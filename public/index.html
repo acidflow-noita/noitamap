@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<title>Noita World</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<link rel="stylesheet" href="css/overlay-styles.css">
+	<link rel="stylesheet" href="css/style.css">
+	<link rel="icon" href="favicon.ico" type="image/x-icon">
+	<link rel="preconnect" href="https://rsms.me/">
+	<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+	<script src="vendor/openseadragon-bin-4.1.0/openseadragon.min.js"></script>
+</head>
+
+<body>
+	<nav class="menu">
+		<img src="/assets/NoitamapLogo.png" alt="Noitamap Logo" />
+		<h1 id="currentMap">Noitamap — Regular Map (beta branch)</h1>
+	</nav>
+	<button class="prev" onclick="changeMap(0)">Regular Map</button>
+	<button class="prev" onclick="changeMap(1)">Nightmare Map</button>
+	<button class="prev" onclick="changeMap(2)">New Game+ Map</button>
+	<div id="os-container"></div>
+
+	<div id="coordinate" class="coordinate">
+		<div class="coordinate-content"></div>
+	<div>
+
+	<script src="js/script.js"></script>
+</body>
+
+</html>

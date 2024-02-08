@@ -1,0 +1,49 @@
+body,
+html {
+	margin: 0px;
+	padding: 0px;
+	background-color: black;
+	overflow: hidden;
+}
+
+#os-container {
+	width: 95vw;
+	height: 95vh;
+	position: fixed;
+}
+
+.menu img {
+	float: left;
+	width: 62px;
+	height: 60px;
+}
+
+.menu h1 {
+	position: relative;
+	top: 18px;
+	left: 10px;
+	color: white;
+}
+
+:root {
+	font-family: Inter, sans-serif;
+	font-feature-settings: 'liga' 1, 'calt' 1;
+	/* fix for Chrome */
+}
+
+@supports (font-variation-settings: normal) {
+	:root {
+		font-family: InterVariable, sans-serif;
+	}
+}
+
+.coordinate {
+	position: absolute;
+	pointer-events: none;
+	color: white;
+}
+
+.coordinate-content {
+	position: relative;
+	top: 2em;
+}

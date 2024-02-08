@@ -1,0 +1,8 @@
+.overlay-highlight {
+    background-color: rgba(128, 128, 128, 0.05);
+    border: rgba(255, 0, 0, 0.1) dashed 1px;
+}
+
+.overlay-highlight:hover {
+    border: red dashed 1px;
+}
