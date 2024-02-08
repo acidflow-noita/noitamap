@@ -3,9 +3,9 @@
 const CHUNK_SIZE = 512;
 
 let tileSources = [
-	"//noitamap-regular-hd.acidflow.stream/maps/regular/regular-2024-02-06-78633191.dzi",
-	"//noitamap-nightmare-hd.acidflow.stream/maps/nightmare/nightmare-2024-02-06-78633191.dzi",
-	"//noitamap-new-game-plus-hd.acidflow.stream/maps/new-game-plus/new-game-plus-2024-02-06-78633191.dzi"
+	"https://noitamap-regular-hd.acidflow.stream/maps/regular/regular-2024-02-06-78633191.dzi",
+	"https://noitamap-nightmare-hd.acidflow.stream/maps/nightmare/nightmare-2024-02-06-78633191.dzi",
+	"https://noitamap-new-game-plus-hd.acidflow.stream/maps/new-game-plus/new-game-plus-2024-02-06-78633191.dzi"
 ];
 
 tileSources = tileSources.map(function (tileSource, i) {
@@ -21,7 +21,7 @@ let oldTileSource = 0;
 
 var os = OpenSeadragon({
 	id: "os-container",
-	prefixUrl: "vendor/openseadragon-bin-4.1.0/images/",
+	prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@4.1/build/openseadragon/images/",
 	//minZoomLevel: 0,
 	//maxZoomLevel: 100,
 	maxZoomPixelRatio: 20,
