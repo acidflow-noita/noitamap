@@ -24,7 +24,7 @@ var os = OpenSeadragon({
 	prefixUrl: "/vendor/openseadragon-bin-4.1.0/images/",
 	//minZoomLevel: 0,
 	//maxZoomLevel: 100,
-	maxZoomPixelRatio: 20,
+	maxZoomPixelRatio: 70,
 	defaultZoomLevel: 0,
 	showNavigator: false,
 	// navigatorPosition: "TOP_RIGHT",
