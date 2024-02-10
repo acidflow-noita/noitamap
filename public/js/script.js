@@ -4,6 +4,7 @@ const CHUNK_SIZE = 512;
 
 let tileSources = [
 	"https://regular-hd.acidflow.stream/maps/regular/regular-2024-02-06-78633191.dzi",
+	"https://regular-main-branch.acidflow.stream/maps/regular-main-branch/regular-main-branch-2024-01-18-78633191.dzi",
 	"https://nightmare-hd.acidflow.stream/maps/nightmare/nightmare-2024-02-06-78633191.dzi",
 	"https://new-game-plus-hd.acidflow.stream/maps/new-game-plus/new-game-plus-2024-02-06-78633191.dzi"
 ];
@@ -65,19 +66,23 @@ function changeMap(tileSource) {
 
 	switch (tileSource) {
 		case 0: {
-			document.getElementById("currentMap").innerHTML = "Noitamap — Regular Map (beta branch)";
+			document.getElementById("currentMap").innerHTML = "Noitamap — Regular Map (&#946; branch)";
 			break;
 		}
 		case 1: {
-			document.getElementById("currentMap").innerHTML = "Noitamap — Nightmare Map (beta branch)";
+			document.getElementById("currentMap").innerHTML = "Noitamap — Regular Map (main branch)";
 			break;
 		}
 		case 2: {
-			document.getElementById("currentMap").innerHTML = "Noitamap — New Game+ Map (beta branch)";
+			document.getElementById("currentMap").innerHTML = "Noitamap — Nightmare Map (&#946; branch)";
+			break;
+		}
+		case 3: {
+			document.getElementById("currentMap").innerHTML = "Noitamap — New Game+ Map (&#946; branch)";
 			break;
 		}
 		default: {
-			document.getElementById("currentMap").innerHTML = "Noitamap (beta branch)";
+			document.getElementById("currentMap").innerHTML = "Noitamap (&#946; branch)";
 			break;
 		}
 	}
