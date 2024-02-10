@@ -27,7 +27,7 @@ html {
 
 :root {
 	font-family: Inter, sans-serif;
-	font-feature-settings: 'liga' 1, 'calt' 1;
+	font-feature-settings: 'liga' 1, 'calt' 1, 'dlig', 'ss01', 'ss02';
 	/* fix for Chrome */
 }
 
@@ -41,6 +41,9 @@ html {
 	position: absolute;
 	pointer-events: none;
 	color: white;
+	font-family: Inter, sans-serif;
+	font-feature-settings: 'tnum', 'zero', 'cv09', 'cv02', 'cv03', 'cv04';
+	font-weight: 400;
 }
 
 .coordinate-content {
