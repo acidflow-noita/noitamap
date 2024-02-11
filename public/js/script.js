@@ -3,7 +3,7 @@
 const CHUNK_SIZE = 512;
 
 let tileSources = [
-	"https://regular-hd.acidflow.stream/maps/regular/regular-2024-02-09-78633191.dzi",
+	"https://regular-hd.acidflow.stream/maps/regular/regular-2024-02-06-78633191.dzi",
 	"https://regular-main-branch.acidflow.stream/maps/regular-main-branch/regular-main-branch-2024-01-18-78633191.dzi",
 	"https://nightmare-hd.acidflow.stream/maps/nightmare/nightmare-2024-02-06-78633191.dzi",
 	"https://new-game-plus-hd.acidflow.stream/maps/new-game-plus/new-game-plus-2024-02-06-78633191.dzi"
