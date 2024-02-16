@@ -206,13 +206,6 @@ const appendAlert = (message, type) => {
 	alertPlaceholder.append(wrapper)
 }
 
-const alertTrigger = document.getElementById('liveAlertBtn')
-if (alertTrigger) {
-	alertTrigger.addEventListener('click', () => {
-		appendAlert('Copied current map coordinates to your clipboard!', 'success')
-	})
-}
-
 function goHome() {
 	os.viewport.goHome();
 };
@@ -222,4 +215,5 @@ function getShareUrl() {
 };
 
 
-
+const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
+const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl))
