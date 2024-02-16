@@ -106,7 +106,7 @@ os.addHandler("open", () => {
 		const currentMapURL = String(urlParams.get("map"));
 		const viewportX = Number(urlParams.get("x"));
 		const viewportY = Number(urlParams.get("y"));
-		const zoom = Number(urlParams.get("zoom").toLocaleString());
+		const zoom = Math.pow(2, Number(urlParams.get("zoom")) / 100);
 		switch (currentMapURL) {
 			case "regular": {
 				if (!document.getElementById("mapId0").classList.contains("active")) {
@@ -189,7 +189,7 @@ os.addHandler("animation-finish", function (event) {
 	// urlParams.set("map", mapQs);
 	urlParams.set("x", center.x.toFixed(10));
 	urlParams.set("y", center.y.toFixed(10));
-	urlParams.set("zoom", zoom.toFixed(0));
+	urlParams.set("zoom", (Math.log2(zoom) * 100).toFixed(0));
 	window.history.replaceState(null, "", "?" + urlParams.toString());
 });
 
@@ -218,6 +218,7 @@ function goHome() {
 };
 
 function getShareUrl() {
+	// TODO: The URL should be updated here
 	window.navigator.clipboard.writeText(window.location.href);
 };
 
