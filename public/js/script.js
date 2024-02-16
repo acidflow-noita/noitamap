@@ -4,9 +4,9 @@ const CHUNK_SIZE = 512;
 
 let tileSources = [
 	"https://regular-hd.acidflow.stream/maps/regular/regular-2024-02-06-78633191.dzi",
-	"https://regular-main-branch.acidflow.stream/maps/regular-main-branch/regular-main-branch-2024-01-18-78633191.dzi",
 	"https://nightmare-hd.acidflow.stream/maps/nightmare/nightmare-2024-02-06-78633191.dzi",
-	"https://new-game-plus-hd.acidflow.stream/maps/new-game-plus/new-game-plus-2024-02-06-78633191.dzi"
+	"https://new-game-plus-hd.acidflow.stream/maps/new-game-plus/new-game-plus-2024-02-06-78633191.dzi",
+	"https://regular-main-branch.acidflow.stream/maps/regular-main-branch/regular-main-branch-2024-01-18-78633191.dzi",
 ];
 
 tileSources = tileSources.map(function (tileSource, i) {
@@ -23,38 +23,25 @@ let oldTileSource = 0;
 var os = OpenSeadragon({
 	id: "os-container",
 	prefixUrl: "/vendor/openseadragon-bin-4.1.0/images/",
-	//minZoomLevel: 0,
-	//maxZoomLevel: 100,
 	maxZoomPixelRatio: 70,
 	defaultZoomLevel: 0,
 	showNavigator: false,
-	// navigatorPosition: "TOP_RIGHT",
-	navigatorDisplayRegionColor: "#FF0000",
-	// sequenceMode: true,
+	showNavigationControl: false,
 	preserveViewport: true,
-	navigatorHeight: 285,
-	navigatorWidth: 200,
 	imageSmoothingEnabled: false,
 	tileSources: tileSources,
 	subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS,
 	smoothTileEdgesMinZoom: 1,
 	minScrollDeltaTime: 10,
 	springStiffness: 50,
-
-	/*overlays: [{
-		className: "overlay-highlight",
-		x: 0.33,
-		y: 0.75,
-		width: 0.2,
-		height: 0.25
-	}]*/
+	preserveViewport: true,
 });
 
 // Disable click to zoom
 this.os.gestureSettingsMouse.clickToZoom = false;
 
-let prevTiledImage
-let nextTiledImage
+let prevTiledImage;
+let nextTiledImage;
 
 function changeMap(tileSource) {
 
@@ -64,32 +51,27 @@ function changeMap(tileSource) {
 	nextTiledImage.setOpacity(1);
 	oldTileSource = tileSource;
 
+	const updatedUrlParams = new URLSearchParams(window.location.search);
 	switch (tileSource) {
-		case 0: {
-			document.getElementById("currentMap").innerHTML = "Noitamap — Regular Map (&#946; branch)";
+		case 0:
+			updatedUrlParams.set("map", "regular");
 			break;
-		}
-		case 1: {
-			document.getElementById("currentMap").innerHTML = "Noitamap — Regular Map (main branch)";
+		case 1:
+			updatedUrlParams.set("map", "nightmare");
 			break;
-		}
-		case 2: {
-			document.getElementById("currentMap").innerHTML = "Noitamap — Nightmare Map (&#946; branch)";
+		case 2:
+			updatedUrlParams.set("map", "new-game-plus");
 			break;
-		}
-		case 3: {
-			document.getElementById("currentMap").innerHTML = "Noitamap — New Game+ Map (&#946; branch)";
+		case 3:
+			updatedUrlParams.set("map", "regular-main-branch");
 			break;
-		}
-		default: {
-			document.getElementById("currentMap").innerHTML = "Noitamap (&#946; branch)";
+		default: updatedUrlParams.set("map", "regular");
 			break;
-		}
-	}
+	};
+	window.history.replaceState(null, "", "?" + updatedUrlParams.toString());
 };
 
 let coordText = "";
-
 os.addHandler('open', function () {
 	const tracker = new OpenSeadragon.MouseTracker({
 		element: os.container,
@@ -115,21 +97,129 @@ os.addHandler('open', function () {
 			coordElement.children[0].textContent = `(${coordText})`;
 		}
 	});
-
 	tracker.setTracking(true);
 });
 
+os.addHandler("open", () => {
+	const urlParams = new URLSearchParams(window.location.search);
+	if (urlParams.has("map") && urlParams.has("x") && urlParams.has("y") && urlParams.has("zoom")) {
+		const currentMapURL = String(urlParams.get("map"));
+		const viewportX = Number(urlParams.get("x"));
+		const viewportY = Number(urlParams.get("y"));
+		const zoom = Number(urlParams.get("zoom").toLocaleString());
+		switch (currentMapURL) {
+			case "regular": {
+				if (!document.getElementById("mapId0").classList.contains("active")) {
+					document.getElementById("mapId0").classList.add("active");
 
-// If the user hits ctrl+c with nothing selected, we put the cursor coordinate
-// into the user's clipboard.
-window.addEventListener('keydown', function (e) {
-	if (e.key !== 'c' || !e.ctrlKey)
-		return;
+					document.getElementById("mapId1").classList.remove("active");
+					document.getElementById("mapId2").classList.remove("active");
+					document.getElementById("mapId3").classList.remove("active");
 
-	const selection = window.getSelection();
-	if (selection.type === "Range")
-		return;
+					urlParams.set("map", "regular");
+					changeMap(0);
 
-	navigator.clipboard.writeText(coordText);
-	e.preventDefault();
+				};
+				break;
+			}
+			case "nightmare": {
+				if (!document.getElementById("mapId1").classList.contains("active")) {
+					document.getElementById("mapId1").classList.add("active");
+
+					document.getElementById("mapId0").classList.remove("active");
+					document.getElementById("mapId2").classList.remove("active");
+					document.getElementById("mapId3").classList.remove("active");
+
+					urlParams.set("map", "nightmare");
+					changeMap(1);
+				};
+				break;
+			}
+			case "new-game-plus": {
+				if (!document.getElementById("mapId2").classList.contains("active")) {
+					document.getElementById("mapId2").classList.add("active");
+
+					document.getElementById("mapId0").classList.remove("active");
+					document.getElementById("mapId1").classList.remove("active");
+					document.getElementById("mapId3").classList.remove("active");
+
+					urlParams.set("map", "new-game-plus");
+					changeMap(2);
+				};
+				break;
+			}
+			case "regular-main-branch": {
+				if (!document.getElementById("mapId3").classList.contains("active")) {
+					document.getElementById("mapId3").classList.add("active");
+
+					document.getElementById("mapId0").classList.remove("active");
+					document.getElementById("mapId1").classList.remove("active");
+					document.getElementById("mapId2").classList.remove("active");
+
+					urlParams.set("map", "regular-main-branch");
+					changeMap(3);
+				};
+				break;
+			}
+			default: {
+				if (!document.getElementById("mapId0").classList.contains("active")) {
+					document.getElementById("mapId0").classList.add("active");
+
+					document.getElementById("mapId1").classList.remove("active");
+					document.getElementById("mapId2").classList.remove("active");
+					document.getElementById("mapId3").classList.remove("active");
+
+					urlParams.set("map", "regular");
+					changeMap(0);
+				};
+				break;
+			}
+		};
+		os.viewport.panTo(new OpenSeadragon.Point(viewportX, viewportY), true);
+		os.viewport.zoomTo(zoom);
+		const mapQs = urlParams.get("map");
+		return mapQs;
+	}
 });
+
+os.addHandler("animation-finish", function (event) {
+	const center = event.eventSource.viewport.getCenter();
+	const zoom = event.eventSource.viewport.getZoom();
+	const urlParams = new URLSearchParams(window.location.search);
+	// urlParams.set("map", mapQs);
+	urlParams.set("x", center.x.toFixed(10));
+	urlParams.set("y", center.y.toFixed(10));
+	urlParams.set("zoom", zoom.toFixed(0));
+	window.history.replaceState(null, "", "?" + urlParams.toString());
+});
+
+const alertPlaceholder = document.getElementById('liveAlertPlaceholder')
+const appendAlert = (message, type) => {
+	const wrapper = document.createElement('div')
+	wrapper.innerHTML = [
+		`<div class="alert alert-${type} alert-dismissible" role="alert">`,
+		`   <div>${message}</div>`,
+		'   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>',
+		'</div>'
+	].join('')
+
+	alertPlaceholder.append(wrapper)
+}
+
+const alertTrigger = document.getElementById('liveAlertBtn')
+if (alertTrigger) {
+	alertTrigger.addEventListener('click', () => {
+		appendAlert('Nice, you triggered this alert message!', 'success')
+	})
+}
+
+function goHome() {
+	os.viewport.goHome();
+};
+
+function getShareUrl() {
+	window.navigator.clipboard.writeText(window.location.href);
+};
+
+
+
