@@ -8,6 +8,7 @@ let tileSources = [
 	"https://new-game-plus-hd.acidflow.stream/maps/new-game-plus/new-game-plus-2024-02-06-78633191.dzi",
 	"https://regular-main-branch.acidflow.stream/maps/regular-main-branch/regular-main-branch-2024-01-18-78633191.dzi",
 	"https://purgatory.acidflow.stream/maps/purgatory/purgatory-2024-01-18-78633191.dzi",
+	"https://apotheosis.acidflow.stream/maps/apotheosis/apotheosis-2024-02-12-78633191.dzi",
 ];
 
 tileSources = tileSources.map(function (tileSource, i) {
@@ -69,6 +70,9 @@ function changeMap(tileSource) {
 		case 4:
 			updatedUrlParams.set("map", "purgatory");
 			break;
+		case 5:
+			updatedUrlParams.set("map", "apotheosis");
+			break;
 		default: updatedUrlParams.set("map", "regular");
 			break;
 	};
@@ -120,6 +124,7 @@ os.addHandler("open", () => {
 					document.getElementById("mapId2").classList.remove("active");
 					document.getElementById("mapId3").classList.remove("active");
 					document.getElementById("mapId4").classList.remove("active");
+					document.getElementById("mapId5").classList.remove("active");
 
 					urlParams.set("map", "regular");
 					changeMap(0);
@@ -135,6 +140,7 @@ os.addHandler("open", () => {
 					document.getElementById("mapId2").classList.remove("active");
 					document.getElementById("mapId3").classList.remove("active");
 					document.getElementById("mapId4").classList.remove("active");
+					document.getElementById("mapId5").classList.remove("active");
 
 					urlParams.set("map", "nightmare");
 					changeMap(1);
@@ -149,6 +155,7 @@ os.addHandler("open", () => {
 					document.getElementById("mapId1").classList.remove("active");
 					document.getElementById("mapId3").classList.remove("active");
 					document.getElementById("mapId4").classList.remove("active");
+					document.getElementById("mapId5").classList.remove("active");
 
 					urlParams.set("map", "new-game-plus");
 					changeMap(2);
@@ -163,6 +170,7 @@ os.addHandler("open", () => {
 					document.getElementById("mapId1").classList.remove("active");
 					document.getElementById("mapId2").classList.remove("active");
 					document.getElementById("mapId4").classList.remove("active");
+					document.getElementById("mapId5").classList.remove("active");
 
 					urlParams.set("map", "regular-main-branch");
 					changeMap(3);
@@ -177,9 +185,25 @@ os.addHandler("open", () => {
 					document.getElementById("mapId1").classList.remove("active");
 					document.getElementById("mapId2").classList.remove("active");
 					document.getElementById("mapId3").classList.remove("active");
+					document.getElementById("mapId5").classList.remove("active");
 
 					urlParams.set("map", "purgatory");
 					changeMap(4);
+				};
+				break;
+			}
+			case "apotheosis": {
+				if (!document.getElementById("mapId5").classList.contains("active")) {
+					document.getElementById("mapId5").classList.add("active");
+
+					document.getElementById("mapId0").classList.remove("active");
+					document.getElementById("mapId1").classList.remove("active");
+					document.getElementById("mapId2").classList.remove("active");
+					document.getElementById("mapId3").classList.remove("active");
+					document.getElementById("mapId4").classList.remove("active");
+
+					urlParams.set("map", "apotheosis");
+					changeMap(5);
 				};
 				break;
 			}
