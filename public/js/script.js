@@ -176,7 +176,7 @@ os.addHandler("open", () => {
 					document.getElementById("mapId3").classList.remove("active");
 
 					urlParams.set("map", "purgatory");
-					changeMap(3);
+					changeMap(4);
 				};
 				break;
 			}
