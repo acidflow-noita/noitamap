@@ -116,6 +116,7 @@ os.addHandler("open", () => {
 					document.getElementById("mapId1").classList.remove("active");
 					document.getElementById("mapId2").classList.remove("active");
 					document.getElementById("mapId3").classList.remove("active");
+					document.getElementById("mapId4").classList.remove("active");
 
 					urlParams.set("map", "regular");
 					changeMap(0);
@@ -130,6 +131,7 @@ os.addHandler("open", () => {
 					document.getElementById("mapId0").classList.remove("active");
 					document.getElementById("mapId2").classList.remove("active");
 					document.getElementById("mapId3").classList.remove("active");
+					document.getElementById("mapId4").classList.remove("active");
 
 					urlParams.set("map", "nightmare");
 					changeMap(1);
@@ -143,6 +145,7 @@ os.addHandler("open", () => {
 					document.getElementById("mapId0").classList.remove("active");
 					document.getElementById("mapId1").classList.remove("active");
 					document.getElementById("mapId3").classList.remove("active");
+					document.getElementById("mapId4").classList.remove("active");
 
 					urlParams.set("map", "new-game-plus");
 					changeMap(2);
@@ -156,8 +159,23 @@ os.addHandler("open", () => {
 					document.getElementById("mapId0").classList.remove("active");
 					document.getElementById("mapId1").classList.remove("active");
 					document.getElementById("mapId2").classList.remove("active");
+					document.getElementById("mapId4").classList.remove("active");
 
 					urlParams.set("map", "regular-main-branch");
+					changeMap(3);
+				};
+				break;
+			}
+			case "purgatory": {
+				if (!document.getElementById("mapId4").classList.contains("active")) {
+					document.getElementById("mapId4").classList.add("active");
+
+					document.getElementById("mapId0").classList.remove("active");
+					document.getElementById("mapId1").classList.remove("active");
+					document.getElementById("mapId2").classList.remove("active");
+					document.getElementById("mapId3").classList.remove("active");
+
+					urlParams.set("map", "purgatory");
 					changeMap(3);
 				};
 				break;
@@ -169,6 +187,7 @@ os.addHandler("open", () => {
 					document.getElementById("mapId1").classList.remove("active");
 					document.getElementById("mapId2").classList.remove("active");
 					document.getElementById("mapId3").classList.remove("active");
+					document.getElementById("mapId4").classList.remove("active");
 
 					urlParams.set("map", "regular");
 					changeMap(0);
