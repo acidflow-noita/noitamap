@@ -66,6 +66,9 @@ function changeMap(tileSource) {
 		case 3:
 			updatedUrlParams.set("map", "regular-main-branch");
 			break;
+		case 4:
+			updatedUrlParams.set("map", "purgatory");
+			break;
 		default: updatedUrlParams.set("map", "regular");
 			break;
 	};
