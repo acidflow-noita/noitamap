@@ -12,6 +12,8 @@ let tileSources = [
 	"https://apotheosis-new-game-plus.acidflow.stream/maps/apotheosis-new-game-plus/apotheosis-new-game-plus-2024-02-12-78633191.dzi",
 	"https://noitavania.acidflow.stream/maps/noitavania/noitavania-2024-02-12-78633191.dzi",
 	"https://noitavania-new-game-plus.acidflow.stream/maps/noitavania-new-game-plus/noitavania-new-game-plus-2024-02-12-78633191.dzi",
+	"https://alternate-biomes.acidflow.stream/maps/alternate-biomes/alternate-biomes-2024-02-12-78633191.dzi",
+	"https://apotheosis-tuonela.acidflow.stream/maps/apotheosis-tuonela/apotheosis-tuonela-2024-02-12-78633191.dzi",
 ];
 
 tileSources = tileSources.map(function (tileSource, i) {
@@ -87,6 +89,12 @@ function changeMap(tileSource) {
 		case 8:
 			updatedUrlParams.set("map", "noitavania-new-game-plus");
 			break;
+		case 9:
+			updatedUrlParams.set("map", "alternate-biomes");
+			break;
+		case 10:
+			updatedUrlParams.set("map", "apotheosis-tuonela");
+			break;
 		default: updatedUrlParams.set("map", "regular");
 			break;
 	};
@@ -141,6 +149,8 @@ os.addHandler("open", () => {
 					document.getElementById("mapId5").classList.remove("active");
 					document.getElementById("mapId7").classList.remove("active");
 					document.getElementById("mapId8").classList.remove("active");
+					document.getElementById("mapId9").classList.remove("active");
+					document.getElementById("mapId10").classList.remove("active");
 
 					urlParams.set("map", "regular");
 					changeMap(0);
@@ -160,6 +170,8 @@ os.addHandler("open", () => {
 					document.getElementById("mapId6").classList.remove("active");
 					document.getElementById("mapId7").classList.remove("active");
 					document.getElementById("mapId8").classList.remove("active");
+					document.getElementById("mapId9").classList.remove("active");
+					document.getElementById("mapId10").classList.remove("active");
 
 					urlParams.set("map", "nightmare");
 					changeMap(1);
@@ -178,6 +190,8 @@ os.addHandler("open", () => {
 					document.getElementById("mapId6").classList.remove("active");
 					document.getElementById("mapId7").classList.remove("active");
 					document.getElementById("mapId8").classList.remove("active");
+					document.getElementById("mapId9").classList.remove("active");
+					document.getElementById("mapId10").classList.remove("active");
 
 					urlParams.set("map", "new-game-plus");
 					changeMap(2);
@@ -196,6 +210,8 @@ os.addHandler("open", () => {
 					document.getElementById("mapId6").classList.remove("active");
 					document.getElementById("mapId7").classList.remove("active");
 					document.getElementById("mapId8").classList.remove("active");
+					document.getElementById("mapId9").classList.remove("active");
+					document.getElementById("mapId10").classList.remove("active");
 
 					urlParams.set("map", "regular-main-branch");
 					changeMap(3);
@@ -214,6 +230,8 @@ os.addHandler("open", () => {
 					document.getElementById("mapId6").classList.remove("active");
 					document.getElementById("mapId7").classList.remove("active");
 					document.getElementById("mapId8").classList.remove("active");
+					document.getElementById("mapId9").classList.remove("active");
+					document.getElementById("mapId10").classList.remove("active");
 
 					urlParams.set("map", "purgatory");
 					changeMap(4);
@@ -232,6 +250,8 @@ os.addHandler("open", () => {
 					document.getElementById("mapId6").classList.remove("active");
 					document.getElementById("mapId7").classList.remove("active");
 					document.getElementById("mapId8").classList.remove("active");
+					document.getElementById("mapId9").classList.remove("active");
+					document.getElementById("mapId10").classList.remove("active");
 
 					urlParams.set("map", "apotheosis");
 					changeMap(5);
@@ -250,6 +270,8 @@ os.addHandler("open", () => {
 					document.getElementById("mapId5").classList.remove("active");
 					document.getElementById("mapId7").classList.remove("active");
 					document.getElementById("mapId8").classList.remove("active");
+					document.getElementById("mapId9").classList.remove("active");
+					document.getElementById("mapId10").classList.remove("active");
 
 					urlParams.set("map", "apotheosis-new-game-plus");
 					changeMap(6);
@@ -268,6 +290,8 @@ os.addHandler("open", () => {
 					document.getElementById("mapId5").classList.remove("active");
 					document.getElementById("mapId6").classList.remove("active");
 					document.getElementById("mapId8").classList.remove("active");
+					document.getElementById("mapId9").classList.remove("active");
+					document.getElementById("mapId10").classList.remove("active");
 
 					urlParams.set("map", "noitavania");
 					changeMap(7);
@@ -277,7 +301,7 @@ os.addHandler("open", () => {
 			case "noitavania-new-game-plus": {
 				if (!document.getElementById("mapId8").classList.contains("active")) {
 					document.getElementById("mapId8").classList.add("active");
-
+					
 					document.getElementById("mapId0").classList.remove("active");
 					document.getElementById("mapId1").classList.remove("active");
 					document.getElementById("mapId2").classList.remove("active");
@@ -286,9 +310,51 @@ os.addHandler("open", () => {
 					document.getElementById("mapId5").classList.remove("active");
 					document.getElementById("mapId6").classList.remove("active");
 					document.getElementById("mapId8").classList.remove("active");
-
+					document.getElementById("mapId9").classList.remove("active");
+					document.getElementById("mapId10").classList.remove("active");
+					
 					urlParams.set("map", "noitavania-new-game-plus");
 					changeMap(8);
+				};
+				break;
+			}
+			case "alternate-biomes": {
+				if (!document.getElementById("mapId9").classList.contains("active")) {
+					document.getElementById("mapId9").classList.add("active");
+
+					document.getElementById("mapId0").classList.remove("active");
+					document.getElementById("mapId1").classList.remove("active");
+					document.getElementById("mapId2").classList.remove("active");
+					document.getElementById("mapId3").classList.remove("active");
+					document.getElementById("mapId4").classList.remove("active");
+					document.getElementById("mapId5").classList.remove("active");
+					document.getElementById("mapId6").classList.remove("active");
+					document.getElementById("mapId7").classList.remove("active");
+					document.getElementById("mapId8").classList.remove("active");
+					document.getElementById("mapId10").classList.remove("active");
+
+					urlParams.set("map", "alternate-biomes");
+					changeMap(9);
+				};
+				break;
+			}
+			case "apotheosis-tuonela": {
+				if (!document.getElementById("mapId10").classList.contains("active")) {
+					document.getElementById("mapId10").classList.add("active");
+
+					document.getElementById("mapId0").classList.remove("active");
+					document.getElementById("mapId1").classList.remove("active");
+					document.getElementById("mapId2").classList.remove("active");
+					document.getElementById("mapId3").classList.remove("active");
+					document.getElementById("mapId4").classList.remove("active");
+					document.getElementById("mapId5").classList.remove("active");
+					document.getElementById("mapId6").classList.remove("active");
+					document.getElementById("mapId7").classList.remove("active");
+					document.getElementById("mapId8").classList.remove("active");
+					document.getElementById("mapId9").classList.remove("active");
+
+					urlParams.set("map", "apotheosis-tuonela");
+					changeMap(10);
 				};
 				break;
 			}
@@ -300,6 +366,12 @@ os.addHandler("open", () => {
 					document.getElementById("mapId2").classList.remove("active");
 					document.getElementById("mapId3").classList.remove("active");
 					document.getElementById("mapId4").classList.remove("active");
+					document.getElementById("mapId5").classList.remove("active");
+					document.getElementById("mapId6").classList.remove("active");
+					document.getElementById("mapId7").classList.remove("active");
+					document.getElementById("mapId8").classList.remove("active");
+					document.getElementById("mapId9").classList.remove("active");
+					document.getElementById("mapId10").classList.remove("active");
 
 					urlParams.set("map", "regular");
 					changeMap(0);
