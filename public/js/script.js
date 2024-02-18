@@ -9,6 +9,9 @@ let tileSources = [
 	"https://regular-main-branch.acidflow.stream/maps/regular-main-branch/regular-main-branch-2024-01-18-78633191.dzi",
 	"https://purgatory.acidflow.stream/maps/purgatory/purgatory-2024-01-18-78633191.dzi",
 	"https://apotheosis.acidflow.stream/maps/apotheosis/apotheosis-2024-02-12-78633191.dzi",
+	"https://apotheosis-new-game-plus.acidflow.stream/maps/apotheosis-new-game-plus/apotheosis-new-game-plus-2024-02-12-78633191.dzi",
+	"https://noitavania.acidflow.stream/maps/noitavania/noitavania-2024-02-12-78633191.dzi",
+	"https://noitavania-new-game-plus.acidflow.stream/maps/noitavania-new-game-plus/noitavania-new-game-plus-2024-02-12-78633191.dzi",
 ];
 
 tileSources = tileSources.map(function (tileSource, i) {
@@ -23,10 +26,10 @@ tileSources = tileSources.map(function (tileSource, i) {
 let oldTileSource = 0;
 
 var os = OpenSeadragon({
+	// maxZoomPixelRatio: 70,
+	// animationTime: 1.2, // default
 	id: "os-container",
 	prefixUrl: "/vendor/openseadragon-bin-4.1.0/images/",
-	maxZoomPixelRatio: 70,
-	defaultZoomLevel: 0,
 	showNavigator: false,
 	showNavigationControl: false,
 	preserveViewport: true,
@@ -37,10 +40,12 @@ var os = OpenSeadragon({
 	minScrollDeltaTime: 10,
 	springStiffness: 50,
 	preserveViewport: true,
+	// animationTime: 10,
+	defaultZoomLevel: 0,
+	maxZoomLevel: 3000,
+	// minZoomLevel: 0.05,
+	gestureSettingsMouse: { clickToZoom: false },
 });
-
-// Disable click to zoom
-this.os.gestureSettingsMouse.clickToZoom = false;
 
 let prevTiledImage;
 let nextTiledImage;
@@ -72,6 +77,15 @@ function changeMap(tileSource) {
 			break;
 		case 5:
 			updatedUrlParams.set("map", "apotheosis");
+			break;
+		case 6:
+			updatedUrlParams.set("map", "apotheosis-new-game-plus");
+			break;
+		case 7:
+			updatedUrlParams.set("map", "noitavania");
+			break;
+		case 8:
+			updatedUrlParams.set("map", "noitavania-new-game-plus");
 			break;
 		default: updatedUrlParams.set("map", "regular");
 			break;
@@ -125,6 +139,8 @@ os.addHandler("open", () => {
 					document.getElementById("mapId3").classList.remove("active");
 					document.getElementById("mapId4").classList.remove("active");
 					document.getElementById("mapId5").classList.remove("active");
+					document.getElementById("mapId7").classList.remove("active");
+					document.getElementById("mapId8").classList.remove("active");
 
 					urlParams.set("map", "regular");
 					changeMap(0);
@@ -141,6 +157,9 @@ os.addHandler("open", () => {
 					document.getElementById("mapId3").classList.remove("active");
 					document.getElementById("mapId4").classList.remove("active");
 					document.getElementById("mapId5").classList.remove("active");
+					document.getElementById("mapId6").classList.remove("active");
+					document.getElementById("mapId7").classList.remove("active");
+					document.getElementById("mapId8").classList.remove("active");
 
 					urlParams.set("map", "nightmare");
 					changeMap(1);
@@ -156,6 +175,9 @@ os.addHandler("open", () => {
 					document.getElementById("mapId3").classList.remove("active");
 					document.getElementById("mapId4").classList.remove("active");
 					document.getElementById("mapId5").classList.remove("active");
+					document.getElementById("mapId6").classList.remove("active");
+					document.getElementById("mapId7").classList.remove("active");
+					document.getElementById("mapId8").classList.remove("active");
 
 					urlParams.set("map", "new-game-plus");
 					changeMap(2);
@@ -171,6 +193,9 @@ os.addHandler("open", () => {
 					document.getElementById("mapId2").classList.remove("active");
 					document.getElementById("mapId4").classList.remove("active");
 					document.getElementById("mapId5").classList.remove("active");
+					document.getElementById("mapId6").classList.remove("active");
+					document.getElementById("mapId7").classList.remove("active");
+					document.getElementById("mapId8").classList.remove("active");
 
 					urlParams.set("map", "regular-main-branch");
 					changeMap(3);
@@ -186,6 +211,9 @@ os.addHandler("open", () => {
 					document.getElementById("mapId2").classList.remove("active");
 					document.getElementById("mapId3").classList.remove("active");
 					document.getElementById("mapId5").classList.remove("active");
+					document.getElementById("mapId6").classList.remove("active");
+					document.getElementById("mapId7").classList.remove("active");
+					document.getElementById("mapId8").classList.remove("active");
 
 					urlParams.set("map", "purgatory");
 					changeMap(4);
@@ -201,9 +229,66 @@ os.addHandler("open", () => {
 					document.getElementById("mapId2").classList.remove("active");
 					document.getElementById("mapId3").classList.remove("active");
 					document.getElementById("mapId4").classList.remove("active");
+					document.getElementById("mapId6").classList.remove("active");
+					document.getElementById("mapId7").classList.remove("active");
+					document.getElementById("mapId8").classList.remove("active");
 
 					urlParams.set("map", "apotheosis");
 					changeMap(5);
+				};
+				break;
+			}
+			case "apotheosis-new-game-plus": {
+				if (!document.getElementById("mapId6").classList.contains("active")) {
+					document.getElementById("mapId6").classList.add("active");
+
+					document.getElementById("mapId0").classList.remove("active");
+					document.getElementById("mapId1").classList.remove("active");
+					document.getElementById("mapId2").classList.remove("active");
+					document.getElementById("mapId3").classList.remove("active");
+					document.getElementById("mapId4").classList.remove("active");
+					document.getElementById("mapId5").classList.remove("active");
+					document.getElementById("mapId7").classList.remove("active");
+					document.getElementById("mapId8").classList.remove("active");
+
+					urlParams.set("map", "apotheosis-new-game-plus");
+					changeMap(6);
+				};
+				break;
+			}
+			case "noitavania": {
+				if (!document.getElementById("mapId7").classList.contains("active")) {
+					document.getElementById("mapId7").classList.add("active");
+
+					document.getElementById("mapId0").classList.remove("active");
+					document.getElementById("mapId1").classList.remove("active");
+					document.getElementById("mapId2").classList.remove("active");
+					document.getElementById("mapId3").classList.remove("active");
+					document.getElementById("mapId4").classList.remove("active");
+					document.getElementById("mapId5").classList.remove("active");
+					document.getElementById("mapId6").classList.remove("active");
+					document.getElementById("mapId8").classList.remove("active");
+
+					urlParams.set("map", "noitavania");
+					changeMap(7);
+				};
+				break;
+			}
+			case "noitavania-new-game-plus": {
+				if (!document.getElementById("mapId8").classList.contains("active")) {
+					document.getElementById("mapId8").classList.add("active");
+
+					document.getElementById("mapId0").classList.remove("active");
+					document.getElementById("mapId1").classList.remove("active");
+					document.getElementById("mapId2").classList.remove("active");
+					document.getElementById("mapId3").classList.remove("active");
+					document.getElementById("mapId4").classList.remove("active");
+					document.getElementById("mapId5").classList.remove("active");
+					document.getElementById("mapId6").classList.remove("active");
+					document.getElementById("mapId8").classList.remove("active");
+
+					urlParams.set("map", "noitavania-new-game-plus");
+					changeMap(8);
 				};
 				break;
 			}
@@ -265,3 +350,19 @@ function getShareUrl() {
 
 const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
 const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl))
+
+// (x: 0.08697259561936987, y: 0.5495140252995913, width: 0.014120588864484205, height: 0.011647328900440127, degrees: 0)
+
+// function fitB() {
+// 	const bounds = new OpenSeadragon.Rect(0.08697259561936987, 0.5495140252995913, 0.014120588864484205, 0.011647328900440127, 0);
+// 	const bounds2 = new OpenSeadragon.Rect(-0.3728888888888868, 5.440092820663267e-15, 1.7457777777777777, 1.44, 0);
+// 	let aT = os.animationTime;
+// 	console.log(aT);
+// 	console.log("===");
+// 	os.viewport.fitBounds(bounds, false);
+// };
+
+
+// const annotations = new OpenSeadragon.Annotations({ viewer });
+
+os.initializeAnnotations();
