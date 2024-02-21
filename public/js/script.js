@@ -28,13 +28,12 @@ tileSources = tileSources.map(function (tileSource, i) {
 let oldTileSource = 0;
 
 var os = OpenSeadragon({
-	// maxZoomPixelRatio: 70,
+	maxZoomPixelRatio: 70,
 	// animationTime: 1.2, // default
 	id: "os-container",
 	prefixUrl: "/vendor/openseadragon-bin-4.1.0/images/",
 	showNavigator: false,
 	showNavigationControl: false,
-	preserveViewport: true,
 	imageSmoothingEnabled: false,
 	tileSources: tileSources,
 	subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS,
@@ -43,9 +42,6 @@ var os = OpenSeadragon({
 	springStiffness: 50,
 	preserveViewport: true,
 	// animationTime: 10,
-	defaultZoomLevel: 0,
-	maxZoomLevel: 3000,
-	// minZoomLevel: 0.05,
 	gestureSettingsMouse: { clickToZoom: false },
 });
 
@@ -101,42 +97,38 @@ function changeMap(tileSource) {
 	window.history.replaceState(null, "", "?" + updatedUrlParams.toString());
 };
 
-let coordText = "";
-os.addHandler('open', function () {
-	const tracker = new OpenSeadragon.MouseTracker({
-		element: os.container,
-		moveHandler: function (event) {
-			const webPoint = event.position;
-			const viewportPoint = os.viewport.pointFromPixel(webPoint);
+const coordElement = document.getElementById("coordinate");
+const mouseTracker = new OpenSeadragon.MouseTracker({
+	// @ts-ignore
+	element: os.container,
+	moveHandler: (event) => {
+		if (event.pointerType != "mouse") { return }
+		const webPoint = event.position;
+		const viewportPoint = os.viewport.pointFromPixel(webPoint);
 
-			const tiledImage = os.world.getItemAt(oldTileSource);
-			const imageSize = tiledImage.getContentSize();
-			const worldMiddle = new OpenSeadragon.Point(
-				imageSize.x / 2,
-				imageSize.y / 2 - 10 * CHUNK_SIZE,
-			);
+		const pixelX = Math.floor(viewportPoint.x).toString();
+		const pixelY = Math.floor(viewportPoint.y).toString();
+		//const chunkX = Math.floor(viewportPoint.x / CHUNK_SIZE).toString();
+		//const chunkY = Math.floor(viewportPoint.y / CHUNK_SIZE).toString();
 
-			const imagePoint = tiledImage.viewportToImageCoordinates(viewportPoint);;
-			const worldPos = imagePoint.minus(worldMiddle);
-
-			const coordElement = document.getElementById("coordinate");
-			coordElement.style.left = `${event.originalEvent.pageX}px`;
-			coordElement.style.top = `${event.originalEvent.pageY}px`;
-
-			coordText = `${Math.floor(worldPos.x)}, ${Math.floor(worldPos.y)}`;
-			coordElement.children[0].textContent = `(${coordText})`;
-		}
-	});
-	tracker.setTracking(true);
-});
+		coordElement.children[0].textContent = `(${pixelX}, ${pixelY})`;
+		coordElement.style.left = `${event.originalEvent.pageX}px`;
+		coordElement.style.top = `${event.originalEvent.pageY}px`;
+	},
+	enterHandler: (event) => {
+		if (event.pointerType != "mouse") { return }
+		coordElement.style.visibility = "visible";
+	},
+	leaveHandler: (event) => {
+		if (event.pointerType != "mouse") { return }
+		coordElement.style.visibility = "hidden";
+	},
+}).setTracking(true);
 
 os.addHandler("open", () => {
 	const urlParams = new URLSearchParams(window.location.search);
-	if (urlParams.has("map") && urlParams.has("x") && urlParams.has("y") && urlParams.has("zoom")) {
+	if (urlParams.has("map")) {
 		const currentMapURL = String(urlParams.get("map"));
-		const viewportX = Number(urlParams.get("x"));
-		const viewportY = Number(urlParams.get("y"));
-		const zoom = Math.pow(2, Number(urlParams.get("zoom")) / 100);
 		switch (currentMapURL) {
 			case "regular": {
 				if (!document.getElementById("mapId0").classList.contains("active")) {
@@ -379,22 +371,52 @@ os.addHandler("open", () => {
 				break;
 			}
 		};
-		os.viewport.panTo(new OpenSeadragon.Point(viewportX, viewportY), true);
-		os.viewport.zoomTo(zoom);
 		const mapQs = urlParams.get("map");
 		return mapQs;
 	}
 });
 
+// Store/load viewport position and zoom level in/from URL parameters.
+os.addHandler("open", (event) => {
+	const viewport = event.eventSource.viewport;
+	const urlParams = new URLSearchParams(window.location.search);
+	// Default/fallback viewport rectangle, which we try to fit first.
+	viewport.fitBounds(new OpenSeadragon.Rect(-25600, -31744, 51200, 73728), true);
+	const viewportCenter = viewport.getCenter()
+	let viewportZoom = viewport.getZoom();
+	// Get offset/zoom parameters from the URL, and overwrite the default/fallback.
+	if (urlParams.has("x")) {
+		viewportCenter.x = Number(urlParams.get("x"));
+	} 
+	if (urlParams.has("y")) {
+		viewportCenter.y = Number(urlParams.get("y"));
+	}
+	if (urlParams.has("zoom")) {
+		viewportZoom = Math.pow(2, Number(urlParams.get("zoom")) / -100);
+	}
+	console.log(viewportCenter, viewportZoom);
+	viewport.panTo(viewportCenter, true);
+	viewport.zoomTo(viewportZoom, undefined, true);
+});
 os.addHandler("animation-finish", function (event) {
 	const center = event.eventSource.viewport.getCenter();
 	const zoom = event.eventSource.viewport.getZoom();
 	const urlParams = new URLSearchParams(window.location.search);
 	// urlParams.set("map", mapQs);
-	urlParams.set("x", center.x.toFixed(10));
-	urlParams.set("y", center.y.toFixed(10));
-	urlParams.set("zoom", (Math.log2(zoom) * 100).toFixed(0));
+	urlParams.set("x", center.x.toFixed(0));
+	urlParams.set("y", center.y.toFixed(0));
+	urlParams.set("zoom", (Math.log2(zoom) * -100).toFixed(0));
 	window.history.replaceState(null, "", "?" + urlParams.toString());
+});
+
+// Get additional DZI information from every loaded TiledImage.
+// This is used to scale and offset images in a way so that the OSD coordinate system aligns with the Noita world coordinate system.
+os.world.addHandler('add-item', (event) => {
+	/** @type {{Format: string, Overlap: string, Size: {Width: string, Height: string}, TileSize: string, TopLeft: {X: string, Y: string}}} */
+	// @ts-ignore
+	const image = event.item.source.Image;
+	event.item.setPosition(new OpenSeadragon.Point(Number(image.TopLeft.X), Number(image.TopLeft.Y)), true);
+	event.item.setWidth(Number(image.Size.Width), true);
 });
 
 const alertPlaceholder = document.getElementById('liveAlertPlaceholder')
