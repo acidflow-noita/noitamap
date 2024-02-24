@@ -3,6 +3,11 @@
 const CHUNK_SIZE = 512;
 
 let tileSources = [
+	// [
+	// 	"https://regular-left-pw.acidflow.stream/maps/regular-left-pw/regular-left-pw-2024-02-12-78633191.dzi",
+	// 	"https://regular-middle.acidflow.stream/maps/regular-middle/regular-middle-2024-02-12-78633191.dzi",
+	// 	"https://regular-right-pw.acidflow.stream/maps/regular-right-pw/regular-right-pw-2024-02-12-78633191.dzi",
+	// ],
 	"https://regular-hd.acidflow.stream/maps/regular/regular-2024-02-06-78633191.dzi",
 	"https://nightmare-hd.acidflow.stream/maps/nightmare/nightmare-2024-02-06-78633191.dzi",
 	"https://new-game-plus-hd.acidflow.stream/maps/new-game-plus/new-game-plus-2024-02-06-78633191.dzi",
@@ -23,6 +28,7 @@ tileSources = tileSources.map(function (tileSource, i) {
 		preload: false
 	};
 });
+
 
 // Set initial map to regular map
 let oldTileSource = 0;
@@ -293,7 +299,7 @@ os.addHandler("open", () => {
 			case "noitavania-new-game-plus": {
 				if (!document.getElementById("mapId8").classList.contains("active")) {
 					document.getElementById("mapId8").classList.add("active");
-					
+
 					document.getElementById("mapId0").classList.remove("active");
 					document.getElementById("mapId1").classList.remove("active");
 					document.getElementById("mapId2").classList.remove("active");
@@ -304,7 +310,7 @@ os.addHandler("open", () => {
 					document.getElementById("mapId8").classList.remove("active");
 					document.getElementById("mapId9").classList.remove("active");
 					document.getElementById("mapId10").classList.remove("active");
-					
+
 					urlParams.set("map", "noitavania-new-game-plus");
 					changeMap(8);
 				};
@@ -387,7 +393,7 @@ os.addHandler("open", (event) => {
 	// Get offset/zoom parameters from the URL, and overwrite the default/fallback.
 	if (urlParams.has("x")) {
 		viewportCenter.x = Number(urlParams.get("x"));
-	} 
+	}
 	if (urlParams.has("y")) {
 		viewportCenter.y = Number(urlParams.get("y"));
 	}
@@ -459,4 +465,4 @@ const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstra
 
 // const annotations = new OpenSeadragon.Annotations({ viewer });
 
-os.initializeAnnotations();
+// os.initializeAnnotations();

@@ -44,8 +44,8 @@
 			<button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
 		</div>
 	</div>
-
-	<nav class="navbar nav nav-pills navbar-expand-xl bg-body-tertiary">
+	
+	<nav class="navbar nav nav-pills  bg-body-tertiary nav-wrapper">
 		<div class="container-fluid ">
 			<a class="navbar-brand" href="#" onclick="goHome();"><img src="/assets/NoitamapLogo.png" alt="Noitamap Logo"
 					class="d-inline-block align-text-middle"></a>
@@ -54,32 +54,29 @@
 				aria-label="Toggle navigation">
 				<span class="navbar-toggler-icon"></span>
 			</button>
-			<div class="collapse navbar-collapse " id="navbarSupportedContent">
-				<ul class="navbar-nav me-auto mb-2 p-3 mb-lg-0 grid column-gap-3" id="navLinksList">
-					<div class="vr"></div>
+			<div class="collapse navbar-collapse flex-column column-gap-3" id="navbarSupportedContent">
+				<ul class="column-gap-3 navbar-nav ml-auto mb-2 mb-lg-0 w-100 d-flex flex-row-md flex-column-sm mb-md-1 mt-md-0 mb-3 mt-2" id="navLinksList">
 					<a id="mapId0" class="nav-link text-nowrap active" href="#" data-bs-toggle="pill" onclick="changeMap(0);">Regular <span class="badge text-bg-info">β</span></a>
 					<a id="mapId1" class="nav-link text-nowrap" href="#" data-bs-toggle="pill" onclick="changeMap(1);">Nightmare <span class="badge text-bg-info">β</span></a>
 					<a id="mapId2" class="nav-link text-nowrap" href="#" data-bs-toggle="pill" onclick="changeMap(2);">NG+ <span class="badge text-bg-info">β</span></a>
-					<div class="vr"></div>
+					<a tabindex="0" class="btn btn-outline-success text-nowrap" data-bs-trigger="focus" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Copied!" role="button" onclick="getShareUrl();"><i class="bi bi-copy"></i> Copy to clipboard</a>
+				</ul>
+				<ul class="column-gap-3 navbar-nav ml-auto mb-2 mb-lg-0 w-100 d-flex flex-row-md flex-column-sm mb-md-1 mt-md-0 mb-3 mt-2">
 					<a id="mapId3" class="nav-link text-nowrap" href="#" data-bs-toggle="pill" onclick="changeMap(3);">Regular <span class="badge text-bg-success">main</span></a>
-					<div class="vr"></div>
 					<a id="mapId4" class="nav-link text-nowrap" href="#" data-bs-toggle="pill" onclick="changeMap(4);">Purgatory <span class="badge text-bg-light"><i class="bi bi-tools"></i></span></a>
-					<div class="vr"></div>
+				</ul>
+				<ul class="column-gap-3 navbar-nav ml-auto mb-2 mb-lg-0 w-100 d-flex flex-row-md flex-column-sm mb-md-1 mt-md-0 mb-3 mt-2">
 					<a id="mapId5" class="nav-link text-nowrap" href="#" data-bs-toggle="pill" onclick="changeMap(5);">Apotheosis <span class="badge text-bg-light"><i class="bi bi-tools"></i></span></a>
 					<a id="mapId6" class="nav-link text-nowrap" href="#" data-bs-toggle="pill" onclick="changeMap(6);">Apotheosis NG+ <span class="badge text-bg-light"><i class="bi bi-tools"></i></span></a>
 					<a id="mapId10" class="nav-link text-nowrap" href="#" data-bs-toggle="pill" onclick="changeMap(10);">Apotheosis Tuonela <span class="badge text-bg-light"><i class="bi bi-tools"></i></span></a>
-					<div class="vr"></div>
 					<a id="mapId7" class="nav-link text-nowrap" href="#" data-bs-toggle="pill" onclick="changeMap(7);">Noitavania <span class="badge text-bg-light"><i class="bi bi-tools"></i></span></a>
+				</ul>
+				<ul class="column-gap-3 navbar-nav ml-auto mb-2 mb-lg-0 w-100 d-flex flex-row-md flex-column-sm mb-md-1 mt-md-0 mb-3 mt-2">
 					<a id="mapId8" class="nav-link text-nowrap" href="#" data-bs-toggle="pill" onclick="changeMap(8);">Noitavania NG+ <span class="badge text-bg-light"><i class="bi bi-tools"></i></span></a>
-					<div class="vr"></div>
 					<a id="mapId9" class="nav-link text-nowrap" href="#" data-bs-toggle="pill" onclick="changeMap(9);">Alternate Biomes <span class="badge text-bg-light"><i class="bi bi-tools"></i></span></a>
-					<div class="vr"></div>
-					<a tabindex="0" class="btn btn-outline-success text-nowrap" data-bs-trigger="focus" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Copied!" role="button" onclick="getShareUrl();"><i class="bi bi-copy"></i> Copy coordinates to clipboard</a>
-					<div class="vr"></div>
 					<a href="https://github.com/acidflow-noita/noitamap" class="btn btn-outline-info text-nowrap" target="_blank" role="button"><i class="bi bi-github"></i> Contribute</a>
 				</ul>
 			</div>
-		</div>
 		</div>
 	</nav>
 
