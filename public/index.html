@@ -97,20 +97,19 @@
             alt="Noitamap Logo"
             class="d-inline-block align-text-middle"
         /></a>
-        <div class="gap-3 column-gap-3 d-flex justify-content-end">
-          <a
-            tabindex="0"
-            class="btn btn-outline-success text-nowrap"
-            data-bs-trigger="focus"
-            data-bs-container="body"
-            data-bs-toggle="popover"
-            data-bs-placement="bottom"
-            data-bs-content="Copied!"
-            role="button"
-            onclick="getShareUrl();"
-            ><i class="bi bi-copy"></i> Copy to clipboard</a
-          >
-        </div>
+        <a
+          id="shareButton"
+          tabindex="0"
+          class="btn btn-outline-success text-nowrap"
+          data-bs-trigger="focus"
+          data-bs-container="body"
+          data-bs-toggle="popover"
+          data-bs-placement="bottom"
+          data-bs-content="Copied!"
+          role="button"
+          onclick="getShareUrl();"
+          ><i class="bi bi-copy"></i> Copy to clipboard</a
+        >
         <button
           class="navbar-toggler"
           type="button"
