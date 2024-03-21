@@ -450,7 +450,6 @@ os.addHandler("open", () => {
       default: {
         if (!document.getElementById("mapId0").classList.contains("active")) {
           document.getElementById("mapId0").classList.add("active");
-
           document.getElementById("mapId1").classList.remove("active");
           document.getElementById("mapId2").classList.remove("active");
           document.getElementById("mapId3").classList.remove("active");
@@ -470,6 +469,10 @@ os.addHandler("open", () => {
     }
     const mapQs = urlParams.get("map");
     return mapQs;
+  }
+  if (!urlParams.has("map")) {
+    urlParams.set("map", "regular");
+    changeMap(0);
   }
 });
 
