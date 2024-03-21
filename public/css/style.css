@@ -6,7 +6,7 @@ html {
   overflow: hidden;
 }
 
-#os-container {
+#osContainer {
   width: 95vw;
   height: 95vh;
   position: fixed;
