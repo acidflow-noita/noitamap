@@ -1,56 +1,56 @@
 body,
 html {
-  margin: 0px;
-  padding: 0px;
-  background-color: black;
-  overflow: hidden;
+    margin: 0px;
+    padding: 0px;
+    background-color: black;
+    overflow: hidden;
 }
 
 #osContainer {
-  width: 95vw;
-  height: 95vh;
-  position: fixed;
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
 }
 
 .menu img {
-  float: left;
-  width: 62px;
-  height: 60px;
+    float: left;
+    width: 62px;
+    height: 60px;
 }
 
 .menu h1 {
-  position: relative;
-  top: 18px;
-  left: 10px;
-  color: white;
+    position: relative;
+    top: 18px;
+    left: 10px;
+    color: white;
 }
 
 :root {
-  font-family: Inter, sans-serif;
-  font-feature-settings: "liga" 1, "calt" 1, "dlig", "ss01", "ss02";
-  /* fix for Chrome */
+    font-family: Inter, sans-serif;
+    font-feature-settings: "liga" 1, "calt" 1, "dlig", "ss01", "ss02";
+    /* fix for Chrome */
 }
 
 @supports (font-variation-settings: normal) {
-  :root {
-    font-family: InterVariable, sans-serif;
-  }
+    :root {
+        font-family: InterVariable, sans-serif;
+    }
 }
 
 .coordinate {
-  position: absolute;
-  pointer-events: none;
-  color: white;
-  font-family: Inter, sans-serif;
-  font-feature-settings: "tnum", "zero", "cv09", "cv02", "cv03", "cv04";
-  font-weight: 400;
+    position: absolute;
+    pointer-events: none;
+    color: white;
+    font-family: Inter, sans-serif;
+    font-feature-settings: "tnum", "zero", "cv09", "cv02", "cv03", "cv04";
+    font-weight: 400;
 }
 
 .coordinate-content {
-  position: relative;
-  top: 2em;
+    position: relative;
+    top: 2em;
 }
 #shareButton {
-  margin-left: auto;
-  margin-right: 2vw;
+    margin-left: auto;
+    margin-right: 2vw;
 }
