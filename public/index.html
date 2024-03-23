@@ -1,45 +1,19 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
-  <head>
+
+<head>
     <meta charset="utf-8" />
     <title>Noita World Map</title>
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, user-scalable=no"
-    />
-    <meta
-      name="description"
-      content="A very fast zoomable map for Noita. Map for the video game Noita."
-    />
-    <link
-      rel="apple-touch-icon"
-      sizes="180x180"
-      href="/assets/favicon/apple-touch-icon.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="/assets/favicon/favicon-32x32.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="/assets/favicon/favicon-16x16.png"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta name="description" content="A very fast zoomable map for Noita. Map for the video game Noita." />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png" />
     <link rel="manifest" href="/assets/favicon/site.webmanifest" />
-    <link
-      rel="mask-icon"
-      href="/assets/favicon/safari-pinned-tab.svg"
-      color="#5bbad5"
-    />
+    <link rel="mask-icon" href="/assets/favicon/safari-pinned-tab.svg" color="#5bbad5" />
     <link rel="shortcut icon" href="/assets/favicon/favicon.ico" />
     <meta name="msapplication-TileColor" content="#da532c" />
-    <meta
-      name="msapplication-config"
-      content="/assets/favicon/browserconfig.xml"
-    />
+    <meta name="msapplication-config" content="/assets/favicon/browserconfig.xml" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="stylesheet" href="css/overlay-styles.css" />
     <link rel="stylesheet" href="css/style.css" />
@@ -47,220 +21,94 @@
     <link rel="preconnect" href="https://rsms.me/" />
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
     <script src="https://cdn.jsdelivr.net/npm/openseadragon@4.1/build/openseadragon/openseadragon.min.js"></script>
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/openseadragon.min.js"></script> -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
-      crossorigin="anonymous"
-    />
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
-      crossorigin="anonymous"
-    ></script>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-    />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <script src="https://unpkg.com/openseadragon-annotations@1.0.5/dist/openseadragon-annotations.js"></script>
-  </head>
+</head>
 
-  <body>
-    <!-- <div id="liveAlertPlaceholder"></div> -->
-
-    <div
-      id="liveAlertPlaceholder"
-      class="toast align-items-center"
-      role="alert"
-      aria-live="assertive"
-      aria-atomic="true"
-    >
-      <div class="d-flex">
-        <div class="toast-body">
-          Copied current map coordinates to your clipboard!
+<body>
+    <div id="liveAlertPlaceholder" class="toast align-items-center" role="alert" aria-live="assertive"
+        aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">Copied current map coordinates to your clipboard!</div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"> </button>
         </div>
-        <button
-          type="button"
-          class="btn-close me-2 m-auto"
-          data-bs-dismiss="toast"
-          aria-label="Close"
-        ></button>
-      </div>
     </div>
+    <nav class="navbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#" onclick="goHome();"><img src="/assets/NoitamapLogo.png" alt="Noitamap Logo"
+                    class="d-inline-block align-text-middle" /> </a>
+            <a id="shareButton" tabindex="0" class="btn btn-outline-success text-nowrap" data-bs-trigger="focus"
+                data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Copied!"
+                role="button" onclick="getShareUrl();"><i class="bi bi-copy"></i> Copy to clipboard</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas"
+                data-bs-target="#offcanvasDarkNavbar" aria-controls="offcanvasDarkNavbar"
+                aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="offcanvasDarkNavbar"
+                aria-labelledby="offcanvasDarkNavbarLabel">
+                <div class="offcanvas-header">
+                    <h5 class="offcanvas-title" id="offcanvasDarkNavbarLabel">List of maps</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"
+                        aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+                        <ul class="column-gap-3 navbar-nav ml-auto mb-2 mb-lg-0 w-100 d-flex flex-row-md flex-column-sm mb-md-1 mt-md-0 mb-3 mt-2"
+                            id="navLinksList">
+                            <a id="mapId0" class="nav-link text-nowrap active" href="#" data-bs-toggle="pill"
+                                onclick="changeMap(0);">Regular <span class="badge text-bg-info">β</span></a>
+                            <a id="mapId1" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
+                                onclick="changeMap(1);">Nightmare <span class="badge text-bg-info">β</span></a>
+                            <a id="mapId2" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
+                                onclick="changeMap(2);">NG+ <span class="badge text-bg-info">β</span></a>
 
-    <nav class="navbar nav bg-body-tertiary nav-wrapper">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="#" onclick="goHome();"
-          ><img
-            src="/assets/NoitamapLogo.png"
-            alt="Noitamap Logo"
-            class="d-inline-block align-text-middle"
-        /></a>
-        <a
-          id="shareButton"
-          tabindex="0"
-          class="btn btn-outline-success text-nowrap"
-          data-bs-trigger="focus"
-          data-bs-container="body"
-          data-bs-toggle="popover"
-          data-bs-placement="bottom"
-          data-bs-content="Copied!"
-          role="button"
-          onclick="getShareUrl();"
-          ><i class="bi bi-copy"></i> Copy to clipboard</a
-        >
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarSupportedContent"
-          aria-controls="navbarSupportedContent"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div
-          class="collapse navbar-collapse flex-column column-gap-3"
-          id="navbarSupportedContent"
-        >
-          <ul
-            class="column-gap-3 navbar-nav ml-auto mb-2 mb-lg-0 w-100 d-flex flex-row-md flex-column-sm mb-md-1 mt-md-0 mb-3 mt-2"
-            id="navLinksList"
-          >
-            <a
-              id="mapId0"
-              class="nav-link text-nowrap active"
-              href="#"
-              data-bs-toggle="pill"
-              onclick="changeMap(0);"
-              >Regular <span class="badge text-bg-info">β</span></a
-            >
-            <a
-              id="mapId1"
-              class="nav-link text-nowrap"
-              href="#"
-              data-bs-toggle="pill"
-              onclick="changeMap(1);"
-              >Nightmare <span class="badge text-bg-info">β</span></a
-            >
-            <a
-              id="mapId2"
-              class="nav-link text-nowrap"
-              href="#"
-              data-bs-toggle="pill"
-              onclick="changeMap(2);"
-              >NG+ <span class="badge text-bg-info">β</span></a
-            >
-          </ul>
-          <ul
-            class="column-gap-3 navbar-nav ml-auto mb-2 mb-lg-0 w-100 d-flex flex-row-md flex-column-sm mb-md-1 mt-md-0 mb-3 mt-2"
-          >
-            <a
-              id="mapId3"
-              class="nav-link text-nowrap"
-              href="#"
-              data-bs-toggle="pill"
-              onclick="changeMap(3);"
-              >Regular <span class="badge text-bg-success">main</span></a
-            >
-            <a
-              id="mapId4"
-              class="nav-link text-nowrap"
-              href="#"
-              data-bs-toggle="pill"
-              onclick="changeMap(4);"
-              >Purgatory
-              <span class="badge text-bg-light"
-                ><i class="bi bi-tools"></i></span
-            ></a>
-          </ul>
-          <ul
-            class="column-gap-3 navbar-nav ml-auto mb-2 mb-lg-0 w-100 d-flex flex-row-md flex-column-sm mb-md-1 mt-md-0 mb-3 mt-2"
-          >
-            <a
-              id="mapId5"
-              class="nav-link text-nowrap"
-              href="#"
-              data-bs-toggle="pill"
-              onclick="changeMap(5);"
-              >Apotheosis
-              <span class="badge text-bg-light"
-                ><i class="bi bi-tools"></i></span
-            ></a>
-            <a
-              id="mapId6"
-              class="nav-link text-nowrap"
-              href="#"
-              data-bs-toggle="pill"
-              onclick="changeMap(6);"
-              >Apotheosis NG+
-              <span class="badge text-bg-light"
-                ><i class="bi bi-tools"></i></span
-            ></a>
-            <a
-              id="mapId10"
-              class="nav-link text-nowrap"
-              href="#"
-              data-bs-toggle="pill"
-              onclick="changeMap(10);"
-              >Apotheosis Tuonela
-              <span class="badge text-bg-light"
-                ><i class="bi bi-tools"></i></span
-            ></a>
-            <a
-              id="mapId7"
-              class="nav-link text-nowrap"
-              href="#"
-              data-bs-toggle="pill"
-              onclick="changeMap(7);"
-              >Noitavania
-              <span class="badge text-bg-light"
-                ><i class="bi bi-tools"></i></span
-            ></a>
-          </ul>
-          <ul
-            class="column-gap-3 navbar-nav ml-auto mb-2 mb-lg-0 w-100 d-flex flex-row-md flex-column-sm mb-md-1 mt-md-0 mb-3 mt-2"
-          >
-            <a
-              id="mapId8"
-              class="nav-link text-nowrap"
-              href="#"
-              data-bs-toggle="pill"
-              onclick="changeMap(8);"
-              >Noitavania NG+
-              <span class="badge text-bg-light"
-                ><i class="bi bi-tools"></i></span
-            ></a>
-            <a
-              id="mapId9"
-              class="nav-link text-nowrap"
-              href="#"
-              data-bs-toggle="pill"
-              onclick="changeMap(9);"
-              >Alternate Biomes
-              <span class="badge text-bg-light"
-                ><i class="bi bi-tools"></i></span
-            ></a>
-            <a
-              href="https://github.com/acidflow-noita/noitamap"
-              class="btn btn-outline-info text-nowrap"
-              target="_blank"
-              role="button"
-              ><i class="bi bi-github"></i> Contribute</a
-            >
-          </ul>
+                            <a id="mapId3" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
+                                onclick="changeMap(3);">Regular <span class="badge text-bg-success">main</span></a>
+
+
+                            <a id="mapId4" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
+                                onclick="changeMap(4);">Purgatory <span class="badge text-bg-light"><i
+                                        class="bi bi-tools"></i></span></a>
+                            <a id="mapId5" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
+                                onclick="changeMap(5);">Apotheosis <span class="badge text-bg-light"><i
+                                        class="bi bi-tools"></i></span></a>
+                            <a id="mapId6" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
+                                onclick="changeMap(6);">Apotheosis NG+ <span class="badge text-bg-light"><i
+                                        class="bi bi-tools"></i></span></a>
+                            <a id="mapId10" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
+                                onclick="changeMap(10);">Apotheosis Tuonela <span class="badge text-bg-light"><i
+                                        class="bi bi-tools"></i></span></a>
+                            <a id="mapId7" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
+                                onclick="changeMap(7);">Noitavania <span class="badge text-bg-light"><i
+                                        class="bi bi-tools"></i></span></a>
+                            <a id="mapId8" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
+                                onclick="changeMap(8);">Noitavania NG+ <span class="badge text-bg-light"><i
+                                        class="bi bi-tools"></i></span></a>
+                            <a id="mapId9" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
+                                onclick="changeMap(9);">Alternate Biomes <span class="badge text-bg-light"><i
+                                        class="bi bi-tools"></i></span></a>
+                            <a href="https://github.com/acidflow-noita/noitamap"
+                                class="btn btn-outline-info text-nowrap w-50" target="\_blank" role="button"><i
+                                    class="bi bi-github"></i> Contribute</a>
+                        </ul>
+                    </ul>
+                </div>
+            </div>
         </div>
-      </div>
     </nav>
-
     <div id="osContainer"></div>
     <div id="coordinates-hover"></div>
     <div id="coordinate" class="coordinate">
-      <div class="coordinate-content"></div>
+        <div class="coordinate-content">
+        </div>
     </div>
-
     <script src="js/script.js"></script>
-  </body>
+</body>
+
 </html>
