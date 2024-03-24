@@ -72,7 +72,7 @@ var os = OpenSeadragon({
   showNavigator: false,
   showNavigationControl: false,
   imageSmoothingEnabled: false,
-  tileSources: tileSources[0][0],
+  tileSources: tileSources[0],
   //   tileSources: tileSources,
   subPixelRoundingForTransparency:
     OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS,
@@ -181,9 +181,9 @@ function changeMap(tileSource) {
     default:
       updatedUrlParams.set("map", "regular");
       os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[1][0] });
-      os.addTiledImage({ tileSource: tileSources[1][1] });
-      os.addTiledImage({ tileSource: tileSources[1][2] });
+      os.addTiledImage({ tileSource: tileSources[0][0] });
+      os.addTiledImage({ tileSource: tileSources[0][1] });
+      os.addTiledImage({ tileSource: tileSources[0][2] });
       os.forceRedraw();
       break;
   }
@@ -483,7 +483,7 @@ os.addHandler("open", (event) => {
   const urlParams = new URLSearchParams(window.location.search);
   // Default/fallback viewport rectangle, which we try to fit first.
   viewport.fitBounds(
-    new OpenSeadragon.Rect(-25600, -31744, 51200, 73728),
+    new OpenSeadragon.Rect(-53760, -31744, 107520, 73728),
     true
   );
   const viewportCenter = viewport.getCenter();
