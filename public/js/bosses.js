@@ -98,5 +98,11 @@ let noitaBosses = {
       mapCoordinate:
         "https://map.runfast.stream/?map=regular&x=4165&y=889&zoom=970",
     },
+    {
+      name: ["Deer Boss", "Tapion vasalli", "Tapio's Vassal", "Island Boss"],
+      spawns: "Lake Island",
+      mapCoordinate:
+        "https://map.runfast.stream/?map=regular&x=-13670&y=134&zoom=796",
+    },
   ],
 };
