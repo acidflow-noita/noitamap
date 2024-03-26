@@ -61,6 +61,23 @@ let tileSources = [
   ],
 ];
 
+const mapNames = [
+   "regular",
+   "nightmare",
+   "new-game-plus",
+   "regular-main-branch",
+   "purgatory",
+   "apotheosis",
+   "apotheosis-new-game-plus",
+   "noitavania",
+   "noitavania-new-game-plus",
+   "alternate-biomes",
+   "apotheosis-tuonela"
+];
+
+const getMapNameForId = ((nameToIdMap) => (name) => nameToIdMap.get(name) ?? 0)(new Map(mapNames.map((map, idx) => [map, idx])));
+
+
 // Set initial map to regular map
 let oldTileSource = 0;
 
@@ -89,104 +106,17 @@ let nextTiledImage;
 
 function changeMap(tileSource) {
   const updatedUrlParams = new URLSearchParams(window.location.search);
-  switch (tileSource) {
-    case 0:
-      updatedUrlParams.set("map", "regular");
-      os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[0][0] });
-      os.addTiledImage({ tileSource: tileSources[0][1] });
-      os.addTiledImage({ tileSource: tileSources[0][2] });
-      os.forceRedraw();
-      break;
-    case 1:
-      updatedUrlParams.set("map", "nightmare");
-      os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[1][0] });
-      //   os.addTiledImage({ tileSource: tileSources[1][1] });
-      //   os.addTiledImage({ tileSource: tileSources[1][2] });
-      os.forceRedraw();
-      break;
-    case 2:
-      updatedUrlParams.set("map", "new-game-plus");
-      os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[2][0] });
-      //   os.addTiledImage({ tileSource: tileSources[2][1] });
-      //   os.addTiledImage({ tileSource: tileSources[2][2] });
-      os.forceRedraw();
-      break;
-    case 3:
-      updatedUrlParams.set("map", "regular-main-branch");
-      os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[3][0] });
-      //   os.addTiledImage({ tileSource: tileSources[3][1] });
-      //   os.addTiledImage({ tileSource: tileSources[3][2] });
-      os.forceRedraw();
-      break;
-    case 4:
-      updatedUrlParams.set("map", "purgatory");
-      os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[4][0] });
-      //   os.addTiledImage({ tileSource: tileSources[4][1] });
-      //   os.addTiledImage({ tileSource: tileSources[4][2] });
-      os.forceRedraw();
-      break;
-    case 5:
-      updatedUrlParams.set("map", "apotheosis");
-      os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[5][0] });
-      //   os.addTiledImage({ tileSource: tileSources[5][1] });
-      //   os.addTiledImage({ tileSource: tileSources[5][2] });
-      os.forceRedraw();
-      break;
-    case 6:
-      updatedUrlParams.set("map", "apotheosis-new-game-plus");
-      os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[6][0] });
-      //   os.addTiledImage({ tileSource: tileSources[6][1] });
-      //   os.addTiledImage({ tileSource: tileSources[6][2] });
-      os.forceRedraw();
-      break;
-    case 7:
-      updatedUrlParams.set("map", "noitavania");
-      os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[7][0] });
-      //   os.addTiledImage({ tileSource: tileSources[7][1] });
-      //   os.addTiledImage({ tileSource: tileSources[7][2] });
-      os.forceRedraw();
-      break;
-    case 8:
-      updatedUrlParams.set("map", "noitavania-new-game-plus");
-      os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[8][0] });
-      //   os.addTiledImage({ tileSource: tileSources[8][1] });
-      //   os.addTiledImage({ tileSource: tileSources[8][2] });
-      os.forceRedraw();
-      break;
-    case 9:
-      updatedUrlParams.set("map", "alternate-biomes");
-      os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[9][0] });
-      //   os.addTiledImage({ tileSource: tileSources[9][1] });
-      //   os.addTiledImage({ tileSource: tileSources[9][2] });
-      os.forceRedraw();
-      break;
-    case 10:
-      updatedUrlParams.set("map", "apotheosis-tuonela");
-      os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[10][0] });
-      //   os.addTiledImage({ tileSource: tileSources[10][1] });
-      //   os.addTiledImage({ tileSource: tileSources[10][2] });
-      os.forceRedraw();
-      break;
-    default:
-      updatedUrlParams.set("map", "regular");
-      os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[0][0] });
-      os.addTiledImage({ tileSource: tileSources[0][1] });
-      os.addTiledImage({ tileSource: tileSources[0][2] });
-      os.forceRedraw();
-      break;
-  }
+
+  const newMapId = getMapNameForId(tileSource);
+  const newMapName = mapNames[currentMapId];
+
+  updatedUrlParams.set("map", newMapName);
+  os.world.removeAll();
+  os.addTiledImage({ tileSource: tileSources[newMapId][0] });
+  tileSources[newMapId][1] && os.addTiledImage({ tileSource: tileSources[newMapId][1] });
+  tileSources[newMapId][2] && os.addTiledImage({ tileSource: tileSources[newMapId][2] });
+  os.forceRedraw();
+
   window.history.replaceState(null, "", "?" + updatedUrlParams.toString());
 }
 
@@ -226,255 +156,16 @@ const mouseTracker = new OpenSeadragon.MouseTracker({
 
 os.addHandler("open", () => {
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.has("map")) {
-    const currentMapURL = String(urlParams.get("map"));
-    switch (currentMapURL) {
-      case "regular": {
-        if (!document.getElementById("mapId0").classList.contains("active")) {
-          document.getElementById("mapId0").classList.add("active");
 
-          document.getElementById("mapId1").classList.remove("active");
-          document.getElementById("mapId2").classList.remove("active");
-          document.getElementById("mapId3").classList.remove("active");
-          document.getElementById("mapId4").classList.remove("active");
-          document.getElementById("mapId5").classList.remove("active");
-          document.getElementById("mapId7").classList.remove("active");
-          document.getElementById("mapId8").classList.remove("active");
-          document.getElementById("mapId9").classList.remove("active");
-          document.getElementById("mapId10").classList.remove("active");
+  const currentMapId = getMapNameForId(String(urlParams.get("map")));
+  const currentMapName = mapNames[currentMapId];
 
-          urlParams.set("map", "regular");
-          changeMap(0);
-        }
-        break;
-      }
-      case "nightmare": {
-        if (!document.getElementById("mapId1").classList.contains("active")) {
-          document.getElementById("mapId1").classList.add("active");
+  document.querySelectorAll(".nav-link").forEach((node) => node.classList.remove("active"));
+  document.querySelector(`#mapId${currentMapId}`).classList.add("active");
 
-          document.getElementById("mapId0").classList.remove("active");
-          document.getElementById("mapId2").classList.remove("active");
-          document.getElementById("mapId3").classList.remove("active");
-          document.getElementById("mapId4").classList.remove("active");
-          document.getElementById("mapId5").classList.remove("active");
-          document.getElementById("mapId6").classList.remove("active");
-          document.getElementById("mapId7").classList.remove("active");
-          document.getElementById("mapId8").classList.remove("active");
-          document.getElementById("mapId9").classList.remove("active");
-          document.getElementById("mapId10").classList.remove("active");
-
-          urlParams.set("map", "nightmare");
-          changeMap(1);
-        }
-        break;
-      }
-      case "new-game-plus": {
-        if (!document.getElementById("mapId2").classList.contains("active")) {
-          document.getElementById("mapId2").classList.add("active");
-
-          document.getElementById("mapId0").classList.remove("active");
-          document.getElementById("mapId1").classList.remove("active");
-          document.getElementById("mapId3").classList.remove("active");
-          document.getElementById("mapId4").classList.remove("active");
-          document.getElementById("mapId5").classList.remove("active");
-          document.getElementById("mapId6").classList.remove("active");
-          document.getElementById("mapId7").classList.remove("active");
-          document.getElementById("mapId8").classList.remove("active");
-          document.getElementById("mapId9").classList.remove("active");
-          document.getElementById("mapId10").classList.remove("active");
-
-          urlParams.set("map", "new-game-plus");
-          changeMap(2);
-        }
-        break;
-      }
-      case "regular-main-branch": {
-        if (!document.getElementById("mapId3").classList.contains("active")) {
-          document.getElementById("mapId3").classList.add("active");
-
-          document.getElementById("mapId0").classList.remove("active");
-          document.getElementById("mapId1").classList.remove("active");
-          document.getElementById("mapId2").classList.remove("active");
-          document.getElementById("mapId4").classList.remove("active");
-          document.getElementById("mapId5").classList.remove("active");
-          document.getElementById("mapId6").classList.remove("active");
-          document.getElementById("mapId7").classList.remove("active");
-          document.getElementById("mapId8").classList.remove("active");
-          document.getElementById("mapId9").classList.remove("active");
-          document.getElementById("mapId10").classList.remove("active");
-
-          urlParams.set("map", "regular-main-branch");
-          changeMap(3);
-        }
-        break;
-      }
-      case "purgatory": {
-        if (!document.getElementById("mapId4").classList.contains("active")) {
-          document.getElementById("mapId4").classList.add("active");
-
-          document.getElementById("mapId0").classList.remove("active");
-          document.getElementById("mapId1").classList.remove("active");
-          document.getElementById("mapId2").classList.remove("active");
-          document.getElementById("mapId3").classList.remove("active");
-          document.getElementById("mapId5").classList.remove("active");
-          document.getElementById("mapId6").classList.remove("active");
-          document.getElementById("mapId7").classList.remove("active");
-          document.getElementById("mapId8").classList.remove("active");
-          document.getElementById("mapId9").classList.remove("active");
-          document.getElementById("mapId10").classList.remove("active");
-
-          urlParams.set("map", "purgatory");
-          changeMap(4);
-        }
-        break;
-      }
-      case "apotheosis": {
-        if (!document.getElementById("mapId5").classList.contains("active")) {
-          document.getElementById("mapId5").classList.add("active");
-
-          document.getElementById("mapId0").classList.remove("active");
-          document.getElementById("mapId1").classList.remove("active");
-          document.getElementById("mapId2").classList.remove("active");
-          document.getElementById("mapId3").classList.remove("active");
-          document.getElementById("mapId4").classList.remove("active");
-          document.getElementById("mapId6").classList.remove("active");
-          document.getElementById("mapId7").classList.remove("active");
-          document.getElementById("mapId8").classList.remove("active");
-          document.getElementById("mapId9").classList.remove("active");
-          document.getElementById("mapId10").classList.remove("active");
-
-          urlParams.set("map", "apotheosis");
-          changeMap(5);
-        }
-        break;
-      }
-      case "apotheosis-new-game-plus": {
-        if (!document.getElementById("mapId6").classList.contains("active")) {
-          document.getElementById("mapId6").classList.add("active");
-
-          document.getElementById("mapId0").classList.remove("active");
-          document.getElementById("mapId1").classList.remove("active");
-          document.getElementById("mapId2").classList.remove("active");
-          document.getElementById("mapId3").classList.remove("active");
-          document.getElementById("mapId4").classList.remove("active");
-          document.getElementById("mapId5").classList.remove("active");
-          document.getElementById("mapId7").classList.remove("active");
-          document.getElementById("mapId8").classList.remove("active");
-          document.getElementById("mapId9").classList.remove("active");
-          document.getElementById("mapId10").classList.remove("active");
-
-          urlParams.set("map", "apotheosis-new-game-plus");
-          changeMap(6);
-        }
-        break;
-      }
-      case "noitavania": {
-        if (!document.getElementById("mapId7").classList.contains("active")) {
-          document.getElementById("mapId7").classList.add("active");
-
-          document.getElementById("mapId0").classList.remove("active");
-          document.getElementById("mapId1").classList.remove("active");
-          document.getElementById("mapId2").classList.remove("active");
-          document.getElementById("mapId3").classList.remove("active");
-          document.getElementById("mapId4").classList.remove("active");
-          document.getElementById("mapId5").classList.remove("active");
-          document.getElementById("mapId6").classList.remove("active");
-          document.getElementById("mapId8").classList.remove("active");
-          document.getElementById("mapId9").classList.remove("active");
-          document.getElementById("mapId10").classList.remove("active");
-
-          urlParams.set("map", "noitavania");
-          changeMap(7);
-        }
-        break;
-      }
-      case "noitavania-new-game-plus": {
-        if (!document.getElementById("mapId8").classList.contains("active")) {
-          document.getElementById("mapId8").classList.add("active");
-
-          document.getElementById("mapId0").classList.remove("active");
-          document.getElementById("mapId1").classList.remove("active");
-          document.getElementById("mapId2").classList.remove("active");
-          document.getElementById("mapId3").classList.remove("active");
-          document.getElementById("mapId4").classList.remove("active");
-          document.getElementById("mapId5").classList.remove("active");
-          document.getElementById("mapId6").classList.remove("active");
-          document.getElementById("mapId8").classList.remove("active");
-          document.getElementById("mapId9").classList.remove("active");
-          document.getElementById("mapId10").classList.remove("active");
-
-          urlParams.set("map", "noitavania-new-game-plus");
-          changeMap(8);
-        }
-        break;
-      }
-      case "alternate-biomes": {
-        if (!document.getElementById("mapId9").classList.contains("active")) {
-          document.getElementById("mapId9").classList.add("active");
-
-          document.getElementById("mapId0").classList.remove("active");
-          document.getElementById("mapId1").classList.remove("active");
-          document.getElementById("mapId2").classList.remove("active");
-          document.getElementById("mapId3").classList.remove("active");
-          document.getElementById("mapId4").classList.remove("active");
-          document.getElementById("mapId5").classList.remove("active");
-          document.getElementById("mapId6").classList.remove("active");
-          document.getElementById("mapId7").classList.remove("active");
-          document.getElementById("mapId8").classList.remove("active");
-          document.getElementById("mapId10").classList.remove("active");
-
-          urlParams.set("map", "alternate-biomes");
-          changeMap(9);
-        }
-        break;
-      }
-      case "apotheosis-tuonela": {
-        if (!document.getElementById("mapId10").classList.contains("active")) {
-          document.getElementById("mapId10").classList.add("active");
-
-          document.getElementById("mapId0").classList.remove("active");
-          document.getElementById("mapId1").classList.remove("active");
-          document.getElementById("mapId2").classList.remove("active");
-          document.getElementById("mapId3").classList.remove("active");
-          document.getElementById("mapId4").classList.remove("active");
-          document.getElementById("mapId5").classList.remove("active");
-          document.getElementById("mapId6").classList.remove("active");
-          document.getElementById("mapId7").classList.remove("active");
-          document.getElementById("mapId8").classList.remove("active");
-          document.getElementById("mapId9").classList.remove("active");
-
-          urlParams.set("map", "apotheosis-tuonela");
-          changeMap(10);
-        }
-        break;
-      }
-      default: {
-        if (!document.getElementById("mapId0").classList.contains("active")) {
-          document.getElementById("mapId0").classList.add("active");
-          document.getElementById("mapId1").classList.remove("active");
-          document.getElementById("mapId2").classList.remove("active");
-          document.getElementById("mapId3").classList.remove("active");
-          document.getElementById("mapId4").classList.remove("active");
-          document.getElementById("mapId5").classList.remove("active");
-          document.getElementById("mapId6").classList.remove("active");
-          document.getElementById("mapId7").classList.remove("active");
-          document.getElementById("mapId8").classList.remove("active");
-          document.getElementById("mapId9").classList.remove("active");
-          document.getElementById("mapId10").classList.remove("active");
-
-          urlParams.set("map", "regular");
-          changeMap(0);
-        }
-        break;
-      }
-    }
-    const mapQs = urlParams.get("map");
-    return mapQs;
-  }
-  if (!urlParams.has("map")) {
-    urlParams.set("map", "regular");
-    changeMap(0);
-  }
+  urlParams.set("map", currentMapName);
+  changeMap(currentMapId);
+  return urlParams.get("map");
 });
 
 // Store/load viewport position and zoom level in/from URL parameters.
