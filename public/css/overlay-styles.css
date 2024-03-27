@@ -1,8 +1,13 @@
-.overlay-highlight {
-    background-color: rgba(128, 128, 128, 0.05);
-    border: rgba(255, 0, 0, 0.1) dashed 1px;
+.osOverlayHighlight {
+  background-color: rgba(56, 162, 204, 0.401);
+  border: rgba(255, 0, 0, 0.1) dashed 1px;
 }
 
-.overlay-highlight:hover {
-    border: red dashed 1px;
+.osOverlayHighlight:hover {
+  border: red dashed 2px;
+}
+
+.osOverlayText {
+  font-size: 1vw;
+  line-height: 1.5em;
 }

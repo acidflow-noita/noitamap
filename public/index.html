@@ -42,6 +42,9 @@
         <div class="container-fluid">
             <a class="navbar-brand" href="#" onclick="goHome();"><img src="/assets/NoitamapLogo.png" alt="Noitamap Logo"
                     class="d-inline-block align-text-middle" /> </a>
+            <a id="overlayVisibilityToggleButton" tabindex="0" class="btn btn-outline-info text-nowrap"
+                data-bs-trigger="focus" role="button" onclick="toggleOverlayVisibility();"><i class="bi bi-layers"></i>
+                Toggle overlays</a>
             <a id="shareButton" tabindex="0" class="btn btn-outline-success text-nowrap" data-bs-trigger="focus"
                 data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Copied!"
                 role="button" onclick="getShareUrl();"><i class="bi bi-copy"></i> Copy to clipboard</a>
