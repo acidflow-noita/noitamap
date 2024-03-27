@@ -531,6 +531,8 @@ overlayTexts.forEach(({ text, x, y, width, height }) =>
   createOverlay(text, x, y, width, height)
 );
 
+const spans = document.querySelectorAll(".osOverlayHighlight span");
+
 // Store/load viewport position and zoom level in/from URL parameters.
 os.addHandler("open", (event) => {
   const viewport = event.eventSource.viewport;
@@ -555,8 +557,12 @@ os.addHandler("open", (event) => {
 
   viewport.panTo(viewportCenter, true);
   viewport.zoomTo(viewportZoom, undefined, true);
+  if (!urlParams.has("zoom")) {
+    spans.forEach((span) => {
+      span.style.display = "none";
+    });
+  }
 });
-const spans = document.querySelectorAll(".osOverlayHighlight span");
 
 os.addHandler("animation-finish", function (event) {
   const center = event.eventSource.viewport.getCenter();
