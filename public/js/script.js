@@ -616,6 +616,8 @@ function updateLoadingIndicator() {
   // loading indicator and not showing it again.
   if (isFullyLoaded) {
     document.querySelector(".loadingIndicator").style.display = "none";
+  } else {
+    document.querySelector(".loadingIndicator").style.display = "block";
   }
 }
 
