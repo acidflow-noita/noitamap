@@ -595,6 +595,41 @@ os.addHandler("open", (event) => {
   viewport.zoomTo(viewportZoom, undefined, true);
 });
 
+// Loading indicator
+function areAllFullyLoaded() {
+  var tiledImage;
+  var count = os.world.getItemCount();
+  for (var i = 0; i < count; i++) {
+    tiledImage = os.world.getItemAt(i);
+    if (!tiledImage.getFullyLoaded()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+var isFullyLoaded = false;
+
+function updateLoadingIndicator() {
+  // Note that this function gets called every time isFullyLoaded changes, which it will do as you
+  // zoom and pan around. All we care about is the initial load, though, so we are just hiding the
+  // loading indicator and not showing it again.
+  if (isFullyLoaded) {
+    document.querySelector(".loadingIndicator").style.display = "none";
+  }
+}
+
+os.world.addHandler("add-item", function (event) {
+  var tiledImage = event.item;
+  tiledImage.addHandler("fully-loaded-change", function () {
+    var newFullyLoaded = areAllFullyLoaded();
+    if (newFullyLoaded !== isFullyLoaded) {
+      isFullyLoaded = newFullyLoaded;
+      updateLoadingIndicator();
+    }
+  });
+});
+
 // Get additional DZI information from every loaded TiledImage.
 // This is used to scale and offset images in a way so that the OSD coordinate system aligns with the Noita world coordinate system.
 os.world.addHandler("add-item", (event) => {
