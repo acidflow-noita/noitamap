@@ -41,9 +41,10 @@
     <nav class="navbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="#" onclick="goHome();"><img src="/assets/NoitamapLogo.png" alt="Noitamap Logo"
-                    class="d-inline-block align-text-middle" /> </a>
+                    class="d-inline-block align-text-middle" /><span id="currentMapName">Noita
+                    map</span></a>
             <a id="overlayVisibilityToggleButton" tabindex="0" class="btn btn-outline-info text-nowrap"
-                data-bs-trigger="focus" role="button" onclick="toggleOverlayVisibility();"><i class="bi bi-layers"></i>
+                data-bs-trigger="focus" role="button"><i class="bi bi-layers"></i>
                 Toggle overlays</a>
             <a id="shareButton" tabindex="0" class="btn btn-outline-success text-nowrap" data-bs-trigger="focus"
                 data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Copied!"

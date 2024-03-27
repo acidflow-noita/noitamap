@@ -1,7 +1,10 @@
 "use strict";
 
+const spans2 = document.querySelectorAll(".osOverlayHighlight");
+
 const overlayTexts = [
   {
+    id: 0,
     text: "Watchtower. Seems to just be a hint to head to the temples in the sky.",
     x: 13758,
     y: -1100,
@@ -9,6 +12,7 @@ const overlayTexts = [
     height: 1600,
   },
   {
+    id: 1,
     text: "Barren Temple. You can find a potion of mimicium here to start your quest. Later you will need to revisit to help this temple flourish.",
     x: -6000,
     y: -5700,
@@ -16,6 +20,7 @@ const overlayTexts = [
     height: 900,
   },
   {
+    id: 2,
     text: "Ominous Temple. A large pool of ominous liquid is needed here. Sea of Mimicium will be helpful.",
     x: 2100,
     y: -5300,
@@ -23,21 +28,25 @@ const overlayTexts = [
     height: 1100,
   },
   {
+    id: 3,
+
     text: 'Henkevä Temple. "Spirited Temple". Potions here require mimicium. Pheromone will aid you. They might also need a little kick.',
     x: -2600,
     y: -5800,
     width: 1600,
     height: 1650,
   },
-  { text: "Milk", x: 2420, y: -4500, width: 25, height: 25 },
+  { id: 4, text: "Milk", x: 2420, y: -4500, width: 25, height: 25 },
   {
+    id: 5,
+
     text: "Kivi Temple. A boss fight here might be easier with a spell unlocked in another temple",
     x: 6750,
     y: -5241,
     width: 1230,
     height: 1100,
   },
-  { text: "Beer", x: 7610, y: -4359, width: 25, height: 25 },
+  { id: 6, text: "Beer", x: 7610, y: -4359, width: 25, height: 25 },
 ];
 
 const CHUNK_SIZE = 512;
@@ -124,11 +133,14 @@ var os = OpenSeadragon({
   gestureSettingsMouse: { clickToZoom: false },
 });
 
+let overlaysState = false;
 let prevTiledImage;
 let nextTiledImage;
 
 function changeMap(tileSource) {
   const updatedUrlParams = new URLSearchParams(window.location.search);
+  document.getElementById("currentMapName").innerHTML =
+    " " + document.getElementById(`mapId${tileSource}`).innerHTML;
   switch (tileSource) {
     case 0:
       updatedUrlParams.set("map", "regular");
@@ -137,6 +149,7 @@ function changeMap(tileSource) {
       os.addTiledImage({ tileSource: tileSources[0][1] });
       os.addTiledImage({ tileSource: tileSources[0][2] });
       os.forceRedraw();
+
       break;
     case 1:
       updatedUrlParams.set("map", "nightmare");
@@ -283,7 +296,7 @@ os.addHandler("open", () => {
           document.getElementById("mapId9").classList.remove("active");
           document.getElementById("mapId10").classList.remove("active");
 
-          urlParams.set("map", "regular");
+          urlParams.set("map", "beta");
           changeMap(0);
         }
         break;
@@ -517,20 +530,6 @@ os.addHandler("open", () => {
   }
 });
 
-function createOverlay(description, x, y, width, height) {
-  const element = document.createElement("div");
-  element.className = "osOverlayHighlight";
-  element.innerHTML = `<span>${description}</span>`;
-  os.addOverlay({
-    element,
-    location: new OpenSeadragon.Rect(x, y, width, height),
-  });
-}
-
-overlayTexts.forEach(({ text, x, y, width, height }) =>
-  createOverlay(text, x, y, width, height)
-);
-
 const spans = document.querySelectorAll(".osOverlayHighlight span");
 
 // Store/load viewport position and zoom level in/from URL parameters.
@@ -557,47 +556,7 @@ os.addHandler("open", (event) => {
 
   viewport.panTo(viewportCenter, true);
   viewport.zoomTo(viewportZoom, undefined, true);
-  if (!urlParams.has("zoom")) {
-    spans.forEach((span) => {
-      span.style.display = "none";
-    });
-  }
 });
-
-os.addHandler("animation-finish", function (event) {
-  const center = event.eventSource.viewport.getCenter();
-  const zoom = event.eventSource.viewport.getZoom();
-  const urlParams = new URLSearchParams(window.location.search);
-  // urlParams.set("map", mapQs);
-  urlParams.set("x", center.x.toFixed(0));
-  urlParams.set("y", center.y.toFixed(0));
-  urlParams.set("zoom", (Math.log2(zoom) * -100).toFixed(0));
-  window.history.replaceState(null, "", "?" + urlParams.toString());
-  // Hide span text if zoomed out
-  if (urlParams.get("zoom") > 1250) {
-    spans.forEach((span) => {
-      span.style.display = "none";
-    });
-  } else {
-    spans.forEach((span) => {
-      span.style.display = "block";
-    });
-  }
-});
-
-// Toggle overlays
-function toggleOverlayVisibility() {
-  const spans2 = document.querySelectorAll(".osOverlayHighlight");
-  if (spans2[0].style.display === "none") {
-    spans2.forEach((span) => {
-      span.style.display = "block";
-    });
-  } else {
-    spans2.forEach((span) => {
-      span.style.display = "none";
-    });
-  }
-}
 
 // Get additional DZI information from every loaded TiledImage.
 // This is used to scale and offset images in a way so that the OSD coordinate system aligns with the Noita world coordinate system.
@@ -630,7 +589,6 @@ function goHome() {
 }
 
 function getShareUrl() {
-  // TODO: The URL should be updated here
   window.navigator.clipboard.writeText(window.location.href);
 }
 
@@ -641,16 +599,44 @@ const popoverList = [...popoverTriggerList].map(
   (popoverTriggerEl) => new bootstrap.Popover(popoverTriggerEl)
 );
 
+let allOverlays = document.getElementsByClassName("osOverlayHighlight");
+document
+  .querySelector("#overlayVisibilityToggleButton")
+  .addEventListener("click", function () {
+    if (overlaysState) {
+      Array.from(allOverlays).forEach((overlay) => {
+        os.removeOverlay(overlay.id);
+      });
+    } else {
+      overlayTexts.forEach(({ id, text, x, y, width, height }) => {
+        let e = document.createElement("div");
+        e.id = `overlayId${id}`;
+        e.className = "osOverlayHighlight";
+        e.innerHTML = `<span id="span${id}" >${text}</span>`;
+
+        os.addOverlay({
+          element: e,
+          location: new OpenSeadragon.Rect(x, y, width, height),
+        });
+        const hue = Math.floor(Math.random() * 360);
+        e.style.backgroundColor = `hsla(${hue}, 60%, 50%, 0.401)`;
+      });
+    }
+    overlaysState = !overlaysState;
+  });
+
+os.addHandler("animation-finish", function (event) {
+  const center = event.eventSource.viewport.getCenter();
+  const zoom = event.eventSource.viewport.getZoom();
+  console.log((Math.log2(zoom) * -100).toFixed(0));
+  const urlParams = new URLSearchParams(window.location.search);
+  urlParams.set("x", center.x.toFixed(0));
+  urlParams.set("y", center.y.toFixed(0));
+  urlParams.set("zoom", (Math.log2(zoom) * -100).toFixed(0));
+  window.history.replaceState(null, "", "?" + urlParams.toString());
+});
+
 // annotations plugin
 // const annotations = new OpenSeadragon.Annotations({ viewer });
 
 // os.initializeAnnotations();
-
-// Randomize overlays colors
-document.addEventListener("DOMContentLoaded", function () {
-  const elements = document.querySelectorAll(".osOverlayHighlight");
-  elements.forEach((element) => {
-    const hue = Math.floor(Math.random() * 360); // Random hue from 0 to 360
-    element.style.backgroundColor = `hsla(${hue}, 60%, 50%, 0.401)`;
-  });
-});
