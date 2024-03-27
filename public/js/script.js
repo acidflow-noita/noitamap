@@ -596,39 +596,27 @@ os.addHandler("open", (event) => {
 });
 
 // Loading indicator
-function areAllFullyLoaded() {
-  var tiledImage;
-  var count = os.world.getItemCount();
-  for (var i = 0; i < count; i++) {
-    tiledImage = os.world.getItemAt(i);
-    if (!tiledImage.getFullyLoaded()) {
-      return false;
-    }
-  }
-  return true;
-}
-
-var isFullyLoaded = false;
-
-function updateLoadingIndicator() {
-  // Note that this function gets called every time isFullyLoaded changes, which it will do as you
-  // zoom and pan around. All we care about is the initial load, though, so we are just hiding the
-  // loading indicator and not showing it again.
+function updateLoadingIndicator(
+  isFullyLoaded,
+  indicator = document.querySelector(".loadingIndicator")
+) {
   if (isFullyLoaded) {
-    document.querySelector(".loadingIndicator").style.display = "none";
+    indicator.style.display = "none";
   } else {
-    document.querySelector(".loadingIndicator").style.display = "block";
+    indicator.style.display = "block";
   }
 }
 
 os.world.addHandler("add-item", function (event) {
-  var tiledImage = event.item;
-  tiledImage.addHandler("fully-loaded-change", function () {
-    var newFullyLoaded = areAllFullyLoaded();
-    if (newFullyLoaded !== isFullyLoaded) {
-      isFullyLoaded = newFullyLoaded;
-      updateLoadingIndicator();
+  // Track load status for each TiledImage
+  event.item.addHandler("fully-loaded-change", function (event) {
+    if (event.fullyLoaded) {
+      // Hide indicator
+      updateLoadingIndicator(true);
+      return;
     }
+    // Show indicator
+    updateLoadingIndicator(false);
   });
 });
 
