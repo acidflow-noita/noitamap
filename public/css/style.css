@@ -62,12 +62,10 @@ html {
 .loadingIndicator {
   margin-bottom: 1vw;
   margin-left: 1vw;
-  /* width: 200px; */
-  /* height: 200px; */
-  /* background-color: red; */
-  color: green;
   position: fixed;
   bottom: 0;
+}
+.spinningIcon {
   -webkit-animation-name: spin;
   -webkit-animation-duration: 4000ms;
   -webkit-animation-iteration-count: infinite;
@@ -86,6 +84,15 @@ html {
   animation-iteration-count: infinite;
   animation-timing-function: linear;
 }
+
+/* TODO: add "Loading" text */
+/* .loadingIndicator span {
+  margin-bottom: 1vw;
+  padding-left: 5vw;
+  position: fixed;
+  bottom: 0;
+} */
+
 @-ms-keyframes spin {
   from {
     -ms-transform: rotate(0deg);
