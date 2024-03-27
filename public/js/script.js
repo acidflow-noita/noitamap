@@ -709,7 +709,6 @@ document
 os.addHandler("animation-finish", function (event) {
   const center = event.eventSource.viewport.getCenter();
   const zoom = event.eventSource.viewport.getZoom();
-  e.log((Math.log2(zoom) * -100).toFixed(0));
   const urlParams = new URLSearchParams(window.location.search);
   urlParams.set("x", center.x.toFixed(0));
   urlParams.set("y", center.y.toFixed(0));
