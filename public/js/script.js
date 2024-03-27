@@ -16,14 +16,14 @@ const overlayTexts = [
     height: 900,
   },
   {
-    text: 'Henkevä Temple. "Spirited Temple". Potions here require mimicium. Pheromone will aid you. They might also need a little kick.',
+    text: "Ominous Temple. A large pool of ominous liquid is needed here. Sea of Mimicium will be helpful.",
     x: 2100,
     y: -5300,
     width: 1300,
     height: 1100,
   },
   {
-    text: "Ominous Temple. A large pool of ominous liquid is needed here. Sea of Mimicium will be helpful.",
+    text: 'Henkevä Temple. "Spirited Temple". Potions here require mimicium. Pheromone will aid you. They might also need a little kick.',
     x: -2600,
     y: -5800,
     width: 1600,
