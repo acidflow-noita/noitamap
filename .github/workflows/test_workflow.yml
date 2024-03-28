@@ -30,5 +30,7 @@ jobs:
     # Runs a single command using the runners shell
     - name: test1
       run: echo "inputs.name - ${{ inputs.name }}"  
-    - name: test2
+    - name: repo level secret
       run: echo "secrets_TEST_SECRET - ${{ secrets.TEST_SECRET }}"
+    - name: org level secret
+      run: echo "THE_EYES_SOLUTION_ACTIONS_SECRET - ${{ secrets.THE_EYES_SOLUTION_ACTIONS_SECRET }}"
