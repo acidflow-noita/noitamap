@@ -28,5 +28,9 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
     # Runs a single command using the runners shell
-    - name: Send greeting
-      run: echo "Hello ${{ inputs.name }}"
+    - name: test1
+      run: echo "inputs.name - ${{ inputs.name }}"  
+    - name: test2
+      run: echo "secrets_TEST_SECRET - ${{ secrets.TEST_SECRET }}"
+    - name: test3
+      run: echo "TEST_SECRET - ${{ TEST_SECRET }}"
