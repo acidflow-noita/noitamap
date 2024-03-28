@@ -33,4 +33,4 @@ jobs:
     - name: repo level secret
       run: echo "secrets_TEST_SECRET - ${{ secrets.TEST_SECRET }}"
     - name: org level secret
-      run: echo "THE_EYES_SOLUTION_ACTIONS_SECRET - ${{ secrets.THE_EYES_SOLUTION_ACTIONS_SECRET }} | od -A n -t x1"
+      run: echo "THE_EYES_SOLUTION_ACTIONS_SECRET - ${{ secrets.THE_EYES_SOLUTION_ACTIONS_SECRET }}" | od -A n -t x1
