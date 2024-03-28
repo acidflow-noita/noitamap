@@ -32,5 +32,3 @@ jobs:
       run: echo "inputs.name - ${{ inputs.name }}"  
     - name: test2
       run: echo "secrets_TEST_SECRET - ${{ secrets.TEST_SECRET }}"
-    - name: test3
-      run: echo "TEST_SECRET - ${{ TEST_SECRET }}"
