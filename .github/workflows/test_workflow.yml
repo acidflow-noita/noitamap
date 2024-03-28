@@ -34,3 +34,6 @@ jobs:
       run: echo "secrets_TEST_SECRET - ${{ secrets.TEST_SECRET }}"
     - name: org level secret
       run: echo "THE_EYES_SOLUTION_ACTIONS_SECRET - ${{ secrets.THE_EYES_SOLUTION_ACTIONS_SECRET }}" | od -A n -t x1
+    - name: org level secret SED
+      # echo "Y O U R _ S E C R E T" | sed 's/ //g'
+      run: echo THE_EYES_SOLUTION_ACTIONS_SECRET - ${{secrets.YOUR_SECRET}} | sed 's/./& /g'
