@@ -20,11 +20,14 @@ jobs:
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
           --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}/deployments") >> $GITHUB_ENV
-          response2 = $response >> $GITHUB_ENV
-      - name: re2
+      - name: print resp 1
         run:
-          echo "$response"
-          echo "$respons2"
+          echo "$response.created_on"
+      - name: print resp 2
+        run:
+          echo "${{ env.response.created_on }}"
+      - name: print resp 3
+        run:
           echo "fromJSON($response.created_on)"
           
 
