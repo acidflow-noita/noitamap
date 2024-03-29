@@ -22,9 +22,9 @@ jobs:
           --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}/deployments")
           echo "$response"
       - name: log dates
-        run:
-          $(echo $response | jq -r '.result[0].created_on')
-          $(echo $response | jq -r '.result[0].modified_on')
+        run: |
+          echo "Created On: $(echo $response | jq -r '.result[0].created_on')"
+          echo "Modified On: $(echo $response | jq -r '.result[0].modified_on')"
         # $secrets.CF_PAGES_READ_ALL_API: ${{ secrets.CF_PAGES_READ_ALL_API }}
         # $secrets.CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
         # $REGULAR_MIDDLE_CF_PROJECT_NAME: ${{ REGULAR_MIDDLE_CF_PROJECT_NAME}}
