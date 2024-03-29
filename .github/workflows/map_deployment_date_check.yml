@@ -21,7 +21,8 @@ jobs:
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
           --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}/deployments")
-          echo "Response: $response" >> $GITHUB_OUTPUT
+          # echo "Response: $response" >> $GITHUB_OUTPUT
+          echo "Response: $response"
       - name: Get created_on
         id: get_created_on
         run: |
