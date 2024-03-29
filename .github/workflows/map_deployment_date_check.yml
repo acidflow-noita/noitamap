@@ -1,0 +1,46 @@
+# This is a basic workflow that is manually triggered
+
+name: Maps Deployment Date Check
+
+on:
+  # schedule:
+  #   - cron: "30 * * * *"
+    workflow_dispatch:
+
+jobs:
+  getRepoCacheVars:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: regular_middle_cacheKey
+        run: echo "current regular_middle_cacheKey = vars.$regular_middle_cacheKey"
+      - name: ask_CF
+        run: |
+          response=$(curl --request GET --header 'Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}' --header 'Content-Type: application/json' --url 'api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ REGULAR_MIDDLE_CF_PROJECT_NAME}}/deployments/latest')
+          echo "Response from example.com: $response"
+      # - name: regular_left_pw_cacheKey
+      #   run: echo "regular_left_pw_cacheKey = vars.$regular_left_pw_cacheKey"
+      # - name: regular_right_pw_cacheKey
+      #   run: echo "regular_right_pw_cacheKey = vars.$regular_right_pw_cacheKey"
+      # - name: nightmare_hd_cacheKey
+      #   run: echo "nightmare_hd_cacheKey = vars.$nightmare_hd_cacheKey"
+      # - name: new_game_plus_hd_cacheKey
+      #   run: echo "new_game_plus_hd_cacheKey = vars.$new_game_plus_hd_cacheKey"
+      # - name: regular_main_branch_cacheKey
+      #   run: echo "regular_main_branch_cacheKey = vars.$regular_main_branch_cacheKey"
+      # - name: purgatory_cacheKey
+      #   run: echo "purgatory_cacheKey = vars.$purgatory_cacheKey"
+      # - name: apotheosis_cacheKey
+      #   run: echo "apotheosis_cacheKey = vars.$apotheosis_cacheKey"
+      # - name: apotheosis_new_game_plus_cacheKey
+      #   run: echo "apotheosis_new_game_plus_cacheKey = vars.$apotheosis_new_game_plus_cacheKey"
+      # - name: noitavania_cacheKey
+      #   run: echo "noitavania_cacheKey = vars.$noitavania_cacheKey"
+      # - name: noitavania_new_game_plus_cacheKey
+      #   run: echo "noitavania_new_game_plus_cacheKey = vars.$noitavania_new_game_plus_cacheKey"
+      # - name: alternate_biomes_cacheKey
+      #   run: echo "alternate_biomes_cacheKey = vars.$alternate_biomes_cacheKey"
+      # - name: apotheosis_tuonela_cacheKey
+      #   run: echo "apotheosis_tuonela_cacheKey = vars.$apotheosis_tuonela_cacheKey"
+
