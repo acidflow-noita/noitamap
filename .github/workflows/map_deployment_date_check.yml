@@ -28,9 +28,7 @@ jobs:
         id: get_created_on
         run: |
           created_on=$(jq -r '.result[0].created_on' <<< '${{ steps.get_cf_deployments.outputs.response_out }}' | date -u -f - +%s)
-          echo "Created___On=$created_on" >> $GITHUB_OUTPUT
-          echo "----------"
-          echo "$Created___On"
+          echo "created_on is ${{ steps.get_created_on.outputs.created_on }}"
 
 
         # $secrets.CF_PAGES_READ_ALL_API: ${{ secrets.CF_PAGES_READ_ALL_API }}
