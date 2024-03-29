@@ -29,11 +29,17 @@ jobs:
         run: |
           created_on=$(jq -r '.result[0].created_on' <<< '${{ steps.get_cf_deployments.outputs.response_out }}' | date -u -f - +%s)
           echo "created_on is ${{ steps.get_created_on.outputs.created_on }}"
-      - name: values debug
-        id: dbg
+      - name: values debug 1
+        id: dbg1
         run: |
           echo "${{ steps.get_cf_deployments.outputs.response_out }}"
+      - name: values debug 2
+        id: dbg2
+        run: |
           echo "created_on is ${{ steps.get_created_on.outputs.created_on }}"
+      - name: values debug 3
+        id: dbg3
+        run: |
           echo "created_on is ${{ steps.get_created_on.outputs }}"
 
 
