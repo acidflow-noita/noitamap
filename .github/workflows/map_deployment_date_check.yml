@@ -23,8 +23,8 @@ jobs:
           response2 = $response >> $GITHUB_ENV
       - name: re2
         run:
-          echo "${{ response }}"
-          echo "${{ respons2 }}"
+          echo "$response"
+          echo "$respons2"
           echo "${{ fromJSON(response2.created_on) }}
           
 
