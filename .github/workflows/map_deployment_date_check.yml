@@ -25,7 +25,7 @@ jobs:
         run:
           echo "$response"
           echo "$respons2"
-          echo "${{ fromJSON(response2.created_on) }}
+          echo "fromJSON($response.created_on)"
           
 
         # $secrets.CF_PAGES_READ_ALL_API: ${{ secrets.CF_PAGES_READ_ALL_API }}
