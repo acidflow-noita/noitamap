@@ -25,6 +25,10 @@ jobs:
         run: |
           created_on=$(echo "$response" | jq -r '.result[0].created_on')
           echo "Created On: $created_on"
+      - name: created on 2
+        run: |
+          created_on2=$(echo "$response" | jq -r '.result.0.created_on')
+          echo "Created On: $created_on2"
 
         # $secrets.CF_PAGES_READ_ALL_API: ${{ secrets.CF_PAGES_READ_ALL_API }}
         # $secrets.CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
