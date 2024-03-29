@@ -20,7 +20,7 @@ jobs:
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/$(echo ${{ env.REGULAR_MIDDLE_CF_PROJECT_NAME }} | sed 's/-/_/g')/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ env.REGULAR_MIDDLE_CF_PROJECT_NAME }} | sed 's/-/_/g')/deployments")
           echo "Response: $response"
           echo "response=$response" >> $GITHUB_OUTPUT
 
