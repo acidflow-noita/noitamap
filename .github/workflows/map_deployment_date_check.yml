@@ -21,14 +21,15 @@ jobs:
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
           --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}/deployments")
-          echo "Response: $response"
-          echo "response=$response" >> $GITHUB_OUTPUT
+          echo "response_env=$response" >> $GITHUB_ENV
+          echo "=========="
+          echo "response_out=$response" >> $GITHUB_OUTPUT
       - name: Get created_on
         id: get_created_on
         run: |
-          created_on=$(jq -r '.result[0].created_on' <<< '${{ steps.get_cf_deployments.outputs.response }}' | date -u -f - +%s)
-          echo "Created On: $created_on" >> $GITHUB_OUPUT
-          echo "Created On: $created_on" >> ${{ vars.regular_middle_cacheKey }}
+          created_on=$(jq -r '.result[0].created_on' <<< '${{ steps.get_cf_deployments.outputs.response_out }}' | date -u -f - +%s)
+          echo "Created___On=$created_on" >> $GITHUB_OUPUT
+          # echo "Created On=$created_on" >> ${{ vars.regular_middle_cacheKey }}
 
 
         # $secrets.CF_PAGES_READ_ALL_API: ${{ secrets.CF_PAGES_READ_ALL_API }}
