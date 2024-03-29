@@ -25,7 +25,7 @@ jobs:
           echo "$response.created_on"
       - name: print resp 2
         run:
-          echo "${{ env.response.created_on }}"
+          echo "${{ response }}"
       - name: print resp 3
         run:
           echo "fromJSON($response.created_on)"
