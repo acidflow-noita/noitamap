@@ -4,7 +4,7 @@ name: Maps Deployment Date Check
 on:
   # schedule:
   #   - cron: "30 * * * *"
-    workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
   getRepoCacheVars:
@@ -24,13 +24,13 @@ jobs:
           echo "Response: $response"
           echo "GH_out: $GITHUB_OUTPUT"
 
-
       - name: Get created_on
         id: get_created_on
         run: |
           created_on=$(jq -r '.result.latest_deployment.created_on' <<< '${{ steps.get_cf_deployments.outputs.response }}' | date -u -f - +%s)
           echo "Created On: $created_on" >> $GITHUB_OUPUT
           echo "Created On: $created_on" >> ${{ vars.regular_middle_cacheKey }}
+
 
 
         # $secrets.CF_PAGES_READ_ALL_API: ${{ secrets.CF_PAGES_READ_ALL_API }}
