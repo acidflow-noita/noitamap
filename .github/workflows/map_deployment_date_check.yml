@@ -29,6 +29,12 @@ jobs:
         run: |
           created_on=$(jq -r '.result[0].created_on' <<< '${{ steps.get_cf_deployments.outputs.response_out }}' | date -u -f - +%s)
           echo "created_on is ${{ steps.get_created_on.outputs.created_on }}"
+      - name: values debug
+        id: dbg
+        run: |
+          echo "${{ steps.get_cf_deployments.outputs.response_out }}"
+          echo "created_on is ${{ steps.get_created_on.outputs.created_on }}"
+          echo "created_on is ${{ steps.get_created_on.outputs }}"
 
 
         # $secrets.CF_PAGES_READ_ALL_API: ${{ secrets.CF_PAGES_READ_ALL_API }}
