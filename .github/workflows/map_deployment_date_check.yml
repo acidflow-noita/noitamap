@@ -1,5 +1,4 @@
 # This is a basic workflow that is manually triggered
-
 name: Maps Deployment Date Check
 
 on:
@@ -14,11 +13,18 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: regular_middle_cacheKey
-        run: echo "current regular_middle_cacheKey = vars.$regular_middle_cacheKey"
+        run: echo "current regular_middle_cacheKey = ${{ vars.regular_middle_cacheKey}}"
       - name: ask_CF
         run: |
-          response=$(curl --request GET --header 'Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}' --header 'Content-Type: application/json' --url 'api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ REGULAR_MIDDLE_CF_PROJECT_NAME}}/deployments/latest')
-          echo "Response from example.com: $response"
+          curl --request GET \
+            --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
+            --header 'Content-Type: application/json' \
+            --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ secrets.REGULAR_MIDDLE_CF_PROJECT_NAME }}/deployments/latest"
+        # $secrets.CF_PAGES_READ_ALL_API: ${{ secrets.CF_PAGES_READ_ALL_API }}
+        # $secrets.CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        # $REGULAR_MIDDLE_CF_PROJECT_NAME: ${{ REGULAR_MIDDLE_CF_PROJECT_NAME}}
+
+        # run: curl --request GET --header 'Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}' --header 'Content-Type: application/json' --url 'api.cloudflare.com/client/v4/accounts/$secrets.CF_ACCOUNT_ID/pages/projects/$REGULAR_MIDDLE_CF_PROJECT_NAME/deployments/latest'
       # - name: regular_left_pw_cacheKey
       #   run: echo "regular_left_pw_cacheKey = vars.$regular_left_pw_cacheKey"
       # - name: regular_right_pw_cacheKey
