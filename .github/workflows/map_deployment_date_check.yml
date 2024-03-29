@@ -36,11 +36,12 @@ jobs:
       - name: values debug 2
         id: dbg2
         run: |
-          echo "created_on is ${{ steps.get_created_on.outputs.created_on }}"
+          echo "created_on is $created_on"
       - name: values debug 3
         id: dbg3
         run: |
-          echo "created_on is ${{ steps.get_created_on.outputs }}"
+          echo "created_on=$created_on" >> $GITHUB_STATE
+          echo "created_on is $STATE_created_on"
 
 
         # $secrets.CF_PAGES_READ_ALL_API: ${{ secrets.CF_PAGES_READ_ALL_API }}
