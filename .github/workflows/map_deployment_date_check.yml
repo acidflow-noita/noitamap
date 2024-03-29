@@ -4,7 +4,7 @@ name: Maps Deployment Date Check
 on:
   # schedule:
   #   - cron: "30 * * * *"
-    workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
   getRepoCacheVars:
@@ -20,20 +20,16 @@ jobs:
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/$(echo ${{ env.REGULAR_MIDDLE_CF_PROJECT_NAME }} | sed 's/-/_/g')/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}/deployments")
+          # echo "Response: $response" >> $GITHUB_OUTPUT
           echo "Response: $response"
-          echo "::set-output name=response::$response"
-
       - name: Get created_on
         id: get_created_on
         run: |
-          created_on=$(echo "$(echo ${{ steps.get_cf_deployments.outputs.response }})" | jq -r '.result[0].created_on')
-          echo "Created On: $created_on"
-          echo "::set-output name=created_on::$created_on"
+          created_on=$(jq -r '.result[0].created_on' <<< '${{ steps.get_cf_deployments.outputs.response }}' | date -u -f - +%s)
+          echo "Created On: $created_on" >> $GITHUB_OUPUT
+          echo "Created On: $created_on" >> ${{ vars.regular_middle_cacheKey }}
 
-      - name: Print created_on
-        run: |
-          echo "Created On: ${{ steps.get_created_on.outputs.created_on }}"
 
         # $secrets.CF_PAGES_READ_ALL_API: ${{ secrets.CF_PAGES_READ_ALL_API }}
         # $secrets.CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
