@@ -20,16 +20,11 @@ jobs:
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
           --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}/deployments")
-      - name: print resp 1
-        run:
-          echo "$response.created_on"
-      - name: print resp 2
-        run:
-          echo "${{ response }}"
-      - name: print resp 3
-        run:
-          echo "fromJSON($response.created_on)"
-          
+          echo "Response: $response"
+      - name: created on
+        run: |
+          created_on=$(echo "$response" | jq -r '.result[0].created_on')
+          echo "Created On: $created_on"
 
         # $secrets.CF_PAGES_READ_ALL_API: ${{ secrets.CF_PAGES_READ_ALL_API }}
         # $secrets.CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
