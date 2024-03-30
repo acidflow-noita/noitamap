@@ -22,7 +22,7 @@ jobs:
           "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}/deployments?order=desc&per_page=1")
           DEPLOYED_ON=$(echo "$DEPLOYMENT" | jq -r '.result[0].created_on')
           echo "Deployed on: $DEPLOYED_ON"
-          echo "DEPLOYED_ON=${{ vars.REGULAR_MIDDLE_CACHEKEY }}"
+          echo "vars.REGULAR_MIDDLE_CACHEKEY=$DEPLOYED_ON"
 
         # $secrets.CF_PAGES_READ_ALL_API: ${{ secrets.CF_PAGES_READ_ALL_API }}
         # $secrets.CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
