@@ -1,4 +1,4 @@
-name: Update maps cacheKeys
+name: Updating maps cacheKeys
 
 on:
   # schedule:
@@ -19,7 +19,7 @@ jobs:
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/ALTERNATE_BIOMES/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.ALTERNATE_BIOMES_CF_PROJECT_NAME }}/deployments")
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
@@ -52,7 +52,7 @@ jobs:
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/APOTHEOSIS/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.APOTHEOSIS_CF_PROJECT_NAME }}/deployments")
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
@@ -84,7 +84,7 @@ jobs:
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/APOTHEOSIS_NEW_GAME_PLUS/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.APOTHEOSIS_NEW_GAME_PLUS_CF_PROJECT_NAME }}/deployments")
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
@@ -117,7 +117,7 @@ jobs:
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/APOTHEOSIS_TUONELA/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ APOTHEOSIS_TUONELA_CF_PROJECT_NAME }}/deployments")
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
@@ -150,7 +150,7 @@ jobs:
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/NEW_GAME_PLUS_HD/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.NEW_GAME_PLUS_HD_CF_PROJECT_NAME }}/deployments")
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
@@ -183,7 +183,7 @@ jobs:
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/NIGHTMARE_HD/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.NIGHTMARE_HD_CF_PROJECT_NAME }}/deployments")
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
@@ -216,7 +216,7 @@ jobs:
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/NOITAVANIA/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.NOITAVANIA_CF_PROJECT_NAME }}/deployments")
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
@@ -249,7 +249,7 @@ jobs:
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/NOITAVANIA_NEW_GAME_PLUS/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.NOITAVANIA_NEW_GAME_PLUS_CF_PROJECT_NAME }}/deployments")
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
@@ -281,7 +281,7 @@ jobs:
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/PURGATORY/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.PURGATORY_CF_PROJECT_NAME }}/deployments")
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
@@ -314,7 +314,7 @@ jobs:
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/REGULAR_LEFT_PW/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.REGULAR_LEFT_PW_CF_PROJECT_NAME }}/deployments")
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
@@ -347,7 +347,7 @@ jobs:
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/REGULAR_MAIN_BRANCH/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.REGULAR_MAIN_BRANCH_CF_PROJECT_NAME }}/deployments")
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
@@ -380,7 +380,7 @@ jobs:
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/REGULAR_MIDDLE/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}/deployments")
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
@@ -413,7 +413,7 @@ jobs:
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/REGULAR_RIGHT_PW/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.REGULAR_RIGHT_PW_CF_PROJECT_NAME }}/deployments")
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
