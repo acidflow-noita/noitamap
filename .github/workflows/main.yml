@@ -1,7 +1,5 @@
 name: Main cacheKeys workflow
 on:
-  # schedule:
-  #   - cron: "30 * * * *"
   workflow_dispatch:
 
 jobs:
