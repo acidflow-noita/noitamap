@@ -49,6 +49,8 @@ jobs:
 
           echo "created_on=${{ steps.get_created_on.outputs.created_on }}" >> $GITHUB_STATE
           echo "created_on is $STATE_created_on"
+      - name: test perl
+        run: perl -v
 
 
         # $secrets.CF_PAGES_READ_ALL_API: ${{ secrets.CF_PAGES_READ_ALL_API }}
