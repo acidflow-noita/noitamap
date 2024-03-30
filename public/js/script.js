@@ -631,6 +631,13 @@ os.world.addHandler("add-item", (event) => {
     true
   );
   event.item.setWidth(Number(image.Size.Width), true);
+
+  // Append cacheKeys to the images
+  // xxx.png?v=UNIX_TIMESTAMP
+  // Each Map has their own timestamps
+  event.item.source.queryParams = `?v=${encodeURIComponent(
+    tileCacheKeys[new URL(event.item.source.tilesUrl).host]
+  )}`;
 });
 
 const alertPlaceholder = document.getElementById("liveAlertPlaceholder");
