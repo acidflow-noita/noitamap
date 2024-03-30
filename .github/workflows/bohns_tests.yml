@@ -43,14 +43,18 @@ jobs:
 
           #echo "created_on is $created_on"
           echo "created_on is ${{ steps.get_created_on.outputs.created_on }}"
-      - name: values debug 3
-        id: dbg3
-        run: |
 
-          echo "created_on=${{ steps.get_created_on.outputs.created_on }}" >> $GITHUB_STATE
-          echo "created_on is $STATE_created_on"
-      - name: test perl
-        run: perl -v
+      - name: github var update
+        id: gh_var_update
+        run: |
+          curl -L \
+          -X PATCH \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GH_NOITAMAP_VARS_ACCESS }}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          https://api.github.com/repos/acidflow-noita/noitamap/actions/variables/REGULAR_MIDDLE_CF_PROJECT_NAME \
+          -d '{"name":"REGULAR_MIDDLE_CF_PROJECT_NAME","value":"$created_on"}'
+
 
 
         # $secrets.CF_PAGES_READ_ALL_API: ${{ secrets.CF_PAGES_READ_ALL_API }}
