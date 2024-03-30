@@ -468,7 +468,13 @@ jobs:
           echo "REGULAR_MAIN_BRANCH_CACHEKEY is ${{ vars.REGULAR_MAIN_BRANCH_CACHEKEY }}"
           echo "REGULAR_MIDDLE_CACHEKEY is ${{ vars.REGULAR_MIDDLE_CACHEKEY }}"
           echo "REGULAR_RIGHT_PW_CACHEKEY is ${{ vars.REGULAR_RIGHT_PW_CACHEKEY }}"
-          
+
+      - name: Print current directory
+        run: pwd
+        
+      - name: List directory contents
+        run: ls -la
+        
       - name: Update index.html
         run: |
           perl -0777 -pi -e 's#<script id="cachekeys">.*</script>#<script id="cachekeys">const tilemodified_ons = {\n"regular-middle.acidflow.stream": "${{ steps.get_modified_on_REGULAR_MIDDLE.modified_on }}",\n"regular-left-pw.acidflow.stream": "${{ steps.get_modified_on_REGULAR_LEFT_PW.modified_on }}",\n"regular-right-pw.acidflow.stream": "${{ steps.get_modified_on_REGULAR_RIGHT_PW.modified_on }}",\n"nightmare-hd.acidflow.stream": "${{ steps.get_modified_on_NIGHTMARE_HD.modified_on }}",\n"new-game-plus-hd.acidflow.stream": "${{ steps.get_modified_on_NEW_GAME_PLUS_HD.modified_on }}",\n"regular-main-branch.acidflow.stream": "${{ steps.get_modified_on_REGULAR_MAIN_BRANCH.modified_on }}",\n"purgatory.acidflow.stream": "${{ steps.get_modified_on_PURGATORY.modified_on }}",\n"apotheosis.acidflow.stream": "${{ steps.get_modified_on_APOTHEOSIS.modified_on }}",\n"apotheosis-new-game-plus.acidflow.stream": "${{ steps.get_modified_on_APOTHEOSIS_NEW_GAME_PLUS.modified_on }}",\n"noitavania.acidflow.stream": "${{ steps.get_modified_on_NOITAVANIA.modified_on }}",\n"noitavania-new-game-plus.acidflow.stream": "${{ steps.get_modified_on_NOITAVANIA_NEW_GAME_PLUS.modified_on }}",\n"alternate-biomes.acidflow.stream": "${{ steps.get_modified_on_ALTERNATE_BIOMES.modified_on }}",\n"apotheosis-tuonela.acidflow.stream": "${{ steps.get_modified_on_APOTHEOSIS_TUONELA.modified_on }}"\n};</script>#s' index.html
