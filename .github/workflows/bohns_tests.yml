@@ -17,7 +17,6 @@ jobs:
       - name: Get CF deployments
         id: get_cf_deployments
         run: |
-
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
@@ -28,22 +27,18 @@ jobs:
       - name: Get created_on
         id: get_created_on
         run: |
-
           created_on=$(jq -r '.result[0].created_on' <<< '${{ steps.get_cf_deployments.outputs.response_out }}' | date -u -f - +%s)
           echo "created_on is $created_on"
           echo "created_on=$created_on" >> $GITHUB_OUTPUT
       - name: values debug 1
         id: dbg1
         run: |
-
           echo "response_out is ${{ steps.get_cf_deployments.outputs.response_out }}"
       - name: values debug 2
         id: dbg2
         run: |
-
           #echo "created_on is $created_on"
           echo "created_on is ${{ steps.get_created_on.outputs.created_on }}"
-
       - name: github var update
         id: gh_var_update
         run: |
