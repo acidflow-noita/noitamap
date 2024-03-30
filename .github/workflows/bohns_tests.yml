@@ -1,5 +1,5 @@
 # This is a basic workflow that is manually triggered
-name: Maps Deployment Date Check
+name: Bohns tests
 
 on:
   # schedule:
