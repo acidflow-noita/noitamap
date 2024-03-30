@@ -7,6 +7,10 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+       
       - name: Print all var names before change
         run: |
           echo "ALTERNATE_BIOMES_CACHEKEY is ${{ vars.ALTERNATE_BIOMES_CACHEKEY }}"
