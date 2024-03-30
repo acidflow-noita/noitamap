@@ -40,10 +40,10 @@ jobs:
           created_on=$(jq -r '.result[0].created_on' <<< '${{ steps.get_cf_deployments.outputs.response_out }}' | date -u -f - +%s)
           echo "created_on is $created_on"
           echo "created_on=$created_on" >> $GITHUB_OUTPUT
-      - name: values debug 1
-        id: dbg1
-        run: |
-          echo "response_out is ${{ steps.get_cf_deployments.outputs.response_out }}"
+      # - name: values debug 1
+      #   id: dbg1
+      #   run: |
+      #     echo "response_out is ${{ steps.get_cf_deployments.outputs.response_out }}"
       - name: values debug 2
         id: dbg2
         run: |
