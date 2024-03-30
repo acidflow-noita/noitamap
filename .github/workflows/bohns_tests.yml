@@ -27,28 +27,28 @@ jobs:
 
     steps:
       - name: ${{ matrix.entry }}_CACHEKEY
-        run: echo "current ${{ matrix.entry }}_CACHEKEY = ${{ vars.${{ matrix.entry }}_CACHEKEY }}"
+        run: echo "current ${{ matrix.entry }}_CACHEKEY = ${{ env[${{ matrix.entry }}_CACHEKEY] }}"
       
       - name: Get CF deployment for ${{ matrix.entry }}_CACHEKEY
-        id: get_cf_deployments_${{ matrix.entry }}
+        id: get_cf_deployments
         run: |
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.${{ matrix.entry }}_CF_PROJECT_NAME }}/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ env[${{ matrix.entry }}_CF_PROJECT_NAME] }}/deployments")
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
       
       - name: Get modified_on for ${{ matrix.entry }}_CACHEKEY
-        id: get_modified_on_${{ matrix.entry }}
+        id: get_modified_on
         run: |
-          modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments_${{ matrix.entry }}.outputs.response_out }}' | date -u -f - +%s)
+          modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments.outputs.response_out }}' | date -u -f - +%s)
           echo "modified_on is $modified_on"
-          echo "modified_on=$modified_on" >> $GITHUB_OUTPUT
+          echo "modified_on=${{ steps.get_modified_on.outputs.modified_on }}" >> $GITHUB_OUTPUT
       
       - name: Github Cachekey Update for ${{ matrix.entry }}_CACHEKEY
-        id: gh_cachekey_update_${{ matrix.entry }}
+        id: gh_cachekey_update
         run: |
           PROJECT_CACHEKEY_VAR="${{ matrix.entry }}_CACHEKEY"
           curl -L \
@@ -57,7 +57,8 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.GH_NOITAMAP_VARS_ACCESS }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/acidflow-noita/noitamap/actions/variables/${PROJECT_CACHEKEY_VAR}\
-            -d "{\"name\":\"${PROJECT_CACHEKEY_VAR}\",\"value\":\"${{ steps.get_modified_on_${{ matrix.entry }}.outputs.modified_on }}\"}"
+            -d "{\"name\":\"${PROJECT_CACHEKEY_VAR}\",\"value\":\"${{ steps.get_modified_on.outputs.modified_on }}\"}"
+
 
 
 
