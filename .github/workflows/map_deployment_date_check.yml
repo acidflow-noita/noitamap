@@ -17,32 +17,11 @@ jobs:
       - name: Get CF deployments
         id: get_cf_deployments
         run: |
-          response=$(curl --request GET \
-          --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
-          --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}/deployments")
-          echo "response_out: $response"
-          echo "=========="
-          echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
-      - name: Get created_on
-        id: get_created_on
-        run: |
-          created_on=$(jq -r '.result[0].created_on' <<< '${{ steps.get_cf_deployments.outputs.response_out }}' | date -u -f - +%s)
-          echo "created_on is ${{ steps.get_created_on.outputs.created_on }}"
-      - name: values debug 1
-        id: dbg1
-        run: |
-          echo "${{ steps.get_cf_deployments.outputs.response_out }}"
-      - name: values debug 2
-        id: dbg2
-        run: |
-          echo "created_on is $created_on"
-      - name: values debug 3
-        id: dbg3
-        run: |
-          echo "created_on=$created_on" >> $GITHUB_STATE
-          echo "created_on is $STATE_created_on"
-
+          DEPLOYMENT=$(wget -qO- --header="Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
+          --header="Content-Type: application/json" \
+          "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}/deployments?order=desc&per_page=1")
+          DEPLOYED_ON=$(echo "$DEPLOYMENT" | jq -r '.result[0].created_on')
+          echo "Deployed on: $DEPLOYED_ON"
 
         # $secrets.CF_PAGES_READ_ALL_API: ${{ secrets.CF_PAGES_READ_ALL_API }}
         # $secrets.CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
