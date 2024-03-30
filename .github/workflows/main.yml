@@ -5,12 +5,12 @@ on:
 jobs:
   getRepoCacheVars:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-       
+
       - name: Print all var names before change
         run: |
           echo "ALTERNATE_BIOMES_CACHEKEY is ${{ vars.ALTERNATE_BIOMES_CACHEKEY }}"
@@ -28,7 +28,7 @@ jobs:
           echo "REGULAR_RIGHT_PW_CACHEKEY is ${{ vars.REGULAR_RIGHT_PW_CACHEKEY }}"
       - name: ALTERNATE_BIOMES_CACHEKEY
         run: echo "current ALTERNATE_BIOMES_CACHEKEY = ${{ env.ALTERNATE_BIOMES_CACHEKEY }}"
-      
+
       - name: Get CF deployment for ALTERNATE_BIOMES_CACHEKEY
         id: get_cf_deployments_ALTERNATE_BIOMES
         run: |
@@ -39,14 +39,14 @@ jobs:
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
-      
+
       - name: Get modified_on for ALTERNATE_BIOMES_CACHEKEY
         id: get_modified_on_ALTERNATE_BIOMES
         run: |
           modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments_ALTERNATE_BIOMES.outputs.response_out }}' | date -u -f - +%s)
           echo "modified_on is $modified_on"
           echo "modified_on=${modified_on}" >> $GITHUB_OUTPUT
-      
+
       - name: Github Cachekey Update for ALTERNATE_BIOMES_CACHEKEY
         id: gh_cachekey_update_ALTERNATE_BIOMES
         run: |
@@ -61,7 +61,7 @@ jobs:
 
       - name: APOTHEOSIS_CACHEKEY
         run: echo "current APOTHEOSIS_CACHEKEY = ${{ env.APOTHEOSIS_CACHEKEY }}"
-      
+
       - name: Get CF deployment for APOTHEOSIS_CACHEKEY
         id: get_cf_deployments_APOTHEOSIS
         run: |
@@ -72,14 +72,14 @@ jobs:
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
-      
+
       - name: Get modified_on for APOTHEOSIS_CACHEKEY
         id: get_modified_on_APOTHEOSIS
         run: |
           modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments_APOTHEOSIS.outputs.response_out }}' | date -u -f - +%s)
           echo "modified_on is $modified_on"
           echo "modified_on=${modified_on}" >> $GITHUB_OUTPUT
-      
+
       - name: Github Cachekey Update for APOTHEOSIS_CACHEKEY
         id: gh_cachekey_update_APOTHEOSIS
         run: |
@@ -93,7 +93,7 @@ jobs:
             -d "{\"name\":\"${PROJECT_CACHEKEY_VAR}\",\"value\":\"${{ steps.get_modified_on_APOTHEOSIS.outputs.modified_on }}\"}"
       - name: APOTHEOSIS_NEW_GAME_PLUS_CACHEKEY
         run: echo "current APOTHEOSIS_NEW_GAME_PLUS_CACHEKEY = ${{ env.APOTHEOSIS_NEW_GAME_PLUS_CACHEKEY }}"
-      
+
       - name: Get CF deployment for APOTHEOSIS_NEW_GAME_PLUS_CACHEKEY
         id: get_cf_deployments_APOTHEOSIS_NEW_GAME_PLUS
         run: |
@@ -104,14 +104,14 @@ jobs:
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
-      
+
       - name: Get modified_on for APOTHEOSIS_NEW_GAME_PLUS_CACHEKEY
         id: get_modified_on_APOTHEOSIS_NEW_GAME_PLUS
         run: |
           modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments_APOTHEOSIS_NEW_GAME_PLUS.outputs.response_out }}' | date -u -f - +%s)
           echo "modified_on is $modified_on"
           echo "modified_on=${modified_on}" >> $GITHUB_OUTPUT
-      
+
       - name: Github Cachekey Update for APOTHEOSIS_NEW_GAME_PLUS_CACHEKEY
         id: gh_cachekey_update_APOTHEOSIS_NEW_GAME_PLUS
         run: |
@@ -126,7 +126,7 @@ jobs:
 
       - name: APOTHEOSIS_TUONELA_CACHEKEY
         run: echo "current APOTHEOSIS_TUONELA_CACHEKEY = ${{ env.APOTHEOSIS_TUONELA_CACHEKEY }}"
-      
+
       - name: Get CF deployment for APOTHEOSIS_TUONELA_CACHEKEY
         id: get_cf_deployments_APOTHEOSIS_TUONELA
         run: |
@@ -137,14 +137,14 @@ jobs:
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
-      
+
       - name: Get modified_on for APOTHEOSIS_TUONELA_CACHEKEY
         id: get_modified_on_APOTHEOSIS_TUONELA
         run: |
           modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments_APOTHEOSIS_TUONELA.outputs.response_out }}' | date -u -f - +%s)
           echo "modified_on is $modified_on"
           echo "modified_on=${modified_on}" >> $GITHUB_OUTPUT
-      
+
       - name: Github Cachekey Update for APOTHEOSIS_TUONELA_CACHEKEY
         id: gh_cachekey_update_APOTHEOSIS_TUONELA
         run: |
@@ -159,7 +159,7 @@ jobs:
 
       - name: NEW_GAME_PLUS_HD_CACHEKEY
         run: echo "current NEW_GAME_PLUS_HD_CACHEKEY = ${{ env.NEW_GAME_PLUS_HD_CACHEKEY }}"
-      
+
       - name: Get CF deployment for NEW_GAME_PLUS_HD_CACHEKEY
         id: get_cf_deployments_NEW_GAME_PLUS_HD
         run: |
@@ -170,14 +170,14 @@ jobs:
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
-      
+
       - name: Get modified_on for NEW_GAME_PLUS_HD_CACHEKEY
         id: get_modified_on_NEW_GAME_PLUS_HD
         run: |
           modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments_NEW_GAME_PLUS_HD.outputs.response_out }}' | date -u -f - +%s)
           echo "modified_on is $modified_on"
           echo "modified_on=${modified_on}" >> $GITHUB_OUTPUT
-      
+
       - name: Github Cachekey Update for NEW_GAME_PLUS_HD_CACHEKEY
         id: gh_cachekey_update_NEW_GAME_PLUS_HD
         run: |
@@ -192,7 +192,7 @@ jobs:
 
       - name: NIGHTMARE_HD_CACHEKEY
         run: echo "current NIGHTMARE_HD_CACHEKEY = ${{ env.NIGHTMARE_HD_CACHEKEY }}"
-      
+
       - name: Get CF deployment for NIGHTMARE_HD_CACHEKEY
         id: get_cf_deployments_NIGHTMARE_HD
         run: |
@@ -203,14 +203,14 @@ jobs:
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
-      
+
       - name: Get modified_on for NIGHTMARE_HD_CACHEKEY
         id: get_modified_on_NIGHTMARE_HD
         run: |
           modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments_NIGHTMARE_HD.outputs.response_out }}' | date -u -f - +%s)
           echo "modified_on is $modified_on"
           echo "modified_on=${modified_on}" >> $GITHUB_OUTPUT
-      
+
       - name: Github Cachekey Update for NIGHTMARE_HD_CACHEKEY
         id: gh_cachekey_update_NIGHTMARE_HD
         run: |
@@ -225,7 +225,7 @@ jobs:
 
       - name: NOITAVANIA_CACHEKEY
         run: echo "current NOITAVANIA_CACHEKEY = ${{ env.NOITAVANIA_CACHEKEY }}"
-      
+
       - name: Get CF deployment for NOITAVANIA_CACHEKEY
         id: get_cf_deployments_NOITAVANIA
         run: |
@@ -236,14 +236,14 @@ jobs:
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
-      
+
       - name: Get modified_on for NOITAVANIA_CACHEKEY
         id: get_modified_on_NOITAVANIA
         run: |
           modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments_NOITAVANIA.outputs.response_out }}' | date -u -f - +%s)
           echo "modified_on is $modified_on"
           echo "modified_on=${modified_on}" >> $GITHUB_OUTPUT
-      
+
       - name: Github Cachekey Update for NOITAVANIA_CACHEKEY
         id: gh_cachekey_update_NOITAVANIA
         run: |
@@ -258,7 +258,7 @@ jobs:
 
       - name: NOITAVANIA_NEW_GAME_PLUS_CACHEKEY
         run: echo "current NOITAVANIA_NEW_GAME_PLUS_CACHEKEY = ${{ env.NOITAVANIA_NEW_GAME_PLUS_CACHEKEY }}"
-      
+
       - name: Get CF deployment for NOITAVANIA_NEW_GAME_PLUS_CACHEKEY
         id: get_cf_deployments_NOITAVANIA_NEW_GAME_PLUS
         run: |
@@ -269,14 +269,14 @@ jobs:
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
-      
+
       - name: Get modified_on for NOITAVANIA_NEW_GAME_PLUS_CACHEKEY
         id: get_modified_on_NOITAVANIA_NEW_GAME_PLUS
         run: |
           modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments_NOITAVANIA_NEW_GAME_PLUS.outputs.response_out }}' | date -u -f - +%s)
           echo "modified_on is $modified_on"
           echo "modified_on=${modified_on}" >> $GITHUB_OUTPUT
-      
+
       - name: Github Cachekey Update for NOITAVANIA_NEW_GAME_PLUS_CACHEKEY
         id: gh_cachekey_update_NOITAVANIA_NEW_GAME_PLUS
         run: |
@@ -290,7 +290,7 @@ jobs:
             -d "{\"name\":\"${PROJECT_CACHEKEY_VAR}\",\"value\":\"${{ steps.get_modified_on_NOITAVANIA_NEW_GAME_PLUS.outputs.modified_on }}\"}"
       - name: PURGATORY_CACHEKEY
         run: echo "current PURGATORY_CACHEKEY = ${{ env.PURGATORY_CACHEKEY }}"
-      
+
       - name: Get CF deployment for PURGATORY_CACHEKEY
         id: get_cf_deployments_PURGATORY
         run: |
@@ -301,14 +301,14 @@ jobs:
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
-      
+
       - name: Get modified_on for PURGATORY_CACHEKEY
         id: get_modified_on_PURGATORY
         run: |
           modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments_PURGATORY.outputs.response_out }}' | date -u -f - +%s)
           echo "modified_on is $modified_on"
           echo "modified_on=${modified_on}" >> $GITHUB_OUTPUT
-      
+
       - name: Github Cachekey Update for PURGATORY_CACHEKEY
         id: gh_cachekey_update_PURGATORY
         run: |
@@ -323,7 +323,7 @@ jobs:
 
       - name: REGULAR_LEFT_PW_CACHEKEY
         run: echo "current REGULAR_LEFT_PW_CACHEKEY = ${{ env.REGULAR_LEFT_PW_CACHEKEY }}"
-      
+
       - name: Get CF deployment for REGULAR_LEFT_PW_CACHEKEY
         id: get_cf_deployments_REGULAR_LEFT_PW
         run: |
@@ -334,14 +334,14 @@ jobs:
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
-      
+
       - name: Get modified_on for REGULAR_LEFT_PW_CACHEKEY
         id: get_modified_on_REGULAR_LEFT_PW
         run: |
           modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments_REGULAR_LEFT_PW.outputs.response_out }}' | date -u -f - +%s)
           echo "modified_on is $modified_on"
           echo "modified_on=${modified_on}" >> $GITHUB_OUTPUT
-      
+
       - name: Github Cachekey Update for REGULAR_LEFT_PW_CACHEKEY
         id: gh_cachekey_update_REGULAR_LEFT_PW
         run: |
@@ -356,7 +356,7 @@ jobs:
 
       - name: REGULAR_MAIN_BRANCH_CACHEKEY
         run: echo "current REGULAR_MAIN_BRANCH_CACHEKEY = ${{ env.REGULAR_MAIN_BRANCH_CACHEKEY }}"
-      
+
       - name: Get CF deployment for REGULAR_MAIN_BRANCH_CACHEKEY
         id: get_cf_deployments_REGULAR_MAIN_BRANCH
         run: |
@@ -367,14 +367,14 @@ jobs:
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
-      
+
       - name: Get modified_on for REGULAR_MAIN_BRANCH_CACHEKEY
         id: get_modified_on_REGULAR_MAIN_BRANCH
         run: |
           modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments_REGULAR_MAIN_BRANCH.outputs.response_out }}' | date -u -f - +%s)
           echo "modified_on is $modified_on"
           echo "modified_on=${modified_on}" >> $GITHUB_OUTPUT
-      
+
       - name: Github Cachekey Update for REGULAR_MAIN_BRANCH_CACHEKEY
         id: gh_cachekey_update_REGULAR_MAIN_BRANCH
         run: |
@@ -389,7 +389,7 @@ jobs:
 
       - name: REGULAR_MIDDLE_CACHEKEY
         run: echo "current REGULAR_MIDDLE_CACHEKEY = ${{ env.REGULAR_MIDDLE_CACHEKEY }}"
-      
+
       - name: Get CF deployment for REGULAR_MIDDLE_CACHEKEY
         id: get_cf_deployments_REGULAR_MIDDLE
         run: |
@@ -400,14 +400,14 @@ jobs:
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
-      
+
       - name: Get modified_on for REGULAR_MIDDLE_CACHEKEY
         id: get_modified_on_REGULAR_MIDDLE
         run: |
           modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments_REGULAR_MIDDLE.outputs.response_out }}' | date -u -f - +%s)
           echo "modified_on is $modified_on"
           echo "modified_on=${modified_on}" >> $GITHUB_OUTPUT
-      
+
       - name: Github Cachekey Update for REGULAR_MIDDLE_CACHEKEY
         id: gh_cachekey_update_REGULAR_MIDDLE
         run: |
@@ -422,7 +422,7 @@ jobs:
 
       - name: REGULAR_RIGHT_PW_CACHEKEY
         run: echo "current REGULAR_RIGHT_PW_CACHEKEY = ${{ env.REGULAR_RIGHT_PW_CACHEKEY }}"
-      
+
       - name: Get CF deployment for REGULAR_RIGHT_PW_CACHEKEY
         id: get_cf_deployments_REGULAR_RIGHT_PW
         run: |
@@ -433,14 +433,14 @@ jobs:
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
-      
+
       - name: Get modified_on for REGULAR_RIGHT_PW_CACHEKEY
         id: get_modified_on_REGULAR_RIGHT_PW
         run: |
           modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments_REGULAR_RIGHT_PW.outputs.response_out }}' | date -u -f - +%s)
           echo "modified_on is $modified_on"
           echo "modified_on=${modified_on}" >> $GITHUB_OUTPUT
-      
+
       - name: Github Cachekey Update for REGULAR_RIGHT_PW_CACHEKEY
         id: gh_cachekey_update_REGULAR_RIGHT_PW
         run: |
@@ -471,13 +471,13 @@ jobs:
 
       - name: Print current directory
         run: pwd
-        
+
       - name: List directory contents
         run: ls -la
-        
+
       - name: Update index.html
         run: |
-          perl -0777 -pi -e 's#<script id="cachekeys">.*</script>#<script id="cachekeys">const tilemodified_ons = {\n"regular-middle.acidflow.stream": "${{ steps.get_modified_on_REGULAR_MIDDLE.modified_on }}",\n"regular-left-pw.acidflow.stream": "${{ steps.get_modified_on_REGULAR_LEFT_PW.modified_on }}",\n"regular-right-pw.acidflow.stream": "${{ steps.get_modified_on_REGULAR_RIGHT_PW.modified_on }}",\n"nightmare-hd.acidflow.stream": "${{ steps.get_modified_on_NIGHTMARE_HD.modified_on }}",\n"new-game-plus-hd.acidflow.stream": "${{ steps.get_modified_on_NEW_GAME_PLUS_HD.modified_on }}",\n"regular-main-branch.acidflow.stream": "${{ steps.get_modified_on_REGULAR_MAIN_BRANCH.modified_on }}",\n"purgatory.acidflow.stream": "${{ steps.get_modified_on_PURGATORY.modified_on }}",\n"apotheosis.acidflow.stream": "${{ steps.get_modified_on_APOTHEOSIS.modified_on }}",\n"apotheosis-new-game-plus.acidflow.stream": "${{ steps.get_modified_on_APOTHEOSIS_NEW_GAME_PLUS.modified_on }}",\n"noitavania.acidflow.stream": "${{ steps.get_modified_on_NOITAVANIA.modified_on }}",\n"noitavania-new-game-plus.acidflow.stream": "${{ steps.get_modified_on_NOITAVANIA_NEW_GAME_PLUS.modified_on }}",\n"alternate-biomes.acidflow.stream": "${{ steps.get_modified_on_ALTERNATE_BIOMES.modified_on }}",\n"apotheosis-tuonela.acidflow.stream": "${{ steps.get_modified_on_APOTHEOSIS_TUONELA.modified_on }}"\n};</script>#s' public/index.html
+          perl -g -pi -e 's#<script id="cachekeys">.*?</script>#<script id="cachekeys">const tileCacheKeys = {\n"regular-middle.acidflow.stream": "${{ steps.get_modified_on_REGULAR_MIDDLE.modified_on }}",\n"regular-left-pw.acidflow.stream": "${{ steps.get_modified_on_REGULAR_LEFT_PW.modified_on }}",\n"regular-right-pw.acidflow.stream": "${{ steps.get_modified_on_REGULAR_RIGHT_PW.modified_on }}",\n"nightmare-hd.acidflow.stream": "${{ steps.get_modified_on_NIGHTMARE_HD.modified_on }}",\n"new-game-plus-hd.acidflow.stream": "${{ steps.get_modified_on_NEW_GAME_PLUS_HD.modified_on }}",\n"regular-main-branch.acidflow.stream": "${{ steps.get_modified_on_REGULAR_MAIN_BRANCH.modified_on }}",\n"purgatory.acidflow.stream": "${{ steps.get_modified_on_PURGATORY.modified_on }}",\n"apotheosis.acidflow.stream": "${{ steps.get_modified_on_APOTHEOSIS.modified_on }}",\n"apotheosis-new-game-plus.acidflow.stream": "${{ steps.get_modified_on_APOTHEOSIS_NEW_GAME_PLUS.modified_on }}",\n"noitavania.acidflow.stream": "${{ steps.get_modified_on_NOITAVANIA.modified_on }}",\n"noitavania-new-game-plus.acidflow.stream": "${{ steps.get_modified_on_NOITAVANIA_NEW_GAME_PLUS.modified_on }}",\n"alternate-biomes.acidflow.stream": "${{ steps.get_modified_on_ALTERNATE_BIOMES.modified_on }}",\n"apotheosis-tuonela.acidflow.stream": "${{ steps.get_modified_on_APOTHEOSIS_TUONELA.modified_on }}"\n};</script>#s' public/index.html
       - name: Commit index.html changes
         id: commit
         run: |
