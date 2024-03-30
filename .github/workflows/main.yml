@@ -452,7 +452,7 @@ jobs:
             https://api.github.com/repos/acidflow-noita/noitamap/actions/variables/${PROJECT_CACHEKEY_VAR}\
             -d "{\"name\":\"${PROJECT_CACHEKEY_VAR}\",\"value\":\"${{ steps.get_modified_on_REGULAR_RIGHT_PW.outputs.modified_on }}\"}"
 
-                  - name: Print all var names after change
+      - name: Print all var names after change
         run: |
           echo "ALTERNATE_BIOMES_CACHEKEY is ${{ vars.ALTERNATE_BIOMES_CACHEKEY }}"
           echo "APOTHEOSIS_CACHEKEY is ${{ vars.APOTHEOSIS_CACHEKEY }}"
