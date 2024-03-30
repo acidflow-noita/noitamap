@@ -117,7 +117,7 @@ jobs:
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ APOTHEOSIS_TUONELA_CF_PROJECT_NAME }}/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.APOTHEOSIS_TUONELA_CF_PROJECT_NAME }}/deployments")
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
