@@ -1,4 +1,4 @@
-name: +Updating maps cacheKeys
+name: Update maps cacheKeys in index html
 
 on:
   # schedule:
