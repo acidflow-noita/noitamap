@@ -1,5 +1,4 @@
-# This is a basic workflow that is manually triggered
-name: Bohns tests
+name: Updating maps cacheKeys
 
 on:
   # schedule:
@@ -8,87 +7,106 @@ on:
 
 jobs:
   getRepoCacheVars:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    strategy:
+      matrix:
+        entry:
+          - ALTERNATE_BIOMES
+          - APOTHEOSIS
+          - APOTHEOSIS_NEW_GAME_PLUS
+          - APOTHEOSIS_TUONELA
+          - NEW_GAME_PLUS_HD
+          - NIGHTMARE_HD
+          - NOITAVANIA
+          - NOITAVANIA_NEW_GAME_PLUS
+          - PURGATORY
+          - REGULAR_LEFT_PW
+          - REGULAR_MAIN_BRANCH
+          - REGULAR_MIDDLE
+          - REGULAR_RIGHT_PW
+
     steps:
-      - name: regular_middle_cacheKey
-        run: echo "current regular_middle_cacheKey = ${{ vars.regular_middle_cacheKey }}"
-      - name: Get CF deployments
-        id: get_cf_deployments
-    
+      - name: ${{ matrix.entry }}_CACHEKEY
+        run: echo "current ${{ matrix.entry }}_CACHEKEY = ${{ vars.${{ matrix.entry }}_CACHEKEY }}"
+      
+      - name: Get CF deployment for ${{ matrix.entry }}_CACHEKEY
+        id: get_cf_deployments_${{ matrix.entry }}
         run: |
           response=$(curl --request GET \
           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
           --header 'Content-Type: application/json' \
-          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}/deployments")
+          --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.${{ matrix.entry }}_CF_PROJECT_NAME }}/deployments")
           echo "response_out: $response"
           echo "=========="
           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
-
-        # # Wget which should work
-        # run: |
-        #   DEPLOYMENT=$(wget -qO- --header="Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
-        #   --header="Content-Type: application/json" \
-        #   "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}/deployments?order=desc&per_page=1")
-        #   DEPLOYED_ON=$(echo "$DEPLOYMENT" | jq -r '.result[0].deployed_on')
-        #   echo "d_on=$DEPLOYED_ON" >> $GITHUB_OUTPUT
-      - name: Get modified_on
-        id: get_modified_on
+      
+      - name: Get modified_on for ${{ matrix.entry }}_CACHEKEY
+        id: get_modified_on_${{ matrix.entry }}
         run: |
-          modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments.outputs.response_out }}' | date -u -f - +%s)
+          modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments_${{ matrix.entry }}.outputs.response_out }}' | date -u -f - +%s)
           echo "modified_on is $modified_on"
           echo "modified_on=$modified_on" >> $GITHUB_OUTPUT
-      # - name: github var update
-      #   id: gh_var_update
-      #   run: |
-      #     curl -L \
-      #       -X PATCH \
-      #       -H "Accept: application/vnd.github+json" \
-      #       -H "Authorization: Bearer ${{ secrets.GH_NOITAMAP_VARS_ACCESS }}" \
-      #       -H "X-GitHub-Api-Version: 2022-11-28" \
-      #       https://api.github.com/repos/acidflow-noita/noitamap/actions/variables/REGULAR_MIDDLE_CACHEKEY \
-      #       -d "{\"name\":\"REGULAR_MIDDLE_CACHEKEY\",\"value\":\"${{ steps.get_deployed_on.outputs.deployed_on }}\"}"
-      - name: Github Cachekey Update for ${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}
-        id: gh_cachekey_update
+      
+      - name: Github Cachekey Update for ${{ matrix.entry }}_CACHEKEY
+        id: gh_cachekey_update_${{ matrix.entry }}
         run: |
-          PROJECT_CACHEKEY_VAR="REGULAR_MIDDLE_CACHEKEY"
+          PROJECT_CACHEKEY_VAR="${{ matrix.entry }}_CACHEKEY"
           curl -L \
             -X PATCH \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GH_NOITAMAP_VARS_ACCESS }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/acidflow-noita/noitamap/actions/variables/${PROJECT_CACHEKEY_VAR}\
-            -d "{\"name\":\"${PROJECT_CACHEKEY_VAR}\",\"value\":\"${{ steps.get_modified_on.outputs.modified_on }}\"}"
+            -d "{\"name\":\"${PROJECT_CACHEKEY_VAR}\",\"value\":\"${{ steps.get_modified_on_${{ matrix.entry }}.outputs.modified_on }}\"}"
 
 
 
-        # $secrets.CF_PAGES_READ_ALL_API: ${{ secrets.CF_PAGES_READ_ALL_API }}
-        # $secrets.CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
-        # $REGULAR_MIDDLE_CF_PROJECT_NAME: ${{ REGULAR_MIDDLE_CF_PROJECT_NAME}}
 
-        # run: curl --request GET --header 'Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}' --header 'Content-Type: application/json' --url 'api.cloudflare.com/client/v4/accounts/$secrets.CF_ACCOUNT_ID/pages/projects/$REGULAR_MIDDLE_CF_PROJECT_NAME/deployments/latest'
-      # - name: regular_left_pw_cacheKey
-      #   run: echo "regular_left_pw_cacheKey = vars.$regular_left_pw_cacheKey"
-      # - name: regular_right_pw_cacheKey
-      #   run: echo "regular_right_pw_cacheKey = vars.$regular_right_pw_cacheKey"
-      # - name: nightmare_hd_cacheKey
-      #   run: echo "nightmare_hd_cacheKey = vars.$nightmare_hd_cacheKey"
-      # - name: new_game_plus_hd_cacheKey
-      #   run: echo "new_game_plus_hd_cacheKey = vars.$new_game_plus_hd_cacheKey"
-      # - name: regular_main_branch_cacheKey
-      #   run: echo "regular_main_branch_cacheKey = vars.$regular_main_branch_cacheKey"
-      # - name: purgatory_cacheKey
-      #   run: echo "purgatory_cacheKey = vars.$purgatory_cacheKey"
-      # - name: apotheosis_cacheKey
-      #   run: echo "apotheosis_cacheKey = vars.$apotheosis_cacheKey"
-      # - name: apotheosis_new_game_plus_cacheKey
-      #   run: echo "apotheosis_new_game_plus_cacheKey = vars.$apotheosis_new_game_plus_cacheKey"
-      # - name: noitavania_cacheKey
-      #   run: echo "noitavania_cacheKey = vars.$noitavania_cacheKey"
-      # - name: noitavania_new_game_plus_cacheKey
-      #   run: echo "noitavania_new_game_plus_cacheKey = vars.$noitavania_new_game_plus_cacheKey"
-      # - name: alternate_biomes_cacheKey
-      #   run: echo "alternate_biomes_cacheKey = vars.$alternate_biomes_cacheKey"
-      # - name: apotheosis_tuonela_cacheKey
-      #   run: echo "apotheosis_tuonela_cacheKey = vars.$apotheosis_tuonela_cacheKey"
+
+
+
+
+
+
+# # This is a basic workflow that is manually triggered
+# name: Bohns tests
+
+# on:
+#   # schedule:
+#   #   - cron: "30 * * * *"
+#   workflow_dispatch:
+# jobs:
+#   getRepoCacheVars:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: regular_middle_cacheKey
+#         run: echo "current regular_middle_cacheKey = ${{ vars.regular_middle_cacheKey }}"
+#       - name: Get CF deployments
+#         id: get_cf_deployments
+#         run: |
+#           response=$(curl --request GET \
+#           --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
+#           --header 'Content-Type: application/json' \
+#           --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}/deployments")
+#           echo "response_out: $response"
+#           echo "=========="
+#           echo "response_out=$(echo $response| tr '\n' ' ')" >> $GITHUB_OUTPUT
+#       - name: Get modified_on
+#         id: get_modified_on
+#         run: |
+#           modified_on=$(jq -r '.result[0].modified_on' <<< '${{ steps.get_cf_deployments.outputs.response_out }}' | date -u -f - +%s)
+#           echo "modified_on is $modified_on"
+#           echo "modified_on=$modified_on" >> $GITHUB_OUTPUT
+#       - name: Github Cachekey Update for ${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}
+#         id: gh_cachekey_update
+#         run: |
+#           PROJECT_CACHEKEY_VAR="REGULAR_MIDDLE_CACHEKEY"
+#           curl -L \
+#             -X PATCH \
+#             -H "Accept: application/vnd.github+json" \
+#             -H "Authorization: Bearer ${{ secrets.GH_NOITAMAP_VARS_ACCESS }}" \
+#             -H "X-GitHub-Api-Version: 2022-11-28" \
+#             https://api.github.com/repos/acidflow-noita/noitamap/actions/variables/${PROJECT_CACHEKEY_VAR}\
+#             -d "{\"name\":\"${PROJECT_CACHEKEY_VAR}\",\"value\":\"${{ steps.get_modified_on.outputs.modified_on }}\"}"
+
+
