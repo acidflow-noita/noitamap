@@ -50,7 +50,7 @@ jobs:
       #       https://api.github.com/repos/acidflow-noita/noitamap/actions/variables/REGULAR_MIDDLE_CACHEKEY \
       #       -d "{\"name\":\"REGULAR_MIDDLE_CACHEKEY\",\"value\":\"${{ steps.get_deployed_on.outputs.deployed_on }}\"}"
       - name: Github Cachekey Update for ${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}
-        id: gh_cachekey_update_${{ vars.REGULAR_MIDDLE_CF_PROJECT_NAME }}
+        id: gh_cachekey_update
         run: |
           PROJECT_CACHEKEY_VAR="REGULAR_MIDDLE_CACHEKEY"
           curl -L \
