@@ -1,0 +1,61 @@
+name: Loop cacheKeys workflow
+on:
+  workflow_dispatch:
+jobs:
+  getRepoCacheVars:
+    runs-on: ubuntu-latest
+    outputs:
+      modified_on: ${{ steps.vars_to_json.outputs.modified_on }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Print all var names before change
+        run: |
+          for var in "ALTERNATE_BIOMES" "APOTHEOSIS" "APOTHEOSIS_NEW_GAME_PLUS" "APOTHEOSIS_TUONELA" "NEW_GAME_PLUS_HD" "NIGHTMARE_HD" "NOITAVANIA" "NOITAVANIA_NEW_GAME_PLUS" "PURGATORY" "REGULAR_LEFT_PW" "REGULAR_MAIN_BRANCH" "REGULAR_MIDDLE" "REGULAR_RIGHT_PW"; do
+            echo "${var}_CACHEKEY is ${{ vars.${var}_CACHEKEY }}"
+          done
+
+      - name: Fetch and update cache keys
+        id: fetch_and_update_cache_keys
+        run: |
+          get_modified_on() {
+            project_name=$1
+            var_name=$2
+            response=$(curl --request GET \
+              --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
+              --header 'Content-Type: application/json' \
+              --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${project_name}/deployments")
+            modified_on=$(echo $response | jq -r '.result[0].modified_on' | date -u -f - +%s)
+            
+            # Update GitHub secret for cache key
+            curl -L -X PATCH \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GH_NOITAMAP_VARS_ACCESS }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -d "{\"name\":\"${var_name}\",\"value\":\"$modified_on\"}" \
+              https://api.github.com/repos/acidflow-noita/noitamap/actions/variables/${var_name}
+            
+            echo "\"$project_name\": \"$modified_on\""
+          }
+
+          modified_on_json="{\n$(get_modified_on project1 ALTERNATE_BIOMES_CACHEKEY),\n$(get_modified_on project2 APOTHEOSIS_CACHEKEY)}"
+          echo "::set-output name=modified_on::$modified_on_json"
+
+      - name: Update index.html with new cache keys
+        run: |
+          new_keys=${{ steps.fetch_and_update_cache_keys.outputs.modified_on }}
+          perl -g -pi -e "s#<script id=\"cachekeys\">.*?</script>#<script id=\"cachekeys\">const tileCacheKeys = {\\n$new_keys\\n};</script>#s" public/index.html
+
+      - name: Commit and push changes if any
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Actions"
+          git add public/index.html
+          if [ -z "$(git status --porcelain)" ]; then 
+            echo "No changes to commit"
+          else 
+            git commit -m "Update index.html"
+            git push
+          fi
