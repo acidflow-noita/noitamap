@@ -24,7 +24,7 @@ jobs:
                       https://api.github.com/repos/acidflow-noita/noitamap/actions/variables)
           
           for name in "${PROJECT_NAMES[@]}"; do
-              cachekey_value=$(jq '.variables[] | select(.name == "${name}_CACHEKEY") | .value' <<< $response)
+              cachekey_value=$(jq '.variables[] | select(.name == "${name}_CACHEKEY") | .value' <<< "$response")
               echo "${name}_CACHEKEY=${cachekey_value}"
 
           done
@@ -42,8 +42,8 @@ jobs:
               --header 'Content-Type: application/json' \
               --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${project_name}/deployments")
               
-            project_alias=$(jq -r '.result[0].aliases[0]' <<< $response | sed 's#https://##')
-            modified_on=$(jq -r '.result[0].modified_on' <<< $response | date -u -f - +%s)
+            project_alias=$(jq -r '.result[0].aliases[0]' <<< "$response" | sed 's#https://##')
+            modified_on=$(jq -r '.result[0].modified_on' <<< "$response" | date -u -f - +%s)
             echo "${var_name}='${project_alias}=${modified_on}'" >> $GITHUB_ENV # Use environment variable to pass dynamic value.
           }
           
@@ -72,7 +72,7 @@ jobs:
         
           for name in ${PROJECT_NAMES[@]}; do
               
-              update_modified_on "$name"
+            update_modified_on "$name"
 
           done
             
