@@ -37,6 +37,8 @@ jobs:
           get_modified_on() {
             project_name=$1
             var_name=${2}_CACHEKEY
+
+            echo "Trying for project_name=$project_name and Cache Key=$var_name"
             response=$(curl --request GET \
               --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
               --header 'Content-Type: application/json' \
@@ -83,7 +85,8 @@ jobs:
           
           perl -pi -e "s#<script id=\"cachekeys\">.*?</script>#<script id=\"cachekeys\">const tileCacheKeys = {$new_keys};</script>#s" public/index.html
 
-      - name: Commit and push changes if any
+      - name: Commit index.html changes
+        id: commit
         run: |
 
           git config --global user.email "action@github.com"
@@ -91,6 +94,14 @@ jobs:
           git add public/index.html
           if [ -z "$(git status --porcelain)" ]; then
             echo "No changes to commit"
+            echo "push=false" >> $GITHUB_OUTPUT
           else
             git commit -m "Update index.html with new cache keys"
-            git push
+            echo "push=true" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+      - name: Push changes
+        if: steps.commit.outputs.push == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GH_ACIDFRLOW_COMMIT_TO_REPO }}
