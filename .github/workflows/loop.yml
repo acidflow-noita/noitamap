@@ -83,7 +83,7 @@ jobs:
 
           new_keys=$(env | grep _CACHEKEY | sed 's/^[^=]*=//; s/=/":"/; s/^/"/; s/$/",/')
           
-          perl -pi -e "s#<script id=\"cachekeys\">.*?</script>#<script id=\"cachekeys\">const tileCacheKeys = {$new_keys};</script>#s" public/index.html
+          perl -0777 -pi -e "s#<script id=\"cachekeys\">.*?</script>#<script id=\"cachekeys\">const tileCacheKeys = {$new_keys};</script>#s" public/index.html
 
       - name: Commit index.html changes
         id: commit
