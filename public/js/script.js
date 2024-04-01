@@ -659,7 +659,7 @@ document
       Array.from(allOverlays).forEach((overlay) => {
         os.removeOverlay(overlay.id);
       });
-      document.getElementById("bald").src = "/public/assets/nooverlay.png";
+      document.getElementById("bald").src = "/assets/nooverlay.png";
       // Todo -- fix this to make overlays work with other maps
     } else if (currentMapURLFromOverlaysToggle === "regular") {
       overlayTexts.forEach(({ id, text, x, y, width, height }) => {
@@ -674,7 +674,7 @@ document
         const hue = Math.floor(Math.random() * 360);
         e.style.backgroundColor = `hsla(${hue}, 60%, 50%, 0.401)`;
       });
-      document.getElementById("bald").src = "/public//assets/overlay.png";
+      document.getElementById("bald").src = "/assets/overlay.png";
     }
     overlaysState = !overlaysState;
   });
