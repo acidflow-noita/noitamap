@@ -11,14 +11,29 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
-      - name: Print all var names before change
+      - name: Print all var names with values before change
         run: |
-          for var in "ALTERNATE_BIOMES" "APOTHEOSIS" "APOTHEOSIS_NEW_GAME_PLUS" "APOTHEOSIS_TUONELA" "NEW_GAME_PLUS_HD" "NIGHTMARE_HD" "NOITAVANIA" "NOITAVANIA_NEW_GAME_PLUS" "PURGATORY" "REGULAR_LEFT_PW" "REGULAR_MAIN_BRANCH" "REGULAR_MIDDLE" "REGULAR_RIGHT_PW"; do
-            echo "${var}_CACHEKEY" # Placeholder echo, actual dynamic access would need scripting support.
+
+          PROJECT_NAMES=("ALTERNATE_BIOMES" "APOTHEOSIS" "APOTHEOSIS_NEW_GAME_PLUS" "APOTHEOSIS_TUONELA" "NEW_GAME_PLUS_HD" "NIGHTMARE_HD" "NOITAVANIA" "NOITAVANIA_NEW_GAME_PLUS" "PURGATORY" "REGULAR_LEFT_PW" "REGULAR_MAIN_BRANCH" "REGULAR_MIDDLE" "REGULAR_RIGHT_PW")
+          
+          # curl get repo variables into $response
+          response=$(curl -L \
+                      -H "Accept: application/vnd.github+json" \
+                      -H "Authorization: Bearer ${{ secrets.GH_NOITAMAP_VARS_ACCESS }}" \
+                      -H "X-GitHub-Api-Version: 2022-11-28" \
+                      https://api.github.com/repos/acidflow-noita/noitamap/actions/variables)
+          
+          for name in "${PROJECT_NAMES[@]}"; do
+              cachekey_value=$(jq '.variables[] | select(.name == "${name}_CACHEKEY") | .value' <<< $response)
+              echo "${name}_CACHEKEY=${cachekey_value}"
+
+          done
+          echo "PROJECT_NAMES='${PROJECT_NAMES[@]}'" >> $GITHUB_ENV
 
       - name: Fetch and update cache keys
         id: fetch_and_update_cache_keys
         run: |
+
           get_modified_on() {
             project_name=$1
             var_name=${2}_CACHEKEY
@@ -26,21 +41,51 @@ jobs:
               --header "Authorization: Bearer ${{ secrets.CF_PAGES_READ_ALL_API }}" \
               --header 'Content-Type: application/json' \
               --url "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CF_ACCOUNT_ID }}/pages/projects/${project_name}/deployments")
-            modified_on=$(echo $response | jq -r '.result[0].modified_on' | date -u -f - +%s)
-            echo "${var_name}=$modified_on" >> $GITHUB_ENV # Use environment variable to pass dynamic value.
+              
+            project_alias=$(jq -r '.result[0].aliases[0]' <<< $response | sed 's#https://##')
+            modified_on=$(jq -r '.result[0].modified_on' <<< $response | date -u -f - +%s)
+            echo "${var_name}='${project_alias}=${modified_on}'" >> $GITHUB_ENV # Use environment variable to pass dynamic value.
           }
-          get_modified_on "project1" "ALTERNATE_BIOMES"
-          get_modified_on "project2" "APOTHEOSIS"
-          # Add more calls as necessary.
+          
+            for name in ${PROJECT_NAMES[@]}; do
+                CF_PROJECT_NAME=$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
+                get_modified_on "$CF_PROJECT_NAME" "$name"
 
+            done
+
+      - name: Github Cachekeys Update
+        id: gh_cachekeys_update
+        run: |
+
+          update_modified_on() {
+              var_name=${1}_CACHEKEY
+              var_value=${!var_name#*=}
+              curl -L \
+              -X PATCH \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GH_NOITAMAP_VARS_ACCESS }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              https://api.github.com/repos/acidflow-noita/noitamap/actions/variables/${var_name}\
+              -d "{\"name\":\"${var_name}\",\"value\":\"${var_value}\"}"
+          
+          }
+        
+          for name in ${PROJECT_NAMES[@]}; do
+              
+              update_modified_on "$name"
+
+          done
+            
       - name: Update index.html with new cache keys
         run: |
-          new_keys=$(env | grep _CACHEKEY | sed 's/=/":"/g; s/^/{ "/; s/$/" },/')
-          # Assuming new_keys is formatted as JSON objects. Adjust the string manipulation as necessary.
+
+          new_keys=$(env | grep _CACHEKEY | sed 's/^[^=]*=//; s/=/":"/; s/^/"/; s/$/",/')
+          
           perl -pi -e "s#<script id=\"cachekeys\">.*?</script>#<script id=\"cachekeys\">const tileCacheKeys = {$new_keys};</script>#s" public/index.html
 
       - name: Commit and push changes if any
         run: |
+
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Actions"
           git add public/index.html
