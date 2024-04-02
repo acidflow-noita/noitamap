@@ -149,9 +149,7 @@ function changeMap(tileSource) {
       os.addTiledImage({ tileSource: tileSources[0][1] });
       os.addTiledImage({ tileSource: tileSources[0][2] });
       os.forceRedraw();
-      document.getElementById(
-        "overlayVisibilityToggleButton"
-      ).style.visibility = "visible";
+      document.querySelector("body").removeAttribute("class");
 
       break;
     case 1:
@@ -161,9 +159,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[1][1] });
       //   os.addTiledImage({ tileSource: tileSources[1][2] });
       os.forceRedraw();
-      document.getElementById(
-        "overlayVisibilityToggleButton"
-      ).style.visibility = "hidden";
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 2:
       updatedUrlParams.set("map", "new-game-plus");
@@ -172,9 +168,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[2][1] });
       //   os.addTiledImage({ tileSource: tileSources[2][2] });
       os.forceRedraw();
-      document.getElementById(
-        "overlayVisibilityToggleButton"
-      ).style.visibility = "hidden";
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 3:
       updatedUrlParams.set("map", "regular-main-branch");
@@ -183,9 +177,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[3][1] });
       //   os.addTiledImage({ tileSource: tileSources[3][2] });
       os.forceRedraw();
-      document.getElementById(
-        "overlayVisibilityToggleButton"
-      ).style.visibility = "hidden";
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 4:
       updatedUrlParams.set("map", "purgatory");
@@ -194,9 +186,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[4][1] });
       //   os.addTiledImage({ tileSource: tileSources[4][2] });
       os.forceRedraw();
-      document.getElementById(
-        "overlayVisibilityToggleButton"
-      ).style.visibility = "hidden";
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 5:
       updatedUrlParams.set("map", "apotheosis");
@@ -205,9 +195,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[5][1] });
       //   os.addTiledImage({ tileSource: tileSources[5][2] });
       os.forceRedraw();
-      document.getElementById(
-        "overlayVisibilityToggleButton"
-      ).style.visibility = "hidden";
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 6:
       updatedUrlParams.set("map", "apotheosis-new-game-plus");
@@ -216,9 +204,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[6][1] });
       //   os.addTiledImage({ tileSource: tileSources[6][2] });
       os.forceRedraw();
-      document.getElementById(
-        "overlayVisibilityToggleButton"
-      ).style.visibility = "hidden";
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 7:
       updatedUrlParams.set("map", "noitavania");
@@ -227,9 +213,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[7][1] });
       //   os.addTiledImage({ tileSource: tileSources[7][2] });
       os.forceRedraw();
-      document.getElementById(
-        "overlayVisibilityToggleButton"
-      ).style.visibility = "hidden";
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 8:
       updatedUrlParams.set("map", "noitavania-new-game-plus");
@@ -238,9 +222,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[8][1] });
       //   os.addTiledImage({ tileSource: tileSources[8][2] });
       os.forceRedraw();
-      document.getElementById(
-        "overlayVisibilityToggleButton"
-      ).style.visibility = "hidden";
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 9:
       updatedUrlParams.set("map", "alternate-biomes");
@@ -249,9 +231,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[9][1] });
       //   os.addTiledImage({ tileSource: tileSources[9][2] });
       os.forceRedraw();
-      document.getElementById(
-        "overlayVisibilityToggleButton"
-      ).style.visibility = "hidden";
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 10:
       updatedUrlParams.set("map", "apotheosis-tuonela");
@@ -260,9 +240,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[10][1] });
       //   os.addTiledImage({ tileSource: tileSources[10][2] });
       os.forceRedraw();
-      document.getElementById(
-        "overlayVisibilityToggleButton"
-      ).style.visibility = "hidden";
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     default:
       updatedUrlParams.set("map", "regular");
@@ -272,9 +250,7 @@ function changeMap(tileSource) {
       os.addTiledImage({ tileSource: tileSources[0][2] });
       os.forceRedraw();
 
-      document.getElementById(
-        "overlayVisibilityToggleButton"
-      ).style.visibility = "visible";
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
   }
   window.history.replaceState(null, "", "?" + updatedUrlParams.toString());
