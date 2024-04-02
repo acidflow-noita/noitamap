@@ -2,12 +2,11 @@
 
 const CHUNK_SIZE = 512;
 
-// "https://regular-hd.acidflow.stream/maps/regular/regular-2024-02-06-78633191.dzi",
 let tileSources = [
   [
-    "https://regular-middle.acidflow.stream/maps/regular-middle/regular-middle-2024-02-12-78633191.dzi",
-    "https://regular-left-pw.acidflow.stream/maps/regular-left-pw/regular-left-pw-2024-02-12-78633191.dzi",
-    "https://regular-right-pw.acidflow.stream/maps/regular-right-pw/regular-right-pw-2024-02-12-78633191.dzi",
+    "https://regular-middle.acidflow.stream/maps/regular-middle/regular-middle-2024-03-25-78633191.dzi",
+    "https://regular-left-pw.acidflow.stream/maps/regular-left-pw/regular-left-pw-2024-03-25-78633191.dzi",
+    "https://regular-right-pw.acidflow.stream/maps/regular-right-pw/regular-right-pw-2024-03-25-78633191.dzi",
   ],
   [
     "https://nightmare-hd.acidflow.stream/maps/nightmare/nightmare-2024-02-06-78633191.dzi",
