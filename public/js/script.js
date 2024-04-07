@@ -58,9 +58,9 @@ let tileSources = [
     "https://regular-right-pw.acidflow.stream/maps/regular-right-pw/regular-right-pw-2024-03-25-78633191.dzi",
   ],
   [
-    "https://nightmare-hd.acidflow.stream/maps/nightmare/nightmare-2024-02-06-78633191.dzi",
-    "",
-    "",
+    "https://nightmare-middle.acidflow.stream/maps/nightmare-middle/nightmare-middle-2024-04-06-78633191.dzi",
+    "https://nightmare-left-pw.acidflow.stream/maps/nightmare-left-pw/nightmare-left-pw-2024-04-06-78633191.dzi",
+    "https://nightmare-right-pw.acidflow.stream/maps/nightmare-right-pw/nightmare-right-pw-2024-04-06-78633191.dzi",
   ],
   [
     "https://new-game-plus-hd.acidflow.stream/maps/new-game-plus/new-game-plus-2024-02-06-78633191.dzi",
@@ -155,8 +155,8 @@ function changeMap(tileSource) {
       updatedUrlParams.set("map", "nightmare");
       os.world.removeAll();
       os.addTiledImage({ tileSource: tileSources[1][0] });
-      //   os.addTiledImage({ tileSource: tileSources[1][1] });
-      //   os.addTiledImage({ tileSource: tileSources[1][2] });
+      os.addTiledImage({ tileSource: tileSources[1][1] });
+      os.addTiledImage({ tileSource: tileSources[1][2] });
       os.forceRedraw();
       document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
