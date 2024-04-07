@@ -41,7 +41,11 @@
     <nav class="navbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="#" onclick="goHome();"><img src="/assets/NoitamapLogo.png" alt="Noitamap Logo"
-                    class="d-inline-block align-text-middle" /> </a>
+                    class="d-inline-block align-text-middle" /><span id="currentMapName">Noita
+                    map</span></a>
+            <a id="overlayVisibilityToggleButton" tabindex="0" class="btn btn-outline-info text-nowrap"
+                data-bs-trigger="focus" role="button"><i class="bi bi-layers"></i>
+                Toggle overlays</a>
             <a id="shareButton" tabindex="0" class="btn btn-outline-success text-nowrap" data-bs-trigger="focus"
                 data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Copied!"
                 role="button" onclick="getShareUrl();"><i class="bi bi-copy"></i> Copy to clipboard</a>
@@ -62,34 +66,38 @@
                         <ul class="column-gap-3 navbar-nav ml-auto mb-2 mb-lg-0 w-100 d-flex flex-row-md flex-column-sm mb-md-1 mt-md-0 mb-3 mt-2"
                             id="navLinksList">
                             <a id="mapId0" class="nav-link text-nowrap active" href="#" data-bs-toggle="pill"
-                                onclick="changeMap(0);">Regular <span class="badge text-bg-info">β</span></a>
+                                onclick="changeMap(0);">Regular <span class="badge text-bg-info">β branch</span> <span
+                                    class="badge text-bg-warning">March 25</span></a>
                             <a id="mapId1" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
-                                onclick="changeMap(1);">Nightmare <span class="badge text-bg-info">β</span></a>
+                                onclick="changeMap(1);">Nightmare <span class="badge text-bg-info">β branch</span> <span
+                                    class="badge text-bg-warning">February 12</span></a>
                             <a id="mapId2" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
-                                onclick="changeMap(2);">NG+ <span class="badge text-bg-info">β</span></a>
+                                onclick="changeMap(2);">NG+ <span class="badge text-bg-info">β branch</span> <span
+                                    class="badge text-bg-warning">February 12</span></a>
                             <a id="mapId3" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
-                                onclick="changeMap(3);">Regular <span class="badge text-bg-success">main</span></a>
+                                onclick="changeMap(3);">Regular <span class="badge text-bg-success">main branch</span>
+                                <span class="badge text-bg-warning">February 12</span></a>
                             <a id="mapId4" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
                                 onclick="changeMap(4);">Purgatory <span class="badge text-bg-light"><i
-                                        class="bi bi-tools"></i></span></a>
+                                        class="bi bi-tools"></i> Mod</span></a>
                             <a id="mapId5" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
                                 onclick="changeMap(5);">Apotheosis <span class="badge text-bg-light"><i
-                                        class="bi bi-tools"></i></span></a>
+                                        class="bi bi-tools"></i> Mod</span></a>
                             <a id="mapId6" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
                                 onclick="changeMap(6);">Apotheosis NG+ <span class="badge text-bg-light"><i
-                                        class="bi bi-tools"></i></span></a>
+                                        class="bi bi-tools"></i> Mod</span></a>
                             <a id="mapId10" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
                                 onclick="changeMap(10);">Apotheosis Tuonela <span class="badge text-bg-light"><i
-                                        class="bi bi-tools"></i></span></a>
+                                        class="bi bi-tools"></i> Mod</span></a>
                             <a id="mapId7" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
                                 onclick="changeMap(7);">Noitavania <span class="badge text-bg-light"><i
-                                        class="bi bi-tools"></i></span></a>
+                                        class="bi bi-tools"></i> Mod</span></a>
                             <a id="mapId8" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
                                 onclick="changeMap(8);">Noitavania NG+ <span class="badge text-bg-light"><i
-                                        class="bi bi-tools"></i></span></a>
+                                        class="bi bi-tools"></i> Mod</span></a>
                             <a id="mapId9" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
                                 onclick="changeMap(9);">Alternate Biomes <span class="badge text-bg-light"><i
-                                        class="bi bi-tools"></i></span></a>
+                                        class="bi bi-tools"></i> Mod</span></a>
                             <a href="https://github.com/acidflow-noita/noitamap"
                                 class="btn btn-outline-info text-nowrap w-50" target="\_blank" role="button"><i
                                     class="bi bi-github"></i> Contribute</a>
@@ -100,11 +108,27 @@
         </div>
     </nav>
     <div id="osContainer"></div>
+    <!-- TODO: add "Loading" text -->
+    <!-- <div class="loadingIndicator clearfix"><i class="bi bi-arrow-repeat loadingIndicator spinningIcon  text-info"></i><span class="text-info">Loading</span></div>-->
+    <i class="bi bi-arrow-repeat loadingIndicator spinningIcon text-info"></i>
     <div id="coordinates-hover"></div>
     <div id="coordinate" class="coordinate">
         <div class="coordinate-content">
         </div>
     </div>
+    <script id="cachekeys">const tileCacheKeys = {"purgatory.acidflow.stream":"1711949623",
+"noitavania-new-game-plus.acidflow.stream":"1711831834",
+"apotheosis-tuonela.acidflow.stream":"1711831560",
+"regular-left-pw.acidflow.stream":"1711832069",
+"apotheosis-new-game-plus.acidflow.stream":"1711831522",
+"regular-middle.acidflow.stream":"1711832204",
+"alternate-biomes.acidflow.stream":"1711831441",
+"regular-main-branch.acidflow.stream":"1711832235",
+"noitavania.acidflow.stream":"1711831797",
+"regular-right-pw.acidflow.stream":"1711832278",
+"apotheosis.acidflow.stream":"1711831489",
+"new-game-plus-hd.acidflow.stream":"1711831587",
+"nightmare-hd.acidflow.stream":"1711831682",};</script>
     <script src="js/script.js"></script>
 </body>
 

@@ -1,8 +1,28 @@
-.overlay-highlight {
-    background-color: rgba(128, 128, 128, 0.05);
-    border: rgba(255, 0, 0, 0.1) dashed 1px;
+.osOverlayHighlight {
+  background-color: rgba(56, 162, 204, 0.401);
+  border: rgba(255, 0, 0, 0.1) dashed 1px;
+  position: relative; /* Ensure positioning context for the span */
+  overflow: hidden;
 }
 
-.overlay-highlight:hover {
-    border: red dashed 1px;
+.osOverlayHighlight:hover {
+  border: red dashed 2px;
+  display: block;
+}
+
+.osOverlayHighlight span {
+  display: none; /* Initially hide the span text */
+}
+
+.osOverlayHighlight:hover span {
+  display: inline;
+}
+
+.osOverlayText {
+  display: none;
+  font-size: 1vw;
+  line-height: 1.5em;
+}
+.osOverlayText:hover {
+  display: block;
 }

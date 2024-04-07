@@ -1,13 +1,61 @@
 "use strict";
 
+const spans2 = document.querySelectorAll(".osOverlayHighlight");
+
+const overlayTexts = [
+  {
+    id: 0,
+    text: "Watchtower. Seems to just be a hint to head to the temples in the sky.",
+    x: 13758,
+    y: -1100,
+    width: 650,
+    height: 1600,
+  },
+  {
+    id: 1,
+    text: "Barren Temple. You can find a potion of mimicium here to start your quest. Later you will need to revisit to help this temple flourish.",
+    x: -6000,
+    y: -5700,
+    width: 1100,
+    height: 900,
+  },
+  {
+    id: 2,
+    text: "Ominous Temple. A large pool of ominous liquid is needed here. Sea of Mimicium will be helpful.",
+    x: 2100,
+    y: -5300,
+    width: 1300,
+    height: 1100,
+  },
+  {
+    id: 3,
+
+    text: 'Henkevä Temple. "Spirited Temple". Potions here require mimicium. Pheromone will aid you. They might also need a little kick.',
+    x: -2600,
+    y: -5800,
+    width: 1600,
+    height: 1650,
+  },
+  { id: 4, text: "Milk", x: 2420, y: -4500, width: 25, height: 25 },
+  {
+    id: 5,
+
+    text: "Kivi Temple. A boss fight here might be easier with a spell unlocked in another temple",
+    x: 6750,
+    y: -5241,
+    width: 1230,
+    height: 1100,
+  },
+  { id: 6, text: "Beer", x: 7610, y: -4359, width: 25, height: 25 },
+];
+
 const CHUNK_SIZE = 512;
 
-// "https://regular-hd.acidflow.stream/maps/regular/regular-2024-02-06-78633191.dzi",
 let tileSources = [
   [
-    "https://regular-middle.acidflow.stream/maps/regular-middle/regular-middle-2024-02-12-78633191.dzi",
-    "https://regular-left-pw.acidflow.stream/maps/regular-left-pw/regular-left-pw-2024-02-12-78633191.dzi",
-    "https://regular-right-pw.acidflow.stream/maps/regular-right-pw/regular-right-pw-2024-02-12-78633191.dzi",
+    "https://regular-middle.acidflow.stream/maps/regular-middle/regular-middle-2024-03-25-78633191.dzi",
+    "https://regular-left-pw.acidflow.stream/maps/regular-left-pw/regular-left-pw-2024-03-25-78633191.dzi",
+    "https://regular-right-pw.acidflow.stream/maps/regular-right-pw/regular-right-pw-2024-03-25-78633191.dzi",
   ],
   [
     "https://nightmare-hd.acidflow.stream/maps/nightmare/nightmare-2024-02-06-78633191.dzi",
@@ -84,11 +132,14 @@ var os = OpenSeadragon({
   gestureSettingsMouse: { clickToZoom: false },
 });
 
+let overlaysState = false;
 let prevTiledImage;
 let nextTiledImage;
 
 function changeMap(tileSource) {
   const updatedUrlParams = new URLSearchParams(window.location.search);
+  document.getElementById("currentMapName").innerHTML =
+    " " + document.getElementById(`mapId${tileSource}`).innerHTML;
   switch (tileSource) {
     case 0:
       updatedUrlParams.set("map", "regular");
@@ -97,6 +148,8 @@ function changeMap(tileSource) {
       os.addTiledImage({ tileSource: tileSources[0][1] });
       os.addTiledImage({ tileSource: tileSources[0][2] });
       os.forceRedraw();
+      document.querySelector("body").removeAttribute("class");
+
       break;
     case 1:
       updatedUrlParams.set("map", "nightmare");
@@ -105,6 +158,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[1][1] });
       //   os.addTiledImage({ tileSource: tileSources[1][2] });
       os.forceRedraw();
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 2:
       updatedUrlParams.set("map", "new-game-plus");
@@ -113,6 +167,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[2][1] });
       //   os.addTiledImage({ tileSource: tileSources[2][2] });
       os.forceRedraw();
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 3:
       updatedUrlParams.set("map", "regular-main-branch");
@@ -121,6 +176,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[3][1] });
       //   os.addTiledImage({ tileSource: tileSources[3][2] });
       os.forceRedraw();
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 4:
       updatedUrlParams.set("map", "purgatory");
@@ -129,6 +185,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[4][1] });
       //   os.addTiledImage({ tileSource: tileSources[4][2] });
       os.forceRedraw();
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 5:
       updatedUrlParams.set("map", "apotheosis");
@@ -137,6 +194,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[5][1] });
       //   os.addTiledImage({ tileSource: tileSources[5][2] });
       os.forceRedraw();
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 6:
       updatedUrlParams.set("map", "apotheosis-new-game-plus");
@@ -145,6 +203,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[6][1] });
       //   os.addTiledImage({ tileSource: tileSources[6][2] });
       os.forceRedraw();
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 7:
       updatedUrlParams.set("map", "noitavania");
@@ -153,6 +212,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[7][1] });
       //   os.addTiledImage({ tileSource: tileSources[7][2] });
       os.forceRedraw();
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 8:
       updatedUrlParams.set("map", "noitavania-new-game-plus");
@@ -161,6 +221,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[8][1] });
       //   os.addTiledImage({ tileSource: tileSources[8][2] });
       os.forceRedraw();
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 9:
       updatedUrlParams.set("map", "alternate-biomes");
@@ -169,6 +230,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[9][1] });
       //   os.addTiledImage({ tileSource: tileSources[9][2] });
       os.forceRedraw();
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 10:
       updatedUrlParams.set("map", "apotheosis-tuonela");
@@ -177,6 +239,7 @@ function changeMap(tileSource) {
       //   os.addTiledImage({ tileSource: tileSources[10][1] });
       //   os.addTiledImage({ tileSource: tileSources[10][2] });
       os.forceRedraw();
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     default:
       updatedUrlParams.set("map", "regular");
@@ -185,6 +248,8 @@ function changeMap(tileSource) {
       os.addTiledImage({ tileSource: tileSources[0][1] });
       os.addTiledImage({ tileSource: tileSources[0][2] });
       os.forceRedraw();
+
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
   }
   window.history.replaceState(null, "", "?" + updatedUrlParams.toString());
@@ -243,7 +308,7 @@ os.addHandler("open", () => {
           document.getElementById("mapId9").classList.remove("active");
           document.getElementById("mapId10").classList.remove("active");
 
-          urlParams.set("map", "regular");
+          urlParams.set("map", "beta");
           changeMap(0);
         }
         break;
@@ -477,6 +542,8 @@ os.addHandler("open", () => {
   }
 });
 
+const spans = document.querySelectorAll(".osOverlayHighlight span");
+
 // Store/load viewport position and zoom level in/from URL parameters.
 os.addHandler("open", (event) => {
   const viewport = event.eventSource.viewport;
@@ -498,19 +565,34 @@ os.addHandler("open", (event) => {
   if (urlParams.has("zoom")) {
     viewportZoom = Math.pow(2, Number(urlParams.get("zoom")) / -100);
   }
-  console.log(viewportCenter, viewportZoom);
+
   viewport.panTo(viewportCenter, true);
   viewport.zoomTo(viewportZoom, undefined, true);
 });
-os.addHandler("animation-finish", function (event) {
-  const center = event.eventSource.viewport.getCenter();
-  const zoom = event.eventSource.viewport.getZoom();
-  const urlParams = new URLSearchParams(window.location.search);
-  // urlParams.set("map", mapQs);
-  urlParams.set("x", center.x.toFixed(0));
-  urlParams.set("y", center.y.toFixed(0));
-  urlParams.set("zoom", (Math.log2(zoom) * -100).toFixed(0));
-  window.history.replaceState(null, "", "?" + urlParams.toString());
+
+// Loading indicator
+function updateLoadingIndicator(
+  isFullyLoaded,
+  indicator = document.querySelector(".loadingIndicator")
+) {
+  if (isFullyLoaded) {
+    indicator.style.display = "none";
+  } else {
+    indicator.style.display = "block";
+  }
+}
+
+os.world.addHandler("add-item", function (event) {
+  // Track load status for each TiledImage
+  event.item.addHandler("fully-loaded-change", function (event) {
+    if (event.fullyLoaded) {
+      // Hide indicator
+      updateLoadingIndicator(true);
+      return;
+    }
+    // Show indicator
+    updateLoadingIndicator(false);
+  });
 });
 
 // Get additional DZI information from every loaded TiledImage.
@@ -524,6 +606,13 @@ os.world.addHandler("add-item", (event) => {
     true
   );
   event.item.setWidth(Number(image.Size.Width), true);
+
+  // Append cacheKeys to the images
+  // xxx.png?v=UNIX_TIMESTAMP
+  // Each Map has their own timestamps
+  event.item.source.queryParams = `?v=${encodeURIComponent(
+    tileCacheKeys[new URL(event.item.source.tilesUrl).host]
+  )}`;
 });
 
 const alertPlaceholder = document.getElementById("liveAlertPlaceholder");
@@ -544,7 +633,6 @@ function goHome() {
 }
 
 function getShareUrl() {
-  // TODO: The URL should be updated here
   window.navigator.clipboard.writeText(window.location.href);
 }
 
@@ -555,17 +643,50 @@ const popoverList = [...popoverTriggerList].map(
   (popoverTriggerEl) => new bootstrap.Popover(popoverTriggerEl)
 );
 
-// (x: 0.08697259561936987, y: 0.5495140252995913, width: 0.014120588864484205, height: 0.011647328900440127, degrees: 0)
+// Todo -- toggle doesnt reset after map change?
+let allOverlays = document.getElementsByClassName("osOverlayHighlight");
+document
+  .querySelector("#overlayVisibilityToggleButton")
+  .addEventListener("click", function () {
+    const updatedUrlParamsFromOverlaysToggle = new URLSearchParams(
+      window.location.search
+    );
+    const currentMapURLFromOverlaysToggle = String(
+      updatedUrlParamsFromOverlaysToggle.get("map")
+    );
+    if (overlaysState) {
+      Array.from(allOverlays).forEach((overlay) => {
+        os.removeOverlay(overlay.id);
+      });
+      // Todo -- fix this to make overlays work with other maps
+    } else if (currentMapURLFromOverlaysToggle === "regular") {
+      overlayTexts.forEach(({ id, text, x, y, width, height }) => {
+        let e = document.createElement("div");
+        e.id = `overlayId${id}`;
+        e.className = "osOverlayHighlight";
+        e.innerHTML = `<span id="span${id}" >${text}</span>`;
+        os.addOverlay({
+          element: e,
+          location: new OpenSeadragon.Rect(x, y, width, height),
+        });
+        const hue = Math.floor(Math.random() * 360);
+        e.style.backgroundColor = `hsla(${hue}, 60%, 50%, 0.401)`;
+      });
+    }
+    overlaysState = !overlaysState;
+  });
 
-// function fitB() {
-// 	const bounds = new OpenSeadragon.Rect(0.08697259561936987, 0.5495140252995913, 0.014120588864484205, 0.011647328900440127, 0);
-// 	const bounds2 = new OpenSeadragon.Rect(-0.3728888888888868, 5.440092820663267e-15, 1.7457777777777777, 1.44, 0);
-// 	let aT = os.animationTime;
-// 	console.log(aT);
-// 	console.log("===");
-// 	os.viewport.fitBounds(bounds, false);
-// };
+os.addHandler("animation-finish", function (event) {
+  const center = event.eventSource.viewport.getCenter();
+  const zoom = event.eventSource.viewport.getZoom();
+  const urlParams = new URLSearchParams(window.location.search);
+  urlParams.set("x", center.x.toFixed(0));
+  urlParams.set("y", center.y.toFixed(0));
+  urlParams.set("zoom", (Math.log2(zoom) * -100).toFixed(0));
+  window.history.replaceState(null, "", "?" + urlParams.toString());
+});
 
+// annotations plugin
 // const annotations = new OpenSeadragon.Annotations({ viewer });
 
 // os.initializeAnnotations();
