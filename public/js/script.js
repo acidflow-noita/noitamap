@@ -59,9 +59,9 @@ let tileSources = [
   ],
 
   [
-    "https://nightmare-middle.acidflow.stream/maps/nightmare-middle/nightmare-middle-2024-04-06-78633191.dzi",
-    "https://nightmare-left-pw.acidflow.stream/maps/nightmare-left-pw/nightmare-left-pw-2024-04-06-78633191.dzi",
-    "https://nightmare-right-pw.acidflow.stream/maps/nightmare-right-pw/nightmare-right-pw-2024-04-06-78633191.dzi",
+    "https://nightmare-main-branch-middle.acidflow.stream/maps/nightmare-main-branch-middle/nightmare-main-branch-middle-2024-04-08-78633191.dzi",
+    "https://nightmare-main-branch-left-pw.acidflow.stream/maps/nightmare-main-branch-left-pw/nightmare-main-branch-left-pw-2024-04-08-78633191.dzi",
+    "https://nightmare-main-branch-right-pw.acidflow.stream/maps/nightmare-main-branch-right-pw/nightmare-main-branch-right-pw-2024-04-08-78633191.dzi",
   ],
   [
     "https://new-game-plus-hd.acidflow.stream/maps/new-game-plus/new-game-plus-2024-02-06-78633191.dzi",
