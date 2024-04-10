@@ -19,7 +19,7 @@ If you're a **player**, you can help by capturing a new version of one of the ga
 ### How to capture a map
 Download the latest release from the [noita-mapcap](https://github.com/Dadido3/noita-mapcap/releases/latest), unpack it and move the `noita-mapcap` directory into your noita mods folder.
 To navigate to your mods folder either open the mods directory from inside the game by pressing `Mods`-->`Open mod folder`, or opening this directory:
-```
+```powershell
 C:\Program Files (x86)\Steam\steamapps\common\Noita\mods\
 ```
 ![Opening mod folder from inside the game](https://github.com/acidflow-noita/noitamap/assets/106106310/fa071095-1129-4c1f-bfae-702138ce4ba0)
@@ -30,7 +30,7 @@ Before starting the map capture process, check that all the mod settings are cor
 
 ### How to stitch a map
 1. Navigate to the `Stitcher` directory, its location is:
-```
+```powershell
 C:\Program Files (x86)\Steam\steamapps\common\Noita\mods\noita-mapcap\bin\stitch
 ```
 2. Right click inside this directory and select "`Open in Terminal`"
