@@ -145,9 +145,9 @@ function changeMap(tileSource) {
     case 0:
       updatedUrlParams.set("map", "regular-main-branch");
       os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[3][0] });
-      os.addTiledImage({ tileSource: tileSources[3][1] });
-      os.addTiledImage({ tileSource: tileSources[3][2] });
+      os.addTiledImage({ tileSource: tileSources[0][0] });
+      os.addTiledImage({ tileSource: tileSources[0][1] });
+      os.addTiledImage({ tileSource: tileSources[0][2] });
       os.forceRedraw();
       document.querySelector("body").removeAttribute("class");
       break;
@@ -172,9 +172,9 @@ function changeMap(tileSource) {
     case 3:
       updatedUrlParams.set("map", "regular-beta");
       os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[0][0] });
-      os.addTiledImage({ tileSource: tileSources[0][1] });
-      os.addTiledImage({ tileSource: tileSources[0][2] });
+      os.addTiledImage({ tileSource: tileSources[3][0] });
+      os.addTiledImage({ tileSource: tileSources[3][1] });
+      os.addTiledImage({ tileSource: tileSources[3][2] });
       os.forceRedraw();
       document.querySelector("body").removeAttribute("class");
 
