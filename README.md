@@ -17,8 +17,16 @@ If you're a **developer**, contributions and discussions are welcome, feel free 
 If you're a **player**, you can help by capturing a new version of one of the game modes, or mods (maps with significant changes over time have date indication on the website), then stitch the map and upload an archive with what you've got to a sharing service like google drive, pixeldrain, gofile, etc, then opening an issue.
 
 ### How to capture a map
-Use `3 Worlds` capturing mode with `60 frames` capture delay and seed set to `786433191`, all the settings should look exactly like on this screenshot excep for specific non-standard map sizes mods like alternative biomes.
-![image](https://github.com/acidflow-noita/noitamap/assets/106106310/27b516a1-355b-4c9e-9e20-c9e1c954be41)
+Download the latest release from the [noita-mapcap](https://github.com/Dadido3/noita-mapcap/releases/latest), unpack it and move the `noita-mapcap` directory into your noita mods folder.
+To navigate to your mods folder either open the mods directory from inside the game by pressing `Mods`-->`Open mod folder`, or opening this directory:
+```
+C:\Program Files (x86)\Steam\steamapps\common\Noita\mods\
+```
+![Opening mod folder from inside the game](https://github.com/acidflow-noita/noitamap/assets/106106310/fa071095-1129-4c1f-bfae-702138ce4ba0)
+
+Before starting the map capture process, check that all the mod settings are correct: use `3 Worlds` capturing mode with `60 frames` capture delay and seed set to `786433191`, all the settings should look exactly like on this screenshot excep for specific non-standard map sizes mods like alternative biomes.
+![Noita-mapcap settings](https://github.com/acidflow-noita/noitamap/assets/106106310/44d0b8b9-89f8-45d6-9f76-5eb9d65c14b7)
+
 
 ### How to stitch a map
 1. Navigate to the `Stitcher` directory, its location is:
@@ -26,8 +34,9 @@ Use `3 Worlds` capturing mode with `60 frames` capture delay and seed set to `78
 C:\Program Files (x86)\Steam\steamapps\common\Noita\mods\noita-mapcap\bin\stitch
 ```
 2. Right click inside this directory and select "`Open in Terminal`"
-![Launching Terminal](https://github.com/acidflow-noita/noitamap/assets/106106310/efdd9fd6-6b64-4c27-92ae-81e0c496d857)
-3. Copy the following command and paste it into the terminal (either `Ctrl+V` or `Mouse right click`), **Do not run the command yet**, you will need to rename the output files following the naming convention: `gamemode-branch-world-patchDate-seedNumber.dzi` (e.g. `regular-main-branch-left-pw-2024-04-08-78633191.dzi`)
+![Launching Terminal](https://github.com/acidflow-noita/noitamap/assets/106106310/a46f1d51-53bc-4b2c-b3a2-799388e0c558)
+
+4. Copy the following command and paste it into the terminal (either `Ctrl+V` or `Mouse right click`), **Do not run the command yet**, you will need to rename the output files following the naming convention: `gamemode-branch-world-patchDate-seedNumber.dzi` (e.g. `regular-main-branch-left-pw-2024-04-08-78633191.dzi`)
 
 ```powershell
 .\stitch.exe --output nightmare-main-branch-left-pw-2024-04-08-78633191.dzi --blend-tile-limit 1 --dzi-tile-size 512 --xmin -53760 --xmax -17408 --ymin -31744 --ymax 41984 --webp-level 9 && .\stitch.exe --output nightmare-main-branch-middle-2024-04-08-78633191.dzi --blend-tile-limit 1 --dzi-tile-size 512 --xmin -17920 --xmax 18432 --ymin -31744 --ymax 41984 --webp-level 9 && .\stitch.exe --output nightmare-main-branch-right-pw-2024-04-08-78633191.dzi --blend-tile-limit 1 --dzi-tile-size 512 --xmin 17920 --xmax 53760 --ymin -31744 --ymax 41984 --webp-level 9
