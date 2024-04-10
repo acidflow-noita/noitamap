@@ -149,7 +149,7 @@ function changeMap(tileSource) {
       os.addTiledImage({ tileSource: tileSources[3][1] });
       os.addTiledImage({ tileSource: tileSources[3][2] });
       os.forceRedraw();
-      document.querySelector("body").setAttribute("class", "toggle-hidden");
+      document.querySelector("body").removeAttribute("class");
       break;
     case 1:
       updatedUrlParams.set("map", "nightmare");
@@ -170,7 +170,7 @@ function changeMap(tileSource) {
       document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 3:
-      updatedUrlParams.set("map", "regular");
+      updatedUrlParams.set("map", "regular-beta");
       os.world.removeAll();
       os.addTiledImage({ tileSource: tileSources[0][0] });
       os.addTiledImage({ tileSource: tileSources[0][1] });
@@ -354,7 +354,7 @@ os.addHandler("open", () => {
         }
         break;
       }
-      case "beta": {
+      case "regular-beta": {
         if (!document.getElementById("mapId3").classList.contains("active")) {
           document.getElementById("mapId3").classList.add("active");
 
@@ -369,7 +369,7 @@ os.addHandler("open", () => {
           document.getElementById("mapId9").classList.remove("active");
           document.getElementById("mapId10").classList.remove("active");
 
-          urlParams.set("map", "beta");
+          urlParams.set("map", "regular-beta");
           changeMap(3);
         }
         break;
@@ -662,7 +662,7 @@ document
       // Todo -- fix this to make overlays work with other maps
     } else if (
       currentMapURLFromOverlaysToggle === "regular-main-branch" ||
-      currentMapURLFromOverlaysToggle === "beta"
+      currentMapURLFromOverlaysToggle === "regular-beta"
     ) {
       overlayTexts.forEach(({ id, text, x, y, width, height }) => {
         let e = document.createElement("div");

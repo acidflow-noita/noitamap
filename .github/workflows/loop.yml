@@ -14,7 +14,7 @@ jobs:
       - name: Print all var names with values before change
         run: |
           
-          PROJECT_NAMES=("ALTERNATE_BIOMES" "APOTHEOSIS"{,"_NEW_GAME_PLUS","_TUONELA"} "NEW_GAME_PLUS_HD" "NIGHTMARE"{"_MIDDLE","_LEFT_PW","_RIGHT_PW"} "NOITAVANIA"{,"_NEW_GAME_PLUS"} "PURGATORY" "REGULAR"{"_LEFT_PW","_MAIN_BRANCH","_MIDDLE","_RIGHT_PW","_MAIN_BRANCH_LEFT_PW","_MAIN_BRANCH_RIGHT_PW"})
+          PROJECT_NAMES=("ALTERNATE_BIOMES" "APOTHEOSIS"{,"_NEW_GAME_PLUS","_TUONELA"} "NEW_GAME_PLUS_HD" "NIGHTMARE"{"_MIDDLE","_LEFT_PW","_RIGHT_PW"} "NOITAVANIA"{,"_NEW_GAME_PLUS"} "PURGATORY" "REGULAR"{"_LEFT_PW","_MIDDLE","_RIGHT_PW","_MAIN_BRANCH_MIDDLE","_MAIN_BRANCH_LEFT_PW","_MAIN_BRANCH_RIGHT_PW"})
 
           # curl get repo variables into $response
           response=$(curl -L \
