@@ -25,7 +25,8 @@ C:\Program Files (x86)\Steam\steamapps\common\Noita\mods\
 ![Opening mod folder from inside the game](https://github.com/acidflow-noita/noitamap/assets/106106310/fa071095-1129-4c1f-bfae-702138ce4ba0)
 
 Before starting the map capture process, check that all the mod settings are correct: use `3 Worlds` capturing mode with `60 frames` capture delay and seed set to `786433191`, all the settings should look exactly like on this screenshot excep for specific non-standard map sizes mods like alternative biomes.
-![Noita-mapcap settings](https://github.com/acidflow-noita/noitamap/assets/106106310/44d0b8b9-89f8-45d6-9f76-5eb9d65c14b7)
+![Noita-mapcap settings](https://github.com/acidflow-noita/noitamap/assets/106106310/dfe4571f-d0d5-4fe2-9f16-b270aec56dac)
+
 
 
 ### How to stitch a map
