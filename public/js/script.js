@@ -295,7 +295,7 @@ os.addHandler("open", () => {
   if (urlParams.has("map")) {
     const currentMapURL = String(urlParams.get("map"));
     switch (currentMapURL) {
-      case "regular": {
+      case "regular-main-branch": {
         if (!document.getElementById("mapId0").classList.contains("active")) {
           document.getElementById("mapId0").classList.add("active");
 
@@ -309,7 +309,7 @@ os.addHandler("open", () => {
           document.getElementById("mapId9").classList.remove("active");
           document.getElementById("mapId10").classList.remove("active");
 
-          urlParams.set("map", "beta");
+          urlParams.set("map", "regular-main-branch");
           changeMap(0);
         }
         break;
@@ -528,7 +528,7 @@ os.addHandler("open", () => {
           document.getElementById("mapId9").classList.remove("active");
           document.getElementById("mapId10").classList.remove("active");
 
-          urlParams.set("map", "regular");
+          urlParams.set("map", "regular-main-branch");
           changeMap(0);
         }
         break;
@@ -538,7 +538,7 @@ os.addHandler("open", () => {
     return mapQs;
   }
   if (!urlParams.has("map")) {
-    urlParams.set("map", "regular");
+    urlParams.set("map", "regular-main-branch");
     changeMap(0);
   }
 });
@@ -660,7 +660,10 @@ document
         os.removeOverlay(overlay.id);
       });
       // Todo -- fix this to make overlays work with other maps
-    } else if (currentMapURLFromOverlaysToggle === "regular") {
+    } else if (
+      currentMapURLFromOverlaysToggle === "regular-main-branch" ||
+      currentMapURLFromOverlaysToggle === "regular"
+    ) {
       overlayTexts.forEach(({ id, text, x, y, width, height }) => {
         let e = document.createElement("div");
         e.id = `overlayId${id}`;
