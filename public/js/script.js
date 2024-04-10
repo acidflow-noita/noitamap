@@ -354,7 +354,7 @@ os.addHandler("open", () => {
         }
         break;
       }
-      case "regular-main-branch": {
+      case "beta": {
         if (!document.getElementById("mapId3").classList.contains("active")) {
           document.getElementById("mapId3").classList.add("active");
 
@@ -369,7 +369,7 @@ os.addHandler("open", () => {
           document.getElementById("mapId9").classList.remove("active");
           document.getElementById("mapId10").classList.remove("active");
 
-          urlParams.set("map", "regular-main-branch");
+          urlParams.set("map", "beta");
           changeMap(3);
         }
         break;
@@ -662,7 +662,7 @@ document
       // Todo -- fix this to make overlays work with other maps
     } else if (
       currentMapURLFromOverlaysToggle === "regular-main-branch" ||
-      currentMapURLFromOverlaysToggle === "regular"
+      currentMapURLFromOverlaysToggle === "beta"
     ) {
       overlayTexts.forEach(({ id, text, x, y, width, height }) => {
         let e = document.createElement("div");
