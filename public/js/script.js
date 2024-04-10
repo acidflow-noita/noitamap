@@ -53,10 +53,11 @@ const CHUNK_SIZE = 512;
 
 let tileSources = [
   [
-    "https://regular-middle.acidflow.stream/maps/regular-middle/regular-middle-2024-03-25-78633191.dzi",
-    "https://regular-left-pw.acidflow.stream/maps/regular-left-pw/regular-left-pw-2024-03-25-78633191.dzi",
-    "https://regular-right-pw.acidflow.stream/maps/regular-right-pw/regular-right-pw-2024-03-25-78633191.dzi",
+    "https://regular-main-branch-middle.acidflow.stream/maps/regular-main-branch-middle/regular-main-branch-middle-2024-04-08-78633191.dzi",
+    "https://regular-main-branch-left-pw.acidflow.stream/maps/regular-main-branch-left-pw/regular-main-branch-left-pw-2024-04-08-78633191.dzi",
+    "https://regular-main-branch-right-pw.acidflow.stream/maps/regular-main-branch-right-pw/regular-main-branch-right-pw-2024-04-08-78633191.dzi",
   ],
+
   [
     "https://nightmare-middle.acidflow.stream/maps/nightmare-middle/nightmare-middle-2024-04-06-78633191.dzi",
     "https://nightmare-left-pw.acidflow.stream/maps/nightmare-left-pw/nightmare-left-pw-2024-04-06-78633191.dzi",
@@ -68,9 +69,9 @@ let tileSources = [
     "",
   ],
   [
-    "https://regular-main-branch.acidflow.stream/maps/regular-main-branch/regular-main-branch-2024-01-18-78633191.dzi",
-    "",
-    "",
+    "https://regular-middle.acidflow.stream/maps/regular-middle/regular-middle-2024-03-25-78633191.dzi",
+    "https://regular-left-pw.acidflow.stream/maps/regular-left-pw/regular-left-pw-2024-03-25-78633191.dzi",
+    "https://regular-right-pw.acidflow.stream/maps/regular-right-pw/regular-right-pw-2024-03-25-78633191.dzi",
   ],
   [
     "https://purgatory.acidflow.stream/maps/purgatory/purgatory-2024-01-18-78633191.dzi",
@@ -142,14 +143,13 @@ function changeMap(tileSource) {
     " " + document.getElementById(`mapId${tileSource}`).innerHTML;
   switch (tileSource) {
     case 0:
-      updatedUrlParams.set("map", "regular");
+      updatedUrlParams.set("map", "regular-main-branch");
       os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[0][0] });
-      os.addTiledImage({ tileSource: tileSources[0][1] });
-      os.addTiledImage({ tileSource: tileSources[0][2] });
+      os.addTiledImage({ tileSource: tileSources[3][0] });
+      os.addTiledImage({ tileSource: tileSources[3][1] });
+      os.addTiledImage({ tileSource: tileSources[3][2] });
       os.forceRedraw();
-      document.querySelector("body").removeAttribute("class");
-
+      document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 1:
       updatedUrlParams.set("map", "nightmare");
@@ -170,13 +170,14 @@ function changeMap(tileSource) {
       document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
     case 3:
-      updatedUrlParams.set("map", "regular-main-branch");
+      updatedUrlParams.set("map", "regular");
       os.world.removeAll();
-      os.addTiledImage({ tileSource: tileSources[3][0] });
-      //   os.addTiledImage({ tileSource: tileSources[3][1] });
-      //   os.addTiledImage({ tileSource: tileSources[3][2] });
+      os.addTiledImage({ tileSource: tileSources[0][0] });
+      os.addTiledImage({ tileSource: tileSources[0][1] });
+      os.addTiledImage({ tileSource: tileSources[0][2] });
       os.forceRedraw();
-      document.querySelector("body").setAttribute("class", "toggle-hidden");
+      document.querySelector("body").removeAttribute("class");
+
       break;
     case 4:
       updatedUrlParams.set("map", "purgatory");
