@@ -64,9 +64,9 @@ let tileSources = [
     "https://nightmare-main-branch-right-pw.acidflow.stream/maps/nightmare-main-branch-right-pw/nightmare-main-branch-right-pw-2024-04-08-78633191.dzi",
   ],
   [
-    "https://new-game-plus-hd.acidflow.stream/maps/new-game-plus/new-game-plus-2024-02-06-78633191.dzi",
-    "",
-    "",
+    "https://new-game-plus-main-branch-middle.acidflow.stream/maps/new-game-plus-main-branch-middle/new-game-plus-main-branch-middle-2024-04-08-78633191.dzi",
+    "https://new-game-plus-main-branch-left-pw.acidflow.stream/maps/new-game-plus-main-branch-left-pw/new-game-plus-main-branch-left-pw-2024-04-08-78633191.dzi",
+    "https://new-game-plus-main-branch-right-pw.acidflow.stream/maps/new-game-plus-main-branch-right-pw/new-game-plus-main-branch-right-pw-2024-04-08-78633191.dzi",
   ],
   [
     "https://regular-beta-middle.acidflow.stream/maps/regular-beta-middle/regular-beta-middle-2024-03-25-78633191.dzi",
@@ -164,8 +164,8 @@ function changeMap(tileSource) {
       updatedUrlParams.set("map", "new-game-plus");
       os.world.removeAll();
       os.addTiledImage({ tileSource: tileSources[2][0] });
-      //   os.addTiledImage({ tileSource: tileSources[2][1] });
-      //   os.addTiledImage({ tileSource: tileSources[2][2] });
+      os.addTiledImage({ tileSource: tileSources[2][1] });
+      os.addTiledImage({ tileSource: tileSources[2][2] });
       os.forceRedraw();
       document.querySelector("body").setAttribute("class", "toggle-hidden");
       break;
