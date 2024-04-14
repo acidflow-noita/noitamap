@@ -65,38 +65,39 @@
                     <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                         <ul class="column-gap-3 navbar-nav ml-auto mb-2 mb-lg-0 w-100 d-flex flex-row-md flex-column-sm mb-md-1 mt-md-0 mb-3 mt-2"
                             id="navLinksList">
-                            <a id="mapId0" class="nav-link text-nowrap active" href="#" data-bs-toggle="pill"
-                                onclick="changeMap(0);">Regular <span class="badge text-bg-success">Epilogue 2</span>
+                            <a data-map-key="regular-main-branch" class="nav-link text-nowrap active" href="#"
+                                data-bs-toggle="pill">Regular <span class="badge text-bg-success">Epilogue 2</span>
                                 <span class="badge text-bg-warning">April 8</span></a>
-                            <a id="mapId1" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
-                                onclick="changeMap(1);">Nightmare <span class="badge text-bg-success">Epilogue 2</span>
+                            <a data-map-key="new-game-plus-main-branch" class="nav-link text-nowrap" href="#"
+                                data-bs-toggle="pill">Nightmare <span class="badge text-bg-success">Epilogue 2</span>
                                 <span class="badge text-bg-warning">April 8</span></a>
-                            <a id="mapId2" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
-                                onclick="changeMap(2);">NG+ <span class="badge text-bg-success">Epilogue 2</span>
-                                <span class="badge text-bg-warning">April 8</span></a>
-                            <a id="mapId3" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
-                                onclick="changeMap(3);">Regular <span class="badge text-bg-info">β branch</span> <span
+                            <a data-map-key="nightmare-main-branch" class=" nav-link text-nowrap" href="#"
+                                data-bs-toggle="pill">NG+
+                                <span class="badge text-bg-success">Epilogue 2</span> <span
+                                    class="badge text-bg-warning">April 8</span></a>
+                            <a data-map-key="regular-beta" class="nav-link text-nowrap" href="#"
+                                data-bs-toggle="pill">Regular <span class="badge text-bg-info">β branch</span> <span
                                     class="badge text-bg-warning">March 25</span></a>
-                            <a id="mapId4" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
-                                onclick="changeMap(4);">Purgatory <span class="badge text-bg-light"><i
+                            <a data-map-key="purgatory" class="nav-link text-nowrap" href="#"
+                                data-bs-toggle="pill">Purgatory <span class="badge text-bg-light"><i
                                         class="bi bi-tools"></i> Mod</span></a>
-                            <a id="mapId5" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
-                                onclick="changeMap(5);">Apotheosis <span class="badge text-bg-light"><i
+                            <a data-map-key="apotheosis" class="nav-link text-nowrap" href="#"
+                                data-bs-toggle="pill">Apotheosis <span class="badge text-bg-light"><i
                                         class="bi bi-tools"></i> Mod</span></a>
-                            <a id="mapId6" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
-                                onclick="changeMap(6);">Apotheosis NG+ <span class="badge text-bg-light"><i
+                            <a data-map-key="apotheosis-new-game-plus" class=" nav-link text-nowrap" href="#"
+                                data-bs-toggle="pill">Apotheosis NG+ <span class="badge text-bg-light"><i
                                         class="bi bi-tools"></i> Mod</span></a>
-                            <a id="mapId10" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
-                                onclick="changeMap(10);">Apotheosis Tuonela <span class="badge text-bg-light"><i
+                            <a data-map-key="apotheosis-tuonela" class="nav-link text-nowrap" href="#"
+                                data-bs-toggle="pill">Apotheosis Tuonela <span class="badge text-bg-light"><i
                                         class="bi bi-tools"></i> Mod</span></a>
-                            <a id="mapId7" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
-                                onclick="changeMap(7);">Noitavania <span class="badge text-bg-light"><i
+                            <a data-map-key="noitavania" class="nav-link text-nowrap" href="#"
+                                data-bs-toggle="pill">Noitavania <span class="badge text-bg-light"><i
                                         class="bi bi-tools"></i> Mod</span></a>
-                            <a id="mapId8" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
-                                onclick="changeMap(8);">Noitavania NG+ <span class="badge text-bg-light"><i
+                            <a data-map-key="noitavania-new-game-plus" class=" nav-link text-nowrap" href="#"
+                                data-bs-toggle="pill">Noitavania NG+ <span class="badge text-bg-light"><i
                                         class="bi bi-tools"></i> Mod</span></a>
-                            <a id="mapId9" class="nav-link text-nowrap" href="#" data-bs-toggle="pill"
-                                onclick="changeMap(9);">Alternate Biomes <span class="badge text-bg-light"><i
+                            <a data-map-key="alternate-biomes" class="nav-link text-nowrap" href="#"
+                                data-bs-toggle="pill">Alternate Biomes <span class="badge text-bg-light"><i
                                         class="bi bi-tools"></i> Mod</span></a>
                             <a href="https://github.com/acidflow-noita/noitamap"
                                 class="btn btn-outline-info text-nowrap w-50" target="\_blank" role="button"><i
@@ -116,25 +117,27 @@
         <div class="coordinate-content">
         </div>
     </div>
-    <script id="cachekeys">const tileCacheKeys = {"noitavania-middle.acidflow.stream":"1713074075",
-"purgatory-middle.acidflow.stream":"1713074258",
-"regular-beta-middle.acidflow.stream":"1712753923",
-"apotheosis-middle.acidflow.stream":"1713074680",
-"regular-main-branch-middle.acidflow.stream":"1712752623",
-"regular-main-branch-left.acidflow.stream":"1713074468",
-"alternate-biomes-middle.acidflow.stream":"1713074601",
-"nightmare-main-branch-middle.acidflow.stream":"1712785843",
-"nightmare-main-branch-right.acidflow.stream":"1713073980",
-"nightmare-main-branch-left.acidflow.stream":"1713073838",
-"new-game-plus-main-branch-right.acidflow.stream":"1713075005",
-"apotheosis-new-game-plus-middle.acidflow.stream":"1713074754",
-"noitavania-new-game-plus-middle.acidflow.stream":"1713074179",
-"apotheosis-tuonela-middle.acidflow.stream":"1713074848",
-"new-game-plus-main-branch-middle.acidflow.stream":"1712840358",
-"new-game-plus-main-branch-left.acidflow.stream":"1713074923",
-"regular-beta-right.acidflow.stream":"1713074395",
-"regular-main-branch-right.acidflow.stream":"1713074545",
-"regular-beta-left.acidflow.stream":"1713074326",};</script>
+    <script id="cachekeys">const tileCacheKeys = {
+            "purgatory.acidflow.stream": "1711949623",
+            "regular-beta-right-pw.acidflow.stream": "1712750893",
+            "noitavania-new-game-plus.acidflow.stream": "1711831834",
+            "regular-beta-middle.acidflow.stream": "1712753923",
+            "regular-main-branch-right-pw.acidflow.stream": "1712751402",
+            "regular-main-branch-middle.acidflow.stream": "1712752623",
+            "apotheosis-tuonela.acidflow.stream": "1711831560",
+            "regular-main-branch-left-pw.acidflow.stream": "1712750988",
+            "apotheosis-new-game-plus.acidflow.stream": "1711831522",
+            "alternate-biomes.acidflow.stream": "1711831441",
+            "regular-beta-left-pw.acidflow.stream": "1712750697",
+            "nightmare-main-branch-middle.acidflow.stream": "1712785843",
+            "noitavania.acidflow.stream": "1711831797",
+            "nightmare-main-branch-right-pw.acidflow.stream": "1712786645",
+            "new-game-plus-main-branch-left-pw.acidflow.stream": "1712840332",
+            "nightmare-main-branch-left-pw.acidflow.stream": "1712785130",
+            "new-game-plus-main-branch-right-pw.acidflow.stream": "1712840401",
+            "new-game-plus-main-branch-middle.acidflow.stream": "1712840358",
+            "apotheosis.acidflow.stream": "1711831489",
+        };</script>
     <script src="js/script.js"></script>
 </body>
 
