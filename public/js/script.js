@@ -279,49 +279,105 @@ const mouseTracker = new OpenSeadragon.MouseTracker({
   },
 }).setTracking(true);
 
-// setActiveMap('a specific map name')
-function setActiveMap(mapName) {
-  const currentMapLink = document.querySelector(`#navLinksList [data-map-key=${mapName}]`);
-  if (!currentMapLink) return;
+const mapVersionUrl = (mapName) => `... todo ...`;
 
-  // remove "active" class from any nav links that still have it
-  for (const el of document.querySelectorAll("#navLinksList .nav-link.active")) {
-    el.classList.remove("active");
+// fetches the version identifier for a given map name, for use in cache busting
+async function fetchMapVersion(mapName) {
+  // we don't want to fetch a cached version of the manifest!
+  const req = await fetch(mapVersionUrl(mapName), {
+    headers: {
+      "cache-control": "no-cache",
+    },
+  });
+
+  let version;
+  if (!req.ok) {
+    console.error(`failed to fetch version for mapName ${mapName}: ${req.status} ${req.statusText}`);
+    version = String(Math.random().toString(36).slice(2));
+  } else {
+    version = (await req.text()).trim();
   }
-  // add "active" class to the nav-link identified by `mapName`
-  currentMapLink.classList.add("active");
 
-  // modify the DOM to show the current map name based on the contents of the link
-  // to activate that map
-  document.getElementById("currentMapName").innerHTML = currentMapLink.innerHTML;
-
-  // update url to refer to the map we just selected
-  const updatedUrlParams = new URLSearchParams(window.location.search);
-  updatedUrlParams.set("map", mapName);
-  window.history.replaceState(null, "", "?" + updatedUrlParams.toString());
+  return encodeURIComponent(version);
 }
 
-// loadMap('a specific map name')
-function loadMap(mapName) {
-  // mapName = 'regular-main-branch', etc.
-  const mapTiles = tileSources[mapName] ?? [];
-  if (mapTiles.length === 0) return;
+const changeMap = (async () => {
+  let cacheBustHandler = undefined;
 
-  os.world.removeAll();
-  for (const url of mapTiles) {
-    os.addTiledImage({ tileSource: url });
+  // setActiveMap('a specific map name')
+  function setActiveMap(mapName) {
+    const currentMapLink = document.querySelector(`#navLinksList [data-map-key=${mapName}]`);
+    if (!currentMapLink) return;
+
+    // remove "active" class from any nav links that still have it
+    for (const el of document.querySelectorAll("#navLinksList .nav-link.active")) {
+      el.classList.remove("active");
+    }
+    // add "active" class to the nav-link identified by `mapName`
+    currentMapLink.classList.add("active");
+
+    // modify the DOM to show the current map name based on the contents of the link
+    // to activate that map
+    document.getElementById("currentMapName").innerHTML = currentMapLink.innerHTML;
+
+    // update url to refer to the map we just selected
+    const updatedUrlParams = new URLSearchParams(window.location.search);
+    updatedUrlParams.set("map", mapName);
+    window.history.replaceState(null, "", "?" + updatedUrlParams.toString());
   }
-  os.forceRedraw();
-}
+
+  // loadMap('a specific map name')
+  async function loadMap(mapName) {
+    // mapName = 'regular-main-branch', etc.
+    const mapTiles = tileSources[mapName] ?? [];
+
+    // do nothing for invalid mapName
+    if (mapTiles.length === 0) return;
+
+    const version = await fetchMapVersion(mapName);
+
+    // when we change maps, remove the old handler so it doesn't interfere...
+    if (cacheBustHandler) {
+      os.world.removeHandler("add-item", cacheBustHandler);
+      cacheBustHandler = undefined;
+    }
+
+    // create the new handler
+    cacheBustHandler = (event) => {
+      /** @type {{Format: string, Overlap: string, Size: {Width: string, Height: string}, TileSize: string, TopLeft: {X: string, Y: string}}} */
+      // Append cacheKeys to the images
+      // xxx.png?v=UNIX_TIMESTAMP
+      // Each Map has their own timestamps
+      event.item.source.queryParams = `?v=${version}`;
+    };
+    os.world.addHandler("add-item", cacheBustHandler);
+
+    // clear the map...
+    os.world.removeAll();
+
+    // ... add the new tiles ...
+    for (const url of mapTiles) {
+      // assumes "url" from tileSource urls does not already include a query string parameter
+      os.addTiledImage({ tileSource: `${url}?v=${version}` });
+    }
+
+    // ... and redraw the map
+    os.forceRedraw();
+  }
+
+  return async (mapName) => {
+    await loadMap(mapName);
+    setActiveMap(mapName);
+  };
+})();
 
 const spans = document.querySelectorAll(".osOverlayHighlight span");
 
-os.addHandler("open", (event) => {
+os.addHandler("open", async (event) => {
   const viewport = event.eventSource.viewport;
   const urlParams = new URLSearchParams(window.location.search);
   const mapName = String(urlParams.get("map") ?? "regular-main-branch");
-  setActiveMap(mapName);
-  loadMap(mapName);
+  changeMap(mapName);
 
   // Default/fallback viewport rectangle, which we try to fit first.
   viewport.fitBounds(new OpenSeadragon.Rect(-53760, -31744, 107520, 73728), true);
@@ -372,11 +428,6 @@ os.world.addHandler("add-item", (event) => {
   const image = event.item.source.Image;
   event.item.setPosition(new OpenSeadragon.Point(Number(image.TopLeft.X), Number(image.TopLeft.Y)), true);
   event.item.setWidth(Number(image.Size.Width), true);
-
-  // Append cacheKeys to the images
-  // xxx.png?v=UNIX_TIMESTAMP
-  // Each Map has their own timestamps
-  event.item.source.queryParams = `?v=${encodeURIComponent(tileCacheKeys[new URL(event.item.source.tilesUrl).host])}`;
 });
 
 const alertPlaceholder = document.getElementById("liveAlertPlaceholder");
@@ -475,13 +526,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     navLinksUl.appendChild(a);
   }
-  document.getElementById("navLinksList").addEventListener("click", (ev) => {
+  document.getElementById("navLinksList").addEventListener("click", async (ev) => {
     const mapKey = ev.target.dataset["mapKey"];
     if (!mapKey) return;
     ev.stopPropagation();
     ev.preventDefault();
-    setActiveMap(mapKey);
-    loadMap(mapKey);
+    changeMap(mapKey);
   });
 });
 

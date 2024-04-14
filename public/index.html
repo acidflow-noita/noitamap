@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
-
-<head>
+  <head>
     <meta charset="utf-8" />
     <title>Noita World Map</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
@@ -21,60 +20,64 @@
     <link rel="preconnect" href="https://rsms.me/" />
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
     <script src="https://cdn.jsdelivr.net/npm/openseadragon@4.1/build/openseadragon/openseadragon.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
-        crossorigin="anonymous"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+      crossorigin="anonymous"
+    ></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <script src="https://unpkg.com/openseadragon-annotations@1.0.5/dist/openseadragon-annotations.js"></script>
-</head>
+  </head>
 
-<body>
-    <div id="liveAlertPlaceholder" class="toast align-items-center" role="alert" aria-live="assertive"
-        aria-atomic="true">
-        <div class="d-flex">
-            <div class="toast-body">Copied current map coordinates to your clipboard!</div>
-            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"> </button>
-        </div>
+  <body>
+    <div id="liveAlertPlaceholder" class="toast align-items-center" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">Copied current map coordinates to your clipboard!</div>
+        <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
     </div>
     <nav class="navbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#" onclick="goHome();"><img src="/assets/NoitamapLogo.png" alt="Noitamap Logo"
-                    class="d-inline-block align-text-middle" /><span id="currentMapName">Noita
-                    map</span></a>
-            <a id="overlayVisibilityToggleButton" tabindex="0" class="btn btn-outline-info text-nowrap"
-                data-bs-trigger="focus" role="button"><i class="bi bi-layers"></i>
-                Toggle overlays</a>
-            <a id="shareButton" tabindex="0" class="btn btn-outline-success text-nowrap" data-bs-trigger="focus"
-                data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Copied!"
-                role="button" onclick="getShareUrl();"><i class="bi bi-copy"></i> Copy to clipboard</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas"
-                data-bs-target="#offcanvasDarkNavbar" aria-controls="offcanvasDarkNavbar"
-                aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="offcanvasDarkNavbar"
-                aria-labelledby="offcanvasDarkNavbarLabel">
-                <div class="offcanvas-header">
-                    <h5 class="offcanvas-title" id="offcanvasDarkNavbarLabel">Available maps</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"
-                        aria-label="Close"></button>
-                </div>
-                <div class="offcanvas-body">
-                    <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-                        <ul class="column-gap-3 navbar-nav ml-auto mb-2 mb-lg-0 w-100 d-flex flex-row-md flex-column-sm mb-md-1 mt-md-0 mb-3 mt-2"
-                            id="navLinksList">
-                        </ul>
-                        <br />
-                        <a href="https://github.com/acidflow-noita/noitamap"
-                            class="btn btn-outline-info text-nowrap w-50" target="\_blank" role="button"><i
-                                class="bi bi-github"></i> Contribute</a>
-                    </ul>
-                    </ul>
-                </div>
-            </div>
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#" onclick="goHome();"
+          ><img src="/assets/NoitamapLogo.png" alt="Noitamap Logo" class="d-inline-block align-text-middle" /><span id="currentMapName">Noita map</span></a
+        >
+        <a id="overlayVisibilityToggleButton" tabindex="0" class="btn btn-outline-info text-nowrap" data-bs-trigger="focus" role="button"><i class="bi bi-layers"></i> Toggle overlays</a>
+        <a
+          id="shareButton"
+          tabindex="0"
+          class="btn btn-outline-success text-nowrap"
+          data-bs-trigger="focus"
+          data-bs-container="body"
+          data-bs-toggle="popover"
+          data-bs-placement="bottom"
+          data-bs-content="Copied!"
+          role="button"
+          onclick="getShareUrl();"
+          ><i class="bi bi-copy"></i> Copy to clipboard</a
+        >
+        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasDarkNavbar" aria-controls="offcanvasDarkNavbar" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="offcanvasDarkNavbar" aria-labelledby="offcanvasDarkNavbarLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="offcanvasDarkNavbarLabel">Available maps</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+              <ul class="column-gap-3 navbar-nav ml-auto mb-2 mb-lg-0 w-100 d-flex flex-row-md flex-column-sm mb-md-1 mt-md-0 mb-3 mt-2" id="navLinksList"></ul>
+              <br />
+              <a href="https://github.com/acidflow-noita/noitamap" class="btn btn-outline-info text-nowrap w-50" target="\_blank" role="button"><i class="bi bi-github"></i> Contribute</a>
+            </ul>
+          </div>
         </div>
+      </div>
     </nav>
     <div id="osContainer"></div>
     <!-- TODO: add "Loading" text -->
@@ -82,31 +85,31 @@
     <i class="bi bi-arrow-repeat loadingIndicator spinningIcon text-info"></i>
     <div id="coordinates-hover"></div>
     <div id="coordinate" class="coordinate">
-        <div class="coordinate-content">
-        </div>
+      <div class="coordinate-content"></div>
     </div>
-    <script id="cachekeys">const tileCacheKeys = {
-            "purgatory.acidflow.stream": "1711949623",
-            "regular-beta-right-pw.acidflow.stream": "1712750893",
-            "noitavania-new-game-plus.acidflow.stream": "1711831834",
-            "regular-beta-middle.acidflow.stream": "1712753923",
-            "regular-main-branch-right-pw.acidflow.stream": "1712751402",
-            "regular-main-branch-middle.acidflow.stream": "1712752623",
-            "apotheosis-tuonela.acidflow.stream": "1711831560",
-            "regular-main-branch-left-pw.acidflow.stream": "1712750988",
-            "apotheosis-new-game-plus.acidflow.stream": "1711831522",
-            "alternate-biomes.acidflow.stream": "1711831441",
-            "regular-beta-left-pw.acidflow.stream": "1712750697",
-            "nightmare-main-branch-middle.acidflow.stream": "1712785843",
-            "noitavania.acidflow.stream": "1711831797",
-            "nightmare-main-branch-right-pw.acidflow.stream": "1712786645",
-            "new-game-plus-main-branch-left-pw.acidflow.stream": "1712840332",
-            "nightmare-main-branch-left-pw.acidflow.stream": "1712785130",
-            "new-game-plus-main-branch-right-pw.acidflow.stream": "1712840401",
-            "new-game-plus-main-branch-middle.acidflow.stream": "1712840358",
-            "apotheosis.acidflow.stream": "1711831489",
-        };</script>
+    <!-- TODO: delete this and whatever code creates it
+      <script id="cachekeys">const tileCacheKeys = {
+        "purgatory.acidflow.stream": "1711949623",
+        "regular-beta-right-pw.acidflow.stream": "1712750893",
+        "noitavania-new-game-plus.acidflow.stream": "1711831834",
+        "regular-beta-middle.acidflow.stream": "1712753923",
+        "regular-main-branch-right-pw.acidflow.stream": "1712751402",
+        "regular-main-branch-middle.acidflow.stream": "1712752623",
+        "apotheosis-tuonela.acidflow.stream": "1711831560",
+        "regular-main-branch-left-pw.acidflow.stream": "1712750988",
+        "apotheosis-new-game-plus.acidflow.stream": "1711831522",
+        "alternate-biomes.acidflow.stream": "1711831441",
+        "regular-beta-left-pw.acidflow.stream": "1712750697",
+        "nightmare-main-branch-middle.acidflow.stream": "1712785843",
+        "noitavania.acidflow.stream": "1711831797",
+        "nightmare-main-branch-right-pw.acidflow.stream": "1712786645",
+        "new-game-plus-main-branch-left-pw.acidflow.stream": "1712840332",
+        "nightmare-main-branch-left-pw.acidflow.stream": "1712785130",
+        "new-game-plus-main-branch-right-pw.acidflow.stream": "1712840401",
+        "new-game-plus-main-branch-middle.acidflow.stream": "1712840358",
+        "apotheosis.acidflow.stream": "1711831489",
+      };</script>
+      -->
     <script src="js/script.js"></script>
-</body>
-
+  </body>
 </html>
