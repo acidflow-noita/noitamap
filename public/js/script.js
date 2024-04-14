@@ -50,105 +50,167 @@ const overlayTexts = [
 ];
 
 const CHUNK_SIZE = 512;
+const mapDefinitions = [
+  {
+    key: "regular-main-branch",
+    label: "Regular",
+    badges: [
+      {
+        label: "Epilogue 2",
+        class: "text-bg-success",
+      },
+    ],
+    patchDate: "2024-04-08",
+    seed: "78633191",
+    tileSets: ["middle", "left", "right"],
+  },
+  {
+    key: "new-game-plus-main-branch",
+    label: "NG+",
+    badges: [
+      {
+        label: "Epilogue 2",
+        class: "text-bg-success",
+      },
+    ],
+    patchDate: "2024-04-08",
+    seed: "78633191",
+    tileSets: ["middle", "left", "right"],
+  },
+  {
+    key: "nightmare-main-branch",
+    label: "Nightmare",
+    badges: [
+      {
+        label: "Epilogue 2",
+        class: "text-bg-success",
+      },
+    ],
+    patchDate: "2024-04-08",
+    seed: "78633191",
+    tileSets: ["middle", "left", "right"],
+  },
+  {
+    key: "regular-beta",
+    label: "Regular",
+    badges: [
+      {
+        label: "β branch",
+        class: "text-bg-info",
+      },
+    ],
+    patchDate: "2024-03-25",
+    seed: "78633191",
+    tileSets: ["middle", "left", "right"],
+  },
+  {
+    key: "purgatory",
+    label: "Purgatory",
+    badges: [
+      {
+        label: "Mod",
+        class: "text-bg-light",
+        icon: "bi bi-tools",
+      },
+    ],
+    patchDate: "2024-01-18",
+    seed: "78633191",
+    tileSets: ["middle"],
+  },
+  {
+    key: "apotheosis",
+    label: "Apotheosis",
+    badges: [
+      {
+        label: "Mod",
+        class: "text-bg-light",
+        icon: "bi bi-tools",
+      },
+    ],
+    patchDate: "2024-02-12",
+    seed: "78633191",
+    tileSets: ["middle"],
+  },
+  {
+    key: "apotheosis-new-game-plus",
+    label: "Apotheosis NG+",
+    badges: [
+      {
+        label: "Mod",
+        class: "text-bg-light",
+        icon: "bi bi-tools",
+      },
+    ],
+    patchDate: "2024-02-12",
+    seed: "78633191",
+    tileSets: ["middle"],
+  },
+  {
+    key: "apotheosis-tuonela",
+    label: "Apotheosis Tuonela",
+    badges: [
+      {
+        label: "Mod",
+        class: "text-bg-light",
+        icon: "bi bi-tools",
+      },
+    ],
+    patchDate: "2024-02-12",
+    seed: "78633191",
+    tileSets: ["middle"],
+  },
+  {
+    key: "noitavania",
+    label: "Noitavania",
+    badges: [
+      {
+        label: "Mod",
+        class: "text-bg-light",
+        icon: "bi bi-tools",
+      },
+    ],
+    patchDate: "2024-02-12",
+    seed: "78633191",
+    tileSets: ["middle"],
+  },
+  {
+    key: "noitavania-new-game-plus",
+    label: "Noitavania NG+",
+    badges: [
+      {
+        label: "Mod",
+        class: "text-bg-light",
+        icon: "bi bi-tools",
+      },
+    ],
+    patchDate: "2024-02-12",
+    seed: "78633191",
+    tileSets: ["middle"],
+  },
+  {
+    key: "alternate-biomes",
+    label: "Alternate Biomes",
+    badges: [
+      {
+        label: "Mod",
+        class: "text-bg-light",
+        icon: "bi bi-tools",
+      },
+    ],
+    patchDate: "2024-02-12",
+    seed: "78633191",
+    tileSets: ["middle"],
+  },
+];
 
 const tileSources = (function () {
   const tileSourceURL = (key, position, patchDate, seed) =>
     `https://${key}-${position}.acidflow.stream/maps/${key}-${position}/${key}-${position}-${patchDate}-${seed}.dzi`;
 
   // TODO: fix dates and positions
-  const definitions = [
-    {
-      key: "noita-main-regular",
-      label: "Regular",
-      badges: ["Epilogue 2"],
-      patchDate: "2024-04-08",
-      seed: "78633191",
-      tileSets: ["middle", "left", "right"],
-    },
-    {
-      key: "new-game-plus-main-branch",
-      label: "NG+",
-      badges: ["Epilogue 2"],
-      patchDate: "2024-04-08",
-      seed: "78633191",
-      tileSets: ["middle", "left", "right"],
-    },
-    {
-      key: "nightmare-main-branch",
-      label: "Nightmare",
-      badges: ["Epilogue 2"],
-      patchDate: "2024-04-08",
-      seed: "78633191",
-      tileSets: ["middle", "left", "right"],
-    },
-    {
-      key: "regular-beta",
-      label: "Regular",
-      badges: ["β branch"],
-      patchDate: "2024-03-25",
-      seed: "78633191",
-      tileSets: ["middle", "left", "right"],
-    },
-    {
-      key: "purgatory",
-      label: "Purgatory",
-      badges: ["Mod"],
-      patchDate: "2024-01-18",
-      seed: "78633191",
-      tileSets: ["middle"],
-    },
-    {
-      key: "apotheosis",
-      label: "Apotheosis",
-      badges: ["Mod"],
-      patchDate: "2024-02-12",
-      seed: "78633191",
-      tileSets: ["middle"],
-    },
-    {
-      key: "apotheosis-new-game-plus",
-      label: "Apotheosis NG+",
-      badges: ["Mod"],
-      patchDate: "2024-02-12",
-      seed: "78633191",
-      tileSets: ["middle"],
-    },
-    {
-      key: "apotheosis-tuonela",
-      label: "Apotheosis Tuonela",
-      badges: ["Mod"],
-      patchDate: "2024-02-12",
-      seed: "78633191",
-      tileSets: ["middle"],
-    },
-    {
-      key: "noitavania",
-      label: "Noitavania",
-      badges: ["Mod"],
-      patchDate: "2024-02-12",
-      seed: "78633191",
-      tileSets: ["middle"],
-    },
-    {
-      key: "noitavania-new-game-plus",
-      label: "Noitavania NG+",
-      badges: ["Mod"],
-      patchDate: "2024-02-12",
-      seed: "78633191",
-      tileSets: ["middle"],
-    },
-    {
-      key: "alternate-biomes",
-      label: "Alternate Biomes",
-      badges: ["Mod"],
-      patchDate: "2024-02-12",
-      seed: "78633191",
-      tileSets: ["middle"],
-    },
-  ];
 
   const output = {};
-  for (const def of definitions) {
+  for (const def of mapDefinitions) {
     const urls = [];
     for (const position of def.tileSets) {
       urls.push(tileSourceURL(def.key, position, def.patchDate, def.seed));
@@ -169,14 +231,13 @@ var os = OpenSeadragon({
   showNavigator: false,
   showNavigationControl: false,
   imageSmoothingEnabled: false,
-  tileSources: tileSources[0],
-  //   tileSources: tileSources,
+  // We have to provide OSD with initial set of tiles
+  tileSources: tileSources["regular-main-branch"],
   subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS,
   smoothTileEdgesMinZoom: 1,
   minScrollDeltaTime: 10,
   springStiffness: 50,
   preserveViewport: true,
-  // animationTime: 10,
   gestureSettingsMouse: { clickToZoom: false },
 });
 
@@ -256,12 +317,11 @@ function loadMap(mapName) {
 const spans = document.querySelectorAll(".osOverlayHighlight span");
 
 os.addHandler("open", (event) => {
+  const viewport = event.eventSource.viewport;
   const urlParams = new URLSearchParams(window.location.search);
   const mapName = String(urlParams.get("map") ?? "regular-main-branch");
   setActiveMap(mapName);
   loadMap(mapName);
-
-  const viewport = event.eventSource.viewport;
 
   // Default/fallback viewport rectangle, which we try to fit first.
   viewport.fitBounds(new OpenSeadragon.Rect(-53760, -31744, 107520, 73728), true);
@@ -332,10 +392,12 @@ const appendAlert = (message, type) => {
   alertPlaceholder.append(wrapper);
 };
 
+// Reset zoom level upon click on the logo
 function goHome() {
   os.viewport.goHome();
 }
 
+// Copy URL to the clipboard for sharing
 function getShareUrl() {
   window.navigator.clipboard.writeText(window.location.href);
 }
@@ -383,12 +445,36 @@ os.addHandler("animation-finish", function (event) {
   window.history.replaceState(null, "", "?" + urlParams.toString());
 });
 
-// annotations plugin
-// const annotations = new OpenSeadragon.Annotations({ viewer });
-
-// os.initializeAnnotations();
-
 document.addEventListener("DOMContentLoaded", () => {
+  const navLinksUl = document.getElementById("navLinksList");
+  if (!navLinksUl) return;
+
+  const formatDate = (d) => d; // TODO: implement
+  // TODO: fix dates and positions
+  // const formatDate = (function () {
+  // new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric" }).format(new Date(date));
+  // })();
+
+  for (const def of mapDefinitions) {
+    const a = document.createElement("a");
+    a.classList.add("nav-link", "text-nowrap");
+    a.href = "#";
+    a.dataset["bsToggle"] = "pill";
+    a.dataset["mapKey"] = def.key;
+    a.textContent = def.label + " ";
+
+    const badges = def.badges.slice();
+    badges.push(formatDate(def.patchDate));
+
+    for (const badge of badges) {
+      const span = document.createElement("span");
+      span.classList.add("badge", badge.class);
+      span.textContent = badge.label;
+      a.appendChild(span);
+    }
+
+    navLinksUl.appendChild(a);
+  }
   document.getElementById("navLinksList").addEventListener("click", (ev) => {
     const mapKey = ev.target.dataset["mapKey"];
     if (!mapKey) return;
@@ -398,3 +484,9 @@ document.addEventListener("DOMContentLoaded", () => {
     loadMap(mapKey);
   });
 });
+
+// TODO: Add annotations
+// annotations plugin
+// const annotations = new OpenSeadragon.Annotations({ viewer });
+
+// os.initializeAnnotations();
