@@ -54,57 +54,53 @@ const CHUNK_SIZE = 512;
 let tileSources = [
   [
     "https://regular-main-branch-middle.acidflow.stream/maps/regular-main-branch-middle/regular-main-branch-middle-2024-04-08-78633191.dzi",
-    "https://regular-main-branch-left-pw.acidflow.stream/maps/regular-main-branch-left-pw/regular-main-branch-left-pw-2024-04-08-78633191.dzi",
-    "https://regular-main-branch-right-pw.acidflow.stream/maps/regular-main-branch-right-pw/regular-main-branch-right-pw-2024-04-08-78633191.dzi",
+    "https://regular-main-branch-left.acidflow.stream/maps/regular-main-branch-left/regular-main-branch-left-2024-04-08-78633191.dzi",
+    "https://regular-main-branch-right.acidflow.stream/maps/regular-main-branch-right/regular-main-branch-right-2024-04-08-78633191.dzi",
   ],
 
   [
     "https://nightmare-main-branch-middle.acidflow.stream/maps/nightmare-main-branch-middle/nightmare-main-branch-middle-2024-04-08-78633191.dzi",
-    "https://nightmare-main-branch-left-pw.acidflow.stream/maps/nightmare-main-branch-left-pw/nightmare-main-branch-left-pw-2024-04-08-78633191.dzi",
-    "https://nightmare-main-branch-right-pw.acidflow.stream/maps/nightmare-main-branch-right-pw/nightmare-main-branch-right-pw-2024-04-08-78633191.dzi",
+    "https://nightmare-main-branch-left.acidflow.stream/maps/nightmare-main-branch-left/nightmare-main-branch-left-2024-04-08-78633191.dzi",
+    "https://nightmare-main-branch-right.acidflow.stream/maps/nightmare-main-branch-right/nightmare-main-branch-right-2024-04-08-78633191.dzi",
   ],
   [
     "https://new-game-plus-main-branch-middle.acidflow.stream/maps/new-game-plus-main-branch-middle/new-game-plus-main-branch-middle-2024-04-08-78633191.dzi",
-    "https://new-game-plus-main-branch-left-pw.acidflow.stream/maps/new-game-plus-main-branch-left-pw/new-game-plus-main-branch-left-pw-2024-04-08-78633191.dzi",
-    "https://new-game-plus-main-branch-right-pw.acidflow.stream/maps/new-game-plus-main-branch-right-pw/new-game-plus-main-branch-right-pw-2024-04-08-78633191.dzi",
+    "https://new-game-plus-main-branch-left.acidflow.stream/maps/new-game-plus-main-branch-left/new-game-plus-main-branch-left-2024-04-08-78633191.dzi",
+    "https://new-game-plus-main-branch-right.acidflow.stream/maps/new-game-plus-main-branch-right/new-game-plus-main-branch-right-2024-04-08-78633191.dzi",
   ],
   [
     "https://regular-beta-middle.acidflow.stream/maps/regular-beta-middle/regular-beta-middle-2024-03-25-78633191.dzi",
-    "https://regular-beta-left-pw.acidflow.stream/maps/regular-beta-left-pw/regular-beta-left-pw-2024-03-25-78633191.dzi",
-    "https://regular-beta-right-pw.acidflow.stream/maps/regular-beta-right-pw/regular-beta-right-pw-2024-03-25-78633191.dzi",
+    "https://regular-beta-left.acidflow.stream/maps/regular-beta-left/regular-beta-left-2024-03-25-78633191.dzi",
+    "https://regular-beta-right.acidflow.stream/maps/regular-beta-right/regular-beta-right-2024-03-25-78633191.dzi",
   ],
+  ["https://purgatory-middle.acidflow.stream/maps/purgatory-middle/purgatory-middle-2024-01-18-78633191.dzi", "", ""],
   [
-    "https://purgatory.acidflow.stream/maps/purgatory/purgatory-2024-01-18-78633191.dzi",
-    "",
-    "",
-  ],
-  [
-    "https://apotheosis.acidflow.stream/maps/apotheosis/apotheosis-2024-02-12-78633191.dzi",
+    "https://apotheosis-middle.acidflow.stream/maps/apotheosis-middle/apotheosis-middle-2024-02-12-78633191.dzi",
     "",
     "",
   ],
   [
-    "https://apotheosis-new-game-plus.acidflow.stream/maps/apotheosis-new-game-plus/apotheosis-new-game-plus-2024-02-12-78633191.dzi",
+    "https://apotheosis-new-game-plus-middle.acidflow.stream/maps/apotheosis-new-game-plus-middle/apotheosis-new-game-plus-middle-2024-02-12-78633191.dzi",
     "",
     "",
   ],
   [
-    "https://noitavania.acidflow.stream/maps/noitavania/noitavania-2024-02-12-78633191.dzi",
+    "https://noitavania-middle.acidflow.stream/maps/noitavania-middle/noitavania-middle-2024-02-12-78633191.dzi",
     "",
     "",
   ],
   [
-    "https://noitavania-new-game-plus.acidflow.stream/maps/noitavania-new-game-plus/noitavania-new-game-plus-2024-02-12-78633191.dzi",
+    "https://noitavania-new-game-plus-middle.acidflow.stream/maps/noitavania-new-game-plus-middle/noitavania-new-game-plus-middle-2024-02-12-78633191.dzi",
     "",
     "",
   ],
   [
-    "https://alternate-biomes.acidflow.stream/maps/alternate-biomes/alternate-biomes-2024-02-12-78633191.dzi",
+    "https://alternate-biomes-middle.acidflow.stream/maps/alternate-biomes-middle/alternate-biomes-middle-2024-02-12-78633191.dzi",
     "",
     "",
   ],
   [
-    "https://apotheosis-tuonela.acidflow.stream/maps/apotheosis-tuonela/apotheosis-tuonela-2024-02-12-78633191.dzi",
+    "https://apotheosis-tuonela-middle.acidflow.stream/maps/apotheosis-tuonela-middle/apotheosis-tuonela-middle-2024-02-12-78633191.dzi",
     "",
     "",
   ],
@@ -123,8 +119,7 @@ var os = OpenSeadragon({
   imageSmoothingEnabled: false,
   tileSources: tileSources[0],
   //   tileSources: tileSources,
-  subPixelRoundingForTransparency:
-    OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS,
+  subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS,
   smoothTileEdgesMinZoom: 1,
   minScrollDeltaTime: 10,
   springStiffness: 50,
@@ -139,8 +134,7 @@ let nextTiledImage;
 
 function changeMap(tileSource) {
   const updatedUrlParams = new URLSearchParams(window.location.search);
-  document.getElementById("currentMapName").innerHTML =
-    " " + document.getElementById(`mapId${tileSource}`).innerHTML;
+  document.getElementById("currentMapName").innerHTML = " " + document.getElementById(`mapId${tileSource}`).innerHTML;
   switch (tileSource) {
     case 0:
       updatedUrlParams.set("map", "regular-main-branch");
@@ -550,10 +544,7 @@ os.addHandler("open", (event) => {
   const viewport = event.eventSource.viewport;
   const urlParams = new URLSearchParams(window.location.search);
   // Default/fallback viewport rectangle, which we try to fit first.
-  viewport.fitBounds(
-    new OpenSeadragon.Rect(-53760, -31744, 107520, 73728),
-    true
-  );
+  viewport.fitBounds(new OpenSeadragon.Rect(-53760, -31744, 107520, 73728), true);
   const viewportCenter = viewport.getCenter();
   let viewportZoom = viewport.getZoom();
   // Get offset/zoom parameters from the URL, and overwrite the default/fallback.
@@ -572,10 +563,7 @@ os.addHandler("open", (event) => {
 });
 
 // Loading indicator
-function updateLoadingIndicator(
-  isFullyLoaded,
-  indicator = document.querySelector(".loadingIndicator")
-) {
+function updateLoadingIndicator(isFullyLoaded, indicator = document.querySelector(".loadingIndicator")) {
   if (isFullyLoaded) {
     indicator.style.display = "none";
   } else {
@@ -602,18 +590,13 @@ os.world.addHandler("add-item", (event) => {
   /** @type {{Format: string, Overlap: string, Size: {Width: string, Height: string}, TileSize: string, TopLeft: {X: string, Y: string}}} */
   // @ts-ignore
   const image = event.item.source.Image;
-  event.item.setPosition(
-    new OpenSeadragon.Point(Number(image.TopLeft.X), Number(image.TopLeft.Y)),
-    true
-  );
+  event.item.setPosition(new OpenSeadragon.Point(Number(image.TopLeft.X), Number(image.TopLeft.Y)), true);
   event.item.setWidth(Number(image.Size.Width), true);
 
   // Append cacheKeys to the images
   // xxx.png?v=UNIX_TIMESTAMP
   // Each Map has their own timestamps
-  event.item.source.queryParams = `?v=${encodeURIComponent(
-    tileCacheKeys[new URL(event.item.source.tilesUrl).host]
-  )}`;
+  event.item.source.queryParams = `?v=${encodeURIComponent(tileCacheKeys[new URL(event.item.source.tilesUrl).host])}`;
 });
 
 const alertPlaceholder = document.getElementById("liveAlertPlaceholder");
@@ -637,48 +620,38 @@ function getShareUrl() {
   window.navigator.clipboard.writeText(window.location.href);
 }
 
-const popoverTriggerList = document.querySelectorAll(
-  '[data-bs-toggle="popover"]'
-);
-const popoverList = [...popoverTriggerList].map(
-  (popoverTriggerEl) => new bootstrap.Popover(popoverTriggerEl)
-);
+const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+const popoverList = [...popoverTriggerList].map((popoverTriggerEl) => new bootstrap.Popover(popoverTriggerEl));
 
 // Todo -- toggle doesnt reset after map change?
 let allOverlays = document.getElementsByClassName("osOverlayHighlight");
-document
-  .querySelector("#overlayVisibilityToggleButton")
-  .addEventListener("click", function () {
-    const updatedUrlParamsFromOverlaysToggle = new URLSearchParams(
-      window.location.search
-    );
-    const currentMapURLFromOverlaysToggle = String(
-      updatedUrlParamsFromOverlaysToggle.get("map")
-    );
-    if (overlaysState) {
-      Array.from(allOverlays).forEach((overlay) => {
-        os.removeOverlay(overlay.id);
+document.querySelector("#overlayVisibilityToggleButton").addEventListener("click", function () {
+  const updatedUrlParamsFromOverlaysToggle = new URLSearchParams(window.location.search);
+  const currentMapURLFromOverlaysToggle = String(updatedUrlParamsFromOverlaysToggle.get("map"));
+  if (overlaysState) {
+    Array.from(allOverlays).forEach((overlay) => {
+      os.removeOverlay(overlay.id);
+    });
+    // Todo -- fix this to make overlays work with other maps
+  } else if (
+    currentMapURLFromOverlaysToggle === "regular-main-branch" ||
+    currentMapURLFromOverlaysToggle === "regular-beta"
+  ) {
+    overlayTexts.forEach(({ id, text, x, y, width, height }) => {
+      let e = document.createElement("div");
+      e.id = `overlayId${id}`;
+      e.className = "osOverlayHighlight";
+      e.innerHTML = `<span id="span${id}" >${text}</span>`;
+      os.addOverlay({
+        element: e,
+        location: new OpenSeadragon.Rect(x, y, width, height),
       });
-      // Todo -- fix this to make overlays work with other maps
-    } else if (
-      currentMapURLFromOverlaysToggle === "regular-main-branch" ||
-      currentMapURLFromOverlaysToggle === "regular-beta"
-    ) {
-      overlayTexts.forEach(({ id, text, x, y, width, height }) => {
-        let e = document.createElement("div");
-        e.id = `overlayId${id}`;
-        e.className = "osOverlayHighlight";
-        e.innerHTML = `<span id="span${id}" >${text}</span>`;
-        os.addOverlay({
-          element: e,
-          location: new OpenSeadragon.Rect(x, y, width, height),
-        });
-        const hue = Math.floor(Math.random() * 360);
-        e.style.backgroundColor = `hsla(${hue}, 60%, 50%, 0.401)`;
-      });
-    }
-    overlaysState = !overlaysState;
-  });
+      const hue = Math.floor(Math.random() * 360);
+      e.style.backgroundColor = `hsla(${hue}, 60%, 50%, 0.401)`;
+    });
+  }
+  overlaysState = !overlaysState;
+});
 
 os.addHandler("animation-finish", function (event) {
   const center = event.eventSource.viewport.getCenter();

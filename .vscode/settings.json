@@ -1,0 +1,7 @@
+{
+  "prettier.printWidth": 120,
+  "[html]": {
+    "prettier.printWidth": 200
+  },
+  "editor.formatOnSave": true
+}
