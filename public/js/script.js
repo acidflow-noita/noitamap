@@ -116,6 +116,7 @@ const mapDefinitions = [
     patchDate: "2024-01-18",
     seed: "78633191",
     tileSets: ["middle"],
+    modUrl: "https://github.com/Priskip/purgatory",
   },
   {
     key: "apotheosis",
@@ -130,6 +131,7 @@ const mapDefinitions = [
     patchDate: "2024-02-12",
     seed: "78633191",
     tileSets: ["middle"],
+    modUrl: "https://steamcommunity.com/sharedfiles/filedetails/?id=3032128572",
   },
   {
     key: "apotheosis-new-game-plus",
@@ -144,6 +146,7 @@ const mapDefinitions = [
     patchDate: "2024-02-12",
     seed: "78633191",
     tileSets: ["middle"],
+    modUrl: "https://steamcommunity.com/sharedfiles/filedetails/?id=3032128572",
   },
   {
     key: "apotheosis-tuonela",
@@ -158,6 +161,7 @@ const mapDefinitions = [
     patchDate: "2024-02-12",
     seed: "78633191",
     tileSets: ["middle"],
+    modUrl: "https://steamcommunity.com/sharedfiles/filedetails/?id=3032128572",
   },
   {
     key: "noitavania",
@@ -172,6 +176,7 @@ const mapDefinitions = [
     patchDate: "2024-02-12",
     seed: "78633191",
     tileSets: ["middle"],
+    modUrl: "https://steamcommunity.com/sharedfiles/filedetails/?id=2263080245",
   },
   {
     key: "noitavania-new-game-plus",
@@ -186,6 +191,7 @@ const mapDefinitions = [
     patchDate: "2024-02-12",
     seed: "78633191",
     tileSets: ["middle"],
+    modUrl: "https://steamcommunity.com/sharedfiles/filedetails/?id=2263080245",
   },
   {
     key: "alternate-biomes",
@@ -200,6 +206,7 @@ const mapDefinitions = [
     patchDate: "2024-02-12",
     seed: "78633191",
     tileSets: ["middle"],
+    modUrl: "https://steamcommunity.com/sharedfiles/filedetails/?id=2554761457",
   },
 ];
 
