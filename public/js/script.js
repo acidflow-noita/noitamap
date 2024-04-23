@@ -381,6 +381,7 @@ const changeMap = (() => {
     const updatedUrlParams = new URLSearchParams(window.location.search);
     updatedUrlParams.set("map", mapName);
     window.history.replaceState(null, "", "?" + updatedUrlParams.toString());
+    addTooltips();
   }
 
   // loadMap('a specific map name')
@@ -575,10 +576,18 @@ document.addEventListener("DOMContentLoaded", () => {
     for (const badge of badges) {
       const span = document.createElement("span");
       span.classList.add("badge");
+
       if (typeof badge.class === "string") {
         span.classList.add(badge.class);
       } else {
         badge.class.forEach((styleClass) => span.classList.add(styleClass));
+      }
+
+      // Add explanatory tooltips to patchdate badges only
+      if (span.classList.contains("border-info-subtle")) {
+        span.dataset["bsToggle"] = "tooltip";
+        span.dataset["bsPlacement"] = "top";
+        span.dataset["bsTitle"] = "Patch date this map was captured";
       }
 
       if (badge.icon) {
@@ -593,6 +602,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     navLinksUl.appendChild(a);
+    addTooltips();
   }
   document.getElementById("navLinksList").addEventListener("click", async (ev) => {
     const mapKey = ev.target.dataset["mapKey"];
@@ -602,3 +612,8 @@ document.addEventListener("DOMContentLoaded", () => {
     changeMap(mapKey);
   });
 });
+
+function addTooltips() {
+  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  const tooltipList = [...tooltipTriggerList].map((tooltipTriggerEl) => new bootstrap.Tooltip(tooltipTriggerEl));
+}
