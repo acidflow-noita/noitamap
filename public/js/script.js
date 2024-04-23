@@ -1,3 +1,9 @@
+// TODO: Add annotations
+// annotations plugin
+// const annotations = new OpenSeadragon.Annotations({ viewer });
+
+// os.initializeAnnotations();
+
 "use strict";
 
 const spans2 = document.querySelectorAll(".osOverlayHighlight");
@@ -213,8 +219,6 @@ const mapDefinitions = [
 const tileSources = (function () {
   const tileSourceURL = (key, position, patchDate, seed) =>
     `https://${key}-${position}.acidflow.stream/maps/${key}-${position}/${key}-${position}-${patchDate}-${seed}.dzi`;
-
-  // TODO: fix dates and positions
 
   const output = {};
   for (const def of mapDefinitions) {
@@ -508,7 +512,6 @@ function getShareUrl() {
 const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
 const popoverList = [...popoverTriggerList].map((popoverTriggerEl) => new bootstrap.Popover(popoverTriggerEl));
 
-// Todo -- toggle doesnt reset after map change?
 let allOverlays = document.getElementsByClassName("osOverlayHighlight");
 document.querySelector("#overlayVisibilityToggleButton").addEventListener("click", function () {
   const updatedUrlParamsFromOverlaysToggle = new URLSearchParams(window.location.search);
@@ -552,7 +555,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const navLinksUl = document.getElementById("navLinksList");
   if (!navLinksUl) return;
 
-  const formatDate = (d) => new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric" }).format(new Date(d)); // TODO: implement
+  const formatDate = (d) => new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric" }).format(new Date(d));
   // TODO: fix dates and positions
   //const formatDate = (function () {
   //new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric" }).format(new Date(date));
@@ -599,9 +602,3 @@ document.addEventListener("DOMContentLoaded", () => {
     changeMap(mapKey);
   });
 });
-
-// TODO: Add annotations
-// annotations plugin
-// const annotations = new OpenSeadragon.Annotations({ viewer });
-
-// os.initializeAnnotations();
