@@ -363,6 +363,16 @@ const changeMap = (() => {
     // to activate that map
     document.getElementById("currentMapName").innerHTML = currentMapLink.innerHTML;
 
+    // Quick hack to fix toggle overlays button
+    switch (mapName) {
+      case "regular-main-branch":
+      case "regular-beta":
+        document.body.classList.remove("toggle-hidden");
+        break;
+      default:
+        document.body.classList.add("toggle-hidden");
+    }
+
     // update url to refer to the map we just selected
     const updatedUrlParams = new URLSearchParams(window.location.search);
     updatedUrlParams.set("map", mapName);
