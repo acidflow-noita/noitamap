@@ -557,12 +557,25 @@ document.addEventListener("DOMContentLoaded", () => {
     a.textContent = def.label + " ";
 
     const badges = def.badges.slice();
-    badges.push(formatDate(def.patchDate));
+    badges.push({ label: formatDate(def.patchDate), class: "border border-info-subtle ms-2".split(" ") });
 
     for (const badge of badges) {
       const span = document.createElement("span");
-      span.classList.add("badge", badge.class);
-      span.textContent = badge.label;
+      span.classList.add("badge");
+      if (typeof badge.class === "string") {
+        span.classList.add(badge.class);
+      } else {
+        badge.class.forEach((styleClass) => span.classList.add(styleClass));
+      }
+
+      if (badge.icon) {
+        const icon = document.createElement("i");
+        badge.icon.split(" ").forEach((styleClass) => icon.classList.add(styleClass));
+        span.appendChild(icon);
+      }
+
+      const text = document.createTextNode(` ${badge.label}`);
+      span.appendChild(text);
       a.appendChild(span);
     }
 
