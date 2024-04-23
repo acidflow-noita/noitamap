@@ -320,9 +320,9 @@ async function fetchMapVersion(mapName) {
     const responses = await Promise.all(
       mapVersionUrl(mapName).map((url) =>
         fetch(url, {
-    headers: {
+          headers: {
             // "cache-control": "no-cache",
-    },
+          },
         })
       )
     );
