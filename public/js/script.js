@@ -286,29 +286,65 @@ const mouseTracker = new OpenSeadragon.MouseTracker({
   },
 }).setTracking(true);
 
-const mapVersionUrl = (mapName) => `... todo ...`;
+const mapVersionUrl = (mapName) => {
+  const fileName = "currentVersion.txt";
+  const versions = tileSources[mapName].map((sourceURL) => `${new URL(sourceURL).origin}/${fileName}`);
+
+  return versions;
+};
 
 // fetches the version identifier for a given map name, for use in cache busting
+/**
+ *
+ * @param {string} mapName name of the map; example: regular-main-branch
+ * @returns {object|string}
+ */
 async function fetchMapVersion(mapName) {
   // we don't want to fetch a cached version of the manifest!
-  const req = await fetch(mapVersionUrl(mapName), {
+  let versions = new Proxy(
+    {},
+    {
+      get(target, key) {
+        if (key in target) {
+          return target[key];
+        } else {
+          const randomString = encodeURIComponent(String(Math.random().toString(36).slice(2)));
+          target[key] = randomString;
+          return randomString;
+        }
+      },
+    }
+  );
+
+  try {
+    const responses = await Promise.all(
+      mapVersionUrl(mapName).map((url) =>
+        fetch(url, {
     headers: {
-      "cache-control": "no-cache",
+            // "cache-control": "no-cache",
     },
-  });
+        })
+      )
+    );
 
-  let version;
-  if (!req.ok) {
-    console.error(`failed to fetch version for mapName ${mapName}: ${req.status} ${req.statusText}`);
-    version = String(Math.random().toString(36).slice(2));
-  } else {
-    version = (await req.text()).trim();
+    await Promise.all(
+      responses.map(async (response) => {
+        const text = await response.text();
+        console.log(text);
+        console.log(response);
+        const origin = new URL(response.url).origin;
+        console.log(origin);
+        versions[origin] = encodeURIComponent(text.trim());
+      })
+    );
+  } catch (error) {
+    console.error(`${error.message} mapName ${mapName}`);
   }
-
-  return encodeURIComponent(version);
+  console.log(versions);
+  return versions;
 }
 
-const changeMap = (async () => {
+const changeMap = (() => {
   let cacheBustHandler = undefined;
 
   // setActiveMap('a specific map name')
@@ -341,8 +377,7 @@ const changeMap = (async () => {
     // do nothing for invalid mapName
     if (mapTiles.length === 0) return;
 
-    const version = await fetchMapVersion(mapName);
-
+    const versions = await fetchMapVersion(mapName);
     // when we change maps, remove the old handler so it doesn't interfere...
     if (cacheBustHandler) {
       os.world.removeHandler("add-item", cacheBustHandler);
@@ -351,11 +386,11 @@ const changeMap = (async () => {
 
     // create the new handler
     cacheBustHandler = (event) => {
-      /** @type {{Format: string, Overlap: string, Size: {Width: string, Height: string}, TileSize: string, TopLeft: {X: string, Y: string}}} */
       // Append cacheKeys to the images
       // xxx.png?v=UNIX_TIMESTAMP
       // Each Map has their own timestamps
-      event.item.source.queryParams = `?v=${version}`;
+      event.item.source.queryParams = `?v=${versions[new URL(event.item.source.tilesUrl).origin]}`;
+      console.log(event.item.source.queryParams);
     };
     os.world.addHandler("add-item", cacheBustHandler);
 
@@ -365,7 +400,7 @@ const changeMap = (async () => {
     // ... add the new tiles ...
     for (const url of mapTiles) {
       // assumes "url" from tileSource urls does not already include a query string parameter
-      os.addTiledImage({ tileSource: `${url}?v=${version}` });
+      os.addTiledImage({ tileSource: url });
     }
 
     // ... and redraw the map
@@ -507,10 +542,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const navLinksUl = document.getElementById("navLinksList");
   if (!navLinksUl) return;
 
-  const formatDate = (d) => d; // TODO: implement
+  const formatDate = (d) => new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric" }).format(new Date(d)); // TODO: implement
   // TODO: fix dates and positions
-  // const formatDate = (function () {
-  // new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric" }).format(new Date(date));
+  //const formatDate = (function () {
+  //new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric" }).format(new Date(date));
   // })();
 
   for (const def of mapDefinitions) {
