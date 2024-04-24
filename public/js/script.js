@@ -290,62 +290,47 @@ const mouseTracker = new OpenSeadragon.MouseTracker({
   },
 }).setTracking(true);
 
-const mapVersionUrl = (mapName) => {
+const mapVersionUrls = (mapName) => {
   const fileName = "currentVersion.txt";
   const versions = tileSources[mapName].map((sourceURL) => `${new URL(sourceURL).origin}/${fileName}`);
 
   return versions;
 };
 
-// fetches the version identifier for a given map name, for use in cache busting
 /**
- *
- * @param {string} mapName name of the map; example: regular-main-branch
- * @returns {object|string}
+ * Fetches map versions for a given map name.
+ * @param {string} mapName - The name of the map to fetch versions for.
+ * @returns {Promise<Object>} A promise that resolves to an object containing versions for different origins.
  */
-async function fetchMapVersion(mapName) {
+function fetchMapVersions(mapName) {
   // we don't want to fetch a cached version of the manifest!
-  let versions = new Proxy(
-    {},
-    {
-      get(target, key) {
-        if (key in target) {
-          return target[key];
-        } else {
-          const randomString = encodeURIComponent(String(Math.random().toString(36).slice(2)));
-          target[key] = randomString;
-          return randomString;
+  const versions = {};
+  const urls = mapVersionUrls(mapName);
+  const promises = urls.map((url) =>
+    fetch(url, {
+      // Commented out because it's causing CORS issues
+      //headers: { 'cache-control': 'no-cache' }
+    })
+      .then((res) => {
+        // gotta check the response, otherwise the body content doesn't represent what you think it does
+        if (!res.ok) {
+          throw new Error(`Fetch failed: ${res.status} ${res.statusText}`);
         }
-      },
-    }
-  );
 
-  try {
-    const responses = await Promise.all(
-      mapVersionUrl(mapName).map((url) =>
-        fetch(url, {
-          headers: {
-            // "cache-control": "no-cache",
-          },
-        })
-      )
-    );
-
-    await Promise.all(
-      responses.map(async (response) => {
-        const text = await response.text();
-        console.log(text);
-        console.log(response);
-        const origin = new URL(response.url).origin;
-        console.log(origin);
-        versions[origin] = encodeURIComponent(text.trim());
+        return res.text();
       })
-    );
-  } catch (error) {
-    console.error(`${error.message} mapName ${mapName}`);
-  }
-  console.log(versions);
-  return versions;
+      .catch((err) => {
+        console.error(err);
+        // create a synthetic cache bust string if anything errored
+        return Math.random().toString(36).slice(2);
+      })
+      .then((body) => {
+        const origin = new URL(url).origin;
+        versions[origin] = encodeURIComponent(body.trim());
+      })
+  );
+  // wait for all requests to have set their key, then return the object
+  return Promise.all(promises).then(() => versions);
 }
 
 const changeMap = (() => {
@@ -390,9 +375,12 @@ const changeMap = (() => {
     const mapTiles = tileSources[mapName] ?? [];
 
     // do nothing for invalid mapName
-    if (mapTiles.length === 0) return;
+    if (mapTiles.length === 0) {
+      console.error("Invalid mapname = %s", mapName);
+      return;
+    }
 
-    const versions = await fetchMapVersion(mapName);
+    const versions = await fetchMapVersions(mapName);
     // when we change maps, remove the old handler so it doesn't interfere...
     if (cacheBustHandler) {
       os.world.removeHandler("add-item", cacheBustHandler);
