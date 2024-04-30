@@ -1,6 +1,6 @@
 # ![NoitamapLogo](https://github.com/acidflow-noita/noitamap/assets/106106310/8d744876-be6f-479c-8bed-09257a07a08a) Noitamap — [map.runfast.stream](https://map.runfast.stream)
 
-Blazing-_fast_ zoomable map for Noita
+Blazing-_fast_ superzoom map for Noita
 
 ![Map demo](https://github.com/acidflow-noita/noitamap/assets/106106310/94e0fb7e-4e0f-4419-9c14-38cace15efee)
 
