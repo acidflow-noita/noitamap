@@ -39,8 +39,11 @@
   </div>
   <nav class="navbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top">
     <div class="container-fluid">
-      <a class="navbar-brand" href="#" onclick="goHome();"><img src="/assets/NoitamapLogo.svg" alt="Noitamap Logo"
+      <a class="navbar-brand" href="#" onclick="resetZoom();"><img src="/assets/NoitamapLogo.svg" alt="Noitamap Logo"
           class="d-inline-block align-text-middle" /><span id="currentMapName">Noita map</span></a>
+      <a id="goToMainWebsiteButton" tabindex="0" href="https://runfast.stream" target="\_blank"
+        class="btn btn-outline-warning text-nowrap" data-bs-trigger="focus" role="button"><i
+          class="icon-runfast"></i></a>
       <a id="overlayVisibilityToggleButton" tabindex="0" class="btn btn-outline-info text-nowrap"
         data-bs-trigger="focus" role="button"><i class="bi bi-layers"></i> Toggle overlays</a>
       <a id="shareButton" tabindex="0" class="btn btn-outline-success text-nowrap" data-bs-trigger="focus"

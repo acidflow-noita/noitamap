@@ -163,3 +163,12 @@ body.toggle-hidden a#overlayVisibilityToggleButton {
 body.toggle-hidden div.osOverlayHighlight {
   display: none !important; /* overwrite the style="" element */
 }
+
+.icon-runfast {
+  background-image: url(/assets/runfast-logo.svg);
+  background-size: cover;
+  display: inline-block;
+  height: 15px;
+  width: 76px;
+  margin-top: 8%;
+}

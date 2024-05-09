@@ -489,7 +489,7 @@ const appendAlert = (message, type) => {
 };
 
 // Reset zoom level upon click on the logo
-function goHome() {
+function resetZoom() {
   os.viewport.goHome();
 }
 
