@@ -250,6 +250,11 @@ var os = OpenSeadragon({
 });
 
 let overlaysState = false;
+const allOverlays = document.getElementsByClassName("osOverlayHighlight");
+const overlaysSwitch = document.querySelector("#overlayVisibilityToggle");
+const overlaysSwitchWrapper = document.querySelector("#overlayVisibilityToggleWrapper");
+overlaysSwitch.checked = false;
+
 let prevTiledImage;
 let nextTiledImage;
 
@@ -348,27 +353,21 @@ const changeMap = (() => {
     // modify the DOM to show the current map name based on the contents of the link
     // to activate that map
     document.getElementById("currentMapName").innerHTML = currentMapLink.innerHTML;
-    const mytooltip = bootstrap.Tooltip.getInstance("#overlaySpan");
-    // Quick hack to fix toggle overlays button
-    const overlaySpan = document.querySelector("#overlaySpan");
+
     switch (mapName) {
       case "regular-main-branch":
       case "regular-beta":
-        // document.body.classList.remove("toggle-hidden");
-        document.querySelector("#overlayVisibilityToggle").disabled = false;
-        // overlaySpan.dataset["bsToggle"] = "tooltip";
-        // overlaySpan.dataset["bsPlacement"] = "bottom";
-        // overlaySpan.innerText = "";
-        mytooltip.disable();
+        document.body.classList.remove("toggle-hidden");
+        overlaysSwitch.disabled = false;
+        overlaysSwitch.checked = overlaysState;
+        overlaysSwitchWrapper.setAttribute("data-bs-title", "Additional info for the map");
         break;
       default:
-        // document.body.classList.add("toggle-hidden");
+        document.body.classList.add("toggle-hidden");
+        overlaysSwitch.disabled = true;
+        overlaysSwitch.checked = false;
 
-        document.querySelector("#overlayVisibilityToggle").disabled = true;
-        mytooltip.enable();
-        overlaySpan.dataset["bsToggle"] = "tooltip";
-        overlaySpan.dataset["bsPlacement"] = "bottom";
-        overlaySpan.dataset["bsTitle"] = "Overlays are not available for this map";
+        overlaysSwitchWrapper.setAttribute("data-bs-title", "No overlays available for this map");
     }
 
     // update url to refer to the map we just selected
@@ -510,13 +509,13 @@ function getShareUrl() {
 const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
 const popoverList = [...popoverTriggerList].map((popoverTriggerEl) => new bootstrap.Popover(popoverTriggerEl));
 
-let allOverlays = document.getElementsByClassName("osOverlayHighlight");
-document.querySelector("#overlayVisibilityToggle").addEventListener("click", function () {
+overlaysSwitch.addEventListener("click", function () {
   const updatedUrlParamsFromOverlaysToggle = new URLSearchParams(window.location.search);
   const currentMapURLFromOverlaysToggle = String(updatedUrlParamsFromOverlaysToggle.get("map"));
   if (overlaysState) {
     Array.from(allOverlays).forEach((overlay) => {
       os.removeOverlay(overlay.id);
+      overlaysSwitch.checked = false;
     });
     // Todo -- fix this to make overlays work with other maps
   } else if (
@@ -622,12 +621,12 @@ function eraseDrawings() {
   console.log("cleared");
 }
 
-drawingToggleSwitch.addEventListener("change", (event) => {
-  if (event.currentTarget.checked && os.areAnnotationsActive() == false) {
-    os.initializeAnnotations();
-    console.log("checked");
-  } else {
-    os.shutdownAnnotations();
-    console.log("not checked");
-  }
-});
+// drawingToggleSwitch.addEventListener("change", (event) => {
+//   if (event.currentTarget.checked && os.areAnnotationsActive() == false) {
+//     os.initializeAnnotations();
+//     console.log("checked");
+//   } else {
+//     os.shutdownAnnotations();
+//     console.log("not checked");
+//   }
+// });

@@ -157,9 +157,7 @@ html {
     transform: rotate(360deg);
   }
 }
-body.toggle-hidden div:has(> #overlayVisibilityToggle) {
-  visibility: hidden;
-}
+
 body.toggle-hidden div.osOverlayHighlight {
   display: none !important; /* overwrite the style="" element */
 }

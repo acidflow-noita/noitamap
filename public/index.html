@@ -44,13 +44,13 @@
       <a id="goToMainWebsiteButton" tabindex="0" href="https://runfast.stream" target="\_blank"
         class="btn btn-outline-warning text-nowrap" data-bs-trigger="focus" role="button"><i
           class="icon-runfast"></i></a>
-      <span id="overlaySpan" class="d-inline-block" tabindex="0" data-bs-toggle="tooltip" data-bs-title="">
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" role="switch" id="overlayVisibilityToggle">
-          <label class="form-check-label" for="overlayVisibilityToggle"><i class="bi bi-layers"></i> Show
-            overlays</label>
-        </div>
-      </span>
+
+      <div id="overlayVisibilityToggleWrapper" class="form-check form-switch" class="d-inline-block" tabindex="0"
+        data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Additional info for the map">
+        <input class="form-check-input" type="checkbox" role="switch" id="overlayVisibilityToggle">
+        <label class="form-check-label" for="overlayVisibilityToggle"><i class="bi bi-layers"></i> Show
+          overlays</label>
+      </div>
 
       <!-- TODO: add drawing -->
       <!-- <div class="form-check form-switch"> -->
