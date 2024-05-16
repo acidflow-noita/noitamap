@@ -44,8 +44,22 @@
       <a id="goToMainWebsiteButton" tabindex="0" href="https://runfast.stream" target="\_blank"
         class="btn btn-outline-warning text-nowrap" data-bs-trigger="focus" role="button"><i
           class="icon-runfast"></i></a>
-      <a id="overlayVisibilityToggleButton" tabindex="0" class="btn btn-outline-info text-nowrap"
-        data-bs-trigger="focus" role="button"><i class="bi bi-layers"></i> Toggle overlays</a>
+
+      <div id="overlayVisibilityToggleWrapper" class="form-check form-switch" class="d-inline-block" tabindex="0"
+        data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Additional info for the map">
+        <input class="form-check-input" type="checkbox" role="switch" id="overlayVisibilityToggle">
+        <label class="form-check-label" for="overlayVisibilityToggle"><i class="bi bi-layers"></i> Show
+          overlays</label>
+      </div>
+
+      <!-- TODO: add drawing -->
+      <!-- <div class="form-check form-switch"> -->
+      <!--   <input class="form-check-input" type="checkbox" role="switch" id="drawingToggleSwitch"> -->
+      <!--   <label class="form-check-label" for="drawingToggleSwitch"><i class="bi bi-brush"></i> Draw</label> -->
+      <!-- </div> -->
+      <!-- <a id="eraseAnnotationDrawingsButton" tabindex="0" class="btn btn-outline-info text-nowrap"
+        data-bs-trigger="focus" role="button" onclick="eraseDrawings()"><i class="bi bi-eraser"></i></a> -->
+
       <a id="shareButton" tabindex="0" class="btn btn-outline-success text-nowrap" data-bs-trigger="focus"
         data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Copied!"
         role="button" onclick="getShareUrl();"><i class="bi bi-copy"></i> Copy to clipboard</a>
