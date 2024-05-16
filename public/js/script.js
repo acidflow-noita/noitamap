@@ -1,8 +1,5 @@
 // TODO: Add annotations
 // annotations plugin
-// const annotations = new OpenSeadragon.Annotations({ viewer });
-
-// os.initializeAnnotations();
 
 "use strict";
 
@@ -351,15 +348,27 @@ const changeMap = (() => {
     // modify the DOM to show the current map name based on the contents of the link
     // to activate that map
     document.getElementById("currentMapName").innerHTML = currentMapLink.innerHTML;
-
+    const mytooltip = bootstrap.Tooltip.getInstance("#overlaySpan");
     // Quick hack to fix toggle overlays button
+    const overlaySpan = document.querySelector("#overlaySpan");
     switch (mapName) {
       case "regular-main-branch":
       case "regular-beta":
-        document.body.classList.remove("toggle-hidden");
+        // document.body.classList.remove("toggle-hidden");
+        document.querySelector("#overlayVisibilityToggle").disabled = false;
+        // overlaySpan.dataset["bsToggle"] = "tooltip";
+        // overlaySpan.dataset["bsPlacement"] = "bottom";
+        // overlaySpan.innerText = "";
+        mytooltip.disable();
         break;
       default:
-        document.body.classList.add("toggle-hidden");
+        // document.body.classList.add("toggle-hidden");
+
+        document.querySelector("#overlayVisibilityToggle").disabled = true;
+        mytooltip.enable();
+        overlaySpan.dataset["bsToggle"] = "tooltip";
+        overlaySpan.dataset["bsPlacement"] = "bottom";
+        overlaySpan.dataset["bsTitle"] = "Overlays are not available for this map";
     }
 
     // update url to refer to the map we just selected
@@ -502,7 +511,7 @@ const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]
 const popoverList = [...popoverTriggerList].map((popoverTriggerEl) => new bootstrap.Popover(popoverTriggerEl));
 
 let allOverlays = document.getElementsByClassName("osOverlayHighlight");
-document.querySelector("#overlayVisibilityToggleButton").addEventListener("click", function () {
+document.querySelector("#overlayVisibilityToggle").addEventListener("click", function () {
   const updatedUrlParamsFromOverlaysToggle = new URLSearchParams(window.location.search);
   const currentMapURLFromOverlaysToggle = String(updatedUrlParamsFromOverlaysToggle.get("map"));
   if (overlaysState) {
@@ -605,3 +614,20 @@ function addTooltips() {
   const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
   const tooltipList = [...tooltipTriggerList].map((tooltipTriggerEl) => new bootstrap.Tooltip(tooltipTriggerEl));
 }
+
+const drawingToggleSwitch = document.getElementById("drawingToggleSwitch");
+
+function eraseDrawings() {
+  os.annotations.clean();
+  console.log("cleared");
+}
+
+drawingToggleSwitch.addEventListener("change", (event) => {
+  if (event.currentTarget.checked && os.areAnnotationsActive() == false) {
+    os.initializeAnnotations();
+    console.log("checked");
+  } else {
+    os.shutdownAnnotations();
+    console.log("not checked");
+  }
+});

@@ -54,7 +54,7 @@ html {
   margin-left: auto;
   margin-right: 2vw;
 }
-#overlayVisibilityToggleButton {
+#overlayVisibilityToggle {
   margin-left: auto;
   margin-right: 2vw;
 }
@@ -157,7 +157,7 @@ html {
     transform: rotate(360deg);
   }
 }
-body.toggle-hidden a#overlayVisibilityToggleButton {
+body.toggle-hidden div:has(> #overlayVisibilityToggle) {
   visibility: hidden;
 }
 body.toggle-hidden div.osOverlayHighlight {
