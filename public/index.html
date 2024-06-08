@@ -1,103 +1,133 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <title>Noita World Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta name="description" content="Blazingly-fast superzoom map for Noita. Map for the video game Noita." />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png" />
+    <link rel="manifest" href="/assets/favicon/site.webmanifest" />
+    <link rel="mask-icon" href="/assets/favicon/safari-pinned-tab.svg" color="#5bbad5" />
+    <link rel="shortcut icon" href="/assets/favicon/favicon.ico" />
+    <meta name="msapplication-TileColor" content="#da532c" />
+    <meta name="msapplication-config" content="/assets/favicon/browserconfig.xml" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="stylesheet" href="css/overlay-styles.css" />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="icon" href="/assets/favicon/favicon.ico" type="image/x-icon" />
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <script src="https://cdn.jsdelivr.net/npm/openseadragon@4.1/build/openseadragon/openseadragon.min.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+      crossorigin="anonymous"
+    ></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <script src="https://unpkg.com/openseadragon-annotations@1.0.5/dist/openseadragon-annotations.js"></script>
+  </head>
 
-<head>
-  <meta charset="utf-8" />
-  <title>Noita World Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <meta name="description" content="Blazingly-fast superzoom map for Noita. Map for the video game Noita." />
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png" />
-  <link rel="manifest" href="/assets/favicon/site.webmanifest" />
-  <link rel="mask-icon" href="/assets/favicon/safari-pinned-tab.svg" color="#5bbad5" />
-  <link rel="shortcut icon" href="/assets/favicon/favicon.ico" />
-  <meta name="msapplication-TileColor" content="#da532c" />
-  <meta name="msapplication-config" content="/assets/favicon/browserconfig.xml" />
-  <meta name="theme-color" content="#ffffff" />
-  <link rel="stylesheet" href="css/overlay-styles.css" />
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="icon" href="/assets/favicon/favicon.ico" type="image/x-icon" />
-  <link rel="preconnect" href="https://rsms.me/" />
-  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
-  <script src="https://cdn.jsdelivr.net/npm/openseadragon@4.1/build/openseadragon/openseadragon.min.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
-    crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-  <script src="https://unpkg.com/openseadragon-annotations@1.0.5/dist/openseadragon-annotations.js"></script>
-</head>
-
-<body>
-  <div id="liveAlertPlaceholder" class="toast align-items-center" role="alert" aria-live="assertive" aria-atomic="true">
-    <div class="d-flex">
-      <div class="toast-body">Copied current map coordinates to your clipboard!</div>
-      <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-    </div>
-  </div>
-  <nav class="navbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="#" onclick="resetZoom();"><img src="/assets/NoitamapLogo.svg" alt="Noitamap Logo"
-          class="d-inline-block align-text-middle" /><span id="currentMapName">Noita map</span></a>
-      <a id="goToMainWebsiteButton" tabindex="0" href="https://runfast.stream" target="\_blank"
-        class="btn btn-outline-warning text-nowrap" data-bs-trigger="focus" role="button"><i
-          class="icon-runfast"></i></a>
-
-      <div id="overlayVisibilityToggleWrapper" class="form-check form-switch" data-bs-toggle="tooltip"
-        data-bs-placement="bottom" data-bs-title="Additional info for the map">
-        <input class="form-check-input" type="checkbox" role="switch" id="overlayVisibilityToggle">
-        <label class="form-check-label" for="overlayVisibilityToggle"><i class="bi bi-layers"></i> Show
-          overlays</label>
+  <body>
+    <div id="liveAlertPlaceholder" class="toast align-items-center" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">Copied current map coordinates to your clipboard!</div>
+        <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
       </div>
+    </div>
+    <nav class="navbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#" onclick="resetZoom();"
+          ><img src="/assets/NoitamapLogo.svg" alt="Noitamap Logo" class="d-inline-block align-text-middle" /><span id="currentMapName">Noita map</span></a
+        >
+        <a id="goToMainWebsiteButton" tabindex="0" href="https://runfast.stream" target="\_blank" class="btn btn-outline-warning text-nowrap" data-bs-trigger="focus" role="button"
+          ><i class="icon-runfast"></i
+        ></a>
 
-      <!-- TODO: add drawing -->
-      <!-- <div class="form-check form-switch"> -->
-      <!--   <input class="form-check-input" type="checkbox" role="switch" id="drawingToggleSwitch"> -->
-      <!--   <label class="form-check-label" for="drawingToggleSwitch"><i class="bi bi-brush"></i> Draw</label> -->
-      <!-- </div> -->
-      <!-- <a id="eraseAnnotationDrawingsButton" tabindex="0" class="btn btn-outline-info text-nowrap"
+        <div id="overlayVisibilityToggleWrapper" class="form-check form-switch" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Additional info for the map">
+          <input class="form-check-input" type="checkbox" role="switch" id="overlayVisibilityToggle" />
+          <label class="form-check-label" for="overlayVisibilityToggle"><i class="bi bi-layers"></i> Show overlays</label>
+        </div>
+
+        <div id="overlaysToggleWrapper" class="hidden">
+          <div class="overlayToggle" class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="bossesOverlayVisibilityToggle" />
+            <label class="form-check-label" for="bossesOverlayVisibilityToggle"><i class="bi bi-layers"></i>Bosses</label>
+          </div>
+          <div class="overlayToggle" class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="locationsOverlayVisibilityToggle" />
+            <label class="form-check-label" for="locationsOverlayVisibilityToggle"><i class="bi bi-layers"></i>Locations</label>
+          </div>
+          <div class="overlayToggle" class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="itemsOverlayVisibilityToggle" />
+            <label class="form-check-label" for="itemsOverlayVisibilityToggle"><i class="bi bi-layers"></i>Items</label>
+          </div>
+          <div class="overlayToggle" class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="orbsOverlayVisibilityToggle" />
+            <label class="form-check-label" for="orbsOverlayVisibilityToggle"><i class="bi bi-layers"></i>Orbs</label>
+          </div>
+        </div>
+
+        <!-- TODO: add drawing -->
+        <!-- <div class="form-check form-switch"> -->
+        <!--   <input class="form-check-input" type="checkbox" role="switch" id="drawingToggleSwitch"> -->
+        <!--   <label class="form-check-label" for="drawingToggleSwitch"><i class="bi bi-brush"></i> Draw</label> -->
+        <!-- </div> -->
+        <!-- <a id="eraseAnnotationDrawingsButton" tabindex="0" class="btn btn-outline-info text-nowrap"
         data-bs-trigger="focus" role="button" onclick="eraseDrawings()"><i class="bi bi-eraser"></i></a> -->
 
-      <a id="shareButton" tabindex="0" class="btn btn-outline-success text-nowrap" data-bs-trigger="focus"
-        data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Copied!"
-        role="button" onclick="getShareUrl();"><i class="bi bi-copy"></i> Copy to clipboard</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasDarkNavbar"
-        aria-controls="offcanvasDarkNavbar" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="offcanvasDarkNavbar"
-        aria-labelledby="offcanvasDarkNavbarLabel">
-        <div class="offcanvas-header">
-          <h5 class="offcanvas-title" id="offcanvasDarkNavbarLabel">Available maps</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"
-            aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body">
-          <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-            <ul
-              class="column-gap-3 navbar-nav ml-auto mb-2 mb-lg-0 w-100 d-flex flex-row-md flex-column-sm mb-md-1 mt-md-0 mb-3 mt-2"
-              id="navLinksList"></ul>
-            <br />
-            <a href="https://github.com/acidflow-noita/noitamap?tab=readme-ov-file#how-to-capture-a-map"
-              class="btn btn-outline-info text-nowrap w-50" target="\_blank" role="button"><i
-                class="bi bi-cloud-upload"></i> Upload map</a>
-            <br />
-            <a href="https://github.com/acidflow-noita/noitamap" class="btn btn-outline-info text-nowrap w-50"
-              target="\_blank" role="button"><i class="bi bi-github"></i> Contribute</a>
-          </ul>
+        <a
+          id="shareButton"
+          tabindex="0"
+          class="btn btn-outline-success text-nowrap"
+          data-bs-trigger="focus"
+          data-bs-container="body"
+          data-bs-toggle="popover"
+          data-bs-placement="bottom"
+          data-bs-content="Copied!"
+          role="button"
+          onclick="getShareUrl();"
+          ><i class="bi bi-copy"></i> Copy to clipboard</a
+        >
+        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasDarkNavbar" aria-controls="offcanvasDarkNavbar" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="offcanvasDarkNavbar" aria-labelledby="offcanvasDarkNavbarLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="offcanvasDarkNavbarLabel">Available maps</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body">
+            <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+              <ul class="column-gap-3 navbar-nav ml-auto mb-2 mb-lg-0 w-100 d-flex flex-row-md flex-column-sm mb-md-1 mt-md-0 mb-3 mt-2" id="navLinksList"></ul>
+              <br />
+              <a href="https://github.com/acidflow-noita/noitamap?tab=readme-ov-file#how-to-capture-a-map" class="btn btn-outline-info text-nowrap w-50" target="\_blank" role="button"
+                ><i class="bi bi-cloud-upload"></i> Upload map</a
+              >
+              <br />
+              <a href="https://github.com/acidflow-noita/noitamap" class="btn btn-outline-info text-nowrap w-50" target="\_blank" role="button"><i class="bi bi-github"></i> Contribute</a>
+            </ul>
+          </div>
         </div>
       </div>
+    </nav>
+    <div id="osContainer"></div>
+    <i class="bi bi-arrow-repeat loadingIndicator spinningIcon text-info"></i>
+    <div id="coordinates-hover"></div>
+    <div id="coordinate" class="coordinate">
+      <div class="coordinate-content"></div>
     </div>
-  </nav>
-  <div id="osContainer"></div>
-  <i class="bi bi-arrow-repeat loadingIndicator spinningIcon text-info"></i>
-  <div id="coordinates-hover"></div>
-  <div id="coordinate" class="coordinate">
-    <div class="coordinate-content"></div>
-  </div>
-  <script src="js/script.js"></script>
-</body>
-
+    <script src="js/overlays/bosses.js"></script>
+    <script src="js/overlays/locations.js"></script>
+    <script src="js/overlays/items.js"></script>
+    <script src="js/overlays/orbs.js"></script>
+    <script src="js/script.js"></script>
+  </body>
 </html>
