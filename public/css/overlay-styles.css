@@ -1,6 +1,6 @@
 .osOverlayHighlight {
   background-color: rgba(56, 162, 204, 0.401);
-  border: rgba(255, 0, 0, 0.1) dashed 1px;
+  border: rgba(255, 0, 0, 0.5) dashed 1px;
   position: relative; /* Ensure positioning context for the span */
   overflow: hidden;
 }
@@ -25,4 +25,10 @@
 }
 .osOverlayText:hover {
   display: block;
+}
+.hidden {
+  display: none !important;
+}
+#overlaysToggleWrapper {
+  margin-left: 1rem;
 }

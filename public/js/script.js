@@ -5,51 +5,23 @@
 
 const spans2 = document.querySelectorAll(".osOverlayHighlight");
 
-const overlayTexts = [
+const OVERLAYS = [
   {
-    id: 0,
-    text: "Watchtower. Seems to just be a hint to head to the temples in the sky.",
-    x: 13758,
-    y: -1100,
-    width: 650,
-    height: 1600,
+    name: "bosses",
+    data: noitaBosses,
   },
   {
-    id: 1,
-    text: "Barren Temple. You can find a potion of mimicium here to start your quest. Later you will need to revisit to help this temple flourish.",
-    x: -6000,
-    y: -5700,
-    width: 1100,
-    height: 900,
+    name: "locations",
+    data: noitaLocations,
   },
   {
-    id: 2,
-    text: "Ominous Temple. A large pool of ominous liquid is needed here. Sea of Mimicium will be helpful.",
-    x: 2100,
-    y: -5300,
-    width: 1300,
-    height: 1100,
+    name: "items",
+    data: noitaItems,
   },
   {
-    id: 3,
-
-    text: 'Henkevä Temple. "Spirited Temple". Potions here require mimicium. Pheromone will aid you. They might also need a little kick.',
-    x: -2600,
-    y: -5800,
-    width: 1600,
-    height: 1650,
+    name: "orbs",
+    data: noitaOrbs,
   },
-  { id: 4, text: "Milk", x: 2420, y: -4500, width: 25, height: 25 },
-  {
-    id: 5,
-
-    text: "Kivi Temple. A boss fight here might be easier with a spell unlocked in another temple",
-    x: 6750,
-    y: -5241,
-    width: 1230,
-    height: 1100,
-  },
-  { id: 6, text: "Beer", x: 7610, y: -4359, width: 25, height: 25 },
 ];
 
 const CHUNK_SIZE = 512;
@@ -252,8 +224,20 @@ var os = OpenSeadragon({
 let overlaysState = false;
 const allOverlays = document.getElementsByClassName("osOverlayHighlight");
 const overlaysSwitch = document.querySelector("#overlayVisibilityToggle");
-const overlaysSwitchWrapper = document.querySelector("#overlayVisibilityToggleWrapper");
-overlaysSwitch.checked = false;
+const overlaysSwitchWrapper = document.querySelector("#overlaysToggleWrapper");
+const overlaySwitchWrapper = document.querySelector("#overlayVisibilityToggleWrapper");
+const [
+  bossesOverlayVisibilityToggle,
+  locationsOverlayVisibilityToggle,
+  itemsOverlayVisibilityToggle,
+  orbsOverlayVisibilityToggle,
+] = document.querySelectorAll(
+  "#bossesOverlayVisibilityToggle, #locationsOverlayVisibilityToggle, #itemsOverlayVisibilityToggle, #orbsOverlayVisibilityToggle",
+);
+bossesOverlayVisibilityToggle.checked = false;
+locationsOverlayVisibilityToggle.checked = true;
+itemsOverlayVisibilityToggle.checked = false;
+orbsOverlayVisibilityToggle.checked = false;
 
 let prevTiledImage;
 let nextTiledImage;
@@ -329,7 +313,7 @@ function fetchMapVersions(mapName) {
       .then((body) => {
         const origin = new URL(url).origin;
         versions[origin] = encodeURIComponent(body.trim());
-      })
+      }),
   );
   // wait for all requests to have set their key, then return the object
   return Promise.all(promises).then(() => versions);
@@ -509,33 +493,80 @@ function getShareUrl() {
 const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
 const popoverList = [...popoverTriggerList].map((popoverTriggerEl) => new bootstrap.Popover(popoverTriggerEl));
 
+const hideOverlays = () => {
+  overlaysSwitchWrapper.classList.add("hidden");
+};
+const displayOverlays = () => {
+  overlaysSwitchWrapper.classList.remove("hidden");
+};
+
+const drawOverlayItems = (items) => {
+  items.forEach(({ id, text, x, y, width, height }) => {
+    let e = document.createElement("div");
+    e.id = `overlayId${id}`;
+    e.className = "osOverlayHighlight";
+    e.innerHTML = `<span id="span${id}" >${text}</span>`;
+    os.addOverlay({
+      element: e,
+      location: new OpenSeadragon.Rect(x, y, width, height),
+    });
+    const hue = Math.floor(Math.random() * 360);
+    e.style.backgroundColor = `hsla(${hue}, 60%, 50%, 0.401)`;
+  });
+};
+
+// Overlay switch handler
 overlaysSwitch.addEventListener("click", function () {
   const updatedUrlParamsFromOverlaysToggle = new URLSearchParams(window.location.search);
   const currentMapURLFromOverlaysToggle = String(updatedUrlParamsFromOverlaysToggle.get("map"));
+  // When turning overlays off
   if (overlaysState) {
     Array.from(allOverlays).forEach((overlay) => {
       os.removeOverlay(overlay.id);
       overlaysSwitch.checked = false;
     });
+    hideOverlays();
     // Todo -- fix this to make overlays work with other maps
+    // When turning overlays on
   } else if (
     currentMapURLFromOverlaysToggle === "regular-main-branch" ||
     currentMapURLFromOverlaysToggle === "regular-beta"
   ) {
-    overlayTexts.forEach(({ id, text, x, y, width, height }) => {
-      let e = document.createElement("div");
-      e.id = `overlayId${id}`;
-      e.className = "osOverlayHighlight";
-      e.innerHTML = `<span id="span${id}" >${text}</span>`;
-      os.addOverlay({
-        element: e,
-        location: new OpenSeadragon.Rect(x, y, width, height),
-      });
-      const hue = Math.floor(Math.random() * 360);
-      e.style.backgroundColor = `hsla(${hue}, 60%, 50%, 0.401)`;
-    });
+    displayOverlays();
+    drawOverlayItems(
+      OVERLAYS.filter(
+        (o) =>
+          (o.name === "bosses" && bossesOverlayVisibilityToggle.checked) ||
+          (o.name === "locations" && locationsOverlayVisibilityToggle.checked) ||
+          (o.name === "items" && itemsOverlayVisibilityToggle.checked) ||
+          (o.name === "orbs" && orbsOverlayVisibilityToggle.checked),
+      ).flatMap((o) => o.data),
+    );
   }
   overlaysState = !overlaysState;
+});
+
+const updateSpecificOverlay = (toggleElement, data) => {
+  if (toggleElement.checked) {
+    drawOverlayItems(data);
+  } else {
+    data.forEach((overlay) => {
+      os.removeOverlay(`overlayId${overlay.id}`);
+    });
+  }
+};
+
+bossesOverlayVisibilityToggle.addEventListener("click", function () {
+  updateSpecificOverlay(bossesOverlayVisibilityToggle, OVERLAYS[0].data);
+});
+locationsOverlayVisibilityToggle.addEventListener("click", function () {
+  updateSpecificOverlay(locationsOverlayVisibilityToggle, OVERLAYS[1].data);
+});
+itemsOverlayVisibilityToggle.addEventListener("click", function () {
+  updateSpecificOverlay(itemsOverlayVisibilityToggle, OVERLAYS[2].data);
+});
+orbsOverlayVisibilityToggle.addEventListener("click", function () {
+  updateSpecificOverlay(orbsOverlayVisibilityToggle, OVERLAYS[3].data);
 });
 
 os.addHandler("animation-finish", function (event) {
