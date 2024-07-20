@@ -7,7 +7,11 @@ Blazingly-_fast_ superzoom map for Noita
 > TLDR: This repo contains sources for a very high-resolution highly-performant map for the video game called [Noita](https://store.steampowered.com/app/881100/Noita/). Noitamap uses [OpenSeadragon](https://github.com/openseadragon/openseadragon).
 > This repo started as a fork of whalehub's repo, which has been deleted from github but we had a [lucky fork](https://github.com/quiddity-wp/noita-map-viewer) with updated version of openseadragon and probably a different algo for creating the "pyramid" (zoomable) tiles. My goal is to create the best map viewing experience.
 
-The [map iself](https://map.runfast.stream) is being served by cloudflare pages with deployment from this repository. All the current map captures are backed up as separate `7z` archives and can be found in a shared [Mega folder](https://mega.nz/folder/8e1BhJAb#OmxyrCC1drMT2vOxSEqgcw).
+The [map iself](https://map.runfast.stream) is being served by cloudflare pages with deployment from this repository.
+
+## Where can I find the source tiles?
+
+All the current map captures are backed up as separate `7z` archives and can be found in a shared [Google Drive Folder](https://drive.google.com/drive/folders/10oSm9NOv0mdWT98tWDB-97nuP_gp1qQz).
 
 We're using seed `786433191` while running map capture because it has a couple structures and secrets visible. If you find a seed with even more stuff, please open an issue!
 
