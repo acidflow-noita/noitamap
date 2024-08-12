@@ -206,7 +206,7 @@ const mapDefinitions = [
         icon: "bi bi-tools",
       },
     ],
-    patchDate: "2024-02-12",
+    patchDate: "2024-08-12",
     seed: "78633191",
     tileSets: ["middle"],
     modUrl: "https://steamcommunity.com/sharedfiles/filedetails/?id=2554761457",
