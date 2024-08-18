@@ -1,0 +1,159 @@
+[
+  {
+    "key": "regular-main-branch",
+    "label": "Regular",
+    "badges": [
+      {
+        "label": "Epilogue 2",
+        "class": "text-bg-success"
+      }
+    ],
+    "patchDate": "2024-08-12",
+    "seed": "78633191",
+    "tileSets": ["middle", "left", "right"]
+  },
+  {
+    "key": "new-game-plus-main-branch",
+    "label": "NG+",
+    "badges": [
+      {
+        "label": "Epilogue 2",
+        "class": "text-bg-success"
+      }
+    ],
+    "patchDate": "2024-08-12",
+    "seed": "78633191",
+    "tileSets": ["middle", "left", "right"]
+  },
+  {
+    "key": "nightmare-main-branch",
+    "label": "Nightmare",
+    "badges": [
+      {
+        "label": "Epilogue 2",
+        "class": "text-bg-success"
+      }
+    ],
+    "patchDate": "2024-08-12",
+    "seed": "78633191",
+    "tileSets": ["middle", "left", "right"]
+  },
+  {
+    "key": "regular-beta",
+    "label": "Regular",
+    "badges": [
+      {
+        "label": "β branch",
+        "class": "text-bg-info"
+      }
+    ],
+    "patchDate": "2024-08-12",
+    "seed": "78633191",
+    "tileSets": ["middle", "left", "right"]
+  },
+  {
+    "key": "purgatory",
+    "label": "Purgatory",
+    "badges": [
+      {
+        "label": "Mod",
+        "class": "text-bg-light",
+        "icon": "bi bi-tools"
+      }
+    ],
+    "patchDate": "2024-08-12",
+    "seed": "78633191",
+    "tileSets": ["middle"],
+    "modUrl": "https://github.com/Priskip/purgatory"
+  },
+  {
+    "key": "apotheosis",
+    "label": "Apotheosis",
+    "badges": [
+      {
+        "label": "Mod",
+        "class": "text-bg-light",
+        "icon": "bi bi-tools"
+      }
+    ],
+    "patchDate": "2024-08-12",
+    "seed": "78633191",
+    "tileSets": ["middle"],
+    "modUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=3032128572"
+  },
+  {
+    "key": "apotheosis-new-game-plus",
+    "label": "Apotheosis NG+",
+    "badges": [
+      {
+        "label": "Mod",
+        "class": "text-bg-light",
+        "icon": "bi bi-tools"
+      }
+    ],
+    "patchDate": "2024-08-12",
+    "seed": "78633191",
+    "tileSets": ["middle"],
+    "modUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=3032128572"
+  },
+  {
+    "key": "apotheosis-tuonela",
+    "label": "Apotheosis Tuonela",
+    "badges": [
+      {
+        "label": "Mod",
+        "class": "text-bg-light",
+        "icon": "bi bi-tools"
+      }
+    ],
+    "patchDate": "2024-08-12",
+    "seed": "78633191",
+    "tileSets": ["middle"],
+    "modUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=3032128572"
+  },
+  {
+    "key": "noitavania",
+    "label": "Noitavania",
+    "badges": [
+      {
+        "label": "Mod",
+        "class": "text-bg-light",
+        "icon": "bi bi-tools"
+      }
+    ],
+    "patchDate": "2024-08-12",
+    "seed": "78633191",
+    "tileSets": ["middle"],
+    "modUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2263080245"
+  },
+  {
+    "key": "noitavania-new-game-plus",
+    "label": "Noitavania NG+",
+    "badges": [
+      {
+        "label": "Mod",
+        "class": "text-bg-light",
+        "icon": "bi bi-tools"
+      }
+    ],
+    "patchDate": "2024-08-12",
+    "seed": "78633191",
+    "tileSets": ["middle"],
+    "modUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2263080245"
+  },
+  {
+    "key": "alternate-biomes",
+    "label": "Alternate Biomes",
+    "badges": [
+      {
+        "label": "Mod",
+        "class": "text-bg-light",
+        "icon": "bi bi-tools"
+      }
+    ],
+    "patchDate": "2024-08-12",
+    "seed": "78633191",
+    "tileSets": ["middle"],
+    "modUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2554761457"
+  }
+]
