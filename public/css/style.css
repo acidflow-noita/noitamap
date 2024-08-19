@@ -6,10 +6,22 @@ html {
   overflow: hidden;
 }
 
+.navbar.mapNavbar {
+  background-color: #030712 !important;
+}
+
 #osContainer {
   width: 100vw;
   height: 100vh;
   position: fixed;
+}
+
+.navbar .container-fluid .d-flex.align-items-center > * {
+  margin-right: 1rem;
+}
+
+.navbar .container-fluid .d-flex.align-items-center > *:last-child {
+  margin-right: 0;
 }
 
 .menu img {
@@ -28,7 +40,6 @@ html {
 :root {
   font-family: Inter, sans-serif;
   font-feature-settings: "liga" 1, "calt" 1, "dlig", "ss01", "ss02";
-  /* fix for Chrome */
 }
 
 @supports (font-variation-settings: normal) {
@@ -50,12 +61,13 @@ html {
   position: relative;
   top: 2em;
 }
+
 #shareButton {
   margin-left: auto;
   margin-right: 2vw;
 }
+
 #overlayVisibilityToggle {
-  margin-left: auto;
   margin-right: 0.5vw;
 }
 
@@ -65,8 +77,8 @@ html {
   position: fixed;
   bottom: 0;
 }
+
 .spinningIcon::before {
-  /* Up to you, but don't need the vendor-fallbacks: https://caniuse.com/css-animation */
   animation-name: spin;
   animation-duration: 3s;
   animation-iteration-count: infinite;
@@ -117,13 +129,6 @@ html {
   text-shadow: -1px 0 white, 0 1px white, 1px 0 white, 0 -1px white;
   opacity: 0.4;
 }
-/* TODO: add "Loading" text */
-/* .loadingIndicator span {
-  margin-bottom: 1vw;
-  padding-left: 5vw;
-  position: fixed;
-  bottom: 0;
-} */
 
 @-ms-keyframes spin {
   from {
@@ -133,6 +138,7 @@ html {
     -ms-transform: rotate(360deg);
   }
 }
+
 @-moz-keyframes spin {
   from {
     -moz-transform: rotate(0deg);
@@ -141,6 +147,7 @@ html {
     -moz-transform: rotate(360deg);
   }
 }
+
 @-webkit-keyframes spin {
   from {
     -webkit-transform: rotate(0deg);
@@ -149,6 +156,7 @@ html {
     -webkit-transform: rotate(360deg);
   }
 }
+
 @keyframes spin {
   from {
     transform: rotate(0deg);
@@ -159,7 +167,7 @@ html {
 }
 
 body.toggle-hidden div.osOverlayHighlight {
-  display: none !important; /* overwrite the style="" element */
+  display: none !important;
 }
 
 .icon-runfast {
@@ -169,4 +177,49 @@ body.toggle-hidden div.osOverlayHighlight {
   height: 15px;
   width: 76px;
   margin-top: 8%;
+}
+
+/* Custom styling to ensure equal spacing */
+.navbar .container-fluid {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem; /* Adjust gap between elements */
+}
+
+.navbar .d-flex.align-items-center {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.navbar-brand,
+#goToMainWebsiteButton,
+#dropdownMenuButton,
+#overlayVisibilityToggleWrapper,
+#shareButton,
+.btn-outline-light {
+  margin: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  #goToMainWebsiteButton,
+  .btn-outline-light {
+    display: none;
+  }
+
+  #shareButton .d-none {
+    display: inline;
+  }
+
+  #overlayVisibilityToggleWrapper .form-check-label {
+    font-size: 0; /* Hides the text but keeps the icon visible */
+    visibility: hidden; /* Ensures that the text is not visible */
+    white-space: nowrap; /* Prevents the text from affecting layout */
+  }
+
+  #overlayVisibilityToggleWrapper .form-check-input {
+    margin-left: 0; /* Ensure proper spacing */
+  }
 }

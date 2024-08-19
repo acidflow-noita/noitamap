@@ -9,7 +9,6 @@
         dataLayer.push(arguments);
       }
       gtag("js", new Date());
-
       gtag("config", "GT-WVGRXGLP");
     </script>
 
@@ -62,6 +61,20 @@
     <meta name="twitter:title" content="Noita Map" />
     <meta name="twitter:description" content="Blazingly-fast superzoom map for Noita. Map for the video game Noita." />
     <meta name="twitter:image" content="https://map.runfast.stream/assets/noitamap-opengraph.png" />
+    <style>
+      .navbar .navbar-brand,
+      .navbar #goToMainWebsiteButton,
+      .navbar .dropdown,
+      .navbar #overlayVisibilityToggleWrapper,
+      .navbar #shareButton,
+      .navbar .btn-outline-light {
+        margin-left: 10px;
+      }
+
+      .navbar .navbar-brand {
+        margin-left: 0;
+      }
+    </style>
   </head>
 
   <body>
@@ -71,60 +84,50 @@
         <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
       </div>
     </div>
-    <nav class="navbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="#" onclick="resetZoom();"
-          ><img src="/assets/NoitamapLogo.svg" alt="Noitamap Logo" class="d-inline-block align-text-middle" /><span id="currentMapName">Noita map</span></a
-        >
-        <a id="goToMainWebsiteButton" tabindex="0" href="https://runfast.stream" target="\_blank" class="btn btn-outline-warning text-nowrap" data-bs-trigger="focus" role="button"
-          ><i class="icon-runfast"></i
-        ></a>
-
-        <div id="overlayVisibilityToggleWrapper" class="form-check form-switch" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Additional info for the map">
-          <input class="form-check-input" type="checkbox" role="switch" id="overlayVisibilityToggle" />
-          <label class="form-check-label" for="overlayVisibilityToggle"><i class="bi bi-layers"></i> Show overlays</label>
-        </div>
-
-        <!-- TODO: add drawing -->
-        <!-- <div class="form-check form-switch"> -->
-        <!--   <input class="form-check-input" type="checkbox" role="switch" id="drawingToggleSwitch"> -->
-        <!--   <label class="form-check-label" for="drawingToggleSwitch"><i class="bi bi-brush"></i> Draw</label> -->
-        <!-- </div> -->
-        <!-- <a id="eraseAnnotationDrawingsButton" tabindex="0" class="btn btn-outline-info text-nowrap"
+    <!-- TODO: add drawing -->
+    <!-- <div class="form-check form-switch"> -->
+    <!--   <input class="form-check-input" type="checkbox" role="switch" id="drawingToggleSwitch"> -->
+    <!--   <label class="form-check-label" for="drawingToggleSwitch"><i class="bi bi-brush"></i> Draw</label> -->
+    <!-- </div> -->
+    <!-- <a id="eraseAnnotationDrawingsButton" tabindex="0" class="btn btn-outline-info text-nowrap"
         data-bs-trigger="focus" role="button" onclick="eraseDrawings()"><i class="bi bi-eraser"></i></a> -->
-
-        <a
-          id="shareButton"
-          tabindex="0"
-          class="btn btn-outline-success text-nowrap"
-          data-bs-trigger="focus"
-          data-bs-container="body"
-          data-bs-toggle="popover"
-          data-bs-placement="bottom"
-          data-bs-content="Copied!"
-          role="button"
-          onclick="getShareUrl();"
-          ><i class="bi bi-copy"></i> Copy to clipboard</a
-        >
-        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasDarkNavbar" aria-controls="offcanvasDarkNavbar" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="offcanvasDarkNavbar" aria-labelledby="offcanvasDarkNavbarLabel">
-          <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="offcanvasDarkNavbarLabel">Available maps</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top">
+      <div class="container-fluid">
+        <div class="d-flex align-items-center">
+          <a class="navbar-brand" href="#" onclick="resetZoom();">
+            <img src="/assets/NoitamapLogo.svg" alt="Noitamap Logo" class="d-inline-blockalign-text-middle p-1" />
+            <span id="currentMapName">Noita map</span>
+          </a>
+          <a id="goToMainWebsiteButton" tabindex="0" href="https://runfast.stream" target="_blank" class="btn btn-outline-warning btn-sm text-nowrap mx-2">
+            <i class="icon-runfast"></i>
+          </a>
+          <div class="dropdown mx-2">
+            <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false">Available maps</button>
+            <ul class="dropdown-menu" id="navLinksList"></ul>
           </div>
-          <div class="offcanvas-body">
-            <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-              <ul class="column-gap-3 navbar-nav ml-auto mb-2 mb-lg-0 w-100 d-flex flex-row-md flex-column-sm mb-md-1 mt-md-0 mb-3 mt-2" id="navLinksList"></ul>
-              <br />
-              <a href="https://github.com/acidflow-noita/noitamap?tab=readme-ov-file#how-to-capture-a-map" class="btn btn-outline-info text-nowrap w-50" target="\_blank" role="button"
-                ><i class="bi bi-cloud-upload"></i> Upload map</a
-              >
-              <br />
-              <a href="https://github.com/acidflow-noita/noitamap" class="btn btn-outline-info text-nowrap w-50" target="\_blank" role="button"><i class="bi bi-github"></i> Contribute</a>
-            </ul>
+          <div id="overlayVisibilityToggleWrapper" class="form-check form-switch mx-2" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Additional info for the map">
+            <input class="form-check-input" type="checkbox" role="switch" id="overlayVisibilityToggle" />
+            <label class="form-check-label" for="overlayVisibilityToggle"><i class="bi bi-layers"></i> Show overlays</label>
           </div>
+        </div>
+        <div class="d-flex ms-auto align-items-center">
+          <a
+            id="shareButton"
+            tabindex="0"
+            class="btn btn-outline-light btn-sm text-nowrap mx-2"
+            data-bs-trigger="focus"
+            data-bs-container="body"
+            data-bs-toggle="popover"
+            data-bs-placement="bottom"
+            data-bs-content="Copied!"
+            role="button"
+            onclick="getShareUrl();"
+          >
+            <i class="bi bi-copy"></i> <span class="d-none d-sm-inline">Copy to clipboard</span>
+          </a>
+          <a href="https://github.com/acidflow-noita/noitamap" class="btn btn-outline-light btn-sm text-nowrap mx-2" target="_blank" role="button">
+            <i class="bi bi-github"></i>
+          </a>
         </div>
       </div>
     </nav>
