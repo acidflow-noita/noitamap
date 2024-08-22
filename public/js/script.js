@@ -239,6 +239,7 @@ var os = OpenSeadragon({
   showNavigator: false,
   showNavigationControl: false,
   imageSmoothingEnabled: false,
+  drawer: "canvas",
   // We have to provide OSD with initial set of tiles
   tileSources: tileSources["regular-main-branch"],
   subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS,
