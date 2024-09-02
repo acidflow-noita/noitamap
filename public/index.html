@@ -15,7 +15,7 @@
     <meta charset="utf-8" />
     <title>Noita Map</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <meta name="description" content="Blazingly-fast superzoom map for Noita. Map for the video game Noita." />
+    <meta name="description" content="Ultrafast superzoom map for Noita. Map for the video game Noita." />
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png" />
@@ -49,6 +49,8 @@
     ></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <script src="https://unpkg.com/openseadragon-annotations@1.0.5/dist/openseadragon-annotations.js"></script>
+    <!-- Todo add opacity slider plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/openseadragon-opacity-slider/dist/openseadragon-opacity-slider.min.js"></script>
 
     <!-- Facebook Meta Tags -->
     <meta property="og:url" content="https://map.runfast.stream/" />
@@ -142,6 +144,7 @@
     <div id="coordinate" class="coordinate">
       <div class="coordinate-content"></div>
     </div>
+    <div id="opacitySliderWrapper"></div>
     <script src="js/script.js"></script>
     <!-- Cloudflare Web Analytics -->
     <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "d6a1d0d280c34cbf8fa978fffc9d0fa2"}'></script>
