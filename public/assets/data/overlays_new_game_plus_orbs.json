@@ -1,0 +1,83 @@
+[
+  {
+    "id": 0,
+    "text": "Spawn area for Sandcaves orb: Necromancy. Main/East/West ID: 4, 260, 132",
+    "x": 512*17,
+    "y": 512*3,
+    "width": 512*6,
+    "height": 512*4,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "id": 1,
+    "text": "Spawn area for Holy Bomb orb. Main/East/West ID: 5, 261, 133",
+    "x": 512*8,
+    "y": 512*7,
+    "width": 512*10,
+    "height": 512*12,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "id": 3,
+    "text": "Spawn area for Nuke orb. Main/East/West ID: 3, 259, 131",
+    "x": 512*26,
+    "y": 512*20,
+    "width": 512*6,
+    "height": 512*6,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "id": 4,
+    "text": "Spawn area for Wizards' den orb: Cement. Main/East/West ID: 10, 266, 138",
+    "x": 512*19,
+    "y": 512*27,
+    "width": 512*5,
+    "height": 512*6,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "id": 5,
+    "text": "Spawn area for Hell orb: Fireworks! Main/East/West ID: 8, 264, 136",
+    "x": 512*-5,
+    "y": 512*30,
+    "width": 512*10,
+    "height": 512*4,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "id": 6,
+    "text": "Spawn area for Snow chasm orb: Deercoy. Main/East/West ID: 9, 265, 137",
+    "x": 512*-20,
+    "y": 512*26,
+    "width": 512*7,
+    "height": 512*4,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "id": 7,
+    "text": "Spawn area for Frozen Vault orb: Tentacle. Main/East/West ID: 2, 258, 130",
+    "x": 512*-22,
+    "y": 512*4,
+    "width": 512*6,
+    "height": 512*3,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "id": 8,
+    "text": "Spawn area for Lake orb: Thundercloud. Main/East/West ID: 7, 263, 135",
+    "x": 512*-32,
+    "y": 512*10,
+    "width": 512*9,
+    "height": 512*10,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "id": 9,
+    "text": "Spawn area for Spiral Shot orb. Main/East/West ID: 6, 262, 134",
+    "x": 512*-15,
+    "y": 512*7,
+    "width": 512*8,
+    "height": 512*9,
+    "maps": ["new-game-plus-main-branch"]
+  }
+]

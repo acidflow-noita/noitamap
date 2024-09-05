@@ -4,6 +4,7 @@
 "use strict";
 
 const spans2 = document.querySelectorAll(".osOverlayHighlight");
+const CHUNK_SIZE = 512;
 
 const overlayTexts = [
   {
@@ -13,6 +14,8 @@ const overlayTexts = [
     y: -1100,
     width: 650,
     height: 1600,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "structure",
   },
   {
     id: 1,
@@ -21,38 +24,150 @@ const overlayTexts = [
     y: -5700,
     width: 1100,
     height: 900,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "structure",
   },
   {
     id: 2,
-    text: "Ominous Temple. A large pool of ominous liquid is needed here. Sea of Mimicium will be helpful.",
-    x: 2100,
-    y: -5300,
-    width: 1300,
-    height: 1100,
-  },
-  {
-    id: 3,
-
     text: 'Henkevä Temple. "Spirited Temple". Potions here require mimicium. Pheromone will aid you. They might also need a little kick.',
     x: -2600,
     y: -5800,
     width: 1600,
     height: 1650,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "structure",
   },
-  { id: 4, text: "Milk", x: 2420, y: -4500, width: 25, height: 25 },
   {
-    id: 5,
-
+    id: 3,
+    text: "Ominous Temple. A large pool of ominous liquid is needed here. Sea of Mimicium will be helpful.",
+    x: 2100,
+    y: -5300,
+    width: 1300,
+    height: 1100,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "structure",
+  },
+  {
+    id: 4,
     text: "Kivi Temple. A boss fight here might be easier with a spell unlocked in another temple",
     x: 6750,
     y: -5241,
     width: 1230,
     height: 1100,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "structure",
   },
-  { id: 6, text: "Beer", x: 7610, y: -4359, width: 25, height: 25 },
+  {
+    id: 5,
+    text: "Milk",
+    x: 2420,
+    y: -4500,
+    width: 25,
+    height: 25,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "item",
+  },
+  {
+    id: 6,
+    text: "Beer",
+    x: 7610,
+    y: -4359,
+    width: 25,
+    height: 25,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+  },
+  {
+    id: 7,
+    text: "Spawn area for Sandcaves orb: Necromancy. Main/East/West ID: 4, 260, 132",
+    x: 512 * 17,
+    y: 512 * 3,
+    width: 512 * 6,
+    height: 512 * 4,
+    maps: ["new-game-plus-main-branch"],
+    type: "orb",
+  },
+  {
+    id: 8,
+    text: "Spawn area for Holy Bomb orb. Main/East/West ID: 5, 261, 133",
+    x: 512 * 8,
+    y: 512 * 7,
+    width: 512 * 10,
+    height: 512 * 12,
+    maps: ["new-game-plus-main-branch"],
+    type: "orb",
+  },
+  {
+    id: 9,
+    text: "Spawn area for Nuke orb. Main/East/West ID: 3, 259, 131",
+    x: 512 * 26,
+    y: 512 * 20,
+    width: 512 * 6,
+    height: 512 * 6,
+    maps: ["new-game-plus-main-branch"],
+    type: "orb",
+  },
+  {
+    id: 10,
+    text: "Spawn area for Wizards' den orb: Cement. Main/East/West ID: 10, 266, 138",
+    x: 512 * 19,
+    y: 512 * 27,
+    width: 512 * 5,
+    height: 512 * 6,
+    maps: ["new-game-plus-main-branch"],
+    type: "orb",
+  },
+  {
+    id: 11,
+    text: "Spawn area for Hell orb: Fireworks! Main/East/West ID: 8, 264, 136",
+    x: 512 * -5,
+    y: 512 * 30,
+    width: 512 * 10,
+    height: 512 * 4,
+    maps: ["new-game-plus-main-branch"],
+    type: "orb",
+  },
+  {
+    id: 12,
+    text: "Spawn area for Snow chasm orb: Deercoy. Main/East/West ID: 9, 265, 137",
+    x: 512 * -20,
+    y: 512 * 26,
+    width: 512 * 7,
+    height: 512 * 4,
+    maps: ["new-game-plus-main-branch"],
+    type: "orb",
+  },
+  {
+    id: 13,
+    text: "Spawn area for Frozen Vault orb: Tentacle. Main/East/West ID: 2, 258, 130",
+    x: 512 * -22,
+    y: 512 * 4,
+    width: 512 * 6,
+    height: 512 * 3,
+    maps: ["new-game-plus-main-branch"],
+    type: "orb",
+  },
+  {
+    id: 14,
+    text: "Spawn area for Lake orb: Thundercloud. Main/East/West ID: 7, 263, 135",
+    x: 512 * -32,
+    y: 512 * 10,
+    width: 512 * 9,
+    height: 512 * 10,
+    maps: ["new-game-plus-main-branch"],
+    type: "orb",
+  },
+  {
+    id: 15,
+    text: "Spawn area for Spiral Shot orb. Main/East/West ID: 6, 262, 134",
+    x: 512 * -15,
+    y: 512 * 7,
+    width: 512 * 8,
+    height: 512 * 9,
+    maps: ["new-game-plus-main-branch"],
+    type: "orb",
+  },
 ];
 
-const CHUNK_SIZE = 512;
 const mapDefinitions = [
   {
     key: "regular-main-branch",
@@ -211,6 +326,34 @@ const mapDefinitions = [
     tileSets: ["middle"],
     modUrl: "https://steamcommunity.com/sharedfiles/filedetails/?id=2554761457",
   },
+  {
+    key: "biomemap-main-branch",
+    label: "Biome Map",
+    badges: [
+      {
+        label: "Game Source",
+        class: "text-bg-primary",
+        icon: "bi bi-gear-wide-connected",
+      },
+    ],
+    patchDate: "2024-08-12",
+    seed: "78633191",
+    tileSets: ["middle"],
+  },
+  {
+    key: "biomemaprendered-main-branch",
+    label: "Biome Map Captured",
+    badges: [
+      {
+        label: "Game Source",
+        class: "text-bg-primary",
+        icon: "bi bi-gear-wide-connected",
+      },
+    ],
+    patchDate: "2024-08-12",
+    seed: "78633191",
+    tileSets: ["middle"],
+  },
 ];
 
 const tileSources = (function () {
@@ -235,7 +378,6 @@ var os = OpenSeadragon({
   maxZoomPixelRatio: 70,
   // animationTime: 1.2, // default
   id: "osContainer",
-  prefixUrl: "/vendor/openseadragon-bin-4.1.0/images/",
   showNavigator: false,
   showNavigationControl: false,
   imageSmoothingEnabled: false,
@@ -248,6 +390,7 @@ var os = OpenSeadragon({
   springStiffness: 50,
   preserveViewport: true,
   gestureSettingsMouse: { clickToZoom: false },
+  opacity: 1,
 });
 
 let overlaysState = false;
@@ -358,6 +501,7 @@ const changeMap = (() => {
     switch (mapName) {
       case "regular-main-branch":
       case "regular-beta":
+      case "new-game-plus-main-branch":
         document.body.classList.remove("toggle-hidden");
         overlaysSwitch.disabled = false;
         overlaysSwitch.checked = overlaysState;
@@ -450,6 +594,7 @@ os.addHandler("open", async (event) => {
 
   viewport.panTo(viewportCenter, true);
   viewport.zoomTo(viewportZoom, undefined, true);
+  addBiomeOverlay();
 });
 
 // Loading indicator
@@ -513,29 +658,52 @@ const popoverList = [...popoverTriggerList].map((popoverTriggerEl) => new bootst
 overlaysSwitch.addEventListener("click", function () {
   const updatedUrlParamsFromOverlaysToggle = new URLSearchParams(window.location.search);
   const currentMapURLFromOverlaysToggle = String(updatedUrlParamsFromOverlaysToggle.get("map"));
-  if (overlaysState) {
-    Array.from(allOverlays).forEach((overlay) => {
+
+  // Function to remove all existing overlays
+  function removeAllOverlays() {
+    // Remove all overlays when switching off
+    document.querySelectorAll(".osOverlayHighlight").forEach((overlay) => {
       os.removeOverlay(overlay.id);
-      overlaysSwitch.checked = false;
-    });
-    // Todo -- fix this to make overlays work with other maps
-  } else if (
-    currentMapURLFromOverlaysToggle === "regular-main-branch" ||
-    currentMapURLFromOverlaysToggle === "regular-beta"
-  ) {
-    overlayTexts.forEach(({ id, text, x, y, width, height }) => {
-      let e = document.createElement("div");
-      e.id = `overlayId${id}`;
-      e.className = "osOverlayHighlight";
-      e.innerHTML = `<span id="span${id}" >${text}</span>`;
-      os.addOverlay({
-        element: e,
-        location: new OpenSeadragon.Rect(x, y, width, height),
-      });
-      const hue = Math.floor(Math.random() * 360);
-      e.style.backgroundColor = `hsla(${hue}, 60%, 50%, 0.401)`;
+      overlay.remove(); // Also remove the overlay element from the DOM
     });
   }
+
+  if (overlaysState) {
+    // If overlays are currently visible, remove them
+    removeAllOverlays();
+    overlaysSwitch.checked = false;
+  } else {
+    // Always clear existing overlays before adding new ones
+    removeAllOverlays();
+
+    // Check if the current map is one of the valid maps
+    if (
+      currentMapURLFromOverlaysToggle === "regular-main-branch" ||
+      currentMapURLFromOverlaysToggle === "regular-beta" ||
+      currentMapURLFromOverlaysToggle === "new-game-plus-main-branch"
+    ) {
+      // Filter overlayTexts based on the current map
+      const filteredOverlays = overlayTexts.filter(({ maps }) => maps.includes(currentMapURLFromOverlaysToggle));
+
+      // Add only the overlays that match the current map
+      filteredOverlays.forEach(({ id, text, x, y, width, height }) => {
+        let e = document.createElement("div");
+        e.id = `overlayId${id}`;
+        e.className = "osOverlayHighlight";
+        e.innerHTML = `<span id="span${id}">${text}</span>`;
+        os.addOverlay({
+          element: e,
+          location: new OpenSeadragon.Rect(x, y, width, height),
+        });
+        const hue = Math.floor(Math.random() * 360);
+        e.style.backgroundColor = `hsla(${hue}, 60%, 60%, 0.5)`;
+      });
+
+      overlaysSwitch.checked = true; // Ensure the switch is checked
+    }
+  }
+
+  // Toggle the overlay state
   overlaysState = !overlaysState;
 });
 
@@ -554,10 +722,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!navLinksUl) return;
 
   const formatDate = (d) => new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric" }).format(new Date(d));
-  // TODO: fix dates and positions
-  //const formatDate = (function () {
-  //new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric" }).format(new Date(date));
-  // })();
 
   for (const def of mapDefinitions) {
     const a = document.createElement("a");
