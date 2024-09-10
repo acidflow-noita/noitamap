@@ -1,72 +1,156 @@
 [
   {
-    "name": ["Pyramid Boss", "Kolmisilmän Koipi", "Three-Eye's Legs"],
-    "spawns": "Pyramid",
-    "mapCoordinate": "https://map.runfast.stream/?map=regular&x=9984&y=-786&zoom=823"
+    "id": 16,
+    "text": ["Pyramid Boss", "Kolmisilmän Koipi", "Three-Eye's Legs"],
+    "x": 512 * 19,
+    "y": 512 * -2,
+    "width": 512 * 1,
+    "height": 512 * 1,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "type": "boss",
+    "url": "https://map.runfast.stream/?map=regular&x=9984&y=-786&zoom=823"
   },
   {
-    "name": ["Leviathan", "Syväolento", "Creature of the Deep"],
-    "spawns": "Lake",
-    "mapCoordinate": "https://map.runfast.stream/?map=regular&x=-14024&y=9994&zoom=987"
+    "id": 17,
+    "text": ["Leviathan", "Syväolento", "Creature of the Deep"],
+    "x": 512 * -28,
+    "y": 512 * 19,
+    "width": 512 * 1.3,
+    "height": 512 * 1,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "type": "boss",
+    "url": "https://map.runfast.stream/?map=regular&x=-14024&y=9994&zoom=987"
   },
   {
-    "name": ["Door boss", "Veska", "Molari", "Mokke", "Seula", "Gate Guardian", "Triangle boss"],
-    "spawns": "Temple of The Art",
-    "mapCoordinate": "https://map.runfast.stream/?map=regular&x=2837&y=11562&zoom=812"
+    "id": 18,
+    "text": ["Door boss", "Veska", "Molari", "Mokke", "Seula", "Gate Guardian", "Triangle boss"],
+    "x": 512 * 5,
+    "y": 512 * 22,
+    "width": 512 * 1,
+    "height": 512 * 1,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "type": "boss",
+    "url": "https://map.runfast.stream/?map=regular&x=2837&y=11562&zoom=812"
   },
   {
-    "name": ["Dragon", "Suomuhauki", "Scale Pike"],
-    "spawns": "Dragoncave",
-    "mapCoordinate": "https://map.runfast.stream/?map=regular&x=2347&y=7444&zoom=917"
+    "id": 19,
+    "text": ["Dragon", "Suomuhauki", "Scale Pike"],
+    "x": 512 * 4,
+    "y": 512 * 14,
+    "width": 512 * 1,
+    "height": 512 * 1,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "type": "boss",
+    "url": "https://map.runfast.stream/?map=regular&x=2347&y=7444&zoom=917"
   },
   {
-    "name": ["Tiny", "Limatoukka", "Slime Maggot", "Slime Caterpillar"],
-    "spawns": "Buried skull",
-    "mapCoordinate": "https://map.runfast.stream/?map=regular&x=14904&y=16428&zoom=1022"
+    "id": 20,
+    "text": ["Tiny", "Limatoukka", "Slime Maggot", "Slime Caterpillar"],
+    "x": 512 * 28,
+    "y": 512 * 32,
+    "width": 512 * 2,
+    "height": 512 * 1,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "type": "boss",
+    "url": "https://map.runfast.stream/?map=regular&x=14904&y=16428&zoom=1022"
   },
   {
-    "name": ["Meat Boss", "Kolmisilmän sydän", "Three-Eye's Heart"],
-    "spawns": "Meat Realm",
-    "mapCoordinate": "https://map.runfast.stream/?map=regular&x=6667&y=8448&zoom=770"
+    "id": 21,
+    "text": ["Meat Boss", "Kolmisilmän sydän", "Three-Eye's Heart"],
+    "x": 512 * 13,
+    "y": 512 * 16,
+    "width": 512 * 1,
+    "height": 512 * 1,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "type": "boss",
+    "url": "https://map.runfast.stream/?map=regular&x=6667&y=8448&zoom=770"
   },
   {
-    "name": ["Alchemist Boss", "Ylialkemisti", "High Alchemist"],
-    "spawns": "Abandoned Alchemy Lab",
-    "mapCoordinate": "https://map.runfast.stream/?map=regular&x=-4840&y=851&zoom=796"
+    "id": 22,
+    "text": ["Alchemist Boss", "Ylialkemisti", "High Alchemist"],
+    "x": 512 * -10,
+    "y": 512 * 1,
+    "width": 512 * 1,
+    "height": 512 * 1,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "type": "boss",
+    "url": "https://map.runfast.stream/?map=regular&x=-4840&y=851&zoom=796"
   },
   {
-    "name": ["Kolmi", "Kolmisilmä", "Three-Eye"],
-    "spawns": "The Laboratory",
-    "mapCoordinate": "https://map.runfast.stream/?map=regular&x=3556&y=13026&zoom=849"
+    "id": 23,
+    "text": ["Kolmi", "Kolmisilmä", "Three-Eye"],
+    "x": 512 * 6,
+    "y": 512 * 25,
+    "width": 512 * 1.9,
+    "height": 512 * 1,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "type": "boss",
+    "url": "https://map.runfast.stream/?map=regular&x=3556&y=13026&zoom=849"
   },
   {
-    "name": ["Mecha Kolmi", "Kolmisilmän silmä", "Three-Eye's Eye"],
-    "spawns": "Power Plant",
-    "mapCoordinate": "https://map.runfast.stream/?map=regular&x=13987&y=11123&zoom=875"
+    "id": 24,
+    "text": ["Mecha Kolmi", "Kolmisilmän silmä", "Three-Eye's Eye"],
+    "x": 512 * 27,
+    "y": 512 * 21,
+    "width": 512 * 1,
+    "height": 512 * 1,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "type": "boss",
+    "url": "https://map.runfast.stream/?map=regular&x=13987&y=11123&zoom=875"
   },
   {
-    "name": ["Friend Boss", "Toveri", "Friend"],
-    "spawns": "Friend Room",
-    "mapCoordinate": "https://map.runfast.stream/?map=regular&x=25360&y=4341&zoom=917"
+    "id": 25,
+    "text": ["Friend Boss", "Toveri", "Friend"],
+    "x": 512 * 49,
+    "y": 512 * 8,
+    "width": 512 * 1,
+    "height": 512 * 1,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "type": "boss",
+    "url": "https://map.runfast.stream/?map=regular&x=25360&y=4341&zoom=917"
   },
   {
-    "name": ["The Master of Masters", "Mestarien mestari", "Grand Master", "Wizard Boss"],
-    "spawns": "Throne Room",
-    "mapCoordinate": "https://map.runfast.stream/?map=regular&x=12573&y=15178&zoom=796"
+    "id": 26,
+    "text": ["The Master of Masters", "Mestarien mestari", "Grand Master", "Wizard Boss"],
+    "x": 512 * 24,
+    "y": 512 * 29,
+    "width": 512 * 1,
+    "height": 512 * 1,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "type": "boss",
+    "url": "https://map.runfast.stream/?map=regular&x=12573&y=15178&zoom=796"
   },
   {
-    "name": ["The Forgotten", "Unohdettu", "Ghost Boss"],
-    "spawns": "Forgotten Cave",
-    "mapCoordinate": "https://map.runfast.stream/?map=regular&x=-11515&y=13123&zoom=744"
+    "id": 27,
+    "text": ["The Forgotten", "Unohdettu", "Ghost Boss"],
+    "x": 512 * -23,
+    "y": 512 * 25,
+    "width": 512 * 1,
+    "height": 512 * 1,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "type": "boss",
+    "url": "https://map.runfast.stream/?map=regular&x=-11515&y=13123&zoom=744"
   },
   {
-    "name": ["Bridge Boss", "Sauvojen tuntija", "Connoisseur of Wands", "Squid Boss", "Pit Boss", "Wand Boss"],
-    "spawns": "Lava Lake",
-    "mapCoordinate": "https://map.runfast.stream/?map=regular&x=4165&y=889&zoom=970"
+    "id": 28,
+    "text": ["Bridge Boss", "Sauvojen tuntija", "Connoisseur of Wands", "Squid Boss", "Pit Boss", "Wand Boss"],
+    "x": 512 * 7,
+    "y": 512 * 1,
+    "width": 512 * 2,
+    "height": 512 * 2,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "type": "boss",
+    "url": "https://map.runfast.stream/?map=regular&x=4165&y=889&zoom=970"
   },
   {
-    "name": ["Deer Boss", "Tapion vasalli", "Tapio's Vassal", "Island Boss"],
-    "spawns": "Lake Island",
-    "mapCoordinate": "https://map.runfast.stream/?map=regular&x=-13670&y=134&zoom=796"
+    "id": 29,
+    "text": ["Deer Boss", "Tapion vasalli", "Tapio's Vassal", "Island Boss"],
+    "x": 512 * -27,
+    "y": 512 * 0,
+    "width": 512 * 1,
+    "height": 512 * 1,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "type": "boss",
+    "url": "https://map.runfast.stream/?map=regular&x=-13670&y=134&zoom=796"
   }
 ]

@@ -3,13 +3,13 @@
 
 "use strict";
 
-const spans2 = document.querySelectorAll(".osOverlayHighlight");
+const spans = document.querySelectorAll(".osOverlayHighlight");
 const CHUNK_SIZE = 512;
 
 const overlayTexts = [
   {
     id: 0,
-    text: "Watchtower. Seems to just be a hint to head to the temples in the sky.",
+    text: ["Watchtower. Seems to just be a hint to head to the temples in the sky."],
     x: 13758,
     y: -1100,
     width: 650,
@@ -19,7 +19,9 @@ const overlayTexts = [
   },
   {
     id: 1,
-    text: "Barren Temple. You can find a potion of mimicium here to start your quest. Later you will need to revisit to help this temple flourish.",
+    text: [
+      "Barren Temple. You can find a potion of mimicium here to start your quest. Later you will need to revisit to help this temple flourish.",
+    ],
     x: -6000,
     y: -5700,
     width: 1100,
@@ -29,7 +31,9 @@ const overlayTexts = [
   },
   {
     id: 2,
-    text: 'Henkevä Temple. "Spirited Temple". Potions here require mimicium. Pheromone will aid you. They might also need a little kick.',
+    text: [
+      'Henkevä Temple. "Spirited Temple". Potions here require mimicium. Pheromone will aid you. They might also need a little kick.',
+    ],
     x: -2600,
     y: -5800,
     width: 1600,
@@ -39,7 +43,7 @@ const overlayTexts = [
   },
   {
     id: 3,
-    text: "Ominous Temple. A large pool of ominous liquid is needed here. Sea of Mimicium will be helpful.",
+    text: ["Ominous Temple. A large pool of ominous liquid is needed here. Sea of Mimicium will be helpful."],
     x: 2100,
     y: -5300,
     width: 1300,
@@ -49,7 +53,7 @@ const overlayTexts = [
   },
   {
     id: 4,
-    text: "Kivi Temple. A boss fight here might be easier with a spell unlocked in another temple",
+    text: ["Kivi Temple. A boss fight here might be easier with a spell unlocked in another temple"],
     x: 6750,
     y: -5241,
     width: 1230,
@@ -59,7 +63,7 @@ const overlayTexts = [
   },
   {
     id: 5,
-    text: "Milk",
+    text: ["Milk"],
     x: 2420,
     y: -4500,
     width: 25,
@@ -69,16 +73,17 @@ const overlayTexts = [
   },
   {
     id: 6,
-    text: "Beer",
+    text: ["Beer"],
     x: 7610,
     y: -4359,
     width: 25,
     height: 25,
     maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "item",
   },
   {
     id: 7,
-    text: "Spawn area for Sandcaves orb: Necromancy. Main/East/West ID: 4, 260, 132",
+    text: ["Spawn area for Sandcaves orb: Necromancy. Main/East/West ID: 4, 260, 132"],
     x: 512 * 17,
     y: 512 * 3,
     width: 512 * 6,
@@ -88,7 +93,7 @@ const overlayTexts = [
   },
   {
     id: 8,
-    text: "Spawn area for Holy Bomb orb. Main/East/West ID: 5, 261, 133",
+    text: ["Spawn area for Holy Bomb orb. Main/East/West ID: 5, 261, 133"],
     x: 512 * 8,
     y: 512 * 7,
     width: 512 * 10,
@@ -98,7 +103,7 @@ const overlayTexts = [
   },
   {
     id: 9,
-    text: "Spawn area for Nuke orb. Main/East/West ID: 3, 259, 131",
+    text: ["Spawn area for Nuke orb. Main/East/West ID: 3, 259, 131"],
     x: 512 * 26,
     y: 512 * 20,
     width: 512 * 6,
@@ -108,7 +113,7 @@ const overlayTexts = [
   },
   {
     id: 10,
-    text: "Spawn area for Wizards' den orb: Cement. Main/East/West ID: 10, 266, 138",
+    text: ["Spawn area for Wizards' den orb: Cement. Main/East/West ID: 10, 266, 138"],
     x: 512 * 19,
     y: 512 * 27,
     width: 512 * 5,
@@ -118,7 +123,7 @@ const overlayTexts = [
   },
   {
     id: 11,
-    text: "Spawn area for Hell orb: Fireworks! Main/East/West ID: 8, 264, 136",
+    text: ["Spawn area for Hell orb: Fireworks! Main/East/West ID: 8, 264, 136"],
     x: 512 * -5,
     y: 512 * 30,
     width: 512 * 10,
@@ -128,7 +133,7 @@ const overlayTexts = [
   },
   {
     id: 12,
-    text: "Spawn area for Snow chasm orb: Deercoy. Main/East/West ID: 9, 265, 137",
+    text: ["Spawn area for Snow chasm orb: Deercoy. Main/East/West ID: 9, 265, 137"],
     x: 512 * -20,
     y: 512 * 26,
     width: 512 * 7,
@@ -138,7 +143,7 @@ const overlayTexts = [
   },
   {
     id: 13,
-    text: "Spawn area for Frozen Vault orb: Tentacle. Main/East/West ID: 2, 258, 130",
+    text: ["Spawn area for Frozen Vault orb: Tentacle. Main/East/West ID: 2, 258, 130"],
     x: 512 * -22,
     y: 512 * 4,
     width: 512 * 6,
@@ -148,7 +153,7 @@ const overlayTexts = [
   },
   {
     id: 14,
-    text: "Spawn area for Lake orb: Thundercloud. Main/East/West ID: 7, 263, 135",
+    text: ["Spawn area for Lake orb: Thundercloud. Main/East/West ID: 7, 263, 135"],
     x: 512 * -32,
     y: 512 * 10,
     width: 512 * 9,
@@ -158,13 +163,167 @@ const overlayTexts = [
   },
   {
     id: 15,
-    text: "Spawn area for Spiral Shot orb. Main/East/West ID: 6, 262, 134",
+    text: ["Spawn area for Spiral Shot orb. Main/East/West ID: 6, 262, 134"],
     x: 512 * -15,
     y: 512 * 7,
     width: 512 * 8,
     height: 512 * 9,
     maps: ["new-game-plus-main-branch"],
     type: "orb",
+  },
+  {
+    id: 16,
+    text: ["Pyramid Boss", "Kolmisilmän Koipi", "Three-Eye's Legs"],
+    x: 512 * 19,
+    y: 512 * -2,
+    width: 512 * 1,
+    height: 512 * 1,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "boss",
+    url: "https://map.runfast.stream/?map=regular&x=9984&y=-786&zoom=823",
+  },
+  {
+    id: 17,
+    text: ["Leviathan", "Syväolento", "Creature of the Deep"],
+    x: 512 * -28,
+    y: 512 * 19,
+    width: 512 * 1.3,
+    height: 512 * 1,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "boss",
+    url: "https://map.runfast.stream/?map=regular&x=-14024&y=9994&zoom=987",
+  },
+  {
+    id: 18,
+    text: ["Door boss", "Veska", "Molari", "Mokke", "Seula", "Gate Guardian", "Triangle boss"],
+    x: 512 * 5,
+    y: 512 * 22,
+    width: 512 * 1,
+    height: 512 * 1,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "boss",
+    url: "https://map.runfast.stream/?map=regular&x=2837&y=11562&zoom=812",
+  },
+  {
+    id: 19,
+    text: ["Dragon", "Suomuhauki", "Scale Pike"],
+    x: 512 * 4,
+    y: 512 * 14,
+    width: 512 * 1,
+    height: 512 * 1,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "boss",
+    url: "https://map.runfast.stream/?map=regular&x=2347&y=7444&zoom=917",
+  },
+  {
+    id: 20,
+    text: ["Tiny", "Limatoukka", "Slime Maggot", "Slime Caterpillar"],
+    x: 512 * 28,
+    y: 512 * 32,
+    width: 512 * 2,
+    height: 512 * 1,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "boss",
+    url: "https://map.runfast.stream/?map=regular&x=14904&y=16428&zoom=1022",
+  },
+  {
+    id: 21,
+    text: ["Meat Boss", "Kolmisilmän sydän", "Three-Eye's Heart"],
+    x: 512 * 13,
+    y: 512 * 16,
+    width: 512 * 1,
+    height: 512 * 1,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "boss",
+    url: "https://map.runfast.stream/?map=regular&x=6667&y=8448&zoom=770",
+  },
+  {
+    id: 22,
+    text: ["Alchemist Boss", "Ylialkemisti", "High Alchemist"],
+    x: 512 * -10,
+    y: 512 * 1,
+    width: 512 * 1,
+    height: 512 * 1,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "boss",
+    url: "https://map.runfast.stream/?map=regular&x=-4840&y=851&zoom=796",
+  },
+  {
+    id: 23,
+    text: ["Kolmi", "Kolmisilmä", "Three-Eye"],
+    x: 512 * 6,
+    y: 512 * 25,
+    width: 512 * 1.9,
+    height: 512 * 1,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "boss",
+    url: "https://map.runfast.stream/?map=regular&x=3556&y=13026&zoom=849",
+  },
+  {
+    id: 24,
+    text: ["Mecha Kolmi", "Kolmisilmän silmä", "Three-Eye's Eye"],
+    x: 512 * 27,
+    y: 512 * 21,
+    width: 512 * 1,
+    height: 512 * 1,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "boss",
+    url: "https://map.runfast.stream/?map=regular&x=13987&y=11123&zoom=875",
+  },
+  {
+    id: 25,
+    text: ["Friend Boss", "Toveri", "Friend"],
+    x: 512 * 49,
+    y: 512 * 8,
+    width: 512 * 1,
+    height: 512 * 1,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "boss",
+    url: "https://map.runfast.stream/?map=regular&x=25360&y=4341&zoom=917",
+  },
+  {
+    id: 26,
+    text: ["The Master of Masters", "Mestarien mestari", "Grand Master", "Wizard Boss"],
+    x: 512 * 24,
+    y: 512 * 29,
+    width: 512 * 1,
+    height: 512 * 1,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "boss",
+    url: "https://map.runfast.stream/?map=regular&x=12573&y=15178&zoom=796",
+  },
+  {
+    id: 27,
+    text: ["The Forgotten", "Unohdettu", "Ghost Boss"],
+    x: 512 * -23,
+    y: 512 * 25,
+    width: 512 * 1,
+    height: 512 * 1,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "boss",
+    url: "https://map.runfast.stream/?map=regular&x=-11515&y=13123&zoom=744",
+  },
+  {
+    id: 28,
+    text: ["Bridge Boss", "Sauvojen tuntija", "Connoisseur of Wands", "Squid Boss", "Pit Boss", "Wand Boss"],
+    x: 512 * 7,
+    y: 512 * 1,
+    width: 512 * 2,
+    height: 512 * 2,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "boss",
+    url: "https://map.runfast.stream/?map=regular&x=4165&y=889&zoom=970",
+  },
+  {
+    id: 29,
+    text: ["Deer Boss", "Tapion vasalli", "Tapio's Vassal", "Island Boss"],
+    x: 512 * -27,
+    y: 512 * 0,
+    width: 512 * 1,
+    height: 512 * 1,
+    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    type: "boss",
+    url: "https://map.runfast.stream/?map=regular&x=-13670&y=134&zoom=796",
   },
 ];
 
@@ -174,7 +333,7 @@ const mapDefinitions = [
     label: "Regular",
     badges: [
       {
-        label: "Epilogue 2",
+        label: "Latest",
         class: "text-bg-success",
       },
     ],
@@ -187,7 +346,7 @@ const mapDefinitions = [
     label: "NG+",
     badges: [
       {
-        label: "Epilogue 2",
+        label: "Latest",
         class: "text-bg-success",
       },
     ],
@@ -200,7 +359,7 @@ const mapDefinitions = [
     label: "Nightmare",
     badges: [
       {
-        label: "Epilogue 2",
+        label: "Latest",
         class: "text-bg-success",
       },
     ],
@@ -331,7 +490,7 @@ const mapDefinitions = [
     label: "Biome Map",
     badges: [
       {
-        label: "Game Source",
+        label: "Special",
         class: "text-bg-primary",
         icon: "bi bi-gear-wide-connected",
       },
@@ -345,7 +504,7 @@ const mapDefinitions = [
     label: "Biome Map Captured",
     badges: [
       {
-        label: "Game Source",
+        label: "Special",
         class: "text-bg-primary",
         icon: "bi bi-gear-wide-connected",
       },
@@ -394,10 +553,26 @@ var os = OpenSeadragon({
 });
 
 let overlaysState = false;
+let structuresOverlaysState = false;
+let obsOverlaysState = false;
+let bossesOverlaysState = false;
+let itemsOverlaysState = false;
 const allOverlays = document.getElementsByClassName("osOverlayHighlight");
 const overlaysSwitch = document.querySelector("#overlayVisibilityToggle");
 const overlaysSwitchWrapper = document.querySelector("#overlayVisibilityToggleWrapper");
 overlaysSwitch.checked = false;
+
+// Individual overlays toggle
+// const allOverlays = document.getElementsByClassName("osOverlayHighlight");
+const structuresOverlaysSwitch = document.querySelector("#structuresToggler");
+const obsOverlaysSwitch = document.querySelector("#obsToggler");
+const bossesOverlaysSwitch = document.querySelector("#bossesToggler");
+const itemsOverlaysSwitch = document.querySelector("#itemsToggler");
+
+structuresOverlaysSwitch.checked = false;
+obsOverlaysSwitch.checked = false;
+bossesOverlaysSwitch.checked = false;
+itemsOverlaysSwitch.checked = false;
 
 let prevTiledImage;
 let nextTiledImage;
@@ -415,10 +590,9 @@ const mouseTracker = new OpenSeadragon.MouseTracker({
 
     const pixelX = Math.floor(viewportPoint.x).toString();
     const pixelY = Math.floor(viewportPoint.y).toString();
-    //const chunkX = Math.floor(viewportPoint.x / CHUNK_SIZE).toString();
-    //const chunkY = Math.floor(viewportPoint.y / CHUNK_SIZE).toString();
-
-    coordElement.children[0].textContent = `(${pixelX}, ${pixelY})`;
+    const chunkX = Math.floor(viewportPoint.x / CHUNK_SIZE).toString();
+    const chunkY = Math.floor(viewportPoint.y / CHUNK_SIZE).toString();
+    coordElement.children[0].innerHTML = `(${pixelX}, ${pixelY})<br>chunk: (${chunkX}, ${chunkY})`;
     coordElement.style.left = `${event.originalEvent.pageX}px`;
     coordElement.style.top = `${event.originalEvent.pageY}px`;
   },
@@ -568,8 +742,6 @@ const changeMap = (() => {
     setActiveMap(mapName);
   };
 })();
-
-const spans = document.querySelectorAll(".osOverlayHighlight span");
 
 os.addHandler("open", async (event) => {
   const viewport = event.eventSource.viewport;
@@ -721,7 +893,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const navLinksUl = document.getElementById("navLinksList");
   if (!navLinksUl) return;
 
-  const formatDate = (d) => new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric" }).format(new Date(d));
+  const formatDate = (d) => new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(d));
 
   for (const def of mapDefinitions) {
     const a = document.createElement("a");
