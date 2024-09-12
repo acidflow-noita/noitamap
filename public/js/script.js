@@ -2,330 +2,234 @@
 // annotations plugin
 
 "use strict";
+// Reference elements for the new toggles
+const structuresOverlaysSwitch = document.querySelector("#structuresToggler");
+const orbsOverlaysSwitch = document.querySelector("#orbsToggler");
+const bossesOverlaysSwitch = document.querySelector("#bossesToggler");
+const itemsOverlaysSwitch = document.querySelector("#itemsToggler");
+
+const allOverlaysSwitches = document.querySelectorAll(".overlayToggler");
+
+// Initialize toggle states
+structuresOverlaysSwitch.checked = false;
+orbsOverlaysSwitch.checked = false;
+bossesOverlaysSwitch.checked = false;
+itemsOverlaysSwitch.checked = false;
+
+let structuresOverlayState = false;
+let orbsOverlaysState = false;
 
 const spans = document.querySelectorAll(".osOverlayHighlight");
 const CHUNK_SIZE = 512;
 
-const overlayTexts = [
-  {
-    id: 0,
-    text: ["Watchtower. Seems to just be a hint to head to the temples in the sky."],
-    x: 13758,
-    y: -1100,
-    width: 650,
-    height: 1600,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "structure",
-  },
-  {
-    id: 1,
-    text: [
-      "Barren Temple. You can find a potion of mimicium here to start your quest. Later you will need to revisit to help this temple flourish.",
-    ],
-    x: -6000,
-    y: -5700,
-    width: 1100,
-    height: 900,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "structure",
-  },
-  {
-    id: 2,
-    text: [
-      'Henkevä Temple. "Spirited Temple". Potions here require mimicium. Pheromone will aid you. They might also need a little kick.',
-    ],
-    x: -2600,
-    y: -5800,
-    width: 1600,
-    height: 1650,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "structure",
-  },
-  {
-    id: 3,
-    text: ["Ominous Temple. A large pool of ominous liquid is needed here. Sea of Mimicium will be helpful."],
-    x: 2100,
-    y: -5300,
-    width: 1300,
-    height: 1100,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "structure",
-  },
-  {
-    id: 4,
-    text: ["Kivi Temple. A boss fight here might be easier with a spell unlocked in another temple"],
-    x: 6750,
-    y: -5241,
-    width: 1230,
-    height: 1100,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "structure",
-  },
-  {
-    id: 5,
-    text: ["Milk"],
-    x: 2420,
-    y: -4500,
-    width: 25,
-    height: 25,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "item",
-  },
-  {
-    id: 6,
-    text: ["Beer"],
-    x: 7610,
-    y: -4359,
-    width: 25,
-    height: 25,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "item",
-  },
-  {
-    id: 7,
-    text: ["Spawn area for Sandcaves orb: Necromancy. Main/East/West ID: 4, 260, 132"],
-    x: 512 * 17,
-    y: 512 * 3,
-    width: 512 * 6,
-    height: 512 * 4,
-    maps: ["new-game-plus-main-branch"],
-    type: "orb",
-  },
-  {
-    id: 8,
-    text: ["Spawn area for Holy Bomb orb. Main/East/West ID: 5, 261, 133"],
-    x: 512 * 8,
-    y: 512 * 7,
-    width: 512 * 10,
-    height: 512 * 12,
-    maps: ["new-game-plus-main-branch"],
-    type: "orb",
-  },
-  {
-    id: 9,
-    text: ["Spawn area for Nuke orb. Main/East/West ID: 3, 259, 131"],
-    x: 512 * 26,
-    y: 512 * 20,
-    width: 512 * 6,
-    height: 512 * 6,
-    maps: ["new-game-plus-main-branch"],
-    type: "orb",
-  },
-  {
-    id: 10,
-    text: ["Spawn area for Wizards' den orb: Cement. Main/East/West ID: 10, 266, 138"],
-    x: 512 * 19,
-    y: 512 * 27,
-    width: 512 * 5,
-    height: 512 * 6,
-    maps: ["new-game-plus-main-branch"],
-    type: "orb",
-  },
-  {
-    id: 11,
-    text: ["Spawn area for Hell orb: Fireworks! Main/East/West ID: 8, 264, 136"],
-    x: 512 * -5,
-    y: 512 * 30,
-    width: 512 * 10,
-    height: 512 * 4,
-    maps: ["new-game-plus-main-branch"],
-    type: "orb",
-  },
-  {
-    id: 12,
-    text: ["Spawn area for Snow chasm orb: Deercoy. Main/East/West ID: 9, 265, 137"],
-    x: 512 * -20,
-    y: 512 * 26,
-    width: 512 * 7,
-    height: 512 * 4,
-    maps: ["new-game-plus-main-branch"],
-    type: "orb",
-  },
-  {
-    id: 13,
-    text: ["Spawn area for Frozen Vault orb: Tentacle. Main/East/West ID: 2, 258, 130"],
-    x: 512 * -22,
-    y: 512 * 4,
-    width: 512 * 6,
-    height: 512 * 3,
-    maps: ["new-game-plus-main-branch"],
-    type: "orb",
-  },
-  {
-    id: 14,
-    text: ["Spawn area for Lake orb: Thundercloud. Main/East/West ID: 7, 263, 135"],
-    x: 512 * -32,
-    y: 512 * 10,
-    width: 512 * 9,
-    height: 512 * 10,
-    maps: ["new-game-plus-main-branch"],
-    type: "orb",
-  },
-  {
-    id: 15,
-    text: ["Spawn area for Spiral Shot orb. Main/East/West ID: 6, 262, 134"],
-    x: 512 * -15,
-    y: 512 * 7,
-    width: 512 * 8,
-    height: 512 * 9,
-    maps: ["new-game-plus-main-branch"],
-    type: "orb",
-  },
-  {
-    id: 16,
-    text: ["Pyramid Boss", "Kolmisilmän Koipi", "Three-Eye's Legs"],
-    x: 512 * 19,
-    y: 512 * -2,
-    width: 512 * 1,
-    height: 512 * 1,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "boss",
-    url: "https://map.runfast.stream/?map=regular&x=9984&y=-786&zoom=823",
-  },
-  {
-    id: 17,
-    text: ["Leviathan", "Syväolento", "Creature of the Deep"],
-    x: 512 * -28,
-    y: 512 * 19,
-    width: 512 * 1.3,
-    height: 512 * 1,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "boss",
-    url: "https://map.runfast.stream/?map=regular&x=-14024&y=9994&zoom=987",
-  },
-  {
-    id: 18,
-    text: ["Door boss", "Veska", "Molari", "Mokke", "Seula", "Gate Guardian", "Triangle boss"],
-    x: 512 * 5,
-    y: 512 * 22,
-    width: 512 * 1,
-    height: 512 * 1,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "boss",
-    url: "https://map.runfast.stream/?map=regular&x=2837&y=11562&zoom=812",
-  },
-  {
-    id: 19,
-    text: ["Dragon", "Suomuhauki", "Scale Pike"],
-    x: 512 * 4,
-    y: 512 * 14,
-    width: 512 * 1,
-    height: 512 * 1,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "boss",
-    url: "https://map.runfast.stream/?map=regular&x=2347&y=7444&zoom=917",
-  },
-  {
-    id: 20,
-    text: ["Tiny", "Limatoukka", "Slime Maggot", "Slime Caterpillar"],
-    x: 512 * 28,
-    y: 512 * 32,
-    width: 512 * 2,
-    height: 512 * 1,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "boss",
-    url: "https://map.runfast.stream/?map=regular&x=14904&y=16428&zoom=1022",
-  },
-  {
-    id: 21,
-    text: ["Meat Boss", "Kolmisilmän sydän", "Three-Eye's Heart"],
-    x: 512 * 13,
-    y: 512 * 16,
-    width: 512 * 1,
-    height: 512 * 1,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "boss",
-    url: "https://map.runfast.stream/?map=regular&x=6667&y=8448&zoom=770",
-  },
-  {
-    id: 22,
-    text: ["Alchemist Boss", "Ylialkemisti", "High Alchemist"],
-    x: 512 * -10,
-    y: 512 * 1,
-    width: 512 * 1,
-    height: 512 * 1,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "boss",
-    url: "https://map.runfast.stream/?map=regular&x=-4840&y=851&zoom=796",
-  },
-  {
-    id: 23,
-    text: ["Kolmi", "Kolmisilmä", "Three-Eye"],
-    x: 512 * 6,
-    y: 512 * 25,
-    width: 512 * 1.9,
-    height: 512 * 1,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "boss",
-    url: "https://map.runfast.stream/?map=regular&x=3556&y=13026&zoom=849",
-  },
-  {
-    id: 24,
-    text: ["Mecha Kolmi", "Kolmisilmän silmä", "Three-Eye's Eye"],
-    x: 512 * 27,
-    y: 512 * 21,
-    width: 512 * 1,
-    height: 512 * 1,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "boss",
-    url: "https://map.runfast.stream/?map=regular&x=13987&y=11123&zoom=875",
-  },
-  {
-    id: 25,
-    text: ["Friend Boss", "Toveri", "Friend"],
-    x: 512 * 49,
-    y: 512 * 8,
-    width: 512 * 1,
-    height: 512 * 1,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "boss",
-    url: "https://map.runfast.stream/?map=regular&x=25360&y=4341&zoom=917",
-  },
-  {
-    id: 26,
-    text: ["The Master of Masters", "Mestarien mestari", "Grand Master", "Wizard Boss"],
-    x: 512 * 24,
-    y: 512 * 29,
-    width: 512 * 1,
-    height: 512 * 1,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "boss",
-    url: "https://map.runfast.stream/?map=regular&x=12573&y=15178&zoom=796",
-  },
-  {
-    id: 27,
-    text: ["The Forgotten", "Unohdettu", "Ghost Boss"],
-    x: 512 * -23,
-    y: 512 * 25,
-    width: 512 * 1,
-    height: 512 * 1,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "boss",
-    url: "https://map.runfast.stream/?map=regular&x=-11515&y=13123&zoom=744",
-  },
-  {
-    id: 28,
-    text: ["Bridge Boss", "Sauvojen tuntija", "Connoisseur of Wands", "Squid Boss", "Pit Boss", "Wand Boss"],
-    x: 512 * 7,
-    y: 512 * 1,
-    width: 512 * 2,
-    height: 512 * 2,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "boss",
-    url: "https://map.runfast.stream/?map=regular&x=4165&y=889&zoom=970",
-  },
-  {
-    id: 29,
-    text: ["Deer Boss", "Tapion vasalli", "Tapio's Vassal", "Island Boss"],
-    x: 512 * -27,
-    y: 512 * 0,
-    width: 512 * 1,
-    height: 512 * 1,
-    maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    type: "boss",
-    url: "https://map.runfast.stream/?map=regular&x=-13670&y=134&zoom=796",
-  },
-];
+const overlayTexts = {
+  structures: [
+    {
+      id: 0,
+      text: ["Watchtower. Seems to just be a hint to head to the temples in the sky."],
+      x: 13758,
+      y: -1100,
+      width: 650,
+      height: 1600,
+      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    },
+    {
+      id: 1,
+      text: [
+        "Barren Temple. You can find a potion of mimicium here to start your quest. Later you will need to revisit to help this temple flourish.",
+      ],
+      x: -6000,
+      y: -5700,
+      width: 1100,
+      height: 900,
+      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    },
+    {
+      id: 2,
+      text: [
+        "Henkevä Temple. 'Spirited Temple'. Potions here require mimicium. Pheromone will aid you. They might also need a little kick.",
+      ],
+      x: -2600,
+      y: -5800,
+      width: 1600,
+      height: 1650,
+      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    },
+    {
+      id: 3,
+      text: ["Ominous Temple. A large pool of ominous liquid is needed here. Sea of Mimicium will be helpful."],
+      x: 2100,
+      y: -5300,
+      width: 1300,
+      height: 1100,
+      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    },
+    {
+      id: 4,
+      text: ["Kivi Temple. A boss fight here might be easier with a spell unlocked in another temple"],
+      x: 6750,
+      y: -5241,
+      width: 1230,
+      height: 1100,
+      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    },
+  ],
+  items: [
+    {
+      id: 5,
+      text: ["Milk"],
+      x: 2420,
+      y: -4500,
+      width: 25,
+      height: 25,
+      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    },
+    {
+      id: 6,
+      text: ["Beer"],
+      x: 7610,
+      y: -4359,
+      width: 25,
+      height: 25,
+      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    },
+  ],
+  orbAreas: [
+    {
+      id: 7,
+      text: ["Spawn area for Sandcaves orb: Necromancy. Main/East/West ID: 4, 260, 132"],
+      x: 512 * 17,
+      y: 512 * 3,
+      width: 512 * 6,
+      height: 512 * 4,
+      maps: ["new-game-plus-main-branch"],
+    },
+    {
+      id: 8,
+      text: ["Spawn area for Holy Bomb orb. Main/East/West ID: 5, 261, 133"],
+      x: 512 * 8,
+      y: 512 * 7,
+      width: 512 * 10,
+      height: 512 * 12,
+      maps: ["new-game-plus-main-branch"],
+    },
+    {
+      id: 9,
+      text: ["Spawn area for Nuke orb. Main/East/West ID: 3, 259, 131"],
+      x: 512 * 26,
+      y: 512 * 20,
+      width: 512 * 6,
+      height: 512 * 6,
+      maps: ["new-game-plus-main-branch"],
+    },
+    {
+      id: 10,
+      text: ["Spawn area for Wizards' den orb: Cement. Main/East/West ID: 10, 266, 138"],
+      x: 512 * 19,
+      y: 512 * 27,
+      width: 512 * 5,
+      height: 512 * 6,
+      maps: ["new-game-plus-main-branch"],
+    },
+    {
+      id: 11,
+      text: ["Spawn area for Hell orb: Fireworks! Main/East/West ID: 8, 264, 136"],
+      x: 512 * -5,
+      y: 512 * 30,
+      width: 512 * 10,
+      height: 512 * 4,
+      maps: ["new-game-plus-main-branch"],
+    },
+    {
+      id: 12,
+      text: ["Spawn area for Snow chasm orb: Deercoy. Main/East/West ID: 9, 265, 137"],
+      x: 512 * -20,
+      y: 512 * 26,
+      width: 512 * 7,
+      height: 512 * 4,
+      maps: ["new-game-plus-main-branch"],
+    },
+    {
+      id: 13,
+      text: ["Spawn area for Frozen Vault orb: Tentacle. Main/East/West ID: 2, 258, 130"],
+      x: 512 * -22,
+      y: 512 * 4,
+      width: 512 * 6,
+      height: 512 * 3,
+      maps: ["new-game-plus-main-branch"],
+    },
+    {
+      id: 14,
+      text: ["Spawn area for Lake orb: Thundercloud. Main/East/West ID: 7, 263, 135"],
+      x: 512 * -32,
+      y: 512 * 10,
+      width: 512 * 9,
+      height: 512 * 10,
+      maps: ["new-game-plus-main-branch"],
+    },
+    {
+      id: 15,
+      text: ["Spawn area for Spiral Shot orb. Main/East/West ID: 6, 262, 134"],
+      x: 512 * -15,
+      y: 512 * 7,
+      width: 512 * 8,
+      height: 512 * 9,
+      maps: ["new-game-plus-main-branch"],
+    },
+  ],
+  bosses: [
+    {
+      id: 16,
+      text: ["Pyramid Boss", "Kolmisilmän Koipi", "Three-Eye's Legs"],
+      x: 512 * 19,
+      y: 512 * -2,
+      width: 512 * 1,
+      height: 512 * 1,
+      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+      url: "https://map.runfast.stream/?map=regular&x=9984&y=-786&zoom=823",
+    },
+    {
+      id: 17,
+      text: ["Leviathan", "Syväolento", "Creature of the Deep"],
+      x: 512 * -28,
+      y: 512 * 19,
+      width: 512 * 1.3,
+      height: 512 * 1,
+      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+      url: "https://map.runfast.stream/?map=regular&x=-14024&y=9994&zoom=987",
+    },
+    {
+      id: 18,
+      text: ["Door boss", "Veska", "Molari", "Mokke", "Seula", "Gate Guardian", "Triangle boss"],
+      x: 512 * 5,
+      y: 512 * 22,
+      width: 512 * 1,
+      height: 512 * 1,
+      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+      url: "https://map.runfast.stream/?map=regular&x=2837&y=11562&zoom=812",
+    },
+    {
+      id: 19,
+      text: ["Dragon", "Suomuhauki", "Scale Pike"],
+      x: 512 * 4,
+      y: 512 * 14,
+      width: 512 * 1,
+      height: 512 * 1,
+      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+      url: "https://map.runfast.stream/?map=regular&x=2347&y=7444&zoom=917",
+    },
+    {
+      id: 20,
+      text: ["Tiny", "Limatoukka", "Slime Maggot", "Wiggler"],
+      x: 512 * -2,
+      y: 512 * 15,
+      width: 512 * 1,
+      height: 512 * 1,
+      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+      url: "https://map.runfast.stream/?map=regular&x=-1408&y=7536&zoom=788",
+    },
+  ],
+};
 
 const mapDefinitions = [
   {
@@ -552,28 +456,6 @@ var os = OpenSeadragon({
   opacity: 1,
 });
 
-let overlaysState = false;
-let structuresOverlaysState = false;
-let obsOverlaysState = false;
-let bossesOverlaysState = false;
-let itemsOverlaysState = false;
-const allOverlays = document.getElementsByClassName("osOverlayHighlight");
-const overlaysSwitch = document.querySelector("#overlayVisibilityToggle");
-const overlaysSwitchWrapper = document.querySelector("#overlayVisibilityToggleWrapper");
-overlaysSwitch.checked = false;
-
-// Individual overlays toggle
-// const allOverlays = document.getElementsByClassName("osOverlayHighlight");
-const structuresOverlaysSwitch = document.querySelector("#structuresToggler");
-const obsOverlaysSwitch = document.querySelector("#obsToggler");
-const bossesOverlaysSwitch = document.querySelector("#bossesToggler");
-const itemsOverlaysSwitch = document.querySelector("#itemsToggler");
-
-structuresOverlaysSwitch.checked = false;
-obsOverlaysSwitch.checked = false;
-bossesOverlaysSwitch.checked = false;
-itemsOverlaysSwitch.checked = false;
-
 let prevTiledImage;
 let nextTiledImage;
 
@@ -653,6 +535,28 @@ function fetchMapVersions(mapName) {
   return Promise.all(promises).then(() => versions);
 }
 
+const hideOverlays = () => {
+  overlaysSwitchWrapper.classList.add("hidden");
+};
+const displayOverlays = () => {
+  overlaysSwitchWrapper.classList.remove("hidden");
+};
+
+const drawOverlayItems = (items) => {
+  items.forEach(({ id, text, x, y, width, height }) => {
+    let e = document.createElement("div");
+    e.id = `overlayId${id}`;
+    e.className = "osOverlayHighlight";
+    e.innerHTML = `<span id="span${id}" >${text}</span>`;
+    os.addOverlay({
+      element: e,
+      location: new OpenSeadragon.Rect(x, y, width, height),
+    });
+    const hue = Math.floor(Math.random() * 360);
+    e.style.backgroundColor = `hsla(${hue}, 60%, 50%, 0.401)`;
+  });
+};
+
 const changeMap = (() => {
   let cacheBustHandler = undefined;
 
@@ -675,19 +579,31 @@ const changeMap = (() => {
     switch (mapName) {
       case "regular-main-branch":
       case "regular-beta":
+        document.body.classList.remove("toggle-hidden");
+        orbsOverlaysSwitch.disabled = true; // Disable the Orbs toggle
+        orbsOverlaysSwitch.checked = false; // Uncheck the Orbs toggle
+        document.querySelectorAll(".overlayToggler").forEach((toggler) => {
+          if (toggler.id !== "orbsToggler") {
+            toggler.disabled = false; // Enable all toggles except Orbs
+          }
+        });
+        break;
+
       case "new-game-plus-main-branch":
         document.body.classList.remove("toggle-hidden");
-        overlaysSwitch.disabled = false;
-        overlaysSwitch.checked = overlaysState;
-        overlaysSwitchWrapper.setAttribute("data-bs-title", "Additional info for the map");
+        document.querySelectorAll(".overlayToggler").forEach((toggler) => {
+          toggler.disabled = false; // Enable all toggles
+        });
         break;
+
       default:
         document.body.classList.add("toggle-hidden");
-        overlaysSwitch.disabled = true;
-        overlaysSwitch.checked = false;
-
-        overlaysSwitchWrapper.setAttribute("data-bs-title", "No overlays available for this map");
+        document.querySelectorAll(".overlayToggler").forEach((toggler) => {
+          toggler.disabled = true; // Disable all toggles
+          toggler.checked = false; // Uncheck all toggles
+        });
     }
+    updateOverlayVisibility();
 
     // update url to refer to the map we just selected
     const updatedUrlParams = new URLSearchParams(window.location.search);
@@ -695,6 +611,33 @@ const changeMap = (() => {
     window.history.replaceState(null, "", "?" + updatedUrlParams.toString());
     addTooltips();
   }
+  // Function to update the visibility of overlays based on toggles
+  function updateOverlayVisibility() {
+    const overlays = {
+      structures: structuresOverlaysSwitch.checked,
+      bosses: bossesOverlaysSwitch.checked,
+      items: itemsOverlaysSwitch.checked,
+      orbs: orbsOverlaysSwitch.checked,
+    };
+
+    // Iterate over each overlay type
+    overlayTexts.forEach((overlay) => {
+      const shouldShow = overlays[overlay.type];
+      const overlayElement = document.getElementById(`overlay-${overlay.id}`);
+
+      if (shouldShow) {
+        overlayElement?.classList.remove("hidden");
+      } else {
+        overlayElement?.classList.add("hidden");
+      }
+    });
+  }
+
+  // Event listeners for each toggle
+  structuresOverlaysSwitch.addEventListener("change", updateOverlayVisibility);
+  bossesOverlaysSwitch.addEventListener("change", updateOverlayVisibility);
+  itemsOverlaysSwitch.addEventListener("change", updateOverlayVisibility);
+  orbsOverlaysSwitch.addEventListener("change", updateOverlayVisibility);
 
   // loadMap('a specific map name')
   async function loadMap(mapName) {
@@ -766,7 +709,6 @@ os.addHandler("open", async (event) => {
 
   viewport.panTo(viewportCenter, true);
   viewport.zoomTo(viewportZoom, undefined, true);
-  addBiomeOverlay();
 });
 
 // Loading indicator
@@ -827,7 +769,12 @@ function getShareUrl() {
 const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
 const popoverList = [...popoverTriggerList].map((popoverTriggerEl) => new bootstrap.Popover(popoverTriggerEl));
 
-overlaysSwitch.addEventListener("click", function () {
+// structuresOverlaysSwitch
+// orbsOverlaysSwitch
+// bossesOverlaysSwitch
+// itemsOverlaysSwitch
+
+structuresOverlaysSwitch.addEventListener("click", function () {
   const updatedUrlParamsFromOverlaysToggle = new URLSearchParams(window.location.search);
   const currentMapURLFromOverlaysToggle = String(updatedUrlParamsFromOverlaysToggle.get("map"));
 
@@ -840,10 +787,10 @@ overlaysSwitch.addEventListener("click", function () {
     });
   }
 
-  if (overlaysState) {
+  if (structuresOverlayState) {
     // If overlays are currently visible, remove them
     removeAllOverlays();
-    overlaysSwitch.checked = false;
+    structuresOverlaysSwitch.checked = false;
   } else {
     // Always clear existing overlays before adding new ones
     removeAllOverlays();
@@ -871,12 +818,161 @@ overlaysSwitch.addEventListener("click", function () {
         e.style.backgroundColor = `hsla(${hue}, 60%, 60%, 0.5)`;
       });
 
-      overlaysSwitch.checked = true; // Ensure the switch is checked
+      structuresOverlaysSwitch.checked = true; // Ensure the switch is checked
     }
   }
 
   // Toggle the overlay state
-  overlaysState = !overlaysState;
+  structuresOverlayState = !structuresOverlayState;
+});
+orbsOverlaysSwitch.addEventListener("click", function () {
+  const updatedUrlParamsFromOverlaysToggle = new URLSearchParams(window.location.search);
+  const currentMapURLFromOverlaysToggle = String(updatedUrlParamsFromOverlaysToggle.get("map"));
+
+  // Function to remove all existing overlays
+  function removeAllOverlays() {
+    // Remove all overlays when switching off
+    document.querySelectorAll(".osOverlayHighlight").forEach((overlay) => {
+      os.removeOverlay(overlay.id);
+      overlay.remove(); // Also remove the overlay element from the DOM
+    });
+  }
+
+  if (orbsOverlaysState) {
+    // If overlays are currently visible, remove them
+    removeAllOverlays();
+    orbsOverlaySwitch.checked = false;
+  } else {
+    // Always clear existing overlays before adding new ones
+    removeAllOverlays();
+
+    // Check if the current map is one of the valid maps
+    if (currentMapURLFromOverlaysToggle === "new-game-plus-main-branch") {
+      // Filter overlayTexts based on the current map
+      const filteredOverlays = overlayTexts.filter(({ maps }) => maps.includes(currentMapURLFromOverlaysToggle));
+
+      // Add only the overlays that match the current map
+      filteredOverlays.forEach(({ id, text, x, y, width, height }) => {
+        let e = document.createElement("div");
+        e.id = `overlayId${id}`;
+        e.className = "osOverlayHighlight";
+        e.innerHTML = `<span id="span${id}">${text}</span>`;
+        os.addOverlay({
+          element: e,
+          location: new OpenSeadragon.Rect(x, y, width, height),
+        });
+        const hue = Math.floor(Math.random() * 360);
+        e.style.backgroundColor = `hsla(${hue}, 60%, 60%, 0.5)`;
+      });
+
+      orbsOverlaySwitch.checked = true; // Ensure the switch is checked
+    }
+  }
+
+  // Toggle the overlay state
+  orbsOverlaysState = !orbsOverlaysState;
+});
+structuresOverlaysSwitch.addEventListener("click", function () {
+  const updatedUrlParamsFromOverlaysToggle = new URLSearchParams(window.location.search);
+  const currentMapURLFromOverlaysToggle = String(updatedUrlParamsFromOverlaysToggle.get("map"));
+
+  // Function to remove all existing overlays
+  function removeAllOverlays() {
+    // Remove all overlays when switching off
+    document.querySelectorAll(".osOverlayHighlight").forEach((overlay) => {
+      os.removeOverlay(overlay.id);
+      overlay.remove(); // Also remove the overlay element from the DOM
+    });
+  }
+
+  if (structuresOverlayState) {
+    // If overlays are currently visible, remove them
+    removeAllOverlays();
+    structuresOverlaysSwitch.checked = false;
+  } else {
+    // Always clear existing overlays before adding new ones
+    removeAllOverlays();
+
+    // Check if the current map is one of the valid maps
+    if (
+      currentMapURLFromOverlaysToggle === "regular-main-branch" ||
+      currentMapURLFromOverlaysToggle === "regular-beta" ||
+      currentMapURLFromOverlaysToggle === "new-game-plus-main-branch"
+    ) {
+      // Filter overlayTexts based on the current map
+      const filteredOverlays = overlayTexts.filter(({ maps }) => maps.includes(currentMapURLFromOverlaysToggle));
+
+      // Add only the overlays that match the current map
+      filteredOverlays.forEach(({ id, text, x, y, width, height }) => {
+        let e = document.createElement("div");
+        e.id = `overlayId${id}`;
+        e.className = "osOverlayHighlight";
+        e.innerHTML = `<span id="span${id}">${text}</span>`;
+        os.addOverlay({
+          element: e,
+          location: new OpenSeadragon.Rect(x, y, width, height),
+        });
+        const hue = Math.floor(Math.random() * 360);
+        e.style.backgroundColor = `hsla(${hue}, 60%, 60%, 0.5)`;
+      });
+
+      structuresOverlaysSwitch.checked = true; // Ensure the switch is checked
+    }
+  }
+
+  // Toggle the overlay state
+  structuresOverlayState = !structuresOverlayState;
+});
+structuresOverlaysSwitch.addEventListener("click", function () {
+  const updatedUrlParamsFromOverlaysToggle = new URLSearchParams(window.location.search);
+  const currentMapURLFromOverlaysToggle = String(updatedUrlParamsFromOverlaysToggle.get("map"));
+
+  // Function to remove all existing overlays
+  function removeAllOverlays() {
+    // Remove all overlays when switching off
+    document.querySelectorAll(".osOverlayHighlight").forEach((overlay) => {
+      os.removeOverlay(overlay.id);
+      overlay.remove(); // Also remove the overlay element from the DOM
+    });
+  }
+
+  if (structuresOverlayState) {
+    // If overlays are currently visible, remove them
+    removeAllOverlays();
+    structuresOverlaysSwitch.checked = false;
+  } else {
+    // Always clear existing overlays before adding new ones
+    removeAllOverlays();
+
+    // Check if the current map is one of the valid maps
+    if (
+      currentMapURLFromOverlaysToggle === "regular-main-branch" ||
+      currentMapURLFromOverlaysToggle === "regular-beta" ||
+      currentMapURLFromOverlaysToggle === "new-game-plus-main-branch"
+    ) {
+      // Filter overlayTexts based on the current map
+      const filteredOverlays = overlayTexts.filter(({ maps }) => maps.includes(currentMapURLFromOverlaysToggle));
+
+      // Add only the overlays that match the current map
+      filteredOverlays.forEach(({ id, text, x, y, width, height }) => {
+        let e = document.createElement("div");
+        e.id = `overlayId${id}`;
+        e.className = "osOverlayHighlight";
+        e.innerHTML = `<span id="span${id}">${text}</span>`;
+        os.addOverlay({
+          element: e,
+          location: new OpenSeadragon.Rect(x, y, width, height),
+        });
+        const hue = Math.floor(Math.random() * 360);
+        e.style.backgroundColor = `hsla(${hue}, 60%, 60%, 0.5)`;
+      });
+
+      structuresOverlaysSwitch.checked = true; // Ensure the switch is checked
+    }
+  }
+
+  // Toggle the overlay state
+  structuresOverlayState = !structuresOverlayState;
 });
 
 os.addHandler("animation-finish", function (event) {
