@@ -14,7 +14,7 @@
 
     <meta charset="utf-8" />
     <title>Noita Map</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <meta name="description" content="Ultrafast superzoom map for Noita. Map for the video game Noita." />
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png" />
@@ -42,11 +42,6 @@
       integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
       crossorigin="anonymous"
     />
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-      crossorigin="anonymous"
-    ></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <script src="https://unpkg.com/openseadragon-annotations@1.0.5/dist/openseadragon-annotations.js"></script>
     <!-- Todo add opacity slider plugin -->
@@ -68,29 +63,9 @@
     <meta name="twitter:title" content="Noita Map" />
     <meta name="twitter:description" content="Blazingly-fast superzoom map for Noita. Map for the video game Noita." />
     <meta name="twitter:image" content="https://map.runfast.stream/assets/noitamap-opengraph.png" />
-    <style>
-      .navbar .navbar-brand,
-      .navbar #goToMainWebsiteButton,
-      .navbar .dropdown,
-      .navbar #overlayVisibilityToggleWrapper,
-      .navbar #shareButton,
-      .navbar .btn-outline-light {
-        margin-left: 10px;
-      }
-
-      .navbar .navbar-brand {
-        margin-left: 0;
-      }
-    </style>
   </head>
 
   <body>
-    <div id="liveAlertPlaceholder" class="toast align-items-center" role="alert" aria-live="assertive" aria-atomic="true">
-      <div class="d-flex">
-        <div class="toast-body">Copied current map coordinates to your clipboard!</div>
-        <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-      </div>
-    </div>
     <!-- TODO: add drawing -->
     <!-- <div class="form-check form-switch"> -->
     <!--   <input class="form-check-input" type="checkbox" role="switch" id="drawingToggleSwitch"> -->
@@ -98,43 +73,70 @@
     <!-- </div> -->
     <!-- <a id="eraseAnnotationDrawingsButton" tabindex="0" class="btn btn-outline-info text-nowrap"
         data-bs-trigger="focus" role="button" onclick="eraseDrawings()"><i class="bi bi-eraser"></i></a> -->
-    <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top">
+    <!-- <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top navbar-expand-sm"></nav> -->
+    <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top navbar-expand-lg">
       <div class="container-fluid">
-        <div class="d-flex align-items-center">
-          <a class="navbar-brand" href="#" onclick="resetZoom();">
-            <img src="/assets/NoitamapLogo.svg" alt="Noitamap Logo" class="d-inline-blockalign-text-middle p-1" />
-            <span id="currentMapName">Noita map</span>
-          </a>
-          <a id="goToMainWebsiteButton" tabindex="0" href="https://runfast.stream" target="_blank" class="btn btn-outline-warning btn-sm text-nowrap mx-2">
-            <i class="icon-runfast"></i>
-          </a>
-          <div class="dropdown mx-2">
-            <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false">Available maps</button>
-            <ul class="dropdown-menu" id="navLinksList"></ul>
+        <a class="navbar-brand" href="#" onclick="resetZoom();">
+          <img src="./assets/NoitamapLogo.svg" alt="Noitamap Logo" class="d-inline-block" />
+          <span id="currentMapName">Noita map</span>
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#collapsibleMapMenu"
+          aria-controls="collapsibleMapMenu"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="collapsibleMapMenu">
+          <!-- Dropdown and buttons container -->
+          <div class="d-flex flex-wrap align-items-center justify-content-start me-auto">
+            <div class="dropdown">
+              <button class="btn btn-sm btn-outline-light dropdown-toggle m-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">Available Maps</button>
+              <ul class="dropdown-menu" id="navLinksList"></ul>
+            </div>
+
+            <a
+              tabindex="0"
+              id="shareButton"
+              class="btn btn-outline-light btn-sm text-nowrap m-2"
+              role="button"
+              onclick="getShareUrl();"
+              data-bs-toggle="popover"
+              data-bs-placement="bottom"
+              data-bs-trigger="focus"
+              data-bs-title="Copied to your clipboard!"
+              data-bs-content="Share copied link with others"
+              data-bs-trigger="focus"
+              data-bs-container="body"
+              data-bs-placement="bottom"
+            >
+              <i class="bi bi-share"></i> <span>Share Location</span>
+            </a>
+
+            <div class="btn-group btn-group-sm m-2" role="group">
+              <input id="structuresToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" />
+              <label class="btn btn-outline-light text-nowrap" for="structuresToggler"><i class="icon-structures"></i> Structures</label>
+              <input id="bossesToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" />
+              <label class="btn btn-outline-light text-nowrap" for="bossesToggler"><i class="icon-bosses"></i> Bosses</label>
+              <input id="itemsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" />
+              <label class="btn btn-outline-light text-nowrap" for="itemsToggler"><i class="icon-items"></i> Items</label>
+              <input id="orbsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" />
+              <label class="btn btn-outline-light text-nowrap" for="orbsToggler"><i class="icon-orbs"></i> Orbs</label>
+            </div>
+
+            <a href="https://github.com/acidflow-noita/noitamap" class="btn btn-sm btn-outline-light text-nowrap m-2" target="_blank" role="button">
+              <i class="bi bi-github"></i> <span>Source Code</span>
+            </a>
+            <a href="https://discord.gg/R2PHyHMYgx" class="btn btn-sm btn-outline-light text-nowrap m-2" target="_blank" role="button"> <i class="bi bi-discord"></i> <span>Join Discord</span> </a>
+            <a id="goToMainWebsiteButton" href="https://runfast.stream" target="_blank" class="btn btn-sm btn-outline-warning m-2">
+              <i class="icon-runfast"></i>
+            </a>
           </div>
-          <div id="overlayVisibilityToggleWrapper" class="form-check form-switch mx-2" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Additional info for the map">
-            <input class="form-check-input" type="checkbox" role="switch" id="overlayVisibilityToggle" />
-            <label class="form-check-label" for="overlayVisibilityToggle"><i class="bi bi-layers"></i> Show overlays</label>
-          </div>
-        </div>
-        <div class="d-flex ms-auto align-items-center">
-          <a
-            id="shareButton"
-            tabindex="0"
-            class="btn btn-outline-light btn-sm text-nowrap mx-2"
-            data-bs-trigger="focus"
-            data-bs-container="body"
-            data-bs-toggle="popover"
-            data-bs-placement="bottom"
-            data-bs-content="Copied!"
-            role="button"
-            onclick="getShareUrl();"
-          >
-            <i class="bi bi-copy"></i> <span class="d-none d-sm-inline">Copy to clipboard</span>
-          </a>
-          <a href="https://github.com/acidflow-noita/noitamap" class="btn btn-outline-light btn-sm text-nowrap mx-2" target="_blank" role="button">
-            <i class="bi bi-github"></i>
-          </a>
         </div>
       </div>
     </nav>
@@ -145,6 +147,11 @@
       <div class="coordinate-content"></div>
     </div>
     <div id="opacitySliderWrapper"></div>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
     <script src="js/script.js"></script>
     <!-- Cloudflare Web Analytics -->
     <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "d6a1d0d280c34cbf8fa978fffc9d0fa2"}'></script>
