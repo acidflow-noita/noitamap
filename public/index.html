@@ -75,7 +75,7 @@
         data-bs-trigger="focus" role="button" onclick="eraseDrawings()"><i class="bi bi-eraser"></i></a> -->
     <!-- <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top navbar-expand-sm"></nav> -->
     <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top navbar-expand-lg">
-      <div class="container-fluid m-1 p-1">
+      <div class="container-fluid">
         <a class="navbar-brand" href="#" onclick="resetZoom();">
           <img src="./assets/NoitamapLogo.svg" alt="Noitamap Logo" class="d-inline-block" />
           <span id="currentMapName">Noita map</span>
@@ -96,14 +96,14 @@
           <!-- Dropdown and buttons container -->
           <div class="d-flex flex-wrap align-items-center justify-content-start me-auto">
             <div class="dropdown">
-              <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Available Maps</button>
+              <button class="btn btn-sm btn-outline-light dropdown-toggle m-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">Available Maps</button>
               <ul class="dropdown-menu" id="navLinksList"></ul>
             </div>
 
             <a
               tabindex="0"
               id="shareButton"
-              class="btn btn-outline-light btn-sm text-nowrap"
+              class="btn btn-outline-light btn-sm text-nowrap m-2"
               role="button"
               onclick="getShareUrl();"
               data-bs-toggle="popover"
@@ -118,22 +118,22 @@
               <i class="bi bi-share"></i> <span>Share Location</span>
             </a>
 
-            <div class="btn-group btn-group-sm" role="group">
+            <div class="btn-group btn-group-sm m-2" role="group">
               <input id="structuresToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" />
-              <label class="btn btn-outline-light" for="structuresToggler"><i class="icon-structures"></i> Structures</label>
+              <label class="btn btn-outline-light text-nowrap" for="structuresToggler"><i class="icon-structures"></i> Structures</label>
               <input id="bossesToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" />
-              <label class="btn btn-outline-light" for="bossesToggler"><i class="icon-bosses"></i> Bosses</label>
+              <label class="btn btn-outline-light text-nowrap" for="bossesToggler"><i class="icon-bosses"></i> Bosses</label>
               <input id="itemsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" />
-              <label class="btn btn-outline-light" for="itemsToggler"><i class="icon-items"></i> Items</label>
+              <label class="btn btn-outline-light text-nowrap" for="itemsToggler"><i class="icon-items"></i> Items</label>
               <input id="orbsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" />
-              <label class="btn btn-outline-light" for="orbsToggler"><i class="icon-orbs"></i> Orbs</label>
+              <label class="btn btn-outline-light text-nowrap" for="orbsToggler"><i class="icon-orbs"></i> Orbs</label>
             </div>
 
-            <a href="https://github.com/acidflow-noita/noitamap" class="btn btn-sm btn-outline-light text-nowrap" target="_blank" role="button">
+            <a href="https://github.com/acidflow-noita/noitamap" class="btn btn-sm btn-outline-light text-nowrap m-2" target="_blank" role="button">
               <i class="bi bi-github"></i> <span>Source Code</span>
             </a>
-            <a href="https://discord.gg/R2PHyHMYgx" class="btn btn-sm btn-outline-light text-nowrap" target="_blank" role="button"> <i class="bi bi-discord"></i> <span>Join Discord</span> </a>
-            <a id="goToMainWebsiteButton" href="https://runfast.stream" target="_blank" class="btn btn-sm btn-outline-warning">
+            <a href="https://discord.gg/R2PHyHMYgx" class="btn btn-sm btn-outline-light text-nowrap m-2" target="_blank" role="button"> <i class="bi bi-discord"></i> <span>Join Discord</span> </a>
+            <a id="goToMainWebsiteButton" href="https://runfast.stream" target="_blank" class="btn btn-sm btn-outline-warning m-2">
               <i class="icon-runfast"></i>
             </a>
           </div>

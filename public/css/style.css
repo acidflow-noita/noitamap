@@ -150,9 +150,10 @@ body.toggle-hidden div.osOverlayHighlight {
   background-image: url(../assets/runfast-logo.svg);
   background-size: cover;
   display: inline-block;
-  height: 15px;
-  width: 76px;
-  margin-top: 8%;
+  height: 10px;
+  width: 50px;
+  margin-top: 3%;
+  vertical-align: center;
 }
 
 .icon-structures {
