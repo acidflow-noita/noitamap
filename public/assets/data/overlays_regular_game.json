@@ -32,7 +32,6 @@
     "width": 1600,
     "height": 1650
   },
-  { "id": 4, "text": "Milk", "x": 2420, "y": -4500, "width": 25, "height": 25 },
   {
     "id": 5,
 
@@ -42,5 +41,6 @@
     "width": 1230,
     "height": 1100
   },
+  { "id": 4, "text": "Milk", "x": 2420, "y": -4500, "width": 25, "height": 25 },
   { "id": 6, "text": "Beer", "x": 7610, "y": -4359, "width": 25, "height": 25 }
 ]

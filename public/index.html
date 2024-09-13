@@ -63,16 +63,9 @@
     <meta name="twitter:title" content="Noita Map" />
     <meta name="twitter:description" content="Blazingly-fast superzoom map for Noita. Map for the video game Noita." />
     <meta name="twitter:image" content="https://map.runfast.stream/assets/noitamap-opengraph.png" />
-
   </head>
 
   <body>
-    <div id="liveAlertPlaceholder" class="toast align-items-center" role="alert" aria-live="assertive" aria-atomic="true">
-      <div class="d-flex">
-        <div class="toast-body">Copied current map coordinates to your clipboard!</div>
-        <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-      </div>
-    </div>
     <!-- TODO: add drawing -->
     <!-- <div class="form-check form-switch"> -->
     <!--   <input class="form-check-input" type="checkbox" role="switch" id="drawingToggleSwitch"> -->
@@ -80,63 +73,72 @@
     <!-- </div> -->
     <!-- <a id="eraseAnnotationDrawingsButton" tabindex="0" class="btn btn-outline-info text-nowrap"
         data-bs-trigger="focus" role="button" onclick="eraseDrawings()"><i class="bi bi-eraser"></i></a> -->
-    <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top navbar-expand-sm">
-      <div class="container-fluid d-flex align-items-center">
-        <!-- row row-cols-2 -->
-        <!-- <div class=""> -->
-          <a class="navbar-brand" href="#" onclick="resetZoom();">
-            <img src="./assets/NoitamapLogo.svg" alt="Noitamap Logo" class="d-inline-block " />
-            <span id="currentMapName">Noita map</span>
-          </a>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleMapMenu" aria-controls="collapsibleMapMenu" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="collapsibleMapMenu">
-            <div class="dropdown d-grid gap-2 d-md-block">
-              <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false">Available Maps</button>
+    <!-- <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top navbar-expand-sm"></nav> -->
+    <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top navbar-expand-lg">
+      <div class="container-fluid m-1 p-1">
+        <a class="navbar-brand" href="#" onclick="resetZoom();">
+          <img src="./assets/NoitamapLogo.svg" alt="Noitamap Logo" class="d-inline-block" />
+          <span id="currentMapName">Noita map</span>
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#collapsibleMapMenu"
+          aria-controls="collapsibleMapMenu"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="collapsibleMapMenu">
+          <!-- Dropdown and buttons container -->
+          <div class="d-flex flex-wrap align-items-center justify-content-start me-auto">
+            <div class="dropdown">
+              <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Available Maps</button>
               <ul class="dropdown-menu" id="navLinksList"></ul>
             </div>
 
             <a
-            id="shareButton"
-            tabindex="0"
-            class="btn btn-sm btn-outline-light text-nowrap d-grid gap-2 d-md-block"
-            data-bs-trigger="focus"
-            data-bs-container="body"
-            data-bs-toggle="popover"
-            data-bs-placement="bottom"
-            data-bs-content="Copied to clipboard!"
-            role="button"
-            onclick="getShareUrl();"
+              tabindex="0"
+              id="shareButton"
+              class="btn btn-outline-light btn-sm text-nowrap"
+              role="button"
+              onclick="getShareUrl();"
+              data-bs-toggle="popover"
+              data-bs-placement="bottom"
+              data-bs-trigger="focus"
+              data-bs-title="Copied to your clipboard!"
+              data-bs-content="Share copied link with others"
+              data-bs-trigger="focus"
+              data-bs-container="body"
+              data-bs-placement="bottom"
             >
-            <i class="bi bi-share"></i> <span>Share Location</span>
-          </a>
+              <i class="bi bi-share"></i> <span>Share Location</span>
+            </a>
 
-          <div class="btn-group text-nowrap" role="group">
-            <input id="structuresToggler" type="checkbox" class="btn-check btn-sm overlayToggler" autocomplete="off" >
-            <label class="btn btn-outline-light" for="structuresToggler"><i class="icon-structures" ></i> Structures</label>
-          
-            <input id="bossesToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off">
-            <label class="btn btn-outline-light" for="bossesToggler"><i class="icon-bosses" ></i> Bosses</label>
-            
-            <input id="itemsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off">
-            <label class="btn btn-outline-light" for="itemsToggler"><i class="icon-items" ></i> Items</label>
-          
-            <input id="orbsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off">
-            <label class="btn btn-outline-light" for="orbsToggler"><i class="icon-orbs" ></i> Orbs</label>
+            <div class="btn-group btn-group-sm" role="group">
+              <input id="structuresToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" />
+              <label class="btn btn-outline-light" for="structuresToggler"><i class="icon-structures"></i> Structures</label>
+              <input id="bossesToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" />
+              <label class="btn btn-outline-light" for="bossesToggler"><i class="icon-bosses"></i> Bosses</label>
+              <input id="itemsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" />
+              <label class="btn btn-outline-light" for="itemsToggler"><i class="icon-items"></i> Items</label>
+              <input id="orbsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" />
+              <label class="btn btn-outline-light" for="orbsToggler"><i class="icon-orbs"></i> Orbs</label>
+            </div>
+
+            <a href="https://github.com/acidflow-noita/noitamap" class="btn btn-sm btn-outline-light text-nowrap" target="_blank" role="button">
+              <i class="bi bi-github"></i> <span>Source Code</span>
+            </a>
+            <a href="https://discord.gg/R2PHyHMYgx" class="btn btn-sm btn-outline-light text-nowrap" target="_blank" role="button"> <i class="bi bi-discord"></i> <span>Join Discord</span> </a>
+            <a id="goToMainWebsiteButton" href="https://runfast.stream" target="_blank" class="btn btn-sm btn-outline-warning">
+              <i class="icon-runfast"></i>
+            </a>
           </div>
-
-
-          <a href="https://github.com/acidflow-noita/noitamap" class="btn btn-sm btn-outline-light text-nowrap d-grid gap-2 d-md-block" target="_blank" role="button">
-            <i class="bi bi-github"> </i><span class="">Source Code</span>
-          </a>
-          <a href="https://discord.gg/R2PHyHMYgx" class="btn btn-sm btn-outline-light text-nowrap d-grid gap-2 d-md-block" target="_blank" role="button">
-            <i class="bi bi-discord"></i> <span class="">Join Discord</span>
-          </a>
-          <a id="goToMainWebsiteButton" href="https://runfast.stream" target="_blank" class="btn btn-sm btn-outline-warning ">
-            <i class="icon-runfast"></i>
-          </a>
         </div>
+      </div>
     </nav>
     <div id="osContainer"></div>
     <i class="bi bi-arrow-repeat loadingIndicator spinningIcon text-info"></i>

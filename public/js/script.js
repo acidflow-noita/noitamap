@@ -1,13 +1,10 @@
-// TODO: Add annotations
-// annotations plugin
-
 "use strict";
+
 // Reference elements for the new toggles
 const structuresOverlaysSwitch = document.querySelector("#structuresToggler");
 const orbsOverlaysSwitch = document.querySelector("#orbsToggler");
 const bossesOverlaysSwitch = document.querySelector("#bossesToggler");
 const itemsOverlaysSwitch = document.querySelector("#itemsToggler");
-
 const allOverlaysSwitches = document.querySelectorAll(".overlayToggler");
 
 // Initialize toggle states
@@ -16,10 +13,12 @@ orbsOverlaysSwitch.checked = false;
 bossesOverlaysSwitch.checked = false;
 itemsOverlaysSwitch.checked = false;
 
+// Overlay states
 let structuresOverlayState = false;
 let orbsOverlaysState = false;
+let bossesOverlaysState = false;
+let itemsOverlaysState = false;
 
-const spans = document.querySelectorAll(".osOverlayHighlight");
 const CHUNK_SIZE = 512;
 
 const overlayTexts = {
@@ -422,7 +421,6 @@ const mapDefinitions = [
 const tileSources = (function () {
   const tileSourceURL = (key, position, patchDate, seed) =>
     `https://${key}-${position}.acidflow.stream/maps/${key}-${position}/${key}-${position}-${patchDate}-${seed}.dzi`;
-
   const output = {};
   for (const def of mapDefinitions) {
     const urls = [];
@@ -431,28 +429,30 @@ const tileSources = (function () {
     }
     output[def.key] = urls;
   }
-
   return output;
 })();
 
 let oldTileSource = 0;
 
+// Initialize OpenSeadragon
 var os = OpenSeadragon({
   maxZoomPixelRatio: 70,
-  // animationTime: 1.2, // default
+  // animationTime: 1.2, // Uncomment if needed
   id: "osContainer",
   showNavigator: false,
   showNavigationControl: false,
   imageSmoothingEnabled: false,
   drawer: "canvas",
-  // We have to provide OSD with initial set of tiles
+  // Provide OSD with initial set of tiles
   tileSources: tileSources["regular-main-branch"],
   subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS,
   smoothTileEdgesMinZoom: 1,
   minScrollDeltaTime: 10,
   springStiffness: 50,
   preserveViewport: true,
-  gestureSettingsMouse: { clickToZoom: false },
+  gestureSettingsMouse: {
+    clickToZoom: false,
+  },
   opacity: 1,
 });
 
@@ -460,6 +460,8 @@ let prevTiledImage;
 let nextTiledImage;
 
 const coordElement = document.getElementById("coordinate");
+
+// Mouse tracker for displaying coordinates
 const mouseTracker = new OpenSeadragon.MouseTracker({
   // @ts-ignore
   element: os.container,
@@ -469,7 +471,6 @@ const mouseTracker = new OpenSeadragon.MouseTracker({
     }
     const webPoint = event.position;
     const viewportPoint = os.viewport.pointFromPixel(webPoint);
-
     const pixelX = Math.floor(viewportPoint.x).toString();
     const pixelY = Math.floor(viewportPoint.y).toString();
     const chunkX = Math.floor(viewportPoint.x / CHUNK_SIZE).toString();
@@ -492,10 +493,10 @@ const mouseTracker = new OpenSeadragon.MouseTracker({
   },
 }).setTracking(true);
 
+// Function to get map version URLs
 const mapVersionUrls = (mapName) => {
   const fileName = "currentVersion.txt";
   const versions = tileSources[mapName].map((sourceURL) => `${new URL(sourceURL).origin}/${fileName}`);
-
   return versions;
 };
 
@@ -505,25 +506,24 @@ const mapVersionUrls = (mapName) => {
  * @returns {Promise<Object>} A promise that resolves to an object containing versions for different origins.
  */
 function fetchMapVersions(mapName) {
-  // we don't want to fetch a cached version of the manifest!
+  // We don't want to fetch a cached version of the manifest!
   const versions = {};
   const urls = mapVersionUrls(mapName);
   const promises = urls.map((url) =>
     fetch(url, {
       // Commented out because it's causing CORS issues
-      //headers: { 'cache-control': 'no-cache' }
+      // headers: { 'cache-control': 'no-cache' }
     })
       .then((res) => {
-        // gotta check the response, otherwise the body content doesn't represent what you think it does
+        // Gotta check the response, otherwise the body content doesn't represent what you think it does
         if (!res.ok) {
           throw new Error(`Fetch failed: ${res.status} ${res.statusText}`);
         }
-
         return res.text();
       })
       .catch((err) => {
         console.error(err);
-        // create a synthetic cache bust string if anything errored
+        // Create a synthetic cache bust string if anything errored
         return Math.random().toString(36).slice(2);
       })
       .then((body) => {
@@ -531,17 +531,21 @@ function fetchMapVersions(mapName) {
         versions[origin] = encodeURIComponent(body.trim());
       })
   );
-  // wait for all requests to have set their key, then return the object
+  // Wait for all requests to have set their key, then return the object
   return Promise.all(promises).then(() => versions);
 }
 
+// Function to hide overlays (if needed)
 const hideOverlays = () => {
   overlaysSwitchWrapper.classList.add("hidden");
 };
+
+// Function to display overlays (if needed)
 const displayOverlays = () => {
   overlaysSwitchWrapper.classList.remove("hidden");
 };
 
+// Function to draw overlay items
 const drawOverlayItems = (items) => {
   items.forEach(({ id, text, x, y, width, height }) => {
     let e = document.createElement("div");
@@ -557,107 +561,198 @@ const drawOverlayItems = (items) => {
   });
 };
 
+// Change map function encapsulated in an IIFE
 const changeMap = (() => {
   let cacheBustHandler = undefined;
 
-  // setActiveMap('a specific map name')
+  // Function to set the active map
   function setActiveMap(mapName) {
     const currentMapLink = document.querySelector(`#navLinksList [data-map-key=${mapName}]`);
     if (!currentMapLink) return;
 
-    // remove "active" class from any nav links that still have it
-    for (const el of document.querySelectorAll("#navLinksList .nav-link.active")) {
+    // Remove "active" class from any nav links that still have it
+    document.querySelectorAll("#navLinksList .nav-link.active").forEach((el) => {
       el.classList.remove("active");
-    }
-    // add "active" class to the nav-link identified by `mapName`
+    });
+
+    // Add "active" class to the nav-link identified by `mapName`
     currentMapLink.classList.add("active");
 
-    // modify the DOM to show the current map name based on the contents of the link
-    // to activate that map
+    // Modify the DOM to show the current map name based on the contents of the link
     document.getElementById("currentMapName").innerHTML = currentMapLink.innerHTML;
 
+    // Handle map-specific UI adjustments
     switch (mapName) {
       case "regular-main-branch":
       case "regular-beta":
-        document.body.classList.remove("toggle-hidden");
-        orbsOverlaysSwitch.disabled = true; // Disable the Orbs toggle
-        orbsOverlaysSwitch.checked = false; // Uncheck the Orbs toggle
-        document.querySelectorAll(".overlayToggler").forEach((toggler) => {
-          if (toggler.id !== "orbsToggler") {
-            toggler.disabled = false; // Enable all toggles except Orbs
-          }
-        });
-        break;
-
       case "new-game-plus-main-branch":
         document.body.classList.remove("toggle-hidden");
-        document.querySelectorAll(".overlayToggler").forEach((toggler) => {
-          toggler.disabled = false; // Enable all toggles
-        });
+        // Enable or disable togglers based on map support
+        updateTogglersBasedOnMap(mapName);
         break;
-
       default:
         document.body.classList.add("toggle-hidden");
         document.querySelectorAll(".overlayToggler").forEach((toggler) => {
-          toggler.disabled = true; // Disable all toggles
-          toggler.checked = false; // Uncheck all toggles
+          toggler.disabled = true;
+          toggler.checked = false;
         });
+        break;
     }
-    updateOverlayVisibility();
 
-    // update url to refer to the map we just selected
+    updateOverlayVisibility(); // Update overlay visibility based on toggler states
+
+    // Update URL to refer to the selected map
     const updatedUrlParams = new URLSearchParams(window.location.search);
     updatedUrlParams.set("map", mapName);
     window.history.replaceState(null, "", "?" + updatedUrlParams.toString());
+
     addTooltips();
   }
-  // Function to update the visibility of overlays based on toggles
-  function updateOverlayVisibility() {
-    const overlays = {
-      structures: structuresOverlaysSwitch.checked,
-      bosses: bossesOverlaysSwitch.checked,
-      items: itemsOverlaysSwitch.checked,
-      orbs: orbsOverlaysSwitch.checked,
-    };
 
-    // Iterate over each overlay type
-    overlayTexts.forEach((overlay) => {
-      const shouldShow = overlays[overlay.type];
-      const overlayElement = document.getElementById(`overlay-${overlay.id}`);
-
-      if (shouldShow) {
-        overlayElement?.classList.remove("hidden");
-      } else {
-        overlayElement?.classList.add("hidden");
+  // Function to update togglers' disabled state based on the current map
+  function updateTogglersBasedOnMap(mapName) {
+    // Determine which overlay types are supported by the current map
+    const supportedOverlayTypes = ["structures", "bosses", "items", "orbAreas"];
+    supportedOverlayTypes.forEach((type) => {
+      const isSupported = overlayTexts[type].some((overlay) => overlay.maps.includes(mapName));
+      const toggler = getTogglerByType(type);
+      if (toggler) {
+        toggler.disabled = !isSupported;
+        if (!isSupported) {
+          toggler.checked = false;
+          // Ensure overlays are hidden if the toggler is disabled
+          removeOverlaysByType(type);
+        }
       }
     });
   }
 
-  // Event listeners for each toggle
-  structuresOverlaysSwitch.addEventListener("change", updateOverlayVisibility);
-  bossesOverlaysSwitch.addEventListener("change", updateOverlayVisibility);
-  itemsOverlaysSwitch.addEventListener("change", updateOverlayVisibility);
-  orbsOverlaysSwitch.addEventListener("change", updateOverlayVisibility);
+  // Utility function to get toggler element by overlay type
+  function getTogglerByType(type) {
+    switch (type) {
+      case "structures":
+        return structuresOverlaysSwitch;
+      case "orbAreas":
+        return orbsOverlaysSwitch;
+      case "bosses":
+        return bossesOverlaysSwitch;
+      case "items":
+        return itemsOverlaysSwitch;
+      default:
+        return null;
+    }
+  }
 
-  // loadMap('a specific map name')
+  function updateOverlayVisibility() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentMap = urlParams.get("map") || "regular-main-branch";
+
+    // Handle structures overlay
+    if (structuresOverlaysSwitch.checked && isOverlaySupported("structures", currentMap)) {
+      addOverlaysByType("structures", currentMap);
+    } else {
+      removeOverlaysByType("structures");
+    }
+
+    // Handle orbs overlay
+    if (orbsOverlaysSwitch.checked && isOverlaySupported("orbAreas", currentMap)) {
+      addOverlaysByType("orbAreas", currentMap);
+    } else {
+      removeOverlaysByType("orbAreas");
+    }
+
+    // Handle bosses overlay
+    if (bossesOverlaysSwitch.checked && isOverlaySupported("bosses", currentMap)) {
+      addOverlaysByType("bosses", currentMap);
+    } else {
+      removeOverlaysByType("bosses");
+    }
+
+    // Handle items overlay
+    if (itemsOverlaysSwitch.checked && isOverlaySupported("items", currentMap)) {
+      addOverlaysByType("items", currentMap);
+    } else {
+      removeOverlaysByType("items");
+    }
+  }
+
+  // Function to check if a particular overlay type is supported by the current map
+  function isOverlaySupported(type, mapName) {
+    return overlayTexts[type].some((overlay) => overlay.maps.includes(mapName));
+  }
+
+  function addOverlaysByType(type, mapName) {
+    if (!overlayTexts[type]) return;
+
+    const filteredOverlays = overlayTexts[type].filter(({ maps }) => maps.includes(mapName));
+
+    filteredOverlays.forEach(({ id, text, x, y, width, height }) => {
+      if (!document.getElementById(`overlayId${id}`)) {
+        // Check if overlay already exists
+        let e = document.createElement("div");
+        e.id = `overlayId${id}`;
+        e.className = "osOverlayHighlight";
+        e.innerHTML = `<span id="span${id}">${text}</span>`;
+        os.addOverlay({
+          element: e,
+          location: new OpenSeadragon.Rect(x, y, width, height),
+        });
+        const hue = Math.floor(Math.random() * 360);
+        e.style.backgroundColor = `hsla(${hue}, 60%, 60%, 0.5)`;
+      }
+    });
+  }
+
+  // Function to remove overlays by type
+  function removeOverlaysByType(type) {
+    if (!overlayTexts[type]) return;
+
+    overlayTexts[type].forEach(({ id }) => {
+      const overlayElement = document.getElementById(`overlayId${id}`);
+      if (overlayElement) {
+        os.removeOverlay(overlayElement.id);
+        overlayElement.remove();
+      }
+    });
+  }
+
+  // Attach event listeners to each toggle switch
+  structuresOverlaysSwitch.addEventListener("change", () => handleOverlayToggle("structures"));
+  orbsOverlaysSwitch.addEventListener("change", () => handleOverlayToggle("orbAreas"));
+  bossesOverlaysSwitch.addEventListener("change", () => handleOverlayToggle("bosses"));
+  itemsOverlaysSwitch.addEventListener("change", () => handleOverlayToggle("items"));
+
+  // Handle individual overlay toggles
+  function handleOverlayToggle(type) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentMap = urlParams.get("map") || "regular-main-branch";
+
+    if (getTogglerByType(type).checked && isOverlaySupported(type, currentMap)) {
+      addOverlaysByType(type, currentMap);
+    } else {
+      removeOverlaysByType(type);
+    }
+  }
+
+  // Function to load the map
   async function loadMap(mapName) {
-    // mapName = 'regular-main-branch', etc.
-    const mapTiles = tileSources[mapName] ?? [];
+    const mapTiles = tileSources[mapName] || [];
 
-    // do nothing for invalid mapName
+    // Do nothing for invalid mapName
     if (mapTiles.length === 0) {
-      console.error("Invalid mapname = %s", mapName);
+      console.error("Invalid mapname =", mapName);
       return;
     }
 
     const versions = await fetchMapVersions(mapName);
-    // when we change maps, remove the old handler so it doesn't interfere...
+
+    // When we change maps, remove the old handler so it doesn't interfere...
     if (cacheBustHandler) {
       os.world.removeHandler("add-item", cacheBustHandler);
       cacheBustHandler = undefined;
     }
 
-    // create the new handler
+    // Create the new handler
     cacheBustHandler = (event) => {
       // Append cacheKeys to the images
       // xxx.png?v=UNIX_TIMESTAMP
@@ -667,12 +762,12 @@ const changeMap = (() => {
     };
     os.world.addHandler("add-item", cacheBustHandler);
 
-    // clear the map...
+    // Clear the map...
     os.world.removeAll();
 
     // ... add the new tiles ...
     for (const url of mapTiles) {
-      // assumes "url" from tileSource urls does not already include a query string parameter
+      // Assumes "url" from tileSource does not already include a query string parameter
       os.addTiledImage({ tileSource: url });
     }
 
@@ -680,22 +775,26 @@ const changeMap = (() => {
     os.forceRedraw();
   }
 
+  // Return the main function to change the map
   return async (mapName) => {
     await loadMap(mapName);
     setActiveMap(mapName);
   };
 })();
 
+// Handle map opening
 os.addHandler("open", async (event) => {
   const viewport = event.eventSource.viewport;
   const urlParams = new URLSearchParams(window.location.search);
   const mapName = String(urlParams.get("map") ?? "regular-main-branch");
-  changeMap(mapName);
+  await changeMap(mapName);
 
   // Default/fallback viewport rectangle, which we try to fit first.
   viewport.fitBounds(new OpenSeadragon.Rect(-53760, -31744, 107520, 73728), true);
+
   const viewportCenter = viewport.getCenter();
   let viewportZoom = viewport.getZoom();
+
   // Get offset/zoom parameters from the URL, and overwrite the default/fallback.
   if (urlParams.has("x")) {
     viewportCenter.x = Number(urlParams.get("x"));
@@ -706,12 +805,11 @@ os.addHandler("open", async (event) => {
   if (urlParams.has("zoom")) {
     viewportZoom = Math.pow(2, Number(urlParams.get("zoom")) / -100);
   }
-
   viewport.panTo(viewportCenter, true);
   viewport.zoomTo(viewportZoom, undefined, true);
 });
 
-// Loading indicator
+// Loading indicator function
 function updateLoadingIndicator(isFullyLoaded, indicator = document.querySelector(".loadingIndicator")) {
   if (isFullyLoaded) {
     indicator.style.display = "none";
@@ -720,8 +818,8 @@ function updateLoadingIndicator(isFullyLoaded, indicator = document.querySelecto
   }
 }
 
+// Track load status for each TiledImage
 os.world.addHandler("add-item", function (event) {
-  // Track load status for each TiledImage
   event.item.addHandler("fully-loaded-change", function (event) {
     if (event.fullyLoaded) {
       // Hide indicator
@@ -733,8 +831,7 @@ os.world.addHandler("add-item", function (event) {
   });
 });
 
-// Get additional DZI information from every loaded TiledImage.
-// This is used to scale and offset images in a way so that the OSD coordinate system aligns with the Noita world coordinate system.
+// Align OSD coordinate system with the Noita world coordinate system
 os.world.addHandler("add-item", (event) => {
   /** @type {{Format: string, Overlap: string, Size: {Width: string, Height: string}, TileSize: string, TopLeft: {X: string, Y: string}}} */
   // @ts-ignore
@@ -743,238 +840,31 @@ os.world.addHandler("add-item", (event) => {
   event.item.setWidth(Number(image.Size.Width), true);
 });
 
-const alertPlaceholder = document.getElementById("liveAlertPlaceholder");
-const appendAlert = (message, type) => {
-  const wrapper = document.createElement("div");
-  wrapper.innerHTML = [
-    `<div class="alert alert-${type} alert-dismissible" role="alert">`,
-    `   <div>${message}</div>`,
-    '   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>',
-    "</div>",
-  ].join("");
-
-  alertPlaceholder.append(wrapper);
-};
-
-// Reset zoom level upon click on the logo
+// Function to reset zoom level
 function resetZoom() {
   os.viewport.goHome();
 }
 
-// Copy URL to the clipboard for sharing
+// Function to copy URL to the clipboard for sharing
 function getShareUrl() {
   window.navigator.clipboard.writeText(window.location.href);
 }
 
-const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
-const popoverList = [...popoverTriggerList].map((popoverTriggerEl) => new bootstrap.Popover(popoverTriggerEl));
+// Function to remove all existing overlays
+function removeAllOverlays() {
+  document.querySelectorAll(".osOverlayHighlight").forEach((overlay) => {
+    os.removeOverlay(overlay.id);
+    overlay.remove(); // Also remove the overlay element from the DOM
+  });
+}
 
-// structuresOverlaysSwitch
-// orbsOverlaysSwitch
-// bossesOverlaysSwitch
-// itemsOverlaysSwitch
+// Function to add tooltips
+function addTooltips() {
+  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  const tooltipList = [...tooltipTriggerList].map((tooltipTriggerEl) => new bootstrap.Tooltip(tooltipTriggerEl));
+}
 
-structuresOverlaysSwitch.addEventListener("click", function () {
-  const updatedUrlParamsFromOverlaysToggle = new URLSearchParams(window.location.search);
-  const currentMapURLFromOverlaysToggle = String(updatedUrlParamsFromOverlaysToggle.get("map"));
-
-  // Function to remove all existing overlays
-  function removeAllOverlays() {
-    // Remove all overlays when switching off
-    document.querySelectorAll(".osOverlayHighlight").forEach((overlay) => {
-      os.removeOverlay(overlay.id);
-      overlay.remove(); // Also remove the overlay element from the DOM
-    });
-  }
-
-  if (structuresOverlayState) {
-    // If overlays are currently visible, remove them
-    removeAllOverlays();
-    structuresOverlaysSwitch.checked = false;
-  } else {
-    // Always clear existing overlays before adding new ones
-    removeAllOverlays();
-
-    // Check if the current map is one of the valid maps
-    if (
-      currentMapURLFromOverlaysToggle === "regular-main-branch" ||
-      currentMapURLFromOverlaysToggle === "regular-beta" ||
-      currentMapURLFromOverlaysToggle === "new-game-plus-main-branch"
-    ) {
-      // Filter overlayTexts based on the current map
-      const filteredOverlays = overlayTexts.filter(({ maps }) => maps.includes(currentMapURLFromOverlaysToggle));
-
-      // Add only the overlays that match the current map
-      filteredOverlays.forEach(({ id, text, x, y, width, height }) => {
-        let e = document.createElement("div");
-        e.id = `overlayId${id}`;
-        e.className = "osOverlayHighlight";
-        e.innerHTML = `<span id="span${id}">${text}</span>`;
-        os.addOverlay({
-          element: e,
-          location: new OpenSeadragon.Rect(x, y, width, height),
-        });
-        const hue = Math.floor(Math.random() * 360);
-        e.style.backgroundColor = `hsla(${hue}, 60%, 60%, 0.5)`;
-      });
-
-      structuresOverlaysSwitch.checked = true; // Ensure the switch is checked
-    }
-  }
-
-  // Toggle the overlay state
-  structuresOverlayState = !structuresOverlayState;
-});
-orbsOverlaysSwitch.addEventListener("click", function () {
-  const updatedUrlParamsFromOverlaysToggle = new URLSearchParams(window.location.search);
-  const currentMapURLFromOverlaysToggle = String(updatedUrlParamsFromOverlaysToggle.get("map"));
-
-  // Function to remove all existing overlays
-  function removeAllOverlays() {
-    // Remove all overlays when switching off
-    document.querySelectorAll(".osOverlayHighlight").forEach((overlay) => {
-      os.removeOverlay(overlay.id);
-      overlay.remove(); // Also remove the overlay element from the DOM
-    });
-  }
-
-  if (orbsOverlaysState) {
-    // If overlays are currently visible, remove them
-    removeAllOverlays();
-    orbsOverlaySwitch.checked = false;
-  } else {
-    // Always clear existing overlays before adding new ones
-    removeAllOverlays();
-
-    // Check if the current map is one of the valid maps
-    if (currentMapURLFromOverlaysToggle === "new-game-plus-main-branch") {
-      // Filter overlayTexts based on the current map
-      const filteredOverlays = overlayTexts.filter(({ maps }) => maps.includes(currentMapURLFromOverlaysToggle));
-
-      // Add only the overlays that match the current map
-      filteredOverlays.forEach(({ id, text, x, y, width, height }) => {
-        let e = document.createElement("div");
-        e.id = `overlayId${id}`;
-        e.className = "osOverlayHighlight";
-        e.innerHTML = `<span id="span${id}">${text}</span>`;
-        os.addOverlay({
-          element: e,
-          location: new OpenSeadragon.Rect(x, y, width, height),
-        });
-        const hue = Math.floor(Math.random() * 360);
-        e.style.backgroundColor = `hsla(${hue}, 60%, 60%, 0.5)`;
-      });
-
-      orbsOverlaySwitch.checked = true; // Ensure the switch is checked
-    }
-  }
-
-  // Toggle the overlay state
-  orbsOverlaysState = !orbsOverlaysState;
-});
-structuresOverlaysSwitch.addEventListener("click", function () {
-  const updatedUrlParamsFromOverlaysToggle = new URLSearchParams(window.location.search);
-  const currentMapURLFromOverlaysToggle = String(updatedUrlParamsFromOverlaysToggle.get("map"));
-
-  // Function to remove all existing overlays
-  function removeAllOverlays() {
-    // Remove all overlays when switching off
-    document.querySelectorAll(".osOverlayHighlight").forEach((overlay) => {
-      os.removeOverlay(overlay.id);
-      overlay.remove(); // Also remove the overlay element from the DOM
-    });
-  }
-
-  if (structuresOverlayState) {
-    // If overlays are currently visible, remove them
-    removeAllOverlays();
-    structuresOverlaysSwitch.checked = false;
-  } else {
-    // Always clear existing overlays before adding new ones
-    removeAllOverlays();
-
-    // Check if the current map is one of the valid maps
-    if (
-      currentMapURLFromOverlaysToggle === "regular-main-branch" ||
-      currentMapURLFromOverlaysToggle === "regular-beta" ||
-      currentMapURLFromOverlaysToggle === "new-game-plus-main-branch"
-    ) {
-      // Filter overlayTexts based on the current map
-      const filteredOverlays = overlayTexts.filter(({ maps }) => maps.includes(currentMapURLFromOverlaysToggle));
-
-      // Add only the overlays that match the current map
-      filteredOverlays.forEach(({ id, text, x, y, width, height }) => {
-        let e = document.createElement("div");
-        e.id = `overlayId${id}`;
-        e.className = "osOverlayHighlight";
-        e.innerHTML = `<span id="span${id}">${text}</span>`;
-        os.addOverlay({
-          element: e,
-          location: new OpenSeadragon.Rect(x, y, width, height),
-        });
-        const hue = Math.floor(Math.random() * 360);
-        e.style.backgroundColor = `hsla(${hue}, 60%, 60%, 0.5)`;
-      });
-
-      structuresOverlaysSwitch.checked = true; // Ensure the switch is checked
-    }
-  }
-
-  // Toggle the overlay state
-  structuresOverlayState = !structuresOverlayState;
-});
-structuresOverlaysSwitch.addEventListener("click", function () {
-  const updatedUrlParamsFromOverlaysToggle = new URLSearchParams(window.location.search);
-  const currentMapURLFromOverlaysToggle = String(updatedUrlParamsFromOverlaysToggle.get("map"));
-
-  // Function to remove all existing overlays
-  function removeAllOverlays() {
-    // Remove all overlays when switching off
-    document.querySelectorAll(".osOverlayHighlight").forEach((overlay) => {
-      os.removeOverlay(overlay.id);
-      overlay.remove(); // Also remove the overlay element from the DOM
-    });
-  }
-
-  if (structuresOverlayState) {
-    // If overlays are currently visible, remove them
-    removeAllOverlays();
-    structuresOverlaysSwitch.checked = false;
-  } else {
-    // Always clear existing overlays before adding new ones
-    removeAllOverlays();
-
-    // Check if the current map is one of the valid maps
-    if (
-      currentMapURLFromOverlaysToggle === "regular-main-branch" ||
-      currentMapURLFromOverlaysToggle === "regular-beta" ||
-      currentMapURLFromOverlaysToggle === "new-game-plus-main-branch"
-    ) {
-      // Filter overlayTexts based on the current map
-      const filteredOverlays = overlayTexts.filter(({ maps }) => maps.includes(currentMapURLFromOverlaysToggle));
-
-      // Add only the overlays that match the current map
-      filteredOverlays.forEach(({ id, text, x, y, width, height }) => {
-        let e = document.createElement("div");
-        e.id = `overlayId${id}`;
-        e.className = "osOverlayHighlight";
-        e.innerHTML = `<span id="span${id}">${text}</span>`;
-        os.addOverlay({
-          element: e,
-          location: new OpenSeadragon.Rect(x, y, width, height),
-        });
-        const hue = Math.floor(Math.random() * 360);
-        e.style.backgroundColor = `hsla(${hue}, 60%, 60%, 0.5)`;
-      });
-
-      structuresOverlaysSwitch.checked = true; // Ensure the switch is checked
-    }
-  }
-
-  // Toggle the overlay state
-  structuresOverlayState = !structuresOverlayState;
-});
-
+// Function to handle the animation-finish event to update URL parameters
 os.addHandler("animation-finish", function (event) {
   const center = event.eventSource.viewport.getCenter();
   const zoom = event.eventSource.viewport.getZoom();
@@ -985,6 +875,7 @@ os.addHandler("animation-finish", function (event) {
   window.history.replaceState(null, "", "?" + urlParams.toString());
 });
 
+// DOMContentLoaded event to initialize map links and tooltips
 document.addEventListener("DOMContentLoaded", () => {
   const navLinksUl = document.getElementById("navLinksList");
   if (!navLinksUl) return;
@@ -995,28 +886,30 @@ document.addEventListener("DOMContentLoaded", () => {
     const a = document.createElement("a");
     a.classList.add("nav-link", "text-nowrap");
     a.href = "#";
-    a.dataset["bsToggle"] = "pill";
-    a.dataset["mapKey"] = def.key;
+    a.dataset.bsToggle = "pill";
+    a.dataset.mapKey = def.key;
     a.textContent = def.label + " ";
 
-    const badges = def.badges.slice();
-    badges.push({ label: formatDate(def.patchDate), class: "border border-info-subtle ms-2".split(" ") });
+    const badges = [...def.badges];
+    badges.push({
+      label: formatDate(def.patchDate),
+      class: ["border", "border-info-subtle", "ms-2"],
+    });
 
     for (const badge of badges) {
       const span = document.createElement("span");
       span.classList.add("badge");
-
       if (typeof badge.class === "string") {
         span.classList.add(badge.class);
       } else {
         badge.class.forEach((styleClass) => span.classList.add(styleClass));
       }
 
-      // Add explanatory tooltips to patchdate badges only
+      // Add explanatory tooltips to patchdate badges only if applicable
       if (span.classList.contains("border-info-subtle")) {
-        span.dataset["bsToggle"] = "tooltip";
-        span.dataset["bsPlacement"] = "top";
-        span.dataset["bsTitle"] = "Patch date this map was captured";
+        span.dataset.bsToggle = "tooltip";
+        span.dataset.bsPlacement = "top";
+        span.dataset.bsTitle = "Patch date this map was captured";
       }
 
       if (badge.icon) {
@@ -1033,27 +926,35 @@ document.addEventListener("DOMContentLoaded", () => {
     navLinksUl.appendChild(a);
     addTooltips();
   }
-  document.getElementById("navLinksList").addEventListener("click", async (ev) => {
-    const mapKey = ev.target.dataset["mapKey"];
+
+  // Handle map link clicks
+  navLinksUl.addEventListener("click", async (ev) => {
+    const mapKey = ev.target.dataset.mapKey;
     if (!mapKey) return;
     ev.stopPropagation();
     ev.preventDefault();
-    changeMap(mapKey);
+    await changeMap(mapKey);
   });
 });
 
+// Utility function to add tooltips (duplicated to ensure functionality)
 function addTooltips() {
   const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
   const tooltipList = [...tooltipTriggerList].map((tooltipTriggerEl) => new bootstrap.Tooltip(tooltipTriggerEl));
 }
 
+// Drawing toggle (assuming annotations are managed elsewhere)
 const drawingToggleSwitch = document.getElementById("drawingToggleSwitch");
 
+// Function to erase drawings
 function eraseDrawings() {
-  os.annotations.clean();
-  console.log("cleared");
+  if (os.annotations && typeof os.annotations.clean === "function") {
+    os.annotations.clean();
+    console.log("cleared");
+  }
 }
 
+// Uncomment and implement annotations if needed
 // drawingToggleSwitch.addEventListener("change", (event) => {
 //   if (event.currentTarget.checked && os.areAnnotationsActive() == false) {
 //     os.initializeAnnotations();
@@ -1063,3 +964,11 @@ function eraseDrawings() {
 //     console.log("not checked");
 //   }
 // });
+
+// Initialize Bootstrap popovers
+const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+const popoverList = [...popoverTriggerList].map((popoverTriggerEl) => new bootstrap.Popover(popoverTriggerEl));
+
+const popover = new bootstrap.Popover(".popover-dismiss", {
+  trigger: "focus",
+});
