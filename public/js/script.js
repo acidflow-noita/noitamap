@@ -7,6 +7,9 @@ const bossesOverlaysSwitch = document.querySelector("#bossesToggler");
 const itemsOverlaysSwitch = document.querySelector("#itemsToggler");
 const allOverlaysSwitches = document.querySelectorAll(".overlayToggler");
 
+const searchInput = document.getElementById("searchInput");
+const searchResults = document.getElementById("searchResults");
+
 // Initialize toggle states
 structuresOverlaysSwitch.checked = false;
 orbsOverlaysSwitch.checked = false;
@@ -559,6 +562,63 @@ var os = OpenSeadragon({
   },
   opacity: 1,
 });
+
+// Setup searching in IIFE to avoid polluting the global scope
+(() => {
+    const index = FlexSearch.Document({
+      document: {
+        index: "text",
+        store: ["text", "maps", "x", "y", "width", "height"]
+      },
+      tokenize: "forward"
+    });
+    for (let array of Object.values(overlayTexts)) {
+      for (let overlay of array) {
+        index.add(overlay);
+      }
+    }
+    
+    const getCurrentMap = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get("map") || "regular-main-branch";
+    }
+    
+    const panToOverlay = (overlay) => {
+      const overlayCenter = new OpenSeadragon.Point(overlay.x + overlay.width / 2, overlay.y + overlay.height / 2);
+      const arbitraryZoomLevel = 0.002;
+      os.viewport.panTo(overlayCenter).zoomTo(arbitraryZoomLevel);
+    }
+    
+    searchInput.addEventListener("keyup", () => {
+      searchResults.innerHTML = "";
+      const query = searchInput.value;
+      if (!query) {
+        return;
+      }
+      
+      const results = index.search(query, { enrich: true });
+      if (results.length === 0) {
+        return;
+      }
+      
+      const currentMap = getCurrentMap();
+      for (let result of results[0].result) {
+        if (!result.doc.maps.includes(currentMap)) {
+          continue
+        }
+    
+        const listItem = document.createElement("div");
+        listItem.className = "search-result";
+        listItem.innerHTML = result.doc.text.join("; ");
+        listItem.addEventListener("mousedown", () => {
+          searchInput.value = "";
+          searchResults.innerHTML = "";
+          panToOverlay(result.doc);
+        })
+        searchResults.appendChild(listItem);
+      }
+    });
+})();
 
 let prevTiledImage;
 let nextTiledImage;
