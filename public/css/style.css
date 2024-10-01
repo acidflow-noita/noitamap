@@ -186,3 +186,31 @@ body.toggle-hidden div.osOverlayHighlight {
   height: 16px;
   width: 16px;
 }
+
+#searchResults {
+  position: absolute;
+  top: 100%;
+  /* left: 0; */
+  max-width: 100%;
+  background: #000a;
+  border: 1px solid #fff;
+  border-radius: 0.25em;
+  display: none;
+}
+
+#searchInput:focus-visible + #searchResults:has(> .search-result) {
+  display: block;
+}
+
+.search-result {
+  padding: 0.5em;
+  border-bottom: 1px solid #fff8;
+  overflow: hidden;
+  text-wrap: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.search-result:hover {
+  background: #fff2;
+}
