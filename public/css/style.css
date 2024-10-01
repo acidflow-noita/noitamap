@@ -198,6 +198,15 @@ body.toggle-hidden div.osOverlayHighlight {
   display: none;
 }
 
+#searchInput {
+  background-color: #030712;
+  border: solid 1px white;
+}
+
+#searchInput::placeholder {
+  font-style: italic;
+}
+
 #searchInput:focus-visible + #searchResults:has(> .search-result) {
   display: block;
 }
