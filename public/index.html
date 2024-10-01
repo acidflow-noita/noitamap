@@ -100,6 +100,12 @@
               <ul class="dropdown-menu" id="navLinksList"></ul>
             </div>
 
+            <!-- Search -->
+            <form role="search" class="input-group-sm m-2">
+              <input id="searchInput" type="search" autofocus class="form-control" placeholder="Search&hellip; e.g. Kolmi" />
+              <div id="searchResults"></div>
+            </form>
+
             <a
               tabindex="0"
               id="shareButton"
@@ -129,11 +135,6 @@
               <label class="btn btn-outline-light text-nowrap" for="orbsToggler"><i class="icon-orbs"></i> Orbs</label>
             </div>
 
-            <div class="btn-group btn-group-sm m-2" role="group">
-              <input id="searchInput" type="text" class="form-control" placeholder="Search..." />
-              <div id="searchResults"></div>
-            </div>
-
             <a href="https://github.com/acidflow-noita/noitamap" class="btn btn-sm btn-outline-light text-nowrap m-2" target="_blank" role="button">
               <i class="bi bi-github"></i> <span>Source Code</span>
             </a>
@@ -157,7 +158,7 @@
       integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
       crossorigin="anonymous"
     ></script>
-    <script src="https://cdn.jsdelivr.net/gh/nextapps-de/flexsearch@0.7.31/dist/flexsearch.compact.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/nextapps-de/flexsearch@0.7.31/dist/flexsearch.bundle.js"></script>
     <script src="js/script.js"></script>
     <!-- Cloudflare Web Analytics -->
     <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "d6a1d0d280c34cbf8fa978fffc9d0fa2"}'></script>
