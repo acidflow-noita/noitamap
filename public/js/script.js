@@ -10,6 +10,8 @@ const allOverlaysSwitches = document.querySelectorAll(".overlayToggler");
 const searchInput = document.getElementById("searchInput");
 const searchResults = document.getElementById("searchResults");
 
+searchInput.parentNode.onsubmit = () => false; // Do nothing when user hits return while searching for map POI
+
 // Initialize toggle states
 structuresOverlaysSwitch.checked = false;
 orbsOverlaysSwitch.checked = false;
@@ -613,6 +615,13 @@ var os = OpenSeadragon({
     });
   };
 
+  searchInput.addEventListener("search", function (event) {
+    if (event.type === "search") {
+      if (event.currentTarget.value === "") searchInput.value = "";
+      searchResults.innerHTML = "";
+    }
+  });
+
   searchInput.addEventListener("keyup", () => {
     searchResults.innerHTML = "";
     const query = searchInput.value;
@@ -635,8 +644,6 @@ var os = OpenSeadragon({
       listItem.className = "search-result";
       listItem.innerHTML = result.doc.text.join("; ");
       listItem.addEventListener("mousedown", () => {
-        searchInput.value = "";
-        searchResults.innerHTML = "";
         panToOverlay(result.doc);
       });
       searchResults.appendChild(listItem);
