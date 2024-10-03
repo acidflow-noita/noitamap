@@ -640,7 +640,7 @@ var os = OpenSeadragon({
         continue;
       }
 
-      const listItem = document.createElement("div");
+      const listItem = document.createElement("li");
       listItem.className = "search-result";
       listItem.innerHTML = result.doc.text.join("; ");
       listItem.addEventListener("mouseup", () => {
