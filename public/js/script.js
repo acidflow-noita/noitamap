@@ -644,11 +644,17 @@ var os = OpenSeadragon({
       listItem.className = "search-result";
       listItem.innerHTML = result.doc.text.join("; ");
       listItem.addEventListener("mouseup", () => {
+        clearSearchData();
         panToOverlay(result.doc);
       });
       searchResults.appendChild(listItem);
     }
   });
+
+  const clearSearchData = () => {
+    searchResults.innerHTML = "";
+    searchInput.value = "";
+  };
 
   searchInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
