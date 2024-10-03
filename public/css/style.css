@@ -207,7 +207,7 @@ body.toggle-hidden div.osOverlayHighlight {
   font-style: italic;
 }
 
-#searchInput:focus-visible + #searchResults:has(> .search-result) {
+#searchInput:focus-visible + #searchResults:has(> .search-result), #searchResults:active {
   display: block;
 }
 
@@ -218,6 +218,7 @@ body.toggle-hidden div.osOverlayHighlight {
   text-wrap: nowrap;
   text-overflow: ellipsis;
   cursor: pointer;
+  user-select: none;
 }
 
 .search-result:hover {

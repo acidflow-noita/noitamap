@@ -643,7 +643,7 @@ var os = OpenSeadragon({
       const listItem = document.createElement("div");
       listItem.className = "search-result";
       listItem.innerHTML = result.doc.text.join("; ");
-      listItem.addEventListener("mousedown", () => {
+      listItem.addEventListener("mouseup", () => {
         panToOverlay(result.doc);
       });
       searchResults.appendChild(listItem);
