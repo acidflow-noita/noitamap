@@ -649,6 +649,12 @@ var os = OpenSeadragon({
       searchResults.appendChild(listItem);
     }
   });
+
+  searchInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+    }
+  });
 })();
 
 let prevTiledImage;
