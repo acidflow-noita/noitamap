@@ -10,6 +10,8 @@ const allOverlaysSwitches = document.querySelectorAll(".overlayToggler");
 const searchInput = document.getElementById("searchInput");
 const searchResults = document.getElementById("searchResults");
 
+searchInput.parentNode.onsubmit = () => false; // Do nothing when user hits return while searching for map POI
+
 // Initialize toggle states
 structuresOverlaysSwitch.checked = false;
 orbsOverlaysSwitch.checked = false;
@@ -480,6 +482,13 @@ const setupSearch = () => {
     });
   };
 
+  searchInput.addEventListener("search", function (event) {
+    if (event.type === "search") {
+      if (event.currentTarget.value === "") searchInput.value = "";
+      searchResults.innerHTML = "";
+    }
+  });
+
   searchInput.addEventListener("keyup", () => {
     searchResults.innerHTML = "";
     const query = searchInput.value;
@@ -499,7 +508,6 @@ const setupSearch = () => {
         if (!result.doc.maps.includes(currentMap) || addedIDs.includes(result.id)) {
           continue;
         }
-
         const listItem = createListItem(result.doc);
         searchResults.appendChild(listItem);
         addedIDs.push(result.id);
