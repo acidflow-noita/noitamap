@@ -589,7 +589,7 @@ const setupSearch = () => {
       }
     }
   };
-})();
+};
 
 let prevTiledImage;
 let nextTiledImage;
