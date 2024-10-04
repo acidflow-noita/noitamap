@@ -459,11 +459,12 @@ const setupSearch = () => {
       listItem.innerHTML = overlay.text.join("; ");
     }
 
-    listItem.addEventListener("mousedown", () => {
-      searchInput.value = "";
-      searchResults.innerHTML = "";
+    listItem.addEventListener("mouseup", () => {
       panToOverlay(overlay);
     });
+    
+    listItem.tabIndex = 0;
+    listItem.addEventListener("keydown", handleListItemNav(listItem, overlay));
 
     return listItem;
   }
@@ -517,17 +518,6 @@ const setupSearch = () => {
         searchResults.appendChild(listItem);
         addedIDs.push(result.id);
       }
-      const listItem = document.createElement("li");
-      listItem.className = "search-result";
-      listItem.innerHTML = result.doc.text.join("; ");
-      listItem.addEventListener("mouseup", () => {
-        clearSearchData();
-        panToOverlay(result.doc);
-      });
-      listItem.tabIndex = 0;
-      listItem.addEventListener("keydown", handleListItemNav(listItem, result.doc));
-
-      searchResults.appendChild(listItem);
     }
   });
 
@@ -535,8 +525,6 @@ const setupSearch = () => {
     return (event) => {
       if (event.key === "Enter") {
         panToOverlay(overlay);
-        clearSearchData();
-        searchInput.focus();
       }
 
       if (event.key === "Escape") {
