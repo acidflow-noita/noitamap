@@ -26,3 +26,65 @@
 .osOverlayText:hover {
   display: block;
 }
+
+div:has(> div > .osOverlayPOI) {
+  position: relative;
+  transform: translate(-50%, -50%);
+  --border-color: #47546b;
+}
+
+.osOverlayPOI {
+  overflow: hidden;
+  background-color: #222933;
+  border: 2px solid var(--border-color);
+  border-radius: 0.25em;
+  line-height: 0;
+}
+
+.osOverlayPopup {
+  position: absolute;
+  visibility: hidden;
+  opacity: 0;
+  transform: translate(-50%, -5px) scale(0.9);
+  padding: 0.5em;
+  border: 2px solid var(--border-color);
+  border-radius: 0.25em;
+  background-color: #222933;
+  left: 50%;
+  bottom: 100%;
+  min-width: 10em;
+  transition: 0.1s ease-out;
+  box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.5);
+}
+
+.osOverlayPopup::before {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid var(--border-color);
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+div:has(> .osOverlayPOI):hover .osOverlayPopup {
+  visibility: visible;
+  opacity: 1;
+  transform: translate(-50%, -5px) scale(1);
+}
+
+.osOverlayPopup h2 {
+  font-size: 1.5em;
+}
+
+.osOverlayPopup h3 {
+  font-size: 1em;
+  color: #ccc;
+}
+
+.osOverlayPopup a {
+  color: #ffc107;
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "id": 5,
+    "type": "item",
+    "name": "Milk",
+    "x": 2437,
+    "y": -4488,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "icon": "assets/icons/items/milk.png",
+    "wiki": "https://noita.wiki.gg/wiki/Milk"
+  },
+  {
+    "id": 6,
+    "type": "item",
+    "name": "Beer",
+    "x": 7623,
+    "y": -4348,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "icon": "assets/icons/items/beer.png",
+    "wiki": "https://noita.wiki.gg/wiki/Beer"
+  }
+]
