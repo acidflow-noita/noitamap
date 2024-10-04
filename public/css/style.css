@@ -190,12 +190,14 @@ body.toggle-hidden div.osOverlayHighlight {
 #searchResults {
   position: absolute;
   top: 100%;
-  /* left: 0; */
   max-width: 100%;
   background: #000a;
-  border: 1px solid #fff;
+  height: 0;
+  border: 0px solid #fff;
   border-radius: 0.25em;
-  display: none;
+  overflow: hidden;
+  list-style-type: none;
+  padding: 0;
 }
 
 #searchInput {
@@ -207,8 +209,11 @@ body.toggle-hidden div.osOverlayHighlight {
   font-style: italic;
 }
 
-#searchInput:focus-visible + #searchResults:has(> .search-result) {
-  display: block;
+#searchInput:focus-visible + #searchResults:has(> .search-result),
+#searchResults:active,
+#searchResults:focus-within {
+  height: auto;
+  border-width: 1px;
 }
 
 .search-result {
@@ -218,8 +223,13 @@ body.toggle-hidden div.osOverlayHighlight {
   text-wrap: nowrap;
   text-overflow: ellipsis;
   cursor: pointer;
+  user-select: none;
 }
 
 .search-result:hover {
+  background: #fff2;
+}
+
+.search-result:focus {
   background: #fff2;
 }

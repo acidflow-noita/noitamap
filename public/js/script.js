@@ -489,7 +489,12 @@ const setupSearch = () => {
     }
   });
 
-  searchInput.addEventListener("keyup", () => {
+  searchInput.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      handleUpDown(event);
+      return;
+    }
+
     searchResults.innerHTML = "";
     const query = searchInput.value;
     if (!query) {
@@ -512,9 +517,79 @@ const setupSearch = () => {
         searchResults.appendChild(listItem);
         addedIDs.push(result.id);
       }
+      const listItem = document.createElement("li");
+      listItem.className = "search-result";
+      listItem.innerHTML = result.doc.text.join("; ");
+      listItem.addEventListener("mouseup", () => {
+        clearSearchData();
+        panToOverlay(result.doc);
+      });
+      listItem.tabIndex = 0;
+      listItem.addEventListener("keydown", handleListItemNav(listItem, result.doc));
+
+      searchResults.appendChild(listItem);
     }
   });
-};
+
+  const handleListItemNav = (listItem, overlay) => {
+    return (event) => {
+      if (event.key === "Enter") {
+        panToOverlay(overlay);
+        clearSearchData();
+        searchInput.focus();
+      }
+
+      if (event.key === "Escape") {
+        searchInput.focus();
+      }
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        const next = listItem.nextElementSibling;
+        if (next) {
+          next.focus();
+        }
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        const prev = listItem.previousElementSibling;
+        if (prev) {
+          prev.focus();
+        } else {
+          searchInput.focus();
+        }
+      }
+    };
+  };
+
+  const clearSearchData = () => {
+    searchResults.innerHTML = "";
+    searchInput.value = "";
+  };
+
+  const handleUpDown = (event) => {
+    const activeElement = document.activeElement;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (activeElement === searchInput) {
+        searchResults.querySelector(".search-result")?.focus();
+      } else if (activeElement.classList.contains("search-result")) {
+        activeElement.nextElementSibling?.focus();
+      }
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (activeElement.classList.contains("search-result")) {
+        const prevResult = activeElement.previousElementSibling;
+        if (prevResult) {
+          prevResult.focus();
+        } else {
+          searchInput.focus();
+        }
+      }
+    }
+  };
+})();
 
 let prevTiledImage;
 let nextTiledImage;
