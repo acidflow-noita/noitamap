@@ -26,6 +26,9 @@ let itemsOverlaysState = false;
 
 const CHUNK_SIZE = 512;
 
+// Minimap visibility
+let navigatorIsHidden = true;
+
 const overlayTexts = {
   structures: [
     {
@@ -387,7 +390,9 @@ var os = OpenSeadragon({
   maxZoomPixelRatio: 70,
   // animationTime: 1.2, // Uncomment if needed
   id: "osContainer",
-  showNavigator: false,
+  showNavigator: true,
+  navigatorAutoFade: false,
+  navigatorPosition: "BOTTOM_RIGHT",
   showNavigationControl: false,
   imageSmoothingEnabled: false,
   drawer: "canvas",
@@ -462,7 +467,7 @@ const setupSearch = () => {
     listItem.addEventListener("mouseup", () => {
       panToOverlay(overlay);
     });
-    
+
     listItem.tabIndex = 0;
     listItem.addEventListener("keydown", handleListItemNav(listItem, overlay));
 
@@ -1084,6 +1089,23 @@ function addTooltips() {
   const tooltipList = [...tooltipTriggerList].map((tooltipTriggerEl) => new bootstrap.Tooltip(tooltipTriggerEl));
 }
 
+// Minimap visibility toggler
+function setViewportNavigatorVisibility(currentZoomLevel) {
+  if (navigatorIsHidden) {
+    if (currentZoomLevel <= 1600) {
+      os.navigator.element.style.display = "inline-block";
+      navigatorIsHidden = false;
+    } else {
+      navigatorIsHidden = true;
+    }
+  } else {
+    if (currentZoomLevel > 1600) {
+      os.navigator.element.style.display = "none";
+      navigatorIsHidden = true;
+    }
+  }
+}
+
 // Function to handle the animation-finish event to update URL parameters
 os.addHandler("animation-finish", function (event) {
   const center = event.eventSource.viewport.getCenter();
@@ -1091,8 +1113,12 @@ os.addHandler("animation-finish", function (event) {
   const urlParams = new URLSearchParams(window.location.search);
   urlParams.set("x", center.x.toFixed(0));
   urlParams.set("y", center.y.toFixed(0));
+  console.log("url zoom: " + (Math.log2(zoom) * -100).toFixed(0));
+
   urlParams.set("zoom", (Math.log2(zoom) * -100).toFixed(0));
   window.history.replaceState(null, "", "?" + urlParams.toString());
+
+  setViewportNavigatorVisibility((Math.log2(zoom) * -100).toFixed(0));
 });
 
 // DOMContentLoaded event to initialize map links and tooltips
