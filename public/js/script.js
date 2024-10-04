@@ -78,26 +78,6 @@ const overlayTexts = {
       maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
     },
   ],
-  items: [
-    {
-      id: 5,
-      text: ["Milk"],
-      x: 512 * 4.2,
-      y: 512 * -9.3,
-      width: 512,
-      height: 512,
-      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    },
-    {
-      id: 6,
-      text: ["Beer"],
-      x: 512 * 14.4,
-      y: 512 * -9,
-      width: 512,
-      height: 512,
-      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-    },
-  ],
   orbAreas: [
     {
       id: 7,
@@ -181,163 +161,22 @@ const overlayTexts = {
       maps: ["new-game-plus-main-branch"],
     },
   ],
-  bosses: [
-    {
-      id: 16,
-      text: ["Pyramid Boss", "Kolmisilmän Koipi", "Three-Eye's Legs"],
-      x: 512 * 19,
-      y: 512 * -2,
-      width: 512 * 1,
-      height: 512 * 1,
-      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-      type: "boss",
-      url: "https://map.runfast.stream/?map=regular&x=9984&y=-786&zoom=823",
-    },
-    {
-      id: 17,
-      text: ["Leviathan", "Syväolento", "Creature of the Deep"],
-      x: 512 * -28,
-      y: 512 * 19,
-      width: 512 * 1.3,
-      height: 512 * 1,
-      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-      type: "boss",
-      url: "https://map.runfast.stream/?map=regular&x=-14024&y=9994&zoom=987",
-    },
-    {
-      id: 18,
-      text: ["Door boss", "Veska", "Molari", "Mokke", "Seula", "Gate Guardian", "Triangle boss"],
-      x: 512 * 5,
-      y: 512 * 22,
-      width: 512 * 1,
-      height: 512 * 1,
-      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-      type: "boss",
-      url: "https://map.runfast.stream/?map=regular&x=2837&y=11562&zoom=812",
-    },
-    {
-      id: 19,
-      text: ["Dragon", "Suomuhauki", "Scale Pike"],
-      x: 512 * 4,
-      y: 512 * 14,
-      width: 512 * 1,
-      height: 512 * 1,
-      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-      type: "boss",
-      url: "https://map.runfast.stream/?map=regular&x=2347&y=7444&zoom=917",
-    },
-    {
-      id: 20,
-      text: ["Tiny", "Limatoukka", "Slime Maggot", "Slime Caterpillar"],
-      x: 512 * 28,
-      y: 512 * 32,
-      width: 512 * 2,
-      height: 512 * 1,
-      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-      type: "boss",
-      url: "https://map.runfast.stream/?map=regular&x=14904&y=16428&zoom=1022",
-    },
-    {
-      id: 21,
-      text: ["Meat Boss", "Kolmisilmän sydän", "Three-Eye's Heart"],
-      x: 512 * 13,
-      y: 512 * 16,
-      width: 512 * 1,
-      height: 512 * 1,
-      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-      type: "boss",
-      url: "https://map.runfast.stream/?map=regular&x=6667&y=8448&zoom=770",
-    },
-    {
-      id: 22,
-      text: ["Alchemist Boss", "Ylialkemisti", "High Alchemist"],
-      x: 512 * -10,
-      y: 512 * 1,
-      width: 512 * 1,
-      height: 512 * 1,
-      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-      type: "boss",
-      url: "https://map.runfast.stream/?map=regular&x=-4840&y=851&zoom=796",
-    },
-    {
-      id: 23,
-      text: ["Kolmi", "Kolmisilmä", "Three-Eye"],
-      x: 512 * 6,
-      y: 512 * 25,
-      width: 512 * 1.9,
-      height: 512 * 1,
-      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-      type: "boss",
-      url: "https://map.runfast.stream/?map=regular&x=3556&y=13026&zoom=849",
-    },
-    {
-      id: 24,
-      text: ["Mecha Kolmi", "Kolmisilmän silmä", "Three-Eye's Eye"],
-      x: 512 * 27,
-      y: 512 * 21,
-      width: 512 * 1,
-      height: 512 * 1,
-      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-      type: "boss",
-      url: "https://map.runfast.stream/?map=regular&x=13987&y=11123&zoom=875",
-    },
-    {
-      id: 25,
-      text: ["Friend Boss", "Toveri", "Friend"],
-      x: 512 * 49,
-      y: 512 * 8,
-      width: 512 * 1,
-      height: 512 * 1,
-      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-      type: "boss",
-      url: "https://map.runfast.stream/?map=regular&x=25360&y=4341&zoom=917",
-    },
-    {
-      id: 26,
-      text: ["The Master of Masters", "Mestarien mestari", "Grand Master", "Wizard Boss"],
-      x: 512 * 24,
-      y: 512 * 29,
-      width: 512 * 1,
-      height: 512 * 1,
-      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-      type: "boss",
-      url: "https://map.runfast.stream/?map=regular&x=12573&y=15178&zoom=796",
-    },
-    {
-      id: 27,
-      text: ["The Forgotten", "Unohdettu", "Ghost Boss"],
-      x: 512 * -23,
-      y: 512 * 25,
-      width: 512 * 1,
-      height: 512 * 1,
-      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-      type: "boss",
-      url: "https://map.runfast.stream/?map=regular&x=-11515&y=13123&zoom=744",
-    },
-    {
-      id: 28,
-      text: ["Bridge Boss", "Sauvojen tuntija", "Connoisseur of Wands", "Squid Boss", "Pit Boss", "Wand Boss"],
-      x: 512 * 7,
-      y: 512 * 1,
-      width: 512 * 2,
-      height: 512 * 2,
-      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-      type: "boss",
-      url: "https://map.runfast.stream/?map=regular&x=4165&y=889&zoom=970",
-    },
-    {
-      id: 29,
-      text: ["Deer Boss", "Tapion vasalli", "Tapio's Vassal", "Island Boss"],
-      x: 512 * -27,
-      y: 512 * 0,
-      width: 512 * 1,
-      height: 512 * 1,
-      maps: ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
-      type: "boss",
-      url: "https://map.runfast.stream/?map=regular&x=-13670&y=134&zoom=796",
-    },
-  ],
 };
+
+const fetchData = async (overlayType) =>
+  fetch(`assets/data/${overlayType}.json`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  }).then((response) => response.json());
+
+(async () => {
+  for (const overlayType of ["items", "bosses"]) {
+    overlayTexts[overlayType] = await fetchData(overlayType);
+  }
+  setupSearch();
+})();
 
 const mapDefinitions = [
   {
@@ -565,12 +404,11 @@ var os = OpenSeadragon({
   opacity: 1,
 });
 
-// Setup searching in IIFE to avoid polluting the global scope
-(() => {
+const setupSearch = () => {
   const index = FlexSearch.Document({
     document: {
-      index: "text",
-      store: ["text", "maps", "x", "y", "width", "height"],
+      index: ["text", "name", "aliases"],
+      store: ["text", "name", "aliases", "maps", "x", "y", "width", "height"],
     },
     tokenize: "forward",
   });
@@ -607,8 +445,37 @@ var os = OpenSeadragon({
     viewport.zoomSpring.animationTime = oldValues.zoomSpringAnimationTime;
   }
 
+  function createListItem(overlay) {
+    const listItem = document.createElement("div");
+    listItem.className = "search-result";
+
+    if (overlay.name) {
+      listItem.innerHTML = overlay.name;
+
+      if (overlay.aliases && overlay.aliases.length > 0) {
+        listItem.innerHTML += ` (${overlay.aliases.join(", ")})`;
+      }
+    } else {
+      listItem.innerHTML = overlay.text.join("; ");
+    }
+
+    listItem.addEventListener("mousedown", () => {
+      searchInput.value = "";
+      searchResults.innerHTML = "";
+      panToOverlay(overlay);
+    });
+
+    return listItem;
+  }
+
   const panToOverlay = (overlay) => {
-    const overlayCenter = new OpenSeadragon.Point(overlay.x + overlay.width / 2, overlay.y + overlay.height / 2);
+    const overlayCenter = new OpenSeadragon.Point(overlay.x, overlay.y);
+
+    if (overlay.width !== undefined && overlay.height !== undefined) {
+      overlayCenter.x += overlay.width / 2;
+      overlayCenter.y += overlay.height / 2;
+    }
+
     const arbitraryZoomLevel = 0.002;
     withSlowOSDAnimation(os.viewport, function () {
       os.viewport.panTo(overlayCenter).zoomTo(arbitraryZoomLevel);
@@ -635,21 +502,19 @@ var os = OpenSeadragon({
     }
 
     const currentMap = getCurrentMap();
-    for (let result of results[0].result) {
-      if (!result.doc.maps.includes(currentMap)) {
-        continue;
+    const addedIDs = [];
+    for (const obj of results) {
+      for (let result of obj.result) {
+        if (!result.doc.maps.includes(currentMap) || addedIDs.includes(result.id)) {
+          continue;
+        }
+        const listItem = createListItem(result.doc);
+        searchResults.appendChild(listItem);
+        addedIDs.push(result.id);
       }
-
-      const listItem = document.createElement("div");
-      listItem.className = "search-result";
-      listItem.innerHTML = result.doc.text.join("; ");
-      listItem.addEventListener("mousedown", () => {
-        panToOverlay(result.doc);
-      });
-      searchResults.appendChild(listItem);
     }
   });
-})();
+};
 
 let prevTiledImage;
 let nextTiledImage;
@@ -794,12 +659,12 @@ const changeMap = (() => {
         break;
     }
 
-    updateOverlayVisibility(); // Update overlay visibility based on toggler states
-
     // Update URL to refer to the selected map
     const updatedUrlParams = new URLSearchParams(window.location.search);
     updatedUrlParams.set("map", mapName);
     window.history.replaceState(null, "", "?" + updatedUrlParams.toString());
+
+    updateOverlayVisibility(); // Update overlay visibility based on toggler states
 
     addTooltips();
   }
@@ -843,31 +708,27 @@ const changeMap = (() => {
     const currentMap = urlParams.get("map") || "regular-main-branch";
 
     // Handle structures overlay
+    removeOverlaysByType("structures");
     if (structuresOverlaysSwitch.checked && isOverlaySupported("structures", currentMap)) {
       addOverlaysByType("structures", currentMap);
-    } else {
-      removeOverlaysByType("structures");
     }
 
     // Handle orbs overlay
+    removeOverlaysByType("orbAreas");
     if (orbsOverlaysSwitch.checked && isOverlaySupported("orbAreas", currentMap)) {
       addOverlaysByType("orbAreas", currentMap);
-    } else {
-      removeOverlaysByType("orbAreas");
     }
 
     // Handle bosses overlay
+    removeOverlaysByType("bosses");
     if (bossesOverlaysSwitch.checked && isOverlaySupported("bosses", currentMap)) {
       addOverlaysByType("bosses", currentMap);
-    } else {
-      removeOverlaysByType("bosses");
     }
 
     // Handle items overlay
+    removeOverlaysByType("items");
     if (itemsOverlaysSwitch.checked && isOverlaySupported("items", currentMap)) {
       addOverlaysByType("items", currentMap);
-    } else {
-      removeOverlaysByType("items");
     }
   }
 
@@ -876,24 +737,125 @@ const changeMap = (() => {
     return overlayTexts[type].some((overlay) => overlay.maps.includes(mapName));
   }
 
+  function createOverlayPopup({ name, aliases, wiki }) {
+    const popup = document.createElement("div");
+    popup.className = "osOverlayPopup";
+
+    const nameElement = document.createElement("h2");
+    nameElement.innerHTML = name.replace(/\s/g, "&nbsp;");
+    popup.appendChild(nameElement);
+
+    if (aliases && aliases.length > 0) {
+      const aliasesElement = document.createElement("h3");
+      aliasesElement.innerHTML = `(${aliases.map((alias) => `"${alias}"`).join(", ")})`;
+      popup.appendChild(aliasesElement);
+    }
+
+    const wikiLink = document.createElement("a");
+    wikiLink.href = wiki;
+    wikiLink.target = "_blank";
+    wikiLink.innerHTML = "Wiki";
+    popup.appendChild(wikiLink);
+
+    return popup;
+  }
+
+  // Function to prevent OpenSeadragon from intercepting clicks inside overlays
+  // https://codepen.io/msalsbery/pen/dyOeXqO
+  function preProcessEventHandler(event) {
+    const target = event.originalEvent.target;
+    switch (event.eventType) {
+      case "pointerdown":
+      case "pointerup":
+        // prevent pointerdown/pointerup events from bubbling
+        // viewer won't see these events
+        event.stopPropagation = true;
+        if (target.tagName === "A") {
+          // allow user agent to handle clicks
+          event.preventDefault = false;
+          // prevents clickHandler call
+          event.preventGesture = true;
+        }
+        break;
+      case "click":
+        // prevent click event from bubbling
+        event.stopPropagation = true;
+        if (target.tagName === "A") {
+          // allow user agent to handle clicks
+          event.preventDefault = false;
+        } else {
+          // we'll handle clicks
+          event.preventDefault = true;
+        }
+        break;
+      case "contextmenu":
+        // allow context menu to pop up
+        event.stopPropagation = true;
+        event.preventDefault = false;
+        break;
+      default:
+        break;
+    }
+  }
+
+  function attachMouseTrackerToElement(element) {
+    new OpenSeadragon.MouseTracker({
+      element,
+      preProcessEventHandler,
+    });
+  }
+
+  function createPOI({ id, name, aliases, x, y, icon, wiki }) {
+    const e = document.createElement("div");
+    e.id = `overlayId${id}`;
+
+    const pin = document.createElement("div");
+    pin.className = "osOverlayPOI";
+    e.appendChild(pin);
+
+    const img = document.createElement("img");
+    img.src = icon;
+    img.alt = name;
+    pin.appendChild(img);
+
+    const popup = createOverlayPopup({ name, aliases, wiki });
+    e.appendChild(popup);
+
+    os.addOverlay({
+      element: e,
+      location: new OpenSeadragon.Point(x, y),
+    });
+
+    attachMouseTrackerToElement(e);
+  }
+
+  function createAOI({ id, text, x, y, width, height }) {
+    const e = document.createElement("div");
+    e.id = `overlayId${id}`;
+    e.className = "osOverlayHighlight";
+    e.innerHTML = `<span id="span${id}">${text}</span>`;
+    os.addOverlay({
+      element: e,
+      location: new OpenSeadragon.Rect(x, y, width, height),
+    });
+    const hue = Math.floor(Math.random() * 360);
+    e.style.backgroundColor = `hsla(${hue}, 60%, 60%, 0.5)`;
+  }
+
   function addOverlaysByType(type, mapName) {
     if (!overlayTexts[type]) return;
 
     const filteredOverlays = overlayTexts[type].filter(({ maps }) => maps.includes(mapName));
+    filteredOverlays.sort((o1, o2) => o1.y - o2.y);
 
-    filteredOverlays.forEach(({ id, text, x, y, width, height }) => {
-      if (!document.getElementById(`overlayId${id}`)) {
-        // Check if overlay already exists
-        let e = document.createElement("div");
-        e.id = `overlayId${id}`;
-        e.className = "osOverlayHighlight";
-        e.innerHTML = `<span id="span${id}">${text}</span>`;
-        os.addOverlay({
-          element: e,
-          location: new OpenSeadragon.Rect(x, y, width, height),
-        });
-        const hue = Math.floor(Math.random() * 360);
-        e.style.backgroundColor = `hsla(${hue}, 60%, 60%, 0.5)`;
+    filteredOverlays.forEach((overlay) => {
+      // Check if overlay already exists
+      if (!document.getElementById(`overlayId${overlay.id}`)) {
+        if (overlay.width !== undefined && overlay.height !== undefined) {
+          createAOI(overlay);
+        } else {
+          createPOI(overlay);
+        }
       }
     });
   }
