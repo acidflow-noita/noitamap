@@ -19,7 +19,7 @@ We're using seed `786433191` while running map capture because it has a couple s
 
 If you're a **developer**, contributions and discussions are welcome, feel free to open PRs and issues, take a look at the [project](<[url](https://github.com/orgs/acidflow-noita/projects/1)>) to see what work is being done.
 
-If you're a **player**, you can help by capturing a new version of one of the game modes, or mods (maps with significant changes over time have date indication on the website), then stitch the map and upload an archive with what you've got to a sharing service like google drive, pixeldrain, gofile, etc, then opening an issue.
+If you're a **player**, you can help by capturing a new version of one of the game modes, or mods (maps with significant changes over time have date indication on the website), then stitch the map and upload an archive with what you've got to a sharing service like google drive, pixeldrain, gofile, etc, then opening an issue. Also, you can help by translating the map into your language and add more points of interest to the overlays (for those who are unable to open a PR the ability to contribute will be added later in the dev cycle).
 
 ### How to capture a map
 
