@@ -1029,6 +1029,7 @@ os.addHandler("open", async (event) => {
   }
   if (urlParams.has("zoom")) {
     viewportZoom = Math.pow(2, Number(urlParams.get("zoom")) / -100);
+    setViewportNavigatorVisibility((Math.log2(zoom) * -100).toFixed(0));
   }
   viewport.panTo(viewportCenter, true);
   viewport.zoomTo(viewportZoom, undefined, true);
