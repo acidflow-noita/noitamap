@@ -1,4 +1,4 @@
-# [![NoitamapLogo](https://github.com/acidflow-noita/noitamap/assets/106106310/8d744876-be6f-479c-8bed-09257a07a08a) noitamap.com](https://noitamap.com)
+# [![NoitamapLogo](https://github.com/acidflow-noita/noitamap/assets/106106310/8d744876-be6f-479c-8bed-09257a07a08a) NoitaMap.com](https://noitamap.com)
 
 _Ultrafast_ Superzoom Map for Noita
 
