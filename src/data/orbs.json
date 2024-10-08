@@ -1,0 +1,29 @@
+[
+  {
+    "id": 7,
+    "text": ["Spawn area for Sandcaves orb: Necromancy. Main/East/West ID: 4, 260, 132"],
+    "x": 17,
+    "y": 3,
+    "width": 6,
+    "height": 4,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "id": 8,
+    "text": ["Spawn area for Holy Bomb orb. Main/East/West ID: 5, 261, 133"],
+    "x": 8,
+    "y": 7,
+    "width": 10,
+    "height": 12,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "id": 9,
+    "text": ["Spawn area for Nuke orb. Main/East/West ID: 3, 259, 131"],
+    "x": 26,
+    "y": 20,
+    "width": 6,
+    "height": 6,
+    "maps": ["new-game-plus-main-branch"]
+  }
+]
