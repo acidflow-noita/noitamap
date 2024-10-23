@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-
+HERE=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # build without altering package.lock
 # https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-nodejs
@@ -20,4 +20,5 @@ npm run generate
 npm run build
 
 # Copy the built tilesources.json into the dist which is /public
-cp "../src/data/tilesources.json" "../public/js/tilesources.json"
+
+cp "$HERE/src/data/tilesources.json" "$HERE/public/js/tilesources.json"
