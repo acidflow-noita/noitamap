@@ -1,7 +1,5 @@
 [
   {
-    "id": 5,
-    "type": "item",
     "name": "Milk",
     "x": 2437,
     "y": -4488,
@@ -10,8 +8,6 @@
     "wiki": "https://noita.wiki.gg/wiki/Milk"
   },
   {
-    "id": 6,
-    "type": "item",
     "name": "Beer",
     "x": 7623,
     "y": -4348,

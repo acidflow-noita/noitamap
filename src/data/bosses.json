@@ -1,7 +1,5 @@
 [
   {
-    "id": 16,
-    "type": "boss",
     "name": "Kolmisilmän Koipi",
     "aliases": ["Pyramid Boss", "Three-Eye's Legs"],
     "x": 9984,
@@ -12,8 +10,6 @@
     "wiki": "https://noita.wiki.gg/wiki/Kolmisilm%C3%A4n_koipi"
   },
   {
-    "id": 17,
-    "type": "boss",
     "name": "Syväolento",
     "aliases": ["Leviathan", "Creature of the Deep"],
     "x": -14024,
@@ -24,8 +20,6 @@
     "wiki": "https://noita.wiki.gg/wiki/Syv%C3%A4olento"
   },
   {
-    "id": 18,
-    "type": "boss",
     "name": "Veska, Molari, Mokke, Seula",
     "aliases": ["Door boss", "Gate Guardian", "Triangle boss"],
     "x": 2837,
@@ -36,8 +30,6 @@
     "wiki": "https://noita.wiki.gg/wiki/Gate_Guardian"
   },
   {
-    "id": 19,
-    "type": "boss",
     "name": "Suomuhauki",
     "aliases": ["Dragon", "Scale Pike"],
     "x": 2347,
@@ -48,8 +40,6 @@
     "wiki": "https://noita.wiki.gg/wiki/Suomuhauki"
   },
   {
-    "id": 20,
-    "type": "boss",
     "name": "Limatoukka",
     "aliases": ["Tiny", "Slime Maggot", "Slime Caterpillar"],
     "x": 14904,
@@ -60,8 +50,6 @@
     "wiki": "https://noita.wiki.gg/wiki/Limatoukka"
   },
   {
-    "id": 21,
-    "type": "boss",
     "name": "Kolmisilmän sydän",
     "aliases": ["Meat Boss", "Three-Eye's Heart"],
     "x": 6667,
@@ -72,8 +60,6 @@
     "wiki": "https://noita.wiki.gg/wiki/Kolmisilm%C3%A4n_syd%C3%A4n"
   },
   {
-    "id": 22,
-    "type": "boss",
     "name": "Ylialkemisti",
     "aliases": ["Alchemist Boss", "High Alchemist"],
     "x": -4840,
@@ -84,8 +70,6 @@
     "wiki": "https://noita.wiki.gg/wiki/Ylialkemisti"
   },
   {
-    "id": 23,
-    "type": "boss",
     "name": "Kolmisilmä",
     "aliases": ["Kolmi", "Three-Eye"],
     "x": 3556,
@@ -96,8 +80,6 @@
     "wiki": "https://noita.wiki.gg/wiki/Kolmisilm%C3%A4"
   },
   {
-    "id": 24,
-    "type": "boss",
     "name": "Kolmisilmän silmä",
     "aliases": ["Mecha Kolmi", "Three-Eye's Eye"],
     "x": 13987,
@@ -108,8 +90,6 @@
     "wiki": "https://noita.wiki.gg/wiki/Kolmisilm%C3%A4n_silm%C3%A4"
   },
   {
-    "id": 25,
-    "type": "boss",
     "name": "Toveri",
     "aliases": ["Friend Boss", "Friend"],
     "x": 25360,
@@ -120,8 +100,6 @@
     "wiki": "https://noita.wiki.gg/wiki/Toveri"
   },
   {
-    "id": 26,
-    "type": "boss",
     "name": "Mestarien mestari",
     "aliases": ["The Master of Masters", "Grand Master", "Wizard Boss"],
     "x": 12573,
@@ -132,8 +110,6 @@
     "wiki": "https://noita.wiki.gg/wiki/Mestarien_mestari"
   },
   {
-    "id": 27,
-    "type": "boss",
     "name": "Unohdettu",
     "aliases": ["The Forgotten", "Ghost Boss"],
     "x": -11515,
@@ -144,8 +120,6 @@
     "wiki": "https://noita.wiki.gg/wiki/Unohdettu"
   },
   {
-    "id": 28,
-    "type": "boss",
     "name": "Sauvojen tuntija",
     "aliases": ["Bridge Boss", "Connoisseur of Wands", "Squid Boss", "Pit Boss", "Wand Boss"],
     "x": 4165,
@@ -156,8 +130,6 @@
     "wiki": "https://noita.wiki.gg/wiki/Sauvojen_tuntija"
   },
   {
-    "id": 29,
-    "type": "boss",
     "name": "Tapion vasalli",
     "aliases": ["Deer Boss", "Tapio's Vassal", "Island Boss"],
     "x": -13670,

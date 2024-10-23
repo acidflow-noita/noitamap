@@ -1,0 +1,46 @@
+[
+  {
+    "text": ["Watchtower. Seems to just be a hint to head to the temples in the sky."],
+    "x": 13758,
+    "y": -1100,
+    "width": 650,
+    "height": 1600,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
+  },
+  {
+    "text": [
+      "Barren Temple. You can find a potion of mimicium here to start your quest. Later you will need to revisit to help this temple flourish."
+    ],
+    "x": -6000,
+    "y": -5700,
+    "width": 1100,
+    "height": 900,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
+  },
+  {
+    "text": [
+      "Henkevä Temple. 'Spirited Temple'. Potions here require mimicium. Pheromone will aid you. They might also need a little kick."
+    ],
+    "x": -2600,
+    "y": -5800,
+    "width": 1600,
+    "height": 1650,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
+  },
+  {
+    "text": ["Ominous Temple. A large pool of ominous liquid is needed here. Sea of Mimicium will be helpful."],
+    "x": 2100,
+    "y": -5300,
+    "width": 1300,
+    "height": 1100,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
+  },
+  {
+    "text": ["Kivi Temple. A boss fight here might be easier with a spell unlocked in another temple"],
+    "x": 6750,
+    "y": -5241,
+    "width": 1230,
+    "height": 1100,
+    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
+  }
+]

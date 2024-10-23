@@ -58,7 +58,7 @@ div:has(> div > .osOverlayPOI) {
 }
 
 .osOverlayPopup::before {
-  content: "";
+  content: '';
   position: absolute;
   width: 0;
   height: 0;
@@ -87,4 +87,15 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup {
 
 .osOverlayPopup a {
   color: #ffc107;
+}
+
+#osContainer .overlay {
+  display: none !important;
+}
+
+#osContainer.show-structures .overlay.structures,
+#osContainer.show-items .overlay.items,
+#osContainer.show-bosses .overlay.bosses,
+#osContainer.show-orbAreas .overlay.orbAreas {
+  display: block !important;
 }
