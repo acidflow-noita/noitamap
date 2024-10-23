@@ -1,4 +1,4 @@
-name: Main npm-based workflow
+name: Main npm-based workflow main branch manual trigger
 on:
   workflow_dispatch:
 # on: [push]
