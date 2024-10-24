@@ -1,4 +1,4 @@
-# ![NoitamapLogo](https://github.com/acidflow-noita/noitamap/assets/106106310/8d744876-be6f-479c-8bed-09257a07a08a) Noitamap — [map.runfast.stream](https://map.runfast.stream)
+# [![NoitamapLogo](https://github.com/acidflow-noita/noitamap/assets/106106310/8d744876-be6f-479c-8bed-09257a07a08a) NoitaMap.com](https://noitamap.com)
 
 _Ultrafast_ Superzoom Map for Noita
 
@@ -7,7 +7,7 @@ _Ultrafast_ Superzoom Map for Noita
 > TLDR: This repo contains sources for a very high-resolution highly-performant map for the video game called [Noita](https://store.steampowered.com/app/881100/Noita/). Noitamap uses [OpenSeadragon](https://github.com/openseadragon/openseadragon).
 > This repo started as a fork of whalehub's repo, which has been deleted from github but we had a [lucky fork](https://github.com/quiddity-wp/noita-map-viewer) with updated version of openseadragon and probably a different algo for creating the "pyramid" (zoomable) tiles. My goal is to create the best map viewing experience.
 
-The [map iself](https://map.runfast.stream) is being served by cloudflare pages with deployment from this repository.
+The [map iself](https://noitamap.com) is being served by cloudflare pages with deployment from this repository.
 
 ## Where can I find the source tiles?
 
@@ -19,7 +19,7 @@ We're using seed `786433191` while running map capture because it has a couple s
 
 If you're a **developer**, contributions and discussions are welcome, feel free to open PRs and issues, take a look at the [project](<[url](https://github.com/orgs/acidflow-noita/projects/1)>) to see what work is being done.
 
-If you're a **player**, you can help by capturing a new version of one of the game modes, or mods (maps with significant changes over time have date indication on the website), then stitch the map and upload an archive with what you've got to a sharing service like google drive, pixeldrain, gofile, etc, then opening an issue.
+If you're a **player**, you can help by capturing a new version of one of the game modes, or mods (maps with significant changes over time have date indication on the website), then stitch the map and upload an archive with what you've got to a sharing service like google drive, pixeldrain, gofile, etc, then opening an issue. Also, you can help by translating the map into your language and add more points of interest to the overlays (for those who are unable to open a PR the ability to contribute will be added later in the dev cycle).
 
 ### How to capture a map
 
@@ -67,4 +67,4 @@ Get-ChildItem -Directory | ForEach-Object { & "${env:ProgramFiles}\7-Zip\7z.exe"
 
 ## Thanks
 
-Huge thanks to [@Dadido3](https://github.com/Dadido3), [@myndzi](https://github.com/myndzi), and [@dextercd](https://github.com/dextercd) for their work, their help, and advice! Thanks to [Arganvain](https://www.twitch.tv/arganvain) for fixing the logo I initially made, thanks to discord user wand_despawner for capturing several maps, thanks to discord user hey_allen for providing storage space for the map tiles' disaster recovery, thanks to discord user Bohnenkrautsaft for the suggestion to add map loading indicator, refactoring of the indicator's code, and other code fixes and improvements!
+Huge thanks to [@Dadido3](https://github.com/Dadido3), [@myndzi](https://github.com/myndzi), [@Acors24](https://github.com/Acors24) and [@dextercd](https://github.com/dextercd) for their work, their help, and advice! Thanks to [Arganvain](https://www.twitch.tv/arganvain) for fixing the logo I initially made, thanks to discord user wand_despawner for capturing several maps, thanks to discord user hey_allen for providing storage space for the map tiles' disaster recovery, thanks to discord user Bohnenkrautsaft for the suggestion to add map loading indicator, refactoring of the indicator's code, and other code fixes and improvements!
