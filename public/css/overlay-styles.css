@@ -78,6 +78,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup {
 
 .osOverlayPopup h2 {
   font-size: 1.5em;
+  text-wrap: nowrap;
 }
 
 .osOverlayPopup h3 {
