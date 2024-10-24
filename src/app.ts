@@ -84,6 +84,9 @@ export class App extends EventEmitter2 {
     for (const [key, enabled] of Object.entries(enableOverlayButton)) {
       const overlayToggle = this.overlayButtons.querySelector(`input[data-overlay-key="${key}"]`) as HTMLInputElement;
       overlayToggle.disabled = !enabled;
+      if (!enabled) {
+        overlayToggle.checked = false;
+      }
     }
   }
 
