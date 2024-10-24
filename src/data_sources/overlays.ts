@@ -172,5 +172,7 @@ export const createOverlays = (mapName: string): OSDOverlay[] => {
     }
   }
 
+  overlays.sort((a, b) => a.location.y - b.location.y);
+
   return overlays;
 };
