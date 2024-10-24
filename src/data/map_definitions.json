@@ -4,7 +4,7 @@
     "label": "Regular",
     "badges": [
       {
-        "label": "Epilogue 2",
+        "label": "Latest",
         "class": "text-bg-success"
       }
     ],
@@ -17,7 +17,7 @@
     "label": "NG+",
     "badges": [
       {
-        "label": "Epilogue 2",
+        "label": "Latest",
         "class": "text-bg-success"
       }
     ],
@@ -30,7 +30,7 @@
     "label": "Nightmare",
     "badges": [
       {
-        "label": "Epilogue 2",
+        "label": "Latest",
         "class": "text-bg-success"
       }
     ],
@@ -158,10 +158,10 @@
   },
   {
     "key": "biomemap-main-branch",
-    "label": "Biome Map Source",
+    "label": "Biome Map",
     "badges": [
       {
-        "label": "Game Source",
+        "label": "Special",
         "class": "text-bg-primary",
         "icon": "bi bi-gear-wide-connected"
       }
@@ -175,7 +175,7 @@
     "label": "Biome Map Captured",
     "badges": [
       {
-        "label": "Game Source",
+        "label": "Special",
         "class": "text-bg-primary",
         "icon": "bi bi-gear-wide-connected"
       }

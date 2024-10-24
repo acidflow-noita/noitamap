@@ -1,0 +1,50 @@
+{
+  "name": "noitamap",
+  "version": "1.0.0",
+  "description": "Noita Map",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsup",
+    "watch": "tsup --no-minify --watch src/**/*.ts --watch src/data/*.json",
+    "generate": "node ./src/data/data_generators/map_definitions_maker.cjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/acidflow-noita/noitamap.git"
+  },
+  "type": "module",
+  "keywords": [
+    "Map",
+    "Noita",
+    "Noita",
+    "Map",
+    "Noitamap",
+    "OpenseaDragon"
+  ],
+  "author": "WUOTE",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/acidflow-noita/noitamap/issues"
+  },
+  "homepage": "https://github.com/acidflow-noita/noitamap#readme",
+  "dependencies": {
+    "eventemitter2": "6.4.9",
+    "flexsearch": "0.7.40",
+    "openseadragon": "5.0.0"
+  },
+  "optionalDependencies": {
+    "canvas": "^2.11.2",
+    "jsdom": "^25.0.1"
+  },
+  "devDependencies": {
+    "@types/bootstrap": "^5.2.10",
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^22.7.7",
+    "@types/openseadragon": "^3.0.10",
+    "prettier": "^3.3.3",
+    "tsup": "^8.3.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3"
+  }
+}

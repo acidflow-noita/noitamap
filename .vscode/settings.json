@@ -1,5 +1,13 @@
 {
   "prettier.printWidth": 120,
+  "prettier.arrowParens": "avoid",
+  "prettier.useTabs": false,
+  "prettier.tabWidth": 2,
+  "prettier.trailingComma": "es5",
+  "prettier.singleQuote": true,
+  "[typescript]": {
+    "editor.tabSize": 2
+  },
   "[html]": {
     "prettier.printWidth": 200
   },

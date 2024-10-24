@@ -1,6 +1,9 @@
-const fs = require("fs");
+const path = require('node:path');
+const fs = require('node:fs');
 
-const mapDefinitions = JSON.parse(fs.readFileSync("../assets/data/map_definitions.json", "utf-8"));
+const relPath = (...components) => path.resolve(__dirname, ...components);
+
+const mapDefinitions = JSON.parse(fs.readFileSync(relPath('..', 'map_definitions.json'), 'utf-8'));
 
 const tileSources = (async function () {
   const tileSourceURL = (key, position, patchDate, seed) =>
@@ -35,6 +38,5 @@ const tileSources = (async function () {
 
   const jsonOutput = JSON.stringify(output, null, 2);
 
-  fs.writeFileSync("../assets/data/tilesources.json", jsonOutput);
-  fs.writeFileSync("./tilesources.json", jsonOutput);
+  fs.writeFileSync(relPath('..', 'tilesources.json'), jsonOutput);
 })();

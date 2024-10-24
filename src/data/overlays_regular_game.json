@@ -1,6 +1,5 @@
 [
   {
-    "id": 0,
     "text": "Watchtower. Seems to just be a hint to head to the temples in the sky.",
     "x": 13758,
     "y": -1100,
@@ -8,7 +7,6 @@
     "height": 1600
   },
   {
-    "id": 1,
     "text": "Barren Temple. You can find a potion of mimicium here to start your quest. Later you will need to revisit to help this temple flourish.",
     "x": -6000,
     "y": -5700,
@@ -16,7 +14,6 @@
     "height": 900
   },
   {
-    "id": 2,
     "text": "Ominous Temple. A large pool of ominous liquid is needed here. Sea of Mimicium will be helpful.",
     "x": 2100,
     "y": -5300,
@@ -24,8 +21,6 @@
     "height": 1100
   },
   {
-    "id": 3,
-
     "text": "Henkevä Temple. \"Spirited Temple\". Potions here require mimicium. Pheromone will aid you. They might also need a little kick.",
     "x": -2600,
     "y": -5800,
@@ -33,14 +28,10 @@
     "height": 1650
   },
   {
-    "id": 5,
-
     "text": "Kivi Temple. A boss fight here might be easier with a spell unlocked in another temple",
     "x": 6750,
     "y": -5241,
     "width": 1230,
     "height": 1100
-  },
-  { "id": 4, "text": "Milk", "x": 2420, "y": -4500, "width": 25, "height": 25 },
-  { "id": 6, "text": "Beer", "x": 7610, "y": -4359, "width": 25, "height": 25 }
+  }
 ]

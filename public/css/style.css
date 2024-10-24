@@ -10,10 +10,21 @@ html {
   background-color: #030712 !important;
 }
 
-#osContainer {
+.flex {
+  display: flex;
+}
+.flex-col-reverse {
+  flex-direction: column-reverse;
+}
+
+.full-viewport-wrapper {
   width: 100vw;
   height: 100vh;
   position: fixed;
+}
+#osContainer {
+  height: 100%;
+  width: 100%;
 }
 
 .menu img {
@@ -24,7 +35,12 @@ html {
 
 :root {
   font-family: Inter, sans-serif;
-  font-feature-settings: "liga" 1, "calt" 1, "dlig", "ss01", "ss02";
+  font-feature-settings:
+    'liga' 1,
+    'calt' 1,
+    'dlig',
+    'ss01',
+    'ss02';
 }
 
 @supports (font-variation-settings: normal) {
@@ -38,7 +54,7 @@ html {
   pointer-events: none;
   color: white;
   font-family: Inter, sans-serif;
-  font-feature-settings: "tnum", "zero", "cv09", "cv02", "cv03", "cv04";
+  font-feature-settings: 'tnum', 'zero', 'cv09', 'cv02', 'cv03', 'cv04';
   font-weight: 400;
 }
 
@@ -96,13 +112,17 @@ html {
 }
 
 .loadingIndicator::after {
-  content: "L\00A0 \00A0 \00A0 ADING";
+  content: 'L\00A0 \00A0 \00A0 ADING';
   position: absolute;
   font-size: 0.875rem;
   left: -0.25rem;
   z-index: -100;
   color: transparent;
-  text-shadow: -1px 0 white, 0 1px white, 1px 0 white, 0 -1px white;
+  text-shadow:
+    -1px 0 white,
+    0 1px white,
+    1px 0 white,
+    0 -1px white;
   opacity: 0.4;
 }
 
@@ -144,6 +164,14 @@ html {
 
 body.toggle-hidden div.osOverlayHighlight {
   display: none !important;
+}
+
+.icon-button.btn {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .icon-runfast {
@@ -209,7 +237,8 @@ body.toggle-hidden div.osOverlayHighlight {
   font-style: italic;
 }
 
-#searchInput:focus-visible + #searchResults:has(> .search-result),
+/* TODO: search results overflow the page on narrow displays */
+#search-form:focus-visible + #searchResults:has(> .search-result),
 #searchResults:active,
 #searchResults:focus-within {
   height: auto;
@@ -232,4 +261,9 @@ body.toggle-hidden div.osOverlayHighlight {
 
 .search-result:focus {
   background: #fff2;
+}
+
+/* prevent drawing an outline around the OSD container if we hit tab to focus it */
+#osContainer :focus-visible {
+  outline: none;
 }

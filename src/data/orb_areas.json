@@ -1,0 +1,74 @@
+[
+  {
+    "text": ["Spawn area for Sandcaves orb: Necromancy. Main/East/West ID: 4, 260, 132"],
+    "x": 17,
+    "y": 3,
+    "width": 6,
+    "height": 4,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "text": ["Spawn area for Holy Bomb orb. Main/East/West ID: 5, 261, 133"],
+    "x": 8,
+    "y": 7,
+    "width": 10,
+    "height": 12,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "text": ["Spawn area for Nuke orb. Main/East/West ID: 3, 259, 131"],
+    "x": 26,
+    "y": 20,
+    "width": 6,
+    "height": 6,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "text": ["Spawn area for Wizards' den orb: Cement. Main/East/West ID: 10, 266, 138"],
+    "x": 19,
+    "y": 27,
+    "width": 5,
+    "height": 6,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "text": ["Spawn area for Hell orb: Fireworks! Main/East/West ID: 8, 264, 136"],
+    "x": -5,
+    "y": 30,
+    "width": 10,
+    "height": 4,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "text": ["Spawn area for Snow chasm orb: Deercoy. Main/East/West ID: 9, 265, 137"],
+    "x": -20,
+    "y": 26,
+    "width": 7,
+    "height": 4,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "text": ["Spawn area for Frozen Vault orb: Tentacle. Main/East/West ID: 2, 258, 130"],
+    "x": -22,
+    "y": 4,
+    "width": 6,
+    "height": 3,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "text": ["Spawn area for Lake orb: Thundercloud. Main/East/West ID: 7, 263, 135"],
+    "x": -32,
+    "y": 10,
+    "width": 9,
+    "height": 10,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "text": ["Spawn area for Spiral Shot orb. Main/East/West ID: 6, 262, 134"],
+    "x": -15,
+    "y": 7,
+    "width": 8,
+    "height": 9,
+    "maps": ["new-game-plus-main-branch"]
+  }
+]
