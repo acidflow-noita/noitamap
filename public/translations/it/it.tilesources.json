@@ -1,0 +1,112 @@
+{
+  "regular-main-branch": [
+    {
+      "url": "https://regular-main-branch-middle.acidflow.stream/maps/regular-main-branch-middle/regular-main-branch-middle-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"36352\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-17920\",\"Y\":\"-31744\"}}}\n"
+    },
+    {
+      "url": "https://regular-main-branch-left.acidflow.stream/maps/regular-main-branch-left/regular-main-branch-left-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"36352\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-53760\",\"Y\":\"-31744\"}}}\n"
+    },
+    {
+      "url": "https://regular-main-branch-right.acidflow.stream/maps/regular-main-branch-right/regular-main-branch-right-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"35840\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"17920\",\"Y\":\"-31744\"}}}\n"
+    }
+  ],
+  "new-game-plus-main-branch": [
+    {
+      "url": "https://new-game-plus-main-branch-middle.acidflow.stream/maps/new-game-plus-main-branch-middle/new-game-plus-main-branch-middle-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"36352\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-17920\",\"Y\":\"-31744\"}}}\n"
+    },
+    {
+      "url": "https://new-game-plus-main-branch-left.acidflow.stream/maps/new-game-plus-main-branch-left/new-game-plus-main-branch-left-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"36352\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-53760\",\"Y\":\"-31744\"}}}\n"
+    },
+    {
+      "url": "https://new-game-plus-main-branch-right.acidflow.stream/maps/new-game-plus-main-branch-right/new-game-plus-main-branch-right-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"35840\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"17920\",\"Y\":\"-31744\"}}}\n"
+    }
+  ],
+  "nightmare-main-branch": [
+    {
+      "url": "https://nightmare-main-branch-middle.acidflow.stream/maps/nightmare-main-branch-middle/nightmare-main-branch-middle-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"36352\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-17920\",\"Y\":\"-31744\"}}}\n"
+    },
+    {
+      "url": "https://nightmare-main-branch-left.acidflow.stream/maps/nightmare-main-branch-left/nightmare-main-branch-left-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"36352\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-53760\",\"Y\":\"-31744\"}}}\n"
+    },
+    {
+      "url": "https://nightmare-main-branch-right.acidflow.stream/maps/nightmare-main-branch-right/nightmare-main-branch-right-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"35840\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"17920\",\"Y\":\"-31744\"}}}\n"
+    }
+  ],
+  "regular-beta": [
+    {
+      "url": "https://regular-beta-middle.acidflow.stream/maps/regular-beta-middle/regular-beta-middle-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"36352\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-17920\",\"Y\":\"-31744\"}}}\n"
+    },
+    {
+      "url": "https://regular-beta-left.acidflow.stream/maps/regular-beta-left/regular-beta-left-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"36352\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-53760\",\"Y\":\"-31744\"}}}\n"
+    },
+    {
+      "url": "https://regular-beta-right.acidflow.stream/maps/regular-beta-right/regular-beta-right-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"35840\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"17920\",\"Y\":\"-31744\"}}}\n"
+    }
+  ],
+  "purgatory": [
+    {
+      "url": "https://purgatory-middle.acidflow.stream/maps/purgatory-middle/purgatory-middle-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"51200\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-25600\",\"Y\":\"-31744\"}}}\n"
+    }
+  ],
+  "apotheosis": [
+    {
+      "url": "https://apotheosis-middle.acidflow.stream/maps/apotheosis-middle/apotheosis-middle-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"51200\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-25600\",\"Y\":\"-31744\"}}}\n"
+    }
+  ],
+  "apotheosis-new-game-plus": [
+    {
+      "url": "https://apotheosis-new-game-plus-middle.acidflow.stream/maps/apotheosis-new-game-plus-middle/apotheosis-new-game-plus-middle-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"51200\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-25600\",\"Y\":\"-31744\"}}}\n"
+    }
+  ],
+  "apotheosis-tuonela": [
+    {
+      "url": "https://apotheosis-tuonela-middle.acidflow.stream/maps/apotheosis-tuonela-middle/apotheosis-tuonela-middle-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"51200\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-25600\",\"Y\":\"-31744\"}}}\n"
+    }
+  ],
+  "noitavania": [
+    {
+      "url": "https://noitavania-middle.acidflow.stream/maps/noitavania-middle/noitavania-middle-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"51200\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-25600\",\"Y\":\"-31744\"}}}\n"
+    }
+  ],
+  "noitavania-new-game-plus": [
+    {
+      "url": "https://noitavania-new-game-plus-middle.acidflow.stream/maps/noitavania-new-game-plus-middle/noitavania-new-game-plus-middle-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"51200\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-25600\",\"Y\":\"-31744\"}}}\n"
+    }
+  ],
+  "alternate-biomes": [
+    {
+      "url": "https://alternate-biomes-middle.acidflow.stream/maps/alternate-biomes-middle/alternate-biomes-middle-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"35840\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-18432\",\"Y\":\"-31744\"}}}\n"
+    }
+  ],
+  "biomemap-main-branch": [
+    {
+      "url": "https://biomemap-main-branch-middle.acidflow.stream/maps/biomemap-main-branch-middle/biomemap-main-branch-middle-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"35840\",\"Height\":\"24576\"},\"TopLeft\":{\"X\":\"-17920\",\"Y\":\"-7168\"}}}"
+    }
+  ],
+  "biomemaprendered-main-branch": [
+    {
+      "url": "https://biomemaprendered-main-branch-middle.acidflow.stream/maps/biomemaprendered-main-branch-middle/biomemaprendered-main-branch-middle-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"37376\",\"Height\":\"26112\"},\"TopLeft\":{\"X\":\"-18688\",\"Y\":\"-7936\"}}}\n"
+    }
+  ]
+}
