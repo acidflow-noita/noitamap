@@ -103,7 +103,7 @@ function createOverlayPopup({ name, aliases, wiki }: Pick<PointOfInterest, 'name
   popup.className = 'osOverlayPopup';
 
   const nameElement = document.createElement('h2');
-  nameElement.textContent = name.replace(/\s/g, '&nbsp;');
+  nameElement.textContent = name;
   popup.appendChild(nameElement);
 
   if (aliases && aliases.length > 0) {
@@ -171,6 +171,8 @@ export const createOverlays = (mapName: string): OSDOverlay[] => {
       overlays.push(overlay);
     }
   }
+
+  overlays.sort((a, b) => a.location.y - b.location.y);
 
   return overlays;
 };
