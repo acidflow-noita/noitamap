@@ -1,5 +1,15 @@
 [
   {
+    "name": "Kivi",
+    "aliases": ["Rock Boss", "Stone Boss", "Sky Boss"],
+    "x": 7375,
+    "y": -4539,
+    "maps": ["regular-main-branch", "regular-beta"],
+    "url": "https://map.runfast.stream/?map=regular&x=7375&y=-4539&zoom=823",
+    "icon": "assets/icons/bosses/kivi.png",
+    "wiki": "https://noita.wiki.gg/wiki/Kivi"
+  },
+  {
     "name": "Kolmisilmän Koipi",
     "aliases": ["Pyramid Boss", "Three-Eye's Legs"],
     "x": 9984,
