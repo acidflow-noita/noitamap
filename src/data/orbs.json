@@ -2,90 +2,100 @@
   {
     "name": "Orb: Earthquake",
     "text": "Secrets of Earth's anger have been unlocked to you",
-    "x": 9933,
-    "y": -1214,
+    "x": 9983,
+    "y": -1222,
     "icon": "assets/icons/orbs/orb_earthquake.webp",
-    "maps": ["regular-main-branch", "regular-beta"]
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
     "name": "Orb: Sea of Lava",
     "text": "Secrets of endless lava have been unlocked to you",
-    "x": 730,
-    "y": -1120,
+    "x": 780,
+    "y": -1088,
     "icon": "assets/icons/orbs/orb_sea_of_lava.webp",
-    "maps": ["regular-main-branch", "regular-beta"]
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
     "name": "Orb: Summon Tentacle",
     "text": "Secrets of otherworldly life have been unlocked to you",
-    "x": -10035,
-    "y": 2898,
+    "x": -9985,
+    "y": 2883,
     "icon": "assets/icons/orbs/orb_summon_tentacle.webp",
-    "maps": ["regular-main-branch", "regular-beta"]
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
     "name": "Orb: Nuke",
     "text": "Secrets of utter destruction have been unlocked to you",
-    "x": 3423,
-    "y": 1862,
+    "x": 3472,
+    "y": 1879,
     "icon": "assets/icons/orbs/orb_nuke.webp",
-    "maps": ["regular-main-branch", "regular-beta"]
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
     "name": "Orb: Necromancy",
     "text": "Secrets of Undeath have been unlocked to you",
-    "x": 9933,
-    "y": 2898,
+    "x": 9982,
+    "y": 2883,
     "icon": "assets/icons/orbs/orb_necromancy.webp",
-    "maps": ["regular-main-branch", "regular-beta"]
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
     "name": "Orb: Holy Bomb",
     "text": "Secrets of fire and brimstone have been unlocked to you",
-    "x": -4403,
-    "y": 3922,
+    "x": -4353,
+    "y": 3912,
     "icon": "assets/icons/orbs/orb_holy_bomb.webp",
-    "maps": ["regular-main-branch", "regular-beta"]
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
     "name": "Orb: Spiral Shot",
     "text": "Secrets of the Spiral have been unlocked to you",
-    "x": -3891,
-    "y": 10066,
+    "x": -3841,
+    "y": 10052,
     "icon": "assets/icons/orbs/orb_spiral_shot.webp",
-    "maps": ["regular-main-branch", "regular-beta"]
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
     "name": "Orb: Thundercloud",
     "text": "Secrets of the stormy skies have been unlocked to you",
-    "x": 4301,
-    "y": 850,
+    "x": 4350,
+    "y": 836,
     "icon": "assets/icons/orbs/orb_thundercloud.webp",
-    "maps": ["regular-main-branch", "regular-beta"]
-
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
     "name": "Orb: Fireworks!",
     "text": "Secrets of jubilation have been unlocked to you",
-    "x": -307,
-    "y": 16210,
+    "x": -256,
+    "y": 16208,
     "icon": "assets/icons/orbs/orb_fireworks.webp",
-    "maps": ["regular-main-branch", "regular-beta"]
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
     "name": "Orb: Summon Deercoy, Flock of Ducks, and Worm Launcher",
     "text": "Secrets of hidden danger have been unlocked to you",
-    "x": -9011,
-    "y": 14674,
+    "x": -8960,
+    "y": 14666,
     "icon": "assets/icons/orbs/orb_summon_deercoy.webp",
-    "maps": ["regular-main-branch", "regular-beta"]
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
     "name": "Orb: Cement",
     "text": "Secrets of rebuilding have been unlocked to you",
-    "x": 10445,
-    "y": 16210,
+    "x": 10495,
+    "y": 16195,
     "icon": "assets/icons/orbs/orb_cement.webp",
-    "maps": ["regular-main-branch", "regular-beta"]    
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   }
 ]
