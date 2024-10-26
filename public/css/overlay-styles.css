@@ -97,6 +97,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup {
 #osContainer.show-structures .overlay.structures,
 #osContainer.show-items .overlay.items,
 #osContainer.show-bosses .overlay.bosses,
-#osContainer.show-orbAreas .overlay.orbAreas {
+#osContainer.show-orbAreas .overlay.orbAreas,
+#osContainer.show-orbs .overlay.orbs {
   display: block !important;
 }
