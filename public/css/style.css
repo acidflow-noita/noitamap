@@ -184,8 +184,13 @@ body.toggle-hidden div.osOverlayHighlight {
   vertical-align: center;
 }
 
+.pixelated-image {
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
 .icon-structures {
-  background-image: url(../assets/icons/icon-structures.svg);
+  background-image: url(../assets/icons/overlay-toggles/icon-structures.svg);
   background-size: cover;
   display: inline-block;
   height: 16px;
@@ -193,7 +198,7 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 .icon-orbs {
-  background-image: url(../assets/icons/icon-orbs.svg);
+  background-image: url(../assets/icons/overlay-toggles/icon-orbs.webp);
   background-size: cover;
   display: inline-block;
   height: 16px;
@@ -201,14 +206,15 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 .icon-items {
-  background-image: url(../assets/icons/icon-items.svg);
+  background-image: url(../assets/icons/overlay-toggles/icon-items.webp);
   background-size: cover;
   display: inline-block;
   height: 16px;
   width: 16px;
 }
+
 .icon-bosses {
-  background-image: url(../assets/icons/icon-bosses.svg);
+  background-image: url(../assets/icons/overlay-toggles/icon-bosses.webp);
   background-size: cover;
   display: inline-block;
   height: 16px;

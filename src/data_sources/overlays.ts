@@ -137,6 +137,7 @@ function createPOI({ name, aliases, icon, wiki, x, y }: PointOfInterest): OSDOve
   const img = document.createElement('img');
   img.src = icon;
   img.alt = name;
+  img.className = 'pixelated-image';
   pin.appendChild(img);
 
   const popup = createOverlayPopup({ name, aliases, wiki });
