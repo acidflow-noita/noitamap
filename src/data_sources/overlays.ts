@@ -65,8 +65,7 @@ const overlayTexts = {
   structures: pixelAOICoords(structures),
   items: pixelPOICoords(items),
   bosses: pixelPOICoords(bosses),
-  orbAreas: chunkAOICoords(orbAreas),
-  orbs: pixelPOICoords(orbs),
+  orbs: [...chunkAOICoords(orbAreas), ...pixelPOICoords(orbs)],
 };
 
 export const getAllOverlays = (): [OverlayKey, TargetOfInterest[]][] => {
