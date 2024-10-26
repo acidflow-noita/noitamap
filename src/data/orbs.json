@@ -1,29 +1,101 @@
 [
   {
-    "id": 7,
-    "text": ["Spawn area for Sandcaves orb: Necromancy. Main/East/West ID: 4, 260, 132"],
-    "x": 17,
-    "y": 3,
-    "width": 6,
-    "height": 4,
-    "maps": ["new-game-plus-main-branch"]
+    "name": "Orb: Earthquake",
+    "text": "Secrets of Earth's anger have been unlocked to you",
+    "x": 9983,
+    "y": -1222,
+    "icon": "assets/icons/orbs/orb_earthquake.webp",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
-    "id": 8,
-    "text": ["Spawn area for Holy Bomb orb. Main/East/West ID: 5, 261, 133"],
-    "x": 8,
-    "y": 7,
-    "width": 10,
-    "height": 12,
-    "maps": ["new-game-plus-main-branch"]
+    "name": "Orb: Sea of Lava",
+    "text": "Secrets of endless lava have been unlocked to you",
+    "x": 780,
+    "y": -1088,
+    "icon": "assets/icons/orbs/orb_sea_of_lava.webp",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
-    "id": 9,
-    "text": ["Spawn area for Nuke orb. Main/East/West ID: 3, 259, 131"],
-    "x": 26,
-    "y": 20,
-    "width": 6,
-    "height": 6,
-    "maps": ["new-game-plus-main-branch"]
+    "name": "Orb: Summon Tentacle",
+    "text": "Secrets of otherworldly life have been unlocked to you",
+    "x": -9985,
+    "y": 2883,
+    "icon": "assets/icons/orbs/orb_summon_tentacle.webp",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
+  },
+  {
+    "name": "Orb: Nuke",
+    "text": "Secrets of utter destruction have been unlocked to you",
+    "x": 3472,
+    "y": 1879,
+    "icon": "assets/icons/orbs/orb_nuke.webp",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
+  },
+  {
+    "name": "Orb: Necromancy",
+    "text": "Secrets of Undeath have been unlocked to you",
+    "x": 9982,
+    "y": 2883,
+    "icon": "assets/icons/orbs/orb_necromancy.webp",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
+  },
+  {
+    "name": "Orb: Holy Bomb",
+    "text": "Secrets of fire and brimstone have been unlocked to you",
+    "x": -4353,
+    "y": 3912,
+    "icon": "assets/icons/orbs/orb_holy_bomb.webp",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
+  },
+  {
+    "name": "Orb: Spiral Shot",
+    "text": "Secrets of the Spiral have been unlocked to you",
+    "x": -3841,
+    "y": 10052,
+    "icon": "assets/icons/orbs/orb_spiral_shot.webp",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
+  },
+  {
+    "name": "Orb: Thundercloud",
+    "text": "Secrets of the stormy skies have been unlocked to you",
+    "x": 4350,
+    "y": 836,
+    "icon": "assets/icons/orbs/orb_thundercloud.webp",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
+  },
+  {
+    "name": "Orb: Fireworks!",
+    "text": "Secrets of jubilation have been unlocked to you",
+    "x": -256,
+    "y": 16208,
+    "icon": "assets/icons/orbs/orb_fireworks.webp",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
+  },
+  {
+    "name": "Orb: Summon Deercoy, Flock of Ducks, and Worm Launcher",
+    "text": "Secrets of hidden danger have been unlocked to you",
+    "x": -8960,
+    "y": 14666,
+    "icon": "assets/icons/orbs/orb_summon_deercoy.webp",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
+  },
+  {
+    "name": "Orb: Cement",
+    "text": "Secrets of rebuilding have been unlocked to you",
+    "x": 10495,
+    "y": 16195,
+    "icon": "assets/icons/orbs/orb_cement.webp",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   }
 ]

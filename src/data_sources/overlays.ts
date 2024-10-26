@@ -2,6 +2,7 @@ import structures from '../data/structures.json';
 import items from '../data/items.json';
 import bosses from '../data/bosses.json';
 import orbAreas from '../data/orb_areas.json';
+import orbs from '../data/orbs.json';
 
 const { Rect, Point } = OpenSeadragon;
 type Rect = InstanceType<typeof Rect>;
@@ -16,6 +17,7 @@ export type PointOfInterest = {
   aliases?: string[];
   icon: string;
   wiki: string;
+  text?: string;
   x: number;
   y: number;
 };
@@ -63,7 +65,7 @@ const overlayTexts = {
   structures: pixelAOICoords(structures),
   items: pixelPOICoords(items),
   bosses: pixelPOICoords(bosses),
-  orbAreas: chunkAOICoords(orbAreas),
+  orbs: [...chunkAOICoords(orbAreas), ...pixelPOICoords(orbs)],
 };
 
 export const getAllOverlays = (): [OverlayKey, TargetOfInterest[]][] => {
@@ -98,7 +100,7 @@ function createAOI({ text, x, y, width, height }: AreaOfInterest) {
 /**
  * Return the DOM element for the popup on a POI
  */
-function createOverlayPopup({ name, aliases, wiki }: Pick<PointOfInterest, 'name' | 'aliases' | 'wiki'>) {
+function createOverlayPopup({ name, aliases, wiki }: Pick<PointOfInterest, 'name' | 'aliases' | 'wiki' | 'text'>) {
   const popup = document.createElement('div');
   popup.className = 'osOverlayPopup';
 
@@ -134,6 +136,7 @@ function createPOI({ name, aliases, icon, wiki, x, y }: PointOfInterest): OSDOve
   const img = document.createElement('img');
   img.src = icon;
   img.alt = name;
+  img.className = 'pixelated-image';
   pin.appendChild(img);
 
   const popup = createOverlayPopup({ name, aliases, wiki });
