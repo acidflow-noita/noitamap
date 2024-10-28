@@ -104,7 +104,10 @@ export class SearchResults extends EventEmitter2 {
 
       switch (overlay.overlayType) {
         case 'poi':
-          listItem.textContent = `${overlay.name} (${overlay.aliases?.join(', ')})`;
+          listItem.textContent = overlay.name;
+          if (overlay.aliases) {
+            listItem.textContent += ` (${overlay.aliases.join(', ')})`;
+          }
           break;
 
         case 'aoi':
