@@ -1,6 +1,6 @@
 import { App } from './app';
 import { parseURL, updateURL } from './data_sources/url';
-import { asOverlayKey } from './data_sources/overlays';
+import { asOverlayKey, showOverlay } from './data_sources/overlays';
 import { SearchBox } from './search/searchbox';
 import { asMapName } from './data_sources/tile_data';
 import { addEventListenerForId, assertElementById, debounce } from './util';
@@ -104,11 +104,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     ev.stopPropagation();
 
-    if (target.checked) {
-      osdRootElement.classList.add(`show-${overlayKey}`);
-    } else {
-      osdRootElement.classList.remove(`show-${overlayKey}`);
-    }
+    showOverlay(overlayKey, target.checked);
   });
 
   // Initialize Bootstrap popovers

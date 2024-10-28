@@ -3,6 +3,7 @@ import items from '../data/items.json';
 import bosses from '../data/bosses.json';
 import orbAreas from '../data/orb_areas.json';
 import orbs from '../data/orbs.json';
+import { assertElementById } from '../util';
 
 const { Rect, Point } = OpenSeadragon;
 type Rect = InstanceType<typeof Rect>;
@@ -178,4 +179,17 @@ export const createOverlays = (mapName: string): OSDOverlay[] => {
   overlays.sort((a, b) => a.location.y - b.location.y);
 
   return overlays;
+};
+
+export const showOverlay = (overlayKey: OverlayKey, show: boolean) => {
+  try {
+    const osdRootElement = assertElementById('osContainer', HTMLElement);
+    if (show) {
+      osdRootElement.classList.add(`show-${overlayKey}`);
+    } else {
+      osdRootElement.classList.remove(`show-${overlayKey}`);
+    }
+  } catch (e) {
+    console.error(e);
+  }
 };
