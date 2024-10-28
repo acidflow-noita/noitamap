@@ -1,6 +1,6 @@
 import { MapName } from './data_sources/tile_data';
 import { AppOSD, ZoomPos } from './app_osd';
-import { getAllOverlays, OverlayKey, TargetOfInterest } from './data_sources/overlays';
+import { getAllOverlays, OverlayKey, showOverlay, TargetOfInterest } from './data_sources/overlays';
 
 export type AppState = {
   pos: ZoomPos;
@@ -86,6 +86,7 @@ export class App extends EventEmitter2 {
       overlayToggle.disabled = !enabled;
       if (!enabled) {
         overlayToggle.checked = false;
+        showOverlay(key as OverlayKey, false);
       }
     }
   }
