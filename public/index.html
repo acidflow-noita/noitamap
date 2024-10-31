@@ -28,6 +28,7 @@
     <meta name="theme-color" content="#ffffff" />
     <link rel="stylesheet" href="css/overlay-styles.css" />
     <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/dono-button.css" />
     <link rel="icon" href="assets/favicon/favicon.ico" type="image/x-icon" />
     <link rel="preconnect" href="https://rsms.me/" />
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
@@ -99,9 +100,10 @@
           <div class="collapse navbar-collapse" id="collapsibleMapMenu">
             <!-- Dropdown and buttons container -->
             <div class="d-flex flex-wrap align-items-center justify-content-start me-auto">
-              <a id="donateButton" href="https://runfast.stream/donate" target="_blank" class="icon-button btn btn-sm btn-outline-info btn-custom text-nowrap m-2" target="_blank" role="button">
+              <!-- <a id="donateButton" href="https://runfast.stream/donate" target="_blank" class="icon-button btn btn-sm btn-outline-info btn-custom text-nowrap m-2" target="_blank" role="button">
                 <i class="bi bi-suit-heart-fill"></i><span>Donate</span>
-              </a>
+              </a> -->
+
               <a id="installModButton" href="https://runfast.stream/noitamap-mod" target="_blank" class="icon-button btn btn-sm btn-outline-light text-nowrap m-2">
                 <i class="bi bi-download"></i><span>Install Mod</span>
               </a>
@@ -152,6 +154,12 @@
               <a id="goToMainWebsiteButton" href="https://runfast.stream" target="_blank" class="btn btn-sm btn-outline-warning m-2">
                 <i class="icon-runfast"></i>
               </a>
+              <div class="m-2 bg-glow rounded-full inline-block">
+                <a href="https://runfast.stream/donate"
+                  ><div id="dono-button" class="test overflow-hidden bg-main text-white border border-2 border-light rounded-full px-4 pt-1 pb-2 inline-block">Donate</div></a
+                >
+                <div class="bg-glow-inner"></div>
+              </div>
             </div>
           </div>
         </div>
