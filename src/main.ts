@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const searchForm = assertElementById('search-form', HTMLFormElement);
   const overlayButtonsElement = assertElementById('overlay-selector', HTMLDivElement);
   const mapNameElement = assertElementById('currentMapName', HTMLElement);
+  const tooltipElement = assertElementById('coordinate', HTMLElement);
+  const coordinatesText = tooltipElement.innerText;
 
   const app = await App.create({
     mountTo: osdRootElement,
@@ -32,6 +34,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   const searchBox = SearchBox.create({
     currentMap: app.getMap(),
     form: searchForm,
+  });
+
+  // Function to parse coordinates
+  function parseCoordinates(text) {
+    // Updated regex to match the first pair of coordinates
+    const match = text.match(/^\((\d+),\s*(\d+)\)/);
+    if (match) {
+      const x = parseInt(match[1], 10);
+      const y = parseInt(match[2], 10);
+      return JSON.stringify({ x: x, y: y });
+    }
+    return null;
+  }
+
+  // Event listener for copying coordinates on "C" key release
+  document.addEventListener('keyup', event => {
+    if (event.code === 'KeyC') {
+      // Read the latest coordinates text from tooltipElement
+      const coordinatesText = tooltipElement.innerText;
+      const parsedCoordinates = parseCoordinates(coordinatesText);
+      if (parsedCoordinates) {
+        navigator.clipboard
+          .writeText(parsedCoordinates)
+          .then(() => {
+            console.log('Coordinates copied to clipboard:', parsedCoordinates);
+          })
+          .catch(err => {
+            console.error('Could not copy coordinates:', err);
+          });
+      } else {
+        console.error('Could not parse coordinates');
+      }
+    }
   });
 
   // link to the app
