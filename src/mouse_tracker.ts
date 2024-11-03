@@ -51,7 +51,7 @@ export const initMouseTracker = ({ osd, tooltipElement, osdElement }: MouseTrack
     // if (!localStorage.enableCopyCoordinates) return;
     if (event.target instanceof HTMLInputElement) return;
     if (tooltipElement.style.visibility === 'hidden') return;
-    if (event.code !== 'KeyC') return;
+    if (event.code !== 'KeyC' || (!event.ctrlKey && !event.metaKey)) return;
 
     // Read the latest coordinates text from tooltipElement
     const coordinatesText = tooltipElement.innerText;

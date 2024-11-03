@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     osdElement: osdRootElement,
     tooltipElement: assertElementById('coordinate', HTMLElement),
   });
-  document.addEventListener('keyup', copyCoordinates, { capture: false });
+  document.addEventListener('keydown', copyCoordinates, { capture: false });
 
   // Uncomment and implement annotations if needed
   // drawingToggleSwitch.addEventListener("change", (event) => {
