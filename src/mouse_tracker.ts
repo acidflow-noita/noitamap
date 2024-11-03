@@ -47,7 +47,8 @@ export const initMouseTracker = ({ osd, tooltipElement, osdElement }: MouseTrack
   }).setTracking(true);
 
   const copyCoordinates = async (event: KeyboardEvent) => {
-    if (!localStorage.enableCopyCoordinates) return;
+    // dev only copy option which can be enabled in the browser console
+    // if (!localStorage.enableCopyCoordinates) return;
     if (event.target instanceof HTMLInputElement) return;
     if (tooltipElement.style.visibility === 'hidden') return;
     if (event.code !== 'KeyC') return;
