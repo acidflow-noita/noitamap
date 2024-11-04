@@ -40,21 +40,30 @@
 | Rainbow Trail Spell               | {"x":-14002,"y":-2860} |           | 1     | 1      | ""   | https://noita.wiki.gg/wiki/Rainbow_Trail                               |
 | Essence Eater (Desert)            | {"x":12569,"y":16}     |           | 1     | 1      | ""   | https://noita.wiki.gg/wiki/Essence_Eater                               |
 | Essence Eater (Snow Wasteland)    | {"x":-6884,"y":-169}   |           | 1     | 1      | ""   | https://noita.wiki.gg/wiki/Essence_Eater                               |
-| Evil Eye                          | {"x":-2434,"y":-203}   |           | 1     | 1      | ""   | https://noita.wiki.gg/wiki/Paha_Silm%C3%A4                             |
 | Scales                            | {"x":13060,"y":8}      |           | 1     | 1      | ""   | https://noita.wiki.gg/wiki/Celestial_Scale                             |
-| Kantele                           | {"x":-1633,"y":-791}   |           | 1     | 1      | ""   | https://noita.wiki.gg/wiki/Kantele                                     |
-| Ocarina                           | {"x":-9984,"y":-6418}  |           | 1     | 1      | ""   | https://noita.wiki.gg/wiki/Huilu                                       |
-| Pillars                           | {"x":-1572,"y":-1640}  |           | 1     | 1      | ""   | https://noita.wiki.gg/wiki/Huilu                                       |
 
-| text               | coord                 | zoom | width | height | maps | wiki                                               |
-| ------------------ | --------------------- | ---- | ----- | ------ | ---- | -------------------------------------------------- |
-| Dark Chest         | {"x":3840,"y":15649}  |      | 1     | 1      | ""   | https://noita.wiki.gg/wiki/Crystal_Key#Dark_Chest  |
-| Coral Chest        | {"x":11519,"y":-4806} |      | 1     | 1      | ""   | https://noita.wiki.gg/wiki/Crystal_Key#Coral_Chest |
-| Music Stone        | {"x":-3342,"y":3346}  |      | 1     | 1      | ""   | https://noita.wiki.gg/wiki/Kuulokivi               |
-| Music Box (Pond)   | {"x":2799,"y":282}    |      | 1     | 1      | ""   | https://noita.wiki.gg/wiki/Music_Machine           |
-| Music Box (Lake)   | {"x":-12188,"y":-385} |      | 1     | 1      | ""   | https://noita.wiki.gg/wiki/Music_Machine           |
-| Music Box (Tree)   | {"x":-1919,"y":-1366} |      | 1     | 1      | ""   | https://noita.wiki.gg/wiki/Music_Machine           |
-| Music Box (Desert) | {"x":14678,"y":-35}   |      | 1     | 1      | ""   | https://noita.wiki.gg/wiki/Music_Machine           |
+| name                 | x           | y          | icon                                        | maps                                                                                                                                                                                                                                     | wiki                                                 |
+| -------------------- | ----------- | ---------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| "Pillars"            | "x":-1572,  | "y":-1640, | public/assets/icons/places/pillars.png      | ["regular-main-branch", "new-game-plus-main-branch", "nightmare-main-branch", "regular-beta", "purgatory", "apotheosis", "apotheosis-new-game-plus", "apotheosis-tuonela", "noitavania", "noitavania-new-game-plus", "alternate-biomes"] | "https://noita.wiki.gg/wiki/Achievement_Pillars"     |
+| "Ocarina"            | "x":-9984,  | "y":-6418, | public/assets/icons/items/flute.png         | ["regular-main-branch", "new-game-plus-main-branch", "nightmare-main-branch", "regular-beta", "purgatory", "apotheosis", "apotheosis-new-game-plus", "apotheosis-tuonela", "alternate-biomes"]                                           | "https://noita.wiki.gg/wiki/Huilu"                   |
+| "Kantele"            | "x":-1633,  | "y":-791,  | public/assets/icons/items/kantele.png       | ["regular-main-branch", "new-game-plus-main-branch", "nightmare-main-branch", "regular-beta", "purgatory", "apotheosis", "apotheosis-new-game-plus", "apotheosis-tuonela", "noitavania", "noitavania-new-game-plus", "alternate-biomes"] | "https://noita.wiki.gg/wiki/Kantele"                 |
+| "Evil Eye"           | "x":-2434,  | "y":-203,  | public/assets/icons/items/evil_eye.png      | ["regular-main-branch", "regular-beta", "purgatory", "apotheosis", "apotheosis-tuonela", "noitavania", "noitavania-new-game-plus", "alternate-biomes"]                                                                                   | "https://noita.wiki.gg/wiki/Paha_Silm%C3%A4"         |
+| "Dark Chest"         | "x":3840,   | "y":15649, | public/assets/icons/items/chest_dark.png    | ["regular-main-branch", "new-game-plus-main-branch", "nightmare-main-branch", "regular-beta", "apotheosis", "apotheosis-new-game-plus", "noitavania", "noitavania-new-game-plus", "alternate-biomes"]                                    | "https://noita.wiki.gg/wiki/Crystal_Key#Dark_Chest"  |
+| "Coral Chest"        | "x":11519,  | "y":-4806, | public/assets/icons/items/chest_light.png   | ["regular-main-branch", "new-game-plus-main-branch", "nightmare-main-branch", "regular-beta", "apotheosis", "apotheosis-new-game-plus", "noitavania", "noitavania-new-game-plus", "alternate-biomes"]                                    | "https://noita.wiki.gg/wiki/Crystal_Key#Coral_Chest" |
+| "Music Stone"        | "x":-3342,  | "y":3346,  | public/assets/icons/items/musicstone.png    | ["regular-main-branch", "regular-beta", "apotheosis", "apotheosis-new-game-plus", "alternate-biomes"]                                                                                                                                    | "https://noita.wiki.gg/wiki/Kuulokivi"               |
+| "Music Box (Pond)"   | "x":2799,   | "y":282,   | public/assets/icons/items/music_machine.png | ["regular-main-branch", "regular-beta"]                                                                                                                                                                                                  | "https://noita.wiki.gg/wiki/Music_Machine"           |
+| "Music Box (Lake)"   | "x":-12188, | "y":-385,  | public/assets/icons/items/music_machine.png | ["regular-main-branch", "regular-beta"]                                                                                                                                                                                                  | "https://noita.wiki.gg/wiki/Music_Machine"           |
+| "Music Box (Tree)"   | "x":-1919,  | "y":-1366, | public/assets/icons/items/music_machine.png | ["regular-main-branch", "regular-beta"]                                                                                                                                                                                                  | "https://noita.wiki.gg/wiki/Music_Machine"           |
+| "Music Box (Desert)" | "x":14678,  | "y":-35,   | public/assets/icons/items/music_machine.png | ["regular-main-branch", "regular-beta"]                                                                                                                                                                                                  | "https://noita.wiki.gg/wiki/Music_Machine"           |
+| "Karl"               | "x":3239,   | "y":2400,  | public/assets/icons/items/karl.webp         | ["regular-main-branch", "regular-beta", "apotheosis", "apotheosis-new-game-plus", "noitavania", "noitavania-new-game-plus", "alternate-biomes"]                                                                                          | "https://noita.wiki.gg/wiki/Racetrack"               |
 
-kantele2
-Karl {"x":3239,"y":2400}
+{
+"name": "Beer",
+"x": 7623,
+"y": -4348,
+"maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+"icon": "assets/icons/items/beer.png",
+"wiki": "https://noita.wiki.gg/wiki/Beer"
+}
+
+["regular-main-branch", "new-game-plus-main-branch", "nightmare-main-branch", "regular-beta", "purgatory", "apotheosis", "apotheosis-new-game-plus", "apotheosis-tuonela", "noitavania", "noitavania-new-game-plus", "alternate-biomes"]
