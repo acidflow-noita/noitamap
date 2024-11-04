@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const searchForm = assertElementById('search-form', HTMLFormElement);
   const overlayButtonsElement = assertElementById('overlay-selector', HTMLDivElement);
   const mapNameElement = assertElementById('currentMapName', HTMLElement);
+  const tooltipElement = assertElementById('coordinate', HTMLElement);
+  const coordinatesText = tooltipElement.innerText;
 
   const app = await App.create({
     mountTo: osdRootElement,
@@ -120,11 +122,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Mouse tracker for displaying coordinates
-  initMouseTracker({
+  const { copyCoordinates } = initMouseTracker({
     osd: app.osd,
     osdElement: osdRootElement,
     tooltipElement: assertElementById('coordinate', HTMLElement),
   });
+  document.addEventListener('keydown', copyCoordinates, { capture: false });
 
   // Uncomment and implement annotations if needed
   // drawingToggleSwitch.addEventListener("change", (event) => {
