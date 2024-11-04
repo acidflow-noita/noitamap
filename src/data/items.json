@@ -182,5 +182,69 @@
       "alternate-biomes"
     ],
     "wiki": "https://noita.wiki.gg/wiki/Racetrack"
+  },
+  {
+    "name": "Essence Of Spirits",
+    "x": -14081,
+    "y": 13567,
+    "icon": "assets/icons/items/essence_alcohol.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Spirits"
+  },
+  {
+    "name": "Essence Of Air",
+    "x": -13056,
+    "y": -5377,
+    "icon": "assets/icons/items/essence_air.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Air"
+  },
+  {
+    "name": "Essence Of Fire",
+    "x": -14062,
+    "y": 370,
+    "icon": "assets/icons/items/essence_fire.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Fire"
+  },
+  {
+    "name": "Essence Of Water",
+    "x": -5376,
+    "y": 16640,
+    "icon": "assets/icons/items/essence_water.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Water"
+  },
+  {
+    "name": "Essence Of Earth",
+    "x": 16128,
+    "y": -1792,
+    "icon": "assets/icons/items/essence_laser.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Earth"
+  },
+  {
+    "name": "Rainbow Trail Spell",
+    "x": -14002,
+    "y": -2860,
+    "icon": "assets/icons/items/rainbow_trail.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Rainbow_Trail"
+  },
+  {
+    "name": "Essence Eater (Desert)",
+    "x": 12569,
+    "y": 16,
+    "icon": "assets/icons/overlay-toggles/icon-orbs.webp",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Essence_Eater"
+  },
+  {
+    "name": "Essence Eater (Snow Wasteland)",
+    "x": -6884,
+    "y": -169,
+    "icon": "assets/icons/overlay-toggles/icon-orbs.webp",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Essence_Eater"
   }
 ]
