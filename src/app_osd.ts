@@ -215,6 +215,8 @@ export class AppOSD extends Viewer {
     const fullSize = this.getCombinedItemsRect();
     const viewerSize = this.viewport.getBounds();
 
+    // TODO fix comment
+
     // we have three cases when loading a new map:
     // 1) we've gone from a big map to a smaller map, and there is empty space
     //    around it. in this case, we zoom in to fit the new map into the viewport
@@ -223,15 +225,24 @@ export class AppOSD extends Viewer {
     // 3) (probably doesn't happen, but could)
     //    we don't have an explicit position yet, and the new map is _bigger_ than
     //    the viewport. in this case, zoom back out
-    if (viewerSize.height > fullSize.height) {
-      this.viewport.fitBounds(fullSize, true);
-    } else if (pos) {
-      // set position to requested position, if present
+
+    this.viewport.fitBounds(fullSize, true);
+    const autoPos = this.getZoomPos();
+    if (pos && pos.zoom > autoPos.zoom) {
+      // if we already have a zoom, and we are "more zoomed in",
+      // use the position we have; otherwise, keep the auto-zoom
       this.setZoomPos(pos);
-    } else {
-      // or fit into the viewport if not present
-      this.viewport.fitBounds(fullSize, true);
     }
+    // if (viewerSize.height > fullSize.height) {
+    //   this.viewport.fitBounds(fullSize, true);
+    // } else
+    // if (pos) {
+    //   // set position to requested position, if present
+    //   this.setZoomPos(pos);
+    // } else {
+    //   // or fit into the viewport if not present
+    //   this.viewport.fitBounds(fullSize, true);
+    // }
   }
 
   panToTarget(x: number, y: number) {
