@@ -1,46 +1,309 @@
 [
   {
     "text": ["Watchtower. Seems to just be a hint to head to the temples in the sky."],
-    "x": 13758,
-    "y": -1100,
-    "width": 650,
-    "height": 1600,
+    "x": 14074,
+    "y": -810,
+    "icon": "assets/icons/places/structure.svg",
     "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
   },
   {
     "text": [
       "Barren Temple. You can find a potion of mimicium here to start your quest. Later you will need to revisit to help this temple flourish."
     ],
-    "x": -6000,
-    "y": -5700,
-    "width": 1100,
-    "height": 900,
+    "x": -5453,
+    "y": -5108,
+    "icon": "assets/icons/places/structure.svg",
+    "wiki": "https://noita.wiki.gg/wiki/Sky_Temples#Barren_Temple",
     "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
   },
   {
     "text": [
       "Henkevä Temple. 'Spirited Temple'. Potions here require mimicium. Pheromone will aid you. They might also need a little kick."
     ],
-    "x": -2600,
-    "y": -5800,
-    "width": 1600,
-    "height": 1650,
+    "x": -1806,
+    "y": -4880,
+    "icon": "assets/icons/places/structure.svg",
+    "wiki": "https://noita.wiki.gg/wiki/Sky_Temples#Henkev%C3%A4_Temple",
     "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
   },
   {
     "text": ["Ominous Temple. A large pool of ominous liquid is needed here. Sea of Mimicium will be helpful."],
-    "x": 2100,
-    "y": -5300,
-    "width": 1300,
-    "height": 1100,
+    "x": 2760,
+    "y": -4660,
+    "icon": "assets/icons/places/structure.svg",
+    "wiki": "https://noita.wiki.gg/wiki/Sky_Temples#Ominous_Temple",
     "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
   },
   {
     "text": ["Kivi Temple. A boss fight here might be easier with a spell unlocked in another temple"],
-    "x": 6750,
-    "y": -5241,
-    "width": 1230,
-    "height": 1100,
+    "x": 7379,
+    "y": -4655,
+    "icon": "assets/icons/places/structure.svg",
+    "wiki": "https://noita.wiki.gg/wiki/Sky_Temples#Kivi_Temple",
     "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
+  },
+  {
+    "name": "Anvil",
+    "x": 1537,
+    "y": 6045,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Hiisi_Anvil"
+  },
+  {
+    "name": "Mountain Altar",
+    "x": 781,
+    "y": -1167,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Mountain_Altar"
+  },
+  {
+    "name": "The Work",
+    "x": 6397,
+    "y": 15072,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/The_Work"
+  },
+  {
+    "name": "Perk Removal Altar",
+    "x": 14080,
+    "y": 7510,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Nullifying_Altar"
+  },
+  {
+    "name": "Greed Curse Pedestal",
+    "x": -1376,
+    "y": -415,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Curse_of_Greed"
+  },
+  {
+    "name": "Lake Island",
+    "x": -14073,
+    "y": 206,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Lake#Lake_Island"
+  },
+  {
+    "name": "Eye Spell Room",
+    "x": -3840,
+    "y": 5374,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/The_Hourglass_Chamber#Teleportatium"
+  },
+  {
+    "name": "Desert Skull, Eye",
+    "x": 7360,
+    "y": 80,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Desert#The_Giant_Skull"
+  },
+  {
+    "name": "Sun/Moon",
+    "x": 259,
+    "y": -25847,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Moon"
+  },
+  {
+    "name": "Dark Sun/Dark Moon",
+    "x": 261,
+    "y": 37764,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Dark_Moon"
+  },
+  {
+    "name": "Hell Shop",
+    "x": -422,
+    "y": 30673,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/The_Work_(Hell)"
+  },
+  {
+    "name": "Heaven Shop",
+    "x": -421,
+    "y": -18573,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/The_Work_(Sky)"
+  },
+  {
+    "name": "Gourd Cave",
+    "x": -16134,
+    "y": -6312,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Refreshing_Gourd"
+  },
+  {
+    "name": "End Of Everything Room",
+    "x": -4862,
+    "y": 15110,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/The_End_of_Everything"
+  },
+  {
+    "name": "Experimental Wand Diamond",
+    "x": 16127,
+    "y": 9986,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Experimental_Wands#Experimental_Wand_(???)"
+  },
+  {
+    "name": "Moon Radar Diamond",
+    "x": 16126,
+    "y": 3328,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Moon_Radar"
+  },
+  {
+    "name": "Averice Diamond",
+    "x": 9472,
+    "y": 4330,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/The_Tower#Avarice_Diamond"
+  },
+  {
+    "name": "Hourglass",
+    "x": -2221,
+    "y": 5247,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/The_Hourglass_Chamber"
+  },
+  {
+    "name": "Big Fungus - Desert Caves",
+    "x": 5890,
+    "y": 3302,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Advanced_Guide:_Sun_Quest#The_Fungal_altars"
+  },
+  {
+    "name": "Fungal Altar - Overgrown Cavern",
+    "x": 15104,
+    "y": 1848,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Advanced_Guide:_Sun_Quest#The_Fungal_altars"
+  },
+  {
+    "name": "Fungal Altar - Power Plant",
+    "x": 13056,
+    "y": 10040,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Advanced_Guide:_Sun_Quest#The_Fungal_altars"
+  },
+  {
+    "name": "Fungal Altar – Vault",
+    "x": -1280,
+    "y": 10040,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Advanced_Guide:_Sun_Quest#The_Fungal_altars"
+  },
+  {
+    "name": "Fungal Altar - Fungal Cavern",
+    "x": -3328,
+    "y": 1848,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Advanced_Guide:_Sun_Quest#The_Fungal_altars"
+  },
+  {
+    "name": "Fungal Altar - Air (Above Desert)",
+    "x": 5932,
+    "y": -4808,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Advanced_Guide:_Sun_Quest#The_Fungal_altars"
+  },
+  {
+    "name": "Outhouse",
+    "x": 9091,
+    "y": -1783,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Touch_of_Gold%3F#Locating"
+  },
+  {
+    "name": "Meditation Cube Room",
+    "x": -4349,
+    "y": 2303,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Meditation_Chamber"
+  },
+  {
+    "name": "Burried Eye Room",
+    "x": 3894,
+    "y": 4405,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Buried_Eye"
+  },
+  {
+    "name": "Race Track",
+    "x": 3250,
+    "y": 2309,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Racetrack"
+  },
+  {
+    "name": "Tower Portal Diamond",
+    "x": 9984,
+    "y": 4358,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/The_Tower"
+  },
+  {
+    "name": "Gold Biome",
+    "x": 15096,
+    "y": -3331,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/The_Gold"
+  },
+  {
+    "name": "Gold Biome (Under The Lake)",
+    "x": -14072,
+    "y": 16615,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/The_Gold"
+  },
+  {
+    "name": "Dark Cave (At Refresh Heart)",
+    "x": -1796,
+    "y": 797,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Dark_Cave"
+  },
+  {
+    "name": "Scales",
+    "x": 13060,
+    "y": 8,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Celestial_Scale"
   }
 ]
