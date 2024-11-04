@@ -1,15 +1,15 @@
 [
   {
-    "text": ["Watchtower. Seems to just be a hint to head to the temples in the sky."],
+    "name": "Watchtower",
+    "text": "Seems to just be a hint to head to the temples in the sky.",
     "x": 14074,
     "y": -810,
     "icon": "assets/icons/places/structure.svg",
     "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
   },
   {
-    "text": [
-      "Barren Temple. You can find a potion of mimicium here to start your quest. Later you will need to revisit to help this temple flourish."
-    ],
+    "name": "Barren Temple",
+    "text": "You can find a potion of mimicium here to start your quest. Later you will need to revisit to help this temple flourish.",
     "x": -5453,
     "y": -5108,
     "icon": "assets/icons/places/structure.svg",
@@ -17,9 +17,8 @@
     "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
   },
   {
-    "text": [
-      "Henkevä Temple. 'Spirited Temple'. Potions here require mimicium. Pheromone will aid you. They might also need a little kick."
-    ],
+    "name": "Henkevä Temple. 'Spirited Temple'",
+    "text": "Potions here require mimicium. Pheromone will aid you. They might also need a little kick.",
     "x": -1806,
     "y": -4880,
     "icon": "assets/icons/places/structure.svg",
@@ -27,7 +26,8 @@
     "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
   },
   {
-    "text": ["Ominous Temple. A large pool of ominous liquid is needed here. Sea of Mimicium will be helpful."],
+    "name": "Ominous Temple",
+    "text": "A large pool of ominous liquid is needed here. Sea of Mimicium will be helpful.",
     "x": 2760,
     "y": -4660,
     "icon": "assets/icons/places/structure.svg",
@@ -35,7 +35,8 @@
     "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
   },
   {
-    "text": ["Kivi Temple. A boss fight here might be easier with a spell unlocked in another temple"],
+    "name": "Kivi Temple",
+    "text": "A boss fight here might be easier with a spell unlocked in another temple",
     "x": 7379,
     "y": -4655,
     "icon": "assets/icons/places/structure.svg",
