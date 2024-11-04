@@ -217,20 +217,20 @@ export class AppOSD extends Viewer {
 
     // we have three cases when loading a new map:
     // 1) we've gone from a big map to a smaller map, and there is empty space
-    //    around it. in this case, we zoom in to fit the new map into the viewport
+    //    around it. in this case, OSD automatically auto-fits the contents in
+    //    the viewport in such a way it takes as much space as possible
     // 2) we explicitly have a position and zoom specified. in this case, we pan
     //    and zoom to the specified position
     // 3) (probably doesn't happen, but could)
     //    we don't have an explicit position yet, and the new map is _bigger_ than
     //    the viewport. in this case, zoom back out
-    if (viewerSize.height > fullSize.height) {
-      this.viewport.fitBounds(fullSize, true);
-    } else if (pos) {
-      // set position to requested position, if present
+
+    this.viewport.fitBounds(fullSize, true);
+    const autoPos = this.getZoomPos();
+    if (pos && pos.zoom > autoPos.zoom) {
+      // if we already have a zoom, and we are "more zoomed in",
+      // use the position we have; otherwise, keep the auto-zoom
       this.setZoomPos(pos);
-    } else {
-      // or fit into the viewport if not present
-      this.viewport.fitBounds(fullSize, true);
     }
   }
 

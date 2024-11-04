@@ -63,7 +63,7 @@ const pixelAOICoords = mapAOICoords(1);
 const pixelPOICoords = mapPOICoords(1);
 
 const overlayTexts = {
-  structures: pixelAOICoords(structures),
+  structures: pixelPOICoords(structures),
   items: pixelPOICoords(items),
   bosses: pixelPOICoords(bosses),
   orbs: [...chunkAOICoords(orbAreas), ...pixelPOICoords(orbs)],
