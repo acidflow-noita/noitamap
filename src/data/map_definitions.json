@@ -39,6 +39,19 @@
     "tileSets": ["middle", "left", "right"]
   },
   {
+    "key": "apotheosis-beta-branch",
+    "label": "Apotheosis Main Map",
+    "badges": [
+      {
+        "label": "Latest",
+        "class": "text-bg-info"
+      }
+    ],
+    "patchDate": "2024-08-12",
+    "seed": "78633194",
+    "tileSets": ["middle", "left", "right"]
+  },
+  {
     "key": "regular-beta",
     "label": "Regular",
     "badges": [
