@@ -104,7 +104,17 @@
     "aliases": ["Friend Boss", "Friend"],
     "x": 25360,
     "y": 4341,
-    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
+    "maps": ["regular-main-branch", "regular-beta"],
+    "url": "https://map.runfast.stream/?map=regular&x=25360&y=4341&zoom=917",
+    "icon": "assets/icons/bosses/friend.png",
+    "wiki": "https://noita.wiki.gg/wiki/Toveri"
+  },
+  {
+    "name": "Toveri",
+    "aliases": ["Friend Boss", "Friend"],
+    "x": 8441,
+    "y": 5879,
+    "maps": ["apotheosis-beta-branch"],
     "url": "https://map.runfast.stream/?map=regular&x=25360&y=4341&zoom=917",
     "icon": "assets/icons/bosses/friend.png",
     "wiki": "https://noita.wiki.gg/wiki/Toveri"

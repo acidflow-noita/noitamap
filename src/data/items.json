@@ -238,6 +238,14 @@
     "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Earth"
   },
   {
+    "name": "Essence Of Earth",
+    "x": 23808,
+    "y": -1793,
+    "icon": "assets/icons/items/essence_laser.png",
+    "maps": ["apotheosis-beta-branch"],
+    "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Earth"
+  },
+  {
     "name": "Rainbow Trail Spell",
     "x": -14002,
     "y": -2860,

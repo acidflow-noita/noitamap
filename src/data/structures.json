@@ -286,6 +286,14 @@
     "wiki": "https://noita.wiki.gg/wiki/The_Gold"
   },
   {
+    "name": "Gold Biome",
+    "x": 22778,
+    "y": -3336,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["apotheosis-beta-branch"],
+    "wiki": "https://noita.wiki.gg/wiki/The_Gold"
+  },
+  {
     "name": "Gold Biome (Under The Lake)",
     "x": -14072,
     "y": 16615,
