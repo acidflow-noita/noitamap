@@ -46,10 +46,10 @@ C:\Program Files (x86)\Steam\steamapps\common\Noita\mods\noita-mapcap\bin\stitch
 2. Right click inside this directory and select "`Open in Terminal`"
    ![Launching Terminal](https://github.com/acidflow-noita/noitamap/assets/106106310/a46f1d51-53bc-4b2c-b3a2-799388e0c558)
 
-3. Copy the following command and paste it into the terminal (either `Ctrl+V` or `Mouse right click`), **Do not run the command yet**, you will need to rename the output files following the naming convention: `gamemode-branch-world-patchDate-seedNumber.dzi` (e.g. `regular-main-branch-left-pw-2024-04-08-78633191.dzi`)
+3. Copy the following command and paste it into the terminal (either `Ctrl+V` or `Mouse right click`), **Do not run the command yet**, you will need to rename the output files following the naming convention: `gamemode-branch-world-patchDate-seedNumber.dzi` (e.g. `regular-main-branch-left-2024-04-08-78633191.dzi`)
 
 ```powershell
-.\stitch.exe --output nightmare-main-branch-left-pw-2024-04-08-78633191.dzi --blend-tile-limit 1 --dzi-tile-size 512 --xmin -53760 --xmax -17408 --ymin -31744 --ymax 41984 --webp-level 9 && .\stitch.exe --output nightmare-main-branch-middle-2024-04-08-78633191.dzi --blend-tile-limit 1 --dzi-tile-size 512 --xmin -17920 --xmax 18432 --ymin -31744 --ymax 41984 --webp-level 9 && .\stitch.exe --output nightmare-main-branch-right-pw-2024-04-08-78633191.dzi --blend-tile-limit 1 --dzi-tile-size 512 --xmin 17920 --xmax 53760 --ymin -31744 --ymax 41984 --webp-level 9
+.\stitch.exe --output nightmare-main-branch-left-2024-04-08-78633191.dzi --blend-tile-limit 1 --dzi-tile-size 512 --xmin -53760 --xmax -17408 --ymin -31744 --ymax 41984 --webp-level 9 && .\stitch.exe --output nightmare-main-branch-middle-2024-04-08-78633191.dzi --blend-tile-limit 1 --dzi-tile-size 512 --xmin -17920 --xmax 18432 --ymin -31744 --ymax 41984 --webp-level 9 && .\stitch.exe --output nightmare-main-branch-right-2024-04-08-78633191.dzi --blend-tile-limit 1 --dzi-tile-size 512 --xmin 17920 --xmax 53760 --ymin -31744 --ymax 41984 --webp-level 9
 ```
 
 4. This will launch the stitcher and after it finishes you will see next to the `stitch.exe` 3 new directories (`gamemode-branch-world-patchDate-seedNumber_files`), and 3 new files (`gamemode-branch-world-patchDate-seedNumber.dzi`).
