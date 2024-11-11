@@ -112,8 +112,8 @@
   {
     "name": "Toveri",
     "aliases": ["Friend Boss", "Friend"],
-    "x": 8441,
-    "y": 5879,
+    "x": 8454,
+    "y": 5971,
     "maps": ["apotheosis-beta-branch"],
     "url": "https://map.runfast.stream/?map=regular&x=25360&y=4341&zoom=917",
     "icon": "assets/icons/bosses/friend.png",
