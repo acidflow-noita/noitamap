@@ -5,7 +5,7 @@
     "x": 14074,
     "y": -810,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
   },
   {
     "name": "Barren Temple",
@@ -16,7 +16,7 @@
     "y": -5108,
     "icon": "assets/icons/places/structure.svg",
     "wiki": "https://noita.wiki.gg/wiki/Sky_Temples#Barren_Temple",
-    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
   },
   {
     "name": "Henkevä Temple. 'Spirited Temple'",
@@ -25,7 +25,7 @@
     "y": -4880,
     "icon": "assets/icons/places/structure.svg",
     "wiki": "https://noita.wiki.gg/wiki/Sky_Temples#Henkev%C3%A4_Temple",
-    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
   },
   {
     "name": "Ominous Temple",
@@ -34,7 +34,7 @@
     "y": -4660,
     "icon": "assets/icons/places/structure.svg",
     "wiki": "https://noita.wiki.gg/wiki/Sky_Temples#Ominous_Temple",
-    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
   },
   {
     "name": "Kivi Temple",
@@ -43,14 +43,14 @@
     "y": -4655,
     "icon": "assets/icons/places/structure.svg",
     "wiki": "https://noita.wiki.gg/wiki/Sky_Temples#Kivi_Temple",
-    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta", "new-game-plus-main-branch"]
   },
   {
     "name": "Anvil",
     "x": 1537,
     "y": 6045,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Hiisi_Anvil"
   },
   {
@@ -58,7 +58,7 @@
     "x": 781,
     "y": -1167,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Mountain_Altar"
   },
   {
@@ -66,7 +66,7 @@
     "x": 6397,
     "y": 15072,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/The_Work"
   },
   {
@@ -74,7 +74,7 @@
     "x": 14080,
     "y": 7510,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Nullifying_Altar"
   },
   {
@@ -82,7 +82,7 @@
     "x": -1376,
     "y": -415,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Curse_of_Greed"
   },
   {
@@ -90,7 +90,7 @@
     "x": -14073,
     "y": 206,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Lake#Lake_Island"
   },
   {
@@ -98,7 +98,7 @@
     "x": -3840,
     "y": 5374,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/The_Hourglass_Chamber#Teleportatium"
   },
   {
@@ -106,7 +106,7 @@
     "x": 7360,
     "y": 80,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Desert#The_Giant_Skull"
   },
   {
@@ -114,7 +114,7 @@
     "x": 259,
     "y": -25847,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Moon"
   },
   {
@@ -122,7 +122,7 @@
     "x": 261,
     "y": 37764,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Dark_Moon"
   },
   {
@@ -130,7 +130,7 @@
     "x": -422,
     "y": 30673,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/The_Work_(Hell)"
   },
   {
@@ -138,7 +138,7 @@
     "x": -421,
     "y": -18573,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/The_Work_(Sky)"
   },
   {
@@ -146,7 +146,7 @@
     "x": -16134,
     "y": -6312,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Refreshing_Gourd"
   },
   {
@@ -154,7 +154,7 @@
     "x": -4862,
     "y": 15110,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/The_End_of_Everything"
   },
   {
@@ -162,7 +162,7 @@
     "x": 16127,
     "y": 9986,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Experimental_Wands#Experimental_Wand_(???)"
   },
   {
@@ -170,7 +170,7 @@
     "x": 16126,
     "y": 3328,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Moon_Radar"
   },
   {
@@ -178,7 +178,7 @@
     "x": 9472,
     "y": 4330,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/The_Tower#Avarice_Diamond"
   },
   {
@@ -186,7 +186,7 @@
     "x": -2221,
     "y": 5247,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/The_Hourglass_Chamber"
   },
   {
@@ -194,7 +194,7 @@
     "x": 5890,
     "y": 3302,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Advanced_Guide:_Sun_Quest#The_Fungal_altars"
   },
   {
@@ -202,7 +202,7 @@
     "x": 15104,
     "y": 1848,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Advanced_Guide:_Sun_Quest#The_Fungal_altars"
   },
   {
@@ -210,7 +210,7 @@
     "x": 13056,
     "y": 10040,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Advanced_Guide:_Sun_Quest#The_Fungal_altars"
   },
   {
@@ -218,7 +218,7 @@
     "x": -1280,
     "y": 10040,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Advanced_Guide:_Sun_Quest#The_Fungal_altars"
   },
   {
@@ -226,7 +226,7 @@
     "x": -3328,
     "y": 1848,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Advanced_Guide:_Sun_Quest#The_Fungal_altars"
   },
   {
@@ -234,7 +234,7 @@
     "x": 5932,
     "y": -4808,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Advanced_Guide:_Sun_Quest#The_Fungal_altars"
   },
   {
@@ -242,7 +242,7 @@
     "x": 9091,
     "y": -1783,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Touch_of_Gold%3F#Locating"
   },
   {
@@ -250,7 +250,7 @@
     "x": -4349,
     "y": 2303,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Meditation_Chamber"
   },
   {
@@ -258,7 +258,7 @@
     "x": 3894,
     "y": 4405,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Buried_Eye"
   },
   {
@@ -266,7 +266,7 @@
     "x": 3250,
     "y": 2309,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Racetrack"
   },
   {
@@ -274,7 +274,7 @@
     "x": 9984,
     "y": 4358,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/The_Tower"
   },
   {
@@ -290,7 +290,7 @@
     "x": -14072,
     "y": 16615,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/The_Gold"
   },
   {
@@ -298,7 +298,7 @@
     "x": -1796,
     "y": 797,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Dark_Cave"
   },
   {
@@ -306,7 +306,7 @@
     "x": 13060,
     "y": 8,
     "icon": "assets/icons/places/structure.svg",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Celestial_Scale"
   }
 ]
