@@ -39,6 +39,20 @@
     "tileSets": ["middle", "left", "right"]
   },
   {
+    "key": "apotheosis-beta-branch",
+    "label": "Apotheosis",
+    "badges": [
+      {
+        "label": "Mod",
+        "class": "text-bg-info",
+        "icon": "bi bi-tools"
+      }
+    ],
+    "patchDate": "2024-08-12",
+    "seed": "78633194",
+    "tileSets": ["middle", "left", "right"]
+  },
+  {
     "key": "regular-beta",
     "label": "Regular",
     "badges": [
@@ -65,21 +79,6 @@
     "seed": "78633191",
     "tileSets": ["middle"],
     "modUrl": "https://github.com/Priskip/purgatory"
-  },
-  {
-    "key": "apotheosis",
-    "label": "Apotheosis",
-    "badges": [
-      {
-        "label": "Mod",
-        "class": "text-bg-light",
-        "icon": "bi bi-tools"
-      }
-    ],
-    "patchDate": "2024-08-12",
-    "seed": "78633191",
-    "tileSets": ["middle"],
-    "modUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=3032128572"
   },
   {
     "key": "apotheosis-new-game-plus",
