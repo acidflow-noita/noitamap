@@ -75,12 +75,6 @@
       "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"51200\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-25600\",\"Y\":\"-31744\"}}}\n"
     }
   ],
-  "apotheosis": [
-    {
-      "url": "https://apotheosis-middle.acidflow.stream/maps/apotheosis-middle/apotheosis-middle-2024-08-12-78633191.dzi",
-      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"51200\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-25600\",\"Y\":\"-31744\"}}}\n"
-    }
-  ],
   "apotheosis-new-game-plus": [
     {
       "url": "https://apotheosis-new-game-plus-middle.acidflow.stream/maps/apotheosis-new-game-plus-middle/apotheosis-new-game-plus-middle-2024-08-12-78633191.dzi",
