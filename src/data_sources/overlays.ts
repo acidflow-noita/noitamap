@@ -119,6 +119,7 @@ function createOverlayPopup({ name, aliases, wiki }: Pick<PointOfInterest, 'name
   wikiLink.href = wiki;
   wikiLink.target = '_blank';
   wikiLink.textContent = 'Wiki';
+  wikiLink.classList.add('wikiLink');
   popup.appendChild(wikiLink);
 
   return popup;
