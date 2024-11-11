@@ -5,7 +5,7 @@
     "x": 9983,
     "y": -1222,
     "icon": "assets/icons/orbs/orb_earthquake.webp",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
     "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
@@ -14,7 +14,7 @@
     "x": 780,
     "y": -1088,
     "icon": "assets/icons/orbs/orb_sea_of_lava.webp",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
     "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
@@ -23,7 +23,7 @@
     "x": -9985,
     "y": 2883,
     "icon": "assets/icons/orbs/orb_summon_tentacle.webp",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
     "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
@@ -32,7 +32,7 @@
     "x": 3472,
     "y": 1879,
     "icon": "assets/icons/orbs/orb_nuke.webp",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
     "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
@@ -41,7 +41,7 @@
     "x": 9982,
     "y": 2883,
     "icon": "assets/icons/orbs/orb_necromancy.webp",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
     "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
@@ -50,7 +50,7 @@
     "x": -4353,
     "y": 3912,
     "icon": "assets/icons/orbs/orb_holy_bomb.webp",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
     "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
@@ -59,7 +59,7 @@
     "x": -3841,
     "y": 10052,
     "icon": "assets/icons/orbs/orb_spiral_shot.webp",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
     "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
@@ -68,7 +68,7 @@
     "x": 4350,
     "y": 836,
     "icon": "assets/icons/orbs/orb_thundercloud.webp",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
     "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
@@ -77,7 +77,7 @@
     "x": -256,
     "y": 16208,
     "icon": "assets/icons/orbs/orb_fireworks.webp",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
     "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
@@ -86,7 +86,7 @@
     "x": -8960,
     "y": 14666,
     "icon": "assets/icons/orbs/orb_summon_deercoy.webp",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
     "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   },
   {
@@ -95,7 +95,7 @@
     "x": 10495,
     "y": 16195,
     "icon": "assets/icons/orbs/orb_cement.webp",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
     "wiki": "https://noita.wiki.gg/wiki/Orb_of_True_Knowledge"
   }
 ]

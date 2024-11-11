@@ -4,7 +4,7 @@
     "x": 2437,
     "y": -4488,
     "icon": "assets/icons/items/milk.png",
-    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
     "wiki": "https://noita.wiki.gg/wiki/Milk"
   },
   {
@@ -12,7 +12,7 @@
     "x": 7623,
     "y": -4348,
     "icon": "assets/icons/items/beer.png",
-    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta", "new-game-plus-main-branch"],
     "wiki": "https://noita.wiki.gg/wiki/Beer"
   },
 
@@ -22,6 +22,7 @@
     "y": -1640,
     "icon": "assets/icons/places/pillars.png",
     "maps": [
+      "apotheosis-beta-branch",
       "regular-main-branch",
       "new-game-plus-main-branch",
       "nightmare-main-branch",
@@ -42,6 +43,7 @@
     "y": -6418,
     "icon": "assets/icons/items/flute.png",
     "maps": [
+      "apotheosis-beta-branch",
       "regular-main-branch",
       "new-game-plus-main-branch",
       "nightmare-main-branch",
@@ -60,6 +62,7 @@
     "y": -791,
     "icon": "assets/icons/items/kantele.png",
     "maps": [
+      "apotheosis-beta-branch",
       "regular-main-branch",
       "new-game-plus-main-branch",
       "nightmare-main-branch",
@@ -80,6 +83,7 @@
     "y": -203,
     "icon": "assets/icons/items/evil_eye.png",
     "maps": [
+      "apotheosis-beta-branch",
       "regular-main-branch",
       "regular-beta",
       "purgatory",
@@ -97,6 +101,7 @@
     "y": 15649,
     "icon": "assets/icons/items/chest_dark.png",
     "maps": [
+      "apotheosis-beta-branch",
       "regular-main-branch",
       "new-game-plus-main-branch",
       "nightmare-main-branch",
@@ -115,6 +120,7 @@
     "y": -4806,
     "icon": "assets/icons/items/chest_light.png",
     "maps": [
+      "apotheosis-beta-branch",
       "regular-main-branch",
       "new-game-plus-main-branch",
       "nightmare-main-branch",
@@ -132,7 +138,14 @@
     "x": -3342,
     "y": 3346,
     "icon": "assets/icons/items/musicstone.png",
-    "maps": ["regular-main-branch", "regular-beta", "apotheosis", "apotheosis-new-game-plus", "alternate-biomes"],
+    "maps": [
+      "apotheosis-beta-branch",
+      "regular-main-branch",
+      "regular-beta",
+      "apotheosis",
+      "apotheosis-new-game-plus",
+      "alternate-biomes"
+    ],
     "wiki": "https://noita.wiki.gg/wiki/Kuulokivi"
   },
   {
@@ -140,7 +153,7 @@
     "x": 2799,
     "y": 282,
     "icon": "assets/icons/items/music_machine.png",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Music_Machine"
   },
   {
@@ -148,7 +161,7 @@
     "x": -12188,
     "y": -385,
     "icon": "assets/icons/items/music_machine.png",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Music_Machine"
   },
   {
@@ -156,7 +169,7 @@
     "x": -1919,
     "y": -1366,
     "icon": "assets/icons/items/music_machine.png",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Music_Machine"
   },
   {
@@ -164,7 +177,7 @@
     "x": 14678,
     "y": -35,
     "icon": "assets/icons/items/music_machine.png",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Music_Machine"
   },
   {
@@ -173,6 +186,7 @@
     "y": 2400,
     "icon": "assets/icons/items/karl.webp",
     "maps": [
+      "apotheosis-beta-branch",
       "regular-main-branch",
       "regular-beta",
       "apotheosis",
@@ -188,7 +202,7 @@
     "x": -14081,
     "y": 13567,
     "icon": "assets/icons/items/essence_alcohol.png",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Spirits"
   },
   {
@@ -196,7 +210,7 @@
     "x": -13056,
     "y": -5377,
     "icon": "assets/icons/items/essence_air.png",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Air"
   },
   {
@@ -204,7 +218,7 @@
     "x": -14062,
     "y": 370,
     "icon": "assets/icons/items/essence_fire.png",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Fire"
   },
   {
@@ -212,7 +226,7 @@
     "x": -5376,
     "y": 16640,
     "icon": "assets/icons/items/essence_water.png",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Water"
   },
   {
@@ -224,11 +238,19 @@
     "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Earth"
   },
   {
+    "name": "Essence Of Earth",
+    "x": 23808,
+    "y": -1793,
+    "icon": "assets/icons/items/essence_laser.png",
+    "maps": ["apotheosis-beta-branch"],
+    "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Earth"
+  },
+  {
     "name": "Rainbow Trail Spell",
     "x": -14002,
     "y": -2860,
     "icon": "assets/icons/items/rainbow_trail.png",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Rainbow_Trail"
   },
   {
@@ -236,7 +258,7 @@
     "x": 12569,
     "y": 16,
     "icon": "assets/icons/overlay-toggles/icon-orbs.webp",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Essence_Eater"
   },
   {
@@ -244,7 +266,7 @@
     "x": -6884,
     "y": -169,
     "icon": "assets/icons/overlay-toggles/icon-orbs.webp",
-    "maps": ["regular-main-branch", "regular-beta"],
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/Essence_Eater"
   }
 ]
