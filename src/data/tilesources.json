@@ -41,6 +41,20 @@
       "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"35840\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"17920\",\"Y\":\"-31744\"}}}\n"
     }
   ],
+  "apotheosis-beta-branch": [
+    {
+      "url": "https://apotheosis-beta-branch-middle.acidflow.stream/maps/apotheosis-beta-branch-middle/apotheosis-beta-branch-middle-2024-08-12-78633194.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"36352\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-17920\",\"Y\":\"-31744\"}}}\n"
+    },
+    {
+      "url": "https://apotheosis-beta-branch-left.acidflow.stream/maps/apotheosis-beta-branch-left/apotheosis-beta-branch-left-2024-08-12-78633194.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"36352\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-53760\",\"Y\":\"-31744\"}}}\n"
+    },
+    {
+      "url": "https://apotheosis-beta-branch-right.acidflow.stream/maps/apotheosis-beta-branch-right/apotheosis-beta-branch-right-2024-08-12-78633194.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"35840\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"17920\",\"Y\":\"-31744\"}}}\n"
+    }
+  ],
   "regular-beta": [
     {
       "url": "https://regular-beta-middle.acidflow.stream/maps/regular-beta-middle/regular-beta-middle-2024-08-12-78633191.dzi",
