@@ -5,7 +5,7 @@
     "x": 7375,
     "y": -4539,
     "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
-    "url": "https://map.runfast.stream/?map=regular&x=7375&y=-4539&zoom=823",
+    "url": "https://noitamap.com/?map=regular&x=7375&y=-4539&zoom=823",
     "icon": "assets/icons/bosses/kivi.png",
     "wiki": "https://noita.wiki.gg/wiki/Kivi"
   },
@@ -15,7 +15,7 @@
     "x": 9984,
     "y": -786,
     "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
-    "url": "https://map.runfast.stream/?map=regular&x=9984&y=-786&zoom=823",
+    "url": "https://noitamap.com/?map=regular&x=9984&y=-786&zoom=823",
     "icon": "assets/icons/bosses/legs.png",
     "wiki": "https://noita.wiki.gg/wiki/Kolmisilm%C3%A4n_koipi"
   },
@@ -25,7 +25,7 @@
     "x": -14024,
     "y": 9994,
     "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch", "apotheosis-beta-branch"],
-    "url": "https://map.runfast.stream/?map=regular&x=-14024&y=9994&zoom=987",
+    "url": "https://noitamap.com/?map=regular&x=-14024&y=9994&zoom=987",
     "icon": "assets/icons/bosses/leviathan.png",
     "wiki": "https://noita.wiki.gg/wiki/Syv%C3%A4olento"
   },
@@ -35,7 +35,7 @@
     "x": 2837,
     "y": 11562,
     "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
-    "url": "https://map.runfast.stream/?map=regular&x=2837&y=11562&zoom=812",
+    "url": "https://noitamap.com/?map=regular&x=2837&y=11562&zoom=812",
     "icon": "assets/icons/bosses/door.png",
     "wiki": "https://noita.wiki.gg/wiki/Gate_Guardian"
   },
@@ -45,7 +45,7 @@
     "x": 2347,
     "y": 7444,
     "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
-    "url": "https://map.runfast.stream/?map=regular&x=2347&y=7444&zoom=917",
+    "url": "https://noitamap.com/?map=regular&x=2347&y=7444&zoom=917",
     "icon": "assets/icons/bosses/dragon.png",
     "wiki": "https://noita.wiki.gg/wiki/Suomuhauki"
   },
@@ -55,7 +55,7 @@
     "x": 14904,
     "y": 16428,
     "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch", "apotheosis-beta-branch"],
-    "url": "https://map.runfast.stream/?map=regular&x=14904&y=16428&zoom=1022",
+    "url": "https://noitamap.com/?map=regular&x=14904&y=16428&zoom=1022",
     "icon": "assets/icons/bosses/tiny.png",
     "wiki": "https://noita.wiki.gg/wiki/Limatoukka"
   },
@@ -65,7 +65,7 @@
     "x": 6667,
     "y": 8448,
     "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
-    "url": "https://map.runfast.stream/?map=regular&x=6667&y=8448&zoom=770",
+    "url": "https://noitamap.com/?map=regular&x=6667&y=8448&zoom=770",
     "icon": "assets/icons/bosses/heart.png",
     "wiki": "https://noita.wiki.gg/wiki/Kolmisilm%C3%A4n_syd%C3%A4n"
   },
@@ -75,7 +75,7 @@
     "x": -4840,
     "y": 851,
     "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
-    "url": "https://map.runfast.stream/?map=regular&x=-4840&y=851&zoom=796",
+    "url": "https://noitamap.com/?map=regular&x=-4840&y=851&zoom=796",
     "icon": "assets/icons/bosses/alchemist.png",
     "wiki": "https://noita.wiki.gg/wiki/Ylialkemisti"
   },
@@ -85,7 +85,7 @@
     "x": 3556,
     "y": 13026,
     "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch", "apotheosis-beta-branch"],
-    "url": "https://map.runfast.stream/?map=regular&x=3556&y=13026&zoom=849",
+    "url": "https://noitamap.com/?map=regular&x=3556&y=13026&zoom=849",
     "icon": "assets/icons/bosses/kolmi.png",
     "wiki": "https://noita.wiki.gg/wiki/Kolmisilm%C3%A4"
   },
@@ -95,7 +95,7 @@
     "x": 13987,
     "y": 11123,
     "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
-    "url": "https://map.runfast.stream/?map=regular&x=13987&y=11123&zoom=875",
+    "url": "https://noitamap.com/?map=regular&x=13987&y=11123&zoom=875",
     "icon": "assets/icons/bosses/eye.png",
     "wiki": "https://noita.wiki.gg/wiki/Kolmisilm%C3%A4n_silm%C3%A4"
   },
@@ -105,7 +105,7 @@
     "x": 25360,
     "y": 4341,
     "maps": ["regular-main-branch", "regular-beta"],
-    "url": "https://map.runfast.stream/?map=regular&x=25360&y=4341&zoom=917",
+    "url": "https://noitamap.com/?map=regular&x=25360&y=4341&zoom=917",
     "icon": "assets/icons/bosses/friend.png",
     "wiki": "https://noita.wiki.gg/wiki/Toveri"
   },
@@ -115,7 +115,7 @@
     "x": 8454,
     "y": 5971,
     "maps": ["apotheosis-beta-branch"],
-    "url": "https://map.runfast.stream/?map=regular&x=25360&y=4341&zoom=917",
+    "url": "https://noitamap.com/?map=regular&x=25360&y=4341&zoom=917",
     "icon": "assets/icons/bosses/friend.png",
     "wiki": "https://noita.wiki.gg/wiki/Toveri"
   },
@@ -125,7 +125,7 @@
     "x": 12573,
     "y": 15178,
     "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
-    "url": "https://map.runfast.stream/?map=regular&x=12573&y=15178&zoom=796",
+    "url": "https://noitamap.com/?map=regular&x=12573&y=15178&zoom=796",
     "icon": "assets/icons/bosses/master.png",
     "wiki": "https://noita.wiki.gg/wiki/Mestarien_mestari"
   },
@@ -135,7 +135,7 @@
     "x": -11515,
     "y": 13123,
     "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
-    "url": "https://map.runfast.stream/?map=regular&x=-11515&y=13123&zoom=744",
+    "url": "https://noitamap.com/?map=regular&x=-11515&y=13123&zoom=744",
     "icon": "assets/icons/bosses/forgotten.png",
     "wiki": "https://noita.wiki.gg/wiki/Unohdettu"
   },
@@ -145,7 +145,7 @@
     "x": 4165,
     "y": 889,
     "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
-    "url": "https://map.runfast.stream/?map=regular&x=4165&y=889&zoom=970",
+    "url": "https://noitamap.com/?map=regular&x=4165&y=889&zoom=970",
     "icon": "assets/icons/bosses/bridge.png",
     "wiki": "https://noita.wiki.gg/wiki/Sauvojen_tuntija"
   },
@@ -155,7 +155,7 @@
     "x": -13670,
     "y": 134,
     "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch", "apotheosis-beta-branch"],
-    "url": "https://map.runfast.stream/?map=regular&x=-13670&y=134&zoom=796",
+    "url": "https://noitamap.com/?map=regular&x=-13670&y=134&zoom=796",
     "icon": "assets/icons/bosses/deer.png",
     "wiki": "https://noita.wiki.gg/wiki/Tapion_vasalli"
   }
