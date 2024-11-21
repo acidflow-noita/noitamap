@@ -139,13 +139,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   //     console.log("not checked");
   //   }
   // });
-
-  // Dirty fix for Wiki links not working with left mouse button
-  document.addEventListener('click', event => {
-    const target = event.target;
-    if (target instanceof HTMLAnchorElement && target.href && target.classList.contains('wikiLink')) {
-      event.preventDefault();
-      window.open(target.href, '_blank');
-    }
-  });
 });

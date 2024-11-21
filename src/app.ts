@@ -58,6 +58,15 @@ export class App extends EventEmitter2 {
     osd.addHandler('viewport-change', () => {
       this.updateZoomPos(osd.getZoomPos());
     });
+    // Dirty fix for Wiki links not working with left mouse button
+    osd.addHandler('canvas-click', ev => {
+      const target = ev.originalTarget;
+
+      if (target instanceof HTMLAnchorElement && target.href && target.classList.contains('wikiLink')) {
+        ev.originalEvent.preventDefault();
+        window.open(target.href, '_blank');
+      }
+    });
   }
 
   private updateOverlaySelectors() {
