@@ -1,0 +1,5501 @@
+[
+  {
+    "id": "BOMB",
+    "name": "Bomb",
+    "sprite": "bomb.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "1": 0.0119,
+      "2": 0.0073,
+      "3": 0.0077,
+      "4": 0.0035,
+      "5": 0.004,
+      "6": 0.0012
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "LIGHT_BULLET",
+    "name": "Spark Bolt",
+    "sprite": "light_bullet.png",
+    "spawnProbabilities": {
+      "0": 0.0448,
+      "1": 0.0119,
+      "2": 0.0036
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "LIGHT_BULLET_TRIGGER",
+    "name": "Spark Bolt With Trigger",
+    "sprite": "light_bullet_trigger.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "1": 0.0059,
+      "2": 0.0036,
+      "3": 0.0038
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "LIGHT_BULLET_TRIGGER_2",
+    "name": "Spark Bolt With Double Trigger",
+    "sprite": "light_bullet_trigger_2.png",
+    "spawnProbabilities": {
+      "2": 0.0073,
+      "3": 0.0038,
+      "5": 0.008,
+      "6": 0.0121,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LIGHT_BULLET_TIMER",
+    "name": "Spark Bolt With Timer",
+    "sprite": "light_bullet_timer.png",
+    "spawnProbabilities": {
+      "1": 0.0059,
+      "2": 0.0036,
+      "3": 0.0058
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BULLET",
+    "name": "Magic Arrow",
+    "sprite": "bullet.png",
+    "spawnProbabilities": {
+      "1": 0.0119,
+      "2": 0.0073,
+      "3": 0.0077,
+      "4": 0.0056,
+      "5": 0.004
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "BULLET_TRIGGER",
+    "name": "Magic Arrow With Trigger",
+    "sprite": "bullet_trigger.png",
+    "spawnProbabilities": {
+      "1": 0.0059,
+      "2": 0.0036,
+      "3": 0.0038,
+      "4": 0.0042,
+      "5": 0.004
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BULLET_TIMER",
+    "name": "Magic Arrow With Timer",
+    "sprite": "bullet_timer.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "3": 0.0038,
+      "4": 0.0035,
+      "5": 0.004,
+      "6": 0.0073
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HEAVY_BULLET",
+    "name": "Magic Bolt",
+    "sprite": "heavy_bullet.png",
+    "spawnProbabilities": {
+      "1": 0.0059,
+      "2": 0.0073,
+      "3": 0.0077,
+      "4": 0.007,
+      "5": 0.008,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HEAVY_BULLET_TRIGGER",
+    "name": "Magic Bolt With Trigger",
+    "sprite": "heavy_bullet_trigger.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "3": 0.0038,
+      "4": 0.0035,
+      "5": 0.0056,
+      "6": 0.0061
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HEAVY_BULLET_TIMER",
+    "name": "Magic Bolt With Timer",
+    "sprite": "heavy_bullet_timer.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "3": 0.0038,
+      "4": 0.0035,
+      "5": 0.004,
+      "6": 0.0085
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "AIR_BULLET",
+    "name": "Burst Of Air",
+    "sprite": "air_bullet.png",
+    "spawnProbabilities": {
+      "1": 0.0119,
+      "2": 0.0073
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "SLOW_BULLET",
+    "name": "Energy Orb",
+    "sprite": "slow_bullet.png",
+    "spawnProbabilities": {
+      "1": 0.0119,
+      "2": 0.0073,
+      "3": 0.0077,
+      "4": 0.007
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SLOW_BULLET_TRIGGER",
+    "name": "Energy Orb With A Trigger",
+    "sprite": "slow_bullet_trigger.png",
+    "spawnProbabilities": {
+      "1": 0.0059,
+      "2": 0.0036,
+      "3": 0.0038,
+      "4": 0.0035,
+      "5": 0.008
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SLOW_BULLET_TIMER",
+    "name": "Energy Orb With A Timer",
+    "sprite": "slow_bullet_timer.png",
+    "spawnProbabilities": {
+      "1": 0.0059,
+      "2": 0.0036,
+      "3": 0.0038,
+      "4": 0.0035,
+      "5": 0.008,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HOOK",
+    "name": "Hookbolt",
+    "sprite": "hook.png",
+    "spawnProbabilities": {
+      "1": 0.0012,
+      "2": 0.0022,
+      "3": 0.0031,
+      "4": 0.0014,
+      "5": 0.0008
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BLACK_HOLE",
+    "name": "Black Hole",
+    "sprite": "black_hole.png",
+    "spawnProbabilities": {
+      "0": 0.0179,
+      "2": 0.0058,
+      "4": 0.0056,
+      "5": 0.0064
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "BLACK_HOLE_DEATH_TRIGGER",
+    "name": "Black Hole with Death Trigger",
+    "sprite": "black_hole_timer.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "4": 0.0035,
+      "5": 0.004,
+      "6": 0.0061
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "WHITE_HOLE",
+    "name": "White Hole",
+    "sprite": "white_hole.png",
+    "spawnProbabilities": {
+      "0": 0.0011,
+      "2": 0.0004,
+      "4": 0.0007,
+      "6": 0.0024,
+      "10": 0.0083
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BLACK_HOLE_BIG",
+    "name": "Giga Black Hole",
+    "sprite": "black_hole_big.png",
+    "spawnProbabilities": {
+      "1": 0.0095,
+      "3": 0.0062,
+      "5": 0.0064,
+      "6": 0.0097,
+      "10": 0.0083
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": false
+  },
+  {
+    "id": "WHITE_HOLE_BIG",
+    "name": "Giga White Hole",
+    "sprite": "white_hole_big.png",
+    "spawnProbabilities": {
+      "1": 0.0006,
+      "3": 0.0004,
+      "5": 0.0008,
+      "6": 0.0048,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "WHITE_HOLE_GIGA",
+    "name": "Omega White Hole",
+    "sprite": "white_hole_giga.png",
+    "spawnProbabilities": {
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "TENTACLE_PORTAL",
+    "name": "Eldritch Portal",
+    "sprite": "tentacle_portal.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0035,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "SPITTER",
+    "name": "Spitter Bolt",
+    "sprite": "spitter.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "1": 0.0119,
+      "2": 0.0073,
+      "3": 0.0038
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "SPITTER_TIMER",
+    "name": "Spitter Bolt With Timer",
+    "sprite": "spitter_timer.png",
+    "spawnProbabilities": {
+      "0": 0.0112,
+      "1": 0.0059,
+      "2": 0.0036,
+      "3": 0.0077
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SPITTER_TIER_2",
+    "name": "Large Spitter Bolt",
+    "sprite": "spitter_green.png",
+    "spawnProbabilities": {
+      "2": 0.0073,
+      "3": 0.0077,
+      "4": 0.007,
+      "5": 0.004
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SPITTER_TIER_2_TIMER",
+    "name": "Large Spitter Bolt With Timer",
+    "sprite": "spitter_green_timer.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "3": 0.0038,
+      "4": 0.0035,
+      "5": 0.008
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SPITTER_TIER_3",
+    "name": "Giant Spitter Bolt",
+    "sprite": "spitter_purple.png",
+    "spawnProbabilities": {
+      "3": 0.0062,
+      "4": 0.0056,
+      "5": 0.008,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SPITTER_TIER_3_TIMER",
+    "name": "Giant Spitter Bolt With Timer",
+    "sprite": "spitter_purple_timer.png",
+    "spawnProbabilities": {
+      "4": 0.0035,
+      "5": 0.0052,
+      "6": 0.0061
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BUBBLESHOT",
+    "name": "Bubble Spark",
+    "sprite": "bubbleshot.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "1": 0.0071,
+      "2": 0.0073,
+      "3": 0.0038
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "BUBBLESHOT_TRIGGER",
+    "name": "Bubble Spark With Trigger",
+    "sprite": "bubbleshot_trigger.png",
+    "spawnProbabilities": {
+      "1": 0.0059,
+      "2": 0.0036,
+      "3": 0.0077
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "DISC_BULLET",
+    "name": "Disc Projectile",
+    "sprite": "disc_bullet.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "2": 0.0073,
+      "4": 0.0042
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "DISC_BULLET_BIG",
+    "name": "Giga Disc Projectile",
+    "sprite": "disc_bullet_big.png",
+    "spawnProbabilities": {
+      "0": 0.0135,
+      "2": 0.0051,
+      "4": 0.0056
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "DISC_BULLET_BIGGER",
+    "name": "Summon Omega Sawblade",
+    "sprite": "omega_disc_bullet.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "3": 0.0046,
+      "5": 0.008,
+      "10": 0.0066
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BOUNCY_ORB",
+    "name": "Energy Sphere",
+    "sprite": "bouncy_orb.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "2": 0.0073,
+      "4": 0.007
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "BOUNCY_ORB_TIMER",
+    "name": "Energy Sphere With Timer",
+    "sprite": "bouncy_orb_timer.png",
+    "spawnProbabilities": {
+      "0": 0.0112,
+      "2": 0.0036,
+      "4": 0.0035
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "RUBBER_BALL",
+    "name": "Bouncing Burst",
+    "sprite": "rubber_ball.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "1": 0.0119,
+      "6": 0.0024
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "ARROW",
+    "name": "Arrow",
+    "sprite": "arrow.png",
+    "spawnProbabilities": {
+      "1": 0.0119,
+      "2": 0.0073,
+      "4": 0.0042,
+      "5": 0.0024
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "POLLEN",
+    "name": "Pollen",
+    "sprite": "pollen.png",
+    "spawnProbabilities": {
+      "0": 0.0135,
+      "1": 0.0119,
+      "3": 0.0077,
+      "4": 0.0042
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LANCE",
+    "name": "Glowing Lance",
+    "sprite": "lance.png",
+    "spawnProbabilities": {
+      "1": 0.0107,
+      "2": 0.0073,
+      "5": 0.0064,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LANCE_HOLY",
+    "name": "Holy Lance",
+    "sprite": "lance_holy.png",
+    "spawnProbabilities": {
+      "3": 0.0038,
+      "5": 0.0064,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ROCKET",
+    "name": "Magic Missile",
+    "sprite": "rocket.png",
+    "spawnProbabilities": {
+      "1": 0.0119,
+      "2": 0.0073,
+      "3": 0.0077,
+      "4": 0.0035,
+      "5": 0.0024
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "ROCKET_TIER_2",
+    "name": "Large Magic Missile",
+    "sprite": "rocket_tier_2.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "3": 0.0077,
+      "4": 0.007,
+      "5": 0.0064,
+      "6": 0.0061
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ROCKET_TIER_3",
+    "name": "Giant Magic Missile",
+    "sprite": "rocket_tier_3.png",
+    "spawnProbabilities": {
+      "2": 0.0018,
+      "3": 0.0038,
+      "4": 0.007,
+      "5": 0.008,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "GRENADE",
+    "name": "Firebolt",
+    "sprite": "grenade.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "1": 0.0119,
+      "2": 0.0036,
+      "3": 0.0019,
+      "4": 0.0014
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "GRENADE_TRIGGER",
+    "name": "Firebolt With Trigger",
+    "sprite": "grenade_trigger.png",
+    "spawnProbabilities": {
+      "0": 0.0112,
+      "1": 0.0059,
+      "2": 0.0015,
+      "3": 0.0038,
+      "4": 0.0035,
+      "5": 0.008
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "GRENADE_TIER_2",
+    "name": "Large Firebolt",
+    "sprite": "grenade_tier_2.png",
+    "spawnProbabilities": {
+      "1": 0.0059,
+      "2": 0.0073,
+      "3": 0.0077,
+      "4": 0.007,
+      "5": 0.004
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "GRENADE_TIER_3",
+    "name": "Giant Firebolt",
+    "sprite": "grenade_tier_3.png",
+    "spawnProbabilities": {
+      "1": 0.003,
+      "2": 0.0036,
+      "3": 0.0058,
+      "4": 0.007,
+      "5": 0.008
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "GRENADE_ANTI",
+    "name": "Odd Firebolt",
+    "sprite": "grenade_anti.png",
+    "spawnProbabilities": {
+      "0": 0.009,
+      "1": 0.0048,
+      "2": 0.0051,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "GRENADE_LARGE",
+    "name": "Dropper Bolt",
+    "sprite": "grenade_large.png",
+    "spawnProbabilities": {
+      "0": 0.009,
+      "1": 0.0048,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "MINE",
+    "name": "Unstable Crystal",
+    "sprite": "mine.png",
+    "spawnProbabilities": {
+      "1": 0.0119,
+      "3": 0.0058,
+      "4": 0.007,
+      "6": 0.0061
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "MINE_DEATH_TRIGGER",
+    "name": "Unstable Crystal With Trigger",
+    "sprite": "mine_death_trigger.png",
+    "spawnProbabilities": {
+      "2": 0.0073,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "PIPE_BOMB",
+    "name": "Dormant Crystal",
+    "sprite": "pipe_bomb.png",
+    "spawnProbabilities": {
+      "2": 0.0073,
+      "3": 0.0077,
+      "4": 0.0042
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "PIPE_BOMB_DEATH_TRIGGER",
+    "name": "Dormant Crystal With Trigger",
+    "sprite": "pipe_bomb_death_trigger.png",
+    "spawnProbabilities": {
+      "2": 0.0044,
+      "3": 0.0062,
+      "4": 0.007,
+      "5": 0.0064
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "FISH",
+    "name": "Summon Fish",
+    "sprite": "fish.png",
+    "spawnProbabilities": {
+      "3": 0.0001,
+      "4": 0.0001,
+      "5": 0.0001
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "EXPLODING_DEER",
+    "name": "Summon Deercoy",
+    "sprite": "exploding_deer.png",
+    "spawnProbabilities": {
+      "3": 0.0046,
+      "4": 0.0042,
+      "5": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "EXPLODING_DUCKS",
+    "name": "Flock Of Ducks",
+    "sprite": "duck_2.png",
+    "spawnProbabilities": {
+      "3": 0.0062,
+      "4": 0.0035,
+      "5": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "WORM_SHOT",
+    "name": "Worm Launcher",
+    "sprite": "worm.png",
+    "spawnProbabilities": {
+      "3": 0.0046,
+      "4": 0.0056,
+      "5": 0.0048,
+      "6": 0.0048,
+      "10": 0.01
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BOMB_DETONATOR",
+    "name": "Explosive Detonator",
+    "sprite": "pipe_bomb_detonator.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "3": 0.0077,
+      "4": 0.0028,
+      "5": 0.004,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "LASER",
+    "name": "Concentrated Light",
+    "sprite": "laser.png",
+    "spawnProbabilities": {
+      "1": 0.0119,
+      "2": 0.0073,
+      "4": 0.007
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "MEGALASER",
+    "name": "Intense Concentrated Light",
+    "sprite": "megalaser.png",
+    "spawnProbabilities": {
+      "3": 0.0046,
+      "4": 0.0042,
+      "5": 0.0064,
+      "6": 0.0073,
+      "10": 0.005
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LIGHTNING",
+    "name": "Lightning Bolt",
+    "sprite": "lightning.png",
+    "spawnProbabilities": {
+      "1": 0.0119,
+      "2": 0.0065,
+      "5": 0.0056,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BALL_LIGHTNING",
+    "name": "Ball Lightning",
+    "sprite": "ball_lightning.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "2": 0.0029,
+      "4": 0.007,
+      "5": 0.008
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LASER_EMITTER",
+    "name": "Plasma Beam",
+    "sprite": "laser_emitter.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "2": 0.0058,
+      "3": 0.0077,
+      "4": 0.0035
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LASER_EMITTER_FOUR",
+    "name": "Plasma Beam Cross",
+    "sprite": "laser_emitter_four.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "2": 0.0065,
+      "3": 0.0023,
+      "4": 0.0035,
+      "5": 0.008
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LASER_EMITTER_CUTTER",
+    "name": "Plasma Cutter",
+    "sprite": "laser_emitter_cutter.png",
+    "spawnProbabilities": {
+      "0": 0.0045,
+      "1": 0.0036,
+      "2": 0.0073,
+      "3": 0.0038,
+      "4": 0.0007
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "DIGGER",
+    "name": "Digging Bolt",
+    "sprite": "digger.png",
+    "spawnProbabilities": {
+      "1": 0.0119,
+      "2": 0.0036
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "POWERDIGGER",
+    "name": "Digging Blast",
+    "sprite": "powerdigger.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "3": 0.0077,
+      "4": 0.0056
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "CHAINSAW",
+    "name": "Chainsaw",
+    "sprite": "chainsaw.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "2": 0.0073
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "LUMINOUS_DRILL",
+    "name": "Luminous Drill",
+    "sprite": "luminous_drill.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "2": 0.0073,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "LASER_LUMINOUS_DRILL",
+    "name": "Luminous Drill With Timer",
+    "sprite": "luminous_drill_timer.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "2": 0.0073,
+      "6": 0.0024,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "TENTACLE",
+    "name": "Summon Tentacle",
+    "sprite": "tentacle.png",
+    "spawnProbabilities": {
+      "3": 0.0077,
+      "4": 0.0035,
+      "5": 0.008,
+      "6": 0.0097
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "TENTACLE_TIMER",
+    "name": "Summon Tentacle With Timer",
+    "sprite": "tentacle_timer.png",
+    "spawnProbabilities": {
+      "3": 0.0046,
+      "4": 0.0056,
+      "5": 0.0048,
+      "6": 0.0085
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HEAL_BULLET",
+    "name": "Healing Bolt",
+    "sprite": "heal_bullet.png",
+    "spawnProbabilities": {
+      "2": 0.0073,
+      "3": 0.0077,
+      "4": 0.0042
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ANTIHEAL",
+    "name": "Deadly Heal",
+    "sprite": "antiheal.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "3": 0.0023,
+      "4": 0.0021,
+      "5": 0.0024
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SPIRAL_SHOT",
+    "name": "Spiral Shot",
+    "sprite": "spiral_shot.png",
+    "spawnProbabilities": {
+      "4": 0.0049,
+      "5": 0.0064,
+      "6": 0.0085
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "MAGIC_SHIELD",
+    "name": "Magic Guard",
+    "sprite": "magic_shield.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "4": 0.0042,
+      "5": 0.0056,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BIG_MAGIC_SHIELD",
+    "name": "Big Magic Guard",
+    "sprite": "big_magic_shield.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "4": 0.0028,
+      "5": 0.004,
+      "6": 0.0073,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "CHAIN_BOLT",
+    "name": "Chain Bolt",
+    "sprite": "chain_bolt.png",
+    "spawnProbabilities": {
+      "0": 0.0168,
+      "4": 0.007,
+      "5": 0.0064,
+      "6": 0.0073
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "FIREBALL",
+    "name": "Fireball",
+    "sprite": "fireball.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "3": 0.0054,
+      "4": 0.007,
+      "6": 0.0061
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "METEOR",
+    "name": "Meteor",
+    "sprite": "meteor.png",
+    "spawnProbabilities": {
+      "4": 0.0042,
+      "5": 0.0048,
+      "6": 0.0085,
+      "10": 0.0083
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "FLAMETHROWER",
+    "name": "Flamethrower",
+    "sprite": "flamethrower.png",
+    "spawnProbabilities": {
+      "2": 0.0058,
+      "3": 0.0069,
+      "4": 0.0063,
+      "6": 0.0073
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ICEBALL",
+    "name": "Iceball",
+    "sprite": "iceball.png",
+    "spawnProbabilities": {
+      "2": 0.0058,
+      "3": 0.0069,
+      "4": 0.0063,
+      "6": 0.0073
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SLIMEBALL",
+    "name": "Slimeball",
+    "sprite": "slimeball.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "3": 0.0077,
+      "4": 0.0049
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "DARKFLAME",
+    "name": "Path Of Dark Flame",
+    "sprite": "darkflame.png",
+    "spawnProbabilities": {
+      "3": 0.0077,
+      "5": 0.0072,
+      "6": 0.0097
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "MISSILE",
+    "name": "Summon Missile",
+    "sprite": "missile.png",
+    "spawnProbabilities": {
+      "1": 0.0059,
+      "2": 0.0036,
+      "3": 0.0077,
+      "5": 0.008
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "FUNKY_SPELL",
+    "name": "???",
+    "sprite": "machinegun_bullet.png",
+    "spawnProbabilities": {
+      "6": 0.0012,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "PEBBLE",
+    "name": "Summon Rock Spirit",
+    "sprite": "pebble.png",
+    "spawnProbabilities": {
+      "1": 0.0107,
+      "2": 0.0073,
+      "4": 0.0063,
+      "6": 0.0073
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "DYNAMITE",
+    "name": "Dynamite",
+    "sprite": "dynamite.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "1": 0.0107,
+      "2": 0.0058,
+      "3": 0.0054,
+      "4": 0.0042
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "GLITTER_BOMB",
+    "name": "Glitter Bomb",
+    "sprite": "glitter_bomb.png",
+    "spawnProbabilities": {
+      "0": 0.0179,
+      "1": 0.0107,
+      "2": 0.0058,
+      "3": 0.0054,
+      "4": 0.0042
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "BUCKSHOT",
+    "name": "Triplicate Bolt",
+    "sprite": "buckshot.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "1": 0.0119,
+      "2": 0.0065,
+      "3": 0.0069,
+      "4": 0.0042
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "FREEZING_GAZE",
+    "name": "Freezing Gaze",
+    "sprite": "freezing_gaze.png",
+    "spawnProbabilities": {
+      "2": 0.0065,
+      "3": 0.0077,
+      "4": 0.007
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "GLOWING_BOLT",
+    "name": "Pinpoint Of Light",
+    "sprite": "glowing_bolt.png",
+    "spawnProbabilities": {
+      "3": 0.0062,
+      "4": 0.0063,
+      "5": 0.008,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SPORE_POD",
+    "name": "Prickly Spore Pod",
+    "sprite": "spore_pod.png",
+    "spawnProbabilities": {
+      "1": 0.0083,
+      "2": 0.0058,
+      "3": 0.0069,
+      "4": 0.0056,
+      "5": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "GLUE_SHOT",
+    "name": "Glue Ball",
+    "sprite": "glue_shot.png",
+    "spawnProbabilities": {
+      "2": 0.0051,
+      "3": 0.0031,
+      "4": 0.0014,
+      "5": 0.004
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BOMB_HOLY",
+    "name": "Holy Bomb",
+    "sprite": "bomb_holy.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "3": 0.0015,
+      "4": 0.0014,
+      "5": 0.0016,
+      "6": 0.0024,
+      "10": 0.0083
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BOMB_HOLY_GIGA",
+    "name": "Giga Holy Bomb",
+    "sprite": "bomb_holy_giga.png",
+    "spawnProbabilities": {
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "PROPANE_TANK",
+    "name": "Propane Tank",
+    "sprite": "propane_tank.png",
+    "spawnProbabilities": {
+      "2": 0.0073,
+      "3": 0.0077,
+      "4": 0.0056,
+      "5": 0.0064,
+      "6": 0.0085
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BOMB_CART",
+    "name": "Bomb Cart",
+    "sprite": "bomb_cart.png",
+    "spawnProbabilities": {
+      "2": 0.0044,
+      "3": 0.0046,
+      "4": 0.0035,
+      "5": 0.0064,
+      "6": 0.0073
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "CURSED_ORB",
+    "name": "Cursed Sphere",
+    "sprite": "cursed_orb.png",
+    "spawnProbabilities": {
+      "1": 0.0036,
+      "2": 0.0015,
+      "3": 0.0008
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "EXPANDING_ORB",
+    "name": "Expanding Sphere",
+    "sprite": "expanding_orb.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "3": 0.0038,
+      "4": 0.007,
+      "5": 0.008,
+      "6": 0.0061
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "CRUMBLING_EARTH",
+    "name": "Earthquake",
+    "sprite": "crumbling_earth.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "3": 0.0023,
+      "4": 0.0035,
+      "5": 0.0048,
+      "6": 0.0109
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SUMMON_ROCK",
+    "name": "Rock",
+    "sprite": "summon_rock.png",
+    "spawnProbabilities": {
+      "0": 0.0179,
+      "1": 0.0095,
+      "2": 0.0044,
+      "3": 0.0046,
+      "4": 0.0021,
+      "5": 0.0056,
+      "6": 0.0085
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SUMMON_EGG",
+    "name": "Summon Egg",
+    "sprite": "summon_egg.png",
+    "spawnProbabilities": {
+      "0": 0.0157,
+      "1": 0.0095,
+      "2": 0.0058,
+      "3": 0.0054,
+      "4": 0.0042,
+      "5": 0.0048,
+      "6": 0.0061
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SUMMON_HOLLOW_EGG",
+    "name": "Summon Hollow Egg",
+    "sprite": "summon_hollow_egg.png",
+    "spawnProbabilities": {
+      "0": 0.0135,
+      "1": 0.0095,
+      "2": 0.0051,
+      "5": 0.0064,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "TNTBOX",
+    "name": "Summon Explosive Box",
+    "sprite": "tntbox.png",
+    "spawnProbabilities": {
+      "1": 0.0095,
+      "2": 0.0065,
+      "3": 0.0038,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "TNTBOX_BIG",
+    "name": "Summon Large Explosive Box",
+    "sprite": "tntbox_big.png",
+    "spawnProbabilities": {
+      "2": 0.0058,
+      "4": 0.007,
+      "5": 0.0056
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SWARM_FLY",
+    "name": "Summon Fly Swarm",
+    "sprite": "swarm_fly.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "4": 0.0028,
+      "5": 0.004
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "SWARM_FIREBUG",
+    "name": "Summon Firebug Swarm",
+    "sprite": "swarm_firebug.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "5": 0.0032,
+      "6": 0.0061
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "SWARM_WASP",
+    "name": "Summon Wasp Swarm",
+    "sprite": "swarm_wasp.png",
+    "spawnProbabilities": {
+      "4": 0.0014,
+      "5": 0.004,
+      "6": 0.0073
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "FRIEND_FLY",
+    "name": "Summon Friendly Fly",
+    "sprite": "friend_fly.png",
+    "spawnProbabilities": {
+      "4": 0.0014,
+      "5": 0.0048,
+      "6": 0.0061
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ACIDSHOT",
+    "name": "Acid Ball",
+    "sprite": "acidshot.png",
+    "spawnProbabilities": {
+      "1": 0.0119,
+      "2": 0.0073,
+      "3": 0.0069,
+      "4": 0.0042
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": true
+  },
+  {
+    "id": "THUNDERBALL",
+    "name": "Thunder Charge",
+    "sprite": "thunderball.png",
+    "spawnProbabilities": {
+      "2": 0.0065,
+      "4": 0.007,
+      "6": 0.0085,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "FIREBOMB",
+    "name": "Firebomb",
+    "sprite": "firebomb.png",
+    "spawnProbabilities": {
+      "1": 0.0119,
+      "2": 0.0065,
+      "3": 0.0054
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SOILBALL",
+    "name": "Chunk Of Soil",
+    "sprite": "soil.png",
+    "spawnProbabilities": {
+      "1": 0.0095,
+      "2": 0.0058,
+      "3": 0.0077,
+      "5": 0.006
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": false
+  },
+  {
+    "id": "DEATH_CROSS",
+    "name": "Death Cross",
+    "sprite": "death_cross.png",
+    "spawnProbabilities": {
+      "1": 0.0119,
+      "2": 0.0058,
+      "3": 0.0046,
+      "4": 0.0035,
+      "5": 0.004,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "DEATH_CROSS_BIG",
+    "name": "Giga Death Cross",
+    "sprite": "death_cross_big.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "3": 0.0038,
+      "4": 0.0038,
+      "5": 0.0024,
+      "6": 0.0048,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "INFESTATION",
+    "name": "Infestation",
+    "sprite": "infestation.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "3": 0.0023,
+      "4": 0.0028
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "WALL_HORIZONTAL",
+    "name": "Horizontal Barrier",
+    "sprite": "wall_horizontal.png",
+    "spawnProbabilities": {
+      "0": 0.009,
+      "1": 0.0048,
+      "2": 0.0044,
+      "4": 0.0035,
+      "5": 0.0016
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "WALL_VERTICAL",
+    "name": "Vertical Barrier",
+    "sprite": "wall_vertical.png",
+    "spawnProbabilities": {
+      "0": 0.009,
+      "1": 0.0048,
+      "2": 0.0044,
+      "4": 0.0035,
+      "5": 0.0016
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "WALL_SQUARE",
+    "name": "Square Barrier",
+    "sprite": "wall_square.png",
+    "spawnProbabilities": {
+      "0": 0.0067,
+      "1": 0.0024,
+      "2": 0.0044,
+      "4": 0.0035,
+      "5": 0.0032,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "TEMPORARY_WALL",
+    "name": "Summon Wall",
+    "sprite": "temporary_wall.png",
+    "spawnProbabilities": {
+      "0": 0.0022,
+      "1": 0.0012,
+      "2": 0.0022,
+      "4": 0.0028,
+      "5": 0.0016
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "TEMPORARY_PLATFORM",
+    "name": "Summon Platform",
+    "sprite": "temporary_platform.png",
+    "spawnProbabilities": {
+      "0": 0.0022,
+      "1": 0.0012,
+      "2": 0.0022,
+      "4": 0.0028,
+      "5": 0.0016
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "PURPLE_EXPLOSION_FIELD",
+    "name": "Glittering Field",
+    "sprite": "purple_explosion_field.png",
+    "spawnProbabilities": {
+      "0": 0.0157,
+      "1": 0.0119,
+      "2": 0.0051,
+      "4": 0.0035,
+      "5": 0.004,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "DELAYED_SPELL",
+    "name": "Delayed Spellcast",
+    "sprite": "delayed_spell.png",
+    "spawnProbabilities": {
+      "0": 0.0179,
+      "1": 0.0095,
+      "2": 0.0073,
+      "4": 0.0049,
+      "5": 0.004,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "LONG_DISTANCE_CAST",
+    "name": "Long-Distance Cast",
+    "sprite": "long_distance_cast.png",
+    "spawnProbabilities": {
+      "0": 0.0135,
+      "1": 0.0083,
+      "2": 0.0058,
+      "4": 0.0042,
+      "5": 0.0024,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "TELEPORT_CAST",
+    "name": "Teleporting Cast",
+    "sprite": "teleport_cast.png",
+    "spawnProbabilities": {
+      "1": 0.0071,
+      "2": 0.0044,
+      "4": 0.0042,
+      "5": 0.0064,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "SUPER_TELEPORT_CAST",
+    "name": "Warp Cast",
+    "sprite": "super_teleport_cast.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "4": 0.0042,
+      "5": 0.0064,
+      "6": 0.0097
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "CASTER_CAST",
+    "name": "Inner Spell",
+    "sprite": "caster_cast.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "4": 0.0014,
+      "5": 0.0032,
+      "6": 0.0048,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "MIST_RADIOACTIVE",
+    "name": "Toxic Mist",
+    "sprite": "mist_radioactive.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "MIST_ALCOHOL",
+    "name": "Mist Of Spirits",
+    "sprite": "mist_alcohol.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "MIST_SLIME",
+    "name": "Slime Mist",
+    "sprite": "mist_slime.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "MIST_BLOOD",
+    "name": "Blood Mist",
+    "sprite": "mist_blood.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "CIRCLE_FIRE",
+    "name": "Circle of Fire",
+    "sprite": "circle_fire.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "CIRCLE_ACID",
+    "name": "Circle of Acid",
+    "sprite": "circle_acid.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "CIRCLE_OIL",
+    "name": "Circle of Oil",
+    "sprite": "circle_oil.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "CIRCLE_WATER",
+    "name": "Circle of water",
+    "sprite": "circle_water.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "MATERIAL_WATER",
+    "name": "Water",
+    "sprite": "material_water.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "MATERIAL_OIL",
+    "name": "Oil",
+    "sprite": "material_oil.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "MATERIAL_BLOOD",
+    "name": "Blood",
+    "sprite": "material_blood.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "MATERIAL_ACID",
+    "name": "Acid",
+    "sprite": "material_acid.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0032,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "MATERIAL_CEMENT",
+    "name": "Cement",
+    "sprite": "material_cement.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0032,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "TELEPORT_PROJECTILE",
+    "name": "Teleport Bolt",
+    "sprite": "teleport_projectile.png",
+    "spawnProbabilities": {
+      "0": 0.0135,
+      "1": 0.0071,
+      "2": 0.0044,
+      "4": 0.0028,
+      "5": 0.0032,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "TELEPORT_PROJECTILE_SHORT",
+    "name": "Small Teleport Bolt",
+    "sprite": "teleport_projectile_short.png",
+    "spawnProbabilities": {
+      "0": 0.0135,
+      "1": 0.0071,
+      "2": 0.0044,
+      "4": 0.0028,
+      "5": 0.0032,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "TELEPORT_PROJECTILE_STATIC",
+    "name": "Return",
+    "sprite": "teleport_projectile_static.png",
+    "spawnProbabilities": {
+      "0": 0.0135,
+      "1": 0.0071,
+      "2": 0.0044,
+      "4": 0.0028,
+      "5": 0.0032,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SWAPPER_PROJECTILE",
+    "name": "Swapper",
+    "sprite": "swapper_projectile.png",
+    "spawnProbabilities": {
+      "0": 0.0011,
+      "1": 0.0006,
+      "2": 0.0007,
+      "4": 0.0028,
+      "5": 0.0032,
+      "6": 0.0012
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "TELEPORT_PROJECTILE_CLOSER",
+    "name": "Homebringer Teleport Bolt",
+    "sprite": "teleport_projectile_closer.png",
+    "spawnProbabilities": {
+      "0": 0.009,
+      "1": 0.0071,
+      "2": 0.0044,
+      "4": 0.0049,
+      "5": 0.0032,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "NUKE",
+    "name": "Nuke",
+    "sprite": "nuke.png",
+    "spawnProbabilities": {
+      "1": 0.0036,
+      "5": 0.008,
+      "6": 0.0121,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "NUKE_GIGA",
+    "name": "Giga Nuke",
+    "sprite": "nuke_giga.png",
+    "spawnProbabilities": {
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "FIREWORK",
+    "name": "Fireworks!",
+    "sprite": "fireworks.png",
+    "spawnProbabilities": {
+      "1": 0.0119,
+      "2": 0.0058,
+      "3": 0.0077,
+      "4": 0.007,
+      "5": 0.004,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SUMMON_WANDGHOST",
+    "name": "Summon Taikasauva",
+    "sprite": "summon_wandghost.png",
+    "spawnProbabilities": {
+      "2": 0.0006,
+      "4": 0.0007,
+      "5": 0.0024,
+      "6": 0.0036,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "TOUCH_GOLD",
+    "name": "Touch Of Gold",
+    "sprite": "touch_gold.png",
+    "spawnProbabilities": {
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0008,
+      "6": 0.0012,
+      "7": 0.1361,
+      "10": 0.0083
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "TOUCH_WATER",
+    "name": "Touch Of Water",
+    "sprite": "touch_water.png",
+    "spawnProbabilities": {
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0008,
+      "6": 0.0012,
+      "7": 0.1361,
+      "10": 0.0066
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "TOUCH_OIL",
+    "name": "Touch Of Oil",
+    "sprite": "touch_oil.png",
+    "spawnProbabilities": {
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0008,
+      "6": 0.0012,
+      "7": 0.1361,
+      "10": 0.0066
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "TOUCH_ALCOHOL",
+    "name": "Touch Of Spirits",
+    "sprite": "touch_alcohol.png",
+    "spawnProbabilities": {
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0008,
+      "6": 0.0012,
+      "7": 0.1361,
+      "10": 0.0066
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "TOUCH_PISS",
+    "name": "Touch of Gold?",
+    "sprite": "touch_piss.png",
+    "spawnProbabilities": {
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0003,
+      "6": 0.0004,
+      "7": 0.0476,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "TOUCH_GRASS",
+    "name": "Touch of Grass",
+    "sprite": "touch_grass.png",
+    "spawnProbabilities": {
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0008,
+      "6": 0.0012,
+      "7": 0.1361,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "TOUCH_BLOOD",
+    "name": "Touch Of Blood",
+    "sprite": "touch_blood.png",
+    "spawnProbabilities": {
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0008,
+      "6": 0.0012,
+      "7": 0.1361,
+      "10": 0.0083
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "TOUCH_SMOKE",
+    "name": "Touch Of Smoke",
+    "sprite": "touch_smoke.png",
+    "spawnProbabilities": {
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0008,
+      "6": 0.0012,
+      "7": 0.1361,
+      "10": 0.0066
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "DESTRUCTION",
+    "name": "Destruction",
+    "sprite": "destruction.png",
+    "spawnProbabilities": {
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "MASS_POLYMORPH",
+    "name": "Muodonmuutos",
+    "sprite": "polymorph.png",
+    "spawnProbabilities": {
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "BURST_2",
+    "name": "Double Spell",
+    "sprite": "burst_2.png",
+    "spawnProbabilities": {
+      "0": 0.0179,
+      "1": 0.0095,
+      "2": 0.0058,
+      "3": 0.0062,
+      "4": 0.0056,
+      "5": 0.0064,
+      "6": 0.0097
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BURST_3",
+    "name": "Triple Spell",
+    "sprite": "burst_3.png",
+    "spawnProbabilities": {
+      "1": 0.0083,
+      "2": 0.0051,
+      "3": 0.0054,
+      "4": 0.0049,
+      "5": 0.0056,
+      "6": 0.0085
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BURST_4",
+    "name": "Quadruple Spell",
+    "sprite": "burst_4.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "3": 0.0038,
+      "4": 0.0042,
+      "5": 0.0048,
+      "6": 0.0073
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BURST_8",
+    "name": "Octuple Spell",
+    "sprite": "burst_8.png",
+    "spawnProbabilities": {
+      "5": 0.0008,
+      "6": 0.0012,
+      "10": 0.0083
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BURST_X",
+    "name": "Myriad Spell",
+    "sprite": "burst_x.png",
+    "spawnProbabilities": {
+      "5": 0.0008,
+      "6": 0.0012,
+      "10": 0.0083
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SCATTER_2",
+    "name": "Double Scatter Spell",
+    "sprite": "scatter_2.png",
+    "spawnProbabilities": {
+      "0": 0.0179,
+      "1": 0.0095,
+      "2": 0.0051
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SCATTER_3",
+    "name": "Triple Scatter Spell",
+    "sprite": "scatter_3.png",
+    "spawnProbabilities": {
+      "0": 0.0135,
+      "1": 0.0083,
+      "2": 0.0051,
+      "3": 0.0062
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SCATTER_4",
+    "name": "Quadruple Scatter Spell",
+    "sprite": "scatter_4.png",
+    "spawnProbabilities": {
+      "1": 0.0059,
+      "2": 0.0044,
+      "3": 0.0054,
+      "4": 0.0056,
+      "5": 0.0064,
+      "6": 0.0073
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "I_SHAPE",
+    "name": "Formation - Behind Your Back",
+    "sprite": "i_shape.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0036,
+      "3": 0.0023
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "Y_SHAPE",
+    "name": "Formation - Bifurcated",
+    "sprite": "y_shape.png",
+    "spawnProbabilities": {
+      "0": 0.0179,
+      "1": 0.0059,
+      "2": 0.0029,
+      "3": 0.0023
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "T_SHAPE",
+    "name": "Formation - Above And Below",
+    "sprite": "t_shape.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0036,
+      "3": 0.0031,
+      "4": 0.0021
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "W_SHAPE",
+    "name": "Formation - Trifurcated",
+    "sprite": "w_shape.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "3": 0.0023,
+      "4": 0.0035,
+      "5": 0.0024,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "CIRCLE_SHAPE",
+    "name": "Formation - Hexagon",
+    "sprite": "circle_shape.png",
+    "spawnProbabilities": {
+      "1": 0.0012,
+      "2": 0.0015,
+      "3": 0.0023,
+      "4": 0.0021,
+      "5": 0.0024,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "PENTAGRAM_SHAPE",
+    "name": "Formation - Pentagon",
+    "sprite": "pentagram_shape.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0029,
+      "3": 0.0023,
+      "4": 0.0014,
+      "5": 0.0008
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "I_SHOT",
+    "name": "Iplicate Spell",
+    "sprite": "i_shot.png",
+    "spawnProbabilities": {
+      "1": 0.0012,
+      "2": 0.0015,
+      "3": 0.0038
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "Y_SHOT",
+    "name": "Yplicate Spell",
+    "sprite": "y_shot.png",
+    "spawnProbabilities": {
+      "1": 0.0012,
+      "2": 0.0015,
+      "3": 0.0038
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "T_SHOT",
+    "name": "Tiplicate Spell",
+    "sprite": "t_shot.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "3": 0.0015,
+      "5": 0.004
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "W_SHOT",
+    "name": "Wuplicate Spell",
+    "sprite": "w_shot.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "3": 0.0015,
+      "5": 0.004,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "QUAD_SHOT",
+    "name": "Quplicate Spell",
+    "sprite": "quad_shot.png",
+    "spawnProbabilities": {
+      "1": 0.0012,
+      "2": 0.0015,
+      "4": 0.0035
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "PENTA_SHOT",
+    "name": "Peplicate Spell",
+    "sprite": "penta_shot.png",
+    "spawnProbabilities": {
+      "3": 0.0008,
+      "4": 0.0014,
+      "5": 0.004,
+      "6": 0.0061,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "HEXA_SHOT",
+    "name": "Heplicate Spell",
+    "sprite": "hexa_shot.png",
+    "spawnProbabilities": {
+      "3": 0.0008,
+      "4": 0.0014,
+      "5": 0.004,
+      "6": 0.0061,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "SPREAD_REDUCE",
+    "name": "Reduce Spread",
+    "sprite": "spread_reduce.png",
+    "spawnProbabilities": {
+      "1": 0.0095,
+      "2": 0.0058,
+      "3": 0.0062,
+      "4": 0.0056,
+      "5": 0.0056,
+      "6": 0.0073
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HEAVY_SPREAD",
+    "name": "Heavy Spread",
+    "sprite": "heavy_spread.png",
+    "spawnProbabilities": {
+      "0": 0.0135,
+      "1": 0.0083,
+      "2": 0.0058,
+      "4": 0.0056,
+      "5": 0.0064,
+      "6": 0.0073
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "RECHARGE",
+    "name": "Reduce Recharge Time",
+    "sprite": "recharge.png",
+    "spawnProbabilities": {
+      "1": 0.0095,
+      "2": 0.0065,
+      "3": 0.0077,
+      "4": 0.0056,
+      "5": 0.0072,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LIFETIME",
+    "name": "Increase Lifetime",
+    "sprite": "lifetime.png",
+    "spawnProbabilities": {
+      "3": 0.0038,
+      "4": 0.0035,
+      "5": 0.004,
+      "6": 0.0091,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LIFETIME_DOWN",
+    "name": "Reduce Lifetime",
+    "sprite": "lifetime_down.png",
+    "spawnProbabilities": {
+      "3": 0.0038,
+      "4": 0.0035,
+      "5": 0.006,
+      "6": 0.0061,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "NOLLA",
+    "name": "Nolla",
+    "sprite": "nolla.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "4": 0.0014,
+      "5": 0.004,
+      "6": 0.0061,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SLOW_BUT_STEADY",
+    "name": "Slow But Steady",
+    "sprite": "slow_but_steady.png",
+    "spawnProbabilities": {
+      "3": 0.0008,
+      "4": 0.0014,
+      "5": 0.0048,
+      "6": 0.0073,
+      "10": 0.0066
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "EXPLOSION_REMOVE",
+    "name": "Remove Explosion",
+    "sprite": "explosion_remove.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "4": 0.0042,
+      "5": 0.0056,
+      "6": 0.0024
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "EXPLOSION_TINY",
+    "name": "Concentrated Explosion",
+    "sprite": "explosion_tiny.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "4": 0.0042,
+      "5": 0.0056,
+      "6": 0.0024
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LASER_EMITTER_WIDER",
+    "name": "Plasma Beam Enhancer",
+    "sprite": "laser_emitter_wider.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0028
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "MANA_REDUCE",
+    "name": "Add Mana",
+    "sprite": "mana.png",
+    "spawnProbabilities": {
+      "1": 0.0083,
+      "2": 0.0065,
+      "3": 0.0077,
+      "4": 0.007,
+      "5": 0.008,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BLOOD_MAGIC",
+    "name": "Blood Magic",
+    "sprite": "blood_magic.png",
+    "spawnProbabilities": {
+      "5": 0.0024,
+      "6": 0.0085,
+      "10": 0.0083
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "MONEY_MAGIC",
+    "name": "Gold To Power",
+    "sprite": "golden_punch.png",
+    "spawnProbabilities": {
+      "3": 0.0015,
+      "5": 0.0064,
+      "6": 0.0036,
+      "10": 0.0083
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "BLOOD_TO_POWER",
+    "name": "Blood To Power",
+    "sprite": "blood_punch.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "5": 0.0064,
+      "6": 0.0024,
+      "10": 0.0083
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "DUPLICATE",
+    "name": "Spell Duplication",
+    "sprite": "duplicate.png",
+    "spawnProbabilities": {
+      "5": 0.0008,
+      "6": 0.0024,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "QUANTUM_SPLIT",
+    "name": "Quantum Split",
+    "sprite": "quantum_split.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "3": 0.0046,
+      "4": 0.0035,
+      "5": 0.004,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "GRAVITY",
+    "name": "Gravity",
+    "sprite": "gravity.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0024,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "GRAVITY_ANTI",
+    "name": "Anti-Gravity",
+    "sprite": "gravity_anti.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0024,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SINEWAVE",
+    "name": "Slithering Path",
+    "sprite": "sinewave.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "4": 0.0038,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "CHAOTIC_ARC",
+    "name": "Chaotic Path",
+    "sprite": "chaotic_arc.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "3": 0.0042,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "PINGPONG_PATH",
+    "name": "Ping-Pong Path",
+    "sprite": "pingpong_path.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "3": 0.0038,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "AVOIDING_ARC",
+    "name": "Avoiding Arc",
+    "sprite": "avoiding_arc.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "4": 0.0028,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "FLOATING_ARC",
+    "name": "Floating Arc",
+    "sprite": "floating_arc.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "3": 0.0031,
+      "5": 0.004
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "FLY_DOWNWARDS",
+    "name": "Fly Downwards",
+    "sprite": "fly_downwards.png",
+    "spawnProbabilities": {
+      "1": 0.0036,
+      "3": 0.0035,
+      "5": 0.0024
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "FLY_UPWARDS",
+    "name": "Fly Upwards",
+    "sprite": "fly_upwards.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "4": 0.0031,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HORIZONTAL_ARC",
+    "name": "Horizontal Path",
+    "sprite": "horizontal_arc.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "3": 0.0031,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LINE_ARC",
+    "name": "Linear Arc",
+    "sprite": "line_arc.png",
+    "spawnProbabilities": {
+      "1": 0.0036,
+      "3": 0.0031,
+      "5": 0.004
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ORBIT_SHOT",
+    "name": "Orbiting Arc",
+    "sprite": "orbit_shot.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0021
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SPIRALING_SHOT",
+    "name": "Spiral Arc",
+    "sprite": "spiraling_shot.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "2": 0.0022,
+      "3": 0.0031,
+      "4": 0.0035
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "PHASING_ARC",
+    "name": "Phasing Arc",
+    "sprite": "phasing_arc.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "3": 0.0023,
+      "4": 0.0042,
+      "5": 0.0008
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "TRUE_ORBIT",
+    "name": "True Orbit",
+    "sprite": "true_orbit.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "3": 0.0023,
+      "4": 0.0028
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BOUNCE",
+    "name": "Bounce",
+    "sprite": "bounce.png",
+    "spawnProbabilities": {
+      "2": 0.0073,
+      "3": 0.0077,
+      "4": 0.0028,
+      "6": 0.0024
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "REMOVE_BOUNCE",
+    "name": "Remove Bounce",
+    "sprite": "remove_bounce.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "3": 0.0015,
+      "4": 0.007,
+      "5": 0.008
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HOMING",
+    "name": "Homing",
+    "sprite": "homing.png",
+    "spawnProbabilities": {
+      "1": 0.0012,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0032,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ANTI_HOMING",
+    "name": "Anti Homing",
+    "sprite": "anti_homing.png",
+    "spawnProbabilities": {
+      "1": 0.0006,
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0007,
+      "5": 0.0008,
+      "6": 0.0001
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HOMING_WAND",
+    "name": "Wand Homing",
+    "sprite": "homing_wand.png",
+    "spawnProbabilities": {
+      "1": 0.0,
+      "2": 0.0006,
+      "4": 0.0006,
+      "5": 0.002,
+      "6": 0.003,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HOMING_SHORT",
+    "name": "Short-range Homing",
+    "sprite": "homing_short.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0058,
+      "3": 0.0077,
+      "4": 0.0028,
+      "5": 0.0024,
+      "6": 0.0012
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HOMING_ROTATE",
+    "name": "Rotate Towards Foes",
+    "sprite": "homing_rotate.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "3": 0.0031,
+      "4": 0.0042,
+      "5": 0.0032,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HOMING_SHOOTER",
+    "name": "Boomerang",
+    "sprite": "homing_shooter.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "3": 0.0023,
+      "4": 0.0014,
+      "6": 0.0024
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "AUTOAIM",
+    "name": "Auto-Aim",
+    "sprite": "autoaim.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0032,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HOMING_ACCELERATING",
+    "name": "Accelerative Homing",
+    "sprite": "homing_accelerating.png",
+    "spawnProbabilities": {
+      "1": 0.0012,
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0035
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HOMING_CURSOR",
+    "name": "Aiming Arc",
+    "sprite": "homing_cursor.png",
+    "spawnProbabilities": {
+      "2": 0.0051,
+      "3": 0.0054,
+      "4": 0.0028,
+      "5": 0.0032,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HOMING_AREA",
+    "name": "Projectile Area Teleport",
+    "sprite": "homing_area.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "3": 0.0031,
+      "4": 0.0042,
+      "5": 0.0056,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "PIERCING_SHOT",
+    "name": "Piercing Shot",
+    "sprite": "piercing_shot.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "3": 0.0038,
+      "4": 0.0042,
+      "5": 0.0048,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "CLIPPING_SHOT",
+    "name": "Drilling Shot",
+    "sprite": "clipping_shot.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "3": 0.0023,
+      "4": 0.0042,
+      "5": 0.0032,
+      "6": 0.0073
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "DAMAGE",
+    "name": "Damage Plus",
+    "sprite": "damage.png",
+    "spawnProbabilities": {
+      "1": 0.0071,
+      "2": 0.0044,
+      "3": 0.0062,
+      "4": 0.0042,
+      "5": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "DAMAGE_RANDOM",
+    "name": "Random Damage",
+    "sprite": "damage_random.png",
+    "spawnProbabilities": {
+      "3": 0.0054,
+      "4": 0.0042,
+      "5": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BLOODLUST",
+    "name": "Bloodlust",
+    "sprite": "bloodlust.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "3": 0.0023,
+      "4": 0.0042,
+      "5": 0.0056,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "DAMAGE_FOREVER",
+    "name": "Mana To Damage",
+    "sprite": "damage_forever.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "3": 0.0023,
+      "4": 0.0042,
+      "5": 0.004,
+      "6": 0.0024,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "CRITICAL_HIT",
+    "name": "Critical Plus",
+    "sprite": "critical_hit.png",
+    "spawnProbabilities": {
+      "1": 0.0059,
+      "2": 0.0044,
+      "3": 0.0046,
+      "4": 0.0049,
+      "5": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "AREA_DAMAGE",
+    "name": "Damage Field",
+    "sprite": "area_damage.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "3": 0.0038,
+      "4": 0.0035,
+      "5": 0.004,
+      "6": 0.0073
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SPELLS_TO_POWER",
+    "name": "Spells To Power",
+    "sprite": "spells_to_power.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0035,
+      "5": 0.004,
+      "6": 0.0061,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ESSENCE_TO_POWER",
+    "name": "Essence to Power",
+    "sprite": "essence_to_power.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "2": 0.0036,
+      "3": 0.0038,
+      "6": 0.0061,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ZERO_DAMAGE",
+    "name": "Null Shot",
+    "sprite": "zero_damage.png",
+    "spawnProbabilities": {
+      "3": 0.0023,
+      "4": 0.0021,
+      "5": 0.0048,
+      "10": 0.005
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HEAVY_SHOT",
+    "name": "Heavy Shot",
+    "sprite": "heavy_shot.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0035
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LIGHT_SHOT",
+    "name": "Light Shot",
+    "sprite": "light_shot.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0038,
+      "4": 0.0028
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "KNOCKBACK",
+    "name": "Knockback",
+    "sprite": "knockback.png",
+    "spawnProbabilities": {
+      "3": 0.0054,
+      "5": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "RECOIL",
+    "name": "Recoil",
+    "sprite": "recoil.png",
+    "spawnProbabilities": {
+      "2": 0.0044,
+      "4": 0.0049
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "RECOIL_DAMPER",
+    "name": "Recoil Damper",
+    "sprite": "recoil_damper.png",
+    "spawnProbabilities": {
+      "3": 0.0046,
+      "6": 0.0085
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "SPEED",
+    "name": "Speed Up",
+    "sprite": "speed.png",
+    "spawnProbabilities": {
+      "1": 0.0119,
+      "2": 0.0036,
+      "3": 0.0038
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ACCELERATING_SHOT",
+    "name": "Accelerating Shot",
+    "sprite": "accelerating_shot.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "3": 0.0031,
+      "4": 0.007
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "DECELERATING_SHOT",
+    "name": "Decelerating Shot",
+    "sprite": "decelerating_shot.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "3": 0.0008,
+      "4": 0.0049
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "EXPLOSIVE_PROJECTILE",
+    "name": "Explosive Projectile",
+    "sprite": "explosive_projectile.png",
+    "spawnProbabilities": {
+      "2": 0.0073,
+      "3": 0.0077,
+      "4": 0.0056
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "CLUSTERMOD",
+    "name": "Clusterbolt",
+    "sprite": "clusterbomb.png",
+    "spawnProbabilities": {
+      "1": 0.0059,
+      "2": 0.0073,
+      "3": 0.0046
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "WATER_TO_POISON",
+    "name": "Water To Poison",
+    "sprite": "water_to_poison.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0021
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BLOOD_TO_ACID",
+    "name": "Blood To Acid",
+    "sprite": "blood_to_acid.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0021
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LAVA_TO_BLOOD",
+    "name": "Lava To Blood",
+    "sprite": "lava_to_blood.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0021
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LIQUID_TO_EXPLOSION",
+    "name": "Liquid Detonation",
+    "sprite": "liquid_to_explosion.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0021
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "TOXIC_TO_ACID",
+    "name": "Toxic Sludge To Acid",
+    "sprite": "toxic_to_acid.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0021
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "STATIC_TO_SAND",
+    "name": "Ground To Sand",
+    "sprite": "static_to_sand.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0021,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "TRANSMUTATION",
+    "name": "Chaotic Transmutation",
+    "sprite": "transmutation.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0021,
+      "5": 0.0024,
+      "6": 0.0036,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "RANDOM_EXPLOSION",
+    "name": "Chaos Magic",
+    "sprite": "random_explosion.png",
+    "spawnProbabilities": {
+      "3": 0.0023,
+      "5": 0.0048,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "NECROMANCY",
+    "name": "Necromancy",
+    "sprite": "necromancy.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "3": 0.0046,
+      "4": 0.0042,
+      "5": 0.0024
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LIGHT",
+    "name": "Light",
+    "sprite": "light.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "1": 0.0095,
+      "2": 0.0044,
+      "3": 0.0031,
+      "4": 0.0014
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "EXPLOSION",
+    "name": "Explosion",
+    "sprite": "explosion.png",
+    "spawnProbabilities": {
+      "0": 0.0112,
+      "2": 0.0073,
+      "4": 0.007,
+      "5": 0.0056
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "EXPLOSION_LIGHT",
+    "name": "Magical Explosion",
+    "sprite": "explosion_light.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "3": 0.0077,
+      "5": 0.0056,
+      "6": 0.0061
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "FIRE_BLAST",
+    "name": "Explosion of Brimstone",
+    "sprite": "fire_blast.png",
+    "spawnProbabilities": {
+      "0": 0.0112,
+      "1": 0.0083,
+      "3": 0.0046,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "POISON_BLAST",
+    "name": "Explosion of Poison",
+    "sprite": "poison_blast.png",
+    "spawnProbabilities": {
+      "1": 0.0059,
+      "2": 0.0058,
+      "4": 0.0028,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ALCOHOL_BLAST",
+    "name": "Explosion of Spirits",
+    "sprite": "alcohol_blast.png",
+    "spawnProbabilities": {
+      "1": 0.0059,
+      "2": 0.0044,
+      "4": 0.0045,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "THUNDER_BLAST",
+    "name": "Explosion of Thunder",
+    "sprite": "thunder_blast.png",
+    "spawnProbabilities": {
+      "1": 0.0059,
+      "3": 0.0046,
+      "5": 0.0056,
+      "6": 0.0061,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "BERSERK_FIELD",
+    "name": "Circle of Fervour",
+    "sprite": "berserk_field.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0046,
+      "4": 0.0021
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "POLYMORPH_FIELD",
+    "name": "Circle of Transmogrification",
+    "sprite": "polymorph_field.png",
+    "spawnProbabilities": {
+      "0": 0.0067,
+      "1": 0.0036,
+      "2": 0.0022,
+      "3": 0.0062,
+      "4": 0.0056,
+      "5": 0.0024,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "CHAOS_POLYMORPH_FIELD",
+    "name": "Circle of Unstable Metamorphosis",
+    "sprite": "chaos_polymorph_field.png",
+    "spawnProbabilities": {
+      "1": 0.0036,
+      "2": 0.0022,
+      "3": 0.0038,
+      "4": 0.0042,
+      "5": 0.0024,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ELECTROCUTION_FIELD",
+    "name": "Circle of Thunder",
+    "sprite": "electrocution_field.png",
+    "spawnProbabilities": {
+      "1": 0.0036,
+      "3": 0.0046,
+      "5": 0.0064,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": false
+  },
+  {
+    "id": "FREEZE_FIELD",
+    "name": "Circle of Stillness",
+    "sprite": "freeze_field.png",
+    "spawnProbabilities": {
+      "0": 0.0067,
+      "2": 0.0044,
+      "4": 0.0049,
+      "5": 0.0024
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": false
+  },
+  {
+    "id": "REGENERATION_FIELD",
+    "name": "Circle of Vigour",
+    "sprite": "regeneration_field.png",
+    "spawnProbabilities": {
+      "1": 0.0036,
+      "2": 0.0022,
+      "3": 0.0031,
+      "4": 0.0021
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "TELEPORTATION_FIELD",
+    "name": "Circle of Displacement",
+    "sprite": "teleportation_field.png",
+    "spawnProbabilities": {
+      "0": 0.0067,
+      "1": 0.0071,
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0042,
+      "5": 0.0024
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "LEVITATION_FIELD",
+    "name": "Circle of Buoyancy",
+    "sprite": "levitation_field.png",
+    "spawnProbabilities": {
+      "1": 0.0036,
+      "2": 0.0044,
+      "3": 0.0046,
+      "4": 0.0021
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "SHIELD_FIELD",
+    "name": "Circle of Shielding",
+    "sprite": "shield_field.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0028,
+      "5": 0.004,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": false
+  },
+  {
+    "id": "PROJECTILE_TRANSMUTATION_FIELD",
+    "name": "Projectile Transmutation Field",
+    "sprite": "projectile_transmutation_field.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0024,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "PROJECTILE_THUNDER_FIELD",
+    "name": "Projectile Thunder Field",
+    "sprite": "projectile_thunder_field.png",
+    "spawnProbabilities": {
+      "3": 0.0023,
+      "4": 0.0021,
+      "5": 0.004,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "PROJECTILE_GRAVITY_FIELD",
+    "name": "Projectile Gravity Field",
+    "sprite": "projectile_gravity_field.png",
+    "spawnProbabilities": {
+      "2": 0.0044,
+      "5": 0.0024,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "VACUUM_POWDER",
+    "name": "Powder Vacuum Field",
+    "sprite": "vacuum_powder.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0054,
+      "5": 0.0024,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "VACUUM_LIQUID",
+    "name": "Liquid Vacuum Field",
+    "sprite": "vacuum_liquid.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "4": 0.0049,
+      "5": 0.0032,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "VACUUM_ENTITIES",
+    "name": "Vacuum Field",
+    "sprite": "vacuum_entities.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0054,
+      "5": 0.0024,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "SEA_LAVA",
+    "name": "Sea Of Lava",
+    "sprite": "sea_lava.png",
+    "spawnProbabilities": {
+      "0": 0.0045,
+      "4": 0.0014,
+      "5": 0.004,
+      "6": 0.0073
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "SEA_ALCOHOL",
+    "name": "Sea Of Alcohol",
+    "sprite": "sea_alcohol.png",
+    "spawnProbabilities": {
+      "0": 0.0067,
+      "4": 0.0035,
+      "5": 0.0048,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "SEA_OIL",
+    "name": "Sea Of Oil",
+    "sprite": "sea_oil.png",
+    "spawnProbabilities": {
+      "0": 0.0067,
+      "4": 0.0035,
+      "5": 0.0048,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "SEA_WATER",
+    "name": "Sea Of Water",
+    "sprite": "sea_water.png",
+    "spawnProbabilities": {
+      "0": 0.0112,
+      "4": 0.0028,
+      "5": 0.0024,
+      "6": 0.0024
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "SEA_SWAMP",
+    "name": "Summon Swamp",
+    "sprite": "sea_swamp.png",
+    "spawnProbabilities": {
+      "0": 0.0
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "SEA_ACID",
+    "name": "Sea Of Acid",
+    "sprite": "sea_acid.png",
+    "spawnProbabilities": {
+      "0": 0.0045,
+      "4": 0.0014,
+      "5": 0.0032,
+      "6": 0.0061
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "SEA_ACID_GAS",
+    "name": "Sea Of Flammable Gas",
+    "sprite": "sea_acid_gas.png",
+    "spawnProbabilities": {
+      "0": 0.0067,
+      "4": 0.0028,
+      "5": 0.0032,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "SEA_MIMIC",
+    "name": "Sea of Mimicium",
+    "sprite": "sea_mimic.png",
+    "spawnProbabilities": {
+      "0": 0.0011,
+      "4": 0.0003,
+      "5": 0.0008,
+      "6": 0.0012,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "CLOUD_WATER",
+    "name": "Rain Cloud",
+    "sprite": "cloud_water.png",
+    "spawnProbabilities": {
+      "0": 0.0045,
+      "1": 0.0036,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0021,
+      "5": 0.0016
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": false
+  },
+  {
+    "id": "CLOUD_OIL",
+    "name": "Oil Cloud",
+    "sprite": "cloud_oil.png",
+    "spawnProbabilities": {
+      "0": 0.0045,
+      "1": 0.0036,
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0021,
+      "5": 0.0016
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "CLOUD_BLOOD",
+    "name": "Blood Cloud",
+    "sprite": "cloud_blood.png",
+    "spawnProbabilities": {
+      "0": 0.0045,
+      "1": 0.0036,
+      "2": 0.0022,
+      "3": 0.0031,
+      "4": 0.0021,
+      "5": 0.0016
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "CLOUD_ACID",
+    "name": "Acid Cloud",
+    "sprite": "cloud_acid.png",
+    "spawnProbabilities": {
+      "0": 0.0045,
+      "1": 0.0024,
+      "2": 0.0029,
+      "3": 0.0015,
+      "4": 0.0014,
+      "5": 0.004
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "CLOUD_THUNDER",
+    "name": "Thundercloud",
+    "sprite": "cloud_thunder.png",
+    "spawnProbabilities": {
+      "0": 0.0067,
+      "1": 0.0036,
+      "2": 0.0015,
+      "3": 0.0023,
+      "4": 0.0028,
+      "5": 0.004
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ELECTRIC_CHARGE",
+    "name": "Electric Charge",
+    "sprite": "electric_charge.png",
+    "spawnProbabilities": {
+      "1": 0.0119,
+      "2": 0.0073,
+      "4": 0.0056,
+      "5": 0.0056
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "MATTER_EATER",
+    "name": "Matter Eater",
+    "sprite": "matter_eater.png",
+    "spawnProbabilities": {
+      "1": 0.0012,
+      "2": 0.0065,
+      "4": 0.0007,
+      "5": 0.0016,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "FREEZE",
+    "name": "Freeze Charge",
+    "sprite": "freeze.png",
+    "spawnProbabilities": {
+      "1": 0.0119,
+      "3": 0.0077,
+      "4": 0.0063,
+      "5": 0.0064
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HITFX_BURNING_CRITICAL_HIT",
+    "name": "Critical On Burning",
+    "sprite": "burning_critical.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "3": 0.0031,
+      "4": 0.0014,
+      "5": 0.0016
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HITFX_CRITICAL_WATER",
+    "name": "Critical On Wet (Water) Enemies",
+    "sprite": "critical_water.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "3": 0.0015,
+      "4": 0.0028,
+      "5": 0.0016
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HITFX_CRITICAL_OIL",
+    "name": "Critical On Oiled Enemies",
+    "sprite": "critical_oil.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "3": 0.0031,
+      "4": 0.0014,
+      "5": 0.0016
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HITFX_CRITICAL_BLOOD",
+    "name": "Critical On Bloody Enemies",
+    "sprite": "critical_blood.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "3": 0.0015,
+      "4": 0.0014,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HITFX_TOXIC_CHARM",
+    "name": "Charm On Toxic Sludge",
+    "sprite": "charm_on_toxic.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "3": 0.0015,
+      "4": 0.0021,
+      "5": 0.0016
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HITFX_EXPLOSION_SLIME",
+    "name": "Explosion On Slimy Enemies",
+    "sprite": "explode_on_slime.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "3": 0.0023,
+      "4": 0.0014,
+      "5": 0.0016
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HITFX_EXPLOSION_SLIME_GIGA",
+    "name": "Giant Explosion On Slimy Enemies",
+    "sprite": "explode_on_slime_giga.png",
+    "spawnProbabilities": {
+      "1": 0.0012,
+      "3": 0.0008,
+      "4": 0.0021,
+      "5": 0.0008
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HITFX_EXPLOSION_ALCOHOL",
+    "name": "Explosion On Drunk Enemies",
+    "sprite": "explode_on_alcohol.png",
+    "spawnProbabilities": {
+      "1": 0.0036,
+      "3": 0.0015,
+      "4": 0.0014,
+      "5": 0.0016
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HITFX_EXPLOSION_ALCOHOL_GIGA",
+    "name": "Giant Explosion On Drunk Enemies",
+    "sprite": "explode_on_alcohol_giga.png",
+    "spawnProbabilities": {
+      "1": 0.0012,
+      "3": 0.0008,
+      "4": 0.0007,
+      "5": 0.0024
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "HITFX_PETRIFY",
+    "name": "Petrify",
+    "sprite": "petrify.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "3": 0.0023,
+      "5": 0.0016,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ROCKET_DOWNWARDS",
+    "name": "Downwards Bolt Bundle",
+    "sprite": "rocket_downwards.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "2": 0.0036,
+      "3": 0.0054,
+      "4": 0.0049
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ROCKET_OCTAGON",
+    "name": "Octagonal Bolt Bundle",
+    "sprite": "rocket_octagon.png",
+    "spawnProbabilities": {
+      "2": 0.0036,
+      "3": 0.0046,
+      "4": 0.0021
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "FIZZLE",
+    "name": "Fizzle",
+    "sprite": "fizzle.png",
+    "spawnProbabilities": {
+      "3": 0.0031,
+      "4": 0.0021,
+      "5": 0.0008
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BOUNCE_EXPLOSION",
+    "name": "Explosive Bounce",
+    "sprite": "bounce_explosion.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "3": 0.0046,
+      "4": 0.0056,
+      "5": 0.0064
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BOUNCE_SPARK",
+    "name": "Bubbly Bounce",
+    "sprite": "bounce_spark.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "2": 0.0044,
+      "3": 0.0046,
+      "4": 0.0042
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BOUNCE_LASER",
+    "name": "Concentrated Light Bounce",
+    "sprite": "bounce_laser.png",
+    "spawnProbabilities": {
+      "3": 0.0031,
+      "4": 0.0056,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BOUNCE_LASER_EMITTER",
+    "name": "Plasma Beam Bounce",
+    "sprite": "bounce_laser_emitter.png",
+    "spawnProbabilities": {
+      "3": 0.0031,
+      "4": 0.0056,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BOUNCE_LARPA",
+    "name": "Larpa Bounce",
+    "sprite": "bounce_larpa.png",
+    "spawnProbabilities": {
+      "4": 0.0028,
+      "5": 0.0048,
+      "6": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BOUNCE_SMALL_EXPLOSION",
+    "name": "Sparkly Bounce",
+    "sprite": "bounce_small_explosion.png",
+    "spawnProbabilities": {
+      "0": 0.0112,
+      "1": 0.0036,
+      "2": 0.0022
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BOUNCE_LIGHTNING",
+    "name": "Lightning Bounce",
+    "sprite": "bounce_lightning.png",
+    "spawnProbabilities": {
+      "1": 0.0012,
+      "3": 0.0023,
+      "5": 0.0048
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BOUNCE_HOLE",
+    "name": "Vacuum Bounce",
+    "sprite": "bounce_hole.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "4": 0.0028,
+      "6": 0.0048,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "FIREBALL_RAY",
+    "name": "Fireball Thrower",
+    "sprite": "fireball_ray.png",
+    "spawnProbabilities": {
+      "1": 0.0071,
+      "2": 0.0044,
+      "4": 0.0028,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LIGHTNING_RAY",
+    "name": "Lightning Thrower",
+    "sprite": "lightning_ray.png",
+    "spawnProbabilities": {
+      "1": 0.0,
+      "2": 0.0015,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "TENTACLE_RAY",
+    "name": "Tentacler",
+    "sprite": "tentacle_ray.png",
+    "spawnProbabilities": {
+      "1": 0.0012,
+      "2": 0.0,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LASER_EMITTER_RAY",
+    "name": "Plasma Beam Thrower",
+    "sprite": "laser_emitter_ray.png",
+    "spawnProbabilities": {
+      "1": 0.0,
+      "2": 0.0007,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "FIREBALL_RAY_LINE",
+    "name": "Two-Way Fireball Thrower",
+    "sprite": "fireball_ray_line.png",
+    "spawnProbabilities": {
+      "2": 0.0044,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0032,
+      "6": 0.0121
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "FIREBALL_RAY_ENEMY",
+    "name": "Personal Fireball Thrower",
+    "sprite": "fireball_ray_enemy.png",
+    "spawnProbabilities": {
+      "1": 0.0059,
+      "2": 0.0044,
+      "4": 0.0028,
+      "5": 0.0024
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LIGHTNING_RAY_ENEMY",
+    "name": "Personal Lightning Caster",
+    "sprite": "lightning_ray_enemy.png",
+    "spawnProbabilities": {
+      "1": 0.0,
+      "2": 0.0015,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.004
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "TENTACLE_RAY_ENEMY",
+    "name": "Personal Tentacler",
+    "sprite": "tentacle_ray_enemy.png",
+    "spawnProbabilities": {
+      "1": 0.0,
+      "2": 0.0007,
+      "3": 0.0031,
+      "4": 0.0035,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "GRAVITY_FIELD_ENEMY",
+    "name": "Personal Gravity Field",
+    "sprite": "gravity_field_enemy.png",
+    "spawnProbabilities": {
+      "1": 0.0059,
+      "2": 0.0044,
+      "4": 0.0028,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "CURSE",
+    "name": "Venomous Curse",
+    "sprite": "curse.png",
+    "spawnProbabilities": {
+      "2": 0.0044,
+      "3": 0.0054,
+      "5": 0.0032,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "CURSE_WITHER_PROJECTILE",
+    "name": "Weakening Curse - Projectiles",
+    "sprite": "curse_wither_projectile.png",
+    "spawnProbabilities": {
+      "3": 0.0015,
+      "4": 0.0028,
+      "5": 0.0056,
+      "6": 0.0085,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "CURSE_WITHER_EXPLOSION",
+    "name": "Weakening Curse - Explosives",
+    "sprite": "curse_wither_explosion.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "3": 0.0031,
+      "4": 0.0049,
+      "5": 0.0056,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "CURSE_WITHER_MELEE",
+    "name": "Weakening Curse - Melee",
+    "sprite": "curse_wither_melee.png",
+    "spawnProbabilities": {
+      "3": 0.0015,
+      "4": 0.0028,
+      "5": 0.0056,
+      "6": 0.0085,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "CURSE_WITHER_ELECTRICITY",
+    "name": "Weakening Curse - Electricity",
+    "sprite": "curse_wither_electricity.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "4": 0.0028,
+      "5": 0.0056,
+      "6": 0.0085,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ORBIT_DISCS",
+    "name": "Sawblade Orbit",
+    "sprite": "orbit_discs.png",
+    "spawnProbabilities": {
+      "1": 0.0036,
+      "2": 0.0047,
+      "4": 0.0028,
+      "5": 0.0024
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ORBIT_FIREBALLS",
+    "name": "Fireball Orbit",
+    "sprite": "orbit_fireballs.png",
+    "spawnProbabilities": {
+      "0": 0.0045,
+      "1": 0.0036,
+      "2": 0.0051,
+      "4": 0.0028,
+      "5": 0.0016
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ORBIT_NUKES",
+    "name": "Nuke Orbit",
+    "sprite": "orbit_nukes.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "4": 0.0014,
+      "5": 0.0008,
+      "6": 0.0024,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ORBIT_LASERS",
+    "name": "Plasma Beam Orbit",
+    "sprite": "orbit_lasers.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "2": 0.0051,
+      "4": 0.0028,
+      "5": 0.0024,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ORBIT_LARPA",
+    "name": "Orbit Larpa",
+    "sprite": "orbit_larpa.png",
+    "spawnProbabilities": {
+      "3": 0.0015,
+      "4": 0.0014,
+      "6": 0.0097,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "CHAIN_SHOT",
+    "name": "Chain Spell",
+    "sprite": "chain_shot.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "4": 0.0042,
+      "5": 0.0064
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ARC_ELECTRIC",
+    "name": "Electric Arc",
+    "sprite": "arc_electric.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0032,
+      "6": 0.0097
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ARC_FIRE",
+    "name": "Fire Arc",
+    "sprite": "arc_fire.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0015,
+      "3": 0.0015,
+      "4": 0.0035,
+      "5": 0.0016
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ARC_GUNPOWDER",
+    "name": "Gunpowder Arc",
+    "sprite": "arc_gunpowder.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0029,
+      "3": 0.0015,
+      "4": 0.0028,
+      "5": 0.0016
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ARC_POISON",
+    "name": "Poison Arc",
+    "sprite": "arc_poison.png",
+    "spawnProbabilities": {
+      "1": 0.0048,
+      "2": 0.0015,
+      "3": 0.0031,
+      "4": 0.0014,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "CRUMBLING_EARTH_PROJECTILE",
+    "name": "Earthquake Shot",
+    "sprite": "crumbling_earth_projectile.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "2": 0.0022,
+      "3": 0.0031,
+      "4": 0.0028,
+      "5": 0.0024
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "X_RAY",
+    "name": "All-Seeing Eye",
+    "sprite": "x_ray.png",
+    "spawnProbabilities": {
+      "0": 0.0179,
+      "1": 0.0119,
+      "2": 0.0073,
+      "3": 0.0054,
+      "4": 0.0035,
+      "5": 0.0024,
+      "6": 0.0024
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": false
+  },
+  {
+    "id": "UNSTABLE_GUNPOWDER",
+    "name": "Firecrackers",
+    "sprite": "unstable_gunpowder.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0031,
+      "4": 0.0028
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ACID_TRAIL",
+    "name": "Acid Trail",
+    "sprite": "acid_trail.png",
+    "spawnProbabilities": {
+      "1": 0.0036,
+      "2": 0.0015,
+      "3": 0.0023,
+      "4": 0.0021,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "POISON_TRAIL",
+    "name": "Poison Trail",
+    "sprite": "poison_trail.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0021
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "OIL_TRAIL",
+    "name": "Oil Trail",
+    "sprite": "oil_trail.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0021
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "WATER_TRAIL",
+    "name": "Water Trail",
+    "sprite": "water_trail.png",
+    "spawnProbabilities": {
+      "1": 0.0036,
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0021
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "GUNPOWDER_TRAIL",
+    "name": "Gunpowder Trail",
+    "sprite": "gunpowder_trail.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0021
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "FIRE_TRAIL",
+    "name": "Fire Trail",
+    "sprite": "fire_trail.png",
+    "spawnProbabilities": {
+      "0": 0.009,
+      "1": 0.0059,
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0014
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "BURN_TRAIL",
+    "name": "Burning Trail",
+    "sprite": "burn_trail.png",
+    "spawnProbabilities": {
+      "0": 0.009,
+      "1": 0.0036,
+      "2": 0.0022
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "TORCH",
+    "name": "Torch",
+    "sprite": "torch.png",
+    "spawnProbabilities": {
+      "0": 0.0224,
+      "1": 0.0071,
+      "2": 0.0036
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": false
+  },
+  {
+    "id": "TORCH_ELECTRIC",
+    "name": "Electric Torch",
+    "sprite": "torch_electric.png",
+    "spawnProbabilities": {
+      "0": 0.0179,
+      "1": 0.0071,
+      "2": 0.0029
+    },
+    "isPremadeWandSpell": true,
+    "isWandSpell": false
+  },
+  {
+    "id": "ENERGY_SHIELD",
+    "name": "Energy Shield",
+    "sprite": "energy_shield.png",
+    "spawnProbabilities": {
+      "1": 0.0006,
+      "2": 0.0029,
+      "3": 0.0062,
+      "4": 0.0028,
+      "5": 0.0032,
+      "6": 0.0073
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ENERGY_SHIELD_SECTOR",
+    "name": "Energy Shield Sector",
+    "sprite": "energy_shield_sector.png",
+    "spawnProbabilities": {
+      "0": 0.0022,
+      "1": 0.0059,
+      "2": 0.0044,
+      "3": 0.0062,
+      "4": 0.0035,
+      "5": 0.0032
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ENERGY_SHIELD_SHOT",
+    "name": "Projectile Energy Shield",
+    "sprite": "energy_shield_shot.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0023,
+      "4": 0.0035,
+      "5": 0.0032,
+      "6": 0.0036
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "TINY_GHOST",
+    "name": "Summon Tiny Ghost",
+    "sprite": "tiny_ghost.png",
+    "spawnProbabilities": {
+      "1": 0.0012,
+      "2": 0.0036,
+      "3": 0.0077,
+      "4": 0.0056,
+      "5": 0.0056,
+      "6": 0.0061
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "OCARINA_A",
+    "name": "Ocarina - Note A",
+    "sprite": "ocarina_a.png",
+    "spawnProbabilities": {
+      "10": 0.0
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "OCARINA_B",
+    "name": "Ocarina - Note B",
+    "sprite": "ocarina_b.png",
+    "spawnProbabilities": {
+      "10": 0.0
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "OCARINA_C",
+    "name": "Ocarina - Note C",
+    "sprite": "ocarina_c.png",
+    "spawnProbabilities": {
+      "10": 0.0
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "OCARINA_D",
+    "name": "Ocarina - Note D",
+    "sprite": "ocarina_d.png",
+    "spawnProbabilities": {
+      "10": 0.0
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "OCARINA_E",
+    "name": "Ocarina - Note E",
+    "sprite": "ocarina_e.png",
+    "spawnProbabilities": {
+      "10": 0.0
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "OCARINA_F",
+    "name": "Ocarina - Note F",
+    "sprite": "ocarina_f.png",
+    "spawnProbabilities": {
+      "10": 0.0
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "OCARINA_GSHARP",
+    "name": "Ocarina - Note G+",
+    "sprite": "ocarina_gsharp.png",
+    "spawnProbabilities": {
+      "10": 0.0
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "OCARINA_A2",
+    "name": "Ocarina - Note A2",
+    "sprite": "ocarina_a2.png",
+    "spawnProbabilities": {
+      "10": 0.0
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "KANTELE_A",
+    "name": "Kantele - Note A",
+    "sprite": "kantele_a.png",
+    "spawnProbabilities": {
+      "10": 0.0
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "KANTELE_D",
+    "name": "Kantele - Note D",
+    "sprite": "kantele_d.png",
+    "spawnProbabilities": {
+      "10": 0.0
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "KANTELE_DIS",
+    "name": "Kantele - Note D+",
+    "sprite": "kantele_dis.png",
+    "spawnProbabilities": {
+      "10": 0.0
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "KANTELE_E",
+    "name": "Kantele - Note E",
+    "sprite": "kantele_e.png",
+    "spawnProbabilities": {
+      "10": 0.0
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "KANTELE_G",
+    "name": "Kantele - Note G",
+    "sprite": "kantele_g.png",
+    "spawnProbabilities": {
+      "10": 0.0
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "RANDOM_SPELL",
+    "name": "Random Spell",
+    "sprite": "random_spell.png",
+    "spawnProbabilities": {
+      "3": 0.0015,
+      "4": 0.0021,
+      "5": 0.0016,
+      "6": 0.0012,
+      "10": 0.0083
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "RANDOM_PROJECTILE",
+    "name": "Random Projectile Spell",
+    "sprite": "random_projectile.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "4": 0.0028,
+      "5": 0.0008,
+      "6": 0.0024,
+      "10": 0.0083
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "RANDOM_MODIFIER",
+    "name": "Random Modifier Spell",
+    "sprite": "random_modifier.png",
+    "spawnProbabilities": {
+      "4": 0.0021,
+      "5": 0.0016,
+      "6": 0.0012,
+      "10": 0.0083
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "RANDOM_STATIC_PROJECTILE",
+    "name": "Random Static Projectile Spell",
+    "sprite": "random_static_projectile.png",
+    "spawnProbabilities": {
+      "3": 0.0015,
+      "5": 0.0008,
+      "6": 0.0024,
+      "10": 0.0083
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "DRAW_RANDOM",
+    "name": "Copy Random Spell",
+    "sprite": "draw_random.png",
+    "spawnProbabilities": {
+      "2": 0.0022,
+      "3": 0.0015,
+      "4": 0.0014,
+      "5": 0.0008,
+      "6": 0.0012,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "DRAW_RANDOM_X3",
+    "name": "Copy Random Spell Thrice",
+    "sprite": "draw_random_x3.png",
+    "spawnProbabilities": {
+      "3": 0.0008,
+      "4": 0.0021,
+      "5": 0.0008,
+      "6": 0.0012,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "DRAW_3_RANDOM",
+    "name": "Copy Three Random Spells",
+    "sprite": "draw_3_random.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "3": 0.0015,
+      "5": 0.0008,
+      "6": 0.0012,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ALL_NUKES",
+    "name": "Spells To Nukes",
+    "sprite": "all_nukes.png",
+    "spawnProbabilities": {
+      "6": 0.0012,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ALL_DISCS",
+    "name": "Spells To Giga Sawblades",
+    "sprite": "all_discs.png",
+    "spawnProbabilities": {
+      "0": 0.0022,
+      "6": 0.0006,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ALL_ROCKETS",
+    "name": "Spells To Magic Missiles",
+    "sprite": "all_rockets.png",
+    "spawnProbabilities": {
+      "1": 0.0012,
+      "6": 0.0006,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ALL_DEATHCROSSES",
+    "name": "Spells To Death Crosses",
+    "sprite": "all_deathcrosses.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "6": 0.0006,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ALL_BLACKHOLES",
+    "name": "Spells To Black Holes",
+    "sprite": "all_blackholes.png",
+    "spawnProbabilities": {
+      "3": 0.0008,
+      "6": 0.0006,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ALL_ACID",
+    "name": "Spells To Acid",
+    "sprite": "all_acid.png",
+    "spawnProbabilities": {
+      "4": 0.0007,
+      "6": 0.0006,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ALL_SPELLS",
+    "name": "The End Of Everything",
+    "sprite": "all_spells.png",
+    "spawnProbabilities": {
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "SUMMON_PORTAL",
+    "name": "Summon Portal",
+    "sprite": "summon_portal.png",
+    "spawnProbabilities": {
+      "10": 0.0
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ADD_TRIGGER",
+    "name": "Add Trigger",
+    "sprite": "trigger.png",
+    "spawnProbabilities": {
+      "3": 0.0023,
+      "4": 0.0042,
+      "5": 0.0048,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ADD_TIMER",
+    "name": "Add Timer",
+    "sprite": "timer.png",
+    "spawnProbabilities": {
+      "3": 0.0023,
+      "4": 0.0042,
+      "5": 0.0048,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ADD_DEATH_TRIGGER",
+    "name": "Add Expiration Trigger",
+    "sprite": "death_trigger.png",
+    "spawnProbabilities": {
+      "3": 0.0023,
+      "4": 0.0042,
+      "5": 0.0048,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "LARPA_CHAOS",
+    "name": "Chaos Larpa",
+    "sprite": "larpa_chaos.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "3": 0.0015,
+      "4": 0.0021,
+      "5": 0.0032,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LARPA_DOWNWARDS",
+    "name": "Downwards Larpa",
+    "sprite": "larpa_downwards.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "3": 0.0023,
+      "4": 0.0028,
+      "5": 0.0016,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LARPA_UPWARDS",
+    "name": "Upwards Larpa",
+    "sprite": "larpa_upwards.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "3": 0.0008,
+      "4": 0.0014,
+      "5": 0.0032,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LARPA_CHAOS_2",
+    "name": "Copy Trail",
+    "sprite": "larpa_chaos_2.png",
+    "spawnProbabilities": {
+      "3": 0.0008,
+      "5": 0.0032,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "LARPA_DEATH",
+    "name": "Larpa Explosion",
+    "sprite": "larpa_death.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "3": 0.0008,
+      "4": 0.0021,
+      "5": 0.0032,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "ALPHA",
+    "name": "Alpha",
+    "sprite": "alpha.png",
+    "spawnProbabilities": {
+      "5": 0.0008,
+      "6": 0.0024,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "GAMMA",
+    "name": "Gamma",
+    "sprite": "gamma.png",
+    "spawnProbabilities": {
+      "5": 0.0008,
+      "6": 0.0024,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "TAU",
+    "name": "Tau",
+    "sprite": "tau.png",
+    "spawnProbabilities": {
+      "5": 0.0008,
+      "6": 0.0024,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "OMEGA",
+    "name": "Omega",
+    "sprite": "omega.png",
+    "spawnProbabilities": {
+      "5": 0.0008,
+      "6": 0.0012,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "MU",
+    "name": "Mu",
+    "sprite": "mu.png",
+    "spawnProbabilities": {
+      "5": 0.0008,
+      "6": 0.0024,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "PHI",
+    "name": "Phi",
+    "sprite": "phi.png",
+    "spawnProbabilities": {
+      "5": 0.0008,
+      "6": 0.0024,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "SIGMA",
+    "name": "Sigma",
+    "sprite": "sigma.png",
+    "spawnProbabilities": {
+      "4": 0.0007,
+      "5": 0.0016,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "ZETA",
+    "name": "Zeta",
+    "sprite": "zeta.png",
+    "spawnProbabilities": {
+      "2": 0.0015,
+      "5": 0.0032,
+      "10": 0.0083
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "DIVIDE_2",
+    "name": "Divide By 2",
+    "sprite": "divide_2.png",
+    "spawnProbabilities": {
+      "3": 0.0015,
+      "5": 0.0024,
+      "6": 0.0024,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "DIVIDE_3",
+    "name": "Divide By 3",
+    "sprite": "divide_3.png",
+    "spawnProbabilities": {
+      "4": 0.0007,
+      "5": 0.0008,
+      "6": 0.0024,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "DIVIDE_4",
+    "name": "Divide By 4",
+    "sprite": "divide_4.png",
+    "spawnProbabilities": {
+      "5": 0.0008,
+      "6": 0.0012,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "DIVIDE_10",
+    "name": "Divide By 10",
+    "sprite": "divide_10.png",
+    "spawnProbabilities": {
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "METEOR_RAIN",
+    "name": "Meteorisade",
+    "sprite": "meteor_rain.png",
+    "spawnProbabilities": {
+      "6": 0.0012,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "WORM_RAIN",
+    "name": "Matosade",
+    "sprite": "worm_rain.png",
+    "spawnProbabilities": {
+      "6": 0.0012,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "RESET",
+    "name": "Wand Refresh",
+    "sprite": "reset.png",
+    "spawnProbabilities": {
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "IF_ENEMY",
+    "name": "Requirement - Enemies",
+    "sprite": "if_enemy.png",
+    "spawnProbabilities": {
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "IF_PROJECTILE",
+    "name": "Requirement - Projectile Spells",
+    "sprite": "if_projectile.png",
+    "spawnProbabilities": {
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "IF_HP",
+    "name": "Requirement - Low Health",
+    "sprite": "if_hp.png",
+    "spawnProbabilities": {
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "IF_HALF",
+    "name": "Requirement - Every Other",
+    "sprite": "if_half.png",
+    "spawnProbabilities": {
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "IF_END",
+    "name": "Requirement - Endpoint",
+    "sprite": "if_end.png",
+    "spawnProbabilities": {
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "IF_ELSE",
+    "name": "Requirement - Otherwise",
+    "sprite": "if_else.png",
+    "spawnProbabilities": {
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "COLOUR_RED",
+    "name": "Red Glimmer",
+    "sprite": "colour_red.png",
+    "spawnProbabilities": {
+      "1": 0.0024,
+      "2": 0.0015,
+      "3": 0.0031,
+      "4": 0.0014,
+      "5": 0.0016,
+      "6": 0.0024
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "COLOUR_ORANGE",
+    "name": "Orange Glimmer",
+    "sprite": "colour_orange.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "3": 0.0008,
+      "4": 0.0028
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "COLOUR_GREEN",
+    "name": "Green Glimmer",
+    "sprite": "colour_green.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "3": 0.0008,
+      "4": 0.0007
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "COLOUR_YELLOW",
+    "name": "Yellow Glimmer",
+    "sprite": "colour_yellow.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "3": 0.0031,
+      "4": 0.0007
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "COLOUR_PURPLE",
+    "name": "Purple Glimmer",
+    "sprite": "colour_purple.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "3": 0.0008,
+      "4": 0.0028
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "COLOUR_BLUE",
+    "name": "Blue Glimmer",
+    "sprite": "colour_blue.png",
+    "spawnProbabilities": {
+      "2": 0.0029,
+      "3": 0.0008,
+      "4": 0.0007
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "COLOUR_RAINBOW",
+    "name": "Rainbow Glimmer",
+    "sprite": "colour_rainbow.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "3": 0.0008,
+      "4": 0.0007,
+      "10": 0.0033
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "COLOUR_INVIS",
+    "name": "Invisible Spell",
+    "sprite": "colour_invis.png",
+    "spawnProbabilities": {
+      "2": 0.0007,
+      "3": 0.0008,
+      "4": 0.0007,
+      "10": 0.0017
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": true
+  },
+  {
+    "id": "RAINBOW_TRAIL",
+    "name": "Rainbow Trail",
+    "sprite": "rainbow_trail.png",
+    "spawnProbabilities": {
+      "10": 0.0
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
+    "id": "CESSATION",
+    "name": "Cessation",
+    "sprite": "cessation.png",
+    "spawnProbabilities": {
+      "5": 0.0008,
+      "6": 0.0024,
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  }
+]

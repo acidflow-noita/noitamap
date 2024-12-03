@@ -1,30 +1,26 @@
-.osOverlayHighlight {
-  background-color: rgba(56, 162, 204, 0.401);
-  border: rgba(255, 0, 0, 0.1) dashed 1px;
-  position: relative; /* Ensure positioning context for the span */
+.overlay.biomes {
+  border-radius: 0.25em;
   overflow: hidden;
 }
 
-.osOverlayHighlight:hover {
-  border: red dashed 2px;
-  display: block;
+.overlay.biomes > div {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-.osOverlayHighlight span {
-  display: none; /* Initially hide the span text */
+.overlay.biomes > div > span {
+  text-align: center;
 }
 
-.osOverlayHighlight:hover span {
-  display: inline;
-}
-
-.osOverlayText {
+.overlay.biomes > div > :first-child {
   display: none;
-  font-size: 1vw;
-  line-height: 1.5em;
 }
-.osOverlayText:hover {
-  display: block;
+
+.overlay.biomes:hover > div > :first-child {
+  display: initial;
 }
 
 div:has(> div > .osOverlayPOI) {
@@ -98,6 +94,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup {
 #osContainer.show-items .overlay.items,
 #osContainer.show-bosses .overlay.bosses,
 #osContainer.show-orbAreas .overlay.orbAreas,
-#osContainer.show-orbs .overlay.orbs {
+#osContainer.show-orbs .overlay.orbs,
+#osContainer .overlay.biomes.show {
   display: block !important;
 }

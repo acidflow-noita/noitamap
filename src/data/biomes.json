@@ -1,0 +1,219 @@
+[
+  {
+    "name": "Mines",
+    "spellTiers": {
+      "wands": [0],
+      "spellShops": [1],
+      "holyMountain": [0, 0]
+    },
+    "location": {
+      "x": -3,
+      "y": 0,
+      "width": 7,
+      "height": 2
+    }
+  },
+  {
+    "name": "Coal Pits",
+    "spellTiers": {
+      "wands": [0, 1],
+      "spellShops": [2],
+      "holyMountain": [0, 1]
+    },
+    "location": {
+      "x": -4,
+      "y": 3,
+      "width": 8,
+      "height": 2
+    }
+  },
+  {
+    "name": "Fungal Caverns",
+    "spellTiers": {
+      "wands": [0, 1]
+    },
+    "location": {
+      "x": -7,
+      "y": 3,
+      "width": 3,
+      "height": 2
+    }
+  },
+  {
+    "name": "Snowy Depths",
+    "spellTiers": {
+      "wands": [1],
+      "spellShops": [3],
+      "holyMountain": [1, 2]
+    },
+    "location": {
+      "x": -5,
+      "y": 6,
+      "width": 10,
+      "height": 3
+    }
+  },
+  {
+    "name": "Hiisi Base",
+    "spellTiers": {
+      "wands": [2],
+      "spellShops": [2],
+      "holyMountain": [1, 2]
+    },
+    "location": {
+      "x": -4,
+      "y": 10,
+      "width": 7,
+      "height": 2
+    }
+  },
+  {
+    "name": "Underground Jungle",
+    "spellTiers": {
+      "wands": [1, 2, 3, 4],
+      "holyMountain": [2, 3]
+    },
+    "location": {
+      "x": -5,
+      "y": 13,
+      "width": 9,
+      "height": 3
+    }
+  },
+  {
+    "name": "The Vault",
+    "spellTiers": {
+      "wands": [2, 3, 4],
+      "spellShops": [4],
+      "holyMountain": [3, 4]
+    },
+    "location": {
+      "x": -6,
+      "y": 17,
+      "width": 11,
+      "height": 3
+    }
+  },
+  {
+    "name": "Temple of the Art",
+    "spellTiers": {
+      "wands": [4, 5],
+      "spellShops": [5],
+      "holyMountain": [5, 6]
+    },
+    "location": {
+      "x": -9,
+      "y": 21,
+      "width": 14,
+      "height": 4
+    }
+  },
+  {
+    "name": "Lukki Lair",
+    "spellTiers": {
+      "wands": [2, 3, 4]
+    },
+    "location": {
+      "x": -12,
+      "y": 11,
+      "width": 7,
+      "height": 9
+    }
+  },
+  {
+    "name": "Wizards' Den",
+    "spellTiers": {
+      "wands": [4, 5]
+    },
+    "location": {
+      "x": 12,
+      "y": 22,
+      "width": 13,
+      "height": 10
+    }
+  },
+  {
+    "name": "Frozen Vault",
+    "spellTiers": {
+      "wands": [2, 3, 4]
+    },
+    "location": {
+      "x": -23,
+      "y": 1,
+      "width": 7,
+      "height": 5
+    }
+  },
+  {
+    "name": "Overgrown Cavern",
+    "spellTiers": {
+      "wands": [2, 3, 4]
+    },
+    "location": {
+      "x": 24,
+      "y": 2,
+      "width": 7,
+      "height": 9
+    }
+  },
+  {
+    "name": "Power Plant",
+    "spellTiers": {
+      "wands": [2, 3, 4]
+    },
+    "location": {
+      "x": 24,
+      "y": 16,
+      "width": 7,
+      "height": 9
+    }
+  },
+  {
+    "name": "The Work (Sky)",
+    "spellTiers": {
+      "spellShops": [10]
+    },
+    "location": {
+      "x": -8,
+      "y": -48,
+      "width": 15,
+      "height": 35
+    }
+  },
+  {
+    "name": "The Work (Hell)",
+    "spellTiers": {
+      "spellShops": [10]
+    },
+    "location": {
+      "x": -8,
+      "y": 37,
+      "width": 15,
+      "height": 36
+    }
+  },
+  {
+    "name": "Meditation Chamber",
+    "spellTiers": {
+      "wands": [1, 2]
+    },
+    "location": {
+      "x": -9,
+      "y": 4,
+      "width": 1,
+      "height": 1
+    }
+  },
+  {
+    "name": "Buried Eye",
+    "spellTiers": {
+      "wands": [1, 2]
+    },
+    "location": {
+      "x": 7,
+      "y": 8,
+      "width": 1,
+      "height": 1
+    }
+  }
+]

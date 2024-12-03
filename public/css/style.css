@@ -273,3 +273,50 @@ body.toggle-hidden div.osOverlayHighlight {
 #osContainer :focus-visible {
   outline: none;
 }
+
+#spellList {
+  visibility: hidden;
+  position: absolute;
+  top: 100%;
+  background: #000a;
+  backdrop-filter: blur(0.25em);
+  border: 1px solid #fff8;
+  border-radius: 0.25em;
+  overflow-y: auto;
+  max-height: calc(100vh - 100%);
+  padding: 0;
+}
+
+#spellSelector:focus + #spellList,
+#spellList:focus-within,
+#spellList:active {
+  visibility: visible;
+}
+
+#spellList li {
+  list-style-type: none;
+  padding: 0.5em;
+  border-bottom: 1px solid #fff8;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+#spellList li:hover {
+  background: #fff2;
+}
+
+#spellList li img {
+  width: 2em;
+}
+
+#spellList li div {
+  display: flex;
+  flex-direction: column;
+}
+
+#spellList li div span:nth-child(2) {
+  font-size: 0.75em;
+}

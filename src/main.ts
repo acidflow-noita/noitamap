@@ -1,6 +1,6 @@
 import { App } from './app';
 import { parseURL, updateURL } from './data_sources/url';
-import { asOverlayKey, showOverlay } from './data_sources/overlays';
+import { asOverlayKey, initSpellSelector, showOverlay } from './data_sources/overlays';
 import { SearchBox } from './search/searchbox';
 import { asMapName } from './data_sources/tile_data';
 import { addEventListenerForId, assertElementById, debounce } from './util';
@@ -128,6 +128,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     tooltipElement: assertElementById('coordinate', HTMLElement),
   });
   document.addEventListener('keydown', copyCoordinates, { capture: false });
+
+  initSpellSelector();
 
   // Uncomment and implement annotations if needed
   // drawingToggleSwitch.addEventListener("change", (event) => {
