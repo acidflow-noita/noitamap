@@ -142,10 +142,14 @@ export const asOverlayKey = (name: string | undefined): OverlayKey | undefined =
  */
 function createAOI({ text, x, y, width, height }: AreaOfInterest): OSDOverlay {
   const el = document.createElement('div');
+  el.className = 'osOverlayHighlight';
 
   const span = document.createElement('span');
   span.textContent = text.join('\n');
   el.appendChild(span);
+
+  const hue = Math.floor(Math.random() * 360);
+  el.style.backgroundColor = `hsla(${hue}, 60%, 60%, 0.5)`;
 
   return { element: el, location: new Rect(x, y, width, height), name: text[0] };
 }
@@ -216,6 +220,7 @@ function createOverlay(overlay: PointOfInterest | AreaOfInterest): OSDOverlay {
 
 const biomeOverlays = biomes.flatMap(biomeToAOI).map(aoi => {
   const overlay = createOverlay(aoi);
+  overlay.element.classList.remove('osOverlayHighlight');
   overlay.element.classList.add('overlay', 'biomes');
   return overlay;
 });
