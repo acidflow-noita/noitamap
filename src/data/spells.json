@@ -287,6 +287,16 @@
     "isWandSpell": false
   },
   {
+    "id": "BLACK_HOLE_GIGA",
+    "name": "Omega Black Hole",
+    "sprite": "black_hole_giga.png",
+    "spawnProbabilities": {
+      "10": 0.0166
+    },
+    "isPremadeWandSpell": false,
+    "isWandSpell": false
+  },
+  {
     "id": "WHITE_HOLE_GIGA",
     "name": "Omega White Hole",
     "sprite": "white_hole_giga.png",
