@@ -279,19 +279,21 @@ export const initSpellSelector = () => {
     return spellListItem;
   };
 
-  const spellItemList = spells.map(createSpellListItem);
+  const spellListItems = spells.map(createSpellListItem);
   const spellListElement = assertElementById('spellList', HTMLUListElement);
 
   const displayMatchingSpells = (search: string) => {
     spellListElement.innerHTML = '';
-    spellItemList.forEach(spellListItem => {
+    if (search === '') {
+      return;
+    }
+
+    spellListItems.forEach(spellListItem => {
       if (spellListItem.textContent?.toLowerCase().includes(search.toLowerCase())) {
         spellListElement.appendChild(spellListItem);
       }
     });
   };
-
-  spellItemList.forEach(spellListItem => spellListElement.appendChild(spellListItem));
 
   const resetBiomeOverlays = () => {
     biomeOverlays.forEach(overlay => {
