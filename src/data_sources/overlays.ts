@@ -368,7 +368,6 @@ export const initSpellSelector = () => {
       const totalProbability = getTotalProbability(probabilities);
       if (totalProbability === 0) return;
 
-      container.appendChild(createSpan(overlay.name));
       container.appendChild(createSpan(`${(totalProbability * 100).toFixed(2)}%`));
       affectedOverlays.push({
         overlay,
@@ -384,7 +383,7 @@ export const initSpellSelector = () => {
         minProbability === maxProbability
           ? 120
           : 120 - 120 * (1 - (totalProbability - minProbability) / (maxProbability - minProbability));
-      overlay.element.style.backgroundColor = `hsla(${hue}, 100%, 50%, 0.4)`;
+      overlay.element.style.backgroundColor = `hsla(${hue}, 100%, 50%, 0.6)`;
     });
   };
 };

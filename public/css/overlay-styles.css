@@ -29,27 +29,21 @@
 
 .overlay.biomes {
   border-radius: 0.25em;
-  overflow: hidden;
-}
 
-.overlay.biomes > div {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
+  & > div {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 
-.overlay.biomes > div > span {
-  text-align: center;
-}
-
-.overlay.biomes > div > :first-child {
-  display: none;
-}
-
-.overlay.biomes:hover > div > :first-child {
-  display: initial;
+    & > span {
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.1em;
+      text-shadow: 0 0 0.5em #000;
+    }
+  }
 }
 
 div:has(> div > .osOverlayPOI) {
