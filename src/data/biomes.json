@@ -215,5 +215,77 @@
       "width": 1,
       "height": 1
     }
+  },
+  {
+    "name": "Bunkers",
+    "spellTiers": {},
+    "location": {
+      "x": -26,
+      "y": 0,
+      "width": 2,
+      "height": 2
+    }
+  },
+  {
+    "name": "Celestial Scale",
+    "spellTiers": {},
+    "location": {
+      "x": 25,
+      "y": -1,
+      "width": 1,
+      "height": 1
+    }
+  },
+  {
+    "name": "Rainbow Trail",
+    "spellTiers": {},
+    "location": {
+      "x": -28,
+      "y": -6,
+      "width": 1,
+      "height": 1
+    }
+  },
+  {
+    "name": "Kantele",
+    "spellTiers": {},
+    "location": {
+      "x": -4,
+      "y": -2,
+      "width": 2,
+      "height": 1
+    }
+  },
+  {
+    "name": "Ocarina",
+    "spellTiers": {},
+    "location": {
+      "x": -20,
+      "y": -13,
+      "width": 1,
+      "height": 1
+    }
+  },
+  {
+    "name": "Eye Room",
+    "spellTiers": {
+      "spellShops": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    },
+    "location": {
+      "x": -8,
+      "y": 10,
+      "width": 1,
+      "height": 1
+    }
+  },
+  {
+    "name": "Robotic Egg",
+    "spellTiers": {},
+    "location": {
+      "x": -10,
+      "y": 29,
+      "width": 1,
+      "height": 1
+    }
   }
 ]

@@ -380,7 +380,62 @@ export const initSpellSelector = () => {
       overlay.element.classList.add('show');
     });
 
+    const addGuaranteedSpawnArea = (biomeName: string) => {
+      const guaranteedSpawnOverlay = biomeOverlays.find(overlay => overlay.name === biomeName);
+      if (guaranteedSpawnOverlay) {
+        guaranteedSpawnOverlay.element.classList.add('show');
+        const container = guaranteedSpawnOverlay.element.firstChild as HTMLDivElement;
+        container.appendChild(createSpan('100%'));
+        affectedOverlays.push({
+          overlay: guaranteedSpawnOverlay,
+          totalProbability: 1,
+        });
+      }
+    };
+
+    const guaranteedSpells = [
+      {
+        idSubstring: 'COLOUR_',
+        biomeName: 'Bunkers',
+      },
+      {
+        idSubstring: 'IF_',
+        biomeName: 'Bunkers',
+      },
+      {
+        idSubstring: 'BLACK_HOLE_GIGA',
+        biomeName: 'Celestial Scale',
+      },
+      {
+        idSubstring: 'RAINBOW_TRAIL',
+        biomeName: 'Rainbow Trail',
+      },
+      {
+        idSubstring: 'KANTELE',
+        biomeName: 'Kantele',
+      },
+      {
+        idSubstring: 'OCARINA',
+        biomeName: 'Ocarina',
+      },
+      {
+        idSubstring: 'ALL_SPELLS',
+        biomeName: 'Robotic Egg',
+      },
+    ];
+
+    guaranteedSpells.forEach(({ idSubstring, biomeName }) => {
+      if (spell.id.includes(idSubstring)) {
+        addGuaranteedSpawnArea(biomeName);
+      }
+    });
+
     affectedOverlays.forEach(({ overlay, totalProbability }) => {
+      if (totalProbability === 1) {
+        overlay.element.style.backgroundColor = 'hsla(200, 100%, 50%, 0.6)';
+        return;
+      }
+
       const hue =
         minProbability === maxProbability
           ? 120
