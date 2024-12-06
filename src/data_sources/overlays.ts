@@ -19,7 +19,7 @@ export type PointOfInterest = {
   name: string;
   aliases?: string[];
   icon: string;
-  wiki: string;
+  wiki?: string;
   text?: string;
   x: number;
   y: number;
@@ -157,7 +157,7 @@ function createAOI({ text, x, y, width, height }: AreaOfInterest): OSDOverlay {
 /**
  * Return the DOM element for the popup on a POI
  */
-function createOverlayPopup({ name, aliases, wiki }: Pick<PointOfInterest, 'name' | 'aliases' | 'wiki' | 'text'>) {
+function createOverlayPopup({ name, aliases, text, wiki }: PointOfInterest) {
   const popup = document.createElement('div');
   popup.className = 'osOverlayPopup';
 
@@ -171,12 +171,20 @@ function createOverlayPopup({ name, aliases, wiki }: Pick<PointOfInterest, 'name
     popup.appendChild(aliasesElement);
   }
 
-  const wikiLink = document.createElement('a');
-  wikiLink.href = wiki;
-  wikiLink.target = '_blank';
-  wikiLink.textContent = 'Wiki';
-  wikiLink.classList.add('wikiLink');
-  popup.appendChild(wikiLink);
+  if (text !== undefined) {
+    const textElement = document.createElement('p');
+    textElement.textContent = text;
+    popup.appendChild(textElement);
+  }
+
+  if (wiki !== undefined) {
+    const wikiLink = document.createElement('a');
+    wikiLink.href = wiki;
+    wikiLink.target = '_blank';
+    wikiLink.textContent = 'Wiki';
+    wikiLink.classList.add('wikiLink');
+    popup.appendChild(wikiLink);
+  }
 
   return popup;
 }
@@ -184,7 +192,8 @@ function createOverlayPopup({ name, aliases, wiki }: Pick<PointOfInterest, 'name
 /**
  * Return the DOM element and the OSD position for an area of interest overlay
  */
-function createPOI({ name, aliases, icon, wiki, x, y }: PointOfInterest): OSDOverlay {
+function createPOI(poi: PointOfInterest): OSDOverlay {
+  const { name, icon, x, y } = poi;
   const el = document.createElement('div');
 
   const pin = document.createElement('div');
@@ -197,7 +206,7 @@ function createPOI({ name, aliases, icon, wiki, x, y }: PointOfInterest): OSDOve
   img.className = 'pixelated-image';
   pin.appendChild(img);
 
-  const popup = createOverlayPopup({ name, aliases, wiki });
+  const popup = createOverlayPopup(poi);
   el.appendChild(popup);
 
   return {

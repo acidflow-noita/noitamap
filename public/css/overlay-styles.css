@@ -107,6 +107,11 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup {
   color: #ccc;
 }
 
+.osOverlayPopup p {
+  font-size: 0.9em;
+  color: #ccc;
+}
+
 .osOverlayPopup a {
   color: #ffc107;
 }
