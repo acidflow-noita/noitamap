@@ -317,6 +317,33 @@ body.toggle-hidden div.osOverlayHighlight {
   flex-direction: column;
 }
 
-#spellList li div span:nth-child(2) {
+#spellList li div span:first-child {
+  font-weight: bolder;
+}
+
+#spellList li div span:not(:first-child) {
   font-size: 0.75em;
+}
+
+#spellChanceInfoButton {
+  & + div {
+    position: absolute;
+    top: 100%;
+    max-height: calc(100vh - 100%);
+    overflow: auto;
+    background: #000a;
+    border: 1px solid #fff8;
+    border-radius: 0.25em;
+    padding: 0.5em;
+    visibility: hidden;
+    backdrop-filter: blur(0.25em);
+
+    & > blockquote {
+      font-size: 0.75em;
+    }
+  }
+
+  &:focus + div {
+    visibility: visible;
+  }
 }

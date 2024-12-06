@@ -60,6 +60,12 @@ div:has(> div > .osOverlayPOI) {
   border: 2px solid var(--border-color);
   border-radius: 0.25em;
   line-height: 0;
+
+  & > img {
+    --size: 30px;
+    min-width: var(--size);
+    min-height: var(--size);
+  }
 }
 
 .osOverlayPopup {
@@ -104,6 +110,11 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup {
 
 .osOverlayPopup h3 {
   font-size: 1em;
+  color: #ccc;
+}
+
+.osOverlayPopup p {
+  font-size: 0.9em;
   color: #ccc;
 }
 

@@ -19,7 +19,7 @@ export type PointOfInterest = {
   name: string;
   aliases?: string[];
   icon: string;
-  wiki: string;
+  wiki?: string;
   text?: string;
   x: number;
   y: number;
@@ -157,7 +157,7 @@ function createAOI({ text, x, y, width, height }: AreaOfInterest): OSDOverlay {
 /**
  * Return the DOM element for the popup on a POI
  */
-function createOverlayPopup({ name, aliases, wiki }: Pick<PointOfInterest, 'name' | 'aliases' | 'wiki' | 'text'>) {
+function createOverlayPopup({ name, aliases, text, wiki }: PointOfInterest) {
   const popup = document.createElement('div');
   popup.className = 'osOverlayPopup';
 
@@ -171,12 +171,20 @@ function createOverlayPopup({ name, aliases, wiki }: Pick<PointOfInterest, 'name
     popup.appendChild(aliasesElement);
   }
 
-  const wikiLink = document.createElement('a');
-  wikiLink.href = wiki;
-  wikiLink.target = '_blank';
-  wikiLink.textContent = 'Wiki';
-  wikiLink.classList.add('wikiLink');
-  popup.appendChild(wikiLink);
+  if (text !== undefined) {
+    const textElement = document.createElement('p');
+    textElement.textContent = text;
+    popup.appendChild(textElement);
+  }
+
+  if (wiki !== undefined) {
+    const wikiLink = document.createElement('a');
+    wikiLink.href = wiki;
+    wikiLink.target = '_blank';
+    wikiLink.textContent = 'Wiki';
+    wikiLink.classList.add('wikiLink');
+    popup.appendChild(wikiLink);
+  }
 
   return popup;
 }
@@ -184,7 +192,8 @@ function createOverlayPopup({ name, aliases, wiki }: Pick<PointOfInterest, 'name
 /**
  * Return the DOM element and the OSD position for an area of interest overlay
  */
-function createPOI({ name, aliases, icon, wiki, x, y }: PointOfInterest): OSDOverlay {
+function createPOI(poi: PointOfInterest): OSDOverlay {
+  const { name, icon, x, y } = poi;
   const el = document.createElement('div');
 
   const pin = document.createElement('div');
@@ -197,7 +206,7 @@ function createPOI({ name, aliases, icon, wiki, x, y }: PointOfInterest): OSDOve
   img.className = 'pixelated-image';
   pin.appendChild(img);
 
-  const popup = createOverlayPopup({ name, aliases, wiki });
+  const popup = createOverlayPopup(poi);
   el.appendChild(popup);
 
   return {
@@ -262,6 +271,11 @@ export const showOverlay = (overlayKey: OverlayKey, show: boolean) => {
 };
 
 export const initSpellSelector = () => {
+  const infoButton = assertElementById('spellChanceInfoButton', HTMLButtonElement);
+  infoButton.addEventListener('click', ev => {
+    ev.preventDefault();
+  });
+
   const createSpan = (content: string) => {
     const span = document.createElement('span');
     span.textContent = content;
@@ -272,11 +286,19 @@ export const initSpellSelector = () => {
   const createSpellListItem = (spell: Spell) => {
     const spellListItem = document.createElement('li');
     spellListItem.dataset.id = spell.id;
-    spellListItem.appendChild(document.createElement('img')).src = `${spritePath}/${spell.sprite}`;
+
+    const spellSprite = document.createElement('img');
+    spellSprite.src = `${spritePath}/${spell.sprite}`;
+    spellSprite.classList.add('pixelated-image');
+    spellListItem.appendChild(spellSprite);
+
     const infoDiv = document.createElement('div');
     infoDiv.appendChild(createSpan(spell.name));
     infoDiv.appendChild(createSpan('Tiers: ' + Object.keys(spell.spawnProbabilities).join(', ')));
+    infoDiv.appendChild(createSpan('Found on wands: ' + (spell.isWandSpell ? 'Yes' : 'No')));
+    infoDiv.appendChild(createSpan('Found on pre-made wands: ' + (spell.isPremadeWandSpell ? 'Yes' : 'No')));
     spellListItem.appendChild(infoDiv);
+
     return spellListItem;
   };
 

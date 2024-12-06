@@ -132,7 +132,41 @@
                   class="icon-orbs pixelated-image"></i> Orbs</label>
             </div>
 
-            <form class="input-group-sm m-2">
+            <form class="input-group-sm m-2 d-flex">
+              <button id="spellChanceInfoButton" class="btn btn-sm btn-outline-light"
+                autocomplete="off">&#9432;</button>
+              <div>
+                <blockquote cite="https://noita.wiki.gg/wiki/Wand_and_Spell_Tiers">
+                  <p>
+                    Spells in Noita are organised into tiers which dictate which spells can spawn; each biome selects
+                    one or more tiers of spells and wands to spawn when generating spell shops and wands. Most spells
+                    belong to more than one tier, though it may define a different rarity value for each tier (for
+                    example, a spell may be very common for Tier 1, but exceedingly rare in Tier 3).
+                  </p>
+                </blockquote>
+                <cite>— <a href="https://noita.wiki.gg/wiki/Wand_and_Spell_Tiers"
+                    target="_blank">noita.wiki.gg</a></cite>
+                <hr />
+                <p>
+                  Each percentage represents the chance of a spell to appear:
+                <ul>
+                  <li>
+                    on a wand (if wands appear in the area and the spell can be found on wands)
+                  </li>
+                  <li>
+                    in a spell shop (if spell shops appear in the area)
+                  </li>
+                </ul>
+                </p>
+                <p>
+                  The percentages regard a <em>single spell roll</em>, not the chance of a spell to appear in general,
+                  e.g. on a wand with the capacity to hold multiple spells.
+                </p>
+                <p>
+                  Some spells can appear on pre-made wands in the Mines. They <em>can</em> be found on such wands
+                  despite being marked as unable to spawn on regular wands.
+                </p>
+              </div>
               <input type="search" id="spellSelector" class="form-control" placeholder="Search for a spell&hellip;" />
               <ul id="spellList"></ul>
             </form>
