@@ -275,7 +275,7 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 #spellList {
-  opacity: 0;
+  visibility: hidden;
   position: absolute;
   top: 100%;
   background: #000a;
@@ -285,13 +285,12 @@ body.toggle-hidden div.osOverlayHighlight {
   overflow-y: auto;
   max-height: calc(100vh - 100%);
   padding: 0;
-  transition: opacity 0.2s;
 }
 
 #spellSelector:focus + #spellList,
 #spellList:focus-within,
 #spellList:active {
-  opacity: 1;
+  visibility: visible;
 }
 
 #spellList li {
@@ -330,12 +329,13 @@ body.toggle-hidden div.osOverlayHighlight {
   & + div {
     position: absolute;
     top: 100%;
+    max-height: calc(100vh - 100%);
+    overflow: auto;
     background: #000a;
     border: 1px solid #fff8;
     border-radius: 0.25em;
     padding: 0.5em;
-    opacity: 0;
-    transition: opacity 0.2s;
+    visibility: hidden;
     backdrop-filter: blur(0.25em);
 
     & > blockquote {
@@ -344,6 +344,6 @@ body.toggle-hidden div.osOverlayHighlight {
   }
 
   &:focus + div {
-    opacity: 1;
+    visibility: visible;
   }
 }
