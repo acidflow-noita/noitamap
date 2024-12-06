@@ -271,6 +271,11 @@ export const showOverlay = (overlayKey: OverlayKey, show: boolean) => {
 };
 
 export const initSpellSelector = () => {
+  const infoButton = assertElementById('spellChanceInfoButton', HTMLButtonElement);
+  infoButton.addEventListener('click', ev => {
+    ev.preventDefault();
+  });
+
   const createSpan = (content: string) => {
     const span = document.createElement('span');
     span.textContent = content;
@@ -285,6 +290,8 @@ export const initSpellSelector = () => {
     const infoDiv = document.createElement('div');
     infoDiv.appendChild(createSpan(spell.name));
     infoDiv.appendChild(createSpan('Tiers: ' + Object.keys(spell.spawnProbabilities).join(', ')));
+    infoDiv.appendChild(createSpan('Found on wands: ' + (spell.isWandSpell ? 'Yes' : 'No')));
+    infoDiv.appendChild(createSpan('Found on pre-made wands: ' + (spell.isPremadeWandSpell ? 'Yes' : 'No')));
     spellListItem.appendChild(infoDiv);
     return spellListItem;
   };
