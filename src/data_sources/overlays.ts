@@ -286,13 +286,19 @@ export const initSpellSelector = () => {
   const createSpellListItem = (spell: Spell) => {
     const spellListItem = document.createElement('li');
     spellListItem.dataset.id = spell.id;
-    spellListItem.appendChild(document.createElement('img')).src = `${spritePath}/${spell.sprite}`;
+
+    const spellSprite = document.createElement('img');
+    spellSprite.src = `${spritePath}/${spell.sprite}`;
+    spellSprite.classList.add('pixelated-image');
+    spellListItem.appendChild(spellSprite);
+
     const infoDiv = document.createElement('div');
     infoDiv.appendChild(createSpan(spell.name));
     infoDiv.appendChild(createSpan('Tiers: ' + Object.keys(spell.spawnProbabilities).join(', ')));
     infoDiv.appendChild(createSpan('Found on wands: ' + (spell.isWandSpell ? 'Yes' : 'No')));
     infoDiv.appendChild(createSpan('Found on pre-made wands: ' + (spell.isPremadeWandSpell ? 'Yes' : 'No')));
     spellListItem.appendChild(infoDiv);
+
     return spellListItem;
   };
 
