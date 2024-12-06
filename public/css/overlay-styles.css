@@ -27,6 +27,27 @@
   display: block;
 }
 
+.overlay.biomes {
+  background: rgba(0, 0, 0, 0.1);
+  border: 0.15em dashed;
+  border-radius: 0.25em;
+
+  & > div {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    & > span {
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.3em;
+      text-shadow: 0 0 0.5em #000;
+    }
+  }
+}
+
 div:has(> div > .osOverlayPOI) {
   position: relative;
   transform: translate(-50%, -50%);
@@ -98,6 +119,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup {
 #osContainer.show-items .overlay.items,
 #osContainer.show-bosses .overlay.bosses,
 #osContainer.show-orbAreas .overlay.orbAreas,
-#osContainer.show-orbs .overlay.orbs {
+#osContainer.show-orbs .overlay.orbs,
+#osContainer .overlay.biomes.show {
   display: block !important;
 }

@@ -4,6 +4,8 @@ import bosses from '../data/bosses.json';
 import orbAreas from '../data/orb_areas.json';
 import orbs from '../data/orbs.json';
 import { assertElementById } from '../util';
+import spells from '../data/spells.json';
+import biomes from '../data/biomes.json';
 
 const { Rect, Point } = OpenSeadragon;
 type Rect = InstanceType<typeof Rect>;
@@ -36,6 +38,31 @@ export type AreaOfInterest = {
 type OSDOverlay = {
   element: HTMLDivElement;
   location: Rect | Point;
+  name?: string;
+};
+
+export type Spell = {
+  id: string;
+  name: string;
+  sprite: string;
+  spawnProbabilities: Partial<Record<string, number>>;
+  isPremadeWandSpell: boolean;
+  isWandSpell: boolean;
+};
+
+export type Biome = {
+  name: string;
+  spellTiers: {
+    wands?: number[];
+    spellShops?: number[];
+    holyMountain?: number[];
+  };
+  location: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
 };
 
 const CHUNK_SIZE = 512;
@@ -62,6 +89,35 @@ const chunkAOICoords = mapAOICoords(CHUNK_SIZE);
 const pixelAOICoords = mapAOICoords(1);
 const pixelPOICoords = mapPOICoords(1);
 
+function biomeToAOI(biome: Biome): AreaOfInterest[] {
+  const { x, y, width, height } = biome.location;
+  const areas: AreaOfInterest[] = [
+    {
+      overlayType: 'aoi',
+      maps: ['regular-main-branch'],
+      text: [biome.name],
+      x,
+      y,
+      width,
+      height,
+    },
+  ];
+
+  if (biome.spellTiers.holyMountain) {
+    areas.push({
+      overlayType: 'aoi',
+      maps: ['regular-main-branch'],
+      text: [`${biome.name} - Holy Mountain`],
+      x,
+      y: y + height,
+      width,
+      height: 1,
+    });
+  }
+
+  return chunkAOICoords(areas);
+}
+
 const overlayTexts = {
   structures: pixelPOICoords(structures),
   items: pixelPOICoords(items),
@@ -84,7 +140,7 @@ export const asOverlayKey = (name: string | undefined): OverlayKey | undefined =
 /**
  * Return the DOM element and the OSD position for an area of interest overlay
  */
-function createAOI({ text, x, y, width, height }: AreaOfInterest) {
+function createAOI({ text, x, y, width, height }: AreaOfInterest): OSDOverlay {
   const el = document.createElement('div');
   el.className = 'osOverlayHighlight';
 
@@ -95,7 +151,7 @@ function createAOI({ text, x, y, width, height }: AreaOfInterest) {
   const hue = Math.floor(Math.random() * 360);
   el.style.backgroundColor = `hsla(${hue}, 60%, 60%, 0.5)`;
 
-  return { element: el, location: new Rect(x, y, width, height) };
+  return { element: el, location: new Rect(x, y, width, height), name: text[0] };
 }
 
 /**
@@ -162,6 +218,14 @@ function createOverlay(overlay: PointOfInterest | AreaOfInterest): OSDOverlay {
   }
 }
 
+const biomeOverlays = biomes.flatMap(biomeToAOI).map(aoi => {
+  const overlay = createOverlay(aoi);
+  overlay.element.classList.remove('osOverlayHighlight');
+  overlay.element.classList.add('overlay', 'biomes');
+  overlay.element.style.backgroundColor = '';
+  return overlay;
+});
+
 export const createOverlays = (mapName: string): OSDOverlay[] => {
   const overlays: OSDOverlay[] = [];
 
@@ -176,6 +240,8 @@ export const createOverlays = (mapName: string): OSDOverlay[] => {
       overlays.push(overlay);
     }
   }
+
+  if (mapName === 'regular-main-branch') overlays.push(...biomeOverlays);
 
   overlays.sort((a, b) => a.location.y - b.location.y);
 
@@ -193,4 +259,189 @@ export const showOverlay = (overlayKey: OverlayKey, show: boolean) => {
   } catch (e) {
     console.error(e);
   }
+};
+
+export const initSpellSelector = () => {
+  const createSpan = (content: string) => {
+    const span = document.createElement('span');
+    span.textContent = content;
+    return span;
+  };
+
+  const spritePath = './assets/icons/spells';
+  const createSpellListItem = (spell: Spell) => {
+    const spellListItem = document.createElement('li');
+    spellListItem.dataset.id = spell.id;
+    spellListItem.appendChild(document.createElement('img')).src = `${spritePath}/${spell.sprite}`;
+    const infoDiv = document.createElement('div');
+    infoDiv.appendChild(createSpan(spell.name));
+    infoDiv.appendChild(createSpan('Tiers: ' + Object.keys(spell.spawnProbabilities).join(', ')));
+    spellListItem.appendChild(infoDiv);
+    return spellListItem;
+  };
+
+  const spellListItems = spells.map(createSpellListItem);
+  const spellListElement = assertElementById('spellList', HTMLUListElement);
+
+  const displayMatchingSpells = (search: string) => {
+    spellListElement.innerHTML = '';
+    if (search === '') {
+      return;
+    }
+
+    spellListItems.forEach(spellListItem => {
+      if (spellListItem.textContent?.toLowerCase().includes(search.toLowerCase())) {
+        spellListElement.appendChild(spellListItem);
+      }
+    });
+  };
+
+  const resetBiomeOverlays = () => {
+    biomeOverlays.forEach(overlay => {
+      const container = overlay.element.firstChild as HTMLDivElement;
+      container.innerHTML = '';
+      overlay.element.classList.remove('show');
+    });
+  };
+
+  const getProbabilities = (spell: Spell, tiers: number[]): number[] => {
+    return Object.entries(spell.spawnProbabilities)
+      .filter(([tier, probability]) => tiers.includes(Number(tier)) && probability !== undefined && probability !== 0)
+      .map(([_, probability]) => probability!);
+  };
+
+  const getMatchingTiers = (spawnTiers: number[], potentialTiers: number[] | undefined) => {
+    return potentialTiers?.filter(tier => spawnTiers.includes(tier)) ?? [];
+  };
+
+  const getTotalProbability = (probabilities: number[]) => {
+    if (probabilities.length === 0) return 0;
+    return probabilities.length / probabilities.reduce((acc, cur) => acc + 1 / cur, 0);
+  };
+
+  const spellSelector = assertElementById('spellSelector', HTMLInputElement);
+  spellSelector.addEventListener('input', ev => {
+    const target = ev.target as HTMLInputElement;
+
+    if (target.value === '') {
+      resetBiomeOverlays();
+    }
+
+    displayMatchingSpells(target.value);
+  });
+
+  spellListElement.addEventListener('click', ev => {
+    if (!(ev.target instanceof HTMLElement)) return;
+    const spellListItem = ev.target.closest('li');
+    if (!spellListItem || !spellListItem.dataset.id) return;
+    const selectedSpell = spells.find(spell => spell.id === spellListItem.dataset.id);
+    if (!selectedSpell) return;
+    selectSpell(selectedSpell);
+  });
+
+  const selectSpell = (spell: Spell) => {
+    resetBiomeOverlays();
+    spellSelector.value = spell.name;
+    const spawnTiers = Object.keys(spell.spawnProbabilities).map(Number);
+
+    const affectedOverlays: {
+      overlay: OSDOverlay;
+      totalProbability: number;
+    }[] = [];
+    let minProbability = 1;
+    let maxProbability = 0;
+    biomeOverlays.forEach(overlay => {
+      if (!overlay.name) return;
+      const container = overlay.element.firstChild as HTMLDivElement;
+
+      const biome = biomes.find(biome => biome.name === overlay.name || biome.name === overlay.name?.split(' - ')[0]);
+      if (!biome) return;
+
+      const tiers: number[] = [];
+      if (overlay.name?.includes('Holy Mountain')) {
+        tiers.push(...getMatchingTiers(spawnTiers, biome.spellTiers.holyMountain));
+      } else {
+        if (spell.isWandSpell || (spell.isPremadeWandSpell && overlay.name === 'Mines')) {
+          tiers.push(...getMatchingTiers(spawnTiers, biome.spellTiers.wands));
+        }
+
+        tiers.push(...getMatchingTiers(spawnTiers, biome.spellTiers.spellShops));
+      }
+      const probabilities = getProbabilities(spell, tiers);
+      const totalProbability = getTotalProbability(probabilities);
+      if (totalProbability === 0) return;
+
+      container.appendChild(createSpan(`${(totalProbability * 100).toFixed(2)}%`));
+      affectedOverlays.push({
+        overlay,
+        totalProbability,
+      });
+      minProbability = Math.min(minProbability, totalProbability);
+      maxProbability = Math.max(maxProbability, totalProbability);
+      overlay.element.classList.add('show');
+    });
+
+    const addGuaranteedSpawnArea = (biomeName: string) => {
+      const guaranteedSpawnOverlay = biomeOverlays.find(overlay => overlay.name === biomeName);
+      if (guaranteedSpawnOverlay) {
+        guaranteedSpawnOverlay.element.classList.add('show');
+        const container = guaranteedSpawnOverlay.element.firstChild as HTMLDivElement;
+        container.appendChild(createSpan('100%'));
+        affectedOverlays.push({
+          overlay: guaranteedSpawnOverlay,
+          totalProbability: 1,
+        });
+      }
+    };
+
+    const guaranteedSpells = [
+      {
+        idSubstring: 'COLOUR_',
+        biomeName: 'Bunkers',
+      },
+      {
+        idSubstring: 'IF_',
+        biomeName: 'Bunkers',
+      },
+      {
+        idSubstring: 'BLACK_HOLE_GIGA',
+        biomeName: 'Celestial Scale',
+      },
+      {
+        idSubstring: 'RAINBOW_TRAIL',
+        biomeName: 'Rainbow Trail',
+      },
+      {
+        idSubstring: 'KANTELE',
+        biomeName: 'Kantele',
+      },
+      {
+        idSubstring: 'OCARINA',
+        biomeName: 'Ocarina',
+      },
+      {
+        idSubstring: 'ALL_SPELLS',
+        biomeName: 'Robotic Egg',
+      },
+    ];
+
+    guaranteedSpells.forEach(({ idSubstring, biomeName }) => {
+      if (spell.id.includes(idSubstring)) {
+        addGuaranteedSpawnArea(biomeName);
+      }
+    });
+
+    affectedOverlays.forEach(({ overlay, totalProbability }) => {
+      if (totalProbability === 1) {
+        overlay.element.style.borderColor = 'hsla(200, 100%, 50%, 0.6)';
+        return;
+      }
+
+      const hue =
+        minProbability === maxProbability
+          ? 120
+          : 120 - 120 * (1 - (totalProbability - minProbability) / (maxProbability - minProbability));
+      overlay.element.style.borderColor = `hsla(${hue}, 100%, 50%, 0.8)`;
+    });
+  };
 };

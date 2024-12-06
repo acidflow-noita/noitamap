@@ -1,182 +1,179 @@
 <!doctype html>
 <html lang="en" data-bs-theme="dark">
-  <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DNR100WX23"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag('js', new Date());
 
-      gtag('config', 'G-DNR100WX23');
-    </script>
-    <meta charset="utf-8" />
-    <title>Noita Map</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-    <meta name="description" content="Ultrafast superzoom map for Noita. Map for the video game Noita." />
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon/favicon-16x16.png" />
-    <link rel="manifest" href="assets/favicon/site.webmanifest" />
-    <link rel="mask-icon" href="assets/favicon/safari-pinned-tab.svg" color="#5bbad5" />
-    <link rel="shortcut icon" href="assets/favicon/favicon.ico" />
-    <meta name="msapplication-TileColor" content="#da532c" />
-    <meta name="msapplication-config" content="assets/favicon/browserconfig.xml" />
-    <meta name="theme-color" content="#ffffff" />
-    <link rel="stylesheet" href="css/overlay-styles.css" />
-    <link rel="stylesheet" href="css/style.css" />
-    <link rel="stylesheet" href="css/dono-button.css" />
-    <link rel="icon" href="assets/favicon/favicon.ico" type="image/x-icon" />
-    <link rel="preconnect" href="https://rsms.me/" />
-    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/5.0.0/openseadragon.min.js"
-      integrity="sha512-mdfzGJn9wUFg72mwblmP0uA6j3uB3uEKOQB1gmCCsnsKQNQRys+mITew+5lPFIo0C4NU1Bi/O+Eaw2GMsjC9IA=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    ></script>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-      crossorigin="anonymous"
-    />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-    <script src="https://unpkg.com/openseadragon-annotations@1.0.5/dist/openseadragon-annotations.js"></script>
-    <!-- Todo add opacity slider plugin -->
-    <script src="https://cdn.jsdelivr.net/npm/openseadragon-opacity-slider/dist/openseadragon-opacity-slider.min.js"></script>
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DNR100WX23"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
 
-    <!-- Facebook Meta Tags -->
-    <meta property="og:url" content="https://map.runfast.stream/" />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Noita Map" />
-    <meta property="og:description" content="Blazingly-fast superzoom map for Noita. Map for the video game Noita." />
-    <meta property="og:image" content="https://map.runfast.stream/assets/noitamap-opengraph.png" />
-    <meta property="og:image:secure_url" content="https://map.runfast.stream/assets/noitamap-opengraph.png" />
-    <meta property="og:image:type" content="image/png" />
+    gtag('config', 'G-DNR100WX23');
+  </script>
+  <meta charset="utf-8" />
+  <title>Noita Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="description" content="Ultrafast superzoom map for Noita. Map for the video game Noita." />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon/favicon-16x16.png" />
+  <link rel="manifest" href="assets/favicon/site.webmanifest" />
+  <link rel="mask-icon" href="assets/favicon/safari-pinned-tab.svg" color="#5bbad5" />
+  <link rel="shortcut icon" href="assets/favicon/favicon.ico" />
+  <meta name="msapplication-TileColor" content="#da532c" />
+  <meta name="msapplication-config" content="assets/favicon/browserconfig.xml" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="stylesheet" href="css/overlay-styles.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/dono-button.css" />
+  <link rel="icon" href="assets/favicon/favicon.ico" type="image/x-icon" />
+  <link rel="preconnect" href="https://rsms.me/" />
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/5.0.0/openseadragon.min.js"
+    integrity="sha512-mdfzGJn9wUFg72mwblmP0uA6j3uB3uEKOQB1gmCCsnsKQNQRys+mITew+5lPFIo0C4NU1Bi/O+Eaw2GMsjC9IA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <script src="https://unpkg.com/openseadragon-annotations@1.0.5/dist/openseadragon-annotations.js"></script>
+  <!-- Todo add opacity slider plugin -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/openseadragon-opacity-slider/dist/openseadragon-opacity-slider.min.js"></script>
 
-    <!-- Twitter Meta Tags -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta property="twitter:domain" content="map.runfast.stream" />
-    <meta property="twitter:url" content="https://map.runfast.stream/" />
-    <meta name="twitter:title" content="Noita Map" />
-    <meta name="twitter:description" content="Blazingly-fast superzoom map for Noita. Map for the video game Noita." />
-    <meta name="twitter:image" content="https://map.runfast.stream/assets/noitamap-opengraph.png" />
-  </head>
+  <!-- Facebook Meta Tags -->
+  <meta property="og:url" content="https://map.runfast.stream/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Noita Map" />
+  <meta property="og:description" content="Blazingly-fast superzoom map for Noita. Map for the video game Noita." />
+  <meta property="og:image" content="https://map.runfast.stream/assets/noitamap-opengraph.png" />
+  <meta property="og:image:secure_url" content="https://map.runfast.stream/assets/noitamap-opengraph.png" />
+  <meta property="og:image:type" content="image/png" />
 
-  <body>
-    <!-- TODO: add drawing -->
-    <!-- <div class="form-check form-switch"> -->
-    <!--   <input class="form-check-input" type="checkbox" role="switch" id="drawingToggleSwitch"> -->
-    <!--   <label class="form-check-label" for="drawingToggleSwitch"><i class="bi bi-brush"></i> Draw</label> -->
-    <!-- </div> -->
-    <!-- <a id="eraseAnnotationDrawingsButton" tabindex="0" class="btn btn-outline-info text-nowrap"
+  <!-- Twitter Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta property="twitter:domain" content="map.runfast.stream" />
+  <meta property="twitter:url" content="https://map.runfast.stream/" />
+  <meta name="twitter:title" content="Noita Map" />
+  <meta name="twitter:description" content="Blazingly-fast superzoom map for Noita. Map for the video game Noita." />
+  <meta name="twitter:image" content="https://map.runfast.stream/assets/noitamap-opengraph.png" />
+</head>
+
+<body>
+  <!-- TODO: add drawing -->
+  <!-- <div class="form-check form-switch"> -->
+  <!--   <input class="form-check-input" type="checkbox" role="switch" id="drawingToggleSwitch"> -->
+  <!--   <label class="form-check-label" for="drawingToggleSwitch"><i class="bi bi-brush"></i> Draw</label> -->
+  <!-- </div> -->
+  <!-- <a id="eraseAnnotationDrawingsButton" tabindex="0" class="btn btn-outline-info text-nowrap"
         data-bs-trigger="focus" role="button" onclick="eraseDrawings()"><i class="bi bi-eraser"></i></a> -->
-    <!-- <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top navbar-expand-sm"></nav> -->
-    <div class="full-viewport-wrapper flex flex-col-reverse">
-      <!-- osContainer comes first so that it's "beneath" menu drop-downs -->
-      <div id="osContainer"></div>
-      <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark navbar-expand-lg">
-        <div class="container-fluid">
-          <a id="navbar-brand" class="navbar-brand" href="#">
-            <img src="./assets/NoitamapLogo.svg" alt="Noitamap Logo" class="d-inline-block" />
-            <span id="currentMapName">Noita map</span>
-          </a>
-          <button
-            class="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#collapsibleMapMenu"
-            aria-controls="collapsibleMapMenu"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
-          >
-            <span class="navbar-toggler-icon"></span>
-          </button>
+  <!-- <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark fixed-top navbar-expand-sm"></nav> -->
+  <div class="full-viewport-wrapper flex flex-col-reverse">
+    <!-- osContainer comes first so that it's "beneath" menu drop-downs -->
+    <div id="osContainer"></div>
+    <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark navbar-expand-lg">
+      <div class="container-fluid">
+        <a id="navbar-brand" class="navbar-brand" href="#">
+          <img src="./assets/NoitamapLogo.svg" alt="Noitamap Logo" class="d-inline-block" />
+          <span id="currentMapName">Noita map</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleMapMenu"
+          aria-controls="collapsibleMapMenu" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
 
-          <div class="collapse navbar-collapse" id="collapsibleMapMenu">
-            <!-- Dropdown and buttons container -->
-            <div class="d-flex flex-wrap align-items-center justify-content-start me-auto">
-              <!-- <a id="donateButton" href="https://runfast.stream/donate" target="_blank" class="icon-button btn btn-sm btn-outline-info btn-custom text-nowrap m-2" target="_blank" role="button">
+        <div class="collapse navbar-collapse" id="collapsibleMapMenu">
+          <!-- Dropdown and buttons container -->
+          <div class="d-flex flex-wrap align-items-center justify-content-start me-auto">
+            <!-- <a id="donateButton" href="https://runfast.stream/donate" target="_blank" class="icon-button btn btn-sm btn-outline-info btn-custom text-nowrap m-2" target="_blank" role="button">
                 <i class="bi bi-suit-heart-fill"></i><span>Donate</span>
               </a> -->
 
-              <a id="installModButton" href="https://runfast.stream/noitamap-mod" target="_blank" class="icon-button btn btn-sm btn-outline-light text-nowrap m-2">
-                <i class="bi bi-download"></i><span>Install Mod</span>
-              </a>
-              <div id="map-selector" class="dropdown">
-                <button class="btn btn-sm btn-outline-light dropdown-toggle m-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">Available Maps</button>
-                <ul class="dropdown-menu" id="navLinksList"></ul>
-              </div>
+            <a id="installModButton" href="https://runfast.stream/noitamap-mod" target="_blank"
+              class="icon-button btn btn-sm btn-outline-light text-nowrap m-2">
+              <i class="bi bi-download"></i><span>Install Mod</span>
+            </a>
+            <div id="map-selector" class="dropdown">
+              <button class="btn btn-sm btn-outline-light dropdown-toggle m-2" type="button" data-bs-toggle="dropdown"
+                aria-expanded="false">Available Maps</button>
+              <ul class="dropdown-menu" id="navLinksList"></ul>
+            </div>
 
-              <!-- Search -->
-              <form id="search-form" role="search" class="input-group-sm m-2">
-                <!-- contents defined in src/search.ts under SearchBox.create() -->
-              </form>
+            <!-- Search -->
+            <form id="search-form" role="search" class="input-group-sm m-2">
+              <!-- contents defined in src/search.ts under SearchBox.create() -->
+            </form>
 
-              <a
-                tabindex="0"
-                id="shareButton"
-                class="icon-button btn btn-outline-light btn-sm text-nowrap m-2"
-                role="button"
-                data-bs-toggle="popover"
-                data-bs-placement="bottom"
-                data-bs-trigger="focus"
-                data-bs-title="Copied to your clipboard!"
-                data-bs-content="Share copied link with others"
-                data-bs-trigger="focus"
-                data-bs-container="body"
-                data-bs-placement="bottom"
-              >
-                <i class="bi bi-share"></i><span>Share Location</span>
-              </a>
+            <a tabindex="0" id="shareButton" class="icon-button btn btn-outline-light btn-sm text-nowrap m-2"
+              role="button" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-trigger="focus"
+              data-bs-title="Copied to your clipboard!" data-bs-content="Share copied link with others"
+              data-bs-trigger="focus" data-bs-container="body" data-bs-placement="bottom">
+              <i class="bi bi-share"></i><span>Share Location</span>
+            </a>
 
-              <div id="overlay-selector" class="btn-group btn-group-sm m-2" role="group">
-                <input id="structuresToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="structures" />
-                <label class="icon-button btn btn-outline-light text-nowrap" for="structuresToggler"><i class="icon-structures"></i> Structures</label>
-                <input id="bossesToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="bosses" />
-                <label class="icon-button btn btn-outline-light text-nowrap" for="bossesToggler"><i class="icon-bosses pixelated-image"></i> Bosses</label>
-                <input id="itemsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="items" />
-                <label class="icon-button btn btn-outline-light text-nowrap" for="itemsToggler"><i class="icon-items pixelated-image"></i> Items</label>
-                <input id="orbsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="orbs" />
-                <label class="icon-button btn btn-outline-light text-nowrap" for="orbsToggler"><i class="icon-orbs pixelated-image"></i> Orbs</label>
-              </div>
+            <div id="overlay-selector" class="btn-group btn-group-sm m-2" role="group">
+              <input id="structuresToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off"
+                data-overlay-key="structures" />
+              <label class="icon-button btn btn-outline-light text-nowrap" for="structuresToggler"><i
+                  class="icon-structures"></i> Structures</label>
+              <input id="bossesToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off"
+                data-overlay-key="bosses" />
+              <label class="icon-button btn btn-outline-light text-nowrap" for="bossesToggler"><i
+                  class="icon-bosses pixelated-image"></i> Bosses</label>
+              <input id="itemsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off"
+                data-overlay-key="items" />
+              <label class="icon-button btn btn-outline-light text-nowrap" for="itemsToggler"><i
+                  class="icon-items pixelated-image"></i> Items</label>
+              <input id="orbsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off"
+                data-overlay-key="orbs" />
+              <label class="icon-button btn btn-outline-light text-nowrap" for="orbsToggler"><i
+                  class="icon-orbs pixelated-image"></i> Orbs</label>
+            </div>
 
-              <a href="https://discord.gg/R2PHyHMYgx" class="icon-button btn btn-sm btn-outline-light text-nowrap m-2" target="_blank" role="button">
-                <i class="bi bi-discord"></i><span>Join Discord</span>
+            <form class="input-group-sm m-2">
+              <input type="search" id="spellSelector" class="form-control" placeholder="Search for a spell&hellip;" />
+              <ul id="spellList"></ul>
+            </form>
+
+            <a href="https://discord.gg/R2PHyHMYgx" class="icon-button btn btn-sm btn-outline-light text-nowrap m-2"
+              target="_blank" role="button">
+              <i class="bi bi-discord"></i><span>Join Discord</span>
+            </a>
+            <a href="https://github.com/acidflow-noita/noitamap"
+              class="icon-button btn btn-sm btn-outline-light text-nowrap m-2" target="_blank" role="button">
+              <i class="bi bi-github"></i><span>Source Code</span>
+            </a>
+            <a id="goToMainWebsiteButton" href="https://runfast.stream" target="_blank"
+              class="btn btn-sm btn-outline-warning m-2">
+              <i class="icon-runfast"></i>
+            </a>
+            <div class="m-2 bg-glow rounded-full inline-block">
+              <a href="https://runfast.stream/donate">
+                <div id="dono-button"
+                  class="test overflow-hidden bg-main text-white border border-2 border-light rounded-full px-4 pt-1 pb-2 inline-block">
+                  Donate</div>
               </a>
-              <a href="https://github.com/acidflow-noita/noitamap" class="icon-button btn btn-sm btn-outline-light text-nowrap m-2" target="_blank" role="button">
-                <i class="bi bi-github"></i><span>Source Code</span>
-              </a>
-              <a id="goToMainWebsiteButton" href="https://runfast.stream" target="_blank" class="btn btn-sm btn-outline-warning m-2">
-                <i class="icon-runfast"></i>
-              </a>
-              <div class="m-2 bg-glow rounded-full inline-block">
-                <a href="https://runfast.stream/donate"
-                  ><div id="dono-button" class="test overflow-hidden bg-main text-white border border-2 border-light rounded-full px-4 pt-1 pb-2 inline-block">Donate</div></a
-                >
-                <div class="bg-glow-inner"></div>
-              </div>
+              <div class="bg-glow-inner"></div>
             </div>
           </div>
         </div>
-      </nav>
-    </div>
-    <i id="loadingIndicator" class="bi bi-arrow-repeat loadingIndicator spinningIcon text-info"></i>
-    <div id="coordinates-hover"></div>
-    <div id="coordinate" class="coordinate">
-      <div class="coordinate-content"></div>
-    </div>
-    <div id="opacitySliderWrapper"></div>
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-      crossorigin="anonymous"
-    ></script>
-    <script src="https://unpkg.com/flexsearch@0.7.40/dist/flexsearch.bundle.min.js"></script>
-    <script src="https://unpkg.com/eventemitter2@6.4.9/lib/eventemitter2.js"></script>
-    <script src="js/main.js"></script>
-  </body>
+      </div>
+    </nav>
+  </div>
+  <i id="loadingIndicator" class="bi bi-arrow-repeat loadingIndicator spinningIcon text-info"></i>
+  <div id="coordinates-hover"></div>
+  <div id="coordinate" class="coordinate">
+    <div class="coordinate-content"></div>
+  </div>
+  <div id="opacitySliderWrapper"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/flexsearch@0.7.40/dist/flexsearch.bundle.min.js"></script>
+  <script src="https://unpkg.com/eventemitter2@6.4.9/lib/eventemitter2.js"></script>
+  <script src="js/main.js"></script>
+</body>
+
 </html>
