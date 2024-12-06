@@ -222,6 +222,7 @@ const biomeOverlays = biomes.flatMap(biomeToAOI).map(aoi => {
   const overlay = createOverlay(aoi);
   overlay.element.classList.remove('osOverlayHighlight');
   overlay.element.classList.add('overlay', 'biomes');
+  overlay.element.style.backgroundColor = '';
   return overlay;
 });
 
@@ -432,7 +433,7 @@ export const initSpellSelector = () => {
 
     affectedOverlays.forEach(({ overlay, totalProbability }) => {
       if (totalProbability === 1) {
-        overlay.element.style.backgroundColor = 'hsla(200, 100%, 50%, 0.6)';
+        overlay.element.style.borderColor = 'hsla(200, 100%, 50%, 0.6)';
         return;
       }
 
@@ -440,7 +441,7 @@ export const initSpellSelector = () => {
         minProbability === maxProbability
           ? 120
           : 120 - 120 * (1 - (totalProbability - minProbability) / (maxProbability - minProbability));
-      overlay.element.style.backgroundColor = `hsla(${hue}, 100%, 50%, 0.6)`;
+      overlay.element.style.borderColor = `hsla(${hue}, 100%, 50%, 0.8)`;
     });
   };
 };
