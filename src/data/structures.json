@@ -125,16 +125,32 @@
   },
   {
     "name": "Hell Shop",
-    "x": -422,
-    "y": 30673,
+    "x": -3323,
+    "y": 28400,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/The_Work_(Hell)"
+  },
+  {
+    "name": "Hell Shop",
+    "x": 3310,
+    "y": 36086,
     "icon": "assets/icons/places/structure.svg",
     "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/The_Work_(Hell)"
   },
   {
     "name": "Heaven Shop",
-    "x": -421,
-    "y": -18573,
+    "x": -3364,
+    "y": -20722,
+    "icon": "assets/icons/places/structure.svg",
+    "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/The_Work_(Sky)"
+  },
+  {
+    "name": "Heaven Shop",
+    "x": 3309,
+    "y": -13024,
     "icon": "assets/icons/places/structure.svg",
     "maps": ["apotheosis-beta-branch", "regular-main-branch", "regular-beta"],
     "wiki": "https://noita.wiki.gg/wiki/The_Work_(Sky)"
