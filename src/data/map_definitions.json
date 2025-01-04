@@ -182,5 +182,19 @@
     "patchDate": "2024-08-12",
     "seed": "78633191",
     "tileSets": ["middle"]
+  },
+  {
+    "key": "maptest",
+    "label": "Map PNG",
+    "badges": [
+      {
+        "label": "Special",
+        "class": "text-bg-primary",
+        "icon": "bi bi-gear-wide-connected"
+      }
+    ],
+    "patchDate": "2024-08-12",
+    "seed": "78633191",
+    "tileSets": ["middle"]
   }
 ]
