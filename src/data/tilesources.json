@@ -120,13 +120,13 @@
   "maptest": [
     {
       "url": "https://maptest-middle.acidflow.stream/maps/maptest-middle/maptest-middle-2024-08-12-78633191.dzi",
-      "dziContent": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Image xmlns=\"http://schemas.microsoft.com/deepzoom/2008\"\n  Format=\"png\"\n  Overlap=\"2\"\n  TileSize=\"512\"\n  >\n  <Size \n    Height=\"26112\"\n    Width=\"37376\"\n  />\n</Image>\n"
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"png\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"37376\",\"Height\":\"26112\"},\"TopLeft\":{\"X\":\"-18688\",\"Y\":\"-7936\"}}}"
     }
   ],
   "maptestjpg": [
     {
       "url": "https://maptestjpg-middle.acidflow.stream/maps/maptestjpg-middle/maptestjpg-middle-2024-08-12-78633191.dzi",
-      "dziContent": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Image xmlns=\"http://schemas.microsoft.com/deepzoom/2008\"\n  Format=\"jpeg\"\n  Overlap=\"2\"\n  TileSize=\"512\"\n  >\n  <Size \n    Height=\"26112\"\n    Width=\"37376\"\n  />\n</Image>\n"
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"jpeg\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"37376\",\"Height\":\"26112\"},\"TopLeft\":{\"X\":\"-18688\",\"Y\":\"-7936\"}}}"
     }
   ]
 }
