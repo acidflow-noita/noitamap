@@ -31,7 +31,7 @@
   "dependencies": {
     "eventemitter2": "6.4.9",
     "flexsearch": "0.7.40",
-    "openseadragon": "5.0.0"
+    "openseadragon": "5.0.1"
   },
   "optionalDependencies": {
     "canvas": "^2.11.2",
@@ -42,6 +42,7 @@
     "@types/jsdom": "^21.1.7",
     "@types/node": "^22.7.7",
     "@types/openseadragon": "^3.0.10",
+    "openseadragon": "^5.0.1",
     "prettier": "^3.3.3",
     "tsup": "^8.3.0",
     "tsx": "^4.19.1",
