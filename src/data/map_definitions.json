@@ -182,47 +182,5 @@
     "patchDate": "2024-08-12",
     "seed": "78633191",
     "tileSets": ["middle"]
-  },
-  {
-    "key": "maptest",
-    "label": "Map Test PNG",
-    "badges": [
-      {
-        "label": "Special",
-        "class": "text-bg-primary",
-        "icon": "bi bi-gear-wide-connected"
-      }
-    ],
-    "patchDate": "2024-08-12",
-    "seed": "78633191",
-    "tileSets": ["middle"]
-  },
-  {
-    "key": "maptestjpg",
-    "label": "Map Test JPG",
-    "badges": [
-      {
-        "label": "Special",
-        "class": "text-bg-primary",
-        "icon": "bi bi-gear-wide-connected"
-      }
-    ],
-    "patchDate": "2024-08-12",
-    "seed": "78633191",
-    "tileSets": ["middle"]
-  },
-  {
-    "key": "maptestwebp",
-    "label": "Map Test WEBP",
-    "badges": [
-      {
-        "label": "Special",
-        "class": "text-bg-primary",
-        "icon": "bi bi-gear-wide-connected"
-      }
-    ],
-    "patchDate": "2024-08-12",
-    "seed": "78633191",
-    "tileSets": ["middle"]
   }
 ]
