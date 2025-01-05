@@ -32,8 +32,11 @@ export class AppOSD extends Viewer {
       // animationTime: 1.2, // Uncomment if needed
       showNavigator: false,
       showNavigationControl: false,
-      imageSmoothingEnabled: false,
+      // drawer: 'webgl', // We dont enable webgl by default
+      crossOriginPolicy: 'Anonymous', // Required for webgl drawer
       drawer: 'canvas',
+      imageSmoothingEnabled: false,
+      debugMode: false, // Optional debugging grid
       // Provide OSD with initial set of tiles
       subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS,
       smoothTileEdgesMinZoom: 1,
