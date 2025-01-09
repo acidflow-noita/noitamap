@@ -170,6 +170,25 @@
                 <ul id="spellList" aria-label="Spell search results"></ul>
               </form>
 
+              <form class="input-group-sm m-2 d-flex">
+                <button
+                  class="btn btn-sm btn-outline-light"
+                  type="button"
+                  data-bs-toggle="popover"
+                  data-bs-trigger="focus"
+                  title="Renderer Selection"
+                  data-bs-content="If you're using a Chromium-based browser (Chrome, Edge, Brave, etc.) try switching to WebGL rendering engine: the tiles will be even less blurry while zooming in quickly."
+                >
+                  <i class="bi bi-info-circle"></i>
+                </button>
+                <div class="btn-group" role="group" aria-label="Renderer selection">
+                  <input type="radio" class="btn-check" name="renderer" id="canvas-renderer" value="canvas" autocomplete="off" checked />
+                  <label class="btn btn-sm btn-outline-light" for="canvas-renderer">Canvas</label>
+                  <input type="radio" class="btn-check" name="renderer" id="webgl-renderer" value="webgl" autocomplete="off" />
+                  <label class="btn btn-sm btn-outline-light" for="webgl-renderer">WebGL</label>
+                </div>
+              </form>
+
               <a href="https://discord.gg/R2PHyHMYgx" class="icon-button btn btn-sm btn-outline-light text-nowrap m-2" target="_blank" role="button">
                 <i class="bi bi-discord"></i><span>Join Discord</span>
               </a>

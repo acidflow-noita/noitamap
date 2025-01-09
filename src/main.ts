@@ -6,6 +6,7 @@ import { asMapName } from './data_sources/tile_data';
 import { addEventListenerForId, assertElementById, debounce } from './util';
 import { createMapLinks, NAV_LINK_IDENTIFIER } from './nav';
 import { initMouseTracker } from './mouse_tracker';
+import { getStoredRenderer, setStoredRenderer } from './renderer_settings';
 
 document.addEventListener('DOMContentLoaded', async () => {
   // TODO: probably most of this should be part of the "App" class, or the "App" class should be removed.
@@ -19,10 +20,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   const tooltipElement = assertElementById('coordinate', HTMLElement);
   const coordinatesText = tooltipElement.innerText;
 
+  // Initialize renderer from storage
+  const rendererInputs = document.querySelectorAll('input[name="renderer"]');
+  const storedRenderer = getStoredRenderer();
+  rendererInputs.forEach((input: HTMLInputElement) => {
+    input.checked = input.value === storedRenderer;
+  });
+
   const app = await App.create({
     mountTo: osdRootElement,
     overlayButtons: overlayButtonsElement,
     initialState: parseURL(),
+    useWebGL: storedRenderer === 'webgl',
   });
 
   navbarBrandElement.addEventListener('click', ev => {
@@ -130,6 +139,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('keydown', copyCoordinates, { capture: false });
 
   initSpellSelector();
+
+  // Handle renderer changes
+  rendererInputs.forEach(input => {
+    input.addEventListener('change', async e => {
+      const newRenderer = (e.target as HTMLInputElement).value as RendererType;
+      setStoredRenderer(newRenderer);
+
+      // Store current state
+      const currentState = {
+        map: app.getMap(),
+        pos: app.osd.getZoomPos(),
+      };
+
+      // Reload page to apply new renderer
+      window.location.reload();
+    });
+  });
 
   // Uncomment and implement annotations if needed
   // drawingToggleSwitch.addEventListener("change", (event) => {
