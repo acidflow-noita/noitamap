@@ -2,8 +2,12 @@ const RENDERER_STORAGE_KEY = 'noitamap-renderer';
 
 export type RendererType = 'canvas' | 'webgl';
 
+export const isRenderer = (v: unknown): v is RendererType => v === 'canvas' || v === 'webgl';
+
 export function getStoredRenderer(): RendererType {
-  return (localStorage.getItem(RENDERER_STORAGE_KEY) as RendererType) || 'canvas';
+  // assign it a variable, so typescript can associate a type with the variable
+  const item = localStorage.getItem(RENDERER_STORAGE_KEY);
+  return isRenderer(item) ? item : 'canvas';
 }
 
 export function setStoredRenderer(renderer: RendererType) {

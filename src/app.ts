@@ -11,7 +11,7 @@ export type AppCreateOpts = {
   mountTo: HTMLElement;
   overlayButtons: HTMLDivElement;
   initialState: Partial<AppState>;
-  useWebGL?: boolean;
+  useWebGL: boolean;
 };
 
 type AppConstructOpts = {

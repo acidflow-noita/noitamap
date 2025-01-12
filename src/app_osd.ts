@@ -25,7 +25,7 @@ export class AppOSD extends Viewer {
   private mapName: MapName | null = null;
   private listeners: ((isLoading: boolean) => void)[] = [];
 
-  constructor(mountTo: HTMLElement, useWebGL?: boolean) {
+  constructor(mountTo: HTMLElement, useWebGL: boolean) {
     super({
       element: mountTo,
       maxZoomPixelRatio: 70,
