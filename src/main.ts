@@ -6,6 +6,7 @@ import { asMapName } from './data_sources/tile_data';
 import { addEventListenerForId, assertElementById, debounce } from './util';
 import { createMapLinks, NAV_LINK_IDENTIFIER } from './nav';
 import { initMouseTracker } from './mouse_tracker';
+import { isRenderer, getStoredRenderer, setStoredRenderer } from './renderer_settings';
 
 document.addEventListener('DOMContentLoaded', async () => {
   // TODO: probably most of this should be part of the "App" class, or the "App" class should be removed.
@@ -18,11 +19,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   const mapNameElement = assertElementById('currentMapName', HTMLElement);
   const tooltipElement = assertElementById('coordinate', HTMLElement);
   const coordinatesText = tooltipElement.innerText;
+  const rendererForm = assertElementById('renderer-form', HTMLFormElement);
+
+  // Initialize renderer from storage
+  const storedRenderer = getStoredRenderer();
+  rendererForm.elements['renderer'].value = storedRenderer;
 
   const app = await App.create({
     mountTo: osdRootElement,
     overlayButtons: overlayButtonsElement,
     initialState: parseURL(),
+    useWebGL: storedRenderer === 'webgl',
   });
 
   navbarBrandElement.addEventListener('click', ev => {
@@ -141,4 +148,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   //     console.log("not checked");
   //   }
   // });
+
+  // Handle renderer changes
+  rendererForm.addEventListener('change', ev => {
+    if (!ev.target.matches('input[type="radio"][name="renderer"]')) return;
+
+    ev.stopPropagation();
+    const newRenderer = rendererForm.elements['renderer'].value;
+
+    if (isRenderer(newRenderer)) {
+      setStoredRenderer(newRenderer);
+      window.location.reload();
+    }
+  });
 });

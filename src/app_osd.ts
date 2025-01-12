@@ -25,7 +25,7 @@ export class AppOSD extends Viewer {
   private mapName: MapName | null = null;
   private listeners: ((isLoading: boolean) => void)[] = [];
 
-  constructor(mountTo: HTMLElement) {
+  constructor(mountTo: HTMLElement, useWebGL: boolean) {
     super({
       element: mountTo,
       maxZoomPixelRatio: 70,
@@ -34,7 +34,7 @@ export class AppOSD extends Viewer {
       showNavigationControl: false,
       // drawer: 'webgl', // We dont enable webgl by default
       crossOriginPolicy: 'Anonymous', // Required for webgl drawer
-      drawer: 'canvas',
+      drawer: useWebGL ? 'webgl' : 'canvas',
       imageSmoothingEnabled: false,
       debugMode: false, // Optional debugging grid
       // Provide OSD with initial set of tiles

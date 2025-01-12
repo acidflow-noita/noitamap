@@ -11,6 +11,7 @@ export type AppCreateOpts = {
   mountTo: HTMLElement;
   overlayButtons: HTMLDivElement;
   initialState: Partial<AppState>;
+  useWebGL: boolean;
 };
 
 type AppConstructOpts = {
@@ -134,9 +135,9 @@ export class App extends EventEmitter2 {
     this.osd.viewport.fitBounds(this.osd.getCombinedItemsRect());
   }
 
-  static async create({ mountTo, overlayButtons, initialState }: AppCreateOpts) {
+  static async create({ mountTo, overlayButtons, initialState, useWebGL }: AppCreateOpts) {
     const mapName = initialState.map ?? 'regular-main-branch';
-    const osd = new AppOSD(mountTo);
+    const osd = new AppOSD(mountTo, useWebGL);
 
     // if we do not have an initial position, we have to fully initialize
     // OpenSeadragon so that we can zoom it to fit and get what the position
