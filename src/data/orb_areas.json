@@ -70,5 +70,21 @@
     "width": 8,
     "height": 9,
     "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "text": ["Spawn point for Sea of Lava orb. Always in the same spot"],
+    "x": 1,
+    "y": -3,
+    "width": 1,
+    "height": 1,
+    "maps": ["new-game-plus-main-branch"]
+  },
+  {
+    "text": ["Spawn area for Earthquake orb. Always in the same spot"],
+    "x": 19,
+    "y": -3,
+    "width": 1,
+    "height": 1,
+    "maps": ["new-game-plus-main-branch"]
   }
 ]
