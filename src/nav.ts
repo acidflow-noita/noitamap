@@ -1,5 +1,6 @@
 import { getAllMapDefinitions } from './data_sources/map_definitions';
 import { assertElementById, formatDate } from './util';
+import type { MapDefinition } from './data_sources/map_definitions';
 
 export const NAV_LINK_IDENTIFIER = 'nav-link';
 
@@ -10,7 +11,7 @@ export const createMapLinks = (): HTMLUListElement => {
 
   for (const [mapName, def] of getAllMapDefinitions()) {
     const a = document.createElement('a');
-    a.classList.add(NAV_LINK_IDENTIFIER, 'text-nowrap');
+    a.classList.add(NAV_LINK_IDENTIFIER, 'text-nowrap', 'dropdown-item');
     a.href = '#';
     a.dataset.bsToggle = 'pill';
     a.dataset.mapKey = mapName;
@@ -48,9 +49,15 @@ export const createMapLinks = (): HTMLUListElement => {
       span.appendChild(text);
       a.appendChild(span);
     }
-
-    navLinksUl.appendChild(a);
+    const li = document.createElement('li');
+    li.appendChild(a);
+    navLinksUl.appendChild(li);
   }
 
   return navLinksUl;
+};
+
+// Utility to get short map name for selection
+export const getShortMapName = (def: MapDefinition) => {
+  return def.label;
 };

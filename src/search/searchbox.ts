@@ -93,11 +93,11 @@ export class SearchBox extends EventEmitter2 {
   static create({ currentMap, form }: SearchBoxCreateOptions) {
     const searchInput = document.createElement('input');
     searchInput.classList.add('form-control');
-    searchInput.id = 'search-form';
+    searchInput.id = 'unified-search-input';
     searchInput.type = 'search';
     searchInput.autofocus = true;
     searchInput.placeholder = 'Search… e.g. Kolmi';
-    searchInput.ariaLabel = 'search';
+    searchInput.ariaLabel = 'Search';
 
     const searchResultsUL = document.createElement('ul');
     searchResultsUL.id = 'searchResults';

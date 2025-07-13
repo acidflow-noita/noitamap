@@ -1,0 +1,72 @@
+.search-result img {
+  width: 32px;
+  height: 32px;
+}
+
+.search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  height: 1em;
+  width: 1em;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23777'><path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/></svg>") center/cover no-repeat;
+  cursor: pointer;
+}
+
+.search-input::-moz-clear-button {
+ display: none;
+}
+
+#unifiedSearchResultsOverlay {
+  position: absolute;
+  z-index: 1050;
+  background: var(--bs-dark);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: none;
+  min-width: 400px;
+  max-width: 500px;
+}
+
+#unifiedSearchResults {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#unifiedSearchResults .list-group-item {
+  border: none;
+  border-bottom: 1px solid var(--bs-border-color);
+  border-radius: 0;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+  padding: 0.5rem 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#unifiedSearchResults .list-group-item.d-flex {
+  white-space: normal;
+  overflow: visible;
+}
+
+#unifiedSearchResults .list-group-item.d-flex > div {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#unifiedSearchResults .list-group-item:hover,
+#unifiedSearchResults .list-group-item:focus {
+  background-color: var(--bs-dark-border-subtle);
+  outline: none;
+}
+
+#unifiedSearchResults .list-group-item:last-child {
+  border-bottom: none;
+}

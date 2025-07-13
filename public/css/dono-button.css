@@ -1,7 +1,7 @@
 .bg-glow {
   position: relative;
   z-index: 0;
-  padding: 0.5rem;
+  padding: 0.25rem;
 }
 .bg-glow-inner {
   position: absolute;
@@ -10,7 +10,7 @@
 
   overflow: hidden;
 
-  filter: blur(25px);
+  filter: blur(20px);
   mask-image: radial-gradient(black 20%, transparent 70%);
 
   background: linear-gradient(
@@ -29,7 +29,7 @@
     #48ff00,
     #00ffd5
   );
-  background-size: 400px 200px;
+  background-size: 500px 250px;
   animation: glowing 10s linear infinite;
 }
 
@@ -38,7 +38,7 @@
     background-position: 0 0;
   }
   100% {
-    background-position: 400px 0;
+    background-position: 500px 0;
   }
 }
 
@@ -55,13 +55,13 @@
   border-style: solid;
 }
 .border-2 {
-  border-width: 2px;
+  border-width: 2px !important;
 }
 .border-light {
   border-color: #f8f9fa;
 }
 .bg-main {
-  background-color: #030712;
+  background-color: oklch(12.9% 0.042 264.695);
 }
 .bg-gray-300 {
   background-color: gray;
@@ -102,6 +102,16 @@
   overflow: hidden;
 }
 
+#dono-button {
+  font-size: 0.875rem; /* Same as btn-sm */
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none !important;
+  min-width: 4.5rem; /* Set fixed minimum width instead of percentage */
+  border-width: 2px !important;
+}
 #dono-button:hover {
   background-color: #ee2b2c;
 }

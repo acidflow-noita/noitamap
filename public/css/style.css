@@ -7,12 +7,26 @@ html {
 }
 
 .navbar.mapNavbar {
-  background-color: #030712 !important;
+  background-color: oklch(12.9% 0.042 264.695) !important;
+}
+
+.dropdown-item.active {
+  background-color: oklch(37.9% 0.146 265.522) !important;
+}
+.dropdown-item.active,
+.dropdown-item:active {
+  background-color: oklch(37.9% 0.146 265.522) !important;
+}
+
+.dropdown-item:focus,
+.dropdown-item:hover {
+  background-color: oklch(37.2% 0.044 257.287) !important;
 }
 
 .flex {
   display: flex;
 }
+
 .flex-col-reverse {
   flex-direction: column-reverse;
 }
@@ -22,6 +36,7 @@ html {
   height: 100vh;
   position: fixed;
 }
+
 #osContainer {
   height: 100%;
   width: 100%;
@@ -108,7 +123,8 @@ html {
     1 86.7%,
     1 100%
   );
-  /*animation-timing-function: linear;*/ /* use this if you don't like the above */
+  /*animation-timing-function: linear;*/
+  /* use this if you don't like the above */
 }
 
 .loadingIndicator::after {
@@ -130,6 +146,7 @@ html {
   from {
     -ms-transform: rotate(0deg);
   }
+
   to {
     -ms-transform: rotate(360deg);
   }
@@ -139,6 +156,7 @@ html {
   from {
     -moz-transform: rotate(0deg);
   }
+
   to {
     -moz-transform: rotate(360deg);
   }
@@ -148,6 +166,7 @@ html {
   from {
     -webkit-transform: rotate(0deg);
   }
+
   to {
     -webkit-transform: rotate(360deg);
   }
@@ -157,6 +176,7 @@ html {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -243,7 +263,6 @@ body.toggle-hidden div.osOverlayHighlight {
   font-style: italic;
 }
 
-/* TODO: search results overflow the page on narrow displays */
 #search-form:focus-visible + #searchResults:has(> .search-result),
 #searchResults:active,
 #searchResults:focus-within {
@@ -269,7 +288,6 @@ body.toggle-hidden div.osOverlayHighlight {
   background: #fff2;
 }
 
-/* prevent drawing an outline around the OSD container if we hit tab to focus it */
 #osContainer :focus-visible {
   outline: none;
 }
@@ -346,4 +364,156 @@ body.toggle-hidden div.osOverlayHighlight {
   &:focus + div {
     visibility: visible;
   }
+}
+
+.icon-label-hover .label-text {
+  display: none;
+}
+
+.icon-label-hover:hover .label-text,
+.icon-label-hover:focus .label-text,
+.icon-label-hover:focus-visible .label-text {
+  display: inline;
+}
+
+#unifiedSearchResultsOverlay {
+  position: absolute;
+  z-index: 9999;
+  background: #181a20ee;
+  border-radius: 0.25em;
+  box-shadow: 0 2px 16px #000a;
+  padding: 0;
+  margin: 0;
+  min-width: 300px;
+  max-width: 400px;
+  overflow: visible;
+}
+
+#unifiedSearchResults {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.navbar .btn {
+  flex-shrink: 0;
+}
+
+#map-selector .dropdown-toggle {
+  min-width: 180px;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#overlay-selector .btn {
+  min-height: 31px; /* Match other btn-sm heights */
+  padding: 0.25rem 0.5rem; /* Match btn-sm padding */
+}
+
+/* Fix inconsistent gaps between menu elements */
+.navbar .d-flex > * {
+  margin: 0.25rem !important;
+}
+
+/* Make search form wider to prevent placeholder clipping and add focus glow padding */
+#search-form {
+  min-width: 280px;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+#shareButton i {
+  margin-top: -1px;
+  margin-right: -3px;
+}
+
+/* Fix renderer info button to show popover */
+#renderer-form .btn:first-child {
+  cursor: pointer;
+}
+
+/* Make overlay button images grayscale when disabled */
+#overlay-selector input:disabled + label i,
+#overlay-selector input[disabled] + label i,
+#overlay-selector .btn:disabled i,
+#overlay-selector .btn[disabled] i,
+#overlay-selector .btn.disabled i {
+  filter: brightness(0.5) contrast(0.5) saturate(0) !important;
+  opacity: 0.6 !important;
+}
+
+#unifiedSearchResults .search-result {
+  padding: 0.5em;
+  border-bottom: 1px solid #fff8;
+  overflow: hidden;
+  text-wrap: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  user-select: none;
+  background: none;
+}
+
+.btn-custom {
+  padding: 0.375rem 0.75rem;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+#unifiedSearchResults .search-result:hover,
+#unifiedSearchResults .search-result:focus {
+  background: #fff2;
+}
+
+#spellModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  z-index: 10000;
+  justify-content: center;
+  align-items: center;
+}
+
+#spellModalOverlay[style*='display: flex'] {
+  display: flex !important;
+}
+
+#spellModalContent {
+  background: #222933;
+  padding: 2em;
+  border-radius: 0.5em;
+  min-width: 300px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  position: relative;
+  color: #fff;
+  box-shadow: 0 2px 32px #000a;
+}
+
+#closeSpellModal {
+  position: absolute;
+  top: 0.5em;
+  right: 0.5em;
+  font-size: 1.5em;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+#closeSpellModal:hover {
+  color: #ffc107;
+}
+
+#unifiedSearchResultsOverlay {
+  min-width: 500px;
 }

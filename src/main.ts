@@ -1,7 +1,7 @@
 import { App } from './app';
 import { parseURL, updateURL } from './data_sources/url';
-import { asOverlayKey, initSpellSelector, showOverlay } from './data_sources/overlays';
-import { SearchBox } from './search/searchbox';
+import { asOverlayKey, showOverlay, selectSpell } from './data_sources/overlays';
+import { UnifiedSearch } from './search/unifiedsearch';
 import { asMapName } from './data_sources/tile_data';
 import { addEventListenerForId, assertElementById, debounce } from './util';
 import { createMapLinks, NAV_LINK_IDENTIFIER } from './nav';
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const osdRootElement = assertElementById('osContainer', HTMLElement);
   const searchForm = assertElementById('search-form', HTMLFormElement);
   const overlayButtonsElement = assertElementById('overlay-selector', HTMLDivElement);
-  const mapNameElement = assertElementById('currentMapName', HTMLElement);
+  const mapSelectorButton = assertElementById('mapSelectorButton', HTMLButtonElement);
   const tooltipElement = assertElementById('coordinate', HTMLElement);
   const coordinatesText = tooltipElement.innerText;
   const rendererForm = assertElementById('renderer-form', HTMLFormElement);
@@ -32,29 +32,57 @@ document.addEventListener('DOMContentLoaded', async () => {
     useWebGL: storedRenderer === 'webgl',
   });
 
+  const initialMapName = app.getMap();
+  const initialMapDef = app.getMapDef(initialMapName);
+  if (initialMapDef) {
+    mapSelectorButton.textContent = initialMapDef.label;
+  }
+
   navbarBrandElement.addEventListener('click', ev => {
     ev.preventDefault();
     app.home();
   });
 
-  // create search
-  const searchBox = SearchBox.create({
+  // create unified search
+  const unifiedSearch = UnifiedSearch.create({
     currentMap: app.getMap(),
     form: searchForm,
   });
 
   // link to the app
-  searchBox.on('selected', toi => app.goto(toi));
+  unifiedSearch.on('selected', (result: any) => {
+    if (result.type === 'spell') {
+      // Fill the search box with the spell name without triggering new search
+      unifiedSearch.setSearchValueWithoutTriggering(result.spell.name);
+      // Hide the search overlay
+      const overlay = document.getElementById('unifiedSearchResultsOverlay');
+      if (overlay) {
+        overlay.style.display = 'none';
+      }
+      // Trigger overlays for the selected spell
+      selectSpell(result.spell, app);
+    } else {
+      app.goto(result);
+    }
+  });
 
   const debouncedUpdateURL = debounce(100, updateURL);
   app.on('state-change', state => {
     // record map / position / zoom changes to the URL when they happen
     debouncedUpdateURL(state);
 
-    const currentMapLink = document.querySelector(`#navLinksList [data-map-key=${state.map}]`);
-    if (!(currentMapLink instanceof HTMLElement)) return;
+    const currentMapLink = document.querySelector(`#navLinksList [data-map-key='${state.map}']`);
 
-    mapNameElement.innerHTML = currentMapLink.innerHTML;
+    // Always update the dropdown button text
+    const mapName = asMapName(state.map);
+    if (mapName) {
+      const mapDef = app.getMapDef(mapName);
+      if (mapDef) {
+        mapSelectorButton.textContent = mapDef.label;
+      }
+    }
+
+    if (!(currentMapLink instanceof HTMLElement)) return;
 
     // Remove "active" class from any nav links that still have it
     document.querySelectorAll('#navLinksList .nav-link.active').forEach(el => {
@@ -94,7 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // load the new map
     app.setMap(mapName);
     // set which map we're searching
-    searchBox.currentMap = mapName;
+    unifiedSearch.currentMap = mapName;
   });
 
   // manage css classes to show / hide overlays
@@ -120,12 +148,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   for (const el of document.querySelectorAll('[data-bs-toggle="popover"]')) {
     new bootstrap.Popover(el);
   }
+  // Initialize Bootstrap tooltips
+  for (const el of document.querySelectorAll('[data-bs-toggle="tooltip"]')) {
+    new bootstrap.Tooltip(el);
+  }
 
-  // share button -- probably want some "copied to clipboard" popup/fade notification
+  // share button with toast notification
   const shareEl = assertElementById('shareButton', HTMLElement);
   shareEl.addEventListener('click', ev => {
     ev.preventDefault();
-    window.navigator.clipboard.writeText(window.location.href);
+    window.navigator.clipboard
+      .writeText(window.location.href)
+      .then(() => {
+        // Show toast notification
+        const toastElement = assertElementById('shareToast', HTMLElement);
+        const toast = new bootstrap.Toast(toastElement, {
+          autohide: true,
+          delay: 2000,
+        });
+        toast.show();
+      })
+      .catch(err => {
+        console.error('Failed to copy to clipboard:', err);
+      });
   });
 
   // Mouse tracker for displaying coordinates
@@ -135,8 +180,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     tooltipElement: assertElementById('coordinate', HTMLElement),
   });
   document.addEventListener('keydown', copyCoordinates, { capture: false });
-
-  initSpellSelector();
 
   // Uncomment and implement annotations if needed
   // drawingToggleSwitch.addEventListener("change", (event) => {
