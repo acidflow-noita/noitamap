@@ -27,6 +27,7 @@
     <meta name="theme-color" content="#ffffff" />
     <link rel="stylesheet" href="css/overlay-styles.css" />
     <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/search.css" />
     <link rel="stylesheet" href="css/dono-button.css" />
     <link rel="icon" href="assets/favicon/favicon.ico" type="image/x-icon" />
     <link rel="preconnect" href="https://rsms.me/" />
@@ -68,6 +69,12 @@
   </head>
 
   <body>
+    <!-- Toast container for notifications -->
+    <div class="toast-container position-fixed top-0 end-0" style="z-index: 1100">
+      <div id="shareToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-body bg-success text-white"><i class="bi bi-check-circle me-2"></i>Copied to clipboard!</div>
+      </div>
+    </div>
     <!-- TODO: add drawing -->
     <!-- <div class="form-check form-switch"> -->
     <!--   <input class="form-check-input" type="checkbox" role="switch" id="drawingToggleSwitch"> -->
@@ -82,8 +89,7 @@
       <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark navbar-expand-lg">
         <div class="container-fluid">
           <a id="navbar-brand" class="navbar-brand" href="#">
-            <img src="./assets/NoitamapLogo.svg" alt="Noitamap Logo" class="d-inline-block" />
-            <span id="currentMapName">Noita map</span>
+            <img src="./assets/NoitamapLogo.svg" alt="Noitamap Logo" class="d-inline-block" style="width: 41px; height: 49px" />
           </a>
           <button
             class="navbar-toggler"
@@ -104,103 +110,155 @@
                 <i class="bi bi-suit-heart-fill"></i><span>Donate</span>
               </a> -->
 
-              <a id="installModButton" href="https://runfast.stream/noitamap-mod" target="_blank" class="icon-button btn btn-sm btn-outline-light text-nowrap m-2">
-                <i class="bi bi-download"></i><span>Install Mod</span>
-              </a>
-              <div id="map-selector" class="dropdown">
-                <button class="btn btn-sm btn-outline-light dropdown-toggle m-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">Available Maps</button>
+              <div id="map-selector" class="dropdown me-2">
+                <button id="mapSelectorButton" class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Available Maps</button>
                 <ul class="dropdown-menu" id="navLinksList"></ul>
               </div>
 
-              <!-- Search -->
-              <form id="search-form" role="search" class="input-group-sm m-2">
-                <!-- contents defined in src/search.ts under SearchBox.create() -->
-              </form>
+              <form id="search-form" role="search" class="flex-grow-1 me-2"></form>
 
               <a
                 tabindex="0"
                 id="shareButton"
-                class="icon-button btn btn-outline-light btn-sm text-nowrap m-2"
+                class="icon-button btn btn-sm btn-outline-light text-nowrap me-2"
                 role="button"
                 data-bs-toggle="popover"
-                data-bs-placement="bottom"
-                data-bs-trigger="focus"
-                data-bs-title="Copied to your clipboard!"
-                data-bs-content="Share copied link with others"
-                data-bs-trigger="focus"
-                data-bs-container="body"
-                data-bs-placement="bottom"
+                data-bs-placement="top"
+                data-bs-trigger="hover focus"
+                data-bs-title="Share Link"
+                data-bs-content="Copy a shareable link to your clipboard"
               >
-                <i class="bi bi-share"></i><span>Share Location</span>
+                <i class="bi bi-share"></i><span></span>
               </a>
 
-              <div id="overlay-selector" class="btn-group btn-group-sm m-2" role="group">
+              <div id="overlay-selector" class="btn-group btn-group me-2" role="group">
                 <input id="structuresToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="structures" />
-                <label class="icon-button btn btn-outline-light text-nowrap" for="structuresToggler"><i class="icon-structures"></i> Structures</label>
+                <label
+                  class="icon-button btn btn-sm btn-outline-light text-nowrap"
+                  for="structuresToggler"
+                  data-bs-toggle="popover"
+                  data-bs-placement="top"
+                  data-bs-trigger="hover focus"
+                  data-bs-title="Structures"
+                  data-bs-content="Toggle structures overlay"
+                  ><i class="icon-structures"></i
+                ></label>
                 <input id="bossesToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="bosses" />
-                <label class="icon-button btn btn-outline-light text-nowrap" for="bossesToggler"><i class="icon-bosses pixelated-image"></i> Bosses</label>
+                <label
+                  class="icon-button btn btn-sm btn-outline-light text-nowrap"
+                  for="bossesToggler"
+                  data-bs-toggle="popover"
+                  data-bs-placement="top"
+                  data-bs-trigger="hover focus"
+                  data-bs-title="Bosses"
+                  data-bs-content="Toggle bosses overlay"
+                  ><i class="icon-bosses pixelated-image"></i
+                ></label>
                 <input id="itemsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="items" />
-                <label class="icon-button btn btn-outline-light text-nowrap" for="itemsToggler"><i class="icon-items pixelated-image"></i> Items</label>
+                <label
+                  class="icon-button btn btn-sm btn-outline-light text-nowrap"
+                  for="itemsToggler"
+                  data-bs-toggle="popover"
+                  data-bs-placement="top"
+                  data-bs-trigger="hover focus"
+                  data-bs-title="Items"
+                  data-bs-content="Toggle items overlay"
+                  ><i class="icon-items pixelated-image"></i>
+                </label>
                 <input id="orbsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="orbs" />
-                <label class="icon-button btn btn-outline-light text-nowrap" for="orbsToggler"><i class="icon-orbs pixelated-image"></i> Orbs</label>
+                <label
+                  class="icon-button btn btn-sm btn-outline-light text-nowrap"
+                  for="orbsToggler"
+                  data-bs-toggle="popover"
+                  data-bs-placement="top"
+                  data-bs-trigger="hover focus"
+                  data-bs-title="Orbs"
+                  data-bs-content="Toggle orbs overlay"
+                  ><i class="icon-orbs pixelated-image"></i
+                ></label>
               </div>
 
-              <form class="input-group-sm m-2 d-flex">
-                <button id="spellChanceInfoButton" class="btn btn-sm btn-outline-light" type="button" aria-label="Spell chance information">&#9432;</button>
-                <div>
-                  <blockquote cite="https://noita.wiki.gg/wiki/Wand_and_Spell_Tiers">
-                    <p>
-                      Spells in Noita are organised into tiers which dictate which spells can spawn; each biome selects one or more tiers of spells and wands to spawn when generating spell shops and
-                      wands. Most spells belong to more than one tier, though it may define a different rarity value for each tier (for example, a spell may be very common for Tier 1, but exceedingly
-                      rare in Tier 3).
-                    </p>
-                  </blockquote>
-                  <cite>— <a href="https://noita.wiki.gg/wiki/Wand_and_Spell_Tiers" target="_blank" rel="noopener">noita.wiki.gg</a></cite>
-                  <hr />
-                  <div>
-                    <p>Each percentage represents the chance of a spell to appear:</p>
-                    <ul>
-                      <li>on a wand (if wands appear in the area and the spell can be found on wands)</li>
-                      <li>in a spell shop (if spell shops appear in the area)</li>
-                    </ul>
-                  </div>
-                  <p>The percentages regard a <em>single spell roll</em>, not the chance of a spell to appear in general, e.g. on a wand with the capacity to hold multiple spells.</p>
-                  <p>Some spells can appear on pre-made wands in the Mines. They <em>can</em> be found on such wands despite being marked as unable to spawn on regular wands.</p>
-                </div>
-                <input type="search" id="spellSelector" class="form-control" placeholder="Search for a spell&hellip;" aria-label="Search spells" />
-                <ul id="spellList" aria-label="Spell search results"></ul>
-              </form>
-
-              <form id="renderer-form" class="input-group-sm m-2 d-flex">
-                <div
-                  class="btn btn-sm btn-outline-light"
-                  data-bs-toggle="popover"
-                  data-bs-trigger="hover focus"
-                  title="Renderer Selection"
-                  data-bs-content="If you're using a Chromium-based browser (Chrome, Edge, Brave, etc.) try switching to WebGL rendering engine: the tiles will be even less blurry while zooming in quickly."
-                >
-                  <i class="bi bi-info-circle"></i>
-                </div>
-                <div class="btn-group" role="group" aria-label="Renderer selection">
+              <form id="renderer-form" class="input-group-sm d-flex">
+                <div class="btn-group btn-group-sm me-2" role="group" aria-label="Renderer selection">
                   <input type="radio" class="btn-check" name="renderer" id="canvas-renderer" value="canvas" autocomplete="off" checked />
-                  <label class="btn btn-sm btn-outline-light" for="canvas-renderer">Canvas</label>
+                  <label
+                    class="btn btn-sm btn-outline-light"
+                    for="canvas-renderer"
+                    data-bs-toggle="popover"
+                    data-bs-placement="top"
+                    data-bs-trigger="hover focus"
+                    data-bs-title="Canvas Rendering"
+                    data-bs-content="Standard HTML5 Canvas rendering. Works on all browsers but may be slightly less crisp when zooming quickly."
+                    ><i class="bi bi-browser-firefox"></i
+                  ></label>
                   <input type="radio" class="btn-check" name="renderer" id="webgl-renderer" value="webgl" autocomplete="off" />
-                  <label class="btn btn-sm btn-outline-light" for="webgl-renderer">WebGL</label>
+                  <label
+                    class="btn btn-sm btn-outline-light"
+                    for="webgl-renderer"
+                    data-bs-toggle="popover"
+                    data-bs-placement="top"
+                    data-bs-trigger="hover focus"
+                    data-bs-title="WebGL Rendering"
+                    data-bs-content="Hardware-accelerated WebGL rendering. If you're using a Chromium-based browser (Chrome, Edge, Brave, etc.) the tiles will be less blurry while zooming in quickly."
+                    ><i class="bi bi-browser-chrome"></i
+                  ></label>
                 </div>
               </form>
-
-              <a href="https://discord.gg/R2PHyHMYgx" class="icon-button btn btn-sm btn-outline-light text-nowrap m-2" target="_blank" role="button">
-                <i class="bi bi-discord"></i><span>Join Discord</span>
+              <a
+                id="installModButton"
+                href="https://runfast.stream/noitamap-mod"
+                target="_blank"
+                class="icon-button btn btn-sm btn-outline-light text-nowrap me-2"
+                data-bs-toggle="popover"
+                data-bs-placement="top"
+                data-bs-trigger="hover focus"
+                data-bs-title="Noita Map Mod"
+                data-bs-content="Install the Noita Map mod"
+              >
+                <i class="bi bi-download"></i><span>Mod</span>
               </a>
-              <a href="https://github.com/acidflow-noita/noitamap" class="icon-button btn btn-sm btn-outline-light text-nowrap m-2" target="_blank" role="button">
-                <i class="bi bi-github"></i><span>Source Code</span>
+              <a
+                href="https://discord.gg/R2PHyHMYgx"
+                class="icon-button btn btn-sm btn-outline-light text-nowrap me-2"
+                target="_blank"
+                role="button"
+                data-bs-toggle="popover"
+                data-bs-placement="top"
+                data-bs-trigger="hover focus"
+                data-bs-title="Discord"
+                data-bs-content="Join the Discord server"
+              >
+                <i class="bi bi-discord"></i>
               </a>
-              <a id="goToMainWebsiteButton" href="https://runfast.stream" target="_blank" class="btn btn-sm btn-outline-warning m-2">
+              <a
+                href="https://github.com/acidflow-noita/noitamap"
+                class="icon-button btn btn-sm btn-outline-light text-nowrap me-2"
+                target="_blank"
+                role="button"
+                data-bs-toggle="popover"
+                data-bs-placement="top"
+                data-bs-trigger="hover focus"
+                data-bs-title="GitHub"
+                data-bs-content="View the source code on GitHub"
+              >
+                <i class="bi bi-github"></i>
+              </a>
+              <a
+                id="goToMainWebsiteButton"
+                href="https://runfast.stream"
+                target="_blank"
+                class="btn btn-sm btn-outline-warning me-2"
+                data-bs-toggle="popover"
+                data-bs-placement="top"
+                data-bs-trigger="hover focus"
+                data-bs-title="Runfast.Stream"
+                data-bs-content="Go to the main runfast.stream website"
+              >
                 <i class="icon-runfast"></i>
               </a>
-              <div class="m-2 bg-glow rounded-full inline-block">
-                <a href="https://runfast.stream/donate">
-                  <div id="dono-button" class="test overflow-hidden bg-main text-white border border-2 border-light rounded-full px-4 pt-1 pb-2 inline-block">Donate</div>
+              <div class="me-2 bg-glow rounded-full inline-block">
+                <a href="https://runfast.stream/donate" style="text-decoration: none" target="_blank">
+                  <div id="dono-button" class="test overflow-hidden bg-main text-white border border-1 border-light rounded-full px-2 py-1 inline-block">Donate</div>
                 </a>
                 <div class="bg-glow-inner"></div>
               </div>

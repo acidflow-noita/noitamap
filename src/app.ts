@@ -1,6 +1,7 @@
 import { MapName } from './data_sources/tile_data';
 import { AppOSD, ZoomPos } from './app_osd';
 import { getAllOverlays, OverlayKey, showOverlay, TargetOfInterest } from './data_sources/overlays';
+import { getAllMapDefinitions, MapDefinition } from './data_sources/map_definitions';
 
 export type AppState = {
   pos: ZoomPos;
@@ -93,16 +94,59 @@ export class App extends EventEmitter2 {
     // that should be disabled
     for (const [key, enabled] of Object.entries(enableOverlayButton)) {
       const overlayToggle = this.overlayButtons.querySelector(`input[data-overlay-key="${key}"]`) as HTMLInputElement;
+      const overlayLabel = this.overlayButtons.querySelector(`label[for="${overlayToggle.id}"]`) as HTMLLabelElement;
+
       overlayToggle.disabled = !enabled;
+
       if (!enabled) {
         overlayToggle.checked = false;
         showOverlay(key as OverlayKey, false);
+
+        // Dispose of any existing popover first
+        const existingPopover = bootstrap.Popover.getInstance(overlayLabel);
+        if (existingPopover) {
+          existingPopover.dispose();
+        }
+
+        // Add popover for disabled buttons
+        overlayLabel.setAttribute('data-bs-toggle', 'popover');
+        overlayLabel.setAttribute('data-bs-placement', 'top');
+        overlayLabel.setAttribute('data-bs-trigger', 'hover focus');
+        overlayLabel.setAttribute('data-bs-title', 'Not Available');
+        overlayLabel.setAttribute('data-bs-content', 'Not available for this map');
+        overlayLabel.setAttribute('tabindex', '0');
+
+        // Initialize the popover
+        new bootstrap.Popover(overlayLabel);
+      } else {
+        // Dispose of existing popover if any
+        const existingPopover = bootstrap.Popover.getInstance(overlayLabel);
+        if (existingPopover) {
+          existingPopover.dispose();
+        }
+
+        // Restore original popover attributes for enabled buttons
+        const overlayName = key.charAt(0).toUpperCase() + key.slice(1);
+        overlayLabel.setAttribute('data-bs-toggle', 'popover');
+        overlayLabel.setAttribute('data-bs-placement', 'top');
+        overlayLabel.setAttribute('data-bs-trigger', 'hover focus');
+        overlayLabel.setAttribute('data-bs-title', overlayName);
+        overlayLabel.setAttribute('data-bs-content', `Toggle ${key} overlay`);
+
+        // Initialize the restored popover
+        new bootstrap.Popover(overlayLabel);
       }
     }
   }
 
   public getMap(): MapName {
     return this.state.map;
+  }
+
+  public getMapDef(mapName: MapName): MapDefinition | undefined {
+    const mapDefs = getAllMapDefinitions();
+    const mapDefEntry = mapDefs.find(([name, _]) => name === mapName);
+    return mapDefEntry ? mapDefEntry[1] : undefined;
   }
 
   public async setMap(mapName: MapName): Promise<void> {

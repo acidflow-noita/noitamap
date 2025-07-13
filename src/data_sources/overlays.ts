@@ -270,17 +270,136 @@ export const showOverlay = (overlayKey: OverlayKey, show: boolean) => {
   }
 };
 
+// Move helpers to top-level
+const createSpan = (content: string) => {
+  const span = document.createElement('span');
+  span.textContent = content;
+  return span;
+};
+
+export const resetBiomeOverlays = () => {
+  biomeOverlays.forEach((overlay: OSDOverlay) => {
+    const container = overlay.element.firstChild as HTMLDivElement;
+    container.innerHTML = '';
+    overlay.element.classList.remove('show');
+  });
+};
+
+const getProbabilities = (spell: Spell, tiers: number[]): number[] => {
+  return Object.entries(spell.spawnProbabilities)
+    .filter(([tier, probability]: [string, number | undefined]) => tiers.includes(Number(tier)) && probability !== undefined && probability !== 0)
+    .map(([_, probability]: [string, number | undefined]) => probability!);
+};
+
+const getMatchingTiers = (spawnTiers: number[], potentialTiers: number[] | undefined) => {
+  return potentialTiers?.filter(tier => spawnTiers.includes(tier)) ?? [];
+};
+
+const getTotalProbability = (probabilities: number[]) => {
+  if (probabilities.length === 0) return 0;
+  return probabilities.length / probabilities.reduce((acc, cur) => acc + 1 / cur, 0);
+};
+
+// Export selectSpell at top-level
+export const selectSpell = (spell: Spell, app: any) => {
+  resetBiomeOverlays();
+  const spawnTiers = Object.keys(spell.spawnProbabilities).map(Number);
+
+  const affectedOverlays: {
+    overlay: OSDOverlay;
+    totalProbability: number;
+  }[] = [];
+  let minProbability = 1;
+  let maxProbability = 0;
+  let boundingBox: Rect | null = null;
+  biomeOverlays.forEach(overlay => {
+    if (!overlay.name) return;
+    const container = overlay.element.firstChild as HTMLDivElement;
+
+    const biome = biomes.find(biome => biome.name === overlay.name || biome.name === overlay.name?.split(' - ')[0]);
+    if (!biome) return;
+
+    const tiers: number[] = [];
+    if (overlay.name?.includes('Holy Mountain')) {
+      tiers.push(...getMatchingTiers(spawnTiers, biome.spellTiers.holyMountain));
+    } else {
+      if (spell.isWandSpell || (spell.isPremadeWandSpell && overlay.name === 'Mines')) {
+        tiers.push(...getMatchingTiers(spawnTiers, biome.spellTiers.wands));
+      }
+      tiers.push(...getMatchingTiers(spawnTiers, biome.spellTiers.spellShops));
+    }
+    const probabilities = getProbabilities(spell, tiers);
+    const totalProbability = getTotalProbability(probabilities);
+    if (totalProbability === 0) return;
+
+    if (boundingBox) {
+      boundingBox = boundingBox.union(overlay.location as Rect);
+    } else {
+      boundingBox = overlay.location as Rect;
+    }
+
+    container.appendChild(createSpan(`${(totalProbability * 100).toFixed(2)}%`));
+    affectedOverlays.push({
+      overlay,
+      totalProbability,
+    });
+    minProbability = Math.min(minProbability, totalProbability);
+    maxProbability = Math.max(maxProbability, totalProbability);
+    overlay.element.classList.add('show');
+  });
+
+  const addGuaranteedSpawnArea = (biomeName: string) => {
+    const guaranteedSpawnOverlay = biomeOverlays.find(overlay => overlay.name === biomeName);
+    if (guaranteedSpawnOverlay) {
+      guaranteedSpawnOverlay.element.classList.add('show');
+      const container = guaranteedSpawnOverlay.element.firstChild as HTMLDivElement;
+      container.appendChild(createSpan('100%'));
+      affectedOverlays.push({
+        overlay: guaranteedSpawnOverlay,
+        totalProbability: 1,
+      });
+    }
+  };
+
+  const guaranteedSpells = [
+    { idSubstring: 'COLOUR_', biomeName: 'Bunkers' },
+    { idSubstring: 'IF_', biomeName: 'Bunkers' },
+    { idSubstring: 'BLACK_HOLE_GIGA', biomeName: 'Celestial Scale' },
+    { idSubstring: 'RAINBOW_TRAIL', biomeName: 'Rainbow Trail' },
+    { idSubstring: 'KANTELE', biomeName: 'Kantele' },
+    { idSubstring: 'OCARINA', biomeName: 'Ocarina' },
+    { idSubstring: 'ALL_SPELLS', biomeName: 'Robotic Egg' },
+  ];
+
+  guaranteedSpells.forEach(({ idSubstring, biomeName }) => {
+    if (spell.id.includes(idSubstring)) {
+      addGuaranteedSpawnArea(biomeName);
+    }
+  });
+
+  affectedOverlays.forEach(({ overlay, totalProbability }) => {
+    if (totalProbability === 1) {
+      overlay.element.style.borderColor = 'hsla(200, 100%, 50%, 0.6)';
+      return;
+    }
+
+    const hue =
+      minProbability === maxProbability
+        ? 120
+        : 120 - 120 * (1 - (totalProbability - minProbability) / (maxProbability - minProbability));
+    overlay.element.style.borderColor = `hsla(${hue}, 100%, 50%, 0.8)`;
+  });
+
+  if (boundingBox) {
+    app.osd.withSlowAnimation(() => app.osd.viewport.fitBounds(boundingBox));
+  }
+};
+
 export const initSpellSelector = () => {
   const infoButton = assertElementById('spellChanceInfoButton', HTMLButtonElement);
   infoButton.addEventListener('click', ev => {
     ev.preventDefault();
   });
-
-  const createSpan = (content: string) => {
-    const span = document.createElement('span');
-    span.textContent = content;
-    return span;
-  };
 
   const spritePath = './assets/icons/spells';
   const createSpellListItem = (spell: Spell) => {
@@ -290,6 +409,10 @@ export const initSpellSelector = () => {
     const spellSprite = document.createElement('img');
     spellSprite.src = `${spritePath}/${spell.sprite}`;
     spellSprite.classList.add('pixelated-image');
+    spellSprite.onerror = () => {
+      spellSprite.src = './assets/icons/spells/missing.png'; // fallback image
+      spellSprite.alt = 'Missing';
+    };
     spellListItem.appendChild(spellSprite);
 
     const infoDiv = document.createElement('div');
@@ -318,29 +441,6 @@ export const initSpellSelector = () => {
     });
   };
 
-  const resetBiomeOverlays = () => {
-    biomeOverlays.forEach(overlay => {
-      const container = overlay.element.firstChild as HTMLDivElement;
-      container.innerHTML = '';
-      overlay.element.classList.remove('show');
-    });
-  };
-
-  const getProbabilities = (spell: Spell, tiers: number[]): number[] => {
-    return Object.entries(spell.spawnProbabilities)
-      .filter(([tier, probability]) => tiers.includes(Number(tier)) && probability !== undefined && probability !== 0)
-      .map(([_, probability]) => probability!);
-  };
-
-  const getMatchingTiers = (spawnTiers: number[], potentialTiers: number[] | undefined) => {
-    return potentialTiers?.filter(tier => spawnTiers.includes(tier)) ?? [];
-  };
-
-  const getTotalProbability = (probabilities: number[]) => {
-    if (probabilities.length === 0) return 0;
-    return probabilities.length / probabilities.reduce((acc, cur) => acc + 1 / cur, 0);
-  };
-
   const spellSelector = assertElementById('spellSelector', HTMLInputElement);
   spellSelector.addEventListener('input', ev => {
     const target = ev.target as HTMLInputElement;
@@ -360,110 +460,4 @@ export const initSpellSelector = () => {
     if (!selectedSpell) return;
     selectSpell(selectedSpell);
   });
-
-  const selectSpell = (spell: Spell) => {
-    resetBiomeOverlays();
-    spellSelector.value = spell.name;
-    const spawnTiers = Object.keys(spell.spawnProbabilities).map(Number);
-
-    const affectedOverlays: {
-      overlay: OSDOverlay;
-      totalProbability: number;
-    }[] = [];
-    let minProbability = 1;
-    let maxProbability = 0;
-    biomeOverlays.forEach(overlay => {
-      if (!overlay.name) return;
-      const container = overlay.element.firstChild as HTMLDivElement;
-
-      const biome = biomes.find(biome => biome.name === overlay.name || biome.name === overlay.name?.split(' - ')[0]);
-      if (!biome) return;
-
-      const tiers: number[] = [];
-      if (overlay.name?.includes('Holy Mountain')) {
-        tiers.push(...getMatchingTiers(spawnTiers, biome.spellTiers.holyMountain));
-      } else {
-        if (spell.isWandSpell || (spell.isPremadeWandSpell && overlay.name === 'Mines')) {
-          tiers.push(...getMatchingTiers(spawnTiers, biome.spellTiers.wands));
-        }
-
-        tiers.push(...getMatchingTiers(spawnTiers, biome.spellTiers.spellShops));
-      }
-      const probabilities = getProbabilities(spell, tiers);
-      const totalProbability = getTotalProbability(probabilities);
-      if (totalProbability === 0) return;
-
-      container.appendChild(createSpan(`${(totalProbability * 100).toFixed(2)}%`));
-      affectedOverlays.push({
-        overlay,
-        totalProbability,
-      });
-      minProbability = Math.min(minProbability, totalProbability);
-      maxProbability = Math.max(maxProbability, totalProbability);
-      overlay.element.classList.add('show');
-    });
-
-    const addGuaranteedSpawnArea = (biomeName: string) => {
-      const guaranteedSpawnOverlay = biomeOverlays.find(overlay => overlay.name === biomeName);
-      if (guaranteedSpawnOverlay) {
-        guaranteedSpawnOverlay.element.classList.add('show');
-        const container = guaranteedSpawnOverlay.element.firstChild as HTMLDivElement;
-        container.appendChild(createSpan('100%'));
-        affectedOverlays.push({
-          overlay: guaranteedSpawnOverlay,
-          totalProbability: 1,
-        });
-      }
-    };
-
-    const guaranteedSpells = [
-      {
-        idSubstring: 'COLOUR_',
-        biomeName: 'Bunkers',
-      },
-      {
-        idSubstring: 'IF_',
-        biomeName: 'Bunkers',
-      },
-      {
-        idSubstring: 'BLACK_HOLE_GIGA',
-        biomeName: 'Celestial Scale',
-      },
-      {
-        idSubstring: 'RAINBOW_TRAIL',
-        biomeName: 'Rainbow Trail',
-      },
-      {
-        idSubstring: 'KANTELE',
-        biomeName: 'Kantele',
-      },
-      {
-        idSubstring: 'OCARINA',
-        biomeName: 'Ocarina',
-      },
-      {
-        idSubstring: 'ALL_SPELLS',
-        biomeName: 'Robotic Egg',
-      },
-    ];
-
-    guaranteedSpells.forEach(({ idSubstring, biomeName }) => {
-      if (spell.id.includes(idSubstring)) {
-        addGuaranteedSpawnArea(biomeName);
-      }
-    });
-
-    affectedOverlays.forEach(({ overlay, totalProbability }) => {
-      if (totalProbability === 1) {
-        overlay.element.style.borderColor = 'hsla(200, 100%, 50%, 0.6)';
-        return;
-      }
-
-      const hue =
-        minProbability === maxProbability
-          ? 120
-          : 120 - 120 * (1 - (totalProbability - minProbability) / (maxProbability - minProbability));
-      overlay.element.style.borderColor = `hsla(${hue}, 100%, 50%, 0.8)`;
-    });
-  };
 };
