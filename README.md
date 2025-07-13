@@ -1,4 +1,4 @@
-# [![NoitamapLogo](https://github.com/acidflow-noita/noitamap/blob/main/public/assets/NoitamapLogo.svg) NoitaMap.com](https://noitamap.com)
+# <a href="https://noitamap.com"><img src="https://github.com/acidflow-noita/noitamap/blob/main/public/assets/NoitamapLogo.svg" alt="Noitamap Logo" style="width: 41px; height: 49px" /> NoitaMap.com</a>
 
 _Ultrafast_ Superzoom Map for Noita
 
