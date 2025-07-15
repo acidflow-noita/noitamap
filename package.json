@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsup",
+    "build": "tsup && npm run copy-flags",
+    "copy-flags": "node build_scripts/copy-flags.cjs",
     "watch": "tsup --no-minify --watch src/**/*.ts --watch src/data/*.json",
     "generate": "node ./src/data/data_generators/map_definitions_maker.cjs"
   },
@@ -29,8 +30,12 @@
   },
   "homepage": "https://github.com/acidflow-noita/noitamap#readme",
   "dependencies": {
+    "@designsystemsinternational/flags": "^0.2.0",
     "eventemitter2": "6.4.9",
     "flexsearch": "0.7.40",
+    "i18next": "^25.3.2",
+    "i18next-browser-languagedetector": "^8.2.0",
+    "i18next-http-backend": "^3.0.2",
     "openseadragon": "5.0.1"
   },
   "optionalDependencies": {

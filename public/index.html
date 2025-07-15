@@ -111,8 +111,17 @@
               </a> -->
 
               <div id="map-selector" class="dropdown me-2">
-                <button id="mapSelectorButton" class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Available Maps</button>
+                <button id="mapSelectorButton" class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-i18n="availableMaps">
+                  Available Maps
+                </button>
                 <ul class="dropdown-menu" id="navLinksList"></ul>
+              </div>
+
+              <div id="language-selector" class="dropdown me-2">
+                <button id="languageSelectorButton" class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <span class="flag-icon flag-icon-us"></span>
+                </button>
+                <ul class="dropdown-menu" id="languageLinksList"></ul>
               </div>
 
               <form id="search-form" role="search" class="flex-grow-1 me-2"></form>
@@ -125,7 +134,9 @@
                 data-bs-toggle="popover"
                 data-bs-placement="top"
                 data-bs-trigger="hover focus"
+                data-i18n-title="shareLink.title"
                 data-bs-title="Share Link"
+                data-i18n-content="shareLink.content"
                 data-bs-content="Copy a shareable link to your clipboard"
               >
                 <i class="bi bi-share"></i><span></span>
@@ -139,7 +150,9 @@
                   data-bs-toggle="popover"
                   data-bs-placement="top"
                   data-bs-trigger="hover focus"
+                  data-i18n-title="structures.title"
                   data-bs-title="Structures"
+                  data-i18n-content="structures.content"
                   data-bs-content="Toggle structures overlay"
                   ><i class="icon-structures"></i
                 ></label>
@@ -150,7 +163,9 @@
                   data-bs-toggle="popover"
                   data-bs-placement="top"
                   data-bs-trigger="hover focus"
+                  data-i18n-title="bosses.title"
                   data-bs-title="Bosses"
+                  data-i18n-content="bosses.content"
                   data-bs-content="Toggle bosses overlay"
                   ><i class="icon-bosses pixelated-image"></i
                 ></label>
@@ -161,7 +176,9 @@
                   data-bs-toggle="popover"
                   data-bs-placement="top"
                   data-bs-trigger="hover focus"
+                  data-i18n-title="items.title"
                   data-bs-title="Items"
+                  data-i18n-content="items.content"
                   data-bs-content="Toggle items overlay"
                   ><i class="icon-items pixelated-image"></i>
                 </label>
@@ -172,7 +189,9 @@
                   data-bs-toggle="popover"
                   data-bs-placement="top"
                   data-bs-trigger="hover focus"
+                  data-i18n-title="orbs.title"
                   data-bs-title="Orbs"
+                  data-i18n-content="orbs.content"
                   data-bs-content="Toggle orbs overlay"
                   ><i class="icon-orbs pixelated-image"></i
                 ></label>
@@ -187,7 +206,9 @@
                     data-bs-toggle="popover"
                     data-bs-placement="top"
                     data-bs-trigger="hover focus"
+                    data-i18n-title="renderer.canvas.title"
                     data-bs-title="Canvas Rendering"
+                    data-i18n-content="renderer.canvas.content"
                     data-bs-content="Standard HTML5 Canvas rendering. Works on all browsers but may be slightly less crisp when zooming quickly."
                     ><i class="bi bi-browser-firefox"></i
                   ></label>
@@ -198,7 +219,9 @@
                     data-bs-toggle="popover"
                     data-bs-placement="top"
                     data-bs-trigger="hover focus"
+                    data-i18n-title="renderer.webgl.title"
                     data-bs-title="WebGL Rendering"
+                    data-i18n-content="renderer.webgl.content"
                     data-bs-content="Hardware-accelerated WebGL rendering. If you're using a Chromium-based browser (Chrome, Edge, Brave, etc.) the tiles will be less blurry while zooming in quickly."
                     ><i class="bi bi-browser-chrome"></i
                   ></label>
@@ -212,7 +235,9 @@
                 data-bs-toggle="popover"
                 data-bs-placement="top"
                 data-bs-trigger="hover focus"
+                data-i18n-title="mod.title"
                 data-bs-title="Noita Map Mod"
+                data-i18n-content="mod.content"
                 data-bs-content="Install the Noita Map mod"
               >
                 <i class="bi bi-download"></i><span>Mod</span>
@@ -225,7 +250,9 @@
                 data-bs-toggle="popover"
                 data-bs-placement="top"
                 data-bs-trigger="hover focus"
+                data-i18n-title="discord.title"
                 data-bs-title="Discord"
+                data-i18n-content="discord.content"
                 data-bs-content="Join the Discord server"
               >
                 <i class="bi bi-discord"></i>
@@ -238,7 +265,9 @@
                 data-bs-toggle="popover"
                 data-bs-placement="top"
                 data-bs-trigger="hover focus"
+                data-i18n-title="github.title"
                 data-bs-title="GitHub"
+                data-i18n-content="github.content"
                 data-bs-content="View the source code on GitHub"
               >
                 <i class="bi bi-github"></i>
@@ -251,14 +280,16 @@
                 data-bs-toggle="popover"
                 data-bs-placement="top"
                 data-bs-trigger="hover focus"
+                data-i18n-title="runfast.title"
                 data-bs-title="Runfast.Stream"
+                data-i18n-content="runfast.content"
                 data-bs-content="Go to the main runfast.stream website"
               >
                 <i class="icon-runfast"></i>
               </a>
               <div class="me-2 bg-glow rounded-full inline-block">
                 <a href="https://runfast.stream/donate" style="text-decoration: none" target="_blank">
-                  <div id="dono-button" class="test overflow-hidden bg-main text-white border border-1 border-light rounded-full px-2 py-1 inline-block">Donate</div>
+                  <div id="dono-button" class="test overflow-hidden bg-main text-white border border-1 border-light rounded-full px-2 py-1 inline-block" data-i18n="donate">Donate</div>
                 </a>
                 <div class="bg-glow-inner"></div>
               </div>

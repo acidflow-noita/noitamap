@@ -1,3 +1,4 @@
+import i18next, { SUPPORTED_LANGUAGES } from './i18n';
 import { App } from './app';
 import { parseURL, updateURL } from './data_sources/url';
 import { asOverlayKey, showOverlay, selectSpell } from './data_sources/overlays';
@@ -7,8 +8,43 @@ import { addEventListenerForId, assertElementById, debounce } from './util';
 import { createMapLinks, NAV_LINK_IDENTIFIER } from './nav';
 import { initMouseTracker } from './mouse_tracker';
 import { isRenderer, getStoredRenderer, setStoredRenderer } from './renderer_settings';
+import { createLanguageSelector } from './language-selector';
+import { updateTranslations } from './i18n-dom';
 
 document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    await i18next.init({
+      fallbackLng: 'en',
+      debug: false,
+      detection: {
+        order: ['querystring', 'cookie', 'localStorage', 'sessionStorage', 'navigator', 'htmlTag'],
+        lookupQuerystring: 'lng',
+        lookupCookie: 'i18next',
+        lookupLocalStorage: 'i18nextLng',
+        lookupSessionStorage: 'i18nextLng',
+        caches: ['localStorage', 'cookie'],
+      },
+      backend: {
+        loadPath: 'https://noitamap-translations.acidflow.stream/locales/{{lng}}/translation.json',
+        requestOptions: {
+          cache: 'no-store',
+        },
+      },
+      interpolation: {
+        escapeValue: false,
+      },
+      supportedLngs: Object.keys(SUPPORTED_LANGUAGES),
+      load: 'languageOnly',
+      cleanCode: true,
+      nonExplicitSupportedLngs: true,
+    });
+
+    createLanguageSelector();
+    updateTranslations();
+  } catch (error) {
+    console.error('i18next initialization failed:', error);
+  }
+
   // TODO: probably most of this should be part of the "App" class, or the "App" class should be removed.
   // i'm not sure i'm happy with the abstraction
 
@@ -33,10 +69,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   const initialMapName = app.getMap();
-  const initialMapDef = app.getMapDef(initialMapName);
-  if (initialMapDef) {
-    mapSelectorButton.textContent = initialMapDef.label;
-  }
 
   navbarBrandElement.addEventListener('click', ev => {
     ev.preventDefault();
@@ -72,15 +104,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     debouncedUpdateURL(state);
 
     const currentMapLink = document.querySelector(`#navLinksList [data-map-key='${state.map}']`);
-
-    // Always update the dropdown button text
-    const mapName = asMapName(state.map);
-    if (mapName) {
-      const mapDef = app.getMapDef(mapName);
-      if (mapDef) {
-        mapSelectorButton.textContent = mapDef.label;
-      }
-    }
 
     if (!(currentMapLink instanceof HTMLElement)) return;
 
