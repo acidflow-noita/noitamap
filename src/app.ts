@@ -112,7 +112,9 @@ export class App extends EventEmitter2 {
         overlayLabel.setAttribute('data-bs-toggle', 'popover');
         overlayLabel.setAttribute('data-bs-placement', 'top');
         overlayLabel.setAttribute('data-bs-trigger', 'hover focus');
+        overlayLabel.setAttribute('data-i18n-title', 'overlay.notAvailable.title');
         overlayLabel.setAttribute('data-bs-title', 'Not Available');
+        overlayLabel.setAttribute('data-i18n-content', 'overlay.notAvailable.content');
         overlayLabel.setAttribute('data-bs-content', 'Not available for this map');
         overlayLabel.setAttribute('tabindex', '0');
 
@@ -126,12 +128,11 @@ export class App extends EventEmitter2 {
         }
 
         // Restore original popover attributes for enabled buttons
-        const overlayName = key.charAt(0).toUpperCase() + key.slice(1);
         overlayLabel.setAttribute('data-bs-toggle', 'popover');
         overlayLabel.setAttribute('data-bs-placement', 'top');
         overlayLabel.setAttribute('data-bs-trigger', 'hover focus');
-        overlayLabel.setAttribute('data-bs-title', overlayName);
-        overlayLabel.setAttribute('data-bs-content', `Toggle ${key} overlay`);
+        overlayLabel.setAttribute('data-i18n-title', `${key}.title`);
+        overlayLabel.setAttribute('data-i18n-content', `${key}.content`);
 
         // Initialize the restored popover
         new bootstrap.Popover(overlayLabel);
@@ -157,6 +158,11 @@ export class App extends EventEmitter2 {
 
     this.updateOverlaySelectors();
     this.emit('state-change', this.state);
+
+    // Update translations after map change to refresh popovers
+    import('./i18n-dom').then(({ updateTranslations }) => {
+      updateTranslations();
+    });
   }
 
   public goto(toi: TargetOfInterest) {

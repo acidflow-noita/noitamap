@@ -29,6 +29,14 @@ export function updateTranslations() {
     }
   });
 
+  const elementsWithDataI18nPlaceholder = document.querySelectorAll('[data-i18n-placeholder]');
+  elementsWithDataI18nPlaceholder.forEach(element => {
+    const key = element.getAttribute('data-i18n-placeholder');
+    if (key && element instanceof HTMLInputElement) {
+      element.placeholder = i18next.t(key);
+    }
+  });
+
   const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
   tooltipTriggerList.forEach(tooltipTriggerEl => {
     // @ts-ignore

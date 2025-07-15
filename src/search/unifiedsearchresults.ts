@@ -1,7 +1,9 @@
 import { TargetOfInterest } from '../data_sources/overlays';
 import { Spell } from '../data_sources/overlays';
 
-export type UnifiedSearchResult = TargetOfInterest | { type: 'spell', spell: Spell, displayName: string, displayText: string };
+export type UnifiedSearchResult =
+  | TargetOfInterest
+  | { type: 'spell'; spell: Spell; displayName: string; displayText: string };
 
 export interface UnifiedSearchResults {
   on(event: 'selected', listener: (target: UnifiedSearchResult) => void): this;
@@ -53,9 +55,8 @@ export class UnifiedSearchResults extends EventEmitter2 {
   private onSelected(ev: MouseEvent | KeyboardEvent) {
     if (!ev.target) return;
 
-    const listItem = ev.target instanceof HTMLLIElement ? ev.target : 
-      (ev.target as Element).closest('li');
-    
+    const listItem = ev.target instanceof HTMLLIElement ? ev.target : (ev.target as Element).closest('li');
+
     if (!(listItem instanceof HTMLLIElement)) return;
 
     // when we've selected an element, find the data
@@ -66,7 +67,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
     ev.stopPropagation();
 
     this.emit('selected', target);
-    
+
     // Hide the search results overlay after selection
     const overlay = document.getElementById('unifiedSearchResultsOverlay');
     if (overlay) {
@@ -132,17 +133,25 @@ export class UnifiedSearchResults extends EventEmitter2 {
         textDiv.textContent = result.displayText;
         listItem.appendChild(textDiv);
       } else if ('overlayType' in result) {
-        // Handle map overlay results
+        // Handle map overlay results with translated names
         switch (result.overlayType) {
           case 'poi':
-            listItem.textContent = result.name;
+            // Use displayName if available (translated), otherwise fall back to name
+            const displayName = 'displayName' in result ? result.displayName : result.name;
+            listItem.textContent = displayName;
             if ('aliases' in result && result.aliases) {
               listItem.textContent += ` (${result.aliases.join(', ')})`;
             }
             break;
 
           case 'aoi':
-            listItem.textContent = result.text.join('; ');
+            // Use displayText if available (translated), otherwise fall back to text
+            const displayText = 'displayText' in result ? result.displayText : result.text;
+            if (Array.isArray(displayText)) {
+              listItem.textContent = displayText.join('; ');
+            } else {
+              listItem.textContent = displayText || result.text.join('; ');
+            }
             break;
         }
       }

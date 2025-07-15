@@ -5,12 +5,14 @@ import { assertMapName, MapName } from './tile_data';
 export type Badge = {
   icon?: string;
   label: string;
+  labelKey?: string;
   class: string | string[];
 };
 
 export type MapDefinition = {
   key: MapName;
   label: string;
+  labelKey?: string;
   badges: Badge[];
   patchDate: string;
   seed: string;

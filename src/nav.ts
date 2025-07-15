@@ -1,6 +1,7 @@
 import { getAllMapDefinitions } from './data_sources/map_definitions';
 import { assertElementById, formatDate } from './util';
 import type { MapDefinition } from './data_sources/map_definitions';
+import i18next from './i18n';
 
 export const NAV_LINK_IDENTIFIER = 'nav-link';
 
@@ -15,7 +16,9 @@ export const createMapLinks = (): HTMLUListElement => {
     a.href = '#';
     a.dataset.bsToggle = 'pill';
     a.dataset.mapKey = mapName;
-    a.textContent = def.label + ' ';
+    // Use labelKey from definition if available, fallback to original label
+    const translatedLabel = def.labelKey ? i18next.t(def.labelKey, { defaultValue: def.label }) : def.label;
+    a.textContent = translatedLabel + ' ';
 
     const badges = [...def.badges];
     badges.push({
@@ -45,7 +48,11 @@ export const createMapLinks = (): HTMLUListElement => {
         span.appendChild(icon);
       }
 
-      const text = document.createTextNode(` ${badge.label}`);
+      // Use labelKey from badge if available, fallback to original label
+      const translatedBadgeLabel = badge.labelKey
+        ? i18next.t(badge.labelKey, { defaultValue: badge.label })
+        : badge.label;
+      const text = document.createTextNode(` ${translatedBadgeLabel}`);
       span.appendChild(text);
       a.appendChild(span);
     }

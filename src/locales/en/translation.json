@@ -1,0 +1,86 @@
+{
+  "search": {
+    "placeholder": "Find spells, items, bosses, places…"
+  },
+  "spell_prefix": "Spell",
+  "tiers_prefix": "Tiers",
+  "share": {
+    "copied": "Copied to clipboard!"
+  },
+  "overlay": {
+    "notAvailable": {
+      "title": "Not Available",
+      "content": "Not available for this map"
+    }
+  },
+  "maps": {
+    "regular": "Regular",
+    "newGamePlus": "NG+",
+    "nightmare": "Nightmare",
+    "apotheosis": "Apotheosis",
+    "regularBeta": "Regular",
+    "purgatory": "Purgatory",
+    "apotheosisNewGamePlus": "Apotheosis NG+",
+    "apotheosistuonela": "Apotheosis Tuonela",
+    "noitavania": "Noitavania",
+    "noitavaniaNewGamePlus": "Noitavania NG+",
+    "alternateBiomes": "Alternate Biomes",
+    "biomeMap": "Biome Map",
+    "biomeMapCaptured": "Biome Map Captured",
+    "mapTestPng": "Map Test PNG"
+  },
+  "badges": {
+    "latest": "Latest",
+    "mod": "Mod",
+    "betaBranch": "β branch",
+    "special": "Special"
+  },
+  "availableMaps": "Available Maps",
+  "donate": "Donate",
+  "shareLink": {
+    "title": "Share Link",
+    "content": "Copy a shareable link to your clipboard"
+  },
+  "structures": {
+    "title": "Structures",
+    "content": "Toggle structures overlay"
+  },
+  "bosses": {
+    "title": "Bosses",
+    "content": "Toggle bosses overlay"
+  },
+  "items": {
+    "title": "Items",
+    "content": "Toggle items overlay"
+  },
+  "orbs": {
+    "title": "Orbs",
+    "content": "Toggle orbs overlay"
+  },
+  "renderer": {
+    "canvas": {
+      "title": "Canvas Rendering",
+      "content": "Standard HTML5 Canvas rendering. Works on all browsers but may be slightly less crisp when zooming quickly."
+    },
+    "webgl": {
+      "title": "WebGL Rendering",
+      "content": "Hardware-accelerated WebGL rendering. If you're using a Chromium-based browser (Chrome, Edge, Brave, etc.) the tiles will be less blurry while zooming in quickly."
+    }
+  },
+  "mod": {
+    "title": "Noita Map Mod",
+    "content": "Install the Noita Map mod"
+  },
+  "discord": {
+    "title": "Discord",
+    "content": "Join the Discord server"
+  },
+  "github": {
+    "title": "GitHub",
+    "content": "View the source code on GitHub"
+  },
+  "runfast": {
+    "title": "Runfast.Stream",
+    "content": "Go to the main runfast.stream website"
+  }
+}

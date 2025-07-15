@@ -4,6 +4,8 @@ import { MapName } from '../data_sources/tile_data';
 import { debounce } from '../util';
 import { UnifiedSearchResults, UnifiedSearchResult } from './unifiedsearchresults';
 import { TargetOfInterest, Spell } from '../data_sources/overlays';
+import { gameTranslator } from '../game-translations/translator';
+import i18next from '../i18n';
 import spells from '../data/spells.json';
 
 export type UnifiedSearchCreateOptions = {
@@ -101,22 +103,32 @@ export class UnifiedSearch extends EventEmitter2 {
       return;
     }
 
-    // Search for map overlays
+    // Search for map overlays (these will be translated by the overlay search function)
     const mapResults = searchOverlays(this.currentMap, searchText);
 
-    // Search for spells
+    // Search for spells with translation support
     const spellResults = spells
-      .filter(
-        spell =>
-          spell.name.toLowerCase().includes(searchText.toLowerCase()) ||
-          spell.id.toLowerCase().includes(searchText.toLowerCase())
-      )
-      .map(spell => ({
-        type: 'spell' as const,
-        spell,
-        displayName: spell.name,
-        displayText: `Spell: ${spell.name} (Tiers: ${Object.keys(spell.spawnProbabilities).join(', ')})`,
-      }));
+      .filter(spell => {
+        const translatedName = gameTranslator.translateSpell(spell.name);
+        const originalName = spell.name.toLowerCase();
+        const translatedNameLower = translatedName.toLowerCase();
+        const searchLower = searchText.toLowerCase();
+
+        return (
+          originalName.includes(searchLower) ||
+          translatedNameLower.includes(searchLower) ||
+          spell.id.toLowerCase().includes(searchLower)
+        );
+      })
+      .map(spell => {
+        const translatedName = gameTranslator.translateSpell(spell.name);
+        return {
+          type: 'spell' as const,
+          spell,
+          displayName: translatedName,
+          displayText: `${i18next.t('spell_prefix', 'Spell')}: ${translatedName} (${i18next.t('tiers_prefix', 'Tiers')}: ${Object.keys(spell.spawnProbabilities).join(', ')})`,
+        };
+      });
 
     // Combine results, prioritizing map results first
     const combinedResults = [...mapResults, ...spellResults];
@@ -130,6 +142,7 @@ export class UnifiedSearch extends EventEmitter2 {
     searchInput.id = 'unified-search-input';
     searchInput.type = 'search';
     searchInput.autofocus = true;
+    searchInput.setAttribute('data-i18n-placeholder', 'search.placeholder');
     searchInput.placeholder = 'Find spells, items, bosses, places…';
     searchInput.ariaLabel = 'unified search';
 

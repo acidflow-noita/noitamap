@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         caches: ['localStorage', 'cookie'],
       },
       backend: {
-        loadPath: 'https://noitamap-translations.acidflow.stream/locales/{{lng}}/translation.json',
+        loadPath: './locales/{{lng}}/translation.json',
         requestOptions: {
           cache: 'no-store',
         },
@@ -183,8 +183,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.navigator.clipboard
       .writeText(window.location.href)
       .then(() => {
-        // Show toast notification
+        // Update toast text with translation
         const toastElement = assertElementById('shareToast', HTMLElement);
+        const toastBody = toastElement.querySelector('.toast-body');
+        if (toastBody) {
+          toastBody.innerHTML = `<i class="bi bi-check-circle me-2"></i>${i18next.t('share.copied')}`;
+        }
         const toast = new bootstrap.Toast(toastElement, {
           autohide: true,
           delay: 2000,
