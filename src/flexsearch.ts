@@ -58,7 +58,11 @@ export const searchOverlays = (mapName: MapName, query: string): TargetOfInteres
 
     // Apply translations at search time using the processed translation files
     let displayName = originalData.name;
-    switch (originalData.overlayType) {
+
+    // Determine overlay type from the key (format: "type:index")
+    const overlayType = key.split(':')[0] as 'bosses' | 'items' | 'structures' | 'orbs';
+
+    switch (overlayType) {
       case 'bosses':
         displayName = gameTranslator.translateBoss(originalData.name);
         break;
@@ -67,6 +71,9 @@ export const searchOverlays = (mapName: MapName, query: string): TargetOfInteres
         break;
       case 'structures':
         displayName = gameTranslator.translateStructure(originalData.name);
+        break;
+      case 'orbs':
+        displayName = gameTranslator.translateContent('orbs', originalData.name);
         break;
       default:
         displayName = gameTranslator.translateGameContent(originalData.name);

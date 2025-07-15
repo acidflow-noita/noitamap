@@ -1,5 +1,7 @@
 import { TargetOfInterest } from '../data_sources/overlays';
 import { Spell } from '../data_sources/overlays';
+import { EventEmitter2 } from 'eventemitter2';
+import i18next from '../i18n';
 
 export type UnifiedSearchResult =
   | TargetOfInterest
@@ -117,31 +119,97 @@ export class UnifiedSearchResults extends EventEmitter2 {
 
       if ('type' in result && result.type === 'spell') {
         // Handle spell results with image
-        listItem.classList.add('d-flex', 'align-items-center');
+        listItem.classList.add('d-flex', 'align-items-start');
         const img = document.createElement('img');
         img.src = `./assets/icons/spells/${result.spell.sprite}`;
-        img.classList.add('pixelated-image', 'me-2');
+        img.classList.add('pixelated-image', 'me-2', 'flex-shrink-0');
         img.alt = result.spell.name;
         img.style.width = '32px';
         img.style.height = '32px';
+        img.style.marginTop = '2px';
         img.onerror = () => {
           img.src = './assets/icons/spells/missing.png';
           img.alt = 'Missing';
         };
         listItem.appendChild(img);
-        const textDiv = document.createElement('div');
-        textDiv.textContent = result.displayText;
-        listItem.appendChild(textDiv);
+
+        // Create content container
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'spell-search-content';
+
+        // Parse the displayText to extract components
+        const currentLang = i18next.language;
+        const spellPrefix = i18next.t('spell_prefix', 'Spell');
+        const tiersPrefix = i18next.t('tiers_prefix', 'Tiers');
+        const translatedName = result.displayName;
+        const tiers = Object.keys(result.spell.spawnProbabilities).join(', ');
+
+        // Main spell line with translated name
+        const mainDiv = document.createElement('div');
+        mainDiv.className = 'spell-main-line';
+        mainDiv.textContent = `${spellPrefix}: ${translatedName}`;
+        contentDiv.appendChild(mainDiv);
+
+        // English name on second line if not in English and different
+        if (currentLang !== 'en' && translatedName !== result.spell.name) {
+          const englishDiv = document.createElement('div');
+          englishDiv.className = 'spell-english-line';
+          englishDiv.textContent = result.spell.name;
+          englishDiv.style.fontSize = '0.85em';
+          englishDiv.style.color = '#888';
+          englishDiv.style.fontStyle = 'italic';
+          contentDiv.appendChild(englishDiv);
+        }
+
+        // Tiers on third line
+        const tiersDiv = document.createElement('div');
+        tiersDiv.className = 'spell-tiers-line';
+        tiersDiv.textContent = `${tiersPrefix}: ${tiers}`;
+        tiersDiv.style.fontSize = '0.85em';
+        tiersDiv.style.color = '#666';
+        contentDiv.appendChild(tiersDiv);
+
+        listItem.appendChild(contentDiv);
       } else if ('overlayType' in result) {
         // Handle map overlay results with translated names
         switch (result.overlayType) {
           case 'poi':
             // Use displayName if available (translated), otherwise fall back to name
             const displayName = 'displayName' in result ? result.displayName : result.name;
-            listItem.textContent = displayName;
-            if ('aliases' in result && result.aliases) {
-              listItem.textContent += ` (${result.aliases.join(', ')})`;
+            const currentLang = i18next.language;
+
+            // Create content container for multi-line display
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'overlay-search-content';
+
+            // Main name line with translated name
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'overlay-main-line';
+            nameDiv.textContent = displayName;
+            contentDiv.appendChild(nameDiv);
+
+            // English name on second line if not in English and different
+            if (currentLang !== 'en' && displayName !== result.name) {
+              const englishDiv = document.createElement('div');
+              englishDiv.className = 'overlay-english-line';
+              englishDiv.textContent = result.name;
+              englishDiv.style.fontSize = '0.85em';
+              englishDiv.style.color = '#888';
+              englishDiv.style.fontStyle = 'italic';
+              contentDiv.appendChild(englishDiv);
             }
+
+            // Aliases on third line if they exist
+            if ('aliases' in result && result.aliases) {
+              const aliasDiv = document.createElement('div');
+              aliasDiv.className = 'overlay-aliases-line';
+              aliasDiv.textContent = `(${result.aliases.join(', ')})`;
+              aliasDiv.style.fontSize = '0.85em';
+              aliasDiv.style.color = '#666';
+              contentDiv.appendChild(aliasDiv);
+            }
+
+            listItem.appendChild(contentDiv);
             break;
 
           case 'aoi':

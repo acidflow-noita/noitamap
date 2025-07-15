@@ -515,5 +515,45 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 #unifiedSearchResultsOverlay {
-  min-width: 500px;
+  min-width: 600px;
+  max-width: 800px;
+}
+
+/* Multi-line search result styles */
+.search-result-content,
+.spell-search-content,
+.overlay-search-content {
+  line-height: 1.3;
+}
+
+.search-result-name,
+.spell-main-line,
+.overlay-main-line {
+  font-weight: 500;
+  color: #fff;
+}
+
+.search-result-english,
+.spell-english-line,
+.overlay-english-line {
+  font-size: 0.85em;
+  color: #888;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.search-result-aliases,
+.spell-tiers-line,
+.overlay-aliases-line {
+  font-size: 0.85em;
+  color: #666;
+  margin-top: 2px;
+}
+
+/* Override text wrapping for multi-line search results */
+#unifiedSearchResults .search-result {
+  text-wrap: wrap;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
 }

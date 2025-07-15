@@ -7,6 +7,7 @@ import { TargetOfInterest, Spell } from '../data_sources/overlays';
 import { gameTranslator } from '../game-translations/translator';
 import i18next from '../i18n';
 import spells from '../data/spells.json';
+import { EventEmitter2 } from 'eventemitter2';
 
 export type UnifiedSearchCreateOptions = {
   currentMap: MapName;
@@ -122,11 +123,19 @@ export class UnifiedSearch extends EventEmitter2 {
       })
       .map(spell => {
         const translatedName = gameTranslator.translateSpell(spell.name);
+        const currentLang = i18next.language;
+
+        // Create display text with English fallback for non-English languages
+        let spellDisplayName = translatedName;
+        if (currentLang !== 'en' && translatedName !== spell.name) {
+          spellDisplayName = `${translatedName} (${spell.name})`;
+        }
+
         return {
           type: 'spell' as const,
           spell,
           displayName: translatedName,
-          displayText: `${i18next.t('spell_prefix', 'Spell')}: ${translatedName} (${i18next.t('tiers_prefix', 'Tiers')}: ${Object.keys(spell.spawnProbabilities).join(', ')})`,
+          displayText: `${i18next.t('spell_prefix', 'Spell')}: ${spellDisplayName} (${i18next.t('tiers_prefix', 'Tiers')}: ${Object.keys(spell.spawnProbabilities).join(', ')})`,
         };
       });
 

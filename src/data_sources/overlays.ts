@@ -6,6 +6,7 @@ import orbs from '../data/orbs.json';
 import { assertElementById } from '../util';
 import spells from '../data/spells.json';
 import biomes from '../data/biomes.json';
+import { gameTranslator } from '../game-translations/translator';
 
 const { Rect, Point } = OpenSeadragon;
 type Rect = InstanceType<typeof Rect>;
@@ -157,12 +158,30 @@ function createAOI({ text, x, y, width, height }: AreaOfInterest): OSDOverlay {
 /**
  * Return the DOM element for the popup on a POI
  */
-function createOverlayPopup({ name, aliases, text, wiki }: PointOfInterest) {
+function createOverlayPopup({ name, aliases, text, wiki }: PointOfInterest, overlayType?: OverlayKey) {
   const popup = document.createElement('div');
   popup.className = 'osOverlayPopup';
 
   const nameElement = document.createElement('h2');
-  nameElement.textContent = name;
+  // Translate the name based on overlay type
+  let translatedName = name;
+  if (overlayType) {
+    switch (overlayType) {
+      case 'bosses':
+        translatedName = gameTranslator.translateBoss(name);
+        break;
+      case 'items':
+        translatedName = gameTranslator.translateItem(name);
+        break;
+      case 'structures':
+        translatedName = gameTranslator.translateStructure(name);
+        break;
+      case 'orbs':
+        translatedName = gameTranslator.translateContent('orbs', name);
+        break;
+    }
+  }
+  nameElement.textContent = translatedName;
   popup.appendChild(nameElement);
 
   if (aliases && aliases.length > 0) {
@@ -192,7 +211,7 @@ function createOverlayPopup({ name, aliases, text, wiki }: PointOfInterest) {
 /**
  * Return the DOM element and the OSD position for an area of interest overlay
  */
-function createPOI(poi: PointOfInterest): OSDOverlay {
+function createPOI(poi: PointOfInterest, overlayType?: OverlayKey): OSDOverlay {
   const { name, icon, x, y } = poi;
   const el = document.createElement('div');
 
@@ -206,7 +225,7 @@ function createPOI(poi: PointOfInterest): OSDOverlay {
   img.className = 'pixelated-image';
   pin.appendChild(img);
 
-  const popup = createOverlayPopup(poi);
+  const popup = createOverlayPopup(poi, overlayType);
   el.appendChild(popup);
 
   return {
@@ -218,10 +237,10 @@ function createPOI(poi: PointOfInterest): OSDOverlay {
 /**
  * Return an Overlay object based on the type of the input data
  */
-function createOverlay(overlay: PointOfInterest | AreaOfInterest): OSDOverlay {
+function createOverlay(overlay: PointOfInterest | AreaOfInterest, overlayType?: OverlayKey): OSDOverlay {
   switch (overlay.overlayType) {
     case 'poi':
-      return createPOI(overlay);
+      return createPOI(overlay, overlayType);
     case 'aoi':
       return createAOI(overlay);
   }
@@ -243,7 +262,7 @@ export const createOverlays = (mapName: string): OSDOverlay[] => {
     for (const overlayData of overlayDatas) {
       if (!overlayData.maps.includes(mapName)) continue;
 
-      const overlay = createOverlay(overlayData);
+      const overlay = createOverlay(overlayData, type);
       overlay.element.classList.add('overlay', type);
 
       overlays.push(overlay);
@@ -287,7 +306,10 @@ export const resetBiomeOverlays = () => {
 
 const getProbabilities = (spell: Spell, tiers: number[]): number[] => {
   return Object.entries(spell.spawnProbabilities)
-    .filter(([tier, probability]: [string, number | undefined]) => tiers.includes(Number(tier)) && probability !== undefined && probability !== 0)
+    .filter(
+      ([tier, probability]: [string, number | undefined]) =>
+        tiers.includes(Number(tier)) && probability !== undefined && probability !== 0
+    )
     .map(([_, probability]: [string, number | undefined]) => probability!);
 };
 
