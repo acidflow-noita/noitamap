@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsup && npm run copy-flags",
+    "build": "tsup && npm run copy-flags && npm run copy-locales",
     "copy-flags": "node build_scripts/copy-flags.cjs",
+    "copy-locales": "node build_scripts/copy-locales.cjs",
     "watch": "tsup --no-minify --watch src/**/*.ts --watch src/data/*.json",
     "generate": "node ./src/data/data_generators/map_definitions_maker.cjs"
   },
