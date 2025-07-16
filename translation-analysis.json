@@ -1,0 +1,110 @@
+{
+  "ar": {
+    "completeness": 96,
+    "humanVerified": 0,
+    "totalKeys": 528,
+    "translatedKeys": 508
+  },
+  "be": {
+    "completeness": 0,
+    "humanVerified": 0,
+    "totalKeys": 0,
+    "translatedKeys": 0
+  },
+  "br": {
+    "completeness": 97,
+    "humanVerified": 0,
+    "totalKeys": 528,
+    "translatedKeys": 510
+  },
+  "ca": {
+    "completeness": 0,
+    "humanVerified": 0,
+    "totalKeys": 0,
+    "translatedKeys": 0
+  },
+  "cs": {
+    "completeness": 99,
+    "humanVerified": 0,
+    "totalKeys": 528,
+    "translatedKeys": 524
+  },
+  "de": {
+    "completeness": 95,
+    "humanVerified": 0,
+    "totalKeys": 528,
+    "translatedKeys": 501
+  },
+  "en": {
+    "completeness": 9,
+    "humanVerified": 0,
+    "totalKeys": 528,
+    "translatedKeys": 47
+  },
+  "es": {
+    "completeness": 96,
+    "humanVerified": 0,
+    "totalKeys": 528,
+    "translatedKeys": 508
+  },
+  "fi": {
+    "completeness": 99,
+    "humanVerified": 0,
+    "totalKeys": 528,
+    "translatedKeys": 524
+  },
+  "fr": {
+    "completeness": 95,
+    "humanVerified": 0,
+    "totalKeys": 528,
+    "translatedKeys": 500
+  },
+  "it": {
+    "completeness": 95,
+    "humanVerified": 0,
+    "totalKeys": 528,
+    "translatedKeys": 504
+  },
+  "ja": {
+    "completeness": 100,
+    "humanVerified": 0,
+    "totalKeys": 528,
+    "translatedKeys": 528
+  },
+  "nl": {
+    "completeness": 64,
+    "humanVerified": 0,
+    "totalKeys": 528,
+    "translatedKeys": 336
+  },
+  "pl": {
+    "completeness": 95,
+    "humanVerified": 0,
+    "totalKeys": 528,
+    "translatedKeys": 504
+  },
+  "ru": {
+    "completeness": 100,
+    "humanVerified": 0,
+    "totalKeys": 528,
+    "translatedKeys": 528
+  },
+  "sv": {
+    "completeness": 99,
+    "humanVerified": 0,
+    "totalKeys": 528,
+    "translatedKeys": 522
+  },
+  "uk": {
+    "completeness": 100,
+    "humanVerified": 0,
+    "totalKeys": 528,
+    "translatedKeys": 528
+  },
+  "zh": {
+    "completeness": 100,
+    "humanVerified": 0,
+    "totalKeys": 528,
+    "translatedKeys": 528
+  }
+}

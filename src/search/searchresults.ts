@@ -1,5 +1,4 @@
 import { TargetOfInterest } from '../data_sources/overlays';
-import { gameTranslator } from '../game-translations/translator';
 import i18next from '../i18n';
 import { EventEmitter2 } from 'eventemitter2';
 

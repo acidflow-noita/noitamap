@@ -1,0 +1,92 @@
+{
+  "ar": {
+    "completeness": 95,
+    "translatedKeys": 502,
+    "totalKeys": 528
+  },
+  "be": {
+    "completeness": 0,
+    "translatedKeys": 0,
+    "totalKeys": 528
+  },
+  "br": {
+    "completeness": 96,
+    "translatedKeys": 505,
+    "totalKeys": 528
+  },
+  "ca": {
+    "completeness": 0,
+    "translatedKeys": 0,
+    "totalKeys": 528
+  },
+  "cs": {
+    "completeness": 99,
+    "translatedKeys": 525,
+    "totalKeys": 528
+  },
+  "de": {
+    "completeness": 95,
+    "translatedKeys": 501,
+    "totalKeys": 528
+  },
+  "en": {
+    "completeness": 9,
+    "translatedKeys": 47,
+    "totalKeys": 528
+  },
+  "es": {
+    "completeness": 95,
+    "translatedKeys": 502,
+    "totalKeys": 528
+  },
+  "fi": {
+    "completeness": 99,
+    "translatedKeys": 525,
+    "totalKeys": 528
+  },
+  "fr": {
+    "completeness": 94,
+    "translatedKeys": 494,
+    "totalKeys": 528
+  },
+  "it": {
+    "completeness": 94,
+    "translatedKeys": 497,
+    "totalKeys": 528
+  },
+  "ja": {
+    "completeness": 100,
+    "translatedKeys": 528,
+    "totalKeys": 528
+  },
+  "nl": {
+    "completeness": 67,
+    "translatedKeys": 354,
+    "totalKeys": 528
+  },
+  "pl": {
+    "completeness": 95,
+    "translatedKeys": 500,
+    "totalKeys": 528
+  },
+  "ru": {
+    "completeness": 100,
+    "translatedKeys": 528,
+    "totalKeys": 528
+  },
+  "sv": {
+    "completeness": 99,
+    "translatedKeys": 525,
+    "totalKeys": 528
+  },
+  "uk": {
+    "completeness": 100,
+    "translatedKeys": 528,
+    "totalKeys": 528
+  },
+  "zh": {
+    "completeness": 100,
+    "translatedKeys": 527,
+    "totalKeys": 528
+  }
+}
