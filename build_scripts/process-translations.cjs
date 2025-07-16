@@ -21,6 +21,7 @@ const LANGUAGE_MAP = {
   fi: 'en', // Fallback to English for Finnish
   cs: 'en', // Fallback to English for Czech
   sv: 'en', // Fallback to English for Swedish
+  id: 'id',
 };
 
 function parseCSVLine(line) {
