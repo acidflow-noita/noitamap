@@ -48,11 +48,24 @@ export const createMapLinks = (): HTMLUListElement => {
         badge.class.forEach(styleClass => span.classList.add(styleClass));
       }
 
-      // Add explanatory tooltips to patchdate badges only if applicable
+      // Use labelKey from badge if available, fallback to original label
+      const translatedBadgeLabel = badge.labelKey
+        ? i18next.t(badge.labelKey, { defaultValue: badge.label })
+        : badge.label;
+
+      // Add explanatory tooltips to all badges
+      span.dataset.bsToggle = 'tooltip';
+      span.dataset.bsPlacement = 'top';
+
       if (span.classList.contains('border-info-subtle')) {
-        span.dataset.bsToggle = 'tooltip';
-        span.dataset.bsPlacement = 'top';
         span.dataset.bsTitle = 'Patch date this map was captured';
+      } else if (badge.labelKey) {
+        // Add tooltip for other badges using their label key
+        const tooltipKey = `badges.${badge.labelKey}Tooltip`;
+        span.dataset.bsTitle = i18next.t(tooltipKey, { defaultValue: translatedBadgeLabel });
+      } else {
+        // Fallback tooltip for badges without specific keys
+        span.dataset.bsTitle = translatedBadgeLabel;
       }
 
       if (badge.icon) {
@@ -61,10 +74,6 @@ export const createMapLinks = (): HTMLUListElement => {
         span.appendChild(icon);
       }
 
-      // Use labelKey from badge if available, fallback to original label
-      const translatedBadgeLabel = badge.labelKey
-        ? i18next.t(badge.labelKey, { defaultValue: badge.label })
-        : badge.label;
       const text = document.createTextNode(` ${translatedBadgeLabel}`);
       span.appendChild(text);
       a.appendChild(span);
@@ -119,11 +128,24 @@ export const updateMapLinkTranslations = (): void => {
         badge.class.forEach(styleClass => span.classList.add(styleClass));
       }
 
-      // Add explanatory tooltips to patchdate badges only if applicable
+      // Use labelKey from badge if available, fallback to original label
+      const translatedBadgeLabel = badge.labelKey
+        ? i18next.t(badge.labelKey, { defaultValue: badge.label })
+        : badge.label;
+
+      // Add explanatory tooltips to all badges
+      span.dataset.bsToggle = 'tooltip';
+      span.dataset.bsPlacement = 'top';
+
       if (span.classList.contains('border-info-subtle')) {
-        span.dataset.bsToggle = 'tooltip';
-        span.dataset.bsPlacement = 'top';
         span.dataset.bsTitle = 'Patch date this map was captured';
+      } else if (badge.labelKey) {
+        // Add tooltip for other badges using their label key
+        const tooltipKey = `badges.${badge.labelKey}Tooltip`;
+        span.dataset.bsTitle = i18next.t(tooltipKey, { defaultValue: translatedBadgeLabel });
+      } else {
+        // Fallback tooltip for badges without specific keys
+        span.dataset.bsTitle = translatedBadgeLabel;
       }
 
       if (badge.icon) {
@@ -132,10 +154,6 @@ export const updateMapLinkTranslations = (): void => {
         span.appendChild(icon);
       }
 
-      // Use labelKey from badge if available, fallback to original label
-      const translatedBadgeLabel = badge.labelKey
-        ? i18next.t(badge.labelKey, { defaultValue: badge.label })
-        : badge.label;
       const text = document.createTextNode(` ${translatedBadgeLabel}`);
       span.appendChild(text);
       link.appendChild(span);

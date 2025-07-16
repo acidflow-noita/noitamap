@@ -40,17 +40,6 @@ export function updateTranslations() {
     }
   });
 
-  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-  tooltipTriggerList.forEach(tooltipTriggerEl => {
-    // @ts-ignore
-    const existingTooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
-    if (existingTooltip) {
-      existingTooltip.dispose();
-    }
-    // @ts-ignore
-    new bootstrap.Tooltip(tooltipTriggerEl);
-  });
-
   const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
   popoverTriggerList.forEach(popoverTriggerEl => {
     // @ts-ignore
@@ -60,6 +49,17 @@ export function updateTranslations() {
     }
     // @ts-ignore
     new bootstrap.Popover(popoverTriggerEl);
+  });
+
+  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  tooltipTriggerList.forEach(tooltipTriggerEl => {
+    // @ts-ignore
+    const existingTooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+    if (existingTooltip) {
+      existingTooltip.dispose();
+    }
+    // @ts-ignore
+    new bootstrap.Tooltip(tooltipTriggerEl);
   });
 
   // Update map link translations

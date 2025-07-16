@@ -14,20 +14,20 @@
     }
   },
   "maps": {
-    "regular": "Normal",
-    "newGamePlus": "NG+",
-    "nightmare": "Pesadilla",
-    "apotheosis": "Apoteosis",
-    "regularBeta": "Normal",
-    "purgatory": "Purgatorio",
-    "apotheosisNewGamePlus": "Apoteosis NG+",
-    "apotheosistuonela": "Apoteosis Tuonela",
+    "regular": "عادية",
+    "newGamePlus": "لعبة جديدة+",
+    "apotheosis": "Apotheosis",
+    "regularBeta": "عادية",
+    "purgatory": "Purgatory",
+    "apotheosisNewGamePlus": "Apotheosis NG+",
+    "apotheosistuonela": "Apotheosis Tuonela",
     "noitavania": "Noitavania",
     "noitavaniaNewGamePlus": "Noitavania NG+",
-    "alternateBiomes": "Biomas alternativos",
-    "biomeMap": "Mapa de biomas",
-    "biomeMapCaptured": "Mapa de biomas capturado",
-    "mapTestPng": "Mapa de prueba PNG"
+    "alternateBiomes": "Alternate Biomes",
+    "nightmare": "كابوس",
+    "biomeMap": "خريطة البيئة",
+    "biomeMapCaptured": "خريطة البيئة المحفوظة",
+    "mapTestPng": "خريطة اختبار PNG"
   },
   "badges": {
     "latest": "Último",

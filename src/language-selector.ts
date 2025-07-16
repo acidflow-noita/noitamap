@@ -32,26 +32,26 @@ fetch('./data/translation-stats.json')
 // Function to get completeness badge
 function getCompletenessBadge(completeness: number): string {
   if (completeness >= 95) {
-    return `<span class="badge bg-success ms-1" title="Translation completeness">${completeness}%</span>`;
+    return `<span class="badge bg-success ms-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Translation completeness: ${completeness}%">${completeness}%</span>`;
   } else if (completeness >= 80) {
-    return `<span class="badge bg-warning ms-1" title="Translation completeness">${completeness}%</span>`;
+    return `<span class="badge bg-warning ms-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Translation completeness: ${completeness}%">${completeness}%</span>`;
   } else if (completeness >= 50) {
-    return `<span class="badge bg-secondary ms-1" title="Translation completeness">${completeness}%</span>`;
+    return `<span class="badge bg-secondary ms-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Translation completeness: ${completeness}%">${completeness}%</span>`;
   } else {
-    return `<span class="badge bg-danger ms-1" title="Translation completeness">${completeness}%</span>`;
+    return `<span class="badge bg-danger ms-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Translation completeness: ${completeness}%">${completeness}%</span>`;
   }
 }
 
 // Function to get human verification badge
 function getHumanVerifiedBadge(humanVerified: number): string {
   if (humanVerified >= 50) {
-    return `<span class="badge bg-info ms-1" title="Human verified translations">✓${humanVerified}%</span>`;
+    return `<span class="badge bg-info ms-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Human verified translations: ${humanVerified}%">✓${humanVerified}%</span>`;
   } else if (humanVerified >= 25) {
-    return `<span class="badge bg-light text-dark ms-1" title="Human verified translations">✓${humanVerified}%</span>`;
+    return `<span class="badge bg-light text-dark ms-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Human verified translations: ${humanVerified}%">✓${humanVerified}%</span>`;
   } else if (humanVerified > 0) {
-    return `<span class="badge bg-outline-secondary ms-1" title="Human verified translations">✓${humanVerified}%</span>`;
+    return `<span class="badge bg-outline-secondary ms-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Human verified translations: ${humanVerified}%">✓${humanVerified}%</span>`;
   } else {
-    return `<span class="badge bg-outline-light text-muted ms-1" title="Human verified translations">✓0%</span>`;
+    return `<span class="badge bg-outline-light text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Human verified translations: 0%">✓0%</span>`;
   }
 }
 
@@ -73,6 +73,12 @@ function updateLanguageDropdown() {
       }
     }
   });
+
+  // Initialize tooltips for the newly added badges
+  languageLinksList.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+    // @ts-ignore
+    new bootstrap.Tooltip(el);
+  });
 }
 
 export function createLanguageSelector() {
@@ -93,6 +99,12 @@ export function createLanguageSelector() {
       buttonContent += completenessBadge + humanVerifiedBadge;
     }
     languageSelectorButton.innerHTML = buttonContent;
+
+    // Initialize tooltips for badges in the button
+    languageSelectorButton.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+      // @ts-ignore
+      new bootstrap.Tooltip(el);
+    });
 
     Array.from(languageLinksList.querySelectorAll('a')).forEach(a => {
       if (a.dataset.lang === currentLanguage) {
