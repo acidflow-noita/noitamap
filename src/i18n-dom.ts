@@ -1,4 +1,5 @@
 import i18next from './i18n';
+import { updateMapLinkTranslations } from './nav';
 
 export function updateTranslations() {
   const elementsWithDataI18n = document.querySelectorAll('[data-i18n]');
@@ -58,4 +59,7 @@ export function updateTranslations() {
     // @ts-ignore
     new bootstrap.Popover(popoverTriggerEl);
   });
+
+  // Update map link translations
+  updateMapLinkTranslations();
 }
