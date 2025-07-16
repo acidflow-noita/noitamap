@@ -22,7 +22,6 @@ const requiredFlags = [
   'Czechia.svg',
   'Italy.svg',
   'Sweden.svg',
-  'Argentina.svg',
 ];
 
 if (!fs.existsSync(targetDir)) {

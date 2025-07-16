@@ -1,27 +1,10 @@
 {
-  "ar": {
-    "completeness": 95,
-    "humanVerified": 0,
-    "translatedKeys": 502,
-    "totalKeys": 528,
-    "humanVerifiedCount": 0
-  },
-  "be": {
-    "completeness": 0,
-    "translatedKeys": 0,
-    "totalKeys": 528
-  },
   "br": {
     "completeness": 96,
     "humanVerified": 0,
     "translatedKeys": 505,
     "totalKeys": 528,
     "humanVerifiedCount": 0
-  },
-  "ca": {
-    "completeness": 0,
-    "translatedKeys": 0,
-    "totalKeys": 528
   },
   "cs": {
     "completeness": 99,

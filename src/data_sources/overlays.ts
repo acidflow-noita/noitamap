@@ -146,7 +146,13 @@ function createAOI({ text, x, y, width, height }: AreaOfInterest): OSDOverlay {
   el.className = 'osOverlayHighlight';
 
   const span = document.createElement('span');
-  span.textContent = text.join('\n');
+  // Store original text for retranslation
+  const originalText = text.join('\n');
+  span.dataset.originalText = originalText;
+
+  // Translate the text for biome overlays
+  const translatedText = gameTranslator.translateContent('biomes', originalText);
+  span.textContent = translatedText;
   el.appendChild(span);
 
   const hue = Math.floor(Math.random() * 360);
@@ -161,6 +167,15 @@ function createAOI({ text, x, y, width, height }: AreaOfInterest): OSDOverlay {
 function createOverlayPopup({ name, aliases, text, wiki }: PointOfInterest, overlayType?: OverlayKey) {
   const popup = document.createElement('div');
   popup.className = 'osOverlayPopup';
+
+  // Store original data for retranslation
+  popup.dataset.originalName = name;
+  if (text !== undefined) {
+    popup.dataset.originalText = text;
+  }
+  if (overlayType) {
+    popup.dataset.overlayType = overlayType;
+  }
 
   const nameElement = document.createElement('h2');
   // Translate the name based on overlay type
@@ -327,38 +342,71 @@ export const refreshOverlayTranslations = () => {
   // Find all overlay popups and refresh their content
   const overlayPopups = document.querySelectorAll('.osOverlayPopup');
   overlayPopups.forEach(popup => {
-    const parentElement = popup.parentElement;
-    if (!parentElement) return;
+    const popupElement = popup as HTMLElement;
 
-    // Get the overlay type from the parent element's classes
-    let overlayType: OverlayKey | undefined;
-    if (parentElement.classList.contains('bosses')) overlayType = 'bosses';
-    else if (parentElement.classList.contains('items')) overlayType = 'items';
-    else if (parentElement.classList.contains('structures')) overlayType = 'structures';
-    else if (parentElement.classList.contains('orbs')) overlayType = 'orbs';
+    // Get the stored original data
+    const originalName = popupElement.dataset.originalName;
+    const originalText = popupElement.dataset.originalText;
+    const overlayType = popupElement.dataset.overlayType as OverlayKey | undefined;
 
-    if (!overlayType) return;
+    if (!originalName || !overlayType) return;
 
-    // Find the original data by looking for the name in the popup
-    const nameElement = popup.querySelector('h2');
-    if (!nameElement) return;
+    // Update the name element
+    const nameElement = popupElement.querySelector('h2');
+    if (nameElement) {
+      let translatedName = originalName;
+      switch (overlayType) {
+        case 'bosses':
+          translatedName = gameTranslator.translateBoss(originalName);
+          break;
+        case 'items':
+          translatedName = gameTranslator.translateItem(originalName);
+          break;
+        case 'structures':
+          translatedName = gameTranslator.translateStructure(originalName);
+          break;
+        case 'orbs':
+          translatedName = gameTranslator.translateContent('orbs', originalName);
+          break;
+      }
+      nameElement.textContent = translatedName;
+    }
 
-    const originalName = nameElement.textContent;
-    if (!originalName) return;
+    // Update the text element if it exists
+    if (originalText) {
+      const textElement = popupElement.querySelector('p');
+      if (textElement) {
+        let translatedText = originalText;
+        switch (overlayType) {
+          case 'bosses':
+            translatedText = gameTranslator.translateBoss(originalText);
+            break;
+          case 'items':
+            translatedText = gameTranslator.translateItem(originalText);
+            break;
+          case 'structures':
+            translatedText = gameTranslator.translateStructure(originalText);
+            break;
+          case 'orbs':
+            translatedText = gameTranslator.translateContent('orbs', originalText);
+            break;
+        }
+        textElement.textContent = translatedText;
+      }
+    }
+  });
 
-    // Find the matching overlay data
-    const overlayDatas = overlayTexts[overlayType];
-    const matchingData = overlayDatas.find(
-      data =>
-        data.name === originalName ||
-        (data.overlayType === 'poi' && gameTranslator.translateContent(overlayType, data.name) === originalName)
-    );
-
-    if (!matchingData || matchingData.overlayType !== 'poi') return;
-
-    // Recreate the popup with fresh translations
-    const newPopup = createOverlayPopup(matchingData, overlayType);
-    parentElement.replaceChild(newPopup, popup);
+  // Also refresh biome overlay text (AOI overlays)
+  const biomeOverlays = document.querySelectorAll('.overlay.biomes span');
+  biomeOverlays.forEach(span => {
+    const spanElement = span as HTMLElement;
+    const originalText = spanElement.dataset.originalText;
+    if (originalText && !originalText.includes('%')) {
+      // Skip percentage displays
+      // Translate biome names using stored original text
+      const translatedText = gameTranslator.translateContent('biomes', originalText);
+      spanElement.textContent = translatedText;
+    }
   });
 };
 
@@ -475,7 +523,7 @@ export const selectSpell = (spell: Spell, app: any) => {
   }
 };
 
-export const initSpellSelector = () => {
+export const initSpellSelector = (app: any) => {
   const infoButton = assertElementById('spellChanceInfoButton', HTMLButtonElement);
   infoButton.addEventListener('click', ev => {
     ev.preventDefault();
@@ -538,6 +586,6 @@ export const initSpellSelector = () => {
     if (!spellListItem || !spellListItem.dataset.id) return;
     const selectedSpell = spells.find(spell => spell.id === spellListItem.dataset.id);
     if (!selectedSpell) return;
-    selectSpell(selectedSpell);
+    selectSpell(selectedSpell, app);
   });
 };

@@ -18,7 +18,6 @@ export const SUPPORTED_LANGUAGES = {
   cs: { name: 'Čeština', flag: 'Czechia' },
   it: { name: 'Italiano', flag: 'Italy' },
   sv: { name: 'Svenska', flag: 'Sweden' },
-  ar: { name: 'Español (Argentina)', flag: 'Argentina' },
 } as const;
 
 export type SupportedLanguage = keyof typeof SUPPORTED_LANGUAGES;

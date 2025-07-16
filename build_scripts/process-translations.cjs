@@ -16,7 +16,6 @@ const LANGUAGE_MAP = {
   zh: 'zh-cn',
   ja: 'jp',
   ko: 'ko',
-  ar: 'es-es', // Fallback to Spanish for Argentina
   uk: 'ru', // Fallback to Russian for Ukrainian
   nl: 'en', // Fallback to English for Dutch
   fi: 'en', // Fallback to English for Finnish
