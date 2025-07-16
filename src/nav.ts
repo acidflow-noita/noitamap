@@ -27,6 +27,7 @@ export const createMapLinks = (): HTMLUListElement => {
       'maps.biomeMap',
       'maps.biomeMapCaptured',
       'maps.mapTestPng',
+      'maps.regularBeta',
     ];
 
     const shouldTranslate = def.labelKey && translatableKeys.includes(def.labelKey);
@@ -107,6 +108,7 @@ export const updateMapLinkTranslations = (): void => {
       'maps.biomeMap',
       'maps.biomeMapCaptured',
       'maps.mapTestPng',
+      'maps.regularBeta',
     ];
 
     const shouldTranslate = def.labelKey && translatableKeys.includes(def.labelKey);
