@@ -10,7 +10,7 @@
   "overlay": {
     "notAvailable": {
       "title": "Niedostępne",
-      "content": "Niedostępne dla tej mapy"
+      "content": "Niedostępne w tej mapie"
     }
   },
   "maps": {
@@ -26,7 +26,7 @@
     "alternateBiomes": "Alternate Biomes",
     "nightmare": "Koszmar",
     "biomeMap": "Mapa biomów",
-    "biomeMapCaptured": "Mapa biomów przechwycona",
+    "biomeMapCaptured": "Przechwycona Mapa biomów ",
     "mapTestPng": "Mapa testowa PNG"
   },
   "badges": {
@@ -60,16 +60,16 @@
   "renderer": {
     "canvas": {
       "title": "Renderowanie Canvas",
-      "content": "Standardowe renderowanie HTML5 Canvas. Działa we wszystkich przeglądarkach, ale może być nieco mniej ostre podczas szybkiego powiększania."
+      "content": "Standardowe renderowanie HTML5 Canvas. Działa we wszystkich przeglądarkach, ale może być nieco mniej wyraźne podczas szybkiego powiększania."
     },
     "webgl": {
       "title": "Renderowanie WebGL",
-      "content": "Sprzętowo przyspieszone renderowanie WebGL. Jeśli używasz przeglądarki opartej na Chromium (Chrome, Edge, Brave itp.), kafelki będą mniej rozmazane podczas szybkiego powiększania."
+      "content": "Renderowanie WebGL z akceleracją sprzętową. Jeśli używasz przeglądarki opartej na Chromium (Chrome, Edge, Brave itp.), podczas szybkiego powiększania, obraz będzie bardziej wyraźny."
     }
   },
   "mod": {
-    "title": "Mod Mapy Noita",
-    "content": "Zainstaluj mod Mapy Noita"
+    "title": "Mod Noita Map",
+    "content": "Zainstaluj mod Noita Map"
   },
   "discord": {
     "title": "Discord",
@@ -81,7 +81,7 @@
   },
   "runfast": {
     "title": "Runfast.Stream",
-    "content": "Przejdź do głównej strony runfast.stream"
+    "content": "Przejdź do strony głównej runfast.stream"
   },
   "gameContent": {
     "spells": {
