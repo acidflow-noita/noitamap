@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prebuild": "npm run copy-flags && npm run copy-locales && npm run generate-translation-stats",
-    "build": "tsup",
+    "build": "tsup && npm run copy-flags && npm run copy-locales && npm run generate-translation-stats",
     "copy-flags": "node build_scripts/copy-flags.cjs",
     "copy-locales": "node build_scripts/copy-locales.cjs",
     "generate-translation-stats": "node build_scripts/generate-translation-stats.cjs",
