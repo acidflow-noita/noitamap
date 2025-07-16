@@ -3,7 +3,8 @@
     "completeness": 96,
     "humanVerified": 0,
     "totalKeys": 528,
-    "translatedKeys": 508
+    "translatedKeys": 508,
+    "humanVerifiedCount": 0
   },
   "be": {
     "completeness": 0,
@@ -15,7 +16,8 @@
     "completeness": 97,
     "humanVerified": 0,
     "totalKeys": 528,
-    "translatedKeys": 510
+    "translatedKeys": 510,
+    "humanVerifiedCount": 0
   },
   "ca": {
     "completeness": 0,
@@ -27,84 +29,97 @@
     "completeness": 99,
     "humanVerified": 0,
     "totalKeys": 528,
-    "translatedKeys": 524
+    "translatedKeys": 524,
+    "humanVerifiedCount": 0
   },
   "de": {
     "completeness": 95,
     "humanVerified": 0,
     "totalKeys": 528,
-    "translatedKeys": 501
+    "translatedKeys": 501,
+    "humanVerifiedCount": 0
   },
   "en": {
-    "completeness": 9,
-    "humanVerified": 0,
-    "totalKeys": 528,
-    "translatedKeys": 47
+    "completeness": 100,
+    "humanVerified": 100,
+    "totalKeys": 48,
+    "translatedKeys": 48
   },
   "es": {
     "completeness": 96,
     "humanVerified": 0,
     "totalKeys": 528,
-    "translatedKeys": 508
+    "translatedKeys": 508,
+    "humanVerifiedCount": 0
   },
   "fi": {
     "completeness": 99,
     "humanVerified": 0,
     "totalKeys": 528,
-    "translatedKeys": 524
+    "translatedKeys": 524,
+    "humanVerifiedCount": 0
   },
   "fr": {
     "completeness": 95,
     "humanVerified": 0,
     "totalKeys": 528,
-    "translatedKeys": 500
+    "translatedKeys": 500,
+    "humanVerifiedCount": 0
   },
   "it": {
     "completeness": 95,
     "humanVerified": 0,
     "totalKeys": 528,
-    "translatedKeys": 504
+    "translatedKeys": 504,
+    "humanVerifiedCount": 0
   },
   "ja": {
     "completeness": 100,
     "humanVerified": 0,
     "totalKeys": 528,
-    "translatedKeys": 528
+    "translatedKeys": 528,
+    "humanVerifiedCount": 0
   },
   "nl": {
     "completeness": 64,
     "humanVerified": 0,
     "totalKeys": 528,
-    "translatedKeys": 336
+    "translatedKeys": 336,
+    "humanVerifiedCount": 0
   },
   "pl": {
     "completeness": 95,
     "humanVerified": 0,
     "totalKeys": 528,
-    "translatedKeys": 504
+    "translatedKeys": 504,
+    "humanVerifiedCount": 0
   },
   "ru": {
     "completeness": 100,
     "humanVerified": 0,
     "totalKeys": 528,
-    "translatedKeys": 528
+    "translatedKeys": 528,
+    "humanVerifiedCount": 0
   },
   "sv": {
     "completeness": 99,
     "humanVerified": 0,
     "totalKeys": 528,
-    "translatedKeys": 522
+    "translatedKeys": 522,
+    "humanVerifiedCount": 0
   },
   "uk": {
     "completeness": 100,
     "humanVerified": 0,
     "totalKeys": 528,
-    "translatedKeys": 528
+    "translatedKeys": 528,
+    "humanVerifiedCount": 0
   },
   "zh": {
     "completeness": 100,
     "humanVerified": 0,
     "totalKeys": 528,
-    "translatedKeys": 528
+    "translatedKeys": 528,
+    "humanVerifiedCount": 0
   }
 }

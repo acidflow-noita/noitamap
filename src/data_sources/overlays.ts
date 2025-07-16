@@ -192,7 +192,25 @@ function createOverlayPopup({ name, aliases, text, wiki }: PointOfInterest, over
 
   if (text !== undefined) {
     const textElement = document.createElement('p');
-    textElement.textContent = text;
+    // Translate the text content based on overlay type
+    let translatedText = text;
+    if (overlayType) {
+      switch (overlayType) {
+        case 'bosses':
+          translatedText = gameTranslator.translateBoss(text);
+          break;
+        case 'items':
+          translatedText = gameTranslator.translateItem(text);
+          break;
+        case 'structures':
+          translatedText = gameTranslator.translateStructure(text);
+          break;
+        case 'orbs':
+          translatedText = gameTranslator.translateContent('orbs', text);
+          break;
+      }
+    }
+    textElement.textContent = translatedText;
     popup.appendChild(textElement);
   }
 

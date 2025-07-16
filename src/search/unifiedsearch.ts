@@ -146,18 +146,11 @@ export class UnifiedSearch extends EventEmitter2 {
   }
 
   static create({ currentMap, form }: UnifiedSearchCreateOptions) {
-    const searchInput = document.createElement('input');
-    searchInput.classList.add('form-control', 'search-input');
-    searchInput.id = 'unified-search-input';
-    searchInput.type = 'search';
-    searchInput.autofocus = true;
-    searchInput.setAttribute('data-i18n-placeholder', 'search.placeholder');
-    searchInput.placeholder = 'Find spells, items, bosses, places…';
-    searchInput.ariaLabel = 'unified search';
-
-    // Insert input into form, but not the results list
-    form.innerHTML = '';
-    form.appendChild(searchInput);
+    // Use the existing search input from HTML instead of creating a new one
+    const searchInput = document.getElementById('unified-search-input') as HTMLInputElement;
+    if (!searchInput) {
+      throw new Error('Search input element not found. Make sure #unified-search-input exists in the HTML.');
+    }
 
     // Create an absolutely-positioned overlay container for search results
     let searchResultsOverlay = document.getElementById('unifiedSearchResultsOverlay');

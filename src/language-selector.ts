@@ -7,8 +7,10 @@ import { updateTranslations } from './i18n-dom';
 interface TranslationStats {
   [lang: string]: {
     completeness: number;
+    humanVerified: number;
     translatedKeys: number;
     totalKeys: number;
+    humanVerifiedCount?: number;
   };
 }
 
@@ -30,13 +32,26 @@ fetch('./data/translation-stats.json')
 // Function to get completeness badge
 function getCompletenessBadge(completeness: number): string {
   if (completeness >= 95) {
-    return `<span class="badge bg-success ms-2">${completeness}%</span>`;
+    return `<span class="badge bg-success ms-1" title="Translation completeness">${completeness}%</span>`;
   } else if (completeness >= 80) {
-    return `<span class="badge bg-warning ms-2">${completeness}%</span>`;
+    return `<span class="badge bg-warning ms-1" title="Translation completeness">${completeness}%</span>`;
   } else if (completeness >= 50) {
-    return `<span class="badge bg-secondary ms-2">${completeness}%</span>`;
+    return `<span class="badge bg-secondary ms-1" title="Translation completeness">${completeness}%</span>`;
   } else {
-    return `<span class="badge bg-danger ms-2">${completeness}%</span>`;
+    return `<span class="badge bg-danger ms-1" title="Translation completeness">${completeness}%</span>`;
+  }
+}
+
+// Function to get human verification badge
+function getHumanVerifiedBadge(humanVerified: number): string {
+  if (humanVerified >= 50) {
+    return `<span class="badge bg-info ms-1" title="Human verified translations">✓${humanVerified}%</span>`;
+  } else if (humanVerified >= 25) {
+    return `<span class="badge bg-light text-dark ms-1" title="Human verified translations">✓${humanVerified}%</span>`;
+  } else if (humanVerified > 0) {
+    return `<span class="badge bg-outline-secondary ms-1" title="Human verified translations">✓${humanVerified}%</span>`;
+  } else {
+    return `<span class="badge bg-outline-light text-muted ms-1" title="Human verified translations">✓0%</span>`;
   }
 }
 
@@ -45,15 +60,16 @@ function updateLanguageDropdown() {
   const languageLinksList = document.getElementById('languageLinksList') as HTMLUListElement;
   if (!languageLinksList) return;
 
-  // Update existing language links with completeness info
+  // Update existing language links with completeness and human verification info
   Array.from(languageLinksList.querySelectorAll('a')).forEach(a => {
     const langCode = a.dataset.lang;
     if (langCode && translationStats[langCode]) {
       const stats = translationStats[langCode];
       const langInfo = SUPPORTED_LANGUAGES[langCode as SupportedLanguage];
       if (langInfo) {
-        const badge = getCompletenessBadge(stats.completeness);
-        a.innerHTML = `<img src="./flags/${langInfo.flag}.svg" class="flag-icon me-2" style="width: 16px; height: 12px;">${langInfo.name}${badge}`;
+        const completenessBadge = getCompletenessBadge(stats.completeness);
+        const humanVerifiedBadge = getHumanVerifiedBadge(stats.humanVerified);
+        a.innerHTML = `<span><img src="./flags/${langInfo.flag}.svg" class="flag-icon me-2" style="width: 16px; height: 12px;">${langInfo.name}</span><span>${completenessBadge}${humanVerifiedBadge}</span>`;
       }
     }
   });
@@ -68,12 +84,13 @@ export function createLanguageSelector() {
     const currentLanguage = i18next.language as SupportedLanguage;
     const langInfo = SUPPORTED_LANGUAGES[currentLanguage] || SUPPORTED_LANGUAGES.en;
 
-    // Show current language with completeness badge if available
+    // Show current language with both badges if available
     let buttonContent = `<img src="./flags/${langInfo.flag}.svg" class="flag-icon me-2" style="width: 16px; height: 12px;">`;
     if (translationStats[currentLanguage]) {
       const stats = translationStats[currentLanguage];
-      const badge = getCompletenessBadge(stats.completeness);
-      buttonContent += badge;
+      const completenessBadge = getCompletenessBadge(stats.completeness);
+      const humanVerifiedBadge = getHumanVerifiedBadge(stats.humanVerified);
+      buttonContent += completenessBadge + humanVerifiedBadge;
     }
     languageSelectorButton.innerHTML = buttonContent;
 

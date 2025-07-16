@@ -124,7 +124,17 @@
                 <ul class="dropdown-menu" id="languageLinksList"></ul>
               </div>
 
-              <form id="search-form" role="search" class="flex-grow-1 me-2"></form>
+              <form id="search-form" role="search" class="flex-grow-1 me-2">
+                <input
+                  id="unified-search-input"
+                  class="form-control search-input"
+                  type="search"
+                  autofocus
+                  data-i18n-placeholder="search.placeholder"
+                  placeholder="Find spells, items, bosses, places…"
+                  aria-label="unified search"
+                />
+              </form>
 
               <a
                 tabindex="0"

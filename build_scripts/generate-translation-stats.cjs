@@ -5,6 +5,7 @@ const path = require('path');
 
 const localesDir = path.join(__dirname, '../src/locales');
 const outputPath = path.join(__dirname, '../src/data/translation-stats.json');
+const commonCsvFile = path.join(__dirname, '../src/game-translations/common.csv');
 
 // Function to count all translatable keys recursively
 function countKeys(obj) {
@@ -81,6 +82,79 @@ if (!referenceTranslation) {
 
 console.log(`Using reference with ${maxKeys} total keys`);
 
+// Function to parse CSV and get human-verified keys
+function getHumanVerifiedKeys() {
+  if (!fs.existsSync(commonCsvFile)) {
+    console.warn('common.csv not found, human verification will be 0%');
+    return new Set();
+  }
+
+  const csvContent = fs.readFileSync(commonCsvFile, 'utf8');
+  const lines = csvContent.split('\n');
+  const humanVerifiedKeys = new Set();
+
+  // Skip header lines and process data
+  for (let i = 2; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    // Parse CSV line properly (handle quoted values)
+    const columns = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let j = 0; j < line.length; j++) {
+      const char = line[j];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        columns.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    columns.push(current.trim());
+
+    if (columns.length > 0 && columns[0]) {
+      const key = columns[0].trim();
+      if (key && !key.startsWith('//') && key !== '' && !key.includes("doesn't need to be translated")) {
+        // These are game content keys that map to gameContent section
+        humanVerifiedKeys.add(`gameContent.spells.${key}`);
+        humanVerifiedKeys.add(`gameContent.items.${key}`);
+        humanVerifiedKeys.add(`gameContent.bosses.${key}`);
+        humanVerifiedKeys.add(`gameContent.structures.${key}`);
+        humanVerifiedKeys.add(`gameContent.orbs.${key}`);
+        // Also add the direct key for UI elements
+        humanVerifiedKeys.add(key);
+      }
+    }
+  }
+
+  return humanVerifiedKeys;
+}
+
+// Function to count human-verified keys in a translation object
+function countHumanVerified(obj, humanVerifiedKeys, prefix = '') {
+  let count = 0;
+  for (const [key, value] of Object.entries(obj)) {
+    const fullKey = prefix ? `${prefix}.${key}` : key;
+
+    if (typeof value === 'string') {
+      if (humanVerifiedKeys.has(key) || humanVerifiedKeys.has(fullKey)) {
+        count++;
+      }
+    } else if (typeof value === 'object' && value !== null) {
+      count += countHumanVerified(value, humanVerifiedKeys, fullKey);
+    }
+  }
+  return count;
+}
+
+// Get human-verified keys from common.csv
+const humanVerifiedKeys = getHumanVerifiedKeys();
+console.log(`Found ${humanVerifiedKeys.size} human-verified keys in common.csv`);
+
 // Second pass: calculate completeness for each language
 const stats = {};
 
@@ -98,23 +172,36 @@ for (const lang of langDirs) {
     // English is always 100% complete as it's the reference
     if (lang === 'en') {
       const actualKeys = countKeys(translation);
+      const humanVerifiedCount = countHumanVerified(translation, humanVerifiedKeys);
+      const humanVerified = Math.round((humanVerifiedCount / actualKeys) * 100);
+
       stats[lang] = {
         completeness: 100,
+        humanVerified,
         translatedKeys: actualKeys,
         totalKeys: actualKeys,
+        humanVerifiedCount,
       };
-      console.log(`${lang}: 100% (${actualKeys}/${actualKeys}) - REFERENCE`);
+      console.log(
+        `${lang}: 100% (${actualKeys}/${actualKeys}) - REFERENCE, ${humanVerified}% human-verified (${humanVerifiedCount}/${actualKeys})`
+      );
     } else {
       const translatedKeys = countTranslated(translation);
+      const humanVerifiedCount = countHumanVerified(translation, humanVerifiedKeys);
       const completeness = Math.round((translatedKeys / maxKeys) * 100);
+      const humanVerified = Math.round((humanVerifiedCount / maxKeys) * 100);
 
       stats[lang] = {
         completeness: Math.min(completeness, 100), // Cap at 100%
+        humanVerified,
         translatedKeys,
         totalKeys: maxKeys,
+        humanVerifiedCount,
       };
 
-      console.log(`${lang}: ${stats[lang].completeness}% (${translatedKeys}/${maxKeys})`);
+      console.log(
+        `${lang}: ${stats[lang].completeness}% (${translatedKeys}/${maxKeys}), ${humanVerified}% human-verified (${humanVerifiedCount}/${maxKeys})`
+      );
     }
   } catch (error) {
     console.error(`Error reading ${lang}: ${error.message}`);
