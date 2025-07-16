@@ -10,6 +10,9 @@ export const isNavLink = (el: HTMLElement) => el.classList.contains(NAV_LINK_IDE
 export const createMapLinks = (): HTMLUListElement => {
   const navLinksUl = assertElementById('navLinksList', HTMLUListElement);
 
+  // Clear placeholder content
+  navLinksUl.innerHTML = '';
+
   for (const [mapName, def] of getAllMapDefinitions()) {
     const a = document.createElement('a');
     a.classList.add(NAV_LINK_IDENTIFIER, 'text-nowrap', 'dropdown-item');

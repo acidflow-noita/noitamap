@@ -114,14 +114,18 @@
                 <button id="mapSelectorButton" class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-i18n="availableMaps">
                   Available Maps
                 </button>
-                <ul class="dropdown-menu" id="navLinksList"></ul>
+                <ul class="dropdown-menu" id="navLinksList">
+                  <li><a class="dropdown-item text-muted" href="#" style="pointer-events: none">Loading maps...</a></li>
+                </ul>
               </div>
 
               <div id="language-selector" class="dropdown me-2">
                 <button id="languageSelectorButton" class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                   <span class="flag-icon flag-icon-us"></span>
                 </button>
-                <ul class="dropdown-menu" id="languageLinksList"></ul>
+                <ul class="dropdown-menu" id="languageLinksList">
+                  <li><a class="dropdown-item text-muted" href="#" style="pointer-events: none">Loading languages...</a></li>
+                </ul>
               </div>
 
               <form id="search-form" role="search" class="flex-grow-1 me-2">

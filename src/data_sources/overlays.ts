@@ -322,6 +322,46 @@ export const resetBiomeOverlays = () => {
   });
 };
 
+// Function to refresh overlay popup translations
+export const refreshOverlayTranslations = () => {
+  // Find all overlay popups and refresh their content
+  const overlayPopups = document.querySelectorAll('.osOverlayPopup');
+  overlayPopups.forEach(popup => {
+    const parentElement = popup.parentElement;
+    if (!parentElement) return;
+
+    // Get the overlay type from the parent element's classes
+    let overlayType: OverlayKey | undefined;
+    if (parentElement.classList.contains('bosses')) overlayType = 'bosses';
+    else if (parentElement.classList.contains('items')) overlayType = 'items';
+    else if (parentElement.classList.contains('structures')) overlayType = 'structures';
+    else if (parentElement.classList.contains('orbs')) overlayType = 'orbs';
+
+    if (!overlayType) return;
+
+    // Find the original data by looking for the name in the popup
+    const nameElement = popup.querySelector('h2');
+    if (!nameElement) return;
+
+    const originalName = nameElement.textContent;
+    if (!originalName) return;
+
+    // Find the matching overlay data
+    const overlayDatas = overlayTexts[overlayType];
+    const matchingData = overlayDatas.find(
+      data =>
+        data.name === originalName ||
+        (data.overlayType === 'poi' && gameTranslator.translateContent(overlayType, data.name) === originalName)
+    );
+
+    if (!matchingData || matchingData.overlayType !== 'poi') return;
+
+    // Recreate the popup with fresh translations
+    const newPopup = createOverlayPopup(matchingData, overlayType);
+    parentElement.replaceChild(newPopup, popup);
+  });
+};
+
 const getProbabilities = (spell: Spell, tiers: number[]): number[] => {
   return Object.entries(spell.spawnProbabilities)
     .filter(
