@@ -11,6 +11,16 @@ import { isRenderer, getStoredRenderer, setStoredRenderer } from './renderer_set
 import { createLanguageSelector } from './language-selector';
 import { updateTranslations } from './i18n-dom';
 
+// Global reference to unified search for translation updates
+let globalUnifiedSearch: UnifiedSearch | null = null;
+
+// Export function to refresh search translations
+export const refreshSearchTranslations = () => {
+  if (globalUnifiedSearch) {
+    globalUnifiedSearch.refreshTranslations();
+  }
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     await i18next.init({
@@ -80,6 +90,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentMap: app.getMap(),
     form: searchForm,
   });
+
+  // Store global reference for translation updates
+  globalUnifiedSearch = unifiedSearch;
 
   // link to the app
   unifiedSearch.on('selected', (result: any) => {

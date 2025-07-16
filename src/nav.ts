@@ -19,8 +19,18 @@ export const createMapLinks = (): HTMLUListElement => {
     a.href = '#';
     a.dataset.bsToggle = 'pill';
     a.dataset.mapKey = mapName;
-    // Use labelKey from definition if available, fallback to original label
-    const translatedLabel = def.labelKey ? i18next.t(def.labelKey, { defaultValue: def.label }) : def.label;
+    // Only translate specific maps, others should keep English names
+    const translatableKeys = [
+      'maps.regular',
+      'maps.newGamePlus',
+      'maps.nightmare',
+      'maps.biomeMap',
+      'maps.biomeMapCaptured',
+      'maps.mapTestPng',
+    ];
+
+    const shouldTranslate = def.labelKey && translatableKeys.includes(def.labelKey);
+    const translatedLabel = shouldTranslate ? i18next.t(def.labelKey, { defaultValue: def.label }) : def.label;
     a.textContent = translatedLabel + ' ';
 
     const badges = [...def.badges];
@@ -80,8 +90,18 @@ export const updateMapLinkTranslations = (): void => {
     // Clear the link content and rebuild it with new translations
     link.innerHTML = '';
 
-    // Use labelKey from definition if available, fallback to original label
-    const translatedLabel = def.labelKey ? i18next.t(def.labelKey, { defaultValue: def.label }) : def.label;
+    // Only translate specific maps, others should keep English names
+    const translatableKeys = [
+      'maps.regular',
+      'maps.newGamePlus',
+      'maps.nightmare',
+      'maps.biomeMap',
+      'maps.biomeMapCaptured',
+      'maps.mapTestPng',
+    ];
+
+    const shouldTranslate = def.labelKey && translatableKeys.includes(def.labelKey);
+    const translatedLabel = shouldTranslate ? i18next.t(def.labelKey, { defaultValue: def.label }) : def.label;
     link.textContent = translatedLabel + ' ';
 
     const badges = [...def.badges];

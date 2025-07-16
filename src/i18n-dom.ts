@@ -1,6 +1,7 @@
 import i18next from './i18n';
 import { updateMapLinkTranslations } from './nav';
 import { refreshOverlayTranslations } from './data_sources/overlays';
+import { refreshSearchTranslations } from './main';
 
 export function updateTranslations() {
   const elementsWithDataI18n = document.querySelectorAll('[data-i18n]');
@@ -66,4 +67,7 @@ export function updateTranslations() {
 
   // Update overlay popup translations
   refreshOverlayTranslations();
+
+  // Update search results translations
+  refreshSearchTranslations();
 }

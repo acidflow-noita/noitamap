@@ -15,18 +15,18 @@
   },
   "maps": {
     "regular": "Обычная",
-    "newGamePlus": "НГ+",
-    "nightmare": "Кошмар",
-    "apotheosis": "Апофеоз",
+    "newGamePlus": "Новая игра+",
+    "apotheosis": "Apotheosis",
     "regularBeta": "Обычная",
-    "purgatory": "Чистилище",
-    "apotheosisNewGamePlus": "Апофеоз НГ+",
-    "apotheosistuonela": "Апофеоз Туонела",
-    "noitavania": "Нойтавания",
-    "noitavaniaNewGamePlus": "Нойтавания НГ+",
-    "alternateBiomes": "Альтернативные биомы",
+    "purgatory": "Purgatory",
+    "apotheosisNewGamePlus": "Apotheosis NG+",
+    "apotheosistuonela": "Apotheosis Tuonela",
+    "noitavania": "Noitavania",
+    "noitavaniaNewGamePlus": "Noitavania NG+",
+    "alternateBiomes": "Alternate Biomes",
+    "nightmare": "Кошмар",
     "biomeMap": "Карта биомов",
-    "biomeMapCaptured": "Карта биомов захваченная",
+    "biomeMapCaptured": "Карта биомов (захват)",
     "mapTestPng": "Тестовая карта PNG"
   },
   "badges": {
@@ -54,8 +54,8 @@
     "content": "Переключить слой предметов"
   },
   "orbs": {
-    "title": "Сферы",
-    "content": "Переключить слой сфер"
+    "title": "Шары (Орбы)",
+    "content": "Переключить слой орбов"
   },
   "renderer": {
     "canvas": {
@@ -537,17 +537,17 @@
       "The Work": "Работа"
     },
     "orbs": {
-      "Orb: Earthquake": "Сфера: Землетрясение",
-      "Orb: Sea of Lava": "Сфера: Море лавы",
-      "Orb: Summon Tentacle": "Сфера: Призыв щупальца",
-      "Orb: Nuke": "Сфера: Ядерное оружие",
-      "Orb: Necromancy": "Сфера: Некромантия",
-      "Orb: Holy Bomb": "Сфера: Святая бомба",
-      "Orb: Spiral Shot": "Сфера: Спиральный выстрел",
-      "Orb: Thundercloud": "Сфера: Грозовое облако",
-      "Orb: Fireworks!": "Сфера: Фейерверк!",
-      "Orb: Summon Deercoy, Flock of Ducks, and Worm Launcher": "Сфера: Призыв оленя-приманки, стаи уток и червемёта",
-      "Orb: Cement": "Сфера: Цемент",
+      "Orb: Earthquake": "Шар (орба): Землетрясение",
+      "Orb: Sea of Lava": "Шар (орба): Море лавы",
+      "Orb: Summon Tentacle": "Шар (орба): Призыв щупальца",
+      "Orb: Nuke": "Шар (орба): Ядерное оружие",
+      "Orb: Necromancy": "Шар (орба): Некромантия",
+      "Orb: Holy Bomb": "Шар (орба): Святая бомба",
+      "Orb: Spiral Shot": "Шар (орба): Спиральный выстрел",
+      "Orb: Thundercloud": "Шар (орба): Грозовое облако",
+      "Orb: Fireworks!": "Шар (орба): Фейерверк!",
+      "Orb: Summon Deercoy, Flock of Ducks, and Worm Launcher": "Шар (орба): Призыв оленя-приманки, стаи уток и червемёта",
+      "Orb: Cement": "Шар (орба): Цемент",
       "Secrets of Earth's anger have been unlocked to you": "Вам открылись тайны гнева Земли",
       "Secrets of endless lava have been unlocked to you": "Вам открылись тайны бесконечной лавы",
       "Secrets of otherworldly life have been unlocked to you": "Вам открылись тайны потусторонней жизни",

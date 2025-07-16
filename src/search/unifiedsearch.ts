@@ -93,6 +93,15 @@ export class UnifiedSearch extends EventEmitter2 {
     this.lastSearchText = value;
   }
 
+  // Method to refresh search results with new translations
+  refreshTranslations() {
+    if (this.searchInput.value.trim() !== '') {
+      // Force update by clearing lastSearchText and calling updateSearchResults
+      this.lastSearchText = '';
+      this.updateSearchResults();
+    }
+  }
+
   private updateSearchResults() {
     const searchText = this.searchInput.value;
     if (this.lastSearchText === searchText) return;
