@@ -373,6 +373,7 @@ for (const lang of langDirs) {
         humanVerified: 100, // English is human-verified by definition
         totalKeys: actualKeys,
         translatedKeys: actualKeys,
+        humanVerifiedCount: actualKeys, // All English keys are human-verified
       };
       console.log(`${lang}: 100% complete (${actualKeys}/${actualKeys} keys) - REFERENCE`);
     } else {
