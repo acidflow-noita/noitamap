@@ -397,16 +397,20 @@ export const refreshOverlayTranslations = () => {
   });
 
   // Also refresh biome overlay text (AOI overlays)
-  const biomeOverlays = document.querySelectorAll('.overlay.biomes span');
-  biomeOverlays.forEach(span => {
-    const spanElement = span as HTMLElement;
-    const originalText = spanElement.dataset.originalText;
-    if (originalText && !originalText.includes('%')) {
-      // Skip percentage displays
-      // Translate biome names using stored original text
-      const translatedText = gameTranslator.translateContent('biomes', originalText);
-      spanElement.textContent = translatedText;
+  const biomeOverlays = document.querySelectorAll('.overlay.biomes');
+  biomeOverlays.forEach(overlay => {
+    const container = overlay.firstChild as HTMLDivElement;
+    if (!container) return;
+
+    // Find the biome name span (has originalText dataset)
+    const biomeNameSpan = container.querySelector('span[data-original-text]') as HTMLElement;
+    if (biomeNameSpan && biomeNameSpan.dataset.originalText) {
+      const translatedText = gameTranslator.translateContent('biomes', biomeNameSpan.dataset.originalText);
+      biomeNameSpan.textContent = translatedText;
     }
+
+    // Percentage spans don't need translation - they're just numbers with %
+    // They will remain as-is
   });
 };
 
