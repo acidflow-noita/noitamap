@@ -247,7 +247,6 @@ function createOverlayPopup({ name, aliases, text, wiki }: PointOfInterest, over
 function createPOI(poi: PointOfInterest, overlayType?: OverlayKey): OSDOverlay {
   const { name, icon, x, y } = poi;
   const el = document.createElement('div');
-  el.className = 'osd-overlay-container';
 
   const pin = document.createElement('div');
   pin.className = 'osOverlayPOI';
@@ -265,8 +264,7 @@ function createPOI(poi: PointOfInterest, overlayType?: OverlayKey): OSDOverlay {
   return {
     element: el,
     location: new Point(x, y),
-    placement: 'CENTER',
-  } as OSDOverlay;
+  };
 }
 
 /**
@@ -331,21 +329,12 @@ const createSpan = (content: string) => {
   return span;
 };
 
-export const resetBiomeOverlays = (app?: any) => {
+export const resetBiomeOverlays = () => {
   biomeOverlays.forEach((overlay: OSDOverlay) => {
     const container = overlay.element.firstChild as HTMLDivElement;
     container.innerHTML = '';
     overlay.element.classList.remove('show');
-    overlay.element.removeAttribute('data-zoom-level');
-    overlay.element.style.borderColor = '';
   });
-
-  // Clean up zoom handler if app is provided
-  if (app && (app as any)._currentZoomHandler) {
-    app.osd.removeHandler('zoom', (app as any)._currentZoomHandler);
-    app.osd.removeHandler('pan', (app as any)._currentZoomHandler);
-    (app as any)._currentZoomHandler = null;
-  }
 };
 
 // Function to refresh overlay popup translations
@@ -407,18 +396,13 @@ export const refreshOverlayTranslations = () => {
     }
   });
 
-  // Also refresh biome overlay text (AOI overlays) - but skip percentage displays
+  // Also refresh biome overlay text (AOI overlays)
   const biomeOverlays = document.querySelectorAll('.overlay.biomes span');
   biomeOverlays.forEach(span => {
     const spanElement = span as HTMLElement;
     const originalText = spanElement.dataset.originalText;
-    // Skip percentage displays and spell percentages
-    if (
-      originalText &&
-      !originalText.includes('%') &&
-      !spanElement.classList.contains('spell-percentage') &&
-      !spanElement.dataset.isPercentage
-    ) {
+    if (originalText && !originalText.includes('%')) {
+      // Skip percentage displays
       // Translate biome names using stored original text
       const translatedText = gameTranslator.translateContent('biomes', originalText);
       spanElement.textContent = translatedText;
@@ -444,28 +428,9 @@ const getTotalProbability = (probabilities: number[]) => {
   return probabilities.length / probabilities.reduce((acc, cur) => acc + 1 / cur, 0);
 };
 
-// Shared function to calculate scale based on zoom level using proper OSD viewport
-const calculateZoomScale = (app: any): number => {
-  const viewport = app.osd.viewport;
-  const currentZoom = viewport.getZoom();
-  const urlZoom = Math.log2(currentZoom) * -100; // Same calculation as url.ts
-
-  // Calculate scale based on zoom level - larger base sizes
-  if (urlZoom >= 1600) {
-    return 0; // Hide completely when zoomed out far
-  } else if (urlZoom >= 1350) {
-    // Medium zoom - small but visible
-    return 0.4;
-  } else {
-    // Close zoom - much larger base scale
-    const zoomFactor = Math.max(1.5, Math.min(4.0, (1350 - urlZoom) / 200));
-    return zoomFactor;
-  }
-};
-
 // Export selectSpell at top-level
 export const selectSpell = (spell: Spell, app: any) => {
-  resetBiomeOverlays(app);
+  resetBiomeOverlays();
   const spawnTiers = Object.keys(spell.spawnProbabilities).map(Number);
 
   const affectedOverlays: {
@@ -501,68 +466,7 @@ export const selectSpell = (spell: Spell, app: any) => {
       boundingBox = overlay.location as Rect;
     }
 
-    // Use shared zoom scale calculation
-    const scale = calculateZoomScale(app);
-
-    if (scale === 0) {
-      container.style.display = 'none';
-      return;
-    }
-
-    // Force container to be positioned and styled correctly with zoom-responsive sizing
-    container.style.cssText = `
-      position: absolute !important;
-      top: 50% !important;
-      left: 50% !important;
-      transform: translate(-50%, -50%) scale(${scale}) !important;
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: center !important;
-      gap: 0.2rem !important;
-      pointer-events: none !important;
-      z-index: 1000 !important;
-      background: #222933 !important;
-      border: 1px solid white !important;
-      border-radius: 0.2rem !important;
-      padding: 0.3rem !important;
-      width: auto !important;
-      height: auto !important;
-    `;
-
-    // Create spell icon with MUCH larger base size
-    const spellIcon = document.createElement('img');
-    spellIcon.src = `./assets/icons/spells/${spell.sprite}`;
-    spellIcon.classList.add('pixelated-image', 'spell-icon');
-    spellIcon.style.cssText = `
-      width: 64px !important;
-      height: 64px !important;
-      image-rendering: pixelated !important;
-      image-rendering: -moz-crisp-edges !important;
-      image-rendering: crisp-edges !important;
-      filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.9)) !important;
-    `;
-    spellIcon.onerror = () => {
-      spellIcon.src = './assets/icons/spells/missing.png';
-    };
-    container.appendChild(spellIcon);
-
-    // Create percentage span with MUCH larger base font size
-    const percentageSpan = createSpan(`${(totalProbability * 100).toFixed(2)}%`);
-    percentageSpan.classList.add('spell-percentage');
-    percentageSpan.dataset.isPercentage = 'true'; // Mark as percentage to prevent translation
-    percentageSpan.style.cssText = `
-      font-size: 24px !important;
-      font-weight: bold !important;
-      color: #fff !important;
-      text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000 !important;
-      white-space: nowrap !important;
-      text-align: center !important;
-      margin: 0 !important;
-      padding: 0 !important;
-    `;
-    container.appendChild(percentageSpan);
-
+    container.appendChild(createSpan(`${(totalProbability * 100).toFixed(2)}%`));
     affectedOverlays.push({
       overlay,
       totalProbability,
@@ -577,69 +481,7 @@ export const selectSpell = (spell: Spell, app: any) => {
     if (guaranteedSpawnOverlay) {
       guaranteedSpawnOverlay.element.classList.add('show');
       const container = guaranteedSpawnOverlay.element.firstChild as HTMLDivElement;
-
-      // Use shared zoom scale calculation (same as regular spawns)
-      const scale = calculateZoomScale(app);
-
-      if (scale === 0) {
-        container.style.display = 'none';
-        return;
-      }
-
-      // Force container styling for guaranteed spawn (same as regular spawns)
-      container.style.cssText = `
-        position: absolute !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) scale(${scale}) !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-        gap: 0.2rem !important;
-        pointer-events: none !important;
-        z-index: 1000 !important;
-        background: #222933 !important;
-        border: 1px solid white !important;
-        border-radius: 0.2rem !important;
-        padding: 0.3rem !important;
-        width: auto !important;
-        height: auto !important;
-      `;
-
-      // Create spell icon for guaranteed spawn with SAME large size as regular spawns
-      const spellIcon = document.createElement('img');
-      spellIcon.src = `./assets/icons/spells/${spell.sprite}`;
-      spellIcon.classList.add('pixelated-image', 'spell-icon');
-      spellIcon.style.cssText = `
-        width: 64px !important;
-        height: 64px !important;
-        image-rendering: pixelated !important;
-        image-rendering: -moz-crisp-edges !important;
-        image-rendering: crisp-edges !important;
-        filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.9)) !important;
-      `;
-      spellIcon.onerror = () => {
-        spellIcon.src = './assets/icons/spells/missing.png';
-      };
-      container.appendChild(spellIcon);
-
-      // Create percentage span for guaranteed spawn with SAME large font as regular spawns
-      const percentageSpan = createSpan('100%');
-      percentageSpan.classList.add('spell-percentage');
-      percentageSpan.dataset.isPercentage = 'true';
-      percentageSpan.style.cssText = `
-        font-size: 24px !important;
-        font-weight: bold !important;
-        color: #fff !important;
-        text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000 !important;
-        white-space: nowrap !important;
-        text-align: center !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      `;
-      container.appendChild(percentageSpan);
-
+      container.appendChild(createSpan('100%'));
       affectedOverlays.push({
         overlay: guaranteedSpawnOverlay,
         totalProbability: 1,
@@ -665,10 +507,7 @@ export const selectSpell = (spell: Spell, app: any) => {
 
   affectedOverlays.forEach(({ overlay, totalProbability }) => {
     if (totalProbability === 1) {
-      const borderColor = 'hsla(200, 100%, 50%, 0.6)';
-      const backgroundColor = 'hsla(200, 100%, 50%, 0.5)';
-      overlay.element.style.borderColor = borderColor;
-      overlay.element.style.backgroundColor = backgroundColor;
+      overlay.element.style.borderColor = 'hsla(200, 100%, 50%, 0.6)';
       return;
     }
 
@@ -676,46 +515,9 @@ export const selectSpell = (spell: Spell, app: any) => {
       minProbability === maxProbability
         ? 120
         : 120 - 120 * (1 - (totalProbability - minProbability) / (maxProbability - minProbability));
-    const borderColor = `hsla(${hue}, 100%, 50%, 0.8)`;
-    const backgroundColor = `hsla(${hue}, 100%, 50%, 0.5)`;
-    overlay.element.style.borderColor = borderColor;
-    overlay.element.style.backgroundColor = backgroundColor;
+    overlay.element.style.borderColor = `hsla(${hue}, 100%, 50%, 0.8)`;
+    overlay.element.style.background = `hsla(${hue}, 100%, 50%, 0.4)`;
   });
-
-  // Set up zoom level monitoring for responsive display
-  const updateZoomLevels = () => {
-    const currentZoom = app.osd.viewport.getZoom();
-    // Convert to URL zoom scale for easier understanding: urlZoom = Math.log2(actualZoom) * -100
-    const urlZoom = Math.log2(currentZoom) * -100;
-
-    // Based on user feedback:
-    // - At zoom 1600+ (URL scale): hide content (far)
-    // - At zoom 1350-1600: show reduced content (medium)
-    // - Below zoom 1350: show all content (close)
-    let zoomLevel: string;
-    if (urlZoom >= 1600) {
-      zoomLevel = 'far';
-    } else if (urlZoom >= 1350) {
-      zoomLevel = 'medium';
-    } else {
-      zoomLevel = 'close';
-    }
-
-    affectedOverlays.forEach(({ overlay }) => {
-      overlay.element.setAttribute('data-zoom-level', zoomLevel);
-    });
-  };
-
-  // Initial zoom level setup
-  updateZoomLevels();
-
-  // Monitor zoom changes
-  const zoomHandler = () => updateZoomLevels();
-  app.osd.addHandler('zoom', zoomHandler);
-  app.osd.addHandler('pan', zoomHandler);
-
-  // Store handler for cleanup
-  (app as any)._currentZoomHandler = zoomHandler;
 
   if (boundingBox) {
     app.osd.withSlowAnimation(() => app.osd.viewport.fitBounds(boundingBox));
@@ -773,7 +575,7 @@ export const initSpellSelector = (app: any) => {
     const target = ev.target as HTMLInputElement;
 
     if (target.value === '') {
-      resetBiomeOverlays(app);
+      resetBiomeOverlays();
     }
 
     displayMatchingSpells(target.value);

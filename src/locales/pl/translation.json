@@ -26,7 +26,7 @@
     "alternateBiomes": "Alternate Biomes",
     "nightmare": "Koszmar",
     "biomeMap": "Mapa biomów",
-    "biomeMapCaptured": "Przechwycona Mapa biomów ",
+    "biomeMapCaptured": "Przechwycona Mapa Biomów ",
     "mapTestPng": "Mapa testowa PNG"
   },
   "badges": {
@@ -641,6 +641,7 @@
       "Hiisi Base Spell Shop": "Hiisi Base Spell Shop"
     },
     "orbAreas": {},
-    "overlaysRegular": {}
+    "overlaysRegular": {},
+    "overlaysNewGamePlus": {}
   }
 }

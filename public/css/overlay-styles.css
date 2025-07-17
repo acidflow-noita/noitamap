@@ -27,111 +27,24 @@
   display: block;
 }
 
-/* Spell overlay biomes with centered content - HIGH PRIORITY */
-#osContainer .overlay.biomes {
-  border: 3px solid rgba(255, 255, 255, 0.8);
-  border-radius: 0.25em !important;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5) !important;
-  position: relative !important;
-}
+.overlay.biomes {
+  background: rgba(0, 0, 0, 0.1);
+  border: 0.15em solid;
+  border-radius: 0.5em;
 
-/* Rectangle background will be set by JavaScript using border color */
+  & > div {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 
-#osContainer .overlay.biomes > div {
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) scale(0.25) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 2px !important;
-  pointer-events: none !important;
-  z-index: 1000 !important;
-  background: #222933 !important;
-  border: 1px solid white !important;
-  border-radius: 4px !important;
-  padding: 2px !important;
-  width: auto !important;
-  height: auto !important;
-}
-
-#osContainer .overlay.biomes .spell-icon {
-  width: 48px !important;
-  height: 48px !important;
-  filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.9)) !important;
-  image-rendering: pixelated !important;
-  image-rendering: -moz-crisp-edges !important;
-  image-rendering: crisp-edges !important;
-  display: block !important;
-}
-
-#osContainer .overlay.biomes .spell-percentage {
-  font-size: 18px !important;
-  font-weight: bold !important;
-  color: #fff !important;
-  text-shadow:
-    -1px -1px 0 #000,
-    1px -1px 0 #000,
-    -1px 1px 0 #000,
-    1px 1px 0 #000 !important;
-  white-space: nowrap !important;
-  text-align: center !important;
-  display: block !important;
-  background: none !important;
-  border: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Hide text and icons at high zoom levels (when zoomed out far) */
-@media screen {
-  .overlay.biomes > div > span,
-  .overlay.biomes > div > .spell-icon {
-    opacity: 1;
-    transition: opacity 0.2s ease;
-  }
-}
-
-/* Zoom-based visibility - hide content when zoom level indicates we're zoomed out */
-#osContainer .overlay.biomes[data-zoom-level='far'] > div {
-  display: none !important;
-}
-
-#osContainer .overlay.biomes[data-zoom-level='medium'] > div {
-  transform: translate(-50%, -50%) scale(0.3) !important;
-  padding: 2px !important;
-}
-
-#osContainer .overlay.biomes[data-zoom-level='medium'] .spell-icon {
-  width: 16px !important;
-  height: 16px !important;
-}
-
-#osContainer .overlay.biomes[data-zoom-level='medium'] .spell-percentage {
-  font-size: 8px !important;
-}
-
-/* Improve visual hierarchy and readability */
-.overlay.biomes.show {
-  animation: overlayFadeIn 0.3s ease-out;
-}
-
-.osd-overlay-container {
-  position: relative;
-  transform: translate(-50%, -50%);
-  --border-color: #47546b;
-}
-
-@keyframes overlayFadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
+    & > span {
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.3em;
+      text-shadow: 0 0 0.5em #000;
+    }
   }
 }
 
@@ -149,7 +62,7 @@ div:has(> div > .osOverlayPOI) {
   line-height: 0;
 
   & > img {
-    --size: 45px;
+    --size: 30px;
     min-width: var(--size);
     min-height: var(--size);
   }

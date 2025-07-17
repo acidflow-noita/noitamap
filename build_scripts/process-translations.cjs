@@ -16,7 +16,7 @@ const LANGUAGE_MAP = {
   zh: 'zh-cn',
   ja: 'jp',
   ko: 'ko',
-  uk: 'ru', // Fallback to Russian for Ukrainian
+  uk: 'uk', // Ukrainian now has its own column in CSV
   nl: 'en', // Fallback to English for Dutch
   fi: 'en', // Fallback to English for Finnish
   cs: 'en', // Fallback to English for Czech
