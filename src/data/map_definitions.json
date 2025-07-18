@@ -2,9 +2,11 @@
   {
     "key": "regular-main-branch",
     "label": "Regular",
+    "labelKey": "maps.regular",
     "badges": [
       {
         "label": "Latest",
+        "labelKey": "badges.latest",
         "class": "text-bg-success"
       }
     ],
@@ -14,10 +16,12 @@
   },
   {
     "key": "new-game-plus-main-branch",
-    "label": "NG+",
+    "label": "New Game+",
+    "labelKey": "maps.newGamePlus",
     "badges": [
       {
         "label": "Latest",
+        "labelKey": "badges.latest",
         "class": "text-bg-success"
       }
     ],
@@ -28,9 +32,11 @@
   {
     "key": "nightmare-main-branch",
     "label": "Nightmare",
+    "labelKey": "maps.nightmare",
     "badges": [
       {
         "label": "Latest",
+        "labelKey": "badges.latest",
         "class": "text-bg-success"
       }
     ],
@@ -41,9 +47,11 @@
   {
     "key": "apotheosis-beta-branch",
     "label": "Apotheosis",
+    "labelKey": "maps.apotheosis",
     "badges": [
       {
         "label": "Mod",
+        "labelKey": "badges.mod",
         "class": "text-bg-info",
         "icon": "bi bi-tools"
       }
@@ -55,9 +63,11 @@
   {
     "key": "regular-beta",
     "label": "Regular",
+    "labelKey": "maps.regularBeta",
     "badges": [
       {
         "label": "β branch",
+        "labelKey": "badges.betaBranch",
         "class": "text-bg-info"
       }
     ],
@@ -68,9 +78,11 @@
   {
     "key": "purgatory",
     "label": "Purgatory",
+    "labelKey": "maps.purgatory",
     "badges": [
       {
         "label": "Mod",
+        "labelKey": "badges.mod",
         "class": "text-bg-light",
         "icon": "bi bi-tools"
       }
@@ -83,9 +95,11 @@
   {
     "key": "apotheosis-new-game-plus",
     "label": "Apotheosis NG+",
+    "labelKey": "maps.apotheosisNewGamePlus",
     "badges": [
       {
         "label": "Mod",
+        "labelKey": "badges.mod",
         "class": "text-bg-light",
         "icon": "bi bi-tools"
       }
@@ -98,9 +112,11 @@
   {
     "key": "apotheosis-tuonela",
     "label": "Apotheosis Tuonela",
+    "labelKey": "maps.apotheosistuonela",
     "badges": [
       {
         "label": "Mod",
+        "labelKey": "badges.mod",
         "class": "text-bg-light",
         "icon": "bi bi-tools"
       }
@@ -113,9 +129,11 @@
   {
     "key": "noitavania",
     "label": "Noitavania",
+    "labelKey": "maps.noitavania",
     "badges": [
       {
         "label": "Mod",
+        "labelKey": "badges.mod",
         "class": "text-bg-light",
         "icon": "bi bi-tools"
       }
@@ -128,9 +146,11 @@
   {
     "key": "noitavania-new-game-plus",
     "label": "Noitavania NG+",
+    "labelKey": "maps.noitavaniaNewGamePlus",
     "badges": [
       {
         "label": "Mod",
+        "labelKey": "badges.mod",
         "class": "text-bg-light",
         "icon": "bi bi-tools"
       }
@@ -143,9 +163,11 @@
   {
     "key": "alternate-biomes",
     "label": "Alternate Biomes",
+    "labelKey": "maps.alternateBiomes",
     "badges": [
       {
         "label": "Mod",
+        "labelKey": "badges.mod",
         "class": "text-bg-light",
         "icon": "bi bi-tools"
       }
@@ -158,9 +180,11 @@
   {
     "key": "biomemap-main-branch",
     "label": "Biome Map",
+    "labelKey": "maps.biomeMap",
     "badges": [
       {
         "label": "Special",
+        "labelKey": "badges.special",
         "class": "text-bg-primary",
         "icon": "bi bi-gear-wide-connected"
       }
@@ -172,9 +196,11 @@
   {
     "key": "biomemaprendered-main-branch",
     "label": "Biome Map Captured",
+    "labelKey": "maps.biomeMapCaptured",
     "badges": [
       {
         "label": "Special",
+        "labelKey": "badges.special",
         "class": "text-bg-primary",
         "icon": "bi bi-gear-wide-connected"
       }
@@ -186,9 +212,11 @@
   {
     "key": "maptestdev",
     "label": "Map Test PNG",
+    "labelKey": "maps.mapTestPng",
     "badges": [
       {
         "label": "Special",
+        "labelKey": "badges.special",
         "class": "text-bg-primary",
         "icon": "bi bi-gear-wide-connected"
       }

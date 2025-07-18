@@ -4,7 +4,10 @@ import { MapName } from '../data_sources/tile_data';
 import { debounce } from '../util';
 import { UnifiedSearchResults, UnifiedSearchResult } from './unifiedsearchresults';
 import { TargetOfInterest, Spell } from '../data_sources/overlays';
+import { gameTranslator } from '../game-translations/translator';
+import i18next from '../i18n';
 import spells from '../data/spells.json';
+import { EventEmitter2 } from 'eventemitter2';
 
 export type UnifiedSearchCreateOptions = {
   currentMap: MapName;
@@ -90,6 +93,15 @@ export class UnifiedSearch extends EventEmitter2 {
     this.lastSearchText = value;
   }
 
+  // Method to refresh search results with new translations
+  refreshTranslations() {
+    if (this.searchInput.value.trim() !== '') {
+      // Force update by clearing lastSearchText and calling updateSearchResults
+      this.lastSearchText = '';
+      this.updateSearchResults();
+    }
+  }
+
   private updateSearchResults() {
     const searchText = this.searchInput.value;
     if (this.lastSearchText === searchText) return;
@@ -101,22 +113,40 @@ export class UnifiedSearch extends EventEmitter2 {
       return;
     }
 
-    // Search for map overlays
+    // Search for map overlays (these will be translated by the overlay search function)
     const mapResults = searchOverlays(this.currentMap, searchText);
 
-    // Search for spells
+    // Search for spells with translation support
     const spellResults = spells
-      .filter(
-        spell =>
-          spell.name.toLowerCase().includes(searchText.toLowerCase()) ||
-          spell.id.toLowerCase().includes(searchText.toLowerCase())
-      )
-      .map(spell => ({
-        type: 'spell' as const,
-        spell,
-        displayName: spell.name,
-        displayText: `Spell: ${spell.name} (Tiers: ${Object.keys(spell.spawnProbabilities).join(', ')})`,
-      }));
+      .filter(spell => {
+        const translatedName = gameTranslator.translateSpell(spell.name);
+        const originalName = spell.name.toLowerCase();
+        const translatedNameLower = translatedName.toLowerCase();
+        const searchLower = searchText.toLowerCase();
+
+        return (
+          originalName.includes(searchLower) ||
+          translatedNameLower.includes(searchLower) ||
+          spell.id.toLowerCase().includes(searchLower)
+        );
+      })
+      .map(spell => {
+        const translatedName = gameTranslator.translateSpell(spell.name);
+        const currentLang = i18next.language;
+
+        // Create display text with English fallback for non-English languages
+        let spellDisplayName = translatedName;
+        if (currentLang !== 'en' && translatedName !== spell.name) {
+          spellDisplayName = `${translatedName} (${spell.name})`;
+        }
+
+        return {
+          type: 'spell' as const,
+          spell,
+          displayName: translatedName,
+          displayText: `${i18next.t('spell_prefix', 'Spell')}: ${spellDisplayName} (${i18next.t('tiers_prefix', 'Tiers')}: ${Object.keys(spell.spawnProbabilities).join(', ')})`,
+        };
+      });
 
     // Combine results, prioritizing map results first
     const combinedResults = [...mapResults, ...spellResults];
@@ -125,17 +155,11 @@ export class UnifiedSearch extends EventEmitter2 {
   }
 
   static create({ currentMap, form }: UnifiedSearchCreateOptions) {
-    const searchInput = document.createElement('input');
-    searchInput.classList.add('form-control', 'search-input');
-    searchInput.id = 'unified-search-input';
-    searchInput.type = 'search';
-    searchInput.autofocus = true;
-    searchInput.placeholder = 'Find spells, items, bosses, places…';
-    searchInput.ariaLabel = 'unified search';
-
-    // Insert input into form, but not the results list
-    form.innerHTML = '';
-    form.appendChild(searchInput);
+    // Use the existing search input from HTML instead of creating a new one
+    const searchInput = document.getElementById('unified-search-input') as HTMLInputElement;
+    if (!searchInput) {
+      throw new Error('Search input element not found. Make sure #unified-search-input exists in the HTML.');
+    }
 
     // Create an absolutely-positioned overlay container for search results
     let searchResultsOverlay = document.getElementById('unifiedSearchResultsOverlay');

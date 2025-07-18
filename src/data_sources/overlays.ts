@@ -6,6 +6,7 @@ import orbs from '../data/orbs.json';
 import { assertElementById } from '../util';
 import spells from '../data/spells.json';
 import biomes from '../data/biomes.json';
+import { gameTranslator } from '../game-translations/translator';
 
 const { Rect, Point } = OpenSeadragon;
 type Rect = InstanceType<typeof Rect>;
@@ -145,7 +146,13 @@ function createAOI({ text, x, y, width, height }: AreaOfInterest): OSDOverlay {
   el.className = 'osOverlayHighlight';
 
   const span = document.createElement('span');
-  span.textContent = text.join('\n');
+  // Store original text for retranslation
+  const originalText = text.join('\n');
+  span.dataset.originalText = originalText;
+
+  // Translate the text for biome overlays
+  const translatedText = gameTranslator.translateContent('biomes', originalText);
+  span.textContent = translatedText;
   el.appendChild(span);
 
   const hue = Math.floor(Math.random() * 360);
@@ -157,12 +164,39 @@ function createAOI({ text, x, y, width, height }: AreaOfInterest): OSDOverlay {
 /**
  * Return the DOM element for the popup on a POI
  */
-function createOverlayPopup({ name, aliases, text, wiki }: PointOfInterest) {
+function createOverlayPopup({ name, aliases, text, wiki }: PointOfInterest, overlayType?: OverlayKey) {
   const popup = document.createElement('div');
   popup.className = 'osOverlayPopup';
 
+  // Store original data for retranslation
+  popup.dataset.originalName = name;
+  if (text !== undefined) {
+    popup.dataset.originalText = text;
+  }
+  if (overlayType) {
+    popup.dataset.overlayType = overlayType;
+  }
+
   const nameElement = document.createElement('h2');
-  nameElement.textContent = name;
+  // Translate the name based on overlay type
+  let translatedName = name;
+  if (overlayType) {
+    switch (overlayType) {
+      case 'bosses':
+        translatedName = gameTranslator.translateBoss(name);
+        break;
+      case 'items':
+        translatedName = gameTranslator.translateItem(name);
+        break;
+      case 'structures':
+        translatedName = gameTranslator.translateStructure(name);
+        break;
+      case 'orbs':
+        translatedName = gameTranslator.translateContent('orbs', name);
+        break;
+    }
+  }
+  nameElement.textContent = translatedName;
   popup.appendChild(nameElement);
 
   if (aliases && aliases.length > 0) {
@@ -173,7 +207,25 @@ function createOverlayPopup({ name, aliases, text, wiki }: PointOfInterest) {
 
   if (text !== undefined) {
     const textElement = document.createElement('p');
-    textElement.textContent = text;
+    // Translate the text content based on overlay type
+    let translatedText = text;
+    if (overlayType) {
+      switch (overlayType) {
+        case 'bosses':
+          translatedText = gameTranslator.translateBoss(text);
+          break;
+        case 'items':
+          translatedText = gameTranslator.translateItem(text);
+          break;
+        case 'structures':
+          translatedText = gameTranslator.translateStructure(text);
+          break;
+        case 'orbs':
+          translatedText = gameTranslator.translateContent('orbs', text);
+          break;
+      }
+    }
+    textElement.textContent = translatedText;
     popup.appendChild(textElement);
   }
 
@@ -192,7 +244,7 @@ function createOverlayPopup({ name, aliases, text, wiki }: PointOfInterest) {
 /**
  * Return the DOM element and the OSD position for an area of interest overlay
  */
-function createPOI(poi: PointOfInterest): OSDOverlay {
+function createPOI(poi: PointOfInterest, overlayType?: OverlayKey): OSDOverlay {
   const { name, icon, x, y } = poi;
   const el = document.createElement('div');
 
@@ -206,7 +258,7 @@ function createPOI(poi: PointOfInterest): OSDOverlay {
   img.className = 'pixelated-image';
   pin.appendChild(img);
 
-  const popup = createOverlayPopup(poi);
+  const popup = createOverlayPopup(poi, overlayType);
   el.appendChild(popup);
 
   return {
@@ -218,10 +270,10 @@ function createPOI(poi: PointOfInterest): OSDOverlay {
 /**
  * Return an Overlay object based on the type of the input data
  */
-function createOverlay(overlay: PointOfInterest | AreaOfInterest): OSDOverlay {
+function createOverlay(overlay: PointOfInterest | AreaOfInterest, overlayType?: OverlayKey): OSDOverlay {
   switch (overlay.overlayType) {
     case 'poi':
-      return createPOI(overlay);
+      return createPOI(overlay, overlayType);
     case 'aoi':
       return createAOI(overlay);
   }
@@ -243,7 +295,7 @@ export const createOverlays = (mapName: string): OSDOverlay[] => {
     for (const overlayData of overlayDatas) {
       if (!overlayData.maps.includes(mapName)) continue;
 
-      const overlay = createOverlay(overlayData);
+      const overlay = createOverlay(overlayData, type);
       overlay.element.classList.add('overlay', type);
 
       overlays.push(overlay);
@@ -285,9 +337,89 @@ export const resetBiomeOverlays = () => {
   });
 };
 
+// Function to refresh overlay popup translations
+export const refreshOverlayTranslations = () => {
+  // Find all overlay popups and refresh their content
+  const overlayPopups = document.querySelectorAll('.osOverlayPopup');
+  overlayPopups.forEach(popup => {
+    const popupElement = popup as HTMLElement;
+
+    // Get the stored original data
+    const originalName = popupElement.dataset.originalName;
+    const originalText = popupElement.dataset.originalText;
+    const overlayType = popupElement.dataset.overlayType as OverlayKey | undefined;
+
+    if (!originalName || !overlayType) return;
+
+    // Update the name element
+    const nameElement = popupElement.querySelector('h2');
+    if (nameElement) {
+      let translatedName = originalName;
+      switch (overlayType) {
+        case 'bosses':
+          translatedName = gameTranslator.translateBoss(originalName);
+          break;
+        case 'items':
+          translatedName = gameTranslator.translateItem(originalName);
+          break;
+        case 'structures':
+          translatedName = gameTranslator.translateStructure(originalName);
+          break;
+        case 'orbs':
+          translatedName = gameTranslator.translateContent('orbs', originalName);
+          break;
+      }
+      nameElement.textContent = translatedName;
+    }
+
+    // Update the text element if it exists
+    if (originalText) {
+      const textElement = popupElement.querySelector('p');
+      if (textElement) {
+        let translatedText = originalText;
+        switch (overlayType) {
+          case 'bosses':
+            translatedText = gameTranslator.translateBoss(originalText);
+            break;
+          case 'items':
+            translatedText = gameTranslator.translateItem(originalText);
+            break;
+          case 'structures':
+            translatedText = gameTranslator.translateStructure(originalText);
+            break;
+          case 'orbs':
+            translatedText = gameTranslator.translateContent('orbs', originalText);
+            break;
+        }
+        textElement.textContent = translatedText;
+      }
+    }
+  });
+
+  // Also refresh biome overlay text (AOI overlays)
+  const biomeOverlays = document.querySelectorAll('.overlay.biomes');
+  biomeOverlays.forEach(overlay => {
+    const container = overlay.firstChild as HTMLDivElement;
+    if (!container) return;
+
+    // Find the biome name span (has originalText dataset)
+    const biomeNameSpan = container.querySelector('span[data-original-text]') as HTMLElement;
+    if (biomeNameSpan && biomeNameSpan.dataset.originalText) {
+      const translatedText = gameTranslator.translateContent('biomes', biomeNameSpan.dataset.originalText);
+      biomeNameSpan.textContent = translatedText;
+    }
+
+    // Percentage spans don't need translation - they're just numbers with %
+    // They will remain as-is
+  });
+};
+
 const getProbabilities = (spell: Spell, tiers: number[]): number[] => {
   return Object.entries(spell.spawnProbabilities)
-    .filter(([tier, probability]: [string, number | undefined]) => tiers.includes(Number(tier)) && probability !== undefined && probability !== 0)
+    .filter(
+      ([tier, probability]: [string, number | undefined]) =>
+        tiers.includes(Number(tier)) && probability !== undefined && probability !== 0
+    )
     .map(([_, probability]: [string, number | undefined]) => probability!);
 };
 
@@ -388,6 +520,7 @@ export const selectSpell = (spell: Spell, app: any) => {
         ? 120
         : 120 - 120 * (1 - (totalProbability - minProbability) / (maxProbability - minProbability));
     overlay.element.style.borderColor = `hsla(${hue}, 100%, 50%, 0.8)`;
+    overlay.element.style.background = `hsla(${hue}, 100%, 50%, 0.4)`;
   });
 
   if (boundingBox) {
@@ -395,7 +528,7 @@ export const selectSpell = (spell: Spell, app: any) => {
   }
 };
 
-export const initSpellSelector = () => {
+export const initSpellSelector = (app: any) => {
   const infoButton = assertElementById('spellChanceInfoButton', HTMLButtonElement);
   infoButton.addEventListener('click', ev => {
     ev.preventDefault();
@@ -458,6 +591,6 @@ export const initSpellSelector = () => {
     if (!spellListItem || !spellListItem.dataset.id) return;
     const selectedSpell = spells.find(spell => spell.id === spellListItem.dataset.id);
     if (!selectedSpell) return;
-    selectSpell(selectedSpell);
+    selectSpell(selectedSpell, app);
   });
 };

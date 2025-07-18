@@ -29,8 +29,8 @@
 
 .overlay.biomes {
   background: rgba(0, 0, 0, 0.1);
-  border: 0.15em dashed;
-  border-radius: 0.25em;
+  border: 0.15em solid;
+  border-radius: 0.5em;
 
   & > div {
     height: 100%;

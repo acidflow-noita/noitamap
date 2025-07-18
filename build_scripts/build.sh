@@ -16,9 +16,13 @@ npm run generate
 #     exit 1
 # fi
 
+# Copy flags and locales BEFORE building
+npm run copy-flags
+npm run copy-locales
+npm run generate-translation-stats
+
 # Generate JS from TS
 npm run build
 
 # Copy the built tilesources.json into the dist which is /public
-
 cp "$HERE/src/data/tilesources.json" "$HERE/public/js/tilesources.json"

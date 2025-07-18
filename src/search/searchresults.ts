@@ -1,4 +1,6 @@
 import { TargetOfInterest } from '../data_sources/overlays';
+import i18next from '../i18n';
+import { EventEmitter2 } from 'eventemitter2';
 
 export interface SearchResults {
   on(event: 'selected', listener: (target: TargetOfInterest) => void): this;
@@ -104,10 +106,42 @@ export class SearchResults extends EventEmitter2 {
 
       switch (overlay.overlayType) {
         case 'poi':
-          listItem.textContent = overlay.name;
-          if (overlay.aliases) {
-            listItem.textContent += ` (${overlay.aliases.join(', ')})`;
+          // Use displayName if available (from search system), otherwise use name
+          const displayName = (overlay as any).displayName || overlay.name;
+          const currentLang = i18next.language;
+
+          // Create the main content div
+          const contentDiv = document.createElement('div');
+          contentDiv.className = 'search-result-content';
+
+          // Add the translated name
+          const nameDiv = document.createElement('div');
+          nameDiv.className = 'search-result-name';
+          nameDiv.textContent = displayName;
+          contentDiv.appendChild(nameDiv);
+
+          // Add English fallback on a new line if not in English and translation differs
+          if (currentLang !== 'en' && displayName !== overlay.name) {
+            const englishDiv = document.createElement('div');
+            englishDiv.className = 'search-result-english';
+            englishDiv.textContent = overlay.name;
+            englishDiv.style.fontSize = '0.85em';
+            englishDiv.style.color = '#888';
+            englishDiv.style.fontStyle = 'italic';
+            contentDiv.appendChild(englishDiv);
           }
+
+          // Add aliases if they exist
+          if (overlay.aliases) {
+            const aliasDiv = document.createElement('div');
+            aliasDiv.className = 'search-result-aliases';
+            aliasDiv.textContent = `(${overlay.aliases.join(', ')})`;
+            aliasDiv.style.fontSize = '0.85em';
+            aliasDiv.style.color = '#666';
+            contentDiv.appendChild(aliasDiv);
+          }
+
+          listItem.appendChild(contentDiv);
           break;
 
         case 'aoi':
