@@ -70,9 +70,9 @@ export const formatDate = (d: string) =>
 
 export const getSpellAvailability = (spell: Spell, i18next: i18n): string => {
   if (!spell.isWandSpell && !spell.isPremadeWandSpell) {
-    return i18next.t('shops_only', 'Shops only');
+    return i18next.t('spell_shops_only', 'Spell shops only');
   } else if (!spell.isWandSpell && spell.isPremadeWandSpell) {
-    return i18next.t('shops_wands_in_mines', 'Shops; wands in Mines');
+    return i18next.t('spell_shops_wands_in_mines', 'Spell shops; wands in Mines');
   }
-  return i18next.t('shops_and_wands', 'Shops and wands');
+  return i18next.t('spell_shops_and_wands', 'Spell shops and wands');
 };
