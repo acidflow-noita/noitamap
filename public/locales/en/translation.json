@@ -4,6 +4,9 @@
   },
   "spell_prefix": "Spell",
   "tiers_prefix": "Tiers",
+  "shops_only": "Shops only",
+  "shops_wands_in_mines": "Shops; wands in Mines",
+  "shops_and_wands": "Shops and wands",
   "share": {
     "copied": "Copied to clipboard!"
   },
