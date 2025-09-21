@@ -2,6 +2,7 @@ import { TargetOfInterest } from '../data_sources/overlays';
 import { Spell } from '../data_sources/overlays';
 import { EventEmitter2 } from 'eventemitter2';
 import i18next from '../i18n';
+import { getSpellAvailability } from '../util';
 
 export type UnifiedSearchResult =
   | TargetOfInterest
@@ -141,6 +142,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
         const currentLang = i18next.language;
         const spellPrefix = i18next.t('spell_prefix', 'Spell');
         const tiersPrefix = i18next.t('tiers_prefix', 'Tiers');
+        const availabilityString = getSpellAvailability(result.spell, i18next);
         const translatedName = result.displayName;
         const tiers = Object.keys(result.spell.spawnProbabilities).join(', ');
 
@@ -161,13 +163,21 @@ export class UnifiedSearchResults extends EventEmitter2 {
           contentDiv.appendChild(englishDiv);
         }
 
-        // Tiers on third line
-        const tiersDiv = document.createElement('div');
-        tiersDiv.className = 'spell-tiers-line';
-        tiersDiv.textContent = `${tiersPrefix}: ${tiers}`;
-        tiersDiv.style.fontSize = '0.85em';
-        tiersDiv.style.color = '#666';
-        contentDiv.appendChild(tiersDiv);
+        // Tiers and availability on third line
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'spell-info-line';
+
+        const tiersSpan = document.createElement('span');
+        tiersSpan.className = 'spell-tiers-line';
+        tiersSpan.textContent = `${tiersPrefix}: ${tiers}`;
+        infoDiv.appendChild(tiersSpan);
+
+        const availabilitySpan = document.createElement('span');
+        availabilitySpan.className = 'spell-availability-line';
+        availabilitySpan.textContent = availabilityString;
+        infoDiv.appendChild(availabilitySpan);
+
+        contentDiv.appendChild(infoDiv);
 
         listItem.appendChild(contentDiv);
       } else if ('overlayType' in result) {

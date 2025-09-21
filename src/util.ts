@@ -1,3 +1,6 @@
+import { i18n } from 'i18next';
+import { Spell } from './data_sources/overlays';
+
 /**
  * Returns a function that debounces calls to `func` by `delay` milliseconds:
  *
@@ -64,3 +67,12 @@ export const addEventListenerForId = <K extends keyof HTMLElementEventMap>(
 
 export const formatDate = (d: string) =>
   new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date(d));
+
+export const getSpellAvailability = (spell: Spell, i18next: i18n): string => {
+  if (!spell.isWandSpell && !spell.isPremadeWandSpell) {
+    return i18next.t('spell_shops_only', 'Spell shops only');
+  } else if (!spell.isWandSpell && spell.isPremadeWandSpell) {
+    return i18next.t('spell_shops_wands_in_mines', 'Spell shops; wands in Mines');
+  }
+  return i18next.t('spell_shops_and_wands', 'Spell shops and wands');
+};

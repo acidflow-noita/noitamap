@@ -543,11 +543,15 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 .search-result-aliases,
-.spell-tiers-line,
+.spell-info-line,
 .overlay-aliases-line {
   font-size: 0.85em;
   color: #666;
   margin-top: 2px;
+}
+
+.spell-info-line .spell-availability-line {
+  margin-left: 1em;
 }
 
 /* Override text wrapping for multi-line search results */
