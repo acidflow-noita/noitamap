@@ -4,6 +4,9 @@
   },
   "spell_prefix": "Kouzlo",
   "tiers_prefix": "Úrovně",
+  "spell_shops_only": "Pouze obchody s kouzly",
+  "spell_shops_wands_in_mines": "Obchody s kouzly; hůlky v dolech",
+  "spell_shops_and_wands": "Obchody s kouzly a hůlky",
   "share": {
     "copied": "Zkopírováno do schránky!"
   },

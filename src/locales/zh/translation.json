@@ -4,6 +4,9 @@
   },
   "spell_prefix": "法术",
   "tiers_prefix": "等级",
+  "spell_shops_only": "仅咒语商店",
+  "spell_shops_wands_in_mines": "咒语商店；矿山中的魔杖",
+  "spell_shops_and_wands": "咒语商店和魔杖",
   "share": {
     "copied": "已复制到剪贴板！"
   },

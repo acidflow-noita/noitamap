@@ -4,6 +4,9 @@
   },
   "spell_prefix": "呪文",
   "tiers_prefix": "ティア",
+  "spell_shops_only": "呪文の店のみ",
+  "spell_shops_wands_in_mines": "呪文の店; 鉱山の杖",
+  "spell_shops_and_wands": "呪文の店と杖",
   "share": {
     "copied": "クリップボードにコピーしました！"
   },

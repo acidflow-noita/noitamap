@@ -4,6 +4,9 @@
   },
   "spell_prefix": "Заклинание",
   "tiers_prefix": "Уровни",
+  "spell_shops_only": "Только магазины заклинаний",
+  "spell_shops_wands_in_mines": "Магазины заклинаний; жезлы в шахтах",
+  "spell_shops_and_wands": "Магазины заклинаний и жезлы",
   "share": {
     "copied": "Скопировано в буфер обмена!"
   },

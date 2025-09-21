@@ -4,6 +4,9 @@
   },
   "spell_prefix": "Trollformel",
   "tiers_prefix": "Nivåer",
+  "spell_shops_only": "Endast trollformelbutiker",
+  "spell_shops_wands_in_mines": "Trollformelbutiker; trollstavar i gruvor",
+  "spell_shops_and_wands": "Trollformelbutiker och trollstavar",
   "share": {
     "copied": "Kopierat till urklipp!"
   },

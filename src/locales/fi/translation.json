@@ -4,6 +4,9 @@
   },
   "spell_prefix": "Loitsu",
   "tiers_prefix": "Tasot",
+  "spell_shops_only": "Vain loitsukaupat",
+  "spell_shops_wands_in_mines": "Loitsukaupat; sauvat kaivoksissa",
+  "spell_shops_and_wands": "Loitsukaupat ja sauvat",
   "share": {
     "copied": "Kopioitu leikepöydälle!"
   },

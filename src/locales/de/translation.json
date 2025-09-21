@@ -4,6 +4,9 @@
   },
   "spell_prefix": "Zauber",
   "tiers_prefix": "Stufen",
+  "spell_shops_only": "Nur Zauberläden",
+  "spell_shops_wands_in_mines": "Zauberläden; Zauberstäbe in Minen",
+  "spell_shops_and_wands": "Zauberläden und Zauberstäbe",
   "share": {
     "copied": "In die Zwischenablage kopiert!"
   },

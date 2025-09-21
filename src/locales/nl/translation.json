@@ -4,6 +4,9 @@
   },
   "spell_prefix": "Spreuk",
   "tiers_prefix": "Niveaus",
+  "spell_shops_only": "Alleen spreukenwinkels",
+  "spell_shops_wands_in_mines": "Spreukenwinkels; toverstokken in mijnen",
+  "spell_shops_and_wands": "Spreukenwinkels en toverstokken",
   "share": {
     "copied": "Gekopieerd naar klembord!"
   },

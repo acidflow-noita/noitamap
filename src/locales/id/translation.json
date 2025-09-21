@@ -4,6 +4,9 @@
   },
   "spell_prefix": "Mantra",
   "tiers_prefix": "Tingkat",
+  "spell_shops_only": "Hanya toko spell",
+  "spell_shops_wands_in_mines": "Toko spell; tongkat di Mines",
+  "spell_shops_and_wands": "Toko spell dan tongkat",
   "share": {
     "copied": "Disalin ke clipboard!"
   },
