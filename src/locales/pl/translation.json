@@ -4,9 +4,9 @@
   },
   "spell_prefix": "Zaklęcie",
   "tiers_prefix": "Poziomy",
-  "spell_shops_only": "",
-  "spell_shops_wands_in_mines": "",
-  "spell_shops_and_wands": "",
+  "spell_shops_only": "Tylko sklepy z zaklęciami",
+  "spell_shops_wands_in_mines": "Sklepy z zaklęciami; różdżki w Kopalniach",
+  "spell_shops_and_wands": "Sklepy z zaklęciami i różdżki",
   "share": {
     "copied": "Skopiowano do schowka!"
   },
