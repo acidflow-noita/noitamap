@@ -4,7 +4,7 @@
     "aliases": ["Rock Boss", "Stone Boss", "Sky Boss"],
     "x": 7375,
     "y": -4539,
-    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
+    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch", "nightmare-main-branch"],
     "url": "https://noitamap.com/?map=regular&x=7375&y=-4539&zoom=823",
     "icon": "assets/icons/bosses/kivi.png",
     "wiki": "https://noita.wiki.gg/wiki/Kivi"
@@ -14,7 +14,7 @@
     "aliases": ["Pyramid Boss", "Three-Eye's Legs"],
     "x": 9984,
     "y": -786,
-    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
+    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch", "nightmare-main-branch"],
     "url": "https://noitamap.com/?map=regular&x=9984&y=-786&zoom=823",
     "icon": "assets/icons/bosses/legs.png",
     "wiki": "https://noita.wiki.gg/wiki/Kolmisilm%C3%A4n_koipi"
@@ -44,7 +44,7 @@
     "aliases": ["Dragon", "Scale Pike"],
     "x": 2347,
     "y": 7444,
-    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch"],
+    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch", "nightmare-main-branch"],
     "url": "https://noitamap.com/?map=regular&x=2347&y=7444&zoom=917",
     "icon": "assets/icons/bosses/dragon.png",
     "wiki": "https://noita.wiki.gg/wiki/Suomuhauki"
@@ -84,7 +84,13 @@
     "aliases": ["Kolmi", "Three-Eye"],
     "x": 3556,
     "y": 13026,
-    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch", "apotheosis-beta-branch"],
+    "maps": [
+      "regular-main-branch",
+      "regular-beta",
+      "new-game-plus-main-branch",
+      "apotheosis-beta-branch",
+      "nightmare-main-branch"
+    ],
     "url": "https://noitamap.com/?map=regular&x=3556&y=13026&zoom=849",
     "icon": "assets/icons/bosses/kolmi.png",
     "wiki": "https://noita.wiki.gg/wiki/Kolmisilm%C3%A4"
@@ -154,7 +160,13 @@
     "aliases": ["Deer Boss", "Tapio's Vassal", "Island Boss"],
     "x": -13670,
     "y": 134,
-    "maps": ["regular-main-branch", "regular-beta", "new-game-plus-main-branch", "apotheosis-beta-branch"],
+    "maps": [
+      "regular-main-branch",
+      "regular-beta",
+      "new-game-plus-main-branch",
+      "apotheosis-beta-branch",
+      "nightmare-main-branch"
+    ],
     "url": "https://noitamap.com/?map=regular&x=-13670&y=134&zoom=796",
     "icon": "assets/icons/bosses/deer.png",
     "wiki": "https://noita.wiki.gg/wiki/Tapion_vasalli"
