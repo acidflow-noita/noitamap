@@ -241,6 +241,14 @@ body.toggle-hidden div.osOverlayHighlight {
   width: 16px;
 }
 
+.icon-spatialAwareness {
+  background-image: url(../assets/icons/overlay-toggles/icon-spatial-awareness.webp);
+  background-size: cover;
+  display: inline-block;
+  height: 16px;
+  width: 16px;
+}
+
 #searchResults {
   position: absolute;
   top: 100%;

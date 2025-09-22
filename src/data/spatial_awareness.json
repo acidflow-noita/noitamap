@@ -1,0 +1,154 @@
+[
+  {
+    "name": "Mina (Player)",
+    "x": 226,
+    "y": 85,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_player.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Min%C3%A4"
+  },
+  {
+    "name": "Friend Boss (Toveri). Note that the boss did not spawn in the main world (bug), and only seen in the east world",
+    "x": -10500,
+    "y": 4360,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_friend.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Toveri"
+  },
+  {
+    "name": "Coral Chest",
+    "x": 11519,
+    "y": -4806,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_special_spot.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Crystal_Key#Coral_Chest"
+  },
+  {
+    "name": "Dark Chest",
+    "x": 3840,
+    "y": 15649,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_special_spot.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Crystal_Key#Dark_Chest"
+  },
+  {
+    "name": "Ocarina",
+    "x": -9984,
+    "y": -6418,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_special_spot.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Huilu"
+  },
+  {
+    "name": "Essence Of Spirits",
+    "x": -14081,
+    "y": 13567,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_special_spot.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Spirits"
+  },
+  {
+    "name": "Essence Of Air",
+    "x": -13056,
+    "y": -5377,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_special_spot.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Air"
+  },
+  {
+    "name": "Essence Of Fire",
+    "x": -14062,
+    "y": 370,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_special_spot.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Fire"
+  },
+  {
+    "name": "Essence Of Water",
+    "x": -5376,
+    "y": 16640,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_special_spot.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Water"
+  },
+  {
+    "name": "Essence Of Earth",
+    "x": 16128,
+    "y": -1792,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_special_spot.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Essences#Essence_of_Earth"
+  },
+  {
+    "name": "Mountain Hall",
+    "x": 759,
+    "y": -450,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_mountain.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Forest"
+  },
+  {
+    "name": "Perk Removal Altar (Nullifying Altar)",
+    "x": 14080,
+    "y": 7510,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_nullifying_altar.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Nullifying_Altar"
+  },
+  {
+    "name": "Holy Mountain (Mines)",
+    "x": -2,
+    "y": 1373,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_holy_mountain.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Holy_Mountain"
+  },
+  {
+    "name": "Holy Mountain (Coal Pits)",
+    "x": -2,
+    "y": 2909,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_holy_mountain.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Holy_Mountain"
+  },
+  {
+    "name": "Holy Mountain (Snowy Depths)",
+    "x": -2,
+    "y": 4956,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_holy_mountain.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Holy_Mountain"
+  },
+  {
+    "name": "Holy Mountain (Hiisi Base)",
+    "x": -2,
+    "y": 6492,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_holy_mountain.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Holy_Mountain"
+  },
+  {
+    "name": "Holy Mountain (Underground Jungle)",
+    "x": -2,
+    "y": 8540,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_holy_mountain.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Holy_Mountain"
+  },
+  {
+    "name": "Holy Mountain (Temple of the Art)",
+    "x": -2,
+    "y": 10589,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_holy_mountain.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Holy_Mountain"
+  },
+  {
+    "name": "Holy Mountain (The Laboratory)",
+    "x": 2590,
+    "y": 13144,
+    "icon": "assets/icons/spatial_awareness/spatial_awareness_holy_mountain.png",
+    "maps": ["regular-main-branch", "regular-beta"],
+    "wiki": "https://noita.wiki.gg/wiki/Holy_Mountain"
+  }
+]
