@@ -3,6 +3,7 @@ import items from '../data/items.json';
 import bosses from '../data/bosses.json';
 import orbAreas from '../data/orb_areas.json';
 import orbs from '../data/orbs.json';
+import spatialAwareness from '../data/spatial_awareness.json';
 import { assertElementById } from '../util';
 import spells from '../data/spells.json';
 import biomes from '../data/biomes.json';
@@ -124,6 +125,7 @@ const overlayTexts = {
   items: pixelPOICoords(items),
   bosses: pixelPOICoords(bosses),
   orbs: [...chunkAOICoords(orbAreas), ...pixelPOICoords(orbs)],
+  spatialAwareness: pixelPOICoords(spatialAwareness),
 };
 
 export const getAllOverlays = (): [OverlayKey, TargetOfInterest[]][] => {
@@ -194,6 +196,9 @@ function createOverlayPopup({ name, aliases, text, wiki }: PointOfInterest, over
       case 'orbs':
         translatedName = gameTranslator.translateContent('orbs', name);
         break;
+      case 'spatialAwareness':
+        translatedName = gameTranslator.translateContent('spatialAwareness', name);
+        break;
     }
   }
   nameElement.textContent = translatedName;
@@ -222,6 +227,9 @@ function createOverlayPopup({ name, aliases, text, wiki }: PointOfInterest, over
           break;
         case 'orbs':
           translatedText = gameTranslator.translateContent('orbs', text);
+          break;
+        case 'spatialAwareness':
+          translatedText = gameTranslator.translateContent('spatialAwareness', text);
           break;
       }
     }
@@ -368,6 +376,9 @@ export const refreshOverlayTranslations = () => {
         case 'orbs':
           translatedName = gameTranslator.translateContent('orbs', originalName);
           break;
+        case 'spatialAwareness':
+          translatedName = gameTranslator.translateContent('spatialAwareness', originalName);
+          break;
       }
       nameElement.textContent = translatedName;
     }
@@ -389,6 +400,9 @@ export const refreshOverlayTranslations = () => {
             break;
           case 'orbs':
             translatedText = gameTranslator.translateContent('orbs', originalText);
+            break;
+          case 'spatialAwareness':
+            translatedText = gameTranslator.translateContent('spatialAwareness', originalText);
             break;
         }
         textElement.textContent = translatedText;

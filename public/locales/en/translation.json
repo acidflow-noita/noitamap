@@ -60,6 +60,10 @@
     "title": "Orbs",
     "content": "Toggle orbs overlay"
   },
+  "spatialAwareness": {
+    "title": "Spatial Awareness",
+    "content": "Toggle spatial awareness perk overlay"
+  },
   "renderer": {
     "canvas": {
       "title": "Canvas Rendering",
@@ -87,6 +91,27 @@
     "content": "Go to the main runfast.stream website"
   },
   "gameContent": {
+    "spatialAwareness": {
+      "Mina (Player)": "Mina (Player)",
+      "Friend Boss (Toveri). Note that the boss did not spawn in the main world (bug), and only seen in the east world": "Friend Boss (Toveri). Note that the boss did not spawn in the main world (bug),\\nand only seen in the east world",
+      "Coral Chest": "Coral Chest",
+      "Dark Chest": "Dark Chest",
+      "Ocarina": "Ocarina",
+      "Essence Of Spirits": "Essence Of Spirits",
+      "Essence Of Air": "Essence Of Air",
+      "Essence Of Fire": "Essence Of Fire",
+      "Essence Of Water": "Essence Of Water",
+      "Essence Of Earth": "Essence Of Earth",
+      "Mountain Hall": "Mountain Hall",
+      "Perk Removal Altar (Nullifying Altar)": "Perk Removal Altar (Nullifying Altar)",
+      "Holy Mountain (Mines)": "Holy Mountain (Mines)",
+      "Holy Mountain (Coal Pits)": "Holy Mountain (Coal Pits)",
+      "Holy Mountain (Snowy Depths)": "Holy Mountain (Snowy Depths)",
+      "Holy Mountain (Hiisi Base)": "Holy Mountain (Hiisi Base)",
+      "Holy Mountain (Underground Jungle)": "Holy Mountain (Underground Jungle)",
+      "Holy Mountain (Temple of the Art)": "Holy Mountain (Temple of the Art)",
+      "Holy Mountain (The Laboratory)": "Holy Mountain (The Laboratory)"
+    },
     "spells": {
       "Bomb": "Bomb",
       "Spark Bolt": "Spark Bolt",
