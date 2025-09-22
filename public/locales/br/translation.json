@@ -4,6 +4,9 @@
   },
   "spell_prefix": "Feitiço",
   "tiers_prefix": "Níveis",
+  "spell_shops_only": "Lojas de feitiços apenas",
+  "spell_shops_wands_in_mines": "Lojas de feitiços; varinhas nas minas",
+  "spell_shops_and_wands": "Lojas de feitiços e varinhas",
   "share": {
     "copied": "Copiado para a área de transferência!"
   },
@@ -581,7 +584,7 @@
       "Fungal Altar - Air (Above Desert)": "Fungal Altar - Air (Above Desert)",
       "Outhouse": "Outhouse",
       "Meditation Cube Room": "Meditation Cube Room",
-      "Burried Eye Room": "Burried Eye Room",
+      "Buried Eye Room": "Buried Eye Room",
       "Race Track": "Race Track",
       "Tower Portal Diamond": "Tower Portal Diamond",
       "Gold Biome": "Gold Biome",

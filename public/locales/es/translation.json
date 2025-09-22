@@ -4,6 +4,9 @@
   },
   "spell_prefix": "Hechizo",
   "tiers_prefix": "Niveles",
+  "spell_shops_only": "Solo tiendas de hechizos",
+  "spell_shops_wands_in_mines": "Tiendas de hechizos; varitas en las minas",
+  "spell_shops_and_wands": "Tiendas de hechizos y varitas",
   "share": {
     "copied": "¡Copiado al portapapeles!"
   },
@@ -581,7 +584,7 @@
       "Fungal Altar - Air (Above Desert)": "Fungal Altar - Air (Above Desert)",
       "Outhouse": "Outhouse",
       "Meditation Cube Room": "Meditation Cube Room",
-      "Burried Eye Room": "Burried Eye Room",
+      "Buried Eye Room": "Buried Eye Room",
       "Race Track": "Race Track",
       "Tower Portal Diamond": "Tower Portal Diamond",
       "Gold Biome": "Gold Biome",

@@ -4,6 +4,9 @@
   },
   "spell_prefix": "Trollformel",
   "tiers_prefix": "Nivåer",
+  "spell_shops_only": "Endast trollformelbutiker",
+  "spell_shops_wands_in_mines": "Trollformelbutiker; trollstavar i gruvor",
+  "spell_shops_and_wands": "Trollformelbutiker och trollstavar",
   "share": {
     "copied": "Kopierat till urklipp!"
   },
@@ -581,7 +584,7 @@
       "Fungal Altar - Air (Above Desert)": "Fungal Altar - Air (Above Desert)",
       "Outhouse": "Outhouse",
       "Meditation Cube Room": "Meditation Cube Room",
-      "Burried Eye Room": "Burried Eye Room",
+      "Buried Eye Room": "Buried Eye Room",
       "Race Track": "Race Track",
       "Tower Portal Diamond": "Tower Portal Diamond",
       "Gold Biome": "Gold Biome",

@@ -4,6 +4,9 @@
   },
   "spell_prefix": "Заклинание",
   "tiers_prefix": "Уровни",
+  "spell_shops_only": "Только магазины заклинаний",
+  "spell_shops_wands_in_mines": "Магазины заклинаний; жезлы в шахтах",
+  "spell_shops_and_wands": "Магазины заклинаний и жезлы",
   "share": {
     "copied": "Скопировано в буфер обмена!"
   },
@@ -581,7 +584,7 @@
       "Fungal Altar - Air (Above Desert)": "Fungal Altar - Air (Above Desert)",
       "Outhouse": "Outhouse",
       "Meditation Cube Room": "Meditation Cube Room",
-      "Burried Eye Room": "Burried Eye Room",
+      "Buried Eye Room": "Buried Eye Room",
       "Race Track": "Race Track",
       "Tower Portal Diamond": "Tower Portal Diamond",
       "Gold Biome": "Gold Biome",

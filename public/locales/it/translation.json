@@ -4,6 +4,9 @@
   },
   "spell_prefix": "Incantesimo",
   "tiers_prefix": "Livelli",
+  "spell_shops_only": "Solo negozi di incantesimi",
+  "spell_shops_wands_in_mines": "Negozi di incantesimi; bacchette nelle miniere",
+  "spell_shops_and_wands": "Negozi di incantesimi e bacchette",
   "share": {
     "copied": "Copiato negli appunti!"
   },
@@ -581,7 +584,7 @@
       "Fungal Altar - Air (Above Desert)": "Fungal Altar - Air (Above Desert)",
       "Outhouse": "Outhouse",
       "Meditation Cube Room": "Meditation Cube Room",
-      "Burried Eye Room": "Burried Eye Room",
+      "Buried Eye Room": "Buried Eye Room",
       "Race Track": "Race Track",
       "Tower Portal Diamond": "Tower Portal Diamond",
       "Gold Biome": "Gold Biome",

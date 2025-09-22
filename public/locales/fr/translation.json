@@ -4,6 +4,9 @@
   },
   "spell_prefix": "Sort",
   "tiers_prefix": "Niveaux",
+  "spell_shops_only": "Magasins de sorts uniquement",
+  "spell_shops_wands_in_mines": "Magasins de sorts ; baguettes dans les mines",
+  "spell_shops_and_wands": "Magasins de sorts et baguettes",
   "share": {
     "copied": "Copié dans le presse-papiers !"
   },
@@ -581,7 +584,7 @@
       "Fungal Altar - Air (Above Desert)": "Fungal Altar - Air (Above Desert)",
       "Outhouse": "Outhouse",
       "Meditation Cube Room": "Meditation Cube Room",
-      "Burried Eye Room": "Burried Eye Room",
+      "Buried Eye Room": "Buried Eye Room",
       "Race Track": "Race Track",
       "Tower Portal Diamond": "Tower Portal Diamond",
       "Gold Biome": "Gold Biome",
