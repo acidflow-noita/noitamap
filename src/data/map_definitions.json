@@ -178,6 +178,23 @@
     "modUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2554761457"
   },
   {
+    "key": "deepend-main-branch",
+    "label": "Deep End",
+    "labelKey": "maps.deepEnd",
+    "badges": [
+      {
+        "label": "Mod",
+        "labelKey": "badges.mod",
+        "class": "text-bg-light",
+        "icon": "bi bi-tools"
+      }
+    ],
+    "patchDate": "2025-05-13",
+    "seed": "786433191",
+    "tileSets": ["middle"],
+    "modUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=3356681136"
+  },
+  {
     "key": "biomemap-main-branch",
     "label": "Biome Map",
     "labelKey": "maps.biomeMap",
