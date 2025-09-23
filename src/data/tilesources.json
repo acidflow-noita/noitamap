@@ -105,6 +105,12 @@
       "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"35840\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-18432\",\"Y\":\"-31744\"}}}\n"
     }
   ],
+  "deepend-main-branch": [
+    {
+      "url": "https://deepend-main-branch-middle.acidflow.stream/maps/deepend-main-branch-middle/deepend-main-branch-middle-2025-05-13-786433191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"1024\",\"Size\":{\"Width\":\"36864\",\"Height\":\"153600\"},\"TopLeft\":{\"X\":\"-18432\",\"Y\":\"-58368\"}}}\n"
+    }
+  ],
   "biomemap-main-branch": [
     {
       "url": "https://biomemap-main-branch-middle.acidflow.stream/maps/biomemap-main-branch-middle/biomemap-main-branch-middle-2024-08-12-78633191.dzi",

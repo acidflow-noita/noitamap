@@ -28,6 +28,7 @@
     "noitavania": "Noitavania",
     "noitavaniaNewGamePlus": "Noitavania NG+",
     "alternateBiomes": "Alternate Biomes",
+    "deepEnd": "Deep End",
     "biomeMap": "Biome Map",
     "biomeMapCaptured": "Biome Map Captured",
     "mapTestPng": "Map Test PNG"
@@ -93,7 +94,7 @@
   "gameContent": {
     "spatialAwareness": {
       "Mina (Player)": "Mina (Player)",
-      "Friend Boss (Toveri). Note that the boss did not spawn in the main world (bug), and only seen in the east world": "Friend Boss (Toveri). Note that the boss did not spawn in the main world (bug),\\nand only seen in the east world",
+      "Friend Boss (Toveri). Note that the boss did not spawn in the main world (bug), and only seen in the east world": "Friend Boss (Toveri). Note that the boss did not spawn in the main world (bug), and only seen in the east world",
       "Coral Chest": "Coral Chest",
       "Dark Chest": "Dark Chest",
       "Ocarina": "Ocarina",
