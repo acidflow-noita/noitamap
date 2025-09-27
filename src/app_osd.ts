@@ -49,6 +49,12 @@ export class AppOSD extends Viewer {
       opacity: 1,
     });
 
+    this.addHandler('canvas-key',event=>{
+        if(['q', 'w', 'e', 'r', 'a', 's', 'd', 'f'].includes(event.originalEvent.key)){
+            event.preventDefaultAction = true;
+        }
+    });
+
     this.world.addHandler('remove-item', event => {
       const item = event.item;
 
