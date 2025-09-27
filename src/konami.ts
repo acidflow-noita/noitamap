@@ -35,7 +35,7 @@ function showMaggotOverlay() {
     maggot.classList.add('maggot');
     maggot.style.left = `${Math.random() * 100}vw`;
     maggot.style.top = `${Math.random() * 100}vh`;
-    const scale = Math.random() * 4 + 0.1;
+    const scale = Math.random() * 2 + 0.1;
     const rotation = Math.random() * 360;
     maggot.style.transform = `scale(${scale}) rotate(${rotation}deg)`;
     overlay.appendChild(maggot);
