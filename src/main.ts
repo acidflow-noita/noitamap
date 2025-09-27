@@ -10,6 +10,7 @@ import { initMouseTracker } from './mouse_tracker';
 import { isRenderer, getStoredRenderer, setStoredRenderer } from './renderer_settings';
 import { createLanguageSelector } from './language-selector';
 import { updateTranslations } from './i18n-dom';
+import { initKonamiCode } from './konami';
 
 // Global reference to unified search for translation updates
 let globalUnifiedSearch: UnifiedSearch | null = null;
@@ -244,4 +245,5 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.location.reload();
     }
   });
+  initKonamiCode();
 });
