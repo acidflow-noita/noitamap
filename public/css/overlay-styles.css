@@ -56,8 +56,8 @@ div:has(> div > .osOverlayPOI) {
 
 .osOverlayPOI {
   overflow: hidden;
-  background-color: #222933;
-  border: 2px solid var(--border-color);
+  background-color: transparent;
+  border: none;
   border-radius: 0.25em;
   line-height: 0;
 
@@ -134,4 +134,8 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup {
 #osContainer.show-spatialAwareness .overlay.spatialAwareness,
 #osContainer .overlay.biomes.show {
   display: block !important;
+}
+
+img[src$="spatial_awareness_special_spot.png"] {
+    transform: scale(0.75);
 }
