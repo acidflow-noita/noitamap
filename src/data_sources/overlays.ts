@@ -8,12 +8,22 @@ import { assertElementById } from '../util';
 import spells from '../data/spells.json';
 import biomes from '../data/biomes.json';
 import { gameTranslator } from '../game-translations/translator';
+import { biomeBoundaries } from '../drawing/biome-boundaries';
+import tilesources from '../data/tilesources.json';
 
 const { Rect, Point } = OpenSeadragon;
 type Rect = InstanceType<typeof Rect>;
 type Point = InstanceType<typeof Point>;
 
-export type TargetOfInterest = PointOfInterest | AreaOfInterest;
+export type PathOfInterest = {
+  overlayType: 'path';
+  maps: string[];
+  path: string;
+  color: string;
+  text: string;
+};
+
+export type TargetOfInterest = PointOfInterest | AreaOfInterest | PathOfInterest;
 
 export type PointOfInterest = {
   overlayType: 'poi';
@@ -38,7 +48,7 @@ export type AreaOfInterest = {
 };
 
 type OSDOverlay = {
-  element: HTMLDivElement;
+  element: HTMLElement;
   location: Rect | Point;
   name?: string;
 };
@@ -126,6 +136,7 @@ const overlayTexts = {
   bosses: pixelPOICoords(bosses),
   orbs: [...chunkAOICoords(orbAreas), ...pixelPOICoords(orbs)],
   spatialAwareness: pixelPOICoords(spatialAwareness),
+  biomeBoundaries: biomeBoundaries,
 };
 
 export const getAllOverlays = (): [OverlayKey, TargetOfInterest[]][] => {
@@ -161,6 +172,76 @@ function createAOI({ text, x, y, width, height }: AreaOfInterest): OSDOverlay {
   el.style.backgroundColor = `hsla(${hue}, 60%, 60%, 0.5)`;
 
   return { element: el, location: new Rect(x, y, width, height), name: text[0] };
+}
+
+function createPathOverlay({ path, color, text }: PathOfInterest): OSDOverlay {
+  // Calculate bounding box from the path coordinates
+  const pathPoints = path.split(/[MLZ]/).filter(p => p.trim() !== '');
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let sumX = 0;
+  let sumY = 0;
+  let count = 0;
+
+  for (const point of pathPoints) {
+    const coords = point.trim().split(' ').map(Number).filter(n => !isNaN(n));
+    for (let i = 0; i < coords.length; i += 2) {
+      if (i + 1 < coords.length) {
+        const x = coords[i];
+        const y = coords[i + 1];
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+        sumX += x;
+        sumY += y;
+        count++;
+      }
+    }
+  }
+
+  const width = maxX - minX;
+  const height = maxY - minY;
+  const centerX = count > 0 ? sumX / count : minX + width / 2;
+  const centerY = count > 0 ? sumY / count : minY + height / 2;
+
+  // Create SVG element
+  const el = document.createElement('div');
+  el.style.pointerEvents = 'none';
+  
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
+  svg.style.width = '100%';
+  svg.style.height = '100%';
+  svg.style.position = 'absolute';
+  svg.style.overflow = 'visible';
+
+  const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  pathEl.setAttribute('d', path);
+  pathEl.style.fill = color;
+  pathEl.style.fillOpacity = '0.5';
+  pathEl.style.stroke = '#000000';
+  pathEl.style.strokeWidth = '50';
+  svg.appendChild(pathEl);
+
+  const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  textEl.textContent = text;
+  textEl.setAttribute('x', centerX.toString());
+  textEl.setAttribute('y', centerY.toString());
+  textEl.setAttribute('dominant-baseline', 'middle');
+  textEl.setAttribute('text-anchor', 'middle');
+  textEl.style.fontSize = '500px';
+  textEl.style.fill = '#ffffff';
+  textEl.style.stroke = '#000000';
+  textEl.style.strokeWidth = '20';
+  textEl.style.paintOrder = 'stroke';
+  svg.appendChild(textEl);
+
+  el.appendChild(svg);
+
+  return { element: el, location: new Rect(minX, minY, width, height) };
 }
 
 /**
@@ -278,12 +359,14 @@ function createPOI(poi: PointOfInterest, overlayType?: OverlayKey): OSDOverlay {
 /**
  * Return an Overlay object based on the type of the input data
  */
-function createOverlay(overlay: PointOfInterest | AreaOfInterest, overlayType?: OverlayKey): OSDOverlay {
+function createOverlay(overlay: TargetOfInterest, overlayType?: OverlayKey): OSDOverlay {
   switch (overlay.overlayType) {
     case 'poi':
       return createPOI(overlay, overlayType);
     case 'aoi':
       return createAOI(overlay);
+    case 'path':
+      return createPathOverlay(overlay);
   }
 }
 
@@ -298,7 +381,7 @@ const biomeOverlays = biomes.flatMap(biomeToAOI).map(aoi => {
 export const createOverlays = (mapName: string): OSDOverlay[] => {
   const overlays: OSDOverlay[] = [];
 
-  type Entries = [OverlayKey, (PointOfInterest | AreaOfInterest)[]];
+  type Entries = [OverlayKey, TargetOfInterest[]];
   for (const [type, overlayDatas] of Object.entries(overlayTexts) as Entries[]) {
     for (const overlayData of overlayDatas) {
       if (!overlayData.maps.includes(mapName)) continue;

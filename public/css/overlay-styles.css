@@ -132,6 +132,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup {
 #osContainer.show-orbAreas .overlay.orbAreas,
 #osContainer.show-orbs .overlay.orbs,
 #osContainer.show-spatialAwareness .overlay.spatialAwareness,
+#osContainer.show-biomeBoundaries .overlay.biomeBoundaries,
 #osContainer .overlay.biomes.show {
   display: block !important;
 }
