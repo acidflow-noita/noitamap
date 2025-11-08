@@ -174,18 +174,50 @@ function createAOI({ text, x, y, width, height }: AreaOfInterest): OSDOverlay {
   return { element: el, location: new Rect(x, y, width, height), name: text[0] };
 }
 
+// Global tooltip element for biome names
+let biomeTooltip: HTMLDivElement | null = null;
+
+function getBiomeTooltip(): HTMLDivElement {
+  if (!biomeTooltip) {
+    biomeTooltip = document.createElement('div');
+    biomeTooltip.id = 'biome-tooltip';
+    biomeTooltip.style.position = 'fixed';
+    biomeTooltip.style.pointerEvents = 'none';
+    biomeTooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.85)';
+    biomeTooltip.style.color = '#ffffff';
+    biomeTooltip.style.padding = '8px 12px';
+    biomeTooltip.style.borderRadius = '4px';
+    biomeTooltip.style.fontSize = '14px';
+    biomeTooltip.style.fontWeight = 'bold';
+    biomeTooltip.style.zIndex = '10000';
+    biomeTooltip.style.display = 'none';
+    biomeTooltip.style.whiteSpace = 'nowrap';
+    biomeTooltip.style.border = '2px solid rgba(255, 255, 255, 0.3)';
+    biomeTooltip.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.5)';
+    document.body.appendChild(biomeTooltip);
+  }
+  return biomeTooltip;
+}
+
 function createPathOverlay({ path, color, text }: PathOfInterest): OSDOverlay {
-  // Calculate bounding box from the path coordinates
-  const pathPoints = path.split(/[MLZ]/).filter(p => p.trim() !== '');
+  // Split the path into individual polygons (separated by M commands)
+  const polygons: string[] = [];
+  const pathCommands = path.split(/(?=M)/); // Split on M but keep M in each part
+  
+  for (const polygon of pathCommands) {
+    if (polygon.trim()) {
+      polygons.push(polygon.trim());
+    }
+  }
+
+  // Calculate bounding box from all coordinates
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
-  let sumX = 0;
-  let sumY = 0;
-  let count = 0;
 
-  for (const point of pathPoints) {
+  const allCoords = path.split(/[MLZ]/).filter(p => p.trim() !== '');
+  for (const point of allCoords) {
     const coords = point.trim().split(' ').map(Number).filter(n => !isNaN(n));
     for (let i = 0; i < coords.length; i += 2) {
       if (i + 1 < coords.length) {
@@ -195,21 +227,18 @@ function createPathOverlay({ path, color, text }: PathOfInterest): OSDOverlay {
         minY = Math.min(minY, y);
         maxX = Math.max(maxX, x);
         maxY = Math.max(maxY, y);
-        sumX += x;
-        sumY += y;
-        count++;
       }
     }
   }
 
   const width = maxX - minX;
   const height = maxY - minY;
-  const centerX = count > 0 ? sumX / count : minX + width / 2;
-  const centerY = count > 0 ? sumY / count : minY + height / 2;
 
-  // Create SVG element
+  // Create container element
   const el = document.createElement('div');
-  el.style.pointerEvents = 'none';
+  el.style.pointerEvents = 'none'; // Container doesn't handle events
+  el.dataset.biomeName = text;
+  el.classList.add('biome-overlay-path');
   
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
@@ -217,29 +246,122 @@ function createPathOverlay({ path, color, text }: PathOfInterest): OSDOverlay {
   svg.style.height = '100%';
   svg.style.position = 'absolute';
   svg.style.overflow = 'visible';
+  svg.style.pointerEvents = 'none'; // SVG itself doesn't block events
 
-  const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  pathEl.setAttribute('d', path);
-  pathEl.style.fill = color;
-  pathEl.style.fillOpacity = '0.5';
-  pathEl.style.stroke = '#000000';
-  pathEl.style.strokeWidth = '50';
-  svg.appendChild(pathEl);
+  const visiblePaths: SVGPathElement[] = [];
 
-  const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  textEl.textContent = text;
-  textEl.setAttribute('x', centerX.toString());
-  textEl.setAttribute('y', centerY.toString());
-  textEl.setAttribute('dominant-baseline', 'middle');
-  textEl.setAttribute('text-anchor', 'middle');
-  textEl.style.fontSize = '500px';
-  textEl.style.fill = '#ffffff';
-  textEl.style.stroke = '#000000';
-  textEl.style.strokeWidth = '20';
-  textEl.style.paintOrder = 'stroke';
-  svg.appendChild(textEl);
+  // Create separate path elements for each polygon
+  for (const polygonPath of polygons) {
+    // Create visible path for this polygon
+    const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pathEl.setAttribute('d', polygonPath);
+    pathEl.style.fill = color;
+    pathEl.style.fillOpacity = '0.3';
+    pathEl.style.stroke = '#000000';
+    pathEl.style.strokeWidth = '50';
+    pathEl.style.transition = 'fill-opacity 0.2s, filter 0.2s';
+    pathEl.style.pointerEvents = 'visiblePainted'; // Only respond to events on visible painted areas
+    pathEl.style.cursor = 'pointer';
+    svg.appendChild(pathEl);
+    visiblePaths.push(pathEl);
+  }
 
   el.appendChild(svg);
+
+  // Load selected state from localStorage
+  const selectedBiomes = JSON.parse(localStorage.getItem('selectedBiomes') || '[]');
+  const isSelected = selectedBiomes.includes(text);
+  if (isSelected) {
+    visiblePaths.forEach(p => p.style.fillOpacity = '0.8');
+    el.dataset.selected = 'true';
+  }
+
+  // Attach event handlers to each polygon path
+  visiblePaths.forEach(pathEl => {
+    // Hover effects
+    pathEl.addEventListener('mouseenter', () => {
+      // Show tooltip
+      const tooltip = getBiomeTooltip();
+      tooltip.textContent = text;
+      tooltip.style.display = 'block';
+      
+      // Increase opacity of ALL paths in this biome group
+      if (el.dataset.selected !== 'true') {
+        visiblePaths.forEach(p => p.style.fillOpacity = '1');
+      }
+      
+      // Dim all other biomes (set fill opacity to 0.3, keep stroke at 0.3)
+      document.querySelectorAll('.biome-overlay-path').forEach((otherEl) => {
+        if (otherEl !== el) {
+          const otherPaths = otherEl.querySelectorAll('path');
+          otherPaths.forEach(p => {
+            (p as SVGPathElement).style.fillOpacity = '0.3';
+            (p as SVGPathElement).style.strokeOpacity = '0.3';
+          });
+        }
+      });
+    });
+
+    pathEl.addEventListener('mouseleave', () => {
+      // Hide tooltip
+      const tooltip = getBiomeTooltip();
+      tooltip.style.display = 'none';
+      
+      // Reset opacity for ALL paths in this biome group
+      if (el.dataset.selected === 'true') {
+        visiblePaths.forEach(p => p.style.fillOpacity = '0.8');
+      } else {
+        visiblePaths.forEach(p => p.style.fillOpacity = '0.3');
+      }
+      
+      // Restore opacity for all other biomes
+      document.querySelectorAll('.biome-overlay-path').forEach((otherEl) => {
+        if (otherEl !== el) {
+          const isOtherSelected = otherEl.getAttribute('data-selected') === 'true';
+          const otherPaths = otherEl.querySelectorAll('path');
+          otherPaths.forEach(p => {
+            (p as SVGPathElement).style.fillOpacity = isOtherSelected ? '0.8' : '0.3';
+            (p as SVGPathElement).style.strokeOpacity = '1';
+          });
+        }
+      });
+    });
+
+    pathEl.addEventListener('mousemove', (e) => {
+      // Update tooltip position to follow cursor
+      const tooltip = getBiomeTooltip();
+      tooltip.style.left = `${e.clientX + 15}px`;
+      tooltip.style.top = `${e.clientY + 15}px`;
+    });
+
+    // Click to toggle selection
+    pathEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      console.log('Biome clicked:', text);
+      const selectedBiomes = JSON.parse(localStorage.getItem('selectedBiomes') || '[]');
+      console.log('Current selected biomes:', selectedBiomes);
+      
+      if (el.dataset.selected === 'true') {
+        // Deselect
+        el.dataset.selected = 'false';
+        visiblePaths.forEach(p => p.style.fillOpacity = '1'); // Hover state
+        const index = selectedBiomes.indexOf(text);
+        if (index > -1) {
+          selectedBiomes.splice(index, 1);
+        }
+      } else {
+        // Select
+        el.dataset.selected = 'true';
+        visiblePaths.forEach(p => p.style.fillOpacity = '0.8');
+        if (!selectedBiomes.includes(text)) {
+          selectedBiomes.push(text);
+        }
+      }
+      
+      localStorage.setItem('selectedBiomes', JSON.stringify(selectedBiomes));
+      console.log('Updated selected biomes:', selectedBiomes);
+    });
+  });
 
   return { element: el, location: new Rect(minX, minY, width, height) };
 }
@@ -381,6 +503,18 @@ const biomeOverlays = biomes.flatMap(biomeToAOI).map(aoi => {
 export const createOverlays = (mapName: string): OSDOverlay[] => {
   const overlays: OSDOverlay[] = [];
 
+  // Define z-index priority for overlay types (lower = behind, higher = in front)
+  const zIndexPriority: Record<string, number> = {
+    'biomeBoundaries': 1,  // Biome boundaries at the back
+    'biomes': 2,           // Biome overlays
+    'orbAreas': 3,         // Area overlays
+    'structures': 10,      // POI overlays in front
+    'items': 10,
+    'bosses': 10,
+    'orbs': 10,
+    'spatialAwareness': 10,
+  };
+
   type Entries = [OverlayKey, TargetOfInterest[]];
   for (const [type, overlayDatas] of Object.entries(overlayTexts) as Entries[]) {
     for (const overlayData of overlayDatas) {
@@ -388,14 +522,31 @@ export const createOverlays = (mapName: string): OSDOverlay[] => {
 
       const overlay = createOverlay(overlayData, type);
       overlay.element.classList.add('overlay', type);
+      
+      // Set z-index based on type
+      const zIndex = zIndexPriority[type] || 5;
+      overlay.element.style.zIndex = String(zIndex);
 
       overlays.push(overlay);
     }
   }
 
-  if (mapName === 'regular-main-branch') overlays.push(...biomeOverlays);
+  if (mapName === 'regular-main-branch') {
+    biomeOverlays.forEach(overlay => {
+      overlay.element.style.zIndex = String(zIndexPriority['biomes'] || 2);
+    });
+    overlays.push(...biomeOverlays);
+  }
 
-  overlays.sort((a, b) => a.location.y - b.location.y);
+  // Sort by z-index first, then by Y coordinate within same z-index
+  overlays.sort((a, b) => {
+    const zIndexA = parseInt(a.element.style.zIndex || '5');
+    const zIndexB = parseInt(b.element.style.zIndex || '5');
+    if (zIndexA !== zIndexB) {
+      return zIndexA - zIndexB;
+    }
+    return a.location.y - b.location.y;
+  });
 
   return overlays;
 };
