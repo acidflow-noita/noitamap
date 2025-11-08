@@ -52,6 +52,8 @@ div:has(> div > .osOverlayPOI) {
   position: relative;
   transform: translate(-50%, -50%);
   --border-color: #47546b;
+  pointer-events: auto;
+  z-index: 10;
 }
 
 .osOverlayPOI {
@@ -124,6 +126,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup {
 
 #osContainer .overlay {
   display: none !important;
+  position: relative; /* Ensure z-index works */
 }
 
 #osContainer.show-structures .overlay.structures,
@@ -132,8 +135,34 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup {
 #osContainer.show-orbAreas .overlay.orbAreas,
 #osContainer.show-orbs .overlay.orbs,
 #osContainer.show-spatialAwareness .overlay.spatialAwareness,
+#osContainer.show-biomeBoundaries .overlay.biomeBoundaries,
 #osContainer .overlay.biomes.show {
   display: block !important;
+}
+
+/* Ensure POI overlays are always on top */
+.overlay.structures,
+.overlay.items,
+.overlay.bosses,
+.overlay.orbs,
+.overlay.spatialAwareness {
+  z-index: 10 !important;
+  pointer-events: auto;
+}
+
+/* Biome boundaries should be behind POIs */
+.overlay.biomeBoundaries {
+  z-index: 1 !important;
+}
+
+/* Biome overlays in the middle */
+.overlay.biomes {
+  z-index: 2 !important;
+}
+
+/* Area overlays */
+.overlay.orbAreas {
+  z-index: 3 !important;
 }
 
 img[src$="spatial_awareness_special_spot.png"] {

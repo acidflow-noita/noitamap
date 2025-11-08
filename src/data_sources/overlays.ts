@@ -8,12 +8,24 @@ import { assertElementById } from '../util';
 import spells from '../data/spells.json';
 import biomes from '../data/biomes.json';
 import { gameTranslator } from '../game-translations/translator';
+import { biomeBoundaries } from '../drawing/biome-boundaries';
+import tilesources from '../data/tilesources.json';
+import i18next from 'i18next';
 
 const { Rect, Point } = OpenSeadragon;
 type Rect = InstanceType<typeof Rect>;
 type Point = InstanceType<typeof Point>;
 
-export type TargetOfInterest = PointOfInterest | AreaOfInterest;
+export type PathOfInterest = {
+  overlayType: 'path';
+  maps: string[];
+  path: string;
+  color: string;
+  text: string;
+  biomeName?: string;
+};
+
+export type TargetOfInterest = PointOfInterest | AreaOfInterest | PathOfInterest;
 
 export type PointOfInterest = {
   overlayType: 'poi';
@@ -38,7 +50,7 @@ export type AreaOfInterest = {
 };
 
 type OSDOverlay = {
-  element: HTMLDivElement;
+  element: HTMLElement;
   location: Rect | Point;
   name?: string;
 };
@@ -126,6 +138,7 @@ const overlayTexts = {
   bosses: pixelPOICoords(bosses),
   orbs: [...chunkAOICoords(orbAreas), ...pixelPOICoords(orbs)],
   spatialAwareness: pixelPOICoords(spatialAwareness),
+  biomeBoundaries: biomeBoundaries,
 };
 
 export const getAllOverlays = (): [OverlayKey, TargetOfInterest[]][] => {
@@ -161,6 +174,177 @@ function createAOI({ text, x, y, width, height }: AreaOfInterest): OSDOverlay {
   el.style.backgroundColor = `hsla(${hue}, 60%, 60%, 0.5)`;
 
   return { element: el, location: new Rect(x, y, width, height), name: text[0] };
+}
+
+// Global tooltip element for biome names
+let biomeTooltip: HTMLDivElement | null = null;
+
+function getBiomeTooltip(): HTMLDivElement {
+  if (!biomeTooltip) {
+    biomeTooltip = document.createElement('div');
+    biomeTooltip.id = 'biome-tooltip';
+    biomeTooltip.style.position = 'fixed';
+    biomeTooltip.style.pointerEvents = 'none';
+    biomeTooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.85)';
+    biomeTooltip.style.color = '#ffffff';
+    biomeTooltip.style.padding = '8px 12px';
+    biomeTooltip.style.borderRadius = '4px';
+    biomeTooltip.style.fontSize = '14px';
+    biomeTooltip.style.fontWeight = 'bold';
+    biomeTooltip.style.zIndex = '10000';
+    biomeTooltip.style.display = 'none';
+    biomeTooltip.style.whiteSpace = 'nowrap';
+    biomeTooltip.style.border = '2px solid rgba(255, 255, 255, 0.3)';
+    biomeTooltip.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.5)';
+    document.body.appendChild(biomeTooltip);
+  }
+  return biomeTooltip;
+}
+
+function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OSDOverlay {
+  // Split the path into individual polygons (separated by M commands)
+  const polygons: string[] = [];
+  const pathCommands = path.split(/(?=M)/); // Split on M but keep M in each part
+  
+  for (const polygon of pathCommands) {
+    if (polygon.trim()) {
+      polygons.push(polygon.trim());
+    }
+  }
+
+  // Calculate bounding box from all coordinates
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  const allCoords = path.split(/[MLZ]/).filter(p => p.trim() !== '');
+  for (const point of allCoords) {
+    const coords = point.trim().split(' ').map(Number).filter(n => !isNaN(n));
+    for (let i = 0; i < coords.length; i += 2) {
+      if (i + 1 < coords.length) {
+        const x = coords[i];
+        const y = coords[i + 1];
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+  }
+
+  const width = maxX - minX;
+  const height = maxY - minY;
+
+  // Create container element
+  const el = document.createElement('div');
+  el.style.pointerEvents = 'none'; // Container doesn't handle events
+  el.dataset.biomeName = text;
+  el.classList.add('biome-overlay-path');
+  
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
+  svg.style.width = '100%';
+  svg.style.height = '100%';
+  svg.style.position = 'absolute';
+  svg.style.overflow = 'visible';
+  svg.style.pointerEvents = 'none'; // SVG itself doesn't block events
+
+  const visiblePaths: SVGPathElement[] = [];
+
+  // Create separate path elements for each polygon
+  for (const polygonPath of polygons) {
+    // Create visible path for this polygon
+    const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pathEl.setAttribute('d', polygonPath);
+    pathEl.style.fill = color;
+    pathEl.style.fillOpacity = '0.3';
+    pathEl.style.stroke = '#000000';
+    pathEl.style.strokeWidth = '50';
+    pathEl.style.transition = 'fill-opacity 0.2s, filter 0.2s';
+    pathEl.style.pointerEvents = 'visiblePainted'; // Only respond to events on visible painted areas
+    pathEl.style.cursor = 'pointer';
+    svg.appendChild(pathEl);
+    visiblePaths.push(pathEl);
+  }
+
+  el.appendChild(svg);
+
+  // Attach event handlers to each polygon path
+  visiblePaths.forEach(pathEl => {
+    pathEl.addEventListener('mouseenter', () => {
+      const tooltip = getBiomeTooltip();
+      
+      // Check if we have a biome name and if it's not empty
+      if (biomeName && biomeName.trim() !== '' && biomeName !== '_EMPTY_') {
+        // biomeName is either already "biome_xxx" or just "xxx"
+        // If it doesn't start with "biome_", prepend it
+        const translationKey = biomeName.startsWith('biome_') ? biomeName : `biome_${biomeName}`;
+        
+        // Try to get translation from gameContent.biomes using the full key
+        let translatedName = i18next.t(`gameContent.biomes.${translationKey}`, { defaultValue: null });
+        
+        // If not found, fall back to just the biome name
+        if (!translatedName) {
+          translatedName = biomeName;
+        }
+        
+        // Format: Translated Name\n(filename)
+        tooltip.innerHTML = `${translatedName}<br><span style="font-family: Inter, sans-serif; font-feature-settings: 'tnum', 'zero', 'cv09', 'cv02', 'cv03', 'cv04'; font-weight: 400; opacity: 0.7;">(${text})</span>`;
+      } else {
+        // No in-game name available
+        const noInGameName = i18next.t('noInGameName');
+        tooltip.innerHTML = `${noInGameName}<br><span style="font-family: Inter, sans-serif; font-feature-settings: 'tnum', 'zero', 'cv09', 'cv02', 'cv03', 'cv04'; font-weight: 400; opacity: 0.7;">(${text})</span>`;
+      }
+      
+      tooltip.style.display = 'block';
+      
+      // Increase fill opacity, keep black stroke
+      visiblePaths.forEach(p => {
+        p.style.fillOpacity = '1';
+      });
+      
+      document.querySelectorAll('.biome-overlay-path').forEach((otherEl) => {
+        if (otherEl !== el) {
+          const otherPaths = otherEl.querySelectorAll('path');
+          otherPaths.forEach(p => {
+            (p as SVGPathElement).style.fillOpacity = '0.3';
+            (p as SVGPathElement).style.strokeOpacity = '0.3';
+          });
+        }
+      });
+    });
+
+    pathEl.addEventListener('mouseleave', () => {
+      const tooltip = getBiomeTooltip();
+      tooltip.style.display = 'none';
+      
+      // Reset to default state
+      visiblePaths.forEach(p => {
+        p.style.fillOpacity = '0.3';
+        p.style.stroke = '#000000';
+        p.style.strokeOpacity = '1';
+      });
+      
+      document.querySelectorAll('.biome-overlay-path').forEach((otherEl) => {
+        if (otherEl !== el) {
+          const otherPaths = otherEl.querySelectorAll('path');
+          otherPaths.forEach(p => {
+            (p as SVGPathElement).style.fillOpacity = '0.3';
+            (p as SVGPathElement).style.strokeOpacity = '1';
+          });
+        }
+      });
+    });
+
+    pathEl.addEventListener('mousemove', (e) => {
+      const tooltip = getBiomeTooltip();
+      tooltip.style.left = `${e.clientX + 15}px`;
+      tooltip.style.top = `${e.clientY + 15}px`;
+    });
+  });
+
+  return { element: el, location: new Rect(minX, minY, width, height) };
 }
 
 /**
@@ -278,12 +462,14 @@ function createPOI(poi: PointOfInterest, overlayType?: OverlayKey): OSDOverlay {
 /**
  * Return an Overlay object based on the type of the input data
  */
-function createOverlay(overlay: PointOfInterest | AreaOfInterest, overlayType?: OverlayKey): OSDOverlay {
+function createOverlay(overlay: TargetOfInterest, overlayType?: OverlayKey): OSDOverlay {
   switch (overlay.overlayType) {
     case 'poi':
       return createPOI(overlay, overlayType);
     case 'aoi':
       return createAOI(overlay);
+    case 'path':
+      return createPathOverlay(overlay);
   }
 }
 
@@ -298,21 +484,50 @@ const biomeOverlays = biomes.flatMap(biomeToAOI).map(aoi => {
 export const createOverlays = (mapName: string): OSDOverlay[] => {
   const overlays: OSDOverlay[] = [];
 
-  type Entries = [OverlayKey, (PointOfInterest | AreaOfInterest)[]];
+  // Define z-index priority for overlay types (lower = behind, higher = in front)
+  const zIndexPriority: Record<string, number> = {
+    'biomeBoundaries': 1,  // Biome boundaries at the back
+    'biomes': 2,           // Biome overlays
+    'orbAreas': 3,         // Area overlays
+    'structures': 10,      // POI overlays in front
+    'items': 10,
+    'bosses': 10,
+    'orbs': 10,
+    'spatialAwareness': 10,
+  };
+
+  type Entries = [OverlayKey, TargetOfInterest[]];
   for (const [type, overlayDatas] of Object.entries(overlayTexts) as Entries[]) {
     for (const overlayData of overlayDatas) {
       if (!overlayData.maps.includes(mapName)) continue;
 
       const overlay = createOverlay(overlayData, type);
       overlay.element.classList.add('overlay', type);
+      
+      // Set z-index based on type
+      const zIndex = zIndexPriority[type] || 5;
+      overlay.element.style.zIndex = String(zIndex);
 
       overlays.push(overlay);
     }
   }
 
-  if (mapName === 'regular-main-branch') overlays.push(...biomeOverlays);
+  if (mapName === 'regular-main-branch') {
+    biomeOverlays.forEach(overlay => {
+      overlay.element.style.zIndex = String(zIndexPriority['biomes'] || 2);
+    });
+    overlays.push(...biomeOverlays);
+  }
 
-  overlays.sort((a, b) => a.location.y - b.location.y);
+  // Sort by z-index first, then by Y coordinate within same z-index
+  overlays.sort((a, b) => {
+    const zIndexA = parseInt(a.element.style.zIndex || '5');
+    const zIndexB = parseInt(b.element.style.zIndex || '5');
+    if (zIndexA !== zIndexB) {
+      return zIndexA - zIndexB;
+    }
+    return a.location.y - b.location.y;
+  });
 
   return overlays;
 };
