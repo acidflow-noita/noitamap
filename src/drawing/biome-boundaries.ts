@@ -36,7 +36,7 @@ function transformMapPathToGameCoords(mapPath: string): string {
 
 export const biomeBoundaries: PathOfInterest[] = biomeBoundariesData.biomes.map(biome => ({
   overlayType: 'path' as const,
-  maps: ['regular-main-branch'],
+  maps: ['regular-main-branch', 'regular-beta'],
   path: transformMapPathToGameCoords(biome.svg_map_path),
   color: biome.biome_color,
   text: biome.filename,
