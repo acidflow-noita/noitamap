@@ -61,6 +61,14 @@
     "title": "Pallot",
     "content": "Vaihda pallojen peitto"
   },
+  "spatialAwareness": {
+    "title": "Avaruudellinen tietoisuus",
+    "content": "Vaihda avaruudellisen tietoisuuden peitto"
+  },
+  "biomeBoundaries": {
+    "title": "Biomirajat",
+    "content": "Vaihda biomirajojen peitto"
+  },
   "renderer": {
     "canvas": {
       "title": "Canvas-renderöinti",

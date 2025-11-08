@@ -61,6 +61,14 @@
     "title": "Sfere",
     "content": "Attiva/disattiva overlay sfere"
   },
+  "spatialAwareness": {
+    "title": "Consapevolezza spaziale",
+    "content": "Attiva/disattiva overlay consapevolezza spaziale"
+  },
+  "biomeBoundaries": {
+    "title": "Confini dei biomi",
+    "content": "Attiva/disattiva overlay confini dei biomi"
+  },
   "renderer": {
     "canvas": {
       "title": "Rendering Canvas",

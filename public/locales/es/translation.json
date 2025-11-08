@@ -61,6 +61,14 @@
     "title": "Orbes",
     "content": "Alternar superposición de orbes"
   },
+  "spatialAwareness": {
+    "title": "Conciencia espacial",
+    "content": "Alternar superposición de conciencia espacial"
+  },
+  "biomeBoundaries": {
+    "title": "Límites de biomas",
+    "content": "Alternar superposición de límites de biomas"
+  },
   "renderer": {
     "canvas": {
       "title": "Renderizado Canvas",

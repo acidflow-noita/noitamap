@@ -61,6 +61,14 @@
     "title": "Kugeln",
     "content": "Kugel-Overlay umschalten"
   },
+  "spatialAwareness": {
+    "title": "Räumliches Bewusstsein",
+    "content": "Räumliches Bewusstsein-Overlay umschalten"
+  },
+  "biomeBoundaries": {
+    "title": "Biomgrenzen",
+    "content": "Biomgrenzen-Overlay umschalten"
+  },
   "renderer": {
     "canvas": {
       "title": "Canvas-Rendering",

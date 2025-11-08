@@ -65,6 +65,10 @@
     "title": "Spatial Awareness",
     "content": "Toggle spatial awareness perk overlay"
   },
+  "biomeBoundaries": {
+    "title": "Biome Boundaries",
+    "content": "Toggle biome boundaries overlay"
+  },
   "renderer": {
     "canvas": {
       "title": "Canvas Rendering",

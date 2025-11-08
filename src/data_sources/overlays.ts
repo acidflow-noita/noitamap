@@ -268,29 +268,15 @@ function createPathOverlay({ path, color, text }: PathOfInterest): OSDOverlay {
 
   el.appendChild(svg);
 
-  // Load selected state from localStorage
-  const selectedBiomes = JSON.parse(localStorage.getItem('selectedBiomes') || '[]');
-  const isSelected = selectedBiomes.includes(text);
-  if (isSelected) {
-    visiblePaths.forEach(p => p.style.fillOpacity = '0.8');
-    el.dataset.selected = 'true';
-  }
-
   // Attach event handlers to each polygon path
   visiblePaths.forEach(pathEl => {
-    // Hover effects
     pathEl.addEventListener('mouseenter', () => {
-      // Show tooltip
       const tooltip = getBiomeTooltip();
       tooltip.textContent = text;
       tooltip.style.display = 'block';
       
-      // Increase opacity of ALL paths in this biome group
-      if (el.dataset.selected !== 'true') {
-        visiblePaths.forEach(p => p.style.fillOpacity = '1');
-      }
+      visiblePaths.forEach(p => p.style.fillOpacity = '1');
       
-      // Dim all other biomes (set fill opacity to 0.3, keep stroke at 0.3)
       document.querySelectorAll('.biome-overlay-path').forEach((otherEl) => {
         if (otherEl !== el) {
           const otherPaths = otherEl.querySelectorAll('path');
@@ -303,24 +289,16 @@ function createPathOverlay({ path, color, text }: PathOfInterest): OSDOverlay {
     });
 
     pathEl.addEventListener('mouseleave', () => {
-      // Hide tooltip
       const tooltip = getBiomeTooltip();
       tooltip.style.display = 'none';
       
-      // Reset opacity for ALL paths in this biome group
-      if (el.dataset.selected === 'true') {
-        visiblePaths.forEach(p => p.style.fillOpacity = '0.8');
-      } else {
-        visiblePaths.forEach(p => p.style.fillOpacity = '0.3');
-      }
+      visiblePaths.forEach(p => p.style.fillOpacity = '0.3');
       
-      // Restore opacity for all other biomes
       document.querySelectorAll('.biome-overlay-path').forEach((otherEl) => {
         if (otherEl !== el) {
-          const isOtherSelected = otherEl.getAttribute('data-selected') === 'true';
           const otherPaths = otherEl.querySelectorAll('path');
           otherPaths.forEach(p => {
-            (p as SVGPathElement).style.fillOpacity = isOtherSelected ? '0.8' : '0.3';
+            (p as SVGPathElement).style.fillOpacity = '0.3';
             (p as SVGPathElement).style.strokeOpacity = '1';
           });
         }
@@ -328,38 +306,9 @@ function createPathOverlay({ path, color, text }: PathOfInterest): OSDOverlay {
     });
 
     pathEl.addEventListener('mousemove', (e) => {
-      // Update tooltip position to follow cursor
       const tooltip = getBiomeTooltip();
       tooltip.style.left = `${e.clientX + 15}px`;
       tooltip.style.top = `${e.clientY + 15}px`;
-    });
-
-    // Click to toggle selection
-    pathEl.addEventListener('click', (e) => {
-      e.stopPropagation();
-      console.log('Biome clicked:', text);
-      const selectedBiomes = JSON.parse(localStorage.getItem('selectedBiomes') || '[]');
-      console.log('Current selected biomes:', selectedBiomes);
-      
-      if (el.dataset.selected === 'true') {
-        // Deselect
-        el.dataset.selected = 'false';
-        visiblePaths.forEach(p => p.style.fillOpacity = '1'); // Hover state
-        const index = selectedBiomes.indexOf(text);
-        if (index > -1) {
-          selectedBiomes.splice(index, 1);
-        }
-      } else {
-        // Select
-        el.dataset.selected = 'true';
-        visiblePaths.forEach(p => p.style.fillOpacity = '0.8');
-        if (!selectedBiomes.includes(text)) {
-          selectedBiomes.push(text);
-        }
-      }
-      
-      localStorage.setItem('selectedBiomes', JSON.stringify(selectedBiomes));
-      console.log('Updated selected biomes:', selectedBiomes);
     });
   });
 

@@ -61,6 +61,14 @@
     "title": "オーブ",
     "content": "オーブオーバーレイを切り替え"
   },
+  "spatialAwareness": {
+    "title": "空間認識",
+    "content": "空間認識オーバーレイを切り替え"
+  },
+  "biomeBoundaries": {
+    "title": "バイオーム境界",
+    "content": "バイオーム境界オーバーレイを切り替え"
+  },
   "renderer": {
     "canvas": {
       "title": "Canvas レンダリング",

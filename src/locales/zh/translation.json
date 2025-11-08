@@ -61,6 +61,14 @@
     "title": "法球",
     "content": "切换法球覆盖层"
   },
+  "spatialAwareness": {
+    "title": "空间感知",
+    "content": "切换空间感知覆盖层"
+  },
+  "biomeBoundaries": {
+    "title": "生物群系边界",
+    "content": "切换生物群系边界覆盖层"
+  },
   "renderer": {
     "canvas": {
       "title": "Canvas 渲染",

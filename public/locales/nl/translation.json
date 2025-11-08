@@ -61,6 +61,14 @@
     "title": "Orbs",
     "content": "Schakel orbs overlay"
   },
+  "spatialAwareness": {
+    "title": "Ruimtelijk bewustzijn",
+    "content": "Schakel ruimtelijk bewustzijn overlay"
+  },
+  "biomeBoundaries": {
+    "title": "Bioomgrenzen",
+    "content": "Schakel bioomgrenzen overlay"
+  },
   "renderer": {
     "canvas": {
       "title": "Canvas Rendering",

@@ -61,6 +61,14 @@
     "title": "Koule",
     "content": "Přepnout vrstvu koulí"
   },
+  "spatialAwareness": {
+    "title": "Prostorové povědomí",
+    "content": "Přepnout vrstvu prostorového povědomí"
+  },
+  "biomeBoundaries": {
+    "title": "Hranice biomů",
+    "content": "Přepnout vrstvu hranic biomů"
+  },
   "renderer": {
     "canvas": {
       "title": "Canvas vykreslování",

@@ -61,6 +61,14 @@
     "title": "Klot",
     "content": "Växla klot overlay"
   },
+  "spatialAwareness": {
+    "title": "Rumslig medvetenhet",
+    "content": "Växla rumslig medvetenhet overlay"
+  },
+  "biomeBoundaries": {
+    "title": "Biomgränser",
+    "content": "Växla biomgränser overlay"
+  },
   "renderer": {
     "canvas": {
       "title": "Canvas-rendering",

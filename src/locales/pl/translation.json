@@ -61,6 +61,14 @@
     "title": "Kule",
     "content": "Przełącz nakładkę kul"
   },
+  "spatialAwareness": {
+    "title": "Świadomość przestrzenna",
+    "content": "Przełącz nakładkę świadomości przestrzennej"
+  },
+  "biomeBoundaries": {
+    "title": "Granice biomów",
+    "content": "Przełącz nakładkę granic biomów"
+  },
   "renderer": {
     "canvas": {
       "title": "Renderowanie Canvas",
