@@ -88,7 +88,7 @@ function main() {
     Object.entries(LANGUAGE_MAP).forEach(([langCode, csvLang]) => {
         console.log(`\nProcessing language: ${langCode} (${csvLang})`);
 
-        const translationFilePath = path.join(__dirname, `../public/locales/${langCode}/translation.json`);
+        const translationFilePath = path.join(__dirname, `../src/locales/${langCode}/translation.json`);
 
         if (!fs.existsSync(translationFilePath)) {
             console.log(`⚠️  Translation file not found: ${langCode}/translation.json`);
