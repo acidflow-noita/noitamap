@@ -339,8 +339,9 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
 
     pathEl.addEventListener('mousemove', (e) => {
       const tooltip = getBiomeTooltip();
-      tooltip.style.left = `${e.clientX + 15}px`;
-      tooltip.style.top = `${e.clientY + 15}px`;
+      // Position tooltip to the right and above cursor to avoid coordinate text
+      tooltip.style.left = `${e.clientX + 20}px`;
+      tooltip.style.top = `${e.clientY - 60}px`;
     });
   });
 
