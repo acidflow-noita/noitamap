@@ -69,6 +69,7 @@
     "title": "Granice biomów",
     "content": "Przełącz nakładkę granic biomów"
   },
+  "noInGameName": "Brak nazwy w grze",
   "renderer": {
     "canvas": {
       "title": "Renderowanie Canvas",

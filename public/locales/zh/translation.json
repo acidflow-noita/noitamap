@@ -69,6 +69,7 @@
     "title": "生物群系边界",
     "content": "切换生物群系边界覆盖层"
   },
+  "noInGameName": "游戏中无名称",
   "renderer": {
     "canvas": {
       "title": "Canvas 渲染",

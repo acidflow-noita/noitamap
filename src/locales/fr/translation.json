@@ -69,6 +69,7 @@
     "title": "Limites des biomes",
     "content": "Basculer la superposition des limites des biomes"
   },
+  "noInGameName": "Pas de nom dans le jeu",
   "renderer": {
     "canvas": {
       "title": "Rendu Canvas",

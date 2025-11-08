@@ -69,6 +69,7 @@
     "title": "Biomgränser",
     "content": "Växla biomgränser overlay"
   },
+  "noInGameName": "Inget namn i spelet",
   "renderer": {
     "canvas": {
       "title": "Canvas-rendering",

@@ -69,6 +69,7 @@
     "title": "バイオーム境界",
     "content": "バイオーム境界オーバーレイを切り替え"
   },
+  "noInGameName": "ゲーム内名なし",
   "renderer": {
     "canvas": {
       "title": "Canvas レンダリング",

@@ -69,6 +69,7 @@
     "title": "Biomirajat",
     "content": "Vaihda biomirajojen peitto"
   },
+  "noInGameName": "Ei pelin sisäistä nimeä",
   "renderer": {
     "canvas": {
       "title": "Canvas-renderöinti",

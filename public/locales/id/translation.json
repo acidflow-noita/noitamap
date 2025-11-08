@@ -69,6 +69,7 @@
     "title": "Batas bioma",
     "content": "Nyalakan petunjuk batas bioma"
   },
+  "noInGameName": "Tidak ada nama dalam game",
   "renderer": {
     "canvas": {
       "title": "Rendering Kanvas",

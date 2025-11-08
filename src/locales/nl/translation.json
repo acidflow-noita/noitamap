@@ -69,6 +69,7 @@
     "title": "Bioomgrenzen",
     "content": "Schakel bioomgrenzen overlay"
   },
+  "noInGameName": "Geen naam in het spel",
   "renderer": {
     "canvas": {
       "title": "Canvas Rendering",

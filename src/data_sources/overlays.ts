@@ -10,6 +10,7 @@ import biomes from '../data/biomes.json';
 import { gameTranslator } from '../game-translations/translator';
 import { biomeBoundaries } from '../drawing/biome-boundaries';
 import tilesources from '../data/tilesources.json';
+import i18next from 'i18next';
 
 const { Rect, Point } = OpenSeadragon;
 type Rect = InstanceType<typeof Rect>;
@@ -21,6 +22,7 @@ export type PathOfInterest = {
   path: string;
   color: string;
   text: string;
+  biomeName?: string;
 };
 
 export type TargetOfInterest = PointOfInterest | AreaOfInterest | PathOfInterest;
@@ -199,7 +201,7 @@ function getBiomeTooltip(): HTMLDivElement {
   return biomeTooltip;
 }
 
-function createPathOverlay({ path, color, text }: PathOfInterest): OSDOverlay {
+function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OSDOverlay {
   // Split the path into individual polygons (separated by M commands)
   const polygons: string[] = [];
   const pathCommands = path.split(/(?=M)/); // Split on M but keep M in each part
@@ -272,10 +274,35 @@ function createPathOverlay({ path, color, text }: PathOfInterest): OSDOverlay {
   visiblePaths.forEach(pathEl => {
     pathEl.addEventListener('mouseenter', () => {
       const tooltip = getBiomeTooltip();
-      tooltip.textContent = text;
+      
+      // Check if we have a biome name and if it's not empty
+      if (biomeName && biomeName.trim() !== '' && biomeName !== '_EMPTY_') {
+        // biomeName is either already "biome_xxx" or just "xxx"
+        // If it doesn't start with "biome_", prepend it
+        const translationKey = biomeName.startsWith('biome_') ? biomeName : `biome_${biomeName}`;
+        
+        // Try to get translation from gameContent.biomes using the full key
+        let translatedName = i18next.t(`gameContent.biomes.${translationKey}`, { defaultValue: null });
+        
+        // If not found, fall back to just the biome name
+        if (!translatedName) {
+          translatedName = biomeName;
+        }
+        
+        // Format: Translated Name\n(filename)
+        tooltip.innerHTML = `${translatedName}<br><span style="font-family: Inter, sans-serif; font-feature-settings: 'tnum', 'zero', 'cv09', 'cv02', 'cv03', 'cv04'; font-weight: 400; opacity: 0.7;">(${text})</span>`;
+      } else {
+        // No in-game name available
+        const noInGameName = i18next.t('noInGameName');
+        tooltip.innerHTML = `${noInGameName}<br><span style="font-family: Inter, sans-serif; font-feature-settings: 'tnum', 'zero', 'cv09', 'cv02', 'cv03', 'cv04'; font-weight: 400; opacity: 0.7;">(${text})</span>`;
+      }
+      
       tooltip.style.display = 'block';
       
-      visiblePaths.forEach(p => p.style.fillOpacity = '1');
+      // Increase fill opacity, keep black stroke
+      visiblePaths.forEach(p => {
+        p.style.fillOpacity = '1';
+      });
       
       document.querySelectorAll('.biome-overlay-path').forEach((otherEl) => {
         if (otherEl !== el) {
@@ -292,7 +319,12 @@ function createPathOverlay({ path, color, text }: PathOfInterest): OSDOverlay {
       const tooltip = getBiomeTooltip();
       tooltip.style.display = 'none';
       
-      visiblePaths.forEach(p => p.style.fillOpacity = '0.3');
+      // Reset to default state
+      visiblePaths.forEach(p => {
+        p.style.fillOpacity = '0.3';
+        p.style.stroke = '#000000';
+        p.style.strokeOpacity = '1';
+      });
       
       document.querySelectorAll('.biome-overlay-path').forEach((otherEl) => {
         if (otherEl !== el) {

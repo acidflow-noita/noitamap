@@ -69,6 +69,7 @@
     "title": "Biome Boundaries",
     "content": "Toggle biome boundaries overlay"
   },
+  "noInGameName": "No in-game name",
   "renderer": {
     "canvas": {
       "title": "Canvas Rendering",

@@ -69,6 +69,7 @@
     "title": "Межі біомів",
     "content": "Перемкнути шар меж біомів"
   },
+  "noInGameName": "Немає назви в грі",
   "renderer": {
     "canvas": {
       "title": "Canvas рендеринг",

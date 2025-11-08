@@ -69,6 +69,7 @@
     "title": "Hranice biomů",
     "content": "Přepnout vrstvu hranic biomů"
   },
+  "noInGameName": "Žádný název ve hře",
   "renderer": {
     "canvas": {
       "title": "Canvas vykreslování",

@@ -34,10 +34,17 @@ function transformMapPathToGameCoords(mapPath: string): string {
     .join(' ');
 }
 
-export const biomeBoundaries: PathOfInterest[] = biomeBoundariesData.biomes.map(biome => ({
-  overlayType: 'path' as const,
-  maps: ['regular-main-branch', 'regular-beta'],
-  path: transformMapPathToGameCoords(biome.svg_map_path),
-  color: biome.biome_color,
-  text: biome.filename,
-}));
+export const biomeBoundaries: PathOfInterest[] = biomeBoundariesData.biomes.map(biome => {
+  // The biome.name field contains the translation key
+  // It's either already "biome_xxx" (for special biomes) or just "xxx" (for regular biomes from XML)
+  const biomeName = biome.name || '';
+  
+  return {
+    overlayType: 'path' as const,
+    maps: ['regular-main-branch', 'regular-beta'],
+    path: transformMapPathToGameCoords(biome.svg_map_path),
+    color: biome.biome_color,
+    text: biome.filename,
+    biomeName: biomeName,
+  };
+});

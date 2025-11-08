@@ -69,6 +69,7 @@
     "title": "Границы биомов",
     "content": "Переключить слой границ биомов"
   },
+  "noInGameName": "Нет названия в игре",
   "renderer": {
     "canvas": {
       "title": "Canvas рендеринг",

@@ -69,6 +69,7 @@
     "title": "Limites de biomas",
     "content": "Alternar sobreposição de limites de biomas"
   },
+  "noInGameName": "Sem nome no jogo",
   "renderer": {
     "canvas": {
       "title": "Renderização Canvas",

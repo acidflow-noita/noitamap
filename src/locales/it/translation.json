@@ -69,6 +69,7 @@
     "title": "Confini dei biomi",
     "content": "Attiva/disattiva overlay confini dei biomi"
   },
+  "noInGameName": "Nessun nome nel gioco",
   "renderer": {
     "canvas": {
       "title": "Rendering Canvas",
