@@ -301,7 +301,7 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
       
       // Increase fill opacity, keep black stroke
       visiblePaths.forEach(p => {
-        p.style.fillOpacity = '1';
+        p.style.fillOpacity = '0.75';
       });
       
       document.querySelectorAll('.biome-overlay-path').forEach((otherEl) => {
