@@ -4,7 +4,13 @@
     "aliases": ["Rock Boss", "Stone Boss", "Sky Boss"],
     "x": 7375,
     "y": -4539,
-    "maps": ["regular-main-branch", "regular-beta", "apotheosis-beta-branch", "nightmare-main-branch"],
+    "maps": [
+      "regular-main-branch",
+      "new-game-plus-main-branch",
+      "regular-beta",
+      "apotheosis-beta-branch",
+      "nightmare-main-branch"
+    ],
     "url": "https://noitamap.com/?map=regular&x=7375&y=-4539&zoom=823",
     "icon": "assets/icons/bosses/kivi.png",
     "wiki": "https://noita.wiki.gg/wiki/Kivi"
