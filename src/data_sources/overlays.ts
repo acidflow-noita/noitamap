@@ -11,6 +11,7 @@ import { gameTranslator } from '../game-translations/translator';
 import { biomeBoundaries } from '../drawing/biome-boundaries';
 import tilesources from '../data/tilesources.json';
 import i18next from 'i18next';
+import hiddenMessages from '../data/hidden_messages.json';
 
 const { Rect, Point } = OpenSeadragon;
 type Rect = InstanceType<typeof Rect>;
@@ -37,6 +38,7 @@ export type PointOfInterest = {
   text?: string;
   x: number;
   y: number;
+  fileName?: string;
 };
 
 export type AreaOfInterest = {
@@ -139,6 +141,7 @@ const overlayTexts = {
   orbs: [...chunkAOICoords(orbAreas), ...pixelPOICoords(orbs)],
   spatialAwareness: pixelPOICoords(spatialAwareness),
   biomeBoundaries: biomeBoundaries,
+  hiddenMessages: pixelPOICoords(hiddenMessages),
 };
 
 export const getAllOverlays = (): [OverlayKey, TargetOfInterest[]][] => {
@@ -351,7 +354,7 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
 /**
  * Return the DOM element for the popup on a POI
  */
-function createOverlayPopup({ name, aliases, text, wiki }: PointOfInterest, overlayType?: OverlayKey) {
+function createOverlayPopup({ name, aliases, text, wiki, fileName }: PointOfInterest, overlayType?: OverlayKey) {
   const popup = document.createElement('div');
   popup.className = 'osOverlayPopup';
 
@@ -393,6 +396,15 @@ function createOverlayPopup({ name, aliases, text, wiki }: PointOfInterest, over
     const aliasesElement = document.createElement('h3');
     aliasesElement.textContent = `(${aliases.map(alias => `"${alias}"`).join(', ')})`;
     popup.appendChild(aliasesElement);
+  }
+
+  if (fileName && overlayType === 'hiddenMessages') {
+    const imgElement = document.createElement('img');
+    imgElement.src = fileName;
+    imgElement.style.maxWidth = '100%';
+    imgElement.style.display = 'block';
+    imgElement.style.marginBottom = '0.5em';
+    popup.appendChild(imgElement);
   }
 
   if (text !== undefined) {
@@ -495,6 +507,7 @@ export const createOverlays = (mapName: string): OSDOverlay[] => {
     'bosses': 10,
     'orbs': 10,
     'spatialAwareness': 10,
+    'hiddenMessages': 10,
   };
 
   type Entries = [OverlayKey, TargetOfInterest[]];
