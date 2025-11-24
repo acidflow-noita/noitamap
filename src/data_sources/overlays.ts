@@ -398,13 +398,44 @@ function createOverlayPopup({ name, aliases, text, wiki, fileName }: PointOfInte
     popup.appendChild(aliasesElement);
   }
 
-  if (fileName && overlayType === 'hiddenMessages') {
-    const imgElement = document.createElement('img');
-    imgElement.src = fileName;
-    imgElement.style.maxWidth = '100%';
-    imgElement.style.display = 'block';
-    imgElement.style.marginBottom = '0.5em';
-    popup.appendChild(imgElement);
+  if ((overlayType as string) === 'hiddenMessages') {
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.gap = '16px';
+    container.style.alignItems = 'flex-start';
+
+    if (fileName) {
+      const imgElement = document.createElement('img');
+      imgElement.src = fileName;
+      imgElement.style.width = '20vw';
+      imgElement.style.display = 'block';
+      imgElement.classList.add('pixelated-image');
+      container.appendChild(imgElement);
+    }
+
+    const textContainer = document.createElement('div');
+    textContainer.style.width = '30vw';
+
+    if (text !== undefined) {
+      const textElement = document.createElement('p');
+      textElement.textContent = text;
+      textContainer.appendChild(textElement);
+    }
+
+    if (wiki !== undefined) {
+      const wikiLink = document.createElement('a');
+      wikiLink.href = wiki;
+      wikiLink.target = '_blank';
+      wikiLink.textContent = 'Wiki';
+      wikiLink.classList.add('wikiLink');
+      wikiLink.style.display = 'inline-block';
+      wikiLink.style.marginTop = '8px';
+      textContainer.appendChild(wikiLink);
+    }
+
+    container.appendChild(textContainer);
+    popup.appendChild(container);
+    return popup;
   }
 
   if (text !== undefined) {
