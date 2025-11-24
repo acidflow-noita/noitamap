@@ -69,6 +69,10 @@
     "title": "バイオーム境界",
     "content": "バイオーム境界オーバーレイを切り替え"
   },
+  "hiddenMessages": {
+    "title": "隠しメッセージ",
+    "content": "隠しメッセージオーバーレイを切り替え"
+  },
   "noInGameName": "ゲーム内名なし",
   "renderer": {
     "canvas": {

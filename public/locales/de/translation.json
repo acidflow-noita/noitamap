@@ -69,6 +69,10 @@
     "title": "Biomgrenzen",
     "content": "Biomgrenzen-Overlay umschalten"
   },
+  "hiddenMessages": {
+    "title": "Versteckte Nachrichten",
+    "content": "Versteckte Nachrichten-Overlay umschalten"
+  },
   "noInGameName": "Kein Name im Spiel",
   "renderer": {
     "canvas": {
