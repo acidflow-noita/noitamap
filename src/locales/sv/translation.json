@@ -69,6 +69,10 @@
     "title": "Biomgränser",
     "content": "Växla biomgränser overlay"
   },
+  "hiddenMessages": {
+    "title": "Dolda meddelanden",
+    "content": "Växla dolda meddelanden overlay"
+  },
   "noInGameName": "Inget namn i spelet",
   "renderer": {
     "canvas": {

@@ -69,6 +69,10 @@
     "title": "Batas bioma",
     "content": "Nyalakan petunjuk batas bioma"
   },
+  "hiddenMessages": {
+    "title": "Pesan tersembunyi",
+    "content": "Nyalakan petunjuk pesan tersembunyi"
+  },
   "noInGameName": "Tidak ada nama dalam game",
   "renderer": {
     "canvas": {

@@ -69,6 +69,10 @@
     "title": "Limites de biomas",
     "content": "Alternar sobreposição de limites de biomas"
   },
+  "hiddenMessages": {
+    "title": "Mensagens ocultas",
+    "content": "Alternar sobreposição de mensagens ocultas"
+  },
   "noInGameName": "Sem nome no jogo",
   "renderer": {
     "canvas": {
