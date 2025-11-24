@@ -69,6 +69,10 @@
     "title": "Bioomgrenzen",
     "content": "Schakel bioomgrenzen overlay"
   },
+  "hiddenMessages": {
+    "title": "Verborgen berichten",
+    "content": "Schakel verborgen berichten overlay"
+  },
   "noInGameName": "Geen naam in het spel",
   "renderer": {
     "canvas": {

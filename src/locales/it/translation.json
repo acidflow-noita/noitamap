@@ -69,6 +69,10 @@
     "title": "Confini dei biomi",
     "content": "Attiva/disattiva overlay confini dei biomi"
   },
+  "hiddenMessages": {
+    "title": "Messaggi nascosti",
+    "content": "Attiva/disattiva overlay messaggi nascosti"
+  },
   "noInGameName": "Nessun nome nel gioco",
   "renderer": {
     "canvas": {

@@ -69,6 +69,10 @@
     "title": "Granice biomów",
     "content": "Przełącz nakładkę granic biomów"
   },
+  "hiddenMessages": {
+    "title": "Ukryte wiadomości",
+    "content": "Przełącz nakładkę ukrytych wiadomości"
+  },
   "noInGameName": "Brak nazwy w grze",
   "renderer": {
     "canvas": {

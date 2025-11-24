@@ -583,3 +583,11 @@ body.toggle-hidden div.osOverlayHighlight {
 .maggot {
   position: absolute;
 }
+
+.icon-hiddenMessages {
+  background-image: url(../assets/icons/overlay-toggles/icon-hidden-messages.webp);
+  background-size: cover;
+  display: inline-block;
+  height: 16px;
+  width: 16px;
+}

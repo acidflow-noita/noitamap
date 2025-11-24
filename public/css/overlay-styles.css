@@ -81,7 +81,8 @@ div:has(> div > .osOverlayPOI) {
   background-color: #222933;
   left: 50%;
   bottom: 100%;
-  min-width: 10em;
+  min-width: 50vw;
+  max-width: 90vw;
   transition: 0.1s ease-out;
   box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.5);
 }
@@ -135,6 +136,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup {
 #osContainer.show-orbAreas .overlay.orbAreas,
 #osContainer.show-orbs .overlay.orbs,
 #osContainer.show-spatialAwareness .overlay.spatialAwareness,
+#osContainer.show-hiddenMessages .overlay.hiddenMessages,
 #osContainer.show-biomeBoundaries .overlay.biomeBoundaries,
 #osContainer .overlay.biomes.show {
   display: block !important;
@@ -145,7 +147,8 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup {
 .overlay.items,
 .overlay.bosses,
 .overlay.orbs,
-.overlay.spatialAwareness {
+.overlay.spatialAwareness,
+.overlay.hiddenMessages {
   z-index: 10 !important;
   pointer-events: auto;
 }

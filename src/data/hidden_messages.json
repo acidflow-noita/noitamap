@@ -1,0 +1,194 @@
+[
+  {
+    "name": "Mountain Text secret message",
+    "aliases": [
+      "Secret Message 9"
+    ],
+    "x": 783,
+    "y": -430,
+    "maps": [
+      "regular-main-branch"
+    ],
+    "url": "https://noitamap.com/?map=regular&x=783&y=-430&zoom=812",
+    "icon": "assets/icons/hidden_messages/hidden_message.png",
+    "wiki": "https://noita.wiki.gg/wiki/Game_Lore#Secret_Messages",
+    "fileName": "assets/icons/hidden_messages/messages/mountain_text.png",
+    "text": "Devoted seeker after true wisdom know this we are watching you."
+  },
+  {
+    "name": "Holy Mountain 1 secret message",
+    "aliases": [
+      "Secret Message 7"
+    ],
+    "x": 1883,
+    "y": 1336,
+    "maps": [
+      "regular-main-branch"
+    ],
+    "url": "https://noitamap.com/?map=regular&x=1883&y=1336&zoom=812",
+    "icon": "assets/icons/hidden_messages/hidden_message.png",
+    "wiki": "https://noita.wiki.gg/wiki/Game_Lore#Secret_Messages",
+    "fileName": "assets/icons/hidden_messages/messages/holy_mountain_1.png",
+    "text": "Why? Why did you look here? What answers are you trying to find in here?"
+  },
+  {
+    "name": "Fungal Caverns 1 secret message",
+    "aliases": [
+      "Secret Message 6"
+    ],
+    "x": 3502,
+    "y": 2663,
+    "maps": [
+      "regular-main-branch"
+    ],
+    "url": "https://noitamap.com/?map=regular&x=3502&y=2663&zoom=812",
+    "icon": "assets/icons/hidden_messages/hidden_message.png",
+    "wiki": "https://noita.wiki.gg/wiki/Game_Lore#Secret_Messages",
+    "fileName": "assets/icons/hidden_messages/messages/fungal_caverns_1.png",
+    "text": "We know what you are after. But it is not here, Knower to Be."
+  },
+  {
+    "name": "Under The Wand Cave secret message",
+    "aliases": [
+      "Secret Message 10"
+    ],
+    "x": -4326,
+    "y": 4501,
+    "maps": [
+      "regular-main-branch"
+    ],
+    "url": "https://noitamap.com/?map=regular&x=-4326&y=4501&zoom=812",
+    "icon": "assets/icons/hidden_messages/hidden_message.png",
+    "wiki": "https://noita.wiki.gg/wiki/Game_Lore#Secret_Messages",
+    "fileName": "assets/icons/hidden_messages/messages/under_the_wand_cave.png",
+    "text": "Why are you doing this? Why are you reading this? What do you think you will find in here? The answer to the treasure?"
+  },
+  {
+    "name": "Jungle Right secret message",
+    "aliases": [
+      "Secret Message 8"
+    ],
+    "x": 2929,
+    "y": 6628,
+    "maps": [
+      "regular-main-branch"
+    ],
+    "url": "https://noitamap.com/?map=regular&x=2929&y=6628&zoom=812",
+    "icon": "assets/icons/hidden_messages/hidden_message.png",
+    "wiki": "https://noita.wiki.gg/wiki/Game_Lore#Secret_Messages",
+    "fileName": "assets/icons/hidden_messages/messages/jungle_right.png",
+    "text": "Why must you go destroying everything? Why? For glory? For your precious god of gods. Is it really worth all this? Is it? Is it really?"
+  },
+  {
+    "name": "Vault Inside secret message",
+    "aliases": [
+      "Secret Message 11"
+    ],
+    "x": -1998,
+    "y": 8464,
+    "maps": [
+      "regular-main-branch"
+    ],
+    "url": "https://noitamap.com/?map=regular&x=-1998&y=8464&zoom=812",
+    "icon": "assets/icons/hidden_messages/hidden_message.png",
+    "wiki": "https://noita.wiki.gg/wiki/Game_Lore#Secret_Messages",
+    "fileName": "assets/icons/hidden_messages/messages/vault_inside.png",
+    "text": "What do you worship? You don't even know it. You think you know the answer, but you don't. You think the treasure will satisfy you, but it won't. You don't even know what your [sic] seeking. You think you do, but you don't."
+  },
+  {
+    "name": "Crypt Left secret message",
+    "aliases": [
+      "Secret Message 12"
+    ],
+    "x": -3967,
+    "y": 10551,
+    "maps": [
+      "regular-main-branch"
+    ],
+    "url": "https://noitamap.com/?map=regular&x=-3967&y=10551&zoom=812",
+    "icon": "assets/icons/hidden_messages/hidden_message.png",
+    "wiki": "https://noita.wiki.gg/wiki/Game_Lore#Secret_Messages",
+    "fileName": "assets/icons/hidden_messages/messages/crypt_left.png",
+    "text": "You gave your free will to the true god. Why else would be here? Why else would be reading this? We wanted you to come here. We wanted you to read this! You think you have free will? We made you come here. We made you read this."
+  },
+  {
+    "name": "Boss Arena secret message",
+    "aliases": [
+      "Secret Message 1"
+    ],
+    "x": 3588,
+    "y": 12703,
+    "maps": [
+      "regular-main-branch"
+    ],
+    "url": "https://noitamap.com/?map=regular&x=3588&y=12703&zoom=812",
+    "icon": "assets/icons/hidden_messages/hidden_message.png",
+    "wiki": "https://noita.wiki.gg/wiki/Game_Lore#Secret_Messages",
+    "fileName": "assets/icons/hidden_messages/messages/boss_arena.png",
+    "text": "Who do you worship? Who is your god? Your real god? You don't even know it. You don't even understand it. You understand so little that we pity you... poor little thing. You've come so far, yet you have so far to go. Or maybe you understand more than we think? You are reading this? Do you even know who your god is? Your true god? The god of gods, the one true god? You think we're the false god, but we created your god and your god of gods. Now who is the real god? If we've created your god and your god of gods and you and your free will and this world and all the worlds. All of it. We allowed you to have free will. You think you have free will. You poor thing. You don't. You think we are the monsters. We're not. Who is the real monster? Your god is, your god of gods is the real monster. Your true god is the real monster."
+  },
+  {
+    "name": "Boss Arena Under secret message",
+    "aliases": [
+      "Secret Message 2"
+    ],
+    "x": 3089,
+    "y": 13720,
+    "maps": [
+      "regular-main-branch"
+    ],
+    "url": "https://noitamap.com/?map=regular&x=3089&y=13720&zoom=812",
+    "icon": "assets/icons/hidden_messages/hidden_message.png",
+    "wiki": "https://noita.wiki.gg/wiki/Game_Lore#Secret_Messages",
+    "fileName": "assets/icons/hidden_messages/messages/boss_arena_under.png",
+    "text": "You come here seeking answers? You think we have all the answers? We don't not. You think we are so different. We are the same. We both serve the same god. The god of many gods. The god we've created. You think you're destroying us. You are not. You are helping us."
+  },
+  {
+    "name": "Boss Arena Under Right secret message",
+    "aliases": [
+      "Secret Message 3"
+    ],
+    "x": 4328,
+    "y": 15097,
+    "maps": [
+      "regular-main-branch"
+    ],
+    "url": "https://noitamap.com/?map=regular&x=4328&y=15097&zoom=812",
+    "icon": "assets/icons/hidden_messages/hidden_message.png",
+    "wiki": "https://noita.wiki.gg/wiki/Game_Lore#Secret_Messages",
+    "fileName": "assets/icons/hidden_messages/messages/boss_arena_under_right.png",
+    "text": "You think you can destroy us? You will not destroy us. We gave you your free will. We made this place. And not just this place, all the places, all the dimensions, all the free wills. You think you've come to steal from us? No, we stole from you. We stole your time and your money and your sanity."
+  },
+  {
+    "name": "Completely Random secret message",
+    "aliases": [
+      "Secret Message 4"
+    ],
+    "x": -5300,
+    "y": 21898,
+    "maps": [
+      "regular-main-branch"
+    ],
+    "url": "https://noitamap.com/?map=regular&x=-5300&y=21898&zoom=812",
+    "icon": "assets/icons/hidden_messages/hidden_message.png",
+    "wiki": "https://noita.wiki.gg/wiki/Game_Lore#Secret_Messages",
+    "fileName": "assets/icons/hidden_messages/messages/completely_random.png",
+    "text": "This is very clever of you. Very clever. We're impressed with you, Knower to Be."
+  },
+  {
+    "name": "Completely Random 2 secret message",
+    "aliases": [
+      "Secret Message 5"
+    ],
+    "x": 4376,
+    "y": 26975,
+    "maps": [
+      "regular-main-branch"
+    ],
+    "url": "https://noitamap.com/?map=regular&x=4376&y=26975&zoom=812",
+    "icon": "assets/icons/hidden_messages/hidden_message.png",
+    "wiki": "https://noita.wiki.gg/wiki/Game_Lore#Secret_Messages",
+    "fileName": "assets/icons/hidden_messages/messages/completely_random_2.png",
+    "text": "While we're impressed, we must ask you this is it really worth transcribing these? Do you really expect us the reveal the real secret? We can tell you this  it is possible but even we don't know how."
+  }
+]

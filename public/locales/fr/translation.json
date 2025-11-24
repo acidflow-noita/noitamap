@@ -69,6 +69,10 @@
     "title": "Limites des biomes",
     "content": "Basculer la superposition des limites des biomes"
   },
+  "hiddenMessages": {
+    "title": "Messages cachés",
+    "content": "Basculer la superposition des messages cachés"
+  },
   "noInGameName": "Pas de nom dans le jeu",
   "renderer": {
     "canvas": {

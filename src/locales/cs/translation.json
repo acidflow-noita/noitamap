@@ -69,6 +69,10 @@
     "title": "Hranice biomů",
     "content": "Přepnout vrstvu hranic biomů"
   },
+  "hiddenMessages": {
+    "title": "Skryté zprávy",
+    "content": "Přepnout vrstvu skrytých zpráv"
+  },
   "noInGameName": "Žádný název ve hře",
   "renderer": {
     "canvas": {

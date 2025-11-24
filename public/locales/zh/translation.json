@@ -69,6 +69,10 @@
     "title": "生物群系边界",
     "content": "切换生物群系边界覆盖层"
   },
+  "hiddenMessages": {
+    "title": "隐藏消息",
+    "content": "切换隐藏消息覆盖层"
+  },
   "noInGameName": "游戏中无名称",
   "renderer": {
     "canvas": {
