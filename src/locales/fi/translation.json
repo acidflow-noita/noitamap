@@ -69,6 +69,10 @@
     "title": "Biomirajat",
     "content": "Vaihda biomirajojen peitto"
   },
+  "hiddenMessages": {
+    "title": "Piilotetut viestit",
+    "content": "Vaihda piilotettujen viestien peitto"
+  },
   "noInGameName": "Ei pelin sisäistä nimeä",
   "renderer": {
     "canvas": {
