@@ -56,6 +56,10 @@ export const searchOverlays = (mapName: MapName, query: string): TargetOfInteres
 
     const originalData = overlays.get(key)!;
 
+    if (originalData.overlayType === 'path') {
+      return [];
+    }
+
     // Apply translations at search time using the processed translation files
     let displayName = originalData.name;
 
