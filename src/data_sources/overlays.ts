@@ -73,12 +73,12 @@ export type Biome = {
     spellShops?: number[];
     holyMountain?: number[];
   };
-  location: {
+  locations: {
     x: number;
     y: number;
     width: number;
     height: number;
-  };
+  }[];
 };
 
 const CHUNK_SIZE = 512;
@@ -106,9 +106,10 @@ const pixelAOICoords = mapAOICoords(1);
 const pixelPOICoords = mapPOICoords(1);
 
 function biomeToAOI(biome: Biome): AreaOfInterest[] {
-  const { x, y, width, height } = biome.location;
-  const areas: AreaOfInterest[] = [
-    {
+  const areas: AreaOfInterest[] = [];
+  for (const location of biome.locations) {
+    const { x, y, width, height } = location;
+    areas.push({
       overlayType: 'aoi',
       maps: ['regular-main-branch'],
       text: [biome.name],
@@ -116,19 +117,19 @@ function biomeToAOI(biome: Biome): AreaOfInterest[] {
       y,
       width,
       height,
-    },
-  ];
-
-  if (biome.spellTiers.holyMountain) {
-    areas.push({
-      overlayType: 'aoi',
-      maps: ['regular-main-branch'],
-      text: [`${biome.name} - Holy Mountain`],
-      x,
-      y: y + height,
-      width,
-      height: 1,
     });
+
+    if (biome.spellTiers.holyMountain) {
+      areas.push({
+        overlayType: 'aoi',
+        maps: ['regular-main-branch'],
+        text: [`${biome.name} - Holy Mountain`],
+        x,
+        y: y + height,
+        width,
+        height: 1,
+      });
+    }
   }
 
   return chunkAOICoords(areas);
