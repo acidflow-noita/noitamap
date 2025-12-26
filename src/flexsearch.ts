@@ -32,6 +32,9 @@ const overlays: Map<FlexSearchId, TargetOfInterest> = new Map();
 
 for (const [type, overlayDatas] of getAllOverlays()) {
   for (const [idx, data] of overlayDatas.entries()) {
+    // Skip path overlays - they shouldn't appear in search results
+    if (data.overlayType === 'path') continue;
+
     // Since we want to be able to search all kinds of things, we need to namespace
     // the array index (id) by its overlay type to keep everything unique
     const id = `${type}:${idx}`;
