@@ -12,7 +12,7 @@
 }
 
 .search-input::-moz-clear-button {
- display: none;
+  display: none;
 }
 
 #unifiedSearchResultsOverlay {
@@ -28,6 +28,49 @@
   display: none;
   min-width: 400px;
   max-width: 500px;
+}
+
+#unifiedSearchFilterBox {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-bottom: 1px solid var(--bs-border-color);
+  background: #343a40;
+  user-select: none;
+}
+
+#unifiedSearchFilterBox label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  max-height: 24px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition:
+    opacity 0.2s,
+    background 0.2s;
+  overflow: hidden;
+}
+
+#unifiedSearchFilterBox label:hover {
+  opacity: 1;
+  background: rgba(255 255 255 / 0.1);
+}
+
+#unifiedSearchFilterBox label:has(input:checked) {
+  opacity: 1;
+  background: rgba(255 255 255 / 0.2);
+}
+
+#unifiedSearchFilterBox input {
+  display: none;
+}
+
+#unifiedSearchFilterBox img {
+  width: 24px;
+  aspect-ratio: 1;
 }
 
 #unifiedSearchResults {

@@ -48,7 +48,7 @@ for (const [type, overlayDatas] of getAllOverlays()) {
   }
 }
 
-export const searchOverlays = (mapName: MapName, query: string): TargetOfInterest[] => {
+export const searchOverlays = (mapName: MapName, query: string, filters: Set<string>): TargetOfInterest[] => {
   // do the search
   const found = index.search(query, { tag: mapName }).flatMap(v => v.result);
   // deduplicate the ids we get back
@@ -57,13 +57,14 @@ export const searchOverlays = (mapName: MapName, query: string): TargetOfInteres
   return [...ids.values()].flatMap(key => {
     if (!overlays.has(key)) return [];
 
+    // Determine overlay type from the key (format: "type:index")
+    const overlayType = key.split(':')[0] as 'bosses' | 'items' | 'structures' | 'orbs';
+    if (filters.size > 0 && !filters.has(overlayType)) return [];
+
     const originalData = overlays.get(key)!;
 
     // Apply translations at search time using the processed translation files
     let displayName = originalData.name;
-
-    // Determine overlay type from the key (format: "type:index")
-    const overlayType = key.split(':')[0] as 'bosses' | 'items' | 'structures' | 'orbs';
 
     switch (overlayType) {
       case 'bosses':
