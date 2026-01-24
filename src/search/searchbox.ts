@@ -95,7 +95,6 @@ export class SearchBox extends EventEmitter2 {
     searchInput.classList.add('form-control');
     searchInput.id = 'unified-search-input';
     searchInput.type = 'search';
-    searchInput.autofocus = true;
     searchInput.placeholder = 'Search… e.g. Kolmi';
     searchInput.ariaLabel = 'Search';
 
