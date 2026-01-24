@@ -27,9 +27,11 @@ export interface UnifiedSearch {
 
 export class UnifiedSearch extends EventEmitter2 {
   private lastSearchText: string = '';
+  private lastSearchFilters: Set<string> = new Set();
 
   private form: HTMLFormElement;
   private searchInput: HTMLInputElement;
+  private activeFilters: Set<string> = new Set();
   private searchResults: UnifiedSearchResults;
 
   public currentMap: MapName;
@@ -86,6 +88,19 @@ export class UnifiedSearch extends EventEmitter2 {
     this.searchResults.on('blur', () => {
       this.searchInput.focus();
     });
+
+    for (const filterCheckbox of document.querySelectorAll<HTMLInputElement>(
+      '#unifiedSearchFilterBox input[type="checkbox"]'
+    )) {
+      filterCheckbox.addEventListener('change', () => {
+        if (filterCheckbox.checked) {
+          this.activeFilters.add(filterCheckbox.value);
+        } else {
+          this.activeFilters.delete(filterCheckbox.value);
+        }
+        this.updateSearchResults();
+      });
+    }
   }
 
   setSearchValueWithoutTriggering(value: string) {
@@ -104,8 +119,9 @@ export class UnifiedSearch extends EventEmitter2 {
 
   private updateSearchResults() {
     const searchText = this.searchInput.value;
-    if (this.lastSearchText === searchText) return;
+    if (this.lastSearchText === searchText && this.lastSearchFilters === this.activeFilters) return;
     this.lastSearchText = searchText;
+    this.lastSearchFilters = new Set(this.activeFilters);
 
     if (searchText === '') {
       resetBiomeOverlays();
@@ -114,42 +130,46 @@ export class UnifiedSearch extends EventEmitter2 {
     }
 
     // Search for map overlays (these will be translated by the overlay search function)
-    const mapResults = searchOverlays(this.currentMap, searchText);
-
-    // Search for spells with translation support
-    const spellResults = spells
-      .filter(spell => {
-        const translatedName = gameTranslator.translateSpell(spell.name);
-        const originalName = spell.name.toLowerCase();
-        const translatedNameLower = translatedName.toLowerCase();
-        const searchLower = searchText.toLowerCase();
-
-        return (
-          originalName.includes(searchLower) ||
-          translatedNameLower.includes(searchLower) ||
-          spell.id.toLowerCase().includes(searchLower)
-        );
-      })
-      .map(spell => {
-        const translatedName = gameTranslator.translateSpell(spell.name);
-        const currentLang = i18next.language;
-
-        // Create display text with English fallback for non-English languages
-        let spellDisplayName = translatedName;
-        if (currentLang !== 'en' && translatedName !== spell.name) {
-          spellDisplayName = `${translatedName} (${spell.name})`;
-        }
-
-        return {
-          type: 'spell' as const,
-          spell,
-          displayName: translatedName,
-          displayText: `${i18next.t('spell_prefix', 'Spell')}: ${spellDisplayName} (${i18next.t('tiers_prefix', 'Tiers')}: ${Object.keys(spell.spawnProbabilities).join(', ')})`,
-        };
-      });
+    const mapResults = searchOverlays(this.currentMap, searchText, this.activeFilters);
 
     // Combine results, prioritizing map results first
-    const combinedResults = [...mapResults, ...spellResults];
+    const combinedResults: any[] = [...mapResults];
+
+    if (this.activeFilters.has('spells') || this.activeFilters.size === 0) {
+      // Search for spells with translation support
+      const spellResults = spells
+        .filter(spell => {
+          const translatedName = gameTranslator.translateSpell(spell.name);
+          const originalName = spell.name.toLowerCase();
+          const translatedNameLower = translatedName.toLowerCase();
+          const searchLower = searchText.toLowerCase();
+
+          return (
+            originalName.includes(searchLower) ||
+            translatedNameLower.includes(searchLower) ||
+            spell.id.toLowerCase().includes(searchLower)
+          );
+        })
+        .map(spell => {
+          const translatedName = gameTranslator.translateSpell(spell.name);
+          const currentLang = i18next.language;
+
+          // Create display text with English fallback for non-English languages
+          let spellDisplayName = translatedName;
+          if (currentLang !== 'en' && translatedName !== spell.name) {
+            spellDisplayName = `${translatedName} (${spell.name})`;
+          }
+
+          return {
+            type: 'spell' as const,
+            spell,
+            displayName: translatedName,
+            displayText: `${i18next.t('spell_prefix', 'Spell')}: ${spellDisplayName} (${i18next.t('tiers_prefix', 'Tiers')}: ${Object.keys(spell.spawnProbabilities).join(', ')})`,
+          };
+        });
+
+      combinedResults.push(...spellResults);
+    }
 
     this.searchResults.setResults(combinedResults);
   }
@@ -173,6 +193,36 @@ export class UnifiedSearch extends EventEmitter2 {
     // Type assertion to satisfy linter
     const overlayDiv = searchResultsOverlay as HTMLDivElement;
 
+    const filterBox = document.createElement('div');
+    filterBox.id = 'unifiedSearchFilterBox';
+
+    const filters = [
+      { type: 'spells', iconSrc: 'assets/icons/spells/light_bullet.png' },
+      { type: 'structures', iconSrc: 'assets/icons/overlay-toggles/icon-structures.svg' },
+      { type: 'bosses', iconSrc: 'assets/icons/overlay-toggles/icon-bosses.webp' },
+      { type: 'items', iconSrc: 'assets/icons/overlay-toggles/icon-items.webp' },
+      { type: 'orbs', iconSrc: 'assets/icons/overlay-toggles/icon-orbs.webp' },
+      { type: 'spatialAwareness', iconSrc: 'assets/icons/overlay-toggles/icon-spatial-awareness.webp' },
+      { type: 'hiddenMessages', iconSrc: 'assets/icons/overlay-toggles/icon-hidden-messages.webp' },
+    ];
+
+    for (const filter of filters) {
+      const filterLabel = document.createElement('label');
+      filterLabel.tabIndex = 0;
+      const filterCheckbox = document.createElement('input');
+      filterCheckbox.type = 'checkbox';
+      filterCheckbox.value = filter.type;
+      filterLabel.appendChild(filterCheckbox);
+      const filterIcon = document.createElement('img');
+      filterIcon.src = filter.iconSrc;
+      filterIcon.alt = '';
+      filterIcon.classList.add('pixelated-image');
+      filterIcon.draggable = false;
+      filterLabel.appendChild(filterIcon);
+      filterBox.appendChild(filterLabel);
+    }
+    overlayDiv.appendChild(filterBox);
+
     const searchResultsUL = document.createElement('ul');
     searchResultsUL.id = 'unifiedSearchResults';
     overlayDiv.appendChild(searchResultsUL);
@@ -188,16 +238,14 @@ export class UnifiedSearch extends EventEmitter2 {
     let isOverlayVisible = false;
 
     searchInput.addEventListener('focus', () => {
-      if (searchInput.value.trim() !== '') {
-        positionOverlay();
-        overlayDiv.style.display = 'block';
-        isOverlayVisible = true;
-      }
+      positionOverlay();
+      overlayDiv.style.display = 'block';
+      isOverlayVisible = true;
     });
 
     const hideOverlay = () => {
       setTimeout(() => {
-        if (!searchResultsUL.matches(':focus-within') && document.activeElement !== searchInput) {
+        if (!overlayDiv.matches(':focus-within') && document.activeElement !== searchInput) {
           overlayDiv.style.display = 'none';
           isOverlayVisible = false;
         }
@@ -228,9 +276,6 @@ export class UnifiedSearch extends EventEmitter2 {
         positionOverlay();
         overlayDiv.style.display = 'block';
         isOverlayVisible = true;
-      } else {
-        overlayDiv.style.display = 'none';
-        isOverlayVisible = false;
       }
     };
 
