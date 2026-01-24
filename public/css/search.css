@@ -7,7 +7,8 @@
   -webkit-appearance: none;
   height: 1em;
   width: 1em;
-  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23777'><path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/></svg>") center/cover no-repeat;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23777'><path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/></svg>")
+    center/cover no-repeat;
   cursor: pointer;
 }
 
@@ -56,12 +57,12 @@
 
 #unifiedSearchFilterBox label:hover {
   opacity: 1;
-  background: rgba(255 255 255 / 0.1);
+  background: #f8f9fa70;
 }
 
 #unifiedSearchFilterBox label:has(input:checked) {
   opacity: 1;
-  background: rgba(255 255 255 / 0.2);
+  background: #f8f9fa;
 }
 
 #unifiedSearchFilterBox input {
