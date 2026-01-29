@@ -37,7 +37,8 @@
     "latest": "Neueste",
     "mod": "Mod",
     "betaBranch": "β Zweig",
-    "special": "Spezial"
+    "special": "Spezial",
+    "patchDateTooltip": "Patch-Datum, an dem diese Karte aufgenommen wurde"
   },
   "availableMaps": "Verfügbare Karten",
   "donate": "Spenden",
@@ -715,5 +716,92 @@
     "orbAreas": {},
     "overlaysRegular": {},
     "overlaysNewGamePlus": {}
+  },
+  "auth": {
+    "signIn": "Anmelden",
+    "signedInAs": "Angemeldet als",
+    "follower": "Follower",
+    "subscriber": "Abonnent",
+    "signOut": "Abmelden"
+  },
+  "loading": {
+    "maps": "Karten werden geladen...",
+    "languages": "Sprachen werden geladen..."
+  },
+  "drawing": {
+    "title": "Zeichenwerkzeuge",
+    "close": "Seitenleiste schließen",
+    "tools": {
+      "label": "Werkzeuge",
+      "move": "Verschieben/Auswählen",
+      "freehand": "Freihand",
+      "line": "Linie",
+      "arrow": "Pfeil",
+      "rectangle": "Rechteck",
+      "circle": "Kreis",
+      "ellipse": "Ellipse",
+      "polygon": "Polygon",
+      "point": "Punkt"
+    },
+    "color": {
+      "label": "Farbe",
+      "choose": "Farbe wählen",
+      "white": "Weiß",
+      "red": "Rot",
+      "orange": "Orange",
+      "yellow": "Gelb",
+      "green": "Grün",
+      "cyan": "Cyan",
+      "blue": "Blau",
+      "violet": "Violett"
+    },
+    "stroke": {
+      "label": "Strichstärke (gilt für alle Formen gleichzeitig)"
+    },
+    "actions": {
+      "undo": "Rückgängig",
+      "undoTitle": "Rückgängig (Strg+Z)",
+      "redo": "Wiederholen",
+      "redoTitle": "Wiederholen (Strg+Umschalt+Z)",
+      "delete": "Löschen",
+      "deleteTitle": "Ausgewählte Form löschen (Entf-Taste)",
+      "showHide": "Ein-/Ausblenden",
+      "showHideTitle": "Zeichnung ein-/ausblenden",
+      "save": "Speichern",
+      "saveTitle": "Zeichnung speichern",
+      "new": "Neu",
+      "newTitle": "Neue Zeichnung beginnen",
+      "download": "Bild herunterladen",
+      "downloadTitle": "Zeichnung als Bild herunterladen",
+      "exportJson": "JSON exportieren",
+      "exportJsonTitle": "Formen als JSON exportieren"
+    },
+    "savedDrawings": {
+      "label": "Gespeicherte Zeichnungen",
+      "empty": "Noch keine gespeicherten Zeichnungen",
+      "shapes": "Formen",
+      "deleteTitle": "Zeichnung löschen",
+      "deleteConfirm": "Diese Zeichnung löschen?",
+      "defaultName": "Zeichnung",
+      "sharedName": "Geteilte Zeichnung"
+    },
+    "auth": {
+      "subscriberOnly": "Zeichnen ist für Abonnenten von Wuotes Twitch-Kanal verfügbar",
+      "signInPrompt": "Melde dich mit Twitch an, um die Zeichenwerkzeuge zu nutzen",
+      "signInButton": "Mit Twitch anmelden",
+      "greeting": "Hallo, {{username}}!",
+      "subscriberFeature": "Zeichnen ist eine Abonnenten-Funktion",
+      "subscribePrompt": "Abonniere Wuotes Twitch-Kanal, um die Zeichenwerkzeuge freizuschalten",
+      "subscribeButton": "Auf Twitch abonnieren",
+      "signOut": "Abmelden"
+    },
+    "warning": {
+      "title": "Die Zeichnung wird komplex.",
+      "message": "Freihandlinien verbrauchen die meisten Daten. Um beim Teilen volle Qualität zu behalten, verwende weniger Freihandlinien oder wechsle zu einfachen Formen (Linien, Rechtecke, Kreise). Andernfalls werden Kurven in geteilten Links weniger glatt dargestellt. Die Screenshots zeigen alle Formen in maximaler Qualität, keine Sorge."
+    },
+    "toggle": {
+      "title": "Zeichenmodus",
+      "content": "Zeichenwerkzeuge zum Beschriften der Karte umschalten"
+    }
   }
 }

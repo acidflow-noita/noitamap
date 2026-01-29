@@ -1,7 +1,14 @@
 import i18next, { SUPPORTED_LANGUAGES } from './i18n';
 import { App } from './app';
-import { parseURL, updateURL } from './data_sources/url';
-import { asOverlayKey, showOverlay, selectSpell } from './data_sources/overlays';
+import {
+  parseURL,
+  updateURL,
+  getEnabledOverlays,
+  updateURLWithOverlays,
+  updateURLWithDrawing,
+  updateURLWithSidebar,
+} from './data_sources/url';
+import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from './data_sources/overlays';
 import { UnifiedSearch } from './search/unifiedsearch';
 import { asMapName } from './data_sources/tile_data';
 import { addEventListenerForId, assertElementById, debounce } from './util';
@@ -11,9 +18,37 @@ import { isRenderer, getStoredRenderer, setStoredRenderer } from './renderer_set
 import { createLanguageSelector } from './language-selector';
 import { updateTranslations } from './i18n-dom';
 import { initKonamiCode } from './konami';
+import { AuthUI } from './auth/auth-ui';
+import { DrawingSidebar } from './drawing/sidebar';
+import { createDrawingManager, DrawingManager } from './drawing/doodle-integration';
+import { DrawingSession } from './drawing/storage';
+import { decodeShapesFromUrl, encodeShapesWithInfo } from './drawing/url-encoder';
+import { captureScreenshot } from './drawing/screenshot';
 
 // Global reference to unified search for translation updates
 let globalUnifiedSearch: UnifiedSearch | null = null;
+
+// Global references for drawing feature
+let globalDrawingManager: DrawingManager | null = null;
+let globalDrawingSession: DrawingSession | null = null;
+let globalDrawingSidebar: DrawingSidebar | null = null;
+
+// Dev console commands (only on dev.noitamap.com, localhost, or file://)
+const isDev = window.location.hostname === 'dev.noitamap.com'
+  || window.location.hostname === 'localhost'
+  || window.location.protocol === 'file:';
+if (isDev) {
+  (window as any).noitamap = {
+    enableDrawing: () => {
+      localStorage.setItem('noitamap-dev-drawing', '1');
+      console.log('Drawing dev mode enabled. Refresh and open the sidebar.');
+    },
+    disableDrawing: () => {
+      localStorage.removeItem('noitamap-dev-drawing');
+      console.log('Drawing dev mode disabled. Refresh to see changes.');
+    },
+  };
+}
 
 // Export function to refresh search translations
 export const refreshSearchTranslations = () => {
@@ -72,14 +107,173 @@ document.addEventListener('DOMContentLoaded', async () => {
   const storedRenderer = getStoredRenderer();
   rendererForm.elements['renderer'].value = storedRenderer;
 
+  // Parse URL state including overlays and drawing
+  const urlState = parseURL();
+
   const app = await App.create({
     mountTo: osdRootElement,
     overlayButtons: overlayButtonsElement,
-    initialState: parseURL(),
+    initialState: urlState,
     useWebGL: storedRenderer === 'webgl',
   });
 
   const initialMapName = app.getMap();
+
+  // Apply overlays from URL
+  if (urlState.overlays && urlState.overlays.length > 0) {
+    for (const overlayKey of urlState.overlays) {
+      const toggler = document.querySelector(
+        `input.overlayToggler[data-overlay-key="${overlayKey}"]`
+      ) as HTMLInputElement | null;
+      if (toggler && !toggler.disabled) {
+        toggler.checked = true;
+        showOverlay(overlayKey, true);
+      }
+    }
+  }
+
+  // Initialize auth UI in navbar (before the donate button)
+  const authContainer = document.createElement('div');
+  authContainer.id = 'auth-container';
+  const donoButton = document.querySelector('.bg-glow');
+  if (donoButton && donoButton.parentElement) {
+    donoButton.parentElement.insertBefore(authContainer, donoButton);
+  }
+  new AuthUI(authContainer);
+
+  // Initialize drawing feature
+  let drawingManager: DrawingManager | null = null;
+  let drawingSession: DrawingSession | null = null;
+  let drawingSidebar: DrawingSidebar | null = null;
+
+  try {
+    // Create drawing session first (needed for the callback)
+    drawingSession = new DrawingSession(initialMapName, {
+      onSave: drawing => {
+        // Encode shapes and update URL when auto-saved
+        if (!drawing) return;
+        const result = encodeShapesWithInfo(drawing.shapes);
+        if (result) {
+          updateURLWithDrawing(result.encoded);
+          // Warn user if drawing was significantly simplified for URL
+          if (result.simplified) {
+            window.dispatchEvent(new CustomEvent('drawing-simplified'));
+          }
+        }
+      },
+    });
+    globalDrawingSession = drawingSession;
+
+    // Create drawing manager with shape change callback for auto-save
+    drawingManager = await createDrawingManager(app.osd, {
+      onShapeChange: () => {
+        if (!drawingManager || !drawingSession) return;
+        const shapes = drawingManager.getShapes();
+        const viewport = app.osd.viewport;
+        const center = viewport.getCenter();
+        const zoom = viewport.getZoom();
+        drawingSession.updateShapes(shapes, {
+          x: center.x,
+          y: center.y,
+          zoom: zoom,
+        });
+      },
+    });
+    globalDrawingManager = drawingManager;
+
+    // Get sidebar container
+    const sidebarContainer = document.getElementById('drawing-sidebar-container');
+    if (sidebarContainer) {
+      // Create draw toggle button first (using btn-check pattern like overlay buttons)
+      const drawToggleWrapper = document.createElement('div');
+      drawToggleWrapper.className = 'btn-group me-2';
+      drawToggleWrapper.innerHTML = `
+        <input type="checkbox" class="btn-check" id="drawToggleBtn" autocomplete="off">
+        <label class="icon-button btn btn-sm btn-outline-light text-nowrap" for="drawToggleBtn"
+          data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover focus"
+          data-i18n-title="drawing.toggle.title" data-bs-title="${i18next.t('drawing.toggle.title')}"
+          data-i18n-content="drawing.toggle.content" data-bs-content="${i18next.t('drawing.toggle.content')}">
+          <i class="bi bi-brush"></i>
+        </label>
+      `;
+
+      // Insert before the auth container
+      const authCont = document.getElementById('auth-container');
+      if (authCont && authCont.parentElement) {
+        authCont.parentElement.insertBefore(drawToggleWrapper, authCont);
+      }
+
+      const drawToggleCheckbox = drawToggleWrapper.querySelector('#drawToggleBtn') as HTMLInputElement;
+      const drawToggleLabel = drawToggleWrapper.querySelector('label') as HTMLLabelElement;
+
+      // Initialize popover for the label
+      new bootstrap.Popover(drawToggleLabel);
+
+      // Initialize sidebar
+      drawingSidebar = new DrawingSidebar(sidebarContainer, {
+        drawingManager,
+        session: drawingSession,
+        onScreenshot: async () => {
+          const shapes = drawingManager?.getShapes() ?? [];
+          const strokeWidth = drawingManager?.getStrokeWidth() ?? 5;
+          // Get viewport info for coordinate transformation
+          const viewport = app.osd.viewport;
+          const containerSize = viewport.getContainerSize();
+          // Create a conversion function using OpenSeadragon's coordinate system
+          const worldToPixel = (x: number, y: number) => {
+            const point = viewport.viewportToViewerElementCoordinates(new OpenSeadragon.Point(x, y));
+            return { x: point.x, y: point.y };
+          };
+          const viewportInfo = {
+            containerSize: { x: containerSize.x, y: containerSize.y },
+            worldToPixel,
+          };
+          await captureScreenshot(osdRootElement, null, app.getMap(), shapes, viewportInfo, strokeWidth);
+        },
+        onSave: async () => {
+          // Encode shapes and update URL
+          const shapes = drawingManager?.getShapes() ?? [];
+          const result = encodeShapesWithInfo(shapes);
+          if (result) {
+            updateURLWithDrawing(result.encoded);
+          }
+        },
+        onClose: () => {
+          // Sync toggle checkbox when sidebar closed via X button
+          drawToggleCheckbox.checked = false;
+          updateURLWithSidebar(false);
+        },
+      });
+      globalDrawingSidebar = drawingSidebar;
+
+      // Toggle sidebar on checkbox change
+      drawToggleCheckbox.addEventListener('change', () => {
+        if (drawToggleCheckbox.checked) {
+          drawingSidebar?.open();
+          updateURLWithSidebar(true);
+        } else {
+          drawingSidebar?.close();
+          updateURLWithSidebar(false);
+        }
+      });
+
+      // Restore sidebar state from URL
+      if (urlState.sidebarOpen) {
+        drawToggleCheckbox.checked = true;
+        drawingSidebar?.open();
+      }
+    }
+
+    // Load drawing from URL if present
+    if (urlState.drawing && drawingManager) {
+      const shapes = decodeShapesFromUrl(urlState.drawing);
+      if (shapes && shapes.length > 0) {
+        drawingManager.loadShapes(shapes);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to initialize drawing feature:', error);
+  }
 
   navbarBrandElement.addEventListener('click', ev => {
     ev.preventDefault();
@@ -179,6 +373,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     ev.stopPropagation();
 
     showOverlay(overlayKey, target.checked);
+
+    // Update URL with current overlays state
+    updateURLWithOverlays(getEnabledOverlays());
   });
 
   // Initialize Bootstrap popovers
@@ -194,8 +391,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   const shareEl = assertElementById('shareButton', HTMLElement);
   shareEl.addEventListener('click', ev => {
     ev.preventDefault();
+
+    // Build URL with current state including overlays and drawing
+    const url = new URL(window.location.href);
+
+    // Add overlays to URL
+    const overlays = getEnabledOverlays();
+    if (overlays.length > 0) {
+      url.searchParams.set('overlays', overlays.join(','));
+    } else {
+      url.searchParams.delete('overlays');
+    }
+
+    // Add drawing to URL if present
+    if (drawingManager) {
+      const shapes = drawingManager.getShapes();
+      if (shapes.length > 0) {
+        const result = encodeShapesWithInfo(shapes);
+        if (result) {
+          url.searchParams.set('drawing', result.encoded);
+        }
+      } else {
+        url.searchParams.delete('drawing');
+      }
+    }
+
     window.navigator.clipboard
-      .writeText(window.location.href)
+      .writeText(url.toString())
       .then(() => {
         // Update toast text with translation
         const toastElement = assertElementById('shareToast', HTMLElement);

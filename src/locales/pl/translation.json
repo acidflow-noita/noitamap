@@ -37,7 +37,8 @@
     "latest": "Najnowsza",
     "mod": "Mod",
     "betaBranch": "gałąź β",
-    "special": "Specjalna"
+    "special": "Specjalna",
+    "patchDateTooltip": "Data patcha, w którym przechwycono tę mapę"
   },
   "availableMaps": "Dostępne mapy",
   "donate": "Wspomóż",
@@ -715,5 +716,92 @@
     "orbAreas": {},
     "overlaysRegular": {},
     "overlaysNewGamePlus": {}
+  },
+  "auth": {
+    "signIn": "Zaloguj się",
+    "signedInAs": "Zalogowany jako",
+    "follower": "Obserwujący",
+    "subscriber": "Subskrybent",
+    "signOut": "Wyloguj się"
+  },
+  "loading": {
+    "maps": "Ładowanie map...",
+    "languages": "Ładowanie języków..."
+  },
+  "drawing": {
+    "title": "Narzędzia rysowania",
+    "close": "Zamknij panel",
+    "tools": {
+      "label": "Narzędzia",
+      "move": "Przesuń/Zaznacz",
+      "freehand": "Odręczne",
+      "line": "Linia",
+      "arrow": "Strzałka",
+      "rectangle": "Prostokąt",
+      "circle": "Koło",
+      "ellipse": "Elipsa",
+      "polygon": "Wielokąt",
+      "point": "Punkt"
+    },
+    "color": {
+      "label": "Kolor",
+      "choose": "Wybierz kolor",
+      "white": "Biały",
+      "red": "Czerwony",
+      "orange": "Pomarańczowy",
+      "yellow": "Żółty",
+      "green": "Zielony",
+      "cyan": "Cyjan",
+      "blue": "Niebieski",
+      "violet": "Fioletowy"
+    },
+    "stroke": {
+      "label": "Grubość linii (dotyczy wszystkich kształtów)"
+    },
+    "actions": {
+      "undo": "Cofnij",
+      "undoTitle": "Cofnij (Ctrl+Z)",
+      "redo": "Ponów",
+      "redoTitle": "Ponów (Ctrl+Shift+Z)",
+      "delete": "Usuń",
+      "deleteTitle": "Usuń zaznaczony kształt (Delete)",
+      "showHide": "Pokaż/Ukryj",
+      "showHideTitle": "Przełącz widoczność rysunku",
+      "save": "Zapisz",
+      "saveTitle": "Zapisz rysunek",
+      "new": "Nowy",
+      "newTitle": "Rozpocznij nowy rysunek",
+      "download": "Pobierz obraz",
+      "downloadTitle": "Pobierz rysunek jako obraz",
+      "exportJson": "Eksportuj JSON",
+      "exportJsonTitle": "Eksportuj kształty jako JSON"
+    },
+    "savedDrawings": {
+      "label": "Zapisane rysunki",
+      "empty": "Brak zapisanych rysunków",
+      "shapes": "kształtów",
+      "deleteTitle": "Usuń rysunek",
+      "deleteConfirm": "Usunąć ten rysunek?",
+      "defaultName": "Rysunek",
+      "sharedName": "Udostępniony rysunek"
+    },
+    "auth": {
+      "subscriberOnly": "Rysowanie jest dostępne dla subskrybentów kanału Wuote na Twitch",
+      "signInPrompt": "Zaloguj się przez Twitch, aby uzyskać dostęp do narzędzi rysowania",
+      "signInButton": "Zaloguj przez Twitch",
+      "greeting": "Cześć, {{username}}!",
+      "subscriberFeature": "Rysowanie to funkcja tylko dla subskrybentów",
+      "subscribePrompt": "Subskrybuj kanał Wuote na Twitch, aby odblokować narzędzia rysowania",
+      "subscribeButton": "Subskrybuj na Twitch",
+      "signOut": "Wyloguj"
+    },
+    "warning": {
+      "title": "Rysunek staje się złożony.",
+      "message": "Linie odręczne zajmują najwięcej danych. Aby zachować pełną jakość podczas udostępniania, używaj mniej linii odręcznych lub przełącz się na proste kształty (linie, prostokąty, koła). W przeciwnym razie udostępnione linki będą pokazywać mniej gładkie krzywe. Zrzuty ekranu pokazują wszystkie kształty w maksymalnej jakości, nie martw się."
+    },
+    "toggle": {
+      "title": "Tryb rysowania",
+      "content": "Przełącz narzędzia rysowania do adnotacji na mapie"
+    }
   }
 }

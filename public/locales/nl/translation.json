@@ -37,7 +37,8 @@
     "latest": "Nieuwste",
     "mod": "Mod",
     "betaBranch": "β tak",
-    "special": "Speciaal"
+    "special": "Speciaal",
+    "patchDateTooltip": "Patchdatum waarop deze kaart is vastgelegd"
   },
   "availableMaps": "Beschikbare kaarten",
   "donate": "Doneren",
@@ -715,5 +716,92 @@
     "orbAreas": {},
     "overlaysRegular": {},
     "overlaysNewGamePlus": {}
+  },
+  "auth": {
+    "signIn": "Inloggen",
+    "signedInAs": "Ingelogd als",
+    "follower": "Volger",
+    "subscriber": "Abonnee",
+    "signOut": "Uitloggen"
+  },
+  "loading": {
+    "maps": "Kaarten laden...",
+    "languages": "Talen laden..."
+  },
+  "drawing": {
+    "title": "Tekengereedschap",
+    "close": "Zijbalk sluiten",
+    "tools": {
+      "label": "Gereedschap",
+      "move": "Verplaatsen/Selecteren",
+      "freehand": "Vrije hand",
+      "line": "Lijn",
+      "arrow": "Pijl",
+      "rectangle": "Rechthoek",
+      "circle": "Cirkel",
+      "ellipse": "Ellips",
+      "polygon": "Veelhoek",
+      "point": "Punt"
+    },
+    "color": {
+      "label": "Kleur",
+      "choose": "Kies kleur",
+      "white": "Wit",
+      "red": "Rood",
+      "orange": "Oranje",
+      "yellow": "Geel",
+      "green": "Groen",
+      "cyan": "Cyaan",
+      "blue": "Blauw",
+      "violet": "Violet"
+    },
+    "stroke": {
+      "label": "Lijndikte (geldt voor alle vormen)"
+    },
+    "actions": {
+      "undo": "Ongedaan maken",
+      "undoTitle": "Ongedaan maken (Ctrl+Z)",
+      "redo": "Opnieuw",
+      "redoTitle": "Opnieuw (Ctrl+Shift+Z)",
+      "delete": "Verwijderen",
+      "deleteTitle": "Geselecteerde vorm verwijderen (Delete)",
+      "showHide": "Tonen/Verbergen",
+      "showHideTitle": "Tekening zichtbaarheid wisselen",
+      "save": "Opslaan",
+      "saveTitle": "Tekening opslaan",
+      "new": "Nieuw",
+      "newTitle": "Nieuwe tekening starten",
+      "download": "Afbeelding downloaden",
+      "downloadTitle": "Tekening als afbeelding downloaden",
+      "exportJson": "JSON exporteren",
+      "exportJsonTitle": "Vormen als JSON exporteren"
+    },
+    "savedDrawings": {
+      "label": "Opgeslagen tekeningen",
+      "empty": "Nog geen opgeslagen tekeningen",
+      "shapes": "vormen",
+      "deleteTitle": "Tekening verwijderen",
+      "deleteConfirm": "Deze tekening verwijderen?",
+      "defaultName": "Tekening",
+      "sharedName": "Gedeelde tekening"
+    },
+    "auth": {
+      "subscriberOnly": "Tekenen is beschikbaar voor Wuote's Twitch-abonnees",
+      "signInPrompt": "Log in met Twitch om toegang te krijgen tot tekengereedschap",
+      "signInButton": "Inloggen met Twitch",
+      "greeting": "Hallo, {{username}}!",
+      "subscriberFeature": "Tekenen is een functie alleen voor abonnees",
+      "subscribePrompt": "Abonneer op Wuote's Twitch-kanaal om tekengereedschap te ontgrendelen",
+      "subscribeButton": "Abonneren op Twitch",
+      "signOut": "Uitloggen"
+    },
+    "warning": {
+      "title": "De tekening wordt complex.",
+      "message": "Vrije hand lijnen gebruiken de meeste data. Om volledige kwaliteit te behouden bij delen, gebruik minder vrije hand lijnen of schakel over naar eenvoudige vormen (lijnen, rechthoeken, cirkels). Anders tonen gedeelde links minder vloeiende curves. Screenshots tonen alle vormen in maximale kwaliteit, maak je geen zorgen."
+    },
+    "toggle": {
+      "title": "Tekenmodus",
+      "content": "Tekengereedschap wisselen om de kaart te annoteren"
+    }
   }
 }

@@ -37,7 +37,8 @@
     "latest": "Terbaru",
     "mod": "Mod",
     "betaBranch": "Cabang β",
-    "special": "Spesial"
+    "special": "Spesial",
+    "patchDateTooltip": "Tanggal patch saat peta ini diambil"
   },
   "availableMaps": "Peta Tersedia",
   "donate": "Donasi",
@@ -660,5 +661,92 @@
     "orbAreas": {},
     "overlaysRegular": {},
     "overlaysNewGamePlus": {}
+  },
+  "auth": {
+    "signIn": "Masuk",
+    "signedInAs": "Masuk sebagai",
+    "follower": "Pengikut",
+    "subscriber": "Pelanggan",
+    "signOut": "Keluar"
+  },
+  "loading": {
+    "maps": "Memuat peta...",
+    "languages": "Memuat bahasa..."
+  },
+  "drawing": {
+    "title": "Alat Gambar",
+    "close": "Tutup panel",
+    "tools": {
+      "label": "Alat",
+      "move": "Pindah/Pilih",
+      "freehand": "Bebas",
+      "line": "Garis",
+      "arrow": "Panah",
+      "rectangle": "Persegi panjang",
+      "circle": "Lingkaran",
+      "ellipse": "Elips",
+      "polygon": "Poligon",
+      "point": "Titik"
+    },
+    "color": {
+      "label": "Warna",
+      "choose": "Pilih warna",
+      "white": "Putih",
+      "red": "Merah",
+      "orange": "Oranye",
+      "yellow": "Kuning",
+      "green": "Hijau",
+      "cyan": "Sian",
+      "blue": "Biru",
+      "violet": "Ungu"
+    },
+    "stroke": {
+      "label": "Ketebalan garis (berlaku untuk semua bentuk)"
+    },
+    "actions": {
+      "undo": "Urungkan",
+      "undoTitle": "Urungkan (Ctrl+Z)",
+      "redo": "Ulangi",
+      "redoTitle": "Ulangi (Ctrl+Shift+Z)",
+      "delete": "Hapus",
+      "deleteTitle": "Hapus bentuk terpilih (Delete)",
+      "showHide": "Tampil/Sembunyikan",
+      "showHideTitle": "Alihkan visibilitas gambar",
+      "save": "Simpan",
+      "saveTitle": "Simpan gambar",
+      "new": "Baru",
+      "newTitle": "Mulai gambar baru",
+      "download": "Unduh gambar",
+      "downloadTitle": "Unduh gambar sebagai gambar",
+      "exportJson": "Ekspor JSON",
+      "exportJsonTitle": "Ekspor bentuk sebagai JSON"
+    },
+    "savedDrawings": {
+      "label": "Gambar Tersimpan",
+      "empty": "Belum ada gambar tersimpan",
+      "shapes": "bentuk",
+      "deleteTitle": "Hapus gambar",
+      "deleteConfirm": "Hapus gambar ini?",
+      "defaultName": "Gambar",
+      "sharedName": "Gambar Bersama"
+    },
+    "auth": {
+      "subscriberOnly": "Menggambar tersedia untuk pelanggan Twitch Wuote",
+      "signInPrompt": "Masuk dengan Twitch untuk mengakses alat gambar",
+      "signInButton": "Masuk dengan Twitch",
+      "greeting": "Halo, {{username}}!",
+      "subscriberFeature": "Menggambar adalah fitur khusus pelanggan",
+      "subscribePrompt": "Berlangganan kanal Twitch Wuote untuk membuka alat gambar",
+      "subscribeButton": "Berlangganan di Twitch",
+      "signOut": "Keluar"
+    },
+    "warning": {
+      "title": "Gambar menjadi kompleks.",
+      "message": "Garis bebas menggunakan data paling banyak. Untuk menjaga kualitas penuh saat berbagi, gunakan lebih sedikit garis bebas atau beralih ke bentuk sederhana (garis, persegi panjang, lingkaran). Jika tidak, tautan yang dibagikan akan menampilkan kurva yang kurang halus. Screenshot menampilkan semua bentuk dalam kualitas maksimal, jangan khawatir."
+    },
+    "toggle": {
+      "title": "Mode Gambar",
+      "content": "Alihkan alat gambar untuk menganotasi peta"
+    }
   }
 }

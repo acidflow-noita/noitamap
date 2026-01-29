@@ -37,7 +37,8 @@
     "latest": "Ultimo",
     "mod": "Mod",
     "betaBranch": "ramo β",
-    "special": "Speciale"
+    "special": "Speciale",
+    "patchDateTooltip": "Data della patch in cui è stata catturata questa mappa"
   },
   "availableMaps": "Mappe disponibili",
   "donate": "Dona",
@@ -715,5 +716,92 @@
     "orbAreas": {},
     "overlaysRegular": {},
     "overlaysNewGamePlus": {}
+  },
+  "auth": {
+    "signIn": "Accedi",
+    "signedInAs": "Connesso come",
+    "follower": "Follower",
+    "subscriber": "Abbonato",
+    "signOut": "Esci"
+  },
+  "loading": {
+    "maps": "Caricamento mappe...",
+    "languages": "Caricamento lingue..."
+  },
+  "drawing": {
+    "title": "Strumenti di disegno",
+    "close": "Chiudi pannello",
+    "tools": {
+      "label": "Strumenti",
+      "move": "Sposta/Seleziona",
+      "freehand": "Mano libera",
+      "line": "Linea",
+      "arrow": "Freccia",
+      "rectangle": "Rettangolo",
+      "circle": "Cerchio",
+      "ellipse": "Ellisse",
+      "polygon": "Poligono",
+      "point": "Punto"
+    },
+    "color": {
+      "label": "Colore",
+      "choose": "Scegli colore",
+      "white": "Bianco",
+      "red": "Rosso",
+      "orange": "Arancione",
+      "yellow": "Giallo",
+      "green": "Verde",
+      "cyan": "Ciano",
+      "blue": "Blu",
+      "violet": "Viola"
+    },
+    "stroke": {
+      "label": "Spessore tratto (si applica a tutte le forme)"
+    },
+    "actions": {
+      "undo": "Annulla",
+      "undoTitle": "Annulla (Ctrl+Z)",
+      "redo": "Ripristina",
+      "redoTitle": "Ripristina (Ctrl+Maiusc+Z)",
+      "delete": "Elimina",
+      "deleteTitle": "Elimina forma selezionata (Canc)",
+      "showHide": "Mostra/Nascondi",
+      "showHideTitle": "Attiva/disattiva visibilità disegno",
+      "save": "Salva",
+      "saveTitle": "Salva disegno",
+      "new": "Nuovo",
+      "newTitle": "Inizia nuovo disegno",
+      "download": "Scarica immagine",
+      "downloadTitle": "Scarica disegno come immagine",
+      "exportJson": "Esporta JSON",
+      "exportJsonTitle": "Esporta forme come JSON"
+    },
+    "savedDrawings": {
+      "label": "Disegni salvati",
+      "empty": "Nessun disegno salvato",
+      "shapes": "forme",
+      "deleteTitle": "Elimina disegno",
+      "deleteConfirm": "Eliminare questo disegno?",
+      "defaultName": "Disegno",
+      "sharedName": "Disegno condiviso"
+    },
+    "auth": {
+      "subscriberOnly": "Il disegno è disponibile per gli abbonati Twitch di Wuote",
+      "signInPrompt": "Accedi con Twitch per accedere agli strumenti di disegno",
+      "signInButton": "Accedi con Twitch",
+      "greeting": "Ciao, {{username}}!",
+      "subscriberFeature": "Il disegno è una funzione riservata agli abbonati",
+      "subscribePrompt": "Abbonati al canale Twitch di Wuote per sbloccare gli strumenti di disegno",
+      "subscribeButton": "Abbonati su Twitch",
+      "signOut": "Esci"
+    },
+    "warning": {
+      "title": "Il disegno sta diventando complesso.",
+      "message": "I tratti a mano libera usano più dati. Per mantenere la qualità completa durante la condivisione, usa meno tratti a mano libera o passa a forme semplici (linee, rettangoli, cerchi). Altrimenti, i link condivisi mostreranno curve meno fluide. Gli screenshot mostrano tutte le forme alla massima qualità, non preoccuparti."
+    },
+    "toggle": {
+      "title": "Modalità disegno",
+      "content": "Attiva/disattiva strumenti di disegno per annotare la mappa"
+    }
   }
 }

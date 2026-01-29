@@ -1,0 +1,70 @@
+/* Drawing Sidebar Styles */
+
+.drawing-sidebar {
+  position: fixed;
+  top: 4.5rem;
+  right: 1.5rem;
+  width: 21rem;
+  max-height: calc(100vh - 6rem);
+  background: rgba(17, 24, 39, 0.92); /* Tailwind gray-900 */
+  backdrop-filter: blur(0.5rem);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.75rem;
+  transform: translateX(calc(100% + 2rem));
+  transition: transform 0.3s ease;
+  z-index: 1000;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.4);
+}
+
+.drawing-sidebar.open {
+  transform: translateX(0);
+}
+
+/* Tool buttons - wrap to grid */
+.drawing-sidebar .btn-group.flex-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.125rem;
+}
+
+.drawing-sidebar .btn-group.flex-wrap > .btn,
+.drawing-sidebar .btn-group.flex-wrap > .btn-check + .btn {
+  flex: 0 0 auto;
+  border-radius: 0.25rem !important;
+}
+
+/* Drawings list - no scrollbars, allow natural overflow */
+.drawing-sidebar .drawings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.drawing-sidebar .sidebar-section:last-child {
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+
+.drawing-sidebar .list-group-item {
+  padding: 0.5rem;
+  border-radius: 0.375rem !important;
+  flex-shrink: 0;
+}
+
+.drawing-sidebar .list-group-item.active {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .drawing-sidebar {
+    width: calc(100% - 2rem);
+    max-width: 21rem;
+    right: 1rem;
+  }
+}

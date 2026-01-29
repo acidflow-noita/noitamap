@@ -59,7 +59,7 @@ export const createMapLinks = (): HTMLUListElement => {
       span.dataset.bsPlacement = 'top';
 
       if (span.classList.contains('border-info-subtle')) {
-        span.dataset.bsTitle = 'Patch date this map was captured';
+        span.dataset.bsTitle = i18next.t('badges.patchDateTooltip');
       } else if (badge.labelKey) {
         // Add tooltip for other badges using their label key
         const tooltipKey = `badges.${badge.labelKey}Tooltip`;
@@ -140,7 +140,7 @@ export const updateMapLinkTranslations = (): void => {
       span.dataset.bsPlacement = 'top';
 
       if (span.classList.contains('border-info-subtle')) {
-        span.dataset.bsTitle = 'Patch date this map was captured';
+        span.dataset.bsTitle = i18next.t('badges.patchDateTooltip');
       } else if (badge.labelKey) {
         // Add tooltip for other badges using their label key
         const tooltipKey = `badges.${badge.labelKey}Tooltip`;

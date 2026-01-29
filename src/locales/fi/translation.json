@@ -37,7 +37,8 @@
     "latest": "Uusin",
     "mod": "Modi",
     "betaBranch": "β haara",
-    "special": "Erikois"
+    "special": "Erikois",
+    "patchDateTooltip": "Päivityksen päivämäärä, jolloin kartta tallennettiin"
   },
   "availableMaps": "Saatavilla olevat kartat",
   "donate": "Lahjoita",
@@ -715,5 +716,92 @@
     "orbAreas": {},
     "overlaysRegular": {},
     "overlaysNewGamePlus": {}
+  },
+  "auth": {
+    "signIn": "Kirjaudu sisään",
+    "signedInAs": "Kirjautunut käyttäjänä",
+    "follower": "Seuraaja",
+    "subscriber": "Tilaaja",
+    "signOut": "Kirjaudu ulos"
+  },
+  "loading": {
+    "maps": "Ladataan karttoja...",
+    "languages": "Ladataan kieliä..."
+  },
+  "drawing": {
+    "title": "Piirtotyökalut",
+    "close": "Sulje sivupalkki",
+    "tools": {
+      "label": "Työkalut",
+      "move": "Siirrä/Valitse",
+      "freehand": "Vapaa piirto",
+      "line": "Viiva",
+      "arrow": "Nuoli",
+      "rectangle": "Suorakulmio",
+      "circle": "Ympyrä",
+      "ellipse": "Ellipsi",
+      "polygon": "Monikulmio",
+      "point": "Piste"
+    },
+    "color": {
+      "label": "Väri",
+      "choose": "Valitse väri",
+      "white": "Valkoinen",
+      "red": "Punainen",
+      "orange": "Oranssi",
+      "yellow": "Keltainen",
+      "green": "Vihreä",
+      "cyan": "Syaani",
+      "blue": "Sininen",
+      "violet": "Violetti"
+    },
+    "stroke": {
+      "label": "Viivan paksuus (vaikuttaa kaikkiin muotoihin)"
+    },
+    "actions": {
+      "undo": "Kumoa",
+      "undoTitle": "Kumoa (Ctrl+Z)",
+      "redo": "Tee uudelleen",
+      "redoTitle": "Tee uudelleen (Ctrl+Shift+Z)",
+      "delete": "Poista",
+      "deleteTitle": "Poista valittu muoto (Delete)",
+      "showHide": "Näytä/Piilota",
+      "showHideTitle": "Vaihda piirroksen näkyvyyttä",
+      "save": "Tallenna",
+      "saveTitle": "Tallenna piirros",
+      "new": "Uusi",
+      "newTitle": "Aloita uusi piirros",
+      "download": "Lataa kuva",
+      "downloadTitle": "Lataa piirros kuvana",
+      "exportJson": "Vie JSON",
+      "exportJsonTitle": "Vie muodot JSON-muodossa"
+    },
+    "savedDrawings": {
+      "label": "Tallennetut piirrokset",
+      "empty": "Ei tallennettuja piirroksia",
+      "shapes": "muotoa",
+      "deleteTitle": "Poista piirros",
+      "deleteConfirm": "Poistetaanko tämä piirros?",
+      "defaultName": "Piirros",
+      "sharedName": "Jaettu piirros"
+    },
+    "auth": {
+      "subscriberOnly": "Piirtäminen on käytettävissä Wuoten Twitch-tilaajille",
+      "signInPrompt": "Kirjaudu Twitchillä päästäksesi piirtotyökaluihin",
+      "signInButton": "Kirjaudu Twitchillä",
+      "greeting": "Hei, {{username}}!",
+      "subscriberFeature": "Piirtäminen on vain tilaajille",
+      "subscribePrompt": "Tilaa Wuoten Twitch-kanava avataksesi piirtotyökalut",
+      "subscribeButton": "Tilaa Twitchissä",
+      "signOut": "Kirjaudu ulos"
+    },
+    "warning": {
+      "title": "Piirros on monimutkaistumassa.",
+      "message": "Vapaat viivat käyttävät eniten dataa. Säilyttääksesi täyden laadun jakaessa, käytä vähemmän vapaita viivoja tai vaihda yksinkertaisiin muotoihin (viivat, suorakulmiot, ympyrät). Muuten jaetut linkit näyttävät käyrät vähemmän tasaisina. Kuvakaappaukset näyttävät kaikki muodot maksimilaadussa, älä huoli."
+    },
+    "toggle": {
+      "title": "Piirtotila",
+      "content": "Vaihda piirtotyökalut kartan merkintöihin"
+    }
   }
 }

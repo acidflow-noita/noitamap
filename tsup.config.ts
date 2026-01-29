@@ -6,6 +6,9 @@ export default defineConfig({
   outDir: 'public/js',
   format: 'iife',
   minify: true,
+  define: {
+    'process.env.NODE_ENV': '"production"',
+  },
   outExtension() {
     return {
       js: `.js`,

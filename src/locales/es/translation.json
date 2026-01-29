@@ -37,7 +37,8 @@
     "latest": "Último",
     "mod": "Mod",
     "betaBranch": "rama β",
-    "special": "Especial"
+    "special": "Especial",
+    "patchDateTooltip": "Fecha del parche en que se capturó este mapa"
   },
   "availableMaps": "Mapas disponibles",
   "donate": "Donar",
@@ -715,5 +716,92 @@
     "orbAreas": {},
     "overlaysRegular": {},
     "overlaysNewGamePlus": {}
+  },
+  "auth": {
+    "signIn": "Iniciar sesión",
+    "signedInAs": "Sesión iniciada como",
+    "follower": "Seguidor",
+    "subscriber": "Suscriptor",
+    "signOut": "Cerrar sesión"
+  },
+  "loading": {
+    "maps": "Cargando mapas...",
+    "languages": "Cargando idiomas..."
+  },
+  "drawing": {
+    "title": "Herramientas de dibujo",
+    "close": "Cerrar panel",
+    "tools": {
+      "label": "Herramientas",
+      "move": "Mover/Seleccionar",
+      "freehand": "Mano alzada",
+      "line": "Línea",
+      "arrow": "Flecha",
+      "rectangle": "Rectángulo",
+      "circle": "Círculo",
+      "ellipse": "Elipse",
+      "polygon": "Polígono",
+      "point": "Punto"
+    },
+    "color": {
+      "label": "Color",
+      "choose": "Elegir color",
+      "white": "Blanco",
+      "red": "Rojo",
+      "orange": "Naranja",
+      "yellow": "Amarillo",
+      "green": "Verde",
+      "cyan": "Cian",
+      "blue": "Azul",
+      "violet": "Violeta"
+    },
+    "stroke": {
+      "label": "Grosor del trazo (afecta a todas las formas)"
+    },
+    "actions": {
+      "undo": "Deshacer",
+      "undoTitle": "Deshacer (Ctrl+Z)",
+      "redo": "Rehacer",
+      "redoTitle": "Rehacer (Ctrl+Mayús+Z)",
+      "delete": "Eliminar",
+      "deleteTitle": "Eliminar forma seleccionada (Supr)",
+      "showHide": "Mostrar/Ocultar",
+      "showHideTitle": "Alternar visibilidad del dibujo",
+      "save": "Guardar",
+      "saveTitle": "Guardar dibujo",
+      "new": "Nuevo",
+      "newTitle": "Iniciar nuevo dibujo",
+      "download": "Descargar imagen",
+      "downloadTitle": "Descargar dibujo como imagen",
+      "exportJson": "Exportar JSON",
+      "exportJsonTitle": "Exportar formas como JSON"
+    },
+    "savedDrawings": {
+      "label": "Dibujos guardados",
+      "empty": "No hay dibujos guardados aún",
+      "shapes": "formas",
+      "deleteTitle": "Eliminar dibujo",
+      "deleteConfirm": "¿Eliminar este dibujo?",
+      "defaultName": "Dibujo",
+      "sharedName": "Dibujo compartido"
+    },
+    "auth": {
+      "subscriberOnly": "El dibujo está disponible para los suscriptores de Twitch de Wuote",
+      "signInPrompt": "Inicia sesión con Twitch para acceder a las herramientas de dibujo",
+      "signInButton": "Iniciar sesión con Twitch",
+      "greeting": "¡Hola, {{username}}!",
+      "subscriberFeature": "El dibujo es una función exclusiva para suscriptores",
+      "subscribePrompt": "Suscríbete al canal de Twitch de Wuote para desbloquear las herramientas de dibujo",
+      "subscribeButton": "Suscribirse en Twitch",
+      "signOut": "Cerrar sesión"
+    },
+    "warning": {
+      "title": "El dibujo se está volviendo complejo.",
+      "message": "Los trazos a mano alzada usan más datos. Para mantener la calidad completa al compartir, usa menos trazos a mano alzada o cambia a formas simples (líneas, rectángulos, círculos). De lo contrario, los enlaces compartidos mostrarán curvas menos suaves. Las capturas de pantalla muestran todas las formas en calidad máxima, no te preocupes."
+    },
+    "toggle": {
+      "title": "Modo de dibujo",
+      "content": "Alternar herramientas de dibujo para anotar el mapa"
+    }
   }
 }

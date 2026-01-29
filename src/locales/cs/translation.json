@@ -37,7 +37,8 @@
     "latest": "Nejnovější",
     "mod": "Mod",
     "betaBranch": "β větev",
-    "special": "Speciální"
+    "special": "Speciální",
+    "patchDateTooltip": "Datum patche, kdy byla tato mapa zachycena"
   },
   "availableMaps": "Dostupné mapy",
   "donate": "Darovat",
@@ -715,5 +716,92 @@
     "orbAreas": {},
     "overlaysRegular": {},
     "overlaysNewGamePlus": {}
+  },
+  "auth": {
+    "signIn": "Přihlásit se",
+    "signedInAs": "Přihlášen jako",
+    "follower": "Sledující",
+    "subscriber": "Odběratel",
+    "signOut": "Odhlásit se"
+  },
+  "loading": {
+    "maps": "Načítání map...",
+    "languages": "Načítání jazyků..."
+  },
+  "drawing": {
+    "title": "Nástroje kreslení",
+    "close": "Zavřít panel",
+    "tools": {
+      "label": "Nástroje",
+      "move": "Přesunout/Vybrat",
+      "freehand": "Volnou rukou",
+      "line": "Čára",
+      "arrow": "Šipka",
+      "rectangle": "Obdélník",
+      "circle": "Kruh",
+      "ellipse": "Elipsa",
+      "polygon": "Mnohoúhelník",
+      "point": "Bod"
+    },
+    "color": {
+      "label": "Barva",
+      "choose": "Vybrat barvu",
+      "white": "Bílá",
+      "red": "Červená",
+      "orange": "Oranžová",
+      "yellow": "Žlutá",
+      "green": "Zelená",
+      "cyan": "Azurová",
+      "blue": "Modrá",
+      "violet": "Fialová"
+    },
+    "stroke": {
+      "label": "Tloušťka čáry (platí pro všechny tvary)"
+    },
+    "actions": {
+      "undo": "Zpět",
+      "undoTitle": "Zpět (Ctrl+Z)",
+      "redo": "Znovu",
+      "redoTitle": "Znovu (Ctrl+Shift+Z)",
+      "delete": "Smazat",
+      "deleteTitle": "Smazat vybraný tvar (Delete)",
+      "showHide": "Zobrazit/Skrýt",
+      "showHideTitle": "Přepnout viditelnost kresby",
+      "save": "Uložit",
+      "saveTitle": "Uložit kresbu",
+      "new": "Nová",
+      "newTitle": "Začít novou kresbu",
+      "download": "Stáhnout obrázek",
+      "downloadTitle": "Stáhnout kresbu jako obrázek",
+      "exportJson": "Exportovat JSON",
+      "exportJsonTitle": "Exportovat tvary jako JSON"
+    },
+    "savedDrawings": {
+      "label": "Uložené kresby",
+      "empty": "Zatím žádné uložené kresby",
+      "shapes": "tvarů",
+      "deleteTitle": "Smazat kresbu",
+      "deleteConfirm": "Smazat tuto kresbu?",
+      "defaultName": "Kresba",
+      "sharedName": "Sdílená kresba"
+    },
+    "auth": {
+      "subscriberOnly": "Kreslení je dostupné pro odběratele Wuoteho Twitch kanálu",
+      "signInPrompt": "Přihlaste se přes Twitch pro přístup k nástrojům kreslení",
+      "signInButton": "Přihlásit se přes Twitch",
+      "greeting": "Ahoj, {{username}}!",
+      "subscriberFeature": "Kreslení je funkce pouze pro odběratele",
+      "subscribePrompt": "Odebírejte Wuoteho Twitch kanál pro odemknutí nástrojů kreslení",
+      "subscribeButton": "Odebírat na Twitch",
+      "signOut": "Odhlásit se"
+    },
+    "warning": {
+      "title": "Kresba se stává složitou.",
+      "message": "Čáry volnou rukou zabírají nejvíce dat. Pro zachování plné kvality při sdílení používejte méně čar volnou rukou nebo přepněte na jednoduché tvary (čáry, obdélníky, kruhy). Jinak budou sdílené odkazy zobrazovat méně hladké křivky. Snímky obrazovky zobrazují všechny tvary v maximální kvalitě, nebojte se."
+    },
+    "toggle": {
+      "title": "Režim kreslení",
+      "content": "Přepnout nástroje kreslení pro anotaci mapy"
+    }
   }
 }

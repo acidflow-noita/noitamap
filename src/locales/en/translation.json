@@ -37,7 +37,8 @@
     "latest": "Latest",
     "mod": "Mod",
     "betaBranch": "β branch",
-    "special": "Special"
+    "special": "Special",
+    "patchDateTooltip": "Patch date this map was captured"
   },
   "availableMaps": "Available Maps",
   "donate": "Donate",
@@ -724,5 +725,92 @@
     },
     "orbAreas": {},
     "overlaysRegular": {}
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signedInAs": "Signed in as",
+    "follower": "Follower",
+    "subscriber": "Subscriber",
+    "signOut": "Sign Out"
+  },
+  "loading": {
+    "maps": "Loading maps...",
+    "languages": "Loading languages..."
+  },
+  "drawing": {
+    "title": "Drawing Tools",
+    "close": "Close sidebar",
+    "tools": {
+      "label": "Tools",
+      "move": "Move/Select",
+      "freehand": "Freehand",
+      "line": "Line",
+      "arrow": "Arrow",
+      "rectangle": "Rectangle",
+      "circle": "Circle",
+      "ellipse": "Ellipse",
+      "polygon": "Polygon",
+      "point": "Point"
+    },
+    "color": {
+      "label": "Color",
+      "choose": "Choose color",
+      "white": "White",
+      "red": "Red",
+      "orange": "Orange",
+      "yellow": "Yellow",
+      "green": "Green",
+      "cyan": "Cyan",
+      "blue": "Blue",
+      "violet": "Violet"
+    },
+    "stroke": {
+      "label": "Stroke Width (affects all shapes at once)"
+    },
+    "actions": {
+      "undo": "Undo",
+      "undoTitle": "Undo (Ctrl+Z)",
+      "redo": "Redo",
+      "redoTitle": "Redo (Ctrl+Shift+Z)",
+      "delete": "Delete",
+      "deleteTitle": "Delete selected shape (Delete key)",
+      "showHide": "Show/Hide",
+      "showHideTitle": "Toggle drawing visibility",
+      "save": "Save",
+      "saveTitle": "Save drawing",
+      "new": "New",
+      "newTitle": "Start new drawing",
+      "download": "Download image",
+      "downloadTitle": "Download drawing as image",
+      "exportJson": "Export JSON",
+      "exportJsonTitle": "Export shapes as JSON"
+    },
+    "savedDrawings": {
+      "label": "Saved Drawings",
+      "empty": "No saved drawings yet",
+      "shapes": "shapes",
+      "deleteTitle": "Delete drawing",
+      "deleteConfirm": "Delete this drawing?",
+      "defaultName": "Drawing",
+      "sharedName": "Shared Drawing"
+    },
+    "auth": {
+      "subscriberOnly": "Drawing is available to Wuote's Twitch subscribers",
+      "signInPrompt": "Sign in with Twitch to access drawing tools",
+      "signInButton": "Sign in with Twitch",
+      "greeting": "Hi, {{username}}!",
+      "subscriberFeature": "Drawing is a subscriber-only feature",
+      "subscribePrompt": "Subscribe to Wuote's Twitch channel to unlock drawing tools",
+      "subscribeButton": "Subscribe on Twitch",
+      "signOut": "Sign out"
+    },
+    "warning": {
+      "title": "Drawing is getting complex.",
+      "message": "Freehand strokes use the most data. To keep full quality when sharing, use fewer freehand strokes or switch to simple shapes (lines, rectangles, circles). Otherwise, shared links will show curves as less smooth. The screenshots will show all the shapes at maximum quality, don't worry."
+    },
+    "toggle": {
+      "title": "Drawing Mode",
+      "content": "Toggle drawing tools to annotate the map"
+    }
   }
 }

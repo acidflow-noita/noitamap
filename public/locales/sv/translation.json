@@ -37,7 +37,8 @@
     "latest": "Senaste",
     "mod": "Mod",
     "betaBranch": "β gren",
-    "special": "Speciell"
+    "special": "Speciell",
+    "patchDateTooltip": "Patchdatum då denna karta fångades"
   },
   "availableMaps": "Tillgängliga kartor",
   "donate": "Donera",
@@ -715,5 +716,92 @@
     "orbAreas": {},
     "overlaysRegular": {},
     "overlaysNewGamePlus": {}
+  },
+  "auth": {
+    "signIn": "Logga in",
+    "signedInAs": "Inloggad som",
+    "follower": "Följare",
+    "subscriber": "Prenumerant",
+    "signOut": "Logga ut"
+  },
+  "loading": {
+    "maps": "Laddar kartor...",
+    "languages": "Laddar språk..."
+  },
+  "drawing": {
+    "title": "Ritverktyg",
+    "close": "Stäng sidopanel",
+    "tools": {
+      "label": "Verktyg",
+      "move": "Flytta/Markera",
+      "freehand": "Frihand",
+      "line": "Linje",
+      "arrow": "Pil",
+      "rectangle": "Rektangel",
+      "circle": "Cirkel",
+      "ellipse": "Ellips",
+      "polygon": "Polygon",
+      "point": "Punkt"
+    },
+    "color": {
+      "label": "Färg",
+      "choose": "Välj färg",
+      "white": "Vit",
+      "red": "Röd",
+      "orange": "Orange",
+      "yellow": "Gul",
+      "green": "Grön",
+      "cyan": "Cyan",
+      "blue": "Blå",
+      "violet": "Violett"
+    },
+    "stroke": {
+      "label": "Linjetjocklek (gäller alla former)"
+    },
+    "actions": {
+      "undo": "Ångra",
+      "undoTitle": "Ångra (Ctrl+Z)",
+      "redo": "Gör om",
+      "redoTitle": "Gör om (Ctrl+Shift+Z)",
+      "delete": "Ta bort",
+      "deleteTitle": "Ta bort markerad form (Delete)",
+      "showHide": "Visa/Dölj",
+      "showHideTitle": "Växla ritningens synlighet",
+      "save": "Spara",
+      "saveTitle": "Spara ritning",
+      "new": "Ny",
+      "newTitle": "Starta ny ritning",
+      "download": "Ladda ner bild",
+      "downloadTitle": "Ladda ner ritning som bild",
+      "exportJson": "Exportera JSON",
+      "exportJsonTitle": "Exportera former som JSON"
+    },
+    "savedDrawings": {
+      "label": "Sparade ritningar",
+      "empty": "Inga sparade ritningar ännu",
+      "shapes": "former",
+      "deleteTitle": "Ta bort ritning",
+      "deleteConfirm": "Ta bort denna ritning?",
+      "defaultName": "Ritning",
+      "sharedName": "Delad ritning"
+    },
+    "auth": {
+      "subscriberOnly": "Ritning är tillgängligt för Wuotes Twitch-prenumeranter",
+      "signInPrompt": "Logga in med Twitch för att få tillgång till ritverktyg",
+      "signInButton": "Logga in med Twitch",
+      "greeting": "Hej, {{username}}!",
+      "subscriberFeature": "Ritning är en funktion endast för prenumeranter",
+      "subscribePrompt": "Prenumerera på Wuotes Twitch-kanal för att låsa upp ritverktyg",
+      "subscribeButton": "Prenumerera på Twitch",
+      "signOut": "Logga ut"
+    },
+    "warning": {
+      "title": "Ritningen blir komplex.",
+      "message": "Frihandslinjer använder mest data. För att behålla full kvalitet vid delning, använd färre frihandslinjer eller byt till enkla former (linjer, rektanglar, cirklar). Annars visar delade länkar mindre jämna kurvor. Skärmdumpar visar alla former i maximal kvalitet, oroa dig inte."
+    },
+    "toggle": {
+      "title": "Ritläge",
+      "content": "Växla ritverktyg för att kommentera kartan"
+    }
   }
 }

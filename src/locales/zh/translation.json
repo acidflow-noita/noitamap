@@ -37,7 +37,8 @@
     "latest": "最新",
     "mod": "模组",
     "betaBranch": "β 分支",
-    "special": "特殊"
+    "special": "特殊",
+    "patchDateTooltip": "该地图截取时的补丁日期"
   },
   "availableMaps": "可用地图",
   "donate": "捐赠",
@@ -715,5 +716,92 @@
     "orbAreas": {},
     "overlaysRegular": {},
     "overlaysNewGamePlus": {}
+  },
+  "auth": {
+    "signIn": "登录",
+    "signedInAs": "已登录为",
+    "follower": "关注者",
+    "subscriber": "订阅者",
+    "signOut": "登出"
+  },
+  "loading": {
+    "maps": "加载地图中...",
+    "languages": "加载语言中..."
+  },
+  "drawing": {
+    "title": "绘图工具",
+    "close": "关闭侧边栏",
+    "tools": {
+      "label": "工具",
+      "move": "移动/选择",
+      "freehand": "自由绘制",
+      "line": "直线",
+      "arrow": "箭头",
+      "rectangle": "矩形",
+      "circle": "圆形",
+      "ellipse": "椭圆",
+      "polygon": "多边形",
+      "point": "点"
+    },
+    "color": {
+      "label": "颜色",
+      "choose": "选择颜色",
+      "white": "白色",
+      "red": "红色",
+      "orange": "橙色",
+      "yellow": "黄色",
+      "green": "绿色",
+      "cyan": "青色",
+      "blue": "蓝色",
+      "violet": "紫色"
+    },
+    "stroke": {
+      "label": "线条宽度（同时应用于所有图形）"
+    },
+    "actions": {
+      "undo": "撤销",
+      "undoTitle": "撤销 (Ctrl+Z)",
+      "redo": "重做",
+      "redoTitle": "重做 (Ctrl+Shift+Z)",
+      "delete": "删除",
+      "deleteTitle": "删除选中的图形 (Delete键)",
+      "showHide": "显示/隐藏",
+      "showHideTitle": "切换绘图可见性",
+      "save": "保存",
+      "saveTitle": "保存绘图",
+      "new": "新建",
+      "newTitle": "开始新绘图",
+      "download": "下载图片",
+      "downloadTitle": "将绘图下载为图片",
+      "exportJson": "导出 JSON",
+      "exportJsonTitle": "将图形导出为 JSON"
+    },
+    "savedDrawings": {
+      "label": "已保存的绘图",
+      "empty": "暂无保存的绘图",
+      "shapes": "个图形",
+      "deleteTitle": "删除绘图",
+      "deleteConfirm": "确定删除此绘图？",
+      "defaultName": "绘图",
+      "sharedName": "共享绘图"
+    },
+    "auth": {
+      "subscriberOnly": "绘图功能仅对 Wuote 的 Twitch 订阅者开放",
+      "signInPrompt": "通过 Twitch 登录以使用绘图工具",
+      "signInButton": "使用 Twitch 登录",
+      "greeting": "你好，{{username}}！",
+      "subscriberFeature": "绘图是订阅者专属功能",
+      "subscribePrompt": "订阅 Wuote 的 Twitch 频道以解锁绘图工具",
+      "subscribeButton": "在 Twitch 上订阅",
+      "signOut": "退出登录"
+    },
+    "warning": {
+      "title": "绘图变得复杂了。",
+      "message": "自由线条占用最多数据。为了在分享时保持完整质量，请减少自由线条的使用或改用简单图形（直线、矩形、圆形）。否则，分享链接中的曲线会不够平滑。截图会以最高质量显示所有图形，请放心。"
+    },
+    "toggle": {
+      "title": "绘图模式",
+      "content": "切换绘图工具以标注地图"
+    }
   }
 }
