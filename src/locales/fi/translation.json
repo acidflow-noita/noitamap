@@ -796,7 +796,7 @@
       "signOut": "Kirjaudu ulos"
     },
     "warning": {
-      "title": "Piirros on monimutkaistumassa.",
+      "title": "Piirros on liian monimutkainen häviöttömään jakamiseen URL:n kautta",
       "message": "Vapaat viivat käyttävät eniten dataa. Säilyttääksesi täyden laadun jakaessa, käytä vähemmän vapaita viivoja tai vaihda yksinkertaisiin muotoihin (viivat, suorakulmiot, ympyrät). Muuten jaetut linkit näyttävät käyrät vähemmän tasaisina. Kuvakaappaukset näyttävät kaikki muodot maksimilaadussa, älä huoli."
     },
     "toggle": {

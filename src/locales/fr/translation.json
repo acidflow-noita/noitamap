@@ -796,7 +796,7 @@
       "signOut": "Se déconnecter"
     },
     "warning": {
-      "title": "Le dessin devient complexe.",
+      "title": "Le dessin devient trop complexe pour un partage sans perte via URL",
       "message": "Les traits à main levée utilisent le plus de données. Pour conserver une qualité optimale lors du partage, utilisez moins de traits à main levée ou passez aux formes simples (lignes, rectangles, cercles). Sinon, les liens partagés afficheront des courbes moins lisses. Les captures d'écran affichent toutes les formes en qualité maximale, ne vous inquiétez pas."
     },
     "toggle": {

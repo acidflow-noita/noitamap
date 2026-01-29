@@ -741,7 +741,7 @@
       "signOut": "Keluar"
     },
     "warning": {
-      "title": "Gambar menjadi kompleks.",
+      "title": "Gambar menjadi terlalu kompleks untuk berbagi tanpa kehilangan kualitas melalui URL",
       "message": "Garis bebas menggunakan data paling banyak. Untuk menjaga kualitas penuh saat berbagi, gunakan lebih sedikit garis bebas atau beralih ke bentuk sederhana (garis, persegi panjang, lingkaran). Jika tidak, tautan yang dibagikan akan menampilkan kurva yang kurang halus. Screenshot menampilkan semua bentuk dalam kualitas maksimal, jangan khawatir."
     },
     "toggle": {

@@ -796,7 +796,7 @@
       "signOut": "Sair"
     },
     "warning": {
-      "title": "O desenho está ficando complexo.",
+      "title": "O desenho está ficando complexo demais para compartilhamento sem perdas via URL",
       "message": "Traços à mão livre usam mais dados. Para manter qualidade total ao compartilhar, use menos traços à mão livre ou mude para formas simples (linhas, retângulos, círculos). Caso contrário, links compartilhados mostrarão curvas menos suaves. As capturas de tela mostram todas as formas em qualidade máxima, não se preocupe."
     },
     "toggle": {

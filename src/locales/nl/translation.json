@@ -796,7 +796,7 @@
       "signOut": "Uitloggen"
     },
     "warning": {
-      "title": "De tekening wordt complex.",
+      "title": "De tekening wordt te complex voor lossless delen via URL",
       "message": "Vrije hand lijnen gebruiken de meeste data. Om volledige kwaliteit te behouden bij delen, gebruik minder vrije hand lijnen of schakel over naar eenvoudige vormen (lijnen, rechthoeken, cirkels). Anders tonen gedeelde links minder vloeiende curves. Screenshots tonen alle vormen in maximale kwaliteit, maak je geen zorgen."
     },
     "toggle": {

@@ -796,7 +796,7 @@
       "signOut": "Cerrar sesión"
     },
     "warning": {
-      "title": "El dibujo se está volviendo complejo.",
+      "title": "El dibujo se está volviendo demasiado complejo para compartir sin pérdidas por URL",
       "message": "Los trazos a mano alzada usan más datos. Para mantener la calidad completa al compartir, usa menos trazos a mano alzada o cambia a formas simples (líneas, rectángulos, círculos). De lo contrario, los enlaces compartidos mostrarán curvas menos suaves. Las capturas de pantalla muestran todas las formas en calidad máxima, no te preocupes."
     },
     "toggle": {

@@ -796,7 +796,7 @@
       "signOut": "Esci"
     },
     "warning": {
-      "title": "Il disegno sta diventando complesso.",
+      "title": "Il disegno sta diventando troppo complesso per la condivisione senza perdite tramite URL",
       "message": "I tratti a mano libera usano più dati. Per mantenere la qualità completa durante la condivisione, usa meno tratti a mano libera o passa a forme semplici (linee, rettangoli, cerchi). Altrimenti, i link condivisi mostreranno curve meno fluide. Gli screenshot mostrano tutte le forme alla massima qualità, non preoccuparti."
     },
     "toggle": {
