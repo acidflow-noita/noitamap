@@ -796,7 +796,7 @@
       "signOut": "Wyloguj"
     },
     "warning": {
-      "title": "Rysunek staje się złożony.",
+      "title": "Rysunek staje się zbyt złożony do bezstratnego udostępniania przez URL",
       "message": "Linie odręczne zajmują najwięcej danych. Aby zachować pełną jakość podczas udostępniania, używaj mniej linii odręcznych lub przełącz się na proste kształty (linie, prostokąty, koła). W przeciwnym razie udostępnione linki będą pokazywać mniej gładkie krzywe. Zrzuty ekranu pokazują wszystkie kształty w maksymalnej jakości, nie martw się."
     },
     "toggle": {

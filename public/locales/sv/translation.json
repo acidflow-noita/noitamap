@@ -796,7 +796,7 @@
       "signOut": "Logga ut"
     },
     "warning": {
-      "title": "Ritningen blir komplex.",
+      "title": "Ritningen blir för komplex för förlustfri delning via URL",
       "message": "Frihandslinjer använder mest data. För att behålla full kvalitet vid delning, använd färre frihandslinjer eller byt till enkla former (linjer, rektanglar, cirklar). Annars visar delade länkar mindre jämna kurvor. Skärmdumpar visar alla former i maximal kvalitet, oroa dig inte."
     },
     "toggle": {

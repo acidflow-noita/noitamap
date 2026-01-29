@@ -796,7 +796,7 @@
       "signOut": "Odhlásit se"
     },
     "warning": {
-      "title": "Kresba se stává složitou.",
+      "title": "Kresba je příliš složitá pro bezztrátové sdílení přes URL",
       "message": "Čáry volnou rukou zabírají nejvíce dat. Pro zachování plné kvality při sdílení používejte méně čar volnou rukou nebo přepněte na jednoduché tvary (čáry, obdélníky, kruhy). Jinak budou sdílené odkazy zobrazovat méně hladké křivky. Snímky obrazovky zobrazují všechny tvary v maximální kvalitě, nebojte se."
     },
     "toggle": {

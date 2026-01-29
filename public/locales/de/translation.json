@@ -796,7 +796,7 @@
       "signOut": "Abmelden"
     },
     "warning": {
-      "title": "Die Zeichnung wird komplex.",
+      "title": "Die Zeichnung wird zu komplex für verlustfreies Teilen per URL",
       "message": "Freihandlinien verbrauchen die meisten Daten. Um beim Teilen volle Qualität zu behalten, verwende weniger Freihandlinien oder wechsle zu einfachen Formen (Linien, Rechtecke, Kreise). Andernfalls werden Kurven in geteilten Links weniger glatt dargestellt. Die Screenshots zeigen alle Formen in maximaler Qualität, keine Sorge."
     },
     "toggle": {

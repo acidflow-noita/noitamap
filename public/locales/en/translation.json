@@ -805,7 +805,7 @@
       "signOut": "Sign out"
     },
     "warning": {
-      "title": "Drawing is getting complex.",
+      "title": "The drawing is getting complex for lossless sharing via URL",
       "message": "Freehand strokes use the most data. To keep full quality when sharing, use fewer freehand strokes or switch to simple shapes (lines, rectangles, circles). Otherwise, shared links will show curves as less smooth. The screenshots will show all the shapes at maximum quality, don't worry."
     },
     "toggle": {
