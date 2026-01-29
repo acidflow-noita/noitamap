@@ -102,6 +102,12 @@ export class DrawingSidebar {
     // Listen for drawing simplification warnings
     this.simplifiedHandler = () => this.showSimplifiedWarning();
     window.addEventListener('drawing-simplified', this.simplifiedHandler);
+
+    // Re-render when language changes
+    i18next.on('languageChanged', () => {
+      this.updateSidebarHeader();
+      this.renderContent();
+    });
   }
 
   private createSidebar(): void {
@@ -124,6 +130,17 @@ export class DrawingSidebar {
     this.sidebar.querySelector('#close-sidebar')?.addEventListener('click', () => {
       this.close();
     });
+  }
+
+  private updateSidebarHeader(): void {
+    const header = this.sidebar.querySelector('.sidebar-header h6');
+    const closeBtn = this.sidebar.querySelector('#close-sidebar');
+    if (header) {
+      header.innerHTML = `<i class="bi bi-brush me-2"></i>${i18next.t('drawing.title')}`;
+    }
+    if (closeBtn) {
+      closeBtn.setAttribute('title', i18next.t('drawing.close'));
+    }
   }
 
   private renderContent(): void {
