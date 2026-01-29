@@ -4,6 +4,8 @@
 
 import type { DrawingManager, ShapeType, Shape } from './doodle-integration';
 import type { DrawingSession, StoredDrawing } from './storage';
+import { getAllDrawings } from './storage';
+import { getAllMapDefinitions } from '../data_sources/map_definitions';
 import type { AuthState } from '../auth/auth-service';
 import { authService } from '../auth/auth-service';
 import i18next from '../i18n';
@@ -15,6 +17,7 @@ export interface SidebarOptions {
   onSave?: () => void;
   onScreenshot?: () => void;
   onClose?: () => void;
+  onMapChange?: (mapName: string) => Promise<void>;
 }
 
 interface ToolConfig {
@@ -422,6 +425,7 @@ export class DrawingSidebar {
   private exportJson(): void {
     const shapes = this.drawingManager.getShapes();
     const data = {
+      map: this.session.getMapName(),
       shapes,
       exported_at: new Date().toISOString(),
       shape_count: shapes.length,
@@ -471,8 +475,18 @@ export class DrawingSidebar {
   }
 
   async refreshDrawingsList(): Promise<void> {
-    const drawings = await this.session.getSavedDrawings();
+    // Get ALL drawings across all maps, not just current map
+    const drawings = await getAllDrawings();
     const currentId = this.session.getCurrent()?.id;
+    const currentMap = this.session.getMapName();
+
+    // Build map name lookup
+    const mapDefs = getAllMapDefinitions();
+    const mapNameLookup = new Map<string, string>();
+    for (const [key, def] of mapDefs) {
+      const translatedLabel = def.labelKey ? i18next.t(def.labelKey) : def.label;
+      mapNameLookup.set(key, translatedLabel);
+    }
 
     if (drawings.length === 0) {
       this.drawingsList.innerHTML = `<div class="text-secondary small text-center py-3">${i18next.t('drawing.savedDrawings.empty')}</div>`;
@@ -485,12 +499,17 @@ export class DrawingSidebar {
         const dateStr = date.toLocaleDateString();
         const shapeCount = drawing.shapes.length;
         const isActive = drawing.id === currentId;
+        const isCurrentMap = drawing.map_name === currentMap;
+        const mapDisplayName = mapNameLookup.get(drawing.map_name) || drawing.map_name;
 
         return `
-        <div class="list-group-item list-group-item-action d-flex align-items-center gap-2 bg-transparent text-light border-secondary ${isActive ? 'active' : ''}" data-id="${drawing.id}" role="button">
+        <div class="list-group-item list-group-item-action d-flex align-items-center gap-2 bg-transparent text-light border-secondary ${isActive ? 'active' : ''}" data-id="${drawing.id}" data-map="${drawing.map_name}" role="button">
           <div class="flex-grow-1 min-width-0">
             <div class="small text-truncate">${this.escapeHtml(drawing.name)}</div>
-            <div class="small text-secondary">${shapeCount} ${i18next.t('drawing.savedDrawings.shapes')} · ${dateStr}</div>
+            <div class="small text-secondary">
+              ${shapeCount} ${i18next.t('drawing.savedDrawings.shapes')} · ${dateStr}
+              ${!isCurrentMap ? `<br><i class="bi bi-map me-1"></i>${this.escapeHtml(mapDisplayName)}` : ''}
+            </div>
           </div>
           <button class="btn btn-sm btn-outline-danger border-0 delete" title="${i18next.t('drawing.savedDrawings.deleteTitle')}"><i class="bi bi-trash"></i></button>
         </div>
@@ -501,6 +520,7 @@ export class DrawingSidebar {
     // Bind events for drawing items
     this.drawingsList.querySelectorAll('.list-group-item').forEach(item => {
       const id = item.getAttribute('data-id');
+      const mapName = item.getAttribute('data-map');
       if (!id) return;
 
       item.querySelector('.delete')?.addEventListener('click', async e => {
@@ -509,12 +529,20 @@ export class DrawingSidebar {
       });
 
       item.addEventListener('click', async () => {
-        await this.loadDrawing(id);
+        await this.loadDrawing(id, mapName || undefined);
       });
     });
   }
 
-  private async loadDrawing(id: string): Promise<void> {
+  private async loadDrawing(id: string, mapName?: string): Promise<void> {
+    const currentMap = this.session.getMapName();
+
+    // If drawing is from a different map, switch maps first
+    if (mapName && mapName !== currentMap && this.options.onMapChange) {
+      await this.options.onMapChange(mapName);
+      this.session.setMap(mapName);
+    }
+
     const drawing = await this.session.loadDrawing(id);
     if (drawing) {
       // Defer heavy rendering to next frame to avoid blocking UI

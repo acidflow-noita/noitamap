@@ -145,6 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let drawingManager: DrawingManager | null = null;
   let drawingSession: DrawingSession | null = null;
   let drawingSidebar: DrawingSidebar | null = null;
+  let drawToggleCheckbox: HTMLInputElement | null = null;
 
   try {
     // Create drawing session first (needed for the callback)
@@ -203,7 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         authCont.parentElement.insertBefore(drawToggleWrapper, authCont);
       }
 
-      const drawToggleCheckbox = drawToggleWrapper.querySelector('#drawToggleBtn') as HTMLInputElement;
+      drawToggleCheckbox = drawToggleWrapper.querySelector('#drawToggleBtn') as HTMLInputElement;
       const drawToggleLabel = drawToggleWrapper.querySelector('label') as HTMLLabelElement;
 
       // Initialize popover for the label
@@ -242,6 +243,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           // Sync toggle checkbox when sidebar closed via X button
           drawToggleCheckbox.checked = false;
           updateURLWithSidebar(false);
+        },
+        onMapChange: async (mapName: string) => {
+          // Switch to the requested map
+          const validMapName = asMapName(mapName);
+          if (validMapName) {
+            await app.setMap(validMapName);
+            unifiedSearch.currentMap = validMapName;
+          }
         },
       });
       globalDrawingSidebar = drawingSidebar;
@@ -349,6 +358,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     // the user clicks an item. let the event bubble so Bootstrap can close
     // the dropdown after a click
     // ev.stopPropagation();
+
+    // Reset drawing when changing maps (drawings are per-map)
+    if (drawingSidebar?.isOpened()) {
+      drawingSidebar.close();
+    }
+    if (drawToggleCheckbox) {
+      drawToggleCheckbox.checked = false;
+    }
+    if (drawingManager) {
+      drawingManager.clearShapes();
+    }
+    if (drawingSession) {
+      drawingSession.setMap(mapName);
+    }
+    // Clear drawing from URL
+    updateURLWithDrawing(null);
+    updateURLWithSidebar(false);
 
     // load the new map
     app.setMap(mapName);

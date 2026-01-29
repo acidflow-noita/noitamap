@@ -172,6 +172,13 @@ export class DrawingSession {
   }
 
   /**
+   * Get the current map name
+   */
+  getMapName(): string {
+    return this.mapName;
+  }
+
+  /**
    * Check if there's an active drawing
    */
   hasDrawing(): boolean {
