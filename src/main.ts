@@ -225,9 +225,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             const point = viewport.viewportToViewerElementCoordinates(new OpenSeadragon.Point(x, y));
             return { x: point.x, y: point.y };
           };
+          // Get map bounds in viewport coordinates for cropping
+          const mapBoundsRect = app.osd.getCombinedItemsRect();
+          const boundsTopLeft = viewport.viewportToViewerElementCoordinates(
+            new OpenSeadragon.Point(mapBoundsRect.x, mapBoundsRect.y)
+          );
+          const boundsBottomRight = viewport.viewportToViewerElementCoordinates(
+            new OpenSeadragon.Point(mapBoundsRect.x + mapBoundsRect.width, mapBoundsRect.y + mapBoundsRect.height)
+          );
           const viewportInfo = {
             containerSize: { x: containerSize.x, y: containerSize.y },
             worldToPixel,
+            mapBounds: {
+              left: boundsTopLeft.x,
+              top: boundsTopLeft.y,
+              right: boundsBottomRight.x,
+              bottom: boundsBottomRight.y,
+            },
           };
           await captureScreenshot(osdRootElement, null, app.getMap(), shapes, viewportInfo, strokeWidth);
         },

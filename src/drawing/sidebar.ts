@@ -519,10 +519,15 @@ export class DrawingSidebar {
         const isCurrentMap = drawing.map_name === currentMap;
         const mapDisplayName = mapNameLookup.get(drawing.map_name) || drawing.map_name;
 
+        // Detect default name marker and translate dynamically
+        const displayName = drawing.name.startsWith('__default__:')
+          ? `${i18next.t('drawing.savedDrawings.defaultName')} ${new Date(parseInt(drawing.name.slice(12))).toLocaleString()}`
+          : drawing.name;
+
         return `
         <div class="list-group-item list-group-item-action d-flex align-items-center gap-2 bg-transparent text-light border-secondary ${isActive ? 'active' : ''}" data-id="${drawing.id}" data-map="${drawing.map_name}" role="button">
           <div class="flex-grow-1 min-width-0">
-            <div class="small text-truncate">${this.escapeHtml(drawing.name)}</div>
+            <div class="small text-truncate">${this.escapeHtml(displayName)}</div>
             <div class="small text-secondary">
               ${shapeCount} ${i18next.t('drawing.savedDrawings.shapes')} · ${dateStr}
               ${!isCurrentMap ? `<br><i class="bi bi-map me-1"></i>${this.escapeHtml(mapDisplayName)}` : ''}

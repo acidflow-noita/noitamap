@@ -125,7 +125,7 @@ export function createDrawing(
   return {
     id: generateDrawingId(),
     map_name: mapName,
-    name: name || `${i18next.t('drawing.savedDrawings.defaultName')} ${new Date(now).toLocaleString()}`,
+    name: name || `__default__:${now}`,
     x: viewport.x,
     y: viewport.y,
     zoom: viewport.zoom,
@@ -217,7 +217,7 @@ export class DrawingSession {
       this.currentDrawing = {
         id: this.sessionId,
         map_name: this.mapName,
-        name: `${i18next.t('drawing.savedDrawings.defaultName')} ${new Date(now).toLocaleString()}`,
+        name: `__default__:${now}`,
         x: viewport?.x ?? 0,
         y: viewport?.y ?? 0,
         zoom: viewport?.zoom ?? 1,

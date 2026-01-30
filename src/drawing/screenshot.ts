@@ -7,6 +7,12 @@ import type { Shape } from './doodle-integration';
 interface ViewportInfo {
   containerSize: { x: number; y: number };
   worldToPixel: (x: number, y: number) => { x: number; y: number };
+  mapBounds?: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+  };
 }
 
 /**
@@ -73,8 +79,37 @@ export async function captureScreenshot(
       console.log('[Screenshot] No shapes or doodle canvas to render');
     }
 
-    // Add watermark
-    await addWatermark(ctx, width, height);
+    // Crop to visible map bounds if available
+    let finalCanvas: HTMLCanvasElement = composite;
+    if (viewportInfo?.mapBounds) {
+      const mb = viewportInfo.mapBounds;
+      const dpr = width / viewportInfo.containerSize.x;
+      // Intersect map bounds with viewport (0,0,width,height)
+      const cropLeft = Math.max(0, Math.floor(mb.left * dpr));
+      const cropTop = Math.max(0, Math.floor(mb.top * dpr));
+      const cropRight = Math.min(width, Math.ceil(mb.right * dpr));
+      const cropBottom = Math.min(height, Math.ceil(mb.bottom * dpr));
+      const cropW = cropRight - cropLeft;
+      const cropH = cropBottom - cropTop;
+
+      if (cropW > 0 && cropH > 0 && (cropW < width || cropH < height)) {
+        const cropped = document.createElement('canvas');
+        cropped.width = cropW;
+        cropped.height = cropH;
+        const cropCtx = cropped.getContext('2d');
+        if (cropCtx) {
+          cropCtx.drawImage(composite, cropLeft, cropTop, cropW, cropH, 0, 0, cropW, cropH);
+          finalCanvas = cropped;
+          console.log('[Screenshot] Cropped to map bounds:', cropW, 'x', cropH);
+        }
+      }
+    }
+
+    // Add watermark to final canvas
+    const finalCtx = finalCanvas.getContext('2d');
+    if (finalCtx) {
+      await addWatermark(finalCtx, finalCanvas.width, finalCanvas.height);
+    }
 
     // Generate filename
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
@@ -83,7 +118,7 @@ export async function captureScreenshot(
     // Trigger download - use WebP lossless (quality 1.0) for smaller file size
     const link = document.createElement('a');
     link.download = filename;
-    link.href = composite.toDataURL('image/webp', 1.0);
+    link.href = finalCanvas.toDataURL('image/webp', 1.0);
     link.click();
 
     console.log('[Screenshot] Saved as', filename);
