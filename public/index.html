@@ -78,13 +78,16 @@
     </div>
     <!-- Drawing warning toast - centered at top, 25% screen width -->
     <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1100">
-      <div id="drawingWarningToast" class="toast text-warning-emphasis bg-warning-subtle" role="alert" aria-live="assertive" aria-atomic="true" style="width: 25vw; min-width: 300px; max-width: 500px;">
+      <div id="drawingWarningToast" class="toast text-warning-emphasis bg-warning-subtle" role="alert" aria-live="assertive" aria-atomic="true" style="width: 25vw; min-width: 300px; max-width: 500px">
         <div class="toast-header text-warning-emphasis bg-warning-subtle">
           <i class="bi bi-exclamation-triangle-fill me-2"></i>
           <strong class="me-auto" data-i18n="drawing.warning.title">The drawing is getting complex for lossless sharing via URL</strong>
           <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
-        <div class="toast-body" data-i18n="drawing.warning.message">Freehand strokes use the most data. To keep full quality when sharing, use fewer freehand strokes or switch to simple shapes (lines, rectangles, circles). Otherwise, shared links will show curves as less smooth. The screenshots will show all the shapes at maximum quality, don't worry.</div>
+        <div class="toast-body" data-i18n="drawing.warning.message">
+          Freehand strokes use the most data. To keep full quality when sharing, use fewer freehand strokes or switch to simple shapes (lines, rectangles, circles). Otherwise, shared links will show
+          curves as less smooth. The screenshots will show all the shapes at maximum quality, don't worry.
+        </div>
       </div>
     </div>
     <!-- Drawing sidebar container -->

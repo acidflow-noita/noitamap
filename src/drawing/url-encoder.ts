@@ -8,6 +8,9 @@
 import LZString from 'lz-string';
 import simplify from 'simplify-js';
 import type { Shape } from './doodle-integration';
+import { overlayToShort, shortToOverlay, mapToShort } from '../data_sources/param-mappings';
+import type { MapName } from '../data_sources/tile_data';
+import type { OverlayKey } from '../data_sources/overlays';
 
 // Maximum URL length (conservative limit for Discord/social media sharing)
 const MAX_URL_LENGTH = 2000;
@@ -46,10 +49,7 @@ function tryEncode(shapes: Shape[], maxChars: number): string | null {
  * NEVER drops shapes - only reduces precision of paths.
  * Returns the encoded string plus info about simplification level.
  */
-export function encodeShapesForUrl(
-  shapes: Shape[],
-  maxLength: number = MAX_URL_LENGTH
-): string | null {
+export function encodeShapesForUrl(shapes: Shape[], maxLength: number = MAX_URL_LENGTH): string | null {
   if (!shapes.length) return null;
 
   const result = encodeShapesWithInfo(shapes, maxLength);
@@ -60,10 +60,7 @@ export function encodeShapesForUrl(
  * Encode shapes with additional info about simplification.
  * Use this when you need to warn the user about precision loss.
  */
-export function encodeShapesWithInfo(
-  shapes: Shape[],
-  maxLength: number = MAX_URL_LENGTH
-): EncodeResult | null {
+export function encodeShapesWithInfo(shapes: Shape[], maxLength: number = MAX_URL_LENGTH): EncodeResult | null {
   if (!shapes.length) return null;
 
   // Budget for the compressed string (reserve space for other URL parts)
@@ -72,7 +69,8 @@ export function encodeShapesWithInfo(
   // Progressive path simplification - keep going until it fits
   // At very high tolerance, paths become just start+end points (2 coords)
   let tolerance = 1;
-  while (tolerance <= 1048576) { // Go up to 2^20, should always be enough
+  while (tolerance <= 1048576) {
+    // Go up to 2^20, should always be enough
     const simplified = simplifyShapes(shapes, tolerance);
     const result = tryEncode(simplified, budget);
     if (result) {
@@ -249,26 +247,27 @@ export function buildShareUrlWithDrawing(
 ): string {
   const url = new URL(baseUrl);
 
-  // Add viewport params
+  // Use short param names
   url.searchParams.set('x', Math.round(viewport.x).toString());
   url.searchParams.set('y', Math.round(viewport.y).toString());
-  url.searchParams.set('zoom', Math.round(viewport.zoom).toString());
-  url.searchParams.set('map', mapName);
+  url.searchParams.set('z', Math.round(viewport.zoom).toString());
+  url.searchParams.set('m', mapToShort(mapName as MapName));
 
-  // Add overlays
+  // Add overlays with short values
   if (overlays && overlays.length > 0) {
-    url.searchParams.set('overlays', overlays.join(','));
+    const shortOverlays = overlays.map(o => overlayToShort(o as OverlayKey));
+    url.searchParams.set('o', shortOverlays.join(','));
   }
 
   // Calculate remaining space for drawing data
   const baseLength = url.toString().length;
-  const availableLength = MAX_URL_LENGTH - baseLength - 10; // 10 chars buffer for "&drawing="
+  const availableLength = MAX_URL_LENGTH - baseLength - 4; // 4 chars buffer for "&d="
 
   // Add drawing if shapes exist and fit
   if (shapes.length > 0) {
     const encoded = encodeShapesForUrl(shapes, availableLength);
     if (encoded) {
-      url.searchParams.set('drawing', encoded);
+      url.searchParams.set('d', encoded);
     }
   }
 
@@ -282,11 +281,20 @@ export function parseDrawingFromUrl(searchParams: URLSearchParams): {
   shapes: Shape[] | null;
   overlays: string[];
 } {
-  const drawingParam = searchParams.get('drawing');
-  const overlaysParam = searchParams.get('overlays');
+  const drawingParam = searchParams.get('d') ?? searchParams.get('drawing');
+  const overlaysParam = searchParams.get('o') ?? searchParams.get('overlays');
+
+  // Decode overlay short codes back to full names
+  const overlays: string[] = [];
+  if (overlaysParam) {
+    for (const code of overlaysParam.split(',').filter(Boolean)) {
+      const full = shortToOverlay(code);
+      overlays.push(full ?? code);
+    }
+  }
 
   return {
     shapes: drawingParam ? decodeShapesFromUrl(drawingParam) : null,
-    overlays: overlaysParam ? overlaysParam.split(',').filter(Boolean) : [],
+    overlays,
   };
 }

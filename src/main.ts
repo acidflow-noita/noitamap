@@ -9,6 +9,7 @@ import {
   updateURLWithSidebar,
 } from './data_sources/url';
 import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from './data_sources/overlays';
+import { overlayToShort } from './data_sources/param-mappings';
 import { UnifiedSearch } from './search/unifiedsearch';
 import { asMapName } from './data_sources/tile_data';
 import { addEventListenerForId, assertElementById, debounce } from './util';
@@ -435,24 +436,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Build URL with current state including overlays and drawing
     const url = new URL(window.location.href);
 
-    // Add overlays to URL
+    // Add overlays to URL (using short codes)
     const overlays = getEnabledOverlays();
     if (overlays.length > 0) {
-      url.searchParams.set('overlays', overlays.join(','));
+      url.searchParams.set('o', overlays.map(overlayToShort).join(','));
     } else {
-      url.searchParams.delete('overlays');
+      url.searchParams.delete('o');
     }
 
-    // Add drawing to URL if present
+    // Add drawing to URL if present (using short param name)
     if (drawingManager) {
       const shapes = drawingManager.getShapes();
       if (shapes.length > 0) {
         const result = encodeShapesWithInfo(shapes);
         if (result) {
-          url.searchParams.set('drawing', result.encoded);
+          url.searchParams.set('d', result.encoded);
         }
       } else {
-        url.searchParams.delete('drawing');
+        url.searchParams.delete('d');
       }
     }
 
