@@ -180,11 +180,21 @@ export class DrawingSidebar {
           <i class="bi bi-twitch me-2"></i>${i18next.t('drawing.auth.signInButton')}
         </button>
       </div>
+      <div class="sidebar-section p-2 border-top border-secondary">
+        <p class="text-secondary small mb-2">${i18next.t('drawing.import.viewOnly', 'You can view shared drawings:')}</p>
+        <button class="btn btn-sm btn-outline-light w-100" id="import-webp-btn-unauth" title="${i18next.t('drawing.actions.importWebpTitle')}">
+          <i class="bi bi-upload me-2"></i>${i18next.t('drawing.actions.importWebp')}
+        </button>
+        <input type="file" id="import-webp-input-unauth" accept="image/webp" style="display: none;">
+      </div>
     `;
 
     this.contentArea.querySelector('#auth-login-btn')?.addEventListener('click', () => {
       authService.login();
     });
+
+    // Bind import button for unauthenticated users
+    this.bindImportButton('import-webp-btn-unauth', 'import-webp-input-unauth');
 
     // Disable drawing when not authenticated
     this.drawingManager.disable();
@@ -205,11 +215,21 @@ export class DrawingSidebar {
           ${i18next.t('drawing.auth.signOut')}
         </button>
       </div>
+      <div class="sidebar-section p-2 border-top border-secondary">
+        <p class="text-secondary small mb-2">${i18next.t('drawing.import.viewOnly', 'You can view shared drawings:')}</p>
+        <button class="btn btn-sm btn-outline-light w-100" id="import-webp-btn-nonsub" title="${i18next.t('drawing.actions.importWebpTitle')}">
+          <i class="bi bi-upload me-2"></i>${i18next.t('drawing.actions.importWebp')}
+        </button>
+        <input type="file" id="import-webp-input-nonsub" accept="image/webp" style="display: none;">
+      </div>
     `;
 
     this.contentArea.querySelector('#auth-logout-btn')?.addEventListener('click', async () => {
       await authService.logout();
     });
+
+    // Bind import button for non-subscriber users
+    this.bindImportButton('import-webp-btn-nonsub', 'import-webp-input-nonsub');
 
     // Disable drawing when not subscribed
     this.drawingManager.disable();
@@ -500,6 +520,25 @@ export class DrawingSidebar {
     }
 
     console.log('[Sidebar] Imported', result.shapes.length, 'shapes from WebP');
+  }
+
+  /**
+   * Helper to bind import button and file input by IDs
+   * Used for both subscriber and non-subscriber views
+   */
+  private bindImportButton(buttonId: string, inputId: string): void {
+    const importBtn = this.contentArea.querySelector(`#${buttonId}`);
+    const importInput = this.contentArea.querySelector(`#${inputId}`) as HTMLInputElement;
+    importBtn?.addEventListener('click', () => {
+      importInput?.click();
+    });
+    importInput?.addEventListener('change', async () => {
+      const file = importInput.files?.[0];
+      if (file) {
+        await this.importWebp(file);
+        importInput.value = ''; // Reset for next import
+      }
+    });
   }
 
   private strokeWidthToSlider(width: number): number {

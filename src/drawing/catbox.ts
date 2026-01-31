@@ -4,11 +4,19 @@
  * Catbox.moe provides free anonymous file hosting.
  * Files are stored at: https://files.catbox.moe/{fileId}.{ext}
  *
+ * Uploads go through our CF Worker proxy (catbox doesn't support CORS).
+ * Downloads are direct from catbox (no CORS issues for GET requests).
+ *
  * For URL sharing, we use a short format: cb:{fileId}
  * Example: cb:vs77xc (reconstructs to https://files.catbox.moe/vs77xc.webp)
  */
 
-const CATBOX_UPLOAD_URL = 'https://catbox.moe/user/api.php';
+// Proxy URL - use dev or prod based on current hostname
+const IMAGE_UPLOAD_PROXY_URL = window.location.hostname === 'localhost'
+  || window.location.hostname === 'dev.noitamap.com'
+  ? 'https://noitamap-image-upload-proxy-dev.wuote.workers.dev'
+  : 'https://noitamap-image-upload-proxy.wuote.workers.dev';
+
 const CATBOX_FILES_URL = 'https://files.catbox.moe';
 
 /**
@@ -21,7 +29,8 @@ export async function uploadToCatbox(blob: Blob): Promise<string | null> {
     formData.append('reqtype', 'fileupload');
     formData.append('fileToUpload', blob, 'drawing.webp');
 
-    const response = await fetch(CATBOX_UPLOAD_URL, {
+    // Use proxy to avoid CORS issues
+    const response = await fetch(IMAGE_UPLOAD_PROXY_URL, {
       method: 'POST',
       body: formData,
     });
