@@ -7,8 +7,9 @@
 import type { Shape } from './doodle-integration';
 import { encodeShapesBinary, decodeShapesBinary } from './binary-encoder';
 
-// Custom RIFF chunk ID for noitamap drawing data (must be exactly 4 ASCII chars)
+// Custom RIFF chunk IDs (must be exactly 4 ASCII chars)
 const DRAW_CHUNK_ID = 'NOIT';
+const MAP_CHUNK_ID = 'NMAP';
 
 interface ViewportInfo {
   containerSize: { x: number; y: number };
@@ -24,7 +25,22 @@ interface ViewportInfo {
 /**
  * Inject drawing data into a WebP blob as a custom RIFF chunk
  */
-async function injectDrawingData(webpBlob: Blob, shapes: Shape[], strokeWidth: number): Promise<Blob> {
+function createRiffChunk(chunkId: string, data: Uint8Array): Uint8Array {
+  const paddedSize = data.length + (data.length % 2);
+  const chunk = new Uint8Array(8 + paddedSize);
+  chunk[0] = chunkId.charCodeAt(0);
+  chunk[1] = chunkId.charCodeAt(1);
+  chunk[2] = chunkId.charCodeAt(2);
+  chunk[3] = chunkId.charCodeAt(3);
+  chunk[4] = data.length & 0xff;
+  chunk[5] = (data.length >> 8) & 0xff;
+  chunk[6] = (data.length >> 16) & 0xff;
+  chunk[7] = (data.length >> 24) & 0xff;
+  chunk.set(data, 8);
+  return chunk;
+}
+
+async function injectDrawingData(webpBlob: Blob, shapes: Shape[], strokeWidth: number, mapName?: string): Promise<Blob> {
   const binary = encodeShapesBinary(shapes, strokeWidth);
   if (!binary || binary.length === 0) {
     return webpBlob;
@@ -42,28 +58,22 @@ async function injectDrawingData(webpBlob: Blob, shapes: Shape[], strokeWidth: n
     return webpBlob;
   }
 
-  // Create new RIFF chunk for drawing data
-  // Chunk format: [4-byte ID][4-byte size (LE)][data][padding if odd]
-  const chunkSize = binary.length;
-  const paddedSize = chunkSize + (chunkSize % 2); // RIFF chunks must be 2-byte aligned
-  const chunkHeader = new Uint8Array(8);
-  chunkHeader[0] = DRAW_CHUNK_ID.charCodeAt(0);
-  chunkHeader[1] = DRAW_CHUNK_ID.charCodeAt(1);
-  chunkHeader[2] = DRAW_CHUNK_ID.charCodeAt(2);
-  chunkHeader[3] = DRAW_CHUNK_ID.charCodeAt(3);
-  // Size as little-endian uint32
-  chunkHeader[4] = chunkSize & 0xff;
-  chunkHeader[5] = (chunkSize >> 8) & 0xff;
-  chunkHeader[6] = (chunkSize >> 16) & 0xff;
-  chunkHeader[7] = (chunkSize >> 24) & 0xff;
+  // Build chunks to append
+  const drawChunk = createRiffChunk(DRAW_CHUNK_ID, binary);
+  const mapChunk = mapName
+    ? createRiffChunk(MAP_CHUNK_ID, new TextEncoder().encode(mapName))
+    : null;
 
-  // Build new WebP file: original data + new chunk
-  const newSize = webpData.length + 8 + paddedSize;
+  const extraSize = drawChunk.length + (mapChunk ? mapChunk.length : 0);
+  const newSize = webpData.length + extraSize;
   const newData = new Uint8Array(newSize);
   newData.set(webpData, 0);
-  newData.set(chunkHeader, webpData.length);
-  newData.set(binary, webpData.length + 8);
-  // Padding byte (if needed) is already 0
+  let writeOffset = webpData.length;
+  newData.set(drawChunk, writeOffset);
+  writeOffset += drawChunk.length;
+  if (mapChunk) {
+    newData.set(mapChunk, writeOffset);
+  }
 
   // Update RIFF file size (bytes 4-7, little-endian, excludes first 8 bytes)
   const riffSize = newSize - 8;
@@ -77,11 +87,11 @@ async function injectDrawingData(webpBlob: Blob, shapes: Shape[], strokeWidth: n
 
 /**
  * Extract drawing data from a WebP file
- * Returns shapes and strokeWidth, or null if no drawing data found
+ * Returns shapes, strokeWidth, and mapName, or null if no drawing data found
  */
 export async function extractDrawingData(
   file: File | Blob
-): Promise<{ shapes: Shape[]; strokeWidth: number } | null> {
+): Promise<{ shapes: Shape[]; strokeWidth: number; mapName?: string } | null> {
   try {
     const data = new Uint8Array(await file.arrayBuffer());
 
@@ -94,8 +104,11 @@ export async function extractDrawingData(
       return null;
     }
 
-    // Parse RIFF chunks to find NOIT chunk
+    // Parse RIFF chunks to find NOIT and NMAP chunks
     let offset = 12; // Skip RIFF header + WEBP signature
+    let drawingResult: { shapes: Shape[]; strokeWidth: number } | null = null;
+    let mapName: string | undefined;
+
     while (offset + 8 <= data.length) {
       const chunkId = String.fromCharCode(data[offset], data[offset + 1], data[offset + 2], data[offset + 3]);
       const chunkSize =
@@ -104,15 +117,20 @@ export async function extractDrawingData(
       if (chunkId === DRAW_CHUNK_ID) {
         // Found drawing data chunk
         const chunkData = data.slice(offset + 8, offset + 8 + chunkSize);
-        const result = decodeShapesBinary(chunkData);
-        if (result) {
-          console.log('[Screenshot] Extracted', result.shapes.length, 'shapes from WebP');
-          return result;
-        }
+        drawingResult = decodeShapesBinary(chunkData);
+      } else if (chunkId === MAP_CHUNK_ID) {
+        // Found map name chunk
+        const chunkData = data.slice(offset + 8, offset + 8 + chunkSize);
+        mapName = new TextDecoder().decode(chunkData);
       }
 
       // Move to next chunk (8-byte header + size, padded to 2-byte boundary)
       offset += 8 + chunkSize + (chunkSize % 2);
+    }
+
+    if (drawingResult) {
+      console.log('[Screenshot] Extracted', drawingResult.shapes.length, 'shapes from WebP, map:', mapName);
+      return { ...drawingResult, mapName };
     }
 
     return null;
@@ -227,10 +245,10 @@ export async function captureScreenshot(
       return null;
     }
 
-    // Embed drawing data in WebP if shapes exist
+    // Embed drawing data and map name in WebP if shapes exist
     const finalBlob =
       shapes && shapes.length > 0
-        ? await injectDrawingData(blob, shapes, strokeWidth ?? 5)
+        ? await injectDrawingData(blob, shapes, strokeWidth ?? 5, mapName)
         : blob;
 
     console.log('[Screenshot] Captured', finalBlob.size, 'bytes');

@@ -335,11 +335,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (blob) {
           const result = await extractDrawingData(blob);
           if (result && result.shapes.length > 0) {
+            // Switch to the correct map if embedded map name differs from current
+            if (result.mapName) {
+              const validMapName = asMapName(result.mapName);
+              if (validMapName && validMapName !== mapName) {
+                console.log('[Main] Switching to map:', validMapName);
+                await app.setMap(validMapName);
+                drawingSession.setMap(validMapName);
+              }
+            }
+
             drawingManager.loadShapes(result.shapes);
             if (result.strokeWidth) {
               drawingManager.setStrokeWidth(result.strokeWidth);
             }
-            console.log('[Main] Loaded', result.shapes.length, 'shapes from catbox');
+            console.log('[Main] Loaded', result.shapes.length, 'shapes from catbox, map:', result.mapName);
             // Auto-open sidebar when loading shared drawing
             if (drawToggleCheckbox && drawingSidebar) {
               drawToggleCheckbox.checked = true;

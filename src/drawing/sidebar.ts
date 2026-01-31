@@ -505,6 +505,13 @@ export class DrawingSidebar {
       return;
     }
 
+    // Switch to the correct map if embedded map name differs from current
+    const currentMap = this.session.getMapName();
+    if (result.mapName && result.mapName !== currentMap && this.options.onMapChange) {
+      await this.options.onMapChange(result.mapName);
+      this.session.setMap(result.mapName);
+    }
+
     // Load shapes into drawing manager
     this.drawingManager.loadShapes(result.shapes);
 
@@ -519,7 +526,7 @@ export class DrawingSidebar {
       }
     }
 
-    console.log('[Sidebar] Imported', result.shapes.length, 'shapes from WebP');
+    console.log('[Sidebar] Imported', result.shapes.length, 'shapes from WebP, map:', result.mapName);
   }
 
   /**
