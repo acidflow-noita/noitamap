@@ -11,6 +11,11 @@ import {
 import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from './data_sources/overlays';
 import { overlayToShort } from './data_sources/param-mappings';
 import { UnifiedSearch } from './search/unifiedsearch';
+import {
+  createSimplificationPreview,
+  createSimplificationSlider,
+  type SimplificationPreview,
+} from './drawing/simplification-preview';
 import { asMapName } from './data_sources/tile_data';
 import { addEventListenerForId, assertElementById, debounce } from './util';
 import { createMapLinks, NAV_LINK_IDENTIFIER } from './nav';
@@ -34,6 +39,11 @@ let globalDrawingManager: DrawingManager | null = null;
 let globalDrawingSession: DrawingSession | null = null;
 let globalDrawingSidebar: DrawingSidebar | null = null;
 
+// Global reference for simplification preview (debug tool)
+let globalSimplificationPreview: SimplificationPreview | null = null;
+let globalSimplificationStatusUpdate: (() => void) | null = null;
+let globalApp: App | null = null;
+
 // Dev console commands (only on dev.noitamap.com, localhost, or file://)
 const isDev = window.location.hostname === 'dev.noitamap.com'
   || window.location.hostname === 'localhost'
@@ -47,6 +57,47 @@ if (isDev) {
     disableDrawing: () => {
       localStorage.removeItem('noitamap-dev-drawing');
       console.log('Drawing dev mode disabled. Refresh to see changes.');
+    },
+    enableSimplificationPreview: () => {
+      if (!globalApp) {
+        console.error('App not initialized yet. Wait for page to load.');
+        return;
+      }
+      if (!globalDrawingManager) {
+        console.error('Drawing manager not available. Enable drawing first with noitamap.enableDrawing() and refresh.');
+        return;
+      }
+      if (globalSimplificationPreview?.isEnabled()) {
+        console.log('Simplification preview already enabled.');
+        return;
+      }
+
+      // Create preview if not exists
+      if (!globalSimplificationPreview) {
+        globalSimplificationPreview = createSimplificationPreview(globalApp.osd);
+      }
+
+      // Enable and create UI
+      globalSimplificationPreview.enable();
+      globalSimplificationPreview.setShapes(globalDrawingManager.getShapes());
+
+      const { element, updateStatus } = createSimplificationSlider(
+        globalSimplificationPreview,
+        () => globalDrawingManager?.getShapes() ?? []
+      );
+      globalSimplificationStatusUpdate = updateStatus;
+      document.body.appendChild(element);
+
+      console.log('Simplification preview enabled. Use the slider to adjust tolerance.');
+    },
+    disableSimplificationPreview: () => {
+      if (globalSimplificationPreview) {
+        globalSimplificationPreview.disable();
+        globalSimplificationStatusUpdate = null;
+        const panel = document.getElementById('simplification-debug-panel');
+        if (panel) panel.remove();
+        console.log('Simplification preview disabled.');
+      }
     },
   };
 }
@@ -117,6 +168,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initialState: urlState,
     useWebGL: storedRenderer === 'webgl',
   });
+  globalApp = app;
 
   const initialMapName = app.getMap();
 
@@ -179,6 +231,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           y: center.y,
           zoom: zoom,
         });
+
+        // Update simplification preview if active
+        if (globalSimplificationPreview?.isEnabled()) {
+          globalSimplificationPreview.setShapes(shapes);
+          globalSimplificationStatusUpdate?.();
+        }
       },
     });
     globalDrawingManager = drawingManager;

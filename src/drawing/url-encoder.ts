@@ -77,7 +77,7 @@ export function encodeShapesWithInfo(shapes: Shape[], maxLength: number = MAX_UR
       return {
         encoded: result,
         tolerance,
-        simplified: tolerance > 64, // Consider "simplified" when tolerance is high
+        simplified: tolerance > 1, // Warn on any simplification
       };
     }
     tolerance *= 2;
