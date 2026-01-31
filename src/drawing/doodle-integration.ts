@@ -50,6 +50,7 @@ export interface DrawingManager {
   getShapes(): Shape[];
   loadShapes(shapes: Shape[]): void;
   clearShapes(): void;
+  resetShapes(): void; // Clear shapes and history (for map changes)
   setVisibility(visible: boolean): void;
   isVisible(): boolean;
   getCanvas(): HTMLCanvasElement | null;
@@ -296,6 +297,19 @@ export async function createDrawingManager(
         pushHistory({ type: 'clear', shapes });
       }
       doodle.clear();
+      callbacks?.onShapeChange?.();
+    },
+
+    resetShapes() {
+      // Clear shapes AND history - use for map changes
+      doodle.clear();
+      undoStack.length = 0;
+      redoStack.length = 0;
+      // Force immediate render to prevent blink of old shapes
+      if (doodle.pixiApp?.renderer) {
+        doodle.pixiApp.renderer.render(doodle.pixiApp.stage);
+      }
+      notifyHistoryChange();
       callbacks?.onShapeChange?.();
     },
 

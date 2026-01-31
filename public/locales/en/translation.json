@@ -782,8 +782,13 @@
       "newTitle": "Start new drawing",
       "download": "Download image",
       "downloadTitle": "Download drawing as image",
+      "importWebp": "Import",
+      "importWebpTitle": "Import drawing from WebP screenshot",
       "exportJson": "Export JSON",
       "exportJsonTitle": "Export shapes as JSON"
+    },
+    "import": {
+      "noData": "No drawing data found in this WebP file"
     },
     "savedDrawings": {
       "label": "Saved Drawings",

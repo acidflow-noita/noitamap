@@ -1,8 +1,9 @@
 /**
  * Simplification Preview - Debug tool to visualize URL compression quality loss
  *
- * Shows a semi-transparent overlay of simplified shapes so users can see
- * how their drawing will look when shared via URL.
+ * DISABLED: This module is no longer actively used.
+ * Drawing sharing now uses catbox.moe image upload with lossless binary data.
+ * No simplification is applied. Code is kept for reference.
  */
 
 import simplify from 'simplify-js';
@@ -26,17 +27,23 @@ interface SimplificationPreview {
 
 /**
  * Simplify path-based shapes to reduce data size
- * Only simplifies path, closed_path, and polygon - other shapes pass through unchanged
+ * Uses adaptive tolerance based on each shape's size (matches url-encoder.ts)
  */
-function simplifyShapes(shapes: Shape[], tolerance: number): Shape[] {
-  if (tolerance <= 1) return shapes; // No simplification needed
+function simplifyShapes(shapes: Shape[], toleranceFactor: number): Shape[] {
+  if (toleranceFactor <= 1) return shapes; // No simplification needed
 
   return shapes.map(shape => {
     // Only simplify path-like shapes (same as url-encoder.ts)
     if (shape.type === 'path' || shape.type === 'closed_path' || shape.type === 'polygon') {
       const points = posToPoints(shape.pos);
       if (points.length < 3) return shape; // Need at least 3 points to simplify
-      const simplified = simplify(points, tolerance, true);
+
+      // Calculate shape's bounding box to determine adaptive tolerance
+      const shapeSize = getShapeSize(points);
+      // Tolerance is a fraction of the shape's size
+      const adaptiveTolerance = (shapeSize * (toleranceFactor - 1)) / 200;
+
+      const simplified = simplify(points, adaptiveTolerance, true);
       return {
         ...shape,
         pos: pointsToPos(simplified),
@@ -45,6 +52,25 @@ function simplifyShapes(shapes: Shape[], tolerance: number): Shape[] {
     // Non-path shapes (rect, circle, line, etc.) are NOT simplified
     return shape;
   });
+}
+
+/**
+ * Get the size (max dimension) of a shape's bounding box
+ */
+function getShapeSize(points: Array<{ x: number; y: number }>): number {
+  if (points.length === 0) return 0;
+
+  let minX = points[0].x, maxX = points[0].x;
+  let minY = points[0].y, maxY = points[0].y;
+
+  for (const p of points) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+
+  return Math.max(maxX - minX, maxY - minY, 1);
 }
 
 function posToPoints(pos: number[]): Array<{ x: number; y: number }> {

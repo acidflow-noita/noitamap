@@ -1,8 +1,14 @@
 /**
  * Screenshot Export - Capture map with drawings
+ *
+ * Embeds drawing data in WebP metadata using a custom RIFF chunk.
  */
 
 import type { Shape } from './doodle-integration';
+import { encodeShapesBinary, decodeShapesBinary } from './binary-encoder';
+
+// Custom RIFF chunk ID for noitamap drawing data (must be exactly 4 ASCII chars)
+const DRAW_CHUNK_ID = 'NOIT';
 
 interface ViewportInfo {
   containerSize: { x: number; y: number };
@@ -16,7 +22,110 @@ interface ViewportInfo {
 }
 
 /**
- * Capture a screenshot of the map canvas with drawing overlay
+ * Inject drawing data into a WebP blob as a custom RIFF chunk
+ */
+async function injectDrawingData(webpBlob: Blob, shapes: Shape[], strokeWidth: number): Promise<Blob> {
+  const binary = encodeShapesBinary(shapes, strokeWidth);
+  if (!binary || binary.length === 0) {
+    return webpBlob;
+  }
+
+  const webpData = new Uint8Array(await webpBlob.arrayBuffer());
+
+  // Verify WebP format: starts with "RIFF" and contains "WEBP"
+  if (
+    webpData.length < 12 ||
+    String.fromCharCode(webpData[0], webpData[1], webpData[2], webpData[3]) !== 'RIFF' ||
+    String.fromCharCode(webpData[8], webpData[9], webpData[10], webpData[11]) !== 'WEBP'
+  ) {
+    console.warn('[Screenshot] Not a valid WebP file, skipping drawing data injection');
+    return webpBlob;
+  }
+
+  // Create new RIFF chunk for drawing data
+  // Chunk format: [4-byte ID][4-byte size (LE)][data][padding if odd]
+  const chunkSize = binary.length;
+  const paddedSize = chunkSize + (chunkSize % 2); // RIFF chunks must be 2-byte aligned
+  const chunkHeader = new Uint8Array(8);
+  chunkHeader[0] = DRAW_CHUNK_ID.charCodeAt(0);
+  chunkHeader[1] = DRAW_CHUNK_ID.charCodeAt(1);
+  chunkHeader[2] = DRAW_CHUNK_ID.charCodeAt(2);
+  chunkHeader[3] = DRAW_CHUNK_ID.charCodeAt(3);
+  // Size as little-endian uint32
+  chunkHeader[4] = chunkSize & 0xff;
+  chunkHeader[5] = (chunkSize >> 8) & 0xff;
+  chunkHeader[6] = (chunkSize >> 16) & 0xff;
+  chunkHeader[7] = (chunkSize >> 24) & 0xff;
+
+  // Build new WebP file: original data + new chunk
+  const newSize = webpData.length + 8 + paddedSize;
+  const newData = new Uint8Array(newSize);
+  newData.set(webpData, 0);
+  newData.set(chunkHeader, webpData.length);
+  newData.set(binary, webpData.length + 8);
+  // Padding byte (if needed) is already 0
+
+  // Update RIFF file size (bytes 4-7, little-endian, excludes first 8 bytes)
+  const riffSize = newSize - 8;
+  newData[4] = riffSize & 0xff;
+  newData[5] = (riffSize >> 8) & 0xff;
+  newData[6] = (riffSize >> 16) & 0xff;
+  newData[7] = (riffSize >> 24) & 0xff;
+
+  return new Blob([newData], { type: 'image/webp' });
+}
+
+/**
+ * Extract drawing data from a WebP file
+ * Returns shapes and strokeWidth, or null if no drawing data found
+ */
+export async function extractDrawingData(
+  file: File | Blob
+): Promise<{ shapes: Shape[]; strokeWidth: number } | null> {
+  try {
+    const data = new Uint8Array(await file.arrayBuffer());
+
+    // Verify WebP format
+    if (
+      data.length < 12 ||
+      String.fromCharCode(data[0], data[1], data[2], data[3]) !== 'RIFF' ||
+      String.fromCharCode(data[8], data[9], data[10], data[11]) !== 'WEBP'
+    ) {
+      return null;
+    }
+
+    // Parse RIFF chunks to find NOIT chunk
+    let offset = 12; // Skip RIFF header + WEBP signature
+    while (offset + 8 <= data.length) {
+      const chunkId = String.fromCharCode(data[offset], data[offset + 1], data[offset + 2], data[offset + 3]);
+      const chunkSize =
+        data[offset + 4] | (data[offset + 5] << 8) | (data[offset + 6] << 16) | (data[offset + 7] << 24);
+
+      if (chunkId === DRAW_CHUNK_ID) {
+        // Found drawing data chunk
+        const chunkData = data.slice(offset + 8, offset + 8 + chunkSize);
+        const result = decodeShapesBinary(chunkData);
+        if (result) {
+          console.log('[Screenshot] Extracted', result.shapes.length, 'shapes from WebP');
+          return result;
+        }
+      }
+
+      // Move to next chunk (8-byte header + size, padded to 2-byte boundary)
+      offset += 8 + chunkSize + (chunkSize % 2);
+    }
+
+    return null;
+  } catch (e) {
+    console.error('[Screenshot] Failed to extract drawing data:', e);
+    return null;
+  }
+}
+
+/**
+ * Capture a screenshot of the map canvas with drawing overlay.
+ * Returns a WebP blob with drawing data embedded in a NOIT RIFF chunk.
+ * The caller decides what to do with it (download, upload, etc.)
  */
 export async function captureScreenshot(
   osdElement: HTMLElement,
@@ -25,7 +134,7 @@ export async function captureScreenshot(
   shapes?: Shape[],
   viewportInfo?: ViewportInfo,
   strokeWidth?: number
-): Promise<void> {
+): Promise<Blob | null> {
   try {
     // Find all canvases in the OSD element
     const allCanvases = osdElement.querySelectorAll('canvas');
@@ -35,7 +144,7 @@ export async function captureScreenshot(
     const osdCanvas = allCanvases[0] as HTMLCanvasElement;
     if (!osdCanvas) {
       console.error('[Screenshot] OSD canvas not found');
-      return;
+      return null;
     }
 
     console.log('[Screenshot] OSD canvas:', osdCanvas.width, 'x', osdCanvas.height);
@@ -49,7 +158,7 @@ export async function captureScreenshot(
     const ctx = composite.getContext('2d');
     if (!ctx) {
       console.error('[Screenshot] Failed to get canvas context');
-      return;
+      return null;
     }
 
     // Draw the map canvas
@@ -111,20 +220,45 @@ export async function captureScreenshot(
       await addWatermark(finalCtx, finalCanvas.width, finalCanvas.height);
     }
 
-    // Generate filename
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const filename = `noitamap-${mapName}-${timestamp}.webp`;
+    // Convert canvas to blob, inject drawing data
+    const blob = await canvasToBlob(finalCanvas);
+    if (!blob) {
+      console.error('[Screenshot] Failed to create blob');
+      return null;
+    }
 
-    // Trigger download - use WebP lossless (quality 1.0) for smaller file size
-    const link = document.createElement('a');
-    link.download = filename;
-    link.href = finalCanvas.toDataURL('image/webp', 1.0);
-    link.click();
+    // Embed drawing data in WebP if shapes exist
+    const finalBlob =
+      shapes && shapes.length > 0
+        ? await injectDrawingData(blob, shapes, strokeWidth ?? 5)
+        : blob;
 
-    console.log('[Screenshot] Saved as', filename);
+    console.log('[Screenshot] Captured', finalBlob.size, 'bytes');
+    return finalBlob;
   } catch (error) {
     console.error('[Screenshot] Failed:', error);
+    return null;
   }
+}
+
+/**
+ * Download a blob as a file
+ */
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = url;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Generate a screenshot filename
+ */
+export function screenshotFilename(mapName: string): string {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  return `noitamap-${mapName}-${timestamp}.webp`;
 }
 
 /**
@@ -347,4 +481,17 @@ export function getDoodleCanvas(viewerElement: HTMLElement): HTMLCanvasElement |
     return canvases[1] as HTMLCanvasElement;
   }
   return null;
+}
+
+/**
+ * Convert canvas to WebP blob
+ */
+function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
+  return new Promise(resolve => {
+    canvas.toBlob(
+      blob => resolve(blob),
+      'image/webp',
+      1.0 // lossless quality
+    );
+  });
 }

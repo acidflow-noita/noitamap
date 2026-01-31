@@ -15,6 +15,7 @@ export interface SidebarOptions {
   session: DrawingSession;
   onVisibilityChange?: (visible: boolean) => void;
   onSave?: () => void;
+  onNew?: () => void;
   onScreenshot?: () => void;
   onClose?: () => void;
   onMapChange?: (mapName: string) => Promise<void>;
@@ -42,21 +43,18 @@ const TOOLS: ToolConfig[] = [
   { id: 'point', icon: 'bi-dot', titleKey: 'drawing.tools.point' },
 ];
 
+import { COLOR_PALETTE, COLOR_NAME_KEYS } from './constants';
+import { extractDrawingData } from './screenshot';
+
 interface ColorPreset {
   color: string;
   nameKey: string;
 }
 
-const COLOR_PRESETS: ColorPreset[] = [
-  { color: '#ffffff', nameKey: 'drawing.color.white' },
-  { color: '#ef4444', nameKey: 'drawing.color.red' },
-  { color: '#f97316', nameKey: 'drawing.color.orange' },
-  { color: '#eab308', nameKey: 'drawing.color.yellow' },
-  { color: '#22c55e', nameKey: 'drawing.color.green' },
-  { color: '#06b6d4', nameKey: 'drawing.color.cyan' },
-  { color: '#3b82f6', nameKey: 'drawing.color.blue' },
-  { color: '#8b5cf6', nameKey: 'drawing.color.violet' },
-];
+const COLOR_PRESETS: ColorPreset[] = COLOR_PALETTE.map((color, i) => ({
+  color,
+  nameKey: COLOR_NAME_KEYS[i],
+}));
 
 export class DrawingSidebar {
   private container: HTMLElement;
@@ -99,9 +97,9 @@ export class DrawingSidebar {
       this.renderContent();
     });
 
-    // Listen for drawing simplification warnings
-    this.simplifiedHandler = () => this.showSimplifiedWarning();
-    window.addEventListener('drawing-simplified', this.simplifiedHandler);
+    // DISABLED: Simplification warnings no longer needed - drawings shared via catbox.moe lossless upload
+    // this.simplifiedHandler = () => this.showSimplifiedWarning();
+    // window.addEventListener('drawing-simplified', this.simplifiedHandler);
 
     // Re-render when language changes
     i18next.on('languageChanged', () => {
@@ -290,6 +288,10 @@ export class DrawingSidebar {
           <button class="btn btn-sm btn-outline-light flex-fill" id="screenshot-btn" title="${i18next.t('drawing.actions.downloadTitle')}">
             <i class="bi bi-download"></i> ${i18next.t('drawing.actions.download')}
           </button>
+          <button class="btn btn-sm btn-outline-light flex-fill" id="import-webp-btn" title="${i18next.t('drawing.actions.importWebpTitle')}">
+            <i class="bi bi-upload"></i> ${i18next.t('drawing.actions.importWebp')}
+          </button>
+          <input type="file" id="import-webp-input" accept="image/webp" style="display: none;">
           <button class="btn btn-sm btn-outline-light flex-fill" id="export-json-btn" title="${i18next.t('drawing.actions.exportJsonTitle')}">
             <i class="bi bi-filetype-json"></i> ${i18next.t('drawing.actions.exportJson')}
           </button>
@@ -392,6 +394,7 @@ export class DrawingSidebar {
       this.drawingManager.clearShapes();
       this.session.clear();
       this.refreshDrawingsList();
+      this.options.onNew?.();
     });
 
     // Screenshot
@@ -402,6 +405,20 @@ export class DrawingSidebar {
     // Export JSON
     this.contentArea.querySelector('#export-json-btn')?.addEventListener('click', () => {
       this.exportJson();
+    });
+
+    // Import WebP with embedded drawing data
+    const importBtn = this.contentArea.querySelector('#import-webp-btn');
+    const importInput = this.contentArea.querySelector('#import-webp-input') as HTMLInputElement;
+    importBtn?.addEventListener('click', () => {
+      importInput?.click();
+    });
+    importInput?.addEventListener('change', async () => {
+      const file = importInput.files?.[0];
+      if (file) {
+        await this.importWebp(file);
+        importInput.value = ''; // Reset for next import
+      }
     });
 
     // Undo
@@ -458,6 +475,46 @@ export class DrawingSidebar {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  private async importWebp(file: File): Promise<void> {
+    const result = await extractDrawingData(file);
+    if (!result || result.shapes.length === 0) {
+      console.log('[Sidebar] No drawing data found in WebP file');
+      alert(i18next.t('drawing.import.noData'));
+      return;
+    }
+
+    // Load shapes into drawing manager
+    this.drawingManager.loadShapes(result.shapes);
+
+    // Update stroke width if available
+    if (result.strokeWidth) {
+      this.drawingManager.setStrokeWidth(result.strokeWidth);
+      // Update slider to match
+      if (this.strokeSlider) {
+        const sliderValue = this.strokeWidthToSlider(result.strokeWidth);
+        this.strokeSlider.value = sliderValue.toString();
+        this.strokeValue.textContent = `${result.strokeWidth}px`;
+      }
+    }
+
+    console.log('[Sidebar] Imported', result.shapes.length, 'shapes from WebP');
+  }
+
+  private strokeWidthToSlider(width: number): number {
+    // Map stroke width to slider value (0-3)
+    const widths = [2, 5, 10, 15];
+    let closest = 0;
+    let minDiff = Math.abs(widths[0] - width);
+    for (let i = 1; i < widths.length; i++) {
+      const diff = Math.abs(widths[i] - width);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = i;
+      }
+    }
+    return closest;
   }
 
   private selectTool(tool: ShapeType): void {

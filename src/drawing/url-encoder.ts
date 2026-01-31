@@ -1,26 +1,27 @@
 /**
  * URL Encoder - Encode/decode drawings for URL sharing
  *
- * Uses LZ-string compression and progressive simplification
- * to keep URLs under the maximum length limit.
+ * DISABLED: This module is no longer actively used.
+ * Drawing sharing now uses catbox.moe image upload with lossless binary data
+ * embedded in WebP NOIT RIFF chunks. See catbox.ts and screenshot.ts.
+ *
+ * Code is kept for reference but not imported anywhere.
  */
 
-import LZString from 'lz-string';
 import simplify from 'simplify-js';
 import type { Shape } from './doodle-integration';
 import { overlayToShort, shortToOverlay, mapToShort } from '../data_sources/param-mappings';
 import type { MapName } from '../data_sources/tile_data';
 import type { OverlayKey } from '../data_sources/overlays';
+import {
+  encodeShapesBinary,
+  decodeShapesBinary,
+  base64urlEncode,
+  base64urlDecode,
+} from './binary-encoder';
 
 // Maximum URL length (conservative limit for Discord/social media sharing)
-const MAX_URL_LENGTH = 2000;
-
-// Compact shape format for URL encoding
-interface CompactShape {
-  t: string; // type
-  c: string; // color
-  p: number[]; // positions (delta encoded for paths)
-}
+const MAX_URL_LENGTH = 499;
 
 /**
  * Result of encoding shapes for URL
@@ -32,14 +33,14 @@ export interface EncodeResult {
 }
 
 /**
- * Try to compress shapes within the given character budget.
- * Returns the compressed string, or null if it doesn't fit.
+ * Try to encode shapes in binary format within the given character budget.
+ * Returns the base64url-encoded string, or null if it doesn't fit.
  */
-function tryEncode(shapes: Shape[], maxChars: number): string | null {
-  const compact = toCompactFormat(shapes);
-  const json = JSON.stringify(compact);
-  const compressed = LZString.compressToEncodedURIComponent(json);
-  return compressed.length < maxChars ? compressed : null;
+function tryEncode(shapes: Shape[], maxChars: number, strokeWidth: number = 5): string | null {
+  const binary = encodeShapesBinary(shapes, strokeWidth);
+  if (!binary) return null;
+  const encoded = base64urlEncode(binary);
+  return encoded.length <= maxChars ? encoded : null;
 }
 
 /**
@@ -95,27 +96,29 @@ export function encodeShapesWithInfo(shapes: Shape[], maxLength: number = MAX_UR
   }
 
   // This should practically never happen (would need thousands of shapes)
-  // But if it does, return the best we can
+  // But if it does, return the best we can with binary encoding
   console.warn('[URL Encoder] Drawing extremely complex, URL may be truncated');
-  const compact = toCompactFormat(maxSimplified);
-  const json = JSON.stringify(compact);
+  const binary = encodeShapesBinary(maxSimplified, 5);
   return {
-    encoded: LZString.compressToEncodedURIComponent(json),
+    encoded: binary ? base64urlEncode(binary) : '',
     tolerance: 1048576,
     simplified: true,
   };
 }
 
 /**
- * Decode shapes from URL parameter
+ * Decode shapes from URL parameter (binary format only)
  */
 export function decodeShapesFromUrl(encoded: string): Shape[] | null {
   try {
-    const json = LZString.decompressFromEncodedURIComponent(encoded);
-    if (!json) return null;
+    const binary = base64urlDecode(encoded);
+    if (binary.length < 9) return null; // Minimum binary format size
 
-    const compact: CompactShape[] = JSON.parse(json);
-    return fromCompactFormat(compact);
+    const result = decodeShapesBinary(binary);
+    if (result && result.shapes.length > 0) {
+      return result.shapes;
+    }
+    return null;
   } catch (e) {
     console.error('Failed to decode drawing from URL:', e);
     return null;
@@ -124,13 +127,22 @@ export function decodeShapesFromUrl(encoded: string): Shape[] | null {
 
 /**
  * Simplify path-based shapes to reduce data size
+ * Uses adaptive tolerance based on each shape's size
  */
-function simplifyShapes(shapes: Shape[], tolerance: number): Shape[] {
+function simplifyShapes(shapes: Shape[], toleranceFactor: number): Shape[] {
   return shapes.map(shape => {
     // Only simplify path-like shapes
     if (shape.type === 'path' || shape.type === 'closed_path' || shape.type === 'polygon') {
       const points = posToPoints(shape.pos);
-      const simplified = simplify(points, tolerance, true);
+      if (points.length < 3) return shape; // Need at least 3 points to simplify
+
+      // Calculate shape's bounding box to determine adaptive tolerance
+      const shapeSize = getShapeSize(points);
+      // Tolerance is a fraction of the shape's size
+      // toleranceFactor of 1 = no simplification, 2 = 0.5% of size, 4 = 1%, etc.
+      const adaptiveTolerance = toleranceFactor <= 1 ? 0 : (shapeSize * (toleranceFactor - 1)) / 200;
+
+      const simplified = simplify(points, adaptiveTolerance, true);
       return {
         ...shape,
         pos: pointsToPos(simplified),
@@ -138,6 +150,25 @@ function simplifyShapes(shapes: Shape[], tolerance: number): Shape[] {
     }
     return shape;
   });
+}
+
+/**
+ * Get the size (max dimension) of a shape's bounding box
+ */
+function getShapeSize(points: Array<{ x: number; y: number }>): number {
+  if (points.length === 0) return 0;
+
+  let minX = points[0].x, maxX = points[0].x;
+  let minY = points[0].y, maxY = points[0].y;
+
+  for (const p of points) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+
+  return Math.max(maxX - minX, maxY - minY, 1); // At least 1 to avoid division by zero
 }
 
 /**
@@ -157,80 +188,7 @@ function posToPoints(pos: number[]): Array<{ x: number; y: number }> {
 function pointsToPos(points: Array<{ x: number; y: number }>): number[] {
   const pos: number[] = [];
   for (const point of points) {
-    // Round to reduce decimal precision in JSON
     pos.push(Math.round(point.x), Math.round(point.y));
-  }
-  return pos;
-}
-
-/**
- * Convert shapes to compact format with delta encoding
- */
-function toCompactFormat(shapes: Shape[]): CompactShape[] {
-  return shapes.map(shape => {
-    let pos = shape.pos;
-
-    // Delta encode path coordinates for better compression
-    if (shape.type === 'path' || shape.type === 'closed_path' || shape.type === 'polygon') {
-      pos = deltaEncode(shape.pos);
-    } else {
-      // Round non-path coordinates
-      pos = shape.pos.map(v => Math.round(v));
-    }
-
-    return {
-      t: shape.type,
-      c: shape.color,
-      p: pos,
-    };
-  });
-}
-
-/**
- * Convert compact format back to shapes
- */
-function fromCompactFormat(compact: CompactShape[]): Shape[] {
-  return compact.map((c, index) => {
-    let pos = c.p;
-
-    // Delta decode path coordinates
-    if (c.t === 'path' || c.t === 'closed_path' || c.t === 'polygon') {
-      pos = deltaDecode(c.p);
-    }
-
-    return {
-      id: crypto.randomUUID(),
-      type: c.t as Shape['type'],
-      color: c.c,
-      pos,
-    };
-  });
-}
-
-/**
- * Delta encode coordinates: store first point absolute, rest as deltas
- */
-function deltaEncode(pos: number[]): number[] {
-  if (pos.length < 2) return pos;
-
-  const encoded = [Math.round(pos[0]), Math.round(pos[1])];
-  for (let i = 2; i < pos.length; i += 2) {
-    encoded.push(Math.round(pos[i] - pos[i - 2]));
-    encoded.push(Math.round(pos[i + 1] - pos[i - 1]));
-  }
-  return encoded;
-}
-
-/**
- * Delta decode coordinates
- */
-function deltaDecode(encoded: number[]): number[] {
-  if (encoded.length < 2) return encoded;
-
-  const pos = [encoded[0], encoded[1]];
-  for (let i = 2; i < encoded.length; i += 2) {
-    pos.push(pos[pos.length - 2] + encoded[i]);
-    pos.push(pos[pos.length - 2] + encoded[i + 1]);
   }
   return pos;
 }
