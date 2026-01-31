@@ -338,7 +338,7 @@ export function decodeShapesBinary(buffer: Uint8Array): { shapes: Shape[]; strok
   const flags = buffer[offset++];
   const version = flags & 0x07;
   // const lzUsed = (flags >> 3) & 0x01;
-  const useUint16 = ((flags >> 4) & 0x01) === 1;
+  const coordSizeFlag = (flags >> 4) & 0x03; // 0=uint8, 1=uint16, 2=int32
 
   if (version !== 0) {
     console.warn('[Binary Decoder] Unknown version:', version);
@@ -373,10 +373,16 @@ export function decodeShapesBinary(buffer: Uint8Array): { shapes: Shape[]; strok
 
   const readCoordX = (): number => {
     let value: number;
-    if (useUint16) {
+    if (coordSizeFlag === 2) {
+      // int32 little-endian
+      value = buffer[offset] | (buffer[offset + 1] << 8) | (buffer[offset + 2] << 16) | (buffer[offset + 3] << 24);
+      offset += 4;
+    } else if (coordSizeFlag === 1) {
+      // uint16 little-endian
       value = buffer[offset] | (buffer[offset + 1] << 8);
       offset += 2;
     } else {
+      // uint8
       value = buffer[offset++];
     }
     return value * scale + xMin;
@@ -384,10 +390,16 @@ export function decodeShapesBinary(buffer: Uint8Array): { shapes: Shape[]; strok
 
   const readCoordY = (): number => {
     let value: number;
-    if (useUint16) {
+    if (coordSizeFlag === 2) {
+      // int32 little-endian
+      value = buffer[offset] | (buffer[offset + 1] << 8) | (buffer[offset + 2] << 16) | (buffer[offset + 3] << 24);
+      offset += 4;
+    } else if (coordSizeFlag === 1) {
+      // uint16 little-endian
       value = buffer[offset] | (buffer[offset + 1] << 8);
       offset += 2;
     } else {
+      // uint8
       value = buffer[offset++];
     }
     return value * scale + yMin;
