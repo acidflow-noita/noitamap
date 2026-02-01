@@ -33,15 +33,45 @@ interface ToolConfig {
 const ELLIPSE_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi" viewBox="0 0 16 16"><ellipse cx="8" cy="8" rx="7" ry="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
 
+/*
+const ELLIPSE_FILLED_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi" viewBox="0 0 16 16"><ellipse cx="8" cy="8" rx="7" ry="3.5" fill="currentColor" stroke="none"/></svg>';
+*/
+
 const TOOLS: ToolConfig[] = [
   { id: 'move', type: 'move', filled: false, icon: 'bi-arrows-move', titleKey: 'drawing.tools.move' },
   { id: 'path', type: 'path', filled: false, icon: 'bi-pencil', titleKey: 'drawing.tools.freehand' },
   { id: 'line', type: 'line', filled: false, icon: 'bi-slash-lg', titleKey: 'drawing.tools.line' },
   { id: 'arrow_line', type: 'arrow_line', filled: false, icon: 'bi-arrow-up-right', titleKey: 'drawing.tools.arrow' },
   { id: 'rect', type: 'rect', filled: false, icon: 'bi-square', titleKey: 'drawing.tools.rectangle' },
+  /*
+  { id: 'rect_filled', type: 'rect', filled: true, icon: 'bi-square-fill', titleKey: 'drawing.tools.rectangleFilled' },
+  */
   { id: 'circle', type: 'circle', filled: false, icon: 'bi-circle', titleKey: 'drawing.tools.circle' },
+  /*
+  { id: 'circle_filled', type: 'circle', filled: true, icon: 'bi-circle-fill', titleKey: 'drawing.tools.circleFilled' },
+  */
   { id: 'ellipse', type: 'ellipse', filled: false, icon: '', titleKey: 'drawing.tools.ellipse', svg: ELLIPSE_SVG },
+  /*
+  {
+    id: 'ellipse_filled',
+    type: 'ellipse',
+    filled: true,
+    icon: '',
+    titleKey: 'drawing.tools.ellipseFilled',
+    svg: ELLIPSE_FILLED_SVG,
+  },
+  */
   { id: 'polygon', type: 'polygon', filled: false, icon: 'bi-pentagon', titleKey: 'drawing.tools.polygon' },
+  /*
+  {
+    id: 'polygon_filled',
+    type: 'polygon',
+    filled: true,
+    icon: 'bi-pentagon-fill',
+    titleKey: 'drawing.tools.polygonFilled',
+  },
+  */
   { id: 'point', type: 'point', filled: false, icon: 'bi-dot', titleKey: 'drawing.tools.point' },
 ];
 
@@ -442,9 +472,11 @@ export class DrawingSidebar {
         // Find config for this tool
         const config = TOOLS.find(t => t.id === inputId);
         if (config) {
+          console.log('[Sidebar] Selected tool:', config.id, 'filled:', config.filled);
           this.drawingManager.setTool(config.type);
           this.drawingManager.setFill(config.filled);
         } else if (inputId === 'move') {
+          console.log('[Sidebar] Selected move tool');
           this.drawingManager.setTool('move');
         }
       });

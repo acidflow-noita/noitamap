@@ -61,7 +61,7 @@ if (isDev) {
     },
     disableDrawing: () => {
       localStorage.removeItem('noitamap-dev-drawing');
-      console.log('Drawing dev mode disabled. Refresh to see changes.');
+      console.log('Drawing dev mode disabled. Refresh to hide the sidebar.');
     },
     // DISABLED: Simplification preview no longer needed - drawings are shared via catbox.moe
     // enableSimplificationPreview: () => { ... },
@@ -325,13 +325,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (fileId) {
         console.log('[Main] Loading drawing from catbox:', fileId);
         // Show loading indicator while fetching
-        const loadingEl = document.getElementById('loadingIndicator');
-        if (loadingEl) loadingEl.style.display = 'block';
+        const loadingToastEl = document.getElementById('catboxLoadingToast');
+        let loadingToast: bootstrap.Toast | null = null;
+        if (loadingToastEl) {
+          loadingToast = new bootstrap.Toast(loadingToastEl, { autohide: false });
+          loadingToast.show();
+        }
 
         const blob = await fetchFromCatbox(fileId);
 
         // Hide loading indicator
-        if (loadingEl) loadingEl.style.display = 'none';
+        loadingToast?.hide();
 
         if (blob) {
           const result = await extractDrawingData(blob);

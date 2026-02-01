@@ -114,11 +114,40 @@ export async function createDrawingManager(
     viewer: osd,
     onAdd: (shape: Shape) => {
       // Ensure shape has filled property if set
-      if (currentFill && shape.filled === undefined) {
+      if (currentFill) {
         shape.filled = true;
       }
+      // Ensure shape has filled property if set
+      if (currentFill) {
+        shape.filled = true;
+      }
+      /*
+      if (currentFill) {
+         // Create a strict clean copy to avoid any internal state issues
+         const filledShape = {
+            id: shape.id,
+            type: shape.type,
+            pos: Array.isArray(shape.pos) ? [...shape.pos] : shape.pos,
+            color: shape.color,
+            filled: true,
+            // Copy other potential properties if they exist
+            points: (shape as any).points,
+            text: (shape as any).text
+         };
+         // Remove undefined properties
+         Object.keys(filledShape).forEach(key => (filledShape as any)[key] === undefined && delete (filledShape as any)[key]);
+
+         doodle.addShapes([filledShape]);
+         pushHistory({ type: 'add', shape: filledShape });
+      } else {
+         doodle.addShape(shape);
+         pushHistory({ type: 'add', shape: { ...shape, pos: [...shape.pos] } });
+      }
+      */
+      // Revert to original behavior for now
       doodle.addShape(shape);
       pushHistory({ type: 'add', shape: { ...shape, pos: [...shape.pos] } });
+
       callbacks?.onShapeChange?.();
     },
     onRemove: (shape: Shape) => {
@@ -153,12 +182,64 @@ export async function createDrawingManager(
     },
   });
 
-  // Wait for pixi app to initialize
-  await new Promise<void>(resolve => {
+  // Helper to safely apply state
+  function applyState() {
+    // Only proceed if pixiApp is fully initialized
+    if (!doodle.pixiApp || (!doodle.pixiApp.canvas && !doodle.pixiApp.view)) {
+      return;
+    }
+
+    if (isEnabled) {
+      doodle.setMode(currentTool);
+      doodle.setPan(currentTool === 'move');
+      // Restore canvas interactivity
+      const canvas = doodle.pixiApp.canvas || doodle.pixiApp.view;
+      if (canvas) {
+        canvas.style.pointerEvents = 'auto';
+      }
+    } else {
+      // Commit any pending move operation before changing mode
+      // setMode calls cancelSelectShape() which reverts to original position
+      // We need to save the tempShape position first if it was modified
+      const doodleAny = doodle as any;
+      if (doodleAny.tempShape?.id) {
+        const tempShape = doodleAny.tempShape;
+        const originalShape = doodleAny.shapes?.find((s: Shape) => s.id === tempShape.id);
+        // Check if shape was modified (position changed)
+        if (originalShape && JSON.stringify(originalShape) !== JSON.stringify(tempShape)) {
+          // Trigger the update callback to save the new position
+          doodle.updateShape({ ...tempShape });
+          callbacks?.onShapeChange?.();
+        }
+      }
+
+      doodle.setMode('move');
+      doodle.setPan(true);
+      // Disable canvas interactivity completely (for view-only mode)
+      const canvas = doodle.pixiApp.canvas || doodle.pixiApp.view;
+      if (canvas) {
+        canvas.style.pointerEvents = 'none';
+      }
+    }
+  }
+
+  // Wait for pixi app to initialize (in background, don't block app load)
+  // We don't await this because it can take a few seconds and we want the UI to load immediately.
+  // The manager's enable/disable methods are already queue-aware.
+  new Promise<void>(resolve => {
+    let attempts = 0;
     const checkPixi = () => {
-      if (doodle.pixiApp) {
+      // Check for canvas or view to ensure init is complete
+      // Pixi v8 uses .canvas, older versions use .view
+      if (doodle.pixiApp && (doodle.pixiApp.canvas || doodle.pixiApp.view)) {
+        applyState(); // Apply initial state
+        resolve();
+      } else if (attempts > 500) {
+        // ~8 seconds timeout
+        console.warn('[Doodle] Initialization timed out waiting for canvas');
         resolve();
       } else {
+        attempts++;
         requestAnimationFrame(checkPixi);
       }
     };
@@ -215,39 +296,12 @@ export async function createDrawingManager(
 
     enable() {
       isEnabled = true;
-      doodle.setMode(currentTool);
-      doodle.setPan(currentTool === 'move');
-      // Restore canvas interactivity
-      const canvas = doodle.pixiApp?.canvas ?? doodle.pixiApp?.view;
-      if (canvas) {
-        canvas.style.pointerEvents = 'auto';
-      }
+      applyState();
     },
 
     disable() {
-      // Commit any pending move operation before changing mode
-      // setMode calls cancelSelectShape() which reverts to original position
-      // We need to save the tempShape position first if it was modified
-      const doodleAny = doodle as any;
-      if (doodleAny.tempShape?.id) {
-        const tempShape = doodleAny.tempShape;
-        const originalShape = doodleAny.shapes?.find((s: Shape) => s.id === tempShape.id);
-        // Check if shape was modified (position changed)
-        if (originalShape && JSON.stringify(originalShape) !== JSON.stringify(tempShape)) {
-          // Trigger the update callback to save the new position
-          doodle.updateShape({ ...tempShape });
-          callbacks?.onShapeChange?.();
-        }
-      }
-
       isEnabled = false;
-      doodle.setMode('move');
-      doodle.setPan(true);
-      // Disable canvas interactivity completely (for view-only mode)
-      const canvas = doodle.pixiApp?.canvas ?? doodle.pixiApp?.view;
-      if (canvas) {
-        canvas.style.pointerEvents = 'none';
-      }
+      applyState();
     },
 
     isEnabled() {
@@ -293,6 +347,7 @@ export async function createDrawingManager(
     },
 
     setFill(filled: boolean) {
+      console.log('[DoodleIntegration] setFill called with:', filled);
       currentFill = filled;
       // Try to set doodle property if it exists, or rely on onAdd hook
       // doodle.filled = filled;

@@ -750,7 +750,11 @@
       "circle": "Circle",
       "ellipse": "Ellipse",
       "polygon": "Polygon",
-      "point": "Point"
+      "point": "Point",
+      "rectangleFilled": "Filled Rectangle",
+      "circleFilled": "Filled Circle",
+      "ellipseFilled": "Filled Ellipse",
+      "polygonFilled": "Filled Polygon"
     },
     "color": {
       "label": "Color",
