@@ -30,9 +30,10 @@ import { DrawingSidebar } from './drawing/sidebar';
 import { createDrawingManager, DrawingManager } from './drawing/doodle-integration';
 import { DrawingSession } from './drawing/storage';
 // DISABLED: URL encoding no longer needed - drawings are shared via catbox.moe image upload
-// import { decodeShapesFromUrl, encodeShapesWithInfo } from './drawing/url-encoder';
+import { decodeShapesFromUrl, encodeShapesWithInfo } from './drawing/url-encoder';
 import { captureScreenshot, downloadBlob, screenshotFilename, extractDrawingData } from './drawing/screenshot';
 import { uploadToCatbox, fetchFromCatbox, isCatboxRef, extractCatboxFileId, createCatboxParam } from './drawing/catbox';
+import { shortenUrl } from './drawing/link-shortener';
 
 // Global reference to unified search for translation updates
 let globalUnifiedSearch: UnifiedSearch | null = null;
@@ -48,9 +49,10 @@ let globalDrawingSidebar: DrawingSidebar | null = null;
 let globalApp: App | null = null;
 
 // Dev console commands (only on dev.noitamap.com, localhost, or file://)
-const isDev = window.location.hostname === 'dev.noitamap.com'
-  || window.location.hostname === 'localhost'
-  || window.location.protocol === 'file:';
+const isDev =
+  window.location.hostname === 'dev.noitamap.com' ||
+  window.location.hostname === 'localhost' ||
+  window.location.protocol === 'file:';
 if (isDev) {
   (window as any).noitamap = {
     enableDrawing: () => {
@@ -169,16 +171,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Create drawing session first (needed for the callback)
     drawingSession = new DrawingSession(initialMapName, {
       // DISABLED: URL encoding of drawings no longer needed - sharing via catbox.moe image upload
-      // onSave: drawing => {
-      //   if (!drawing) return;
-      //   const result = encodeShapesWithInfo(drawing.shapes);
-      //   if (result) {
-      //     updateURLWithDrawing(result.encoded);
-      //     if (result.simplified) {
-      //       window.dispatchEvent(new CustomEvent('drawing-simplified'));
-      //     }
-      //   }
-      // },
+      onSave: drawing => {
+        if (!drawing) return;
+        // Encode drawing to URL for local state visibility
+        const mapName = drawingSession?.getMapName() ?? '';
+        const sw = drawingManager?.getStrokeWidth() ?? 5;
+        const result = encodeShapesWithInfo(drawing.shapes, undefined, mapName, sw);
+        if (result) {
+          updateURLWithDrawing(result.encoded);
+        }
+      },
     });
     globalDrawingSession = drawingSession;
 
@@ -317,28 +319,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
-    // Load drawing from URL if present
-    // DISABLED: Old inline URL-encoded drawing format
-    // if (urlState.drawing && drawingManager) {
-    //   const shapes = decodeShapesFromUrl(urlState.drawing);
-    //   if (shapes && shapes.length > 0) {
-    //     drawingManager.loadShapes(shapes);
-    //   }
-    // }
-
-    // Load drawing from catbox.moe if d=cb:{fileId} param present
+    // Load drawing from catbox.moe if d=cb:{fileId} param present (check FIRST)
     if (urlState.drawing && drawingManager && isCatboxRef(urlState.drawing)) {
       const fileId = extractCatboxFileId(urlState.drawing);
       if (fileId) {
         console.log('[Main] Loading drawing from catbox:', fileId);
+        // Show loading indicator while fetching
+        const loadingEl = document.getElementById('loadingIndicator');
+        if (loadingEl) loadingEl.style.display = 'block';
+
         const blob = await fetchFromCatbox(fileId);
+
+        // Hide loading indicator
+        if (loadingEl) loadingEl.style.display = 'none';
+
         if (blob) {
           const result = await extractDrawingData(blob);
           if (result && result.shapes.length > 0) {
             // Switch to the correct map if embedded map name differs from current
             if (result.mapName) {
               const validMapName = asMapName(result.mapName);
-              if (validMapName && validMapName !== mapName) {
+              if (validMapName && validMapName !== app.getMap()) {
                 console.log('[Main] Switching to map:', validMapName);
                 await app.setMap(validMapName);
                 drawingSession.setMap(validMapName);
@@ -348,8 +349,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             drawingManager.loadShapes(result.shapes);
             if (result.strokeWidth) {
               drawingManager.setStrokeWidth(result.strokeWidth);
+              drawingSidebar?.setStrokeWidth(result.strokeWidth);
             }
             console.log('[Main] Loaded', result.shapes.length, 'shapes from catbox, map:', result.mapName);
+
+            // Auto-download the WebP as a backup for the user
+            const mapName = result.mapName ?? app.getMap();
+            const downloadToastEl = document.getElementById('downloadToast');
+            let downloadToast: bootstrap.Toast | null = null;
+            if (downloadToastEl) {
+              downloadToast = new bootstrap.Toast(downloadToastEl, { autohide: false });
+              downloadToast.show();
+            }
+            downloadBlob(blob, screenshotFilename(mapName));
+            // Hide toast after a short delay (download initiated)
+            setTimeout(() => downloadToast?.hide(), 1500);
+
             // Auto-open sidebar when loading shared drawing
             if (drawToggleCheckbox && drawingSidebar) {
               drawToggleCheckbox.checked = true;
@@ -365,8 +380,96 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
     }
+    // Load drawing from URL param if present (only if not a catbox ref)
+    else if (urlState.drawing && drawingManager) {
+      const decoded = decodeShapesFromUrl(urlState.drawing);
+      if (decoded && decoded.shapes.length > 0) {
+        drawingManager.loadShapes(decoded.shapes);
+        // Apply the decoded stroke width to both manager and sidebar UI
+        drawingManager.setStrokeWidth(decoded.strokeWidth);
+        drawingSidebar?.setStrokeWidth(decoded.strokeWidth);
+      }
+    }
   } catch (error) {
     console.error('Failed to initialize drawing feature:', error);
+  }
+
+  // Drag-and-drop import: accept WebP files dropped anywhere on the page
+  {
+    let dragCounter = 0;
+    const dropOverlay = document.createElement('div');
+    dropOverlay.className = 'drop-overlay';
+    dropOverlay.setAttribute('data-text', i18next.t('drawing.import.dropHint', 'Drop WebP file to import drawing'));
+    document.body.appendChild(dropOverlay);
+
+    document.body.addEventListener('dragenter', e => {
+      e.preventDefault();
+      if (e.dataTransfer?.types.includes('Files')) {
+        dragCounter++;
+        dropOverlay.classList.add('visible');
+      }
+    });
+
+    document.body.addEventListener('dragleave', e => {
+      e.preventDefault();
+      dragCounter--;
+      if (dragCounter <= 0) {
+        dragCounter = 0;
+        dropOverlay.classList.remove('visible');
+      }
+    });
+
+    document.body.addEventListener('dragover', e => {
+      e.preventDefault();
+    });
+
+    document.body.addEventListener('drop', async e => {
+      e.preventDefault();
+      dragCounter = 0;
+      dropOverlay.classList.remove('visible');
+
+      const file = e.dataTransfer?.files[0];
+      if (!file || !file.name.endsWith('.webp')) return;
+
+      const result = await extractDrawingData(file);
+      if (!result || result.shapes.length === 0) {
+        console.warn('[DragDrop] No drawing data found in dropped file');
+        return;
+      }
+
+      // Switch to correct map if needed
+      if (result.mapName) {
+        const validMapName = asMapName(result.mapName);
+        if (validMapName && validMapName !== app.getMap()) {
+          await app.setMap(validMapName);
+          drawingSession?.setMap(validMapName);
+        }
+      }
+
+      if (drawingManager) {
+        drawingManager.loadShapes(result.shapes);
+        if (result.strokeWidth) {
+          drawingManager.setStrokeWidth(result.strokeWidth);
+          drawingSidebar?.setStrokeWidth(result.strokeWidth);
+        }
+        // Update URL with imported drawing data
+        const mapName = drawingSession?.getMapName() ?? '';
+        const sw = result.strokeWidth ?? drawingManager.getStrokeWidth();
+        const encoded = encodeShapesWithInfo(result.shapes, undefined, mapName, sw);
+        if (encoded) {
+          updateURLWithDrawing(encoded.encoded);
+        }
+      }
+
+      // Auto-open sidebar
+      if (drawToggleCheckbox && drawingSidebar) {
+        drawToggleCheckbox.checked = true;
+        drawingSidebar.open();
+        updateURLWithSidebar(true);
+      }
+
+      console.log('[DragDrop] Imported', result.shapes.length, 'shapes from dropped file');
+    });
   }
 
   navbarBrandElement.addEventListener('click', ev => {
@@ -443,6 +546,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // the user clicks an item. let the event bubble so Bootstrap can close
     // the dropdown after a click
     // ev.stopPropagation();
+
+    // Blur to restore hotkey focus to document
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
 
     // Reset drawing when changing maps (drawings are per-map)
     // Preserve sidebar state - don't open or close it
@@ -577,9 +685,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Update current URL with catbox param
       updateURLWithDrawing(createCatboxParam(fileId));
 
+      // Shorten URL if possible
+      let finalUrl = url.toString();
+      const shortUrl = await shortenUrl(finalUrl);
+      if (shortUrl) {
+        finalUrl = shortUrl;
+      }
+
       // Copy to clipboard
       window.navigator.clipboard
-        .writeText(url.toString())
+        .writeText(finalUrl)
         .then(() => {
           if (toastBody) {
             toastBody.innerHTML = `<i class="bi bi-check-circle me-2"></i>${i18next.t('share.copiedWithDrawing', 'Link with drawing copied! Image saved to your PC.')}`;
@@ -601,8 +716,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       url.searchParams.delete('d');
 
+      // Shorten URL if possible
+      let finalUrl = url.toString();
+      const shortUrl = await shortenUrl(finalUrl);
+      if (shortUrl) {
+        finalUrl = shortUrl;
+      }
+
       window.navigator.clipboard
-        .writeText(url.toString())
+        .writeText(finalUrl)
         .then(() => {
           const toastElement = assertElementById('shareToast', HTMLElement);
           const toastBody = toastElement.querySelector('.toast-body');

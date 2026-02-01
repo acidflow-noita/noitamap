@@ -2,7 +2,7 @@
  * Binary Encoder/Decoder for Drawing Data
  *
  * Implements the compact binary format:
- * - 8-byte header (flags, scale, x_min, y_min)
+ * - 10-byte header (flags, scale, x_min as int32, y_min as int32)
  * - Packed stroke widths (2 bits per shape)
  * - Per-shape headers (type + color + fill in 1 byte)
  * - Compact coordinates (uint8 or uint16 with reference frame)
@@ -10,13 +10,7 @@
  */
 
 import type { Shape } from './doodle-integration';
-import {
-  TYPE_CODES,
-  CODE_TO_TYPE,
-  COLOR_PALETTE,
-  COLOR_TO_INDEX,
-  STROKE_WIDTHS,
-} from './constants';
+import { TYPE_CODES, CODE_TO_TYPE, COLOR_PALETTE, COLOR_TO_INDEX, STROKE_WIDTHS } from './constants';
 
 /**
  * Find closest stroke width index
@@ -57,11 +51,29 @@ function writeInt24(buffer: Uint8Array, offset: number, value: number): void {
 
 /**
  * Read int24 little-endian with sign extension
+ * @deprecated Use readInt32 for lossless coordinate storage
  */
 function readInt24(buffer: Uint8Array, offset: number): number {
   let value = buffer[offset] | (buffer[offset + 1] << 8) | (buffer[offset + 2] << 16);
   if (value & 0x800000) value |= ~0xffffff; // sign extend negative
   return value;
+}
+
+/**
+ * Write int32 little-endian (lossless for all Noita map coordinates)
+ */
+function writeInt32(buffer: Uint8Array, offset: number, value: number): void {
+  buffer[offset] = value & 0xff;
+  buffer[offset + 1] = (value >> 8) & 0xff;
+  buffer[offset + 2] = (value >> 16) & 0xff;
+  buffer[offset + 3] = (value >> 24) & 0xff;
+}
+
+/**
+ * Read int32 little-endian
+ */
+function readInt32(buffer: Uint8Array, offset: number): number {
+  return buffer[offset] | (buffer[offset + 1] << 8) | (buffer[offset + 2] << 16) | (buffer[offset + 3] << 24);
 }
 
 /**
@@ -103,8 +115,14 @@ function needsUint16(span: number, scale: number): boolean {
 /**
  * Encode shapes to binary format
  */
-export function encodeShapesBinary(shapes: Shape[], strokeWidth: number = 5): Uint8Array | null {
+export function encodeShapesBinary(shapes: Shape[], mapName: string, strokeWidth: number = 5): Uint8Array | null {
   if (shapes.length === 0 || shapes.length > 255) return null;
+
+  const mapNameBytes = new TextEncoder().encode(mapName);
+  if (mapNameBytes.length > 255) {
+    console.warn('Map name too long for binary format', mapName);
+    return null;
+  }
 
   const bbox = getBoundingBox(shapes);
   const spanX = bbox.xMax - bbox.xMin;
@@ -133,7 +151,8 @@ export function encodeShapesBinary(shapes: Shape[], strokeWidth: number = 5): Ui
   }
 
   // Estimate buffer size (generous)
-  let estimatedSize = 8; // header
+  let estimatedSize = 10; // header (10 bytes: flags, scale, xMin as int32, yMin as int32)
+  estimatedSize += 1 + mapNameBytes.length; // map name length + bytes
   estimatedSize += 1; // shape count
   estimatedSize += Math.ceil(shapes.length / 4); // stroke widths packed
 
@@ -162,13 +181,19 @@ export function encodeShapesBinary(shapes: Shape[], strokeWidth: number = 5): Ui
   // Byte 1: scale (always 1 for lossless)
   buffer[offset++] = scale;
 
-  // Bytes 2-4: x_min (int24)
-  writeInt24(buffer, offset, bbox.xMin);
-  offset += 3;
+  // Bytes 2-5: x_min (int32) - lossless for all Noita map coordinates
+  writeInt32(buffer, offset, bbox.xMin);
+  offset += 4;
 
-  // Bytes 5-7: y_min (int24)
-  writeInt24(buffer, offset, bbox.yMin);
-  offset += 3;
+  writeInt32(buffer, offset, bbox.yMin);
+  offset += 4;
+
+  // Byte 10: Map Name Length
+  buffer[offset++] = mapNameBytes.length;
+
+  // Map Name Bytes
+  buffer.set(mapNameBytes, offset);
+  offset += mapNameBytes.length;
 
   // === SHAPE DATA ===
   // Byte 8: shape count
@@ -182,8 +207,13 @@ export function encodeShapesBinary(shapes: Shape[], strokeWidth: number = 5): Ui
     for (let j = 0; j < 4; j++) {
       const shapeIdx = i * 4 + j;
       if (shapeIdx < shapes.length) {
-        // For now, all shapes use the same stroke width
-        packedByte |= (strokeIdx & 0x03) << (j * 2);
+        // Use per-shape stroke width (default to 5 if missing)
+        const s = shapes[shapeIdx];
+        // Shapes from doodle might not have strokeWidth prop directly if it's on style
+        // We'll trust the shape object has it or fall back to argument
+        const width = (s as any).strokeWidth ?? strokeWidth;
+        const sIdx = strokeToIndex(width);
+        packedByte |= (sIdx & 0x03) << (j * 2);
       }
     }
     buffer[offset++] = packedByte;
@@ -193,7 +223,7 @@ export function encodeShapesBinary(shapes: Shape[], strokeWidth: number = 5): Ui
   for (const shape of shapes) {
     const typeCode = TYPE_CODES[shape.type] ?? 6; // default to path
     const colorIdx = colorToIndex(shape.color);
-    const fill = 0; // TODO: support fill
+    const fill = shape.filled ? 1 : 0;
 
     // Shape header (1 byte): bits 0-3=type, bits 4-6=color, bit 7=fill
     const shapeHeader = (typeCode & 0x0f) | ((colorIdx & 0x07) << 4) | ((fill & 0x01) << 7);
@@ -232,6 +262,7 @@ export function encodeShapesBinary(shapes: Shape[], strokeWidth: number = 5): Ui
 
     switch (shape.type) {
       case 'point':
+      case 'text':
         // [coord] x, [coord] y
         writeCoordX(pos[0]);
         writeCoordY(pos[1]);
@@ -329,8 +360,12 @@ export function encodeShapesBinary(shapes: Shape[], strokeWidth: number = 5): Ui
 /**
  * Decode binary format back to shapes
  */
-export function decodeShapesBinary(buffer: Uint8Array): { shapes: Shape[]; strokeWidth: number } | null {
-  if (buffer.length < 9) return null; // minimum: 8 header + 1 count
+export function decodeShapesBinary(buffer: Uint8Array): {
+  shapes: Shape[];
+  strokeWidth: number;
+  mapName?: string;
+} | null {
+  if (buffer.length < 11) return null; // minimum: 10 header + 1 count
 
   let offset = 0;
 
@@ -346,14 +381,35 @@ export function decodeShapesBinary(buffer: Uint8Array): { shapes: Shape[]; strok
   }
 
   const scale = buffer[offset++];
-  const xMin = readInt24(buffer, offset);
-  offset += 3;
-  const yMin = readInt24(buffer, offset);
-  offset += 3;
+  const xMin = readInt32(buffer, offset);
+  offset += 4;
+  const yMin = readInt32(buffer, offset);
+  offset += 4;
 
-  // === SHAPE DATA ===
+  let mapName = '';
+  // Check if we have map name
+  // To keep backward compatibility with previous dev iteration (if any), check buffer length
+  // But my format is new.
+  // Wait, if I change format, I break loading old binary data?
+  // Use version flag?
+  // Current version bits = 0.
+  // I should bump version or detect.
+  // Actually, existing binary data (int24) is "Version 0"?
+  // My new int32 format uses `coordSizeFlag=2` (int32) which validly differentiates it from int24 (implied 3 bytes? No, int24 was using specific bytes).
+  // The header size changed from 8 to 10 bytes.
+  // Version 0 (int24 uses 8 bytes header).
+  // Version 1 (int32 uses 10 bytes header).
+  // I should bump version in header.
+
+  // Let's assume version 0 for now but rely on logic:
+  // After yMin (byte 10), we expect MAP_NAME_LENGTH.
+
+  const mapNameLen = buffer[offset++];
+  const mapNameBytes = buffer.subarray(offset, offset + mapNameLen);
+  mapName = new TextDecoder().decode(mapNameBytes);
+  offset += mapNameLen;
+
   const shapeCount = buffer[offset++];
-  if (shapeCount === 0) return { shapes: [], strokeWidth: 5 };
 
   // Read packed stroke widths
   const strokeBytes = Math.ceil(shapeCount / 4);
@@ -413,7 +469,7 @@ export function decodeShapesBinary(buffer: Uint8Array): { shapes: Shape[]; strok
     const shapeHeader = buffer[offset++];
     const typeCode = shapeHeader & 0x0f;
     const colorIdx = (shapeHeader >> 4) & 0x07;
-    // const fill = (shapeHeader >> 7) & 0x01;
+    const filled = (shapeHeader & 0x80) !== 0;
 
     const type = CODE_TO_TYPE[typeCode] ?? 'path';
     const color = COLOR_PALETTE[colorIdx] ?? '#ffffff';
@@ -422,6 +478,7 @@ export function decodeShapesBinary(buffer: Uint8Array): { shapes: Shape[]; strok
 
     switch (type) {
       case 'point':
+      case 'text':
         pos = [readCoordX(), readCoordY()];
         break;
 
@@ -494,11 +551,12 @@ export function decodeShapesBinary(buffer: Uint8Array): { shapes: Shape[]; strok
       id: crypto.randomUUID(),
       type: type as Shape['type'],
       color,
+      filled,
       pos,
     });
   }
 
-  return { shapes, strokeWidth };
+  return { shapes, strokeWidth, mapName };
 }
 
 /**

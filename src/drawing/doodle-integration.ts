@@ -28,13 +28,15 @@ export type ShapeType =
   | 'closed_path'
   | 'line'
   | 'arrow_line'
-  | 'point';
+  | 'point'
+  | 'text';
 
 export interface Shape {
   id: string;
   type: ShapeType;
   pos: number[];
   color: string;
+  filled?: boolean;
   readonly?: boolean;
 }
 
@@ -45,8 +47,11 @@ export interface DrawingManager {
   setTool(tool: ShapeType): void;
   getTool(): ShapeType;
   setColor(color: string): void;
+  getColor(): string;
   setStrokeWidth(width: number): void;
   getStrokeWidth(): number;
+  setFill(filled: boolean): void;
+  getFill(): boolean;
   getShapes(): Shape[];
   loadShapes(shapes: Shape[]): void;
   clearShapes(): void;
@@ -77,6 +82,8 @@ export async function createDrawingManager(
   let visible = true;
   let currentTool: ShapeType = 'path';
   let currentStrokeWidth = 5;
+  let currentColor = '#ffffff';
+  let currentFill = false;
 
   // Undo/redo history
   type HistoryEntry =
@@ -106,6 +113,10 @@ export async function createDrawingManager(
   const doodle = createDoodle({
     viewer: osd,
     onAdd: (shape: Shape) => {
+      // Ensure shape has filled property if set
+      if (currentFill && shape.filled === undefined) {
+        shape.filled = true;
+      }
       doodle.addShape(shape);
       pushHistory({ type: 'add', shape: { ...shape, pos: [...shape.pos] } });
       callbacks?.onShapeChange?.();
@@ -114,9 +125,7 @@ export async function createDrawingManager(
       // Capture full shape data before removal
       const doodleAny = doodle as any;
       const fullShape = doodleAny.shapes?.find((s: Shape) => s.id === shape.id);
-      const captured = fullShape
-        ? { ...fullShape, pos: [...fullShape.pos] }
-        : { ...shape, pos: [...shape.pos] };
+      const captured = fullShape ? { ...fullShape, pos: [...fullShape.pos] } : { ...shape, pos: [...shape.pos] };
       doodle.removeShape(shape);
       pushHistory({ type: 'remove', shape: captured });
       callbacks?.onShapeChange?.();
@@ -125,9 +134,7 @@ export async function createDrawingManager(
       // Capture old shape before update
       const doodleAny = doodle as any;
       const oldShape = doodleAny.shapes?.find((s: Shape) => s.id === shape.id);
-      const capturedOld = oldShape
-        ? { ...oldShape, pos: [...oldShape.pos] }
-        : null;
+      const capturedOld = oldShape ? { ...oldShape, pos: [...oldShape.pos] } : null;
       doodle.updateShape(shape);
       if (capturedOld) {
         pushHistory({
@@ -179,10 +186,7 @@ export async function createDrawingManager(
   Object.defineProperty(mouse, 'dx', {
     get: () => {
       // Calculate correct world coordinates from current pixel position
-      const viewportPoint = osd.viewport.pointFromPixel(
-        new OpenSeadragon.Point(mouse.x, mouse.y),
-        true
-      );
+      const viewportPoint = osd.viewport.pointFromPixel(new OpenSeadragon.Point(mouse.x, mouse.y), true);
       return viewportPoint.x;
     },
     set: (val: number) => {
@@ -193,10 +197,7 @@ export async function createDrawingManager(
 
   Object.defineProperty(mouse, 'dy', {
     get: () => {
-      const viewportPoint = osd.viewport.pointFromPixel(
-        new OpenSeadragon.Point(mouse.x, mouse.y),
-        true
-      );
+      const viewportPoint = osd.viewport.pointFromPixel(new OpenSeadragon.Point(mouse.x, mouse.y), true);
       return viewportPoint.y;
     },
     set: (val: number) => {
@@ -216,6 +217,11 @@ export async function createDrawingManager(
       isEnabled = true;
       doodle.setMode(currentTool);
       doodle.setPan(currentTool === 'move');
+      // Restore canvas interactivity
+      const canvas = doodle.pixiApp?.canvas ?? doodle.pixiApp?.view;
+      if (canvas) {
+        canvas.style.pointerEvents = 'auto';
+      }
     },
 
     disable() {
@@ -225,9 +231,7 @@ export async function createDrawingManager(
       const doodleAny = doodle as any;
       if (doodleAny.tempShape?.id) {
         const tempShape = doodleAny.tempShape;
-        const originalShape = doodleAny.shapes?.find(
-          (s: Shape) => s.id === tempShape.id
-        );
+        const originalShape = doodleAny.shapes?.find((s: Shape) => s.id === tempShape.id);
         // Check if shape was modified (position changed)
         if (originalShape && JSON.stringify(originalShape) !== JSON.stringify(tempShape)) {
           // Trigger the update callback to save the new position
@@ -239,6 +243,11 @@ export async function createDrawingManager(
       isEnabled = false;
       doodle.setMode('move');
       doodle.setPan(true);
+      // Disable canvas interactivity completely (for view-only mode)
+      const canvas = doodle.pixiApp?.canvas ?? doodle.pixiApp?.view;
+      if (canvas) {
+        canvas.style.pointerEvents = 'none';
+      }
     },
 
     isEnabled() {
@@ -258,8 +267,20 @@ export async function createDrawingManager(
     },
 
     setColor(color: string) {
+      currentColor = color;
       doodle.setBrushColor(color);
       doodle.setDefaultColor(color);
+      // Ensure fill color matches brush color for filled shapes
+      const doodleAny = doodle as any;
+      if (doodleAny.setFillColor) {
+        doodleAny.setFillColor(color);
+      } else {
+        doodleAny.fillColor = color;
+      }
+    },
+
+    getColor(): string {
+      return currentColor;
     },
 
     setStrokeWidth(width: number) {
@@ -269,6 +290,23 @@ export async function createDrawingManager(
 
     getStrokeWidth(): number {
       return currentStrokeWidth;
+    },
+
+    setFill(filled: boolean) {
+      currentFill = filled;
+      // Try to set doodle property if it exists, or rely on onAdd hook
+      // doodle.filled = filled;
+      // Assuming we need to handle it ourselves via shape properties
+      const doodleAny = doodle as any;
+      if (doodleAny.setFilled) {
+        doodleAny.setFilled(filled);
+      } else {
+        doodleAny.filled = filled; // optimistic
+      }
+    },
+
+    getFill(): boolean {
+      return currentFill;
     },
 
     getShapes(): Shape[] {
@@ -289,6 +327,8 @@ export async function createDrawingManager(
         doodle.addShapes(sanitizedShapes);
       }
       notifyHistoryChange();
+      // Notify that shapes have changed so session/URL can update
+      callbacks?.onShapeChange?.();
     },
 
     clearShapes() {
@@ -301,14 +341,45 @@ export async function createDrawingManager(
     },
 
     resetShapes() {
+      // Hide the canvas FIRST to prevent any visual flash
+      if (doodle.pixiApp?.stage) {
+        doodle.pixiApp.stage.visible = false;
+        doodle.pixiApp.stage.alpha = 0;
+      }
+
       // Clear shapes AND history - use for map changes
       doodle.clear();
       undoStack.length = 0;
       redoStack.length = 0;
-      // Force immediate render to prevent blink of old shapes
+
+      // Aggressively clear internal state if accessible
+      const doodleAny = doodle as any;
+      if (Array.isArray(doodleAny.shapes)) {
+        doodleAny.shapes = [];
+      }
+      if (doodleAny.tempShape) {
+        doodleAny.tempShape = null;
+      }
+
+      // Note: Do NOT call removeChildren() - it destroys the doodle's internal graphics containers
+      // and breaks subsequent rendering. doodle.clear() handles clearing shapes properly.
+
+      // Force immediate render of empty stage
       if (doodle.pixiApp?.renderer) {
         doodle.pixiApp.renderer.render(doodle.pixiApp.stage);
       }
+
+      // Restore visibility after a frame so the empty canvas is shown
+      // Use two rAF to ensure the cleared render has been committed
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (visible && doodle.pixiApp?.stage) {
+            doodle.pixiApp.stage.visible = true;
+            doodle.pixiApp.stage.alpha = 1;
+          }
+        });
+      });
+
       notifyHistoryChange();
       callbacks?.onShapeChange?.();
     },
@@ -350,7 +421,12 @@ export async function createDrawingManager(
 
           // Extract the stage as a canvas
           const extractedCanvas = pixiApp.renderer.extract.canvas(pixiApp.stage);
-          console.log('[Doodle] Extracted canvas from Pixi renderer:', extractedCanvas.width, 'x', extractedCanvas.height);
+          console.log(
+            '[Doodle] Extracted canvas from Pixi renderer:',
+            extractedCanvas.width,
+            'x',
+            extractedCanvas.height
+          );
           return extractedCanvas as HTMLCanvasElement;
         } else {
           console.log('[Doodle] Pixi renderer.extract not available');

@@ -12,10 +12,12 @@
  */
 
 // Proxy URL - use dev or prod based on current hostname
-const IMAGE_UPLOAD_PROXY_URL = window.location.hostname === 'localhost'
-  || window.location.hostname === 'dev.noitamap.com'
-  ? 'https://noitamap-image-upload-proxy-dev.wuote.workers.dev'
-  : 'https://noitamap-image-upload-proxy.wuote.workers.dev';
+const IMAGE_UPLOAD_PROXY_URL =
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.hostname === 'dev.noitamap.com'
+    ? 'https://noitamap-image-upload-proxy-dev.wuote.workers.dev'
+    : 'https://noitamap-image-upload-proxy.wuote.workers.dev';
 
 const CATBOX_FILES_URL = 'https://files.catbox.moe';
 
@@ -36,7 +38,8 @@ export async function uploadToCatbox(blob: Blob): Promise<string | null> {
     });
 
     if (!response.ok) {
-      console.error('[Catbox] Upload failed:', response.status, response.statusText);
+      const text = await response.text();
+      console.error('[Catbox] Upload failed:', response.status, response.statusText, text);
       return null;
     }
 
@@ -45,10 +48,17 @@ export async function uploadToCatbox(blob: Blob): Promise<string | null> {
     const fullUrl = await response.text();
     const trimmed = fullUrl.trim();
 
-    // Extract file ID from URL
-    const match = trimmed.match(/files\.catbox\.moe\/([a-zA-Z0-9]+)\.webp/);
+    // Log the response for debugging
+    console.log('[Catbox] Response received:', trimmed.substring(0, 200));
+
+    // Extract file ID from URL - handle both .webp and other extensions
+    const match = trimmed.match(/files\.catbox\.moe\/([a-zA-Z0-9]+)\.\w+/);
     if (!match) {
-      console.error('[Catbox] Unexpected response format:', trimmed);
+      console.error('[Catbox] Unexpected response format:', trimmed.substring(0, 200));
+      // Check if catbox returned an error message
+      if (trimmed.toLowerCase().includes('error') || trimmed.length < 20) {
+        console.error('[Catbox] Possible catbox error:', trimmed);
+      }
       return null;
     }
 

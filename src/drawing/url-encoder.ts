@@ -13,12 +13,7 @@ import type { Shape } from './doodle-integration';
 import { overlayToShort, shortToOverlay, mapToShort } from '../data_sources/param-mappings';
 import type { MapName } from '../data_sources/tile_data';
 import type { OverlayKey } from '../data_sources/overlays';
-import {
-  encodeShapesBinary,
-  decodeShapesBinary,
-  base64urlEncode,
-  base64urlDecode,
-} from './binary-encoder';
+import { encodeShapesBinary, decodeShapesBinary, base64urlEncode, base64urlDecode } from './binary-encoder';
 
 // Maximum URL length (conservative limit for Discord/social media sharing)
 const MAX_URL_LENGTH = 499;
@@ -36,8 +31,8 @@ export interface EncodeResult {
  * Try to encode shapes in binary format within the given character budget.
  * Returns the base64url-encoded string, or null if it doesn't fit.
  */
-function tryEncode(shapes: Shape[], maxChars: number, strokeWidth: number = 5): string | null {
-  const binary = encodeShapesBinary(shapes, strokeWidth);
+function tryEncode(shapes: Shape[], maxChars: number, mapName: string = '', strokeWidth: number = 5): string | null {
+  const binary = encodeShapesBinary(shapes, mapName, strokeWidth);
   if (!binary) return null;
   const encoded = base64urlEncode(binary);
   return encoded.length <= maxChars ? encoded : null;
@@ -50,10 +45,10 @@ function tryEncode(shapes: Shape[], maxChars: number, strokeWidth: number = 5): 
  * NEVER drops shapes - only reduces precision of paths.
  * Returns the encoded string plus info about simplification level.
  */
-export function encodeShapesForUrl(shapes: Shape[], maxLength: number = MAX_URL_LENGTH): string | null {
+export function encodeShapesForUrl(shapes: Shape[], maxLength: number = MAX_URL_LENGTH, mapName: string = '', strokeWidth: number = 5): string | null {
   if (!shapes.length) return null;
 
-  const result = encodeShapesWithInfo(shapes, maxLength);
+  const result = encodeShapesWithInfo(shapes, maxLength, mapName, strokeWidth);
   return result?.encoded ?? null;
 }
 
@@ -61,7 +56,7 @@ export function encodeShapesForUrl(shapes: Shape[], maxLength: number = MAX_URL_
  * Encode shapes with additional info about simplification.
  * Use this when you need to warn the user about precision loss.
  */
-export function encodeShapesWithInfo(shapes: Shape[], maxLength: number = MAX_URL_LENGTH): EncodeResult | null {
+export function encodeShapesWithInfo(shapes: Shape[], maxLength: number = MAX_URL_LENGTH, mapName: string = '', strokeWidth: number = 5): EncodeResult | null {
   if (!shapes.length) return null;
 
   // Budget for the compressed string (reserve space for other URL parts)
@@ -72,8 +67,9 @@ export function encodeShapesWithInfo(shapes: Shape[], maxLength: number = MAX_UR
   let tolerance = 1;
   while (tolerance <= 1048576) {
     // Go up to 2^20, should always be enough
-    const simplified = simplifyShapes(shapes, tolerance);
-    const result = tryEncode(simplified, budget);
+    // const simplified = simplifyShapes(shapes, tolerance);
+    // const result = tryEncode(simplified, budget);
+    const result = tryEncode(shapes, budget, mapName, strokeWidth); // Skip simplification for now
     if (result) {
       return {
         encoded: result,
@@ -85,8 +81,9 @@ export function encodeShapesWithInfo(shapes: Shape[], maxLength: number = MAX_UR
   }
 
   // Last resort: maximum simplification (paths become straight lines)
-  const maxSimplified = simplifyShapes(shapes, 1048576);
-  const result = tryEncode(maxSimplified, budget);
+  // const maxSimplified = simplifyShapes(shapes, 1048576);
+  // const result = tryEncode(maxSimplified, budget);
+  const result = tryEncode(shapes, budget, mapName, strokeWidth);
   if (result) {
     return {
       encoded: result,
@@ -98,7 +95,7 @@ export function encodeShapesWithInfo(shapes: Shape[], maxLength: number = MAX_UR
   // This should practically never happen (would need thousands of shapes)
   // But if it does, return the best we can with binary encoding
   console.warn('[URL Encoder] Drawing extremely complex, URL may be truncated');
-  const binary = encodeShapesBinary(maxSimplified, 5);
+  const binary = encodeShapesBinary(shapes, mapName, strokeWidth);
   return {
     encoded: binary ? base64urlEncode(binary) : '',
     tolerance: 1048576,
@@ -108,15 +105,16 @@ export function encodeShapesWithInfo(shapes: Shape[], maxLength: number = MAX_UR
 
 /**
  * Decode shapes from URL parameter (binary format only)
+ * Returns shapes, strokeWidth, and mapName from the encoded data
  */
-export function decodeShapesFromUrl(encoded: string): Shape[] | null {
+export function decodeShapesFromUrl(encoded: string): { shapes: Shape[]; strokeWidth: number; mapName?: string } | null {
   try {
     const binary = base64urlDecode(encoded);
     if (binary.length < 9) return null; // Minimum binary format size
 
     const result = decodeShapesBinary(binary);
     if (result && result.shapes.length > 0) {
-      return result.shapes;
+      return result;
     }
     return null;
   } catch (e) {
@@ -158,8 +156,10 @@ function simplifyShapes(shapes: Shape[], toleranceFactor: number): Shape[] {
 function getShapeSize(points: Array<{ x: number; y: number }>): number {
   if (points.length === 0) return 0;
 
-  let minX = points[0].x, maxX = points[0].x;
-  let minY = points[0].y, maxY = points[0].y;
+  let minX = points[0].x,
+    maxX = points[0].x;
+  let minY = points[0].y,
+    maxY = points[0].y;
 
   for (const p of points) {
     if (p.x < minX) minX = p.x;
@@ -237,6 +237,8 @@ export function buildShareUrlWithDrawing(
  */
 export function parseDrawingFromUrl(searchParams: URLSearchParams): {
   shapes: Shape[] | null;
+  strokeWidth: number;
+  mapName?: string;
   overlays: string[];
 } {
   const drawingParam = searchParams.get('d') ?? searchParams.get('drawing');
@@ -251,8 +253,11 @@ export function parseDrawingFromUrl(searchParams: URLSearchParams): {
     }
   }
 
+  const decoded = drawingParam ? decodeShapesFromUrl(drawingParam) : null;
   return {
-    shapes: drawingParam ? decodeShapesFromUrl(drawingParam) : null,
+    shapes: decoded?.shapes ?? null,
+    strokeWidth: decoded?.strokeWidth ?? 5,
+    mapName: decoded?.mapName,
     overlays,
   };
 }

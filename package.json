@@ -4,7 +4,7 @@
   "description": "Noita Map",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
     "build": "tsup && npm run copy-flags && npm run add-biome-translations && npm run copy-locales",
     "copy-flags": "node build_scripts/copy-flags.cjs",
     "add-biome-translations": "node build_scripts/add-biome-translations.cjs",

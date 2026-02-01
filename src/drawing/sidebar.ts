@@ -22,7 +22,9 @@ export interface SidebarOptions {
 }
 
 interface ToolConfig {
-  id: ShapeType;
+  id: string; // UI ID
+  type: ShapeType; // Doodle shape type
+  filled: boolean; // Filled state
   icon: string;
   titleKey: string;
   svg?: string; // Custom SVG instead of Bootstrap icon
@@ -32,18 +34,18 @@ const ELLIPSE_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi" viewBox="0 0 16 16"><ellipse cx="8" cy="8" rx="7" ry="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
 
 const TOOLS: ToolConfig[] = [
-  { id: 'move', icon: 'bi-arrows-move', titleKey: 'drawing.tools.move' },
-  { id: 'path', icon: 'bi-pencil', titleKey: 'drawing.tools.freehand' },
-  { id: 'line', icon: 'bi-slash-lg', titleKey: 'drawing.tools.line' },
-  { id: 'arrow_line', icon: 'bi-arrow-up-right', titleKey: 'drawing.tools.arrow' },
-  { id: 'rect', icon: 'bi-square', titleKey: 'drawing.tools.rectangle' },
-  { id: 'circle', icon: 'bi-circle', titleKey: 'drawing.tools.circle' },
-  { id: 'ellipse', icon: '', titleKey: 'drawing.tools.ellipse', svg: ELLIPSE_SVG },
-  { id: 'polygon', icon: 'bi-pentagon', titleKey: 'drawing.tools.polygon' },
-  { id: 'point', icon: 'bi-dot', titleKey: 'drawing.tools.point' },
+  { id: 'move', type: 'move', filled: false, icon: 'bi-arrows-move', titleKey: 'drawing.tools.move' },
+  { id: 'path', type: 'path', filled: false, icon: 'bi-pencil', titleKey: 'drawing.tools.freehand' },
+  { id: 'line', type: 'line', filled: false, icon: 'bi-slash-lg', titleKey: 'drawing.tools.line' },
+  { id: 'arrow_line', type: 'arrow_line', filled: false, icon: 'bi-arrow-up-right', titleKey: 'drawing.tools.arrow' },
+  { id: 'rect', type: 'rect', filled: false, icon: 'bi-square', titleKey: 'drawing.tools.rectangle' },
+  { id: 'circle', type: 'circle', filled: false, icon: 'bi-circle', titleKey: 'drawing.tools.circle' },
+  { id: 'ellipse', type: 'ellipse', filled: false, icon: '', titleKey: 'drawing.tools.ellipse', svg: ELLIPSE_SVG },
+  { id: 'polygon', type: 'polygon', filled: false, icon: 'bi-pentagon', titleKey: 'drawing.tools.polygon' },
+  { id: 'point', type: 'point', filled: false, icon: 'bi-dot', titleKey: 'drawing.tools.point' },
 ];
 
-import { COLOR_PALETTE, COLOR_NAME_KEYS } from './constants';
+import { COLOR_PALETTE, COLOR_NAME_KEYS, STROKE_WIDTHS } from './constants';
 import { extractDrawingData } from './screenshot';
 
 interface ColorPreset {
@@ -68,8 +70,7 @@ export class DrawingSidebar {
   // UI elements
   private sidebar!: HTMLElement;
   private contentArea!: HTMLElement;
-  private toolButtons: Map<ShapeType, HTMLElement> = new Map();
-  private colorPicker!: HTMLInputElement;
+  private toolButtons: Map<string, HTMLElement> = new Map();
   private strokeSlider!: HTMLInputElement;
   private strokeValue!: HTMLElement;
   private visibilityBtn!: HTMLElement;
@@ -78,7 +79,9 @@ export class DrawingSidebar {
   private redoBtn!: HTMLButtonElement;
   private deleteBtn!: HTMLButtonElement;
   private keyboardHandler: ((e: KeyboardEvent) => void) | null = null;
+  private keyupHandler: ((e: KeyboardEvent) => void) | null = null;
   private simplifiedHandler: (() => void) | null = null;
+  private previousTool: ShapeType | null = null;
 
   constructor(container: HTMLElement, options: SidebarOptions) {
     this.container = container;
@@ -146,6 +149,10 @@ export class DrawingSidebar {
     if (this.keyboardHandler) {
       document.removeEventListener('keydown', this.keyboardHandler);
       this.keyboardHandler = null;
+    }
+    if (this.keyupHandler) {
+      document.removeEventListener('keyup', this.keyupHandler);
+      this.keyupHandler = null;
     }
 
     // Dev bypass: localStorage flag, only on dev/localhost/file://
@@ -239,44 +246,43 @@ export class DrawingSidebar {
     this.contentArea.innerHTML = `
       <div class="sidebar-section p-2 border-bottom border-secondary">
         <label class="form-label text-secondary small mb-1">${i18next.t('drawing.tools.label')}</label>
-        <div class="d-flex gap-1" id="tool-buttons">
+        <div class="d-flex flex-wrap gap-1" id="tool-buttons">
           <input type="radio" class="btn-check" name="drawing-tool" id="tool-move" autocomplete="off">
           <label class="btn btn-sm btn-outline-light" for="tool-move" data-tool="move" title="${i18next.t('drawing.tools.move')}">
             <i class="bi-arrows-move"></i>
           </label>
-          <div class="btn-group btn-group-sm" role="group">
-            ${TOOLS.slice(1)
-              .map(
-                tool => `
-            <input type="radio" class="btn-check" name="drawing-tool" id="tool-${tool.id}" autocomplete="off" ${tool.id === 'path' ? 'checked' : ''}>
-            <label class="btn btn-outline-light" for="tool-${tool.id}" data-tool="${tool.id}" title="${i18next.t(tool.titleKey)}">
-              ${tool.svg ? tool.svg : `<i class="${tool.icon}"></i>`}
-            </label>`
-              )
-              .join('')}
-          </div>
+          ${TOOLS.slice(1)
+            .map(
+              tool => `
+          <input type="radio" class="btn-check" name="drawing-tool" id="tool-${tool.id}" autocomplete="off" ${tool.id === 'path' ? 'checked' : ''}>
+          <label class="btn btn-sm btn-outline-light" for="tool-${tool.id}" data-tool="${tool.id}" title="${i18next.t(tool.titleKey)}">
+            ${tool.svg ? tool.svg : `<i class="${tool.icon}"></i>`}
+          </label>`
+            )
+            .join('')}
         </div>
       </div>
 
       <div class="sidebar-section p-2 border-bottom border-secondary">
         <label class="form-label text-secondary small mb-1">${i18next.t('drawing.color.label')}</label>
-        <div class="d-flex align-items-center gap-2">
-          <input type="color" class="form-control form-control-color" id="draw-color" value="#ffffff" title="${i18next.t('drawing.color.choose')}">
-          <div class="d-flex flex-wrap gap-1">
-            ${COLOR_PRESETS.map(
-              color => `
-              <button type="button" class="btn btn-sm p-0 border rounded" data-color="${color.color}" style="background-color: ${color.color}; width: 24px; height: 24px;" title="${i18next.t(color.nameKey)}"></button>
-            `
-            ).join('')}
-          </div>
+        <div class="d-flex flex-wrap gap-1">
+          ${COLOR_PRESETS.map(
+            color => `
+            <button type="button" class="btn btn-sm p-0 border rounded" data-color="${color.color}" style="background-color: ${color.color}; width: 24px; height: 24px;" title="${i18next.t(color.nameKey)}"></button>
+          `
+          ).join('')}
         </div>
       </div>
 
       <div class="sidebar-section p-2 border-bottom border-secondary">
         <label class="form-label text-secondary small mb-1">${i18next.t('drawing.stroke.label')}</label>
-        <div class="d-flex align-items-center gap-2">
-          <input type="range" class="form-range flex-grow-1" id="draw-stroke" min="1" max="20" value="5">
-          <span class="text-light small" id="stroke-value" style="min-width: 1.5rem;">5</span>
+        <div class="btn-group btn-group-sm w-100" role="group" id="stroke-buttons">
+          ${STROKE_WIDTHS.map((width, index) => {
+            const labels = ['Thin', 'Normal', 'Thick', 'Heavy'];
+            const label = labels[index] || width + 'px';
+            return `<input type="radio" class="btn-check" name="stroke-width" id="stroke-${width}" autocomplete="off" ${index === 1 ? 'checked' : ''}>
+            <label class="btn btn-outline-light" for="stroke-${width}">${label}</label>`;
+          }).join('')}
         </div>
       </div>
 
@@ -333,7 +339,6 @@ export class DrawingSidebar {
       if (btn) this.toolButtons.set(tool.id, btn);
     });
 
-    this.colorPicker = this.contentArea.querySelector('#draw-color') as HTMLInputElement;
     this.strokeSlider = this.contentArea.querySelector('#draw-stroke') as HTMLInputElement;
     this.strokeValue = this.contentArea.querySelector('#stroke-value') as HTMLElement;
     this.visibilityBtn = this.contentArea.querySelector('#toggle-visibility') as HTMLElement;
@@ -346,9 +351,12 @@ export class DrawingSidebar {
     this.bindSubscriberEvents();
     this.refreshDrawingsList();
 
-    // Set initial stroke width and color
-    this.drawingManager.setStrokeWidth(5);
-    this.drawingManager.setColor('#ffffff');
+    // Preserve current stroke width and color, or use defaults for first render
+    const currentStroke = this.drawingManager.getStrokeWidth();
+    const currentColor = this.drawingManager.getColor();
+    // Update UI to match current values (don't reset them)
+    this.setStrokeWidth(currentStroke);
+    this.setColor(currentColor);
 
     // Set up history change callback to update undo/redo buttons
     this.drawingManager.onHistoryChange = (canUndo, canRedo) => {
@@ -360,20 +368,86 @@ export class DrawingSidebar {
     if (this.isOpen) {
       this.drawingManager.enable();
     }
+
+    this.bindHotkeys();
+  }
+
+  private bindHotkeys(): void {
+    let spaceHeld = false;
+
+    this.keyboardHandler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (e.code === 'Space') {
+        // Spacebar: temporarily disable drawing to allow map panning
+        if (!e.repeat && !spaceHeld) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+          }
+          spaceHeld = true;
+          // Disable doodle so OSD can receive pan gestures
+          this.drawingManager.disable();
+        }
+        return;
+      }
+
+      // Other hotkeys only work when drawing is enabled
+      if (!this.drawingManager.isEnabled()) return;
+
+      if (e.code === 'KeyV') {
+        // V: switch to move tool (for moving shapes)
+        if (!e.repeat) {
+          e.preventDefault();
+          this.drawingManager.setTool('move');
+          this.updateToolUI('move');
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          this.drawingManager.redo();
+        } else {
+          this.drawingManager.undo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.code === 'KeyY') {
+        e.preventDefault();
+        this.drawingManager.redo();
+      }
+    };
+
+    this.keyupHandler = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && spaceHeld) {
+        spaceHeld = false;
+        // Re-enable drawing when spacebar is released
+        this.drawingManager.enable();
+      }
+    };
+
+    document.addEventListener('keydown', this.keyboardHandler);
+    document.addEventListener('keyup', this.keyupHandler);
+  }
+
+  private updateToolUI(toolId: string): void {
+    const radio = this.contentArea.querySelector(`#tool-${toolId}`) as HTMLInputElement;
+    if (radio) radio.checked = true;
   }
 
   private bindSubscriberEvents(): void {
     // Tool selection - use radio button change event
     this.contentArea.querySelectorAll('input[name="drawing-tool"]').forEach(input => {
       input.addEventListener('change', () => {
-        const toolId = (input as HTMLInputElement).id.replace('tool-', '') as ShapeType;
-        this.drawingManager.setTool(toolId);
-      });
-    });
+        const inputId = (input as HTMLInputElement).id.replace('tool-', '');
 
-    // Color picker
-    this.colorPicker.addEventListener('input', () => {
-      this.drawingManager.setColor(this.colorPicker.value);
+        // Find config for this tool
+        const config = TOOLS.find(t => t.id === inputId);
+        if (config) {
+          this.drawingManager.setTool(config.type);
+          this.drawingManager.setFill(config.filled);
+        } else if (inputId === 'move') {
+          this.drawingManager.setTool('move');
+        }
+      });
     });
 
     // Color presets
@@ -381,17 +455,21 @@ export class DrawingSidebar {
       btn.addEventListener('click', () => {
         const color = btn.getAttribute('data-color');
         if (color) {
-          this.colorPicker.value = color;
           this.drawingManager.setColor(color);
+          this.updateActiveColorSwatch(color);
         }
       });
     });
 
-    // Stroke width
-    this.strokeSlider.addEventListener('input', () => {
-      const value = parseInt(this.strokeSlider.value, 10);
-      this.strokeValue.textContent = value.toString();
-      this.drawingManager.setStrokeWidth(value);
+    // Initialize active swatch
+    this.updateActiveColorSwatch('#ffffff');
+
+    // Stroke width buttons
+    this.contentArea.querySelectorAll('input[name="stroke-width"]').forEach(input => {
+      input.addEventListener('change', () => {
+        const width = parseInt((input as HTMLInputElement).id.replace('stroke-', ''), 10);
+        this.drawingManager.setStrokeWidth(width);
+      });
     });
 
     // Visibility toggle
@@ -515,18 +593,17 @@ export class DrawingSidebar {
     // Load shapes into drawing manager
     this.drawingManager.loadShapes(result.shapes);
 
-    // Update stroke width if available
+    // Update stroke width if available (both manager and UI)
     if (result.strokeWidth) {
       this.drawingManager.setStrokeWidth(result.strokeWidth);
-      // Update slider to match
-      if (this.strokeSlider) {
-        const sliderValue = this.strokeWidthToSlider(result.strokeWidth);
-        this.strokeSlider.value = sliderValue.toString();
-        this.strokeValue.textContent = `${result.strokeWidth}px`;
-      }
+      this.setStrokeWidth(result.strokeWidth);
     }
 
     console.log('[Sidebar] Imported', result.shapes.length, 'shapes from WebP, map:', result.mapName);
+
+    // Save to session and refresh list
+    await this.session.save();
+    this.refreshDrawingsList();
   }
 
   /**
@@ -740,15 +817,36 @@ export class DrawingSidebar {
    * Set the current color in the UI
    */
   setColor(color: string): void {
-    this.colorPicker.value = color;
+    // this.colorPicker.value = color; // Removed
+    this.updateActiveColorSwatch(color);
   }
 
   /**
    * Set the stroke width in the UI
    */
   setStrokeWidth(width: number): void {
-    this.strokeSlider.value = width.toString();
-    this.strokeValue.textContent = width.toString();
+    const radio = this.contentArea.querySelector(`#stroke-${width}`) as HTMLInputElement;
+    if (radio) radio.checked = true;
+  }
+  private updateActiveColorSwatch(color: string): void {
+    const normalize = (c: string) => c.toLowerCase();
+    const target = normalize(color);
+
+    this.contentArea.querySelectorAll('[data-color]').forEach(el => {
+      const btn = el as HTMLElement;
+      const btnColor = normalize(btn.getAttribute('data-color') || '');
+      if (btnColor === target) {
+        btn.classList.add('border-light', 'border-2', 'opacity-100');
+        btn.classList.remove('border', 'opacity-75'); // Remove default border if needed
+        btn.style.transform = 'scale(1.1)';
+        btn.style.zIndex = '1';
+      } else {
+        btn.classList.remove('border-light', 'border-2', 'opacity-100');
+        btn.classList.add('border'); // Restore default
+        btn.style.transform = '';
+        btn.style.zIndex = '';
+      }
+    });
   }
 }
 

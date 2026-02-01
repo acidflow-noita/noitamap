@@ -37,12 +37,22 @@ export default {
     }
 
     try {
+      // Parse the incoming multipart form data
+      const incomingFormData = await request.formData();
+
+      // Build a new FormData to forward to catbox
+      const forwardFormData = new FormData();
+      for (const [key, value] of incomingFormData.entries()) {
+        forwardFormData.append(key, value);
+      }
+
       // Forward the request to the configured upload target
+      // Let the runtime set Content-Type with correct boundary automatically
       const response = await fetch(env.UPLOAD_TARGET, {
         method: 'POST',
-        body: request.body,
+        body: forwardFormData,
         headers: {
-          'Content-Type': request.headers.get('Content-Type') || 'multipart/form-data',
+          'User-Agent': 'Noitamap-Upload-Proxy/1.0',
         },
       });
 

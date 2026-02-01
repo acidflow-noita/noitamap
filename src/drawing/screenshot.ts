@@ -41,7 +41,7 @@ function createRiffChunk(chunkId: string, data: Uint8Array): Uint8Array {
 }
 
 async function injectDrawingData(webpBlob: Blob, shapes: Shape[], strokeWidth: number, mapName?: string): Promise<Blob> {
-  const binary = encodeShapesBinary(shapes, strokeWidth);
+  const binary = encodeShapesBinary(shapes, mapName ?? '', strokeWidth);
   if (!binary || binary.length === 0) {
     return webpBlob;
   }
