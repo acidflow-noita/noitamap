@@ -109,6 +109,26 @@ export async function createDrawingManager(
     manager.onHistoryChange?.(undoStack.length > 0, redoStack.length > 0);
   }
 
+  // Wait for OSD viewer canvas to be ready before initializing doodle
+  // The doodle library requires the OSD canvas element to exist
+  await new Promise<void>(resolve => {
+    let attempts = 0;
+    const checkOsdReady = () => {
+      const osdCanvas = (osd as any).canvas || osd.element?.querySelector('canvas');
+      if (osdCanvas) {
+        resolve();
+      } else if (attempts > 100) {
+        // ~1.6 seconds timeout - continue anyway
+        console.warn('[Doodle] OSD canvas not found after timeout, proceeding anyway');
+        resolve();
+      } else {
+        attempts++;
+        requestAnimationFrame(checkOsdReady);
+      }
+    };
+    checkOsdReady();
+  });
+
   // Create doodle instance
   const doodle = createDoodle({
     viewer: osd,
@@ -185,7 +205,12 @@ export async function createDrawingManager(
   // Helper to safely apply state
   function applyState() {
     // Only proceed if pixiApp is fully initialized
-    if (!doodle.pixiApp || (!doodle.pixiApp.canvas && !doodle.pixiApp.view)) {
+    const app = doodle.pixiApp;
+    // Check if renderer exists before accessing canvas getter
+    const hasRenderer = app && (app.renderer || (app as any)._renderer);
+    const canvas = hasRenderer ? app.canvas || app.view : null;
+
+    if (!app || !canvas) {
       return;
     }
 
@@ -193,7 +218,6 @@ export async function createDrawingManager(
       doodle.setMode(currentTool);
       doodle.setPan(currentTool === 'move');
       // Restore canvas interactivity
-      const canvas = doodle.pixiApp.canvas || doodle.pixiApp.view;
       if (canvas) {
         canvas.style.pointerEvents = 'auto';
       }
@@ -216,7 +240,6 @@ export async function createDrawingManager(
       doodle.setMode('move');
       doodle.setPan(true);
       // Disable canvas interactivity completely (for view-only mode)
-      const canvas = doodle.pixiApp.canvas || doodle.pixiApp.view;
       if (canvas) {
         canvas.style.pointerEvents = 'none';
       }
@@ -229,18 +252,33 @@ export async function createDrawingManager(
   new Promise<void>(resolve => {
     let attempts = 0;
     const checkPixi = () => {
-      // Check for canvas or view to ensure init is complete
-      // Pixi v8 uses .canvas, older versions use .view
-      if (doodle.pixiApp && (doodle.pixiApp.canvas || doodle.pixiApp.view)) {
-        applyState(); // Apply initial state
-        resolve();
-      } else if (attempts > 500) {
-        // ~8 seconds timeout
-        console.warn('[Doodle] Initialization timed out waiting for canvas');
-        resolve();
-      } else {
-        attempts++;
-        requestAnimationFrame(checkPixi);
+      try {
+        // Check for canvas or view to ensure init is complete
+        // Pixi v8 uses .canvas, older versions use .view
+        // SAFEGUARD: Check renderer first, as accessing .canvas throws if renderer is undefined
+        const app = doodle.pixiApp;
+        const hasRenderer = app && (app.renderer || (app as any)._renderer);
+        const hasCanvas = hasRenderer && (app.canvas || app.view);
+
+        if (app && hasCanvas) {
+          applyState(); // Apply initial state
+          resolve();
+        } else if (attempts > 500) {
+          // ~8 seconds timeout
+          console.warn('[Doodle] Initialization timed out waiting for canvas');
+          resolve();
+        } else {
+          attempts++;
+          requestAnimationFrame(checkPixi);
+        }
+      } catch (e) {
+        console.warn('[Doodle] Error during initialization check:', e);
+        if (attempts > 500) {
+          resolve();
+        } else {
+          attempts++;
+          requestAnimationFrame(checkPixi);
+        }
       }
     };
     checkPixi();

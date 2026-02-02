@@ -112,6 +112,7 @@ export class DrawingSidebar {
   private keyupHandler: ((e: KeyboardEvent) => void) | null = null;
   private simplifiedHandler: (() => void) | null = null;
   private previousTool: ShapeType | null = null;
+  private catboxSourceUrl: string | null = null;
 
   constructor(container: HTMLElement, options: SidebarOptions) {
     this.container = container;
@@ -223,6 +224,11 @@ export class DrawingSidebar {
           <i class="bi bi-upload me-2"></i>${i18next.t('drawing.actions.importWebp')}
         </button>
         <input type="file" id="import-webp-input-unauth" accept="image/webp" style="display: none;">
+        <div id="catbox-source-container" class="mt-2" style="display: none;">
+          <a id="catbox-source-link" href="#" target="_blank" class="btn btn-sm btn-outline-info w-100">
+            <i class="bi bi-cloud me-2"></i>${i18next.t('drawing.actions.openSource', 'Open source on Catbox')}
+          </a>
+        </div>
       </div>
     `;
 
@@ -235,6 +241,8 @@ export class DrawingSidebar {
 
     // Disable drawing when not authenticated
     this.drawingManager.disable();
+
+    this.updateCatboxSourceUI();
   }
 
   private renderNonSubscriberContent(): void {
@@ -258,6 +266,11 @@ export class DrawingSidebar {
           <i class="bi bi-upload me-2"></i>${i18next.t('drawing.actions.importWebp')}
         </button>
         <input type="file" id="import-webp-input-nonsub" accept="image/webp" style="display: none;">
+        <div id="catbox-source-container" class="mt-2" style="display: none;">
+          <a id="catbox-source-link" href="#" target="_blank" class="btn btn-sm btn-outline-info w-100">
+            <i class="bi bi-cloud me-2"></i>${i18next.t('drawing.actions.openSource', 'Open source on Catbox')}
+          </a>
+        </div>
       </div>
     `;
 
@@ -270,6 +283,8 @@ export class DrawingSidebar {
 
     // Disable drawing when not subscribed
     this.drawingManager.disable();
+
+    this.updateCatboxSourceUI();
   }
 
   private renderSubscriberContent(): void {
@@ -352,6 +367,11 @@ export class DrawingSidebar {
             <i class="bi bi-filetype-json"></i> ${i18next.t('drawing.actions.exportJson')}
           </button>
         </div>
+        <div id="catbox-source-container" class="mt-2" style="display: none;">
+          <a id="catbox-source-link" href="#" target="_blank" class="btn btn-sm btn-outline-info w-100">
+            <i class="bi bi-cloud me-2"></i>${i18next.t('drawing.actions.openSource', 'Open source on Catbox')}
+          </a>
+        </div>
       </div>
 
       <div class="sidebar-section p-2 flex-grow-1 overflow-auto">
@@ -400,6 +420,9 @@ export class DrawingSidebar {
     }
 
     this.bindHotkeys();
+
+    // Update catbox source link if set
+    this.updateCatboxSourceUI();
   }
 
   private bindHotkeys(): void {
@@ -879,6 +902,34 @@ export class DrawingSidebar {
         btn.style.zIndex = '';
       }
     });
+  }
+
+  /**
+   * Set the Catbox source URL to display a link to the original image
+   */
+  setCatboxSource(fileId: string | null): void {
+    if (!fileId) {
+      this.catboxSourceUrl = null;
+    } else {
+      // If fileId already has extension (e.g. from regex match), don't append it again
+      const file = fileId.endsWith('.webp') ? fileId : `${fileId}.webp`;
+      this.catboxSourceUrl = `https://files.catbox.moe/${file}`;
+    }
+    this.updateCatboxSourceUI();
+  }
+
+  private updateCatboxSourceUI(): void {
+    const container = this.contentArea.querySelector('#catbox-source-container') as HTMLElement;
+    const link = this.contentArea.querySelector('#catbox-source-link') as HTMLAnchorElement;
+
+    if (container && link) {
+      if (this.catboxSourceUrl) {
+        link.href = this.catboxSourceUrl;
+        container.style.display = 'block';
+      } else {
+        container.style.display = 'none';
+      }
+    }
   }
 }
 

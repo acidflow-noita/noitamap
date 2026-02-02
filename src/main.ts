@@ -166,13 +166,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   let drawingSession: DrawingSession | null = null;
   let drawingSidebar: DrawingSidebar | null = null;
   let drawToggleCheckbox: HTMLInputElement | null = null;
+  let isDrawLoading = false; // Flag to prevent URL updates during loading
 
   try {
     // Create drawing session first (needed for the callback)
     drawingSession = new DrawingSession(initialMapName, {
       // DISABLED: URL encoding of drawings no longer needed - sharing via catbox.moe image upload
       onSave: drawing => {
-        if (!drawing) return;
+        if (!drawing || isDrawLoading) return;
         // Encode drawing to URL for local state visibility
         const mapName = drawingSession?.getMapName() ?? '';
         const sw = drawingManager?.getStrokeWidth() ?? 5;
@@ -350,7 +351,9 @@ document.addEventListener('DOMContentLoaded', async () => {
               }
             }
 
+            isDrawLoading = true;
             drawingManager.loadShapes(result.shapes);
+            isDrawLoading = false;
             if (result.strokeWidth) {
               drawingManager.setStrokeWidth(result.strokeWidth);
               drawingSidebar?.setStrokeWidth(result.strokeWidth);
@@ -373,6 +376,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (drawToggleCheckbox && drawingSidebar) {
               drawToggleCheckbox.checked = true;
               drawingSidebar.open();
+              drawingSidebar.setCatboxSource(fileId);
               updateURLWithSidebar(true);
             }
           } else {
@@ -388,7 +392,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     else if (urlState.drawing && drawingManager) {
       const decoded = decodeShapesFromUrl(urlState.drawing);
       if (decoded && decoded.shapes.length > 0) {
+        isDrawLoading = true;
         drawingManager.loadShapes(decoded.shapes);
+        isDrawLoading = false;
         // Apply the decoded stroke width to both manager and sidebar UI
         drawingManager.setStrokeWidth(decoded.strokeWidth);
         drawingSidebar?.setStrokeWidth(decoded.strokeWidth);
@@ -451,7 +457,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       if (drawingManager) {
+        isDrawLoading = true;
         drawingManager.loadShapes(result.shapes);
+        isDrawLoading = false;
         if (result.strokeWidth) {
           drawingManager.setStrokeWidth(result.strokeWidth);
           drawingSidebar?.setStrokeWidth(result.strokeWidth);

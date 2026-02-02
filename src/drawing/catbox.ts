@@ -112,9 +112,15 @@ export function isCatboxRef(param: string): boolean {
  */
 export function extractCatboxFileId(param: string): string | null {
   if (!isCatboxRef(param)) return null;
-  const fileId = param.slice(3); // Remove "cb:" prefix
+  let fileId = param.slice(3); // Remove "cb:" prefix
+
+  // Strip extension if present (backward compatibility for old links)
+  if (fileId.toLowerCase().endsWith('.webp')) {
+    fileId = fileId.slice(0, -5);
+  }
+
   // Validate file ID format (alphanumeric, typically 6 chars)
-  if (!/^[a-zA-Z0-9]+$/.test(fileId)) return null;
+  if (!/^[a-zA-Z0-9_-]+$/.test(fileId)) return null;
   return fileId;
 }
 
