@@ -10,6 +10,7 @@
     "add-biome-translations": "node build_scripts/add-biome-translations.cjs",
     "copy-locales": "node build_scripts/copy-locales.cjs",
     "watch": "tsup --no-minify --watch src/**/*.ts --watch src/data/*.json",
+    "dev": "npx serve public",
     "generate": "node ./src/data/data_generators/map_definitions_maker.cjs"
   },
   "repository": {
