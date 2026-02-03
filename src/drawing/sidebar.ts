@@ -2,7 +2,7 @@
  * Drawing Sidebar - UI component for drawing tools and saved drawings
  */
 
-import type { DrawingManager, ShapeType, Shape } from './doodle-integration';
+import type { DrawingManager, ShapeType, Shape, TextZoomStrategyType } from './doodle-integration';
 import type { DrawingSession, StoredDrawing } from './storage';
 import { getAllDrawings } from './storage';
 import { getAllMapDefinitions } from '../data_sources/map_definitions';
@@ -347,6 +347,18 @@ export class DrawingSidebar {
         </div>
       </div>
 
+      <div class="sidebar-section p-2 border-bottom border-secondary" id="text-zoom-section" style="display: none;">
+        <label class="form-label text-secondary small mb-1">Text Zoom (Debug)</label>
+        <div class="btn-group btn-group-sm w-100" role="group" id="text-zoom-buttons">
+          <input type="radio" class="btn-check" name="text-zoom" id="text-zoom-fixed-screen" autocomplete="off" checked>
+          <label class="btn btn-outline-warning" for="text-zoom-fixed-screen" title="Text stays same screen size regardless of zoom">Screen</label>
+          <input type="radio" class="btn-check" name="text-zoom" id="text-zoom-fixed-world" autocomplete="off">
+          <label class="btn btn-outline-warning" for="text-zoom-fixed-world" title="Text scales with the map (like other shapes)">World</label>
+          <input type="radio" class="btn-check" name="text-zoom" id="text-zoom-hybrid" autocomplete="off">
+          <label class="btn btn-outline-warning" for="text-zoom-hybrid" title="Text scale clamped between 0.5x and 2x">Hybrid</label>
+        </div>
+      </div>
+
       <div class="sidebar-section p-2 border-bottom border-secondary">
         <div class="d-flex flex-wrap gap-1">
           <button class="btn btn-sm btn-outline-light flex-fill" id="undo-btn" title="${i18next.t('drawing.actions.undoTitle')}" disabled>
@@ -505,9 +517,10 @@ export class DrawingSidebar {
     const radio = this.contentArea.querySelector(`#tool-${toolId}`) as HTMLInputElement;
     if (radio) radio.checked = true;
 
-    // Toggle stroke/font UI based on tool
+    // Toggle stroke/font/zoom UI based on tool
     const strokeSection = this.contentArea.querySelector('#stroke-width-section') as HTMLElement;
     const fontSection = this.contentArea.querySelector('#font-size-section') as HTMLElement;
+    const textZoomSection = this.contentArea.querySelector('#text-zoom-section') as HTMLElement;
 
     if (!strokeSection || !fontSection) {
       console.warn('[Sidebar] Warning: One or more UI sections not found:', { strokeSection, fontSection });
@@ -517,9 +530,11 @@ export class DrawingSidebar {
       if (toolId === 'text') {
         strokeSection.style.display = 'none';
         fontSection.style.display = 'block';
+        if (textZoomSection) textZoomSection.style.display = 'block';
       } else {
         strokeSection.style.display = 'block';
         fontSection.style.display = 'none';
+        if (textZoomSection) textZoomSection.style.display = 'none';
       }
     }
   }
@@ -578,6 +593,14 @@ export class DrawingSidebar {
       input.addEventListener('change', () => {
         const size = parseInt((input as HTMLInputElement).id.replace('font-', ''), 10);
         this.drawingManager.setFontSize(size);
+      });
+    });
+
+    // Text zoom strategy buttons (debug)
+    this.contentArea.querySelectorAll('input[name="text-zoom"]').forEach(input => {
+      input.addEventListener('change', () => {
+        const strategy = (input as HTMLInputElement).id.replace('text-zoom-', '') as 'fixed-screen' | 'fixed-world' | 'hybrid';
+        this.drawingManager.setTextZoomStrategy(strategy);
       });
     });
 

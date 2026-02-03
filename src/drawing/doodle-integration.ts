@@ -43,6 +43,8 @@ export interface Shape {
   strokeWidth?: number;
 }
 
+export type TextZoomStrategyType = 'fixed-screen' | 'fixed-world' | 'hybrid';
+
 export interface DrawingManager {
   enable(): void;
   disable(): void;
@@ -72,6 +74,8 @@ export interface DrawingManager {
   onHistoryChange?: (canUndo: boolean, canRedo: boolean) => void;
   deleteSelected(): boolean;
   destroy(): void;
+  setTextZoomStrategy(strategy: TextZoomStrategyType): void;
+  getTextZoomStrategy(): TextZoomStrategyType;
 }
 
 /**
@@ -105,6 +109,9 @@ export async function createDrawingManager(
 
   // Text shapes are stored separately since doodle doesn't support them
   let textShapes: Shape[] = [];
+
+  // Text zoom strategy
+  let textZoomStrategy: TextZoomStrategyType = 'fixed-screen';
 
   function pushHistory(entry: HistoryEntry) {
     if (isUndoRedoAction) return;
@@ -441,11 +448,15 @@ export async function createDrawingManager(
 
   const overlays = new OverlaysManager();
 
-  // DOM-based Text Renderer
+  // DOM-based Text Renderer with edit/move support
   class TextRenderer {
     private container: HTMLDivElement;
     private textMap: Map<string, HTMLDivElement> = new Map();
     private osdViewer: AppOSD;
+    private selectedId: string | null = null;
+    private isDragging = false;
+    private dragStartPos: { x: number; y: number } | null = null;
+    private dragStartWorld: { x: number; y: number } | null = null;
 
     constructor(viewer: AppOSD) {
       this.osdViewer = viewer;
@@ -457,17 +468,161 @@ export async function createDrawingManager(
         left: '0',
         width: '100%',
         height: '100%',
-        pointerEvents: 'none', // Allow clicks to pass through to map
-        zIndex: '2000', // Above map and overlays
+        pointerEvents: 'none',
+        zIndex: '2000',
         overflow: 'hidden'
       });
-      
-      // Append directly to viewer element to ensure it's on top of OSD canvas/overlays
+
       viewer.element.appendChild(this.container);
-      
+
       // Update positions on zoom/pan
       viewer.addHandler('animation', () => this.updatePositions());
       viewer.addHandler('open', () => this.updatePositions());
+
+      // Global mouse move/up for dragging
+      document.addEventListener('mousemove', this.onMouseMove.bind(this));
+      document.addEventListener('mouseup', this.onMouseUp.bind(this));
+    }
+
+    private onMouseMove(e: MouseEvent) {
+      if (!this.isDragging || !this.dragStartPos || !this.dragStartWorld || !this.selectedId) return;
+
+      const dx = e.clientX - this.dragStartPos.x;
+      const dy = e.clientY - this.dragStartPos.y;
+
+      // Convert pixel delta to viewport delta
+      const viewport = this.osdViewer.viewport;
+      const zoom = viewport.getZoom(true);
+      const containerSize = viewport.getContainerSize();
+
+      // Approximate conversion from screen pixels to viewport coords
+      const viewportDx = dx / (containerSize.x * zoom);
+      const viewportDy = dy / (containerSize.y * zoom);
+
+      const newX = this.dragStartWorld.x + viewportDx;
+      const newY = this.dragStartWorld.y + viewportDy;
+
+      // Update the text element position directly for visual feedback
+      const el = this.textMap.get(this.selectedId);
+      if (el) {
+        el.dataset.worldX = String(newX);
+        el.dataset.worldY = String(newY);
+        this.updatePositions();
+      }
+    }
+
+    private onMouseUp(_e: MouseEvent) {
+      if (this.isDragging && this.selectedId) {
+        // Commit the move to the shape
+        const el = this.textMap.get(this.selectedId);
+        if (el) {
+          const newX = parseFloat(el.dataset.worldX || '0');
+          const newY = parseFloat(el.dataset.worldY || '0');
+
+          // Find and update the shape
+          const shapeIndex = textShapes.findIndex(s => s.id === this.selectedId);
+          if (shapeIndex !== -1) {
+            const oldShape = { ...textShapes[shapeIndex], pos: [...textShapes[shapeIndex].pos] };
+            textShapes[shapeIndex].pos = [newX, newY];
+            const newShape = { ...textShapes[shapeIndex], pos: [...textShapes[shapeIndex].pos] };
+            pushHistory({ type: 'update', oldShape, newShape });
+            callbacks?.onShapeChange?.();
+          }
+        }
+      }
+      this.isDragging = false;
+      this.dragStartPos = null;
+      this.dragStartWorld = null;
+    }
+
+    private setupTextElement(textEl: HTMLDivElement, shapeId: string) {
+      textEl.style.cursor = 'move';
+
+      // Click to select
+      textEl.addEventListener('mousedown', (e) => {
+        if (!isEnabled) return;
+        e.stopPropagation();
+        e.preventDefault();
+
+        this.selectText(shapeId);
+
+        // Start drag
+        this.isDragging = true;
+        this.dragStartPos = { x: e.clientX, y: e.clientY };
+        this.dragStartWorld = {
+          x: parseFloat(textEl.dataset.worldX || '0'),
+          y: parseFloat(textEl.dataset.worldY || '0')
+        };
+      });
+
+      // Double-click to edit
+      textEl.addEventListener('dblclick', (e) => {
+        if (!isEnabled) return;
+        e.stopPropagation();
+        e.preventDefault();
+
+        const shape = textShapes.find(s => s.id === shapeId);
+        if (!shape) return;
+
+        const rect = textEl.getBoundingClientRect();
+        const viewerRect = this.osdViewer.element.getBoundingClientRect();
+
+        overlays.showInput(
+          rect.left - viewerRect.left,
+          rect.top - viewerRect.top,
+          shape.text || '',
+          shape.fontSize || currentFontSize,
+          (newText) => {
+            const oldShape = { ...shape, pos: [...shape.pos] };
+            shape.text = newText;
+            const newShape = { ...shape, pos: [...shape.pos] };
+            pushHistory({ type: 'update', oldShape, newShape });
+            this.sync(textShapes);
+            callbacks?.onShapeChange?.();
+          },
+          () => { /* cancel */ }
+        );
+      });
+    }
+
+    selectText(id: string | null) {
+      // Deselect previous
+      if (this.selectedId) {
+        const prevEl = this.textMap.get(this.selectedId);
+        if (prevEl) {
+          prevEl.style.outline = 'none';
+        }
+      }
+
+      this.selectedId = id;
+
+      // Select new
+      if (id) {
+        const el = this.textMap.get(id);
+        if (el) {
+          el.style.outline = '2px solid #9146FF';
+          el.style.outlineOffset = '2px';
+        }
+      }
+    }
+
+    getSelectedId(): string | null {
+      return this.selectedId;
+    }
+
+    deleteSelected(): boolean {
+      if (!this.selectedId) return false;
+
+      const index = textShapes.findIndex(s => s.id === this.selectedId);
+      if (index !== -1) {
+        const removed = textShapes.splice(index, 1)[0];
+        pushHistory({ type: 'remove', shape: { ...removed, pos: [...removed.pos] } });
+        this.sync(textShapes);
+        this.selectedId = null;
+        callbacks?.onShapeChange?.();
+        return true;
+      }
+      return false;
     }
 
     sync(shapes: Shape[]) {
@@ -482,67 +637,95 @@ export async function createDrawingManager(
             textEl = document.createElement('div');
             textEl.className = 'doodle-text-label';
             textEl.style.position = 'absolute';
-            textEl.style.pointerEvents = 'auto'; // allow selection/interaction if needed
+            textEl.style.pointerEvents = 'auto';
             textEl.style.whiteSpace = 'pre';
             textEl.style.textShadow = '0 0 4px #000';
+            textEl.dataset.shapeId = shape.id;
             this.container.appendChild(textEl);
             this.textMap.set(shape.id, textEl);
+            this.setupTextElement(textEl, shape.id);
           }
 
           textEl.textContent = shape.text;
           textEl.style.fontFamily = 'Inter, sans-serif';
           textEl.style.fontSize = `${shape.fontSize || 16}px`;
           textEl.style.color = shape.color || '#ffffff';
-          
-          // Store world position on element for updatePositions
           textEl.dataset.worldX = String(shape.pos[0]);
           textEl.dataset.worldY = String(shape.pos[1]);
+          textEl.dataset.baseFontSize = String(shape.fontSize || 16);
+
+          // Restore selection outline if selected
+          if (shape.id === this.selectedId) {
+            textEl.style.outline = '2px solid #9146FF';
+            textEl.style.outlineOffset = '2px';
+          } else {
+            textEl.style.outline = 'none';
+          }
         }
       });
 
-      // Remove Old
+      // Remove old
       for (const [id, el] of this.textMap) {
         if (!currentIds.has(id)) {
           el.remove();
           this.textMap.delete(id);
+          if (this.selectedId === id) {
+            this.selectedId = null;
+          }
         }
       }
-      
+
       this.updatePositions();
     }
-    
+
     updatePositions() {
-        if (!this.textMap.size) return;
-        
-        const viewport = this.osdViewer.viewport;
-        
-        this.textMap.forEach((el) => {
-            const x = parseFloat(el.dataset.worldX || '0');
-            const y = parseFloat(el.dataset.worldY || '0');
-            const pixel = viewport.viewportToViewerElementCoordinates(
-                new OpenSeadragon.Point(x, y)
-            );
-            
-            // Text position
-            el.style.left = `${pixel.x}px`;
-            el.style.top = `${pixel.y}px`;
-            
-            // Text scale
-            // Use Fixed Screen Size (scale 1) to ensure text remains readable/visible 
-            // regardless of zoom level. Scaling with the map (Fixed World Size) caused 
-            // text to become invisible when zoomed out.
-            el.style.transformOrigin = 'top left';
+      if (!this.textMap.size) return;
+
+      const viewport = this.osdViewer.viewport;
+      const zoom = viewport.getZoom(true);
+
+      this.textMap.forEach((el) => {
+        const x = parseFloat(el.dataset.worldX || '0');
+        const y = parseFloat(el.dataset.worldY || '0');
+        const baseFontSize = parseFloat(el.dataset.baseFontSize || '16');
+        const pixel = viewport.viewportToViewerElementCoordinates(
+          new OpenSeadragon.Point(x, y)
+        );
+
+        el.style.left = `${pixel.x}px`;
+        el.style.top = `${pixel.y}px`;
+        el.style.transformOrigin = 'top left';
+
+        // Apply zoom strategy
+        switch (textZoomStrategy) {
+          case 'fixed-screen':
+            // Text stays same screen size regardless of zoom
             el.style.transform = 'scale(1)';
-        });
+            el.style.fontSize = `${baseFontSize}px`;
+            break;
+          case 'fixed-world':
+            // Text scales with the map (like other shapes)
+            el.style.transform = `scale(${zoom})`;
+            el.style.fontSize = `${baseFontSize}px`;
+            break;
+          case 'hybrid':
+            // Clamp scale between 0.5 and 2 for readability
+            const clampedScale = Math.max(0.5, Math.min(2, zoom));
+            el.style.transform = `scale(${clampedScale})`;
+            el.style.fontSize = `${baseFontSize}px`;
+            break;
+        }
+      });
     }
 
     clear() {
-        this.container.innerHTML = '';
-        this.textMap.clear();
+      this.container.innerHTML = '';
+      this.textMap.clear();
+      this.selectedId = null;
     }
-    
+
     setVisible(visible: boolean) {
-        this.container.style.display = visible ? 'block' : 'none';
+      this.container.style.display = visible ? 'block' : 'none';
     }
   }
 
@@ -698,11 +881,11 @@ export async function createDrawingManager(
             strokeWidth: shape.strokeWidth || 5,
           };
 
-          const coordLimit = 500000;
+          // Basic validation - just check pos exists and values are finite
           if (
             !sanitizedShape.pos ||
             !Array.isArray(sanitizedShape.pos) ||
-            sanitizedShape.pos.some(n => !Number.isFinite(n) || Math.abs(n) > coordLimit)
+            sanitizedShape.pos.some(n => !Number.isFinite(n))
           ) {
             console.warn('[Doodle] Skipping invalid shape:', sanitizedShape.id);
             skippedCount++;
@@ -939,6 +1122,11 @@ export async function createDrawingManager(
     },
 
     deleteSelected(): boolean {
+      // First try to delete selected text
+      if (textRenderer?.deleteSelected()) {
+        return true;
+      }
+      // Then try to delete selected doodle shape
       const doodleAny = doodle as any;
       if (doodleAny.tempShape?.id) {
         const shape = { ...doodleAny.tempShape };
@@ -946,6 +1134,15 @@ export async function createDrawingManager(
         return true;
       }
       return false;
+    },
+
+    setTextZoomStrategy(strategy: TextZoomStrategyType) {
+      textZoomStrategy = strategy;
+      textRenderer?.updatePositions();
+    },
+
+    getTextZoomStrategy(): TextZoomStrategyType {
+      return textZoomStrategy;
     },
 
     destroy() {
