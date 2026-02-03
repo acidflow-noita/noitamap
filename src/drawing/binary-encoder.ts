@@ -506,6 +506,7 @@ export function decodeShapesBinary(buffer: Uint8Array): {
         const len = buffer[offset++];
         const textBytes = buffer.subarray(offset, offset + len);
         currentText = new TextDecoder().decode(textBytes);
+        offset += len;
         break;
       }
 
