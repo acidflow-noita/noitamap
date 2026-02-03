@@ -72,6 +72,14 @@
   <body>
     <!-- Toast container for notifications -->
     <div class="toast-container position-fixed top-0 end-0" style="z-index: 1100">
+      <div id="skippedShapesToast" class="toast text-bg-warning" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          <strong class="me-auto">Drawing Warning</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">Some drawing data was corrupted and could not be loaded.</div>
+      </div>
       <div id="shareToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-body bg-success text-white"><i class="bi bi-check-circle me-2"></i>Copied to clipboard!</div>
       </div>

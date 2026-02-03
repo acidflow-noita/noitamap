@@ -38,6 +38,9 @@ export interface Shape {
   color: string;
   filled?: boolean;
   readonly?: boolean;
+  text?: string;
+  fontSize?: number;
+  strokeWidth?: number;
 }
 
 export interface DrawingManager {
@@ -52,6 +55,8 @@ export interface DrawingManager {
   getStrokeWidth(): number;
   setFill(filled: boolean): void;
   getFill(): boolean;
+  setFontSize(size: number): void;
+  getFontSize(): number;
   getShapes(): Shape[];
   loadShapes(shapes: Shape[]): void;
   clearShapes(): void;
@@ -83,7 +88,8 @@ export async function createDrawingManager(
   let currentTool: ShapeType = 'path';
   let currentStrokeWidth = 5;
   let currentColor = '#ffffff';
-  let currentFill = false;
+  // let currentFill = false; // Disabled
+  let currentFontSize = 16;
 
   // Undo/redo history
   type HistoryEntry =
@@ -96,6 +102,9 @@ export async function createDrawingManager(
   const redoStack: HistoryEntry[] = [];
   let isUndoRedoAction = false; // Suppress history recording during undo/redo
   const MAX_HISTORY = 100;
+
+  // Text shapes are stored separately since doodle doesn't support them
+  let textShapes: Shape[] = [];
 
   function pushHistory(entry: HistoryEntry) {
     if (isUndoRedoAction) return;
@@ -134,37 +143,15 @@ export async function createDrawingManager(
     viewer: osd,
     onAdd: (shape: Shape) => {
       // Ensure shape has filled property if set
-      if (currentFill) {
-        shape.filled = true;
-      }
-      // Ensure shape has filled property if set
-      if (currentFill) {
-        shape.filled = true;
-      }
-      /*
-      if (currentFill) {
-         // Create a strict clean copy to avoid any internal state issues
-         const filledShape = {
-            id: shape.id,
-            type: shape.type,
-            pos: Array.isArray(shape.pos) ? [...shape.pos] : shape.pos,
-            color: shape.color,
-            filled: true,
-            // Copy other potential properties if they exist
-            points: (shape as any).points,
-            text: (shape as any).text
-         };
-         // Remove undefined properties
-         Object.keys(filledShape).forEach(key => (filledShape as any)[key] === undefined && delete (filledShape as any)[key]);
+      // if (currentFill) {
+      //   shape.filled = true;
+      // }
 
-         doodle.addShapes([filledShape]);
-         pushHistory({ type: 'add', shape: filledShape });
-      } else {
-         doodle.addShape(shape);
-         pushHistory({ type: 'add', shape: { ...shape, pos: [...shape.pos] } });
+      // Ensure shape has strokeWidth property
+      if (!shape.strokeWidth) {
+        shape.strokeWidth = currentStrokeWidth;
       }
-      */
-      // Revert to original behavior for now
+
       doodle.addShape(shape);
       pushHistory({ type: 'add', shape: { ...shape, pos: [...shape.pos] } });
 
@@ -215,23 +202,23 @@ export async function createDrawingManager(
     }
 
     if (isEnabled) {
-      doodle.setMode(currentTool);
-      doodle.setPan(currentTool === 'move');
+      if (currentTool === 'text') {
+         doodle.setMode('move');
+         doodle.setPan(true);
+      } else {
+         doodle.setMode(currentTool);
+         doodle.setPan(currentTool === 'move');
+      }
       // Restore canvas interactivity
       if (canvas) {
         canvas.style.pointerEvents = 'auto';
       }
     } else {
-      // Commit any pending move operation before changing mode
-      // setMode calls cancelSelectShape() which reverts to original position
-      // We need to save the tempShape position first if it was modified
       const doodleAny = doodle as any;
       if (doodleAny.tempShape?.id) {
         const tempShape = doodleAny.tempShape;
         const originalShape = doodleAny.shapes?.find((s: Shape) => s.id === tempShape.id);
-        // Check if shape was modified (position changed)
         if (originalShape && JSON.stringify(originalShape) !== JSON.stringify(tempShape)) {
-          // Trigger the update callback to save the new position
           doodle.updateShape({ ...tempShape });
           callbacks?.onShapeChange?.();
         }
@@ -246,16 +233,11 @@ export async function createDrawingManager(
     }
   }
 
-  // Wait for pixi app to initialize (in background, don't block app load)
-  // We don't await this because it can take a few seconds and we want the UI to load immediately.
-  // The manager's enable/disable methods are already queue-aware.
+  // Wait for pixi app to initialize
   new Promise<void>(resolve => {
     let attempts = 0;
     const checkPixi = () => {
       try {
-        // Check for canvas or view to ensure init is complete
-        // Pixi v8 uses .canvas, older versions use .view
-        // SAFEGUARD: Check renderer first, as accessing .canvas throws if renderer is undefined
         const app = doodle.pixiApp;
         const hasRenderer = app && (app.renderer || (app as any)._renderer);
         const hasCanvas = hasRenderer && (app.canvas || app.view);
@@ -264,7 +246,6 @@ export async function createDrawingManager(
           applyState(); // Apply initial state
           resolve();
         } else if (attempts > 500) {
-          // ~8 seconds timeout
           console.warn('[Doodle] Initialization timed out waiting for canvas');
           resolve();
         } else {
@@ -284,32 +265,24 @@ export async function createDrawingManager(
     checkPixi();
   });
 
-  // Set default color immediately to prevent "Unable to convert color NaN" error
+  // Set default color
   doodle.setBrushColor('#ffffff');
   doodle.setDefaultColor('#ffffff');
 
-  // Patch coordinate handling for noitamap's TopLeft tile offsets.
-  //
-  // The doodle's moveHandler uses viewport._viewportToImageDelta() which doesn't
-  // work with noitamap's multi-tile setup. In noitamap, viewport coords = world coords.
-  //
-  // We use property getters on mouse.dx/dy that always return the correct world
-  // coordinates based on the current mouse.x/y values.
+  // Patch coordinate handling
   const doodleAny = doodle as any;
   const mouse = doodleAny.mouse;
 
-  // Store any values doodle tries to write (to not break its internal state tracking)
   let storedDx = 0;
   let storedDy = 0;
 
   Object.defineProperty(mouse, 'dx', {
     get: () => {
-      // Calculate correct world coordinates from current pixel position
       const viewportPoint = osd.viewport.pointFromPixel(new OpenSeadragon.Point(mouse.x, mouse.y), true);
       return viewportPoint.x;
     },
     set: (val: number) => {
-      storedDx = val; // Store but don't use
+      storedDx = val;
     },
     configurable: true,
   });
@@ -325,9 +298,300 @@ export async function createDrawingManager(
     configurable: true,
   });
 
-  // Set initial state
   doodle.setMode('path');
-  doodle.setPan(true); // Allow panning by default
+  doodle.setPan(true);
+
+  // --- Text Tool Implementation ---
+
+  // Manager for DOM overlays (text input)
+  class OverlaysManager {
+    private activeContainer: HTMLDivElement | null = null;
+    private activeInput: HTMLTextAreaElement | null = null;
+    private onCommit: ((text: string) => void) | null = null;
+    private onCancel: (() => void) | null = null;
+
+    showInput(
+      x: number,
+      y: number,
+      initialText: string = '',
+      fontSize: number,
+      onCommit: (t: string) => void,
+      onCancel: () => void
+    ) {
+      this.closeInput();
+
+      this.onCommit = onCommit;
+      this.onCancel = onCancel;
+
+      // Container for input and controls
+      const container = document.createElement('div');
+      Object.assign(container.style, {
+        position: 'absolute',
+        left: `${x}px`,
+        top: `${y}px`,
+        zIndex: '10000',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '4px',
+      });
+
+      const input = document.createElement('textarea');
+      input.value = initialText;
+      input.className = 'doodle-text-input';
+      Object.assign(input.style, {
+        minWidth: '200px',
+        minHeight: '100px',
+        fontSize: '16px', // UI size
+        fontFamily: 'Inter, sans-serif',
+        background: 'rgba(0, 0, 0, 0.8)',
+        color: 'white',
+        border: '1px solid #9146FF',
+        borderRadius: '4px',
+        padding: '8px',
+        resize: 'both',
+        outline: 'none',
+      });
+
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          this.commit();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          this.cancel();
+        }
+        e.stopPropagation();
+      });
+
+      input.addEventListener('keyup', e => e.stopPropagation());
+      input.addEventListener('keypress', e => e.stopPropagation());
+
+      // Controls
+      const controls = document.createElement('div');
+      Object.assign(controls.style, {
+        display: 'flex',
+        gap: '4px',
+        justifyContent: 'flex-end',
+      });
+
+      const createBtn = (iconClass: string, colorClass: string, onClick: () => void, title: string) => {
+        const btn = document.createElement('button');
+        btn.className = `btn btn-sm ${colorClass}`;
+        btn.innerHTML = `<i class="${iconClass}"></i>`;
+        btn.title = title;
+        Object.assign(btn.style, {
+          padding: '2px 8px',
+        });
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onClick();
+        });
+        btn.addEventListener('mousedown', (e) => e.stopPropagation()); // Prevent OSD drag
+        return btn;
+      };
+
+      const cancelBtn = createBtn('bi bi-x-lg', 'btn-danger', () => this.cancel(), 'Cancel (Esc)');
+      const confirmBtn = createBtn('bi bi-check-lg', 'btn-success', () => this.commit(), 'Confirm (Ctrl+Enter)');
+
+      controls.appendChild(cancelBtn);
+      controls.appendChild(confirmBtn);
+
+      container.appendChild(input);
+      container.appendChild(controls);
+      document.body.appendChild(container);
+      
+      input.focus();
+      this.activeInput = input;
+      this.activeContainer = container;
+
+      // Click outside to commit? optional, but maybe safer to rely on buttons/keys now
+      // input.addEventListener('blur', () => {
+      //   this.commit();
+      // });
+    }
+
+    commit() {
+      if (this.activeInput && this.onCommit) {
+        const text = this.activeInput.value.trim();
+        if (text) {
+          this.onCommit(text);
+        } else {
+          this.onCancel?.();
+        }
+      }
+      this.closeInput();
+    }
+
+    cancel() {
+      this.onCancel?.();
+      this.closeInput();
+    }
+
+    closeInput() {
+      if (this.activeContainer) {
+        this.activeContainer.remove();
+        this.activeContainer = null;
+        this.activeInput = null;
+      }
+      this.onCommit = null;
+      this.onCancel = null;
+    }
+  }
+
+  const overlays = new OverlaysManager();
+
+  // DOM-based Text Renderer
+  class TextRenderer {
+    private container: HTMLDivElement;
+    private textMap: Map<string, HTMLDivElement> = new Map();
+    private osdViewer: AppOSD;
+
+    constructor(viewer: AppOSD) {
+      this.osdViewer = viewer;
+      this.container = document.createElement('div');
+      this.container.className = 'doodle-text-layer';
+      Object.assign(this.container.style, {
+        position: 'absolute',
+        top: '0',
+        left: '0',
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none', // Allow clicks to pass through to map
+        zIndex: '2000', // Above map and overlays
+        overflow: 'hidden'
+      });
+      
+      // Append directly to viewer element to ensure it's on top of OSD canvas/overlays
+      viewer.element.appendChild(this.container);
+      
+      // Update positions on zoom/pan
+      viewer.addHandler('animation', () => this.updatePositions());
+      viewer.addHandler('open', () => this.updatePositions());
+    }
+
+    sync(shapes: Shape[]) {
+      const currentIds = new Set<string>();
+
+      shapes.forEach(shape => {
+        if (shape.type === 'text' && shape.text) {
+          currentIds.add(shape.id);
+          let textEl = this.textMap.get(shape.id);
+
+          if (!textEl) {
+            textEl = document.createElement('div');
+            textEl.className = 'doodle-text-label';
+            textEl.style.position = 'absolute';
+            textEl.style.pointerEvents = 'auto'; // allow selection/interaction if needed
+            textEl.style.whiteSpace = 'pre';
+            textEl.style.textShadow = '0 0 4px #000';
+            this.container.appendChild(textEl);
+            this.textMap.set(shape.id, textEl);
+          }
+
+          textEl.textContent = shape.text;
+          textEl.style.fontFamily = 'Inter, sans-serif';
+          textEl.style.fontSize = `${shape.fontSize || 16}px`;
+          textEl.style.color = shape.color || '#ffffff';
+          
+          // Store world position on element for updatePositions
+          textEl.dataset.worldX = String(shape.pos[0]);
+          textEl.dataset.worldY = String(shape.pos[1]);
+        }
+      });
+
+      // Remove Old
+      for (const [id, el] of this.textMap) {
+        if (!currentIds.has(id)) {
+          el.remove();
+          this.textMap.delete(id);
+        }
+      }
+      
+      this.updatePositions();
+    }
+    
+    updatePositions() {
+        if (!this.textMap.size) return;
+        
+        const viewport = this.osdViewer.viewport;
+        
+        this.textMap.forEach((el) => {
+            const x = parseFloat(el.dataset.worldX || '0');
+            const y = parseFloat(el.dataset.worldY || '0');
+            const pixel = viewport.viewportToViewerElementCoordinates(
+                new OpenSeadragon.Point(x, y)
+            );
+            
+            // Text position
+            el.style.left = `${pixel.x}px`;
+            el.style.top = `${pixel.y}px`;
+            
+            // Text scale
+            // Use Fixed Screen Size (scale 1) to ensure text remains readable/visible 
+            // regardless of zoom level. Scaling with the map (Fixed World Size) caused 
+            // text to become invisible when zoomed out.
+            el.style.transformOrigin = 'top left';
+            el.style.transform = 'scale(1)';
+        });
+    }
+
+    clear() {
+        this.container.innerHTML = '';
+        this.textMap.clear();
+    }
+    
+    setVisible(visible: boolean) {
+        this.container.style.display = visible ? 'block' : 'none';
+    }
+  }
+
+  let textRenderer: TextRenderer | null = null;
+  // Initialize TextRenderer
+  const initTextRenderer = () => {
+    if (!textRenderer) {
+      textRenderer = new TextRenderer(osd);
+    }
+  };
+
+  // Add click handler for text tool
+  osd.addHandler('canvas-click', (event: any) => {
+    if (!isEnabled || currentTool !== 'text') return;
+    if (event.quick) {
+      event.preventDefaultAction = true;
+
+      const viewportPoint = osd.viewport.pointFromPixel(event.position);
+      const webPoint = event.position; // Screen pixel
+
+      overlays.showInput(
+        webPoint.x,
+        webPoint.y,
+        '',
+        currentFontSize,
+        text => {
+          // Create Shape
+          const shape: Shape = {
+            id: crypto.randomUUID(),
+            type: 'text',
+            text: text,
+            fontSize: currentFontSize,
+            color: currentColor,
+            pos: [viewportPoint.x, viewportPoint.y],
+            filled: true,
+            strokeWidth: 0, // Text doesn't use stroke width
+          };
+          // Text shapes are stored separately
+          textShapes.push(shape);
+          pushHistory({ type: 'add', shape: { ...shape, pos: [...shape.pos] } });
+          
+          initTextRenderer();
+          textRenderer?.sync(textShapes);
+          callbacks?.onShapeChange?.();
+        },
+        () => { /* cancel */ }
+      );
+    }
+  });
 
   const manager: DrawingManager = {
     onHistoryChange: undefined,
@@ -335,11 +599,13 @@ export async function createDrawingManager(
     enable() {
       isEnabled = true;
       applyState();
+      textRenderer?.setVisible(true);
     },
 
     disable() {
       isEnabled = false;
       applyState();
+      // textRenderer?.setVisible(false); // Keep text visible even if drawing disabled? Usually yes.
     },
 
     isEnabled() {
@@ -349,8 +615,13 @@ export async function createDrawingManager(
     setTool(tool: ShapeType) {
       currentTool = tool;
       if (isEnabled) {
-        doodle.setMode(tool);
-        doodle.setPan(tool === 'move');
+        if (tool === 'text') {
+          doodle.setMode('move');
+          doodle.setPan(true);
+        } else {
+          doodle.setMode(tool);
+          doodle.setPan(tool === 'move');
+        }
       }
     },
 
@@ -362,13 +633,6 @@ export async function createDrawingManager(
       currentColor = color;
       doodle.setBrushColor(color);
       doodle.setDefaultColor(color);
-      // Ensure fill color matches brush color for filled shapes
-      const doodleAny = doodle as any;
-      if (doodleAny.setFillColor) {
-        doodleAny.setFillColor(color);
-      } else {
-        doodleAny.fillColor = color;
-      }
     },
 
     getColor(): string {
@@ -385,67 +649,133 @@ export async function createDrawingManager(
     },
 
     setFill(filled: boolean) {
-      console.log('[DoodleIntegration] setFill called with:', filled);
-      currentFill = filled;
-      // Try to set doodle property if it exists, or rely on onAdd hook
-      // doodle.filled = filled;
-      // Assuming we need to handle it ourselves via shape properties
-      const doodleAny = doodle as any;
-      if (doodleAny.setFilled) {
-        doodleAny.setFilled(filled);
-      } else {
-        doodleAny.filled = filled; // optimistic
-      }
+      // Disabled
+      // console.log('[DoodleIntegration] setFill called with:', filled);
+      // currentFill = filled;
     },
 
     getFill(): boolean {
-      return currentFill;
+      return false; // currentFill;
+    },
+
+    setFontSize(size: number) {
+      currentFontSize = size;
+    },
+
+    getFontSize(): number {
+      return currentFontSize;
     },
 
     getShapes(): Shape[] {
-      return doodle.getShapes();
+      return [...doodle.getShapes(), ...textShapes];
     },
 
     loadShapes(shapes: Shape[]) {
-      // Loading shapes resets history
       doodle.clear();
       undoStack.length = 0;
       redoStack.length = 0;
+      textShapes = [];
+      let skippedCount = 0;
+
       if (shapes.length > 0) {
-        // Sanitize colors - ensure they're valid hex values
-        const sanitizedShapes = shapes.map(shape => ({
-          ...shape,
-          color: isValidHexColor(shape.color) ? shape.color : '#ffffff',
-        }));
-        doodle.addShapes(sanitizedShapes);
+        const doodleShapes: Shape[] = [];
+        const allowedDoodleTypes = new Set([
+          'rect',
+          'polygon',
+          'circle',
+          'ellipse',
+          'path',
+          'closed_path',
+          'line',
+          'arrow_line',
+          'point',
+        ]);
+
+        for (const shape of shapes) {
+          const sanitizedShape = {
+            ...shape,
+            color: isValidHexColor(shape.color) ? shape.color : '#ffffff',
+            strokeWidth: shape.strokeWidth || 5,
+          };
+
+          const coordLimit = 500000;
+          if (
+            !sanitizedShape.pos ||
+            !Array.isArray(sanitizedShape.pos) ||
+            sanitizedShape.pos.some(n => !Number.isFinite(n) || Math.abs(n) > coordLimit)
+          ) {
+            console.warn('[Doodle] Skipping invalid shape:', sanitizedShape.id);
+            skippedCount++;
+            continue;
+          }
+
+          if (sanitizedShape.type === 'text') {
+            textShapes.push(sanitizedShape);
+            continue;
+          }
+
+          if (!allowedDoodleTypes.has(sanitizedShape.type)) {
+            skippedCount++;
+            continue;
+          }
+
+          if (
+            (sanitizedShape.type === 'path' ||
+              sanitizedShape.type === 'closed_path' ||
+              sanitizedShape.type === 'polygon') &&
+            sanitizedShape.pos.length < 4
+          ) {
+            skippedCount++;
+            continue;
+          }
+
+          doodleShapes.push(sanitizedShape);
+        }
+
+        if (doodleShapes.length > 0) {
+          try {
+            doodle.addShapes(doodleShapes);
+          } catch (e) {
+            console.error('[Doodle] Error adding shapes:', e);
+          }
+        }
       }
+
+      if (skippedCount > 0) {
+        window.dispatchEvent(new CustomEvent('drawing-shapes-skipped', { detail: { count: skippedCount } }));
+      }
+
       notifyHistoryChange();
-      // Notify that shapes have changed so session/URL can update
       callbacks?.onShapeChange?.();
+
+      initTextRenderer();
+      textRenderer?.sync(textShapes);
     },
 
     clearShapes() {
-      const shapes = doodle.getShapes().map((s: Shape) => ({ ...s, pos: [...s.pos] }));
+      const shapes = [...doodle.getShapes(), ...textShapes];
       if (shapes.length > 0) {
-        pushHistory({ type: 'clear', shapes });
+        // Deep copy shapes for history
+        const deepShapes = shapes.map(s => ({ ...s, pos: [...s.pos] }));
+        pushHistory({ type: 'clear', shapes: deepShapes });
       }
       doodle.clear();
+      textShapes = [];
       callbacks?.onShapeChange?.();
+      textRenderer?.sync([]);
     },
 
     resetShapes() {
-      // Hide the canvas FIRST to prevent any visual flash
       if (doodle.pixiApp?.stage) {
         doodle.pixiApp.stage.visible = false;
         doodle.pixiApp.stage.alpha = 0;
       }
 
-      // Clear shapes AND history - use for map changes
       doodle.clear();
       undoStack.length = 0;
       redoStack.length = 0;
+      textShapes = [];
 
-      // Aggressively clear internal state if accessible
       const doodleAny = doodle as any;
       if (Array.isArray(doodleAny.shapes)) {
         doodleAny.shapes = [];
@@ -454,16 +784,10 @@ export async function createDrawingManager(
         doodleAny.tempShape = null;
       }
 
-      // Note: Do NOT call removeChildren() - it destroys the doodle's internal graphics containers
-      // and breaks subsequent rendering. doodle.clear() handles clearing shapes properly.
-
-      // Force immediate render of empty stage
       if (doodle.pixiApp?.renderer) {
         doodle.pixiApp.renderer.render(doodle.pixiApp.stage);
       }
 
-      // Restore visibility after a frame so the empty canvas is shown
-      // Use two rAF to ensure the cleared render has been committed
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           if (visible && doodle.pixiApp?.stage) {
@@ -475,17 +799,17 @@ export async function createDrawingManager(
 
       notifyHistoryChange();
       callbacks?.onShapeChange?.();
+      textRenderer?.sync([]);
     },
 
     setVisibility(show: boolean) {
       visible = show;
       if (doodle.pixiApp?.stage) {
-        // Set both visible and alpha for better compatibility
         doodle.pixiApp.stage.visible = show;
         doodle.pixiApp.stage.alpha = show ? 1 : 0;
-        // Also set renderable to prevent rendering when hidden
         doodle.pixiApp.stage.renderable = show;
       }
+      textRenderer?.setVisible(show);
     },
 
     isVisible() {
@@ -493,45 +817,22 @@ export async function createDrawingManager(
     },
 
     getCanvas(): HTMLCanvasElement | null {
-      // Pixi 7+ uses 'canvas', older versions use 'view'
       return doodle.pixiApp?.canvas ?? doodle.pixiApp?.view ?? null;
     },
 
     extractCanvas(): HTMLCanvasElement | null {
-      // Try to extract canvas content from Pixi
-      // This handles WebGL canvases that can't be directly drawn to 2D context
       const pixiApp = doodle.pixiApp;
-      if (!pixiApp) {
-        console.log('[Doodle] No pixiApp available');
-        return null;
-      }
+      if (!pixiApp) return null;
 
       try {
-        // Pixi v7+ uses renderer.extract
         if (pixiApp.renderer?.extract) {
-          // Force a render first to make sure everything is drawn
           pixiApp.renderer.render(pixiApp.stage);
-
-          // Extract the stage as a canvas
-          const extractedCanvas = pixiApp.renderer.extract.canvas(pixiApp.stage);
-          console.log(
-            '[Doodle] Extracted canvas from Pixi renderer:',
-            extractedCanvas.width,
-            'x',
-            extractedCanvas.height
-          );
-          return extractedCanvas as HTMLCanvasElement;
-        } else {
-          console.log('[Doodle] Pixi renderer.extract not available');
+          return pixiApp.renderer.extract.canvas(pixiApp.stage) as HTMLCanvasElement;
         }
       } catch (e) {
-        console.warn('[Doodle] Failed to extract canvas from renderer:', e);
+        console.warn('[Doodle] Failed to extract canvas:', e);
       }
-
-      // Fall back to getting the canvas directly
-      const canvas = this.getCanvas();
-      console.log('[Doodle] Falling back to direct canvas access');
-      return canvas;
+      return this.getCanvas();
     },
 
     undo() {
@@ -542,24 +843,41 @@ export async function createDrawingManager(
       try {
         switch (entry.type) {
           case 'add':
-            // Undo add = remove the shape
-            doodle.removeShape(entry.shape);
+            if (entry.shape.type === 'text') {
+              const idx = textShapes.findIndex(s => s.id === entry.shape.id);
+              if (idx !== -1) textShapes.splice(idx, 1);
+            } else {
+              doodle.removeShape(entry.shape);
+            }
             break;
           case 'remove':
-            // Undo remove = add the shape back
-            doodle.addShape({ ...entry.shape, pos: [...entry.shape.pos] });
+            if (entry.shape.type === 'text') {
+               textShapes.push({ ...entry.shape, pos: [...entry.shape.pos] });
+            } else {
+               doodle.addShape({ ...entry.shape, pos: [...entry.shape.pos] });
+            }
             break;
           case 'update':
-            // Undo update = restore old shape
-            doodle.updateShape({ ...entry.oldShape, pos: [...entry.oldShape.pos] });
+            if (entry.oldShape.type === 'text') {
+               const idx = textShapes.findIndex(s => s.id === entry.oldShape.id);
+               if (idx !== -1) textShapes[idx] = { ...entry.oldShape, pos: [...entry.oldShape.pos] };
+            } else {
+               doodle.updateShape({ ...entry.oldShape, pos: [...entry.oldShape.pos] });
+            }
             break;
           case 'clear':
-            // Undo clear = add all shapes back
-            doodle.addShapes(entry.shapes.map(s => ({ ...s, pos: [...s.pos] })));
+            const textToRestore = entry.shapes.filter(s => s.type === 'text');
+            const doodleToRestore = entry.shapes.filter(s => s.type !== 'text');
+            
+            textShapes.push(...textToRestore.map(s => ({ ...s, pos: [...s.pos] })));
+            doodle.addShapes(doodleToRestore.map(s => ({ ...s, pos: [...s.pos] })));
             break;
         }
         redoStack.push(entry);
         callbacks?.onShapeChange?.();
+
+        initTextRenderer();
+        textRenderer?.sync(textShapes);
       } finally {
         isUndoRedoAction = false;
       }
@@ -574,24 +892,38 @@ export async function createDrawingManager(
       try {
         switch (entry.type) {
           case 'add':
-            // Redo add = add the shape
-            doodle.addShape({ ...entry.shape, pos: [...entry.shape.pos] });
+            if (entry.shape.type === 'text') {
+                textShapes.push({ ...entry.shape, pos: [...entry.shape.pos] });
+            } else {
+                doodle.addShape({ ...entry.shape, pos: [...entry.shape.pos] });
+            }
             break;
           case 'remove':
-            // Redo remove = remove the shape
-            doodle.removeShape(entry.shape);
+            if (entry.shape.type === 'text') {
+                const idx = textShapes.findIndex(s => s.id === entry.shape.id);
+                if (idx !== -1) textShapes.splice(idx, 1);
+            } else {
+                doodle.removeShape(entry.shape);
+            }
             break;
           case 'update':
-            // Redo update = apply new shape
-            doodle.updateShape({ ...entry.newShape, pos: [...entry.newShape.pos] });
+            if (entry.newShape.type === 'text') {
+                const idx = textShapes.findIndex(s => s.id === entry.newShape.id);
+                if (idx !== -1) textShapes[idx] = { ...entry.newShape, pos: [...entry.newShape.pos] };
+            } else {
+                doodle.updateShape({ ...entry.newShape, pos: [...entry.newShape.pos] });
+            }
             break;
           case 'clear':
-            // Redo clear = clear all shapes
             doodle.clear();
+            textShapes = [];
             break;
         }
         undoStack.push(entry);
         callbacks?.onShapeChange?.();
+
+        initTextRenderer();
+        textRenderer?.sync(textShapes);
       } finally {
         isUndoRedoAction = false;
       }
@@ -609,7 +941,6 @@ export async function createDrawingManager(
     deleteSelected(): boolean {
       const doodleAny = doodle as any;
       if (doodleAny.tempShape?.id) {
-        // Use doodle's onRemove which will trigger our history recording
         const shape = { ...doodleAny.tempShape };
         doodleAny.conf.onRemove?.(shape);
         return true;
@@ -619,8 +950,13 @@ export async function createDrawingManager(
 
     destroy() {
       doodle.destroy();
+      overlays.closeInput();
+      if (textRenderer) {
+         textRenderer.clear();
+         textRenderer = null;
+      }
     },
   };
-
+  
   return manager;
 }

@@ -84,7 +84,7 @@ export async function getDrawingsForMap(mapName: string): Promise<StoredDrawing[
 export async function getAllDrawings(): Promise<StoredDrawing[]> {
   const db = await getDB();
   const drawings = await db.getAll(STORE_NAME);
-  return drawings.sort((a, b) => b.updated_at - a.updated_at);
+  return drawings.sort((a, b) => b.created_at - a.created_at);
 }
 
 /**

@@ -75,7 +75,7 @@ const TOOLS: ToolConfig[] = [
   { id: 'point', type: 'point', filled: false, icon: 'bi-dot', titleKey: 'drawing.tools.point' },
 ];
 
-import { COLOR_PALETTE, COLOR_NAME_KEYS, STROKE_WIDTHS } from './constants';
+import { COLOR_PALETTE, COLOR_NAME_KEYS, STROKE_WIDTHS, FONT_SIZES } from './constants';
 import { extractDrawingData } from './screenshot';
 
 interface ColorPreset {
@@ -101,8 +101,6 @@ export class DrawingSidebar {
   private sidebar!: HTMLElement;
   private contentArea!: HTMLElement;
   private toolButtons: Map<string, HTMLElement> = new Map();
-  private strokeSlider!: HTMLInputElement;
-  private strokeValue!: HTMLElement;
   private visibilityBtn!: HTMLElement;
   private drawingsList!: HTMLElement;
   private undoBtn!: HTMLButtonElement;
@@ -288,6 +286,11 @@ export class DrawingSidebar {
   }
 
   private renderSubscriberContent(): void {
+    const extendedTools = [
+      ...TOOLS,
+      { id: 'text', type: 'text', filled: false, icon: 'bi-type', titleKey: 'drawing.tools.text', svg: undefined },
+    ];
+
     this.contentArea.innerHTML = `
       <div class="sidebar-section p-2 border-bottom border-secondary">
         <label class="form-label text-secondary small mb-1">${i18next.t('drawing.tools.label')}</label>
@@ -296,7 +299,8 @@ export class DrawingSidebar {
           <label class="btn btn-sm btn-outline-light" for="tool-move" data-tool="move" title="${i18next.t('drawing.tools.move')}">
             <i class="bi-arrows-move"></i>
           </label>
-          ${TOOLS.slice(1)
+          ${extendedTools
+            .slice(1)
             .map(
               tool => `
           <input type="radio" class="btn-check" name="drawing-tool" id="tool-${tool.id}" autocomplete="off" ${tool.id === 'path' ? 'checked' : ''}>
@@ -319,7 +323,7 @@ export class DrawingSidebar {
         </div>
       </div>
 
-      <div class="sidebar-section p-2 border-bottom border-secondary">
+      <div class="sidebar-section p-2 border-bottom border-secondary" id="stroke-width-section">
         <label class="form-label text-secondary small mb-1">${i18next.t('drawing.stroke.label')}</label>
         <div class="btn-group btn-group-sm w-100" role="group" id="stroke-buttons">
           ${STROKE_WIDTHS.map((width, index) => {
@@ -327,6 +331,18 @@ export class DrawingSidebar {
             const label = labels[index] || width + 'px';
             return `<input type="radio" class="btn-check" name="stroke-width" id="stroke-${width}" autocomplete="off" ${index === 1 ? 'checked' : ''}>
             <label class="btn btn-outline-light" for="stroke-${width}">${label}</label>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <div class="sidebar-section p-2 border-bottom border-secondary" id="font-size-section" style="display: none;">
+        <label class="form-label text-secondary small mb-1">Font Size</label>
+        <div class="btn-group btn-group-sm w-100" role="group" id="font-size-buttons">
+          ${FONT_SIZES.map((size, index) => {
+            const labels = ['Small', 'Medium', 'Large', 'Huge'];
+            const label = labels[index];
+            return `<input type="radio" class="btn-check" name="font-size" id="font-${size}" autocomplete="off" ${index === 0 ? 'checked' : ''}>
+            <label class="btn btn-outline-light" for="font-${size}">${label}</label>`;
           }).join('')}
         </div>
       </div>
@@ -384,13 +400,15 @@ export class DrawingSidebar {
 
     // Cache UI elements
     this.toolButtons.clear();
+    // Cache standard tools
     TOOLS.forEach(tool => {
       const btn = this.contentArea.querySelector(`label[data-tool="${tool.id}"]`) as HTMLElement;
       if (btn) this.toolButtons.set(tool.id, btn);
     });
+    // Cache text tool
+    const textBtn = this.contentArea.querySelector(`label[data-tool="text"]`) as HTMLElement;
+    if (textBtn) this.toolButtons.set('text', textBtn);
 
-    this.strokeSlider = this.contentArea.querySelector('#draw-stroke') as HTMLInputElement;
-    this.strokeValue = this.contentArea.querySelector('#stroke-value') as HTMLElement;
     this.visibilityBtn = this.contentArea.querySelector('#toggle-visibility') as HTMLElement;
     this.drawingsList = this.contentArea.querySelector('#drawings-list') as HTMLElement;
     this.undoBtn = this.contentArea.querySelector('#undo-btn') as HTMLButtonElement;
@@ -399,6 +417,7 @@ export class DrawingSidebar {
 
     // Bind events for subscriber content
     this.bindSubscriberEvents();
+    this.updateToolUI(this.drawingManager.getTool()); // Ensure UI state matches active tool
     this.refreshDrawingsList();
 
     // Preserve current stroke width and color, or use defaults for first render
@@ -482,8 +501,27 @@ export class DrawingSidebar {
   }
 
   private updateToolUI(toolId: string): void {
+    console.log('[Sidebar] updateToolUI called with:', toolId);
     const radio = this.contentArea.querySelector(`#tool-${toolId}`) as HTMLInputElement;
     if (radio) radio.checked = true;
+
+    // Toggle stroke/font UI based on tool
+    const strokeSection = this.contentArea.querySelector('#stroke-width-section') as HTMLElement;
+    const fontSection = this.contentArea.querySelector('#font-size-section') as HTMLElement;
+
+    if (!strokeSection || !fontSection) {
+      console.warn('[Sidebar] Warning: One or more UI sections not found:', { strokeSection, fontSection });
+    }
+
+    if (strokeSection && fontSection) {
+      if (toolId === 'text') {
+        strokeSection.style.display = 'none';
+        fontSection.style.display = 'block';
+      } else {
+        strokeSection.style.display = 'block';
+        fontSection.style.display = 'none';
+      }
+    }
   }
 
   private bindSubscriberEvents(): void {
@@ -492,15 +530,23 @@ export class DrawingSidebar {
       input.addEventListener('change', () => {
         const inputId = (input as HTMLInputElement).id.replace('tool-', '');
 
-        // Find config for this tool
-        const config = TOOLS.find(t => t.id === inputId);
+        // Handle text tool special case or lookup in standard tools
+        const config =
+          TOOLS.find(t => t.id === inputId) || (inputId === 'text' ? { id: 'text', type: 'text', filled: false } : null);
+
         if (config) {
-          console.log('[Sidebar] Selected tool:', config.id, 'filled:', config.filled);
-          this.drawingManager.setTool(config.type);
-          this.drawingManager.setFill(config.filled);
+          console.log('[Sidebar] Selected tool:', config.id);
+          this.drawingManager.setTool(config.type as ShapeType);
+          // Only set fill for non-text tools (text tool handles its own rendering)
+          // DISABLED: Filled shapes don't work properly with doodle library
+          // if (config.type !== 'text') {
+          //   this.drawingManager.setFill(config.filled);
+          // }
+          this.updateToolUI(config.id);
         } else if (inputId === 'move') {
           console.log('[Sidebar] Selected move tool');
           this.drawingManager.setTool('move');
+          this.updateToolUI('move');
         }
       });
     });
@@ -524,6 +570,14 @@ export class DrawingSidebar {
       input.addEventListener('change', () => {
         const width = parseInt((input as HTMLInputElement).id.replace('stroke-', ''), 10);
         this.drawingManager.setStrokeWidth(width);
+      });
+    });
+
+    // Font size buttons
+    this.contentArea.querySelectorAll('input[name="font-size"]').forEach(input => {
+      input.addEventListener('change', () => {
+        const size = parseInt((input as HTMLInputElement).id.replace('font-', ''), 10);
+        this.drawingManager.setFontSize(size);
       });
     });
 
@@ -768,7 +822,7 @@ export class DrawingSidebar {
               ${!isCurrentMap ? `<br><i class="bi bi-map me-1"></i>${this.escapeHtml(mapDisplayName)}` : ''}
             </div>
           </div>
-          <button class="btn btn-sm btn-outline-danger border-0 delete" title="${i18next.t('drawing.savedDrawings.deleteTitle')}"><i class="bi bi-trash"></i></button>
+          <button type="button" class="btn btn-sm btn-outline-danger border-0 delete" style="position: relative; z-index: 2;" title="${i18next.t('drawing.savedDrawings.deleteTitle')}"><i class="bi bi-trash"></i></button>
         </div>
       `;
       })

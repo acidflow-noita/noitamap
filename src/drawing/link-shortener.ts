@@ -1,8 +1,15 @@
 /**
  * Link Shortener Client for go.noitamap.com
+ *
+ * Uses the m.uq.rs shortener API to create shortened URLs.
+ * Short URLs are served from go.noitamap.com via CNAME pointing to m.uq.rs.
  */
 
-const SHORTENER_API_URL = 'https://go.noitamap.com';
+// API endpoint for creating short links
+const SHORTENER_API_URL = 'https://m.uq.rs';
+
+// Domain for short URLs (must match CNAME setup)
+const SHORT_URL_DOMAIN = 'https://go.noitamap.com';
 
 interface ShortenerResponse {
   key: string;
@@ -11,6 +18,7 @@ interface ShortenerResponse {
 
 /**
  * Shorten a URL using the Noitamap shortener service
+ * Returns the short URL (e.g. https://go.noitamap.com/abc123) or null on failure
  */
 export async function shortenUrl(longUrl: string): Promise<string | null> {
   try {
@@ -31,7 +39,7 @@ export async function shortenUrl(longUrl: string): Promise<string | null> {
     }
 
     const data = (await response.json()) as ShortenerResponse;
-    return `${SHORTENER_API_URL}/${data.key}`;
+    return `${SHORT_URL_DOMAIN}/${data.key}`;
   } catch (e) {
     console.error('[Link Shortener] Error shortening URL:', e);
     return null;

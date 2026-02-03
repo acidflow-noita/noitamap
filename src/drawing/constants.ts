@@ -38,6 +38,9 @@ export const COLOR_TO_INDEX: Record<string, number> = Object.fromEntries(
 // Stroke width palette (2 bits) - order matters for binary encoding
 export const STROKE_WIDTHS = [2, 5, 10, 15] as const; // thin, normal, thick, heavy
 
+// Font sizes (2 bits) - order matters for binary encoding (reusing stroke width logic)
+export const FONT_SIZES = [16, 24, 32, 48] as const; // small, medium, large, huge
+
 // Type codes (4 bits) - order matters for binary encoding
 export const TYPE_CODES: Record<string, number> = {
   point: 0,

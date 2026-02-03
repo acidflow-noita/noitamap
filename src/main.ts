@@ -632,91 +632,104 @@ document.addEventListener('DOMContentLoaded', async () => {
       const uploadingToast = new bootstrap.Toast(toastElement, { autohide: false });
       uploadingToast.show();
 
-      // Capture screenshot with embedded drawing data
-      const viewport = app.osd.viewport;
-      const containerSize = viewport.getContainerSize();
-      const worldToPixel = (x: number, y: number) => {
-        const point = viewport.viewportToViewerElementCoordinates(new OpenSeadragon.Point(x, y));
-        return { x: point.x, y: point.y };
-      };
-      const mapBoundsRect = app.osd.getCombinedItemsRect();
-      const boundsTopLeft = viewport.viewportToViewerElementCoordinates(
-        new OpenSeadragon.Point(mapBoundsRect.x, mapBoundsRect.y)
-      );
-      const boundsBottomRight = viewport.viewportToViewerElementCoordinates(
-        new OpenSeadragon.Point(mapBoundsRect.x + mapBoundsRect.width, mapBoundsRect.y + mapBoundsRect.height)
-      );
-      const viewportInfo = {
-        containerSize: { x: containerSize.x, y: containerSize.y },
-        worldToPixel,
-        mapBounds: {
-          left: boundsTopLeft.x,
-          top: boundsTopLeft.y,
-          right: boundsBottomRight.x,
-          bottom: boundsBottomRight.y,
-        },
-      };
+      try {
+        // Capture screenshot with embedded drawing data
+        const viewport = app.osd.viewport;
+        const containerSize = viewport.getContainerSize();
+        const worldToPixel = (x: number, y: number) => {
+          const point = viewport.viewportToViewerElementCoordinates(new OpenSeadragon.Point(x, y));
+          return { x: point.x, y: point.y };
+        };
+        const mapBoundsRect = app.osd.getCombinedItemsRect();
+        const boundsTopLeft = viewport.viewportToViewerElementCoordinates(
+          new OpenSeadragon.Point(mapBoundsRect.x, mapBoundsRect.y)
+        );
+        const boundsBottomRight = viewport.viewportToViewerElementCoordinates(
+          new OpenSeadragon.Point(mapBoundsRect.x + mapBoundsRect.width, mapBoundsRect.y + mapBoundsRect.height)
+        );
+        const viewportInfo = {
+          containerSize: { x: containerSize.x, y: containerSize.y },
+          worldToPixel,
+          mapBounds: {
+            left: boundsTopLeft.x,
+            top: boundsTopLeft.y,
+            right: boundsBottomRight.x,
+            bottom: boundsBottomRight.y,
+          },
+        };
 
-      const blob = await captureScreenshot(osdRootElement, null, app.getMap(), shapes, viewportInfo, strokeWidth);
-      if (!blob) {
-        uploadingToast.hide();
-        if (toastBody) {
-          toastBody.innerHTML = `<i class="bi bi-x-circle me-2"></i>${i18next.t('share.screenshotFailed', 'Failed to capture screenshot')}`;
+        const blob = await captureScreenshot(osdRootElement, null, app.getMap(), shapes, viewportInfo, strokeWidth);
+        if (!blob) {
+          uploadingToast.hide();
+          if (toastBody) {
+            toastBody.innerHTML = `<i class="bi bi-x-circle me-2"></i>${i18next.t('share.screenshotFailed', 'Failed to capture screenshot')}`;
+          }
+          const errorToast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
+          errorToast.show();
+          return;
         }
-        const errorToast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
-        errorToast.show();
-        return;
-      }
 
-      // Auto-download the image to user's PC as backup
-      downloadBlob(blob, screenshotFilename(app.getMap()));
+        // Auto-download the image to user's PC as backup
+        downloadBlob(blob, screenshotFilename(app.getMap()));
 
-      // Upload to catbox
-      const fileId = await uploadToCatbox(blob);
-      uploadingToast.hide();
+        // Upload to catbox
+        const fileId = await uploadToCatbox(blob);
+        uploadingToast.hide();
 
-      if (!fileId) {
+        if (!fileId) {
+          if (toastBody) {
+            toastBody.innerHTML = `<i class="bi bi-x-circle me-2"></i>${i18next.t('share.uploadFailed', 'Upload failed. Image was saved to your PC.')}`;
+          }
+          const errorToast = new bootstrap.Toast(toastElement, { autohide: true, delay: 4000 });
+          errorToast.show();
+          return;
+        }
+
+        // Build URL with catbox param
+        const url = new URL(window.location.href);
+        const overlays = getEnabledOverlays();
+        if (overlays.length > 0) {
+          url.searchParams.set('o', overlays.map(overlayToShort).join(','));
+        } else {
+          url.searchParams.delete('o');
+        }
+        url.searchParams.set('d', createCatboxParam(fileId));
+
+        // Update current URL with catbox param
+        updateURLWithDrawing(createCatboxParam(fileId));
+
+        // Show "Open on Catbox" link in sidebar
+        drawingSidebar?.setCatboxSource(fileId);
+
+        // Shorten URL if possible
+        let finalUrl = url.toString();
+        const shortUrl = await shortenUrl(finalUrl);
+        if (shortUrl) {
+          finalUrl = shortUrl;
+        }
+
+        // Copy to clipboard
+        window.navigator.clipboard
+          .writeText(finalUrl)
+          .then(() => {
+            if (toastBody) {
+              toastBody.innerHTML = `<i class="bi bi-check-circle me-2"></i>${i18next.t('share.copiedWithDrawing', 'Link with drawing copied! Image saved to your PC.')}`;
+            }
+            const successToast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
+            successToast.show();
+          })
+          .catch(err => {
+            console.error('Failed to copy to clipboard:', err);
+          });
+      } catch (error) {
+        console.error('[Share] Error during upload:', error);
+        uploadingToast.hide();
         if (toastBody) {
           toastBody.innerHTML = `<i class="bi bi-x-circle me-2"></i>${i18next.t('share.uploadFailed', 'Upload failed. Image was saved to your PC.')}`;
         }
         const errorToast = new bootstrap.Toast(toastElement, { autohide: true, delay: 4000 });
         errorToast.show();
-        return;
       }
-
-      // Build URL with catbox param
-      const url = new URL(window.location.href);
-      const overlays = getEnabledOverlays();
-      if (overlays.length > 0) {
-        url.searchParams.set('o', overlays.map(overlayToShort).join(','));
-      } else {
-        url.searchParams.delete('o');
-      }
-      url.searchParams.set('d', createCatboxParam(fileId));
-
-      // Update current URL with catbox param
-      updateURLWithDrawing(createCatboxParam(fileId));
-
-      // Shorten URL if possible
-      let finalUrl = url.toString();
-      const shortUrl = await shortenUrl(finalUrl);
-      if (shortUrl) {
-        finalUrl = shortUrl;
-      }
-
-      // Copy to clipboard
-      window.navigator.clipboard
-        .writeText(finalUrl)
-        .then(() => {
-          if (toastBody) {
-            toastBody.innerHTML = `<i class="bi bi-check-circle me-2"></i>${i18next.t('share.copiedWithDrawing', 'Link with drawing copied! Image saved to your PC.')}`;
-          }
-          const successToast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
-          successToast.show();
-        })
-        .catch(err => {
-          console.error('Failed to copy to clipboard:', err);
-        });
     } else {
       // No drawings - just copy the current URL
       const url = new URL(window.location.href);
@@ -784,6 +797,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
   initKonamiCode();
+
+  // Listen for corrupted shape data warnings
+  window.addEventListener('drawing-shapes-skipped', (event: any) => {
+    const toastEl = document.getElementById('skippedShapesToast');
+    if (toastEl) {
+      // You could customize the message with event.detail.count if you want
+      const toast = new bootstrap.Toast(toastEl);
+      toast.show();
+    }
+  });
 });
 
 /**

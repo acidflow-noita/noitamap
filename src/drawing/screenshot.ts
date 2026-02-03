@@ -40,7 +40,12 @@ function createRiffChunk(chunkId: string, data: Uint8Array): Uint8Array {
   return chunk;
 }
 
-async function injectDrawingData(webpBlob: Blob, shapes: Shape[], strokeWidth: number, mapName?: string): Promise<Blob> {
+async function injectDrawingData(
+  webpBlob: Blob,
+  shapes: Shape[],
+  strokeWidth: number,
+  mapName?: string
+): Promise<Blob> {
   const binary = encodeShapesBinary(shapes, mapName ?? '', strokeWidth);
   if (!binary || binary.length === 0) {
     return webpBlob;
@@ -60,9 +65,7 @@ async function injectDrawingData(webpBlob: Blob, shapes: Shape[], strokeWidth: n
 
   // Build chunks to append
   const drawChunk = createRiffChunk(DRAW_CHUNK_ID, binary);
-  const mapChunk = mapName
-    ? createRiffChunk(MAP_CHUNK_ID, new TextEncoder().encode(mapName))
-    : null;
+  const mapChunk = mapName ? createRiffChunk(MAP_CHUNK_ID, new TextEncoder().encode(mapName)) : null;
 
   const extraSize = drawChunk.length + (mapChunk ? mapChunk.length : 0);
   const newSize = webpData.length + extraSize;
@@ -247,9 +250,7 @@ export async function captureScreenshot(
 
     // Embed drawing data and map name in WebP if shapes exist
     const finalBlob =
-      shapes && shapes.length > 0
-        ? await injectDrawingData(blob, shapes, strokeWidth ?? 5, mapName)
-        : blob;
+      shapes && shapes.length > 0 ? await injectDrawingData(blob, shapes, strokeWidth ?? 5, mapName) : blob;
 
     console.log('[Screenshot] Captured', finalBlob.size, 'bytes');
     return finalBlob;
@@ -312,11 +313,15 @@ function renderShapesToCanvas(
   canvasHeight: number,
   strokeWidth: number
 ): void {
+  // Doodle renders strokes in screen pixels (constant thickness regardless of zoom).
+  // We must scale the stroke width only by the DPR to match this behavior.
+  const dpr = canvasWidth / viewportInfo.containerSize.x;
+  const scaledStrokeWidth = strokeWidth * dpr;
 
   for (const shape of shapes) {
     ctx.strokeStyle = shape.color;
     ctx.fillStyle = shape.color;
-    ctx.lineWidth = strokeWidth;
+    ctx.lineWidth = scaledStrokeWidth;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
@@ -352,20 +357,14 @@ function renderShapesToCanvas(
         ctx.stroke();
 
         if (shape.type === 'arrow_line') {
-          // Draw arrowhead
+          // Draw arrowhead, scaled by DPR
           const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-          const headLen = 15;
+          const headLen = 15 * dpr;
           ctx.beginPath();
           ctx.moveTo(p2.x, p2.y);
-          ctx.lineTo(
-            p2.x - headLen * Math.cos(angle - Math.PI / 6),
-            p2.y - headLen * Math.sin(angle - Math.PI / 6)
-          );
+          ctx.lineTo(p2.x - headLen * Math.cos(angle - Math.PI / 6), p2.y - headLen * Math.sin(angle - Math.PI / 6));
           ctx.moveTo(p2.x, p2.y);
-          ctx.lineTo(
-            p2.x - headLen * Math.cos(angle + Math.PI / 6),
-            p2.y - headLen * Math.sin(angle + Math.PI / 6)
-          );
+          ctx.lineTo(p2.x - headLen * Math.cos(angle + Math.PI / 6), p2.y - headLen * Math.sin(angle + Math.PI / 6));
           ctx.stroke();
         }
         break;
@@ -427,8 +426,22 @@ function renderShapesToCanvas(
         if (pos.length < 2) break;
         const point = worldToCanvas(pos[0], pos[1], viewportInfo, canvasWidth, canvasHeight);
         ctx.beginPath();
-        ctx.arc(point.x, point.y, strokeWidth * 2, 0, Math.PI * 2);
+        ctx.arc(point.x, point.y, scaledStrokeWidth * 2, 0, Math.PI * 2);
         ctx.fill();
+        break;
+      }
+
+      case 'text': {
+        if (pos.length < 2 || !shape.text) break;
+        const point = worldToCanvas(pos[0], pos[1], viewportInfo, canvasWidth, canvasHeight);
+
+        // Text size should also be consistent with screen size (DPR), not zoom
+        const fontSize = (shape.fontSize || 16) * dpr;
+
+        ctx.font = `${fontSize}px Inter, system-ui, sans-serif`;
+        ctx.fillStyle = shape.color;
+        ctx.textBaseline = 'top'; // Match PIXI default
+        ctx.fillText(shape.text, point.x, point.y);
         break;
       }
     }
@@ -438,11 +451,7 @@ function renderShapesToCanvas(
 /**
  * Add noitamap watermark to the screenshot (top-right corner)
  */
-async function addWatermark(
-  ctx: CanvasRenderingContext2D,
-  canvasWidth: number,
-  canvasHeight: number
-): Promise<void> {
+async function addWatermark(ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number): Promise<void> {
   const padding = 10;
   const watermarkHeight = 28;
   const watermarkWidth = 140;

@@ -10,7 +10,7 @@
  */
 
 import type { Shape } from './doodle-integration';
-import { TYPE_CODES, CODE_TO_TYPE, COLOR_PALETTE, COLOR_TO_INDEX, STROKE_WIDTHS } from './constants';
+import { TYPE_CODES, CODE_TO_TYPE, COLOR_PALETTE, COLOR_TO_INDEX, STROKE_WIDTHS, FONT_SIZES } from './constants';
 
 /**
  * Find closest stroke width index
@@ -20,6 +20,22 @@ function strokeToIndex(width: number): number {
   let minDiff = Math.abs(STROKE_WIDTHS[0] - width);
   for (let i = 1; i < STROKE_WIDTHS.length; i++) {
     const diff = Math.abs(STROKE_WIDTHS[i] - width);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = i;
+    }
+  }
+  return closest;
+}
+
+/**
+ * Find closest font size index
+ */
+function fontToIndex(size: number): number {
+  let closest = 0;
+  let minDiff = Math.abs(FONT_SIZES[0] - size);
+  for (let i = 1; i < FONT_SIZES.length; i++) {
+    const diff = Math.abs(FONT_SIZES[i] - size);
     if (diff < minDiff) {
       minDiff = diff;
       closest = i;
@@ -162,6 +178,13 @@ export function encodeShapesBinary(shapes: Shape[], mapName: string, strokeWidth
     if (shape.type === 'path' || shape.type === 'closed_path' || shape.type === 'polygon') {
       estimatedSize += 1; // point count byte
     }
+    if (shape.type === 'text' && shape.text) {
+      // Text length (1 byte) + text bytes
+      // Note: We use TextEncoder to get byte length, which might be expensive in a loop.
+      // Optimization: assume < 255 length and just add length * 3 (worst case) + 1 for estimation?
+      // Or just measure properly.
+      estimatedSize += 1 + new TextEncoder().encode(shape.text).length;
+    }
   }
 
   const buffer = new Uint8Array(estimatedSize);
@@ -169,12 +192,13 @@ export function encodeShapesBinary(shapes: Shape[], mapName: string, strokeWidth
 
   // === HEADER (8 bytes) ===
   // Byte 0: flags
-  // bits 0-2: version (3 bits)
+  // bits 0-2: version (3 bits) - NOW VERSION 1
   // bit 3: lz_used
   // bits 4-5: coord_size (0=uint8, 1=uint16, 2=int32)
+  const version = 1;
   const flags =
-    (0 & 0x07) | // version (3 bits)
-    (0 << 3) | // lz_used (set later if compressed)
+    (version & 0x07) | // version 1
+    (0 << 3) | // lz_used
     ((coordSizeFlag & 0x03) << 4); // coord_size (2 bits)
   buffer[offset++] = flags;
 
@@ -200,20 +224,23 @@ export function encodeShapesBinary(shapes: Shape[], mapName: string, strokeWidth
   buffer[offset++] = shapes.length;
 
   // Packed stroke widths (2 bits each, 4 per byte)
-  const strokeIdx = strokeToIndex(strokeWidth);
   const strokeBytes = Math.ceil(shapes.length / 4);
   for (let i = 0; i < strokeBytes; i++) {
     let packedByte = 0;
     for (let j = 0; j < 4; j++) {
       const shapeIdx = i * 4 + j;
       if (shapeIdx < shapes.length) {
-        // Use per-shape stroke width (default to 5 if missing)
         const s = shapes[shapeIdx];
-        // Shapes from doodle might not have strokeWidth prop directly if it's on style
-        // We'll trust the shape object has it or fall back to argument
-        const width = (s as any).strokeWidth ?? strokeWidth;
-        const sIdx = strokeToIndex(width);
-        packedByte |= (sIdx & 0x03) << (j * 2);
+        // For text, pack the font size index. For all other shapes, pack the global stroke width index.
+        if (s.type === 'text') {
+          const size = s.fontSize ?? 16;
+          const sIdx = fontToIndex(size);
+          packedByte |= (sIdx & 0x03) << (j * 2);
+        } else {
+          const width = s.strokeWidth ?? strokeWidth;
+          const sIdx = strokeToIndex(width);
+          packedByte |= (sIdx & 0x03) << (j * 2);
+        }
       }
     }
     buffer[offset++] = packedByte;
@@ -262,10 +289,22 @@ export function encodeShapesBinary(shapes: Shape[], mapName: string, strokeWidth
 
     switch (shape.type) {
       case 'point':
-      case 'text':
         // [coord] x, [coord] y
         writeCoordX(pos[0]);
         writeCoordY(pos[1]);
+        break;
+
+      case 'text':
+        // [coord] x, [coord] y, [len] text
+        writeCoordX(pos[0]);
+        writeCoordY(pos[1]);
+        {
+          const textBytes = new TextEncoder().encode(shape.text || '');
+          const len = Math.min(255, textBytes.length);
+          buffer[offset++] = len;
+          buffer.set(textBytes.subarray(0, len), offset);
+          offset += len;
+        }
         break;
 
       case 'circle':
@@ -297,13 +336,7 @@ export function encodeShapesBinary(shapes: Shape[], mapName: string, strokeWidth
       case 'path':
       case 'closed_path':
       case 'polygon': {
-        // Point count with delta size flag
         const pointCount = pos.length / 2;
-        if (pointCount > 127) {
-          // Too many points, skip this shape
-          continue;
-        }
-
         // Check if deltas fit in int8
         let needInt16Deltas = false;
         for (let i = 2; i < pos.length; i += 2) {
@@ -315,8 +348,11 @@ export function encodeShapesBinary(shapes: Shape[], mapName: string, strokeWidth
           }
         }
 
-        // Point count byte: high bit = delta size flag
-        buffer[offset++] = pointCount | (needInt16Deltas ? 0x80 : 0);
+        // V1 Format: [flags] [count_low] [count_high]
+        // flags: bit 0 = needInt16Deltas
+        buffer[offset++] = needInt16Deltas ? 0x01 : 0x00;
+        buffer[offset++] = pointCount & 0xff;
+        buffer[offset++] = (pointCount >> 8) & 0xff;
 
         // First point (absolute)
         writeCoordX(pos[0]);
@@ -375,8 +411,8 @@ export function decodeShapesBinary(buffer: Uint8Array): {
   // const lzUsed = (flags >> 3) & 0x01;
   const coordSizeFlag = (flags >> 4) & 0x03; // 0=uint8, 1=uint16, 2=int32
 
-  if (version !== 0) {
-    console.warn('[Binary Decoder] Unknown version:', version);
+  if (version > 1) {
+    console.warn('[Binary Decoder] Unsupported version:', version);
     return null;
   }
 
@@ -387,23 +423,6 @@ export function decodeShapesBinary(buffer: Uint8Array): {
   offset += 4;
 
   let mapName = '';
-  // Check if we have map name
-  // To keep backward compatibility with previous dev iteration (if any), check buffer length
-  // But my format is new.
-  // Wait, if I change format, I break loading old binary data?
-  // Use version flag?
-  // Current version bits = 0.
-  // I should bump version or detect.
-  // Actually, existing binary data (int24) is "Version 0"?
-  // My new int32 format uses `coordSizeFlag=2` (int32) which validly differentiates it from int24 (implied 3 bytes? No, int24 was using specific bytes).
-  // The header size changed from 8 to 10 bytes.
-  // Version 0 (int24 uses 8 bytes header).
-  // Version 1 (int32 uses 10 bytes header).
-  // I should bump version in header.
-
-  // Let's assume version 0 for now but rely on logic:
-  // After yMin (byte 10), we expect MAP_NAME_LENGTH.
-
   const mapNameLen = buffer[offset++];
   const mapNameBytes = buffer.subarray(offset, offset + mapNameLen);
   mapName = new TextDecoder().decode(mapNameBytes);
@@ -424,8 +443,8 @@ export function decodeShapesBinary(buffer: Uint8Array): {
     }
   }
 
-  // Use first shape's stroke width as global (for now)
-  const strokeWidth = STROKE_WIDTHS[strokeIndices[0]] ?? 5;
+  // Default fallback
+  const globalStrokeWidth = 5;
 
   const readCoordX = (): number => {
     let value: number;
@@ -475,12 +494,20 @@ export function decodeShapesBinary(buffer: Uint8Array): {
     const color = COLOR_PALETTE[colorIdx] ?? '#ffffff';
 
     let pos: number[] = [];
+    let currentText: string | undefined;
 
     switch (type) {
       case 'point':
-      case 'text':
         pos = [readCoordX(), readCoordY()];
         break;
+
+      case 'text': {
+        pos = [readCoordX(), readCoordY()];
+        const len = buffer[offset++];
+        const textBytes = buffer.subarray(offset, offset + len);
+        currentText = new TextDecoder().decode(textBytes);
+        break;
+      }
 
       case 'circle': {
         const cx = readCoordX();
@@ -508,9 +535,20 @@ export function decodeShapesBinary(buffer: Uint8Array): {
       case 'path':
       case 'closed_path':
       case 'polygon': {
-        const countByte = buffer[offset++];
-        const pointCount = countByte & 0x7f;
-        const needInt16Deltas = (countByte & 0x80) !== 0;
+        let pointCount: number;
+        let needInt16Deltas: boolean;
+
+        if (version === 0) {
+          // V0: [count | flags]
+          const countByte = buffer[offset++];
+          pointCount = countByte & 0x7f;
+          needInt16Deltas = (countByte & 0x80) !== 0;
+        } else {
+          // V1: [flags] [count_low] [count_high]
+          const flagsByte = buffer[offset++];
+          needInt16Deltas = (flagsByte & 0x01) !== 0;
+          pointCount = buffer[offset++] | (buffer[offset++] << 8);
+        }
 
         if (pointCount === 0) break;
 
@@ -547,16 +585,25 @@ export function decodeShapesBinary(buffer: Uint8Array): {
         continue;
     }
 
-    shapes.push({
+    const shapeObj: Shape = {
       id: crypto.randomUUID(),
       type: type as Shape['type'],
       color,
       filled,
       pos,
-    });
+    };
+
+    if (type === 'text') {
+      shapeObj.fontSize = FONT_SIZES[strokeIndices[i]] ?? 16;
+      shapeObj.text = currentText;
+    } else {
+      shapeObj.strokeWidth = STROKE_WIDTHS[strokeIndices[i]] ?? 5;
+    }
+
+    shapes.push(shapeObj);
   }
 
-  return { shapes, strokeWidth, mapName };
+  return { shapes, strokeWidth: globalStrokeWidth, mapName };
 }
 
 /**
