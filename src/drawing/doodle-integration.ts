@@ -331,7 +331,8 @@ export async function createDrawingManager(
       fontSize: number,
       onCommit: (t: string) => void,
       onCancel: () => void,
-      initialWidth?: number
+      initialWidth?: number,
+      initialHeight?: number
     ) {
       this.closeInput();
 
@@ -355,9 +356,10 @@ export async function createDrawingManager(
       input.className = 'doodle-text-input';
       Object.assign(input.style, {
         boxSizing: 'border-box',
-        minWidth: initialWidth ? `${Math.max(100, initialWidth)}px` : '200px',
+        minWidth: '100px',
         width: initialWidth ? `${Math.max(100, initialWidth)}px` : '200px',
-        minHeight: '60px',
+        minHeight: '40px',
+        height: initialHeight ? `${Math.max(40, initialHeight)}px` : 'auto',
         fontSize: '16px', // UI size
         fontFamily: 'Inter, sans-serif',
         background: 'rgba(0, 0, 0, 0.8)',
@@ -605,6 +607,15 @@ export async function createDrawingManager(
         const rect = textEl.getBoundingClientRect();
         const viewerRect = this.osdViewer.element.getBoundingClientRect();
 
+        // Calculate appropriate height based on content
+        // Count newlines and estimate needed height, with a reasonable minimum
+        const lineCount = (shape.text || '').split('\n').length;
+        const estimatedHeight = Math.max(80, lineCount * 24 + 40); // 24px per line + padding
+        const editHeight = Math.max(rect.height, estimatedHeight);
+
+        // Hide the text element while editing to avoid visual confusion
+        textEl.style.visibility = 'hidden';
+
         overlays.showInput(
           rect.left - viewerRect.left,
           rect.top - viewerRect.top,
@@ -615,10 +626,16 @@ export async function createDrawingManager(
             shape.text = newText;
             const newShape = { ...shape, pos: [...shape.pos] };
             pushHistory({ type: 'update', oldShape, newShape });
+            textEl.style.visibility = 'visible';
             this.sync(textShapes);
             callbacks?.onShapeChange?.();
           },
-          () => { /* cancel */ }
+          () => {
+            // On cancel, restore visibility
+            textEl.style.visibility = 'visible';
+          },
+          Math.max(rect.width, 200),
+          editHeight
         );
       });
     }
@@ -876,18 +893,21 @@ export async function createDrawingManager(
     startViewport: { x: number; y: number }
   ) => {
     const width = Math.abs(endPixel.x - startPixel.x);
+    const height = Math.abs(endPixel.y - startPixel.y);
     const minX = Math.min(startPixel.x, endPixel.x);
     const minY = Math.min(startPixel.y, endPixel.y);
 
-    // If user dragged to create a region, use that width; otherwise use default
-    const textWidth = width > 50 ? width : undefined;
+    // If user dragged to create a region (min 50px in either dimension), use that size
+    const hasDraggedArea = width > 50 || height > 50;
+    const textWidth = hasDraggedArea ? Math.max(width, 100) : undefined;
+    const textHeight = hasDraggedArea ? Math.max(height, 40) : undefined;
 
     // Use top-left corner of the rectangle for position
-    const placementX = width > 50 ? minX : startPixel.x;
-    const placementY = width > 50 ? minY : startPixel.y;
+    const placementX = hasDraggedArea ? minX : startPixel.x;
+    const placementY = hasDraggedArea ? minY : startPixel.y;
 
     // Convert placement pixel to viewport coordinates
-    const placementViewport = width > 50
+    const placementViewport = hasDraggedArea
       ? osd.viewport.pointFromPixel(new OpenSeadragon.Point(placementX, placementY))
       : { x: startViewport.x, y: startViewport.y };
 
@@ -917,7 +937,8 @@ export async function createDrawingManager(
         callbacks?.onShapeChange?.();
       },
       () => { /* cancel */ },
-      textWidth
+      textWidth,
+      textHeight
     );
   };
 
