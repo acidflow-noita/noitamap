@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { encodeShapesBinary, decodeShapesBinary } from './binary-encoder';
-import type { Shape } from './doodle-integration';
+import { encodeShapesBinary, decodeShapesBinary } from '../../src/drawing/binary-encoder';
+import type { Shape } from '../../src/drawing/doodle-integration';
 
 describe('Binary Encoder', () => {
   it('should losslessly encode and decode shapes across the map', () => {

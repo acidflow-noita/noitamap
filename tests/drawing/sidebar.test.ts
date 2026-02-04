@@ -1,27 +1,27 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { DrawingSidebar } from './sidebar';
-import { DrawingManager } from './doodle-integration';
-import { DrawingSession } from './storage';
-import { authService } from '../auth/auth-service';
-import i18next from '../i18n';
+import { DrawingSidebar } from '../../src/drawing/sidebar';
+import { DrawingManager } from '../../src/drawing/doodle-integration';
+import { DrawingSession } from '../../src/drawing/storage';
+import { authService } from '../../src/auth/auth-service';
+import i18next from '../../src/i18n';
 
 // Mock dependencies
-vi.mock('../i18n', () => ({
+vi.mock('../../src/i18n', () => ({
   default: {
     t: (key: string) => key,
     on: vi.fn(),
   },
 }));
 
-vi.mock('../auth/auth-service', () => ({
+vi.mock('../../src/auth/auth-service', () => ({
   authService: {
     getState: vi.fn(() => ({ authenticated: true, isSubscriber: true, username: 'TestUser' })),
     subscribe: vi.fn(() => vi.fn()),
   },
 }));
 
-vi.mock('./storage', () => ({
+vi.mock('../../src/drawing/storage', () => ({
   getAllDrawings: vi.fn(() => Promise.resolve([])),
   getAllMapDefinitions: vi.fn(() => new Map()),
 }));
@@ -91,10 +91,12 @@ describe('DrawingSidebar', () => {
     // Note: The constructor calls updateToolUI which sets initial visibility
 
     const strokeSection = container.querySelector('#stroke-width-section') as HTMLElement;
-    const fontSection = container.querySelector('#font-size-section') as HTMLElement;
+    const textControls = container.querySelector('#text-controls') as HTMLElement;
 
+    expect(strokeSection).toBeTruthy();
+    expect(textControls).toBeTruthy();
     expect(strokeSection.style.display).not.toBe('none');
-    expect(fontSection.style.display).toBe('none');
+    expect(textControls.style.display).toBe('none');
   });
 
   it('should show font size and hide stroke width when text tool is selected', () => {
@@ -104,10 +106,12 @@ describe('DrawingSidebar', () => {
     new DrawingSidebar(container, { drawingManager, session });
 
     const strokeSection = container.querySelector('#stroke-width-section') as HTMLElement;
-    const fontSection = container.querySelector('#font-size-section') as HTMLElement;
+    const textControls = container.querySelector('#text-controls') as HTMLElement;
 
+    expect(strokeSection).toBeTruthy();
+    expect(textControls).toBeTruthy();
     expect(strokeSection.style.display).toBe('none');
-    expect(fontSection.style.display).toBe('block');
+    expect(textControls.style.display).toBe('block');
   });
 
   it('should toggle sections when switching tools', () => {
@@ -130,10 +134,12 @@ describe('DrawingSidebar', () => {
     expect(drawingManager.setTool).toHaveBeenCalledWith('text');
 
     const strokeSection = container.querySelector('#stroke-width-section') as HTMLElement;
-    const fontSection = container.querySelector('#font-size-section') as HTMLElement;
+    const textControls = container.querySelector('#text-controls') as HTMLElement;
 
+    expect(strokeSection).toBeTruthy();
+    expect(textControls).toBeTruthy();
     expect(strokeSection.style.display).toBe('none');
-    expect(fontSection.style.display).toBe('block');
+    expect(textControls.style.display).toBe('block');
 
     // Reset spy
     (drawingManager.setTool as any).mockClear();
@@ -144,6 +150,6 @@ describe('DrawingSidebar', () => {
     expect(drawingManager.setTool).toHaveBeenCalledWith('move');
 
     expect(strokeSection.style.display).toBe('block');
-    expect(fontSection.style.display).toBe('none');
+    expect(textControls.style.display).toBe('none');
   });
 });

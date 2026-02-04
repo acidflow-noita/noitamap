@@ -286,10 +286,7 @@ export class DrawingSidebar {
   }
 
   private renderSubscriberContent(): void {
-    const extendedTools = [
-      ...TOOLS,
-      { id: 'text', type: 'text', filled: false, icon: 'bi-type', titleKey: 'drawing.tools.text', svg: undefined },
-    ];
+    const drawingTools = TOOLS.filter(t => t.id !== 'move');
 
     this.contentArea.innerHTML = `
       <div class="sidebar-section p-2 border-bottom border-secondary">
@@ -299,8 +296,7 @@ export class DrawingSidebar {
           <label class="btn btn-sm btn-outline-light" for="tool-move" data-tool="move" title="${i18next.t('drawing.tools.move')}">
             <i class="bi-arrows-move"></i>
           </label>
-          ${extendedTools
-            .slice(1)
+          ${drawingTools
             .map(
               tool => `
           <input type="radio" class="btn-check" name="drawing-tool" id="tool-${tool.id}" autocomplete="off" ${tool.id === 'path' ? 'checked' : ''}>
@@ -312,7 +308,28 @@ export class DrawingSidebar {
         </div>
       </div>
 
-      <div class="sidebar-section p-2 border-bottom border-secondary">
+      <div class="sidebar-section p-2 border-bottom border-secondary bg-dark bg-opacity-25">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <input type="radio" class="btn-check" name="drawing-tool" id="tool-text" autocomplete="off">
+          <label class="btn btn-sm btn-outline-info flex-grow-1" for="tool-text" data-tool="text" title="${i18next.t('drawing.tools.text')}">
+            <i class="bi bi-type me-1"></i> ${i18next.t('drawing.tools.text')}
+          </label>
+        </div>
+        
+        <div id="text-controls" style="display: none;">
+          <label class="form-label text-secondary small mb-1">Font Size</label>
+          <div class="btn-group btn-group-sm w-100 mb-2" role="group" id="font-size-buttons">
+            ${FONT_SIZES.map((size, index) => {
+              const labels = ['Small', 'Medium', 'Large', 'Huge'];
+              const label = labels[index];
+              return `<input type="radio" class="btn-check" name="font-size" id="font-${size}" autocomplete="off" ${index === 0 ? 'checked' : ''}>
+              <label class="btn btn-outline-info" for="font-${size}">${label}</label>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section p-2 border-bottom border-secondary" id="color-section">
         <label class="form-label text-secondary small mb-1">${i18next.t('drawing.color.label')}</label>
         <div class="d-flex flex-wrap gap-1">
           ${COLOR_PRESETS.map(
@@ -332,30 +349,6 @@ export class DrawingSidebar {
             return `<input type="radio" class="btn-check" name="stroke-width" id="stroke-${width}" autocomplete="off" ${index === 1 ? 'checked' : ''}>
             <label class="btn btn-outline-light" for="stroke-${width}">${label}</label>`;
           }).join('')}
-        </div>
-      </div>
-
-      <div class="sidebar-section p-2 border-bottom border-secondary" id="font-size-section" style="display: none;">
-        <label class="form-label text-secondary small mb-1">Font Size</label>
-        <div class="btn-group btn-group-sm w-100" role="group" id="font-size-buttons">
-          ${FONT_SIZES.map((size, index) => {
-            const labels = ['Small', 'Medium', 'Large', 'Huge'];
-            const label = labels[index];
-            return `<input type="radio" class="btn-check" name="font-size" id="font-${size}" autocomplete="off" ${index === 0 ? 'checked' : ''}>
-            <label class="btn btn-outline-light" for="font-${size}">${label}</label>`;
-          }).join('')}
-        </div>
-      </div>
-
-      <div class="sidebar-section p-2 border-bottom border-secondary" id="text-zoom-section" style="display: none;">
-        <label class="form-label text-secondary small mb-1">Text Zoom (Debug)</label>
-        <div class="btn-group btn-group-sm w-100" role="group" id="text-zoom-buttons">
-          <input type="radio" class="btn-check" name="text-zoom" id="text-zoom-fixed-screen" autocomplete="off" checked>
-          <label class="btn btn-outline-warning" for="text-zoom-fixed-screen" title="Text stays same screen size regardless of zoom">Screen</label>
-          <input type="radio" class="btn-check" name="text-zoom" id="text-zoom-fixed-world" autocomplete="off">
-          <label class="btn btn-outline-warning" for="text-zoom-fixed-world" title="Text scales with the map (like other shapes)">World</label>
-          <input type="radio" class="btn-check" name="text-zoom" id="text-zoom-hybrid" autocomplete="off">
-          <label class="btn btn-outline-warning" for="text-zoom-hybrid" title="Text scale clamped between 0.5x and 2x">Hybrid</label>
         </div>
       </div>
 
@@ -517,24 +510,17 @@ export class DrawingSidebar {
     const radio = this.contentArea.querySelector(`#tool-${toolId}`) as HTMLInputElement;
     if (radio) radio.checked = true;
 
-    // Toggle stroke/font/zoom UI based on tool
+    // Toggle stroke/font UI based on tool
     const strokeSection = this.contentArea.querySelector('#stroke-width-section') as HTMLElement;
-    const fontSection = this.contentArea.querySelector('#font-size-section') as HTMLElement;
-    const textZoomSection = this.contentArea.querySelector('#text-zoom-section') as HTMLElement;
+    const textControls = this.contentArea.querySelector('#text-controls') as HTMLElement;
 
-    if (!strokeSection || !fontSection) {
-      console.warn('[Sidebar] Warning: One or more UI sections not found:', { strokeSection, fontSection });
-    }
-
-    if (strokeSection && fontSection) {
+    if (strokeSection && textControls) {
       if (toolId === 'text') {
         strokeSection.style.display = 'none';
-        fontSection.style.display = 'block';
-        if (textZoomSection) textZoomSection.style.display = 'block';
+        textControls.style.display = 'block';
       } else {
         strokeSection.style.display = 'block';
-        fontSection.style.display = 'none';
-        if (textZoomSection) textZoomSection.style.display = 'none';
+        textControls.style.display = 'none';
       }
     }
   }
@@ -593,14 +579,6 @@ export class DrawingSidebar {
       input.addEventListener('change', () => {
         const size = parseInt((input as HTMLInputElement).id.replace('font-', ''), 10);
         this.drawingManager.setFontSize(size);
-      });
-    });
-
-    // Text zoom strategy buttons (debug)
-    this.contentArea.querySelectorAll('input[name="text-zoom"]').forEach(input => {
-      input.addEventListener('change', () => {
-        const strategy = (input as HTMLInputElement).id.replace('text-zoom-', '') as 'fixed-screen' | 'fixed-world' | 'hybrid';
-        this.drawingManager.setTextZoomStrategy(strategy);
       });
     });
 
@@ -734,6 +712,7 @@ export class DrawingSidebar {
     console.log('[Sidebar] Imported', result.shapes.length, 'shapes from WebP, map:', result.mapName);
 
     // Save to session and refresh list
+    this.session.setIsImport(true);
     await this.session.save();
     this.refreshDrawingsList();
   }
@@ -830,6 +809,7 @@ export class DrawingSidebar {
         const isActive = drawing.id === currentId;
         const isCurrentMap = drawing.map_name === currentMap;
         const mapDisplayName = mapNameLookup.get(drawing.map_name) || drawing.map_name;
+        const isImport = !!drawing.isImport;
 
         // Detect default name marker and translate dynamically
         const displayName = drawing.name.startsWith('__default__:')
@@ -839,7 +819,10 @@ export class DrawingSidebar {
         return `
         <div class="list-group-item list-group-item-action d-flex align-items-center gap-2 bg-transparent text-light border-secondary ${isActive ? 'active' : ''}" data-id="${drawing.id}" data-map="${drawing.map_name}" role="button">
           <div class="flex-grow-1 min-width-0">
-            <div class="small text-truncate">${this.escapeHtml(displayName)}</div>
+            <div class="small text-truncate">
+              ${isImport ? '<i class="bi bi-download me-1 text-info" title="Imported drawing"></i>' : ''}
+              ${this.escapeHtml(displayName)}
+            </div>
             <div class="small text-secondary">
               ${shapeCount} ${i18next.t('drawing.savedDrawings.shapes')} · ${dateStr}
               ${!isCurrentMap ? `<br><i class="bi bi-map me-1"></i>${this.escapeHtml(mapDisplayName)}` : ''}

@@ -1,14 +1,8 @@
 /**
- * Binary Encoder/Decoder for Drawing Data (V2 - Simplified)
+ * Binary Encoder/Decoder for Drawing Data (V3)
  *
- * Uses int32 everywhere for lossless coordinate storage.
- * No delta encoding - simpler and guaranteed lossless.
- *
- * Format:
- * - Header: version (1 byte), map name length + bytes
- * - Shape count (1 byte)
- * - Packed stroke widths (2 bits per shape)
- * - Per-shape: header (1 byte) + coordinates (int32 each)
+ * V3 adds:
+ * - Text width support for resizable bounding boxes
  */
 
 import type { Shape } from './doodle-integration';
@@ -76,7 +70,7 @@ function readInt32(buffer: Uint8Array, offset: number): number {
 }
 
 /**
- * Encode shapes to binary format (V2)
+ * Encode shapes to binary format (V3)
  */
 export function encodeShapesBinary(shapes: Shape[], mapName: string, _strokeWidth: number = 5): Uint8Array | null {
   if (shapes.length === 0 || shapes.length > 255) return null;
@@ -101,6 +95,7 @@ export function encodeShapesBinary(shapes: Shape[], mapName: string, _strokeWidt
     }
     if (shape.type === 'text') {
       estimatedSize += 1 + (shape.text ? new TextEncoder().encode(shape.text).length : 0);
+      estimatedSize += 4; // width as int32
     }
   }
 
@@ -108,8 +103,8 @@ export function encodeShapesBinary(shapes: Shape[], mapName: string, _strokeWidt
   let offset = 0;
 
   // === HEADER ===
-  // Byte 0: version = 2
-  buffer[offset++] = 2;
+  // Byte 0: version = 3
+  buffer[offset++] = 3;
 
   // Map name
   buffer[offset++] = mapNameBytes.length;
@@ -169,6 +164,8 @@ export function encodeShapesBinary(shapes: Shape[], mapName: string, _strokeWidt
           buffer[offset++] = len;
           buffer.set(textBytes.subarray(0, len), offset);
           offset += len;
+          writeInt32(buffer, offset, shape.width ?? 0);
+          offset += 4;
         }
         break;
 
@@ -247,7 +244,9 @@ export function decodeShapesBinary(buffer: Uint8Array): {
   let offset = 0;
   const version = buffer[offset++];
 
-  if (version === 2) {
+  if (version === 3) {
+    return decodeV3(buffer, offset);
+  } else if (version === 2) {
     return decodeV2(buffer, offset);
   } else if (version === 0 || version === 1) {
     return decodeV1(buffer);
@@ -370,6 +369,135 @@ function decodeV2(
     if (type === 'text') {
       shapeObj.fontSize = FONT_SIZES[strokeIndices[i]] ?? 16;
       shapeObj.text = currentText;
+    } else {
+      shapeObj.strokeWidth = STROKE_WIDTHS[strokeIndices[i]] ?? 5;
+    }
+
+    shapes.push(shapeObj);
+  }
+
+  return { shapes, strokeWidth: 5, mapName };
+}
+
+/**
+ * Decode V3 format (adds text width)
+ */
+function decodeV3(
+  buffer: Uint8Array,
+  offset: number
+): { shapes: Shape[]; strokeWidth: number; mapName?: string } | null {
+  // Map name
+  const mapNameLen = buffer[offset++];
+  const mapName = new TextDecoder().decode(buffer.subarray(offset, offset + mapNameLen));
+  offset += mapNameLen;
+
+  // Shape count
+  const shapeCount = buffer[offset++];
+
+  // Packed stroke widths
+  const strokeBytes = Math.ceil(shapeCount / 4);
+  const strokeIndices: number[] = [];
+  for (let i = 0; i < strokeBytes; i++) {
+    const packedByte = buffer[offset++];
+    for (let j = 0; j < 4; j++) {
+      if (i * 4 + j < shapeCount) {
+        strokeIndices.push((packedByte >> (j * 2)) & 0x03);
+      }
+    }
+  }
+
+  const shapes: Shape[] = [];
+
+  for (let i = 0; i < shapeCount; i++) {
+    if (offset >= buffer.length) break;
+
+    const shapeHeader = buffer[offset++];
+    const typeCode = shapeHeader & 0x0f;
+    const colorIdx = (shapeHeader >> 4) & 0x07;
+    const filled = (shapeHeader & 0x80) !== 0;
+
+    const type = CODE_TO_TYPE[typeCode] ?? 'path';
+    const color = COLOR_PALETTE[colorIdx] ?? '#ffffff';
+
+    let pos: number[] = [];
+    let currentText: string | undefined;
+    let currentWidth: number | undefined;
+
+    switch (type) {
+      case 'point':
+        pos = [readInt32(buffer, offset), readInt32(buffer, offset + 4)];
+        offset += 8;
+        break;
+
+      case 'text':
+        pos = [readInt32(buffer, offset), readInt32(buffer, offset + 4)];
+        offset += 8;
+        {
+          const len = buffer[offset++];
+          currentText = new TextDecoder().decode(buffer.subarray(offset, offset + len));
+          offset += len;
+          currentWidth = readInt32(buffer, offset);
+          offset += 4;
+        }
+        break;
+
+      case 'circle':
+        pos = [readInt32(buffer, offset), readInt32(buffer, offset + 4), readInt32(buffer, offset + 8)];
+        offset += 12;
+        break;
+
+      case 'line':
+      case 'arrow_line':
+        pos = [
+          readInt32(buffer, offset),
+          readInt32(buffer, offset + 4),
+          readInt32(buffer, offset + 8),
+          readInt32(buffer, offset + 12),
+        ];
+        offset += 16;
+        break;
+
+      case 'rect':
+      case 'ellipse':
+        pos = [
+          readInt32(buffer, offset),
+          readInt32(buffer, offset + 4),
+          readInt32(buffer, offset + 8),
+          readInt32(buffer, offset + 12),
+        ];
+        offset += 16;
+        break;
+
+      case 'path':
+      case 'closed_path':
+      case 'polygon': {
+        const pointCount = buffer[offset] | (buffer[offset + 1] << 8);
+        offset += 2;
+        for (let j = 0; j < pointCount * 2; j++) {
+          pos.push(readInt32(buffer, offset));
+          offset += 4;
+        }
+        break;
+      }
+
+      default:
+        continue;
+    }
+
+    const shapeObj: Shape = {
+      id: crypto.randomUUID(),
+      type: type as Shape['type'],
+      color,
+      filled,
+      pos,
+    };
+
+    if (type === 'text') {
+      shapeObj.fontSize = FONT_SIZES[strokeIndices[i]] ?? 16;
+      shapeObj.text = currentText;
+      if (currentWidth && currentWidth > 0) {
+        shapeObj.width = currentWidth;
+      }
     } else {
       shapeObj.strokeWidth = STROKE_WIDTHS[strokeIndices[i]] ?? 5;
     }

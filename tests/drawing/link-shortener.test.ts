@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { shortenUrl } from './link-shortener';
+import { shortenUrl } from '../../src/drawing/link-shortener';
 
 describe('Link Shortener', () => {
   const originalFetch = global.fetch;

@@ -188,24 +188,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Create drawing manager with shape change callback for auto-save
     drawingManager = await createDrawingManager(app.osd, {
       onShapeChange: () => {
-        if (!drawingManager || !drawingSession) return;
         const shapes = drawingManager.getShapes();
-        const viewport = app.osd.viewport;
-        const center = viewport.getCenter();
-        const zoom = viewport.getZoom();
-        drawingSession.updateShapes(shapes, {
-          x: center.x,
-          y: center.y,
-          zoom: zoom,
-        });
-
-        // DISABLED: Simplification preview no longer needed
-        // if (globalSimplificationPreview?.isEnabled()) {
-        //   globalSimplificationPreview.setShapes(shapes);
-        //   globalSimplificationStatusUpdate?.();
-        // }
+        const viewport = app.osd.getZoomPos();
+        drawingSession.updateShapes(shapes, viewport);
       },
+      onToolChange: (tool) => {
+        drawingSidebar.updateSelectedTool(tool);
+      }
     });
+
     globalDrawingManager = drawingManager;
 
     // Get sidebar container

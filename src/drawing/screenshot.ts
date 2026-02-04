@@ -441,7 +441,37 @@ function renderShapesToCanvas(
         ctx.font = `${fontSize}px Inter, system-ui, sans-serif`;
         ctx.fillStyle = shape.color;
         ctx.textBaseline = 'top'; // Match PIXI default
-        ctx.fillText(shape.text, point.x, point.y);
+        
+        const lines = shape.text.split('\n');
+        const lineHeight = fontSize * 1.2;
+        
+        const maxWidth = shape.width ? shape.width * dpr : 0;
+        
+        let yOffset = 0;
+        for (const line of lines) {
+           if (maxWidth > 0) {
+              // Word wrap this line
+              const words = line.split(' ');
+              let currentLine = '';
+              for (const word of words) {
+                 const testLine = currentLine + (currentLine ? ' ' : '') + word;
+                 const metrics = ctx.measureText(testLine);
+                 if (metrics.width > maxWidth && currentLine !== '') {
+                    ctx.fillText(currentLine, point.x, point.y + yOffset);
+                    currentLine = word;
+                    yOffset += lineHeight;
+                 } else {
+                    currentLine = testLine;
+                 }
+              }
+              ctx.fillText(currentLine, point.x, point.y + yOffset);
+              yOffset += lineHeight;
+           } else {
+              // No wrapping
+              ctx.fillText(line, point.x, point.y + yOffset);
+              yOffset += lineHeight;
+           }
+        }
         break;
       }
     }

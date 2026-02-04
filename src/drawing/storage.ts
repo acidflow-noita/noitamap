@@ -23,6 +23,7 @@ export interface StoredDrawing {
   shapes: Shape[];
   created_at: number;
   updated_at: number;
+  isImport?: boolean;
 }
 
 interface DrawingDB extends DBSchema {
@@ -208,6 +209,15 @@ export class DrawingSession {
   }
 
   /**
+   * Set if the current drawing is an import
+   */
+  setIsImport(val: boolean): void {
+    if (this.currentDrawing) {
+      this.currentDrawing.isImport = val;
+    }
+  }
+
+  /**
    * Update shapes in the current drawing (triggers auto-save)
    */
   updateShapes(shapes: Shape[], viewport?: { x: number; y: number; zoom: number }): void {
@@ -330,5 +340,7 @@ export function importDrawingData(
   }
 ): StoredDrawing {
   const viewport = data.viewport ?? { x: 0, y: 0, zoom: 1 };
-  return createDrawing(mapName, data.shapes, viewport, i18next.t('drawing.savedDrawings.sharedName'));
+  const drawing = createDrawing(mapName, data.shapes, viewport, i18next.t('drawing.savedDrawings.sharedName'));
+  drawing.isImport = true;
+  return drawing;
 }

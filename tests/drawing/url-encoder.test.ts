@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { encodeShapesForUrl, encodeShapesWithInfo, decodeShapesFromUrl, parseDrawingFromUrl } from './url-encoder';
-import type { Shape } from './doodle-integration';
+import { encodeShapesForUrl, encodeShapesWithInfo, decodeShapesFromUrl, parseDrawingFromUrl } from '../../src/drawing/url-encoder';
+import type { Shape } from '../../src/drawing/doodle-integration';
 
 describe('URL Encoder', () => {
   describe('encodeShapesForUrl / decodeShapesFromUrl', () => {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { isCatboxRef, extractCatboxFileId, createCatboxParam, getCatboxUrl } from './catbox';
+import { isCatboxRef, extractCatboxFileId, createCatboxParam, getCatboxUrl } from '../../src/drawing/catbox';
 
 describe('Catbox Utilities', () => {
   describe('isCatboxRef', () => {

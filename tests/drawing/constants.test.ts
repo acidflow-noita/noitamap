@@ -7,7 +7,7 @@ import {
   FONT_SIZES,
   TYPE_CODES,
   CODE_TO_TYPE,
-} from './constants';
+} from '../../src/drawing/constants';
 
 describe('Drawing Constants', () => {
   describe('COLOR_PALETTE', () => {
