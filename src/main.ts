@@ -152,12 +152,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Initialize auth UI in navbar (before the donate button)
+  // Initialize auth UI in navbar (at the end of the button container)
   const authContainer = document.createElement('div');
   authContainer.id = 'auth-container';
-  const donoButton = document.querySelector('.bg-glow');
-  if (donoButton && donoButton.parentElement) {
-    donoButton.parentElement.insertBefore(authContainer, donoButton);
+  // Find the container div that holds all the buttons
+  const buttonContainer = document.querySelector('.collapse.navbar-collapse .d-flex.flex-wrap');
+  if (buttonContainer) {
+    buttonContainer.appendChild(authContainer);
   }
   new AuthUI(authContainer);
 
@@ -193,7 +194,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         drawingSession.updateShapes(shapes, viewport);
       },
       onToolChange: (tool) => {
-        drawingSidebar.updateSelectedTool(tool);
+        // drawingSidebar is created later, so check if it exists
+        if (drawingSidebar) {
+          drawingSidebar.updateSelectedTool(tool);
+        }
       }
     });
 
