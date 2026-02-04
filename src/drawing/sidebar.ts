@@ -311,19 +311,19 @@ export class DrawingSidebar {
       <div class="sidebar-section p-2 border-bottom border-secondary bg-dark bg-opacity-25">
         <div class="d-flex align-items-center gap-2 mb-2">
           <input type="radio" class="btn-check" name="drawing-tool" id="tool-text" autocomplete="off">
-          <label class="btn btn-sm btn-outline-info flex-grow-1" for="tool-text" data-tool="text" title="${i18next.t('drawing.tools.text')}">
+          <label class="btn btn-sm btn-outline-light" for="tool-text" data-tool="text" title="${i18next.t('drawing.tools.text')}">
             <i class="bi bi-type me-1"></i> ${i18next.t('drawing.tools.text')}
           </label>
         </div>
-        
+
         <div id="text-controls" style="display: none;">
-          <label class="form-label text-secondary small mb-1">Font Size</label>
+          <label class="form-label text-secondary small mb-1">${i18next.t('drawing.fontSize.label')}</label>
           <div class="btn-group btn-group-sm w-100 mb-2" role="group" id="font-size-buttons">
             ${FONT_SIZES.map((size, index) => {
-              const labels = ['Small', 'Medium', 'Large', 'Huge'];
-              const label = labels[index];
+              const labelKeys = ['small', 'medium', 'large', 'huge'];
+              const label = i18next.t(`drawing.fontSize.${labelKeys[index]}`);
               return `<input type="radio" class="btn-check" name="font-size" id="font-${size}" autocomplete="off" ${index === 0 ? 'checked' : ''}>
-              <label class="btn btn-outline-info" for="font-${size}">${label}</label>`;
+              <label class="btn btn-outline-light" for="font-${size}">${label}</label>`;
             }).join('')}
           </div>
         </div>
@@ -344,8 +344,8 @@ export class DrawingSidebar {
         <label class="form-label text-secondary small mb-1">${i18next.t('drawing.stroke.label')}</label>
         <div class="btn-group btn-group-sm w-100" role="group" id="stroke-buttons">
           ${STROKE_WIDTHS.map((width, index) => {
-            const labels = ['Thin', 'Normal', 'Thick', 'Heavy'];
-            const label = labels[index] || width + 'px';
+            const labelKeys = ['thin', 'normal', 'thick', 'heavy'];
+            const label = i18next.t(`drawing.stroke.${labelKeys[index]}`);
             return `<input type="radio" class="btn-check" name="stroke-width" id="stroke-${width}" autocomplete="off" ${index === 1 ? 'checked' : ''}>
             <label class="btn btn-outline-light" for="stroke-${width}">${label}</label>`;
           }).join('')}

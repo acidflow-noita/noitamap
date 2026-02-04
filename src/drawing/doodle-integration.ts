@@ -318,6 +318,11 @@ export async function createDrawingManager(
     private activeInput: HTMLTextAreaElement | null = null;
     private onCommit: ((text: string) => void) | null = null;
     private onCancel: (() => void) | null = null;
+    private parentElement: HTMLElement;
+
+    constructor(parentElement: HTMLElement) {
+      this.parentElement = parentElement;
+    }
 
     showInput(
       x: number,
@@ -325,7 +330,8 @@ export async function createDrawingManager(
       initialText: string = '',
       fontSize: number,
       onCommit: (t: string) => void,
-      onCancel: () => void
+      onCancel: () => void,
+      initialWidth?: number
     ) {
       this.closeInput();
 
@@ -348,13 +354,15 @@ export async function createDrawingManager(
       input.value = initialText;
       input.className = 'doodle-text-input';
       Object.assign(input.style, {
-        minWidth: '200px',
-        minHeight: '100px',
+        boxSizing: 'border-box',
+        minWidth: initialWidth ? `${Math.max(100, initialWidth)}px` : '200px',
+        width: initialWidth ? `${Math.max(100, initialWidth)}px` : '200px',
+        minHeight: '60px',
         fontSize: '16px', // UI size
         fontFamily: 'Inter, sans-serif',
         background: 'rgba(0, 0, 0, 0.8)',
         color: 'white',
-        border: '1px solid #9146FF',
+        border: '2px dashed #ffffff',
         borderRadius: '4px',
         padding: '8px',
         resize: 'both',
@@ -408,9 +416,13 @@ export async function createDrawingManager(
 
       container.appendChild(input);
       container.appendChild(controls);
-      document.body.appendChild(container);
-      
-      input.focus();
+      this.parentElement.appendChild(container);
+
+      // Use requestAnimationFrame to ensure element is in DOM before focusing
+      requestAnimationFrame(() => {
+        input.focus();
+        input.select();
+      });
       this.activeInput = input;
       this.activeContainer = container;
 
@@ -448,7 +460,7 @@ export async function createDrawingManager(
     }
   }
 
-  const overlays = new OverlaysManager();
+  const overlays = new OverlaysManager(osd.element);
 
   // DOM-based Text Renderer with edit/move support
   class TextRenderer {
@@ -626,7 +638,7 @@ export async function createDrawingManager(
       if (id) {
         const el = this.textMap.get(id);
         if (el) {
-          el.style.outline = '2px solid #9146FF';
+          el.style.outline = '2px dashed #ffffff';
           el.style.outlineOffset = '2px';
         }
       }
@@ -710,7 +722,7 @@ export async function createDrawingManager(
 
           // Restore selection outline if selected
           if (shape.id === this.selectedId) {
-            textEl.style.outline = '2px solid #9146FF';
+            textEl.style.outline = '2px dashed #ffffff';
             textEl.style.outlineOffset = '2px';
           } else {
             textEl.style.outline = 'none';
@@ -809,43 +821,146 @@ export async function createDrawingManager(
     }
   };
 
-  // Add click handler for text tool
-  osd.addHandler('canvas-click', (event: any) => {
-    if (!isEnabled || currentTool !== 'text') return;
-    if (event.quick) {
-      event.preventDefaultAction = true;
+  // --- Text Tool Drag-to-Define-Area Implementation ---
 
-      const viewportPoint = osd.viewport.pointFromPixel(event.position);
-      const webPoint = event.position; // Screen pixel
+  // Preview rectangle for text area definition
+  let textPreviewRect: HTMLDivElement | null = null;
+  let textDragState: {
+    isDragging: boolean;
+    startPixel: { x: number; y: number };
+    startViewport: { x: number; y: number };
+  } | null = null;
 
-      overlays.showInput(
-        webPoint.x,
-        webPoint.y,
-        '',
-        currentFontSize,
-        text => {
-          // Create Shape
-          const shape: Shape = {
-            id: crypto.randomUUID(),
-            type: 'text',
-            text: text,
-            fontSize: currentFontSize,
-            color: currentColor,
-            pos: [viewportPoint.x, viewportPoint.y],
-            filled: true,
-            strokeWidth: 0, // Text doesn't use stroke width
-          };
-          // Text shapes are stored separately
-          textShapes.push(shape);
-          pushHistory({ type: 'add', shape: { ...shape, pos: [...shape.pos] } });
-          
-          initTextRenderer();
-          textRenderer?.sync(textShapes);
-          callbacks?.onShapeChange?.();
-        },
-        () => { /* cancel */ }
-      );
+  const createTextPreviewRect = () => {
+    if (textPreviewRect) return textPreviewRect;
+
+    const rect = document.createElement('div');
+    Object.assign(rect.style, {
+      position: 'absolute',
+      border: '2px dashed #ffffff',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      pointerEvents: 'none',
+      zIndex: '9999',
+      display: 'none',
+    });
+    osd.element.appendChild(rect);
+    textPreviewRect = rect;
+    return rect;
+  };
+
+  const updateTextPreviewRect = (startX: number, startY: number, currentX: number, currentY: number) => {
+    const rect = createTextPreviewRect();
+    const left = Math.min(startX, currentX);
+    const top = Math.min(startY, currentY);
+    const width = Math.abs(currentX - startX);
+    const height = Math.abs(currentY - startY);
+
+    Object.assign(rect.style, {
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${width}px`,
+      height: `${height}px`,
+      display: 'block',
+    });
+  };
+
+  const hideTextPreviewRect = () => {
+    if (textPreviewRect) {
+      textPreviewRect.style.display = 'none';
     }
+  };
+
+  const completeTextPlacement = (
+    startPixel: { x: number; y: number },
+    endPixel: { x: number; y: number },
+    startViewport: { x: number; y: number }
+  ) => {
+    const width = Math.abs(endPixel.x - startPixel.x);
+    const minX = Math.min(startPixel.x, endPixel.x);
+    const minY = Math.min(startPixel.y, endPixel.y);
+
+    // If user dragged to create a region, use that width; otherwise use default
+    const textWidth = width > 50 ? width : undefined;
+
+    // Use top-left corner of the rectangle for position
+    const placementX = width > 50 ? minX : startPixel.x;
+    const placementY = width > 50 ? minY : startPixel.y;
+
+    // Convert placement pixel to viewport coordinates
+    const placementViewport = width > 50
+      ? osd.viewport.pointFromPixel(new OpenSeadragon.Point(placementX, placementY))
+      : { x: startViewport.x, y: startViewport.y };
+
+    overlays.showInput(
+      placementX,
+      placementY,
+      '',
+      currentFontSize,
+      text => {
+        // Create Shape
+        const shape: Shape = {
+          id: crypto.randomUUID(),
+          type: 'text',
+          text: text,
+          fontSize: currentFontSize,
+          color: currentColor,
+          pos: [placementViewport.x, placementViewport.y],
+          filled: true,
+          strokeWidth: 0,
+          width: textWidth,
+        };
+        textShapes.push(shape);
+        pushHistory({ type: 'add', shape: { ...shape, pos: [...shape.pos] } });
+
+        initTextRenderer();
+        textRenderer?.sync(textShapes);
+        callbacks?.onShapeChange?.();
+      },
+      () => { /* cancel */ },
+      textWidth
+    );
+  };
+
+  // Add drag handlers for text tool
+  osd.addHandler('canvas-press', (event: any) => {
+    if (!isEnabled || currentTool !== 'text') return;
+
+    event.preventDefaultAction = true;
+
+    const viewportPoint = osd.viewport.pointFromPixel(event.position);
+    textDragState = {
+      isDragging: true,
+      startPixel: { x: event.position.x, y: event.position.y },
+      startViewport: { x: viewportPoint.x, y: viewportPoint.y },
+    };
+  });
+
+  osd.addHandler('canvas-drag', (event: any) => {
+    if (!isEnabled || currentTool !== 'text' || !textDragState?.isDragging) return;
+
+    event.preventDefaultAction = true;
+
+    updateTextPreviewRect(
+      textDragState.startPixel.x,
+      textDragState.startPixel.y,
+      event.position.x,
+      event.position.y
+    );
+  });
+
+  osd.addHandler('canvas-release', (event: any) => {
+    if (!isEnabled || currentTool !== 'text' || !textDragState) return;
+
+    event.preventDefaultAction = true;
+    hideTextPreviewRect();
+
+    completeTextPlacement(
+      textDragState.startPixel,
+      { x: event.position.x, y: event.position.y },
+      textDragState.startViewport
+    );
+
+    textDragState = null;
   });
 
   const manager: DrawingManager = {
@@ -1215,6 +1330,10 @@ export async function createDrawingManager(
     destroy() {
       doodle.destroy();
       overlays.closeInput();
+      if (textPreviewRect) {
+        textPreviewRect.remove();
+        textPreviewRect = null;
+      }
       if (textRenderer) {
          textRenderer.clear();
          textRenderer = null;
