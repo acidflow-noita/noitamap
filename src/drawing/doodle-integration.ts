@@ -18,6 +18,33 @@ function isValidHexColor(color: string): boolean {
   return /^#[0-9A-Fa-f]{6}$/.test(color) || /^#[0-9A-Fa-f]{3}$/.test(color);
 }
 
+/**
+ * Convert HTML from contenteditable to plain text with newlines
+ */
+function htmlToText(html: string): string {
+  // Replace <br> and <div>/ <p> tags with newlines
+  let text = html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<div>/gi, '')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<p>/gi, '');
+
+  // Decode basic HTML entities
+  const temp = document.createElement('div');
+  temp.innerHTML = text;
+  text = temp.textContent || '';
+
+  return text.trim();
+}
+
+/**
+ * Convert plain text with newlines to HTML for contenteditable
+ */
+function textToHtml(text: string): string {
+  return (text || '').replace(/\n/g, '<br>');
+}
+
 // Shape types supported by doodle
 export type ShapeType =
   | 'move'
@@ -435,6 +462,16 @@ export async function createDrawingManager(
       // Click to select
       textEl.addEventListener('mousedown', e => {
         if (!isEnabled) return;
+        // Don't start drag/select if we are already editing this element
+        if (this.editingId === shapeId) return;
+
+        // NEW: Don't allow selecting other shapes if we are editing something else
+        if (this.editingId && this.editingId !== shapeId) {
+          e.stopPropagation();
+          e.preventDefault();
+          return;
+        }
+
         // Don't start drag if clicking on the resize handle (bottom-right area)
         const rect = textEl.getBoundingClientRect();
         if (e.clientX > rect.right - 15 && e.clientY > rect.bottom - 15) {
@@ -559,6 +596,9 @@ export async function createDrawingManager(
       this.editingId = shapeId;
       this.editOriginalText = shape.text || '';
 
+      // NEW: Set class on container to allow CSS to block doodle interactions
+      this.container.classList.add('doodle-text-editing');
+
       // Make contenteditable
       textEl.contentEditable = 'true';
       textEl.style.outline = '2px dashed #ffffff';
@@ -608,7 +648,8 @@ export async function createDrawingManager(
 
       const inputHandler = () => {
         // Update shape text in real-time for visual feedback
-        const newText = textEl.textContent || '';
+        // Use helper to handle various newline formats from different browsers
+        const newText = htmlToText(textEl.innerHTML);
         shape.text = newText;
       };
 
@@ -647,7 +688,8 @@ export async function createDrawingManager(
       }
 
       if (save && shape) {
-        const newText = (textEl?.textContent || '').trim();
+        // Use helper to preserve line breaks correctly
+        const newText = htmlToText(textEl?.innerHTML || '');
 
         if (newText) {
           // Save the text
@@ -705,6 +747,9 @@ export async function createDrawingManager(
       this.editOriginalText = '';
       this.editHandlers = null;
 
+      // NEW: Remove class from container
+      this.container.classList.remove('doodle-text-editing');
+
       // Re-sync to update display
       this.sync(textShapes);
     }
@@ -732,9 +777,9 @@ export async function createDrawingManager(
             this.setupTextElement(textEl, shape.id);
           }
 
-          // Don't update textContent if this element is currently being edited
+          // Don't update content if this element is currently being edited
           if (this.editingId !== shape.id) {
-            textEl.textContent = shape.text || '';
+            textEl.innerHTML = textToHtml(shape.text || '');
           }
           textEl.style.fontFamily = 'Inter, sans-serif';
           textEl.style.fontSize = `${shape.fontSize || 16}px`;
@@ -826,6 +871,11 @@ export async function createDrawingManager(
 
   // Forward declaration of setTool logic for internal use
   const setToolInternal = (tool: ShapeType) => {
+    // Exit any active text edit before switching tools
+    if (textRenderer?.isEditing()) {
+      textRenderer.exitEditMode(true);
+    }
+
     currentTool = tool;
     if (isEnabled) {
       if (tool === 'text') {

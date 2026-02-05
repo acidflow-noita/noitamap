@@ -591,3 +591,18 @@ body.toggle-hidden div.osOverlayHighlight {
   height: 16px;
   width: 16px;
 }
+
+/* Text Editing UI fixes */
+.doodle-text-layer {
+  pointer-events: none;
+}
+
+.doodle-text-label {
+  pointer-events: auto;
+}
+
+/* When editing, only the current element should respond to mouse */
+.doodle-text-editing .doodle-text-label:not([contenteditable='true']) {
+  pointer-events: none;
+  opacity: 0.7;
+}
