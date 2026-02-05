@@ -84,22 +84,20 @@ describe('DrawingSidebar', () => {
     expect(container.querySelector('.drawing-sidebar')).toBeTruthy();
   });
 
-  it('should show stroke width and hide font size by default (move tool)', () => {
+  it('should show both stroke width and font size sections by default', () => {
     new DrawingSidebar(container, { drawingManager, session });
-
-    // Simulate initial render state
-    // Note: The constructor calls updateToolUI which sets initial visibility
 
     const strokeSection = container.querySelector('#stroke-width-section') as HTMLElement;
     const textControls = container.querySelector('#text-controls') as HTMLElement;
 
     expect(strokeSection).toBeTruthy();
     expect(textControls).toBeTruthy();
+    // They are always visible now
     expect(strokeSection.style.display).not.toBe('none');
-    expect(textControls.style.display).toBe('none');
+    expect(textControls.style.display).not.toBe('none');
   });
 
-  it('should show font size and hide stroke width when text tool is selected', () => {
+  it('should keep sections visible when text tool is selected', () => {
     // Start with text tool
     (drawingManager.getTool as any).mockReturnValue('text');
 
@@ -110,16 +108,12 @@ describe('DrawingSidebar', () => {
 
     expect(strokeSection).toBeTruthy();
     expect(textControls).toBeTruthy();
-    expect(strokeSection.style.display).toBe('none');
-    expect(textControls.style.display).toBe('block');
+    expect(strokeSection.style.display).not.toBe('none');
+    expect(textControls.style.display).not.toBe('none');
   });
 
-  it('should toggle sections when switching tools', () => {
-    const sidebar = new DrawingSidebar(container, { drawingManager, session });
-
-    // Manually trigger tool change logic (simulating click)
-    // We can access private method by casting if needed, or by simulating the event
-    // Simulating DOM event is better
+  it('should keep sections visible when switching tools', () => {
+    new DrawingSidebar(container, { drawingManager, session });
 
     const toolButtons = container.querySelectorAll('input[name="drawing-tool"]');
     const textRadio = Array.from(toolButtons).find(b => b.id === 'tool-text') as HTMLInputElement;
@@ -138,8 +132,8 @@ describe('DrawingSidebar', () => {
 
     expect(strokeSection).toBeTruthy();
     expect(textControls).toBeTruthy();
-    expect(strokeSection.style.display).toBe('none');
-    expect(textControls.style.display).toBe('block');
+    expect(strokeSection.style.display).not.toBe('none');
+    expect(textControls.style.display).not.toBe('none');
 
     // Reset spy
     (drawingManager.setTool as any).mockClear();
@@ -149,7 +143,7 @@ describe('DrawingSidebar', () => {
 
     expect(drawingManager.setTool).toHaveBeenCalledWith('move');
 
-    expect(strokeSection.style.display).toBe('block');
-    expect(textControls.style.display).toBe('none');
+    expect(strokeSection.style.display).not.toBe('none');
+    expect(textControls.style.display).not.toBe('none');
   });
 });

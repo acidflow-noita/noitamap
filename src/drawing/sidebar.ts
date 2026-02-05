@@ -289,12 +289,12 @@ export class DrawingSidebar {
     const drawingTools = TOOLS.filter(t => t.id !== 'move');
 
     this.contentArea.innerHTML = `
-      <div class="sidebar-section p-2 border-bottom border-secondary">
-        <label class="form-label text-secondary small mb-1">${i18next.t('drawing.tools.label')}</label>
-        <div class="d-flex flex-wrap gap-1" id="tool-buttons">
+      <div class="sidebar-section mb-3">
+        <label class="form-label text-secondary small mb-1">${i18next.t('drawing.shapes.label')}</label>
+        <div class="d-flex flex-wrap gap-1 mb-2" id="tool-buttons">
           <input type="radio" class="btn-check" name="drawing-tool" id="tool-move" autocomplete="off">
           <label class="btn btn-sm btn-outline-light" for="tool-move" data-tool="move" title="${i18next.t('drawing.tools.move')}">
-            <i class="bi-arrows-move"></i>
+            <i class="bi bi-arrows-move"></i>
           </label>
           ${drawingTools
             .map(
@@ -306,9 +306,22 @@ export class DrawingSidebar {
             )
             .join('')}
         </div>
+
+        <div id="stroke-width-section" class="mt-2">
+          <label class="form-label text-secondary small mb-1">${i18next.t('drawing.stroke.label')}</label>
+          <div class="btn-group btn-group-sm w-100" role="group" id="stroke-buttons">
+            ${STROKE_WIDTHS.map((width, index) => {
+              const labelKeys = ['thin', 'normal', 'thick', 'heavy'];
+              const label = i18next.t(`drawing.stroke.${labelKeys[index]}`);
+              return `<input type="radio" class="btn-check" name="stroke-width" id="stroke-${width}" autocomplete="off" ${index === 1 ? 'checked' : ''}>
+              <label class="btn btn-outline-light" for="stroke-${width}">${label}</label>`;
+            }).join('')}
+          </div>
+        </div>
       </div>
 
-      <div class="sidebar-section p-2 border-bottom border-secondary bg-dark bg-opacity-25">
+      <div class="sidebar-section mb-3 bg-dark bg-opacity-25 rounded">
+        <label class="form-label text-secondary small mb-1">${i18next.t('drawing.text.label')}</label>
         <div class="d-flex align-items-center gap-2 mb-2">
           <input type="radio" class="btn-check" name="drawing-tool" id="tool-text" autocomplete="off">
           <label class="btn btn-sm btn-outline-light" for="tool-text" data-tool="text" title="${i18next.t('drawing.tools.text')}">
@@ -316,9 +329,9 @@ export class DrawingSidebar {
           </label>
         </div>
 
-        <div id="text-controls" style="display: none;">
+        <div id="text-controls">
           <label class="form-label text-secondary small mb-1">${i18next.t('drawing.fontSize.label')}</label>
-          <div class="btn-group btn-group-sm w-100 mb-2" role="group" id="font-size-buttons">
+          <div class="btn-group btn-group-sm w-100" role="group" id="font-size-buttons">
             ${FONT_SIZES.map((size, index) => {
               const labelKeys = ['small', 'medium', 'large', 'huge'];
               const label = i18next.t(`drawing.fontSize.${labelKeys[index]}`);
@@ -329,9 +342,10 @@ export class DrawingSidebar {
         </div>
       </div>
 
-      <div class="sidebar-section p-2 border-bottom border-secondary" id="color-section">
+      <div class="sidebar-section mb-3" id="color-section">
         <label class="form-label text-secondary small mb-1">${i18next.t('drawing.color.label')}</label>
-        <div class="d-flex flex-wrap gap-1">
+        <div class="d-flex flex-wrap align-items-center gap-1">
+          <input type="color" class="form-control form-control-color form-control-sm border-0 bg-transparent p-0 me-1" id="custom-color-picker" value="#ffffff" title="${i18next.t('drawing.color.choose')}">
           ${COLOR_PRESETS.map(
             color => `
             <button type="button" class="btn btn-sm p-0 border rounded" data-color="${color.color}" style="background-color: ${color.color}; width: 24px; height: 24px;" title="${i18next.t(color.nameKey)}"></button>
@@ -340,19 +354,7 @@ export class DrawingSidebar {
         </div>
       </div>
 
-      <div class="sidebar-section p-2 border-bottom border-secondary" id="stroke-width-section">
-        <label class="form-label text-secondary small mb-1">${i18next.t('drawing.stroke.label')}</label>
-        <div class="btn-group btn-group-sm w-100" role="group" id="stroke-buttons">
-          ${STROKE_WIDTHS.map((width, index) => {
-            const labelKeys = ['thin', 'normal', 'thick', 'heavy'];
-            const label = i18next.t(`drawing.stroke.${labelKeys[index]}`);
-            return `<input type="radio" class="btn-check" name="stroke-width" id="stroke-${width}" autocomplete="off" ${index === 1 ? 'checked' : ''}>
-            <label class="btn btn-outline-light" for="stroke-${width}">${label}</label>`;
-          }).join('')}
-        </div>
-      </div>
-
-      <div class="sidebar-section p-2 border-bottom border-secondary">
+      <div class="sidebar-section mb-3">
         <div class="d-flex flex-wrap gap-1">
           <button class="btn btn-sm btn-outline-light flex-fill" id="undo-btn" title="${i18next.t('drawing.actions.undoTitle')}" disabled>
             <i class="bi bi-arrow-counterclockwise"></i> ${i18next.t('drawing.actions.undo')}
@@ -366,7 +368,7 @@ export class DrawingSidebar {
         </div>
       </div>
 
-      <div class="sidebar-section p-2 border-bottom border-secondary">
+      <div class="sidebar-section mb-3">
         <div class="d-flex flex-wrap gap-1">
           <button class="btn btn-sm btn-outline-light flex-fill" id="toggle-visibility" title="${i18next.t('drawing.actions.showHideTitle')}">
             <i class="bi bi-eye"></i> ${i18next.t('drawing.actions.showHide')}
@@ -395,7 +397,7 @@ export class DrawingSidebar {
         </div>
       </div>
 
-      <div class="sidebar-section p-2 flex-grow-1 overflow-auto">
+      <div class="sidebar-section flex-grow-1 overflow-auto">
         <label class="form-label text-secondary small mb-1">${i18next.t('drawing.savedDrawings.label')}</label>
         <div class="drawings-list" id="drawings-list">
           <div class="text-secondary small text-center py-3">${i18next.t('drawing.savedDrawings.empty')}</div>
@@ -509,20 +511,6 @@ export class DrawingSidebar {
     console.log('[Sidebar] updateToolUI called with:', toolId);
     const radio = this.contentArea.querySelector(`#tool-${toolId}`) as HTMLInputElement;
     if (radio) radio.checked = true;
-
-    // Toggle stroke/font UI based on tool
-    const strokeSection = this.contentArea.querySelector('#stroke-width-section') as HTMLElement;
-    const textControls = this.contentArea.querySelector('#text-controls') as HTMLElement;
-
-    if (strokeSection && textControls) {
-      if (toolId === 'text') {
-        strokeSection.style.display = 'none';
-        textControls.style.display = 'block';
-      } else {
-        strokeSection.style.display = 'block';
-        textControls.style.display = 'none';
-      }
-    }
   }
 
   private bindSubscriberEvents(): void {
@@ -559,8 +547,19 @@ export class DrawingSidebar {
         if (color) {
           this.drawingManager.setColor(color);
           this.updateActiveColorSwatch(color);
+          // Update custom picker too
+          const customPicker = this.contentArea.querySelector('#custom-color-picker') as HTMLInputElement;
+          if (customPicker) customPicker.value = color;
         }
       });
+    });
+
+    // Custom color picker
+    const customColorPicker = this.contentArea.querySelector('#custom-color-picker') as HTMLInputElement;
+    customColorPicker?.addEventListener('input', (e) => {
+      const color = (e.target as HTMLInputElement).value;
+      this.drawingManager.setColor(color);
+      this.updateActiveColorSwatch(color);
     });
 
     // Initialize active swatch
