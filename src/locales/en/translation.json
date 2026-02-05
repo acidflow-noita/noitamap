@@ -8,7 +8,15 @@
   "spell_shops_wands_in_mines": "Spell shops; wands in Mines",
   "spell_shops_and_wands": "Spell shops and wands",
   "share": {
-    "copied": "Copied to clipboard!"
+    "copied": "Copied to clipboard!",
+    "uploading": "Uploading drawing...",
+    "screenshotFailed": "Failed to capture screenshot",
+    "uploadFailed": "Upload failed. Image was saved to your PC.",
+    "copiedWithDrawing": "Link with drawing copied! Image saved to your PC.",
+    "downloading": "Downloading shared drawing...",
+    "downloadingCloud": "Downloading drawing from cloud...",
+    "drawingNotFound": "The shared drawing could not be found. It may have been deleted from the host. Ask the person who shared the link to send you the source image file, then use the Import button in the drawing panel.",
+    "drawingNotFoundTitle": "Drawing Not Found"
   },
   "overlay": {
     "notAvailable": {
@@ -807,10 +815,12 @@
       "importWebp": "Import",
       "importWebpTitle": "Import drawing from WebP screenshot",
       "exportJson": "Export JSON",
-      "exportJsonTitle": "Export shapes as JSON"
+      "exportJsonTitle": "Export shapes as JSON",
+      "openSource": "Open source on Catbox"
     },
     "import": {
-      "noData": "No drawing data found in this WebP file"
+      "noData": "No drawing data found in this WebP file",
+      "viewOnly": "You can view shared drawings:"
     },
     "savedDrawings": {
       "label": "Saved Drawings",
@@ -819,7 +829,8 @@
       "deleteTitle": "Delete drawing",
       "deleteConfirm": "Delete this drawing?",
       "defaultName": "Drawing",
-      "sharedName": "Shared Drawing"
+      "sharedName": "Shared Drawing",
+      "importedTitle": "Imported drawing"
     },
     "auth": {
       "subscriberOnly": "Drawing is available to Wuote's Twitch subscribers",

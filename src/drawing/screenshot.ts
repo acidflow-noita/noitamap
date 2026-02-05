@@ -132,7 +132,6 @@ export async function extractDrawingData(
     }
 
     if (drawingResult) {
-      console.log('[Screenshot] Extracted', drawingResult.shapes.length, 'shapes from WebP, map:', mapName);
       return { ...drawingResult, mapName };
     }
 
@@ -159,7 +158,6 @@ export async function captureScreenshot(
   try {
     // Find all canvases in the OSD element
     const allCanvases = osdElement.querySelectorAll('canvas');
-    console.log('[Screenshot] Found', allCanvases.length, 'canvases in OSD element');
 
     // The first canvas is typically the OSD map canvas
     const osdCanvas = allCanvases[0] as HTMLCanvasElement;
@@ -167,8 +165,6 @@ export async function captureScreenshot(
       console.error('[Screenshot] OSD canvas not found');
       return null;
     }
-
-    console.log('[Screenshot] OSD canvas:', osdCanvas.width, 'x', osdCanvas.height);
 
     // Create composite canvas
     const width = osdCanvas.width;
@@ -184,29 +180,22 @@ export async function captureScreenshot(
 
     // Draw the map canvas
     ctx.drawImage(osdCanvas, 0, 0);
-    console.log('[Screenshot] Drew OSD canvas');
 
     // Try to render shapes if we have shape data and viewport info
     if (shapes && shapes.length > 0 && viewportInfo) {
-      console.log('[Screenshot] Rendering', shapes.length, 'shapes from data');
       renderShapesToCanvas(ctx, shapes, viewportInfo, width, height, strokeWidth ?? 5);
     } else if (doodleCanvas) {
       // Fallback to trying to capture the doodle canvas directly
       const doodleWidth = doodleCanvas.width;
       const doodleHeight = doodleCanvas.height;
 
-      console.log('[Screenshot] Doodle canvas:', doodleWidth, 'x', doodleHeight);
-
       if (doodleWidth > 0 && doodleHeight > 0) {
         try {
           ctx.drawImage(doodleCanvas, 0, 0, doodleWidth, doodleHeight, 0, 0, width, height);
-          console.log('[Screenshot] Drew doodle canvas');
         } catch (e) {
           console.error('[Screenshot] Failed to draw doodle canvas:', e);
         }
       }
-    } else {
-      console.log('[Screenshot] No shapes or doodle canvas to render');
     }
 
     // Crop to visible map bounds if available
@@ -230,7 +219,6 @@ export async function captureScreenshot(
         if (cropCtx) {
           cropCtx.drawImage(composite, cropLeft, cropTop, cropW, cropH, 0, 0, cropW, cropH);
           finalCanvas = cropped;
-          console.log('[Screenshot] Cropped to map bounds:', cropW, 'x', cropH);
         }
       }
     }
@@ -252,7 +240,6 @@ export async function captureScreenshot(
     const finalBlob =
       shapes && shapes.length > 0 ? await injectDrawingData(blob, shapes, strokeWidth ?? 5, mapName) : blob;
 
-    console.log('[Screenshot] Captured', finalBlob.size, 'bytes');
     return finalBlob;
   } catch (error) {
     console.error('[Screenshot] Failed:', error);

@@ -218,14 +218,14 @@ export class DrawingSidebar {
         </button>
       </div>
       <div class="sidebar-section p-2 border-top border-secondary">
-        <p class="text-secondary small mb-2">${i18next.t('drawing.import.viewOnly', 'You can view shared drawings:')}</p>
-        <button class="btn btn-sm btn-outline-light w-100" id="import-webp-btn-unauth" title="${i18next.t('drawing.actions.importWebpTitle')}">
+        <p class="text-secondary small mb-2">${i18next.t('drawing.import.viewOnly')}</p>
+        <button class="btn btn-sm btn-outline-light w-100 mb-2" id="import-webp-btn-unauth" title="${i18next.t('drawing.actions.importWebpTitle')}">
           <i class="bi bi-upload me-2"></i>${i18next.t('drawing.actions.importWebp')}
         </button>
         <input type="file" id="import-webp-input-unauth" accept="image/webp" style="display: none;">
-        <div id="catbox-source-container" class="mt-2" style="display: none;">
+        <div id="catbox-source-container" style="display: none;">
           <a id="catbox-source-link" href="#" target="_blank" class="btn btn-sm btn-outline-info w-100">
-            <i class="bi bi-cloud me-2"></i>${i18next.t('drawing.actions.openSource', 'Open source on Catbox')}
+            <i class="bi bi-cloud me-2"></i>${i18next.t('drawing.actions.openSource')}
           </a>
         </div>
       </div>
@@ -260,14 +260,14 @@ export class DrawingSidebar {
         </button>
       </div>
       <div class="sidebar-section p-2 border-top border-secondary">
-        <p class="text-secondary small mb-2">${i18next.t('drawing.import.viewOnly', 'You can view shared drawings:')}</p>
-        <button class="btn btn-sm btn-outline-light w-100" id="import-webp-btn-nonsub" title="${i18next.t('drawing.actions.importWebpTitle')}">
+        <p class="text-secondary small mb-2">${i18next.t('drawing.import.viewOnly')}</p>
+        <button class="btn btn-sm btn-outline-light w-100 mb-2" id="import-webp-btn-nonsub" title="${i18next.t('drawing.actions.importWebpTitle')}">
           <i class="bi bi-upload me-2"></i>${i18next.t('drawing.actions.importWebp')}
         </button>
         <input type="file" id="import-webp-input-nonsub" accept="image/webp" style="display: none;">
-        <div id="catbox-source-container" class="mt-2" style="display: none;">
+        <div id="catbox-source-container" style="display: none;">
           <a id="catbox-source-link" href="#" target="_blank" class="btn btn-sm btn-outline-info w-100">
-            <i class="bi bi-cloud me-2"></i>${i18next.t('drawing.actions.openSource', 'Open source on Catbox')}
+            <i class="bi bi-cloud me-2"></i>${i18next.t('drawing.actions.openSource')}
           </a>
         </div>
       </div>
@@ -290,7 +290,7 @@ export class DrawingSidebar {
     const drawingTools = TOOLS.filter(t => t.id !== 'move');
 
     this.contentArea.innerHTML = `
-      <div class="sidebar-section mb-3">
+      <div class="sidebar-section mb-2">
         <label class="form-label text-secondary small mb-1">${i18next.t('drawing.shapes.label')}</label>
         <div class="d-flex flex-wrap gap-1 mb-2" id="tool-buttons">
           <input type="radio" class="btn-check" name="drawing-tool" id="tool-move" autocomplete="off">
@@ -321,7 +321,7 @@ export class DrawingSidebar {
         </div>
       </div>
 
-      <div class="sidebar-section mb-3 bg-dark bg-opacity-25 rounded">
+      <div class="sidebar-section mb-2 bg-dark bg-opacity-25 rounded">
         <label class="form-label text-secondary small mb-1">${i18next.t('drawing.text.label')}</label>
         <div class="d-flex align-items-center gap-2 mb-2">
           <input type="radio" class="btn-check" name="drawing-tool" id="tool-text" autocomplete="off">
@@ -343,10 +343,10 @@ export class DrawingSidebar {
         </div>
       </div>
 
-      <div class="sidebar-section mb-3" id="color-section">
+      <div class="sidebar-section mb-2" id="color-section">
         <label class="form-label text-secondary small mb-1">${i18next.t('drawing.color.label')}</label>
         <div class="d-flex flex-wrap align-items-center gap-1">
-          <input type="color" class="form-control form-control-color form-control-sm border-0 bg-transparent p-0 me-1" id="custom-color-picker" value="#ffffff" title="${i18next.t('drawing.color.choose')}">
+          <input type="color" id="custom-color-picker" value="#ffffff" title="${i18next.t('drawing.color.choose')}">
           ${COLOR_PRESETS.map(
             color => `
             <button type="button" class="btn btn-sm p-0 border rounded" data-color="${color.color}" style="background-color: ${color.color}; width: 24px; height: 24px;" title="${i18next.t(color.nameKey)}"></button>
@@ -355,7 +355,7 @@ export class DrawingSidebar {
         </div>
       </div>
 
-      <div class="sidebar-section mb-3">
+      <div class="sidebar-section mb-2">
         <div class="d-flex flex-wrap gap-1">
           <button class="btn btn-sm btn-outline-light flex-fill" id="undo-btn" title="${i18next.t('drawing.actions.undoTitle')}" disabled>
             <i class="bi bi-arrow-counterclockwise"></i> ${i18next.t('drawing.actions.undo')}
@@ -369,7 +369,7 @@ export class DrawingSidebar {
         </div>
       </div>
 
-      <div class="sidebar-section mb-3">
+      <div class="sidebar-section mb-2">
         <div class="d-flex flex-wrap gap-1">
           <button class="btn btn-sm btn-outline-light flex-fill" id="toggle-visibility" title="${i18next.t('drawing.actions.showHideTitle')}">
             <i class="bi bi-eye"></i> ${i18next.t('drawing.actions.showHide')}
@@ -393,12 +393,12 @@ export class DrawingSidebar {
         </div>
         <div id="catbox-source-container" class="mt-2" style="display: none;">
           <a id="catbox-source-link" href="#" target="_blank" class="btn btn-sm btn-outline-info w-100">
-            <i class="bi bi-cloud me-2"></i>${i18next.t('drawing.actions.openSource', 'Open source on Catbox')}
+            <i class="bi bi-cloud me-2"></i>${i18next.t('drawing.actions.openSource')}
           </a>
         </div>
       </div>
 
-      <div class="sidebar-section flex-grow-1 overflow-auto">
+      <div class="sidebar-section flex-grow-1 d-flex flex-column">
         <label class="form-label text-secondary small mb-1">${i18next.t('drawing.savedDrawings.label')}</label>
         <div class="drawings-list" id="drawings-list">
           <div class="text-secondary small text-center py-3">${i18next.t('drawing.savedDrawings.empty')}</div>
@@ -856,7 +856,7 @@ export class DrawingSidebar {
         <div class="list-group-item list-group-item-action d-flex align-items-center gap-2 bg-transparent text-light border-secondary ${isActive ? 'active' : ''}" data-id="${drawing.id}" data-map="${drawing.map_name}" role="button">
           <div class="flex-grow-1 min-width-0">
             <div class="small text-truncate">
-              ${isImport ? '<i class="bi bi-download me-1 text-info" title="Imported drawing"></i>' : ''}
+              ${isImport ? `<i class="bi bi-download me-1 text-info" title="${i18next.t('drawing.savedDrawings.importedTitle')}"></i>` : ''}
               ${this.escapeHtml(displayName)}
             </div>
             <div class="small text-secondary">
@@ -1035,6 +1035,7 @@ export class DrawingSidebar {
     if (container && link) {
       if (this.catboxSourceUrl) {
         link.href = this.catboxSourceUrl;
+        link.innerHTML = `<i class="bi bi-cloud me-2"></i>${i18next.t('drawing.actions.openSource')}`;
         container.style.display = 'block';
       } else {
         container.style.display = 'none';

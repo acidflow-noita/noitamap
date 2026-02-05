@@ -330,11 +330,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (urlState.drawing && drawingManager && isCatboxRef(urlState.drawing)) {
       const fileId = extractCatboxFileId(urlState.drawing);
       if (fileId) {
-        console.log('[Main] Loading drawing from catbox:', fileId);
         // Show loading indicator while fetching
         const loadingToastEl = document.getElementById('catboxLoadingToast');
         let loadingToast: bootstrap.Toast | null = null;
         if (loadingToastEl) {
+          const body = loadingToastEl.querySelector('.toast-body span');
+          if (body) body.textContent = i18next.t('share.downloadingCloud');
           loadingToast = new bootstrap.Toast(loadingToastEl, { autohide: false });
           loadingToast.show();
         }
@@ -351,7 +352,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (result.mapName) {
               const validMapName = asMapName(result.mapName);
               if (validMapName && validMapName !== app.getMap()) {
-                console.log('[Main] Switching to map:', validMapName);
                 await app.setMap(validMapName);
                 drawingSession.setMap(validMapName);
               }
@@ -364,13 +364,14 @@ document.addEventListener('DOMContentLoaded', async () => {
               drawingManager.setStrokeWidth(result.strokeWidth);
               drawingSidebar?.setStrokeWidth(result.strokeWidth);
             }
-            console.log('[Main] Loaded', result.shapes.length, 'shapes from catbox, map:', result.mapName);
 
             // Auto-download the WebP as a backup for the user
             const mapName = result.mapName ?? app.getMap();
             const downloadToastEl = document.getElementById('downloadToast');
             let downloadToast: bootstrap.Toast | null = null;
             if (downloadToastEl) {
+              const body = downloadToastEl.querySelector('.toast-body');
+              if (body) body.innerHTML = `<i class="bi bi-download me-2"></i>${i18next.t('share.downloading')}`;
               downloadToast = new bootstrap.Toast(downloadToastEl, { autohide: false });
               downloadToast.show();
             }
@@ -385,8 +386,6 @@ document.addEventListener('DOMContentLoaded', async () => {
               drawingSidebar.setCatboxSource(fileId);
               updateURLWithSidebar(true);
             }
-          } else {
-            console.warn('[Main] No drawing data found in catbox file');
           }
         } else {
           // File not found on catbox - show error toast
@@ -633,7 +632,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const toastElement = assertElementById('shareToast', HTMLElement);
       const toastBody = toastElement.querySelector('.toast-body');
       if (toastBody) {
-        toastBody.innerHTML = `<i class="bi bi-hourglass-split me-2"></i>${i18next.t('share.uploading', 'Uploading drawing...')}`;
+        toastBody.innerHTML = `<i class="bi bi-hourglass-split me-2"></i>${i18next.t('share.uploading')}`;
       }
       const uploadingToast = new bootstrap.Toast(toastElement, { autohide: false });
       uploadingToast.show();
@@ -668,7 +667,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!blob) {
           uploadingToast.hide();
           if (toastBody) {
-            toastBody.innerHTML = `<i class="bi bi-x-circle me-2"></i>${i18next.t('share.screenshotFailed', 'Failed to capture screenshot')}`;
+            toastBody.innerHTML = `<i class="bi bi-x-circle me-2"></i>${i18next.t('share.screenshotFailed')}`;
           }
           const errorToast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
           errorToast.show();
@@ -684,7 +683,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (!fileId) {
           if (toastBody) {
-            toastBody.innerHTML = `<i class="bi bi-x-circle me-2"></i>${i18next.t('share.uploadFailed', 'Upload failed. Image was saved to your PC.')}`;
+            toastBody.innerHTML = `<i class="bi bi-x-circle me-2"></i>${i18next.t('share.uploadFailed')}`;
           }
           const errorToast = new bootstrap.Toast(toastElement, { autohide: true, delay: 4000 });
           errorToast.show();
@@ -719,7 +718,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           .writeText(finalUrl)
           .then(() => {
             if (toastBody) {
-              toastBody.innerHTML = `<i class="bi bi-check-circle me-2"></i>${i18next.t('share.copiedWithDrawing', 'Link with drawing copied! Image saved to your PC.')}`;
+              toastBody.innerHTML = `<i class="bi bi-check-circle me-2"></i>${i18next.t('share.copiedWithDrawing')}`;
             }
             const successToast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
             successToast.show();
@@ -731,7 +730,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('[Share] Error during upload:', error);
         uploadingToast.hide();
         if (toastBody) {
-          toastBody.innerHTML = `<i class="bi bi-x-circle me-2"></i>${i18next.t('share.uploadFailed', 'Upload failed. Image was saved to your PC.')}`;
+          toastBody.innerHTML = `<i class="bi bi-x-circle me-2"></i>${i18next.t('share.uploadFailed')}`;
         }
         const errorToast = new bootstrap.Toast(toastElement, { autohide: true, delay: 4000 });
         errorToast.show();

@@ -48,9 +48,6 @@ export async function uploadToCatbox(blob: Blob): Promise<string | null> {
     const fullUrl = await response.text();
     const trimmed = fullUrl.trim();
 
-    // Log the response for debugging
-    console.log('[Catbox] Response received:', trimmed.substring(0, 200));
-
     // Extract file ID from URL - handle both .webp and other extensions
     const match = trimmed.match(/files\.catbox\.moe\/([a-zA-Z0-9]+)\.\w+/);
     if (!match) {
@@ -63,7 +60,6 @@ export async function uploadToCatbox(blob: Blob): Promise<string | null> {
     }
 
     const fileId = match[1];
-    console.log('[Catbox] Upload success, file ID:', fileId);
     return fileId;
   } catch (error) {
     console.error('[Catbox] Upload error:', error);
@@ -90,7 +86,6 @@ export async function fetchFromCatbox(fileId: string): Promise<Blob | null> {
     }
 
     const blob = await response.blob();
-    console.log('[Catbox] Fetched', blob.size, 'bytes for file ID:', fileId);
     return blob;
   } catch (error) {
     console.error('[Catbox] Fetch error:', error);
