@@ -23,6 +23,14 @@
   transform: translateX(0);
 }
 
+#sidebar-content {
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Sidebar section structure */
 .drawing-sidebar .sidebar-section {
   padding: 0.5rem;
@@ -75,8 +83,6 @@
 }
 
 .drawing-sidebar .sidebar-section:last-child {
-  overflow-y: auto;
-  overflow-x: hidden;
   min-height: 0;
   flex-grow: 1;
 }

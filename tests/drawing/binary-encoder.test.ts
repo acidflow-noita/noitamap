@@ -135,4 +135,33 @@ describe('Binary Encoder', () => {
     const decoded = decodeShapesBinary(encoded!);
     expect(decoded?.shapes[0].pos).toEqual([1234, 5678]);
   });
+
+  it('should support custom RGB colors (V4)', () => {
+    const customColor = '#123456';
+    const shapes: Shape[] = [
+      {
+        id: 'c1',
+        type: 'rect',
+        pos: [100, 200, 300, 400],
+        color: customColor,
+        filled: true,
+      },
+      {
+        id: 'c2',
+        type: 'path',
+        pos: [10, 20, 30, 40],
+        color: '#ff00ff', // Also a custom color (Violet is #8b5cf6 in palette)
+      },
+    ];
+
+    const encoded = encodeShapesBinary(shapes, 'custom_color_map');
+    expect(encoded).not.toBeNull();
+    expect(encoded![0]).toBe(4); // Version 4
+
+    const decoded = decodeShapesBinary(encoded!);
+    expect(decoded).not.toBeNull();
+    expect(decoded?.shapes[0].color).toBe(customColor);
+    expect(decoded?.shapes[0].filled).toBe(true);
+    expect(decoded?.shapes[1].color).toBe('#ff00ff');
+  });
 });

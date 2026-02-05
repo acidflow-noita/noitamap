@@ -121,6 +121,7 @@ export class DrawingSidebar {
 
     this.createSidebar();
     this.bindCloseEvent();
+    this.loadSettings();
     this.renderContent();
 
     // Subscribe to auth state changes
@@ -451,6 +452,35 @@ export class DrawingSidebar {
     this.updateCatboxSourceUI();
   }
 
+  private saveSettings(): void {
+    const settings = {
+      color: this.drawingManager.getColor(),
+      strokeWidth: this.drawingManager.getStrokeWidth(),
+      fontSize: this.drawingManager.getFontSize(),
+    };
+    localStorage.setItem('noitamap-drawing-settings', JSON.stringify(settings));
+  }
+
+  private loadSettings(): void {
+    const stored = localStorage.getItem('noitamap-drawing-settings');
+    if (stored) {
+      try {
+        const settings = JSON.parse(stored);
+        if (settings.color) {
+          this.drawingManager.setColor(settings.color);
+        }
+        if (settings.strokeWidth) {
+          this.drawingManager.setStrokeWidth(settings.strokeWidth);
+        }
+        if (settings.fontSize) {
+          this.drawingManager.setFontSize(settings.fontSize);
+        }
+      } catch (e) {
+        console.warn('[Sidebar] Failed to load drawing settings', e);
+      }
+    }
+  }
+
   private bindHotkeys(): void {
     let spaceHeld = false;
 
@@ -550,26 +580,32 @@ export class DrawingSidebar {
           // Update custom picker too
           const customPicker = this.contentArea.querySelector('#custom-color-picker') as HTMLInputElement;
           if (customPicker) customPicker.value = color;
+          this.saveSettings();
         }
       });
     });
 
     // Custom color picker
     const customColorPicker = this.contentArea.querySelector('#custom-color-picker') as HTMLInputElement;
+    if (customColorPicker) {
+      customColorPicker.value = this.drawingManager.getColor();
+    }
     customColorPicker?.addEventListener('input', (e) => {
       const color = (e.target as HTMLInputElement).value;
       this.drawingManager.setColor(color);
       this.updateActiveColorSwatch(color);
+      this.saveSettings();
     });
 
     // Initialize active swatch
-    this.updateActiveColorSwatch('#ffffff');
+    this.updateActiveColorSwatch(this.drawingManager.getColor());
 
     // Stroke width buttons
     this.contentArea.querySelectorAll('input[name="stroke-width"]').forEach(input => {
       input.addEventListener('change', () => {
         const width = parseInt((input as HTMLInputElement).id.replace('stroke-', ''), 10);
         this.drawingManager.setStrokeWidth(width);
+        this.saveSettings();
       });
     });
 
@@ -578,6 +614,7 @@ export class DrawingSidebar {
       input.addEventListener('change', () => {
         const size = parseInt((input as HTMLInputElement).id.replace('font-', ''), 10);
         this.drawingManager.setFontSize(size);
+        this.saveSettings();
       });
     });
 
@@ -936,6 +973,8 @@ export class DrawingSidebar {
   setColor(color: string): void {
     // this.colorPicker.value = color; // Removed
     this.updateActiveColorSwatch(color);
+    const customPicker = this.contentArea.querySelector('#custom-color-picker') as HTMLInputElement;
+    if (customPicker) customPicker.value = color;
   }
 
   /**
