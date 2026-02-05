@@ -766,7 +766,8 @@
       "rectangleFilled": "塗りつぶされた長方形",
       "circleFilled": "塗りつぶされた円",
       "ellipseFilled": "塗りつぶされた楕円",
-      "polygonFilled": "塗りつぶされた多角形"
+      "polygonFilled": "塗りつぶされた多角形",
+      "text": "Text"
     },
     "color": {
       "label": "色",
@@ -781,7 +782,11 @@
       "violet": "紫"
     },
     "stroke": {
-      "label": "線の太さ（すべての図形に一括適用）"
+      "label": "線の太さ（すべての図形に一括適用）",
+      "thin": "Thin",
+      "normal": "Normal",
+      "thick": "Thick",
+      "heavy": "Heavy"
     },
     "actions": {
       "undo": "元に戻す",
@@ -832,6 +837,13 @@
     "toggle": {
       "title": "描画モード",
       "content": "マップに注釈を付ける描画ツールを切り替え"
+    },
+    "fontSize": {
+      "label": "Font Size",
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "huge": "Huge"
     }
   }
 }

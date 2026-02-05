@@ -766,7 +766,8 @@
       "rectangleFilled": "Fylld rektangel",
       "circleFilled": "Fylld cirkel",
       "ellipseFilled": "Fylld ellips",
-      "polygonFilled": "Fylld polygon"
+      "polygonFilled": "Fylld polygon",
+      "text": "Text"
     },
     "color": {
       "label": "Färg",
@@ -781,7 +782,11 @@
       "violet": "Violett"
     },
     "stroke": {
-      "label": "Linjetjocklek (gäller alla former)"
+      "label": "Linjetjocklek (gäller alla former)",
+      "thin": "Thin",
+      "normal": "Normal",
+      "thick": "Thick",
+      "heavy": "Heavy"
     },
     "actions": {
       "undo": "Ångra",
@@ -832,6 +837,13 @@
     "toggle": {
       "title": "Ritläge",
       "content": "Växla ritverktyg för att kommentera kartan"
+    },
+    "fontSize": {
+      "label": "Font Size",
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "huge": "Huge"
     }
   }
 }

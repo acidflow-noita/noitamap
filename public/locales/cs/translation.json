@@ -766,7 +766,8 @@
       "rectangleFilled": "Vyplněný obdélník",
       "circleFilled": "Vyplněný kruh",
       "ellipseFilled": "Vyplněná elipsa",
-      "polygonFilled": "Vyplněný polygon"
+      "polygonFilled": "Vyplněný polygon",
+      "text": "Text"
     },
     "color": {
       "label": "Barva",
@@ -781,7 +782,11 @@
       "violet": "Fialová"
     },
     "stroke": {
-      "label": "Tloušťka čáry (platí pro všechny tvary)"
+      "label": "Tloušťka čáry (platí pro všechny tvary)",
+      "thin": "Thin",
+      "normal": "Normal",
+      "thick": "Thick",
+      "heavy": "Heavy"
     },
     "actions": {
       "undo": "Zpět",
@@ -832,6 +837,13 @@
     "toggle": {
       "title": "Režim kreslení",
       "content": "Přepnout nástroje kreslení pro anotaci mapy"
+    },
+    "fontSize": {
+      "label": "Font Size",
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "huge": "Huge"
     }
   }
 }

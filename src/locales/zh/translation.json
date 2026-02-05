@@ -766,7 +766,8 @@
       "rectangleFilled": "填充矩形",
       "circleFilled": "填充圆形",
       "ellipseFilled": "填充椭圆",
-      "polygonFilled": "填充多边形"
+      "polygonFilled": "填充多边形",
+      "text": "Text"
     },
     "color": {
       "label": "颜色",
@@ -781,7 +782,11 @@
       "violet": "紫色"
     },
     "stroke": {
-      "label": "线条宽度（同时应用于所有图形）"
+      "label": "线条宽度（同时应用于所有图形）",
+      "thin": "Thin",
+      "normal": "Normal",
+      "thick": "Thick",
+      "heavy": "Heavy"
     },
     "actions": {
       "undo": "撤销",
@@ -832,6 +837,13 @@
     "toggle": {
       "title": "绘图模式",
       "content": "切换绘图工具以标注地图"
+    },
+    "fontSize": {
+      "label": "Font Size",
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "huge": "Huge"
     }
   }
 }

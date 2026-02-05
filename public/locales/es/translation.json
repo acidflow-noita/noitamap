@@ -766,7 +766,8 @@
       "rectangleFilled": "Rectángulo relleno",
       "circleFilled": "Círculo relleno",
       "ellipseFilled": "Elipse rellena",
-      "polygonFilled": "Polígono relleno"
+      "polygonFilled": "Polígono relleno",
+      "text": "Text"
     },
     "color": {
       "label": "Color",
@@ -781,7 +782,11 @@
       "violet": "Violeta"
     },
     "stroke": {
-      "label": "Grosor del trazo (afecta a todas las formas)"
+      "label": "Grosor del trazo (afecta a todas las formas)",
+      "thin": "Thin",
+      "normal": "Normal",
+      "thick": "Thick",
+      "heavy": "Heavy"
     },
     "actions": {
       "undo": "Deshacer",
@@ -832,6 +837,13 @@
     "toggle": {
       "title": "Modo de dibujo",
       "content": "Alternar herramientas de dibujo para anotar el mapa"
+    },
+    "fontSize": {
+      "label": "Font Size",
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "huge": "Huge"
     }
   }
 }

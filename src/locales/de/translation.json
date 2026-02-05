@@ -766,7 +766,8 @@
       "rectangleFilled": "Gefülltes Rechteck",
       "circleFilled": "Gefüllter Kreis",
       "ellipseFilled": "Gefüllte Ellipse",
-      "polygonFilled": "Gefülltes Polygon"
+      "polygonFilled": "Gefülltes Polygon",
+      "text": "Text"
     },
     "color": {
       "label": "Farbe",
@@ -781,7 +782,11 @@
       "violet": "Violett"
     },
     "stroke": {
-      "label": "Strichstärke (gilt für alle Formen gleichzeitig)"
+      "label": "Strichstärke (gilt für alle Formen gleichzeitig)",
+      "thin": "Thin",
+      "normal": "Normal",
+      "thick": "Thick",
+      "heavy": "Heavy"
     },
     "actions": {
       "undo": "Rückgängig",
@@ -832,6 +837,13 @@
     "toggle": {
       "title": "Zeichenmodus",
       "content": "Zeichenwerkzeuge zum Beschriften der Karte umschalten"
+    },
+    "fontSize": {
+      "label": "Font Size",
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "huge": "Huge"
     }
   }
 }

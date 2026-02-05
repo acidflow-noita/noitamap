@@ -766,7 +766,8 @@
       "rectangleFilled": "Gevulde rechthoek",
       "circleFilled": "Gevulde cirkel",
       "ellipseFilled": "Gevulde ellips",
-      "polygonFilled": "Gevulde polygoon"
+      "polygonFilled": "Gevulde polygoon",
+      "text": "Text"
     },
     "color": {
       "label": "Kleur",
@@ -781,7 +782,11 @@
       "violet": "Violet"
     },
     "stroke": {
-      "label": "Lijndikte (geldt voor alle vormen)"
+      "label": "Lijndikte (geldt voor alle vormen)",
+      "thin": "Thin",
+      "normal": "Normal",
+      "thick": "Thick",
+      "heavy": "Heavy"
     },
     "actions": {
       "undo": "Ongedaan maken",
@@ -832,6 +837,13 @@
     "toggle": {
       "title": "Tekenmodus",
       "content": "Tekengereedschap wisselen om de kaart te annoteren"
+    },
+    "fontSize": {
+      "label": "Font Size",
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "huge": "Huge"
     }
   }
 }

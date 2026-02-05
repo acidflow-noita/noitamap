@@ -751,10 +751,18 @@
       "ellipse": "Ellipse",
       "polygon": "Polygon",
       "point": "Point",
+      "text": "Text",
       "rectangleFilled": "Filled Rectangle",
       "circleFilled": "Filled Circle",
       "ellipseFilled": "Filled Ellipse",
       "polygonFilled": "Filled Polygon"
+    },
+    "fontSize": {
+      "label": "Font Size",
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "huge": "Huge"
     },
     "color": {
       "label": "Color",
@@ -769,7 +777,11 @@
       "violet": "Violet"
     },
     "stroke": {
-      "label": "Stroke Width (affects all shapes at once)"
+      "label": "Stroke Width (affects all shapes at once)",
+      "thin": "Thin",
+      "normal": "Normal",
+      "thick": "Thick",
+      "heavy": "Heavy"
     },
     "actions": {
       "undo": "Undo",

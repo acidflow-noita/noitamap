@@ -766,7 +766,8 @@
       "rectangleFilled": "Wypełniony prostokąt",
       "circleFilled": "Wypełnione koło",
       "ellipseFilled": "Wypełniona elipsa",
-      "polygonFilled": "Wypełniony wielokąt"
+      "polygonFilled": "Wypełniony wielokąt",
+      "text": "Text"
     },
     "color": {
       "label": "Kolor",
@@ -781,7 +782,11 @@
       "violet": "Fioletowy"
     },
     "stroke": {
-      "label": "Grubość linii (dotyczy wszystkich kształtów)"
+      "label": "Grubość linii (dotyczy wszystkich kształtów)",
+      "thin": "Thin",
+      "normal": "Normal",
+      "thick": "Thick",
+      "heavy": "Heavy"
     },
     "actions": {
       "undo": "Cofnij",
@@ -832,6 +837,13 @@
     "toggle": {
       "title": "Tryb rysowania",
       "content": "Przełącz narzędzia rysowania do adnotacji na mapie"
+    },
+    "fontSize": {
+      "label": "Font Size",
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "huge": "Huge"
     }
   }
 }

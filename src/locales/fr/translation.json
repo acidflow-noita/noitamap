@@ -766,7 +766,8 @@
       "rectangleFilled": "Rectangle plein",
       "circleFilled": "Cercle plein",
       "ellipseFilled": "Ellipse pleine",
-      "polygonFilled": "Polygone plein"
+      "polygonFilled": "Polygone plein",
+      "text": "Text"
     },
     "color": {
       "label": "Couleur",
@@ -781,7 +782,11 @@
       "violet": "Violet"
     },
     "stroke": {
-      "label": "Épaisseur du trait (s'applique à toutes les formes)"
+      "label": "Épaisseur du trait (s'applique à toutes les formes)",
+      "thin": "Thin",
+      "normal": "Normal",
+      "thick": "Thick",
+      "heavy": "Heavy"
     },
     "actions": {
       "undo": "Annuler",
@@ -832,6 +837,13 @@
     "toggle": {
       "title": "Mode dessin",
       "content": "Basculer les outils de dessin pour annoter la carte"
+    },
+    "fontSize": {
+      "label": "Font Size",
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "huge": "Huge"
     }
   }
 }
