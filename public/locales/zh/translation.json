@@ -90,7 +90,7 @@
     },
     "webgl": {
       "title": "WebGL 渲染",
-      "content": "硬件加速 WebGL 渲染。如果您使用基于 Chromium 的浏览器（Chrome、Edge、Brave 等），在快速放大时瓦片会更清晰。"
+      "content": "硬件加速 WebGL 渲染。如果您使用基于 Chromium 的浏览器（Chrome、Edge, Brave 等），在快速放大时瓦片会更清晰。"
     }
   },
   "mod": {
@@ -760,6 +760,12 @@
   "drawing": {
     "title": "绘图工具",
     "close": "关闭侧边栏",
+    "shapes": {
+      "label": "形状"
+    },
+    "text": {
+      "label": "文本"
+    },
     "tools": {
       "label": "工具",
       "move": "移动/选择",
@@ -771,11 +777,18 @@
       "ellipse": "椭圆",
       "polygon": "多边形",
       "point": "点",
+      "text": "文本",
       "rectangleFilled": "填充矩形",
       "circleFilled": "填充圆形",
       "ellipseFilled": "填充椭圆",
-      "polygonFilled": "填充多边形",
-      "text": "文本"
+      "polygonFilled": "填充多边形"
+    },
+    "fontSize": {
+      "label": "字体大小",
+      "small": "小",
+      "medium": "中",
+      "large": "大",
+      "huge": "特大"
     },
     "color": {
       "label": "颜色",
@@ -848,19 +861,6 @@
     "toggle": {
       "title": "绘图模式",
       "content": "切换绘图工具以标注地图"
-    },
-    "fontSize": {
-      "label": "字体大小",
-      "small": "小",
-      "medium": "中",
-      "large": "大",
-      "huge": "特大"
-    },
-    "shapes": {
-      "label": "形状"
-    },
-    "text": {
-      "label": "文本"
     }
   }
 }

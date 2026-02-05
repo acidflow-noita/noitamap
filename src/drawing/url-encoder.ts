@@ -118,7 +118,7 @@ export function decodeShapesFromUrl(encoded: string): { shapes: Shape[]; strokeW
     }
     return null;
   } catch (e) {
-    console.error('Failed to decode drawing from URL:', e);
+    // Silence expected errors from invalid/corrupted URL data
     return null;
   }
 }

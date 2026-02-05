@@ -295,7 +295,6 @@ export function decodeShapesBinary(buffer: Uint8Array): {
   } else if (version === 0 || version === 1) {
     return decodeV1(buffer);
   } else {
-    console.warn('[Binary Decoder] Unsupported version:', version);
     return null;
   }
 }
