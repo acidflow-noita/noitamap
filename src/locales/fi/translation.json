@@ -8,7 +8,15 @@
   "spell_shops_wands_in_mines": "Loitsukaupat; sauvat kaivoksissa",
   "spell_shops_and_wands": "Loitsukaupat ja sauvat",
   "share": {
-    "copied": "Kopioitu leikepöydälle!"
+    "copied": "Kopioitu leikepöydälle!",
+    "uploading": "Ladataan piirrosta...",
+    "screenshotFailed": "Kuvakaappauksen ottaminen epäonnistui",
+    "uploadFailed": "Lataus epäonnistui. Kuva tallennettiin tietokoneellesi.",
+    "copiedWithDrawing": "Linkki piirroksella kopioitu! Kuva tallennettu tietokoneellesi.",
+    "downloading": "Ladataan jaettua piirrosta...",
+    "downloadingCloud": "Ladataan piirrosta pilvestä...",
+    "drawingNotFound": "Jaettua piirrosta ei löytynyt. Se on saatettu poistaa palvelimelta. Pyydä linkin jakajaa lähettämään alkuperäinen kuvatiedosto ja käytä Tuo-painiketta piirtopaneelissa.",
+    "drawingNotFoundTitle": "Piirrosta ei löytynyt"
   },
   "overlay": {
     "notAvailable": {
@@ -806,10 +814,12 @@
       "importWebp": "Tuo",
       "importWebpTitle": "Tuo piirustus WebP-kuvakaappauksesta",
       "exportJson": "Vie JSON",
-      "exportJsonTitle": "Vie muodot JSON-muodossa"
+      "exportJsonTitle": "Vie muodot JSON-muodossa",
+      "openSource": "Avaa lähde Catboxissa"
     },
     "import": {
-      "noData": "Tässä WebP-tiedostossa ei ole piirustusdataa"
+      "noData": "Tässä WebP-tiedostossa ei ole piirustusdataa",
+      "viewOnly": "Voit katsella jaettuja piirroksia:"
     },
     "savedDrawings": {
       "label": "Tallennetut piirrokset",
@@ -818,7 +828,8 @@
       "deleteTitle": "Poista piirros",
       "deleteConfirm": "Poistetaanko tämä piirros?",
       "defaultName": "Piirros",
-      "sharedName": "Jaettu piirros"
+      "sharedName": "Jaettu piirros",
+      "importedTitle": "Tuotu piirros"
     },
     "auth": {
       "subscriberOnly": "Piirtäminen on käytettävissä Wuoten Twitch-tilaajille",

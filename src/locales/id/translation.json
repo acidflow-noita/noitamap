@@ -8,7 +8,15 @@
   "spell_shops_wands_in_mines": "Toko spell; tongkat di Mines",
   "spell_shops_and_wands": "Toko spell dan tongkat",
   "share": {
-    "copied": "Disalin ke clipboard!"
+    "copied": "Disalin ke clipboard!",
+    "uploading": "Mengunggah gambar...",
+    "screenshotFailed": "Gagal mengambil tangkapan layar",
+    "uploadFailed": "Unggahan gagal. Gambar disimpan di PC Anda.",
+    "copiedWithDrawing": "Link dengan gambar disalin! Gambar disimpan di PC Anda.",
+    "downloading": "Mengunduh gambar bersama...",
+    "downloadingCloud": "Mengunduh gambar dari cloud...",
+    "drawingNotFound": "Gambar bersama tidak ditemukan. Mungkin telah dihapus oleh host. Minta orang yang membagikan link untuk mengirim file gambar asli, lalu gunakan tombol Impor di panel gambar.",
+    "drawingNotFoundTitle": "Gambar Tidak Ditemukan"
   },
   "overlay": {
     "notAvailable": {
@@ -806,10 +814,12 @@
       "importWebp": "Impor",
       "importWebpTitle": "Impor gambar dari tangkapan layar WebP",
       "exportJson": "Ekspor JSON",
-      "exportJsonTitle": "Ekspor bentuk sebagai JSON"
+      "exportJsonTitle": "Ekspor bentuk sebagai JSON",
+      "openSource": "Buka sumber di Catbox"
     },
     "import": {
-      "noData": "Tidak ada data gambar yang ditemukan di file WebP ini"
+      "noData": "Tidak ada data gambar yang ditemukan di file WebP ini",
+      "viewOnly": "Anda dapat melihat gambar bersama:"
     },
     "savedDrawings": {
       "label": "Gambar Tersimpan",
@@ -818,7 +828,8 @@
       "deleteTitle": "Hapus gambar",
       "deleteConfirm": "Hapus gambar ini?",
       "defaultName": "Gambar",
-      "sharedName": "Gambar Bersama"
+      "sharedName": "Gambar Bersama",
+      "importedTitle": "Gambar diimpor"
     },
     "auth": {
       "subscriberOnly": "Menggambar tersedia untuk pelanggan Twitch Wuote",

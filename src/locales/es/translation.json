@@ -8,7 +8,15 @@
   "spell_shops_wands_in_mines": "Tiendas de hechizos; varitas en las minas",
   "spell_shops_and_wands": "Tiendas de hechizos y varitas",
   "share": {
-    "copied": "¡Copiado al portapapeles!"
+    "copied": "¡Copiado al portapapeles!",
+    "uploading": "Subiendo dibujo...",
+    "screenshotFailed": "Error al capturar la pantalla",
+    "uploadFailed": "Error al subir. La imagen se guardó en tu PC.",
+    "copiedWithDrawing": "¡Enlace con dibujo copiado! Imagen guardada en tu PC.",
+    "downloading": "Descargando dibujo compartido...",
+    "downloadingCloud": "Descargando dibujo de la nube...",
+    "drawingNotFound": "No se pudo encontrar el dibujo compartido. Puede que haya sido eliminado del servidor. Pide a la persona que compartió el enlace que te envíe el archivo de imagen original y usa el botón Importar en el panel de dibujo.",
+    "drawingNotFoundTitle": "Dibujo no encontrado"
   },
   "overlay": {
     "notAvailable": {
@@ -806,10 +814,12 @@
       "importWebp": "Importar",
       "importWebpTitle": "Importar dibujo de captura de pantalla WebP",
       "exportJson": "Exportar JSON",
-      "exportJsonTitle": "Exportar formas como JSON"
+      "exportJsonTitle": "Exportar formas como JSON",
+      "openSource": "Abrir fuente en Catbox"
     },
     "import": {
-      "noData": "No se encontraron datos de dibujo en este archivo WebP"
+      "noData": "No se encontraron datos de dibujo en este archivo WebP",
+      "viewOnly": "Puedes ver dibujos compartidos:"
     },
     "savedDrawings": {
       "label": "Dibujos guardados",
@@ -818,7 +828,8 @@
       "deleteTitle": "Eliminar dibujo",
       "deleteConfirm": "¿Eliminar este dibujo?",
       "defaultName": "Dibujo",
-      "sharedName": "Dibujo compartido"
+      "sharedName": "Dibujo compartido",
+      "importedTitle": "Dibujo importado"
     },
     "auth": {
       "subscriberOnly": "El dibujo está disponible para los suscriptores de Twitch de Wuote",

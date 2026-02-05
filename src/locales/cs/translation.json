@@ -8,7 +8,15 @@
   "spell_shops_wands_in_mines": "Obchody s kouzly; hůlky v dolech",
   "spell_shops_and_wands": "Obchody s kouzly a hůlky",
   "share": {
-    "copied": "Zkopírováno do schránky!"
+    "copied": "Zkopírováno do schránky!",
+    "uploading": "Nahrávání kresby...",
+    "screenshotFailed": "Nepodařilo se zachytit snímek obrazovky",
+    "uploadFailed": "Nahrávání selhalo. Obrázek byl uložen do vašeho PC.",
+    "copiedWithDrawing": "Odkaz s kresbou zkopírován! Obrázek byl uložen do vašeho PC.",
+    "downloading": "Stahování sdílené kresby...",
+    "downloadingCloud": "Stahování kresby z cloudu...",
+    "drawingNotFound": "Sdílená kresba nebyla nalezena. Mohla být smazána z hostingu. Požádejte osobu, která odkaz sdílela, aby vám poslala původní obrázek, a poté použijte tlačítko Importovat v panelu kreslení.",
+    "drawingNotFoundTitle": "Kresba nenalezena"
   },
   "overlay": {
     "notAvailable": {
@@ -806,10 +814,12 @@
       "importWebp": "Importovat",
       "importWebpTitle": "Importovat kresbu ze snímku obrazovky WebP",
       "exportJson": "Exportovat JSON",
-      "exportJsonTitle": "Exportovat tvary jako JSON"
+      "exportJsonTitle": "Exportovat tvary jako JSON",
+      "openSource": "Otevřít zdroj na Catbox"
     },
     "import": {
-      "noData": "V tomto souboru WebP nebyly nalezeny žádné údaje o kresbě"
+      "noData": "V tomto souboru WebP nebyly nalezeny žádné údaje o kresbě",
+      "viewOnly": "Můžete si prohlédnout sdílené kresby:"
     },
     "savedDrawings": {
       "label": "Uložené kresby",
@@ -818,7 +828,8 @@
       "deleteTitle": "Smazat kresbu",
       "deleteConfirm": "Smazat tuto kresbu?",
       "defaultName": "Kresba",
-      "sharedName": "Sdílená kresba"
+      "sharedName": "Sdílená kresba",
+      "importedTitle": "Importovaná kresba"
     },
     "auth": {
       "subscriberOnly": "Kreslení je dostupné pro odběratele Wuoteho Twitch kanálu",

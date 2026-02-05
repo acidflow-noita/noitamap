@@ -8,7 +8,15 @@
   "spell_shops_wands_in_mines": "Sklepy z zaklęciami; różdżki w Kopalniach",
   "spell_shops_and_wands": "Sklepy z zaklęciami i różdżki",
   "share": {
-    "copied": "Skopiowano do schowka!"
+    "copied": "Skopiowano do schowka!",
+    "uploading": "Przesyłanie rysunku...",
+    "screenshotFailed": "Nie udało się przechwycić ekranu",
+    "uploadFailed": "Przesyłanie nie powiodło się. Obraz został zapisany na Twoim komputerze.",
+    "copiedWithDrawing": "Link z rysunkiem skopiowany! Obraz został zapisany na Twoim komputerze.",
+    "downloading": "Pobieranie udostępnionego rysunku...",
+    "downloadingCloud": "Pobieranie rysunku z chmury...",
+    "drawingNotFound": "Udostępniony rysunek nie został znaleziony. Mógł zostać usunięty przez hosta. Poproś osobę, która udostępniła link, o przesłanie oryginalnego pliku obrazu, a następnie użyj przycisku Importuj w panelu rysowania.",
+    "drawingNotFoundTitle": "Nie znaleziono rysunku"
   },
   "overlay": {
     "notAvailable": {
@@ -806,10 +814,12 @@
       "importWebp": "Importuj",
       "importWebpTitle": "Importuj rysunek ze zrzutu ekranu WebP",
       "exportJson": "Eksportuj JSON",
-      "exportJsonTitle": "Eksportuj kształty jako JSON"
+      "exportJsonTitle": "Eksportuj kształty jako JSON",
+      "openSource": "Otwórz źródło w Catbox"
     },
     "import": {
-      "noData": "Nie znaleziono danych rysunku w tym pliku WebP"
+      "noData": "Nie znaleziono danych rysunku w tym pliku WebP",
+      "viewOnly": "Możesz przeglądać udostępnione rysunki:"
     },
     "savedDrawings": {
       "label": "Zapisane rysunki",
@@ -818,7 +828,8 @@
       "deleteTitle": "Usuń rysunek",
       "deleteConfirm": "Usunąć ten rysunek?",
       "defaultName": "Rysunek",
-      "sharedName": "Udostępniony rysunek"
+      "sharedName": "Udostępniony rysunek",
+      "importedTitle": "Zaimportowany rysunek"
     },
     "auth": {
       "subscriberOnly": "Rysowanie jest dostępne dla subskrybentów kanału Wuote na Twitch",

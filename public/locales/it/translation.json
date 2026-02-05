@@ -8,7 +8,15 @@
   "spell_shops_wands_in_mines": "Negozi di incantesimi; bacchette nelle miniere",
   "spell_shops_and_wands": "Negozi di incantesimi e bacchette",
   "share": {
-    "copied": "Copiato negli appunti!"
+    "copied": "Copiato negli appunti!",
+    "uploading": "Caricamento disegno...",
+    "screenshotFailed": "Impossibile acquisire lo screenshot",
+    "uploadFailed": "Caricamento fallito. L'immagine è stata salvata sul PC.",
+    "copiedWithDrawing": "Link con disegno copiato! Immagine salvata sul PC.",
+    "downloading": "Download del disegno condiviso...",
+    "downloadingCloud": "Download del disegno dal cloud...",
+    "drawingNotFound": "Il disegno condiviso non è stato trovato. Potrebbe essere stato eliminato dall'host. Chiedi alla persona che ha condiviso il link di inviarti il file immagine originale, quindi usa il pulsante Importa nel pannello di disegno.",
+    "drawingNotFoundTitle": "Disegno non trovato"
   },
   "overlay": {
     "notAvailable": {
@@ -806,10 +814,12 @@
       "importWebp": "Importa",
       "importWebpTitle": "Importa disegno da screenshot WebP",
       "exportJson": "Esporta JSON",
-      "exportJsonTitle": "Esporta forme come JSON"
+      "exportJsonTitle": "Esporta forme come JSON",
+      "openSource": "Apri sorgente su Catbox"
     },
     "import": {
-      "noData": "Nessun dato di disegno trovato in questo file WebP"
+      "noData": "Nessun dato di disegno trovato in questo file WebP",
+      "viewOnly": "Puoi visualizzare i disegni condivisi:"
     },
     "savedDrawings": {
       "label": "Disegni salvati",
@@ -818,7 +828,8 @@
       "deleteTitle": "Elimina disegno",
       "deleteConfirm": "Eliminare questo disegno?",
       "defaultName": "Disegno",
-      "sharedName": "Disegno condiviso"
+      "sharedName": "Disegno condiviso",
+      "importedTitle": "Disegno importato"
     },
     "auth": {
       "subscriberOnly": "Il disegno è disponibile per gli abbonati Twitch di Wuote",

@@ -8,7 +8,15 @@
   "spell_shops_wands_in_mines": "Magasins de sorts ; baguettes dans les mines",
   "spell_shops_and_wands": "Magasins de sorts et baguettes",
   "share": {
-    "copied": "Copié dans le presse-papiers !"
+    "copied": "Copié dans le presse-papiers !",
+    "uploading": "Téléchargement du dessin...",
+    "screenshotFailed": "Échec de la capture d'écran",
+    "uploadFailed": "Échec du téléchargement. L'image a été enregistrée sur votre PC.",
+    "copiedWithDrawing": "Lien avec dessin copié ! L'image a été enregistrée sur votre PC.",
+    "downloading": "Téléchargement du dessin partagé...",
+    "downloadingCloud": "Téléchargement du dessin depuis le cloud...",
+    "drawingNotFound": "Le dessin partagé est introuvable. Il a peut-être été supprimé de l'hôte. Demandez à la personne qui a partagé le lien de vous envoyer le fichier image source, puis utilisez le bouton Importer dans le panneau de dessin.",
+    "drawingNotFoundTitle": "Dessin non trouvé"
   },
   "overlay": {
     "notAvailable": {
@@ -806,10 +814,12 @@
       "importWebp": "Importer",
       "importWebpTitle": "Importer un dessin à partir d'une capture d'écran WebP",
       "exportJson": "Exporter JSON",
-      "exportJsonTitle": "Exporter les formes en JSON"
+      "exportJsonTitle": "Exporter les formes en JSON",
+      "openSource": "Ouvrir la source sur Catbox"
     },
     "import": {
-      "noData": "Aucune donnée de dessin trouvée dans ce fichier WebP"
+      "noData": "Aucune donnée de dessin trouvée dans ce fichier WebP",
+      "viewOnly": "Vous pouvez voir les dessins partagés :"
     },
     "savedDrawings": {
       "label": "Dessins enregistrés",
@@ -818,7 +828,8 @@
       "deleteTitle": "Supprimer le dessin",
       "deleteConfirm": "Supprimer ce dessin ?",
       "defaultName": "Dessin",
-      "sharedName": "Dessin partagé"
+      "sharedName": "Dessin partagé",
+      "importedTitle": "Dessin importé"
     },
     "auth": {
       "subscriberOnly": "Le dessin est disponible pour les abonnés Twitch de Wuote",

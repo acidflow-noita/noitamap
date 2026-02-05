@@ -8,7 +8,15 @@
   "spell_shops_wands_in_mines": "Trollformelbutiker; trollstavar i gruvor",
   "spell_shops_and_wands": "Trollformelbutiker och trollstavar",
   "share": {
-    "copied": "Kopierat till urklipp!"
+    "copied": "Kopierat till urklipp!",
+    "uploading": "Laddar upp ritning...",
+    "screenshotFailed": "Misslyckades med att ta skärmdump",
+    "uploadFailed": "Uppladdning misslyckades. Bilden sparades på din dator.",
+    "copiedWithDrawing": "Länk med ritning kopierad! Bilden sparades på din dator.",
+    "downloading": "Laddar ner delad ritning...",
+    "downloadingCloud": "Laddar ner ritning från molnet...",
+    "drawingNotFound": "Den delade ritningen hittades inte. Den kan ha raderats från värden. Be personen som delade länken att skicka den ursprungliga bildfilen och använd sedan knappen Importera i ritpanelen.",
+    "drawingNotFoundTitle": "Ritningen hittades inte"
   },
   "overlay": {
     "notAvailable": {
@@ -806,10 +814,12 @@
       "importWebp": "Importera",
       "importWebpTitle": "Importera ritning från WebP-skärmdump",
       "exportJson": "Exportera JSON",
-      "exportJsonTitle": "Exportera former som JSON"
+      "exportJsonTitle": "Exportera former som JSON",
+      "openSource": "Öppna källkod på Catbox"
     },
     "import": {
-      "noData": "Ingen ritdata hittades i denna WebP-fil"
+      "noData": "Ingen ritdata hittades i denna WebP-fil",
+      "viewOnly": "Du kan visa delade ritningar:"
     },
     "savedDrawings": {
       "label": "Sparade ritningar",
@@ -818,7 +828,8 @@
       "deleteTitle": "Ta bort ritning",
       "deleteConfirm": "Ta bort denna ritning?",
       "defaultName": "Ritning",
-      "sharedName": "Delad ritning"
+      "sharedName": "Delad ritning",
+      "importedTitle": "Importerad ritning"
     },
     "auth": {
       "subscriberOnly": "Ritning är tillgängligt för Wuotes Twitch-prenumeranter",

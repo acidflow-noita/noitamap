@@ -8,7 +8,15 @@
   "spell_shops_wands_in_mines": "呪文の店; 鉱山の杖",
   "spell_shops_and_wands": "呪文の店と杖",
   "share": {
-    "copied": "クリップボードにコピーしました！"
+    "copied": "クリップボードにコピーしました！",
+    "uploading": "描画をアップロード中...",
+    "screenshotFailed": "スクリーンショットのキャプチャに失敗しました",
+    "uploadFailed": "アップロードに失敗しました。画像はPCに保存されました。",
+    "copiedWithDrawing": "描画付きリンクをコピーしました！画像はPCに保存されました。",
+    "downloading": "共有された描画をダウンロード中...",
+    "downloadingCloud": "クラウドから描画をダウンロード中...",
+    "drawingNotFound": "共有された描画が見つかりませんでした。ホストから削除された可能性があります。リンクを共有した人に元の画像ファイルを送ってもらい、描画パネルのインポートボタンを使用してください。",
+    "drawingNotFoundTitle": "描画が見つかりません"
   },
   "overlay": {
     "notAvailable": {
@@ -806,10 +814,12 @@
       "importWebp": "インポート",
       "importWebpTitle": "WebPスクリーンショットから描画をインポート",
       "exportJson": "JSON エクスポート",
-      "exportJsonTitle": "図形をJSONとしてエクスポート"
+      "exportJsonTitle": "図形をJSONとしてエクスポート",
+      "openSource": "Catboxでソースを開く"
     },
     "import": {
-      "noData": "このWebPファイルに描画データが見つかりません"
+      "noData": "このWebPファイルに描画データが見つかりません",
+      "viewOnly": "共有された描画を表示できます："
     },
     "savedDrawings": {
       "label": "保存済みの描画",
@@ -818,7 +828,8 @@
       "deleteTitle": "描画を削除",
       "deleteConfirm": "この描画を削除しますか？",
       "defaultName": "描画",
-      "sharedName": "共有された描画"
+      "sharedName": "共有された描画",
+      "importedTitle": "インポートされた描画"
     },
     "auth": {
       "subscriberOnly": "描画機能はWuoteのTwitchサブスクライバー限定です",

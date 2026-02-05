@@ -8,7 +8,15 @@
   "spell_shops_wands_in_mines": "Spreukenwinkels; toverstokken in mijnen",
   "spell_shops_and_wands": "Spreukenwinkels en toverstokken",
   "share": {
-    "copied": "Gekopieerd naar klembord!"
+    "copied": "Gekopieerd naar klembord!",
+    "uploading": "Tekening uploaden...",
+    "screenshotFailed": "Screenshot maken mislukt",
+    "uploadFailed": "Upload mislukt. Afbeelding is opgeslagen op je PC.",
+    "copiedWithDrawing": "Link met tekening gekopieerd! Afbeelding opgeslagen op je PC.",
+    "downloading": "Gedeelde tekening downloaden...",
+    "downloadingCloud": "Tekening downloaden uit de cloud...",
+    "drawingNotFound": "De gedeelde tekening kon niet worden gevonden. Mogelijk is deze verwijderd van de host. Vraag de persoon die de link deelde om het originele afbeeldingsbestand te sturen, en gebruik dan de knop Importeren in het tekenpaneel.",
+    "drawingNotFoundTitle": "Tekening niet gevonden"
   },
   "overlay": {
     "notAvailable": {
@@ -806,10 +814,12 @@
       "importWebp": "Importeren",
       "importWebpTitle": "Tekening importeren van WebP-screenshot",
       "exportJson": "JSON exporteren",
-      "exportJsonTitle": "Vormen als JSON exporteren"
+      "exportJsonTitle": "Vormen als JSON exporteren",
+      "openSource": "Open bron op Catbox"
     },
     "import": {
-      "noData": "Geen tekengegevens gevonden in dit WebP-bestand"
+      "noData": "Geen tekengegevens gevonden in dit WebP-bestand",
+      "viewOnly": "Je kunt gedeelde tekeningen bekijken:"
     },
     "savedDrawings": {
       "label": "Opgeslagen tekeningen",
@@ -818,7 +828,8 @@
       "deleteTitle": "Tekening verwijderen",
       "deleteConfirm": "Deze tekening verwijderen?",
       "defaultName": "Tekening",
-      "sharedName": "Gedeelde tekening"
+      "sharedName": "Gedeelde tekening",
+      "importedTitle": "Geïmporteerde tekening"
     },
     "auth": {
       "subscriberOnly": "Tekenen is beschikbaar voor Wuote's Twitch-abonnees",

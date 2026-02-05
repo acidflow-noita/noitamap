@@ -8,7 +8,15 @@
   "spell_shops_wands_in_mines": "咒语商店；矿山中的魔杖",
   "spell_shops_and_wands": "咒语商店和魔杖",
   "share": {
-    "copied": "已复制到剪贴板！"
+    "copied": "已复制到剪贴板！",
+    "uploading": "正在上传绘图...",
+    "screenshotFailed": "截图失败",
+    "uploadFailed": "上传失败。图片已保存至您的电脑。",
+    "copiedWithDrawing": "带有绘图的链接已复制！图片已保存至您的电脑。",
+    "downloading": "正在下载分享的绘图...",
+    "downloadingCloud": "正在从云端下载绘图...",
+    "drawingNotFound": "找不到分享的绘图。它可能已从主机删除。请让分享链接的人给您发送原始图片文件，然后使用绘图面板中的“导入”按钮。",
+    "drawingNotFoundTitle": "找不到绘图"
   },
   "overlay": {
     "notAvailable": {
@@ -806,10 +814,12 @@
       "importWebp": "导入",
       "importWebpTitle": "从 WebP 截图导入绘图",
       "exportJson": "导出 JSON",
-      "exportJsonTitle": "将图形导出为 JSON"
+      "exportJsonTitle": "将图形导出为 JSON",
+      "openSource": "在 Catbox 查看源码"
     },
     "import": {
-      "noData": "在此 WebP 文件中未找到绘图数据"
+      "noData": "在此 WebP 文件中未找到绘图数据",
+      "viewOnly": "您可以查看分享的绘图："
     },
     "savedDrawings": {
       "label": "已保存的绘图",
@@ -818,7 +828,8 @@
       "deleteTitle": "删除绘图",
       "deleteConfirm": "确定删除此绘图？",
       "defaultName": "绘图",
-      "sharedName": "共享绘图"
+      "sharedName": "共享绘图",
+      "importedTitle": "已导入的绘图"
     },
     "auth": {
       "subscriberOnly": "绘图功能仅对 Wuote 的 Twitch 订阅者开放",

@@ -8,7 +8,15 @@
   "spell_shops_wands_in_mines": "Zauberläden; Zauberstäbe in Minen",
   "spell_shops_and_wands": "Zauberläden und Zauberstäbe",
   "share": {
-    "copied": "In die Zwischenablage kopiert!"
+    "copied": "In die Zwischenablage kopiert!",
+    "uploading": "Zeichnung wird hochgeladen...",
+    "screenshotFailed": "Screenshot-Aufnahme fehlgeschlagen",
+    "uploadFailed": "Upload fehlgeschlagen. Das Bild wurde auf Ihrem PC gespeichert.",
+    "copiedWithDrawing": "Link mit Zeichnung kopiert! Das Bild wurde auf Ihrem PC gespeichert.",
+    "downloading": "Geteilte Zeichnung wird heruntergeladen...",
+    "downloadingCloud": "Zeichnung wird aus der Cloud heruntergeladen...",
+    "drawingNotFound": "Die geteilte Zeichnung konnte nicht gefunden werden. Sie wurde möglicherweise vom Host gelöscht. Bitten Sie die Person, die den Link geteilt hat, Ihnen die Original-Bilddatei zu senden, und verwenden Sie dann die Schaltfläche Importieren im Zeichenpanel.",
+    "drawingNotFoundTitle": "Zeichnung nicht gefunden"
   },
   "overlay": {
     "notAvailable": {
@@ -806,10 +814,12 @@
       "importWebp": "Importieren",
       "importWebpTitle": "Zeichnung aus WebP-Screenshot importieren",
       "exportJson": "JSON exportieren",
-      "exportJsonTitle": "Formen als JSON exportieren"
+      "exportJsonTitle": "Formen als JSON exportieren",
+      "openSource": "Quelle auf Catbox öffnen"
     },
     "import": {
-      "noData": "Keine Zeichnungsdaten in dieser WebP-Datei gefunden"
+      "noData": "Keine Zeichnungsdaten in dieser WebP-Datei gefunden",
+      "viewOnly": "Du kannst geteilte Zeichnungen ansehen:"
     },
     "savedDrawings": {
       "label": "Gespeicherte Zeichnungen",
@@ -818,7 +828,8 @@
       "deleteTitle": "Zeichnung löschen",
       "deleteConfirm": "Diese Zeichnung löschen?",
       "defaultName": "Zeichnung",
-      "sharedName": "Geteilte Zeichnung"
+      "sharedName": "Geteilte Zeichnung",
+      "importedTitle": "Importierte Zeichnung"
     },
     "auth": {
       "subscriberOnly": "Zeichnen ist für Abonnenten von Wuotes Twitch-Kanal verfügbar",
