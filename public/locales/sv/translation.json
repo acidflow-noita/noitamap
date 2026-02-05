@@ -783,10 +783,10 @@
     },
     "stroke": {
       "label": "Linjetjocklek (gäller alla former)",
-      "thin": "Thin",
+      "thin": "Tunn",
       "normal": "Normal",
-      "thick": "Thick",
-      "heavy": "Heavy"
+      "thick": "Tjock",
+      "heavy": "Kraftig"
     },
     "actions": {
       "undo": "Ångra",
@@ -839,11 +839,11 @@
       "content": "Växla ritverktyg för att kommentera kartan"
     },
     "fontSize": {
-      "label": "Font Size",
-      "small": "Small",
+      "label": "Teckenstorlek",
+      "small": "Liten",
       "medium": "Medium",
-      "large": "Large",
-      "huge": "Huge"
+      "large": "Stor",
+      "huge": "Enorm"
     }
   }
 }

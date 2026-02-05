@@ -767,7 +767,7 @@
       "circleFilled": "填充圆形",
       "ellipseFilled": "填充椭圆",
       "polygonFilled": "填充多边形",
-      "text": "Text"
+      "text": "文本"
     },
     "color": {
       "label": "颜色",
@@ -783,10 +783,10 @@
     },
     "stroke": {
       "label": "线条宽度（同时应用于所有图形）",
-      "thin": "Thin",
-      "normal": "Normal",
-      "thick": "Thick",
-      "heavy": "Heavy"
+      "thin": "细",
+      "normal": "标准",
+      "thick": "粗",
+      "heavy": "极粗"
     },
     "actions": {
       "undo": "撤销",
@@ -839,11 +839,11 @@
       "content": "切换绘图工具以标注地图"
     },
     "fontSize": {
-      "label": "Font Size",
-      "small": "Small",
-      "medium": "Medium",
-      "large": "Large",
-      "huge": "Huge"
+      "label": "字体大小",
+      "small": "小",
+      "medium": "中",
+      "large": "大",
+      "huge": "特大"
     }
   }
 }

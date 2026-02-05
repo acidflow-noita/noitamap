@@ -783,10 +783,10 @@
     },
     "stroke": {
       "label": "Tloušťka čáry (platí pro všechny tvary)",
-      "thin": "Thin",
-      "normal": "Normal",
-      "thick": "Thick",
-      "heavy": "Heavy"
+      "thin": "Tenké",
+      "normal": "Normální",
+      "thick": "Tlusté",
+      "heavy": "Tučné"
     },
     "actions": {
       "undo": "Zpět",
@@ -839,11 +839,11 @@
       "content": "Přepnout nástroje kreslení pro anotaci mapy"
     },
     "fontSize": {
-      "label": "Font Size",
-      "small": "Small",
-      "medium": "Medium",
-      "large": "Large",
-      "huge": "Huge"
+      "label": "Velikost písma",
+      "small": "Malé",
+      "medium": "Střední",
+      "large": "Velké",
+      "huge": "Obrovské"
     }
   }
 }

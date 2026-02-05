@@ -767,7 +767,7 @@
       "circleFilled": "Täytetty ympyrä",
       "ellipseFilled": "Täytetty ellipsi",
       "polygonFilled": "Täytetty polygoni",
-      "text": "Text"
+      "text": "Teksti"
     },
     "color": {
       "label": "Väri",
@@ -783,10 +783,10 @@
     },
     "stroke": {
       "label": "Viivan paksuus (vaikuttaa kaikkiin muotoihin)",
-      "thin": "Thin",
-      "normal": "Normal",
-      "thick": "Thick",
-      "heavy": "Heavy"
+      "thin": "Ohut",
+      "normal": "Normaali",
+      "thick": "Paksu",
+      "heavy": "Raskas"
     },
     "actions": {
       "undo": "Kumoa",
@@ -839,11 +839,11 @@
       "content": "Vaihda piirtotyökalut kartan merkintöihin"
     },
     "fontSize": {
-      "label": "Font Size",
-      "small": "Small",
-      "medium": "Medium",
-      "large": "Large",
-      "huge": "Huge"
+      "label": "Fonttikoko",
+      "small": "Pieni",
+      "medium": "Keskisuuri",
+      "large": "Suuri",
+      "huge": "Valtava"
     }
   }
 }

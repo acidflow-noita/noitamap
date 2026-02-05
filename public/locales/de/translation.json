@@ -783,10 +783,10 @@
     },
     "stroke": {
       "label": "Strichstärke (gilt für alle Formen gleichzeitig)",
-      "thin": "Thin",
+      "thin": "Dünn",
       "normal": "Normal",
-      "thick": "Thick",
-      "heavy": "Heavy"
+      "thick": "Dick",
+      "heavy": "Fett"
     },
     "actions": {
       "undo": "Rückgängig",
@@ -839,11 +839,11 @@
       "content": "Zeichenwerkzeuge zum Beschriften der Karte umschalten"
     },
     "fontSize": {
-      "label": "Font Size",
-      "small": "Small",
-      "medium": "Medium",
-      "large": "Large",
-      "huge": "Huge"
+      "label": "Schriftgröße",
+      "small": "Klein",
+      "medium": "Mittel",
+      "large": "Groß",
+      "huge": "Riesig"
     }
   }
 }

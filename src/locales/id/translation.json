@@ -767,7 +767,7 @@
       "circleFilled": "Lingkaran berisi",
       "ellipseFilled": "Elips berisi",
       "polygonFilled": "Poligon berisi",
-      "text": "Text"
+      "text": "Teks"
     },
     "color": {
       "label": "Warna",
@@ -783,10 +783,10 @@
     },
     "stroke": {
       "label": "Ketebalan garis (berlaku untuk semua bentuk)",
-      "thin": "Thin",
+      "thin": "Tipis",
       "normal": "Normal",
-      "thick": "Thick",
-      "heavy": "Heavy"
+      "thick": "Tebal",
+      "heavy": "Sangat tebal"
     },
     "actions": {
       "undo": "Urungkan",
@@ -839,11 +839,11 @@
       "content": "Alihkan alat gambar untuk menganotasi peta"
     },
     "fontSize": {
-      "label": "Font Size",
-      "small": "Small",
-      "medium": "Medium",
-      "large": "Large",
-      "huge": "Huge"
+      "label": "Ukuran font",
+      "small": "Kecil",
+      "medium": "Sedang",
+      "large": "Besar",
+      "huge": "Sangat besar"
     }
   }
 }
