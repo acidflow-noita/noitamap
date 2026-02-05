@@ -926,6 +926,9 @@ export class DrawingSidebar {
   updateSelectedTool(tool: ShapeType): void {
     const radio = this.sidebar.querySelector(`#tool-${tool}`) as HTMLInputElement;
     if (radio) radio.checked = true;
+
+    // Also toggle the stroke/font UI sections
+    this.updateToolUI(tool);
   }
 
   /**
@@ -943,6 +946,15 @@ export class DrawingSidebar {
     const radio = this.contentArea.querySelector(`#stroke-${width}`) as HTMLInputElement;
     if (radio) radio.checked = true;
   }
+
+  /**
+   * Set the font size in the UI
+   */
+  setFontSize(size: number): void {
+    const radio = this.contentArea.querySelector(`#font-${size}`) as HTMLInputElement;
+    if (radio) radio.checked = true;
+  }
+
   private updateActiveColorSwatch(color: string): void {
     const normalize = (c: string) => c.toLowerCase();
     const target = normalize(color);

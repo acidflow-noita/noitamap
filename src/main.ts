@@ -198,6 +198,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (drawingSidebar) {
           drawingSidebar.updateSelectedTool(tool);
         }
+      },
+      onTextSelect: (shape) => {
+        // Update sidebar UI to match selected text's properties
+        if (drawingSidebar && shape) {
+          if (shape.color) {
+            drawingSidebar.setColor(shape.color);
+          }
+          if (shape.fontSize) {
+            drawingSidebar.setFontSize(shape.fontSize);
+          }
+        }
       }
     });
 
