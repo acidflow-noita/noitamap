@@ -844,6 +844,12 @@
       "medium": "Średni",
       "large": "Duży",
       "huge": "Ogromny"
+    },
+    "shapes": {
+      "label": "Kształty"
+    },
+    "text": {
+      "label": "Tekst"
     }
   }
 }

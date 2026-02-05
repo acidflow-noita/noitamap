@@ -844,6 +844,12 @@
       "medium": "Medium",
       "large": "Stor",
       "huge": "Enorm"
+    },
+    "shapes": {
+      "label": "Former"
+    },
+    "text": {
+      "label": "Text"
     }
   }
 }

@@ -844,6 +844,12 @@
       "medium": "中",
       "large": "大",
       "huge": "特大"
+    },
+    "shapes": {
+      "label": "形状"
+    },
+    "text": {
+      "label": "テキスト"
     }
   }
 }

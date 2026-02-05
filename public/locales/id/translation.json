@@ -844,6 +844,12 @@
       "medium": "Sedang",
       "large": "Besar",
       "huge": "Sangat besar"
+    },
+    "shapes": {
+      "label": "Bentuk"
+    },
+    "text": {
+      "label": "Teks"
     }
   }
 }

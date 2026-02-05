@@ -844,6 +844,12 @@
       "medium": "Střední",
       "large": "Velké",
       "huge": "Obrovské"
+    },
+    "shapes": {
+      "label": "Tvary"
+    },
+    "text": {
+      "label": "Text"
     }
   }
 }

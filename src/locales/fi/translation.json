@@ -844,6 +844,12 @@
       "medium": "Keskisuuri",
       "large": "Suuri",
       "huge": "Valtava"
+    },
+    "shapes": {
+      "label": "Muodot"
+    },
+    "text": {
+      "label": "Teksti"
     }
   }
 }

@@ -740,6 +740,12 @@
   "drawing": {
     "title": "Drawing Tools",
     "close": "Close sidebar",
+    "shapes": {
+      "label": "Shapes"
+    },
+    "text": {
+      "label": "Text"
+    },
     "tools": {
       "label": "Tools",
       "move": "Move/Select",
