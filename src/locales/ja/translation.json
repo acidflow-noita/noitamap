@@ -715,7 +715,28 @@
     },
     "orbAreas": {},
     "overlaysRegular": {},
-    "overlaysNewGamePlus": {}
+    "overlaysNewGamePlus": {},
+    "spatialAwareness": {
+      "Mina (Player)": "Mina (Player)",
+      "Friend Boss (Toveri). Note that the boss did not spawn in the main world (bug), and only seen in the east world": "Friend Boss (Toveri). Note that the boss did not spawn in the main world (bug), and only seen in the east world",
+      "Coral Chest": "Coral Chest",
+      "Dark Chest": "Dark Chest",
+      "Ocarina": "Ocarina",
+      "Essence Of Spirits": "Essence Of Spirits",
+      "Essence Of Air": "Essence Of Air",
+      "Essence Of Fire": "Essence Of Fire",
+      "Essence Of Water": "Essence Of Water",
+      "Essence Of Earth": "Essence Of Earth",
+      "Mountain Hall": "Mountain Hall",
+      "Perk Removal Altar (Nullifying Altar)": "Perk Removal Altar (Nullifying Altar)",
+      "Holy Mountain (Mines)": "Holy Mountain (Mines)",
+      "Holy Mountain (Coal Pits)": "Holy Mountain (Coal Pits)",
+      "Holy Mountain (Snowy Depths)": "Holy Mountain (Snowy Depths)",
+      "Holy Mountain (Hiisi Base)": "Holy Mountain (Hiisi Base)",
+      "Holy Mountain (Underground Jungle)": "Holy Mountain (Underground Jungle)",
+      "Holy Mountain (Temple of the Art)": "Holy Mountain (Temple of the Art)",
+      "Holy Mountain (The Laboratory)": "Holy Mountain (The Laboratory)"
+    }
   },
   "auth": {
     "signIn": "ログイン",
@@ -741,7 +762,11 @@
       "circle": "円",
       "ellipse": "楕円",
       "polygon": "多角形",
-      "point": "点"
+      "point": "点",
+      "rectangleFilled": "塗りつぶされた長方形",
+      "circleFilled": "塗りつぶされた円",
+      "ellipseFilled": "塗りつぶされた楕円",
+      "polygonFilled": "塗りつぶされた多角形"
     },
     "color": {
       "label": "色",
@@ -773,8 +798,13 @@
       "newTitle": "新しい描画を開始",
       "download": "画像をダウンロード",
       "downloadTitle": "描画を画像としてダウンロード",
+      "importWebp": "インポート",
+      "importWebpTitle": "WebPスクリーンショットから描画をインポート",
       "exportJson": "JSON エクスポート",
       "exportJsonTitle": "図形をJSONとしてエクスポート"
+    },
+    "import": {
+      "noData": "このWebPファイルに描画データが見つかりません"
     },
     "savedDrawings": {
       "label": "保存済みの描画",

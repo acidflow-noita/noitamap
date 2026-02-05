@@ -715,7 +715,28 @@
     },
     "orbAreas": {},
     "overlaysRegular": {},
-    "overlaysNewGamePlus": {}
+    "overlaysNewGamePlus": {},
+    "spatialAwareness": {
+      "Mina (Player)": "Mina (Player)",
+      "Friend Boss (Toveri). Note that the boss did not spawn in the main world (bug), and only seen in the east world": "Friend Boss (Toveri). Note that the boss did not spawn in the main world (bug), and only seen in the east world",
+      "Coral Chest": "Coral Chest",
+      "Dark Chest": "Dark Chest",
+      "Ocarina": "Ocarina",
+      "Essence Of Spirits": "Essence Of Spirits",
+      "Essence Of Air": "Essence Of Air",
+      "Essence Of Fire": "Essence Of Fire",
+      "Essence Of Water": "Essence Of Water",
+      "Essence Of Earth": "Essence Of Earth",
+      "Mountain Hall": "Mountain Hall",
+      "Perk Removal Altar (Nullifying Altar)": "Perk Removal Altar (Nullifying Altar)",
+      "Holy Mountain (Mines)": "Holy Mountain (Mines)",
+      "Holy Mountain (Coal Pits)": "Holy Mountain (Coal Pits)",
+      "Holy Mountain (Snowy Depths)": "Holy Mountain (Snowy Depths)",
+      "Holy Mountain (Hiisi Base)": "Holy Mountain (Hiisi Base)",
+      "Holy Mountain (Underground Jungle)": "Holy Mountain (Underground Jungle)",
+      "Holy Mountain (Temple of the Art)": "Holy Mountain (Temple of the Art)",
+      "Holy Mountain (The Laboratory)": "Holy Mountain (The Laboratory)"
+    }
   },
   "auth": {
     "signIn": "Войти",
@@ -741,7 +762,11 @@
       "circle": "Круг",
       "ellipse": "Эллипс",
       "polygon": "Многоугольник",
-      "point": "Точка"
+      "point": "Точка",
+      "rectangleFilled": "Заполненный прямоугольник",
+      "circleFilled": "Заполненный круг",
+      "ellipseFilled": "Заполненный эллипс",
+      "polygonFilled": "Заполненный многоугольник"
     },
     "color": {
       "label": "Цвет",
@@ -773,8 +798,13 @@
       "newTitle": "Начать новый рисунок",
       "download": "Скачать изображение",
       "downloadTitle": "Скачать рисунок как изображение",
+      "importWebp": "Импорт",
+      "importWebpTitle": "Импортировать рисунок из скриншота WebP",
       "exportJson": "Экспорт JSON",
       "exportJsonTitle": "Экспортировать фигуры в JSON"
+    },
+    "import": {
+      "noData": "В этом файле WebP не найдено данных рисунка"
     },
     "savedDrawings": {
       "label": "Сохранённые рисунки",

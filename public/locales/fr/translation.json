@@ -715,7 +715,28 @@
     },
     "orbAreas": {},
     "overlaysRegular": {},
-    "overlaysNewGamePlus": {}
+    "overlaysNewGamePlus": {},
+    "spatialAwareness": {
+      "Mina (Player)": "Mina (Player)",
+      "Friend Boss (Toveri). Note that the boss did not spawn in the main world (bug), and only seen in the east world": "Friend Boss (Toveri). Note that the boss did not spawn in the main world (bug), and only seen in the east world",
+      "Coral Chest": "Coral Chest",
+      "Dark Chest": "Dark Chest",
+      "Ocarina": "Ocarina",
+      "Essence Of Spirits": "Essence Of Spirits",
+      "Essence Of Air": "Essence Of Air",
+      "Essence Of Fire": "Essence Of Fire",
+      "Essence Of Water": "Essence Of Water",
+      "Essence Of Earth": "Essence Of Earth",
+      "Mountain Hall": "Mountain Hall",
+      "Perk Removal Altar (Nullifying Altar)": "Perk Removal Altar (Nullifying Altar)",
+      "Holy Mountain (Mines)": "Holy Mountain (Mines)",
+      "Holy Mountain (Coal Pits)": "Holy Mountain (Coal Pits)",
+      "Holy Mountain (Snowy Depths)": "Holy Mountain (Snowy Depths)",
+      "Holy Mountain (Hiisi Base)": "Holy Mountain (Hiisi Base)",
+      "Holy Mountain (Underground Jungle)": "Holy Mountain (Underground Jungle)",
+      "Holy Mountain (Temple of the Art)": "Holy Mountain (Temple of the Art)",
+      "Holy Mountain (The Laboratory)": "Holy Mountain (The Laboratory)"
+    }
   },
   "auth": {
     "signIn": "Se connecter",
@@ -741,7 +762,11 @@
       "circle": "Cercle",
       "ellipse": "Ellipse",
       "polygon": "Polygone",
-      "point": "Point"
+      "point": "Point",
+      "rectangleFilled": "Rectangle plein",
+      "circleFilled": "Cercle plein",
+      "ellipseFilled": "Ellipse pleine",
+      "polygonFilled": "Polygone plein"
     },
     "color": {
       "label": "Couleur",
@@ -773,8 +798,13 @@
       "newTitle": "Commencer un nouveau dessin",
       "download": "Télécharger l'image",
       "downloadTitle": "Télécharger le dessin en image",
+      "importWebp": "Importer",
+      "importWebpTitle": "Importer un dessin à partir d'une capture d'écran WebP",
       "exportJson": "Exporter JSON",
       "exportJsonTitle": "Exporter les formes en JSON"
+    },
+    "import": {
+      "noData": "Aucune donnée de dessin trouvée dans ce fichier WebP"
     },
     "savedDrawings": {
       "label": "Dessins enregistrés",
