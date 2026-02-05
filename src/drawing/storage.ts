@@ -142,7 +142,7 @@ export function createDrawing(
 export class DrawingSession {
   private currentDrawing: StoredDrawing | null = null;
   private mapName: string;
-  private onSave?: (drawing: StoredDrawing) => void;
+  private onSave?: (drawing: StoredDrawing | null) => void;
   private debouncedSave: () => void;
   private sessionId: string; // Single ID for the entire session
 
@@ -150,7 +150,7 @@ export class DrawingSession {
     mapName: string,
     options?: {
       autoSaveDelay?: number;
-      onSave?: (drawing: StoredDrawing) => void;
+      onSave?: (drawing: StoredDrawing | null) => void;
     }
   ) {
     this.mapName = mapName;
@@ -268,6 +268,7 @@ export class DrawingSession {
     // If shapes are empty, delete the drawing from storage instead of saving
     if (this.currentDrawing.shapes.length === 0) {
       await deleteDrawing(this.currentDrawing.id);
+      this.onSave?.(null);
       return null;
     }
 
@@ -282,6 +283,7 @@ export class DrawingSession {
   clear(): void {
     this.currentDrawing = null;
     this.sessionId = generateDrawingId(); // Fresh ID for next drawing
+    this.onSave?.(null);
   }
 
   /**
@@ -292,6 +294,7 @@ export class DrawingSession {
       await deleteDrawing(this.currentDrawing.id);
       this.currentDrawing = null;
       this.sessionId = generateDrawingId(); // Fresh ID for next drawing
+      this.onSave?.(null);
     }
   }
 
@@ -302,6 +305,7 @@ export class DrawingSession {
     this.mapName = mapName;
     this.currentDrawing = null;
     this.sessionId = generateDrawingId(); // Fresh ID for new map
+    this.onSave?.(null);
   }
 
   /**

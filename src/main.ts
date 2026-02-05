@@ -174,7 +174,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     drawingSession = new DrawingSession(initialMapName, {
       // DISABLED: URL encoding of drawings no longer needed - sharing via catbox.moe image upload
       onSave: drawing => {
-        if (!drawing || isDrawLoading) return;
+        if (isDrawLoading) return;
+        if (!drawing) {
+          updateURLWithDrawing(null);
+          return;
+        }
         // Encode drawing to URL for local state visibility
         const mapName = drawingSession?.getMapName() ?? '';
         const sw = drawingManager?.getStrokeWidth() ?? 5;
@@ -193,13 +197,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const viewport = app.osd.getZoomPos();
         drawingSession.updateShapes(shapes, viewport);
       },
-      onToolChange: (tool) => {
+      onToolChange: tool => {
         // drawingSidebar is created later, so check if it exists
         if (drawingSidebar) {
           drawingSidebar.updateSelectedTool(tool);
         }
       },
-      onTextSelect: (shape) => {
+      onTextSelect: shape => {
         // Update sidebar UI to match selected text's properties
         if (drawingSidebar && shape) {
           if (shape.color) {
@@ -209,7 +213,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             drawingSidebar.setFontSize(shape.fontSize);
           }
         }
-      }
+      },
     });
 
     globalDrawingManager = drawingManager;
@@ -336,7 +340,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (loadingToastEl) {
           const body = loadingToastEl.querySelector('.toast-body span');
           if (body) body.textContent = i18next.t('share.downloadingCloud');
-          loadingToast = new bootstrap.Toast(loadingToastEl, { autohide: false });
+          loadingToast = new bootstrap.Toast(loadingToastEl, {
+            autohide: false,
+          });
           loadingToast.show();
         }
 
@@ -372,7 +378,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (downloadToastEl) {
               const body = downloadToastEl.querySelector('.toast-body');
               if (body) body.innerHTML = `<i class="bi bi-download me-2"></i>${i18next.t('share.downloading')}`;
-              downloadToast = new bootstrap.Toast(downloadToastEl, { autohide: false });
+              downloadToast = new bootstrap.Toast(downloadToastEl, {
+                autohide: false,
+              });
               downloadToast.show();
             }
             downloadBlob(blob, screenshotFilename(mapName));
@@ -634,7 +642,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (toastBody) {
         toastBody.innerHTML = `<i class="bi bi-hourglass-split me-2"></i>${i18next.t('share.uploading')}`;
       }
-      const uploadingToast = new bootstrap.Toast(toastElement, { autohide: false });
+      const uploadingToast = new bootstrap.Toast(toastElement, {
+        autohide: false,
+      });
       uploadingToast.show();
 
       try {
@@ -669,7 +679,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (toastBody) {
             toastBody.innerHTML = `<i class="bi bi-x-circle me-2"></i>${i18next.t('share.screenshotFailed')}`;
           }
-          const errorToast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
+          const errorToast = new bootstrap.Toast(toastElement, {
+            autohide: true,
+            delay: 3000,
+          });
           errorToast.show();
           return;
         }
@@ -685,7 +698,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (toastBody) {
             toastBody.innerHTML = `<i class="bi bi-x-circle me-2"></i>${i18next.t('share.uploadFailed')}`;
           }
-          const errorToast = new bootstrap.Toast(toastElement, { autohide: true, delay: 4000 });
+          const errorToast = new bootstrap.Toast(toastElement, {
+            autohide: true,
+            delay: 4000,
+          });
           errorToast.show();
           return;
         }
@@ -720,7 +736,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (toastBody) {
               toastBody.innerHTML = `<i class="bi bi-check-circle me-2"></i>${i18next.t('share.copiedWithDrawing')}`;
             }
-            const successToast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
+            const successToast = new bootstrap.Toast(toastElement, {
+              autohide: true,
+              delay: 3000,
+            });
             successToast.show();
           })
           .catch(err => {
@@ -732,7 +751,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (toastBody) {
           toastBody.innerHTML = `<i class="bi bi-x-circle me-2"></i>${i18next.t('share.uploadFailed')}`;
         }
-        const errorToast = new bootstrap.Toast(toastElement, { autohide: true, delay: 4000 });
+        const errorToast = new bootstrap.Toast(toastElement, {
+          autohide: true,
+          delay: 4000,
+        });
         errorToast.show();
       }
     } else {
@@ -761,7 +783,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (toastBody) {
             toastBody.innerHTML = `<i class="bi bi-check-circle me-2"></i>${i18next.t('share.copied')}`;
           }
-          const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 2000 });
+          const toast = new bootstrap.Toast(toastElement, {
+            autohide: true,
+            delay: 2000,
+          });
           toast.show();
         })
         .catch(err => {
