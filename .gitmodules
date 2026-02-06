@@ -1,0 +1,3 @@
+[submodule "doodle"]
+	path = doodle
+	url = https://github.com/WUOTE/doodle.git

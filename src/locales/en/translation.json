@@ -804,6 +804,8 @@
       "redoTitle": "Redo (Ctrl+Shift+Z)",
       "delete": "Delete",
       "deleteTitle": "Delete selected shape (Delete key)",
+      "toggleFill": "Fill",
+      "toggleFillTitle": "Toggle fill on selected shape",
       "showHide": "Show/Hide",
       "showHideTitle": "Toggle drawing visibility",
       "save": "Save",

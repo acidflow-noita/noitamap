@@ -65,6 +65,7 @@ export interface Shape {
   pos: number[];
   color: string;
   filled?: boolean;
+  fillAlpha?: number;
   readonly?: boolean;
   text?: string;
   fontSize?: number;
@@ -102,6 +103,7 @@ export interface DrawingManager {
   canRedo(): boolean;
   onHistoryChange?: (canUndo: boolean, canRedo: boolean) => void;
   deleteSelected(): boolean;
+  toggleSelectedFill(): boolean;
   destroy(): void;
   setTextZoomStrategy(strategy: TextZoomStrategyType): void;
   getTextZoomStrategy(): TextZoomStrategyType;
@@ -123,7 +125,7 @@ export async function createDrawingManager(
   let currentTool: ShapeType = 'path';
   let currentStrokeWidth = 5;
   let currentColor = '#ffffff';
-  // let currentFill = false; // Disabled
+  let currentFill = false;
   let currentFontSize = 16;
 
   // Undo/redo history
@@ -180,10 +182,10 @@ export async function createDrawingManager(
   const doodle = createDoodle({
     viewer: osd,
     onAdd: (shape: Shape) => {
-      // Ensure shape has filled property if set
-      // if (currentFill) {
-      //   shape.filled = true;
-      // }
+      // Set fillAlpha if fill mode is enabled
+      if (currentFill) {
+        shape.fillAlpha = 0.5;
+      }
 
       // Ensure shape has strokeWidth property
       if (!shape.strokeWidth) {
@@ -1086,13 +1088,11 @@ export async function createDrawingManager(
     },
 
     setFill(filled: boolean) {
-      // Disabled
-      // console.log('[DoodleIntegration] setFill called with:', filled);
-      // currentFill = filled;
+      currentFill = filled;
     },
 
     getFill(): boolean {
-      return false; // currentFill;
+      return currentFill;
     },
 
     setFontSize(size: number) {
@@ -1387,6 +1387,29 @@ export async function createDrawingManager(
       if (doodleAny.tempShape?.id) {
         const shape = { ...doodleAny.tempShape };
         doodleAny.conf.onRemove?.(shape);
+        return true;
+      }
+      return false;
+    },
+
+    toggleSelectedFill(): boolean {
+      const doodleAny = doodle as any;
+      if (doodleAny.tempShape?.id) {
+        const shape = doodleAny.tempShape;
+        const oldShape = { ...shape, pos: [...shape.pos] };
+
+        // Toggle fillAlpha between 0 and 0.5
+        shape.fillAlpha = shape.fillAlpha ? 0 : 0.5;
+
+        // Update the shape in doodle's internal state
+        doodle.updateShape({ ...shape });
+
+        pushHistory({
+          type: 'update',
+          oldShape,
+          newShape: { ...shape, pos: [...shape.pos] },
+        });
+        callbacks?.onShapeChange?.();
         return true;
       }
       return false;

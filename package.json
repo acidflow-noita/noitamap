@@ -36,7 +36,7 @@
   "homepage": "https://github.com/acidflow-noita/noitamap#readme",
   "dependencies": {
     "@designsystemsinternational/flags": "^0.2.0",
-    "@wtsml/doodle": "^1.0.4",
+    "@wtsml/doodle": "./doodle/doodle-dist",
     "eventemitter2": "6.4.9",
     "flexsearch": "0.7.40",
     "i18next": "^25.3.2",

@@ -33,10 +33,8 @@ interface ToolConfig {
 const ELLIPSE_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi" viewBox="0 0 16 16"><ellipse cx="8" cy="8" rx="7" ry="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
 
-/*
 const ELLIPSE_FILLED_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi" viewBox="0 0 16 16"><ellipse cx="8" cy="8" rx="7" ry="3.5" fill="currentColor" stroke="none"/></svg>';
-*/
 
 const TOOLS: ToolConfig[] = [
   { id: 'move', type: 'move', filled: false, icon: 'bi-arrows-move', titleKey: 'drawing.tools.move' },
@@ -44,15 +42,10 @@ const TOOLS: ToolConfig[] = [
   { id: 'line', type: 'line', filled: false, icon: 'bi-slash-lg', titleKey: 'drawing.tools.line' },
   { id: 'arrow_line', type: 'arrow_line', filled: false, icon: 'bi-arrow-up-right', titleKey: 'drawing.tools.arrow' },
   { id: 'rect', type: 'rect', filled: false, icon: 'bi-square', titleKey: 'drawing.tools.rectangle' },
-  /*
   { id: 'rect_filled', type: 'rect', filled: true, icon: 'bi-square-fill', titleKey: 'drawing.tools.rectangleFilled' },
-  */
   { id: 'circle', type: 'circle', filled: false, icon: 'bi-circle', titleKey: 'drawing.tools.circle' },
-  /*
   { id: 'circle_filled', type: 'circle', filled: true, icon: 'bi-circle-fill', titleKey: 'drawing.tools.circleFilled' },
-  */
   { id: 'ellipse', type: 'ellipse', filled: false, icon: '', titleKey: 'drawing.tools.ellipse', svg: ELLIPSE_SVG },
-  /*
   {
     id: 'ellipse_filled',
     type: 'ellipse',
@@ -61,9 +54,7 @@ const TOOLS: ToolConfig[] = [
     titleKey: 'drawing.tools.ellipseFilled',
     svg: ELLIPSE_FILLED_SVG,
   },
-  */
   { id: 'polygon', type: 'polygon', filled: false, icon: 'bi-pentagon', titleKey: 'drawing.tools.polygon' },
-  /*
   {
     id: 'polygon_filled',
     type: 'polygon',
@@ -71,7 +62,6 @@ const TOOLS: ToolConfig[] = [
     icon: 'bi-pentagon-fill',
     titleKey: 'drawing.tools.polygonFilled',
   },
-  */
   { id: 'point', type: 'point', filled: false, icon: 'bi-dot', titleKey: 'drawing.tools.point' },
 ];
 
@@ -106,6 +96,7 @@ export class DrawingSidebar {
   private undoBtn!: HTMLButtonElement;
   private redoBtn!: HTMLButtonElement;
   private deleteBtn!: HTMLButtonElement;
+  private toggleFillBtn!: HTMLButtonElement;
   private keyboardHandler: ((e: KeyboardEvent) => void) | null = null;
   private keyupHandler: ((e: KeyboardEvent) => void) | null = null;
   private simplifiedHandler: (() => void) | null = null;
@@ -363,6 +354,9 @@ export class DrawingSidebar {
           <button class="btn btn-sm btn-outline-light flex-fill" id="redo-btn" title="${i18next.t('drawing.actions.redoTitle')}" disabled>
             <i class="bi bi-arrow-clockwise"></i> ${i18next.t('drawing.actions.redo')}
           </button>
+          <button class="btn btn-sm btn-outline-info flex-fill" id="toggle-fill-btn" title="${i18next.t('drawing.actions.toggleFillTitle')}">
+            <i class="bi bi-paint-bucket"></i> ${i18next.t('drawing.actions.toggleFill')}
+          </button>
           <button class="btn btn-sm btn-outline-danger flex-fill" id="delete-selected-btn" title="${i18next.t('drawing.actions.deleteTitle')}">
             <i class="bi bi-trash3"></i> ${i18next.t('drawing.actions.delete')}
           </button>
@@ -422,6 +416,7 @@ export class DrawingSidebar {
     this.undoBtn = this.contentArea.querySelector('#undo-btn') as HTMLButtonElement;
     this.redoBtn = this.contentArea.querySelector('#redo-btn') as HTMLButtonElement;
     this.deleteBtn = this.contentArea.querySelector('#delete-selected-btn') as HTMLButtonElement;
+    this.toggleFillBtn = this.contentArea.querySelector('#toggle-fill-btn') as HTMLButtonElement;
 
     // Bind events for subscriber content
     this.bindSubscriberEvents();
@@ -556,11 +551,10 @@ export class DrawingSidebar {
         if (config) {
           console.log('[Sidebar] Selected tool:', config.id);
           this.drawingManager.setTool(config.type as ShapeType);
-          // Only set fill for non-text tools (text tool handles its own rendering)
-          // DISABLED: Filled shapes don't work properly with doodle library
-          // if (config.type !== 'text') {
-          //   this.drawingManager.setFill(config.filled);
-          // }
+          // Set fill mode for non-text tools
+          if (config.type !== 'text') {
+            this.drawingManager.setFill(config.filled);
+          }
           this.updateToolUI(config.id);
         } else if (inputId === 'move') {
           console.log('[Sidebar] Selected move tool');
@@ -678,6 +672,11 @@ export class DrawingSidebar {
     // Delete selected shape
     this.deleteBtn.addEventListener('click', () => {
       this.drawingManager.deleteSelected();
+    });
+
+    // Toggle fill on selected shape
+    this.toggleFillBtn.addEventListener('click', () => {
+      this.drawingManager.toggleSelectedFill();
     });
 
     // Keyboard shortcuts for undo/redo
