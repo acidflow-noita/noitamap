@@ -193,9 +193,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Create drawing manager with shape change callback for auto-save
     drawingManager = await createDrawingManager(app.osd, {
       onShapeChange: () => {
-        const shapes = drawingManager.getShapes();
-        const viewport = app.osd.getZoomPos();
-        drawingSession.updateShapes(shapes, viewport);
+        if (drawingManager && drawingSession) {
+          const shapes = drawingManager.getShapes();
+          const viewport = app.osd.getZoomPos();
+          drawingSession.updateShapes(shapes, viewport);
+        }
       },
       onToolChange: tool => {
         // drawingSidebar is created later, so check if it exists
@@ -298,7 +300,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         },
         onClose: () => {
           // Sync toggle checkbox when sidebar closed via X button
-          drawToggleCheckbox.checked = false;
+          if (drawToggleCheckbox) {
+            drawToggleCheckbox.checked = false;
+          }
           updateURLWithSidebar(false);
         },
         onMapChange: async (mapName: string) => {
@@ -313,8 +317,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       globalDrawingSidebar = drawingSidebar;
 
       // Toggle sidebar on checkbox change
-      drawToggleCheckbox.addEventListener('change', () => {
-        if (drawToggleCheckbox.checked) {
+      drawToggleCheckbox?.addEventListener('change', () => {
+        if (drawToggleCheckbox?.checked) {
           drawingSidebar?.open();
           updateURLWithSidebar(true);
         } else {
@@ -324,7 +328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
 
       // Restore sidebar state from URL
-      if (urlState.sidebarOpen) {
+      if (urlState.sidebarOpen && drawToggleCheckbox) {
         drawToggleCheckbox.checked = true;
         drawingSidebar?.open();
       }
@@ -336,7 +340,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (fileId) {
         // Show loading indicator while fetching
         const loadingToastEl = document.getElementById('catboxLoadingToast');
-        let loadingToast: bootstrap.Toast | null = null;
+        let loadingToast: any = null;
         if (loadingToastEl) {
           const body = loadingToastEl.querySelector('.toast-body span');
           if (body) body.textContent = i18next.t('share.downloadingCloud');
@@ -359,7 +363,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               const validMapName = asMapName(result.mapName);
               if (validMapName && validMapName !== app.getMap()) {
                 await app.setMap(validMapName);
-                drawingSession.setMap(validMapName);
+                if (drawingSession) drawingSession.setMap(validMapName);
               }
             }
 
@@ -374,7 +378,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Auto-download the WebP as a backup for the user
             const mapName = result.mapName ?? app.getMap();
             const downloadToastEl = document.getElementById('downloadToast');
-            let downloadToast: bootstrap.Toast | null = null;
+            let downloadToast: any = null;
             if (downloadToastEl) {
               const body = downloadToastEl.querySelector('.toast-body');
               if (body) body.innerHTML = `<i class="bi bi-download me-2"></i>${i18next.t('share.downloading')}`;
@@ -803,23 +807,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   document.addEventListener('keydown', copyCoordinates, { capture: false });
 
-  // Uncomment and implement annotations if needed
-  // drawingToggleSwitch.addEventListener("change", (event) => {
-  //   if (event.currentTarget.checked && os.areAnnotationsActive() == false) {
-  //     os.initializeAnnotations();
-  //     console.log("checked");
-  //   } else {
-  //     os.shutdownAnnotations();
-  //     console.log("not checked");
-  //   }
-  // });
-
   // Handle renderer changes
   rendererForm.addEventListener('change', ev => {
-    if (!ev.target.matches('input[type="radio"][name="renderer"]')) return;
+    if (!ev.target || !(ev.target as HTMLElement).matches('input[type="radio"][name="renderer"]')) return;
 
     ev.stopPropagation();
-    const newRenderer = rendererForm.elements['renderer'].value;
+    const newRenderer = (rendererForm.elements as any)['renderer'].value;
 
     if (isRenderer(newRenderer)) {
       setStoredRenderer(newRenderer);

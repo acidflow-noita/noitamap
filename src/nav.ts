@@ -31,7 +31,7 @@ export const createMapLinks = (): HTMLUListElement => {
     ];
 
     const shouldTranslate = def.labelKey && translatableKeys.includes(def.labelKey);
-    const translatedLabel = shouldTranslate ? i18next.t(def.labelKey, { defaultValue: def.label }) : def.label;
+    const translatedLabel = shouldTranslate ? i18next.t(def.labelKey || '', { defaultValue: def.label }) : def.label;
     a.textContent = translatedLabel + ' ';
 
     const badges = [...def.badges];
@@ -112,7 +112,7 @@ export const updateMapLinkTranslations = (): void => {
     ];
 
     const shouldTranslate = def.labelKey && translatableKeys.includes(def.labelKey);
-    const translatedLabel = shouldTranslate ? i18next.t(def.labelKey, { defaultValue: def.label }) : def.label;
+    const translatedLabel = shouldTranslate ? i18next.t(def.labelKey || '', { defaultValue: def.label }) : def.label;
     link.textContent = translatedLabel + ' ';
 
     const badges = [...def.badges];

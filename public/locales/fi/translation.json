@@ -815,7 +815,9 @@
       "importWebpTitle": "Tuo piirustus WebP-kuvakaappauksesta",
       "exportJson": "Vie JSON",
       "exportJsonTitle": "Vie muodot JSON-muodossa",
-      "openSource": "Avaa lähde Catboxissa"
+      "openSource": "Avaa lähde Catboxissa",
+      "toggleFill": "Fill",
+      "toggleFillTitle": "Toggle fill on selected shape"
     },
     "import": {
       "noData": "Tässä WebP-tiedostossa ei ole piirustusdataa",
@@ -861,6 +863,13 @@
     },
     "text": {
       "label": "Teksti"
+    },
+    "fillAlpha": {
+      "label": "Fill Opacity",
+      "light": "25%",
+      "medium": "50%",
+      "heavy": "75%",
+      "solid": "100%"
     }
   }
 }

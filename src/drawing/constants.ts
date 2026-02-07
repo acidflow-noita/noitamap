@@ -38,6 +38,9 @@ export const COLOR_TO_INDEX: Record<string, number> = Object.fromEntries(
 // Stroke width palette (2 bits) - order matters for binary encoding
 export const STROKE_WIDTHS = [2, 5, 10, 15] as const; // thin, normal, thick, heavy
 
+// Fill alpha palette (2 bits) - order matters for binary encoding
+export const FILL_ALPHAS = [0.25, 0.5, 0.75, 1.0] as const; // light, medium, heavy, solid
+
 // Font sizes (2 bits) - order matters for binary encoding (reusing stroke width logic)
 export const FONT_SIZES = [16, 24, 32, 48] as const; // small, medium, large, huge
 

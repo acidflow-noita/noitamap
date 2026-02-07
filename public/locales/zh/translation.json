@@ -828,7 +828,9 @@
       "importWebpTitle": "从 WebP 截图导入绘图",
       "exportJson": "导出 JSON",
       "exportJsonTitle": "将图形导出为 JSON",
-      "openSource": "在 Catbox 查看源码"
+      "openSource": "在 Catbox 查看源码",
+      "toggleFill": "Fill",
+      "toggleFillTitle": "Toggle fill on selected shape"
     },
     "import": {
       "noData": "在此 WebP 文件中未找到绘图数据",
@@ -861,6 +863,13 @@
     "toggle": {
       "title": "绘图模式",
       "content": "切换绘图工具以标注地图"
+    },
+    "fillAlpha": {
+      "label": "Fill Opacity",
+      "light": "25%",
+      "medium": "50%",
+      "heavy": "75%",
+      "solid": "100%"
     }
   }
 }

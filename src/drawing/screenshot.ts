@@ -120,7 +120,14 @@ export async function extractDrawingData(
       if (chunkId === DRAW_CHUNK_ID) {
         // Found drawing data chunk
         const chunkData = data.slice(offset + 8, offset + 8 + chunkSize);
-        drawingResult = decodeShapesBinary(chunkData);
+        const result = decodeShapesBinary(chunkData);
+        if (result) {
+          drawingResult = {
+            shapes: result.shapes,
+            strokeWidth: result.strokeWidth ?? 5,
+          };
+          if (result.mapName) mapName = result.mapName;
+        }
       } else if (chunkId === MAP_CHUNK_ID) {
         // Found map name chunk
         const chunkData = data.slice(offset + 8, offset + 8 + chunkSize);

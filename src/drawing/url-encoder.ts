@@ -114,7 +114,11 @@ export function decodeShapesFromUrl(encoded: string): { shapes: Shape[]; strokeW
 
     const result = decodeShapesBinary(binary);
     if (result && result.shapes.length > 0) {
-      return result;
+      return {
+        shapes: result.shapes,
+        strokeWidth: result.strokeWidth ?? 5,
+        mapName: result.mapName,
+      };
     }
     return null;
   } catch (e) {

@@ -87,6 +87,8 @@ export interface DrawingManager {
   getStrokeWidth(): number;
   setFill(filled: boolean): void;
   getFill(): boolean;
+  setFillAlpha(alpha: number): void;
+  getFillAlpha(): number;
   setFontSize(size: number): void;
   getFontSize(): number;
   getShapes(): Shape[];
@@ -102,6 +104,8 @@ export interface DrawingManager {
   canUndo(): boolean;
   canRedo(): boolean;
   onHistoryChange?: (canUndo: boolean, canRedo: boolean) => void;
+  onShapeSelect?: (shape: Shape | null) => void;
+  onTextSelect?: (shape: Shape | null) => void;
   deleteSelected(): boolean;
   toggleSelectedFill(): boolean;
   destroy(): void;
@@ -118,6 +122,7 @@ export async function createDrawingManager(
     onShapeChange?: () => void;
     onToolChange?: (tool: ShapeType) => void;
     onTextSelect?: (shape: Shape | null) => void;
+    onShapeSelect?: (shape: Shape | null) => void;
   }
 ): Promise<DrawingManager> {
   let isEnabled = false;
@@ -126,6 +131,7 @@ export async function createDrawingManager(
   let currentStrokeWidth = 5;
   let currentColor = '#ffffff';
   let currentFill = false;
+  let currentFillAlpha = 1.0;
   let currentFontSize = 16;
 
   // Undo/redo history
@@ -182,13 +188,14 @@ export async function createDrawingManager(
   const doodle = createDoodle({
     viewer: osd,
     onAdd: (shape: Shape) => {
-      // Set fillAlpha if fill mode is enabled
+      // Set fillAlpha and filled if fill mode is enabled
       if (currentFill) {
-        shape.fillAlpha = 0.5;
+        shape.filled = true;
+        shape.fillAlpha = currentFillAlpha;
       }
 
       // Ensure shape has strokeWidth property
-      if (!shape.strokeWidth) {
+      if (!shape.strokeWidth && shape.type !== 'text' && shape.type !== 'point') {
         shape.strokeWidth = currentStrokeWidth;
       }
 
@@ -221,11 +228,13 @@ export async function createDrawingManager(
       }
       callbacks?.onShapeChange?.();
     },
-    onSelect: (_shape: Shape) => {
-      // Shape selected
+    onSelect: (shape: Shape) => {
+      callbacks?.onShapeSelect?.(shape);
+      manager.onShapeSelect?.(shape);
     },
     onCancelSelect: (_shape: Shape) => {
-      // Shape deselected
+      callbacks?.onShapeSelect?.(null);
+      manager.onShapeSelect?.(null);
     },
   });
 
@@ -528,9 +537,16 @@ export async function createDrawingManager(
         }
         // Notify about the selected shape
         const shape = textShapes.find(s => s.id === id);
-        this.onTextSelect(shape || null);
+        const selectedShape = shape || null;
+        this.onTextSelect(selectedShape);
+        callbacks?.onShapeSelect?.(selectedShape);
+        manager.onShapeSelect?.(selectedShape);
+        manager.onTextSelect?.(selectedShape);
       } else {
         this.onTextSelect(null);
+        callbacks?.onShapeSelect?.(null);
+        manager.onShapeSelect?.(null);
+        manager.onTextSelect?.(null);
       }
     }
 
@@ -1041,6 +1057,8 @@ export async function createDrawingManager(
 
   const manager: DrawingManager = {
     onHistoryChange: undefined,
+    onShapeSelect: undefined,
+    onTextSelect: undefined,
 
     enable() {
       isEnabled = true;
@@ -1070,6 +1088,24 @@ export async function createDrawingManager(
       currentColor = color;
       doodle.setBrushColor(color);
       doodle.setDefaultColor(color);
+
+      // Update selected doodle shape if any
+      const doodleAny = doodle as any;
+      if (doodleAny.tempShape?.id) {
+        const shape = doodleAny.tempShape;
+        const oldShape = { ...shape, pos: [...shape.pos] };
+        const newShape = { ...shape, pos: [...shape.pos], color };
+        doodle.updateShape(newShape);
+        // Re-select the shape (updateShape clears tempShape)
+        doodle.selectShape(newShape);
+        pushHistory({
+          type: 'update',
+          oldShape,
+          newShape,
+        });
+        callbacks?.onShapeChange?.();
+      }
+
       // Update selected text if any
       textRenderer?.updateSelected({ color });
     },
@@ -1081,6 +1117,23 @@ export async function createDrawingManager(
     setStrokeWidth(width: number) {
       currentStrokeWidth = width;
       doodle.strokeWidth = width;
+
+      // Update selected doodle shape if any
+      const doodleAny = doodle as any;
+      if (doodleAny.tempShape?.id) {
+        const shape = doodleAny.tempShape;
+        const oldShape = { ...shape, pos: [...shape.pos] };
+        const newShape = { ...shape, pos: [...shape.pos], strokeWidth: width };
+        doodle.updateShape(newShape);
+        // Re-select the shape (updateShape clears tempShape)
+        doodle.selectShape(newShape);
+        pushHistory({
+          type: 'update',
+          oldShape,
+          newShape,
+        });
+        callbacks?.onShapeChange?.();
+      }
     },
 
     getStrokeWidth(): number {
@@ -1093,6 +1146,31 @@ export async function createDrawingManager(
 
     getFill(): boolean {
       return currentFill;
+    },
+
+    setFillAlpha(alpha: number) {
+      currentFillAlpha = alpha;
+
+      // Update selected doodle shape if any
+      const doodleAny = doodle as any;
+      if (doodleAny.tempShape?.id) {
+        const shape = doodleAny.tempShape;
+        const oldShape = { ...shape, pos: [...shape.pos] };
+        const newShape = { ...shape, pos: [...shape.pos], fillAlpha: alpha };
+        doodle.updateShape(newShape);
+        // Re-select the shape (updateShape clears tempShape)
+        doodle.selectShape(newShape);
+        pushHistory({
+          type: 'update',
+          oldShape,
+          newShape,
+        });
+        callbacks?.onShapeChange?.();
+      }
+    },
+
+    getFillAlpha(): number {
+      return currentFillAlpha;
     },
 
     setFontSize(size: number) {
@@ -1398,16 +1476,24 @@ export async function createDrawingManager(
         const shape = doodleAny.tempShape;
         const oldShape = { ...shape, pos: [...shape.pos] };
 
-        // Toggle fillAlpha between 0 and 0.5
-        shape.fillAlpha = shape.fillAlpha ? 0 : 0.5;
+        // Toggle fillAlpha between 0 and currentFillAlpha
+        const newFillAlpha = (shape.fillAlpha && shape.fillAlpha > 0) ? 0 : currentFillAlpha;
+        const newShape = {
+          ...shape,
+          pos: [...shape.pos],
+          fillAlpha: newFillAlpha,
+          filled: newFillAlpha > 0,
+        };
 
         // Update the shape in doodle's internal state
-        doodle.updateShape({ ...shape });
+        doodle.updateShape(newShape);
+        // Re-select the shape (updateShape clears tempShape)
+        doodle.selectShape(newShape);
 
         pushHistory({
           type: 'update',
           oldShape,
-          newShape: { ...shape, pos: [...shape.pos] },
+          newShape,
         });
         callbacks?.onShapeChange?.();
         return true;

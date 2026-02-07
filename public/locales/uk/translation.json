@@ -822,7 +822,9 @@
       "importWebpTitle": "Імпортувати малюнок з WebP скріншота",
       "exportJson": "Експорт JSON",
       "exportJsonTitle": "Експортувати фігури у JSON",
-      "openSource": "Відкрити джерело на Catbox"
+      "openSource": "Відкрити джерело на Catbox",
+      "toggleFill": "Fill",
+      "toggleFillTitle": "Toggle fill on selected shape"
     },
     "import": {
       "noData": "У цьому WebP файлі не знайдено даних малюнка",
@@ -861,6 +863,13 @@
     },
     "text": {
       "label": "Текст"
+    },
+    "fillAlpha": {
+      "label": "Fill Opacity",
+      "light": "25%",
+      "medium": "50%",
+      "heavy": "75%",
+      "solid": "100%"
     }
   }
 }

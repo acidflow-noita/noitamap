@@ -815,7 +815,9 @@
       "importWebpTitle": "WebPスクリーンショットから描画をインポート",
       "exportJson": "JSON エクスポート",
       "exportJsonTitle": "図形をJSONとしてエクスポート",
-      "openSource": "Catboxでソースを開く"
+      "openSource": "Catboxでソースを開く",
+      "toggleFill": "Fill",
+      "toggleFillTitle": "Toggle fill on selected shape"
     },
     "import": {
       "noData": "このWebPファイルに描画データが見つかりません",
@@ -861,6 +863,13 @@
     },
     "text": {
       "label": "テキスト"
+    },
+    "fillAlpha": {
+      "label": "Fill Opacity",
+      "light": "25%",
+      "medium": "50%",
+      "heavy": "75%",
+      "solid": "100%"
     }
   }
 }

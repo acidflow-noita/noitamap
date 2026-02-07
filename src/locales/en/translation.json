@@ -791,11 +791,18 @@
       "violet": "Violet"
     },
     "stroke": {
-      "label": "Stroke Width (affects all shapes at once)",
+      "label": "Stroke Width",
       "thin": "Thin",
       "normal": "Normal",
       "thick": "Thick",
       "heavy": "Heavy"
+    },
+    "fillAlpha": {
+      "label": "Fill Opacity",
+      "light": "25%",
+      "medium": "50%",
+      "heavy": "75%",
+      "solid": "100%"
     },
     "actions": {
       "undo": "Undo",

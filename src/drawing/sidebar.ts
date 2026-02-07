@@ -65,7 +65,7 @@ const TOOLS: ToolConfig[] = [
   { id: 'point', type: 'point', filled: false, icon: 'bi-dot', titleKey: 'drawing.tools.point' },
 ];
 
-import { COLOR_PALETTE, COLOR_NAME_KEYS, STROKE_WIDTHS, FONT_SIZES } from './constants';
+import { COLOR_PALETTE, COLOR_NAME_KEYS, STROKE_WIDTHS, FILL_ALPHAS, FONT_SIZES } from './constants';
 import { extractDrawingData } from './screenshot';
 
 interface ColorPreset {
@@ -97,6 +97,8 @@ export class DrawingSidebar {
   private redoBtn!: HTMLButtonElement;
   private deleteBtn!: HTMLButtonElement;
   private toggleFillBtn!: HTMLButtonElement;
+  private strokeWidthSection!: HTMLElement;
+  private fillAlphaSection!: HTMLElement;
   private keyboardHandler: ((e: KeyboardEvent) => void) | null = null;
   private keyupHandler: ((e: KeyboardEvent) => void) | null = null;
   private simplifiedHandler: (() => void) | null = null;
@@ -279,6 +281,9 @@ export class DrawingSidebar {
 
   private renderSubscriberContent(): void {
     const drawingTools = TOOLS.filter(t => t.id !== 'move');
+    const currentStrokeWidth = this.drawingManager.getStrokeWidth();
+    const currentFillAlpha = this.drawingManager.getFillAlpha();
+    const currentFontSize = this.drawingManager.getFontSize();
 
     this.contentArea.innerHTML = `
       <div class="sidebar-section mb-2">
@@ -305,8 +310,22 @@ export class DrawingSidebar {
             ${STROKE_WIDTHS.map((width, index) => {
               const labelKeys = ['thin', 'normal', 'thick', 'heavy'];
               const label = i18next.t(`drawing.stroke.${labelKeys[index]}`);
-              return `<input type="radio" class="btn-check" name="stroke-width" id="stroke-${width}" autocomplete="off" ${index === 1 ? 'checked' : ''}>
+              const isChecked = width === currentStrokeWidth;
+              return `<input type="radio" class="btn-check" name="stroke-width" id="stroke-${width}" autocomplete="off" ${isChecked ? 'checked' : ''}>
               <label class="btn btn-outline-light" for="stroke-${width}">${label}</label>`;
+            }).join('')}
+          </div>
+        </div>
+
+        <div id="fill-alpha-section" class="mt-2" style="display: none;">
+          <label class="form-label text-secondary small mb-1">${i18next.t('drawing.fillAlpha.label')}</label>
+          <div class="btn-group btn-group-sm w-100" role="group" id="fill-alpha-buttons">
+            ${FILL_ALPHAS.map((alpha, index) => {
+              const labelKeys = ['light', 'medium', 'heavy', 'solid'];
+              const label = i18next.t(`drawing.fillAlpha.${labelKeys[index]}`);
+              const isChecked = alpha === currentFillAlpha;
+              return `<input type="radio" class="btn-check" name="fill-alpha" id="fill-alpha-${index}" autocomplete="off" ${isChecked ? 'checked' : ''}>
+              <label class="btn btn-outline-light" for="fill-alpha-${index}">${label}</label>`;
             }).join('')}
           </div>
         </div>
@@ -315,7 +334,7 @@ export class DrawingSidebar {
       <div class="sidebar-section mb-2 bg-dark bg-opacity-25 rounded">
         <label class="form-label text-secondary small mb-1">${i18next.t('drawing.text.label')}</label>
         <div class="d-flex align-items-center gap-2 mb-2">
-          <input type="radio" class="btn-check" name="drawing-tool" id="tool-text" autocomplete="off">
+          <input type="radio" class="btn-check" name="drawing-tool" id="tool-text" autocomplete="off" ${this.drawingManager.getTool() === 'text' ? 'checked' : ''}>
           <label class="btn btn-sm btn-outline-light" for="tool-text" data-tool="text" title="${i18next.t('drawing.tools.text')}">
             <i class="bi bi-type me-1"></i> ${i18next.t('drawing.tools.text')}
           </label>
@@ -327,7 +346,8 @@ export class DrawingSidebar {
             ${FONT_SIZES.map((size, index) => {
               const labelKeys = ['small', 'medium', 'large', 'huge'];
               const label = i18next.t(`drawing.fontSize.${labelKeys[index]}`);
-              return `<input type="radio" class="btn-check" name="font-size" id="font-${size}" autocomplete="off" ${index === 0 ? 'checked' : ''}>
+              const isChecked = size === currentFontSize;
+              return `<input type="radio" class="btn-check" name="font-size" id="font-${size}" autocomplete="off" ${isChecked ? 'checked' : ''}>
               <label class="btn btn-outline-light" for="font-${size}">${label}</label>`;
             }).join('')}
           </div>
@@ -417,23 +437,59 @@ export class DrawingSidebar {
     this.redoBtn = this.contentArea.querySelector('#redo-btn') as HTMLButtonElement;
     this.deleteBtn = this.contentArea.querySelector('#delete-selected-btn') as HTMLButtonElement;
     this.toggleFillBtn = this.contentArea.querySelector('#toggle-fill-btn') as HTMLButtonElement;
+    this.strokeWidthSection = this.contentArea.querySelector('#stroke-width-section') as HTMLElement;
+    this.fillAlphaSection = this.contentArea.querySelector('#fill-alpha-section') as HTMLElement;
 
     // Bind events for subscriber content
     this.bindSubscriberEvents();
     this.updateToolUI(this.drawingManager.getTool()); // Ensure UI state matches active tool
     this.refreshDrawingsList();
 
-    // Preserve current stroke width and color, or use defaults for first render
-    const currentStroke = this.drawingManager.getStrokeWidth();
-    const currentColor = this.drawingManager.getColor();
-    // Update UI to match current values (don't reset them)
-    this.setStrokeWidth(currentStroke);
-    this.setColor(currentColor);
+    // Update UI to match current values
+    this.setStrokeWidth(currentStrokeWidth);
+    this.setColor(this.drawingManager.getColor());
+    this.setFillAlpha(currentFillAlpha);
 
     // Set up history change callback to update undo/redo buttons
     this.drawingManager.onHistoryChange = (canUndo, canRedo) => {
       this.undoBtn.disabled = !canUndo;
       this.redoBtn.disabled = !canRedo;
+    };
+
+    // Set up shape selection callback to update UI
+    this.drawingManager.onShapeSelect = (shape: Shape | null) => {
+      if (shape) {
+        // Update color UI
+        if (shape.color) {
+          this.setColor(shape.color);
+        }
+
+        // Update stroke width UI
+        if (shape.strokeWidth !== undefined) {
+          this.setStrokeWidth(shape.strokeWidth);
+        }
+
+        // Update fill alpha UI
+        if (shape.fillAlpha !== undefined) {
+          this.setFillAlpha(shape.fillAlpha);
+        }
+
+        // Bug 4: Disable stroke width for filled shapes
+        const isFilled = (shape.fillAlpha !== undefined && shape.fillAlpha > 0) || shape.filled;
+        if (isFilled && shape.type !== 'path' && shape.type !== 'line' && shape.type !== 'arrow_line') {
+          this.strokeWidthSection.classList.add('opacity-50', 'pe-none');
+          // Use normal stroke width as default for filled shapes as requested in bug 4
+          this.setStrokeWidth(5);
+          this.drawingManager.setStrokeWidth(5);
+        } else {
+          this.strokeWidthSection.classList.remove('opacity-50', 'pe-none');
+        }
+      } else {
+        // No selection - restore stroke width section
+        this.strokeWidthSection.classList.remove('opacity-50', 'pe-none');
+        // Restore manager's current stroke width to UI
+        this.setStrokeWidth(this.drawingManager.getStrokeWidth());
+      }
     };
 
     // Enable drawing if sidebar is open
@@ -452,6 +508,7 @@ export class DrawingSidebar {
       color: this.drawingManager.getColor(),
       strokeWidth: this.drawingManager.getStrokeWidth(),
       fontSize: this.drawingManager.getFontSize(),
+      fillAlpha: this.drawingManager.getFillAlpha(),
     };
     localStorage.setItem('noitamap-drawing-settings', JSON.stringify(settings));
   }
@@ -469,6 +526,9 @@ export class DrawingSidebar {
         }
         if (settings.fontSize) {
           this.drawingManager.setFontSize(settings.fontSize);
+        }
+        if (settings.fillAlpha) {
+          this.drawingManager.setFillAlpha(settings.fillAlpha);
         }
       } catch (e) {
         console.warn('[Sidebar] Failed to load drawing settings', e);
@@ -538,6 +598,12 @@ export class DrawingSidebar {
     if (radio) radio.checked = true;
   }
 
+  private updateFillAlphaVisibility(showFill: boolean): void {
+    if (this.fillAlphaSection) {
+      this.fillAlphaSection.style.display = showFill ? 'block' : 'none';
+    }
+  }
+
   private bindSubscriberEvents(): void {
     // Tool selection - use radio button change event
     this.contentArea.querySelectorAll('input[name="drawing-tool"]').forEach(input => {
@@ -556,10 +622,13 @@ export class DrawingSidebar {
             this.drawingManager.setFill(config.filled);
           }
           this.updateToolUI(config.id);
+          // Show/hide fill alpha section based on filled tool
+          this.updateFillAlphaVisibility(config.filled);
         } else if (inputId === 'move') {
           console.log('[Sidebar] Selected move tool');
           this.drawingManager.setTool('move');
           this.updateToolUI('move');
+          this.updateFillAlphaVisibility(false);
         }
       });
     });
@@ -599,6 +668,15 @@ export class DrawingSidebar {
       input.addEventListener('change', () => {
         const width = parseInt((input as HTMLInputElement).id.replace('stroke-', ''), 10);
         this.drawingManager.setStrokeWidth(width);
+        this.saveSettings();
+      });
+    });
+
+    // Fill alpha buttons
+    this.contentArea.querySelectorAll('input[name="fill-alpha"]').forEach(input => {
+      input.addEventListener('change', () => {
+        const index = parseInt((input as HTMLInputElement).id.replace('fill-alpha-', ''), 10);
+        this.drawingManager.setFillAlpha(FILL_ALPHAS[index]);
         this.saveSettings();
       });
     });
@@ -990,6 +1068,17 @@ export class DrawingSidebar {
   setFontSize(size: number): void {
     const radio = this.contentArea.querySelector(`#font-${size}`) as HTMLInputElement;
     if (radio) radio.checked = true;
+  }
+
+  /**
+   * Set the fill alpha in the UI
+   */
+  setFillAlpha(alpha: number): void {
+    const index = FILL_ALPHAS.indexOf(alpha as typeof FILL_ALPHAS[number]);
+    if (index >= 0) {
+      const radio = this.contentArea.querySelector(`#fill-alpha-${index}`) as HTMLInputElement;
+      if (radio) radio.checked = true;
+    }
   }
 
   private updateActiveColorSwatch(color: string): void {

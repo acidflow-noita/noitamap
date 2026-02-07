@@ -815,7 +815,9 @@
       "importWebpTitle": "Importer un dessin à partir d'une capture d'écran WebP",
       "exportJson": "Exporter JSON",
       "exportJsonTitle": "Exporter les formes en JSON",
-      "openSource": "Ouvrir la source sur Catbox"
+      "openSource": "Ouvrir la source sur Catbox",
+      "toggleFill": "Fill",
+      "toggleFillTitle": "Toggle fill on selected shape"
     },
     "import": {
       "noData": "Aucune donnée de dessin trouvée dans ce fichier WebP",
@@ -861,6 +863,13 @@
     },
     "text": {
       "label": "Texte"
+    },
+    "fillAlpha": {
+      "label": "Fill Opacity",
+      "light": "25%",
+      "medium": "50%",
+      "heavy": "75%",
+      "solid": "100%"
     }
   }
 }

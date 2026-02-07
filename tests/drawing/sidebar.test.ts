@@ -47,6 +47,10 @@ describe('DrawingSidebar', () => {
       getColor: vi.fn().mockReturnValue('#ffffff'),
       setStrokeWidth: vi.fn(),
       getStrokeWidth: vi.fn().mockReturnValue(5),
+      setFill: vi.fn(),
+      getFill: vi.fn().mockReturnValue(false),
+      setFillAlpha: vi.fn(),
+      getFillAlpha: vi.fn().mockReturnValue(1.0),
       setFontSize: vi.fn(),
       getFontSize: vi.fn().mockReturnValue(16),
       getShapes: vi.fn().mockReturnValue([]),
@@ -62,7 +66,7 @@ describe('DrawingSidebar', () => {
       canUndo: vi.fn(),
       canRedo: vi.fn(),
       deleteSelected: vi.fn(),
-      setFill: vi.fn(),
+      toggleSelectedFill: vi.fn(),
       destroy: vi.fn(),
     } as unknown as DrawingManager;
 

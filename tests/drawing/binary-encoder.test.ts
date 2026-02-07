@@ -136,7 +136,7 @@ describe('Binary Encoder', () => {
     expect(decoded?.shapes[0].pos).toEqual([1234, 5678]);
   });
 
-  it('should support custom RGB colors (V4)', () => {
+  it('should support custom RGB colors and fill alpha (V5)', () => {
     const customColor = '#123456';
     const shapes: Shape[] = [
       {
@@ -145,6 +145,7 @@ describe('Binary Encoder', () => {
         pos: [100, 200, 300, 400],
         color: customColor,
         filled: true,
+        fillAlpha: 0.75,
       },
       {
         id: 'c2',
@@ -156,12 +157,13 @@ describe('Binary Encoder', () => {
 
     const encoded = encodeShapesBinary(shapes, 'custom_color_map');
     expect(encoded).not.toBeNull();
-    expect(encoded![0]).toBe(4); // Version 4
+    expect(encoded![0]).toBe(5); // Version 5
 
     const decoded = decodeShapesBinary(encoded!);
     expect(decoded).not.toBeNull();
     expect(decoded?.shapes[0].color).toBe(customColor);
     expect(decoded?.shapes[0].filled).toBe(true);
+    expect(decoded?.shapes[0].fillAlpha).toBe(0.75);
     expect(decoded?.shapes[1].color).toBe('#ff00ff');
   });
 });

@@ -796,6 +796,13 @@
       "thick": "Толстая",
       "heavy": "Жирная"
     },
+    "fillAlpha": {
+      "label": "Fill Opacity",
+      "light": "25%",
+      "medium": "50%",
+      "heavy": "75%",
+      "solid": "100%"
+    },
     "actions": {
       "undo": "Отменить",
       "undoTitle": "Отменить (Ctrl+Z)",
@@ -803,6 +810,8 @@
       "redoTitle": "Повторить (Ctrl+Shift+Z)",
       "delete": "Удалить",
       "deleteTitle": "Удалить выделенную фигуру (Delete)",
+      "toggleFill": "Fill",
+      "toggleFillTitle": "Toggle fill on selected shape",
       "showHide": "Показать/Скрыть",
       "showHideTitle": "Переключить видимость рисунка",
       "save": "Сохранить",
