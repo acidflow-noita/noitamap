@@ -817,11 +817,14 @@
       "exportJsonTitle": "Ekspor bentuk sebagai JSON",
       "openSource": "Buka sumber di Catbox",
       "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape"
+      "toggleFillTitle": "Toggle fill on selected shape",
+      "importJson": "Import JSON",
+      "importJsonTitle": "Import shapes from JSON file"
     },
     "import": {
       "noData": "Tidak ada data gambar yang ditemukan di file WebP ini",
-      "viewOnly": "Anda dapat melihat gambar bersama:"
+      "viewOnly": "Anda dapat melihat gambar bersama:",
+      "dropHint": "Drop WebP or JSON file to import drawing"
     },
     "savedDrawings": {
       "label": "Gambar Tersimpan",

@@ -824,11 +824,14 @@
       "exportJsonTitle": "Експортувати фігури у JSON",
       "openSource": "Відкрити джерело на Catbox",
       "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape"
+      "toggleFillTitle": "Toggle fill on selected shape",
+      "importJson": "Import JSON",
+      "importJsonTitle": "Import shapes from JSON file"
     },
     "import": {
       "noData": "У цьому WebP файлі не знайдено даних малюнка",
-      "viewOnly": "Ви можете переглядати спільні малюнки:"
+      "viewOnly": "Ви можете переглядати спільні малюнки:",
+      "dropHint": "Drop WebP or JSON file to import drawing"
     },
     "savedDrawings": {
       "label": "Збережені малюнки",

@@ -823,13 +823,16 @@
       "downloadTitle": "Download drawing as image",
       "importWebp": "Import",
       "importWebpTitle": "Import drawing from WebP screenshot",
+      "importJson": "Import JSON",
+      "importJsonTitle": "Import shapes from JSON file",
       "exportJson": "Export JSON",
       "exportJsonTitle": "Export shapes as JSON",
       "openSource": "Open source on Catbox"
     },
     "import": {
       "noData": "No drawing data found in this WebP file",
-      "viewOnly": "You can view shared drawings:"
+      "viewOnly": "You can view shared drawings:",
+      "dropHint": "Drop WebP or JSON file to import drawing"
     },
     "savedDrawings": {
       "label": "Saved Drawings",

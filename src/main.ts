@@ -426,7 +426,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let dragCounter = 0;
     const dropOverlay = document.createElement('div');
     dropOverlay.className = 'drop-overlay';
-    dropOverlay.setAttribute('data-text', i18next.t('drawing.import.dropHint', 'Drop WebP file to import drawing'));
+    dropOverlay.setAttribute('data-text', i18next.t('drawing.import.dropHint', 'Drop WebP or JSON file to import drawing'));
     document.body.appendChild(dropOverlay);
 
     document.body.addEventListener('dragenter', e => {
@@ -456,17 +456,45 @@ document.addEventListener('DOMContentLoaded', async () => {
       dropOverlay.classList.remove('visible');
 
       const file = e.dataTransfer?.files[0];
-      if (!file || !file.name.endsWith('.webp')) return;
+      if (!file) return;
 
-      const result = await extractDrawingData(file);
-      if (!result || result.shapes.length === 0) {
-        console.warn('[DragDrop] No drawing data found in dropped file');
+      let shapes: any[] = [];
+      let mapName: string | undefined;
+      let strokeWidth: number | undefined;
+
+      if (file.name.endsWith('.webp')) {
+        const result = await extractDrawingData(file);
+        if (!result || result.shapes.length === 0) {
+          console.warn('[DragDrop] No drawing data found in dropped file');
+          return;
+        }
+        shapes = result.shapes;
+        mapName = result.mapName;
+        strokeWidth = result.strokeWidth;
+      } else if (file.name.endsWith('.json')) {
+        try {
+          const text = await file.text();
+          const data = JSON.parse(text);
+          if (Array.isArray(data)) {
+            shapes = data;
+          } else if (data && Array.isArray(data.shapes)) {
+            shapes = data.shapes;
+            mapName = data.map;
+          } else {
+            console.warn('[DragDrop] Invalid JSON format: missing shapes array');
+            return;
+          }
+        } catch (err) {
+          console.error('[DragDrop] Failed to parse JSON:', err);
+          return;
+        }
+      } else {
         return;
       }
 
       // Switch to correct map if needed
-      if (result.mapName) {
-        const validMapName = asMapName(result.mapName);
+      if (mapName) {
+        const validMapName = asMapName(mapName);
         if (validMapName && validMapName !== app.getMap()) {
           await app.setMap(validMapName);
           drawingSession?.setMap(validMapName);
@@ -475,16 +503,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (drawingManager) {
         isDrawLoading = true;
-        drawingManager.loadShapes(result.shapes);
+        drawingManager.loadShapes(shapes);
         isDrawLoading = false;
-        if (result.strokeWidth) {
-          drawingManager.setStrokeWidth(result.strokeWidth);
-          drawingSidebar?.setStrokeWidth(result.strokeWidth);
+        if (strokeWidth) {
+          drawingManager.setStrokeWidth(strokeWidth);
+          drawingSidebar?.setStrokeWidth(strokeWidth);
         }
         // Update URL with imported drawing data
-        const mapName = drawingSession?.getMapName() ?? '';
-        const sw = result.strokeWidth ?? drawingManager.getStrokeWidth();
-        const encoded = encodeShapesWithInfo(result.shapes, undefined, mapName, sw);
+        const currentMap = drawingSession?.getMapName() ?? '';
+        const sw = strokeWidth ?? drawingManager.getStrokeWidth();
+        const encoded = encodeShapesWithInfo(shapes, undefined, currentMap, sw);
         if (encoded) {
           updateURLWithDrawing(encoded.encoded);
         }
@@ -497,7 +525,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateURLWithSidebar(true);
       }
 
-      console.log('[DragDrop] Imported', result.shapes.length, 'shapes from dropped file');
+      console.log('[DragDrop] Imported', shapes.length, 'shapes from dropped file');
     });
   }
 

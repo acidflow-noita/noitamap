@@ -817,11 +817,14 @@
       "exportJsonTitle": "Vie muodot JSON-muodossa",
       "openSource": "Avaa lähde Catboxissa",
       "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape"
+      "toggleFillTitle": "Toggle fill on selected shape",
+      "importJson": "Import JSON",
+      "importJsonTitle": "Import shapes from JSON file"
     },
     "import": {
       "noData": "Tässä WebP-tiedostossa ei ole piirustusdataa",
-      "viewOnly": "Voit katsella jaettuja piirroksia:"
+      "viewOnly": "Voit katsella jaettuja piirroksia:",
+      "dropHint": "Drop WebP or JSON file to import drawing"
     },
     "savedDrawings": {
       "label": "Tallennetut piirrokset",

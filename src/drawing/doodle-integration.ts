@@ -127,7 +127,7 @@ export async function createDrawingManager(
 ): Promise<DrawingManager> {
   let isEnabled = false;
   let visible = true;
-  let currentTool: ShapeType = 'path';
+  let currentTool: ShapeType = 'move';
   let currentStrokeWidth = 5;
   let currentColor = '#ffffff';
   let currentFill = false;
@@ -1212,7 +1212,7 @@ export async function createDrawingManager(
           const sanitizedShape = {
             ...shape,
             color: isValidHexColor(shape.color) ? shape.color : '#ffffff',
-            strokeWidth: shape.strokeWidth || 5,
+            strokeWidth: shape.strokeWidth !== undefined ? shape.strokeWidth : 5,
           };
 
           // Basic validation - just check pos exists and values are finite

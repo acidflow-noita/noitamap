@@ -817,11 +817,14 @@
       "exportJsonTitle": "Exportera former som JSON",
       "openSource": "Öppna källkod på Catbox",
       "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape"
+      "toggleFillTitle": "Toggle fill on selected shape",
+      "importJson": "Import JSON",
+      "importJsonTitle": "Import shapes from JSON file"
     },
     "import": {
       "noData": "Ingen ritdata hittades i denna WebP-fil",
-      "viewOnly": "Du kan visa delade ritningar:"
+      "viewOnly": "Du kan visa delade ritningar:",
+      "dropHint": "Drop WebP or JSON file to import drawing"
     },
     "savedDrawings": {
       "label": "Sparade ritningar",

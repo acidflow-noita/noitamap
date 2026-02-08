@@ -817,11 +817,14 @@
       "exportJsonTitle": "Exporter les formes en JSON",
       "openSource": "Ouvrir la source sur Catbox",
       "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape"
+      "toggleFillTitle": "Toggle fill on selected shape",
+      "importJson": "Import JSON",
+      "importJsonTitle": "Import shapes from JSON file"
     },
     "import": {
       "noData": "Aucune donnée de dessin trouvée dans ce fichier WebP",
-      "viewOnly": "Vous pouvez voir les dessins partagés :"
+      "viewOnly": "Vous pouvez voir les dessins partagés :",
+      "dropHint": "Drop WebP or JSON file to import drawing"
     },
     "savedDrawings": {
       "label": "Dessins enregistrés",

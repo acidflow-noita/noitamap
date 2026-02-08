@@ -97,8 +97,6 @@ export class DrawingSidebar {
   private redoBtn!: HTMLButtonElement;
   private deleteBtn!: HTMLButtonElement;
   private toggleFillBtn!: HTMLButtonElement;
-  private strokeWidthSection!: HTMLElement;
-  private fillAlphaSection!: HTMLElement;
   private keyboardHandler: ((e: KeyboardEvent) => void) | null = null;
   private keyupHandler: ((e: KeyboardEvent) => void) | null = null;
   private simplifiedHandler: (() => void) | null = null;
@@ -289,14 +287,14 @@ export class DrawingSidebar {
       <div class="sidebar-section mb-2">
         <label class="form-label text-secondary small mb-1">${i18next.t('drawing.shapes.label')}</label>
         <div class="d-flex flex-wrap gap-1 mb-2" id="tool-buttons">
-          <input type="radio" class="btn-check" name="drawing-tool" id="tool-move" autocomplete="off">
+          <input type="radio" class="btn-check" name="drawing-tool" id="tool-move" autocomplete="off" checked>
           <label class="btn btn-sm btn-outline-light" for="tool-move" data-tool="move" title="${i18next.t('drawing.tools.move')}">
             <i class="bi bi-arrows-move"></i>
           </label>
           ${drawingTools
             .map(
               tool => `
-          <input type="radio" class="btn-check" name="drawing-tool" id="tool-${tool.id}" autocomplete="off" ${tool.id === 'path' ? 'checked' : ''}>
+          <input type="radio" class="btn-check" name="drawing-tool" id="tool-${tool.id}" autocomplete="off">
           <label class="btn btn-sm btn-outline-light" for="tool-${tool.id}" data-tool="${tool.id}" title="${i18next.t(tool.titleKey)}">
             ${tool.svg ? tool.svg : `<i class="${tool.icon}"></i>`}
           </label>`
@@ -317,7 +315,7 @@ export class DrawingSidebar {
           </div>
         </div>
 
-        <div id="fill-alpha-section" class="mt-2" style="display: none;">
+        <div id="fill-alpha-section" class="mt-2">
           <label class="form-label text-secondary small mb-1">${i18next.t('drawing.fillAlpha.label')}</label>
           <div class="btn-group btn-group-sm w-100" role="group" id="fill-alpha-buttons">
             ${FILL_ALPHAS.map((alpha, index) => {
@@ -401,6 +399,10 @@ export class DrawingSidebar {
             <i class="bi bi-upload"></i> ${i18next.t('drawing.actions.importWebp')}
           </button>
           <input type="file" id="import-webp-input" accept="image/webp" style="display: none;">
+          <button class="btn btn-sm btn-outline-light flex-fill" id="import-json-btn" title="${i18next.t('drawing.actions.importJsonTitle')}">
+            <i class="bi bi-file-earmark-arrow-up"></i> ${i18next.t('drawing.actions.importJson')}
+          </button>
+          <input type="file" id="import-json-input" accept="application/json" style="display: none;">
           <button class="btn btn-sm btn-outline-light flex-fill" id="export-json-btn" title="${i18next.t('drawing.actions.exportJsonTitle')}">
             <i class="bi bi-filetype-json"></i> ${i18next.t('drawing.actions.exportJson')}
           </button>
@@ -437,8 +439,6 @@ export class DrawingSidebar {
     this.redoBtn = this.contentArea.querySelector('#redo-btn') as HTMLButtonElement;
     this.deleteBtn = this.contentArea.querySelector('#delete-selected-btn') as HTMLButtonElement;
     this.toggleFillBtn = this.contentArea.querySelector('#toggle-fill-btn') as HTMLButtonElement;
-    this.strokeWidthSection = this.contentArea.querySelector('#stroke-width-section') as HTMLElement;
-    this.fillAlphaSection = this.contentArea.querySelector('#fill-alpha-section') as HTMLElement;
 
     // Bind events for subscriber content
     this.bindSubscriberEvents();
@@ -473,22 +473,6 @@ export class DrawingSidebar {
         if (shape.fillAlpha !== undefined) {
           this.setFillAlpha(shape.fillAlpha);
         }
-
-        // Bug 4: Disable stroke width for filled shapes
-        const isFilled = (shape.fillAlpha !== undefined && shape.fillAlpha > 0) || shape.filled;
-        if (isFilled && shape.type !== 'path' && shape.type !== 'line' && shape.type !== 'arrow_line') {
-          this.strokeWidthSection.classList.add('opacity-50', 'pe-none');
-          // Use normal stroke width as default for filled shapes as requested in bug 4
-          this.setStrokeWidth(5);
-          this.drawingManager.setStrokeWidth(5);
-        } else {
-          this.strokeWidthSection.classList.remove('opacity-50', 'pe-none');
-        }
-      } else {
-        // No selection - restore stroke width section
-        this.strokeWidthSection.classList.remove('opacity-50', 'pe-none');
-        // Restore manager's current stroke width to UI
-        this.setStrokeWidth(this.drawingManager.getStrokeWidth());
       }
     };
 
@@ -538,12 +522,13 @@ export class DrawingSidebar {
 
   private bindHotkeys(): void {
     let spaceHeld = false;
+    let previousTool: ShapeType | null = null;
 
     this.keyboardHandler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
+      // === SPACEBAR: Temporary pan mode ===
       if (e.code === 'Space') {
-        // Spacebar: temporarily disable drawing to allow map panning
         if (!e.repeat && !spaceHeld) {
           e.preventDefault();
           e.stopPropagation();
@@ -551,8 +536,11 @@ export class DrawingSidebar {
             document.activeElement.blur();
           }
           spaceHeld = true;
+          previousTool = this.drawingManager.getTool();
           // Disable doodle so OSD can receive pan gestures
           this.drawingManager.disable();
+          // Change cursor to grab hand
+          document.body.style.cursor = 'grab';
         }
         return;
       }
@@ -560,14 +548,47 @@ export class DrawingSidebar {
       // Other hotkeys only work when drawing is enabled
       if (!this.drawingManager.isEnabled()) return;
 
+      // === TOOL HOTKEYS ===
       if (e.code === 'KeyV') {
-        // V: switch to move tool (for moving shapes)
+        // V: Move/Select tool
         if (!e.repeat) {
           e.preventDefault();
           this.drawingManager.setTool('move');
           this.updateToolUI('move');
         }
+      } else if (e.code === 'KeyX') {
+        // X: Freehand/Path tool
+        if (!e.repeat) {
+          e.preventDefault();
+          this.drawingManager.setTool('path');
+          this.drawingManager.setFill(false);
+          this.updateToolUI('path');
+        }
+      } else if (e.code === 'KeyR') {
+        // R: Rectangle tool
+        if (!e.repeat) {
+          e.preventDefault();
+          this.drawingManager.setTool('rect');
+          this.drawingManager.setFill(false);
+          this.updateToolUI('rect');
+        }
+      } else if (e.code === 'KeyF') {
+        // F: Toggle fill on selected shape
+        if (!e.repeat) {
+          e.preventDefault();
+          this.drawingManager.toggleSelectedFill();
+        }
+      } else if (e.code === 'KeyC') {
+        // C: Focus color picker
+        if (!e.repeat) {
+          e.preventDefault();
+          const colorPicker = this.contentArea.querySelector('#custom-color-picker') as HTMLInputElement;
+          if (colorPicker) {
+            colorPicker.click();
+          }
+        }
       } else if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') {
+        // Ctrl+Z / Cmd+Z: Undo
         e.preventDefault();
         if (e.shiftKey) {
           this.drawingManager.redo();
@@ -575,6 +596,7 @@ export class DrawingSidebar {
           this.drawingManager.undo();
         }
       } else if ((e.ctrlKey || e.metaKey) && e.code === 'KeyY') {
+        // Ctrl+Y / Cmd+Y: Redo
         e.preventDefault();
         this.drawingManager.redo();
       }
@@ -583,8 +605,16 @@ export class DrawingSidebar {
     this.keyupHandler = (e: KeyboardEvent) => {
       if (e.code === 'Space' && spaceHeld) {
         spaceHeld = false;
+        // Restore cursor
+        document.body.style.cursor = '';
         // Re-enable drawing when spacebar is released
         this.drawingManager.enable();
+        // Restore previous tool if it was set
+        if (previousTool) {
+          this.drawingManager.setTool(previousTool);
+          this.updateToolUI(previousTool);
+          previousTool = null;
+        }
       }
     };
 
@@ -596,12 +626,6 @@ export class DrawingSidebar {
     console.log('[Sidebar] updateToolUI called with:', toolId);
     const radio = this.contentArea.querySelector(`#tool-${toolId}`) as HTMLInputElement;
     if (radio) radio.checked = true;
-  }
-
-  private updateFillAlphaVisibility(showFill: boolean): void {
-    if (this.fillAlphaSection) {
-      this.fillAlphaSection.style.display = showFill ? 'block' : 'none';
-    }
   }
 
   private bindSubscriberEvents(): void {
@@ -622,13 +646,10 @@ export class DrawingSidebar {
             this.drawingManager.setFill(config.filled);
           }
           this.updateToolUI(config.id);
-          // Show/hide fill alpha section based on filled tool
-          this.updateFillAlphaVisibility(config.filled);
         } else if (inputId === 'move') {
           console.log('[Sidebar] Selected move tool');
           this.drawingManager.setTool('move');
           this.updateToolUI('move');
-          this.updateFillAlphaVisibility(false);
         }
       });
     });
@@ -723,6 +744,20 @@ export class DrawingSidebar {
       this.exportJson();
     });
 
+    // Import JSON
+    const importJsonBtn = this.contentArea.querySelector('#import-json-btn');
+    const importJsonInput = this.contentArea.querySelector('#import-json-input') as HTMLInputElement;
+    importJsonBtn?.addEventListener('click', () => {
+      importJsonInput?.click();
+    });
+    importJsonInput?.addEventListener('change', async () => {
+      const file = importJsonInput.files?.[0];
+      if (file) {
+        await this.importJson(file);
+        importJsonInput.value = ''; // Reset for next import
+      }
+    });
+
     // Import WebP with embedded drawing data
     const importBtn = this.contentArea.querySelector('#import-webp-btn');
     const importInput = this.contentArea.querySelector('#import-webp-input') as HTMLInputElement;
@@ -796,6 +831,45 @@ export class DrawingSidebar {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  private async importJson(file: File): Promise<void> {
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      let shapes: Shape[] = [];
+      let mapName: string | undefined;
+
+      if (Array.isArray(data)) {
+        shapes = data;
+      } else if (data && Array.isArray(data.shapes)) {
+        shapes = data.shapes;
+        mapName = data.map;
+      } else {
+        throw new Error('Invalid JSON format: missing shapes array');
+      }
+
+      // Switch to the correct map if embedded map name differs from current
+      const currentMap = this.session.getMapName();
+      if (mapName && mapName !== currentMap && this.options.onMapChange) {
+        await this.options.onMapChange(mapName);
+        this.session.setMap(mapName);
+      }
+
+      // Load shapes into drawing manager
+      this.drawingManager.loadShapes(shapes);
+
+      console.log('[Sidebar] Imported', shapes.length, 'shapes from JSON, map:', mapName);
+
+      // Save to session and refresh list
+      this.session.setIsImport(true);
+      await this.session.save();
+      this.refreshDrawingsList();
+    } catch (e) {
+      console.error('[Sidebar] Failed to import JSON', e);
+      alert(`${i18next.t('drawing.import.noData')}: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
 
   private async importWebp(file: File): Promise<void> {

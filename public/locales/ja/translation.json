@@ -817,11 +817,14 @@
       "exportJsonTitle": "図形をJSONとしてエクスポート",
       "openSource": "Catboxでソースを開く",
       "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape"
+      "toggleFillTitle": "Toggle fill on selected shape",
+      "importJson": "Import JSON",
+      "importJsonTitle": "Import shapes from JSON file"
     },
     "import": {
       "noData": "このWebPファイルに描画データが見つかりません",
-      "viewOnly": "共有された描画を表示できます："
+      "viewOnly": "共有された描画を表示できます：",
+      "dropHint": "Drop WebP or JSON file to import drawing"
     },
     "savedDrawings": {
       "label": "保存済みの描画",

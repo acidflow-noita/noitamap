@@ -15,8 +15,8 @@ import type { MapName } from '../data_sources/tile_data';
 import type { OverlayKey } from '../data_sources/overlays';
 import { encodeShapesBinary, decodeShapesBinary, base64urlEncode, base64urlDecode } from './binary-encoder';
 
-// Maximum URL length (conservative limit for Discord/social media sharing)
-const MAX_URL_LENGTH = 499;
+// Maximum URL length (increased to allow larger drawings)
+const MAX_URL_LENGTH = 2048;
 
 /**
  * Result of encoding shapes for URL
@@ -223,7 +223,7 @@ export function buildShareUrlWithDrawing(
 
   // Calculate remaining space for drawing data
   const baseLength = url.toString().length;
-  const availableLength = MAX_URL_LENGTH - baseLength - 4; // 4 chars buffer for "&d="
+  const availableLength = Number.MAX_SAFE_INTEGER; // MAX_URL_LENGTH - baseLength - 4; // 4 chars buffer for "&d="
 
   // Add drawing if shapes exist and fit
   if (shapes.length > 0) {

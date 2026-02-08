@@ -126,7 +126,7 @@ function readInt32(buffer: Uint8Array, offset: number): number {
  * Encode shapes to binary format (V5)
  */
 export function encodeShapesBinary(shapes: Shape[], mapName: string, _strokeWidth: number = 5): Uint8Array | null {
-  if (shapes.length === 0 || shapes.length > 255) return null;
+  if (shapes.length === 0) return null;
 
   const mapNameBytes = new TextEncoder().encode(mapName);
   if (mapNameBytes.length > 255) {
@@ -173,7 +173,8 @@ export function encodeShapesBinary(shapes: Shape[], mapName: string, _strokeWidt
   offset += mapNameBytes.length;
 
   // Shape count
-  buffer[offset++] = shapes.length;
+  writeInt32(buffer, offset, shapes.length);
+  offset += 4;
 
   // Packed stroke widths (2 bits each, 4 per byte)
   const strokeBytes = Math.ceil(shapes.length / 4);
@@ -357,7 +358,8 @@ function decodeV5(
   offset += mapNameLen;
 
   // Shape count
-  const shapeCount = buffer[offset++];
+  const shapeCount = readInt32(buffer, offset);
+  offset += 4;
 
   // Packed stroke widths
   const strokeBytes = Math.ceil(shapeCount / 4);

@@ -817,11 +817,14 @@
       "exportJsonTitle": "Exportovat tvary jako JSON",
       "openSource": "Otevřít zdroj na Catbox",
       "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape"
+      "toggleFillTitle": "Toggle fill on selected shape",
+      "importJson": "Import JSON",
+      "importJsonTitle": "Import shapes from JSON file"
     },
     "import": {
       "noData": "V tomto souboru WebP nebyly nalezeny žádné údaje o kresbě",
-      "viewOnly": "Můžete si prohlédnout sdílené kresby:"
+      "viewOnly": "Můžete si prohlédnout sdílené kresby:",
+      "dropHint": "Drop WebP or JSON file to import drawing"
     },
     "savedDrawings": {
       "label": "Uložené kresby",

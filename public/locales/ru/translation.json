@@ -824,11 +824,14 @@
       "importWebpTitle": "Импортировать рисунок из скриншота WebP",
       "exportJson": "Экспорт JSON",
       "exportJsonTitle": "Экспортировать фигуры в JSON",
-      "openSource": "Открыть источник на Catbox"
+      "openSource": "Открыть источник на Catbox",
+      "importJson": "Import JSON",
+      "importJsonTitle": "Import shapes from JSON file"
     },
     "import": {
       "noData": "В этом файле WebP не найдено данных рисунка",
-      "viewOnly": "Вы можете просматривать общие рисунки:"
+      "viewOnly": "Вы можете просматривать общие рисунки:",
+      "dropHint": "Drop WebP or JSON file to import drawing"
     },
     "savedDrawings": {
       "label": "Сохранённые рисунки",

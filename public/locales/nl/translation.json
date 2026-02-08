@@ -817,11 +817,14 @@
       "exportJsonTitle": "Vormen als JSON exporteren",
       "openSource": "Open bron op Catbox",
       "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape"
+      "toggleFillTitle": "Toggle fill on selected shape",
+      "importJson": "Import JSON",
+      "importJsonTitle": "Import shapes from JSON file"
     },
     "import": {
       "noData": "Geen tekengegevens gevonden in dit WebP-bestand",
-      "viewOnly": "Je kunt gedeelde tekeningen bekijken:"
+      "viewOnly": "Je kunt gedeelde tekeningen bekijken:",
+      "dropHint": "Drop WebP or JSON file to import drawing"
     },
     "savedDrawings": {
       "label": "Opgeslagen tekeningen",
