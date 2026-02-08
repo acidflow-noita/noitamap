@@ -297,6 +297,16 @@ function worldToCanvas(
 }
 
 /**
+ * Convert hex color to RGBA for canvas rendering
+ */
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/**
  * Render shapes to a 2D canvas context
  */
 function renderShapesToCanvas(
@@ -313,9 +323,12 @@ function renderShapesToCanvas(
   const scaledStrokeWidth = strokeWidth * dpr;
 
   for (const shape of shapes) {
+    const isFilled = shape.filled || (shape.fillAlpha !== undefined && shape.fillAlpha > 0);
+    const fillAlpha = shape.fillAlpha !== undefined ? shape.fillAlpha : 1.0;
+    
     ctx.strokeStyle = shape.color;
-    ctx.fillStyle = shape.color;
-    ctx.lineWidth = scaledStrokeWidth;
+    ctx.fillStyle = isFilled ? hexToRgba(shape.color, fillAlpha) : 'transparent';
+    ctx.lineWidth = (shape.strokeWidth !== undefined ? shape.strokeWidth : strokeWidth) * dpr;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
@@ -334,9 +347,9 @@ function renderShapesToCanvas(
         }
         if (shape.type === 'closed_path') {
           ctx.closePath();
-          ctx.fill();
+          if (isFilled) ctx.fill();
         }
-        ctx.stroke();
+        if (ctx.lineWidth > 0) ctx.stroke();
         break;
       }
 
@@ -348,7 +361,7 @@ function renderShapesToCanvas(
         ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
-        ctx.stroke();
+        if (ctx.lineWidth > 0) ctx.stroke();
 
         if (shape.type === 'arrow_line') {
           // Draw arrowhead, scaled by DPR
@@ -359,7 +372,7 @@ function renderShapesToCanvas(
           ctx.lineTo(p2.x - headLen * Math.cos(angle - Math.PI / 6), p2.y - headLen * Math.sin(angle - Math.PI / 6));
           ctx.moveTo(p2.x, p2.y);
           ctx.lineTo(p2.x - headLen * Math.cos(angle + Math.PI / 6), p2.y - headLen * Math.sin(angle + Math.PI / 6));
-          ctx.stroke();
+          if (ctx.lineWidth > 0) ctx.stroke();
         }
         break;
       }
@@ -369,7 +382,10 @@ function renderShapesToCanvas(
         if (pos.length < 4) break;
         const r1 = worldToCanvas(pos[0], pos[1], viewportInfo, canvasWidth, canvasHeight);
         const r2 = worldToCanvas(pos[0] + pos[2], pos[1] + pos[3], viewportInfo, canvasWidth, canvasHeight);
-        ctx.strokeRect(r1.x, r1.y, r2.x - r1.x, r2.y - r1.y);
+        const w = r2.x - r1.x;
+        const h = r2.y - r1.y;
+        if (isFilled) ctx.fillRect(r1.x, r1.y, w, h);
+        if (ctx.lineWidth > 0) ctx.strokeRect(r1.x, r1.y, w, h);
         break;
       }
 
@@ -382,7 +398,8 @@ function renderShapesToCanvas(
         const radiusPixels = edgePoint.x - center.x;
         ctx.beginPath();
         ctx.arc(center.x, center.y, Math.abs(radiusPixels), 0, Math.PI * 2);
-        ctx.stroke();
+        if (isFilled) ctx.fill();
+        if (ctx.lineWidth > 0) ctx.stroke();
         break;
       }
 
@@ -398,7 +415,8 @@ function renderShapesToCanvas(
         const radiusYPixels = edgeY.y - eCenter.y;
         ctx.beginPath();
         ctx.ellipse(eCenter.x, eCenter.y, Math.abs(radiusXPixels), Math.abs(radiusYPixels), 0, 0, Math.PI * 2);
-        ctx.stroke();
+        if (isFilled) ctx.fill();
+        if (ctx.lineWidth > 0) ctx.stroke();
         break;
       }
 
@@ -412,7 +430,8 @@ function renderShapesToCanvas(
           ctx.lineTo(pt.x, pt.y);
         }
         ctx.closePath();
-        ctx.stroke();
+        if (isFilled) ctx.fill();
+        if (ctx.lineWidth > 0) ctx.stroke();
         break;
       }
 
@@ -421,6 +440,7 @@ function renderShapesToCanvas(
         const point = worldToCanvas(pos[0], pos[1], viewportInfo, canvasWidth, canvasHeight);
         ctx.beginPath();
         ctx.arc(point.x, point.y, scaledStrokeWidth * 2, 0, Math.PI * 2);
+        ctx.fillStyle = shape.color; // Points always solid
         ctx.fill();
         break;
       }
