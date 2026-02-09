@@ -136,6 +136,85 @@ describe('Binary Encoder', () => {
     expect(decoded?.shapes[0].pos).toEqual([1234, 5678]);
   });
 
+  it('should handle polygon shapes with many vertices', () => {
+    // Create a polygon with many vertices (like those from vtracer conversion)
+    const vertices = [];
+    const numPoints = 100;
+    for (let i = 0; i < numPoints; i++) {
+      const angle = (i / numPoints) * Math.PI * 2;
+      vertices.push(
+        Math.round(10000 * Math.cos(angle) - 15000), // x
+        Math.round(10000 * Math.sin(angle) + 5000)   // y
+      );
+    }
+
+    const shapes: Shape[] = [
+      {
+        id: 'polygon1',
+        type: 'polygon',
+        pos: vertices,
+        color: '#ff0000',
+        filled: true,
+        fillAlpha: 1.0,
+      },
+    ];
+
+    const encoded = encodeShapesBinary(shapes, 'polygon_map');
+    expect(encoded).not.toBeNull();
+
+    const decoded = decodeShapesBinary(encoded!);
+    expect(decoded).not.toBeNull();
+    expect(decoded?.shapes.length).toBe(1);
+    expect(decoded?.shapes[0].type).toBe('polygon');
+    expect(decoded?.shapes[0].pos.length).toBe(vertices.length);
+
+    // Verify all coordinates match exactly
+    for (let i = 0; i < vertices.length; i++) {
+      expect(decoded?.shapes[0].pos[i]).toBe(vertices[i]);
+    }
+  });
+
+  it('should handle complex polygon with negative coordinates', () => {
+    // Test polygon similar to convert_svg output with large negative coordinates
+    const shapes: Shape[] = [
+      {
+        id: 'complex_polygon',
+        type: 'polygon',
+        pos: [
+          -15912, -9072,
+          -14708, -9072,
+          -14708, -8900,
+          -14020, -8900,
+          -14020, -8728,
+          -13504, -8728,
+          -13504, -8556,
+          -13332, -8556,
+          -13332, -8384,
+          -12988, -8384,
+          -12988, -8212,
+          -12816, -8212,
+        ],
+        color: '#5B4749',
+        filled: true,
+        fillAlpha: 1.0,
+        strokeWidth: 0,
+      },
+    ];
+
+    const encoded = encodeShapesBinary(shapes, 'complex_map');
+    expect(encoded).not.toBeNull();
+
+    const decoded = decodeShapesBinary(encoded!);
+    expect(decoded).not.toBeNull();
+    expect(decoded?.shapes[0].type).toBe('polygon');
+    expect(decoded?.shapes[0].pos.length).toBe(shapes[0].pos.length);
+
+    // Verify all coordinates preserved
+    for (let i = 0; i < shapes[0].pos.length; i++) {
+      expect(decoded?.shapes[0].pos[i]).toBe(shapes[0].pos[i]);
+    }
+  });
+
   it('should support custom RGB colors and fill alpha (V5)', () => {
     const customColor = '#123456';
     const shapes: Shape[] = [

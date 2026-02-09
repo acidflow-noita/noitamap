@@ -290,16 +290,19 @@ describe('Drawing Workflow - E2E Tests', () => {
       expect(isValid).toBe(false);
     });
 
-    it('should recover from failed encoding', () => {
-      const tooManyShapes: Shape[] = Array.from({ length: 300 }, (_, i) => ({
+    it('should handle large number of shapes', () => {
+      const manyShapes: Shape[] = Array.from({ length: 300 }, (_, i) => ({
         id: `shape-${i}`,
         type: 'point',
         pos: [i, i],
         color: '#ffffff',
       }));
 
-      const encoded = encodeShapesBinary(tooManyShapes, 'test');
-      expect(encoded).toBeNull(); // Should fail gracefully (max 255 shapes)
+      const encoded = encodeShapesBinary(manyShapes, 'test');
+      expect(encoded).not.toBeNull(); // Should work - V5 uses int32 for shape count
+
+      const decoded = decodeShapesBinary(encoded!);
+      expect(decoded?.shapes.length).toBe(300);
     });
   });
 

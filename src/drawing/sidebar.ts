@@ -9,6 +9,7 @@ import { getAllMapDefinitions } from '../data_sources/map_definitions';
 import type { AuthState } from '../auth/auth-service';
 import { authService } from '../auth/auth-service';
 import i18next from '../i18n';
+import { createKeydownHandler, createKeyupHandler, type HotkeyState, type HotkeyHandlers } from './hotkeys';
 
 export interface SidebarOptions {
   drawingManager: DrawingManager;
@@ -97,10 +98,10 @@ export class DrawingSidebar {
   private redoBtn!: HTMLButtonElement;
   private deleteBtn!: HTMLButtonElement;
   private toggleFillBtn!: HTMLButtonElement;
+  private hotkeyState: HotkeyState = { spaceHeld: false, previousTool: null };
   private keyboardHandler: ((e: KeyboardEvent) => void) | null = null;
   private keyupHandler: ((e: KeyboardEvent) => void) | null = null;
   private simplifiedHandler: (() => void) | null = null;
-  private previousTool: ShapeType | null = null;
   private catboxSourceUrl: string | null = null;
 
   constructor(container: HTMLElement, options: SidebarOptions) {
@@ -521,102 +522,13 @@ export class DrawingSidebar {
   }
 
   private bindHotkeys(): void {
-    let spaceHeld = false;
-    let previousTool: ShapeType | null = null;
-
-    this.keyboardHandler = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-
-      // === SPACEBAR: Temporary pan mode ===
-      if (e.code === 'Space') {
-        if (!e.repeat && !spaceHeld) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (document.activeElement instanceof HTMLElement) {
-            document.activeElement.blur();
-          }
-          spaceHeld = true;
-          previousTool = this.drawingManager.getTool();
-          // Disable doodle so OSD can receive pan gestures
-          this.drawingManager.disable();
-          // Change cursor to grab hand
-          document.body.style.cursor = 'grab';
-        }
-        return;
-      }
-
-      // Other hotkeys only work when drawing is enabled
-      if (!this.drawingManager.isEnabled()) return;
-
-      // === TOOL HOTKEYS ===
-      if (e.code === 'KeyV') {
-        // V: Move/Select tool
-        if (!e.repeat) {
-          e.preventDefault();
-          this.drawingManager.setTool('move');
-          this.updateToolUI('move');
-        }
-      } else if (e.code === 'KeyX') {
-        // X: Freehand/Path tool
-        if (!e.repeat) {
-          e.preventDefault();
-          this.drawingManager.setTool('path');
-          this.drawingManager.setFill(false);
-          this.updateToolUI('path');
-        }
-      } else if (e.code === 'KeyR') {
-        // R: Rectangle tool
-        if (!e.repeat) {
-          e.preventDefault();
-          this.drawingManager.setTool('rect');
-          this.drawingManager.setFill(false);
-          this.updateToolUI('rect');
-        }
-      } else if (e.code === 'KeyF') {
-        // F: Toggle fill on selected shape
-        if (!e.repeat) {
-          e.preventDefault();
-          this.drawingManager.toggleSelectedFill();
-        }
-      } else if (e.code === 'KeyC') {
-        // C: Focus color picker
-        if (!e.repeat) {
-          e.preventDefault();
-          const colorPicker = this.contentArea.querySelector('#custom-color-picker') as HTMLInputElement;
-          if (colorPicker) {
-            colorPicker.click();
-          }
-        }
-      } else if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') {
-        // Ctrl+Z / Cmd+Z: Undo
-        e.preventDefault();
-        if (e.shiftKey) {
-          this.drawingManager.redo();
-        } else {
-          this.drawingManager.undo();
-        }
-      } else if ((e.ctrlKey || e.metaKey) && e.code === 'KeyY') {
-        // Ctrl+Y / Cmd+Y: Redo
-        e.preventDefault();
-        this.drawingManager.redo();
-      }
+    const hotkeyHandlers: HotkeyHandlers = {
+      updateToolUI: (toolId: string) => this.updateToolUI(toolId),
+      getColorPicker: () => this.contentArea.querySelector('#custom-color-picker') as HTMLInputElement | null,
     };
 
-    this.keyupHandler = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && spaceHeld) {
-        spaceHeld = false;
-        // Restore cursor
-        document.body.style.cursor = '';
-        // Re-enable drawing when spacebar is released
-        this.drawingManager.enable();
-        // Restore previous tool if it was set
-        if (previousTool) {
-          this.drawingManager.setTool(previousTool);
-          this.updateToolUI(previousTool);
-          previousTool = null;
-        }
-      }
-    };
+    this.keyboardHandler = createKeydownHandler(this.drawingManager, hotkeyHandlers, this.hotkeyState);
+    this.keyupHandler = createKeyupHandler(this.drawingManager, hotkeyHandlers, this.hotkeyState);
 
     document.addEventListener('keydown', this.keyboardHandler);
     document.addEventListener('keyup', this.keyupHandler);
