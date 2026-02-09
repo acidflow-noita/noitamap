@@ -322,6 +322,13 @@ function renderShapesToCanvas(
   const dpr = canvasWidth / viewportInfo.containerSize.x;
   const scaledStrokeWidth = strokeWidth * dpr;
 
+  // Calculate effective zoom scale by measuring canvas pixels per world unit
+  // This matches doodle.scale used in live rendering
+  const origin = viewportInfo.worldToPixel(0, 0);
+  const unitPoint = viewportInfo.worldToPixel(1, 0);
+  const pixelsPerWorldUnit = Math.abs(unitPoint.x - origin.x);
+  const effectiveScale = pixelsPerWorldUnit; // This is the doodle-equivalent scale
+
   for (const shape of shapes) {
     const isFilled = shape.filled || (shape.fillAlpha !== undefined && shape.fillAlpha > 0);
     const fillAlpha = shape.fillAlpha !== undefined ? shape.fillAlpha : 1.0;
@@ -329,7 +336,8 @@ function renderShapesToCanvas(
     ctx.strokeStyle = shape.color;
     ctx.fillStyle = isFilled ? hexToRgba(shape.color, fillAlpha) : 'transparent';
     ctx.lineWidth = (shape.strokeWidth !== undefined ? shape.strokeWidth : strokeWidth) * dpr;
-    ctx.lineCap = 'square';
+    // Use butt caps to match doodle library rendering
+    ctx.lineCap = 'butt';
     ctx.lineJoin = 'miter';
 
     const pos = shape.pos;
@@ -364,14 +372,26 @@ function renderShapesToCanvas(
         if (ctx.lineWidth > 0) ctx.stroke();
 
         if (shape.type === 'arrow_line') {
-          // Draw arrowhead, scaled by DPR
+          // Draw arrowhead - match doodle library proportions
+          // Doodle uses: worldSize = baseSize / scale, so screenSize = baseSize (constant)
+          // For screenshot canvas: canvasSize = baseSize * dpr
           const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-          const headLen = 15 * dpr;
+          const shapeStrokeWidth = shape.strokeWidth !== undefined ? shape.strokeWidth : strokeWidth;
+          const baseSize = Math.max(12, shapeStrokeWidth * 2.5);
+          const headLen = baseSize * dpr;
+          const headAngle = Math.PI / 6; // 30 degrees to match doodle
+
+          // Calculate arrow head points
+          const ax = p2.x - headLen * Math.cos(angle - headAngle);
+          const ay = p2.y - headLen * Math.sin(angle - headAngle);
+          const bx = p2.x - headLen * Math.cos(angle + headAngle);
+          const by = p2.y - headLen * Math.sin(angle + headAngle);
+
+          // Draw arrow head with same stroke width as line
           ctx.beginPath();
-          ctx.moveTo(p2.x, p2.y);
-          ctx.lineTo(p2.x - headLen * Math.cos(angle - Math.PI / 6), p2.y - headLen * Math.sin(angle - Math.PI / 6));
-          ctx.moveTo(p2.x, p2.y);
-          ctx.lineTo(p2.x - headLen * Math.cos(angle + Math.PI / 6), p2.y - headLen * Math.sin(angle + Math.PI / 6));
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.lineTo(bx, by);
           if (ctx.lineWidth > 0) ctx.stroke();
         }
         break;
