@@ -329,8 +329,8 @@ function renderShapesToCanvas(
     ctx.strokeStyle = shape.color;
     ctx.fillStyle = isFilled ? hexToRgba(shape.color, fillAlpha) : 'transparent';
     ctx.lineWidth = (shape.strokeWidth !== undefined ? shape.strokeWidth : strokeWidth) * dpr;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    ctx.lineCap = 'square';
+    ctx.lineJoin = 'miter';
 
     const pos = shape.pos;
 

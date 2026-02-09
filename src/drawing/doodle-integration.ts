@@ -347,7 +347,9 @@ export async function createDrawingManager(
     configurable: true,
   });
 
-  doodle.setMode('path');
+  // Start with no drawing tool selected (move mode with pan enabled)
+  // This matches the initial currentTool = 'move' and avoids confusing users
+  doodle.setMode('move');
   doodle.setPan(true);
 
   // --- Text Tool Implementation ---

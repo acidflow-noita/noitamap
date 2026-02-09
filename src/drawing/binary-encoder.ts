@@ -137,7 +137,7 @@ export function encodeShapesBinary(shapes: Shape[], mapName: string, _strokeWidt
   // Estimate buffer size (generous)
   let estimatedSize = 2; // version + map name length
   estimatedSize += mapNameBytes.length;
-  estimatedSize += 1; // shape count
+  estimatedSize += 4; // shape count (int32)
   estimatedSize += Math.ceil(shapes.length / 4); // stroke widths packed
   estimatedSize += Math.ceil(shapes.length / 4); // fill alphas packed (V5)
 
