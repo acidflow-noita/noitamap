@@ -1,4 +1,24 @@
 import i18next, { SUPPORTED_LANGUAGES } from './i18n';
+
+// --- Dev Console Commands (Early Initialization) ---
+const isDev =
+  /dev\.noitamap\.com|vectorize-images\.noitamap\.com|localhost|127\.0\.0\.1/.test(window.location.hostname) ||
+  window.location.protocol === 'file:';
+
+if (isDev) {
+  (window as any).noitamap = {
+    enableDrawing: () => {
+      localStorage.setItem('noitamap-dev-drawing', '1');
+      console.log('Drawing dev mode enabled. Refresh and open the sidebar.');
+    },
+    disableDrawing: () => {
+      localStorage.removeItem('noitamap-dev-drawing');
+      console.log('Drawing dev mode disabled. Refresh to hide the sidebar.');
+    },
+  };
+  console.log('[Noitamap] Dev mode detected, "noitamap" commands available.');
+}
+
 import { App } from './app';
 import {
   parseURL,
@@ -48,28 +68,6 @@ let globalDrawingSidebar: DrawingSidebar | null = null;
 // let globalSimplificationPreview: SimplificationPreview | null = null;
 // let globalSimplificationStatusUpdate: (() => void) | null = null;
 let globalApp: App | null = null;
-
-// Dev console commands (only on dev.noitamap.com, vectorize-images.noitamap.com, localhost, or file://)
-const isDev =
-  window.location.hostname === 'dev.noitamap.com' ||
-  window.location.hostname === 'vectorize-images.noitamap.com' ||
-  window.location.hostname === 'localhost' ||
-  window.location.protocol === 'file:';
-if (isDev) {
-  (window as any).noitamap = {
-    enableDrawing: () => {
-      localStorage.setItem('noitamap-dev-drawing', '1');
-      console.log('Drawing dev mode enabled. Refresh and open the sidebar.');
-    },
-    disableDrawing: () => {
-      localStorage.removeItem('noitamap-dev-drawing');
-      console.log('Drawing dev mode disabled. Refresh to hide the sidebar.');
-    },
-    // DISABLED: Simplification preview no longer needed - drawings are shared via cloud storage
-    // enableSimplificationPreview: () => { ... },
-    // disableSimplificationPreview: () => { ... },
-  };
-}
 
 // Export function to refresh search translations
 export const refreshSearchTranslations = () => {

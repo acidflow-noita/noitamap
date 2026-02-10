@@ -180,9 +180,7 @@ export class DrawingSidebar {
 
     // Dev bypass: localStorage flag, only on dev/localhost/file://
     const isDevHost =
-      window.location.hostname === 'dev.noitamap.com' ||
-      window.location.hostname === 'vectorize-images.noitamap.com' ||
-      window.location.hostname === 'localhost' ||
+      /dev\.noitamap\.com|vectorize-images\.noitamap\.com|localhost|127\.0\.0\.1/.test(window.location.hostname) ||
       window.location.protocol === 'file:';
     const isDevMode = isDevHost && localStorage.getItem('noitamap-dev-drawing') === '1';
 
