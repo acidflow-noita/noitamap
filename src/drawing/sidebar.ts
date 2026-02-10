@@ -68,6 +68,7 @@ const TOOLS: ToolConfig[] = [
 
 import { COLOR_PALETTE, COLOR_NAME_KEYS, STROKE_WIDTHS, FILL_ALPHAS, FONT_SIZES } from './constants';
 import { extractDrawingData } from './screenshot';
+import { vectorizeImage, getDefaultMapDimensions } from './vectorize';
 
 interface ColorPreset {
   color: string;
@@ -102,7 +103,7 @@ export class DrawingSidebar {
   private keyboardHandler: ((e: KeyboardEvent) => void) | null = null;
   private keyupHandler: ((e: KeyboardEvent) => void) | null = null;
   private simplifiedHandler: (() => void) | null = null;
-  private catboxSourceUrl: string | null = null;
+  private cloudSourceUrl: string | null = null;
 
   constructor(container: HTMLElement, options: SidebarOptions) {
     this.container = container;
@@ -122,7 +123,7 @@ export class DrawingSidebar {
       this.renderContent();
     });
 
-    // DISABLED: Simplification warnings no longer needed - drawings shared via catbox.moe lossless upload
+    // DISABLED: Simplification warnings no longer needed - drawings shared via cloud lossless upload
     // this.simplifiedHandler = () => this.showSimplifiedWarning();
     // window.addEventListener('drawing-simplified', this.simplifiedHandler);
 
@@ -180,6 +181,7 @@ export class DrawingSidebar {
     // Dev bypass: localStorage flag, only on dev/localhost/file://
     const isDevHost =
       window.location.hostname === 'dev.noitamap.com' ||
+      window.location.hostname === 'vectorize-images.noitamap.com' ||
       window.location.hostname === 'localhost' ||
       window.location.protocol === 'file:';
     const isDevMode = isDevHost && localStorage.getItem('noitamap-dev-drawing') === '1';
@@ -215,8 +217,8 @@ export class DrawingSidebar {
           <i class="bi bi-upload me-2"></i>${i18next.t('drawing.actions.importWebp')}
         </button>
         <input type="file" id="import-webp-input-unauth" accept="image/webp" style="display: none;">
-        <div id="catbox-source-container" style="display: none;">
-          <a id="catbox-source-link" href="#" target="_blank" class="btn btn-sm btn-outline-info w-100">
+        <div id="cloud-source-container" style="display: none;">
+          <a id="cloud-source-link" href="#" target="_blank" class="btn btn-sm btn-outline-info w-100">
             <i class="bi bi-cloud me-2"></i>${i18next.t('drawing.actions.openSource')}
           </a>
         </div>
@@ -233,7 +235,7 @@ export class DrawingSidebar {
     // Disable drawing when not authenticated
     this.drawingManager.disable();
 
-    this.updateCatboxSourceUI();
+    this.updateCloudSourceUI();
   }
 
   private renderNonSubscriberContent(): void {
@@ -257,8 +259,8 @@ export class DrawingSidebar {
           <i class="bi bi-upload me-2"></i>${i18next.t('drawing.actions.importWebp')}
         </button>
         <input type="file" id="import-webp-input-nonsub" accept="image/webp" style="display: none;">
-        <div id="catbox-source-container" style="display: none;">
-          <a id="catbox-source-link" href="#" target="_blank" class="btn btn-sm btn-outline-info w-100">
+        <div id="cloud-source-container" style="display: none;">
+          <a id="cloud-source-link" href="#" target="_blank" class="btn btn-sm btn-outline-info w-100">
             <i class="bi bi-cloud me-2"></i>${i18next.t('drawing.actions.openSource')}
           </a>
         </div>
@@ -275,7 +277,7 @@ export class DrawingSidebar {
     // Disable drawing when not subscribed
     this.drawingManager.disable();
 
-    this.updateCatboxSourceUI();
+    this.updateCloudSourceUI();
   }
 
   private renderSubscriberContent(): void {
@@ -407,9 +409,13 @@ export class DrawingSidebar {
           <button class="btn btn-sm btn-outline-light flex-fill" id="export-json-btn" title="${i18next.t('drawing.actions.exportJsonTitle')}">
             <i class="bi bi-filetype-json"></i> ${i18next.t('drawing.actions.exportJson')}
           </button>
+          <button class="btn btn-sm btn-outline-light flex-fill" id="vectorize-btn" title="${i18next.t('drawing.actions.vectorizeTitle')}">
+            <i class="bi bi-bezier2"></i> ${i18next.t('drawing.actions.vectorize')}
+          </button>
+          <input type="file" id="vectorize-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display: none;">
         </div>
-        <div id="catbox-source-container" class="mt-2" style="display: none;">
-          <a id="catbox-source-link" href="#" target="_blank" class="btn btn-sm btn-outline-info w-100">
+        <div id="cloud-source-container" class="mt-2" style="display: none;">
+          <a id="cloud-source-link" href="#" target="_blank" class="btn btn-sm btn-outline-info w-100">
             <i class="bi bi-cloud me-2"></i>${i18next.t('drawing.actions.openSource')}
           </a>
         </div>
@@ -484,8 +490,8 @@ export class DrawingSidebar {
 
     this.bindHotkeys();
 
-    // Update catbox source link if set
-    this.updateCatboxSourceUI();
+    // Update cloud source link if set
+    this.updateCloudSourceUI();
   }
 
   private saveSettings(): void {
@@ -684,6 +690,20 @@ export class DrawingSidebar {
       }
     });
 
+    // Vectorize image
+    const vectorizeBtn = this.contentArea.querySelector('#vectorize-btn');
+    const vectorizeInput = this.contentArea.querySelector('#vectorize-input') as HTMLInputElement;
+    vectorizeBtn?.addEventListener('click', () => {
+      vectorizeInput?.click();
+    });
+    vectorizeInput?.addEventListener('change', async () => {
+      const file = vectorizeInput.files?.[0];
+      if (file) {
+        await this.vectorizeAndImport(file);
+        vectorizeInput.value = ''; // Reset for next import
+      }
+    });
+
     // Undo
     this.undoBtn.addEventListener('click', () => {
       this.drawingManager.undo();
@@ -816,6 +836,54 @@ export class DrawingSidebar {
     this.refreshDrawingsList();
   }
 
+  private async vectorizeAndImport(file: File): Promise<void> {
+    const vectorizeBtn = this.contentArea.querySelector('#vectorize-btn') as HTMLButtonElement;
+    const originalContent = vectorizeBtn?.innerHTML;
+
+    try {
+      // Show loading state
+      if (vectorizeBtn) {
+        vectorizeBtn.disabled = true;
+        vectorizeBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span>`;
+      }
+
+      // Get map dimensions
+      const mapDimensions = getDefaultMapDimensions();
+
+      // Vectorize the image
+      const shapes = await vectorizeImage(file, mapDimensions.width, mapDimensions.center, {
+        colorPrecision: 6,
+        filterSpeckle: 4,
+        targetScalePercent: 0.6,
+      });
+
+      if (shapes.length === 0) {
+        console.log('[Sidebar] No shapes extracted from image');
+        alert(i18next.t('drawing.vectorize.noShapes'));
+        return;
+      }
+
+      // Load shapes into drawing manager
+      this.drawingManager.loadShapes(shapes);
+
+      console.log('[Sidebar] Vectorized', shapes.length, 'shapes from image');
+
+      // Save to session and refresh list
+      this.session.setIsImport(true);
+      await this.session.save();
+      this.refreshDrawingsList();
+    } catch (e) {
+      console.error('[Sidebar] Failed to vectorize image', e);
+      alert(`${i18next.t('drawing.vectorize.error')}: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      // Restore button state
+      if (vectorizeBtn && originalContent) {
+        vectorizeBtn.disabled = false;
+        vectorizeBtn.innerHTML = originalContent;
+      }
+    }
+  }
+
   /**
    * Helper to bind import button and file input by IDs
    * Used for both subscriber and non-subscriber views
@@ -884,6 +952,12 @@ export class DrawingSidebar {
   async refreshDrawingsList(): Promise<void> {
     // Get ALL drawings across all maps, not just current map
     const drawings = await getAllDrawings();
+    
+    if (!this.drawingsList) {
+      console.warn('[Sidebar] drawingsList element missing, skipping refresh');
+      return;
+    }
+
     const currentId = this.session.getCurrent()?.id;
     const currentMap = this.session.getMapName();
 
@@ -1089,26 +1163,20 @@ export class DrawingSidebar {
   }
 
   /**
-   * Set the Catbox source URL to display a link to the original image
+   * Set the Cloud source URL to display a link to the original image
    */
-  setCatboxSource(fileId: string | null): void {
-    if (!fileId) {
-      this.catboxSourceUrl = null;
-    } else {
-      // If fileId already has extension (e.g. from regex match), don't append it again
-      const file = fileId.endsWith('.webp') ? fileId : `${fileId}.webp`;
-      this.catboxSourceUrl = `https://files.catbox.moe/${file}`;
-    }
-    this.updateCatboxSourceUI();
+  setCloudSource(url: string | null): void {
+    this.cloudSourceUrl = url;
+    this.updateCloudSourceUI();
   }
 
-  private updateCatboxSourceUI(): void {
-    const container = this.contentArea.querySelector('#catbox-source-container') as HTMLElement;
-    const link = this.contentArea.querySelector('#catbox-source-link') as HTMLAnchorElement;
+  private updateCloudSourceUI(): void {
+    const container = this.contentArea.querySelector('#cloud-source-container') as HTMLElement;
+    const link = this.contentArea.querySelector('#cloud-source-link') as HTMLAnchorElement;
 
     if (container && link) {
-      if (this.catboxSourceUrl) {
-        link.href = this.catboxSourceUrl;
+      if (this.cloudSourceUrl) {
+        link.href = this.cloudSourceUrl;
         link.innerHTML = `<i class="bi bi-cloud me-2"></i>${i18next.t('drawing.actions.openSource')}`;
         container.style.display = 'block';
       } else {

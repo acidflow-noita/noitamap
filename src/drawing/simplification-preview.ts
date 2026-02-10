@@ -2,7 +2,7 @@
  * Simplification Preview - Debug tool to visualize URL compression quality loss
  *
  * DISABLED: This module is no longer actively used.
- * Drawing sharing now uses catbox.moe image upload with lossless binary data.
+ * Drawing sharing now uses cloud image upload (Primary/Fallback) with lossless binary data.
  * No simplification is applied. Code is kept for reference.
  */
 

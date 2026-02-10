@@ -10,6 +10,7 @@
 interface Env {
   ALLOWED_ORIGINS: string;
   UPLOAD_TARGET: string;
+  UPLOAD_TARGET_FALLBACK: string;
 }
 
 export default {
@@ -37,33 +38,63 @@ export default {
     }
 
     try {
+      const url = new URL(request.url);
+      const hostParam = url.searchParams.get('host');
+      
+      // Default to primary (UPLOAD_TARGET), fallback to secondary (UPLOAD_TARGET_FALLBACK)
+      const isFallback = hostParam === 'fallback' || hostParam === '0x0';
+      const uploadTarget = isFallback ? env.UPLOAD_TARGET_FALLBACK : env.UPLOAD_TARGET;
+
+      console.log(`[Proxy] Forwarding to: ${uploadTarget}`);
+
       // Parse the incoming multipart form data
       const incomingFormData = await request.formData();
-
-      // Build a new FormData to forward to catbox
       const forwardFormData = new FormData();
-      for (const [key, value] of incomingFormData.entries()) {
-        forwardFormData.append(key, value);
+
+      if (isFallback) {
+        // qu.ax expects 'files[]' field
+        const file = incomingFormData.get('file') || incomingFormData.get('fileToUpload');
+        if (file) forwardFormData.append('files[]', file);
+      } else {
+        for (const [key, value] of incomingFormData.entries()) {
+          forwardFormData.append(key, value);
+        }
       }
 
-      // Forward the request to the configured upload target
-      // Let the runtime set Content-Type with correct boundary automatically
-      const response = await fetch(env.UPLOAD_TARGET, {
+      // Forward the request
+      const response = await fetch(uploadTarget, {
         method: 'POST',
         body: forwardFormData,
         headers: {
-          'User-Agent': 'Noitamap-Upload-Proxy/1.0',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
         },
+        redirect: 'follow'
       });
 
+      let responseText = await response.text();
+      
+      // qu.ax returns JSON, we need to extract the URL string for the frontend
+      if (isFallback && response.ok) {
+        try {
+          const json = JSON.parse(responseText);
+          if (json.success && json.files && json.files[0]) {
+            responseText = json.files[0].url;
+          }
+        } catch (e) {
+          console.error('[Proxy] Failed to parse qu.ax JSON response');
+        }
+      }
+
+      console.log(`[Proxy] Target ${uploadTarget} returned ${response.status}: ${responseText.substring(0, 100)}`);
+
       // Return response with CORS headers
-      const responseText = await response.text();
+      const headers = new Headers();
+      headers.set('Access-Control-Allow-Origin', allowedOrigin);
+      headers.set('Content-Type', 'text/plain');
+
       return new Response(responseText, {
         status: response.status,
-        headers: {
-          'Access-Control-Allow-Origin': allowedOrigin,
-          'Content-Type': 'text/plain',
-        },
+        headers
       });
     } catch (error) {
       console.error('Image upload proxy error:', error);

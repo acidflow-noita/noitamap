@@ -828,16 +828,22 @@
       "importWebpTitle": "从 WebP 截图导入绘图",
       "exportJson": "导出 JSON",
       "exportJsonTitle": "将图形导出为 JSON",
-      "openSource": "在 Catbox 查看源码",
+      "openSource": "查看源码",
       "toggleFill": "Fill",
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file"
+      "importJsonTitle": "Import shapes from JSON file",
+      "vectorize": "Vectorize",
+      "vectorizeTitle": "Import and vectorize an image"
     },
     "import": {
       "noData": "在此 WebP 文件中未找到绘图数据",
       "viewOnly": "您可以查看分享的绘图：",
-      "dropHint": "Drop WebP or JSON file to import drawing"
+      "dropHint": "Drop WebP or JSON file to import drawing",
+      "dropHintImport": "Import Drawing",
+      "dropHintImportTypes": "WebP or JSON",
+      "dropHintVectorize": "Vectorize Image",
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
     },
     "savedDrawings": {
       "label": "已保存的绘图",
@@ -873,6 +879,12 @@
       "medium": "50%",
       "heavy": "75%",
       "solid": "100%"
+    },
+    "vectorize": {
+      "noShapes": "No shapes could be extracted from this image",
+      "error": "Failed to vectorize image",
+      "processing": "Vectorizing image...",
+      "unsupportedFormat": "Unsupported image format"
     }
   }
 }

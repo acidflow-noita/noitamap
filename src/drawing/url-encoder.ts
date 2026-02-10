@@ -2,8 +2,8 @@
  * URL Encoder - Encode/decode drawings for URL sharing
  *
  * DISABLED: This module is no longer actively used.
- * Drawing sharing now uses catbox.moe image upload with lossless binary data
- * embedded in WebP NOIT RIFF chunks. See catbox.ts and screenshot.ts.
+ * Drawing sharing now uses cloud image upload (Primary/Fallback) with lossless binary data
+ * embedded in WebP NOIT RIFF chunks. See cloud-storage.ts and screenshot.ts.
  *
  * Code is kept for reference but not imported anywhere.
  */

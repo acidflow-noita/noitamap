@@ -14,4 +14,11 @@ export default defineConfig({
       js: `.js`,
     };
   },
+  esbuildOptions(options) {
+    // Configure loader for WASM files
+    options.loader = {
+      ...options.loader,
+      '.wasm': 'file',
+    };
+  },
 });

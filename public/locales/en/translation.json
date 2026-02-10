@@ -827,12 +827,24 @@
       "importJsonTitle": "Import shapes from JSON file",
       "exportJson": "Export JSON",
       "exportJsonTitle": "Export shapes as JSON",
-      "openSource": "Open source on Catbox"
+      "vectorize": "Vectorize",
+      "vectorizeTitle": "Import and vectorize an image",
+      "openSource": "Open Source"
     },
     "import": {
       "noData": "No drawing data found in this WebP file",
       "viewOnly": "You can view shared drawings:",
-      "dropHint": "Drop WebP or JSON file to import drawing"
+      "dropHint": "Drop WebP or JSON file to import drawing",
+      "dropHintImport": "Import Drawing",
+      "dropHintImportTypes": "WebP or JSON",
+      "dropHintVectorize": "Vectorize Image",
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
+    },
+    "vectorize": {
+      "noShapes": "No shapes could be extracted from this image",
+      "error": "Failed to vectorize image",
+      "processing": "Vectorizing image...",
+      "unsupportedFormat": "Unsupported image format"
     },
     "savedDrawings": {
       "label": "Saved Drawings",

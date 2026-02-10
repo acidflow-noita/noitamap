@@ -22,7 +22,7 @@ tests/
 
 ### Integration Tests (with mocks)
 - Test API integrations with mocked responses
-- Examples: `link-shortener.test.ts`, `catbox.test.ts`
+- Examples: `link-shortener.test.ts`, `cloud-storage.test.ts`
 
 ## Running Tests
 

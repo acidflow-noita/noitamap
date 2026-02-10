@@ -45,7 +45,8 @@
     "idb": "^8.0.3",
     "lz-string": "^1.5.0",
     "openseadragon": "5.0.1",
-    "simplify-js": "^1.2.4"
+    "simplify-js": "^1.2.4",
+    "vectortracer": "^0.1.2"
   },
   "devDependencies": {
     "@types/bootstrap": "^5.2.10",
