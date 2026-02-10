@@ -14,11 +14,6 @@ describe('Cloud Storage Utilities', () => {
       expect(isCloudRef('qx:xyz123')).toBe(true);
     });
 
-    it('should return true for legacy fallback (0x0) references', () => {
-      expect(isCloudRef('0x0:abc.webp')).toBe(true);
-      expect(isCloudRef('0x0:xyz123')).toBe(true);
-    });
-
     it('should return false for unknown references', () => {
       expect(isCloudRef('vs77xc')).toBe(false);
       expect(isCloudRef('cloud:vs77xc')).toBe(false);
@@ -38,13 +33,8 @@ describe('Cloud Storage Utilities', () => {
     });
 
     it('should return full fallback URL for fallback param', () => {
-      expect(getCloudUrl('qx:abc.webp')).toBe('https://qu.ax/abc.webp');
-      expect(getCloudUrl('qx:xyz123')).toBe('https://qu.ax/xyz123');
-    });
-
-    it('should map legacy 0x0 param to current fallback URL', () => {
-      expect(getCloudUrl('0x0:abc.webp')).toBe('https://qu.ax/abc.webp');
-      expect(getCloudUrl('0x0:xyz123')).toBe('https://qu.ax/xyz123');
+      expect(getCloudUrl('qx:abc.webp')).toBe('https://qu.ax/x/abc.webp');
+      expect(getCloudUrl('qx:xyz123')).toBe('https://qu.ax/x/xyz123.webp');
     });
 
     it('should return null for unknown params', () => {

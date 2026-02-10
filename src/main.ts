@@ -861,11 +861,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Auto-download the image to user's PC as backup
-        downloadBlob(blob, screenshotFilename(app.getMap()));
+        const filename = screenshotFilename(app.getMap());
+        downloadBlob(blob, filename);
 
         // Upload to cloud (Primary -> Fallback)
         try {
-          const uploadResult = await uploadDrawing(blob);
+          const uploadResult = await uploadDrawing(blob, undefined, filename);
           uploadingToast.hide();
 
           if (!uploadResult) {

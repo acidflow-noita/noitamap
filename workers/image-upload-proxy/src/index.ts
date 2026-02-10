@@ -1,10 +1,8 @@
 /**
  * Image Upload Proxy Worker - Forwards uploads to configured image host
  *
- * Some image hosts don't support CORS, so we proxy the upload request.
- * This is a tiny passthrough - no storage, no processing.
- *
- * Configure UPLOAD_TARGET in wrangler.toml to change the image host.
+ * This worker acts as a transparent bridge to allow CORS-free uploads
+ * to providers like Catbox and qu.ax.
  */
 
 interface Env {
@@ -32,7 +30,7 @@ export default {
       });
     }
 
-    // Only allow POST
+    // Only allow POST (Uploads only to save quota)
     if (request.method !== 'POST') {
       return new Response('Method not allowed', { status: 405 });
     }
@@ -40,12 +38,10 @@ export default {
     try {
       const url = new URL(request.url);
       const hostParam = url.searchParams.get('host');
-      
-      // Default to primary (UPLOAD_TARGET), fallback to secondary (UPLOAD_TARGET_FALLBACK)
-      const isFallback = hostParam === 'fallback' || hostParam === '0x0';
+      const isFallback = hostParam === 'fallback';
       const uploadTarget = isFallback ? env.UPLOAD_TARGET_FALLBACK : env.UPLOAD_TARGET;
 
-      console.log(`[Proxy] Forwarding to: ${uploadTarget}`);
+      console.log(`[Proxy] Uploading to: ${uploadTarget}`);
 
       // Parse the incoming multipart form data
       const incomingFormData = await request.formData();
@@ -56,6 +52,7 @@ export default {
         const file = incomingFormData.get('file') || incomingFormData.get('fileToUpload');
         if (file) forwardFormData.append('files[]', file);
       } else {
+        // Primary (Catbox) uses 'fileToUpload'
         for (const [key, value] of incomingFormData.entries()) {
           forwardFormData.append(key, value);
         }
@@ -73,7 +70,7 @@ export default {
 
       let responseText = await response.text();
       
-      // qu.ax returns JSON, we need to extract the URL string for the frontend
+      // qu.ax returns JSON, extract the direct URL for the frontend
       if (isFallback && response.ok) {
         try {
           const json = JSON.parse(responseText);
@@ -84,8 +81,6 @@ export default {
           console.error('[Proxy] Failed to parse qu.ax JSON response');
         }
       }
-
-      console.log(`[Proxy] Target ${uploadTarget} returned ${response.status}: ${responseText.substring(0, 100)}`);
 
       // Return response with CORS headers
       const headers = new Headers();
