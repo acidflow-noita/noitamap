@@ -819,18 +819,14 @@
       "toggleFill": "Fill",
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file",
-      "vectorize": "Vectorize",
-      "vectorizeTitle": "Import and vectorize an image"
+      "importJsonTitle": "Import shapes from JSON file"
     },
     "import": {
       "noData": "Nessun dato di disegno trovato in questo file WebP",
       "viewOnly": "Puoi visualizzare i disegni condivisi:",
       "dropHint": "Drop WebP or JSON file to import drawing",
       "dropHintImport": "Import Drawing",
-      "dropHintImportTypes": "WebP or JSON",
-      "dropHintVectorize": "Vectorize Image",
-      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
+      "dropHintImportTypes": "WebP or JSON"
     },
     "savedDrawings": {
       "label": "Disegni salvati",
@@ -879,12 +875,6 @@
       "medium": "50%",
       "heavy": "75%",
       "solid": "100%"
-    },
-    "vectorize": {
-      "noShapes": "No shapes could be extracted from this image",
-      "error": "Failed to vectorize image",
-      "processing": "Vectorizing image...",
-      "unsupportedFormat": "Unsupported image format"
     }
   }
 }

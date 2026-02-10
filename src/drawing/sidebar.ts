@@ -68,7 +68,6 @@ const TOOLS: ToolConfig[] = [
 
 import { COLOR_PALETTE, COLOR_NAME_KEYS, STROKE_WIDTHS, FILL_ALPHAS, FONT_SIZES } from './constants';
 import { extractDrawingData } from './screenshot';
-import { vectorizeImage, getDefaultMapDimensions } from './vectorize';
 
 interface ColorPreset {
   color: string;
@@ -180,7 +179,7 @@ export class DrawingSidebar {
 
     // Dev bypass: localStorage flag, only on dev/localhost/file://
     const isDevHost =
-      /dev\.noitamap\.com|vectorize-images\.noitamap\.com|localhost|127\.0\.0\.1/.test(window.location.hostname) ||
+      /dev\.noitamap\.com|localhost|127\.0\.0\.1/.test(window.location.hostname) ||
       window.location.protocol === 'file:';
     const isDevMode = isDevHost && localStorage.getItem('noitamap-dev-drawing') === '1';
 
@@ -407,10 +406,6 @@ export class DrawingSidebar {
           <button class="btn btn-sm btn-outline-light flex-fill" id="export-json-btn" title="${i18next.t('drawing.actions.exportJsonTitle')}">
             <i class="bi bi-filetype-json"></i> ${i18next.t('drawing.actions.exportJson')}
           </button>
-          <button class="btn btn-sm btn-outline-light flex-fill" id="vectorize-btn" title="${i18next.t('drawing.actions.vectorizeTitle')}">
-            <i class="bi bi-bezier2"></i> ${i18next.t('drawing.actions.vectorize')}
-          </button>
-          <input type="file" id="vectorize-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display: none;">
         </div>
         <div id="cloud-source-container" class="mt-2" style="display: none;">
           <a id="cloud-source-link" href="#" target="_blank" class="btn btn-sm btn-outline-info w-100">
@@ -688,20 +683,6 @@ export class DrawingSidebar {
       }
     });
 
-    // Vectorize image
-    const vectorizeBtn = this.contentArea.querySelector('#vectorize-btn');
-    const vectorizeInput = this.contentArea.querySelector('#vectorize-input') as HTMLInputElement;
-    vectorizeBtn?.addEventListener('click', () => {
-      vectorizeInput?.click();
-    });
-    vectorizeInput?.addEventListener('change', async () => {
-      const file = vectorizeInput.files?.[0];
-      if (file) {
-        await this.vectorizeAndImport(file);
-        vectorizeInput.value = ''; // Reset for next import
-      }
-    });
-
     // Undo
     this.undoBtn.addEventListener('click', () => {
       this.drawingManager.undo();
@@ -832,54 +813,6 @@ export class DrawingSidebar {
     this.session.setIsImport(true);
     await this.session.save();
     this.refreshDrawingsList();
-  }
-
-  private async vectorizeAndImport(file: File): Promise<void> {
-    const vectorizeBtn = this.contentArea.querySelector('#vectorize-btn') as HTMLButtonElement;
-    const originalContent = vectorizeBtn?.innerHTML;
-
-    try {
-      // Show loading state
-      if (vectorizeBtn) {
-        vectorizeBtn.disabled = true;
-        vectorizeBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span>`;
-      }
-
-      // Get map dimensions
-      const mapDimensions = getDefaultMapDimensions();
-
-      // Vectorize the image
-      const shapes = await vectorizeImage(file, mapDimensions.width, mapDimensions.center, {
-        colorPrecision: 6,
-        filterSpeckle: 4,
-        targetScalePercent: 0.6,
-      });
-
-      if (shapes.length === 0) {
-        console.log('[Sidebar] No shapes extracted from image');
-        alert(i18next.t('drawing.vectorize.noShapes'));
-        return;
-      }
-
-      // Load shapes into drawing manager
-      this.drawingManager.loadShapes(shapes);
-
-      console.log('[Sidebar] Vectorized', shapes.length, 'shapes from image');
-
-      // Save to session and refresh list
-      this.session.setIsImport(true);
-      await this.session.save();
-      this.refreshDrawingsList();
-    } catch (e) {
-      console.error('[Sidebar] Failed to vectorize image', e);
-      alert(`${i18next.t('drawing.vectorize.error')}: ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      // Restore button state
-      if (vectorizeBtn && originalContent) {
-        vectorizeBtn.disabled = false;
-        vectorizeBtn.innerHTML = originalContent;
-      }
-    }
   }
 
   /**

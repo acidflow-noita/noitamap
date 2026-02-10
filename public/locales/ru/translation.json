@@ -826,18 +826,14 @@
       "exportJsonTitle": "Экспортировать фигуры в JSON",
       "openSource": "Открыть источник",
       "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file",
-      "vectorize": "Vectorize",
-      "vectorizeTitle": "Import and vectorize an image"
+      "importJsonTitle": "Import shapes from JSON file"
     },
     "import": {
       "noData": "В этом файле WebP не найдено данных рисунка",
       "viewOnly": "Вы можете просматривать общие рисунки:",
       "dropHint": "Drop WebP or JSON file to import drawing",
       "dropHintImport": "Import Drawing",
-      "dropHintImportTypes": "WebP or JSON",
-      "dropHintVectorize": "Vectorize Image",
-      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
+      "dropHintImportTypes": "WebP or JSON"
     },
     "savedDrawings": {
       "label": "Сохранённые рисунки",
@@ -879,12 +875,6 @@
       "medium": "Средний",
       "large": "Большой",
       "huge": "Огромный"
-    },
-    "vectorize": {
-      "noShapes": "No shapes could be extracted from this image",
-      "error": "Failed to vectorize image",
-      "processing": "Vectorizing image...",
-      "unsupportedFormat": "Unsupported image format"
     }
   }
 }

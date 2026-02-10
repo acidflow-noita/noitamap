@@ -203,11 +203,6 @@
   background: rgba(59, 130, 246, 0.2);
 }
 
-.drop-zone-vectorize.active {
-  border-color: #22c55e;
-  background: rgba(34, 197, 94, 0.2);
-}
-
 .drop-zone-content {
   display: flex;
   flex-direction: column;

@@ -15,7 +15,7 @@
 
 // Proxy URL - use dev or prod based on current hostname
 const IMAGE_UPLOAD_PROXY_URL =
-  /dev\.noitamap\.com|vectorize-images\.noitamap\.com|localhost|127\.0\.0\.1/.test(window.location.hostname)
+  /dev\.noitamap\.com|localhost|127\.0\.0\.1/.test(window.location.hostname)
     ? 'https://noitamap-image-upload-proxy-dev.wuote.workers.dev'
     : 'https://noitamap-image-upload-proxy.wuote.workers.dev';
 

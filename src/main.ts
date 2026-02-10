@@ -2,7 +2,7 @@ import i18next, { SUPPORTED_LANGUAGES } from './i18n';
 
 // --- Dev Console Commands (Early Initialization) ---
 const isDev =
-  /dev\.noitamap\.com|vectorize-images\.noitamap\.com|localhost|127\.0\.0\.1/.test(window.location.hostname) ||
+  /dev\.noitamap\.com|localhost|127\.0\.0\.1/.test(window.location.hostname) ||
   window.location.protocol === 'file:';
 
 if (isDev) {
@@ -54,7 +54,6 @@ import { decodeShapesFromUrl, encodeShapesWithInfo } from './drawing/url-encoder
 import { captureScreenshot, downloadBlob, screenshotFilename, extractDrawingData } from './drawing/screenshot';
 import { uploadDrawing, fetchDrawing, isCloudRef, getCloudUrl } from './drawing/cloud-storage';
 import { shortenUrl } from './drawing/link-shortener';
-import { vectorizeImage, getDefaultMapDimensions } from './drawing/vectorize';
 
 // Global reference to unified search for translation updates
 let globalUnifiedSearch: UnifiedSearch | null = null;
@@ -418,45 +417,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('Failed to initialize drawing feature:', error);
   }
 
-  // Drag-and-drop import: split zones for import vs vectorize
+  // Drag-and-drop import: accept WebP files dropped anywhere on the page
   {
     let dragCounter = 0;
     const dropOverlay = document.createElement('div');
     dropOverlay.className = 'drop-overlay';
-    dropOverlay.innerHTML = `
-      <div class="drop-zone drop-zone-import" data-zone="import">
-        <div class="drop-zone-content">
-          <i class="bi bi-file-earmark-arrow-down"></i>
-          <span>${i18next.t('drawing.import.dropHintImport', 'Import Drawing')}</span>
-          <small>${i18next.t('drawing.import.dropHintImportTypes', 'WebP or JSON')}</small>
-        </div>
-      </div>
-      <div class="drop-zone drop-zone-vectorize" data-zone="vectorize">
-        <div class="drop-zone-content">
-          <i class="bi bi-bezier2"></i>
-          <span>${i18next.t('drawing.import.dropHintVectorize', 'Vectorize Image')}</span>
-          <small>${i18next.t('drawing.import.dropHintVectorizeTypes', 'PNG, JPG, WebP, SVG')}</small>
-        </div>
-      </div>
-    `;
+    dropOverlay.setAttribute('data-text', i18next.t('drawing.import.dropHint', 'Drop WebP or JSON file to import drawing'));
     document.body.appendChild(dropOverlay);
-
-    // Track which zone is being hovered
-    let activeZone: 'import' | 'vectorize' | null = null;
-
-    dropOverlay.addEventListener('dragover', e => {
-      e.preventDefault();
-      const target = (e.target as HTMLElement).closest('.drop-zone');
-      const zone = target?.getAttribute('data-zone') as 'import' | 'vectorize' | null;
-
-      if (zone !== activeZone) {
-        dropOverlay.querySelectorAll('.drop-zone').forEach(el => el.classList.remove('active'));
-        if (zone) {
-          target?.classList.add('active');
-        }
-        activeZone = zone;
-      }
-    });
 
     document.body.addEventListener('dragenter', e => {
       e.preventDefault();
@@ -472,8 +439,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (dragCounter <= 0) {
         dragCounter = 0;
         dropOverlay.classList.remove('visible');
-        dropOverlay.querySelectorAll('.drop-zone').forEach(el => el.classList.remove('active'));
-        activeZone = null;
       }
     });
 
@@ -485,23 +450,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       e.preventDefault();
       dragCounter = 0;
       dropOverlay.classList.remove('visible');
-      dropOverlay.querySelectorAll('.drop-zone').forEach(el => el.classList.remove('active'));
 
       const file = e.dataTransfer?.files[0];
       if (!file) return;
 
-      // Determine which zone was dropped on
-      const target = (e.target as HTMLElement).closest('.drop-zone');
-      const zone = target?.getAttribute('data-zone') as 'import' | 'vectorize' | null;
-
-      if (zone === 'vectorize') {
-        // Handle vectorization
-        await handleVectorizeDrop(file);
-      } else if (zone === 'import') {
-        // Handle import
-        await handleImportDrop(file);
-      }
-      activeZone = null;
+      await handleImportDrop(file);
     });
 
     async function handleImportDrop(file: File) {
@@ -513,7 +466,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const result = await extractDrawingData(file);
         if (!result || result.shapes.length === 0) {
           console.warn('[DragDrop] No drawing data found in dropped file');
-          alert(i18next.t('drawing.import.noData'));
           return;
         }
         shapes = result.shapes;
@@ -530,16 +482,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             mapName = data.map;
           } else {
             console.warn('[DragDrop] Invalid JSON format: missing shapes array');
-            alert(i18next.t('drawing.import.noData'));
             return;
           }
         } catch (err) {
           console.error('[DragDrop] Failed to parse JSON:', err);
-          alert(i18next.t('drawing.import.noData'));
           return;
         }
       } else {
-        alert(i18next.t('drawing.import.noData'));
         return;
       }
 
@@ -577,94 +526,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       console.log('[DragDrop] Imported', shapes.length, 'shapes from dropped file');
-    }
-
-    async function handleVectorizeDrop(file: File) {
-      // Check if file is a supported image type
-      const supportedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
-      const supportedExts = ['.png', '.jpg', '.jpeg', '.webp', '.svg'];
-      const isSupported =
-        supportedTypes.includes(file.type) || supportedExts.some(ext => file.name.toLowerCase().endsWith(ext));
-
-      if (!isSupported) {
-        alert(i18next.t('drawing.vectorize.unsupportedFormat', 'Unsupported image format'));
-        return;
-      }
-
-      // Show loading indicator
-      dropOverlay.classList.add('visible', 'loading');
-      dropOverlay.innerHTML = `
-        <div class="drop-zone-loading">
-          <div class="spinner-border text-light" role="status"></div>
-          <span>${i18next.t('drawing.vectorize.processing', 'Vectorizing image...')}</span>
-        </div>
-      `;
-
-      try {
-        const mapDimensions = getDefaultMapDimensions();
-        const shapes = await vectorizeImage(file, mapDimensions.width, mapDimensions.center, {
-          colorPrecision: 6,
-          filterSpeckle: 4,
-          targetScalePercent: 0.6,
-        });
-
-        if (shapes.length === 0) {
-          alert(i18next.t('drawing.vectorize.noShapes'));
-          return;
-        }
-
-        if (drawingManager) {
-          isDrawLoading = true;
-          drawingManager.loadShapes(shapes);
-          isDrawLoading = false;
-
-          // Update URL with imported drawing data
-          const currentMap = drawingSession?.getMapName() ?? '';
-          const sw = drawingManager.getStrokeWidth();
-          const encoded = encodeShapesWithInfo(shapes, undefined, currentMap, sw);
-          if (encoded) {
-            updateURLWithDrawing(encoded.encoded);
-          }
-        }
-
-        // Auto-open sidebar
-        if (drawToggleCheckbox && drawingSidebar) {
-          drawToggleCheckbox.checked = true;
-          drawingSidebar.open();
-          updateURLWithSidebar(true);
-        }
-
-        // Save to session
-        if (drawingSession) {
-          drawingSession.setIsImport(true);
-          await drawingSession.save();
-          drawingSidebar?.refreshDrawingsList();
-        }
-
-        console.log('[DragDrop] Vectorized', shapes.length, 'shapes from dropped image');
-      } catch (err) {
-        console.error('[DragDrop] Failed to vectorize image:', err);
-        alert(`${i18next.t('drawing.vectorize.error')}: ${err instanceof Error ? err.message : String(err)}`);
-      } finally {
-        // Restore the overlay HTML
-        dropOverlay.classList.remove('visible', 'loading');
-        dropOverlay.innerHTML = `
-          <div class="drop-zone drop-zone-import" data-zone="import">
-            <div class="drop-zone-content">
-              <i class="bi bi-file-earmark-arrow-down"></i>
-              <span>${i18next.t('drawing.import.dropHintImport', 'Import Drawing')}</span>
-              <small>${i18next.t('drawing.import.dropHintImportTypes', 'WebP or JSON')}</small>
-            </div>
-          </div>
-          <div class="drop-zone drop-zone-vectorize" data-zone="vectorize">
-            <div class="drop-zone-content">
-              <i class="bi bi-bezier2"></i>
-              <span>${i18next.t('drawing.import.dropHintVectorize', 'Vectorize Image')}</span>
-              <small>${i18next.t('drawing.import.dropHintVectorizeTypes', 'PNG, JPG, WebP, SVG')}</small>
-            </div>
-          </div>
-        `;
-      }
     }
   }
 
