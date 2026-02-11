@@ -13,7 +13,7 @@
     "check-translations": "node build_scripts/check-translations.cjs",
     "sync-translations": "node build_scripts/sync-translations.cjs",
     "watch": "tsup --no-minify --watch src/**/*.ts --watch src/data/*.json",
-    "dev": "npx serve public",
+    "dev": "concurrently -k \"npm:watch\" \"npx serve public\"",
     "generate": "node ./src/data/data_generators/map_definitions_maker.cjs"
   },
   "repository": {
@@ -54,6 +54,7 @@
     "@types/lz-string": "^1.3.34",
     "@types/node": "^22.7.7",
     "@types/openseadragon": "^3.0.10",
+    "concurrently": "^9.2.1",
     "jsdom": "^27.0.1",
     "openseadragon": "^5.0.1",
     "prettier": "^3.3.3",
