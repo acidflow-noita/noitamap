@@ -4,6 +4,7 @@
   "description": "Noita Map",
   "main": "index.js",
   "scripts": {
+    "preinstall": "git submodule update --init --recursive",
     "test": "vitest run",
     "build": "tsup && npm run copy-flags && npm run add-biome-translations && npm run copy-locales",
     "copy-flags": "node build_scripts/copy-flags.cjs",
