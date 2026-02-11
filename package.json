@@ -12,7 +12,7 @@
     "copy-locales": "node build_scripts/copy-locales.cjs",
     "check-translations": "node build_scripts/check-translations.cjs",
     "sync-translations": "node build_scripts/sync-translations.cjs",
-    "watch": "tsup --no-minify --watch src/**/*.ts --watch src/data/*.json",
+    "watch": "tsup --no-minify --watch \"src/**/*.ts\" --watch \"src/data/*.json\"",
     "dev": "concurrently -k \"npm:watch\" \"npx serve public\"",
     "generate": "node ./src/data/data_generators/map_definitions_maker.cjs"
   },
