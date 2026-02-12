@@ -152,17 +152,15 @@
   }
 }
 
-/* Drag and drop overlay with split zones */
+/* Drag and drop overlay for importing WebP drawing files */
 .drop-overlay {
   position: fixed;
   inset: 0;
   z-index: 10000;
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
-  gap: 2rem;
-  padding: 2rem;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
   opacity: 0;
   visibility: hidden;
@@ -173,69 +171,25 @@
 .drop-overlay.visible {
   opacity: 1;
   visibility: visible;
-  pointer-events: auto;
 }
 
-.drop-overlay.loading {
-  align-items: center;
-  justify-content: center;
-}
-
-.drop-zone {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 3px dashed rgba(255, 255, 255, 0.4);
+.drop-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 1.5rem;
+  border: 3px dashed rgba(255, 255, 255, 0.5);
   border-radius: 1rem;
-  transition: all 0.2s ease;
-  max-width: 400px;
+  pointer-events: none;
 }
 
-.drop-zone.active {
-  border-color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.02);
-}
-
-.drop-zone-import.active {
-  border-color: #3b82f6;
-  background: rgba(59, 130, 246, 0.2);
-}
-
-.drop-zone-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  color: white;
-  gap: 0.75rem;
-  padding: 2rem;
-}
-
-.drop-zone-content i {
-  font-size: 3rem;
-  opacity: 0.8;
-}
-
-.drop-zone-content span {
-  font-size: 1.25rem;
+.drop-overlay::after {
+  content: attr(data-text);
+  font-size: 1.5rem;
   font-weight: 500;
-}
-
-.drop-zone-content small {
-  font-size: 0.875rem;
-  opacity: 0.7;
-}
-
-.drop-zone-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
   color: white;
-}
-
-.drop-zone-loading span {
-  font-size: 1.25rem;
+  text-align: center;
+  padding: 1rem 2rem;
+  background: rgba(59, 130, 246, 0.8);
+  border-radius: 0.75rem;
+  box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.3);
 }
