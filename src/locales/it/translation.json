@@ -824,9 +824,11 @@
     "import": {
       "noData": "Nessun dato di disegno trovato in questo file WebP",
       "viewOnly": "Puoi visualizzare i disegni condivisi:",
-      "dropHint": "Drop WebP or JSON file to import drawing",
-      "dropHintImport": "Import Drawing",
-      "dropHintImportTypes": "WebP or JSON"
+      "dropHint": "Rilascia un file WebP o JSON per importare il disegno",
+      "dropHintImport": "Importa annotazione Noitamap",
+      "dropHintImportTypes": "WebP o JSON",
+      "dropHintVectorize": "Vettorializza immagine",
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
     },
     "savedDrawings": {
       "label": "Disegni salvati",
@@ -875,6 +877,13 @@
       "medium": "50%",
       "heavy": "75%",
       "solid": "100%"
+    },
+    "vectorize": {
+      "noShapes": "Nessuna forma estratta da questa immagine",
+      "error": "Impossibile vettorializzare l'immagine",
+      "processing": "Vettorializzazione immagine...",
+      "unsupportedFormat": "Formato immagine non supportato",
+      "errorDetail": "La vettorializzazione è fallita — l'immagine potrebbe essere troppo complessa o fotografica. Questa funzione funziona meglio con pixel art e immagini a colori piatti."
     }
   }
 }

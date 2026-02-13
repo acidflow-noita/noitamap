@@ -824,9 +824,11 @@
     "import": {
       "noData": "Ingen ritdata hittades i denna WebP-fil",
       "viewOnly": "Du kan visa delade ritningar:",
-      "dropHint": "Drop WebP or JSON file to import drawing",
-      "dropHintImport": "Import Drawing",
-      "dropHintImportTypes": "WebP or JSON"
+      "dropHint": "Släpp en WebP- eller JSON-fil för att importera en ritning",
+      "dropHintImport": "Importera Noitamap-anteckning",
+      "dropHintImportTypes": "WebP eller JSON",
+      "dropHintVectorize": "Vektorisera bild",
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
     },
     "savedDrawings": {
       "label": "Sparade ritningar",
@@ -875,6 +877,13 @@
       "medium": "50%",
       "heavy": "75%",
       "solid": "100%"
+    },
+    "vectorize": {
+      "noShapes": "Inga former kunde extraheras från denna bild",
+      "error": "Kunde inte vektorisera bilden",
+      "processing": "Vektoriserar bild...",
+      "unsupportedFormat": "Bildformat stöds inte",
+      "errorDetail": "Vektoriseringen misslyckades — bilden kan vara för komplex eller fotografisk. Denna funktion fungerar bäst med pixelkonst och bilder med platta färger."
     }
   }
 }

@@ -152,44 +152,98 @@
   }
 }
 
-/* Drag and drop overlay for importing WebP drawing files */
+/* Drag and drop overlay for importing/vectorizing files */
 .drop-overlay {
   position: fixed;
   inset: 0;
   z-index: 10000;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 1.5rem;
+  padding: 1.5rem;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
   pointer-events: none;
 }
 
 .drop-overlay.visible {
   opacity: 1;
   visibility: visible;
+  pointer-events: auto;
 }
 
-.drop-overlay::before {
-  content: '';
-  position: absolute;
-  inset: 1.5rem;
-  border: 3px dashed rgba(255, 255, 255, 0.5);
+/* Drop zones */
+.drop-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px dashed rgba(255, 255, 255, 0.3);
   border-radius: 1rem;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+  position: relative;
+}
+
+.drop-zone-import {
+  flex: 7;
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.drop-zone-vectorize {
+  flex: 3;
+  background: rgba(168, 85, 247, 0.12);
+  border-color: rgba(168, 85, 247, 0.35);
+}
+
+.drop-zone-import.active {
+  background: rgba(59, 130, 246, 0.3);
+  border-color: rgba(59, 130, 246, 0.8);
+}
+
+.drop-zone-vectorize.active {
+  background: rgba(168, 85, 247, 0.3);
+  border-color: rgba(168, 85, 247, 0.8);
+}
+
+.drop-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: white;
+  text-align: center;
   pointer-events: none;
 }
 
-.drop-overlay::after {
-  content: attr(data-text);
-  font-size: 1.5rem;
+.drop-zone-title {
+  font-size: 1.25rem;
   font-weight: 500;
+}
+
+.drop-zone-types {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.drop-zone-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
   color: white;
-  text-align: center;
-  padding: 1rem 2rem;
-  background: rgba(59, 130, 246, 0.8);
-  border-radius: 0.75rem;
-  box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.drop-zone-progress {
+  font-size: 0.9rem;
+  opacity: 0.9;
 }

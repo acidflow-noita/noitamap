@@ -824,9 +824,11 @@
     "import": {
       "noData": "Geen tekengegevens gevonden in dit WebP-bestand",
       "viewOnly": "Je kunt gedeelde tekeningen bekijken:",
-      "dropHint": "Drop WebP or JSON file to import drawing",
-      "dropHintImport": "Import Drawing",
-      "dropHintImportTypes": "WebP or JSON"
+      "dropHint": "Sleep een WebP- of JSON-bestand om een tekening te importeren",
+      "dropHintImport": "Noitamap-annotatie importeren",
+      "dropHintImportTypes": "WebP of JSON",
+      "dropHintVectorize": "Afbeelding vectoriseren",
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
     },
     "savedDrawings": {
       "label": "Opgeslagen tekeningen",
@@ -875,6 +877,13 @@
       "medium": "50%",
       "heavy": "75%",
       "solid": "100%"
+    },
+    "vectorize": {
+      "noShapes": "Er konden geen vormen uit deze afbeelding worden geëxtraheerd",
+      "error": "Kan afbeelding niet vectoriseren",
+      "processing": "Afbeelding vectoriseren...",
+      "unsupportedFormat": "Niet-ondersteund afbeeldingsformaat",
+      "errorDetail": "Vectorisatie mislukt — de afbeelding is mogelijk te complex of fotografisch. Deze functie werkt het beste met pixel art en afbeeldingen met vlakke kleuren."
     }
   }
 }

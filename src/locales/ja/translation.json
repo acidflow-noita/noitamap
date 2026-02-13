@@ -824,9 +824,11 @@
     "import": {
       "noData": "このWebPファイルに描画データが見つかりません",
       "viewOnly": "共有された描画を表示できます：",
-      "dropHint": "Drop WebP or JSON file to import drawing",
-      "dropHintImport": "Import Drawing",
-      "dropHintImportTypes": "WebP or JSON"
+      "dropHint": "WebPまたはJSONファイルをドロップして描画をインポート",
+      "dropHintImport": "Noitamapアノテーションをインポート",
+      "dropHintImportTypes": "WebPまたはJSON",
+      "dropHintVectorize": "画像をベクター化",
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
     },
     "savedDrawings": {
       "label": "保存済みの描画",
@@ -875,6 +877,13 @@
       "medium": "50%",
       "heavy": "75%",
       "solid": "100%"
+    },
+    "vectorize": {
+      "noShapes": "この画像から図形を抽出できませんでした",
+      "error": "画像のベクター化に失敗しました",
+      "processing": "画像をベクター化中...",
+      "unsupportedFormat": "サポートされていない画像形式",
+      "errorDetail": "ベクター化に失敗しました — 画像が複雑すぎるか写真的である可能性があります。この機能はピクセルアートやフラットカラーの画像に最適です。"
     }
   }
 }

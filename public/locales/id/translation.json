@@ -824,9 +824,11 @@
     "import": {
       "noData": "Tidak ada data gambar yang ditemukan di file WebP ini",
       "viewOnly": "Anda dapat melihat gambar bersama:",
-      "dropHint": "Drop WebP or JSON file to import drawing",
-      "dropHintImport": "Import Drawing",
-      "dropHintImportTypes": "WebP or JSON"
+      "dropHint": "Jatuhkan file WebP atau JSON untuk mengimpor gambar",
+      "dropHintImport": "Impor Anotasi Noitamap",
+      "dropHintImportTypes": "WebP atau JSON",
+      "dropHintVectorize": "Vektorisasi Gambar",
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
     },
     "savedDrawings": {
       "label": "Gambar Tersimpan",
@@ -875,6 +877,13 @@
       "medium": "50%",
       "heavy": "75%",
       "solid": "100%"
+    },
+    "vectorize": {
+      "noShapes": "Tidak ada bentuk yang dapat diekstrak dari gambar ini",
+      "error": "Gagal memvektorisasi gambar",
+      "processing": "Memvektorisasi gambar...",
+      "unsupportedFormat": "Format gambar tidak didukung",
+      "errorDetail": "Vektorisasi gagal — gambar mungkin terlalu kompleks atau fotografis. Fitur ini bekerja paling baik dengan pixel art dan gambar berwarna datar."
     }
   }
 }

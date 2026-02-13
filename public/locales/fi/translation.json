@@ -824,9 +824,11 @@
     "import": {
       "noData": "Tässä WebP-tiedostossa ei ole piirustusdataa",
       "viewOnly": "Voit katsella jaettuja piirroksia:",
-      "dropHint": "Drop WebP or JSON file to import drawing",
-      "dropHintImport": "Import Drawing",
-      "dropHintImportTypes": "WebP or JSON"
+      "dropHint": "Pudota WebP- tai JSON-tiedosto tuodaksesi piirustuksen",
+      "dropHintImport": "Tuo Noitamap-merkintäpiirustus",
+      "dropHintImportTypes": "WebP tai JSON",
+      "dropHintVectorize": "Vektoroi kuva",
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
     },
     "savedDrawings": {
       "label": "Tallennetut piirrokset",
@@ -875,6 +877,13 @@
       "medium": "50%",
       "heavy": "75%",
       "solid": "100%"
+    },
+    "vectorize": {
+      "noShapes": "Kuvasta ei voitu poimia muotoja",
+      "error": "Kuvan vektorointi epäonnistui",
+      "processing": "Vektoroidaan kuvaa...",
+      "unsupportedFormat": "Kuvamuotoa ei tueta",
+      "errorDetail": "Vektorointi epäonnistui — kuva voi olla liian monimutkainen tai valokuvamainen. Tämä toiminto toimii parhaiten pikselitaiteen ja tasavärikuvien kanssa."
     }
   }
 }

@@ -824,9 +824,11 @@
     "import": {
       "noData": "Keine Zeichnungsdaten in dieser WebP-Datei gefunden",
       "viewOnly": "Du kannst geteilte Zeichnungen ansehen:",
-      "dropHint": "Drop WebP or JSON file to import drawing",
-      "dropHintImport": "Import Drawing",
-      "dropHintImportTypes": "WebP or JSON"
+      "dropHint": "WebP- oder JSON-Datei ablegen, um Zeichnung zu importieren",
+      "dropHintImport": "Noitamap-Anmerkung importieren",
+      "dropHintImportTypes": "WebP oder JSON",
+      "dropHintVectorize": "Bild vektorisieren",
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
     },
     "savedDrawings": {
       "label": "Gespeicherte Zeichnungen",
@@ -875,6 +877,13 @@
       "medium": "50%",
       "heavy": "75%",
       "solid": "100%"
+    },
+    "vectorize": {
+      "noShapes": "Aus diesem Bild konnten keine Formen extrahiert werden",
+      "error": "Bild konnte nicht vektorisiert werden",
+      "processing": "Bild wird vektorisiert...",
+      "unsupportedFormat": "Nicht unterstütztes Bildformat",
+      "errorDetail": "Vektorisierung fehlgeschlagen — das Bild ist möglicherweise zu komplex oder fotografisch. Diese Funktion funktioniert am besten mit Pixel-Art und Bildern mit flachen Farben."
     }
   }
 }

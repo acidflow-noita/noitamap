@@ -831,9 +831,11 @@
     "import": {
       "noData": "У цьому WebP файлі не знайдено даних малюнка",
       "viewOnly": "Ви можете переглядати спільні малюнки:",
-      "dropHint": "Drop WebP or JSON file to import drawing",
-      "dropHintImport": "Import Drawing",
-      "dropHintImportTypes": "WebP or JSON"
+      "dropHint": "Перетягніть файл WebP або JSON для імпорту малюнка",
+      "dropHintImport": "Імпортувати анотацію Noitamap",
+      "dropHintImportTypes": "WebP або JSON",
+      "dropHintVectorize": "Векторизувати зображення",
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
     },
     "savedDrawings": {
       "label": "Збережені малюнки",
@@ -875,6 +877,13 @@
       "medium": "50%",
       "heavy": "75%",
       "solid": "100%"
+    },
+    "vectorize": {
+      "noShapes": "Не вдалося витягти фігури з цього зображення",
+      "error": "Не вдалося векторизувати зображення",
+      "processing": "Векторизація зображення...",
+      "unsupportedFormat": "Непідтримуваний формат зображення",
+      "errorDetail": "Векторизація не вдалася — зображення може бути занадто складним або фотографічним. Ця функція найкраще працює з піксель-артом та зображеннями з однотонними кольорами."
     }
   }
 }

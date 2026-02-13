@@ -824,9 +824,11 @@
     "import": {
       "noData": "Nie znaleziono danych rysunku w tym pliku WebP",
       "viewOnly": "Możesz przeglądać udostępnione rysunki:",
-      "dropHint": "Drop WebP or JSON file to import drawing",
-      "dropHintImport": "Import Drawing",
-      "dropHintImportTypes": "WebP or JSON"
+      "dropHint": "Upuść plik WebP lub JSON, aby zaimportować rysunek",
+      "dropHintImport": "Importuj adnotację Noitamap",
+      "dropHintImportTypes": "WebP lub JSON",
+      "dropHintVectorize": "Wektoryzuj obraz",
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
     },
     "savedDrawings": {
       "label": "Zapisane rysunki",
@@ -875,6 +877,13 @@
       "medium": "50%",
       "heavy": "75%",
       "solid": "100%"
+    },
+    "vectorize": {
+      "noShapes": "Nie udało się wyodrębnić kształtów z tego obrazu",
+      "error": "Nie udało się zwektoryzować obrazu",
+      "processing": "Wektoryzacja obrazu...",
+      "unsupportedFormat": "Nieobsługiwany format obrazu",
+      "errorDetail": "Wektoryzacja nie powiodła się — obraz może być zbyt złożony lub fotograficzny. Ta funkcja działa najlepiej z pixel artem i obrazami o jednolitych kolorach."
     }
   }
 }

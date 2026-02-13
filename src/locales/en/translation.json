@@ -833,8 +833,17 @@
       "noData": "No drawing data found in this WebP file",
       "viewOnly": "You can view shared drawings:",
       "dropHint": "Drop WebP or JSON file to import drawing",
-      "dropHintImport": "Import Drawing",
-      "dropHintImportTypes": "WebP or JSON"
+      "dropHintImport": "Import Noitamap Annotation Drawing",
+      "dropHintImportTypes": "WebP or JSON",
+      "dropHintVectorize": "Vectorize Image",
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
+    },
+    "vectorize": {
+      "noShapes": "No shapes could be extracted from this image",
+      "error": "Failed to vectorize image",
+      "errorDetail": "Vectorization failed — the image may be too complex or photographic. This feature works best with pixel art and flat-color images.",
+      "processing": "Vectorizing image...",
+      "unsupportedFormat": "Unsupported image format"
     },
     "savedDrawings": {
       "label": "Saved Drawings",

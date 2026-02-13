@@ -824,9 +824,11 @@
     "import": {
       "noData": "V tomto souboru WebP nebyly nalezeny žádné údaje o kresbě",
       "viewOnly": "Můžete si prohlédnout sdílené kresby:",
-      "dropHint": "Drop WebP or JSON file to import drawing",
-      "dropHintImport": "Import Drawing",
-      "dropHintImportTypes": "WebP or JSON"
+      "dropHint": "Přetáhněte soubor WebP nebo JSON pro import kresby",
+      "dropHintImport": "Importovat anotaci z Noitamap",
+      "dropHintImportTypes": "WebP nebo JSON",
+      "dropHintVectorize": "Vektorizovat obrázek",
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
     },
     "savedDrawings": {
       "label": "Uložené kresby",
@@ -875,6 +877,13 @@
       "medium": "50%",
       "heavy": "75%",
       "solid": "100%"
+    },
+    "vectorize": {
+      "noShapes": "Z tohoto obrázku nebyly extrahovány žádné tvary",
+      "error": "Nepodařilo se vektorizovat obrázek",
+      "processing": "Vektorizace obrázku...",
+      "unsupportedFormat": "Nepodporovaný formát obrázku",
+      "errorDetail": "Vektorizace selhala — obrázek může být příliš složitý nebo fotografický. Tato funkce funguje nejlépe s pixel artem a obrázky s plochými barvami."
     }
   }
 }

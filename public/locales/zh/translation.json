@@ -837,9 +837,11 @@
     "import": {
       "noData": "在此 WebP 文件中未找到绘图数据",
       "viewOnly": "您可以查看分享的绘图：",
-      "dropHint": "Drop WebP or JSON file to import drawing",
-      "dropHintImport": "Import Drawing",
-      "dropHintImportTypes": "WebP or JSON"
+      "dropHint": "拖放WebP或JSON文件以导入绘图",
+      "dropHintImport": "导入Noitamap标注绘图",
+      "dropHintImportTypes": "WebP或JSON",
+      "dropHintVectorize": "矢量化图片",
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
     },
     "savedDrawings": {
       "label": "已保存的绘图",
@@ -875,6 +877,13 @@
       "medium": "50%",
       "heavy": "75%",
       "solid": "100%"
+    },
+    "vectorize": {
+      "noShapes": "无法从此图片中提取形状",
+      "error": "图片矢量化失败",
+      "processing": "正在矢量化图片...",
+      "unsupportedFormat": "不支持的图片格式",
+      "errorDetail": "矢量化失败 — 图片可能过于复杂或为摄影图片。此功能最适合像素画和纯色图片。"
     }
   }
 }
