@@ -241,5 +241,21 @@
     "patchDate": "2024-08-12",
     "seed": "78633191",
     "tileSets": ["middle"]
+  },
+  {
+    "key": "empty-test",
+    "label": "Map Test Empty",
+    "labelKey": "maps.mapTestEmpty",
+    "badges": [
+      {
+        "label": "Special",
+        "labelKey": "badges.special",
+        "class": "text-bg-primary",
+        "icon": "bi bi-gear-wide-connected"
+      }
+    ],
+    "patchDate": "2024-08-12",
+    "seed": "78633191",
+    "tileSets": ["middle"]
   }
 ]

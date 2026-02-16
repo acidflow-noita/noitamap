@@ -128,5 +128,11 @@
       "url": "https://maptestdev-middle.acidflow.stream/maps/maptestdev-middle/maptestdev-middle-2024-08-12-78633191.dzi",
       "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"png\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"37376\",\"Height\":\"75264\"},\"TopLeft\":{\"X\":\"-18688\",\"Y\":\"-32512\"}}}\n"
     }
+  ],
+  "empty-test": [
+    {
+      "url": "https://empty-test-middle.acidflow.stream/maps/empty-test-middle/empty-test-middle-2024-08-12-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"37376\",\"Height\":\"26112\"},\"TopLeft\":{\"X\":\"-18688\",\"Y\":\"-7936\"}}}\n"
+    }
   ]
 }
