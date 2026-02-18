@@ -39,7 +39,8 @@
     "nightmare": "ナイトメア",
     "biomeMap": "バイオームマップ",
     "biomeMapCaptured": "バイオームマップ キャプチャ済み",
-    "mapTestPng": "マップテスト PNG"
+    "mapTestPng": "マップテスト PNG",
+    "mapDynamic": "ダイナミック"
   },
   "badges": {
     "latest": "最新",

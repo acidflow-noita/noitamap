@@ -39,7 +39,8 @@
     "nightmare": "Noční můra",
     "biomeMap": "Mapa biomů",
     "biomeMapCaptured": "Mapa biomů zachycená",
-    "mapTestPng": "Testovací mapa PNG"
+    "mapTestPng": "Testovací mapa PNG",
+    "mapDynamic": "Dynamická"
   },
   "badges": {
     "latest": "Nejnovější",

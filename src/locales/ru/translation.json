@@ -39,7 +39,8 @@
     "nightmare": "Кошмар",
     "biomeMap": "Карта биомов",
     "biomeMapCaptured": "Карта биомов (захват)",
-    "mapTestPng": "Тестовая карта PNG"
+    "mapTestPng": "Тестовая карта PNG",
+    "mapDynamic": "Динамическая"
   },
   "badges": {
     "latest": "Последняя",

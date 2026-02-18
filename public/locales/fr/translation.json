@@ -39,7 +39,8 @@
     "nightmare": "Cauchemar",
     "biomeMap": "Carte des biomes",
     "biomeMapCaptured": "Carte des biomes capturée",
-    "mapTestPng": "Carte test PNG"
+    "mapTestPng": "Carte test PNG",
+    "mapDynamic": "Dynamique"
   },
   "badges": {
     "latest": "Dernier",

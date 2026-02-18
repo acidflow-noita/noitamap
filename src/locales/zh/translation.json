@@ -39,7 +39,8 @@
     "nightmare": "噩梦",
     "biomeMap": "生物群系地图",
     "biomeMapCaptured": "生物群系地图已捕获",
-    "mapTestPng": "地图测试 PNG"
+    "mapTestPng": "地图测试 PNG",
+    "mapDynamic": "动态"
   },
   "badges": {
     "latest": "最新",

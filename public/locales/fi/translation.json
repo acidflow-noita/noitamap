@@ -39,7 +39,8 @@
     "nightmare": "Painajainen",
     "biomeMap": "Biomikartta",
     "biomeMapCaptured": "Biomikartta tallennettu",
-    "mapTestPng": "Karttitesti PNG"
+    "mapTestPng": "Karttitesti PNG",
+    "mapDynamic": "Dynaaminen"
   },
   "badges": {
     "latest": "Uusin",

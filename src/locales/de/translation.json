@@ -39,7 +39,8 @@
     "nightmare": "Alptraum",
     "biomeMap": "Biom-Karte",
     "biomeMapCaptured": "Biom-Karte erfasst",
-    "mapTestPng": "Karten-Test PNG"
+    "mapTestPng": "Karten-Test PNG",
+    "mapDynamic": "Dynamisch"
   },
   "badges": {
     "latest": "Neueste",
