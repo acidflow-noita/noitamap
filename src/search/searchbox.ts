@@ -85,7 +85,7 @@ export class SearchBox extends EventEmitter2 {
     if (this.lastSearchText === searchText) return;
     this.lastSearchText = searchText;
 
-    const results = searchText === '' ? [] : searchOverlays(this.currentMap, searchText);
+    const results = searchText === '' ? [] : searchOverlays(this.currentMap, searchText, new Set());
 
     this.searchResults.setResults(results);
   }

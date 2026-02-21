@@ -185,7 +185,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
         switch (result.overlayType) {
           case 'poi':
             // Use displayName if available (translated), otherwise fall back to name
-            const displayName = 'displayName' in result ? result.displayName : result.name;
+            const displayName = 'displayName' in result ? (result as any).displayName : (result as any).name;
             const currentLang = i18next.language;
 
             // Create content container for multi-line display
@@ -195,14 +195,14 @@ export class UnifiedSearchResults extends EventEmitter2 {
             // Main name line with translated name
             const nameDiv = document.createElement('div');
             nameDiv.className = 'overlay-main-line';
-            nameDiv.textContent = displayName;
+            nameDiv.textContent = displayName as string;
             contentDiv.appendChild(nameDiv);
 
             // English name on second line if not in English and different
-            if (currentLang !== 'en' && displayName !== result.name) {
+            if (currentLang !== 'en' && displayName !== (result as any).name) {
               const englishDiv = document.createElement('div');
               englishDiv.className = 'overlay-english-line';
-              englishDiv.textContent = result.name;
+              englishDiv.textContent = (result as any).name;
               englishDiv.style.fontSize = '0.85em';
               englishDiv.style.color = '#888';
               englishDiv.style.fontStyle = 'italic';
@@ -224,11 +224,11 @@ export class UnifiedSearchResults extends EventEmitter2 {
 
           case 'aoi':
             // Use displayText if available (translated), otherwise fall back to text
-            const displayText = 'displayText' in result ? result.displayText : result.text;
+            const displayText = 'displayText' in result ? (result as any).displayText : result.text;
             if (Array.isArray(displayText)) {
               listItem.textContent = displayText.join('; ');
             } else {
-              listItem.textContent = displayText || result.text.join('; ');
+              listItem.textContent = (displayText as string) || result.text.join('; ');
             }
             break;
         }

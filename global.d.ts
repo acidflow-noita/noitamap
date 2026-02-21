@@ -8,10 +8,10 @@ declare global {
   export const bootstrap = bbootstrap;
 
   export namespace FlexSearch {
-    export type Document = FFlexSearch.Document;
+    export type Document = FFlexSearch.Document<any, any>;
   }
   export const FlexSearch = {
-    Document: DocumentFactory,
+    Document: FFlexSearch.Document as any,
   };
 
   export const EventEmitter2 = EEventEmitter2;
@@ -27,5 +27,16 @@ declare global {
       drawer?: string;
       subPixelRoundingForTransparency?: number;
     }
+
+    export class Viewer extends OSD.Viewer {}
+    export class TileSource extends OSD.TileSource {}
+    export class Point extends OSD.Point {}
+    export class Rect extends OSD.Rect {}
+    export class MouseTracker extends OSD.MouseTracker {}
+    export type DziTileSource = OSD.DziTileSource;
+    export type TiledImage = OSD.TiledImage;
+    export type EventHandler<T> = OSD.EventHandler<T>;
+    export type AddItemWorldEvent = OSD.AddItemWorldEvent;
+    export type Viewport = OSD.Viewport;
   }
 }

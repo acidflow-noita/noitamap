@@ -34,25 +34,24 @@
   "dependencies": {
     "@designsystemsinternational/flags": "^0.2.0",
     "eventemitter2": "6.4.9",
-    "flexsearch": "0.7.40",
-    "i18next": "^25.3.2",
-    "i18next-browser-languagedetector": "^8.2.0",
-    "i18next-http-backend": "^3.0.2",
-    "openseadragon": "5.0.1"
+    "flexsearch": "0.8.212",
+    "i18next": "^25.8.13",
+    "i18next-browser-languagedetector": "^8.2.1",
+    "i18next-http-backend": "^3.0.2"
   },
   "optionalDependencies": {
-    "canvas": "^2.11.2",
-    "jsdom": "^25.0.1"
+    "canvas": "^3.2.1",
+    "jsdom": "^28.1.0"
   },
   "devDependencies": {
     "@types/bootstrap": "^5.2.10",
-    "@types/jsdom": "^21.1.7",
-    "@types/node": "^22.7.7",
-    "@types/openseadragon": "^3.0.10",
-    "openseadragon": "^5.0.1",
-    "prettier": "^3.3.3",
-    "tsup": "^8.1.0",
-    "tsx": "^4.19.1",
-    "typescript": "^5.6.3"
+    "@types/jsdom": "^27.0.0",
+    "@types/node": "^25.3.0",
+    "@types/openseadragon": "^5.0.2",
+    "openseadragon": "^6.0.0",
+    "prettier": "^3.8.1",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   }
 }

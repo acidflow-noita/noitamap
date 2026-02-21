@@ -166,12 +166,12 @@ export class App extends EventEmitter2 {
   }
 
   public goto(toi: TargetOfInterest) {
-    let x = toi.x;
-    let y = toi.y;
+    let x = (toi as any).x;
+    let y = (toi as any).y;
 
     if (toi.overlayType === 'aoi') {
-      x += toi.width / 2;
-      y += toi.height / 2;
+      x += (toi as any).width / 2;
+      y += (toi as any).height / 2;
     }
 
     this.updateZoomPos({

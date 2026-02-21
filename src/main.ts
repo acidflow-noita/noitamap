@@ -70,7 +70,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize renderer from storage
   const storedRenderer = getStoredRenderer();
-  rendererForm.elements['renderer'].value = storedRenderer;
+  const rendererInput = rendererForm.elements.namedItem('renderer') as HTMLInputElement | null;
+  if (rendererInput) {
+    rendererInput.value = storedRenderer;
+  }
 
   const app = await App.create({
     mountTo: osdRootElement,
@@ -235,10 +238,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Handle renderer changes
   rendererForm.addEventListener('change', ev => {
-    if (!ev.target.matches('input[type="radio"][name="renderer"]')) return;
+    if (!(ev.target instanceof HTMLInputElement) || !ev.target.matches('input[type="radio"][name="renderer"]')) return;
 
     ev.stopPropagation();
-    const newRenderer = rendererForm.elements['renderer'].value;
+    const rendererInput = rendererForm.elements.namedItem('renderer') as HTMLInputElement | null;
+    const newRenderer = rendererInput ? rendererInput.value : '';
 
     if (isRenderer(newRenderer)) {
       setStoredRenderer(newRenderer);

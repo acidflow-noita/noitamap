@@ -1,7 +1,6 @@
 import { fetchMapVersions, getTileData, MapName } from './data_sources/tile_data';
 import { createOverlays } from './data_sources/overlays';
 
-import type { TileSourceOptions } from 'openseadragon';
 import { CHUNK_SIZE } from './constants';
 
 const { Point, TileSource, Viewer } = OpenSeadragon;
@@ -38,7 +37,7 @@ export class AppOSD extends Viewer {
       imageSmoothingEnabled: false,
       debugMode: false, // Optional debugging grid
       // Provide OSD with initial set of tiles
-      subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS,
+      subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS as any,
       smoothTileEdgesMinZoom: 1,
       minScrollDeltaTime: 10,
       springStiffness: 50,
@@ -49,13 +48,13 @@ export class AppOSD extends Viewer {
       opacity: 1,
     });
 
-    this.addHandler('canvas-key',event=>{
-        if(['q', 'w', 'e', 'r', 'a', 's', 'd', 'f'].includes(event.originalEvent.key)){
-            event.preventDefaultAction = true;
-        }
+    this.addHandler('canvas-key', event => {
+      if (['q', 'w', 'e', 'r', 'a', 's', 'd', 'f'].includes((event as any).originalEvent.key)) {
+        (event as any).preventDefaultAction = true;
+      }
     });
 
-    this.world.addHandler('remove-item', event => {
+    this.world.addHandler('remove-item', (event: any) => {
       const item = event.item;
 
       item.removeAllHandlers('fully-loaded-change');
@@ -65,7 +64,7 @@ export class AppOSD extends Viewer {
     });
 
     // Align OSD coordinate system with the Noita world coordinate system
-    this.world.addHandler('add-item', event => {
+    this.world.addHandler('add-item', (event: any) => {
       const item = event.item;
 
       item.addHandler('fully-loaded-change', () => this.notifyLoadingStatus());
@@ -123,7 +122,7 @@ export class AppOSD extends Viewer {
 
       this.addHandler('open-failed', reject);
 
-      this.addOnceHandler('open', event => {
+      this.addOnceHandler('open', () => {
         this.removeHandler('open-failed', reject);
         resolve();
       });
@@ -207,7 +206,7 @@ export class AppOSD extends Viewer {
     this.world.removeAll();
 
     // ... add the new tiles ...
-    this.open(tileSources);
+    this.open(tileSources as any);
 
     // remove all overlays from the viewer
     this.clearOverlays();

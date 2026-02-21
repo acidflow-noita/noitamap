@@ -31,7 +31,9 @@ export const createMapLinks = (): HTMLUListElement => {
     ];
 
     const shouldTranslate = def.labelKey && translatableKeys.includes(def.labelKey);
-    const translatedLabel = shouldTranslate ? i18next.t(def.labelKey, { defaultValue: def.label }) : def.label;
+    const translatedLabel = shouldTranslate
+      ? i18next.t(def.labelKey as string, { defaultValue: def.label as string })
+      : def.label;
     a.textContent = translatedLabel + ' ';
 
     const badges = [...def.badges];
@@ -51,7 +53,7 @@ export const createMapLinks = (): HTMLUListElement => {
 
       // Use labelKey from badge if available, fallback to original label
       const translatedBadgeLabel = badge.labelKey
-        ? i18next.t(badge.labelKey, { defaultValue: badge.label })
+        ? i18next.t(badge.labelKey as string, { defaultValue: badge.label as string })
         : badge.label;
 
       // Add explanatory tooltips to all badges
@@ -63,7 +65,7 @@ export const createMapLinks = (): HTMLUListElement => {
       } else if (badge.labelKey) {
         // Add tooltip for other badges using their label key
         const tooltipKey = `badges.${badge.labelKey}Tooltip`;
-        span.dataset.bsTitle = i18next.t(tooltipKey, { defaultValue: translatedBadgeLabel });
+        span.dataset.bsTitle = i18next.t(tooltipKey as string, { defaultValue: translatedBadgeLabel as string });
       } else {
         // Fallback tooltip for badges without specific keys
         span.dataset.bsTitle = translatedBadgeLabel;
@@ -112,7 +114,9 @@ export const updateMapLinkTranslations = (): void => {
     ];
 
     const shouldTranslate = def.labelKey && translatableKeys.includes(def.labelKey);
-    const translatedLabel = shouldTranslate ? i18next.t(def.labelKey, { defaultValue: def.label }) : def.label;
+    const translatedLabel = shouldTranslate
+      ? i18next.t(def.labelKey as string, { defaultValue: def.label as string })
+      : def.label;
     link.textContent = translatedLabel + ' ';
 
     const badges = [...def.badges];
@@ -144,7 +148,7 @@ export const updateMapLinkTranslations = (): void => {
       } else if (badge.labelKey) {
         // Add tooltip for other badges using their label key
         const tooltipKey = `badges.${badge.labelKey}Tooltip`;
-        span.dataset.bsTitle = i18next.t(tooltipKey, { defaultValue: translatedBadgeLabel });
+        span.dataset.bsTitle = i18next.t(tooltipKey as string, { defaultValue: translatedBadgeLabel as string });
       } else {
         // Fallback tooltip for badges without specific keys
         span.dataset.bsTitle = translatedBadgeLabel;

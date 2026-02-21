@@ -14,8 +14,8 @@ import i18next from 'i18next';
 import hiddenMessages from '../data/hidden_messages.json';
 
 const { Rect, Point } = OpenSeadragon;
-type Rect = InstanceType<typeof Rect>;
-type Point = InstanceType<typeof Point>;
+type Rect = OpenSeadragon.Rect;
+type Point = OpenSeadragon.Point;
 
 export type PathOfInterest = {
   overlayType: 'path';
@@ -209,7 +209,7 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
   // Split the path into individual polygons (separated by M commands)
   const polygons: string[] = [];
   const pathCommands = path.split(/(?=M)/); // Split on M but keep M in each part
-  
+
   for (const polygon of pathCommands) {
     if (polygon.trim()) {
       polygons.push(polygon.trim());
@@ -224,7 +224,11 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
 
   const allCoords = path.split(/[MLZ]/).filter(p => p.trim() !== '');
   for (const point of allCoords) {
-    const coords = point.trim().split(' ').map(Number).filter(n => !isNaN(n));
+    const coords = point
+      .trim()
+      .split(' ')
+      .map(Number)
+      .filter(n => !isNaN(n));
     for (let i = 0; i < coords.length; i += 2) {
       if (i + 1 < coords.length) {
         const x = coords[i];
@@ -245,7 +249,7 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
   el.style.pointerEvents = 'none'; // Container doesn't handle events
   el.dataset.biomeName = text;
   el.classList.add('biome-overlay-path');
-  
+
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
   svg.style.width = '100%';
@@ -278,21 +282,21 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
   visiblePaths.forEach(pathEl => {
     pathEl.addEventListener('mouseenter', () => {
       const tooltip = getBiomeTooltip();
-      
+
       // Check if we have a biome name and if it's not empty
       if (biomeName && biomeName.trim() !== '' && biomeName !== '_EMPTY_') {
         // biomeName is either already "biome_xxx" or just "xxx"
         // If it doesn't start with "biome_", prepend it
         const translationKey = biomeName.startsWith('biome_') ? biomeName : `biome_${biomeName}`;
-        
+
         // Try to get translation from gameContent.biomes using the full key
         let translatedName = i18next.t(`gameContent.biomes.${translationKey}`, { defaultValue: null });
-        
+
         // If not found, fall back to just the biome name
         if (!translatedName) {
           translatedName = biomeName;
         }
-        
+
         // Format: Translated Name\n(filename)
         tooltip.innerHTML = `${translatedName}<br><span style="font-family: Inter, sans-serif; font-feature-settings: 'tnum', 'zero', 'cv09', 'cv02', 'cv03', 'cv04'; font-weight: 400; opacity: 0.7;">(${text})</span>`;
       } else {
@@ -300,15 +304,15 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
         const noInGameName = i18next.t('noInGameName');
         tooltip.innerHTML = `${noInGameName}<br><span style="font-family: Inter, sans-serif; font-feature-settings: 'tnum', 'zero', 'cv09', 'cv02', 'cv03', 'cv04'; font-weight: 400; opacity: 0.7;">(${text})</span>`;
       }
-      
+
       tooltip.style.display = 'block';
-      
+
       // Increase fill opacity, keep black stroke
       visiblePaths.forEach(p => {
         p.style.fillOpacity = '0.75';
       });
-      
-      document.querySelectorAll('.biome-overlay-path').forEach((otherEl) => {
+
+      document.querySelectorAll('.biome-overlay-path').forEach(otherEl => {
         if (otherEl !== el) {
           const otherPaths = otherEl.querySelectorAll('path');
           otherPaths.forEach(p => {
@@ -322,15 +326,15 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
     pathEl.addEventListener('mouseleave', () => {
       const tooltip = getBiomeTooltip();
       tooltip.style.display = 'none';
-      
+
       // Reset to default state
       visiblePaths.forEach(p => {
         p.style.fillOpacity = '0.3';
         p.style.stroke = '#000000';
         p.style.strokeOpacity = '1';
       });
-      
-      document.querySelectorAll('.biome-overlay-path').forEach((otherEl) => {
+
+      document.querySelectorAll('.biome-overlay-path').forEach(otherEl => {
         if (otherEl !== el) {
           const otherPaths = otherEl.querySelectorAll('path');
           otherPaths.forEach(p => {
@@ -341,7 +345,7 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
       });
     });
 
-    pathEl.addEventListener('mousemove', (e) => {
+    pathEl.addEventListener('mousemove', e => {
       const tooltip = getBiomeTooltip();
       // Position tooltip to the right and above cursor to avoid coordinate text
       tooltip.style.left = `${e.clientX + 20}px`;
@@ -531,15 +535,15 @@ export const createOverlays = (mapName: string): OSDOverlay[] => {
 
   // Define z-index priority for overlay types (lower = behind, higher = in front)
   const zIndexPriority: Record<string, number> = {
-    'biomeBoundaries': 1,  // Biome boundaries at the back
-    'biomes': 2,           // Biome overlays
-    'orbAreas': 3,         // Area overlays
-    'structures': 10,      // POI overlays in front
-    'items': 10,
-    'bosses': 10,
-    'orbs': 10,
-    'spatialAwareness': 10,
-    'hiddenMessages': 10,
+    biomeBoundaries: 1, // Biome boundaries at the back
+    biomes: 2, // Biome overlays
+    orbAreas: 3, // Area overlays
+    structures: 10, // POI overlays in front
+    items: 10,
+    bosses: 10,
+    orbs: 10,
+    spatialAwareness: 10,
+    hiddenMessages: 10,
   };
 
   type Entries = [OverlayKey, TargetOfInterest[]];
@@ -549,7 +553,7 @@ export const createOverlays = (mapName: string): OSDOverlay[] => {
 
       const overlay = createOverlay(overlayData, type);
       overlay.element.classList.add('overlay', type);
-      
+
       // Set z-index based on type
       const zIndex = zIndexPriority[type] || 5;
       overlay.element.style.zIndex = String(zIndex);
