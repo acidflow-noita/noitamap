@@ -92,6 +92,10 @@
     "webgl": {
       "title": "Renderowanie WebGL",
       "content": "Renderowanie WebGL z akceleracją sprzętową. Jeśli używasz przeglądarki opartej na Chromium (Chrome, Edge, Brave itp.), podczas szybkiego powiększania, obraz będzie bardziej wyraźny."
+    },
+    "fallback": {
+      "title": "WebGL Unsupported",
+      "message": "Your device or browser doesn't support WebGL hardware acceleration. The map will load using the Canvas fallback, but some advanced particle effects will be disabled."
     }
   },
   "mod": {

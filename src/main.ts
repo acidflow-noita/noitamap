@@ -1,25 +1,24 @@
-import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
+import i18next, { SUPPORTED_LANGUAGES } from './i18n';
 
 // --- Dev Console Commands (Early Initialization) ---
 const isDev =
-  /dev\.noitamap\.com|localhost|127\.0\.0\.1/.test(window.location.hostname) ||
-  window.location.protocol === "file:";
+  /dev\.noitamap\.com|localhost|127\.0\.0\.1/.test(window.location.hostname) || window.location.protocol === 'file:';
 
 if (isDev) {
   (window as any).noitamap = {
     enableDrawing: () => {
-      localStorage.setItem("noitamap-dev-drawing", "1");
-      console.log("Drawing dev mode enabled. Refresh and open the sidebar.");
+      localStorage.setItem('noitamap-dev-drawing', '1');
+      console.log('Drawing dev mode enabled. Refresh and open the sidebar.');
     },
     disableDrawing: () => {
-      localStorage.removeItem("noitamap-dev-drawing");
-      console.log("Drawing dev mode disabled. Refresh to hide the sidebar.");
+      localStorage.removeItem('noitamap-dev-drawing');
+      console.log('Drawing dev mode disabled. Refresh to hide the sidebar.');
     },
   };
   console.log('[Noitamap] Dev mode detected, "noitamap" commands available.');
 }
 
-import { App } from "./app";
+import { App } from './app';
 import {
   parseURL,
   updateURL,
@@ -27,72 +26,32 @@ import {
   updateURLWithOverlays,
   updateURLWithDrawing,
   updateURLWithSidebar,
-} from "./data_sources/url";
-import {
-  asOverlayKey,
-  showOverlay,
-  selectSpell,
-  OverlayKey,
-} from "./data_sources/overlays";
-import { overlayToShort } from "./data_sources/param-mappings";
-import { UnifiedSearch } from "./search/unifiedsearch";
-// DISABLED: Simplification preview no longer needed - drawings are shared via cloud image upload
-// import {
-//   createSimplificationPreview,
-//   createSimplificationSlider,
-//   type SimplificationPreview,
-// } from './drawing/simplification-preview';
-import { asMapName } from "./data_sources/tile_data";
-import { addEventListenerForId, assertElementById, debounce } from "./util";
-import { createMapLinks, NAV_LINK_IDENTIFIER } from "./nav";
-import { initMouseTracker } from "./mouse_tracker";
-import {
-  isRenderer,
-  getStoredRenderer,
-  setStoredRenderer,
-} from "./renderer_settings";
-import { createLanguageSelector } from "./language-selector";
-import { updateTranslations } from "./i18n-dom";
-import { initKonamiCode } from "./konami";
-import { AuthUI } from "./auth/auth-ui";
-import { DrawingSidebar } from "./drawing/sidebar";
-import {
-  createDrawingManager,
-  DrawingManager,
-} from "./drawing/doodle-integration";
-import { DrawingSession } from "./drawing/storage";
-// DISABLED: URL encoding no longer needed - drawings are shared via cloud image upload
-import {
-  decodeShapesFromUrl,
-  encodeShapesWithInfo,
-} from "./drawing/url-encoder";
-import {
-  captureScreenshot,
-  downloadBlob,
-  screenshotFilename,
-  extractDrawingData,
-} from "./drawing/screenshot";
-import {
-  uploadDrawing,
-  fetchDrawing,
-  isCloudRef,
-  getCloudUrl,
-} from "./drawing/cloud-storage";
-import { shortenUrl } from "./drawing/link-shortener";
-import { vectorizeImage } from "./drawing/vectorize";
+} from './data_sources/url';
+import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from './data_sources/overlays';
+import { overlayToShort } from './data_sources/param-mappings';
+import { UnifiedSearch } from './search/unifiedsearch';
+import { asMapName } from './data_sources/tile_data';
+import { addEventListenerForId, assertElementById, debounce } from './util';
+import { createMapLinks, NAV_LINK_IDENTIFIER } from './nav';
+import { initMouseTracker } from './mouse_tracker';
+import { isRenderer, getStoredRenderer, setStoredRenderer } from './renderer_settings';
+import { createLanguageSelector } from './language-selector';
+import { updateTranslations } from './i18n-dom';
+import { initKonamiCode } from './konami';
+import { AuthUI } from './auth/auth-ui';
+import { authService } from './auth/auth-service';
+import { shortenUrl } from './drawing/link-shortener';
 
 // Global reference to unified search for translation updates
 let globalUnifiedSearch: UnifiedSearch | null = null;
 
-// Global references for drawing feature
-let globalDrawingManager: DrawingManager | null = null;
-let globalDrawingSession: DrawingSession | null = null;
-let globalDrawingSidebar: DrawingSidebar | null = null;
-
-// DISABLED: Simplification preview no longer needed
-// let globalSimplificationPreview: SimplificationPreview | null = null;
-// let globalSimplificationStatusUpdate: (() => void) | null = null;
 let globalApp: App | null = null;
+
+// Map-change callbacks registered by the pro bundle via onMapChange hook
+const mapChangeCallbacks: Array<(mapName: string) => void> = [];
+
+// Reference to unified search so the pro hook can update it
+let _unifiedSearch: UnifiedSearch | null = null;
 
 // Export function to refresh search translations
 export const refreshSearchTranslations = () => {
@@ -101,37 +60,30 @@ export const refreshSearchTranslations = () => {
   }
 };
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener('DOMContentLoaded', async () => {
   try {
     await i18next.init({
-      fallbackLng: "en",
+      fallbackLng: 'en',
       debug: false,
       detection: {
-        order: [
-          "querystring",
-          "cookie",
-          "localStorage",
-          "sessionStorage",
-          "navigator",
-          "htmlTag",
-        ],
-        lookupQuerystring: "lng",
-        lookupCookie: "i18next",
-        lookupLocalStorage: "i18nextLng",
-        lookupSessionStorage: "i18nextLng",
-        caches: ["localStorage", "cookie"],
+        order: ['querystring', 'cookie', 'localStorage', 'sessionStorage', 'navigator', 'htmlTag'],
+        lookupQuerystring: 'lng',
+        lookupCookie: 'i18next',
+        lookupLocalStorage: 'i18nextLng',
+        lookupSessionStorage: 'i18nextLng',
+        caches: ['localStorage', 'cookie'],
       },
       backend: {
-        loadPath: "./locales/{{lng}}/translation.json",
+        loadPath: './locales/{{lng}}/translation.json',
         requestOptions: {
-          cache: "no-store",
+          cache: 'no-store',
         },
       },
       interpolation: {
         escapeValue: false,
       },
       supportedLngs: Object.keys(SUPPORTED_LANGUAGES),
-      load: "languageOnly",
+      load: 'languageOnly',
       cleanCode: true,
       nonExplicitSupportedLngs: true,
     });
@@ -139,30 +91,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     createLanguageSelector();
     updateTranslations();
   } catch (error) {
-    console.error("i18next initialization failed:", error);
+    console.error('i18next initialization failed:', error);
   }
 
   // TODO: probably most of this should be part of the "App" class, or the "App" class should be removed.
   // i'm not sure i'm happy with the abstraction
 
-  const navbarBrandElement = assertElementById("navbar-brand", HTMLElement);
-  const osdRootElement = assertElementById("osContainer", HTMLElement);
-  const searchForm = assertElementById("search-form", HTMLFormElement);
-  const overlayButtonsElement = assertElementById(
-    "overlay-selector",
-    HTMLDivElement,
-  );
-  const mapSelectorButton = assertElementById(
-    "mapSelectorButton",
-    HTMLButtonElement,
-  );
-  const tooltipElement = assertElementById("coordinate", HTMLElement);
+  const navbarBrandElement = assertElementById('navbar-brand', HTMLElement);
+  const osdRootElement = assertElementById('osContainer', HTMLElement);
+  const searchForm = assertElementById('search-form', HTMLFormElement);
+  const overlayButtonsElement = assertElementById('overlay-selector', HTMLDivElement);
+  const mapSelectorButton = assertElementById('mapSelectorButton', HTMLButtonElement);
+  const tooltipElement = assertElementById('coordinate', HTMLElement);
   const coordinatesText = tooltipElement.innerText;
-  const rendererForm = assertElementById("renderer-form", HTMLFormElement);
+  const rendererForm = assertElementById('renderer-form', HTMLFormElement);
 
   // Initialize renderer from storage
   const storedRenderer = getStoredRenderer();
-  rendererForm.elements["renderer"].value = storedRenderer;
+  rendererForm.elements['renderer'].value = storedRenderer;
 
   // Parse URL state including overlays and drawing
   const urlState = parseURL();
@@ -171,17 +117,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     mountTo: osdRootElement,
     overlayButtons: overlayButtonsElement,
     initialState: urlState,
-    useWebGL: storedRenderer === "webgl",
+    useWebGL: storedRenderer === 'webgl',
   });
   globalApp = app;
-
-  const initialMapName = app.getMap();
 
   // Apply overlays from URL
   if (urlState.overlays && urlState.overlays.length > 0) {
     for (const overlayKey of urlState.overlays) {
       const toggler = document.querySelector(
-        `input.overlayToggler[data-overlay-key="${overlayKey}"]`,
+        `input.overlayToggler[data-overlay-key="${overlayKey}"]`
       ) as HTMLInputElement | null;
       if (toggler && !toggler.disabled) {
         toggler.checked = true;
@@ -191,594 +135,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // Initialize auth UI in navbar (at the end of the button container)
-  const authContainer = document.createElement("div");
-  authContainer.id = "auth-container";
+  const authContainer = document.createElement('div');
+  authContainer.id = 'auth-container';
   // Find the container div that holds all the buttons
-  const buttonContainer = document.querySelector(
-    ".collapse.navbar-collapse .d-flex.flex-wrap",
-  );
+  const buttonContainer = document.querySelector('.collapse.navbar-collapse .d-flex.flex-wrap');
   if (buttonContainer) {
     buttonContainer.appendChild(authContainer);
   }
   new AuthUI(authContainer);
 
-  // Initialize drawing feature
-  let drawingManager: DrawingManager | null = null;
-  let drawingSession: DrawingSession | null = null;
-  let drawingSidebar: DrawingSidebar | null = null;
-  let drawToggleCheckbox: HTMLInputElement | null = null;
-  let isDrawLoading = false; // Flag to prevent URL updates during loading
-
-  try {
-    // Create drawing session first (needed for the callback)
-    drawingSession = new DrawingSession(initialMapName, {
-      // DISABLED: URL encoding of drawings no longer needed - sharing via cloud image upload
-      onSave: (drawing) => {
-        if (isDrawLoading) return;
-        if (!drawing) {
-          updateURLWithDrawing(null);
-          return;
-        }
-        // Encode drawing to URL for local state visibility
-        const mapName = drawingSession?.getMapName() ?? "";
-        const sw = drawingManager?.getStrokeWidth() ?? 5;
-        const result = encodeShapesWithInfo(
-          drawing.shapes,
-          undefined,
-          mapName,
-          sw,
-        );
-        if (result) {
-          updateURLWithDrawing(result.encoded);
-        }
-      },
-    });
-    globalDrawingSession = drawingSession;
-
-    // Create drawing manager with shape change callback for auto-save
-    drawingManager = await createDrawingManager(app.osd, {
-      onShapeChange: () => {
-        if (drawingManager && drawingSession) {
-          const shapes = drawingManager.getShapes();
-          const viewport = app.osd.getZoomPos();
-          drawingSession.updateShapes(shapes, viewport);
-        }
-      },
-      onToolChange: (tool) => {
-        // drawingSidebar is created later, so check if it exists
-        if (drawingSidebar) {
-          drawingSidebar.updateSelectedTool(tool);
-        }
-      },
-      onTextSelect: (shape) => {
-        // Update sidebar UI to match selected text's properties
-        if (drawingSidebar && shape) {
-          if (shape.color) {
-            drawingSidebar.setColor(shape.color);
-          }
-          if (shape.fontSize) {
-            drawingSidebar.setFontSize(shape.fontSize);
-          }
-        }
-      },
-    });
-
-    globalDrawingManager = drawingManager;
-
-    // Get sidebar container
-    const sidebarContainer = document.getElementById(
-      "drawing-sidebar-container",
-    );
-    if (sidebarContainer) {
-      // Create draw toggle button first (using btn-check pattern like overlay buttons)
-      const drawToggleWrapper = document.createElement("div");
-      drawToggleWrapper.className = "btn-group me-2";
-      drawToggleWrapper.innerHTML = `
-        <input type="checkbox" class="btn-check" id="drawToggleBtn" autocomplete="off">
-        <label class="icon-button btn btn-sm btn-outline-light text-nowrap" for="drawToggleBtn"
-          data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover focus"
-          data-i18n-title="drawing.toggle.title" data-bs-title="${i18next.t("drawing.toggle.title")}"
-          data-i18n-content="drawing.toggle.content" data-bs-content="${i18next.t("drawing.toggle.content")}">
-          <i class="bi bi-brush"></i>
-        </label>
-      `;
-
-      // Insert before the auth container
-      const authCont = document.getElementById("auth-container");
-      if (authCont && authCont.parentElement) {
-        authCont.parentElement.insertBefore(drawToggleWrapper, authCont);
-      }
-
-      drawToggleCheckbox = drawToggleWrapper.querySelector(
-        "#drawToggleBtn",
-      ) as HTMLInputElement;
-      const drawToggleLabel = drawToggleWrapper.querySelector(
-        "label",
-      ) as HTMLLabelElement;
-
-      // Initialize popover for the label
-      new bootstrap.Popover(drawToggleLabel);
-
-      // Initialize sidebar
-      drawingSidebar = new DrawingSidebar(sidebarContainer, {
-        drawingManager,
-        session: drawingSession,
-        onScreenshot: async () => {
-          const shapes = drawingManager?.getShapes() ?? [];
-          const strokeWidth = drawingManager?.getStrokeWidth() ?? 5;
-          // Get viewport info for coordinate transformation
-          const viewport = app.osd.viewport;
-          const containerSize = viewport.getContainerSize();
-          // Create a conversion function using OpenSeadragon's coordinate system
-          const worldToPixel = (x: number, y: number) => {
-            const point = viewport.viewportToViewerElementCoordinates(
-              new OpenSeadragon.Point(x, y),
-            );
-            return { x: point.x, y: point.y };
-          };
-          // Get map bounds in viewport coordinates for cropping
-          const mapBoundsRect = app.osd.getCombinedItemsRect();
-          const boundsTopLeft = viewport.viewportToViewerElementCoordinates(
-            new OpenSeadragon.Point(mapBoundsRect.x, mapBoundsRect.y),
-          );
-          const boundsBottomRight = viewport.viewportToViewerElementCoordinates(
-            new OpenSeadragon.Point(
-              mapBoundsRect.x + mapBoundsRect.width,
-              mapBoundsRect.y + mapBoundsRect.height,
-            ),
-          );
-          const viewportInfo = {
-            containerSize: { x: containerSize.x, y: containerSize.y },
-            worldToPixel,
-            mapBounds: {
-              left: boundsTopLeft.x,
-              top: boundsTopLeft.y,
-              right: boundsBottomRight.x,
-              bottom: boundsBottomRight.y,
-            },
-          };
-          const blob = await captureScreenshot(
-            osdRootElement,
-            null,
-            app.getMap(),
-            shapes,
-            viewportInfo,
-            strokeWidth,
-          );
-          if (blob) {
-            downloadBlob(blob, screenshotFilename(app.getMap()));
-          }
-        },
-        onSave: async () => {
-          // DISABLED: URL encoding no longer needed - drawings saved locally and shared via cloud storage
-          // const shapes = drawingManager?.getShapes() ?? [];
-          // const result = encodeShapesWithInfo(shapes);
-          // if (result) {
-          //   updateURLWithDrawing(result.encoded);
-          // }
-        },
-        onNew: () => {
-          // Clear drawing from URL when starting new drawing
-          updateURLWithDrawing(null);
-        },
-        onClose: () => {
-          // Sync toggle checkbox when sidebar closed via X button
-          if (drawToggleCheckbox) {
-            drawToggleCheckbox.checked = false;
-          }
-          updateURLWithSidebar(false);
-        },
-        onMapChange: async (mapName: string) => {
-          // Switch to the requested map
-          const validMapName = asMapName(mapName);
-          if (validMapName) {
-            await app.setMap(validMapName);
-            unifiedSearch.currentMap = validMapName;
-          }
-        },
-      });
-      globalDrawingSidebar = drawingSidebar;
-
-      // Toggle sidebar on checkbox change
-      drawToggleCheckbox?.addEventListener("change", () => {
-        if (drawToggleCheckbox?.checked) {
-          drawingSidebar?.open();
-          updateURLWithSidebar(true);
-        } else {
-          drawingSidebar?.close();
-          updateURLWithSidebar(false);
-        }
-      });
-
-      // Restore sidebar state from URL
-      if (urlState.sidebarOpen && drawToggleCheckbox) {
-        drawToggleCheckbox.checked = true;
-        drawingSidebar?.open();
-      }
-    }
-
-    // Load drawing from cloud if d=cb:... or d=qx:... param present (check FIRST)
-    if (urlState.drawing && drawingManager && isCloudRef(urlState.drawing)) {
-      // Show loading indicator while fetching
-      const loadingToastEl = document.getElementById("cloudLoadingToast");
-      let loadingToast: any = null;
-      if (loadingToastEl) {
-        const body = loadingToastEl.querySelector(".toast-body span");
-        if (body) body.textContent = i18next.t("share.downloadingCloud");
-        loadingToast = new bootstrap.Toast(loadingToastEl, {
-          autohide: false,
-        });
-        loadingToast.show();
-      }
-
-      const blob = await fetchDrawing(urlState.drawing);
-
-      // Hide loading indicator
-      loadingToast?.hide();
-
-      if (blob) {
-        const result = await extractDrawingData(blob);
-        if (result && result.shapes.length > 0) {
-          // Switch to the correct map if embedded map name differs from current
-          if (result.mapName) {
-            const validMapName = asMapName(result.mapName);
-            if (validMapName && validMapName !== app.getMap()) {
-              await app.setMap(validMapName);
-              if (drawingSession) drawingSession.setMap(validMapName);
-            }
-          }
-
-          isDrawLoading = true;
-          drawingManager.loadShapes(result.shapes);
-          isDrawLoading = false;
-          if (result.strokeWidth) {
-            drawingManager.setStrokeWidth(result.strokeWidth);
-            drawingSidebar?.setStrokeWidth(result.strokeWidth);
-          }
-
-          // Auto-download the WebP as a backup for the user
-          const mapName = result.mapName ?? app.getMap();
-          const downloadToastEl = document.getElementById("downloadToast");
-          let downloadToast: any = null;
-          if (downloadToastEl) {
-            const body = downloadToastEl.querySelector(".toast-body");
-            if (body)
-              body.innerHTML = `<i class="bi bi-download me-2"></i>${i18next.t("share.downloading")}`;
-            downloadToast = new bootstrap.Toast(downloadToastEl, {
-              autohide: false,
-            });
-            downloadToast.show();
-          }
-          downloadBlob(blob, screenshotFilename(mapName));
-          // Hide toast after a short delay (download initiated)
-          setTimeout(() => downloadToast?.hide(), 1500);
-
-          // Auto-open sidebar when loading shared drawing
-          if (drawToggleCheckbox && drawingSidebar) {
-            drawToggleCheckbox.checked = true;
-            drawingSidebar.open();
-            drawingSidebar.setCloudSource(getCloudUrl(urlState.drawing));
-            updateURLWithSidebar(true);
-          }
-        }
-      } else {
-        // File not found on cloud - show error toast
-        showCloudErrorToast();
-      }
-    }
-    // Load drawing from URL param if present (only if not a cloud ref)
-    else if (urlState.drawing && drawingManager) {
-      const decoded = decodeShapesFromUrl(urlState.drawing);
-      if (decoded && decoded.shapes.length > 0) {
-        isDrawLoading = true;
-        drawingManager.loadShapes(decoded.shapes);
-        isDrawLoading = false;
-        // Apply the decoded stroke width to both manager and sidebar UI
-        drawingManager.setStrokeWidth(decoded.strokeWidth);
-        drawingSidebar?.setStrokeWidth(decoded.strokeWidth);
-      }
-    }
-  } catch (error) {
-    console.error("Failed to initialize drawing feature:", error);
-  }
-
-  // Drag-and-drop: two-zone overlay (Import Drawing / Vectorize Image)
-  {
-    let dragCounter = 0;
-    const dropOverlay = document.createElement("div");
-    dropOverlay.className = "drop-overlay";
-    dropOverlay.innerHTML = `
-      <div class="drop-zone drop-zone-import">
-        <div class="drop-zone-content">
-          <i class="bi bi-file-earmark-arrow-down" style="font-size:2rem"></i>
-          <div class="drop-zone-title">${i18next.t("drawing.import.dropHintImport", "Import Drawing")}</div>
-          <div class="drop-zone-types">${i18next.t("drawing.import.dropHintImportTypes", "WebP or JSON")}</div>
-        </div>
-        <div class="drop-zone-loading" style="display:none">
-          <div class="spinner-border text-light" role="status"></div>
-        </div>
-      </div>
-      <div class="drop-zone drop-zone-vectorize">
-        <div class="drop-zone-content">
-          <i class="bi bi-vector-pen" style="font-size:2rem"></i>
-          <div class="drop-zone-title">${i18next.t("drawing.import.dropHintVectorize", "Vectorize Image")}</div>
-          <div class="drop-zone-types">${i18next.t("drawing.import.dropHintVectorizeTypes", "PNG, JPG, WebP, SVG")}</div>
-        </div>
-        <div class="drop-zone-loading" style="display:none">
-          <div class="spinner-border text-light" role="status"></div>
-          <div class="drop-zone-progress"></div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(dropOverlay);
-
-    const importZone = dropOverlay.querySelector(
-      ".drop-zone-import",
-    ) as HTMLElement;
-    const vectorizeZone = dropOverlay.querySelector(
-      ".drop-zone-vectorize",
-    ) as HTMLElement;
-
-    document.body.addEventListener("dragenter", (e) => {
-      e.preventDefault();
-      if (e.dataTransfer?.types.includes("Files")) {
-        dragCounter++;
-        dropOverlay.classList.add("visible");
-      }
-    });
-
-    document.body.addEventListener("dragleave", (e) => {
-      e.preventDefault();
-      dragCounter--;
-      if (dragCounter <= 0) {
-        dragCounter = 0;
-        dropOverlay.classList.remove("visible");
-        importZone.classList.remove("active");
-        vectorizeZone.classList.remove("active");
-      }
-    });
-
-    document.body.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      // Highlight zone under cursor
-      const target = e.target as HTMLElement;
-      const zone = target.closest(".drop-zone");
-      importZone.classList.toggle("active", zone === importZone);
-      vectorizeZone.classList.toggle("active", zone === vectorizeZone);
-    });
-
-    document.body.addEventListener("drop", async (e) => {
-      e.preventDefault();
-      dragCounter = 0;
-
-      const file = e.dataTransfer?.files[0];
-      if (!file) {
-        dropOverlay.classList.remove("visible");
-        importZone.classList.remove("active");
-        vectorizeZone.classList.remove("active");
-        return;
-      }
-
-      const target = e.target as HTMLElement;
-      const zone = target.closest(".drop-zone");
-
-      if (zone === vectorizeZone) {
-        importZone.classList.remove("active");
-        vectorizeZone.classList.remove("active");
-        await handleVectorizeDrop(file);
-      } else if (zone === importZone) {
-        importZone.classList.remove("active");
-        vectorizeZone.classList.remove("active");
-        dropOverlay.classList.remove("visible");
-        await handleImportDrop(file);
-      } else {
-        dropOverlay.classList.remove("visible");
-        importZone.classList.remove("active");
-        vectorizeZone.classList.remove("active");
-      }
-    });
-
-    async function handleImportDrop(file: File) {
-      let shapes: any[] = [];
-      let mapName: string | undefined;
-      let strokeWidth: number | undefined;
-
-      if (file.name.endsWith(".webp")) {
-        const result = await extractDrawingData(file);
-        if (!result || result.shapes.length === 0) {
-          console.warn("[DragDrop] No drawing data found in dropped file");
-          return;
-        }
-        shapes = result.shapes;
-        mapName = result.mapName;
-        strokeWidth = result.strokeWidth;
-      } else if (file.name.endsWith(".json")) {
-        try {
-          const text = await file.text();
-          const data = JSON.parse(text);
-          if (Array.isArray(data)) {
-            shapes = data;
-          } else if (data && Array.isArray(data.shapes)) {
-            shapes = data.shapes;
-            mapName = data.map;
-          } else {
-            console.warn(
-              "[DragDrop] Invalid JSON format: missing shapes array",
-            );
-            return;
-          }
-        } catch (err) {
-          console.error("[DragDrop] Failed to parse JSON:", err);
-          return;
-        }
-      } else {
-        return;
-      }
-
-      // Switch to correct map if needed
-      if (mapName) {
-        const validMapName = asMapName(mapName);
-        if (validMapName && validMapName !== app.getMap()) {
-          await app.setMap(validMapName);
-          drawingSession?.setMap(validMapName);
-        }
-      }
-
-      if (drawingManager) {
-        isDrawLoading = true;
-        drawingManager.loadShapes(shapes);
-        isDrawLoading = false;
-        if (strokeWidth) {
-          drawingManager.setStrokeWidth(strokeWidth);
-          drawingSidebar?.setStrokeWidth(strokeWidth);
-        }
-        // Update URL with imported drawing data
-        const currentMap = drawingSession?.getMapName() ?? "";
-        const sw = strokeWidth ?? drawingManager.getStrokeWidth();
-        const encoded = encodeShapesWithInfo(shapes, undefined, currentMap, sw);
-        if (encoded) {
-          updateURLWithDrawing(encoded.encoded);
-        }
-      }
-
-      // Auto-open sidebar
-      if (drawToggleCheckbox && drawingSidebar) {
-        drawToggleCheckbox.checked = true;
-        drawingSidebar.open();
-        updateURLWithSidebar(true);
-      }
-
-      console.log(
-        "[DragDrop] Imported",
-        shapes.length,
-        "shapes from dropped file",
-      );
-    }
-
-    async function handleVectorizeDrop(file: File) {
-      const supportedTypes = [
-        "image/png",
-        "image/jpeg",
-        "image/webp",
-        "image/svg+xml",
-      ];
-      const supportedExts = [".png", ".jpg", ".jpeg", ".webp", ".svg"];
-      const ext = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
-
-      if (!supportedTypes.includes(file.type) && !supportedExts.includes(ext)) {
-        console.warn("[Vectorize] Unsupported format:", file.type, file.name);
-        dropOverlay.classList.remove("visible");
-        return;
-      }
-
-      // Show loading state on the vectorize zone
-      const content = vectorizeZone.querySelector(
-        ".drop-zone-content",
-      ) as HTMLElement;
-      const loading = vectorizeZone.querySelector(
-        ".drop-zone-loading",
-      ) as HTMLElement;
-      const progressEl = vectorizeZone.querySelector(
-        ".drop-zone-progress",
-      ) as HTMLElement;
-      content.style.display = "none";
-      loading.style.display = "flex";
-      progressEl.textContent = i18next.t(
-        "drawing.vectorize.processing",
-        "Vectorizing image...",
-      );
-
-      // Hide the import zone during processing
-      importZone.style.display = "none";
-
-      try {
-        const shapes = await vectorizeImage(
-          file,
-          undefined,
-          undefined,
-          {},
-          (progress) => {
-            const pct = Math.round(progress * 100);
-            progressEl.textContent = `${i18next.t("drawing.vectorize.processing", "Vectorizing image...")} ${pct}%`;
-          },
-        );
-
-        // Reset overlay
-        dropOverlay.classList.remove("visible");
-        content.style.display = "";
-        loading.style.display = "none";
-        importZone.style.display = "";
-
-        if (!shapes || shapes.length === 0) {
-          console.warn("[Vectorize] No shapes extracted");
-          return;
-        }
-
-        if (drawingManager) {
-          isDrawLoading = true;
-          drawingManager.loadShapes(shapes);
-          isDrawLoading = false;
-
-          // Update URL
-          const currentMap = drawingSession?.getMapName() ?? "";
-          const sw = drawingManager.getStrokeWidth();
-          const encoded = encodeShapesWithInfo(
-            shapes,
-            undefined,
-            currentMap,
-            sw,
-          );
-          if (encoded) {
-            updateURLWithDrawing(encoded.encoded);
-          }
-        }
-
-        // Auto-open sidebar
-        if (drawToggleCheckbox && drawingSidebar) {
-          drawToggleCheckbox.checked = true;
-          drawingSidebar.open();
-          updateURLWithSidebar(true);
-        }
-
-        console.log(
-          "[Vectorize] Generated",
-          shapes.length,
-          "shapes from",
-          file.name,
-        );
-      } catch (err) {
-        console.error("[Vectorize] Failed:", err);
-        // Reset overlay
-        dropOverlay.classList.remove("visible");
-        content.style.display = "";
-        loading.style.display = "none";
-        importZone.style.display = "";
-
-        // Show error toast
-        const toastEl = document.getElementById("drawingWarningToast");
-        if (toastEl) {
-          const titleEl = toastEl.querySelector(".toast-header strong");
-          if (titleEl)
-            titleEl.textContent = i18next.t(
-              "drawing.vectorize.error",
-              "Failed to vectorize image",
-            );
-          const bodyEl = toastEl.querySelector(".toast-body");
-          if (bodyEl)
-            bodyEl.textContent = i18next.t(
-              "drawing.vectorize.errorDetail",
-              "Vectorization failed — the image may be too complex or photographic. This feature works best with pixel art and flat-color images.",
-            );
-          const toast = new bootstrap.Toast(toastEl, {
-            autohide: false,
-          });
-          toast.show();
-        }
-      }
-    }
-  }
-
-  navbarBrandElement.addEventListener("click", (ev) => {
+  navbarBrandElement.addEventListener('click', ev => {
     ev.preventDefault();
     app.home();
   });
@@ -791,16 +157,74 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Store global reference for translation updates
   globalUnifiedSearch = unifiedSearch;
+  _unifiedSearch = unifiedSearch;
+
+  // Expose hooks for the pro bundle via window.__noitamap
+  const proHooks: NoitamapProHooks = {
+    osd: app.osd,
+    osdElement: osdRootElement,
+    getMap: () => app.getMap(),
+    setMap: (mapName: string) => app.setMap(asMapName(mapName) ?? (mapName as any)),
+    updateURLWithDrawing,
+    updateURLWithSidebar,
+    urlState: { drawing: urlState.drawing, sidebarOpen: urlState.sidebarOpen },
+    setSearchMap: (mapName: string) => {
+      if (_unifiedSearch) _unifiedSearch.currentMap = mapName as any;
+    },
+    onMapChange: (callback: (mapName: string) => void) => {
+      mapChangeCallbacks.push(callback);
+    },
+    getEnabledOverlays,
+    overlayToShort: (key: string) => overlayToShort(key as any),
+  };
+  window.__noitamap = proHooks;
+
+  // Dynamically load the pro bundle when drawing is enabled
+  if (localStorage.getItem('noitamap-dev-drawing') === '1') {
+    try {
+      const token = authService.getToken();
+      if (!token) {
+        console.warn('[Noitamap] No auth token found. Cannot load pro features.');
+      }
+
+      const proUrl = 'https://noitamap-pro.acidflow.stream/pro.js';
+      console.log('[Noitamap] Fetching pro features...');
+
+      const response = await fetch(proUrl, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+
+      const code = await response.text();
+      const blob = new Blob([code], { type: 'application/javascript' });
+      const blobUrl = URL.createObjectURL(blob);
+
+      const proModule = await import(
+        // @ts-ignore — remote ES module loaded at runtime
+        /* @vite-ignore */ blobUrl
+      );
+
+      URL.revokeObjectURL(blobUrl);
+
+      await proModule.init(proHooks);
+      console.log('[Noitamap] Pro features loaded.');
+    } catch (error) {
+      console.error('[Noitamap] Failed to load pro features:', error);
+    }
+  }
 
   // link to the app
-  unifiedSearch.on("selected", (result: any) => {
-    if (result.type === "spell") {
+  unifiedSearch.on('selected', (result: any) => {
+    if (result.type === 'spell') {
       // Fill the search box with the spell name without triggering new search
       unifiedSearch.setSearchValueWithoutTriggering(result.spell.name);
       // Hide the search overlay
-      const overlay = document.getElementById("unifiedSearchResultsOverlay");
+      const overlay = document.getElementById('unifiedSearchResultsOverlay');
       if (overlay) {
-        overlay.style.display = "none";
+        overlay.style.display = 'none';
       }
       // Trigger overlays for the selected spell
       selectSpell(result.spell, app);
@@ -810,36 +234,32 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   const debouncedUpdateURL = debounce(100, updateURL);
-  app.on("state-change", (state) => {
+  app.on('state-change', state => {
     // record map / position / zoom changes to the URL when they happen
     debouncedUpdateURL(state);
 
-    const currentMapLink = document.querySelector(
-      `#navLinksList [data-map-key='${state.map}']`,
-    );
+    const currentMapLink = document.querySelector(`#navLinksList [data-map-key='${state.map}']`);
 
     if (!(currentMapLink instanceof HTMLElement)) return;
 
     // Remove "active" class from any nav links that still have it
-    document
-      .querySelectorAll("#navLinksList .nav-link.active")
-      .forEach((el) => {
-        el.classList.remove("active");
-      });
+    document.querySelectorAll('#navLinksList .nav-link.active').forEach(el => {
+      el.classList.remove('active');
+    });
 
     // Add "active" class to the nav-link identified by `mapName`
-    currentMapLink.classList.add("active");
+    currentMapLink.classList.add('active');
   });
 
-  const loadingIndicator = assertElementById("loadingIndicator", HTMLElement);
+  const loadingIndicator = assertElementById('loadingIndicator', HTMLElement);
   // show/hide loading indicator
-  app.on("loading-change", (isLoading) => {
-    loadingIndicator.style.display = isLoading ? "block" : "none";
+  app.on('loading-change', isLoading => {
+    loadingIndicator.style.display = isLoading ? 'block' : 'none';
   });
 
   // respond to changes of map
   const mapLinksUL = createMapLinks();
-  mapLinksUL.addEventListener("click", (ev) => {
+  mapLinksUL.addEventListener('click', ev => {
     if (!(ev.target instanceof HTMLElement)) return;
 
     const link = ev.target.closest(`.${NAV_LINK_IDENTIFIER}`);
@@ -862,16 +282,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.activeElement.blur();
     }
 
-    // Reset drawing when changing maps (drawings are per-map)
-    // Preserve sidebar state - don't open or close it
-    if (drawingManager) {
-      drawingManager.resetShapes(); // Clear shapes AND history
+    // Notify pro bundle about map change (drawing reset, etc.)
+    for (const cb of mapChangeCallbacks) {
+      cb(mapName);
     }
-    if (drawingSession) {
-      drawingSession.setMap(mapName);
-    }
-    // Clear drawing from URL but preserve sidebar state
-    updateURLWithDrawing(null);
 
     // load the new map
     app.setMap(mapName);
@@ -880,14 +294,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // manage css classes to show / hide overlays
-  addEventListenerForId("overlay-selector", "click", (ev) => {
+  addEventListenerForId('overlay-selector', 'click', ev => {
     const target = ev.target;
 
     // not an input element
     if (!(target instanceof HTMLInputElement)) return;
 
     // not a checkbox
-    if (target.getAttribute("type") !== "checkbox") return;
+    if (target.getAttribute('type') !== 'checkbox') return;
 
     // overlay isn't defined on this checkbox
     const overlayKey = asOverlayKey(target.dataset.overlayKey);
@@ -910,219 +324,59 @@ document.addEventListener("DOMContentLoaded", async () => {
     new bootstrap.Tooltip(el);
   }
 
-  // share button with toast notification
-  const shareEl = assertElementById("shareButton", HTMLElement);
-  shareEl.addEventListener("click", async (ev) => {
+  // share button with toast notification (simple URL copy — pro bundle patches this for drawing share)
+  const shareEl = assertElementById('shareButton', HTMLElement);
+  shareEl.addEventListener('click', async ev => {
     ev.preventDefault();
 
-    const shapes = drawingManager?.getShapes() ?? [];
-
-    // If there are drawings, upload to cloud storage and share the short link
-    if (shapes.length > 0 && drawingManager) {
-      const strokeWidth = drawingManager.getStrokeWidth();
-
-      // Show "uploading" feedback
-      const toastElement = assertElementById("shareToast", HTMLElement);
-      const toastBody = toastElement.querySelector(".toast-body");
-      if (toastBody) {
-        toastBody.innerHTML = `<i class="bi bi-hourglass-split me-2"></i>${i18next.t("share.uploading")}`;
-      }
-      const uploadingToast = new bootstrap.Toast(toastElement, {
-        autohide: false,
-      });
-      uploadingToast.show();
-
-      try {
-        // Capture screenshot with embedded drawing data
-        const viewport = app.osd.viewport;
-        const containerSize = viewport.getContainerSize();
-        const worldToPixel = (x: number, y: number) => {
-          const point = viewport.viewportToViewerElementCoordinates(
-            new OpenSeadragon.Point(x, y),
-          );
-          return { x: point.x, y: point.y };
-        };
-        const mapBoundsRect = app.osd.getCombinedItemsRect();
-        const boundsTopLeft = viewport.viewportToViewerElementCoordinates(
-          new OpenSeadragon.Point(mapBoundsRect.x, mapBoundsRect.y),
-        );
-        const boundsBottomRight = viewport.viewportToViewerElementCoordinates(
-          new OpenSeadragon.Point(
-            mapBoundsRect.x + mapBoundsRect.width,
-            mapBoundsRect.y + mapBoundsRect.height,
-          ),
-        );
-        const viewportInfo = {
-          containerSize: { x: containerSize.x, y: containerSize.y },
-          worldToPixel,
-          mapBounds: {
-            left: boundsTopLeft.x,
-            top: boundsTopLeft.y,
-            right: boundsBottomRight.x,
-            bottom: boundsBottomRight.y,
-          },
-        };
-
-        const blob = await captureScreenshot(
-          osdRootElement,
-          null,
-          app.getMap(),
-          shapes,
-          viewportInfo,
-          strokeWidth,
-        );
-        if (!blob) {
-          uploadingToast.hide();
-          if (toastBody) {
-            toastBody.innerHTML = `<i class="bi bi-x-circle me-2"></i>${i18next.t("share.screenshotFailed")}`;
-          }
-          const errorToast = new bootstrap.Toast(toastElement, {
-            autohide: true,
-            delay: 3000,
-          });
-          errorToast.show();
-          return;
-        }
-
-        // Auto-download the image to user's PC as backup
-        const filename = screenshotFilename(app.getMap());
-        downloadBlob(blob, filename);
-
-        // Upload to cloud (Primary -> Fallback)
-        try {
-          const uploadResult = await uploadDrawing(blob, undefined, filename);
-          uploadingToast.hide();
-
-          if (!uploadResult) {
-            if (toastBody) {
-              toastBody.innerHTML = `<i class="bi bi-x-circle me-2"></i>${i18next.t("share.uploadFailed")}`;
-            }
-            const errorToast = new bootstrap.Toast(toastElement, {
-              autohide: true,
-              delay: 4000,
-            });
-            errorToast.show();
-            return;
-          }
-
-          // Build URL with cloud param
-          const url = new URL(window.location.href);
-          const overlays = getEnabledOverlays();
-          if (overlays.length > 0) {
-            url.searchParams.set("o", overlays.map(overlayToShort).join(","));
-          } else {
-            url.searchParams.delete("o");
-          }
-          url.searchParams.set("d", uploadResult.param);
-
-          // Update current URL with cloud param
-          updateURLWithDrawing(uploadResult.param);
-
-          // Show "Open Source" link in sidebar
-          drawingSidebar?.setCloudSource(uploadResult.url);
-
-          // Shorten URL if possible
-          let finalUrl = url.toString();
-          const shortUrl = await shortenUrl(finalUrl);
-          if (shortUrl) {
-            finalUrl = shortUrl;
-          }
-
-          // Copy to clipboard
-          window.navigator.clipboard
-            .writeText(finalUrl)
-            .then(() => {
-              if (toastBody) {
-                toastBody.innerHTML = `<i class="bi bi-check-circle me-2"></i>${i18next.t("share.copiedWithDrawing")}`;
-              }
-              const successToast = new bootstrap.Toast(toastElement, {
-                autohide: true,
-                delay: 3000,
-              });
-              successToast.show();
-            })
-            .catch((err) => {
-              console.error("Failed to copy to clipboard:", err);
-            });
-        } catch (error) {
-          console.error("[Share] Error during upload:", error);
-          uploadingToast.hide();
-          if (toastBody) {
-            toastBody.innerHTML = `<i class="bi bi-x-circle me-2"></i>${i18next.t("share.uploadFailed")}`;
-          }
-          const errorToast = new bootstrap.Toast(toastElement, {
-            autohide: true,
-            delay: 4000,
-          });
-          errorToast.show();
-        }
-      } catch (error) {
-        console.error("[Share] Error during screenshot or preparation:", error);
-        // Note: uploadingToast might not be initialized yet here, but let's be safe
-        const toastElement = document.getElementById("shareToast");
-        if (toastElement) {
-          const toast = bootstrap.Toast.getInstance(toastElement);
-          toast?.hide();
-        }
-      }
+    const url = new URL(window.location.href);
+    const overlays = getEnabledOverlays();
+    if (overlays.length > 0) {
+      url.searchParams.set('o', overlays.map(overlayToShort).join(','));
     } else {
-      // No drawings - just copy the current URL
-      const url = new URL(window.location.href);
-      const overlays = getEnabledOverlays();
-      if (overlays.length > 0) {
-        url.searchParams.set("o", overlays.map(overlayToShort).join(","));
-      } else {
-        url.searchParams.delete("o");
-      }
-      url.searchParams.delete("d");
-
-      // Shorten URL if possible
-      let finalUrl = url.toString();
-      const shortUrl = await shortenUrl(finalUrl);
-      if (shortUrl) {
-        finalUrl = shortUrl;
-      }
-
-      window.navigator.clipboard
-        .writeText(finalUrl)
-        .then(() => {
-          const toastElement = assertElementById("shareToast", HTMLElement);
-          const toastBody = toastElement.querySelector(".toast-body");
-          if (toastBody) {
-            toastBody.innerHTML = `<i class="bi bi-check-circle me-2"></i>${i18next.t("share.copied")}`;
-          }
-          const toast = new bootstrap.Toast(toastElement, {
-            autohide: true,
-            delay: 2000,
-          });
-          toast.show();
-        })
-        .catch((err) => {
-          console.error("Failed to copy to clipboard:", err);
-        });
+      url.searchParams.delete('o');
     }
+    url.searchParams.delete('d');
+
+    let finalUrl = url.toString();
+    const shortUrl = await shortenUrl(finalUrl);
+    if (shortUrl) {
+      finalUrl = shortUrl;
+    }
+
+    window.navigator.clipboard
+      .writeText(finalUrl)
+      .then(() => {
+        const toastElement = assertElementById('shareToast', HTMLElement);
+        const toastBody = toastElement.querySelector('.toast-body');
+        if (toastBody) {
+          toastBody.innerHTML = `<i class="bi bi-check-circle me-2"></i>${i18next.t('share.copied')}`;
+        }
+        const toast = new bootstrap.Toast(toastElement, {
+          autohide: true,
+          delay: 2000,
+        });
+        toast.show();
+      })
+      .catch(err => {
+        console.error('Failed to copy to clipboard:', err);
+      });
   });
 
   // Mouse tracker for displaying coordinates
   const { copyCoordinates } = initMouseTracker({
     osd: app.osd,
     osdElement: osdRootElement,
-    tooltipElement: assertElementById("coordinate", HTMLElement),
+    tooltipElement: assertElementById('coordinate', HTMLElement),
   });
-  document.addEventListener("keydown", copyCoordinates, { capture: false });
+  document.addEventListener('keydown', copyCoordinates, { capture: false });
 
   // Handle renderer changes
-  rendererForm.addEventListener("change", (ev) => {
-    if (
-      !ev.target ||
-      !(ev.target as HTMLElement).matches(
-        'input[type="radio"][name="renderer"]',
-      )
-    )
-      return;
+  rendererForm.addEventListener('change', ev => {
+    if (!ev.target || !(ev.target as HTMLElement).matches('input[type="radio"][name="renderer"]')) return;
 
     ev.stopPropagation();
-    const newRenderer = (rendererForm.elements as any)["renderer"].value;
+    const newRenderer = (rendererForm.elements as any)['renderer'].value;
 
     if (isRenderer(newRenderer)) {
       setStoredRenderer(newRenderer);
@@ -1130,41 +384,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
   initKonamiCode();
-
-  // Listen for corrupted shape data warnings
-  window.addEventListener("drawing-shapes-skipped", (event: any) => {
-    const toastEl = document.getElementById("skippedShapesToast");
-    if (toastEl) {
-      // You could customize the message with event.detail.count if you want
-      const toast = new bootstrap.Toast(toastEl);
-      toast.show();
-    }
-  });
 });
-
-/**
- * Show error toast when cloud drawing file is not found
- */
-function showCloudErrorToast(): void {
-  const toastEl =
-    document.getElementById("drawingWarningToast") ??
-    document.getElementById("shareToast");
-  if (!toastEl) return;
-
-  const toastBody = toastEl.querySelector(".toast-body");
-  if (toastBody) {
-    toastBody.innerHTML = `
-      <i class="bi bi-exclamation-triangle me-2 text-warning"></i>
-      ${i18next.t("share.drawingNotFound", "The shared drawing could not be found. It may have been deleted from the host. Ask the person who shared the link to send you the source image file, then use the Import button in the drawing panel.")}
-    `;
-  }
-  const titleEl = toastEl.querySelector(".toast-header strong");
-  if (titleEl) {
-    titleEl.textContent = i18next.t(
-      "share.drawingNotFoundTitle",
-      "Drawing Not Found",
-    );
-  }
-  const toast = new bootstrap.Toast(toastEl, { autohide: false });
-  toast.show();
-}

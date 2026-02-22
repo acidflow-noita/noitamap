@@ -92,6 +92,10 @@
     "webgl": {
       "title": "Renderizado WebGL",
       "content": "Renderizado WebGL acelerado por hardware. Si usas un navegador basado en Chromium (Chrome, Edge, Brave, etc.) las baldosas serán menos borrosas al hacer zoom rápidamente."
+    },
+    "fallback": {
+      "title": "WebGL Unsupported",
+      "message": "Your device or browser doesn't support WebGL hardware acceleration. The map will load using the Canvas fallback, but some advanced particle effects will be disabled."
     }
   },
   "mod": {

@@ -2,18 +2,18 @@
   "name": "noitamap",
   "version": "1.0.0",
   "description": "Noita Map",
-  "main": "index.js",
+  "main": "src/main.ts",
+  "module": "src/main.ts",
   "scripts": {
-    "preinstall": "git submodule update --init --recursive",
     "test": "vitest run",
-    "build": "tsup && npm run copy-flags && npm run add-biome-translations && npm run copy-locales",
+    "build": "vite build && npm run copy-flags && npm run add-biome-translations && npm run copy-locales",
     "copy-flags": "node build_scripts/copy-flags.cjs",
     "add-biome-translations": "node build_scripts/add-biome-translations.cjs",
     "copy-locales": "node build_scripts/copy-locales.cjs",
     "check-translations": "node build_scripts/check-translations.cjs",
     "sync-translations": "node build_scripts/sync-translations.cjs",
-    "watch": "tsup --no-minify --watch \"src/**/*.ts\" --watch \"src/data/*.json\"",
-    "dev": "concurrently -k \"npm:watch\" \"npx serve public\"",
+    "watch": "vite build --watch",
+    "dev": "vite",
     "generate": "node ./src/data/data_generators/map_definitions_maker.cjs"
   },
   "repository": {
@@ -21,6 +21,20 @@
     "url": "git+https://github.com/acidflow-noita/noitamap.git"
   },
   "type": "module",
+  "exports": {
+    "./data_sources/tile_data": "./src/data_sources/tile_data.ts",
+    "./data_sources/map_definitions": "./src/data_sources/map_definitions.ts",
+    "./data_sources/param-mappings": "./src/data_sources/param-mappings.ts",
+    "./data_sources/overlays": "./src/data_sources/overlays.ts",
+    "./app_osd": "./src/app_osd.ts",
+    "./util": "./src/util.ts",
+    "./auth/auth-service": "./src/auth/auth-service.ts",
+    "./i18n": "./src/i18n.ts"
+  },
+  "files": [
+    "src/",
+    "global.d.ts"
+  ],
   "keywords": [
     "Map",
     "Noita",
@@ -36,31 +50,31 @@
   },
   "homepage": "https://github.com/acidflow-noita/noitamap#readme",
   "dependencies": {
-    "@designsystemsinternational/flags": "^0.2.0",
-    "@wtsml/doodle": "./doodle/doodle-dist",
-    "eventemitter2": "6.4.9",
-    "flexsearch": "0.7.40",
-    "i18next": "^25.3.2",
-    "i18next-browser-languagedetector": "^8.2.0",
-    "i18next-http-backend": "^3.0.2",
-    "idb": "^8.0.3",
-    "lz-string": "^1.5.0",
-    "openseadragon": "5.0.1",
-    "simplify-js": "^1.2.4"
+    "i18next": "^25.8.13",
+    "i18next-browser-languagedetector": "^8.2.1",
+    "i18next-http-backend": "^3.0.2"
   },
   "devDependencies": {
+    "@designsystemsinternational/flags": "^0.2.0",
     "@types/bootstrap": "^5.2.10",
-    "@types/jsdom": "^21.1.7",
+    "@types/jsdom": "^27.0.0",
     "@types/lz-string": "^1.3.34",
-    "@types/node": "^22.7.7",
-    "@types/openseadragon": "^3.0.10",
+    "@types/node": "^25.3.0",
+    "@types/openseadragon": "^5.0.2",
     "concurrently": "^9.2.1",
-    "jsdom": "^27.0.1",
-    "openseadragon": "^5.0.1",
-    "prettier": "^3.3.3",
-    "tsup": "^8.1.0",
-    "tsx": "^4.19.1",
-    "typescript": "^5.6.3",
+    "eventemitter2": "6.4.9",
+    "flexsearch": "0.8.212",
+    "idb": "^8.0.3",
+    "jsdom": "^28.1.0",
+    "lz-string": "^1.5.0",
+    "openseadragon": "^6.0.0",
+    "pixi.js": "^8.16.0",
+    "prettier": "^3.8.1",
+    "rollup": "^4.57.1",
+    "simplify-js": "^1.2.4",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
     "vitest": "^3.2.4"
   }
 }

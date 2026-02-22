@@ -92,6 +92,10 @@
     "webgl": {
       "title": "Renderização WebGL",
       "content": "Renderização WebGL acelerada por hardware. Se você estiver usando um navegador baseado em Chromium (Chrome, Edge, Brave, etc.), os tiles ficarão menos borrados ao fazer zoom rapidamente."
+    },
+    "fallback": {
+      "title": "WebGL Unsupported",
+      "message": "Your device or browser doesn't support WebGL hardware acceleration. The map will load using the Canvas fallback, but some advanced particle effects will be disabled."
     }
   },
   "mod": {

@@ -7,7 +7,7 @@ export const isRenderer = (v: unknown): v is RendererType => v === 'canvas' || v
 export function getStoredRenderer(): RendererType {
   // assign it a variable, so typescript can associate a type with the variable
   const item = localStorage.getItem(RENDERER_STORAGE_KEY);
-  return isRenderer(item) ? item : 'canvas';
+  return isRenderer(item) ? item : 'webgl';
 }
 
 export function setStoredRenderer(renderer: RendererType) {

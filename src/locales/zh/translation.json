@@ -92,6 +92,10 @@
     "webgl": {
       "title": "WebGL 渲染",
       "content": "硬件加速 WebGL 渲染。如果您使用基于 Chromium 的浏览器（Chrome、Edge, Brave 等），在快速放大时瓦片会更清晰。"
+    },
+    "fallback": {
+      "title": "WebGL Unsupported",
+      "message": "Your device or browser doesn't support WebGL hardware acceleration. The map will load using the Canvas fallback, but some advanced particle effects will be disabled."
     }
   },
   "mod": {

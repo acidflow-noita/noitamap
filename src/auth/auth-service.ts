@@ -15,8 +15,9 @@ const AUTH_WORKER_URL =
     ? 'https://noitamap-auth-dev.wuote.workers.dev'
     : 'https://noitamap-auth.wuote.workers.dev';
 
-// Local storage key for session backup
+// Local storage keys for session backup
 const SESSION_KEY = 'noitamap_session';
+const JWT_KEY = 'noitamap_jwt';
 
 class AuthService {
   private state: AuthState = {
@@ -36,15 +37,20 @@ class AuthService {
     const urlParams = new URLSearchParams(window.location.search);
     const authResult = urlParams.get('auth');
     const sessionFromUrl = urlParams.get('session');
+    const tokenFromUrl = urlParams.get('token');
 
     if (authResult === 'success' && sessionFromUrl) {
       // Store session in localStorage as backup
       localStorage.setItem(SESSION_KEY, sessionFromUrl);
+      if (tokenFromUrl) {
+        localStorage.setItem(JWT_KEY, tokenFromUrl);
+      }
 
       // Clean URL params
       const cleanUrl = new URL(window.location.href);
       cleanUrl.searchParams.delete('auth');
       cleanUrl.searchParams.delete('session');
+      cleanUrl.searchParams.delete('token');
       window.history.replaceState({}, '', cleanUrl.toString());
     }
 
@@ -78,6 +84,9 @@ class AuthService {
 
       if (response.ok) {
         const data = await response.json();
+        if (data.token) {
+          localStorage.setItem(JWT_KEY, data.token);
+        }
         this.state = {
           authenticated: data.authenticated,
           username: data.username || null,
@@ -137,6 +146,7 @@ class AuthService {
 
     // Clear local storage regardless
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(JWT_KEY);
 
     this.state = {
       authenticated: false,
@@ -153,6 +163,13 @@ class AuthService {
    */
   getState(): AuthState {
     return { ...this.state };
+  }
+
+  /**
+   * Get stored JWT token
+   */
+  getToken(): string | null {
+    return localStorage.getItem(JWT_KEY);
   }
 
   /**

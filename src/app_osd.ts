@@ -34,7 +34,34 @@ export class AppOSD extends Viewer {
       showNavigationControl: false,
       // drawer: 'webgl', // We dont enable webgl by default
       crossOriginPolicy: 'Anonymous', // Required for webgl drawer
-      drawer: useWebGL ? 'webgl' : 'canvas',
+      // Check for WebGL support if requested
+      // The user wants webgl, but we need to ensure their browser supports it.
+      drawer: (() => {
+        if (!useWebGL) return 'canvas';
+
+        try {
+          const canvas = document.createElement('canvas');
+          const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+          if (gl && gl instanceof WebGLRenderingContext) {
+            return 'webgl';
+          }
+        } catch (e) {
+          console.warn('WebGL check failed', e);
+        }
+
+        // Fallback triggered
+        console.warn('WebGL not supported, falling back to Canvas renderer.');
+        setTimeout(() => {
+          const toastEl = document.getElementById('webglFallbackToast');
+          if (toastEl) {
+            // @ts-ignore : bootstrap is loaded globally
+            const toast = new bootstrap.Toast(toastEl, { autohide: false });
+            toast.show();
+          }
+        }, 1000); // Slight delay to ensure UI is ready
+
+        return 'canvas';
+      })(),
       imageSmoothingEnabled: false,
       debugMode: false, // Optional debugging grid
       // Provide OSD with initial set of tiles
@@ -49,10 +76,10 @@ export class AppOSD extends Viewer {
       opacity: 1,
     });
 
-    this.addHandler('canvas-key',event=>{
-        if(['q', 'w', 'e', 'r', 'a', 's', 'd', 'f'].includes(event.originalEvent.key)){
-            event.preventDefaultAction = true;
-        }
+    this.addHandler('canvas-key', event => {
+      if (['q', 'w', 'e', 'r', 'a', 's', 'd', 'f'].includes(event.originalEvent.key)) {
+        event.preventDefaultAction = true;
+      }
     });
 
     this.world.addHandler('remove-item', event => {
@@ -70,9 +97,14 @@ export class AppOSD extends Viewer {
 
       item.addHandler('fully-loaded-change', () => this.notifyLoadingStatus());
 
-      const image = (item.source as DziTileSource).Image;
-      item.setPosition(new OpenSeadragon.Point(Number(image.TopLeft.X), Number(image.TopLeft.Y)), true);
-      item.setWidth(Number(image.Size.Width), true);
+      // Check if this source is our main map DziTileSource
+      if ('Image' in item.source) {
+        const image = (item.source as DziTileSource).Image;
+        if (image && image.TopLeft) {
+          item.setPosition(new OpenSeadragon.Point(Number(image.TopLeft.X), Number(image.TopLeft.Y)), true);
+          item.setWidth(Number(image.Size.Width), true);
+        }
+      }
 
       // recalculate loading when the list of items we're tracking
       this.notifyLoadingStatus();
@@ -181,12 +213,18 @@ export class AppOSD extends Viewer {
 
     this.cacheBustHandler = event => {
       const source = event.item.source as any as { queryParams: string; tilesUrl: string };
-      const version = versions[new URL(source.tilesUrl).origin];
-
-      // we're mutating the input, which may break in the future -- but it works for now
-      // a better answer is to subclass TileSource and override getTileUrl (or supply a
-      // custom getTileUrl function), but in version 5.0.0 that doesn't work as expected
-      source.queryParams = `?v=${version}`;
+      // Only cache bust DZI/Tile sources that actually have a tilesUrl
+      if (typeof source.tilesUrl === 'string') {
+        try {
+          const version = versions[new URL(source.tilesUrl).origin];
+          // we're mutating the input, which may break in the future -- but it works for now
+          // a better answer is to subclass TileSource and override getTileUrl (or supply a
+          // custom getTileUrl function), but in version 5.0.0 that doesn't work as expected
+          source.queryParams = `?v=${version}`;
+        } catch (e) {
+          // ignore invalid URLs
+        }
+      }
     };
     this.world.addHandler('add-item', this.cacheBustHandler!);
   }
