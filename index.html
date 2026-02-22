@@ -8,9 +8,9 @@
       function gtag() {
         dataLayer.push(arguments);
       }
-      gtag('js', new Date());
+      gtag("js", new Date());
 
-      gtag('config', 'G-DNR100WX23');
+      gtag("config", "G-DNR100WX23");
     </script>
     <meta charset="utf-8" />
     <title>Noita Map</title>
@@ -80,10 +80,14 @@
         <div class="toast-body">Some drawing data was corrupted and could not be loaded.</div>
       </div>
       <div id="shareToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-body bg-success text-white" data-i18n="share.copied"><i class="bi bi-check-circle me-2"></i>Copied to clipboard!</div>
+        <div class="toast-body bg-success text-white" data-i18n="share.copied">
+          <i class="bi bi-check-circle me-2"></i>Copied to clipboard!
+        </div>
       </div>
       <div id="downloadToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-body bg-info text-white" data-i18n="share.downloading"><i class="bi bi-download me-2"></i>Downloading shared drawing...</div>
+        <div class="toast-body bg-info text-white" data-i18n="share.downloading">
+          <i class="bi bi-download me-2"></i>Downloading shared drawing...
+        </div>
       </div>
       <div id="cloudLoadingToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-body bg-primary text-white">
@@ -100,21 +104,32 @@
           <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
         <div class="toast-body" data-i18n="renderer.fallback.message">
-          Your device or browser doesn't support WebGL hardware acceleration. The map will load using the Canvas fallback, but some advanced particle effects will be disabled.
+          Your device or browser doesn't support WebGL hardware acceleration. The map will load using the Canvas
+          fallback, but some advanced particle effects will be disabled.
         </div>
       </div>
     </div>
     <!-- Drawing warning toast - centered at top, 25% screen width -->
     <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1100">
-      <div id="drawingWarningToast" class="toast text-warning-emphasis bg-warning-subtle" role="alert" aria-live="assertive" aria-atomic="true" style="width: 25vw; min-width: 300px; max-width: 500px">
+      <div
+        id="drawingWarningToast"
+        class="toast text-warning-emphasis bg-warning-subtle"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        style="width: 25vw; min-width: 300px; max-width: 500px"
+      >
         <div class="toast-header text-warning-emphasis bg-warning-subtle">
           <i class="bi bi-exclamation-triangle-fill me-2"></i>
-          <strong class="me-auto" data-i18n="drawing.warning.title">The drawing is getting complex for lossless sharing via URL</strong>
+          <strong class="me-auto" data-i18n="drawing.warning.title"
+            >The drawing is getting complex for lossless sharing via URL</strong
+          >
           <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
         <div class="toast-body" data-i18n="drawing.warning.message">
-          Freehand strokes use the most data. To keep full quality when sharing, use fewer freehand strokes or switch to simple shapes (lines, rectangles, circles). Otherwise, shared links will show
-          curves as less smooth. The screenshots will show all the shapes at maximum quality, don't worry.
+          Freehand strokes use the most data. To keep full quality when sharing, use fewer freehand strokes or switch to
+          simple shapes (lines, rectangles, circles). Otherwise, shared links will show curves as less smooth. The
+          screenshots will show all the shapes at maximum quality, don't worry.
         </div>
       </div>
     </div>
@@ -126,7 +141,12 @@
       <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark navbar-expand-lg">
         <div class="container-fluid">
           <a id="navbar-brand" class="navbar-brand" href="#">
-            <img src="./assets/NoitamapLogo.svg" alt="Noitamap Logo" class="d-inline-block" style="width: 41px; height: 49px" />
+            <img
+              src="./assets/NoitamapLogo.svg"
+              alt="Noitamap Logo"
+              class="d-inline-block"
+              style="width: 41px; height: 49px"
+            />
           </a>
           <button
             class="navbar-toggler"
@@ -148,7 +168,14 @@
               </a> -->
 
               <div id="map-selector" class="dropdown me-2">
-                <button id="mapSelectorButton" class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-i18n="availableMaps">
+                <button
+                  id="mapSelectorButton"
+                  class="btn btn-sm btn-outline-light dropdown-toggle"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  data-i18n="availableMaps"
+                >
                   Available Maps
                 </button>
                 <ul class="dropdown-menu" id="navLinksList">
@@ -157,11 +184,19 @@
               </div>
 
               <div id="language-selector" class="dropdown me-2">
-                <button id="languageSelectorButton" class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <button
+                  id="languageSelectorButton"
+                  class="btn btn-sm btn-outline-light dropdown-toggle"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
                   <span class="flag-icon flag-icon-us"></span>
                 </button>
                 <ul class="dropdown-menu" id="languageLinksList">
-                  <li><a class="dropdown-item text-muted" href="#" style="pointer-events: none">Loading languages...</a></li>
+                  <li>
+                    <a class="dropdown-item text-muted" href="#" style="pointer-events: none">Loading languages...</a>
+                  </li>
                 </ul>
               </div>
 
@@ -193,7 +228,13 @@
               </a>
 
               <div id="overlay-selector" class="btn-group btn-group me-2" role="group">
-                <input id="structuresToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="structures" />
+                <input
+                  id="structuresToggler"
+                  type="checkbox"
+                  class="btn-check overlayToggler"
+                  autocomplete="off"
+                  data-overlay-key="structures"
+                />
                 <label
                   class="icon-button btn btn-sm btn-outline-light text-nowrap"
                   for="structuresToggler"
@@ -206,7 +247,13 @@
                   data-bs-content="Toggle structures overlay"
                   ><i class="icon-structures"></i
                 ></label>
-                <input id="bossesToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="bosses" />
+                <input
+                  id="bossesToggler"
+                  type="checkbox"
+                  class="btn-check overlayToggler"
+                  autocomplete="off"
+                  data-overlay-key="bosses"
+                />
                 <label
                   class="icon-button btn btn-sm btn-outline-light text-nowrap"
                   for="bossesToggler"
@@ -219,7 +266,13 @@
                   data-bs-content="Toggle bosses overlay"
                   ><i class="icon-bosses pixelated-image"></i
                 ></label>
-                <input id="itemsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="items" />
+                <input
+                  id="itemsToggler"
+                  type="checkbox"
+                  class="btn-check overlayToggler"
+                  autocomplete="off"
+                  data-overlay-key="items"
+                />
                 <label
                   class="icon-button btn btn-sm btn-outline-light text-nowrap"
                   for="itemsToggler"
@@ -232,7 +285,13 @@
                   data-bs-content="Toggle items overlay"
                   ><i class="icon-items pixelated-image"></i>
                 </label>
-                <input id="orbsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="orbs" />
+                <input
+                  id="orbsToggler"
+                  type="checkbox"
+                  class="btn-check overlayToggler"
+                  autocomplete="off"
+                  data-overlay-key="orbs"
+                />
                 <label
                   class="icon-button btn btn-sm btn-outline-light text-nowrap"
                   for="orbsToggler"
@@ -245,7 +304,13 @@
                   data-bs-content="Toggle orbs overlay"
                   ><i class="icon-orbs pixelated-image"></i
                 ></label>
-                <input id="spatialAwarenessToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="spatialAwareness" />
+                <input
+                  id="spatialAwarenessToggler"
+                  type="checkbox"
+                  class="btn-check overlayToggler"
+                  autocomplete="off"
+                  data-overlay-key="spatialAwareness"
+                />
                 <label
                   class="icon-button btn btn-sm btn-outline-light text-nowrap"
                   for="spatialAwarenessToggler"
@@ -258,7 +323,13 @@
                   data-bs-content="Toggle spatial awareness perk overlay"
                   ><i class="icon-spatialAwareness pixelated-image"></i
                 ></label>
-                <input id="biomeBoundariesToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="biomeBoundaries" />
+                <input
+                  id="biomeBoundariesToggler"
+                  type="checkbox"
+                  class="btn-check overlayToggler"
+                  autocomplete="off"
+                  data-overlay-key="biomeBoundaries"
+                />
                 <label
                   class="icon-button btn btn-sm btn-outline-light text-nowrap"
                   for="biomeBoundariesToggler"
@@ -271,7 +342,13 @@
                   data-bs-content="Toggle biome boundaries overlay"
                   ><i class="bi bi-border-outer"></i
                 ></label>
-                <input id="hiddenMessagesToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="hiddenMessages" />
+                <input
+                  id="hiddenMessagesToggler"
+                  type="checkbox"
+                  class="btn-check overlayToggler"
+                  autocomplete="off"
+                  data-overlay-key="hiddenMessages"
+                />
                 <label
                   class="icon-button btn btn-sm btn-outline-light text-nowrap"
                   for="hiddenMessagesToggler"
@@ -282,13 +359,24 @@
                   data-bs-title="Hidden Messages"
                   data-i18n-content="hiddenMessages.content"
                   data-bs-content="Toggle hidden messages overlay"
-                  ><i class="icon-hiddenMessages pixelated-image"></i><span class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-danger"> New! </span></label
+                  ><i class="icon-hiddenMessages pixelated-image"></i
+                  ><span class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-danger">
+                    New!
+                  </span></label
                 >
               </div>
 
-              <form id="renderer-form" class="input-group-sm d-flex">
+              <form id="renderer-form" class="input-group-sm d-flex" style="display: none">
                 <div class="btn-group btn-group-sm me-2" role="group" aria-label="Renderer selection">
-                  <input type="radio" class="btn-check" name="renderer" id="canvas-renderer" value="canvas" autocomplete="off" checked />
+                  <input
+                    type="radio"
+                    class="btn-check"
+                    name="renderer"
+                    id="canvas-renderer"
+                    value="canvas"
+                    autocomplete="off"
+                    checked
+                  />
                   <label
                     class="btn btn-sm btn-outline-light"
                     for="canvas-renderer"
@@ -301,7 +389,14 @@
                     data-bs-content="Standard HTML5 Canvas rendering. Works on all browsers but may be slightly less crisp when zooming quickly."
                     ><i class="bi bi-browser-firefox"></i
                   ></label>
-                  <input type="radio" class="btn-check" name="renderer" id="webgl-renderer" value="webgl" autocomplete="off" />
+                  <input
+                    type="radio"
+                    class="btn-check"
+                    name="renderer"
+                    id="webgl-renderer"
+                    value="webgl"
+                    autocomplete="off"
+                  />
                   <label
                     class="btn btn-sm btn-outline-light"
                     for="webgl-renderer"

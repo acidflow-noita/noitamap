@@ -1,24 +1,24 @@
-import i18next, { SUPPORTED_LANGUAGES } from './i18n';
+import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
 
 // --- Dev Console Commands (Early Initialization) ---
 const isDev =
-  /dev\.noitamap\.com|localhost|127\.0\.0\.1/.test(window.location.hostname) || window.location.protocol === 'file:';
+  /dev\.noitamap\.com|localhost|127\.0\.0\.1/.test(window.location.hostname) || window.location.protocol === "file:";
 
 if (isDev) {
   (window as any).noitamap = {
     enableDrawing: () => {
-      localStorage.setItem('noitamap-dev-drawing', '1');
-      console.log('Drawing dev mode enabled. Refresh and open the sidebar.');
+      localStorage.setItem("noitamap-dev-drawing", "1");
+      console.log("Drawing dev mode enabled. Refresh and open the sidebar.");
     },
     disableDrawing: () => {
-      localStorage.removeItem('noitamap-dev-drawing');
-      console.log('Drawing dev mode disabled. Refresh to hide the sidebar.');
+      localStorage.removeItem("noitamap-dev-drawing");
+      console.log("Drawing dev mode disabled. Refresh to hide the sidebar.");
     },
   };
   console.log('[Noitamap] Dev mode detected, "noitamap" commands available.');
 }
 
-import { App } from './app';
+import { App } from "./app";
 import {
   parseURL,
   updateURL,
@@ -26,21 +26,21 @@ import {
   updateURLWithOverlays,
   updateURLWithDrawing,
   updateURLWithSidebar,
-} from './data_sources/url';
-import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from './data_sources/overlays';
-import { overlayToShort } from './data_sources/param-mappings';
-import { UnifiedSearch } from './search/unifiedsearch';
-import { asMapName } from './data_sources/tile_data';
-import { addEventListenerForId, assertElementById, debounce } from './util';
-import { createMapLinks, NAV_LINK_IDENTIFIER } from './nav';
-import { initMouseTracker } from './mouse_tracker';
-import { isRenderer, getStoredRenderer, setStoredRenderer } from './renderer_settings';
-import { createLanguageSelector } from './language-selector';
-import { updateTranslations } from './i18n-dom';
-import { initKonamiCode } from './konami';
-import { AuthUI } from './auth/auth-ui';
-import { authService } from './auth/auth-service';
-import { shortenUrl } from './drawing/link-shortener';
+} from "./data_sources/url";
+import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from "./data_sources/overlays";
+import { overlayToShort } from "./data_sources/param-mappings";
+import { UnifiedSearch } from "./search/unifiedsearch";
+import { asMapName } from "./data_sources/tile_data";
+import { addEventListenerForId, assertElementById, debounce } from "./util";
+import { createMapLinks, NAV_LINK_IDENTIFIER } from "./nav";
+import { initMouseTracker } from "./mouse_tracker";
+import { isRenderer, getStoredRenderer, setStoredRenderer } from "./renderer_settings";
+import { createLanguageSelector } from "./language-selector";
+import { updateTranslations } from "./i18n-dom";
+import { initKonamiCode } from "./konami";
+import { AuthUI } from "./auth/auth-ui";
+import { authService } from "./auth/auth-service";
+import { shortenUrl } from "./drawing/link-shortener";
 
 // Global reference to unified search for translation updates
 let globalUnifiedSearch: UnifiedSearch | null = null;
@@ -60,31 +60,31 @@ export const refreshSearchTranslations = () => {
   }
 };
 
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener("DOMContentLoaded", async () => {
   try {
     await i18next.init({
-      fallbackLng: 'en',
+      fallbackLng: "en",
       debug: false,
       showSupportNotice: false,
       detection: {
-        order: ['querystring', 'cookie', 'localStorage', 'sessionStorage', 'navigator', 'htmlTag'],
-        lookupQuerystring: 'lng',
-        lookupCookie: 'i18next',
-        lookupLocalStorage: 'i18nextLng',
-        lookupSessionStorage: 'i18nextLng',
-        caches: ['localStorage', 'cookie'],
+        order: ["querystring", "cookie", "localStorage", "sessionStorage", "navigator", "htmlTag"],
+        lookupQuerystring: "lng",
+        lookupCookie: "i18next",
+        lookupLocalStorage: "i18nextLng",
+        lookupSessionStorage: "i18nextLng",
+        caches: ["localStorage", "cookie"],
       },
       backend: {
-        loadPath: './locales/{{lng}}/translation.json',
+        loadPath: "./locales/{{lng}}/translation.json",
         requestOptions: {
-          cache: 'no-store',
+          cache: "no-store",
         },
       },
       interpolation: {
         escapeValue: false,
       },
       supportedLngs: Object.keys(SUPPORTED_LANGUAGES),
-      load: 'languageOnly',
+      load: "languageOnly",
       cleanCode: true,
       nonExplicitSupportedLngs: true,
     });
@@ -92,24 +92,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     createLanguageSelector();
     updateTranslations();
   } catch (error) {
-    console.error('i18next initialization failed:', error);
+    console.error("i18next initialization failed:", error);
   }
 
   // TODO: probably most of this should be part of the "App" class, or the "App" class should be removed.
   // i'm not sure i'm happy with the abstraction
 
-  const navbarBrandElement = assertElementById('navbar-brand', HTMLElement);
-  const osdRootElement = assertElementById('osContainer', HTMLElement);
-  const searchForm = assertElementById('search-form', HTMLFormElement);
-  const overlayButtonsElement = assertElementById('overlay-selector', HTMLDivElement);
-  const mapSelectorButton = assertElementById('mapSelectorButton', HTMLButtonElement);
-  const tooltipElement = assertElementById('coordinate', HTMLElement);
+  const navbarBrandElement = assertElementById("navbar-brand", HTMLElement);
+  const osdRootElement = assertElementById("osContainer", HTMLElement);
+  const searchForm = assertElementById("search-form", HTMLFormElement);
+  const overlayButtonsElement = assertElementById("overlay-selector", HTMLDivElement);
+  const mapSelectorButton = assertElementById("mapSelectorButton", HTMLButtonElement);
+  const tooltipElement = assertElementById("coordinate", HTMLElement);
   const coordinatesText = tooltipElement.innerText;
-  const rendererForm = assertElementById('renderer-form', HTMLFormElement);
+  const rendererForm = assertElementById("renderer-form", HTMLFormElement);
 
   // Initialize renderer from storage
   const storedRenderer = getStoredRenderer();
-  rendererForm.elements['renderer'].value = storedRenderer;
+  rendererForm.elements["renderer"].value = storedRenderer;
 
   // Parse URL state including overlays and drawing
   const urlState = parseURL();
@@ -118,15 +118,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     mountTo: osdRootElement,
     overlayButtons: overlayButtonsElement,
     initialState: urlState,
-    useWebGL: storedRenderer === 'webgl',
+    useWebGL: storedRenderer === "webgl",
   });
   globalApp = app;
+  console.log(`[Noitamap] Active OSD drawer: ${(app.osd as any).drawer?.getType?.() ?? storedRenderer}`);
 
   // Apply overlays from URL
   if (urlState.overlays && urlState.overlays.length > 0) {
     for (const overlayKey of urlState.overlays) {
       const toggler = document.querySelector(
-        `input.overlayToggler[data-overlay-key="${overlayKey}"]`
+        `input.overlayToggler[data-overlay-key="${overlayKey}"]`,
       ) as HTMLInputElement | null;
       if (toggler && !toggler.disabled) {
         toggler.checked = true;
@@ -136,16 +137,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Initialize auth UI in navbar (at the end of the button container)
-  const authContainer = document.createElement('div');
-  authContainer.id = 'auth-container';
+  const authContainer = document.createElement("div");
+  authContainer.id = "auth-container";
   // Find the container div that holds all the buttons
-  const buttonContainer = document.querySelector('.collapse.navbar-collapse .d-flex.flex-wrap');
+  const buttonContainer = document.querySelector(".collapse.navbar-collapse .d-flex.flex-wrap");
   if (buttonContainer) {
     buttonContainer.appendChild(authContainer);
   }
   new AuthUI(authContainer);
 
-  navbarBrandElement.addEventListener('click', ev => {
+  navbarBrandElement.addEventListener("click", (ev) => {
     ev.preventDefault();
     app.home();
   });
@@ -182,15 +183,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.__noitamap = proHooks;
 
   // Dynamically load the pro bundle when drawing is enabled
-  if (localStorage.getItem('noitamap-dev-drawing') === '1') {
+  if (localStorage.getItem("noitamap-dev-drawing") === "1") {
     try {
       const token = authService.getToken();
       if (!token) {
-        console.warn('[Noitamap] No auth token found. Cannot load pro features.');
+        console.warn("[Noitamap] No auth token found. Cannot load pro features.");
       }
 
-      const proUrl = 'https://noitamap-pro.acidflow.stream/pro.js';
-      console.log('[Noitamap] Fetching pro features...');
+      const proUrl = "https://noitamap-pro.acidflow.stream/pro.js";
+      console.log("[Noitamap] Fetching pro features...");
 
       const response = await fetch(proUrl, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -201,7 +202,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       const code = await response.text();
-      const blob = new Blob([code], { type: 'application/javascript' });
+      const blob = new Blob([code], { type: "application/javascript" });
       const blobUrl = URL.createObjectURL(blob);
 
       const proModule = await import(
@@ -212,21 +213,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       URL.revokeObjectURL(blobUrl);
 
       await proModule.init(proHooks);
-      console.log('[Noitamap] Pro features loaded.');
+      console.log("[Noitamap] Pro features loaded.");
     } catch (error) {
-      console.error('[Noitamap] Failed to load pro features:', error);
+      console.error("[Noitamap] Failed to load pro features:", error);
     }
   }
 
   // link to the app
-  unifiedSearch.on('selected', (result: any) => {
-    if (result.type === 'spell') {
+  unifiedSearch.on("selected", (result: any) => {
+    if (result.type === "spell") {
       // Fill the search box with the spell name without triggering new search
       unifiedSearch.setSearchValueWithoutTriggering(result.spell.name);
       // Hide the search overlay
-      const overlay = document.getElementById('unifiedSearchResultsOverlay');
+      const overlay = document.getElementById("unifiedSearchResultsOverlay");
       if (overlay) {
-        overlay.style.display = 'none';
+        overlay.style.display = "none";
       }
       // Trigger overlays for the selected spell
       selectSpell(result.spell, app);
@@ -236,7 +237,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   const debouncedUpdateURL = debounce(100, updateURL);
-  app.on('state-change', state => {
+  app.on("state-change", (state) => {
     // record map / position / zoom changes to the URL when they happen
     debouncedUpdateURL(state);
 
@@ -245,23 +246,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!(currentMapLink instanceof HTMLElement)) return;
 
     // Remove "active" class from any nav links that still have it
-    document.querySelectorAll('#navLinksList .nav-link.active').forEach(el => {
-      el.classList.remove('active');
+    document.querySelectorAll("#navLinksList .nav-link.active").forEach((el) => {
+      el.classList.remove("active");
     });
 
     // Add "active" class to the nav-link identified by `mapName`
-    currentMapLink.classList.add('active');
+    currentMapLink.classList.add("active");
   });
 
-  const loadingIndicator = assertElementById('loadingIndicator', HTMLElement);
+  const loadingIndicator = assertElementById("loadingIndicator", HTMLElement);
   // show/hide loading indicator
-  app.on('loading-change', isLoading => {
-    loadingIndicator.style.display = isLoading ? 'block' : 'none';
+  app.on("loading-change", (isLoading) => {
+    loadingIndicator.style.display = isLoading ? "block" : "none";
   });
 
   // respond to changes of map
   const mapLinksUL = createMapLinks();
-  mapLinksUL.addEventListener('click', ev => {
+  mapLinksUL.addEventListener("click", (ev) => {
     if (!(ev.target instanceof HTMLElement)) return;
 
     const link = ev.target.closest(`.${NAV_LINK_IDENTIFIER}`);
@@ -296,14 +297,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // manage css classes to show / hide overlays
-  addEventListenerForId('overlay-selector', 'click', ev => {
+  addEventListenerForId("overlay-selector", "click", (ev) => {
     const target = ev.target;
 
     // not an input element
     if (!(target instanceof HTMLInputElement)) return;
 
     // not a checkbox
-    if (target.getAttribute('type') !== 'checkbox') return;
+    if (target.getAttribute("type") !== "checkbox") return;
 
     // overlay isn't defined on this checkbox
     const overlayKey = asOverlayKey(target.dataset.overlayKey);
@@ -327,18 +328,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // share button with toast notification (simple URL copy — pro bundle patches this for drawing share)
-  const shareEl = assertElementById('shareButton', HTMLElement);
-  shareEl.addEventListener('click', async ev => {
+  const shareEl = assertElementById("shareButton", HTMLElement);
+  shareEl.addEventListener("click", async (ev) => {
     ev.preventDefault();
 
     const url = new URL(window.location.href);
     const overlays = getEnabledOverlays();
     if (overlays.length > 0) {
-      url.searchParams.set('o', overlays.map(overlayToShort).join(','));
+      url.searchParams.set("o", overlays.map(overlayToShort).join(","));
     } else {
-      url.searchParams.delete('o');
+      url.searchParams.delete("o");
     }
-    url.searchParams.delete('d');
+    url.searchParams.delete("d");
 
     let finalUrl = url.toString();
     const shortUrl = await shortenUrl(finalUrl);
@@ -349,10 +350,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.navigator.clipboard
       .writeText(finalUrl)
       .then(() => {
-        const toastElement = assertElementById('shareToast', HTMLElement);
-        const toastBody = toastElement.querySelector('.toast-body');
+        const toastElement = assertElementById("shareToast", HTMLElement);
+        const toastBody = toastElement.querySelector(".toast-body");
         if (toastBody) {
-          toastBody.innerHTML = `<i class="bi bi-check-circle me-2"></i>${i18next.t('share.copied')}`;
+          toastBody.innerHTML = `<i class="bi bi-check-circle me-2"></i>${i18next.t("share.copied")}`;
         }
         const toast = new bootstrap.Toast(toastElement, {
           autohide: true,
@@ -360,8 +361,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         toast.show();
       })
-      .catch(err => {
-        console.error('Failed to copy to clipboard:', err);
+      .catch((err) => {
+        console.error("Failed to copy to clipboard:", err);
       });
   });
 
@@ -369,16 +370,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   const { copyCoordinates } = initMouseTracker({
     osd: app.osd,
     osdElement: osdRootElement,
-    tooltipElement: assertElementById('coordinate', HTMLElement),
+    tooltipElement: assertElementById("coordinate", HTMLElement),
   });
-  document.addEventListener('keydown', copyCoordinates, { capture: false });
+  document.addEventListener("keydown", copyCoordinates, { capture: false });
 
   // Handle renderer changes
-  rendererForm.addEventListener('change', ev => {
+  rendererForm.addEventListener("change", (ev) => {
     if (!ev.target || !(ev.target as HTMLElement).matches('input[type="radio"][name="renderer"]')) return;
 
     ev.stopPropagation();
-    const newRenderer = (rendererForm.elements as any)['renderer'].value;
+    const newRenderer = (rendererForm.elements as any)["renderer"].value;
 
     if (isRenderer(newRenderer)) {
       setStoredRenderer(newRenderer);

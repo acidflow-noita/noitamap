@@ -53,17 +53,8 @@ export class AppOSD extends Viewer {
           console.warn("WebGL check failed", e);
         }
 
-        // Fallback triggered (catches Firefox resistFingerprinting & unsupported hardware)
+        // Silently fall back to Canvas — no toast for normal WebGL→Canvas downgrade
         console.warn("WebGL not supported or functional test failed, falling back to Canvas renderer.");
-        setTimeout(() => {
-          const toastEl = document.getElementById("webglFallbackToast");
-          if (toastEl) {
-            // @ts-ignore : bootstrap is loaded globally
-            const toast = new bootstrap.Toast(toastEl, { autohide: false });
-            toast.show();
-          }
-        }, 1000); // Slight delay to ensure UI is ready
-
         return "canvas";
       })(),
       imageSmoothingEnabled: false,
