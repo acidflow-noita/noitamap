@@ -1,2 +1,6 @@
 /node_modules
-.claude/settings.json
+/dist
+/public/flags
+/public/locales
+/public/js
+.claude/*
