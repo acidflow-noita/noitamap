@@ -50,7 +50,7 @@ for (const [type, overlayDatas] of getAllOverlays()) {
 
 export const searchOverlays = (mapName: MapName, query: string, filters: Set<string>): TargetOfInterest[] => {
   // do the search
-  const found = index.search(query, { tag: mapName }).flatMap(v => v.result);
+  const found = index.search(query, { tag: { maps: mapName } }).flatMap(v => v.result);
   // deduplicate the ids we get back
   const ids = new Set<FlexSearchId>(found);
   // turn the ids back into TargetOfInterest objects, but with translated display names
