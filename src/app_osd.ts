@@ -1,8 +1,8 @@
-import { fetchMapVersions, getTileData, MapName } from './data_sources/tile_data';
-import { createOverlays } from './data_sources/overlays';
+import { fetchMapVersions, getTileData, MapName } from "./data_sources/tile_data";
+import { createOverlays } from "./data_sources/overlays";
 
-import type { TileSourceOptions } from 'openseadragon';
-import { CHUNK_SIZE } from './constants';
+import type { TileSourceOptions } from "openseadragon";
+import { CHUNK_SIZE } from "./constants";
 
 const { Point, TileSource, Viewer } = OpenSeadragon;
 
@@ -33,26 +33,30 @@ export class AppOSD extends Viewer {
       showNavigator: false,
       showNavigationControl: false,
       // drawer: 'webgl', // We dont enable webgl by default
-      crossOriginPolicy: 'Anonymous', // Required for webgl drawer
+      crossOriginPolicy: "Anonymous", // Required for webgl drawer
       // Check for WebGL support if requested
       // The user wants webgl, but we need to ensure their browser supports it.
       drawer: (() => {
-        if (!useWebGL) return 'canvas';
+        if (!useWebGL) return "canvas";
 
         try {
-          const canvas = document.createElement('canvas');
-          const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-          if (gl && gl instanceof WebGLRenderingContext) {
-            return 'webgl';
+          // Use OSD's rigorous functional test rather than a basic context check.
+          // This catches the exact Firefox readPixels failure before OSD initializes.
+          if (
+            OpenSeadragon.WebGLDrawer &&
+            typeof OpenSeadragon.WebGLDrawer.isSupported === "function" &&
+            OpenSeadragon.WebGLDrawer.isSupported()
+          ) {
+            return "webgl";
           }
         } catch (e) {
-          console.warn('WebGL check failed', e);
+          console.warn("WebGL check failed", e);
         }
 
-        // Fallback triggered
-        console.warn('WebGL not supported, falling back to Canvas renderer.');
+        // Fallback triggered (catches Firefox resistFingerprinting & unsupported hardware)
+        console.warn("WebGL not supported or functional test failed, falling back to Canvas renderer.");
         setTimeout(() => {
-          const toastEl = document.getElementById('webglFallbackToast');
+          const toastEl = document.getElementById("webglFallbackToast");
           if (toastEl) {
             // @ts-ignore : bootstrap is loaded globally
             const toast = new bootstrap.Toast(toastEl, { autohide: false });
@@ -60,7 +64,7 @@ export class AppOSD extends Viewer {
           }
         }, 1000); // Slight delay to ensure UI is ready
 
-        return 'canvas';
+        return "canvas";
       })(),
       imageSmoothingEnabled: false,
       debugMode: false, // Optional debugging grid
@@ -76,29 +80,29 @@ export class AppOSD extends Viewer {
       opacity: 1,
     });
 
-    this.addHandler('canvas-key', event => {
-      if (['q', 'w', 'e', 'r', 'a', 's', 'd', 'f'].includes(event.originalEvent.key)) {
+    this.addHandler("canvas-key", (event) => {
+      if (["q", "w", "e", "r", "a", "s", "d", "f"].includes(event.originalEvent.key)) {
         event.preventDefaultAction = true;
       }
     });
 
-    this.world.addHandler('remove-item', event => {
+    this.world.addHandler("remove-item", (event) => {
       const item = event.item;
 
-      item.removeAllHandlers('fully-loaded-change');
+      item.removeAllHandlers("fully-loaded-change");
 
       // recalculate loading when the list of items we're tracking
       this.notifyLoadingStatus();
     });
 
     // Align OSD coordinate system with the Noita world coordinate system
-    this.world.addHandler('add-item', event => {
+    this.world.addHandler("add-item", (event) => {
       const item = event.item;
 
-      item.addHandler('fully-loaded-change', () => this.notifyLoadingStatus());
+      item.addHandler("fully-loaded-change", () => this.notifyLoadingStatus());
 
       // Check if this source is our main map DziTileSource
-      if ('Image' in item.source) {
+      if ("Image" in item.source) {
         const image = (item.source as DziTileSource).Image;
         if (image && image.TopLeft) {
           item.setPosition(new OpenSeadragon.Point(Number(image.TopLeft.X), Number(image.TopLeft.Y)), true);
@@ -112,7 +116,7 @@ export class AppOSD extends Viewer {
   }
 
   private static getTileSources(mapName: MapName): string[] {
-    return getTileData(mapName).map(tileData => tileData.url);
+    return getTileData(mapName).map((tileData) => tileData.url);
   }
 
   // return a list of TiledImages currently present in the world
@@ -138,11 +142,11 @@ export class AppOSD extends Viewer {
       ),
       // we're ready by default, unless one or more items
       // say they are both visible and not ready
-      true
+      true,
     );
     const isLoading = !isFullyLoaded;
 
-    this.listeners.forEach(fn => fn(isLoading));
+    this.listeners.forEach((fn) => fn(isLoading));
   }
 
   onLoading(cb: (isLoading: boolean) => void) {
@@ -153,10 +157,10 @@ export class AppOSD extends Viewer {
     return new Promise<void>((resolve, reject) => {
       if (this.isOpen()) return resolve();
 
-      this.addHandler('open-failed', reject);
+      this.addHandler("open-failed", reject);
 
-      this.addOnceHandler('open', event => {
-        this.removeHandler('open-failed', reject);
+      this.addOnceHandler("open", (event) => {
+        this.removeHandler("open-failed", reject);
         resolve();
       });
     });
@@ -204,17 +208,17 @@ export class AppOSD extends Viewer {
 
   private cacheBustHandler?: OpenSeadragon.EventHandler<OpenSeadragon.AddItemWorldEvent>;
   private async bindCacheBustHandler(): Promise<void> {
-    if (this.mapName === null) throw new Error('this.mapName should not be null');
+    if (this.mapName === null) throw new Error("this.mapName should not be null");
 
     // if we have a previous cache bust handler, it's tied to the old map name -- remove it
-    if (this.cacheBustHandler) this.world.removeHandler('add-item', this.cacheBustHandler);
+    if (this.cacheBustHandler) this.world.removeHandler("add-item", this.cacheBustHandler);
 
     const versions = await fetchMapVersions(this.mapName);
 
-    this.cacheBustHandler = event => {
+    this.cacheBustHandler = (event) => {
       const source = event.item.source as any as { queryParams: string; tilesUrl: string };
       // Only cache bust DZI/Tile sources that actually have a tilesUrl
-      if (typeof source.tilesUrl === 'string') {
+      if (typeof source.tilesUrl === "string") {
         try {
           const version = versions[new URL(source.tilesUrl).origin];
           // we're mutating the input, which may break in the future -- but it works for now
@@ -226,7 +230,7 @@ export class AppOSD extends Viewer {
         }
       }
     };
-    this.world.addHandler('add-item', this.cacheBustHandler!);
+    this.world.addHandler("add-item", this.cacheBustHandler!);
   }
 
   /**
@@ -290,7 +294,7 @@ export class AppOSD extends Viewer {
       Math.min(here.x, there.x),
       Math.min(here.y, there.y),
       Math.min(CHUNK_SIZE, Math.abs(here.x - there.x)),
-      Math.min(CHUNK_SIZE, Math.abs(here.y - there.y))
+      Math.min(CHUNK_SIZE, Math.abs(here.y - there.y)),
     );
 
     const destRect = new OpenSeadragon.Rect(x - CHUNK_SIZE / 2, y - CHUNK_SIZE / 2, CHUNK_SIZE, CHUNK_SIZE);
