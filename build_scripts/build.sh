@@ -1,22 +1,19 @@
-#!/bin/bash
-
-HERE=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+#!/bin/sh
 
 # Install dependencies from lockfile
-# https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-nodejs
 npm ci
 
 # Generate tilesources
 npm run generate
 
-# Build (vite outputs to dist/)
+# Build (sync-translations → add-biome-translations → check-translations → copy-flags → copy-locales → vite build)
 npm run build
 
 # Copy tilesources.json into dist for runtime access
-cp "$HERE/../src/data/tilesources.json" "$HERE/../dist/tilesources.json"
+cp src/data/tilesources.json dist/tilesources.json
 
-# CF Pages output dir is set to "public" (shared with main/prod).
-# Vite outputs to dist/, so move it to public/ for CF to pick up.
-# This is safe because CF builds run in a fresh clone.
-rm -rf "$HERE/../public"
-mv "$HERE/../dist" "$HERE/../public"
+# CF Pages output dir is "public" (shared with main/prod).
+# Vite outputs to dist/, so swap it in for CF to pick up.
+# Safe because CF builds run in a fresh clone.
+rm -rf public
+mv dist public
