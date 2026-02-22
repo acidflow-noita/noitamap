@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await i18next.init({
       fallbackLng: 'en',
       debug: false,
+      showSupportNotice: false,
       detection: {
         order: ['querystring', 'cookie', 'localStorage', 'sessionStorage', 'navigator', 'htmlTag'],
         lookupQuerystring: 'lng',
@@ -161,6 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Expose hooks for the pro bundle via window.__noitamap
   const proHooks: NoitamapProHooks = {
+    i18next,
     osd: app.osd,
     osdElement: osdRootElement,
     getMap: () => app.getMap(),

@@ -34,6 +34,8 @@ declare global {
    * The pro bundle receives this via `window.__noitamap` after the main app initializes.
    */
   interface NoitamapProHooks {
+    /** Initialized i18next instance (shared so the pro bundle doesn't need its own) */
+    i18next: typeof import('i18next').default;
     /** OpenSeadragon viewer instance */
     osd: OpenSeadragon.Viewer;
     /** The DOM element that contains the OSD viewer */
