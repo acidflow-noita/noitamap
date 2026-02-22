@@ -9,9 +9,14 @@ npm ci
 # Generate tilesources
 npm run generate
 
-# Build: add-biome-translations → copy-flags → copy-locales → vite build
-# (flags and locales must be in public/ before vite copies public/ → dist/)
+# Build (vite outputs to dist/)
 npm run build
 
 # Copy tilesources.json into dist for runtime access
 cp "$HERE/../src/data/tilesources.json" "$HERE/../dist/tilesources.json"
+
+# CF Pages output dir is set to "public" (shared with main/prod).
+# Vite outputs to dist/, so move it to public/ for CF to pick up.
+# This is safe because CF builds run in a fresh clone.
+rm -rf "$HERE/../public"
+mv "$HERE/../dist" "$HERE/../public"
