@@ -802,7 +802,7 @@
       "violet": "Фіолетовий"
     },
     "stroke": {
-      "label": "Товщина лінії (застосовується до всіх фігур)",
+      "label": "Товщина лінії",
       "thin": "Тонка",
       "normal": "Звичайна",
       "thick": "Товста",
@@ -850,7 +850,8 @@
       "deleteConfirm": "Видалити цей малюнок?",
       "defaultName": "Малюнок",
       "sharedName": "Спільний малюнок",
-      "importedTitle": "Імпортований малюнок"
+      "importedTitle": "Імпортований малюнок",
+      "renameTitle": "Rename drawing"
     },
     "auth": {
       "subscriberOnly": "Малювання доступне підписникам Twitch-каналу Wuote",

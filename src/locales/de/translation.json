@@ -795,7 +795,7 @@
       "violet": "Violett"
     },
     "stroke": {
-      "label": "Strichstärke (gilt für alle Formen gleichzeitig)",
+      "label": "Strichstärke",
       "thin": "Dünn",
       "normal": "Normal",
       "thick": "Dick",
@@ -843,7 +843,8 @@
       "deleteConfirm": "Diese Zeichnung löschen?",
       "defaultName": "Zeichnung",
       "sharedName": "Geteilte Zeichnung",
-      "importedTitle": "Importierte Zeichnung"
+      "importedTitle": "Importierte Zeichnung",
+      "renameTitle": "Rename drawing"
     },
     "auth": {
       "subscriberOnly": "Zeichnen ist für Abonnenten von Wuotes Twitch-Kanal verfügbar",

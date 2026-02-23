@@ -795,7 +795,7 @@
       "violet": "Violeta"
     },
     "stroke": {
-      "label": "Grosor del trazo (afecta a todas las formas)",
+      "label": "Grosor del trazo",
       "thin": "Fino",
       "normal": "Normal",
       "thick": "Grueso",
@@ -843,7 +843,8 @@
       "deleteConfirm": "¿Eliminar este dibujo?",
       "defaultName": "Dibujo",
       "sharedName": "Dibujo compartido",
-      "importedTitle": "Dibujo importado"
+      "importedTitle": "Dibujo importado",
+      "renameTitle": "Rename drawing"
     },
     "auth": {
       "subscriberOnly": "El dibujo está disponible para los suscriptores de Twitch de Wuote",

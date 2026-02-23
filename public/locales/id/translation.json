@@ -795,7 +795,7 @@
       "violet": "Ungu"
     },
     "stroke": {
-      "label": "Ketebalan garis (berlaku untuk semua bentuk)",
+      "label": "Ketebalan garis",
       "thin": "Tipis",
       "normal": "Normal",
       "thick": "Tebal",
@@ -843,7 +843,8 @@
       "deleteConfirm": "Hapus gambar ini?",
       "defaultName": "Gambar",
       "sharedName": "Gambar Bersama",
-      "importedTitle": "Gambar diimpor"
+      "importedTitle": "Gambar diimpor",
+      "renameTitle": "Rename drawing"
     },
     "auth": {
       "subscriberOnly": "Menggambar tersedia untuk pelanggan Twitch Wuote",

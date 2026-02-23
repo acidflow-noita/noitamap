@@ -795,7 +795,7 @@
       "violet": "紫"
     },
     "stroke": {
-      "label": "線の太さ（すべての図形に一括適用）",
+      "label": "線の太さ",
       "thin": "細い",
       "normal": "標準",
       "thick": "太い",
@@ -843,7 +843,8 @@
       "deleteConfirm": "この描画を削除しますか？",
       "defaultName": "描画",
       "sharedName": "共有された描画",
-      "importedTitle": "インポートされた描画"
+      "importedTitle": "インポートされた描画",
+      "renameTitle": "Rename drawing"
     },
     "auth": {
       "subscriberOnly": "描画機能はWuoteのTwitchサブスクライバー限定です",

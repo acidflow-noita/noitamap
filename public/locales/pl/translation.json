@@ -795,7 +795,7 @@
       "violet": "Fioletowy"
     },
     "stroke": {
-      "label": "Grubość linii (dotyczy wszystkich kształtów)",
+      "label": "Grubość linii",
       "thin": "Cienki",
       "normal": "Normalny",
       "thick": "Gruby",
@@ -843,7 +843,8 @@
       "deleteConfirm": "Usunąć ten rysunek?",
       "defaultName": "Rysunek",
       "sharedName": "Udostępniony rysunek",
-      "importedTitle": "Zaimportowany rysunek"
+      "importedTitle": "Zaimportowany rysunek",
+      "renameTitle": "Rename drawing"
     },
     "auth": {
       "subscriberOnly": "Rysowanie jest dostępne dla subskrybentów kanału Wuote na Twitch",

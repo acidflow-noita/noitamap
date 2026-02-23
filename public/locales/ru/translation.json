@@ -795,7 +795,7 @@
       "violet": "Фиолетовый"
     },
     "stroke": {
-      "label": "Толщина линии (применяется ко всем фигурам)",
+      "label": "Толщина линии",
       "thin": "Тонкая",
       "normal": "Обычная",
       "thick": "Толстая",
@@ -850,7 +850,8 @@
       "deleteConfirm": "Удалить этот рисунок?",
       "defaultName": "Рисунок",
       "sharedName": "Общий рисунок",
-      "importedTitle": "Импортированный рисунок"
+      "importedTitle": "Импортированный рисунок",
+      "renameTitle": "Rename drawing"
     },
     "auth": {
       "subscriberOnly": "Рисование доступно подписчикам Twitch-канала Wuote",

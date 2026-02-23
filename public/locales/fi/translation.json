@@ -795,7 +795,7 @@
       "violet": "Violetti"
     },
     "stroke": {
-      "label": "Viivan paksuus (vaikuttaa kaikkiin muotoihin)",
+      "label": "Viivan paksuus",
       "thin": "Ohut",
       "normal": "Normaali",
       "thick": "Paksu",
@@ -843,7 +843,8 @@
       "deleteConfirm": "Poistetaanko tämä piirros?",
       "defaultName": "Piirros",
       "sharedName": "Jaettu piirros",
-      "importedTitle": "Tuotu piirros"
+      "importedTitle": "Tuotu piirros",
+      "renameTitle": "Rename drawing"
     },
     "auth": {
       "subscriberOnly": "Piirtäminen on käytettävissä Wuoten Twitch-tilaajille",

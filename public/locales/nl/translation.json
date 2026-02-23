@@ -795,7 +795,7 @@
       "violet": "Violet"
     },
     "stroke": {
-      "label": "Lijndikte (geldt voor alle vormen)",
+      "label": "Lijndikte",
       "thin": "Dun",
       "normal": "Normaal",
       "thick": "Dik",
@@ -843,7 +843,8 @@
       "deleteConfirm": "Deze tekening verwijderen?",
       "defaultName": "Tekening",
       "sharedName": "Gedeelde tekening",
-      "importedTitle": "Geïmporteerde tekening"
+      "importedTitle": "Geïmporteerde tekening",
+      "renameTitle": "Rename drawing"
     },
     "auth": {
       "subscriberOnly": "Tekenen is beschikbaar voor Wuote's Twitch-abonnees",

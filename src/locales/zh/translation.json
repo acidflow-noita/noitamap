@@ -808,7 +808,7 @@
       "violet": "紫色"
     },
     "stroke": {
-      "label": "线条宽度（同时应用于所有图形）",
+      "label": "线条宽度",
       "thin": "细",
       "normal": "标准",
       "thick": "粗",
@@ -856,7 +856,8 @@
       "deleteConfirm": "确定删除此绘图？",
       "defaultName": "绘图",
       "sharedName": "共享绘图",
-      "importedTitle": "已导入的绘图"
+      "importedTitle": "已导入的绘图",
+      "renameTitle": "Rename drawing"
     },
     "auth": {
       "subscriberOnly": "绘图功能仅对 Wuote 的 Twitch 订阅者开放",

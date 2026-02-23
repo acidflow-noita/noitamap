@@ -12,22 +12,21 @@ import {
 } from './param-mappings';
 
 /**
- * Extended app state with overlays, drawing, and sidebar
+ * Extended app state with overlays and sidebar
  */
 export interface URLState extends Partial<AppState> {
   overlays?: OverlayKey[];
-  drawing?: string;
   sidebarOpen?: boolean;
 }
 
 /**
- * Desired URL param order: x, y, z (zoom), m (map), o (overlays), s (sidebar), d (drawing)
+ * Desired URL param order: x, y, z (zoom), m (map), o (overlays), s (sidebar)
  * Short params used for encoding, decoder accepts both short and long names
  */
-const PARAM_ORDER = ['x', 'y', 'z', 'm', 'o', 's', 'd'];
+const PARAM_ORDER = ['x', 'y', 'z', 'm', 'o', 's'];
 
 /**
- * Reorder URL search params to maintain consistent order (drawing always last)
+ * Reorder URL search params to maintain consistent order
  * Also cleans up old long param names, replacing them with short versions
  */
 function reorderParams(url: URL): void {
@@ -39,7 +38,6 @@ function reorderParams(url: URL): void {
     map: 'm',
     overlays: 'o',
     sidebar: 's',
-    drawing: 'd',
   };
 
   // Collect all params in desired order
@@ -85,7 +83,7 @@ function getParam(url: URL, shortName: string, longName: string): string | null 
 
 /**
  * Take the window's URL and return partial application state
- * Accepts both short (z, m, o, s, d) and long (zoom, map, overlays, sidebar, drawing) param names
+ * Accepts both short (z, m, o, s) and long (zoom, map, overlays, sidebar) param names
  */
 export function parseURL(): URLState {
   const url = new URL(window.location.toString());
@@ -121,14 +119,11 @@ export function parseURL(): URLState {
     }
   }
 
-  // Get drawing param (encoded string) - accept both short and long
-  const drawing = getParam(url, 'd', 'drawing') ?? undefined;
-
   // Get sidebar open state - accept both short and long param names and values
   const sidebarParam = getParam(url, 's', 'sidebar');
   const sidebarOpen = shortToSidebar(sidebarParam);
 
-  return { pos, map, overlays, drawing, sidebarOpen };
+  return { pos, map, overlays, sidebarOpen };
 }
 
 /**
@@ -173,20 +168,6 @@ export function updateURLWithOverlays(overlays: OverlayKey[]) {
     url.searchParams.set('o', shortOverlays.join(','));
   } else {
     url.searchParams.delete('o');
-  }
-  reorderParams(url);
-  window.history.replaceState(null, '', url.toString());
-}
-
-/**
- * Update URL with drawing data (uses short param name)
- */
-export function updateURLWithDrawing(drawing: string | null) {
-  const url = new URL(window.location.toString());
-  if (drawing) {
-    url.searchParams.set('d', drawing);
-  } else {
-    url.searchParams.delete('d');
   }
   reorderParams(url);
   window.history.replaceState(null, '', url.toString());

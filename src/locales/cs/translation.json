@@ -795,7 +795,7 @@
       "violet": "Fialová"
     },
     "stroke": {
-      "label": "Tloušťka čáry (platí pro všechny tvary)",
+      "label": "Tloušťka čáry",
       "thin": "Tenké",
       "normal": "Normální",
       "thick": "Tlusté",
@@ -843,7 +843,8 @@
       "deleteConfirm": "Smazat tuto kresbu?",
       "defaultName": "Kresba",
       "sharedName": "Sdílená kresba",
-      "importedTitle": "Importovaná kresba"
+      "importedTitle": "Importovaná kresba",
+      "renameTitle": "Rename drawing"
     },
     "auth": {
       "subscriberOnly": "Kreslení je dostupné pro odběratele Wuoteho Twitch kanálu",

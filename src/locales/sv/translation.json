@@ -795,7 +795,7 @@
       "violet": "Violett"
     },
     "stroke": {
-      "label": "Linjetjocklek (gäller alla former)",
+      "label": "Linjetjocklek",
       "thin": "Tunn",
       "normal": "Normal",
       "thick": "Tjock",
@@ -843,7 +843,8 @@
       "deleteConfirm": "Ta bort denna ritning?",
       "defaultName": "Ritning",
       "sharedName": "Delad ritning",
-      "importedTitle": "Importerad ritning"
+      "importedTitle": "Importerad ritning",
+      "renameTitle": "Rename drawing"
     },
     "auth": {
       "subscriberOnly": "Ritning är tillgängligt för Wuotes Twitch-prenumeranter",

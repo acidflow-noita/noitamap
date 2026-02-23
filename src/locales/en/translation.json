@@ -858,6 +858,7 @@
       "deleteConfirm": "Delete this drawing?",
       "defaultName": "Drawing",
       "sharedName": "Shared Drawing",
+      "renameTitle": "Rename drawing",
       "importedTitle": "Imported drawing"
     },
     "auth": {

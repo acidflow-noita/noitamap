@@ -24,7 +24,6 @@ import {
   updateURL,
   getEnabledOverlays,
   updateURLWithOverlays,
-  updateURLWithDrawing,
   updateURLWithSidebar,
 } from "./data_sources/url";
 import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from "./data_sources/overlays";
@@ -168,9 +167,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     osdElement: osdRootElement,
     getMap: () => app.getMap(),
     setMap: (mapName: string) => app.setMap(asMapName(mapName) ?? (mapName as any)),
-    updateURLWithDrawing,
     updateURLWithSidebar,
-    urlState: { drawing: urlState.drawing, sidebarOpen: urlState.sidebarOpen },
+    urlState: { sidebarOpen: urlState.sidebarOpen },
     setSearchMap: (mapName: string) => {
       if (_unifiedSearch) _unifiedSearch.currentMap = mapName as any;
     },
@@ -179,6 +177,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     },
     getEnabledOverlays,
     overlayToShort: (key: string) => overlayToShort(key as any),
+    showOverlay: (key: string, show: boolean) => showOverlay(key as any, show),
   };
   window.__noitamap = proHooks;
 
