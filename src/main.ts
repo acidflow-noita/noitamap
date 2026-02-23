@@ -1,4 +1,5 @@
 import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
+import { setupDropOverlay } from "./drop-overlay";
 
 // --- Dev Console Commands (Early Initialization) ---
 const isDev =
@@ -166,7 +167,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     osd: app.osd,
     osdElement: osdRootElement,
     getMap: () => app.getMap(),
-    setMap: (mapName: string) => app.setMap(asMapName(mapName) ?? (mapName as any)),
+    setMap: (mapName: string) => app.setMap(asMapName(mapName) ?? (mapName as any)),  
     updateURLWithSidebar,
     urlState: { sidebarOpen: urlState.sidebarOpen },
     setSearchMap: (mapName: string) => {
@@ -177,16 +178,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     },
     getEnabledOverlays,
     overlayToShort: (key: string) => overlayToShort(key as any),
-    showOverlay: (key: string, show: boolean) => showOverlay(key as any, show),
+    showOverlay: (key: string, show: boolean) => {
+      const toggler = document.querySelector(`input.overlayToggler[data-overlay-key="${key}"]`) as HTMLInputElement | null;
+      if (toggler) {
+        toggler.checked = show;
+      }
+      showOverlay(key as any, show);
+      updateURLWithOverlays(getEnabledOverlays());
+    },
   };
   window.__noitamap = proHooks;
 
-  // Dynamically load the pro bundle when drawing is enabled
-  if (localStorage.getItem("noitamap-dev-drawing") === "1") {
+  // Function to load pro bundle
+  const loadProBundle = async (): Promise<boolean> => {
+    // If already loaded, return true
+    if ((window as any).noitamap_pro_loaded) return true;
+
     try {
       const token = authService.getToken();
       if (!token) {
-        console.warn("[Noitamap] No auth token found. Cannot load pro features.");
+        // We log warning but still try fetch if server allows public access for viewer
+        console.warn("[Noitamap] No auth token found. Attempting to load pro features...");
       }
 
       const proUrl = "https://noitamap-pro.acidflow.stream/pro.js";
@@ -197,6 +209,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+            console.warn("[Noitamap] Pro features require authentication/subscription.");
+            return false;
+        }
         throw new Error(`HTTP error ${response.status}`);
       }
 
@@ -205,23 +221,34 @@ document.addEventListener("DOMContentLoaded", async () => {
       const blobUrl = URL.createObjectURL(blob);
 
       const proModule = await import(
-        // @ts-ignore — remote ES module loaded at runtime
+        // @ts-ignore â€” remote ES module loaded at runtime
         /* @vite-ignore */ blobUrl
       );
 
       URL.revokeObjectURL(blobUrl);
 
       await proModule.init(proHooks);
+      (window as any).noitamap_pro_loaded = true;
       console.log("[Noitamap] Pro features loaded.");
+      return true;
     } catch (error) {
       console.error("[Noitamap] Failed to load pro features:", error);
+      return false;
     }
+  };
+
+  // Initialize Drop Overlay
+  setupDropOverlay(i18next, loadProBundle);
+
+  // Dynamically load the pro bundle when drawing is enabled (legacy check)
+  if (localStorage.getItem("noitamap-dev-drawing") === "1") {
+    loadProBundle();
   }
 
   // link to the app
   unifiedSearch.on("selected", (result: any) => {
     if (result.type === "spell") {
-      // Fill the search box with the spell name without triggering new search
+      // Fill the search box with the spell name without triggering new search        
       unifiedSearch.setSearchValueWithoutTriggering(result.spell.name);
       // Hide the search overlay
       const overlay = document.getElementById("unifiedSearchResultsOverlay");
@@ -245,7 +272,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!(currentMapLink instanceof HTMLElement)) return;
 
     // Remove "active" class from any nav links that still have it
-    document.querySelectorAll("#navLinksList .nav-link.active").forEach((el) => {
+    document.querySelectorAll("#navLinksList .nav-link.active").forEach((el) => {     
       el.classList.remove("active");
     });
 
@@ -253,7 +280,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     currentMapLink.classList.add("active");
   });
 
-  const loadingIndicator = assertElementById("loadingIndicator", HTMLElement);
+  const loadingIndicator = assertElementById("loadingIndicator", HTMLElement);        
   // show/hide loading indicator
   app.on("loading-change", (isLoading) => {
     loadingIndicator.style.display = isLoading ? "block" : "none";
@@ -326,7 +353,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     new bootstrap.Tooltip(el);
   }
 
-  // share button with toast notification (simple URL copy — pro bundle patches this for drawing share)
+  // share button with toast notification (simple URL copy â€” pro bundle patches this for drawing share)
   const shareEl = assertElementById("shareButton", HTMLElement);
   shareEl.addEventListener("click", async (ev) => {
     ev.preventDefault();
