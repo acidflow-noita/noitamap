@@ -3,7 +3,7 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-01-20",
   "observability": {
-    "enabled": true,
+    "enabled": false,
     "head_sampling_rate": 1,
   },
   // Production environment (default)
@@ -11,6 +11,27 @@
     "WORKER_URL": "https://noitamap-auth.wuote.workers.dev",
     "ALLOWED_ORIGINS": "https://noitamap.com,https://dev.noitamap.com",
   },
+  // Secrets Store bindings (shared across environments)
+  // TODO: Fill in your store_id from the Cloudflare Secrets Store dashboard
+  "secrets_store_secrets": [
+    {
+      "binding": "PATREON_CLIENT_ID",
+      "store_id": "291b9519666945a1a56adbb686c62d76",
+      "secret_name": "PATREON_CLIENT_ID",
+    },
+    {
+      "binding": "PATREON_CLIENT_SECRET",
+      "store_id": "291b9519666945a1a56adbb686c62d76",
+      "secret_name": "PATREON_CLIENT_SECRET",
+    },
+    {
+      "binding": "PATREON_CAMPAIGN_ID",
+      "store_id": "291b9519666945a1a56adbb686c62d76",
+      "secret_name": "PATREON_CAMPAIGN_ID",
+    },
+    { "binding": "JWT_SECRET", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "JWT_SECRET_PROD" },
+    { "binding": "CREATOR_USER_ID", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "CREATOR_USER_ID" },
+  ],
   "env": {
     // Development environment
     "dev": {
@@ -19,6 +40,29 @@
         "WORKER_URL": "https://noitamap-auth-dev.wuote.workers.dev",
         "ALLOWED_ORIGINS": "https://dev.noitamap.com,http://localhost:5173,http://localhost:3000",
       },
+      "secrets_store_secrets": [
+        {
+          "binding": "PATREON_CLIENT_ID",
+          "store_id": "291b9519666945a1a56adbb686c62d76",
+          "secret_name": "PATREON_CLIENT_ID",
+        },
+        {
+          "binding": "PATREON_CLIENT_SECRET",
+          "store_id": "291b9519666945a1a56adbb686c62d76",
+          "secret_name": "PATREON_CLIENT_SECRET",
+        },
+        {
+          "binding": "PATREON_CAMPAIGN_ID",
+          "store_id": "291b9519666945a1a56adbb686c62d76",
+          "secret_name": "PATREON_CAMPAIGN_ID",
+        },
+        { "binding": "JWT_SECRET", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "JWT_SECRET_DEV" },
+        {
+          "binding": "CREATOR_USER_ID",
+          "store_id": "291b9519666945a1a56adbb686c62d76",
+          "secret_name": "CREATOR_USER_ID",
+        },
+      ],
     },
     // Local development environment
     "local": {

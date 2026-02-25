@@ -11,18 +11,36 @@
  * - JWT_SECRET: Secret for signing JWTs and HMAC state tokens
  */
 
+// Secrets Store bindings return objects with .get(), plain vars are strings
+interface SecretStoreSecret {
+  get(): Promise<string>;
+}
+
 interface Env {
-  PATREON_CLIENT_ID: string;
-  PATREON_CLIENT_SECRET: string;
-  PATREON_CAMPAIGN_ID: string;
+  // Secrets Store bindings
+  PATREON_CLIENT_ID: SecretStoreSecret;
+  PATREON_CLIENT_SECRET: SecretStoreSecret;
+  PATREON_CAMPAIGN_ID: SecretStoreSecret;
+  JWT_SECRET: SecretStoreSecret;
+  CREATOR_USER_ID: SecretStoreSecret;
+
+  // Plain environment variables (from wrangler.jsonc vars)
   WORKER_URL: string;
   ALLOWED_ORIGINS: string;
-  JWT_SECRET: string;
 
   // -- Twitch OAuth (Future Use) --
-  // TWITCH_CLIENT_ID: string;
-  // TWITCH_CLIENT_SECRET: string;
-  // WUOTE_USER_ID: string;
+  // TWITCH_CLIENT_ID: SecretStoreSecret;
+  // TWITCH_CLIENT_SECRET: SecretStoreSecret;
+  // WUOTE_USER_ID: SecretStoreSecret;
+}
+
+// Resolved secrets for use throughout request handling
+interface Secrets {
+  patreonClientId: string;
+  patreonClientSecret: string;
+  patreonCampaignId: string;
+  jwtSecret: string;
+  creatorUserId: string;
 }
 
 // -- Types --
@@ -81,6 +99,17 @@ const STATE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 
 // -- Main Worker --
 
+async function resolveSecrets(env: Env): Promise<Secrets> {
+  const [patreonClientId, patreonClientSecret, patreonCampaignId, jwtSecret, creatorUserId] = await Promise.all([
+    env.PATREON_CLIENT_ID.get(),
+    env.PATREON_CLIENT_SECRET.get(),
+    env.PATREON_CAMPAIGN_ID.get(),
+    env.JWT_SECRET.get(),
+    env.CREATOR_USER_ID.get(),
+  ]);
+  return { patreonClientId, patreonClientSecret, patreonCampaignId, jwtSecret, creatorUserId };
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -93,13 +122,15 @@ export default {
     }
 
     try {
+      const secrets = await resolveSecrets(env);
+
       switch (url.pathname) {
         case '/auth/login':
-          return handlePatreonLogin(request, env);
+          return handlePatreonLogin(request, env, secrets);
         case '/auth/callback':
-          return handlePatreonCallback(request, env);
+          return handlePatreonCallback(request, env, secrets);
         case '/auth/check':
-          return handleAuthCheck(request, env, allowedOrigin);
+          return handleAuthCheck(request, secrets, allowedOrigin);
         default:
           return new Response('Not Found', { status: 404 });
       }
@@ -112,14 +143,14 @@ export default {
 
 // -- Handlers --
 
-async function handlePatreonLogin(request: Request, env: Env): Promise<Response> {
+async function handlePatreonLogin(request: Request, env: Env, secrets: Secrets): Promise<Response> {
   const url = new URL(request.url);
   const redirectUrl = url.searchParams.get('redirect') || '';
 
   // Create a signed state token: base64url(payload).base64url(hmac)
   const expiresAt = Date.now() + STATE_EXPIRY_MS;
   const statePayload = `${redirectUrl}|${expiresAt}`;
-  const state = await signState(statePayload, env.JWT_SECRET);
+  const state = await signState(statePayload, secrets.jwtSecret);
 
   // Construct the callback URL
   const callbackUri = `${env.WORKER_URL}/auth/callback`;
@@ -127,15 +158,15 @@ async function handlePatreonLogin(request: Request, env: Env): Promise<Response>
   // Patreon OAuth V2 Authorization URL
   const authUrl = new URL('https://www.patreon.com/oauth2/authorize');
   authUrl.searchParams.set('response_type', 'code');
-  authUrl.searchParams.set('client_id', env.PATREON_CLIENT_ID);
+  authUrl.searchParams.set('client_id', secrets.patreonClientId);
   authUrl.searchParams.set('redirect_uri', callbackUri);
-  authUrl.searchParams.set('scope', 'identity identity.memberships');
+  authUrl.searchParams.set('scope', 'identity.memberships');
   authUrl.searchParams.set('state', state);
 
   return Response.redirect(authUrl.toString(), 302);
 }
 
-async function handlePatreonCallback(request: Request, env: Env): Promise<Response> {
+async function handlePatreonCallback(request: Request, env: Env, secrets: Secrets): Promise<Response> {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
@@ -144,7 +175,7 @@ async function handlePatreonCallback(request: Request, env: Env): Promise<Respon
   // Validate & decode state
   if (!state) return redirectToError(env, 'missing_state');
 
-  const statePayload = await verifyState(state, env.JWT_SECRET);
+  const statePayload = await verifyState(state, secrets.jwtSecret);
   if (!statePayload) return redirectToError(env, 'invalid_state');
 
   const [redirectUrl, expiresAtStr] = statePayload.split('|');
@@ -170,8 +201,8 @@ async function handlePatreonCallback(request: Request, env: Env): Promise<Respon
       body: new URLSearchParams({
         code,
         grant_type: 'authorization_code',
-        client_id: env.PATREON_CLIENT_ID,
-        client_secret: env.PATREON_CLIENT_SECRET,
+        client_id: secrets.patreonClientId,
+        client_secret: secrets.patreonClientSecret,
         redirect_uri: `${env.WORKER_URL}/auth/callback`,
       }),
     });
@@ -210,12 +241,16 @@ async function handlePatreonCallback(request: Request, env: Env): Promise<Respon
     let isFollower = false;
     let isSubscriber = false;
 
-    if (identityData.included) {
+    // Creator bypass — grant full access to the campaign owner
+    if (secrets.creatorUserId && user.id === secrets.creatorUserId) {
+      isFollower = true;
+      isSubscriber = true;
+    } else if (identityData.included) {
       for (const item of identityData.included) {
         if (item.type !== 'member') continue;
 
         const campaignId = item.relationships?.campaign?.data?.id;
-        if (env.PATREON_CAMPAIGN_ID && campaignId !== env.PATREON_CAMPAIGN_ID) {
+        if (secrets.patreonCampaignId && campaignId !== secrets.patreonCampaignId) {
           continue;
         }
 
@@ -241,7 +276,7 @@ async function handlePatreonCallback(request: Request, env: Env): Promise<Respon
         iat: now,
         exp: now + JWT_EXPIRY_SECONDS,
       },
-      env.JWT_SECRET
+      secrets.jwtSecret
     );
 
     // 5. Redirect with Token
@@ -259,14 +294,14 @@ async function handlePatreonCallback(request: Request, env: Env): Promise<Respon
   }
 }
 
-async function handleAuthCheck(request: Request, env: Env, allowedOrigin: string): Promise<Response> {
+async function handleAuthCheck(request: Request, secrets: Secrets, allowedOrigin: string): Promise<Response> {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return jsonResponse({ authenticated: false }, allowedOrigin);
   }
 
   const token = authHeader.substring(7);
-  const payload = await verifyJWT(token, env.JWT_SECRET);
+  const payload = await verifyJWT(token, secrets.jwtSecret);
   if (!payload) {
     return jsonResponse({ authenticated: false }, allowedOrigin);
   }

@@ -121,7 +121,7 @@ export class AuthUI {
       btn.setAttribute('data-bs-toggle', 'dropdown');
       btn.setAttribute('aria-expanded', 'false');
       // Reset content if it was replaced by Patreon button
-      btn.innerHTML = `<i class="bi bi-person-check me-1"></i> <span class="auth-text">${state.username || 'User'}</span>`;
+      btn.innerHTML = `<i class="bi bi-person-check me-1"></i> <span class="auth-text">${i18next.t('auth.yourAccount', 'Your Account')}</span>`;
       
       // Create dropdown menu if not exists
       let dropdown = this.button.querySelector('.dropdown-menu');
@@ -129,10 +129,10 @@ export class AuthUI {
         dropdown = document.createElement('ul');
         dropdown.className = 'dropdown-menu dropdown-menu-end';
         dropdown.innerHTML = `
-          <li><span class="dropdown-item-text text-muted small">${i18next.t('auth.signedInAs', 'Signed in as')} <strong>${state.username}</strong></span></li>
-          <li><hr class="dropdown-divider"></li>
-          ${state.isSubscriber ? `<li><span class="dropdown-item-text"><i class="bi bi-star-fill text-warning me-1"></i>${i18next.t('auth.patron', 'Patreon Supporter')}</span></li>` : ''}     
-          ${state.isFollower && !state.isSubscriber ? `<li><span class="dropdown-item-text"><i class="bi bi-heart-fill text-danger me-1"></i>${i18next.t('auth.follower', 'Follower')}</span></li>` : ''}
+          ${state.isSubscriber
+            ? `<li><span class="dropdown-item-text text-success small"><i class="bi bi-check-circle-fill me-1"></i>${i18next.t('auth.proActive', 'Pro active')}</span></li>`
+            : `<li><a class="dropdown-item small" href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer"><i class="bi bi-star me-1"></i>${i18next.t('auth.subscribeCta', 'Subscribe for Pro')}</a></li>`
+          }
           <li><hr class="dropdown-divider"></li>
           <li><button class="dropdown-item" id="logoutBtn"><i class="bi bi-box-arrow-right me-1"></i>${i18next.t('auth.signOut', 'Sign Out')}</button></li>
         `;
@@ -146,9 +146,7 @@ export class AuthUI {
           this.handleLogout();
         });
       } else {
-        // Update existing dropdown
-        const usernameEl = dropdown.querySelector('.dropdown-item-text strong');
-        if (usernameEl) usernameEl.textContent = state.username || 'User';
+        // Dropdown already exists, nothing to update
       }
     } else {
       // Show "Get Pro" button
