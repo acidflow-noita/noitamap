@@ -39,8 +39,7 @@
     "nightmare": "ナイトメア",
     "biomeMap": "バイオームマップ",
     "biomeMapCaptured": "バイオームマップ キャプチャ済み",
-    "mapTestPng": "マップテスト PNG",
-    "mapDynamic": "ダイナミック"
+    "mapTestPng": "マップテスト PNG"
   },
   "badges": {
     "latest": "最新",
@@ -756,7 +755,17 @@
     "signedInAs": "ログイン中:",
     "follower": "フォロワー",
     "subscriber": "サブスクライバー",
-    "signOut": "ログアウト"
+    "signOut": "ログアウト",
+    "patron": "Patreon Supporter",
+    "getPro": "Get Pro",
+    "proFeatures": "Pro Features",
+    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
+    "featureDrawing": "Drawing & annotation tools",
+    "featureShare": "Share drawings via magic screenshots",
+    "featureSave": "Save & manage multiple drawings",
+    "loginWithPatreon": "Login with Patreon",
+    "becomePatron": "Become a Patron",
+    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
   },
   "loading": {
     "maps": "マップを読み込み中...",

@@ -1,0 +1,32 @@
+{
+  "name": "noitamap-auth",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-01-20",
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+  },
+  // Production environment (default)
+  "vars": {
+    "WORKER_URL": "https://noitamap-auth.wuote.workers.dev",
+    "ALLOWED_ORIGINS": "https://noitamap.com,https://dev.noitamap.com",
+  },
+  "env": {
+    // Development environment
+    "dev": {
+      "name": "noitamap-auth-dev",
+      "vars": {
+        "WORKER_URL": "https://noitamap-auth-dev.wuote.workers.dev",
+        "ALLOWED_ORIGINS": "https://dev.noitamap.com,http://localhost:5173,http://localhost:3000",
+      },
+    },
+    // Local development environment
+    "local": {
+      "name": "noitamap-auth-local",
+      "vars": {
+        "WORKER_URL": "http://localhost:8787",
+        "ALLOWED_ORIGINS": "http://localhost:5173,http://localhost:3000",
+      },
+    },
+  },
+}

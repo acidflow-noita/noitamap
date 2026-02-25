@@ -39,8 +39,7 @@
     "nightmare": "Кошмар",
     "biomeMap": "Карта біомів",
     "biomeMapCaptured": "Карта біомів захоплена",
-    "mapTestPng": "Тестова карта PNG",
-    "mapDynamic": "Динамічна"
+    "mapTestPng": "Тестова карта PNG"
   },
   "badges": {
     "latest": "Остання",
@@ -756,7 +755,17 @@
     "signedInAs": "Увійшли як",
     "follower": "Фоловер",
     "subscriber": "Підписник",
-    "signOut": "Вийти"
+    "signOut": "Вийти",
+    "patron": "Patreon Supporter",
+    "getPro": "Get Pro",
+    "proFeatures": "Pro Features",
+    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
+    "featureDrawing": "Drawing & annotation tools",
+    "featureShare": "Share drawings via magic screenshots",
+    "featureSave": "Save & manage multiple drawings",
+    "loginWithPatreon": "Login with Patreon",
+    "becomePatron": "Become a Patron",
+    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
   },
   "loading": {
     "maps": "Завантаження карт...",

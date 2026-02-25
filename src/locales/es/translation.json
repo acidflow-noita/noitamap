@@ -39,8 +39,7 @@
     "nightmare": "Pesadilla",
     "biomeMap": "Mapa de biomas",
     "biomeMapCaptured": "Mapa de biomas capturado",
-    "mapTestPng": "Mapa de prueba PNG",
-    "mapDynamic": "Dinámico"
+    "mapTestPng": "Mapa de prueba PNG"
   },
   "badges": {
     "latest": "Último",
@@ -756,7 +755,17 @@
     "signedInAs": "Sesión iniciada como",
     "follower": "Seguidor",
     "subscriber": "Suscriptor",
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "patron": "Patreon Supporter",
+    "getPro": "Get Pro",
+    "proFeatures": "Pro Features",
+    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
+    "featureDrawing": "Drawing & annotation tools",
+    "featureShare": "Share drawings via magic screenshots",
+    "featureSave": "Save & manage multiple drawings",
+    "loginWithPatreon": "Login with Patreon",
+    "becomePatron": "Become a Patron",
+    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
   },
   "loading": {
     "maps": "Cargando mapas...",

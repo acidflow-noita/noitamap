@@ -39,8 +39,7 @@
     "nightmare": "Alptraum",
     "biomeMap": "Biom-Karte",
     "biomeMapCaptured": "Biom-Karte erfasst",
-    "mapTestPng": "Karten-Test PNG",
-    "mapDynamic": "Dynamisch"
+    "mapTestPng": "Karten-Test PNG"
   },
   "badges": {
     "latest": "Neueste",
@@ -756,7 +755,17 @@
     "signedInAs": "Angemeldet als",
     "follower": "Follower",
     "subscriber": "Abonnent",
-    "signOut": "Abmelden"
+    "signOut": "Abmelden",
+    "patron": "Patreon Supporter",
+    "getPro": "Get Pro",
+    "proFeatures": "Pro Features",
+    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
+    "featureDrawing": "Drawing & annotation tools",
+    "featureShare": "Share drawings via magic screenshots",
+    "featureSave": "Save & manage multiple drawings",
+    "loginWithPatreon": "Login with Patreon",
+    "becomePatron": "Become a Patron",
+    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
   },
   "loading": {
     "maps": "Karten werden geladen...",

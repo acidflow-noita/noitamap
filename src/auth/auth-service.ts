@@ -1,5 +1,6 @@
 /**
- * Auth Service - Manages Twitch authentication state
+ * Auth Service - Manages authentication state (currently via Patreon OAuth)
+ * Stateless JWT-only auth — tokens expire after 24 hours.
  */
 
 export interface AuthState {
@@ -15,8 +16,6 @@ const AUTH_WORKER_URL =
     ? 'https://noitamap-auth-dev.wuote.workers.dev'
     : 'https://noitamap-auth.wuote.workers.dev';
 
-// Local storage keys for session backup
-const SESSION_KEY = 'noitamap_session';
 const JWT_KEY = 'noitamap_jwt';
 
 class AuthService {
@@ -30,31 +29,34 @@ class AuthService {
   private listeners: Set<(state: AuthState) => void> = new Set();
 
   /**
-   * Initialize auth state from URL params or cookie
+   * Initialize auth state from URL params or stored token
    */
   async init(): Promise<AuthState> {
-    // Check if we're returning from OAuth
+    const cleanUrl = new URL(window.location.href);
+    let shouldUpdateUrl = false;
+
     const urlParams = new URLSearchParams(window.location.search);
     const authResult = urlParams.get('auth');
-    const sessionFromUrl = urlParams.get('session');
     const tokenFromUrl = urlParams.get('token');
+    const errorFromUrl = urlParams.get('auth_error');
 
-    if (authResult === 'success' && sessionFromUrl) {
-      // Store session in localStorage as backup
-      localStorage.setItem(SESSION_KEY, sessionFromUrl);
-      if (tokenFromUrl) {
-        localStorage.setItem(JWT_KEY, tokenFromUrl);
-      }
+    if (errorFromUrl) {
+      console.error('Auth Error:', errorFromUrl);
+      cleanUrl.searchParams.delete('auth_error');
+      shouldUpdateUrl = true;
+    }
 
-      // Clean URL params
-      const cleanUrl = new URL(window.location.href);
+    if (authResult === 'success' && tokenFromUrl) {
+      localStorage.setItem(JWT_KEY, tokenFromUrl);
       cleanUrl.searchParams.delete('auth');
-      cleanUrl.searchParams.delete('session');
       cleanUrl.searchParams.delete('token');
+      shouldUpdateUrl = true;
+    }
+
+    if (shouldUpdateUrl) {
       window.history.replaceState({}, '', cleanUrl.toString());
     }
 
-    // Check auth status
     await this.checkAuth();
     return this.state;
   }
@@ -64,36 +66,35 @@ class AuthService {
    */
   async checkAuth(): Promise<AuthState> {
     try {
-      // Get session from localStorage
-      const storedSession = localStorage.getItem(SESSION_KEY);
-
-      // Build check URL with session if available
-      const checkUrl = new URL(`${AUTH_WORKER_URL}/auth/check`);
-      if (storedSession) {
-        checkUrl.searchParams.set('session', storedSession);
+      const storedToken = localStorage.getItem(JWT_KEY);
+      if (!storedToken) {
+        this.state = {
+          authenticated: false,
+          username: null,
+          isFollower: false,
+          isSubscriber: false,
+        };
+        this.notifyListeners();
+        return this.state;
       }
 
-      const response = await fetch(checkUrl.toString(), {
-        credentials: 'include',
-        headers: storedSession
-          ? {
-              Authorization: `Bearer ${storedSession}`,
-            }
-          : {},
+      const response = await fetch(`${AUTH_WORKER_URL}/auth/check`, {
+        headers: { Authorization: `Bearer ${storedToken}` },
       });
 
       if (response.ok) {
         const data = await response.json();
-        if (data.token) {
-          localStorage.setItem(JWT_KEY, data.token);
-        }
         this.state = {
           authenticated: data.authenticated,
           username: data.username || null,
           isFollower: data.isFollower || false,
           isSubscriber: data.isSubscriber || false,
         };
+        if (!data.authenticated) {
+          localStorage.removeItem(JWT_KEY);
+        }
       } else {
+        localStorage.removeItem(JWT_KEY);
         this.state = {
           authenticated: false,
           username: null,
@@ -116,36 +117,17 @@ class AuthService {
   }
 
   /**
-   * Start login flow - redirects to Twitch OAuth
+   * Start login flow - redirects to OAuth provider
    */
   login(): void {
-    // Include current URL as redirect destination
     const redirectUrl = encodeURIComponent(window.location.href);
     window.location.href = `${AUTH_WORKER_URL}/auth/login?redirect=${redirectUrl}`;
   }
 
   /**
-   * Logout - clear session
+   * Logout - clear token and reset state
    */
   async logout(): Promise<void> {
-    try {
-      const storedSession = localStorage.getItem(SESSION_KEY);
-
-      await fetch(`${AUTH_WORKER_URL}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: storedSession
-          ? {
-              Authorization: `Bearer ${storedSession}`,
-            }
-          : {},
-      });
-    } catch (error) {
-      console.error('Logout request failed:', error);
-    }
-
-    // Clear local storage regardless
-    localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(JWT_KEY);
 
     this.state = {

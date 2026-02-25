@@ -5,12 +5,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "deploy:dev": "wrangler deploy --env dev",
-    "db:create": "wrangler d1 create noitamap-auth",
-    "db:create:dev": "wrangler d1 create noitamap-auth-dev",
-    "db:migrate": "wrangler d1 migrations apply noitamap-auth",
-    "db:migrate:dev": "wrangler d1 migrations apply noitamap-auth-dev --env dev",
-    "db:migrate:local": "wrangler d1 migrations apply noitamap-auth-local --local"
+    "deploy:dev": "wrangler deploy --env dev"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260127.0",

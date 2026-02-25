@@ -39,8 +39,7 @@
     "nightmare": "Кошмар",
     "biomeMap": "Карта биомов",
     "biomeMapCaptured": "Карта биомов (захват)",
-    "mapTestPng": "Тестовая карта PNG",
-    "mapDynamic": "Динамическая"
+    "mapTestPng": "Тестовая карта PNG"
   },
   "badges": {
     "latest": "Последняя",
@@ -756,7 +755,17 @@
     "signedInAs": "Вы вошли как",
     "follower": "Фолловер",
     "subscriber": "Подписчик",
-    "signOut": "Выйти"
+    "signOut": "Выйти",
+    "patron": "Patreon Supporter",
+    "getPro": "Get Pro",
+    "proFeatures": "Pro Features",
+    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
+    "featureDrawing": "Drawing & annotation tools",
+    "featureShare": "Share drawings via magic screenshots",
+    "featureSave": "Save & manage multiple drawings",
+    "loginWithPatreon": "Login with Patreon",
+    "becomePatron": "Become a Patron",
+    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
   },
   "loading": {
     "maps": "Загрузка карт...",

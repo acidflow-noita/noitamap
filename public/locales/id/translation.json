@@ -39,8 +39,7 @@
     "deepEnd": "Deep End",
     "biomeMap": "Biome Map",
     "biomeMapCaptured": "Biome Map Captured",
-    "mapTestPng": "Map Test PNG",
-    "mapDynamic": "Dinamis"
+    "mapTestPng": "Map Test PNG"
   },
   "badges": {
     "latest": "Terbaru",
@@ -756,7 +755,17 @@
     "signedInAs": "Masuk sebagai",
     "follower": "Pengikut",
     "subscriber": "Pelanggan",
-    "signOut": "Keluar"
+    "signOut": "Keluar",
+    "patron": "Patreon Supporter",
+    "getPro": "Get Pro",
+    "proFeatures": "Pro Features",
+    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
+    "featureDrawing": "Drawing & annotation tools",
+    "featureShare": "Share drawings via magic screenshots",
+    "featureSave": "Save & manage multiple drawings",
+    "loginWithPatreon": "Login with Patreon",
+    "becomePatron": "Become a Patron",
+    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
   },
   "loading": {
     "maps": "Memuat peta...",
