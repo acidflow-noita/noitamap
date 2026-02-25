@@ -40,7 +40,7 @@ import { updateTranslations } from "./i18n-dom";
 import { initKonamiCode } from "./konami";
 import { AuthUI } from "./auth/auth-ui";
 import { authService } from "./auth/auth-service";
-import { shortenUrl } from "./drawing/link-shortener";
+import { DrawingUI } from "./drawing/drawing-ui";
 
 // Global reference to unified search for translation updates
 let globalUnifiedSearch: UnifiedSearch | null = null;
@@ -167,7 +167,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     osd: app.osd,
     osdElement: osdRootElement,
     getMap: () => app.getMap(),
-    setMap: (mapName: string) => app.setMap(asMapName(mapName) ?? (mapName as any)),  
+    setMap: (mapName: string) => app.setMap(asMapName(mapName) ?? (mapName as any)),
     updateURLWithSidebar,
     urlState: { sidebarOpen: urlState.sidebarOpen },
     setSearchMap: (mapName: string) => {
@@ -179,7 +179,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     getEnabledOverlays,
     overlayToShort: (key: string) => overlayToShort(key as any),
     showOverlay: (key: string, show: boolean) => {
-      const toggler = document.querySelector(`input.overlayToggler[data-overlay-key="${key}"]`) as HTMLInputElement | null;
+      const toggler = document.querySelector(
+        `input.overlayToggler[data-overlay-key="${key}"]`,
+      ) as HTMLInputElement | null;
       if (toggler) {
         toggler.checked = show;
       }
@@ -210,8 +212,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
-            console.warn("[Noitamap] Pro features require authentication/subscription.");
-            return false;
+          console.warn("[Noitamap] Pro features require authentication/subscription.");
+          return false;
         }
         throw new Error(`HTTP error ${response.status}`);
       }
@@ -237,18 +239,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
+  // Initialize Drawing UI (Brush Button)
+  // This handles the "Get Pro" modal for unauthed users and loads the pro bundle for subscribers
+  new DrawingUI(authContainer, {
+    onEnableDrawing: loadProBundle,
+  });
+
   // Initialize Drop Overlay
   setupDropOverlay(i18next, loadProBundle);
 
-  // Dynamically load the pro bundle when drawing is enabled (legacy check)
-  if (localStorage.getItem("noitamap-dev-drawing") === "1") {
+  // Dynamically load the pro bundle when drawing is enabled (legacy check) OR if URL requests sidebar
+  if (localStorage.getItem("noitamap-dev-drawing") === "1" || urlState.sidebarOpen) {
     loadProBundle();
   }
 
   // link to the app
   unifiedSearch.on("selected", (result: any) => {
     if (result.type === "spell") {
-      // Fill the search box with the spell name without triggering new search        
+      // Fill the search box with the spell name without triggering new search
       unifiedSearch.setSearchValueWithoutTriggering(result.spell.name);
       // Hide the search overlay
       const overlay = document.getElementById("unifiedSearchResultsOverlay");
@@ -272,7 +280,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!(currentMapLink instanceof HTMLElement)) return;
 
     // Remove "active" class from any nav links that still have it
-    document.querySelectorAll("#navLinksList .nav-link.active").forEach((el) => {     
+    document.querySelectorAll("#navLinksList .nav-link.active").forEach((el) => {
       el.classList.remove("active");
     });
 
@@ -280,7 +288,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     currentMapLink.classList.add("active");
   });
 
-  const loadingIndicator = assertElementById("loadingIndicator", HTMLElement);        
+  const loadingIndicator = assertElementById("loadingIndicator", HTMLElement);
   // show/hide loading indicator
   app.on("loading-change", (isLoading) => {
     loadingIndicator.style.display = isLoading ? "block" : "none";
@@ -367,11 +375,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     url.searchParams.delete("d");
 
-    let finalUrl = url.toString();
-    const shortUrl = await shortenUrl(finalUrl);
-    if (shortUrl) {
-      finalUrl = shortUrl;
-    }
+    const finalUrl = url.toString();
 
     window.navigator.clipboard
       .writeText(finalUrl)

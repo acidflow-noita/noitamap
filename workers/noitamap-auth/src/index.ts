@@ -65,14 +65,14 @@ interface PatreonTokenResponse {
 interface PatreonIdentityResponse {
   data: {
     id: string;
-    type: 'user';
+    type: "user";
     attributes: {
       full_name: string;
       image_url?: string;
     };
     relationships?: {
       memberships?: {
-        data: Array<{ id: string; type: 'member' }>;
+        data: Array<{ id: string; type: "member" }>;
       };
     };
   };
@@ -86,7 +86,7 @@ interface PatreonIdentityResponse {
     };
     relationships?: {
       campaign?: {
-        data: { type: 'campaign'; id: string };
+        data: { type: "campaign"; id: string };
       };
     };
   }>;
@@ -113,11 +113,11 @@ async function resolveSecrets(env: Env): Promise<Secrets> {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    const origin = request.headers.get('Origin') || '';
+    const origin = request.headers.get("Origin") || "";
     const allowedOrigin = getAllowedOrigin(origin, env);
 
     // CORS Preflight
-    if (request.method === 'OPTIONS') {
+    if (request.method === "OPTIONS") {
       return handleCORS(allowedOrigin);
     }
 
@@ -125,18 +125,18 @@ export default {
       const secrets = await resolveSecrets(env);
 
       switch (url.pathname) {
-        case '/auth/login':
+        case "/auth/login":
           return handlePatreonLogin(request, env, secrets);
-        case '/auth/callback':
+        case "/auth/callback":
           return handlePatreonCallback(request, env, secrets);
-        case '/auth/check':
+        case "/auth/check":
           return handleAuthCheck(request, secrets, allowedOrigin);
         default:
-          return new Response('Not Found', { status: 404 });
+          return new Response("Not Found", { status: 404 });
       }
     } catch (error) {
-      console.error('Worker Error:', error);
-      return new Response('Internal Server Error', { status: 500 });
+      console.error("Worker Error:", error);
+      return new Response("Internal Server Error", { status: 500 });
     }
   },
 };
@@ -145,7 +145,7 @@ export default {
 
 async function handlePatreonLogin(request: Request, env: Env, secrets: Secrets): Promise<Response> {
   const url = new URL(request.url);
-  const redirectUrl = url.searchParams.get('redirect') || '';
+  const redirectUrl = url.searchParams.get("redirect") || "";
 
   // Create a signed state token: base64url(payload).base64url(hmac)
   const expiresAt = Date.now() + STATE_EXPIRY_MS;
@@ -156,35 +156,35 @@ async function handlePatreonLogin(request: Request, env: Env, secrets: Secrets):
   const callbackUri = `${env.WORKER_URL}/auth/callback`;
 
   // Patreon OAuth V2 Authorization URL
-  const authUrl = new URL('https://www.patreon.com/oauth2/authorize');
-  authUrl.searchParams.set('response_type', 'code');
-  authUrl.searchParams.set('client_id', secrets.patreonClientId);
-  authUrl.searchParams.set('redirect_uri', callbackUri);
-  authUrl.searchParams.set('scope', 'identity.memberships');
-  authUrl.searchParams.set('state', state);
+  const authUrl = new URL("https://www.patreon.com/oauth2/authorize");
+  authUrl.searchParams.set("response_type", "code");
+  authUrl.searchParams.set("client_id", secrets.patreonClientId);
+  authUrl.searchParams.set("redirect_uri", callbackUri);
+  authUrl.searchParams.set("scope", "identity identity.memberships");
+  authUrl.searchParams.set("state", state);
 
   return Response.redirect(authUrl.toString(), 302);
 }
 
 async function handlePatreonCallback(request: Request, env: Env, secrets: Secrets): Promise<Response> {
   const url = new URL(request.url);
-  const code = url.searchParams.get('code');
-  const state = url.searchParams.get('state');
-  const error = url.searchParams.get('error');
+  const code = url.searchParams.get("code");
+  const state = url.searchParams.get("state");
+  const error = url.searchParams.get("error");
 
   // Validate & decode state
-  if (!state) return redirectToError(env, 'missing_state');
+  if (!state) return redirectToError(env, "missing_state");
 
   const statePayload = await verifyState(state, secrets.jwtSecret);
-  if (!statePayload) return redirectToError(env, 'invalid_state');
+  if (!statePayload) return redirectToError(env, "invalid_state");
 
-  const [redirectUrl, expiresAtStr] = statePayload.split('|');
+  const [redirectUrl, expiresAtStr] = statePayload.split("|");
   const expiresAt = parseInt(expiresAtStr, 10);
   if (isNaN(expiresAt) || Date.now() > expiresAt) {
-    return redirectToError(env, 'expired_state');
+    return redirectToError(env, "expired_state");
   }
 
-  const finalRedirectUrl = redirectUrl || 'https://noitamap.com';
+  const finalRedirectUrl = redirectUrl || "https://noitamap.com";
 
   if (error) {
     return Response.redirect(`${finalRedirectUrl}?auth_error=${encodeURIComponent(error)}`, 302);
@@ -195,12 +195,12 @@ async function handlePatreonCallback(request: Request, env: Env, secrets: Secret
 
   try {
     // 1. Exchange Code for Token
-    const tokenResponse = await fetch('https://www.patreon.com/api/oauth2/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    const tokenResponse = await fetch("https://www.patreon.com/api/oauth2/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         code,
-        grant_type: 'authorization_code',
+        grant_type: "authorization_code",
         client_id: secrets.patreonClientId,
         client_secret: secrets.patreonClientSecret,
         redirect_uri: `${env.WORKER_URL}/auth/callback`,
@@ -209,19 +209,19 @@ async function handlePatreonCallback(request: Request, env: Env, secrets: Secret
 
     if (!tokenResponse.ok) {
       const errText = await tokenResponse.text();
-      console.error('Patreon Token Error:', errText);
+      console.error("Patreon Token Error:", errText);
       return Response.redirect(`${finalRedirectUrl}?auth_error=token_exchange_failed`, 302);
     }
 
     const tokenData = (await tokenResponse.json()) as PatreonTokenResponse;
 
     // 2. Fetch Identity & Memberships
-    const identityUrl = new URL('https://www.patreon.com/api/oauth2/v2/identity');
-    identityUrl.searchParams.set('include', 'memberships,memberships.campaign');
-    identityUrl.searchParams.set('fields[user]', 'full_name,image_url');
+    const identityUrl = new URL("https://www.patreon.com/api/oauth2/v2/identity");
+    identityUrl.searchParams.set("include", "memberships,memberships.campaign");
+    identityUrl.searchParams.set("fields[user]", "full_name,image_url");
     identityUrl.searchParams.set(
-      'fields[member]',
-      'patron_status,currently_entitled_amount_cents,campaign_lifetime_support_cents'
+      "fields[member]",
+      "patron_status,currently_entitled_amount_cents,campaign_lifetime_support_cents",
     );
 
     const identityResponse = await fetch(identityUrl.toString(), {
@@ -230,7 +230,7 @@ async function handlePatreonCallback(request: Request, env: Env, secrets: Secret
 
     if (!identityResponse.ok) {
       const errText = await identityResponse.text();
-      console.error('Patreon Identity Error:', errText);
+      console.error("Patreon Identity Error:", errText);
       return Response.redirect(`${finalRedirectUrl}?auth_error=identity_fetch_failed`, 302);
     }
 
@@ -247,7 +247,7 @@ async function handlePatreonCallback(request: Request, env: Env, secrets: Secret
       isSubscriber = true;
     } else if (identityData.included) {
       for (const item of identityData.included) {
-        if (item.type !== 'member') continue;
+        if (item.type !== "member") continue;
 
         const campaignId = item.relationships?.campaign?.data?.id;
         if (secrets.patreonCampaignId && campaignId !== secrets.patreonCampaignId) {
@@ -256,10 +256,7 @@ async function handlePatreonCallback(request: Request, env: Env, secrets: Secret
 
         isFollower = true;
 
-        if (
-          item.attributes.patron_status === 'active_patron' &&
-          item.attributes.currently_entitled_amount_cents > 0
-        ) {
+        if (item.attributes.patron_status === "active_patron" && item.attributes.currently_entitled_amount_cents > 0) {
           isSubscriber = true;
         }
       }
@@ -270,33 +267,33 @@ async function handlePatreonCallback(request: Request, env: Env, secrets: Secret
     const jwt = await signJWT(
       {
         sub: user.id,
-        username: user.attributes.full_name || 'Patron',
+        username: user.attributes.full_name || "Patron",
         is_follower: isFollower,
         is_subscriber: isSubscriber,
         iat: now,
         exp: now + JWT_EXPIRY_SECONDS,
       },
-      secrets.jwtSecret
+      secrets.jwtSecret,
     );
 
     // 5. Redirect with Token
     const redirectUrlObj = new URL(finalRedirectUrl);
-    redirectUrlObj.searchParams.set('auth', 'success');
-    redirectUrlObj.searchParams.set('token', jwt);
+    redirectUrlObj.searchParams.set("auth", "success");
+    redirectUrlObj.searchParams.set("token", jwt);
 
     return new Response(null, {
       status: 302,
       headers: { Location: redirectUrlObj.toString() },
     });
   } catch (err) {
-    console.error('Callback Exception:', err);
+    console.error("Callback Exception:", err);
     return Response.redirect(`${finalRedirectUrl}?auth_error=server_error`, 302);
   }
 }
 
 async function handleAuthCheck(request: Request, secrets: Secrets, allowedOrigin: string): Promise<Response> {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
     return jsonResponse({ authenticated: false }, allowedOrigin);
   }
 
@@ -313,14 +310,14 @@ async function handleAuthCheck(request: Request, secrets: Secrets, allowedOrigin
       isFollower: payload.is_follower,
       isSubscriber: payload.is_subscriber,
     },
-    allowedOrigin
+    allowedOrigin,
   );
 }
 
 // -- Helpers --
 
 function getAllowedOrigin(origin: string, env: Env): string {
-  const allowed = env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
+  const allowed = env.ALLOWED_ORIGINS.split(",").map((o) => o.trim());
   return allowed.includes(origin) ? origin : allowed[0];
 }
 
@@ -328,11 +325,11 @@ function handleCORS(allowedOrigin: string): Response {
   return new Response(null, {
     status: 204,
     headers: {
-      'Access-Control-Allow-Origin': allowedOrigin,
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Max-Age': '86400',
+      "Access-Control-Allow-Origin": allowedOrigin,
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Credentials": "true",
+      "Access-Control-Max-Age": "86400",
     },
   });
 }
@@ -340,18 +337,18 @@ function handleCORS(allowedOrigin: string): Response {
 function jsonResponse(data: unknown, allowedOrigin: string): Response {
   return new Response(JSON.stringify(data), {
     headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': allowedOrigin,
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Allow-Credentials': 'true',
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": allowedOrigin,
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Credentials": "true",
     },
   });
 }
 
 function redirectToError(env: Env, error: string): Response {
-  const allowed = env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
-  const fallback = allowed[0] || 'https://noitamap.com';
+  const allowed = env.ALLOWED_ORIGINS.split(",").map((o) => o.trim());
+  const fallback = allowed[0] || "https://noitamap.com";
   return Response.redirect(`${fallback}?auth_error=${error}`, 302);
 }
 
@@ -359,41 +356,33 @@ function redirectToError(env: Env, error: string): Response {
 
 async function signState(payload: string, secret: string): Promise<string> {
   const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    enc.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
+  const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [
+    "sign",
+  ]);
   const payloadB64 = base64url(enc.encode(payload));
-  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(payloadB64));
+  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(payloadB64));
   return `${payloadB64}.${base64url(sig)}`;
 }
 
 async function verifyState(state: string, secret: string): Promise<string | null> {
-  const parts = state.split('.');
+  const parts = state.split(".");
   if (parts.length !== 2) return null;
   const [payloadB64, sigB64] = parts;
 
   const enc = new TextEncoder();
   try {
-    const key = await crypto.subtle.importKey(
-      'raw',
-      enc.encode(secret),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['verify']
-    );
-    const sigStr = sigB64.replace(/-/g, '+').replace(/_/g, '/');
+    const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [
+      "verify",
+    ]);
+    const sigStr = sigB64.replace(/-/g, "+").replace(/_/g, "/");
     const binSig = atob(sigStr);
     const sigBytes = new Uint8Array(binSig.length);
     for (let i = 0; i < binSig.length; i++) sigBytes[i] = binSig.charCodeAt(i);
 
-    const valid = await crypto.subtle.verify('HMAC', key, sigBytes, enc.encode(payloadB64));
+    const valid = await crypto.subtle.verify("HMAC", key, sigBytes, enc.encode(payloadB64));
     if (!valid) return null;
 
-    const payloadStr = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'));
+    const payloadStr = atob(payloadB64.replace(/-/g, "+").replace(/_/g, "/"));
     return payloadStr;
   } catch {
     return null;
@@ -404,53 +393,45 @@ async function verifyState(state: string, secret: string): Promise<string | null
 
 function base64url(data: ArrayBuffer | Uint8Array): string {
   const bytes = new Uint8Array(data);
-  let binary = '';
+  let binary = "";
   for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 async function signJWT(payload: JWTPayload, secret: string): Promise<string> {
   const enc = new TextEncoder();
-  const header = { alg: 'HS256', typ: 'JWT' };
+  const header = { alg: "HS256", typ: "JWT" };
   const headerB64 = base64url(enc.encode(JSON.stringify(header)));
   const payloadB64 = base64url(enc.encode(JSON.stringify(payload)));
   const input = `${headerB64}.${payloadB64}`;
 
-  const key = await crypto.subtle.importKey(
-    'raw',
-    enc.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(input));
+  const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [
+    "sign",
+  ]);
+  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(input));
   return `${input}.${base64url(sig)}`;
 }
 
 async function verifyJWT(token: string, secret: string): Promise<JWTPayload | null> {
-  const parts = token.split('.');
+  const parts = token.split(".");
   if (parts.length !== 3) return null;
   const [headerB64, payloadB64, sigB64] = parts;
   const input = `${headerB64}.${payloadB64}`;
   const enc = new TextEncoder();
 
   try {
-    const key = await crypto.subtle.importKey(
-      'raw',
-      enc.encode(secret),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['verify']
-    );
-    const sigStr = sigB64.replace(/-/g, '+').replace(/_/g, '/');
+    const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [
+      "verify",
+    ]);
+    const sigStr = sigB64.replace(/-/g, "+").replace(/_/g, "/");
     const binSig = atob(sigStr);
     const sigBytes = new Uint8Array(binSig.length);
     for (let i = 0; i < binSig.length; i++) sigBytes[i] = binSig.charCodeAt(i);
 
-    const valid = await crypto.subtle.verify('HMAC', key, sigBytes, enc.encode(input));
+    const valid = await crypto.subtle.verify("HMAC", key, sigBytes, enc.encode(input));
     if (!valid) return null;
 
-    const payloadStr = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'));
+    const payloadStr = atob(payloadB64.replace(/-/g, "+").replace(/_/g, "/"));
     const payload = JSON.parse(payloadStr) as JWTPayload;
 
     if (payload.exp < Date.now() / 1000) return null;

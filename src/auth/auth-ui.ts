@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Auth UI - Login button and "Get Pro" modal for navbar
  */
 
@@ -168,14 +168,7 @@ export class AuthUI {
     }
   }
 
-  private handleClick(): void {
-    const state = authService.getState();
-    if (!state.authenticated) {
-      this.showGetProModal();
-    }
-  }
-
-  private showGetProModal(): void {
+  public static showGetProModal(): void {
     // Remove existing modal if any
     const existing = document.getElementById('getProModal');
     if (existing) existing.remove();
@@ -232,6 +225,13 @@ export class AuthUI {
     modal.addEventListener('hidden.bs.modal', () => {
       modal.remove();
     });
+  }
+
+  private handleClick(): void {
+    const state = authService.getState();
+    if (!state.authenticated) {
+      AuthUI.showGetProModal();
+    }
   }
 
   private async handleLogout(): Promise<void> {
