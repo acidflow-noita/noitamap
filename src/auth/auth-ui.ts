@@ -244,7 +244,7 @@ export class AuthUI {
  * Requires active Patreon subscription
  */
 export function canUseDraw(): boolean {
-  return authService.isAuthenticated();
+  return authService.isSubscriber();
 }
 
 /**

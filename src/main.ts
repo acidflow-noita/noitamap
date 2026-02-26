@@ -39,7 +39,6 @@ import { createLanguageSelector } from "./language-selector";
 import { updateTranslations } from "./i18n-dom";
 import { initKonamiCode } from "./konami";
 import { AuthUI } from "./auth/auth-ui";
-import { authService } from "./auth/auth-service";
 import { DrawingUI } from "./drawing/drawing-ui";
 
 // Global reference to unified search for translation updates
@@ -197,24 +196,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     if ((window as any).noitamap_pro_loaded) return true;
 
     try {
-      const token = authService.getToken();
-      if (!token) {
-        // We log warning but still try fetch if server allows public access for viewer
-        console.warn("[Noitamap] No auth token found. Attempting to load pro features...");
-      }
-
       const proUrl = "https://noitamap-pro.acidflow.stream/pro.js";
       console.log("[Noitamap] Fetching pro features...");
 
-      const response = await fetch(proUrl, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const response = await fetch(proUrl);
 
       if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          console.warn("[Noitamap] Pro features require authentication/subscription.");
-          return false;
-        }
         throw new Error(`HTTP error ${response.status}`);
       }
 

@@ -44,12 +44,10 @@ declare global {
     getMap: () => string;
     /** Switch to a different map */
     setMap: (mapName: string) => Promise<void>;
-    /** Update the drawing param in the URL */
-    updateURLWithDrawing: (encoded: string | null) => void;
     /** Update the sidebar open/closed state in the URL */
     updateURLWithSidebar: (open: boolean) => void;
-    /** The URL state parsed at page load (drawing param, sidebar state, etc.) */
-    urlState: { drawing?: string; sidebarOpen?: boolean };
+    /** The URL state parsed at page load (sidebar state, etc.) */
+    urlState: { sidebarOpen?: boolean };
     /** Set the current map in unified search (so search results match after map change) */
     setSearchMap: (mapName: string) => void;
     /** Callback when map changes (so pro code can reset drawing state) */
@@ -58,6 +56,14 @@ declare global {
     getEnabledOverlays: () => string[];
     /** Map overlay key to short param */
     overlayToShort: (key: string) => string;
+    /** Toggle an overlay on/off and update URL */
+    showOverlay: (key: string, show: boolean) => void;
+    /** Drop overlay element (set by drop-overlay.ts) */
+    dropOverlay?: HTMLElement;
+    /** Pro handler for importing a drawing file (set by pro bundle) */
+    handleImportDrop?: (file: File) => Promise<void>;
+    /** Pro handler for vectorizing a dropped image (set by pro bundle) */
+    handleVectorizeDrop?: (file: File) => Promise<void>;
   }
 
   interface Window {
