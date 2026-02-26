@@ -856,13 +856,13 @@
       "renameTitle": "Rename drawing"
     },
     "auth": {
-      "subscriberOnly": "Rysowanie jest dostępne dla subskrybentów kanału Wuote na Twitch",
-      "signInPrompt": "Zaloguj się przez Twitch, aby uzyskać dostęp do narzędzi rysowania",
-      "signInButton": "Zaloguj przez Twitch",
+      "subscriberOnly": "Rysowanie jest dostępne dla członków Patreona",
+      "signInPrompt": "Zaloguj się przez Patreon, aby uzyskać dostęp do narzędzi rysowania",
+      "signInButton": "Zaloguj przez Patreon",
       "greeting": "Cześć, {{username}}!",
       "subscriberFeature": "Rysowanie to funkcja tylko dla subskrybentów",
-      "subscribePrompt": "Subskrybuj kanał Wuote na Twitch, aby odblokować narzędzia rysowania",
-      "subscribeButton": "Subskrybuj na Twitch",
+      "subscribePrompt": "Zostań członkiem Patreona, aby odblokować narzędzia rysowania",
+      "subscribeButton": "Wesprzyj na Patreonie",
       "signOut": "Wyloguj"
     },
     "warning": {

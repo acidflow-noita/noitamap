@@ -856,13 +856,13 @@
       "renameTitle": "Rename drawing"
     },
     "auth": {
-      "subscriberOnly": "El dibujo está disponible para los suscriptores de Twitch de Wuote",
-      "signInPrompt": "Inicia sesión con Twitch para acceder a las herramientas de dibujo",
-      "signInButton": "Iniciar sesión con Twitch",
+      "subscriberOnly": "El dibujo está disponible para los miembros de Patreon",
+      "signInPrompt": "Inicia sesión con Patreon para acceder a las herramientas de dibujo",
+      "signInButton": "Iniciar sesión con Patreon",
       "greeting": "¡Hola, {{username}}!",
       "subscriberFeature": "El dibujo es una función exclusiva para suscriptores",
-      "subscribePrompt": "Suscríbete al canal de Twitch de Wuote para desbloquear las herramientas de dibujo",
-      "subscribeButton": "Suscribirse en Twitch",
+      "subscribePrompt": "Hazte miembro de Patreon para desbloquear las herramientas de dibujo",
+      "subscribeButton": "Apoyar en Patreon",
       "signOut": "Cerrar sesión"
     },
     "warning": {

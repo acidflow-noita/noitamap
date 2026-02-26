@@ -36,6 +36,8 @@ declare global {
   interface NoitamapProHooks {
     /** Initialized i18next instance (shared so the pro bundle doesn't need its own) */
     i18next: typeof import('i18next').default;
+    /** Live auth service instance from the main app */
+    authService: typeof import('./src/auth/auth-service').authService;
     /** OpenSeadragon viewer instance */
     osd: OpenSeadragon.Viewer;
     /** The DOM element that contains the OSD viewer */

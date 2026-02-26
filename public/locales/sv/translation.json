@@ -856,13 +856,13 @@
       "renameTitle": "Rename drawing"
     },
     "auth": {
-      "subscriberOnly": "Ritning är tillgängligt för Wuotes Twitch-prenumeranter",
-      "signInPrompt": "Logga in med Twitch för att få tillgång till ritverktyg",
-      "signInButton": "Logga in med Twitch",
+      "subscriberOnly": "Ritning är tillgängligt för Patreon-medlemmar",
+      "signInPrompt": "Logga in med Patreon för att få tillgång till ritverktyg",
+      "signInButton": "Logga in med Patreon",
       "greeting": "Hej, {{username}}!",
       "subscriberFeature": "Ritning är en funktion endast för prenumeranter",
-      "subscribePrompt": "Prenumerera på Wuotes Twitch-kanal för att låsa upp ritverktyg",
-      "subscribeButton": "Prenumerera på Twitch",
+      "subscribePrompt": "Bli Patreon-medlem för att låsa upp ritverktyg",
+      "subscribeButton": "Stöd på Patreon",
       "signOut": "Logga ut"
     },
     "warning": {

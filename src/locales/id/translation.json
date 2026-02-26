@@ -856,13 +856,13 @@
       "renameTitle": "Rename drawing"
     },
     "auth": {
-      "subscriberOnly": "Menggambar tersedia untuk pelanggan Twitch Wuote",
-      "signInPrompt": "Masuk dengan Twitch untuk mengakses alat gambar",
-      "signInButton": "Masuk dengan Twitch",
+      "subscriberOnly": "Menggambar tersedia untuk anggota Patreon",
+      "signInPrompt": "Masuk dengan Patreon untuk mengakses alat gambar",
+      "signInButton": "Masuk dengan Patreon",
       "greeting": "Halo, {{username}}!",
       "subscriberFeature": "Menggambar adalah fitur khusus pelanggan",
-      "subscribePrompt": "Berlangganan kanal Twitch Wuote untuk membuka alat gambar",
-      "subscribeButton": "Berlangganan di Twitch",
+      "subscribePrompt": "Bergabung dengan Patreon untuk membuka alat gambar",
+      "subscribeButton": "Dukung di Patreon",
       "signOut": "Keluar"
     },
     "warning": {

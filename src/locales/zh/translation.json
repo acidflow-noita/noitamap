@@ -869,13 +869,13 @@
       "renameTitle": "Rename drawing"
     },
     "auth": {
-      "subscriberOnly": "绘图功能仅对 Wuote 的 Twitch 订阅者开放",
-      "signInPrompt": "通过 Twitch 登录以使用绘图工具",
-      "signInButton": "使用 Twitch 登录",
+      "subscriberOnly": "绘图功能仅对 Patreon 会员开放",
+      "signInPrompt": "通过 Patreon 登录以使用绘图工具",
+      "signInButton": "使用 Patreon 登录",
       "greeting": "你好，{{username}}！",
       "subscriberFeature": "绘图是订阅者专属功能",
-      "subscribePrompt": "订阅 Wuote 的 Twitch 频道以解锁绘图工具",
-      "subscribeButton": "在 Twitch 上订阅",
+      "subscribePrompt": "成为 Patreon 会员以解锁绘图工具",
+      "subscribeButton": "在 Patreon 上支持",
       "signOut": "退出登录"
     },
     "warning": {

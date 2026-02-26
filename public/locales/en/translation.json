@@ -871,13 +871,13 @@
       "importedTitle": "Imported drawing"
     },
     "auth": {
-      "subscriberOnly": "Drawing is available to Wuote's Twitch subscribers",
-      "signInPrompt": "Sign in with Twitch to access drawing tools",
-      "signInButton": "Sign in with Twitch",
+      "subscriberOnly": "Drawing is available to Patreon members",
+      "signInPrompt": "Sign in with Patreon to access drawing tools",
+      "signInButton": "Sign in with Patreon",
       "greeting": "Hi, {{username}}!",
       "subscriberFeature": "Drawing is a subscriber-only feature",
-      "subscribePrompt": "Subscribe to Wuote's Twitch channel to unlock drawing tools",
-      "subscribeButton": "Subscribe on Twitch",
+      "subscribePrompt": "Become a Patreon member to unlock drawing tools",
+      "subscribeButton": "Subscribe on Patreon",
       "signOut": "Sign out"
     },
     "warning": {

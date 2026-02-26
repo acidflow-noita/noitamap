@@ -856,13 +856,13 @@
       "renameTitle": "Rename drawing"
     },
     "auth": {
-      "subscriberOnly": "Kreslení je dostupné pro odběratele Wuoteho Twitch kanálu",
-      "signInPrompt": "Přihlaste se přes Twitch pro přístup k nástrojům kreslení",
-      "signInButton": "Přihlásit se přes Twitch",
+      "subscriberOnly": "Kreslení je dostupné pro členy Patreonu",
+      "signInPrompt": "Přihlaste se přes Patreon pro přístup k nástrojům kreslení",
+      "signInButton": "Přihlásit se přes Patreon",
       "greeting": "Ahoj, {{username}}!",
       "subscriberFeature": "Kreslení je funkce pouze pro odběratele",
-      "subscribePrompt": "Odebírejte Wuoteho Twitch kanál pro odemknutí nástrojů kreslení",
-      "subscribeButton": "Odebírat na Twitch",
+      "subscribePrompt": "Staňte se členem Patreonu pro odemknutí nástrojů kreslení",
+      "subscribeButton": "Podpořit na Patreonu",
       "signOut": "Odhlásit se"
     },
     "warning": {

@@ -856,13 +856,13 @@
       "renameTitle": "Rename drawing"
     },
     "auth": {
-      "subscriberOnly": "Piirtäminen on käytettävissä Wuoten Twitch-tilaajille",
-      "signInPrompt": "Kirjaudu Twitchillä päästäksesi piirtotyökaluihin",
-      "signInButton": "Kirjaudu Twitchillä",
+      "subscriberOnly": "Piirtäminen on käytettävissä Patreon-jäsenille",
+      "signInPrompt": "Kirjaudu Patreonilla päästäksesi piirtotyökaluihin",
+      "signInButton": "Kirjaudu Patreonilla",
       "greeting": "Hei, {{username}}!",
       "subscriberFeature": "Piirtäminen on vain tilaajille",
-      "subscribePrompt": "Tilaa Wuoten Twitch-kanava avataksesi piirtotyökalut",
-      "subscribeButton": "Tilaa Twitchissä",
+      "subscribePrompt": "Liity Patreon-jäseneksi avataksesi piirtotyökalut",
+      "subscribeButton": "Tue Patreonissa",
       "signOut": "Kirjaudu ulos"
     },
     "warning": {

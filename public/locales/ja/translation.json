@@ -856,13 +856,13 @@
       "renameTitle": "Rename drawing"
     },
     "auth": {
-      "subscriberOnly": "描画機能はWuoteのTwitchサブスクライバー限定です",
-      "signInPrompt": "描画ツールにアクセスするにはTwitchでログインしてください",
-      "signInButton": "Twitchでログイン",
+      "subscriberOnly": "描画機能はPatreonメンバー限定です",
+      "signInPrompt": "描画ツールにアクセスするにはPatreonでログインしてください",
+      "signInButton": "Patreonでログイン",
       "greeting": "こんにちは、{{username}}さん！",
       "subscriberFeature": "描画はサブスクライバー限定機能です",
-      "subscribePrompt": "WuoteのTwitchチャンネルを購読して描画ツールをアンロック",
-      "subscribeButton": "Twitchで購読する",
+      "subscribePrompt": "Patreonメンバーになって描画ツールをアンロック",
+      "subscribeButton": "Patreonで支援する",
       "signOut": "ログアウト"
     },
     "warning": {

@@ -856,13 +856,13 @@
       "renameTitle": "Rename drawing"
     },
     "auth": {
-      "subscriberOnly": "Tekenen is beschikbaar voor Wuote's Twitch-abonnees",
-      "signInPrompt": "Log in met Twitch om toegang te krijgen tot tekengereedschap",
-      "signInButton": "Inloggen met Twitch",
+      "subscriberOnly": "Tekenen is beschikbaar voor Patreon-leden",
+      "signInPrompt": "Log in met Patreon om toegang te krijgen tot tekengereedschap",
+      "signInButton": "Inloggen met Patreon",
       "greeting": "Hallo, {{username}}!",
       "subscriberFeature": "Tekenen is een functie alleen voor abonnees",
-      "subscribePrompt": "Abonneer op Wuote's Twitch-kanaal om tekengereedschap te ontgrendelen",
-      "subscribeButton": "Abonneren op Twitch",
+      "subscribePrompt": "Word Patreon-lid om tekengereedschap te ontgrendelen",
+      "subscribeButton": "Steunen op Patreon",
       "signOut": "Uitloggen"
     },
     "warning": {

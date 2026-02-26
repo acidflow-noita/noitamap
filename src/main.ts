@@ -39,6 +39,7 @@ import { createLanguageSelector } from "./language-selector";
 import { updateTranslations } from "./i18n-dom";
 import { initKonamiCode } from "./konami";
 import { AuthUI } from "./auth/auth-ui";
+import { authService } from "./auth/auth-service";
 import { DrawingUI } from "./drawing/drawing-ui";
 
 // Global reference to unified search for translation updates
@@ -163,6 +164,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Expose hooks for the pro bundle via window.__noitamap
   const proHooks: NoitamapProHooks = {
     i18next,
+    authService,
     osd: app.osd,
     osdElement: osdRootElement,
     getMap: () => app.getMap(),

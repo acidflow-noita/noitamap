@@ -856,13 +856,13 @@
       "renameTitle": "Rename drawing"
     },
     "auth": {
-      "subscriberOnly": "Zeichnen ist für Abonnenten von Wuotes Twitch-Kanal verfügbar",
-      "signInPrompt": "Melde dich mit Twitch an, um die Zeichenwerkzeuge zu nutzen",
-      "signInButton": "Mit Twitch anmelden",
+      "subscriberOnly": "Zeichnen ist für Patreon-Mitglieder verfügbar",
+      "signInPrompt": "Melde dich mit Patreon an, um die Zeichenwerkzeuge zu nutzen",
+      "signInButton": "Mit Patreon anmelden",
       "greeting": "Hallo, {{username}}!",
       "subscriberFeature": "Zeichnen ist eine Abonnenten-Funktion",
-      "subscribePrompt": "Abonniere Wuotes Twitch-Kanal, um die Zeichenwerkzeuge freizuschalten",
-      "subscribeButton": "Auf Twitch abonnieren",
+      "subscribePrompt": "Werde Patreon-Mitglied, um die Zeichenwerkzeuge freizuschalten",
+      "subscribeButton": "Auf Patreon unterstützen",
       "signOut": "Abmelden"
     },
     "warning": {
