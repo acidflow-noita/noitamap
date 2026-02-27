@@ -6,6 +6,25 @@ import fs from 'fs';
 const isProAvailable = fs.existsSync(resolve(__dirname, 'noitamap-pro/src/pro-entry.ts'));
 
 export default defineConfig({
+  plugins: [
+    {
+      name: 'og-meta-rewrite',
+      transformIndexHtml(html) {
+        const domain = process.env.SITE_DOMAIN || 'noitamap.com';
+        const siteUrl = `https://${domain}/`;
+        const ogImageFile = domain.includes('dev.') ? 'noitamap-dev-opengraph.png' : 'noitamap-opengraph.png';
+        const ogImage = `https://${domain}/assets/${ogImageFile}`;
+
+        return html
+          .replace(/content="https:\/\/map\.runfast\.stream\/"/g, `content="${siteUrl}"`)
+          .replace(
+            /content="https:\/\/map\.runfast\.stream\/assets\/noitamap-opengraph\.png"/g,
+            `content="${ogImage}"`,
+          )
+          .replace(/content="map\.runfast\.stream"/g, `content="${domain}"`);
+      },
+    },
+  ],
   resolve: {
     alias: isProAvailable
       ? {
