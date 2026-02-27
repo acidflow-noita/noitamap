@@ -39,7 +39,8 @@
     "nightmare": "Pesadelo",
     "biomeMap": "Mapa de biomas",
     "biomeMapCaptured": "Mapa de biomas capturado",
-    "mapTestPng": "Mapa de teste PNG"
+    "mapTestPng": "Mapa de teste PNG",
+    "mapDynamic": "Dinâmico"
   },
   "badges": {
     "latest": "Mais recente",

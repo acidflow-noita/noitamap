@@ -39,7 +39,8 @@
     "nightmare": "Nachtmerrie",
     "biomeMap": "Bioom kaart",
     "biomeMapCaptured": "Bioom kaart vastgelegd",
-    "mapTestPng": "Kaart test PNG"
+    "mapTestPng": "Kaart test PNG",
+    "mapDynamic": "Dynamisch"
   },
   "badges": {
     "latest": "Nieuwste",

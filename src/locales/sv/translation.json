@@ -39,7 +39,8 @@
     "nightmare": "Mardröm",
     "biomeMap": "Biomkarta",
     "biomeMapCaptured": "Biomkarta fångad",
-    "mapTestPng": "Karttest PNG"
+    "mapTestPng": "Karttest PNG",
+    "mapDynamic": "Dynamisk"
   },
   "badges": {
     "latest": "Senaste",

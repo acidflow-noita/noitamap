@@ -39,7 +39,8 @@
     "nightmare": "Koszmar",
     "biomeMap": "Mapa biomów",
     "biomeMapCaptured": "Przechwycona Mapa Biomów ",
-    "mapTestPng": "Mapa testowa PNG"
+    "mapTestPng": "Mapa testowa PNG",
+    "mapDynamic": "Dynamiczna"
   },
   "badges": {
     "latest": "Najnowsza",

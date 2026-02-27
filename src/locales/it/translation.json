@@ -39,7 +39,8 @@
     "nightmare": "Incubo",
     "biomeMap": "Mappa biomi",
     "biomeMapCaptured": "Mappa biomi catturata",
-    "mapTestPng": "Mappa test PNG"
+    "mapTestPng": "Mappa test PNG",
+    "mapDynamic": "Dinamica"
   },
   "badges": {
     "latest": "Ultimo",

@@ -241,5 +241,21 @@
     "patchDate": "2024-08-12",
     "seed": "78633191",
     "tileSets": ["middle"]
+  },
+  {
+    "key": "dynamic-main-branch",
+    "label": "Dynamic Map",
+    "labelKey": "maps.mapDynamic",
+    "badges": [
+      {
+        "label": "Special",
+        "labelKey": "badges.special",
+        "class": "text-bg-primary",
+        "icon": "bi bi-gear-wide-connected"
+      }
+    ],
+    "patchDate": "2025-01-25",
+    "seed": "78633191",
+    "tileSets": ["middle", "left", "right"]
   }
 ]
