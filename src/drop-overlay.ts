@@ -163,7 +163,8 @@ export function setupDropOverlay(
         await window.__noitamap.handleImportDrop(file);
       }
     } else if (isVectorize) {
-      // Reset active class but keep overlay visible
+      // Reset drag state and active class but keep overlay visible for progress
+      dragCounter = 0;
       importZone.classList.remove("active");
       vectorizeZone.classList.remove("active");
       // Let handler manage the rest (progress etc)
