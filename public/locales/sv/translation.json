@@ -764,7 +764,7 @@
     "featureDrawing": "Drawing & annotation tools",
     "featureShare": "Share drawings via magic screenshots",
     "featureSave": "Save & manage multiple drawings",
-    "loginWithPatreon": "Login with Patreon",
+    "loginWithPatreon": "Sign in with Patreon",
     "becomePatron": "Become a Patron",
     "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
   },
@@ -838,7 +838,7 @@
     },
     "import": {
       "noData": "Ingen ritdata hittades i denna WebP-fil",
-      "viewOnly": "Du kan visa delade ritningar:",
+      "viewOnly": "Att visa ritningar gjorda av andra är gratis, importera en ritning genom att dra och släppa den på kartan eller använd importknappen nedan",
       "dropHint": "Släpp en WebP- eller JSON-fil för att importera en ritning",
       "dropHintImport": "Importera Noitamap-anteckning",
       "dropHintImportTypes": "WebP eller JSON",

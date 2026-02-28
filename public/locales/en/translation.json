@@ -752,7 +752,7 @@
     "featureDrawing": "Drawing & annotation tools",
     "featureShare": "Share drawings via magic screenshots",
     "featureSave": "Save & manage multiple drawings",
-    "loginWithPatreon": "Login with Patreon",
+    "loginWithPatreon": "Sign in with Patreon",
     "becomePatron": "Become a Patron",
     "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
   },
@@ -846,7 +846,7 @@
     },
     "import": {
       "noData": "No drawing data found in this WebP file",
-      "viewOnly": "You can view shared drawings:",
+      "viewOnly": "Viewing drawings made by others is free, import a drawing by dragging and dropping it on top of the map or use the import button below",
       "dropHint": "Drop WebP or JSON file to import drawing",
       "dropHintImport": "Import Noitamap Annotation Drawing",
       "dropHintImportTypes": "WebP or JSON",

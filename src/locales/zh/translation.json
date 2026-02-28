@@ -764,7 +764,7 @@
     "featureDrawing": "Drawing & annotation tools",
     "featureShare": "Share drawings via magic screenshots",
     "featureSave": "Save & manage multiple drawings",
-    "loginWithPatreon": "Login with Patreon",
+    "loginWithPatreon": "Sign in with Patreon",
     "becomePatron": "Become a Patron",
     "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
   },
@@ -851,7 +851,7 @@
     },
     "import": {
       "noData": "在此 WebP 文件中未找到绘图数据",
-      "viewOnly": "您可以查看分享的绘图：",
+      "viewOnly": "查看其他人制作的绘图是免费的，将绘图拖放到地图上即可导入，或使用下方的导入按钮",
       "dropHint": "拖放WebP或JSON文件以导入绘图",
       "dropHintImport": "导入Noitamap标注绘图",
       "dropHintImportTypes": "WebP或JSON",

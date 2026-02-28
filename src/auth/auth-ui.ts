@@ -97,7 +97,7 @@ export class AuthUI {
     // Initial state placeholder
     wrapper.innerHTML = `
       <button id="authButton" class="btn btn-sm btn-outline-light" type="button">
-        <i class="bi bi-star me-1"></i>
+        <img src="assets/icons/website-icons/noitamap-pro-icon.svg" alt="" class="pro-icon">
         <span class="auth-text">${i18next.t('auth.getPro', 'Get Pro')}</span>
       </button>
     `;
@@ -130,7 +130,7 @@ export class AuthUI {
         dropdown.className = 'dropdown-menu dropdown-menu-end';
         dropdown.innerHTML = `
           ${state.isSubscriber
-            ? `<li><span class="dropdown-item-text text-success small"><i class="bi bi-check-circle-fill me-1"></i>${i18next.t('auth.proActive', 'Pro active')}</span></li>`
+            ? `<li><span class="dropdown-item-text text-success small"><img src="assets/icons/website-icons/noitamap-pro-icon.svg" alt="" class="pro-icon">${i18next.t('auth.proActive', 'Pro active')}</span></li>`
             : `<li><a class="dropdown-item small" href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer"><i class="bi bi-star me-1"></i>${i18next.t('auth.subscribeCta', 'Subscribe for Pro')}</a></li>`
           }
           <li><hr class="dropdown-divider"></li>
@@ -159,7 +159,7 @@ export class AuthUI {
       btn.className = 'btn btn-sm btn-outline-light';
       btn.removeAttribute('data-bs-toggle');
       btn.removeAttribute('aria-expanded');
-      btn.innerHTML = `<i class="bi bi-star me-1"></i> <span class="auth-text">${i18next.t('auth.getPro', 'Get Pro')}</span>`;
+      btn.innerHTML = `<img src="assets/icons/website-icons/noitamap-pro-icon.svg" alt="" class="pro-icon"> <span class="auth-text">${i18next.t('auth.getPro', 'Get Pro')}</span>`;
       this.button.classList.remove('dropdown');
 
       // Remove dropdown if exists
@@ -196,13 +196,13 @@ export class AuthUI {
               <li class="mb-2"><i class="bi bi-save me-2 text-info"></i>${i18next.t('auth.featureSave', 'Save & manage multiple drawings')}</li>
             </ul>
             <hr class="border-secondary">
-            <div class="d-grid gap-2">
+            <div class="d-flex flex-column align-items-center gap-2">
               <button id="patreonLoginBtn" class="btn-patreon">
                 ${PATREON_SYMBOL_WHITE}
-                ${i18next.t('auth.loginWithPatreon', 'Log in with Patreon')}
+                ${i18next.t('auth.loginWithPatreon', 'Sign in with Patreon')}
               </button>
-              <a href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary">
-                <i class="bi bi-box-arrow-up-right me-2"></i>${i18next.t('auth.becomePatron', 'Become a Patron')}
+              <a href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-box-arrow-up-right me-1"></i>${i18next.t('auth.becomePatron', 'Become a Patron')}
               </a>
             </div>
           </div>
