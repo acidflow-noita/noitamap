@@ -831,17 +831,18 @@
       "saveTitle": "Зберегти малюнок",
       "new": "Новий",
       "newTitle": "Почати новий малюнок",
-      "download": "Завантажити зображення",
+      "download": "Завантажити Зображення",
       "downloadTitle": "Завантажити малюнок як зображення",
-      "importWebp": "Імпорт",
+      "importWebp": "Імпорт Зображення",
       "importWebpTitle": "Імпортувати малюнок з WebP скріншота",
-      "exportJson": "Експорт JSON",
+      "exportJson": "Завантажити JSON",
       "exportJsonTitle": "Експортувати фігури у JSON",
       "openSource": "Відкрити джерело",
       "toggleFill": "Fill",
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file"
+      "importJsonTitle": "Import shapes from JSON file",
+      "label": "Actions"
     },
     "import": {
       "noData": "У цьому WebP файлі не знайдено даних малюнка",
@@ -900,6 +901,9 @@
       "processing": "Векторизація зображення...",
       "unsupportedFormat": "Непідтримуваний формат зображення",
       "errorDetail": "Векторизація не вдалася — зображення може бути занадто складним або фотографічним. Ця функція найкраще працює з піксель-артом та зображеннями з однотонними кольорами."
+    },
+    "exampleDrawings": {
+      "label": "Example Drawings"
     }
   }
 }

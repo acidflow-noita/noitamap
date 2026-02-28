@@ -824,17 +824,18 @@
       "saveTitle": "Tekening opslaan",
       "new": "Nieuw",
       "newTitle": "Nieuwe tekening starten",
-      "download": "Afbeelding downloaden",
+      "download": "Afbeelding Downloaden",
       "downloadTitle": "Tekening als afbeelding downloaden",
-      "importWebp": "Importeren",
+      "importWebp": "Afbeelding Importeren",
       "importWebpTitle": "Tekening importeren van WebP-screenshot",
-      "exportJson": "JSON exporteren",
+      "exportJson": "JSON Downloaden",
       "exportJsonTitle": "Vormen als JSON exporteren",
       "openSource": "Open bron",
       "toggleFill": "Fill",
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file"
+      "importJsonTitle": "Import shapes from JSON file",
+      "label": "Actions"
     },
     "import": {
       "noData": "Geen tekengegevens gevonden in dit WebP-bestand",
@@ -900,6 +901,9 @@
       "processing": "Afbeelding vectoriseren...",
       "unsupportedFormat": "Niet-ondersteund afbeeldingsformaat",
       "errorDetail": "Vectorisatie mislukt — de afbeelding is mogelijk te complex of fotografisch. Deze functie werkt het beste met pixel art en afbeeldingen met vlakke kleuren."
+    },
+    "exampleDrawings": {
+      "label": "Example Drawings"
     }
   }
 }

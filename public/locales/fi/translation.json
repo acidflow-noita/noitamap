@@ -824,17 +824,18 @@
       "saveTitle": "Tallenna piirros",
       "new": "Uusi",
       "newTitle": "Aloita uusi piirros",
-      "download": "Lataa kuva",
+      "download": "Lataa Kuva",
       "downloadTitle": "Lataa piirros kuvana",
-      "importWebp": "Tuo",
+      "importWebp": "Tuo Kuva",
       "importWebpTitle": "Tuo piirustus WebP-kuvakaappauksesta",
-      "exportJson": "Vie JSON",
+      "exportJson": "Lataa JSON",
       "exportJsonTitle": "Vie muodot JSON-muodossa",
       "openSource": "Avaa lähde",
       "toggleFill": "Fill",
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file"
+      "importJsonTitle": "Import shapes from JSON file",
+      "label": "Actions"
     },
     "import": {
       "noData": "Tässä WebP-tiedostossa ei ole piirustusdataa",
@@ -900,6 +901,9 @@
       "processing": "Vektoroidaan kuvaa...",
       "unsupportedFormat": "Kuvamuotoa ei tueta",
       "errorDetail": "Vektorointi epäonnistui — kuva voi olla liian monimutkainen tai valokuvamainen. Tämä toiminto toimii parhaiten pikselitaiteen ja tasavärikuvien kanssa."
+    },
+    "exampleDrawings": {
+      "label": "Example Drawings"
     }
   }
 }

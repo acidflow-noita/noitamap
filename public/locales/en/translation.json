@@ -820,6 +820,7 @@
       "solid": "100%"
     },
     "actions": {
+      "label": "Actions",
       "undo": "Undo",
       "undoTitle": "Undo (Ctrl+Z)",
       "redo": "Redo",
@@ -834,13 +835,13 @@
       "saveTitle": "Save drawing",
       "new": "New",
       "newTitle": "Start new drawing",
-      "download": "Download image",
+      "download": "Download Image",
       "downloadTitle": "Download drawing as image",
-      "importWebp": "Import",
+      "importWebp": "Import Image",
       "importWebpTitle": "Import drawing from WebP screenshot",
       "importJson": "Import JSON",
       "importJsonTitle": "Import shapes from JSON file",
-      "exportJson": "Export JSON",
+      "exportJson": "Download JSON",
       "exportJsonTitle": "Export shapes as JSON",
       "openSource": "Open Source"
     },
@@ -859,6 +860,9 @@
       "errorDetail": "Vectorization failed — the image may be too complex or photographic. This feature works best with pixel art and flat-color images.",
       "processing": "Vectorizing image...",
       "unsupportedFormat": "Unsupported image format"
+    },
+    "exampleDrawings": {
+      "label": "Example Drawings"
     },
     "savedDrawings": {
       "label": "Saved Drawings",

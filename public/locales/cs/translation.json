@@ -824,17 +824,18 @@
       "saveTitle": "Uložit kresbu",
       "new": "Nová",
       "newTitle": "Začít novou kresbu",
-      "download": "Stáhnout obrázek",
+      "download": "Stáhnout Obrázek",
       "downloadTitle": "Stáhnout kresbu jako obrázek",
-      "importWebp": "Importovat",
+      "importWebp": "Importovat Obrázek",
       "importWebpTitle": "Importovat kresbu ze snímku obrazovky WebP",
-      "exportJson": "Exportovat JSON",
+      "exportJson": "Stáhnout JSON",
       "exportJsonTitle": "Exportovat tvary jako JSON",
       "openSource": "Otevřít zdroj",
       "toggleFill": "Fill",
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file"
+      "importJsonTitle": "Import shapes from JSON file",
+      "label": "Actions"
     },
     "import": {
       "noData": "V tomto souboru WebP nebyly nalezeny žádné údaje o kresbě",
@@ -900,6 +901,9 @@
       "processing": "Vektorizace obrázku...",
       "unsupportedFormat": "Nepodporovaný formát obrázku",
       "errorDetail": "Vektorizace selhala — obrázek může být příliš složitý nebo fotografický. Tato funkce funguje nejlépe s pixel artem a obrázky s plochými barvami."
+    },
+    "exampleDrawings": {
+      "label": "Example Drawings"
     }
   }
 }

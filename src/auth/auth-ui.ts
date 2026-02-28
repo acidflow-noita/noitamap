@@ -73,6 +73,24 @@ export class AuthUI {
         background-color: rgba(255, 66, 77, 0.1);
         color: ${PATREON_COLOR};
       }
+      .btn-patron {
+        background-color: oklch(82.8% 0.189 84.429);
+        color: #000;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: background-color 0.2s;
+        text-decoration: none;
+      }
+      .btn-patron:hover {
+        background-color: oklch(77% 0.189 84.429);
+        color: #000;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -196,13 +214,13 @@ export class AuthUI {
               <li class="mb-2"><i class="bi bi-save me-2 text-info"></i>${i18next.t('auth.featureSave', 'Save & manage multiple drawings')}</li>
             </ul>
             <hr class="border-secondary">
-            <div class="d-flex flex-column align-items-center gap-2">
-              <button id="patreonLoginBtn" class="btn-patreon">
+            <div class="d-flex flex-column align-items-center gap-3">
+              <button id="patreonLoginBtn" class="btn-patreon w-75 justify-content-center">
                 ${PATREON_SYMBOL_WHITE}
                 ${i18next.t('auth.loginWithPatreon', 'Sign in with Patreon')}
               </button>
-              <a href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-box-arrow-up-right me-1"></i>${i18next.t('auth.becomePatron', 'Become a Patron')}
+              <a href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer" class="btn-patron w-75 justify-content-center">
+                <i class="bi bi-box-arrow-up-right"></i>${i18next.t('auth.becomePatron', 'Become a Patron')}
               </a>
             </div>
           </div>

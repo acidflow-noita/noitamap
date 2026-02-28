@@ -826,15 +826,16 @@
       "newTitle": "新しい描画を開始",
       "download": "画像をダウンロード",
       "downloadTitle": "描画を画像としてダウンロード",
-      "importWebp": "インポート",
+      "importWebp": "画像インポート",
       "importWebpTitle": "WebPスクリーンショットから描画をインポート",
-      "exportJson": "JSON エクスポート",
+      "exportJson": "JSON ダウンロード",
       "exportJsonTitle": "図形をJSONとしてエクスポート",
       "openSource": "ソースを開く",
       "toggleFill": "Fill",
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file"
+      "importJsonTitle": "Import shapes from JSON file",
+      "label": "Actions"
     },
     "import": {
       "noData": "このWebPファイルに描画データが見つかりません",
@@ -900,6 +901,9 @@
       "processing": "画像をベクター化中...",
       "unsupportedFormat": "サポートされていない画像形式",
       "errorDetail": "ベクター化に失敗しました — 画像が複雑すぎるか写真的である可能性があります。この機能はピクセルアートやフラットカラーの画像に最適です。"
+    },
+    "exampleDrawings": {
+      "label": "Example Drawings"
     }
   }
 }

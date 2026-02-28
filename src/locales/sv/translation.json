@@ -824,17 +824,18 @@
       "saveTitle": "Spara ritning",
       "new": "Ny",
       "newTitle": "Starta ny ritning",
-      "download": "Ladda ner bild",
+      "download": "Ladda ner Bild",
       "downloadTitle": "Ladda ner ritning som bild",
-      "importWebp": "Importera",
+      "importWebp": "Importera Bild",
       "importWebpTitle": "Importera ritning från WebP-skärmdump",
-      "exportJson": "Exportera JSON",
+      "exportJson": "Ladda ner JSON",
       "exportJsonTitle": "Exportera former som JSON",
       "openSource": "Öppna källkod",
       "toggleFill": "Fill",
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file"
+      "importJsonTitle": "Import shapes from JSON file",
+      "label": "Actions"
     },
     "import": {
       "noData": "Ingen ritdata hittades i denna WebP-fil",
@@ -900,6 +901,9 @@
       "processing": "Vektoriserar bild...",
       "unsupportedFormat": "Bildformat stöds inte",
       "errorDetail": "Vektoriseringen misslyckades — bilden kan vara för komplex eller fotografisk. Denna funktion fungerar bäst med pixelkonst och bilder med platta färger."
+    },
+    "exampleDrawings": {
+      "label": "Example Drawings"
     }
   }
 }

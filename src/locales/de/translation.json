@@ -824,17 +824,18 @@
       "saveTitle": "Zeichnung speichern",
       "new": "Neu",
       "newTitle": "Neue Zeichnung beginnen",
-      "download": "Bild herunterladen",
+      "download": "Bild Herunterladen",
       "downloadTitle": "Zeichnung als Bild herunterladen",
-      "importWebp": "Importieren",
+      "importWebp": "Bild Importieren",
       "importWebpTitle": "Zeichnung aus WebP-Screenshot importieren",
-      "exportJson": "JSON exportieren",
+      "exportJson": "JSON Herunterladen",
       "exportJsonTitle": "Formen als JSON exportieren",
       "openSource": "Quelle öffnen",
       "toggleFill": "Fill",
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file"
+      "importJsonTitle": "Import shapes from JSON file",
+      "label": "Actions"
     },
     "import": {
       "noData": "Keine Zeichnungsdaten in dieser WebP-Datei gefunden",
@@ -900,6 +901,9 @@
       "processing": "Bild wird vektorisiert...",
       "unsupportedFormat": "Nicht unterstütztes Bildformat",
       "errorDetail": "Vektorisierung fehlgeschlagen — das Bild ist möglicherweise zu komplex oder fotografisch. Diese Funktion funktioniert am besten mit Pixel-Art und Bildern mit flachen Farben."
+    },
+    "exampleDrawings": {
+      "label": "Example Drawings"
     }
   }
 }

@@ -833,15 +833,16 @@
       "saveTitle": "Сохранить рисунок",
       "new": "Новый",
       "newTitle": "Начать новый рисунок",
-      "download": "Скачать изображение",
+      "download": "Скачать Изображение",
       "downloadTitle": "Скачать рисунок как изображение",
-      "importWebp": "Импорт",
+      "importWebp": "Импорт Изображения",
       "importWebpTitle": "Импортировать рисунок из скриншота WebP",
-      "exportJson": "Экспорт JSON",
+      "exportJson": "Скачать JSON",
       "exportJsonTitle": "Экспортировать фигуры в JSON",
       "openSource": "Открыть источник",
       "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file"
+      "importJsonTitle": "Import shapes from JSON file",
+      "label": "Actions"
     },
     "import": {
       "noData": "В этом файле WebP не найдено данных рисунка",
@@ -900,6 +901,9 @@
       "processing": "Векторизация изображения...",
       "unsupportedFormat": "Неподдерживаемый формат изображения",
       "errorDetail": "Векторизация не удалась — изображение может быть слишком сложным или фотографическим. Эта функция лучше всего работает с пиксель-артом и изображениями с однотонными цветами."
+    },
+    "exampleDrawings": {
+      "label": "Example Drawings"
     }
   }
 }

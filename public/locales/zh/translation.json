@@ -839,15 +839,16 @@
       "newTitle": "开始新绘图",
       "download": "下载图片",
       "downloadTitle": "将绘图下载为图片",
-      "importWebp": "导入",
+      "importWebp": "导入图片",
       "importWebpTitle": "从 WebP 截图导入绘图",
-      "exportJson": "导出 JSON",
+      "exportJson": "下载 JSON",
       "exportJsonTitle": "将图形导出为 JSON",
       "openSource": "查看源码",
       "toggleFill": "Fill",
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file"
+      "importJsonTitle": "Import shapes from JSON file",
+      "label": "Actions"
     },
     "import": {
       "noData": "在此 WebP 文件中未找到绘图数据",
@@ -900,6 +901,9 @@
       "processing": "正在矢量化图片...",
       "unsupportedFormat": "不支持的图片格式",
       "errorDetail": "矢量化失败 — 图片可能过于复杂或为摄影图片。此功能最适合像素画和纯色图片。"
+    },
+    "exampleDrawings": {
+      "label": "Example Drawings"
     }
   }
 }

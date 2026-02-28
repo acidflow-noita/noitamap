@@ -824,17 +824,18 @@
       "saveTitle": "Zapisz rysunek",
       "new": "Nowy",
       "newTitle": "Rozpocznij nowy rysunek",
-      "download": "Pobierz obraz",
+      "download": "Pobierz Obraz",
       "downloadTitle": "Pobierz rysunek jako obraz",
-      "importWebp": "Importuj",
+      "importWebp": "Importuj Obraz",
       "importWebpTitle": "Importuj rysunek ze zrzutu ekranu WebP",
-      "exportJson": "Eksportuj JSON",
+      "exportJson": "Pobierz JSON",
       "exportJsonTitle": "Eksportuj kształty jako JSON",
       "openSource": "Otwórz źródło",
       "toggleFill": "Fill",
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file"
+      "importJsonTitle": "Import shapes from JSON file",
+      "label": "Actions"
     },
     "import": {
       "noData": "Nie znaleziono danych rysunku w tym pliku WebP",
@@ -900,6 +901,9 @@
       "processing": "Wektoryzacja obrazu...",
       "unsupportedFormat": "Nieobsługiwany format obrazu",
       "errorDetail": "Wektoryzacja nie powiodła się — obraz może być zbyt złożony lub fotograficzny. Ta funkcja działa najlepiej z pixel artem i obrazami o jednolitych kolorach."
+    },
+    "exampleDrawings": {
+      "label": "Example Drawings"
     }
   }
 }

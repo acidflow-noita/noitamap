@@ -824,17 +824,18 @@
       "saveTitle": "Simpan gambar",
       "new": "Baru",
       "newTitle": "Mulai gambar baru",
-      "download": "Unduh gambar",
+      "download": "Unduh Gambar",
       "downloadTitle": "Unduh gambar sebagai gambar",
-      "importWebp": "Impor",
+      "importWebp": "Impor Gambar",
       "importWebpTitle": "Impor gambar dari tangkapan layar WebP",
-      "exportJson": "Ekspor JSON",
+      "exportJson": "Unduh JSON",
       "exportJsonTitle": "Ekspor bentuk sebagai JSON",
       "openSource": "Buka sumber",
       "toggleFill": "Fill",
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file"
+      "importJsonTitle": "Import shapes from JSON file",
+      "label": "Actions"
     },
     "import": {
       "noData": "Tidak ada data gambar yang ditemukan di file WebP ini",
@@ -900,6 +901,9 @@
       "processing": "Memvektorisasi gambar...",
       "unsupportedFormat": "Format gambar tidak didukung",
       "errorDetail": "Vektorisasi gagal — gambar mungkin terlalu kompleks atau fotografis. Fitur ini bekerja paling baik dengan pixel art dan gambar berwarna datar."
+    },
+    "exampleDrawings": {
+      "label": "Example Drawings"
     }
   }
 }

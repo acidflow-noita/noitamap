@@ -143,6 +143,25 @@
   opacity: 0.7;
 }
 
+/* Stroke width & fill alpha button SVGs - match Bootstrap icon sizing */
+#stroke-buttons svg,
+#fill-alpha-buttons svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+
+/* Text tool button - wider than icon-only buttons, with gap to font sizes */
+label[data-tool="text"] {
+  min-width: calc(3 * 2rem);
+  margin-right: 0.6rem;
+}
+
+/* Example drawings placeholder - height of ~2 saved drawing items */
+.example-drawings-list {
+  min-height: calc(2 * 3.5rem);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .drawing-sidebar {

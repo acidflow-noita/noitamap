@@ -824,17 +824,18 @@
       "saveTitle": "Guardar dibujo",
       "new": "Nuevo",
       "newTitle": "Iniciar nuevo dibujo",
-      "download": "Descargar imagen",
+      "download": "Descargar Imagen",
       "downloadTitle": "Descargar dibujo como imagen",
-      "importWebp": "Importar",
+      "importWebp": "Importar Imagen",
       "importWebpTitle": "Importar dibujo de captura de pantalla WebP",
-      "exportJson": "Exportar JSON",
+      "exportJson": "Descargar JSON",
       "exportJsonTitle": "Exportar formas como JSON",
       "openSource": "Abrir fuente",
       "toggleFill": "Fill",
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file"
+      "importJsonTitle": "Import shapes from JSON file",
+      "label": "Actions"
     },
     "import": {
       "noData": "No se encontraron datos de dibujo en este archivo WebP",
@@ -900,6 +901,9 @@
       "processing": "Vectorizando imagen...",
       "unsupportedFormat": "Formato de imagen no soportado",
       "errorDetail": "La vectorización falló — la imagen puede ser demasiado compleja o fotográfica. Esta función funciona mejor con pixel art e imágenes de colores planos."
+    },
+    "exampleDrawings": {
+      "label": "Example Drawings"
     }
   }
 }
