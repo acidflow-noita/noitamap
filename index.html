@@ -132,6 +132,23 @@
           screenshots will show all the shapes at maximum quality, don't worry.
         </div>
       </div>
+      <div
+        id="vectorizeErrorToast"
+        class="toast text-danger-emphasis bg-danger-subtle border-danger"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        style="width: 25vw; min-width: 300px; max-width: 500px"
+      >
+        <div class="toast-header text-danger-emphasis bg-danger-subtle border-danger">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          <strong class="me-auto" data-i18n="drawing.vectorize.failedTitle">Vectorization failed</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" data-i18n="drawing.vectorize.failed">
+          The image may be too complex or photographic. This feature works best with pixel art and flat-color images.
+        </div>
+      </div>
     </div>
     <!-- Drawing sidebar container -->
     <div id="drawing-sidebar-container"></div>

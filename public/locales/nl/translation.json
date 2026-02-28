@@ -900,7 +900,9 @@
       "error": "Kan afbeelding niet vectoriseren",
       "processing": "Afbeelding vectoriseren...",
       "unsupportedFormat": "Niet-ondersteund afbeeldingsformaat",
-      "errorDetail": "Vectorisatie mislukt — de afbeelding is mogelijk te complex of fotografisch. Deze functie werkt het beste met pixel art en afbeeldingen met vlakke kleuren."
+      "errorDetail": "Vectorisatie mislukt — de afbeelding is mogelijk te complex of fotografisch. Deze functie werkt het beste met pixel art en afbeeldingen met vlakke kleuren.",
+      "failedTitle": "Vectorisatie mislukt",
+      "failed": "De afbeelding is mogelijk te complex of fotografisch. Deze functie werkt het beste met pixel art en afbeeldingen met vlakke kleuren."
     },
     "exampleDrawings": {
       "label": "Example Drawings"

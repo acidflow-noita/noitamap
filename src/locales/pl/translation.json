@@ -900,7 +900,9 @@
       "error": "Nie udało się zwektoryzować obrazu",
       "processing": "Wektoryzacja obrazu...",
       "unsupportedFormat": "Nieobsługiwany format obrazu",
-      "errorDetail": "Wektoryzacja nie powiodła się — obraz może być zbyt złożony lub fotograficzny. Ta funkcja działa najlepiej z pixel artem i obrazami o jednolitych kolorach."
+      "errorDetail": "Wektoryzacja nie powiodła się — obraz może być zbyt złożony lub fotograficzny. Ta funkcja działa najlepiej z pixel artem i obrazami o jednolitych kolorach.",
+      "failedTitle": "Wektoryzacja nie powiodła się",
+      "failed": "Obraz może być zbyt złożony lub fotograficzny. Ta funkcja działa najlepiej z pixel artem i obrazami o jednolitych kolorach."
     },
     "exampleDrawings": {
       "label": "Example Drawings"

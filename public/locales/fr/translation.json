@@ -900,7 +900,9 @@
       "error": "Échec de la vectorisation de l'image",
       "processing": "Vectorisation de l'image...",
       "unsupportedFormat": "Format d'image non pris en charge",
-      "errorDetail": "La vectorisation a échoué — l'image est peut-être trop complexe ou photographique. Cette fonctionnalité fonctionne mieux avec le pixel art et les images en aplats de couleurs."
+      "errorDetail": "La vectorisation a échoué — l'image est peut-être trop complexe ou photographique. Cette fonctionnalité fonctionne mieux avec le pixel art et les images en aplats de couleurs.",
+      "failedTitle": "La vectorisation a échoué",
+      "failed": "L'image est peut-être trop complexe ou photographique. Cette fonctionnalité fonctionne mieux avec le pixel art et les images en aplats de couleurs."
     },
     "exampleDrawings": {
       "label": "Example Drawings"

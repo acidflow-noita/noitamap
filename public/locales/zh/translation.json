@@ -900,7 +900,9 @@
       "error": "图片矢量化失败",
       "processing": "正在矢量化图片...",
       "unsupportedFormat": "不支持的图片格式",
-      "errorDetail": "矢量化失败 — 图片可能过于复杂或为摄影图片。此功能最适合像素画和纯色图片。"
+      "errorDetail": "矢量化失败 — 图片可能过于复杂或为摄影图片。此功能最适合像素画和纯色图片。",
+      "failedTitle": "矢量化失败",
+      "failed": "图片可能过于复杂或为摄影图片。此功能最适合像素画和纯色图片。"
     },
     "exampleDrawings": {
       "label": "Example Drawings"

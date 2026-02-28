@@ -859,7 +859,9 @@
       "error": "Failed to vectorize image",
       "errorDetail": "Vectorization failed — the image may be too complex or photographic. This feature works best with pixel art and flat-color images.",
       "processing": "Vectorizing image...",
-      "unsupportedFormat": "Unsupported image format"
+      "unsupportedFormat": "Unsupported image format",
+      "failedTitle": "Vectorization failed",
+      "failed": "The image may be too complex or photographic. This feature works best with pixel art and flat-color images."
     },
     "exampleDrawings": {
       "label": "Example Drawings"

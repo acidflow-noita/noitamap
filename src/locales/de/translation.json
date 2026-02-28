@@ -900,7 +900,9 @@
       "error": "Bild konnte nicht vektorisiert werden",
       "processing": "Bild wird vektorisiert...",
       "unsupportedFormat": "Nicht unterstütztes Bildformat",
-      "errorDetail": "Vektorisierung fehlgeschlagen — das Bild ist möglicherweise zu komplex oder fotografisch. Diese Funktion funktioniert am besten mit Pixel-Art und Bildern mit flachen Farben."
+      "errorDetail": "Vektorisierung fehlgeschlagen — das Bild ist möglicherweise zu komplex oder fotografisch. Diese Funktion funktioniert am besten mit Pixel-Art und Bildern mit flachen Farben.",
+      "failedTitle": "Vektorisierung fehlgeschlagen",
+      "failed": "Das Bild ist möglicherweise zu komplex oder fotografisch. Diese Funktion funktioniert am besten mit Pixel-Art und Bildern mit flachen Farben."
     },
     "exampleDrawings": {
       "label": "Example Drawings"

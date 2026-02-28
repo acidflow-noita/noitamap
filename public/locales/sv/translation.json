@@ -900,7 +900,9 @@
       "error": "Kunde inte vektorisera bilden",
       "processing": "Vektoriserar bild...",
       "unsupportedFormat": "Bildformat stöds inte",
-      "errorDetail": "Vektoriseringen misslyckades — bilden kan vara för komplex eller fotografisk. Denna funktion fungerar bäst med pixelkonst och bilder med platta färger."
+      "errorDetail": "Vektoriseringen misslyckades — bilden kan vara för komplex eller fotografisk. Denna funktion fungerar bäst med pixelkonst och bilder med platta färger.",
+      "failedTitle": "Vektoriseringen misslyckades",
+      "failed": "Bilden kan vara för komplex eller fotografisk. Denna funktion fungerar bäst med pixelkonst och bilder med platta färger."
     },
     "exampleDrawings": {
       "label": "Example Drawings"

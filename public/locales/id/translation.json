@@ -900,7 +900,9 @@
       "error": "Gagal memvektorisasi gambar",
       "processing": "Memvektorisasi gambar...",
       "unsupportedFormat": "Format gambar tidak didukung",
-      "errorDetail": "Vektorisasi gagal — gambar mungkin terlalu kompleks atau fotografis. Fitur ini bekerja paling baik dengan pixel art dan gambar berwarna datar."
+      "errorDetail": "Vektorisasi gagal — gambar mungkin terlalu kompleks atau fotografis. Fitur ini bekerja paling baik dengan pixel art dan gambar berwarna datar.",
+      "failedTitle": "Vektorisasi gagal",
+      "failed": "Gambar mungkin terlalu kompleks atau fotografis. Fitur ini bekerja paling baik dengan pixel art dan gambar berwarna datar."
     },
     "exampleDrawings": {
       "label": "Example Drawings"

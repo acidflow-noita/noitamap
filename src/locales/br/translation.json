@@ -900,7 +900,9 @@
       "error": "Falha ao vetorizar imagem",
       "processing": "Vetorizando imagem...",
       "unsupportedFormat": "Formato de imagem não suportado",
-      "errorDetail": "A vetorização falhou — a imagem pode ser muito complexa ou fotográfica. Este recurso funciona melhor com pixel art e imagens de cores planas."
+      "errorDetail": "A vetorização falhou — a imagem pode ser muito complexa ou fotográfica. Este recurso funciona melhor com pixel art e imagens de cores planas.",
+      "failedTitle": "A vetorização falhou",
+      "failed": "A imagem pode ser muito complexa ou fotográfica. Este recurso funciona melhor com pixel art e imagens de cores planas."
     },
     "exampleDrawings": {
       "label": "Example Drawings"

@@ -900,7 +900,9 @@
       "error": "Nepodařilo se vektorizovat obrázek",
       "processing": "Vektorizace obrázku...",
       "unsupportedFormat": "Nepodporovaný formát obrázku",
-      "errorDetail": "Vektorizace selhala — obrázek může být příliš složitý nebo fotografický. Tato funkce funguje nejlépe s pixel artem a obrázky s plochými barvami."
+      "errorDetail": "Vektorizace selhala — obrázek může být příliš složitý nebo fotografický. Tato funkce funguje nejlépe s pixel artem a obrázky s plochými barvami.",
+      "failedTitle": "Vektorizace selhala",
+      "failed": "Obrázek může být příliš složitý nebo fotografický. Tato funkce funguje nejlépe s pixel artem a obrázky s plochými barvami."
     },
     "exampleDrawings": {
       "label": "Example Drawings"

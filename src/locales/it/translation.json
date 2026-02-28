@@ -900,7 +900,9 @@
       "error": "Impossibile vettorializzare l'immagine",
       "processing": "Vettorializzazione immagine...",
       "unsupportedFormat": "Formato immagine non supportato",
-      "errorDetail": "La vettorializzazione è fallita — l'immagine potrebbe essere troppo complessa o fotografica. Questa funzione funziona meglio con pixel art e immagini a colori piatti."
+      "errorDetail": "La vettorializzazione è fallita — l'immagine potrebbe essere troppo complessa o fotografica. Questa funzione funziona meglio con pixel art e immagini a colori piatti.",
+      "failedTitle": "La vettorializzazione è fallita",
+      "failed": "L'immagine potrebbe essere troppo complessa o fotografica. Questa funzione funziona meglio con pixel art e immagini a colori piatti."
     },
     "exampleDrawings": {
       "label": "Example Drawings"
