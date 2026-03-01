@@ -852,7 +852,7 @@
       "dropHintImport": "Import Noitamap Annotation Drawing",
       "dropHintImportTypes": "WebP or JSON",
       "dropHintVectorize": "Vectorize Image",
-      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO"
     },
     "vectorize": {
       "noShapes": "No shapes could be extracted from this image",

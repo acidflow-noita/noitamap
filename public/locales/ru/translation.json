@@ -851,7 +851,7 @@
       "dropHintImport": "Импортировать аннотацию Noitamap",
       "dropHintImportTypes": "WebP или JSON",
       "dropHintVectorize": "Векторизовать изображение",
-      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO"
     },
     "savedDrawings": {
       "label": "Сохранённые рисунки",

@@ -844,7 +844,7 @@
       "dropHintImport": "Noitamap-Anmerkung importieren",
       "dropHintImportTypes": "WebP oder JSON",
       "dropHintVectorize": "Bild vektorisieren",
-      "dropHintVectorizeTypes": "PNG, JPG, WebP, SVG"
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO"
     },
     "savedDrawings": {
       "label": "Gespeicherte Zeichnungen",
