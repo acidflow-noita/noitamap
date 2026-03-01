@@ -90,7 +90,7 @@ class AuthService {
         this.state = {
           authenticated: data.authenticated,
           username: data.username || null,
-          nickname: data.vanity || data.first_name || data.nickname || null,
+          nickname: data.vanity || data.nickname || null,
           isFollower: data.isFollower || false,
           isSubscriber: data.isSubscriber || false,
         };
