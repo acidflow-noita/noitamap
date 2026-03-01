@@ -198,6 +198,29 @@ label[data-tool="text"] {
   pointer-events: auto;
 }
 
+.drop-overlay.hint {
+  animation: dropOverlayHint 5s ease-in-out forwards;
+}
+
+@keyframes dropOverlayHint {
+  0% {
+    opacity: 0;
+    visibility: visible;
+  }
+  10% {
+    opacity: 1;
+    visibility: visible;
+  }
+  90% {
+    opacity: 1;
+    visibility: visible;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
 /* Drop zones */
 .drop-zone {
   display: flex;

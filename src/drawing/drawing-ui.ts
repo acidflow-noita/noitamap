@@ -65,11 +65,13 @@ export class DrawingUI {
     if (!state.authenticated || !state.isSubscriber) {
       e.preventDefault(); // Stop checkbox from toggling
       AuthUI.showGetProModal();
-      return;
+      // We no longer return early here. We want to load the pro bundle anyway
+      // so the user can see the unauthenticated/non-subscriber sidebar state.
     }
 
-    // 2. User is subscriber
-    // If we are turning it ON, make sure Pro bundle is loaded
+    // 2. Load pro bundle if needed (regardless of subscriber status,
+    // since the sidebar now has an unauthenticated view).
+    // If we are turning it ON (or attempting to), make sure Pro bundle is loaded
     if (target.checked) {
       if (!(window as any).noitamap_pro_loaded) {
         e.preventDefault(); // Pause toggle while loading
