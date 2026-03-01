@@ -6,22 +6,24 @@
 export interface AuthState {
   authenticated: boolean;
   username: string | null;
+  nickname: string | null;
   isFollower: boolean;
   isSubscriber: boolean;
 }
 
 // Auth worker URL (configure based on environment)
 const AUTH_WORKER_URL =
-  window.location.hostname === 'localhost' || window.location.hostname.includes('dev.')
-    ? 'https://noitamap-auth-dev.wuote.workers.dev'
-    : 'https://noitamap-auth.wuote.workers.dev';
+  window.location.hostname === "localhost" || window.location.hostname.includes("dev.")
+    ? "https://noitamap-auth-dev.wuote.workers.dev"
+    : "https://noitamap-auth.wuote.workers.dev";
 
-const JWT_KEY = 'noitamap_jwt';
+const JWT_KEY = "noitamap_jwt";
 
 class AuthService {
   private state: AuthState = {
     authenticated: false,
     username: null,
+    nickname: null,
     isFollower: false,
     isSubscriber: false,
   };
@@ -36,25 +38,25 @@ class AuthService {
     let shouldUpdateUrl = false;
 
     const urlParams = new URLSearchParams(window.location.search);
-    const authResult = urlParams.get('auth');
-    const tokenFromUrl = urlParams.get('token');
-    const errorFromUrl = urlParams.get('auth_error');
+    const authResult = urlParams.get("auth");
+    const tokenFromUrl = urlParams.get("token");
+    const errorFromUrl = urlParams.get("auth_error");
 
     if (errorFromUrl) {
-      console.error('Auth Error:', errorFromUrl);
-      cleanUrl.searchParams.delete('auth_error');
+      console.error("Auth Error:", errorFromUrl);
+      cleanUrl.searchParams.delete("auth_error");
       shouldUpdateUrl = true;
     }
 
-    if (authResult === 'success' && tokenFromUrl) {
+    if (authResult === "success" && tokenFromUrl) {
       localStorage.setItem(JWT_KEY, tokenFromUrl);
-      cleanUrl.searchParams.delete('auth');
-      cleanUrl.searchParams.delete('token');
+      cleanUrl.searchParams.delete("auth");
+      cleanUrl.searchParams.delete("token");
       shouldUpdateUrl = true;
     }
 
     if (shouldUpdateUrl) {
-      window.history.replaceState({}, '', cleanUrl.toString());
+      window.history.replaceState({}, "", cleanUrl.toString());
     }
 
     await this.checkAuth();
@@ -71,6 +73,7 @@ class AuthService {
         this.state = {
           authenticated: false,
           username: null,
+          nickname: null,
           isFollower: false,
           isSubscriber: false,
         };
@@ -87,6 +90,7 @@ class AuthService {
         this.state = {
           authenticated: data.authenticated,
           username: data.username || null,
+          nickname: data.vanity || data.first_name || data.nickname || null,
           isFollower: data.isFollower || false,
           isSubscriber: data.isSubscriber || false,
         };
@@ -98,15 +102,17 @@ class AuthService {
         this.state = {
           authenticated: false,
           username: null,
+          nickname: null,
           isFollower: false,
           isSubscriber: false,
         };
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      console.error("Auth check failed:", error);
       this.state = {
         authenticated: false,
         username: null,
+        nickname: null,
         isFollower: false,
         isSubscriber: false,
       };
@@ -133,6 +139,7 @@ class AuthService {
     this.state = {
       authenticated: false,
       username: null,
+      nickname: null,
       isFollower: false,
       isSubscriber: false,
     };
@@ -185,7 +192,7 @@ class AuthService {
 
   private notifyListeners(): void {
     const state = this.getState();
-    this.listeners.forEach(listener => listener(state));
+    this.listeners.forEach((listener) => listener(state));
   }
 }
 
