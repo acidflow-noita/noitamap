@@ -64,6 +64,8 @@ declare global {
     showOverlay: (key: string, show: boolean) => void;
     /** Drop overlay element (set by drop-overlay.ts) */
     dropOverlay?: HTMLElement;
+    /** Reset drag counter and overlay state (set by drop-overlay.ts) */
+    resetDragState?: () => void;
     /** Pro handler for importing a drawing file (set by pro bundle) */
     handleImportDrop?: (file: File) => Promise<void>;
     /** Pro handler for vectorizing a dropped image (set by pro bundle) */

@@ -33,6 +33,12 @@ export function setupDropOverlay(i18next: any, loadProCallback: () => Promise<bo
   // Store reference in window so pro bundle can access it
   if (window.__noitamap) {
     window.__noitamap.dropOverlay = dropOverlay;
+    window.__noitamap.resetDragState = () => {
+      dragCounter = 0;
+      dropOverlay.classList.remove("visible");
+      importZone.classList.remove("active");
+      vectorizeZone.classList.remove("active");
+    };
   }
 
   document.addEventListener("dragenter", (e) => {

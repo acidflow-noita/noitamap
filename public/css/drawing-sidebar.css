@@ -1,5 +1,18 @@
 /* Drawing Sidebar Styles */
 
+/* Canvas background swatch icons */
+.canvas-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  outline: 1.5px solid #888;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+.canvas-swatch-black { background: #000; }
+.canvas-swatch-white { background: #fff; }
+
 .drawing-sidebar {
   position: fixed;
   top: 4.5rem;
