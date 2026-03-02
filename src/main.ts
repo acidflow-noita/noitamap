@@ -28,6 +28,7 @@ if (isDev) {
   console.log('[Noitamap] Dev mode detected, "noitamap" commands available.');
 }
 
+// temporary comment to force deploy to CF
 import { App } from "./app";
 import {
   parseURL,
