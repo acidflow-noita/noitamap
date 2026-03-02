@@ -116,6 +116,13 @@
   padding: 0.5rem;
   border-radius: 0.375rem !important;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Keep rename/delete buttons visible even when the drawing name is very long */
+.drawing-sidebar .list-group-item .rename,
+.drawing-sidebar .list-group-item .delete {
+  flex-shrink: 0;
 }
 
 .drawing-sidebar .list-group-item.active {
