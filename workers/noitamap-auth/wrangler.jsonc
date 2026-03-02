@@ -9,10 +9,9 @@
   // Production environment (default)
   "vars": {
     "WORKER_URL": "https://noitamap-auth.wuote.workers.dev",
-    "ALLOWED_ORIGINS": "https://noitamap.com,https://dev.noitamap.com",
+    "ALLOWED_ORIGINS": "https://noitamap.com,https://dev.noitamap.com,https://dynamic-map.noitamap.com,https://dynamic-map.noitamap.pages.dev",
   },
   // Secrets Store bindings (shared across environments)
-  // TODO: Fill in your store_id from the Cloudflare Secrets Store dashboard
   "secrets_store_secrets": [
     {
       "binding": "PATREON_CLIENT_ID",
@@ -38,7 +37,7 @@
       "name": "noitamap-auth-dev",
       "vars": {
         "WORKER_URL": "https://noitamap-auth-dev.wuote.workers.dev",
-        "ALLOWED_ORIGINS": "https://dev.noitamap.com,http://localhost:5173,http://localhost:3000",
+        "ALLOWED_ORIGINS": "https://dev.noitamap.com,http://localhost:5173,http://localhost:3000,https://dynamic-map.noitamap.com,https://dynamic-map.noitamap.pages.dev",
       },
       "secrets_store_secrets": [
         {
