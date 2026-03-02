@@ -790,7 +790,9 @@
       "circleFilled": "Vyplněný kruh",
       "ellipseFilled": "Vyplněná elipsa",
       "polygonFilled": "Vyplněný polygon",
-      "text": "Text"
+      "text": "Text",
+      "pointNoStroke": "Changing stroke width is not available for the dot tool",
+      "pointNoFill": "Changing fill transparency is not available for the dot tool"
     },
     "color": {
       "label": "Barva",
@@ -906,6 +908,12 @@
     },
     "exampleDrawings": {
       "label": "Example Drawings"
+    },
+    "canvas": {
+      "label": "Canvas",
+      "map": "Map",
+      "black": "Black",
+      "white": "White"
     }
   }
 }

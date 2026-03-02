@@ -17,13 +17,14 @@ import {
 export interface URLState extends Partial<AppState> {
   overlays?: OverlayKey[];
   sidebarOpen?: boolean;
+  canvas?: 'map' | 'black' | 'white';
 }
 
 /**
- * Desired URL param order: x, y, z (zoom), m (map), o (overlays), s (sidebar)
+ * Desired URL param order: x, y, z (zoom), m (map), o (overlays), s (sidebar), c (canvas)
  * Short params used for encoding, decoder accepts both short and long names
  */
-const PARAM_ORDER = ['x', 'y', 'z', 'm', 'o', 's'];
+const PARAM_ORDER = ['x', 'y', 'z', 'm', 'o', 's', 'c'];
 
 /**
  * Reorder URL search params to maintain consistent order
@@ -38,6 +39,7 @@ function reorderParams(url: URL): void {
     map: 'm',
     overlays: 'o',
     sidebar: 's',
+    canvas: 'c',
   };
 
   // Collect all params in desired order
@@ -123,7 +125,18 @@ export function parseURL(): URLState {
   const sidebarParam = getParam(url, 's', 'sidebar');
   const sidebarOpen = shortToSidebar(sidebarParam);
 
-  return { pos, map, overlays, sidebarOpen };
+  // Get canvas background - accept both short and long param names
+  const canvasParam = getParam(url, 'c', 'canvas');
+  let canvas: 'map' | 'black' | 'white' | undefined = undefined;
+  if (canvasParam === 'b' || canvasParam === 'black') {
+    canvas = 'black';
+  } else if (canvasParam === 'w' || canvasParam === 'white') {
+    canvas = 'white';
+  } else if (canvasParam === 'm' || canvasParam === 'map') {
+    canvas = 'map';
+  }
+
+  return { pos, map, overlays, sidebarOpen, canvas };
 }
 
 /**
@@ -183,6 +196,21 @@ export function updateURLWithSidebar(isOpen: boolean) {
     url.searchParams.set('s', shortValue);
   } else {
     url.searchParams.delete('s');
+  }
+  reorderParams(url);
+  window.history.replaceState(null, '', url.toString());
+}
+
+/**
+ * Update URL with canvas background state (uses short param name and short values)
+ */
+export function updateURLWithCanvas(canvas: 'map' | 'black' | 'white') {
+  const url = new URL(window.location.toString());
+  if (canvas === 'map') {
+    url.searchParams.delete('c');
+  } else {
+    const shortVal = canvas === 'black' ? 'b' : 'w';
+    url.searchParams.set('c', shortVal);
   }
   reorderParams(url);
   window.history.replaceState(null, '', url.toString());

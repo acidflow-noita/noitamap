@@ -26,6 +26,7 @@ import {
   getEnabledOverlays,
   updateURLWithOverlays,
   updateURLWithSidebar,
+  updateURLWithCanvas,
 } from "./data_sources/url";
 import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from "./data_sources/overlays";
 import { overlayToShort } from "./data_sources/param-mappings";
@@ -123,6 +124,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   globalApp = app;
   console.log(`[Noitamap] Active OSD drawer: ${(app.osd as any).drawer?.getType?.() ?? storedRenderer}`);
 
+  // Apply canvas background from URL
+  if (urlState.canvas) {
+    app.setBackground(urlState.canvas);
+  }
+
   // Apply overlays from URL
   if (urlState.overlays && urlState.overlays.length > 0) {
     for (const overlayKey of urlState.overlays) {
@@ -170,7 +176,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     getMap: () => app.getMap(),
     setMap: (mapName: string) => app.setMap(asMapName(mapName) ?? (mapName as any)),
     updateURLWithSidebar,
-    urlState: { sidebarOpen: urlState.sidebarOpen },
+    urlState: { sidebarOpen: urlState.sidebarOpen, canvas: urlState.canvas },
+    setBackground: (type: "map" | "black" | "white") => {
+      app.setBackground(type);
+      updateURLWithCanvas(type);
+    },
     setSearchMap: (mapName: string) => {
       if (_unifiedSearch) _unifiedSearch.currentMap = mapName as any;
     },

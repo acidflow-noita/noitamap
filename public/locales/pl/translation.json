@@ -790,7 +790,9 @@
       "circleFilled": "Wypełnione koło",
       "ellipseFilled": "Wypełniona elipsa",
       "polygonFilled": "Wypełniony wielokąt",
-      "text": "Tekst"
+      "text": "Tekst",
+      "pointNoStroke": "Changing stroke width is not available for the dot tool",
+      "pointNoFill": "Changing fill transparency is not available for the dot tool"
     },
     "color": {
       "label": "Kolor",
@@ -906,6 +908,12 @@
     },
     "exampleDrawings": {
       "label": "Example Drawings"
+    },
+    "canvas": {
+      "label": "Canvas",
+      "map": "Map",
+      "black": "Black",
+      "white": "White"
     }
   }
 }

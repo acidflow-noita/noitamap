@@ -790,7 +790,9 @@
       "circleFilled": "Gevulde cirkel",
       "ellipseFilled": "Gevulde ellips",
       "polygonFilled": "Gevulde polygoon",
-      "text": "Tekst"
+      "text": "Tekst",
+      "pointNoStroke": "Changing stroke width is not available for the dot tool",
+      "pointNoFill": "Changing fill transparency is not available for the dot tool"
     },
     "color": {
       "label": "Kleur",
@@ -906,6 +908,12 @@
     },
     "exampleDrawings": {
       "label": "Example Drawings"
+    },
+    "canvas": {
+      "label": "Canvas",
+      "map": "Map",
+      "black": "Black",
+      "white": "White"
     }
   }
 }

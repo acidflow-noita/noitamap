@@ -185,6 +185,19 @@ export class App extends EventEmitter2 {
     this.osd.viewport.fitBounds(this.osd.getCombinedItemsRect());
   }
 
+  public setBackground(type: 'map' | 'black' | 'white'): void {
+    const tiledImage = this.osd.world.getItemAt(0);
+    if (!tiledImage) return;
+
+    if (type === 'map') {
+      tiledImage.setOpacity(1);
+      this.osd.element.style.backgroundColor = '';
+    } else {
+      tiledImage.setOpacity(0);
+      this.osd.element.style.backgroundColor = type === 'black' ? '#000000' : '#ffffff';
+    }
+  }
+
   static async create({ mountTo, overlayButtons, initialState, useWebGL }: AppCreateOpts) {
     const mapName = initialState.map ?? 'regular-main-branch';
     const osd = new AppOSD(mountTo, useWebGL);

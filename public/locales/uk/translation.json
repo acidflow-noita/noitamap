@@ -790,7 +790,9 @@
       "rectangleFilled": "Заповнений прямокутник",
       "circleFilled": "Заповнене коло",
       "ellipseFilled": "Заповнений еліпс",
-      "polygonFilled": "Заповнений багатокутник"
+      "polygonFilled": "Заповнений багатокутник",
+      "pointNoStroke": "Changing stroke width is not available for the dot tool",
+      "pointNoFill": "Changing fill transparency is not available for the dot tool"
     },
     "fontSize": {
       "label": "Розмір шрифту",
@@ -906,6 +908,12 @@
     },
     "exampleDrawings": {
       "label": "Example Drawings"
+    },
+    "canvas": {
+      "label": "Canvas",
+      "map": "Map",
+      "black": "Black",
+      "white": "White"
     }
   }
 }

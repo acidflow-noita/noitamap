@@ -48,8 +48,10 @@ declare global {
     setMap: (mapName: string) => Promise<void>;
     /** Update the sidebar open/closed state in the URL */
     updateURLWithSidebar: (open: boolean) => void;
-    /** The URL state parsed at page load (sidebar state, etc.) */
-    urlState: { sidebarOpen?: boolean };
+    /** The URL state parsed at page load (sidebar state, canvas, etc.) */
+    urlState: { sidebarOpen?: boolean; canvas?: 'map' | 'black' | 'white' };
+    /** Set the canvas background and update URL */
+    setBackground: (type: 'map' | 'black' | 'white') => void;
     /** Set the current map in unified search (so search results match after map change) */
     setSearchMap: (mapName: string) => void;
     /** Callback when map changes (so pro code can reset drawing state) */

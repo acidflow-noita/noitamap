@@ -784,7 +784,9 @@
       "rectangleFilled": "Filled Rectangle",
       "circleFilled": "Filled Circle",
       "ellipseFilled": "Filled Ellipse",
-      "polygonFilled": "Filled Polygon"
+      "polygonFilled": "Filled Polygon",
+      "pointNoStroke": "Changing stroke width is not available for the dot tool",
+      "pointNoFill": "Changing fill transparency is not available for the dot tool"
     },
     "fontSize": {
       "label": "Font Size",
@@ -804,6 +806,12 @@
       "cyan": "Cyan",
       "blue": "Blue",
       "violet": "Violet"
+    },
+    "canvas": {
+      "label": "Canvas",
+      "map": "Map",
+      "black": "Black",
+      "white": "White"
     },
     "stroke": {
       "label": "Stroke Width",
