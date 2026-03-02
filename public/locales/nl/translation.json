@@ -791,8 +791,8 @@
       "ellipseFilled": "Gevulde ellips",
       "polygonFilled": "Gevulde polygoon",
       "text": "Tekst",
-      "pointNoStroke": "Changing stroke width is not available for the dot tool",
-      "pointNoFill": "Changing fill transparency is not available for the dot tool"
+      "pointNoStroke": "Het wijzigen van de lijndikte is niet beschikbaar voor het puntgereedschap",
+      "pointNoFill": "Het wijzigen van de vul-transparantie is niet beschikbaar voor het puntgereedschap"
     },
     "color": {
       "label": "Kleur",
@@ -907,13 +907,13 @@
       "failed": "De afbeelding is mogelijk te complex of fotografisch. Deze functie werkt het beste met pixel art en afbeeldingen met vlakke kleuren."
     },
     "exampleDrawings": {
-      "label": "Example Drawings"
+      "label": "Voorbeeldtekeningen"
     },
     "canvas": {
       "label": "Canvas",
-      "map": "Map",
-      "black": "Black",
-      "white": "White"
+      "map": "Kaart",
+      "black": "Zwart",
+      "white": "Wit"
     }
   }
 }

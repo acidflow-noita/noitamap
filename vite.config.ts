@@ -26,18 +26,23 @@ export default defineConfig({
     },
   ],
   resolve: {
-    alias: isProAvailable
-      ? {
-          'noitamap/data_sources/tile_data': resolve(__dirname, 'src/data_sources/tile_data.ts'),
-          'noitamap/data_sources/map_definitions': resolve(__dirname, 'src/data_sources/map_definitions.ts'),
-          'noitamap/data_sources/param-mappings': resolve(__dirname, 'src/data_sources/param-mappings.ts'),
-          'noitamap/data_sources/overlays': resolve(__dirname, 'src/data_sources/overlays.ts'),
-          'noitamap/app_osd': resolve(__dirname, 'src/app_osd.ts'),
-          'noitamap/util': resolve(__dirname, 'src/util.ts'),
-          'noitamap/auth/auth-service': resolve(__dirname, 'src/auth/auth-service.ts'),
-          'noitamap/i18n': resolve(__dirname, 'src/i18n.ts'),
-        }
-      : {},
+    alias: {
+      // Telescope submodule — always available (free feature)
+      'noita-telescope': resolve(__dirname, 'lib/noita-telescope/js'),
+      ...(isProAvailable
+        ? {
+            'noitamap/data_sources/tile_data': resolve(__dirname, 'src/data_sources/tile_data.ts'),
+            'noitamap/data_sources/map_definitions': resolve(__dirname, 'src/data_sources/map_definitions.ts'),
+            'noitamap/data_sources/param-mappings': resolve(__dirname, 'src/data_sources/param-mappings.ts'),
+            'noitamap/data_sources/overlays': resolve(__dirname, 'src/data_sources/overlays.ts'),
+            'noitamap/app_osd': resolve(__dirname, 'src/app_osd.ts'),
+            'noitamap/util': resolve(__dirname, 'src/util.ts'),
+            'noitamap/auth/auth-service': resolve(__dirname, 'src/auth/auth-service.ts'),
+            'noitamap/i18n': resolve(__dirname, 'src/i18n.ts'),
+            'noitamap/data-archive': resolve(__dirname, 'src/data-archive.ts'),
+          }
+        : {}),
+    },
   },
   build: {
     outDir: 'dist',

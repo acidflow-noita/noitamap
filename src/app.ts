@@ -218,7 +218,7 @@ export class App extends EventEmitter2 {
   }
 
   static async create({ mountTo, overlayButtons, initialState, useWebGL }: AppCreateOpts) {
-    const mapName = initialState.map ?? 'regular-main-branch';
+    const mapName = initialState.map ?? 'dynamic-main-branch';
     const osd = new AppOSD(mountTo, useWebGL);
 
     // if we do not have an initial position, we have to fully initialize

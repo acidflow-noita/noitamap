@@ -791,8 +791,8 @@
       "ellipseFilled": "Elipse preenchida",
       "polygonFilled": "Polígono preenchido",
       "text": "Texto",
-      "pointNoStroke": "Changing stroke width is not available for the dot tool",
-      "pointNoFill": "Changing fill transparency is not available for the dot tool"
+      "pointNoStroke": "A alteração da espessura do traço não está disponível para a ferramenta de ponto",
+      "pointNoFill": "A alteração da transparência do preenchimento não está disponível para a ferramenta de ponto"
     },
     "color": {
       "label": "Cor",
@@ -907,13 +907,13 @@
       "failed": "A imagem pode ser muito complexa ou fotográfica. Este recurso funciona melhor com pixel art e imagens de cores planas."
     },
     "exampleDrawings": {
-      "label": "Example Drawings"
+      "label": "Desenhos de Exemplo"
     },
     "canvas": {
-      "label": "Canvas",
-      "map": "Map",
-      "black": "Black",
-      "white": "White"
+      "label": "Tela",
+      "map": "Mapa",
+      "black": "Preto",
+      "white": "Branco"
     }
   }
 }

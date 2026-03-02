@@ -791,8 +791,8 @@
       "ellipseFilled": "Täytetty ellipsi",
       "polygonFilled": "Täytetty polygoni",
       "text": "Teksti",
-      "pointNoStroke": "Changing stroke width is not available for the dot tool",
-      "pointNoFill": "Changing fill transparency is not available for the dot tool"
+      "pointNoStroke": "Viivan paksuuden muuttaminen ei ole käytettävissä pistetyökalulle",
+      "pointNoFill": "Täytön läpinäkyvyyden muuttaminen ei ole käytettävissä pistetyökalulle"
     },
     "color": {
       "label": "Väri",
@@ -907,13 +907,13 @@
       "failed": "Kuva voi olla liian monimutkainen tai valokuvamainen. Tämä toiminto toimii parhaiten pikselitaiteen ja tasavärikuvien kanssa."
     },
     "exampleDrawings": {
-      "label": "Example Drawings"
+      "label": "Esimerkkipiirrokset"
     },
     "canvas": {
-      "label": "Canvas",
-      "map": "Map",
-      "black": "Black",
-      "white": "White"
+      "label": "Kangas",
+      "map": "Kartta",
+      "black": "Musta",
+      "white": "Valkoinen"
     }
   }
 }

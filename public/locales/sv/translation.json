@@ -791,8 +791,8 @@
       "ellipseFilled": "Fylld ellips",
       "polygonFilled": "Fylld polygon",
       "text": "Text",
-      "pointNoStroke": "Changing stroke width is not available for the dot tool",
-      "pointNoFill": "Changing fill transparency is not available for the dot tool"
+      "pointNoStroke": "Ändring av linjetjocklek är inte tillgänglig för punktverktyget",
+      "pointNoFill": "Ändring av fyllningens transparens är inte tillgänglig för punktverktyget"
     },
     "color": {
       "label": "Färg",
@@ -907,13 +907,13 @@
       "failed": "Bilden kan vara för komplex eller fotografisk. Denna funktion fungerar bäst med pixelkonst och bilder med platta färger."
     },
     "exampleDrawings": {
-      "label": "Example Drawings"
+      "label": "Exempelritningar"
     },
     "canvas": {
-      "label": "Canvas",
-      "map": "Map",
-      "black": "Black",
-      "white": "White"
+      "label": "Duk",
+      "map": "Karta",
+      "black": "Svart",
+      "white": "Vit"
     }
   }
 }

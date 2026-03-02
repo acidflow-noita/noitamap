@@ -1,5 +1,8 @@
 import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
 import { setupDropOverlay } from "./drop-overlay";
+import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed } from "./dynamic_ui";
+import { runDynamicMapFromURL, runDynamicMap, clearDynamicMap, getCurrentDynamicSeed, getCurrentIsDaily } from "./dynamic-map";
+import type { DynamicPOI } from "./dynamic-map";
 
 // --- Dev Console Commands (Early Initialization) ---
 const isDev =
@@ -110,7 +113,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Initialize renderer from storage
   const storedRenderer = getStoredRenderer();
-  rendererForm.elements["renderer"].value = storedRenderer;
+  (rendererForm.elements as any)["renderer"].value = storedRenderer;
 
   // Parse URL state including overlays and drawing
   const urlState = parseURL();
@@ -166,6 +169,30 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Store global reference for translation updates
   globalUnifiedSearch = unifiedSearch;
   _unifiedSearch = unifiedSearch;
+
+  // ── Dynamic map setup ─────────────────────────────────────────────────────
+  const dynamicOpts = {
+    viewer: app.osd,
+    onLoadingChange: (isLoading: boolean) => {
+      loadingIndicator.style.display = isLoading ? 'block' : 'none';
+    },
+    onSeedResolved: (seed: number, isDaily: boolean) => {
+      setDynamicUISeed(seed, isDaily);
+    },
+    onPOIsReady: (pois: DynamicPOI[]) => {
+      unifiedSearch.setDynamicPOIs(pois);
+    },
+  };
+
+  createDynamicUI(dynamicOpts);
+  updateDynamicUIVisibility(app.getMap());
+
+  // Auto-start generation if landing on dynamic map
+  if (app.getMap() === 'dynamic-main-branch') {
+    runDynamicMapFromURL(dynamicOpts).catch(e =>
+      console.error('[Noitamap] Dynamic map init failed:', e)
+    );
+  }
 
   // Expose hooks for the pro bundle via window.__noitamap
   const proHooks: NoitamapProHooks = {
@@ -308,11 +335,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    // jQuery isn't in scope, so we can't manually hide the toggle after
-    // the user clicks an item. let the event bubble so Bootstrap can close
-    // the dropdown after a click
-    // ev.stopPropagation();
-
     // Blur to restore hotkey focus to document
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
@@ -323,10 +345,26 @@ document.addEventListener("DOMContentLoaded", async () => {
       cb(mapName);
     }
 
+    // Switching AWAY from dynamic → clear overlays and POI index
+    if (app.getMap() === 'dynamic-main-branch' && mapName !== 'dynamic-main-branch') {
+      clearDynamicMap(app.osd);
+      unifiedSearch.setDynamicPOIs([]);
+    }
+
     // load the new map
     app.setMap(mapName);
     // set which map we're searching
     unifiedSearch.currentMap = mapName;
+
+    // Show/hide dynamic toolbar
+    updateDynamicUIVisibility(mapName);
+
+    // Switching TO dynamic → start generation
+    if (mapName === 'dynamic-main-branch') {
+      runDynamicMapFromURL(dynamicOpts).catch(e =>
+        console.error('[Noitamap] Dynamic map switch failed:', e)
+      );
+    }
   });
 
   // manage css classes to show / hide overlays
@@ -373,6 +411,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       url.searchParams.delete("o");
     }
     url.searchParams.delete("d");
+
+    // Include seed params when on dynamic map so shared link reproduces the same map
+    if (app.getMap() === 'dynamic-main-branch') {
+      const seed = getCurrentDynamicSeed();
+      const isDaily = getCurrentIsDaily();
+      if (seed !== null) {
+        url.searchParams.set('se', String(seed));
+        if (isDaily) url.searchParams.set('ds', '1');
+        else url.searchParams.delete('ds');
+      }
+    }
 
     const finalUrl = url.toString();
 

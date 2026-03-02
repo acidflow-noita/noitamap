@@ -8,6 +8,7 @@ import { gameTranslator } from '../game-translations/translator';
 import i18next from '../i18n';
 import spells from '../data/spells.json';
 import { EventEmitter2 } from 'eventemitter2';
+import type { DynamicPOI } from '../dynamic-map';
 
 export type UnifiedSearchCreateOptions = {
   currentMap: MapName;
@@ -33,6 +34,7 @@ export class UnifiedSearch extends EventEmitter2 {
   private searchInput: HTMLInputElement;
   private activeFilters: Set<string> = new Set();
   private searchResults: UnifiedSearchResults;
+  private dynamicPOIs: DynamicPOI[] = [];
 
   public currentMap: MapName;
 
@@ -108,6 +110,16 @@ export class UnifiedSearch extends EventEmitter2 {
     this.lastSearchText = value;
   }
 
+  /** Replace the dynamic POI index (called by the generation pipeline). */
+  setDynamicPOIs(pois: DynamicPOI[]): void {
+    this.dynamicPOIs = pois;
+    // If the user already has text in the search box, refresh immediately
+    if (this.searchInput.value.trim() !== '') {
+      this.lastSearchText = '';
+      this.updateSearchResults();
+    }
+  }
+
   // Method to refresh search results with new translations
   refreshTranslations() {
     if (this.searchInput.value.trim() !== '') {
@@ -129,6 +141,56 @@ export class UnifiedSearch extends EventEmitter2 {
       return;
     }
 
+    const isDynamic = this.currentMap === 'dynamic-main-branch';
+
+    if (isDynamic) {
+      // Dynamic map: search dynamic POIs only (no spells, no static overlays)
+      const searchLower = searchText.toLowerCase();
+
+      // Read player position from URL for proximity sorting
+      const urlParams = new URLSearchParams(window.location.search);
+      const playerX = parseFloat(urlParams.get('x') ?? '') || null;
+      const playerY = parseFloat(urlParams.get('y') ?? '') || null;
+
+      const CHUNK_SIZE = 512;
+
+      let matched = this.dynamicPOIs.filter(p => {
+        const name = (p.name ?? p.type ?? '').toLowerCase();
+        const item = (p.item ?? '').toLowerCase();
+        return name.includes(searchLower) || item.includes(searchLower) || p.type.toLowerCase().includes(searchLower);
+      });
+
+      // Sort by proximity if player position is known
+      if (playerX !== null && playerY !== null) {
+        matched = matched.slice().sort((a, b) => {
+          const da = Math.hypot(a.worldX - playerX, a.worldY - playerY);
+          const db = Math.hypot(b.worldX - playerX, b.worldY - playerY);
+          return da - db;
+        });
+      }
+
+      // Convert to UnifiedSearchResult shape (overlayType: 'poi')
+      const dynamicResults: UnifiedSearchResult[] = matched.slice(0, 50).map(p => {
+        const chunksAway = (playerX !== null && playerY !== null)
+          ? Math.round(Math.hypot(p.worldX - playerX, p.worldY - playerY) / CHUNK_SIZE)
+          : null;
+        return {
+          overlayType: 'poi' as const,
+          name: p.name ?? p.type,
+          displayName: p.name ?? p.type,
+          x: p.worldX,
+          y: p.worldY,
+          maps: ['dynamic-main-branch' as MapName],
+          chunksAway,
+          isDynamic: true,
+        } as any;
+      });
+
+      this.searchResults.setResults(dynamicResults);
+      return;
+    }
+
+    // Static map path
     // Search for map overlays (these will be translated by the overlay search function)
     const mapResults = searchOverlays(this.currentMap, searchText, this.activeFilters);
 

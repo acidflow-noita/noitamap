@@ -791,8 +791,8 @@
       "ellipseFilled": "塗りつぶされた楕円",
       "polygonFilled": "塗りつぶされた多角形",
       "text": "テキスト",
-      "pointNoStroke": "Changing stroke width is not available for the dot tool",
-      "pointNoFill": "Changing fill transparency is not available for the dot tool"
+      "pointNoStroke": "点ツールでは線の太さの変更は利用できません",
+      "pointNoFill": "点ツールでは塗りつぶしの透明度の変更は利用できません"
     },
     "color": {
       "label": "色",
@@ -907,13 +907,13 @@
       "failed": "画像が複雑すぎるか写真的である可能性があります。この機能はピクセルアートやフラットカラーの画像に最適です。"
     },
     "exampleDrawings": {
-      "label": "Example Drawings"
+      "label": "描画例"
     },
     "canvas": {
-      "label": "Canvas",
-      "map": "Map",
-      "black": "Black",
-      "white": "White"
+      "label": "キャンバス",
+      "map": "マップ",
+      "black": "黒",
+      "white": "白"
     }
   }
 }

@@ -791,8 +791,8 @@
       "ellipseFilled": "Заполненный эллипс",
       "polygonFilled": "Заполненный многоугольник",
       "text": "Текст",
-      "pointNoStroke": "Changing stroke width is not available for the dot tool",
-      "pointNoFill": "Changing fill transparency is not available for the dot tool"
+      "pointNoStroke": "Изменение толщины линии недоступно для инструмента «Точка»",
+      "pointNoFill": "Изменение прозрачности заливки недоступно для инструмента «Точка»"
     },
     "color": {
       "label": "Цвет",
@@ -907,13 +907,13 @@
       "failed": "Изображение может быть слишком сложным или фотографическим. Эта функция лучше всего работает с пиксель-артом и изображениями с однотонными цветами."
     },
     "exampleDrawings": {
-      "label": "Example Drawings"
+      "label": "Примеры рисунков"
     },
     "canvas": {
-      "label": "Canvas",
-      "map": "Map",
-      "black": "Black",
-      "white": "White"
+      "label": "Холст",
+      "map": "Карта",
+      "black": "Черный",
+      "white": "Белый"
     }
   }
 }

@@ -1,0 +1,3 @@
+[submodule "lib/noita-telescope"]
+	path = lib/noita-telescope
+	url = https://github.com/Lymm37/noita-telescope.git

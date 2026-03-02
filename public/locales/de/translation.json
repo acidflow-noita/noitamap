@@ -791,8 +791,8 @@
       "ellipseFilled": "Gefüllte Ellipse",
       "polygonFilled": "Gefülltes Polygon",
       "text": "Text",
-      "pointNoStroke": "Changing stroke width is not available for the dot tool",
-      "pointNoFill": "Changing fill transparency is not available for the dot tool"
+      "pointNoStroke": "Die Änderung der Strichstärke ist für das Punkt-Werkzeug nicht verfügbar",
+      "pointNoFill": "Die Änderung der Fülltransparenz ist für das Punkt-Werkzeug nicht verfügbar"
     },
     "color": {
       "label": "Farbe",
@@ -907,13 +907,13 @@
       "failed": "Das Bild ist möglicherweise zu komplex oder fotografisch. Diese Funktion funktioniert am besten mit Pixel-Art und Bildern mit flachen Farben."
     },
     "exampleDrawings": {
-      "label": "Example Drawings"
+      "label": "Beispielzeichnungen"
     },
     "canvas": {
-      "label": "Canvas",
-      "map": "Map",
-      "black": "Black",
-      "white": "White"
+      "label": "Leinwand",
+      "map": "Karte",
+      "black": "Schwarz",
+      "white": "Weiß"
     }
   }
 }

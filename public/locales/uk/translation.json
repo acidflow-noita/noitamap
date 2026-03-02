@@ -791,8 +791,8 @@
       "circleFilled": "Заповнене коло",
       "ellipseFilled": "Заповнений еліпс",
       "polygonFilled": "Заповнений багатокутник",
-      "pointNoStroke": "Changing stroke width is not available for the dot tool",
-      "pointNoFill": "Changing fill transparency is not available for the dot tool"
+      "pointNoStroke": "Зміна товщини лінії недоступна для інструменту «Точка»",
+      "pointNoFill": "Зміна прозорості заливки недоступна для інструменту «Точка»"
     },
     "fontSize": {
       "label": "Розмір шрифту",
@@ -907,13 +907,13 @@
       "failed": "Зображення може бути занадто складним або фотографічним. Ця функція найкраще працює з піксель-артом та зображеннями з однотонними кольорами."
     },
     "exampleDrawings": {
-      "label": "Example Drawings"
+      "label": "Приклади малюнків"
     },
     "canvas": {
-      "label": "Canvas",
-      "map": "Map",
-      "black": "Black",
-      "white": "White"
+      "label": "Полотно",
+      "map": "Карта",
+      "black": "Чорний",
+      "white": "Білий"
     }
   }
 }

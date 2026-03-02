@@ -18,13 +18,17 @@ export interface URLState extends Partial<AppState> {
   overlays?: OverlayKey[];
   sidebarOpen?: boolean;
   canvas?: 'map' | 'black' | 'white';
+  /** Seed number for dynamic map */
+  seed?: number;
+  /** Daily seed flag — if true, seed came from daily fetch */
+  dailySeed?: boolean;
 }
 
 /**
- * Desired URL param order: x, y, z (zoom), m (map), o (overlays), s (sidebar), c (canvas)
+ * Desired URL param order: x, y, z (zoom), m (map), se (seed), ds (daily seed), o (overlays), s (sidebar), c (canvas)
  * Short params used for encoding, decoder accepts both short and long names
  */
-const PARAM_ORDER = ['x', 'y', 'z', 'm', 'o', 's', 'c'];
+const PARAM_ORDER = ['x', 'y', 'z', 'm', 'se', 'ds', 'o', 's', 'c'];
 
 /**
  * Reorder URL search params to maintain consistent order
@@ -136,7 +140,13 @@ export function parseURL(): URLState {
     canvas = 'map';
   }
 
-  return { pos, map, overlays, sidebarOpen, canvas };
+  // Parse seed params for dynamic map
+  const seedParam = url.searchParams.get('se');
+  const seed = seedParam !== null ? intQueryValue(seedParam) ?? undefined : undefined;
+  const dsParam = url.searchParams.get('ds');
+  const dailySeed = dsParam === '1' || dsParam === 'true' || undefined;
+
+  return { pos, map, overlays, sidebarOpen, canvas, seed, dailySeed };
 }
 
 /**
@@ -212,6 +222,32 @@ export function updateURLWithCanvas(canvas: 'map' | 'black' | 'white') {
     const shortVal = canvas === 'black' ? 'b' : 'w';
     url.searchParams.set('c', shortVal);
   }
+  reorderParams(url);
+  window.history.replaceState(null, '', url.toString());
+}
+
+/**
+ * Update URL with seed params for dynamic map
+ */
+export function updateURLWithSeed(seed: number, isDailySeed: boolean) {
+  const url = new URL(window.location.toString());
+  url.searchParams.set('se', seed.toString());
+  if (isDailySeed) {
+    url.searchParams.set('ds', '1');
+  } else {
+    url.searchParams.delete('ds');
+  }
+  reorderParams(url);
+  window.history.replaceState(null, '', url.toString());
+}
+
+/**
+ * Clear seed params from the URL
+ */
+export function clearSeedParams() {
+  const url = new URL(window.location.toString());
+  url.searchParams.delete('se');
+  url.searchParams.delete('ds');
   reorderParams(url);
   window.history.replaceState(null, '', url.toString());
 }

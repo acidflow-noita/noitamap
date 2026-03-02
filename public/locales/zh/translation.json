@@ -797,8 +797,8 @@
       "circleFilled": "填充圆形",
       "ellipseFilled": "填充椭圆",
       "polygonFilled": "填充多边形",
-      "pointNoStroke": "Changing stroke width is not available for the dot tool",
-      "pointNoFill": "Changing fill transparency is not available for the dot tool"
+      "pointNoStroke": "点工具不支持修改线条宽度",
+      "pointNoFill": "点工具不支持修改填充透明度"
     },
     "fontSize": {
       "label": "字体大小",
@@ -907,13 +907,13 @@
       "failed": "图片可能过于复杂或为摄影图片。此功能最适合像素画和纯色图片。"
     },
     "exampleDrawings": {
-      "label": "Example Drawings"
+      "label": "示例绘图"
     },
     "canvas": {
-      "label": "Canvas",
-      "map": "Map",
-      "black": "Black",
-      "white": "White"
+      "label": "画布",
+      "map": "地图",
+      "black": "黑色",
+      "white": "白色"
     }
   }
 }

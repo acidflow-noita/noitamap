@@ -5,6 +5,7 @@
   "main": "src/main.ts",
   "module": "src/main.ts",
   "scripts": {
+    "preinstall": "git submodule update --init --recursive",
     "test": "vitest run",
     "build": "npm run sync-translations && npm run add-biome-translations && npm run check-translations && npm run copy-flags && npm run copy-locales && vite build",
     "copy-flags": "node build_scripts/copy-flags.cjs",
@@ -29,7 +30,8 @@
     "./app_osd": "./src/app_osd.ts",
     "./util": "./src/util.ts",
     "./auth/auth-service": "./src/auth/auth-service.ts",
-    "./i18n": "./src/i18n.ts"
+    "./i18n": "./src/i18n.ts",
+    "./data-archive": "./src/data-archive.ts"
   },
   "files": [
     "src/",
@@ -52,7 +54,8 @@
   "dependencies": {
     "i18next": "^25.8.13",
     "i18next-browser-languagedetector": "^8.2.1",
-    "i18next-http-backend": "^3.0.2"
+    "i18next-http-backend": "^3.0.2",
+    "jszip": "^3.10.1"
   },
   "devDependencies": {
     "@designsystemsinternational/flags": "^0.2.0",
