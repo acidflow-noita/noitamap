@@ -791,8 +791,8 @@
       "ellipseFilled": "Wypełniona elipsa",
       "polygonFilled": "Wypełniony wielokąt",
       "text": "Tekst",
-      "pointNoStroke": "Changing stroke width is not available for the dot tool",
-      "pointNoFill": "Changing fill transparency is not available for the dot tool"
+      "pointNoStroke": "Zmiana grubości linii nie jest dostępna dla narzędzia punktu",
+      "pointNoFill": "Zmiana przezroczystości wypełnienia nie jest dostępna dla narzędzia punktu"
     },
     "color": {
       "label": "Kolor",
@@ -907,13 +907,13 @@
       "failed": "Obraz może być zbyt złożony lub fotograficzny. Ta funkcja działa najlepiej z pixel artem i obrazami o jednolitych kolorach."
     },
     "exampleDrawings": {
-      "label": "Example Drawings"
+      "label": "Przykładowe rysunki"
     },
     "canvas": {
-      "label": "Canvas",
-      "map": "Map",
-      "black": "Black",
-      "white": "White"
+      "label": "Płótno",
+      "map": "Mapa",
+      "black": "Czarny",
+      "white": "Biały"
     }
   }
 }

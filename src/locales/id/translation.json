@@ -791,8 +791,8 @@
       "ellipseFilled": "Elips berisi",
       "polygonFilled": "Poligon berisi",
       "text": "Teks",
-      "pointNoStroke": "Changing stroke width is not available for the dot tool",
-      "pointNoFill": "Changing fill transparency is not available for the dot tool"
+      "pointNoStroke": "Mengubah ketebalan garis tidak tersedia untuk alat titik",
+      "pointNoFill": "Mengubah transparansi isian tidak tersedia untuk alat titik"
     },
     "color": {
       "label": "Warna",
@@ -907,13 +907,13 @@
       "failed": "Gambar mungkin terlalu kompleks atau fotografis. Fitur ini bekerja paling baik dengan pixel art dan gambar berwarna datar."
     },
     "exampleDrawings": {
-      "label": "Example Drawings"
+      "label": "Contoh Gambar"
     },
     "canvas": {
-      "label": "Canvas",
-      "map": "Map",
-      "black": "Black",
-      "white": "White"
+      "label": "Kanvas",
+      "map": "Peta",
+      "black": "Hitam",
+      "white": "Putih"
     }
   }
 }
