@@ -109,6 +109,7 @@
 .drawing-sidebar .drawings-list {
   flex-grow: 1;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .drawing-sidebar .list-group-item {

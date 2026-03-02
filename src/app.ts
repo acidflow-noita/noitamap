@@ -185,13 +185,36 @@ export class App extends EventEmitter2 {
     this.osd.viewport.fitBounds(this.osd.getCombinedItemsRect());
   }
 
+  private canvasOverlay: HTMLElement | null = null;
+
   public setBackground(type: 'map' | 'black' | 'white'): void {
-    const count = this.osd.world.getItemCount();
-    const opacity = type === 'map' ? 1 : 0;
-    for (let i = 0; i < count; i++) {
-      this.osd.world.getItemAt(i).setOpacity(opacity);
+    if (type === 'map') {
+      // Remove overlay — reveal the map tiles underneath
+      if (this.canvasOverlay) {
+        this.canvasOverlay.remove();
+        this.canvasOverlay = null;
+      }
+    } else {
+      // Create or reuse a CSS overlay that covers the tile layer.
+      // Tiles keep loading normally underneath (no setOpacity(0)), so the
+      // loading spinner resolves correctly.
+      if (!this.canvasOverlay) {
+        // Check if one already exists (e.g. created by drawingManager)
+        this.canvasOverlay = this.osd.element.querySelector('#canvas-bg-overlay');
+      }
+      if (!this.canvasOverlay) {
+        this.canvasOverlay = document.createElement('div');
+        this.canvasOverlay.id = 'canvas-bg-overlay';
+        Object.assign(this.canvasOverlay.style, {
+          position: 'absolute',
+          inset: '0',
+          zIndex: '1',          // above tiles, below doodle/text layers
+          pointerEvents: 'none', // clicks pass through to OSD/doodle
+        });
+        this.osd.element.appendChild(this.canvasOverlay);
+      }
+      this.canvasOverlay.style.backgroundColor = type === 'black' ? '#000000' : '#ffffff';
     }
-    this.osd.element.style.backgroundColor = type === 'map' ? '' : type === 'black' ? '#000000' : '#ffffff';
   }
 
   static async create({ mountTo, overlayButtons, initialState, useWebGL }: AppCreateOpts) {
