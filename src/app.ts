@@ -186,16 +186,12 @@ export class App extends EventEmitter2 {
   }
 
   public setBackground(type: 'map' | 'black' | 'white'): void {
-    const tiledImage = this.osd.world.getItemAt(0);
-    if (!tiledImage) return;
-
-    if (type === 'map') {
-      tiledImage.setOpacity(1);
-      this.osd.element.style.backgroundColor = '';
-    } else {
-      tiledImage.setOpacity(0);
-      this.osd.element.style.backgroundColor = type === 'black' ? '#000000' : '#ffffff';
+    const count = this.osd.world.getItemCount();
+    const opacity = type === 'map' ? 1 : 0;
+    for (let i = 0; i < count; i++) {
+      this.osd.world.getItemAt(i).setOpacity(opacity);
     }
+    this.osd.element.style.backgroundColor = type === 'map' ? '' : type === 'black' ? '#000000' : '#ffffff';
   }
 
   static async create({ mountTo, overlayButtons, initialState, useWebGL }: AppCreateOpts) {
