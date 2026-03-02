@@ -10,31 +10,31 @@
  *  - Returning results as typed data for the OSD bridge
  */
 
-import { installTelescopeShim } from './telescope-dom-shim';
-import { installFetchInterceptor, loadBiomeMaps, loadWangTileFromZip } from './telescope-data-bridge';
-import { getDataZip } from '../data-archive';
+import { installTelescopeShim } from "./telescope-dom-shim";
+import { installFetchInterceptor, loadBiomeMaps, loadWangTileFromZip } from "./telescope-data-bridge";
+import { getDataZip } from "../data-archive";
 
 // Telescope imports (plain JS modules via Vite alias 'noita-telescope')
 // @ts-ignore — untyped JS module
-import { generateBiomeData, BIOME_CONFIG } from 'noita-telescope/biome_generator.js';
+import { generateBiomeData, BIOME_CONFIG } from "noita-telescope/biome_generator.js";
 // @ts-ignore
-import { generateBiomeTiles } from 'noita-telescope/tile_generator.js';
+import { generateBiomeTiles } from "noita-telescope/tile_generator.js";
 // @ts-ignore
-import { scanSpawnFunctions, getSpecialPoIs, prescanSpawnFunctions } from 'noita-telescope/poi_scanner.js';
+import { scanSpawnFunctions, getSpecialPoIs, prescanSpawnFunctions } from "noita-telescope/poi_scanner.js";
 // @ts-ignore
-import { loadPixelSceneData, reloadPixelSceneCache } from 'noita-telescope/pixel_scene_generation.js';
+import { PIXEL_SCENE_DATA, loadPixelSceneData, reloadPixelSceneCache } from "noita-telescope/pixel_scene_generation.js";
 // @ts-ignore
-import { GENERATOR_CONFIG } from 'noita-telescope/generator_config.js';
+import { GENERATOR_CONFIG } from "noita-telescope/generator_config.js";
 // @ts-ignore
-import { UNLOCKABLES, setUnlocks } from 'noita-telescope/unlocks.js';
+import { UNLOCKABLES, setUnlocks } from "noita-telescope/unlocks.js";
 // @ts-ignore
-import { getWorldSize, getWorldCenter } from 'noita-telescope/utils.js';
+import { getWorldSize, getWorldCenter } from "noita-telescope/utils.js";
 // @ts-ignore
-import { sanitizePng } from 'noita-telescope/png_sanitizer.js';
+import { sanitizePng } from "noita-telescope/png_sanitizer.js";
 // @ts-ignore
-import { loadTranslations } from 'noita-telescope/translations.js';
+import { loadTranslations } from "noita-telescope/translations.js";
 // @ts-ignore
-import { findEyeMessages } from 'noita-telescope/eye_messages.js';
+import { findEyeMessages } from "noita-telescope/eye_messages.js";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -118,7 +118,7 @@ let biomeAssets: { ng0: Uint32Array | null; ngp: Uint32Array | null } = { ng0: n
 export async function initTelescope(): Promise<void> {
   if (initialized) return;
 
-  console.log('[Telescope] Initializing...');
+  console.log("[Telescope] Initializing...");
 
   // 1. Install DOM shim before any telescope code reads the DOM
   installTelescopeShim({
@@ -130,14 +130,14 @@ export async function initTelescope(): Promise<void> {
 
   // 2. Ensure data.zip is loaded
   const zip = await getDataZip();
-  if (!zip) throw new Error('[Telescope] data.zip failed to load');
+  if (!zip) throw new Error("[Telescope] data.zip failed to load");
 
   // 3. Install fetch interceptor so telescope's fetch('./data/...') goes to zip
   installFetchInterceptor();
 
   // 4. Load biome map base assets (telescope's preload step)
   biomeAssets = await loadBiomeMaps();
-  if (!biomeAssets.ng0) throw new Error('[Telescope] Failed to load NG0 biome map');
+  if (!biomeAssets.ng0) throw new Error("[Telescope] Failed to load NG0 biome map");
 
   // 5. Load translations
   await loadTranslations();
@@ -158,8 +158,35 @@ export async function initTelescope(): Promise<void> {
   // 8. Load pixel scene data (uses fetch interceptor internally)
   await loadPixelSceneData();
 
+  // 9. loadPixelSceneData fires async image loads but doesn't await them.
+  // We must block until they are ready, otherwise OSD will hang trying to render empty canvases.
+  await new Promise<void>((resolve) => {
+    const checkInterval = setInterval(() => {
+      let allLoaded = true;
+      const scenes = Object.values(PIXEL_SCENE_DATA as Record<string, any>);
+      if (scenes.length === 0) {
+        // Data not populated yet
+        allLoaded = false;
+      } else {
+        for (const scene of scenes) {
+          // Check if imgElement is created AND has width > 0
+          // (canvas gets width set in onload)
+          if (!scene.imgElement || scene.imgElement.width === 0) {
+            allLoaded = false;
+            break;
+          }
+        }
+      }
+
+      if (allLoaded) {
+        clearInterval(checkInterval);
+        resolve();
+      }
+    }, 50);
+  });
+
   initialized = true;
-  console.log('[Telescope] Initialization complete');
+  console.log("[Telescope] Initialization complete");
 }
 
 // ─── Generation ─────────────────────────────────────────────────────────────
@@ -181,7 +208,9 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   const parallelWorlds = opts.parallelWorlds ?? [-1, 0, 1];
   const isNGP = ngPlus > 0;
 
-  console.log(`[Telescope] Generating: seed=${seed}, NG+=${ngPlus}, daily=${dailySeed}, PWs=${parallelWorlds.join(',')}`);
+  console.log(
+    `[Telescope] Generating: seed=${seed}, NG+=${ngPlus}, daily=${dailySeed}, PWs=${parallelWorlds.join(",")}`,
+  );
   const t0 = performance.now();
 
   // Set unlocks: daily seed = ALL ON, arbitrary = ALL ON for now
@@ -199,15 +228,20 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   const h = isNGP ? BIOME_CONFIG.H_NGP : BIOME_CONFIG.H_NG0;
   const base = isNGP ? biomeAssets.ngp : biomeAssets.ng0;
 
-  if (!base) throw new Error('[Telescope] Biome map assets not loaded');
+  if (!base) throw new Error("[Telescope] Biome map assets not loaded");
 
   // Step 1: Generate biome data
   const biomeData = generateBiomeData(seed, ngPlus, base, w, h);
 
   // Step 2: Generate tiles
   const tileLayers: TileLayer[] = await generateBiomeTiles(
-    biomeData.pixels, w, h,
-    GENERATOR_CONFIG, seed, ngPlus, 0 /* extra_rerolls */
+    biomeData.pixels,
+    w,
+    h,
+    GENERATOR_CONFIG,
+    seed,
+    ngPlus,
+    0 /* extra_rerolls */,
   );
 
   // Initialize pixel scene caches on each layer
@@ -227,8 +261,14 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     const pwKey = `${pw},0`; // vertical PW always 0 for noitamap
 
     const scanResults = scanSpawnFunctions(
-      biomeData, tileSpawns, seed, ngPlus, pw, 0 /* pwVertical */,
-      false /* skipCosmeticScenes */, perks
+      biomeData,
+      tileSpawns,
+      seed,
+      ngPlus,
+      pw,
+      0 /* pwVertical */,
+      false /* skipCosmeticScenes */,
+      perks,
     );
 
     const specialPOIs = getSpecialPoIs(biomeData, seed, ngPlus, pw, 0, perks);

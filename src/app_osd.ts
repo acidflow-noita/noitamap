@@ -25,6 +25,8 @@ export class AppOSD extends Viewer {
   private mapName: MapName | null = null;
   private listeners: ((isLoading: boolean) => void)[] = [];
 
+  private failedItems: Set<OpenSeadragon.TiledImage> = new Set();
+
   constructor(mountTo: HTMLElement, useWebGL: boolean) {
     super({
       element: mountTo,
@@ -81,9 +83,18 @@ export class AppOSD extends Viewer {
       const item = event.item;
 
       item.removeAllHandlers("fully-loaded-change");
+      this.failedItems.delete(item);
 
       // recalculate loading when the list of items we're tracking
       this.notifyLoadingStatus();
+    });
+
+    this.addHandler("tile-load-failed", (event) => {
+      const item = event.tiledImage;
+      if (item) {
+        this.failedItems.add(item);
+        this.notifyLoadingStatus();
+      }
     });
 
     // Align OSD coordinate system with the Noita world coordinate system
@@ -126,11 +137,15 @@ export class AppOSD extends Viewer {
   private notifyLoadingStatus() {
     const isFullyLoaded = this.getAllItems().reduce(
       // prettier-ignore
-      (isReady, item) => ( 
-        (item as any).getDrawArea() !== null // if the item has a draw area, it is expected to load...
+      (isReady, item) => {
+        if (this.failedItems.has(item)) {
+          // If the item failed to load, consider it 'ready' so it doesn't block UI
+          return isReady;
+        }
+        return (item as any).getDrawArea() !== null // if the item has a draw area, it is expected to load...
           ? (isReady && item.getFullyLoaded()) // so check if it is loaded yet
           : isReady // otherwise skip this item
-      ),
+      },
       // we're ready by default, unless one or more items
       // say they are both visible and not ready
       true,

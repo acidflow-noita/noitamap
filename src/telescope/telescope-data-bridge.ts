@@ -10,7 +10,7 @@
  * loadWangAsset) work unmodified — they just call fetch() and get zip data.
  */
 
-import { getDataZip } from '../data-archive';
+import { getDataZip } from "../data-archive";
 
 // ─── Path mapping ───────────────────────────────────────────────────────────
 
@@ -19,34 +19,30 @@ import { getDataZip } from '../data-archive';
  */
 function telescopePathToZipPath(telescopePath: string): string {
   // Normalise: strip leading './' or '/' and query strings
-  let p = telescopePath.replace(/^\.\//, '').replace(/\?.*$/, '');
+  let p = telescopePath.replace(/^\.\//, "").replace(/\?.*$/, "");
 
   // Wang tiles: data/wang_tiles/X.png → data/wang_tiles/X.png (same)
-  if (p.startsWith('data/wang_tiles/')) return p;
+  if (p.startsWith("data/wang_tiles/")) return p;
 
   // Biome maps: data/biome_maps/X.png → data/biome_impl/X.png
-  if (p.startsWith('data/biome_maps/')) {
-    return p.replace('data/biome_maps/', 'data/biome_impl/');
+  if (p.startsWith("data/biome_maps/")) {
+    return p.replace("data/biome_maps/", "data/biome_impl/");
   }
 
   // Pixel scenes: data/pixel_scenes/<biome>/<scene>.png → data/biome_impl/<biome>/<scene>.png
   // General scenes: data/pixel_scenes/general/<scene>.png → data/biome_impl/<scene>.png
-  if (p.startsWith('data/pixel_scenes/')) {
-    const rest = p.replace('data/pixel_scenes/', '');
-    if (rest.startsWith('general/')) {
-      return 'data/biome_impl/' + rest.replace('general/', '');
+  if (p.startsWith("data/pixel_scenes/")) {
+    const rest = p.replace("data/pixel_scenes/", "");
+    if (rest.startsWith("general/")) {
+      return "data/biome_impl/" + rest.replace("general/", "");
     }
-    return 'data/biome_impl/' + rest;
+    return "data/biome_impl/" + rest;
   }
 
   // Item/spell/wand sprites: data/item_sprites/X → data/item_sprites/X (same)
   // data/spell_sprites/X → data/spell_sprites/X (same)
   // data/wand_sprites/X → data/wand_sprites/X (same)
-  if (
-    p.startsWith('data/item_sprites/') ||
-    p.startsWith('data/spell_sprites/') ||
-    p.startsWith('data/wand_sprites/')
-  ) {
+  if (p.startsWith("data/item_sprites/") || p.startsWith("data/spell_sprites/") || p.startsWith("data/wand_sprites/")) {
     return p;
   }
 
@@ -69,38 +65,58 @@ export function installFetchInterceptor(): void {
   interceptorInstalled = true;
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url;
+    const urlString = typeof input === "string" ? input : input instanceof URL ? input.href : (input as Request).url;
 
-    // Only intercept ./data/ relative paths
-    if (!url.startsWith('./data/') && !url.startsWith('data/')) {
+    let isDataRequest = false;
+    let normalizePath = "";
+
+    try {
+      // Parse as URL to safely check pathname (handles absolute URLs automatically)
+      // We use window.location.href as base to handle relative strings
+      const urlObj = new URL(urlString, window.location.href);
+      if (urlObj.pathname.startsWith("/data/")) {
+        isDataRequest = true;
+        // Strip leading slash for zip mapping
+        normalizePath = urlObj.pathname.substring(1);
+      }
+    } catch (e) {
+      // Fallback if URL parsing fails for some reason
+      if (urlString.startsWith("./data/") || urlString.startsWith("data/")) {
+        isDataRequest = true;
+        normalizePath = urlString.startsWith("./") ? urlString.substring(2) : urlString;
+      }
+    }
+
+    // Pass through non-data requests (like takapuoli.noitagame.com)
+    if (!isDataRequest) {
       return originalFetch(input, init);
     }
 
-    const zipPath = telescopePathToZipPath(url);
+    const zipPath = telescopePathToZipPath(normalizePath);
     const zip = await getDataZip();
     if (!zip) {
-      console.warn(`[DataBridge] data.zip not loaded, falling through for: ${url}`);
+      console.warn(`[DataBridge] data.zip not loaded, falling through for: ${urlString}`);
       return originalFetch(input, init);
     }
 
     const file = zip.file(zipPath);
     if (!file) {
-      console.warn(`[DataBridge] Not found in zip: ${zipPath} (from ${url})`);
-      return new Response(null, { status: 404, statusText: 'Not Found' });
+      console.warn(`[DataBridge] Not found in zip: ${zipPath} (from ${urlString})`);
+      return new Response(null, { status: 404, statusText: "Not Found" });
     }
 
-    const buf = await file.async('arraybuffer');
-    const ext = zipPath.split('.').pop()?.toLowerCase();
-    let mime = 'application/octet-stream';
-    if (ext === 'png') mime = 'image/png';
-    else if (ext === 'json') mime = 'application/json';
-    else if (ext === 'csv') mime = 'text/csv';
-    else if (ext === 'xml') mime = 'text/xml';
+    const buf = await file.async("arraybuffer");
+    const ext = zipPath.split(".").pop()?.toLowerCase();
+    let mime = "application/octet-stream";
+    if (ext === "png") mime = "image/png";
+    else if (ext === "json") mime = "application/json";
+    else if (ext === "csv") mime = "text/csv";
+    else if (ext === "xml") mime = "text/xml";
 
     return new Response(buf, {
       status: 200,
-      statusText: 'OK',
-      headers: { 'Content-Type': mime },
+      statusText: "OK",
+      headers: { "Content-Type": mime },
     });
   };
 }
@@ -120,9 +136,7 @@ export function removeFetchInterceptor(): void {
  * Load a biome map PNG from data.zip and return as Uint32Array
  * (matching telescope's preload format: 0xFF000000 | R<<16 | G<<8 | B).
  */
-export async function loadBiomeMapFromZip(
-  telescopePath: string
-): Promise<Uint32Array | null> {
+export async function loadBiomeMapFromZip(telescopePath: string): Promise<Uint32Array | null> {
   const zipPath = telescopePathToZipPath(telescopePath);
   const zip = await getDataZip();
   if (!zip) return null;
@@ -133,14 +147,14 @@ export async function loadBiomeMapFromZip(
     return null;
   }
 
-  const buf = await file.async('arraybuffer');
-  const blob = new Blob([buf], { type: 'image/png' });
+  const buf = await file.async("arraybuffer");
+  const blob = new Blob([buf], { type: "image/png" });
   const bitmap = await createImageBitmap(blob);
 
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
   ctx.drawImage(bitmap, 0, 0);
   bitmap.close();
 
@@ -161,8 +175,8 @@ export async function loadBiomeMaps(): Promise<{
   ngp: Uint32Array | null;
 }> {
   const [ng0, ngp] = await Promise.all([
-    loadBiomeMapFromZip('./data/biome_maps/biome_map.png'),
-    loadBiomeMapFromZip('./data/biome_maps/biome_map_newgame_plus.png'),
+    loadBiomeMapFromZip("./data/biome_maps/biome_map.png"),
+    loadBiomeMapFromZip("./data/biome_maps/biome_map_newgame_plus.png"),
   ]);
   return { ng0, ngp };
 }
@@ -172,7 +186,7 @@ export async function loadBiomeMaps(): Promise<{
  * Returns the same format as telescope's loadWangAsset.
  */
 export async function loadWangTileFromZip(
-  telescopePath: string
+  telescopePath: string,
 ): Promise<{ data: Uint8ClampedArray; width: number; height: number } | null> {
   const zipPath = telescopePathToZipPath(telescopePath);
   const zip = await getDataZip();
@@ -187,14 +201,14 @@ export async function loadWangTileFromZip(
   // Use the fetch interceptor path (sanitizePng expects to fetch a URL)
   // Since the interceptor is installed, we can just use telescope's own
   // sanitizePng which calls fetch() internally.
-  const buf = await file.async('arraybuffer');
-  const blob = new Blob([buf], { type: 'image/png' });
+  const buf = await file.async("arraybuffer");
+  const blob = new Blob([buf], { type: "image/png" });
   const bitmap = await createImageBitmap(blob);
 
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
   ctx.drawImage(bitmap, 0, 0);
   bitmap.close();
 
