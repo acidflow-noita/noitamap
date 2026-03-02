@@ -1,7 +1,13 @@
 import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
 import { setupDropOverlay } from "./drop-overlay";
 import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed } from "./dynamic_ui";
-import { runDynamicMapFromURL, runDynamicMap, clearDynamicMap, getCurrentDynamicSeed, getCurrentIsDaily } from "./dynamic-map";
+import {
+  runDynamicMapFromURL,
+  runDynamicMap,
+  clearDynamicMap,
+  getCurrentDynamicSeed,
+  getCurrentIsDaily,
+} from "./dynamic-map";
 import type { DynamicPOI } from "./dynamic-map";
 
 // --- Dev Console Commands (Early Initialization) ---
@@ -34,7 +40,7 @@ import {
 import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from "./data_sources/overlays";
 import { overlayToShort } from "./data_sources/param-mappings";
 import { UnifiedSearch } from "./search/unifiedsearch";
-import { asMapName } from "./data_sources/tile_data";
+import { asMapName, MapName } from "./data_sources/tile_data";
 import { addEventListenerForId, assertElementById, debounce } from "./util";
 import { createMapLinks, NAV_LINK_IDENTIFIER } from "./nav";
 import { initMouseTracker } from "./mouse_tracker";
@@ -123,6 +129,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     overlayButtons: overlayButtonsElement,
     initialState: urlState,
     useWebGL: storedRenderer === "webgl",
+  }).catch(async (e) => {
+    // The default or URL-specified map failed to open (e.g. CORS block on a new domain).
+    // Fall back to a known-good map so the rest of the app still initializes.
+    console.warn("[Noitamap] Map failed to open, falling back to regular-main-branch:", e);
+    return App.create({
+      mountTo: osdRootElement,
+      overlayButtons: overlayButtonsElement,
+      initialState: { ...urlState, map: "regular-main-branch" as MapName },
+      useWebGL: storedRenderer === "webgl",
+    });
   });
   globalApp = app;
   console.log(`[Noitamap] Active OSD drawer: ${(app.osd as any).drawer?.getType?.() ?? storedRenderer}`);
@@ -174,7 +190,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const dynamicOpts = {
     viewer: app.osd,
     onLoadingChange: (isLoading: boolean) => {
-      loadingIndicator.style.display = isLoading ? 'block' : 'none';
+      loadingIndicator.style.display = isLoading ? "block" : "none";
     },
     onSeedResolved: (seed: number, isDaily: boolean) => {
       setDynamicUISeed(seed, isDaily);
@@ -188,10 +204,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   updateDynamicUIVisibility(app.getMap());
 
   // Auto-start generation if landing on dynamic map
-  if (app.getMap() === 'dynamic-main-branch') {
-    runDynamicMapFromURL(dynamicOpts).catch(e =>
-      console.error('[Noitamap] Dynamic map init failed:', e)
-    );
+  if (app.getMap() === "dynamic-main-branch") {
+    runDynamicMapFromURL(dynamicOpts).catch((e) => console.error("[Noitamap] Dynamic map init failed:", e));
   }
 
   // Expose hooks for the pro bundle via window.__noitamap
@@ -346,7 +360,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Switching AWAY from dynamic → clear overlays and POI index
-    if (app.getMap() === 'dynamic-main-branch' && mapName !== 'dynamic-main-branch') {
+    if (app.getMap() === "dynamic-main-branch" && mapName !== "dynamic-main-branch") {
       clearDynamicMap(app.osd);
       unifiedSearch.setDynamicPOIs([]);
     }
@@ -360,10 +374,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateDynamicUIVisibility(mapName);
 
     // Switching TO dynamic → start generation
-    if (mapName === 'dynamic-main-branch') {
-      runDynamicMapFromURL(dynamicOpts).catch(e =>
-        console.error('[Noitamap] Dynamic map switch failed:', e)
-      );
+    if (mapName === "dynamic-main-branch") {
+      runDynamicMapFromURL(dynamicOpts).catch((e) => console.error("[Noitamap] Dynamic map switch failed:", e));
     }
   });
 
@@ -413,13 +425,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     url.searchParams.delete("d");
 
     // Include seed params when on dynamic map so shared link reproduces the same map
-    if (app.getMap() === 'dynamic-main-branch') {
+    if (app.getMap() === "dynamic-main-branch") {
       const seed = getCurrentDynamicSeed();
       const isDaily = getCurrentIsDaily();
       if (seed !== null) {
-        url.searchParams.set('se', String(seed));
-        if (isDaily) url.searchParams.set('ds', '1');
-        else url.searchParams.delete('ds');
+        url.searchParams.set("se", String(seed));
+        if (isDaily) url.searchParams.set("ds", "1");
+        else url.searchParams.delete("ds");
       }
     }
 
