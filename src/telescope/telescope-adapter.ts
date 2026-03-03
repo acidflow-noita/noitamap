@@ -11,30 +11,26 @@
  */
 
 import { installTelescopeShim } from "./telescope-dom-shim";
-import { installFetchInterceptor, loadBiomeMaps, loadWangTileFromZip } from "./telescope-data-bridge";
+import { installFetchInterceptor, installImageSrcInterceptor, loadBiomeMaps, loadWangTileFromZip } from "./telescope-data-bridge";
 import { getDataZip } from "../data-archive";
 
-// Telescope imports (plain JS modules via Vite alias 'noita-telescope')
-// @ts-ignore — untyped JS module
-import { generateBiomeData, BIOME_CONFIG } from "noita-telescope/biome_generator.js";
-// @ts-ignore
-import { generateBiomeTiles } from "noita-telescope/tile_generator.js";
-// @ts-ignore
-import { scanSpawnFunctions, getSpecialPoIs, prescanSpawnFunctions } from "noita-telescope/poi_scanner.js";
-// @ts-ignore
-import { PIXEL_SCENE_DATA, loadPixelSceneData, reloadPixelSceneCache } from "noita-telescope/pixel_scene_generation.js";
-// @ts-ignore
-import { GENERATOR_CONFIG } from "noita-telescope/generator_config.js";
-// @ts-ignore
-import { UNLOCKABLES, setUnlocks } from "noita-telescope/unlocks.js";
-// @ts-ignore
-import { getWorldSize, getWorldCenter } from "noita-telescope/utils.js";
-// @ts-ignore
-import { sanitizePng } from "noita-telescope/png_sanitizer.js";
-// @ts-ignore
-import { loadTranslations } from "noita-telescope/translations.js";
-// @ts-ignore
-import { findEyeMessages } from "noita-telescope/eye_messages.js";
+// Telescope modules — loaded dynamically in initTelescope() to avoid top-level
+// await in image_processing.js from blocking the entire bundle on CF Pages.
+let generateBiomeData: any;
+let BIOME_CONFIG: any;
+let generateBiomeTiles: any;
+let scanSpawnFunctions: any;
+let getSpecialPoIs: any;
+let prescanSpawnFunctions: any;
+let PIXEL_SCENE_DATA: any;
+let loadPixelSceneData: any;
+let GENERATOR_CONFIG: any;
+let UNLOCKABLES: any;
+let setUnlocks: any;
+let getWorldSize: any;
+let getWorldCenter: any;
+let loadTranslations: any;
+let findEyeMessages: any;
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -71,7 +67,7 @@ export interface POI {
 }
 
 export interface PixelScene {
-  imgElement: HTMLCanvasElement;
+  imgElement: HTMLCanvasElement | OffscreenCanvas;
   x: number;
   y: number;
   width: number;
@@ -135,19 +131,62 @@ export async function initTelescope(): Promise<void> {
   // 3. Install fetch interceptor so telescope's fetch('./data/...') goes to zip
   installFetchInterceptor();
 
-  // 4. Load biome map base assets (telescope's preload step)
+  // 3b. Install Image src interceptor so telescope's new Image().src = './data/...' goes to zip
+  installImageSrcInterceptor();
+
+  // 4. Dynamically import telescope modules (must happen AFTER interceptors are installed,
+  //    because image_processing.js has top-level await that loads PNGs via new Image())
+  const [
+    biomeGenMod,
+    tileGenMod,
+    poiScannerMod,
+    pixelSceneMod,
+    genConfigMod,
+    unlocksMod,
+    utilsMod,
+    translationsMod,
+    eyeMessagesMod,
+  ] = await Promise.all([
+    import("noita-telescope/biome_generator.js"),
+    import("noita-telescope/tile_generator.js"),
+    import("noita-telescope/poi_scanner.js"),
+    import("noita-telescope/pixel_scene_generation.js"),
+    import("noita-telescope/generator_config.js"),
+    import("noita-telescope/unlocks.js"),
+    import("noita-telescope/utils.js"),
+    import("noita-telescope/translations.js"),
+    import("noita-telescope/eye_messages.js"),
+  ]);
+
+  generateBiomeData = biomeGenMod.generateBiomeData;
+  BIOME_CONFIG = biomeGenMod.BIOME_CONFIG;
+  generateBiomeTiles = tileGenMod.generateBiomeTiles;
+  scanSpawnFunctions = poiScannerMod.scanSpawnFunctions;
+  getSpecialPoIs = poiScannerMod.getSpecialPoIs;
+  prescanSpawnFunctions = poiScannerMod.prescanSpawnFunctions;
+  PIXEL_SCENE_DATA = pixelSceneMod.PIXEL_SCENE_DATA;
+  loadPixelSceneData = pixelSceneMod.loadPixelSceneData;
+  GENERATOR_CONFIG = genConfigMod.GENERATOR_CONFIG;
+  UNLOCKABLES = unlocksMod.UNLOCKABLES;
+  setUnlocks = unlocksMod.setUnlocks;
+  getWorldSize = utilsMod.getWorldSize;
+  getWorldCenter = utilsMod.getWorldCenter;
+  loadTranslations = translationsMod.loadTranslations;
+  findEyeMessages = eyeMessagesMod.findEyeMessages;
+
+  // 5. Load biome map base assets (telescope's preload step)
   biomeAssets = await loadBiomeMaps();
   if (!biomeAssets.ng0) throw new Error("[Telescope] Failed to load NG0 biome map");
 
-  // 5. Load translations
+  // 6. Load translations
   await loadTranslations();
 
-  // 6. Enable all regions in generator config
+  // 7. Enable all regions in generator config
   for (const key of Object.keys(GENERATOR_CONFIG)) {
     GENERATOR_CONFIG[key].enabled = true;
   }
 
-  // 7. Pre-load wang tile data for all regions
+  // 8. Pre-load wang tile data for all regions
   for (const key of Object.keys(GENERATOR_CONFIG)) {
     const cfg = GENERATOR_CONFIG[key];
     if (cfg.wangFile && !cfg.wangData) {
@@ -155,35 +194,9 @@ export async function initTelescope(): Promise<void> {
     }
   }
 
-  // 8. Load pixel scene data (uses fetch interceptor internally)
+  // 9. Load pixel scene data (uses fetch interceptor internally).
+  // The new telescope fully awaits image loading, so no polling needed.
   await loadPixelSceneData();
-
-  // 9. loadPixelSceneData fires async image loads but doesn't await them.
-  // We must block until they are ready, otherwise OSD will hang trying to render empty canvases.
-  await new Promise<void>((resolve) => {
-    const checkInterval = setInterval(() => {
-      let allLoaded = true;
-      const scenes = Object.values(PIXEL_SCENE_DATA as Record<string, any>);
-      if (scenes.length === 0) {
-        // Data not populated yet
-        allLoaded = false;
-      } else {
-        for (const scene of scenes) {
-          // Check if imgElement is created AND has width > 0
-          // (canvas gets width set in onload)
-          if (!scene.imgElement || scene.imgElement.width === 0) {
-            allLoaded = false;
-            break;
-          }
-        }
-      }
-
-      if (allLoaded) {
-        clearInterval(checkInterval);
-        resolve();
-      }
-    }, 50);
-  });
 
   initialized = true;
   console.log("[Telescope] Initialization complete");

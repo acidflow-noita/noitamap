@@ -118,7 +118,7 @@ export async function runDynamicMap(
     }
 
     // 4. Render onto OSD
-    renderGenerationResult(viewer as any, result);
+    await renderGenerationResult(viewer as any, result);
 
     // 5. Export flat POI list for search
     if (onPOIsReady) {

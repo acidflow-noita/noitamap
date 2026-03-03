@@ -13,10 +13,25 @@
  */
 
 import type { GenerationResult, POI, PixelScene, TileLayer } from './telescope-adapter';
-// @ts-ignore
-import { VISUAL_TILE_OFFSET_X, VISUAL_TILE_OFFSET_Y, CHUNK_SIZE } from 'noita-telescope/constants.js';
-// @ts-ignore
-import { getWorldSize, getWorldCenter } from 'noita-telescope/utils.js';
+
+// Telescope constants/utils — loaded lazily to avoid pulling in the
+// static import chain that includes image_processing.js's top-level await.
+let VISUAL_TILE_OFFSET_X: number;
+let VISUAL_TILE_OFFSET_Y: number;
+let CHUNK_SIZE: number;
+let _telescopeModulesLoaded = false;
+
+async function ensureTelescopeModules(): Promise<void> {
+  if (_telescopeModulesLoaded) return;
+  const [constantsMod, utilsMod] = await Promise.all([
+    import('noita-telescope/constants.js'),
+    import('noita-telescope/utils.js'),
+  ]);
+  VISUAL_TILE_OFFSET_X = constantsMod.VISUAL_TILE_OFFSET_X;
+  VISUAL_TILE_OFFSET_Y = constantsMod.VISUAL_TILE_OFFSET_Y;
+  CHUNK_SIZE = constantsMod.CHUNK_SIZE;
+  _telescopeModulesLoaded = true;
+}
 
 // OSD viewer type — use `any` because the installed OSD types bundle
 // does not export Viewer/TiledImage/Point as named exports; they are
@@ -55,6 +70,23 @@ export function clearDynamicOverlays(viewer: any): void {
   dynamicOverlayElements = [];
 }
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Convert a canvas (regular or OffscreenCanvas) to a data URL synchronously.
+ */
+function canvasToDataUrl(canvas: HTMLCanvasElement | OffscreenCanvas): string {
+  if (canvas instanceof HTMLCanvasElement) {
+    return canvas.toDataURL('image/png');
+  }
+  // OffscreenCanvas: draw onto a regular canvas to get toDataURL
+  const tmp = document.createElement('canvas');
+  tmp.width = canvas.width;
+  tmp.height = canvas.height;
+  tmp.getContext('2d')!.drawImage(canvas as any, 0, 0);
+  return tmp.toDataURL('image/png');
+}
+
 // ─── Tile rendering ─────────────────────────────────────────────────────────
 
 /**
@@ -64,16 +96,17 @@ export function clearDynamicOverlays(viewer: any): void {
  * the world center at (worldCenter*512, 14*512).  We add the center offset
  * so the tiles are positioned correctly in absolute world-pixel coords.
  */
-export function addTileLayers(
+export async function addTileLayers(
   viewer: OSDViewer,
   result: GenerationResult,
-): void {
+): Promise<void> {
+  await ensureTelescopeModules();
   const { tileLayers, worldCenter, isNGP } = result;
 
   for (const layer of tileLayers) {
     if (!layer.canvas) continue;
 
-    const dataUrl = layer.canvas.toDataURL('image/png');
+    const dataUrl = canvasToDataUrl(layer.canvas);
 
     // Position in absolute world-pixel coords
     const x = layer.correctedX + VISUAL_TILE_OFFSET_X;
@@ -107,10 +140,11 @@ export function addTileLayers(
 /**
  * Add pixel scenes for all parallel worlds to the viewer.
  */
-export function addPixelScenes(
+export async function addPixelScenes(
   viewer: OSDViewer,
   result: GenerationResult,
-): void {
+): Promise<void> {
+  await ensureTelescopeModules();
   const { pixelScenesByPW, worldCenter, worldSize, isNGP } = result;
 
   let addedCount = 0;
@@ -122,7 +156,7 @@ export function addPixelScenes(
     for (const scene of scenes) {
       if (!scene || !scene.imgElement) continue;
 
-      const dataUrl = scene.imgElement.toDataURL('image/png');
+      const dataUrl = canvasToDataUrl(scene.imgElement);
 
       // Pixel scene positions: scene.x/y are already in world coordinates
       // but need the world center offset and PW shift
@@ -156,10 +190,11 @@ export function addPixelScenes(
  * Add POI markers as OSD HTML overlays with actual game sprites.
  * Each POI gets an <img> element positioned at its world coordinates.
  */
-export function addPOIOverlays(
+export async function addPOIOverlays(
   viewer: OSDViewer,
   result: GenerationResult,
-): void {
+): Promise<void> {
+  await ensureTelescopeModules();
   const { poisByPW, worldCenter, worldSize, isNGP } = result;
 
   for (const [pwKey, pois] of Object.entries(poisByPW)) {
@@ -259,14 +294,14 @@ function getPOIColor(poi: POI): string {
  * Render all generation results onto the OSD viewer.
  * Clears previous dynamic overlays first.
  */
-export function renderGenerationResult(
+export async function renderGenerationResult(
   viewer: OSDViewer,
   result: GenerationResult,
-): void {
+): Promise<void> {
   clearDynamicOverlays(viewer);
-  addTileLayers(viewer, result);
-  addPixelScenes(viewer, result);
-  addPOIOverlays(viewer, result);
+  await addTileLayers(viewer, result);
+  await addPixelScenes(viewer, result);
+  await addPOIOverlays(viewer, result);
 }
 
 /**

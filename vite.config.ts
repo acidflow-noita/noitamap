@@ -29,6 +29,9 @@ export default defineConfig({
     alias: {
       // Telescope submodule — always available (free feature)
       'noita-telescope': resolve(__dirname, 'lib/noita-telescope/js'),
+      // Shim telescope's zip_extraction.js (imports from CDN that Vite can't bundle).
+      // Our fetch interceptor already serves data from data.zip.
+      'noita-telescope/zip_extraction.js': resolve(__dirname, 'src/telescope/zip-extraction-shim.ts'),
       ...(isProAvailable
         ? {
             'noitamap/data_sources/tile_data': resolve(__dirname, 'src/data_sources/tile_data.ts'),

@@ -48,9 +48,12 @@ function openDB(): Promise<IDBDatabase> {
 }
 
 /**
- * Serialize a canvas to a Blob (PNG).
+ * Serialize a canvas (HTMLCanvasElement or OffscreenCanvas) to a Blob (PNG).
  */
-function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+function canvasToBlob(canvas: HTMLCanvasElement | OffscreenCanvas): Promise<Blob> {
+  if (canvas instanceof OffscreenCanvas) {
+    return canvas.convertToBlob({ type: 'image/png' });
+  }
   return new Promise((resolve, reject) => {
     canvas.toBlob(blob => {
       if (blob) resolve(blob);

@@ -130,6 +130,81 @@ export function removeFetchInterceptor(): void {
   interceptorInstalled = false;
 }
 
+// ─── Image src interceptor ──────────────────────────────────────────────────
+
+let imageSrcInterceptorInstalled = false;
+let originalSrcDescriptor: PropertyDescriptor | undefined;
+
+/**
+ * Install a monkey-patch on HTMLImageElement.prototype.src so that
+ * telescope's `new Image(); img.src = './data/...'` loads go through our
+ * fetch interceptor (and thus come from data.zip) instead of hitting the
+ * server (which on CF Pages returns the SPA fallback HTML).
+ *
+ * Must be called AFTER installFetchInterceptor().
+ */
+export function installImageSrcInterceptor(): void {
+  if (imageSrcInterceptorInstalled) return;
+  imageSrcInterceptorInstalled = true;
+
+  originalSrcDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+  if (!originalSrcDescriptor || !originalSrcDescriptor.set || !originalSrcDescriptor.get) {
+    console.warn('[DataBridge] Cannot intercept Image.src — descriptor not found');
+    return;
+  }
+
+  const origSet = originalSrcDescriptor.set;
+  const origGet = originalSrcDescriptor.get;
+
+  Object.defineProperty(HTMLImageElement.prototype, 'src', {
+    get: origGet,
+    set(this: HTMLImageElement, value: string) {
+      let isDataUrl = false;
+      let fetchPath = '';
+
+      if (typeof value === 'string') {
+        if (value.startsWith('./data/') || value.startsWith('data/')) {
+          isDataUrl = true;
+          fetchPath = value;
+        } else if (value.startsWith('/data/')) {
+          isDataUrl = true;
+          fetchPath = '.' + value;
+        }
+      }
+
+      if (!isDataUrl) {
+        origSet.call(this, value);
+        return;
+      }
+
+      // Intercept: fetch the PNG from our zip-backed fetch interceptor,
+      // convert to a blob URL, then set that as the actual src.
+      const img = this;
+      fetch(fetchPath)
+        .then(r => r.blob())
+        .then(blob => {
+          const blobUrl = URL.createObjectURL(blob);
+          origSet.call(img, blobUrl);
+        })
+        .catch(() => {
+          // Fall back to original URL on error
+          origSet.call(img, value);
+        });
+    },
+    enumerable: true,
+    configurable: true,
+  });
+}
+
+/**
+ * Remove the Image src interceptor and restore the original setter.
+ */
+export function removeImageSrcInterceptor(): void {
+  if (!imageSrcInterceptorInstalled || !originalSrcDescriptor) return;
+  Object.defineProperty(HTMLImageElement.prototype, 'src', originalSrcDescriptor);
+  imageSrcInterceptorInstalled = false;
+}
+
 // ─── Direct loaders (for adapter code that bypasses telescope's fetch) ──────
 
 /**
