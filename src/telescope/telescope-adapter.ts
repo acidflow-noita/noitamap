@@ -96,6 +96,7 @@ export interface GenerationResult {
   pixelScenesByPW: Record<string, PixelScene[]>;
   eyes: any;
   parallelWorlds: number[];
+  masterCanvas?: HTMLCanvasElement;
 }
 
 export interface GenerateOptions {

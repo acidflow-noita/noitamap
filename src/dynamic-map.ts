@@ -11,11 +11,11 @@
  *   7. Index POIs into FlexSearch for dynamic search
  */
 
-import { fetchDailySeed } from './data_sources/daily_seed';
-import { parseURL, updateURLWithSeed } from './data_sources/url';
-import { getCachedGeneration, cacheGeneration } from './telescope/tile-cache';
-import { generateDynamicMap, type GenerationResult } from './telescope/telescope-adapter';
-import { renderGenerationResult, clearDynamicOverlays, getAllPOIsFlat } from './telescope/telescope-osd-bridge';
+import { fetchDailySeed } from "./data_sources/daily_seed";
+import { parseURL, updateURLWithSeed } from "./data_sources/url";
+import { getCachedGeneration, cacheGeneration } from "./telescope/tile-cache";
+import { generateDynamicMap, type GenerationResult } from "./telescope/telescope-adapter";
+import { renderGenerationResult, clearDynamicOverlays, getAllPOIsFlat } from "./telescope/telescope-osd-bridge";
 
 // ─── Types & state ───────────────────────────────────────────────────────────
 
@@ -75,7 +75,7 @@ export async function resolveSeed(): Promise<{ seed: number; isDaily: boolean }>
     updateURLWithSeed(seed, true);
     return { seed, isDaily: true };
   } catch (err) {
-    console.warn('[DynamicMap] Daily seed fetch failed, using fallback:', err);
+    console.warn("[DynamicMap] Daily seed fetch failed, using fallback:", err);
     // Fallback: use a deterministic seed based on UTC date so every visitor
     // still sees the same map even when the Nolla endpoint is unreachable.
     const dateStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
@@ -108,6 +108,10 @@ export async function runDynamicMap(
   onLoadingChange?.(true);
   onSeedResolved?.(seed, isDaily);
 
+  // Clear existing before starting new generation to avoid stacking
+  // and give immediate visual feedback.
+  clearDynamicMap(viewer);
+
   try {
     // 1. Check cache
     console.log(`[DynamicMap] Checking cache for seed ${seed}…`);
@@ -119,12 +123,13 @@ export async function runDynamicMap(
       result = await generateDynamicMap({ seed, ngPlus: 0, dailySeed: isDaily });
 
       // 3. Store in cache (fire-and-forget — don't block render)
-      cacheGeneration(seed, result).catch(e =>
-        console.warn('[DynamicMap] Cache write failed:', e),
-      );
+      cacheGeneration(seed, result).catch((e) => console.warn("[DynamicMap] Cache write failed:", e));
     }
 
     // 4. Render onto OSD
+    console.log(
+      `[DynamicMap] Rendering seed ${seed} with ${result.parallelWorlds?.length || 3} worlds, worldCenter=${result.worldCenter}`,
+    );
     await renderGenerationResult(viewer as any, result);
 
     // 5. Export flat POI list for search
@@ -140,7 +145,7 @@ export async function runDynamicMap(
 
     return result;
   } catch (err) {
-    console.error('[DynamicMap] Pipeline failed:', err);
+    console.error("[DynamicMap] Pipeline failed:", err);
     return null;
   } finally {
     onLoadingChange?.(false);
@@ -170,5 +175,5 @@ function buildPOIName(p: any): string {
   if (p.item) return p.item;
   if (p.name) return p.name;
   if (p.type) return p.type;
-  return 'Unknown';
+  return "Unknown";
 }

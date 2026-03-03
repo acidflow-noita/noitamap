@@ -9,23 +9,34 @@ import type { GenerationResult, POI, PixelScene, TileLayer } from "./telescope-a
 declare const OpenSeadragon: any;
 
 let CHUNK_SIZE: number;
+let BIOME_CONFIG: any;
+let TILE_FOREGROUND_COLORS: any;
 let _telescopeModulesLoaded = false;
 
 async function ensureTelescopeModules(): Promise<void> {
   if (_telescopeModulesLoaded) return;
-  const [constantsMod, utilsMod] = await Promise.all([
+  const [constantsMod, biomeMod, imageMod] = await Promise.all([
     import("noita-telescope/constants.js"),
-    import("noita-telescope/utils.js"),
+    import("noita-telescope/biome_generator.js"),
+    import("noita-telescope/image_processing.js"),
   ]);
   CHUNK_SIZE = constantsMod.CHUNK_SIZE;
+  BIOME_CONFIG = biomeMod.BIOME_CONFIG;
+  TILE_FOREGROUND_COLORS = imageMod.TILE_FOREGROUND_COLORS;
   _telescopeModulesLoaded = true;
 }
 
 type OSDViewer = any;
 
-let dynamicTiledImages: any[] = [];
+const dynamicTiledImages: Set<OpenSeadragon.TiledImage> = new Set();
 let dynamicOverlayElements: HTMLElement[] = [];
 let dynamicBlobUrls: string[] = [];
+
+/**
+ * ID of the currently active generation. Used to abort rendering
+ * if a newer generation starts while we're awaiting async operations.
+ */
+let currentGenerationId = 0;
 
 /**
  * Remove all dynamic map overlays from the viewer.
@@ -36,7 +47,7 @@ export function clearDynamicOverlays(viewer: any): void {
       viewer.world.removeItem(item);
     } catch {}
   }
-  dynamicTiledImages = [];
+  dynamicTiledImages.clear();
 
   for (const el of dynamicOverlayElements) {
     try {
@@ -46,10 +57,42 @@ export function clearDynamicOverlays(viewer: any): void {
   }
   dynamicOverlayElements = [];
 
-  for (const url of dynamicBlobUrls) {
-    URL.revokeObjectURL(url);
-  }
+  // Delay revocation to give OSD time to release the resources
+  const urlsToRevoke = [...dynamicBlobUrls];
   dynamicBlobUrls = [];
+  setTimeout(() => {
+    for (const url of urlsToRevoke) {
+      URL.revokeObjectURL(url);
+    }
+  }, 2000);
+}
+
+/**
+ * Recolor grayscale Wang tiles with biome-specific foreground colors.
+ */
+function recolorLayerCanvas(canvas: HTMLCanvasElement, biomeColor: number): void {
+  const fgColor = TILE_FOREGROUND_COLORS?.[biomeColor];
+  if (!fgColor) return;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imgData.data;
+
+  const r = (fgColor >> 16) & 0xff;
+  const g = (fgColor >> 8) & 0xff;
+  const b = fgColor & 0xff;
+
+  for (let i = 0; i < data.length; i += 4) {
+    // If it's a "gray" pixel (detail pixel), recolor it
+    if (data[i] === data[i + 1] && data[i + 1] === data[i + 2] && data[i] > 0) {
+      data[i] = r;
+      data[i + 1] = g;
+      data[i + 2] = b;
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
 }
 
 /**
@@ -68,17 +111,14 @@ async function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
 }
 
 /**
- * Add generated tile canvases to the OSD viewer.
- * Merges all biomes into a single master canvas to solve memory/scaling issues.
+ * Generates a single master canvas by merging all biome layers.
  */
-export async function addTileLayers(viewer: OSDViewer, result: GenerationResult): Promise<void> {
-  await ensureTelescopeModules();
-  const { tileLayers, isNGP, worldCenter } = result;
+async function generateMasterCanvas(result: GenerationResult): Promise<HTMLCanvasElement> {
+  const { tileLayers, isNGP } = result;
 
   // Noita world dimensions (in chunks)
   const w = isNGP ? 72 : 70;
   const h = 240;
-  const pwOffsetChunks = w * 512;
 
   // 1. Create a Master World Canvas at 1:10 scale (as per Telescope's internal scale)
   const masterW = Math.ceil((w * 512) / 10);
@@ -93,42 +133,125 @@ export async function addTileLayers(viewer: OSDViewer, result: GenerationResult)
   // Merge all biome layers into the master canvas
   for (const layer of tileLayers) {
     if (!layer.canvas) continue;
+
+    // Apply biome recoloring if we have a biome name/color
+    const biomeName = (layer as any).biomeName;
+    const biomeColor = BIOME_CONFIG[biomeName]?.color;
+    if (biomeColor !== undefined) {
+      recolorLayerCanvas(layer.canvas, biomeColor);
+    }
+
     // layer.correctedX/Y are relative to Chunk 0. Map to 1/10th scale.
     ctx.drawImage(layer.canvas, layer.correctedX / 10, layer.correctedY / 10);
+  }
+  return masterCanvas;
+}
+
+/**
+ * Generates a giant master canvas covering all active parallel worlds (usually -1, 0, 1).
+ */
+async function generateMasterWorldCanvas(result: GenerationResult): Promise<HTMLCanvasElement> {
+  const { tileLayers, isNGP, parallelWorlds } = result;
+
+  // Noita world width (in chunks)
+  const w = isNGP ? 72 : 70;
+  const pwOffsetPixels = w * 512;
+  const pws = parallelWorlds || [-1, 0, 1];
+  const minPW = Math.min(...pws);
+  const maxPW = Math.max(...pws);
+  const numPws = maxPW - minPW + 1;
+
+  // Master World Canvas at 1:10 scale
+  const masterW = Math.ceil((numPws * pwOffsetPixels) / 10);
+  const masterH = Math.ceil((140 * 512) / 10); // Vertical size covers expected range
+
+  const canvas = document.createElement("canvas");
+  canvas.width = masterW;
+  canvas.height = masterH;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+
+  // Shift to start drawing from the leftmost PW
+  const xOffset = -minPW * pwOffsetPixels;
+
+  for (const pw of pws) {
+    const pwShiftX = (pw * pwOffsetPixels + xOffset) / 10;
+    for (const layer of tileLayers) {
+      if (layer.canvas) {
+        ctx.drawImage(layer.canvas, pwShiftX + layer.correctedX / 10, layer.correctedY / 10);
+      }
+    }
+  }
+
+  return canvas;
+}
+
+/**
+ * Add generated tile canvases to the OSD viewer.
+ */
+export async function addTileLayers(viewer: OSDViewer, result: GenerationResult, generationId: number): Promise<void> {
+  await ensureTelescopeModules();
+  const { isNGP, worldCenter, parallelWorlds } = result;
+
+  // 1. Get or Generate Master World Canvas
+  if (!result.masterCanvas) {
+    result.masterCanvas = await generateMasterWorldCanvas(result);
+  }
+  const masterCanvas = result.masterCanvas;
+
+  // Guard: if another generation started while we were processing this one, abort.
+  if (currentGenerationId !== generationId) {
+    console.log(`[OSD Bridge] Aborting addTileLayers for obsolete generation ${generationId}`);
+    return;
   }
 
   // 2. Add to OSD
   const url = await canvasToBlobUrl(masterCanvas);
-  const anchorX = -(worldCenter * 512); // Chunk 35 (center) -> -17920
-  const anchorY = -(14 * 512); // Chunk 14 (origin) -> -7168
 
-  let addedCount = 0;
-  for (const pw of result.parallelWorlds || [-1, 0, 1]) {
-    const pwShiftX = pw * pwOffsetChunks;
+  const w = isNGP ? 72 : 70;
+  const pwOffsetPixels = w * 512;
+  const pws = parallelWorlds || [-1, 0, 1];
+  const minPW = Math.min(...pws);
 
-    viewer.addTiledImage({
-      tileSource: {
-        type: "image",
-        url: url,
-        buildPyramid: true, // Native OSD pyramid support for clean zooming
-      },
-      x: anchorX + pwShiftX,
-      y: anchorY,
-      width: masterW * 10, // Apply 10x scale to mapped pixels
-      error: (err: any) => console.error("[OSD Bridge] Failed to load master image:", err),
-    });
-    addedCount++;
+  // Noita alignment:
+  // Middle world origin corresponds to Chunk 35 (or 36 for NGP).
+  // anchorX is the world coordinate of the left edge of the Middle World.
+  const middleWorldLeftX = -(worldCenter * 512);
+  const totalLeftX = middleWorldLeftX + minPW * pwOffsetPixels;
+  const anchorY = -(14 * 512); // Chunk 14 is the origin vertical chunk
+
+  console.log(
+    `[OSD Bridge] Gen ${generationId}: Adding master biomes at x=${totalLeftX}, y=${anchorY}, wc=${worldCenter}`,
+  );
+
+  // Clear existing biome layers IMMEDIATELY before adding new ones
+  clearDynamicOverlays(viewer);
+
+  const tiledImage = viewer.addTiledImage({
+    tileSource: {
+      type: "image",
+      url: url,
+      buildPyramid: true,
+    },
+    x: totalLeftX,
+    y: anchorY,
+    width: masterCanvas.width * 10,
+    success: (event: any) => {
+      // Final Guard: If a newer generation has already taken over, remove this one immediately.
+      if (currentGenerationId !== generationId) {
+        console.log(`[OSD Bridge] Removing late-success image for generation ${generationId}`);
+        viewer.world.removeItem(event.item);
+        return;
+      }
+      dynamicTiledImages.add(event.item);
+      dynamicBlobUrls.push(url);
+    },
+    error: (err: any) => console.error("[OSD Bridge] Failed to load master image:", err),
+  });
+
+  if (tiledImage) {
+    // Also track the item immediately if available sync (though success is safer)
+    dynamicTiledImages.add(tiledImage);
   }
-
-  // Track items for dynamic cleanup
-  setTimeout(() => {
-    const count = viewer.world.getItemCount();
-    const newItems: any[] = [];
-    for (let i = count - addedCount; i < count; i++) {
-      if (i >= 0) newItems.push(viewer.world.getItemAt(i));
-    }
-    dynamicTiledImages.push(...newItems);
-  }, 100);
 }
 
 /**
@@ -168,11 +291,13 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
 
   setTimeout(() => {
     const count = viewer.world.getItemCount();
-    const newItems: any[] = [];
-    for (let i = count - addedCount; i < count; i++) {
-      if (i >= 0) newItems.push(viewer.world.getItemAt(i));
-    }
-    dynamicTiledImages.push(...newItems);
+    // This logic needs to be updated to work with a Set if pixel scenes are to be cleared dynamically.
+    // For now, pixel scenes are not cleared by clearDynamicOverlays.
+    // const newItems: any[] = [];
+    // for (let i = count - addedCount; i < count; i++) {
+    //   if (i >= 0) newItems.push(viewer.world.getItemAt(i));
+    // }
+    // dynamicTiledImages.push(...newItems);
   }, 100);
 }
 
@@ -227,8 +352,11 @@ function getPOIColor(poi: POI): string {
 }
 
 export async function renderGenerationResult(viewer: OSDViewer, result: GenerationResult): Promise<void> {
+  const generationId = ++currentGenerationId;
+  // Overlays are now cleared at the START of runDynamicMap to avoid stacking
+  // during the long generation process. We clear again here just in case.
   clearDynamicOverlays(viewer);
-  await addTileLayers(viewer, result);
+  await addTileLayers(viewer, result, generationId);
   // POIs and pixel scenes disabled to maximize stability for now
 }
 

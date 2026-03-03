@@ -6,14 +6,20 @@
  * Prunes entries older than 30 days.
  */
 
-const DB_NAME = 'noitamap-telescope';
+const DB_NAME = "noitamap-telescope";
 const DB_VERSION = 1;
-const STORE_NAME = 'generations';
+const STORE_NAME = "generations";
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 interface CachedGeneration {
   seed: number;
   timestamp: number;
+  ngPlus: number;
+  isNGP: boolean;
+  worldSize: number;
+  worldCenter: number;
+  parallelWorlds: number[];
+  masterBlob: Blob | null;
   tileLayers: Array<{
     blob: Blob;
     correctedX: number;
@@ -22,24 +28,26 @@ interface CachedGeneration {
     h: number;
   }>;
   poisByPW: Record<string, any[]>;
-  pixelScenesByPW: Record<string, Array<{
-    blob: Blob;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    name: string;
-    key: string;
-  }>>;
+  pixelScenesByPW: Record<
+    string,
+    Array<{
+      blob: Blob;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      name: string;
+      key: string;
+    }>
+  >;
 }
-
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'seed' });
+        db.createObjectStore(STORE_NAME, { keyPath: "seed" });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -52,13 +60,13 @@ function openDB(): Promise<IDBDatabase> {
  */
 function canvasToBlob(canvas: HTMLCanvasElement | OffscreenCanvas): Promise<Blob> {
   if (canvas instanceof OffscreenCanvas) {
-    return canvas.convertToBlob({ type: 'image/png' });
+    return canvas.convertToBlob({ type: "image/png" });
   }
   return new Promise((resolve, reject) => {
-    canvas.toBlob(blob => {
+    canvas.toBlob((blob) => {
       if (blob) resolve(blob);
-      else reject(new Error('Canvas toBlob failed'));
-    }, 'image/png');
+      else reject(new Error("Canvas toBlob failed"));
+    }, "image/png");
   });
 }
 
@@ -67,10 +75,10 @@ function canvasToBlob(canvas: HTMLCanvasElement | OffscreenCanvas): Promise<Blob
  */
 async function blobToCanvas(blob: Blob): Promise<HTMLCanvasElement> {
   const bitmap = await createImageBitmap(blob);
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
   ctx.drawImage(bitmap, 0, 0);
   bitmap.close();
   return canvas;
@@ -91,7 +99,7 @@ export async function cacheGeneration(seed: number, result: any): Promise<void> 
         correctedY: layer.correctedY,
         w: layer.w,
         h: layer.h,
-      }))
+      })),
     );
 
     // Serialize pixel scene canvases to blobs
@@ -106,19 +114,25 @@ export async function cacheGeneration(seed: number, result: any): Promise<void> 
           height: scene.height,
           name: scene.name,
           key: scene.key,
-        }))
+        })),
       );
     }
 
     const entry: CachedGeneration = {
       seed,
       timestamp: Date.now(),
+      ngPlus: result.ngPlus,
+      isNGP: result.isNGP,
+      worldSize: result.worldSize,
+      worldCenter: result.worldCenter,
+      parallelWorlds: result.parallelWorlds || [-1, 0, 1],
+      masterBlob: result.masterCanvas ? await canvasToBlob(result.masterCanvas) : null,
       tileLayers,
       poisByPW: result.poisByPW,
       pixelScenesByPW,
     };
 
-    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const tx = db.transaction(STORE_NAME, "readwrite");
     tx.objectStore(STORE_NAME).put(entry);
     await new Promise<void>((resolve, reject) => {
       tx.oncomplete = () => resolve();
@@ -128,7 +142,7 @@ export async function cacheGeneration(seed: number, result: any): Promise<void> 
     db.close();
     console.log(`[TileCache] Cached generation for seed ${seed}`);
   } catch (e) {
-    console.warn('[TileCache] Failed to cache generation:', e);
+    console.warn("[TileCache] Failed to cache generation:", e);
   }
 }
 
@@ -138,7 +152,7 @@ export async function cacheGeneration(seed: number, result: any): Promise<void> 
 export async function getCachedGeneration(seed: number): Promise<any | null> {
   try {
     const db = await openDB();
-    const tx = db.transaction(STORE_NAME, 'readonly');
+    const tx = db.transaction(STORE_NAME, "readonly");
     const req = tx.objectStore(STORE_NAME).get(seed);
 
     const entry: CachedGeneration | undefined = await new Promise((resolve, reject) => {
@@ -163,7 +177,7 @@ export async function getCachedGeneration(seed: number): Promise<any | null> {
         correctedY: layer.correctedY,
         w: layer.w,
         h: layer.h,
-      }))
+      })),
     );
 
     const pixelScenesByPW: Record<string, any[]> = {};
@@ -177,18 +191,25 @@ export async function getCachedGeneration(seed: number): Promise<any | null> {
           height: scene.height,
           name: scene.name,
           key: scene.key,
-        }))
+        })),
       );
     }
 
     console.log(`[TileCache] Cache hit for seed ${seed}`);
     return {
+      seed: entry.seed,
+      ngPlus: entry.ngPlus,
+      isNGP: entry.isNGP,
+      worldSize: entry.worldSize,
+      worldCenter: entry.worldCenter,
+      parallelWorlds: entry.parallelWorlds,
+      masterCanvas: entry.masterBlob ? await blobToCanvas(entry.masterBlob) : null,
       tileLayers,
       poisByPW: entry.poisByPW,
       pixelScenesByPW,
     };
   } catch (e) {
-    console.warn('[TileCache] Failed to read cache:', e);
+    console.warn("[TileCache] Failed to read cache:", e);
     return null;
   }
 }
@@ -199,7 +220,7 @@ export async function getCachedGeneration(seed: number): Promise<any | null> {
 async function pruneOldEntries(): Promise<void> {
   try {
     const db = await openDB();
-    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
     const req = store.openCursor();
     const now = Date.now();
@@ -220,6 +241,6 @@ async function pruneOldEntries(): Promise<void> {
     });
     db.close();
   } catch (e) {
-    console.warn('[TileCache] Failed to prune:', e);
+    console.warn("[TileCache] Failed to prune:", e);
   }
 }

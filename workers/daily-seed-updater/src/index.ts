@@ -37,13 +37,15 @@ function parseSeed(text: string): number | null {
 
 /** Build the _headers file content for CORS + caching. */
 function headersFileContent(): string {
-  return [
-    "/current_seed.txt",
-    "  Access-Control-Allow-Origin: *",
-    "  Access-Control-Allow-Methods: GET, OPTIONS",
-    "  Cache-Control: public, max-age=300, s-maxage=300",
-    "  Content-Type: text/plain; charset=utf-8",
-  ].join("\n") + "\n";
+  return (
+    [
+      "/current_seed.txt",
+      "  Access-Control-Allow-Origin: *",
+      "  Access-Control-Allow-Methods: GET, OPTIONS",
+      "  Cache-Control: public, max-age=300, s-maxage=300",
+      "  Content-Type: text/plain; charset=utf-8",
+    ].join("\n") + "\n"
+  );
 }
 
 /**
@@ -53,14 +55,19 @@ function headersFileContent(): string {
  *   2. POST .../assets/upload?base64=true  (file content, auth = upload jwt)
  *   3. PUT  .../scripts/{name}  (deploy worker with completion jwt)
  */
-async function deployStaticAssets(seed: number, apiToken: string, accountId: string, workerName: string): Promise<void> {
+async function deployStaticAssets(
+  seed: number,
+  apiToken: string,
+  accountId: string,
+  workerName: string,
+): Promise<void> {
   const seedContent = seed.toString() + "\n";
   const headersContent = headersFileContent();
 
   const workerScript = `
 export default {
   async fetch(request, env) {
-    return new Response("Not Found", { status: 404 });
+    return env.ASSETS.fetch(request);
   }
 };
 `.trim();
@@ -75,26 +82,23 @@ export default {
   const headersB64 = bytesToBase64(headersBytes);
 
   // Hash = sha256(base64(content) + extension) truncated to 32 hex chars
-  const seedHash = await assetHash(seedB64, "txt");
+  const seedHash = await assetHash(seedB64, ".txt");
   const headersHash = await assetHash(headersB64, "");
 
   // --- Step 1: Create upload session ---
-  const sessionResp = await fetch(
-    `${apiBase}/workers/scripts/${workerName}/assets-upload-session`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        manifest: {
-          "/current_seed.txt": { hash: seedHash, size: seedBytes.byteLength },
-          "/_headers": { hash: headersHash, size: headersBytes.byteLength },
-        },
-      }),
+  const sessionResp = await fetch(`${apiBase}/workers/scripts/${workerName}/assets-upload-session`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiToken}`,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      manifest: {
+        "/current_seed.txt": { hash: seedHash, size: seedBytes.byteLength },
+        "/_headers": { hash: headersHash, size: headersBytes.byteLength },
+      },
+    }),
+  });
   if (!sessionResp.ok) {
     const text = await sessionResp.text();
     throw new Error(`Asset upload session failed (${sessionResp.status}): ${text}`);
@@ -105,7 +109,7 @@ export default {
   let jwt = sessionData.result.jwt;
   const buckets = sessionData.result.buckets;
 
-  // --- Step 2: Upload files (base64-encoded JSON body) ---
+  // --- Step 2: Upload files ---
   const hashToB64: Record<string, string> = {
     [seedHash]: seedB64,
     [headersHash]: headersB64,
@@ -115,18 +119,17 @@ export default {
     const formData = new FormData();
     for (const hash of bucket) {
       if (hashToB64[hash]) {
-        formData.append(hash, new Blob([hashToB64[hash]]), hash);
+        // When base64=true is set on the upload URL, Cloudflare expects
+        // the form data value to be the base64-encoded string itself.
+        formData.append(hash, hashToB64[hash]);
       }
     }
 
-    const uploadResp = await fetch(
-      `${apiBase}/workers/assets/upload?base64=true`,
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${jwt}` },
-        body: formData,
-      },
-    );
+    const uploadResp = await fetch(`${apiBase}/workers/assets/upload?base64=true`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${jwt}` },
+      body: formData,
+    });
     if (!uploadResp.ok) {
       const text = await uploadResp.text();
       throw new Error(`Asset upload failed (${uploadResp.status}): ${text}`);
@@ -148,14 +151,11 @@ export default {
   deployForm.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
   deployForm.append("worker.js", new Blob([workerScript], { type: "application/javascript+module" }), "worker.js");
 
-  const deployResp = await fetch(
-    `${apiBase}/workers/scripts/${workerName}`,
-    {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${apiToken}` },
-      body: deployForm,
-    },
-  );
+  const deployResp = await fetch(`${apiBase}/workers/scripts/${workerName}`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${apiToken}` },
+    body: deployForm,
+  });
   if (!deployResp.ok) {
     const text = await deployResp.text();
     throw new Error(`Worker deploy failed (${deployResp.status}): ${text}`);
@@ -176,15 +176,15 @@ async function assetHash(contentBase64: string, extension: string): Promise<stri
   const encoder = new TextEncoder();
   const data = encoder.encode(contentBase64 + extension);
   const digest = await crypto.subtle.digest("SHA-256", data);
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+  return [...new Uint8Array(digest)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 32);
 }
 
 async function runUpdate(env: Env): Promise<string> {
   // Resolve secrets from Secrets Store
-  const [apiToken, accountId] = await Promise.all([
-    env.CF_API_TOKEN.get(),
-    env.CF_ACCOUNT_ID.get(),
-  ]);
+  const [apiToken, accountId] = await Promise.all([env.CF_API_TOKEN.get(), env.CF_ACCOUNT_ID.get()]);
 
   // 1. Fetch seed from Nolla
   const resp = await fetch(NOLLA_URL);
@@ -208,6 +208,19 @@ async function runUpdate(env: Env): Promise<string> {
 }
 
 export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const url = new URL(request.url);
+    if (url.pathname === "/update") {
+      try {
+        const result = await runUpdate(env);
+        return new Response(result, { status: 200 });
+      } catch (err: any) {
+        return new Response(err.message, { status: 500 });
+      }
+    }
+    return new Response("Not Found", { status: 404 });
+  },
+
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     await runUpdate(env);
   },
