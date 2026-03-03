@@ -4,13 +4,106 @@
  * Bridges between data.zip (via data-archive.ts) and telescope's expected
  * `./data/...` fetch paths.
  *
- * Strategy: patch `window.fetch` so that any request to a `./data/...` URL
- * is intercepted, resolved from data.zip, and returned as a normal Response.
- * This lets ALL telescope code (loadPixelSceneData, sanitizePng, preload,
- * loadWangAsset) work unmodified — they just call fetch() and get zip data.
+ * Strategy:
+ *  1. Try data.zip (our custom archive, has biome maps and biome_impl PNGs)
+ *  2. Try telescope's own pixel_scenes.zip or wang_tiles.zip (served from public/)
+ *  3. Fall through to the real network (serves translations.csv, secret_messages, etc.)
  */
 
+import JSZip from "jszip";
 import { getDataZip } from "../data-archive";
+
+// ─── Secondary zip archives (telescope's own data) ──────────────────────────
+
+let pixelScenesZip: JSZip | null = null;
+let pixelScenesZipPromise: Promise<JSZip | null> | null = null;
+
+let wangTilesZip: JSZip | null = null;
+let wangTilesZipPromise: Promise<JSZip | null> | null = null;
+
+async function loadSecondaryZip(
+  url: string,
+  cache: { zip: JSZip | null; promise: Promise<JSZip | null> | null },
+): Promise<JSZip | null> {
+  if (cache.zip) return cache.zip;
+  if (!cache.promise) {
+    cache.promise = (async () => {
+      try {
+        const resp = await originalFetch(url);
+        if (!resp.ok) return null;
+        const buf = await resp.arrayBuffer();
+        const z = await JSZip.loadAsync(buf);
+        cache.zip = z;
+        return z;
+      } catch {
+        return null;
+      }
+    })();
+  }
+  return cache.promise;
+}
+
+function getPixelScenesZip(): Promise<JSZip | null> {
+  const cache = {
+    get zip() {
+      return pixelScenesZip;
+    },
+    set zip(v) {
+      pixelScenesZip = v;
+    },
+    get promise() {
+      return pixelScenesZipPromise;
+    },
+    set promise(v) {
+      pixelScenesZipPromise = v;
+    },
+  };
+  return loadSecondaryZip("./pixel_scenes.zip", cache);
+}
+
+function getWangTilesZip(): Promise<JSZip | null> {
+  const cache = {
+    get zip() {
+      return wangTilesZip;
+    },
+    set zip(v) {
+      wangTilesZip = v;
+    },
+    get promise() {
+      return wangTilesZipPromise;
+    },
+    set promise(v) {
+      wangTilesZipPromise = v;
+    },
+  };
+  return loadSecondaryZip("./wang_tiles.zip", cache);
+}
+
+/**
+ * Try to resolve a telescope data path from the secondary zip archives.
+ * - data/pixel_scenes/<biome>/<scene>.png → pixel_scenes.zip entry <biome>/<scene>.png
+ * - data/wang_tiles/<sub>.png            → wang_tiles.zip entry <sub>.png
+ * Returns the file contents as ArrayBuffer, or null if not found.
+ */
+async function trySecondaryZips(normalizePath: string): Promise<ArrayBuffer | null> {
+  if (normalizePath.startsWith("data/pixel_scenes/")) {
+    const relativePath = normalizePath.replace("data/pixel_scenes/", "");
+    const z = await getPixelScenesZip();
+    if (z) {
+      const file = z.file(relativePath);
+      if (file) return file.async("arraybuffer");
+    }
+  }
+  if (normalizePath.startsWith("data/wang_tiles/")) {
+    const relativePath = normalizePath.replace("data/wang_tiles/", "");
+    const z = await getWangTilesZip();
+    if (z) {
+      const file = z.file(relativePath);
+      if (file) return file.async("arraybuffer");
+    }
+  }
+  return null;
+}
 
 // ─── Path mapping ───────────────────────────────────────────────────────────
 
@@ -101,8 +194,17 @@ export function installFetchInterceptor(): void {
 
     const file = zip.file(zipPath);
     if (!file) {
-      console.warn(`[DataBridge] Not found in zip: ${zipPath} (from ${urlString})`);
-      return new Response(null, { status: 404, statusText: "Not Found" });
+      // Not in data.zip — try telescope's own secondary zip archives
+      const buf = await trySecondaryZips(normalizePath);
+      if (buf) {
+        const ext = normalizePath.split(".").pop()?.toLowerCase();
+        let mime = "application/octet-stream";
+        if (ext === "png") mime = "image/png";
+        else if (ext === "csv") mime = "text/csv";
+        return new Response(buf, { status: 200, statusText: "OK", headers: { "Content-Type": mime } });
+      }
+      // Fall through to the real network (translations.csv, secret_messages, etc.)
+      return originalFetch(input, init);
     }
 
     const buf = await file.async("arraybuffer");
@@ -147,28 +249,28 @@ export function installImageSrcInterceptor(): void {
   if (imageSrcInterceptorInstalled) return;
   imageSrcInterceptorInstalled = true;
 
-  originalSrcDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+  originalSrcDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src");
   if (!originalSrcDescriptor || !originalSrcDescriptor.set || !originalSrcDescriptor.get) {
-    console.warn('[DataBridge] Cannot intercept Image.src — descriptor not found');
+    console.warn("[DataBridge] Cannot intercept Image.src — descriptor not found");
     return;
   }
 
   const origSet = originalSrcDescriptor.set;
   const origGet = originalSrcDescriptor.get;
 
-  Object.defineProperty(HTMLImageElement.prototype, 'src', {
+  Object.defineProperty(HTMLImageElement.prototype, "src", {
     get: origGet,
     set(this: HTMLImageElement, value: string) {
       let isDataUrl = false;
-      let fetchPath = '';
+      let fetchPath = "";
 
-      if (typeof value === 'string') {
-        if (value.startsWith('./data/') || value.startsWith('data/')) {
+      if (typeof value === "string") {
+        if (value.startsWith("./data/") || value.startsWith("data/")) {
           isDataUrl = true;
           fetchPath = value;
-        } else if (value.startsWith('/data/')) {
+        } else if (value.startsWith("/data/")) {
           isDataUrl = true;
-          fetchPath = '.' + value;
+          fetchPath = "." + value;
         }
       }
 
@@ -181,8 +283,8 @@ export function installImageSrcInterceptor(): void {
       // convert to a blob URL, then set that as the actual src.
       const img = this;
       fetch(fetchPath)
-        .then(r => r.blob())
-        .then(blob => {
+        .then((r) => r.blob())
+        .then((blob) => {
           const blobUrl = URL.createObjectURL(blob);
           origSet.call(img, blobUrl);
         })
@@ -201,7 +303,7 @@ export function installImageSrcInterceptor(): void {
  */
 export function removeImageSrcInterceptor(): void {
   if (!imageSrcInterceptorInstalled || !originalSrcDescriptor) return;
-  Object.defineProperty(HTMLImageElement.prototype, 'src', originalSrcDescriptor);
+  Object.defineProperty(HTMLImageElement.prototype, "src", originalSrcDescriptor);
   imageSrcInterceptorInstalled = false;
 }
 
@@ -268,15 +370,18 @@ export async function loadWangTileFromZip(
   if (!zip) return null;
 
   const file = zip.file(zipPath);
+  let buf: ArrayBuffer;
   if (!file) {
-    console.warn(`[DataBridge] Wang tile not found: ${zipPath}`);
-    return null;
+    // Try telescope's own wang_tiles.zip (serves static/ entries missing from data.zip)
+    const secondary = await trySecondaryZips(zipPath);
+    if (!secondary) {
+      console.warn(`[DataBridge] Wang tile not found: ${zipPath}`);
+      return null;
+    }
+    buf = secondary;
+  } else {
+    buf = await file.async("arraybuffer");
   }
-
-  // Use the fetch interceptor path (sanitizePng expects to fetch a URL)
-  // Since the interceptor is installed, we can just use telescope's own
-  // sanitizePng which calls fetch() internally.
-  const buf = await file.async("arraybuffer");
   const blob = new Blob([buf], { type: "image/png" });
   const bitmap = await createImageBitmap(blob);
 

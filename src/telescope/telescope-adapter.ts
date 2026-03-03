@@ -11,7 +11,12 @@
  */
 
 import { installTelescopeShim } from "./telescope-dom-shim";
-import { installFetchInterceptor, installImageSrcInterceptor, loadBiomeMaps, loadWangTileFromZip } from "./telescope-data-bridge";
+import {
+  installFetchInterceptor,
+  installImageSrcInterceptor,
+  loadBiomeMaps,
+  loadWangTileFromZip,
+} from "./telescope-data-bridge";
 import { getDataZip } from "../data-archive";
 
 // Telescope modules — loaded dynamically in initTelescope() to avoid top-level
@@ -90,6 +95,7 @@ export interface GenerationResult {
   /** Pixel scenes keyed by "pw,pwVertical" */
   pixelScenesByPW: Record<string, PixelScene[]>;
   eyes: any;
+  parallelWorlds: number[];
 }
 
 export interface GenerateOptions {
@@ -119,7 +125,7 @@ export async function initTelescope(): Promise<void> {
   // 1. Install DOM shim before any telescope code reads the DOM
   installTelescopeShim({
     clearSpawnPixels: true,
-    recolorMaterials: false,
+    recolorMaterials: true,
     enableEdgeNoise: true,
     fixHolyMountainEdgeNoise: true,
   });
@@ -307,5 +313,6 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     poisByPW,
     pixelScenesByPW,
     eyes,
+    parallelWorlds,
   };
 }

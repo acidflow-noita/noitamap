@@ -2,178 +2,125 @@
  * telescope-osd-bridge.ts
  *
  * Renders telescope generation results onto an OpenSeadragon viewer.
- * Adds tile canvases as simple image overlays, POI sprites as HTML overlays,
- * and pixel scenes as image overlays.
- *
- * All telescope coordinates use the Noita world pixel system where
- * world center is at chunk (35, 14) for NG0.  OSD in noitamap already
- * uses world-pixel coordinates (the DZI TopLeft shifts take care of
- * aligning tiles).  For dynamic maps we position items directly in
- * world-pixel space.
+ * Merges biome layers into a single master canvas for performance and scaling.
  */
 
-import type { GenerationResult, POI, PixelScene, TileLayer } from './telescope-adapter';
+import type { GenerationResult, POI, PixelScene, TileLayer } from "./telescope-adapter";
+declare const OpenSeadragon: any;
 
-// Telescope constants/utils — loaded lazily to avoid pulling in the
-// static import chain that includes image_processing.js's top-level await.
-let VISUAL_TILE_OFFSET_X: number;
-let VISUAL_TILE_OFFSET_Y: number;
 let CHUNK_SIZE: number;
 let _telescopeModulesLoaded = false;
 
 async function ensureTelescopeModules(): Promise<void> {
   if (_telescopeModulesLoaded) return;
   const [constantsMod, utilsMod] = await Promise.all([
-    import('noita-telescope/constants.js'),
-    import('noita-telescope/utils.js'),
+    import("noita-telescope/constants.js"),
+    import("noita-telescope/utils.js"),
   ]);
-  VISUAL_TILE_OFFSET_X = constantsMod.VISUAL_TILE_OFFSET_X;
-  VISUAL_TILE_OFFSET_Y = constantsMod.VISUAL_TILE_OFFSET_Y;
   CHUNK_SIZE = constantsMod.CHUNK_SIZE;
   _telescopeModulesLoaded = true;
 }
 
-// OSD viewer type — use `any` because the installed OSD types bundle
-// does not export Viewer/TiledImage/Point as named exports; they are
-// available on the global OpenSeadragon object loaded via CDN script.
 type OSDViewer = any;
 
-// Track items we've added so we can clear them on regeneration
 let dynamicTiledImages: any[] = [];
 let dynamicOverlayElements: HTMLElement[] = [];
-
-// ─── Clear ──────────────────────────────────────────────────────────────────
+let dynamicBlobUrls: string[] = [];
 
 /**
  * Remove all dynamic map overlays from the viewer.
  */
 export function clearDynamicOverlays(viewer: any): void {
-  // Remove tiled images (tile canvases, pixel scenes)
   for (const item of dynamicTiledImages) {
     try {
       viewer.world.removeItem(item);
-    } catch {
-      // item may already be removed
-    }
+    } catch {}
   }
   dynamicTiledImages = [];
 
-  // Remove HTML overlays (POI sprites)
   for (const el of dynamicOverlayElements) {
     try {
       viewer.removeOverlay(el);
       el.remove();
-    } catch {
-      // overlay may already be removed
-    }
+    } catch {}
   }
   dynamicOverlayElements = [];
-}
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-/**
- * Convert a canvas (regular or OffscreenCanvas) to a data URL synchronously.
- */
-function canvasToDataUrl(canvas: HTMLCanvasElement | OffscreenCanvas): string {
-  if (canvas instanceof HTMLCanvasElement) {
-    return canvas.toDataURL('image/png');
+  for (const url of dynamicBlobUrls) {
+    URL.revokeObjectURL(url);
   }
-  // OffscreenCanvas: draw onto a regular canvas to get toDataURL
-  const tmp = document.createElement('canvas');
-  tmp.width = canvas.width;
-  tmp.height = canvas.height;
-  tmp.getContext('2d')!.drawImage(canvas as any, 0, 0);
-  return tmp.toDataURL('image/png');
+  dynamicBlobUrls = [];
 }
 
-// ─── Tile rendering ─────────────────────────────────────────────────────────
+/**
+ * Convert a canvas to a blob URL asynchronously.
+ */
+async function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob((b) => resolve(b), "image/png");
+  });
+
+  if (!blob) throw new Error("Failed to create blob from canvas");
+
+  const url = URL.createObjectURL(blob);
+  dynamicBlobUrls.push(url);
+  return url;
+}
 
 /**
- * Add generated tile canvases to the OSD viewer as simple images.
- *
- * Telescope's correctedX/correctedY are in world-pixel space relative to
- * the world center at (worldCenter*512, 14*512).  We add the center offset
- * so the tiles are positioned correctly in absolute world-pixel coords.
+ * Add generated tile canvases to the OSD viewer.
+ * Merges all biomes into a single master canvas to solve memory/scaling issues.
  */
-export async function addTileLayers(
-  viewer: OSDViewer,
-  result: GenerationResult,
-): Promise<void> {
+export async function addTileLayers(viewer: OSDViewer, result: GenerationResult): Promise<void> {
   await ensureTelescopeModules();
-  const { tileLayers, worldCenter, isNGP } = result;
+  const { tileLayers, isNGP, worldCenter } = result;
 
+  // Noita world dimensions (in chunks)
+  const w = isNGP ? 72 : 70;
+  const h = 240;
+  const pwOffsetChunks = w * 512;
+
+  // 1. Create a Master World Canvas at 1:10 scale (as per Telescope's internal scale)
+  const masterW = Math.ceil((w * 512) / 10);
+  const masterH = Math.ceil((h * 512) / 10);
+
+  const masterCanvas = document.createElement("canvas");
+  masterCanvas.width = masterW;
+  masterCanvas.height = masterH;
+  const ctx = masterCanvas.getContext("2d");
+  if (!ctx) throw new Error("Failed to create master canvas context");
+
+  // Merge all biome layers into the master canvas
   for (const layer of tileLayers) {
     if (!layer.canvas) continue;
-
-    const dataUrl = canvasToDataUrl(layer.canvas);
-
-    // Position in absolute world-pixel coords
-    const x = layer.correctedX + VISUAL_TILE_OFFSET_X;
-    const y = layer.correctedY + VISUAL_TILE_OFFSET_Y;
-
-    viewer.addSimpleImage({
-      url: dataUrl,
-      x,
-      y,
-      width: layer.w,
-    });
+    // layer.correctedX/Y are relative to Chunk 0. Map to 1/10th scale.
+    ctx.drawImage(layer.canvas, layer.correctedX / 10, layer.correctedY / 10);
   }
 
-  // Track the items we just added
-  // OSD adds them to the world, we need to capture them
-  // (addSimpleImage fires 'add-item' but doesn't return the item directly)
-  // We'll capture them after a microtask
-  setTimeout(() => {
-    const count = viewer.world.getItemCount();
-    // The last N items are the ones we just added
-    const newItems: any[] = [];
-    for (let i = count - tileLayers.length; i < count; i++) {
-      if (i >= 0) newItems.push(viewer.world.getItemAt(i));
-    }
-    dynamicTiledImages.push(...newItems);
-  }, 0);
-}
-
-// ─── Pixel scene rendering ──────────────────────────────────────────────────
-
-/**
- * Add pixel scenes for all parallel worlds to the viewer.
- */
-export async function addPixelScenes(
-  viewer: OSDViewer,
-  result: GenerationResult,
-): Promise<void> {
-  await ensureTelescopeModules();
-  const { pixelScenesByPW, worldCenter, worldSize, isNGP } = result;
+  // 2. Add to OSD
+  const url = await canvasToBlobUrl(masterCanvas);
+  const anchorX = -(worldCenter * 512); // Chunk 35 (center) -> -17920
+  const anchorY = -(14 * 512); // Chunk 14 (origin) -> -7168
 
   let addedCount = 0;
+  for (const pw of result.parallelWorlds || [-1, 0, 1]) {
+    const pwShiftX = pw * pwOffsetChunks;
 
-  for (const [pwKey, scenes] of Object.entries(pixelScenesByPW)) {
-    const [pwStr] = pwKey.split(',');
-    const pw = parseInt(pwStr);
-
-    for (const scene of scenes) {
-      if (!scene || !scene.imgElement) continue;
-
-      const dataUrl = canvasToDataUrl(scene.imgElement);
-
-      // Pixel scene positions: scene.x/y are already in world coordinates
-      // but need the world center offset and PW shift
-      const x = scene.x + worldCenter * CHUNK_SIZE - pw * worldSize * CHUNK_SIZE;
-      const y = scene.y + 14 * CHUNK_SIZE;
-
-      viewer.addSimpleImage({
-        url: dataUrl,
-        x,
-        y,
-        width: scene.width,
-      });
-      addedCount++;
-    }
+    viewer.addTiledImage({
+      tileSource: {
+        type: "image",
+        url: url,
+        buildPyramid: true, // Native OSD pyramid support for clean zooming
+      },
+      x: anchorX + pwShiftX,
+      y: anchorY,
+      width: masterW * 10, // Apply 10x scale to mapped pixels
+      error: (err: any) => console.error("[OSD Bridge] Failed to load master image:", err),
+    });
+    addedCount++;
   }
 
-  // Track items
+  // Track items for dynamic cleanup
   setTimeout(() => {
     const count = viewer.world.getItemCount();
     const newItems: any[] = [];
@@ -181,32 +128,69 @@ export async function addPixelScenes(
       if (i >= 0) newItems.push(viewer.world.getItemAt(i));
     }
     dynamicTiledImages.push(...newItems);
-  }, 0);
+  }, 100);
 }
 
-// ─── POI rendering ──────────────────────────────────────────────────────────
+/**
+ * Add pixel scenes for all parallel worlds to the viewer.
+ */
+export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult): Promise<void> {
+  await ensureTelescopeModules();
+  const { pixelScenesByPW, worldCenter, worldSize } = result;
+
+  let addedCount = 0;
+
+  for (const [pwKey, scenes] of Object.entries(pixelScenesByPW)) {
+    const [pwStr] = pwKey.split(",");
+    const pw = parseInt(pwStr);
+
+    for (const scene of scenes) {
+      if (!scene || !scene.imgElement) continue;
+
+      const url = await canvasToBlobUrl(scene.imgElement as any);
+
+      const x = scene.x + worldCenter * CHUNK_SIZE - pw * worldSize * CHUNK_SIZE;
+      const y = scene.y + 14 * CHUNK_SIZE;
+
+      viewer.addTiledImage({
+        tileSource: {
+          type: "image",
+          url: url,
+          buildPyramid: false, // Small scenes don't need pyramids
+        },
+        x,
+        y,
+        width: scene.width * 10,
+      });
+      addedCount++;
+    }
+  }
+
+  setTimeout(() => {
+    const count = viewer.world.getItemCount();
+    const newItems: any[] = [];
+    for (let i = count - addedCount; i < count; i++) {
+      if (i >= 0) newItems.push(viewer.world.getItemAt(i));
+    }
+    dynamicTiledImages.push(...newItems);
+  }, 100);
+}
 
 /**
- * Add POI markers as OSD HTML overlays with actual game sprites.
- * Each POI gets an <img> element positioned at its world coordinates.
+ * Add POI markers as OSD HTML overlays.
  */
-export async function addPOIOverlays(
-  viewer: OSDViewer,
-  result: GenerationResult,
-): Promise<void> {
+export async function addPOIOverlays(viewer: OSDViewer, result: GenerationResult): Promise<void> {
   await ensureTelescopeModules();
-  const { poisByPW, worldCenter, worldSize, isNGP } = result;
+  const { poisByPW, worldCenter, worldSize } = result;
 
   for (const [pwKey, pois] of Object.entries(poisByPW)) {
-    const [pwStr] = pwKey.split(',');
+    const [pwStr] = pwKey.split(",");
     const pw = parseInt(pwStr);
 
     for (const poi of pois) {
       const el = createPOIElement(poi);
       if (!el) continue;
 
-      // POI positions: poi.x/y are in world-pixel coords with PW shift baked in
-      // We need to un-shift the PW and add the world center offset
       const x = poi.x - pw * worldSize * CHUNK_SIZE + worldCenter * CHUNK_SIZE;
       const y = poi.y + 14 * CHUNK_SIZE;
 
@@ -221,111 +205,42 @@ export async function addPOIOverlays(
   }
 }
 
-/**
- * Create an HTML element for a POI.
- * Uses actual game sprites where available, falls back to a colored dot.
- */
 function createPOIElement(poi: POI): HTMLElement | null {
-  const el = document.createElement('div');
-  el.className = 'dynamic-poi';
-  el.dataset.poiType = poi.type;
-  if (poi.item) el.dataset.poiItem = poi.item;
-
-  // Determine sprite path based on POI type
-  const spritePath = getPOISpritePath(poi);
-
-  if (spritePath) {
-    const img = document.createElement('img');
-    img.src = spritePath;
-    img.style.cssText = 'width:32px;height:32px;image-rendering:pixelated;pointer-events:none;';
-    img.draggable = false;
-    el.appendChild(img);
-  } else {
-    // Fallback: colored circle
-    const color = getPOIColor(poi);
-    el.style.cssText = `width:12px;height:12px;border-radius:50%;background:${color};border:2px solid rgba(0,0,0,0.5);pointer-events:none;`;
-  }
-
+  const el = document.createElement("div");
+  el.className = "dynamic-poi";
+  const color = getPOIColor(poi);
+  el.style.cssText = `width:12px;height:12px;border-radius:50%;background:${color};border:2px solid rgba(0,0,0,0.5);pointer-events:none;`;
   return el;
 }
 
-/**
- * Get a sprite image path for a POI, or null if no sprite is available.
- * Sprites are loaded from data.zip via the fetch interceptor.
- */
-function getPOISpritePath(poi: POI): string | null {
-  // TODO: Build a proper sprite mapping once data.zip sprite paths are confirmed
-  // For now, use the fetch interceptor path for known item sprites
-  if (poi.type === 'item' && poi.item) {
-    if (poi.item.includes('potion') || poi.item === 'pouch') {
-      return './data/item_sprites/potion.png';
-    }
-    if (poi.item.includes('heart')) {
-      return './data/item_sprites/heart.png';
-    }
-  }
-  // Wand sprites require specific wand type info — use fallback for now
-  return null;
-}
-
-/**
- * Get a fallback color for a POI type.
- */
 function getPOIColor(poi: POI): string {
   switch (poi.type) {
-    case 'wand': return '#00FFFF';
-    case 'item':
-      if (poi.item?.includes('heart')) return '#FF0000';
-      if (poi.item?.includes('potion') || poi.item === 'pouch') return '#0000FF';
-      if (poi.item === 'portal') return '#800080';
-      return '#FFFF00';
-    case 'utility_box': return '#FF00FF';
-    case 'chest':
-    case 'pacifist_chest': return '#FFA500';
-    case 'great_chest': return '#FF5500';
-    case 'holy_mountain_shop': return '#00FF00';
-    default: return '#FFFFFF';
+    case "wand":
+      return "#00FFFF";
+    case "item":
+      return "#FFFF00";
+    case "chest":
+      return "#FFA500";
+    default:
+      return "#FFFFFF";
   }
 }
 
-// ─── Full render ────────────────────────────────────────────────────────────
-
-/**
- * Render all generation results onto the OSD viewer.
- * Clears previous dynamic overlays first.
- */
-export async function renderGenerationResult(
-  viewer: OSDViewer,
-  result: GenerationResult,
-): Promise<void> {
+export async function renderGenerationResult(viewer: OSDViewer, result: GenerationResult): Promise<void> {
   clearDynamicOverlays(viewer);
   await addTileLayers(viewer, result);
-  await addPixelScenes(viewer, result);
-  await addPOIOverlays(viewer, result);
+  // POIs and pixel scenes disabled to maximize stability for now
 }
 
-/**
- * Get all POIs from a generation result as a flat array with world-pixel coords,
- * suitable for indexing into FlexSearch.
- */
 export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: number; worldX: number; worldY: number }> {
   const flat: Array<POI & { pw: number; worldX: number; worldY: number }> = [];
-  const { poisByPW, worldCenter, worldSize } = result;
-
+  const { poisByPW } = result;
   for (const [pwKey, pois] of Object.entries(poisByPW)) {
-    const [pwStr] = pwKey.split(',');
+    const [pwStr] = pwKey.split(",");
     const pw = parseInt(pwStr);
-
     for (const poi of pois) {
-      flat.push({
-        ...poi,
-        pw,
-        // World-pixel coordinates (absolute, with PW baked in)
-        worldX: poi.x,
-        worldY: poi.y,
-      });
+      flat.push({ ...poi, pw, worldX: poi.x, worldY: poi.y });
     }
   }
-
   return flat;
 }

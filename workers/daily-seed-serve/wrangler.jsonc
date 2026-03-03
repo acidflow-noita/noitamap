@@ -4,6 +4,9 @@
   "assets": {
     "directory": "./public",
   },
+  "vars": {
+    "ALLOWED_ORIGINS": "http://localhost:5173,https://noitamap.com,https://dev.noitamap.com,https://dynamic-map.noitamap.com,https://dynamic-map.noitamap.pages.dev",
+  },
   "routes": [
     {
       "pattern": "daily-seed.acidflow.stream",
