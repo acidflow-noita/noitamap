@@ -1,16 +1,13 @@
 /**
  * telescope-dom-shim.ts
  *
- * Injects fake DOM elements that telescope's JS reads via
- * document.getElementById() / querySelector().  Must be called BEFORE any
- * telescope module that references the DOM.
+ * Injects fake DOM checkbox elements that telescope's JS reads via
+ * document.getElementById().  Must be called BEFORE any telescope
+ * module that references the DOM (poi_scanner, pixel_scene_generation,
+ * utils / getBiomeAtWorldCoordinates).
  *
- * telescope's app.js runs init() at module load time (triggered when
- * eye_messages.js imports from app.js).  init() attaches event handlers to
- * dozens of UI elements (seed input, PW controls, perk checkboxes, etc.) that
- * don't exist on the noitamap page.  Rather than stubbing every single element
- * we patch getElementById and querySelector to return safe no-op elements for
- * any ID/selector that doesn't exist in the real DOM.
+ * The shim creates hidden checkboxes with the IDs telescope expects
+ * and sets their .checked / .value to the defaults we want for noitamap.
  */
 
 let installed = false;
@@ -30,8 +27,8 @@ const DEFAULTS: Required<TelescopeShimOptions> = {
 };
 
 /**
- * Install DOM shims so telescope code can call
- * `document.getElementById('anything').checked` etc. without crashing.
+ * Install hidden checkbox stubs so telescope code can call
+ * `document.getElementById('clear-spawn-pixels').checked` etc.
  */
 export function installTelescopeShim(opts?: TelescopeShimOptions): void {
   if (installed) return;
@@ -44,6 +41,7 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
     'recolor-materials': cfg.recolorMaterials,
     'debug-enable-edge-noise': cfg.enableEdgeNoise,
     'debug-fix-holy-mountain-edge-noise': cfg.fixHolyMountainEdgeNoise,
+    // Additional IDs telescope may read (safe no-ops)
     'debug-hide-pois': true,
     'debug-draw': false,
     'debug-path': false,
@@ -62,7 +60,7 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
   container.style.display = 'none';
 
   for (const [id, checked] of Object.entries(checkboxes)) {
-    if (document.getElementById(id)) continue;
+    if (document.getElementById(id)) continue; // already exists
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.id = id;
@@ -70,6 +68,7 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
     container.appendChild(cb);
   }
 
+  // Also add text inputs telescope may read
   const textInputs: Record<string, string> = {
     'debug-extra-rerolls': '0',
     'debug-biome-overlay-mode': 'none',
@@ -84,41 +83,4 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
   }
 
   document.body.appendChild(container);
-
-  // app.js init() needs a real canvas (calls getContext('2d')) and a view div
-  if (!document.getElementById('canvas')) {
-    const canvas = document.createElement('canvas');
-    canvas.id = 'canvas';
-    canvas.style.display = 'none';
-    document.body.appendChild(canvas);
-  }
-  if (!document.getElementById('view')) {
-    const view = document.createElement('div');
-    view.id = 'view';
-    view.style.display = 'none';
-    document.body.appendChild(view);
-  }
-
-  // Patch getElementById and querySelector to return safe dummy elements
-  // for any ID/selector that telescope's app.js references but doesn't
-  // exist on the noitamap page. This prevents init() from crashing on
-  // the dozens of UI controls it tries to bind events to.
-  const origGetById = document.getElementById.bind(document);
-  document.getElementById = (id: string): HTMLElement => {
-    return origGetById(id) ?? makeDummyElement(id);
-  };
-
-  const origQuerySelector = document.querySelector.bind(document);
-  document.querySelector = ((selector: string): Element => {
-    return origQuerySelector(selector) ?? makeDummyElement();
-  }) as typeof document.querySelector;
-}
-
-/** A hidden element that silently accepts any property set / event binding. */
-function makeDummyElement(id?: string): HTMLInputElement {
-  const el = document.createElement('input');
-  el.type = 'text';
-  el.style.display = 'none';
-  if (id) el.id = id;
-  return el;
 }
