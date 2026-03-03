@@ -1,0 +1,13 @@
+{
+  "name": "daily-seed-updater",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260127.0",
+    "typescript": "^5.4.5",
+    "wrangler": "^4.0.0"
+  }
+}

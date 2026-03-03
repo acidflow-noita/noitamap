@@ -1,14 +1,14 @@
 /**
  * daily_seed.ts
  *
- * Fetches the Noita daily seed from Nolla's endpoint.
- * The fetch happens from the end user's browser — not from the deployment.
+ * Fetches the Noita daily seed from daily-seed.acidflow.stream,
+ * a static-assets-only CF Worker updated once per day by a separate cron worker.
  *
  * The daily seed changes at midnight UTC, so the cache is keyed by UTC date.
  * If the user has the tab open across midnight, the next call will re-fetch.
  */
 
-const DAILY_SEED_URL = "https://takapuoli.noitagame.com/callback";
+const DAILY_SEED_URL = "https://daily-seed.acidflow.stream/current_seed.txt";
 
 let cachedSeed: number | null = null;
 let cachedUTCDate: string | null = null;
@@ -30,10 +30,10 @@ export async function fetchDailySeed(): Promise<number> {
   if (!resp.ok) throw new Error(`Daily seed fetch failed: ${resp.status}`);
 
   const text = await resp.text();
-  // Response format: "field0;seedNumber;field2;..." — seed is at index 1
-  const parts = text.split(";");
-  const seed = parseInt(parts[1], 10);
-  if (isNaN(seed)) throw new Error(`Could not parse daily seed from: ${text}`);
+  const seed = parseInt(text.trim(), 10);
+  if (isNaN(seed)) {
+    throw new Error(`Could not parse daily seed from response: ${text}`);
+  }
 
   cachedSeed = seed;
   cachedUTCDate = today;

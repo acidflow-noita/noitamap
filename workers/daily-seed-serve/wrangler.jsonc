@@ -1,0 +1,13 @@
+{
+  "name": "daily-seed-serve",
+  "compatibility_date": "2026-02-19",
+  "assets": {
+    "directory": "./public",
+  },
+  "routes": [
+    {
+      "pattern": "daily-seed.acidflow.stream",
+      "custom_domain": true,
+    },
+  ],
+}

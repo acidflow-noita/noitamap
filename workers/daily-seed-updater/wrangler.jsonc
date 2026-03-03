@@ -1,0 +1,30 @@
+{
+  "name": "daily-seed-updater",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-02-19",
+  "observability": {
+    "enabled": false,
+  },
+  // Cron trigger: 00:01 UTC daily. Seed changes at midnight UTC.
+  "triggers": {
+    "crons": ["1 0 * * *"],
+  },
+  // No routes — this worker is never exposed via HTTP.
+  "vars": {
+    "SEED_WORKER_NAME": "daily-seed-serve",
+  },
+  // Secrets Store bindings — same store as noitamap-auth.
+  // Add CF_API_TOKEN and CF_ACCOUNT_ID to store ID 291b9519666945a1a56adbb686c62d76.
+  "secrets_store_secrets": [
+    {
+      "binding": "CF_API_TOKEN",
+      "store_id": "291b9519666945a1a56adbb686c62d76",
+      "secret_name": "CF_API_TOKEN",
+    },
+    {
+      "binding": "CF_ACCOUNT_ID",
+      "store_id": "291b9519666945a1a56adbb686c62d76",
+      "secret_name": "CF_ACCOUNT_ID",
+    },
+  ],
+}

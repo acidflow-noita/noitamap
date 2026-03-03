@@ -64,22 +64,29 @@ export function getCurrentIsDaily(): boolean {
 export async function resolveSeed(): Promise<{ seed: number; isDaily: boolean }> {
   const urlState = parseURL();
 
-  if (urlState.dailySeed || (urlState.seed === undefined && urlState.dailySeed === undefined)) {
-    // Daily seed path (explicit ds=1 OR no params at all)
-    const seed = await fetchDailySeed();
-    updateURLWithSeed(seed, true);
-    return { seed, isDaily: true };
-  }
-
-  if (urlState.seed !== undefined) {
+  if (urlState.seed !== undefined && !urlState.dailySeed) {
     // Arbitrary seed — already in URL, no fetch needed
     return { seed: urlState.seed, isDaily: false };
   }
 
-  // Fallback: daily
-  const seed = await fetchDailySeed();
-  updateURLWithSeed(seed, true);
-  return { seed, isDaily: true };
+  // Daily seed path (explicit ds=1 OR no params at all)
+  try {
+    const seed = await fetchDailySeed();
+    updateURLWithSeed(seed, true);
+    return { seed, isDaily: true };
+  } catch (err) {
+    console.warn('[DynamicMap] Daily seed fetch failed, using fallback:', err);
+    // Fallback: use a deterministic seed based on UTC date so every visitor
+    // still sees the same map even when the Nolla endpoint is unreachable.
+    const dateStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    let hash = 0;
+    for (let i = 0; i < dateStr.length; i++) {
+      hash = (hash * 31 + dateStr.charCodeAt(i)) | 0;
+    }
+    const fallbackSeed = Math.abs(hash) % 2147483647 || 1;
+    updateURLWithSeed(fallbackSeed, true);
+    return { seed: fallbackSeed, isDaily: true };
+  }
 }
 
 // ─── Main pipeline ───────────────────────────────────────────────────────────
