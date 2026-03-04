@@ -102,15 +102,19 @@ export async function runDynamicMap(
 ): Promise<GenerationResult | null> {
   const { viewer, onLoadingChange, onPOIsReady, onSeedResolved } = opts;
 
+  // 0. Skip if already showing this seed (avoids blinking and redundant loads)
+  if (seed === currentSeed && viewer.world.getItemCount() > 0) {
+    console.log(`[DynamicMap] Seed ${seed} is already active, skipping redundant render.`);
+    onLoadingChange?.(false);
+    return null;
+  }
+
+  onLoadingChange?.(true);
+
   currentSeed = seed;
   currentIsDaily = isDaily;
 
-  onLoadingChange?.(true);
   onSeedResolved?.(seed, isDaily);
-
-  // Clear existing before starting new generation to avoid stacking
-  // and give immediate visual feedback.
-  clearDynamicMap(viewer);
 
   try {
     // 1. Check cache

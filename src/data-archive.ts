@@ -3,36 +3,38 @@
  * Fetches data.zip once, caches it, and provides typed accessors for
  * individual entries (text, blob, ImageBitmap, etc.).
  */
-import JSZip from 'jszip';
+import JSZip from "jszip";
 
-const DATA_ZIP_URL = './data.zip';
+const DATA_ZIP_URL = "./data.zip";
 
 let zipPromise: Promise<JSZip | null> | null = null;
 let zip: JSZip | null = null;
 
 /**
- * Lazily fetch and cache data.zip.  Subsequent calls return the same instance.
+ * Lazily fetch and cache data.zip. Subsequent calls return the same instance.
  */
 export async function getDataZip(): Promise<JSZip | null> {
   if (zip) return zip;
-  if (!zipPromise) {
-    zipPromise = (async () => {
-      try {
-        const resp = await fetch(DATA_ZIP_URL);
-        if (!resp.ok) {
-          console.warn(`data.zip fetch failed (${resp.status})`);
-          return null;
-        }
-        const buf = await resp.arrayBuffer();
-        zip = await JSZip.loadAsync(buf);
-        console.log('[DataArchive] data.zip loaded');
-        return zip;
-      } catch (e) {
-        console.error('[DataArchive] Failed to load data.zip:', e);
+  if (zipPromise) return zipPromise;
+
+  zipPromise = (async () => {
+    try {
+      console.log("[DataArchive] Loading data.zip...");
+      const resp = await fetch(DATA_ZIP_URL);
+      if (!resp.ok) {
+        console.warn(`data.zip fetch failed (${resp.status})`);
         return null;
       }
-    })();
-  }
+      const buf = await resp.arrayBuffer();
+      zip = await JSZip.loadAsync(buf);
+      console.log("[DataArchive] data.zip loaded and ready");
+      return zip;
+    } catch (e) {
+      console.error("[DataArchive] Failed to load data.zip:", e);
+      return null;
+    }
+  })();
+
   return zipPromise;
 }
 
@@ -47,7 +49,7 @@ export async function readText(path: string): Promise<string | null> {
     console.warn(`[DataArchive] Missing: ${path}`);
     return null;
   }
-  return file.async('string');
+  return file.async("string");
 }
 
 /**
@@ -61,7 +63,7 @@ export async function readBlob(path: string, mimeType?: string): Promise<Blob | 
     console.warn(`[DataArchive] Missing: ${path}`);
     return null;
   }
-  const buf = await file.async('arraybuffer');
+  const buf = await file.async("arraybuffer");
   return new Blob([buf], mimeType ? { type: mimeType } : undefined);
 }
 
@@ -69,7 +71,7 @@ export async function readBlob(path: string, mimeType?: string): Promise<Blob | 
  * Read an image from data.zip as an ImageBitmap.
  */
 export async function readImage(path: string): Promise<ImageBitmap | null> {
-  const blob = await readBlob(path, 'image/png');
+  const blob = await readBlob(path, "image/png");
   if (!blob) return null;
   return createImageBitmap(blob);
 }
@@ -78,13 +80,13 @@ export async function readImage(path: string): Promise<ImageBitmap | null> {
  * Read a PNG from data.zip and return it as ImageData.
  */
 export async function readImageData(path: string): Promise<ImageData | null> {
-  const blob = await readBlob(path, 'image/png');
+  const blob = await readBlob(path, "image/png");
   if (!blob) return null;
   const bitmap = await createImageBitmap(blob);
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
   ctx.drawImage(bitmap, 0, 0);
   bitmap.close();
   return ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -94,13 +96,13 @@ export async function readImageData(path: string): Promise<ImageData | null> {
  * Read a PNG from data.zip and return it as an HTMLCanvasElement.
  */
 export async function readCanvas(path: string): Promise<HTMLCanvasElement | null> {
-  const blob = await readBlob(path, 'image/png');
+  const blob = await readBlob(path, "image/png");
   if (!blob) return null;
   const bitmap = await createImageBitmap(blob);
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
   ctx.drawImage(bitmap, 0, 0);
   bitmap.close();
   return canvas;

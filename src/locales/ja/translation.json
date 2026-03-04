@@ -915,5 +915,37 @@
       "black": "黒",
       "white": "白"
     }
+  },
+  "dynamicMap": {
+    "generate": {
+      "0": "G",
+      "1": "e",
+      "2": "n",
+      "3": "e",
+      "4": "r",
+      "5": "a",
+      "6": "t",
+      "7": "e",
+      "label": "Generate",
+      "alreadyGeneratedTitle": "Seed Active",
+      "alreadyGeneratedContent": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
+    },
+    "daily": "Daily",
+    "placeholder": "Custom seed…",
+    "nerdMode": {
+      "0": "N",
+      "1": "e",
+      "2": "r",
+      "3": "d",
+      "4": " ",
+      "5": "M",
+      "6": "o",
+      "7": "d",
+      "8": "e",
+      "label": "Nerd Mode",
+      "title": "Advanced Mode",
+      "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
+    },
+    "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
   }
 }

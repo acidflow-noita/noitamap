@@ -10,19 +10,24 @@ declare const OpenSeadragon: any;
 
 let CHUNK_SIZE: number;
 let BIOME_CONFIG: any;
+let GENERATOR_CONFIG: any;
 let TILE_FOREGROUND_COLORS: any;
+let createTileOverlaysCheap: any;
 let _telescopeModulesLoaded = false;
 
 async function ensureTelescopeModules(): Promise<void> {
   if (_telescopeModulesLoaded) return;
-  const [constantsMod, biomeMod, imageMod] = await Promise.all([
+  const [constantsMod, biomeMod, genMod, imageMod] = await Promise.all([
     import("noita-telescope/constants.js"),
     import("noita-telescope/biome_generator.js"),
+    import("noita-telescope/generator_config.js"),
     import("noita-telescope/image_processing.js"),
   ]);
   CHUNK_SIZE = constantsMod.CHUNK_SIZE;
   BIOME_CONFIG = biomeMod.BIOME_CONFIG;
+  GENERATOR_CONFIG = genMod.GENERATOR_CONFIG;
   TILE_FOREGROUND_COLORS = imageMod.TILE_FOREGROUND_COLORS;
+  createTileOverlaysCheap = imageMod.createTileOverlaysCheap;
   _telescopeModulesLoaded = true;
 }
 
@@ -136,7 +141,7 @@ async function generateMasterCanvas(result: GenerationResult): Promise<HTMLCanva
 
     // Apply biome recoloring if we have a biome name/color
     const biomeName = (layer as any).biomeName;
-    const biomeColor = BIOME_CONFIG[biomeName]?.color;
+    const biomeColor = GENERATOR_CONFIG[biomeName]?.color;
     if (biomeColor !== undefined) {
       recolorLayerCanvas(layer.canvas, biomeColor);
     }
@@ -149,9 +154,10 @@ async function generateMasterCanvas(result: GenerationResult): Promise<HTMLCanva
 
 /**
  * Generates a giant master canvas covering all active parallel worlds (usually -1, 0, 1).
+ * Uses telescope's createTileOverlaysCheap to properly recolor biome tiles.
  */
 async function generateMasterWorldCanvas(result: GenerationResult): Promise<HTMLCanvasElement> {
-  const { tileLayers, isNGP, parallelWorlds } = result;
+  const { tileLayers, isNGP, parallelWorlds, biomeData } = result;
 
   // Noita world width (in chunks)
   const w = isNGP ? 72 : 70;
@@ -175,10 +181,17 @@ async function generateMasterWorldCanvas(result: GenerationResult): Promise<HTML
 
   for (const pw of pws) {
     const pwShiftX = (pw * pwOffsetPixels + xOffset) / 10;
-    for (const layer of tileLayers) {
-      if (layer.canvas) {
-        ctx.drawImage(layer.canvas, pwShiftX + layer.correctedX / 10, layer.correctedY / 10);
-      }
+
+    // Use telescope's recoloring pipeline to produce properly colored overlay canvases
+    const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(
+      biomeData, tileLayers, pw, 0 /* pwVertical */, isNGP,
+    );
+
+    for (let i = 0; i < tileLayers.length; i++) {
+      const layer = tileLayers[i];
+      const overlay = overlays[i];
+      if (!overlay) continue;
+      ctx.drawImage(overlay, pwShiftX + layer.correctedX / 10, layer.correctedY / 10);
     }
   }
 

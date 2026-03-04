@@ -3,21 +3,16 @@
  *
  * Builds and manages the dynamic map toolbar.
  * Shown only when the active map is 'dynamic-main-branch'.
- *
- * Layout (left to right in the navbar button strip):
- *   [Daily Seed's Map] [seed input] [Generate] [Nerd Mode]
- *
- * The toolbar is inserted as a sibling of the standard controls
- * inside `.d-flex.flex-wrap` and hidden/shown based on map state.
  */
 
-import { fetchDailySeed } from './data_sources/daily_seed';
-import { updateURLWithSeed } from './data_sources/url';
-import { getCurrentDynamicSeed, getCurrentIsDaily, runDynamicMap } from './dynamic-map';
-import type { DynamicMapOptions } from './dynamic-map';
+import i18next from "i18next";
+import { fetchDailySeed } from "./data_sources/daily_seed";
+import { updateURLWithSeed } from "./data_sources/url";
+import { getCurrentDynamicSeed, runDynamicMap } from "./dynamic-map";
+import type { DynamicMapOptions } from "./dynamic-map";
 
-const NERD_MODE_URL = 'https://lymm37.github.io/noita-telescope/';
-const DYNAMIC_MAP_NAME = 'dynamic-main-branch';
+const NERD_MODE_URL = "https://lymm37.github.io/noita-telescope/";
+const DYNAMIC_MAP_NAME = "dynamic-main-branch";
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
@@ -32,98 +27,97 @@ let isBusy = false;
 
 /**
  * Create and inject the dynamic map toolbar into the nav button container.
- * Call once after DOMContentLoaded.
- *
- * @param opts - Dynamic map options (viewer, callbacks) used when Generate is clicked
  */
 export function createDynamicUI(opts: DynamicMapOptions): void {
   dynamicOpts = opts;
 
-  const buttonContainer = document.querySelector<HTMLElement>(
-    '.collapse.navbar-collapse .d-flex.flex-wrap',
-  );
-  if (!buttonContainer) {
-    console.error('[DynamicUI] Could not find button container');
-    return;
-  }
+  const buttonContainer = document.querySelector<HTMLElement>(".collapse.navbar-collapse .d-flex.flex-wrap");
+  if (!buttonContainer) return;
 
-  // Wrapper — hidden by default, shown when on dynamic map
-  toolbarEl = document.createElement('div');
-  toolbarEl.id = 'dynamic-map-toolbar';
-  toolbarEl.className = 'd-none d-flex flex-wrap align-items-center gap-1 me-1';
+  toolbarEl = document.createElement("div");
+  toolbarEl.id = "dynamic-map-toolbar";
+  toolbarEl.className = "d-none d-flex flex-wrap align-items-center gap-1 me-1";
 
-  // ── Daily Seed's Map button ────────────────────────────────────────────────
-  dailySeedBtn = document.createElement('button');
-  dailySeedBtn.id = 'dynamicDailySeedButton';
-  dailySeedBtn.className = 'btn btn-sm btn-outline-info text-nowrap';
-  dailySeedBtn.title = "Load today's daily seed map";
-  dailySeedBtn.innerHTML = '<i class="bi bi-calendar-day"></i><span class="ms-1 d-none d-xl-inline">Daily</span>';
-  dailySeedBtn.addEventListener('click', () => onDailySeedClick());
+  // ── Daily Seed button ──
+  dailySeedBtn = document.createElement("button");
+  dailySeedBtn.id = "dynamicDailySeedButton";
+  dailySeedBtn.className = "btn btn-sm btn-outline-info text-nowrap";
+  // Tooltip only for daily
+  dailySeedBtn.setAttribute("data-bs-toggle", "tooltip");
+  dailySeedBtn.setAttribute("data-bs-placement", "bottom");
+  dailySeedBtn.setAttribute("data-i18n-title", "dynamicMap.daily");
+  dailySeedBtn.title = i18next.t("dynamicMap.daily");
+  dailySeedBtn.innerHTML = `<i class="bi bi-calendar-day"></i><span class="ms-1 d-none d-xl-inline" data-i18n="dynamicMap.daily">${i18next.t("dynamicMap.daily")}</span>`;
+  dailySeedBtn.addEventListener("click", () => onDailySeedClick());
   toolbarEl.appendChild(dailySeedBtn);
 
-  // ── Custom seed input ──────────────────────────────────────────────────────
-  seedInput = document.createElement('input');
-  seedInput.id = 'dynamicSeedInput';
-  seedInput.type = 'text';
-  seedInput.inputMode = 'numeric';
-  seedInput.pattern = '[0-9]*';
-  seedInput.className = 'form-control form-control-sm';
-  seedInput.placeholder = 'Custom seed…';
-  seedInput.style.width = '110px';
-  seedInput.title = 'Enter a custom seed number';
-  seedInput.addEventListener('keydown', ev => {
-    if (ev.key === 'Enter') onGenerateClick();
+  // ── Seed input ──
+  seedInput = document.createElement("input");
+  seedInput.id = "dynamicSeedInput";
+  seedInput.type = "text";
+  seedInput.inputMode = "numeric";
+  seedInput.pattern = "[0-9]*";
+  seedInput.className = "form-control form-control-sm";
+  seedInput.style.width = "110px";
+  seedInput.setAttribute("data-i18n-placeholder", "dynamicMap.placeholder");
+  seedInput.placeholder = i18next.t("dynamicMap.placeholder");
+  seedInput.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") onGenerateClick();
+  });
+  seedInput.addEventListener("input", () => {
+    // Strip non-numeric characters
+    if (seedInput) seedInput.value = seedInput.value.replace(/\D/g, "");
+    updateGenerateButtonState();
   });
   toolbarEl.appendChild(seedInput);
 
-  // ── Generate button ────────────────────────────────────────────────────────
-  generateBtn = document.createElement('button');
-  generateBtn.id = 'dynamicGenerateButton';
-  generateBtn.className = 'btn btn-sm btn-outline-light text-nowrap';
-  generateBtn.title = 'Generate map for this seed';
-  generateBtn.innerHTML = '<i class="bi bi-play-fill"></i><span class="ms-1 d-none d-xl-inline">Generate</span>';
-  generateBtn.addEventListener('click', () => onGenerateClick());
+  generateBtn = document.createElement("button");
+  generateBtn.id = "dynamicGenerateButton";
+  generateBtn.className = "btn btn-sm btn-outline-light text-nowrap";
+  generateBtn.innerHTML = `<i class="bi bi-play-fill"></i><span class="ms-1 d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
+  generateBtn.addEventListener("click", () => onGenerateClick());
+
   toolbarEl.appendChild(generateBtn);
 
-  // ── Nerd Mode button ───────────────────────────────────────────────────────
-  const nerdBtn = document.createElement('a');
-  nerdBtn.id = 'dynamicNerdModeButton';
-  nerdBtn.className = 'btn btn-sm btn-outline-secondary text-nowrap';
+  // ── Nerd Mode button ──
+  const nerdBtn = document.createElement("a");
+  nerdBtn.id = "dynamicNerdModeButton";
+  nerdBtn.className = "btn btn-sm btn-outline-secondary text-nowrap";
   nerdBtn.href = NERD_MODE_URL;
-  nerdBtn.target = '_blank';
-  nerdBtn.rel = 'noopener noreferrer';
-  nerdBtn.title = 'Open Telescope (advanced mode) in a new tab';
-  nerdBtn.innerHTML = '<i class="bi bi-code-slash"></i><span class="ms-1 d-none d-xl-inline">Nerd Mode</span>';
+  nerdBtn.target = "_blank";
+  nerdBtn.rel = "noopener noreferrer";
+  nerdBtn.innerHTML = `<i class="bi bi-code-slash"></i><span class="ms-1 d-none d-xl-inline" data-i18n="dynamicMap.nerdMode.label">${i18next.t("dynamicMap.nerdMode.label")}</span>`;
   toolbarEl.appendChild(nerdBtn);
 
-  // Insert BEFORE the overlay-selector group so it appears right after the search
-  const overlaySel = buttonContainer.querySelector('#overlay-selector');
+  const overlaySel = buttonContainer.querySelector("#overlay-selector");
   if (overlaySel) {
     buttonContainer.insertBefore(toolbarEl, overlaySel);
   } else {
     buttonContainer.appendChild(toolbarEl);
   }
+
+  // Initialize tooltips
+  // @ts-ignore
+  new bootstrap.Tooltip(dailySeedBtn);
+
+  // Initial state for buttons
+  updateGenerateButtonState();
 }
 
 // ─── Visibility ──────────────────────────────────────────────────────────────
 
-/**
- * Show or hide the toolbar depending on whether the dynamic map is active.
- * Call this on every map-change event and on initial load.
- */
 export function updateDynamicUIVisibility(currentMap: string): void {
   if (!toolbarEl) return;
-
   const isDynamic = currentMap === DYNAMIC_MAP_NAME;
-  toolbarEl.classList.toggle('d-none', !isDynamic);
-  toolbarEl.classList.toggle('d-flex', isDynamic);
+  toolbarEl.classList.toggle("d-none", !isDynamic);
+  toolbarEl.classList.toggle("d-flex", isDynamic);
 
   if (isDynamic) {
-    // Reflect the current seed in the input field
     const seed = getCurrentDynamicSeed();
     if (seed !== null && seedInput) {
       seedInput.value = String(seed);
     }
+    updateGenerateButtonState();
   }
 }
 
@@ -135,40 +129,52 @@ async function onDailySeedClick(): Promise<void> {
   try {
     const seed = await fetchDailySeed();
     if (seedInput) seedInput.value = String(seed);
-    updateURLWithSeed(seed, true);
-    await runDynamicMap(seed, true, dynamicOpts);
+    const currentSeed = getCurrentDynamicSeed();
+
+    if (seed !== currentSeed) {
+      updateURLWithSeed(seed, true);
+      await runDynamicMap(seed, true, dynamicOpts);
+    } else {
+      console.log("[DynamicUI] Daily seed matches current seed, skipping.");
+    }
   } catch (e) {
-    console.error('[DynamicUI] Daily seed fetch failed:', e);
+    console.error("[DynamicUI] Daily seed fetch failed:", e);
   } finally {
-    setBusy(false);
+    setTimeout(() => {
+      setBusy(false);
+      updateGenerateButtonState();
+    }, 300);
   }
 }
 
 async function onGenerateClick(): Promise<void> {
   if (isBusy || !dynamicOpts || !seedInput) return;
-
   const rawVal = seedInput.value.trim();
   if (!rawVal) {
-    // No seed typed — fall back to daily
     await onDailySeedClick();
     return;
   }
-
   const seed = parseInt(rawVal, 10);
   if (isNaN(seed)) {
-    seedInput.classList.add('is-invalid');
-    setTimeout(() => seedInput?.classList.remove('is-invalid'), 1500);
+    seedInput.classList.add("is-invalid");
+    setTimeout(() => seedInput?.classList.remove("is-invalid"), 1500);
     return;
   }
+
+  const currentSeed = getCurrentDynamicSeed();
+  if (seed === currentSeed) return;
 
   setBusy(true);
   try {
     updateURLWithSeed(seed, false);
     await runDynamicMap(seed, false, dynamicOpts);
   } catch (e) {
-    console.error('[DynamicUI] Generate failed:', e);
+    console.error("[DynamicUI] Generate failed:", e);
   } finally {
-    setBusy(false);
+    setTimeout(() => {
+      setBusy(false);
+      updateGenerateButtonState();
+    }, 300);
   }
 }
 
@@ -178,15 +184,21 @@ function setBusy(busy: boolean): void {
     generateBtn.disabled = busy;
     generateBtn.innerHTML = busy
       ? '<span class="spinner-border spinner-border-sm" role="status"></span>'
-      : '<i class="bi bi-play-fill"></i><span class="ms-1 d-none d-xl-inline">Generate</span>';
+      : `<i class="bi bi-play-fill"></i><span class="ms-1 d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
   }
   if (dailySeedBtn) dailySeedBtn.disabled = busy;
 }
 
-/**
- * Pre-fill the seed input with a given seed (called by the pipeline after
- * resolving the daily seed so the UI reflects what was generated).
- */
+function updateGenerateButtonState(): void {
+  if (!generateBtn || !seedInput) return;
+  const currentSeed = getCurrentDynamicSeed();
+  const inputSeed = parseInt(seedInput.value || "", 10);
+  const isMatch = !isNaN(inputSeed) && inputSeed === currentSeed;
+
+  generateBtn.disabled = isMatch || isBusy;
+}
+
 export function setDynamicUISeed(seed: number, isDaily: boolean): void {
   if (seedInput) seedInput.value = String(seed);
+  updateGenerateButtonState();
 }

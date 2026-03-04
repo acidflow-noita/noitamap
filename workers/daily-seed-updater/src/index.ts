@@ -64,14 +64,6 @@ async function deployStaticAssets(
   const seedContent = seed.toString() + "\n";
   const headersContent = headersFileContent();
 
-  const workerScript = `
-export default {
-  async fetch(request, env) {
-    return env.ASSETS.fetch(request);
-  }
-};
-`.trim();
-
   const apiBase = `https://api.cloudflare.com/client/v4/accounts/${accountId}`;
 
   // Encode to bytes + base64
@@ -119,8 +111,6 @@ export default {
     const formData = new FormData();
     for (const hash of bucket) {
       if (hashToB64[hash]) {
-        // When base64=true is set on the upload URL, Cloudflare expects
-        // the form data value to be the base64-encoded string itself.
         formData.append(hash, hashToB64[hash]);
       }
     }
@@ -134,7 +124,6 @@ export default {
       const text = await uploadResp.text();
       throw new Error(`Asset upload failed (${uploadResp.status}): ${text}`);
     }
-    // The last upload returns a completion JWT
     const uploadData = (await uploadResp.json()) as { result?: { jwt?: string } };
     if (uploadData.result?.jwt) {
       jwt = uploadData.result.jwt;
@@ -142,14 +131,13 @@ export default {
   }
 
   // --- Step 3: Deploy worker with completion JWT ---
+  // For assets-only workers, we just need to provide the assets JWT in the metadata
   const deployForm = new FormData();
   const metadata = {
-    main_module: "worker.js",
     assets: { jwt },
     compatibility_date: "2026-02-19",
   };
   deployForm.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
-  deployForm.append("worker.js", new Blob([workerScript], { type: "application/javascript+module" }), "worker.js");
 
   const deployResp = await fetch(`${apiBase}/workers/scripts/${workerName}`, {
     method: "PUT",
@@ -158,7 +146,7 @@ export default {
   });
   if (!deployResp.ok) {
     const text = await deployResp.text();
-    throw new Error(`Worker deploy failed (${deployResp.status}): ${text}`);
+    throw new Error(`Worker deploy failed (${deployResp.ok ? "OK" : deployResp.status}): ${text}`);
   }
 
   console.log(`Deployed daily-seed-serve with seed: ${seed}`);
@@ -210,15 +198,48 @@ async function runUpdate(env: Env): Promise<string> {
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+
+    // Add CORS headers to all responses
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Cache-Control",
+      "Access-Control-Max-Age": "86400",
+    };
+
+    // Handle preflight requests
+    if (request.method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    let response: Response;
     if (url.pathname === "/update") {
       try {
         const result = await runUpdate(env);
-        return new Response(result, { status: 200 });
+        response = new Response(result, { status: 200 });
       } catch (err: any) {
-        return new Response(err.message, { status: 500 });
+        response = new Response(err.message, { status: 500 });
+      }
+    } else {
+      // Default to serving assets (including current_seed.txt)
+      try {
+        response = await (env as any).ASSETS.fetch(request);
+      } catch (e) {
+        // Fallback for local dev if ASSETS is not bound correctly
+        response = new Response("Not Found", { status: 404 });
       }
     }
-    return new Response("Not Found", { status: 404 });
+
+    // Wrap the response with CORS headers
+    // Note: We create a new Response because some headers might be immutable
+    const newHeaders = new Headers(response.headers);
+    Object.entries(corsHeaders).forEach(([k, v]) => newHeaders.set(k, v));
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: newHeaders,
+    });
   },
 
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
