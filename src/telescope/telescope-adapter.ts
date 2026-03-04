@@ -125,7 +125,7 @@ export async function initTelescope(): Promise<void> {
 
   // 1. Install DOM shim before any telescope code reads the DOM
   installTelescopeShim({
-    clearSpawnPixels: true,
+    clearSpawnPixels: false,
     recolorMaterials: true,
     enableEdgeNoise: true,
     fixHolyMountainEdgeNoise: true,

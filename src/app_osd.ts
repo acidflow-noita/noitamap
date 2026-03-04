@@ -176,8 +176,12 @@ export class AppOSD extends Viewer {
     if (this.world.getItemCount() === 0) return this.world.getHomeBounds();
 
     const dims = { x: Infinity, y: Infinity, width: 0, height: 0 };
+    let found = false;
     for (let i = 0; i < this.world.getItemCount(); i++) {
-      const item = this.world.getItemAt(i).getBoundsNoRotate();
+      const tiledImage = this.world.getItemAt(i);
+      // Skip dynamic overlay images (non-DZI) so they don't inflate the home bounds
+      if (!("Image" in tiledImage.source)) continue;
+      const item = tiledImage.getBoundsNoRotate();
 
       // we're laying multiple tilesources out left-to-right, though I'm not
       // clear on what decides this! we want the minimum x,y and the maximum
@@ -186,8 +190,10 @@ export class AppOSD extends Viewer {
       dims.y = Math.min(dims.y, item.y);
       dims.width += item.width;
       dims.height = Math.max(dims.height, item.height);
+      found = true;
     }
 
+    if (!found) return this.world.getHomeBounds();
     return new OpenSeadragon.Rect(dims.x, dims.y, dims.width, dims.height);
   }
 
