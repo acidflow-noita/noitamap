@@ -55,7 +55,8 @@
     "i18next": "^25.8.13",
     "i18next-browser-languagedetector": "^8.2.1",
     "i18next-http-backend": "^3.0.2",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "pngjs": "^7.0.0"
   },
   "devDependencies": {
     "@designsystemsinternational/flags": "^0.2.0",

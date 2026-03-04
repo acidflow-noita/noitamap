@@ -99,8 +99,12 @@ async function trySecondaryZips(normalizePath: string): Promise<ArrayBuffer | nu
     const z = await getWangTilesZip();
     if (z) {
       const file = z.file(relativePath);
-      if (file) return file.async("arraybuffer");
+      if (file) {
+          // console.log(`[DataBridge] Found ${normalizePath} in secondary wang_tiles.zip`);
+          return file.async("arraybuffer");
+      }
     }
+    console.warn(`[DataBridge] ${normalizePath} NOT FOUND in secondary wang_tiles.zip`);
   }
   return null;
 }
@@ -202,6 +206,10 @@ export function installFetchInterceptor(): void {
         if (ext === "png") mime = "image/png";
         else if (ext === "csv") mime = "text/csv";
         return new Response(buf, { status: 200, statusText: "OK", headers: { "Content-Type": mime } });
+      }
+      
+      if (normalizePath.includes('wang_tiles')) {
+          console.warn(`[DataBridge] Wang tile NOT FOUND: ${normalizePath} (zipPath: ${zipPath})`);
       }
       // Fall through to the real network (translations.csv, secret_messages, etc.)
       return originalFetch(input, init);
@@ -326,7 +334,7 @@ export async function loadBiomeMapFromZip(telescopePath: string): Promise<Uint32
 
   const buf = await file.async("arraybuffer");
   const blob = new Blob([buf], { type: "image/png" });
-  const bitmap = await createImageBitmap(blob);
+  const bitmap = await createImageBitmap(blob, { colorSpaceConversion: 'none', premultipliedAlpha: 'none' });
 
   const canvas = document.createElement("canvas");
   canvas.width = bitmap.width;
@@ -383,7 +391,7 @@ export async function loadWangTileFromZip(
     buf = await file.async("arraybuffer");
   }
   const blob = new Blob([buf], { type: "image/png" });
-  const bitmap = await createImageBitmap(blob);
+  const bitmap = await createImageBitmap(blob, { colorSpaceConversion: 'none', premultipliedAlpha: 'none' });
 
   const canvas = document.createElement("canvas");
   canvas.width = bitmap.width;

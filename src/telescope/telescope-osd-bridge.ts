@@ -12,22 +12,27 @@ let CHUNK_SIZE: number;
 let BIOME_CONFIG: any;
 let GENERATOR_CONFIG: any;
 let TILE_FOREGROUND_COLORS: any;
+let BIOME_COLOR_LOOKUP: any;
 let createTileOverlaysCheap: any;
+let getWorldSize: any;
 let _telescopeModulesLoaded = false;
 
 async function ensureTelescopeModules(): Promise<void> {
   if (_telescopeModulesLoaded) return;
-  const [constantsMod, biomeMod, genMod, imageMod] = await Promise.all([
+  const [constantsMod, biomeMod, genMod, imageMod, utilsMod] = await Promise.all([
     import("noita-telescope/constants.js"),
     import("noita-telescope/biome_generator.js"),
     import("noita-telescope/generator_config.js"),
     import("noita-telescope/image_processing.js"),
+    import("noita-telescope/utils.js"),
   ]);
   CHUNK_SIZE = constantsMod.CHUNK_SIZE;
   BIOME_CONFIG = biomeMod.BIOME_CONFIG;
   GENERATOR_CONFIG = genMod.GENERATOR_CONFIG;
   TILE_FOREGROUND_COLORS = imageMod.TILE_FOREGROUND_COLORS;
+  BIOME_COLOR_LOOKUP = imageMod.BIOME_COLOR_LOOKUP;
   createTileOverlaysCheap = imageMod.createTileOverlaysCheap;
+  getWorldSize = utilsMod.getWorldSize;
   _telescopeModulesLoaded = true;
 }
 
@@ -73,34 +78,6 @@ export function clearDynamicOverlays(viewer: any): void {
 }
 
 /**
- * Recolor grayscale Wang tiles with biome-specific foreground colors.
- */
-function recolorLayerCanvas(canvas: HTMLCanvasElement, biomeColor: number): void {
-  const fgColor = TILE_FOREGROUND_COLORS?.[biomeColor];
-  if (!fgColor) return;
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imgData.data;
-
-  const r = (fgColor >> 16) & 0xff;
-  const g = (fgColor >> 8) & 0xff;
-  const b = fgColor & 0xff;
-
-  for (let i = 0; i < data.length; i += 4) {
-    // If it's a "gray" pixel (detail pixel), recolor it
-    if (data[i] === data[i + 1] && data[i + 1] === data[i + 2] && data[i] > 0) {
-      data[i] = r;
-      data[i + 1] = g;
-      data[i + 2] = b;
-    }
-  }
-  ctx.putImageData(imgData, 0, 0);
-}
-
-/**
  * Convert a canvas to a blob URL asynchronously.
  */
 async function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
@@ -116,51 +93,63 @@ async function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
 }
 
 /**
- * Generates a single master canvas by merging all biome layers.
+ * Build a biome background canvas from biomeData.pixels using BIOME_COLOR_LOOKUP.
+ * Replicates telescope's renderRecolorMap() — produces a w×h canvas where each
+ * pixel is the recolored background color for that biome chunk.
  */
-async function generateMasterCanvas(result: GenerationResult): Promise<HTMLCanvasElement> {
-  const { tileLayers, isNGP } = result;
+function buildRecolorBackground(biomeData: any, w: number, h: number): OffscreenCanvas {
+  const canvas = new OffscreenCanvas(w, h);
+  const ctx = canvas.getContext("2d")!;
+  const id = ctx.createImageData(w, h);
 
-  // Noita world dimensions (in chunks)
-  const w = isNGP ? 72 : 70;
-  const h = 240;
+  const surfaceBiomes = [
+    0x1133f1, // Lake
+    0xf7cf8d, // Pond
+    0x36d517, // Hills
+    0xd6d8e3, // Snow
+    0xcc9944, // Desert
+    0x48e311, // Empty
+  ];
+  const surfaceLevel = 14;
 
-  // 1. Create a Master World Canvas at 1:10 scale (as per Telescope's internal scale)
-  const masterW = Math.ceil((w * 512) / 10);
-  const masterH = Math.ceil((h * 512) / 10);
-
-  const masterCanvas = document.createElement("canvas");
-  masterCanvas.width = masterW;
-  masterCanvas.height = masterH;
-  const ctx = masterCanvas.getContext("2d");
-  if (!ctx) throw new Error("Failed to create master canvas context");
-
-  // Merge all biome layers into the master canvas
-  for (const layer of tileLayers) {
-    if (!layer.canvas) continue;
-
-    // Apply biome recoloring if we have a biome name/color
-    const biomeName = (layer as any).biomeName;
-    const biomeColor = GENERATOR_CONFIG[biomeName]?.color;
-    if (biomeColor !== undefined) {
-      recolorLayerCanvas(layer.canvas, biomeColor);
+  for (let i = 0; i < biomeData.pixels.length; i++) {
+    let color = biomeData.pixels[i] & 0xffffff;
+    const isSurfaceBiome = surfaceBiomes.includes(color);
+    if (BIOME_COLOR_LOOKUP[color]) {
+      if (isSurfaceBiome) {
+        if (i > w * surfaceLevel) {
+          color = BIOME_COLOR_LOOKUP[color];
+        } else {
+          // Sky gradient
+          const depthFactor = Math.min(Math.floor(i / w) / surfaceLevel, 1);
+          const r = 0x87 + (0xbb - 0x87) * depthFactor;
+          const g = 0xce + (0xdd - 0xce) * depthFactor;
+          const b = 0xeb;
+          color = (r << 16) | (g << 8) | b;
+        }
+      } else {
+        color = BIOME_COLOR_LOOKUP[color];
+      }
     }
-
-    // layer.correctedX/Y are relative to Chunk 0. Map to 1/10th scale.
-    ctx.drawImage(layer.canvas, layer.correctedX / 10, layer.correctedY / 10);
+    id.data[i * 4] = (color >> 16) & 0xff;
+    id.data[i * 4 + 1] = (color >> 8) & 0xff;
+    id.data[i * 4 + 2] = color & 0xff;
+    id.data[i * 4 + 3] = 255;
   }
-  return masterCanvas;
+  ctx.putImageData(id, 0, 0);
+  return canvas;
 }
 
 /**
  * Generates a giant master canvas covering all active parallel worlds (usually -1, 0, 1).
- * Uses telescope's createTileOverlaysCheap to properly recolor biome tiles.
+ * Draws biome background first (recolorMap), then tile overlays on top.
  */
 async function generateMasterWorldCanvas(result: GenerationResult): Promise<HTMLCanvasElement> {
   const { tileLayers, isNGP, parallelWorlds, biomeData } = result;
 
-  // Noita world width (in chunks)
+  // Noita world dimensions
   const w = isNGP ? 72 : 70;
+  const h = isNGP ? 48 : 48; // Biome map height in chunks
   const pwOffsetPixels = w * 512;
   const pws = parallelWorlds || [-1, 0, 1];
   const minPW = Math.min(...pws);
@@ -169,7 +158,7 @@ async function generateMasterWorldCanvas(result: GenerationResult): Promise<HTML
 
   // Master World Canvas at 1:10 scale
   const masterW = Math.ceil((numPws * pwOffsetPixels) / 10);
-  const masterH = Math.ceil((140 * 512) / 10); // Vertical size covers expected range
+  const masterH = Math.ceil((h * 512) / 10);
 
   const canvas = document.createElement("canvas");
   canvas.width = masterW;
@@ -179,10 +168,10 @@ async function generateMasterWorldCanvas(result: GenerationResult): Promise<HTML
   // Shift to start drawing from the leftmost PW
   const xOffset = -minPW * pwOffsetPixels;
 
+  // 1. Draw tile overlays for each PW
   for (const pw of pws) {
     const pwShiftX = (pw * pwOffsetPixels + xOffset) / 10;
 
-    // Use telescope's recoloring pipeline to produce properly colored overlay canvases
     const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(
       biomeData, tileLayers, pw, 0 /* pwVertical */, isNGP,
     );
@@ -366,11 +355,8 @@ function getPOIColor(poi: POI): string {
 
 export async function renderGenerationResult(viewer: OSDViewer, result: GenerationResult): Promise<void> {
   const generationId = ++currentGenerationId;
-  // Overlays are now cleared at the START of runDynamicMap to avoid stacking
-  // during the long generation process. We clear again here just in case.
   clearDynamicOverlays(viewer);
   await addTileLayers(viewer, result, generationId);
-  // POIs and pixel scenes disabled to maximize stability for now
 }
 
 export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: number; worldX: number; worldY: number }> {

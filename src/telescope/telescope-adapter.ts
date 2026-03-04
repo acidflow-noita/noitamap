@@ -125,7 +125,7 @@ export async function initTelescope(): Promise<void> {
 
   // 1. Install DOM shim before any telescope code reads the DOM
   installTelescopeShim({
-    clearSpawnPixels: false,
+    clearSpawnPixels: true,
     recolorMaterials: true,
     enableEdgeNoise: true,
     fixHolyMountainEdgeNoise: true,
@@ -153,6 +153,7 @@ export async function initTelescope(): Promise<void> {
     utilsMod,
     translationsMod,
     eyeMessagesMod,
+    imageProcessingMod,
   ] = await Promise.all([
     import("noita-telescope/biome_generator.js"),
     import("noita-telescope/tile_generator.js"),
@@ -163,6 +164,7 @@ export async function initTelescope(): Promise<void> {
     import("noita-telescope/utils.js"),
     import("noita-telescope/translations.js"),
     import("noita-telescope/eye_messages.js"),
+    import("noita-telescope/image_processing.js"),
   ]);
 
   generateBiomeData = biomeGenMod.generateBiomeData;
@@ -181,6 +183,16 @@ export async function initTelescope(): Promise<void> {
   loadTranslations = translationsMod.loadTranslations;
   findEyeMessages = eyeMessagesMod.findEyeMessages;
 
+  // 4b. Apply truthy color hack to fix library transparency bug
+  // The library uses `if (foregroundColor)` which fails for color 0 (black).
+  // We change 0 to 1 (near-black) to make it truthy without touching the library code.
+  const { TILE_FOREGROUND_COLORS } = imageProcessingMod;
+  if (TILE_FOREGROUND_COLORS) {
+    for (const [key, val] of Object.entries(TILE_FOREGROUND_COLORS)) {
+      if (val === 0) (TILE_FOREGROUND_COLORS as any)[key] = 1;
+    }
+  }
+
   // 5. Load biome map base assets (telescope's preload step)
   biomeAssets = await loadBiomeMaps();
   if (!biomeAssets.ng0) throw new Error("[Telescope] Failed to load NG0 biome map");
@@ -194,11 +206,20 @@ export async function initTelescope(): Promise<void> {
   }
 
   // 8. Pre-load wang tile data for all regions
+  const wangLoadResults: string[] = [];
   for (const key of Object.keys(GENERATOR_CONFIG)) {
     const cfg = GENERATOR_CONFIG[key];
     if (cfg.wangFile && !cfg.wangData) {
       cfg.wangData = await loadWangTileFromZip(cfg.wangFile);
+      if (!cfg.wangData) {
+        wangLoadResults.push(`FAIL: ${key} (${cfg.wangFile})`);
+      }
     }
+  }
+  if (wangLoadResults.length > 0) {
+    console.warn("[Telescope] Wang tile load failures:", wangLoadResults);
+  } else {
+    console.log("[Telescope] All wang tiles loaded successfully");
   }
 
   // 9. Load pixel scene data (uses fetch interceptor internally).
