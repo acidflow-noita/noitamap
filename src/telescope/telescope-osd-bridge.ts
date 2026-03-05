@@ -360,9 +360,15 @@ async function addBiomeLayersProgressively(
   const allBiomesToRender = [...orderedBiomes, ...unorderedBiomes];
 
   const anchorY = -(14 * 512);
+  const totalPWs = pwOrder.length;
 
-  for (const pw of pwOrder) {
+  for (let pwIdx = 0; pwIdx < pwOrder.length; pwIdx++) {
+    const pw = pwOrder[pwIdx];
     if (currentGenerationId !== generationId) return;
+
+    // Report start of this PW's computation (progress: percent through all PWs)
+    const progressStart = Math.round((pwIdx / totalPWs) * 100);
+    window.dispatchEvent(new CustomEvent("biomeGenerationProgress", { detail: { percentage: progressStart } }));
 
     // Compute all overlays for this PW at once (CPU-bound, ~1-2s)
     const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(
@@ -420,6 +426,10 @@ async function addBiomeLayersProgressively(
     }
 
     console.log(`[OSD Bridge] Gen ${generationId}: Added PW ${pw} biome overlays`);
+
+    // Report completion of this PW
+    const progressEnd = Math.round(((pwIdx + 1) / totalPWs) * 100);
+    window.dispatchEvent(new CustomEvent("biomeGenerationProgress", { detail: { percentage: progressEnd } }));
 
     // Yield to browser so OSD renders this world before we compute the next
     await new Promise((r) => setTimeout(r, 0));

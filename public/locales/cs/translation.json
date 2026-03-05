@@ -770,7 +770,14 @@
   },
   "loading": {
     "maps": "Načítání map...",
-    "languages": "Načítání jazyků..."
+    "languages": "Načítání jazyků...",
+    "mapData": {
+      "downloading": "Stahování dat světa",
+      "generating": "Generování biomů",
+      "hint": "Tento 24MB soubor se po prvním načtení trvale uloží do mezipaměti.",
+      "segmentDownload": "Stahování dat",
+      "segmentGeneration": "Generování biomů"
+    }
   },
   "drawing": {
     "title": "Nástroje kreslení",

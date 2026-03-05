@@ -770,7 +770,14 @@
   },
   "loading": {
     "maps": "Ładowanie map...",
-    "languages": "Ładowanie języków..."
+    "languages": "Ładowanie języków...",
+    "mapData": {
+      "downloading": "Pobieranie danych świata",
+      "generating": "Generowanie biomów",
+      "hint": "Ten plik (24 MB) jest trwale przechowywany w pamięci podręcznej po pierwszym załadowaniu.",
+      "segmentDownload": "Pobieranie danych",
+      "segmentGeneration": "Generowanie biomów"
+    }
   },
   "drawing": {
     "title": "Narzędzia rysowania",

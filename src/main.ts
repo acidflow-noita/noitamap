@@ -39,29 +39,29 @@ if (isDev) {
         worldSize: result.worldSize,
         worldCenter: result.worldCenter,
         poisByPW: Object.entries(result.poisByPW).reduce((acc, [pw, pois]) => {
-          acc[pw] = pois.map(p => {
+          acc[pw] = pois.map((p) => {
             const { x, y, type, ...rest } = p;
             return { x, y, type, data: rest };
           });
           return acc;
         }, {} as any),
         pixelScenesByPW: Object.entries(result.pixelScenesByPW).reduce((acc, [pw, scenes]) => {
-          acc[pw] = scenes.map(s => ({ x: s.x, y: s.y, name: s.name, key: s.key }));
+          acc[pw] = scenes.map((s) => ({ x: s.x, y: s.y, name: s.name, key: s.key }));
           return acc;
         }, {} as any),
         eyes: result.eyes,
         parallelWorlds: result.parallelWorlds,
-        biomes: result.tileLayers.map(l => ({ name: l.biomeName, x: l.correctedX, y: l.correctedY, w: l.w, h: l.h }))
+        biomes: result.tileLayers.map((l) => ({ name: l.biomeName, x: l.correctedX, y: l.correctedY, w: l.w, h: l.h })),
       };
-      const blob = new Blob([JSON.stringify(exportable, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(exportable, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `noitamap-seed-${result.seed}.json`;
       a.click();
       URL.revokeObjectURL(url);
       console.log(`Exported data for seed ${result.seed}`);
-    }
+    },
   };
   console.log('[Noitamap] Dev mode detected, "noitamap" commands available.');
 }
@@ -143,6 +143,67 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (error) {
     console.error("i18next initialization failed:", error);
   }
+
+  // Handle map loading progress UI (two-segment bar)
+  const _getLoadingOverlay = () => document.getElementById("map-loading-overlay");
+  const _getDownloadBar = () => document.getElementById("loading-bar-download") as HTMLElement | null;
+  const _getGenerationBar = () => document.getElementById("loading-bar-generation") as HTMLElement | null;
+  const _getStatusText = () => document.getElementById("map-loading-status");
+  const _getTitle = () => document.getElementById("map-loading-title");
+  const _getSubtitle = () => document.getElementById("map-loading-subtitle");
+
+  window.addEventListener("dataZipProgress", ((e: CustomEvent) => {
+    const overlay = _getLoadingOverlay();
+    const bar = _getDownloadBar();
+    const status = _getStatusText();
+    const title = _getTitle();
+    if (!overlay || !bar) return;
+
+    if (e.detail.percentage < 100) {
+      overlay.style.display = "flex";
+      // Segment 1 fills left half (0–50% total)
+      const segPct = e.detail.percentage / 2; // maps 0–100 → 0–50% of bar width
+      bar.style.width = `${segPct * 2}%`; // bar max-width is 50%, so fill relative to that
+      bar.setAttribute("aria-valuenow", e.detail.percentage.toString());
+      if (title) title.setAttribute("data-i18n", "loading.mapData.downloading");
+      if (status) status.textContent = `${e.detail.percentage}%`;
+    } else {
+      // Download done – keep bar at 50% and switch title to generation phase
+      bar.style.width = "100%"; // fills its max-width: 50% slot entirely
+      if (title) title.setAttribute("data-i18n", "loading.mapData.generating");
+      if (title)
+        title.textContent = i18next.isInitialized ? i18next.t("loading.mapData.generating") : "Generating Biomes";
+      const subtitle = _getSubtitle();
+      if (subtitle) subtitle.style.display = "none";
+      if (status) status.textContent = "50%";
+    }
+  }) as EventListener);
+
+  window.addEventListener("biomeGenerationProgress", ((e: CustomEvent) => {
+    const overlay = _getLoadingOverlay();
+    const bar = _getGenerationBar();
+    const status = _getStatusText();
+    if (!overlay || !bar) return;
+
+    overlay.style.display = "flex";
+    bar.style.width = `${e.detail.percentage}%`; // fills its max-width: 50% slot
+    bar.setAttribute("aria-valuenow", e.detail.percentage.toString());
+    if (status) status.textContent = `${Math.round(50 + e.detail.percentage / 2)}%`;
+
+    if (e.detail.percentage >= 100) {
+      setTimeout(() => {
+        const o = _getLoadingOverlay();
+        if (o) o.style.display = "none";
+        // Reset both bars for the next generation
+        const dl = _getDownloadBar();
+        const gen = _getGenerationBar();
+        if (dl) dl.style.width = "0%";
+        if (gen) gen.style.width = "0%";
+        const subtitle = _getSubtitle();
+        if (subtitle) subtitle.style.display = "";
+      }, 400);
+    }
+  }) as EventListener);
 
   // TODO: probably most of this should be part of the "App" class, or the "App" class should be removed.
   // i'm not sure i'm happy with the abstraction

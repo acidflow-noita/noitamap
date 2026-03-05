@@ -770,7 +770,14 @@
   },
   "loading": {
     "maps": "Laddar kartor...",
-    "languages": "Laddar språk..."
+    "languages": "Laddar språk...",
+    "mapData": {
+      "downloading": "Laddar ner världens data",
+      "generating": "Genererar biomer",
+      "hint": "Denna 24 MB fil lagras permanent i cachen efter den första inläsningen.",
+      "segmentDownload": "Datanedladdning",
+      "segmentGeneration": "Biomgenerering"
+    }
   },
   "drawing": {
     "title": "Ritverktyg",

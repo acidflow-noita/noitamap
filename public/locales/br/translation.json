@@ -770,7 +770,14 @@
   },
   "loading": {
     "maps": "Carregando mapas...",
-    "languages": "Carregando idiomas..."
+    "languages": "Carregando idiomas...",
+    "mapData": {
+      "downloading": "Baixando Dados do Mundo",
+      "generating": "Gerando Biomas",
+      "hint": "Este arquivo de 24 MB é armazenado permanentemente no cache após o primeiro carregamento.",
+      "segmentDownload": "Download de Dados",
+      "segmentGeneration": "Geração de Biomas"
+    }
   },
   "drawing": {
     "title": "Ferramentas de Desenho",

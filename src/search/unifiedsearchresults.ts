@@ -274,11 +274,27 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     imgContainer.style.backgroundColor = "#1a1a1a";
                     imgContainer.style.borderRadius = "2px";
                     imgContainer.style.padding = "1px";
+                    imgContainer.style.border = "1px solid #333";
                     if (isAlwaysCast) {
-                      imgContainer.style.border = "1px solid #ffcc00";
-                      imgContainer.style.backgroundColor = "rgba(255, 204, 0, 0.2)";
-                    } else {
-                      imgContainer.style.border = "1px solid #333";
+                      const acBadge = document.createElement("div");
+                      acBadge.textContent = "AC";
+                      acBadge.style.position = "absolute";
+                      acBadge.style.top = "-4px";
+                      acBadge.style.left = "-4px";
+                      acBadge.style.width = "12px";
+                      acBadge.style.height = "12px";
+                      acBadge.style.display = "flex";
+                      acBadge.style.alignItems = "center";
+                      acBadge.style.justifyContent = "center";
+                      acBadge.style.fontSize = "7px";
+                      acBadge.style.fontWeight = "bold";
+                      acBadge.style.backgroundColor = "white";
+                      acBadge.style.color = "black";
+                      acBadge.style.borderRadius = "50%";
+                      acBadge.style.lineHeight = "1";
+                      acBadge.style.border = "1px solid #333";
+                      acBadge.style.zIndex = "2";
+                      imgContainer.appendChild(acBadge);
                     }
 
                     const img = document.createElement("img");

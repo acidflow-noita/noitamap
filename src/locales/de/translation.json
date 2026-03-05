@@ -770,7 +770,14 @@
   },
   "loading": {
     "maps": "Karten werden geladen...",
-    "languages": "Sprachen werden geladen..."
+    "languages": "Sprachen werden geladen...",
+    "mapData": {
+      "downloading": "Welt-Daten werden heruntergeladen",
+      "generating": "Biome werden generiert",
+      "hint": "Diese 24MB große Datei wird nach dem ersten Laden dauerhaft gespeichert.",
+      "segmentDownload": "Daten-Download",
+      "segmentGeneration": "Biom-Generierung"
+    }
   },
   "drawing": {
     "title": "Zeichenwerkzeuge",

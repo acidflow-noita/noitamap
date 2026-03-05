@@ -770,7 +770,14 @@
   },
   "loading": {
     "maps": "Kaarten laden...",
-    "languages": "Talen laden..."
+    "languages": "Talen laden...",
+    "mapData": {
+      "downloading": "Wereldgegevens downloaden",
+      "generating": "Biomen genereren",
+      "hint": "Dit bestand van 24 MB wordt na de eerste keer laden permanent in de cache opgeslagen.",
+      "segmentDownload": "Data-download",
+      "segmentGeneration": "Biome-generatie"
+    }
   },
   "drawing": {
     "title": "Tekengereedschap",

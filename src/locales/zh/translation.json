@@ -770,7 +770,14 @@
   },
   "loading": {
     "maps": "加载地图中...",
-    "languages": "加载语言中..."
+    "languages": "加载语言中...",
+    "mapData": {
+      "downloading": "正在下载世界数据",
+      "generating": "正在生成生物群落",
+      "hint": "此 24MB 文件在首次加载后将永久缓存。",
+      "segmentDownload": "数据下载",
+      "segmentGeneration": "生物群落生成"
+    }
   },
   "drawing": {
     "title": "绘图工具",

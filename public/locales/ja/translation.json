@@ -770,7 +770,14 @@
   },
   "loading": {
     "maps": "マップを読み込み中...",
-    "languages": "言語を読み込み中..."
+    "languages": "言語を読み込み中...",
+    "mapData": {
+      "downloading": "ワールドデータをダウンロード中",
+      "generating": "バイオームを生成中",
+      "hint": "この24MBのファイルは、初回読み込み後に永久にキャッシュされます。",
+      "segmentDownload": "データのダウンロード",
+      "segmentGeneration": "バイオームの生成"
+    }
   },
   "drawing": {
     "title": "描画ツール",

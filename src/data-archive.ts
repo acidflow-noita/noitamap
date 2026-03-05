@@ -20,12 +20,107 @@ export async function getDataZip(): Promise<JSZip | null> {
   zipPromise = (async () => {
     try {
       console.log("[DataArchive] Loading data.zip...");
-      const resp = await fetch(DATA_ZIP_URL);
-      if (!resp.ok) {
-        console.warn(`data.zip fetch failed (${resp.status})`);
-        return null;
+
+      const cacheName = "noitamap-data-archive-v2";
+      const cache = await caches.open(cacheName);
+
+      // 1. Do a quick HEAD request to get the latest file metadata from the server
+      let serverMeta = "";
+      try {
+        const headResp = await fetch(DATA_ZIP_URL, { method: "HEAD", cache: "no-cache" });
+        if (headResp.ok) {
+          serverMeta =
+            headResp.headers.get("ETag") ||
+            headResp.headers.get("Last-Modified") ||
+            headResp.headers.get("Content-Length") ||
+            "";
+        }
+      } catch (e) {
+        console.warn("[DataArchive] HEAD request failed, falling back to cache if available", e);
       }
-      const buf = await resp.arrayBuffer();
+
+      let response = await cache.match(DATA_ZIP_URL);
+      let buf: ArrayBuffer | null = null;
+      let shouldUseCache = false;
+
+      if (response && response.ok) {
+        const cachedMeta = response.headers.get("X-Archive-Meta");
+        if (serverMeta && cachedMeta === serverMeta) {
+          shouldUseCache = true;
+        } else if (!serverMeta) {
+          // Offline or HEAD failed, assume cache is valid
+          shouldUseCache = true;
+        } else {
+          console.log(`[DataArchive] Cache invalidated! Server: ${serverMeta}, Cached: ${cachedMeta}`);
+        }
+      }
+
+      if (shouldUseCache && response) {
+        console.log("[DataArchive] Loaded data.zip from Cache API");
+        buf = await response.arrayBuffer();
+
+        // Dispatch instant completion event
+        window.dispatchEvent(
+          new CustomEvent("dataZipProgress", { detail: { loaded: 100, total: 100, percentage: 100 } }),
+        );
+      } else {
+        console.log("[DataArchive] Fetching data.zip from network...");
+        const fetchResp = await fetch(DATA_ZIP_URL);
+
+        if (!fetchResp.ok) {
+          console.warn(`data.zip fetch failed (${fetchResp.status})`);
+          return null;
+        }
+
+        const contentLength = fetchResp.headers.get("content-length");
+        const totalBytes = contentLength ? parseInt(contentLength, 10) : 25000000; // fallback est ~25MB
+
+        // Setup ReadableStream to track progress
+        let loadedBytes = 0;
+        const reader = fetchResp.body!.getReader();
+        const chunks: Uint8Array[] = [];
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          if (value) {
+            chunks.push(value);
+            loadedBytes += value.length;
+
+            const percentage = Math.min(100, Math.round((loadedBytes / totalBytes) * 100));
+            window.dispatchEvent(
+              new CustomEvent("dataZipProgress", {
+                detail: { loaded: loadedBytes, total: totalBytes, percentage },
+              }),
+            );
+          }
+        }
+
+        // Combine chunks
+        const combined = new Uint8Array(loadedBytes);
+        let offset = 0;
+        for (const chunk of chunks) {
+          combined.set(chunk, offset);
+          offset += chunk.length;
+        }
+        buf = combined.buffer;
+
+        // Save to cache for next time
+        const headers = new Headers(fetchResp.headers);
+        if (serverMeta) {
+          headers.set("X-Archive-Meta", serverMeta);
+        }
+        const cacheResponse = new Response(buf, {
+          status: fetchResp.status,
+          statusText: fetchResp.statusText,
+          headers: headers,
+        });
+        await cache.put(DATA_ZIP_URL, cacheResponse);
+      }
+
+      if (!buf) throw new Error("Failed to obtain array buffer for data.zip");
+
       zip = await JSZip.loadAsync(buf);
       console.log("[DataArchive] data.zip loaded and ready");
       return zip;

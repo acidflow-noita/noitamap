@@ -772,7 +772,14 @@
   },
   "loading": {
     "maps": "Loading maps...",
-    "languages": "Loading languages..."
+    "languages": "Loading languages...",
+    "mapData": {
+      "downloading": "Downloading World Data",
+      "generating": "Generating Biomes",
+      "hint": "This 24MB file is cached permanently after the first load.",
+      "segmentDownload": "Data Download",
+      "segmentGeneration": "Biome Generation"
+    }
   },
   "drawing": {
     "title": "Drawing Tools",

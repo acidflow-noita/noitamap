@@ -770,7 +770,14 @@
   },
   "loading": {
     "maps": "Caricamento mappe...",
-    "languages": "Caricamento lingue..."
+    "languages": "Caricamento lingue...",
+    "mapData": {
+      "downloading": "Scaricamento dei dati del mondo",
+      "generating": "Generazione dei biomi",
+      "hint": "Questo file da 24 MB viene memorizzato nella cache in modo permanente dopo il primo caricamento.",
+      "segmentDownload": "Download dei dati",
+      "segmentGeneration": "Generazione dei biomi"
+    }
   },
   "drawing": {
     "title": "Strumenti di disegno",

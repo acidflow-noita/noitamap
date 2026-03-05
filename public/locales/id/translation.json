@@ -770,7 +770,14 @@
   },
   "loading": {
     "maps": "Memuat peta...",
-    "languages": "Memuat bahasa..."
+    "languages": "Memuat bahasa...",
+    "mapData": {
+      "downloading": "Mengunduh Data Dunia",
+      "generating": "Menghasilkan Bioma",
+      "hint": "File 24MB ini disimpan secara permanen di cache setelah pemuatan pertama.",
+      "segmentDownload": "Unduh Data",
+      "segmentGeneration": "Pembuatan Bioma"
+    }
   },
   "drawing": {
     "title": "Alat Gambar",

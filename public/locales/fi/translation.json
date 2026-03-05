@@ -770,7 +770,14 @@
   },
   "loading": {
     "maps": "Ladataan karttoja...",
-    "languages": "Ladataan kieliä..."
+    "languages": "Ladataan kieliä...",
+    "mapData": {
+      "downloading": "Ladataan maailman tietoja",
+      "generating": "Luodaan biomeja",
+      "hint": "Tämä 24 Mt:n tiedosto tallennetaan pysyvästi välimuistiin ensimmäisen latauksen jälkeen.",
+      "segmentDownload": "Tietojen lataus",
+      "segmentGeneration": "Biomien luonti"
+    }
   },
   "drawing": {
     "title": "Piirtotyökalut",
