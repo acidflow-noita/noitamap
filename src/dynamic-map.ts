@@ -43,6 +43,7 @@ export interface DynamicPOI {
 
 let currentSeed: number | null = null;
 let currentIsDaily: boolean = false;
+let lastResult: GenerationResult | null = null;
 
 /** Get the seed currently displayed on the dynamic map */
 export function getCurrentDynamicSeed(): number | null {
@@ -51,6 +52,10 @@ export function getCurrentDynamicSeed(): number | null {
 
 export function getCurrentIsDaily(): boolean {
   return currentIsDaily;
+}
+
+export function getLastGenerationResult(): GenerationResult | null {
+  return lastResult;
 }
 
 // ─── Seed resolution ─────────────────────────────────────────────────────────
@@ -135,6 +140,16 @@ export async function runDynamicMap(
       `[DynamicMap] Rendering seed ${seed} with ${result.parallelWorlds?.length || 3} worlds, worldCenter=${result.worldCenter}`,
     );
     await renderGenerationResult(viewer as any, result);
+    lastResult = result;
+
+    // Log summary of what was generated
+    const allPois = Object.values(result.poisByPW).flat();
+    const poiCounts = allPois.reduce((acc, p) => {
+      acc[p.type] = (acc[p.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    console.log("[Telescope] Generated PoI summary:", poiCounts);
+    console.log("[Telescope] Full generation result:", result);
 
     // 5. Export flat POI list for search
     if (onPOIsReady) {

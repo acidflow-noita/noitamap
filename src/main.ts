@@ -7,6 +7,7 @@ import {
   clearDynamicMap,
   getCurrentDynamicSeed,
   getCurrentIsDaily,
+  getLastGenerationResult,
 } from "./dynamic-map";
 import type { DynamicPOI } from "./dynamic-map";
 
@@ -24,6 +25,43 @@ if (isDev) {
       localStorage.removeItem("noitamap-dev-drawing");
       console.log("Drawing dev mode disabled. Refresh to hide the sidebar.");
     },
+    exportData: () => {
+      const result = getLastGenerationResult();
+      if (!result) {
+        console.warn("No dynamic generation data available to export.");
+        return;
+      }
+      // Prepare serializable copy
+      const exportable = {
+        seed: result.seed,
+        ngPlus: result.ngPlus,
+        isNGP: result.isNGP,
+        worldSize: result.worldSize,
+        worldCenter: result.worldCenter,
+        poisByPW: Object.entries(result.poisByPW).reduce((acc, [pw, pois]) => {
+          acc[pw] = pois.map(p => {
+            const { x, y, type, ...rest } = p;
+            return { x, y, type, data: rest };
+          });
+          return acc;
+        }, {} as any),
+        pixelScenesByPW: Object.entries(result.pixelScenesByPW).reduce((acc, [pw, scenes]) => {
+          acc[pw] = scenes.map(s => ({ x: s.x, y: s.y, name: s.name, key: s.key }));
+          return acc;
+        }, {} as any),
+        eyes: result.eyes,
+        parallelWorlds: result.parallelWorlds,
+        biomes: result.tileLayers.map(l => ({ name: l.biomeName, x: l.correctedX, y: l.correctedY, w: l.w, h: l.h }))
+      };
+      const blob = new Blob([JSON.stringify(exportable, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `noitamap-seed-${result.seed}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      console.log(`Exported data for seed ${result.seed}`);
+    }
   };
   console.log('[Noitamap] Dev mode detected, "noitamap" commands available.');
 }

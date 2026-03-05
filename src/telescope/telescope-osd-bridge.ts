@@ -5,7 +5,8 @@
  * Merges biome layers into a single master canvas for performance and scaling.
  */
 
-import type { GenerationResult, POI, PixelScene, TileLayer } from "./telescope-adapter";
+import type { GenerationResult, POI, PixelScene, TileLayer } from "./adapter";
+import { getDataZip } from "../data-archive";
 declare const OpenSeadragon: any;
 
 let CHUNK_SIZE: number;
@@ -16,6 +17,71 @@ let BIOME_COLOR_LOOKUP: any;
 let createTileOverlaysCheap: any;
 let getWorldSize: any;
 let _telescopeModulesLoaded = false;
+
+// ─── Sprite Cache ───────────────────────────────────────────────────────────
+
+const spriteUrlCache: Map<string, string> = new Map();
+const rotatedSpriteUrlCache: Map<string, { url: string; w: number; h: number }> = new Map();
+
+/**
+ * Fetch a sprite from data.zip, rotate it 90deg CCW, and return a blob URL + dimensions.
+ */
+async function getRotatedWandSprite(spriteName: string): Promise<{ url: string; w: number; h: number } | null> {
+  if (rotatedSpriteUrlCache.has(spriteName)) return rotatedSpriteUrlCache.get(spriteName)!;
+
+  const zip = await getDataZip();
+  if (!zip) return null;
+
+  const paths = [
+    `data/items_gfx/wands/${spriteName}.png`,
+    `data/items_gfx/wands/${spriteName}`,
+    spriteName.startsWith("data/") ? spriteName : null,
+  ].filter(Boolean) as string[];
+
+  let file = null;
+  for (const path of paths) {
+    file = zip.file(path);
+    if (file) break;
+  }
+  if (!file) return null;
+
+  const blob = await file.async("blob");
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = reject;
+    i.src = URL.createObjectURL(blob);
+  });
+
+  // Rotate 90deg CCW via canvas
+  const canvas = document.createElement("canvas");
+  canvas.width = img.height;
+  canvas.height = img.width;
+  const ctx = canvas.getContext("2d")!;
+  ctx.translate(0, img.width);
+  ctx.rotate(-Math.PI / 2);
+  ctx.drawImage(img, 0, 0);
+
+  const rotatedBlob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/png"));
+  if (!rotatedBlob) return null;
+
+  const url = URL.createObjectURL(rotatedBlob);
+  const result = { url, w: canvas.width, h: canvas.height };
+
+  rotatedSpriteUrlCache.set(spriteName, result);
+  dynamicBlobUrls.push(url);
+  URL.revokeObjectURL(img.src); // Clean up the intermediate URL
+
+  return result;
+}
+
+/**
+ * Fetch a sprite from data.zip and return an HTMLImageElement.
+ */
+async function getWandSpriteImage(spriteName: string): Promise<HTMLImageElement | null> {
+  // Obsolete: logic moved to getRotatedWandSprite
+  return null;
+}
 
 async function ensureTelescopeModules(): Promise<void> {
   if (_telescopeModulesLoaded) return;
@@ -173,7 +239,11 @@ async function generateMasterWorldCanvas(result: GenerationResult): Promise<HTML
     const pwShiftX = (pw * pwOffsetPixels + xOffset) / 10;
 
     const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(
-      biomeData, tileLayers, pw, 0 /* pwVertical */, isNGP,
+      biomeData,
+      tileLayers,
+      pw,
+      0 /* pwVertical */,
+      isNGP,
     );
 
     for (let i = 0; i < tileLayers.length; i++) {
@@ -185,6 +255,39 @@ async function generateMasterWorldCanvas(result: GenerationResult): Promise<HTML
   }
 
   return canvas;
+}
+
+/**
+ * Helper to map raw Noita world units to linearized visual units (mod 5 logic).
+ * rawX/rawY: Noita world units (0,0 is the origin in the middle of World 0).
+ * Returns: OSD coordinate relative to the same origin.
+ */
+function getCorrectedWorldPos(rawX: number, rawY: number, worldCenter: number): { x: number; y: number } {
+  const chunkX = Math.floor(rawX / 512) + worldCenter;
+  const chunkY = Math.floor(rawY / 512) + 14;
+
+  const div5x = Math.floor(chunkX / 5);
+  const mod5x = ((chunkX % 5) + 5) % 5;
+  const correctedX = (div5x * 256 + mod5x * 51) * 10;
+
+  const div5y = Math.floor(chunkY / 5);
+  const mod5y = ((chunkY % 5) + 5) % 5;
+  let correctedY = (div5y * 256 + mod5y * 51) * 10;
+  if (mod5y > 0) correctedY += 10;
+
+  const localX = ((rawX % 512) + 512) % 512;
+  const localY = ((rawY % 512) + 512) % 512;
+
+  const chunkW = mod5x === 4 ? 52 : 51;
+  const chunkH = mod5y === 4 ? 52 : 51;
+
+  const finalX = correctedX + (localX * chunkW * 10) / 512;
+  const finalY = correctedY + (localY * chunkH * 10) / 512;
+
+  return {
+    x: finalX - worldCenter * 512,
+    y: finalY - 14 * 512,
+  };
 }
 
 /**
@@ -214,12 +317,10 @@ export async function addTileLayers(viewer: OSDViewer, result: GenerationResult,
   const pws = parallelWorlds || [-1, 0, 1];
   const minPW = Math.min(...pws);
 
-  // Noita alignment:
   // Middle world origin corresponds to Chunk 35 (or 36 for NGP).
-  // anchorX is the world coordinate of the left edge of the Middle World.
   const middleWorldLeftX = -(worldCenter * 512);
   const totalLeftX = middleWorldLeftX + minPW * pwOffsetPixels;
-  const anchorY = -(14 * 512); // Chunk 14 is the origin vertical chunk
+  const anchorY = -(14 * 512);
 
   console.log(
     `[OSD Bridge] Gen ${generationId}: Adding master biomes at x=${totalLeftX}, y=${anchorY}, wc=${worldCenter}`,
@@ -251,7 +352,6 @@ export async function addTileLayers(viewer: OSDViewer, result: GenerationResult,
   });
 
   if (tiledImage) {
-    // Also track the item immediately if available sync (though success is safer)
     dynamicTiledImages.add(tiledImage);
   }
 }
@@ -261,46 +361,40 @@ export async function addTileLayers(viewer: OSDViewer, result: GenerationResult,
  */
 export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult): Promise<void> {
   await ensureTelescopeModules();
-  const { pixelScenesByPW, worldCenter, worldSize } = result;
+  const { pixelScenesByPW, worldCenter } = result;
 
-  let addedCount = 0;
-
-  for (const [pwKey, scenes] of Object.entries(pixelScenesByPW)) {
-    const [pwStr] = pwKey.split(",");
-    const pw = parseInt(pwStr);
-
-    for (const scene of scenes) {
-      if (!scene || !scene.imgElement) continue;
-
+  // Parallelize URL creation
+  const allScenes = Object.values(pixelScenesByPW).flat();
+  const sceneData = await Promise.all(
+    allScenes.map(async (scene) => {
+      if (!scene || !scene.imgElement) return null;
       const url = await canvasToBlobUrl(scene.imgElement as any);
+      return { scene, url };
+    }),
+  );
 
-      const x = scene.x + worldCenter * CHUNK_SIZE - pw * worldSize * CHUNK_SIZE;
-      const y = scene.y + 14 * CHUNK_SIZE;
+  for (const data of sceneData) {
+    if (!data) continue;
+    const { scene, url } = data;
 
-      viewer.addTiledImage({
-        tileSource: {
-          type: "image",
-          url: url,
-          buildPyramid: false, // Small scenes don't need pyramids
-        },
-        x,
-        y,
-        width: scene.width * 10,
-      });
-      addedCount++;
-    }
+    // Use mod 5 correction for structure alignment
+    const { x, y } = getCorrectedWorldPos(scene.x, scene.y, worldCenter);
+
+    viewer.addTiledImage({
+      tileSource: {
+        type: "image",
+        url: url,
+        buildPyramid: false,
+      },
+      x,
+      y,
+      width: scene.width * 10, // 1 pixel = 10 units
+      success: (event: any) => {
+        dynamicTiledImages.add(event.item);
+        dynamicBlobUrls.push(url);
+      },
+    });
   }
-
-  setTimeout(() => {
-    const count = viewer.world.getItemCount();
-    // This logic needs to be updated to work with a Set if pixel scenes are to be cleared dynamically.
-    // For now, pixel scenes are not cleared by clearDynamicOverlays.
-    // const newItems: any[] = [];
-    // for (let i = count - addedCount; i < count; i++) {
-    //   if (i >= 0) newItems.push(viewer.world.getItemAt(i));
-    // }
-    // dynamicTiledImages.push(...newItems);
-  }, 100);
 }
 
 /**
@@ -308,36 +402,55 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
  */
 export async function addPOIOverlays(viewer: OSDViewer, result: GenerationResult): Promise<void> {
   await ensureTelescopeModules();
-  const { poisByPW, worldCenter, worldSize } = result;
+  const { poisByPW, worldCenter } = result;
 
-  for (const [pwKey, pois] of Object.entries(poisByPW)) {
-    const [pwStr] = pwKey.split(",");
-    const pw = parseInt(pwStr);
+  const allPois = Object.values(poisByPW).flat();
+  const wandsOnly = allPois.filter((p) => p.type === "wand");
 
-    for (const poi of pois) {
-      const el = createPOIElement(poi);
-      if (!el) continue;
+  // Parallelize sprite loading
+  const uniqueSpriteNames = [...new Set(wandsOnly.map((p) => p.sprite))].filter(Boolean) as string[];
+  const spriteMap = new Map<string, { url: string; w: number; h: number }>();
 
-      const x = poi.x - pw * worldSize * CHUNK_SIZE + worldCenter * CHUNK_SIZE;
-      const y = poi.y + 14 * CHUNK_SIZE;
+  await Promise.all(
+    uniqueSpriteNames.map(async (name) => {
+      const rotated = await getRotatedWandSprite(name);
+      if (rotated) spriteMap.set(name, rotated);
+    }),
+  );
 
-      viewer.addOverlay({
-        element: el,
-        location: new (OpenSeadragon as any).Point(x, y),
-        placement: (OpenSeadragon as any).Placement.CENTER,
-      });
+  for (const poi of wandsOnly) {
+    const rotated = spriteMap.get(poi.sprite!);
+    if (!rotated) continue;
 
-      dynamicOverlayElements.push(el);
-    }
+    const el = document.createElement("img");
+    el.src = rotated.url;
+    el.className = "dynamic-poi poi-wand";
+    el.style.cssText = `
+      image-rendering: pixelated;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    `;
+
+    // Apply mod 5 correction for precise centering
+    const { x, y } = getCorrectedWorldPos(poi.x, poi.y, worldCenter);
+
+    // 1 sprite pixel = 1 world unit in Noita
+    const worldW = rotated.w;
+    const worldH = rotated.h;
+
+    viewer.addOverlay({
+      element: el,
+      location: new (OpenSeadragon as any).Rect(x - worldW / 2, y - worldH / 2, worldW, worldH),
+    });
+
+    dynamicOverlayElements.push(el);
   }
 }
 
-function createPOIElement(poi: POI): HTMLElement | null {
-  const el = document.createElement("div");
-  el.className = "dynamic-poi";
-  const color = getPOIColor(poi);
-  el.style.cssText = `width:12px;height:12px;border-radius:50%;background:${color};border:2px solid rgba(0,0,0,0.5);pointer-events:none;`;
-  return el;
+async function createPOIElement(poi: POI): Promise<HTMLElement | null> {
+  // Obsolete: logic moved into addPOIOverlays for Rect support
+  return null;
 }
 
 function getPOIColor(poi: POI): string {
@@ -357,6 +470,8 @@ export async function renderGenerationResult(viewer: OSDViewer, result: Generati
   const generationId = ++currentGenerationId;
   clearDynamicOverlays(viewer);
   await addTileLayers(viewer, result, generationId);
+  await addPOIOverlays(viewer, result);
+  // await addPixelScenes(viewer, result);
 }
 
 export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: number; worldX: number; worldY: number }> {
