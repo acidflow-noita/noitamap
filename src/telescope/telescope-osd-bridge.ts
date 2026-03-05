@@ -25,26 +25,61 @@ let _telescopeModulesLoaded = false;
 /** Ordered list of biome keys for progressive rendering. */
 const BIOME_RENDER_ORDER: string[] = [
   // Main biomes
-  "coalmine", "coalmine_alt", "excavationsite", "fungicave", "snowcave",
-  "snowcastle", "rainforest", "rainforest_open", "vault", "crypt",
-  "liquidcave", "pyramid", "wandcave", "sandcave", "the_end",
-  "fungiforest", "rainforest_dark", "wizardcave", "robobase", "meat",
-  "vault_frozen", "clouds", "the_sky", "snowchasm",
+  "coalmine",
+  "coalmine_alt",
+  "excavationsite",
+  "fungicave",
+  "snowcave",
+  "snowcastle",
+  "rainforest",
+  "rainforest_open",
+  "vault",
+  "crypt",
+  "liquidcave",
+  "pyramid",
+  "wandcave",
+  "sandcave",
+  "the_end",
+  "fungiforest",
+  "rainforest_dark",
+  "wizardcave",
+  "robobase",
+  "meat",
+  "vault_frozen",
+  "clouds",
+  "the_sky",
+  "snowchasm",
   // Tower variants
-  "tower_end", "tower_crypt", "tower_vault", "tower_rainforest",
-  "tower_fungicave", "tower_snowcastle", "tower_snowcave",
-  "tower_excavationsite", "tower_coalmine",
+  "tower_end",
+  "tower_crypt",
+  "tower_vault",
+  "tower_rainforest",
+  "tower_fungicave",
+  "tower_snowcastle",
+  "tower_snowcave",
+  "tower_excavationsite",
+  "tower_coalmine",
   // Extra generation biomes
-  "boss_arena", "snowcave_secret_chamber", "excavationsite_cube_chamber",
-  "snowcastle_cavern", "snowcastle_hourglass_chamber", "pyramid_top",
-  "robot_egg", "secret_lab", "wizardcave_entrance", "dragoncave",
+  "boss_arena",
+  "snowcave_secret_chamber",
+  "excavationsite_cube_chamber",
+  "snowcastle_cavern",
+  "snowcastle_hourglass_chamber",
+  "pyramid_top",
+  "robot_egg",
+  "secret_lab",
+  "wizardcave_entrance",
+  "dragoncave",
 ];
 
 /** Biomes already baked into the static OSD background map — skip rendering. */
 const SKIP_BIOMES = new Set([
   "temple_altar",
-  "biome_watchtower", "biome_potion_mimics", "biome_darkness",
-  "biome_boss_sky", "biome_barren",
+  "biome_watchtower",
+  "biome_potion_mimics",
+  "biome_darkness",
+  "biome_boss_sky",
+  "biome_barren",
   "lake_deep",
 ]);
 
@@ -74,7 +109,6 @@ export async function getWandSprite(spriteName: string): Promise<string | null> 
       const blob = await file.async("blob");
       const url = URL.createObjectURL(blob);
       spriteUrlCache.set(spriteName, url);
-      dynamicBlobUrls.push(url);
       return url;
     }
   }
@@ -127,7 +161,6 @@ export async function getRotatedWandSprite(spriteName: string): Promise<{ url: s
   const result = { url, w: canvas.width, h: canvas.height };
 
   rotatedSpriteUrlCache.set(spriteName, result);
-  dynamicBlobUrls.push(url);
   URL.revokeObjectURL(img.src); // Clean up the intermediate URL
 
   return result;
@@ -141,7 +174,12 @@ async function ensureTelescopeModules(): Promise<void> {
   // which needs the Image src interceptor to resolve from data.zip.
   // On cache-hit paths, initTelescope() is skipped, so these may not be installed yet.
   await getDataZip();
-  installTelescopeShim({ clearSpawnPixels: true, recolorMaterials: true, enableEdgeNoise: true, fixHolyMountainEdgeNoise: true });
+  installTelescopeShim({
+    clearSpawnPixels: true,
+    recolorMaterials: true,
+    enableEdgeNoise: true,
+    fixHolyMountainEdgeNoise: true,
+  });
   installFetchInterceptor();
   installImageSrcInterceptor();
 
@@ -369,7 +407,9 @@ async function addBiomeLayersProgressively(
           width: osdWidth,
           success: (event: any) => {
             if (currentGenerationId !== generationId) {
-              try { viewer.world.removeItem(event.item); } catch {}
+              try {
+                viewer.world.removeItem(event.item);
+              } catch {}
               return;
             }
             dynamicTiledImages.add(event.item);
@@ -433,12 +473,19 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
 /**
  * Add POI markers as OSD HTML overlays.
  */
-export async function addPOIOverlays(viewer: OSDViewer, result: GenerationResult): Promise<void> {
+export async function addPOIOverlays(viewer: OSDViewer, result: GenerationResult, generationId: number): Promise<void> {
   await ensureTelescopeModules();
+  if (currentGenerationId !== generationId) return;
+
   const { poisByPW, worldCenter } = result;
 
   const allPois = Object.values(poisByPW).flat();
   const wandsOnly = allPois.filter((p) => p.type === "wand");
+
+  if (wandsOnly.length === 0) {
+    console.log("[OSD Bridge] No wand POIs to render");
+    return;
+  }
 
   // Parallelize sprite loading
   const uniqueSpriteNames = [...new Set(wandsOnly.map((p) => p.sprite))].filter(Boolean) as string[];
@@ -446,12 +493,21 @@ export async function addPOIOverlays(viewer: OSDViewer, result: GenerationResult
 
   await Promise.all(
     uniqueSpriteNames.map(async (name) => {
-      const rotated = await getRotatedWandSprite(name);
-      if (rotated) spriteMap.set(name, rotated);
+      try {
+        const rotated = await getRotatedWandSprite(name);
+        if (rotated) spriteMap.set(name, rotated);
+      } catch (err) {
+        console.warn(`[OSD Bridge] Failed to load wand sprite: ${name}`, err);
+      }
     }),
   );
 
+  if (currentGenerationId !== generationId) return;
+
+  let addedCount = 0;
   for (const poi of wandsOnly) {
+    if (currentGenerationId !== generationId) return;
+
     const rotated = spriteMap.get(poi.sprite!);
     if (!rotated) continue;
 
@@ -476,18 +532,82 @@ export async function addPOIOverlays(viewer: OSDViewer, result: GenerationResult
     });
 
     dynamicOverlayElements.push(el);
+    addedCount++;
   }
+  console.log(
+    `[OSD Bridge] Added ${addedCount}/${wandsOnly.length} wand overlays (${spriteMap.size} unique sprites loaded)`,
+  );
 }
-
-// ─── Main Entry Point ───────────────────────────────────────────────────────
 
 export async function renderGenerationResult(viewer: OSDViewer, result: GenerationResult): Promise<void> {
   const generationId = ++currentGenerationId;
   clearDynamicOverlays(viewer);
+
+  // Pre-fetch wand sprites in parallel so they are ready by the time
+  // biome layers finish rendering.
+  const poisByPW = result.poisByPW;
+  const allPois = Object.values(poisByPW).flat();
+  const wandsOnly = allPois.filter((p) => p.type === "wand");
+
+  const uniqueSpriteNames = [...new Set(wandsOnly.map((p) => p.sprite))].filter(Boolean) as string[];
+  const spriteMap = new Map<string, { url: string; w: number; h: number }>();
+
+  const poiSpritePromise = Promise.all(
+    uniqueSpriteNames.map(async (name) => {
+      try {
+        const rotated = await getRotatedWandSprite(name);
+        if (rotated) spriteMap.set(name, rotated);
+      } catch (err) {
+        console.warn(`[OSD Bridge] Failed to load wand sprite: ${name}`, err);
+      }
+    }),
+  );
+
+  // Adding biomes initializes the OSD viewport bounds.
+  // Overlays added before the viewport is established will break.
   await addBiomeLayersProgressively(viewer, result, generationId);
+
+  // Wait for sprites to finish fetching, then add the HTML overlays.
+  await poiSpritePromise;
+
   if (currentGenerationId !== generationId) return;
-  await addPOIOverlays(viewer, result);
-  // await addPixelScenes(viewer, result);
+
+  let addedCount = 0;
+  for (const poi of wandsOnly) {
+    if (currentGenerationId !== generationId) return;
+
+    const rotated = spriteMap.get(poi.sprite!);
+    if (!rotated) continue;
+
+    const el = document.createElement("img");
+    el.src = rotated.url;
+    el.className = "dynamic-poi poi-wand";
+    el.style.cssText = `
+      image-rendering: pixelated;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    `;
+
+    const { x, y } = getCorrectedWorldPos(poi.x, poi.y, result.worldCenter);
+
+    const worldW = rotated.w;
+    const worldH = rotated.h;
+
+    viewer.addOverlay({
+      element: el,
+      location: new (OpenSeadragon as any).Rect(x - worldW / 2, y - worldH / 2, worldW, worldH),
+    });
+
+    dynamicOverlayElements.push(el);
+    addedCount++;
+  }
+
+  if (wandsOnly.length > 0) {
+    console.log(
+      `[OSD Bridge] Added ${addedCount}/${wandsOnly.length} wand overlays (${spriteMap.size} unique sprites loaded)`,
+    );
+  }
 }
 
 export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: number; worldX: number; worldY: number }> {

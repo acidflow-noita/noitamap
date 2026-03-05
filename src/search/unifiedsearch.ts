@@ -1,14 +1,14 @@
-import { searchOverlays } from '../flexsearch';
-import { resetBiomeOverlays } from '../data_sources/overlays';
-import { MapName } from '../data_sources/tile_data';
-import { debounce } from '../util';
-import { UnifiedSearchResults, UnifiedSearchResult } from './unifiedsearchresults';
-import { TargetOfInterest, Spell } from '../data_sources/overlays';
-import { gameTranslator } from '../game-translations/translator';
-import i18next from '../i18n';
-import spells from '../data/spells.json';
-import { EventEmitter2 } from 'eventemitter2';
-import type { DynamicPOI } from '../dynamic-map';
+import { searchOverlays } from "../flexsearch";
+import { resetBiomeOverlays } from "../data_sources/overlays";
+import { MapName } from "../data_sources/tile_data";
+import { debounce } from "../util";
+import { UnifiedSearchResults, UnifiedSearchResult } from "./unifiedsearchresults";
+import { TargetOfInterest, Spell } from "../data_sources/overlays";
+import { gameTranslator } from "../game-translations/translator";
+import i18next from "../i18n";
+import spells from "../data/spells.json";
+import { EventEmitter2 } from "eventemitter2";
+import type { DynamicPOI } from "../dynamic-map";
 
 export type UnifiedSearchCreateOptions = {
   currentMap: MapName;
@@ -23,11 +23,11 @@ type UnifiedSearchConstructOptions = {
 };
 
 export interface UnifiedSearch {
-  on(event: 'selected', listener: (target: TargetOfInterest | { type: 'spell'; spell: any }) => void): this;
+  on(event: "selected", listener: (target: TargetOfInterest | { type: "spell"; spell: any }) => void): this;
 }
 
 export class UnifiedSearch extends EventEmitter2 {
-  private lastSearchText: string = '';
+  private lastSearchText: string = "";
   private lastSearchFilters: Set<string> = new Set();
 
   private form: HTMLFormElement;
@@ -50,14 +50,14 @@ export class UnifiedSearch extends EventEmitter2 {
   }
 
   private bindEvents() {
-    this.searchResults.on('selected', (result: any) => {
-      this.emit('selected', result);
+    this.searchResults.on("selected", (result: any) => {
+      this.emit("selected", result);
     });
 
     const debounced = debounce(100, () => this.updateSearchResults());
 
     // never submit the form
-    this.form.addEventListener('submit', ev => {
+    this.form.addEventListener("submit", (ev) => {
       ev.preventDefault();
       // if the "search" event isn't present, still update the search
       // results when the user hits enter in the search box
@@ -66,20 +66,20 @@ export class UnifiedSearch extends EventEmitter2 {
 
     // nonstandard event for when user hits enter (or clicks the x) in
     // an <input type="search">
-    this.searchInput.addEventListener('search', debounced);
+    this.searchInput.addEventListener("search", debounced);
 
     // "live" search - show list of results as the user types
-    this.searchInput.addEventListener('keyup', ev => {
+    this.searchInput.addEventListener("keyup", (ev) => {
       if (!(ev.altKey || ev.shiftKey || ev.ctrlKey || ev.metaKey || ev.isComposing)) {
         switch (ev.key) {
-          case 'Escape':
-            this.searchInput.value = '';
+          case "Escape":
+            this.searchInput.value = "";
             this.updateSearchResults();
             break;
-          case 'ArrowDown':
+          case "ArrowDown":
             this.searchResults.focusNext();
             return;
-          case 'ArrowUp':
+          case "ArrowUp":
             this.searchResults.focusPrevious();
             return;
         }
@@ -87,14 +87,14 @@ export class UnifiedSearch extends EventEmitter2 {
       debounced();
     });
 
-    this.searchResults.on('blur', () => {
+    this.searchResults.on("blur", () => {
       this.searchInput.focus();
     });
 
     for (const filterCheckbox of document.querySelectorAll<HTMLInputElement>(
-      '#unifiedSearchFilterBox input[type="checkbox"]'
+      '#unifiedSearchFilterBox input[type="checkbox"]',
     )) {
-      filterCheckbox.addEventListener('change', () => {
+      filterCheckbox.addEventListener("change", () => {
         if (filterCheckbox.checked) {
           this.activeFilters.add(filterCheckbox.value);
         } else {
@@ -114,17 +114,17 @@ export class UnifiedSearch extends EventEmitter2 {
   setDynamicPOIs(pois: DynamicPOI[]): void {
     this.dynamicPOIs = pois;
     // If the user already has text in the search box, refresh immediately
-    if (this.searchInput.value.trim() !== '') {
-      this.lastSearchText = '';
+    if (this.searchInput.value.trim() !== "") {
+      this.lastSearchText = "";
       this.updateSearchResults();
     }
   }
 
   // Method to refresh search results with new translations
   refreshTranslations() {
-    if (this.searchInput.value.trim() !== '') {
+    if (this.searchInput.value.trim() !== "") {
       // Force update by clearing lastSearchText and calling updateSearchResults
-      this.lastSearchText = '';
+      this.lastSearchText = "";
       this.updateSearchResults();
     }
   }
@@ -135,13 +135,13 @@ export class UnifiedSearch extends EventEmitter2 {
     this.lastSearchText = searchText;
     this.lastSearchFilters = new Set(this.activeFilters);
 
-    if (searchText === '') {
+    if (searchText === "") {
       resetBiomeOverlays();
       this.searchResults.setResults([]);
       return;
     }
 
-    const isDynamic = this.currentMap === 'dynamic-main-branch';
+    const isDynamic = this.currentMap === "dynamic-main-branch";
 
     if (isDynamic) {
       // Dynamic map: search dynamic POIs only (no spells, no static overlays)
@@ -149,22 +149,40 @@ export class UnifiedSearch extends EventEmitter2 {
 
       // Read player position from URL for proximity sorting
       const urlParams = new URLSearchParams(window.location.search);
-      const playerX = parseFloat(urlParams.get('x') ?? '') || null;
-      const playerY = parseFloat(urlParams.get('y') ?? '') || null;
+      const playerX = parseFloat(urlParams.get("x") ?? "") || null;
+      const playerY = parseFloat(urlParams.get("y") ?? "") || null;
 
       const CHUNK_SIZE = 512;
 
-      let matched = this.dynamicPOIs.filter(p => {
-        const searchMatched = 
-          (p.name ?? p.type ?? '').toLowerCase().includes(searchLower) || 
-          (p.item ?? '').toLowerCase().includes(searchLower) || 
+      let matched = this.dynamicPOIs.filter((p) => {
+        const searchMatched =
+          (p.name ?? p.type ?? "").toLowerCase().includes(searchLower) ||
+          (p.item ?? "").toLowerCase().includes(searchLower) ||
           p.type.toLowerCase().includes(searchLower);
-        
-        if (!searchMatched) return false;
+
+        let spellsMatched = false;
+        if (p.cards || p.always_casts) {
+          const allSpells = [...(p.cards || []), ...(p.always_casts || [])];
+          spellsMatched = allSpells.some((c: string) => {
+            const spell = spells.find((s) => s.id === c);
+            if (!spell) return c.toLowerCase().includes(searchLower);
+            const translatedName = gameTranslator.translateSpell(spell.name).toLowerCase();
+            const originalName = spell.name.toLowerCase();
+            return (
+              translatedName.includes(searchLower) ||
+              originalName.includes(searchLower) ||
+              c.toLowerCase().includes(searchLower)
+            );
+          });
+        }
+
+        if (!searchMatched && !spellsMatched) return false;
 
         // Respect filters if any are active
         if (this.activeFilters.size > 0) {
-          if (this.activeFilters.has('wands') && p.type === 'wand') return true;
+          if (this.activeFilters.has("wands") && p.type === "wand") return true;
+          // If spells filter is active, we only show it if the search text matched a spell inside this POI
+          if (this.activeFilters.has("spells") && spellsMatched && p.type === "wand") return true;
           // Add more dynamic filters here later (chests, items, etc)
           return false;
         }
@@ -182,26 +200,64 @@ export class UnifiedSearch extends EventEmitter2 {
       }
 
       // Convert to UnifiedSearchResult shape (overlayType: 'poi')
-      const dynamicResults: UnifiedSearchResult[] = matched.map(p => {
-        const chunksAway = (playerX !== null && playerY !== null)
-          ? Math.round(Math.hypot(p.worldX - playerX, p.worldY - playerY) / CHUNK_SIZE)
-          : null;
+      const dynamicResults: UnifiedSearchResult[] = matched.map((p) => {
+        const chunksAway =
+          playerX !== null && playerY !== null
+            ? Math.round(Math.hypot(p.worldX - playerX, p.worldY - playerY) / CHUNK_SIZE)
+            : null;
         return {
-          overlayType: 'poi' as const,
+          overlayType: "poi" as const,
           name: p.name ?? p.type,
           displayName: p.name ?? p.type,
           x: p.worldX,
           y: p.worldY,
-          maps: ['dynamic-main-branch' as MapName],
+          maps: ["dynamic-main-branch" as MapName],
           chunksAway,
           isDynamic: true,
           type: p.type,
           sprite: p.sprite,
           wandName: p.name,
+          cards: p.cards,
+          alwaysCasts: p.always_casts,
         } as any;
       });
 
-      this.searchResults.setResults(dynamicResults);
+      const combinedResults: any[] = [...dynamicResults];
+
+      if (this.activeFilters.has("spells") || this.activeFilters.size === 0) {
+        const spellResults = spells
+          .filter((spell) => {
+            const translatedName = gameTranslator.translateSpell(spell.name);
+            const originalName = spell.name.toLowerCase();
+            const translatedNameLower = translatedName.toLowerCase();
+
+            return (
+              originalName.includes(searchLower) ||
+              translatedNameLower.includes(searchLower) ||
+              spell.id.toLowerCase().includes(searchLower)
+            );
+          })
+          .map((spell) => {
+            const translatedName = gameTranslator.translateSpell(spell.name);
+            const currentLang = i18next.language;
+
+            let spellDisplayName = translatedName;
+            if (currentLang !== "en" && translatedName !== spell.name) {
+              spellDisplayName = `${translatedName} (${spell.name})`;
+            }
+
+            return {
+              type: "spell" as const,
+              spell,
+              displayName: translatedName,
+              displayText: `${i18next.t("spell_prefix", "Spell")}: ${spellDisplayName} (${i18next.t("tiers_prefix", "Tiers")}: ${Object.keys(spell.spawnProbabilities).join(", ")})`,
+            };
+          });
+
+        combinedResults.push(...spellResults);
+      }
+
+      this.searchResults.setResults(combinedResults);
       return;
     }
 
@@ -212,10 +268,10 @@ export class UnifiedSearch extends EventEmitter2 {
     // Combine results, prioritizing map results first
     const combinedResults: any[] = [...mapResults];
 
-    if (this.activeFilters.has('spells') || this.activeFilters.size === 0) {
+    if (this.activeFilters.has("spells") || this.activeFilters.size === 0) {
       // Search for spells with translation support
       const spellResults = spells
-        .filter(spell => {
+        .filter((spell) => {
           const translatedName = gameTranslator.translateSpell(spell.name);
           const originalName = spell.name.toLowerCase();
           const translatedNameLower = translatedName.toLowerCase();
@@ -227,21 +283,21 @@ export class UnifiedSearch extends EventEmitter2 {
             spell.id.toLowerCase().includes(searchLower)
           );
         })
-        .map(spell => {
+        .map((spell) => {
           const translatedName = gameTranslator.translateSpell(spell.name);
           const currentLang = i18next.language;
 
           // Create display text with English fallback for non-English languages
           let spellDisplayName = translatedName;
-          if (currentLang !== 'en' && translatedName !== spell.name) {
+          if (currentLang !== "en" && translatedName !== spell.name) {
             spellDisplayName = `${translatedName} (${spell.name})`;
           }
 
           return {
-            type: 'spell' as const,
+            type: "spell" as const,
             spell,
             displayName: translatedName,
-            displayText: `${i18next.t('spell_prefix', 'Spell')}: ${spellDisplayName} (${i18next.t('tiers_prefix', 'Tiers')}: ${Object.keys(spell.spawnProbabilities).join(', ')})`,
+            displayText: `${i18next.t("spell_prefix", "Spell")}: ${spellDisplayName} (${i18next.t("tiers_prefix", "Tiers")}: ${Object.keys(spell.spawnProbabilities).join(", ")})`,
           };
         });
 
@@ -253,69 +309,70 @@ export class UnifiedSearch extends EventEmitter2 {
 
   static create({ currentMap, form }: UnifiedSearchCreateOptions) {
     // Use the existing search input from HTML instead of creating a new one
-    const searchInput = document.getElementById('unified-search-input') as HTMLInputElement;
+    const searchInput = document.getElementById("unified-search-input") as HTMLInputElement;
     if (!searchInput) {
-      throw new Error('Search input element not found. Make sure #unified-search-input exists in the HTML.');
+      throw new Error("Search input element not found. Make sure #unified-search-input exists in the HTML.");
     }
 
     // Create an absolutely-positioned overlay container for search results
-    let searchResultsOverlay = document.getElementById('unifiedSearchResultsOverlay');
+    let searchResultsOverlay = document.getElementById("unifiedSearchResultsOverlay");
     if (!searchResultsOverlay) {
-      searchResultsOverlay = document.createElement('div');
-      searchResultsOverlay.id = 'unifiedSearchResultsOverlay';
+      searchResultsOverlay = document.createElement("div");
+      searchResultsOverlay.id = "unifiedSearchResultsOverlay";
       document.body.appendChild(searchResultsOverlay);
     } else {
-      searchResultsOverlay.innerHTML = '';
+      searchResultsOverlay.innerHTML = "";
     }
     // Type assertion to satisfy linter
     const overlayDiv = searchResultsOverlay as HTMLDivElement;
 
-    const filterBox = document.createElement('div');
-    filterBox.id = 'unifiedSearchFilterBox';
+    const filterBox = document.createElement("div");
+    filterBox.id = "unifiedSearchFilterBox";
 
-    const isDynamicMap = currentMap === 'dynamic-main-branch';
-    const filters = isDynamicMap 
+    const isDynamicMap = currentMap === "dynamic-main-branch";
+    const filters = isDynamicMap
       ? [
-          { type: 'wands', iconSrc: 'data/items_gfx/wands/wand_0531.png' }, // wand_0531 is Wand_handgun
+          { type: "wands", iconSrc: "data/items_gfx/wands/wand_0531.png" }, // wand_0531 is Wand_handgun
+          { type: "spells", iconSrc: "assets/icons/spells/light_bullet.png" },
         ]
       : [
-          { type: 'spells', iconSrc: 'assets/icons/spells/light_bullet.png' },
-          { type: 'structures', iconSrc: 'assets/icons/overlay-toggles/icon-structures.svg' },
-          { type: 'bosses', iconSrc: 'assets/icons/overlay-toggles/icon-bosses.webp' },
-          { type: 'items', iconSrc: 'assets/icons/overlay-toggles/icon-items.webp' },
-          { type: 'orbs', iconSrc: 'assets/icons/overlay-toggles/icon-orbs.webp' },
-          { type: 'spatialAwareness', iconSrc: 'assets/icons/overlay-toggles/icon-spatial-awareness.webp' },
-          { type: 'hiddenMessages', iconSrc: 'assets/icons/overlay-toggles/icon-hidden-messages.webp' },
+          { type: "spells", iconSrc: "assets/icons/spells/light_bullet.png" },
+          { type: "structures", iconSrc: "assets/icons/overlay-toggles/icon-structures.svg" },
+          { type: "bosses", iconSrc: "assets/icons/overlay-toggles/icon-bosses.webp" },
+          { type: "items", iconSrc: "assets/icons/overlay-toggles/icon-items.webp" },
+          { type: "orbs", iconSrc: "assets/icons/overlay-toggles/icon-orbs.webp" },
+          { type: "spatialAwareness", iconSrc: "assets/icons/overlay-toggles/icon-spatial-awareness.webp" },
+          { type: "hiddenMessages", iconSrc: "assets/icons/overlay-toggles/icon-hidden-messages.webp" },
         ];
 
     for (const filter of filters) {
-      const filterLabel = document.createElement('label');
+      const filterLabel = document.createElement("label");
       filterLabel.tabIndex = 0;
-      const filterCheckbox = document.createElement('input');
-      filterCheckbox.type = 'checkbox';
+      const filterCheckbox = document.createElement("input");
+      filterCheckbox.type = "checkbox";
       filterCheckbox.value = filter.type;
       filterLabel.appendChild(filterCheckbox);
-      const filterIcon = document.createElement('img');
-      if (filter.iconSrc.startsWith('data/')) {
-        import('../telescope/telescope-osd-bridge').then(mod => {
+      const filterIcon = document.createElement("img");
+      if (filter.iconSrc.startsWith("data/")) {
+        import("../telescope/telescope-osd-bridge").then((mod) => {
           // We can use getWandSprite for any PNG in the zip
-          mod.getWandSprite(filter.iconSrc).then(url => {
+          mod.getWandSprite(filter.iconSrc).then((url) => {
             if (url) filterIcon.src = url;
           });
         });
       } else {
         filterIcon.src = filter.iconSrc;
       }
-      filterIcon.alt = '';
-      filterIcon.classList.add('pixelated-image');
+      filterIcon.alt = "";
+      filterIcon.classList.add("pixelated-image");
       filterIcon.draggable = false;
       filterLabel.appendChild(filterIcon);
       filterBox.appendChild(filterLabel);
     }
     overlayDiv.appendChild(filterBox);
 
-    const searchResultsUL = document.createElement('ul');
-    searchResultsUL.id = 'unifiedSearchResults';
+    const searchResultsUL = document.createElement("ul");
+    searchResultsUL.id = "unifiedSearchResults";
     overlayDiv.appendChild(searchResultsUL);
 
     // Position overlay below the input
@@ -328,33 +385,33 @@ export class UnifiedSearch extends EventEmitter2 {
 
     let isOverlayVisible = false;
 
-    searchInput.addEventListener('focus', () => {
+    searchInput.addEventListener("focus", () => {
       positionOverlay();
-      overlayDiv.style.display = 'block';
+      overlayDiv.style.display = "block";
       isOverlayVisible = true;
     });
 
     const hideOverlay = () => {
       setTimeout(() => {
-        if (!overlayDiv.matches(':focus-within') && document.activeElement !== searchInput) {
-          overlayDiv.style.display = 'none';
+        if (!overlayDiv.matches(":focus-within") && document.activeElement !== searchInput) {
+          overlayDiv.style.display = "none";
           isOverlayVisible = false;
         }
       }, 200);
     };
 
-    searchInput.addEventListener('blur', hideOverlay);
-    overlayDiv.addEventListener('blur', hideOverlay);
+    searchInput.addEventListener("blur", hideOverlay);
+    overlayDiv.addEventListener("blur", hideOverlay);
 
-    window.addEventListener('resize', () => {
+    window.addEventListener("resize", () => {
       if (isOverlayVisible) positionOverlay();
     });
     window.addEventListener(
-      'scroll',
+      "scroll",
       () => {
         if (isOverlayVisible) positionOverlay();
       },
-      true
+      true,
     );
 
     const searchResults = new UnifiedSearchResults(searchResultsUL);
@@ -365,7 +422,7 @@ export class UnifiedSearch extends EventEmitter2 {
       origSetResults(...args);
       if (args[0].length > 0 && document.activeElement === searchInput) {
         positionOverlay();
-        overlayDiv.style.display = 'block';
+        overlayDiv.style.display = "block";
         isOverlayVisible = true;
       }
     };
