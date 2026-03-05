@@ -2,14 +2,29 @@
  * tile-cache.ts
  *
  * IndexedDB cache for telescope generation results.
- * Keyed by seed — stores serialized tile canvases, POI data, and pixel scenes.
+ * Keyed by seed — stores raw tile buffers, biome data, and POIs.
+ * No canvas blobs stored — overlays are recomputed from raw data on restore.
  * Prunes entries older than 30 days.
  */
 
 const DB_NAME = "noitamap-telescope";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "generations";
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+interface CachedTileLayer {
+  biomeName: string;
+  correctedX: number;
+  correctedY: number;
+  w: number;
+  h: number;
+  buffer: ArrayBuffer | null;
+  width: number;
+  height: number;
+  mapH: number;
+  minX: number;
+  minY: number;
+}
 
 interface CachedGeneration {
   seed: number;
@@ -19,19 +34,14 @@ interface CachedGeneration {
   worldSize: number;
   worldCenter: number;
   parallelWorlds: number[];
-  masterBlob: Blob | null;
-  tileLayers: Array<{
-    blob: Blob;
-    correctedX: number;
-    correctedY: number;
-    w: number;
-    h: number;
-  }>;
+  tileLayers: CachedTileLayer[];
+  biomeDataPixels: ArrayBuffer;
+  biomeDataW: number;
+  biomeDataH: number;
   poisByPW: Record<string, any[]>;
   pixelScenesByPW: Record<
     string,
     Array<{
-      blob: Blob;
       x: number;
       y: number;
       width: number;
@@ -41,14 +51,17 @@ interface CachedGeneration {
     }>
   >;
 }
+
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: "seed" });
+      // Delete old store if upgrading from v1 (had blob data)
+      if (db.objectStoreNames.contains(STORE_NAME)) {
+        db.deleteObjectStore(STORE_NAME);
       }
+      db.createObjectStore(STORE_NAME, { keyPath: "seed" });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -56,66 +69,41 @@ function openDB(): Promise<IDBDatabase> {
 }
 
 /**
- * Serialize a canvas (HTMLCanvasElement or OffscreenCanvas) to a Blob (PNG).
- */
-function canvasToBlob(canvas: HTMLCanvasElement | OffscreenCanvas): Promise<Blob> {
-  if (canvas instanceof OffscreenCanvas) {
-    return canvas.convertToBlob({ type: "image/png" });
-  }
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob);
-      else reject(new Error("Canvas toBlob failed"));
-    }, "image/png");
-  });
-}
-
-/**
- * Deserialize a Blob back to a canvas.
- */
-async function blobToCanvas(blob: Blob): Promise<HTMLCanvasElement> {
-  const bitmap = await createImageBitmap(blob);
-  const canvas = document.createElement("canvas");
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
-  ctx.drawImage(bitmap, 0, 0);
-  bitmap.close();
-  return canvas;
-}
-
-/**
  * Store a generation result in the cache.
+ * Only stores raw data (buffers, biome pixels, POIs) — no canvas blobs.
  */
 export async function cacheGeneration(seed: number, result: any): Promise<void> {
   try {
     const db = await openDB();
 
-    // Serialize tile layer canvases to blobs
-    const tileLayers = await Promise.all(
-      result.tileLayers.map(async (layer: any) => ({
-        blob: layer.canvas ? await canvasToBlob(layer.canvas) : null,
-        correctedX: layer.correctedX,
-        correctedY: layer.correctedY,
-        w: layer.w,
-        h: layer.h,
-      })),
-    );
+    // Serialize tile layer raw buffers (no canvas blobs)
+    const tileLayers: CachedTileLayer[] = result.tileLayers.map((layer: any) => ({
+      biomeName: layer.biomeName || "",
+      correctedX: layer.correctedX,
+      correctedY: layer.correctedY,
+      w: layer.w,
+      h: layer.h,
+      buffer: layer.buffer
+        ? layer.buffer.buffer.slice(layer.buffer.byteOffset, layer.buffer.byteOffset + layer.buffer.byteLength)
+        : null,
+      width: layer.width,
+      height: layer.height,
+      mapH: layer.mapH,
+      minX: layer.minX,
+      minY: layer.minY,
+    }));
 
-    // Serialize pixel scene canvases to blobs
+    // Store pixel scene metadata only (no canvas blobs — scenes are disabled)
     const pixelScenesByPW: Record<string, any[]> = {};
     for (const [pw, scenes] of Object.entries(result.pixelScenesByPW) as [string, any[]][]) {
-      pixelScenesByPW[pw] = await Promise.all(
-        scenes.map(async (scene: any) => ({
-          blob: scene.imgElement ? await canvasToBlob(scene.imgElement) : null,
-          x: scene.x,
-          y: scene.y,
-          width: scene.width,
-          height: scene.height,
-          name: scene.name,
-          key: scene.key,
-        })),
-      );
+      pixelScenesByPW[pw] = scenes.map((scene: any) => ({
+        x: scene.x,
+        y: scene.y,
+        width: scene.width,
+        height: scene.height,
+        name: scene.name,
+        key: scene.key,
+      }));
     }
 
     const entry: CachedGeneration = {
@@ -126,8 +114,12 @@ export async function cacheGeneration(seed: number, result: any): Promise<void> 
       worldSize: result.worldSize,
       worldCenter: result.worldCenter,
       parallelWorlds: result.parallelWorlds || [-1, 0, 1],
-      masterBlob: result.masterCanvas ? await canvasToBlob(result.masterCanvas) : null,
       tileLayers,
+      biomeDataPixels: result.biomeData?.pixels
+        ? new Uint32Array(result.biomeData.pixels).buffer
+        : new ArrayBuffer(0),
+      biomeDataW: result.biomeData?.w ?? 0,
+      biomeDataH: result.biomeData?.h ?? 0,
       poisByPW: result.poisByPW,
       pixelScenesByPW,
     };
@@ -148,6 +140,7 @@ export async function cacheGeneration(seed: number, result: any): Promise<void> 
 
 /**
  * Retrieve a cached generation, or null if not found / expired.
+ * Restores raw data only — no blob deserialization needed.
  */
 export async function getCachedGeneration(seed: number): Promise<any | null> {
   try {
@@ -164,35 +157,43 @@ export async function getCachedGeneration(seed: number): Promise<any | null> {
 
     if (!entry) return null;
     if (Date.now() - entry.timestamp > MAX_AGE_MS) {
-      // Expired — don't use, but don't block on deleting it
       pruneOldEntries().catch(() => {});
       return null;
     }
 
-    // Deserialize blobs back to canvases
-    const tileLayers = await Promise.all(
-      entry.tileLayers.map(async (layer) => ({
-        canvas: layer.blob ? await blobToCanvas(layer.blob) : null,
-        correctedX: layer.correctedX,
-        correctedY: layer.correctedY,
-        w: layer.w,
-        h: layer.h,
-      })),
-    );
+    // Restore tile layers with raw buffers (no canvas — overlays recomputed)
+    const tileLayers = entry.tileLayers.map((layer) => ({
+      biomeName: layer.biomeName,
+      canvas: null,
+      correctedX: layer.correctedX,
+      correctedY: layer.correctedY,
+      w: layer.w,
+      h: layer.h,
+      buffer: layer.buffer ? new Uint8Array(layer.buffer) : null,
+      width: layer.width,
+      height: layer.height,
+      mapH: layer.mapH,
+      minX: layer.minX,
+      minY: layer.minY,
+    }));
 
+    // Reconstruct biomeData with pixels
+    const biomeData = entry.biomeDataPixels?.byteLength
+      ? { pixels: new Uint32Array(entry.biomeDataPixels), w: entry.biomeDataW, h: entry.biomeDataH }
+      : { pixels: new Uint32Array(0), w: 0, h: 0 };
+
+    // Restore pixel scene metadata (no imgElement — scenes are disabled)
     const pixelScenesByPW: Record<string, any[]> = {};
     for (const [pw, scenes] of Object.entries(entry.pixelScenesByPW)) {
-      pixelScenesByPW[pw] = await Promise.all(
-        scenes.map(async (scene) => ({
-          imgElement: scene.blob ? await blobToCanvas(scene.blob) : null,
-          x: scene.x,
-          y: scene.y,
-          width: scene.width,
-          height: scene.height,
-          name: scene.name,
-          key: scene.key,
-        })),
-      );
+      pixelScenesByPW[pw] = scenes.map((scene) => ({
+        imgElement: null,
+        x: scene.x,
+        y: scene.y,
+        width: scene.width,
+        height: scene.height,
+        name: scene.name,
+        key: scene.key,
+      }));
     }
 
     console.log(`[TileCache] Cache hit for seed ${seed}`);
@@ -203,7 +204,7 @@ export async function getCachedGeneration(seed: number): Promise<any | null> {
       worldSize: entry.worldSize,
       worldCenter: entry.worldCenter,
       parallelWorlds: entry.parallelWorlds,
-      masterCanvas: entry.masterBlob ? await blobToCanvas(entry.masterBlob) : null,
+      biomeData,
       tileLayers,
       poisByPW: entry.poisByPW,
       pixelScenesByPW,

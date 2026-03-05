@@ -2,11 +2,13 @@
  * telescope-osd-bridge.ts
  *
  * Renders telescope generation results onto an OpenSeadragon viewer.
- * Merges biome layers into a single master canvas for performance and scaling.
+ * Adds biome overlays progressively (per-biome, per-PW) for visual feedback.
  */
 
-import type { GenerationResult, POI, PixelScene, TileLayer } from "./adapter";
+import type { GenerationResult, POI, PixelScene, TileLayer } from "./telescope-adapter";
 import { getDataZip } from "../data-archive";
+import { installTelescopeShim } from "./telescope-dom-shim";
+import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope-data-bridge";
 declare const OpenSeadragon: any;
 
 let CHUNK_SIZE: number;
@@ -17,6 +19,34 @@ let BIOME_COLOR_LOOKUP: any;
 let createTileOverlaysCheap: any;
 let getWorldSize: any;
 let _telescopeModulesLoaded = false;
+
+// ─── Biome Render Order ─────────────────────────────────────────────────────
+
+/** Ordered list of biome keys for progressive rendering. */
+const BIOME_RENDER_ORDER: string[] = [
+  // Main biomes
+  "coalmine", "coalmine_alt", "excavationsite", "fungicave", "snowcave",
+  "snowcastle", "rainforest", "rainforest_open", "vault", "crypt",
+  "liquidcave", "pyramid", "wandcave", "sandcave", "the_end",
+  "fungiforest", "rainforest_dark", "wizardcave", "robobase", "meat",
+  "vault_frozen", "clouds", "the_sky", "snowchasm",
+  // Tower variants
+  "tower_end", "tower_crypt", "tower_vault", "tower_rainforest",
+  "tower_fungicave", "tower_snowcastle", "tower_snowcave",
+  "tower_excavationsite", "tower_coalmine",
+  // Extra generation biomes
+  "boss_arena", "snowcave_secret_chamber", "excavationsite_cube_chamber",
+  "snowcastle_cavern", "snowcastle_hourglass_chamber", "pyramid_top",
+  "robot_egg", "secret_lab", "wizardcave_entrance", "dragoncave",
+];
+
+/** Biomes already baked into the static OSD background map — skip rendering. */
+const SKIP_BIOMES = new Set([
+  "temple_altar",
+  "biome_watchtower", "biome_potion_mimics", "biome_darkness",
+  "biome_boss_sky", "biome_barren",
+  "lake_deep",
+]);
 
 // ─── Sprite Cache ───────────────────────────────────────────────────────────
 
@@ -103,16 +133,18 @@ export async function getRotatedWandSprite(spriteName: string): Promise<{ url: s
   return result;
 }
 
-/**
- * Fetch a sprite from data.zip and return an HTMLImageElement.
- */
-async function getWandSpriteImage(spriteName: string): Promise<HTMLImageElement | null> {
-  // Obsolete: logic moved to getRotatedWandSprite
-  return null;
-}
-
 async function ensureTelescopeModules(): Promise<void> {
   if (_telescopeModulesLoaded) return;
+
+  // Ensure interceptors are installed before importing telescope modules.
+  // image_processing.js has a top-level await that loads PNGs via new Image().src,
+  // which needs the Image src interceptor to resolve from data.zip.
+  // On cache-hit paths, initTelescope() is skipped, so these may not be installed yet.
+  await getDataZip();
+  installTelescopeShim({ clearSpawnPixels: true, recolorMaterials: true, enableEdgeNoise: true, fixHolyMountainEdgeNoise: true });
+  installFetchInterceptor();
+  installImageSrcInterceptor();
+
   const [constantsMod, biomeMod, genMod, imageMod, utilsMod] = await Promise.all([
     import("noita-telescope/constants.js"),
     import("noita-telescope/biome_generator.js"),
@@ -127,12 +159,22 @@ async function ensureTelescopeModules(): Promise<void> {
   BIOME_COLOR_LOOKUP = imageMod.BIOME_COLOR_LOOKUP;
   createTileOverlaysCheap = imageMod.createTileOverlaysCheap;
   getWorldSize = utilsMod.getWorldSize;
+
+  // Apply truthy color hack: the library uses `if (foregroundColor)` which
+  // fails for color 0 (black). Change 0→1 (near-black) to make it truthy.
+  // initTelescope() does this too, but on cache-hit paths it may not have run.
+  if (TILE_FOREGROUND_COLORS) {
+    for (const [key, val] of Object.entries(TILE_FOREGROUND_COLORS)) {
+      if (val === 0) (TILE_FOREGROUND_COLORS as any)[key] = 1;
+    }
+  }
+
   _telescopeModulesLoaded = true;
 }
 
 type OSDViewer = any;
 
-const dynamicTiledImages: Set<OpenSeadragon.TiledImage> = new Set();
+const dynamicTiledImages: Set<any> = new Set();
 let dynamicOverlayElements: HTMLElement[] = [];
 let dynamicBlobUrls: string[] = [];
 
@@ -172,7 +214,17 @@ export function clearDynamicOverlays(viewer: any): void {
 }
 
 /**
- * Convert a canvas to a blob URL asynchronously.
+ * Convert an OffscreenCanvas to a blob URL.
+ */
+async function offscreenCanvasToBlobUrl(canvas: OffscreenCanvas): Promise<string> {
+  const blob = await canvas.convertToBlob({ type: "image/png" });
+  const url = URL.createObjectURL(blob);
+  dynamicBlobUrls.push(url);
+  return url;
+}
+
+/**
+ * Convert an HTMLCanvasElement to a blob URL.
  */
 async function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
   const blob = await new Promise<Blob | null>((resolve) => {
@@ -187,108 +239,7 @@ async function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
 }
 
 /**
- * Build a biome background canvas from biomeData.pixels using BIOME_COLOR_LOOKUP.
- * Replicates telescope's renderRecolorMap() — produces a w×h canvas where each
- * pixel is the recolored background color for that biome chunk.
- */
-function buildRecolorBackground(biomeData: any, w: number, h: number): OffscreenCanvas {
-  const canvas = new OffscreenCanvas(w, h);
-  const ctx = canvas.getContext("2d")!;
-  const id = ctx.createImageData(w, h);
-
-  const surfaceBiomes = [
-    0x1133f1, // Lake
-    0xf7cf8d, // Pond
-    0x36d517, // Hills
-    0xd6d8e3, // Snow
-    0xcc9944, // Desert
-    0x48e311, // Empty
-  ];
-  const surfaceLevel = 14;
-
-  for (let i = 0; i < biomeData.pixels.length; i++) {
-    let color = biomeData.pixels[i] & 0xffffff;
-    const isSurfaceBiome = surfaceBiomes.includes(color);
-    if (BIOME_COLOR_LOOKUP[color]) {
-      if (isSurfaceBiome) {
-        if (i > w * surfaceLevel) {
-          color = BIOME_COLOR_LOOKUP[color];
-        } else {
-          // Sky gradient
-          const depthFactor = Math.min(Math.floor(i / w) / surfaceLevel, 1);
-          const r = 0x87 + (0xbb - 0x87) * depthFactor;
-          const g = 0xce + (0xdd - 0xce) * depthFactor;
-          const b = 0xeb;
-          color = (r << 16) | (g << 8) | b;
-        }
-      } else {
-        color = BIOME_COLOR_LOOKUP[color];
-      }
-    }
-    id.data[i * 4] = (color >> 16) & 0xff;
-    id.data[i * 4 + 1] = (color >> 8) & 0xff;
-    id.data[i * 4 + 2] = color & 0xff;
-    id.data[i * 4 + 3] = 255;
-  }
-  ctx.putImageData(id, 0, 0);
-  return canvas;
-}
-
-/**
- * Generates a giant master canvas covering all active parallel worlds (usually -1, 0, 1).
- * Draws biome background first (recolorMap), then tile overlays on top.
- */
-async function generateMasterWorldCanvas(result: GenerationResult): Promise<HTMLCanvasElement> {
-  const { tileLayers, isNGP, parallelWorlds, biomeData } = result;
-
-  // Noita world dimensions
-  const w = isNGP ? 72 : 70;
-  const h = isNGP ? 48 : 48; // Biome map height in chunks
-  const pwOffsetPixels = w * 512;
-  const pws = parallelWorlds || [-1, 0, 1];
-  const minPW = Math.min(...pws);
-  const maxPW = Math.max(...pws);
-  const numPws = maxPW - minPW + 1;
-
-  // Master World Canvas at 1:10 scale
-  const masterW = Math.ceil((numPws * pwOffsetPixels) / 10);
-  const masterH = Math.ceil((h * 512) / 10);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = masterW;
-  canvas.height = masterH;
-  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
-
-  // Shift to start drawing from the leftmost PW
-  const xOffset = -minPW * pwOffsetPixels;
-
-  // 1. Draw tile overlays for each PW
-  for (const pw of pws) {
-    const pwShiftX = (pw * pwOffsetPixels + xOffset) / 10;
-
-    const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(
-      biomeData,
-      tileLayers,
-      pw,
-      0 /* pwVertical */,
-      isNGP,
-    );
-
-    for (let i = 0; i < tileLayers.length; i++) {
-      const layer = tileLayers[i];
-      const overlay = overlays[i];
-      if (!overlay) continue;
-      ctx.drawImage(overlay, pwShiftX + layer.correctedX / 10, layer.correctedY / 10);
-    }
-  }
-
-  return canvas;
-}
-
-/**
  * Helper to map raw Noita world units to linearized visual units (mod 5 logic).
- * rawX/rawY: Noita world units (0,0 is the origin in the middle of World 0).
- * Returns: OSD coordinate relative to the same origin.
  */
 function getCorrectedWorldPos(rawX: number, rawY: number, worldCenter: number): { x: number; y: number } {
   const chunkX = Math.floor(rawX / 512) + worldCenter;
@@ -318,71 +269,124 @@ function getCorrectedWorldPos(rawX: number, rawY: number, worldCenter: number): 
   };
 }
 
+// ─── Progressive Biome Rendering ────────────────────────────────────────────
+
 /**
- * Add generated tile canvases to the OSD viewer.
+ * Progressively add biome tile overlays to OSD, one biome at a time.
+ * Center world (PW 0) renders first, then east (PW 1), then west (PW -1).
+ *
+ * For each PW, we call createTileOverlaysCheap once to compute all overlays,
+ * then iterate through biomes in render order — converting each small overlay
+ * canvas to a blob URL and adding it to OSD individually. Each overlay canvas
+ * is small (100-500px), so PNG encode per biome is near-instant.
  */
-export async function addTileLayers(viewer: OSDViewer, result: GenerationResult, generationId: number): Promise<void> {
+async function addBiomeLayersProgressively(
+  viewer: OSDViewer,
+  result: GenerationResult,
+  generationId: number,
+): Promise<void> {
   await ensureTelescopeModules();
-  const { isNGP, worldCenter, parallelWorlds } = result;
 
-  // 1. Get or Generate Master World Canvas
-  if (!result.masterCanvas) {
-    result.masterCanvas = await generateMasterWorldCanvas(result);
-  }
-  const masterCanvas = result.masterCanvas;
-
-  // Guard: if another generation started while we were processing this one, abort.
-  if (currentGenerationId !== generationId) {
-    console.log(`[OSD Bridge] Aborting addTileLayers for obsolete generation ${generationId}`);
-    return;
-  }
-
-  // 2. Add to OSD
-  const url = await canvasToBlobUrl(masterCanvas);
-
+  const { tileLayers, biomeData, isNGP, worldCenter, parallelWorlds } = result;
   const w = isNGP ? 72 : 70;
   const pwOffsetPixels = w * 512;
   const pws = parallelWorlds || [-1, 0, 1];
-  const minPW = Math.min(...pws);
 
-  // Middle world origin corresponds to Chunk 35 (or 36 for NGP).
-  const middleWorldLeftX = -(worldCenter * 512);
-  const totalLeftX = middleWorldLeftX + minPW * pwOffsetPixels;
-  const anchorY = -(14 * 512);
-
-  console.log(
-    `[OSD Bridge] Gen ${generationId}: Adding master biomes at x=${totalLeftX}, y=${anchorY}, wc=${worldCenter}`,
-  );
-
-  // Clear existing biome layers IMMEDIATELY before adding new ones
-  clearDynamicOverlays(viewer);
-
-  const tiledImage = viewer.addTiledImage({
-    tileSource: {
-      type: "image",
-      url: url,
-      buildPyramid: true,
-    },
-    x: totalLeftX,
-    y: anchorY,
-    width: masterCanvas.width * 10,
-    success: (event: any) => {
-      // Final Guard: If a newer generation has already taken over, remove this one immediately.
-      if (currentGenerationId !== generationId) {
-        console.log(`[OSD Bridge] Removing late-success image for generation ${generationId}`);
-        viewer.world.removeItem(event.item);
-        return;
-      }
-      dynamicTiledImages.add(event.item);
-      dynamicBlobUrls.push(url);
-    },
-    error: (err: any) => console.error("[OSD Bridge] Failed to load master image:", err),
+  // Sort PWs: center (0) first, then positive (east), then negative (west)
+  const pwOrder = [...pws].sort((a, b) => {
+    if (a === 0) return -1;
+    if (b === 0) return 1;
+    return b - a;
   });
 
-  if (tiledImage) {
-    dynamicTiledImages.add(tiledImage);
+  // Build biomeName → layer indices lookup (biomes can have multiple parts)
+  const layerIndicesByBiome = new Map<string, number[]>();
+  for (let i = 0; i < tileLayers.length; i++) {
+    const layer = tileLayers[i];
+    if (layer.biomeName) {
+      const arr = layerIndicesByBiome.get(layer.biomeName);
+      if (arr) arr.push(i);
+      else layerIndicesByBiome.set(layer.biomeName, [i]);
+    }
+  }
+
+  // Build ordered render list (skip prebaked biomes, include fallbacks)
+  const orderedBiomes = BIOME_RENDER_ORDER.filter((b) => !SKIP_BIOMES.has(b));
+  const orderedSet = new Set<string>(orderedBiomes);
+  const unorderedBiomes: string[] = [];
+  for (const [biomeName] of layerIndicesByBiome) {
+    if (!orderedSet.has(biomeName) && !SKIP_BIOMES.has(biomeName)) {
+      unorderedBiomes.push(biomeName);
+    }
+  }
+  const allBiomesToRender = [...orderedBiomes, ...unorderedBiomes];
+
+  const anchorY = -(14 * 512);
+
+  for (const pw of pwOrder) {
+    if (currentGenerationId !== generationId) return;
+
+    // Compute all overlays for this PW at once (CPU-bound, ~1-2s)
+    const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(
+      biomeData,
+      tileLayers,
+      pw,
+      0 /* pwVertical */,
+      isNGP,
+    );
+
+    if (currentGenerationId !== generationId) return;
+
+    // Add each biome overlay individually to OSD in render order
+    for (const biomeName of allBiomesToRender) {
+      if (currentGenerationId !== generationId) return;
+
+      const layerIdxArr = layerIndicesByBiome.get(biomeName);
+      if (!layerIdxArr) continue;
+
+      for (const layerIdx of layerIdxArr) {
+        if (currentGenerationId !== generationId) return;
+
+        const overlay = overlays[layerIdx];
+        if (!overlay || overlay.width === 0 || overlay.height === 0) continue;
+
+        const layer = tileLayers[layerIdx];
+        const url = await offscreenCanvasToBlobUrl(overlay);
+        if (currentGenerationId !== generationId) return;
+
+        const x = -(worldCenter * 512) + pw * pwOffsetPixels + layer.correctedX;
+        const y = anchorY + layer.correctedY;
+        const osdWidth = overlay.width * 10;
+
+        viewer.addTiledImage({
+          tileSource: {
+            type: "image",
+            url,
+            buildPyramid: false,
+          },
+          x,
+          y,
+          width: osdWidth,
+          success: (event: any) => {
+            if (currentGenerationId !== generationId) {
+              try { viewer.world.removeItem(event.item); } catch {}
+              return;
+            }
+            dynamicTiledImages.add(event.item);
+          },
+          error: (err: any) => console.warn(`[OSD Bridge] Failed to add ${biomeName} part PW ${pw}:`, err),
+        });
+      }
+    }
+
+    console.log(`[OSD Bridge] Gen ${generationId}: Added PW ${pw} biome overlays`);
+
+    // Yield to browser so OSD renders this world before we compute the next
+    await new Promise((r) => setTimeout(r, 0));
   }
 }
+
+// ─── Pixel Scenes ───────────────────────────────────────────────────────────
 
 /**
  * Add pixel scenes for all parallel worlds to the viewer.
@@ -405,7 +409,6 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     if (!data) continue;
     const { scene, url } = data;
 
-    // Use mod 5 correction for structure alignment
     const { x, y } = getCorrectedWorldPos(scene.x, scene.y, worldCenter);
 
     viewer.addTiledImage({
@@ -416,7 +419,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
       },
       x,
       y,
-      width: scene.width * 10, // 1 pixel = 10 units
+      width: scene.width * 10,
       success: (event: any) => {
         dynamicTiledImages.add(event.item);
         dynamicBlobUrls.push(url);
@@ -424,6 +427,8 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     });
   }
 }
+
+// ─── POI Overlays ───────────────────────────────────────────────────────────
 
 /**
  * Add POI markers as OSD HTML overlays.
@@ -460,10 +465,8 @@ export async function addPOIOverlays(viewer: OSDViewer, result: GenerationResult
       cursor: pointer;
     `;
 
-    // Apply mod 5 correction for precise centering
     const { x, y } = getCorrectedWorldPos(poi.x, poi.y, worldCenter);
 
-    // 1 sprite pixel = 1 world unit in Noita
     const worldW = rotated.w;
     const worldH = rotated.h;
 
@@ -476,28 +479,13 @@ export async function addPOIOverlays(viewer: OSDViewer, result: GenerationResult
   }
 }
 
-async function createPOIElement(poi: POI): Promise<HTMLElement | null> {
-  // Obsolete: logic moved into addPOIOverlays for Rect support
-  return null;
-}
-
-function getPOIColor(poi: POI): string {
-  switch (poi.type) {
-    case "wand":
-      return "#00FFFF";
-    case "item":
-      return "#FFFF00";
-    case "chest":
-      return "#FFA500";
-    default:
-      return "#FFFFFF";
-  }
-}
+// ─── Main Entry Point ───────────────────────────────────────────────────────
 
 export async function renderGenerationResult(viewer: OSDViewer, result: GenerationResult): Promise<void> {
   const generationId = ++currentGenerationId;
   clearDynamicOverlays(viewer);
-  await addTileLayers(viewer, result, generationId);
+  await addBiomeLayersProgressively(viewer, result, generationId);
+  if (currentGenerationId !== generationId) return;
   await addPOIOverlays(viewer, result);
   // await addPixelScenes(viewer, result);
 }

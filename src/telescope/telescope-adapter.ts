@@ -40,6 +40,7 @@ let findEyeMessages: any;
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface TileLayer {
+  biomeName: string;
   canvas: HTMLCanvasElement;
   correctedX: number;
   correctedY: number;
@@ -96,7 +97,6 @@ export interface GenerationResult {
   pixelScenesByPW: Record<string, PixelScene[]>;
   eyes: any;
   parallelWorlds: number[];
-  masterCanvas?: HTMLCanvasElement;
 }
 
 export interface GenerateOptions {
@@ -181,7 +181,18 @@ export async function initTelescope(): Promise<void> {
   getWorldSize = utilsMod.getWorldSize;
   getWorldCenter = utilsMod.getWorldCenter;
   loadTranslations = translationsMod.loadTranslations;
-  findEyeMessages = eyeMessagesMod.findEyeMessages;
+  
+  // Runtime patch for eye_messages.js crash (TypeError: positionsEast[i] is undefined)
+  // ES module exports are read-only, so we wrap it in our local variable instead.
+  const originalFindEyeMessages = eyeMessagesMod.findEyeMessages;
+  findEyeMessages = (biomeMap: any, seed: number, ngPlus: number) => {
+    try {
+      return originalFindEyeMessages(biomeMap, seed, ngPlus);
+    } catch (e) {
+      console.warn("[Telescope Hack] findEyeMessages crashed, returning empty arrays:", e);
+      return { east: [], west: [] };
+    }
+  };
 
   // 4b. Apply truthy color hack to fix library transparency bug
   // The library uses `if (foregroundColor)` which fails for color 0 (black).

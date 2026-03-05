@@ -276,7 +276,7 @@ export class UnifiedSearch extends EventEmitter2 {
     const isDynamicMap = currentMap === 'dynamic-main-branch';
     const filters = isDynamicMap 
       ? [
-          { type: 'wands', iconSrc: 'assets/icons/overlay-toggles/icon-items.webp' },
+          { type: 'wands', iconSrc: 'data/items_gfx/wands/wand_0531.png' }, // wand_0531 is Wand_handgun
         ]
       : [
           { type: 'spells', iconSrc: 'assets/icons/spells/light_bullet.png' },
@@ -296,7 +296,16 @@ export class UnifiedSearch extends EventEmitter2 {
       filterCheckbox.value = filter.type;
       filterLabel.appendChild(filterCheckbox);
       const filterIcon = document.createElement('img');
-      filterIcon.src = filter.iconSrc;
+      if (filter.iconSrc.startsWith('data/')) {
+        import('../telescope/telescope-osd-bridge').then(mod => {
+          // We can use getWandSprite for any PNG in the zip
+          mod.getWandSprite(filter.iconSrc).then(url => {
+            if (url) filterIcon.src = url;
+          });
+        });
+      } else {
+        filterIcon.src = filter.iconSrc;
+      }
       filterIcon.alt = '';
       filterIcon.classList.add('pixelated-image');
       filterIcon.draggable = false;

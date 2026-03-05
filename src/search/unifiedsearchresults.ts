@@ -121,14 +121,13 @@ export class UnifiedSearchResults extends EventEmitter2 {
 
       if ('type' in result && result.type === 'spell') {
         // Handle spell results with image
-        listItem.classList.add('d-flex', 'align-items-start');
+        listItem.classList.add('d-flex', 'align-items-center');
         const img = document.createElement('img');
         img.src = `./assets/icons/spells/${result.spell.sprite}`;
         img.classList.add('pixelated-image', 'me-2', 'flex-shrink-0');
         img.alt = result.spell.name;
         img.style.width = '32px';
         img.style.height = '32px';
-        img.style.marginTop = '2px';
         img.onerror = () => {
           img.src = './assets/icons/spells/missing.png';
           img.alt = 'Missing';
@@ -191,12 +190,11 @@ export class UnifiedSearchResults extends EventEmitter2 {
 
             // Handle Wands specifically with sprites (UNROTATED)
             if ((result as any).type === 'wand' && (result as any).sprite) {
-              listItem.classList.add('d-flex', 'align-items-start');
+              listItem.classList.add('d-flex', 'align-items-center');
               const img = document.createElement('img');
               img.classList.add('pixelated-image', 'me-2', 'flex-shrink-0');
               img.style.width = '32px';
               img.style.height = '32px';
-              img.style.marginTop = '2px';
               img.style.objectFit = 'contain';
               getWandSprite((result as any).sprite).then(url => {
                 if (url) img.src = url;

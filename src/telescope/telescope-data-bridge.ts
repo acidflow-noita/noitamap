@@ -288,12 +288,23 @@ export function installImageSrcInterceptor(): void {
       }
 
       // Intercept: fetch the PNG from our zip-backed fetch interceptor,
-      // convert to a blob URL, then set that as the actual src.
+      // then load via createImageBitmap with colorSpaceConversion:'none'
+      // to prevent the browser from altering pixel values (color management).
+      // Finally re-export as a blob URL that the Image element can load.
       const img = this;
       fetch(fetchPath)
         .then((r) => r.blob())
-        .then((blob) => {
-          const blobUrl = URL.createObjectURL(blob);
+        .then(async (blob) => {
+          const bitmap = await createImageBitmap(blob, {
+            colorSpaceConversion: "none",
+            premultiplyAlpha: "none",
+          } as any);
+          const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+          const ctx = canvas.getContext("2d")!;
+          ctx.drawImage(bitmap, 0, 0);
+          bitmap.close();
+          const outBlob = await canvas.convertToBlob({ type: "image/png" });
+          const blobUrl = URL.createObjectURL(outBlob);
           origSet.call(img, blobUrl);
         })
         .catch(() => {
