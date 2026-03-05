@@ -24,9 +24,37 @@ const spriteUrlCache: Map<string, string> = new Map();
 const rotatedSpriteUrlCache: Map<string, { url: string; w: number; h: number }> = new Map();
 
 /**
+ * Fetch an unrotated sprite from data.zip and return a blob URL.
+ */
+export async function getWandSprite(spriteName: string): Promise<string | null> {
+  if (spriteUrlCache.has(spriteName)) return spriteUrlCache.get(spriteName)!;
+
+  const zip = await getDataZip();
+  if (!zip) return null;
+
+  const paths = [
+    `data/items_gfx/wands/${spriteName}.png`,
+    `data/items_gfx/wands/${spriteName}`,
+    spriteName.startsWith("data/") ? spriteName : null,
+  ].filter(Boolean) as string[];
+
+  for (const path of paths) {
+    const file = zip.file(path);
+    if (file) {
+      const blob = await file.async("blob");
+      const url = URL.createObjectURL(blob);
+      spriteUrlCache.set(spriteName, url);
+      dynamicBlobUrls.push(url);
+      return url;
+    }
+  }
+  return null;
+}
+
+/**
  * Fetch a sprite from data.zip, rotate it 90deg CCW, and return a blob URL + dimensions.
  */
-async function getRotatedWandSprite(spriteName: string): Promise<{ url: string; w: number; h: number } | null> {
+export async function getRotatedWandSprite(spriteName: string): Promise<{ url: string; w: number; h: number } | null> {
   if (rotatedSpriteUrlCache.has(spriteName)) return rotatedSpriteUrlCache.get(spriteName)!;
 
   const zip = await getDataZip();

@@ -315,7 +315,27 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     const specialPOIs = getSpecialPoIs(biomeData, seed, ngPlus, pw, 0, perks);
 
     pixelScenesByPW[pwKey] = scanResults.finalPixelScenes;
-    poisByPW[pwKey] = scanResults.generatedSpawns.concat(specialPOIs);
+    
+    // Post-process POIs to fix wand names without modifying library code
+    const combinedPois = scanResults.generatedSpawns.concat(specialPOIs);
+    for (const poi of combinedPois) {
+      if (poi.type === "wand" && (!poi.name || poi.name === "Taikasauva")) {
+        const [nollaPrngMod, wandConfigMod] = await Promise.all([
+          import("noita-telescope/nolla_prng.js"),
+          import("noita-telescope/wand_config.js"),
+        ]);
+        const prng = new nollaPrngMod.NollaPrng(0);
+        prng.SetRandomSeed(seed + ngPlus, poi.x, poi.y);
+        
+        // Replicate library's random name generation logic
+        // (Library's Random(a, b) uses a + floor((b+1-a)*Next))
+        const { GUN_NAMES } = wandConfigMod;
+        const nameIdx = Math.floor((GUN_NAMES.length) * prng.Next());
+        poi.name = GUN_NAMES[nameIdx];
+      }
+    }
+    
+    poisByPW[pwKey] = combinedPois;
   }
 
   // Step 5: Eye messages (main world only)

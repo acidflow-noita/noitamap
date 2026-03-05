@@ -3,6 +3,7 @@ import { Spell } from '../data_sources/overlays';
 import { EventEmitter2 } from 'eventemitter2';
 import i18next from '../i18n';
 import { getSpellAvailability } from '../util';
+import { getWandSprite } from '../telescope/telescope-osd-bridge';
 
 export type UnifiedSearchResult =
   | TargetOfInterest
@@ -188,6 +189,21 @@ export class UnifiedSearchResults extends EventEmitter2 {
             const displayName = ('displayName' in result ? (result as any).displayName : result.name) as string;
             const currentLang = i18next.language;
 
+            // Handle Wands specifically with sprites (UNROTATED)
+            if ((result as any).type === 'wand' && (result as any).sprite) {
+              listItem.classList.add('d-flex', 'align-items-start');
+              const img = document.createElement('img');
+              img.classList.add('pixelated-image', 'me-2', 'flex-shrink-0');
+              img.style.width = '32px';
+              img.style.height = '32px';
+              img.style.marginTop = '2px';
+              img.style.objectFit = 'contain';
+              getWandSprite((result as any).sprite).then(url => {
+                if (url) img.src = url;
+              });
+              listItem.appendChild(img);
+            }
+
             // Create content container for multi-line display
             const contentDiv = document.createElement('div');
             contentDiv.className = 'overlay-search-content';
@@ -197,14 +213,22 @@ export class UnifiedSearchResults extends EventEmitter2 {
             nameDiv.className = 'overlay-main-line';
 
             // For dynamic POIs, show "~X chunks away" proximity hint
-            if ((result as any).isDynamic && (result as any).chunksAway !== null) {
-              const chunksAway = (result as any).chunksAway as number;
-              nameDiv.textContent = displayName;
-              const proximitySpan = document.createElement('span');
-              proximitySpan.className = 'ms-2 text-secondary';
-              proximitySpan.style.fontSize = '0.8em';
-              proximitySpan.textContent = `~${chunksAway} chunks away`;
-              nameDiv.appendChild(proximitySpan);
+            if ((result as any).isDynamic) {
+              if ((result as any).type === 'wand') {
+                const wandName = (result as any).wandName || (result as any).name || 'Magic';
+                nameDiv.textContent = `${wandName} wand`;
+              } else {
+                nameDiv.textContent = displayName;
+              }
+              
+              if ((result as any).chunksAway !== null) {
+                const chunksAway = (result as any).chunksAway as number;
+                const proximitySpan = document.createElement('span');
+                proximitySpan.className = 'ms-2 text-secondary';
+                proximitySpan.style.fontSize = '0.8em';
+                proximitySpan.textContent = `~${chunksAway} chunks away`;
+                nameDiv.appendChild(proximitySpan);
+              }
             } else {
               nameDiv.textContent = displayName;
             }

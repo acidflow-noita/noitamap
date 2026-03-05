@@ -191,6 +191,7 @@ export function clearDynamicMap(viewer: any): void {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function buildPOIName(p: any): string {
+  if (p.type === "wand" && p.name) return p.name;
   if (p.item) return p.item;
   if (p.name) return p.name;
   if (p.type) return p.type;

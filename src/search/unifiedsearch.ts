@@ -155,9 +155,21 @@ export class UnifiedSearch extends EventEmitter2 {
       const CHUNK_SIZE = 512;
 
       let matched = this.dynamicPOIs.filter(p => {
-        const name = (p.name ?? p.type ?? '').toLowerCase();
-        const item = (p.item ?? '').toLowerCase();
-        return name.includes(searchLower) || item.includes(searchLower) || p.type.toLowerCase().includes(searchLower);
+        const searchMatched = 
+          (p.name ?? p.type ?? '').toLowerCase().includes(searchLower) || 
+          (p.item ?? '').toLowerCase().includes(searchLower) || 
+          p.type.toLowerCase().includes(searchLower);
+        
+        if (!searchMatched) return false;
+
+        // Respect filters if any are active
+        if (this.activeFilters.size > 0) {
+          if (this.activeFilters.has('wands') && p.type === 'wand') return true;
+          // Add more dynamic filters here later (chests, items, etc)
+          return false;
+        }
+
+        return true;
       });
 
       // Sort by proximity if player position is known
@@ -170,7 +182,7 @@ export class UnifiedSearch extends EventEmitter2 {
       }
 
       // Convert to UnifiedSearchResult shape (overlayType: 'poi')
-      const dynamicResults: UnifiedSearchResult[] = matched.slice(0, 50).map(p => {
+      const dynamicResults: UnifiedSearchResult[] = matched.map(p => {
         const chunksAway = (playerX !== null && playerY !== null)
           ? Math.round(Math.hypot(p.worldX - playerX, p.worldY - playerY) / CHUNK_SIZE)
           : null;
@@ -183,6 +195,9 @@ export class UnifiedSearch extends EventEmitter2 {
           maps: ['dynamic-main-branch' as MapName],
           chunksAway,
           isDynamic: true,
+          type: p.type,
+          sprite: p.sprite,
+          wandName: p.name,
         } as any;
       });
 
@@ -258,15 +273,20 @@ export class UnifiedSearch extends EventEmitter2 {
     const filterBox = document.createElement('div');
     filterBox.id = 'unifiedSearchFilterBox';
 
-    const filters = [
-      { type: 'spells', iconSrc: 'assets/icons/spells/light_bullet.png' },
-      { type: 'structures', iconSrc: 'assets/icons/overlay-toggles/icon-structures.svg' },
-      { type: 'bosses', iconSrc: 'assets/icons/overlay-toggles/icon-bosses.webp' },
-      { type: 'items', iconSrc: 'assets/icons/overlay-toggles/icon-items.webp' },
-      { type: 'orbs', iconSrc: 'assets/icons/overlay-toggles/icon-orbs.webp' },
-      { type: 'spatialAwareness', iconSrc: 'assets/icons/overlay-toggles/icon-spatial-awareness.webp' },
-      { type: 'hiddenMessages', iconSrc: 'assets/icons/overlay-toggles/icon-hidden-messages.webp' },
-    ];
+    const isDynamicMap = currentMap === 'dynamic-main-branch';
+    const filters = isDynamicMap 
+      ? [
+          { type: 'wands', iconSrc: 'assets/icons/overlay-toggles/icon-items.webp' },
+        ]
+      : [
+          { type: 'spells', iconSrc: 'assets/icons/spells/light_bullet.png' },
+          { type: 'structures', iconSrc: 'assets/icons/overlay-toggles/icon-structures.svg' },
+          { type: 'bosses', iconSrc: 'assets/icons/overlay-toggles/icon-bosses.webp' },
+          { type: 'items', iconSrc: 'assets/icons/overlay-toggles/icon-items.webp' },
+          { type: 'orbs', iconSrc: 'assets/icons/overlay-toggles/icon-orbs.webp' },
+          { type: 'spatialAwareness', iconSrc: 'assets/icons/overlay-toggles/icon-spatial-awareness.webp' },
+          { type: 'hiddenMessages', iconSrc: 'assets/icons/overlay-toggles/icon-hidden-messages.webp' },
+        ];
 
     for (const filter of filters) {
       const filterLabel = document.createElement('label');
