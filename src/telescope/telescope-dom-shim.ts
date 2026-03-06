@@ -76,6 +76,7 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
   const textInputs: Record<string, string> = {
     "debug-extra-rerolls": "0",
     "debug-biome-overlay-mode": "none",
+    "enable-static-pixel-scenes": "all",
   };
   for (const [id, value] of Object.entries(textInputs)) {
     if (document.getElementById(id)) continue;

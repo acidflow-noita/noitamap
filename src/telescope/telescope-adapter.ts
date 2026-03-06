@@ -37,6 +37,9 @@ let getWorldSize: any;
 let getWorldCenter: any;
 let loadTranslations: any;
 let findEyeMessages: any;
+let addStaticPixelScenes: any;
+let telescopeApp: any;
+let BIOME_COLOR_LOOKUP: any;
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -155,6 +158,7 @@ export async function initTelescope(): Promise<void> {
     translationsMod,
     eyeMessagesMod,
     imageProcessingMod,
+    staticSpawnsMod,
   ] = await Promise.all([
     import("noita-telescope/biome_generator.js"),
     import("noita-telescope/tile_generator.js"),
@@ -166,6 +170,7 @@ export async function initTelescope(): Promise<void> {
     import("noita-telescope/translations.js"),
     import("noita-telescope/eye_messages.js"),
     import("noita-telescope/image_processing.js"),
+    import("noita-telescope/static_spawns.js"),
   ]);
 
   generateBiomeData = biomeGenMod.generateBiomeData;
@@ -182,6 +187,12 @@ export async function initTelescope(): Promise<void> {
   getWorldSize = utilsMod.getWorldSize;
   getWorldCenter = utilsMod.getWorldCenter;
   loadTranslations = translationsMod.loadTranslations;
+  addStaticPixelScenes = staticSpawnsMod.addStaticPixelScenes;
+
+  // Get the shimmed app object so we can populate properties the library reads
+  const appMod = await import("noita-telescope/app.js");
+  telescopeApp = appMod.app;
+  BIOME_COLOR_LOOKUP = imageProcessingMod.BIOME_COLOR_LOOKUP;
 
   // Overwrite the imageProcessingMod lookups with pure-JS decoded ones
   // to fix LibreWolf/Safari fingerprinting protection returning zeroed data
@@ -295,6 +306,46 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   // Step 1: Generate biome data
   const biomeData = generateBiomeData(seed, ngPlus, base, w, h);
 
+  // Step 1b: Populate the shimmed app's recolorOffscreen canvas.
+  // The library's recolorPixelSceneForBiome() falls back to reading single pixels
+  // from app.recolorOffscreen when a biome's overlay color is missing (0xff00ff).
+  // Each pixel at (chunkX, chunkY) holds the background color for that chunk.
+  {
+    const recolorCanvas = document.createElement("canvas");
+    recolorCanvas.width = w;
+    recolorCanvas.height = h;
+    const ctx = recolorCanvas.getContext("2d")!;
+    const id = ctx.createImageData(w, h);
+    const surfaceBiomes = [0x1133f1, 0xf7cf8d, 0x36d517, 0xd6d8e3, 0xcc9944, 0x48e311];
+    const surfaceLevel = 14;
+    for (let i = 0; i < biomeData.pixels.length; i++) {
+      let color = biomeData.pixels[i] & 0xffffff;
+      const isSurface = surfaceBiomes.includes(color);
+      if (BIOME_COLOR_LOOKUP[color]) {
+        if (isSurface && i > w * surfaceLevel) {
+          color = BIOME_COLOR_LOOKUP[color];
+        } else if (isSurface) {
+          const depthFactor = Math.min(Math.floor(i / w) / surfaceLevel, 1);
+          const r = 0x87 + (0xbb - 0x87) * depthFactor;
+          const g = 0xce + (0xdd - 0xce) * depthFactor;
+          color = (r << 16) | (g << 8) | 0xeb;
+        } else {
+          color = BIOME_COLOR_LOOKUP[color];
+        }
+      }
+      id.data[i * 4] = (color >> 16) & 0xff;
+      id.data[i * 4 + 1] = (color >> 8) & 0xff;
+      id.data[i * 4 + 2] = color & 0xff;
+      id.data[i * 4 + 3] = 255;
+    }
+    ctx.putImageData(id, 0, 0);
+    telescopeApp.recolorOffscreen = recolorCanvas;
+    telescopeApp.w = w;
+    telescopeApp.h = h;
+    telescopeApp.ngPlusCount = ngPlus;
+    telescopeApp.biomeData = biomeData;
+  }
+
   // Step 2: Generate tiles
   const tileLayers: TileLayer[] = await generateBiomeTiles(
     biomeData.pixels,
@@ -337,8 +388,17 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
 
     pixelScenesByPW[pwKey] = scanResults.finalPixelScenes;
 
+    // Add static pixel scenes (hardcoded positions like pyramid boss, fishing hut, etc.)
+    const staticResults = addStaticPixelScenes(seed, ngPlus, pw, 0, biomeData, false);
+    if (staticResults && staticResults.pixelScenes) {
+      pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(staticResults.pixelScenes);
+    }
+
     // Post-process POIs to fix wand names without modifying library code
     const combinedPois = scanResults.generatedSpawns.concat(specialPOIs);
+    if (staticResults && staticResults.pois) {
+      combinedPois.push(...staticResults.pois);
+    }
     for (const poi of combinedPois) {
       if (poi.type === "wand" && (!poi.name || poi.name === "Taikasauva")) {
         const [nollaPrngMod, wandConfigMod] = await Promise.all([
