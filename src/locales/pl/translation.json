@@ -954,5 +954,6 @@
       "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
     },
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
-  }
+  },
+  "alive_wand": "(alive wand)"
 }

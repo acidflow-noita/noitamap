@@ -159,8 +159,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const title = _getTitle();
     if (!overlay || !bar) return;
 
+    // Always show the overlay when loading starts
+    overlay.style.display = "flex";
+
     if (e.detail.percentage < 100) {
-      overlay.style.display = "flex";
       // Segment 1 fills left half (0–50% total)
       const segPct = e.detail.percentage / 2; // maps 0–100 → 0–50% of bar width
       bar.style.width = `${segPct * 2}%`; // bar max-width is 50%, so fill relative to that
@@ -191,17 +193,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (status) status.textContent = `${Math.round(50 + e.detail.percentage / 2)}%`;
 
     if (e.detail.percentage >= 100) {
-      setTimeout(() => {
-        const o = _getLoadingOverlay();
-        if (o) o.style.display = "none";
-        // Reset both bars for the next generation
-        const dl = _getDownloadBar();
-        const gen = _getGenerationBar();
-        if (dl) dl.style.width = "0%";
-        if (gen) gen.style.width = "0%";
-        const subtitle = _getSubtitle();
-        if (subtitle) subtitle.style.display = "";
-      }, 400);
+      // Dismiss after OSD has had one paint cycle — don't add artificial delay.
+      // Two rAFs ensure the browser actually commits the frame before we hide.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const o = _getLoadingOverlay();
+          if (o) o.style.display = "none";
+          // Reset both bars for the next generation
+          const dl = _getDownloadBar();
+          const gen = _getGenerationBar();
+          if (dl) dl.style.width = "0%";
+          if (gen) gen.style.width = "0%";
+          const subtitle = _getSubtitle();
+          if (subtitle) subtitle.style.display = "";
+        });
+      });
     }
   }) as EventListener);
 

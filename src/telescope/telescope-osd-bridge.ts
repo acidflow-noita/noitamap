@@ -8,7 +8,13 @@
 import type { GenerationResult, POI, PixelScene, TileLayer } from "./telescope-adapter";
 import { getDataZip } from "../data-archive";
 import { installTelescopeShim } from "./telescope-dom-shim";
-import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope-data-bridge";
+import {
+  installFetchInterceptor,
+  installImageSrcInterceptor,
+  buildBiomeColorLookupsFromZip,
+} from "./telescope-data-bridge";
+import { rgbaToPngBlobUrl } from "./png-decode";
+
 declare const OpenSeadragon: any;
 
 let CHUNK_SIZE: number;
@@ -137,32 +143,33 @@ export async function getRotatedWandSprite(spriteName: string): Promise<{ url: s
   }
   if (!file) return null;
 
-  const blob = await file.async("blob");
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const i = new Image();
-    i.onload = () => resolve(i);
-    i.onerror = reject;
-    i.src = URL.createObjectURL(blob);
-  });
+  const buf = await file.async("arraybuffer");
+  const { decodePngToRgba, rgbaToPngBlobUrl } = await import("./png-decode");
+  const srcImg = decodePngToRgba(buf);
+  const sw = srcImg.width;
+  const sh = srcImg.height;
 
-  // Rotate 90deg CCW via canvas
-  const canvas = document.createElement("canvas");
-  canvas.width = img.height;
-  canvas.height = img.width;
-  const ctx = canvas.getContext("2d")!;
-  ctx.translate(0, img.width);
-  ctx.rotate(-Math.PI / 2);
-  ctx.drawImage(img, 0, 0);
+  // Rotate 90° CCW: output is sh wide, sw tall
+  const outW = sh;
+  const outH = sw;
+  const rotated = new Uint8ClampedArray(outW * outH * 4);
+  for (let y = 0; y < sh; y++) {
+    for (let x = 0; x < sw; x++) {
+      const srcIdx = (y * sw + x) * 4;
+      // 90° CCW: new(x, y) = old(sw-1-y, x) ... actually CCW: new pixel at (y, sw-1-x)
+      const dstX = y;
+      const dstY = sw - 1 - x;
+      const dstIdx = (dstY * outW + dstX) * 4;
+      rotated[dstIdx] = srcImg.data[srcIdx];
+      rotated[dstIdx + 1] = srcImg.data[srcIdx + 1];
+      rotated[dstIdx + 2] = srcImg.data[srcIdx + 2];
+      rotated[dstIdx + 3] = srcImg.data[srcIdx + 3];
+    }
+  }
 
-  const rotatedBlob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/png"));
-  if (!rotatedBlob) return null;
-
-  const url = URL.createObjectURL(rotatedBlob);
-  const result = { url, w: canvas.width, h: canvas.height };
-
+  const url = await rgbaToPngBlobUrl(rotated, outW, outH);
+  const result = { url, w: outW, h: outH };
   rotatedSpriteUrlCache.set(spriteName, result);
-  URL.revokeObjectURL(img.src); // Clean up the intermediate URL
-
   return result;
 }
 
@@ -197,6 +204,14 @@ async function ensureTelescopeModules(): Promise<void> {
   BIOME_COLOR_LOOKUP = imageMod.BIOME_COLOR_LOOKUP;
   createTileOverlaysCheap = imageMod.createTileOverlaysCheap;
   getWorldSize = utilsMod.getWorldSize;
+
+  // Overwrite the imageProcessingMod lookups with pure-JS decoded ones
+  // to fix LibreWolf/Safari fingerprinting protection returning zeroed data
+  const correctLookups = await buildBiomeColorLookupsFromZip(genMod.BIOME_COLOR_TO_NAME);
+  Object.assign(imageMod.BIOME_BACKGROUND_COLORS, correctLookups.nameLookupBackground);
+  Object.assign(imageMod.BIOME_COLOR_LOOKUP, correctLookups.backgroundColors);
+  Object.assign(imageMod.TILE_OVERLAY_COLORS, correctLookups.nameLookupForeground);
+  Object.assign(imageMod.TILE_FOREGROUND_COLORS, correctLookups.foregroundColors);
 
   // Apply truthy color hack: the library uses `if (foregroundColor)` which
   // fails for color 0 (black). Change 0→1 (near-black) to make it truthy.
@@ -255,6 +270,13 @@ export function clearDynamicOverlays(viewer: any): void {
  * Convert an OffscreenCanvas to a blob URL.
  */
 async function offscreenCanvasToBlobUrl(canvas: OffscreenCanvas): Promise<string> {
+  const rawData = (canvas as any).__noitamap_rawImageData as ImageData | undefined;
+  if (rawData) {
+    const url = await rgbaToPngBlobUrl(rawData.data, rawData.width, rawData.height);
+    dynamicBlobUrls.push(url);
+    return url;
+  }
+
   const blob = await canvas.convertToBlob({ type: "image/png" });
   const url = URL.createObjectURL(blob);
   dynamicBlobUrls.push(url);
@@ -265,6 +287,13 @@ async function offscreenCanvasToBlobUrl(canvas: OffscreenCanvas): Promise<string
  * Convert an HTMLCanvasElement to a blob URL.
  */
 async function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
+  const rawData = (canvas as any).__noitamap_rawImageData as ImageData | undefined;
+  if (rawData) {
+    const url = await rgbaToPngBlobUrl(rawData.data, rawData.width, rawData.height);
+    dynamicBlobUrls.push(url);
+    return url;
+  }
+
   const blob = await new Promise<Blob | null>((resolve) => {
     canvas.toBlob((b) => resolve(b), "image/png");
   });
@@ -323,6 +352,9 @@ async function addBiomeLayersProgressively(
   result: GenerationResult,
   generationId: number,
 ): Promise<void> {
+  // Fire a 0% event before the blocking ensureTelescopeModules() call
+  // so the loading bar becomes visible/active immediately.
+  window.dispatchEvent(new CustomEvent("biomeGenerationProgress", { detail: { percentage: 0 } }));
   await ensureTelescopeModules();
 
   const { tileLayers, biomeData, isNGP, worldCenter, parallelWorlds } = result;
@@ -358,6 +390,8 @@ async function addBiomeLayersProgressively(
     }
   }
   const allBiomesToRender = [...orderedBiomes, ...unorderedBiomes];
+  console.log(`[OSD Bridge] biome layer names in tileLayers:`, Array.from(layerIndicesByBiome.keys()));
+  console.log(`[OSD Bridge] unordered biomes to render:`, unorderedBiomes);
 
   const anchorY = -(14 * 512);
   const totalPWs = pwOrder.length;
@@ -366,9 +400,14 @@ async function addBiomeLayersProgressively(
     const pw = pwOrder[pwIdx];
     if (currentGenerationId !== generationId) return;
 
-    // Report start of this PW's computation (progress: percent through all PWs)
+    // Report the START of this PW's computation BEFORE the CPU-heavy work.
+    // This ensures the bar visually advances before we get blocked.
     const progressStart = Math.round((pwIdx / totalPWs) * 100);
     window.dispatchEvent(new CustomEvent("biomeGenerationProgress", { detail: { percentage: progressStart } }));
+
+    // Yield briefly so the browser can paint the progress update before we block the main thread.
+    await new Promise((r) => setTimeout(r, 0));
+    if (currentGenerationId !== generationId) return;
 
     // Compute all overlays for this PW at once (CPU-bound, ~1-2s)
     const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(
@@ -430,9 +469,6 @@ async function addBiomeLayersProgressively(
     // Report completion of this PW
     const progressEnd = Math.round(((pwIdx + 1) / totalPWs) * 100);
     window.dispatchEvent(new CustomEvent("biomeGenerationProgress", { detail: { percentage: progressEnd } }));
-
-    // Yield to browser so OSD renders this world before we compute the next
-    await new Promise((r) => setTimeout(r, 0));
   }
 }
 

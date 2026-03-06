@@ -16,6 +16,7 @@ import {
   installImageSrcInterceptor,
   loadBiomeMaps,
   loadWangTileFromZip,
+  buildBiomeColorLookupsFromZip,
 } from "./telescope-data-bridge";
 import { getDataZip } from "../data-archive";
 
@@ -181,7 +182,16 @@ export async function initTelescope(): Promise<void> {
   getWorldSize = utilsMod.getWorldSize;
   getWorldCenter = utilsMod.getWorldCenter;
   loadTranslations = translationsMod.loadTranslations;
-  
+
+  // Overwrite the imageProcessingMod lookups with pure-JS decoded ones
+  // to fix LibreWolf/Safari fingerprinting protection returning zeroed data
+  console.log("[Telescope] Rebuilding color lookups to bypass canvas fingerprinting...");
+  const correctLookups = await buildBiomeColorLookupsFromZip(genConfigMod.BIOME_COLOR_TO_NAME);
+  Object.assign(imageProcessingMod.BIOME_BACKGROUND_COLORS, correctLookups.nameLookupBackground);
+  Object.assign(imageProcessingMod.BIOME_COLOR_LOOKUP, correctLookups.backgroundColors);
+  Object.assign(imageProcessingMod.TILE_OVERLAY_COLORS, correctLookups.nameLookupForeground);
+  Object.assign(imageProcessingMod.TILE_FOREGROUND_COLORS, correctLookups.foregroundColors);
+
   // Runtime patch for eye_messages.js crash (TypeError: positionsEast[i] is undefined)
   // ES module exports are read-only, so we wrap it in our local variable instead.
   const originalFindEyeMessages = eyeMessagesMod.findEyeMessages;
@@ -326,7 +336,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     const specialPOIs = getSpecialPoIs(biomeData, seed, ngPlus, pw, 0, perks);
 
     pixelScenesByPW[pwKey] = scanResults.finalPixelScenes;
-    
+
     // Post-process POIs to fix wand names without modifying library code
     const combinedPois = scanResults.generatedSpawns.concat(specialPOIs);
     for (const poi of combinedPois) {
@@ -337,15 +347,15 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         ]);
         const prng = new nollaPrngMod.NollaPrng(0);
         prng.SetRandomSeed(seed + ngPlus, poi.x, poi.y);
-        
+
         // Replicate library's random name generation logic
         // (Library's Random(a, b) uses a + floor((b+1-a)*Next))
         const { GUN_NAMES } = wandConfigMod;
-        const nameIdx = Math.floor((GUN_NAMES.length) * prng.Next());
+        const nameIdx = Math.floor(GUN_NAMES.length * prng.Next());
         poi.name = GUN_NAMES[nameIdx];
       }
     }
-    
+
     poisByPW[pwKey] = combinedPois;
   }
 

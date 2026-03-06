@@ -12,6 +12,8 @@
 
 import JSZip from "jszip";
 import { getDataZip } from "../data-archive";
+import { decodePngToRgba, rgbaToPngBlobUrl } from "./png-decode";
+import type { RawImageData } from "./png-decode";
 
 // ─── Secondary zip archives (telescope's own data) ──────────────────────────
 
@@ -100,8 +102,8 @@ async function trySecondaryZips(normalizePath: string): Promise<ArrayBuffer | nu
     if (z) {
       const file = z.file(relativePath);
       if (file) {
-          // console.log(`[DataBridge] Found ${normalizePath} in secondary wang_tiles.zip`);
-          return file.async("arraybuffer");
+        // console.log(`[DataBridge] Found ${normalizePath} in secondary wang_tiles.zip`);
+        return file.async("arraybuffer");
       }
     }
     console.warn(`[DataBridge] ${normalizePath} NOT FOUND in secondary wang_tiles.zip`);
@@ -207,9 +209,9 @@ export function installFetchInterceptor(): void {
         else if (ext === "csv") mime = "text/csv";
         return new Response(buf, { status: 200, statusText: "OK", headers: { "Content-Type": mime } });
       }
-      
-      if (normalizePath.includes('wang_tiles')) {
-          console.warn(`[DataBridge] Wang tile NOT FOUND: ${normalizePath} (zipPath: ${zipPath})`);
+
+      if (normalizePath.includes("wang_tiles")) {
+        console.warn(`[DataBridge] Wang tile NOT FOUND: ${normalizePath} (zipPath: ${zipPath})`);
       }
       // Fall through to the real network (translations.csv, secret_messages, etc.)
       return originalFetch(input, init);
@@ -288,23 +290,23 @@ export function installImageSrcInterceptor(): void {
       }
 
       // Intercept: fetch the PNG from our zip-backed fetch interceptor,
-      // then load via createImageBitmap with colorSpaceConversion:'none'
-      // to prevent the browser from altering pixel values (color management).
-      // Finally re-export as a blob URL that the Image element can load.
+      // then decode pixel data using pure-JS fast-png (no canvas/getImageData).
+      // This is immune to fingerprinting protection in LibreWolf/Safari/iOS.
       const img = this;
       fetch(fetchPath)
-        .then((r) => r.blob())
-        .then(async (blob) => {
-          const bitmap = await createImageBitmap(blob, {
-            colorSpaceConversion: "none",
-            premultiplyAlpha: "none",
-          } as any);
-          const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-          const ctx = canvas.getContext("2d")!;
-          ctx.drawImage(bitmap, 0, 0);
-          bitmap.close();
-          const outBlob = await canvas.convertToBlob({ type: "image/png" });
-          const blobUrl = URL.createObjectURL(outBlob);
+        .then((r) => r.arrayBuffer())
+        .then(async (buf) => {
+          const decoded = decodePngToRgba(buf);
+          // Store raw pixel data on the element so the canvas fingerprint bypass
+          // shim can use it when drawImage(img, ...) is called later.
+          // Without this, biome_hacks.js's preloadOverlays() gets zeroed data
+          // in LibreWolf because getImageData() is blocked by fingerprint protection.
+          (img as any).__noitamap_rawImageData = {
+            data: decoded.data,
+            width: decoded.width,
+            height: decoded.height,
+          };
+          const blobUrl = await rgbaToPngBlobUrl(decoded.data, decoded.width, decoded.height);
           origSet.call(img, blobUrl);
         })
         .catch(() => {
@@ -343,19 +345,10 @@ export async function loadBiomeMapFromZip(telescopePath: string): Promise<Uint32
     return null;
   }
 
+  // Use pure-JS PNG decoding — no canvas, no getImageData.
+  // This is immune to fingerprinting protection (LibreWolf, Safari, iOS).
   const buf = await file.async("arraybuffer");
-  const blob = new Blob([buf], { type: "image/png" });
-  const bitmap = await createImageBitmap(blob, { colorSpaceConversion: 'none', premultipliedAlpha: 'none' });
-
-  const canvas = document.createElement("canvas");
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-  const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(bitmap, 0, 0);
-  bitmap.close();
-
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const { data, width, height } = imgData;
+  const { data, width, height } = decodePngToRgba(buf);
   const u32 = new Uint32Array(width * height);
   for (let i = 0; i < u32.length; i++) {
     u32[i] = 0xff000000 | (data[i * 4] << 16) | (data[i * 4 + 1] << 8) | data[i * 4 + 2];
@@ -401,16 +394,79 @@ export async function loadWangTileFromZip(
   } else {
     buf = await file.async("arraybuffer");
   }
-  const blob = new Blob([buf], { type: "image/png" });
-  const bitmap = await createImageBitmap(blob, { colorSpaceConversion: 'none', premultipliedAlpha: 'none' });
 
-  const canvas = document.createElement("canvas");
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-  const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(bitmap, 0, 0);
-  bitmap.close();
+  // Use pure-JS PNG decoding — no canvas, no getImageData.
+  return decodePngToRgba(buf);
+}
 
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  return { data: imgData.data, width: imgData.width, height: imgData.height };
+// ─── Biome Color Lookup (canvas-free) ───────────────────────────────────────
+
+/**
+ * Replicates image_processing.js's createBiomeColorLookup() using canvas-free
+ * PNG decoding. Called after importing the telescope module to overwrite the
+ * module's own (potentially zero-data) lookup tables in privacy browsers.
+ *
+ * The telescope library computes:
+ *   BIOME_COLOR_LOOKUP  – biome map color → background color
+ *   BIOME_BACKGROUND_COLORS – same data, different shape
+ *   TILE_OVERLAY_COLORS / TILE_FOREGROUND_COLORS – foreground colors
+ */
+export async function buildBiomeColorLookupsFromZip(biomeColorConfig: Record<string, string>): Promise<{
+  nameLookupBackground: Record<string, number>;
+  backgroundColors: Record<number, number>;
+  nameLookupForeground: Record<string, number>;
+  foregroundColors: Record<number, number>;
+}> {
+  const [ng0Buf, bgBuf, fgBuf] = await Promise.all([
+    loadRawPngFromZip("./data/biome_maps/biome_map.png"),
+    loadRawPngFromZip("./data/biome_maps/biome_map_background.png"),
+    loadRawPngFromZip("./data/biome_maps/biome_map_foreground.png"),
+  ]);
+
+  if (!ng0Buf || !bgBuf || !fgBuf) {
+    console.warn("[DataBridge] Could not load biome map PNGs for lookup rebuild");
+    return { nameLookupBackground: {}, backgroundColors: {}, nameLookupForeground: {}, foregroundColors: {} };
+  }
+
+  const ng0 = decodePngToRgba(ng0Buf);
+  const bg = decodePngToRgba(bgBuf);
+  const fg = decodePngToRgba(fgBuf);
+
+  function buildLookup(
+    base: RawImageData,
+    mapped: RawImageData,
+  ): { nameLookup: Record<string, number>; colors: Record<number, number> } {
+    const nameLookup: Record<string, number> = {};
+    const colors: Record<number, number> = {};
+    const len = Math.min(base.data.length, mapped.data.length);
+    for (let i = 0; i < len; i += 4) {
+      const c1 = (base.data[i] << 16) | (base.data[i + 1] << 8) | base.data[i + 2];
+      const c2 = (mapped.data[i] << 16) | (mapped.data[i + 1] << 8) | mapped.data[i + 2];
+      const biomeName = biomeColorConfig[String(c1)];
+      if (biomeName) nameLookup[biomeName] = c2;
+      colors[c1] = c2;
+    }
+    return { nameLookup, colors };
+  }
+
+  const { nameLookup: nameLookupBackground, colors: backgroundColors } = buildLookup(ng0, bg);
+  const { nameLookup: nameLookupForeground, colors: foregroundColors } = buildLookup(ng0, fg);
+
+  // Hard-coded extras from the library (biomes missing in NG+ biome map)
+  nameLookupBackground["temple_altar_right_snowcave"] = 0x4e4132;
+  backgroundColors[0x93cb4f] = 0x4e4132;
+  nameLookupBackground["temple_altar_right_snowcastle"] = 0x4e4133;
+  backgroundColors[0x93cb5a] = 0x4e4133;
+
+  return { nameLookupBackground, backgroundColors, nameLookupForeground, foregroundColors };
+}
+
+/** Load a PNG from data.zip and return raw ArrayBuffer (no decoding). */
+async function loadRawPngFromZip(telescopePath: string): Promise<ArrayBuffer | null> {
+  const zipPath = telescopePathToZipPath(telescopePath);
+  const zip = await getDataZip();
+  if (!zip) return null;
+  const file = zip.file(zipPath);
+  if (!file) return null;
+  return file.async("arraybuffer");
 }

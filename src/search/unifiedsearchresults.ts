@@ -216,7 +216,12 @@ export class UnifiedSearchResults extends EventEmitter2 {
             if ((result as any).isDynamic) {
               if ((result as any).type === "wand") {
                 const wandName = (result as any).wandName || (result as any).name || "Magic";
-                nameDiv.textContent = `${wandName} wand`;
+                if (wandName.toUpperCase() === "TAIKASAUVA") {
+                  const aliveWandText = i18next.t("alive_wand", "(alive wand)");
+                  nameDiv.textContent = `TAIKASAUVA ${aliveWandText}`;
+                } else {
+                  nameDiv.textContent = `${wandName} wand`;
+                }
               } else {
                 nameDiv.textContent = displayName;
               }
