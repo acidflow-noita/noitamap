@@ -29,6 +29,8 @@ export interface UnifiedSearch {
 export class UnifiedSearch extends EventEmitter2 {
   private lastSearchText: string = "";
   private lastSearchFilters: Set<string> = new Set();
+  private lastViewportKey: string = "";
+  private isInteracting: boolean = false;
 
   private form: HTMLFormElement;
   private searchInput: HTMLInputElement;
@@ -110,6 +112,15 @@ export class UnifiedSearch extends EventEmitter2 {
     this.lastSearchText = value;
   }
 
+  /** Set interaction state (pause sorting during map move) */
+  setInteracting(interacting: boolean): void {
+    this.isInteracting = interacting;
+    // When interaction ends, do one final sort
+    if (!interacting) {
+      this.notifyViewportChanged();
+    }
+  }
+
   /** Replace the dynamic POI index (called by the generation pipeline). */
   setDynamicPOIs(pois: DynamicPOI[]): void {
     this.dynamicPOIs = pois;
@@ -129,11 +140,35 @@ export class UnifiedSearch extends EventEmitter2 {
     }
   }
 
+  /** Notify the search that the map viewport has moved. Re-sorts results by proximity. */
+  notifyViewportChanged(): void {
+    if (this.currentMap !== "dynamic-main-branch") return;
+    if (this.searchInput.value.trim() === "") return;
+    if (this.isInteracting) return; // Skip sorting while user is actively moving the map
+
+    // Read current viewport position from URL (always integers in url.ts)
+    const urlParams = new URLSearchParams(window.location.search);
+    const x = parseInt(urlParams.get("x") ?? "", 10);
+    const y = parseInt(urlParams.get("y") ?? "", 10);
+    if (!isNaN(x) && !isNaN(y)) {
+      this.searchResults.resortByProximity(x, y);
+    }
+  }
+
   private updateSearchResults() {
     const searchText = this.searchInput.value;
-    if (this.lastSearchText === searchText && this.lastSearchFilters === this.activeFilters) return;
+    // Also check viewport position for dynamic map proximity sorting
+    const urlParams = new URLSearchParams(window.location.search);
+    const vpKey = `${urlParams.get("x") ?? ""},${urlParams.get("y") ?? ""}`;
+    if (
+      this.lastSearchText === searchText &&
+      this.lastSearchFilters === this.activeFilters &&
+      this.lastViewportKey === vpKey
+    )
+      return;
     this.lastSearchText = searchText;
     this.lastSearchFilters = new Set(this.activeFilters);
+    this.lastViewportKey = vpKey;
 
     if (searchText === "") {
       resetBiomeOverlays();
@@ -158,6 +193,8 @@ export class UnifiedSearch extends EventEmitter2 {
         const searchMatched =
           (p.name ?? p.type ?? "").toLowerCase().includes(searchLower) ||
           (p.item ?? "").toLowerCase().includes(searchLower) ||
+          (p.enemy ?? "").toLowerCase().includes(searchLower) ||
+          (p.material ?? "").toLowerCase().includes(searchLower) ||
           p.type.toLowerCase().includes(searchLower);
 
         let spellsMatched = false;
@@ -176,7 +213,33 @@ export class UnifiedSearch extends EventEmitter2 {
           });
         }
 
-        if (!searchMatched && !spellsMatched) return false;
+        // Also search within container items (chests, shops, etc.)
+        let containerItemsMatched = false;
+        if (p.items && Array.isArray(p.items)) {
+          containerItemsMatched = p.items.some((ci: any) => {
+            if (ci.ignore) return false;
+            if ((ci.item ?? "").toLowerCase().includes(searchLower)) return true;
+            if ((ci.name ?? "").toLowerCase().includes(searchLower)) return true;
+            if ((ci.material ?? "").toLowerCase().includes(searchLower)) return true;
+            if ((ci.enemy ?? "").toLowerCase().includes(searchLower)) return true;
+            if (ci.spell && ci.spell.toLowerCase().includes(searchLower)) return true;
+            // Search wand spells inside containers
+            if (ci.cards || ci.always_casts) {
+              const cSpells = [...(ci.cards || []), ...(ci.always_casts || [])];
+              return cSpells.some((c: string) => {
+                const spell = spells.find((s) => s.id === c);
+                if (!spell) return c.toLowerCase().includes(searchLower);
+                return (
+                  gameTranslator.translateSpell(spell.name).toLowerCase().includes(searchLower) ||
+                  spell.name.toLowerCase().includes(searchLower)
+                );
+              });
+            }
+            return false;
+          });
+        }
+
+        if (!searchMatched && !spellsMatched && !containerItemsMatched) return false;
 
         // Respect filters if any are active
         if (this.activeFilters.size > 0) {
@@ -219,12 +282,19 @@ export class UnifiedSearch extends EventEmitter2 {
           wandName: p.name,
           cards: p.cards,
           alwaysCasts: p.always_casts,
+          // Pass through all POI fields for rendering
+          item: p.item,
+          material: p.material,
+          enemy: p.enemy,
+          items: p.items,
+          amount: p.amount,
         } as any;
       });
 
       const combinedResults: any[] = [...dynamicResults];
 
-      if (this.activeFilters.has("spells") || this.activeFilters.size === 0) {
+      // Add general spell probabilities ONLY if we are NOT on the dynamic map
+      if (!isDynamic && (this.activeFilters.has("spells") || this.activeFilters.size === 0)) {
         const spellResults = spells
           .filter((spell) => {
             const translatedName = gameTranslator.translateSpell(spell.name);
@@ -389,6 +459,7 @@ export class UnifiedSearch extends EventEmitter2 {
       positionOverlay();
       overlayDiv.style.display = "block";
       isOverlayVisible = true;
+      searchResults.resetScroll();
     });
 
     const hideOverlay = () => {

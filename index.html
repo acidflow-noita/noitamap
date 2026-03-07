@@ -172,7 +172,7 @@
         <p id="map-loading-subtitle" style="margin-bottom: 16px; font-size: 0.85em; color: #aaa">
           This 24MB file is cached permanently after the first load.
         </p>
-        <!-- Two-segment progress bar wrapper -->
+        <!-- Three-segment progress bar wrapper -->
         <div
           style="
             width: 50%;
@@ -189,7 +189,7 @@
             id="loading-bar-download"
             class="progress-bar progress-bar-striped progress-bar-animated"
             role="progressbar"
-            style="width: 0%; max-width: 50%; height: 100%; background-color: #0d6efd; transition: width 0.2s ease"
+            style="width: 0%; max-width: 33.33%; height: 100%; background-color: #0d6efd; transition: width 0.2s ease"
             aria-valuenow="0"
             aria-valuemin="0"
             aria-valuemax="100"
@@ -199,7 +199,17 @@
             id="loading-bar-generation"
             class="progress-bar progress-bar-striped progress-bar-animated"
             role="progressbar"
-            style="width: 0%; max-width: 50%; height: 100%; background-color: #198754; transition: width 0.2s ease"
+            style="width: 0%; max-width: 33.33%; height: 100%; background-color: #198754; transition: width 0.2s ease"
+            aria-valuenow="0"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          ></div>
+          <!-- Segment 3: items and wands -->
+          <div
+            id="loading-bar-items"
+            class="progress-bar progress-bar-striped progress-bar-animated"
+            role="progressbar"
+            style="width: 0%; max-width: 33.33%; height: 100%; background-color: #ffc107; transition: width 0.2s ease"
             aria-valuenow="0"
             aria-valuemin="0"
             aria-valuemax="100"
@@ -234,6 +244,20 @@
               "
             ></span
             ><span>Biome Generation</span></span
+          >
+          <span
+            ><span
+              style="
+                display: inline-block;
+                width: 12px;
+                height: 12px;
+                background: #ffc107;
+                border-radius: 2px;
+                margin-right: 4px;
+                vertical-align: middle;
+              "
+            ></span
+            ><span>Adding items and wands</span></span
           >
         </div>
         <p id="map-loading-status" style="margin-top: 10px; font-size: 0.88em; color: #ccc">0%</p>

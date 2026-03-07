@@ -148,6 +148,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const _getLoadingOverlay = () => document.getElementById("map-loading-overlay");
   const _getDownloadBar = () => document.getElementById("loading-bar-download") as HTMLElement | null;
   const _getGenerationBar = () => document.getElementById("loading-bar-generation") as HTMLElement | null;
+  const _getItemsBar = () => document.getElementById("loading-bar-items") as HTMLElement | null;
   const _getStatusText = () => document.getElementById("map-loading-status");
   const _getTitle = () => document.getElementById("map-loading-title");
   const _getSubtitle = () => document.getElementById("map-loading-subtitle");
@@ -163,21 +164,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     overlay.style.display = "flex";
 
     if (e.detail.percentage < 100) {
-      // Segment 1 fills left half (0–50% total)
-      const segPct = e.detail.percentage / 2; // maps 0–100 → 0–50% of bar width
-      bar.style.width = `${segPct * 2}%`; // bar max-width is 50%, so fill relative to that
+      // Segment 1 fills left third (0–33.3% total)
+      bar.style.width = `${e.detail.percentage}%`;
       bar.setAttribute("aria-valuenow", e.detail.percentage.toString());
       if (title) title.setAttribute("data-i18n", "loading.mapData.downloading");
-      if (status) status.textContent = `${e.detail.percentage}%`;
+      if (status) status.textContent = `${Math.round(e.detail.percentage / 3)}%`;
     } else {
-      // Download done – keep bar at 50% and switch title to generation phase
-      bar.style.width = "100%"; // fills its max-width: 50% slot entirely
+      // Download done – keep bar at max and switch title to generation phase
+      bar.style.width = "100%";
       if (title) title.setAttribute("data-i18n", "loading.mapData.generating");
       if (title)
         title.textContent = i18next.isInitialized ? i18next.t("loading.mapData.generating") : "Generating Biomes";
       const subtitle = _getSubtitle();
       if (subtitle) subtitle.style.display = "none";
-      if (status) status.textContent = "50%";
+      if (status) status.textContent = "33%";
     }
   }) as EventListener);
 
@@ -188,9 +188,31 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!overlay || !bar) return;
 
     overlay.style.display = "flex";
-    bar.style.width = `${e.detail.percentage}%`; // fills its max-width: 50% slot
+    bar.style.width = `${e.detail.percentage}%`;
     bar.setAttribute("aria-valuenow", e.detail.percentage.toString());
-    if (status) status.textContent = `${Math.round(50 + e.detail.percentage / 2)}%`;
+    if (status) status.textContent = `${Math.round(33 + e.detail.percentage / 3)}%`;
+
+    if (e.detail.percentage >= 100) {
+      const title = _getTitle();
+      if (title) {
+        title.removeAttribute("data-i18n");
+        title.textContent = "Adding items and wands to the map";
+      }
+      bar.style.width = "100%";
+      if (status) status.textContent = "66%";
+    }
+  }) as EventListener);
+
+  window.addEventListener("itemsGenerationProgress", ((e: CustomEvent) => {
+    const overlay = _getLoadingOverlay();
+    const bar = _getItemsBar();
+    const status = _getStatusText();
+    if (!overlay || !bar) return;
+
+    overlay.style.display = "flex";
+    bar.style.width = `${e.detail.percentage}%`;
+    bar.setAttribute("aria-valuenow", e.detail.percentage.toString());
+    if (status) status.textContent = `${Math.round(66 + e.detail.percentage / 3)}%`;
 
     if (e.detail.percentage >= 100) {
       // Dismiss after OSD has had one paint cycle — don't add artificial delay.
@@ -199,11 +221,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         requestAnimationFrame(() => {
           const o = _getLoadingOverlay();
           if (o) o.style.display = "none";
-          // Reset both bars for the next generation
+          // Reset all bars for the next generation
           const dl = _getDownloadBar();
           const gen = _getGenerationBar();
+          const it = _getItemsBar();
           if (dl) dl.style.width = "0%";
           if (gen) gen.style.width = "0%";
+          if (it) it.style.width = "0%";
           const subtitle = _getSubtitle();
           if (subtitle) subtitle.style.display = "";
         });
@@ -417,9 +441,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   const debouncedUpdateURL = debounce(100, updateURL);
+  const debouncedViewportNotify = debounce(300, () => unifiedSearch.notifyViewportChanged());
+
+  // Pause search sorting during active interaction to keep map navigation smooth
+  app.osd.addHandler("canvas-drag", () => unifiedSearch.setInteracting(true));
+  app.osd.addHandler("canvas-scroll", () => unifiedSearch.setInteracting(true));
+  app.osd.addHandler("canvas-drag-end", () => unifiedSearch.setInteracting(false));
+  app.osd.addHandler("animation-finish", () => unifiedSearch.setInteracting(false));
+
   app.on("state-change", (state) => {
     // record map / position / zoom changes to the URL when they happen
     debouncedUpdateURL(state);
+    // Re-sort search results by proximity to the new viewport position
+    debouncedViewportNotify();
 
     const currentMapLink = document.querySelector(`#navLinksList [data-map-key='${state.map}']`);
 

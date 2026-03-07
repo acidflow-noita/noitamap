@@ -3,39 +3,8 @@
 // It is used via a Vite alias to prevent the telescope "standalone app" from trying
 // to initialize and crash when we only want to import its modules in noitamap.
 
-import { generateBiomeData, BIOME_CONFIG } from "noita-telescope/biome_generator.js";
-import { sanitizePng } from "noita-telescope/png_sanitizer.js";
-import { getDisplayName, loadTranslations } from "noita-telescope/translations.js";
-import { UNLOCKABLES, setUnlocks } from "noita-telescope/unlocks.js";
-import { toggleTooltipPinned, updateTooltip } from "noita-telescope/tooltip_generator.js";
-import { GENERATOR_CONFIG } from "noita-telescope/generator_config.js";
-import { generateBiomeTiles } from "noita-telescope/tile_generator.js";
-import { scanSpawnFunctions, getSpecialPoIs, prescanSpawnFunctions } from "noita-telescope/poi_scanner.js";
-import { performSearch, navigateSearch, cancelSearch, isSearchActive } from "noita-telescope/search.js";
-import {
-  TIME_UNTIL_LOADING,
-  POI_RADIUS,
-  CHUNK_SIZE,
-  VISUAL_TILE_OFFSET_X,
-  VISUAL_TILE_OFFSET_Y,
-} from "noita-telescope/constants.js";
-import {
-  getBiomeAtWorldCoordinates,
-  getMaterialAtWorldCoordinates,
-  getWorldCenter,
-  getWorldSize,
-} from "noita-telescope/utils.js";
-import { renderWallMessages } from "noita-telescope/wall_messages.js";
-import { findEyeMessages, renderEyeMessages } from "noita-telescope/eye_messages.js";
-import {
-  BIOME_COLOR_LOOKUP,
-  createTileOverlays,
-  createTileOverlaysCheap,
-  createTileOverlaysExpanded,
-} from "noita-telescope/image_processing.js";
-import { COALMINE_ALT_SCENES } from "noita-telescope/pixel_scene_config.js";
-import { debugBiomeEdgeNoise } from "noita-telescope/edge_noise.js";
-import { loadPixelSceneData, reloadPixelSceneCache } from "noita-telescope/pixel_scene_generation.js";
+// No static imports from "noita-telescope/" to avoid mixing static and dynamic imports!
+// This file only exports a fake `app` object so that library files don't crash when referencing `app`.
 
 export const app = {
   // ... (We just need it to exist and have basic properties if used)
@@ -53,7 +22,7 @@ export const app = {
   h: 0,
   biomeData: null,
   tileLayers: [],
-  cam: { x: CHUNK_SIZE * 35, y: CHUNK_SIZE * 24, z: 0.053 },
+  cam: { x: 512 * 35, y: 512 * 24, z: 0.053 },
   drag: { on: false, lx: 0, ly: 0 },
   assets: { ng0: null, ngp: null },
   pinnedTooltip: null,

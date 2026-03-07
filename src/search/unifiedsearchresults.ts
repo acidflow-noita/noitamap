@@ -3,7 +3,7 @@ import { Spell } from "../data_sources/overlays";
 import { EventEmitter2 } from "eventemitter2";
 import i18next from "../i18n";
 import { getSpellAvailability } from "../util";
-import { getWandSprite } from "../telescope/telescope-osd-bridge";
+import { getWandSprite, getPOISpriteFirstFrame } from "../telescope/telescope-osd-bridge";
 import spells from "../data/spells.json";
 import { gameTranslator } from "../game-translations/translator";
 
@@ -18,9 +18,14 @@ export interface UnifiedSearchResults {
 
 export class UnifiedSearchResults extends EventEmitter2 {
   private targetByElement = new WeakMap<Element, UnifiedSearchResult>();
+  private elementByTarget = new Map<UnifiedSearchResult, HTMLElement>();
   private currentElement: Element | null = null;
 
   private wrapper: HTMLUListElement;
+  private lastSortedOrder: string = "";
+  private lastSortX: number = 0;
+  private lastSortY: number = 0;
+
   constructor(wrapper: HTMLUListElement) {
     super();
 
@@ -109,7 +114,62 @@ export class UnifiedSearchResults extends EventEmitter2 {
   private clearResults(hide: boolean = true) {
     this.currentElement = null;
     this.wrapper.innerHTML = "";
+    this.wrapper.scrollTop = 0;
+    this.elementByTarget.clear();
+    this.lastSortedOrder = "";
+    this.lastSortX = 0;
+    this.lastSortY = 0;
     // this.wrapper.style.display = hide ? 'none' : 'block';
+  }
+
+  /** Reset scroll position to top. */
+  resetScroll(): void {
+    this.wrapper.scrollTop = 0;
+  }
+
+  /** Efficiently re-sort existing result elements by proximity to (x, y) */
+  resortByProximity(playerX: number, playerY: number): void {
+    const CHUNK_SIZE = 512;
+    const items = Array.from(this.elementByTarget.entries());
+    if (items.length === 0) return;
+
+    // Only sort dynamic POIs that have x/y coordinates
+    const sortable = items.filter(([target]) => "x" in target && (target as any).isDynamic);
+    if (sortable.length === 0) return;
+
+    // Optimization: Skip if we haven't moved much
+    const distMoved = Math.hypot(playerX - this.lastSortX, playerY - this.lastSortY);
+    if (distMoved < 128 && this.lastSortedOrder !== "") return;
+
+    this.lastSortX = playerX;
+    this.lastSortY = playerY;
+
+    sortable.sort(([targetA], [targetB]) => {
+      const pA = targetA as any;
+      const pB = targetB as any;
+      const da = Math.hypot(pA.x - playerX, pA.y - playerY);
+      const db = Math.hypot(pB.x - playerX, pB.y - playerY);
+      return da - db;
+    });
+
+    // Check if the order has actually changed
+    const currentOrder = sortable.map(([target]) => (target as any).x + "," + (target as any).y).join("|");
+    if (currentOrder === this.lastSortedOrder) return;
+    this.lastSortedOrder = currentOrder;
+
+    // Use a fragment to avoid layout thrashing
+    const fragment = document.createDocumentFragment();
+    for (const [target, el] of sortable) {
+      fragment.appendChild(el);
+      // Update the "chunks away" text if it exists
+      const p = target as any;
+      const chunksAway = Math.round(Math.hypot(p.x - playerX, p.y - playerY) / CHUNK_SIZE);
+      const proximitySpan = el.querySelector(".proximity-hint");
+      if (proximitySpan) {
+        proximitySpan.textContent = `~${chunksAway} chunks away`;
+      }
+    }
+    this.wrapper.appendChild(fragment);
   }
 
   setResults(results: UnifiedSearchResult[]) {
@@ -120,21 +180,29 @@ export class UnifiedSearchResults extends EventEmitter2 {
       listItem.classList.add("list-group-item", "search-result");
       listItem.tabIndex = idx;
       this.targetByElement.set(listItem, result);
+      this.elementByTarget.set(result, listItem);
 
       if ("type" in result && result.type === "spell") {
         // Handle spell results with image
         listItem.classList.add("d-flex", "align-items-center");
         const img = document.createElement("img");
-        img.src = `./assets/icons/spells/${result.spell.sprite}`;
         img.classList.add("pixelated-image", "me-2", "flex-shrink-0");
         img.alt = result.spell.name;
         img.style.width = "32px";
         img.style.height = "32px";
-        img.onerror = () => {
-          img.src = "./assets/icons/spells/missing.png";
-          img.alt = "Missing";
-        };
         listItem.appendChild(img);
+
+        // Try to use atlas for spell icon
+        getPOISpriteFirstFrame({ type: "spell", item: result.spell.id }).then((url) => {
+          if (url) {
+            img.src = url;
+          } else {
+            img.src = `./assets/icons/spells/${result.spell.sprite}`;
+            img.onerror = () => {
+              img.src = "./assets/icons/spells/missing.png";
+            };
+          }
+        });
 
         // Create content container
         const contentDiv = document.createElement("div");
@@ -190,19 +258,26 @@ export class UnifiedSearchResults extends EventEmitter2 {
             const displayName = ("displayName" in result ? (result as any).displayName : result.name) as string;
             const currentLang = i18next.language;
 
-            // Handle Wands specifically with sprites (UNROTATED)
-            if ((result as any).type === "wand" && (result as any).sprite) {
-              listItem.classList.add("d-flex", "align-items-center");
-              const img = document.createElement("img");
-              img.classList.add("pixelated-image", "me-2", "flex-shrink-0");
-              img.style.width = "32px";
-              img.style.height = "32px";
-              img.style.objectFit = "contain";
-              getWandSprite((result as any).sprite).then((url) => {
-                if (url) img.src = url;
-              });
-              listItem.appendChild(img);
-            }
+            // Image/Sprite Handling
+            const img = document.createElement("img");
+            img.classList.add("pixelated-image", "me-2", "flex-shrink-0");
+            img.style.width = "32px";
+            img.style.height = "32px";
+            img.style.objectFit = "contain";
+            listItem.classList.add("d-flex", "align-items-center");
+            listItem.appendChild(img);
+
+            // Use atlas for everything if possible to speed up loading
+            getPOISpriteFirstFrame(result as any).then((url) => {
+              if (url) {
+                img.src = url;
+              } else if ((result as any).type === "wand" && (result as any).sprite) {
+                // Fallback for wands not in atlas
+                getWandSprite((result as any).sprite).then((u) => {
+                  if (u) img.src = u;
+                });
+              }
+            });
 
             // Create content container for multi-line display
             const contentDiv = document.createElement("div");
@@ -223,13 +298,37 @@ export class UnifiedSearchResults extends EventEmitter2 {
                   nameDiv.textContent = `${wandName} wand`;
                 }
               } else {
-                nameDiv.textContent = displayName;
+                // Non-wand dynamic POI: show meaningful name
+                const r = result as any;
+                let label = displayName;
+                if (r.type === "item") {
+                  const itemName = r.item || "item";
+                  if ((itemName === "potion" || itemName === "pouch") && r.material) {
+                    label = `${r.material} ${itemName}`;
+                  } else if (itemName === "gold" && r.amount) {
+                    label = `Gold $${r.amount}`;
+                  } else if (itemName === "heart") {
+                    label = "Heart (+25 HP)";
+                  } else if (itemName === "heart_bigger") {
+                    label = "Heart (+50 HP)";
+                  } else if (itemName === "full_heal") {
+                    label = "Full Heal";
+                  } else {
+                    label = itemName.replace(/_/g, " ");
+                  }
+                } else if (r.type === "enemy") {
+                  label = r.enemy || r.type;
+                } else {
+                  // Containers and other types: capitalize and humanize
+                  label = (r.type || displayName).replace(/_/g, " ");
+                }
+                nameDiv.textContent = label;
               }
 
               if ((result as any).chunksAway !== null) {
                 const chunksAway = (result as any).chunksAway as number;
                 const proximitySpan = document.createElement("span");
-                proximitySpan.className = "ms-2 text-secondary";
+                proximitySpan.className = "ms-2 text-secondary proximity-hint";
                 proximitySpan.style.fontSize = "0.8em";
                 proximitySpan.textContent = `~${chunksAway} chunks away`;
                 nameDiv.appendChild(proximitySpan);
@@ -303,16 +402,22 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     }
 
                     const img = document.createElement("img");
-                    img.src = `./assets/icons/spells/${spell.sprite}`;
                     img.className = "pixelated-image";
                     img.style.width = "20px";
                     img.style.height = "20px";
                     img.style.display = "block";
                     img.title = gameTranslator.translateSpell(spell.name);
 
-                    img.onerror = () => {
-                      img.src = "./assets/icons/spells/missing.png";
-                    };
+                    getPOISpriteFirstFrame({ type: "spell", item: spell.id }).then((url) => {
+                      if (url) {
+                        img.src = url;
+                      } else {
+                        img.src = `./assets/icons/spells/${spell.sprite}`;
+                        img.onerror = () => {
+                          img.src = "./assets/icons/spells/missing.png";
+                        };
+                      }
+                    });
 
                     imgContainer.appendChild(img);
                     spellsDiv.appendChild(imgContainer);
@@ -328,6 +433,92 @@ export class UnifiedSearchResults extends EventEmitter2 {
               }
 
               contentDiv.appendChild(spellsDiv);
+            }
+
+            // Container contents (chests, shops, bosses, etc.)
+            if ((result as any).isDynamic && (result as any).items?.length > 0) {
+              const itemsDiv = document.createElement("div");
+              itemsDiv.className = "container-items-row mt-1 d-flex flex-wrap gap-1";
+              itemsDiv.style.alignItems = "center";
+
+              const items = (result as any).items as any[];
+              for (const item of items) {
+                if (item.ignore) continue;
+                if (item.type === "wand" || item.item === "wand") {
+                  // Show wand sprite + its spells
+                  const wandContainer = document.createElement("div");
+                  wandContainer.style.display = "flex";
+                  wandContainer.style.alignItems = "center";
+                  wandContainer.style.gap = "2px";
+                  wandContainer.style.backgroundColor = "#1a1a1a";
+                  wandContainer.style.borderRadius = "3px";
+                  wandContainer.style.padding = "2px 4px";
+                  wandContainer.style.border = "1px solid #333";
+
+                  if (item.sprite) {
+                    const wandImg = document.createElement("img");
+                    wandImg.classList.add("pixelated-image");
+                    wandImg.style.width = "24px";
+                    wandImg.style.height = "24px";
+                    wandImg.style.objectFit = "contain";
+                    getWandSprite(item.sprite).then((url) => {
+                      if (url) wandImg.src = url;
+                    });
+                    wandContainer.appendChild(wandImg);
+                  }
+
+                  // Show spells in the wand
+                  const allSpells = [...(item.always_casts || []), ...(item.cards || [])];
+                  for (const spellName of allSpells.slice(0, 6)) {
+                    const spell = spells.find((s) => s.id === spellName);
+                    if (spell) {
+                      const spellImg = document.createElement("img");
+                      spellImg.className = "pixelated-image";
+                      spellImg.style.width = "16px";
+                      spellImg.style.height = "16px";
+                      spellImg.title = gameTranslator.translateSpell(spell.name);
+
+                      getPOISpriteFirstFrame({ type: "spell", item: spell.id }).then((url) => {
+                        if (url) {
+                          spellImg.src = url;
+                        } else {
+                          spellImg.src = `./assets/icons/spells/${spell.sprite}`;
+                          spellImg.onerror = () => {
+                            spellImg.src = "./assets/icons/spells/missing.png";
+                          };
+                        }
+                      });
+                      wandContainer.appendChild(spellImg);
+                    }
+                  }
+                  if (allSpells.length > 6) {
+                    const more = document.createElement("span");
+                    more.style.fontSize = "10px";
+                    more.style.color = "#888";
+                    more.textContent = `+${allSpells.length - 6}`;
+                    wandContainer.appendChild(more);
+                  }
+                  itemsDiv.appendChild(wandContainer);
+                } else {
+                  // Non-wand item: show sprite icon
+                  const itemImg = document.createElement("img");
+                  itemImg.classList.add("pixelated-image");
+                  itemImg.style.width = "20px";
+                  itemImg.style.height = "20px";
+                  itemImg.style.backgroundColor = "#1a1a1a";
+                  itemImg.style.borderRadius = "2px";
+                  itemImg.style.padding = "1px";
+                  itemImg.style.border = "1px solid #333";
+                  const itemName = item.item || item.type || "";
+                  itemImg.title = itemName;
+                  getPOISpriteFirstFrame(item).then((url) => {
+                    if (url) itemImg.src = url;
+                  });
+                  itemsDiv.appendChild(itemImg);
+                }
+              }
+
+              contentDiv.appendChild(itemsDiv);
             }
 
             listItem.appendChild(contentDiv);

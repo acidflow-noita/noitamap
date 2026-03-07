@@ -14,6 +14,9 @@ import {
   buildBiomeColorLookupsFromZip,
 } from "./telescope-data-bridge";
 import { rgbaToPngBlobUrl } from "./png-decode";
+import { buildMarkerData, getAtlas, getSpritesheet, getSpriteKey, loadSpritesheetAndAtlas } from "./poi-spatial-index";
+import type { MarkerData, MarkerItem } from "./poi-spatial-index";
+import { createMarkerTileSource } from "./marker-tile-source";
 
 declare const OpenSeadragon: any;
 
@@ -585,75 +588,242 @@ export async function addPOIOverlays(viewer: OSDViewer, result: GenerationResult
   );
 }
 
+// ─── Active marker data (for tooltip click handling) ────────────────────────
+let activeMarkerData: MarkerData | null = null;
+let tooltipEl: HTMLDivElement | null = null;
+let canvasClickHandler: ((event: any) => void) | null = null;
+
+/**
+ * Show a tooltip for a marker at the given screen position.
+ */
+function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): void {
+  if (!tooltipEl) {
+    tooltipEl = document.createElement("div");
+    tooltipEl.className = "marker-tooltip";
+    tooltipEl.style.cssText = `
+      position: fixed;
+      z-index: 10000;
+      background: rgba(20, 20, 30, 0.95);
+      color: #eee;
+      border: 1px solid #555;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 13px;
+      max-width: 300px;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      font-family: monospace;
+      line-height: 1.4;
+    `;
+    document.body.appendChild(tooltipEl);
+  }
+
+  const poi = item.poi;
+  let html = "";
+
+  if (poi.type === "wand") {
+    html += `<div style="font-weight:bold;color:#c8a2ff">Wand</div>`;
+    if (poi.name) html += `<div>${escapeHtml(poi.name)}</div>`;
+    if (poi.stats) {
+      const s = poi.stats;
+      const lines: string[] = [];
+      if (s.shuffle != null) lines.push(s.shuffle ? "Shuffle" : "No Shuffle");
+      if (s.spellsPerCast != null) lines.push(`Spells/Cast: ${s.spellsPerCast}`);
+      if (s.castDelay != null) lines.push(`Cast Delay: ${s.castDelay}`);
+      if (s.rechargeTime != null) lines.push(`Recharge: ${s.rechargeTime}`);
+      if (s.manaMax != null) lines.push(`Mana: ${s.manaMax}`);
+      if (s.manaChargeSpeed != null) lines.push(`Regen: ${s.manaChargeSpeed}`);
+      if (s.capacity != null) lines.push(`Capacity: ${s.capacity}`);
+      if (s.spread != null) lines.push(`Spread: ${s.spread}°`);
+      if (lines.length) html += `<div style="margin-top:4px">${lines.join("<br>")}</div>`;
+    }
+    if (poi.spells && poi.spells.length) {
+      html += `<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:2px">`;
+      for (const spell of poi.spells) {
+        const spellId = typeof spell === "string" ? spell : spell.id ?? spell;
+        const iconPath = `./assets/icons/spells/${String(spellId).toLowerCase()}.png`;
+        html += `<img src="${iconPath}" width="16" height="16" title="${escapeHtml(String(spellId))}" style="image-rendering:pixelated" onerror="this.style.display='none'">`;
+      }
+      html += `</div>`;
+    }
+  } else if (poi.type === "item" || poi.type === "chest") {
+    const label = poi.item ?? poi.type;
+    html += `<div style="font-weight:bold;color:#ffd700">${escapeHtml(label)}</div>`;
+    if (poi.material) html += `<div>Material: ${escapeHtml(poi.material)}</div>`;
+    if (poi.contents && poi.contents.length) {
+      html += `<div style="margin-top:2px">Contains: ${poi.contents.map((c: any) => escapeHtml(typeof c === "string" ? c : c.name ?? c.item ?? String(c))).join(", ")}</div>`;
+    }
+  } else {
+    html += `<div style="font-weight:bold">${escapeHtml(poi.type)}</div>`;
+    if (poi.item) html += `<div>${escapeHtml(poi.item)}</div>`;
+  }
+
+  html += `<div style="margin-top:4px;color:#888;font-size:11px">PW ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})</div>`;
+
+  tooltipEl.innerHTML = html;
+  tooltipEl.style.display = "block";
+
+  // Position tooltip near click, clamped to viewport
+  const pad = 12;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  let tx = screenX + pad;
+  let ty = screenY + pad;
+  // Defer clamping to after render so we know tooltip size
+  requestAnimationFrame(() => {
+    if (!tooltipEl) return;
+    const rect = tooltipEl.getBoundingClientRect();
+    if (tx + rect.width > vw - pad) tx = screenX - rect.width - pad;
+    if (ty + rect.height > vh - pad) ty = screenY - rect.height - pad;
+    if (tx < pad) tx = pad;
+    if (ty < pad) ty = pad;
+    tooltipEl.style.left = `${tx}px`;
+    tooltipEl.style.top = `${ty}px`;
+  });
+  tooltipEl.style.left = `${tx}px`;
+  tooltipEl.style.top = `${ty}px`;
+}
+
+function hideMarkerTooltip(): void {
+  if (tooltipEl) tooltipEl.style.display = "none";
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/**
+ * Install a canvas-click handler on the viewer to detect marker clicks.
+ */
+function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
+  // Remove previous handler if any
+  if (canvasClickHandler) {
+    viewer.removeHandler("canvas-click", canvasClickHandler);
+    canvasClickHandler = null;
+  }
+
+  canvasClickHandler = (event: any) => {
+    // Convert click to viewport coordinates, then to image coordinates
+    const viewportPoint = viewer.viewport.pointFromPixel(event.position);
+    // viewportPoint is in OSD viewport coordinate space
+    const vpX = viewportPoint.x;
+    const vpY = viewportPoint.y;
+
+    // Convert viewport coords to local (bbox-relative) coords for Flatbush query
+    const localX = vpX - data.originX;
+    const localY = vpY - data.originY;
+
+    // Search for nearest marker within ~20px radius in local coords
+    const searchRadius = 20;
+    const results = data.index.search(
+      localX - searchRadius,
+      localY - searchRadius,
+      localX + searchRadius,
+      localY + searchRadius,
+    );
+
+    if (results.length === 0) {
+      hideMarkerTooltip();
+      return;
+    }
+
+    // Find the closest marker to the click point (using viewport coords for distance)
+    let bestIdx = results[0];
+    let bestDist = Infinity;
+    for (const idx of results) {
+      const item = data.items[idx];
+      const dx = item.osdX - vpX;
+      const dy = item.osdY - vpY;
+      const dist = dx * dx + dy * dy;
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = idx;
+      }
+    }
+
+    const clickedItem = data.items[bestIdx];
+    if (clickedItem) {
+      // Prevent default OSD click behavior (zoom)
+      event.preventDefaultAction = true;
+      showMarkerTooltip(clickedItem, event.originalEvent.clientX, event.originalEvent.clientY);
+    }
+  };
+
+  viewer.addHandler("canvas-click", canvasClickHandler);
+
+  // Hide tooltip on drag/pan
+  viewer.addHandler("canvas-drag", hideMarkerTooltip);
+}
+
 export async function renderGenerationResult(viewer: OSDViewer, result: GenerationResult): Promise<void> {
   const generationId = ++currentGenerationId;
   clearDynamicOverlays(viewer);
 
-  // Pre-fetch wand sprites in parallel so they are ready by the time
-  // biome layers finish rendering.
-  const poisByPW = result.poisByPW;
-  const allPois = Object.values(poisByPW).flat();
-  const wandsOnly = allPois.filter((p) => p.type === "wand");
-
-  const uniqueSpriteNames = [...new Set(wandsOnly.map((p) => p.sprite))].filter(Boolean) as string[];
-  const spriteMap = new Map<string, { url: string; w: number; h: number }>();
-
-  const poiSpritePromise = Promise.all(
-    uniqueSpriteNames.map(async (name) => {
-      try {
-        const rotated = await getRotatedWandSprite(name);
-        if (rotated) spriteMap.set(name, rotated);
-      } catch (err) {
-        console.warn(`[OSD Bridge] Failed to load wand sprite: ${name}`, err);
-      }
-    }),
-  );
+  // Start building marker data in parallel with biome rendering
+  const markerPromise = buildMarkerData(result);
 
   // Adding biomes initializes the OSD viewport bounds.
-  // Overlays added before the viewport is established will break.
   await addBiomeLayersProgressively(viewer, result, generationId);
-
-  // Wait for sprites to finish fetching, then add the HTML overlays.
-  await poiSpritePromise;
 
   if (currentGenerationId !== generationId) return;
 
-  let addedCount = 0;
-  for (const poi of wandsOnly) {
-    if (currentGenerationId !== generationId) return;
+  // Add marker layer via MarkerTileSource
+  const data = await markerPromise;
+  activeMarkerData = data;
 
-    const rotated = spriteMap.get(poi.sprite!);
-    if (!rotated) continue;
-
-    const el = document.createElement("img");
-    el.src = rotated.url;
-    el.className = "dynamic-poi poi-wand";
-    el.style.cssText = `
-      image-rendering: pixelated;
-      width: 100%;
-      height: 100%;
-      cursor: pointer;
-    `;
-
-    const { x, y } = getCorrectedWorldPos(poi.x, poi.y, result.worldCenter);
-
-    const worldW = rotated.w;
-    const worldH = rotated.h;
-
-    viewer.addOverlay({
-      element: el,
-      location: new (OpenSeadragon as any).Rect(x - worldW / 2, y - worldH / 2, worldW, worldH),
-    });
-
-    dynamicOverlayElements.push(el);
-    addedCount++;
+  if (currentGenerationId !== generationId) return;
+  if (data.items.length === 0) {
+    console.log("[OSD Bridge] No POI markers to render");
+    window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 100 } }));
+    return;
   }
 
-  if (wandsOnly.length > 0) {
-    console.log(
-      `[OSD Bridge] Added ${addedCount}/${wandsOnly.length} wand overlays (${spriteMap.size} unique sprites loaded)`,
-    );
+  window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 30 } }));
+
+  // Get maxLevel from the first item that has it (usually the main map DZI)
+  let maxLevel = 12; // sensible default
+  for (let i = 0; i < viewer.world.getItemCount(); i++) {
+    const item = viewer.world.getItemAt(i);
+    const source = item.source;
+    if (source && source.maxLevel && source.maxLevel > 0) {
+      maxLevel = source.maxLevel;
+      break;
+    }
   }
+
+  // Use the bounding box computed by buildMarkerData for tile source dimensions.
+  // This ensures the tile source covers exactly the area where markers exist,
+  // and its internal coordinate space (0-based) matches the Flatbush index.
+  const markerTileSource = createMarkerTileSource(data, {
+    width: data.bboxWidth,
+    height: data.bboxHeight,
+    maxLevel,
+  });
+
+  window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 60 } }));
+
+  viewer.addTiledImage({
+    tileSource: markerTileSource,
+    x: data.originX,
+    y: data.originY,
+    width: data.bboxWidth,
+    success: (event: any) => {
+      if (currentGenerationId !== generationId) {
+        try { viewer.world.removeItem(event.item); } catch {}
+        return;
+      }
+      dynamicTiledImages.add(event.item);
+      console.log(`[OSD Bridge] MarkerTileSource added with ${data.items.length} markers`);
+      window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 100 } }));
+    },
+    error: (err: any) => {
+      console.warn("[OSD Bridge] Failed to add marker layer:", err);
+      window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 100 } }));
+    },
+  });
+
+  // Install click handler for tooltips
+  installClickHandler(viewer, data);
 }
 
 export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: number; worldX: number; worldY: number }> {
@@ -664,7 +834,114 @@ export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: numb
     const pw = parseInt(pwStr);
     for (const poi of pois) {
       flat.push({ ...poi, pw, worldX: poi.x, worldY: poi.y });
+      // Unwrap container items (shops, holy mountain shops, eye rooms)
+      if (
+        (poi.type === "holy_mountain_shop" || poi.type === "shop" || poi.type === "eye_room") &&
+        poi.items &&
+        Array.isArray(poi.items)
+      ) {
+        for (const inner of poi.items) {
+          if (inner.ignore) continue;
+          flat.push({ ...inner, pw, worldX: inner.x, worldY: inner.y });
+        }
+      }
     }
   }
   return flat;
 }
+
+// ─── getPOISpriteFirstFrame ─────────────────────────────────────────────────
+
+const spriteFirstFrameCache = new Map<string, string | null>();
+
+/**
+ * Get a blob URL for a POI's sprite (first frame for animated sprites).
+ * Uses the static spritesheet + atlas if available, falls back to data.zip.
+ */
+export async function getPOISpriteFirstFrame(poi: {
+  type: string;
+  item?: string;
+  sprite?: string;
+  material?: string;
+  enemy?: string;
+}): Promise<string | null> {
+  const key = getSpriteKey(poi as POI);
+  if (!key) return null;
+
+  if (spriteFirstFrameCache.has(key)) return spriteFirstFrameCache.get(key)!;
+
+  // Eagerly load atlas+spritesheet if not already cached
+  let atlas = getAtlas();
+  let spritesheet = getSpritesheet();
+  if (!atlas || !spritesheet) {
+    const loaded = await loadSpritesheetAndAtlas();
+    atlas = loaded.atlas;
+    spritesheet = loaded.spritesheet;
+  }
+
+  if (atlas && spritesheet && atlas[key]) {
+    const entry = atlas[key];
+    const canvas = document.createElement("canvas");
+    canvas.width = entry.w;
+    canvas.height = entry.h;
+    const ctx = canvas.getContext("2d")!;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(spritesheet, entry.x, entry.y, entry.w, entry.h, 0, 0, entry.w, entry.h);
+    const url = await new Promise<string>((resolve) => {
+      canvas.toBlob((blob) => {
+        resolve(blob ? URL.createObjectURL(blob) : "");
+      }, "image/png");
+    });
+    spriteFirstFrameCache.set(key, url || null);
+    return url || null;
+  }
+
+  // Fallback: decode from data.zip directly (for sprites not in atlas)
+  if (key.startsWith("wand:")) {
+    const name = key.slice(5);
+    // Return unrotated (horizontal) wand sprite for UI use (search results, etc.)
+    const url = await getWandSprite(name);
+    spriteFirstFrameCache.set(key, url);
+    return url;
+  }
+
+  if (key.startsWith("item:")) {
+    const name = key.slice(5);
+    const url = await getItemSpriteFromZip(name);
+    spriteFirstFrameCache.set(key, url);
+    return url;
+  }
+
+  spriteFirstFrameCache.set(key, null);
+  return null;
+}
+
+async function getItemSpriteFromZip(name: string): Promise<string | null> {
+  const zip = await getDataZip();
+  if (!zip) return null;
+  const file = zip.file(`data/items_gfx/${name}.png`);
+  if (!file) return null;
+  const blob = await file.async("blob");
+  return URL.createObjectURL(blob);
+}
+
+// ─── Spell image preloading ─────────────────────────────────────────────────
+
+let spellImagesPreloaded = false;
+
+/**
+ * Preload spell icons so tooltip spell images load instantly.
+ * Uses <link rel=prefetch> for background loading.
+ */
+export function preloadSpellImages(): void {
+  if (spellImagesPreloaded) return;
+  spellImagesPreloaded = true;
+
+  // The spell icons are already deployed as static assets at ./assets/icons/spells/*.png
+  // We can't enumerate them without a manifest, so instead we preload on first tooltip show.
+  // For now, preload nothing proactively — browser caching handles repeat loads.
+  // The atlas already contains spell sprites for search results.
+  // Tooltip spell icons use the per-file icons at ./assets/icons/spells/ which are
+  // loaded on demand with img tags — the browser cache will handle them after first load.
+}
+

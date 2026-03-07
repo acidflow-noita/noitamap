@@ -147,7 +147,8 @@ export async function initTelescope(): Promise<void> {
 
   // 4. Dynamically import telescope modules (must happen AFTER interceptors are installed,
   //    because image_processing.js has top-level await that loads PNGs via new Image())
-  const [
+  const telescope = await import("./telescope-exports");
+  const {
     biomeGenMod,
     tileGenMod,
     poiScannerMod,
@@ -159,19 +160,7 @@ export async function initTelescope(): Promise<void> {
     eyeMessagesMod,
     imageProcessingMod,
     staticSpawnsMod,
-  ] = await Promise.all([
-    import("noita-telescope/biome_generator.js"),
-    import("noita-telescope/tile_generator.js"),
-    import("noita-telescope/poi_scanner.js"),
-    import("noita-telescope/pixel_scene_generation.js"),
-    import("noita-telescope/generator_config.js"),
-    import("noita-telescope/unlocks.js"),
-    import("noita-telescope/utils.js"),
-    import("noita-telescope/translations.js"),
-    import("noita-telescope/eye_messages.js"),
-    import("noita-telescope/image_processing.js"),
-    import("noita-telescope/static_spawns.js"),
-  ]);
+  } = telescope;
 
   generateBiomeData = biomeGenMod.generateBiomeData;
   BIOME_CONFIG = biomeGenMod.BIOME_CONFIG;
@@ -190,8 +179,7 @@ export async function initTelescope(): Promise<void> {
   addStaticPixelScenes = staticSpawnsMod.addStaticPixelScenes;
 
   // Get the shimmed app object so we can populate properties the library reads
-  const appMod = await import("noita-telescope/app.js");
-  telescopeApp = appMod.app;
+  telescopeApp = telescope.appMod.app;
   BIOME_COLOR_LOOKUP = imageProcessingMod.BIOME_COLOR_LOOKUP;
 
   // Overwrite the imageProcessingMod lookups with pure-JS decoded ones
@@ -401,10 +389,8 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     }
     for (const poi of combinedPois) {
       if (poi.type === "wand" && (!poi.name || poi.name === "Taikasauva")) {
-        const [nollaPrngMod, wandConfigMod] = await Promise.all([
-          import("noita-telescope/nolla_prng.js"),
-          import("noita-telescope/wand_config.js"),
-        ]);
+        const telescope = await import("./telescope-exports");
+        const { nollaPrngMod, wandConfigMod } = telescope;
         const prng = new nollaPrngMod.NollaPrng(0);
         prng.SetRandomSeed(seed + ngPlus, poi.x, poi.y);
 
