@@ -52,7 +52,7 @@ export function createMarkerTileSource(
 
   // MUST return a string to avoid OSD crashes, but we intercept the download.
   source.getTileUrl = function () {
-    return "marker://tile";
+    return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
   };
 
   source.hasTransparency = function () {

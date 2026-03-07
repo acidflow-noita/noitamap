@@ -193,13 +193,13 @@ async function ensureTelescopeModules(): Promise<void> {
   installFetchInterceptor();
   installImageSrcInterceptor();
 
-  const [constantsMod, biomeMod, genMod, imageMod, utilsMod] = await Promise.all([
-    import("noita-telescope/constants.js"),
-    import("noita-telescope/biome_generator.js"),
-    import("noita-telescope/generator_config.js"),
-    import("noita-telescope/image_processing.js"),
-    import("noita-telescope/utils.js"),
-  ]);
+  const telescope = await import("./telescope-exports");
+  const constantsMod = telescope.constantsMod;
+  const biomeMod = telescope.biomeGenMod;
+  const genMod = telescope.genConfigMod;
+  const imageMod = telescope.imageProcessingMod;
+  const utilsMod = telescope.utilsMod;
+
   CHUNK_SIZE = constantsMod.CHUNK_SIZE;
   BIOME_CONFIG = biomeMod.BIOME_CONFIG;
   GENERATOR_CONFIG = genMod.GENERATOR_CONFIG;
