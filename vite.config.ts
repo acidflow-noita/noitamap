@@ -77,6 +77,11 @@ export default defineConfig({
     emptyOutDir: true, // Always start clean — no stale hashed files
     sourcemap: true,
     minify: "esbuild",
+    // IMPORTANT: Disable modulepreload injection. Vite injects <link rel="modulepreload">
+    // for dynamically-imported chunks, which causes the browser to eagerly evaluate them.
+    // The telescope-lib chunk has top-level await (image_processing.js) that MUST only run
+    // after interceptors are installed — eager evaluation crashes the app silently.
+    modulePreload: false,
 
     rollupOptions: {
       input: {
