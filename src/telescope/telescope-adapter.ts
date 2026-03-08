@@ -2,26 +2,17 @@
  * telescope-adapter.ts
  *
  * Main adapter that wraps telescope's generation pipeline into a clean
- * async API for noitamap.  Handles:
- *  - Installing DOM shim (fake checkboxes for telescope's getElementById calls)
- *  - Installing fetch interceptor (data.zip → telescope's ./data/ paths)
- *  - Loading biome maps, wang tiles, pixel scenes from data.zip
- *  - Running the full generation pipeline
- *  - Returning results as typed data for the OSD bridge
+ * async API for noitamap.
  */
 
 import { installTelescopeShim } from "./telescope-dom-shim";
 import {
   installFetchInterceptor,
   installImageSrcInterceptor,
-  loadBiomeMaps,
-  loadWangTileFromZip,
-  buildBiomeColorLookupsFromZip,
 } from "./telescope-data-bridge";
 import { getDataZip } from "../data-archive";
 
-// Telescope modules — loaded dynamically in initTelescope() to avoid top-level
-// await in image_processing.js from blocking the entire bundle on CF Pages.
+// Telescope modules
 let generateBiomeData: any;
 let BIOME_CONFIG: any;
 let generateBiomeTiles: any;
@@ -147,31 +138,20 @@ export async function initTelescope(): Promise<void> {
 
   // 4. Dynamically import telescope modules (must happen AFTER interceptors are installed,
   //    because image_processing.js has top-level await that loads PNGs via new Image())
-  const [
-    biomeGenMod,
-    tileGenMod,
-    poiScannerMod,
-    pixelSceneMod,
-    genConfigMod,
-    unlocksMod,
-    utilsMod,
-    translationsMod,
-    eyeMessagesMod,
-    imageProcessingMod,
-    staticSpawnsMod,
-  ] = await Promise.all([
-    import("noita-telescope/biome_generator.js"),
-    import("noita-telescope/tile_generator.js"),
-    import("noita-telescope/poi_scanner.js"),
-    import("noita-telescope/pixel_scene_generation.js"),
-    import("noita-telescope/generator_config.js"),
-    import("noita-telescope/unlocks.js"),
-    import("noita-telescope/utils.js"),
-    import("noita-telescope/translations.js"),
-    import("noita-telescope/eye_messages.js"),
-    import("noita-telescope/image_processing.js"),
-    import("noita-telescope/static_spawns.js"),
-  ]);
+  const telescope = await import("./telescope-exports");
+  const biomeGenMod = telescope.biomeGenMod;
+  const tileGenMod = telescope.tileGenMod;
+  const poiScannerMod = telescope.poiScannerMod;
+  const pixelSceneMod = telescope.pixelSceneMod;
+  const genConfigMod = telescope.genConfigMod;
+  const unlocksMod = telescope.unlocksMod;
+  const utilsMod = telescope.utilsMod;
+  const translationsMod = telescope.translationsMod;
+  const eyeMessagesMod = telescope.eyeMessagesMod;
+  const imageProcessingMod = telescope.imageProcessingMod;
+  const staticSpawnsMod = telescope.staticSpawnsMod;
+  const pngSanitizerMod = telescope.pngSanitizerMod;
+  const appMod = telescope.appMod;
 
   generateBiomeData = biomeGenMod.generateBiomeData;
   BIOME_CONFIG = biomeGenMod.BIOME_CONFIG;
@@ -187,46 +167,35 @@ export async function initTelescope(): Promise<void> {
   getWorldSize = utilsMod.getWorldSize;
   getWorldCenter = utilsMod.getWorldCenter;
   loadTranslations = translationsMod.loadTranslations;
+  findEyeMessages = eyeMessagesMod.findEyeMessages;
   addStaticPixelScenes = staticSpawnsMod.addStaticPixelScenes;
-
-  // Get the shimmed app object so we can populate properties the library reads
-  const appMod = await import("noita-telescope/app.js");
   telescopeApp = appMod.app;
   BIOME_COLOR_LOOKUP = imageProcessingMod.BIOME_COLOR_LOOKUP;
 
-  // Overwrite the imageProcessingMod lookups with pure-JS decoded ones
-  // to fix LibreWolf/Safari fingerprinting protection returning zeroed data
-  console.log("[Telescope] Rebuilding color lookups to bypass canvas fingerprinting...");
-  const correctLookups = await buildBiomeColorLookupsFromZip(genConfigMod.BIOME_COLOR_TO_NAME);
-  Object.assign(imageProcessingMod.BIOME_BACKGROUND_COLORS, correctLookups.nameLookupBackground);
-  Object.assign(imageProcessingMod.BIOME_COLOR_LOOKUP, correctLookups.backgroundColors);
-  Object.assign(imageProcessingMod.TILE_OVERLAY_COLORS, correctLookups.nameLookupForeground);
-  Object.assign(imageProcessingMod.TILE_FOREGROUND_COLORS, correctLookups.foregroundColors);
+  // 5. Load biome map base assets (telescope's preload step)
+  // Use library's loadPNG which handles sanitization
+  const [ng0Img, ngpImg] = await Promise.all([
+    pngSanitizerMod.loadPNG("./data/biome_maps/biome_map.png"),
+    pngSanitizerMod.loadPNG("./data/biome_maps/biome_map_newgame_plus.png"),
+  ]);
 
-  // Runtime patch for eye_messages.js crash (TypeError: positionsEast[i] is undefined)
-  // ES module exports are read-only, so we wrap it in our local variable instead.
-  const originalFindEyeMessages = eyeMessagesMod.findEyeMessages;
-  findEyeMessages = (biomeMap: any, seed: number, ngPlus: number) => {
-    try {
-      return originalFindEyeMessages(biomeMap, seed, ngPlus);
-    } catch (e) {
-      console.warn("[Telescope Hack] findEyeMessages crashed, returning empty arrays:", e);
-      return { east: [], west: [] };
+  // Apply gamma fix directly to the raw RGBA bytes.
+  // The dev mentioned #000042 becomes #000040. We ensure it's #000042.
+  const applyGammaFix = (img: any) => {
+    const data = img.data;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i] === 0 && data[i + 1] === 0 && data[i + 2] === 0x40) {
+        data[i + 2] = 0x42;
+      }
     }
+    return data;
   };
 
-  // 4b. Apply truthy color hack to fix library transparency bug
-  // The library uses `if (foregroundColor)` which fails for color 0 (black).
-  // We change 0 to 1 (near-black) to make it truthy without touching the library code.
-  const { TILE_FOREGROUND_COLORS } = imageProcessingMod;
-  if (TILE_FOREGROUND_COLORS) {
-    for (const [key, val] of Object.entries(TILE_FOREGROUND_COLORS)) {
-      if (val === 0) (TILE_FOREGROUND_COLORS as any)[key] = 1;
-    }
-  }
+  biomeAssets = {
+    ng0: applyGammaFix(ng0Img),
+    ngp: applyGammaFix(ngpImg),
+  };
 
-  // 5. Load biome map base assets (telescope's preload step)
-  biomeAssets = await loadBiomeMaps();
   if (!biomeAssets.ng0) throw new Error("[Telescope] Failed to load NG0 biome map");
 
   // 6. Load translations
@@ -242,8 +211,11 @@ export async function initTelescope(): Promise<void> {
   for (const key of Object.keys(GENERATOR_CONFIG)) {
     const cfg = GENERATOR_CONFIG[key];
     if (cfg.wangFile && !cfg.wangData) {
-      cfg.wangData = await loadWangTileFromZip(cfg.wangFile);
-      if (!cfg.wangData) {
+      // Use library's loadPNG for wang tiles too
+      try {
+        const img = await pngSanitizerMod.loadPNG(cfg.wangFile);
+        cfg.wangData = img;
+      } catch (e) {
         wangLoadResults.push(`FAIL: ${key} (${cfg.wangFile})`);
       }
     }
@@ -257,6 +229,15 @@ export async function initTelescope(): Promise<void> {
   // 9. Load pixel scene data (uses fetch interceptor internally).
   // The new telescope fully awaits image loading, so no polling needed.
   await loadPixelSceneData();
+
+  // 10. Cache bust check: If we just updated the library, clear the generation cache
+  // to ensure fixed logic actually runs instead of showing old empty results.
+  const LIB_VERSION = "2026-03-07-v1";
+  if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
+    console.log("[Telescope] Library version updated, clearing generation cache...");
+    import("./tile-cache").then(m => m.clearCache()).catch(() => {});
+    localStorage.setItem("noitamap-telescope-version", LIB_VERSION);
+  }
 
   initialized = true;
   console.log("[Telescope] Initialization complete");
@@ -306,9 +287,16 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   // Step 1: Generate biome data
   const biomeData = generateBiomeData(seed, ngPlus, base, w, h);
 
+  // Debug: Log all unique colors to see if they match constants
+  const uniqueColors = new Set(Array.from(biomeData.pixels));
+  console.log("[Telescope Debug] Unique colors in biomeData:", Array.from(uniqueColors).map((c: any) => "0x" + (c >>> 0).toString(16).padStart(8, '0')));
+
+  // Fix: Ensure alpha is set. The library might return signed or unsigned depending on bits.
+  for (let i = 0; i < biomeData.pixels.length; i++) {
+    biomeData.pixels[i] = (biomeData.pixels[i] | 0xFF000000) >>> 0;
+  }
+
   // Step 1b: Populate the shimmed app's recolorOffscreen canvas.
-  // The library's recolorPixelSceneForBiome() falls back to reading single pixels
-  // from app.recolorOffscreen when a biome's overlay color is missing (0xff00ff).
   // Each pixel at (chunkX, chunkY) holds the background color for that chunk.
   {
     const recolorCanvas = document.createElement("canvas");
@@ -316,6 +304,10 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     recolorCanvas.height = h;
     const ctx = recolorCanvas.getContext("2d")!;
     const id = ctx.createImageData(w, h);
+    
+    // The library's app.recolorOffscreenBuffer is RGB only (stride 3)
+    const outBuffer = new Uint8Array(w * h * 3);
+
     const surfaceBiomes = [0x1133f1, 0xf7cf8d, 0x36d517, 0xd6d8e3, 0xcc9944, 0x48e311];
     const surfaceLevel = 14;
     for (let i = 0; i < biomeData.pixels.length; i++) {
@@ -333,13 +325,23 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
           color = BIOME_COLOR_LOOKUP[color];
         }
       }
-      id.data[i * 4] = (color >> 16) & 0xff;
-      id.data[i * 4 + 1] = (color >> 8) & 0xff;
-      id.data[i * 4 + 2] = color & 0xff;
+      
+      const r = (color >> 16) & 0xff;
+      const g = (color >> 8) & 0xff;
+      const b = color & 0xff;
+
+      id.data[i * 4] = r;
+      id.data[i * 4 + 1] = g;
+      id.data[i * 4 + 2] = b;
       id.data[i * 4 + 3] = 255;
+
+      outBuffer[i * 3] = r;
+      outBuffer[i * 3 + 1] = g;
+      outBuffer[i * 3 + 2] = b;
     }
     ctx.putImageData(id, 0, 0);
     telescopeApp.recolorOffscreen = recolorCanvas;
+    telescopeApp.recolorOffscreenBuffer = outBuffer;
     telescopeApp.w = w;
     telescopeApp.h = h;
     telescopeApp.ngPlusCount = ngPlus;
@@ -401,21 +403,16 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     }
     for (const poi of combinedPois) {
       if (poi.type === "wand" && (!poi.name || poi.name === "Taikasauva")) {
-        const [nollaPrngMod, wandConfigMod] = await Promise.all([
-          import("noita-telescope/nolla_prng.js"),
-          import("noita-telescope/wand_config.js"),
-        ]);
-        const prng = new nollaPrngMod.NollaPrng(0);
+        const telescope = await import("./telescope-exports");
+        const prng = new telescope.nollaPrngMod.NollaPrng(0);
         prng.SetRandomSeed(seed + ngPlus, poi.x, poi.y);
 
         // Replicate library's random name generation logic
-        // (Library's Random(a, b) uses a + floor((b+1-a)*Next))
-        const { GUN_NAMES } = wandConfigMod;
+        const { GUN_NAMES } = telescope.wandConfigMod;
         const nameIdx = Math.floor(GUN_NAMES.length * prng.Next());
         poi.name = GUN_NAMES[nameIdx];
       }
     }
-
     poisByPW[pwKey] = combinedPois;
   }
 

@@ -5,29 +5,39 @@
  */
 import JSZip from "jszip";
 
-const DATA_ZIP_URL = "./data.zip";
+const ZIP_URLS: Record<string, string> = {
+  main: "./data.zip",
+  pixel_scenes: "./pixel_scenes.zip",
+  wang_tiles: "./wang_tiles.zip",
+};
 
-let zipPromise: Promise<JSZip | null> | null = null;
-let zip: JSZip | null = null;
+const zipPromises: Record<string, Promise<JSZip | null> | null> = {};
+const zips: Record<string, JSZip | null> = {};
 
 /**
- * Lazily fetch and cache data.zip. Subsequent calls return the same instance.
+ * Lazily fetch and cache a zip archive.
  */
-export async function getDataZip(): Promise<JSZip | null> {
-  if (zip) return zip;
-  if (zipPromise) return zipPromise;
+export async function getZip(key: string = "main"): Promise<JSZip | null> {
+  if (zips[key]) return zips[key];
+  if (zipPromises[key]) return zipPromises[key];
 
-  zipPromise = (async () => {
+  const url = ZIP_URLS[key];
+  if (!url) {
+    console.error(`[DataArchive] Unknown zip key: ${key}`);
+    return null;
+  }
+
+  zipPromises[key] = (async () => {
     try {
-      console.log("[DataArchive] Loading data.zip...");
+      console.log(`[DataArchive] Loading ${url}...`);
 
-      const cacheName = "noitamap-data-archive-v2";
+      const cacheName = `noitamap-archive-${key}-v2`;
       const cache = await caches.open(cacheName);
 
       // 1. Do a quick HEAD request to get the latest file metadata from the server
       let serverMeta = "";
       try {
-        const headResp = await fetch(DATA_ZIP_URL, { method: "HEAD", cache: "no-cache" });
+        const headResp = await fetch(url, { method: "HEAD", cache: "no-cache" });
         if (headResp.ok) {
           serverMeta =
             headResp.headers.get("ETag") ||
@@ -36,10 +46,10 @@ export async function getDataZip(): Promise<JSZip | null> {
             "";
         }
       } catch (e) {
-        console.warn("[DataArchive] HEAD request failed, falling back to cache if available", e);
+        console.warn(`[DataArchive] HEAD request failed for ${url}, falling back to cache if available`, e);
       }
 
-      let response = await cache.match(DATA_ZIP_URL);
+      let response = await cache.match(url);
       let buf: ArrayBuffer | null = null;
       let shouldUseCache = false;
 
@@ -48,34 +58,33 @@ export async function getDataZip(): Promise<JSZip | null> {
         if (serverMeta && cachedMeta === serverMeta) {
           shouldUseCache = true;
         } else if (!serverMeta) {
-          // Offline or HEAD failed, assume cache is valid
           shouldUseCache = true;
         } else {
-          console.log(`[DataArchive] Cache invalidated! Server: ${serverMeta}, Cached: ${cachedMeta}`);
+          console.log(`[DataArchive] Cache invalidated for ${url}! Server: ${serverMeta}, Cached: ${cachedMeta}`);
         }
       }
 
       if (shouldUseCache && response) {
-        console.log("[DataArchive] Loaded data.zip from Cache API");
+        console.log(`[DataArchive] Loaded ${url} from Cache API`);
         buf = await response.arrayBuffer();
 
-        // Dispatch instant completion event
-        window.dispatchEvent(
-          new CustomEvent("dataZipProgress", { detail: { loaded: 100, total: 100, percentage: 100 } }),
-        );
+        if (key === "main") {
+          window.dispatchEvent(
+            new CustomEvent("dataZipProgress", { detail: { loaded: 100, total: 100, percentage: 100 } }),
+          );
+        }
       } else {
-        console.log("[DataArchive] Fetching data.zip from network...");
-        const fetchResp = await fetch(DATA_ZIP_URL);
+        console.log(`[DataArchive] Fetching ${url} from network...`);
+        const fetchResp = await fetch(url);
 
         if (!fetchResp.ok) {
-          console.warn(`data.zip fetch failed (${fetchResp.status})`);
+          console.warn(`${url} fetch failed (${fetchResp.status})`);
           return null;
         }
 
         const contentLength = fetchResp.headers.get("content-length");
-        const totalBytes = contentLength ? parseInt(contentLength, 10) : 25000000; // fallback est ~25MB
+        const totalBytes = contentLength ? parseInt(contentLength, 10) : 25000000;
 
-        // Setup ReadableStream to track progress
         let loadedBytes = 0;
         const reader = fetchResp.body!.getReader();
         const chunks: Uint8Array[] = [];
@@ -88,16 +97,17 @@ export async function getDataZip(): Promise<JSZip | null> {
             chunks.push(value);
             loadedBytes += value.length;
 
-            const percentage = Math.min(100, Math.round((loadedBytes / totalBytes) * 100));
-            window.dispatchEvent(
-              new CustomEvent("dataZipProgress", {
-                detail: { loaded: loadedBytes, total: totalBytes, percentage },
-              }),
-            );
+            if (key === "main") {
+              const percentage = Math.min(100, Math.round((loadedBytes / totalBytes) * 100));
+              window.dispatchEvent(
+                new CustomEvent("dataZipProgress", {
+                  detail: { loaded: loadedBytes, total: totalBytes, percentage },
+                }),
+              );
+            }
           }
         }
 
-        // Combine chunks
         const combined = new Uint8Array(loadedBytes);
         let offset = 0;
         for (const chunk of chunks) {
@@ -106,7 +116,6 @@ export async function getDataZip(): Promise<JSZip | null> {
         }
         buf = combined.buffer;
 
-        // Save to cache for next time
         const headers = new Headers(fetchResp.headers);
         if (serverMeta) {
           headers.set("X-Archive-Meta", serverMeta);
@@ -116,46 +125,52 @@ export async function getDataZip(): Promise<JSZip | null> {
           statusText: fetchResp.statusText,
           headers: headers,
         });
-        await cache.put(DATA_ZIP_URL, cacheResponse);
+        await cache.put(url, cacheResponse);
       }
 
-      if (!buf) throw new Error("Failed to obtain array buffer for data.zip");
+      if (!buf) throw new Error(`Failed to obtain array buffer for ${url}`);
 
-      zip = await JSZip.loadAsync(buf);
-      console.log("[DataArchive] data.zip loaded and ready");
-      return zip;
+      const instance = await JSZip.loadAsync(buf);
+      zips[key] = instance;
+      console.log(`[DataArchive] ${url} loaded and ready`);
+      return instance;
     } catch (e) {
-      console.error("[DataArchive] Failed to load data.zip:", e);
+      console.error(`[DataArchive] Failed to load ${url}:`, e);
       return null;
     }
   })();
 
-  return zipPromise;
+  return zipPromises[key];
+}
+
+/** Legacy alias */
+export async function getDataZip(): Promise<JSZip | null> {
+  return getZip("main");
 }
 
 /**
- * Read a text file from data.zip.
+ * Read a text file from one of the zip archives.
  */
-export async function readText(path: string): Promise<string | null> {
-  const z = await getDataZip();
+export async function readText(path: string, zipKey: string = "main"): Promise<string | null> {
+  const z = await getZip(zipKey);
   if (!z) return null;
   const file = z.file(path);
   if (!file) {
-    console.warn(`[DataArchive] Missing: ${path}`);
+    console.warn(`[DataArchive] Missing: ${path} in ${zipKey}`);
     return null;
   }
   return file.async("string");
 }
 
 /**
- * Read a binary file from data.zip as a Blob.
+ * Read a binary file from one of the zip archives as a Blob.
  */
-export async function readBlob(path: string, mimeType?: string): Promise<Blob | null> {
-  const z = await getDataZip();
+export async function readBlob(path: string, mimeType?: string, zipKey: string = "main"): Promise<Blob | null> {
+  const z = await getZip(zipKey);
   if (!z) return null;
   const file = z.file(path);
   if (!file) {
-    console.warn(`[DataArchive] Missing: ${path}`);
+    // Silent fail for multi-zip searching
     return null;
   }
   const buf = await file.async("arraybuffer");
@@ -163,19 +178,19 @@ export async function readBlob(path: string, mimeType?: string): Promise<Blob | 
 }
 
 /**
- * Read an image from data.zip as an ImageBitmap.
+ * Read an image from one of the zip archives as an ImageBitmap.
  */
-export async function readImage(path: string): Promise<ImageBitmap | null> {
-  const blob = await readBlob(path, "image/png");
+export async function readImage(path: string, zipKey: string = "main"): Promise<ImageBitmap | null> {
+  const blob = await readBlob(path, "image/png", zipKey);
   if (!blob) return null;
   return createImageBitmap(blob);
 }
 
 /**
- * Read a PNG from data.zip and return it as ImageData.
+ * Read a PNG from one of the zip archives and return it as ImageData.
  */
-export async function readImageData(path: string): Promise<ImageData | null> {
-  const blob = await readBlob(path, "image/png");
+export async function readImageData(path: string, zipKey: string = "main"): Promise<ImageData | null> {
+  const blob = await readBlob(path, "image/png", zipKey);
   if (!blob) return null;
   const bitmap = await createImageBitmap(blob);
   const canvas = document.createElement("canvas");
@@ -188,10 +203,10 @@ export async function readImageData(path: string): Promise<ImageData | null> {
 }
 
 /**
- * Read a PNG from data.zip and return it as an HTMLCanvasElement.
+ * Read a PNG from one of the zip archives and return it as an HTMLCanvasElement.
  */
-export async function readCanvas(path: string): Promise<HTMLCanvasElement | null> {
-  const blob = await readBlob(path, "image/png");
+export async function readCanvas(path: string, zipKey: string = "main"): Promise<HTMLCanvasElement | null> {
+  const blob = await readBlob(path, "image/png", zipKey);
   if (!blob) return null;
   const bitmap = await createImageBitmap(blob);
   const canvas = document.createElement("canvas");
@@ -204,10 +219,10 @@ export async function readCanvas(path: string): Promise<HTMLCanvasElement | null
 }
 
 /**
- * List all entries in data.zip matching a prefix.
+ * List all entries in a zip archive matching a prefix.
  */
-export async function listEntries(prefix: string): Promise<string[]> {
-  const z = await getDataZip();
+export async function listEntries(prefix: string, zipKey: string = "main"): Promise<string[]> {
+  const z = await getZip(zipKey);
   if (!z) return [];
   const entries: string[] = [];
   z.forEach((relativePath) => {

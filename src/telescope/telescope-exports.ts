@@ -40,3 +40,5 @@ export * as wandConfigMod from "noita-telescope/wand_config.js";
 export * as constantsMod from "noita-telescope/constants.js";
 // @ts-ignore
 export * as tooltipGenMod from "noita-telescope/tooltip_generator.js";
+// @ts-ignore
+export * as pngSanitizerMod from "noita-telescope/png_sanitizer.js";

@@ -13,9 +13,11 @@ import tilesources from '../data/tilesources.json';
 import i18next from 'i18next';
 import hiddenMessages from '../data/hidden_messages.json';
 
+declare const OpenSeadragon: any;
+
 const { Rect, Point } = OpenSeadragon;
-type Rect = InstanceType<typeof Rect>;
-type Point = InstanceType<typeof Point>;
+type Rect = any;
+type Point = any;
 
 export type PathOfInterest = {
   overlayType: 'path';

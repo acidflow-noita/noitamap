@@ -3,7 +3,7 @@ import { Spell } from "../data_sources/overlays";
 import { EventEmitter2 } from "eventemitter2";
 import i18next from "../i18n";
 import { getSpellAvailability } from "../util";
-import { getWandSprite } from "../telescope/telescope-osd-bridge";
+import { getWandSprite, getPOISpriteFirstFrame } from "../telescope/telescope-osd-bridge";
 import spells from "../data/spells.json";
 import { gameTranslator } from "../game-translations/translator";
 
@@ -18,15 +18,65 @@ export interface UnifiedSearchResults {
 
 export class UnifiedSearchResults extends EventEmitter2 {
   private targetByElement = new WeakMap<Element, UnifiedSearchResult>();
+  private elementByTarget = new Map<UnifiedSearchResult, HTMLElement>();
   private currentElement: Element | null = null;
 
   private wrapper: HTMLUListElement;
+  private lastSortedOrder: string = "";
+  private lastSortX: number = 0;
+  private lastSortY: number = 0;
+
   constructor(wrapper: HTMLUListElement) {
     super();
 
     this.wrapper = wrapper;
     this.wrapper.innerHTML = "";
     this.bindEvents();
+  }
+
+  /** Efficiently re-sort existing result elements by proximity to (x, y) */
+  resortByProximity(playerX: number, playerY: number): void {
+    const CHUNK_SIZE = 512;
+    const items = Array.from(this.elementByTarget.entries());
+    if (items.length === 0) return;
+
+    // Only sort dynamic POIs that have x/y coordinates
+    const sortable = items.filter(([target]) => "x" in target && (target as any).isDynamic);
+    if (sortable.length === 0) return;
+
+    // Optimization: Skip if we haven't moved much
+    const distMoved = Math.hypot(playerX - this.lastSortX, playerY - this.lastSortY);
+    if (distMoved < 128 && this.lastSortedOrder !== "") return;
+
+    this.lastSortX = playerX;
+    this.lastSortY = playerY;
+
+    sortable.sort(([targetA], [targetB]) => {
+      const pA = targetA as any;
+      const pB = targetB as any;
+      const da = Math.hypot(pA.x - playerX, pA.y - playerY);
+      const db = Math.hypot(pB.x - playerX, pB.y - playerY);
+      return da - db;
+    });
+
+    // Check if the order has actually changed
+    const currentOrder = sortable.map(([target]) => (target as any).x + "," + (target as any).y).join("|");
+    if (currentOrder === this.lastSortedOrder) return;
+    this.lastSortedOrder = currentOrder;
+
+    // Use a fragment to avoid layout thrashing
+    const fragment = document.createDocumentFragment();
+    for (const [target, el] of sortable) {
+      fragment.appendChild(el);
+      // Update the "chunks away" text if it exists
+      const p = target as any;
+      const chunksAway = Math.round(Math.hypot(p.x - playerX, p.y - playerY) / CHUNK_SIZE);
+      const proximitySpan = el.querySelector(".proximity-hint");
+      if (proximitySpan) {
+        proximitySpan.textContent = `~${chunksAway} chunks away`;
+      }
+    }
+    this.wrapper.appendChild(fragment);
   }
 
   private bindEvents() {
@@ -108,6 +158,8 @@ export class UnifiedSearchResults extends EventEmitter2 {
 
   private clearResults(hide: boolean = true) {
     this.currentElement = null;
+    this.elementByTarget.clear();
+    this.lastSortedOrder = "";
     this.wrapper.innerHTML = "";
     // this.wrapper.style.display = hide ? 'none' : 'block';
   }
@@ -120,21 +172,30 @@ export class UnifiedSearchResults extends EventEmitter2 {
       listItem.classList.add("list-group-item", "search-result");
       listItem.tabIndex = idx;
       this.targetByElement.set(listItem, result);
+      this.elementByTarget.set(result, listItem);
 
       if ("type" in result && result.type === "spell") {
         // Handle spell results with image
         listItem.classList.add("d-flex", "align-items-center");
         const img = document.createElement("img");
-        img.src = `./assets/icons/spells/${result.spell.sprite}`;
         img.classList.add("pixelated-image", "me-2", "flex-shrink-0");
         img.alt = result.spell.name;
         img.style.width = "32px";
         img.style.height = "32px";
-        img.onerror = () => {
-          img.src = "./assets/icons/spells/missing.png";
-          img.alt = "Missing";
-        };
         listItem.appendChild(img);
+
+        // Try to use atlas for spell icon
+        getPOISpriteFirstFrame({ type: "spell", item: result.spell.id }).then((url) => {
+          if (url) {
+            img.src = url;
+          } else {
+            img.src = `./assets/icons/spells/${result.spell.sprite}`;
+            img.onerror = () => {
+              img.src = "./assets/icons/spells/missing.png";
+              img.alt = "Missing";
+            };
+          }
+        });
 
         // Create content container
         const contentDiv = document.createElement("div");
@@ -199,6 +260,18 @@ export class UnifiedSearchResults extends EventEmitter2 {
               img.style.height = "32px";
               img.style.objectFit = "contain";
               getWandSprite((result as any).sprite).then((url) => {
+                if (url) img.src = url;
+              });
+              listItem.appendChild(img);
+            } else if ((result as any).isDynamic && (result as any).type) {
+              // Non-wand POIs: use atlas for fast image loading
+              listItem.classList.add("d-flex", "align-items-center");
+              const img = document.createElement("img");
+              img.classList.add("pixelated-image", "me-2", "flex-shrink-0");
+              img.style.width = "32px";
+              img.style.height = "32px";
+              img.style.objectFit = "contain";
+              getPOISpriteFirstFrame(result as any).then((url) => {
                 if (url) img.src = url;
               });
               listItem.appendChild(img);

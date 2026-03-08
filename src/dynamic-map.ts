@@ -153,6 +153,7 @@ export async function runDynamicMap(
 
     // 5. Export flat POI list for search
     if (onPOIsReady) {
+      window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 60 } }));
       const flat = getAllPOIsFlat(result);
       const dynamicPOIs: DynamicPOI[] = flat.map((p, i) => ({
         ...p,
@@ -160,6 +161,7 @@ export async function runDynamicMap(
         name: buildPOIName(p),
       }));
       onPOIsReady(dynamicPOIs);
+      window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 100 } }));
     }
 
     return result;

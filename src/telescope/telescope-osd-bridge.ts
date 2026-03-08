@@ -11,9 +11,11 @@ import { installTelescopeShim } from "./telescope-dom-shim";
 import {
   installFetchInterceptor,
   installImageSrcInterceptor,
-  buildBiomeColorLookupsFromZip,
 } from "./telescope-data-bridge";
 import { rgbaToPngBlobUrl } from "./png-decode";
+import { buildMarkerData, getAtlas, getSpritesheet, getSpriteKey, loadSpritesheetAndAtlas, FIRST_FRAME_SIZE } from "./poi-spatial-index";
+import type { MarkerData, MarkerItem } from "./poi-spatial-index";
+import { createMarkerTileSource } from "./marker-tile-source";
 
 declare const OpenSeadragon: any;
 
@@ -190,13 +192,13 @@ async function ensureTelescopeModules(): Promise<void> {
   installFetchInterceptor();
   installImageSrcInterceptor();
 
-  const [constantsMod, biomeMod, genMod, imageMod, utilsMod] = await Promise.all([
-    import("noita-telescope/constants.js"),
-    import("noita-telescope/biome_generator.js"),
-    import("noita-telescope/generator_config.js"),
-    import("noita-telescope/image_processing.js"),
-    import("noita-telescope/utils.js"),
-  ]);
+  const telescope = await import("./telescope-exports");
+  const constantsMod = telescope.constantsMod;
+  const biomeMod = telescope.biomeGenMod;
+  const genMod = telescope.genConfigMod;
+  const imageMod = telescope.imageProcessingMod;
+  const utilsMod = telescope.utilsMod;
+
   CHUNK_SIZE = constantsMod.CHUNK_SIZE;
   BIOME_CONFIG = biomeMod.BIOME_CONFIG;
   GENERATOR_CONFIG = genMod.GENERATOR_CONFIG;
@@ -205,17 +207,8 @@ async function ensureTelescopeModules(): Promise<void> {
   createTileOverlaysCheap = imageMod.createTileOverlaysCheap;
   getWorldSize = utilsMod.getWorldSize;
 
-  // Overwrite the imageProcessingMod lookups with pure-JS decoded ones
-  // to fix LibreWolf/Safari fingerprinting protection returning zeroed data
-  const correctLookups = await buildBiomeColorLookupsFromZip(genMod.BIOME_COLOR_TO_NAME);
-  Object.assign(imageMod.BIOME_BACKGROUND_COLORS, correctLookups.nameLookupBackground);
-  Object.assign(imageMod.BIOME_COLOR_LOOKUP, correctLookups.backgroundColors);
-  Object.assign(imageMod.TILE_OVERLAY_COLORS, correctLookups.nameLookupForeground);
-  Object.assign(imageMod.TILE_FOREGROUND_COLORS, correctLookups.foregroundColors);
-
   // Apply truthy color hack: the library uses `if (foregroundColor)` which
   // fails for color 0 (black). Change 0→1 (near-black) to make it truthy.
-  // initTelescope() does this too, but on cache-hit paths it may not have run.
   if (TILE_FOREGROUND_COLORS) {
     for (const [key, val] of Object.entries(TILE_FOREGROUND_COLORS)) {
       if (val === 0) (TILE_FOREGROUND_COLORS as any)[key] = 1;
@@ -589,71 +582,39 @@ export async function renderGenerationResult(viewer: OSDViewer, result: Generati
   const generationId = ++currentGenerationId;
   clearDynamicOverlays(viewer);
 
-  // Pre-fetch wand sprites in parallel so they are ready by the time
-  // biome layers finish rendering.
-  const poisByPW = result.poisByPW;
-  const allPois = Object.values(poisByPW).flat();
-  const wandsOnly = allPois.filter((p) => p.type === "wand");
-
-  const uniqueSpriteNames = [...new Set(wandsOnly.map((p) => p.sprite))].filter(Boolean) as string[];
-  const spriteMap = new Map<string, { url: string; w: number; h: number }>();
-
-  const poiSpritePromise = Promise.all(
-    uniqueSpriteNames.map(async (name) => {
-      try {
-        const rotated = await getRotatedWandSprite(name);
-        if (rotated) spriteMap.set(name, rotated);
-      } catch (err) {
-        console.warn(`[OSD Bridge] Failed to load wand sprite: ${name}`, err);
-      }
-    }),
-  );
-
   // Adding biomes initializes the OSD viewport bounds.
   // Overlays added before the viewport is established will break.
   await addBiomeLayersProgressively(viewer, result, generationId);
-
-  // Wait for sprites to finish fetching, then add the HTML overlays.
-  await poiSpritePromise;
-
   if (currentGenerationId !== generationId) return;
 
-  let addedCount = 0;
-  for (const poi of wandsOnly) {
-    if (currentGenerationId !== generationId) return;
+  // 1. Build spatial index for POIs (markers)
+  window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 0 } }));
+  const markerData = await buildMarkerData(result);
+  window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 30 } }));
+  if (currentGenerationId !== generationId) return;
 
-    const rotated = spriteMap.get(poi.sprite!);
-    if (!rotated) continue;
-
-    const el = document.createElement("img");
-    el.src = rotated.url;
-    el.className = "dynamic-poi poi-wand";
-    el.style.cssText = `
-      image-rendering: pixelated;
-      width: 100%;
-      height: 100%;
-      cursor: pointer;
-    `;
-
-    const { x, y } = getCorrectedWorldPos(poi.x, poi.y, result.worldCenter);
-
-    const worldW = rotated.w;
-    const worldH = rotated.h;
-
-    viewer.addOverlay({
-      element: el,
-      location: new (OpenSeadragon as any).Rect(x - worldW / 2, y - worldH / 2, worldW, worldH),
-    });
-
-    dynamicOverlayElements.push(el);
-    addedCount++;
-  }
-
-  if (wandsOnly.length > 0) {
-    console.log(
-      `[OSD Bridge] Added ${addedCount}/${wandsOnly.length} wand overlays (${spriteMap.size} unique sprites loaded)`,
-    );
-  }
+  // 2. Add as a custom OSD tiled layer for efficiency
+  const markerTileSource = createMarkerTileSource(markerData);
+  viewer.addTiledImage({
+    tileSource: markerTileSource,
+    x: markerData.originX,
+    y: markerData.originY,
+    width: markerData.bboxWidth,
+    success: (event: any) => {
+      if (currentGenerationId !== generationId) {
+        try {
+          viewer.world.removeItem(event.item);
+        } catch {}
+        return;
+      }
+      dynamicTiledImages.add(event.item);
+      window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 100 } }));
+    },
+    error: (err: any) => {
+      console.warn("[OSD Bridge] Failed to add marker tiled image:", err);
+      window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 100 } }));
+    },
+  });
 }
 
 export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: number; worldX: number; worldY: number }> {
@@ -667,4 +628,64 @@ export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: numb
     }
   }
   return flat;
+}
+
+// ─── getPOISpriteFirstFrame ─────────────────────────────────────────────────
+
+const spriteFirstFrameCache = new Map<string, string | null>();
+
+/**
+ * Get a blob URL for a POI's sprite (first frame for animated sprites).
+ * Uses the static spritesheet + atlas if available, falls back to data.zip.
+ */
+export async function getPOISpriteFirstFrame(poi: {
+  type: string;
+  item?: string;
+  sprite?: string;
+  material?: string;
+  enemy?: string;
+}): Promise<string | null> {
+  const key = getSpriteKey(poi as POI);
+  if (!key) return null;
+
+  if (spriteFirstFrameCache.has(key)) return spriteFirstFrameCache.get(key)!;
+
+  // Eagerly load atlas+spritesheet if not already cached
+  let atlas = getAtlas();
+  let spritesheet = getSpritesheet();
+  if (!atlas || !spritesheet) {
+    const loaded = await loadSpritesheetAndAtlas();
+    atlas = loaded.atlas;
+    spritesheet = loaded.spritesheet;
+  }
+
+  if (atlas && spritesheet && atlas[key]) {
+    const entry = atlas[key];
+    // Use first-frame dimensions for animated sprites
+    const frame = FIRST_FRAME_SIZE[key];
+    const srcW = frame ? frame.w : entry.w;
+    const srcH = frame ? frame.h : entry.h;
+    const canvas = document.createElement("canvas");
+    canvas.width = srcW;
+    canvas.height = srcH;
+    const ctx = canvas.getContext("2d")!;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(spritesheet, entry.x, entry.y, srcW, srcH, 0, 0, srcW, srcH);
+    const url = await new Promise<string>((resolve) => {
+      canvas.toBlob((blob) => {
+        resolve(blob ? URL.createObjectURL(blob) : "");
+      }, "image/png");
+    });
+    spriteFirstFrameCache.set(key, url || null);
+    return url || null;
+  }
+
+  // Fallback: decode from data.zip directly (for sprites not in atlas)
+  if (key.startsWith("wand:")) {
+    const spriteName = key.replace("wand:", "");
+    const rotated = await getRotatedWandSprite(spriteName);
+    return rotated ? rotated.url : null;
+  }
+
+  return null;
 }

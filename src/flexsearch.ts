@@ -3,7 +3,7 @@ import { type MapName } from './data_sources/tile_data';
 import { gameTranslator } from './game-translations/translator';
 
 import type FFlexSearch from 'flexsearch';
-import type { Id as FlexSearchId, IndexOptionsForDocumentSearch, StoreOption } from 'flexsearch';
+import type { Id as FlexSearchId } from 'flexsearch';
 
 // on load, we'll instantiate flexsearch just once, but we'll tell it
 // about the different maps and require that when a user queries the
@@ -12,11 +12,11 @@ import type { Id as FlexSearchId, IndexOptionsForDocumentSearch, StoreOption } f
 
 // FlexSearch's types are _fucked_, so we have to do a bunch of hacky nonsense
 // to get types that agree with the actual interfaces present in the window
-type DocumentFactory<T, Store extends StoreOption = false> = (
-  options: IndexOptionsForDocumentSearch<T, Store>
-) => FFlexSearch.Document<unknown, false>;
+type DocumentFactory = (
+  options: any
+) => any;
 
-const index = (FlexSearch.Document as DocumentFactory<unknown, false>)({
+const index = (FlexSearch.Document as DocumentFactory)({
   document: {
     id: 'id',
     index: ['text', 'name', 'aliases'],
@@ -50,7 +50,7 @@ for (const [type, overlayDatas] of getAllOverlays()) {
 
 export const searchOverlays = (mapName: MapName, query: string, filters: Set<string>): TargetOfInterest[] => {
   // do the search
-  const found = index.search(query, { tag: { maps: mapName } }).flatMap(v => v.result);
+  const found = index.search(query, { tag: { maps: mapName } }).flatMap((v: any) => v.result);
   // deduplicate the ids we get back
   const ids = new Set<FlexSearchId>(found);
   // turn the ids back into TargetOfInterest objects, but with translated display names
@@ -58,29 +58,29 @@ export const searchOverlays = (mapName: MapName, query: string, filters: Set<str
     if (!overlays.has(key)) return [];
 
     // Determine overlay type from the key (format: "type:index")
-    const overlayType = key.split(':')[0] as 'bosses' | 'items' | 'structures' | 'orbs';
+    const overlayType = (key as any).split(':')[0] as 'bosses' | 'items' | 'structures' | 'orbs';
     if (filters.size > 0 && !filters.has(overlayType)) return [];
 
     const originalData = overlays.get(key)!;
 
     // Apply translations at search time using the processed translation files
-    let displayName = originalData.name;
+    let displayName = (originalData as any).name;
 
     switch (overlayType) {
       case 'bosses':
-        displayName = gameTranslator.translateBoss(originalData.name);
+        displayName = gameTranslator.translateBoss((originalData as any).name);
         break;
       case 'items':
-        displayName = gameTranslator.translateItem(originalData.name);
+        displayName = gameTranslator.translateItem((originalData as any).name);
         break;
       case 'structures':
-        displayName = gameTranslator.translateStructure(originalData.name);
+        displayName = gameTranslator.translateStructure((originalData as any).name);
         break;
       case 'orbs':
-        displayName = gameTranslator.translateContent('orbs', originalData.name);
+        displayName = gameTranslator.translateContent('orbs', (originalData as any).name);
         break;
       default:
-        displayName = gameTranslator.translateGameContent(originalData.name);
+        displayName = gameTranslator.translateGameContent((originalData as any).name);
         break;
     }
 
@@ -89,7 +89,7 @@ export const searchOverlays = (mapName: MapName, query: string, filters: Set<str
       {
         ...originalData,
         displayName,
-        displayText: originalData.text ? gameTranslator.translateGameContent(originalData.text) : originalData.text,
+        displayText: (originalData as any).text ? gameTranslator.translateGameContent((originalData as any).text as any) : (originalData as any).text,
       },
     ];
   });

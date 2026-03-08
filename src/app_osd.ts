@@ -1,10 +1,9 @@
 import { fetchMapVersions, getTileData, MapName } from "./data_sources/tile_data";
 import { createOverlays } from "./data_sources/overlays";
 
-import type { TileSourceOptions } from "openseadragon";
 import { CHUNK_SIZE } from "./constants";
 
-const { Point, TileSource, Viewer } = OpenSeadragon;
+declare const OpenSeadragon: any;
 
 export type ZoomPos = {
   x: number;
@@ -12,38 +11,25 @@ export type ZoomPos = {
   zoom: number;
 };
 
-type DziTileSource = OpenSeadragon.DziTileSource & { Image: DziImage };
-type DziImage = {
-  Format: string;
-  Overlap: string;
-  Size: { Width: string; Height: string };
-  TileSize: string;
-  TopLeft: { X: string; Y: string };
-};
+type DziTileSource = any;
 
-export class AppOSD extends Viewer {
+export class AppOSD {
+  private viewer: any; // OpenSeadragon.Viewer
   private mapName: MapName | null = null;
   private listeners: ((isLoading: boolean) => void)[] = [];
 
-  private failedItems: Set<OpenSeadragon.TiledImage> = new Set();
+  private failedItems: Set<any> = new Set();
 
   constructor(mountTo: HTMLElement, useWebGL: boolean) {
-    super({
+    this.viewer = new OpenSeadragon.Viewer({
       element: mountTo,
       maxZoomPixelRatio: 70,
-      // animationTime: 1.2, // Uncomment if needed
       showNavigator: false,
       showNavigationControl: false,
-      // drawer: 'webgl', // We dont enable webgl by default
-      crossOriginPolicy: "Anonymous", // Required for webgl drawer
-      // Check for WebGL support if requested
-      // The user wants webgl, but we need to ensure their browser supports it.
+      crossOriginPolicy: "Anonymous",
       drawer: (() => {
         if (!useWebGL) return "canvas";
-
         try {
-          // Use OSD's rigorous functional test rather than a basic context check.
-          // This catches the exact Firefox readPixels failure before OSD initializes.
           if (
             OpenSeadragon.WebGLDrawer &&
             typeof OpenSeadragon.WebGLDrawer.isSupported === "function" &&
@@ -54,14 +40,10 @@ export class AppOSD extends Viewer {
         } catch (e) {
           console.warn("WebGL check failed", e);
         }
-
-        // Silently fall back to Canvas — no toast for normal WebGL→Canvas downgrade
-        console.warn("WebGL not supported or functional test failed, falling back to Canvas renderer.");
         return "canvas";
       })(),
       imageSmoothingEnabled: false,
-      debugMode: false, // Optional debugging grid
-      // Provide OSD with initial set of tiles
+      debugMode: false,
       subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS,
       smoothTileEdgesMinZoom: 1,
       minScrollDeltaTime: 10,
@@ -73,23 +55,20 @@ export class AppOSD extends Viewer {
       opacity: 1,
     });
 
-    this.addHandler("canvas-key", (event) => {
+    this.addHandler("canvas-key", (event: any) => {
       if (["q", "w", "e", "r", "a", "s", "d", "f"].includes(event.originalEvent.key)) {
         event.preventDefaultAction = true;
       }
     });
 
-    this.world.addHandler("remove-item", (event) => {
+    this.world.addHandler("remove-item", (event: any) => {
       const item = event.item;
-
       item.removeAllHandlers("fully-loaded-change");
       this.failedItems.delete(item);
-
-      // recalculate loading when the list of items we're tracking
       this.notifyLoadingStatus();
     });
 
-    this.addHandler("tile-load-failed", (event) => {
+    this.addHandler("tile-load-failed", (event: any) => {
       const item = event.tiledImage;
       if (item) {
         this.failedItems.add(item);
@@ -97,13 +76,9 @@ export class AppOSD extends Viewer {
       }
     });
 
-    // Align OSD coordinate system with the Noita world coordinate system
-    this.world.addHandler("add-item", (event) => {
+    this.world.addHandler("add-item", (event: any) => {
       const item = event.item;
-
       item.addHandler("fully-loaded-change", () => this.notifyLoadingStatus());
-
-      // Check if this source is our main map DziTileSource
       if ("Image" in item.source) {
         const image = (item.source as DziTileSource).Image;
         if (image && image.TopLeft) {
@@ -111,47 +86,50 @@ export class AppOSD extends Viewer {
           item.setWidth(Number(image.Size.Width), true);
         }
       }
-
-      // recalculate loading when the list of items we're tracking
       this.notifyLoadingStatus();
     });
   }
+
+  // Proxy common OSD properties and methods
+  get viewport() { return this.viewer.viewport; }
+  get world() { return this.viewer.world; }
+  get element() { return this.viewer.element; }
+
+  addHandler(name: string, handler: (event: any) => void) { this.viewer.addHandler(name, handler); }
+  removeHandler(name: string, handler: (event: any) => void) { this.viewer.removeHandler(name, handler); }
+  addOnceHandler(name: string, handler: (event: any) => void) { this.viewer.addOnceHandler(name, handler); }
+  
+  addTiledImage(options: any) { this.viewer.addTiledImage(options); }
+  addOverlay(options: any) { this.viewer.addOverlay(options); }
+  clearOverlays() { this.viewer.clearOverlays(); }
+  removeOverlay(el: HTMLElement) { this.viewer.removeOverlay(el); }
+  
+  open(sources: any) { this.viewer.open(sources); }
+  isOpen() { return this.viewer.isOpen(); }
 
   private static getTileSources(mapName: MapName): string[] {
     return getTileData(mapName).map((tileData) => tileData.url);
   }
 
-  // return a list of TiledImages currently present in the world
-  private getAllItems(): OpenSeadragon.TiledImage[] {
+  private getAllItems(): any[] {
     const items = [];
-
     for (let i = 0; i < this.world.getItemCount(); i++) {
       items.push(this.world.getItemAt(i));
     }
-
     return items;
   }
 
-  // notify listeners: all listeners are called with `true` if one or more items
-  // in the world is currently waiting for data to be loaded. ()
   private notifyLoadingStatus() {
     const isFullyLoaded = this.getAllItems().reduce(
-      // prettier-ignore
       (isReady, item) => {
-        if (this.failedItems.has(item)) {
-          // If the item failed to load, consider it 'ready' so it doesn't block UI
-          return isReady;
-        }
-        return (item as any).getDrawArea() !== null // if the item has a draw area, it is expected to load...
-          ? (isReady && item.getFullyLoaded()) // so check if it is loaded yet
-          : isReady // otherwise skip this item
+        if (this.failedItems.has(item)) return isReady;
+        return (item as any).getDrawArea() !== null
+          ? (isReady && item.getFullyLoaded())
+          : isReady;
       },
-      // we're ready by default, unless one or more items
-      // say they are both visible and not ready
       true,
     );
     const isLoading = !isFullyLoaded;
-
     this.listeners.forEach((fn) => fn(isLoading));
   }
 
@@ -162,37 +140,28 @@ export class AppOSD extends Viewer {
   private onOpen(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       if (this.isOpen()) return resolve();
-
       this.addHandler("open-failed", reject);
-
-      this.addOnceHandler("open", (event) => {
+      this.addOnceHandler("open", (_event) => {
         this.removeHandler("open-failed", reject);
         resolve();
       });
     });
   }
 
-  getCombinedItemsRect(): OpenSeadragon.Rect {
+  getCombinedItemsRect(): any {
     if (this.world.getItemCount() === 0) return this.world.getHomeBounds();
-
     const dims = { x: Infinity, y: Infinity, width: 0, height: 0 };
     let found = false;
     for (let i = 0; i < this.world.getItemCount(); i++) {
       const tiledImage = this.world.getItemAt(i);
-      // Skip dynamic overlay images (non-DZI) so they don't inflate the home bounds
       if (!("Image" in tiledImage.source)) continue;
       const item = tiledImage.getBoundsNoRotate();
-
-      // we're laying multiple tilesources out left-to-right, though I'm not
-      // clear on what decides this! we want the minimum x,y and the maximum
-      // height, but the _combined_ width
       dims.x = Math.min(dims.x, item.x);
       dims.y = Math.min(dims.y, item.y);
       dims.width += item.width;
       dims.height = Math.max(dims.height, item.height);
       found = true;
     }
-
     if (!found) return this.world.getHomeBounds();
     return new OpenSeadragon.Rect(dims.x, dims.y, dims.width, dims.height);
   }
@@ -201,155 +170,88 @@ export class AppOSD extends Viewer {
     const viewport = this.viewport;
     const viewportCenter = viewport.getCenter();
     const viewportZoom = viewport.getZoom();
-
-    return {
-      x: viewportCenter.x,
-      y: viewportCenter.y,
-      zoom: viewportZoom,
-    };
+    return { x: viewportCenter.x, y: viewportCenter.y, zoom: viewportZoom };
   }
 
   setZoomPos(pos: ZoomPos): void {
-    const viewport = this.viewport;
-
     const { x, y, zoom } = pos;
-
-    viewport.panTo(new Point(x, y), true);
-    viewport.zoomTo(zoom, undefined, true);
+    this.viewport.panTo(new OpenSeadragon.Point(x, y), true);
+    this.viewport.zoomTo(zoom, undefined, true);
   }
 
-  private cacheBustHandler?: OpenSeadragon.EventHandler<OpenSeadragon.AddItemWorldEvent>;
+  private cacheBustHandler?: any;
   private async bindCacheBustHandler(): Promise<void> {
     if (this.mapName === null) throw new Error("this.mapName should not be null");
-
-    // if we have a previous cache bust handler, it's tied to the old map name -- remove it
     if (this.cacheBustHandler) this.world.removeHandler("add-item", this.cacheBustHandler);
-
     const versions = await fetchMapVersions(this.mapName);
-
-    this.cacheBustHandler = (event) => {
-      const source = event.item.source as any as { queryParams: string; tilesUrl: string };
-      // Only cache bust DZI/Tile sources that actually have a tilesUrl
+    this.cacheBustHandler = (event: any) => {
+      const source = event.item.source as any;
       if (typeof source.tilesUrl === "string") {
         try {
           const version = versions[new URL(source.tilesUrl).origin];
-          // we're mutating the input, which may break in the future -- but it works for now
-          // a better answer is to subclass TileSource and override getTileUrl (or supply a
-          // custom getTileUrl function), but in version 5.0.0 that doesn't work as expected
           source.queryParams = `?v=${version}`;
-        } catch (e) {
-          // ignore invalid URLs
-        }
+        } catch (e) {}
       }
     };
     this.world.addHandler("add-item", this.cacheBustHandler!);
   }
 
-  /**
-   * In-place update of the currently-displayed map. Retains pan and zoom location
-   */
   async setMap(mapName: MapName, pos?: ZoomPos): Promise<void> {
     if (mapName === this.mapName) return;
-
     this.mapName = mapName;
-
-    await this.bindCacheBustHandler(); // must call _after_ we update this.mapName
-
+    await this.bindCacheBustHandler();
     const tileSources = AppOSD.getTileSources(mapName);
-
-    // Clear the map...
     this.world.removeAll();
-
-    // ... add the new tiles ...
     this.open(tileSources);
-
-    // remove all overlays from the viewer
     this.clearOverlays();
-
-    // add overlays for the new map
     const overlays = createOverlays(mapName);
     for (const overlay of overlays) {
       this.addOverlay(overlay);
     }
-
-    // wait for "open" event
     await this.onOpen();
-
     const fullSize = this.getCombinedItemsRect();
-    const viewerSize = this.viewport.getBounds();
-
-    // we have three cases when loading a new map:
-    // 1) we've gone from a big map to a smaller map, and there is empty space
-    //    around it. in this case, OSD automatically auto-fits the contents in
-    //    the viewport in such a way it takes as much space as possible
-    // 2) we explicitly have a position and zoom specified. in this case, we pan
-    //    and zoom to the specified position
-    // 3) (probably doesn't happen, but could)
-    //    we don't have an explicit position yet, and the new map is _bigger_ than
-    //    the viewport. in this case, zoom back out
-
     this.viewport.fitBounds(fullSize, true);
     const autoPos = this.getZoomPos();
     if (pos && pos.zoom > autoPos.zoom) {
-      // if we already have a zoom, and we are "more zoomed in",
-      // use the position we have; otherwise, keep the auto-zoom
       this.setZoomPos(pos);
     }
   }
 
   panToTarget(x: number, y: number) {
     const viewport = this.viewport;
-
-    const here = this.viewport.getCenter();
+    const here = viewport.getCenter();
     const there = new OpenSeadragon.Point(x, y);
     const boundingRect = new OpenSeadragon.Rect(
       Math.min(here.x, there.x),
       Math.min(here.y, there.y),
-      Math.min(CHUNK_SIZE, Math.abs(here.x - there.x)),
-      Math.min(CHUNK_SIZE, Math.abs(here.y - there.y)),
+      Math.max(CHUNK_SIZE, Math.abs(here.x - there.x)),
+      Math.max(CHUNK_SIZE, Math.abs(here.y - there.y)),
     );
-
     const destRect = new OpenSeadragon.Rect(x - CHUNK_SIZE / 2, y - CHUNK_SIZE / 2, CHUNK_SIZE, CHUNK_SIZE);
-
-    // Math.pow(2, 1000 / -100)
-    // 0.0009765625
     if (viewport.getZoom() < 0.0009765625) {
-      // we're already zoomed out enough, just go straight to the destination
       this.withSlowAnimation(() => viewport.fitBounds(destRect));
       return;
     }
-
-    // we're zoomed in to some extent, zoom out first
     this.withSlowAnimation(() => viewport.fitBounds(boundingRect));
-
-    // problem: if the destination is already on screen, we rubber band out and in again
     clearTimeout(this.panTimer);
     this.panTimer = setTimeout(() => {
       this.panTimer = undefined;
       this.withSlowAnimation(() => viewport.fitBounds(destRect));
     }, 1000);
   }
-  private panTimer: NodeJS.Timeout | undefined = undefined;
+  private panTimer: any = undefined;
 
   private withSlowAnimation(cb: Function) {
-    const viewport = this.viewport as OpenSeadragon.Viewport & {
-      centerSpringX: any;
-      centerSpringY: any;
-      zoomSpring: any;
-    };
-
+    const viewport = this.viewport;
     const oldValues = {
       centerSpringXAnimationTime: viewport.centerSpringX.animationTime,
       centerSpringYAnimationTime: viewport.centerSpringY.animationTime,
       zoomSpringAnimationTime: viewport.zoomSpring.animationTime,
     };
-
     viewport.centerSpringX.animationTime = 10;
     viewport.centerSpringY.animationTime = 10;
     viewport.zoomSpring.animationTime = 20;
-
     cb();
-
     viewport.centerSpringX.animationTime = oldValues.centerSpringXAnimationTime;
     viewport.centerSpringY.animationTime = oldValues.centerSpringYAnimationTime;
     viewport.zoomSpring.animationTime = oldValues.zoomSpringAnimationTime;

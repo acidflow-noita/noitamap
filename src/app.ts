@@ -165,7 +165,7 @@ export class App extends EventEmitter2 {
     });
   }
 
-  public goto(toi: TargetOfInterest) {
+  public goto(toi: any) {
     let x = toi.x;
     let y = toi.y;
 

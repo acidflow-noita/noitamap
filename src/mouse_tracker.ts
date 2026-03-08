@@ -1,14 +1,15 @@
 import { CHUNK_SIZE } from './constants';
 
+declare const OpenSeadragon: any;
+
 export type MouseTrackerOptions = {
-  osd: OpenSeadragon.Viewer;
+  osd: any; // OpenSeadragon.Viewer
   tooltipElement: HTMLElement;
   osdElement: HTMLElement;
 };
 
 // Function to parse coordinates
 function parseCoordinates(text: string) {
-  // Updated regex to match the first pair of coordinates
   const match = text.match(/^\((-?\d+),\s*(-?\d+)\)/);
   if (match) {
     const x = parseInt(match[1], 10);
@@ -19,10 +20,8 @@ function parseCoordinates(text: string) {
 }
 
 export const initMouseTracker = ({ osd, tooltipElement, osdElement }: MouseTrackerOptions) => {
-  // Mouse tracker for displaying coordinates
   new OpenSeadragon.MouseTracker({
     element: osdElement,
-    // @types/openseadragon does not appear to define the events
     moveHandler: (event: any) => {
       if (event.pointerType != 'mouse') return;
 
@@ -47,13 +46,10 @@ export const initMouseTracker = ({ osd, tooltipElement, osdElement }: MouseTrack
   }).setTracking(true);
 
   const copyCoordinates = async (event: KeyboardEvent) => {
-    // dev only copy option which can be enabled in the browser console
-    // if (!localStorage.enableCopyCoordinates) return;
     if (event.target instanceof HTMLInputElement) return;
     if (tooltipElement.style.visibility === 'hidden') return;
     if (event.code !== 'KeyC' || (!event.ctrlKey && !event.metaKey)) return;
 
-    // Read the latest coordinates text from tooltipElement
     const coordinatesText = tooltipElement.innerText;
     const parsedCoordinates = parseCoordinates(coordinatesText);
     if (!parsedCoordinates) {

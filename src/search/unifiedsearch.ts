@@ -29,6 +29,8 @@ export interface UnifiedSearch {
 export class UnifiedSearch extends EventEmitter2 {
   private lastSearchText: string = "";
   private lastSearchFilters: Set<string> = new Set();
+  private lastViewportKey: string = "";
+  private isInteracting: boolean = false;
 
   private form: HTMLFormElement;
   private searchInput: HTMLInputElement;
@@ -47,6 +49,30 @@ export class UnifiedSearch extends EventEmitter2 {
     this.searchResults = searchResults;
 
     this.bindEvents();
+  }
+
+  /** Set interaction state (pause sorting during map move) */
+  setInteracting(interacting: boolean): void {
+    this.isInteracting = interacting;
+    // When interaction ends, do one final sort
+    if (!interacting) {
+      this.notifyViewportChanged();
+    }
+  }
+
+  /** Notify the search that the map viewport has moved. Re-sorts results by proximity. */
+  notifyViewportChanged(): void {
+    if (this.currentMap !== "dynamic-main-branch") return;
+    if (this.searchInput.value.trim() === "") return;
+    if (this.isInteracting) return; // Skip sorting while user is actively moving the map
+
+    // Read current viewport position from URL (always integers in url.ts)
+    const urlParams = new URLSearchParams(window.location.search);
+    const x = parseInt(urlParams.get("x") ?? "", 10);
+    const y = parseInt(urlParams.get("y") ?? "", 10);
+    if (!isNaN(x) && !isNaN(y)) {
+      this.searchResults.resortByProximity(x, y);
+    }
   }
 
   private bindEvents() {

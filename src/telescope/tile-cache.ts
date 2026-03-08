@@ -245,3 +245,23 @@ async function pruneOldEntries(): Promise<void> {
     console.warn("[TileCache] Failed to prune:", e);
   }
 }
+
+/**
+ * Completely clear the telescope generation cache.
+ */
+export async function clearCache(): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    store.clear();
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+    console.log("[TileCache] Cache cleared");
+  } catch (e) {
+    console.warn("[TileCache] Failed to clear cache:", e);
+  }
+}
