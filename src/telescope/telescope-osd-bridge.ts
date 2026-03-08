@@ -12,7 +12,7 @@ import {
   installFetchInterceptor,
   installImageSrcInterceptor,
 } from "./telescope-data-bridge";
-import { rgbaToPngBlobUrl } from "./png-decode";
+import { decodePngToRgba, rgbaToPngBlobUrl } from "./png-decode";
 import { buildMarkerData, getAtlas, getSpritesheet, getSpriteKey, loadSpritesheetAndAtlas, FIRST_FRAME_SIZE } from "./poi-spatial-index";
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
 import { createMarkerTileSource } from "./marker-tile-source";
@@ -146,7 +146,6 @@ export async function getRotatedWandSprite(spriteName: string): Promise<{ url: s
   if (!file) return null;
 
   const buf = await file.async("arraybuffer");
-  const { decodePngToRgba, rgbaToPngBlobUrl } = await import("./png-decode");
   const srcImg = decodePngToRgba(buf);
   const sw = srcImg.width;
   const sh = srcImg.height;

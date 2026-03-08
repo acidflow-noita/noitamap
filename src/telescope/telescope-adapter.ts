@@ -11,6 +11,7 @@ import {
   installImageSrcInterceptor,
 } from "./telescope-data-bridge";
 import { getDataZip } from "../data-archive";
+import { clearCache } from "./tile-cache";
 
 // Telescope modules
 let generateBiomeData: any;
@@ -235,7 +236,9 @@ export async function initTelescope(): Promise<void> {
   const LIB_VERSION = "2026-03-07-v1";
   if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
     console.log("[Telescope] Library version updated, clearing generation cache...");
-    import("./tile-cache").then(m => m.clearCache()).catch(() => {});
+    try {
+      clearCache();
+    } catch (e) {}
     localStorage.setItem("noitamap-telescope-version", LIB_VERSION);
   }
 
