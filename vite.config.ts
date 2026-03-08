@@ -49,12 +49,14 @@ export default defineConfig({
       "noita-telescope/app.js": resolve(__dirname, "src/telescope/telescope-app-shim.js"),
       [resolve(__dirname, "lib/noita-telescope/js/app.js")]: resolve(__dirname, "src/telescope/telescope-app-shim.js"),
       // Shim telescope's zip_extraction.js (imports from CDN that Vite can't bundle).
-      // Our fetch interceptor already serves data from data.zip.
+      // Our shim directly reads from our zip archives.
       "noita-telescope/zip_extraction.js": resolve(__dirname, "src/telescope/zip-extraction-shim.ts"),
       [resolve(__dirname, "lib/noita-telescope/js/zip_extraction.js")]: resolve(
         __dirname,
         "src/telescope/zip-extraction-shim.ts",
       ),
+      // Redirect CDN imports used by telescope to local npm packages so they get bundled.
+      "https://cdn.jsdelivr.net/npm/upng-js@2.1.0/+esm": "upng-js",
       ...(isProAvailable
         ? {
             "noitamap/data_sources/tile_data": resolve(__dirname, "src/data_sources/tile_data.ts"),
@@ -72,7 +74,7 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
-    emptyOutDir: false, // We'll clean this manually if needed, or let Vite overwrite
+    emptyOutDir: true, // Always start clean — no stale hashed files
     sourcemap: true,
     minify: "esbuild",
 
