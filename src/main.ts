@@ -461,11 +461,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   app.osd.addHandler("canvas-drag-end", () => unifiedSearch.setInteracting(false));
   app.osd.addHandler("animation-finish", () => unifiedSearch.setInteracting(false));
 
+  // Track previous map so state-change can detect transitions away from dynamic
+  let lastKnownMap: string = app.getMap();
+
   app.on("state-change", (state) => {
     // record map / position / zoom changes to the URL when they happen
     debouncedUpdateURL(state);
     // Re-sort search results by proximity to the new viewport position
     debouncedViewportNotify();
+
+    // Clean up dynamic map state whenever we leave the dynamic map, regardless
+    // of the trigger (nav click, pro-bundle import, setMap hook, etc.)
+    if (lastKnownMap === "dynamic-main-branch" && state.map !== "dynamic-main-branch") {
+      clearDynamicMap(app.osd);
+      unifiedSearch.setDynamicPOIs([]);
+    }
+    lastKnownMap = state.map;
 
     const currentMapLink = document.querySelector(`#navLinksList [data-map-key='${state.map}']`);
 

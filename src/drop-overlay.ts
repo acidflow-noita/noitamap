@@ -80,8 +80,113 @@ export function setupDropOverlay(i18next: any, loadProCallback: () => Promise<bo
     return true;
   }
 
-  // Ctrl+V paste logic for drawings/images is exclusively handled by `setupPasteHandler` in `noitamap-pro`
-  // Ensure we don't have duplicate listeners that conflict and incorrectly route to vectorize.
+  // ─── Bootstrap Ctrl+V paste handler ──────────────────────────────────────
+  // The real paste handler lives in the pro bundle (setupPasteHandler in pro-entry.ts).
+  // This bootstrap listener loads the pro bundle on the first paste, then forwards
+  // the pasted data to the newly-available handler. It removes itself once pro is loaded.
+  const bootstrapPasteHandler = async (e: ClipboardEvent) => {
+    // Don't intercept when typing in inputs/textareas
+    if (
+      e.target instanceof HTMLInputElement ||
+      e.target instanceof HTMLTextAreaElement ||
+      (e.target instanceof HTMLElement && e.target.isContentEditable)
+    )
+      return;
+
+    // If pro bundle is already loaded, this bootstrap handler is redundant
+    if (window.__noitamap?.handleVectorizeDrop) {
+      document.removeEventListener("paste", bootstrapPasteHandler);
+      return;
+    }
+
+    const clipboardData = e.clipboardData;
+    if (!clipboardData) return;
+
+    // ── Extract image blob if present ──
+    let imageBlob: File | null = null;
+    const files = Array.from(clipboardData.files || []);
+    if (files.length > 0) {
+      const maybeImage = files.find((f) => f.type.startsWith("image/"));
+      if (maybeImage) imageBlob = maybeImage;
+    }
+    if (!imageBlob) {
+      const imageItem = Array.from(clipboardData.items).find(
+        (item) => item.kind === "file" && item.type.startsWith("image/"),
+      );
+      if (imageItem) imageBlob = imageItem.getAsFile();
+    }
+
+    // ── Extract JSON text if present ──
+    // Read the text synchronously via getData (available during the paste event).
+    let jsonText: string | null = null;
+    if (!imageBlob) {
+      const rawText = clipboardData.getData("text/plain");
+      if (rawText) {
+        const trimmed = rawText.trim();
+        if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+          try {
+            const data = JSON.parse(trimmed);
+            const isShapeArray = Array.isArray(data) && data.length > 0 && data[0].type && data[0].pos;
+            const isDrawingObject = data?.shapes && Array.isArray(data.shapes);
+            if (isShapeArray || isDrawingObject) {
+              jsonText = trimmed;
+            }
+          } catch {
+            // Not valid JSON — ignore
+          }
+        }
+      }
+    }
+
+    // Nothing pasteable found
+    if (!imageBlob && !jsonText) return;
+
+    e.preventDefault();
+    console.log("[DropOverlay] Paste detected, loading pro bundle…");
+
+    // Show visual loading indicator using the drop overlay
+    const loadingEl = vectorizeZone.querySelector(".drop-zone-loading") as HTMLElement;
+    const contentEl = vectorizeZone.querySelector(".drop-zone-content") as HTMLElement;
+    const progressEl = vectorizeZone.querySelector(".drop-zone-progress") as HTMLElement;
+    dropOverlay.classList.add("visible");
+    importZone.style.display = "none";
+    if (contentEl) contentEl.style.display = "none";
+    if (loadingEl) loadingEl.style.display = "flex";
+    if (progressEl)
+      progressEl.textContent = i18next.t("drawing.import.loadingModule", "Loading image processing module…");
+
+    const loaded = await loadProCallback();
+
+    // Hide loading indicator
+    dropOverlay.classList.remove("visible");
+    importZone.style.display = "";
+    if (contentEl) contentEl.style.display = "";
+    if (loadingEl) loadingEl.style.display = "none";
+
+    if (!loaded) return;
+
+    // Remove this bootstrap handler — the pro bundle's handler takes over
+    document.removeEventListener("paste", bootstrapPasteHandler);
+
+    // Route to the appropriate pro handler with the extracted data
+    if (imageBlob) {
+      // Check if it's a WebP with embedded drawing data (import vs vectorize)
+      if (imageBlob.type === "image/webp" && window.__noitamap?.handleImportDrop) {
+        // Let the pro handler decide — pass as import first
+        const file = new File([imageBlob], imageBlob.name || "pasted-image.webp", { type: imageBlob.type });
+        await window.__noitamap.handleImportDrop(file);
+      } else if (window.__noitamap?.handleVectorizeDrop) {
+        const ext = imageBlob.name ? imageBlob.name.split(".").pop() : imageBlob.type.split("/")[1] || "png";
+        const file = new File([imageBlob], imageBlob.name || `pasted-image.${ext}`, { type: imageBlob.type });
+        await window.__noitamap.handleVectorizeDrop(file);
+      }
+    } else if (jsonText && window.__noitamap?.handleImportDrop) {
+      const file = new File([jsonText], "pasted-drawing.json", { type: "application/json" });
+      await window.__noitamap.handleImportDrop(file);
+    }
+  };
+
+  document.addEventListener("paste", bootstrapPasteHandler);
 
   // ─── Drag & Drop handlers ─────────────────────────────────────────────────
   document.addEventListener("dragenter", (e) => {

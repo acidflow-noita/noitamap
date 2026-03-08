@@ -12,7 +12,7 @@
  */
 
 import { fetchDailySeed } from "./data_sources/daily_seed";
-import { parseURL, updateURLWithSeed } from "./data_sources/url";
+import { parseURL, updateURLWithSeed, clearSeedParams } from "./data_sources/url";
 import { getCachedGeneration, cacheGeneration } from "./telescope/tile-cache";
 import { generateDynamicMap, type GenerationResult } from "./telescope/telescope-adapter";
 import { renderGenerationResult, clearDynamicOverlays, getAllPOIsFlat } from "./telescope/telescope-osd-bridge";
@@ -44,6 +44,7 @@ export interface DynamicPOI {
 let currentSeed: number | null = null;
 let currentIsDaily: boolean = false;
 let lastResult: GenerationResult | null = null;
+let dynamicRendered: boolean = false;
 
 /** Get the seed currently displayed on the dynamic map */
 export function getCurrentDynamicSeed(): number | null {
@@ -108,7 +109,10 @@ export async function runDynamicMap(
   const { viewer, onLoadingChange, onPOIsReady, onSeedResolved } = opts;
 
   // 0. Skip if already showing this seed (avoids blinking and redundant loads)
-  if (seed === currentSeed && viewer.world.getItemCount() > 0) {
+  // Use `dynamicRendered` instead of `viewer.world.getItemCount()` because
+  // the static map's DZI tiles inflate the item count even when no biomes
+  // have been rendered (e.g. after import → map switch → back to dynamic).
+  if (seed === currentSeed && dynamicRendered) {
     console.log(`[DynamicMap] Seed ${seed} is already active, skipping redundant render.`);
     onLoadingChange?.(false);
     return null;
@@ -141,6 +145,7 @@ export async function runDynamicMap(
     );
     await renderGenerationResult(viewer as any, result);
     lastResult = result;
+    dynamicRendered = true;
 
     // Log summary of what was generated
     const allPois = Object.values(result.poisByPW).flat();
@@ -189,6 +194,8 @@ export function clearDynamicMap(viewer: any): void {
   clearDynamicOverlays(viewer);
   currentSeed = null;
   currentIsDaily = false;
+  dynamicRendered = false;
+  clearSeedParams();
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
