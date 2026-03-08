@@ -1,7 +1,8 @@
-import { MapName } from './data_sources/tile_data';
-import { AppOSD, ZoomPos } from './app_osd';
-import { getAllOverlays, OverlayKey, showOverlay, TargetOfInterest } from './data_sources/overlays';
-import { getAllMapDefinitions, MapDefinition } from './data_sources/map_definitions';
+import { MapName } from "./data_sources/tile_data";
+import { AppOSD, ZoomPos } from "./app_osd";
+import { getAllOverlays, OverlayKey, showOverlay, TargetOfInterest } from "./data_sources/overlays";
+import { getAllMapDefinitions, MapDefinition } from "./data_sources/map_definitions";
+import { updateTranslations } from "./i18n-dom";
 
 export type AppState = {
   pos: ZoomPos;
@@ -24,8 +25,8 @@ type AppConstructOpts = {
 export type StateUpdateCallback = (state: AppState) => void;
 
 export interface App {
-  on(event: 'state-change', listener: (state: AppState) => void): this;
-  on(event: 'loading-change', listener: (isLoading: boolean) => void): this;
+  on(event: "state-change", listener: (state: AppState) => void): this;
+  on(event: "loading-change", listener: (isLoading: boolean) => void): this;
 }
 
 export class App extends EventEmitter2 {
@@ -49,24 +50,24 @@ export class App extends EventEmitter2 {
       ...this.state.pos,
       ...zoomPos,
     };
-    this.emit('state-change', this.state);
+    this.emit("state-change", this.state);
   }
 
   private bindHandlers() {
     const osd = this.osd;
 
-    osd.onLoading(isLoading => this.emit('loading-change', isLoading));
+    osd.onLoading((isLoading) => this.emit("loading-change", isLoading));
 
-    osd.addHandler('viewport-change', () => {
+    osd.addHandler("viewport-change", () => {
       this.updateZoomPos(osd.getZoomPos());
     });
     // Dirty fix for Wiki links not working with left mouse button
-    osd.addHandler('canvas-click', ev => {
+    osd.addHandler("canvas-click", (ev) => {
       const target = ev.originalTarget;
 
-      if (target instanceof HTMLAnchorElement && target.href && target.classList.contains('wikiLink')) {
+      if (target instanceof HTMLAnchorElement && target.href && target.classList.contains("wikiLink")) {
         ev.originalEvent.preventDefault();
-        window.open(target.href, '_blank');
+        window.open(target.href, "_blank");
       }
     });
   }
@@ -84,9 +85,9 @@ export class App extends EventEmitter2 {
 
       // of all the overlays for this type, do _any_ of them (array.some)
       // have a "maps" property that includes currentMap?
-      enableOverlayButton[key] = overlayDatas.some(data =>
+      enableOverlayButton[key] = overlayDatas.some((data) =>
         //
-        data.maps.includes(currentMap)
+        data.maps.includes(currentMap),
       );
     }
 
@@ -109,14 +110,14 @@ export class App extends EventEmitter2 {
         }
 
         // Add popover for disabled buttons
-        overlayLabel.setAttribute('data-bs-toggle', 'popover');
-        overlayLabel.setAttribute('data-bs-placement', 'top');
-        overlayLabel.setAttribute('data-bs-trigger', 'hover focus');
-        overlayLabel.setAttribute('data-i18n-title', 'overlay.notAvailable.title');
-        overlayLabel.setAttribute('data-bs-title', 'Not Available');
-        overlayLabel.setAttribute('data-i18n-content', 'overlay.notAvailable.content');
-        overlayLabel.setAttribute('data-bs-content', 'Not available for this map');
-        overlayLabel.setAttribute('tabindex', '0');
+        overlayLabel.setAttribute("data-bs-toggle", "popover");
+        overlayLabel.setAttribute("data-bs-placement", "top");
+        overlayLabel.setAttribute("data-bs-trigger", "hover focus");
+        overlayLabel.setAttribute("data-i18n-title", "overlay.notAvailable.title");
+        overlayLabel.setAttribute("data-bs-title", "Not Available");
+        overlayLabel.setAttribute("data-i18n-content", "overlay.notAvailable.content");
+        overlayLabel.setAttribute("data-bs-content", "Not available for this map");
+        overlayLabel.setAttribute("tabindex", "0");
 
         // Initialize the popover
         new bootstrap.Popover(overlayLabel);
@@ -128,11 +129,11 @@ export class App extends EventEmitter2 {
         }
 
         // Restore original popover attributes for enabled buttons
-        overlayLabel.setAttribute('data-bs-toggle', 'popover');
-        overlayLabel.setAttribute('data-bs-placement', 'top');
-        overlayLabel.setAttribute('data-bs-trigger', 'hover focus');
-        overlayLabel.setAttribute('data-i18n-title', `${key}.title`);
-        overlayLabel.setAttribute('data-i18n-content', `${key}.content`);
+        overlayLabel.setAttribute("data-bs-toggle", "popover");
+        overlayLabel.setAttribute("data-bs-placement", "top");
+        overlayLabel.setAttribute("data-bs-trigger", "hover focus");
+        overlayLabel.setAttribute("data-i18n-title", `${key}.title`);
+        overlayLabel.setAttribute("data-i18n-content", `${key}.content`);
 
         // Initialize the restored popover
         new bootstrap.Popover(overlayLabel);
@@ -157,19 +158,17 @@ export class App extends EventEmitter2 {
     this.state.map = mapName;
 
     this.updateOverlaySelectors();
-    this.emit('state-change', this.state);
+    this.emit("state-change", this.state);
 
     // Update translations after map change to refresh popovers
-    import('./i18n-dom').then(({ updateTranslations }) => {
-      updateTranslations();
-    });
+    updateTranslations();
   }
 
   public goto(toi: any) {
     let x = toi.x;
     let y = toi.y;
 
-    if (toi.overlayType === 'aoi') {
+    if (toi.overlayType === "aoi") {
       x += toi.width / 2;
       y += toi.height / 2;
     }
@@ -187,8 +186,8 @@ export class App extends EventEmitter2 {
 
   private canvasOverlay: HTMLElement | null = null;
 
-  public setBackground(type: 'map' | 'black' | 'white'): void {
-    if (type === 'map') {
+  public setBackground(type: "map" | "black" | "white"): void {
+    if (type === "map") {
       // Remove overlay — reveal the map tiles underneath
       if (this.canvasOverlay) {
         this.canvasOverlay.remove();
@@ -200,25 +199,25 @@ export class App extends EventEmitter2 {
       // loading spinner resolves correctly.
       if (!this.canvasOverlay) {
         // Check if one already exists (e.g. created by drawingManager)
-        this.canvasOverlay = this.osd.element.querySelector('#canvas-bg-overlay');
+        this.canvasOverlay = this.osd.element.querySelector("#canvas-bg-overlay");
       }
       if (!this.canvasOverlay) {
-        this.canvasOverlay = document.createElement('div');
-        this.canvasOverlay.id = 'canvas-bg-overlay';
+        this.canvasOverlay = document.createElement("div");
+        this.canvasOverlay.id = "canvas-bg-overlay";
         Object.assign(this.canvasOverlay.style, {
-          position: 'absolute',
-          inset: '0',
-          zIndex: '1',          // above tiles, below doodle/text layers
-          pointerEvents: 'none', // clicks pass through to OSD/doodle
+          position: "absolute",
+          inset: "0",
+          zIndex: "1", // above tiles, below doodle/text layers
+          pointerEvents: "none", // clicks pass through to OSD/doodle
         });
         this.osd.element.appendChild(this.canvasOverlay);
       }
-      this.canvasOverlay.style.backgroundColor = type === 'black' ? '#000000' : '#ffffff';
+      this.canvasOverlay.style.backgroundColor = type === "black" ? "#000000" : "#ffffff";
     }
   }
 
   static async create({ mountTo, overlayButtons, initialState, useWebGL }: AppCreateOpts) {
-    const mapName = initialState.map ?? 'dynamic-main-branch';
+    const mapName = initialState.map ?? "dynamic-main-branch";
     const osd = new AppOSD(mountTo, useWebGL);
 
     // if we do not have an initial position, we have to fully initialize

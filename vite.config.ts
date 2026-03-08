@@ -84,6 +84,9 @@ export default defineConfig({
       output: {
         // Force manual chunking for vendor dependencies
         manualChunks: (id) => {
+          if (id.includes("noita-telescope") || id.includes("src/telescope/")) {
+            return "telescope";
+          }
           if (id.includes("node_modules")) {
             if (id.includes("openseadragon")) return "vendor-osd";
             if (id.includes("pixi.js")) return "vendor-pixi";

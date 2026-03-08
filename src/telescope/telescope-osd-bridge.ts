@@ -578,12 +578,178 @@ export async function addPOIOverlays(viewer: OSDViewer, result: GenerationResult
   );
 }
 
+// ─── Active marker data (for tooltip click handling) ────────────────────────
+let activeMarkerData: MarkerData | null = null;
+let tooltipEl: HTMLDivElement | null = null;
+let canvasClickHandler: ((event: any) => void) | null = null;
+
+/**
+ * Show a tooltip for a marker at the given screen position.
+ */
+function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): void {
+  if (!tooltipEl) {
+    tooltipEl = document.createElement("div");
+    tooltipEl.className = "marker-tooltip";
+    tooltipEl.style.cssText = `
+      position: fixed;
+      z-index: 10000;
+      background: rgba(20, 20, 30, 0.95);
+      color: #eee;
+      border: 1px solid #555;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 13px;
+      max-width: 300px;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      font-family: monospace;
+      line-height: 1.4;
+    `;
+    document.body.appendChild(tooltipEl);
+  }
+
+  const poi = item.poi;
+  let html = "";
+
+  if (poi.type === "wand") {
+    html += `<div style="font-weight:bold;color:#c8a2ff">Wand</div>`;
+    if (poi.name) html += `<div>${escapeHtml(poi.name)}</div>`;
+    if (poi.stats) {
+      const s = poi.stats;
+      const lines: string[] = [];
+      if (s.shuffle != null) lines.push(s.shuffle ? "Shuffle" : "No Shuffle");
+      if (s.spellsPerCast != null) lines.push(`Spells/Cast: ${s.spellsPerCast}`);
+      if (s.castDelay != null) lines.push(`Cast Delay: ${s.castDelay}`);
+      if (s.rechargeTime != null) lines.push(`Recharge: ${s.rechargeTime}`);
+      if (s.manaMax != null) lines.push(`Mana: ${s.manaMax}`);
+      if (s.manaChargeSpeed != null) lines.push(`Regen: ${s.manaChargeSpeed}`);
+      if (s.capacity != null) lines.push(`Capacity: ${s.capacity}`);
+      if (s.spread != null) lines.push(`Spread: ${s.spread}°`);
+      if (lines.length) html += `<div style="margin-top:4px">${lines.join("<br>")}</div>`;
+    }
+    if (poi.spells && poi.spells.length) {
+      html += `<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:2px">`;
+      for (const spell of poi.spells) {
+        const spellId = typeof spell === "string" ? spell : spell.id ?? spell;
+        const iconPath = `./assets/icons/spells/${String(spellId).toLowerCase()}.png`;
+        html += `<img src="${iconPath}" width="16" height="16" title="${escapeHtml(String(spellId))}" style="image-rendering:pixelated" onerror="this.style.display='none'">`;
+      }
+      html += `</div>`;
+    }
+  } else if (poi.type === "item" || poi.type === "chest") {
+    const label = poi.item ?? poi.type;
+    html += `<div style="font-weight:bold;color:#ffd700">${escapeHtml(label)}</div>`;
+    if (poi.material) html += `<div>Material: ${escapeHtml(poi.material)}</div>`;
+    if (poi.contents && poi.contents.length) {
+      html += `<div style="margin-top:2px">Contains: ${poi.contents.map((c: any) => escapeHtml(typeof c === "string" ? c : c.name ?? c.item ?? String(c))).join(", ")}</div>`;
+    }
+  } else {
+    html += `<div style="font-weight:bold">${escapeHtml(poi.type)}</div>`;
+    if (poi.item) html += `<div>${escapeHtml(poi.item)}</div>`;
+  }
+
+  html += `<div style="margin-top:4px;color:#888;font-size:11px">PW ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})</div>`;
+
+  tooltipEl.innerHTML = html;
+  tooltipEl.style.display = "block";
+
+  // Position tooltip near click, clamped to viewport
+  const pad = 12;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  let tx = screenX + pad;
+  let ty = screenY + pad;
+  // Defer clamping to after render so we know tooltip size
+  requestAnimationFrame(() => {
+    if (!tooltipEl) return;
+    const rect = tooltipEl.getBoundingClientRect();
+    if (tx + rect.width > vw - pad) tx = screenX - rect.width - pad;
+    if (ty + rect.height > vh - pad) ty = screenY - rect.height - pad;
+    if (tx < pad) tx = pad;
+    if (ty < pad) ty = pad;
+    tooltipEl.style.left = `${tx}px`;
+    tooltipEl.style.top = `${ty}px`;
+  });
+  tooltipEl.style.left = `${tx}px`;
+  tooltipEl.style.top = `${ty}px`;
+}
+
+function hideMarkerTooltip(): void {
+  if (tooltipEl) tooltipEl.style.display = "none";
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/**
+ * Install a canvas-click handler on the viewer to detect marker clicks.
+ */
+function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
+  // Remove previous handler if any
+  if (canvasClickHandler) {
+    viewer.removeHandler("canvas-click", canvasClickHandler);
+    canvasClickHandler = null;
+  }
+
+  canvasClickHandler = (event: any) => {
+    // Convert click to viewport coordinates, then to image coordinates
+    const viewportPoint = viewer.viewport.pointFromPixel(event.position);
+    // viewportPoint is in OSD viewport coordinate space
+    const vpX = viewportPoint.x;
+    const vpY = viewportPoint.y;
+
+    // Convert viewport coords to local (bbox-relative) coords for Flatbush query
+    const localX = vpX - data.originX;
+    const localY = vpY - data.originY;
+
+    // Search for nearest marker within ~20px radius in local coords
+    const searchRadius = 20;
+    const results = data.index.search(
+      localX - searchRadius,
+      localY - searchRadius,
+      localX + searchRadius,
+      localY + searchRadius,
+    );
+
+    if (results.length === 0) {
+      hideMarkerTooltip();
+      return;
+    }
+
+    // Find the closest marker to the click point (using viewport coords for distance)
+    let bestIdx = results[0];
+    let bestDist = Infinity;
+    for (const idx of results) {
+      const item = data.items[idx];
+      const dx = item.osdX - vpX;
+      const dy = item.osdY - vpY;
+      const dist = dx * dx + dy * dy;
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = idx;
+      }
+    }
+
+    const clickedItem = data.items[bestIdx];
+    if (clickedItem) {
+      // Prevent default OSD click behavior (zoom)
+      event.preventDefaultAction = true;
+      showMarkerTooltip(clickedItem, event.originalEvent.clientX, event.originalEvent.clientY);
+    }
+  };
+
+  viewer.addHandler("canvas-click", canvasClickHandler);
+
+  // Hide tooltip on drag/pan
+  viewer.addHandler("canvas-drag", hideMarkerTooltip);
+}
+
 export async function renderGenerationResult(viewer: OSDViewer, result: GenerationResult): Promise<void> {
   const generationId = ++currentGenerationId;
   clearDynamicOverlays(viewer);
 
   // Adding biomes initializes the OSD viewport bounds.
-  // Overlays added before the viewport is established will break.
   await addBiomeLayersProgressively(viewer, result, generationId);
   if (currentGenerationId !== generationId) return;
 
@@ -625,6 +791,17 @@ export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: numb
     const pw = parseInt(pwStr);
     for (const poi of pois) {
       flat.push({ ...poi, pw, worldX: poi.x, worldY: poi.y });
+      // Unwrap container items (shops, holy mountain shops, eye rooms)
+      if (
+        (poi.type === "holy_mountain_shop" || poi.type === "shop" || poi.type === "eye_room") &&
+        poi.items &&
+        Array.isArray(poi.items)
+      ) {
+        for (const inner of poi.items) {
+          if (inner.ignore) continue;
+          flat.push({ ...inner, pw, worldX: inner.x, worldY: inner.y });
+        }
+      }
     }
   }
   return flat;

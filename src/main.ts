@@ -90,6 +90,7 @@ import { initKonamiCode } from "./konami";
 import { AuthUI } from "./auth/auth-ui";
 import { authService } from "./auth/auth-service";
 import { DrawingUI } from "./drawing/drawing-ui";
+import { loadSpritesheetAndAtlas } from "./telescope/poi-spatial-index";
 
 // Global reference to unified search for translation updates
 let globalUnifiedSearch: UnifiedSearch | null = null;
