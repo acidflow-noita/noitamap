@@ -21,6 +21,8 @@ export async function getZip(key: string = "main"): Promise<JSZip | null> {
   if (zips[key]) return zips[key];
   if (zipPromises[key]) return zipPromises[key];
 
+  console.trace(`[DataArchive] Someone requested getZip('${key}') - tracing stack`);
+
   const url = ZIP_URLS[key];
   if (!url) {
     console.error(`[DataArchive] Unknown zip key: ${key}`);
