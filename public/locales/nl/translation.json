@@ -854,8 +854,8 @@
       "dropHintImportTypes": "WebP of JSON",
       "dropHintVectorize": "Afbeelding vectoriseren",
       "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO",
-      "successTitle": "Import successful",
-      "successMessage": "The drawing has been successfully imported."
+      "successTitle": "Import geslaagd",
+      "successMessage": "De tekening is succesvol geïmporteerd."
     },
     "savedDrawings": {
       "label": "Opgeslagen tekeningen",

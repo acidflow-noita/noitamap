@@ -854,8 +854,8 @@
       "dropHintImportTypes": "WebP tai JSON",
       "dropHintVectorize": "Vektoroi kuva",
       "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO",
-      "successTitle": "Import successful",
-      "successMessage": "The drawing has been successfully imported."
+      "successTitle": "Tuonti onnistui",
+      "successMessage": "Piirustus on tuotu onnistuneesti."
     },
     "savedDrawings": {
       "label": "Tallennetut piirrokset",

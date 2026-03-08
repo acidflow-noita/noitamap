@@ -854,8 +854,8 @@
       "dropHintImportTypes": "WebP nebo JSON",
       "dropHintVectorize": "Vektorizovat obrázek",
       "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO",
-      "successTitle": "Import successful",
-      "successMessage": "The drawing has been successfully imported."
+      "successTitle": "Import byl úspěšný",
+      "successMessage": "Výkres byl úspěšně importován."
     },
     "savedDrawings": {
       "label": "Uložené kresby",

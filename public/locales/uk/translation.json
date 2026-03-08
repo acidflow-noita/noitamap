@@ -861,8 +861,8 @@
       "dropHintImportTypes": "WebP або JSON",
       "dropHintVectorize": "Векторизувати зображення",
       "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO",
-      "successTitle": "Import successful",
-      "successMessage": "The drawing has been successfully imported."
+      "successTitle": "Імпорт успішний",
+      "successMessage": "Малюнок успішно імпортовано."
     },
     "savedDrawings": {
       "label": "Збережені малюнки",

@@ -854,8 +854,8 @@
       "dropHintImportTypes": "WebP atau JSON",
       "dropHintVectorize": "Vektorisasi Gambar",
       "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO",
-      "successTitle": "Import successful",
-      "successMessage": "The drawing has been successfully imported."
+      "successTitle": "Impor berhasil",
+      "successMessage": "Gambar telah berhasil diimpor."
     },
     "savedDrawings": {
       "label": "Gambar Tersimpan",
