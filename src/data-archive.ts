@@ -17,7 +17,7 @@ const zips: Record<string, JSZip | null> = {};
 /**
  * Lazily fetch and cache a zip archive.
  */
-export async function getZip(key: string = "main"): Promise<JSZip | null> {
+export async function getZip(key: string = "main", silent: boolean = false): Promise<JSZip | null> {
   if (zips[key]) return zips[key];
   if (zipPromises[key]) return zipPromises[key];
 
@@ -70,7 +70,7 @@ export async function getZip(key: string = "main"): Promise<JSZip | null> {
         console.log(`[DataArchive] Loaded ${url} from Cache API`);
         buf = await response.arrayBuffer();
 
-        if (key === "main") {
+        if (key === "main" && !silent) {
           window.dispatchEvent(
             new CustomEvent("dataZipProgress", { detail: { loaded: 100, total: 100, percentage: 100 } }),
           );
@@ -99,7 +99,7 @@ export async function getZip(key: string = "main"): Promise<JSZip | null> {
             chunks.push(value);
             loadedBytes += value.length;
 
-            if (key === "main") {
+            if (key === "main" && !silent) {
               const percentage = Math.min(100, Math.round((loadedBytes / totalBytes) * 100));
               window.dispatchEvent(
                 new CustomEvent("dataZipProgress", {
@@ -147,14 +147,14 @@ export async function getZip(key: string = "main"): Promise<JSZip | null> {
 
 /** Legacy alias */
 export async function getDataZip(): Promise<JSZip | null> {
-  return getZip("main");
+  return getZip("main", false);
 }
 
 /**
  * Read a text file from one of the zip archives.
  */
-export async function readText(path: string, zipKey: string = "main"): Promise<string | null> {
-  const z = await getZip(zipKey);
+export async function readText(path: string, zipKey: string = "main", silent: boolean = false): Promise<string | null> {
+  const z = await getZip(zipKey, silent);
   if (!z) return null;
   const file = z.file(path);
   if (!file) {
@@ -167,8 +167,13 @@ export async function readText(path: string, zipKey: string = "main"): Promise<s
 /**
  * Read a binary file from one of the zip archives as a Blob.
  */
-export async function readBlob(path: string, mimeType?: string, zipKey: string = "main"): Promise<Blob | null> {
-  const z = await getZip(zipKey);
+export async function readBlob(
+  path: string,
+  mimeType?: string,
+  zipKey: string = "main",
+  silent: boolean = false,
+): Promise<Blob | null> {
+  const z = await getZip(zipKey, silent);
   if (!z) return null;
   const file = z.file(path);
   if (!file) {
@@ -182,8 +187,12 @@ export async function readBlob(path: string, mimeType?: string, zipKey: string =
 /**
  * Read an image from one of the zip archives as an ImageBitmap.
  */
-export async function readImage(path: string, zipKey: string = "main"): Promise<ImageBitmap | null> {
-  const blob = await readBlob(path, "image/png", zipKey);
+export async function readImage(
+  path: string,
+  zipKey: string = "main",
+  silent: boolean = false,
+): Promise<ImageBitmap | null> {
+  const blob = await readBlob(path, "image/png", zipKey, silent);
   if (!blob) return null;
   return createImageBitmap(blob);
 }

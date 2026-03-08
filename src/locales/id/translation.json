@@ -853,7 +853,9 @@
       "dropHintImport": "Impor Anotasi Noitamap",
       "dropHintImportTypes": "WebP atau JSON",
       "dropHintVectorize": "Vektorisasi Gambar",
-      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO"
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO",
+      "successTitle": "Impor berhasil",
+      "successMessage": "Gambar telah berhasil diimpor."
     },
     "savedDrawings": {
       "label": "Gambar Tersimpan",

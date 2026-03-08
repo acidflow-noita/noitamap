@@ -112,7 +112,9 @@ export const refreshSearchTranslations = () => {
 
 document.addEventListener("DOMContentLoaded", async () => {
   // Start preloading the atlas for search results immediately
-  import("./telescope/poi-spatial-index").then(m => m.loadSpritesheetAndAtlas()).catch(e => console.warn("[Noitamap] Atlas preload failed:", e));
+  import("./telescope/poi-spatial-index")
+    .then((m) => m.loadSpritesheetAndAtlas())
+    .catch((e) => console.warn("[Noitamap] Atlas preload failed:", e));
 
   try {
     await i18next.init({
@@ -194,7 +196,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     overlay.style.display = "flex";
     bar.style.width = `${e.detail.percentage}%`;
     bar.setAttribute("aria-valuenow", e.detail.percentage.toString());
-    if (status) status.textContent = `${Math.round(33 + e.detail.percentage / 3)}%`;        
+    if (status) status.textContent = `${Math.round(33 + e.detail.percentage / 3)}%`;
 
     if (e.detail.percentage >= 100) {
       const title = _getTitle();
@@ -216,7 +218,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     overlay.style.display = "flex";
     bar.style.width = `${e.detail.percentage}%`;
     bar.setAttribute("aria-valuenow", e.detail.percentage.toString());
-    if (status) status.textContent = `${Math.round(66 + e.detail.percentage / 3)}%`;        
+    if (status) status.textContent = `${Math.round(66 + e.detail.percentage / 3)}%`;
 
     if (e.detail.percentage >= 100) {
       const overlay = _getLoadingOverlay();
@@ -385,24 +387,29 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
       const proUrl = "https://noitamap-pro.acidflow.stream/pro.js";
-      console.log("[Noitamap] Fetching pro features...");
+      let proModule;
+      // @ts-ignore
+      if (import.meta.env.DEV) {
+        // @ts-ignore
+        proModule = await import("../../noitamap-pro/src/pro-entry.ts");
+      } else {
+        const response = await fetch(proUrl);
 
-      const response = await fetch(proUrl);
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
+        }
 
-      if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
+        const code = await response.text();
+        const blob = new Blob([code], { type: "application/javascript" });
+        const blobUrl = URL.createObjectURL(blob);
+
+        proModule = await import(
+          // @ts-ignore — remote ES module loaded at runtime
+          /* @vite-ignore */ blobUrl
+        );
+
+        URL.revokeObjectURL(blobUrl);
       }
-
-      const code = await response.text();
-      const blob = new Blob([code], { type: "application/javascript" });
-      const blobUrl = URL.createObjectURL(blob);
-
-      const proModule = await import(
-        // @ts-ignore â€” remote ES module loaded at runtime
-        /* @vite-ignore */ blobUrl
-      );
-
-      URL.revokeObjectURL(blobUrl);
 
       await proModule.init(proHooks);
       (window as any).noitamap_pro_loaded = true;

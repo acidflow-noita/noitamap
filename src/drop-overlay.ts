@@ -80,53 +80,8 @@ export function setupDropOverlay(i18next: any, loadProCallback: () => Promise<bo
     return true;
   }
 
-  // ─── Ctrl+V / Paste handler ────────────────────────────────────────────────
-  document.addEventListener("paste", async (e) => {
-    // Ignore paste if user is typing in an input or textarea
-    const active = document.activeElement;
-    if (
-      active instanceof HTMLInputElement ||
-      active instanceof HTMLTextAreaElement ||
-      (active as HTMLElement)?.isContentEditable
-    ) {
-      return;
-    }
-
-    const items = e.clipboardData?.items;
-    if (!items) return;
-
-    // Look for an image item in the clipboard
-    let imageItem: DataTransferItem | null = null;
-    let fileItem: DataTransferItem | null = null;
-    for (const item of items) {
-      if (item.kind === "file" && item.type.startsWith("image/")) {
-        imageItem = item;
-      } else if (item.kind === "file") {
-        fileItem = item;
-      }
-    }
-
-    if (!imageItem && !fileItem) return;
-
-    e.preventDefault();
-
-    const file = (imageItem ?? fileItem)!.getAsFile();
-    if (!file) return;
-
-    // Decide: import or vectorize based on file type
-    const ext = file.name?.toLowerCase() ?? "";
-    const isDrawingImport = ext.endsWith(".json") || (ext.endsWith(".webp") && file.type === "image/webp" && !imageItem);
-
-    if (isDrawingImport) {
-      // Import drawing (JSON or WebP drawing export)
-      if (!(await ensureProHandler("handleImportDrop"))) return;
-      await window.__noitamap!.handleImportDrop!(file);
-    } else {
-      // Vectorize image (screenshots, PNGs, JPGs, etc.)
-      if (!(await ensureProHandler("handleVectorizeDrop"))) return;
-      await window.__noitamap!.handleVectorizeDrop!(file);
-    }
-  });
+  // Ctrl+V paste logic for drawings/images is exclusively handled by `setupPasteHandler` in `noitamap-pro`
+  // Ensure we don't have duplicate listeners that conflict and incorrectly route to vectorize.
 
   // ─── Drag & Drop handlers ─────────────────────────────────────────────────
   document.addEventListener("dragenter", (e) => {
@@ -184,14 +139,26 @@ export function setupDropOverlay(i18next: any, loadProCallback: () => Promise<bo
     // Determine action
     const isVectorize = zone === vectorizeZone;
     const isImport = zone === importZone;
+    const ext = file.name?.toLowerCase() ?? "";
+    let isDrawingImport = false;
 
-    if (!isVectorize && !isImport) return;
+    if (isImport) {
+      isDrawingImport = true;
+    } else if (isVectorize) {
+      if (ext.endsWith(".webp") && file.type === "image/webp") {
+        // @ts-ignore
+        if (window.__noitamap?.isWebPDrawing) {
+          // @ts-ignore
+          isDrawingImport = await window.__noitamap.isWebPDrawing(file);
+        }
+      }
+    }
 
-    const handlerName = isVectorize ? "handleVectorizeDrop" : "handleImportDrop";
+    const handlerName = isDrawingImport ? "handleImportDrop" : "handleVectorizeDrop";
 
     if (!(await ensureProHandler(handlerName as any, zone as HTMLElement))) return;
 
-    if (isImport) {
+    if (isDrawingImport) {
       resetOverlay();
       if (window.__noitamap?.handleImportDrop) {
         await window.__noitamap.handleImportDrop(file);

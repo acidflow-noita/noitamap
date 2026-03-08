@@ -144,16 +144,18 @@ export async function runDynamicMap(
 
     // Log summary of what was generated
     const allPois = Object.values(result.poisByPW).flat();
-    const poiCounts = allPois.reduce((acc, p) => {
-      acc[p.type] = (acc[p.type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const poiCounts = allPois.reduce(
+      (acc, p) => {
+        acc[p.type] = (acc[p.type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
     console.log("[Telescope] Generated PoI summary:", poiCounts);
     console.log("[Telescope] Full generation result:", result);
 
     // 5. Export flat POI list for search
     if (onPOIsReady) {
-      window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 60 } }));
       const flat = getAllPOIsFlat(result);
       const dynamicPOIs: DynamicPOI[] = flat.map((p, i) => ({
         ...p,
@@ -161,7 +163,6 @@ export async function runDynamicMap(
         name: buildPOIName(p),
       }));
       onPOIsReady(dynamicPOIs);
-      window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 100 } }));
     }
 
     return result;

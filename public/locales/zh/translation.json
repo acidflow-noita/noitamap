@@ -866,7 +866,9 @@
       "dropHintImport": "导入Noitamap标注绘图",
       "dropHintImportTypes": "WebP或JSON",
       "dropHintVectorize": "矢量化图片",
-      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO"
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO",
+      "successTitle": "Import successful",
+      "successMessage": "The drawing has been successfully imported."
     },
     "savedDrawings": {
       "label": "已保存的绘图",

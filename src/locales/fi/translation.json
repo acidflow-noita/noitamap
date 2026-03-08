@@ -853,7 +853,9 @@
       "dropHintImport": "Tuo Noitamap-merkintäpiirustus",
       "dropHintImportTypes": "WebP tai JSON",
       "dropHintVectorize": "Vektoroi kuva",
-      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO"
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO",
+      "successTitle": "Tuonti onnistui",
+      "successMessage": "Piirustus on tuotu onnistuneesti."
     },
     "savedDrawings": {
       "label": "Tallennetut piirrokset",

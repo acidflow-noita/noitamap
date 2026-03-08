@@ -860,7 +860,9 @@
       "dropHintImport": "Імпортувати анотацію Noitamap",
       "dropHintImportTypes": "WebP або JSON",
       "dropHintVectorize": "Векторизувати зображення",
-      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO"
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO",
+      "successTitle": "Import successful",
+      "successMessage": "The drawing has been successfully imported."
     },
     "savedDrawings": {
       "label": "Збережені малюнки",

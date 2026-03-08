@@ -853,7 +853,9 @@
       "dropHintImport": "Importera Noitamap-anteckning",
       "dropHintImportTypes": "WebP eller JSON",
       "dropHintVectorize": "Vektorisera bild",
-      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO"
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO",
+      "successTitle": "Importen lyckades",
+      "successMessage": "Ritningen har importerats framgångsrikt."
     },
     "savedDrawings": {
       "label": "Sparade ritningar",

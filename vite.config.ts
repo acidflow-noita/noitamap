@@ -3,9 +3,14 @@ import { resolve } from "path";
 
 import fs from "fs";
 
-const isProAvailable = fs.existsSync(resolve(__dirname, "noitamap-pro/src/pro-entry.ts"));
+const isProAvailable = fs.existsSync(resolve(__dirname, "../noitamap-pro/src/pro-entry.ts"));
 
 export default defineConfig({
+  server: {
+    fs: {
+      allow: [".."],
+    },
+  },
   plugins: [
     {
       name: "og-meta-rewrite",
@@ -86,7 +91,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
-        ...(isProAvailable ? { pro: resolve(__dirname, "noitamap-pro/src/pro-entry.ts") } : {}),
+        ...(isProAvailable ? { pro: resolve(__dirname, "../noitamap-pro/src/pro-entry.ts") } : {}),
       },
       output: {
         // Force manual chunking for vendor dependencies

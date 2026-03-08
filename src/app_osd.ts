@@ -14,7 +14,7 @@ export type ZoomPos = {
 type DziTileSource = any;
 
 export class AppOSD {
-  private viewer: any; // OpenSeadragon.Viewer
+  public viewer: any; // OpenSeadragon.Viewer
   private mapName: MapName | null = null;
   private listeners: ((isLoading: boolean) => void)[] = [];
 
@@ -91,21 +91,58 @@ export class AppOSD {
   }
 
   // Proxy common OSD properties and methods
-  get viewport() { return this.viewer.viewport; }
-  get world() { return this.viewer.world; }
-  get element() { return this.viewer.element; }
+  get viewport() {
+    return this.viewer.viewport;
+  }
+  get world() {
+    return this.viewer.world;
+  }
+  get element() {
+    return this.viewer.element;
+  }
+  get canvas() {
+    return this.viewer.canvas || this.viewer.element.querySelector(".openseadragon-canvas");
+  }
+  get innerTracker() {
+    return this.viewer.innerTracker;
+  }
 
-  addHandler(name: string, handler: (event: any) => void) { this.viewer.addHandler(name, handler); }
-  removeHandler(name: string, handler: (event: any) => void) { this.viewer.removeHandler(name, handler); }
-  addOnceHandler(name: string, handler: (event: any) => void) { this.viewer.addOnceHandler(name, handler); }
-  
-  addTiledImage(options: any) { this.viewer.addTiledImage(options); }
-  addOverlay(options: any) { this.viewer.addOverlay(options); }
-  clearOverlays() { this.viewer.clearOverlays(); }
-  removeOverlay(el: HTMLElement) { this.viewer.removeOverlay(el); }
-  
-  open(sources: any) { this.viewer.open(sources); }
-  isOpen() { return this.viewer.isOpen(); }
+  setMouseNavEnabled(enabled: boolean) {
+    this.viewer.setMouseNavEnabled(enabled);
+  }
+  isMouseNavEnabled() {
+    return this.viewer.isMouseNavEnabled();
+  }
+
+  addHandler(name: string, handler: (event: any) => void) {
+    this.viewer.addHandler(name, handler);
+  }
+  removeHandler(name: string, handler: (event: any) => void) {
+    this.viewer.removeHandler(name, handler);
+  }
+  addOnceHandler(name: string, handler: (event: any) => void) {
+    this.viewer.addOnceHandler(name, handler);
+  }
+
+  addTiledImage(options: any) {
+    this.viewer.addTiledImage(options);
+  }
+  addOverlay(options: any) {
+    this.viewer.addOverlay(options);
+  }
+  clearOverlays() {
+    this.viewer.clearOverlays();
+  }
+  removeOverlay(el: HTMLElement) {
+    this.viewer.removeOverlay(el);
+  }
+
+  open(sources: any) {
+    this.viewer.open(sources);
+  }
+  isOpen() {
+    return this.viewer.isOpen();
+  }
 
   private static getTileSources(mapName: MapName): string[] {
     return getTileData(mapName).map((tileData) => tileData.url);
@@ -120,15 +157,10 @@ export class AppOSD {
   }
 
   private notifyLoadingStatus() {
-    const isFullyLoaded = this.getAllItems().reduce(
-      (isReady, item) => {
-        if (this.failedItems.has(item)) return isReady;
-        return (item as any).getDrawArea() !== null
-          ? (isReady && item.getFullyLoaded())
-          : isReady;
-      },
-      true,
-    );
+    const isFullyLoaded = this.getAllItems().reduce((isReady, item) => {
+      if (this.failedItems.has(item)) return isReady;
+      return (item as any).getDrawArea() !== null ? isReady && item.getFullyLoaded() : isReady;
+    }, true);
     const isLoading = !isFullyLoaded;
     this.listeners.forEach((fn) => fn(isLoading));
   }

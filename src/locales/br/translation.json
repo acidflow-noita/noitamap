@@ -853,7 +853,9 @@
       "dropHintImport": "Importar Anotação do Noitamap",
       "dropHintImportTypes": "WebP ou JSON",
       "dropHintVectorize": "Vetorizar Imagem",
-      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO"
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO",
+      "successTitle": "Importação bem-sucedida",
+      "successMessage": "O desenho foi importado com sucesso."
     },
     "savedDrawings": {
       "label": "Desenhos Salvos",

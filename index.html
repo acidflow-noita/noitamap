@@ -149,6 +149,23 @@
           The image may be too complex or photographic. This feature works best with pixel art and flat-color images.
         </div>
       </div>
+      <div
+        id="importSuccessToast"
+        class="toast text-success-emphasis bg-success-subtle border-success"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        style="width: 25vw; min-width: 300px; max-width: 500px"
+      >
+        <div class="toast-header text-success-emphasis bg-success-subtle border-success">
+          <i class="bi bi-check-circle-fill me-2"></i>
+          <strong class="me-auto" data-i18n="drawing.import.successTitle">Import successful</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" data-i18n="drawing.import.successMessage">
+          The drawing has been successfully imported.
+        </div>
+      </div>
     </div>
     <!-- Drawing sidebar container -->
     <div id="drawing-sidebar-container"></div>

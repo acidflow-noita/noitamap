@@ -853,7 +853,9 @@
       "dropHintImport": "Noitamapアノテーションをインポート",
       "dropHintImportTypes": "WebPまたはJSON",
       "dropHintVectorize": "画像をベクター化",
-      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO"
+      "dropHintVectorizeTypes": "PNG, JPG, WebP, GIF, BMP, ICO",
+      "successTitle": "Import successful",
+      "successMessage": "The drawing has been successfully imported."
     },
     "savedDrawings": {
       "label": "保存済みの描画",
