@@ -87,16 +87,20 @@ export function installFetchInterceptor(): void {
                 statusText: "OK",
                 headers: { "Content-Type": isImage ? "image/png" : "application/octet-stream" },
               });
-            } else {
-              // console.warn(`[FetchInterceptor] NOT FOUND: ${url} (Zip path: ${zipPath})`);
-            }
-          }
-        }
-      }
-    }
+              } else {
+                // console.warn(`[FetchInterceptor] NOT FOUND: ${url} (Zip path: ${zipPath})`);
+              }
+            } // end if (zip)
+          } // end for zipConfigs
+          
+          // If we got here and it was a ./data/ request, we failed to find it in the zips.
+          // In original code this just falls through to returning `originalFetch`.
+        } // end if (match)
+      } // end if (url.startsWith)
 
-    return originalFetch(input, init);
-  };
+      // Fallback to original fetch
+      return originalFetch(input, init);
+    };
 }
 
 // ─── Image src Interceptor ───────────────────────────────────────────────────
@@ -123,12 +127,39 @@ export function installImageSrcInterceptor(): void {
 
           // We don't want to block the setter, so we run the search in an async task
           (async () => {
-            const zipKeys = ["main", "pixel_scenes", "wang_tiles"];
-            for (const key of zipKeys) {
-              const zip = await getZip(key);
+            const zipConfigs = [
+              { key: "main", strip: "" },
+              { key: "pixel_scenes", strip: "data/pixel_scenes/" },
+              { key: "wang_tiles", strip: "data/wang_tiles/" },
+            ];
+            
+            for (const config of zipConfigs) {
+              const zip = await getZip(config.key);
               if (!zip) continue;
 
-              const file = zip.file(zipPath);
+              let localZipPath = config.strip && zipPath.startsWith(config.strip)
+                ? zipPath.substring(config.strip.length)
+                : zipPath;
+
+              let file = zip.file(localZipPath);
+              
+              if (!file && config.key === "main") {
+                const fallbacks = [
+                  zipPath.replace("data/pixel_scenes/general/", "data/biome_impl/"),
+                  zipPath.replace("data/pixel_scenes/general/", "data/biome_impl/the_end/"),
+                  zipPath.replace("data/pixel_scenes/general/teleportroom", "data/biome_impl/mystery_teleport"),
+                  zipPath.replace("data/pixel_scenes/general/cauldron", "data/biome_impl/cauldron"),
+                  zipPath.replace("data/pixel_scenes/spliced/", "data/biome_impl/"),
+                  zipPath.replace("data/biome_maps/", "data/biome_impl/"),
+                ];
+                for (const fallback of fallbacks) {
+                  if (fallback !== zipPath) {
+                    file = zip.file(fallback);
+                    if (file) break;
+                  }
+                }
+              }
+
               if (file) {
                 try {
                   const buf = await file.async("arraybuffer");
@@ -137,7 +168,7 @@ export function installImageSrcInterceptor(): void {
                   originalSet.call(self, blobUrl);
                   return;
                 } catch (err) {
-                  console.warn(`[ImageInterceptor] Failed to decode ${zipPath} from ${key}`, err);
+                  console.warn(`[ImageInterceptor] Failed to decode ${zipPath} from ${config.key}`, err);
                 }
               }
             }

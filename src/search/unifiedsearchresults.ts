@@ -174,50 +174,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
     this.wrapper.scrollTop = 0;
   }
 
-  /** Efficiently re-sort existing result elements by proximity to (x, y) */
-  resortByProximity(playerX: number, playerY: number): void {
-    const CHUNK_SIZE = 512;
-    const items = Array.from(this.elementByTarget.entries());
-    if (items.length === 0) return;
 
-    // Only sort dynamic POIs that have x/y coordinates
-    const sortable = items.filter(([target]) => "x" in target && (target as any).isDynamic);
-    if (sortable.length === 0) return;
-
-    // Optimization: Skip if we haven't moved much
-    const distMoved = Math.hypot(playerX - this.lastSortX, playerY - this.lastSortY);
-    if (distMoved < 128 && this.lastSortedOrder !== "") return;
-
-    this.lastSortX = playerX;
-    this.lastSortY = playerY;
-
-    sortable.sort(([targetA], [targetB]) => {
-      const pA = targetA as any;
-      const pB = targetB as any;
-      const da = Math.hypot(pA.x - playerX, pA.y - playerY);
-      const db = Math.hypot(pB.x - playerX, pB.y - playerY);
-      return da - db;
-    });
-
-    // Check if the order has actually changed
-    const currentOrder = sortable.map(([target]) => (target as any).x + "," + (target as any).y).join("|");
-    if (currentOrder === this.lastSortedOrder) return;
-    this.lastSortedOrder = currentOrder;
-
-    // Use a fragment to avoid layout thrashing
-    const fragment = document.createDocumentFragment();
-    for (const [target, el] of sortable) {
-      fragment.appendChild(el);
-      // Update the "chunks away" text if it exists
-      const p = target as any;
-      const chunksAway = Math.round(Math.hypot(p.x - playerX, p.y - playerY) / CHUNK_SIZE);
-      const proximitySpan = el.querySelector(".proximity-hint");
-      if (proximitySpan) {
-        proximitySpan.textContent = `~${chunksAway} chunks away`;
-      }
-    }
-    this.wrapper.appendChild(fragment);
-  }
 
   setResults(results: UnifiedSearchResult[]) {
     this.clearResults(results.length === 0);

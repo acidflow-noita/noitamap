@@ -136,14 +136,7 @@ export class UnifiedSearch extends EventEmitter2 {
     this.lastSearchText = value;
   }
 
-  /** Set interaction state (pause sorting during map move) */
-  setInteracting(interacting: boolean): void {
-    this.isInteracting = interacting;
-    // When interaction ends, do one final sort
-    if (!interacting) {
-      this.notifyViewportChanged();
-    }
-  }
+
 
   /** Replace the dynamic POI index (called by the generation pipeline). */
   setDynamicPOIs(pois: DynamicPOI[]): void {
@@ -164,20 +157,7 @@ export class UnifiedSearch extends EventEmitter2 {
     }
   }
 
-  /** Notify the search that the map viewport has moved. Re-sorts results by proximity. */
-  notifyViewportChanged(): void {
-    if (this.currentMap !== "dynamic-main-branch") return;
-    if (this.searchInput.value.trim() === "") return;
-    if (this.isInteracting) return; // Skip sorting while user is actively moving the map
 
-    // Read current viewport position from URL (always integers in url.ts)
-    const urlParams = new URLSearchParams(window.location.search);
-    const x = parseInt(urlParams.get("x") ?? "", 10);
-    const y = parseInt(urlParams.get("y") ?? "", 10);
-    if (!isNaN(x) && !isNaN(y)) {
-      this.searchResults.resortByProximity(x, y);
-    }
-  }
 
   private updateSearchResults() {
     const searchText = this.searchInput.value;
