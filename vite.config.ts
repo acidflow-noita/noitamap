@@ -95,6 +95,12 @@ export default defineConfig({
           // IMPORTANT: this MUST be separate from src/telescope/ adapter code.
           // The library has top-level `await` in image_processing.js that would
           // block the entire app if loaded eagerly with the adapter chunk.
+          if (id.includes("src/telescope/telescope-exports.ts")) {
+            return "telescope-lib";
+          }
+          if (id.includes("src/")) {
+            return "main";
+          }
           if (id.includes("noita-telescope")) {
             return "telescope-lib";
           }
