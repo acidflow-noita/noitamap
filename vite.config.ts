@@ -86,9 +86,17 @@ export default defineConfig({
       output: {
         // Force manual chunking for vendor dependencies
         manualChunks: (id) => {
-          if (id.includes("noita-telescope") || id.includes("src/telescope/")) {
-            return "telescope";
+          // noita-telescope library code gets its own lazy chunk.
+          // IMPORTANT: this MUST be separate from src/telescope/ adapter code.
+          // The library has top-level `await` in image_processing.js that would
+          // block the entire app if loaded eagerly with the adapter chunk.
+          if (id.includes("noita-telescope")) {
+            return "telescope-lib";
           }
+          // src/telescope/ adapter code stays in main (no forced chunk).
+          // This lets it load at startup without triggering the library's
+          // top-level await — the library only loads when initTelescope()
+          // calls `await import("./telescope-exports")`.
           if (id.includes("node_modules")) {
             if (id.includes("openseadragon")) return "vendor-osd";
             if (id.includes("pixi.js")) return "vendor-pixi";
