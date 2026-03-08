@@ -54,9 +54,10 @@ export function installFetchInterceptor(): void {
           const zip = await getZip(config.key);
           if (zip) {
             // 1. Try exact path (relative to zip root)
-            let zipPath = config.strip && fullZipPath.startsWith(config.strip)
-              ? fullZipPath.substring(config.strip.length)
-              : fullZipPath;
+            let zipPath =
+              config.strip && fullZipPath.startsWith(config.strip)
+                ? fullZipPath.substring(config.strip.length)
+                : fullZipPath;
 
             let file = zip.file(zipPath);
 
@@ -87,20 +88,18 @@ export function installFetchInterceptor(): void {
                 statusText: "OK",
                 headers: { "Content-Type": isImage ? "image/png" : "application/octet-stream" },
               });
-              } else {
-                // console.warn(`[FetchInterceptor] NOT FOUND: ${url} (Zip path: ${zipPath})`);
-              }
-            } // end if (zip)
-          } // end for zipConfigs
-          
-          // If we got here and it was a ./data/ request, we failed to find it in the zips.
-          // In original code this just falls through to returning `originalFetch`.
-        } // end if (match)
-      } // end if (url.startsWith)
+            }
+          } // end if (zip)
+        } // end for zipConfigs
 
-      // Fallback to original fetch
-      return originalFetch(input, init);
-    };
+        // If we got here and it was a ./data/ request, we failed to find it in the zips.
+        // In original code this just falls through to returning `originalFetch`.
+      } // end if (match)
+    } // end if (url.startsWith)
+
+    // Fallback to original fetch
+    return originalFetch(input, init);
+  };
 }
 
 // ─── Image src Interceptor ───────────────────────────────────────────────────
@@ -132,17 +131,16 @@ export function installImageSrcInterceptor(): void {
               { key: "pixel_scenes", strip: "data/pixel_scenes/" },
               { key: "wang_tiles", strip: "data/wang_tiles/" },
             ];
-            
+
             for (const config of zipConfigs) {
               const zip = await getZip(config.key);
               if (!zip) continue;
 
-              let localZipPath = config.strip && zipPath.startsWith(config.strip)
-                ? zipPath.substring(config.strip.length)
-                : zipPath;
+              let localZipPath =
+                config.strip && zipPath.startsWith(config.strip) ? zipPath.substring(config.strip.length) : zipPath;
 
               let file = zip.file(localZipPath);
-              
+
               if (!file && config.key === "main") {
                 const fallbacks = [
                   zipPath.replace("data/pixel_scenes/general/", "data/biome_impl/"),
