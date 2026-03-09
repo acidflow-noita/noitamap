@@ -125,7 +125,7 @@ const CONTAINER_TYPES = new Set([
 
 // ─── Sprite key resolution ──────────────────────────────────────────────────
 
-function getSpriteKey(poi: POI): string | null {
+function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | null {
   if (poi.type === "spell" && (poi as any).item) {
     return `spell:${String((poi as any).item).toLowerCase()}`;
   }
@@ -138,8 +138,22 @@ function getSpriteKey(poi: POI): string | null {
 
   if (poi.type === "item" && poi.item) {
     const item = poi.item;
-    if (item === "potion" || item === "potion_normal") return "item:potion";
-    if (item === "pouch" || item === "powder_stash_pouch") return "item:pouch";
+    if (item === "potion" || item === "potion_normal") {
+      const mat = (poi as any).material;
+      if (atlas && mat) {
+        const key = `item:potion:${mat}`;
+        if (atlas[key]) return key;
+      }
+      return "item:potion";
+    }
+    if (item === "pouch" || item === "powder_stash_pouch") {
+      const mat = (poi as any).material;
+      if (atlas && mat) {
+        const key = `item:pouch:${mat}`;
+        if (atlas[key]) return key;
+      }
+      return "item:pouch";
+    }
     if (item === "powder_stash") return "item:powder_stash";
     if (item === "gold" || item === "goldnugget") return "item:goldnugget_01";
     if (item === "heart") return "item:heart";
@@ -195,7 +209,7 @@ function addMarkerItem(
   worldCenter: number,
   atlas: Record<string, AtlasEntry>,
 ): void {
-  const key = getSpriteKey(poi);
+  const key = getSpriteKey(poi, atlas);
   if (!key || !atlas[key]) return;
   const entry = atlas[key];
   const frame = FIRST_FRAME_SIZE[key];

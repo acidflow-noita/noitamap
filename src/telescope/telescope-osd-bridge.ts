@@ -780,7 +780,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     contRow.style.cssText = "display:flex;flex-wrap:wrap;gap:3px;align-items:center";
     for (const ci of poi.items) {
       if (ci.ignore) continue;
-      const ciKey = getSpriteKey(ci);
+      const ciKey = getSpriteKey(ci, getAtlas() || undefined);
       if (ciKey) {
         const canvas = drawSpriteToCanvas(ciKey, 20, 20);
         if (canvas) {
@@ -980,11 +980,6 @@ export async function getPOISpriteFirstFrame(poi: {
   material?: string;
   enemy?: string;
 }): Promise<string | null> {
-  const key = getSpriteKey(poi as POI);
-  if (!key) return null;
-
-  if (spriteFirstFrameCache.has(key)) return spriteFirstFrameCache.get(key)!;
-
   // Eagerly load atlas+spritesheet if not already cached
   let atlas = getAtlas();
   let spritesheet = getSpritesheet();
@@ -993,6 +988,11 @@ export async function getPOISpriteFirstFrame(poi: {
     atlas = loaded.atlas;
     spritesheet = loaded.spritesheet;
   }
+
+  const key = getSpriteKey(poi as POI, atlas);
+  if (!key) return null;
+
+  if (spriteFirstFrameCache.has(key)) return spriteFirstFrameCache.get(key)!;
 
   if (atlas && spritesheet && atlas[key]) {
     const entry = atlas[key];

@@ -216,6 +216,42 @@ async function main() {
     sprites.push({ key: extra.key, data: img.data, width: img.width, height: img.height });
   }
 
+  // ─── Custom Material Icons ─────────────────────────────────────────────────
+  // Load material-specific potions and pouches from src/material-icons
+  const MATERIAL_ICONS_DIR = path.resolve(__dirname, "..", "src", "material-icons");
+  if (fs.existsSync(MATERIAL_ICONS_DIR)) {
+    console.log(`[build-spritesheet] Scanning material icons in ${MATERIAL_ICONS_DIR}...`);
+    const files = fs.readdirSync(MATERIAL_ICONS_DIR);
+    let materialIconCount = 0;
+    for (const file of files) {
+      if (!file.endsWith(".png")) continue;
+
+      let key = null;
+      if (file.startsWith("Materialpotion_")) {
+        const material = file.replace("Materialpotion_", "").replace(".png", "");
+        key = `item:potion:${material}`;
+      } else if (file.startsWith("Materialpouch_")) {
+        const material = file.replace("Materialpouch_", "").replace(".png", "");
+        key = `item:pouch:${material}`;
+      }
+
+      if (key) {
+        const buf = fs.readFileSync(path.join(MATERIAL_ICONS_DIR, file));
+        try {
+          let img = decodePng(buf);
+          // Assuming these icons don't need cropping/rotation
+          sprites.push({ key, data: img.data, width: img.width, height: img.height });
+          materialIconCount++;
+        } catch (e) {
+          console.warn(`  [WARN] Failed to decode ${file}: ${e.message}`);
+        }
+      }
+    }
+    console.log(`[build-spritesheet] Added ${materialIconCount} material icons.`);
+  } else {
+    console.warn(`[build-spritesheet] Material icons dir not found at ${MATERIAL_ICONS_DIR}`);
+  }
+
   // ─── Spell sprites (from ui_gfx/gun_actions/) ─────────────────────────────
   const spellPrefix = "data/ui_gfx/gun_actions/";
   const spellPaths = [];
