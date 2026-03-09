@@ -67,11 +67,7 @@ async function loadAtlas(): Promise<Record<string, AtlasEntry>> {
 
 // ─── Coordinate conversion ─────────────────────────────────────────────────
 
-function getCorrectedWorldPos(
-  rawX: number,
-  rawY: number,
-  worldCenter: number,
-): { x: number; y: number } {
+function getCorrectedWorldPos(rawX: number, rawY: number, worldCenter: number): { x: number; y: number } {
   const chunkX = Math.floor(rawX / 512) + worldCenter;
   const chunkY = Math.floor(rawY / 512) + 14;
 
@@ -101,8 +97,8 @@ function getCorrectedWorldPos(
 
 // ─── Multi-frame sprite first-frame dimensions ─────────────────────────────
 export const FIRST_FRAME_SIZE: Record<string, { w: number; h: number }> = {
-  "item:torch":              { w: 16, h: 16 },
-  "item:heart":              { w: 20, h: 20 },
+  "item:torch": { w: 16, h: 16 },
+  "item:heart": { w: 20, h: 20 },
   "item:heart_extrahp_evil": { w: 20, h: 20 },
 };
 
@@ -121,11 +117,17 @@ const CONTAINER_TYPES = new Set([
   "snowy_room",
   "robot_egg",
   "chest",
+  "laboratory",
 ]);
 
 // ─── Sprite key resolution ──────────────────────────────────────────────────
 
 function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | null {
+  // Spells inside containers have {type: 'item', item: 'spell', spell: 'SPELL_ID'}
+  if (poi.type === "item" && poi.item === "spell" && (poi as any).spell) {
+    return `spell:${String((poi as any).spell).toLowerCase()}`;
+  }
+
   if (poi.type === "spell" && (poi as any).item) {
     return `spell:${String((poi as any).item).toLowerCase()}`;
   }
@@ -158,12 +160,11 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | nu
     if (item === "gold" || item === "goldnugget") return "item:goldnugget_01";
     if (item === "heart") return "item:heart";
     if (item === "heart_bigger" || item === "heart_extra") return "item:heart_extrahp";
-    if (item === "full_heal") return "item:heart_extrahp_evil";
+    if (item === "full_heal") return "item:heart";
     if (item === "chest") return "item:chest";
     if (item === "chest_present") return "item:chest_present";
     if (item === "spell_refresh") return "item:spell_refresh";
     if (item === "broken_wand") return "item:broken_wand";
-    // if (item === "flask" || item === "flask_liquid") return "item:flask_liquid";
     if (item === "jar") return "item:jar";
     if (item === "bomb") return "item:bomb";
     if (item === "bomb_holy") return "item:bomb_holy";
@@ -179,7 +180,8 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | nu
   // Containers — use chest_random for regular chests, distinct icons for others
   if (poi.type === "chest") return "item:chest_random";
   if (poi.type === "pacifist_chest") return "item:chest_random";
-  // if (poi.type === "shop" || poi.type === "holy_mountain_shop") return "item:chest";
+  if (poi.type === "shop" || poi.type === "holy_mountain_shop") return "item:chest";
+  if (poi.type === "laboratory") return "item:potion";
   if (poi.type === "eye_room") return "item:evil_eye";
 
   // Boss drop types
@@ -225,9 +227,7 @@ function addMarkerItem(
   });
 }
 
-export async function buildMarkerData(
-  result: GenerationResult,
-): Promise<MarkerData> {
+export async function buildMarkerData(result: GenerationResult): Promise<MarkerData> {
   const [spritesheet, atlas] = await Promise.all([loadSpritesheet(), loadAtlas()]);
 
   const { poisByPW, worldCenter } = result;
@@ -252,7 +252,10 @@ export async function buildMarkerData(
   }
 
   // Compute bounding box
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
   for (const item of items) {
     const left = item.osdX - item.w / 2;
     const top = item.osdY - item.h / 2;
@@ -266,9 +269,15 @@ export async function buildMarkerData(
 
   const pad = 50;
   if (items.length > 0) {
-    minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+    minX -= pad;
+    minY -= pad;
+    maxX += pad;
+    maxY += pad;
   } else {
-    minX = 0; minY = 0; maxX = 1; maxY = 1;
+    minX = 0;
+    minY = 0;
+    maxX = 1;
+    maxY = 1;
   }
 
   const originX = minX;
@@ -287,7 +296,9 @@ export async function buildMarkerData(
   }
   index.finish();
 
-  console.log(`[POISpatialIndex] Built index with ${items.length} markers, bbox: (${Math.round(originX)},${Math.round(originY)}) ${Math.round(bboxWidth)}x${Math.round(bboxHeight)}`);
+  console.log(
+    `[POISpatialIndex] Built index with ${items.length} markers, bbox: (${Math.round(originX)},${Math.round(originY)}) ${Math.round(bboxWidth)}x${Math.round(bboxHeight)}`,
+  );
   return { index, spritesheet, atlas, items, originX, originY, bboxWidth, bboxHeight };
 }
 
@@ -296,11 +307,7 @@ export async function buildMarkerData(
  * Synchronous — no blob URL creation needed.
  * Returns the canvas, or null if the sprite key isn't in the atlas.
  */
-export function drawSpriteToCanvas(
-  key: string,
-  displayW: number,
-  displayH: number,
-): HTMLCanvasElement | null {
+export function drawSpriteToCanvas(key: string, displayW: number, displayH: number): HTMLCanvasElement | null {
   if (!cachedSpritesheet || !cachedAtlas) return null;
   const entry = cachedAtlas[key];
   if (!entry) return null;

@@ -8,12 +8,18 @@
 import type { GenerationResult, POI, PixelScene, TileLayer } from "./telescope-adapter";
 import { getDataZip } from "../data-archive";
 import { installTelescopeShim } from "./telescope-dom-shim";
-import {
-  installFetchInterceptor,
-  installImageSrcInterceptor,
-} from "./telescope-data-bridge";
+import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope-data-bridge";
 import { decodePngToRgba, rgbaToPngBlobUrl } from "./png-decode";
-import { buildMarkerData, getAtlas, getSpritesheet, getSpriteKey, loadSpritesheetAndAtlas, FIRST_FRAME_SIZE, CONTAINER_TYPES, drawSpriteToCanvas } from "./poi-spatial-index";
+import {
+  buildMarkerData,
+  getAtlas,
+  getSpritesheet,
+  getSpriteKey,
+  loadSpritesheetAndAtlas,
+  FIRST_FRAME_SIZE,
+  CONTAINER_TYPES,
+  drawSpriteToCanvas,
+} from "./poi-spatial-index";
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
 import { createMarkerTileSource } from "./marker-tile-source";
 import { gameTranslator } from "../game-translations/translator";
@@ -257,6 +263,13 @@ export function clearDynamicOverlays(viewer: any): void {
       URL.revokeObjectURL(url);
     }
   }, 2000);
+}
+
+/**
+ * Check if dynamic overlays are still present in the OSD viewer.
+ */
+export function hasDynamicOverlays(): boolean {
+  return dynamicTiledImages.size > 0;
 }
 
 /**
@@ -620,7 +633,10 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     line-height: 1;
   `;
   closeBtn.textContent = "x";
-  closeBtn.onclick = (e) => { e.stopPropagation(); hideMarkerTooltip(); };
+  closeBtn.onclick = (e) => {
+    e.stopPropagation();
+    hideMarkerTooltip();
+  };
   tooltipEl.appendChild(closeBtn);
 
   const poi = item.poi;
@@ -645,7 +661,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // but some paths may wrap them in a stats sub-object. Check both.
     const s = poi.stats || poi;
     const statsDiv = document.createElement("div");
-    statsDiv.style.cssText = "display:grid;grid-template-columns:auto auto;gap:1px 12px;font-size:12px;margin-bottom:6px;color:#bbb";
+    statsDiv.style.cssText =
+      "display:grid;grid-template-columns:auto auto;gap:1px 12px;font-size:12px;margin-bottom:6px;color:#bbb";
     const addStat = (label: string, value: string) => {
       const l = document.createElement("span");
       l.style.color = "#888";
@@ -673,37 +690,56 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     if (spread != null) addStat("Spread:", `${spread} deg`);
     if (statsDiv.childNodes.length > 0) tooltipEl.appendChild(statsDiv);
 
-    // Spell icons (always casts + regular)
-    const allSpells = [...(poi.always_casts || poi.alwaysCasts || []), ...(poi.cards || poi.spells || [])];
-    const acCount = (poi.always_casts || poi.alwaysCasts || []).length;
-    if (allSpells.length > 0) {
+    // Spell icons (always casts + regular) — show full wand capacity
+    const alwaysCasts = poi.always_casts || poi.alwaysCasts || [];
+    const cards = poi.cards || poi.spells || [];
+    const allSpells = [...alwaysCasts, ...cards];
+    const acCount = alwaysCasts.length;
+    const deckCapacity = cap ?? allSpells.length;
+    // Build display slots: always-casts first, then cards padded to deck capacity
+    const displaySlots: Array<{ id: string | null; isAC: boolean }> = [];
+    for (let i = 0; i < acCount; i++) {
+      const sp = alwaysCasts[i];
+      displaySlots.push({ id: sp ? (typeof sp === "string" ? sp : (sp.id ?? sp)) : null, isAC: true });
+    }
+    for (let i = 0; i < deckCapacity; i++) {
+      const sp = cards[i];
+      displaySlots.push({ id: sp ? (typeof sp === "string" ? sp : (sp.id ?? sp)) : null, isAC: false });
+    }
+    if (displaySlots.length > 0) {
       const spellsRow = document.createElement("div");
       spellsRow.style.cssText = "display:flex;flex-wrap:wrap;gap:3px;margin-top:4px";
-      allSpells.forEach((spell: any, i: number) => {
-        const spellId = typeof spell === "string" ? spell : spell.id ?? spell;
-        const isAC = i < acCount;
+      for (const slot of displaySlots) {
         const container = document.createElement("div");
-        container.style.cssText = `position:relative;display:inline-block;background:#111;border-radius:3px;padding:1px;border:1px solid ${isAC ? "#c8a2ff" : "#333"}`;
-        container.title = String(spellId);
-        if (isAC) {
+        container.style.cssText = `position:relative;display:inline-block;width:22px;height:22px;background:#111;border-radius:3px;border:1px solid ${slot.isAC ? "#c8a2ff" : "#333"}`;
+        if (slot.id) {
+          container.title = String(slot.id);
+        }
+        if (slot.isAC) {
           const badge = document.createElement("div");
           badge.textContent = "AC";
-          badge.style.cssText = "position:absolute;top:-5px;left:-5px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:bold;background:white;color:black;border-radius:50%;border:1px solid #333;z-index:2";
+          badge.style.cssText =
+            "position:absolute;top:-5px;left:-5px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:bold;background:white;color:black;border-radius:50%;border:1px solid #333;z-index:2";
           container.appendChild(badge);
         }
-        const img = document.createElement("img");
-        img.style.cssText = "width:20px;height:20px;image-rendering:pixelated;display:block";
-        getPOISpriteFirstFrame({ type: "spell", item: String(spellId) }).then((url) => {
-          if (url) {
-            img.src = url;
-          } else {
-            img.src = `./assets/icons/spells/${String(spellId).toLowerCase()}.png`;
-            img.onerror = () => { img.style.display = "none"; };
-          }
-        });
-        container.appendChild(img);
+        if (slot.id) {
+          const img = document.createElement("img");
+          img.style.cssText = "width:20px;height:20px;image-rendering:pixelated;display:block;margin:auto";
+          getPOISpriteFirstFrame({ type: "spell", item: String(slot.id) }).then((url) => {
+            if (url) {
+              img.src = url;
+            } else {
+              img.src = `./assets/icons/spells/${String(slot.id).toLowerCase()}.png`;
+              img.onerror = () => {
+                img.style.display = "none";
+              };
+            }
+          });
+          container.appendChild(img);
+        }
+        // Empty slot: container is already styled as a 22x22 dark square
         spellsRow.appendChild(container);
-      });
+      }
       tooltipEl.appendChild(spellsRow);
     }
   } else if (poi.type === "item" || poi.type === "chest") {
@@ -740,10 +776,12 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     if (poi.contents && poi.contents.length) {
       const contentsDiv = document.createElement("div");
       contentsDiv.style.cssText = "margin-top:2px;color:#aaa;font-size:12px";
-      contentsDiv.textContent = `Contains: ${poi.contents.map((c: any) => {
-        const cName = typeof c === "string" ? c : c.name ?? c.item ?? String(c);
-        return gameTranslator.translateItem(cName);
-      }).join(", ")}`;
+      contentsDiv.textContent = `Contains: ${poi.contents
+        .map((c: any) => {
+          const cName = typeof c === "string" ? c : (c.name ?? c.item ?? String(c));
+          return gameTranslator.translateItem(cName);
+        })
+        .join(", ")}`;
       tooltipEl.appendChild(contentsDiv);
     }
   } else if (poi.type === "spell") {
@@ -800,7 +838,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       }
       // Fallback: text label
       const span = document.createElement("span");
-      span.style.cssText = "font-size:11px;color:#aaa;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
+      span.style.cssText =
+        "font-size:11px;color:#aaa;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
       span.textContent = translatedName;
       contRow.appendChild(span);
     }
@@ -932,6 +971,13 @@ export async function renderGenerationResult(viewer: OSDViewer, result: Generati
   installClickHandler(viewer, markerData);
   activeMarkerData = markerData;
 
+  let itemsProgressDone = false;
+  const emitItemsDone = () => {
+    if (itemsProgressDone) return;
+    itemsProgressDone = true;
+    window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 100 } }));
+  };
+
   viewer.addTiledImage({
     tileSource: markerTileSource,
     x: markerData.originX,
@@ -945,13 +991,16 @@ export async function renderGenerationResult(viewer: OSDViewer, result: Generati
         return;
       }
       dynamicTiledImages.add(event.item);
-      window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 100 } }));
+      emitItemsDone();
     },
     error: (err: any) => {
       console.warn("[OSD Bridge] Failed to add marker tiled image:", err);
-      window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 100 } }));
+      emitItemsDone();
     },
   });
+
+  // Fallback: if OSD callback hasn't fired within 3s, force-complete the bar
+  setTimeout(emitItemsDone, 3000);
 }
 
 export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: number; worldX: number; worldY: number }> {

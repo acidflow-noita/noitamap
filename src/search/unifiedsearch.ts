@@ -10,6 +10,22 @@ import spells from "../data/spells.json";
 import { EventEmitter2 } from "eventemitter2";
 import type { DynamicPOI } from "../dynamic-map";
 
+// Inlined from poi-spatial-index to avoid pulling Flatbush into the main bundle
+const CONTAINER_TYPES = new Set([
+  "holy_mountain_shop",
+  "shop",
+  "eye_room",
+  "pacifist_chest",
+  "triangle_boss",
+  "alchemist_boss",
+  "pyramid_boss",
+  "dragon",
+  "wand_altar",
+  "snowy_room",
+  "robot_egg",
+  "chest",
+  "laboratory",
+]);
 export type UnifiedSearchCreateOptions = {
   currentMap: MapName;
   form: HTMLFormElement;
@@ -136,8 +152,6 @@ export class UnifiedSearch extends EventEmitter2 {
     this.lastSearchText = value;
   }
 
-
-
   /** Replace the dynamic POI index (called by the generation pipeline). */
   setDynamicPOIs(pois: DynamicPOI[]): void {
     this.dynamicPOIs = pois;
@@ -156,8 +170,6 @@ export class UnifiedSearch extends EventEmitter2 {
       this.updateSearchResults();
     }
   }
-
-
 
   private updateSearchResults() {
     const searchText = this.searchInput.value;
@@ -248,9 +260,34 @@ export class UnifiedSearch extends EventEmitter2 {
         // Respect filters if any are active
         if (this.activeFilters.size > 0) {
           if (this.activeFilters.has("wands") && p.type === "wand") return true;
-          // If spells filter is active, we only show it if the search text matched a spell inside this POI
           if (this.activeFilters.has("spells") && spellsMatched && p.type === "wand") return true;
-          // Add more dynamic filters here later (chests, items, etc)
+          if (this.activeFilters.has("items") && p.type === "item") return true;
+          if (this.activeFilters.has("chests") && CONTAINER_TYPES.has(p.type)) return true;
+          if (
+            this.activeFilters.has("potions") &&
+            p.type === "item" &&
+            (p.item === "potion" ||
+              p.item === "potion_normal" ||
+              p.item === "pouch" ||
+              p.item === "powder_stash" ||
+              p.item === "powder_stash_pouch")
+          )
+            return true;
+          if (
+            this.activeFilters.has("hearts") &&
+            p.type === "item" &&
+            (p.item === "heart" || p.item === "heart_bigger" || p.item === "full_heal")
+          )
+            return true;
+          if (
+            this.activeFilters.has("bosses") &&
+            (p.type === "triangle_boss" ||
+              p.type === "alchemist_boss" ||
+              p.type === "pyramid_boss" ||
+              p.type === "dragon")
+          )
+            return true;
+          if (this.activeFilters.has("enemies") && p.type === "enemy") return true;
           return false;
         }
 
@@ -406,8 +443,14 @@ export class UnifiedSearch extends EventEmitter2 {
     const isDynamicMap = currentMap === "dynamic-main-branch";
     const filters = isDynamicMap
       ? [
-          { type: "wands", iconSrc: "data/items_gfx/wands/wand_0531.png" }, // wand_0531 is Wand_handgun
+          { type: "wands", iconSrc: "data/items_gfx/wands/wand_0531.png" },
           { type: "spells", iconSrc: "assets/icons/spells/light_bullet.png" },
+          { type: "items", iconSrc: "assets/icons/overlay-toggles/icon-items.webp" },
+          { type: "chests", iconSrc: "assets/spritesheet.png" },
+          { type: "potions", iconSrc: "assets/spritesheet.png" },
+          { type: "hearts", iconSrc: "assets/spritesheet.png" },
+          { type: "bosses", iconSrc: "assets/icons/overlay-toggles/icon-bosses.webp" },
+          { type: "enemies", iconSrc: "assets/spritesheet.png" },
         ]
       : [
           { type: "spells", iconSrc: "assets/icons/spells/light_bullet.png" },

@@ -90,7 +90,6 @@ import { initKonamiCode } from "./konami";
 import { AuthUI } from "./auth/auth-ui";
 import { authService } from "./auth/auth-service";
 import { DrawingUI } from "./drawing/drawing-ui";
-import { loadSpritesheetAndAtlas } from "./telescope/poi-spatial-index";
 
 // Global reference to unified search for translation updates
 let globalUnifiedSearch: UnifiedSearch | null = null;
@@ -492,8 +491,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   const loadingIndicator = assertElementById("loadingIndicator", HTMLElement);
-  // show/hide loading indicator
+  // show/hide loading indicator — BUT suppress while on the dynamic map
+  // because OSD keeps emitting loading-change(true) as it lazily loads the
+  // many biome tile images, which would keep the spinner stuck.
   app.on("loading-change", (isLoading) => {
+    if (app.getMap() === "dynamic-main-branch") return;
     loadingIndicator.style.display = isLoading ? "block" : "none";
   });
 

@@ -26,8 +26,10 @@ export function createMarkerTileSource(markerData: MarkerData): any {
     if (item.h > maxMarkerDim) maxMarkerDim = item.h;
   }
 
-  console.log(`[MarkerTileSource] Creating: ${Math.round(bboxWidth)}x${Math.round(bboxHeight)}, ` +
-    `${items.length} markers, maxLevel=${maxLevel}, origin=(${Math.round(originX)},${Math.round(originY)})`);
+  console.log(
+    `[MarkerTileSource] Creating: ${Math.round(bboxWidth)}x${Math.round(bboxHeight)}, ` +
+      `${items.length} markers, maxLevel=${maxLevel}, origin=(${Math.round(originX)},${Math.round(originY)})`,
+  );
 
   function tileBounds(level: number, x: number, y: number) {
     const scale = Math.pow(2, maxLevel - level);
@@ -74,9 +76,11 @@ export function createMarkerTileSource(markerData: MarkerData): any {
     const results = index.search(bx - pad, by - pad, bx + bw + pad, by + bh + pad);
 
     if (downloadCount < 5) {
-      console.log(`[MarkerTileSource] downloadTileStart: level=${level} (${x},${y}), ` +
-        `bounds=(${Math.round(bx)},${Math.round(by)} ${Math.round(bw)}x${Math.round(bh)}), ` +
-        `hits=${results.length}`);
+      console.log(
+        `[MarkerTileSource] downloadTileStart: level=${level} (${x},${y}), ` +
+          `bounds=(${Math.round(bx)},${Math.round(by)} ${Math.round(bw)}x${Math.round(bh)}), ` +
+          `hits=${results.length}`,
+      );
       downloadCount++;
       if (downloadCount === 5) console.log(`[MarkerTileSource] (suppressing further logs)`);
     }
@@ -109,14 +113,25 @@ export function createMarkerTileSource(markerData: MarkerData): any {
         const drawW = item.w * drawScale;
         const drawH = item.h * drawScale;
 
-        // Skip markers too small to render at this zoom level
-        if (drawW < 1 || drawH < 1) continue;
+        // Enforce minimum rendered size so markers don't disappear at
+        // intermediate zoom levels (causes "blinking" as tiles recalculate).
+        // Very small markers render as a 2px dot; still visible as a hint.
+        const MIN_RENDER = 2;
+        let finalW = drawW;
+        let finalH = drawH;
+        let finalX = drawX;
+        let finalY = drawY;
+        if (finalW < MIN_RENDER || finalH < MIN_RENDER) {
+          // Center the clamped square on the original center
+          const cx = drawX + drawW / 2;
+          const cy = drawY + drawH / 2;
+          finalW = Math.max(finalW, MIN_RENDER);
+          finalH = Math.max(finalH, MIN_RENDER);
+          finalX = cx - finalW / 2;
+          finalY = cy - finalH / 2;
+        }
 
-        ctx.drawImage(
-          spritesheet,
-          atlasEntry.x, atlasEntry.y, item.w, item.h,
-          drawX, drawY, drawW, drawH,
-        );
+        ctx.drawImage(spritesheet, atlasEntry.x, atlasEntry.y, item.w, item.h, finalX, finalY, finalW, finalH);
       }
     }
 

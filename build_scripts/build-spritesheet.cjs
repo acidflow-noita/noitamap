@@ -76,12 +76,51 @@ function cropFirstFrame(data, sw, sh) {
   return { data: out, width: frameW, height: sh };
 }
 
+/**
+ * Parse a Noita Sprite XML and extract offset_x, offset_y, frame_width, frame_height.
+ * Returns { offsetX, offsetY, frameW, frameH } or null if no XML found.
+ */
+async function parseXmlOffsets(zip, xmlPath) {
+  const f = zip.file(xmlPath);
+  if (!f) return null;
+  const txt = await f.async("text");
+  const oxMatch = txt.match(/offset_x="(\d+)"/);
+  const oyMatch = txt.match(/offset_y="(\d+)"/);
+  const fwMatch = txt.match(/frame_width="(\d+)"/);
+  const fhMatch = txt.match(/frame_height="(\d+)"/);
+  // Return null only if XML has NO useful data at all
+  if (!oxMatch && !oyMatch && !fwMatch && !fhMatch) return null;
+  return {
+    offsetX: oxMatch ? parseInt(oxMatch[1]) : 0,
+    offsetY: oyMatch ? parseInt(oyMatch[1]) : 0,
+    frameW: fwMatch ? parseInt(fwMatch[1]) : null,
+    frameH: fhMatch ? parseInt(fhMatch[1]) : null,
+  };
+}
+
+/**
+ * Crop a sprite to the first frame using XML-defined frame dimensions.
+ * Falls back to square-crop (height×height) if no XML data.
+ */
+function cropToFrame(data, sw, sh, frameW, frameH) {
+  const fw = frameW || sh; // default: assume square frame
+  const fh = frameH || sh;
+  if (fw >= sw && fh >= sh) return { data, width: sw, height: sh }; // no crop needed
+  const out = new Uint8ClampedArray(fw * fh * 4);
+  for (let y = 0; y < fh; y++) {
+    const srcOff = y * sw * 4;
+    const dstOff = y * fw * 4;
+    out.set(data.subarray(srcOff, srcOff + fw * 4), dstOff);
+  }
+  return { data: out, width: fw, height: fh };
+}
+
 async function main() {
   console.log("[build-spritesheet] Loading data.zip...");
   const zipBuf = fs.readFileSync(DATA_ZIP);
   const zip = await JSZip.loadAsync(zipBuf);
 
-  /** @type {Array<{key: string, data: Uint8ClampedArray, width: number, height: number}>} */
+  /** @type {Array<{key: string, data: Uint8ClampedArray, width: number, height: number, offsetX?: number, offsetY?: number}>} */
   const sprites = [];
 
   // ─── Wand sprites (rotated 90° CCW) ────────────────────────────────────────
@@ -100,7 +139,14 @@ async function main() {
     const img = decodePng(buf);
     const rotated = rotateCCW(img.data, img.width, img.height);
     const name = path.basename(p, ".png");
-    sprites.push({ key: `wand:${name}`, ...rotated });
+    const xmlPath = p.replace(".png", ".xml");
+    const offsets = await parseXmlOffsets(zip, xmlPath);
+    const entry = { key: `wand:${name}`, ...rotated };
+    if (offsets) {
+      entry.offsetX = offsets.offsetX;
+      entry.offsetY = offsets.offsetY;
+    }
+    sprites.push(entry);
   }
 
   // Also include custom wand sprites
@@ -118,7 +164,14 @@ async function main() {
     const img = decodePng(buf);
     const rotated = rotateCCW(img.data, img.width, img.height);
     const name = path.basename(p, ".png");
-    sprites.push({ key: `wand:custom/${name}`, ...rotated });
+    const xmlPath = p.replace(".png", ".xml");
+    const offsets = await parseXmlOffsets(zip, xmlPath);
+    const entry = { key: `wand:custom/${name}`, ...rotated };
+    if (offsets) {
+      entry.offsetX = offsets.offsetX;
+      entry.offsetY = offsets.offsetY;
+    }
+    sprites.push(entry);
   }
 
   // ─── Item sprites ──────────────────────────────────────────────────────────
@@ -191,17 +244,27 @@ async function main() {
     }
     const buf = await f.async("arraybuffer");
     let img = decodePng(buf);
-    // Crop animated sprites to first frame
-    if (img.width > img.height) {
+    const xmlPath = `data/items_gfx/${name}.xml`;
+    const xmlData = await parseXmlOffsets(zip, xmlPath);
+    // Use XML frame dimensions for precise cropping; fall back to old heuristic
+    if (xmlData && xmlData.frameW && xmlData.frameH) {
+      img = cropToFrame(img.data, img.width, img.height, xmlData.frameW, xmlData.frameH);
+    } else if (img.width > img.height) {
       img = cropFirstFrame(img.data, img.width, img.height);
     }
-    sprites.push({ key: `item:${name}`, data: img.data, width: img.width, height: img.height });
+    const entry = { key: `item:${name}`, data: img.data, width: img.width, height: img.height };
+    if (xmlData) {
+      if (xmlData.offsetX) entry.offsetX = xmlData.offsetX;
+      if (xmlData.offsetY) entry.offsetY = xmlData.offsetY;
+    }
+    sprites.push(entry);
   }
 
   // Extra item sprites from non-standard paths
+  // noCrop: true → don't crop even if width > height (not animated, just wider)
   const extraItems = [
-    { key: "item:chest_random", path: "data/buildings_gfx/chest_random.png" },
-    { key: "item:chest_random_super", path: "data/buildings_gfx/chest_random_super.png" },
+    { key: "item:chest_random", path: "data/buildings_gfx/chest_random.png", noCrop: true },
+    { key: "item:chest_random_super", path: "data/buildings_gfx/chest_random_super.png", noCrop: true },
     { key: "item:potion", path: "data/ui_gfx/items/potion.png" },
   ];
   for (const extra of extraItems) {
@@ -212,8 +275,21 @@ async function main() {
     }
     const buf = await f.async("arraybuffer");
     let img = decodePng(buf);
-    if (img.width > img.height) img = cropFirstFrame(img.data, img.width, img.height);
-    sprites.push({ key: extra.key, data: img.data, width: img.width, height: img.height });
+    const xmlPath = extra.path.replace(".png", ".xml");
+    const xmlData = await parseXmlOffsets(zip, xmlPath);
+    if (!extra.noCrop) {
+      if (xmlData && xmlData.frameW && xmlData.frameH) {
+        img = cropToFrame(img.data, img.width, img.height, xmlData.frameW, xmlData.frameH);
+      } else if (img.width > img.height) {
+        img = cropFirstFrame(img.data, img.width, img.height);
+      }
+    }
+    const entry = { key: extra.key, data: img.data, width: img.width, height: img.height };
+    if (xmlData) {
+      if (xmlData.offsetX) entry.offsetX = xmlData.offsetX;
+      if (xmlData.offsetY) entry.offsetY = xmlData.offsetY;
+    }
+    sprites.push(entry);
   }
 
   // ─── Custom Material Icons ─────────────────────────────────────────────────
@@ -292,7 +368,10 @@ async function main() {
       curX = 0;
       rowHeight = 0;
     }
-    atlas[s.key] = { x: curX, y: curY, w: s.width, h: s.height };
+    const atlasEntry = { x: curX, y: curY, w: s.width, h: s.height };
+    if (s.offsetX != null) atlasEntry.ox = s.offsetX;
+    if (s.offsetY != null) atlasEntry.oy = s.offsetY;
+    atlas[s.key] = atlasEntry;
     s._px = curX;
     s._py = curY;
     curX += s.width + 1; // 1px gap between sprites

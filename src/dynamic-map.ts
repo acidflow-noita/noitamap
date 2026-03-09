@@ -15,7 +15,12 @@ import { fetchDailySeed } from "./data_sources/daily_seed";
 import { parseURL, updateURLWithSeed, clearSeedParams } from "./data_sources/url";
 import { getCachedGeneration, cacheGeneration } from "./telescope/tile-cache";
 import { generateDynamicMap, type GenerationResult } from "./telescope/telescope-adapter";
-import { renderGenerationResult, clearDynamicOverlays, getAllPOIsFlat } from "./telescope/telescope-osd-bridge";
+import {
+  renderGenerationResult,
+  clearDynamicOverlays,
+  getAllPOIsFlat,
+  hasDynamicOverlays,
+} from "./telescope/telescope-osd-bridge";
 
 // ─── Types & state ───────────────────────────────────────────────────────────
 
@@ -108,14 +113,24 @@ export async function runDynamicMap(
 ): Promise<GenerationResult | null> {
   const { viewer, onLoadingChange, onPOIsReady, onSeedResolved } = opts;
 
-  // 0. Skip if already showing this seed (avoids blinking and redundant loads)
-  // Use `dynamicRendered` instead of `viewer.world.getItemCount()` because
-  // the static map's DZI tiles inflate the item count even when no biomes
-  // have been rendered (e.g. after import → map switch → back to dynamic).
-  if (seed === currentSeed && dynamicRendered) {
+  // 0. Skip only if we truly already rendered this seed AND the overlays
+  //    are still present in OSD. A drawing import or map change may have
+  //    removed the overlays without going through clearDynamicMap, so we
+  //    also verify the overlays are physically present via hasDynamicOverlays().
+  if (seed === currentSeed && dynamicRendered && hasDynamicOverlays()) {
     console.log(`[DynamicMap] Seed ${seed} is already active, skipping redundant render.`);
+    // Still re-emit POIs so search is populated (it may have been cleared)
+    if (onPOIsReady && lastResult) {
+      const flat = getAllPOIsFlat(lastResult);
+      const dynamicPOIs: DynamicPOI[] = flat.map((p, i) => ({
+        ...p,
+        id: `dyn-${i}`,
+        name: buildPOIName(p),
+      }));
+      onPOIsReady(dynamicPOIs);
+    }
     onLoadingChange?.(false);
-    return null;
+    return lastResult;
   }
 
   onLoadingChange?.(true);

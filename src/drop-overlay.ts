@@ -104,12 +104,19 @@ export function setupDropOverlay(i18next: any, loadProCallback: () => Promise<bo
 
     // ── Extract image blob if present ──
     let imageBlob: File | null = null;
+    let jsonFile: File | null = null;
     const files = Array.from(clipboardData.files || []);
     if (files.length > 0) {
-      const maybeImage = files.find((f) => f.type.startsWith("image/"));
-      if (maybeImage) imageBlob = maybeImage;
+      // Check for JSON file first (pasted from file manager)
+      const maybeJson = files.find((f) => f.type === "application/json" || f.name?.toLowerCase().endsWith(".json"));
+      if (maybeJson) {
+        jsonFile = maybeJson;
+      } else {
+        const maybeImage = files.find((f) => f.type.startsWith("image/"));
+        if (maybeImage) imageBlob = maybeImage;
+      }
     }
-    if (!imageBlob) {
+    if (!imageBlob && !jsonFile) {
       const imageItem = Array.from(clipboardData.items).find(
         (item) => item.kind === "file" && item.type.startsWith("image/"),
       );
@@ -119,7 +126,7 @@ export function setupDropOverlay(i18next: any, loadProCallback: () => Promise<bo
     // ── Extract JSON text if present ──
     // Read the text synchronously via getData (available during the paste event).
     let jsonText: string | null = null;
-    if (!imageBlob) {
+    if (!imageBlob && !jsonFile) {
       const rawText = clipboardData.getData("text/plain");
       if (rawText) {
         const trimmed = rawText.trim();
@@ -139,7 +146,7 @@ export function setupDropOverlay(i18next: any, loadProCallback: () => Promise<bo
     }
 
     // Nothing pasteable found
-    if (!imageBlob && !jsonText) return;
+    if (!imageBlob && !jsonFile && !jsonText) return;
 
     e.preventDefault();
     console.log("[DropOverlay] Paste detected, loading pro bundle…");
@@ -169,7 +176,10 @@ export function setupDropOverlay(i18next: any, loadProCallback: () => Promise<bo
     document.removeEventListener("paste", bootstrapPasteHandler);
 
     // Route to the appropriate pro handler with the extracted data
-    if (imageBlob) {
+    if (jsonFile && window.__noitamap?.handleImportDrop) {
+      // JSON file pasted from file manager — import directly
+      await window.__noitamap.handleImportDrop(jsonFile);
+    } else if (imageBlob) {
       // Check if it's a WebP with embedded drawing data (import vs vectorize)
       if (imageBlob.type === "image/webp" && window.__noitamap?.handleImportDrop) {
         // Let the pro handler decide — pass as import first
