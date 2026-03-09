@@ -67,10 +67,6 @@ async function loadAtlas(): Promise<Record<string, AtlasEntry>> {
 
 // ─── Coordinate conversion ─────────────────────────────────────────────────
 
-/**
- * Same logic as getCorrectedWorldPos in telescope-osd-bridge.ts.
- * Maps raw Noita world coordinates to linearized OSD image coordinates.
- */
 function getCorrectedWorldPos(
   rawX: number,
   rawY: number,
@@ -104,31 +100,37 @@ function getCorrectedWorldPos(
 }
 
 // ─── Multi-frame sprite first-frame dimensions ─────────────────────────────
-// Atlas stores full spritesheets (all animation frames). For rendering we only
-// want the first frame, which sits in the top-left corner of the atlas region.
-// Frame dims come from Noita's sprite XML files (e.g. data/items_gfx/heart.xml).
-// Only entries where atlas size > frame size need to be listed here.
 export const FIRST_FRAME_SIZE: Record<string, { w: number; h: number }> = {
-  "item:torch":              { w: 16, h: 16 },  // 48x48 atlas, 3x3 grid
-  "item:heart":              { w: 20, h: 20 },  // 40x40 atlas, 2x2 grid (frame_width=20 per XML)
-  "item:heart_extrahp_evil": { w: 20, h: 20 },  // 40x40 atlas, 2x2 grid
+  "item:torch":              { w: 16, h: 16 },
+  "item:heart":              { w: 20, h: 20 },
+  "item:heart_extrahp_evil": { w: 20, h: 20 },
 };
+
+// ─── Container types ────────────────────────────────────────────────────────
+
+const CONTAINER_TYPES = new Set([
+  "holy_mountain_shop",
+  "shop",
+  "eye_room",
+  "pacifist_chest",
+  "triangle_boss",
+  "alchemist_boss",
+  "pyramid_boss",
+  "dragon",
+  "wand_altar",
+  "snowy_room",
+  "robot_egg",
+  "chest",
+]);
 
 // ─── Sprite key resolution ──────────────────────────────────────────────────
 
-/**
- * Determine the atlas sprite key for a given POI.
- */
 function getSpriteKey(poi: POI): string | null {
   if (poi.type === "spell" && (poi as any).item) {
-    // spell IDs are UPPERCASE in spells.json but lowercase in atlas.json
     return `spell:${String((poi as any).item).toLowerCase()}`;
   }
 
   if (poi.type === "wand" && poi.sprite) {
-    // poi.sprite can be a filename like "wand_0001" or a full path
-    // like "data/items_gfx/wands/wand_0001.png". The atlas keys use
-    // the filename without extension, e.g. "wand:wand_0001".
     const parts = poi.sprite.split("/");
     const filename = parts[parts.length - 1].replace(/\.png$/, "");
     return `wand:${filename}`;
@@ -136,7 +138,6 @@ function getSpriteKey(poi: POI): string | null {
 
   if (poi.type === "item" && poi.item) {
     const item = poi.item;
-    // Map common item names to atlas keys
     if (item === "potion" || item === "potion_normal") return "item:potion";
     if (item === "pouch" || item === "powder_stash_pouch") return "item:pouch";
     if (item === "powder_stash") return "item:powder_stash";
@@ -147,26 +148,69 @@ function getSpriteKey(poi: POI): string | null {
     if (item === "chest") return "item:chest";
     if (item === "chest_present") return "item:chest_present";
     if (item === "spell_refresh") return "item:spell_refresh";
+    if (item === "broken_wand") return "item:broken_wand";
+    if (item === "flask" || item === "flask_liquid") return "item:flask_liquid";
+    if (item === "jar") return "item:jar";
+    if (item === "bomb") return "item:bomb";
+    if (item === "bomb_holy") return "item:bomb_holy";
+    if (item === "bomb_holy_giga") return "item:bomb_holy_giga";
+    if (item === "torch") return "item:torch";
+    if (item === "orb") return "item:orb";
+    if (item === "perk") return "item:perk";
+    if (item === "emerald_tablet") return "item:emerald_tablet";
     if (item === "egg" || item.startsWith("egg_")) return `item:${item}`;
-    // Fall through to generic lookup
-    const key = `item:${item}`;
-    return key;
+    return `item:${item}`;
   }
 
-  // Containers
-  if (poi.type === "chest") return "item:chest";
+  // Containers — use chest_random for regular chests, distinct icons for others
+  if (poi.type === "chest") return "item:chest_random";
+  if (poi.type === "pacifist_chest") return "item:chest_random";
   if (poi.type === "shop" || poi.type === "holy_mountain_shop") return "item:chest";
   if (poi.type === "eye_room") return "item:evil_eye";
+
+  // Boss drop types
+  if (
+    poi.type === "triangle_boss" ||
+    poi.type === "alchemist_boss" ||
+    poi.type === "pyramid_boss" ||
+    poi.type === "dragon"
+  ) {
+    return "item:chest_random_super";
+  }
+
+  // Wand altars / special wand sources
+  if (poi.type === "wand_altar" || poi.type === "snowy_room" || poi.type === "robot_egg") {
+    return "item:broken_wand";
+  }
 
   return null;
 }
 
 // ─── Build marker data ──────────────────────────────────────────────────────
 
-/**
- * Flatten all POIs from the generation result, unwrapping containers,
- * and build a Flatbush spatial index + parallel items array.
- */
+function addMarkerItem(
+  items: MarkerItem[],
+  poi: POI,
+  pw: number,
+  worldCenter: number,
+  atlas: Record<string, AtlasEntry>,
+): void {
+  const key = getSpriteKey(poi);
+  if (!key || !atlas[key]) return;
+  const entry = atlas[key];
+  const frame = FIRST_FRAME_SIZE[key];
+  const { x, y } = getCorrectedWorldPos(poi.x, poi.y, worldCenter);
+  items.push({
+    poi,
+    pw,
+    spriteKey: key,
+    osdX: x,
+    osdY: y,
+    w: frame ? frame.w : entry.w,
+    h: frame ? frame.h : entry.h,
+  });
+}
+
 export async function buildMarkerData(
   result: GenerationResult,
 ): Promise<MarkerData> {
@@ -180,50 +224,20 @@ export async function buildMarkerData(
     const pw = parseInt(pwStr);
 
     for (const poi of pois) {
-      // Unwrap container POIs
-      if (
-        (poi.type === "holy_mountain_shop" || poi.type === "shop" || poi.type === "eye_room") &&
-        poi.items &&
-        Array.isArray(poi.items)
-      ) {
+      // Always add the container itself as a marker
+      addMarkerItem(items, poi, pw, worldCenter, atlas);
+
+      // Also unwrap container contents as separate markers
+      if (CONTAINER_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {
         for (const innerItem of poi.items) {
           if (innerItem.ignore) continue;
-          const key = getSpriteKey(innerItem);
-          if (!key || !atlas[key]) continue;
-          const entry = atlas[key];
-          const frame = FIRST_FRAME_SIZE[key];
-          const { x, y } = getCorrectedWorldPos(innerItem.x, innerItem.y, worldCenter);
-          items.push({
-            poi: innerItem,
-            pw,
-            spriteKey: key,
-            osdX: x,
-            osdY: y,
-            w: frame ? frame.w : entry.w,
-            h: frame ? frame.h : entry.h,
-          });
+          addMarkerItem(items, innerItem, pw, worldCenter, atlas);
         }
-        continue;
       }
-
-      const key = getSpriteKey(poi);
-      if (!key || !atlas[key]) continue;
-      const entry = atlas[key];
-      const frame = FIRST_FRAME_SIZE[key];
-      const { x, y } = getCorrectedWorldPos(poi.x, poi.y, worldCenter);
-      items.push({
-        poi,
-        pw,
-        spriteKey: key,
-        osdX: x,
-        osdY: y,
-        w: frame ? frame.w : entry.w,
-        h: frame ? frame.h : entry.h,
-      });
     }
   }
 
-  // Compute bounding box of all markers in OSD viewport coordinates
+  // Compute bounding box
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const item of items) {
     const left = item.osdX - item.w / 2;
@@ -236,13 +250,9 @@ export async function buildMarkerData(
     if (bottom > maxY) maxY = bottom;
   }
 
-  // Add padding so edge markers aren't clipped
   const pad = 50;
   if (items.length > 0) {
-    minX -= pad;
-    minY -= pad;
-    maxX += pad;
-    maxY += pad;
+    minX -= pad; minY -= pad; maxX += pad; maxY += pad;
   } else {
     minX = 0; minY = 0; maxX = 1; maxY = 1;
   }
@@ -252,9 +262,6 @@ export async function buildMarkerData(
   const bboxWidth = maxX - minX;
   const bboxHeight = maxY - minY;
 
-  // Build Flatbush index using coordinates LOCAL to the bounding box origin.
-  // This ensures the tile source's internal coordinate system (0-based) matches
-  // the Flatbush index directly.
   const index = new Flatbush(items.length || 1);
   for (const item of items) {
     index.add(
@@ -271,22 +278,41 @@ export async function buildMarkerData(
 }
 
 /**
- * Get the cached atlas (for use by getPOISpriteFirstFrame in the bridge).
+ * Draw a sprite from the atlas directly onto a canvas element.
+ * Synchronous — no blob URL creation needed.
+ * Returns the canvas, or null if the sprite key isn't in the atlas.
  */
+export function drawSpriteToCanvas(
+  key: string,
+  displayW: number,
+  displayH: number,
+): HTMLCanvasElement | null {
+  if (!cachedSpritesheet || !cachedAtlas) return null;
+  const entry = cachedAtlas[key];
+  if (!entry) return null;
+
+  const frame = FIRST_FRAME_SIZE[key];
+  const srcW = frame ? frame.w : entry.w;
+  const srcH = frame ? frame.h : entry.h;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = displayW;
+  canvas.height = displayH;
+  canvas.style.imageRendering = "pixelated";
+  const ctx = canvas.getContext("2d")!;
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(cachedSpritesheet, entry.x, entry.y, srcW, srcH, 0, 0, displayW, displayH);
+  return canvas;
+}
+
 export function getAtlas(): Record<string, AtlasEntry> | null {
   return cachedAtlas;
 }
 
-/**
- * Get the cached spritesheet image.
- */
 export function getSpritesheet(): HTMLImageElement | null {
   return cachedSpritesheet;
 }
 
-/**
- * Eagerly load both spritesheet and atlas (for use before buildMarkerData).
- */
 export async function loadSpritesheetAndAtlas(): Promise<{
   spritesheet: HTMLImageElement;
   atlas: Record<string, AtlasEntry>;
@@ -295,5 +321,4 @@ export async function loadSpritesheetAndAtlas(): Promise<{
   return { spritesheet, atlas };
 }
 
-/** Expose getSpriteKey for external use. */
-export { getSpriteKey };
+export { getSpriteKey, CONTAINER_TYPES };

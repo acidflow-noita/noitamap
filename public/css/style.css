@@ -219,6 +219,13 @@ body.toggle-hidden div.osOverlayHighlight {
   image-rendering: pixelated;
 }
 
+/* Ensure OSD renders pixel-art tiles without smoothing */
+.openseadragon-canvas canvas,
+.openseadragon-canvas img {
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
 .icon-structures {
   background-image: url(../assets/icons/overlay-toggles/icon-structures.svg);
   background-size: cover;

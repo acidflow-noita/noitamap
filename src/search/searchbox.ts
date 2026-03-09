@@ -1,3 +1,4 @@
+import { EventEmitter2 } from "eventemitter2";
 import { searchOverlays } from '../flexsearch';
 import { MapName } from '../data_sources/tile_data';
 import { debounce } from '../util';

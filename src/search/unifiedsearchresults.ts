@@ -3,7 +3,7 @@ import { Spell } from "../data_sources/overlays";
 import { EventEmitter2 } from "eventemitter2";
 import i18next from "../i18n";
 import { getSpellAvailability } from "../util";
-import { getWandSprite, getPOISpriteFirstFrame } from "../telescope/telescope-osd-bridge";
+import { getPOISpriteFirstFrame } from "../telescope/telescope-osd-bridge";
 import spells from "../data/spells.json";
 import { gameTranslator } from "../game-translations/translator";
 
@@ -271,7 +271,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
               img.style.width = "32px";
               img.style.height = "32px";
               img.style.objectFit = "contain";
-              getWandSprite((result as any).sprite).then((url) => {
+              getPOISpriteFirstFrame({ type: "wand", sprite: (result as any).sprite }).then((url) => {
                 if (url) img.src = url;
               });
               listItem.appendChild(img);
@@ -471,7 +471,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     wandImg.style.width = "24px";
                     wandImg.style.height = "24px";
                     wandImg.style.objectFit = "contain";
-                    getWandSprite(item.sprite).then((url) => {
+                    getPOISpriteFirstFrame({ type: "wand", sprite: item.sprite }).then((url) => {
                       if (url) wandImg.src = url;
                     });
                     wandContainer.appendChild(wandImg);

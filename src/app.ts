@@ -1,3 +1,4 @@
+import { EventEmitter2 } from "eventemitter2";
 import { MapName } from "./data_sources/tile_data";
 import { AppOSD, ZoomPos } from "./app_osd";
 import { getAllOverlays, OverlayKey, showOverlay, TargetOfInterest } from "./data_sources/overlays";

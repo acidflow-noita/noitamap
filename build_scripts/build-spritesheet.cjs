@@ -169,6 +169,20 @@ async function main() {
     sprites.push({ key: `item:${name}`, data: img.data, width: img.width, height: img.height });
   }
 
+  // Extra item sprites from non-standard paths
+  const extraItems = [
+    { key: "item:chest_random", path: "data/buildings_gfx/chest_random.png" },
+    { key: "item:chest_random_super", path: "data/buildings_gfx/chest_random_super.png" },
+  ];
+  for (const extra of extraItems) {
+    const f = zip.file(extra.path);
+    if (!f) { console.warn(`  [SKIP] ${extra.path} not found`); continue; }
+    const buf = await f.async("arraybuffer");
+    let img = decodePng(buf);
+    if (img.width > img.height) img = cropFirstFrame(img.data, img.width, img.height);
+    sprites.push({ key: extra.key, data: img.data, width: img.width, height: img.height });
+  }
+
   // ─── Spell sprites (from ui_gfx/gun_actions/) ─────────────────────────────
   const spellPrefix = "data/ui_gfx/gun_actions/";
   const spellPaths = [];

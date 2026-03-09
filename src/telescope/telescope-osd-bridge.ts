@@ -13,7 +13,7 @@ import {
   installImageSrcInterceptor,
 } from "./telescope-data-bridge";
 import { decodePngToRgba, rgbaToPngBlobUrl } from "./png-decode";
-import { buildMarkerData, getAtlas, getSpritesheet, getSpriteKey, loadSpritesheetAndAtlas, FIRST_FRAME_SIZE } from "./poi-spatial-index";
+import { buildMarkerData, getAtlas, getSpritesheet, getSpriteKey, loadSpritesheetAndAtlas, FIRST_FRAME_SIZE, CONTAINER_TYPES, drawSpriteToCanvas } from "./poi-spatial-index";
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
 import { createMarkerTileSource } from "./marker-tile-source";
 
@@ -583,82 +583,237 @@ let tooltipEl: HTMLDivElement | null = null;
 let canvasClickHandler: ((event: any) => void) | null = null;
 
 /**
- * Show a tooltip for a marker at the given screen position.
+ * Show a popup for a marker at the given screen position.
+ * Styled to match noitamap's dark theme with game-style presentation.
  */
 function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): void {
-  if (!tooltipEl) {
-    tooltipEl = document.createElement("div");
-    tooltipEl.className = "marker-tooltip";
-    tooltipEl.style.cssText = `
-      position: fixed;
-      z-index: 10000;
-      background: rgba(20, 20, 30, 0.95);
-      color: #eee;
-      border: 1px solid #555;
-      border-radius: 6px;
-      padding: 8px 12px;
-      font-size: 13px;
-      max-width: 300px;
-      pointer-events: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      font-family: monospace;
-      line-height: 1.4;
-    `;
-    document.body.appendChild(tooltipEl);
+  // Remove previous popup
+  if (tooltipEl) {
+    tooltipEl.remove();
+    tooltipEl = null;
   }
+
+  tooltipEl = document.createElement("div");
+  tooltipEl.className = "marker-tooltip";
+  tooltipEl.style.cssText = `
+    position: fixed;
+    z-index: 10000;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    border: 2px solid #3a3a5c;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    max-width: 340px;
+    pointer-events: auto;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.7);
+    font-family: monospace;
+    line-height: 1.5;
+  `;
+
+  // Close button
+  const closeBtn = document.createElement("div");
+  closeBtn.style.cssText = `
+    position: absolute; top: 4px; right: 8px;
+    cursor: pointer; color: #666; font-size: 16px;
+    line-height: 1;
+  `;
+  closeBtn.textContent = "x";
+  closeBtn.onclick = (e) => { e.stopPropagation(); hideMarkerTooltip(); };
+  tooltipEl.appendChild(closeBtn);
 
   const poi = item.poi;
-  let html = "";
 
   if (poi.type === "wand") {
-    html += `<div style="font-weight:bold;color:#c8a2ff">Wand</div>`;
-    if (poi.name) html += `<div>${escapeHtml(poi.name)}</div>`;
-    if (poi.stats) {
-      const s = poi.stats;
-      const lines: string[] = [];
-      if (s.shuffle != null) lines.push(s.shuffle ? "Shuffle" : "No Shuffle");
-      if (s.spellsPerCast != null) lines.push(`Spells/Cast: ${s.spellsPerCast}`);
-      if (s.castDelay != null) lines.push(`Cast Delay: ${s.castDelay}`);
-      if (s.rechargeTime != null) lines.push(`Recharge: ${s.rechargeTime}`);
-      if (s.manaMax != null) lines.push(`Mana: ${s.manaMax}`);
-      if (s.manaChargeSpeed != null) lines.push(`Regen: ${s.manaChargeSpeed}`);
-      if (s.capacity != null) lines.push(`Capacity: ${s.capacity}`);
-      if (s.spread != null) lines.push(`Spread: ${s.spread}°`);
-      if (lines.length) html += `<div style="margin-top:4px">${lines.join("<br>")}</div>`;
-    }
-    if (poi.spells && poi.spells.length) {
-      html += `<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:2px">`;
-      for (const spell of poi.spells) {
+    // Header with sprite
+    const header = document.createElement("div");
+    header.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:6px";
+    const spriteImg = document.createElement("img");
+    spriteImg.style.cssText = "width:32px;height:32px;image-rendering:pixelated;object-fit:contain";
+    getPOISpriteFirstFrame({ type: "wand", sprite: poi.sprite }).then((url) => {
+      if (url) spriteImg.src = url;
+    });
+    header.appendChild(spriteImg);
+    const title = document.createElement("div");
+    title.style.cssText = "font-weight:bold;color:#c8a2ff;font-size:14px";
+    title.textContent = poi.name || "Wand";
+    header.appendChild(title);
+    tooltipEl.appendChild(header);
+
+    // Wand stats — telescope POIs put stats as top-level snake_case fields,
+    // but some paths may wrap them in a stats sub-object. Check both.
+    const s = poi.stats || poi;
+    const statsDiv = document.createElement("div");
+    statsDiv.style.cssText = "display:grid;grid-template-columns:auto auto;gap:1px 12px;font-size:12px;margin-bottom:6px;color:#bbb";
+    const addStat = (label: string, value: string) => {
+      const l = document.createElement("span");
+      l.style.color = "#888";
+      l.textContent = label;
+      const v = document.createElement("span");
+      v.textContent = value;
+      statsDiv.appendChild(l);
+      statsDiv.appendChild(v);
+    };
+    const shuffle = s.shuffle ?? s.deck_shuffle;
+    if (shuffle != null) addStat("Shuffle:", shuffle ? "Yes" : "No");
+    const spc = s.spellsPerCast ?? s.spells_per_cast ?? s.actions_per_round;
+    if (spc != null) addStat("Spells/Cast:", String(spc));
+    const cd = s.castDelay ?? s.cast_delay ?? s.fire_rate_wait;
+    if (cd != null) addStat("Cast Delay:", String(cd));
+    const rt = s.rechargeTime ?? s.recharge_time ?? s.reload_time;
+    if (rt != null) addStat("Recharge:", String(rt));
+    const mm = s.manaMax ?? s.mana_max;
+    if (mm != null) addStat("Mana:", String(mm));
+    const mc = s.manaChargeSpeed ?? s.mana_charge_speed;
+    if (mc != null) addStat("Regen:", String(mc));
+    const cap = s.capacity ?? s.deck_capacity;
+    if (cap != null) addStat("Capacity:", String(cap));
+    const spread = s.spread ?? s.spread_degrees;
+    if (spread != null) addStat("Spread:", `${spread} deg`);
+    if (statsDiv.childNodes.length > 0) tooltipEl.appendChild(statsDiv);
+
+    // Spell icons (always casts + regular)
+    const allSpells = [...(poi.always_casts || poi.alwaysCasts || []), ...(poi.cards || poi.spells || [])];
+    const acCount = (poi.always_casts || poi.alwaysCasts || []).length;
+    if (allSpells.length > 0) {
+      const spellsRow = document.createElement("div");
+      spellsRow.style.cssText = "display:flex;flex-wrap:wrap;gap:3px;margin-top:4px";
+      allSpells.forEach((spell: any, i: number) => {
         const spellId = typeof spell === "string" ? spell : spell.id ?? spell;
-        const iconPath = `./assets/icons/spells/${String(spellId).toLowerCase()}.png`;
-        html += `<img src="${iconPath}" width="16" height="16" title="${escapeHtml(String(spellId))}" style="image-rendering:pixelated" onerror="this.style.display='none'">`;
-      }
-      html += `</div>`;
+        const isAC = i < acCount;
+        const container = document.createElement("div");
+        container.style.cssText = `position:relative;display:inline-block;background:#111;border-radius:3px;padding:1px;border:1px solid ${isAC ? "#c8a2ff" : "#333"}`;
+        container.title = String(spellId);
+        if (isAC) {
+          const badge = document.createElement("div");
+          badge.textContent = "AC";
+          badge.style.cssText = "position:absolute;top:-5px;left:-5px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:bold;background:white;color:black;border-radius:50%;border:1px solid #333;z-index:2";
+          container.appendChild(badge);
+        }
+        const img = document.createElement("img");
+        img.style.cssText = "width:20px;height:20px;image-rendering:pixelated;display:block";
+        getPOISpriteFirstFrame({ type: "spell", item: String(spellId) }).then((url) => {
+          if (url) {
+            img.src = url;
+          } else {
+            img.src = `./assets/icons/spells/${String(spellId).toLowerCase()}.png`;
+            img.onerror = () => { img.style.display = "none"; };
+          }
+        });
+        container.appendChild(img);
+        spellsRow.appendChild(container);
+      });
+      tooltipEl.appendChild(spellsRow);
     }
   } else if (poi.type === "item" || poi.type === "chest") {
+    // Header with sprite
+    const header = document.createElement("div");
+    header.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px";
+    const spriteImg = document.createElement("img");
+    spriteImg.style.cssText = "width:24px;height:24px;image-rendering:pixelated;object-fit:contain";
+    getPOISpriteFirstFrame(poi as any).then((url) => {
+      if (url) spriteImg.src = url;
+    });
+    header.appendChild(spriteImg);
+
     const label = poi.item ?? poi.type;
-    html += `<div style="font-weight:bold;color:#ffd700">${escapeHtml(label)}</div>`;
-    if (poi.material) html += `<div>Material: ${escapeHtml(poi.material)}</div>`;
-    if (poi.contents && poi.contents.length) {
-      html += `<div style="margin-top:2px">Contains: ${poi.contents.map((c: any) => escapeHtml(typeof c === "string" ? c : c.name ?? c.item ?? String(c))).join(", ")}</div>`;
+    const title = document.createElement("div");
+    title.style.cssText = "font-weight:bold;color:#ffd700;font-size:14px";
+    title.textContent = label.replace(/_/g, " ");
+    header.appendChild(title);
+    tooltipEl.appendChild(header);
+
+    if (poi.material) {
+      const mat = document.createElement("div");
+      mat.style.cssText = "color:#aaa;font-size:12px";
+      mat.textContent = `Material: ${poi.material}`;
+      tooltipEl.appendChild(mat);
     }
+    if (poi.amount) {
+      const amt = document.createElement("div");
+      amt.style.cssText = "color:#aaa;font-size:12px";
+      amt.textContent = `Amount: ${poi.amount}`;
+      tooltipEl.appendChild(amt);
+    }
+    if (poi.contents && poi.contents.length) {
+      const contentsDiv = document.createElement("div");
+      contentsDiv.style.cssText = "margin-top:2px;color:#aaa;font-size:12px";
+      contentsDiv.textContent = `Contains: ${poi.contents.map((c: any) => typeof c === "string" ? c : c.name ?? c.item ?? String(c)).join(", ")}`;
+      tooltipEl.appendChild(contentsDiv);
+    }
+  } else if (poi.type === "spell") {
+    const header = document.createElement("div");
+    header.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px";
+    const spriteImg = document.createElement("img");
+    spriteImg.style.cssText = "width:24px;height:24px;image-rendering:pixelated;display:block";
+    getPOISpriteFirstFrame({ type: "spell", item: poi.item }).then((url) => {
+      if (url) spriteImg.src = url;
+    });
+    header.appendChild(spriteImg);
+    const title = document.createElement("div");
+    title.style.cssText = "font-weight:bold;color:#66ccff;font-size:14px";
+    title.textContent = poi.item || "Spell";
+    header.appendChild(title);
+    tooltipEl.appendChild(header);
   } else {
-    html += `<div style="font-weight:bold">${escapeHtml(poi.type)}</div>`;
-    if (poi.item) html += `<div>${escapeHtml(poi.item)}</div>`;
+    const title = document.createElement("div");
+    title.style.cssText = "font-weight:bold;font-size:14px;margin-bottom:4px";
+    title.textContent = (poi.type || "Unknown").replace(/_/g, " ");
+    tooltipEl.appendChild(title);
+    if (poi.item) {
+      const itemDiv = document.createElement("div");
+      itemDiv.style.cssText = "color:#aaa;font-size:12px";
+      itemDiv.textContent = poi.item.replace(/_/g, " ");
+      tooltipEl.appendChild(itemDiv);
+    }
   }
 
-  html += `<div style="margin-top:4px;color:#888;font-size:11px">PW ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})</div>`;
+  // Container contents — show items inside chests/shops/bosses
+  if (CONTAINER_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {
+    const contDiv = document.createElement("div");
+    contDiv.style.cssText = "margin-top:6px;border-top:1px solid #333;padding-top:4px";
+    const contLabel = document.createElement("div");
+    contLabel.style.cssText = "font-size:11px;color:#888;margin-bottom:3px";
+    contLabel.textContent = "Contains:";
+    contDiv.appendChild(contLabel);
+    const contRow = document.createElement("div");
+    contRow.style.cssText = "display:flex;flex-wrap:wrap;gap:3px;align-items:center";
+    for (const ci of poi.items) {
+      if (ci.ignore) continue;
+      const ciKey = getSpriteKey(ci);
+      if (ciKey) {
+        const canvas = drawSpriteToCanvas(ciKey, 20, 20);
+        if (canvas) {
+          canvas.title = ci.name || ci.item || ci.type || "";
+          canvas.style.cssText += ";background:#111;border-radius:2px;border:1px solid #333";
+          contRow.appendChild(canvas);
+          continue;
+        }
+      }
+      // Fallback: text label
+      const span = document.createElement("span");
+      span.style.cssText = "font-size:11px;color:#aaa;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
+      span.textContent = ci.name || ci.item || ci.type || "?";
+      contRow.appendChild(span);
+    }
+    contDiv.appendChild(contRow);
+    tooltipEl.appendChild(contDiv);
+  }
 
-  tooltipEl.innerHTML = html;
-  tooltipEl.style.display = "block";
+  // Footer: position info
+  const footer = document.createElement("div");
+  footer.style.cssText = "margin-top:6px;color:#666;font-size:11px;border-top:1px solid #333;padding-top:4px";
+  footer.textContent = `PW ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
+  tooltipEl.appendChild(footer);
 
-  // Position tooltip near click, clamped to viewport
+  document.body.appendChild(tooltipEl);
+
+  // Position popup near click, clamped to viewport
   const pad = 12;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   let tx = screenX + pad;
   let ty = screenY + pad;
-  // Defer clamping to after render so we know tooltip size
   requestAnimationFrame(() => {
     if (!tooltipEl) return;
     const rect = tooltipEl.getBoundingClientRect();
@@ -674,35 +829,36 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 }
 
 function hideMarkerTooltip(): void {
-  if (tooltipEl) tooltipEl.style.display = "none";
+  if (tooltipEl) {
+    tooltipEl.remove();
+    tooltipEl = null;
+  }
 }
 
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
+let canvasMoveHandler: ((event: any) => void) | null = null;
 
 /**
- * Install a canvas-click handler on the viewer to detect marker clicks.
+ * Install a canvas-click handler on the viewer to detect marker clicks,
+ * and a mousemove handler to show pointer cursor when hovering over markers.
  */
 function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
-  // Remove previous handler if any
+  // Remove previous handlers
   if (canvasClickHandler) {
     viewer.removeHandler("canvas-click", canvasClickHandler);
     canvasClickHandler = null;
   }
+  if (canvasMoveHandler) {
+    viewer.removeHandler("canvas-move", canvasMoveHandler);
+    canvasMoveHandler = null;
+  }
 
-  canvasClickHandler = (event: any) => {
-    // Convert click to viewport coordinates, then to image coordinates
+  function findNearestMarker(event: any): MarkerItem | null {
     const viewportPoint = viewer.viewport.pointFromPixel(event.position);
-    // viewportPoint is in OSD viewport coordinate space
     const vpX = viewportPoint.x;
     const vpY = viewportPoint.y;
-
-    // Convert viewport coords to local (bbox-relative) coords for Flatbush query
     const localX = vpX - data.originX;
     const localY = vpY - data.originY;
 
-    // Search for nearest marker within ~20px radius in local coords
     const searchRadius = 20;
     const results = data.index.search(
       localX - searchRadius,
@@ -710,13 +866,8 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
       localX + searchRadius,
       localY + searchRadius,
     );
+    if (results.length === 0) return null;
 
-    if (results.length === 0) {
-      hideMarkerTooltip();
-      return;
-    }
-
-    // Find the closest marker to the click point (using viewport coords for distance)
     let bestIdx = results[0];
     let bestDist = Infinity;
     for (const idx of results) {
@@ -729,18 +880,28 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
         bestIdx = idx;
       }
     }
+    return data.items[bestIdx] ?? null;
+  }
 
-    const clickedItem = data.items[bestIdx];
-    if (clickedItem) {
-      // Prevent default OSD click behavior (zoom)
+  canvasClickHandler = (event: any) => {
+    const item = findNearestMarker(event);
+    if (item) {
       event.preventDefaultAction = true;
-      showMarkerTooltip(clickedItem, event.originalEvent.clientX, event.originalEvent.clientY);
+      showMarkerTooltip(item, event.originalEvent.clientX, event.originalEvent.clientY);
+    } else {
+      hideMarkerTooltip();
     }
   };
 
-  viewer.addHandler("canvas-click", canvasClickHandler);
+  // Change cursor to pointer when hovering over a marker
+  const osdCanvas = viewer.canvas as HTMLElement;
+  canvasMoveHandler = (event: any) => {
+    const item = findNearestMarker(event);
+    osdCanvas.style.cursor = item ? "pointer" : "";
+  };
 
-  // Hide tooltip on drag/pan
+  viewer.addHandler("canvas-click", canvasClickHandler);
+  viewer.addHandler("canvas-move", canvasMoveHandler);
   viewer.addHandler("canvas-drag", hideMarkerTooltip);
 }
 
@@ -755,11 +916,14 @@ export async function renderGenerationResult(viewer: OSDViewer, result: Generati
   // 1. Build spatial index for POIs (markers)
   window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 0 } }));
   const markerData = await buildMarkerData(result);
-  window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 30 } }));
+  window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 50 } }));
   if (currentGenerationId !== generationId) return;
 
-  // 2. Add as a custom OSD tiled layer for efficiency
+  // 2. Add as a custom OSD tiled layer
   const markerTileSource = createMarkerTileSource(markerData);
+  installClickHandler(viewer, markerData);
+  activeMarkerData = markerData;
+
   viewer.addTiledImage({
     tileSource: markerTileSource,
     x: markerData.originX,
@@ -790,12 +954,7 @@ export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: numb
     const pw = parseInt(pwStr);
     for (const poi of pois) {
       flat.push({ ...poi, pw, worldX: poi.x, worldY: poi.y });
-      // Unwrap container items (shops, holy mountain shops, eye rooms)
-      if (
-        (poi.type === "holy_mountain_shop" || poi.type === "shop" || poi.type === "eye_room") &&
-        poi.items &&
-        Array.isArray(poi.items)
-      ) {
+      if (CONTAINER_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {
         for (const inner of poi.items) {
           if (inner.ignore) continue;
           flat.push({ ...inner, pw, worldX: inner.x, worldY: inner.y });
