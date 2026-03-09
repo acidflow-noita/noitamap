@@ -177,26 +177,27 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | nu
     return `item:${item}`;
   }
 
-  // Containers — use chest_random for regular chests, distinct icons for others
-  if (poi.type === "chest") return "item:chest_random";
-  if (poi.type === "pacifist_chest") return "item:chest_random";
-  if (poi.type === "shop" || poi.type === "holy_mountain_shop") return "item:chest";
-  if (poi.type === "laboratory") return "item:potion";
-  if (poi.type === "eye_room") return "item:evil_eye";
+  // Containers — skip rendering the base container icon now that
+  // we unwrap their actual contents (spells/items) directly onto the map.
+  if (poi.type === "chest") return null;
+  if (poi.type === "pacifist_chest") return null;
+  if (poi.type === "shop" || poi.type === "holy_mountain_shop") return null;
+  if (poi.type === "laboratory") return null;
+  if (poi.type === "eye_room") return null;
 
-  // Boss drop types
+  // Boss drop types — skip base icons
   if (
     poi.type === "triangle_boss" ||
     poi.type === "alchemist_boss" ||
     poi.type === "pyramid_boss" ||
     poi.type === "dragon"
   ) {
-    return "item:chest_random_super";
+    return null;
   }
 
-  // Wand altars / special wand sources
+  // Wand altars / special wand sources — also skip base icons
   if (poi.type === "wand_altar" || poi.type === "snowy_room" || poi.type === "robot_egg") {
-    return "item:broken_wand";
+    return null;
   }
 
   return null;
