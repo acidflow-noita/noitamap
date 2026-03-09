@@ -149,7 +149,7 @@ function getSpriteKey(poi: POI): string | null {
     if (item === "chest_present") return "item:chest_present";
     if (item === "spell_refresh") return "item:spell_refresh";
     if (item === "broken_wand") return "item:broken_wand";
-    if (item === "flask" || item === "flask_liquid") return "item:flask_liquid";
+    // if (item === "flask" || item === "flask_liquid") return "item:flask_liquid";
     if (item === "jar") return "item:jar";
     if (item === "bomb") return "item:bomb";
     if (item === "bomb_holy") return "item:bomb_holy";
@@ -165,7 +165,7 @@ function getSpriteKey(poi: POI): string | null {
   // Containers — use chest_random for regular chests, distinct icons for others
   if (poi.type === "chest") return "item:chest_random";
   if (poi.type === "pacifist_chest") return "item:chest_random";
-  if (poi.type === "shop" || poi.type === "holy_mountain_shop") return "item:chest";
+  // if (poi.type === "shop" || poi.type === "holy_mountain_shop") return "item:chest";
   if (poi.type === "eye_room") return "item:evil_eye";
 
   // Boss drop types

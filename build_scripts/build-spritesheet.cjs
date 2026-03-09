@@ -88,11 +88,7 @@ async function main() {
   const wandPrefix = "data/items_gfx/wands/";
   const wandPaths = [];
   zip.forEach((relPath) => {
-    if (
-      relPath.startsWith(wandPrefix) &&
-      relPath.endsWith(".png") &&
-      relPath.indexOf("/custom/") === -1
-    ) {
+    if (relPath.startsWith(wandPrefix) && relPath.endsWith(".png") && relPath.indexOf("/custom/") === -1) {
       wandPaths.push(relPath);
     }
   });
@@ -110,10 +106,7 @@ async function main() {
   // Also include custom wand sprites
   const customWandPaths = [];
   zip.forEach((relPath) => {
-    if (
-      relPath.startsWith(wandPrefix + "custom/") &&
-      relPath.endsWith(".png")
-    ) {
+    if (relPath.startsWith(wandPrefix + "custom/") && relPath.endsWith(".png")) {
       customWandPaths.push(relPath);
     }
   });
@@ -131,24 +124,60 @@ async function main() {
   // ─── Item sprites ──────────────────────────────────────────────────────────
   // Key items that appear as POIs on the dynamic map
   const itemFiles = [
-    "chest", "chest_present", "crate",
-    "heart", "heart_extrahp", "heart_extrahp_evil",
-    "potion", "pouch", "powder_stash", "material_pouch", "material_backbag",
-    "flask_liquid", "jar",
-    "goldnugget_01", "goldnugget_6px", "goldnugget_9px", "goldnugget_12px", "goldnugget_20px",
+    "chest",
+    "chest_present",
+    "crate",
+    "heart_extrahp",
+    "heart_extrahp_evil",
+    "heart",
+    "pouch",
+    "powder_stash",
+    "material_pouch",
+    "material_backbag",
+    "flask_liquid",
+    "jar",
+    "goldnugget_01",
+    "goldnugget_6px",
+    "goldnugget_9px",
+    "goldnugget_12px",
+    "goldnugget_20px",
     "spell_refresh",
-    "orb", "orb_greed",
-    "perk", "safe_haven",
-    "egg", "egg_purple", "egg_red", "egg_slime", "egg_worm",
-    "book", "book_s", "emerald_tablet", "scroll",
-    "kakke", "gourd",
-    "key", "knife", "rock",
-    "bomb", "bomb_holy", "bomb_holy_giga",
+    "orb",
+    "orb_greed",
+    "perk",
+    "safe_haven",
+    "egg",
+    "egg_purple",
+    "egg_red",
+    "egg_slime",
+    "egg_worm",
+    "book",
+    "book_s",
+    "emerald_tablet",
+    "scroll",
+    "kakke",
+    "gourd",
+    "key",
+    "knife",
+    "rock",
+    "bomb",
+    "bomb_holy",
+    "bomb_holy_giga",
     "evil_eye",
-    "torch", "moon", "sunseed",
-    "beamstone", "thunderstone", "stonestone", "waterstone", "wandstone", "musicstone", "brimstone",
-    "broken_wand", "broken_spell",
-    "kantele", "flute",
+    "torch",
+    "moon",
+    "sunseed",
+    "beamstone",
+    "thunderstone",
+    "stonestone",
+    "waterstone",
+    "wandstone",
+    "musicstone",
+    "brimstone",
+    "broken_wand",
+    "broken_spell",
+    "kantele",
+    "flute",
     "medkit",
   ];
 
@@ -173,10 +202,14 @@ async function main() {
   const extraItems = [
     { key: "item:chest_random", path: "data/buildings_gfx/chest_random.png" },
     { key: "item:chest_random_super", path: "data/buildings_gfx/chest_random_super.png" },
+    { key: "item:potion", path: "data/ui_gfx/items/potion.png" },
   ];
   for (const extra of extraItems) {
     const f = zip.file(extra.path);
-    if (!f) { console.warn(`  [SKIP] ${extra.path} not found`); continue; }
+    if (!f) {
+      console.warn(`  [SKIP] ${extra.path} not found`);
+      continue;
+    }
     const buf = await f.async("arraybuffer");
     let img = decodePng(buf);
     if (img.width > img.height) img = cropFirstFrame(img.data, img.width, img.height);
