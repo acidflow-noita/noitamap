@@ -16,6 +16,7 @@ import { decodePngToRgba, rgbaToPngBlobUrl } from "./png-decode";
 import { buildMarkerData, getAtlas, getSpritesheet, getSpriteKey, loadSpritesheetAndAtlas, FIRST_FRAME_SIZE, CONTAINER_TYPES, drawSpriteToCanvas } from "./poi-spatial-index";
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
 import { createMarkerTileSource } from "./marker-tile-source";
+import { gameTranslator } from "../game-translations/translator";
 
 declare const OpenSeadragon: any;
 
@@ -636,7 +637,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     header.appendChild(spriteImg);
     const title = document.createElement("div");
     title.style.cssText = "font-weight:bold;color:#c8a2ff;font-size:14px";
-    title.textContent = poi.name || "Wand";
+    title.textContent = poi.name || gameTranslator.translateItem("Wand");
     header.appendChild(title);
     tooltipEl.appendChild(header);
 
@@ -719,14 +720,15 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const label = poi.item ?? poi.type;
     const title = document.createElement("div");
     title.style.cssText = "font-weight:bold;color:#ffd700;font-size:14px";
-    title.textContent = label.replace(/_/g, " ");
+    title.textContent = gameTranslator.translateItem(label).replace(/_/g, " ");
     header.appendChild(title);
     tooltipEl.appendChild(header);
 
     if (poi.material) {
       const mat = document.createElement("div");
       mat.style.cssText = "color:#aaa;font-size:12px";
-      mat.textContent = `Material: ${poi.material}`;
+      const materialLabel = gameTranslator.translateItem("inventory_actiontype_material");
+      mat.textContent = `${materialLabel}: ${gameTranslator.translateMaterial(poi.material)}`;
       tooltipEl.appendChild(mat);
     }
     if (poi.amount) {
@@ -738,7 +740,10 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     if (poi.contents && poi.contents.length) {
       const contentsDiv = document.createElement("div");
       contentsDiv.style.cssText = "margin-top:2px;color:#aaa;font-size:12px";
-      contentsDiv.textContent = `Contains: ${poi.contents.map((c: any) => typeof c === "string" ? c : c.name ?? c.item ?? String(c)).join(", ")}`;
+      contentsDiv.textContent = `Contains: ${poi.contents.map((c: any) => {
+        const cName = typeof c === "string" ? c : c.name ?? c.item ?? String(c);
+        return gameTranslator.translateItem(cName);
+      }).join(", ")}`;
       tooltipEl.appendChild(contentsDiv);
     }
   } else if (poi.type === "spell") {
@@ -752,18 +757,19 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     header.appendChild(spriteImg);
     const title = document.createElement("div");
     title.style.cssText = "font-weight:bold;color:#66ccff;font-size:14px";
-    title.textContent = poi.item || "Spell";
+    title.textContent = gameTranslator.translateSpell(poi.item || "Spell");
     header.appendChild(title);
     tooltipEl.appendChild(header);
   } else {
     const title = document.createElement("div");
     title.style.cssText = "font-weight:bold;font-size:14px;margin-bottom:4px";
-    title.textContent = (poi.type || "Unknown").replace(/_/g, " ");
+    const label = poi.type || "Unknown";
+    title.textContent = gameTranslator.translateItem(label).replace(/_/g, " ");
     tooltipEl.appendChild(title);
     if (poi.item) {
       const itemDiv = document.createElement("div");
       itemDiv.style.cssText = "color:#aaa;font-size:12px";
-      itemDiv.textContent = poi.item.replace(/_/g, " ");
+      itemDiv.textContent = gameTranslator.translateItem(poi.item).replace(/_/g, " ");
       tooltipEl.appendChild(itemDiv);
     }
   }
@@ -781,10 +787,12 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     for (const ci of poi.items) {
       if (ci.ignore) continue;
       const ciKey = getSpriteKey(ci, getAtlas() || undefined);
+      const ciName = ci.name || ci.item || ci.type || "";
+      const translatedName = gameTranslator.translateItem(ciName);
       if (ciKey) {
         const canvas = drawSpriteToCanvas(ciKey, 20, 20);
         if (canvas) {
-          canvas.title = ci.name || ci.item || ci.type || "";
+          canvas.title = translatedName;
           canvas.style.cssText += ";background:#111;border-radius:2px;border:1px solid #333";
           contRow.appendChild(canvas);
           continue;
@@ -793,7 +801,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       // Fallback: text label
       const span = document.createElement("span");
       span.style.cssText = "font-size:11px;color:#aaa;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
-      span.textContent = ci.name || ci.item || ci.type || "?";
+      span.textContent = translatedName;
       contRow.appendChild(span);
     }
     contDiv.appendChild(contRow);

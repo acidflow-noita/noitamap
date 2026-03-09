@@ -50,7 +50,7 @@ function parseCSVLine(line) {
 }
 
 function loadBiomeTranslations() {
-  const csvPath = path.join(__dirname, "../src/game-translations/common.csv");
+  const csvPath = path.join(__dirname, "../public/data/translations.csv");
   const content = fs.readFileSync(csvPath, "utf8");
   const lines = content.split("\n");
 
@@ -87,22 +87,15 @@ function main() {
   Object.entries(LANGUAGE_MAP).forEach(([langCode, csvLang]) => {
     console.log(`\nProcessing language: ${langCode} (${csvLang})`);
 
-    const translationFilePath = path.join(
-      __dirname,
-      `../src/locales/${langCode}/translation.json`,
-    );
+    const translationFilePath = path.join(__dirname, `../src/locales/${langCode}/translation.json`);
 
     if (!fs.existsSync(translationFilePath)) {
-      console.log(
-        `⚠️  Translation file not found: ${langCode}/translation.json`,
-      );
+      console.log(`⚠️  Translation file not found: ${langCode}/translation.json`);
       return;
     }
 
     try {
-      const existingTranslations = JSON.parse(
-        fs.readFileSync(translationFilePath, "utf8"),
-      );
+      const existingTranslations = JSON.parse(fs.readFileSync(translationFilePath, "utf8"));
 
       if (!existingTranslations.gameContent) {
         existingTranslations.gameContent = {};
@@ -125,10 +118,7 @@ function main() {
       console.log(`  ✅ Added ${addedCount} biome translations`);
 
       // Write back to file
-      fs.writeFileSync(
-        translationFilePath,
-        JSON.stringify(existingTranslations, null, 2),
-      );
+      fs.writeFileSync(translationFilePath, JSON.stringify(existingTranslations, null, 2));
     } catch (error) {
       console.error(`❌ Error processing ${langCode}:`, error.message);
     }
