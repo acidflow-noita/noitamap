@@ -441,16 +441,20 @@ export class UnifiedSearch extends EventEmitter2 {
     filterBox.id = "unifiedSearchFilterBox";
 
     const isDynamicMap = currentMap === "dynamic-main-branch";
-    const filters = isDynamicMap
+    const filters: Array<{
+      type: string;
+      iconSrc?: string;
+      atlasKey?: string;
+    }> = isDynamicMap
       ? [
-          { type: "wands", iconSrc: "data/items_gfx/wands/wand_0531.png" },
-          { type: "spells", iconSrc: "assets/icons/spells/light_bullet.png" },
-          { type: "items", iconSrc: "assets/icons/overlay-toggles/icon-items.webp" },
-          { type: "chests", iconSrc: "assets/spritesheet.png" },
-          { type: "potions", iconSrc: "assets/spritesheet.png" },
-          { type: "hearts", iconSrc: "assets/spritesheet.png" },
+          { type: "wands", atlasKey: "wand:custom/good_01" },
+          { type: "spells", atlasKey: "spell:mana" },
+          { type: "items", atlasKey: "item:wandstone" },
+          { type: "chests", atlasKey: "item:chest_random_super" },
+          { type: "potions", atlasKey: "item:potion:acid" },
+          { type: "hearts", atlasKey: "item:heart_extrahp" },
           { type: "bosses", iconSrc: "assets/icons/overlay-toggles/icon-bosses.webp" },
-          { type: "enemies", iconSrc: "assets/spritesheet.png" },
+          { type: "enemies", atlasKey: "spell:exploding_deer" },
         ]
       : [
           { type: "spells", iconSrc: "assets/icons/spells/light_bullet.png" },
@@ -470,15 +474,29 @@ export class UnifiedSearch extends EventEmitter2 {
       filterCheckbox.value = filter.type;
       filterLabel.appendChild(filterCheckbox);
       const filterIcon = document.createElement("img");
-      if (filter.iconSrc.startsWith("data/")) {
-        import("../telescope/telescope-osd-bridge").then((mod) => {
-          // We can use getWandSprite for any PNG in the zip
-          mod.getWandSprite(filter.iconSrc).then((url) => {
-            if (url) filterIcon.src = url;
+      if (filter.atlasKey) {
+        // Extract a single sprite from the spritesheet by atlas key
+        const key = filter.atlasKey;
+        import("../telescope/poi-spatial-index").then((mod) => {
+          mod.loadSpritesheetAndAtlas().then(({ atlas, spritesheet }) => {
+            const entry = atlas[key];
+            if (!entry) return;
+            const frame = mod.FIRST_FRAME_SIZE[key];
+            const srcW = frame ? frame.w : entry.w;
+            const srcH = frame ? frame.h : entry.h;
+            const canvas = document.createElement("canvas");
+            canvas.width = srcW;
+            canvas.height = srcH;
+            const ctx = canvas.getContext("2d")!;
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(spritesheet, entry.x, entry.y, srcW, srcH, 0, 0, srcW, srcH);
+            canvas.toBlob((blob) => {
+              if (blob) filterIcon.src = URL.createObjectURL(blob);
+            }, "image/png");
           });
         });
       } else {
-        filterIcon.src = filter.iconSrc;
+        filterIcon.src = filter.iconSrc!;
       }
       filterIcon.alt = "";
       filterIcon.classList.add("pixelated-image");
