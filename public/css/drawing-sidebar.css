@@ -36,6 +36,37 @@
   transform: translateX(0);
 }
 
+/* Bottom toolbar for shape tools */
+.drawing-toolbar {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(calc(100% + 2rem));
+  transition: transform 0.3s ease;
+  z-index: 1000;
+  background: rgba(17, 24, 39, 0.92);
+  backdrop-filter: blur(0.5rem);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.4);
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.drawing-toolbar.open {
+  transform: translateX(-50%) translateY(0);
+}
+
+.drawing-toolbar .btn-check + .btn {
+  border-radius: 0.25rem !important;
+}
+
+.drawing-toolbar .btn {
+  border-radius: 0.25rem !important;
+}
+
 #sidebar-content {
   flex-grow: 1;
   overflow-y: auto;
@@ -46,13 +77,12 @@
 
 /* Sidebar section structure */
 .drawing-sidebar .sidebar-section {
-  padding: 0.3rem 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.4rem 0.5rem;
 }
 
-/* Remove "hole" above sections without a label */
-.drawing-sidebar .sidebar-section:not(:has(label)) {
-  padding-top: 0;
+/* First section needs no top padding (header already provides it) */
+.drawing-sidebar .sidebar-section:first-child {
+  padding-top: 0.15rem;
 }
 
 /* Tool buttons - wrap to grid */
@@ -189,6 +219,16 @@ label[data-tool="text"] {
     width: calc(100% - 2rem);
     max-width: 21rem;
     right: 1rem;
+  }
+
+  .drawing-toolbar {
+    left: 1rem;
+    right: 1rem;
+    transform: translateX(0) translateY(calc(100% + 2rem));
+  }
+
+  .drawing-toolbar.open {
+    transform: translateX(0) translateY(0);
   }
 }
 
