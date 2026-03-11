@@ -334,7 +334,9 @@ export class UnifiedSearchResults extends EventEmitter2 {
                   label = r.enemy || r.type;
                 } else {
                   // Containers and other types: capitalize and humanize
-                  label = (r.type || displayName).replace(/_/g, " ");
+                  label = (r.type || displayName)
+                    .replace(/_/g, " ")
+                    .replace(/\b\w/g, (c: string) => c.toUpperCase());
                 }
                 nameDiv.textContent = label;
               }

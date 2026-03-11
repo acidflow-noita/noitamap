@@ -122,9 +122,8 @@ const CONTAINER_TYPES = new Set([
   "laboratory",
 ]);
 
-/** Chest-like containers: show only the chest sprite on the map, not individual items. */
+/** Chest-like containers: show only the chest sprite on map, contents in popup/search only. */
 const CHEST_ONLY_TYPES = new Set(["chest", "pacifist_chest", "great_chest"]);
-
 // ─── Sprite key resolution ──────────────────────────────────────────────────
 
 function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | null {
@@ -244,10 +243,10 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
     const pw = parseInt(pwStr);
 
     for (const poi of pois) {
-      // Always add the container itself as a marker
+      // Add the POI itself as a marker
       addMarkerItem(items, poi, pw, worldCenter, atlas);
 
-      // Also unwrap container contents as separate markers (but not chest-only types)
+      // Unwrap container contents as separate markers (except chest types which just show the chest icon)
       if (CONTAINER_TYPES.has(poi.type) && !CHEST_ONLY_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {
         for (const innerItem of poi.items) {
           if (innerItem.ignore) continue;
@@ -348,4 +347,4 @@ export async function loadSpritesheetAndAtlas(): Promise<{
   return { spritesheet, atlas };
 }
 
-export { getSpriteKey, CONTAINER_TYPES };
+export { getSpriteKey, CONTAINER_TYPES, CHEST_ONLY_TYPES };

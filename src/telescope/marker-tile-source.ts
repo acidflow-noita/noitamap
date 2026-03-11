@@ -11,6 +11,7 @@ import { MarkerData } from "./poi-spatial-index";
 declare const OpenSeadragon: any;
 
 const TILE_SIZE = 512;
+let tileSourceCounter = 0;
 
 export function createMarkerTileSource(markerData: MarkerData): any {
   const { index, spritesheet, atlas, items, originX, originY, bboxWidth, bboxHeight } = markerData;
@@ -48,8 +49,9 @@ export function createMarkerTileSource(markerData: MarkerData): any {
     maxLevel: maxLevel,
   });
 
+  const sourceId = ++tileSourceCounter;
   source.getTileUrl = function (level: number, x: number, y: number) {
-    return `marker-tile://${level}/${x}/${y}`;
+    return `marker-tile://${sourceId}/${level}/${x}/${y}`;
   };
 
   source.hasTransparency = function () {

@@ -18,6 +18,7 @@ import {
   loadSpritesheetAndAtlas,
   FIRST_FRAME_SIZE,
   CONTAINER_TYPES,
+  CHEST_ONLY_TYPES,
   drawSpriteToCanvas,
 } from "./poi-spatial-index";
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
@@ -251,11 +252,18 @@ let currentGenerationId = 0;
  * Remove all dynamic map overlays from the viewer.
  */
 export function clearDynamicOverlays(viewer: any): void {
-  for (const item of dynamicTiledImages) {
-    try {
-      viewer.world.removeItem(item);
-    } catch {}
-  }
+  // Remove ALL world items that aren't base static DZI tiles.
+  // This is more robust than tracking individual items, because addTiledImage
+  // success callbacks are async and can slip past Set-based tracking.
+  try {
+    const world = viewer.world;
+    for (let i = world.getItemCount() - 1; i >= 0; i--) {
+      const item = world.getItemAt(i);
+      if (item && typeof item.source?.tilesUrl !== "string") {
+        world.removeItem(item);
+      }
+    }
+  } catch {}
   dynamicTiledImages.clear();
 
   for (const el of dynamicOverlayElements) {
@@ -476,7 +484,6 @@ async function addBiomeLayersProgressively(
             }
             dynamicTiledImages.add(event.item);
           },
-          error: (err: any) => console.warn(`[OSD Bridge] Failed to add ${biomeName} part PW ${pw}:`, err),
         });
       }
     }
@@ -1115,7 +1122,8 @@ export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: numb
     const pw = parseInt(pwStr);
     for (const poi of pois) {
       flat.push({ ...poi, pw, worldX: poi.x, worldY: poi.y });
-      if (CONTAINER_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {
+      // Unwrap container contents for search (except chest types — those are searched via their parent entry)
+      if (CONTAINER_TYPES.has(poi.type) && !CHEST_ONLY_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {
         for (const inner of poi.items) {
           if (inner.ignore) continue;
           flat.push({ ...inner, pw, worldX: inner.x, worldY: inner.y });
