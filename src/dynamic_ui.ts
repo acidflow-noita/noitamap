@@ -87,6 +87,10 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   nerdBtn.target = "_blank";
   nerdBtn.rel = "noopener noreferrer";
   nerdBtn.innerHTML = `<i class="bi bi-code-slash"></i><span class="ms-1 d-none d-xl-inline" data-i18n="dynamicMap.nerdMode.label">${i18next.t("dynamicMap.nerdMode.label")}</span>`;
+  nerdBtn.addEventListener("click", () => {
+    const seed = new URLSearchParams(window.location.search).get("se");
+    nerdBtn.href = seed ? `${NERD_MODE_URL}?seed=${seed}` : NERD_MODE_URL;
+  });
   toolbarEl.appendChild(nerdBtn);
 
   const overlaySel = buttonContainer.querySelector("#overlay-selector");
@@ -111,6 +115,23 @@ export function updateDynamicUIVisibility(currentMap: string): void {
   const isDynamic = currentMap === DYNAMIC_MAP_NAME;
   toolbarEl.classList.toggle("d-none", !isDynamic);
   toolbarEl.classList.toggle("d-flex", isDynamic);
+
+  // Hide overlay toggles on dynamic map
+  // because dynamic maps don't support or need most static overlays.
+  const overlaySelector = document.getElementById("overlay-selector");
+  if (overlaySelector) {
+    const togglers = overlaySelector.querySelectorAll<HTMLInputElement>("input.overlayToggler");
+    for (const toggler of togglers) {
+      const label = overlaySelector.querySelector<HTMLLabelElement>(`label[for="${toggler.id}"]`);
+      if (isDynamic) {
+        toggler.classList.add("d-none");
+        if (label) label.classList.add("d-none");
+      } else {
+        toggler.classList.remove("d-none");
+        if (label) label.classList.remove("d-none");
+      }
+    }
+  }
 
   if (isDynamic) {
     const seed = getCurrentDynamicSeed();

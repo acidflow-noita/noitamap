@@ -142,23 +142,29 @@ export async function runDynamicMap(
 
   try {
     // 1. Check cache
+    let t = performance.now();
     console.log(`[DynamicMap] Checking cache for seed ${seed}…`);
     let result: GenerationResult | null = await getCachedGeneration(seed);
+    console.log(`[DynamicMap] Cache check: ${((performance.now() - t) / 1000).toFixed(2)}s (${result ? "HIT" : "MISS"})`);
 
     if (!result) {
       // 2. Generate
+      t = performance.now();
       console.log(`[DynamicMap] Cache miss — generating seed ${seed}…`);
       result = await generateDynamicMap({ seed, ngPlus: 0, dailySeed: isDaily });
+      console.log(`[DynamicMap] Generation: ${((performance.now() - t) / 1000).toFixed(2)}s`);
 
       // 3. Store in cache (fire-and-forget — don't block render)
       cacheGeneration(seed, result).catch((e) => console.warn("[DynamicMap] Cache write failed:", e));
     }
 
     // 4. Render onto OSD
+    t = performance.now();
     console.log(
       `[DynamicMap] Rendering seed ${seed} with ${result.parallelWorlds?.length || 3} worlds, worldCenter=${result.worldCenter}`,
     );
     await renderGenerationResult(viewer as any, result);
+    console.log(`[DynamicMap] Render: ${((performance.now() - t) / 1000).toFixed(2)}s`);
     lastResult = result;
     dynamicRendered = true;
 
@@ -172,9 +178,9 @@ export async function runDynamicMap(
       {} as Record<string, number>,
     );
     console.log("[Telescope] Generated PoI summary:", poiCounts);
-    console.log("[Telescope] Full generation result:", result);
 
     // 5. Export flat POI list for search
+    t = performance.now();
     if (onPOIsReady) {
       const flat = getAllPOIsFlat(result);
       const dynamicPOIs: DynamicPOI[] = flat.map((p, i) => ({
@@ -184,6 +190,7 @@ export async function runDynamicMap(
       }));
       onPOIsReady(dynamicPOIs);
     }
+    console.log(`[DynamicMap] POI export + index: ${((performance.now() - t) / 1000).toFixed(2)}s`);
 
     return result;
   } catch (err) {

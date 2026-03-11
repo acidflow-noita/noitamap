@@ -1,3 +1,7 @@
+#renderer-form {
+  display: none !important;
+}
+
 body,
 html {
   margin: 0px;
@@ -61,11 +65,11 @@ html {
 :root {
   font-family: Inter, sans-serif;
   font-feature-settings:
-    'liga' 1,
-    'calt' 1,
-    'dlig',
-    'ss01',
-    'ss02';
+    "liga" 1,
+    "calt" 1,
+    "dlig",
+    "ss01",
+    "ss02";
 }
 
 @supports (font-variation-settings: normal) {
@@ -79,7 +83,7 @@ html {
   pointer-events: none;
   color: white;
   font-family: Inter, sans-serif;
-  font-feature-settings: 'tnum', 'zero', 'cv09', 'cv02', 'cv03', 'cv04';
+  font-feature-settings: "tnum", "zero", "cv09", "cv02", "cv03", "cv04";
   font-weight: 400;
 }
 
@@ -138,7 +142,7 @@ html {
 }
 
 .loadingIndicator::after {
-  content: 'L\00A0 \00A0 \00A0 ADING';
+  content: "L\00A0 \00A0 \00A0 ADING";
   position: absolute;
   font-size: 0.875rem;
   left: -0.25rem;
@@ -224,6 +228,11 @@ body.toggle-hidden div.osOverlayHighlight {
 .openseadragon-canvas img {
   image-rendering: crisp-edges;
   image-rendering: pixelated;
+}
+
+/* Pointer cursor when hovering over a dynamic map POI marker */
+.openseadragon-canvas.poi-hover {
+  cursor: pointer !important;
 }
 
 .icon-structures {
@@ -506,7 +515,7 @@ body.toggle-hidden div.osOverlayHighlight {
   align-items: center;
 }
 
-#spellModalOverlay[style*='display: flex'] {
+#spellModalOverlay[style*="display: flex"] {
   display: flex !important;
 }
 

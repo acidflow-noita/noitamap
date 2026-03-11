@@ -95,7 +95,10 @@ export class App extends EventEmitter2 {
     // go through the results and apply disabled to the overlay buttons
     // that should be disabled
     for (const [key, enabled] of Object.entries(enableOverlayButton)) {
-      const overlayToggle = this.overlayButtons.querySelector(`input[data-overlay-key="${key}"]`) as HTMLInputElement;
+      const overlayToggle = this.overlayButtons.querySelector(
+        `input[data-overlay-key="${key}"]`,
+      ) as HTMLInputElement | null;
+      if (!overlayToggle) continue; // toggle may live outside the group (e.g. standalone biome boundaries button)
       const overlayLabel = this.overlayButtons.querySelector(`label[for="${overlayToggle.id}"]`) as HTMLLabelElement;
 
       overlayToggle.disabled = !enabled;

@@ -23,8 +23,19 @@ import {
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
 import { createMarkerTileSource } from "./marker-tile-source";
 import { gameTranslator } from "../game-translations/translator";
+import spells from "../data/spells.json";
 
 declare const OpenSeadragon: any;
+
+// Spell ID → English display name lookup (lazy-init)
+let _spellNameById: Map<string, string> | null = null;
+function getSpellName(id: string): string {
+  if (!_spellNameById) {
+    _spellNameById = new Map();
+    for (const s of spells) _spellNameById.set(s.id, s.name);
+  }
+  return _spellNameById.get(id) ?? id;
+}
 
 let CHUNK_SIZE: number;
 let BIOME_CONFIG: any;
@@ -646,7 +657,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const header = document.createElement("div");
     header.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:6px";
     const spriteImg = document.createElement("img");
-    spriteImg.style.cssText = "width:32px;height:32px;image-rendering:pixelated;object-fit:contain";
+    spriteImg.style.cssText = "width:32px;height:32px;image-rendering:pixelated;object-fit:contain;transform:rotate(90deg)";
     getPOISpriteFirstFrame({ type: "wand", sprite: poi.sprite }).then((url) => {
       if (url) spriteImg.src = url;
     });
@@ -675,19 +686,19 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const shuffle = s.shuffle ?? s.deck_shuffle;
     if (shuffle != null) addStat("Shuffle:", shuffle ? "Yes" : "No");
     const spc = s.spellsPerCast ?? s.spells_per_cast ?? s.actions_per_round;
-    if (spc != null) addStat("Spells/Cast:", String(spc));
+    if (spc != null) addStat("Spells/Cast:", String(Math.floor(Number(spc))));
     const cd = s.castDelay ?? s.cast_delay ?? s.fire_rate_wait;
-    if (cd != null) addStat("Cast Delay:", String(cd));
+    if (cd != null) addStat("Cast Delay:", String(Math.floor(Number(cd))));
     const rt = s.rechargeTime ?? s.recharge_time ?? s.reload_time;
-    if (rt != null) addStat("Recharge:", String(rt));
+    if (rt != null) addStat("Recharge:", String(Math.floor(Number(rt))));
     const mm = s.manaMax ?? s.mana_max;
-    if (mm != null) addStat("Mana:", String(mm));
+    if (mm != null) addStat("Mana:", String(Math.floor(Number(mm))));
     const mc = s.manaChargeSpeed ?? s.mana_charge_speed;
-    if (mc != null) addStat("Regen:", String(mc));
+    if (mc != null) addStat("Regen:", String(Math.floor(Number(mc))));
     const cap = s.capacity ?? s.deck_capacity;
-    if (cap != null) addStat("Capacity:", String(cap));
+    if (cap != null) addStat("Capacity:", String(Math.floor(Number(cap))));
     const spread = s.spread ?? s.spread_degrees;
-    if (spread != null) addStat("Spread:", `${spread} deg`);
+    if (spread != null) addStat("Spread:", `${Math.floor(Number(spread))} deg`);
     if (statsDiv.childNodes.length > 0) tooltipEl.appendChild(statsDiv);
 
     // Spell icons (always casts + regular) — show full wand capacity
@@ -713,7 +724,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         const container = document.createElement("div");
         container.style.cssText = `position:relative;display:inline-block;width:22px;height:22px;background:#111;border-radius:3px;border:1px solid ${slot.isAC ? "#c8a2ff" : "#333"}`;
         if (slot.id) {
-          container.title = String(slot.id);
+          container.title = gameTranslator.translateSpell(getSpellName(slot.id));
         }
         if (slot.isAC) {
           const badge = document.createElement("div");
@@ -742,7 +753,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       }
       tooltipEl.appendChild(spellsRow);
     }
-  } else if (poi.type === "item" || poi.type === "chest") {
+  } else if (poi.type === "item" || poi.type === "chest" || poi.type === "pacifist_chest" || poi.type === "great_chest") {
     // Header with sprite
     const header = document.createElement("div");
     header.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px";
@@ -756,7 +767,11 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const label = poi.item ?? poi.type;
     const title = document.createElement("div");
     title.style.cssText = "font-weight:bold;color:#ffd700;font-size:14px";
-    title.textContent = gameTranslator.translateItem(label).replace(/_/g, " ");
+    // Show HP info for heart items
+    if (poi.item === "heart") title.textContent = "Heart (+25 HP)";
+    else if (poi.item === "heart_bigger") title.textContent = "Heart (+50 HP)";
+    else if (poi.item === "full_heal") title.textContent = "Full Heal";
+    else title.textContent = gameTranslator.translateItem(label).replace(/_/g, " ");
     header.appendChild(title);
     tooltipEl.appendChild(header);
 
@@ -827,16 +842,85 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       const ciKey = getSpriteKey(ci, getAtlas() || undefined);
       const ciName = ci.name || ci.item || ci.type || "";
       const translatedName = gameTranslator.translateItem(ciName);
-      if (ciKey) {
-        const canvas = drawSpriteToCanvas(ciKey, 20, 20);
-        if (canvas) {
-          canvas.title = translatedName;
-          canvas.style.cssText += ";background:#111;border-radius:2px;border:1px solid #333";
-          contRow.appendChild(canvas);
-          continue;
+
+      // Wands: show sprite (rotated) + spell icons
+      if (ci.type === "wand") {
+        const wandBox = document.createElement("div");
+        wandBox.style.cssText = "display:flex;align-items:center;gap:2px;background:#111;border-radius:3px;padding:2px 4px;border:1px solid #333";
+        if (ciKey) {
+          const canvas = drawSpriteToCanvas(ciKey, 20, 20);
+          if (canvas) {
+            canvas.style.cssText += ";transform:rotate(90deg)";
+            canvas.title = ci.name || "Wand";
+            wandBox.appendChild(canvas);
+          }
         }
+        const spellIds = [...(ci.always_casts || []), ...(ci.cards || [])];
+        for (const sid of spellIds.slice(0, 4)) {
+          const spellKey = `spell:${String(sid).toLowerCase()}`;
+          const spellCanvas = drawSpriteToCanvas(spellKey, 16, 16);
+          if (spellCanvas) {
+            spellCanvas.title = gameTranslator.translateSpell(getSpellName(String(sid)));
+            wandBox.appendChild(spellCanvas);
+          }
+        }
+        if (spellIds.length > 4) {
+          const more = document.createElement("span");
+          more.style.cssText = "font-size:10px;color:#888";
+          more.textContent = `+${spellIds.length - 4}`;
+          wandBox.appendChild(more);
+        }
+        contRow.appendChild(wandBox);
+        continue;
       }
-      // Fallback: text label
+
+      // Gold: show sprite + amount
+      if (ci.item === "gold" || ci.item === "goldnugget") {
+        const goldBox = document.createElement("div");
+        goldBox.style.cssText = "display:flex;align-items:center;gap:3px;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
+        if (ciKey) {
+          const canvas = drawSpriteToCanvas(ciKey, 20, 20);
+          if (canvas) goldBox.appendChild(canvas);
+        }
+        const label = document.createElement("span");
+        label.style.cssText = "font-size:11px;color:#ffd700";
+        label.textContent = ci.amount ? `$${ci.amount}` : "Gold";
+        goldBox.appendChild(label);
+        contRow.appendChild(goldBox);
+        continue;
+      }
+
+      // Hearts: show sprite + HP label
+      if (ci.item === "heart" || ci.item === "heart_bigger" || ci.item === "full_heal") {
+        const heartBox = document.createElement("div");
+        heartBox.style.cssText = "display:flex;align-items:center;gap:3px;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
+        if (ciKey) {
+          const canvas = drawSpriteToCanvas(ciKey, 20, 20);
+          if (canvas) heartBox.appendChild(canvas);
+        }
+        const label = document.createElement("span");
+        label.style.cssText = "font-size:11px;color:#ff6b6b";
+        if (ci.item === "heart") label.textContent = "+25 HP";
+        else if (ci.item === "heart_bigger") label.textContent = "+50 HP";
+        else label.textContent = "Full Heal";
+        heartBox.appendChild(label);
+        contRow.appendChild(heartBox);
+        continue;
+      }
+
+      // Default: sprite + text label
+      if (ciKey) {
+        const itemBox = document.createElement("div");
+        itemBox.style.cssText = "display:flex;align-items:center;gap:3px;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
+        const canvas = drawSpriteToCanvas(ciKey, 20, 20);
+        if (canvas) itemBox.appendChild(canvas);
+        const textSpan = document.createElement("span");
+        textSpan.style.cssText = "font-size:11px;color:#aaa";
+        textSpan.textContent = translatedName;
+        itemBox.appendChild(textSpan);
+        contRow.appendChild(itemBox);
+        continue;
+      }
       const span = document.createElement("span");
       span.style.cssText =
         "font-size:11px;color:#aaa;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
@@ -882,7 +966,7 @@ function hideMarkerTooltip(): void {
   }
 }
 
-let canvasMoveHandler: ((event: any) => void) | null = null;
+let canvasMoveCleanup: (() => void) | null = null;
 
 /**
  * Install a canvas-click handler on the viewer to detect marker clicks,
@@ -894,9 +978,9 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
     viewer.removeHandler("canvas-click", canvasClickHandler);
     canvasClickHandler = null;
   }
-  if (canvasMoveHandler) {
-    viewer.removeHandler("canvas-move", canvasMoveHandler);
-    canvasMoveHandler = null;
+  if (canvasMoveCleanup) {
+    canvasMoveCleanup();
+    canvasMoveCleanup = null;
   }
 
   function findNearestMarker(event: any): MarkerItem | null {
@@ -940,15 +1024,33 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
     }
   };
 
-  // Change cursor to pointer when hovering over a marker
+  // Native mousemove on OSD canvas for pointer cursor (OSD has no 'canvas-move' event)
   const osdCanvas = viewer.canvas as HTMLElement;
-  canvasMoveHandler = (event: any) => {
-    const item = findNearestMarker(event);
-    osdCanvas.style.cursor = item ? "pointer" : "";
+  const onMouseMove = (e: MouseEvent) => {
+    const rect = osdCanvas.getBoundingClientRect();
+    const pixelX = e.clientX - rect.left;
+    const pixelY = e.clientY - rect.top;
+    const pixelPoint = new (OpenSeadragon as any).Point(pixelX, pixelY);
+    const viewportPoint = viewer.viewport.pointFromPixel(pixelPoint);
+
+    const vpX = viewportPoint.x;
+    const vpY = viewportPoint.y;
+    const localX = vpX - data.originX;
+    const localY = vpY - data.originY;
+
+    const searchRadius = 20;
+    const results = data.index.search(
+      localX - searchRadius,
+      localY - searchRadius,
+      localX + searchRadius,
+      localY + searchRadius,
+    );
+    osdCanvas.classList.toggle("poi-hover", results.length > 0);
   };
+  osdCanvas.addEventListener("mousemove", onMouseMove);
+  canvasMoveCleanup = () => osdCanvas.removeEventListener("mousemove", onMouseMove);
 
   viewer.addHandler("canvas-click", canvasClickHandler);
-  viewer.addHandler("canvas-move", canvasMoveHandler);
   viewer.addHandler("canvas-drag", hideMarkerTooltip);
 }
 

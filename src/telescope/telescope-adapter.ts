@@ -375,6 +375,11 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   const pixelScenesByPW: Record<string, PixelScene[]> = {};
   const perks: Record<string, any> = {}; // No perks active by default
 
+  // Pre-load telescope modules needed for wand naming (avoid repeated dynamic imports in loop)
+  const telescopeMods = await import("./telescope-exports");
+  const { NollaPrng } = telescopeMods.nollaPrngMod;
+  const { GUN_NAMES } = telescopeMods.wandConfigMod;
+
   for (const pw of parallelWorlds) {
     const pwKey = `${pw},0`; // vertical PW always 0 for noitamap
 
@@ -406,12 +411,8 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     }
     for (const poi of combinedPois) {
       if (poi.type === "wand" && (!poi.name || poi.name === "Taikasauva")) {
-        const telescope = await import("./telescope-exports");
-        const prng = new telescope.nollaPrngMod.NollaPrng(0);
+        const prng = new NollaPrng(0);
         prng.SetRandomSeed(seed + ngPlus, poi.x, poi.y);
-
-        // Replicate library's random name generation logic
-        const { GUN_NAMES } = telescope.wandConfigMod;
         const nameIdx = Math.floor(GUN_NAMES.length * prng.Next());
         poi.name = GUN_NAMES[nameIdx];
       }

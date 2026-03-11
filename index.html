@@ -206,7 +206,13 @@
             id="loading-bar-download"
             class="progress-bar progress-bar-striped progress-bar-animated"
             role="progressbar"
-            style="width: 0%; max-width: 33.3%; height: 100%; background-color: oklch(52% 0.105 223.128); transition: width 0.2s ease"
+            style="
+              width: 0%;
+              max-width: 33.3%;
+              height: 100%;
+              background-color: oklch(52% 0.105 223.128);
+              transition: width 0.2s ease;
+            "
             aria-valuenow="0"
             aria-valuemin="0"
             aria-valuemax="100"
@@ -216,7 +222,13 @@
             id="loading-bar-generation"
             class="progress-bar progress-bar-striped progress-bar-animated"
             role="progressbar"
-            style="width: 0%; max-width: 33.3%; height: 100%; background-color: oklch(60.9% 0.126 221.723); transition: width 0.2s ease"
+            style="
+              width: 0%;
+              max-width: 33.3%;
+              height: 100%;
+              background-color: oklch(60.9% 0.126 221.723);
+              transition: width 0.2s ease;
+            "
             aria-valuenow="0"
             aria-valuemin="0"
             aria-valuemax="100"
@@ -226,7 +238,13 @@
             id="loading-bar-items"
             class="progress-bar progress-bar-striped progress-bar-animated"
             role="progressbar"
-            style="width: 0%; max-width: 33.4%; height: 100%; background-color: oklch(78.9% 0.154 211.53); transition: width 0.2s ease"
+            style="
+              width: 0%;
+              max-width: 33.4%;
+              height: 100%;
+              background-color: oklch(78.9% 0.154 211.53);
+              transition: width 0.2s ease;
+            "
             aria-valuenow="0"
             aria-valuemin="0"
             aria-valuemax="100"
@@ -470,25 +488,6 @@
                   ><i class="icon-spatialAwareness pixelated-image"></i
                 ></label>
                 <input
-                  id="biomeBoundariesToggler"
-                  type="checkbox"
-                  class="btn-check overlayToggler"
-                  autocomplete="off"
-                  data-overlay-key="biomeBoundaries"
-                />
-                <label
-                  class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                  for="biomeBoundariesToggler"
-                  data-bs-toggle="popover"
-                  data-bs-placement="top"
-                  data-bs-trigger="hover focus"
-                  data-i18n-title="biomeBoundaries.title"
-                  data-bs-title="Biome Boundaries"
-                  data-i18n-content="biomeBoundaries.content"
-                  data-bs-content="Toggle biome boundaries overlay"
-                  ><i class="bi bi-border-outer"></i
-                ></label>
-                <input
                   id="hiddenMessagesToggler"
                   type="checkbox"
                   class="btn-check overlayToggler"
@@ -511,6 +510,27 @@
                   </span></label
                 >
               </div>
+
+              <!-- Standalone Biome Boundaries Button -->
+              <input
+                id="biomeBoundariesToggler"
+                type="checkbox"
+                class="btn-check overlayToggler"
+                autocomplete="off"
+                data-overlay-key="biomeBoundaries"
+              />
+              <label
+                class="icon-button btn btn-sm btn-outline-light text-nowrap me-2"
+                for="biomeBoundariesToggler"
+                data-bs-toggle="popover"
+                data-bs-placement="top"
+                data-bs-trigger="hover focus"
+                data-i18n-title="biomeBoundaries.title"
+                data-bs-title="Biome Boundaries"
+                data-i18n-content="biomeBoundaries.content"
+                data-bs-content="Toggle biome boundaries overlay"
+                ><i class="bi bi-border-outer"></i
+              ></label>
 
               <form id="renderer-form" class="input-group-sm d-flex" style="display: none">
                 <div class="btn-group btn-group-sm me-2" role="group" aria-label="Renderer selection">

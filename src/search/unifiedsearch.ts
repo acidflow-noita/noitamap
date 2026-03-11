@@ -24,6 +24,7 @@ const CONTAINER_TYPES = new Set([
   "snowy_room",
   "robot_egg",
   "chest",
+  "great_chest",
   "laboratory",
 ]);
 export type UnifiedSearchCreateOptions = {
@@ -42,6 +43,9 @@ export interface UnifiedSearch {
   on(event: "selected", listener: (target: TargetOfInterest | { type: "spell"; spell: any }) => void): this;
 }
 
+// FlexSearch Document factory — FlexSearch is loaded as a global via script tag
+type DocumentFactory = (options: any) => any;
+
 export class UnifiedSearch extends EventEmitter2 {
   private lastSearchText: string = "";
   private lastSearchFilters: Set<string> = new Set();
@@ -53,6 +57,8 @@ export class UnifiedSearch extends EventEmitter2 {
   private activeFilters: Set<string> = new Set();
   private searchResults: UnifiedSearchResults;
   private dynamicPOIs: DynamicPOI[] = [];
+  private dynamicIndex: any = null; // FlexSearch.Document index for dynamic POIs
+  private dynamicPOIMap: Map<string, DynamicPOI> = new Map(); // fast id→POI lookup
 
   public currentMap: MapName;
 
@@ -79,10 +85,17 @@ export class UnifiedSearch extends EventEmitter2 {
   /** Notify the search that the map viewport has moved. Re-sorts results by proximity. */
   notifyViewportChanged(): void {
     if (this.currentMap !== "dynamic-main-branch") return;
-    if (this.searchInput.value.trim() === "") return;
     if (this.isInteracting) return; // Skip sorting while user is actively moving the map
 
-    // Read current viewport position from URL (always integers in url.ts)
+    if (this.searchInput.value.trim() === "") {
+      // Empty search on dynamic map: recalculate "10 nearest" with new viewport position
+      this.lastViewportKey = ""; // force recalculation
+      this.lastSearchText = "__force__"; // bypass dedup guard
+      this.updateSearchResults();
+      return;
+    }
+
+    // Non-empty search: just re-sort existing results by proximity
     const urlParams = new URLSearchParams(window.location.search);
     const x = parseInt(urlParams.get("x") ?? "", 10);
     const y = parseInt(urlParams.get("y") ?? "", 10);
@@ -134,7 +147,7 @@ export class UnifiedSearch extends EventEmitter2 {
     });
 
     for (const filterCheckbox of document.querySelectorAll<HTMLInputElement>(
-      '#unifiedSearchFilterBox input[type="checkbox"]',
+      '#unifiedSearchFilterBox input[type="checkbox"][data-filter]',
     )) {
       filterCheckbox.addEventListener("change", () => {
         if (filterCheckbox.checked) {
@@ -155,10 +168,71 @@ export class UnifiedSearch extends EventEmitter2 {
   /** Replace the dynamic POI index (called by the generation pipeline). */
   setDynamicPOIs(pois: DynamicPOI[]): void {
     this.dynamicPOIs = pois;
-    // If the user already has text in the search box, refresh immediately
-    if (this.searchInput.value.trim() !== "") {
-      this.lastSearchText = "";
-      this.updateSearchResults();
+    this.rebuildDynamicIndex(pois);
+    // Always refresh search results — triggers initial "10 nearest" display
+    // even when search box is empty
+    this.lastSearchText = "__force__";
+    this.lastViewportKey = "";
+    this.updateSearchResults();
+  }
+
+  /** Build a FlexSearch Document index over the dynamic POI array for fast text queries. */
+  private rebuildDynamicIndex(pois: DynamicPOI[]): void {
+    // Build a compound searchable text field for each POI
+    this.dynamicPOIMap = new Map();
+
+    this.dynamicIndex = (FlexSearch.Document as DocumentFactory)({
+      document: {
+        id: "id",
+        index: ["searchText"],
+      },
+      tokenize: "forward",
+    });
+
+    // Pre-build O(1) spell lookup to avoid O(N) spells.find() per spell reference
+    const spellById = new Map<string, (typeof spells)[0]>();
+    for (const s of spells) spellById.set(s.id, s);
+
+    for (const p of pois) {
+      this.dynamicPOIMap.set(p.id, p);
+
+      // Concatenate all searchable fields into one text blob
+      const parts: string[] = [p.name ?? "", p.type ?? "", p.item ?? "", p.enemy ?? "", p.material ?? ""];
+
+      // Index spell names (both ids and translated names)
+      for (const spellId of [...(p.cards || []), ...(p.always_casts || [])]) {
+        parts.push(spellId);
+        const spell = spellById.get(spellId);
+        if (spell) {
+          parts.push(spell.name);
+          parts.push(gameTranslator.translateSpell(spell.name));
+        }
+      }
+
+      // Index container item names
+      if (p.items && Array.isArray(p.items)) {
+        for (const ci of p.items) {
+          if (ci.ignore) continue;
+          if (ci.item) parts.push(ci.item);
+          if (ci.name) parts.push(ci.name);
+          if (ci.material) parts.push(ci.material);
+          if (ci.enemy) parts.push(ci.enemy);
+          if (ci.spell) parts.push(ci.spell);
+          for (const cSpellId of [...(ci.cards || []), ...(ci.always_casts || [])]) {
+            parts.push(cSpellId);
+            const spell = spellById.get(cSpellId);
+            if (spell) {
+              parts.push(spell.name);
+              parts.push(gameTranslator.translateSpell(spell.name));
+            }
+          }
+        }
+      }
+
+      this.dynamicIndex.add({
+        id: p.id,
+        searchText: parts.filter(Boolean).join(" "),
+      });
     }
   }
 
@@ -186,81 +260,95 @@ export class UnifiedSearch extends EventEmitter2 {
     this.lastSearchFilters = new Set(this.activeFilters);
     this.lastViewportKey = vpKey;
 
+    const isDynamic = this.currentMap === "dynamic-main-branch";
+
+    // Read player position from URL for proximity sorting (needed for both empty & non-empty search on dynamic map)
+    const playerX = parseFloat(urlParams.get("x") ?? "") || null;
+    const playerY = parseFloat(urlParams.get("y") ?? "") || null;
+
     if (searchText === "") {
       resetBiomeOverlays();
-      this.searchResults.setResults([]);
+      if (isDynamic && playerX !== null && playerY !== null && this.dynamicPOIs && this.dynamicPOIs.length > 0) {
+        // Find the 10 closest items using a fast O(N) array pass with squared distances
+        const topK = 10;
+        const closest: { poi: any; distSq: number }[] = [];
+
+        for (let i = 0; i < this.dynamicPOIs.length; i++) {
+          const p = this.dynamicPOIs[i];
+          const dx = p.worldX - playerX;
+          const dy = p.worldY - playerY;
+          const distSq = dx * dx + dy * dy;
+
+          if (closest.length < topK) {
+            closest.push({ poi: p, distSq });
+            closest.sort((a, b) => a.distSq - b.distSq);
+          } else if (distSq < closest[topK - 1].distSq) {
+            closest[topK - 1] = { poi: p, distSq };
+            closest.sort((a, b) => a.distSq - b.distSq);
+          }
+        }
+
+        const sortedPOIs = closest.map((c) => c.poi);
+        const CHUNK_SIZE = 512;
+
+        // Map to expected UnifiedSearchResult format (adding overlayType, chunksAway, etc)
+        const displayResults = sortedPOIs.map((p) => {
+          const chunksAway = Math.round(Math.hypot(p.worldX - playerX, p.worldY - playerY) / CHUNK_SIZE);
+          return {
+            overlayType: "poi" as const,
+            name: p.name ?? p.type,
+            displayName: p.name ?? p.type,
+            x: p.worldX,
+            y: p.worldY,
+            maps: ["dynamic-main-branch" as any],
+            chunksAway,
+            isDynamic: true,
+            type: p.type,
+            sprite: p.sprite,
+            wandName: p.name,
+            cards: p.cards,
+            alwaysCasts: p.always_casts,
+            item: p.item,
+            material: p.material,
+            enemy: p.enemy,
+            items: p.items,
+            amount: p.amount,
+          };
+        });
+
+        this.searchResults.setResults(displayResults as any);
+      } else {
+        this.searchResults.setResults([]);
+      }
       return;
     }
 
-    const isDynamic = this.currentMap === "dynamic-main-branch";
-
     if (isDynamic) {
-      // Dynamic map: search dynamic POIs only (no spells, no static overlays)
-      const searchLower = searchText.toLowerCase();
-
-      // Read player position from URL for proximity sorting
-      const urlParams = new URLSearchParams(window.location.search);
-      const playerX = parseFloat(urlParams.get("x") ?? "") || null;
-      const playerY = parseFloat(urlParams.get("y") ?? "") || null;
-
+      // Dynamic map: search dynamic POIs via FlexSearch index
       const CHUNK_SIZE = 512;
 
-      let matched = this.dynamicPOIs.filter((p) => {
-        const searchMatched =
-          (p.name ?? p.type ?? "").toLowerCase().includes(searchLower) ||
-          (p.item ?? "").toLowerCase().includes(searchLower) ||
-          (p.enemy ?? "").toLowerCase().includes(searchLower) ||
-          (p.material ?? "").toLowerCase().includes(searchLower) ||
-          p.type.toLowerCase().includes(searchLower);
+      let matched: DynamicPOI[] = [];
 
-        let spellsMatched = false;
-        if (p.cards || p.always_casts) {
-          const allSpells = [...(p.cards || []), ...(p.always_casts || [])];
-          spellsMatched = allSpells.some((c: string) => {
-            const spell = spells.find((s) => s.id === c);
-            if (!spell) return c.toLowerCase().includes(searchLower);
-            const translatedName = gameTranslator.translateSpell(spell.name).toLowerCase();
-            const originalName = spell.name.toLowerCase();
-            return (
-              translatedName.includes(searchLower) ||
-              originalName.includes(searchLower) ||
-              c.toLowerCase().includes(searchLower)
-            );
-          });
-        }
+      if (this.dynamicIndex) {
+        // Query the FlexSearch index for matching POI ids
+        const found = this.dynamicIndex.search(searchText).flatMap((v: any) => v.result);
+        const ids = new Set<string>(found);
+        matched = [...ids].map((id) => this.dynamicPOIMap.get(id)).filter(Boolean) as DynamicPOI[];
+      } else {
+        // Fallback: brute-force filter if index not built yet
+        const searchLower = searchText.toLowerCase();
+        matched = this.dynamicPOIs.filter(
+          (p) =>
+            (p.name ?? p.type ?? "").toLowerCase().includes(searchLower) ||
+            (p.item ?? "").toLowerCase().includes(searchLower) ||
+            p.type.toLowerCase().includes(searchLower),
+        );
+      }
 
-        // Also search within container items (chests, shops, etc.)
-        let containerItemsMatched = false;
-        if (p.items && Array.isArray(p.items)) {
-          containerItemsMatched = p.items.some((ci: any) => {
-            if (ci.ignore) return false;
-            if ((ci.item ?? "").toLowerCase().includes(searchLower)) return true;
-            if ((ci.name ?? "").toLowerCase().includes(searchLower)) return true;
-            if ((ci.material ?? "").toLowerCase().includes(searchLower)) return true;
-            if ((ci.enemy ?? "").toLowerCase().includes(searchLower)) return true;
-            if (ci.spell && ci.spell.toLowerCase().includes(searchLower)) return true;
-            // Search wand spells inside containers
-            if (ci.cards || ci.always_casts) {
-              const cSpells = [...(ci.cards || []), ...(ci.always_casts || [])];
-              return cSpells.some((c: string) => {
-                const spell = spells.find((s) => s.id === c);
-                if (!spell) return c.toLowerCase().includes(searchLower);
-                return (
-                  gameTranslator.translateSpell(spell.name).toLowerCase().includes(searchLower) ||
-                  spell.name.toLowerCase().includes(searchLower)
-                );
-              });
-            }
-            return false;
-          });
-        }
-
-        if (!searchMatched && !spellsMatched && !containerItemsMatched) return false;
-
-        // Respect filters if any are active
-        if (this.activeFilters.size > 0) {
+      // Apply category filters
+      if (this.activeFilters.size > 0) {
+        matched = matched.filter((p) => {
           if (this.activeFilters.has("wands") && p.type === "wand") return true;
-          if (this.activeFilters.has("spells") && spellsMatched && p.type === "wand") return true;
           if (this.activeFilters.has("items") && p.type === "item") return true;
           if (this.activeFilters.has("chests") && CONTAINER_TYPES.has(p.type)) return true;
           if (
@@ -289,17 +377,17 @@ export class UnifiedSearch extends EventEmitter2 {
             return true;
           if (this.activeFilters.has("enemies") && p.type === "enemy") return true;
           return false;
-        }
+        });
+      }
 
-        return true;
-      });
-
-      // Sort by proximity if player position is known
+      // Sort by proximity using squared distance (no sqrt needed for ordering)
       if (playerX !== null && playerY !== null) {
-        matched = matched.slice().sort((a, b) => {
-          const da = Math.hypot(a.worldX - playerX, a.worldY - playerY);
-          const db = Math.hypot(b.worldX - playerX, b.worldY - playerY);
-          return da - db;
+        matched.sort((a, b) => {
+          const dax = a.worldX - playerX,
+            day = a.worldY - playerY;
+          const dbx = b.worldX - playerX,
+            dby = b.worldY - playerY;
+          return dax * dax + day * day - (dbx * dbx + dby * dby);
         });
       }
 
@@ -307,7 +395,7 @@ export class UnifiedSearch extends EventEmitter2 {
       const dynamicResults: UnifiedSearchResult[] = matched.map((p) => {
         const chunksAway =
           playerX !== null && playerY !== null
-            ? Math.round(Math.hypot(p.worldX - playerX, p.worldY - playerY) / CHUNK_SIZE)
+            ? Math.round(Math.sqrt((p.worldX - playerX) ** 2 + (p.worldY - playerY) ** 2) / CHUNK_SIZE)
             : null;
         return {
           overlayType: "poi" as const,
@@ -323,7 +411,6 @@ export class UnifiedSearch extends EventEmitter2 {
           wandName: p.name,
           cards: p.cards,
           alwaysCasts: p.always_casts,
-          // Pass through all POI fields for rendering
           item: p.item,
           material: p.material,
           enemy: p.enemy,
@@ -333,40 +420,6 @@ export class UnifiedSearch extends EventEmitter2 {
       });
 
       const combinedResults: any[] = [...dynamicResults];
-
-      // Add general spell probabilities ONLY if we are NOT on the dynamic map
-      if (!isDynamic && (this.activeFilters.has("spells") || this.activeFilters.size === 0)) {
-        const spellResults = spells
-          .filter((spell) => {
-            const translatedName = gameTranslator.translateSpell(spell.name);
-            const originalName = spell.name.toLowerCase();
-            const translatedNameLower = translatedName.toLowerCase();
-
-            return (
-              originalName.includes(searchLower) ||
-              translatedNameLower.includes(searchLower) ||
-              spell.id.toLowerCase().includes(searchLower)
-            );
-          })
-          .map((spell) => {
-            const translatedName = gameTranslator.translateSpell(spell.name);
-            const currentLang = i18next.language;
-
-            let spellDisplayName = translatedName;
-            if (currentLang !== "en" && translatedName !== spell.name) {
-              spellDisplayName = `${translatedName} (${spell.name})`;
-            }
-
-            return {
-              type: "spell" as const,
-              spell,
-              displayName: translatedName,
-              displayText: `${i18next.t("spell_prefix", "Spell")}: ${spellDisplayName} (${i18next.t("tiers_prefix", "Tiers")}: ${Object.keys(spell.spawnProbabilities).join(", ")})`,
-            };
-          });
-
-        combinedResults.push(...spellResults);
-      }
 
       this.searchResults.setResults(combinedResults);
       return;
@@ -472,6 +525,7 @@ export class UnifiedSearch extends EventEmitter2 {
       const filterCheckbox = document.createElement("input");
       filterCheckbox.type = "checkbox";
       filterCheckbox.value = filter.type;
+      filterCheckbox.dataset.filter = "true";
       filterLabel.appendChild(filterCheckbox);
       const filterIcon = document.createElement("img");
       if (filter.atlasKey) {
@@ -501,9 +555,13 @@ export class UnifiedSearch extends EventEmitter2 {
       filterIcon.alt = "";
       filterIcon.classList.add("pixelated-image");
       filterIcon.draggable = false;
+      if (filter.type === "wands") {
+        filterIcon.style.transform = "rotate(90deg)";
+      }
       filterLabel.appendChild(filterIcon);
       filterBox.appendChild(filterLabel);
     }
+
     overlayDiv.appendChild(filterBox);
 
     const searchResultsUL = document.createElement("ul");

@@ -99,6 +99,7 @@ function getCorrectedWorldPos(rawX: number, rawY: number, worldCenter: number): 
 export const FIRST_FRAME_SIZE: Record<string, { w: number; h: number }> = {
   "item:torch": { w: 16, h: 16 },
   "item:heart": { w: 20, h: 20 },
+  "item:heart_extrahp": { w: 20, h: 20 },
   "item:heart_extrahp_evil": { w: 20, h: 20 },
 };
 
@@ -117,8 +118,12 @@ const CONTAINER_TYPES = new Set([
   "snowy_room",
   "robot_egg",
   "chest",
+  "great_chest",
   "laboratory",
 ]);
+
+/** Chest-like containers: show only the chest sprite on the map, not individual items. */
+const CHEST_ONLY_TYPES = new Set(["chest", "pacifist_chest", "great_chest"]);
 
 // ─── Sprite key resolution ──────────────────────────────────────────────────
 
@@ -158,7 +163,7 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | nu
     }
     if (item === "powder_stash") return "item:powder_stash";
     if (item === "gold" || item === "goldnugget") return "item:goldnugget_01";
-    if (item === "heart") return "item:heart";
+    if (item === "heart") return "item:heart_extrahp";
     if (item === "heart_bigger" || item === "heart_extra") return "item:heart_extrahp";
     if (item === "full_heal") return "item:heart";
     if (item === "chest") return "item:chest";
@@ -177,10 +182,10 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | nu
     return `item:${item}`;
   }
 
-  // Containers — skip rendering the base container icon now that
-  // we unwrap their actual contents (spells/items) directly onto the map.
-  if (poi.type === "chest") return null;
-  if (poi.type === "pacifist_chest") return null;
+  // Containers — show the chest sprite on the map
+  if (poi.type === "chest") return "item:chest_random";
+  if (poi.type === "pacifist_chest") return "item:chest_random";
+  if (poi.type === "great_chest") return "item:chest_random_super";
   if (poi.type === "shop" || poi.type === "holy_mountain_shop") return null;
   if (poi.type === "laboratory") return null;
   if (poi.type === "eye_room") return null;
@@ -242,8 +247,8 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
       // Always add the container itself as a marker
       addMarkerItem(items, poi, pw, worldCenter, atlas);
 
-      // Also unwrap container contents as separate markers
-      if (CONTAINER_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {
+      // Also unwrap container contents as separate markers (but not chest-only types)
+      if (CONTAINER_TYPES.has(poi.type) && !CHEST_ONLY_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {
         for (const innerItem of poi.items) {
           if (innerItem.ignore) continue;
           addMarkerItem(items, innerItem, pw, worldCenter, atlas);

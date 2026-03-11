@@ -271,6 +271,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
               img.style.width = "32px";
               img.style.height = "32px";
               img.style.objectFit = "contain";
+              img.style.transform = "rotate(90deg)";
               getPOISpriteFirstFrame({ type: "wand", sprite: (result as any).sprite }).then((url) => {
                 if (url) img.src = url;
               });
@@ -471,6 +472,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     wandImg.style.width = "24px";
                     wandImg.style.height = "24px";
                     wandImg.style.objectFit = "contain";
+                    wandImg.style.transform = "rotate(90deg)";
                     getPOISpriteFirstFrame({ type: "wand", sprite: item.sprite }).then((url) => {
                       if (url) wandImg.src = url;
                     });
