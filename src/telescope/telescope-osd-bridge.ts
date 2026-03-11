@@ -767,8 +767,10 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const label = poi.item ?? poi.type;
     const title = document.createElement("div");
     title.style.cssText = "font-weight:bold;color:#ffd700;font-size:14px";
-    // Show HP info for heart items
-    if (poi.item === "heart") title.textContent = "Heart (+25 HP)";
+    // Show HP info for heart items, spell names for spells
+    if (poi.item === "spell" && (poi as any).spell) {
+      title.textContent = gameTranslator.translateSpell(getSpellName(String((poi as any).spell)));
+    } else if (poi.item === "heart") title.textContent = "Heart (+25 HP)";
     else if (poi.item === "heart_bigger") title.textContent = "Heart (+50 HP)";
     else if (poi.item === "full_heal") title.textContent = "Full Heal";
     else title.textContent = gameTranslator.translateItem(label).replace(/_/g, " ");
@@ -810,7 +812,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     header.appendChild(spriteImg);
     const title = document.createElement("div");
     title.style.cssText = "font-weight:bold;color:#66ccff;font-size:14px";
-    title.textContent = gameTranslator.translateSpell(poi.item || "Spell");
+    title.textContent = gameTranslator.translateSpell(getSpellName(poi.item || "")) || "Spell";
     header.appendChild(title);
     tooltipEl.appendChild(header);
   } else {

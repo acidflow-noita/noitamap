@@ -313,6 +313,7 @@ export class UnifiedSearch extends EventEmitter2 {
             enemy: p.enemy,
             items: p.items,
             amount: p.amount,
+            spell: p.spell,
           };
         });
 
@@ -416,6 +417,7 @@ export class UnifiedSearch extends EventEmitter2 {
           enemy: p.enemy,
           items: p.items,
           amount: p.amount,
+          spell: p.spell,
         } as any;
       });
 

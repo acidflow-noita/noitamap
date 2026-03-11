@@ -134,6 +134,10 @@ export function updateDynamicUIVisibility(currentMap: string): void {
   }
 
   if (isDynamic) {
+    // Pre-initialize telescope modules in background so first generation is faster
+    import("./telescope/telescope-adapter")
+      .then((m) => m.initTelescope())
+      .catch(() => {});
     const seed = getCurrentDynamicSeed();
     if (seed !== null && seedInput) {
       seedInput.value = String(seed);
@@ -154,6 +158,7 @@ async function onDailySeedClick(): Promise<void> {
 
     if (seed !== currentSeed) {
       updateURLWithSeed(seed, true);
+      showLoadingOverlay();
       await runDynamicMap(seed, true, dynamicOpts);
     } else {
       console.log("[DynamicUI] Daily seed matches current seed, skipping.");
@@ -188,6 +193,7 @@ async function onGenerateClick(): Promise<void> {
   setBusy(true);
   try {
     updateURLWithSeed(seed, false);
+    showLoadingOverlay();
     await runDynamicMap(seed, false, dynamicOpts);
   } catch (e) {
     console.error("[DynamicUI] Generate failed:", e);
@@ -217,6 +223,27 @@ function updateGenerateButtonState(): void {
   const isMatch = !isNaN(inputSeed) && inputSeed === currentSeed;
 
   generateBtn.disabled = isMatch || isBusy;
+}
+
+/** Show the loading overlay with download already complete, ready for generation progress. */
+function showLoadingOverlay(): void {
+  const overlay = document.getElementById("map-loading-overlay");
+  if (!overlay) return;
+  overlay.style.display = "flex";
+  // Skip download phase (data.zip already loaded)
+  const dl = document.getElementById("loading-bar-download") as HTMLElement | null;
+  if (dl) dl.style.width = "100%";
+  // Reset generation and items bars
+  const gen = document.getElementById("loading-bar-generation") as HTMLElement | null;
+  const items = document.getElementById("loading-bar-items") as HTMLElement | null;
+  if (gen) gen.style.width = "0%";
+  if (items) items.style.width = "0%";
+  const title = document.getElementById("map-loading-title");
+  if (title) title.textContent = "Generating Biomes";
+  const subtitle = document.getElementById("map-loading-subtitle");
+  if (subtitle) subtitle.style.display = "none";
+  const status = document.getElementById("map-loading-status");
+  if (status) status.textContent = "33%";
 }
 
 export function setDynamicUISeed(seed: number, isDaily: boolean): void {

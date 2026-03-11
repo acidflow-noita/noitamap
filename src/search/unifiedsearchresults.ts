@@ -316,6 +316,9 @@ export class UnifiedSearchResults extends EventEmitter2 {
                   const itemName = r.item || "item";
                   if ((itemName === "potion" || itemName === "pouch") && r.material) {
                     label = `${r.material} ${itemName}`;
+                  } else if (itemName === "spell" && r.spell) {
+                    const spell = spells.find((s: any) => s.id === r.spell);
+                    label = gameTranslator.translateSpell(spell ? spell.name : r.spell);
                   } else if (itemName === "gold" && r.amount) {
                     label = `Gold $${r.amount}`;
                   } else if (itemName === "heart") {
