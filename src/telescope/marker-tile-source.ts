@@ -7,6 +7,7 @@
  */
 
 import { MarkerData } from "./poi-spatial-index";
+import { applySpoilerFree } from "../spoiler-free";
 
 declare const OpenSeadragon: any;
 
@@ -58,6 +59,8 @@ export function createMarkerTileSource(markerData: MarkerData): any {
     return true;
   };
 
+  // Use spatial index to check if markers exist in this tile.
+  // Prevents OSD from creating empty transparent canvases.
   source.tileExists = function (level: number, x: number, y: number) {
     const { bx, by, bw, bh } = tileBounds(level, x, y);
     const pad = maxMarkerDim;
@@ -91,7 +94,6 @@ export function createMarkerTileSource(markerData: MarkerData): any {
     canvas.width = TILE_SIZE;
     canvas.height = TILE_SIZE;
     const ctx = canvas.getContext("2d")!;
-    // Nearest-neighbor for pixel art — no smoothing/antialiasing ever.
     ctx.imageSmoothingEnabled = false;
 
     if (results.length > 0) {
@@ -101,50 +103,51 @@ export function createMarkerTileSource(markerData: MarkerData): any {
         const item = items[idx];
         if (!item) continue;
 
-        const atlasEntry = atlas[item.spriteKey];
+        const atlasKey = applySpoilerFree(item.spriteKey, atlas);
+        const atlasEntry = atlas[atlasKey];
         if (!atlasEntry) continue;
 
-        const itemLocalX = item.osdX - originX - item.w / 2;
-        const itemLocalY = item.osdY - originY - item.h / 2;
+        const srcW = atlasEntry.w;
+        const srcH = atlasEntry.h;
 
-        // Sub-pixel coordinates are fine — canvas drawImage handles them
-        // correctly with imageSmoothingEnabled=false. Do NOT round, as
-        // rounding causes markers to visibly shift when zoom level changes.
+        // When spoiler-free swaps the sprite, use the replacement sprite's
+        // own pixel dimensions (item.w/h are pixel dims from the original atlas entry).
+        const drawItemW = atlasKey !== item.spriteKey ? srcW : item.w;
+        const drawItemH = atlasKey !== item.spriteKey ? srcH : item.h;
+
+        const itemLocalX = item.osdX - originX - drawItemW / 2;
+        const itemLocalY = item.osdY - originY - drawItemH / 2;
+
         const drawX = (itemLocalX - bx) * drawScale;
         const drawY = (itemLocalY - by) * drawScale;
-        const drawW = item.w * drawScale;
-        const drawH = item.h * drawScale;
+        const drawW = drawItemW * drawScale;
+        const drawH = drawItemH * drawScale;
 
-        // Enforce minimum rendered size so markers don't disappear at
-        // intermediate zoom levels (causes "blinking" as tiles recalculate).
-        // Very small markers render as a 2px dot; still visible as a hint.
-        const MIN_RENDER = 2;
-        let finalW = drawW;
-        let finalH = drawH;
-        let finalX = drawX;
-        let finalY = drawY;
-        if (finalW < MIN_RENDER || finalH < MIN_RENDER) {
-          // Center the clamped square on the original center
-          const cx = drawX + drawW / 2;
-          const cy = drawY + drawH / 2;
-          finalW = Math.max(finalW, MIN_RENDER);
-          finalH = Math.max(finalH, MIN_RENDER);
-          finalX = cx - finalW / 2;
-          finalY = cy - finalH / 2;
-        }
+        // Skip markers smaller than 1px — sub-pixel drawImage produces
+        // colored rectangle artifacts on some browsers/GPUs.
+        if (drawW < 1 || drawH < 1) continue;
 
-        ctx.drawImage(spritesheet, atlasEntry.x, atlasEntry.y, item.w, item.h, finalX, finalY, finalW, finalH);
+        ctx.drawImage(
+          spritesheet,
+          atlasEntry.x, atlasEntry.y, srcW, srcH,
+          drawX, drawY, drawW, drawH,
+        );
       }
     }
 
-    // Pass canvas directly — synchronous, preserves transparency.
-    // Do NOT use createImageBitmap: it's async (causes race conditions
-    // on rapid zoom) and may apply unwanted smoothing to pixel art.
-    context.finish(canvas, null, "image");
+    // IMPORTANT: Defer context.finish to the next microtask. Calling it
+    // synchronously inside downloadTileStart confuses OSD's coverage
+    // tracking — OSD calls _setCoverage for the tile before _resetCoverage
+    // has run for that level in the current render pass, producing the
+    // "Setting coverage for a tile before its level's coverage has been
+    // reset" warnings and causing DZI background tiles to "pop" to low-res.
+    queueMicrotask(() => {
+      context.finish(canvas, null, "image");
+    });
   };
 
   source.downloadTileAbort = function (_context: any) {
-    // No-op — canvas rendering is synchronous
+    // No-op — canvas rendering is synchronous, finish is deferred
   };
 
   return source;

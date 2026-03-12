@@ -245,6 +245,13 @@ export class UnifiedSearch extends EventEmitter2 {
     }
   }
 
+  /** Force a full re-render of search results (e.g. when spoiler-free toggles). */
+  forceRefresh() {
+    this.lastSearchText = "__force__";
+    this.lastViewportKey = "";
+    this.updateSearchResults();
+  }
+
   private updateSearchResults() {
     const searchText = this.searchInput.value;
     // Also check viewport position for dynamic map proximity sorting

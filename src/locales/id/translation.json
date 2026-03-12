@@ -4572,5 +4572,9 @@
     },
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
   },
-  "alive_wand": "(alive wand)"
+  "alive_wand": "(alive wand)",
+  "spoilerFree": {
+    "title": "Spoiler-free",
+    "content": "Hide wand, spell, item identities on the map and in the search results. Wands show up as the starter wand, spells and items show up as unidentified."
+  }
 }

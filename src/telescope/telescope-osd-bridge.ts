@@ -24,6 +24,7 @@ import {
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
 import { createMarkerTileSource } from "./marker-tile-source";
 import { gameTranslator } from "../game-translations/translator";
+import { isSpoilerFree, getSpoilerCategory, getSpoilerLabel, applySpoilerFree } from "../spoiler-free";
 import spells from "../data/spells.json";
 
 declare const OpenSeadragon: any;
@@ -613,6 +614,7 @@ export async function addPOIOverlays(viewer: OSDViewer, result: GenerationResult
 let activeMarkerData: MarkerData | null = null;
 let tooltipEl: HTMLDivElement | null = null;
 let canvasClickHandler: ((event: any) => void) | null = null;
+let markerTiledImage: any = null;
 
 /**
  * Show a popup for a marker at the given screen position.
@@ -658,6 +660,44 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   tooltipEl.appendChild(closeBtn);
 
   const poi = item.poi;
+
+  // ─── Spoiler-free mode: generic popup with no details ──────────────────
+  if (isSpoilerFree()) {
+    const category = getSpoilerCategory(item.spriteKey);
+    const label = getSpoilerLabel(category);
+    const colorMap = { wand: "#c8a2ff", spell: "#66ccff", something: "#ffd700" };
+
+    const title = document.createElement("div");
+    title.style.cssText = `font-weight:bold;color:${colorMap[category]};font-size:14px;margin-bottom:4px`;
+    title.textContent = label;
+    tooltipEl.appendChild(title);
+
+    // Footer with position only
+    const footer = document.createElement("div");
+    footer.style.cssText = "margin-top:6px;color:#666;font-size:11px;border-top:1px solid #333;padding-top:4px";
+    footer.textContent = `PW ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
+    tooltipEl.appendChild(footer);
+
+    document.body.appendChild(tooltipEl);
+    const pad = 12;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    let tx = screenX + pad;
+    let ty = screenY + pad;
+    requestAnimationFrame(() => {
+      if (!tooltipEl) return;
+      const rect = tooltipEl.getBoundingClientRect();
+      if (tx + rect.width > vw - pad) tx = screenX - rect.width - pad;
+      if (ty + rect.height > vh - pad) ty = screenY - rect.height - pad;
+      if (tx < pad) tx = pad;
+      if (ty < pad) ty = pad;
+      tooltipEl.style.left = `${tx}px`;
+      tooltipEl.style.top = `${ty}px`;
+    });
+    tooltipEl.style.left = `${tx}px`;
+    tooltipEl.style.top = `${ty}px`;
+    return;
+  }
 
   if (poi.type === "wand") {
     // Header with sprite
@@ -1101,7 +1141,9 @@ export async function renderGenerationResult(viewer: OSDViewer, result: Generati
         } catch {}
         return;
       }
+      event.item._isMarkerLayer = true;
       dynamicTiledImages.add(event.item);
+      markerTiledImage = event.item;
       emitItemsDone();
     },
     error: (err: any) => {
@@ -1158,10 +1200,15 @@ export async function getPOISpriteFirstFrame(poi: {
     spritesheet = loaded.spritesheet;
   }
 
-  const key = getSpriteKey(poi as POI, atlas);
-  if (!key) return null;
+  const rawKey = getSpriteKey(poi as POI, atlas);
+  if (!rawKey) return null;
 
-  if (spriteFirstFrameCache.has(key)) return spriteFirstFrameCache.get(key)!;
+  // Apply spoiler-free transformation — swap sprite key if enabled
+  const key = applySpoilerFree(rawKey, atlas);
+
+  // Cache key includes spoiler-free state to avoid stale entries
+  const cacheKey = `${key}:${isSpoilerFree() ? "sf" : "ns"}`;
+  if (spriteFirstFrameCache.has(cacheKey)) return spriteFirstFrameCache.get(cacheKey)!;
 
   if (atlas && spritesheet && atlas[key]) {
     const entry = atlas[key];
@@ -1180,7 +1227,7 @@ export async function getPOISpriteFirstFrame(poi: {
         resolve(blob ? URL.createObjectURL(blob) : "");
       }, "image/png");
     });
-    spriteFirstFrameCache.set(key, url || null);
+    spriteFirstFrameCache.set(cacheKey, url || null);
     return url || null;
   }
 

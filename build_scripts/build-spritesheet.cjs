@@ -1,9 +1,17 @@
 /**
  * build-spritesheet.cjs
  *
- * Extracts POI sprites from data.zip, packs them into a single spritesheet.png + atlas.json.
- * Wand sprites are rotated 90° CCW (stored horizontal, displayed vertical on the map).
- * Animated sprites (width > height) are cropped to the first frame.
+ * Extracts ALL entity sprites from data.zip, packs them into a single
+ * spritesheet.png + atlas.json.
+ *
+ * - Recursively scans all key image directories (items_gfx, buildings_gfx,
+ *   enemies_gfx, ui_gfx/gun_actions, ui_gfx/items, ui_gfx/perk_icons,
+ *   props_gfx, props_breakable_gfx, etc.) including subdirectories.
+ * - Parses companion .xml files for spritesheet animation data (frame_width,
+ *   frame_height, offset_x, offset_y, frame_count, etc.) and adds to atlas.
+ * - Wand sprites are rotated 90° CCW.
+ * - Animated sprites are cropped to first frame using XML data or heuristic.
+ * - Custom flask/pouch material icons from src/material-icons are included.
  *
  * Output:
  *   public/assets/spritesheet.png
@@ -24,11 +32,50 @@ const OUT_PNG = path.join(OUT_DIR, "spritesheet.png");
 const OUT_JSON = path.join(OUT_DIR, "atlas.json");
 
 // Max spritesheet width — sprites are packed left-to-right, row by row
-const SHEET_MAX_W = 2048;
+const SHEET_MAX_W = 4096;
 
-/**
- * Decode a PNG buffer into { data: Uint8ClampedArray, width, height }.
- */
+// Max individual sprite dimension — skip huge images (pixel scenes, backgrounds)
+const MAX_SPRITE_DIM = 256;
+
+// ─── Image directories to scan recursively in data.zip ───────────────────────
+// These contain entity sprites, item icons, spell icons, etc.
+const SCAN_DIRS = [
+  "data/items_gfx/",
+  "data/buildings_gfx/",
+  "data/enemies_gfx/",
+  "data/ui_gfx/gun_actions/",
+  "data/ui_gfx/items/",
+  "data/ui_gfx/perk_icons/",
+  "data/ui_gfx/status_indicators/",
+  "data/ui_gfx/essence_icons/",
+  "data/ui_gfx/decorations/",
+  "data/ui_gfx/inventory/",
+  "data/props_gfx/",
+  "data/props_breakable_gfx/",
+  "data/projectiles_gfx/",
+  "data/particles/image_emitters/",
+];
+
+// Paths to SKIP when scanning — not useful as standalone sprites
+const SKIP_DIRS = [
+  "data/items_gfx/in_hand/",  // Hand-held overlays, not standalone sprites
+];
+
+// Directories whose PNGs should be rotated 90° CCW (wand sprites)
+const WAND_DIRS = [
+  "data/items_gfx/wands/",
+];
+
+// Directories where width > height does NOT mean animated spritesheet;
+// images should NOT be cropped by the heuristic.
+const NO_HEURISTIC_CROP_DIRS = [
+  "data/buildings_gfx/",
+  "data/props_gfx/",
+  "data/props_breakable_gfx/",
+];
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 function decodePng(buf) {
   const png = PNG.sync.read(Buffer.from(buf));
   return {
@@ -38,10 +85,6 @@ function decodePng(buf) {
   };
 }
 
-/**
- * Rotate RGBA pixel data 90° counter-clockwise.
- * Input is (sw × sh), output is (sh × sw).
- */
 function rotateCCW(data, sw, sh) {
   const outW = sh;
   const outH = sw;
@@ -62,57 +105,203 @@ function rotateCCW(data, sw, sh) {
 }
 
 /**
- * Crop the first frame from an animated sprite (width > height).
- * Frame = first height×height pixels from the left.
+ * Crop the first frame from a spritesheet image.
+ * posX/posY specify the pixel offset of the first frame within the source image.
  */
-function cropFirstFrame(data, sw, sh) {
-  const frameW = sh; // square frame
-  const out = new Uint8ClampedArray(frameW * sh * 4);
-  for (let y = 0; y < sh; y++) {
-    const srcOff = y * sw * 4;
-    const dstOff = y * frameW * 4;
-    out.set(data.subarray(srcOff, srcOff + frameW * 4), dstOff);
-  }
-  return { data: out, width: frameW, height: sh };
-}
-
-/**
- * Parse a Noita Sprite XML and extract offset_x, offset_y, frame_width, frame_height.
- * Returns { offsetX, offsetY, frameW, frameH } or null if no XML found.
- */
-async function parseXmlOffsets(zip, xmlPath) {
-  const f = zip.file(xmlPath);
-  if (!f) return null;
-  const txt = await f.async("text");
-  const oxMatch = txt.match(/offset_x="(\d+)"/);
-  const oyMatch = txt.match(/offset_y="(\d+)"/);
-  const fwMatch = txt.match(/frame_width="(\d+)"/);
-  const fhMatch = txt.match(/frame_height="(\d+)"/);
-  // Return null only if XML has NO useful data at all
-  if (!oxMatch && !oyMatch && !fwMatch && !fhMatch) return null;
-  return {
-    offsetX: oxMatch ? parseInt(oxMatch[1]) : 0,
-    offsetY: oyMatch ? parseInt(oyMatch[1]) : 0,
-    frameW: fwMatch ? parseInt(fwMatch[1]) : null,
-    frameH: fhMatch ? parseInt(fhMatch[1]) : null,
-  };
-}
-
-/**
- * Crop a sprite to the first frame using XML-defined frame dimensions.
- * Falls back to square-crop (height×height) if no XML data.
- */
-function cropToFrame(data, sw, sh, frameW, frameH) {
-  const fw = frameW || sh; // default: assume square frame
-  const fh = frameH || sh;
-  if (fw >= sw && fh >= sh) return { data, width: sw, height: sh }; // no crop needed
+function cropToFrame(data, sw, sh, frameW, frameH, posX = 0, posY = 0) {
+  const fw = Math.min(frameW || sh, sw - posX);
+  const fh = Math.min(frameH || sh, sh - posY);
+  if (fw >= sw && fh >= sh && posX === 0 && posY === 0) return { data, width: sw, height: sh };
   const out = new Uint8ClampedArray(fw * fh * 4);
   for (let y = 0; y < fh; y++) {
-    const srcOff = y * sw * 4;
+    const srcOff = ((y + posY) * sw + posX) * 4;
     const dstOff = y * fw * 4;
     out.set(data.subarray(srcOff, srcOff + fw * 4), dstOff);
   }
   return { data: out, width: fw, height: fh };
+}
+
+/**
+ * Parse a Noita .xml file and extract all useful sprite metadata.
+ * Returns object with available fields, or null if no XML found / no useful data.
+ */
+async function parseXml(zip, xmlPath) {
+  const f = zip.file(xmlPath);
+  if (!f) return null;
+  const txt = await f.async("text");
+
+  const getInt = (name) => {
+    const m = txt.match(new RegExp(`${name}="(-?\\d+)"`));
+    return m ? parseInt(m[1]) : undefined;
+  };
+  const getFloat = (name) => {
+    const m = txt.match(new RegExp(`${name}="(-?[\\d.]+)"`));
+    return m ? parseFloat(m[1]) : undefined;
+  };
+  const getStr = (name) => {
+    const m = txt.match(new RegExp(`${name}="([^"]*)"`));
+    return m ? m[1] : undefined;
+  };
+
+  const result = {};
+  let hasData = false;
+
+  // Sprite geometry
+  const fields = {
+    offset_x: getInt("offset_x"),
+    offset_y: getInt("offset_y"),
+    frame_width: getInt("frame_width"),
+    frame_height: getInt("frame_height"),
+    frame_count: getInt("frame_count"),
+    frames_per_row: getInt("frames_per_row"),
+    frame_wait: getFloat("frame_wait"),
+    default_animation: getStr("default_animation"),
+  };
+
+  for (const [k, v] of Object.entries(fields)) {
+    if (v !== undefined) {
+      result[k] = v;
+      hasData = true;
+    }
+  }
+
+  // Parse <RectAnimation> elements for named animations
+  const animRegex = /<RectAnimation\s+([^/>]*)\/?>/g;
+  let animMatch;
+  const animations = [];
+  while ((animMatch = animRegex.exec(txt)) !== null) {
+    const attrs = animMatch[1];
+    const anim = {};
+    const nameM = attrs.match(/name="([^"]*)"/);
+    if (nameM) anim.name = nameM[1];
+    const posXM = attrs.match(/pos_x="(-?\d+)"/);
+    if (posXM) anim.pos_x = parseInt(posXM[1]);
+    const posYM = attrs.match(/pos_y="(-?\d+)"/);
+    if (posYM) anim.pos_y = parseInt(posYM[1]);
+    const fwM = attrs.match(/frame_width="(-?\d+)"/);
+    if (fwM) anim.frame_width = parseInt(fwM[1]);
+    const fhM = attrs.match(/frame_height="(-?\d+)"/);
+    if (fhM) anim.frame_height = parseInt(fhM[1]);
+    const fcM = attrs.match(/frame_count="(-?\d+)"/);
+    if (fcM) anim.frame_count = parseInt(fcM[1]);
+    const fwaitM = attrs.match(/frame_wait="(-?[\d.]+)"/);
+    if (fwaitM) anim.frame_wait = parseFloat(fwaitM[1]);
+    const fprM = attrs.match(/frames_per_row="(-?\d+)"/);
+    if (fprM) anim.frames_per_row = parseInt(fprM[1]);
+    if (Object.keys(anim).length > 0) animations.push(anim);
+  }
+  if (animations.length > 0) {
+    result.animations = animations;
+    hasData = true;
+  }
+
+  return hasData ? result : null;
+}
+
+/**
+ * Determine the atlas key for a file path within data.zip.
+ */
+function getAtlasKey(zipPath, isWand) {
+  // Wands: wand:<basename> or wand:custom/<basename>
+  if (isWand) {
+    const wandBase = "data/items_gfx/wands/";
+    const rel = zipPath.slice(wandBase.length).replace(/\.png$/, "");
+    return `wand:${rel}`;
+  }
+
+  // Spells: spell:<basename>
+  if (zipPath.startsWith("data/ui_gfx/gun_actions/")) {
+    const name = path.basename(zipPath, ".png");
+    return `spell:${name}`;
+  }
+
+  // Items: item:<relative path from items_gfx without .png>
+  if (zipPath.startsWith("data/items_gfx/")) {
+    // Skip wands — handled above
+    if (zipPath.startsWith("data/items_gfx/wands/")) return null;
+    const rel = zipPath.slice("data/items_gfx/".length).replace(/\.png$/, "");
+    return `item:${rel}`;
+  }
+
+  // Buildings
+  if (zipPath.startsWith("data/buildings_gfx/")) {
+    const rel = zipPath.slice("data/buildings_gfx/".length).replace(/\.png$/, "");
+    return `building:${rel}`;
+  }
+
+  // Enemies
+  if (zipPath.startsWith("data/enemies_gfx/")) {
+    const rel = zipPath.slice("data/enemies_gfx/".length).replace(/\.png$/, "");
+    return `enemy:${rel}`;
+  }
+
+  // UI items
+  if (zipPath.startsWith("data/ui_gfx/items/")) {
+    const rel = zipPath.slice("data/ui_gfx/items/".length).replace(/\.png$/, "");
+    return `ui_item:${rel}`;
+  }
+
+  // Perks
+  if (zipPath.startsWith("data/ui_gfx/perk_icons/")) {
+    const name = path.basename(zipPath, ".png");
+    return `perk:${name}`;
+  }
+
+  // Status indicators
+  if (zipPath.startsWith("data/ui_gfx/status_indicators/")) {
+    const name = path.basename(zipPath, ".png");
+    return `status:${name}`;
+  }
+
+  // Essence icons
+  if (zipPath.startsWith("data/ui_gfx/essence_icons/")) {
+    const name = path.basename(zipPath, ".png");
+    return `essence:${name}`;
+  }
+
+  // Props
+  if (zipPath.startsWith("data/props_gfx/")) {
+    const rel = zipPath.slice("data/props_gfx/".length).replace(/\.png$/, "");
+    return `prop:${rel}`;
+  }
+
+  // Props breakable
+  if (zipPath.startsWith("data/props_breakable_gfx/")) {
+    const rel = zipPath.slice("data/props_breakable_gfx/".length).replace(/\.png$/, "");
+    return `prop_break:${rel}`;
+  }
+
+  // Projectiles
+  if (zipPath.startsWith("data/projectiles_gfx/")) {
+    const rel = zipPath.slice("data/projectiles_gfx/".length).replace(/\.png$/, "");
+    return `projectile:${rel}`;
+  }
+
+  // Particles / image emitters
+  if (zipPath.startsWith("data/particles/")) {
+    const rel = zipPath.slice("data/particles/".length).replace(/\.png$/, "");
+    return `particle:${rel}`;
+  }
+
+  // Generic fallback for remaining ui_gfx
+  if (zipPath.startsWith("data/ui_gfx/")) {
+    const rel = zipPath.slice("data/ui_gfx/".length).replace(/\.png$/, "");
+    return `ui:${rel}`;
+  }
+
+  // Fallback: full relative path
+  const rel = zipPath.slice("data/".length).replace(/\.png$/, "");
+  return `data:${rel}`;
+}
+
+/**
+ * Check if a PNG is fully transparent (skip it).
+ */
+function isFullyTransparent(data) {
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] > 0) return false;
+  }
+  return true;
 }
 
 async function main() {
@@ -120,183 +309,132 @@ async function main() {
   const zipBuf = fs.readFileSync(DATA_ZIP);
   const zip = await JSZip.loadAsync(zipBuf);
 
-  /** @type {Array<{key: string, data: Uint8ClampedArray, width: number, height: number, offsetX?: number, offsetY?: number}>} */
+  /** @type {Array<{key: string, data: Uint8ClampedArray, width: number, height: number, xmlData?: object}>} */
   const sprites = [];
+  const seenKeys = new Set();
 
-  // ─── Wand sprites (rotated 90° CCW) ────────────────────────────────────────
-  const wandPrefix = "data/items_gfx/wands/";
-  const wandPaths = [];
+  // ─── Collect all PNG paths from scan directories ───────────────────────────
+  const allPngPaths = [];
   zip.forEach((relPath) => {
-    if (relPath.startsWith(wandPrefix) && relPath.endsWith(".png") && relPath.indexOf("/custom/") === -1) {
-      wandPaths.push(relPath);
+    if (!relPath.endsWith(".png")) return;
+    // Skip excluded directories
+    for (const skip of SKIP_DIRS) {
+      if (relPath.startsWith(skip)) return;
     }
-  });
-  wandPaths.sort();
-
-  console.log(`[build-spritesheet] Processing ${wandPaths.length} wand sprites...`);
-  for (const p of wandPaths) {
-    const buf = await zip.file(p).async("arraybuffer");
-    const img = decodePng(buf);
-    const rotated = rotateCCW(img.data, img.width, img.height);
-    const name = path.basename(p, ".png");
-    const xmlPath = p.replace(".png", ".xml");
-    const offsets = await parseXmlOffsets(zip, xmlPath);
-    const entry = { key: `wand:${name}`, ...rotated };
-    if (offsets) {
-      entry.offsetX = offsets.offsetX;
-      entry.offsetY = offsets.offsetY;
-    }
-    sprites.push(entry);
-  }
-
-  // Also include custom wand sprites
-  const customWandPaths = [];
-  zip.forEach((relPath) => {
-    if (relPath.startsWith(wandPrefix + "custom/") && relPath.endsWith(".png")) {
-      customWandPaths.push(relPath);
-    }
-  });
-  customWandPaths.sort();
-
-  console.log(`[build-spritesheet] Processing ${customWandPaths.length} custom wand sprites...`);
-  for (const p of customWandPaths) {
-    const buf = await zip.file(p).async("arraybuffer");
-    const img = decodePng(buf);
-    const rotated = rotateCCW(img.data, img.width, img.height);
-    const name = path.basename(p, ".png");
-    const xmlPath = p.replace(".png", ".xml");
-    const offsets = await parseXmlOffsets(zip, xmlPath);
-    const entry = { key: `wand:custom/${name}`, ...rotated };
-    if (offsets) {
-      entry.offsetX = offsets.offsetX;
-      entry.offsetY = offsets.offsetY;
-    }
-    sprites.push(entry);
-  }
-
-  // ─── Item sprites ──────────────────────────────────────────────────────────
-  // Key items that appear as POIs on the dynamic map
-  const itemFiles = [
-    "chest",
-    "chest_present",
-    "crate",
-    "heart_extrahp",
-    "heart_extrahp_evil",
-    "heart",
-    "pouch",
-    "powder_stash",
-    "material_pouch",
-    "material_backbag",
-    "flask_liquid",
-    "jar",
-    "goldnugget_01",
-    "goldnugget_6px",
-    "goldnugget_9px",
-    "goldnugget_12px",
-    "goldnugget_20px",
-    "spell_refresh",
-    "orb",
-    "orb_greed",
-    "perk",
-    "safe_haven",
-    "egg",
-    "egg_purple",
-    "egg_red",
-    "egg_slime",
-    "egg_worm",
-    "book",
-    "book_s",
-    "emerald_tablet",
-    "scroll",
-    "kakke",
-    "gourd",
-    "key",
-    "knife",
-    "rock",
-    "bomb",
-    "bomb_holy",
-    "bomb_holy_giga",
-    "evil_eye",
-    "torch",
-    "moon",
-    "sunseed",
-    "beamstone",
-    "thunderstone",
-    "stonestone",
-    "waterstone",
-    "wandstone",
-    "musicstone",
-    "brimstone",
-    "broken_wand",
-    "broken_spell",
-    "kantele",
-    "flute",
-    "medkit",
-  ];
-
-  console.log(`[build-spritesheet] Processing ${itemFiles.length} item sprites...`);
-  for (const name of itemFiles) {
-    const p = `data/items_gfx/${name}.png`;
-    const f = zip.file(p);
-    if (!f) {
-      console.warn(`  [SKIP] ${p} not found`);
-      continue;
-    }
-    const buf = await f.async("arraybuffer");
-    let img = decodePng(buf);
-    const xmlPath = `data/items_gfx/${name}.xml`;
-    const xmlData = await parseXmlOffsets(zip, xmlPath);
-    // Use XML frame dimensions for precise cropping; fall back to old heuristic
-    if (xmlData && xmlData.frameW && xmlData.frameH) {
-      img = cropToFrame(img.data, img.width, img.height, xmlData.frameW, xmlData.frameH);
-    } else if (img.width > img.height) {
-      img = cropFirstFrame(img.data, img.width, img.height);
-    }
-    const entry = { key: `item:${name}`, data: img.data, width: img.width, height: img.height };
-    if (xmlData) {
-      if (xmlData.offsetX) entry.offsetX = xmlData.offsetX;
-      if (xmlData.offsetY) entry.offsetY = xmlData.offsetY;
-    }
-    sprites.push(entry);
-  }
-
-  // Extra item sprites from non-standard paths
-  // noCrop: true → don't crop even if width > height (not animated, just wider)
-  const extraItems = [
-    { key: "item:chest_random", path: "data/buildings_gfx/chest_random.png", noCrop: true },
-    { key: "item:chest_random_super", path: "data/buildings_gfx/chest_random_super.png", noCrop: true },
-    { key: "item:potion", path: "data/ui_gfx/items/potion.png" },
-  ];
-  for (const extra of extraItems) {
-    const f = zip.file(extra.path);
-    if (!f) {
-      console.warn(`  [SKIP] ${extra.path} not found`);
-      continue;
-    }
-    const buf = await f.async("arraybuffer");
-    let img = decodePng(buf);
-    const xmlPath = extra.path.replace(".png", ".xml");
-    const xmlData = await parseXmlOffsets(zip, xmlPath);
-    if (!extra.noCrop) {
-      if (xmlData && xmlData.frameW && xmlData.frameH) {
-        img = cropToFrame(img.data, img.width, img.height, xmlData.frameW, xmlData.frameH);
-      } else if (img.width > img.height) {
-        img = cropFirstFrame(img.data, img.width, img.height);
+    for (const dir of SCAN_DIRS) {
+      if (relPath.startsWith(dir)) {
+        allPngPaths.push(relPath);
+        return;
       }
     }
-    const entry = { key: extra.key, data: img.data, width: img.width, height: img.height };
-    if (xmlData) {
-      if (xmlData.offsetX) entry.offsetX = xmlData.offsetX;
-      if (xmlData.offsetY) entry.offsetY = xmlData.offsetY;
+  });
+  allPngPaths.sort();
+
+  console.log(`[build-spritesheet] Found ${allPngPaths.length} PNG files across ${SCAN_DIRS.length} directories`);
+
+  let skippedLarge = 0;
+  let skippedTransparent = 0;
+  let processed = 0;
+
+  for (const p of allPngPaths) {
+    const isWand = WAND_DIRS.some((d) => p.startsWith(d));
+    const key = getAtlasKey(p, isWand);
+    if (!key || seenKeys.has(key)) continue;
+
+    let buf;
+    try {
+      buf = await zip.file(p).async("arraybuffer");
+    } catch {
+      continue;
     }
+
+    let img;
+    try {
+      img = decodePng(buf);
+    } catch {
+      continue;
+    }
+
+    // Skip very large images (pixel scene backgrounds, etc.)
+    if (img.width > MAX_SPRITE_DIM || img.height > MAX_SPRITE_DIM) {
+      skippedLarge++;
+      continue;
+    }
+
+    // Skip fully transparent images
+    if (isFullyTransparent(img.data)) {
+      skippedTransparent++;
+      continue;
+    }
+
+    // Parse companion XML
+    const xmlPath = p.replace(/\.png$/, ".xml");
+    const xmlData = await parseXml(zip, xmlPath);
+
+    // Crop animated sprites to first frame
+    const noHeuristicCrop = NO_HEURISTIC_CROP_DIRS.some((d) => p.startsWith(d));
+    if (xmlData && xmlData.frame_width && xmlData.frame_height) {
+      // Use animation pos_x/pos_y if available (first animation's offset)
+      let posX = 0, posY = 0;
+      if (xmlData.animations && xmlData.animations.length > 0) {
+        const anim = xmlData.animations[0];
+        posX = anim.pos_x || 0;
+        posY = anim.pos_y || 0;
+      }
+      img = cropToFrame(img.data, img.width, img.height, xmlData.frame_width, xmlData.frame_height, posX, posY);
+    } else if (img.width > img.height && !isWand && !noHeuristicCrop) {
+      // Heuristic: width > height likely means horizontal spritesheet
+      // Skip for buildings/props which are often just wide (not animated)
+      img = cropToFrame(img.data, img.width, img.height, img.height, img.height);
+    }
+
+    // Rotate wands 90° CCW
+    if (isWand) {
+      const rotated = rotateCCW(img.data, img.width, img.height);
+      img = rotated;
+    }
+
+    // Skip if after cropping, still too large
+    if (img.width > MAX_SPRITE_DIM || img.height > MAX_SPRITE_DIM) {
+      skippedLarge++;
+      continue;
+    }
+
+    const entry = { key, data: img.data, width: img.width, height: img.height };
+    if (xmlData) entry.xmlData = xmlData;
     sprites.push(entry);
+    seenKeys.add(key);
+    processed++;
   }
 
-  // ─── Custom Material Icons ─────────────────────────────────────────────────
-  // Load material-specific potions and pouches from src/material-icons
+  console.log(`[build-spritesheet] Processed: ${processed}, Skipped large: ${skippedLarge}, Skipped transparent: ${skippedTransparent}`);
+
+  // ─── Backward-compatible aliases ───────────────────────────────────────────
+  // The runtime code uses keys like "item:chest_random" which maps to buildings_gfx.
+  // Add aliases so both key formats work.
+  const aliases = [
+    { from: "building:chest_random", to: "item:chest_random" },
+    { from: "building:chest_random_super", to: "item:chest_random_super" },
+    { from: "ui_item:potion", to: "item:potion" },
+  ];
+
+  // ─── wand:handgun (rotated) — used by spoiler-free mode ────────────────────
+  // handgun.png lives in items_gfx/ root, keyed as item:handgun. We need a
+  // rotated copy under wand:handgun for use as the generic wand sprite.
+  const handgunSprite = sprites.find((s) => s.key === "item:handgun");
+  if (handgunSprite) {
+    const rotated = rotateCCW(handgunSprite.data, handgunSprite.width, handgunSprite.height);
+    const wandHandgun = { key: "wand:handgun", data: rotated.data, width: rotated.width, height: rotated.height };
+    sprites.push(wandHandgun);
+    seenKeys.add("wand:handgun");
+    console.log("[build-spritesheet] Added wand:handgun (rotated from item:handgun)");
+  } else {
+    console.warn("[build-spritesheet] WARNING: item:handgun not found, cannot create wand:handgun");
+  }
+
+  // ─── Custom Material Icons from src/material-icons ─────────────────────────
   const MATERIAL_ICONS_DIR = path.resolve(__dirname, "..", "src", "material-icons");
   if (fs.existsSync(MATERIAL_ICONS_DIR)) {
-    console.log(`[build-spritesheet] Scanning material icons in ${MATERIAL_ICONS_DIR}...`);
     const files = fs.readdirSync(MATERIAL_ICONS_DIR);
     let materialIconCount = 0;
     for (const file of files) {
@@ -311,71 +449,65 @@ async function main() {
         key = `item:pouch:${material}`;
       }
 
-      if (key) {
-        const buf = fs.readFileSync(path.join(MATERIAL_ICONS_DIR, file));
+      if (key && !seenKeys.has(key)) {
         try {
-          let img = decodePng(buf);
-          // Assuming these icons don't need cropping/rotation
+          const buf = fs.readFileSync(path.join(MATERIAL_ICONS_DIR, file));
+          const img = decodePng(buf);
           sprites.push({ key, data: img.data, width: img.width, height: img.height });
+          seenKeys.add(key);
           materialIconCount++;
         } catch (e) {
           console.warn(`  [WARN] Failed to decode ${file}: ${e.message}`);
         }
       }
     }
-    console.log(`[build-spritesheet] Added ${materialIconCount} material icons.`);
-  } else {
-    console.warn(`[build-spritesheet] Material icons dir not found at ${MATERIAL_ICONS_DIR}`);
-  }
-
-  // ─── Spell sprites (from ui_gfx/gun_actions/) ─────────────────────────────
-  const spellPrefix = "data/ui_gfx/gun_actions/";
-  const spellPaths = [];
-  zip.forEach((relPath) => {
-    if (relPath.startsWith(spellPrefix) && relPath.endsWith(".png")) {
-      spellPaths.push(relPath);
-    }
-  });
-  spellPaths.sort();
-
-  console.log(`[build-spritesheet] Processing ${spellPaths.length} spell sprites...`);
-  for (const p of spellPaths) {
-    const buf = await zip.file(p).async("arraybuffer");
-    let img = decodePng(buf);
-    if (img.width > img.height) {
-      img = cropFirstFrame(img.data, img.width, img.height);
-    }
-    const name = path.basename(p, ".png");
-    sprites.push({ key: `spell:${name}`, data: img.data, width: img.width, height: img.height });
+    console.log(`[build-spritesheet] Added ${materialIconCount} custom material icons`);
   }
 
   console.log(`[build-spritesheet] Total sprites: ${sprites.length}`);
 
   // ─── Pack sprites into rows ────────────────────────────────────────────────
-  // Simple row packing: left to right, wrap when exceeding SHEET_MAX_W
   const atlas = {};
+
+  // Sort by height descending for better packing
+  sprites.sort((a, b) => b.height - a.height);
+
   let curX = 0;
   let curY = 0;
   let rowHeight = 0;
 
-  // Sort sprites by height (descending) for slightly better packing
-  sprites.sort((a, b) => b.height - a.height);
-
   for (const s of sprites) {
     if (curX + s.width > SHEET_MAX_W) {
-      // New row
-      curY += rowHeight + 1; // 1px gap between rows
+      curY += rowHeight + 1;
       curX = 0;
       rowHeight = 0;
     }
     const atlasEntry = { x: curX, y: curY, w: s.width, h: s.height };
-    if (s.offsetX != null) atlasEntry.ox = s.offsetX;
-    if (s.offsetY != null) atlasEntry.oy = s.offsetY;
+
+    // Add XML metadata if available
+    if (s.xmlData) {
+      if (s.xmlData.offset_x != null) atlasEntry.ox = s.xmlData.offset_x;
+      if (s.xmlData.offset_y != null) atlasEntry.oy = s.xmlData.offset_y;
+      if (s.xmlData.frame_width != null) atlasEntry.fw = s.xmlData.frame_width;
+      if (s.xmlData.frame_height != null) atlasEntry.fh = s.xmlData.frame_height;
+      if (s.xmlData.frame_count != null) atlasEntry.fc = s.xmlData.frame_count;
+      if (s.xmlData.frames_per_row != null) atlasEntry.fpr = s.xmlData.frames_per_row;
+      if (s.xmlData.frame_wait != null) atlasEntry.fwait = s.xmlData.frame_wait;
+      if (s.xmlData.animations) atlasEntry.anims = s.xmlData.animations;
+    }
+
     atlas[s.key] = atlasEntry;
     s._px = curX;
     s._py = curY;
-    curX += s.width + 1; // 1px gap between sprites
+    curX += s.width + 1;
     rowHeight = Math.max(rowHeight, s.height);
+  }
+
+  // Add backward-compatible aliases
+  for (const { from, to } of aliases) {
+    if (atlas[from] && !atlas[to]) {
+      atlas[to] = { ...atlas[from] };
+    }
   }
 
   const sheetW = SHEET_MAX_W;
@@ -385,7 +517,6 @@ async function main() {
 
   // ─── Compose final PNG ─────────────────────────────────────────────────────
   const sheet = new PNG({ width: sheetW, height: sheetH });
-  // Fill with transparent
   sheet.data.fill(0);
 
   for (const s of sprites) {
@@ -410,7 +541,7 @@ async function main() {
     fs.mkdirSync(OUT_DIR, { recursive: true });
   }
 
-  const pngBuf = PNG.sync.write(sheet, { colorType: 6 }); // RGBA
+  const pngBuf = PNG.sync.write(sheet, { colorType: 6 });
   fs.writeFileSync(OUT_PNG, pngBuf);
   console.log(`[build-spritesheet] Wrote ${OUT_PNG} (${(pngBuf.length / 1024).toFixed(1)} KB)`);
 

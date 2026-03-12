@@ -24,6 +24,7 @@ export class AppOSD {
     this.viewer = new OpenSeadragon.Viewer({
       element: mountTo,
       maxZoomPixelRatio: 70,
+      maxImageCacheCount: 800, // Default 200 is too low when marker tile source is active
       showNavigator: false,
       showNavigationControl: false,
       crossOriginPolicy: "Anonymous",

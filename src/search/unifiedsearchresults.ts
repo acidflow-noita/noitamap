@@ -6,6 +6,7 @@ import { getSpellAvailability } from "../util";
 import { getPOISpriteFirstFrame } from "../telescope/telescope-osd-bridge";
 import spells from "../data/spells.json";
 import { gameTranslator } from "../game-translations/translator";
+import { isSpoilerFree } from "../spoiler-free";
 
 export type UnifiedSearchResult =
   | TargetOfInterest
@@ -301,14 +302,26 @@ export class UnifiedSearchResults extends EventEmitter2 {
             // For dynamic POIs, show "~X chunks away" proximity hint
             if ((result as any).isDynamic) {
               if ((result as any).type === "wand") {
-                const wandName = (result as any).wandName || (result as any).name || "Magic";
-                if (wandName.toUpperCase() === "TAIKASAUVA") {
-                  const aliveWandText = i18next.t("alive_wand", "(alive wand)");
-                  nameDiv.textContent = `TAIKASAUVA ${aliveWandText}`;
+                if (isSpoilerFree()) {
+                  nameDiv.textContent = "Wand";
                 } else {
-                  nameDiv.textContent = `${wandName} wand`;
+                  const wandName = (result as any).wandName || (result as any).name || "Magic";
+                  if (wandName.toUpperCase() === "TAIKASAUVA") {
+                    const aliveWandText = i18next.t("alive_wand", "(alive wand)");
+                    nameDiv.textContent = `TAIKASAUVA ${aliveWandText}`;
+                  } else {
+                    nameDiv.textContent = `${wandName} wand`;
+                  }
                 }
               } else {
+                if (isSpoilerFree()) {
+                  const r = result as any;
+                  if (r.type === "spell" || (r.type === "item" && r.item === "spell")) {
+                    nameDiv.textContent = "Spell";
+                  } else {
+                    nameDiv.textContent = "Something";
+                  }
+                } else {
                 // Non-wand dynamic POI: show meaningful name
                 const r = result as any;
                 let label = displayName;
@@ -339,6 +352,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     .replace(/\b\w/g, (c: string) => c.toUpperCase());
                 }
                 nameDiv.textContent = label;
+                }
               }
 
               if ((result as any).chunksAway !== null) {
@@ -355,7 +369,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
             contentDiv.appendChild(nameDiv);
 
             // English name on second line if not in English and different
-            if (currentLang !== "en" && displayName !== result.name) {
+            if (!isSpoilerFree() && currentLang !== "en" && displayName !== result.name) {
               const englishDiv = document.createElement("div");
               englishDiv.className = "overlay-english-line";
               englishDiv.textContent = result.name;
@@ -366,7 +380,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
             }
 
             // Aliases on third line if they exist
-            if ("aliases" in result && result.aliases) {
+            if (!isSpoilerFree() && "aliases" in result && result.aliases) {
               const aliasDiv = document.createElement("div");
               aliasDiv.className = "overlay-aliases-line";
               aliasDiv.textContent = `(${result.aliases.join(", ")})`;
@@ -375,8 +389,9 @@ export class UnifiedSearchResults extends EventEmitter2 {
               contentDiv.appendChild(aliasDiv);
             }
 
-            // ADD THIS FOR WANDS:
+            // Wand spells display (hidden in spoiler-free mode)
             if (
+              !isSpoilerFree() &&
               (result as any).type === "wand" &&
               ((result as any).cards?.length > 0 || (result as any).alwaysCasts?.length > 0)
             ) {
@@ -451,8 +466,8 @@ export class UnifiedSearchResults extends EventEmitter2 {
               contentDiv.appendChild(spellsDiv);
             }
 
-            // Container contents (chests, shops, bosses, etc.)
-            if ((result as any).isDynamic && (result as any).items?.length > 0) {
+            // Container contents (hidden in spoiler-free mode)
+            if (!isSpoilerFree() && (result as any).isDynamic && (result as any).items?.length > 0) {
               const itemsDiv = document.createElement("div");
               itemsDiv.className = "container-items-row mt-1 d-flex flex-wrap gap-1";
               itemsDiv.style.alignItems = "center";

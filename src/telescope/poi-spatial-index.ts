@@ -7,6 +7,7 @@
 
 import Flatbush from "flatbush";
 import type { GenerationResult, POI } from "./telescope-adapter";
+import { applySpoilerFree } from "../spoiler-free";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -314,7 +315,8 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
  */
 export function drawSpriteToCanvas(key: string, displayW: number, displayH: number): HTMLCanvasElement | null {
   if (!cachedSpritesheet || !cachedAtlas) return null;
-  const entry = cachedAtlas[key];
+  const resolvedKey = applySpoilerFree(key, cachedAtlas);
+  const entry = cachedAtlas[resolvedKey];
   if (!entry) return null;
 
   const frame = FIRST_FRAME_SIZE[key];

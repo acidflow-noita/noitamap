@@ -84,6 +84,7 @@ import { addEventListenerForId, assertElementById, debounce } from "./util";
 import { createMapLinks, NAV_LINK_IDENTIFIER } from "./nav";
 import { initMouseTracker } from "./mouse_tracker";
 import { isRenderer, getStoredRenderer, setStoredRenderer } from "./renderer_settings";
+import { isSpoilerFree, setSpoilerFree } from "./spoiler-free";
 import { createLanguageSelector } from "./language-selector";
 import { updateTranslations } from "./i18n-dom";
 import { initKonamiCode } from "./konami";
@@ -545,7 +546,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // manage css classes to show / hide overlays
-  addEventListenerForId("overlay-selector", "click", (ev) => {
+  const handleOverlayToggle = (ev: Event) => {
     const target = ev.target;
 
     // not an input element
@@ -564,6 +565,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Update URL with current overlays state
     updateURLWithOverlays(getEnabledOverlays());
+  };
+
+  addEventListenerForId("overlay-selector", "click", handleOverlayToggle);
+
+  // Standalone overlay toggles outside #overlay-selector (e.g. biome boundaries)
+  document.querySelectorAll<HTMLInputElement>("input.overlayToggler:not(#overlay-selector input)").forEach((el) => {
+    el.addEventListener("change", handleOverlayToggle);
   });
 
   // Initialize Bootstrap popovers
@@ -641,5 +649,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.location.reload();
     }
   });
+
+  // Handle spoiler-free toggle — reload page to re-render all tiles
+  // (same approach as renderer toggle, OSD tile cache can't be selectively invalidated)
+  const spoilerFreeToggle = document.getElementById("spoilerFreeToggle") as HTMLInputElement | null;
+  if (spoilerFreeToggle) {
+    spoilerFreeToggle.checked = isSpoilerFree();
+    spoilerFreeToggle.addEventListener("change", () => {
+      setSpoilerFree(spoilerFreeToggle.checked);
+      window.location.reload();
+    });
+  }
+
   initKonamiCode();
 });
