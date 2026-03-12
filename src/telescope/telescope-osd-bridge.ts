@@ -15,6 +15,7 @@ import {
   getAtlas,
   getSpritesheet,
   getSpriteKey,
+  resolveSpellKey,
   loadSpritesheetAndAtlas,
   FIRST_FRAME_SIZE,
   CONTAINER_TYPES,
@@ -890,7 +891,9 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       if (ci.ignore) continue;
       const ciKey = getSpriteKey(ci, getAtlas() || undefined);
       const ciName = ci.name || ci.item || ci.type || "";
-      const translatedName = gameTranslator.translateItem(ciName);
+      const translatedName = (ci.item === "spell" && ci.spell)
+        ? gameTranslator.translateSpell(getSpellName(String(ci.spell)))
+        : gameTranslator.translateItem(ciName);
 
       // Wands: show sprite (rotated) + spell icons
       if (ci.type === "wand") {
@@ -906,7 +909,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         }
         const spellIds = [...(ci.always_casts || []), ...(ci.cards || [])];
         for (const sid of spellIds.slice(0, 4)) {
-          const spellKey = `spell:${String(sid).toLowerCase()}`;
+          const spellKey = resolveSpellKey(String(sid));
           const spellCanvas = drawSpriteToCanvas(spellKey, 16, 16);
           if (spellCanvas) {
             spellCanvas.title = gameTranslator.translateSpell(getSpellName(String(sid)));
@@ -958,9 +961,11 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       }
 
       // Default: sprite + text label (with material for flasks/potions)
-      const displayName = ci.material
-        ? `${translatedName}: ${gameTranslator.translateMaterial(ci.material)}`
-        : translatedName;
+      let displayName = translatedName;
+      if (ci.material) {
+        const matName = gameTranslator.translateMaterial(ci.material);
+        displayName = `${translatedName}: ${matName}`;
+      }
       if (ciKey) {
         const itemBox = document.createElement("div");
         itemBox.style.cssText = "display:flex;align-items:center;gap:3px;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";

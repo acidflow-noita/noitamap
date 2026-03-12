@@ -199,6 +199,16 @@ export class UnifiedSearch extends EventEmitter2 {
       // Concatenate all searchable fields into one text blob
       const parts: string[] = [p.name ?? "", p.type ?? "", p.item ?? "", p.enemy ?? "", p.material ?? ""];
 
+      // Add "flask" alias for potions so old-school players can find them
+      if (p.item === "potion" || p.item === "potion_normal") {
+        parts.push("flask");
+      }
+
+      // Add translated material name for potions/pouches
+      if (p.material) {
+        parts.push(gameTranslator.translateMaterial(p.material));
+      }
+
       // Index spell names (both ids and translated names)
       for (const spellId of [...(p.cards || []), ...(p.always_casts || [])]) {
         parts.push(spellId);
@@ -215,9 +225,15 @@ export class UnifiedSearch extends EventEmitter2 {
           if (ci.ignore) continue;
           if (ci.item) parts.push(ci.item);
           if (ci.name) parts.push(ci.name);
-          if (ci.material) parts.push(ci.material);
+          if (ci.material) {
+            parts.push(ci.material);
+            parts.push(gameTranslator.translateMaterial(ci.material));
+          }
           if (ci.enemy) parts.push(ci.enemy);
           if (ci.spell) parts.push(ci.spell);
+          if (ci.item === "potion" || ci.item === "potion_normal") {
+            parts.push("flask");
+          }
           for (const cSpellId of [...(ci.cards || []), ...(ci.always_casts || [])]) {
             parts.push(cSpellId);
             const spell = spellById.get(cSpellId);

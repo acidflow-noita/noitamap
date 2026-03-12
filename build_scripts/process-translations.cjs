@@ -233,7 +233,9 @@ function updateLanguageFiles() {
 
         if (key.startsWith("mat_")) {
           const materialId = key.replace("mat_", "");
-          existingTranslations.gameContent.materials[materialId] = translatedName;
+          // Capitalize first letter — game CSV has inconsistent casing
+          const capitalized = translatedName.charAt(0).toUpperCase() + translatedName.slice(1);
+          existingTranslations.gameContent.materials[materialId] = capitalized;
           matAddedCount++;
         } else {
           // Add all other keys to UI category as a fallback

@@ -8,6 +8,7 @@
 import Flatbush from "flatbush";
 import type { GenerationResult, POI } from "./telescope-adapter";
 import { applySpoilerFree } from "../spoiler-free";
+import spells from "../data/spells.json";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -127,14 +128,27 @@ const CONTAINER_TYPES = new Set([
 const CHEST_ONLY_TYPES = new Set(["chest", "pacifist_chest", "great_chest"]);
 // ─── Sprite key resolution ──────────────────────────────────────────────────
 
+// Spell ID → atlas sprite key (handles ID/filename mismatches like
+// LASER_LUMINOUS_DRILL → spell:luminous_drill_timer)
+let _spellIdToSpriteKey: Map<string, string> | null = null;
+function resolveSpellKey(spellId: string): string {
+  if (!_spellIdToSpriteKey) {
+    _spellIdToSpriteKey = new Map();
+    for (const s of spells) {
+      _spellIdToSpriteKey.set(s.id, `spell:${s.sprite.replace(/\.png$/, "")}`);
+    }
+  }
+  return _spellIdToSpriteKey.get(spellId) ?? `spell:${spellId.toLowerCase()}`;
+}
+
 function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | null {
   // Spells inside containers have {type: 'item', item: 'spell', spell: 'SPELL_ID'}
   if (poi.type === "item" && poi.item === "spell" && (poi as any).spell) {
-    return `spell:${String((poi as any).spell).toLowerCase()}`;
+    return resolveSpellKey(String((poi as any).spell));
   }
 
   if (poi.type === "spell" && (poi as any).item) {
-    return `spell:${String((poi as any).item).toLowerCase()}`;
+    return resolveSpellKey(String((poi as any).item));
   }
 
   if (poi.type === "wand" && poi.sprite) {
@@ -349,4 +363,4 @@ export async function loadSpritesheetAndAtlas(): Promise<{
   return { spritesheet, atlas };
 }
 
-export { getSpriteKey, CONTAINER_TYPES, CHEST_ONLY_TYPES };
+export { getSpriteKey, resolveSpellKey, CONTAINER_TYPES, CHEST_ONLY_TYPES };
