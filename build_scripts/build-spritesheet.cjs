@@ -53,12 +53,18 @@ const SCAN_DIRS = [
   "data/props_gfx/",
   "data/props_breakable_gfx/",
   "data/projectiles_gfx/",
-  "data/particles/image_emitters/",
 ];
 
 // Paths to SKIP when scanning — not useful as standalone sprites
 const SKIP_DIRS = [
   "data/items_gfx/in_hand/",  // Hand-held overlays, not standalone sprites
+];
+
+// Filename patterns to SKIP — never used in the spritesheet/atlas
+const SKIP_SUFFIXES = [
+  "_hotspot",
+  "_hotspots",
+  "_uv_src",
 ];
 
 // Directories whose PNGs should be rotated 90° CCW (wand sprites)
@@ -277,12 +283,6 @@ function getAtlasKey(zipPath, isWand) {
     return `projectile:${rel}`;
   }
 
-  // Particles / image emitters
-  if (zipPath.startsWith("data/particles/")) {
-    const rel = zipPath.slice("data/particles/".length).replace(/\.png$/, "");
-    return `particle:${rel}`;
-  }
-
   // Generic fallback for remaining ui_gfx
   if (zipPath.startsWith("data/ui_gfx/")) {
     const rel = zipPath.slice("data/ui_gfx/".length).replace(/\.png$/, "");
@@ -320,6 +320,13 @@ async function main() {
     // Skip excluded directories
     for (const skip of SKIP_DIRS) {
       if (relPath.startsWith(skip)) return;
+    }
+    // Skip image_emitters anywhere in path
+    if (relPath.includes("/image_emitters/")) return;
+    // Skip filename patterns (_hotspot, _hotspots, _uv_src)
+    const baseName = path.basename(relPath, ".png");
+    for (const suffix of SKIP_SUFFIXES) {
+      if (baseName.endsWith(suffix)) return;
     }
     for (const dir of SCAN_DIRS) {
       if (relPath.startsWith(dir)) {
@@ -371,17 +378,36 @@ async function main() {
     const xmlPath = p.replace(/\.png$/, ".xml");
     const xmlData = await parseXml(zip, xmlPath);
 
-    // Crop animated sprites to first frame
+    // Crop animated sprites to first frame of the default/idle animation
     const noHeuristicCrop = NO_HEURISTIC_CROP_DIRS.some((d) => p.startsWith(d));
     if (xmlData && xmlData.frame_width && xmlData.frame_height) {
-      // Use animation pos_x/pos_y if available (first animation's offset)
+      // Find the best animation to use for the first frame:
+      // 1. The animation matching default_animation name
+      // 2. An animation named "idle" or "stand"
+      // 3. The first animation
       let posX = 0, posY = 0;
       if (xmlData.animations && xmlData.animations.length > 0) {
-        const anim = xmlData.animations[0];
-        posX = anim.pos_x || 0;
-        posY = anim.pos_y || 0;
+        let bestAnim = xmlData.animations[0];
+        if (xmlData.default_animation) {
+          const match = xmlData.animations.find(a => a.name === xmlData.default_animation);
+          if (match) bestAnim = match;
+        } else {
+          const idleAnim = xmlData.animations.find(a =>
+            a.name === "idle" || a.name === "stand" || a.name === "default"
+          );
+          if (idleAnim) bestAnim = idleAnim;
+        }
+        posX = bestAnim.pos_x || 0;
+        posY = bestAnim.pos_y || 0;
+        // Use the animation's own frame dimensions if available
+        if (bestAnim.frame_width && bestAnim.frame_height) {
+          img = cropToFrame(img.data, img.width, img.height, bestAnim.frame_width, bestAnim.frame_height, posX, posY);
+        } else {
+          img = cropToFrame(img.data, img.width, img.height, xmlData.frame_width, xmlData.frame_height, posX, posY);
+        }
+      } else {
+        img = cropToFrame(img.data, img.width, img.height, xmlData.frame_width, xmlData.frame_height, 0, 0);
       }
-      img = cropToFrame(img.data, img.width, img.height, xmlData.frame_width, xmlData.frame_height, posX, posY);
     } else if (img.width > img.height && !isWand && !noHeuristicCrop) {
       // Heuristic: width > height likely means horizontal spritesheet
       // Skip for buildings/props which are often just wide (not animated)
@@ -493,6 +519,7 @@ async function main() {
       if (s.xmlData.frame_count != null) atlasEntry.fc = s.xmlData.frame_count;
       if (s.xmlData.frames_per_row != null) atlasEntry.fpr = s.xmlData.frames_per_row;
       if (s.xmlData.frame_wait != null) atlasEntry.fwait = s.xmlData.frame_wait;
+      if (s.xmlData.default_animation) atlasEntry.defanim = s.xmlData.default_animation;
       if (s.xmlData.animations) atlasEntry.anims = s.xmlData.animations;
     }
 

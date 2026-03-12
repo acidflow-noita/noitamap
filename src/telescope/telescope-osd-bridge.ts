@@ -957,7 +957,10 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         continue;
       }
 
-      // Default: sprite + text label
+      // Default: sprite + text label (with material for flasks/potions)
+      const displayName = ci.material
+        ? `${translatedName}: ${gameTranslator.translateMaterial(ci.material)}`
+        : translatedName;
       if (ciKey) {
         const itemBox = document.createElement("div");
         itemBox.style.cssText = "display:flex;align-items:center;gap:3px;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
@@ -965,7 +968,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         if (canvas) itemBox.appendChild(canvas);
         const textSpan = document.createElement("span");
         textSpan.style.cssText = "font-size:11px;color:#aaa";
-        textSpan.textContent = translatedName;
+        textSpan.textContent = displayName;
         itemBox.appendChild(textSpan);
         contRow.appendChild(itemBox);
         continue;
@@ -973,7 +976,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       const span = document.createElement("span");
       span.style.cssText =
         "font-size:11px;color:#aaa;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
-      span.textContent = translatedName;
+      span.textContent = displayName;
       contRow.appendChild(span);
     }
     contDiv.appendChild(contRow);

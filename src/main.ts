@@ -657,6 +657,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     spoilerFreeToggle.checked = isSpoilerFree();
     spoilerFreeToggle.addEventListener("change", () => {
       setSpoilerFree(spoilerFreeToggle.checked);
+      // Hide popover and blur before reload to prevent it from re-appearing
+      // via the "focus" trigger after page restore
+      const label = document.querySelector<HTMLElement>('label[for="spoilerFreeToggle"]');
+      if (label) {
+        const popover = bootstrap.Popover.getInstance(label);
+        if (popover) popover.hide();
+        label.blur();
+      }
+      spoilerFreeToggle.blur();
       window.location.reload();
     });
   }
