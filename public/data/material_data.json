@@ -1,0 +1,4672 @@
+[
+    {
+        "name": "air",
+        "parent": null,
+        "tags": "",
+        "type": null,
+        "wang": "FF000042",
+        "color": "FF000042",
+        "texture": null,
+        "texture_color": "FF000042"
+    },
+    {
+        "name": "fire",
+        "parent": null,
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "7FFF6060",
+        "color": "7FFF6000",
+        "texture": null,
+        "texture_color": "7FFF6000"
+    },
+    {
+        "name": "spark",
+        "parent": null,
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "7FFF6024",
+        "color": "7FFF6024",
+        "texture": null,
+        "texture_color": "7FFF6024"
+    },
+    {
+        "name": "spark_electric",
+        "parent": null,
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "7F27B4F6",
+        "color": "7F27B4F6",
+        "texture": null,
+        "texture_color": "7F27B4F6"
+    },
+    {
+        "name": "flame",
+        "parent": null,
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "7FCE0F0F",
+        "color": "7FCE0F0F",
+        "texture": null,
+        "texture_color": "7FCE0F0F"
+    },
+    {
+        "name": "sand_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF524F2D",
+        "color": "FF524F2D",
+        "texture": "earth.png",
+        "texture_color": "FF484328"
+    },
+    {
+        "name": "nest_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[burnable],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFA83E29",
+        "color": "FFA83E29",
+        "texture": "nest.png",
+        "texture_color": "FF722C1B"
+    },
+    {
+        "name": "bluefungi_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[burnable],[alchemy],[solid],[earth],[fungus]",
+        "type": "liquid",
+        "wang": "FF435495",
+        "color": "FF435495",
+        "texture": "bluefungi.png",
+        "texture_color": "FF455699"
+    },
+    {
+        "name": "rock_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[meltable_to_lava],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF353923",
+        "color": "FF313B36",
+        "texture": "rock.png",
+        "texture_color": "FF292A30"
+    },
+    {
+        "name": "water_static",
+        "parent": null,
+        "tags": "[static]",
+        "type": "liquid",
+        "wang": "A02F554D",
+        "color": "A0376259",
+        "texture": null,
+        "texture_color": "A0376259"
+    },
+    {
+        "name": "endslime_static",
+        "parent": null,
+        "tags": "[static],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "888BFF80",
+        "color": "888BFF80",
+        "texture": "endslime.png",
+        "texture_color": "FF754444"
+    },
+    {
+        "name": "slime_static",
+        "parent": null,
+        "tags": "[static],[alchemy],[solid],[earth],[food]",
+        "type": "liquid",
+        "wang": "88E8BD5C",
+        "color": "88E8BD5C",
+        "texture": "slime.png",
+        "texture_color": "FFA62B75"
+    },
+    {
+        "name": "spore_pod_stalk",
+        "parent": null,
+        "tags": "[static],[alchemy],[solid],[burnable],[earth],[fungus]",
+        "type": "liquid",
+        "wang": "FFE8BDCB",
+        "color": "88E8BD5C",
+        "texture": "bluefungi.png",
+        "texture_color": "FF455699"
+    },
+    {
+        "name": "lavarock_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF5F2621",
+        "color": "FF5F2621",
+        "texture": "lavarock.png",
+        "texture_color": "FF4D201F"
+    },
+    {
+        "name": "static_magic_material",
+        "parent": null,
+        "tags": "[static],[corrodible],[alchemy],[solid]",
+        "type": "liquid",
+        "wang": "FFD7D684",
+        "color": "FFD7D684",
+        "texture": "static_magic_material.png",
+        "texture_color": "FFCFCE7E"
+    },
+    {
+        "name": "meteorite_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF1D1010",
+        "color": "FF1D1010",
+        "texture": "meteor.png",
+        "texture_color": "FF2F1918"
+    },
+    {
+        "name": "templerock_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF6F5439",
+        "color": "FF6F5439",
+        "texture": "templerock.png",
+        "texture_color": "FF55402B"
+    },
+    {
+        "name": "steel_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[rust],[alchemy],[meltable_metal_generic],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF404041",
+        "color": "FF404040",
+        "texture": "steelpanel.png",
+        "texture_color": "FF6D5E4C"
+    },
+    {
+        "name": "rock_static_glow",
+        "parent": null,
+        "tags": "[static],[corrodible],[meltable_to_lava],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF145014",
+        "color": "FF145014",
+        "texture": "glowrock.png",
+        "texture_color": "FF223730"
+    },
+    {
+        "name": "snow_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[frozen],[meltable_to_water],[alchemy],[solid]",
+        "type": "liquid",
+        "wang": "FFEBEBEC",
+        "color": "FFEBEBEB",
+        "texture": "snow.png",
+        "texture_color": "FFA0BFD7"
+    },
+    {
+        "name": "ice_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[frozen],[meltable_to_water],[alchemy],[solid]",
+        "type": "liquid",
+        "wang": "FFCFF7C8",
+        "color": "FFCFF7C8",
+        "texture": "ice.png",
+        "texture_color": "FF4E93B3"
+    },
+    {
+        "name": "ice_acid_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[frozen],[meltable_to_acid],[alchemy],[solid]",
+        "type": "liquid",
+        "wang": "FFCFFFC8",
+        "color": "FFCFFFC8",
+        "texture": "ice_acid.png",
+        "texture_color": "FF53AE6F"
+    },
+    {
+        "name": "ice_cold_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[frozen],[meltable_to_cold],[alchemy],[solid]",
+        "type": "liquid",
+        "wang": "FFAFFFC8",
+        "color": "FFAFFFC8",
+        "texture": "ice_cold.png",
+        "texture_color": "FF7C85CB"
+    },
+    {
+        "name": "ice_radioactive_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[frozen],[meltable_to_radioactive],[alchemy],[solid]",
+        "type": "liquid",
+        "wang": "FFBFFFC8",
+        "color": "FFBFFFC8",
+        "texture": "ice_radioactive.png",
+        "texture_color": "FF60AE53"
+    },
+    {
+        "name": "ice_poison_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[frozen],[meltable_to_poison],[alchemy],[solid]",
+        "type": "liquid",
+        "wang": "FFBA2DE0",
+        "color": "FFBA2DE0",
+        "texture": "ice_poison.png",
+        "texture_color": "FFBA6DEC"
+    },
+    {
+        "name": "ice_meteor_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[frozen],[meltable_to_lava],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFCF1FC8",
+        "color": "FFCF1FC8",
+        "texture": "ice_acid.png",
+        "texture_color": "FF53AE6F"
+    },
+    {
+        "name": "tubematerial",
+        "parent": null,
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFCFF7C5",
+        "color": "FFCFF7C5",
+        "texture": "ice.png",
+        "texture_color": "FF4E93B3"
+    },
+    {
+        "name": "glass_static",
+        "parent": null,
+        "tags": "[static],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFA16065",
+        "color": "FFA16065",
+        "texture": "glass.png",
+        "texture_color": "FF75C0D1"
+    },
+    {
+        "name": "waterrock",
+        "parent": null,
+        "tags": "[static],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF1A43F4",
+        "color": "FF1A43F4",
+        "texture": "rock.png",
+        "texture_color": "FF292A30"
+    },
+    {
+        "name": "ice_glass",
+        "parent": null,
+        "tags": "[box2d],[static],[meltable_to_water],[alchemy],[solid],[cold]",
+        "type": "solid",
+        "wang": "FFAEDDE3",
+        "color": "FFCFF7C8",
+        "texture": "ice.png",
+        "texture_color": "FF4E93B3"
+    },
+    {
+        "name": "ice_glass_b2",
+        "parent": null,
+        "tags": "[static],[meltable_to_water],[alchemy],[solid],[cold]",
+        "type": "solid",
+        "wang": "FFAEDDE5",
+        "color": "FFCFF7C8",
+        "texture": "ice.png",
+        "texture_color": "FF4E93B3"
+    },
+    {
+        "name": "glass_brittle",
+        "parent": null,
+        "tags": "[static],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FFAEDDD3",
+        "color": "FFAEDDD3",
+        "texture": "glass.png",
+        "texture_color": "FF75C0D1"
+    },
+    {
+        "name": "snowrock_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFDBDBDC",
+        "color": "FFDBDBDB",
+        "texture": "snowrock.png",
+        "texture_color": "FF3F5976"
+    },
+    {
+        "name": "concrete_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[meltable_to_lava],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF767677",
+        "color": "FF767676",
+        "texture": "concrete.png",
+        "texture_color": "FF808080"
+    },
+    {
+        "name": "wood_static",
+        "parent": null,
+        "tags": "[corrodible],[burnable],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF413F24",
+        "color": "FF413F24",
+        "texture": "wood.png",
+        "texture_color": "FF413621"
+    },
+    {
+        "name": "cheese_static",
+        "parent": null,
+        "tags": "[static],[corrodible],[meltable_to_lava],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFF3CD67",
+        "color": "FFF3CD67",
+        "texture": null,
+        "texture_color": "FFF3CD67"
+    },
+    {
+        "name": "smoke",
+        "parent": null,
+        "tags": "[gas]",
+        "type": "gas",
+        "wang": "7F848485",
+        "color": "7F848485",
+        "texture": null,
+        "texture_color": "7F848485"
+    },
+    {
+        "name": "cloud",
+        "parent": null,
+        "tags": "[gas]",
+        "type": "gas",
+        "wang": "7FAFAFBF",
+        "color": "7FAFAFBF",
+        "texture": null,
+        "texture_color": "7FAFAFBF"
+    },
+    {
+        "name": "cloud_lighter",
+        "parent": null,
+        "tags": "[gas]",
+        "type": "gas",
+        "wang": "7FAFAFE5",
+        "color": "7FAFAFE5",
+        "texture": null,
+        "texture_color": "7FAFAFE5"
+    },
+    {
+        "name": "smoke_explosion",
+        "parent": null,
+        "tags": "[gas]",
+        "type": "gas",
+        "wang": "7F848486",
+        "color": "7F848486",
+        "texture": null,
+        "texture_color": "7F848486"
+    },
+    {
+        "name": "steam",
+        "parent": null,
+        "tags": "[gas]",
+        "type": "gas",
+        "wang": "7FC5C5FF",
+        "color": "7FC5C5FF",
+        "texture": null,
+        "texture_color": "7FC5C5FF"
+    },
+    {
+        "name": "acid_gas",
+        "parent": null,
+        "tags": "[gas],[burnable_fast]",
+        "type": "gas",
+        "wang": "AF4EB815",
+        "color": "AF4EB835",
+        "texture": null,
+        "texture_color": "AF4EB835"
+    },
+    {
+        "name": "acid_gas_static",
+        "parent": null,
+        "tags": "[gas],[burnable_fast]",
+        "type": "gas",
+        "wang": "AF4EB817",
+        "color": "AF4EB835",
+        "texture": null,
+        "texture_color": "AF4EB835"
+    },
+    {
+        "name": "smoke_static",
+        "parent": null,
+        "tags": "[gas]",
+        "type": "gas",
+        "wang": "7F848487",
+        "color": "7F848487",
+        "texture": null,
+        "texture_color": "7F848487"
+    },
+    {
+        "name": "blood_cold_vapour",
+        "parent": null,
+        "tags": "[gas],[vapour],[cold]",
+        "type": "gas",
+        "wang": "7F5C98CD",
+        "color": "7F5C98CD",
+        "texture": null,
+        "texture_color": "7F5C98CD"
+    },
+    {
+        "name": "sand_herb_vapour",
+        "parent": null,
+        "tags": "[gas],[vapour]",
+        "type": "gas",
+        "wang": "7F6E8C3B",
+        "color": "7F6E8C3B",
+        "texture": null,
+        "texture_color": "7F6E8C3B"
+    },
+    {
+        "name": "radioactive_gas",
+        "parent": null,
+        "tags": "[gas]",
+        "type": "gas",
+        "wang": "AF43B815",
+        "color": "7FC4FF10",
+        "texture": null,
+        "texture_color": "7FC4FF10"
+    },
+    {
+        "name": "radioactive_gas_static",
+        "parent": null,
+        "tags": "[gas]",
+        "type": "gas",
+        "wang": "AF43B818",
+        "color": "7FC4FF10",
+        "texture": null,
+        "texture_color": "7FC4FF10"
+    },
+    {
+        "name": "magic_gas_hp_regeneration",
+        "parent": null,
+        "tags": "[gas],[vapour],[regenerative_gas]",
+        "type": "gas",
+        "wang": "7FA1F18C",
+        "color": "7FA1F18C",
+        "texture": null,
+        "texture_color": "7FA1F18C"
+    },
+    {
+        "name": "magic_gas_midas",
+        "parent": null,
+        "tags": "[gas],[vapour]",
+        "type": "gas",
+        "wang": "7FDFDC08",
+        "color": "EFEFA101",
+        "texture": "honey.png",
+        "texture_color": "FFE9C353"
+    },
+    {
+        "name": "magic_gas_worm_blood",
+        "parent": null,
+        "tags": "[gas],[vapour]",
+        "type": "gas",
+        "wang": "7FC6CF24",
+        "color": "7FC6CF27",
+        "texture": "yellowblood_gas.png",
+        "texture_color": "FF9AA03C"
+    },
+    {
+        "name": "rainbow_gas",
+        "parent": null,
+        "tags": "[gas]",
+        "type": "gas",
+        "wang": "7FF2E604",
+        "color": "80FFA2CD",
+        "texture": "rainbow_gas.png",
+        "texture_color": "FFA6A193"
+    },
+    {
+        "name": "magic_gas_polymorph",
+        "parent": null,
+        "tags": "[gas],[vapour],[alchemy]",
+        "type": "gas",
+        "wang": "80F17BEB",
+        "color": "80F17BEB",
+        "texture": null,
+        "texture_color": "80F17BEB"
+    },
+    {
+        "name": "magic_gas_weakness",
+        "parent": null,
+        "tags": "[gas],[vapour],[alchemy]",
+        "type": "gas",
+        "wang": "B326C523",
+        "color": "B426C528",
+        "texture": "magic_liquid_weakness.png",
+        "texture_color": "FF049623"
+    },
+    {
+        "name": "magic_gas_teleport",
+        "parent": null,
+        "tags": "[gas],[vapour],[alchemy]",
+        "type": "gas",
+        "wang": "817FCEED",
+        "color": "817FCEED",
+        "texture": null,
+        "texture_color": "817FCEED"
+    },
+    {
+        "name": "magic_gas_fungus",
+        "parent": null,
+        "tags": "[gas],[vapour],[alchemy]",
+        "type": "gas",
+        "wang": "813BBB36",
+        "color": "FFF064AA",
+        "texture": "fungi.png",
+        "texture_color": "FFA6365C"
+    },
+    {
+        "name": "water",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[freezable],[water],[liquid_common],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "902F554C",
+        "color": "A0376259",
+        "texture": null,
+        "texture_color": "A0376259"
+    },
+    {
+        "name": "water_temp",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[freezable],[water],[liquid_common]",
+        "type": "liquid",
+        "wang": "902F554F",
+        "color": "902F554F",
+        "texture": null,
+        "texture_color": "902F554F"
+    },
+    {
+        "name": "water_ice",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[meltable_to_water],[freezable],[water],[liquid_common],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "602F557F",
+        "color": "A0376269",
+        "texture": null,
+        "texture_color": "A0376269"
+    },
+    {
+        "name": "water_swamp",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[meltable_to_water],[water],[impure],[liquid_common]",
+        "type": "liquid",
+        "wang": "802F552C",
+        "color": "802F552C",
+        "texture": null,
+        "texture_color": "802F552C"
+    },
+    {
+        "name": "oil",
+        "parent": null,
+        "tags": "[liquid],[burnable],[impure],[liquid_common],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FF3B3B3C",
+        "color": "E63D3728",
+        "texture": null,
+        "texture_color": "E63D3728"
+    },
+    {
+        "name": "alcohol",
+        "parent": null,
+        "tags": "[liquid],[water],[impure],[liquid_common],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "90D0FFE8",
+        "color": "4FEA7207",
+        "texture": null,
+        "texture_color": "4FEA7207"
+    },
+    {
+        "name": "beer",
+        "parent": null,
+        "tags": "[liquid],[water],[impure],[liquid_common]",
+        "type": "liquid",
+        "wang": "90D0FFE6",
+        "color": "4FBD7E05",
+        "texture": null,
+        "texture_color": "4FBD7E05"
+    },
+    {
+        "name": "milk",
+        "parent": null,
+        "tags": "[liquid],[water],[impure],[liquid_common]",
+        "type": "liquid",
+        "wang": "90D0FFE5",
+        "color": "FFFFF6E5",
+        "texture": null,
+        "texture_color": "FFFFF6E5"
+    },
+    {
+        "name": "molut",
+        "parent": null,
+        "tags": "[liquid],[water],[impure],[liquid_common]",
+        "type": "liquid",
+        "wang": "90D0FFE4",
+        "color": "FFB4A485",
+        "texture": null,
+        "texture_color": "FFB4A485"
+    },
+    {
+        "name": "sima",
+        "parent": null,
+        "tags": "[liquid],[water],[impure],[liquid_common]",
+        "type": "liquid",
+        "wang": "90D0FFE9",
+        "color": "4FEA7207",
+        "texture": null,
+        "texture_color": "4FEA7207"
+    },
+    {
+        "name": "juhannussima",
+        "parent": null,
+        "tags": "[liquid],[water],[impure],[liquid_common]",
+        "type": "liquid",
+        "wang": "90D0FFE7",
+        "color": "4FEA7207",
+        "texture": null,
+        "texture_color": "4FEA7207"
+    },
+    {
+        "name": "alcohol_gas",
+        "parent": null,
+        "tags": "[gas],[burnable],[evaporable]",
+        "type": "gas",
+        "wang": "1101FD13",
+        "color": "72F87D12",
+        "texture": null,
+        "texture_color": "72F87D12"
+    },
+    {
+        "name": "magic_liquid",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[impure]",
+        "type": "liquid",
+        "wang": "80FFFEA2",
+        "color": "80FFFEA2",
+        "texture": null,
+        "texture_color": "80FFFEA2"
+    },
+    {
+        "name": "material_confusion",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[impure]",
+        "type": "liquid",
+        "wang": "80FF0204",
+        "color": "88E8BD5C",
+        "texture": "confusion.png",
+        "texture_color": "88E8BD5C"
+    },
+    {
+        "name": "material_darkness",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[impure]",
+        "type": "liquid",
+        "wang": "80563E66",
+        "color": "80563E66",
+        "texture": "darkness.png",
+        "texture_color": "FF2D1026"
+    },
+    {
+        "name": "material_rainbow",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[impure]",
+        "type": "liquid",
+        "wang": "80FFA2CD",
+        "color": "80FFA2CD",
+        "texture": "rainbow.png",
+        "texture_color": "FF756C57"
+    },
+    {
+        "name": "magic_liquid_weakness",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[impure],[magic_faster]",
+        "type": "liquid",
+        "wang": "B426C528",
+        "color": "B426C528",
+        "texture": "magic_liquid_weakness.png",
+        "texture_color": "FF049623"
+    },
+    {
+        "name": "magic_liquid_movement_faster",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[impure],[magic_faster]",
+        "type": "liquid",
+        "wang": "80C1DBA4",
+        "color": "80C1DBA4",
+        "texture": null,
+        "texture_color": "80C1DBA4"
+    },
+    {
+        "name": "magic_liquid_faster_levitation",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[impure],[magic_faster]",
+        "type": "liquid",
+        "wang": "80F6FFDC",
+        "color": "80F6FFDC",
+        "texture": null,
+        "texture_color": "80F6FFDC"
+    },
+    {
+        "name": "magic_liquid_faster_levitation_and_movement",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[impure],[magic_faster]",
+        "type": "liquid",
+        "wang": "80C7F865",
+        "color": "80C7F865",
+        "texture": null,
+        "texture_color": "80C7F865"
+    },
+    {
+        "name": "magic_liquid_worm_attractor",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[impure]",
+        "type": "liquid",
+        "wang": "80687478",
+        "color": "80687478",
+        "texture": null,
+        "texture_color": "80687478"
+    },
+    {
+        "name": "magic_liquid_protection_all",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[impure]",
+        "type": "liquid",
+        "wang": "80DF9828",
+        "color": "80DF9828",
+        "texture": null,
+        "texture_color": "80DF9828"
+    },
+    {
+        "name": "magic_liquid_mana_regeneration",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[impure]",
+        "type": "liquid",
+        "wang": "800BFFE5",
+        "color": "800BFFE5",
+        "texture": null,
+        "texture_color": "800BFFE5"
+    },
+    {
+        "name": "magic_liquid_unstable_teleportation",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[impure]",
+        "type": "liquid",
+        "wang": "8000BEE4",
+        "color": "8000BEE4",
+        "texture": "magic_liquid_unstable_telep.png",
+        "texture_color": "FF4CC7E7"
+    },
+    {
+        "name": "magic_liquid_teleportation",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[impure]",
+        "type": "liquid",
+        "wang": "807FCEEA",
+        "color": "807FCEEA",
+        "texture": null,
+        "texture_color": "807FCEEA"
+    },
+    {
+        "name": "magic_liquid_hp_regeneration",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[regenerative]",
+        "type": "liquid",
+        "wang": "80A1F18B",
+        "color": "80A1F18B",
+        "texture": null,
+        "texture_color": "80A1F18B"
+    },
+    {
+        "name": "magic_liquid_hp_regeneration_unstable",
+        "parent": "magic_liquid_hp_regeneration",
+        "tags": "[liquid],[water],[magic_liquid],[regenerative]",
+        "type": "liquid",
+        "wang": "80A1F18C",
+        "color": "80A1F18C",
+        "texture": null,
+        "texture_color": "80A1F18C"
+    },
+    {
+        "name": "magic_liquid_polymorph",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[magic_polymorph],[impure]",
+        "type": "liquid",
+        "wang": "80F18BEB",
+        "color": "80F18BEB",
+        "texture": null,
+        "texture_color": "80F18BEB"
+    },
+    {
+        "name": "magic_liquid_random_polymorph",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[magic_polymorph],[impure]",
+        "type": "liquid",
+        "wang": "8091448D",
+        "color": "8091448D",
+        "texture": null,
+        "texture_color": "8091448D"
+    },
+    {
+        "name": "magic_liquid_unstable_polymorph",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[magic_polymorph],[impure]",
+        "type": "liquid",
+        "wang": "80A3569F",
+        "color": "80A3569F",
+        "texture": "polymorph_unstable.png",
+        "texture_color": "FFA2559E"
+    },
+    {
+        "name": "magic_liquid_berserk",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[impure]",
+        "type": "liquid",
+        "wang": "80F86868",
+        "color": "80F86868",
+        "texture": null,
+        "texture_color": "80F86868"
+    },
+    {
+        "name": "magic_liquid_charm",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[impure]",
+        "type": "liquid",
+        "wang": "80C23055",
+        "color": "80C23055",
+        "texture": null,
+        "texture_color": "80C23055"
+    },
+    {
+        "name": "magic_liquid_invisibility",
+        "parent": null,
+        "tags": "[liquid],[water],[magic_liquid],[impure]",
+        "type": "liquid",
+        "wang": "80306CC0",
+        "color": "80306CC0",
+        "texture": null,
+        "texture_color": "80306CC0"
+    },
+    {
+        "name": "cloud_radioactive",
+        "parent": null,
+        "tags": "[liquid],[radioactive],[impure],[liquid_common]",
+        "type": "liquid",
+        "wang": "1101FF34",
+        "color": "11B4FF10",
+        "texture": null,
+        "texture_color": "11B4FF10"
+    },
+    {
+        "name": "cloud_blood",
+        "parent": null,
+        "tags": "[liquid],[blood],[impure],[liquid_common]",
+        "type": "liquid",
+        "wang": "2201FD34",
+        "color": "33B80000",
+        "texture": null,
+        "texture_color": "33B80000"
+    },
+    {
+        "name": "cloud_slime",
+        "parent": null,
+        "tags": "[liquid],[impure],[slime],[liquid_common]",
+        "type": "liquid",
+        "wang": "2201FC34",
+        "color": "37C5447C",
+        "texture": null,
+        "texture_color": "37C5447C"
+    },
+    {
+        "name": "swamp",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[soluble],[meltable_to_water],[freezable],[water],[impure],[liquid_common],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "802F2F0A",
+        "color": "802F2F0A",
+        "texture": "swamp.png",
+        "texture_color": "FF2A2A08"
+    },
+    {
+        "name": "mud",
+        "parent": null,
+        "tags": "[sand_ground],[corrodible],[meltable_to_lava],[impure]",
+        "type": "liquid",
+        "wang": "A0363E21",
+        "color": "A0363E21",
+        "texture": "mud.png",
+        "texture_color": "FF4F492D"
+    },
+    {
+        "name": "blood",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[soluble],[blood],[impure],[liquid_common],[food],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "AA830000",
+        "color": "AA830000",
+        "texture": null,
+        "texture_color": "AA830000"
+    },
+    {
+        "name": "blood_fading",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[soluble],[evaporable_fast],[blood],[impure],[liquid_common],[food]",
+        "type": "liquid",
+        "wang": "AA830002",
+        "color": "AA830002",
+        "texture": null,
+        "texture_color": "AA830002"
+    },
+    {
+        "name": "blood_fungi",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[soluble],[evaporable],[blood],[impure],[liquid_common],[food],[fungus],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "AA830001",
+        "color": "FFF064AA",
+        "texture": "fungi.png",
+        "texture_color": "FFA6365C"
+    },
+    {
+        "name": "blood_worm",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[soluble],[blood],[impure],[liquid_common],[food],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "88C8BC00",
+        "color": "88C8BC00",
+        "texture": "yellowblood.png",
+        "texture_color": "FFA5AC31"
+    },
+    {
+        "name": "porridge",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[soluble],[impure],[liquid_common],[evaporable_by_fire],[food]",
+        "type": "liquid",
+        "wang": "EED7CFAE",
+        "color": "EED7CFAE",
+        "texture": "porridge.png",
+        "texture_color": "FFCEC8B4"
+    },
+    {
+        "name": "blood_cold",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[soluble],[evaporable_custom],[blood],[impure],[cold],[liquid_common]",
+        "type": "liquid",
+        "wang": "AA830023",
+        "color": "FF3D4D87",
+        "texture": "blueblood.png",
+        "texture_color": "FF455699"
+    },
+    {
+        "name": "radioactive_liquid",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[soluble],[radioactive],[impure],[liquid_common],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "4400FF33",
+        "color": "44B4FF10",
+        "texture": null,
+        "texture_color": "44B4FF10"
+    },
+    {
+        "name": "radioactive_liquid_fading",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[soluble],[evaporable],[radioactive],[impure],[liquid_common]",
+        "type": "liquid",
+        "wang": "4400FF34",
+        "color": "44B4FF10",
+        "texture": null,
+        "texture_color": "44B4FF10"
+    },
+    {
+        "name": "plasma_fading",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[soluble],[evaporable_fast],[impure],[liquid_common]",
+        "type": "liquid",
+        "wang": "7734BFFF",
+        "color": "7734BFFF",
+        "texture": null,
+        "texture_color": "7734BFFF"
+    },
+    {
+        "name": "gold_molten",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[molten],[alchemy],[gold],[solid],[liquid_common],[earth]",
+        "type": "liquid",
+        "wang": "FFEBCD04",
+        "color": "FFB89E58",
+        "texture": "gold.png",
+        "texture_color": "FFCB9E60"
+    },
+    {
+        "name": "wax_molten",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[molten],[alchemy],[impure],[solid],[liquid_common],[earth]",
+        "type": "liquid",
+        "wang": "FFEAACAB",
+        "color": "FFEAACAB",
+        "texture": "wax.png",
+        "texture_color": "FFF4F0E0"
+    },
+    {
+        "name": "silver_molten",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[molten],[alchemy],[solid],[liquid_common],[earth]",
+        "type": "liquid",
+        "wang": "FF4E5263",
+        "color": "FFB89E58",
+        "texture": "silver.png",
+        "texture_color": "FF979DAB"
+    },
+    {
+        "name": "copper_molten",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[molten],[alchemy],[solid],[liquid_common],[earth]",
+        "type": "liquid",
+        "wang": "FF4E5264",
+        "color": "FFB89E58",
+        "texture": "copper.png",
+        "texture_color": "FF876464"
+    },
+    {
+        "name": "brass_molten",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[molten],[alchemy],[solid],[liquid_common],[earth]",
+        "type": "liquid",
+        "wang": "FF4E5285",
+        "color": "FFB89E58",
+        "texture": "brass.png",
+        "texture_color": "FFCF805C"
+    },
+    {
+        "name": "glass_molten",
+        "parent": null,
+        "tags": "[liquid],[molten],[meltable_to_lava],[alchemy],[solid],[liquid_common],[earth]",
+        "type": "liquid",
+        "wang": "FF4E5266",
+        "color": "FFB89E58",
+        "texture": "glass.png",
+        "texture_color": "FF75C0D1"
+    },
+    {
+        "name": "glass_broken_molten",
+        "parent": null,
+        "tags": "[liquid],[molten],[meltable_to_lava],[alchemy],[solid],[liquid_common],[earth]",
+        "type": "liquid",
+        "wang": "FF4E5237",
+        "color": "FFB89E58",
+        "texture": "glass.png",
+        "texture_color": "FF75C0D1"
+    },
+    {
+        "name": "steel_molten",
+        "parent": null,
+        "tags": "[liquid],[molten],[alchemy],[solid],[liquid_common],[earth]",
+        "type": "liquid",
+        "wang": "FFEBCD08",
+        "color": "FFB89E58",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "creepy_liquid",
+        "parent": null,
+        "tags": "[liquid],[impure]",
+        "type": "liquid",
+        "wang": "7F381774",
+        "color": "7F381774",
+        "texture": null,
+        "texture_color": "7F381774"
+    },
+    {
+        "name": "cement",
+        "parent": null,
+        "tags": "[corrodible],[meltable_to_lava],[alchemy],[impure],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF808081",
+        "color": "FF808080",
+        "texture": "concrete_wet.png",
+        "texture_color": "FF868686"
+    },
+    {
+        "name": "concrete_sand",
+        "parent": null,
+        "tags": "[corrodible],[meltable_to_lava],[alchemy]",
+        "type": "liquid",
+        "wang": "FF808082",
+        "color": "FF767676",
+        "texture": "concrete.png",
+        "texture_color": "FF808080"
+    },
+    {
+        "name": "sand",
+        "parent": null,
+        "tags": "[sand_ground],[corrodible],[meltable_to_lava_fast],[alchemy],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FFEBCD00",
+        "color": "FFB89E57",
+        "texture": "sand.png",
+        "texture_color": "FFBDAB75"
+    },
+    {
+        "name": "bone",
+        "parent": null,
+        "tags": "[sand_ground],[corrodible],[meltable_to_lava],[alchemy],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FFE6E6FF",
+        "color": "FFE6E6FF",
+        "texture": "bone.png",
+        "texture_color": "FFDAD6C6"
+    },
+    {
+        "name": "soil",
+        "parent": null,
+        "tags": "[sand_ground],[corrodible],[grows_grass],[meltable_to_lava],[alchemy],[solid]",
+        "type": "liquid",
+        "wang": "FF36311E",
+        "color": "FF36311E",
+        "texture": "soil.png",
+        "texture_color": "FF28261C"
+    },
+    {
+        "name": "sandstone",
+        "parent": null,
+        "tags": "[sand_ground],[corrodible],[meltable_to_lava],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF90FE40",
+        "color": "FF90FE40",
+        "texture": "desert.png",
+        "texture_color": "FFB2A16A"
+    },
+    {
+        "name": "fungisoil",
+        "parent": null,
+        "tags": "[sand_ground],[corrodible],[grows_fungus],[meltable_to_lava],[alchemy],[solid],[earth],[fungus]",
+        "type": "liquid",
+        "wang": "FF36312E",
+        "color": "FF36311E",
+        "texture": "soil.png",
+        "texture_color": "FF28261C"
+    },
+    {
+        "name": "honey",
+        "parent": null,
+        "tags": "[corrodible],[meltable_to_lava_fast],[alchemy],[meltable_by_fire],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "55E8BD5A",
+        "color": "FFE8BD5A",
+        "texture": "honey.png",
+        "texture_color": "FFE9C353"
+    },
+    {
+        "name": "glue",
+        "parent": null,
+        "tags": "[liquid],[burnable],[alchemy],[impure]",
+        "type": "liquid",
+        "wang": "FFF6FCE3",
+        "color": "FFF6FCE3",
+        "texture": null,
+        "texture_color": "FFF6FCE3"
+    },
+    {
+        "name": "slime",
+        "parent": null,
+        "tags": "[corrodible],[meltable_to_lava],[alchemy],[slime],[liquid_common],[food],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "88B8376D",
+        "color": "88B8376D",
+        "texture": "slime.png",
+        "texture_color": "FFA62B75"
+    },
+    {
+        "name": "slush",
+        "parent": null,
+        "tags": "[corrodible],[meltable_to_water],[alchemy],[snow],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "90B5CEFF",
+        "color": "90B5CEFF",
+        "texture": "slush.png",
+        "texture_color": "FF8098AC"
+    },
+    {
+        "name": "vomit",
+        "parent": "slime_green",
+        "tags": "[food]",
+        "type": null,
+        "wang": "88E8BD5B",
+        "color": "FFCC4C4C",
+        "texture": "vomit.png",
+        "texture_color": "FF83823D"
+    },
+    {
+        "name": "explosion_dirt",
+        "parent": null,
+        "tags": "[sand_ground],[corrodible]",
+        "type": "liquid",
+        "wang": "FF36311F",
+        "color": "FF36311F",
+        "texture": null,
+        "texture_color": "FF36311F"
+    },
+    {
+        "name": "vine",
+        "parent": null,
+        "tags": "[static],[sand_ground],[corrodible],[burnable],[alchemy]",
+        "type": "liquid",
+        "wang": "FF526F40",
+        "color": "FF526F36",
+        "texture": "test_vine.png",
+        "texture_color": "FF604524"
+    },
+    {
+        "name": "root",
+        "parent": null,
+        "tags": "[static],[sand_ground],[corrodible],[burnable],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF2A724A",
+        "color": "FF2A724A",
+        "texture": "test_vine.png",
+        "texture_color": "FF604524"
+    },
+    {
+        "name": "snow",
+        "parent": null,
+        "tags": "[static],[sand_ground],[corrodible],[frozen],[meltable_to_water],[alchemy],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FFF4F4F3",
+        "color": "FFF4F4F3",
+        "texture": "snow.png",
+        "texture_color": "FFA0BFD7"
+    },
+    {
+        "name": "snow_sticky",
+        "parent": null,
+        "tags": "[sand_ground],[corrodible],[frozen],[meltable_to_water],[alchemy]",
+        "type": "liquid",
+        "wang": "FFEEEEED",
+        "color": "FFEEEEEE",
+        "texture": "snow.png",
+        "texture_color": "FFA0BFD7"
+    },
+    {
+        "name": "rotten_meat",
+        "parent": null,
+        "tags": "[sand_ground],[corrodible],[meltable_to_lava],[alchemy],[meat],[food]",
+        "type": "liquid",
+        "wang": "FFEBCDD0",
+        "color": "FFCC4C4C",
+        "texture": "meat_rotten.png",
+        "texture_color": "FFBB8558"
+    },
+    {
+        "name": "meat_slime_sand",
+        "parent": null,
+        "tags": "[sand_ground],[corrodible],[meltable_to_lava],[alchemy],[meat],[slime],[food]",
+        "type": "liquid",
+        "wang": "FFED4C4C",
+        "color": "FFED4C4C",
+        "texture": "meat_rotten.png",
+        "texture_color": "FFBB8558"
+    },
+    {
+        "name": "rotten_meat_radioactive",
+        "parent": null,
+        "tags": "[sand_ground],[corrodible],[meltable_to_lava],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "liquid",
+        "wang": "4400FF53",
+        "color": "FFCC4C4C",
+        "texture": "meat_rotten.png",
+        "texture_color": "FFBB8558"
+    },
+    {
+        "name": "ice",
+        "parent": null,
+        "tags": "[sand_ground],[corrodible],[frozen],[meltable_to_water],[alchemy],[solid]",
+        "type": "liquid",
+        "wang": "FFCFCFF0",
+        "color": "FFCFCFF0",
+        "texture": "ice.png",
+        "texture_color": "FF4E93B3"
+    },
+    {
+        "name": "sand_herb",
+        "parent": null,
+        "tags": "[corrodible],[evaporable_custom],[burnable],[alchemy]",
+        "type": "liquid",
+        "wang": "AA8300A0",
+        "color": "FF33B828",
+        "texture": "moss.png",
+        "texture_color": "FF68853B"
+    },
+    {
+        "name": "wax",
+        "parent": null,
+        "tags": "[burnable],[corrodible],[meltable],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFEAAAAB",
+        "color": "FFEAAAAB",
+        "texture": "wax.png",
+        "texture_color": "FFF4F0E0"
+    },
+    {
+        "name": "gold",
+        "parent": null,
+        "tags": "[sand_metal],[corrodible],[meltable_metal],[alchemy],[gold],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFEBCD01",
+        "color": "FFB89E58",
+        "texture": "gold.png",
+        "texture_color": "FFCB9E60"
+    },
+    {
+        "name": "silver",
+        "parent": null,
+        "tags": "[sand_metal],[corrodible],[meltable_metal],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF4E5262",
+        "color": "FFB89E58",
+        "texture": "silver.png",
+        "texture_color": "FF979DAB"
+    },
+    {
+        "name": "copper",
+        "parent": null,
+        "tags": "[sand_metal],[corrodible],[meltable_metal],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF4E5265",
+        "color": "FFB89E58",
+        "texture": "copper.png",
+        "texture_color": "FF876464"
+    },
+    {
+        "name": "brass",
+        "parent": null,
+        "tags": "[sand_metal],[corrodible],[meltable_metal],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF4E5267",
+        "color": "FFB89E58",
+        "texture": "brass.png",
+        "texture_color": "FFCF805C"
+    },
+    {
+        "name": "diamond",
+        "parent": null,
+        "tags": "[sand_metal],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF82DBE2",
+        "color": "FF82DBE2",
+        "texture": "diamond.png",
+        "texture_color": "FF8CB7CA"
+    },
+    {
+        "name": "coal",
+        "parent": null,
+        "tags": "[sand_other],[corrodible],[burnable],[alchemy],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FF505052",
+        "color": "FF505050",
+        "texture": "coal.png",
+        "texture_color": "FF272727"
+    },
+    {
+        "name": "sulphur",
+        "parent": null,
+        "tags": "[sand_other],[corrodible],[alchemy]",
+        "type": "liquid",
+        "wang": "FF141415",
+        "color": "FFB89E57",
+        "texture": "sulphur.png",
+        "texture_color": "FFAAA054"
+    },
+    {
+        "name": "salt",
+        "parent": null,
+        "tags": "[sand_other],[corrodible],[alchemy],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FFE1E1E2",
+        "color": "FFB89E57",
+        "texture": "salt.png",
+        "texture_color": "FFB2BCBD"
+    },
+    {
+        "name": "sodium_unstable",
+        "parent": null,
+        "tags": "[sand_other],[corrodible],[alchemy]",
+        "type": "liquid",
+        "wang": "FF411F24",
+        "color": "FF411F24",
+        "texture": "salt.png",
+        "texture_color": "FFB2BCBD"
+    },
+    {
+        "name": "gunpowder",
+        "parent": null,
+        "tags": "[sand_other],[corrodible],[alchemy],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FF232324",
+        "color": "FFB89E57",
+        "texture": "gunpowder.png",
+        "texture_color": "FFAD7154"
+    },
+    {
+        "name": "gunpowder_explosive",
+        "parent": null,
+        "tags": "[sand_other],[corrodible],[alchemy],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FFF7BB43",
+        "color": "FFF7BB43",
+        "texture": "gunpowder_tnt.png",
+        "texture_color": "FFB75748"
+    },
+    {
+        "name": "gunpowder_tnt",
+        "parent": null,
+        "tags": "[sand_other],[corrodible],[alchemy]",
+        "type": "liquid",
+        "wang": "FFF7BF43",
+        "color": "FFF7BF43",
+        "texture": "gunpowder_tnt.png",
+        "texture_color": "FFB75748"
+    },
+    {
+        "name": "gunpowder_unstable",
+        "parent": null,
+        "tags": "[sand_other],[corrodible],[burnable],[alchemy],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FF232373",
+        "color": "FFB89E57",
+        "texture": "gunpowder.png",
+        "texture_color": "FFAD7154"
+    },
+    {
+        "name": "gunpowder_unstable_big",
+        "parent": null,
+        "tags": "[sand_other],[corrodible],[burnable],[alchemy]",
+        "type": "liquid",
+        "wang": "FF230F73",
+        "color": "FFB89E57",
+        "texture": "gunpowder.png",
+        "texture_color": "FFAD7154"
+    },
+    {
+        "name": "monster_powder_test",
+        "parent": null,
+        "tags": "[sand_other],[corrodible],[burnable],[alchemy]",
+        "type": "liquid",
+        "wang": "FF200073",
+        "color": "FFB89E57",
+        "texture": "gunpowder.png",
+        "texture_color": "FFAD7154"
+    },
+    {
+        "name": "rat_powder",
+        "parent": null,
+        "tags": "[sand_other]",
+        "type": "liquid",
+        "wang": "FFBE4DFF",
+        "color": "FFB89E57",
+        "texture": "meat_rotten.png",
+        "texture_color": "FFBB8558"
+    },
+    {
+        "name": "fungus_powder",
+        "parent": null,
+        "tags": "[sand_other],[fungus]",
+        "type": "liquid",
+        "wang": "FFBECAFE",
+        "color": "FFB89E57",
+        "texture": "meat_rotten.png",
+        "texture_color": "FFBB8558"
+    },
+    {
+        "name": "orb_powder",
+        "parent": null,
+        "tags": "[NO_FUNGAL_SHIFT]",
+        "type": "liquid",
+        "wang": "FFF7F3EE",
+        "color": "FFF7F3EE",
+        "texture": "ice.png",
+        "texture_color": "FF4E93B3"
+    },
+    {
+        "name": "gunpowder_unstable_boss_limbs",
+        "parent": null,
+        "tags": "[sand_other],[corrodible],[alchemy],[meat]",
+        "type": "liquid",
+        "wang": "FF80C850",
+        "color": "FF80C850",
+        "texture": "moss.png",
+        "texture_color": "FF68853B"
+    },
+    {
+        "name": "plastic_red",
+        "parent": null,
+        "tags": "[corrodible],[meltable],[alchemy]",
+        "type": "liquid",
+        "wang": "FF900000",
+        "color": "FF900000",
+        "texture": null,
+        "texture_color": "FF900000"
+    },
+    {
+        "name": "plastic_grey",
+        "parent": "plastic_red",
+        "tags": "[corrodible],[meltable],[alchemy]",
+        "type": null,
+        "wang": "FF707271",
+        "color": "FF707271",
+        "texture": null,
+        "texture_color": "FF707271"
+    },
+    {
+        "name": "plastic_red_molten",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[molten],[meltable_to_lava],[alchemy],[liquid_common]",
+        "type": "liquid",
+        "wang": "FF9000AB",
+        "color": "FF9000AB",
+        "texture": null,
+        "texture_color": "FF9000AB"
+    },
+    {
+        "name": "plastic_grey_molten",
+        "parent": "plastic_red_molten",
+        "tags": "[liquid],[corrodible],[molten],[meltable_to_lava],[alchemy],[liquid_common]",
+        "type": null,
+        "wang": "FF707273",
+        "color": "FF707273",
+        "texture": null,
+        "texture_color": "FF707273"
+    },
+    {
+        "name": "grass",
+        "parent": null,
+        "tags": "[plant],[requires_air],[corrodible],[burnable],[alchemy],[impure]",
+        "type": "liquid",
+        "wang": "FF3ABB30",
+        "color": "FF33B828",
+        "texture": "grass.png",
+        "texture_color": "FF79A541"
+    },
+    {
+        "name": "grass_holy",
+        "parent": null,
+        "tags": "[plant],[requires_air],[corrodible],[burnable],[alchemy]",
+        "type": "liquid",
+        "wang": "FF3ABB40",
+        "color": "FF33B828",
+        "texture": "grass.png",
+        "texture_color": "FF79A541"
+    },
+    {
+        "name": "grass_darker",
+        "parent": null,
+        "tags": "[plant],[requires_air],[corrodible],[burnable],[alchemy],[impure]",
+        "type": "liquid",
+        "wang": "FF3ABB41",
+        "color": "FF33B828",
+        "texture": "grass_dark.png",
+        "texture_color": "FF505F1F"
+    },
+    {
+        "name": "grass_ice",
+        "parent": "grass",
+        "tags": "[plant],[corrodible],[burnable],[impure]",
+        "type": "liquid",
+        "wang": "FF3ABB31",
+        "color": "FF33B828",
+        "texture": "grass_frozen.png",
+        "texture_color": "FF2E3E48"
+    },
+    {
+        "name": "grass_dry",
+        "parent": "grass",
+        "tags": "[plant],[requires_air],[corrodible],[burnable],[alchemy],[impure]",
+        "type": "liquid",
+        "wang": "FF3ABB35",
+        "color": "FF33B828",
+        "texture": "grass_dry.png",
+        "texture_color": "FF776E37"
+    },
+    {
+        "name": "fungi",
+        "parent": null,
+        "tags": "[plant],[corrodible],[burnable],[alchemy],[impure],[fungus]",
+        "type": "liquid",
+        "wang": "FF3ABB32",
+        "color": "FFF064AA",
+        "texture": "fungi.png",
+        "texture_color": "FFA6365C"
+    },
+    {
+        "name": "spore",
+        "parent": null,
+        "tags": "[plant],[corrodible],[burnable],[alchemy],[impure]",
+        "type": "liquid",
+        "wang": "FF3ABB33",
+        "color": "FF33B828",
+        "texture": "gunpowder.png",
+        "texture_color": "FFAD7154"
+    },
+    {
+        "name": "moss",
+        "parent": null,
+        "tags": "[plant],[corrodible],[burnable],[alchemy],[impure]",
+        "type": "liquid",
+        "wang": "FF33B828",
+        "color": "FF33B828",
+        "texture": "moss.png",
+        "texture_color": "FF68853B"
+    },
+    {
+        "name": "plant_material",
+        "parent": null,
+        "tags": "[plant],[requires_air],[corrodible],[burnable]",
+        "type": "liquid",
+        "wang": "FF33B838",
+        "color": "FF33B828",
+        "texture": "grass.png",
+        "texture_color": "FF79A541"
+    },
+    {
+        "name": "plant_material_red",
+        "parent": null,
+        "tags": "[plant],[requires_air],[corrodible],[burnable]",
+        "type": "liquid",
+        "wang": "FFAA2818",
+        "color": "FFAA2818",
+        "texture": "lavarock.png",
+        "texture_color": "FF4D201F"
+    },
+    {
+        "name": "plant_material_dark",
+        "parent": null,
+        "tags": "[plant],[requires_air],[corrodible],[burnable]",
+        "type": "liquid",
+        "wang": "FF33B839",
+        "color": "FF33B828",
+        "texture": "grass_dark.png",
+        "texture_color": "FF505F1F"
+    },
+    {
+        "name": "ceiling_plant_material",
+        "parent": null,
+        "tags": "[plant],[corrodible],[burnable]",
+        "type": "liquid",
+        "wang": "FF33B848",
+        "color": "FF33B828",
+        "texture": "grass.png",
+        "texture_color": "FF79A541"
+    },
+    {
+        "name": "mushroom_seed",
+        "parent": null,
+        "tags": "[plant],[corrodible],[burnable]",
+        "type": "liquid",
+        "wang": "FFB89F6C",
+        "color": "FFB89F6C",
+        "texture": null,
+        "texture_color": "FFB89F6C"
+    },
+    {
+        "name": "plant_seed",
+        "parent": null,
+        "tags": "[plant],[corrodible],[burnable]",
+        "type": "liquid",
+        "wang": "FFBC9B58",
+        "color": "FFBC9B58",
+        "texture": null,
+        "texture_color": "FFBC9B58"
+    },
+    {
+        "name": "mushroom",
+        "parent": null,
+        "tags": "[plant],[corrodible],[burnable]",
+        "type": "liquid",
+        "wang": "FFB89F7C",
+        "color": "FFB89F7C",
+        "texture": null,
+        "texture_color": "FFB89F7C"
+    },
+    {
+        "name": "mushroom_giant_red",
+        "parent": null,
+        "tags": "[plant],[requires_air],[corrodible],[burnable]",
+        "type": "liquid",
+        "wang": "FFD9D9CD",
+        "color": "FFD9D9CD",
+        "texture": null,
+        "texture_color": "FFD9D9CD"
+    },
+    {
+        "name": "mushroom_giant_blue",
+        "parent": null,
+        "tags": "[plant],[requires_air],[corrodible],[burnable]",
+        "type": "liquid",
+        "wang": "FFD9D9CC",
+        "color": "FFD9D9CC",
+        "texture": null,
+        "texture_color": "FFD9D9CC"
+    },
+    {
+        "name": "glowshroom",
+        "parent": null,
+        "tags": "[plant],[requires_air],[corrodible],[burnable]",
+        "type": "liquid",
+        "wang": "FFD9D9CB",
+        "color": "FFD9D9CB",
+        "texture": null,
+        "texture_color": "FFD9D9CB"
+    },
+    {
+        "name": "bush_seed",
+        "parent": null,
+        "tags": "[plant],[requires_air],[corrodible],[burnable]",
+        "type": "liquid",
+        "wang": "FF4D5D44",
+        "color": "FF4D5D44",
+        "texture": null,
+        "texture_color": "FF4D5D44"
+    },
+    {
+        "name": "acid",
+        "parent": null,
+        "tags": "[liquid],[acid],[impure],[liquid_common],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "4B00FF12",
+        "color": "4B00ED32",
+        "texture": null,
+        "texture_color": "4B00ED32"
+    },
+    {
+        "name": "lava",
+        "parent": null,
+        "tags": "[fire_lava],[liquid],[lava],[liquid_common],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FFFF6000",
+        "color": "FFFF6000",
+        "texture": null,
+        "texture_color": "FFFF6000"
+    },
+    {
+        "name": "wood_player",
+        "parent": null,
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF613E03",
+        "color": "FF413F24",
+        "texture": "wood.png",
+        "texture_color": "FF413621"
+    },
+    {
+        "name": "wood_player_b2",
+        "parent": null,
+        "tags": "[static],[box2d],[alchemy],[corrodible],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF613E02",
+        "color": "FF413F24",
+        "texture": "wood.png",
+        "texture_color": "FF413621"
+    },
+    {
+        "name": "wood",
+        "parent": null,
+        "tags": "[box2d],[corrodible],[alchemy],[burnable],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF613E00",
+        "color": "FF413F24",
+        "texture": "wood.png",
+        "texture_color": "FF413621"
+    },
+    {
+        "name": "wax_b2",
+        "parent": null,
+        "tags": "[box2d],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FFEAAAAC",
+        "color": "FFEAAAAC",
+        "texture": "wax.png",
+        "texture_color": "FFF4F0E0"
+    },
+    {
+        "name": "fuse",
+        "parent": null,
+        "tags": "[box2d]",
+        "type": "solid",
+        "wang": "FFEAAAAD",
+        "color": "FF586679",
+        "texture": null,
+        "texture_color": "FF586679"
+    },
+    {
+        "name": "wood_loose",
+        "parent": null,
+        "tags": "[box2d],[corrodible],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF613E01",
+        "color": "FF5D5A33",
+        "texture": "wood.png",
+        "texture_color": "FF413621"
+    },
+    {
+        "name": "rock_loose",
+        "parent": null,
+        "tags": "[box2d],[corrodible],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF937D58",
+        "color": "FF937D58",
+        "texture": "rock.png",
+        "texture_color": "FF292A30"
+    },
+    {
+        "name": "ice_ceiling",
+        "parent": null,
+        "tags": "[box2d],[corrodible],[alchemy],[solid]",
+        "type": "solid",
+        "wang": "FF3B93BA",
+        "color": "FF3B93BB",
+        "texture": "ice.png",
+        "texture_color": "FF4E93B3"
+    },
+    {
+        "name": "brick",
+        "parent": null,
+        "tags": "[box2d],[corrodible],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FFB80900",
+        "color": "FF73737F",
+        "texture": "brick.png",
+        "texture_color": "FF96756F"
+    },
+    {
+        "name": "concrete_collapsed",
+        "parent": null,
+        "tags": "[box2d],[corrodible],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FFB80901",
+        "color": "FF73737F",
+        "texture": "brick.png",
+        "texture_color": "FF96756F"
+    },
+    {
+        "name": "tnt",
+        "parent": null,
+        "tags": "[box2d],[corrodible],[burnable],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FFAB5E4F",
+        "color": "FF73737F",
+        "texture": "tnt.png",
+        "texture_color": "FF98605A"
+    },
+    {
+        "name": "tnt_static",
+        "parent": null,
+        "tags": "[box2d],[corrodible],[burnable],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FFC1FFEE",
+        "color": "FF73737F",
+        "texture": "tnt.png",
+        "texture_color": "FF98605A"
+    },
+    {
+        "name": "trailer_text",
+        "parent": null,
+        "tags": "",
+        "type": "liquid",
+        "wang": "FFC0FFE1",
+        "color": "FFFFFFFF",
+        "texture": null,
+        "texture_color": "FFFFFFFF"
+    },
+    {
+        "name": "meteorite",
+        "parent": null,
+        "tags": "[box2d],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF1D1012",
+        "color": "FF1D1010",
+        "texture": "meteor.png",
+        "texture_color": "FF2F1918"
+    },
+    {
+        "name": "sulphur_box2d",
+        "parent": null,
+        "tags": "[box2d],[solid],[sunbaby_ignore_list]",
+        "type": "solid",
+        "wang": "FFC9C169",
+        "color": "FFC9C169",
+        "texture": "sulphur.png",
+        "texture_color": "FFAAA054"
+    },
+    {
+        "name": "meteorite_test",
+        "parent": null,
+        "tags": "[box2d],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF1D1013",
+        "color": "FF1D1010",
+        "texture": "meteor.png",
+        "texture_color": "FF2F1918"
+    },
+    {
+        "name": "meteorite_green",
+        "parent": null,
+        "tags": "[box2d],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF4E5244",
+        "color": "FF313B36",
+        "texture": "rock_glow.png",
+        "texture_color": "FF114317"
+    },
+    {
+        "name": "steel",
+        "parent": null,
+        "tags": "[box2d],[rust_box2d],[alchemy],[meltable_metal],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF3B5D4B",
+        "color": "FF73737F",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "steel_rust",
+        "parent": null,
+        "tags": "[box2d],[alchemy],[meltable_metal],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF73727E",
+        "color": "FF73737F",
+        "texture": "rust.png",
+        "texture_color": "FFA75620"
+    },
+    {
+        "name": "metal_rust_rust",
+        "parent": null,
+        "tags": "[box2d],[alchemy],[corrodible],[solid],[meltable_metal_generic],[earth]",
+        "type": "solid",
+        "wang": "FF73A27E",
+        "color": "FF73A37F",
+        "texture": "rust.png",
+        "texture_color": "FFA75620"
+    },
+    {
+        "name": "metal_rust_barrel_rust",
+        "parent": null,
+        "tags": "[box2d],[alchemy],[corrodible],[solid],[meltable_metal_generic],[earth]",
+        "type": "solid",
+        "wang": "FF73A27F",
+        "color": "FF73A37F",
+        "texture": "rust.png",
+        "texture_color": "FFA75620"
+    },
+    {
+        "name": "plastic",
+        "parent": null,
+        "tags": "[box2d],[corrodible],[meltable_plastic],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF3B5D3B",
+        "color": "FF73737F",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "aluminium",
+        "parent": null,
+        "tags": "[box2d],[corrodible],[rust_oxide],[alchemy],[meltable_metal],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF3B5D3C",
+        "color": "FF73737F",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "rock_static_box2d",
+        "parent": null,
+        "tags": "[box2d],[static],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF2D2DFF",
+        "color": "FFCFF7C8",
+        "texture": "ice.png",
+        "texture_color": "FF4E93B3"
+    },
+    {
+        "name": "rock_box2d",
+        "parent": null,
+        "tags": "[box2d],[static],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF2E2DFF",
+        "color": "FF2E2DFF",
+        "texture": "rock.png",
+        "texture_color": "FF292A30"
+    },
+    {
+        "name": "crystal",
+        "parent": null,
+        "tags": "[box2d],[alchemy]",
+        "type": "solid",
+        "wang": "FF3B5D2E",
+        "color": "FF74737F",
+        "texture": "crystal.png",
+        "texture_color": "FF6AB3DE"
+    },
+    {
+        "name": "magic_crystal",
+        "parent": null,
+        "tags": "[box2d],[alchemy]",
+        "type": "solid",
+        "wang": "FF3B5D43",
+        "color": "FF5FCDE4",
+        "texture": "crystal.png",
+        "texture_color": "FF6AB3DE"
+    },
+    {
+        "name": "crystal_magic",
+        "parent": null,
+        "tags": "[box2d],[alchemy]",
+        "type": "solid",
+        "wang": "FF3B5D2F",
+        "color": "FF74737E",
+        "texture": "crystal.png",
+        "texture_color": "FF6AB3DE"
+    },
+    {
+        "name": "aluminium_oxide",
+        "parent": null,
+        "tags": "[box2d],[corrodible],[alchemy],[meltable_metal],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF3B5D4D",
+        "color": "FF73747F",
+        "texture": "aluminium_oxide.png",
+        "texture_color": "FFC7C3B3"
+    },
+    {
+        "name": "meat",
+        "parent": null,
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFF2DDB2",
+        "color": "FFCC4C4C",
+        "texture": "meat.png",
+        "texture_color": "FFC0708B"
+    },
+    {
+        "name": "meat_slime",
+        "parent": null,
+        "tags": "[box2d],[corrodible],[meltable_to_lava],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFF2DDB3",
+        "color": "FFCC4C4C",
+        "texture": "meat.png",
+        "texture_color": "FFC0708B"
+    },
+    {
+        "name": "urine",
+        "parent": null,
+        "tags": "[liquid],[corrodible],[soluble],[liquid_common]",
+        "type": "liquid",
+        "wang": "33FFEE00",
+        "color": "33FFEE00",
+        "texture": null,
+        "texture_color": "33FFEE00"
+    },
+    {
+        "name": "poo",
+        "parent": null,
+        "tags": "[sand_other],[corrodible],[soluble]",
+        "type": "liquid",
+        "wang": "FF36315F",
+        "color": "FF36311E",
+        "texture": "soil.png",
+        "texture_color": "FF28261C"
+    },
+    {
+        "name": "mammi",
+        "parent": null,
+        "tags": "[sand_other],[corrodible],[soluble]",
+        "type": "liquid",
+        "wang": "FF232612",
+        "color": "FF36311E",
+        "texture": "soil.png",
+        "texture_color": "FF28261C"
+    },
+    {
+        "name": "physics_throw_material_part2",
+        "parent": null,
+        "tags": "[box2d],[alchemy]",
+        "type": "solid",
+        "wang": "FFDEE1FE",
+        "color": "FFDEE1FE",
+        "texture": "ice.png",
+        "texture_color": "FF4E93B3"
+    },
+    {
+        "name": "rocket_particles",
+        "parent": null,
+        "tags": "[liquid]",
+        "type": "liquid",
+        "wang": "66FFFFFE",
+        "color": "66FFFFFE",
+        "texture": null,
+        "texture_color": "66FFFFFE"
+    },
+    {
+        "name": "ice_melting_perf_killer",
+        "parent": null,
+        "tags": "[box2d],[hax],[meltable_to_water],[ice]",
+        "type": "solid",
+        "wang": "FFDEE1AA",
+        "color": "FF3B93BB",
+        "texture": "ice.png",
+        "texture_color": "FF4E93B3"
+    },
+    {
+        "name": "ice_b2",
+        "parent": null,
+        "tags": "[box2d],[alchemy],[solid]",
+        "type": "solid",
+        "wang": "FFDEE1EC",
+        "color": "FF3B93BB",
+        "texture": "ice.png",
+        "texture_color": "FF4E93B3"
+    },
+    {
+        "name": "glass_liquidcave",
+        "parent": null,
+        "tags": "[box2d],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FFDEE1FA",
+        "color": "FFCFF7C8",
+        "texture": "ice.png",
+        "texture_color": "FF4E93B3"
+    },
+    {
+        "name": "glass",
+        "parent": null,
+        "tags": "[static],[meltable_metal],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FFAEDDEE",
+        "color": "FFAEDDEE",
+        "texture": "glass.png",
+        "texture_color": "FF75C0D1"
+    },
+    {
+        "name": "glass_broken",
+        "parent": null,
+        "tags": "[sand_other],[meltable_metal],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFAEDDEF",
+        "color": "FFAEDDEE",
+        "texture": "glass.png",
+        "texture_color": "FF75C0D1"
+    },
+    {
+        "name": "neon_tube_purple",
+        "parent": null,
+        "tags": "[static],[corrodible],[box2d],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FFAEDDE6",
+        "color": "FFCFF7C8",
+        "texture": "neon_tube_purple.png",
+        "texture_color": "FFA6365C"
+    },
+    {
+        "name": "blood_thick",
+        "parent": null,
+        "tags": "[static],[corrodible],[blood],[food],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FFFF7674",
+        "color": "FFFF7674",
+        "texture": null,
+        "texture_color": "FFFF7674"
+    },
+    {
+        "name": "snow_b2",
+        "parent": null,
+        "tags": "[box2d],[corrodible],[alchemy],[meltable_to_water],[solid]",
+        "type": "solid",
+        "wang": "FFB80902",
+        "color": "FFF4F4F3",
+        "texture": "snow.png",
+        "texture_color": "FFA0BFD7"
+    },
+    {
+        "name": "fungal_shift_particle_fx",
+        "parent": null,
+        "tags": "",
+        "type": null,
+        "wang": "80C1DBA5",
+        "color": "80C1DBA5",
+        "texture": "confusion.png",
+        "texture_color": "FF71647B"
+    },
+    {
+        "name": "fire_blue",
+        "parent": "fire",
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "7FFF6061",
+        "color": "7F82DCFF",
+        "texture": null,
+        "texture_color": "7F82DCFF"
+    },
+    {
+        "name": "spark_green",
+        "parent": "spark",
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "7F96FF46",
+        "color": "7F96FF46",
+        "texture": null,
+        "texture_color": "7F96FF46"
+    },
+    {
+        "name": "spark_green_bright",
+        "parent": "spark",
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "7F96FF47",
+        "color": "7F96FF46",
+        "texture": null,
+        "texture_color": "7F96FF46"
+    },
+    {
+        "name": "spark_blue",
+        "parent": "spark",
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "7F82DCFF",
+        "color": "7F82DCFF",
+        "texture": null,
+        "texture_color": "7F82DCFF"
+    },
+    {
+        "name": "spark_blue_dark",
+        "parent": "spark",
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "7F205BFE",
+        "color": "7F205BFE",
+        "texture": null,
+        "texture_color": "7F205BFE"
+    },
+    {
+        "name": "spark_red",
+        "parent": "spark",
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "7FFF2813",
+        "color": "7FFF2813",
+        "texture": null,
+        "texture_color": "7FFF2813"
+    },
+    {
+        "name": "spark_red_bright",
+        "parent": "spark",
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "7FFF2814",
+        "color": "7FFF2813",
+        "texture": null,
+        "texture_color": "7FFF2813"
+    },
+    {
+        "name": "spark_white",
+        "parent": "spark",
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "FFFEFEFF",
+        "color": "7FFEFEFF",
+        "texture": null,
+        "texture_color": "7FFEFEFF"
+    },
+    {
+        "name": "spark_white_bright",
+        "parent": "spark",
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "FFFEFEFD",
+        "color": "7FFEFEFF",
+        "texture": null,
+        "texture_color": "7FFEFEFF"
+    },
+    {
+        "name": "spark_yellow",
+        "parent": "spark",
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "FFFFF028",
+        "color": "7FFFAC0F",
+        "texture": null,
+        "texture_color": "7FFFAC0F"
+    },
+    {
+        "name": "spark_purple",
+        "parent": "spark",
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "44B43C1F",
+        "color": "44B43CFF",
+        "texture": null,
+        "texture_color": "44B43CFF"
+    },
+    {
+        "name": "spark_purple_bright",
+        "parent": "spark",
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "44B4323F",
+        "color": "7F7C41FF",
+        "texture": null,
+        "texture_color": "7F7C41FF"
+    },
+    {
+        "name": "spark_player",
+        "parent": "spark",
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "FFFFF029",
+        "color": "7F7F5476",
+        "texture": null,
+        "texture_color": "7F7F5476"
+    },
+    {
+        "name": "spark_teal",
+        "parent": "spark",
+        "tags": "[fire],[hot]",
+        "type": "fire",
+        "wang": "44A41C1F",
+        "color": "6A44F393",
+        "texture": null,
+        "texture_color": "6A44F393"
+    },
+    {
+        "name": "sand_static_rainforest",
+        "parent": "sand_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF524F00",
+        "color": "FF524F00",
+        "texture": "earth_rainforest.png",
+        "texture_color": "FF555629"
+    },
+    {
+        "name": "sand_static_rainforest_dark",
+        "parent": "sand_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF261F26",
+        "color": "FF261F26",
+        "texture": "earth_rainforest_dark.png",
+        "texture_color": "FF3C2D36"
+    },
+    {
+        "name": "bone_static",
+        "parent": "sand_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF523F03",
+        "color": "FF524F00",
+        "texture": "bone.png",
+        "texture_color": "FFDAD6C6"
+    },
+    {
+        "name": "rust_static",
+        "parent": "sand_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFEE8F49",
+        "color": "FFEE8F49",
+        "texture": "rust.png",
+        "texture_color": "FFA75620"
+    },
+    {
+        "name": "sand_static_bright",
+        "parent": "sand_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFEF8F49",
+        "color": "FFEF8F49",
+        "texture": "earth_bright.png",
+        "texture_color": "FF746C42"
+    },
+    {
+        "name": "meat_static",
+        "parent": "sand_static",
+        "tags": "[static],[corrodible],[meltable_to_blood],[alchemy],[meat],[food],[earth],[solid]",
+        "type": null,
+        "wang": "FF9A5149",
+        "color": "FF9A5149",
+        "texture": "meat_static.png",
+        "texture_color": "FF5C231F"
+    },
+    {
+        "name": "sand_static_red",
+        "parent": "sand_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFFF8F47",
+        "color": "FFFF8F47",
+        "texture": "earth_bright_red.png",
+        "texture_color": "FF745442"
+    },
+    {
+        "name": "rock_static_intro",
+        "parent": "rock_static",
+        "tags": "[static],[alchemy],[solid],[earth]",
+        "type": null,
+        "wang": "FF0A3344",
+        "color": "FF313B36",
+        "texture": "rock.png",
+        "texture_color": "FF292A30"
+    },
+    {
+        "name": "rock_static_trip_secret",
+        "parent": "rock_static",
+        "tags": "[static],[alchemy],[solid],[earth]",
+        "type": null,
+        "wang": "FF0ABBA4",
+        "color": "FF313B36",
+        "texture": "rock.png",
+        "texture_color": "FF292A30"
+    },
+    {
+        "name": "rock_static_trip_secret2",
+        "parent": "rock_static",
+        "tags": "[static],[alchemy],[solid],[earth]",
+        "type": null,
+        "wang": "FF0BAAB4",
+        "color": "FF313B36",
+        "texture": "rock.png",
+        "texture_color": "FF292A30"
+    },
+    {
+        "name": "rock_static_cursed",
+        "parent": "rock_static",
+        "tags": "[static],[alchemy],[solid],[earth],[matter_eater_ignore_list]",
+        "type": null,
+        "wang": "FF3F4D3E",
+        "color": "FF313B36",
+        "texture": "rock_cursed.png",
+        "texture_color": "FF754F4F"
+    },
+    {
+        "name": "rock_static_purple",
+        "parent": "rock_static",
+        "tags": "[static],[alchemy],[solid],[earth]",
+        "type": null,
+        "wang": "FF272224",
+        "color": "FF272224",
+        "texture": "rock_static_purple.png",
+        "texture_color": "FF332E31"
+    },
+    {
+        "name": "rock_hard",
+        "parent": "rock_static",
+        "tags": "[static],[alchemy],[solid],[earth]",
+        "type": null,
+        "wang": "FF003344",
+        "color": "FF003344",
+        "texture": "rock_hard.png",
+        "texture_color": "FF3B241E"
+    },
+    {
+        "name": "rock_static_fungal",
+        "parent": "rock_static",
+        "tags": "[static],[alchemy],[solid],[earth],[fungus]",
+        "type": null,
+        "wang": "FF00A244",
+        "color": "FF495978",
+        "texture": "fun.png",
+        "texture_color": "FF3D4B73"
+    },
+    {
+        "name": "wood_tree",
+        "parent": "rock_static",
+        "tags": "[static],[alchemy],[solid],[earth]",
+        "type": null,
+        "wang": "FF005345",
+        "color": "FF003344",
+        "texture": "wood_vertical.png",
+        "texture_color": "FF3E331E"
+    },
+    {
+        "name": "rock_static_noedge",
+        "parent": "rock_static",
+        "tags": "[static],[alchemy],[solid],[earth]",
+        "type": null,
+        "wang": "FF003345",
+        "color": "FF003345",
+        "texture": "rock.png",
+        "texture_color": "FF292A30"
+    },
+    {
+        "name": "rock_hard_border",
+        "parent": "rock_static",
+        "tags": "[static],[alchemy],[solid],[earth]",
+        "type": null,
+        "wang": "FF104344",
+        "color": "FF104344",
+        "texture": "rock_hard_border.png",
+        "texture_color": "FF271612"
+    },
+    {
+        "name": "rock_magic_gate",
+        "parent": "rock_static",
+        "tags": "[static],[corrodible],[meltable_to_lava],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFAB3347",
+        "color": "FFAB3344",
+        "texture": "rock_hard.png",
+        "texture_color": "FF3B241E"
+    },
+    {
+        "name": "rock_magic_bottom",
+        "parent": "rock_static",
+        "tags": "[static],[corrodible],[meltable_to_lava],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFABB346",
+        "color": "FFABB344",
+        "texture": "magic_gate.png",
+        "texture_color": "FF49634C"
+    },
+    {
+        "name": "rock_eroding",
+        "parent": "rock_static",
+        "tags": "[static],[corrodible],[meltable_to_lava],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFAFB146",
+        "color": "FFABB344",
+        "texture": "rock_hard.png",
+        "texture_color": "FF3B241E"
+    },
+    {
+        "name": "rock_vault",
+        "parent": "rock_static",
+        "tags": "[static],[corrodible],[meltable_to_lava],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF003349",
+        "color": "FF003344",
+        "texture": "vaultrock.png",
+        "texture_color": "FF34483A"
+    },
+    {
+        "name": "coal_static",
+        "parent": "rock_static",
+        "tags": "[static],[corrodible],[meltable_to_lava],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF124444",
+        "color": "FF124444",
+        "texture": "coal_static.png",
+        "texture_color": "FF363636"
+    },
+    {
+        "name": "rock_static_grey",
+        "parent": "rock_static",
+        "tags": "[static],[corrodible],[meltable_to_lava],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF1244A4",
+        "color": "FF1244A4",
+        "texture": "rock_grey.png",
+        "texture_color": "FF4C4C4C"
+    },
+    {
+        "name": "rock_static_radioactive",
+        "parent": "rock_static",
+        "tags": "[static],[alchemy],[meltable_to_lava],[corrodible],[solid],[earth]",
+        "type": null,
+        "wang": "FF00F344",
+        "color": "FF003344",
+        "texture": "rock_radioactive.png",
+        "texture_color": "FF1D4A1F"
+    },
+    {
+        "name": "rock_static_cursed_green",
+        "parent": "rock_static",
+        "tags": "[static],[alchemy],[meltable_to_lava],[corrodible],[solid],[earth]",
+        "type": null,
+        "wang": "FF659244",
+        "color": "FF003344",
+        "texture": "rock_cursed_green.png",
+        "texture_color": "FF52754D"
+    },
+    {
+        "name": "rock_static_poison",
+        "parent": "rock_static",
+        "tags": "[static],[alchemy],[meltable_to_lava],[corrodible],[solid],[earth]",
+        "type": null,
+        "wang": "FF00FA44",
+        "color": "FFB43CFF",
+        "texture": "rock_poison.png",
+        "texture_color": "FF341F3A"
+    },
+    {
+        "name": "skullrock",
+        "parent": "the_end",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": null,
+        "wang": "FF00A344",
+        "color": "FF00A344",
+        "texture": "skullrock.png",
+        "texture_color": "FF271412"
+    },
+    {
+        "name": "rock_static_wet",
+        "parent": "rock_static",
+        "tags": "[static],[corrodible],[meltable_to_lava],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF103344",
+        "color": "FF103344",
+        "texture": "rock.png",
+        "texture_color": "FF292A30"
+    },
+    {
+        "name": "templebrick_static",
+        "parent": "templerock_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF786C42",
+        "color": "FF786C42",
+        "texture": "templebrick.png",
+        "texture_color": "FF4D4630"
+    },
+    {
+        "name": "templebrick_static_broken",
+        "parent": "templerock_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF9E8438",
+        "color": "FF786C42",
+        "texture": "templebrick_broken.png",
+        "texture_color": "FF3E3928"
+    },
+    {
+        "name": "templebrick_static_soft",
+        "parent": "templerock_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFAF9F6A",
+        "color": "FF786C42",
+        "texture": "templebrick.png",
+        "texture_color": "FF4D4630"
+    },
+    {
+        "name": "templebrick_noedge_static",
+        "parent": "templerock_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF786C44",
+        "color": "FF786C44",
+        "texture": "templebrick.png",
+        "texture_color": "FF4D4630"
+    },
+    {
+        "name": "templerock_soft",
+        "parent": "templerock_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF6A54A9",
+        "color": "FF6F5439",
+        "texture": "templerock.png",
+        "texture_color": "FF55402B"
+    },
+    {
+        "name": "templebrick_thick_static",
+        "parent": "templebrick_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF646C58",
+        "color": "FF646C58",
+        "texture": "templebrick.png",
+        "texture_color": "FF4D4630"
+    },
+    {
+        "name": "templebrick_thick_static_noedge",
+        "parent": "templebrick_thick_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF606C5A",
+        "color": "FF646C58",
+        "texture": "templebrick.png",
+        "texture_color": "FF4D4630"
+    },
+    {
+        "name": "templeslab_static",
+        "parent": "templebrick_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF947059",
+        "color": "FF4E4343",
+        "texture": "templeslab.png",
+        "texture_color": "FF4B413F"
+    },
+    {
+        "name": "templeslab_crumbling_static",
+        "parent": "templeslab_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF846049",
+        "color": "FF4E4343",
+        "texture": "templeslab.png",
+        "texture_color": "FF4B413F"
+    },
+    {
+        "name": "templebrickdark_static",
+        "parent": "templerock_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF5B5047",
+        "color": "FF5B5047",
+        "texture": "templebrick_alt.png",
+        "texture_color": "FF554A42"
+    },
+    {
+        "name": "wizardstone",
+        "parent": "templerock_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF4C4356",
+        "color": "FF786C42",
+        "texture": "wizardstone.png",
+        "texture_color": "FF433F46"
+    },
+    {
+        "name": "templebrick_golden_static",
+        "parent": "templerock_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFB07E13",
+        "color": "FFB07E13",
+        "texture": "templebrick_golden.png",
+        "texture_color": "FFCCAB58"
+    },
+    {
+        "name": "templebrick_diamond_static",
+        "parent": "templerock_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF5E9AB5",
+        "color": "FF5E9AB5",
+        "texture": "templebrick_diamond.png",
+        "texture_color": "FFADC9CF"
+    },
+    {
+        "name": "templebrick_static_ruined",
+        "parent": "templerock_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF78CACE",
+        "color": "FF786C42",
+        "texture": "templebrick_ruined.png",
+        "texture_color": "FF3F3632"
+    },
+    {
+        "name": "glowstone",
+        "parent": "templerock_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFAAF06E",
+        "color": "FFAAF06E",
+        "texture": "templebrick_alt.png",
+        "texture_color": "FF554A42"
+    },
+    {
+        "name": "glowstone_altar",
+        "parent": "templerock_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFFFC931",
+        "color": "FF2FEB48",
+        "texture": "",
+        "texture_color": "FF2FEB48"
+    },
+    {
+        "name": "glowstone_altar_hdr",
+        "parent": "templerock_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFFFC932",
+        "color": "FF2FEB48",
+        "texture": "",
+        "texture_color": "FF2FEB48"
+    },
+    {
+        "name": "glowstone_potion",
+        "parent": "templerock_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FFA3F06E",
+        "color": "FFAAF06E",
+        "texture": "templebrick_alt.png",
+        "texture_color": "FF554A42"
+    },
+    {
+        "name": "templebrick_red",
+        "parent": "templerock_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF78AC42",
+        "color": "FF78AC42",
+        "texture": "templebrick_red.png",
+        "texture_color": "FF633631"
+    },
+    {
+        "name": "templebrick_moss_static",
+        "parent": "templerock_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF786C45",
+        "color": "FF786C42",
+        "texture": "templerock.png",
+        "texture_color": "FF55402B"
+    },
+    {
+        "name": "the_end",
+        "parent": "templebrick_static",
+        "tags": "[static],[corrodible],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF026C05",
+        "color": "FF026C05",
+        "texture": "the_end.png",
+        "texture_color": "FF2F1918"
+    },
+    {
+        "name": "steelmoss_static",
+        "parent": "steel_static",
+        "tags": "[static],[corrodible],[rust],[alchemy],[meltable_metal_generic],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF787A55",
+        "color": "FF787A55",
+        "texture": "steel_rusted.png",
+        "texture_color": "FF636346"
+    },
+    {
+        "name": "steel_rusted_no_holes",
+        "parent": "steelmoss_static",
+        "tags": "[static],[corrodible],[rust],[alchemy],[meltable_metal_generic],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF904F3A",
+        "color": "FF904F3A",
+        "texture": "steelpanelmoss.png",
+        "texture_color": "FF636346"
+    },
+    {
+        "name": "steel_grey_static",
+        "parent": "steelmoss_static",
+        "tags": "[static],[corrodible],[rust],[alchemy],[meltable_metal_generic],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF9B4A3F",
+        "color": "FF904F3A",
+        "texture": "steelpanel_grey.png",
+        "texture_color": "FF6B6D74"
+    },
+    {
+        "name": "steelfrost_static",
+        "parent": "steel_static",
+        "tags": "[static],[corrodible],[rust],[alchemy],[meltable_metal_generic],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF787B34",
+        "color": "FF596F6E",
+        "texture": "steelpanelfrost.png",
+        "texture_color": "FF566D6A"
+    },
+    {
+        "name": "steelmoss_slanted",
+        "parent": "steel_static",
+        "tags": "[static],[corrodible],[rust],[alchemy],[meltable_metal_generic],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF787A85",
+        "color": "FF787A85",
+        "texture": "steelpanelmoss.png",
+        "texture_color": "FF636346"
+    },
+    {
+        "name": "steelsmoke_static",
+        "parent": "steel_static",
+        "tags": "[static],[corrodible],[rust],[alchemy],[meltable_metal_generic],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF646455",
+        "color": "FF646455",
+        "texture": "steelpanel.png",
+        "texture_color": "FF6D5E4C"
+    },
+    {
+        "name": "steelpipe_static",
+        "parent": "steel_static",
+        "tags": "[static],[corrodible],[rust],[alchemy],[meltable_metal_generic],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF64C455",
+        "color": "FF646455",
+        "texture": "steelpanel.png",
+        "texture_color": "FF6D5E4C"
+    },
+    {
+        "name": "steel_static_strong",
+        "parent": "steel_static",
+        "tags": "[static],[alchemy],[solid],[earth]",
+        "type": null,
+        "wang": "FF404A41",
+        "color": "FF404041",
+        "texture": "steelpanel.png",
+        "texture_color": "FF6D5E4C"
+    },
+    {
+        "name": "steel_static_unmeltable",
+        "parent": "steel_static",
+        "tags": "[static],[alchemy],[corrodible],[solid],[earth]",
+        "type": null,
+        "wang": "FF404F50",
+        "color": "FF404041",
+        "texture": "steelpanel.png",
+        "texture_color": "FF6D5E4C"
+    },
+    {
+        "name": "rock_static_intro_breakable",
+        "parent": "ice_static",
+        "tags": "[static],[alchemy],[solid],[earth]",
+        "type": null,
+        "wang": "FF0A3355",
+        "color": "FF313B36",
+        "texture": "rock.png",
+        "texture_color": "FF292A30"
+    },
+    {
+        "name": "ice_blood_static",
+        "parent": "ice_static",
+        "tags": "[static],[alchemy],[meltable_to_blood],[solid]",
+        "type": null,
+        "wang": "FFCB7070",
+        "color": "FFCB7070",
+        "texture": "ice_blood.png",
+        "texture_color": "FFAE5853"
+    },
+    {
+        "name": "ice_slime_static",
+        "parent": "ice_static",
+        "tags": "[static],[alchemy],[meltable_to_slime],[solid]",
+        "type": null,
+        "wang": "FFCBA270",
+        "color": "FFB870D2",
+        "texture": "ice_slime.png",
+        "texture_color": "FFA14EB3"
+    },
+    {
+        "name": "tube_physics",
+        "parent": "ice_glass",
+        "tags": "[box2d],[static],[meltable_to_lava],[alchemy],[solid],[earth]",
+        "type": null,
+        "wang": "FF413F42",
+        "color": "FF413F42",
+        "texture": null,
+        "texture_color": "FF413F42"
+    },
+    {
+        "name": "ice_acid_glass",
+        "parent": "ice_glass",
+        "tags": "[static],[meltable_to_acid],[alchemy],[solid],[cold]",
+        "type": null,
+        "wang": "FF41FF42",
+        "color": "FF41FF42",
+        "texture": null,
+        "texture_color": "FF41FF42"
+    },
+    {
+        "name": "ice_cold_glass",
+        "parent": "ice_glass",
+        "tags": "[static],[meltable_to_cold],[alchemy],[solid],[cold]",
+        "type": null,
+        "wang": "FFA1FF42",
+        "color": "FFA1FF42",
+        "texture": null,
+        "texture_color": "FFA1FF42"
+    },
+    {
+        "name": "ice_radioactive_glass",
+        "parent": "ice_glass",
+        "tags": "[static],[meltable_to_radioactive],[alchemy],[solid],[cold]",
+        "type": null,
+        "wang": "FFB1FF42",
+        "color": "FFB1FF42",
+        "texture": null,
+        "texture_color": "FFB1FF42"
+    },
+    {
+        "name": "ice_poison_glass",
+        "parent": "ice_glass",
+        "tags": "[static],[meltable_to_poison],[alchemy],[solid],[cold]",
+        "type": null,
+        "wang": "FFBC3AE0",
+        "color": "FFBC3AE0",
+        "texture": null,
+        "texture_color": "FFBC3AE0"
+    },
+    {
+        "name": "ice_blood_glass",
+        "parent": "ice_glass",
+        "tags": "[static],[meltable_to_blood],[alchemy],[solid],[cold]",
+        "type": null,
+        "wang": "FFBC40E2",
+        "color": "FFBC40E2",
+        "texture": null,
+        "texture_color": "FFBC40E2"
+    },
+    {
+        "name": "ice_slime_glass",
+        "parent": "ice_glass",
+        "tags": "[static],[meltable_to_slime],[alchemy],[solid],[cold]",
+        "type": null,
+        "wang": "FFBC10E2",
+        "color": "FFBC10E2",
+        "texture": null,
+        "texture_color": "FFBC10E2"
+    },
+    {
+        "name": "wood_static_wet",
+        "parent": "wood_static",
+        "tags": "[corrodible],[burnable],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF413F41",
+        "color": "FF413F41",
+        "texture": null,
+        "texture_color": "FF413F41"
+    },
+    {
+        "name": "root_growth",
+        "parent": "wood_static",
+        "tags": "[corrodible],[burnable],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF412D41",
+        "color": "FF007540",
+        "texture": "root_growth.png",
+        "texture_color": "FF597131"
+    },
+    {
+        "name": "wood_burns_forever",
+        "parent": "wood_static",
+        "tags": "[corrodible],[burnable],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF413F43",
+        "color": "FF413F43",
+        "texture": null,
+        "texture_color": "FF413F43"
+    },
+    {
+        "name": "creepy_liquid_emitter",
+        "parent": "wood_static",
+        "tags": "[corrodible],[burnable],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF41AF41",
+        "color": "FF41AF41",
+        "texture": "templebrick_alt.png",
+        "texture_color": "FF554A42"
+    },
+    {
+        "name": "gold_static",
+        "parent": "wood_static",
+        "tags": "[corrodible],[alchemy],[gold],[solid],[earth]",
+        "type": null,
+        "wang": "FF4AAF41",
+        "color": "FF4AAF41",
+        "texture": "gold.png",
+        "texture_color": "FFCB9E60"
+    },
+    {
+        "name": "gold_static_radioactive",
+        "parent": "wood_static",
+        "tags": "[corrodible],[alchemy],[gold],[solid],[earth]",
+        "type": null,
+        "wang": "FF4AAF45",
+        "color": "FF4AAF45",
+        "texture": "gold.png",
+        "texture_color": "FFCB9E60"
+    },
+    {
+        "name": "gold_static_dark",
+        "parent": "wood_static",
+        "tags": "[corrodible],[alchemy],[gold],[solid],[earth]",
+        "type": null,
+        "wang": "FF4ACF41",
+        "color": "FF4ACF41",
+        "texture": "gold_dark.png",
+        "texture_color": "FF755132"
+    },
+    {
+        "name": "wood_static_vertical",
+        "parent": "wood_static",
+        "tags": "[corrodible],[burnable],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF413F3A",
+        "color": "FF413F3A",
+        "texture": "wood_vertical.png",
+        "texture_color": "FF3E331E"
+    },
+    {
+        "name": "wood_static_gas",
+        "parent": "wood_static",
+        "tags": "[corrodible],[burnable],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF414F41",
+        "color": "FF414F41",
+        "texture": null,
+        "texture_color": "FF414F41"
+    },
+    {
+        "name": "corruption_static",
+        "parent": "rock_static",
+        "tags": "[static],[corrodible]",
+        "type": null,
+        "wang": "FF7D0067",
+        "color": "FF7D0067",
+        "texture": "corruption.png",
+        "texture_color": "FF4B0039"
+    },
+    {
+        "name": "smoke_magic",
+        "parent": "smoke",
+        "tags": "[gas]",
+        "type": "gas",
+        "wang": "01C1E5FF",
+        "color": "01A53D77",
+        "texture": null,
+        "texture_color": "01A53D77"
+    },
+    {
+        "name": "steam_trailer",
+        "parent": "steam",
+        "tags": "[gas]",
+        "type": "gas",
+        "wang": "FFC6C5FF",
+        "color": "BF84A7BE",
+        "texture": null,
+        "texture_color": "BF84A7BE"
+    },
+    {
+        "name": "poison_gas",
+        "parent": "acid_gas",
+        "tags": "[gas],[burnable_fast]",
+        "type": "gas",
+        "wang": "7FB42CFF",
+        "color": "7FB42CFF",
+        "texture": null,
+        "texture_color": "7FB42CFF"
+    },
+    {
+        "name": "fungal_gas",
+        "parent": "acid_gas",
+        "tags": "[gas],[burnable_fast],[fungus]",
+        "type": null,
+        "wang": "7FEA1CAF",
+        "color": "7FEA1CAF",
+        "texture": null,
+        "texture_color": "7FEA1CAF"
+    },
+    {
+        "name": "poo_gas",
+        "parent": "smoke",
+        "tags": "[gas]",
+        "type": null,
+        "wang": "7F724F43",
+        "color": "7F724F43",
+        "texture": null,
+        "texture_color": "7F724F43"
+    },
+    {
+        "name": "water_fading",
+        "parent": "water",
+        "tags": "[liquid],[corrodible],[freezable],[water],[liquid_common],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "902F354C",
+        "color": "A0376259",
+        "texture": null,
+        "texture_color": "A0376259"
+    },
+    {
+        "name": "water_salt",
+        "parent": "water",
+        "tags": "[liquid],[corrodible],[freezable],[water],[liquid_common]",
+        "type": null,
+        "wang": "A02F754C",
+        "color": "A02F754C",
+        "texture": null,
+        "texture_color": "A02F754C"
+    },
+    {
+        "name": "void_liquid",
+        "parent": "water",
+        "tags": "[liquid]",
+        "type": null,
+        "wang": "FFA2332A",
+        "color": "FF000000",
+        "texture": null,
+        "texture_color": "FF000000"
+    },
+    {
+        "name": "mimic_liquid",
+        "parent": "water",
+        "tags": "[liquid],[mimic_liquid]",
+        "type": null,
+        "wang": "FFA2332B",
+        "color": "88E8BD5C",
+        "texture": "mimic_liquid.png",
+        "texture_color": "FF8E9E84"
+    },
+    {
+        "name": "just_death",
+        "parent": "water",
+        "tags": "[liquid],[magic]",
+        "type": null,
+        "wang": "FFB2332B",
+        "color": "FF000000",
+        "texture": null,
+        "texture_color": "FF000000"
+    },
+    {
+        "name": "liquid_fire",
+        "parent": "oil",
+        "tags": "[liquid],[burnable],[impure],[hot],[fire_strong],[liquid_common]",
+        "type": null,
+        "wang": "AF3B3B3D",
+        "color": "AFF08400",
+        "texture": null,
+        "texture_color": "AFF08400"
+    },
+    {
+        "name": "liquid_fire_weak",
+        "parent": "oil",
+        "tags": "[liquid],[burnable],[impure],[hot],[fire_strong],[liquid_common]",
+        "type": null,
+        "wang": "FF3B3B4D",
+        "color": "FFEBCD00",
+        "texture": null,
+        "texture_color": "FFEBCD00"
+    },
+    {
+        "name": "midas_precursor",
+        "parent": "alcohol",
+        "tags": "[liquid],[burnable],[water]",
+        "type": null,
+        "wang": "E1243CFF",
+        "color": "E1243CFF",
+        "texture": "midas_precursor.png",
+        "texture_color": "FF1657ED"
+    },
+    {
+        "name": "midas",
+        "parent": "alcohol",
+        "tags": "[liquid],[burnable],[water]",
+        "type": null,
+        "wang": "EFEFA101",
+        "color": "EFEFA101",
+        "texture": "honey.png",
+        "texture_color": "FFE9C353"
+    },
+    {
+        "name": "pus",
+        "parent": "material_darkness",
+        "tags": "[liquid],[water],[magic_liquid],[impure]",
+        "type": "liquid",
+        "wang": "44695642",
+        "color": "AA695642",
+        "texture": "pus.png",
+        "texture_color": "FF8E5547"
+    },
+    {
+        "name": "blood_fading_slow",
+        "parent": "blood",
+        "tags": "[liquid],[corrodible],[soluble],[blood],[impure],[liquid_common],[food],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "44F13C23",
+        "color": "AA830000",
+        "texture": null,
+        "texture_color": "AA830000"
+    },
+    {
+        "name": "poison",
+        "parent": "radioactive_liquid",
+        "tags": "[liquid],[corrodible],[soluble],[impure],[liquid_common]",
+        "type": null,
+        "wang": "44B43CFF",
+        "color": "44B43CFF",
+        "texture": null,
+        "texture_color": "44B43CFF"
+    },
+    {
+        "name": "cursed_liquid",
+        "parent": "radioactive_liquid",
+        "tags": "[corrodible],[soluble],[impure]",
+        "type": null,
+        "wang": "44369244",
+        "color": "44369244",
+        "texture": null,
+        "texture_color": "44369244"
+    },
+    {
+        "name": "radioactive_liquid_yellow",
+        "parent": "radioactive_liquid",
+        "tags": "[liquid],[corrodible],[soluble],[radioactive],[impure],[liquid_common],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "44B4FF10",
+        "color": "44B4FF10",
+        "texture": null,
+        "texture_color": "44B4FF10"
+    },
+    {
+        "name": "plasma_fading_bright",
+        "parent": "plasma_fading",
+        "tags": "[liquid],[corrodible],[soluble],[evaporable_fast],[impure],[liquid_common]",
+        "type": "liquid",
+        "wang": "FF36CDFF",
+        "color": "FF36CDFF",
+        "texture": null,
+        "texture_color": "FF36CDFF"
+    },
+    {
+        "name": "plasma_fading_green",
+        "parent": "plasma_fading",
+        "tags": "[liquid],[corrodible],[soluble],[evaporable_fast],[impure],[liquid_common]",
+        "type": "liquid",
+        "wang": "FF78F050",
+        "color": "FF78F050",
+        "texture": null,
+        "texture_color": "FF78F050"
+    },
+    {
+        "name": "plasma_fading_pink",
+        "parent": "plasma_fading",
+        "tags": "[liquid],[corrodible],[soluble],[evaporable_fast],[impure],[liquid_common]",
+        "type": "liquid",
+        "wang": "FFFF50F0",
+        "color": "FFFF50F0",
+        "texture": null,
+        "texture_color": "FFFF50F0"
+    },
+    {
+        "name": "steel_static_molten",
+        "parent": "gold_molten",
+        "tags": "[liquid],[corrodible],[molten_metal],[alchemy],[gold],[solid],[liquid_common],[earth]",
+        "type": null,
+        "wang": "FF404042",
+        "color": "FF404040",
+        "texture": "steelpanel.png",
+        "texture_color": "FF6D5E4C"
+    },
+    {
+        "name": "steelmoss_slanted_molten",
+        "parent": "gold_molten",
+        "tags": "[liquid],[corrodible],[molten_metal],[alchemy],[gold],[solid],[liquid_common],[earth]",
+        "type": null,
+        "wang": "FF404043",
+        "color": "FF404040",
+        "texture": "steelpanelmoss.png",
+        "texture_color": "FF636346"
+    },
+    {
+        "name": "steelmoss_static_molten",
+        "parent": "gold_molten",
+        "tags": "[liquid],[corrodible],[molten_metal],[alchemy],[gold],[solid],[liquid_common],[earth]",
+        "type": null,
+        "wang": "FF404044",
+        "color": "FF404040",
+        "texture": "steelpanelmoss.png",
+        "texture_color": "FF636346"
+    },
+    {
+        "name": "steelsmoke_static_molten",
+        "parent": "gold_molten",
+        "tags": "[liquid],[corrodible],[molten_metal],[alchemy],[gold],[solid],[liquid_common],[earth]",
+        "type": null,
+        "wang": "FF404045",
+        "color": "FF404040",
+        "texture": "steelpanel.png",
+        "texture_color": "FF6D5E4C"
+    },
+    {
+        "name": "metal_sand_molten",
+        "parent": "gold_molten",
+        "tags": "[liquid],[corrodible],[molten_metal],[alchemy],[gold],[solid],[liquid_common],[earth]",
+        "type": null,
+        "wang": "FF4B4045",
+        "color": "FF404040",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "metal_molten",
+        "parent": "gold_molten",
+        "tags": "[liquid],[corrodible],[molten_metal],[alchemy],[gold],[solid],[liquid_common],[earth]",
+        "type": null,
+        "wang": "FF404046",
+        "color": "FF404040",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "metal_rust_molten",
+        "parent": "gold_molten",
+        "tags": "[liquid],[corrodible],[molten_metal],[alchemy],[gold],[solid],[liquid_common],[earth]",
+        "type": null,
+        "wang": "FF404047",
+        "color": "FF404040",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "metal_nohit_molten",
+        "parent": "gold_molten",
+        "tags": "[liquid],[corrodible],[molten_metal],[alchemy],[gold],[solid],[liquid_common],[earth]",
+        "type": null,
+        "wang": "FF404048",
+        "color": "FF404040",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "aluminium_molten",
+        "parent": "gold_molten",
+        "tags": "[liquid],[corrodible],[molten_metal],[alchemy],[gold],[solid],[liquid_common],[earth]",
+        "type": null,
+        "wang": "FF404049",
+        "color": "FF404040",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "aluminium_robot_molten",
+        "parent": "gold_molten",
+        "tags": "[liquid],[corrodible],[molten_metal],[alchemy],[gold],[solid],[liquid_common],[earth]",
+        "type": null,
+        "wang": "FF404050",
+        "color": "FF404040",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "metal_prop_molten",
+        "parent": "gold_molten",
+        "tags": "[liquid],[corrodible],[molten_metal],[alchemy],[gold],[solid],[liquid_common],[earth]",
+        "type": null,
+        "wang": "FF404051",
+        "color": "FF404040",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "steel_rust_molten",
+        "parent": "gold_molten",
+        "tags": "[liquid],[corrodible],[molten_metal],[alchemy],[gold],[solid],[liquid_common],[earth]",
+        "type": null,
+        "wang": "FF404052",
+        "color": "FF404040",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "aluminium_oxide_molten",
+        "parent": "gold_molten",
+        "tags": "[liquid],[corrodible],[molten_metal],[alchemy],[gold],[solid],[liquid_common],[earth]",
+        "type": null,
+        "wang": "FF404053",
+        "color": "FF404040",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "sand_blue",
+        "parent": "sand",
+        "tags": "[sand_ground],[corrodible],[meltable_to_lava_fast],[alchemy],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FF008240",
+        "color": "FF008240",
+        "texture": "sand_blue.png",
+        "texture_color": "FF374269"
+    },
+    {
+        "name": "sand_surface",
+        "parent": "sand",
+        "tags": "[sand_ground],[corrodible],[meltable_to_lava_fast],[alchemy],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FF009242",
+        "color": "FFB89E57",
+        "texture": "sand_surface.png",
+        "texture_color": "FFECD89B"
+    },
+    {
+        "name": "lavasand",
+        "parent": "sand",
+        "tags": "[sand_ground],[corrodible],[meltable_to_lava_fast],[alchemy],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FF0A8240",
+        "color": "FF0A8240",
+        "texture": "lavarock.png",
+        "texture_color": "FF4D201F"
+    },
+    {
+        "name": "sand_petrify",
+        "parent": "sand",
+        "tags": "[sand_ground],[corrodible],[meltable_to_lava_fast],[alchemy],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FF433454",
+        "color": "FFAAAAAA",
+        "texture": "sand_petrify.png",
+        "texture_color": "FF5B6070"
+    },
+    {
+        "name": "soil_lush",
+        "parent": "soil",
+        "tags": "[sand_ground],[corrodible],[grows_grass],[meltable_to_lava],[alchemy],[solid]",
+        "type": "liquid",
+        "wang": "FF008040",
+        "color": "FF008040",
+        "texture": "soil_lush.png",
+        "texture_color": "FF6C8D32"
+    },
+    {
+        "name": "soil_lush_dark",
+        "parent": "soil",
+        "tags": "[sand_ground],[corrodible],[grows_grass],[meltable_to_lava],[alchemy],[solid]",
+        "type": "liquid",
+        "wang": "FF40323D",
+        "color": "FF40323D",
+        "texture": "soil_lush_dark.png",
+        "texture_color": "FF453542"
+    },
+    {
+        "name": "soil_dead",
+        "parent": "soil",
+        "tags": "[sand_ground],[corrodible],[grows_grass],[meltable_to_lava],[alchemy],[solid]",
+        "type": "liquid",
+        "wang": "FF708040",
+        "color": "FF708040",
+        "texture": "soil_dead.png",
+        "texture_color": "FF7B743F"
+    },
+    {
+        "name": "soil_dark",
+        "parent": "soil",
+        "tags": "[sand_ground],[corrodible],[grows_grass],[meltable_to_lava],[alchemy],[solid]",
+        "type": "liquid",
+        "wang": "FFAF8040",
+        "color": "FF708040",
+        "texture": "soil_lush_dark.png",
+        "texture_color": "FF453542"
+    },
+    {
+        "name": "sandstone_surface",
+        "parent": "sandstone",
+        "tags": "[sand_ground],[corrodible],[meltable_to_lava],[alchemy],[solid],[earth]",
+        "type": "liquid",
+        "wang": "FF90FE4A",
+        "color": "FF90FE40",
+        "texture": "desert_surface.png",
+        "texture_color": "FFEED894"
+    },
+    {
+        "name": "slime_green",
+        "parent": "slime",
+        "tags": "[corrodible],[meltable_to_lava],[alchemy],[slime],[liquid_common],[food],[chaotic_transmutation]",
+        "type": null,
+        "wang": "8880FF80",
+        "color": "884FAB2E",
+        "texture": "slime_green.png",
+        "texture_color": "FF68853B"
+    },
+    {
+        "name": "slime_yellow",
+        "parent": "slime",
+        "tags": "[corrodible],[meltable_to_lava],[alchemy],[slime],[liquid_common],[food]",
+        "type": null,
+        "wang": "889CB32B",
+        "color": "889CB32B",
+        "texture": "yellowblood.png",
+        "texture_color": "FFA5AC31"
+    },
+    {
+        "name": "pea_soup",
+        "parent": "slime_green",
+        "tags": "[corrodible],[meltable_to_lava],[alchemy],[slime],[liquid_common],[food],[chaotic_transmutation]",
+        "type": null,
+        "wang": "8880FF82",
+        "color": "884FAB2E",
+        "texture": "slime_green.png",
+        "texture_color": "FF68853B"
+    },
+    {
+        "name": "endslime",
+        "parent": "slime",
+        "tags": "[static],[corrodible],[alchemy],[slime],[chaotic_transmutation]",
+        "type": null,
+        "wang": "888AFF80",
+        "color": "88AB372C",
+        "texture": "endslime.png",
+        "texture_color": "FF754444"
+    },
+    {
+        "name": "endslime_blood",
+        "parent": "slime",
+        "tags": "[static],[corrodible],[slime]",
+        "type": null,
+        "wang": "888CFF80",
+        "color": "88AB372C",
+        "texture": "endslime.png",
+        "texture_color": "FF754444"
+    },
+    {
+        "name": "meat_slime_green",
+        "parent": "meat_slime",
+        "tags": "[box2d],[corrodible],[meltable_to_lava],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFED4D4C",
+        "color": "FFED4D4C",
+        "texture": null,
+        "texture_color": "FFED4D4C"
+    },
+    {
+        "name": "meat_slime_orange",
+        "parent": "meat_slime",
+        "tags": "[box2d],[corrodible],[meltable_to_lava],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFFEAF2C",
+        "color": "FFFEAF2C",
+        "texture": null,
+        "texture_color": "FFFEAF2C"
+    },
+    {
+        "name": "meat_worm",
+        "parent": "meat",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFEBCDA1",
+        "color": "FFEBCD00",
+        "texture": "wormmeat.png",
+        "texture_color": "FF6D98C9"
+    },
+    {
+        "name": "meat_helpless",
+        "parent": "meat",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFE3C3A2",
+        "color": "FFE3C3A2",
+        "texture": null,
+        "texture_color": "FFE3C3A2"
+    },
+    {
+        "name": "meat_trippy",
+        "parent": "meat",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFE2C2A4",
+        "color": "FFE2C2A4",
+        "texture": null,
+        "texture_color": "FFE2C2A4"
+    },
+    {
+        "name": "meat_frog",
+        "parent": "meat_trippy",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFE2C2A5",
+        "color": "FFE2C2A5",
+        "texture": null,
+        "texture_color": "FFE2C2A5"
+    },
+    {
+        "name": "meat_cursed",
+        "parent": "meat",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFE3C1A1",
+        "color": "FFE3C1A1",
+        "texture": null,
+        "texture_color": "FFE3C1A1"
+    },
+    {
+        "name": "meat_cursed_dry",
+        "parent": "meat_cursed",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFE3C1A4",
+        "color": "FFE3C1A4",
+        "texture": null,
+        "texture_color": "FFE3C1A4"
+    },
+    {
+        "name": "meat_slime_cursed",
+        "parent": "meat_slime",
+        "tags": "[box2d],[corrodible],[meltable_to_lava],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFE2CBB0",
+        "color": "FFE2CBB0",
+        "texture": null,
+        "texture_color": "FFE2CBB0"
+    },
+    {
+        "name": "meat_teleport",
+        "parent": "meat",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFBBC1A1",
+        "color": "FFBBC1A1",
+        "texture": null,
+        "texture_color": "FFBBC1A1"
+    },
+    {
+        "name": "meat_fast",
+        "parent": "meat",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFBBF111",
+        "color": "FFBBF111",
+        "texture": null,
+        "texture_color": "FFBBF111"
+    },
+    {
+        "name": "meat_polymorph",
+        "parent": "meat",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFB3A181",
+        "color": "FFB3A181",
+        "texture": null,
+        "texture_color": "FFB3A181"
+    },
+    {
+        "name": "meat_polymorph_protection",
+        "parent": "meat",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFB4A282",
+        "color": "FFB4A282",
+        "texture": null,
+        "texture_color": "FFB4A282"
+    },
+    {
+        "name": "meat_confusion",
+        "parent": "meat",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFB3A070",
+        "color": "FFB3A070",
+        "texture": null,
+        "texture_color": "FFB3A070"
+    },
+    {
+        "name": "gold_radioactive",
+        "parent": "gold",
+        "tags": "[sand_metal],[corrodible],[meltable_metal_generic],[alchemy],[gold],[solid],[earth]",
+        "type": null,
+        "wang": "FFFBF451",
+        "color": "FFB8AE58",
+        "texture": "gold.png",
+        "texture_color": "FFCB9E60"
+    },
+    {
+        "name": "steel_sand",
+        "parent": "silver",
+        "tags": "[sand_metal],[corrodible],[alchemy]",
+        "type": null,
+        "wang": "FFEBF4A1",
+        "color": "FFEBF4A1",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "metal_sand",
+        "parent": "silver",
+        "tags": "[sand_metal],[corrodible],[alchemy],[meltable_metal]",
+        "type": null,
+        "wang": "FFE4F4B0",
+        "color": "FFEBF4A1",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "sodium",
+        "parent": "salt",
+        "tags": "[sand_other],[corrodible],[alchemy],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FF410F24",
+        "color": "FF410F24",
+        "texture": null,
+        "texture_color": "FF410F24"
+    },
+    {
+        "name": "purifying_powder",
+        "parent": "salt",
+        "tags": "[sand_other],[corrodible],[alchemy],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FFB6D5D8",
+        "color": "FFB6D5D8",
+        "texture": null,
+        "texture_color": "FFB6D5D8"
+    },
+    {
+        "name": "burning_powder",
+        "parent": "salt",
+        "tags": "[sand_other],[corrodible],[alchemy],[chaotic_transmutation]",
+        "type": "liquid",
+        "wang": "FFA10F24",
+        "color": "FFA10F24",
+        "texture": null,
+        "texture_color": "FFA10F24"
+    },
+    {
+        "name": "fungus_powder_bad",
+        "parent": "fungus_powder",
+        "tags": "[sand_other],[fungus]",
+        "type": "liquid",
+        "wang": "FFCACAFE",
+        "color": "FFA10F24",
+        "texture": null,
+        "texture_color": "FFA10F24"
+    },
+    {
+        "name": "shock_powder",
+        "parent": "fungus_powder",
+        "tags": "[sand_other],[fungus]",
+        "type": "liquid",
+        "wang": "FFACACFE",
+        "color": "FFA10F24",
+        "texture": null,
+        "texture_color": "FFA10F24"
+    },
+    {
+        "name": "plastic_molten",
+        "parent": "plastic_red_molten",
+        "tags": "[liquid],[corrodible],[molten],[meltable_to_lava],[alchemy],[liquid_common]",
+        "type": "liquid",
+        "wang": "FFFF00AB",
+        "color": "FF73737F",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "plastic_prop_molten",
+        "parent": "plastic_red_molten",
+        "tags": "[liquid],[corrodible],[molten],[meltable_to_lava],[alchemy],[liquid_common]",
+        "type": "liquid",
+        "wang": "FFBB00AB",
+        "color": "FF73737F",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "fungi_green",
+        "parent": "fungi",
+        "tags": "[plant],[corrodible],[burnable],[alchemy],[impure],[fungus]",
+        "type": "liquid",
+        "wang": "FF45FF45",
+        "color": "FF45FF45",
+        "texture": "moss.png",
+        "texture_color": "FF68853B"
+    },
+    {
+        "name": "fungi_yellow",
+        "parent": "fungi_green",
+        "tags": "[plant],[corrodible],[burnable],[alchemy],[impure],[fungus]",
+        "type": "liquid",
+        "wang": "FFBEC639",
+        "color": "FFBEC639",
+        "texture": "yellowblood.png",
+        "texture_color": "FFA5AC31"
+    },
+    {
+        "name": "grass_dark",
+        "parent": "grass",
+        "tags": "[plant],[requires_air],[corrodible],[burnable],[alchemy],[impure]",
+        "type": "liquid",
+        "wang": "FF7F506D",
+        "color": "FF7F506D",
+        "texture": "moss.png",
+        "texture_color": "FF68853B"
+    },
+    {
+        "name": "fungi_creeping",
+        "parent": "fungi",
+        "tags": "[plant],[corrodible],[burnable]",
+        "type": null,
+        "wang": "FF46FF65",
+        "color": "FF45FF45",
+        "texture": "meat_rotten.png",
+        "texture_color": "FFBB8558"
+    },
+    {
+        "name": "fungi_creeping_secret",
+        "parent": "fungi",
+        "tags": "[plant],[corrodible],[burnable]",
+        "type": null,
+        "wang": "FF461FF5",
+        "color": "FF45FF45",
+        "texture": "slime.png",
+        "texture_color": "FFA62B75"
+    },
+    {
+        "name": "peat",
+        "parent": "moss",
+        "tags": "[plant],[corrodible],[burnable],[alchemy],[impure]",
+        "type": "liquid",
+        "wang": "A045AA45",
+        "color": "A045AA45",
+        "texture": "moss.png",
+        "texture_color": "FF68853B"
+    },
+    {
+        "name": "moss_rust",
+        "parent": "moss",
+        "tags": "[plant],[corrodible],[burnable],[alchemy],[impure]",
+        "type": "liquid",
+        "wang": "FF45F145",
+        "color": "FF9A5E4C",
+        "texture": "moss_rust.png",
+        "texture_color": "FF864F52"
+    },
+    {
+        "name": "wood_player_b2_vertical",
+        "parent": "wood_player_b2",
+        "tags": "[static],[box2d],[alchemy],[corrodible],[solid],[earth]",
+        "type": "solid",
+        "wang": "FFA13F02",
+        "color": "FFA13F02",
+        "texture": "wood_vertical.png",
+        "texture_color": "FF3E331E"
+    },
+    {
+        "name": "fuse_bright",
+        "parent": "fuse",
+        "tags": "[box2d]",
+        "type": null,
+        "wang": "FFEA151E",
+        "color": "FFAB57A0",
+        "texture": null,
+        "texture_color": "FFAB57A0"
+    },
+    {
+        "name": "fuse_tnt",
+        "parent": "fuse",
+        "tags": "[box2d]",
+        "type": null,
+        "wang": "FFEAAAAE",
+        "color": "FF304055",
+        "texture": null,
+        "texture_color": "FF304055"
+    },
+    {
+        "name": "fuse_holy",
+        "parent": "fuse",
+        "tags": "[box2d]",
+        "type": null,
+        "wang": "FFEAABAE",
+        "color": "FFF0D447",
+        "texture": null,
+        "texture_color": "FFF0D447"
+    },
+    {
+        "name": "templebrick_box2d",
+        "parent": "wood",
+        "tags": "[box2d],[corrodible],[alchemy],[burnable],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF644620",
+        "color": "FF644620",
+        "texture": "templebrick.png",
+        "texture_color": "FF4D4630"
+    },
+    {
+        "name": "wood_trailer",
+        "parent": "wood_loose",
+        "tags": "[box2d],[corrodible],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FFA44620",
+        "color": "FFA44620",
+        "texture": null,
+        "texture_color": "FFA44620"
+    },
+    {
+        "name": "wood_wall",
+        "parent": "wood",
+        "tags": "[box2d],[corrodible],[alchemy],[burnable],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF644600",
+        "color": "FF644600",
+        "texture": "wood.png",
+        "texture_color": "FF413621"
+    },
+    {
+        "name": "cactus",
+        "parent": "wood_loose",
+        "tags": "[box2d],[corrodible],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF64F640",
+        "color": "FF64F640",
+        "texture": "wood.png",
+        "texture_color": "FF413621"
+    },
+    {
+        "name": "grass_loose",
+        "parent": "wood_loose",
+        "tags": "[box2d],[corrodible],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF64E64A",
+        "color": "FF64F640",
+        "texture": "moss.png",
+        "texture_color": "FF68853B"
+    },
+    {
+        "name": "fungus_loose",
+        "parent": "wood_loose",
+        "tags": "[box2d],[alchemy],[solid],[earth],[fungus]",
+        "type": null,
+        "wang": "FF64AB40",
+        "color": "FF64AB40",
+        "texture": "fungi.png",
+        "texture_color": "FFA6365C"
+    },
+    {
+        "name": "fungus_loose_green",
+        "parent": "wood_loose",
+        "tags": "[box2d],[alchemy],[solid],[earth],[fungus]",
+        "type": null,
+        "wang": "FF64AB2C",
+        "color": "FF64AB2C",
+        "texture": "moss.png",
+        "texture_color": "FF68853B"
+    },
+    {
+        "name": "fungus_loose_trippy",
+        "parent": "wood_loose",
+        "tags": "[box2d],[alchemy],[solid],[earth],[fungus]",
+        "type": null,
+        "wang": "FF64AB41",
+        "color": "FF64AB40",
+        "texture": "fungi.png",
+        "texture_color": "FFA6365C"
+    },
+    {
+        "name": "wood_prop",
+        "parent": "wood",
+        "tags": "[box2d],[corrodible],[alchemy],[burnable],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF966400",
+        "color": "FF966400",
+        "texture": "wood.png",
+        "texture_color": "FF413621"
+    },
+    {
+        "name": "wood_prop_noplayerhit",
+        "parent": "wood",
+        "tags": "[box2d],[corrodible],[alchemy],[burnable],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF966401",
+        "color": "FF966400",
+        "texture": "wood.png",
+        "texture_color": "FF413621"
+    },
+    {
+        "name": "cloth_box2d",
+        "parent": "aluminium",
+        "tags": "[box2d],[burnable],[solid]",
+        "type": null,
+        "wang": "FF937F52",
+        "color": "FF937F52",
+        "texture": "cloth.png",
+        "texture_color": "FF766742"
+    },
+    {
+        "name": "wood_prop_durable",
+        "parent": "wood",
+        "tags": "[box2d],[corrodible],[alchemy],[burnable],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF966410",
+        "color": "FF966410",
+        "texture": "wood.png",
+        "texture_color": "FF413621"
+    },
+    {
+        "name": "nest_box2d",
+        "parent": "wood_prop",
+        "tags": "[box2d],[corrodible],[alchemy],[burnable],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF3B8D4B",
+        "color": "FF3B8D4B",
+        "texture": "nest.png",
+        "texture_color": "FF722C1B"
+    },
+    {
+        "name": "nest_firebug_box2d",
+        "parent": "wood_prop",
+        "tags": "[box2d],[corrodible],[alchemy],[burnable],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF3B3E3B",
+        "color": "FF3B8D4B",
+        "texture": "nest.png",
+        "texture_color": "FF722C1B"
+    },
+    {
+        "name": "cocoon_box2d",
+        "parent": "wood_prop",
+        "tags": "[box2d],[corrodible],[alchemy],[burnable],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF3F8D4B",
+        "color": "FF3F8D4B",
+        "texture": "nest.png",
+        "texture_color": "FF722C1B"
+    },
+    {
+        "name": "meteorite_crackable",
+        "parent": "meteorite",
+        "tags": "[box2d],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FFA86C42",
+        "color": "FFA86C42",
+        "texture": "templebrick.png",
+        "texture_color": "FF4D4630"
+    },
+    {
+        "name": "plastic_prop",
+        "parent": "plastic",
+        "tags": "[box2d],[corrodible],[meltable_plastic],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FF3B6D4B",
+        "color": "FF3B5D4B",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "aluminium_robot",
+        "parent": "aluminium",
+        "tags": "[box2d],[corrodible],[alchemy],[meltable_metal],[solid],[earth]",
+        "type": null,
+        "wang": "FF3C2D3C",
+        "color": "FF3C2D3C",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "metal_prop",
+        "parent": "aluminium",
+        "tags": "[box2d],[corrodible],[alchemy],[meltable_metal],[solid],[earth]",
+        "type": null,
+        "wang": "FF968800",
+        "color": "FF968800",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "metal_prop_low_restitution",
+        "parent": "aluminium",
+        "tags": "[box2d],[corrodible],[alchemy],[meltable_metal_generic],[solid],[earth]",
+        "type": null,
+        "wang": "FF9A8F00",
+        "color": "FF968800",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "metal_prop_loose",
+        "parent": "aluminium",
+        "tags": "[box2d],[corrodible],[alchemy],[meltable_metal_generic],[solid],[earth]",
+        "type": null,
+        "wang": "FF9677A0",
+        "color": "FF968800",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "metal",
+        "parent": "aluminium",
+        "tags": "[box2d],[corrodible],[alchemy],[meltable_metal],[solid],[earth]",
+        "type": null,
+        "wang": "FF3D2D3C",
+        "color": "FF3D2D3C",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "metal_hard",
+        "parent": "aluminium",
+        "tags": "[box2d],[corrodible],[alchemy],[meltable_metal_generic],[solid]",
+        "type": null,
+        "wang": "FF3DF03C",
+        "color": "FF3D2D3C",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "rock_box2d",
+        "parent": "aluminium",
+        "tags": "[box2d],[solid],[earth]",
+        "type": null,
+        "wang": "FF2D2DAC",
+        "color": "FF2D2DAC",
+        "texture": "rock.png",
+        "texture_color": "FF292A30"
+    },
+    {
+        "name": "templebrick_box2d_edgetiles",
+        "parent": "aluminium",
+        "tags": "[box2d],[solid],[earth]",
+        "type": null,
+        "wang": "FF2FFDA4",
+        "color": "FF786C42",
+        "texture": "templebrick.png",
+        "texture_color": "FF4D4630"
+    },
+    {
+        "name": "rock_box2d_hard",
+        "parent": "aluminium",
+        "tags": "[box2d],[solid],[sunbaby_ignore_list]",
+        "type": null,
+        "wang": "FF2D6DBC",
+        "color": "FF2D2DAC",
+        "texture": "rock.png",
+        "texture_color": "FF292A30"
+    },
+    {
+        "name": "poop_box2d_hard",
+        "parent": "aluminium",
+        "tags": "[box2d],[sunbaby_ignore_list],[matter_eater_ignore_list]",
+        "type": null,
+        "wang": "FFA38431",
+        "color": "FFA38431",
+        "texture": "earth_alt.png",
+        "texture_color": "FF403B23"
+    },
+    {
+        "name": "rock_box2d_nohit",
+        "parent": "aluminium",
+        "tags": "[box2d],[solid],[earth]",
+        "type": null,
+        "wang": "FF2D2DBC",
+        "color": "FF2D2DAC",
+        "texture": "rock.png",
+        "texture_color": "FF292A30"
+    },
+    {
+        "name": "rock_box2d_nohit_heavy",
+        "parent": "aluminium",
+        "tags": "[box2d],[solid],[earth]",
+        "type": null,
+        "wang": "FF2D2DBD",
+        "color": "FF2D2DAC",
+        "texture": "rock.png",
+        "texture_color": "FF292A30"
+    },
+    {
+        "name": "rock_box2d_nohit_hard",
+        "parent": "aluminium",
+        "tags": "[box2d],[solid]",
+        "type": null,
+        "wang": "FF2D4DBC",
+        "color": "FF2D2DAC",
+        "texture": "rock.png",
+        "texture_color": "FF292A30"
+    },
+    {
+        "name": "item_box2d",
+        "parent": "aluminium",
+        "tags": "[box2d]",
+        "type": null,
+        "wang": "FFFE2DAC",
+        "color": "FFFE2DAC",
+        "texture": "crystal.png",
+        "texture_color": "FF6AB3DE"
+    },
+    {
+        "name": "item_box2d_glass",
+        "parent": "aluminium",
+        "tags": "[box2d]",
+        "type": null,
+        "wang": "FFFE2DAB",
+        "color": "FFFE2DAC",
+        "texture": "crystal.png",
+        "texture_color": "FF6AB3DE"
+    },
+    {
+        "name": "item_box2d_meat",
+        "parent": "item_box2d",
+        "tags": "[box2d]",
+        "type": null,
+        "wang": "FFFE11A1",
+        "color": "FFFE2DAC",
+        "texture": "meat.png",
+        "texture_color": "FFC0708B"
+    },
+    {
+        "name": "gem_box2d",
+        "parent": "aluminium",
+        "tags": "[box2d],[sunbaby_ignore_list]",
+        "type": null,
+        "wang": "FFFD2DAC",
+        "color": "FF5787E7",
+        "texture": "crystal.png",
+        "texture_color": "FF6AB3DE"
+    },
+    {
+        "name": "potion_glass_box2d",
+        "parent": "aluminium",
+        "tags": "[box2d]",
+        "type": null,
+        "wang": "FFFD2DAB",
+        "color": "FF5787E7",
+        "texture": "crystal.png",
+        "texture_color": "FF6AB3DE"
+    },
+    {
+        "name": "glass_box2d",
+        "parent": "aluminium",
+        "tags": "[box2d]",
+        "type": null,
+        "wang": "FFFD4DAB",
+        "color": "FF5787E7",
+        "texture": "crystal.png",
+        "texture_color": "FF6AB3DE"
+    },
+    {
+        "name": "gem_box2d_yellow_sun",
+        "parent": "gem_box2d",
+        "tags": "[box2d],[matter_eater_ignore_list],[indestructible],[sunbaby_ignore_list]",
+        "type": null,
+        "wang": "FFFF9919",
+        "color": "FFFFC74E",
+        "texture": null,
+        "texture_color": "FFFFC74E"
+    },
+    {
+        "name": "gem_box2d_red_float",
+        "parent": "gem_box2d",
+        "tags": "[box2d],[sunbaby_ignore_list]",
+        "type": null,
+        "wang": "FFFD2D7D",
+        "color": "FFE72850",
+        "texture": null,
+        "texture_color": "FFE72850"
+    },
+    {
+        "name": "gem_box2d_yellow_sun_gravity",
+        "parent": "gem_box2d",
+        "tags": "[box2d],[matter_eater_ignore_list],[indestructible],[sunbaby_ignore_list]",
+        "type": null,
+        "wang": "FFAF9019",
+        "color": "FFFFC74E",
+        "texture": null,
+        "texture_color": "FFFFC74E"
+    },
+    {
+        "name": "gem_box2d_darksun",
+        "parent": "gem_box2d",
+        "tags": "[box2d],[matter_eater_ignore_list],[indestructible],[sunbaby_ignore_list]",
+        "type": null,
+        "wang": "FF1E4866",
+        "color": "FF1E4866",
+        "texture": null,
+        "texture_color": "FF1E4866"
+    },
+    {
+        "name": "gem_box2d_pink",
+        "parent": "gem_box2d",
+        "tags": "[box2d],[sunbaby_ignore_list]",
+        "type": null,
+        "wang": "FFFD2DAD",
+        "color": "FFE334B4",
+        "texture": null,
+        "texture_color": "FFE334B4"
+    },
+    {
+        "name": "gem_box2d_red",
+        "parent": "gem_box2d",
+        "tags": "[box2d],[sunbaby_ignore_list]",
+        "type": null,
+        "wang": "FFFD2D9D",
+        "color": "FFE72850",
+        "texture": null,
+        "texture_color": "FFE72850"
+    },
+    {
+        "name": "gem_box2d_turquoise",
+        "parent": "gem_box2d",
+        "tags": "[box2d],[sunbaby_ignore_list]",
+        "type": null,
+        "wang": "FF14FFD7",
+        "color": "FF42FFBD",
+        "texture": null,
+        "texture_color": "FF42FFBD"
+    },
+    {
+        "name": "gem_box2d_opal",
+        "parent": "gem_box2d",
+        "tags": "[box2d],[sunbaby_ignore_list]",
+        "type": null,
+        "wang": "FF52DD60",
+        "color": "FF52DD60",
+        "texture": null,
+        "texture_color": "FF52DD60"
+    },
+    {
+        "name": "gem_box2d_white",
+        "parent": "gem_box2d",
+        "tags": "[box2d],[sunbaby_ignore_list]",
+        "type": null,
+        "wang": "FFEBEAEF",
+        "color": "FFEBEAEF",
+        "texture": null,
+        "texture_color": "FFEBEAEF"
+    },
+    {
+        "name": "gem_box2d_green",
+        "parent": "gem_box2d",
+        "tags": "[box2d],[sunbaby_ignore_list]",
+        "type": null,
+        "wang": "FFFD2DAE",
+        "color": "FFA6D33C",
+        "texture": null,
+        "texture_color": "FFA6D33C"
+    },
+    {
+        "name": "gem_box2d_orange",
+        "parent": "gem_box2d",
+        "tags": "[box2d],[sunbaby_ignore_list]",
+        "type": null,
+        "wang": "FFF98227",
+        "color": "FF89DA79",
+        "texture": null,
+        "texture_color": "FF89DA79"
+    },
+    {
+        "name": "gold_box2d",
+        "parent": "gem_box2d",
+        "tags": "[box2d],[gold],[alchemy]",
+        "type": null,
+        "wang": "FFF98228",
+        "color": "FFFFC74E",
+        "texture": null,
+        "texture_color": "FFFFC74E"
+    },
+    {
+        "name": "bloodgold_box2d",
+        "parent": "gem_box2d",
+        "tags": "[box2d],[gold],[alchemy]",
+        "type": null,
+        "wang": "FFF92828",
+        "color": "FFFF4E4E",
+        "texture": null,
+        "texture_color": "FFFF4E4E"
+    },
+    {
+        "name": "metal_nohit",
+        "parent": "aluminium",
+        "tags": "[box2d],[corrodible],[alchemy],[meltable_metal],[solid],[earth]",
+        "type": null,
+        "wang": "FFAD2DAC",
+        "color": "FFAD2DAC",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "metal_chain_nohit",
+        "parent": "aluminium",
+        "tags": "[box2d],[corrodible],[alchemy],[meltable_metal_generic],[solid],[earth]",
+        "type": null,
+        "wang": "FFAD2DAD",
+        "color": "FFAD2DAC",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "metal_wire_nohit",
+        "parent": "aluminium",
+        "tags": "[box2d],[corrodible],[alchemy],[meltable_metal_generic],[solid],[earth]",
+        "type": null,
+        "wang": "FFAD2DAE",
+        "color": "FFAD2DAC",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "metal_rust",
+        "parent": "aluminium",
+        "tags": "[box2d],[corrodible],[rust_box2d],[alchemy],[meltable_metal],[solid],[earth]",
+        "type": null,
+        "wang": "FF4D2D3C",
+        "color": "FF4D2D3C",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "metal_rust_barrel",
+        "parent": "aluminium",
+        "tags": "[box2d],[corrodible],[rust_box2d],[alchemy],[meltable_metal_generic],[solid],[earth]",
+        "type": null,
+        "wang": "FF4D2D3D",
+        "color": "FF4D2D3C",
+        "texture": "steel.png",
+        "texture_color": "FF616C72"
+    },
+    {
+        "name": "bone_box2d",
+        "parent": "aluminium",
+        "tags": "[box2d],[corrodible],[alchemy],[meltable_to_lava],[solid],[earth]",
+        "type": null,
+        "wang": "FF1C2D2C",
+        "color": "FF1C2D2C",
+        "texture": "bone.png",
+        "texture_color": "FFDAD6C6"
+    },
+    {
+        "name": "magic_crystal_green",
+        "parent": "magic_crystal",
+        "tags": "[box2d],[alchemy]",
+        "type": "solid",
+        "wang": "FFB2D740",
+        "color": "FFB2D740",
+        "texture": "crystal.png",
+        "texture_color": "FF6AB3DE"
+    },
+    {
+        "name": "gold_b2",
+        "parent": "crystal",
+        "tags": "[box2d],[gold],[alchemy],[solid],[earth]",
+        "type": null,
+        "wang": "FFFEFAE4",
+        "color": "FFFEFAE4",
+        "texture": "gold.png",
+        "texture_color": "FFCB9E60"
+    },
+    {
+        "name": "crystal_purple",
+        "parent": "crystal",
+        "tags": "[box2d],[alchemy]",
+        "type": "solid",
+        "wang": "FFA53D77",
+        "color": "FFA53D77",
+        "texture": "crystal_purple.png",
+        "texture_color": "FFDE6AB5"
+    },
+    {
+        "name": "crystal_solid",
+        "parent": "crystal",
+        "tags": "[box2d],[alchemy]",
+        "type": "solid",
+        "wang": "FFA5AD11",
+        "color": "FFA5AD11",
+        "texture": null,
+        "texture_color": "FFA5AD11"
+    },
+    {
+        "name": "meat_fruit",
+        "parent": "meat",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFA50E77",
+        "color": "FFCC4C4C",
+        "texture": "meat.png",
+        "texture_color": "FFC0708B"
+    },
+    {
+        "name": "meat_pumpkin",
+        "parent": "meat_fruit",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FFFF531B",
+        "color": "FFFF531B",
+        "texture": "meat.png",
+        "texture_color": "FFC0708B"
+    },
+    {
+        "name": "meat_warm",
+        "parent": "meat",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FF5B5246",
+        "color": "FF5B5246",
+        "texture": "meat_warm.png",
+        "texture_color": "FFBBA78A"
+    },
+    {
+        "name": "meat_hot",
+        "parent": "meat",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FF5C5246",
+        "color": "FF5C5246",
+        "texture": "meat_hot.png",
+        "texture_color": "FFA48371"
+    },
+    {
+        "name": "meat_done",
+        "parent": "meat",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FF5D5246",
+        "color": "FF5D5246",
+        "texture": "meat_done.png",
+        "texture_color": "FF775A48"
+    },
+    {
+        "name": "meat_burned",
+        "parent": "meat",
+        "tags": "[box2d],[corrodible],[alchemy],[meat],[solid],[earth],[food]",
+        "type": "solid",
+        "wang": "FF5E5246",
+        "color": "FF5E5246",
+        "texture": "meat_burned.png",
+        "texture_color": "FF463F3B"
+    },
+    {
+        "name": "neon_tube_cyan",
+        "parent": "neon_tube_purple",
+        "tags": "[static],[corrodible],[box2d],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FFAEDDE7",
+        "color": "FFCFF7C8",
+        "texture": "neon_tube_cyan.png",
+        "texture_color": "FF0D8DF9"
+    },
+    {
+        "name": "neon_tube_blood_red",
+        "parent": "neon_tube_purple",
+        "tags": "[static],[corrodible],[box2d],[alchemy],[solid],[earth]",
+        "type": "solid",
+        "wang": "FFAEDDE8",
+        "color": "FFCFF7C8",
+        "texture": "neon_tube_blood_red.png",
+        "texture_color": "FF8C1414"
+    }
+]

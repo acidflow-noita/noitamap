@@ -574,6 +574,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     el.addEventListener("change", handleOverlayToggle);
   });
 
+  // Dismiss any lingering popovers left over from a pre-reload state
+  document.querySelectorAll('.popover').forEach((el: Element) => el.remove());
+
   // Initialize Bootstrap popovers
   for (const el of document.querySelectorAll('[data-bs-toggle="popover"]')) {
     new bootstrap.Popover(el);
@@ -657,16 +660,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     spoilerFreeToggle.checked = isSpoilerFree();
     spoilerFreeToggle.addEventListener("change", () => {
       setSpoilerFree(spoilerFreeToggle.checked);
-      // Hide popover and blur before reload to prevent it from re-appearing
-      // via the "focus" trigger after page restore
+      // Dispose the popover entirely and remove any leftover DOM elements
+      // before reloading, to prevent it from lingering after page restore.
       const label = document.querySelector<HTMLElement>('label[for="spoilerFreeToggle"]');
       if (label) {
         const popover = bootstrap.Popover.getInstance(label);
-        if (popover) popover.hide();
+        if (popover) popover.dispose();
         label.blur();
       }
       spoilerFreeToggle.blur();
-      window.location.reload();
+      document.querySelectorAll('.popover').forEach((el: Element) => el.remove());
+      // Defer reload briefly so the DOM cleanup above takes effect
+      setTimeout(() => window.location.reload(), 50);
     });
   }
 

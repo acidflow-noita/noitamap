@@ -82,11 +82,15 @@ export function installFetchInterceptor(): void {
             if (file) {
               // console.log(`[FetchInterceptor] Intercepted ${url} -> zip:${config.key}:${file.name}`);
               const blob = await file.async("blob");
-              const isImage = file.name.toLowerCase().endsWith(".png");
+              const lowerName = file.name.toLowerCase();
+              const contentType = lowerName.endsWith(".png") ? "image/png"
+                : lowerName.endsWith(".json") ? "application/json"
+                : lowerName.endsWith(".csv") ? "text/csv"
+                : "application/octet-stream";
               return new Response(blob, {
                 status: 200,
                 statusText: "OK",
-                headers: { "Content-Type": isImage ? "image/png" : "application/octet-stream" },
+                headers: { "Content-Type": contentType },
               });
             }
           } // end if (zip)
