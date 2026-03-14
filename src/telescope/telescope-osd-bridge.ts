@@ -498,46 +498,428 @@ async function addBiomeLayersProgressively(
   }
 }
 
+// ─── Pixel Scene Config ─────────────────────────────────────────────────────
+
+/** Runtime pixel scene toggle config. Categories can be turned on/off. */
+export const pixelSceneConfig = {
+  /** Master toggle — disables all pixel scenes when false */
+  enabled: true,
+  /** Skip lists by scene name */
+  skipNames: new Set([
+    // Player rooms — not relevant for map
+    "yourroom", "yourroom_entrance", "yourroom_npc",
+    "yourroom_coffin", "yourroom_coffin_entrance", "yourroom_coffin_npc",
+    // Boss/special scenes — misplaced if duplicated from scanner
+    "boss_arena", "boss_arena_top", "boss_victoryroom",
+    // Spliced scenes prebaked in map capture
+    "tree", "mountain_lake", "lavalake2", "lavalake_pit_bottom",
+    "skull", "skull_in_desert", "lake_statue",
+    // Static scenes prebaked in map capture
+    "lavalake_pit", "lavalake_pit_cracked", "cauldron",
+    "cliff", "rainbow_cloud", "huussi",
+    "snowy_ruins_eye_pillar", "desert_ruins_base_01",
+    "music_machine_stand", "bunker", "bunker2",
+    // Biome color scenes prebaked in map capture
+    "dragoncave", "roadblock",
+  ]),
+  /** Skip lists by biome prefix in scene key */
+  skipBiomes: new Set([
+    "dragoncave",     // prebaked in static map art
+    "pyramid_right",  // unused overlay in actual game
+    "mountain",       // mountain scenes are prebaked in map capture
+  ]),
+  /** Category toggles */
+  categories: {
+    static: true,       // hardcoded-position scenes (pyramid boss, fishing hut, etc.)
+    biomeChunk: true,   // biome-color-driven chunk scenes (orbrooms, essencerooms, etc.)
+    spawned: true,      // scenes placed by spawn functions (shops, oiltanks, etc.)
+    spliced: true,      // spliced scenes (moon, watercave edges, mountain_lake, etc.)
+    temple: true,       // holy mountain altar scenes
+    friendRoom: true,   // friend caves
+    watercave: true,    // watercave layouts
+    snowcastle: true,   // snowcastle_cavern (hiisi hourglass shop)
+  } as Record<string, boolean>,
+};
+
+// Expose to console for debug toggling
+(window as any).__pixelSceneConfig = pixelSceneConfig;
+
+/** Debug panel (off by default, call window.__pixelSceneDebug() to open) */
+(window as any).__pixelSceneDebug = () => {
+  const cfg = pixelSceneConfig;
+  console.group("%c[Pixel Scene Debug]", "color: #0af; font-weight: bold");
+  console.log("Master enabled:", cfg.enabled);
+  console.log("Skip names:", [...cfg.skipNames]);
+  console.log("Skip biomes:", [...cfg.skipBiomes]);
+  console.log("Categories:", { ...cfg.categories });
+  console.log("");
+  console.log("Toggle examples:");
+  console.log("  __pixelSceneConfig.enabled = false           // disable all");
+  console.log("  __pixelSceneConfig.categories.temple = false // disable temple scenes");
+  console.log("  __pixelSceneConfig.skipNames.add('orbroom')  // skip orbroom");
+  console.log("  __pixelSceneConfig.skipBiomes.delete('dragoncave') // unblock dragoncave");
+  console.log("After changing, re-enter the seed to regenerate.");
+  console.groupEnd();
+};
+
 // ─── Pixel Scenes ───────────────────────────────────────────────────────────
 
 /**
- * Add pixel scenes for all parallel worlds to the viewer.
+ * Categorize a pixel scene for config filtering.
  */
-export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult): Promise<void> {
-  await ensureTelescopeModules();
-  const { pixelScenesByPW, worldCenter } = result;
+function getSceneCategory(scene: PixelScene): string | null {
+  const key = scene.key;
+  const name = scene.name;
+  const biome = key.split("/")[0];
 
-  // Parallelize URL creation
-  const allScenes = Object.values(pixelScenesByPW).flat();
-  const sceneData = await Promise.all(
-    allScenes.map(async (scene) => {
-      if (!scene || !scene.imgElement) return null;
-      const url = await canvasToBlobUrl(scene.imgElement as any);
-      return { scene, url };
-    }),
-  );
+  if (biome === "spliced") return "spliced";
+  if (biome.includes("temple")) return "temple";
+  if (name === "friendroom" || name === "cavern") return "friendRoom";
+  if (name.startsWith("watercave_layout")) return "watercave";
+  if (name === "side_cavern_left" || name === "side_cavern_right") return "snowcastle";
+  if (biome.startsWith("friend_")) return "friendRoom";
+  if (biome === "snowcastle_cavern" || biome === "sandcave") return "snowcastle";
 
-  for (const data of sceneData) {
-    if (!data) continue;
-    const { scene, url } = data;
+  return "spawned"; // default for spawn-function-generated scenes
+}
 
-    const { x, y } = getCorrectedWorldPos(scene.x, scene.y, worldCenter);
+/**
+ * Convert a telescope imgElement (Uint8Array, Uint8ClampedArray, Canvas, or OffscreenCanvas)
+ * to an ImageBitmap for drawing. Fixes magenta placeholder pixels (0xff00ff) and
+ * air color (0x000042) by making them transparent.
+ */
+async function imgElementToBitmap(
+  img: HTMLCanvasElement | OffscreenCanvas | Uint8Array | Uint8ClampedArray,
+  width: number,
+  height: number,
+): Promise<ImageBitmap | null> {
+  try {
+    if (img instanceof HTMLCanvasElement || img instanceof OffscreenCanvas) {
+      return await createImageBitmap(img);
+    }
+    // Raw RGBA pixel data — fix placeholder colors
+    const src = img instanceof Uint8ClampedArray ? img : new Uint8ClampedArray(img);
+    const fixed = new Uint8ClampedArray(src.length);
+    for (let i = 0; i < src.length; i += 4) {
+      const r = src[i], g = src[i + 1], b = src[i + 2];
+      // Magenta placeholder (0xff00ff) → transparent
+      if (r === 0xff && g === 0x00 && b === 0xff) {
+        fixed[i + 3] = 0;
+        continue;
+      }
+      // Air color (0x000042) → transparent
+      if (r === 0x00 && g === 0x00 && b === 0x42) {
+        fixed[i + 3] = 0;
+        continue;
+      }
+      fixed[i] = r;
+      fixed[i + 1] = g;
+      fixed[i + 2] = b;
+      fixed[i + 3] = src[i + 3];
+    }
+    const imageData = new ImageData(fixed, width, height);
+    return await createImageBitmap(imageData);
+  } catch (e) {
+    console.warn("[OSD Bridge] imgElementToBitmap failed:", e);
+    return null;
+  }
+}
 
-    viewer.addTiledImage({
-      tileSource: {
-        type: "image",
-        url: url,
-        buildPyramid: false,
-      },
-      x,
-      y,
-      width: scene.width * 10,
-      success: (event: any) => {
-        dynamicTiledImages.add(event.item);
-        dynamicBlobUrls.push(url);
-      },
+/**
+ * Pre-indexed lookup of all _visual.png files in data.zip.
+ * Built once, then reused for all scene lookups.
+ */
+let _visualLookup: { byPath: Map<string, string>; byName: Map<string, string> } | null = null;
+
+async function getVisualPngLookup(): Promise<{ byPath: Map<string, string>; byName: Map<string, string> }> {
+  if (_visualLookup) return _visualLookup;
+  const zip = await getDataZip();
+  const byPath = new Map<string, string>(); // "coalmine/oiltank_1" → full zip path
+  const byName = new Map<string, string>(); // "oiltank_1" → full zip path (first-found)
+  if (zip) {
+    zip.forEach((relativePath: string) => {
+      if (!relativePath.endsWith("_visual.png") || !relativePath.startsWith("data/biome_impl/")) return;
+      const inner = relativePath.substring("data/biome_impl/".length);
+      const key = inner.substring(0, inner.length - "_visual.png".length);
+      byPath.set(key, relativePath);
+      const slash = key.lastIndexOf("/");
+      const nameOnly = slash >= 0 ? key.substring(slash + 1) : key;
+      if (!byName.has(nameOnly)) byName.set(nameOnly, relativePath);
     });
   }
+  _visualLookup = { byPath, byName };
+  console.log(`[OSD Bridge] Visual PNG index: ${byPath.size} files`);
+  return _visualLookup;
+}
+
+/**
+ * Try to load a _visual.png from data.zip for a given scene key.
+ * Uses pre-indexed lookup. Falls back to name-only match when
+ * biome alias doesn't match zip directory (e.g. "general/moon" → "spliced/moon").
+ */
+const _visualPngMissLog = new Set<string>();
+async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null> {
+  const zip = await getDataZip();
+  if (!zip) return null;
+
+  const slashIdx = sceneKey.indexOf("/");
+  if (slashIdx === -1) return null;
+
+  const biome = sceneKey.substring(0, slashIdx);
+  const name = sceneKey.substring(slashIdx + 1);
+
+  const lookup = await getVisualPngLookup();
+
+  // 1. Exact key match: "coalmine/oiltank_1" → data/biome_impl/coalmine/oiltank_1_visual.png
+  // 2. Biome-prefixed match (redundant for non-general, but harmless)
+  // 3. Name-only fallback: "boss_arena" → finds data/biome_impl/spliced/boss_arena_visual.png
+  const candidates = [
+    lookup.byPath.get(sceneKey),
+    biome !== sceneKey.substring(0, slashIdx) ? null : lookup.byPath.get(`${biome}/${name}`),
+    lookup.byName.get(name),
+  ];
+
+  for (const path of candidates) {
+    if (!path) continue;
+    const file = zip.file(path);
+    if (!file) continue;
+    try {
+      const buf = await file.async("arraybuffer");
+      const decoded = decodePngToRgba(buf);
+      const imageData = new ImageData(decoded.data, decoded.width, decoded.height);
+      return await createImageBitmap(imageData);
+    } catch (e) {
+      console.warn(`[OSD Bridge] Failed to decode visual PNG ${path}:`, e);
+    }
+  }
+  if (!_visualPngMissLog.has(sceneKey)) {
+    _visualPngMissLog.add(sceneKey);
+    console.log(`[OSD Bridge] No _visual.png for "${sceneKey}", using imgElement fallback`);
+  }
+  return null;
+}
+
+/**
+ * Add pixel scenes for all parallel worlds to the viewer.
+ *
+ * Loads _visual.png from data.zip for proper pre-colored images.
+ * Falls back to telescope's imgElement if no _visual.png exists.
+ * Groups by scene key for bitmap caching. Builds a Flatbush spatial index
+ * and creates ONE custom OSD tile source for efficient rendering.
+ */
+export async function addPixelScenes(
+  viewer: OSDViewer,
+  result: GenerationResult,
+  generationId: number,
+): Promise<void> {
+  if (!pixelSceneConfig.enabled) return;
+
+  const { pixelScenesByPW, worldCenter } = result;
+
+  const allScenes = Object.values(pixelScenesByPW).flat();
+  const validScenes = allScenes.filter((s) => {
+    if (!s || s.width <= 0 || s.height <= 0) return false;
+    if (pixelSceneConfig.skipNames.has(s.name)) return false;
+    const biome = s.key.split("/")[0];
+    if (pixelSceneConfig.skipBiomes.has(biome)) return false;
+    const category = getSceneCategory(s);
+    if (category && !pixelSceneConfig.categories[category]) return false;
+    return true;
+  });
+  if (validScenes.length === 0) return;
+
+  // 1. Collect unique scene keys (biome/name) for _visual.png loading
+  const bitmapByKey = new Map<string, ImageBitmap>();
+  const uniqueKeys = new Map<string, PixelScene>();
+
+  for (const scene of validScenes) {
+    if (!uniqueKeys.has(scene.key)) {
+      uniqueKeys.set(scene.key, scene);
+    }
+  }
+
+  console.log(
+    `[OSD Bridge] Pixel scenes: ${allScenes.length} total, ${validScenes.length} valid, ` +
+      `${uniqueKeys.size} unique keys`,
+  );
+
+  // 2. Load _visual.png from data.zip, falling back to imgElement (with magenta fix)
+  const BATCH = 50;
+  const keyArr = Array.from(uniqueKeys.entries());
+  let visualCount = 0;
+  let fallbackCount = 0;
+  let missingCount = 0;
+  for (let i = 0; i < keyArr.length; i += BATCH) {
+    if (currentGenerationId !== generationId) return;
+    const batch = keyArr.slice(i, i + BATCH);
+    await Promise.all(
+      batch.map(async ([key, scene]) => {
+        // Try _visual.png from data.zip first
+        const visualBitmap = await loadVisualPngBitmap(key);
+        if (visualBitmap) {
+          bitmapByKey.set(key, visualBitmap);
+          visualCount++;
+          return;
+        }
+        // Fall back to telescope's recolored imgElement (magenta/air colors are made transparent)
+        if (scene.imgElement) {
+          const bitmap = await imgElementToBitmap(scene.imgElement, scene.width, scene.height);
+          if (bitmap) {
+            bitmapByKey.set(key, bitmap);
+            fallbackCount++;
+          } else {
+            missingCount++;
+          }
+        } else {
+          missingCount++;
+        }
+      }),
+    );
+  }
+
+  if (currentGenerationId !== generationId) return;
+  console.log(
+    `[OSD Bridge] Pixel scene bitmaps: ${bitmapByKey.size}/${uniqueKeys.size} ` +
+      `(${visualCount} visual, ${fallbackCount} fallback, ${missingCount} missing)`,
+  );
+
+  // 3. Build items array and compute bounding box
+  interface SceneItem {
+    osdX: number;
+    osdY: number;
+    w: number;
+    h: number;
+    sceneKey: string;
+  }
+  const items: SceneItem[] = [];
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+  for (const scene of validScenes) {
+    if (!bitmapByKey.has(scene.key)) continue;
+    const { x, y } = getCorrectedWorldPos(scene.x, scene.y, worldCenter);
+    items.push({ osdX: x, osdY: y, w: scene.width, h: scene.height, sceneKey: scene.key });
+    if (x < minX) minX = x;
+    if (y < minY) minY = y;
+    if (x + scene.width > maxX) maxX = x + scene.width;
+    if (y + scene.height > maxY) maxY = y + scene.height;
+  }
+
+  if (items.length === 0) return;
+
+  const pad = 50;
+  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+  const originX = minX;
+  const originY = minY;
+  const bboxWidth = maxX - minX;
+  const bboxHeight = maxY - minY;
+
+  // 3. Build Flatbush spatial index
+  const Flatbush = (await import("flatbush")).default;
+  const index = new Flatbush(items.length);
+  for (const item of items) {
+    index.add(
+      item.osdX - originX,
+      item.osdY - originY,
+      item.osdX + item.w - originX,
+      item.osdY + item.h - originY,
+    );
+  }
+  index.finish();
+
+  // 4. Create custom tile source
+  const TILE_SIZE = 512;
+  const maxDim = Math.max(bboxWidth, bboxHeight);
+  const maxLevel = Math.max(0, Math.ceil(Math.log2(maxDim)));
+
+  let maxSceneDim = 0;
+  for (const item of items) {
+    if (item.w > maxSceneDim) maxSceneDim = item.w;
+    if (item.h > maxSceneDim) maxSceneDim = item.h;
+  }
+
+  function tileBounds(level: number, tx: number, ty: number) {
+    const scale = Math.pow(2, maxLevel - level);
+    return {
+      bx: tx * TILE_SIZE * scale,
+      by: ty * TILE_SIZE * scale,
+      bw: TILE_SIZE * scale,
+      bh: TILE_SIZE * scale,
+    };
+  }
+
+  const source = new OpenSeadragon.TileSource({
+    height: bboxHeight,
+    width: bboxWidth,
+    tileSize: TILE_SIZE,
+    minLevel: 0,
+    maxLevel,
+  });
+
+  source.getTileUrl = function (level: number, x: number, y: number) {
+    return `pixel-scene-tile://${generationId}/${level}/${x}/${y}`;
+  };
+  source.hasTransparency = function () { return true; };
+
+  source.tileExists = function (level: number, x: number, y: number) {
+    const { bx, by, bw, bh } = tileBounds(level, x, y);
+    const p = maxSceneDim;
+    return index.search(bx - p, by - p, bx + bw + p, by + bh + p).length > 0;
+  };
+
+  let logCount = 0;
+  source.downloadTileStart = function (context: any) {
+    const tile = context.tile;
+    const { bx, by, bw, bh } = tileBounds(tile.level, tile.x, tile.y);
+    const p = maxSceneDim;
+    const results = index.search(bx - p, by - p, bx + bw + p, by + bh + p);
+
+    if (logCount < 3) {
+      console.log(`[PixelSceneTile] level=${tile.level} (${tile.x},${tile.y}), hits=${results.length}`);
+      logCount++;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = TILE_SIZE;
+    canvas.height = TILE_SIZE;
+    const ctx = canvas.getContext("2d")!;
+    ctx.imageSmoothingEnabled = false;
+
+    if (results.length > 0) {
+      const drawScale = TILE_SIZE / bw;
+      for (const idx of results) {
+        const item = items[idx];
+        if (!item) continue;
+        const bitmap = bitmapByKey.get(item.sceneKey);
+        if (!bitmap) continue;
+        const drawX = (item.osdX - originX - bx) * drawScale;
+        const drawY = (item.osdY - originY - by) * drawScale;
+        const drawW = item.w * drawScale;
+        const drawH = item.h * drawScale;
+        if (drawW < 1 || drawH < 1) continue;
+        ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, drawX, drawY, drawW, drawH);
+      }
+    }
+
+    queueMicrotask(() => { context.finish(canvas, null, "image"); });
+  };
+  source.downloadTileAbort = function () {};
+
+  // 5. Add as a single tiled image to OSD
+  viewer.addTiledImage({
+    tileSource: source,
+    x: originX,
+    y: originY,
+    width: bboxWidth,
+    success: (event: any) => {
+      if (currentGenerationId !== generationId) {
+        try { viewer.world.removeItem(event.item); } catch {}
+        return;
+      }
+      dynamicTiledImages.add(event.item);
+    },
+  });
+
+  console.log(`[OSD Bridge] Added ${items.length} pixel scenes as single tile source`);
 }
 
 // ─── POI Overlays ───────────────────────────────────────────────────────────
@@ -1117,6 +1499,10 @@ export async function renderGenerationResult(viewer: OSDViewer, result: Generati
 
   // Adding biomes initializes the OSD viewport bounds.
   await addBiomeLayersProgressively(viewer, result, generationId);
+  if (currentGenerationId !== generationId) return;
+
+  // Pixel scenes render on top of biome overlays, below POI markers.
+  await addPixelScenes(viewer, result, generationId);
   if (currentGenerationId !== generationId) return;
 
   // 1. Build spatial index for POIs (markers)

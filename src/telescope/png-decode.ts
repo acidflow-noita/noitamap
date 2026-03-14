@@ -110,7 +110,7 @@ export function decodePngToRgba(buf: ArrayBuffer): RawImageData {
  * Encode raw RGBA pixel data back to a PNG Blob URL.
  * Uses fast-png's encoder — no canvas involved.
  */
-export async function rgbaToPngBlobUrl(data: Uint8ClampedArray, width: number, height: number): Promise<string> {
+export async function rgbaToPngBlobUrl(data: Uint8ClampedArray | Uint8Array, width: number, height: number): Promise<string> {
   const { encode } = await import("fast-png");
   const encoded = encode({ data: new Uint8Array(data.buffer), width, height, channels: 4 });
   const blob = new Blob([encoded as unknown as BlobPart], { type: "image/png" });

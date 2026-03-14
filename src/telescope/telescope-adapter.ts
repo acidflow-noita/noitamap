@@ -69,7 +69,7 @@ export interface POI {
 }
 
 export interface PixelScene {
-  imgElement: HTMLCanvasElement | OffscreenCanvas;
+  imgElement: HTMLCanvasElement | OffscreenCanvas | Uint8Array | Uint8ClampedArray;
   x: number;
   y: number;
   width: number;
@@ -77,6 +77,7 @@ export interface PixelScene {
   name: string;
   key: string;
   variantKey?: string;
+  spawnPoints?: any[];
 }
 
 export interface GenerationResult {
@@ -233,7 +234,7 @@ export async function initTelescope(): Promise<void> {
 
   // 10. Cache bust check: If we just updated the library, clear the generation cache
   // to ensure fixed logic actually runs instead of showing old empty results.
-  const LIB_VERSION = "2026-03-07-v1";
+  const LIB_VERSION = "2026-03-15-visual-lookup";
   if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
     console.log("[Telescope] Library version updated, clearing generation cache...");
     try {

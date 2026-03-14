@@ -430,8 +430,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Initialize Drop Overlay
   setupDropOverlay(i18next, loadProBundle);
 
-  // Dynamically load the pro bundle when drawing is enabled (legacy check) OR if URL requests sidebar
-  if (localStorage.getItem("noitamap-dev-drawing") === "1" || urlState.sidebarOpen) {
+  // Dynamically load the pro bundle when URL requests sidebar (auth check handled inside pro bundle)
+  if ((isDev && localStorage.getItem("noitamap-dev-drawing") === "1") || urlState.sidebarOpen) {
     loadProBundle();
   }
 

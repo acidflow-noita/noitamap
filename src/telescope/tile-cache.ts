@@ -48,6 +48,7 @@ interface CachedGeneration {
       height: number;
       name: string;
       key: string;
+      variantKey: string;
     }>
   >;
 }
@@ -103,6 +104,7 @@ export async function cacheGeneration(seed: number, result: any): Promise<void> 
         height: scene.height,
         name: scene.name,
         key: scene.key,
+        variantKey: scene.variantKey || "",
       }));
     }
 
@@ -193,6 +195,7 @@ export async function getCachedGeneration(seed: number): Promise<any | null> {
         height: scene.height,
         name: scene.name,
         key: scene.key,
+        variantKey: scene.variantKey || "",
       }));
     }
 
