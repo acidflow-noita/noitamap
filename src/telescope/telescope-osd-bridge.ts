@@ -628,36 +628,86 @@ async function imgElementToBitmap(
 }
 
 /**
- * Pre-indexed lookup of all _visual.png files in data.zip.
- * Built once, then reused for all scene lookups.
+ * Pre-indexed lookup of _visual.png and _background.png files in data.zip.
  */
-let _visualLookup: { byPath: Map<string, string>; byName: Map<string, string> } | null = null;
+interface ScenePngIndex {
+  visualByPath: Map<string, string>;
+  visualByName: Map<string, string>;
+  bgByPath: Map<string, string>;
+  bgByName: Map<string, string>;
+}
+let _pngIndex: ScenePngIndex | null = null;
 
-async function getVisualPngLookup(): Promise<{ byPath: Map<string, string>; byName: Map<string, string> }> {
-  if (_visualLookup) return _visualLookup;
+async function getScenePngIndex(): Promise<ScenePngIndex> {
+  if (_pngIndex) return _pngIndex;
   const zip = await getDataZip();
-  const byPath = new Map<string, string>(); // "coalmine/oiltank_1" → full zip path
-  const byName = new Map<string, string>(); // "oiltank_1" → full zip path (first-found)
+  const visualByPath = new Map<string, string>();
+  const visualByName = new Map<string, string>();
+  const bgByPath = new Map<string, string>();
+  const bgByName = new Map<string, string>();
   if (zip) {
     zip.forEach((relativePath: string) => {
-      if (!relativePath.endsWith("_visual.png") || !relativePath.startsWith("data/biome_impl/")) return;
+      if (!relativePath.startsWith("data/biome_impl/") || !relativePath.endsWith(".png")) return;
       const inner = relativePath.substring("data/biome_impl/".length);
-      const key = inner.substring(0, inner.length - "_visual.png".length);
-      byPath.set(key, relativePath);
-      const slash = key.lastIndexOf("/");
-      const nameOnly = slash >= 0 ? key.substring(slash + 1) : key;
-      if (!byName.has(nameOnly)) byName.set(nameOnly, relativePath);
+      const addTo = (suffix: string, pathMap: Map<string, string>, nameMap: Map<string, string>) => {
+        if (!inner.endsWith(suffix)) return;
+        const key = inner.substring(0, inner.length - suffix.length);
+        pathMap.set(key, relativePath);
+        const slash = key.lastIndexOf("/");
+        const nameOnly = slash >= 0 ? key.substring(slash + 1) : key;
+        if (!nameMap.has(nameOnly)) nameMap.set(nameOnly, relativePath);
+      };
+      addTo("_visual.png", visualByPath, visualByName);
+      addTo("_background.png", bgByPath, bgByName);
     });
   }
-  _visualLookup = { byPath, byName };
-  console.log(`[OSD Bridge] Visual PNG index: ${byPath.size} files`);
-  return _visualLookup;
+  _pngIndex = { visualByPath, visualByName, bgByPath, bgByName };
+  console.log(`[OSD Bridge] Scene PNG index: ${visualByPath.size} visual, ${bgByPath.size} background`);
+  return _pngIndex;
+}
+
+/** Resolve best matching zip path for a scene across lookup maps, with suffix-stripping fallback. */
+function resolveScenePath(
+  byPath: Map<string, string>,
+  byName: Map<string, string>,
+  biome: string,
+  name: string,
+  sceneKey: string,
+): string | undefined {
+  let found = byPath.get(sceneKey) || byName.get(name);
+  if (found) return found;
+  let base = name;
+  while (base.includes("_")) {
+    base = base.substring(0, base.lastIndexOf("_"));
+    found = byPath.get(`${biome}/${base}`) || byName.get(base);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+/** Decode a PNG from data.zip, applying background transparency. */
+async function decodeScenePng(zip: any, path: string): Promise<ImageData | null> {
+  const file = zip.file(path);
+  if (!file) return null;
+  const buf = await file.async("arraybuffer");
+  const decoded = decodePngToRgba(buf);
+  const d = decoded.data;
+  const tlR = d[0], tlG = d[1], tlB = d[2], tlA = d[3];
+  if (tlA === 0) {
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i] === 0 && d[i + 1] === 0 && d[i + 2] === 0 && d[i + 3] === 255) d[i + 3] = 0;
+    }
+  } else {
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i] === tlR && d[i + 1] === tlG && d[i + 2] === tlB) d[i + 3] = 0;
+    }
+  }
+  return new ImageData(d, decoded.width, decoded.height);
 }
 
 /**
- * Try to load a _visual.png from data.zip for a given scene key.
- * Uses pre-indexed lookup. Falls back to name-only match when
- * biome alias doesn't match zip directory (e.g. "general/moon" → "spliced/moon").
+ * Load a pixel scene bitmap from data.zip.
+ * Composites _background.png (below) + _visual.png (above) when both exist.
  */
 const _visualPngMissLog = new Set<string>();
 async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null> {
@@ -669,62 +719,43 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
 
   const biome = sceneKey.substring(0, slashIdx);
   const name = sceneKey.substring(slashIdx + 1);
+  const idx = await getScenePngIndex();
 
-  const lookup = await getVisualPngLookup();
+  const visualPath = resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, sceneKey);
+  const bgPath = resolveScenePath(idx.bgByPath, idx.bgByName, biome, name, sceneKey);
 
-  // 1. Exact key match: "coalmine/oiltank_1" → data/biome_impl/coalmine/oiltank_1_visual.png
-  // 2. Name-only fallback: "boss_arena" → finds data/biome_impl/spliced/boss_arena_visual.png
-  // 3. Base-name fallback: strip material suffix (altar_top_water → altar_top)
-  const candidates: (string | undefined)[] = [
-    lookup.byPath.get(sceneKey),
-    lookup.byName.get(name),
-  ];
-
-  // Try progressively shorter base names by stripping _suffix
-  // Handles material variants: altar_top_water → altar_top, altar_top_radioactive → altar_top
-  let baseName = name;
-  while (baseName.includes("_")) {
-    baseName = baseName.substring(0, baseName.lastIndexOf("_"));
-    candidates.push(lookup.byPath.get(`${biome}/${baseName}`));
-    candidates.push(lookup.byName.get(baseName));
-  }
-
-  for (const path of candidates) {
-    if (!path) continue;
-    const file = zip.file(path);
-    if (!file) continue;
-    try {
-      const buf = await file.async("arraybuffer");
-      const decoded = decodePngToRgba(buf);
-      const d = decoded.data;
-      // Make background pixels transparent.
-      // RGBA PNGs: top-left pixel already has alpha=0 → just clear black pixels too.
-      // RGB PNGs (no alpha): all pixels have alpha=255, background is the corner color.
-      const tlR = d[0], tlG = d[1], tlB = d[2], tlA = d[3];
-      if (tlA === 0) {
-        // Already has proper alpha — make pure black transparent too (safety)
-        for (let i = 0; i < d.length; i += 4) {
-          if (d[i] === 0 && d[i + 1] === 0 && d[i + 2] === 0 && d[i + 3] === 255) {
-            d[i + 3] = 0;
-          }
-        }
-      } else {
-        // No alpha channel — use top-left corner pixel as the transparent background color
-        for (let i = 0; i < d.length; i += 4) {
-          if (d[i] === tlR && d[i + 1] === tlG && d[i + 2] === tlB) {
-            d[i + 3] = 0;
-          }
-        }
-      }
-      const imageData = new ImageData(d, decoded.width, decoded.height);
-      return await createImageBitmap(imageData);
-    } catch (e) {
-      console.warn(`[OSD Bridge] Failed to decode visual PNG ${path}:`, e);
+  if (!visualPath && !bgPath) {
+    if (!_visualPngMissLog.has(sceneKey)) {
+      _visualPngMissLog.add(sceneKey);
+      console.log(`[OSD Bridge] No visual/bg PNG for "${sceneKey}", using imgElement fallback`);
     }
+    return null;
   }
-  if (!_visualPngMissLog.has(sceneKey)) {
-    _visualPngMissLog.add(sceneKey);
-    console.log(`[OSD Bridge] No _visual.png for "${sceneKey}", using imgElement fallback`);
+
+  try {
+    const bgData = bgPath ? await decodeScenePng(zip, bgPath) : null;
+    const visualData = visualPath ? await decodeScenePng(zip, visualPath) : null;
+
+    if (!bgData && visualData) return await createImageBitmap(visualData);
+    if (bgData && !visualData) return await createImageBitmap(bgData);
+
+    // Composite: background underneath, visual on top
+    if (bgData && visualData) {
+      const w = Math.max(bgData.width, visualData.width);
+      const h = Math.max(bgData.height, visualData.height);
+      const canvas = new OffscreenCanvas(w, h);
+      const ctx = canvas.getContext("2d")!;
+      ctx.imageSmoothingEnabled = false;
+      const bgBmp = await createImageBitmap(bgData);
+      ctx.drawImage(bgBmp, 0, 0);
+      bgBmp.close();
+      const visBmp = await createImageBitmap(visualData);
+      ctx.drawImage(visBmp, 0, 0);
+      visBmp.close();
+      return await createImageBitmap(canvas);
+    }
+  } catch (e) {
+    console.warn(`[OSD Bridge] Failed to load scene PNGs for "${sceneKey}":`, e);
   }
   return null;
 }
@@ -747,6 +778,16 @@ export async function addPixelScenes(
   const { pixelScenesByPW, worldCenter } = result;
 
   const allScenes = Object.values(pixelScenesByPW).flat();
+
+  // Debug: check for specific expected scenes
+  const debugNames = new Set(["friendroom", "cavern", "side_cavern_left", "side_cavern_right"]);
+  const found = allScenes.filter((s) => s && debugNames.has(s.name));
+  if (found.length > 0) {
+    console.log(`[OSD Bridge] Found expected scenes:`, found.map((s) => `${s.name} (${s.key}) at (${s.x},${s.y})`));
+  } else {
+    console.log(`[OSD Bridge] Missing expected scenes: friendroom, cavern, side_cavern_*. Telescope may not be generating them.`);
+  }
+
   const validScenes = allScenes.filter((s) => {
     if (!s || s.width <= 0 || s.height <= 0) return false;
     if (pixelSceneConfig.skipNames.has(s.name)) return false;
