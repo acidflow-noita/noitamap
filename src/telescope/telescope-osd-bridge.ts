@@ -507,6 +507,8 @@ export const pixelSceneConfig = {
   /** Skip lists by scene name */
   skipNames: new Set([
     // Player rooms — not relevant for map
+    "teleportroom",
+    "mystery_teleport",
     "robot_egg",
     "secret_chamber",
     "cube_chamber",
@@ -884,36 +886,97 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
       `${uniqueKeys.size} unique keys`,
   );
 
-  // 2. Load _visual.png from data.zip, falling back to imgElement (with magenta fix)
+  // 2. Build composite bitmaps: _background.png (bottom) + imgElement (middle) + _visual.png (top)
   const BATCH = 50;
   const keyArr = Array.from(uniqueKeys.entries());
-  let visualCount = 0;
+  let compositeCount = 0;
   let fallbackCount = 0;
   let missingCount = 0;
+  const idx = await getScenePngIndex();
+
   for (let i = 0; i < keyArr.length; i += BATCH) {
     if (currentGenerationId !== generationId) return;
     const batch = keyArr.slice(i, i + BATCH);
     await Promise.all(
       batch.map(async ([key, scene]) => {
-        // Try _visual.png from data.zip first
-        const visualBitmap = await loadVisualPngBitmap(key);
-        if (visualBitmap) {
-          bitmapByKey.set(key, visualBitmap);
-          visualCount++;
+        const slashIdx = key.indexOf("/");
+        const biome = slashIdx >= 0 ? key.substring(0, slashIdx) : "";
+        const name = slashIdx >= 0 ? key.substring(slashIdx + 1) : key;
+        const skipBg = biome === "temple" || biome === "general";
+
+        const visualPath = resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, key);
+        const bgPath = skipBg ? undefined : resolveScenePath(idx.bgByPath, idx.bgByName, biome, name, key);
+
+        const zip = await getDataZip();
+        let bgData: ImageData | null = null;
+        let visualData: ImageData | null = null;
+
+        if (zip && bgPath) {
+          bgData = await decodeScenePng(zip, bgPath).catch(() => null);
+          // Skip tiny material-variant patches
+          if (bgData && scene.width > 0 && bgData.width < scene.width / 2) bgData = null;
+        }
+        if (zip && visualPath) {
+          visualData = await decodeScenePng(zip, visualPath).catch(() => null);
+        }
+
+        // Middle layer: telescope's recolored imgElement (with magenta/air fix)
+        let midBitmap: ImageBitmap | null = null;
+        if (scene.imgElement) {
+          midBitmap = await imgElementToBitmap(scene.imgElement, scene.width, scene.height);
+        }
+
+        // Determine what layers we have
+        const hasBg = !!bgData;
+        const hasMid = !!midBitmap;
+        const hasVis = !!visualData;
+
+        if (!hasBg && !hasMid && !hasVis) {
+          missingCount++;
           return;
         }
-        // Fall back to telescope's recolored imgElement (magenta/air colors are made transparent)
-        if (scene.imgElement) {
-          const bitmap = await imgElementToBitmap(scene.imgElement, scene.width, scene.height);
-          if (bitmap) {
-            bitmapByKey.set(key, bitmap);
-            fallbackCount++;
-          } else {
-            missingCount++;
-          }
-        } else {
-          missingCount++;
+
+        // Single layer — no compositing needed
+        if (!hasBg && !hasVis && hasMid) {
+          bitmapByKey.set(key, midBitmap!);
+          fallbackCount++;
+          return;
         }
+        if (!hasBg && !hasMid && hasVis) {
+          bitmapByKey.set(key, await createImageBitmap(visualData!));
+          compositeCount++;
+          return;
+        }
+        if (hasBg && !hasMid && !hasVis) {
+          bitmapByKey.set(key, await createImageBitmap(bgData!));
+          compositeCount++;
+          return;
+        }
+
+        // Multi-layer composite: bg → imgElement → visual
+        const w = scene.width || Math.max(bgData?.width ?? 0, visualData?.width ?? 0);
+        const h = scene.height || Math.max(bgData?.height ?? 0, visualData?.height ?? 0);
+        const canvas = new OffscreenCanvas(w, h);
+        const ctx = canvas.getContext("2d")!;
+        ctx.imageSmoothingEnabled = false;
+
+        if (bgData) {
+          const bmp = await createImageBitmap(bgData);
+          ctx.drawImage(bmp, 0, 0);
+          bmp.close();
+        }
+        if (midBitmap) {
+          ctx.drawImage(midBitmap, 0, 0);
+          midBitmap.close();
+        }
+        if (visualData) {
+          const bmp = await createImageBitmap(visualData);
+          ctx.drawImage(bmp, 0, 0);
+          bmp.close();
+        }
+
+        bitmapByKey.set(key, await createImageBitmap(canvas));
+        compositeCount++;
       }),
     );
   }
@@ -921,7 +984,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   if (currentGenerationId !== generationId) return;
   console.log(
     `[OSD Bridge] Pixel scene bitmaps: ${bitmapByKey.size}/${uniqueKeys.size} ` +
-      `(${visualCount} visual, ${fallbackCount} fallback, ${missingCount} missing)`,
+      `(${compositeCount} composite, ${fallbackCount} fallback, ${missingCount} missing)`,
   );
 
   // 3. Build items array and compute bounding box
