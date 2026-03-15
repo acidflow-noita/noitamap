@@ -8,7 +8,7 @@
  */
 
 const DB_NAME = "noitamap-telescope";
-const DB_VERSION = 3; // bumped to invalidate stale pixel scene cache
+const DB_VERSION = 4; // bumped: now serializes imgElement pixel data for pixel scenes
 const STORE_NAME = "generations";
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -49,6 +49,7 @@ interface CachedGeneration {
       name: string;
       key: string;
       variantKey: string;
+      imgData: ArrayBuffer | null;
     }>
   >;
 }
@@ -94,18 +95,43 @@ export async function cacheGeneration(seed: number, result: any): Promise<void> 
       minY: layer.minY,
     }));
 
-    // Store pixel scene metadata only (no canvas blobs — scenes are disabled)
+    // Store pixel scene metadata + raw imgElement RGBA data
     const pixelScenesByPW: Record<string, any[]> = {};
     for (const [pw, scenes] of Object.entries(result.pixelScenesByPW) as [string, any[]][]) {
-      pixelScenesByPW[pw] = scenes.map((scene: any) => ({
-        x: scene.x,
-        y: scene.y,
-        width: scene.width,
-        height: scene.height,
-        name: scene.name,
-        key: scene.key,
-        variantKey: scene.variantKey || "",
-      }));
+      pixelScenesByPW[pw] = scenes.map((scene: any) => {
+        // Extract raw RGBA bytes from imgElement for serialization
+        let imgData: ArrayBuffer | null = null;
+        if (scene.imgElement) {
+          if (scene.imgElement instanceof Uint8Array || scene.imgElement instanceof Uint8ClampedArray) {
+            imgData = scene.imgElement.buffer.slice(
+              scene.imgElement.byteOffset,
+              scene.imgElement.byteOffset + scene.imgElement.byteLength,
+            );
+          } else if (scene.imgElement instanceof HTMLCanvasElement) {
+            const ctx = scene.imgElement.getContext("2d");
+            if (ctx) {
+              const id = ctx.getImageData(0, 0, scene.width, scene.height);
+              imgData = id.data.buffer.slice(id.data.byteOffset, id.data.byteOffset + id.data.byteLength);
+            }
+          } else if (scene.imgElement instanceof OffscreenCanvas) {
+            const ctx = scene.imgElement.getContext("2d");
+            if (ctx) {
+              const id = ctx.getImageData(0, 0, scene.width, scene.height);
+              imgData = id.data.buffer.slice(id.data.byteOffset, id.data.byteOffset + id.data.byteLength);
+            }
+          }
+        }
+        return {
+          x: scene.x,
+          y: scene.y,
+          width: scene.width,
+          height: scene.height,
+          name: scene.name,
+          key: scene.key,
+          variantKey: scene.variantKey || "",
+          imgData,
+        };
+      });
     }
 
     const entry: CachedGeneration = {
@@ -184,11 +210,11 @@ export async function getCachedGeneration(seed: number): Promise<any | null> {
       ? { pixels: new Uint32Array(entry.biomeDataPixels), w: entry.biomeDataW, h: entry.biomeDataH }
       : { pixels: new Uint32Array(0), w: 0, h: 0 };
 
-    // Restore pixel scene metadata (no imgElement — scenes are disabled)
+    // Restore pixel scene metadata + imgElement from cached RGBA data
     const pixelScenesByPW: Record<string, any[]> = {};
     for (const [pw, scenes] of Object.entries(entry.pixelScenesByPW)) {
       pixelScenesByPW[pw] = scenes.map((scene) => ({
-        imgElement: null,
+        imgElement: scene.imgData ? new Uint8ClampedArray(scene.imgData) : null,
         x: scene.x,
         y: scene.y,
         width: scene.width,

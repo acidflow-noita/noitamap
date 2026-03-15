@@ -350,6 +350,56 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     telescopeApp.h = h;
     telescopeApp.ngPlusCount = ngPlus;
     telescopeApp.biomeData = biomeData;
+
+    // Populate heaven recolor buffer (from top row of main recolor, matching app.js logic)
+    if (biomeData.heavenPixels) {
+      const heavenCanvas = document.createElement("canvas");
+      heavenCanvas.width = w;
+      heavenCanvas.height = h;
+      const ctxH = heavenCanvas.getContext("2d")!;
+      const heavenId = ctxH.createImageData(w, h);
+      const heavenBuffer = new Uint8Array(w * h * 3);
+      for (let i = 0; i < biomeData.heavenPixels.length; i++) {
+        // Use top row pixels of main recolor map for heaven (same as app.js)
+        heavenId.data[i * 4] = id.data[(i * 4) % (w * 4)];
+        heavenId.data[i * 4 + 1] = id.data[(i * 4 + 1) % (w * 4)];
+        heavenId.data[i * 4 + 2] = id.data[(i * 4 + 2) % (w * 4)];
+        heavenId.data[i * 4 + 3] = 255;
+        heavenBuffer[i * 3] = id.data[(i * 4) % (w * 4)];
+        heavenBuffer[i * 3 + 1] = id.data[(i * 4 + 1) % (w * 4)];
+        heavenBuffer[i * 3 + 2] = id.data[(i * 4 + 2) % (w * 4)];
+      }
+      ctxH.putImageData(heavenId, 0, 0);
+      telescopeApp.recolorOffscreenHeaven = heavenCanvas;
+      telescopeApp.recolorOffscreenHeavenBuffer = heavenBuffer;
+    }
+
+    // Populate hell recolor buffer
+    if (biomeData.hellPixels) {
+      const hellCanvas = document.createElement("canvas");
+      hellCanvas.width = w;
+      hellCanvas.height = h;
+      const ctxHe = hellCanvas.getContext("2d")!;
+      const hellId = ctxHe.createImageData(w, h);
+      const hellBuffer = new Uint8Array(w * h * 3);
+      for (let i = 0; i < biomeData.hellPixels.length; i++) {
+        const hColor = biomeData.hellPixels[i] & 0xffffff;
+        const recolor = BIOME_COLOR_LOOKUP[hColor] || hColor;
+        const hr = (recolor >> 16) & 0xff;
+        const hg = (recolor >> 8) & 0xff;
+        const hb = recolor & 0xff;
+        hellId.data[i * 4] = hr;
+        hellId.data[i * 4 + 1] = hg;
+        hellId.data[i * 4 + 2] = hb;
+        hellId.data[i * 4 + 3] = 255;
+        hellBuffer[i * 3] = hr;
+        hellBuffer[i * 3 + 1] = hg;
+        hellBuffer[i * 3 + 2] = hb;
+      }
+      ctxHe.putImageData(hellId, 0, 0);
+      telescopeApp.recolorOffscreenHell = hellCanvas;
+      telescopeApp.recolorOffscreenHellBuffer = hellBuffer;
+    }
   }
 
   // Step 2: Generate tiles
@@ -405,10 +455,26 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(staticResults.pixelScenes);
     }
 
+    // Also generate static scenes for heaven (pwVertical=-1) and hell (pwVertical=+1)
+    // to capture shops and temples that fall outside the main world's vertical range
+    const verticalPois: POI[] = [];
+    for (const pvt of [-1, 1]) {
+      const vtResults = addStaticPixelScenes(seed, ngPlus, pw, pvt, biomeData, false);
+      if (vtResults && vtResults.pixelScenes && vtResults.pixelScenes.length > 0) {
+        pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(vtResults.pixelScenes);
+      }
+      if (vtResults && vtResults.pois && vtResults.pois.length > 0) {
+        verticalPois.push(...vtResults.pois);
+      }
+    }
+
     // Post-process POIs to fix wand names without modifying library code
     const combinedPois = scanResults.generatedSpawns.concat(specialPOIs);
     if (staticResults && staticResults.pois) {
       combinedPois.push(...staticResults.pois);
+    }
+    if (verticalPois.length > 0) {
+      combinedPois.push(...verticalPois);
     }
     for (const poi of combinedPois) {
       if (poi.type === "wand" && (!poi.name || poi.name === "Taikasauva")) {

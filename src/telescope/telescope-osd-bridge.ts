@@ -507,16 +507,38 @@ export const pixelSceneConfig = {
   /** Skip lists by scene name */
   skipNames: new Set([
     // Player rooms — not relevant for map
+    "essence_altar",
+    "essence_altar_desert",
+    "fishing_hut",
+    "scale",
+    "meatroom",
+    "roboroom",
+    "gourd_room",
+    "ocarina",
+    "funroom",
+    "lavalake_racing",
+    "secret_lab",
+    "altar_top_ending",
+    "hourglass_chamber",
+    "watercave",
+    "altar_top_water",
+    "altar_top_lava",
+    "altar_top_blood",
+    "altar_top_oil",
+    "altar_top_radioactive",
     "teleportroom",
     "mystery_teleport",
     "robot_egg",
     "secret_chamber",
     "cube_chamber",
     "alchemist_secret",
+    "alchemist_secret_music",
+    "null_room",
     "eyespot",
     "orbroom",
     "altar_top",
     "altar_right",
+    "altar_right_snowcastle",
     "altar_left",
     "altar",
     "yourroom",
@@ -581,10 +603,26 @@ export const pixelSceneConfig = {
     if (s.name === "essenceroom" && s.x < 0) return true;
     return false;
   }) as ((scene: { name: string; key: string; x: number; y: number }) => boolean) | null,
+  /** Global per-layer toggles for compositing */
+  layers: {
+    background: true, // _background.png (bottom layer)
+    mid: true, // imgElement/recolored (middle layer from telescope)
+    visual: true, // _visual.png (top layer)
+  },
+  /**
+   * Per-scene layer overrides. Keyed by scene name (e.g. "friendroom", "altar_top").
+   * Each value: { background?: boolean, mid?: boolean, visual?: boolean }
+   * Unset properties fall back to global `layers` defaults.
+   * Example: layerOverrides["friendroom"] = { background: false, mid: true, visual: true }
+   */
+  layerOverrides: {} as Record<string, { background?: boolean; mid?: boolean; visual?: boolean }>,
 };
 
 // Expose to console for debug toggling
 (window as any).__pixelSceneConfig = pixelSceneConfig;
+
+/** Last loaded scene list for debug introspection */
+let _lastLoadedScenes: Array<{ name: string; key: string; x: number; y: number; category: string | null }> = [];
 
 /** Debug panel (off by default, call window.__pixelSceneDebug() to open) */
 (window as any).__pixelSceneDebug = () => {
@@ -595,13 +633,67 @@ export const pixelSceneConfig = {
   console.log("Skip biomes:", [...cfg.skipBiomes]);
   console.log("Categories:", { ...cfg.categories });
   console.log("");
-  console.log("Toggle examples:");
+  console.log("Commands:");
+  console.log("  __pixelSceneList()              // list all loaded scenes");
+  console.log("  __pixelSceneToggle('name')      // toggle a scene name on/off in skipNames");
+  console.log("  __pixelSceneHover(true)         // enable hover to show scene names");
+  console.log("  __pixelSceneHover(false)        // disable hover");
+  console.log("");
+  console.log("Layer toggles (re-enter seed after changing):");
+  console.log("  __pixelSceneConfig.layers.background = false // global: skip _background.png");
+  console.log("  __pixelSceneConfig.layers.mid = false        // global: skip imgElement (recolored)");
+  console.log("  __pixelSceneConfig.layers.visual = false     // global: skip _visual.png");
+  console.log("");
+  console.log("Per-scene layer overrides (re-enter seed after changing):");
+  console.log("  __pixelSceneConfig.layerOverrides['friendroom'] = { background: false }");
+  console.log("  __pixelSceneConfig.layerOverrides['altar_top'] = { mid: false, visual: true }");
+  console.log("  delete __pixelSceneConfig.layerOverrides['friendroom'] // reset to global");
+  console.log("");
+  console.log("Other:");
   console.log("  __pixelSceneConfig.enabled = false           // disable all");
   console.log("  __pixelSceneConfig.categories.temple = false // disable temple scenes");
   console.log("  __pixelSceneConfig.skipNames.add('orbroom')  // skip orbroom");
   console.log("  __pixelSceneConfig.skipBiomes.delete('dragoncave') // unblock dragoncave");
   console.log("After changing, re-enter the seed to regenerate.");
   console.groupEnd();
+};
+
+/** List all loaded pixel scenes, grouped by category */
+(window as any).__pixelSceneList = () => {
+  if (_lastLoadedScenes.length === 0) {
+    console.log("[Pixel Scenes] No scenes loaded yet. Generate a seed first.");
+    return;
+  }
+  const byCategory = new Map<string, typeof _lastLoadedScenes>();
+  for (const s of _lastLoadedScenes) {
+    const cat = s.category || "uncategorized";
+    if (!byCategory.has(cat)) byCategory.set(cat, []);
+    byCategory.get(cat)!.push(s);
+  }
+  console.group(`%c[Pixel Scenes] ${_lastLoadedScenes.length} scenes loaded`, "color: #0af; font-weight: bold");
+  for (const [cat, scenes] of byCategory) {
+    const enabled = pixelSceneConfig.categories[cat] !== false;
+    console.group(`${cat} (${scenes.length}) ${enabled ? "✓" : "✗ DISABLED"}`);
+    const uniqueNames = [...new Set(scenes.map((s) => s.name))].sort();
+    for (const name of uniqueNames) {
+      const count = scenes.filter((s) => s.name === name).length;
+      const skipped = pixelSceneConfig.skipNames.has(name);
+      console.log(`  ${skipped ? "✗" : "✓"} ${name} (×${count})${skipped ? " [SKIPPED]" : ""}`);
+    }
+    console.groupEnd();
+  }
+  console.groupEnd();
+};
+
+/** Toggle a scene name on/off in skipNames */
+(window as any).__pixelSceneToggle = (name: string) => {
+  if (pixelSceneConfig.skipNames.has(name)) {
+    pixelSceneConfig.skipNames.delete(name);
+    console.log(`[Pixel Scenes] "${name}" UN-SKIPPED. Re-enter seed to regenerate.`);
+  } else {
+    pixelSceneConfig.skipNames.add(name);
+    console.log(`[Pixel Scenes] "${name}" SKIPPED. Re-enter seed to regenerate.`);
+  }
 };
 
 /** Toggle base OSD map tiles visibility. Call __toggleBaseMap() from console. */
@@ -871,6 +963,15 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   });
   if (validScenes.length === 0) return;
 
+  // Populate debug scene list for __pixelSceneList()
+  _lastLoadedScenes = allScenes.map((s) => ({
+    name: s.name,
+    key: s.key,
+    x: s.x,
+    y: s.y,
+    category: getSceneCategory(s),
+  }));
+
   // 1. Collect unique scene keys (biome/name) for _visual.png loading
   const bitmapByKey = new Map<string, ImageBitmap>();
   const uniqueKeys = new Map<string, PixelScene>();
@@ -904,8 +1005,14 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
         const name = slashIdx >= 0 ? key.substring(slashIdx + 1) : key;
         const skipBg = biome === "temple" || biome === "general";
 
-        const visualPath = resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, key);
-        const bgPath = skipBg ? undefined : resolveScenePath(idx.bgByPath, idx.bgByName, biome, name, key);
+        // Resolve per-scene layer overrides (fall back to global)
+        const override = pixelSceneConfig.layerOverrides[name] || pixelSceneConfig.layerOverrides[key];
+        const wantBg = override?.background ?? pixelSceneConfig.layers.background;
+        const wantMid = override?.mid ?? pixelSceneConfig.layers.mid;
+        const wantVis = override?.visual ?? pixelSceneConfig.layers.visual;
+
+        const visualPath = wantVis ? resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, key) : undefined;
+        const bgPath = skipBg || !wantBg ? undefined : resolveScenePath(idx.bgByPath, idx.bgByName, biome, name, key);
 
         const zip = await getDataZip();
         let bgData: ImageData | null = null;
@@ -922,7 +1029,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
 
         // Middle layer: telescope's recolored imgElement (with magenta/air fix)
         let midBitmap: ImageBitmap | null = null;
-        if (scene.imgElement) {
+        if (scene.imgElement && wantMid) {
           midBitmap = await imgElementToBitmap(scene.imgElement, scene.width, scene.height);
         }
 
@@ -1098,10 +1205,11 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
         if (!item) continue;
         const bitmap = bitmapByKey.get(item.sceneKey);
         if (!bitmap) continue;
-        const drawX = (item.osdX - originX - bx) * drawScale;
-        const drawY = (item.osdY - originY - by) * drawScale;
-        const drawW = item.w * drawScale;
-        const drawH = item.h * drawScale;
+        // Round to integers and add 0.5px overlap to prevent Chrome subpixel seams
+        const drawX = Math.floor((item.osdX - originX - bx) * drawScale);
+        const drawY = Math.floor((item.osdY - originY - by) * drawScale);
+        const drawW = Math.ceil(item.w * drawScale) + 1;
+        const drawH = Math.ceil(item.h * drawScale) + 1;
         if (drawW < 1 || drawH < 1) continue;
         ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, drawX, drawY, drawW, drawH);
       }
