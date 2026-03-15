@@ -521,12 +521,14 @@ export const pixelSceneConfig = {
     "music_machine_stand", "bunker", "bunker2",
     // Biome color scenes prebaked in map capture
     "dragoncave", "roadblock",
+    // Pyramid scenes - prebaked in map art
+    "left", "right",
   ]),
   /** Skip lists by biome prefix in scene key */
   skipBiomes: new Set([
     "dragoncave",     // prebaked in static map art
-    "pyramid_right",  // unused overlay in actual game
     "mountain",       // mountain scenes are prebaked in map capture
+    "pyramid",        // pyramid scenes are prebaked in map capture
   ]),
   /** Category toggles */
   categories: {
@@ -671,13 +673,21 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
   const lookup = await getVisualPngLookup();
 
   // 1. Exact key match: "coalmine/oiltank_1" → data/biome_impl/coalmine/oiltank_1_visual.png
-  // 2. Biome-prefixed match (redundant for non-general, but harmless)
-  // 3. Name-only fallback: "boss_arena" → finds data/biome_impl/spliced/boss_arena_visual.png
-  const candidates = [
+  // 2. Name-only fallback: "boss_arena" → finds data/biome_impl/spliced/boss_arena_visual.png
+  // 3. Base-name fallback: strip material suffix (altar_top_water → altar_top)
+  const candidates: (string | undefined)[] = [
     lookup.byPath.get(sceneKey),
-    biome !== sceneKey.substring(0, slashIdx) ? null : lookup.byPath.get(`${biome}/${name}`),
     lookup.byName.get(name),
   ];
+
+  // Try progressively shorter base names by stripping _suffix
+  // Handles material variants: altar_top_water → altar_top, altar_top_radioactive → altar_top
+  let baseName = name;
+  while (baseName.includes("_")) {
+    baseName = baseName.substring(0, baseName.lastIndexOf("_"));
+    candidates.push(lookup.byPath.get(`${biome}/${baseName}`));
+    candidates.push(lookup.byName.get(baseName));
+  }
 
   for (const path of candidates) {
     if (!path) continue;
