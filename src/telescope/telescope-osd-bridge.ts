@@ -507,40 +507,78 @@ export const pixelSceneConfig = {
   /** Skip lists by scene name */
   skipNames: new Set([
     // Player rooms — not relevant for map
-    "yourroom", "yourroom_entrance", "yourroom_npc",
-    "yourroom_coffin", "yourroom_coffin_entrance", "yourroom_coffin_npc",
+    "robot_egg",
+    "secret_chamber",
+    "cube_chamber",
+    "alchemist_secret",
+    "eyespot",
+    "orbroom",
+    "altar_top",
+    "altar_right",
+    "altar_left",
+    "altar",
+    "yourroom",
+    "yourroom_entrance",
+    "yourroom_npc",
+    "yourroom_coffin",
+    "yourroom_coffin_entrance",
+    "yourroom_coffin_npc",
     // Boss/special scenes — misplaced if duplicated from scanner
-    "boss_arena", "boss_arena_top", "boss_victoryroom",
+    "boss_arena",
+    "boss_arena_top",
+    "boss_victoryroom",
     // Spliced scenes prebaked in map capture
-    "tree", "mountain_lake", "lavalake2", "lavalake_pit_bottom",
-    "skull", "skull_in_desert", "lake_statue",
+    "tree",
+    "mountain_lake",
+    "lavalake2",
+    "lavalake_pit_bottom",
+    "skull",
+    "skull_in_desert",
+    "lake_statue",
     // Static scenes prebaked in map capture
-    "lavalake_pit", "lavalake_pit_cracked", "cauldron",
-    "cliff", "rainbow_cloud", "huussi",
-    "snowy_ruins_eye_pillar", "desert_ruins_base_01",
-    "music_machine_stand", "bunker", "bunker2",
+    "lavalake_pit",
+    "lavalake_pit_cracked",
+    "cauldron",
+    "cliff",
+    "rainbow_cloud",
+    "huussi",
+    "snowy_ruins_eye_pillar",
+    "desert_ruins_base_01",
+    "music_machine_stand",
+    "bunker",
+    "bunker2",
+    "greed_treasure",
     // Biome color scenes prebaked in map capture
-    "dragoncave", "roadblock", "wizardcave_entrance",
+    "dragoncave",
+    "roadblock",
+    "wizardcave_entrance",
     // Pyramid scenes - prebaked in map art
-    "left", "right",
+    "left",
+    "right",
   ]),
   /** Skip lists by biome prefix in scene key */
   skipBiomes: new Set([
-    "dragoncave",     // prebaked in static map art
-    "mountain",       // mountain scenes are prebaked in map capture
-    "pyramid",        // pyramid scenes are prebaked in map capture
+    "dragoncave", // prebaked in static map art
+    "mountain", // mountain scenes are prebaked in map capture
+    "pyramid", // pyramid scenes are prebaked in map capture
   ]),
   /** Category toggles */
   categories: {
-    static: true,       // hardcoded-position scenes (pyramid boss, fishing hut, etc.)
-    biomeChunk: true,   // biome-color-driven chunk scenes (orbrooms, essencerooms, etc.)
-    spawned: true,      // scenes placed by spawn functions (shops, oiltanks, etc.)
-    spliced: true,      // spliced scenes (moon, watercave edges, mountain_lake, etc.)
-    temple: true,       // holy mountain altar scenes
-    friendRoom: true,   // friend caves
-    watercave: true,    // watercave layouts
-    snowcastle: true,   // snowcastle_cavern (hiisi hourglass shop)
+    static: true, // hardcoded-position scenes (pyramid boss, fishing hut, etc.)
+    biomeChunk: true, // biome-color-driven chunk scenes (orbrooms, essencerooms, etc.)
+    spawned: true, // scenes placed by spawn functions (shops, oiltanks, etc.)
+    spliced: true, // spliced scenes (moon, watercave edges, mountain_lake, etc.)
+    temple: true, // holy mountain altar scenes
+    friendRoom: true, // friend caves
+    watercave: true, // watercave layouts
+    snowcastle: true, // snowcastle_cavern (hiisi hourglass shop)
   } as Record<string, boolean>,
+  /** Custom skip function — return true to skip a scene. */
+  skipFn: ((s: { name: string; key: string; x: number; y: number }) => {
+    // Skip lake essenceroom (prebaked at ~-14000,13570) but keep tower one (~10000,4350)
+    if (s.name === "essenceroom" && s.x < 0) return true;
+    return false;
+  }) as ((scene: { name: string; key: string; x: number; y: number }) => boolean) | null,
 };
 
 // Expose to console for debug toggling
@@ -562,6 +600,26 @@ export const pixelSceneConfig = {
   console.log("  __pixelSceneConfig.skipBiomes.delete('dragoncave') // unblock dragoncave");
   console.log("After changing, re-enter the seed to regenerate.");
   console.groupEnd();
+};
+
+/** Toggle base OSD map tiles visibility. Call __toggleBaseMap() from console. */
+(window as any).__toggleBaseMap = () => {
+  const osd = (window as any).__osdViewer;
+  if (!osd) {
+    console.log("No OSD viewer found. Set window.__osdViewer first.");
+    return;
+  }
+  const world = osd.world;
+  const count = world.getItemCount();
+  // Items 0..N are base map tiles; dynamic overlays are tracked in dynamicTiledImages
+  for (let i = 0; i < count; i++) {
+    const item = world.getItemAt(i);
+    if (!dynamicTiledImages.has(item)) {
+      const cur = item.getOpacity();
+      item.setOpacity(cur > 0 ? 0 : 1);
+    }
+  }
+  console.log("[OSD] Toggled base map tiles visibility");
 };
 
 // ─── Pixel Scenes ───────────────────────────────────────────────────────────
@@ -603,7 +661,9 @@ async function imgElementToBitmap(
     const src = img instanceof Uint8ClampedArray ? img : new Uint8ClampedArray(img);
     const fixed = new Uint8ClampedArray(src.length);
     for (let i = 0; i < src.length; i += 4) {
-      const r = src[i], g = src[i + 1], b = src[i + 2];
+      const r = src[i],
+        g = src[i + 1],
+        b = src[i + 2];
       // Magenta placeholder (0xff00ff) → transparent
       if (r === 0xff && g === 0x00 && b === 0xff) {
         fixed[i + 3] = 0;
@@ -692,7 +752,10 @@ async function decodeScenePng(zip: any, path: string): Promise<ImageData | null>
   const buf = await file.async("arraybuffer");
   const decoded = decodePngToRgba(buf);
   const d = decoded.data;
-  const tlR = d[0], tlG = d[1], tlB = d[2], tlA = d[3];
+  const tlR = d[0],
+    tlG = d[1],
+    tlB = d[2],
+    tlA = d[3];
   if (tlA === 0) {
     for (let i = 0; i < d.length; i += 4) {
       if (d[i] === 0 && d[i + 1] === 0 && d[i + 2] === 0 && d[i + 3] === 255) d[i + 3] = 0;
@@ -722,7 +785,9 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
   const idx = await getScenePngIndex();
 
   const visualPath = resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, sceneKey);
-  const bgPath = resolveScenePath(idx.bgByPath, idx.bgByName, biome, name, sceneKey);
+  // Skip backgrounds for biomes where the prebaked map already provides the bg
+  const skipBg = biome === "temple" || biome === "general";
+  const bgPath = skipBg ? undefined : resolveScenePath(idx.bgByPath, idx.bgByName, biome, name, sceneKey);
 
   if (!visualPath && !bgPath) {
     if (!_visualPngMissLog.has(sceneKey)) {
@@ -740,7 +805,10 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
     if (bgData && !visualData) return await createImageBitmap(bgData);
 
     // Composite: background underneath, visual on top
+    // Skip tiny bg patches (material variant thumbnails ≤32px) — they're not real backgrounds
     if (bgData && visualData) {
+      const useBg = bgData.width >= visualData.width / 2 && bgData.height >= visualData.height / 2;
+      if (!useBg) return await createImageBitmap(visualData);
       const w = Math.max(bgData.width, visualData.width);
       const h = Math.max(bgData.height, visualData.height);
       const canvas = new OffscreenCanvas(w, h);
@@ -768,11 +836,7 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
  * Groups by scene key for bitmap caching. Builds a Flatbush spatial index
  * and creates ONE custom OSD tile source for efficient rendering.
  */
-export async function addPixelScenes(
-  viewer: OSDViewer,
-  result: GenerationResult,
-  generationId: number,
-): Promise<void> {
+export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult, generationId: number): Promise<void> {
   if (!pixelSceneConfig.enabled) return;
 
   const { pixelScenesByPW, worldCenter } = result;
@@ -783,9 +847,14 @@ export async function addPixelScenes(
   const debugNames = new Set(["friendroom", "cavern", "side_cavern_left", "side_cavern_right"]);
   const found = allScenes.filter((s) => s && debugNames.has(s.name));
   if (found.length > 0) {
-    console.log(`[OSD Bridge] Found expected scenes:`, found.map((s) => `${s.name} (${s.key}) at (${s.x},${s.y})`));
+    console.log(
+      `[OSD Bridge] Found expected scenes:`,
+      found.map((s) => `${s.name} (${s.key}) at (${s.x},${s.y})`),
+    );
   } else {
-    console.log(`[OSD Bridge] Missing expected scenes: friendroom, cavern, side_cavern_*. Telescope may not be generating them.`);
+    console.log(
+      `[OSD Bridge] Missing expected scenes: friendroom, cavern, side_cavern_*. Telescope may not be generating them.`,
+    );
   }
 
   const validScenes = allScenes.filter((s) => {
@@ -795,6 +864,7 @@ export async function addPixelScenes(
     if (pixelSceneConfig.skipBiomes.has(biome)) return false;
     const category = getSceneCategory(s);
     if (category && !pixelSceneConfig.categories[category]) return false;
+    if (pixelSceneConfig.skipFn && pixelSceneConfig.skipFn(s)) return false;
     return true;
   });
   if (validScenes.length === 0) return;
@@ -863,7 +933,10 @@ export async function addPixelScenes(
     sceneKey: string;
   }
   const items: SceneItem[] = [];
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
 
   for (const scene of validScenes) {
     if (!bitmapByKey.has(scene.key)) continue;
@@ -878,7 +951,10 @@ export async function addPixelScenes(
   if (items.length === 0) return;
 
   const pad = 50;
-  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+  minX -= pad;
+  minY -= pad;
+  maxX += pad;
+  maxY += pad;
   const originX = minX;
   const originY = minY;
   const bboxWidth = maxX - minX;
@@ -888,12 +964,7 @@ export async function addPixelScenes(
   const Flatbush = (await import("flatbush")).default;
   const index = new Flatbush(items.length);
   for (const item of items) {
-    index.add(
-      item.osdX - originX,
-      item.osdY - originY,
-      item.osdX + item.w - originX,
-      item.osdY + item.h - originY,
-    );
+    index.add(item.osdX - originX, item.osdY - originY, item.osdX + item.w - originX, item.osdY + item.h - originY);
   }
   index.finish();
 
@@ -929,7 +1000,9 @@ export async function addPixelScenes(
   source.getTileUrl = function (level: number, x: number, y: number) {
     return `pixel-scene-tile://${generationId}/${level}/${x}/${y}`;
   };
-  source.hasTransparency = function () { return true; };
+  source.hasTransparency = function () {
+    return true;
+  };
 
   source.tileExists = function (level: number, x: number, y: number) {
     const { bx, by, bw, bh } = tileBounds(level, x, y);
@@ -971,7 +1044,9 @@ export async function addPixelScenes(
       }
     }
 
-    queueMicrotask(() => { context.finish(canvas, null, "image"); });
+    queueMicrotask(() => {
+      context.finish(canvas, null, "image");
+    });
   };
   source.downloadTileAbort = function () {};
 
@@ -983,7 +1058,9 @@ export async function addPixelScenes(
     width: bboxWidth,
     success: (event: any) => {
       if (currentGenerationId !== generationId) {
-        try { viewer.world.removeItem(event.item); } catch {}
+        try {
+          viewer.world.removeItem(event.item);
+        } catch {}
         return;
       }
       dynamicTiledImages.add(event.item);
@@ -991,6 +1068,52 @@ export async function addPixelScenes(
   });
 
   console.log(`[OSD Bridge] Added ${items.length} pixel scenes as single tile source`);
+
+  // Debug: expose hover query for pixel scene identification
+  // Enable with: __pixelSceneHover(true)   Disable with: __pixelSceneHover(false)
+  (window as any).__pixelSceneHover = (enable: boolean) => {
+    const handlerKey = "__psHoverHandler";
+    const osdCanvas = viewer.canvas as HTMLElement;
+    if (!enable) {
+      if ((window as any)[handlerKey]) {
+        osdCanvas.removeEventListener("mousemove", (window as any)[handlerKey]);
+        delete (window as any)[handlerKey];
+        const el = document.getElementById("__ps-debug-tooltip");
+        if (el) el.style.display = "none";
+        console.log("[PixelScene] Hover debug disabled");
+      }
+      return;
+    }
+    const handler = (event: MouseEvent) => {
+      const vp = viewer.viewport.windowToViewportCoordinates(new OpenSeadragon.Point(event.clientX, event.clientY));
+      const wx = vp.x - originX;
+      const wy = vp.y - originY;
+      const hits = index.search(wx, wy, wx, wy);
+      const el = document.getElementById("__ps-debug-tooltip")!;
+      if (hits.length > 0) {
+        const names = hits.map((i: number) => items[i]?.sceneKey).filter(Boolean);
+        if (names.length > 0) {
+          el.textContent = names.join("\n");
+          el.style.left = event.clientX + 12 + "px";
+          el.style.top = event.clientY + 12 + "px";
+          el.style.display = "block";
+        }
+      } else {
+        el.style.display = "none";
+      }
+    };
+    (window as any)[handlerKey] = handler;
+    osdCanvas.addEventListener("mousemove", handler);
+    // Create tooltip element
+    if (!document.getElementById("__ps-debug-tooltip")) {
+      const el = document.createElement("div");
+      el.id = "__ps-debug-tooltip";
+      el.style.cssText =
+        "position:fixed;background:#000c;color:#0f0;font:12px monospace;padding:4px 8px;pointer-events:none;z-index:99999;display:none;border-radius:4px;white-space:pre";
+      document.body.appendChild(el);
+    }
+    console.log("[PixelScene] Hover debug enabled — hover over pixel scenes to see their keys");
+  };
 }
 
 // ─── POI Overlays ───────────────────────────────────────────────────────────
@@ -1158,7 +1281,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const header = document.createElement("div");
     header.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:6px";
     const spriteImg = document.createElement("img");
-    spriteImg.style.cssText = "width:32px;height:32px;image-rendering:pixelated;object-fit:contain;transform:rotate(90deg)";
+    spriteImg.style.cssText =
+      "width:32px;height:32px;image-rendering:pixelated;object-fit:contain;transform:rotate(90deg)";
     getPOISpriteFirstFrame({ type: "wand", sprite: poi.sprite }).then((url) => {
       if (url) spriteImg.src = url;
     });
@@ -1254,7 +1378,12 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       }
       tooltipEl.appendChild(spellsRow);
     }
-  } else if (poi.type === "item" || poi.type === "chest" || poi.type === "pacifist_chest" || poi.type === "great_chest") {
+  } else if (
+    poi.type === "item" ||
+    poi.type === "chest" ||
+    poi.type === "pacifist_chest" ||
+    poi.type === "great_chest"
+  ) {
     // Header with sprite
     const header = document.createElement("div");
     header.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px";
@@ -1344,14 +1473,16 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       if (ci.ignore) continue;
       const ciKey = getSpriteKey(ci, getAtlas() || undefined);
       const ciName = ci.name || ci.item || ci.type || "";
-      const translatedName = (ci.item === "spell" && ci.spell)
-        ? gameTranslator.translateSpell(getSpellName(String(ci.spell)))
-        : gameTranslator.translateItem(ciName);
+      const translatedName =
+        ci.item === "spell" && ci.spell
+          ? gameTranslator.translateSpell(getSpellName(String(ci.spell)))
+          : gameTranslator.translateItem(ciName);
 
       // Wands: show sprite (rotated) + spell icons
       if (ci.type === "wand") {
         const wandBox = document.createElement("div");
-        wandBox.style.cssText = "display:flex;align-items:center;gap:2px;background:#111;border-radius:3px;padding:2px 4px;border:1px solid #333";
+        wandBox.style.cssText =
+          "display:flex;align-items:center;gap:2px;background:#111;border-radius:3px;padding:2px 4px;border:1px solid #333";
         if (ciKey) {
           const canvas = drawSpriteToCanvas(ciKey, 20, 20);
           if (canvas) {
@@ -1382,7 +1513,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       // Gold: show sprite + amount
       if (ci.item === "gold" || ci.item === "goldnugget") {
         const goldBox = document.createElement("div");
-        goldBox.style.cssText = "display:flex;align-items:center;gap:3px;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
+        goldBox.style.cssText =
+          "display:flex;align-items:center;gap:3px;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
         if (ciKey) {
           const canvas = drawSpriteToCanvas(ciKey, 20, 20);
           if (canvas) goldBox.appendChild(canvas);
@@ -1398,7 +1530,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       // Hearts: show sprite + HP label
       if (ci.item === "heart" || ci.item === "heart_bigger" || ci.item === "full_heal") {
         const heartBox = document.createElement("div");
-        heartBox.style.cssText = "display:flex;align-items:center;gap:3px;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
+        heartBox.style.cssText =
+          "display:flex;align-items:center;gap:3px;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
         if (ciKey) {
           const canvas = drawSpriteToCanvas(ciKey, 20, 20);
           if (canvas) heartBox.appendChild(canvas);
@@ -1421,7 +1554,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       }
       if (ciKey) {
         const itemBox = document.createElement("div");
-        itemBox.style.cssText = "display:flex;align-items:center;gap:3px;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
+        itemBox.style.cssText =
+          "display:flex;align-items:center;gap:3px;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
         const canvas = drawSpriteToCanvas(ciKey, 20, 20);
         if (canvas) itemBox.appendChild(canvas);
         const textSpan = document.createElement("span");
@@ -1567,6 +1701,7 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
 export async function renderGenerationResult(viewer: OSDViewer, result: GenerationResult): Promise<void> {
   const generationId = ++currentGenerationId;
   clearDynamicOverlays(viewer);
+  (window as any).__osdViewer = viewer;
 
   // Adding biomes initializes the OSD viewport bounds.
   await addBiomeLayersProgressively(viewer, result, generationId);

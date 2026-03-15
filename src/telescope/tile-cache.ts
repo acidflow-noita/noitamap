@@ -8,7 +8,7 @@
  */
 
 const DB_NAME = "noitamap-telescope";
-const DB_VERSION = 2;
+const DB_VERSION = 3; // bumped to invalidate stale pixel scene cache
 const STORE_NAME = "generations";
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
