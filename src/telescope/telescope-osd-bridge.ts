@@ -520,7 +520,7 @@ export const pixelSceneConfig = {
     "snowy_ruins_eye_pillar", "desert_ruins_base_01",
     "music_machine_stand", "bunker", "bunker2",
     // Biome color scenes prebaked in map capture
-    "dragoncave", "roadblock",
+    "dragoncave", "roadblock", "wizardcave_entrance",
     // Pyramid scenes - prebaked in map art
     "left", "right",
   ]),
@@ -696,7 +696,27 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
     try {
       const buf = await file.async("arraybuffer");
       const decoded = decodePngToRgba(buf);
-      const imageData = new ImageData(decoded.data, decoded.width, decoded.height);
+      const d = decoded.data;
+      // Make background pixels transparent.
+      // RGBA PNGs: top-left pixel already has alpha=0 → just clear black pixels too.
+      // RGB PNGs (no alpha): all pixels have alpha=255, background is the corner color.
+      const tlR = d[0], tlG = d[1], tlB = d[2], tlA = d[3];
+      if (tlA === 0) {
+        // Already has proper alpha — make pure black transparent too (safety)
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i] === 0 && d[i + 1] === 0 && d[i + 2] === 0 && d[i + 3] === 255) {
+            d[i + 3] = 0;
+          }
+        }
+      } else {
+        // No alpha channel — use top-left corner pixel as the transparent background color
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i] === tlR && d[i + 1] === tlG && d[i + 2] === tlB) {
+            d[i + 3] = 0;
+          }
+        }
+      }
+      const imageData = new ImageData(d, decoded.width, decoded.height);
       return await createImageBitmap(imageData);
     } catch (e) {
       console.warn(`[OSD Bridge] Failed to decode visual PNG ${path}:`, e);
