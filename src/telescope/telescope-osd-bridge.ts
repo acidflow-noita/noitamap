@@ -119,11 +119,6 @@ const SKIP_BIOMES = new Set([
   "lake_deep",
 ]);
 
-/** Biomes that need overlay rendering but should NOT get a tiled background (prebaked bg in static map). */
-const SKIP_BG_ONLY = new Set([
-  "pyramid",
-]);
-
 // ─── Sprite Cache ───────────────────────────────────────────────────────────
 
 const spriteUrlCache: Map<string, string> = new Map();
@@ -422,6 +417,7 @@ const BIOME_BACKGROUND_MAP: Record<string, string> = {
   solid_wall_tower_3: "data/weather_gfx/background_snowcave.png",
   solid_wall_tower_2: "data/weather_gfx/background_excavationsite.png",
   solid_wall_tower_1: "data/weather_gfx/background_coalmine.png",
+  solid_wall_tower_10: "data/weather_gfx/background_crypt.png",
 };
 
 /** Cache of loaded background ImageBitmaps, keyed by zip path */
@@ -478,7 +474,7 @@ async function addBiomeBackgrounds(
 
   // Determine which biomes need backgrounds
   const biomesWithBg = boundaryData.biomes.filter(
-    (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename) && !SKIP_BG_ONLY.has(b.filename),
+    (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename),
   );
   if (biomesWithBg.length === 0) return;
 
@@ -812,6 +808,8 @@ export const pixelSceneConfig = {
     // Pyramid scenes - prebaked in map art
     "left",
     "right",
+    // Hidden cavern - prebaked in OSD
+    "solid_wall_hidden_cavern",
   ]),
   /** Skip lists by biome prefix in scene key */
   skipBiomes: new Set([
@@ -1033,8 +1031,8 @@ async function getScenePngIndex(): Promise<ScenePngIndex> {
   const bgByPath = new Map<string, string>();
   const bgByName = new Map<string, string>();
   // Collect plain .png as fallback visuals (used when no _visual.png exists)
-  const plainByPath = new Map<string, string>();
-  const plainByName = new Map<string, string>();
+  // NOTE: plain .png in biome_impl are material color maps, NOT visuals.
+  // Do not use them as visual fallbacks.
   if (zip) {
     zip.forEach((relativePath: string) => {
       if (!relativePath.startsWith("data/biome_impl/") || !relativePath.endsWith(".png")) return;
@@ -1049,22 +1047,7 @@ async function getScenePngIndex(): Promise<ScenePngIndex> {
       };
       addTo("_visual.png", visualByPath, visualByName);
       addTo("_background.png", bgByPath, bgByName);
-      // Plain .png (not _visual, not _background) — fallback visual
-      if (!inner.endsWith("_visual.png") && !inner.endsWith("_background.png") && inner.includes("/")) {
-        const key = inner.substring(0, inner.length - ".png".length);
-        plainByPath.set(key, relativePath);
-        const slash = key.lastIndexOf("/");
-        const nameOnly = slash >= 0 ? key.substring(slash + 1) : key;
-        if (!plainByName.has(nameOnly)) plainByName.set(nameOnly, relativePath);
-      }
     });
-    // Merge plain .png into visual maps as fallback (only where no _visual.png exists)
-    for (const [key, path] of plainByPath) {
-      if (!visualByPath.has(key)) visualByPath.set(key, path);
-    }
-    for (const [name, path] of plainByName) {
-      if (!visualByName.has(name)) visualByName.set(name, path);
-    }
   }
   _pngIndex = { visualByPath, visualByName, bgByPath, bgByName };
   console.log(`[OSD Bridge] Scene PNG index: ${visualByPath.size} visual, ${bgByPath.size} background`);
