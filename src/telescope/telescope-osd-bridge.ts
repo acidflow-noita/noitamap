@@ -363,6 +363,221 @@ function getCorrectedWorldPos(rawX: number, rawY: number, worldCenter: number): 
   };
 }
 
+// ─── Biome Background Tiling ────────────────────────────────────────────────
+
+/**
+ * Authoritative biome → tileable background PNG mapping,
+ * extracted from Noita's biome XML files in data.zip.
+ */
+const BIOME_BACKGROUND_MAP: Record<string, string> = {
+  coalmine: "data/weather_gfx/background_coalmine.png",
+  coalmine_alt: "data/weather_gfx/background_coalmine.png",
+  excavationsite: "data/weather_gfx/background_excavationsite.png",
+  excavationsite_cube_chamber: "data/weather_gfx/background_cave_04_alt3.png",
+  snowcave: "data/weather_gfx/background_snowcave.png",
+  snowcave_secret_chamber: "data/weather_gfx/background_snowcave.png",
+  snowcastle: "data/weather_gfx/background_snowcastle.png",
+  snowcastle_cavern: "data/weather_gfx/background_cave_02.png",
+  snowcastle_hourglass_chamber: "data/weather_gfx/background_cave_04_alt3.png",
+  fungicave: "data/weather_gfx/background_fungicave_01.png",
+  fungiforest: "data/weather_gfx/background_fungiforest_01.png",
+  rainforest: "data/weather_gfx/background_rainforest.png",
+  rainforest_open: "data/weather_gfx/background_rainforest.png",
+  rainforest_dark: "data/weather_gfx/background_rainforest_dark.png",
+  vault: "data/weather_gfx/background_vault.png",
+  vault_frozen: "data/weather_gfx/background_vault_frozen.png",
+  crypt: "data/weather_gfx/background_crypt.png",
+  wandcave: "data/weather_gfx/background_wandcave.png",
+  wizardcave: "data/weather_gfx/background_wizardcave.png",
+  robobase: "data/weather_gfx/background_robobase.png",
+  the_end: "data/weather_gfx/background_the_end.png",
+  pyramid: "data/weather_gfx/background_pyramid.png",
+  liquidcave: "data/weather_gfx/background_cave_04_alt.png",
+  sandcave: "data/weather_gfx/background_cave_09.png",
+  dragoncave: "data/weather_gfx/background_cave_02.png",
+  lavalake: "data/weather_gfx/background_cave_04_alt.png",
+  temple_altar: "data/weather_gfx/background_cave_02.png",
+  secret_lab: "data/weather_gfx/background_snowcave.png",
+};
+
+/** Cache of loaded background ImageBitmaps, keyed by zip path */
+const _bgBitmapCache = new Map<string, ImageBitmap>();
+
+/** Load a tileable background image from data.zip, caching the result. */
+async function loadBiomeBackground(zipPath: string): Promise<ImageBitmap | null> {
+  const cached = _bgBitmapCache.get(zipPath);
+  if (cached) return cached;
+  const { readImage } = await import("../data-archive");
+  const bmp = await readImage(zipPath).catch(() => null);
+  if (bmp) _bgBitmapCache.set(zipPath, bmp);
+  return bmp;
+}
+
+/**
+ * Parse an SVG path string (M x y L x y ... Z) into a Path2D.
+ * Coordinates are game-world coordinates (pixels).
+ */
+function svgPathToPath2D(svgPath: string): Path2D {
+  const p = new Path2D();
+  const parts = svgPath.split(" ");
+  let i = 0;
+  while (i < parts.length) {
+    const cmd = parts[i];
+    if (cmd === "M" || cmd === "L") {
+      const x = Number(parts[i + 1]);
+      const y = Number(parts[i + 2]);
+      if (cmd === "M") p.moveTo(x, y);
+      else p.lineTo(x, y);
+      i += 3;
+    } else if (cmd === "Z") {
+      p.closePath();
+      i++;
+    } else {
+      i++;
+    }
+  }
+  return p;
+}
+
+/**
+ * Add pre-baked biome background layers using biome boundary shapes.
+ * Each biome's exact shape (from biome_boundries_py.json) is used as a clip
+ * mask. The bg texture is tiled at native resolution within the clip, then
+ * the canvas is added as a static OSD layer below biome overlays.
+ */
+async function addBiomeBackgrounds(
+  viewer: OSDViewer,
+  generationId: number,
+): Promise<void> {
+  const boundaryData = (await import("../data/biome_boundries_py.json")).default;
+  if (!boundaryData?.biomes) return;
+
+  // Determine which biomes need backgrounds
+  const biomesWithBg = boundaryData.biomes.filter(
+    (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename],
+  );
+  if (biomesWithBg.length === 0) return;
+
+  // Pre-load all needed background textures
+  const neededPaths = new Set<string>();
+  for (const b of biomesWithBg) {
+    neededPaths.add(BIOME_BACKGROUND_MAP[b.filename]);
+  }
+  await Promise.all([...neededPaths].map((p) => loadBiomeBackground(p)));
+  console.log(`[OSD Bridge] Pre-loaded ${neededPaths.size} biome background textures`);
+
+  const CHUNK_SIZE = 512;
+  const MAP_TOP_LEFT_X = -17920;
+  const BIOME_IMAGE_TOP_Y = -14 * CHUNK_SIZE; // -7168
+
+  for (const biome of biomesWithBg) {
+    if (currentGenerationId !== generationId) return;
+
+    const bgPath = BIOME_BACKGROUND_MAP[biome.filename];
+    const bgBitmap = _bgBitmapCache.get(bgPath);
+    if (!bgBitmap) continue;
+
+    // Parse the SVG path — coordinates are in chunk units (image pixels)
+    const rawParts = biome.svg_map_path.split(" ");
+
+    // Find bounding box in game coordinates
+    let minGX = Infinity, minGY = Infinity, maxGX = -Infinity, maxGY = -Infinity;
+    let isX = true;
+    for (const part of rawParts) {
+      if (part === "M" || part === "L" || part === "Z") { isX = true; continue; }
+      const v = Number(part);
+      if (isX) {
+        const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
+        minGX = Math.min(minGX, gx);
+        maxGX = Math.max(maxGX, gx);
+        isX = false;
+      } else {
+        const gy = v * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
+        minGY = Math.min(minGY, gy);
+        maxGY = Math.max(maxGY, gy);
+        isX = true;
+      }
+    }
+    if (!isFinite(minGX)) continue;
+
+    const regionW = maxGX - minGX;
+    const regionH = maxGY - minGY;
+    if (regionW <= 0 || regionH <= 0) continue;
+
+    // Create canvas at 1/10th resolution (matching OSD tile scale)
+    const scale = 0.1;
+    const cw = Math.ceil(regionW * scale);
+    const ch = Math.ceil(regionH * scale);
+    if (cw <= 0 || ch <= 0) continue;
+
+    const canvas = new OffscreenCanvas(cw, ch);
+    const ctx = canvas.getContext("2d")!;
+    ctx.imageSmoothingEnabled = false;
+
+    // Build clip path in canvas coordinates
+    ctx.save();
+    ctx.beginPath();
+    let isXp = true;
+    for (let j = 0; j < rawParts.length; j++) {
+      const part = rawParts[j];
+      if (part === "M" || part === "L" || part === "Z") {
+        if (part === "Z") ctx.closePath();
+        isXp = true;
+        continue;
+      }
+      const v = Number(part);
+      if (isXp) {
+        const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
+        const nextPart = rawParts[j + 1];
+        if (nextPart !== undefined) {
+          const gy = Number(nextPart) * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
+          const cx = (gx - minGX) * scale;
+          const cy = (gy - minGY) * scale;
+          // Check if previous command was M or L
+          const prevCmd = rawParts[j - 1];
+          if (prevCmd === "M") ctx.moveTo(cx, cy);
+          else ctx.lineTo(cx, cy);
+        }
+        isXp = false;
+      } else {
+        isXp = true;
+      }
+    }
+    ctx.clip();
+
+    // Tile bg texture at correct scale within clip
+    // Background tiles at native game pixels, scaled to canvas coords
+    const tw = Math.max(1, Math.round(bgBitmap.width * scale));
+    const th = Math.max(1, Math.round(bgBitmap.height * scale));
+    for (let ty = 0; ty < ch; ty += th) {
+      for (let tx = 0; tx < cw; tx += tw) {
+        ctx.drawImage(bgBitmap, 0, 0, bgBitmap.width, bgBitmap.height, tx, ty, tw, th);
+      }
+    }
+    ctx.restore();
+
+    // Add to OSD
+    const url = await offscreenCanvasToBlobUrl(canvas);
+    if (currentGenerationId !== generationId) return;
+
+    viewer.addTiledImage({
+      tileSource: { type: "image", url, buildPyramid: false },
+      x: minGX,
+      y: minGY,
+      width: regionW,
+      success: (event: any) => {
+        if (currentGenerationId !== generationId) {
+          try { viewer.world.removeItem(event.item); } catch {}
+          return;
+        }
+        dynamicTiledImages.add(event.item);
+      },
+    });
+  }
+
+  console.log(`[OSD Bridge] Gen ${generationId}: Added ${biomesWithBg.length} biome background layers`);
+}
+
 // ─── Progressive Biome Rendering ────────────────────────────────────────────
 
 /**
@@ -461,27 +676,21 @@ async function addBiomeLayersProgressively(
         if (!overlay || overlay.width === 0 || overlay.height === 0) continue;
 
         const layer = tileLayers[layerIdx];
-        const url = await offscreenCanvasToBlobUrl(overlay);
-        if (currentGenerationId !== generationId) return;
-
         const x = -(worldCenter * 512) + pw * pwOffsetPixels + layer.correctedX;
         const y = anchorY + layer.correctedY;
         const osdWidth = overlay.width * 10;
 
+        const url = await offscreenCanvasToBlobUrl(overlay);
+        if (currentGenerationId !== generationId) return;
+
         viewer.addTiledImage({
-          tileSource: {
-            type: "image",
-            url,
-            buildPyramid: false,
-          },
+          tileSource: { type: "image", url, buildPyramid: false },
           x,
           y,
           width: osdWidth,
           success: (event: any) => {
             if (currentGenerationId !== generationId) {
-              try {
-                viewer.world.removeItem(event.item);
-              } catch {}
+              try { viewer.world.removeItem(event.item); } catch {}
               return;
             }
             dynamicTiledImages.add(event.item);
@@ -490,7 +699,7 @@ async function addBiomeLayersProgressively(
       }
     }
 
-    console.log(`[OSD Bridge] Gen ${generationId}: Added PW ${pw} biome overlays`);
+    console.log(`[OSD Bridge] Gen ${generationId}: Added PW ${pw} biome overlays + backgrounds`);
 
     // Report completion of this PW
     const progressEnd = Math.round(((pwIdx + 1) / totalPWs) * 100);
@@ -1873,6 +2082,10 @@ export async function renderGenerationResult(viewer: OSDViewer, result: Generati
   const generationId = ++currentGenerationId;
   clearDynamicOverlays(viewer);
   (window as any).__osdViewer = viewer;
+
+  // Add biome-shaped background layers first (below everything)
+  await addBiomeBackgrounds(viewer, generationId);
+  if (currentGenerationId !== generationId) return;
 
   // Adding biomes initializes the OSD viewport bounds.
   await addBiomeLayersProgressively(viewer, result, generationId);
