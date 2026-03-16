@@ -250,6 +250,9 @@ function addMarkerItem(
   });
 }
 
+/** Boss container types whose drops should be offset to avoid overlapping the boss sprite. */
+const BOSS_DROP_TYPES = new Set(["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon"]);
+
 export async function buildMarkerData(result: GenerationResult): Promise<MarkerData> {
   const [spritesheet, atlas] = await Promise.all([loadSpritesheet(), loadAtlas()]);
 
@@ -268,13 +271,18 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
       if (CONTAINER_TYPES.has(poi.type) && !CHEST_ONLY_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {
         const innerItems = poi.items.filter((i: any) => !i.ignore);
         const count = innerItems.length;
+        const isBoss = BOSS_DROP_TYPES.has(poi.type);
         for (let ci = 0; ci < count; ci++) {
           const innerItem = innerItems[ci];
-          // Offset items: spread horizontally with bigger gaps + push down below the boss/source
-          const offsetPoi = count > 1
-            ? { ...innerItem, x: innerItem.x + (ci - (count - 1) / 2) * 20, y: innerItem.y + 50 }
-            : { ...innerItem, y: innerItem.y + 50 };
-          addMarkerItem(items, offsetPoi, pw, worldCenter, atlas);
+          if (isBoss) {
+            // Boss drops: spread horizontally + push down below the boss sprite
+            const offsetPoi = count > 1
+              ? { ...innerItem, x: innerItem.x + (ci - (count - 1) / 2) * 20, y: innerItem.y + 50 }
+              : { ...innerItem, y: innerItem.y + 50 };
+            addMarkerItem(items, offsetPoi, pw, worldCenter, atlas);
+          } else {
+            addMarkerItem(items, innerItem, pw, worldCenter, atlas);
+          }
         }
       }
     }

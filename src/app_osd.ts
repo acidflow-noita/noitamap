@@ -29,18 +29,23 @@ export class AppOSD {
       showNavigationControl: false,
       crossOriginPolicy: "Anonymous",
       drawer: (() => {
-        if (!useWebGL) return "canvas";
+        if (!useWebGL) {
+          console.log("[OSD] Drawer: canvas (user preference)");
+          return "canvas";
+        }
         try {
           if (
             OpenSeadragon.WebGLDrawer &&
             typeof OpenSeadragon.WebGLDrawer.isSupported === "function" &&
             OpenSeadragon.WebGLDrawer.isSupported()
           ) {
+            console.log("[OSD] Drawer: webgl");
             return "webgl";
           }
         } catch (e) {
           console.warn("WebGL check failed", e);
         }
+        console.log("[OSD] Drawer: canvas (webgl not supported)");
         return "canvas";
       })(),
       imageSmoothingEnabled: false,

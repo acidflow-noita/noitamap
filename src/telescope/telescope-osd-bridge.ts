@@ -2128,27 +2128,50 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
 
 // ─── Boss Sprite Overlays ──────────────────────────────────────────────────
 
-/** POI type → data.zip sprite PNG path + first-frame size */
-const BOSS_SPRITE_MAP: Record<string, { path: string; w: number; h: number }> = {
-  triangle_boss: { path: "data/entities/animals/boss_gate/gate_monster_a.png", w: 52, h: 66 },
-  alchemist_boss: { path: "data/entities/animals/boss_alchemist/boss_alchemist.png", w: 64, h: 72 },
-  pyramid_boss: { path: "data/entities/animals/boss_wizard/wizard_body.png", w: 80, h: 72 },
+/** POI type → data.zip sprite XML path (resolved at runtime for frame size) */
+const BOSS_SPRITE_XML_MAP: Record<string, string> = {
+  alchemist_boss: "data/entities/animals/boss_alchemist/boss_alchemist_sprite.xml",
+  pyramid_boss: "data/entities/animals/boss_limbs/body.xml",
+  mestari_boss: "data/entities/animals/boss_wizard/wizard_body.xml",
+  friend: "data/enemies_gfx/friend.xml",
 };
 
-const _bossBitmapCache = new Map<string, string>(); // path → blob URL
+interface BossSpriteInfo { pngPath: string; frameW: number; frameH: number }
+const _bossSpriteInfoCache = new Map<string, BossSpriteInfo>();
 
-async function loadBossSprite(zipPath: string): Promise<string | null> {
-  if (_bossBitmapCache.has(zipPath)) return _bossBitmapCache.get(zipPath)!;
+async function resolveBossSpriteInfo(xmlPath: string): Promise<BossSpriteInfo | null> {
+  if (_bossSpriteInfoCache.has(xmlPath)) return _bossSpriteInfoCache.get(xmlPath)!;
+  const zip = await getDataZip();
+  if (!zip) return null;
+  const entry = zip.file(xmlPath);
+  if (!entry) return null;
+  const xml = await (entry as any).async("string");
+  const pngPath = xml.match(/filename="([^"]+\.png)"/)?.[1];
+  const frameW = parseInt(xml.match(/frame_width="(\d+)"/)?.[1] || "0");
+  const frameH = parseInt(xml.match(/frame_height="(\d+)"/)?.[1] || "0");
+  if (!pngPath || !frameW || !frameH) return null;
+  const info = { pngPath, frameW, frameH };
+  _bossSpriteInfoCache.set(xmlPath, info);
+  return info;
+}
+
+const _bossBitmapCache = new Map<string, string>(); // cacheKey → blob URL
+
+async function loadBossSprite(zipPath: string, frameW: number, frameH: number): Promise<string | null> {
+  const cacheKey = `${zipPath}:${frameW}x${frameH}`;
+  if (_bossBitmapCache.has(cacheKey)) return _bossBitmapCache.get(cacheKey)!;
   const { readImage } = await import("../data-archive");
   const bmp = await readImage(zipPath).catch(() => null);
   if (!bmp) return null;
-  // Extract first frame only
-  const canvas = new OffscreenCanvas(bmp.width, bmp.height);
+  // Extract first frame only (top-left frameW x frameH region)
+  const fw = Math.min(frameW, bmp.width);
+  const fh = Math.min(frameH, bmp.height);
+  const canvas = new OffscreenCanvas(fw, fh);
   const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(bmp, 0, 0);
+  ctx.drawImage(bmp, 0, 0, fw, fh, 0, 0, fw, fh);
   const blob = await canvas.convertToBlob({ type: "image/png" });
   const url = URL.createObjectURL(blob);
-  _bossBitmapCache.set(zipPath, url);
+  _bossBitmapCache.set(cacheKey, url);
   return url;
 }
 
@@ -2159,17 +2182,28 @@ async function addBossOverlays(
 ): Promise<void> {
   const { poisByPW, worldCenter } = result;
   const allPois = Object.values(poisByPW).flat();
-  const bossPois = allPois.filter((p) => BOSS_SPRITE_MAP[p.type]);
+  const bossPois = allPois.filter((p) => BOSS_SPRITE_XML_MAP[p.type]);
   if (bossPois.length === 0) return;
 
-  // Pre-load all needed boss sprites
-  const neededPaths = new Set(bossPois.map((p) => BOSS_SPRITE_MAP[p.type].path));
-  await Promise.all([...neededPaths].map((p) => loadBossSprite(p)));
+  // Resolve sprite info from XMLs and pre-load PNGs
+  const infoByType = new Map<string, BossSpriteInfo>();
+  await Promise.all(
+    [...new Set(bossPois.map((p) => p.type))].map(async (type) => {
+      const info = await resolveBossSpriteInfo(BOSS_SPRITE_XML_MAP[type]);
+      if (info) infoByType.set(type, info);
+    }),
+  );
+  await Promise.all(
+    [...infoByType.values()].map((info) => loadBossSprite(info.pngPath, info.frameW, info.frameH)),
+  );
   if (currentGenerationId !== generationId) return;
 
+  let addedCount = 0;
   for (const poi of bossPois) {
-    const info = BOSS_SPRITE_MAP[poi.type];
-    const url = _bossBitmapCache.get(info.path);
+    const info = infoByType.get(poi.type);
+    if (!info) continue;
+    const cacheKey = `${info.pngPath}:${info.frameW}x${info.frameH}`;
+    const url = _bossBitmapCache.get(cacheKey);
     if (!url) continue;
 
     const { x, y } = getCorrectedWorldPos(poi.x, poi.y, worldCenter);
@@ -2182,15 +2216,16 @@ async function addBossOverlays(
     viewer.addOverlay({
       element: el,
       location: new (OpenSeadragon as any).Rect(
-        x - info.w / 2,
-        y - info.h / 2,
-        info.w,
-        info.h,
+        x - info.frameW / 2,
+        y - info.frameH / 2,
+        info.frameW,
+        info.frameH,
       ),
     });
     dynamicOverlayElements.push(el);
+    addedCount++;
   }
-  console.log(`[OSD Bridge] Added ${bossPois.length} boss overlays`);
+  console.log(`[OSD Bridge] Added ${addedCount} boss overlays`);
 }
 
 export async function renderGenerationResult(viewer: OSDViewer, result: GenerationResult): Promise<void> {

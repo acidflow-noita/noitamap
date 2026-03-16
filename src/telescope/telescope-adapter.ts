@@ -476,6 +476,56 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     if (verticalPois.length > 0) {
       combinedPois.push(...verticalPois);
     }
+
+    // Add orbs from biome generation (coordinates are in chunk units, convert to world pixels)
+    if (pw === 0 && biomeData.orbs && Array.isArray(biomeData.orbs)) {
+      for (const orb of biomeData.orbs) {
+        combinedPois.push({
+          ...orb,
+          x: orb.x * 512 + 256 - 32 * 512,
+          y: orb.y * 512 + 256 - 14 * 512,
+        });
+      }
+    }
+
+    // Add friend boss at the correct friend cave
+    if (pw === 0) {
+      const pwOffsetX = pw * 512 * 70;
+      const friendRoomPositions = [
+        { x: 6 * 512 + pwOffsetX, y: 11 * 512 },
+        { x: 8 * 512 + pwOffsetX, y: 19 * 512 },
+        { x: -10 * 512 + pwOffsetX, y: 9 * 512 },
+        { x: -21 * 512 + pwOffsetX, y: 8 * 512 },
+        { x: -22 * 512 + pwOffsetX, y: 22 * 512 },
+        { x: -10 * 512 + pwOffsetX, y: 25 * 512 },
+      ];
+      const friendPrng = new NollaPrng(0);
+      friendPrng.SetRandomSeed(seed + ngPlus, 24, 32);
+      const friendRoom = friendPrng.Random(1, 6);
+      const pos = friendRoomPositions[friendRoom - 1];
+      combinedPois.push({
+        type: "friend",
+        x: pos.x + 256,
+        y: pos.y + 256,
+        biome: `friend_${friendRoom}`,
+      } as any);
+      // Offset gourd down so it doesn't overlap the friend boss
+      for (const poi of combinedPois) {
+        if (poi.type === "item" && (poi as any).item === "gourd" && (poi as any).biome === `friend_${friendRoom}`) {
+          poi.y += 80;
+        }
+      }
+
+      // Add mestari_secret boss (boss_wizard) at mestari_secret orbroom center
+      // mestari_secret is at chunk (59, 43) in biome map coordinates
+      // World coords: x = (59 - 32) * 512 + 256, y = (43 - 14) * 512 + 256
+      combinedPois.push({
+        type: "mestari_boss",
+        x: (59 - 32) * 512 + 256,
+        y: (43 - 14) * 512 + 256,
+        biome: "mestari_secret",
+      } as any);
+    }
     for (const poi of combinedPois) {
       if (poi.type === "wand" && (!poi.name || poi.name === "Taikasauva")) {
         const prng = new NollaPrng(0);
