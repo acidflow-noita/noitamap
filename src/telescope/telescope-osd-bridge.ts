@@ -101,15 +101,27 @@ const BIOME_RENDER_ORDER: string[] = [
   "dragoncave",
 ];
 
-/** Biomes already baked into the static OSD background map — skip rendering. */
+/** Biomes already baked into the static OSD background map — skip overlay rendering AND biome backgrounds. */
 const SKIP_BIOMES = new Set([
   "temple_altar",
+  "dragoncave",
+  "snowcastle_hourglass_chamber",
+  "snowcastle_cavern",
+  "snowcave_secret_chamber",
+  "excavationsite_cube_chamber",
+  "secret_lab",
+  "lavalake",
   "biome_watchtower",
   "biome_potion_mimics",
   "biome_darkness",
   "biome_boss_sky",
   "biome_barren",
   "lake_deep",
+]);
+
+/** Biomes that need overlay rendering but should NOT get a tiled background (prebaked bg in static map). */
+const SKIP_BG_ONLY = new Set([
+  "pyramid",
 ]);
 
 // ─── Sprite Cache ───────────────────────────────────────────────────────────
@@ -391,6 +403,7 @@ const BIOME_BACKGROUND_MAP: Record<string, string> = {
   wizardcave: "data/weather_gfx/background_wizardcave.png",
   robobase: "data/weather_gfx/background_robobase.png",
   the_end: "data/weather_gfx/background_the_end.png",
+  meat: "data/weather_gfx/background_the_end.png",
   pyramid: "data/weather_gfx/background_pyramid.png",
   liquidcave: "data/weather_gfx/background_cave_04_alt.png",
   sandcave: "data/weather_gfx/background_cave_09.png",
@@ -398,6 +411,17 @@ const BIOME_BACKGROUND_MAP: Record<string, string> = {
   lavalake: "data/weather_gfx/background_cave_04_alt.png",
   temple_altar: "data/weather_gfx/background_cave_02.png",
   secret_lab: "data/weather_gfx/background_snowcave.png",
+  winter_caves: "data/weather_gfx/background_snowcave.png",
+  // Tower floors (top to bottom = main biomes in reverse)
+  solid_wall_tower_9: "data/weather_gfx/background_the_end.png",
+  solid_wall_tower_8: "data/weather_gfx/background_crypt.png",
+  solid_wall_tower_7: "data/weather_gfx/background_vault.png",
+  solid_wall_tower_6: "data/weather_gfx/background_rainforest.png",
+  solid_wall_tower_5: "data/weather_gfx/background_fungicave_01.png",
+  solid_wall_tower_4: "data/weather_gfx/background_snowcastle.png",
+  solid_wall_tower_3: "data/weather_gfx/background_snowcave.png",
+  solid_wall_tower_2: "data/weather_gfx/background_excavationsite.png",
+  solid_wall_tower_1: "data/weather_gfx/background_coalmine.png",
 };
 
 /** Cache of loaded background ImageBitmaps, keyed by zip path */
@@ -454,7 +478,7 @@ async function addBiomeBackgrounds(
 
   // Determine which biomes need backgrounds
   const biomesWithBg = boundaryData.biomes.filter(
-    (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename],
+    (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename) && !SKIP_BG_ONLY.has(b.filename),
   );
   if (biomesWithBg.length === 0) return;
 
@@ -1008,6 +1032,9 @@ async function getScenePngIndex(): Promise<ScenePngIndex> {
   const visualByName = new Map<string, string>();
   const bgByPath = new Map<string, string>();
   const bgByName = new Map<string, string>();
+  // Collect plain .png as fallback visuals (used when no _visual.png exists)
+  const plainByPath = new Map<string, string>();
+  const plainByName = new Map<string, string>();
   if (zip) {
     zip.forEach((relativePath: string) => {
       if (!relativePath.startsWith("data/biome_impl/") || !relativePath.endsWith(".png")) return;
@@ -1022,7 +1049,22 @@ async function getScenePngIndex(): Promise<ScenePngIndex> {
       };
       addTo("_visual.png", visualByPath, visualByName);
       addTo("_background.png", bgByPath, bgByName);
+      // Plain .png (not _visual, not _background) — fallback visual
+      if (!inner.endsWith("_visual.png") && !inner.endsWith("_background.png") && inner.includes("/")) {
+        const key = inner.substring(0, inner.length - ".png".length);
+        plainByPath.set(key, relativePath);
+        const slash = key.lastIndexOf("/");
+        const nameOnly = slash >= 0 ? key.substring(slash + 1) : key;
+        if (!plainByName.has(nameOnly)) plainByName.set(nameOnly, relativePath);
+      }
     });
+    // Merge plain .png into visual maps as fallback (only where no _visual.png exists)
+    for (const [key, path] of plainByPath) {
+      if (!visualByPath.has(key)) visualByPath.set(key, path);
+    }
+    for (const [name, path] of plainByName) {
+      if (!visualByName.has(name)) visualByName.set(name, path);
+    }
   }
   _pngIndex = { visualByPath, visualByName, bgByPath, bgByName };
   console.log(`[OSD Bridge] Scene PNG index: ${visualByPath.size} visual, ${bgByPath.size} background`);

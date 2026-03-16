@@ -11,9 +11,9 @@
 
 const STORAGE_KEY = "noitamap-spoiler-free";
 
-// Default to ON — users who want to see spoilers toggle it off
+// Default to OFF — users who want to hide spoilers toggle it on
 const stored = localStorage.getItem(STORAGE_KEY);
-let _enabled: boolean = stored === null ? true : stored === "1";
+let _enabled: boolean = stored === null ? false : stored === "1";
 
 const _listeners: ((enabled: boolean) => void)[] = [];
 
