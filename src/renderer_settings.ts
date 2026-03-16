@@ -7,7 +7,10 @@ export const isRenderer = (v: unknown): v is RendererType => v === 'canvas' || v
 export function getStoredRenderer(): RendererType {
   // assign it a variable, so typescript can associate a type with the variable
   const item = localStorage.getItem(RENDERER_STORAGE_KEY);
-  return isRenderer(item) ? item : 'webgl';
+  if (isRenderer(item)) return item;
+  // Default: canvas for Firefox (historically more performant), webgl for Chromium
+  const isFirefox = typeof navigator !== "undefined" && /Firefox\//i.test(navigator.userAgent);
+  return isFirefox ? "canvas" : "webgl";
 }
 
 export function setStoredRenderer(renderer: RendererType) {

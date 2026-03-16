@@ -204,7 +204,10 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | nu
   if (poi.type === "laboratory") return null;
   if (poi.type === "eye_room") return null;
 
-  // Boss drop types — skip base icons
+  // Boss types — no boss sprites in atlas, skip rendering the boss entity.
+  // Drops are still shown via container unwrapping below.
+  // dragon, fish_giga (leviathan), gate_monster_a (gate boss), islandspirit — hidden/prebaked, skip.
+  // triangle_boss, alchemist_boss, pyramid_boss, boss_centipede, friend — skip sprite (none in atlas).
   if (
     poi.type === "triangle_boss" ||
     poi.type === "alchemist_boss" ||
@@ -263,9 +266,15 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
 
       // Unwrap container contents as separate markers (except chest types which just show the chest icon)
       if (CONTAINER_TYPES.has(poi.type) && !CHEST_ONLY_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {
-        for (const innerItem of poi.items) {
-          if (innerItem.ignore) continue;
-          addMarkerItem(items, innerItem, pw, worldCenter, atlas);
+        const innerItems = poi.items.filter((i: any) => !i.ignore);
+        const count = innerItems.length;
+        for (let ci = 0; ci < count; ci++) {
+          const innerItem = innerItems[ci];
+          // Offset items: spread horizontally with bigger gaps + push down below the boss/source
+          const offsetPoi = count > 1
+            ? { ...innerItem, x: innerItem.x + (ci - (count - 1) / 2) * 20, y: innerItem.y + 50 }
+            : { ...innerItem, y: innerItem.y + 50 };
+          addMarkerItem(items, offsetPoi, pw, worldCenter, atlas);
         }
       }
     }

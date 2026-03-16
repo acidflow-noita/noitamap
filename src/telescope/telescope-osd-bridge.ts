@@ -490,6 +490,44 @@ async function addBiomeBackgrounds(
   const MAP_TOP_LEFT_X = -17920;
   const BIOME_IMAGE_TOP_Y = -14 * CHUNK_SIZE; // -7168
 
+  // Compute global bounding box across ALL biomes to create a single canvas
+  let globalMinGX = Infinity, globalMinGY = Infinity, globalMaxGX = -Infinity, globalMaxGY = -Infinity;
+  for (const biome of biomesWithBg) {
+    const rawParts = biome.svg_map_path.split(" ");
+    let isX = true;
+    for (const part of rawParts) {
+      if (part === "M" || part === "L" || part === "Z") { isX = true; continue; }
+      const v = Number(part);
+      if (isX) {
+        const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
+        globalMinGX = Math.min(globalMinGX, gx);
+        globalMaxGX = Math.max(globalMaxGX, gx);
+        isX = false;
+      } else {
+        const gy = v * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
+        globalMinGY = Math.min(globalMinGY, gy);
+        globalMaxGY = Math.max(globalMaxGY, gy);
+        isX = true;
+      }
+    }
+  }
+  if (!isFinite(globalMinGX)) return;
+
+  const regionW = globalMaxGX - globalMinGX;
+  const regionH = globalMaxGY - globalMinGY;
+  if (regionW <= 0 || regionH <= 0) return;
+
+  // Single canvas at 1/10th resolution
+  const scale = 0.1;
+  const cw = Math.ceil(regionW * scale);
+  const ch = Math.ceil(regionH * scale);
+  if (cw <= 0 || ch <= 0) return;
+
+  const canvas = new OffscreenCanvas(cw, ch);
+  const ctx = canvas.getContext("2d")!;
+  ctx.imageSmoothingEnabled = false;
+
+  // Draw each biome's clipped background onto the single canvas
   for (const biome of biomesWithBg) {
     if (currentGenerationId !== generationId) return;
 
@@ -497,10 +535,9 @@ async function addBiomeBackgrounds(
     const bgBitmap = _bgBitmapCache.get(bgPath);
     if (!bgBitmap) continue;
 
-    // Parse the SVG path — coordinates are in chunk units (image pixels)
     const rawParts = biome.svg_map_path.split(" ");
 
-    // Find bounding box in game coordinates
+    // Find per-biome bounding box for tiling extent
     let minGX = Infinity, minGY = Infinity, maxGX = -Infinity, maxGY = -Infinity;
     let isX = true;
     for (const part of rawParts) {
@@ -508,33 +545,17 @@ async function addBiomeBackgrounds(
       const v = Number(part);
       if (isX) {
         const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
-        minGX = Math.min(minGX, gx);
-        maxGX = Math.max(maxGX, gx);
+        minGX = Math.min(minGX, gx); maxGX = Math.max(maxGX, gx);
         isX = false;
       } else {
         const gy = v * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
-        minGY = Math.min(minGY, gy);
-        maxGY = Math.max(maxGY, gy);
+        minGY = Math.min(minGY, gy); maxGY = Math.max(maxGY, gy);
         isX = true;
       }
     }
     if (!isFinite(minGX)) continue;
 
-    const regionW = maxGX - minGX;
-    const regionH = maxGY - minGY;
-    if (regionW <= 0 || regionH <= 0) continue;
-
-    // Create canvas at 1/10th resolution (matching OSD tile scale)
-    const scale = 0.1;
-    const cw = Math.ceil(regionW * scale);
-    const ch = Math.ceil(regionH * scale);
-    if (cw <= 0 || ch <= 0) continue;
-
-    const canvas = new OffscreenCanvas(cw, ch);
-    const ctx = canvas.getContext("2d")!;
-    ctx.imageSmoothingEnabled = false;
-
-    // Build clip path in canvas coordinates
+    // Build clip path in global canvas coordinates
     ctx.save();
     ctx.beginPath();
     let isXp = true;
@@ -551,9 +572,8 @@ async function addBiomeBackgrounds(
         const nextPart = rawParts[j + 1];
         if (nextPart !== undefined) {
           const gy = Number(nextPart) * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
-          const cx = (gx - minGX) * scale;
-          const cy = (gy - minGY) * scale;
-          // Check if previous command was M or L
+          const cx = (gx - globalMinGX) * scale;
+          const cy = (gy - globalMinGY) * scale;
           const prevCmd = rawParts[j - 1];
           if (prevCmd === "M") ctx.moveTo(cx, cy);
           else ctx.lineTo(cx, cy);
@@ -565,37 +585,40 @@ async function addBiomeBackgrounds(
     }
     ctx.clip();
 
-    // Tile bg texture at correct scale within clip
-    // Background tiles at native game pixels, scaled to canvas coords
+    // Tile bg texture within clip
     const tw = Math.max(1, Math.round(bgBitmap.width * scale));
     const th = Math.max(1, Math.round(bgBitmap.height * scale));
-    for (let ty = 0; ty < ch; ty += th) {
-      for (let tx = 0; tx < cw; tx += tw) {
+    const tileMinX = Math.floor((minGX - globalMinGX) * scale / tw) * tw;
+    const tileMinY = Math.floor((minGY - globalMinGY) * scale / th) * th;
+    const tileMaxX = Math.ceil((maxGX - globalMinGX) * scale);
+    const tileMaxY = Math.ceil((maxGY - globalMinGY) * scale);
+    for (let ty = tileMinY; ty < tileMaxY; ty += th) {
+      for (let tx = tileMinX; tx < tileMaxX; tx += tw) {
         ctx.drawImage(bgBitmap, 0, 0, bgBitmap.width, bgBitmap.height, tx, ty, tw, th);
       }
     }
     ctx.restore();
-
-    // Add to OSD
-    const url = await offscreenCanvasToBlobUrl(canvas);
-    if (currentGenerationId !== generationId) return;
-
-    viewer.addTiledImage({
-      tileSource: { type: "image", url, buildPyramid: false },
-      x: minGX,
-      y: minGY,
-      width: regionW,
-      success: (event: any) => {
-        if (currentGenerationId !== generationId) {
-          try { viewer.world.removeItem(event.item); } catch {}
-          return;
-        }
-        dynamicTiledImages.add(event.item);
-      },
-    });
   }
 
-  console.log(`[OSD Bridge] Gen ${generationId}: Added ${biomesWithBg.length} biome background layers`);
+  // Add single combined canvas to OSD
+  const url = await offscreenCanvasToBlobUrl(canvas);
+  if (currentGenerationId !== generationId) return;
+
+  viewer.addTiledImage({
+    tileSource: { type: "image", url, buildPyramid: false },
+    x: globalMinGX,
+    y: globalMinGY,
+    width: regionW,
+    success: (event: any) => {
+      if (currentGenerationId !== generationId) {
+        try { viewer.world.removeItem(event.item); } catch {}
+        return;
+      }
+      dynamicTiledImages.add(event.item);
+    },
+  });
+
+  console.log(`[OSD Bridge] Gen ${generationId}: Added ${biomesWithBg.length} biome backgrounds as single layer`);
 }
 
 // ─── Progressive Biome Rendering ────────────────────────────────────────────
