@@ -2126,6 +2126,73 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
   viewer.addHandler("canvas-drag", hideMarkerTooltip);
 }
 
+// ─── Boss Sprite Overlays ──────────────────────────────────────────────────
+
+/** POI type → data.zip sprite PNG path + first-frame size */
+const BOSS_SPRITE_MAP: Record<string, { path: string; w: number; h: number }> = {
+  triangle_boss: { path: "data/entities/animals/boss_gate/gate_monster_a.png", w: 52, h: 66 },
+  alchemist_boss: { path: "data/entities/animals/boss_alchemist/boss_alchemist.png", w: 64, h: 72 },
+  pyramid_boss: { path: "data/entities/animals/boss_wizard/wizard_body.png", w: 80, h: 72 },
+};
+
+const _bossBitmapCache = new Map<string, string>(); // path → blob URL
+
+async function loadBossSprite(zipPath: string): Promise<string | null> {
+  if (_bossBitmapCache.has(zipPath)) return _bossBitmapCache.get(zipPath)!;
+  const { readImage } = await import("../data-archive");
+  const bmp = await readImage(zipPath).catch(() => null);
+  if (!bmp) return null;
+  // Extract first frame only
+  const canvas = new OffscreenCanvas(bmp.width, bmp.height);
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(bmp, 0, 0);
+  const blob = await canvas.convertToBlob({ type: "image/png" });
+  const url = URL.createObjectURL(blob);
+  _bossBitmapCache.set(zipPath, url);
+  return url;
+}
+
+async function addBossOverlays(
+  viewer: OSDViewer,
+  result: GenerationResult,
+  generationId: number,
+): Promise<void> {
+  const { poisByPW, worldCenter } = result;
+  const allPois = Object.values(poisByPW).flat();
+  const bossPois = allPois.filter((p) => BOSS_SPRITE_MAP[p.type]);
+  if (bossPois.length === 0) return;
+
+  // Pre-load all needed boss sprites
+  const neededPaths = new Set(bossPois.map((p) => BOSS_SPRITE_MAP[p.type].path));
+  await Promise.all([...neededPaths].map((p) => loadBossSprite(p)));
+  if (currentGenerationId !== generationId) return;
+
+  for (const poi of bossPois) {
+    const info = BOSS_SPRITE_MAP[poi.type];
+    const url = _bossBitmapCache.get(info.path);
+    if (!url) continue;
+
+    const { x, y } = getCorrectedWorldPos(poi.x, poi.y, worldCenter);
+
+    const el = document.createElement("img");
+    el.src = url;
+    el.className = "dynamic-poi poi-boss";
+    el.style.cssText = "image-rendering: pixelated; width: 100%; height: 100%;";
+
+    viewer.addOverlay({
+      element: el,
+      location: new (OpenSeadragon as any).Rect(
+        x - info.w / 2,
+        y - info.h / 2,
+        info.w,
+        info.h,
+      ),
+    });
+    dynamicOverlayElements.push(el);
+  }
+  console.log(`[OSD Bridge] Added ${bossPois.length} boss overlays`);
+}
+
 export async function renderGenerationResult(viewer: OSDViewer, result: GenerationResult): Promise<void> {
   const generationId = ++currentGenerationId;
   clearDynamicOverlays(viewer);
@@ -2141,6 +2208,10 @@ export async function renderGenerationResult(viewer: OSDViewer, result: Generati
 
   // Pixel scenes render on top of biome overlays, below POI markers.
   await addPixelScenes(viewer, result, generationId);
+  if (currentGenerationId !== generationId) return;
+
+  // Boss sprites render on top of pixel scenes, below item markers.
+  await addBossOverlays(viewer, result, generationId);
   if (currentGenerationId !== generationId) return;
 
   // 1. Build spatial index for POIs (markers)
