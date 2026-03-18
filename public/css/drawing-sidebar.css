@@ -37,6 +37,9 @@
 }
 
 /* Bottom toolbar for shape tools */
+.drawing-toolbar:empty {
+  display: none !important;
+}
 .drawing-toolbar {
   position: fixed;
   bottom: 1rem;

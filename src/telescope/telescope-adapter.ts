@@ -107,6 +107,7 @@ export interface GenerateOptions {
 // ─── State ──────────────────────────────────────────────────────────────────
 
 let initialized = false;
+let initPromise: Promise<void> | null = null;
 let biomeAssets: { ng0: Uint32Array | null; ngp: Uint32Array | null } = { ng0: null, ngp: null };
 
 // ─── Initialization ─────────────────────────────────────────────────────────
@@ -117,7 +118,13 @@ let biomeAssets: { ng0: Uint32Array | null; ngp: Uint32Array | null } = { ng0: n
  */
 export async function initTelescope(): Promise<void> {
   if (initialized) return;
+  if (initPromise) return initPromise;
 
+  initPromise = _doInitTelescope();
+  await initPromise;
+}
+
+async function _doInitTelescope(): Promise<void> {
   console.log("[Telescope] Initializing...");
 
   // 1. Install DOM shim before any telescope code reads the DOM
@@ -234,7 +241,7 @@ export async function initTelescope(): Promise<void> {
 
   // 10. Cache bust check: If we just updated the library, clear the generation cache
   // to ensure fixed logic actually runs instead of showing old empty results.
-  const LIB_VERSION = "2026-03-15-visual-lookup";
+  const LIB_VERSION = "2026-03-17-settings-api";
   if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
     console.log("[Telescope] Library version updated, clearing generation cache...");
     try {
@@ -487,7 +494,6 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         });
       }
     }
-
     // Add friend boss at the correct friend cave
     if (pw === 0) {
       const pwOffsetX = pw * 512 * 70;

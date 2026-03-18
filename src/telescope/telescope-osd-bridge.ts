@@ -304,6 +304,7 @@ export function hasDynamicOverlays(): boolean {
  * Convert an OffscreenCanvas to a blob URL.
  */
 async function offscreenCanvasToBlobUrl(canvas: OffscreenCanvas): Promise<string> {
+  // 1. Prefer the raw ImageData captured by the putImageData shim
   const rawData = (canvas as any).__noitamap_rawImageData as ImageData | undefined;
   if (rawData) {
     const url = await rgbaToPngBlobUrl(rawData.data, rawData.width, rawData.height);
@@ -311,6 +312,20 @@ async function offscreenCanvasToBlobUrl(canvas: OffscreenCanvas): Promise<string
     return url;
   }
 
+  // 2. For composited canvases (biome backgrounds, etc.) use getImageData
+  //    which is shimmed to return pristine pixels in LibreWolf/Safari ITP.
+  //    This avoids convertToBlob which gets randomized by fingerprint protection.
+  try {
+    const ctx = canvas.getContext("2d");
+    if (ctx && canvas.width > 0 && canvas.height > 0) {
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const url = await rgbaToPngBlobUrl(imageData.data, imageData.width, imageData.height);
+      dynamicBlobUrls.push(url);
+      return url;
+    }
+  } catch {}
+
+  // 3. Last resort fallback
   const blob = await canvas.convertToBlob({ type: "image/png" });
   const url = URL.createObjectURL(blob);
   dynamicBlobUrls.push(url);
@@ -465,10 +480,7 @@ function svgPathToPath2D(svgPath: string): Path2D {
  * mask. The bg texture is tiled at native resolution within the clip, then
  * the canvas is added as a static OSD layer below biome overlays.
  */
-async function addBiomeBackgrounds(
-  viewer: OSDViewer,
-  generationId: number,
-): Promise<void> {
+async function addBiomeBackgrounds(viewer: OSDViewer, generationId: number): Promise<void> {
   const boundaryData = (await import("../data/biome_boundries_py.json")).default;
   if (!boundaryData?.biomes) return;
 
@@ -487,10 +499,12 @@ async function addBiomeBackgrounds(
   console.log(`[OSD Bridge] Pre-loaded ${neededPaths.size} biome background textures`);
 
   const CHUNK_SIZE = 512;
-  const MAP_TOP_LEFT_X = -17920;
   const BIOME_IMAGE_TOP_Y = -14 * CHUNK_SIZE; // -7168
 
-  // Compute global bounding box across ALL biomes to create a single canvas
+  // Build the single bg canvas once (PW 0), then replicate for each PW via offset
+  const MAP_TOP_LEFT_X = -17920; // PW 0 origin
+
+  // Compute global bounding box across ALL biomes
   let globalMinGX = Infinity, globalMinGY = Infinity, globalMaxGX = -Infinity, globalMaxGY = -Infinity;
   for (const biome of biomesWithBg) {
     const rawParts = biome.svg_map_path.split(" ");
@@ -500,13 +514,11 @@ async function addBiomeBackgrounds(
       const v = Number(part);
       if (isX) {
         const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
-        globalMinGX = Math.min(globalMinGX, gx);
-        globalMaxGX = Math.max(globalMaxGX, gx);
+        globalMinGX = Math.min(globalMinGX, gx); globalMaxGX = Math.max(globalMaxGX, gx);
         isX = false;
       } else {
         const gy = v * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
-        globalMinGY = Math.min(globalMinGY, gy);
-        globalMaxGY = Math.max(globalMaxGY, gy);
+        globalMinGY = Math.min(globalMinGY, gy); globalMaxGY = Math.max(globalMaxGY, gy);
         isX = true;
       }
     }
@@ -517,7 +529,6 @@ async function addBiomeBackgrounds(
   const regionH = globalMaxGY - globalMinGY;
   if (regionW <= 0 || regionH <= 0) return;
 
-  // Single canvas at 1/10th resolution
   const scale = 0.1;
   const cw = Math.ceil(regionW * scale);
   const ch = Math.ceil(regionH * scale);
@@ -527,17 +538,13 @@ async function addBiomeBackgrounds(
   const ctx = canvas.getContext("2d")!;
   ctx.imageSmoothingEnabled = false;
 
-  // Draw each biome's clipped background onto the single canvas
   for (const biome of biomesWithBg) {
     if (currentGenerationId !== generationId) return;
-
     const bgPath = BIOME_BACKGROUND_MAP[biome.filename];
     const bgBitmap = _bgBitmapCache.get(bgPath);
     if (!bgBitmap) continue;
 
     const rawParts = biome.svg_map_path.split(" ");
-
-    // Find per-biome bounding box for tiling extent
     let minGX = Infinity, minGY = Infinity, maxGX = -Infinity, maxGY = -Infinity;
     let isX = true;
     for (const part of rawParts) {
@@ -545,17 +552,14 @@ async function addBiomeBackgrounds(
       const v = Number(part);
       if (isX) {
         const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
-        minGX = Math.min(minGX, gx); maxGX = Math.max(maxGX, gx);
-        isX = false;
+        minGX = Math.min(minGX, gx); maxGX = Math.max(maxGX, gx); isX = false;
       } else {
         const gy = v * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
-        minGY = Math.min(minGY, gy); maxGY = Math.max(maxGY, gy);
-        isX = true;
+        minGY = Math.min(minGY, gy); maxGY = Math.max(maxGY, gy); isX = true;
       }
     }
     if (!isFinite(minGX)) continue;
 
-    // Build clip path in global canvas coordinates
     ctx.save();
     ctx.beginPath();
     let isXp = true;
@@ -563,8 +567,7 @@ async function addBiomeBackgrounds(
       const part = rawParts[j];
       if (part === "M" || part === "L" || part === "Z") {
         if (part === "Z") ctx.closePath();
-        isXp = true;
-        continue;
+        isXp = true; continue;
       }
       const v = Number(part);
       if (isXp) {
@@ -575,21 +578,17 @@ async function addBiomeBackgrounds(
           const cx = (gx - globalMinGX) * scale;
           const cy = (gy - globalMinGY) * scale;
           const prevCmd = rawParts[j - 1];
-          if (prevCmd === "M") ctx.moveTo(cx, cy);
-          else ctx.lineTo(cx, cy);
+          if (prevCmd === "M") ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
         }
         isXp = false;
-      } else {
-        isXp = true;
-      }
+      } else { isXp = true; }
     }
     ctx.clip();
 
-    // Tile bg texture within clip
     const tw = Math.max(1, Math.round(bgBitmap.width * scale));
     const th = Math.max(1, Math.round(bgBitmap.height * scale));
-    const tileMinX = Math.floor((minGX - globalMinGX) * scale / tw) * tw;
-    const tileMinY = Math.floor((minGY - globalMinGY) * scale / th) * th;
+    const tileMinX = Math.floor(((minGX - globalMinGX) * scale) / tw) * tw;
+    const tileMinY = Math.floor(((minGY - globalMinGY) * scale) / th) * th;
     const tileMaxX = Math.ceil((maxGX - globalMinGX) * scale);
     const tileMaxY = Math.ceil((maxGY - globalMinGY) * scale);
     for (let ty = tileMinY; ty < tileMaxY; ty += th) {
@@ -600,25 +599,30 @@ async function addBiomeBackgrounds(
     ctx.restore();
   }
 
-  // Add single combined canvas to OSD
+  // Create blob URL once, reuse for all PWs
   const url = await offscreenCanvasToBlobUrl(canvas);
   if (currentGenerationId !== generationId) return;
 
-  viewer.addTiledImage({
-    tileSource: { type: "image", url, buildPyramid: false },
-    x: globalMinGX,
-    y: globalMinGY,
-    width: regionW,
-    success: (event: any) => {
-      if (currentGenerationId !== generationId) {
-        try { viewer.world.removeItem(event.item); } catch {}
-        return;
-      }
-      dynamicTiledImages.add(event.item);
-    },
-  });
+  // Add the bg canvas for PW 0, -1, and +1
+  const pwOffsetPixels = 70 * 512; // TODO: use isNGP for 72
+  for (const pw of [-1, 0, 1]) {
+    const pwX = globalMinGX + pw * pwOffsetPixels;
+    viewer.addTiledImage({
+      tileSource: { type: "image", url, buildPyramid: false },
+      x: pwX,
+      y: globalMinGY,
+      width: regionW,
+      success: (event: any) => {
+        if (currentGenerationId !== generationId) {
+          try { viewer.world.removeItem(event.item); } catch {}
+          return;
+        }
+        dynamicTiledImages.add(event.item);
+      },
+    });
+  }
 
-  console.log(`[OSD Bridge] Gen ${generationId}: Added ${biomesWithBg.length} biome backgrounds as single layer`);
+  console.log(`[OSD Bridge] Gen ${generationId}: Added biome backgrounds for 3 PWs`);
 }
 
 // ─── Progressive Biome Rendering ────────────────────────────────────────────
@@ -705,16 +709,19 @@ async function addBiomeLayersProgressively(
 
     if (currentGenerationId !== generationId) return;
 
-    // Add each biome overlay individually to OSD in render order
-    for (const biomeName of allBiomesToRender) {
-      if (currentGenerationId !== generationId) return;
+    // ── Composite all biome overlays into one canvas per PW ──────────────
+    // Instead of adding 50+ individual TiledImages (which overwhelms the
+    // canvas drawer in Firefox), we merge them into a single image.
 
+    // First pass: determine bounding box across all non-empty overlays
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    const validOverlays: { overlay: OffscreenCanvas; x: number; y: number; osdWidth: number }[] = [];
+
+    for (const biomeName of allBiomesToRender) {
       const layerIdxArr = layerIndicesByBiome.get(biomeName);
       if (!layerIdxArr) continue;
 
       for (const layerIdx of layerIdxArr) {
-        if (currentGenerationId !== generationId) return;
-
         const overlay = overlays[layerIdx];
         if (!overlay || overlay.width === 0 || overlay.height === 0) continue;
 
@@ -722,27 +729,52 @@ async function addBiomeLayersProgressively(
         const x = -(worldCenter * 512) + pw * pwOffsetPixels + layer.correctedX;
         const y = anchorY + layer.correctedY;
         const osdWidth = overlay.width * 10;
+        const osdHeight = overlay.height * 10;
 
-        const url = await offscreenCanvasToBlobUrl(overlay);
-        if (currentGenerationId !== generationId) return;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x + osdWidth);
+        maxY = Math.max(maxY, y + osdHeight);
 
-        viewer.addTiledImage({
-          tileSource: { type: "image", url, buildPyramid: false },
-          x,
-          y,
-          width: osdWidth,
-          success: (event: any) => {
-            if (currentGenerationId !== generationId) {
-              try { viewer.world.removeItem(event.item); } catch {}
-              return;
-            }
-            dynamicTiledImages.add(event.item);
-          },
-        });
+        validOverlays.push({ overlay, x, y, osdWidth });
       }
     }
 
-    console.log(`[OSD Bridge] Gen ${generationId}: Added PW ${pw} biome overlays + backgrounds`);
+    if (validOverlays.length === 0) continue;
+
+    // Create a composited canvas at the same pixel density (1 pixel = 10 OSD units)
+    const compositeW = Math.ceil((maxX - minX) / 10);
+    const compositeH = Math.ceil((maxY - minY) / 10);
+    const compositeCanvas = new OffscreenCanvas(compositeW, compositeH);
+    const compositeCtx = compositeCanvas.getContext("2d")!;
+
+    // Draw all overlays onto the composited canvas in render order
+    for (const { overlay, x, y } of validOverlays) {
+      const px = Math.round((x - minX) / 10);
+      const py = Math.round((y - minY) / 10);
+      compositeCtx.drawImage(overlay, px, py);
+    }
+
+    // Convert the single composited canvas to a blob URL and add as one TiledImage
+    const url = await offscreenCanvasToBlobUrl(compositeCanvas);
+    if (currentGenerationId !== generationId) return;
+
+    const osdWidth = compositeW * 10;
+    viewer.addTiledImage({
+      tileSource: { type: "image", url, buildPyramid: false },
+      x: minX,
+      y: minY,
+      width: osdWidth,
+      success: (event: any) => {
+        if (currentGenerationId !== generationId) {
+          try { viewer.world.removeItem(event.item); } catch {}
+          return;
+        }
+        dynamicTiledImages.add(event.item);
+      },
+    });
+
+    console.log(`[OSD Bridge] Gen ${generationId}: Added PW ${pw} composited biome image (${validOverlays.length} overlays → 1 tile, ${compositeW}×${compositeH}px)`);
 
     // Report completion of this PW
     const progressEnd = Math.round(((pwIdx + 1) / totalPWs) * 100);
@@ -1070,6 +1102,13 @@ async function getScenePngIndex(): Promise<ScenePngIndex> {
       };
       addTo("_visual.png", visualByPath, visualByName);
       addTo("_background.png", bgByPath, bgByName);
+      // Top-level plain .png files (no subdirectory, no _visual/_background suffix) —
+      // these are full pixel scene visuals like watercave_layout_X.png
+      if (!inner.includes("/") && !inner.endsWith("_visual.png") && !inner.endsWith("_background.png")) {
+        const key = inner.substring(0, inner.length - ".png".length);
+        // Add as visual by name so resolveScenePath can find them
+        if (!visualByName.has(key)) visualByName.set(key, relativePath);
+      }
     });
   }
   _pngIndex = { visualByPath, visualByName, bgByPath, bgByName };
@@ -1110,10 +1149,14 @@ async function decodeScenePng(zip: any, path: string): Promise<ImageData | null>
   if (tlA === 0) {
     for (let i = 0; i < d.length; i += 4) {
       if (d[i] === 0 && d[i + 1] === 0 && d[i + 2] === 0 && d[i + 3] === 255) d[i + 3] = 0;
+      if (d[i] === 0 && d[i + 1] === 0 && d[i + 2] === 66) d[i + 3] = 0; // Noita air color
+      if (d[i] === 255 && d[i + 1] === 0 && d[i + 2] === 255) d[i + 3] = 0; // Magenta placeholder
     }
   } else {
     for (let i = 0; i < d.length; i += 4) {
       if (d[i] === tlR && d[i + 1] === tlG && d[i + 2] === tlB) d[i + 3] = 0;
+      if (d[i] === 0 && d[i + 1] === 0 && d[i + 2] === 66) d[i + 3] = 0; // Noita air color
+      if (d[i] === 255 && d[i + 1] === 0 && d[i + 2] === 255) d[i + 3] = 0; // Magenta placeholder
     }
   }
   return new ImageData(d, decoded.width, decoded.height);
@@ -1124,6 +1167,7 @@ async function decodeScenePng(zip: any, path: string): Promise<ImageData | null>
  * Composites _background.png (below) + _visual.png (above) when both exist.
  */
 const _visualPngMissLog = new Set<string>();
+
 async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null> {
   const zip = await getDataZip();
   if (!zip) return null;
@@ -1133,6 +1177,7 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
 
   const biome = sceneKey.substring(0, slashIdx);
   const name = sceneKey.substring(slashIdx + 1);
+
   const idx = await getScenePngIndex();
 
   const visualPath = resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, sceneKey);
@@ -1260,6 +1305,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
         const slashIdx = key.indexOf("/");
         const biome = slashIdx >= 0 ? key.substring(0, slashIdx) : "";
         const name = slashIdx >= 0 ? key.substring(slashIdx + 1) : key;
+
         const skipBg = biome === "temple" || biome === "general";
 
         // Resolve per-scene layer overrides (fall back to global)
@@ -2136,7 +2182,11 @@ const BOSS_SPRITE_XML_MAP: Record<string, string> = {
   friend: "data/enemies_gfx/friend.xml",
 };
 
-interface BossSpriteInfo { pngPath: string; frameW: number; frameH: number }
+interface BossSpriteInfo {
+  pngPath: string;
+  frameW: number;
+  frameH: number;
+}
 const _bossSpriteInfoCache = new Map<string, BossSpriteInfo>();
 
 async function resolveBossSpriteInfo(xmlPath: string): Promise<BossSpriteInfo | null> {
@@ -2175,11 +2225,7 @@ async function loadBossSprite(zipPath: string, frameW: number, frameH: number): 
   return url;
 }
 
-async function addBossOverlays(
-  viewer: OSDViewer,
-  result: GenerationResult,
-  generationId: number,
-): Promise<void> {
+async function addBossOverlays(viewer: OSDViewer, result: GenerationResult, generationId: number): Promise<void> {
   const { poisByPW, worldCenter } = result;
   const allPois = Object.values(poisByPW).flat();
   const bossPois = allPois.filter((p) => BOSS_SPRITE_XML_MAP[p.type]);
@@ -2193,9 +2239,7 @@ async function addBossOverlays(
       if (info) infoByType.set(type, info);
     }),
   );
-  await Promise.all(
-    [...infoByType.values()].map((info) => loadBossSprite(info.pngPath, info.frameW, info.frameH)),
-  );
+  await Promise.all([...infoByType.values()].map((info) => loadBossSprite(info.pngPath, info.frameW, info.frameH)));
   if (currentGenerationId !== generationId) return;
 
   let addedCount = 0;
@@ -2215,12 +2259,7 @@ async function addBossOverlays(
 
     viewer.addOverlay({
       element: el,
-      location: new (OpenSeadragon as any).Rect(
-        x - info.frameW / 2,
-        y - info.frameH / 2,
-        info.frameW,
-        info.frameH,
-      ),
+      location: new (OpenSeadragon as any).Rect(x - info.frameW / 2, y - info.frameH / 2, info.frameW, info.frameH),
     });
     dynamicOverlayElements.push(el);
     addedCount++;

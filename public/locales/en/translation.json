@@ -50,6 +50,9 @@
       "alreadyGeneratedContent": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
     },
     "daily": "Daily",
+    "dailyDescription": "Load the daily game seed, shared by all players today",
+    "seedTooltipDaily": "This is the daily seed",
+    "seedTooltipCustom": "This is a manually selected seed",
     "placeholder": "Custom seed…",
     "nerdMode": {
       "label": "Nerd Mode",

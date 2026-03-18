@@ -49,7 +49,11 @@ declare global {
     /** Update the sidebar open/closed state in the URL */
     updateURLWithSidebar: (open: boolean) => void;
     /** The URL state parsed at page load (sidebar state, canvas, etc.) */
-    urlState: { sidebarOpen?: boolean; canvas?: 'map' | 'black' | 'white' };
+    urlState: { sidebarOpen?: boolean; canvas?: 'map' | 'black' | 'white'; seed?: number };
+    /** Get active seed params */
+    getSeedParams: () => { seed?: number };
+    /** Set active seed active params */
+    setSeedParams: (seed: number) => void;
     /** Set the canvas background and update URL */
     setBackground: (type: 'map' | 'black' | 'white') => void;
     /** Set the current map in unified search (so search results match after map change) */

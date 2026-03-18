@@ -42,11 +42,15 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   dailySeedBtn = document.createElement("button");
   dailySeedBtn.id = "dynamicDailySeedButton";
   dailySeedBtn.className = "btn btn-sm btn-outline-info text-nowrap";
-  // Tooltip only for daily
-  dailySeedBtn.setAttribute("data-bs-toggle", "tooltip");
+  // Popover (same style as share button / overlay toggles)
+  dailySeedBtn.setAttribute("data-bs-toggle", "popover");
   dailySeedBtn.setAttribute("data-bs-placement", "bottom");
+  dailySeedBtn.setAttribute("data-bs-trigger", "hover focus");
   dailySeedBtn.setAttribute("data-i18n-title", "dynamicMap.daily");
-  dailySeedBtn.title = i18next.t("dynamicMap.daily");
+  dailySeedBtn.setAttribute("data-bs-title", i18next.t("dynamicMap.daily"));
+  dailySeedBtn.setAttribute("data-i18n-content", "dynamicMap.dailyDescription");
+  dailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.dailyDescription"));
+  dailySeedBtn.setAttribute("tabindex", "0");
   dailySeedBtn.innerHTML = `<i class="bi bi-calendar-day"></i><span class="ms-1 d-none d-xl-inline" data-i18n="dynamicMap.daily">${i18next.t("dynamicMap.daily")}</span>`;
   dailySeedBtn.addEventListener("click", () => onDailySeedClick());
   toolbarEl.appendChild(dailySeedBtn);
@@ -61,12 +65,20 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   seedInput.style.width = "110px";
   seedInput.setAttribute("data-i18n-placeholder", "dynamicMap.placeholder");
   seedInput.placeholder = i18next.t("dynamicMap.placeholder");
+  // Tooltip — title is set dynamically by updateSeedTooltip()
+  seedInput.setAttribute("data-bs-toggle", "tooltip");
+  seedInput.setAttribute("data-bs-placement", "bottom");
+  seedInput.title = i18next.t("dynamicMap.seedTooltipCustom");
   seedInput.addEventListener("keydown", (ev) => {
     if (ev.key === "Enter") onGenerateClick();
   });
   seedInput.addEventListener("input", () => {
     // Strip non-numeric characters
-    if (seedInput) seedInput.value = seedInput.value.replace(/\D/g, "");
+    if (seedInput) {
+      seedInput.value = seedInput.value.replace(/\D/g, "");
+      seedInput.classList.remove("seed-daily");
+      updateSeedTooltip(false);
+    }
     updateGenerateButtonState();
   });
   toolbarEl.appendChild(seedInput);
@@ -100,9 +112,11 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
     buttonContainer.appendChild(toolbarEl);
   }
 
-  // Initialize tooltips
+  // Initialize popovers and tooltips
   // @ts-ignore
-  new bootstrap.Tooltip(dailySeedBtn);
+  new bootstrap.Popover(dailySeedBtn);
+  // @ts-ignore
+  seedTooltipInstance = new bootstrap.Tooltip(seedInput);
 
   // Initial state for buttons
   updateGenerateButtonState();
@@ -226,7 +240,7 @@ function updateGenerateButtonState(): void {
 }
 
 /** Show the loading overlay with download already complete, ready for generation progress. */
-function showLoadingOverlay(): void {
+export function showLoadingOverlay(): void {
   const overlay = document.getElementById("map-loading-overlay");
   if (!overlay) return;
   overlay.style.display = "flex";
@@ -246,7 +260,35 @@ function showLoadingOverlay(): void {
   if (status) status.textContent = "33%";
 }
 
+/** Hide the loading overlay. */
+export function hideLoadingOverlay(): void {
+  const overlay = document.getElementById("map-loading-overlay");
+  if (overlay) overlay.style.display = "none";
+}
+
 export function setDynamicUISeed(seed: number, isDaily: boolean): void {
-  if (seedInput) seedInput.value = String(seed);
+  if (seedInput) {
+    seedInput.value = String(seed);
+    seedInput.classList.toggle("seed-daily", isDaily);
+    updateSeedTooltip(isDaily);
+  }
   updateGenerateButtonState();
+}
+
+// ─── Seed Tooltip ────────────────────────────────────────────────────────────
+
+let seedTooltipInstance: any = null;
+
+function updateSeedTooltip(isDaily: boolean): void {
+  if (!seedInput) return;
+  const key = isDaily ? "dynamicMap.seedTooltipDaily" : "dynamicMap.seedTooltipCustom";
+  const text = i18next.t(key);
+  seedInput.setAttribute("data-bs-title", text);
+  seedInput.title = text;
+  // Re-create the tooltip instance so Bootstrap picks up the new title
+  if (seedTooltipInstance) {
+    try { seedTooltipInstance.dispose(); } catch {}
+  }
+  // @ts-ignore
+  seedTooltipInstance = new bootstrap.Tooltip(seedInput);
 }

@@ -4570,7 +4570,10 @@
       "title": "Advanced Mode",
       "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
     },
-    "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
+    "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
+    "dailyDescription": "Load the daily game seed, shared by all players today",
+    "seedTooltipDaily": "This is the daily seed",
+    "seedTooltipCustom": "This is a manually selected seed"
   },
   "alive_wand": "(alive wand)",
   "spoilerFree": {

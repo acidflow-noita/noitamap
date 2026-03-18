@@ -617,3 +617,22 @@ body.toggle-hidden div.osOverlayHighlight {
   height: 16px;
   width: 16px;
 }
+
+/* ── Dynamic map toolbar ─────────────────────────────────────────────────── */
+
+#dynamicDailySeedButton {
+  color: oklch(78.9% 0.154 211.53);
+  border-color: oklch(78.9% 0.154 211.53);
+}
+
+#dynamicDailySeedButton:hover,
+#dynamicDailySeedButton:focus {
+  background-color: oklch(78.9% 0.154 211.53);
+  border-color: oklch(78.9% 0.154 211.53);
+  color: #fff;
+}
+
+/* Seed input — daily seed colored, custom seed white */
+#dynamicSeedInput.seed-daily {
+  color: oklch(78.9% 0.154 211.53);
+}

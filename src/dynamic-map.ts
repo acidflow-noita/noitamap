@@ -135,6 +135,10 @@ export async function runDynamicMap(
 
   onLoadingChange?.(true);
 
+  // Yield so the browser can paint the loading indicator before telescope
+  // blocks the main thread during initialization (~700ms first load).
+  await new Promise((r) => setTimeout(r, 0));
+
   currentSeed = seed;
   currentIsDaily = isDaily;
 

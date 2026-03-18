@@ -1,6 +1,6 @@
 import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
 import { setupDropOverlay } from "./drop-overlay";
-import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed } from "./dynamic_ui";
+import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed, showLoadingOverlay, hideLoadingOverlay } from "./dynamic_ui";
 import {
   runDynamicMapFromURL,
   runDynamicMap,
@@ -75,6 +75,7 @@ import {
   updateURLWithOverlays,
   updateURLWithSidebar,
   updateURLWithCanvas,
+  updateURLWithSeed,
 } from "./data_sources/url";
 import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from "./data_sources/overlays";
 import { overlayToShort } from "./data_sources/param-mappings";
@@ -324,18 +325,48 @@ document.addEventListener("DOMContentLoaded", async () => {
   _unifiedSearch = unifiedSearch;
 
   // ── Dynamic map setup ─────────────────────────────────────────────────────
+  // Tracks seed from the last dynamic map session so returning to dynamic map
+  // can restore it (priority: URL param > last session seed > daily).
+  let lastSessionSeed: number | null = null;
+  let lastSessionIsDaily: boolean = false;
+  // Pending seed set via setSeedParams before the map has switched to dynamic
+  let pendingDynamicSeed: number | null = null;
+
   const dynamicOpts = {
     viewer: app.osd,
     onLoadingChange: (isLoading: boolean) => {
       loadingIndicator.style.display = isLoading ? "block" : "none";
+      if (isLoading) {
+        showLoadingOverlay();
+      } else {
+        hideLoadingOverlay();
+      }
     },
     onSeedResolved: (seed: number, isDaily: boolean) => {
       setDynamicUISeed(seed, isDaily);
+      lastSessionSeed = seed;
+      lastSessionIsDaily = isDaily;
     },
     onPOIsReady: (pois: DynamicPOI[]) => {
       unifiedSearch.setDynamicPOIs(pois);
     },
   };
+
+  /** Run dynamic map using seed priority: URL param → last session seed → daily */
+  async function runDynamicMapWithPriority(): Promise<void> {
+    const urlState = (await import("./data_sources/url")).parseURL();
+    if (urlState.seed !== undefined && !urlState.dailySeed) {
+      // URL has explicit non-daily seed — highest priority
+      await runDynamicMap(urlState.seed, false, dynamicOpts);
+    } else if (lastSessionSeed !== null) {
+      // Restore the last seed the user was viewing
+      updateURLWithSeed(lastSessionSeed, lastSessionIsDaily);
+      await runDynamicMap(lastSessionSeed, lastSessionIsDaily, dynamicOpts);
+    } else {
+      // Fall back to daily seed resolution
+      await (await import("./dynamic-map")).runDynamicMapFromURL(dynamicOpts);
+    }
+  }
 
   createDynamicUI(dynamicOpts);
   updateDynamicUIVisibility(app.getMap());
@@ -354,7 +385,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     getMap: () => app.getMap(),
     setMap: (mapName: string) => app.setMap(asMapName(mapName) ?? (mapName as any)),
     updateURLWithSidebar,
-    urlState: { sidebarOpen: urlState.sidebarOpen, canvas: urlState.canvas },
+    urlState: { sidebarOpen: urlState.sidebarOpen, canvas: urlState.canvas, seed: urlState.seed },
+    getSeedParams: () => ({ seed: getCurrentDynamicSeed() ?? undefined }),
+    setSeedParams: (seed: number) => {
+      updateURLWithSeed(seed, false);
+      // Always update seed UI immediately
+      setDynamicUISeed(seed, false);
+      // Store as pending — may be used when map transitions to dynamic
+      pendingDynamicSeed = seed;
+      lastSessionSeed = seed;
+      lastSessionIsDaily = false;
+      if (app.getMap() === "dynamic-main-branch") {
+        runDynamicMap(seed, false, dynamicOpts).catch((e) => console.error("[Noitamap] Dynamic map rebuild failed:", e));
+      }
+    },
     setBackground: (type: "map" | "black" | "white") => {
       app.setBackground(type);
       updateURLWithCanvas(type);
@@ -475,8 +519,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (lastKnownMap === "dynamic-main-branch" && state.map !== "dynamic-main-branch") {
       clearDynamicMap(app.osd);
       unifiedSearch.setDynamicPOIs([]);
+    } else if (lastKnownMap !== "dynamic-main-branch" && state.map === "dynamic-main-branch") {
+      // Moving TO dynamic map — if we have a pending seed from drawing import, use it directly
+      if (pendingDynamicSeed !== null) {
+        const seedToRun = pendingDynamicSeed;
+        pendingDynamicSeed = null;
+        runDynamicMap(seedToRun, false, dynamicOpts).catch((e) => console.error("[Noitamap] Dynamic map switch (pending seed) failed:", e));
+      } else {
+        // Priority: URL seed > last session seed > daily
+        runDynamicMapWithPriority().catch((e) => console.error("[Noitamap] Dynamic map switch failed:", e));
+      }
     }
     lastKnownMap = state.map;
+
+    // Show/hide dynamic toolbar on map change
+    updateDynamicUIVisibility(state.map);
 
     const currentMapLink = document.querySelector(`#navLinksList [data-map-key='${state.map}']`);
 
@@ -525,24 +582,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       cb(mapName);
     }
 
-    // Switching AWAY from dynamic → clear overlays and POI index
-    if (app.getMap() === "dynamic-main-branch" && mapName !== "dynamic-main-branch") {
-      clearDynamicMap(app.osd);
-      unifiedSearch.setDynamicPOIs([]);
-    }
-
     // load the new map
     app.setMap(mapName);
     // set which map we're searching
     unifiedSearch.currentMap = mapName;
-
-    // Show/hide dynamic toolbar
-    updateDynamicUIVisibility(mapName);
-
-    // Switching TO dynamic → start generation
-    if (mapName === "dynamic-main-branch") {
-      runDynamicMapFromURL(dynamicOpts).catch((e) => console.error("[Noitamap] Dynamic map switch failed:", e));
-    }
   });
 
   // manage css classes to show / hide overlays
