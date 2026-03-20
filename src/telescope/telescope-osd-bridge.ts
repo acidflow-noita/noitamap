@@ -2269,44 +2269,27 @@ async function addBossOverlays(viewer: OSDViewer, result: GenerationResult, gene
 
 // ─── Orb Overlays ─────────────────────────────────────────────────────────
 
-/** Map orb names from telescope to icon filenames in assets/icons/orbs/ */
-const ORB_NAME_TO_ICON: Record<string, string> = {
-  orb_00: "orb_earthquake",
-  orb_01: "orb_sea_of_lava",
-  orb_02: "orb_summon_tentacle",
-  orb_03: "orb_nuke",
-  orb_04: "orb_necromancy",
-  orb_05: "orb_holy_bomb",
-  orb_06: "orb_spiral_shot",
-  orb_07: "orb_thundercloud",
-  orb_08: "orb_fireworks",
-  orb_09: "orb_summon_deercoy",
-  orb_10: "orb_cement",
-  // Direct name matches (telescope libraries may use either form)
-  earthquake: "orb_earthquake",
-  sea_of_lava: "orb_sea_of_lava",
-  summon_tentacle: "orb_summon_tentacle",
-  nuke: "orb_nuke",
-  necromancy: "orb_necromancy",
-  holy_bomb: "orb_holy_bomb",
-  spiral_shot: "orb_spiral_shot",
-  thundercloud: "orb_thundercloud",
-  fireworks: "orb_fireworks",
-  summon_deercoy: "orb_summon_deercoy",
-  cement: "orb_cement",
-};
+/**
+ * Hardcoded orb data for the dynamic map.
+ * Orb positions are fixed game locations (not seed-dependent).
+ * Each entry has: name, x, y (world coords), icon path (relative to public/).
+ */
+import orbsData from "../data/orbs.json";
 
-const _orbIconCache = new Map<string, string>(); // icon name → blob URL
+const _orbIconCache = new Map<string, string>(); // icon path → blob URL
 
-async function loadOrbIcon(iconName: string): Promise<string | null> {
-  if (_orbIconCache.has(iconName)) return _orbIconCache.get(iconName)!;
-  const url = `./assets/icons/orbs/${iconName}.webp`;
+async function loadOrbIconByPath(iconPath: string): Promise<string | null> {
+  if (_orbIconCache.has(iconPath)) return _orbIconCache.get(iconPath)!;
+  const url = `./${iconPath}`;
   try {
     const resp = await fetch(url);
-    if (!resp.ok) return null;
+    if (!resp.ok) {
+      console.warn(`[OSD Bridge] Failed to load orb icon: ${url} (${resp.status})`);
+      return null;
+    }
     const blob = await resp.blob();
     const blobUrl = URL.createObjectURL(blob);
-    _orbIconCache.set(iconName, blobUrl);
+    _orbIconCache.set(iconPath, blobUrl);
     return blobUrl;
   } catch {
     return null;
@@ -2314,40 +2297,37 @@ async function loadOrbIcon(iconName: string): Promise<string | null> {
 }
 
 async function addOrbOverlays(viewer: OSDViewer, result: GenerationResult, generationId: number): Promise<void> {
-  const { poisByPW, worldCenter } = result;
-  const allPois = Object.values(poisByPW).flat();
-  const orbPois = allPois.filter((p) => p.type === "item" && p.item === "orb");
-  if (orbPois.length === 0) return;
+  const { worldCenter } = result;
 
-  // Pre-load all needed orb icons
-  const iconNames = new Set<string>();
-  for (const poi of orbPois) {
-    const name = (poi as any).name || (poi as any).orbName || "";
-    const iconName = ORB_NAME_TO_ICON[name] || ORB_NAME_TO_ICON[name.toLowerCase()] || "orb_earthquake";
-    iconNames.add(iconName);
-  }
-  await Promise.all([...iconNames].map((n) => loadOrbIcon(n)));
+  // Filter orbs for the dynamic map
+  const dynamicOrbs = orbsData.filter((orb: any) =>
+    orb.maps && orb.maps.includes("dynamic-main-branch")
+  );
+  if (dynamicOrbs.length === 0) return;
+
+  // Pre-load all orb icons
+  await Promise.all(dynamicOrbs.map((orb: any) => loadOrbIconByPath(orb.icon)));
   if (currentGenerationId !== generationId) return;
 
   let addedCount = 0;
-  for (const poi of orbPois) {
+  for (const orb of dynamicOrbs) {
     if (currentGenerationId !== generationId) return;
-    const name = (poi as any).name || (poi as any).orbName || "";
-    const iconName = ORB_NAME_TO_ICON[name] || ORB_NAME_TO_ICON[name.toLowerCase()] || "orb_earthquake";
-    const iconUrl = _orbIconCache.get(iconName);
+    const iconUrl = _orbIconCache.get(orb.icon);
     if (!iconUrl) continue;
 
-    const { x, y } = getCorrectedWorldPos(poi.x, poi.y, worldCenter);
-    const orbSize = 24; // World-coordinate size for orb icon
+    const { x, y } = getCorrectedWorldPos(orb.x, orb.y, worldCenter);
+    const orbWidth = 20; // World-coordinate width for orb icon
+    const orbHeight = 25; // 4:5 aspect ratio matching 40x50px icon
 
     const el = document.createElement("img");
     el.src = iconUrl;
     el.className = "dynamic-poi poi-orb";
+    el.title = orb.name || "Orb";
     el.style.cssText = "image-rendering: pixelated; width: 100%; height: 100%; cursor: pointer;";
 
     viewer.addOverlay({
       element: el,
-      location: new (OpenSeadragon as any).Rect(x - orbSize / 2, y - orbSize / 2, orbSize, orbSize),
+      location: new (OpenSeadragon as any).Rect(x - orbWidth / 2, y - orbHeight / 2, orbWidth, orbHeight),
     });
     dynamicOverlayElements.push(el);
     addedCount++;
