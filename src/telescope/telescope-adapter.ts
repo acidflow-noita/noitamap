@@ -484,11 +484,13 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       combinedPois.push(...verticalPois);
     }
 
-    // Add orbs from biome generation (coordinates are in chunk units, convert to world pixels)
     if (pw === 0 && biomeData.orbs && Array.isArray(biomeData.orbs)) {
       for (const orb of biomeData.orbs) {
         combinedPois.push({
           ...orb,
+          type: "item",
+          item: "orb",
+          name: orb.id,
           x: orb.x * 512 + 256 - 32 * 512,
           y: orb.y * 512 + 256 - 14 * 512,
         });

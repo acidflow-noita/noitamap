@@ -211,9 +211,14 @@ label[data-tool="text"] {
   margin-right: 0.6rem;
 }
 
-/* Example drawings placeholder - height of ~2 saved drawing items */
+/* Example drawings - compact to fit exactly the items present */
 .example-drawings-list {
-  min-height: calc(2 * 3.5rem);
+  /* Remove max-height and scrolling to let it shrink-wrap exactly the 2 items */
+  overflow: hidden;
+}
+
+.example-drawings-list .list-group-item {
+  padding: 0.25rem 0.5rem;
 }
 
 /* Responsive adjustments */

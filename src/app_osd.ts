@@ -24,7 +24,6 @@ export class AppOSD {
     this.viewer = new OpenSeadragon.Viewer({
       element: mountTo,
       maxZoomPixelRatio: 70,
-      maxImageCacheCount: 800, // Default 200 is too low when marker tile source is active
       showNavigator: false,
       showNavigationControl: false,
       crossOriginPolicy: "Anonymous",
@@ -50,8 +49,9 @@ export class AppOSD {
       })(),
       imageSmoothingEnabled: false,
       debugMode: false,
-      subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS,
-      smoothTileEdgesMinZoom: 1,
+      subPixelRoundingForTransparency: useWebGL
+        ? OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS
+        : OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.NEVER,
       minScrollDeltaTime: 10,
       springStiffness: 50,
       preserveViewport: true,

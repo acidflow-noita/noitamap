@@ -2267,6 +2267,94 @@ async function addBossOverlays(viewer: OSDViewer, result: GenerationResult, gene
   console.log(`[OSD Bridge] Added ${addedCount} boss overlays`);
 }
 
+// ─── Orb Overlays ─────────────────────────────────────────────────────────
+
+/** Map orb names from telescope to icon filenames in assets/icons/orbs/ */
+const ORB_NAME_TO_ICON: Record<string, string> = {
+  orb_00: "orb_earthquake",
+  orb_01: "orb_sea_of_lava",
+  orb_02: "orb_summon_tentacle",
+  orb_03: "orb_nuke",
+  orb_04: "orb_necromancy",
+  orb_05: "orb_holy_bomb",
+  orb_06: "orb_spiral_shot",
+  orb_07: "orb_thundercloud",
+  orb_08: "orb_fireworks",
+  orb_09: "orb_summon_deercoy",
+  orb_10: "orb_cement",
+  // Direct name matches (telescope libraries may use either form)
+  earthquake: "orb_earthquake",
+  sea_of_lava: "orb_sea_of_lava",
+  summon_tentacle: "orb_summon_tentacle",
+  nuke: "orb_nuke",
+  necromancy: "orb_necromancy",
+  holy_bomb: "orb_holy_bomb",
+  spiral_shot: "orb_spiral_shot",
+  thundercloud: "orb_thundercloud",
+  fireworks: "orb_fireworks",
+  summon_deercoy: "orb_summon_deercoy",
+  cement: "orb_cement",
+};
+
+const _orbIconCache = new Map<string, string>(); // icon name → blob URL
+
+async function loadOrbIcon(iconName: string): Promise<string | null> {
+  if (_orbIconCache.has(iconName)) return _orbIconCache.get(iconName)!;
+  const url = `./assets/icons/orbs/${iconName}.webp`;
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const blob = await resp.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    _orbIconCache.set(iconName, blobUrl);
+    return blobUrl;
+  } catch {
+    return null;
+  }
+}
+
+async function addOrbOverlays(viewer: OSDViewer, result: GenerationResult, generationId: number): Promise<void> {
+  const { poisByPW, worldCenter } = result;
+  const allPois = Object.values(poisByPW).flat();
+  const orbPois = allPois.filter((p) => p.type === "item" && p.item === "orb");
+  if (orbPois.length === 0) return;
+
+  // Pre-load all needed orb icons
+  const iconNames = new Set<string>();
+  for (const poi of orbPois) {
+    const name = (poi as any).name || (poi as any).orbName || "";
+    const iconName = ORB_NAME_TO_ICON[name] || ORB_NAME_TO_ICON[name.toLowerCase()] || "orb_earthquake";
+    iconNames.add(iconName);
+  }
+  await Promise.all([...iconNames].map((n) => loadOrbIcon(n)));
+  if (currentGenerationId !== generationId) return;
+
+  let addedCount = 0;
+  for (const poi of orbPois) {
+    if (currentGenerationId !== generationId) return;
+    const name = (poi as any).name || (poi as any).orbName || "";
+    const iconName = ORB_NAME_TO_ICON[name] || ORB_NAME_TO_ICON[name.toLowerCase()] || "orb_earthquake";
+    const iconUrl = _orbIconCache.get(iconName);
+    if (!iconUrl) continue;
+
+    const { x, y } = getCorrectedWorldPos(poi.x, poi.y, worldCenter);
+    const orbSize = 24; // World-coordinate size for orb icon
+
+    const el = document.createElement("img");
+    el.src = iconUrl;
+    el.className = "dynamic-poi poi-orb";
+    el.style.cssText = "image-rendering: pixelated; width: 100%; height: 100%; cursor: pointer;";
+
+    viewer.addOverlay({
+      element: el,
+      location: new (OpenSeadragon as any).Rect(x - orbSize / 2, y - orbSize / 2, orbSize, orbSize),
+    });
+    dynamicOverlayElements.push(el);
+    addedCount++;
+  }
+  console.log(`[OSD Bridge] Added ${addedCount} orb overlays`);
+}
+
 export async function renderGenerationResult(viewer: OSDViewer, result: GenerationResult): Promise<void> {
   const generationId = ++currentGenerationId;
   clearDynamicOverlays(viewer);
@@ -2286,6 +2374,10 @@ export async function renderGenerationResult(viewer: OSDViewer, result: Generati
 
   // Boss sprites render on top of pixel scenes, below item markers.
   await addBossOverlays(viewer, result, generationId);
+  if (currentGenerationId !== generationId) return;
+
+  // Orb icons render as individual overlays using the webp icons.
+  await addOrbOverlays(viewer, result, generationId);
   if (currentGenerationId !== generationId) return;
 
   // 1. Build spatial index for POIs (markers)

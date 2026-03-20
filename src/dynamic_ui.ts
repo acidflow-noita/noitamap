@@ -130,20 +130,18 @@ export function updateDynamicUIVisibility(currentMap: string): void {
   toolbarEl.classList.toggle("d-none", !isDynamic);
   toolbarEl.classList.toggle("d-flex", isDynamic);
 
-  // Hide overlay toggles on dynamic map
-  // because dynamic maps don't support or need most static overlays.
+  // Hide overlay toggles on dynamic map that don't have dynamic map data.
+  // Orbs (and any future overlays) that include dynamic-main-branch entries stay visible.
   const overlaySelector = document.getElementById("overlay-selector");
   if (overlaySelector) {
+    const dynamicOverlayKeys = new Set(["orbs"]);
     const togglers = overlaySelector.querySelectorAll<HTMLInputElement>("input.overlayToggler");
     for (const toggler of togglers) {
       const label = overlaySelector.querySelector<HTMLLabelElement>(`label[for="${toggler.id}"]`);
-      if (isDynamic) {
-        toggler.classList.add("d-none");
-        if (label) label.classList.add("d-none");
-      } else {
-        toggler.classList.remove("d-none");
-        if (label) label.classList.remove("d-none");
-      }
+      const key = toggler.dataset.overlayKey;
+      const shouldHide = isDynamic && !dynamicOverlayKeys.has(key || "");
+      toggler.classList.toggle("d-none", shouldHide);
+      if (label) label.classList.toggle("d-none", shouldHide);
     }
   }
 
@@ -152,8 +150,11 @@ export function updateDynamicUIVisibility(currentMap: string): void {
     import("./telescope/telescope-adapter")
       .then((m) => m.initTelescope())
       .catch(() => {});
+    // Only populate seedInput from last-known seed if the input is empty.
+    // setSeedParams may have already written the pending seed here;
+    // overwriting it with getCurrentDynamicSeed() would show the OLD seed.
     const seed = getCurrentDynamicSeed();
-    if (seed !== null && seedInput) {
+    if (seed !== null && seedInput && !seedInput.value) {
       seedInput.value = String(seed);
     }
     updateGenerateButtonState();
@@ -268,6 +269,7 @@ export function hideLoadingOverlay(): void {
 
 export function setDynamicUISeed(seed: number, isDaily: boolean): void {
   if (seedInput) {
+    seedInput.value = ""; // Force clear first to prevent any visual appending bugs
     seedInput.value = String(seed);
     seedInput.classList.toggle("seed-daily", isDaily);
     updateSeedTooltip(isDaily);
