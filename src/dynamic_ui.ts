@@ -130,11 +130,10 @@ export function updateDynamicUIVisibility(currentMap: string): void {
   toolbarEl.classList.toggle("d-none", !isDynamic);
   toolbarEl.classList.toggle("d-flex", isDynamic);
 
-  // Hide overlay toggles on dynamic map that don't have dynamic map data.
-  // Orbs (and any future overlays) that include dynamic-main-branch entries stay visible.
+  // Hide overlay toggles on dynamic map, except those that work on the dynamic map.
   const overlaySelector = document.getElementById("overlay-selector");
   if (overlaySelector) {
-    const dynamicOverlayKeys = new Set(["orbs"]);
+    const dynamicOverlayKeys = new Set(["biomeBoundaries"]);
     const togglers = overlaySelector.querySelectorAll<HTMLInputElement>("input.overlayToggler");
     for (const toggler of togglers) {
       const label = overlaySelector.querySelector<HTMLLabelElement>(`label[for="${toggler.id}"]`);

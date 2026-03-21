@@ -282,6 +282,7 @@ export function clearDynamicOverlays(viewer: any): void {
     } catch {}
   }
   dynamicOverlayElements = [];
+  activeOrbTargets = [];
 
   // Delay revocation to give OSD time to release the resources
   const urlsToRevoke = [...dynamicBlobUrls];
@@ -1667,6 +1668,15 @@ let tooltipEl: HTMLDivElement | null = null;
 let canvasClickHandler: ((event: any) => void) | null = null;
 let markerTiledImage: any = null;
 
+// Orb click data — stored here so the canvas-click handler can detect orb clicks
+interface OrbClickTarget {
+  osdX: number;
+  osdY: number;
+  orb: { name?: string; text?: string; x: number; y: number };
+  iconUrl: string;
+}
+let activeOrbTargets: OrbClickTarget[] = [];
+
 /**
  * Show a popup for a marker at the given screen position.
  * Styled to match noitamap's dark theme with game-style presentation.
@@ -2137,9 +2147,34 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
     if (item) {
       event.preventDefaultAction = true;
       showMarkerTooltip(item, event.originalEvent.clientX, event.originalEvent.clientY);
-    } else {
-      hideMarkerTooltip();
+      return;
     }
+
+    // Check orb overlays
+    if (activeOrbTargets.length > 0) {
+      const viewportPoint = viewer.viewport.pointFromPixel(event.position);
+      const vpX = viewportPoint.x;
+      const vpY = viewportPoint.y;
+      let bestOrb: OrbClickTarget | null = null;
+      let bestDist = Infinity;
+      for (const ot of activeOrbTargets) {
+        const dx = ot.osdX - vpX;
+        const dy = ot.osdY - vpY;
+        const dist = dx * dx + dy * dy;
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestOrb = ot;
+        }
+      }
+      // Only match if within ~15 world units (orb icons are 20x25)
+      if (bestOrb && bestDist < 15 * 15) {
+        event.preventDefaultAction = true;
+        showOrbTooltip(bestOrb.orb, bestOrb.iconUrl, event.originalEvent.clientX, event.originalEvent.clientY);
+        return;
+      }
+    }
+
+    hideMarkerTooltip();
   };
 
   // Native mousemove on OSD canvas for pointer cursor (OSD has no 'canvas-move' event)
@@ -2269,6 +2304,88 @@ async function addBossOverlays(viewer: OSDViewer, result: GenerationResult, gene
 
 // ─── Orb Overlays ─────────────────────────────────────────────────────────
 
+function showOrbTooltip(orb: { name?: string; text?: string; x: number; y: number }, iconUrl: string, screenX: number, screenY: number): void {
+  if (tooltipEl) {
+    tooltipEl.remove();
+    tooltipEl = null;
+  }
+
+  tooltipEl = document.createElement("div");
+  tooltipEl.className = "marker-tooltip";
+  tooltipEl.style.cssText = `
+    position: fixed;
+    z-index: 10000;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    border: 2px solid #3a3a5c;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    max-width: 340px;
+    pointer-events: auto;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.7);
+    font-family: monospace;
+    line-height: 1.5;
+  `;
+
+  const closeBtn = document.createElement("div");
+  closeBtn.style.cssText = `
+    position: absolute; top: 4px; right: 8px;
+    cursor: pointer; color: #666; font-size: 16px;
+    line-height: 1;
+  `;
+  closeBtn.textContent = "x";
+  closeBtn.onclick = (e) => {
+    e.stopPropagation();
+    hideMarkerTooltip();
+  };
+  tooltipEl.appendChild(closeBtn);
+
+  const header = document.createElement("div");
+  header.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px";
+  const spriteImg = document.createElement("img");
+  spriteImg.src = iconUrl;
+  spriteImg.style.cssText = "width:24px;height:30px;image-rendering:pixelated;object-fit:contain";
+  header.appendChild(spriteImg);
+  const title = document.createElement("div");
+  title.style.cssText = "font-weight:bold;color:#ffd700;font-size:14px";
+  title.textContent = orb.name || "Orb";
+  header.appendChild(title);
+  tooltipEl.appendChild(header);
+
+  if (orb.text) {
+    const desc = document.createElement("div");
+    desc.style.cssText = "color:#aaa;font-size:12px;font-style:italic;margin-top:2px";
+    desc.textContent = orb.text;
+    tooltipEl.appendChild(desc);
+  }
+
+  const footer = document.createElement("div");
+  footer.style.cssText = "margin-top:6px;color:#666;font-size:11px;border-top:1px solid #333;padding-top:4px";
+  footer.textContent = `(${Math.round(orb.x)}, ${Math.round(orb.y)})`;
+  tooltipEl.appendChild(footer);
+
+  document.body.appendChild(tooltipEl);
+
+  const pad = 12;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  let tx = screenX + pad;
+  let ty = screenY + pad;
+  requestAnimationFrame(() => {
+    if (!tooltipEl) return;
+    const rect = tooltipEl.getBoundingClientRect();
+    if (tx + rect.width > vw - pad) tx = screenX - rect.width - pad;
+    if (ty + rect.height > vh - pad) ty = screenY - rect.height - pad;
+    if (tx < pad) tx = pad;
+    if (ty < pad) ty = pad;
+    tooltipEl.style.left = `${tx}px`;
+    tooltipEl.style.top = `${ty}px`;
+  });
+  tooltipEl.style.left = `${tx}px`;
+  tooltipEl.style.top = `${ty}px`;
+}
+
 /**
  * Hardcoded orb data for the dynamic map.
  * Orb positions are fixed game locations (not seed-dependent).
@@ -2309,6 +2426,7 @@ async function addOrbOverlays(viewer: OSDViewer, result: GenerationResult, gener
   await Promise.all(dynamicOrbs.map((orb: any) => loadOrbIconByPath(orb.icon)));
   if (currentGenerationId !== generationId) return;
 
+  activeOrbTargets = [];
   let addedCount = 0;
   for (const orb of dynamicOrbs) {
     if (currentGenerationId !== generationId) return;
@@ -2324,6 +2442,9 @@ async function addOrbOverlays(viewer: OSDViewer, result: GenerationResult, gener
     el.className = "dynamic-poi poi-orb";
     el.title = orb.name || "Orb";
     el.style.cssText = "image-rendering: pixelated; width: 100%; height: 100%; cursor: pointer;";
+
+    // Store position for canvas-click handler detection
+    activeOrbTargets.push({ osdX: x, osdY: y, orb, iconUrl });
 
     viewer.addOverlay({
       element: el,
