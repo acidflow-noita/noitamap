@@ -4397,6 +4397,9 @@
   "drawing": {
     "title": "Nástroje kreslení",
     "close": "Zavřít panel",
+    "popover": {
+      "hotkey": "Hotkey"
+    },
     "tools": {
       "label": "Nástroje",
       "move": "Přesunout/Vybrat",

@@ -4397,6 +4397,9 @@
   "drawing": {
     "title": "Outils de dessin",
     "close": "Fermer le panneau",
+    "popover": {
+      "hotkey": "Hotkey"
+    },
     "tools": {
       "label": "Outils",
       "move": "Déplacer/Sélectionner",

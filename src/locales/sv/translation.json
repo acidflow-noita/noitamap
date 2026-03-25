@@ -4397,6 +4397,9 @@
   "drawing": {
     "title": "Ritverktyg",
     "close": "Stäng sidopanel",
+    "popover": {
+      "hotkey": "Hotkey"
+    },
     "tools": {
       "label": "Verktyg",
       "move": "Flytta/Markera",

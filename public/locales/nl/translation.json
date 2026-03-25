@@ -4397,6 +4397,9 @@
   "drawing": {
     "title": "Tekengereedschap",
     "close": "Zijbalk sluiten",
+    "popover": {
+      "hotkey": "Hotkey"
+    },
     "tools": {
       "label": "Gereedschap",
       "move": "Verplaatsen/Selecteren",

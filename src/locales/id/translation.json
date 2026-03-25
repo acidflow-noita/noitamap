@@ -4397,6 +4397,9 @@
   "drawing": {
     "title": "Alat Gambar",
     "close": "Tutup panel",
+    "popover": {
+      "hotkey": "Hotkey"
+    },
     "tools": {
       "label": "Alat",
       "move": "Pindah/Pilih",

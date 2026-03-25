@@ -4397,6 +4397,9 @@
   "drawing": {
     "title": "Narzędzia rysowania",
     "close": "Zamknij panel",
+    "popover": {
+      "hotkey": "Hotkey"
+    },
     "tools": {
       "label": "Narzędzia",
       "move": "Przesuń/Zaznacz",

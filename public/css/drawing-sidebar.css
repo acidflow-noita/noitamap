@@ -82,6 +82,17 @@
   padding: 0.2rem 0.35rem;
 }
 
+/* Hotkey letter in popover content — monospace, tinted */
+.hotkey-letter {
+  font-family: 'Inter', 'Courier New', monospace;
+  font-size: 1.2em;
+  font-weight: 600;
+  color: #7dd3fc;
+  line-height: 1;
+  vertical-align: baseline;
+  margin-left: 0.15em;
+}
+
 #sidebar-content {
   flex-grow: 1;
   overflow-y: auto;
@@ -217,10 +228,9 @@
   height: 1em;
 }
 
-/* Text tool button - wider than icon-only buttons, with gap to font sizes */
+/* Text tool button - same width as other tool buttons */
 label[data-tool="text"] {
-  min-width: calc(3 * 2rem);
-  margin-right: 0.6rem;
+  min-width: 2rem;
 }
 
 /* Example drawings - compact to fit exactly the items present */

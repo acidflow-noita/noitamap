@@ -4404,6 +4404,9 @@
   "drawing": {
     "title": "Drawing Tools",
     "close": "Close sidebar",
+    "popover": {
+      "hotkey": "Hotkey"
+    },
     "shapes": {
       "label": "Shapes"
     },

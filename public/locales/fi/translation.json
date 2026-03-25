@@ -4397,6 +4397,9 @@
   "drawing": {
     "title": "Piirtotyökalut",
     "close": "Sulje sivupalkki",
+    "popover": {
+      "hotkey": "Hotkey"
+    },
     "tools": {
       "label": "Työkalut",
       "move": "Siirrä/Valitse",

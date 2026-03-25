@@ -4397,6 +4397,9 @@
   "drawing": {
     "title": "描画ツール",
     "close": "サイドバーを閉じる",
+    "popover": {
+      "hotkey": "Hotkey"
+    },
     "tools": {
       "label": "ツール",
       "move": "移動/選択",

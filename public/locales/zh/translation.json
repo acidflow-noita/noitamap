@@ -4397,6 +4397,9 @@
   "drawing": {
     "title": "绘图工具",
     "close": "关闭侧边栏",
+    "popover": {
+      "hotkey": "Hotkey"
+    },
     "shapes": {
       "label": "形状"
     },

@@ -4397,6 +4397,9 @@
   "drawing": {
     "title": "Zeichenwerkzeuge",
     "close": "Seitenleiste schließen",
+    "popover": {
+      "hotkey": "Hotkey"
+    },
     "tools": {
       "label": "Werkzeuge",
       "move": "Verschieben/Auswählen",
