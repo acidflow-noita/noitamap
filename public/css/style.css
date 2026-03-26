@@ -596,17 +596,18 @@ body.toggle-hidden div.osOverlayHighlight {
   text-overflow: unset;
 }
 
-.maggot-overlay {
+.easter-egg-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  z-index: 9999;
+  z-index: 1050;
+  overflow: hidden;
 }
 
-.maggot {
+.easter-egg-item {
   position: absolute;
 }
 

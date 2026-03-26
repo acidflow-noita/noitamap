@@ -4550,6 +4550,10 @@
       "content": "Toggle drawing tools to annotate the map"
     }
   },
+  "konami": {
+    "gambaTitle": "This Is a Joke!",
+    "gambaMessage": "We do not condone gambling. Gambling addiction is a serious issue that can ruin lives, relationships, and finances. If you or someone you know is struggling with gambling, please seek help. Never gamble."
+  },
   "spoilerFree": {
     "title": "Spoiler-free",
     "content": "Hide wand, spell, item identities on the map and in the search results. Wands show up as the starter wand, spells and items show up as unidentified."
