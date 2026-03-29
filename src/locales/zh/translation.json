@@ -1,7 +1,7 @@
 {
   "search": {
     "placeholder": "查找法术、物品、Boss、地点…",
-    "indexing": "Search is being indexed…",
+    "indexing": "Data is being loaded…",
     "indexingHint": "You can navigate the map while data loads"
   },
   "spell_prefix": "法术",

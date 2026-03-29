@@ -219,7 +219,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
     // "Indexing" notice at the bottom
     const notice = document.createElement("li");
     notice.className = "search-indexing-notice";
-    notice.innerHTML = `<span class="spinner-border spinner-border-sm text-secondary" role="status"></span><span>Search is being indexed…</span>`;
+    notice.innerHTML = `<span class="spinner-border spinner-border-sm text-secondary" role="status"></span><span>Data is being loaded…</span>`;
     this.wrapper.appendChild(notice);
   }
 
