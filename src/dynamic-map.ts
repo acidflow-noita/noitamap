@@ -20,6 +20,8 @@ import {
   clearDynamicOverlays,
   getAllPOIsFlat,
   hasDynamicOverlays,
+  ensurePersistentBiomeBackgrounds,
+  resetPersistentBiomeBackgrounds,
 } from "./telescope/telescope-osd-bridge";
 
 // ─── Types & state ───────────────────────────────────────────────────────────
@@ -139,6 +141,11 @@ export async function runDynamicMap(
   // blocks the main thread during initialization (~700ms first load).
   await new Promise((r) => setTimeout(r, 0));
 
+  // Ensure persistent biome backgrounds are present in OSD — fills the
+  // biome boundary shapes with correct textures so there are no "black holes".
+  // Only does work on the first call; subsequent calls are no-ops.
+  await ensurePersistentBiomeBackgrounds(viewer);
+
   currentSeed = seed;
   currentIsDaily = isDaily;
 
@@ -162,7 +169,7 @@ export async function runDynamicMap(
       cacheGeneration(seed, result).catch((e) => console.warn("[DynamicMap] Cache write failed:", e));
     }
 
-    // 4. Render onto OSD
+    // 4. Render onto OSD (skeleton placeholders are removed inside after real biome backgrounds load)
     t = performance.now();
     console.log(
       `[DynamicMap] Rendering seed ${seed} with ${result.parallelWorlds?.length || 3} worlds, worldCenter=${result.worldCenter}`,
@@ -218,6 +225,7 @@ export async function runDynamicMapFromURL(opts: DynamicMapOptions): Promise<Gen
  */
 export function clearDynamicMap(viewer: any): void {
   clearDynamicOverlays(viewer);
+  resetPersistentBiomeBackgrounds();
   currentSeed = null;
   currentIsDaily = false;
   dynamicRendered = false;

@@ -175,13 +175,52 @@ export class UnifiedSearchResults extends EventEmitter2 {
     this.wrapper.scrollTop = 0;
   }
 
-  /** Show a "search is being indexed" placeholder. */
+  /** Show a "search is being indexed" placeholder with skeleton loaders. */
   setIndexingPlaceholder(): void {
     this.clearResults(false);
-    const li = document.createElement("li");
-    li.className = "search-indexing-notice";
-    li.innerHTML = `<span class="spinner-border spinner-border-sm text-secondary" role="status"></span><span>Search is being indexed…</span>`;
-    this.wrapper.appendChild(li);
+
+    // Render 6 skeleton rows mimicking real search result items
+    for (let i = 0; i < 6; i++) {
+      const li = document.createElement("li");
+      li.className = "list-group-item search-result d-flex align-items-center";
+      li.style.pointerEvents = "none";
+
+      // Skeleton icon
+      const iconSkel = document.createElement("div");
+      iconSkel.className = "skeleton-pulse me-2 flex-shrink-0";
+      iconSkel.style.width = "32px";
+      iconSkel.style.height = "32px";
+      iconSkel.style.borderRadius = "4px";
+      li.appendChild(iconSkel);
+
+      // Skeleton text lines
+      const textCol = document.createElement("div");
+      textCol.style.flex = "1";
+      textCol.style.minWidth = "0";
+
+      const line1 = document.createElement("div");
+      line1.className = "skeleton-pulse";
+      line1.style.height = "12px";
+      // Vary widths so it looks natural
+      line1.style.width = [70, 55, 80, 60, 45, 65][i] + "%";
+      line1.style.marginBottom = "6px";
+      textCol.appendChild(line1);
+
+      const line2 = document.createElement("div");
+      line2.className = "skeleton-pulse";
+      line2.style.height = "10px";
+      line2.style.width = [40, 30, 50, 35, 25, 45][i] + "%";
+      textCol.appendChild(line2);
+
+      li.appendChild(textCol);
+      this.wrapper.appendChild(li);
+    }
+
+    // "Indexing" notice at the bottom
+    const notice = document.createElement("li");
+    notice.className = "search-indexing-notice";
+    notice.innerHTML = `<span class="spinner-border spinner-border-sm text-secondary" role="status"></span><span>Search is being indexed…</span>`;
+    this.wrapper.appendChild(notice);
   }
 
   setResults(results: UnifiedSearchResult[]) {

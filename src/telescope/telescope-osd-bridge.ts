@@ -268,6 +268,7 @@ export function clearDynamicOverlays(viewer: any): void {
     const world = viewer.world;
     for (let i = world.getItemCount() - 1; i >= 0; i--) {
       const item = world.getItemAt(i);
+      // Skip base static DZI tiles (they have a string tilesUrl)
       if (item && typeof item.source?.tilesUrl !== "string") {
         world.removeItem(item);
       }
@@ -300,6 +301,246 @@ export function clearDynamicOverlays(viewer: any): void {
 export function hasDynamicOverlays(): boolean {
   return dynamicTiledImages.size > 0;
 }
+
+// ─── Biome background layer ─────────────────────────────────────────────────
+
+const BIOME_BG_CACHE_NAME = "noitamap-biome-bg-v1";
+const BIOME_BG_CACHE_KEY = "/biome_bg_composite.png";
+
+/** In-memory cache of the composite blob + positioning metadata */
+let _bgCompositeBlob: Blob | null = null;
+let _bgGeometry: { gx: number; gy: number; w: number; h: number } | null = null;
+let _bgInitPromise: Promise<void> | null = null;
+
+/**
+ * Initialize the biome background system: render or load the composite,
+ * cache in memory, and add to OSD as a preview. Safe to call multiple times.
+ */
+export function ensurePersistentBiomeBackgrounds(viewer: any): Promise<void> {
+  if (!_bgInitPromise) {
+    _bgInitPromise = _initBiomeBg(viewer);
+  }
+  return _bgInitPromise;
+}
+
+/**
+ * Reset so biome backgrounds will be re-initialized on next call.
+ * Called when switching away from the dynamic map (setMap → world.removeAll).
+ * Keeps the in-memory blob cache so re-init is instant.
+ */
+export function resetPersistentBiomeBackgrounds(): void {
+  _bgInitPromise = null;
+}
+
+/**
+ * Add biome background layers to OSD from the in-memory cached blob.
+ * This is FAST (no rendering, no network) — just creates blob URLs
+ * and calls addTiledImage. Used after clearDynamicOverlays to immediately
+ * restore the biome background layer.
+ *
+ * Returns immediately if the blob hasn't been loaded yet (preview not ready).
+ */
+export function addBiomeBgToOSD(viewer: any): void {
+  if (!_bgCompositeBlob || !_bgGeometry) return;
+  const { gx, gy, w } = _bgGeometry;
+  const pwOffsetPixels = 70 * 512;
+  for (const pw of [-1, 0, 1]) {
+    const url = URL.createObjectURL(_bgCompositeBlob);
+    viewer.addTiledImage({
+      tileSource: { type: "image", url, buildPyramid: false },
+      x: gx + pw * pwOffsetPixels,
+      y: gy,
+      width: w,
+    });
+  }
+}
+
+async function _initBiomeBg(viewer: any): Promise<void> {
+  // Compute geometry (only once)
+  if (!_bgGeometry) {
+    const boundaryData = (await import("../data/biome_boundries_py.json")).default;
+    if (!boundaryData?.biomes) return;
+
+    const biomesWithBg = boundaryData.biomes.filter(
+      (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename),
+    );
+    if (biomesWithBg.length === 0) return;
+
+    const CHUNK_SIZE = 512;
+    const BIOME_IMAGE_TOP_Y = -14 * CHUNK_SIZE;
+    const MAP_TOP_LEFT_X = -17920;
+
+    let globalMinGX = Infinity, globalMinGY = Infinity, globalMaxGX = -Infinity, globalMaxGY = -Infinity;
+    for (const biome of biomesWithBg) {
+      const rawParts = biome.svg_map_path.split(" ");
+      let isX = true;
+      for (const part of rawParts) {
+        if (part === "M" || part === "L" || part === "Z") { isX = true; continue; }
+        const v = Number(part);
+        if (isX) {
+          const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
+          globalMinGX = Math.min(globalMinGX, gx); globalMaxGX = Math.max(globalMaxGX, gx);
+          isX = false;
+        } else {
+          const gy = v * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
+          globalMinGY = Math.min(globalMinGY, gy); globalMaxGY = Math.max(globalMaxGY, gy);
+          isX = true;
+        }
+      }
+    }
+    if (!isFinite(globalMinGX)) return;
+
+    const regionW = globalMaxGX - globalMinGX;
+    const regionH = globalMaxGY - globalMinGY;
+    if (regionW <= 0 || regionH <= 0) return;
+
+    _bgGeometry = { gx: globalMinGX, gy: globalMinGY, w: regionW, h: regionH };
+  }
+
+  // Load or render the composite blob (only once)
+  if (!_bgCompositeBlob) {
+    // Try Cache API first
+    try {
+      const cache = await caches.open(BIOME_BG_CACHE_NAME);
+      const cached = await cache.match(BIOME_BG_CACHE_KEY);
+      if (cached) {
+        _bgCompositeBlob = await cached.blob();
+        console.log(`[OSD Bridge] Biome bg composite loaded from cache (${_bgCompositeBlob.size} bytes)`);
+      }
+    } catch (e) {
+      console.warn("[OSD Bridge] Cache API read failed:", e);
+    }
+
+    // Render if not cached
+    if (!_bgCompositeBlob) {
+      const boundaryData = (await import("../data/biome_boundries_py.json")).default;
+      const biomesWithBg = boundaryData.biomes.filter(
+        (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename),
+      );
+      console.log("[OSD Bridge] Rendering biome bg composite...");
+      _bgCompositeBlob = await _renderBiomeComposite(
+        biomesWithBg, _bgGeometry.gx, _bgGeometry.gy, _bgGeometry.w, _bgGeometry.h,
+      );
+      if (!_bgCompositeBlob) return;
+
+      // Cache for next page load
+      try {
+        const cache = await caches.open(BIOME_BG_CACHE_NAME);
+        await cache.put(BIOME_BG_CACHE_KEY, new Response(_bgCompositeBlob, {
+          headers: { "Content-Type": "image/png" },
+        }));
+        console.log(`[OSD Bridge] Biome bg composite cached (${_bgCompositeBlob.size} bytes)`);
+      } catch (e) {
+        console.warn("[OSD Bridge] Cache API write failed:", e);
+      }
+    }
+  }
+
+  // Add initial preview to OSD
+  addBiomeBgToOSD(viewer);
+  console.log("[OSD Bridge] Biome bg preview added to OSD (3 PWs)");
+}
+
+/** Render the biome background composite on an OffscreenCanvas. */
+async function _renderBiomeComposite(
+  biomesWithBg: any[],
+  globalMinGX: number, globalMinGY: number,
+  regionW: number, regionH: number,
+): Promise<Blob | null> {
+  const CHUNK_SIZE = 512;
+  const BIOME_IMAGE_TOP_Y = -14 * CHUNK_SIZE;
+  const MAP_TOP_LEFT_X = -17920;
+
+  // Load textures from static URLs
+  const neededPaths = new Set<string>();
+  for (const b of biomesWithBg) {
+    neededPaths.add(BIOME_BACKGROUND_MAP[b.filename]);
+  }
+
+  const bgCache = new Map<string, ImageBitmap>();
+  await Promise.all([...neededPaths].map(async (zipPath) => {
+    try {
+      const filename = zipPath.split("/").pop()!;
+      const resp = await fetch(`./biome_bg/${filename}`);
+      if (!resp.ok) return;
+      const blob = await resp.blob();
+      const bmp = await createImageBitmap(blob);
+      bgCache.set(zipPath, bmp);
+    } catch {}
+  }));
+
+  const scale = 0.1;
+  const cw = Math.ceil(regionW * scale);
+  const ch = Math.ceil(regionH * scale);
+  if (cw <= 0 || ch <= 0) return null;
+
+  const canvas = new OffscreenCanvas(cw, ch);
+  const ctx = canvas.getContext("2d")!;
+  ctx.imageSmoothingEnabled = false;
+
+  for (const biome of biomesWithBg) {
+    const bgPath = BIOME_BACKGROUND_MAP[biome.filename];
+    const bgBitmap = bgCache.get(bgPath);
+    if (!bgBitmap) continue;
+
+    const rawParts = biome.svg_map_path.split(" ");
+    let minGX = Infinity, minGY = Infinity, maxGX = -Infinity, maxGY = -Infinity;
+    let isX = true;
+    for (const part of rawParts) {
+      if (part === "M" || part === "L" || part === "Z") { isX = true; continue; }
+      const v = Number(part);
+      if (isX) {
+        const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
+        minGX = Math.min(minGX, gx); maxGX = Math.max(maxGX, gx); isX = false;
+      } else {
+        const gy = v * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
+        minGY = Math.min(minGY, gy); maxGY = Math.max(maxGY, gy); isX = true;
+      }
+    }
+    if (!isFinite(minGX)) continue;
+
+    ctx.save();
+    ctx.beginPath();
+    let isXp = true;
+    for (let j = 0; j < rawParts.length; j++) {
+      const part = rawParts[j];
+      if (part === "M" || part === "L" || part === "Z") {
+        if (part === "Z") ctx.closePath();
+        isXp = true; continue;
+      }
+      const v = Number(part);
+      if (isXp) {
+        const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
+        const nextPart = rawParts[j + 1];
+        if (nextPart !== undefined) {
+          const gy = Number(nextPart) * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
+          const cx = (gx - globalMinGX) * scale;
+          const cy = (gy - globalMinGY) * scale;
+          const prevCmd = rawParts[j - 1];
+          if (prevCmd === "M") ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+        }
+        isXp = false;
+      } else { isXp = true; }
+    }
+    ctx.clip();
+
+    const tw = Math.max(1, Math.round(bgBitmap.width * scale));
+    const th = Math.max(1, Math.round(bgBitmap.height * scale));
+    const tileMinX = Math.floor(((minGX - globalMinGX) * scale) / tw) * tw;
+    const tileMinY = Math.floor(((minGY - globalMinGY) * scale) / th) * th;
+    const tileMaxX = Math.ceil((maxGX - globalMinGX) * scale);
+    const tileMaxY = Math.ceil((maxGY - globalMinGY) * scale);
+    for (let ty = tileMinY; ty < tileMaxY; ty += th) {
+      for (let tx = tileMinX; tx < tileMaxX; tx += tw) {
+        ctx.drawImage(bgBitmap, 0, 0, bgBitmap.width, bgBitmap.height, tx, ty, tw, th);
+      }
+    }
+    ctx.restore();
+  }
+
+  return canvas.convertToBlob({ type: "image/png" });
+}
+
 
 /**
  * Convert an OffscreenCanvas to a blob URL.
@@ -2461,8 +2702,10 @@ export async function renderGenerationResult(viewer: OSDViewer, result: Generati
   clearDynamicOverlays(viewer);
   (window as any).__osdViewer = viewer;
 
-  // Add biome-shaped background layers first (below everything)
-  await addBiomeBackgrounds(viewer, generationId);
+  // Re-add biome backgrounds immediately after clearing.
+  // addBiomeBgToOSD is synchronous and uses the in-memory cached blob —
+  // the OSD items will be the bottom-most dynamic layers.
+  addBiomeBgToOSD(viewer);
   if (currentGenerationId !== generationId) return;
 
   // Adding biomes initializes the OSD viewport bounds.
