@@ -2699,12 +2699,29 @@ async function addOrbOverlays(viewer: OSDViewer, result: GenerationResult, gener
 
 export async function renderGenerationResult(viewer: OSDViewer, result: GenerationResult): Promise<void> {
   const generationId = ++currentGenerationId;
-  clearDynamicOverlays(viewer);
   (window as any).__osdViewer = viewer;
 
-  // Re-add biome backgrounds immediately after clearing.
-  // addBiomeBgToOSD is synchronous and uses the in-memory cached blob —
-  // the OSD items will be the bottom-most dynamic layers.
+  // Snapshot old dynamic items (tiled images + HTML overlays) BEFORE adding
+  // new content. We'll remove them AFTER new content is fully in place,
+  // so there's never a visible gap where biome backgrounds disappear.
+  const oldWorldItems: any[] = [];
+  try {
+    const world = viewer.world;
+    for (let i = 0; i < world.getItemCount(); i++) {
+      const item = world.getItemAt(i);
+      if (item && typeof item.source?.tilesUrl !== "string") {
+        oldWorldItems.push(item);
+      }
+    }
+  } catch {}
+  const oldOverlayEls = [...dynamicOverlayElements];
+  dynamicOverlayElements = [];
+  const oldBlobUrls = [...dynamicBlobUrls];
+  dynamicBlobUrls = [];
+  dynamicTiledImages.clear();
+  activeOrbTargets = [];
+
+  // Add biome backgrounds as the bottom-most new layer
   addBiomeBgToOSD(viewer);
   if (currentGenerationId !== generationId) return;
 
@@ -2767,6 +2784,23 @@ export async function renderGenerationResult(viewer: OSDViewer, result: Generati
 
   // Fallback: if OSD callback hasn't fired within 3s, force-complete the bar
   setTimeout(emitItemsDone, 3000);
+
+  // Remove old items NOW — new content is fully added and covering them.
+  // This creates a seamless swap with no visible gap.
+  try {
+    const world = viewer.world;
+    for (const item of oldWorldItems) {
+      try { world.removeItem(item); } catch {}
+    }
+  } catch {}
+  for (const el of oldOverlayEls) {
+    try { viewer.removeOverlay(el); el.remove(); } catch {}
+  }
+  setTimeout(() => {
+    for (const url of oldBlobUrls) {
+      URL.revokeObjectURL(url);
+    }
+  }, 2000);
 }
 
 export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: number; worldX: number; worldY: number }> {

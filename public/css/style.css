@@ -642,14 +642,30 @@ body.toggle-hidden div.osOverlayHighlight {
 
 #map-loading-strip {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  top: 100%;
+  left: 5%;
+  right: 5%;
   z-index: 1040;
   pointer-events: none;
   display: none;           /* toggled by JS */
   opacity: 0;
   transition: opacity 0.35s ease;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  #map-loading-strip {
+    left: 15%;
+    right: 15%;
+  }
+}
+
+@media (min-width: 1200px) {
+  #map-loading-strip {
+    left: 30%;
+    right: 30%;
+  }
 }
 
 #map-loading-strip.visible {
@@ -669,7 +685,7 @@ body.toggle-hidden div.osOverlayHighlight {
   background: rgba(10, 12, 18, 0.78);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .loading-strip-phase {
