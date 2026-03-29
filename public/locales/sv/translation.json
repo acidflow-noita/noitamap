@@ -1,7 +1,7 @@
 {
   "search": {
     "placeholder": "Hitta trollformler, föremål, bossar, platser…",
-    "indexing": "Search is being indexed…",
+    "indexing": "Data is being loaded…",
     "indexingHint": "You can navigate the map while data loads"
   },
   "spell_prefix": "Trollformel",

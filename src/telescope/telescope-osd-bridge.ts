@@ -225,6 +225,19 @@ async function ensureTelescopeModules(): Promise<void> {
   const genMod = telescope.genConfigMod;
   const imageMod = telescope.imageProcessingMod;
   const utilsMod = telescope.utilsMod;
+  const settingsMod = telescope.settingsMod;
+
+  // Push our settings into telescope's centralized appSettings object
+  settingsMod.updateSettings({
+    clearSpawnPixels: true,
+    recolorMaterials: true,
+    enableEdgeNoise: true,
+    fixHolyMountainEdgeNoise: true,
+    enableStaticPixelScenes: 'all',
+    skipCosmeticScenes: false,
+    excludeTaikasauva: false,
+    excludeEdgeCases: false,
+  });
 
   CHUNK_SIZE = constantsMod.CHUNK_SIZE;
   BIOME_CONFIG = biomeMod.BIOME_CONFIG;

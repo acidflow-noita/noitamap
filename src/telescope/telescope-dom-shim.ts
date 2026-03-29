@@ -40,6 +40,7 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
 
   const cfg = { ...DEFAULTS, ...opts };
 
+  // Checkbox inputs — telescope reads these via .checked
   const checkboxes: Record<string, boolean> = {
     "clear-spawn-pixels": cfg.clearSpawnPixels,
     "recolor-materials": cfg.recolorMaterials,
@@ -57,6 +58,20 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
     "exclude-taikasauva": false,
     "exclude-edge-cases": false,
     "visited-coalmine-alt-shrine": false,
+    // Search-related checkboxes
+    "search-all-pw": false,
+    "search-vertical-pw": false,
+    "show-wand-sprite-rarity": false,
+    // App UI checkboxes
+    "custom-art": false,
+    "debug-show-path": false,
+    "debug-show-tile-bounds": false,
+    "greed-curse": false,
+    "no-more-shuffle": false,
+    "auto-increment-seed": false,
+    "enable-edge-noise": false,
+    "fix-holy-mountain-edge-noise": false,
+    "rng-info": false,
   };
 
   const container = document.createElement("div");
@@ -72,11 +87,50 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
     container.appendChild(cb);
   }
 
-  // Also add text inputs telescope may read
+  // Text/number inputs — telescope reads these via .value
   const textInputs: Record<string, string> = {
     "debug-extra-rerolls": "0",
     "debug-biome-overlay-mode": "none",
     "enable-static-pixel-scenes": "all",
+    // Navigation inputs
+    "seed": "0",
+    "pw": "0",
+    "pw-vertical": "0",
+    // Search inputs
+    "search-input": "",
+    "search-name": "",
+    "search-sprite": "",
+    "search-ac": "",
+    "search-ac-mode": "any",
+    "search-shuffle-mode": "any",
+    "search-pw-limit": "1",
+    "search-pw-vertical-limit": "1",
+    // Wand stat filter inputs (min/max ranges)
+    "cap-max-num": "99999",
+    "cap-min-num": "0",
+    "delay-max-num": "99999",
+    "delay-min-num": "-99999",
+    "len-max-num": "99999",
+    "len-min-num": "0",
+    "mana-max-num": "99999",
+    "mana-min-num": "0",
+    "manarech-max-num": "99999",
+    "manarech-min-num": "0",
+    "rarity-max-num": "99999",
+    "rarity-min-num": "0",
+    "rech-max-num": "99999",
+    "rech-min-num": "-99999",
+    "speed-max-num": "99999",
+    "speed-min-num": "0",
+    "spells-max-num": "99999",
+    "spells-min-num": "0",
+    "spread-max-num": "99999",
+    "spread-min-num": "-99999",
+    // App UI inputs
+    "ng": "0",
+    "extra-shop-items": "0",
+    "local-search-mode": "global",
+    "search-radius-num": "0",
   };
   for (const [id, value] of Object.entries(textInputs)) {
     if (document.getElementById(id)) continue;
@@ -87,8 +141,60 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
     container.appendChild(input);
   }
 
+  // Container/display elements — telescope accesses .innerHTML, .innerText, .style, or .getBoundingClientRect
+  const displayElements: Record<string, string> = {
+    "search-results": "div",
+    "search-nav": "div",
+    "search-count": "span",
+    "cancel-search": "button",
+    "view": "div",
+    // App UI containers, canvases, and buttons
+    "advanced-ui": "div",
+    "canvas": "canvas",
+    "coords": "div",
+    "copy-path-btn": "button",
+    "daily-run-button": "button",
+    "debug-noise-canvas": "canvas",
+    "debug-options": "div",
+    "gen-btn": "button",
+    "loading-overlay": "div",
+    "loading-text": "div",
+    "overlay": "canvas",
+    "pw-dec": "button",
+    "pw-dec-vertical": "button",
+    "pw-inc": "button",
+    "pw-inc-vertical": "button",
+    "pw-set-max": "span",
+    "pw-set-max-vertical": "span",
+    "regions-all": "button",
+    "regions-list": "div",
+    "regions-none": "button",
+    "regions-useful": "button",
+    "search-all-pw-label": "label",
+    "search-background": "div",
+    "search-btn": "button",
+    "search-label": "span",
+    "search-next": "button",
+    "search-prev": "button",
+    "search-status": "span",
+    "search-status-container": "div",
+    "status": "div",
+    "tooltip": "div",
+    "unlock-all": "button",
+    "unlock-folder-picker": "input",
+    "unlock-none": "button",
+    "unlocks-list": "div",
+  };
+  for (const [id, tagName] of Object.entries(displayElements)) {
+    if (document.getElementById(id)) continue;
+    const el = document.createElement(tagName);
+    el.id = id;
+    container.appendChild(el);
+  }
+
   document.body.appendChild(container);
 }
+
 
 /**
  * LibreWolf and Safari ITP block canvas `getImageData` and `convertToBlob` by

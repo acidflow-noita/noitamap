@@ -161,6 +161,22 @@ async function _doInitTelescope(): Promise<void> {
   const staticSpawnsMod = telescope.staticSpawnsMod;
   const pngSanitizerMod = telescope.pngSanitizerMod;
   const appMod = telescope.appMod;
+  const settingsMod = telescope.settingsMod;
+
+  // 4b. Push our shim settings into telescope's centralized appSettings.
+  //     Telescope refactored from reading DOM checkboxes directly to using
+  //     an appSettings object (settings.js). Without this call, clearSpawnPixels
+  //     defaults to false and spawn pixels reappear on the map.
+  settingsMod.updateSettings({
+    clearSpawnPixels: true,
+    recolorMaterials: true,
+    enableEdgeNoise: true,
+    fixHolyMountainEdgeNoise: true,
+    enableStaticPixelScenes: 'all',
+    skipCosmeticScenes: false,
+    excludeTaikasauva: false,
+    excludeEdgeCases: false,
+  });
 
   generateBiomeData = biomeGenMod.generateBiomeData;
   BIOME_CONFIG = biomeGenMod.BIOME_CONFIG;

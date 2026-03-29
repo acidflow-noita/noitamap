@@ -1,7 +1,7 @@
 {
   "search": {
     "placeholder": "Znajdź zaklęcia, przedmioty, bossy, miejsca…",
-    "indexing": "Search is being indexed…",
+    "indexing": "Data is being loaded…",
     "indexingHint": "You can navigate the map while data loads"
   },
   "spell_prefix": "Zaklęcie",

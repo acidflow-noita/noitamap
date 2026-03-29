@@ -16,7 +16,9 @@
     "sync-translations": "node build_scripts/sync-translations.cjs",
     "watch": "vite build --watch",
     "dev": "vite",
-    "generate": "node ./src/data/data_generators/map_definitions_maker.cjs"
+    "generate": "node ./src/data/data_generators/map_definitions_maker.cjs",
+    "test-telescope": "vitest run tests/telescope-integration.test.ts tests/telescope-wang-tiles.test.ts",
+    "update-and-build": "node scripts/update-telescope.cjs"
   },
   "repository": {
     "type": "git",
