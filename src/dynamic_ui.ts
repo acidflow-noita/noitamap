@@ -172,7 +172,7 @@ async function onDailySeedClick(): Promise<void> {
 
     if (seed !== currentSeed) {
       updateURLWithSeed(seed, true);
-      showLoadingOverlay();
+      showLoadingStrip();
       await runDynamicMap(seed, true, dynamicOpts);
     } else {
       console.log("[DynamicUI] Daily seed matches current seed, skipping.");
@@ -207,7 +207,7 @@ async function onGenerateClick(): Promise<void> {
   setBusy(true);
   try {
     updateURLWithSeed(seed, false);
-    showLoadingOverlay();
+    showLoadingStrip();
     await runDynamicMap(seed, false, dynamicOpts);
   } catch (e) {
     console.error("[DynamicUI] Generate failed:", e);
@@ -239,11 +239,12 @@ function updateGenerateButtonState(): void {
   generateBtn.disabled = isMatch || isBusy;
 }
 
-/** Show the loading overlay with download already complete, ready for generation progress. */
-export function showLoadingOverlay(): void {
-  const overlay = document.getElementById("map-loading-overlay");
-  if (!overlay) return;
-  overlay.style.display = "flex";
+/** Show the non-blocking loading strip with download already complete. */
+export function showLoadingStrip(): void {
+  const strip = document.getElementById("map-loading-strip");
+  if (!strip) return;
+  strip.classList.remove("fade-out");
+  strip.classList.add("visible");
   // Skip download phase (data.zip already loaded)
   const dl = document.getElementById("loading-bar-download") as HTMLElement | null;
   if (dl) dl.style.width = "100%";
@@ -254,16 +255,19 @@ export function showLoadingOverlay(): void {
   if (items) items.style.width = "0%";
   const title = document.getElementById("map-loading-title");
   if (title) title.textContent = "Generating Biomes";
-  const subtitle = document.getElementById("map-loading-subtitle");
-  if (subtitle) subtitle.style.display = "none";
   const status = document.getElementById("map-loading-status");
   if (status) status.textContent = "33%";
 }
 
-/** Hide the loading overlay. */
-export function hideLoadingOverlay(): void {
-  const overlay = document.getElementById("map-loading-overlay");
-  if (overlay) overlay.style.display = "none";
+/** Hide the loading strip with a fade-out. */
+export function hideLoadingStrip(): void {
+  const strip = document.getElementById("map-loading-strip");
+  if (!strip) return;
+  strip.classList.add("fade-out");
+  // After the CSS transition completes, fully hide
+  setTimeout(() => {
+    strip.classList.remove("visible", "fade-out");
+  }, 400);
 }
 
 export function setDynamicUISeed(seed: number, isDaily: boolean): void {

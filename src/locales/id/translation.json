@@ -1,6 +1,8 @@
 {
   "search": {
-    "placeholder": "Cari mantra, item, bos, tempat…"
+    "placeholder": "Cari mantra, item, bos, tempat…",
+    "indexing": "Search is being indexed…",
+    "indexingHint": "You can navigate the map while data loads"
   },
   "spell_prefix": "Mantra",
   "tiers_prefix": "Tingkat",
@@ -4391,7 +4393,8 @@
       "generating": "Menghasilkan Bioma",
       "hint": "File 24MB ini disimpan secara permanen di cache setelah pemuatan pertama.",
       "segmentDownload": "Unduh Data",
-      "segmentGeneration": "Pembuatan Bioma"
+      "segmentGeneration": "Pembuatan Bioma",
+      "addingItems": "Adding items and wands"
     }
   },
   "drawing": {

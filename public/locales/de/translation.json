@@ -1,6 +1,8 @@
 {
   "search": {
-    "placeholder": "Zauber, Gegenstände, Bosse, Orte finden…"
+    "placeholder": "Zauber, Gegenstände, Bosse, Orte finden…",
+    "indexing": "Search is being indexed…",
+    "indexingHint": "You can navigate the map while data loads"
   },
   "spell_prefix": "Zauber",
   "tiers_prefix": "Stufen",
@@ -4391,7 +4393,8 @@
       "generating": "Biome werden generiert",
       "hint": "Diese 24MB große Datei wird nach dem ersten Laden dauerhaft gespeichert.",
       "segmentDownload": "Daten-Download",
-      "segmentGeneration": "Biom-Generierung"
+      "segmentGeneration": "Biom-Generierung",
+      "addingItems": "Adding items and wands"
     }
   },
   "drawing": {

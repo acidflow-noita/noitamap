@@ -1,6 +1,8 @@
 {
   "search": {
-    "placeholder": "Buscar hechizos, objetos, jefes, lugares…"
+    "placeholder": "Buscar hechizos, objetos, jefes, lugares…",
+    "indexing": "Search is being indexed…",
+    "indexingHint": "You can navigate the map while data loads"
   },
   "spell_prefix": "Hechizo",
   "tiers_prefix": "Niveles",
@@ -4391,7 +4393,8 @@
       "generating": "Generando biomas",
       "hint": "Este archivo de 24 MB se guarda en caché permanentemente tras la primera carga.",
       "segmentDownload": "Descarga de datos",
-      "segmentGeneration": "Generación de biomas"
+      "segmentGeneration": "Generación de biomas",
+      "addingItems": "Adding items and wands"
     }
   },
   "drawing": {

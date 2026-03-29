@@ -175,7 +175,14 @@ export class UnifiedSearchResults extends EventEmitter2 {
     this.wrapper.scrollTop = 0;
   }
 
-
+  /** Show a "search is being indexed" placeholder. */
+  setIndexingPlaceholder(): void {
+    this.clearResults(false);
+    const li = document.createElement("li");
+    li.className = "search-indexing-notice";
+    li.innerHTML = `<span class="spinner-border spinner-border-sm text-secondary" role="status"></span><span>Search is being indexed…</span>`;
+    this.wrapper.appendChild(li);
+  }
 
   setResults(results: UnifiedSearchResult[]) {
     this.clearResults(results.length === 0);

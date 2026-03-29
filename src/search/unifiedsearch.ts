@@ -59,6 +59,7 @@ export class UnifiedSearch extends EventEmitter2 {
   private dynamicPOIs: DynamicPOI[] = [];
   private dynamicIndex: any = null; // FlexSearch.Document index for dynamic POIs
   private dynamicPOIMap: Map<string, DynamicPOI> = new Map(); // fast id→POI lookup
+  private indexingState: 'idle' | 'indexing' | 'ready' = 'idle';
 
   public currentMap: MapName;
 
@@ -176,6 +177,23 @@ export class UnifiedSearch extends EventEmitter2 {
     this.updateSearchResults();
   }
 
+  /** Set the search indexing state (idle | indexing | ready). */
+  setIndexingState(state: 'idle' | 'indexing' | 'ready'): void {
+    const prev = this.indexingState;
+    this.indexingState = state;
+    // When transitioning to 'ready', force a search refresh so results appear
+    if (state === 'ready' && prev === 'indexing') {
+      this.lastSearchText = "__force__";
+      this.lastViewportKey = "";
+      this.updateSearchResults();
+    }
+    // When transitioning to 'indexing', update display immediately
+    if (state === 'indexing') {
+      this.lastSearchText = "__force__";
+      this.updateSearchResults();
+    }
+  }
+
   /** Build a FlexSearch Document index over the dynamic POI array for fast text queries. */
   private rebuildDynamicIndex(pois: DynamicPOI[]): void {
     // Build a compound searchable text field for each POI
@@ -291,6 +309,11 @@ export class UnifiedSearch extends EventEmitter2 {
 
     if (searchText === "") {
       resetBiomeOverlays();
+      if (isDynamic && this.indexingState === 'indexing') {
+        // Show indexing placeholder
+        this.searchResults.setIndexingPlaceholder();
+        return;
+      }
       if (isDynamic && playerX !== null && playerY !== null && this.dynamicPOIs && this.dynamicPOIs.length > 0) {
         // Find the 10 closest items using a fast O(N) array pass with squared distances
         const topK = 10;
@@ -346,6 +369,11 @@ export class UnifiedSearch extends EventEmitter2 {
       }
       return;
     }
+
+      if (isDynamic && this.indexingState === 'indexing') {
+        this.searchResults.setIndexingPlaceholder();
+        return;
+      }
 
     if (isDynamic) {
       // Dynamic map: search dynamic POIs via FlexSearch index

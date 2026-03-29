@@ -1,6 +1,8 @@
 {
   "search": {
-    "placeholder": "Etsi loitsuja, esineitä, pommoja, paikkoja…"
+    "placeholder": "Etsi loitsuja, esineitä, pommoja, paikkoja…",
+    "indexing": "Search is being indexed…",
+    "indexingHint": "You can navigate the map while data loads"
   },
   "spell_prefix": "Loitsu",
   "tiers_prefix": "Tasot",
@@ -4391,7 +4393,8 @@
       "generating": "Luodaan biomeja",
       "hint": "Tämä 24 Mt:n tiedosto tallennetaan pysyvästi välimuistiin ensimmäisen latauksen jälkeen.",
       "segmentDownload": "Tietojen lataus",
-      "segmentGeneration": "Biomien luonti"
+      "segmentGeneration": "Biomien luonti",
+      "addingItems": "Adding items and wands"
     }
   },
   "drawing": {

@@ -1,6 +1,6 @@
 import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
 import { setupDropOverlay } from "./drop-overlay";
-import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed, showLoadingOverlay, hideLoadingOverlay } from "./dynamic_ui";
+import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed, showLoadingStrip, hideLoadingStrip } from "./dynamic_ui";
 import {
   runDynamicMapFromURL,
   runDynamicMap,
@@ -151,95 +151,71 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("i18next initialization failed:", error);
   }
 
-  // Handle map loading progress UI (two-segment bar)
-  const _getLoadingOverlay = () => document.getElementById("map-loading-overlay");
+  // Handle map loading progress UI (non-blocking strip)
   const _getDownloadBar = () => document.getElementById("loading-bar-download") as HTMLElement | null;
   const _getGenerationBar = () => document.getElementById("loading-bar-generation") as HTMLElement | null;
   const _getItemsBar = () => document.getElementById("loading-bar-items") as HTMLElement | null;
   const _getStatusText = () => document.getElementById("map-loading-status");
   const _getTitle = () => document.getElementById("map-loading-title");
-  const _getSubtitle = () => document.getElementById("map-loading-subtitle");
 
   window.addEventListener("dataZipProgress", ((e: CustomEvent) => {
-    const overlay = _getLoadingOverlay();
     const bar = _getDownloadBar();
     const status = _getStatusText();
     const title = _getTitle();
-    if (!overlay || !bar) return;
+    if (!bar) return;
 
-    // Always show the overlay when loading starts
-    overlay.style.display = "flex";
+    showLoadingStrip();
 
     if (e.detail.percentage < 100) {
-      // Segment 1 fills left third (0–33.3% total)
       bar.style.width = `${e.detail.percentage}%`;
-      bar.setAttribute("aria-valuenow", e.detail.percentage.toString());
-      if (title) title.setAttribute("data-i18n", "loading.mapData.downloading");
+      if (title) title.textContent = i18next.isInitialized ? i18next.t("loading.mapData.downloading") : "Downloading World Data";
       if (status) status.textContent = `${Math.round(e.detail.percentage / 3)}%`;
     } else {
-      // Download done – keep bar at max and switch title to generation phase
       bar.style.width = "100%";
-      if (title) title.setAttribute("data-i18n", "loading.mapData.generating");
-      if (title)
-        title.textContent = i18next.isInitialized ? i18next.t("loading.mapData.generating") : "Generating Biomes";
-      const subtitle = _getSubtitle();
-      if (subtitle) subtitle.style.display = "none";
+      if (title) title.textContent = i18next.isInitialized ? i18next.t("loading.mapData.generating") : "Generating Biomes";
       if (status) status.textContent = "33%";
     }
   }) as EventListener);
 
   window.addEventListener("biomeGenerationProgress", ((e: CustomEvent) => {
-    const overlay = _getLoadingOverlay();
     const bar = _getGenerationBar();
     const status = _getStatusText();
-    if (!overlay || !bar) return;
+    if (!bar) return;
 
-    overlay.style.display = "flex";
+    showLoadingStrip();
     bar.style.width = `${e.detail.percentage}%`;
-    bar.setAttribute("aria-valuenow", e.detail.percentage.toString());
     if (status) status.textContent = `${Math.round(33 + e.detail.percentage / 3)}%`;
 
     if (e.detail.percentage >= 100) {
       const title = _getTitle();
-      if (title) {
-        title.removeAttribute("data-i18n");
-        title.textContent = "Adding items and wands to the map";
-      }
+      if (title) title.textContent = i18next.isInitialized ? i18next.t("loading.mapData.addingItems") : "Adding items and wands";
       bar.style.width = "100%";
       if (status) status.textContent = "66%";
     }
   }) as EventListener);
 
   window.addEventListener("itemsGenerationProgress", ((e: CustomEvent) => {
-    const overlay = _getLoadingOverlay();
     const bar = _getItemsBar();
     const status = _getStatusText();
-    if (!overlay || !bar) return;
+    if (!bar) return;
 
-    overlay.style.display = "flex";
+    showLoadingStrip();
     bar.style.width = `${e.detail.percentage}%`;
-    bar.setAttribute("aria-valuenow", e.detail.percentage.toString());
     if (status) status.textContent = `${Math.round(66 + e.detail.percentage / 3)}%`;
 
     if (e.detail.percentage >= 100) {
-      const overlay = _getLoadingOverlay();
-      if (overlay) {
+      requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            const o = _getLoadingOverlay();
-            if (o) o.style.display = "none";
-            // Reset all bars for the next generation
-            const dl = _getDownloadBar();
-            const gen = _getGenerationBar();
-            const it = _getItemsBar();
-            if (dl) dl.style.width = "0%";
-            if (gen) gen.style.width = "0%";
-            if (it) it.style.width = "0%";
-            const subtitle = _getSubtitle();
-            if (subtitle) subtitle.style.display = "";
-          });
+          hideLoadingStrip();
+          // Reset all bars for the next generation
+          const dl = _getDownloadBar();
+          const gen = _getGenerationBar();
+          const it = _getItemsBar();
+          if (dl) dl.style.width = "0%";
+          if (gen) gen.style.width = "0%";
+          if (it) it.style.width = "0%";
         });
-      }
+      });
     }
   }) as EventListener);
 
@@ -337,9 +313,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     onLoadingChange: (isLoading: boolean) => {
       loadingIndicator.style.display = isLoading ? "block" : "none";
       if (isLoading) {
-        showLoadingOverlay();
+        showLoadingStrip();
+        unifiedSearch.setIndexingState('indexing');
       } else {
-        hideLoadingOverlay();
+        hideLoadingStrip();
       }
     },
     onSeedResolved: (seed: number, isDaily: boolean) => {
@@ -349,6 +326,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     },
     onPOIsReady: (pois: DynamicPOI[]) => {
       unifiedSearch.setDynamicPOIs(pois);
+      unifiedSearch.setIndexingState('ready');
     },
   };
 
@@ -519,6 +497,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (lastKnownMap === "dynamic-main-branch" && state.map !== "dynamic-main-branch") {
       clearDynamicMap(app.osd);
       unifiedSearch.setDynamicPOIs([]);
+      unifiedSearch.setIndexingState('idle');
     } else if (lastKnownMap !== "dynamic-main-branch" && state.map === "dynamic-main-branch") {
       // Moving TO dynamic map — if we have a pending seed from drawing import, use it directly
       if (pendingDynamicSeed !== null) {

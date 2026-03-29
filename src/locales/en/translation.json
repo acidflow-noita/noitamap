@@ -1,6 +1,8 @@
 {
   "search": {
-    "placeholder": "Find spells, items, bosses, places…"
+    "placeholder": "Find spells, items, bosses, places…",
+    "indexing": "Search is being indexed…",
+    "indexingHint": "You can navigate the map while data loads"
   },
   "spell_prefix": "Spell",
   "tiers_prefix": "Tiers",
@@ -4396,6 +4398,7 @@
     "mapData": {
       "downloading": "Downloading World Data",
       "generating": "Generating Biomes",
+      "addingItems": "Adding items and wands",
       "hint": "This 24MB file is cached permanently after the first load.",
       "segmentDownload": "Data Download",
       "segmentGeneration": "Biome Generation"

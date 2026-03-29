@@ -637,3 +637,101 @@ body.toggle-hidden div.osOverlayHighlight {
 #dynamicSeedInput.seed-daily {
   color: oklch(78.9% 0.154 211.53);
 }
+
+/* ── Non-blocking loading strip ──────────────────────────────────────────── */
+
+#map-loading-strip {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1040;
+  pointer-events: none;
+  display: none;           /* toggled by JS */
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+#map-loading-strip.visible {
+  display: block;
+  opacity: 1;
+}
+
+#map-loading-strip.fade-out {
+  opacity: 0;
+}
+
+.loading-strip-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: rgba(10, 12, 18, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.loading-strip-phase {
+  color: #ccc;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  min-width: 140px;
+}
+
+.loading-strip-pct {
+  color: #999;
+  font-size: 0.78rem;
+  font-feature-settings: "tnum";
+  min-width: 32px;
+  text-align: right;
+}
+
+.loading-strip-bar-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  overflow: hidden;
+}
+
+.loading-strip-bar {
+  height: 100%;
+  max-width: 33.4%;
+  transition: width 0.25s ease;
+}
+
+.seg-download  { background: oklch(52% 0.105 223.128); }
+.seg-generation { background: oklch(60.9% 0.126 221.723); }
+.seg-items      { background: oklch(78.9% 0.154 211.53); }
+
+/* ── Search indexing placeholder ─────────────────────────────────────────── */
+
+.search-indexing-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.search-indexing-notice .spinner-border {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+  flex-shrink: 0;
+}
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-pulse {
+  background: linear-gradient(90deg, #2a2d35 25%, #3a3d45 50%, #2a2d35 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease infinite;
+  border-radius: 3px;
+}

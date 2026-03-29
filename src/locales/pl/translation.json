@@ -1,6 +1,8 @@
 {
   "search": {
-    "placeholder": "Znajdź zaklęcia, przedmioty, bossy, miejsca…"
+    "placeholder": "Znajdź zaklęcia, przedmioty, bossy, miejsca…",
+    "indexing": "Search is being indexed…",
+    "indexingHint": "You can navigate the map while data loads"
   },
   "spell_prefix": "Zaklęcie",
   "tiers_prefix": "Poziomy",
@@ -4391,7 +4393,8 @@
       "generating": "Generowanie biomów",
       "hint": "Ten plik (24 MB) jest trwale przechowywany w pamięci podręcznej po pierwszym załadowaniu.",
       "segmentDownload": "Pobieranie danych",
-      "segmentGeneration": "Generowanie biomów"
+      "segmentGeneration": "Generowanie biomów",
+      "addingItems": "Adding items and wands"
     }
   },
   "drawing": {

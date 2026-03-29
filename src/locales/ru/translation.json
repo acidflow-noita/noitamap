@@ -1,6 +1,8 @@
 {
   "search": {
-    "placeholder": "Найти заклинания, предметы, боссов, места…"
+    "placeholder": "Найти заклинания, предметы, боссов, места…",
+    "indexing": "Search is being indexed…",
+    "indexingHint": "You can navigate the map while data loads"
   },
   "spell_prefix": "Заклинание",
   "tiers_prefix": "Уровни",
@@ -4391,7 +4393,8 @@
       "generating": "Генерация биомов",
       "hint": "Этот файл (24 МБ) кэшируется после первой загрузки.",
       "segmentDownload": "Загрузка данных",
-      "segmentGeneration": "Генерация биомов"
+      "segmentGeneration": "Генерация биомов",
+      "addingItems": "Adding items and wands"
     }
   },
   "drawing": {
