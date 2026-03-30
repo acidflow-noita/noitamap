@@ -6,6 +6,7 @@
  */
 
 import type { GenerationResult, POI, PixelScene, TileLayer } from "./telescope-adapter";
+import { getPixelSceneImgElement, recolorPixelSceneForBiome, TILE_OVERLAY_COLORS } from "./telescope-adapter";
 import { getDataZip } from "../data-archive";
 import { installTelescopeShim } from "./telescope-dom-shim";
 import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope-data-bridge";
@@ -1586,9 +1587,40 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
         }
 
         // Middle layer: telescope's recolored imgElement (with magenta/air fix)
+        // NOTE: Telescope's refactored loadPixelScene no longer sets imgElement on
+        // returned scene objects. The raw data in PIXEL_SCENE_DATA[key].imgElement
+        // is UN-RECOLORED (gray terrain pixels show as white), so we must apply
+        // recolorPixelSceneForBiome to map those colors to the actual biome materials.
         let midBitmap: ImageBitmap | null = null;
-        if (scene.imgElement && wantMid) {
+        if (wantMid && scene.imgElement) {
+          // Old telescope path: imgElement is already recolored — use directly
           midBitmap = await imgElementToBitmap(scene.imgElement, scene.width, scene.height);
+        } else if (wantMid) {
+          // No visual/bg PNGs available or telescope refactored them away — use raw imgElement as fallback, but recolor it
+          const rawImgEl = getPixelSceneImgElement(scene.key);
+          if (rawImgEl) {
+             let recolored = rawImgEl;
+             try {
+                recolored = recolorPixelSceneForBiome(scene.name, rawImgEl, biome);
+
+                // Telescope's internal recolor lookup sometimes misses biomes (like the vault on the foreground map)
+                // and defaults to magenta (0xff00ff). Because our imgElementToBitmap interprets 
+                // pure magenta as a transparent placeholder, the terrain gets erased!
+                // We fix it by converting any opaque magenta back into a reliable metal-grey terrain color.
+                for (let i = 0; i < recolored.length; i += 4) {
+                  if (recolored[i] === 0xff && recolored[i+1] === 0x00 && recolored[i+2] === 0xff) {
+                    if (recolored[i+3] === 0xff) {
+                      recolored[i] = 0x5a;
+                      recolored[i+1] = 0x63;
+                      recolored[i+2] = 0x69;
+                    }
+                  }
+                }
+             } catch (e) {
+                console.warn("[OSD Bridge] Failed to recolor pixel scene fallback:", scene.key, e);
+             }
+             midBitmap = await imgElementToBitmap(recolored, scene.width, scene.height);
+          }
         }
 
         // Determine what layers we have

@@ -21,7 +21,18 @@ let scanSpawnFunctions: any;
 let getSpecialPoIs: any;
 let prescanSpawnFunctions: any;
 let PIXEL_SCENE_DATA: any;
+/**
+ * Get the raw pixel scene image data from telescope's internal cache.
+ * Telescope's refactored loadPixelScene/loadRandomPixelScene no longer set
+ * imgElement on returned scene objects, but the data still exists in
+ * PIXEL_SCENE_DATA[key].imgElement.
+ */
+export function getPixelSceneImgElement(key: string): Uint8Array | null {
+  if (!PIXEL_SCENE_DATA || !PIXEL_SCENE_DATA[key]) return null;
+  return PIXEL_SCENE_DATA[key].imgElement || null;
+}
 let loadPixelSceneData: any;
+export let recolorPixelSceneForBiome: any;
 let GENERATOR_CONFIG: any;
 let UNLOCKABLES: any;
 let setUnlocks: any;
@@ -32,6 +43,7 @@ let findEyeMessages: any;
 let addStaticPixelScenes: any;
 let telescopeApp: any;
 let BIOME_COLOR_LOOKUP: any;
+export let TILE_OVERLAY_COLORS: any;
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -186,6 +198,7 @@ async function _doInitTelescope(): Promise<void> {
   prescanSpawnFunctions = poiScannerMod.prescanSpawnFunctions;
   PIXEL_SCENE_DATA = pixelSceneMod.PIXEL_SCENE_DATA;
   loadPixelSceneData = pixelSceneMod.loadPixelSceneData;
+  recolorPixelSceneForBiome = pixelSceneMod.recolorPixelSceneForBiome;
   GENERATOR_CONFIG = genConfigMod.GENERATOR_CONFIG;
   UNLOCKABLES = unlocksMod.UNLOCKABLES;
   setUnlocks = unlocksMod.setUnlocks;
@@ -196,6 +209,7 @@ async function _doInitTelescope(): Promise<void> {
   addStaticPixelScenes = staticSpawnsMod.addStaticPixelScenes;
   telescopeApp = appMod.app;
   BIOME_COLOR_LOOKUP = imageProcessingMod.BIOME_COLOR_LOOKUP;
+  TILE_OVERLAY_COLORS = imageProcessingMod.TILE_OVERLAY_COLORS;
 
   // 5. Load biome map base assets (telescope's preload step)
   // Use library's loadPNG which handles sanitization
