@@ -114,13 +114,15 @@ export interface GenerateOptions {
   dailySeed?: boolean;
   /** Which horizontal parallel worlds to generate for */
   parallelWorlds?: number[];
+  /** Game mode: 'normal' or 'nightmare' */
+  gameMode?: string;
 }
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
 let initialized = false;
 let initPromise: Promise<void> | null = null;
-let biomeAssets: { ng0: Uint32Array | null; ngp: Uint32Array | null } = { ng0: null, ngp: null };
+let biomeAssets: { ng0: Uint32Array | null; ngp: Uint32Array | null; nightmare: Uint32Array | null } = { ng0: null, ngp: null, nightmare: null };
 
 // ─── Initialization ─────────────────────────────────────────────────────────
 
@@ -188,6 +190,7 @@ async function _doInitTelescope(): Promise<void> {
     skipCosmeticScenes: false,
     excludeTaikasauva: false,
     excludeEdgeCases: false,
+    showEnemies: true,
   });
 
   generateBiomeData = biomeGenMod.generateBiomeData;
@@ -218,6 +221,12 @@ async function _doInitTelescope(): Promise<void> {
     pngSanitizerMod.loadPNG("./data/biome_maps/biome_map_newgame_plus.png"),
   ]);
 
+  // Nightmare biome map is optional — only available when data.zip includes it
+  let nightmareImg: any = null;
+  try {
+    nightmareImg = await pngSanitizerMod.loadPNG("./data/biome_maps/biome_map_nightmare.png");
+  } catch (_) {}
+
   // Apply gamma fix directly to the raw RGBA bytes.
   // The dev mentioned #000042 becomes #000040. We ensure it's #000042.
   const applyGammaFix = (img: any) => {
@@ -233,6 +242,7 @@ async function _doInitTelescope(): Promise<void> {
   biomeAssets = {
     ng0: applyGammaFix(ng0Img),
     ngp: applyGammaFix(ngpImg),
+    nightmare: nightmareImg ? applyGammaFix(nightmareImg) : null,
   };
 
   if (!biomeAssets.ng0) throw new Error("[Telescope] Failed to load NG0 biome map");
@@ -271,7 +281,7 @@ async function _doInitTelescope(): Promise<void> {
 
   // 10. Cache bust check: If we just updated the library, clear the generation cache
   // to ensure fixed logic actually runs instead of showing old empty results.
-  const LIB_VERSION = "2026-03-17-settings-api";
+  const LIB_VERSION = "2026-03-31-enemy-spawns";
   if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
     console.log("[Telescope] Library version updated, clearing generation cache...");
     try {
@@ -301,6 +311,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   const ngPlus = opts.ngPlus ?? 0;
   const dailySeed = opts.dailySeed ?? false;
   const parallelWorlds = opts.parallelWorlds ?? [-1, 0, 1];
+  const gameMode = opts.gameMode ?? "normal";
   const isNGP = ngPlus > 0;
 
   console.log(
@@ -317,16 +328,17 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   }
 
   // World dimensions
-  const worldSize = getWorldSize(isNGP);
-  const worldCenter = getWorldCenter(isNGP);
-  const w = isNGP ? BIOME_CONFIG.W_NGP : BIOME_CONFIG.W_NG0;
-  const h = isNGP ? BIOME_CONFIG.H_NGP : BIOME_CONFIG.H_NG0;
-  const base = isNGP ? biomeAssets.ngp : biomeAssets.ng0;
+  const worldSize = getWorldSize(isNGP, gameMode);
+  const worldCenter = getWorldCenter(isNGP, gameMode);
+  const useNGPDimensions = isNGP || gameMode === "nightmare";
+  const w = useNGPDimensions ? BIOME_CONFIG.W_NGP : BIOME_CONFIG.W_NG0;
+  const h = useNGPDimensions ? BIOME_CONFIG.H_NGP : BIOME_CONFIG.H_NG0;
+  const base = isNGP ? biomeAssets.ngp : (gameMode === "nightmare" ? biomeAssets.nightmare : biomeAssets.ng0);
 
   if (!base) throw new Error("[Telescope] Biome map assets not loaded");
 
   // Step 1: Generate biome data
-  const biomeData = generateBiomeData(seed, ngPlus, base, w, h);
+  const biomeData = generateBiomeData(seed, ngPlus, gameMode, base, w, h);
 
   // Debug: Log all unique colors to see if they match constants
   const uniqueColors = new Set(Array.from(biomeData.pixels));
@@ -448,6 +460,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     seed,
     ngPlus,
     0 /* extra_rerolls */,
+    gameMode,
   );
 
   // Initialize pixel scene caches on each layer
@@ -456,7 +469,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   }
 
   // Step 3: Prescan spawn functions (once per seed, reused across PWs)
-  const tileSpawns = prescanSpawnFunctions(tileLayers, isNGP);
+  const tileSpawns = prescanSpawnFunctions(tileLayers, isNGP, gameMode);
 
   // Step 4: Scan each PW
   const poisByPW: Record<string, POI[]> = {};
@@ -480,14 +493,15 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       0 /* pwVertical */,
       false /* skipCosmeticScenes */,
       perks,
+      gameMode,
     );
 
-    const specialPOIs = getSpecialPoIs(biomeData, seed, ngPlus, pw, 0, perks);
+    const specialPOIs = getSpecialPoIs(biomeData, seed, ngPlus, pw, 0, perks, gameMode);
 
     pixelScenesByPW[pwKey] = scanResults.finalPixelScenes;
 
     // Add static pixel scenes (hardcoded positions like pyramid boss, fishing hut, etc.)
-    const staticResults = addStaticPixelScenes(seed, ngPlus, pw, 0, biomeData, false);
+    const staticResults = addStaticPixelScenes(seed, ngPlus, pw, 0, biomeData, false, perks, false, gameMode);
     if (staticResults && staticResults.pixelScenes) {
       pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(staticResults.pixelScenes);
     }
@@ -496,7 +510,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     // to capture shops and temples that fall outside the main world's vertical range
     const verticalPois: POI[] = [];
     for (const pvt of [-1, 1]) {
-      const vtResults = addStaticPixelScenes(seed, ngPlus, pw, pvt, biomeData, false);
+      const vtResults = addStaticPixelScenes(seed, ngPlus, pw, pvt, biomeData, false, perks, false, gameMode);
       if (vtResults && vtResults.pixelScenes && vtResults.pixelScenes.length > 0) {
         pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(vtResults.pixelScenes);
       }

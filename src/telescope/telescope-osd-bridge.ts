@@ -238,6 +238,7 @@ async function ensureTelescopeModules(): Promise<void> {
     skipCosmeticScenes: false,
     excludeTaikasauva: false,
     excludeEdgeCases: false,
+    showEnemies: true,
   });
 
   CHUNK_SIZE = constantsMod.CHUNK_SIZE;
@@ -2215,6 +2216,30 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     title.textContent = gameTranslator.translateSpell(getSpellName(poi.item || "")) || "Spell";
     header.appendChild(title);
     tooltipEl.appendChild(header);
+  } else if (poi.type === "entity" && (poi as any).entity) {
+    const header = document.createElement("div");
+    header.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px";
+    const spriteImg = document.createElement("img");
+    spriteImg.style.cssText = "width:24px;height:24px;image-rendering:pixelated;object-fit:contain";
+    getPOISpriteFirstFrame({ type: "entity", entity: (poi as any).entity }).then((url) => {
+      if (url) spriteImg.src = url;
+    });
+    header.appendChild(spriteImg);
+    const title = document.createElement("div");
+    title.style.cssText = "font-weight:bold;color:#ff8844;font-size:14px";
+    const rawName = String((poi as any).entity);
+    const translationKey = `animal_${rawName.toLowerCase()}`;
+    const translated = gameTranslator.translateItem(translationKey);
+    // If translation returns the key unchanged, fall back to readable name
+    title.textContent = (translated !== translationKey) ? translated : rawName.replace(/_/g, " ");
+    header.appendChild(title);
+    tooltipEl.appendChild(header);
+    if (poi.biome) {
+      const biomeDiv = document.createElement("div");
+      biomeDiv.style.cssText = "color:#888;font-size:11px";
+      biomeDiv.textContent = `Biome: ${gameTranslator.translateItem(poi.biome)}`;
+      tooltipEl.appendChild(biomeDiv);
+    }
   } else {
     const title = document.createElement("div");
     title.style.cssText = "font-weight:bold;font-size:14px;margin-bottom:4px";

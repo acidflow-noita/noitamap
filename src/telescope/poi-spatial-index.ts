@@ -122,6 +122,8 @@ const CONTAINER_TYPES = new Set([
   "chest",
   "great_chest",
   "laboratory",
+  "enemies",
+  "props",
 ]);
 
 /** Chest-like containers: show only the chest sprite on map, contents in popup/search only. */
@@ -217,6 +219,19 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | nu
     return null;
   }
 
+  // Enemy/prop spawn containers — don't render the container itself, only inner items
+  if (poi.type === "enemies" || poi.type === "props") {
+    return null;
+  }
+
+  // Individual entity from an enemy spawn — map to atlas enemy sprite
+  if (poi.type === "entity" && (poi as any).entity) {
+    const entityName = String((poi as any).entity).toLowerCase();
+    const key = `enemy:${entityName}`;
+    if (atlas && atlas[key]) return key;
+    return key; // return even if not in atlas — the renderer will skip if missing
+  }
+
   // Wand altars / special wand sources — also skip base icons
   if (poi.type === "wand_altar" || poi.type === "snowy_room" || poi.type === "robot_egg") {
     return null;
@@ -253,6 +268,9 @@ function addMarkerItem(
 /** Boss container types whose drops should be offset to avoid overlapping the boss sprite. */
 const BOSS_DROP_TYPES = new Set(["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon"]);
 
+/** Enemy/prop spawn containers: spread inner items to avoid overlap. */
+const ENEMY_SPAWN_TYPES = new Set(["enemies", "props"]);
+
 export async function buildMarkerData(result: GenerationResult): Promise<MarkerData> {
   const [spritesheet, atlas] = await Promise.all([loadSpritesheet(), loadAtlas()]);
 
@@ -279,6 +297,18 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
             const offsetPoi = count > 1
               ? { ...innerItem, x: innerItem.x + (ci - (count - 1) / 2) * 20, y: innerItem.y + 50 }
               : { ...innerItem, y: innerItem.y + 50 };
+            addMarkerItem(items, offsetPoi, pw, worldCenter, atlas);
+          } else if (ENEMY_SPAWN_TYPES.has(poi.type)) {
+            // Enemy spawns: spread items in a small circle around the spawn point
+            // to avoid overlap when multiple creatures share the same position
+            const angle = (ci / count) * 2 * Math.PI;
+            const radius = count > 1 ? 12 : 0;
+            const offsetPoi = {
+              ...innerItem,
+              biome: innerItem.biome || poi.biome, // propagate biome from parent
+              x: innerItem.x + Math.cos(angle) * radius,
+              y: innerItem.y + Math.sin(angle) * radius,
+            };
             addMarkerItem(items, offsetPoi, pw, worldCenter, atlas);
           } else {
             addMarkerItem(items, innerItem, pw, worldCenter, atlas);

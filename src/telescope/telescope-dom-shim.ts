@@ -66,6 +66,7 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
     "custom-art": false,
     "debug-show-path": false,
     "debug-show-tile-bounds": false,
+    "show-enemy-spawns": true,
     "greed-curse": false,
     "no-more-shuffle": false,
     "auto-increment-seed": false,
@@ -129,6 +130,7 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
     // App UI inputs
     "ng": "0",
     "extra-shop-items": "0",
+    "game-mode": "normal",
     "local-search-mode": "global",
     "search-radius-num": "0",
   };
