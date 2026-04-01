@@ -2724,7 +2724,19 @@ async function loadOrbIconByPath(iconPath: string): Promise<string | null> {
   }
 }
 
-async function addOrbOverlays(viewer: OSDViewer, result: GenerationResult, generationId: number): Promise<void> {
+const ORB_OVERLAY_UNLOCK_KEYS = [
+  "sea_lava", "crumbling_earth", "tentacle", "nuke", "necromancy",
+  "bomb_holy", "spiral_shot", "cloud_thunder", "firework",
+  "exploding_deer", "material_cement",
+];
+
+async function addOrbOverlays(
+  viewer: OSDViewer,
+  result: GenerationResult,
+  generationId: number,
+  unlocks: string[] | null,
+  isDaily: boolean,
+): Promise<void> {
   const { worldCenter } = result;
 
   // Filter orbs for the dynamic map
@@ -2733,15 +2745,40 @@ async function addOrbOverlays(viewer: OSDViewer, result: GenerationResult, gener
   );
   if (dynamicOrbs.length === 0) return;
 
-  // Pre-load all orb icons
+  // Pre-load all spell orb icons
   await Promise.all(dynamicOrbs.map((orb: any) => loadOrbIconByPath(orb.icon)));
+  if (currentGenerationId !== generationId) return;
+
+  // Build unlock set for collected detection
+  const unlockSet = (!isDaily && unlocks) ? new Set(unlocks) : null;
+
+  // Pre-render the empty orb sprite from the atlas (item:orbs/orb)
+  let emptyOrbUrl: string | null = null;
+  if (unlockSet) {
+    emptyOrbUrl = await getPOISpriteFirstFrame({ type: "item", item: "orb", collected: true } as any);
+  }
   if (currentGenerationId !== generationId) return;
 
   activeOrbTargets = [];
   let addedCount = 0;
   for (const orb of dynamicOrbs) {
     if (currentGenerationId !== generationId) return;
-    const iconUrl = _orbIconCache.get(orb.icon);
+
+    // Determine if this orb is collected based on unlock state
+    let isCollected = false;
+    if (unlockSet) {
+      const match = orb.icon.match(/orb_(\d+)\.png$/);
+      if (match) {
+        const orbIdx = parseInt(match[1], 10);
+        const key = ORB_OVERLAY_UNLOCK_KEYS[orbIdx];
+        if (key && unlockSet.has(key)) isCollected = true;
+      }
+    }
+
+    // Use empty orb icon (item:orbs/orb) for collected, spell icon for uncollected
+    const iconUrl = (isCollected && emptyOrbUrl)
+      ? emptyOrbUrl
+      : _orbIconCache.get(orb.icon);
     if (!iconUrl) continue;
 
     const { x, y } = getCorrectedWorldPos(orb.x, orb.y, worldCenter);
@@ -2751,7 +2788,7 @@ async function addOrbOverlays(viewer: OSDViewer, result: GenerationResult, gener
     const el = document.createElement("img");
     el.src = iconUrl;
     el.className = "dynamic-poi poi-orb";
-    el.title = orb.name || "Orb";
+    el.title = isCollected ? "Orb (collected)" : (orb.name || "Orb");
     el.style.cssText = "image-rendering: pixelated; width: 100%; height: 100%; cursor: pointer;";
 
     // Store position for canvas-click handler detection
@@ -2764,10 +2801,10 @@ async function addOrbOverlays(viewer: OSDViewer, result: GenerationResult, gener
     dynamicOverlayElements.push(el);
     addedCount++;
   }
-  console.log(`[OSD Bridge] Added ${addedCount} orb overlays`);
+  console.log(`[OSD Bridge] Added ${addedCount} orb overlays (${unlockSet ? 'unlock-aware' : 'all visible'})`);
 }
 
-export async function renderGenerationResult(viewer: OSDViewer, result: GenerationResult): Promise<void> {
+export async function renderGenerationResult(viewer: OSDViewer, result: GenerationResult, unlocks?: string[] | null, isDaily?: boolean): Promise<void> {
   const generationId = ++currentGenerationId;
   (window as any).__osdViewer = viewer;
 
@@ -2808,7 +2845,7 @@ export async function renderGenerationResult(viewer: OSDViewer, result: Generati
   if (currentGenerationId !== generationId) return;
 
   // Orb icons render as individual overlays using the webp icons.
-  await addOrbOverlays(viewer, result, generationId);
+  await addOrbOverlays(viewer, result, generationId, unlocks ?? null, isDaily ?? false);
   if (currentGenerationId !== generationId) return;
 
   // 1. Build spatial index for POIs (markers)

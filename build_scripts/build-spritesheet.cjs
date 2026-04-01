@@ -362,8 +362,9 @@ async function main() {
       continue;
     }
 
-    // Skip very large images (pixel scene backgrounds, etc.)
-    if (img.width > MAX_SPRITE_DIM || img.height > MAX_SPRITE_DIM) {
+    // Skip images where BOTH dimensions exceed the limit (true backgrounds/pixel scenes).
+    // Wide spritesheets (e.g. 280x50 orb animations) pass through and get cropped later.
+    if (img.width > MAX_SPRITE_DIM && img.height > MAX_SPRITE_DIM) {
       skippedLarge++;
       continue;
     }

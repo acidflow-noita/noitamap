@@ -116,6 +116,8 @@ export interface GenerateOptions {
   parallelWorlds?: number[];
   /** Game mode: 'normal' or 'nightmare' */
   gameMode?: string;
+  /** Unlocked spell keys. null = all unlocked. */
+  unlocks?: string[] | null;
 }
 
 // ─── State ──────────────────────────────────────────────────────────────────
@@ -281,7 +283,7 @@ async function _doInitTelescope(): Promise<void> {
 
   // 10. Cache bust check: If we just updated the library, clear the generation cache
   // to ensure fixed logic actually runs instead of showing old empty results.
-  const LIB_VERSION = "2026-03-31-enemy-spawns";
+  const LIB_VERSION = "2026-04-01-orb-unlocks";
   if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
     console.log("[Telescope] Library version updated, clearing generation cache...");
     try {
@@ -319,12 +321,11 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   );
   const t0 = performance.now();
 
-  // Set unlocks: daily seed = ALL ON, arbitrary = ALL ON for now
+  // Set unlocks: daily seed = ALL ON, otherwise use provided unlocks (empty = nothing unlocked)
   if (dailySeed) {
     setUnlocks(Object.keys(UNLOCKABLES));
   } else {
-    // Default to all unlocked for now (future: could allow toggle)
-    setUnlocks(Object.keys(UNLOCKABLES));
+    setUnlocks(opts.unlocks || []);
   }
 
   // World dimensions
@@ -528,13 +529,36 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       combinedPois.push(...verticalPois);
     }
 
+    // Orb index -> unlock key mapping (derived from game entity data).
+    // Order matches telescope's addOrb() call order = game's orb_id order.
+    const ORB_UNLOCK_KEYS = [
+      "sea_lava",        // orb_00 - Pyramid
+      "crumbling_earth", // orb_01 - Floating Island
+      "tentacle",        // orb_02 - Vault
+      "nuke",            // orb_03 - Pyramid (Inside) -- NOTE: telescope places Vault before Pyramid Inside
+      "necromancy",      // orb_04 - Hell
+      "bomb_holy",       // orb_05 - Snowcave
+      "spiral_shot",     // orb_06 - Desert
+      "cloud_thunder",   // orb_07 - Nuke (location name)
+      "firework",        // orb_08 - Orb 1
+      "exploding_deer",  // orb_09 - Orb 2
+      "material_cement", // orb_10 - Orb 3
+    ];
     if (pw === 0 && biomeData.orbs && Array.isArray(biomeData.orbs)) {
-      for (const orb of biomeData.orbs) {
+      // Daily seed: never mark collected — always show orbs with spells inside
+      const unlockSet = (!dailySeed && opts.unlocks) ? new Set(opts.unlocks) : null;
+      for (let i = 0; i < biomeData.orbs.length; i++) {
+        const orb = biomeData.orbs[i];
+        const unlockKey = ORB_UNLOCK_KEYS[i] || null;
+        const collected = unlockSet && unlockKey ? unlockSet.has(unlockKey) : false;
         combinedPois.push({
           ...orb,
           type: "item",
           item: "orb",
-          name: orb.id,
+          name: orb.name,
+          orbIndex: i,
+          unlockKey,
+          collected,
           x: orb.x * 512 + 256 - 32 * 512,
           y: orb.y * 512 + 256 - 14 * 512,
         });

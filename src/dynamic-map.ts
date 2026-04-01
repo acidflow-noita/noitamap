@@ -14,7 +14,8 @@
 import { fetchDailySeed } from "./data_sources/daily_seed";
 import { parseURL, updateURLWithSeed, clearSeedParams } from "./data_sources/url";
 import { getCachedGeneration, cacheGeneration } from "./telescope/tile-cache";
-import { generateDynamicMap, type GenerationResult } from "./telescope/telescope-adapter";
+import { generateDynamicMap, initTelescope, type GenerationResult } from "./telescope/telescope-adapter";
+import { getUnlocksFromURL, unlocksChanged, UNLOCK_KEYS } from "./unlocks";
 import {
   renderGenerationResult,
   clearDynamicOverlays,
@@ -50,6 +51,7 @@ export interface DynamicPOI {
 
 let currentSeed: number | null = null;
 let currentIsDaily: boolean = false;
+let currentUnlocksKey: string | null = null;
 let lastResult: GenerationResult | null = null;
 let dynamicRendered: boolean = false;
 
@@ -115,12 +117,13 @@ export async function runDynamicMap(
 ): Promise<GenerationResult | null> {
   const { viewer, onLoadingChange, onPOIsReady, onSeedResolved } = opts;
 
-  // 0. Skip only if we truly already rendered this seed AND the overlays
-  //    are still present in OSD. A drawing import or map change may have
-  //    removed the overlays without going through clearDynamicMap, so we
-  //    also verify the overlays are physically present via hasDynamicOverlays().
-  if (seed === currentSeed && dynamicRendered && hasDynamicOverlays()) {
-    console.log(`[DynamicMap] Seed ${seed} is already active, skipping redundant render.`);
+  // Read unlock state from URL (caches to localStorage automatically)
+  const unlocks = getUnlocksFromURL();
+  const unlockKey = unlocks ? unlocks.sort().join(",") : "all";
+
+  // 0. Skip only if same seed, same unlocks, and overlays still present.
+  if (seed === currentSeed && unlockKey === currentUnlocksKey && dynamicRendered && hasDynamicOverlays()) {
+    console.log(`[DynamicMap] Seed ${seed} is already active with same unlocks, skipping redundant render.`);
     // Still re-emit POIs so search is populated (it may have been cleared)
     if (onPOIsReady && lastResult) {
       const flat = getAllPOIsFlat(lastResult);
@@ -135,6 +138,9 @@ export async function runDynamicMap(
     return lastResult;
   }
 
+  // If unlocks changed for the same seed, we must regenerate (skip cache)
+  const forceRegenerate = seed === currentSeed && unlockKey !== currentUnlocksKey;
+
   onLoadingChange?.(true);
 
   // Yield so the browser can paint the loading indicator before telescope
@@ -148,33 +154,68 @@ export async function runDynamicMap(
 
   currentSeed = seed;
   currentIsDaily = isDaily;
+  currentUnlocksKey = unlockKey;
 
   onSeedResolved?.(seed, isDaily);
 
   try {
-    // 1. Check cache
+     // 0b. Ensure telescope is initialized (runs LIB_VERSION cache bust BEFORE cache check)
+    await initTelescope();
+
+    // 1. Check cache (skip if unlocks changed for same seed)
     let t = performance.now();
-    console.log(`[DynamicMap] Checking cache for seed ${seed}…`);
-    let result: GenerationResult | null = await getCachedGeneration(seed);
-    console.log(`[DynamicMap] Cache check: ${((performance.now() - t) / 1000).toFixed(2)}s (${result ? "HIT" : "MISS"})`);
+    let result: GenerationResult | null = null;
+    if (!forceRegenerate) {
+      console.log(`[DynamicMap] Checking cache for seed ${seed}...`);
+      result = await getCachedGeneration(seed);
+      console.log(`[DynamicMap] Cache check: ${((performance.now() - t) / 1000).toFixed(2)}s (${result ? "HIT" : "MISS"})`);
+    } else {
+      console.log(`[DynamicMap] Unlocks changed, forcing regeneration for seed ${seed}`);
+    }
 
     if (!result) {
-      // 2. Generate
+      // 2. Generate with unlock state
       t = performance.now();
-      console.log(`[DynamicMap] Cache miss — generating seed ${seed}…`);
-      result = await generateDynamicMap({ seed, ngPlus: 0, dailySeed: isDaily });
+      console.log(`[DynamicMap] Generating seed ${seed} (unlocks: ${unlocks ? unlocks.length + "/" + UNLOCK_KEYS.length : "all"})...`);
+      result = await generateDynamicMap({ seed, ngPlus: 0, dailySeed: isDaily, unlocks });
       console.log(`[DynamicMap] Generation: ${((performance.now() - t) / 1000).toFixed(2)}s`);
 
-      // 3. Store in cache (fire-and-forget — don't block render)
+      // 3. Store in cache (fire-and-forget -- don't block render)
       cacheGeneration(seed, result).catch((e) => console.warn("[DynamicMap] Cache write failed:", e));
     }
 
-    // 4. Render onto OSD (skeleton placeholders are removed inside after real biome backgrounds load)
+    // 4. Stamp orb POIs with collected flag based on current unlock state.
+    //    Daily seed: NEVER mark as collected — always show orbs with spells inside,
+    //    since players want to see where all the spells are.
+    //    Non-daily: mark collected orbs as empty (spell already taken in a prior run).
+    const ORB_UNLOCK_KEYS = [
+      "sea_lava", "crumbling_earth", "tentacle", "nuke", "necromancy",
+      "bomb_holy", "spiral_shot", "cloud_thunder", "firework",
+      "exploding_deer", "material_cement",
+    ];
+    if (unlocks && !isDaily) {
+      const unlockSet = new Set(unlocks);
+      for (const pois of Object.values(result.poisByPW)) {
+        let orbCounter = 0;
+        for (const poi of pois) {
+          if (poi.type === "item" && poi.item === "orb") {
+            // Assign orbIndex if missing (e.g. from old cached data)
+            if ((poi as any).orbIndex == null) (poi as any).orbIndex = orbCounter;
+            const idx = (poi as any).orbIndex;
+            const key = typeof idx === "number" ? ORB_UNLOCK_KEYS[idx] : (poi as any).unlockKey;
+            (poi as any).collected = key ? unlockSet.has(key) : false;
+            orbCounter++;
+          }
+        }
+      }
+    }
+
+    // 5. Render onto OSD (skeleton placeholders are removed inside after real biome backgrounds load)
     t = performance.now();
     console.log(
       `[DynamicMap] Rendering seed ${seed} with ${result.parallelWorlds?.length || 3} worlds, worldCenter=${result.worldCenter}`,
     );
-    await renderGenerationResult(viewer as any, result);
+    await renderGenerationResult(viewer as any, result, unlocks, isDaily);
     console.log(`[DynamicMap] Render: ${((performance.now() - t) / 1000).toFixed(2)}s`);
     lastResult = result;
     dynamicRendered = true;
@@ -228,6 +269,7 @@ export function clearDynamicMap(viewer: any): void {
   resetPersistentBiomeBackgrounds();
   currentSeed = null;
   currentIsDaily = false;
+  currentUnlocksKey = null;
   dynamicRendered = false;
   clearSeedParams();
 }

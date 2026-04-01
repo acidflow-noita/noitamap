@@ -191,7 +191,16 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | nu
     if (item === "bomb_holy") return "item:bomb_holy";
     if (item === "bomb_holy_giga") return "item:bomb_holy_giga";
     if (item === "torch") return "item:torch";
-    if (item === "orb") return "item:orb";
+    if (item === "orb") {
+      if ((poi as any).collected) return "item:orbs/orb"; // empty orb — spell already collected
+      // Orb with spell still inside — show specific orb image
+      const orbIdx = (poi as any).orbIndex;
+      if (typeof orbIdx === "number") {
+        const specificKey = `item:orbs/orb_${String(orbIdx).padStart(2, "0")}`;
+        if (atlas && atlas[specificKey]) return specificKey;
+      }
+      return "item:orb"; // fallback
+    }
     if (item === "perk") return "item:perk";
     if (item === "emerald_tablet") return "item:emerald_tablet";
     if (item === "egg" || item.startsWith("egg_")) return `item:${item}`;
