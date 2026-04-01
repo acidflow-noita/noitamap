@@ -27,6 +27,39 @@ const CONTAINER_TYPES = new Set([
   "great_chest",
   "laboratory",
 ]);
+
+const CHEST_TYPES = new Set(["chest", "great_chest", "pacifist_chest"]);
+const HOLY_MOUNTAIN_TYPES = new Set(["holy_mountain_shop"]);
+const BOSS_TYPES = new Set(["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon"]);
+
+/** Check if a POI matches any of the active filters. */
+function matchesFilters(p: DynamicPOI, activeFilters: Set<string>): boolean {
+  if (activeFilters.size === 0) return true;
+  if (activeFilters.has("wands") && p.type === "wand") return true;
+  if (activeFilters.has("spells") && p.type === "item" && p.item === "spell") return true;
+  if (activeFilters.has("items") && p.type === "item") return true;
+  if (activeFilters.has("chests") && CHEST_TYPES.has(p.type)) return true;
+  if (activeFilters.has("holyMountains") && HOLY_MOUNTAIN_TYPES.has(p.type)) return true;
+  if (
+    activeFilters.has("potions") &&
+    p.type === "item" &&
+    (p.item === "potion" ||
+      p.item === "potion_normal" ||
+      p.item === "pouch" ||
+      p.item === "powder_stash" ||
+      p.item === "powder_stash_pouch")
+  )
+    return true;
+  if (
+    activeFilters.has("hearts") &&
+    p.type === "item" &&
+    (p.item === "heart" || p.item === "heart_bigger" || p.item === "full_heal")
+  )
+    return true;
+  if (activeFilters.has("bosses") && BOSS_TYPES.has(p.type)) return true;
+  if (activeFilters.has("enemies") && p.type === "entity") return true;
+  return false;
+}
 export type UnifiedSearchCreateOptions = {
   currentMap: MapName;
   form: HTMLFormElement;
@@ -48,7 +81,7 @@ type DocumentFactory = (options: any) => any;
 
 export class UnifiedSearch extends EventEmitter2 {
   private lastSearchText: string = "";
-  private lastSearchFilters: Set<string> = new Set();
+  private lastSearchFilters: string = "";
   private lastViewportKey: string = "";
   private isInteracting: boolean = false;
 
@@ -147,6 +180,22 @@ export class UnifiedSearch extends EventEmitter2 {
       this.searchInput.focus();
     });
 
+    for (const filterCheckbox of document.querySelectorAll<HTMLInputElement>(
+      '#unifiedSearchFilterBox input[type="checkbox"][data-filter]',
+    )) {
+      filterCheckbox.addEventListener("change", () => {
+        if (filterCheckbox.checked) {
+          this.activeFilters.add(filterCheckbox.value);
+        } else {
+          this.activeFilters.delete(filterCheckbox.value);
+        }
+        this.updateSearchResults();
+      });
+    }
+  }
+
+  /** Bind filter checkbox events. Must be called after filter DOM is created. */
+  bindFilterEvents() {
     for (const filterCheckbox of document.querySelectorAll<HTMLInputElement>(
       '#unifiedSearchFilterBox input[type="checkbox"][data-filter]',
     )) {
@@ -301,14 +350,15 @@ export class UnifiedSearch extends EventEmitter2 {
     // Also check viewport position for dynamic map proximity sorting
     const urlParams = new URLSearchParams(window.location.search);
     const vpKey = `${urlParams.get("x") ?? ""},${urlParams.get("y") ?? ""}`;
+    const filterKey = [...this.activeFilters].sort().join(",");
     if (
       this.lastSearchText === searchText &&
-      this.lastSearchFilters === this.activeFilters &&
+      this.lastSearchFilters === filterKey &&
       this.lastViewportKey === vpKey
     )
       return;
     this.lastSearchText = searchText;
-    this.lastSearchFilters = new Set(this.activeFilters);
+    this.lastSearchFilters = filterKey;
     this.lastViewportKey = vpKey;
 
     const isDynamic = this.currentMap === "dynamic-main-branch";
@@ -332,6 +382,7 @@ export class UnifiedSearch extends EventEmitter2 {
         for (let i = 0; i < this.dynamicPOIs.length; i++) {
           const p = this.dynamicPOIs[i];
           if (p.type === "enemies" || p.type === "props") continue;
+          if (!matchesFilters(p, this.activeFilters)) continue;
           const dx = p.worldX - playerX;
           const dy = p.worldY - playerY;
           const distSq = dx * dx + dy * dy;
@@ -411,37 +462,7 @@ export class UnifiedSearch extends EventEmitter2 {
 
       // Apply category filters
       if (this.activeFilters.size > 0) {
-        matched = matched.filter((p) => {
-          if (this.activeFilters.has("wands") && p.type === "wand") return true;
-          if (this.activeFilters.has("items") && p.type === "item") return true;
-          if (this.activeFilters.has("chests") && CONTAINER_TYPES.has(p.type)) return true;
-          if (
-            this.activeFilters.has("potions") &&
-            p.type === "item" &&
-            (p.item === "potion" ||
-              p.item === "potion_normal" ||
-              p.item === "pouch" ||
-              p.item === "powder_stash" ||
-              p.item === "powder_stash_pouch")
-          )
-            return true;
-          if (
-            this.activeFilters.has("hearts") &&
-            p.type === "item" &&
-            (p.item === "heart" || p.item === "heart_bigger" || p.item === "full_heal")
-          )
-            return true;
-          if (
-            this.activeFilters.has("bosses") &&
-            (p.type === "triangle_boss" ||
-              p.type === "alchemist_boss" ||
-              p.type === "pyramid_boss" ||
-              p.type === "dragon")
-          )
-            return true;
-          if (this.activeFilters.has("enemies") && p.type === "entity") return true;
-          return false;
-        });
+        matched = matched.filter((p) => matchesFilters(p, this.activeFilters));
       }
 
       // Sort by proximity using squared distance (no sqrt needed for ordering)
@@ -570,6 +591,7 @@ export class UnifiedSearch extends EventEmitter2 {
           { type: "spells", atlasKey: "spell:mana" },
           { type: "items", atlasKey: "item:wandstone" },
           { type: "chests", atlasKey: "item:chest_random_super" },
+          { type: "holyMountains", iconSrc: "assets/icons/spatial_awareness/spatial_awareness_holy_mountain.png" },
           { type: "potions", atlasKey: "item:potion:acid" },
           { type: "hearts", atlasKey: "item:heart_extrahp" },
           { type: "bosses", iconSrc: "assets/icons/overlay-toggles/icon-bosses.webp" },
@@ -585,9 +607,26 @@ export class UnifiedSearch extends EventEmitter2 {
           { type: "hiddenMessages", iconSrc: "assets/icons/overlay-toggles/icon-hidden-messages.webp" },
         ];
 
+    const FILTER_LABELS: Record<string, string> = {
+      wands: "Wands",
+      spells: "Spells",
+      items: "Items",
+      chests: "Chests",
+      holyMountains: "Holy Mountains",
+      potions: "Potions & Flasks",
+      hearts: "Hearts & Heals",
+      bosses: "Bosses",
+      enemies: "Creatures",
+      structures: "Structures",
+      orbs: "Orbs",
+      spatialAwareness: "Spatial Awareness",
+      hiddenMessages: "Hidden Messages",
+    };
+
     for (const filter of filters) {
       const filterLabel = document.createElement("label");
       filterLabel.tabIndex = 0;
+      filterLabel.title = FILTER_LABELS[filter.type] || filter.type;
       const filterCheckbox = document.createElement("input");
       filterCheckbox.type = "checkbox";
       filterCheckbox.value = filter.type;
@@ -687,11 +726,13 @@ export class UnifiedSearch extends EventEmitter2 {
       }
     };
 
-    return new UnifiedSearch({
+    const instance = new UnifiedSearch({
       currentMap,
       form,
       searchInput,
       searchResults,
     });
+    instance.bindFilterEvents();
+    return instance;
   }
 }
