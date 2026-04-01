@@ -217,6 +217,16 @@ export class UnifiedSearch extends EventEmitter2 {
       // Concatenate all searchable fields into one text blob
       const parts: string[] = [p.name ?? "", p.type ?? "", p.item ?? "", p.enemy ?? "", p.material ?? ""];
 
+      // Add entity name and translated name for creature search
+      if (p.type === "entity" && (p as any).entity) {
+        const entityName = String((p as any).entity);
+        parts.push(entityName);
+        const translated = gameTranslator.translateItem(`animal_${entityName.toLowerCase()}`);
+        if (translated !== `animal_${entityName.toLowerCase()}`) {
+          parts.push(translated);
+        }
+      }
+
       // Add "flask" alias for potions so old-school players can find them
       if (p.item === "potion" || p.item === "potion_normal") {
         parts.push("flask");
@@ -321,6 +331,7 @@ export class UnifiedSearch extends EventEmitter2 {
 
         for (let i = 0; i < this.dynamicPOIs.length; i++) {
           const p = this.dynamicPOIs[i];
+          if (p.type === "enemies" || p.type === "props") continue;
           const dx = p.worldX - playerX;
           const dy = p.worldY - playerY;
           const distSq = dx * dx + dy * dy;
@@ -357,6 +368,7 @@ export class UnifiedSearch extends EventEmitter2 {
             item: p.item,
             material: p.material,
             enemy: p.enemy,
+            entity: p.entity,
             items: p.items,
             amount: p.amount,
             spell: p.spell,
@@ -427,7 +439,7 @@ export class UnifiedSearch extends EventEmitter2 {
               p.type === "dragon")
           )
             return true;
-          if (this.activeFilters.has("enemies") && p.type === "enemy") return true;
+          if (this.activeFilters.has("enemies") && p.type === "entity") return true;
           return false;
         });
       }
@@ -466,6 +478,7 @@ export class UnifiedSearch extends EventEmitter2 {
           item: p.item,
           material: p.material,
           enemy: p.enemy,
+          entity: p.entity,
           items: p.items,
           amount: p.amount,
           spell: p.spell,

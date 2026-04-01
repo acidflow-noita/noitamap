@@ -331,8 +331,12 @@ export class UnifiedSearchResults extends EventEmitter2 {
               img.style.width = "32px";
               img.style.height = "32px";
               img.style.objectFit = "contain";
+              img.style.display = "none";
               getPOISpriteFirstFrame(result as any).then((url) => {
-                if (url) img.src = url;
+                if (url) {
+                  img.src = url;
+                  img.style.display = "";
+                }
               });
               listItem.appendChild(img);
             }
@@ -390,6 +394,10 @@ export class UnifiedSearchResults extends EventEmitter2 {
                   } else {
                     label = itemName.replace(/_/g, " ");
                   }
+                } else if (r.type === "entity" && r.entity) {
+                  const translationKey = `animal_${String(r.entity).toLowerCase()}`;
+                  const translated = gameTranslator.translateItem(translationKey);
+                  label = translated !== translationKey ? translated : String(r.entity).replace(/_/g, " ");
                 } else if (r.type === "enemy") {
                   label = r.enemy || r.type;
                 } else {

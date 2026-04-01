@@ -2880,12 +2880,22 @@ export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: numb
     const [pwStr] = pwKey.split(",");
     const pw = parseInt(pwStr);
     for (const poi of pois) {
-      flat.push({ ...poi, pw, worldX: poi.x, worldY: poi.y });
+      const isEnemySpawn = poi.type === "enemies" || poi.type === "props";
+      // Enemy/prop spawn containers: only emit inner items, not the parent
+      if (!isEnemySpawn) {
+        flat.push({ ...poi, pw, worldX: poi.x, worldY: poi.y });
+      }
       // Unwrap container contents for search (except chest types — those are searched via their parent entry)
       if (CONTAINER_TYPES.has(poi.type) && !CHEST_ONLY_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {
         for (const inner of poi.items) {
           if (inner.ignore) continue;
-          flat.push({ ...inner, pw, worldX: inner.x, worldY: inner.y });
+          flat.push({
+            ...inner,
+            pw,
+            biome: inner.biome || poi.biome,
+            worldX: inner.x ?? poi.x,
+            worldY: inner.y ?? poi.y,
+          });
         }
       }
     }
