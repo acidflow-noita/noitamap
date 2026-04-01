@@ -112,10 +112,27 @@ export async function resolveSeed(): Promise<{ seed: number; isDaily: boolean }>
  */
 export async function runDynamicMap(
   seed: number,
-  isDaily: boolean,
+  isDailyParam: boolean,
   opts: DynamicMapOptions,
 ): Promise<GenerationResult | null> {
   const { viewer, onLoadingChange, onPOIsReady, onSeedResolved } = opts;
+
+  // Auto-detect daily seed: if not explicitly daily, compare against today's daily.
+  // This handles the mod sending ?se=<seed> without ds=1 when the player is on a daily run.
+  let isDaily = isDailyParam;
+  if (!isDaily) {
+    try {
+      const dailySeed = await fetchDailySeed();
+      if (dailySeed === seed) {
+        isDaily = true;
+        console.log(`[DynamicMap] Seed ${seed} matches today's daily seed, auto-detecting as daily`);
+        // Update URL to reflect daily status so the UI shows correctly on reload
+        (await import("./data_sources/url")).updateURLWithSeed(seed, true);
+      }
+    } catch {
+      // Daily seed fetch failed — continue as non-daily
+    }
+  }
 
   // Read unlock state from URL (caches to localStorage automatically)
   const unlocks = getUnlocksFromURL();
