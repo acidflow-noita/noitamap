@@ -28,6 +28,7 @@ import { createMarkerTileSource } from "./marker-tile-source";
 import { gameTranslator } from "../game-translations/translator";
 import { isSpoilerFree, getSpoilerCategory, getSpoilerLabel, applySpoilerFree } from "../spoiler-free";
 import spells from "../data/spells.json";
+import { CREATURE_DATA } from "../data/creature-data";
 
 declare const OpenSeadragon: any;
 
@@ -1416,7 +1417,7 @@ async function decodeScenePng(zip: any, path: string): Promise<ImageData | null>
       if (d[i] === 255 && d[i + 1] === 0 && d[i + 2] === 255) d[i + 3] = 0; // Magenta placeholder
     }
   }
-  return new ImageData(d, decoded.width, decoded.height);
+  return new ImageData(new Uint8ClampedArray(d as any), decoded.width, decoded.height);
 }
 
 /**
@@ -2011,7 +2012,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
   // ─── Spoiler-free mode: generic popup with no details ──────────────────
   if (isSpoilerFree()) {
-    const category = getSpoilerCategory(item.spriteKey);
+    const rootKey = Array.isArray(item.spriteKey) ? item.spriteKey[0] : item.spriteKey;
+    const category = getSpoilerCategory(rootKey);
     const label = getSpoilerLabel(category);
     const colorMap = { wand: "#c8a2ff", spell: "#66ccff", something: "#ffd700" };
 
@@ -2212,43 +2214,168 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     });
     header.appendChild(spriteImg);
     const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;color:#66ccff;font-size:14px";
+    title.style.cssText = "font-weight:bold;color:#66ccff;font-size:16px";
     title.textContent = gameTranslator.translateSpell(getSpellName(poi.item || "")) || "Spell";
     header.appendChild(title);
     tooltipEl.appendChild(header);
-  } else if (poi.type === "entity" && (poi as any).entity) {
+  } else if ((poi.type === "entity" && (poi as any).entity) || ["alchemist_boss", "boss_wizard", "boss_meat", "islandspirit", "boss_sky", "boss_robot", "boss_centipede", "triangle_boss", "pyramid_boss", "dragon", "boss_ghost", "friend"].includes(poi.type || "")) {
+    const isSpecialEntity = poi.type !== "entity";
     const header = document.createElement("div");
     header.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px";
     const spriteImg = document.createElement("img");
-    spriteImg.style.cssText = "width:24px;height:24px;image-rendering:pixelated;object-fit:contain";
-    getPOISpriteFirstFrame({ type: "entity", entity: (poi as any).entity }).then((url) => {
+    spriteImg.style.cssText = "width:32px;height:32px;image-rendering:pixelated;object-fit:contain";
+    getPOISpriteFirstFrame(poi as any).then((url) => {
       if (url) spriteImg.src = url;
     });
     header.appendChild(spriteImg);
-    const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;color:#ff8844;font-size:14px";
-    const rawName = String((poi as any).entity);
-    const translationKey = `animal_${rawName.toLowerCase()}`;
+    const titleCol = document.createElement("div");
+    const rawName = String((poi as any).entity || poi.type);
+    let entityId = rawName.toLowerCase();
+    
+    // Map telescope boss types to actual CREATURE_DATA IDs
+    const bossMap: Record<string, string> = {
+      alchemist_boss: "boss_alchemist",
+      pyramid_boss: "boss_limbs",
+      dragon: "boss_dragon",
+      triangle_boss: "boss_pit",
+    };
+    if (bossMap[entityId]) entityId = bossMap[entityId];
+
+    const translationKey = `animal_${entityId}`;
     const translated = gameTranslator.translateItem(translationKey);
-    // If translation returns the key unchanged, fall back to readable name
-    title.textContent = (translated !== translationKey) ? translated : rawName.replace(/_/g, " ");
-    header.appendChild(title);
+    const title = document.createElement("div");
+    title.style.cssText = "font-weight:bold;color:#ff8844;font-size:16px";
+    // Show creature alias
+    const creature = CREATURE_DATA[entityId];
+    title.textContent = creature?.name ? creature.name : ((translated !== translationKey) ? translated : rawName.replace(/_/g, " "));
+    titleCol.appendChild(title);
+    if (creature?.alias) {
+      const aliasDiv = document.createElement("div");
+      aliasDiv.style.cssText = "color:#9a9;font-size:13px;font-style:italic";
+      aliasDiv.textContent = creature.alias;
+      titleCol.appendChild(aliasDiv);
+    }
+    header.appendChild(titleCol);
     tooltipEl.appendChild(header);
+
+    // Rich creature stats from CREATURE_DATA
+    if (creature) {
+      const statsDiv = document.createElement("div");
+      statsDiv.style.cssText = "margin-top:6px;font-size:15px;line-height:1.6;color:#ccc";
+
+      // Category + Faction
+      if (creature.category || creature.faction) {
+        const catDiv = document.createElement("div");
+        catDiv.style.cssText = "color:#888;margin-bottom:2px";
+        const parts = [];
+        if (creature.category) parts.push(creature.category);
+        if (creature.faction) parts.push(`(${creature.faction})`);
+        catDiv.textContent = parts.join(" ");
+        statsDiv.appendChild(catDiv);
+      }
+
+      // Health
+      if (creature.health) {
+        const hpDiv = document.createElement("div");
+        hpDiv.style.cssText = "color:#ddd;font-size:16px;margin-bottom:2px";
+        hpDiv.innerHTML = `<span style="color:#e55;font-weight:bold">HP:</span> ${creature.health}`;
+        statsDiv.appendChild(hpDiv);
+      }
+
+      // Attacks
+      if (creature.attacks) {
+        const atkDiv = document.createElement("div");
+        atkDiv.style.cssText = "color:#ddd;font-size:16px;margin-bottom:2px";
+        atkDiv.innerHTML = `<span style="color:#f80;font-weight:bold">Attacks:</span> ${creature.attacks}`;
+        statsDiv.appendChild(atkDiv);
+      }
+
+      // Immunities
+      if (creature.immunities) {
+        const immDiv = document.createElement("div");
+        immDiv.style.cssText = "color:#ddd;font-size:16px;margin-top:4px";
+        immDiv.innerHTML = `<span style="color:#6bf;font-weight:bold">Immunities:</span> ${creature.immunities}`;
+        statsDiv.appendChild(immDiv);
+      }
+
+      // Damage multipliers (table)
+      if (creature.dmgMults) {
+        const dmgDiv = document.createElement("div");
+        dmgDiv.style.cssText = "margin-top:4px;border-top:1px solid #333;padding-top:4px";
+        const dmgLabel = document.createElement("div");
+        dmgLabel.style.cssText = "color:#888;font-size:14px;margin-bottom:2px";
+        dmgLabel.textContent = "Damage multipliers:";
+        dmgDiv.appendChild(dmgLabel);
+        
+        const table = document.createElement("table");
+        table.style.cssText = "font-size:14px;border-spacing:0;width:100%";
+        
+        const dmgIcons = undefined;
+
+        const mults = Object.entries(creature.dmgMults);
+        for (const [key, valRaw] of mults) {
+          let valStr = String(valRaw);
+          if (valStr === "1x") valStr = "1.0";
+          
+          let info = { icon: key === "radioactive" ? "Toxic" : key.charAt(0).toUpperCase() + key.slice(1) };
+          const tr = document.createElement("tr");
+          const tdLabel = document.createElement("td");
+          tdLabel.style.cssText = `color:#ccc;text-align:left;padding-right:12px;padding-bottom:2px;font-weight:bold`;
+          tdLabel.textContent = `${info.icon}:`;
+          const tdVal = document.createElement("td");
+          tdVal.style.cssText = `text-align:right;color:#fff;padding-bottom:2px`;
+          tdVal.textContent = valStr;
+          tr.appendChild(tdLabel);
+          tr.appendChild(tdVal);
+          table.appendChild(tr);
+        }
+        dmgDiv.appendChild(table);
+        statsDiv.appendChild(dmgDiv);
+      }
+
+      // Spawn location
+      if (creature.spawnLocation) {
+        const spawnDiv = document.createElement("div");
+        spawnDiv.style.cssText = "margin-top:4px";
+        spawnDiv.innerHTML = `<span style="color:#888">Found in biomes:</span> ${creature.spawnLocation}`;
+        statsDiv.appendChild(spawnDiv);
+      }
+      if (creature.ngPlusSpawn) {
+        const ngDiv = document.createElement("div");
+        ngDiv.style.cssText = "margin-top:2px";
+        ngDiv.innerHTML = `<span style="color:#888">Found in biomes (NG+):</span> ${creature.ngPlusSpawn}`;
+        statsDiv.appendChild(ngDiv);
+      }
+
+      // Blood + Corpse
+      if (creature.blood || creature.corpse) {
+        const matDiv = document.createElement("div");
+        matDiv.style.cssText = "margin-top:3px;color:#a88";
+        const parts = [];
+        if (creature.blood) parts.push(`Blood: ${creature.blood}`);
+        if (creature.corpse) parts.push(`Corpse: ${creature.corpse}`);
+        matDiv.textContent = parts.join(" | ");
+        statsDiv.appendChild(matDiv);
+      }
+
+      tooltipEl.appendChild(statsDiv);
+    }
+
     if (poi.biome) {
       const biomeDiv = document.createElement("div");
-      biomeDiv.style.cssText = "color:#888;font-size:11px";
+      biomeDiv.style.cssText = "color:#888;font-size:13px;margin-top:3px";
       biomeDiv.textContent = `Biome: ${gameTranslator.translateItem(poi.biome)}`;
       tooltipEl.appendChild(biomeDiv);
     }
   } else {
     const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;font-size:14px;margin-bottom:4px";
+    title.style.cssText = "font-weight:bold;font-size:16px;margin-bottom:4px";
     const label = poi.type || "Unknown";
     title.textContent = gameTranslator.translateItem(label).replace(/_/g, " ");
     tooltipEl.appendChild(title);
     if (poi.item) {
       const itemDiv = document.createElement("div");
-      itemDiv.style.cssText = "color:#aaa;font-size:12px";
+      itemDiv.style.cssText = "color:#aaa;font-size:14px";
       itemDiv.textContent = gameTranslator.translateItem(poi.item).replace(/_/g, " ");
       tooltipEl.appendChild(itemDiv);
     }
@@ -2259,8 +2386,9 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const contDiv = document.createElement("div");
     contDiv.style.cssText = "margin-top:6px;border-top:1px solid #333;padding-top:4px";
     const contLabel = document.createElement("div");
-    contLabel.style.cssText = "font-size:11px;color:#888;margin-bottom:3px";
-    contLabel.textContent = "Contains:";
+    contLabel.style.cssText = "font-size:13px;color:#888;margin-bottom:3px";
+    const isBossDrop = ["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon", "boss_wizard", "boss_ghost", "boss_sky", "islandspirit", "boss_centipede", "boss_robot", "boss_meat", "friend"].includes(poi.type || "");
+    contLabel.textContent = isBossDrop ? "Drops:" : "Contains:";
     contDiv.appendChild(contLabel);
     const contRow = document.createElement("div");
     contRow.style.cssText = "display:flex;flex-wrap:wrap;gap:3px;align-items:center";
@@ -2522,7 +2650,7 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
 
 /** POI type → data.zip sprite XML path (resolved at runtime for frame size) */
 const BOSS_SPRITE_XML_MAP: Record<string, string> = {
-  alchemist_boss: "data/entities/animals/boss_alchemist/boss_alchemist_sprite.xml",
+  boss_alchemist: "data/entities/animals/boss_alchemist/boss_alchemist_sprite.xml",
   pyramid_boss: "data/entities/animals/boss_limbs/body.xml",
   mestari_boss: "data/entities/animals/boss_wizard/wizard_body.xml",
   friend: "data/enemies_gfx/friend.xml",
@@ -2954,6 +3082,7 @@ export async function getPOISpriteFirstFrame(poi: {
   sprite?: string;
   material?: string;
   enemy?: string;
+  entity?: string;
 }): Promise<string | null> {
   // Eagerly load atlas+spritesheet if not already cached
   let atlas = getAtlas();
@@ -2968,24 +3097,58 @@ export async function getPOISpriteFirstFrame(poi: {
   if (!rawKey) return null;
 
   // Apply spoiler-free transformation — swap sprite key if enabled
-  const key = applySpoilerFree(rawKey, atlas);
+  const rootRawKey = Array.isArray(rawKey) ? rawKey[0] : rawKey;
+  const keyRawOut = applySpoilerFree(rootRawKey, atlas);
+  const finalKeys = (keyRawOut !== rootRawKey) ? [keyRawOut] : (Array.isArray(rawKey) ? rawKey : [rawKey]);
+  const key = finalKeys[0];
 
   // Cache key includes spoiler-free state to avoid stale entries
   const cacheKey = `${key}:${isSpoilerFree() ? "sf" : "ns"}`;
   if (spriteFirstFrameCache.has(cacheKey)) return spriteFirstFrameCache.get(cacheKey)!;
 
   if (atlas && spritesheet && atlas[key]) {
-    const entry = atlas[key];
-    // Use first-frame dimensions for animated sprites
+    const rootAtlas = atlas[key];
     const frame = FIRST_FRAME_SIZE[key];
-    const srcW = frame ? frame.w : entry.w;
-    const srcH = frame ? frame.h : entry.h;
+    const canvasW = frame ? frame.w : rootAtlas.w;
+    const canvasH = frame ? frame.h : rootAtlas.h;
+
     const canvas = document.createElement("canvas");
-    canvas.width = srcW;
-    canvas.height = srcH;
+    canvas.width = canvasW;
+    canvas.height = canvasH;
     const ctx = canvas.getContext("2d")!;
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(spritesheet, entry.x, entry.y, srcW, srcH, 0, 0, srcW, srcH);
+
+    // Draw all composite layers overlapping using their atlas origins
+    const drawKeys = finalKeys;
+    let rootScale = 1;
+    let rootCenterX = canvasW / 2;
+    let rootCenterY = canvasH / 2;
+    let isFirst = true;
+
+    for (const k of drawKeys) {
+      if (atlas[k]) {
+        const e = atlas[k];
+        const f = FIRST_FRAME_SIZE[k];
+        const sw = f ? f.w : e.w;
+        const sh = f ? f.h : e.h;
+        
+        if (isFirst) {
+          isFirst = false;
+          const r_ox = e.ox ?? sw / 2;
+          const r_oy = e.oy ?? sh / 2;
+          rootCenterX = (canvasW - sw * rootScale) / 2 + (r_ox * rootScale);
+          rootCenterY = (canvasH - sh * rootScale) / 2 + (r_oy * rootScale);
+        }
+
+        const l_ox = e.ox ?? sw / 2;
+        const l_oy = e.oy ?? sh / 2;
+        const drawX = rootCenterX - (l_ox * rootScale);
+        const drawY = rootCenterY - (l_oy * rootScale);
+        
+        ctx.drawImage(spritesheet, e.x, e.y, sw, sh, drawX, drawY, sw * rootScale, sh * rootScale);
+      }
+    }
+
     const url = await new Promise<string>((resolve) => {
       canvas.toBlob((blob) => {
         resolve(blob ? URL.createObjectURL(blob) : "");

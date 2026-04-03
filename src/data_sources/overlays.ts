@@ -12,6 +12,10 @@ import { biomeBoundaries } from '../drawing/biome-boundaries';
 import tilesources from '../data/tilesources.json';
 import i18next from 'i18next';
 import hiddenMessages from '../data/hidden_messages.json';
+import { drawSpriteToCanvas, getSpriteOffset, loadSpritesheetAndAtlas } from '../telescope/poi-spatial-index';
+
+// Preload atlas so boss sprites are ready when overlays are created
+loadSpritesheetAndAtlas().catch(() => {});
 
 declare const OpenSeadragon: any;
 
@@ -35,7 +39,8 @@ export type PointOfInterest = {
   maps: string[];
   name: string;
   aliases?: string[];
-  icon: string;
+  icon?: string;
+  spriteKey?: string | string[];
   wiki?: string;
   text?: string;
   x: number;
@@ -484,18 +489,46 @@ function createOverlayPopup({ name, aliases, text, wiki, fileName }: PointOfInte
  * Return the DOM element and the OSD position for an area of interest overlay
  */
 function createPOI(poi: PointOfInterest, overlayType?: OverlayKey): OSDOverlay {
-  const { name, icon, x, y } = poi;
+  const { name, icon, spriteKey, x, y } = poi;
   const el = document.createElement('div');
 
   const pin = document.createElement('div');
   pin.className = 'osOverlayPOI';
   el.appendChild(pin);
 
-  const img = document.createElement('img');
-  img.src = icon;
-  img.alt = name;
-  img.className = 'pixelated-image';
-  pin.appendChild(img);
+  // Use atlas sprite if spriteKey is present, otherwise fall back to icon img
+  if (spriteKey) {
+    // Apply sprite offset so hotspot aligns with the map position
+    const applyOffset = (canvas: HTMLCanvasElement) => {
+      const { dx, dy } = getSpriteOffset(spriteKey, 64, 64);
+      canvas.style.transform = `translate(${dx}px, ${dy}px)`;
+    };
+    // Try sync first (atlas may already be cached)
+    const canvas = drawSpriteToCanvas(spriteKey, 64, 64);
+    if (canvas) {
+      canvas.className = 'pixelated-image';
+      canvas.setAttribute('alt', name);
+      applyOffset(canvas);
+      pin.appendChild(canvas);
+    } else {
+      // Atlas not ready yet — await it, then draw
+      loadSpritesheetAndAtlas().then(() => {
+        const c = drawSpriteToCanvas(spriteKey, 64, 64);
+        if (c) {
+          c.className = 'pixelated-image';
+          c.setAttribute('alt', name);
+          applyOffset(c);
+          pin.appendChild(c);
+        }
+      });
+    }
+  } else if (icon) {
+    const img = document.createElement('img');
+    img.src = icon;
+    img.alt = name;
+    img.className = 'pixelated-image';
+    pin.appendChild(img);
+  }
 
   const popup = createOverlayPopup(poi, overlayType);
   el.appendChild(popup);

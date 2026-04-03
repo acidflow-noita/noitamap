@@ -259,25 +259,196 @@ export class AppOSD {
     const viewport = this.viewport;
     const here = viewport.getCenter();
     const there = new OpenSeadragon.Point(x, y);
-    const boundingRect = new OpenSeadragon.Rect(
-      Math.min(here.x, there.x),
-      Math.min(here.y, there.y),
-      Math.max(CHUNK_SIZE, Math.abs(here.x - there.x)),
-      Math.max(CHUNK_SIZE, Math.abs(here.y - there.y)),
-    );
-    const destRect = new OpenSeadragon.Rect(x - CHUNK_SIZE / 2, y - CHUNK_SIZE / 2, CHUNK_SIZE, CHUNK_SIZE);
-    if (viewport.getZoom() < 0.0009765625) {
+
+    // Cancel any in-progress pan
+    if (this.panTimer) clearTimeout(this.panTimer);
+    this.removePanTrail();
+
+    // If already at destination or extremely close, just snap
+    const dist = Math.sqrt((here.x - x) ** 2 + (here.y - y) ** 2);
+    if (dist < CHUNK_SIZE * 0.5) {
+      const destRect = new OpenSeadragon.Rect(x - CHUNK_SIZE / 2, y - CHUNK_SIZE / 2, CHUNK_SIZE, CHUNK_SIZE);
       this.withSlowAnimation(() => viewport.fitBounds(destRect));
+      this.addPulseMarker(x, y);
       return;
     }
-    this.withSlowAnimation(() => viewport.fitBounds(boundingRect));
-    clearTimeout(this.panTimer);
-    this.panTimer = setTimeout(() => {
-      this.panTimer = undefined;
-      this.withSlowAnimation(() => viewport.fitBounds(destRect));
-    }, 1000);
+
+    // ─── Phase 1: Zoom out to show both origin and destination ───
+    const padding = 1.3; // 30% padding around the bounding box
+    const midX = (here.x + there.x) / 2;
+    const midY = (here.y + there.y) / 2;
+    const spanW = Math.abs(here.x - there.x) * padding;
+    const spanH = Math.abs(here.y - there.y) * padding;
+    const overviewRect = new OpenSeadragon.Rect(
+      midX - spanW / 2,
+      midY - spanH / 2,
+      Math.max(spanW, CHUNK_SIZE * 2),
+      Math.max(spanH, CHUNK_SIZE * 2),
+    );
+
+    // Show SVG trail line from here → there
+    this.addPanTrail(here.x, here.y, x, y);
+
+    // Phase 1: zoom out to overview
+    this.withSlowAnimation(() => viewport.fitBounds(overviewRect));
+
+    // ─── Phase 2: After phase 1 animation completes, zoom into destination ───
+    const destRect = new OpenSeadragon.Rect(x - CHUNK_SIZE / 2, y - CHUNK_SIZE / 2, CHUNK_SIZE, CHUNK_SIZE);
+
+    // Use animation-finish event for precise synchronization
+    const onAnimFinish = () => {
+      this.viewer.removeHandler("animation-finish", onAnimFinish);
+      // Hold the overview for 3s so the user can see the full path
+      this.panTimer = setTimeout(() => {
+        this.panTimer = undefined;
+        this.withSlowAnimation(() => viewport.fitBounds(destRect));
+        // Remove trail and add pulse after phase 2 starts
+        this.panTimer = setTimeout(() => {
+          this.removePanTrail();
+          this.addPulseMarker(x, y);
+        }, 800);
+      }, 1000);
+    };
+    this.viewer.addHandler("animation-finish", onAnimFinish);
   }
   private panTimer: any = undefined;
+
+  /** Add an SVG trail line overlay connecting origin to destination */
+  private addPanTrail(x1: number, y1: number, x2: number, y2: number) {
+    this.removePanTrail();
+    const container = this.viewer.container as HTMLElement;
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "pan-trail-svg");
+    svg.style.cssText = `
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 9999; overflow: visible;
+    `;
+
+    // Defs for the marching ants effect
+    svg.innerHTML = `
+      <defs>
+        <marker id="pan-trail-arrow" viewBox="0 0 10 10" refX="8" refY="5"
+                markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 2 1 L 8 5 L 2 9" fill="none" stroke="oklch(62.7% 0.194 149.214)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        </marker>
+      </defs>
+    `;
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("class", "pan-trail-line");
+    line.setAttribute("stroke", "oklch(62.7% 0.194 149.214)");
+    line.setAttribute("stroke-width", "8");
+    line.setAttribute("stroke-dasharray", "10,8");
+    line.setAttribute("stroke-opacity", "0.8");
+    line.setAttribute("marker-end", "url(#pan-trail-arrow)");
+    svg.appendChild(line);
+
+    // Destination dot
+    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    dot.setAttribute("class", "pan-trail-dot");
+    dot.setAttribute("r", "6");
+    dot.setAttribute("fill", "oklch(62.7% 0.194 149.214)");
+    dot.setAttribute("fill-opacity", "0.9");
+    svg.appendChild(dot);
+
+    container.appendChild(svg);
+
+    // Store trail data for position updates
+    this.panTrailData = { svg, line, dot, x1, y1, x2, y2 };
+    this.updatePanTrailPositions();
+
+    // Start marching ants animation
+    this.panTrailAnimFrame = requestAnimationFrame(this.animatePanTrail);
+
+    // Listen to viewport changes to update line positions
+    this.panTrailViewportHandler = () => this.updatePanTrailPositions();
+    this.viewer.addHandler("animation", this.panTrailViewportHandler);
+    this.viewer.addHandler("animation-finish", this.panTrailViewportHandler);
+  }
+
+  private panTrailData: {
+    svg: SVGSVGElement;
+    line: SVGLineElement;
+    dot: SVGCircleElement;
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  } | null = null;
+  private panTrailAnimFrame: number = 0;
+  private panTrailDashOffset: number = 0;
+  private panTrailViewportHandler: (() => void) | null = null;
+
+  private animatePanTrail = () => {
+    if (!this.panTrailData) return;
+    this.panTrailDashOffset -= 0.5;
+    this.panTrailData.line.setAttribute("stroke-dashoffset", String(this.panTrailDashOffset));
+    this.panTrailAnimFrame = requestAnimationFrame(this.animatePanTrail);
+  };
+
+  private updatePanTrailPositions() {
+    if (!this.panTrailData) return;
+    const { line, dot, x1, y1, x2, y2 } = this.panTrailData;
+    const viewport = this.viewport;
+    const p1 = viewport.viewportToViewerElementCoordinates(new OpenSeadragon.Point(x1, y1));
+    const p2 = viewport.viewportToViewerElementCoordinates(new OpenSeadragon.Point(x2, y2));
+    line.setAttribute("x1", String(p1.x));
+    line.setAttribute("y1", String(p1.y));
+    line.setAttribute("x2", String(p2.x));
+    line.setAttribute("y2", String(p2.y));
+    dot.setAttribute("cx", String(p2.x));
+    dot.setAttribute("cy", String(p2.y));
+  }
+
+  private removePanTrail() {
+    if (this.panTrailAnimFrame) {
+      cancelAnimationFrame(this.panTrailAnimFrame);
+      this.panTrailAnimFrame = 0;
+    }
+    if (this.panTrailViewportHandler) {
+      this.viewer.removeHandler("animation", this.panTrailViewportHandler);
+      this.viewer.removeHandler("animation-finish", this.panTrailViewportHandler);
+      this.panTrailViewportHandler = null;
+    }
+    if (this.panTrailData) {
+      this.panTrailData.svg.remove();
+      this.panTrailData = null;
+    }
+    this.panTrailDashOffset = 0;
+  }
+
+  /** Add a pulsing circle at the destination that fades out */
+  private addPulseMarker(x: number, y: number) {
+    // Remove any existing pulse
+    const old = this.viewer.container.querySelector(".pan-pulse-marker");
+    if (old) old.remove();
+
+    const el = document.createElement("div");
+    el.className = "pan-pulse-marker";
+    el.style.cssText = `
+      position: absolute; width: 20px; height: 20px;
+      border: 2px solid oklch(62.7% 0.194 149.214); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      animation: pan-pulse 1.5s ease-out forwards;
+      transform: translate(-50%, -50%);
+    `;
+
+    // Position via OSD overlay system
+    this.viewer.addOverlay({
+      element: el,
+      location: new OpenSeadragon.Point(x, y),
+      placement: OpenSeadragon.Placement.CENTER,
+    });
+
+    // Auto-remove after animation
+    setTimeout(() => {
+      try {
+        this.viewer.removeOverlay(el);
+      } catch (_) {}
+      el.remove();
+    }, 1500);
+  }
 
   private withSlowAnimation(cb: Function) {
     const viewport = this.viewport;
@@ -286,9 +457,9 @@ export class AppOSD {
       centerSpringYAnimationTime: viewport.centerSpringY.animationTime,
       zoomSpringAnimationTime: viewport.zoomSpring.animationTime,
     };
-    viewport.centerSpringX.animationTime = 10;
-    viewport.centerSpringY.animationTime = 10;
-    viewport.zoomSpring.animationTime = 20;
+    viewport.centerSpringX.animationTime = 3.75;
+    viewport.centerSpringY.animationTime = 3.75;
+    viewport.zoomSpring.animationTime = 1.75;
     cb();
     viewport.centerSpringX.animationTime = oldValues.centerSpringXAnimationTime;
     viewport.centerSpringY.animationTime = oldValues.centerSpringYAnimationTime;

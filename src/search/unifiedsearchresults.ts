@@ -7,6 +7,7 @@ import { getPOISpriteFirstFrame } from "../telescope/telescope-osd-bridge";
 import spells from "../data/spells.json";
 import { gameTranslator } from "../game-translations/translator";
 import { isSpoilerFree } from "../spoiler-free";
+import { CREATURE_DATA } from "../data/creature-data";
 
 export type UnifiedSearchResult =
   | TargetOfInterest
@@ -407,9 +408,35 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     .replace(/\b\w/g, (c: string) => c.toUpperCase());
                 }
                 nameDiv.textContent = label;
+
+                // Show creature alias subtitle for entities
+                if (r.type === "entity" && r.entity && !isSpoilerFree()) {
+                  const entityId = String(r.entity).toLowerCase();
+                  const creatureInfo = CREATURE_DATA[entityId];
+                  if (creatureInfo) {
+                    const currentLang = i18next.language || "en";
+                    const aliasParts: string[] = [];
+                    // If not English, add the official Finnish name
+                    if (currentLang !== "en" && creatureInfo.name) {
+                      aliasParts.push(`"${creatureInfo.name}"`);
+                    }
+                    // Always add the English alias if present
+                    if (creatureInfo.alias) {
+                      aliasParts.push(`"${creatureInfo.alias}"`);
+                    }
+                    if (aliasParts.length > 0) {
+                      const aliasLine = document.createElement("div");
+                      aliasLine.className = "creature-alias-line";
+                      aliasLine.textContent = aliasParts.join(", ");
+                      aliasLine.style.fontSize = "0.82em";
+                      aliasLine.style.color = "#9a9";
+                      aliasLine.style.fontStyle = "italic";
+                      nameDiv.appendChild(aliasLine);
+                    }
+                  }
                 }
               }
-
+            }
               if ((result as any).chunksAway !== null) {
                 const chunksAway = (result as any).chunksAway as number;
                 const proximitySpan = document.createElement("span");

@@ -521,7 +521,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     }
 
     // Post-process POIs to fix wand names without modifying library code
-    const combinedPois = scanResults.generatedSpawns.concat(specialPOIs);
+    let combinedPois = scanResults.generatedSpawns.concat(specialPOIs);
     if (staticResults && staticResults.pois) {
       combinedPois.push(...staticResults.pois);
     }
@@ -579,12 +579,17 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       friendPrng.SetRandomSeed(seed + ngPlus, 24, 32);
       const friendRoom = friendPrng.Random(1, 6);
       const pos = friendRoomPositions[friendRoom - 1];
-      combinedPois.push({
-        type: "friend",
-        x: pos.x + 256,
-        y: pos.y + 256,
-        biome: `friend_${friendRoom}`,
-      } as any);
+      if (!combinedPois.some((p: any) => p.type === "friend")) {
+        combinedPois.push({
+          type: "friend",
+          name: "Toveri",
+          x: pos.x + 256,
+          y: pos.y + 256,
+          biome: `friend_${friendRoom}`,
+          items: [{item: "Full Health Regeneration"}],
+        } as any);
+      }
+
       // Offset gourd down so it doesn't overlap the friend boss
       for (const poi of combinedPois) {
         if (poi.type === "item" && (poi as any).item === "gourd" && (poi as any).biome === `friend_${friendRoom}`) {
@@ -596,11 +601,90 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       // mestari_secret is at chunk (59, 43) in biome map coordinates
       // World coords: x = (59 - 32) * 512 + 256, y = (43 - 14) * 512 + 256
       combinedPois.push({
-        type: "mestari_boss",
-        x: (59 - 32) * 512 + 256,
-        y: (43 - 14) * 512 + 256,
+        type: "boss_wizard",
+        name: "Mestarien mestari",
+        x: 12573,
+        y: 15178,
         biome: "mestari_secret",
+        items: [{item: "Sauvan Ydin (Wand Core)"}, {item: "Book: A Cunning Contraption"}, {item: "Spell: Wand Refresh"}, {item: "Spell: Add Trigger"}, {item: "Spell: Add Timer"}, {item: "Spell: Add Expiration Trigger"}, {item: "Spell: Spell Duplication"}],
       } as any);
+
+      // Add forgotten (boss_ghost) manually due to lack of telescope coverage
+      combinedPois.push({
+        type: "boss_ghost",
+        name: "Unohdettu",
+        x: (9 - 32) * 512 + 256,
+        y: (39 - 14) * 512 + 256,
+        biome: "boss_arena",
+        items: [{item: "Sun Seed"}, {item: "Full Health Regeneration"}],
+      } as any);
+
+      // Add Kivi (Rock Boss)
+      combinedPois.push({
+        type: "boss_sky",
+        name: "Kivi",
+        x: 7300,
+        y: -4574,
+        biome: "boss_sky",
+        items: [{item: "Kummitus"}],
+      } as any);
+
+      // Add Tapion Vasalli (Deer Boss)
+      combinedPois.push({
+        type: "islandspirit",
+        name: "Tapion vasalli",
+        x: -13676,
+        y: 57,
+        biome: "lake_island",
+        icon: "assets/icons/bosses/deer.png",
+        items: [{item: "Spell: Muodonmuutos"}],
+      } as any);
+
+      // Add Kolmisilmä (Kolmi)
+      combinedPois.push({
+        type: "boss_centipede",
+        name: "Kolmisilmä",
+        x: 3556,
+        y: 13026,
+        biome: "boss_arena",
+        items: [{item: "boss_centipede_sampo"}],
+      } as any);
+
+      // Add Mecha Kolmi
+      combinedPois.push({
+        type: "boss_robot",
+        name: "Kolmisilmän Koipi",
+        x: 13987,
+        y: 11123,
+        biome: "boss_arena",
+        items: [{item: "Spell: Spatial Awareness"}],
+      } as any);
+
+      // Add Meat Boss (Kolmisilmän sydän)
+      combinedPois.push({
+        type: "boss_meat",
+        name: "Kolmisilmän sydän",
+        x: 6915,
+        y: 8448,
+        biome: "boss_arena",
+        items: [{item: "Experimental Wand (Saha)"}],
+      } as any);
+    }
+
+    // Deduplicate friend
+    const friendPois = combinedPois.filter((p: any) => p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss");
+    if (friendPois.length > 0) {
+      const keep = friendPois.find((p: any) => p.type === "friend") || friendPois[0];
+      combinedPois = combinedPois.filter((p: any) => !(p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss"));
+      combinedPois.push(keep);
+    }
+
+    // Deduplicate alchemist_boss
+    const alchemistPois = combinedPois.filter((p: any) => p.type === "alchemist_boss" || (p.type === "entity" && p.entity === "boss_alchemist"));
+    if (alchemistPois.length > 0) {
+      const keep = alchemistPois.find((p: any) => p.type === "alchemist_boss") || alchemistPois[0];
+      combinedPois = combinedPois.filter((p: any) => !(p.type === "alchemist_boss" || (p.type === "entity" && p.entity === "boss_alchemist")));
+      combinedPois.push(keep);
     }
     for (const poi of combinedPois) {
       if (poi.type === "wand" && (!poi.name || poi.name === "Taikasauva")) {

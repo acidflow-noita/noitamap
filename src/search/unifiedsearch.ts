@@ -9,6 +9,7 @@ import i18next from "../i18n";
 import spells from "../data/spells.json";
 import { EventEmitter2 } from "eventemitter2";
 import type { DynamicPOI } from "../dynamic-map";
+import { CREATURE_ALIASES, CREATURE_DATA } from "../data/creature-data";
 
 // Inlined from poi-spatial-index to avoid pulling Flatbush into the main bundle
 const CONTAINER_TYPES = new Set([
@@ -26,11 +27,20 @@ const CONTAINER_TYPES = new Set([
   "chest",
   "great_chest",
   "laboratory",
+  "boss_spirit",
+  "islandspirit",
+  "boss_wizard",
+  "boss_ghost",
+  "boss_sky",
+  "boss_centipede",
+  "boss_robot",
+  "boss_meat",
+  "friend"
 ]);
 
 const CHEST_TYPES = new Set(["chest", "great_chest", "pacifist_chest"]);
 const HOLY_MOUNTAIN_TYPES = new Set(["holy_mountain_shop"]);
-const BOSS_TYPES = new Set(["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon"]);
+const BOSS_TYPES = new Set(["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon", "boss_wizard", "boss_ghost", "friend", "boss_sky", "islandspirit", "boss_centipede", "boss_robot", "boss_meat"]);
 
 /** Check if a POI matches any of the active filters. */
 function matchesFilters(p: DynamicPOI, activeFilters: Set<string>): boolean {
@@ -267,13 +277,50 @@ export class UnifiedSearch extends EventEmitter2 {
       const parts: string[] = [p.name ?? "", p.type ?? "", p.item ?? "", p.enemy ?? "", p.material ?? ""];
 
       // Add entity name and translated name for creature search
+      let entityNameForSearch = "";
       if (p.type === "entity" && (p as any).entity) {
-        const entityName = String((p as any).entity);
-        parts.push(entityName);
-        const translated = gameTranslator.translateItem(`animal_${entityName.toLowerCase()}`);
-        if (translated !== `animal_${entityName.toLowerCase()}`) {
+        entityNameForSearch = String((p as any).entity).toLowerCase();
+      } else if (p.type === "alchemist_boss") {
+        entityNameForSearch = "boss_alchemist";
+      } else if (p.type === "mestari_boss") {
+        entityNameForSearch = "boss_wizard";
+      } else if (p.type === "boss_ghost") {
+        entityNameForSearch = "boss_ghost";
+      } else if (p.type === "triangle_boss") {
+        entityNameForSearch = "boss_gate";
+      } else if (p.type === "pyramid_boss") {
+        entityNameForSearch = "boss_limbs";
+      } else if (p.type === "dragon") {
+        entityNameForSearch = "boss_dragon";
+      } else if (p.type === "friend") {
+        entityNameForSearch = "friend";
+      } else if (p.type === "boss_sky") {
+        entityNameForSearch = "boss_sky";
+      } else if (p.type === "boss_wizard" || p.type === "mestari_boss") {
+        entityNameForSearch = "boss_wizard";
+      } else if (p.type === "boss_centipede") {
+        entityNameForSearch = "boss_centipede";
+      } else if (p.type === "boss_robot") {
+        entityNameForSearch = "boss_robot";
+      } else if (p.type === "boss_meat") {
+        entityNameForSearch = "boss_meat";
+      } else if (p.type === "islandspirit") {
+        entityNameForSearch = "boss_spirit";
+      }
+
+      if (entityNameForSearch) {
+        parts.push(entityNameForSearch);
+        const translated = gameTranslator.translateItem(`animal_${entityNameForSearch}`);
+        if (translated !== `animal_${entityNameForSearch}`) {
           parts.push(translated);
         }
+        // Add English alias so "Rat", "Tentacler" etc. work in any language
+        const alias = CREATURE_ALIASES[entityNameForSearch];
+        if (alias) parts.push(alias);
+        // Add official Finnish name so it's always searchable
+        const data = CREATURE_DATA[entityNameForSearch];
+        if (data?.name) parts.push(data.name);
+        if (data?.alias) parts.push(data.alias);
       }
 
       // Add "flask" alias for potions so old-school players can find them

@@ -103,35 +103,53 @@ export function createMarkerTileSource(markerData: MarkerData): any {
         const item = items[idx];
         if (!item) continue;
 
-        const atlasKey = applySpoilerFree(item.spriteKey, atlas);
-        const atlasEntry = atlas[atlasKey];
-        if (!atlasEntry) continue;
+        const rawKeysRaw = Array.isArray(item.spriteKey) ? item.spriteKey : [item.spriteKey];
+        const rootKey = rawKeysRaw[0];
+        const atlasKeyScrubbed = applySpoilerFree(rootKey, atlas);
+        const drawKeys = (atlasKeyScrubbed !== rootKey) ? [atlasKeyScrubbed] : rawKeysRaw;
 
-        const srcW = atlasEntry.w;
-        const srcH = atlasEntry.h;
+        let isMain = true;
+        let rootW = 0;
+        let rootH = 0;
+        let rootOX = 0;
+        let rootOY = 0;
 
-        // When spoiler-free swaps the sprite, use the replacement sprite's
-        // own pixel dimensions (item.w/h are pixel dims from the original atlas entry).
-        const drawItemW = atlasKey !== item.spriteKey ? srcW : item.w;
-        const drawItemH = atlasKey !== item.spriteKey ? srcH : item.h;
+        for (const k of drawKeys) {
+          const atlasEntry = atlas[k];
+          if (!atlasEntry) continue;
 
-        const itemLocalX = item.osdX - originX - drawItemW / 2;
-        const itemLocalY = item.osdY - originY - drawItemH / 2;
+          const srcW = atlasEntry.w;
+          const srcH = atlasEntry.h;
 
-        const drawX = (itemLocalX - bx) * drawScale;
-        const drawY = (itemLocalY - by) * drawScale;
-        const drawW = drawItemW * drawScale;
-        const drawH = drawItemH * drawScale;
+          if (isMain) {
+            isMain = false;
+            // When spoiler-free swaps the sprite, use the replacement sprite's
+            // own pixel dimensions (item.w/h are pixel dims from the original atlas entry).
+            rootW = atlasKeyScrubbed !== rootKey ? srcW : item.w;
+            rootH = atlasKeyScrubbed !== rootKey ? srcH : item.h;
+            rootOX = atlasEntry.ox ?? rootW / 2;
+            rootOY = atlasEntry.oy ?? rootH / 2;
+          }
 
-        // Skip markers smaller than 1px — sub-pixel drawImage produces
-        // colored rectangle artifacts on some browsers/GPUs.
-        if (drawW < 1 || drawH < 1) continue;
+          const l_ox = atlasEntry.ox ?? srcW / 2;
+          const l_oy = atlasEntry.oy ?? srcH / 2;
+          const itemLocalX = item.osdX - originX + (l_ox - rootOX);
+          const itemLocalY = item.osdY - originY + (l_oy - rootOY);
 
-        ctx.drawImage(
-          spritesheet,
-          atlasEntry.x, atlasEntry.y, srcW, srcH,
-          drawX, drawY, drawW, drawH,
-        );
+          const drawX = (itemLocalX - bx - l_ox) * drawScale;
+          const drawY = (itemLocalY - by - l_oy) * drawScale;
+          const drawW = srcW * drawScale;
+          const drawH = srcH * drawScale;
+
+          // Skip markers smaller than 1px
+          if (drawW < 1 || drawH < 1) continue;
+
+          ctx.drawImage(
+            spritesheet,
+            atlasEntry.x, atlasEntry.y, srcW, srcH,
+            drawX, drawY, drawW, drawH,
+          );
+        }
       }
     }
 

@@ -171,3 +171,25 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup {
 img[src$="spatial_awareness_special_spot.png"] {
     transform: scale(0.75);
 }
+
+/* Pan-to-target pulse marker animation */
+@keyframes pan-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    border-width: 3px;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(3);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+/* Canvas sprites rendered from atlas in POI overlays */
+.osOverlayPOI > canvas {
+  --size: 30px;
+  min-width: var(--size);
+  min-height: var(--size);
+  image-rendering: pixelated;
+}

@@ -43,6 +43,7 @@ const SCAN_DIRS = [
   "data/items_gfx/",
   "data/buildings_gfx/",
   "data/enemies_gfx/",
+  "data/entities/animals/",
   "data/ui_gfx/gun_actions/",
   "data/ui_gfx/items/",
   "data/ui_gfx/perk_icons/",
@@ -58,6 +59,15 @@ const SCAN_DIRS = [
 // Paths to SKIP when scanning — not useful as standalone sprites
 const SKIP_DIRS = [
   "data/items_gfx/in_hand/",  // Hand-held overlays, not standalone sprites
+  "data/entities/animals/boss_centipede/rewards/",  // Reward icons, not creature sprites
+  "data/entities/animals/boss_centipede/verlet_chains/",  // Chain segments
+  "data/entities/animals/boss_centipede/limbs/",  // Limb segments
+  "data/entities/animals/boss_centipede/tail/",  // Tail segments
+  "data/entities/animals/boss_limbs/limb",  // Limb segments (prefix match)
+  "data/entities/animals/boss_meat/limb",  // Limb segments
+  "data/entities/animals/boss_meat/hair",  // Hair pieces
+  "data/entities/animals/boss_fish/tentacle",  // Tentacle parts
+  "data/entities/animals/ending_placeholder/",  // Duplicate ending assets
 ];
 
 // Filename patterns to SKIP — never used in the spritesheet/atlas
@@ -241,6 +251,14 @@ function getAtlasKey(zipPath, isWand) {
     return `enemy:${rel}`;
   }
 
+  // Boss/creature entity sprites → enemy: keys (same namespace as enemies_gfx)
+  if (zipPath.startsWith("data/entities/animals/")) {
+    const rel = zipPath.slice("data/entities/animals/".length).replace(/\.png$/, "");
+    // Map boss_xxx/body.png → enemy:boss_xxx_body, boss_xxx/sprite.png → enemy:boss_xxx_sprite
+    const key = rel.replace(/\//g, "_");
+    return `enemy:${key}`;
+  }
+
   // UI items
   if (zipPath.startsWith("data/ui_gfx/items/")) {
     const rel = zipPath.slice("data/ui_gfx/items/".length).replace(/\.png$/, "");
@@ -362,11 +380,29 @@ async function main() {
       continue;
     }
 
-    // Skip images where BOTH dimensions exceed the limit (true backgrounds/pixel scenes).
+    // Parse companion XML early — we need it to decide whether large images can be cropped
+    // Try exact match first, then _sprite.xml (boss sprites use this naming convention)
+    const xmlPath = p.replace(/\.png$/, ".xml");
+    let xmlData = await parseXml(zip, xmlPath);
+    // Also try _sprite.xml if the matched XML has no frame data
+    // (entity XMLs like boss_alchemist.xml have offset_x/y from SpriteComponents but no frame_width)
+    if (!xmlData || !xmlData.frame_width) {
+      const spriteXmlPath = p.replace(/\.png$/, "_sprite.xml");
+      const spriteXml = await parseXml(zip, spriteXmlPath);
+      if (spriteXml) xmlData = spriteXml;
+    }
+
+    // Skip images where BOTH dimensions exceed the limit — UNLESS they have XML frame data
+    // that will allow us to crop them to a small first frame (e.g., boss sprite sheets).
     // Wide spritesheets (e.g. 280x50 orb animations) pass through and get cropped later.
     if (img.width > MAX_SPRITE_DIM && img.height > MAX_SPRITE_DIM) {
-      skippedLarge++;
-      continue;
+      const canCrop = xmlData && xmlData.frame_width && xmlData.frame_height
+        && xmlData.frame_width <= MAX_SPRITE_DIM && xmlData.frame_height <= MAX_SPRITE_DIM;
+      if (!canCrop) {
+        skippedLarge++;
+        continue;
+      }
+      // Large image with XML frame data — let it through for cropping below
     }
 
     // Skip fully transparent images
@@ -374,10 +410,6 @@ async function main() {
       skippedTransparent++;
       continue;
     }
-
-    // Parse companion XML
-    const xmlPath = p.replace(/\.png$/, ".xml");
-    const xmlData = await parseXml(zip, xmlPath);
 
     // Crop animated sprites to first frame of the default/idle animation
     const noHeuristicCrop = NO_HEURISTIC_CROP_DIRS.some((d) => p.startsWith(d));

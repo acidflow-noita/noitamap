@@ -17,12 +17,16 @@ export interface AtlasEntry {
   y: number;
   w: number;
   h: number;
+  /** Sprite offset X (hotspot X from left edge) */
+  ox?: number;
+  /** Sprite offset Y (hotspot Y from top edge) */
+  oy?: number;
 }
 
 export interface MarkerItem {
   poi: POI;
   pw: number;
-  spriteKey: string;
+  spriteKey: string | string[];
   osdX: number;
   osdY: number;
   w: number;
@@ -124,6 +128,13 @@ const CONTAINER_TYPES = new Set([
   "laboratory",
   "enemies",
   "props",
+  "boss_sky",
+  "islandspirit",
+  "boss_wizard",
+  "boss_ghost",
+  "boss_centipede",
+  "boss_robot",
+  "boss_meat",
 ]);
 
 /** Chest-like containers: show only the chest sprite on map, contents in popup/search only. */
@@ -143,7 +154,7 @@ function resolveSpellKey(spellId: string): string {
   return _spellIdToSpriteKey.get(spellId) ?? `spell:${spellId.toLowerCase()}`;
 }
 
-function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | null {
+function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | string[] | null {
   // Spells inside containers have {type: 'item', item: 'spell', spell: 'SPELL_ID'}
   if (poi.type === "item" && poi.item === "spell" && (poi as any).spell) {
     return resolveSpellKey(String((poi as any).spell));
@@ -215,17 +226,29 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | nu
   if (poi.type === "laboratory") return null;
   if (poi.type === "eye_room") return null;
 
-  // Boss types — no boss sprites in atlas, skip rendering the boss entity.
-  // Drops are still shown via container unwrapping below.
-  // dragon, fish_giga (leviathan), gate_monster_a (gate boss), islandspirit — hidden/prebaked, skip.
-  // triangle_boss, alchemist_boss, pyramid_boss, boss_centipede, friend — skip sprite (none in atlas).
-  if (
-    poi.type === "triangle_boss" ||
-    poi.type === "alchemist_boss" ||
-    poi.type === "pyramid_boss" ||
-    poi.type === "dragon"
-  ) {
-    return null;
+  // Boss types — map to their full creature sprites in the atlas
+  // Can be a string, or an array of strings to composite multiple sprite layers (drawn sequentially at 0,0 offset).
+  const BOSS_SPRITE_KEYS: Record<string, string | string[]> = {
+    alchemist_boss: "enemy:boss_alchemist_boss_alchemist",
+    pyramid_boss: "enemy:boss_limbs_body",
+    dragon: "enemy:dragon_head",
+    boss_wizard: [
+      "enemy:boss_wizard_wizard_body",
+      "enemy:boss_wizard_wizard_hand",
+      "enemy:boss_wizard_wizard_hand",
+      "enemy:boss_wizard_wizard_head",
+      "enemy:boss_wizard_wizard_helmet",
+    ],
+    boss_ghost: "enemy:boss_ghost_body",
+    friend: "enemy:friend",
+    boss_sky: "enemy:boss_sky_boss_sky",
+    islandspirit: "enemy:boss_spirit_boss_spirit",
+    boss_centipede: "enemy:boss_centipede_body",
+    boss_robot: "enemy:boss_robot_body",
+    boss_meat: "enemy:boss_meat_body",
+  };
+  if (BOSS_SPRITE_KEYS[poi.type]) {
+    return BOSS_SPRITE_KEYS[poi.type];
   }
 
   // Enemy/prop spawn containers — don't render the container itself, only inner items
@@ -258,15 +281,18 @@ function addMarkerItem(
   worldCenter: number,
   atlas: Record<string, AtlasEntry>,
 ): void {
-  const key = getSpriteKey(poi, atlas);
-  if (!key || !atlas[key]) return;
-  const entry = atlas[key];
-  const frame = FIRST_FRAME_SIZE[key];
+  const keyRaw = getSpriteKey(poi, atlas);
+  if (!keyRaw) return;
+  const rootKey = Array.isArray(keyRaw) ? keyRaw[0] : keyRaw;
+  if (!atlas[rootKey]) return;
+  
+  const entry = atlas[rootKey];
+  const frame = FIRST_FRAME_SIZE[rootKey];
   const { x, y } = getCorrectedWorldPos(poi.x, poi.y, worldCenter);
   items.push({
     poi,
     pw,
-    spriteKey: key,
+    spriteKey: keyRaw,
     osdX: x,
     osdY: y,
     w: frame ? frame.w : entry.w,
@@ -275,7 +301,7 @@ function addMarkerItem(
 }
 
 /** Boss container types whose drops should be offset to avoid overlapping the boss sprite. */
-const BOSS_DROP_TYPES = new Set(["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon"]);
+const BOSS_DROP_TYPES = new Set(["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon", "boss_wizard", "boss_ghost", "boss_sky", "islandspirit", "boss_centipede", "boss_robot", "boss_meat"]);
 
 /** Enemy/prop spawn containers: spread inner items to avoid overlap. */
 const ENEMY_SPAWN_TYPES = new Set(["enemies", "props"]);
@@ -303,9 +329,10 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
           const innerItem = innerItems[ci];
           if (isBoss) {
             // Boss drops: spread horizontally + push down below the boss sprite
+            const pushDown = poi.type === "triangle_boss" ? 70 : 50;
             const offsetPoi = count > 1
-              ? { ...innerItem, x: innerItem.x + (ci - (count - 1) / 2) * 20, y: innerItem.y + 50 }
-              : { ...innerItem, y: innerItem.y + 50 };
+              ? { ...innerItem, x: innerItem.x + (ci - (count - 1) / 2) * 20, y: innerItem.y + pushDown }
+              : { ...innerItem, y: innerItem.y + pushDown };
             addMarkerItem(items, offsetPoi, pw, worldCenter, atlas);
           } else if (ENEMY_SPAWN_TYPES.has(poi.type)) {
             // Enemy spawns: spread items in a small circle around the spawn point
@@ -379,28 +406,83 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
 }
 
 /**
- * Draw a sprite from the atlas directly onto a canvas element.
+ * Draw a sprite (or array of sprite layers) from the atlas directly onto a canvas element.
  * Synchronous — no blob URL creation needed.
- * Returns the canvas, or null if the sprite key isn't in the atlas.
+ * Returns the canvas, or null if all sprite keys are missing.
  */
-export function drawSpriteToCanvas(key: string, displayW: number, displayH: number): HTMLCanvasElement | null {
+export function drawSpriteToCanvas(keyRaw: string | string[], displayW: number, displayH: number): HTMLCanvasElement | null {
   if (!cachedSpritesheet || !cachedAtlas) return null;
+  const keys = Array.isArray(keyRaw) ? keyRaw : [keyRaw];
+  let canvas: HTMLCanvasElement | null = null;
+  let ctx: CanvasRenderingContext2D | null = null;
+  let rootScale = 1;
+  let rootCenterX = displayW / 2;
+  let rootCenterY = displayH / 2;
+
+  for (const key of keys) {
+    const resolvedKey = applySpoilerFree(key, cachedAtlas);
+    const entry = cachedAtlas[resolvedKey];
+    if (!entry) continue;
+
+    if (!canvas || !ctx) {
+      canvas = document.createElement("canvas");
+      canvas.width = displayW;
+      canvas.height = displayH;
+      canvas.style.imageRendering = "pixelated";
+      ctx = canvas.getContext("2d")!;
+      ctx.imageSmoothingEnabled = false;
+
+      // Determine root dimensions to anchor the piece origins
+      const rootResolved = applySpoilerFree(keys[0], cachedAtlas);
+      const rootEntry = cachedAtlas[rootResolved] || entry; // fallback to current if 0 is missing
+      const rootFrame = FIRST_FRAME_SIZE[keys[0]];
+      const rootW = rootFrame ? rootFrame.w : rootEntry.w;
+      const rootH = rootFrame ? rootFrame.h : rootEntry.h;
+      rootScale = Math.min(displayW / rootW, displayH / rootH, 1);
+      
+      const r_ox = rootEntry.ox ?? rootW / 2;
+      const r_oy = rootEntry.oy ?? rootH / 2;
+      // We want root's origin to be perfectly centered, adjusted for its size taking up space
+      const rootDrawW = rootW * rootScale;
+      const rootDrawH = rootH * rootScale;
+      rootCenterX = (displayW - rootDrawW) / 2 + (r_ox * rootScale);
+      rootCenterY = (displayH - rootDrawH) / 2 + (r_oy * rootScale);
+    }
+
+    const frame = FIRST_FRAME_SIZE[key];
+    const srcW = frame ? frame.w : entry.w;
+    const srcH = frame ? frame.h : entry.h;
+    const l_ox = entry.ox ?? srcW / 2;
+    const l_oy = entry.oy ?? srcH / 2;
+
+    const drawW = srcW * rootScale;
+    const drawH = srcH * rootScale;
+    const drawX = rootCenterX - (l_ox * rootScale);
+    const drawY = rootCenterY - (l_oy * rootScale);
+
+    ctx.drawImage(cachedSpritesheet, entry.x, entry.y, srcW, srcH, drawX, drawY, drawW, drawH);
+  }
+
+  return canvas;
+}
+
+/**
+ * Get the sprite's hotspot offset as pixel values relative to the displayed size.
+ * Returns { dx, dy } — CSS translate values to shift the sprite so the hotspot
+ * aligns with the entity position. If no offset data, returns center offset.
+ */
+export function getSpriteOffset(keyRaw: string | string[], displayW: number, displayH: number): { dx: number; dy: number } {
+  if (!cachedAtlas) return { dx: -displayW / 2, dy: -displayH / 2 };
+  const key = Array.isArray(keyRaw) ? keyRaw[0] : keyRaw; // use root body component for offsets
   const resolvedKey = applySpoilerFree(key, cachedAtlas);
   const entry = cachedAtlas[resolvedKey];
-  if (!entry) return null;
-
-  const frame = FIRST_FRAME_SIZE[key];
-  const srcW = frame ? frame.w : entry.w;
-  const srcH = frame ? frame.h : entry.h;
-
-  const canvas = document.createElement("canvas");
-  canvas.width = displayW;
-  canvas.height = displayH;
-  canvas.style.imageRendering = "pixelated";
-  const ctx = canvas.getContext("2d")!;
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(cachedSpritesheet, entry.x, entry.y, srcW, srcH, 0, 0, displayW, displayH);
-  return canvas;
+  if (!entry) return { dx: -displayW / 2, dy: -displayH / 2 };
+  const srcW = entry.w || 1;
+  const srcH = entry.h || 1;
+  const ox = entry.ox ?? srcW / 2;
+  const oy = entry.oy ?? srcH / 2;
+  // Scale offsets to display size
+  return { dx: -(ox / srcW) * displayW, dy: -(oy / srcH) * displayH };
 }
 
 export function getAtlas(): Record<string, AtlasEntry> | null {
