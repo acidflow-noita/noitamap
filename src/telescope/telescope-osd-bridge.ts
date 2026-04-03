@@ -2214,7 +2214,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     });
     header.appendChild(spriteImg);
     const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;color:#66ccff;font-size:16px";
+    title.style.cssText = "font-weight:bold;color:#66ccff;font-size:14px";
     title.textContent = gameTranslator.translateSpell(getSpellName(poi.item || "")) || "Spell";
     header.appendChild(title);
     tooltipEl.appendChild(header);
@@ -2244,14 +2244,14 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const translationKey = `animal_${entityId}`;
     const translated = gameTranslator.translateItem(translationKey);
     const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;color:#ff8844;font-size:16px";
+    title.style.cssText = "font-weight:bold;color:#ff8844;font-size:14px";
     // Show creature alias
     const creature = CREATURE_DATA[entityId];
     title.textContent = creature?.name ? creature.name : ((translated !== translationKey) ? translated : rawName.replace(/_/g, " "));
     titleCol.appendChild(title);
     if (creature?.alias) {
       const aliasDiv = document.createElement("div");
-      aliasDiv.style.cssText = "color:#9a9;font-size:13px;font-style:italic";
+      aliasDiv.style.cssText = "color:#9a9;font-size:12px;font-style:italic";
       aliasDiv.textContent = creature.alias;
       titleCol.appendChild(aliasDiv);
     }
@@ -2261,7 +2261,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // Rich creature stats from CREATURE_DATA
     if (creature) {
       const statsDiv = document.createElement("div");
-      statsDiv.style.cssText = "margin-top:6px;font-size:15px;line-height:1.6;color:#ccc";
+      statsDiv.style.cssText = "margin-top:6px;font-size:13px;line-height:1.6;color:#ccc";
 
       // Category + Faction
       if (creature.category || creature.faction) {
@@ -2277,7 +2277,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       // Health
       if (creature.health) {
         const hpDiv = document.createElement("div");
-        hpDiv.style.cssText = "color:#ddd;font-size:16px;margin-bottom:2px";
+        hpDiv.style.cssText = "color:#ddd;font-size:14px;margin-bottom:2px";
         hpDiv.innerHTML = `<span style="color:#e55;font-weight:bold">HP:</span> ${creature.health}`;
         statsDiv.appendChild(hpDiv);
       }
@@ -2285,7 +2285,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       // Attacks
       if (creature.attacks) {
         const atkDiv = document.createElement("div");
-        atkDiv.style.cssText = "color:#ddd;font-size:16px;margin-bottom:2px";
+        atkDiv.style.cssText = "color:#ddd;font-size:14px;margin-bottom:2px";
         atkDiv.innerHTML = `<span style="color:#f80;font-weight:bold">Attacks:</span> ${creature.attacks}`;
         statsDiv.appendChild(atkDiv);
       }
@@ -2293,7 +2293,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       // Immunities
       if (creature.immunities) {
         const immDiv = document.createElement("div");
-        immDiv.style.cssText = "color:#ddd;font-size:16px;margin-top:4px";
+        immDiv.style.cssText = "color:#ddd;font-size:14px;margin-top:4px";
         immDiv.innerHTML = `<span style="color:#6bf;font-weight:bold">Immunities:</span> ${creature.immunities}`;
         statsDiv.appendChild(immDiv);
       }
@@ -2303,12 +2303,12 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         const dmgDiv = document.createElement("div");
         dmgDiv.style.cssText = "margin-top:4px;border-top:1px solid #333;padding-top:4px";
         const dmgLabel = document.createElement("div");
-        dmgLabel.style.cssText = "color:#888;font-size:14px;margin-bottom:2px";
+        dmgLabel.style.cssText = "color:#888;font-size:12px;margin-bottom:2px";
         dmgLabel.textContent = "Damage multipliers:";
         dmgDiv.appendChild(dmgLabel);
         
         const table = document.createElement("table");
-        table.style.cssText = "font-size:14px;border-spacing:0;width:100%";
+        table.style.cssText = "font-size:12px;border-spacing:0;width:100%";
         
         const dmgIcons = undefined;
 

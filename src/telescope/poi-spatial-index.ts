@@ -135,6 +135,7 @@ const CONTAINER_TYPES = new Set([
   "boss_centipede",
   "boss_robot",
   "boss_meat",
+  "boss_pit",
 ]);
 
 /** Chest-like containers: show only the chest sprite on map, contents in popup/search only. */
@@ -246,6 +247,7 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     boss_centipede: "enemy:boss_centipede_body",
     boss_robot: "enemy:boss_robot_body",
     boss_meat: "enemy:boss_meat_body",
+    boss_pit: "enemy:boss_pit",
   };
   if (BOSS_SPRITE_KEYS[poi.type]) {
     return BOSS_SPRITE_KEYS[poi.type];

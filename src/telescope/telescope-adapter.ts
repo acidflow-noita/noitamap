@@ -669,6 +669,16 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         biome: "boss_arena",
         items: [{item: "Experimental Wand (Saha)"}],
       } as any);
+
+      // Add Squidward / Pit Boss (Sauvojen tuntija)
+      combinedPois.push({
+        type: "boss_pit",
+        name: "Sauvojen tuntija",
+        x: 3750, 
+        y: 1100,
+        biome: "orb_room_bridge",
+        items: [{item: "Wand (Tier 10)"}],
+      } as any);
     }
 
     // Deduplicate friend

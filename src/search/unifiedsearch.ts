@@ -304,6 +304,8 @@ export class UnifiedSearch extends EventEmitter2 {
         entityNameForSearch = "boss_robot";
       } else if (p.type === "boss_meat") {
         entityNameForSearch = "boss_meat";
+      } else if (p.type === "boss_pit") {
+        entityNameForSearch = "boss_pit";
       } else if (p.type === "islandspirit") {
         entityNameForSearch = "boss_spirit";
       }
@@ -492,8 +494,8 @@ export class UnifiedSearch extends EventEmitter2 {
       let matched: DynamicPOI[] = [];
 
       if (this.dynamicIndex) {
-        // Query the FlexSearch index for matching POI ids
-        const found = this.dynamicIndex.search(searchText).flatMap((v: any) => v.result);
+        // Query the FlexSearch index for matching POI ids with a high limit (default is 100)
+        const found = this.dynamicIndex.search(searchText, 10000).flatMap((v: any) => v.result);
         const ids = new Set<string>(found);
         matched = [...ids].map((id) => this.dynamicPOIMap.get(id)).filter(Boolean) as DynamicPOI[];
       } else {
@@ -523,16 +525,25 @@ export class UnifiedSearch extends EventEmitter2 {
         });
       }
 
+      // Performance fix: Limit the results to render in UI to a reasonable number
+      matched = matched.slice(0, 50);
+
       // Convert to UnifiedSearchResult shape (overlayType: 'poi')
       const dynamicResults: UnifiedSearchResult[] = matched.map((p) => {
         const chunksAway =
           playerX !== null && playerY !== null
             ? Math.round(Math.sqrt((p.worldX - playerX) ** 2 + (p.worldY - playerY) ** 2) / CHUNK_SIZE)
             : null;
+        const entityName = p.type === "entity" ? String((p as any).entity).toLowerCase() : "";
+        let finalName = p.name ?? p.type;
+        if (entityName && CREATURE_DATA[entityName]?.name) {
+          finalName = CREATURE_DATA[entityName].name;
+        }
+
         return {
           overlayType: "poi" as const,
-          name: p.name ?? p.type,
-          displayName: p.name ?? p.type,
+          name: finalName,
+          displayName: finalName,
           x: p.worldX,
           y: p.worldY,
           maps: ["dynamic-main-branch" as MapName],
@@ -735,6 +746,14 @@ export class UnifiedSearch extends EventEmitter2 {
       overlayDiv.style.display = "block";
       isOverlayVisible = true;
       searchResults.resetScroll();
+    });
+
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        overlayDiv.style.display = "none";
+        isOverlayVisible = false;
+        searchInput.blur();
+      }
     });
 
     const hideOverlay = () => {
