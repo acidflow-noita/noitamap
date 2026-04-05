@@ -100,7 +100,8 @@ div:has(> div > .osOverlayPOI) {
   transform: translateX(-50%);
 }
 
-div:has(> .osOverlayPOI):hover .osOverlayPopup {
+div:has(> .osOverlayPOI):hover .osOverlayPopup,
+.osOverlayPopup.force-show {
   visibility: visible;
   opacity: 1;
   transform: translate(-50%, -5px) scale(1);

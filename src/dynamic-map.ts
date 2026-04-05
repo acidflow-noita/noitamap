@@ -146,7 +146,7 @@ export async function runDynamicMap(
       const flat = getAllPOIsFlat(lastResult);
       const dynamicPOIs: DynamicPOI[] = flat.map((p, i) => ({
         ...p,
-        id: `dyn-${i}`,
+        id: `d-${i}`,
         name: buildPOIName(p),
       }));
       onPOIsReady(dynamicPOIs);
@@ -182,12 +182,14 @@ export async function runDynamicMap(
     // 1. Check cache (skip if unlocks changed for same seed)
     let t = performance.now();
     let result: GenerationResult | null = null;
+    const cacheKey = `${seed}-${unlockKey}`;
+    
     if (!forceRegenerate) {
-      console.log(`[DynamicMap] Checking cache for seed ${seed}...`);
-      result = await getCachedGeneration(seed);
+      console.log(`[DynamicMap] Checking cache for key ${cacheKey}...`);
+      result = await getCachedGeneration(cacheKey);
       console.log(`[DynamicMap] Cache check: ${((performance.now() - t) / 1000).toFixed(2)}s (${result ? "HIT" : "MISS"})`);
     } else {
-      console.log(`[DynamicMap] Unlocks changed, forcing regeneration for seed ${seed}`);
+      console.log(`[DynamicMap] Unlocks changed, forcing regeneration for key ${cacheKey}`);
     }
 
     if (!result) {
@@ -198,7 +200,7 @@ export async function runDynamicMap(
       console.log(`[DynamicMap] Generation: ${((performance.now() - t) / 1000).toFixed(2)}s`);
 
       // 3. Store in cache (fire-and-forget -- don't block render)
-      cacheGeneration(seed, result).catch((e) => console.warn("[DynamicMap] Cache write failed:", e));
+      cacheGeneration(cacheKey, seed, result).catch((e) => console.warn("[DynamicMap] Cache write failed:", e));
     }
 
     // 4. Stamp orb POIs with collected flag based on current unlock state.
@@ -227,6 +229,23 @@ export async function runDynamicMap(
       }
     }
 
+    // 4.5. Assign persistent IDs to POIs recursively so nested items (e.g., boss drops, spawned wands) can be deep-linked
+    let globalPoiIndex = 0;
+    const assignIds = (poiArr: any[]) => {
+      if (!Array.isArray(poiArr)) return;
+      for (const poi of poiArr) {
+        if (!poi.id) {
+          poi.id = `d-${globalPoiIndex++}`;
+        }
+        if (poi.items) {
+          assignIds(poi.items);
+        }
+      }
+    };
+    for (const pois of Object.values(result.poisByPW)) {
+      assignIds(pois as any[]);
+    }
+
     // 5. Render onto OSD (skeleton placeholders are removed inside after real biome backgrounds load)
     t = performance.now();
     console.log(
@@ -252,9 +271,9 @@ export async function runDynamicMap(
     t = performance.now();
     if (onPOIsReady) {
       const flat = getAllPOIsFlat(result);
-      const dynamicPOIs: DynamicPOI[] = flat.map((p, i) => ({
+      const dynamicPOIs: DynamicPOI[] = flat.map((p) => ({
         ...p,
-        id: `dyn-${i}`,
+        id: (p as any).id,
         name: buildPOIName(p),
       }));
       onPOIsReady(dynamicPOIs);

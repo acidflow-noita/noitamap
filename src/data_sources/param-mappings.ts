@@ -127,3 +127,42 @@ export function shortToSidebar(value: string | null): boolean {
   if (!value) return false;
   return value === '1' || value === 'open';
 }
+
+// Search filter short codes
+const FILTER_SHORT_TO_FULL: Record<string, string> = {
+  w: 'wands',
+  s: 'spells',
+  i: 'items',
+  c: 'chests',
+  hm: 'holyMountains',
+  p: 'potions',
+  h: 'hearts',
+  b: 'bosses',
+  e: 'enemies',
+};
+
+const FILTER_FULL_TO_SHORT: Record<string, string> = {
+  wands: 'w',
+  spells: 's',
+  items: 'i',
+  chests: 'c',
+  holyMountains: 'hm',
+  potions: 'p',
+  hearts: 'h',
+  bosses: 'b',
+  enemies: 'e',
+};
+
+/**
+ * Convert filter to short code for URL encoding
+ */
+export function filterToShort(filter: string): string {
+  return FILTER_FULL_TO_SHORT[filter] ?? filter;
+}
+
+/**
+ * Convert short code or full name to filter (for decoding)
+ */
+export function shortToFilter(code: string): string {
+  return FILTER_SHORT_TO_FULL[code] ?? code;
+}

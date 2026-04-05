@@ -176,6 +176,11 @@ export class UnifiedSearchResults extends EventEmitter2 {
     this.wrapper.scrollTop = 0;
   }
 
+  /** Return the current result objects in display order. */
+  getRawResults(): UnifiedSearchResult[] {
+    return Array.from(this.elementByTarget.keys());
+  }
+
   /** Show a "search is being indexed" placeholder with skeleton loaders. */
   setIndexingPlaceholder(): void {
     this.clearResults(false);
@@ -220,7 +225,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
     // "Indexing" notice at the bottom
     const notice = document.createElement("li");
     notice.className = "search-indexing-notice";
-    notice.innerHTML = `<span class="spinner-border spinner-border-sm text-secondary" role="status"></span><span>Data is being loaded…</span>`;
+    notice.innerHTML = `<span class="spinner-border spinner-border-sm text-secondary" role="status"></span><span>Loading data…</span>`;
     this.wrapper.appendChild(notice);
   }
 

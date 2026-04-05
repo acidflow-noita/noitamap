@@ -76,6 +76,7 @@ import {
   updateURLWithSidebar,
   updateURLWithCanvas,
   updateURLWithSeed,
+  updateURLWithSearch,
 } from "./data_sources/url";
 import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from "./data_sources/overlays";
 import { overlayToShort } from "./data_sources/param-mappings";
@@ -257,6 +258,33 @@ document.addEventListener("DOMContentLoaded", async () => {
   globalApp = app;
   console.log(`[Noitamap] Active OSD drawer: ${(app.osd as any).drawer?.getType?.() ?? storedRenderer}`);
 
+  let initialSearchQuery = urlState.query;
+  let initialTargetPoiId = urlState.targetPoiId;
+
+  // Pre-populate and trigger the search right away so user sees skeletons
+  if (initialSearchQuery && _unifiedSearch) {
+    setTimeout(() => {
+        if (initialSearchQuery && _unifiedSearch) {
+           _unifiedSearch.triggerSearch(initialSearchQuery);
+        }
+    }, 500);
+  }
+
+  // Static map POI link sharing: pan to URL-encoded coordinates when map is not dynamic
+  if (initialTargetPoiId && urlState.map !== "dynamic-main-branch") {
+    const capturedStaticPoiId = initialTargetPoiId;
+    initialTargetPoiId = undefined;
+    setTimeout(() => {
+      // st-X_Y format produced by the search result selector
+      const match = capturedStaticPoiId.match(/^st-(-?[\d.]+)_(-?[\d.]+)$/);
+      if (match) {
+        const x = parseFloat(match[1]);
+        const y = parseFloat(match[2]);
+        app.osd.viewport.panTo(new (OpenSeadragon as any).Point(x, y), false);
+      }
+    }, 500);
+  }
+
   // Apply canvas background from URL
   if (urlState.canvas) {
     app.setBackground(urlState.canvas);
@@ -294,11 +322,24 @@ document.addEventListener("DOMContentLoaded", async () => {
   const unifiedSearch = UnifiedSearch.create({
     currentMap: app.getMap(),
     form: searchForm,
+    initialFilters: urlState.filters,
   });
 
   // Store global reference for translation updates
   globalUnifiedSearch = unifiedSearch;
   _unifiedSearch = unifiedSearch;
+
+  // Track the search string in the URL on typing
+  unifiedSearch.searchInput.addEventListener("input", debounce(300, (ev: Event) => {
+    updateURLWithSearch((ev.target as HTMLInputElement).value, unifiedSearch.activeFilters);
+  }));
+
+  // Track filter changes
+  document.addEventListener("change", (ev: Event) => {
+    if (ev.target instanceof HTMLInputElement && ev.target.matches('#unifiedSearchFilterBox input[type="checkbox"][data-filter]')) {
+      updateURLWithSearch(unifiedSearch.searchInput.value, unifiedSearch.activeFilters);
+    }
+  });
 
   // ── Dynamic map setup ─────────────────────────────────────────────────────
   // Tracks seed from the last dynamic map session so returning to dynamic map
@@ -327,6 +368,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     onPOIsReady: (pois: DynamicPOI[]) => {
       unifiedSearch.setDynamicPOIs(pois);
       unifiedSearch.setIndexingState('ready');
+      // If we had a search query, trigger it now that dynamic POIs are indexed
+      if (initialSearchQuery) {
+        unifiedSearch.triggerSearch(initialSearchQuery);
+        initialSearchQuery = undefined;
+      }
+      // If we had a target POI ID to share, open its tooltip.
+      // Capture the value NOW before clearing the variable — the dynamic import
+      // is async so the .then() callback would otherwise see undefined.
+      if (initialTargetPoiId) {
+        const capturedPoiId = initialTargetPoiId;
+        initialTargetPoiId = undefined;
+        import('./telescope/telescope-osd-bridge').then(m => {
+          m.openTooltipForPOI(capturedPoiId, app.osd);
+        });
+      }
     },
   };
 
@@ -358,7 +414,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const proHooks: NoitamapProHooks = {
     i18next,
     authService,
-    osd: app.osd,
+    osd: app.osd as unknown as OpenSeadragon.Viewer,
     osdElement: osdRootElement,
     getMap: () => app.getMap(),
     setMap: (mapName: string) => app.setMap(asMapName(mapName) ?? (mapName as any)),
@@ -471,6 +527,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       selectSpell(result.spell, app);
     } else {
       app.goto(result);
+      
+      // Instantly update the URL to point to this selected POI
+      if (result.id || (result.x != null && result.y != null)) {
+         const pid = result.id || `st-${Math.round(result.x)}_${Math.round(result.y)}`;
+         const url = new URL(window.location.href);
+         url.searchParams.set("poi", pid);
+         
+         const qValue = unifiedSearch.getCurrentQuery();
+         if (qValue) {
+            url.searchParams.set("q", qValue);
+         }
+         
+         window.history.replaceState({}, "", url.toString());
+      }
     }
   });
 
@@ -609,10 +679,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // share button with toast notification (simple URL copy â€” pro bundle patches this for drawing share)
-  const shareEl = assertElementById("shareButton", HTMLElement);
-  shareEl.addEventListener("click", async (ev) => {
-    ev.preventDefault();
-
+  // Global function to build a complete share URL including map overlays and dynamic seeds
+  const getShareUrl = (poiId?: string) => {
     const url = new URL(window.location.href);
     const overlays = getEnabledOverlays();
     if (overlays.length > 0) {
@@ -633,7 +701,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    const finalUrl = url.toString();
+    if (poiId) {
+      url.searchParams.delete("px");
+      url.searchParams.delete("py");
+      url.searchParams.set("poi", poiId);
+    }
+    return url.toString();
+  };
+  (window as any).getShareUrl = getShareUrl;
+
+  const shareEl = assertElementById("shareButton", HTMLElement);
+  shareEl.addEventListener("click", async (ev) => {
+    ev.preventDefault();
+    const finalUrl = getShareUrl();
 
     window.navigator.clipboard
       .writeText(finalUrl)

@@ -11,6 +11,7 @@ import { getDataZip } from "../data-archive";
 import { installTelescopeShim } from "./telescope-dom-shim";
 import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope-data-bridge";
 import { decodePngToRgba, rgbaToPngBlobUrl } from "./png-decode";
+import i18next from "../i18n";
 import {
   buildMarkerData,
   getAtlas,
@@ -612,36 +613,7 @@ async function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
   return url;
 }
 
-/**
- * Helper to map raw Noita world units to linearized visual units (mod 5 logic).
- */
-function getCorrectedWorldPos(rawX: number, rawY: number, worldCenter: number): { x: number; y: number } {
-  const chunkX = Math.floor(rawX / 512) + worldCenter;
-  const chunkY = Math.floor(rawY / 512) + 14;
 
-  const div5x = Math.floor(chunkX / 5);
-  const mod5x = ((chunkX % 5) + 5) % 5;
-  const correctedX = (div5x * 256 + mod5x * 51) * 10;
-
-  const div5y = Math.floor(chunkY / 5);
-  const mod5y = ((chunkY % 5) + 5) % 5;
-  let correctedY = (div5y * 256 + mod5y * 51) * 10;
-  if (mod5y > 0) correctedY += 10;
-
-  const localX = ((rawX % 512) + 512) % 512;
-  const localY = ((rawY % 512) + 512) % 512;
-
-  const chunkW = mod5x === 4 ? 52 : 51;
-  const chunkH = mod5y === 4 ? 52 : 51;
-
-  const finalX = correctedX + (localX * chunkW * 10) / 512;
-  const finalY = correctedY + (localY * chunkH * 10) / 512;
-
-  return {
-    x: finalX - worldCenter * 512,
-    y: finalY - 14 * 512,
-  };
-}
 
 // ─── Biome Background Tiling ────────────────────────────────────────────────
 
@@ -1702,7 +1674,9 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
 
   for (const scene of validScenes) {
     if (!bitmapByKey.has(scene.key)) continue;
-    const { x, y } = getCorrectedWorldPos(scene.x, scene.y, worldCenter);
+    // Raw engine coordinates align exactly to 1:1 mapped grid.
+    const x = scene.x;
+    const y = scene.y;
     items.push({ osdX: x, osdY: y, w: scene.width, h: scene.height, sceneKey: scene.key });
     if (x < minX) minX = x;
     if (y < minY) minY = y;
@@ -1932,7 +1906,8 @@ export async function addPOIOverlays(viewer: OSDViewer, result: GenerationResult
       cursor: pointer;
     `;
 
-    const { x, y } = getCorrectedWorldPos(poi.x, poi.y, worldCenter);
+    const x = poi.x;
+    const y = poi.y;
 
     const worldW = rotated.w;
     const worldH = rotated.h;
@@ -1987,6 +1962,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     border-radius: 8px;
     padding: 10px 14px;
     font-size: 13px;
+    min-width: 150px;
     max-width: 340px;
     pointer-events: auto;
     box-shadow: 0 6px 20px rgba(0,0,0,0.7);
@@ -1994,21 +1970,59 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     line-height: 1.5;
   `;
 
-  // Close button
-  const closeBtn = document.createElement("div");
-  closeBtn.style.cssText = `
-    position: absolute; top: 4px; right: 8px;
-    cursor: pointer; color: #666; font-size: 16px;
-    line-height: 1;
+  // Top controls container
+  const topBar = document.createElement("div");
+  topBar.style.cssText = `
+    position: absolute; top: 6px; right: 6px;
+    display: flex; gap: 6px; align-items: center;
   `;
-  closeBtn.textContent = "x";
+
+  const shareBtn = document.createElement("button");
+  shareBtn.style.cssText = `
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); 
+    border-radius: 4px; color: #ccc; cursor: pointer; padding: 2px 8px; 
+    display: flex; align-items: center; justify-content: center; font-size: 12px;
+    transition: all 0.2s;
+  `;
+  shareBtn.innerHTML = '<i class="bi bi-share"></i>';
+  shareBtn.title = i18next.t("share.copyLink", { defaultValue: "Copy direct link" });
+  shareBtn.onmouseenter = () => { shareBtn.style.background = "rgba(255,255,255,0.2)"; };
+  shareBtn.onmouseleave = () => { shareBtn.style.background = "rgba(255,255,255,0.1)"; };
+  
+  const closeBtn = document.createElement("button");
+  closeBtn.style.cssText = `
+    background: transparent; border: none; padding: 2px 6px;
+    cursor: pointer; color: #888; font-size: 18px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 0.2s;
+  `;
+  closeBtn.textContent = "×";
+  closeBtn.onmouseenter = () => { closeBtn.style.color = "#fff"; };
+  closeBtn.onmouseleave = () => { closeBtn.style.color = "#888"; };
+
   closeBtn.onclick = (e) => {
     e.stopPropagation();
     hideMarkerTooltip();
   };
-  tooltipEl.appendChild(closeBtn);
+  
+  topBar.appendChild(shareBtn);
+  topBar.appendChild(closeBtn);
+  tooltipEl.appendChild(topBar);
 
   const poi = item.poi;
+  
+  // Instantly update the URL to point to this popup
+  const url = new URL(window.location.href);
+  url.searchParams.set("poi", (poi as any).id);
+  window.history.replaceState({}, "", url.toString());
+
+  shareBtn.onclick = (e) => {
+    e.stopPropagation();
+    const finalUrl = (window as any).getShareUrl((poi as any).id);
+    navigator.clipboard.writeText(finalUrl);
+    shareBtn.innerHTML = '<i class="bi bi-check2 text-success"></i>';
+    setTimeout(() => { shareBtn.innerHTML = '<i class="bi bi-share"></i>'; }, 2000);
+  };
 
   // ─── Spoiler-free mode: generic popup with no details ──────────────────
   if (isSpoilerFree()) {
@@ -2534,12 +2548,15 @@ function hideMarkerTooltip(): void {
 }
 
 let canvasMoveCleanup: (() => void) | null = null;
+let globalMarkerData: MarkerData | null = null;
 
 /**
  * Install a canvas-click handler on the viewer to detect marker clicks,
  * and a mousemove handler to show pointer cursor when hovering over markers.
  */
 function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
+  globalMarkerData = data;
+  
   // Remove previous handlers
   if (canvasClickHandler) {
     viewer.removeHandler("canvas-click", canvasClickHandler);
@@ -2646,6 +2663,39 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
   viewer.addHandler("canvas-drag", hideMarkerTooltip);
 }
 
+export function openTooltipForPOI(poiId: string, viewer: any): void {
+  if (!globalMarkerData || !poiId || poiId === "undefined" || poiId === "null") return;
+  
+  // Find the exact marker item based on its reference or fallback ID
+  const item = globalMarkerData.items.find(i => {
+    const primaryId = (i.poi as any).id;
+    return primaryId === poiId;
+  });
+  if (!item) return;
+
+  // Convert map coordinates to viewer pixel coordinates
+  const pt = new (OpenSeadragon as any).Point(item.osdX, item.osdY);
+
+  // Force pan to it first
+  viewer.viewport.panTo(pt, true);
+  
+  // Wait a tick for viewport bounds to settle before displaying tooltip
+  setTimeout(() => {
+     const pixel = viewer.viewport.pixelFromPoint(pt);
+     const canvasRect = (viewer.canvas as HTMLElement).getBoundingClientRect();
+     // 'pixel' denotes physical monitor pixel coordinates relative to the canvas, NOT game world coordinates.
+     // If the viewport jump hasn't fully rendered, pixel positioning might end up outside the physical window.
+     // We clamp it safely using the actual DOM canvas dimensions.
+     const isOffScreen = pixel.x < -100 || pixel.x > canvasRect.width + 100 ||
+                         pixel.y < -100 || pixel.y > canvasRect.height + 100;
+     
+     const tx = isOffScreen ? (canvasRect.width / 2) : pixel.x;
+     const ty = isOffScreen ? (canvasRect.height / 2) : pixel.y;
+     
+     showMarkerTooltip(item, canvasRect.left + tx, canvasRect.top + ty);
+  }, 100);
+}
+
 // ─── Boss Sprite Overlays ──────────────────────────────────────────────────
 
 /** POI type → data.zip sprite XML path (resolved at runtime for frame size) */
@@ -2724,7 +2774,8 @@ async function addBossOverlays(viewer: OSDViewer, result: GenerationResult, gene
     const url = _bossBitmapCache.get(cacheKey);
     if (!url) continue;
 
-    const { x, y } = getCorrectedWorldPos(poi.x, poi.y, worldCenter);
+    const x = poi.x;
+    const y = poi.y;
 
     const el = document.createElement("img");
     el.src = url;
@@ -2909,7 +2960,8 @@ async function addOrbOverlays(
       : _orbIconCache.get(orb.icon);
     if (!iconUrl) continue;
 
-    const { x, y } = getCorrectedWorldPos(orb.x, orb.y, worldCenter);
+    const x = orb.x;
+    const y = orb.y;
     const orbWidth = 20; // World-coordinate width for orb icon
     const orbHeight = 25; // 4:5 aspect ratio matching 40x50px icon
 

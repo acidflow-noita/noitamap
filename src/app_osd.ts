@@ -250,8 +250,13 @@ export class AppOSD {
     const fullSize = this.getCombinedItemsRect();
     this.viewport.fitBounds(fullSize, true);
     const autoPos = this.getZoomPos();
-    if (pos && pos.zoom > autoPos.zoom) {
-      this.setZoomPos(pos);
+    if (pos) {
+      this.setZoomPos({
+        x: pos.x,
+        y: pos.y,
+        // Prevent zooming out further than the full map bounds
+        zoom: Math.max(pos.zoom, autoPos.zoom),
+      });
     }
   }
 

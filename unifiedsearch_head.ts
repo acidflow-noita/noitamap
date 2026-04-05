@@ -45,13 +45,13 @@ const BOSS_TYPES = new Set(["triangle_boss", "alchemist_boss", "pyramid_boss", "
 /** Check if a POI matches any of the active filters. */
 function matchesFilters(p: DynamicPOI, activeFilters: Set<string>): boolean {
   if (activeFilters.size === 0) return true;
-  if (activeFilters.has("w") && p.type === "wand") return true;
-  if (activeFilters.has("s") && p.type === "item" && p.item === "spell") return true;
-  if (activeFilters.has("i") && p.type === "item") return true;
-  if (activeFilters.has("c") && CHEST_TYPES.has(p.type)) return true;
-  if (activeFilters.has("hm") && HOLY_MOUNTAIN_TYPES.has(p.type)) return true;
+  if (activeFilters.has("wands") && p.type === "wand") return true;
+  if (activeFilters.has("spells") && p.type === "item" && p.item === "spell") return true;
+  if (activeFilters.has("items") && p.type === "item") return true;
+  if (activeFilters.has("chests") && CHEST_TYPES.has(p.type)) return true;
+  if (activeFilters.has("holyMountains") && HOLY_MOUNTAIN_TYPES.has(p.type)) return true;
   if (
-    activeFilters.has("p") &&
+    activeFilters.has("potions") &&
     p.type === "item" &&
     (p.item === "potion" ||
       p.item === "potion_normal" ||
@@ -61,19 +61,18 @@ function matchesFilters(p: DynamicPOI, activeFilters: Set<string>): boolean {
   )
     return true;
   if (
-    activeFilters.has("h") &&
+    activeFilters.has("hearts") &&
     p.type === "item" &&
     (p.item === "heart" || p.item === "heart_bigger" || p.item === "full_heal")
   )
     return true;
-  if (activeFilters.has("b") && BOSS_TYPES.has(p.type)) return true;
-  if (activeFilters.has("e") && p.type === "entity") return true;
+  if (activeFilters.has("bosses") && BOSS_TYPES.has(p.type)) return true;
+  if (activeFilters.has("enemies") && p.type === "entity") return true;
   return false;
 }
 export type UnifiedSearchCreateOptions = {
   currentMap: MapName;
   form: HTMLFormElement;
-  initialFilters?: string[];
 };
 
 type UnifiedSearchConstructOptions = {
@@ -81,15 +80,9 @@ type UnifiedSearchConstructOptions = {
   form: HTMLFormElement;
   searchInput: HTMLInputElement;
   searchResults: UnifiedSearchResults;
-  initialFilters?: string[];
 };
 
 export interface UnifiedSearch {
-  activeFilters: Set<string>;
-  searchInput: HTMLInputElement;
-  triggerSearch(value: string, selectIndex?: number): void;
-  getCurrentQuery(): string;
-  showOverlay(): void;
   on(event: "selected", listener: (target: TargetOfInterest | { type: "spell"; spell: any }) => void): this;
 }
 
@@ -102,9 +95,9 @@ export class UnifiedSearch extends EventEmitter2 {
   private lastViewportKey: string = "";
   private isInteracting: boolean = false;
 
-  public form: HTMLFormElement;
-  public searchInput: HTMLInputElement;
-  public activeFilters: Set<string> = new Set();
+  private form: HTMLFormElement;
+  private searchInput: HTMLInputElement;
+  private activeFilters: Set<string> = new Set();
   private searchResults: UnifiedSearchResults;
   private dynamicPOIs: DynamicPOI[] = [];
   private dynamicIndex: any = null; // FlexSearch.Document index for dynamic POIs
@@ -113,16 +106,13 @@ export class UnifiedSearch extends EventEmitter2 {
 
   public currentMap: MapName;
 
-  private constructor({ currentMap, form, searchInput, searchResults, initialFilters }: UnifiedSearchConstructOptions) {
+  private constructor({ currentMap, form, searchInput, searchResults }: UnifiedSearchConstructOptions) {
     super();
 
     this.currentMap = currentMap;
     this.form = form;
     this.searchInput = searchInput;
     this.searchResults = searchResults;
-    if (initialFilters) {
-      initialFilters.forEach(f => this.activeFilters.add(f));
-    }
 
     this.bindEvents();
   }
@@ -203,9 +193,6 @@ export class UnifiedSearch extends EventEmitter2 {
     for (const filterCheckbox of document.querySelectorAll<HTMLInputElement>(
       '#unifiedSearchFilterBox input[type="checkbox"][data-filter]',
     )) {
-      if (this.activeFilters.has(filterCheckbox.value)) {
-        filterCheckbox.checked = true;
-      }
       filterCheckbox.addEventListener("change", () => {
         if (filterCheckbox.checked) {
           this.activeFilters.add(filterCheckbox.value);
@@ -222,9 +209,6 @@ export class UnifiedSearch extends EventEmitter2 {
     for (const filterCheckbox of document.querySelectorAll<HTMLInputElement>(
       '#unifiedSearchFilterBox input[type="checkbox"][data-filter]',
     )) {
-      if (this.activeFilters.has(filterCheckbox.value)) {
-        filterCheckbox.checked = true;
-      }
       filterCheckbox.addEventListener("change", () => {
         if (filterCheckbox.checked) {
           this.activeFilters.add(filterCheckbox.value);
@@ -239,16 +223,6 @@ export class UnifiedSearch extends EventEmitter2 {
   setSearchValueWithoutTriggering(value: string) {
     this.searchInput.value = value;
     this.lastSearchText = value;
-  }
-
-  getCurrentQuery(): string {
-    return this.searchInput.value;
-  }
-
-  triggerSearch(value: string) {
-    this.searchInput.value = value;
-    (this as any).explicitShowRequested = true;
-    this.updateSearchResults();
   }
 
   /** Replace the dynamic POI index (called by the generation pipeline). */
@@ -642,7 +616,7 @@ export class UnifiedSearch extends EventEmitter2 {
     this.searchResults.setResults(combinedResults);
   }
 
-  static create({ currentMap, form, initialFilters }: UnifiedSearchCreateOptions) {
+  static create({ currentMap, form }: UnifiedSearchCreateOptions) {
     // Use the existing search input from HTML instead of creating a new one
     const searchInput = document.getElementById("unified-search-input") as HTMLInputElement;
     if (!searchInput) {
@@ -671,40 +645,40 @@ export class UnifiedSearch extends EventEmitter2 {
       atlasKey?: string;
     }> = isDynamicMap
       ? [
-          { type: "w", atlasKey: "wand:custom/good_01" },
-          { type: "s", atlasKey: "spell:mana" },
-          { type: "i", atlasKey: "item:wandstone" },
-          { type: "c", atlasKey: "item:chest_random_super" },
-          { type: "hm", iconSrc: "assets/icons/spatial_awareness/spatial_awareness_holy_mountain.png" },
-          { type: "p", atlasKey: "item:potion:acid" },
-          { type: "h", atlasKey: "item:heart_extrahp" },
-          { type: "b", iconSrc: "assets/icons/overlay-toggles/icon-bosses.webp" },
-          { type: "e", atlasKey: "spell:exploding_deer" },
+          { type: "wands", atlasKey: "wand:custom/good_01" },
+          { type: "spells", atlasKey: "spell:mana" },
+          { type: "items", atlasKey: "item:wandstone" },
+          { type: "chests", atlasKey: "item:chest_random_super" },
+          { type: "holyMountains", iconSrc: "assets/icons/spatial_awareness/spatial_awareness_holy_mountain.png" },
+          { type: "potions", atlasKey: "item:potion:acid" },
+          { type: "hearts", atlasKey: "item:heart_extrahp" },
+          { type: "bosses", iconSrc: "assets/icons/overlay-toggles/icon-bosses.webp" },
+          { type: "enemies", atlasKey: "spell:exploding_deer" },
         ]
       : [
-          { type: "s", iconSrc: "assets/icons/spells/light_bullet.png" },
-          { type: "st", iconSrc: "assets/icons/overlay-toggles/icon-structures.svg" },
-          { type: "b", iconSrc: "assets/icons/overlay-toggles/icon-bosses.webp" },
-          { type: "i", iconSrc: "assets/icons/overlay-toggles/icon-items.webp" },
-          { type: "or", iconSrc: "assets/icons/overlay-toggles/icon-orbs.webp" },
-          { type: "sa", iconSrc: "assets/icons/overlay-toggles/icon-spatial-awareness.webp" },
-          { type: "msg", iconSrc: "assets/icons/overlay-toggles/icon-hidden-messages.webp" },
+          { type: "spells", iconSrc: "assets/icons/spells/light_bullet.png" },
+          { type: "structures", iconSrc: "assets/icons/overlay-toggles/icon-structures.svg" },
+          { type: "bosses", iconSrc: "assets/icons/overlay-toggles/icon-bosses.webp" },
+          { type: "items", iconSrc: "assets/icons/overlay-toggles/icon-items.webp" },
+          { type: "orbs", iconSrc: "assets/icons/overlay-toggles/icon-orbs.webp" },
+          { type: "spatialAwareness", iconSrc: "assets/icons/overlay-toggles/icon-spatial-awareness.webp" },
+          { type: "hiddenMessages", iconSrc: "assets/icons/overlay-toggles/icon-hidden-messages.webp" },
         ];
 
     const FILTER_LABELS: Record<string, string> = {
-      w: "Wands",
-      s: "Spells",
-      i: "Items",
-      c: "Chests",
-      hm: "Holy Mountains",
-      p: "Potions & Flasks",
-      h: "Hearts & Heals",
-      b: "Bosses",
-      e: "Creatures",
-      st: "Structures",
-      or: "Orbs",
-      sa: "Spatial Awareness",
-      msg: "Hidden Messages",
+      wands: "Wands",
+      spells: "Spells",
+      items: "Items",
+      chests: "Chests",
+      holyMountains: "Holy Mountains",
+      potions: "Potions & Flasks",
+      hearts: "Hearts & Heals",
+      bosses: "Bosses",
+      enemies: "Creatures",
+      structures: "Structures",
+      orbs: "Orbs",
+      spatialAwareness: "Spatial Awareness",
+      hiddenMessages: "Hidden Messages",
     };
 
     for (const filter of filters) {
@@ -811,11 +785,10 @@ export class UnifiedSearch extends EventEmitter2 {
     const origSetResults = searchResults.setResults.bind(searchResults);
     searchResults.setResults = (...args) => {
       origSetResults(...args);
-      if (args[0].length > 0 && (document.activeElement === searchInput || (instance as any).explicitShowRequested)) {
+      if (args[0].length > 0 && document.activeElement === searchInput) {
         positionOverlay();
         overlayDiv.style.display = "block";
         isOverlayVisible = true;
-        (instance as any).explicitShowRequested = false; // consume it
       }
     };
 
@@ -824,16 +797,7 @@ export class UnifiedSearch extends EventEmitter2 {
       form,
       searchInput,
       searchResults,
-      initialFilters,
     });
-    
-    // allow programmatically opening the overlay without focusing
-    (instance as any).showOverlay = () => {
-      (instance as any).explicitShowRequested = true;
-      if (searchInput.value.length > 0) {
-         instance.triggerSearch(searchInput.value);
-      }
-    };
     instance.bindFilterEvents();
     return instance;
   }

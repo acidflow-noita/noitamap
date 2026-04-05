@@ -22,13 +22,18 @@ export interface URLState extends Partial<AppState> {
   seed?: number;
   /** Daily seed flag — if true, seed came from daily fetch */
   dailySeed?: boolean;
+  /** Search query string */
+  query?: string;
+  filters?: string[];
+  /** Target POI ID to automatically open popup for */
+  targetPoiId?: string;
 }
 
 /**
- * Desired URL param order: x, y, z (zoom), m (map), se (seed), ds (daily seed), o (overlays), s (sidebar), c (canvas)
+ * Desired URL param order: x, y, z (zoom), m (map), se (seed), ds (daily seed), o (overlays), s (sidebar), c (canvas), poi (targetPoiId), q (search), f (filters)
  * Short params used for encoding, decoder accepts both short and long names
  */
-const PARAM_ORDER = ['x', 'y', 'z', 'm', 'se', 'ds', 'o', 's', 'c'];
+const PARAM_ORDER = ['x', 'y', 'z', 'm', 'se', 'ds', 'o', 's', 'c', 'poi', 'q', 'f'];
 
 /**
  * Reorder URL search params to maintain consistent order
@@ -146,7 +151,25 @@ export function parseURL(): URLState {
   const dsParam = url.searchParams.get('ds');
   const dailySeed = dsParam === '1' || dsParam === 'true' || undefined;
 
-  return { pos, map, overlays, sidebarOpen, canvas, seed, dailySeed };
+  // Decode search
+  const queryParam = getParam(url, 'q', 'search');
+  const query = queryParam || undefined;
+
+  const fParam = getParam(url, 'f', 'filters');
+  let filters: string[] | undefined = undefined;
+  if (fParam) {
+    try {
+      filters = fParam.split(',');
+    } catch {
+      filters = undefined;
+    }
+  }
+
+  // Get targeted POI ID
+  const poiParam = getParam(url, 'poi', 'targetPoiId') || getParam(url, 'pid', 'targetPoiId');
+  const targetPoiId = poiParam || undefined;
+
+  return { pos, map, overlays, sidebarOpen, canvas, seed, dailySeed, query, filters, targetPoiId };
 }
 
 /**
@@ -160,6 +183,29 @@ export function updateURL(data: AppState) {
   url.searchParams.set('y', data.pos.y.toFixed(0));
   url.searchParams.set('z', (Math.log2(data.pos.zoom) * -100).toFixed(0));
   url.searchParams.set('m', mapToShort(data.map as MapName));
+  // Note: we don't dynamically update the URL with the search query character by character
+  // If we wanted to, we would set 'q' param here. Let's just leave it out from AppState updates.
+  reorderParams(url);
+  window.history.replaceState(null, '', url.toString());
+}
+
+/**
+ * Sync the search query and active filters to the URL
+ */
+export function updateURLWithSearch(query: string, filters: Set<string>) {
+  const url = new URL(window.location.toString());
+  if (query.trim()) {
+    url.searchParams.set('q', query.trim());
+  } else {
+    url.searchParams.delete('q');
+  }
+  
+  if (filters.size > 0) {
+    url.searchParams.set('f', Array.from(filters).join(','));
+  } else {
+    url.searchParams.delete('f');
+  }
+
   reorderParams(url);
   window.history.replaceState(null, '', url.toString());
 }

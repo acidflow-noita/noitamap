@@ -73,33 +73,7 @@ async function loadAtlas(): Promise<Record<string, AtlasEntry>> {
 
 // ─── Coordinate conversion ─────────────────────────────────────────────────
 
-function getCorrectedWorldPos(rawX: number, rawY: number, worldCenter: number): { x: number; y: number } {
-  const chunkX = Math.floor(rawX / 512) + worldCenter;
-  const chunkY = Math.floor(rawY / 512) + 14;
 
-  const div5x = Math.floor(chunkX / 5);
-  const mod5x = ((chunkX % 5) + 5) % 5;
-  const correctedX = (div5x * 256 + mod5x * 51) * 10;
-
-  const div5y = Math.floor(chunkY / 5);
-  const mod5y = ((chunkY % 5) + 5) % 5;
-  let correctedY = (div5y * 256 + mod5y * 51) * 10;
-  if (mod5y > 0) correctedY += 10;
-
-  const localX = ((rawX % 512) + 512) % 512;
-  const localY = ((rawY % 512) + 512) % 512;
-
-  const chunkW = mod5x === 4 ? 52 : 51;
-  const chunkH = mod5y === 4 ? 52 : 51;
-
-  const finalX = correctedX + (localX * chunkW * 10) / 512;
-  const finalY = correctedY + (localY * chunkH * 10) / 512;
-
-  return {
-    x: finalX - worldCenter * 512,
-    y: finalY - 14 * 512,
-  };
-}
 
 // ─── Multi-frame sprite first-frame dimensions ─────────────────────────────
 export const FIRST_FRAME_SIZE: Record<string, { w: number; h: number }> = {
@@ -290,13 +264,12 @@ function addMarkerItem(
   
   const entry = atlas[rootKey];
   const frame = FIRST_FRAME_SIZE[rootKey];
-  const { x, y } = getCorrectedWorldPos(poi.x, poi.y, worldCenter);
   items.push({
     poi,
     pw,
     spriteKey: keyRaw,
-    osdX: x,
-    osdY: y,
+    osdX: poi.x,
+    osdY: poi.y,
     w: frame ? frame.w : entry.w,
     h: frame ? frame.h : entry.h,
   });

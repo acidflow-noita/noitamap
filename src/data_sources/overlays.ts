@@ -362,7 +362,7 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
 /**
  * Return the DOM element for the popup on a POI
  */
-function createOverlayPopup({ name, aliases, text, wiki, fileName }: PointOfInterest, overlayType?: OverlayKey) {
+function createOverlayPopup({ name, aliases, text, wiki, fileName, x, y }: PointOfInterest, overlayType?: OverlayKey) {
   const popup = document.createElement('div');
   popup.className = 'osOverlayPopup';
 
@@ -374,8 +374,15 @@ function createOverlayPopup({ name, aliases, text, wiki, fileName }: PointOfInte
   if (overlayType) {
     popup.dataset.overlayType = overlayType;
   }
+  
+  const poiId = `st-${Math.round(x)}_${Math.round(y)}`;
+  popup.dataset.poiId = poiId;
+
+  const headerContainer = document.createElement("div");
+  headerContainer.style.cssText = "display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 4px; min-width: 150px;";
 
   const nameElement = document.createElement('h2');
+  nameElement.style.margin = "0";
   // Translate the name based on overlay type
   let translatedName = name;
   if (overlayType) {
@@ -398,7 +405,33 @@ function createOverlayPopup({ name, aliases, text, wiki, fileName }: PointOfInte
     }
   }
   nameElement.textContent = translatedName;
-  popup.appendChild(nameElement);
+  headerContainer.appendChild(nameElement);
+
+  const shareBtn = document.createElement("button");
+  shareBtn.className = "btn btn-sm btn-outline-secondary";
+  shareBtn.style.cssText = `
+    display: flex; align-items: center; justify-content: center; 
+    padding: 2px 8px; font-size: 12px; background: rgba(255,255,255,0.1); 
+    border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; 
+    color: #ccc; cursor: pointer; transition: all 0.2s;
+    flex-shrink: 0;
+  `;
+  shareBtn.innerHTML = '<i class="bi bi-share"></i>';
+  shareBtn.title = i18next.t("share.copyLink", { defaultValue: "Copy direct link" });
+  shareBtn.onmouseenter = () => { shareBtn.style.background = "rgba(255,255,255,0.2)"; };
+  shareBtn.onmouseleave = () => { shareBtn.style.background = "rgba(255,255,255,0.1)"; };
+  shareBtn.onclick = (e) => {
+    e.stopPropagation();
+    const finalUrl = (window as any).getShareUrl(poiId);
+    navigator.clipboard.writeText(finalUrl);
+    
+    // Feedback
+    shareBtn.innerHTML = '<i class="bi bi-check2 text-success"></i>';
+    setTimeout(() => { shareBtn.innerHTML = '<i class="bi bi-share"></i>'; }, 2000);
+  };
+  headerContainer.appendChild(shareBtn);
+  
+  popup.appendChild(headerContainer);
 
   if (aliases && aliases.length > 0) {
     const aliasesElement = document.createElement('h3');
@@ -532,6 +565,12 @@ function createPOI(poi: PointOfInterest, overlayType?: OverlayKey): OSDOverlay {
 
   const popup = createOverlayPopup(poi, overlayType);
   el.appendChild(popup);
+  
+  el.addEventListener('mouseenter', () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("poi", `st-${Math.round(x)}_${Math.round(y)}`);
+    window.history.replaceState({}, "", url.toString());
+  });
 
   return {
     element: el,

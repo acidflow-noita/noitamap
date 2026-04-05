@@ -8,7 +8,7 @@
  */
 
 const DB_NAME = "noitamap-telescope";
-const DB_VERSION = 4; // bumped: now serializes imgElement pixel data for pixel scenes
+const DB_VERSION = 5; // bumped: composite cacheKey (seed-unlocks)
 const STORE_NAME = "generations";
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -27,6 +27,7 @@ interface CachedTileLayer {
 }
 
 interface CachedGeneration {
+  cacheKey: string;
   seed: number;
   timestamp: number;
   ngPlus: number;
@@ -63,7 +64,7 @@ function openDB(): Promise<IDBDatabase> {
       if (db.objectStoreNames.contains(STORE_NAME)) {
         db.deleteObjectStore(STORE_NAME);
       }
-      db.createObjectStore(STORE_NAME, { keyPath: "seed" });
+      db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -74,7 +75,7 @@ function openDB(): Promise<IDBDatabase> {
  * Store a generation result in the cache.
  * Only stores raw data (buffers, biome pixels, POIs) — no canvas blobs.
  */
-export async function cacheGeneration(seed: number, result: any): Promise<void> {
+export async function cacheGeneration(cacheKey: string, seed: number, result: any): Promise<void> {
   try {
     const db = await openDB();
 
@@ -135,6 +136,7 @@ export async function cacheGeneration(seed: number, result: any): Promise<void> 
     }
 
     const entry: CachedGeneration = {
+      cacheKey,
       seed,
       timestamp: Date.now(),
       ngPlus: result.ngPlus,
@@ -160,7 +162,7 @@ export async function cacheGeneration(seed: number, result: any): Promise<void> 
     });
 
     db.close();
-    console.log(`[TileCache] Cached generation for seed ${seed}`);
+    console.log(`[TileCache] Cached generation for key ${cacheKey}`);
   } catch (e) {
     console.warn("[TileCache] Failed to cache generation:", e);
   }
@@ -170,11 +172,11 @@ export async function cacheGeneration(seed: number, result: any): Promise<void> 
  * Retrieve a cached generation, or null if not found / expired.
  * Restores raw data only — no blob deserialization needed.
  */
-export async function getCachedGeneration(seed: number): Promise<any | null> {
+export async function getCachedGeneration(cacheKey: string): Promise<any | null> {
   try {
     const db = await openDB();
     const tx = db.transaction(STORE_NAME, "readonly");
-    const req = tx.objectStore(STORE_NAME).get(seed);
+    const req = tx.objectStore(STORE_NAME).get(cacheKey);
 
     const entry: CachedGeneration | undefined = await new Promise((resolve, reject) => {
       req.onsuccess = () => resolve(req.result);
@@ -225,8 +227,9 @@ export async function getCachedGeneration(seed: number): Promise<any | null> {
       }));
     }
 
-    console.log(`[TileCache] Cache hit for seed ${seed}`);
+    console.log(`[TileCache] Cache hit for key ${cacheKey}`);
     return {
+      cacheKey: entry.cacheKey,
       seed: entry.seed,
       ngPlus: entry.ngPlus,
       isNGP: entry.isNGP,
