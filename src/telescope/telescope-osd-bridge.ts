@@ -1971,11 +1971,12 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     line-height: 1.5;
   `;
 
-  // Top controls container
+  // Top controls container — in normal flow, pushed to right
   const topBar = document.createElement("div");
   topBar.style.cssText = `
-    position: absolute; top: 6px; right: 6px;
-    display: flex; gap: 6px; align-items: center;
+    display: flex; gap: 6px; align-items: center; justify-content: flex-end;
+    margin: -2px -6px 4px 0;
+    flex-shrink: 0;
   `;
 
   const shareBtn = document.createElement("button");
