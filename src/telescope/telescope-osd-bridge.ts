@@ -28,6 +28,7 @@ import type { MarkerData, MarkerItem } from "./poi-spatial-index";
 import { createMarkerTileSource } from "./marker-tile-source";
 import { gameTranslator } from "../game-translations/translator";
 import { isSpoilerFree, getSpoilerCategory, getSpoilerLabel, applySpoilerFree } from "../spoiler-free";
+import { clearTargetPoiId } from "../data_sources/url";
 import spells from "../data/spells.json";
 import { CREATURE_DATA } from "../data/creature-data";
 
@@ -2544,6 +2545,7 @@ function hideMarkerTooltip(): void {
   if (tooltipEl) {
     tooltipEl.remove();
     tooltipEl = null;
+    clearTargetPoiId();
   }
 }
 

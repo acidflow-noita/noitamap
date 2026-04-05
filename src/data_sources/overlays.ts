@@ -12,6 +12,7 @@ import { biomeBoundaries } from '../drawing/biome-boundaries';
 import tilesources from '../data/tilesources.json';
 import i18next from 'i18next';
 import hiddenMessages from '../data/hidden_messages.json';
+import { clearTargetPoiId } from './url';
 import { drawSpriteToCanvas, getSpriteOffset, loadSpritesheetAndAtlas } from '../telescope/poi-spatial-index';
 
 // Preload atlas so boss sprites are ready when overlays are created
@@ -570,6 +571,11 @@ function createPOI(poi: PointOfInterest, overlayType?: OverlayKey): OSDOverlay {
     const url = new URL(window.location.href);
     url.searchParams.set("poi", `st-${Math.round(x)}_${Math.round(y)}`);
     window.history.replaceState({}, "", url.toString());
+  });
+  
+  // Clean up URL parameter cleanly when popup closes (mouse leaves)
+  el.addEventListener('mouseleave', () => {
+    (window as any).clearTargetPoiId?.() || clearTargetPoiId();
   });
 
   return {

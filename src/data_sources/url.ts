@@ -173,6 +173,25 @@ export function parseURL(): URLState {
 }
 
 /**
+ * Clear the target POI ID from the window URL without a full AppState rewrite
+ */
+export function clearTargetPoiId() {
+  try {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('poi') && !url.searchParams.has('pid')) {
+      return;
+    }
+    url.searchParams.delete('poi');
+    url.searchParams.delete('pid');
+    
+    const cleanUrl = url.pathname + url.search + url.hash;
+    window.history.replaceState({}, '', cleanUrl);
+  } catch (error) {
+    console.error("[Noitamap] Error clearing POI from URL:", error);
+  }
+}
+
+/**
  * Take complete application state and write it to the window's URL
  * Uses short param names for compact URLs
  */

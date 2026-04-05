@@ -77,6 +77,7 @@ import {
   updateURLWithCanvas,
   updateURLWithSeed,
   updateURLWithSearch,
+  clearTargetPoiId,
 } from "./data_sources/url";
 import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from "./data_sources/overlays";
 import { overlayToShort } from "./data_sources/param-mappings";
@@ -548,8 +549,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const debouncedViewportNotify = debounce(300, () => unifiedSearch.notifyViewportChanged());
 
   // Pause search sorting during active interaction to keep map navigation smooth
-  app.osd.addHandler("canvas-drag", () => unifiedSearch.setInteracting(true));
-  app.osd.addHandler("canvas-scroll", () => unifiedSearch.setInteracting(true));
+  app.osd.addHandler("canvas-drag", () => {
+     unifiedSearch.setInteracting(true);
+     clearTargetPoiId();
+  });
+  app.osd.addHandler("canvas-scroll", () => {
+     unifiedSearch.setInteracting(true);
+     clearTargetPoiId();
+  });
   app.osd.addHandler("canvas-drag-end", () => unifiedSearch.setInteracting(false));
   app.osd.addHandler("animation-finish", () => unifiedSearch.setInteracting(false));
 
