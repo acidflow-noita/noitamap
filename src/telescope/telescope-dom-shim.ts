@@ -212,9 +212,13 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
 function installCanvasFingerprintBypass() {
   const origOffscreenPutImageData = OffscreenCanvasRenderingContext2D.prototype.putImageData;
   OffscreenCanvasRenderingContext2D.prototype.putImageData = function (imageData: ImageData, dx: number, dy: number) {
-    // Telescope library always puts at 0, 0 for the full image
     if (dx === 0 && dy === 0) {
-      (this.canvas as any).__noitamap_rawImageData = imageData;
+      // Clone the data — telescope may reuse/mutate the same ImageData buffer
+      (this.canvas as any).__noitamap_rawImageData = new ImageData(
+        new Uint8ClampedArray(imageData.data),
+        imageData.width,
+        imageData.height,
+      );
     }
     return (origOffscreenPutImageData as any).apply(this, arguments as any);
   };
@@ -222,7 +226,11 @@ function installCanvasFingerprintBypass() {
   const origCanvasPutImageData = CanvasRenderingContext2D.prototype.putImageData;
   CanvasRenderingContext2D.prototype.putImageData = function (imageData: ImageData, dx: number, dy: number) {
     if (dx === 0 && dy === 0) {
-      (this.canvas as any).__noitamap_rawImageData = imageData;
+      (this.canvas as any).__noitamap_rawImageData = new ImageData(
+        new Uint8ClampedArray(imageData.data),
+        imageData.width,
+        imageData.height,
+      );
     }
     return (origCanvasPutImageData as any).apply(this, arguments as any);
   };
@@ -296,4 +304,56 @@ function installCanvasFingerprintBypass() {
     OffscreenCanvasRenderingContext2D.prototype.getImageData,
   );
   CanvasRenderingContext2D.prototype.getImageData = shimGetImageData(CanvasRenderingContext2D.prototype.getImageData);
+}
+
+// ─── Canvas Fingerprint Detection ────────────────────────────────────────────
+
+let _canvasTainted: boolean | null = null;
+
+/**
+ * Detect whether the browser's canvas fingerprint protection is active.
+ * Draws 256 varied pixels, reads back, and measures TOTAL noise energy
+ * (sum of absolute differences). Firefox color rounding produces ~50-200
+ * total noise; LibreWolf RFP produces 2000+.
+ *
+ * Returns `true` if canvas extraction is tainted (LibreWolf RFP, Tor, etc.).
+ */
+export function isCanvasTainted(): boolean {
+  if (_canvasTainted !== null) return _canvasTainted;
+
+  try {
+    const SIZE = 16;
+    const c = new OffscreenCanvas(SIZE, SIZE);
+    const ctx = c.getContext("2d")!;
+
+    const expected: number[] = [];
+    for (let y = 0; y < SIZE; y++) {
+      for (let x = 0; x < SIZE; x++) {
+        const r = (x * 17 + 3) & 255;
+        const g = (y * 31 + 7) & 255;
+        const b = ((x ^ y) * 13 + 42) & 255;
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(x, y, 1, 1);
+        expected.push(r, g, b, 255);
+      }
+    }
+
+    const readback = ctx.getImageData(0, 0, SIZE, SIZE);
+    let totalNoise = 0;
+    for (let i = 0; i < readback.data.length; i++) {
+      totalNoise += Math.abs(readback.data[i] - expected[i]);
+    }
+
+    // Firefox: ~50-200, LibreWolf RFP: 2000+
+    const NOISE_THRESHOLD = 500;
+    _canvasTainted = totalNoise > NOISE_THRESHOLD;
+    console.log(`[Shim] Canvas noise test: totalNoise=${totalNoise}, threshold=${NOISE_THRESHOLD}, tainted=${_canvasTainted}`);
+    if (_canvasTainted) {
+      console.warn("[Shim] Canvas fingerprint protection detected — using individual overlay rendering for biome layers");
+    }
+  } catch {
+    _canvasTainted = false;
+  }
+
+  return _canvasTainted!;
 }

@@ -254,7 +254,7 @@ export function showLoadingStrip(): void {
   if (gen) gen.style.width = "0%";
   if (items) items.style.width = "0%";
   const title = document.getElementById("map-loading-title");
-  if (title) title.textContent = "Generating Biomes";
+  if (title) title.textContent = i18next.t("loading.mapData.generating");
   const status = document.getElementById("map-loading-status");
   if (status) status.textContent = "33%";
 }

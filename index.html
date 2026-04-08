@@ -184,6 +184,24 @@
           finances. If you or someone you know is struggling with gambling, please seek help. Never gamble.
         </div>
       </div>
+      <div
+        id="privacyBrowserToast"
+        class="toast text-warning-emphasis bg-warning-subtle border-warning"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        data-bs-autohide="false"
+        style="width: 25vw; min-width: 300px; max-width: 500px"
+      >
+        <div class="toast-header text-warning-emphasis bg-warning-subtle border-warning">
+          <i class="bi bi-shield-exclamation me-2"></i>
+          <strong class="me-auto" data-i18n="privacyBrowser.title">Privacy Browser Detected</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" data-i18n="privacyBrowser.message">
+          Your browser's canvas fingerprint protection causes dynamic map rendering to display incorrectly. For the best experience with seed-based maps, please use a Chromium-based browser such as <strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Brave</strong>. Static (pre-captured) maps are unaffected.
+        </div>
+      </div>
     </div>
     <!-- Drawing sidebar container -->
     <div id="drawing-sidebar-container"></div>

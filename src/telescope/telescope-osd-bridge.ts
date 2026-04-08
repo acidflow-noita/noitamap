@@ -8,7 +8,7 @@
 import type { GenerationResult, POI, PixelScene, TileLayer } from "./telescope-adapter";
 import { getPixelSceneImgElement, recolorPixelSceneForBiome, TILE_OVERLAY_COLORS } from "./telescope-adapter";
 import { getDataZip } from "../data-archive";
-import { installTelescopeShim } from "./telescope-dom-shim";
+import { installTelescopeShim, isCanvasTainted } from "./telescope-dom-shim";
 import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope-data-bridge";
 import { decodePngToRgba, rgbaToPngBlobUrl } from "./png-decode";
 import i18next from "../i18n";
@@ -52,6 +52,7 @@ let BIOME_COLOR_LOOKUP: any;
 let createTileOverlaysCheap: any;
 let getWorldSize: any;
 let _telescopeModulesLoaded = false;
+let privacyToastShown = false;
 
 // ─── Biome Render Order ─────────────────────────────────────────────────────
 
@@ -567,6 +568,7 @@ async function offscreenCanvasToBlobUrl(canvas: OffscreenCanvas): Promise<string
   // 1. Prefer the raw ImageData captured by the putImageData shim
   const rawData = (canvas as any).__noitamap_rawImageData as ImageData | undefined;
   if (rawData) {
+
     const url = await rgbaToPngBlobUrl(rawData.data, rawData.width, rawData.height);
     dynamicBlobUrls.push(url);
     return url;
@@ -578,6 +580,7 @@ async function offscreenCanvasToBlobUrl(canvas: OffscreenCanvas): Promise<string
   try {
     const ctx = canvas.getContext("2d");
     if (ctx && canvas.width > 0 && canvas.height > 0) {
+
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const url = await rgbaToPngBlobUrl(imageData.data, imageData.width, imageData.height);
       dynamicBlobUrls.push(url);
@@ -586,6 +589,7 @@ async function offscreenCanvasToBlobUrl(canvas: OffscreenCanvas): Promise<string
   } catch {}
 
   // 3. Last resort fallback
+
   const blob = await canvas.convertToBlob({ type: "image/png" });
   const url = URL.createObjectURL(blob);
   dynamicBlobUrls.push(url);
@@ -979,14 +983,22 @@ async function addBiomeLayersProgressively(
     const compositeCanvas = new OffscreenCanvas(compositeW, compositeH);
     const compositeCtx = compositeCanvas.getContext("2d")!;
 
-    // Draw all overlays onto the composited canvas in render order
+    // Show privacy browser warning toast once per session if canvas tainting detected
+    if (isCanvasTainted() && !privacyToastShown) {
+      privacyToastShown = true;
+      const toastEl = document.getElementById("privacyBrowserToast");
+      if (toastEl) {
+        // @ts-ignore — Bootstrap is loaded globally
+        new bootstrap.Toast(toastEl).show();
+      }
+    }
+
+    // ── GPU-accelerated compositing (all browsers) ──
     for (const { overlay, x, y } of validOverlays) {
       const px = Math.round((x - minX) / 10);
       const py = Math.round((y - minY) / 10);
       compositeCtx.drawImage(overlay, px, py);
     }
-
-    // Convert the single composited canvas to a blob URL and add as one TiledImage
     const url = await offscreenCanvasToBlobUrl(compositeCanvas);
     if (currentGenerationId !== generationId) return;
 
@@ -1004,8 +1016,6 @@ async function addBiomeLayersProgressively(
         dynamicTiledImages.add(event.item);
       },
     });
-
-    console.log(`[OSD Bridge] Gen ${generationId}: Added PW ${pw} composited biome image (${validOverlays.length} overlays → 1 tile, ${compositeW}×${compositeH}px)`);
 
     // Report completion of this PW
     const progressEnd = Math.round(((pwIdx + 1) / totalPWs) * 100);

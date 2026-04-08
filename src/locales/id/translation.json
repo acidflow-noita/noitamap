@@ -4589,5 +4589,9 @@
   "spoilerFree": {
     "title": "Spoiler-free",
     "content": "Hide wand, spell, item identities on the map and in the search results. Wands show up as the starter wand, spells and items show up as unidentified."
+  },
+  "privacyBrowser": {
+    "title": "Privacy Browser Detected",
+    "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
   }
 }
