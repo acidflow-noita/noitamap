@@ -4544,6 +4544,13 @@
       "map": "Карта",
       "black": "Черный",
       "white": "Белый"
+    },
+    "layerOrdering": {
+      "label": "Layer ordering",
+      "frontTitle": "Bring to Front",
+      "upTitle": "Move Forward",
+      "downTitle": "Move Backward",
+      "backTitle": "Send to Back"
     }
   },
   "dynamicMap": {
@@ -4561,7 +4568,7 @@
       "alreadyGeneratedContent": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
     },
     "daily": "Daily",
-    "placeholder": "Custom seed…",
+    "placeholder": "Game seed",
     "nerdMode": {
       "0": "N",
       "1": "e",
@@ -4578,7 +4585,7 @@
     },
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "Load the daily game seed, shared by all players today",
-    "seedTooltipDaily": "This is the daily seed",
+    "seedTooltipDaily": "This is the daily run seed",
     "seedTooltipCustom": "This is a manually selected seed"
   },
   "alive_wand": "(alive wand)",

@@ -53,9 +53,9 @@
     },
     "daily": "Daily",
     "dailyDescription": "Load the daily game seed, shared by all players today",
-    "seedTooltipDaily": "This is the daily seed",
+    "seedTooltipDaily": "This is the daily run seed",
     "seedTooltipCustom": "This is a manually selected seed",
-    "placeholder": "Custom seed…",
+    "placeholder": "Game seed",
     "nerdMode": {
       "label": "Nerd Mode",
       "title": "Advanced Mode",
@@ -4519,6 +4519,13 @@
       "unsupportedFormat": "Unsupported image format",
       "failedTitle": "Vectorization failed",
       "failed": "The image may be too complex or photographic. This feature works best with pixel art and flat-color images."
+    },
+    "layerOrdering": {
+      "label": "Layer ordering",
+      "frontTitle": "Bring to Front",
+      "upTitle": "Move Forward",
+      "downTitle": "Move Backward",
+      "backTitle": "Send to Back"
     },
     "exampleDrawings": {
       "label": "Example Drawings"

@@ -65,10 +65,12 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   seedInput.style.width = "110px";
   seedInput.setAttribute("data-i18n-placeholder", "dynamicMap.placeholder");
   seedInput.placeholder = i18next.t("dynamicMap.placeholder");
-  // Tooltip — title is set dynamically by updateSeedTooltip()
-  seedInput.setAttribute("data-bs-toggle", "tooltip");
+  // Popover -- title is the section, content is set dynamically by updateSeedTooltip()
+  seedInput.setAttribute("data-bs-toggle", "popover");
   seedInput.setAttribute("data-bs-placement", "bottom");
-  seedInput.title = i18next.t("dynamicMap.seedTooltipCustom");
+  seedInput.setAttribute("data-bs-trigger", "hover focus");
+  seedInput.setAttribute("data-bs-title", i18next.t("dynamicMap.placeholder"));
+  seedInput.setAttribute("data-bs-content", i18next.t("dynamicMap.seedTooltipCustom"));
   seedInput.addEventListener("keydown", (ev) => {
     if (ev.key === "Enter") onGenerateClick();
   });
@@ -116,7 +118,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   // @ts-ignore
   new bootstrap.Popover(dailySeedBtn);
   // @ts-ignore
-  seedTooltipInstance = new bootstrap.Tooltip(seedInput);
+  seedTooltipInstance = new bootstrap.Popover(seedInput);
 
   // Initial state for buttons
   updateGenerateButtonState();
@@ -288,12 +290,11 @@ function updateSeedTooltip(isDaily: boolean): void {
   if (!seedInput) return;
   const key = isDaily ? "dynamicMap.seedTooltipDaily" : "dynamicMap.seedTooltipCustom";
   const text = i18next.t(key);
-  seedInput.setAttribute("data-bs-title", text);
-  seedInput.title = text;
-  // Re-create the tooltip instance so Bootstrap picks up the new title
+  seedInput.setAttribute("data-bs-content", text);
+  // Re-create the popover instance so Bootstrap picks up the new content
   if (seedTooltipInstance) {
     try { seedTooltipInstance.dispose(); } catch {}
   }
   // @ts-ignore
-  seedTooltipInstance = new bootstrap.Tooltip(seedInput);
+  seedTooltipInstance = new bootstrap.Popover(seedInput);
 }

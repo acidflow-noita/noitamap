@@ -22,6 +22,38 @@ html {
 
 .navbar.mapNavbar {
   background-color: oklch(12.9% 0.042 264.695) !important;
+  border-bottom: 1px solid #1e293b; /* slate-800 */
+}
+
+/* ── UI Facelift: soften aggressive outlines (Tailwind 4 palette) ──────── */
+
+.navbar .btn-outline-light {
+  --bs-btn-color: #cbd5e1; /* slate-300 */
+  --bs-btn-border-color: #475569; /* slate-600 */
+  --bs-btn-hover-color: #f1f5f9; /* slate-100 */
+  --bs-btn-hover-bg: #33415540; /* slate-700 / 25% */
+  --bs-btn-hover-border-color: #94a3b8; /* slate-400 */
+  --bs-btn-active-color: #f8fafc; /* slate-50 */
+  --bs-btn-active-bg: #47556940; /* slate-600 / 25% */
+  --bs-btn-active-border-color: #94a3b8; /* slate-400 */
+}
+
+.navbar .btn-check:checked + .btn-outline-light {
+  --bs-btn-active-color: #f8fafc; /* slate-50 */
+  --bs-btn-active-bg: #47556940; /* slate-600 / 25% */
+  --bs-btn-active-border-color: #94a3b8; /* slate-400 */
+  color: #f8fafc;
+  background-color: #47556940;
+  border-color: #94a3b8;
+}
+
+/* Soften runfast (warning) button */
+.navbar #goToMainWebsiteButton {
+  --bs-btn-color: #94a3b8; /* slate-400 */
+  --bs-btn-border-color: #475569; /* slate-600 */
+  --bs-btn-hover-color: #fbbf24; /* amber-400 */
+  --bs-btn-hover-border-color: #fbbf2466; /* amber-400 / 40% */
+  --bs-btn-hover-bg: #fbbf2414; /* amber-400 / 8% */
 }
 
 .dropdown-item.active {
@@ -288,9 +320,19 @@ body.toggle-hidden div.osOverlayHighlight {
   padding: 0;
 }
 
-#searchInput {
-  background-color: #030712;
-  border: solid 1px white;
+#searchInput,
+.search-input {
+  background-color: #0f172a; /* slate-900 */
+  border: 1px solid #475569; /* slate-600 */
+  color: #e2e8f0; /* slate-200 */
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#searchInput:focus,
+.search-input:focus {
+  border-color: #94a3b8; /* slate-400 */
+  box-shadow: 0 0 0 2px #4755691a; /* slate-600 / 10% */
+  background-color: #1e293b; /* slate-800 */
 }
 
 #searchInput::placeholder {
@@ -622,20 +664,20 @@ body.toggle-hidden div.osOverlayHighlight {
 /* ── Dynamic map toolbar ─────────────────────────────────────────────────── */
 
 #dynamicDailySeedButton {
-  color: oklch(78.9% 0.154 211.53);
-  border-color: oklch(78.9% 0.154 211.53);
+  color: #0d9488; /* teal-600 */
+  border-color: #0d948873; /* teal-600 / 45% */
 }
 
 #dynamicDailySeedButton:hover,
 #dynamicDailySeedButton:focus {
-  background-color: oklch(78.9% 0.154 211.53);
-  border-color: oklch(78.9% 0.154 211.53);
-  color: #fff;
+  background-color: #0d948833; /* teal-600 / 20% */
+  border-color: #0d9488b3; /* teal-600 / 70% */
+  color: #5eead4; /* teal-300 */
 }
 
-/* Seed input — daily seed colored, custom seed white */
+/* Seed input -- daily seed colored, custom seed white */
 #dynamicSeedInput.seed-daily {
-  color: oklch(78.9% 0.154 211.53);
+  color: #14b8a6; /* teal-500 */
 }
 
 /* ── Non-blocking loading strip ──────────────────────────────────────────── */
@@ -718,9 +760,9 @@ body.toggle-hidden div.osOverlayHighlight {
   transition: width 0.25s ease;
 }
 
-.seg-download  { background: oklch(52% 0.105 223.128); }
-.seg-generation { background: oklch(60.9% 0.126 221.723); }
-.seg-items      { background: oklch(78.9% 0.154 211.53); }
+.seg-download   { background: #0f766e; } /* teal-700 */
+.seg-generation { background: #0d9488; } /* teal-600 */
+.seg-items      { background: #14b8a6; } /* teal-500 */
 
 /* ── Search indexing placeholder ─────────────────────────────────────────── */
 
