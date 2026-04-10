@@ -4383,7 +4383,10 @@
     "featureSave": "Salvar e gerenciar varios desenhos",
     "loginWithPatreon": "Entrar com Patreon",
     "becomePatron": "Tornar-se apoiador",
-    "loginPrompt": "Entre com o Patreon para usar ferramentas de desenho.\n\nOs desenhos sao salvos localmente e podem ser compartilhados por URL.\n\nDeseja entrar?"
+    "loginPrompt": "Entre com o Patreon para usar ferramentas de desenho.\n\nOs desenhos sao salvos localmente e podem ser compartilhados por URL.\n\nDeseja entrar?",
+    "yourAccount": "Sua conta",
+    "proActive": "Pro ativo",
+    "subscribeCta": "Atualizar para Pro"
   },
   "loading": {
     "maps": "Carregando mapas...",

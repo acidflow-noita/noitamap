@@ -4383,7 +4383,10 @@
     "featureSave": "Salva e gestisci disegni multipli",
     "loginWithPatreon": "Accedi con Patreon",
     "becomePatron": "Diventa patron",
-    "loginPrompt": "Accedi con Patreon per usare gli strumenti di disegno.\n\nI disegni vengono salvati localmente e possono essere condivisi tramite URL.\n\nVuoi accedere?"
+    "loginPrompt": "Accedi con Patreon per usare gli strumenti di disegno.\n\nI disegni vengono salvati localmente e possono essere condivisi tramite URL.\n\nVuoi accedere?",
+    "yourAccount": "Il tuo account",
+    "proActive": "Pro attivo",
+    "subscribeCta": "Passa a Pro"
   },
   "loading": {
     "maps": "Caricamento mappe...",

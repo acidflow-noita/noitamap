@@ -4383,7 +4383,10 @@
     "featureSave": "Meerdere tekeningen opslaan en beheren",
     "loginWithPatreon": "Inloggen met Patreon",
     "becomePatron": "Word patron",
-    "loginPrompt": "Log in met Patreon om de tekentools te gebruiken.\n\nTekeningen worden lokaal opgeslagen en kunnen worden gedeeld via URL.\n\nWil je inloggen?"
+    "loginPrompt": "Log in met Patreon om de tekentools te gebruiken.\n\nTekeningen worden lokaal opgeslagen en kunnen worden gedeeld via URL.\n\nWil je inloggen?",
+    "yourAccount": "Jouw account",
+    "proActive": "Pro actief",
+    "subscribeCta": "Upgraden naar Pro"
   },
   "loading": {
     "maps": "Kaarten laden...",

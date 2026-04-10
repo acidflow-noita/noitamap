@@ -59,6 +59,8 @@ html {
 /* ── Dropdown menus: match Tailwind 4 dark palette ──────────────────────── */
 
 .dropdown-menu {
+  --bs-dropdown-link-active-bg: var(--accent-bg);
+  --bs-dropdown-link-active-color: var(--accent-color);
   background-color: oklch(15.6% 0.026 264.695); /* ~slate-900 */
   border: 1px solid #334155; /* slate-700 */
   box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.4);
@@ -69,24 +71,18 @@ html {
   color: #cbd5e1; /* slate-300 */
 }
 
-.dropdown-item.active,
-.dropdown-item:active {
-  background-color: #33415580; /* slate-700 / 50% */
-  color: #f1f5f9; /* slate-100 */
-}
-
 .dropdown-item:focus,
 .dropdown-item:hover {
   background-color: #33415560; /* slate-700 / 37% */
   color: #f1f5f9; /* slate-100 */
 }
 
-/* Override Bootstrap blue pill active state inside dropdowns */
+/* Active state inside dropdowns (maps, language, etc.) */
 .dropdown-menu .nav-link.active,
 .dropdown-menu .nav-link.active:focus,
 .dropdown-menu .nav-link.active:hover {
-  background-color: #14b8a622; /* teal-500 / 13% */
-  color: #14b8a6; /* teal-500 */
+  background-color: var(--accent-bg);
+  color: var(--accent-color);
 }
 
 .flex {
@@ -115,6 +111,10 @@ html {
 }
 
 :root {
+  /* ── Accent color: change these two values to retheme all active/selected states ── */
+  --accent-color: #14b8a6;      /* teal-500 */
+  --accent-bg: #14b8a622;       /* teal-500 / 13% */
+
   font-family: Inter, sans-serif;
   font-feature-settings:
     "liga" 1,
@@ -696,6 +696,10 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 /* Seed input -- daily seed colored, custom seed white */
+#dynamicSeedInput {
+  width: 110px;
+}
+
 #dynamicSeedInput.seed-daily {
   color: #14b8a6; /* teal-500 */
 }
@@ -814,3 +818,9 @@ body.toggle-hidden div.osOverlayHighlight {
   border-radius: 3px;
 }
 
+/* ── Auth dropdown: ensure it renders above other navbar elements ────────── */
+
+#auth-button-wrapper {
+  position: relative;
+  z-index: 1050;
+}

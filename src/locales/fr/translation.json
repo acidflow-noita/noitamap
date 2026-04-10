@@ -4373,7 +4373,7 @@
     "signedInAs": "Connecté en tant que",
     "follower": "Follower",
     "subscriber": "Abonné",
-    "signOut": "Se déconnecter",
+    "signOut": "Se deconnecter",
     "patron": "Soutien Patreon",
     "getPro": "Obtenir Pro",
     "proFeatures": "Fonctionnalites Pro",
@@ -4383,7 +4383,10 @@
     "featureSave": "Sauvegarder et gerer plusieurs dessins",
     "loginWithPatreon": "Se connecter avec Patreon",
     "becomePatron": "Devenir patron",
-    "loginPrompt": "Connectez-vous avec Patreon pour utiliser les outils de dessin.\n\nLes dessins sont sauvegardes localement et peuvent etre partages par URL.\n\nVoulez-vous vous connecter ?"
+    "loginPrompt": "Connectez-vous avec Patreon pour utiliser les outils de dessin.\n\nLes dessins sont sauvegardes localement et peuvent etre partages par URL.\n\nVoulez-vous vous connecter ?",
+    "yourAccount": "Votre compte",
+    "proActive": "Pro actif",
+    "subscribeCta": "Passer a Pro"
   },
   "loading": {
     "maps": "Chargement des cartes...",

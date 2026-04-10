@@ -4383,7 +4383,10 @@
     "featureSave": "Simpan dan kelola beberapa gambar",
     "loginWithPatreon": "Masuk dengan Patreon",
     "becomePatron": "Menjadi patron",
-    "loginPrompt": "Masuk dengan Patreon untuk menggunakan alat menggambar.\n\nGambar disimpan secara lokal dan dapat dibagikan melalui URL.\n\nApakah Anda ingin masuk?"
+    "loginPrompt": "Masuk dengan Patreon untuk menggunakan alat menggambar.\n\nGambar disimpan secara lokal dan dapat dibagikan melalui URL.\n\nApakah Anda ingin masuk?",
+    "yourAccount": "Akun Anda",
+    "proActive": "Pro aktif",
+    "subscribeCta": "Tingkatkan ke Pro"
   },
   "loading": {
     "maps": "Memuat peta...",

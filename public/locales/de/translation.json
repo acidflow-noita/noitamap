@@ -4383,7 +4383,10 @@
     "featureSave": "Mehrere Zeichnungen speichern und verwalten",
     "loginWithPatreon": "Mit Patreon anmelden",
     "becomePatron": "Patron werden",
-    "loginPrompt": "Melde dich mit Patreon an, um die Zeichenwerkzeuge zu nutzen.\n\nZeichnungen werden lokal gespeichert und koennen per URL geteilt werden.\n\nMoechtest du dich anmelden?"
+    "loginPrompt": "Melde dich mit Patreon an, um die Zeichenwerkzeuge zu nutzen.\n\nZeichnungen werden lokal gespeichert und koennen per URL geteilt werden.\n\nMoechtest du dich anmelden?",
+    "yourAccount": "Dein Konto",
+    "proActive": "Pro aktiv",
+    "subscribeCta": "Auf Pro upgraden"
   },
   "loading": {
     "maps": "Karten werden geladen...",

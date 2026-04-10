@@ -4373,7 +4373,7 @@
     "signedInAs": "Zalogowany jako",
     "follower": "Obserwujący",
     "subscriber": "Subskrybent",
-    "signOut": "Wyloguj się",
+    "signOut": "Wyloguj sie",
     "patron": "Wspirajacy na Patreonie",
     "getPro": "Zdobadz Pro",
     "proFeatures": "Funkcje Pro",
@@ -4383,7 +4383,10 @@
     "featureSave": "Zapisywanie i zarzadzanie wieloma rysunkami",
     "loginWithPatreon": "Zaloguj sie przez Patreon",
     "becomePatron": "Zostan patronem",
-    "loginPrompt": "Zaloguj sie przez Patreon, aby uzywac narzedzi do rysowania.\n\nRysunki sa zapisywane lokalnie i moga byc udostepniane przez URL.\n\nCzy chcesz sie zalogowac?"
+    "loginPrompt": "Zaloguj sie przez Patreon, aby uzywac narzedzi do rysowania.\n\nRysunki sa zapisywane lokalnie i moga byc udostepniane przez URL.\n\nCzy chcesz sie zalogowac?",
+    "yourAccount": "Twoje konto",
+    "proActive": "Pro aktywne",
+    "subscribeCta": "Ulepsz do Pro"
   },
   "loading": {
     "maps": "Ładowanie map...",

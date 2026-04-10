@@ -4383,7 +4383,10 @@
     "featureSave": "Spara och hantera flera teckningar",
     "loginWithPatreon": "Logga in med Patreon",
     "becomePatron": "Bli patron",
-    "loginPrompt": "Logga in med Patreon for att anvanda ritverktygen.\n\nTeckningar sparas lokalt och kan delas via URL.\n\nVill du logga in?"
+    "loginPrompt": "Logga in med Patreon for att anvanda ritverktygen.\n\nTeckningar sparas lokalt och kan delas via URL.\n\nVill du logga in?",
+    "yourAccount": "Ditt konto",
+    "proActive": "Pro aktivt",
+    "subscribeCta": "Uppgradera till Pro"
   },
   "loading": {
     "maps": "Laddar kartor...",

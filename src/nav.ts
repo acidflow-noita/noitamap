@@ -21,6 +21,7 @@ export const createMapLinks = (): HTMLUListElement => {
     a.dataset.mapKey = mapName;
     // Only translate specific maps, others should keep English names
     const translatableKeys = [
+      'maps.mapDynamic',
       'maps.regular',
       'maps.newGamePlus',
       'maps.nightmare',
@@ -56,19 +57,19 @@ export const createMapLinks = (): HTMLUListElement => {
         ? i18next.t(badge.labelKey, { defaultValue: badge.label })
         : badge.label;
 
-      // Add explanatory tooltips to all badges
-      span.dataset.bsToggle = 'tooltip';
+      // Add popovers to all badges (consistent with sidebar style)
+      span.dataset.bsToggle = 'popover';
       span.dataset.bsPlacement = 'top';
+      span.dataset.bsTrigger = 'hover focus';
+      span.dataset.bsHtml = 'true';
 
       if (span.classList.contains('border-info-subtle')) {
-        span.dataset.bsTitle = i18next.t('badges.patchDateTooltip');
+        span.dataset.bsContent = i18next.t('badges.patchDateTooltip');
       } else if (badge.labelKey) {
-        // Add tooltip for other badges using their label key
         const tooltipKey = `badges.${badge.labelKey}Tooltip`;
-        span.dataset.bsTitle = i18next.t(tooltipKey, { defaultValue: translatedBadgeLabel });
+        span.dataset.bsContent = i18next.t(tooltipKey, { defaultValue: translatedBadgeLabel });
       } else {
-        // Fallback tooltip for badges without specific keys
-        span.dataset.bsTitle = translatedBadgeLabel;
+        span.dataset.bsContent = translatedBadgeLabel;
       }
 
       if (badge.icon) {
@@ -104,6 +105,7 @@ export const updateMapLinkTranslations = (): void => {
 
     // Only translate specific maps, others should keep English names
     const translatableKeys = [
+      'maps.mapDynamic',
       'maps.regular',
       'maps.newGamePlus',
       'maps.nightmare',
@@ -139,19 +141,19 @@ export const updateMapLinkTranslations = (): void => {
         ? i18next.t(badge.labelKey, { defaultValue: badge.label })
         : badge.label;
 
-      // Add explanatory tooltips to all badges
-      span.dataset.bsToggle = 'tooltip';
+      // Add popovers to all badges (consistent with sidebar style)
+      span.dataset.bsToggle = 'popover';
       span.dataset.bsPlacement = 'top';
+      span.dataset.bsTrigger = 'hover focus';
+      span.dataset.bsHtml = 'true';
 
       if (span.classList.contains('border-info-subtle')) {
-        span.dataset.bsTitle = i18next.t('badges.patchDateTooltip');
+        span.dataset.bsContent = i18next.t('badges.patchDateTooltip');
       } else if (badge.labelKey) {
-        // Add tooltip for other badges using their label key
         const tooltipKey = `badges.${badge.labelKey}Tooltip`;
-        span.dataset.bsTitle = i18next.t(tooltipKey, { defaultValue: translatedBadgeLabel });
+        span.dataset.bsContent = i18next.t(tooltipKey, { defaultValue: translatedBadgeLabel });
       } else {
-        // Fallback tooltip for badges without specific keys
-        span.dataset.bsTitle = translatedBadgeLabel;
+        span.dataset.bsContent = translatedBadgeLabel;
       }
 
       if (badge.icon) {

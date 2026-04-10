@@ -4373,7 +4373,7 @@
     "signedInAs": "Přihlášen jako",
     "follower": "Sledující",
     "subscriber": "Odběratel",
-    "signOut": "Odhlásit se",
+    "signOut": "Odhlasit se",
     "patron": "Podpurce na Patreonu",
     "getPro": "Ziskat Pro",
     "proFeatures": "Funkce Pro",
@@ -4383,7 +4383,10 @@
     "featureSave": "Ulozeni a sprava vice kreseb",
     "loginWithPatreon": "Prihlasit se pres Patreon",
     "becomePatron": "Stat se patronem",
-    "loginPrompt": "Prihlaste se pres Patreon pro pouziti kreslicich nastroju.\n\nKresby se ukladaji lokalne a lze je sdilet prostrednictvim URL.\n\nChcete se prihlasit?"
+    "loginPrompt": "Prihlaste se pres Patreon pro pouziti kreslicich nastroju.\n\nKresby se ukladaji lokalne a lze je sdilet prostrednictvim URL.\n\nChcete se prihlasit?",
+    "yourAccount": "Vas ucet",
+    "proActive": "Pro aktivni",
+    "subscribeCta": "Prejit na Pro"
   },
   "loading": {
     "maps": "Načítání map...",

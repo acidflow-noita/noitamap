@@ -4381,7 +4381,7 @@
     "follower": "Follower",
     "subscriber": "Subscriber",
     "patron": "Patreon Supporter",
-    "signOut": "Sign Out",
+    "signOut": "Sign out",
     "getPro": "Get Pro",
     "proFeatures": "Pro Features",
     "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
@@ -4390,7 +4390,10 @@
     "featureSave": "Save & manage multiple drawings",
     "loginWithPatreon": "Sign in with Patreon",
     "becomePatron": "Become a Patron",
-    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
+    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?",
+    "yourAccount": "Your account",
+    "proActive": "Pro active",
+    "subscribeCta": "Upgrade to Pro"
   },
   "loading": {
     "maps": "Loading maps...",

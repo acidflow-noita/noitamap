@@ -103,6 +103,11 @@ export class AuthUI {
     // Subscribe to auth changes
     authService.subscribe((state) => this.updateButton(state));
 
+    // Re-render when language changes
+    i18next.on("languageChanged", () => {
+      this.updateButton(authService.getState());
+    });
+
     // Initialize auth state
     const state = await authService.init();
     this.updateButton(state);
@@ -130,43 +135,47 @@ export class AuthUI {
     if (!this.button) return;
 
     const btn = this.button.querySelector("#authButton") as HTMLElement;
-    const textEl = this.button.querySelector(".auth-text") as HTMLElement;
-    const icon = this.button.querySelector("i") as HTMLElement;
 
     if (state.authenticated) {
       // Show username with dropdown
       btn.className = "btn btn-sm btn-outline-success dropdown-toggle";
       btn.setAttribute("data-bs-toggle", "dropdown");
       btn.setAttribute("aria-expanded", "false");
-      // Reset content if it was replaced by Patreon button
-      btn.innerHTML = `<i class="bi bi-person-check me-1"></i> <span class="auth-text">${i18next.t("auth.yourAccount", "Your Account")}</span>`;
+      btn.innerHTML = `<i class="bi bi-person-check me-1"></i> <span class="auth-text">${i18next.t("auth.yourAccount", "Your account")}</span>`;
 
-      // Create dropdown menu if not exists
+      // Always rebuild dropdown to pick up language changes
+      // Dispose old Bootstrap Dropdown instance so it doesn't hold a stale menu reference
+      // @ts-ignore
+      const existingBsDropdown = bootstrap.Dropdown.getInstance(btn);
+      if (existingBsDropdown) existingBsDropdown.dispose();
+
       let dropdown = this.button.querySelector(".dropdown-menu");
-      if (!dropdown) {
-        dropdown = document.createElement("ul");
-        dropdown.className = "dropdown-menu dropdown-menu-end";
-        dropdown.innerHTML = `
+      if (dropdown) dropdown.remove();
+
+      dropdown = document.createElement("ul");
+      dropdown.className = "dropdown-menu dropdown-menu-end";
+      dropdown.innerHTML = `
           ${
             state.isSubscriber
               ? `<li><span class="dropdown-item-text text-success small"><img src="assets/icons/website-icons/noitamap-pro-icon.svg" alt="" class="pro-icon">${i18next.t("auth.proActive", "Pro active")}</span></li>`
               : `<li><a class="dropdown-item small" href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer"><i class="bi bi-star me-1"></i>${i18next.t("auth.subscribeCta", "Upgrade to Pro")}</a></li>`
           }
           <li><hr class="dropdown-divider"></li>
-          <li><button class="dropdown-item" id="logoutBtn"><i class="bi bi-box-arrow-right me-1"></i>${i18next.t("auth.signOut", "Sign Out")}</button></li>
+          <li><button class="dropdown-item" id="logoutBtn"><i class="bi bi-box-arrow-right me-1"></i>${i18next.t("auth.signOut", "Sign out")}</button></li>
         `;
-        this.button.appendChild(dropdown);
-        this.button.classList.add("dropdown");
+      this.button.appendChild(dropdown);
+      this.button.classList.add("dropdown");
 
-        // Bind logout handler
-        const logoutBtn = dropdown.querySelector("#logoutBtn");
-        logoutBtn?.addEventListener("click", (e) => {
-          e.preventDefault();
-          this.handleLogout();
-        });
-      } else {
-        // Dropdown already exists, nothing to update
-      }
+      // Reinitialize Bootstrap Dropdown with the new menu
+      // @ts-ignore
+      new bootstrap.Dropdown(btn);
+
+      // Bind logout handler
+      const logoutBtn = dropdown.querySelector("#logoutBtn");
+      logoutBtn?.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.handleLogout();
+      });
     } else {
       // Show "Get Pro" button
       // We keep the "Get Pro" style for the navbar button to match the theme,

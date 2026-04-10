@@ -4383,7 +4383,10 @@
     "featureSave": "Tallenna ja hallinnoi useita piirustuksia",
     "loginWithPatreon": "Kirjaudu Patreonilla",
     "becomePatron": "Ryhdy tukijaksi",
-    "loginPrompt": "Kirjaudu Patreonilla kayttaaksesi piirustustyokaluja.\n\nPiirustukset tallennetaan paikallisesti ja niita voi jakaa URL:n kautta.\n\nHaluatko kirjautua?"
+    "loginPrompt": "Kirjaudu Patreonilla kayttaaksesi piirustustyokaluja.\n\nPiirustukset tallennetaan paikallisesti ja niita voi jakaa URL:n kautta.\n\nHaluatko kirjautua?",
+    "yourAccount": "Tilisi",
+    "proActive": "Pro aktiivinen",
+    "subscribeCta": "Paivita Pro-versioon"
   },
   "loading": {
     "maps": "Ladataan karttoja...",

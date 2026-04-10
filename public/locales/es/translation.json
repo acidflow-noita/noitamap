@@ -4373,7 +4373,7 @@
     "signedInAs": "Sesión iniciada como",
     "follower": "Seguidor",
     "subscriber": "Suscriptor",
-    "signOut": "Cerrar sesión",
+    "signOut": "Cerrar sesion",
     "patron": "Patrocinador en Patreon",
     "getPro": "Obtener Pro",
     "proFeatures": "Funciones Pro",
@@ -4383,7 +4383,10 @@
     "featureSave": "Guardar y gestionar multiples dibujos",
     "loginWithPatreon": "Iniciar sesion con Patreon",
     "becomePatron": "Convertirse en patron",
-    "loginPrompt": "Inicia sesion con Patreon para usar las herramientas de dibujo.\n\nLos dibujos se guardan localmente y se pueden compartir por URL.\n\nDeseas iniciar sesion?"
+    "loginPrompt": "Inicia sesion con Patreon para usar las herramientas de dibujo.\n\nLos dibujos se guardan localmente y se pueden compartir por URL.\n\nDeseas iniciar sesion?",
+    "yourAccount": "Tu cuenta",
+    "proActive": "Pro activo",
+    "subscribeCta": "Actualizar a Pro"
   },
   "loading": {
     "maps": "Cargando mapas...",

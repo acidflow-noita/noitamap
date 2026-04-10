@@ -22,6 +22,7 @@ let generateBtn: HTMLButtonElement | null = null;
 let dailySeedBtn: HTMLButtonElement | null = null;
 let dynamicOpts: DynamicMapOptions | null = null;
 let isBusy = false;
+let generatePopoverInstance: any = null;
 
 // ─── Build ───────────────────────────────────────────────────────────────────
 
@@ -62,7 +63,6 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   seedInput.inputMode = "numeric";
   seedInput.pattern = "[0-9]*";
   seedInput.className = "form-control form-control-sm";
-  seedInput.style.width = "110px";
   seedInput.setAttribute("data-i18n-placeholder", "dynamicMap.placeholder");
   seedInput.placeholder = i18next.t("dynamicMap.placeholder");
   // Popover -- title is the section, content is set dynamically by updateSeedTooltip()
@@ -88,6 +88,11 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   generateBtn = document.createElement("button");
   generateBtn.id = "dynamicGenerateButton";
   generateBtn.className = "btn btn-sm btn-outline-light text-nowrap";
+  generateBtn.setAttribute("data-bs-toggle", "popover");
+  generateBtn.setAttribute("data-bs-placement", "bottom");
+  generateBtn.setAttribute("data-bs-trigger", "hover focus");
+  generateBtn.setAttribute("data-bs-title", i18next.t("dynamicMap.generate.label"));
+  generateBtn.setAttribute("data-bs-content", "");
   generateBtn.innerHTML = `<i class="bi bi-play-fill"></i><span class="ms-1 d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
   generateBtn.addEventListener("click", () => onGenerateClick());
 
@@ -100,7 +105,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   nerdBtn.href = NERD_MODE_URL;
   nerdBtn.target = "_blank";
   nerdBtn.rel = "noopener noreferrer";
-  nerdBtn.innerHTML = `<i class="bi bi-code-slash"></i><span class="ms-1 d-none d-xl-inline" data-i18n="dynamicMap.nerdMode.label">${i18next.t("dynamicMap.nerdMode.label")}</span>`;
+  nerdBtn.innerHTML = `<i class="bi bi-box-arrow-up-right"></i><span class="ms-1 d-none d-xl-inline" data-i18n="dynamicMap.nerdMode.label">${i18next.t("dynamicMap.nerdMode.label")}</span>`;
   nerdBtn.addEventListener("click", () => {
     const seed = new URLSearchParams(window.location.search).get("se");
     nerdBtn.href = seed ? `${NERD_MODE_URL}?seed=${seed}` : NERD_MODE_URL;
@@ -119,6 +124,8 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   new bootstrap.Popover(dailySeedBtn);
   // @ts-ignore
   seedTooltipInstance = new bootstrap.Popover(seedInput);
+  // @ts-ignore
+  generatePopoverInstance = new bootstrap.Popover(generateBtn);
 
   // Initial state for buttons
   updateGenerateButtonState();
@@ -237,6 +244,21 @@ function updateGenerateButtonState(): void {
   const isMatch = !isNaN(inputSeed) && inputSeed === currentSeed;
 
   generateBtn.disabled = isMatch || isBusy;
+
+  // Update popover content to show "already generated" hint when disabled
+  const content = isMatch
+    ? i18next.t("dynamicMap.generate.alreadyGeneratedContent")
+    : "";
+  const title = isMatch
+    ? i18next.t("dynamicMap.generate.alreadyGeneratedTitle")
+    : i18next.t("dynamicMap.generate.label");
+  generateBtn.setAttribute("data-bs-content", content);
+  generateBtn.setAttribute("data-bs-title", title);
+  if (generatePopoverInstance) {
+    try { generatePopoverInstance.dispose(); } catch {}
+  }
+  // @ts-ignore
+  generatePopoverInstance = new bootstrap.Popover(generateBtn);
 }
 
 /** Show the non-blocking loading strip with download already complete. */

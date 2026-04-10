@@ -4373,7 +4373,7 @@
     "signedInAs": "已登录为",
     "follower": "关注者",
     "subscriber": "订阅者",
-    "signOut": "登出",
+    "signOut": "退出",
     "patron": "Patreon支持者",
     "getPro": "获取 Pro",
     "proFeatures": "Pro 功能",
@@ -4383,7 +4383,10 @@
     "featureSave": "保存和管理多个绘画",
     "loginWithPatreon": "通过 Patreon 登录",
     "becomePatron": "成为赞助者",
-    "loginPrompt": "通过 Patreon 登录以使用绘图工具。\n\n绘画保存在本地，可通过 URL 分享。\n\n是否登录？"
+    "loginPrompt": "通过 Patreon 登录以使用绘图工具。\n\n绘画保存在本地，可通过 URL 分享。\n\n是否登录？",
+    "yourAccount": "你的账户",
+    "proActive": "Pro 已激活",
+    "subscribeCta": "升级到 Pro"
   },
   "loading": {
     "maps": "加载地图中...",

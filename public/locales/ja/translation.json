@@ -4383,7 +4383,10 @@
     "featureSave": "複数の描画を保存・管理",
     "loginWithPatreon": "Patreonでログイン",
     "becomePatron": "パトロンになる",
-    "loginPrompt": "Patreonでログインして描画ツールを使用します。\n\n描画はローカルに保存され、URLで共有できます。\n\nログインしますか？"
+    "loginPrompt": "Patreonでログインして描画ツールを使用します。\n\n描画はローカルに保存され、URLで共有できます。\n\nログインしますか？",
+    "yourAccount": "アカウント",
+    "proActive": "Pro 有効",
+    "subscribeCta": "Pro にアップグレード"
   },
   "loading": {
     "maps": "マップを読み込み中...",
