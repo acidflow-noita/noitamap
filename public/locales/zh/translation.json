@@ -1,8 +1,8 @@
 {
   "search": {
     "placeholder": "查找法术、物品、Boss、地点…",
-    "indexing": "Data is being loaded…",
-    "indexingHint": "You can navigate the map while data loads"
+    "indexing": "加载数据中...",
+    "indexingHint": "数据加载时您可以浏览地图"
   },
   "spell_prefix": "法术",
   "tiers_prefix": "等级",
@@ -4374,16 +4374,16 @@
     "follower": "关注者",
     "subscriber": "订阅者",
     "signOut": "登出",
-    "patron": "Patreon Supporter",
-    "getPro": "Get Pro",
-    "proFeatures": "Pro Features",
-    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
-    "featureDrawing": "Drawing & annotation tools",
-    "featureShare": "Share drawings via magic screenshots",
-    "featureSave": "Save & manage multiple drawings",
-    "loginWithPatreon": "Sign in with Patreon",
-    "becomePatron": "Become a Patron",
-    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
+    "patron": "Patreon支持者",
+    "getPro": "获取 Pro",
+    "proFeatures": "Pro 功能",
+    "proDescription": "绘图工具和其他Pro功能可供 Patreon 支持者使用。",
+    "featureDrawing": "绘图与标注工具",
+    "featureShare": "通过魔法截图分享绘画",
+    "featureSave": "保存和管理多个绘画",
+    "loginWithPatreon": "通过 Patreon 登录",
+    "becomePatron": "成为赞助者",
+    "loginPrompt": "通过 Patreon 登录以使用绘图工具。\n\n绘画保存在本地，可通过 URL 分享。\n\n是否登录？"
   },
   "loading": {
     "maps": "加载地图中...",
@@ -4394,7 +4394,7 @@
       "hint": "此 24MB 文件在首次加载后将永久缓存。",
       "segmentDownload": "数据下载",
       "segmentGeneration": "生物群落生成",
-      "addingItems": "Adding items and wands"
+      "addingItems": "正在添加物品、魔杖和生物"
     }
   },
   "drawing": {
@@ -4466,7 +4466,6 @@
       "save": "保存",
       "saveTitle": "保存绘图",
       "new": "新建",
-      "newTitle": "开始新绘图",
       "download": "下载图片",
       "downloadTitle": "将绘图下载为图片",
       "importWebp": "导入 Magic Screenshot",
@@ -4474,11 +4473,12 @@
       "exportJson": "下载 JSON",
       "exportJsonTitle": "将图形导出为 JSON",
       "openSource": "查看源码",
-      "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape",
-      "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions"
+      "toggleFill": "填充",
+      "toggleFillTitle": "切换所选图形的填充",
+      "importJson": "导入 JSON",
+      "importJsonTitle": "从 JSON 文件导入图形",
+      "label": "操作",
+      "newTitle": "开始新绘画"
     },
     "import": {
       "noData": "在此 WebP 文件中未找到绘图数据",
@@ -4500,7 +4500,7 @@
       "defaultName": "绘图",
       "sharedName": "共享绘图",
       "importedTitle": "已导入的绘图",
-      "renameTitle": "Rename drawing"
+      "renameTitle": "重命名绘画"
     },
     "auth": {
       "subscriberOnly": "绘图功能仅对 Patreon 会员开放",
@@ -4521,7 +4521,7 @@
       "content": "切换绘图工具以标注地图"
     },
     "fillAlpha": {
-      "label": "Fill Opacity",
+      "label": "填充不透明度",
       "light": "25%",
       "medium": "50%",
       "heavy": "75%",
@@ -4546,11 +4546,11 @@
       "white": "白色"
     },
     "layerOrdering": {
-      "label": "Layer ordering",
-      "frontTitle": "Bring to Front",
-      "upTitle": "Move Forward",
-      "downTitle": "Move Backward",
-      "backTitle": "Send to Back"
+      "label": "图层顺序",
+      "frontTitle": "移至最前",
+      "upTitle": "向前移动",
+      "downTitle": "向后移动",
+      "backTitle": "移至最后"
     }
   },
   "dynamicMap": {
@@ -4563,12 +4563,12 @@
       "5": "a",
       "6": "t",
       "7": "e",
-      "label": "Generate",
-      "alreadyGeneratedTitle": "Seed Active",
-      "alreadyGeneratedContent": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
+      "label": "生成",
+      "alreadyGeneratedTitle": "种子已激活",
+      "alreadyGeneratedContent": "该种子的地图已生成，更改种子编号将重新生成地图"
     },
-    "daily": "Daily",
-    "placeholder": "Game seed",
+    "daily": "每日",
+    "placeholder": "游戏种子",
     "nerdMode": {
       "0": "N",
       "1": "e",
@@ -4580,25 +4580,25 @@
       "7": "d",
       "8": "e",
       "label": "Lymm's Telescope",
-      "title": "Advanced Mode",
-      "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
+      "title": "高级模式",
+      "content": "在新标签页中打开Telescope应用程序，使用高级地图生成和调试工具。"
     },
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
-    "dailyDescription": "Load the daily game seed, shared by all players today",
-    "seedTooltipDaily": "This is the daily run seed",
-    "seedTooltipCustom": "This is a manually selected seed"
+    "dailyDescription": "加载今日的每日种子，所有玩家共享",
+    "seedTooltipDaily": "这是每日跑的种子",
+    "seedTooltipCustom": "这是手动选择的种子"
   },
-  "alive_wand": "(alive wand)",
+  "alive_wand": "(活体魔杖)",
   "konami": {
-    "gambaTitle": "This Is a Joke!",
-    "gambaMessage": "We do not condone gambling. Gambling addiction is a serious issue that can ruin lives, relationships, and finances. If you or someone you know is struggling with gambling, please seek help. Never gamble."
+    "gambaTitle": "这是个笑话！",
+    "gambaMessage": "我们不支持赌博。赌博成瘾是一个严重的问题，可能毁掉生活、人际关系和财务。如果您或您认识的人正在与赌博成瘾作斗争，请寻求帮助。永远不要赌博。"
   },
   "spoilerFree": {
-    "title": "Spoiler-free",
-    "content": "Hide wand, spell, item identities on the map and in the search results. Wands show up as the starter wand, spells and items show up as unidentified."
+    "title": "无剧透",
+    "content": "在地图和搜索结果中隐藏魔杖、咒语、物品的身份。魔杖显示为初始魔杖，咒语和物品显示为未识别。"
   },
   "privacyBrowser": {
-    "title": "Privacy Browser Detected",
+    "title": "检测到隐私浏览器",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
   }
 }

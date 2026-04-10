@@ -35,8 +35,10 @@ export const createMapLinks = (): HTMLUListElement => {
     a.textContent = translatedLabel + ' ';
 
     const badges = [...def.badges];
+    const isDynamic = def.key === 'dynamic-main-branch';
+    const dateStr = isDynamic ? new Date().toISOString().slice(0, 10) : def.patchDate;
     badges.push({
-      label: formatDate(def.patchDate),
+      label: formatDate(dateStr, i18next.language),
       class: ['border', 'border-info-subtle', 'ms-2'],
     });
 
@@ -116,8 +118,10 @@ export const updateMapLinkTranslations = (): void => {
     link.textContent = translatedLabel + ' ';
 
     const badges = [...def.badges];
+    const isDynamic = def.key === 'dynamic-main-branch';
+    const dateStr = isDynamic ? new Date().toISOString().slice(0, 10) : def.patchDate;
     badges.push({
-      label: formatDate(def.patchDate),
+      label: formatDate(dateStr, i18next.language),
       class: ['border', 'border-info-subtle', 'ms-2'],
     });
 

@@ -1,8 +1,8 @@
 {
   "search": {
     "placeholder": "Znajdź zaklęcia, przedmioty, bossy, miejsca…",
-    "indexing": "Data is being loaded…",
-    "indexingHint": "You can navigate the map while data loads"
+    "indexing": "Ladowanie danych...",
+    "indexingHint": "Mozesz przegladac mape podczas ladowania danych"
   },
   "spell_prefix": "Zaklęcie",
   "tiers_prefix": "Poziomy",
@@ -4374,16 +4374,16 @@
     "follower": "Obserwujący",
     "subscriber": "Subskrybent",
     "signOut": "Wyloguj się",
-    "patron": "Patreon Supporter",
-    "getPro": "Get Pro",
-    "proFeatures": "Pro Features",
-    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
-    "featureDrawing": "Drawing & annotation tools",
-    "featureShare": "Share drawings via magic screenshots",
-    "featureSave": "Save & manage multiple drawings",
-    "loginWithPatreon": "Sign in with Patreon",
-    "becomePatron": "Become a Patron",
-    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
+    "patron": "Wspirajacy na Patreonie",
+    "getPro": "Zdobadz Pro",
+    "proFeatures": "Funkcje Pro",
+    "proDescription": "Narzedzia do rysowania i inne funkcje pro sa dostepne dla wspierajacych na Patreonie.",
+    "featureDrawing": "Narzedzia do rysowania i adnotacji",
+    "featureShare": "Udostepniaj rysunki za pomoca magicznych zrzutow ekranu",
+    "featureSave": "Zapisywanie i zarzadzanie wieloma rysunkami",
+    "loginWithPatreon": "Zaloguj sie przez Patreon",
+    "becomePatron": "Zostan patronem",
+    "loginPrompt": "Zaloguj sie przez Patreon, aby uzywac narzedzi do rysowania.\n\nRysunki sa zapisywane lokalnie i moga byc udostepniane przez URL.\n\nCzy chcesz sie zalogowac?"
   },
   "loading": {
     "maps": "Ładowanie map...",
@@ -4394,7 +4394,7 @@
       "hint": "Ten plik (24 MB) jest trwale przechowywany w pamięci podręcznej po pierwszym załadowaniu.",
       "segmentDownload": "Pobieranie danych",
       "segmentGeneration": "Generowanie biomów",
-      "addingItems": "Adding items and wands"
+      "addingItems": "Dodawanie przedmiotow, rozdzek i stworzen"
     }
   },
   "drawing": {
@@ -4460,12 +4460,12 @@
       "exportJson": "Pobierz JSON",
       "exportJsonTitle": "Eksportuj kształty jako JSON",
       "openSource": "Otwórz źródło",
-      "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape",
-      "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions",
-      "newTitle": "Start new drawing"
+      "toggleFill": "Wypelnienie",
+      "toggleFillTitle": "Przelacz wypelnienie wybranego ksztaltu",
+      "importJson": "Importuj JSON",
+      "importJsonTitle": "Importuj ksztalty z pliku JSON",
+      "label": "Akcje",
+      "newTitle": "Rozpocznij nowy rysunek"
     },
     "import": {
       "noData": "Nie znaleziono danych rysunku w tym pliku WebP",
@@ -4487,7 +4487,7 @@
       "defaultName": "Rysunek",
       "sharedName": "Udostępniony rysunek",
       "importedTitle": "Zaimportowany rysunek",
-      "renameTitle": "Rename drawing"
+      "renameTitle": "Zmien nazwe rysunku"
     },
     "auth": {
       "subscriberOnly": "Rysowanie jest dostępne dla członków Patreona",
@@ -4521,7 +4521,7 @@
       "label": "Tekst"
     },
     "fillAlpha": {
-      "label": "Fill Opacity",
+      "label": "Przezroczystosc wypelnienia",
       "light": "25%",
       "medium": "50%",
       "heavy": "75%",
@@ -4546,11 +4546,11 @@
       "white": "Biały"
     },
     "layerOrdering": {
-      "label": "Layer ordering",
-      "frontTitle": "Bring to Front",
-      "upTitle": "Move Forward",
-      "downTitle": "Move Backward",
-      "backTitle": "Send to Back"
+      "label": "Kolejnosc warstw",
+      "frontTitle": "Przesun na wierzch",
+      "upTitle": "Przesun do przodu",
+      "downTitle": "Przesun do tylu",
+      "backTitle": "Przesun na spod"
     }
   },
   "dynamicMap": {
@@ -4563,12 +4563,12 @@
       "5": "a",
       "6": "t",
       "7": "e",
-      "label": "Generate",
-      "alreadyGeneratedTitle": "Seed Active",
-      "alreadyGeneratedContent": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
+      "label": "Generuj",
+      "alreadyGeneratedTitle": "Seed aktywny",
+      "alreadyGeneratedContent": "Mapa zostala juz wygenerowana dla tego seeda, zmiana numeru seeda spowoduje regeneracje mapy"
     },
-    "daily": "Daily",
-    "placeholder": "Game seed",
+    "daily": "Dzienny",
+    "placeholder": "Seed gry",
     "nerdMode": {
       "0": "N",
       "1": "e",
@@ -4580,25 +4580,25 @@
       "7": "d",
       "8": "e",
       "label": "Lymm's Telescope",
-      "title": "Advanced Mode",
-      "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
+      "title": "Tryb zaawansowany",
+      "content": "Otworz aplikacje Telescope w nowej karcie, aby uzyskac dostep do zaawansowanych narzedzi generowania map i debugowania."
     },
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
-    "dailyDescription": "Load the daily game seed, shared by all players today",
-    "seedTooltipDaily": "This is the daily run seed",
-    "seedTooltipCustom": "This is a manually selected seed"
+    "dailyDescription": "Zaladuj dzienny seed gry, wspoldzielony przez wszystkich graczy dzis",
+    "seedTooltipDaily": "To jest seed dziennego biegu",
+    "seedTooltipCustom": "To jest recznie wybrany seed"
   },
-  "alive_wand": "(alive wand)",
+  "alive_wand": "(zywa rozdzka)",
   "konami": {
-    "gambaTitle": "This Is a Joke!",
-    "gambaMessage": "We do not condone gambling. Gambling addiction is a serious issue that can ruin lives, relationships, and finances. If you or someone you know is struggling with gambling, please seek help. Never gamble."
+    "gambaTitle": "To zart!",
+    "gambaMessage": "Nie popieramy hazardu. Uzaleznienie od hazardu to powazny problem, ktory moze zniszczyc zycie, relacje i finanse. Jesli ty lub ktos, kogo znasz, zmaga sie z uzaleznieniem od hazardu, poszukaj pomocy. Nigdy nie uprawiaj hazardu."
   },
   "spoilerFree": {
-    "title": "Spoiler-free",
-    "content": "Hide wand, spell, item identities on the map and in the search results. Wands show up as the starter wand, spells and items show up as unidentified."
+    "title": "Bez spoilerow",
+    "content": "Ukryj tozsamosc rozdzek, zaklec i przedmiotow na mapie i w wynikach wyszukiwania. Rozdzki pojawiaja sie jako startowa rozdzka, zaklecia i przedmioty pojawiaja sie jako niezidentyfikowane."
   },
   "privacyBrowser": {
-    "title": "Privacy Browser Detected",
+    "title": "Wykryto przegladarke prywatnosci",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
   }
 }

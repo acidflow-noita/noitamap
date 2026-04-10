@@ -1,8 +1,8 @@
 {
   "search": {
     "placeholder": "Знайти заклинання, предмети, босів, місця…",
-    "indexing": "Data is being loaded…",
-    "indexingHint": "You can navigate the map while data loads"
+    "indexing": "Завантаження даних...",
+    "indexingHint": "Ви можете переміщатися по карті, поки дані завантажуються"
   },
   "spell_prefix": "Заклинання",
   "tiers_prefix": "Рівні",
@@ -4374,16 +4374,16 @@
     "follower": "Фоловер",
     "subscriber": "Підписник",
     "signOut": "Вийти",
-    "patron": "Patreon Supporter",
-    "getPro": "Get Pro",
-    "proFeatures": "Pro Features",
-    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
-    "featureDrawing": "Drawing & annotation tools",
-    "featureShare": "Share drawings via magic screenshots",
-    "featureSave": "Save & manage multiple drawings",
-    "loginWithPatreon": "Sign in with Patreon",
-    "becomePatron": "Become a Patron",
-    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
+    "patron": "Підтримувач на Patreon",
+    "getPro": "Отримати Pro",
+    "proFeatures": "Функції Pro",
+    "proDescription": "Інструменти малювання та інші Pro-функції доступні підтримувачам на Patreon.",
+    "featureDrawing": "Інструменти малювання та анотації",
+    "featureShare": "Діліться малюнками через магічні скріншоти",
+    "featureSave": "Збереження та керування кількома малюнками",
+    "loginWithPatreon": "Увійти через Patreon",
+    "becomePatron": "Стати патроном",
+    "loginPrompt": "Увійдіть через Patreon, щоб використовувати інструменти малювання.\n\nМалюнки зберігаються локально та можуть бути поширені через URL.\n\nУвійти?"
   },
   "loading": {
     "maps": "Завантаження карт...",
@@ -4394,7 +4394,7 @@
       "hint": "Цей файл (24 МБ) кешується після першого завантаження.",
       "segmentDownload": "Завантаження даних",
       "segmentGeneration": "Генерація біомів",
-      "addingItems": "Adding items and wands"
+      "addingItems": "Додавання предметів, паличок та істот"
     }
   },
   "drawing": {
@@ -4460,7 +4460,6 @@
       "save": "Зберегти",
       "saveTitle": "Зберегти малюнок",
       "new": "Новий",
-      "newTitle": "Почати новий малюнок",
       "download": "Завантажити Зображення",
       "downloadTitle": "Завантажити малюнок як зображення",
       "importWebp": "Імпортувати Magic Screenshot",
@@ -4468,11 +4467,12 @@
       "exportJson": "Завантажити JSON",
       "exportJsonTitle": "Експортувати фігури у JSON",
       "openSource": "Відкрити джерело",
-      "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape",
-      "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions"
+      "toggleFill": "Заливка",
+      "toggleFillTitle": "Перемкнути заливку виділеної фігури",
+      "importJson": "Імпортувати JSON",
+      "importJsonTitle": "Імпортувати фігури з JSON-файлу",
+      "label": "Дії",
+      "newTitle": "Почати новий малюнок"
     },
     "import": {
       "noData": "У цьому WebP файлі не знайдено даних малюнка",
@@ -4494,7 +4494,7 @@
       "defaultName": "Малюнок",
       "sharedName": "Спільний малюнок",
       "importedTitle": "Імпортований малюнок",
-      "renameTitle": "Rename drawing"
+      "renameTitle": "Перейменувати малюнок"
     },
     "auth": {
       "subscriberOnly": "Малювання доступне учасникам Patreon",
@@ -4521,7 +4521,7 @@
       "label": "Текст"
     },
     "fillAlpha": {
-      "label": "Fill Opacity",
+      "label": "Непрозорість заливки",
       "light": "25%",
       "medium": "50%",
       "heavy": "75%",
@@ -4546,11 +4546,11 @@
       "white": "Білий"
     },
     "layerOrdering": {
-      "label": "Layer ordering",
-      "frontTitle": "Bring to Front",
-      "upTitle": "Move Forward",
-      "downTitle": "Move Backward",
-      "backTitle": "Send to Back"
+      "label": "Порядок шарів",
+      "frontTitle": "На передній план",
+      "upTitle": "Перемістити вперед",
+      "downTitle": "Перемістити назад",
+      "backTitle": "На задній план"
     }
   },
   "dynamicMap": {
@@ -4563,12 +4563,12 @@
       "5": "a",
       "6": "t",
       "7": "e",
-      "label": "Generate",
-      "alreadyGeneratedTitle": "Seed Active",
-      "alreadyGeneratedContent": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
+      "label": "Згенерувати",
+      "alreadyGeneratedTitle": "Сід активний",
+      "alreadyGeneratedContent": "Карту вже згенеровано для цього сіда, зміна номера сіда перегенерує карту"
     },
-    "daily": "Daily",
-    "placeholder": "Game seed",
+    "daily": "Щоденний",
+    "placeholder": "Сід гри",
     "nerdMode": {
       "0": "N",
       "1": "e",
@@ -4580,25 +4580,25 @@
       "7": "d",
       "8": "e",
       "label": "Lymm's Telescope",
-      "title": "Advanced Mode",
-      "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
+      "title": "Розширений режим",
+      "content": "Відкрити додаток Telescope у новій вкладці для розширених інструментів генерації карт та налагодження."
     },
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
-    "dailyDescription": "Load the daily game seed, shared by all players today",
-    "seedTooltipDaily": "This is the daily run seed",
-    "seedTooltipCustom": "This is a manually selected seed"
+    "dailyDescription": "Завантажити щоденний сід гри, спільний для всіх гравців сьогодні",
+    "seedTooltipDaily": "Це сід щоденного забігу",
+    "seedTooltipCustom": "Це вручну обраний сід"
   },
-  "alive_wand": "(alive wand)",
+  "alive_wand": "(жива паличка)",
   "konami": {
-    "gambaTitle": "This Is a Joke!",
-    "gambaMessage": "We do not condone gambling. Gambling addiction is a serious issue that can ruin lives, relationships, and finances. If you or someone you know is struggling with gambling, please seek help. Never gamble."
+    "gambaTitle": "Це жарт!",
+    "gambaMessage": "Ми не схвалюємо азартні ігри. Ігрова залежність -- це серйозна проблема, яка може зруйнувати життя, стосунки та фінанси. Якщо ви або хтось з ваших знайомих страждає від ігрової залежності, зверніться по допомогу. Ніколи не грайте в азартні ігри."
   },
   "spoilerFree": {
-    "title": "Spoiler-free",
-    "content": "Hide wand, spell, item identities on the map and in the search results. Wands show up as the starter wand, spells and items show up as unidentified."
+    "title": "Без спойлерів",
+    "content": "Приховати ідентифікацію паличок, заклинань та предметів на карті та в результатах пошуку. Палички відображаються як стартова паличка, заклинання та предмети -- як нерозпізнані."
   },
   "privacyBrowser": {
-    "title": "Privacy Browser Detected",
+    "title": "Виявлено браузер конфіденційності",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
   }
 }

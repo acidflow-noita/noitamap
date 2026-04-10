@@ -1,8 +1,8 @@
 {
   "search": {
     "placeholder": "Trouver sorts, objets, boss, lieux…",
-    "indexing": "Data is being loaded…",
-    "indexingHint": "You can navigate the map while data loads"
+    "indexing": "Chargement des donnees...",
+    "indexingHint": "Vous pouvez naviguer sur la carte pendant le chargement des donnees"
   },
   "spell_prefix": "Sort",
   "tiers_prefix": "Niveaux",
@@ -4374,16 +4374,16 @@
     "follower": "Follower",
     "subscriber": "Abonné",
     "signOut": "Se déconnecter",
-    "patron": "Patreon Supporter",
-    "getPro": "Get Pro",
-    "proFeatures": "Pro Features",
-    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
-    "featureDrawing": "Drawing & annotation tools",
-    "featureShare": "Share drawings via magic screenshots",
-    "featureSave": "Save & manage multiple drawings",
-    "loginWithPatreon": "Sign in with Patreon",
-    "becomePatron": "Become a Patron",
-    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
+    "patron": "Soutien Patreon",
+    "getPro": "Obtenir Pro",
+    "proFeatures": "Fonctionnalites Pro",
+    "proDescription": "Les outils de dessin et d'autres fonctionnalites pro sont disponibles pour les soutiens Patreon.",
+    "featureDrawing": "Outils de dessin et d'annotation",
+    "featureShare": "Partagez des dessins via des captures d'ecran magiques",
+    "featureSave": "Sauvegarder et gerer plusieurs dessins",
+    "loginWithPatreon": "Se connecter avec Patreon",
+    "becomePatron": "Devenir patron",
+    "loginPrompt": "Connectez-vous avec Patreon pour utiliser les outils de dessin.\n\nLes dessins sont sauvegardes localement et peuvent etre partages par URL.\n\nVoulez-vous vous connecter ?"
   },
   "loading": {
     "maps": "Chargement des cartes...",
@@ -4394,7 +4394,7 @@
       "hint": "Ce fichier de 24 Mo est mis en cache de manière permanente après le premier chargement.",
       "segmentDownload": "Téléchargement des données",
       "segmentGeneration": "Génération des biomes",
-      "addingItems": "Adding items and wands"
+      "addingItems": "Ajout d'objets, de baguettes et de creatures"
     }
   },
   "drawing": {
@@ -4453,7 +4453,6 @@
       "save": "Enregistrer",
       "saveTitle": "Enregistrer le dessin",
       "new": "Nouveau",
-      "newTitle": "Commencer un nouveau dessin",
       "download": "Télécharger l'Image",
       "downloadTitle": "Télécharger le dessin en image",
       "importWebp": "Importer Magic Screenshot",
@@ -4461,11 +4460,12 @@
       "exportJson": "Télécharger JSON",
       "exportJsonTitle": "Exporter les formes en JSON",
       "openSource": "Ouvrir la source",
-      "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape",
-      "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions"
+      "toggleFill": "Remplissage",
+      "toggleFillTitle": "Basculer le remplissage de la forme selectionnee",
+      "importJson": "Importer JSON",
+      "importJsonTitle": "Importer des formes depuis un fichier JSON",
+      "label": "Actions",
+      "newTitle": "Commencer un nouveau dessin"
     },
     "import": {
       "noData": "Aucune donnée de dessin trouvée dans ce fichier WebP",
@@ -4487,7 +4487,7 @@
       "defaultName": "Dessin",
       "sharedName": "Dessin partagé",
       "importedTitle": "Dessin importé",
-      "renameTitle": "Rename drawing"
+      "renameTitle": "Renommer le dessin"
     },
     "auth": {
       "subscriberOnly": "Le dessin est disponible pour les membres Patreon",
@@ -4521,7 +4521,7 @@
       "label": "Texte"
     },
     "fillAlpha": {
-      "label": "Fill Opacity",
+      "label": "Opacite du remplissage",
       "light": "25%",
       "medium": "50%",
       "heavy": "75%",
@@ -4546,11 +4546,11 @@
       "white": "Blanc"
     },
     "layerOrdering": {
-      "label": "Layer ordering",
-      "frontTitle": "Bring to Front",
-      "upTitle": "Move Forward",
-      "downTitle": "Move Backward",
-      "backTitle": "Send to Back"
+      "label": "Ordre des calques",
+      "frontTitle": "Mettre au premier plan",
+      "upTitle": "Avancer",
+      "downTitle": "Reculer",
+      "backTitle": "Mettre en arriere-plan"
     }
   },
   "dynamicMap": {
@@ -4563,12 +4563,12 @@
       "5": "a",
       "6": "t",
       "7": "e",
-      "label": "Generate",
-      "alreadyGeneratedTitle": "Seed Active",
-      "alreadyGeneratedContent": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
+      "label": "Generer",
+      "alreadyGeneratedTitle": "Seed active",
+      "alreadyGeneratedContent": "La carte est deja generee pour cette seed, changer le numero de seed regenerera la carte"
     },
-    "daily": "Daily",
-    "placeholder": "Game seed",
+    "daily": "Quotidien",
+    "placeholder": "Seed du jeu",
     "nerdMode": {
       "0": "N",
       "1": "e",
@@ -4580,25 +4580,25 @@
       "7": "d",
       "8": "e",
       "label": "Lymm's Telescope",
-      "title": "Advanced Mode",
-      "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
+      "title": "Mode avance",
+      "content": "Ouvrir l'application Telescope dans un nouvel onglet pour des outils avances de generation de carte et de debogage."
     },
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
-    "dailyDescription": "Load the daily game seed, shared by all players today",
-    "seedTooltipDaily": "This is the daily run seed",
-    "seedTooltipCustom": "This is a manually selected seed"
+    "dailyDescription": "Charger la seed quotidienne du jeu, partagee par tous les joueurs aujourd'hui",
+    "seedTooltipDaily": "C'est la seed de la course quotidienne",
+    "seedTooltipCustom": "C'est une seed selectionnee manuellement"
   },
-  "alive_wand": "(alive wand)",
+  "alive_wand": "(baguette vivante)",
   "konami": {
-    "gambaTitle": "This Is a Joke!",
-    "gambaMessage": "We do not condone gambling. Gambling addiction is a serious issue that can ruin lives, relationships, and finances. If you or someone you know is struggling with gambling, please seek help. Never gamble."
+    "gambaTitle": "C'est une blague !",
+    "gambaMessage": "Nous ne cauutionnons pas les jeux de hasard. L'addiction au jeu est un probleme grave qui peut ruiner des vies, des relations et des finances. Si vous ou quelqu'un que vous connaissez souffre d'addiction au jeu, veuillez chercher de l'aide. Ne jouez jamais."
   },
   "spoilerFree": {
-    "title": "Spoiler-free",
-    "content": "Hide wand, spell, item identities on the map and in the search results. Wands show up as the starter wand, spells and items show up as unidentified."
+    "title": "Sans spoilers",
+    "content": "Masquer l'identite des baguettes, sorts et objets sur la carte et dans les resultats de recherche. Les baguettes apparaissent comme la baguette de depart, les sorts et objets comme non identifies."
   },
   "privacyBrowser": {
-    "title": "Privacy Browser Detected",
+    "title": "Navigateur de confidentialite detecte",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
   }
 }

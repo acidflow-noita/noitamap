@@ -1,8 +1,8 @@
 {
   "search": {
     "placeholder": "Find spells, items, bosses, places…",
-    "indexing": "Data is being loaded…",
-    "indexingHint": "You can navigate the map while data loads"
+    "indexing": "Loading data...",
+    "indexingHint": "You can navigate the map while data is loading"
   },
   "spell_prefix": "Spell",
   "tiers_prefix": "Tiers",
@@ -4398,7 +4398,7 @@
     "mapData": {
       "downloading": "Downloading World Data",
       "generating": "Generating Biomes",
-      "addingItems": "Adding items and wands",
+      "addingItems": "Adding items, wands and creatures",
       "hint": "This 24MB file is cached permanently after the first load.",
       "segmentDownload": "Data Download",
       "segmentGeneration": "Biome Generation"
@@ -4468,7 +4468,7 @@
       "heavy": "Heavy"
     },
     "fillAlpha": {
-      "label": "Fill Opacity",
+      "label": "Fill opacity",
       "light": "25%",
       "medium": "50%",
       "heavy": "75%",
@@ -4522,10 +4522,10 @@
     },
     "layerOrdering": {
       "label": "Layer ordering",
-      "frontTitle": "Bring to Front",
-      "upTitle": "Move Forward",
-      "downTitle": "Move Backward",
-      "backTitle": "Send to Back"
+      "frontTitle": "Bring to front",
+      "upTitle": "Move forward",
+      "downTitle": "Move backward",
+      "backTitle": "Send to back"
     },
     "exampleDrawings": {
       "label": "Example Drawings"
@@ -4561,7 +4561,7 @@
     }
   },
   "konami": {
-    "gambaTitle": "This Is a Joke!",
+    "gambaTitle": "This is a joke!",
     "gambaMessage": "We do not condone gambling. Gambling addiction is a serious issue that can ruin lives, relationships, and finances. If you or someone you know is struggling with gambling, please seek help. Never gamble."
   },
   "spoilerFree": {

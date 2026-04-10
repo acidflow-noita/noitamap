@@ -1,8 +1,8 @@
 {
   "search": {
     "placeholder": "呪文、アイテム、ボス、場所を検索…",
-    "indexing": "Data is being loaded…",
-    "indexingHint": "You can navigate the map while data loads"
+    "indexing": "データを読み込み中...",
+    "indexingHint": "データの読み込み中もマップを操作できます"
   },
   "spell_prefix": "呪文",
   "tiers_prefix": "ティア",
@@ -4374,16 +4374,16 @@
     "follower": "フォロワー",
     "subscriber": "サブスクライバー",
     "signOut": "ログアウト",
-    "patron": "Patreon Supporter",
-    "getPro": "Get Pro",
-    "proFeatures": "Pro Features",
-    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
-    "featureDrawing": "Drawing & annotation tools",
-    "featureShare": "Share drawings via magic screenshots",
-    "featureSave": "Save & manage multiple drawings",
-    "loginWithPatreon": "Sign in with Patreon",
-    "becomePatron": "Become a Patron",
-    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
+    "patron": "Patreonサポーター",
+    "getPro": "Proを取得",
+    "proFeatures": "Pro機能",
+    "proDescription": "描画ツールやその他のPro機能はPatreonサポーターに提供されています。",
+    "featureDrawing": "描画・注釈ツール",
+    "featureShare": "マジックスクリーンショットで描画を共有",
+    "featureSave": "複数の描画を保存・管理",
+    "loginWithPatreon": "Patreonでログイン",
+    "becomePatron": "パトロンになる",
+    "loginPrompt": "Patreonでログインして描画ツールを使用します。\n\n描画はローカルに保存され、URLで共有できます。\n\nログインしますか？"
   },
   "loading": {
     "maps": "マップを読み込み中...",
@@ -4394,7 +4394,7 @@
       "hint": "この24MBのファイルは、初回読み込み後に永久にキャッシュされます。",
       "segmentDownload": "データのダウンロード",
       "segmentGeneration": "バイオームの生成",
-      "addingItems": "Adding items and wands"
+      "addingItems": "アイテム、杖、クリーチャーを追加中"
     }
   },
   "drawing": {
@@ -4460,12 +4460,12 @@
       "exportJson": "JSON ダウンロード",
       "exportJsonTitle": "図形をJSONとしてエクスポート",
       "openSource": "ソースを開く",
-      "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape",
-      "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions",
-      "newTitle": "Start new drawing"
+      "toggleFill": "塗り",
+      "toggleFillTitle": "選択した図形の塗りを切替",
+      "importJson": "JSONをインポート",
+      "importJsonTitle": "JSONファイルから図形をインポート",
+      "label": "アクション",
+      "newTitle": "新しい描画を開始"
     },
     "import": {
       "noData": "このWebPファイルに描画データが見つかりません",
@@ -4487,7 +4487,7 @@
       "defaultName": "描画",
       "sharedName": "共有された描画",
       "importedTitle": "インポートされた描画",
-      "renameTitle": "Rename drawing"
+      "renameTitle": "描画の名前を変更"
     },
     "auth": {
       "subscriberOnly": "描画機能はPatreonメンバー限定です",
@@ -4521,7 +4521,7 @@
       "label": "テキスト"
     },
     "fillAlpha": {
-      "label": "Fill Opacity",
+      "label": "塗りの不透明度",
       "light": "25%",
       "medium": "50%",
       "heavy": "75%",
@@ -4546,11 +4546,11 @@
       "white": "白"
     },
     "layerOrdering": {
-      "label": "Layer ordering",
-      "frontTitle": "Bring to Front",
-      "upTitle": "Move Forward",
-      "downTitle": "Move Backward",
-      "backTitle": "Send to Back"
+      "label": "レイヤーの並び替え",
+      "frontTitle": "最前面へ",
+      "upTitle": "前へ移動",
+      "downTitle": "後ろへ移動",
+      "backTitle": "最背面へ"
     }
   },
   "dynamicMap": {
@@ -4563,12 +4563,12 @@
       "5": "a",
       "6": "t",
       "7": "e",
-      "label": "Generate",
-      "alreadyGeneratedTitle": "Seed Active",
-      "alreadyGeneratedContent": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
+      "label": "生成",
+      "alreadyGeneratedTitle": "シード有効",
+      "alreadyGeneratedContent": "このシードのマップは既に生成済みです。シード番号を変更するとマップが再生成されます"
     },
-    "daily": "Daily",
-    "placeholder": "Game seed",
+    "daily": "デイリー",
+    "placeholder": "ゲームシード",
     "nerdMode": {
       "0": "N",
       "1": "e",
@@ -4580,25 +4580,25 @@
       "7": "d",
       "8": "e",
       "label": "Lymm's Telescope",
-      "title": "Advanced Mode",
-      "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
+      "title": "アドバンスモード",
+      "content": "Telescopeアプリケーションを新しいタブで開き、高度なマップ生成とデバッグツールを使用します。"
     },
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
-    "dailyDescription": "Load the daily game seed, shared by all players today",
-    "seedTooltipDaily": "This is the daily run seed",
-    "seedTooltipCustom": "This is a manually selected seed"
+    "dailyDescription": "今日のデイリーシードを読み込む（全プレイヤー共通）",
+    "seedTooltipDaily": "これはデイリーランのシードです",
+    "seedTooltipCustom": "これは手動で選択されたシードです"
   },
-  "alive_wand": "(alive wand)",
+  "alive_wand": "(生きている杖)",
   "konami": {
-    "gambaTitle": "This Is a Joke!",
-    "gambaMessage": "We do not condone gambling. Gambling addiction is a serious issue that can ruin lives, relationships, and finances. If you or someone you know is struggling with gambling, please seek help. Never gamble."
+    "gambaTitle": "これは冒談です！",
+    "gambaMessage": "私たちはギャンブルを容認しません。ギャンブル依存症は生活、人間関係、財政を破壊する深刻な問題です。あなたまたはあなたの知人がギャンブル依存に苦しんでいる場合は、助けを求めてください。絶対にギャンブルをしないでください。"
   },
   "spoilerFree": {
-    "title": "Spoiler-free",
-    "content": "Hide wand, spell, item identities on the map and in the search results. Wands show up as the starter wand, spells and items show up as unidentified."
+    "title": "ネタバレなし",
+    "content": "地図と検索結果で杖、呪文、アイテムの正体を隠す。杖は初期杖として、呪文とアイテムは未識別として表示されます。"
   },
   "privacyBrowser": {
-    "title": "Privacy Browser Detected",
+    "title": "プライバシーブラウザを検出",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
   }
 }

@@ -74,9 +74,12 @@ describe('Translation Fullness', () => {
         const placeholders = enKeys.filter(key => {
           // Some keys are expected to be the same (e.g. proper names, technical terms, or symbols)
           const ignoreList = [
+            // Proper names and brand names
             'mod.title',
             'discord.title',
             'github.title',
+            'dynamicMap.nerdMode.label', // "Lymm's Telescope"
+            // Map proper nouns (mod names, Greek letters, version names)
             '???',
             'Ocarina',
             'Kantele',
@@ -97,7 +100,33 @@ describe('Translation Fullness', () => {
             'Mu',
             'Phi',
             'Sigma',
-            'Zeta'
+            'Zeta',
+            // Percentages (universal)
+            'drawing.fillAlpha.light',   // "25%"
+            'drawing.fillAlpha.medium',  // "50%"
+            'drawing.fillAlpha.heavy',   // "75%"
+            'drawing.fillAlpha.solid',   // "100%"
+            // File format lists (universal)
+            'drawing.import.dropHintVectorizeTypes', // "PNG, JPG, WebP, GIF, BMP, ICO"
+            // Removed from UI but still in translation files
+            'drawing.popover.hotkey',
+            // Gaming/tech terms that are the same in many languages
+            'badges.mod',
+            'auth.follower',
+            // Drawing tool/color names that happen to be the same in some languages
+            'drawing.tools.ellipse',
+            'drawing.tools.polygon',
+            'drawing.tools.rectangle',
+            'drawing.tools.point',
+            'drawing.tools.text',
+            'drawing.text.label',
+            'drawing.fontSize.medium',
+            'drawing.color.orange',
+            'drawing.color.cyan',
+            'drawing.color.violet',
+            'drawing.color.label',
+            'drawing.stroke.normal',
+            'drawing.canvas.label',
           ];
           
           if (ignoreList.some(ignore => key.includes(ignore))) return false;

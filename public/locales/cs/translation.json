@@ -1,8 +1,8 @@
 {
   "search": {
     "placeholder": "Najít kouzla, předměty, bossy, místa…",
-    "indexing": "Data is being loaded…",
-    "indexingHint": "You can navigate the map while data loads"
+    "indexing": "Nacitani dat...",
+    "indexingHint": "Mapu muzete prohlizet, zatimco se data nacitaji"
   },
   "spell_prefix": "Kouzlo",
   "tiers_prefix": "Úrovně",
@@ -4374,16 +4374,16 @@
     "follower": "Sledující",
     "subscriber": "Odběratel",
     "signOut": "Odhlásit se",
-    "patron": "Patreon Supporter",
-    "getPro": "Get Pro",
-    "proFeatures": "Pro Features",
-    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
-    "featureDrawing": "Drawing & annotation tools",
-    "featureShare": "Share drawings via magic screenshots",
-    "featureSave": "Save & manage multiple drawings",
-    "loginWithPatreon": "Sign in with Patreon",
-    "becomePatron": "Become a Patron",
-    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
+    "patron": "Podpurce na Patreonu",
+    "getPro": "Ziskat Pro",
+    "proFeatures": "Funkce Pro",
+    "proDescription": "Nastroje pro kresleni a dalsi pro funkce jsou k dispozici pro podporovatele na Patreonu.",
+    "featureDrawing": "Nastroje pro kresleni a anotaci",
+    "featureShare": "Sdileni kresby pres magicke snimky",
+    "featureSave": "Ulozeni a sprava vice kreseb",
+    "loginWithPatreon": "Prihlasit se pres Patreon",
+    "becomePatron": "Stat se patronem",
+    "loginPrompt": "Prihlaste se pres Patreon pro pouziti kreslicich nastroju.\n\nKresby se ukladaji lokalne a lze je sdilet prostrednictvim URL.\n\nChcete se prihlasit?"
   },
   "loading": {
     "maps": "Načítání map...",
@@ -4394,7 +4394,7 @@
       "hint": "Tento 24MB soubor se po prvním načtení trvale uloží do mezipaměti.",
       "segmentDownload": "Stahování dat",
       "segmentGeneration": "Generování biomů",
-      "addingItems": "Adding items and wands"
+      "addingItems": "Pridavani predmetu, hulek a tvoru"
     }
   },
   "drawing": {
@@ -4453,7 +4453,6 @@
       "save": "Uložit",
       "saveTitle": "Uložit kresbu",
       "new": "Nová",
-      "newTitle": "Začít novou kresbu",
       "download": "Stáhnout Obrázek",
       "downloadTitle": "Stáhnout kresbu jako obrázek",
       "importWebp": "Importovat Magic Screenshot",
@@ -4461,11 +4460,12 @@
       "exportJson": "Stáhnout JSON",
       "exportJsonTitle": "Exportovat tvary jako JSON",
       "openSource": "Otevřít zdroj",
-      "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape",
-      "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions"
+      "toggleFill": "Vyplnit",
+      "toggleFillTitle": "Prepnout vypln u vybrane formy",
+      "importJson": "Importovat JSON",
+      "importJsonTitle": "Importovat tvary ze souboru JSON",
+      "label": "Akce",
+      "newTitle": "Zahajit novou kresbu"
     },
     "import": {
       "noData": "V tomto souboru WebP nebyly nalezeny žádné údaje o kresbě",
@@ -4487,7 +4487,7 @@
       "defaultName": "Kresba",
       "sharedName": "Sdílená kresba",
       "importedTitle": "Importovaná kresba",
-      "renameTitle": "Rename drawing"
+      "renameTitle": "Prejmenovat kresbu"
     },
     "auth": {
       "subscriberOnly": "Kreslení je dostupné pro členy Patreonu",
@@ -4521,7 +4521,7 @@
       "label": "Text"
     },
     "fillAlpha": {
-      "label": "Fill Opacity",
+      "label": "Pruhlednost vyplne",
       "light": "25%",
       "medium": "50%",
       "heavy": "75%",
@@ -4546,11 +4546,11 @@
       "white": "Bílá"
     },
     "layerOrdering": {
-      "label": "Layer ordering",
-      "frontTitle": "Bring to Front",
-      "upTitle": "Move Forward",
-      "downTitle": "Move Backward",
-      "backTitle": "Send to Back"
+      "label": "Poради vrstев",
+      "frontTitle": "Prenest dopredu",
+      "upTitle": "Posunout dopredu",
+      "downTitle": "Posunout dozadu",
+      "backTitle": "Odeslat dozadu"
     }
   },
   "dynamicMap": {
@@ -4563,12 +4563,12 @@
       "5": "a",
       "6": "t",
       "7": "e",
-      "label": "Generate",
-      "alreadyGeneratedTitle": "Seed Active",
-      "alreadyGeneratedContent": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
+      "label": "Generovat",
+      "alreadyGeneratedTitle": "Seed aktivni",
+      "alreadyGeneratedContent": "Mapa je jiz vygenerovana pro tento seed, zmena cisla seedu regeneruje mapu"
     },
-    "daily": "Daily",
-    "placeholder": "Game seed",
+    "daily": "Denni",
+    "placeholder": "Herni seed",
     "nerdMode": {
       "0": "N",
       "1": "e",
@@ -4580,25 +4580,25 @@
       "7": "d",
       "8": "e",
       "label": "Lymm's Telescope",
-      "title": "Advanced Mode",
-      "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
+      "title": "Pokrocily rezim",
+      "content": "Otevrit aplikaci Telescope na nove karte pro pokrocile nastroje generovani map a ladeni."
     },
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
-    "dailyDescription": "Load the daily game seed, shared by all players today",
-    "seedTooltipDaily": "This is the daily run seed",
-    "seedTooltipCustom": "This is a manually selected seed"
+    "dailyDescription": "Nacist denni herni seed, sdileny vsemi hraci dnes",
+    "seedTooltipDaily": "Toto je seed denniho behu",
+    "seedTooltipCustom": "Toto je manualne zvoleny seed"
   },
-  "alive_wand": "(alive wand)",
+  "alive_wand": "(ziva hulka)",
   "konami": {
-    "gambaTitle": "This Is a Joke!",
-    "gambaMessage": "We do not condone gambling. Gambling addiction is a serious issue that can ruin lives, relationships, and finances. If you or someone you know is struggling with gambling, please seek help. Never gamble."
+    "gambaTitle": "Tohle je vtip!",
+    "gambaMessage": "Neschvalujeme hazardni hry. Zavislost na hazardu je vazny problem, ktery muze znicit zivoty, vztahy a finance. Pokud vy nebo nekdo, koho znate, bojuje se zavislosti na hazardu, vyhledejte pomoc. Nikdy nehrajte hazardni hry."
   },
   "spoilerFree": {
-    "title": "Spoiler-free",
-    "content": "Hide wand, spell, item identities on the map and in the search results. Wands show up as the starter wand, spells and items show up as unidentified."
+    "title": "Bez spoileru",
+    "content": "Skryt identity hulek, kouzel a predmetu na mape a ve vysledcich hledani. Hulky se zobrazi jako pocatecni hulka, kouzla a predmety se zobrazi jako neidentifikovane."
   },
   "privacyBrowser": {
-    "title": "Privacy Browser Detected",
+    "title": "Zjisten prohlizec ochrany soukromi",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
   }
 }

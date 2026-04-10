@@ -1,8 +1,8 @@
 {
   "search": {
     "placeholder": "Cari mantra, item, bos, tempat…",
-    "indexing": "Data is being loaded…",
-    "indexingHint": "You can navigate the map while data loads"
+    "indexing": "Memuat data...",
+    "indexingHint": "Anda dapat menjelajahi peta saat data sedang dimuat"
   },
   "spell_prefix": "Mantra",
   "tiers_prefix": "Tingkat",
@@ -4374,16 +4374,16 @@
     "follower": "Pengikut",
     "subscriber": "Pelanggan",
     "signOut": "Keluar",
-    "patron": "Patreon Supporter",
-    "getPro": "Get Pro",
-    "proFeatures": "Pro Features",
-    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
-    "featureDrawing": "Drawing & annotation tools",
-    "featureShare": "Share drawings via magic screenshots",
-    "featureSave": "Save & manage multiple drawings",
-    "loginWithPatreon": "Sign in with Patreon",
-    "becomePatron": "Become a Patron",
-    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
+    "patron": "Pendukung Patreon",
+    "getPro": "Dapatkan Pro",
+    "proFeatures": "Fitur Pro",
+    "proDescription": "Alat menggambar dan fitur pro lainnya tersedia untuk pendukung Patreon.",
+    "featureDrawing": "Alat menggambar dan anotasi",
+    "featureShare": "Bagikan gambar melalui tangkapan layar ajaib",
+    "featureSave": "Simpan dan kelola beberapa gambar",
+    "loginWithPatreon": "Masuk dengan Patreon",
+    "becomePatron": "Menjadi patron",
+    "loginPrompt": "Masuk dengan Patreon untuk menggunakan alat menggambar.\n\nGambar disimpan secara lokal dan dapat dibagikan melalui URL.\n\nApakah Anda ingin masuk?"
   },
   "loading": {
     "maps": "Memuat peta...",
@@ -4394,7 +4394,7 @@
       "hint": "File 24MB ini disimpan secara permanen di cache setelah pemuatan pertama.",
       "segmentDownload": "Unduh Data",
       "segmentGeneration": "Pembuatan Bioma",
-      "addingItems": "Adding items and wands"
+      "addingItems": "Menambahkan item, tongkat, dan makhluk"
     }
   },
   "drawing": {
@@ -4453,7 +4453,6 @@
       "save": "Simpan",
       "saveTitle": "Simpan gambar",
       "new": "Baru",
-      "newTitle": "Mulai gambar baru",
       "download": "Unduh Gambar",
       "downloadTitle": "Unduh gambar sebagai gambar",
       "importWebp": "Impor Magic Screenshot",
@@ -4461,11 +4460,12 @@
       "exportJson": "Unduh JSON",
       "exportJsonTitle": "Ekspor bentuk sebagai JSON",
       "openSource": "Buka sumber",
-      "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape",
-      "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions"
+      "toggleFill": "Isian",
+      "toggleFillTitle": "Beralih isian pada bentuk yang dipilih",
+      "importJson": "Impor JSON",
+      "importJsonTitle": "Impor bentuk dari file JSON",
+      "label": "Tindakan",
+      "newTitle": "Mulai gambar baru"
     },
     "import": {
       "noData": "Tidak ada data gambar yang ditemukan di file WebP ini",
@@ -4487,7 +4487,7 @@
       "defaultName": "Gambar",
       "sharedName": "Gambar Bersama",
       "importedTitle": "Gambar diimpor",
-      "renameTitle": "Rename drawing"
+      "renameTitle": "Ubah nama gambar"
     },
     "auth": {
       "subscriberOnly": "Menggambar tersedia untuk anggota Patreon",
@@ -4521,7 +4521,7 @@
       "label": "Teks"
     },
     "fillAlpha": {
-      "label": "Fill Opacity",
+      "label": "Opasitas isian",
       "light": "25%",
       "medium": "50%",
       "heavy": "75%",
@@ -4546,11 +4546,11 @@
       "white": "Putih"
     },
     "layerOrdering": {
-      "label": "Layer ordering",
-      "frontTitle": "Bring to Front",
-      "upTitle": "Move Forward",
-      "downTitle": "Move Backward",
-      "backTitle": "Send to Back"
+      "label": "Urutan lapisan",
+      "frontTitle": "Bawa ke depan",
+      "upTitle": "Pindahkan ke depan",
+      "downTitle": "Pindahkan ke belakang",
+      "backTitle": "Kirim ke belakang"
     }
   },
   "dynamicMap": {
@@ -4563,12 +4563,12 @@
       "5": "a",
       "6": "t",
       "7": "e",
-      "label": "Generate",
-      "alreadyGeneratedTitle": "Seed Active",
-      "alreadyGeneratedContent": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
+      "label": "Hasilkan",
+      "alreadyGeneratedTitle": "Seed aktif",
+      "alreadyGeneratedContent": "Peta sudah dibuat untuk seed ini, mengubah nomor seed akan membuat ulang peta"
     },
-    "daily": "Daily",
-    "placeholder": "Game seed",
+    "daily": "Harian",
+    "placeholder": "Seed permainan",
     "nerdMode": {
       "0": "N",
       "1": "e",
@@ -4580,25 +4580,25 @@
       "7": "d",
       "8": "e",
       "label": "Lymm's Telescope",
-      "title": "Advanced Mode",
-      "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
+      "title": "Mode lanjutan",
+      "content": "Buka aplikasi Telescope di tab baru untuk alat pembuatan peta dan debugging tingkat lanjut."
     },
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
-    "dailyDescription": "Load the daily game seed, shared by all players today",
-    "seedTooltipDaily": "This is the daily run seed",
-    "seedTooltipCustom": "This is a manually selected seed"
+    "dailyDescription": "Muat seed harian permainan, dibagikan oleh semua pemain hari ini",
+    "seedTooltipDaily": "Ini adalah seed lari harian",
+    "seedTooltipCustom": "Ini adalah seed yang dipilih secara manual"
   },
-  "alive_wand": "(alive wand)",
+  "alive_wand": "(tongkat hidup)",
   "konami": {
-    "gambaTitle": "This Is a Joke!",
-    "gambaMessage": "We do not condone gambling. Gambling addiction is a serious issue that can ruin lives, relationships, and finances. If you or someone you know is struggling with gambling, please seek help. Never gamble."
+    "gambaTitle": "Ini lelucon!",
+    "gambaMessage": "Kami tidak mendukung perjudian. Kecanduan judi adalah masalah serius yang dapat menghancurkan kehidupan, hubungan, dan keuangan. Jika Anda atau seseorang yang Anda kenal berjuang dengan kecanduan judi, carilah bantuan. Jangan pernah berjudi."
   },
   "spoilerFree": {
-    "title": "Spoiler-free",
-    "content": "Hide wand, spell, item identities on the map and in the search results. Wands show up as the starter wand, spells and items show up as unidentified."
+    "title": "Bebas spoiler",
+    "content": "Sembunyikan identitas tongkat, mantra, dan item di peta dan di hasil pencarian. Tongkat muncul sebagai tongkat awal, mantra dan item muncul sebagai tidak teridentifikasi."
   },
   "privacyBrowser": {
-    "title": "Privacy Browser Detected",
+    "title": "Browser privasi terdeteksi",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
   }
 }

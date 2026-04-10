@@ -1,8 +1,8 @@
 {
   "search": {
     "placeholder": "Buscar hechizos, objetos, jefes, lugares…",
-    "indexing": "Data is being loaded…",
-    "indexingHint": "You can navigate the map while data loads"
+    "indexing": "Cargando datos...",
+    "indexingHint": "Puedes navegar por el mapa mientras se cargan los datos"
   },
   "spell_prefix": "Hechizo",
   "tiers_prefix": "Niveles",
@@ -4374,16 +4374,16 @@
     "follower": "Seguidor",
     "subscriber": "Suscriptor",
     "signOut": "Cerrar sesión",
-    "patron": "Patreon Supporter",
-    "getPro": "Get Pro",
-    "proFeatures": "Pro Features",
-    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
-    "featureDrawing": "Drawing & annotation tools",
-    "featureShare": "Share drawings via magic screenshots",
-    "featureSave": "Save & manage multiple drawings",
-    "loginWithPatreon": "Sign in with Patreon",
-    "becomePatron": "Become a Patron",
-    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
+    "patron": "Patrocinador en Patreon",
+    "getPro": "Obtener Pro",
+    "proFeatures": "Funciones Pro",
+    "proDescription": "Las herramientas de dibujo y otras funciones pro estan disponibles para los patrocinadores de Patreon.",
+    "featureDrawing": "Herramientas de dibujo y anotacion",
+    "featureShare": "Comparte dibujos mediante capturas magicas",
+    "featureSave": "Guardar y gestionar multiples dibujos",
+    "loginWithPatreon": "Iniciar sesion con Patreon",
+    "becomePatron": "Convertirse en patron",
+    "loginPrompt": "Inicia sesion con Patreon para usar las herramientas de dibujo.\n\nLos dibujos se guardan localmente y se pueden compartir por URL.\n\nDeseas iniciar sesion?"
   },
   "loading": {
     "maps": "Cargando mapas...",
@@ -4394,7 +4394,7 @@
       "hint": "Este archivo de 24 MB se guarda en caché permanentemente tras la primera carga.",
       "segmentDownload": "Descarga de datos",
       "segmentGeneration": "Generación de biomas",
-      "addingItems": "Adding items and wands"
+      "addingItems": "Anadiendo objetos, varitas y criaturas"
     }
   },
   "drawing": {
@@ -4460,12 +4460,12 @@
       "exportJson": "Descargar JSON",
       "exportJsonTitle": "Exportar formas como JSON",
       "openSource": "Abrir fuente",
-      "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape",
-      "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions",
-      "newTitle": "Start new drawing"
+      "toggleFill": "Relleno",
+      "toggleFillTitle": "Alternar relleno en la forma seleccionada",
+      "importJson": "Importar JSON",
+      "importJsonTitle": "Importar formas desde archivo JSON",
+      "label": "Acciones",
+      "newTitle": "Iniciar nuevo dibujo"
     },
     "import": {
       "noData": "No se encontraron datos de dibujo en este archivo WebP",
@@ -4487,7 +4487,7 @@
       "defaultName": "Dibujo",
       "sharedName": "Dibujo compartido",
       "importedTitle": "Dibujo importado",
-      "renameTitle": "Rename drawing"
+      "renameTitle": "Renombrar dibujo"
     },
     "auth": {
       "subscriberOnly": "El dibujo está disponible para los miembros de Patreon",
@@ -4521,7 +4521,7 @@
       "label": "Texto"
     },
     "fillAlpha": {
-      "label": "Fill Opacity",
+      "label": "Opacidad del relleno",
       "light": "25%",
       "medium": "50%",
       "heavy": "75%",
@@ -4546,11 +4546,11 @@
       "white": "Blanco"
     },
     "layerOrdering": {
-      "label": "Layer ordering",
-      "frontTitle": "Bring to Front",
-      "upTitle": "Move Forward",
-      "downTitle": "Move Backward",
-      "backTitle": "Send to Back"
+      "label": "Orden de capas",
+      "frontTitle": "Traer al frente",
+      "upTitle": "Mover adelante",
+      "downTitle": "Mover atras",
+      "backTitle": "Enviar al fondo"
     }
   },
   "dynamicMap": {
@@ -4563,12 +4563,12 @@
       "5": "a",
       "6": "t",
       "7": "e",
-      "label": "Generate",
-      "alreadyGeneratedTitle": "Seed Active",
-      "alreadyGeneratedContent": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
+      "label": "Generar",
+      "alreadyGeneratedTitle": "Seed activa",
+      "alreadyGeneratedContent": "El mapa ya fue generado para esta seed, cambiar el numero de seed regenerara el mapa"
     },
-    "daily": "Daily",
-    "placeholder": "Game seed",
+    "daily": "Diario",
+    "placeholder": "Seed del juego",
     "nerdMode": {
       "0": "N",
       "1": "e",
@@ -4580,25 +4580,25 @@
       "7": "d",
       "8": "e",
       "label": "Lymm's Telescope",
-      "title": "Advanced Mode",
-      "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
+      "title": "Modo avanzado",
+      "content": "Abrir la aplicacion Telescope en una nueva pestana para herramientas avanzadas de generacion de mapas y depuracion."
     },
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
-    "dailyDescription": "Load the daily game seed, shared by all players today",
-    "seedTooltipDaily": "This is the daily run seed",
-    "seedTooltipCustom": "This is a manually selected seed"
+    "dailyDescription": "Cargar la seed diaria del juego, compartida por todos los jugadores hoy",
+    "seedTooltipDaily": "Esta es la seed de la carrera diaria",
+    "seedTooltipCustom": "Esta es una seed seleccionada manualmente"
   },
-  "alive_wand": "(alive wand)",
+  "alive_wand": "(varita viva)",
   "konami": {
-    "gambaTitle": "This Is a Joke!",
-    "gambaMessage": "We do not condone gambling. Gambling addiction is a serious issue that can ruin lives, relationships, and finances. If you or someone you know is struggling with gambling, please seek help. Never gamble."
+    "gambaTitle": "Esto es una broma!",
+    "gambaMessage": "No apoyamos los juegos de azar. La adiccion al juego es un problema serio que puede arruinar vidas, relaciones y finanzas. Si tu o alguien que conoces lucha con la adiccion al juego, busca ayuda. Nunca apuestes."
   },
   "spoilerFree": {
-    "title": "Spoiler-free",
-    "content": "Hide wand, spell, item identities on the map and in the search results. Wands show up as the starter wand, spells and items show up as unidentified."
+    "title": "Sin spoilers",
+    "content": "Ocultar las identidades de varitas, hechizos y objetos en el mapa y en los resultados de busqueda. Las varitas se muestran como la varita inicial, los hechizos y objetos aparecen como no identificados."
   },
   "privacyBrowser": {
-    "title": "Privacy Browser Detected",
+    "title": "Navegador de privacidad detectado",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
   }
 }

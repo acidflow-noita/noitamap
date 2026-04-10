@@ -1,8 +1,8 @@
 {
   "search": {
     "placeholder": "Найти заклинания, предметы, боссов, места…",
-    "indexing": "Data is being loaded…",
-    "indexingHint": "You can navigate the map while data loads"
+    "indexing": "Загрузка данных...",
+    "indexingHint": "Вы можете перемещаться по карте, пока данные загружаются"
   },
   "spell_prefix": "Заклинание",
   "tiers_prefix": "Уровни",
@@ -4374,16 +4374,16 @@
     "follower": "Фолловер",
     "subscriber": "Подписчик",
     "signOut": "Выйти",
-    "patron": "Patreon Supporter",
-    "getPro": "Get Pro",
-    "proFeatures": "Pro Features",
-    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
-    "featureDrawing": "Drawing & annotation tools",
-    "featureShare": "Share drawings via magic screenshots",
-    "featureSave": "Save & manage multiple drawings",
-    "loginWithPatreon": "Sign in with Patreon",
-    "becomePatron": "Become a Patron",
-    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
+    "patron": "Поддерживающий на Patreon",
+    "getPro": "Получить Pro",
+    "proFeatures": "Функции Pro",
+    "proDescription": "Инструменты рисования и другие Pro-функции доступны поддерживающим на Patreon.",
+    "featureDrawing": "Инструменты рисования и аннотации",
+    "featureShare": "Делитесь рисунками через магические скриншоты",
+    "featureSave": "Сохранение и управление несколькими рисунками",
+    "loginWithPatreon": "Войти через Patreon",
+    "becomePatron": "Стать патроном",
+    "loginPrompt": "Войдите через Patreon, чтобы использовать инструменты рисования.\n\nРисунки сохраняются локально и могут быть отправлены по URL.\n\nВойти?"
   },
   "loading": {
     "maps": "Загрузка карт...",
@@ -4394,7 +4394,7 @@
       "hint": "Этот файл (24 МБ) кэшируется после первой загрузки.",
       "segmentDownload": "Загрузка данных",
       "segmentGeneration": "Генерация биомов",
-      "addingItems": "Adding items and wands"
+      "addingItems": "Добавление предметов, палочек и существ"
     }
   },
   "drawing": {
@@ -4442,7 +4442,7 @@
       "heavy": "Жирная"
     },
     "fillAlpha": {
-      "label": "Fill Opacity",
+      "label": "Непрозрачность заливки",
       "light": "25%",
       "medium": "50%",
       "heavy": "75%",
@@ -4455,8 +4455,8 @@
       "redoTitle": "Повторить (Ctrl+Shift+Z)",
       "delete": "Удалить",
       "deleteTitle": "Удалить выделенную фигуру (Delete)",
-      "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape",
+      "toggleFill": "Заливка",
+      "toggleFillTitle": "Переключить заливку выбранной фигуры",
       "showHide": "Показать/Скрыть",
       "showHideTitle": "Переключить видимость рисунка",
       "save": "Сохранить",
@@ -4469,10 +4469,10 @@
       "exportJson": "Скачать JSON",
       "exportJsonTitle": "Экспортировать фигуры в JSON",
       "openSource": "Открыть источник",
-      "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions",
-      "newTitle": "Start new drawing"
+      "importJson": "Импортировать JSON",
+      "importJsonTitle": "Импортировать фигуры из JSON-файла",
+      "label": "Действия",
+      "newTitle": "Начать новый рисунок"
     },
     "import": {
       "noData": "В этом файле WebP не найдено данных рисунка",
@@ -4494,7 +4494,7 @@
       "defaultName": "Рисунок",
       "sharedName": "Общий рисунок",
       "importedTitle": "Импортированный рисунок",
-      "renameTitle": "Rename drawing"
+      "renameTitle": "Переименовать рисунок"
     },
     "auth": {
       "subscriberOnly": "Рисование доступно участникам Patreon",
@@ -4546,11 +4546,11 @@
       "white": "Белый"
     },
     "layerOrdering": {
-      "label": "Layer ordering",
-      "frontTitle": "Bring to Front",
-      "upTitle": "Move Forward",
-      "downTitle": "Move Backward",
-      "backTitle": "Send to Back"
+      "label": "Порядок слоёв",
+      "frontTitle": "На передний план",
+      "upTitle": "Переместить вперёд",
+      "downTitle": "Переместить назад",
+      "backTitle": "На задний план"
     }
   },
   "dynamicMap": {
@@ -4563,12 +4563,12 @@
       "5": "a",
       "6": "t",
       "7": "e",
-      "label": "Generate",
-      "alreadyGeneratedTitle": "Seed Active",
-      "alreadyGeneratedContent": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
+      "label": "Сгенерировать",
+      "alreadyGeneratedTitle": "Сид активен",
+      "alreadyGeneratedContent": "Карта уже сгенерирована для этого сида, изменение номера сида перегенерирует карту"
     },
-    "daily": "Daily",
-    "placeholder": "Game seed",
+    "daily": "Ежедневный",
+    "placeholder": "Сид игры",
     "nerdMode": {
       "0": "N",
       "1": "e",
@@ -4580,25 +4580,25 @@
       "7": "d",
       "8": "e",
       "label": "Lymm's Telescope",
-      "title": "Advanced Mode",
-      "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
+      "title": "Расширенный режим",
+      "content": "Открыть приложение Telescope в новой вкладке для расширенных инструментов генерации карт и отладки."
     },
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
-    "dailyDescription": "Load the daily game seed, shared by all players today",
-    "seedTooltipDaily": "This is the daily run seed",
-    "seedTooltipCustom": "This is a manually selected seed"
+    "dailyDescription": "Загрузить ежедневный сид игры, общий для всех игроков сегодня",
+    "seedTooltipDaily": "Это сид ежедневного забега",
+    "seedTooltipCustom": "Это вручную выбранный сид"
   },
-  "alive_wand": "(alive wand)",
+  "alive_wand": "(живая палочка)",
   "konami": {
-    "gambaTitle": "This Is a Joke!",
-    "gambaMessage": "We do not condone gambling. Gambling addiction is a serious issue that can ruin lives, relationships, and finances. If you or someone you know is struggling with gambling, please seek help. Never gamble."
+    "gambaTitle": "Это шутка!",
+    "gambaMessage": "Мы не одобряем азартные игры. Игровая зависимость -- это серьёзная проблема, которая может разрушить жизни, отношения и финансы. Если вы или кто-то из ваших знакомых страдает от игровой зависимости, обратитесь за помощью. Никогда не играйте в азартные игры."
   },
   "spoilerFree": {
-    "title": "Spoiler-free",
-    "content": "Hide wand, spell, item identities on the map and in the search results. Wands show up as the starter wand, spells and items show up as unidentified."
+    "title": "Без спойлеров",
+    "content": "Скрыть идентификацию палочек, заклинаний и предметов на карте и в результатах поиска. Палочки отображаются как стартовая палочка, заклинания и предметы -- как неопознанные."
   },
   "privacyBrowser": {
-    "title": "Privacy Browser Detected",
+    "title": "Обнаружен браузер конфиденциальности",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
   }
 }

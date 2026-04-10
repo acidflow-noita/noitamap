@@ -1,8 +1,8 @@
 {
   "search": {
     "placeholder": "Vind spreuken, items, bazen, plaatsen…",
-    "indexing": "Data is being loaded…",
-    "indexingHint": "You can navigate the map while data loads"
+    "indexing": "Gegevens laden...",
+    "indexingHint": "Je kunt de kaart verkennen terwijl de gegevens laden"
   },
   "spell_prefix": "Spreuk",
   "tiers_prefix": "Niveaus",
@@ -4374,16 +4374,16 @@
     "follower": "Volger",
     "subscriber": "Abonnee",
     "signOut": "Uitloggen",
-    "patron": "Patreon Supporter",
-    "getPro": "Get Pro",
-    "proFeatures": "Pro Features",
-    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
-    "featureDrawing": "Drawing & annotation tools",
-    "featureShare": "Share drawings via magic screenshots",
-    "featureSave": "Save & manage multiple drawings",
-    "loginWithPatreon": "Sign in with Patreon",
-    "becomePatron": "Become a Patron",
-    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
+    "patron": "Patreon-ondersteuner",
+    "getPro": "Pro verkrijgen",
+    "proFeatures": "Pro-functies",
+    "proDescription": "Tekentools en andere pro-functies zijn beschikbaar voor Patreon-ondersteuners.",
+    "featureDrawing": "Teken- en annotatietools",
+    "featureShare": "Deel tekeningen via magische schermafbeeldingen",
+    "featureSave": "Meerdere tekeningen opslaan en beheren",
+    "loginWithPatreon": "Inloggen met Patreon",
+    "becomePatron": "Word patron",
+    "loginPrompt": "Log in met Patreon om de tekentools te gebruiken.\n\nTekeningen worden lokaal opgeslagen en kunnen worden gedeeld via URL.\n\nWil je inloggen?"
   },
   "loading": {
     "maps": "Kaarten laden...",
@@ -4394,7 +4394,7 @@
       "hint": "Dit bestand van 24 MB wordt na de eerste keer laden permanent in de cache opgeslagen.",
       "segmentDownload": "Data-download",
       "segmentGeneration": "Biome-generatie",
-      "addingItems": "Adding items and wands"
+      "addingItems": "Items, toverstaven en wezens toevoegen"
     }
   },
   "drawing": {
@@ -4453,7 +4453,6 @@
       "save": "Opslaan",
       "saveTitle": "Tekening opslaan",
       "new": "Nieuw",
-      "newTitle": "Nieuwe tekening starten",
       "download": "Afbeelding Downloaden",
       "downloadTitle": "Tekening als afbeelding downloaden",
       "importWebp": "Magic Screenshot importeren",
@@ -4461,11 +4460,12 @@
       "exportJson": "JSON Downloaden",
       "exportJsonTitle": "Vormen als JSON exporteren",
       "openSource": "Open bron",
-      "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape",
-      "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions"
+      "toggleFill": "Vulling",
+      "toggleFillTitle": "Vulling van geselecteerde vorm wisselen",
+      "importJson": "JSON importeren",
+      "importJsonTitle": "Vormen importeren uit JSON-bestand",
+      "label": "Acties",
+      "newTitle": "Nieuwe tekening starten"
     },
     "import": {
       "noData": "Geen tekengegevens gevonden in dit WebP-bestand",
@@ -4487,7 +4487,7 @@
       "defaultName": "Tekening",
       "sharedName": "Gedeelde tekening",
       "importedTitle": "Geïmporteerde tekening",
-      "renameTitle": "Rename drawing"
+      "renameTitle": "Tekening hernoemen"
     },
     "auth": {
       "subscriberOnly": "Tekenen is beschikbaar voor Patreon-leden",
@@ -4521,7 +4521,7 @@
       "label": "Tekst"
     },
     "fillAlpha": {
-      "label": "Fill Opacity",
+      "label": "Vulling dekking",
       "light": "25%",
       "medium": "50%",
       "heavy": "75%",
@@ -4546,11 +4546,11 @@
       "white": "Wit"
     },
     "layerOrdering": {
-      "label": "Layer ordering",
-      "frontTitle": "Bring to Front",
-      "upTitle": "Move Forward",
-      "downTitle": "Move Backward",
-      "backTitle": "Send to Back"
+      "label": "Laagvolgorde",
+      "frontTitle": "Naar voorgrond",
+      "upTitle": "Vooruit verplaatsen",
+      "downTitle": "Achteruit verplaatsen",
+      "backTitle": "Naar achtergrond"
     }
   },
   "dynamicMap": {
@@ -4563,12 +4563,12 @@
       "5": "a",
       "6": "t",
       "7": "e",
-      "label": "Generate",
-      "alreadyGeneratedTitle": "Seed Active",
-      "alreadyGeneratedContent": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
+      "label": "Genereren",
+      "alreadyGeneratedTitle": "Seed actief",
+      "alreadyGeneratedContent": "De kaart is al gegenereerd voor deze seed, het wijzigen van het seed-nummer zal de kaart opnieuw genereren"
     },
-    "daily": "Daily",
-    "placeholder": "Game seed",
+    "daily": "Dagelijks",
+    "placeholder": "Game-seed",
     "nerdMode": {
       "0": "N",
       "1": "e",
@@ -4580,25 +4580,25 @@
       "7": "d",
       "8": "e",
       "label": "Lymm's Telescope",
-      "title": "Advanced Mode",
-      "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
+      "title": "Geavanceerde modus",
+      "content": "Open de Telescope-applicatie in een nieuw tabblad voor geavanceerde kaartgeneratie- en debugtools."
     },
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
-    "dailyDescription": "Load the daily game seed, shared by all players today",
-    "seedTooltipDaily": "This is the daily run seed",
-    "seedTooltipCustom": "This is a manually selected seed"
+    "dailyDescription": "Laad de dagelijkse game-seed, gedeeld door alle spelers vandaag",
+    "seedTooltipDaily": "Dit is de dagelijkse run-seed",
+    "seedTooltipCustom": "Dit is een handmatig geselecteerde seed"
   },
-  "alive_wand": "(alive wand)",
+  "alive_wand": "(levende toverstaf)",
   "konami": {
-    "gambaTitle": "This Is a Joke!",
-    "gambaMessage": "We do not condone gambling. Gambling addiction is a serious issue that can ruin lives, relationships, and finances. If you or someone you know is struggling with gambling, please seek help. Never gamble."
+    "gambaTitle": "Dit is een grap!",
+    "gambaMessage": "Wij keuren gokken niet goed. Gokverslaving is een ernstig probleem dat levens, relaties en financien kan ruineren. Als jij of iemand die je kent worstelt met gokverslaving, zoek dan hulp. Gok nooit."
   },
   "spoilerFree": {
-    "title": "Spoiler-free",
-    "content": "Hide wand, spell, item identities on the map and in the search results. Wands show up as the starter wand, spells and items show up as unidentified."
+    "title": "Spoilervrij",
+    "content": "Verberg de identiteit van toverstaven, spreuken en voorwerpen op de kaart en in zoekresultaten. Toverstaven worden weergegeven als de starttoverstaf, spreuken en voorwerpen als niet-geidentificeerd."
   },
   "privacyBrowser": {
-    "title": "Privacy Browser Detected",
+    "title": "Privacybrowser gedetecteerd",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
   }
 }

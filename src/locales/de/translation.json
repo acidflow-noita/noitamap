@@ -1,8 +1,8 @@
 {
   "search": {
     "placeholder": "Zauber, Gegenstände, Bosse, Orte finden…",
-    "indexing": "Data is being loaded…",
-    "indexingHint": "You can navigate the map while data loads"
+    "indexing": "Daten werden geladen...",
+    "indexingHint": "Du kannst die Karte erkunden, wahrend die Daten geladen werden"
   },
   "spell_prefix": "Zauber",
   "tiers_prefix": "Stufen",
@@ -4374,16 +4374,16 @@
     "follower": "Follower",
     "subscriber": "Abonnent",
     "signOut": "Abmelden",
-    "patron": "Patreon Supporter",
-    "getPro": "Get Pro",
-    "proFeatures": "Pro Features",
-    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
-    "featureDrawing": "Drawing & annotation tools",
-    "featureShare": "Share drawings via magic screenshots",
-    "featureSave": "Save & manage multiple drawings",
-    "loginWithPatreon": "Sign in with Patreon",
-    "becomePatron": "Become a Patron",
-    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?"
+    "patron": "Patreon-Unterstuetzer",
+    "getPro": "Pro holen",
+    "proFeatures": "Pro-Funktionen",
+    "proDescription": "Zeichenwerkzeuge und andere Pro-Funktionen sind fuer Patreon-Unterstuetzer verfuegbar.",
+    "featureDrawing": "Zeichen- und Anmerkungswerkzeuge",
+    "featureShare": "Zeichnungen per Magic-Screenshots teilen",
+    "featureSave": "Mehrere Zeichnungen speichern und verwalten",
+    "loginWithPatreon": "Mit Patreon anmelden",
+    "becomePatron": "Patron werden",
+    "loginPrompt": "Melde dich mit Patreon an, um die Zeichenwerkzeuge zu nutzen.\n\nZeichnungen werden lokal gespeichert und koennen per URL geteilt werden.\n\nMoechtest du dich anmelden?"
   },
   "loading": {
     "maps": "Karten werden geladen...",
@@ -4394,7 +4394,7 @@
       "hint": "Diese 24MB große Datei wird nach dem ersten Laden dauerhaft gespeichert.",
       "segmentDownload": "Daten-Download",
       "segmentGeneration": "Biom-Generierung",
-      "addingItems": "Adding items and wands"
+      "addingItems": "Gegenstaende, Zauberstaebe und Kreaturen werden hinzugefuegt"
     }
   },
   "drawing": {
@@ -4460,12 +4460,12 @@
       "exportJson": "JSON Herunterladen",
       "exportJsonTitle": "Formen als JSON exportieren",
       "openSource": "Quelle öffnen",
-      "toggleFill": "Fill",
-      "toggleFillTitle": "Toggle fill on selected shape",
-      "importJson": "Import JSON",
-      "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions",
-      "newTitle": "Start new drawing"
+      "toggleFill": "Fuellung",
+      "toggleFillTitle": "Fuellung der ausgewaehlten Form umschalten",
+      "importJson": "JSON importieren",
+      "importJsonTitle": "Formen aus JSON-Datei importieren",
+      "label": "Aktionen",
+      "newTitle": "Neue Zeichnung starten"
     },
     "import": {
       "noData": "Keine Zeichnungsdaten in dieser WebP-Datei gefunden",
@@ -4487,7 +4487,7 @@
       "defaultName": "Zeichnung",
       "sharedName": "Geteilte Zeichnung",
       "importedTitle": "Importierte Zeichnung",
-      "renameTitle": "Rename drawing"
+      "renameTitle": "Zeichnung umbenennen"
     },
     "auth": {
       "subscriberOnly": "Zeichnen ist für Patreon-Mitglieder verfügbar",
@@ -4521,7 +4521,7 @@
       "label": "Text"
     },
     "fillAlpha": {
-      "label": "Fill Opacity",
+      "label": "Fuellungsdeckkraft",
       "light": "25%",
       "medium": "50%",
       "heavy": "75%",
@@ -4546,11 +4546,11 @@
       "white": "Weiß"
     },
     "layerOrdering": {
-      "label": "Layer ordering",
-      "frontTitle": "Bring to Front",
-      "upTitle": "Move Forward",
-      "downTitle": "Move Backward",
-      "backTitle": "Send to Back"
+      "label": "Ebenenanordnung",
+      "frontTitle": "Nach vorne bringen",
+      "upTitle": "Vorwaerts bewegen",
+      "downTitle": "Rueckwaerts bewegen",
+      "backTitle": "Nach hinten senden"
     }
   },
   "dynamicMap": {
@@ -4563,12 +4563,12 @@
       "5": "a",
       "6": "t",
       "7": "e",
-      "label": "Generate",
-      "alreadyGeneratedTitle": "Seed Active",
-      "alreadyGeneratedContent": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
+      "label": "Generieren",
+      "alreadyGeneratedTitle": "Seed aktiv",
+      "alreadyGeneratedContent": "Die Karte wurde bereits fuer diesen Seed generiert. Eine Aenderung der Seed-Nummer regeneriert die Karte"
     },
-    "daily": "Daily",
-    "placeholder": "Game seed",
+    "daily": "Taeglich",
+    "placeholder": "Spiel-Seed",
     "nerdMode": {
       "0": "N",
       "1": "e",
@@ -4580,25 +4580,25 @@
       "7": "d",
       "8": "e",
       "label": "Lymm's Telescope",
-      "title": "Advanced Mode",
-      "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
+      "title": "Erweiterter Modus",
+      "content": "Die Telescope-Anwendung in einem neuen Tab oeffnen fuer erweiterte Kartenerstellung und Debugging-Werkzeuge."
     },
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
-    "dailyDescription": "Load the daily game seed, shared by all players today",
-    "seedTooltipDaily": "This is the daily run seed",
-    "seedTooltipCustom": "This is a manually selected seed"
+    "dailyDescription": "Den taeglichen Spiel-Seed laden, der heute von allen Spielern geteilt wird",
+    "seedTooltipDaily": "Dies ist der taegliche Lauf-Seed",
+    "seedTooltipCustom": "Dies ist ein manuell ausgewaehlter Seed"
   },
-  "alive_wand": "(alive wand)",
+  "alive_wand": "(lebender Zauberstab)",
   "konami": {
-    "gambaTitle": "This Is a Joke!",
-    "gambaMessage": "We do not condone gambling. Gambling addiction is a serious issue that can ruin lives, relationships, and finances. If you or someone you know is struggling with gambling, please seek help. Never gamble."
+    "gambaTitle": "Das ist ein Witz!",
+    "gambaMessage": "Wir dulden kein Gluecksspiel. Spielsucht ist ein ernstes Problem, das Leben, Beziehungen und Finanzen zerstoeren kann. Wenn du oder jemand, den du kennst, mit Spielsucht kaempft, suche bitte Hilfe. Spiele niemals um Geld."
   },
   "spoilerFree": {
-    "title": "Spoiler-free",
-    "content": "Hide wand, spell, item identities on the map and in the search results. Wands show up as the starter wand, spells and items show up as unidentified."
+    "title": "Spoilerfrei",
+    "content": "Identitaeten von Zauberstaeben, Zaubern und Gegenstaenden auf der Karte und in den Suchergebnissen ausblenden. Zauberstaebe werden als Startzauberstab angezeigt, Zauber und Gegenstaende als unidentifiziert."
   },
   "privacyBrowser": {
-    "title": "Privacy Browser Detected",
+    "title": "Datenschutz-Browser erkannt",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
   }
 }
