@@ -4453,7 +4453,6 @@
       "save": "Tallenna",
       "saveTitle": "Tallenna piirros",
       "new": "Uusi",
-      "newTitle": "Aloita uusi piirros",
       "download": "Lataa Kuva",
       "downloadTitle": "Lataa piirros kuvana",
       "importWebp": "Tuo Magic Screenshot",
@@ -4465,7 +4464,8 @@
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
       "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions"
+      "label": "Actions",
+      "newTitle": "Start new drawing"
     },
     "import": {
       "noData": "Tässä WebP-tiedostossa ei ole piirustusdataa",

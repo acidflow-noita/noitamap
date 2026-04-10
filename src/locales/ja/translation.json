@@ -4453,7 +4453,6 @@
       "save": "保存",
       "saveTitle": "描画を保存",
       "new": "新規",
-      "newTitle": "新しい描画を開始",
       "download": "画像をダウンロード",
       "downloadTitle": "描画を画像としてダウンロード",
       "importWebp": "Magic Screenshotをインポート",
@@ -4465,7 +4464,8 @@
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
       "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions"
+      "label": "Actions",
+      "newTitle": "Start new drawing"
     },
     "import": {
       "noData": "このWebPファイルに描画データが見つかりません",

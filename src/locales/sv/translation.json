@@ -4453,7 +4453,6 @@
       "save": "Spara",
       "saveTitle": "Spara ritning",
       "new": "Ny",
-      "newTitle": "Starta ny ritning",
       "download": "Ladda ner Bild",
       "downloadTitle": "Ladda ner ritning som bild",
       "importWebp": "Importera Magic Screenshot",
@@ -4465,7 +4464,8 @@
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
       "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions"
+      "label": "Actions",
+      "newTitle": "Start new drawing"
     },
     "import": {
       "noData": "Ingen ritdata hittades i denna WebP-fil",

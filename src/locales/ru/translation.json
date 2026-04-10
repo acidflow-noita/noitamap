@@ -4462,7 +4462,6 @@
       "save": "Сохранить",
       "saveTitle": "Сохранить рисунок",
       "new": "Новый",
-      "newTitle": "Начать новый рисунок",
       "download": "Скачать Изображение",
       "downloadTitle": "Скачать рисунок как изображение",
       "importWebp": "Импортировать Magic Screenshot",
@@ -4472,7 +4471,8 @@
       "openSource": "Открыть источник",
       "importJson": "Import JSON",
       "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions"
+      "label": "Actions",
+      "newTitle": "Start new drawing"
     },
     "import": {
       "noData": "В этом файле WebP не найдено данных рисунка",

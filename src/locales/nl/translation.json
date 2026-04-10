@@ -4453,7 +4453,6 @@
       "save": "Opslaan",
       "saveTitle": "Tekening opslaan",
       "new": "Nieuw",
-      "newTitle": "Nieuwe tekening starten",
       "download": "Afbeelding Downloaden",
       "downloadTitle": "Tekening als afbeelding downloaden",
       "importWebp": "Magic Screenshot importeren",
@@ -4465,7 +4464,8 @@
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
       "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions"
+      "label": "Actions",
+      "newTitle": "Start new drawing"
     },
     "import": {
       "noData": "Geen tekengegevens gevonden in dit WebP-bestand",

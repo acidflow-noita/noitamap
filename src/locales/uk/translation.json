@@ -4460,7 +4460,6 @@
       "save": "Зберегти",
       "saveTitle": "Зберегти малюнок",
       "new": "Новий",
-      "newTitle": "Почати новий малюнок",
       "download": "Завантажити Зображення",
       "downloadTitle": "Завантажити малюнок як зображення",
       "importWebp": "Імпортувати Magic Screenshot",
@@ -4472,7 +4471,8 @@
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
       "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions"
+      "label": "Actions",
+      "newTitle": "Start new drawing"
     },
     "import": {
       "noData": "У цьому WebP файлі не знайдено даних малюнка",

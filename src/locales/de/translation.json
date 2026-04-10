@@ -4453,7 +4453,6 @@
       "save": "Speichern",
       "saveTitle": "Zeichnung speichern",
       "new": "Neu",
-      "newTitle": "Neue Zeichnung beginnen",
       "download": "Bild Herunterladen",
       "downloadTitle": "Zeichnung als Bild herunterladen",
       "importWebp": "Magic Screenshot importieren",
@@ -4465,7 +4464,8 @@
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
       "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions"
+      "label": "Actions",
+      "newTitle": "Start new drawing"
     },
     "import": {
       "noData": "Keine Zeichnungsdaten in dieser WebP-Datei gefunden",

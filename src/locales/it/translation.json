@@ -4453,7 +4453,6 @@
       "save": "Salva",
       "saveTitle": "Salva disegno",
       "new": "Nuovo",
-      "newTitle": "Inizia nuovo disegno",
       "download": "Scarica Immagine",
       "downloadTitle": "Scarica disegno come immagine",
       "importWebp": "Importa Magic Screenshot",
@@ -4465,7 +4464,8 @@
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
       "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions"
+      "label": "Actions",
+      "newTitle": "Start new drawing"
     },
     "import": {
       "noData": "Nessun dato di disegno trovato in questo file WebP",

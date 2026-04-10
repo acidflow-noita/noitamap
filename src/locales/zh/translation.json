@@ -4466,7 +4466,6 @@
       "save": "保存",
       "saveTitle": "保存绘图",
       "new": "新建",
-      "newTitle": "开始新绘图",
       "download": "下载图片",
       "downloadTitle": "将绘图下载为图片",
       "importWebp": "导入 Magic Screenshot",
@@ -4478,7 +4477,8 @@
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
       "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions"
+      "label": "Actions",
+      "newTitle": "Start new drawing"
     },
     "import": {
       "noData": "在此 WebP 文件中未找到绘图数据",

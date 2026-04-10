@@ -4453,7 +4453,6 @@
       "save": "Simpan",
       "saveTitle": "Simpan gambar",
       "new": "Baru",
-      "newTitle": "Mulai gambar baru",
       "download": "Unduh Gambar",
       "downloadTitle": "Unduh gambar sebagai gambar",
       "importWebp": "Impor Magic Screenshot",
@@ -4465,7 +4464,8 @@
       "toggleFillTitle": "Toggle fill on selected shape",
       "importJson": "Import JSON",
       "importJsonTitle": "Import shapes from JSON file",
-      "label": "Actions"
+      "label": "Actions",
+      "newTitle": "Start new drawing"
     },
     "import": {
       "noData": "Tidak ada data gambar yang ditemukan di file WebP ini",
