@@ -62,6 +62,8 @@ export const createMapLinks = (): HTMLUListElement => {
       span.dataset.bsPlacement = 'top';
       span.dataset.bsTrigger = 'hover focus';
       span.dataset.bsHtml = 'true';
+      span.setAttribute('tabindex', '0');
+      span.dataset.bsTitle = translatedBadgeLabel;
 
       if (span.classList.contains('border-info-subtle')) {
         span.dataset.bsContent = i18next.t('badges.patchDateTooltip');
@@ -146,6 +148,8 @@ export const updateMapLinkTranslations = (): void => {
       span.dataset.bsPlacement = 'top';
       span.dataset.bsTrigger = 'hover focus';
       span.dataset.bsHtml = 'true';
+      span.setAttribute('tabindex', '0');
+      span.dataset.bsTitle = translatedBadgeLabel;
 
       if (span.classList.contains('border-info-subtle')) {
         span.dataset.bsContent = i18next.t('badges.patchDateTooltip');
@@ -167,6 +171,15 @@ export const updateMapLinkTranslations = (): void => {
       link.appendChild(span);
     }
   }
+
+  // Reinitialize popovers on rebuilt badge elements
+  navLinksUl.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => {
+    // @ts-ignore
+    const existing = bootstrap.Popover.getInstance(el);
+    if (existing) existing.dispose();
+    // @ts-ignore
+    new bootstrap.Popover(el);
+  });
 };
 
 // Utility to get short map name for selection

@@ -34,14 +34,15 @@
 }
 
 /* Icon-only buttons: force square */
-.drawing-sidebar .btn.btn-sm:not(.flex-fill):not([data-color]) {
+.drawing-sidebar .btn.btn-sm:not(.flex-fill):not(.w-100):not([data-color]) {
   min-width: 2rem;
   min-height: 2rem;
   padding: 0.2rem 0.35rem;
 }
 
-/* Buttons with text (flex-fill): add gap between icon and text */
-.drawing-sidebar .btn.btn-sm.flex-fill {
+/* Buttons with text (flex-fill or w-100): add gap between icon and text */
+.drawing-sidebar .btn.btn-sm.flex-fill,
+.drawing-sidebar .btn.btn-sm.w-100 {
   gap: 0.35em;
 }
 

@@ -4540,7 +4540,9 @@
       "failed": "Obraz może być zbyt złożony lub fotograficzny. Ta funkcja działa najlepiej z pixel artem i obrazami o jednolitych kolorach."
     },
     "exampleDrawings": {
-      "label": "Przykładowe rysunki"
+      "label": "Przykładowe rysunki",
+      "drawingExample": "Przyklad rysunku",
+      "vectorizationExample": "Przyklad wektoryzacji"
     },
     "canvas": {
       "label": "Płótno",

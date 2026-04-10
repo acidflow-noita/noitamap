@@ -48,7 +48,7 @@
   "dynamicMap": {
     "generate": {
       "label": "Generate",
-      "alreadyGeneratedTitle": "Seed Active",
+      "alreadyGeneratedTitle": "Seed active",
       "alreadyGeneratedContent": "Map is already generated for this seed, changing the seed number to another one will regenerate the map"
     },
     "daily": "Daily",
@@ -4531,7 +4531,9 @@
       "backTitle": "Send to back"
     },
     "exampleDrawings": {
-      "label": "Example Drawings"
+      "label": "Example Drawings",
+      "drawingExample": "Drawing example",
+      "vectorizationExample": "Vectorization example"
     },
     "savedDrawings": {
       "label": "Saved Drawings",

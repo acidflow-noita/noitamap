@@ -4540,7 +4540,9 @@
       "failed": "L'immagine potrebbe essere troppo complessa o fotografica. Questa funzione funziona meglio con pixel art e immagini a colori piatti."
     },
     "exampleDrawings": {
-      "label": "Esempi di disegni"
+      "label": "Esempi di disegni",
+      "drawingExample": "Esempio di disegno",
+      "vectorizationExample": "Esempio di vettorizzazione"
     },
     "canvas": {
       "label": "Tela",

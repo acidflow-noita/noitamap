@@ -39,12 +39,12 @@ html {
 }
 
 .navbar .btn-check:checked + .btn-outline-light {
-  --bs-btn-active-color: #f8fafc; /* slate-50 */
-  --bs-btn-active-bg: #47556940; /* slate-600 / 25% */
-  --bs-btn-active-border-color: #94a3b8; /* slate-400 */
-  color: #f8fafc;
-  background-color: #47556940;
-  border-color: #94a3b8;
+  --bs-btn-active-color: #0f172a; /* slate-900 */
+  --bs-btn-active-bg: #cbd5e1; /* slate-300 */
+  --bs-btn-active-border-color: #cbd5e1; /* slate-300 */
+  color: #0f172a;
+  background-color: #cbd5e1;
+  border-color: #cbd5e1;
 }
 
 /* Soften runfast (warning) button */
@@ -702,6 +702,19 @@ body.toggle-hidden div.osOverlayHighlight {
 
 #dynamicSeedInput.seed-daily {
   color: #14b8a6; /* teal-500 */
+}
+
+/* Generate button: match sidebar disabled styling */
+#dynamicGenerateButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+#dynamicGenerateButton:disabled {
+  --bs-btn-disabled-border-color: #33415580; /* slate-700 / 50% */
+  --bs-btn-disabled-color: #64748b; /* slate-500 */
+  --bs-btn-disabled-opacity: 0.5;
 }
 
 /* ── Non-blocking loading strip ──────────────────────────────────────────── */

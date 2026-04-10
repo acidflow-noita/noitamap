@@ -4540,7 +4540,9 @@
       "failed": "De afbeelding is mogelijk te complex of fotografisch. Deze functie werkt het beste met pixel art en afbeeldingen met vlakke kleuren."
     },
     "exampleDrawings": {
-      "label": "Voorbeeldtekeningen"
+      "label": "Voorbeeldtekeningen",
+      "drawingExample": "Tekenvoorbeeld",
+      "vectorizationExample": "Vectorisatievoorbeeld"
     },
     "canvas": {
       "label": "Canvas",

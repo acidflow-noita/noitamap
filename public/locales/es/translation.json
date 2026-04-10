@@ -4540,7 +4540,9 @@
       "failed": "La imagen puede ser demasiado compleja o fotográfica. Esta función funciona mejor con pixel art e imágenes de colores planos."
     },
     "exampleDrawings": {
-      "label": "Dibujos de ejemplo"
+      "label": "Dibujos de ejemplo",
+      "drawingExample": "Ejemplo de dibujo",
+      "vectorizationExample": "Ejemplo de vectorizacion"
     },
     "canvas": {
       "label": "Lienzo",

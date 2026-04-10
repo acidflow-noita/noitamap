@@ -4540,7 +4540,9 @@
       "failed": "Bilden kan vara för komplex eller fotografisk. Denna funktion fungerar bäst med pixelkonst och bilder med platta färger."
     },
     "exampleDrawings": {
-      "label": "Exempelritningar"
+      "label": "Exempelritningar",
+      "drawingExample": "Ritningsexempel",
+      "vectorizationExample": "Vektoriseringsexempel"
     },
     "canvas": {
       "label": "Duk",

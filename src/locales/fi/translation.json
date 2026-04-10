@@ -4540,7 +4540,9 @@
       "failed": "Kuva voi olla liian monimutkainen tai valokuvamainen. Tämä toiminto toimii parhaiten pikselitaiteen ja tasavärikuvien kanssa."
     },
     "exampleDrawings": {
-      "label": "Esimerkkipiirrokset"
+      "label": "Esimerkkipiirrokset",
+      "drawingExample": "Piirustusesimerkki",
+      "vectorizationExample": "Vektorointiesimerkki"
     },
     "canvas": {
       "label": "Kangas",

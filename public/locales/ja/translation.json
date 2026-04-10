@@ -4540,7 +4540,9 @@
       "failed": "画像が複雑すぎるか写真的である可能性があります。この機能はピクセルアートやフラットカラーの画像に最適です。"
     },
     "exampleDrawings": {
-      "label": "描画例"
+      "label": "描画例",
+      "drawingExample": "描画の例",
+      "vectorizationExample": "ベクタライズの例"
     },
     "canvas": {
       "label": "キャンバス",

@@ -4540,7 +4540,9 @@
       "failed": "Obrázek může být příliš složitý nebo fotografický. Tato funkce funguje nejlépe s pixel artem a obrázky s plochými barvami."
     },
     "exampleDrawings": {
-      "label": "Ukázkové kresby"
+      "label": "Ukázkové kresby",
+      "drawingExample": "Priklad kresby",
+      "vectorizationExample": "Priklad vektorizace"
     },
     "canvas": {
       "label": "Plátno",

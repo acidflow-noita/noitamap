@@ -85,18 +85,26 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   });
   toolbarEl.appendChild(seedInput);
 
+  // Wrapper span so popover works even when button is disabled (Bootstrap requirement)
+  const generateWrapper = document.createElement("span");
+  generateWrapper.id = "dynamicGenerateWrapper";
+  generateWrapper.setAttribute("data-bs-toggle", "popover");
+  generateWrapper.setAttribute("data-bs-placement", "bottom");
+  generateWrapper.setAttribute("data-bs-trigger", "hover focus");
+  generateWrapper.setAttribute("data-bs-html", "true");
+  generateWrapper.setAttribute("data-i18n-title", "dynamicMap.generate.label");
+  generateWrapper.setAttribute("data-bs-title", i18next.t("dynamicMap.generate.label"));
+  generateWrapper.setAttribute("data-bs-content", "");
+  generateWrapper.setAttribute("tabindex", "0");
+
   generateBtn = document.createElement("button");
   generateBtn.id = "dynamicGenerateButton";
   generateBtn.className = "btn btn-sm btn-outline-light text-nowrap";
-  generateBtn.setAttribute("data-bs-toggle", "popover");
-  generateBtn.setAttribute("data-bs-placement", "bottom");
-  generateBtn.setAttribute("data-bs-trigger", "hover focus");
-  generateBtn.setAttribute("data-bs-title", i18next.t("dynamicMap.generate.label"));
-  generateBtn.setAttribute("data-bs-content", "");
   generateBtn.innerHTML = `<i class="bi bi-play-fill"></i><span class="ms-1 d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
   generateBtn.addEventListener("click", () => onGenerateClick());
 
-  toolbarEl.appendChild(generateBtn);
+  generateWrapper.appendChild(generateBtn);
+  toolbarEl.appendChild(generateWrapper);
 
   // ── Lymm's Telescope button ──
   const nerdBtn = document.createElement("a");
@@ -125,10 +133,61 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   // @ts-ignore
   seedTooltipInstance = new bootstrap.Popover(seedInput);
   // @ts-ignore
-  generatePopoverInstance = new bootstrap.Popover(generateBtn);
+  generatePopoverInstance = new bootstrap.Popover(generateWrapper);
 
   // Initial state for buttons
   updateGenerateButtonState();
+
+  // Re-translate the entire toolbar whenever the language changes
+  i18next.on("languageChanged", refreshDynamicUITranslations);
+}
+
+// ─── Translation Refresh ─────────────────────────────────────────────────────
+
+function refreshDynamicUITranslations(): void {
+  if (!toolbarEl) return;
+
+  // Daily seed button
+  if (dailySeedBtn) {
+    dailySeedBtn.setAttribute("data-bs-title", i18next.t("dynamicMap.daily"));
+    dailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.dailyDescription"));
+    const span = dailySeedBtn.querySelector("span[data-i18n]");
+    if (span) span.textContent = i18next.t("dynamicMap.daily");
+  }
+
+  // Seed input
+  if (seedInput) {
+    seedInput.placeholder = i18next.t("dynamicMap.placeholder");
+    seedInput.setAttribute("data-bs-title", i18next.t("dynamicMap.placeholder"));
+    // Determine current tooltip flavour (daily or custom)
+    const isDaily = seedInput.classList.contains("seed-daily");
+    const contentKey = isDaily ? "dynamicMap.seedTooltipDaily" : "dynamicMap.seedTooltipCustom";
+    seedInput.setAttribute("data-bs-content", i18next.t(contentKey));
+  }
+
+  // Generate button text + wrapper popover
+  if (generateBtn && !isBusy) {
+    const genSpan = generateBtn.querySelector("span[data-i18n]");
+    if (genSpan) genSpan.textContent = i18next.t("dynamicMap.generate.label");
+  }
+  // Update generate wrapper popover (handles both active and "already generated" states)
+  updateGenerateButtonState();
+
+  // Nerd mode / telescope button
+  const nerdBtn = document.getElementById("dynamicNerdModeButton");
+  if (nerdBtn) {
+    const nerdSpan = nerdBtn.querySelector("span[data-i18n]");
+    if (nerdSpan) nerdSpan.textContent = i18next.t("dynamicMap.nerdMode.label");
+  }
+
+  // Dispose and reinitialize ALL popovers in the toolbar
+  toolbarEl.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => {
+    // @ts-ignore
+    const existing = bootstrap.Popover.getInstance(el);
+    if (existing) existing.dispose();
+    // @ts-ignore
+    new bootstrap.Popover(el);
+  });
 }
 
 // ─── Visibility ──────────────────────────────────────────────────────────────
@@ -245,20 +304,22 @@ function updateGenerateButtonState(): void {
 
   generateBtn.disabled = isMatch || isBusy;
 
-  // Update popover content to show "already generated" hint when disabled
+  // Update popover on the wrapper (works even when button is disabled)
+  const wrapper = document.getElementById("dynamicGenerateWrapper");
+  if (!wrapper) return;
   const content = isMatch
     ? i18next.t("dynamicMap.generate.alreadyGeneratedContent")
     : "";
   const title = isMatch
     ? i18next.t("dynamicMap.generate.alreadyGeneratedTitle")
     : i18next.t("dynamicMap.generate.label");
-  generateBtn.setAttribute("data-bs-content", content);
-  generateBtn.setAttribute("data-bs-title", title);
+  wrapper.setAttribute("data-bs-content", content);
+  wrapper.setAttribute("data-bs-title", title);
   if (generatePopoverInstance) {
     try { generatePopoverInstance.dispose(); } catch {}
   }
   // @ts-ignore
-  generatePopoverInstance = new bootstrap.Popover(generateBtn);
+  generatePopoverInstance = new bootstrap.Popover(wrapper);
 }
 
 /** Show the non-blocking loading strip with download already complete. */

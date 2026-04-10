@@ -4540,7 +4540,9 @@
       "failed": "图片可能过于复杂或为摄影图片。此功能最适合像素画和纯色图片。"
     },
     "exampleDrawings": {
-      "label": "示例绘图"
+      "label": "示例绘图",
+      "drawingExample": "绘画示例",
+      "vectorizationExample": "矢量化示例"
     },
     "canvas": {
       "label": "画布",

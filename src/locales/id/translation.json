@@ -4540,7 +4540,9 @@
       "failed": "Gambar mungkin terlalu kompleks atau fotografis. Fitur ini bekerja paling baik dengan pixel art dan gambar berwarna datar."
     },
     "exampleDrawings": {
-      "label": "Contoh Gambar"
+      "label": "Contoh Gambar",
+      "drawingExample": "Contoh gambar",
+      "vectorizationExample": "Contoh vektorisasi"
     },
     "canvas": {
       "label": "Kanvas",

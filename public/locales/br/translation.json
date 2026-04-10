@@ -4540,7 +4540,9 @@
       "failed": "A imagem pode ser muito complexa ou fotográfica. Este recurso funciona melhor com pixel art e imagens de cores planas."
     },
     "exampleDrawings": {
-      "label": "Desenhos de Exemplo"
+      "label": "Desenhos de Exemplo",
+      "drawingExample": "Exemplo de desenho",
+      "vectorizationExample": "Exemplo de vetorizacao"
     },
     "canvas": {
       "label": "Tela",

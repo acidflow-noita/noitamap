@@ -4540,7 +4540,9 @@
       "failed": "Das Bild ist möglicherweise zu komplex oder fotografisch. Diese Funktion funktioniert am besten mit Pixel-Art und Bildern mit flachen Farben."
     },
     "exampleDrawings": {
-      "label": "Beispielzeichnungen"
+      "label": "Beispielzeichnungen",
+      "drawingExample": "Zeichnungsbeispiel",
+      "vectorizationExample": "Vektorisierungsbeispiel"
     },
     "canvas": {
       "label": "Leinwand",
