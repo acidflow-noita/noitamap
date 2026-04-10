@@ -52,7 +52,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   dailySeedBtn.setAttribute("data-i18n-content", "dynamicMap.dailyDescription");
   dailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.dailyDescription"));
   dailySeedBtn.setAttribute("tabindex", "0");
-  dailySeedBtn.innerHTML = `<i class="bi bi-calendar-day"></i><span class="ms-1 d-none d-xl-inline" data-i18n="dynamicMap.daily">${i18next.t("dynamicMap.daily")}</span>`;
+  dailySeedBtn.innerHTML = `<i class="bi bi-calendar-day me-1"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.daily">${i18next.t("dynamicMap.daily")}</span>`;
   dailySeedBtn.addEventListener("click", () => onDailySeedClick());
   toolbarEl.appendChild(dailySeedBtn);
 
@@ -100,7 +100,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   generateBtn = document.createElement("button");
   generateBtn.id = "dynamicGenerateButton";
   generateBtn.className = "btn btn-sm btn-outline-light text-nowrap";
-  generateBtn.innerHTML = `<i class="bi bi-play-fill"></i><span class="ms-1 d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
+  generateBtn.innerHTML = `<i class="bi bi-play-fill me-1"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
   generateBtn.addEventListener("click", () => onGenerateClick());
 
   generateWrapper.appendChild(generateBtn);
@@ -113,7 +113,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   nerdBtn.href = NERD_MODE_URL;
   nerdBtn.target = "_blank";
   nerdBtn.rel = "noopener noreferrer";
-  nerdBtn.innerHTML = `<i class="bi bi-box-arrow-up-right"></i><span class="ms-1 d-none d-xl-inline" data-i18n="dynamicMap.nerdMode.label">${i18next.t("dynamicMap.nerdMode.label")}</span>`;
+  nerdBtn.innerHTML = `<i class="bi bi-box-arrow-up-right me-1"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.nerdMode.label">${i18next.t("dynamicMap.nerdMode.label")}</span>`;
   nerdBtn.addEventListener("click", () => {
     const seed = new URLSearchParams(window.location.search).get("se");
     nerdBtn.href = seed ? `${NERD_MODE_URL}?seed=${seed}` : NERD_MODE_URL;
@@ -290,8 +290,8 @@ function setBusy(busy: boolean): void {
   if (generateBtn) {
     generateBtn.disabled = busy;
     generateBtn.innerHTML = busy
-      ? '<span class="spinner-border spinner-border-sm" role="status"></span>'
-      : `<i class="bi bi-play-fill"></i><span class="ms-1 d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
+      ? `<span class="spinner-border spinner-border-sm me-1" role="status"></span><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`
+      : `<i class="bi bi-play-fill me-1"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
   }
   if (dailySeedBtn) dailySeedBtn.disabled = busy;
 }
@@ -315,11 +315,15 @@ function updateGenerateButtonState(): void {
     : i18next.t("dynamicMap.generate.label");
   wrapper.setAttribute("data-bs-content", content);
   wrapper.setAttribute("data-bs-title", title);
-  if (generatePopoverInstance) {
-    try { generatePopoverInstance.dispose(); } catch {}
+
+  // @ts-ignore Update active popover DOM if it is currently visible
+  const instance = bootstrap.Popover.getInstance(wrapper);
+  if (instance && instance.tip) {
+    const header = instance.tip.querySelector('.popover-header');
+    if (header) header.innerHTML = title;
+    const body = instance.tip.querySelector('.popover-body');
+    if (body) body.innerHTML = content;
   }
-  // @ts-ignore
-  generatePopoverInstance = new bootstrap.Popover(wrapper);
 }
 
 /** Show the non-blocking loading strip with download already complete. */
@@ -372,12 +376,11 @@ function updateSeedTooltip(isDaily: boolean): void {
   const key = isDaily ? "dynamicMap.seedTooltipDaily" : "dynamicMap.seedTooltipCustom";
   const text = i18next.t(key);
   seedInput.setAttribute("data-bs-content", text);
-  // Re-create the popover instance so Bootstrap picks up the new content
-  if (seedTooltipInstance) {
-    try {
-      seedTooltipInstance.dispose();
-    } catch {}
+  
+  // @ts-ignore Update active popover DOM if it is currently visible
+  const instance = bootstrap.Popover.getInstance(seedInput);
+  if (instance && instance.tip) {
+    const body = instance.tip.querySelector('.popover-body');
+    if (body) body.innerHTML = text;
   }
-  // @ts-ignore
-  seedTooltipInstance = new bootstrap.Popover(seedInput);
 }

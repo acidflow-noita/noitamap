@@ -706,9 +706,6 @@ body.toggle-hidden div.osOverlayHighlight {
 
 /* Generate button: match sidebar disabled styling */
 #dynamicGenerateButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35em;
 }
 
 #dynamicGenerateButton:disabled {

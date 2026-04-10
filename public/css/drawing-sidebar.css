@@ -40,11 +40,7 @@
   padding: 0.2rem 0.35rem;
 }
 
-/* Buttons with text (flex-fill or w-100): add gap between icon and text */
-.drawing-sidebar .btn.btn-sm.flex-fill,
-.drawing-sidebar .btn.btn-sm.w-100 {
-  gap: 0.35em;
-}
+/* Buttons with text no longer use CSS gap, they use .me-1 on icons uniformly */
 
 .drawing-sidebar .btn-outline-danger {
   --bs-btn-color: #f87171; /* red-400 */

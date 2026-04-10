@@ -15,7 +15,7 @@ export const createMapLinks = (): HTMLUListElement => {
 
   for (const [mapName, def] of getAllMapDefinitions()) {
     const a = document.createElement('a');
-    a.classList.add(NAV_LINK_IDENTIFIER, 'text-nowrap', 'dropdown-item');
+    a.classList.add(NAV_LINK_IDENTIFIER, 'text-nowrap', 'dropdown-item', 'd-flex', 'align-items-center', 'gap-1');
     a.href = '#';
     a.dataset.bsToggle = 'pill';
     a.dataset.mapKey = mapName;
@@ -33,14 +33,17 @@ export const createMapLinks = (): HTMLUListElement => {
 
     const shouldTranslate = def.labelKey && translatableKeys.includes(def.labelKey);
     const translatedLabel = shouldTranslate ? i18next.t(def.labelKey || '', { defaultValue: def.label }) : def.label;
-    a.textContent = translatedLabel + ' ';
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'me-2';
+    labelSpan.textContent = translatedLabel;
+    a.appendChild(labelSpan);
 
     const badges = [...def.badges];
     const isDynamic = def.key === 'dynamic-main-branch';
     const dateStr = isDynamic ? new Date().toISOString().slice(0, 10) : def.patchDate;
     badges.push({
       label: formatDate(dateStr, i18next.language),
-      class: ['border', 'border-info-subtle', 'ms-2'],
+      class: ['border', 'border-info-subtle'],
     });
 
     for (const badge of badges) {
@@ -60,7 +63,7 @@ export const createMapLinks = (): HTMLUListElement => {
       // Add popovers to all badges (consistent with sidebar style)
       span.dataset.bsToggle = 'popover';
       span.dataset.bsPlacement = 'top';
-      span.dataset.bsTrigger = 'hover focus';
+      span.dataset.bsTrigger = 'hover';
       span.dataset.bsHtml = 'true';
       span.setAttribute('tabindex', '0');
       span.dataset.bsTitle = translatedBadgeLabel;
@@ -119,14 +122,17 @@ export const updateMapLinkTranslations = (): void => {
 
     const shouldTranslate = def.labelKey && translatableKeys.includes(def.labelKey);
     const translatedLabel = shouldTranslate ? i18next.t(def.labelKey || '', { defaultValue: def.label }) : def.label;
-    link.textContent = translatedLabel + ' ';
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'me-2';
+    labelSpan.textContent = translatedLabel;
+    link.appendChild(labelSpan);
 
     const badges = [...def.badges];
     const isDynamic = def.key === 'dynamic-main-branch';
     const dateStr = isDynamic ? new Date().toISOString().slice(0, 10) : def.patchDate;
     badges.push({
       label: formatDate(dateStr, i18next.language),
-      class: ['border', 'border-info-subtle', 'ms-2'],
+      class: ['border', 'border-info-subtle'],
     });
 
     for (const badge of badges) {
@@ -146,7 +152,7 @@ export const updateMapLinkTranslations = (): void => {
       // Add popovers to all badges (consistent with sidebar style)
       span.dataset.bsToggle = 'popover';
       span.dataset.bsPlacement = 'top';
-      span.dataset.bsTrigger = 'hover focus';
+      span.dataset.bsTrigger = 'hover';
       span.dataset.bsHtml = 'true';
       span.setAttribute('tabindex', '0');
       span.dataset.bsTitle = translatedBadgeLabel;
