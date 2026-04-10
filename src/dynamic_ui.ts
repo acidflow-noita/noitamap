@@ -93,7 +93,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
 
   toolbarEl.appendChild(generateBtn);
 
-  // ── Nerd Mode button ──
+  // ── Lymm's Telescope button ──
   const nerdBtn = document.createElement("a");
   nerdBtn.id = "dynamicNerdModeButton";
   nerdBtn.className = "btn btn-sm btn-outline-secondary text-nowrap";
@@ -148,9 +148,7 @@ export function updateDynamicUIVisibility(currentMap: string): void {
 
   if (isDynamic) {
     // Pre-initialize telescope modules in background so first generation is faster
-    import("./telescope/telescope-adapter")
-      .then((m) => m.initTelescope())
-      .catch(() => {});
+    import("./telescope/telescope-adapter").then((m) => m.initTelescope()).catch(() => {});
     // Only populate seedInput from last-known seed if the input is empty.
     // setSeedParams may have already written the pending seed here;
     // overwriting it with getCurrentDynamicSeed() would show the OLD seed.
@@ -293,7 +291,9 @@ function updateSeedTooltip(isDaily: boolean): void {
   seedInput.setAttribute("data-bs-content", text);
   // Re-create the popover instance so Bootstrap picks up the new content
   if (seedTooltipInstance) {
-    try { seedTooltipInstance.dispose(); } catch {}
+    try {
+      seedTooltipInstance.dispose();
+    } catch {}
   }
   // @ts-ignore
   seedTooltipInstance = new bootstrap.Popover(seedInput);

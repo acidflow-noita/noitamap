@@ -21,6 +21,11 @@
   border-color: #cbd5e1; /* slate-300 */
 }
 
+/* Selected drawing tool: tint icon with current brush color (except move) */
+.drawing-toolbar .btn-check:checked + .btn-outline-light[data-tool]:not([data-tool="move"]) {
+  color: var(--drawing-color, #0f172a);
+}
+
 /* Sidebar buttons: consistent sizing to match toolbar (icon-only buttons) */
 .drawing-sidebar .btn.btn-sm {
   display: inline-flex;
@@ -54,6 +59,16 @@
   --bs-btn-hover-color: #a5f3fc; /* cyan-200 */
   --bs-btn-hover-bg: #0891b233; /* cyan-600 / 20% */
   --bs-btn-hover-border-color: #22d3ee99; /* cyan-400 / 60% */
+}
+
+/* Disabled buttons: fade border so they look less prominent than active ones */
+.drawing-sidebar .btn-outline-light:disabled,
+.drawing-sidebar .btn-outline-light.disabled,
+.drawing-sidebar .btn-outline-danger:disabled,
+.drawing-sidebar .btn-outline-danger.disabled {
+  --bs-btn-disabled-border-color: #33415580; /* slate-700 / 50% */
+  --bs-btn-disabled-color: #64748b; /* slate-500 */
+  --bs-btn-disabled-opacity: 0.5;
 }
 
 /* Soften sidebar header border */

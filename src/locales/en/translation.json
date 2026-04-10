@@ -57,7 +57,7 @@
     "seedTooltipCustom": "This is a manually selected seed",
     "placeholder": "Game seed",
     "nerdMode": {
-      "label": "Nerd Mode",
+      "label": "Lymm's Telescope",
       "title": "Advanced Mode",
       "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
     }

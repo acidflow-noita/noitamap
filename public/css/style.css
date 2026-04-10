@@ -56,17 +56,37 @@ html {
   --bs-btn-hover-bg: #fbbf2414; /* amber-400 / 8% */
 }
 
-.dropdown-item.active {
-  background-color: oklch(37.9% 0.146 265.522) !important;
+/* ── Dropdown menus: match Tailwind 4 dark palette ──────────────────────── */
+
+.dropdown-menu {
+  background-color: oklch(15.6% 0.026 264.695); /* ~slate-900 */
+  border: 1px solid #334155; /* slate-700 */
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.4);
 }
+
+.dropdown-item,
+.dropdown-menu .nav-link {
+  color: #cbd5e1; /* slate-300 */
+}
+
 .dropdown-item.active,
 .dropdown-item:active {
-  background-color: oklch(37.9% 0.146 265.522) !important;
+  background-color: #33415580; /* slate-700 / 50% */
+  color: #f1f5f9; /* slate-100 */
 }
 
 .dropdown-item:focus,
 .dropdown-item:hover {
-  background-color: oklch(37.2% 0.044 257.287) !important;
+  background-color: #33415560; /* slate-700 / 37% */
+  color: #f1f5f9; /* slate-100 */
+}
+
+/* Override Bootstrap blue pill active state inside dropdowns */
+.dropdown-menu .nav-link.active,
+.dropdown-menu .nav-link.active:focus,
+.dropdown-menu .nav-link.active:hover {
+  background-color: #14b8a622; /* teal-500 / 13% */
+  color: #14b8a6; /* teal-500 */
 }
 
 .flex {
