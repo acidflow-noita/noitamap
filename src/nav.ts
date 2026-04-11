@@ -69,7 +69,9 @@ export const createMapLinks = (): HTMLUListElement => {
       span.dataset.bsTitle = translatedBadgeLabel;
 
       if (span.classList.contains('border-info-subtle')) {
-        span.dataset.bsContent = i18next.t('badges.patchDateTooltip');
+        span.dataset.bsContent = isDynamic 
+          ? i18next.t('badges.dynamicDateTooltip') 
+          : i18next.t('badges.patchDateTooltip');
       } else if (badge.labelKey) {
         const tooltipKey = `badges.${badge.labelKey}Tooltip`;
         span.dataset.bsContent = i18next.t(tooltipKey, { defaultValue: translatedBadgeLabel });
@@ -158,7 +160,9 @@ export const updateMapLinkTranslations = (): void => {
       span.dataset.bsTitle = translatedBadgeLabel;
 
       if (span.classList.contains('border-info-subtle')) {
-        span.dataset.bsContent = i18next.t('badges.patchDateTooltip');
+        span.dataset.bsContent = isDynamic 
+          ? i18next.t('badges.dynamicDateTooltip') 
+          : i18next.t('badges.patchDateTooltip');
       } else if (badge.labelKey) {
         const tooltipKey = `badges.${badge.labelKey}Tooltip`;
         span.dataset.bsContent = i18next.t(tooltipKey, { defaultValue: translatedBadgeLabel });

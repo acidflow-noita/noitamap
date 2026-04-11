@@ -49,7 +49,8 @@
     "mod": "MOD",
     "betaBranch": "β ブランチ",
     "special": "特別",
-    "patchDateTooltip": "このマップがキャプチャされたパッチの日付"
+    "patchDateTooltip": "このマップがキャプチャされたパッチの日付",
+    "dynamicDateTooltip": "ダイナミックマップは常に最新です"
   },
   "availableMaps": "利用可能なマップ",
   "donate": "寄付",

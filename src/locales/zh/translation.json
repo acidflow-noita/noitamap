@@ -49,7 +49,8 @@
     "mod": "模组",
     "betaBranch": "β 分支",
     "special": "特殊",
-    "patchDateTooltip": "该地图截取时的补丁日期"
+    "patchDateTooltip": "该地图截取时的补丁日期",
+    "dynamicDateTooltip": "动态地图始终是最新的"
   },
   "availableMaps": "可用地图",
   "donate": "捐赠",

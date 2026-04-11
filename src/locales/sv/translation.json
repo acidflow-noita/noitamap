@@ -49,7 +49,8 @@
     "mod": "Mod",
     "betaBranch": "β gren",
     "special": "Speciell",
-    "patchDateTooltip": "Patchdatum då denna karta fångades"
+    "patchDateTooltip": "Patchdatum då denna karta fångades",
+    "dynamicDateTooltip": "Dynamisk karta är alltid uppdaterad"
   },
   "availableMaps": "Tillgängliga kartor",
   "donate": "Donera",

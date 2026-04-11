@@ -58,6 +58,39 @@ html {
 
 /* ── Dropdown menus: match Tailwind 4 dark palette ──────────────────────── */
 
+/* Custom badges to override ugly bootstrap colors in the map dropdown */
+.dropdown-menu .badge.text-bg-primary {
+  background-color: #451a03 !important; /* amber-950 */
+  color: #fbbf24 !important; /* amber-400 */
+  border: 1px solid #92400e !important; /* amber-800 */
+}
+
+.dropdown-menu .badge.text-bg-success {
+  background-color: #022c22 !important; /* emerald-950 */
+  color: #34d399 !important; /* emerald-400 */
+  border: 1px solid #065f46 !important; /* emerald-800 */
+}
+
+.dropdown-menu .badge.text-bg-info {
+  background-color: #083344 !important; /* cyan-950 */
+  color: #22d3ee !important; /* cyan-400 */
+  border: 1px solid #155e75 !important; /* cyan-800 */
+}
+
+.dropdown-menu .badge.text-bg-light {
+  background-color: #0f172a !important; /* slate-900 */
+  color: #94a3b8 !important; /* slate-400 */
+  border: 1px solid #1e293b !important; /* slate-800 */
+}
+
+/* Date badge generated dynamically in nav.ts uses border-info-subtle */
+.dropdown-menu .badge.border-info-subtle {
+  background-color: transparent !important;
+  color: #64748b !important; /* slate-500 */
+  border-color: #334155 !important; /* slate-700 */
+  font-weight: normal;
+}
+
 .dropdown-menu {
   --bs-dropdown-link-active-bg: var(--accent-bg);
   --bs-dropdown-link-active-color: var(--accent-color);
@@ -112,8 +145,8 @@ html {
 
 :root {
   /* ── Accent color: change these two values to retheme all active/selected states ── */
-  --accent-color: #14b8a6;      /* teal-500 */
-  --accent-bg: #14b8a622;       /* teal-500 / 13% */
+  --accent-color: #14b8a6; /* teal-500 */
+  --accent-bg: #14b8a622; /* teal-500 / 13% */
 
   font-family: Inter, sans-serif;
   font-feature-settings:
@@ -345,7 +378,9 @@ body.toggle-hidden div.osOverlayHighlight {
   background-color: #0f172a; /* slate-900 */
   border: 1px solid #475569; /* slate-600 */
   color: #e2e8f0; /* slate-200 */
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 #searchInput:focus,
@@ -723,7 +758,7 @@ body.toggle-hidden div.osOverlayHighlight {
   right: 5%;
   z-index: 1040;
   pointer-events: none;
-  display: none;           /* toggled by JS */
+  display: none; /* toggled by JS */
   opacity: 0;
   transition: opacity 0.35s ease;
   border-radius: 0 0 8px 8px;
@@ -794,9 +829,15 @@ body.toggle-hidden div.osOverlayHighlight {
   transition: width 0.25s ease;
 }
 
-.seg-download   { background: #0f766e; } /* teal-700 */
-.seg-generation { background: #0d9488; } /* teal-600 */
-.seg-items      { background: #14b8a6; } /* teal-500 */
+.seg-download {
+  background: #0f766e;
+} /* teal-700 */
+.seg-generation {
+  background: #0d9488;
+} /* teal-600 */
+.seg-items {
+  background: #14b8a6;
+} /* teal-500 */
 
 /* ── Search indexing placeholder ─────────────────────────────────────────── */
 
@@ -817,8 +858,12 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 @keyframes skeleton-shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .skeleton-pulse {

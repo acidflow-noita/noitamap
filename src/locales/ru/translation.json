@@ -49,7 +49,8 @@
     "mod": "Мод",
     "betaBranch": "β-билд",
     "special": "Особая",
-    "patchDateTooltip": "Дата патча, на котором была снята карта"
+    "patchDateTooltip": "Дата патча, на котором была снята карта",
+    "dynamicDateTooltip": "Динамическая карта всегда актуальна"
   },
   "availableMaps": "Доступные карты",
   "donate": "Донат",

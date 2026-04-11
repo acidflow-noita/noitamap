@@ -67,7 +67,8 @@
     "mod": "Mod",
     "betaBranch": "β branch",
     "special": "Special",
-    "patchDateTooltip": "Patch date this map was captured"
+    "patchDateTooltip": "Patch date this map was captured",
+    "dynamicDateTooltip": "Dynamic map is always up to date"
   },
   "availableMaps": "Available Maps",
   "donate": "Donate",

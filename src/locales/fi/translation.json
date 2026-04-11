@@ -49,7 +49,8 @@
     "mod": "Modi",
     "betaBranch": "β haara",
     "special": "Erikois",
-    "patchDateTooltip": "Päivityksen päivämäärä, jolloin kartta tallennettiin"
+    "patchDateTooltip": "Päivityksen päivämäärä, jolloin kartta tallennettiin",
+    "dynamicDateTooltip": "Dynaaminen kartta on aina ajan tasalla"
   },
   "availableMaps": "Saatavilla olevat kartat",
   "donate": "Lahjoita",

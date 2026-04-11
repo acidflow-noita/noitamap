@@ -49,7 +49,8 @@
     "mod": "Mod",
     "betaBranch": "β Zweig",
     "special": "Spezial",
-    "patchDateTooltip": "Patch-Datum, an dem diese Karte aufgenommen wurde"
+    "patchDateTooltip": "Patch-Datum, an dem diese Karte aufgenommen wurde",
+    "dynamicDateTooltip": "Die dynamische Karte ist immer aktuell"
   },
   "availableMaps": "Verfügbare Karten",
   "donate": "Spenden",

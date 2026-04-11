@@ -49,7 +49,8 @@
     "mod": "Mod",
     "betaBranch": "rama β",
     "special": "Especial",
-    "patchDateTooltip": "Fecha del parche en que se capturó este mapa"
+    "patchDateTooltip": "Fecha del parche en que se capturó este mapa",
+    "dynamicDateTooltip": "El mapa dinámico siempre está actualizado"
   },
   "availableMaps": "Mapas disponibles",
   "donate": "Donar",
