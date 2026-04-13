@@ -80,18 +80,23 @@ export function installFetchInterceptor(): void {
             }
 
             if (file) {
-              // console.log(`[FetchInterceptor] Intercepted ${url} -> zip:${config.key}:${file.name}`);
-              const blob = await file.async("blob");
-              const lowerName = file.name.toLowerCase();
-              const contentType = lowerName.endsWith(".png") ? "image/png"
-                : lowerName.endsWith(".json") ? "application/json"
-                : lowerName.endsWith(".csv") ? "text/csv"
-                : "application/octet-stream";
-              return new Response(blob, {
-                status: 200,
-                statusText: "OK",
-                headers: { "Content-Type": contentType },
-              });
+              try {
+                const blob = await file.async("blob");
+                const lowerName = file.name.toLowerCase();
+                const contentType = lowerName.endsWith(".png") ? "image/png"
+                  : lowerName.endsWith(".json") ? "application/json"
+                  : lowerName.endsWith(".csv") ? "text/csv"
+                  : "application/octet-stream";
+                return new Response(blob, {
+                  status: 200,
+                  statusText: "OK",
+                  headers: { "Content-Type": contentType },
+                });
+              } catch (e) {
+                console.error(`[FetchInterceptor] CRITICAL: Zip ${config.key} is corrupted (${e}). Deleting cache and aborting map load to prevent infinitely falling back to unbundled assets.`);
+                caches.delete(`noitamap-archive-${config.key}-v2`).catch(() => {});
+                throw new Error(`Data Archive ${config.key}.zip is deeply corrupted on this device. Local cache cleared. Please hard-refresh your browser!`);
+              }
             }
           } // end if (zip)
         } // end for zipConfigs

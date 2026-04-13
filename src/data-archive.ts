@@ -94,7 +94,15 @@ export async function getZip(key: string = "main", silent: boolean = false): Pro
 
         if (!fetchResp.ok) {
           console.warn(`${url} fetch failed (${fetchResp.status})`);
-          return null;
+          resolve(null);
+          return;
+        }
+
+        const contentType = fetchResp.headers.get("content-type");
+        if (contentType && contentType.includes("text/html")) {
+          console.warn(`[DataArchive] ${url} returned HTML fallback, skipping and resolving null`);
+          resolve(null);
+          return;
         }
 
         const contentLength = fetchResp.headers.get("content-length");
@@ -123,6 +131,10 @@ export async function getZip(key: string = "main", silent: boolean = false): Pro
               }
             }
           }
+        }
+        
+        if (totalBytes > 0 && loadedBytes < totalBytes) {
+          throw new Error(`Download truncated: expected ${totalBytes} bytes, stream ended at ${loadedBytes}`);
         }
 
         const combined = new Uint8Array(loadedBytes);
@@ -153,6 +165,9 @@ export async function getZip(key: string = "main", silent: boolean = false): Pro
       resolve(instance);
     } catch (e) {
       console.error(`[DataArchive] Failed to load ${url}:`, e);
+      try {
+        await caches.delete(`noitamap-archive-${key}-v2`);
+      } catch (err) {}
       resolve(null);
     }
     }); // end locks.request
@@ -177,7 +192,12 @@ export async function readText(path: string, zipKey: string = "main", silent: bo
     console.warn(`[DataArchive] Missing: ${path} in ${zipKey}`);
     return null;
   }
-  return file.async("string");
+  try {
+    return await file.async("string");
+  } catch (e) {
+    console.error(`[DataArchive] Corrupted text file ${path}:`, e);
+    return null;
+  }
 }
 
 /**
@@ -196,8 +216,13 @@ export async function readBlob(
     // Silent fail for multi-zip searching
     return null;
   }
-  const buf = await file.async("arraybuffer");
-  return new Blob([buf], mimeType ? { type: mimeType } : undefined);
+  try {
+    const buf = await file.async("arraybuffer");
+    return new Blob([buf], mimeType ? { type: mimeType } : undefined);
+  } catch (e) {
+    console.error(`[DataArchive] Corrupted binary file ${path}:`, e);
+    return null;
+  }
 }
 
 /**
