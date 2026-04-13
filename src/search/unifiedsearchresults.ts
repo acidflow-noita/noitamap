@@ -350,8 +350,12 @@ export class UnifiedSearchResults extends EventEmitter2 {
               getPOISpriteFirstFrame(result as any).then((url) => {
                 if (url) {
                   img.src = url;
-                  img.style.display = "";
+                } else {
+                  // Fallback for POIs or entities missing a sprite
+                  img.src = "./assets/icons/no_image_available.png";
+                  img.style.opacity = "0.5";
                 }
+                img.style.display = "";
               });
               listItem.appendChild(img);
             }
@@ -543,7 +547,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
                       } else {
                         img.src = `./assets/icons/spells/${spell.sprite}`;
                         img.onerror = () => {
-                          img.src = "./assets/icons/spells/missing.png";
+                          img.src = "./assets/icons/no_image_available.png";
                         };
                       }
                     });

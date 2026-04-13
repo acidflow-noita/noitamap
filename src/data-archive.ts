@@ -39,9 +39,10 @@ export async function getZip(key: string = "main", silent: boolean = false): Pro
     return null;
   }
 
-  zipPromises[key] = (async () => {
-    try {
-      console.log(`[DataArchive] Loading ${url}...`);
+  zipPromises[key] = new Promise((resolve, reject) => {
+    navigator.locks.request(`zip-fetch-${key}`, async () => {
+      try {
+        console.log(`[DataArchive] Loading ${url}...`);
 
       const cacheName = `noitamap-archive-${key}-v2`;
       const cache = await caches.open(cacheName);
@@ -149,12 +150,13 @@ export async function getZip(key: string = "main", silent: boolean = false): Pro
       const instance = await JSZip.loadAsync(buf);
       zips[key] = instance;
       console.log(`[DataArchive] ${url} loaded and ready`);
-      return instance;
+      resolve(instance);
     } catch (e) {
       console.error(`[DataArchive] Failed to load ${url}:`, e);
-      return null;
+      resolve(null);
     }
-  })();
+    }); // end locks.request
+  }); // end new Promise
 
   return zipPromises[key];
 }
