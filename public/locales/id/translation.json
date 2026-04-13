@@ -2,7 +2,9 @@
   "search": {
     "placeholder": "Cari mantra, item, bos, tempat…",
     "indexing": "Memuat data...",
-    "indexingHint": "Anda dapat menjelajahi peta saat data sedang dimuat"
+    "indexingHint": "Anda dapat menjelajahi peta saat data sedang dimuat",
+    "popoverTitle": "Mencari",
+    "popoverContent": "Cari mantra, item, tongkat sihir, bos, makhluk, ramuan, struktur, dan banyak lagi. Gunakan tombol filter di bawah untuk mempersempit hasil berdasarkan kategori."
   },
   "spell_prefix": "Mantra",
   "tiers_prefix": "Tingkat",
@@ -4606,5 +4608,39 @@
   "privacyBrowser": {
     "title": "Browser privasi terdeteksi",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
+  },
+  "searchFilters": {
+    "wands": "Filter hasil untuk hanya menampilkan tongkat sihir",
+    "spells": "Filter hasil untuk hanya menampilkan mantra",
+    "items": "Filter hasil untuk hanya menampilkan item",
+    "chests": "Filter hasil untuk hanya menampilkan peti",
+    "holyMountains": "Filter hasil untuk hanya menampilkan toko Holy Mountain",
+    "potions": "Filter hasil untuk hanya menampilkan ramuan",
+    "hearts": "Filter hasil untuk hanya menampilkan hati",
+    "bosses": "Filter hasil untuk hanya menampilkan bos",
+    "creatures": "Filter hasil untuk hanya menampilkan makhluk",
+    "structures": "Filter hasil untuk hanya menampilkan struktur",
+    "orbs": "Filter hasil untuk hanya menampilkan bola",
+    "spatialAwareness": "Filter hasil untuk hanya menampilkan titik kesadaran spasial",
+    "hiddenMessages": "Filter hasil untuk hanya menampilkan pesan tersembunyi"
+  },
+  "filterLabels": {
+    "wands": "tongkat sihir",
+    "spells": "Mantra",
+    "items": "Barang",
+    "chests": "Peti",
+    "holyMountains": "Pegunungan Suci",
+    "potions": "Ramuan & Termos",
+    "hearts": "Hati & Sembuh",
+    "bosses": "Bos",
+    "creatures": "Makhluk",
+    "structures": "Struktur",
+    "orbs": "bola",
+    "spatialAwareness": "Kesadaran Spasial",
+    "hiddenMessages": "Pesan Tersembunyi"
+  },
+  "chunkGrid": {
+    "title": "Kotak Potongan",
+    "content": "Alihkan hamparan kisi batas bongkahan"
   }
 }

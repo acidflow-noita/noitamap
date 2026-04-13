@@ -2,7 +2,9 @@
   "search": {
     "placeholder": "查找法术、物品、Boss、地点…",
     "indexing": "加载数据中...",
-    "indexingHint": "数据加载时您可以浏览地图"
+    "indexingHint": "数据加载时您可以浏览地图",
+    "popoverTitle": "搜索",
+    "popoverContent": "搜索咒语、物品、魔杖、Boss、生物、药剂、结构等等。使用下面的过滤按钮按类别缩小结果范围。"
   },
   "spell_prefix": "法术",
   "tiers_prefix": "等级",
@@ -4606,5 +4608,39 @@
   "privacyBrowser": {
     "title": "检测到隐私浏览器",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
+  },
+  "searchFilters": {
+    "wands": "过滤结果以仅显示魔杖",
+    "spells": "过滤结果以仅显示法术",
+    "items": "过滤结果以仅显示物品",
+    "chests": "过滤结果以仅显示宝箱",
+    "holyMountains": "筛选结果仅显示圣山商店",
+    "potions": "过滤结果以仅显示药水",
+    "hearts": "过滤结果以仅显示红心",
+    "bosses": "过滤结果以仅显示 Boss",
+    "creatures": "过滤结果以仅显示生物",
+    "structures": "过滤结果以仅显示结构",
+    "orbs": "过滤结果以仅显示球体",
+    "spatialAwareness": "过滤结果以仅显示空间感知点",
+    "hiddenMessages": "过滤结果以仅显示隐藏的消息"
+  },
+  "filterLabels": {
+    "wands": "魔杖",
+    "spells": "法术",
+    "items": "项目",
+    "chests": "宝箱",
+    "holyMountains": "神圣之山",
+    "potions": "药水和药剂",
+    "hearts": "追加生命值上限",
+    "bosses": "老板们",
+    "creatures": "敌人",
+    "structures": "结构",
+    "orbs": "球体",
+    "spatialAwareness": "空间意识",
+    "hiddenMessages": "隐藏消息"
+  },
+  "chunkGrid": {
+    "title": "块网格",
+    "content": "切换块边界网格覆盖"
   }
 }

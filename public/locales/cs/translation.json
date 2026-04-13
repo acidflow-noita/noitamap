@@ -2,7 +2,9 @@
   "search": {
     "placeholder": "Najít kouzla, předměty, bossy, místa…",
     "indexing": "Nacitani dat...",
-    "indexingHint": "Mapu muzete prohlizet, zatimco se data nacitaji"
+    "indexingHint": "Mapu muzete prohlizet, zatimco se data nacitaji",
+    "popoverTitle": "Vyhledávání",
+    "popoverContent": "Hledejte kouzla, předměty, hůlky, bossy, stvoření, lektvary, struktury a další. Pomocí níže uvedených tlačítek filtru můžete zúžit výsledky podle kategorie."
   },
   "spell_prefix": "Kouzlo",
   "tiers_prefix": "Úrovně",
@@ -4606,5 +4608,39 @@
   "privacyBrowser": {
     "title": "Zjisten prohlizec ochrany soukromi",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
+  },
+  "searchFilters": {
+    "wands": "Filtrujte výsledky tak, aby se zobrazovaly pouze hůlky",
+    "spells": "Filtrovat výsledky, aby se zobrazila pouze kouzla",
+    "items": "Filtrujte výsledky, abyste zobrazili pouze položky",
+    "chests": "Filtrujte výsledky, abyste zobrazili pouze truhly",
+    "holyMountains": "Filtrujte výsledky, aby se zobrazily pouze obchody v Holy Mountain",
+    "potions": "Filtrujte výsledky, abyste zobrazili pouze lektvary",
+    "hearts": "Filtrujte výsledky tak, aby se zobrazovaly pouze srdce",
+    "bosses": "Filtrujte výsledky tak, aby se zobrazili pouze nadřazení",
+    "creatures": "Filtrujte výsledky, abyste zobrazili pouze tvory",
+    "structures": "Filtrujte výsledky tak, aby byly zobrazeny pouze struktury",
+    "orbs": "Filtrujte výsledky, abyste zobrazili pouze koule",
+    "spatialAwareness": "Filtrujte výsledky, abyste zobrazili pouze body prostorového povědomí",
+    "hiddenMessages": "Filtrovat výsledky, aby se zobrazily pouze skryté zprávy"
+  },
+  "filterLabels": {
+    "wands": "Hůlky",
+    "spells": "Kouzla",
+    "items": "Položky",
+    "chests": "Truhly",
+    "holyMountains": "Svaté hory",
+    "potions": "Lektvary a baňky",
+    "hearts": "Srdce a léčí",
+    "bosses": "Šéfové",
+    "creatures": "Stvoření",
+    "structures": "Struktury",
+    "orbs": "Orby",
+    "spatialAwareness": "Prostorové povědomí",
+    "hiddenMessages": "Skryté zprávy"
+  },
+  "chunkGrid": {
+    "title": "Kusová mřížka",
+    "content": "Přepnout překrytí mřížky hranic bloků"
   }
 }

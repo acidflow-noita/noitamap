@@ -35,12 +35,25 @@ const CONTAINER_TYPES = new Set([
   "boss_centipede",
   "boss_robot",
   "boss_meat",
-  "friend"
+  "friend",
 ]);
 
 const CHEST_TYPES = new Set(["chest", "great_chest", "pacifist_chest"]);
 const HOLY_MOUNTAIN_TYPES = new Set(["holy_mountain_shop"]);
-const BOSS_TYPES = new Set(["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon", "boss_wizard", "boss_ghost", "friend", "boss_sky", "islandspirit", "boss_centipede", "boss_robot", "boss_meat"]);
+const BOSS_TYPES = new Set([
+  "triangle_boss",
+  "alchemist_boss",
+  "pyramid_boss",
+  "dragon",
+  "boss_wizard",
+  "boss_ghost",
+  "friend",
+  "boss_sky",
+  "islandspirit",
+  "boss_centipede",
+  "boss_robot",
+  "boss_meat",
+]);
 
 /** Check if a POI matches any of the active filters. */
 function matchesFilters(p: DynamicPOI, activeFilters: Set<string>): boolean {
@@ -109,7 +122,7 @@ export class UnifiedSearch extends EventEmitter2 {
   private dynamicPOIs: DynamicPOI[] = [];
   private dynamicIndex: any = null; // FlexSearch.Document index for dynamic POIs
   private dynamicPOIMap: Map<string, DynamicPOI> = new Map(); // fast id→POI lookup
-  private indexingState: 'idle' | 'indexing' | 'ready' = 'idle';
+  private indexingState: "idle" | "indexing" | "ready" = "idle";
 
   public currentMap: MapName;
 
@@ -121,7 +134,7 @@ export class UnifiedSearch extends EventEmitter2 {
     this.searchInput = searchInput;
     this.searchResults = searchResults;
     if (initialFilters) {
-      initialFilters.forEach(f => this.activeFilters.add(f));
+      initialFilters.forEach((f) => this.activeFilters.add(f));
     }
 
     this.bindEvents();
@@ -263,17 +276,17 @@ export class UnifiedSearch extends EventEmitter2 {
   }
 
   /** Set the search indexing state (idle | indexing | ready). */
-  setIndexingState(state: 'idle' | 'indexing' | 'ready'): void {
+  setIndexingState(state: "idle" | "indexing" | "ready"): void {
     const prev = this.indexingState;
     this.indexingState = state;
     // When transitioning to 'ready', force a search refresh so results appear
-    if (state === 'ready' && prev === 'indexing') {
+    if (state === "ready" && prev === "indexing") {
       this.lastSearchText = "__force__";
       this.lastViewportKey = "";
       this.updateSearchResults();
     }
     // When transitioning to 'indexing', update display immediately
-    if (state === 'indexing') {
+    if (state === "indexing") {
       this.lastSearchText = "__force__";
       this.updateSearchResults();
     }
@@ -426,11 +439,7 @@ export class UnifiedSearch extends EventEmitter2 {
     const urlParams = new URLSearchParams(window.location.search);
     const vpKey = `${urlParams.get("x") ?? ""},${urlParams.get("y") ?? ""}`;
     const filterKey = [...this.activeFilters].sort().join(",");
-    if (
-      this.lastSearchText === searchText &&
-      this.lastSearchFilters === filterKey &&
-      this.lastViewportKey === vpKey
-    )
+    if (this.lastSearchText === searchText && this.lastSearchFilters === filterKey && this.lastViewportKey === vpKey)
       return;
     this.lastSearchText = searchText;
     this.lastSearchFilters = filterKey;
@@ -444,7 +453,7 @@ export class UnifiedSearch extends EventEmitter2 {
 
     if (searchText === "") {
       resetBiomeOverlays();
-      if (isDynamic && this.indexingState === 'indexing') {
+      if (isDynamic && this.indexingState === "indexing") {
         // Show indexing placeholder
         this.searchResults.setIndexingPlaceholder();
         return;
@@ -508,10 +517,10 @@ export class UnifiedSearch extends EventEmitter2 {
       return;
     }
 
-      if (isDynamic && this.indexingState === 'indexing') {
-        this.searchResults.setIndexingPlaceholder();
-        return;
-      }
+    if (isDynamic && this.indexingState === "indexing") {
+      this.searchResults.setIndexingPlaceholder();
+      return;
+    }
 
     if (isDynamic) {
       // Dynamic map: search dynamic POIs via FlexSearch index
@@ -692,25 +701,48 @@ export class UnifiedSearch extends EventEmitter2 {
         ];
 
     const FILTER_LABELS: Record<string, string> = {
-      w: "Wands",
-      s: "Spells",
-      i: "Items",
-      c: "Chests",
-      hm: "Holy Mountains",
-      p: "Potions & Flasks",
-      h: "Hearts & Heals",
-      b: "Bosses",
-      e: "Creatures",
-      st: "Structures",
-      or: "Orbs",
-      sa: "Spatial Awareness",
-      msg: "Hidden Messages",
+      w: i18next.t("filterLabels.wands", "Wands"),
+      s: i18next.t("filterLabels.spells", "Spells"),
+      i: i18next.t("filterLabels.items", "Items"),
+      c: i18next.t("filterLabels.chests", "Chests"),
+      hm: i18next.t("filterLabels.holyMountains", "Holy Mountains"),
+      p: i18next.t("filterLabels.potions", "Potions & Flasks"),
+      h: i18next.t("filterLabels.hearts", "Hearts & Heals"),
+      b: i18next.t("filterLabels.bosses", "Bosses"),
+      e: i18next.t("filterLabels.creatures", "Enemies"),
+      st: i18next.t("filterLabels.structures", "Structures"),
+      or: i18next.t("filterLabels.orbs", "Orbs"),
+      sa: i18next.t("filterLabels.spatialAwareness", "Spatial Awareness"),
+      msg: i18next.t("filterLabels.hiddenMessages", "Hidden Messages"),
+    };
+
+    const FILTER_DESCRIPTIONS: Record<string, string> = {
+      w: i18next.t("searchFilters.wands", "Filter results to show only wands"),
+      s: i18next.t("searchFilters.spells", "Filter results to show only spells"),
+      i: i18next.t("searchFilters.items", "Filter results to show only items"),
+      c: i18next.t("searchFilters.chests", "Filter results to show only chests"),
+      hm: i18next.t("searchFilters.holyMountains", "Filter results to show only Holy Mountain shops"),
+      p: i18next.t("searchFilters.potions", "Filter results to show only potions"),
+      h: i18next.t("searchFilters.hearts", "Filter results to show only hearts"),
+      b: i18next.t("searchFilters.bosses", "Filter results to show only bosses"),
+      e: i18next.t("searchFilters.creatures", "Filter results to show only creatures"),
+      st: i18next.t("searchFilters.structures", "Filter results to show only structures"),
+      or: i18next.t("searchFilters.orbs", "Filter results to show only orbs"),
+      sa: i18next.t("searchFilters.spatialAwareness", "Filter results to show only spatial awareness points"),
+      msg: i18next.t("searchFilters.hiddenMessages", "Filter results to show only hidden messages"),
     };
 
     for (const filter of filters) {
       const filterLabel = document.createElement("label");
       filterLabel.tabIndex = 0;
-      filterLabel.title = FILTER_LABELS[filter.type] || filter.type;
+      const labelText = FILTER_LABELS[filter.type] || filter.type;
+      // Use Bootstrap popover instead of plain title
+      filterLabel.dataset.bsToggle = "popover";
+      filterLabel.dataset.bsPlacement = "top";
+      filterLabel.dataset.bsTrigger = "hover";
+      filterLabel.dataset.bsHtml = "true";
+      filterLabel.dataset.bsTitle = labelText;
+      filterLabel.dataset.bsContent = FILTER_DESCRIPTIONS[filter.type] || labelText;
       const filterCheckbox = document.createElement("input");
       filterCheckbox.type = "checkbox";
       filterCheckbox.value = filter.type;
@@ -752,6 +784,10 @@ export class UnifiedSearch extends EventEmitter2 {
     }
 
     overlayDiv.appendChild(filterBox);
+
+    // Initialize Bootstrap popovers on all filter labels
+    // @ts-ignore
+    filterBox.querySelectorAll('[data-bs-toggle="popover"]').forEach((el: HTMLElement) => new bootstrap.Popover(el));
 
     const searchResultsUL = document.createElement("ul");
     searchResultsUL.id = "unifiedSearchResults";
@@ -826,12 +862,12 @@ export class UnifiedSearch extends EventEmitter2 {
       searchResults,
       initialFilters,
     });
-    
+
     // allow programmatically opening the overlay without focusing
     (instance as any).showOverlay = () => {
       (instance as any).explicitShowRequested = true;
       if (searchInput.value.length > 0) {
-         instance.triggerSearch(searchInput.value);
+        instance.triggerSearch(searchInput.value);
       }
     };
     instance.bindFilterEvents();

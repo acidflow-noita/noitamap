@@ -2,7 +2,9 @@
   "search": {
     "placeholder": "呪文、アイテム、ボス、場所を検索…",
     "indexing": "データを読み込み中...",
-    "indexingHint": "データの読み込み中もマップを操作できます"
+    "indexingHint": "データの読み込み中もマップを操作できます",
+    "popoverTitle": "検索",
+    "popoverContent": "呪文、アイテム、杖、ボス、クリーチャー、ポーション、建造物などを検索します。下のフィルタ ボタンを使用して、結果をカテゴリ別に絞り込みます。"
   },
   "spell_prefix": "呪文",
   "tiers_prefix": "ティア",
@@ -4606,5 +4608,39 @@
   "privacyBrowser": {
     "title": "プライバシーブラウザを検出",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
+  },
+  "searchFilters": {
+    "wands": "結果をフィルタリングして杖のみを表示する",
+    "spells": "結果をフィルタリングして呪文のみを表示する",
+    "items": "結果をフィルタリングして項目のみを表示する",
+    "chests": "結果をフィルターして宝箱のみを表示する",
+    "holyMountains": "結果をフィルターしてホーリー マウンテンのショップのみを表示する",
+    "potions": "結果をフィルタリングしてポーションのみを表示する",
+    "hearts": "結果をフィルターしてハートのみを表示する",
+    "bosses": "結果をフィルターしてボスのみを表示する",
+    "creatures": "結果をフィルターして生き物のみを表示する",
+    "structures": "結果をフィルタリングして構造のみを表示する",
+    "orbs": "結果をフィルターしてオーブのみを表示する",
+    "spatialAwareness": "結果をフィルタリングして空間認識ポイントのみを表示する",
+    "hiddenMessages": "結果をフィルタリングして非表示のメッセージのみを表示する"
+  },
+  "filterLabels": {
+    "wands": "ワンド",
+    "spells": "呪文",
+    "items": "アイテム",
+    "chests": "チェスト",
+    "holyMountains": "聖なる山",
+    "potions": "ポーションとフラスコ",
+    "hearts": "追加の最大HP",
+    "bosses": "ボス",
+    "creatures": "敵",
+    "structures": "構造物",
+    "orbs": "オーブ",
+    "spatialAwareness": "空間認識",
+    "hiddenMessages": "隠しメッセージ"
+  },
+  "chunkGrid": {
+    "title": "チャンクグリッド",
+    "content": "チャンク境界のグリッド オーバーレイを切り替えます"
   }
 }

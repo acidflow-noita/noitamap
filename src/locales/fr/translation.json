@@ -2,7 +2,9 @@
   "search": {
     "placeholder": "Trouver sorts, objets, boss, lieux…",
     "indexing": "Chargement des donnees...",
-    "indexingHint": "Vous pouvez naviguer sur la carte pendant le chargement des donnees"
+    "indexingHint": "Vous pouvez naviguer sur la carte pendant le chargement des donnees",
+    "popoverTitle": "Recherche",
+    "popoverContent": "Recherchez des sorts, des objets, des baguettes, des boss, des créatures, des potions, des structures et bien plus encore. Utilisez les boutons de filtre ci-dessous pour affiner les résultats par catégorie."
   },
   "spell_prefix": "Sort",
   "tiers_prefix": "Niveaux",
@@ -4606,5 +4608,39 @@
   "privacyBrowser": {
     "title": "Navigateur de confidentialite detecte",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
+  },
+  "searchFilters": {
+    "wands": "Filtrer les résultats pour afficher uniquement les baguettes",
+    "spells": "Filtrer les résultats pour afficher uniquement les sorts",
+    "items": "Filtrer les résultats pour afficher uniquement les éléments",
+    "chests": "Filtrer les résultats pour afficher uniquement les coffres",
+    "holyMountains": "Filtrer les résultats pour afficher uniquement les magasins Holy Mountain",
+    "potions": "Filtrer les résultats pour afficher uniquement les potions",
+    "hearts": "Filtrer les résultats pour afficher uniquement les cœurs",
+    "bosses": "Filtrer les résultats pour afficher uniquement les patrons",
+    "creatures": "Filtrer les résultats pour afficher uniquement les créatures",
+    "structures": "Filtrer les résultats pour afficher uniquement les structures",
+    "orbs": "Filtrer les résultats pour afficher uniquement les orbes",
+    "spatialAwareness": "Filtrer les résultats pour afficher uniquement les points de conscience spatiale",
+    "hiddenMessages": "Filtrer les résultats pour afficher uniquement les messages masqués"
+  },
+  "filterLabels": {
+    "wands": "Baguettes",
+    "spells": "Sorts",
+    "items": "Articles",
+    "chests": "Coffres",
+    "holyMountains": "Montagne sacrée",
+    "potions": "Potions et flacons",
+    "hearts": "PV max. supplémentaires",
+    "bosses": "Patrons",
+    "creatures": "Ennemis",
+    "structures": "Structures",
+    "orbs": "Orbes",
+    "spatialAwareness": "Conscience spatiale",
+    "hiddenMessages": "Messages cachés"
+  },
+  "chunkGrid": {
+    "title": "Grille de morceaux",
+    "content": "Activer/désactiver la superposition de la grille des limites des morceaux"
   }
 }

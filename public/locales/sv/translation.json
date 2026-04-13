@@ -2,7 +2,9 @@
   "search": {
     "placeholder": "Hitta trollformler, föremål, bossar, platser…",
     "indexing": "Laddar data...",
-    "indexingHint": "Du kan utforska kartan medan data laddas"
+    "indexingHint": "Du kan utforska kartan medan data laddas",
+    "popoverTitle": "Söka",
+    "popoverContent": "Sök efter trollformler, föremål, trollstavar, bossar, varelser, drycker, strukturer och mer. Använd filterknapparna nedan för att begränsa resultaten efter kategori."
   },
   "spell_prefix": "Trollformel",
   "tiers_prefix": "Nivåer",
@@ -4606,5 +4608,39 @@
   "privacyBrowser": {
     "title": "Integritetswebblasare upptackt",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
+  },
+  "searchFilters": {
+    "wands": "Filtrera resultat för att endast visa trollstavar",
+    "spells": "Filtrera resultat för att endast visa trollformler",
+    "items": "Filtrera resultat för att endast visa objekt",
+    "chests": "Filtrera resultat för att endast visa kistor",
+    "holyMountains": "Filtrera resultat för att endast visa Holy Mountain-butiker",
+    "potions": "Filtrera resultaten för att endast visa drycker",
+    "hearts": "Filtrera resultaten för att endast visa hjärtan",
+    "bosses": "Filtrera resultat för att endast visa chefer",
+    "creatures": "Filtrera resultat för att endast visa varelser",
+    "structures": "Filtrera resultat för att endast visa strukturer",
+    "orbs": "Filtrera resultat för att endast visa klot",
+    "spatialAwareness": "Filtrera resultat för att endast visa rumsliga medvetenhetspunkter",
+    "hiddenMessages": "Filtrera resultat för att endast visa dolda meddelanden"
+  },
+  "filterLabels": {
+    "wands": "Stavar",
+    "spells": "Trollformler",
+    "items": "Föremål",
+    "chests": "kistor",
+    "holyMountains": "Heliga bergen",
+    "potions": "Potions & Flaskor",
+    "hearts": "Hjärtan & läker",
+    "bosses": "Chefer",
+    "creatures": "Varelser",
+    "structures": "Strukturer",
+    "orbs": "Orbs",
+    "spatialAwareness": "Rumslig medvetenhet",
+    "hiddenMessages": "Dolda meddelanden"
+  },
+  "chunkGrid": {
+    "title": "Chunk Grid",
+    "content": "Växla rutnätsöverlagring för bitgränser"
   }
 }

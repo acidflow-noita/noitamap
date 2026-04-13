@@ -62,20 +62,21 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   seedInput.type = "text";
   seedInput.inputMode = "numeric";
   seedInput.pattern = "[0-9]*";
+  seedInput.maxLength = 10;
+  seedInput.size = 10;
   seedInput.className = "form-control form-control-sm";
   seedInput.setAttribute("data-i18n-placeholder", "dynamicMap.placeholder");
   seedInput.placeholder = i18next.t("dynamicMap.placeholder");
   // Popover -- title is the section, content is set dynamically by updateSeedTooltip()
   seedInput.setAttribute("data-bs-toggle", "popover");
   seedInput.setAttribute("data-bs-placement", "bottom");
-  seedInput.setAttribute("data-bs-trigger", "hover focus");
+  seedInput.setAttribute("data-bs-trigger", "hover");
   seedInput.setAttribute("data-bs-title", i18next.t("dynamicMap.placeholder"));
   seedInput.setAttribute("data-bs-content", i18next.t("dynamicMap.seedTooltipCustom"));
   seedInput.addEventListener("keydown", (ev) => {
     if (ev.key === "Enter") onGenerateClick();
   });
   seedInput.addEventListener("input", () => {
-    // Strip non-numeric characters
     if (seedInput) {
       seedInput.value = seedInput.value.replace(/\D/g, "");
       seedInput.classList.remove("seed-daily");
@@ -208,7 +209,21 @@ export function updateDynamicUIVisibility(currentMap: string): void {
       const key = toggler.dataset.overlayKey;
       const shouldHide = isDynamic && !dynamicOverlayKeys.has(key || "");
       toggler.classList.toggle("d-none", shouldHide);
-      if (label) label.classList.toggle("d-none", shouldHide);
+      if (label) {
+        label.classList.toggle("d-none", shouldHide);
+        // Reset any previously set border-radius
+        label.style.borderRadius = "";
+      }
+    }
+
+    // Fix btn-group border-radius on first/last visible labels
+    const visibleLabels = overlaySelector.querySelectorAll<HTMLLabelElement>("label.btn:not(.d-none)");
+    if (visibleLabels.length > 0) {
+      const r = "var(--bs-border-radius)";
+      visibleLabels[0].style.borderTopLeftRadius = r;
+      visibleLabels[0].style.borderBottomLeftRadius = r;
+      visibleLabels[visibleLabels.length - 1].style.borderTopRightRadius = r;
+      visibleLabels[visibleLabels.length - 1].style.borderBottomRightRadius = r;
     }
   }
 
@@ -359,7 +374,7 @@ export function hideLoadingStrip(): void {
 
 export function setDynamicUISeed(seed: number, isDaily: boolean): void {
   if (seedInput) {
-    seedInput.value = ""; // Force clear first to prevent any visual appending bugs
+    seedInput.value = "";
     seedInput.value = String(seed);
     seedInput.classList.toggle("seed-daily", isDaily);
     updateSeedTooltip(isDaily);

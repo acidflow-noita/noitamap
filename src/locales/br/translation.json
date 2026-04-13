@@ -2,7 +2,9 @@
   "search": {
     "placeholder": "Encontrar feitiços, itens, chefes, lugares…",
     "indexing": "Carregando dados...",
-    "indexingHint": "Voce pode navegar pelo mapa enquanto os dados carregam"
+    "indexingHint": "Voce pode navegar pelo mapa enquanto os dados carregam",
+    "popoverTitle": "Procurar",
+    "popoverContent": "Procure feitiços, itens, varinhas, chefes, criaturas, poções, estruturas e muito mais. Use os botões de filtro abaixo para restringir os resultados por categoria."
   },
   "spell_prefix": "Feitiço",
   "tiers_prefix": "Níveis",
@@ -4606,5 +4608,39 @@
   "privacyBrowser": {
     "title": "Navegador de privacidade detectado",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
+  },
+  "searchFilters": {
+    "wands": "Filtre os resultados para mostrar apenas varinhas",
+    "spells": "Filtre os resultados para mostrar apenas feitiços",
+    "items": "Filtre os resultados para mostrar apenas itens",
+    "chests": "Filtre os resultados para mostrar apenas baús",
+    "holyMountains": "Filtre os resultados para mostrar apenas as lojas da Montanha Sagrada",
+    "potions": "Filtre os resultados para mostrar apenas poções",
+    "hearts": "Filtre os resultados para mostrar apenas corações",
+    "bosses": "Filtre os resultados para mostrar apenas os chefes",
+    "creatures": "Filtre os resultados para mostrar apenas criaturas",
+    "structures": "Filtre os resultados para mostrar apenas estruturas",
+    "orbs": "Filtre os resultados para mostrar apenas orbes",
+    "spatialAwareness": "Filtre os resultados para mostrar apenas pontos de consciência espacial",
+    "hiddenMessages": "Filtre os resultados para mostrar apenas mensagens ocultas"
+  },
+  "filterLabels": {
+    "wands": "Varinhas",
+    "spells": "Feitiços",
+    "items": "Unid",
+    "chests": "Baús",
+    "holyMountains": "Montanha Sagrada",
+    "potions": "Poções e Frascos",
+    "hearts": "PV máximo extra",
+    "bosses": "Chefes",
+    "creatures": "Inimigos",
+    "structures": "Estruturas",
+    "orbs": "Orbes",
+    "spatialAwareness": "Consciência Espacial",
+    "hiddenMessages": "Mensagens ocultas"
+  },
+  "chunkGrid": {
+    "title": "Grade de pedaços",
+    "content": "Alternar sobreposição de grade de limites de blocos"
   }
 }

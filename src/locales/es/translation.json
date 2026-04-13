@@ -2,7 +2,9 @@
   "search": {
     "placeholder": "Buscar hechizos, objetos, jefes, lugares…",
     "indexing": "Cargando datos...",
-    "indexingHint": "Puedes navegar por el mapa mientras se cargan los datos"
+    "indexingHint": "Puedes navegar por el mapa mientras se cargan los datos",
+    "popoverTitle": "Buscar",
+    "popoverContent": "Busque hechizos, objetos, varitas, jefes, criaturas, pociones, estructuras y más. Utilice los botones de filtro a continuación para limitar los resultados por categoría."
   },
   "spell_prefix": "Hechizo",
   "tiers_prefix": "Niveles",
@@ -4606,5 +4608,39 @@
   "privacyBrowser": {
     "title": "Navegador de privacidad detectado",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
+  },
+  "searchFilters": {
+    "wands": "Filtrar resultados para mostrar solo varitas",
+    "spells": "Filtrar resultados para mostrar solo hechizos",
+    "items": "Filtrar resultados para mostrar solo elementos",
+    "chests": "Filtrar resultados para mostrar solo cofres",
+    "holyMountains": "Filtrar resultados para mostrar solo tiendas de Holy Mountain",
+    "potions": "Filtrar resultados para mostrar solo pociones",
+    "hearts": "Filtrar resultados para mostrar solo corazones",
+    "bosses": "Filtrar resultados para mostrar solo jefes",
+    "creatures": "Filtrar resultados para mostrar solo criaturas",
+    "structures": "Filtrar resultados para mostrar solo estructuras",
+    "orbs": "Filtrar resultados para mostrar solo orbes",
+    "spatialAwareness": "Filtrar resultados para mostrar solo puntos de conciencia espacial",
+    "hiddenMessages": "Filtrar resultados para mostrar solo mensajes ocultos"
+  },
+  "filterLabels": {
+    "wands": "varitas",
+    "spells": "Hechizos",
+    "items": "Elementos",
+    "chests": "Cofres",
+    "holyMountains": "Montaña Sagrada",
+    "potions": "Pociones y frascos",
+    "hearts": "PS máx. adicionales",
+    "bosses": "jefes",
+    "creatures": "Enemigos",
+    "structures": "Estructuras",
+    "orbs": "Orbes",
+    "spatialAwareness": "Conciencia espacial",
+    "hiddenMessages": "Mensajes ocultos"
+  },
+  "chunkGrid": {
+    "title": "Cuadricula de chunks",
+    "content": "Alternar superposición de cuadrícula de límites de fragmentos"
   }
 }

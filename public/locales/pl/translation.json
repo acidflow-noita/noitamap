@@ -2,7 +2,9 @@
   "search": {
     "placeholder": "Znajdź zaklęcia, przedmioty, bossy, miejsca…",
     "indexing": "Ladowanie danych...",
-    "indexingHint": "Mozesz przegladac mape podczas ladowania danych"
+    "indexingHint": "Mozesz przegladac mape podczas ladowania danych",
+    "popoverTitle": "Szukaj",
+    "popoverContent": "Szukaj zaklęć, przedmiotów, różdżek, bossów, stworzeń, mikstur, struktur i nie tylko. Użyj poniższych przycisków filtrowania, aby zawęzić wyniki według kategorii."
   },
   "spell_prefix": "Zaklęcie",
   "tiers_prefix": "Poziomy",
@@ -4606,5 +4608,39 @@
   "privacyBrowser": {
     "title": "Wykryto przegladarke prywatnosci",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
+  },
+  "searchFilters": {
+    "wands": "Filtruj wyniki, aby wyświetlić tylko różdżki",
+    "spells": "Filtruj wyniki, aby wyświetlić tylko zaklęcia",
+    "items": "Filtruj wyniki, aby wyświetlić tylko elementy",
+    "chests": "Filtruj wyniki, aby wyświetlić tylko skrzynie",
+    "holyMountains": "Filtruj wyniki, aby wyświetlić tylko sklepy Holy Mountain",
+    "potions": "Filtruj wyniki, aby wyświetlić tylko mikstury",
+    "hearts": "Filtruj wyniki, aby wyświetlić tylko serca",
+    "bosses": "Filtruj wyniki, aby wyświetlić tylko bossów",
+    "creatures": "Filtruj wyniki, aby wyświetlić tylko stworzenia",
+    "structures": "Filtruj wyniki, aby wyświetlić tylko struktury",
+    "orbs": "Filtruj wyniki, aby wyświetlić tylko kule",
+    "spatialAwareness": "Filtruj wyniki, aby wyświetlić tylko punkty świadomości przestrzennej",
+    "hiddenMessages": "Filtruj wyniki, aby wyświetlić tylko ukryte wiadomości"
+  },
+  "filterLabels": {
+    "wands": "Różdżki",
+    "spells": "Zaklęcia",
+    "items": "Rzeczy",
+    "chests": "Skrzynie",
+    "holyMountains": "Święta Góra",
+    "potions": "Mikstury i Flaszki",
+    "hearts": "Dodatkowe maksimum PZ",
+    "bosses": "Szefowie",
+    "creatures": "Wrogowie",
+    "structures": "Struktury",
+    "orbs": "Kule",
+    "spatialAwareness": "Świadomość przestrzenna",
+    "hiddenMessages": "Ukryte wiadomości"
+  },
+  "chunkGrid": {
+    "title": "Siatka kawałków",
+    "content": "Przełącz nakładkę siatki granic porcji"
   }
 }

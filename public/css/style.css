@@ -22,7 +22,7 @@ html {
 
 .navbar.mapNavbar {
   background-color: oklch(12.9% 0.042 264.695) !important;
-  border-bottom: 1px solid #1e293b; /* slate-800 */
+  border-bottom: 1px solid #334155; /* slate-700 */
 }
 
 /* ── UI Facelift: soften aggressive outlines (Tailwind 4 palette) ──────── */
@@ -148,17 +148,33 @@ html {
   --accent-color: #14b8a6; /* teal-500 */
   --accent-bg: #14b8a622; /* teal-500 / 13% */
 
+  /* Override Bootstrap font stack so all components (popovers, tooltips, etc.) use Inter */
+  --bs-body-font-family: Inter, sans-serif;
+  --bs-font-sans-serif: Inter, sans-serif;
   font-family: Inter, sans-serif;
   font-feature-settings:
-    "liga" 1,
-    "calt" 1,
-    "dlig",
-    "ss01",
-    "ss02";
+    "liga" 1, /* standard ligatures */
+    "calt" 1, /* contextual alternates */
+    "dlig" 1, /* discretionary ligatures */
+    "case" 1, /* case-sensitive forms */
+    "ss01" 1, /* open digits */
+    "ss02" 1, /* ambiguous characters */
+    "ss03" 1, /* lowercase r curves */
+    "ss04" 1, /* disambiguation */
+    "cv01" 1, /* alt 1 */
+    "cv02" 1, /* alt 2 */
+    "cv03" 1, /* alt 3 */
+    "cv04" 1, /* alt 4 */
+    "cv09" 1, /* flat-top 6/9 */
+    "cv10" 1, /* alt G */
+    "zero" 1, /* slashed zero */
+    "tnum" 1; /* tabular numerals */
 }
 
 @supports (font-variation-settings: normal) {
   :root {
+    --bs-body-font-family: InterVariable, sans-serif;
+    --bs-font-sans-serif: InterVariable, sans-serif;
     font-family: InterVariable, sans-serif;
   }
 }
@@ -545,6 +561,7 @@ body.toggle-hidden div.osOverlayHighlight {
   padding: 0.25rem 0.5rem; /* Match btn-sm padding */
 }
 
+
 /* Fix inconsistent gaps between menu elements */
 .navbar .d-flex > * {
   margin: 0.25rem !important;
@@ -732,7 +749,9 @@ body.toggle-hidden div.osOverlayHighlight {
 
 /* Seed input -- daily seed colored, custom seed white */
 #dynamicSeedInput {
-  width: 110px;
+  width: auto !important;
+  font-feature-settings: "tnum" 1, "zero" 1, "ss01" 1, "ss02" 1, "cv01" 1, "cv02" 1, "cv03" 1, "cv04" 1, "cv09" 1;
+  letter-spacing: 0.5px;
 }
 
 #dynamicSeedInput.seed-daily {
@@ -753,7 +772,7 @@ body.toggle-hidden div.osOverlayHighlight {
 
 #map-loading-strip {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 1.5vh);
   left: 5%;
   right: 5%;
   z-index: 1040;
@@ -761,7 +780,7 @@ body.toggle-hidden div.osOverlayHighlight {
   display: none; /* toggled by JS */
   opacity: 0;
   transition: opacity 0.35s ease;
-  border-radius: 0 0 8px 8px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -793,10 +812,9 @@ body.toggle-hidden div.osOverlayHighlight {
   align-items: center;
   gap: 10px;
   padding: 8px 16px;
-  background: rgba(10, 12, 18, 0.78);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: oklch(12.9% 0.042 264.695); /* same as .navbar.mapNavbar */
+  border: 1px solid #334155; /* slate-700 */
+  border-radius: 8px;
 }
 
 .loading-strip-phase {

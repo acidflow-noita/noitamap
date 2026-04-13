@@ -442,18 +442,19 @@ export class UnifiedSearchResults extends EventEmitter2 {
                 }
               }
             }
-              if ((result as any).chunksAway !== null) {
-                const chunksAway = (result as any).chunksAway as number;
-                const proximitySpan = document.createElement("span");
-                proximitySpan.className = "ms-2 text-secondary proximity-hint";
-                proximitySpan.style.fontSize = "0.8em";
-                proximitySpan.textContent = `~${chunksAway} chunks away`;
-                nameDiv.appendChild(proximitySpan);
-              }
             } else {
               nameDiv.textContent = displayName;
             }
             contentDiv.appendChild(nameDiv);
+
+            if ((result as any).chunksAway !== null) {
+              const chunksAway = (result as any).chunksAway as number;
+              const proximitySpan = document.createElement("span");
+              proximitySpan.className = "ms-2 text-secondary proximity-hint";
+              proximitySpan.style.fontSize = "0.8em";
+              proximitySpan.textContent = `~${chunksAway} chunks away`;
+              contentDiv.appendChild(proximitySpan);
+            }
 
             // English name on second line if not in English and different
             if (!isSpoilerFree() && currentLang !== "en" && displayName !== result.name) {

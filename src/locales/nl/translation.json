@@ -2,7 +2,9 @@
   "search": {
     "placeholder": "Vind spreuken, items, bazen, plaatsen…",
     "indexing": "Gegevens laden...",
-    "indexingHint": "Je kunt de kaart verkennen terwijl de gegevens laden"
+    "indexingHint": "Je kunt de kaart verkennen terwijl de gegevens laden",
+    "popoverTitle": "Zoekopdracht",
+    "popoverContent": "Zoek naar spreuken, items, toverstokken, bazen, wezens, drankjes, structuren en meer. Gebruik de onderstaande filterknoppen om de resultaten per categorie te verfijnen."
   },
   "spell_prefix": "Spreuk",
   "tiers_prefix": "Niveaus",
@@ -4606,5 +4608,39 @@
   "privacyBrowser": {
     "title": "Privacybrowser gedetecteerd",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
+  },
+  "searchFilters": {
+    "wands": "Filter de resultaten om alleen toverstokken weer te geven",
+    "spells": "Filter de resultaten om alleen spreuken weer te geven",
+    "items": "Filter de resultaten om alleen items weer te geven",
+    "chests": "Filter de resultaten om alleen kisten weer te geven",
+    "holyMountains": "Filter de resultaten om alleen Holy Mountain-winkels weer te geven",
+    "potions": "Filter de resultaten om alleen drankjes weer te geven",
+    "hearts": "Filter de resultaten om alleen harten weer te geven",
+    "bosses": "Filter de resultaten om alleen bazen weer te geven",
+    "creatures": "Filter de resultaten om alleen wezens weer te geven",
+    "structures": "Filter de resultaten om alleen structuren weer te geven",
+    "orbs": "Filter de resultaten om alleen lichtbollen weer te geven",
+    "spatialAwareness": "Filter de resultaten om alleen ruimtelijke bewustzijnspunten weer te geven",
+    "hiddenMessages": "Filter de resultaten om alleen verborgen berichten weer te geven"
+  },
+  "filterLabels": {
+    "wands": "Toverstokken",
+    "spells": "Spreuken",
+    "items": "Artikelen",
+    "chests": "Kisten",
+    "holyMountains": "Heilige bergen",
+    "potions": "Drankjes en kolven",
+    "hearts": "Harten en genezingen",
+    "bosses": "Bazen",
+    "creatures": "Wezens",
+    "structures": "Structuren",
+    "orbs": "Orbs",
+    "spatialAwareness": "Ruimtelijk bewustzijn",
+    "hiddenMessages": "Verborgen berichten"
+  },
+  "chunkGrid": {
+    "title": "Chunk-raster",
+    "content": "Schakel de rasteroverlay van blokgrenzen in of uit"
   }
 }

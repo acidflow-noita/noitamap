@@ -2,7 +2,9 @@
   "search": {
     "placeholder": "Zauber, Gegenstände, Bosse, Orte finden…",
     "indexing": "Daten werden geladen...",
-    "indexingHint": "Du kannst die Karte erkunden, wahrend die Daten geladen werden"
+    "indexingHint": "Du kannst die Karte erkunden, wahrend die Daten geladen werden",
+    "popoverTitle": "Suchen",
+    "popoverContent": "Suchen Sie nach Zaubersprüchen, Gegenständen, Zauberstäben, Bossen, Kreaturen, Tränken, Strukturen und mehr. Verwenden Sie die Filterschaltflächen unten, um die Ergebnisse nach Kategorie einzugrenzen."
   },
   "spell_prefix": "Zauber",
   "tiers_prefix": "Stufen",
@@ -4606,5 +4608,39 @@
   "privacyBrowser": {
     "title": "Datenschutz-Browser erkannt",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
+  },
+  "searchFilters": {
+    "wands": "Filtern Sie die Ergebnisse, um nur Zauberstäbe anzuzeigen",
+    "spells": "Filtern Sie die Ergebnisse, um nur Zauber anzuzeigen",
+    "items": "Filtern Sie die Ergebnisse, um nur Artikel anzuzeigen",
+    "chests": "Filtern Sie die Ergebnisse, um nur Truhen anzuzeigen",
+    "holyMountains": "Filtern Sie die Ergebnisse, um nur Geschäfte in Holy Mountain anzuzeigen",
+    "potions": "Filtern Sie die Ergebnisse, um nur Tränke anzuzeigen",
+    "hearts": "Filtern Sie die Ergebnisse, um nur Herzen anzuzeigen",
+    "bosses": "Filtern Sie die Ergebnisse, um nur Bosse anzuzeigen",
+    "creatures": "Filtern Sie die Ergebnisse, um nur Kreaturen anzuzeigen",
+    "structures": "Filtern Sie die Ergebnisse, um nur Strukturen anzuzeigen",
+    "orbs": "Filtern Sie die Ergebnisse, um nur Kugeln anzuzeigen",
+    "spatialAwareness": "Filtern Sie die Ergebnisse, um nur räumliche Wahrnehmungspunkte anzuzeigen",
+    "hiddenMessages": "Filtern Sie die Ergebnisse, um nur ausgeblendete Nachrichten anzuzeigen"
+  },
+  "filterLabels": {
+    "wands": "Zauberstäbe",
+    "spells": "Zauber",
+    "items": "Artikel",
+    "chests": "Truhen",
+    "holyMountains": "Heiliger Berg",
+    "potions": "Tränke und Fläschchen",
+    "hearts": "Erhöhte max. LP",
+    "bosses": "Bosse",
+    "creatures": "Feinde",
+    "structures": "Strukturen",
+    "orbs": "Kugeln",
+    "spatialAwareness": "Raumbewusstsein",
+    "hiddenMessages": "Versteckte Nachrichten"
+  },
+  "chunkGrid": {
+    "title": "Chunk-Gitter",
+    "content": "Schalten Sie die Rasterüberlagerung der Blockgrenzen um"
   }
 }

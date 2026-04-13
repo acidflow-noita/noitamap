@@ -2,7 +2,9 @@
   "search": {
     "placeholder": "Trova incantesimi, oggetti, boss, luoghi…",
     "indexing": "Caricamento dati...",
-    "indexingHint": "Puoi navigare la mappa mentre i dati vengono caricati"
+    "indexingHint": "Puoi navigare la mappa mentre i dati vengono caricati",
+    "popoverTitle": "Ricerca",
+    "popoverContent": "Cerca incantesimi, oggetti, bacchette, boss, creature, pozioni, strutture e altro ancora. Utilizza i pulsanti filtro qui sotto per restringere i risultati per categoria."
   },
   "spell_prefix": "Incantesimo",
   "tiers_prefix": "Livelli",
@@ -4606,5 +4608,39 @@
   "privacyBrowser": {
     "title": "Browser per la privacy rilevato",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
+  },
+  "searchFilters": {
+    "wands": "Filtra i risultati per mostrare solo le bacchette",
+    "spells": "Filtra i risultati per mostrare solo gli incantesimi",
+    "items": "Filtra i risultati per mostrare solo gli elementi",
+    "chests": "Filtra i risultati per mostrare solo i forzieri",
+    "holyMountains": "Filtra i risultati per mostrare solo i negozi della Montagna Sacra",
+    "potions": "Filtra i risultati per mostrare solo le pozioni",
+    "hearts": "Filtra i risultati per mostrare solo i cuori",
+    "bosses": "Filtra i risultati per mostrare solo i capi",
+    "creatures": "Filtra i risultati per mostrare solo le creature",
+    "structures": "Filtra i risultati per mostrare solo le strutture",
+    "orbs": "Filtra i risultati per mostrare solo le sfere",
+    "spatialAwareness": "Filtra i risultati per mostrare solo i punti di consapevolezza spaziale",
+    "hiddenMessages": "Filtra i risultati per mostrare solo i messaggi nascosti"
+  },
+  "filterLabels": {
+    "wands": "Bacchette",
+    "spells": "Incantesimi",
+    "items": "Elementi",
+    "chests": "Forzieri",
+    "holyMountains": "Montagna Sacra",
+    "potions": "Pozioni e boccette",
+    "hearts": "PS massimi extra",
+    "bosses": "Boss",
+    "creatures": "Nemici",
+    "structures": "Strutture",
+    "orbs": "Sfere",
+    "spatialAwareness": "Consapevolezza spaziale",
+    "hiddenMessages": "Messaggi nascosti"
+  },
+  "chunkGrid": {
+    "title": "Griglia a blocchi",
+    "content": "Attiva/disattiva la sovrapposizione della griglia dei limiti dei blocchi"
   }
 }

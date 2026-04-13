@@ -94,6 +94,7 @@ import { initKonamiCode } from "./konami";
 import { AuthUI } from "./auth/auth-ui";
 import { authService } from "./auth/auth-service";
 import { DrawingUI } from "./drawing/drawing-ui";
+import { initChunkGrid, showChunkGrid } from "./drawing/chunk-grid";
 
 // Global reference to unified search for translation updates
 let globalUnifiedSearch: UnifiedSearch | null = null;
@@ -258,6 +259,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   globalApp = app;
   console.log(`[Noitamap] Active OSD drawer: ${(app.osd as any).drawer?.getType?.() ?? storedRenderer}`);
+
+  // Chunk grid toggle
+  initChunkGrid(app.osd.viewer);
+  const chunkGridToggler = document.getElementById("chunkGridToggler") as HTMLInputElement | null;
+  if (chunkGridToggler) {
+    chunkGridToggler.addEventListener("change", () => showChunkGrid(chunkGridToggler.checked));
+  }
 
   let initialSearchQuery = urlState.query;
   let initialTargetPoiId = urlState.targetPoiId;
@@ -667,11 +675,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   addEventListenerForId("overlay-selector", "click", handleOverlayToggle);
-
-  // Standalone overlay toggles outside #overlay-selector (e.g. biome boundaries)
-  document.querySelectorAll<HTMLInputElement>("input.overlayToggler:not(#overlay-selector input)").forEach((el) => {
-    el.addEventListener("change", handleOverlayToggle);
-  });
 
   // Dismiss any lingering popovers left over from a pre-reload state
   document.querySelectorAll('.popover').forEach((el: Element) => el.remove());

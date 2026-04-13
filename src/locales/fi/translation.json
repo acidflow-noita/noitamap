@@ -2,7 +2,9 @@
   "search": {
     "placeholder": "Etsi loitsuja, esineitä, pommoja, paikkoja…",
     "indexing": "Ladataan tietoja...",
-    "indexingHint": "Voit selata karttaa tietojen latauksen aikana"
+    "indexingHint": "Voit selata karttaa tietojen latauksen aikana",
+    "popoverTitle": "Haku",
+    "popoverContent": "Etsi loitsuja, esineitä, sauvoja, pomoja, olentoja, juomia, rakenteita ja muuta. Käytä alla olevia suodatinpainikkeita rajataksesi tuloksia luokittain."
   },
   "spell_prefix": "Loitsu",
   "tiers_prefix": "Tasot",
@@ -4606,5 +4608,39 @@
   "privacyBrowser": {
     "title": "Yksityisyysselain havaittu",
     "message": "Your browser's canvas fingerprint protection is active. The dynamic map is running in a software compatibility mode with degraded performance. For the best experience, please use Chrome, Firefox, or Edge."
+  },
+  "searchFilters": {
+    "wands": "Suodata tulokset näyttämään vain sauvat",
+    "spells": "Suodata tulokset näyttämään vain loitsuja",
+    "items": "Suodata tulokset näyttääksesi vain kohteet",
+    "chests": "Suodata tulokset näyttämään vain arkut",
+    "holyMountains": "Suodata tulokset näyttääksesi vain Holy Mountainin kaupat",
+    "potions": "Suodata tulokset näyttääksesi vain juomat",
+    "hearts": "Suodata tulokset näyttämään vain sydämet",
+    "bosses": "Suodata tulokset näyttämään vain pomot",
+    "creatures": "Suodata tulokset näyttääksesi vain olennot",
+    "structures": "Suodata tulokset näyttääksesi vain rakenteet",
+    "orbs": "Suodata tulokset näyttääksesi vain pallot",
+    "spatialAwareness": "Suodata tulokset näyttääksesi vain tilatietoisuuspisteet",
+    "hiddenMessages": "Suodata tulokset näyttääksesi vain piilotetut viestit"
+  },
+  "filterLabels": {
+    "wands": "sauvat",
+    "spells": "Loitsuja",
+    "items": "Tuotteet",
+    "chests": "Arkut",
+    "holyMountains": "Pyhät vuoret",
+    "potions": "Juoma ja pullot",
+    "hearts": "Sydämiä & parantaa",
+    "bosses": "Pomot",
+    "creatures": "olentoja",
+    "structures": "Rakenteet",
+    "orbs": "Orbs",
+    "spatialAwareness": "Tilatietoisuus",
+    "hiddenMessages": "Piilotetut viestit"
+  },
+  "chunkGrid": {
+    "title": "Osittainen verkko",
+    "content": "Ota lohkorajojen ruudukon peitto päälle/pois"
   }
 }

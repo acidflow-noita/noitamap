@@ -2,7 +2,39 @@
   "search": {
     "placeholder": "Find spells, items, bosses, places…",
     "indexing": "Loading data...",
-    "indexingHint": "You can navigate the map while data is loading"
+    "indexingHint": "You can navigate the map while data is loading",
+    "popoverTitle": "Search",
+    "popoverContent": "Search for spells, items, wands, bosses, creatures, potions, structures, and more. Use the filter buttons below to narrow results by category."
+  },
+  "searchFilters": {
+    "wands": "Filter results to show only wands",
+    "spells": "Filter results to show only spells",
+    "items": "Filter results to show only items",
+    "chests": "Filter results to show only chests",
+    "holyMountains": "Filter results to show only Holy Mountain shops",
+    "potions": "Filter results to show only potions",
+    "hearts": "Filter results to show only hearts",
+    "bosses": "Filter results to show only bosses",
+    "creatures": "Filter results to show only creatures",
+    "structures": "Filter results to show only structures",
+    "orbs": "Filter results to show only orbs",
+    "spatialAwareness": "Filter results to show only spatial awareness points",
+    "hiddenMessages": "Filter results to show only hidden messages"
+  },
+  "filterLabels": {
+    "wands": "Wands",
+    "spells": "Spells",
+    "items": "Items",
+    "chests": "Chests",
+    "holyMountains": "Holy Mountains",
+    "potions": "Potions & Flasks",
+    "hearts": "Hearts & Heals",
+    "bosses": "Bosses",
+    "creatures": "Enemies",
+    "structures": "Structures",
+    "orbs": "Orbs",
+    "spatialAwareness": "Spatial Awareness",
+    "hiddenMessages": "Hidden Messages"
   },
   "spell_prefix": "Spell",
   "tiers_prefix": "Tiers",
@@ -99,6 +131,10 @@
   "biomeBoundaries": {
     "title": "Biome Boundaries",
     "content": "Toggle biome boundaries overlay"
+  },
+  "chunkGrid": {
+    "title": "Chunk Grid",
+    "content": "Toggle chunk boundaries grid overlay"
   },
   "hiddenMessages": {
     "title": "Hidden Messages",
