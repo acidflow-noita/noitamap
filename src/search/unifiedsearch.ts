@@ -465,11 +465,10 @@ export class UnifiedSearch extends EventEmitter2 {
   // Method to refresh search results with new translations
   refreshTranslations() {
     this.refreshFilterTranslations();
-    if (this.searchInput.value.trim() !== "") {
-      // Force update by clearing lastSearchText and calling updateSearchResults
-      this.lastSearchText = "";
-      this.updateSearchResults();
-    }
+    
+    // Force update by ignoring last search state
+    this.lastSearchText = "__force__";
+    this.updateSearchResults();
   }
 
   /** Force a full re-render of search results (e.g. when spoiler-free toggles). */
@@ -726,7 +725,7 @@ export class UnifiedSearch extends EventEmitter2 {
       atlasKey?: string;
     }> = isDynamicMap
       ? [
-          { type: "w", atlasKey: "wand:custom/good_01" },
+          { type: "w", atlasKey: "wand:handgun" },
           { type: "s", atlasKey: "spell:mana" },
           { type: "i", atlasKey: "item:wandstone" },
           { type: "c", atlasKey: "item:chest_random_super" },
@@ -822,10 +821,8 @@ export class UnifiedSearch extends EventEmitter2 {
       }
       filterIcon.alt = "";
       filterIcon.classList.add("pixelated-image");
+      if (filter.type === "w") filterIcon.classList.add("filter-wand");
       filterIcon.draggable = false;
-      if (filter.type === "w") {
-        filterIcon.style.transform = "rotate(90deg)";
-      }
       filterLabel.appendChild(filterIcon);
       filterBox.appendChild(filterLabel);
     }
@@ -876,6 +873,39 @@ export class UnifiedSearch extends EventEmitter2 {
 
     searchInput.addEventListener("blur", hideOverlay);
     overlayDiv.addEventListener("blur", hideOverlay);
+
+    // Close overlay when clicking outside
+    // Use capture phase to intercept pointerdown before OpenSeadragon stops propagation
+    document.addEventListener("pointerdown", (e) => {
+      if (isOverlayVisible && !overlayDiv.contains(e.target as Node) && e.target !== searchInput) {
+        overlayDiv.style.display = "none";
+        isOverlayVisible = false;
+        searchInput.blur();
+      }
+    }, true);
+
+    // Close overlay when language changes
+    i18next.on("languageChanged", () => {
+      overlayDiv.style.display = "none";
+      isOverlayVisible = false;
+      searchInput.blur();
+    });
+
+    // Close overlay when clicking outside, use capture to bypass OpenSeadragon swallowing pointer events
+    document.addEventListener("pointerdown", (e) => {
+      if (isOverlayVisible && !overlayDiv.contains(e.target as Node) && e.target !== searchInput) {
+        overlayDiv.style.display = "none";
+        isOverlayVisible = false;
+        searchInput.blur();
+      }
+    }, true);
+
+    // Close overlay when language changes
+    i18next.on("languageChanged", () => {
+      overlayDiv.style.display = "none";
+      isOverlayVisible = false;
+      searchInput.blur();
+    });
 
     window.addEventListener("resize", () => {
       if (isOverlayVisible) positionOverlay();

@@ -62,12 +62,14 @@ export function updateTranslations() {
     new bootstrap.Tooltip(tooltipTriggerEl);
   });
 
-  // Update map link translations
-  updateMapLinkTranslations();
+  setTimeout(() => {
+    // Update map link translations
+    updateMapLinkTranslations();
 
-  // Update overlay popup translations
-  refreshOverlayTranslations();
+    // Update overlay popup translations
+    refreshOverlayTranslations();
 
-  // Update search results translations
-  refreshSearchTranslations();
+    // Update search results translations
+    refreshSearchTranslations();
+  }, 50);
 }

@@ -645,7 +645,7 @@ export class UnifiedSearch extends EventEmitter2 {
       atlasKey?: string;
     }> = isDynamicMap
       ? [
-          { type: "wands", atlasKey: "wand:custom/good_01" },
+          { type: "wands", atlasKey: "wand:handgun" },
           { type: "spells", atlasKey: "spell:mana" },
           { type: "items", atlasKey: "item:wandstone" },
           { type: "chests", atlasKey: "item:chest_random_super" },
@@ -718,9 +718,6 @@ export class UnifiedSearch extends EventEmitter2 {
       filterIcon.alt = "";
       filterIcon.classList.add("pixelated-image");
       filterIcon.draggable = false;
-      if (filter.type === "wands") {
-        filterIcon.style.transform = "rotate(90deg)";
-      }
       filterLabel.appendChild(filterIcon);
       filterBox.appendChild(filterLabel);
     }
@@ -767,6 +764,14 @@ export class UnifiedSearch extends EventEmitter2 {
 
     searchInput.addEventListener("blur", hideOverlay);
     overlayDiv.addEventListener("blur", hideOverlay);
+
+    // Close overlay when clicking outside
+    document.addEventListener("click", (e) => {
+      if (isOverlayVisible && !overlayDiv.contains(e.target as Node) && e.target !== searchInput) {
+        overlayDiv.style.display = "none";
+        isOverlayVisible = false;
+      }
+    });
 
     window.addEventListener("resize", () => {
       if (isOverlayVisible) positionOverlay();

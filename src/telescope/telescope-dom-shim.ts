@@ -210,30 +210,34 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
  * raw data using pure-JS `fast-png`, bypassing the browser canvas extraction blocker.
  */
 function installCanvasFingerprintBypass() {
-  const origOffscreenPutImageData = OffscreenCanvasRenderingContext2D.prototype.putImageData;
-  OffscreenCanvasRenderingContext2D.prototype.putImageData = function (imageData: ImageData, dx: number, dy: number) {
-    if (dx === 0 && dy === 0) {
-      // Clone the data — telescope may reuse/mutate the same ImageData buffer
-      (this.canvas as any).__noitamap_rawImageData = new ImageData(
-        new Uint8ClampedArray(imageData.data),
-        imageData.width,
-        imageData.height,
-      );
-    }
-    return (origOffscreenPutImageData as any).apply(this, arguments as any);
-  };
+  if (typeof OffscreenCanvasRenderingContext2D !== "undefined") {
+    const origOffscreenPutImageData = OffscreenCanvasRenderingContext2D.prototype.putImageData;
+    OffscreenCanvasRenderingContext2D.prototype.putImageData = function (imageData: ImageData, dx: number, dy: number) {
+      if (dx === 0 && dy === 0) {
+        // Clone the data — telescope may reuse/mutate the same ImageData buffer
+        (this.canvas as any).__noitamap_rawImageData = new ImageData(
+          new Uint8ClampedArray(imageData.data),
+          imageData.width,
+          imageData.height,
+        );
+      }
+      return (origOffscreenPutImageData as any).apply(this, arguments as any);
+    };
+  }
 
-  const origCanvasPutImageData = CanvasRenderingContext2D.prototype.putImageData;
-  CanvasRenderingContext2D.prototype.putImageData = function (imageData: ImageData, dx: number, dy: number) {
-    if (dx === 0 && dy === 0) {
-      (this.canvas as any).__noitamap_rawImageData = new ImageData(
-        new Uint8ClampedArray(imageData.data),
-        imageData.width,
-        imageData.height,
-      );
-    }
-    return (origCanvasPutImageData as any).apply(this, arguments as any);
-  };
+  if (typeof CanvasRenderingContext2D !== "undefined") {
+    const origCanvasPutImageData = CanvasRenderingContext2D.prototype.putImageData;
+    CanvasRenderingContext2D.prototype.putImageData = function (imageData: ImageData, dx: number, dy: number) {
+      if (dx === 0 && dy === 0) {
+        (this.canvas as any).__noitamap_rawImageData = new ImageData(
+          new Uint8ClampedArray(imageData.data),
+          imageData.width,
+          imageData.height,
+        );
+      }
+      return (origCanvasPutImageData as any).apply(this, arguments as any);
+    };
+  }
 
   // ----- Extended Canvas Fingerprinting Bypass for LibreWolf/Safari ITP -----
   // ImageBitmap is non-extensible so we cannot attach arbitrary properties to it.
@@ -285,10 +289,14 @@ function installCanvasFingerprintBypass() {
     };
   }
 
-  OffscreenCanvasRenderingContext2D.prototype.drawImage = shimDrawImage(
-    OffscreenCanvasRenderingContext2D.prototype.drawImage,
-  );
-  CanvasRenderingContext2D.prototype.drawImage = shimDrawImage(CanvasRenderingContext2D.prototype.drawImage);
+  if (typeof OffscreenCanvasRenderingContext2D !== "undefined") {
+    OffscreenCanvasRenderingContext2D.prototype.drawImage = shimDrawImage(
+      OffscreenCanvasRenderingContext2D.prototype.drawImage,
+    );
+  }
+  if (typeof CanvasRenderingContext2D !== "undefined") {
+    CanvasRenderingContext2D.prototype.drawImage = shimDrawImage(CanvasRenderingContext2D.prototype.drawImage);
+  }
 
   function shimGetImageData(origFn: any) {
     return function (this: any, sx: number, sy: number, sw: number, sh: number) {
@@ -300,10 +308,14 @@ function installCanvasFingerprintBypass() {
     };
   }
 
-  OffscreenCanvasRenderingContext2D.prototype.getImageData = shimGetImageData(
-    OffscreenCanvasRenderingContext2D.prototype.getImageData,
-  );
-  CanvasRenderingContext2D.prototype.getImageData = shimGetImageData(CanvasRenderingContext2D.prototype.getImageData);
+  if (typeof OffscreenCanvasRenderingContext2D !== "undefined") {
+    OffscreenCanvasRenderingContext2D.prototype.getImageData = shimGetImageData(
+      OffscreenCanvasRenderingContext2D.prototype.getImageData,
+    );
+  }
+  if (typeof CanvasRenderingContext2D !== "undefined") {
+    CanvasRenderingContext2D.prototype.getImageData = shimGetImageData(CanvasRenderingContext2D.prototype.getImageData);
+  }
 }
 
 // ─── Canvas Fingerprint Detection ────────────────────────────────────────────

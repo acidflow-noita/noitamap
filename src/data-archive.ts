@@ -5,10 +5,11 @@
  */
 import JSZip from "jszip";
 
+const BASE_URL = typeof import.meta !== "undefined" && import.meta.env ? import.meta.env.BASE_URL : "/";
 const ZIP_URLS: Record<string, string> = {
-  main: "./data.zip",
-  pixel_scenes: "./pixel_scenes.zip",
-  wang_tiles: "./wang_tiles.zip",
+  main: BASE_URL + "data.zip",
+  pixel_scenes: BASE_URL + "pixel_scenes.zip",
+  wang_tiles: BASE_URL + "wang_tiles.zip",
 };
 
 const zipPromises: Record<string, Promise<JSZip | null> | null> = {};
@@ -71,9 +72,11 @@ export async function getZip(key: string = "main", silent: boolean = false): Pro
         buf = await response.arrayBuffer();
 
         if (key === "main" && !silent) {
-          window.dispatchEvent(
-            new CustomEvent("dataZipProgress", { detail: { loaded: 100, total: 100, percentage: 100 } }),
-          );
+          if (typeof window !== "undefined" && typeof CustomEvent !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("dataZipProgress", { detail: { loaded: 100, total: 100, percentage: 100 } }),
+            );
+          }
         }
       } else {
         console.log(`[DataArchive] Fetching ${url} from network...`);
@@ -101,11 +104,13 @@ export async function getZip(key: string = "main", silent: boolean = false): Pro
 
             if (key === "main" && !silent) {
               const percentage = Math.min(100, Math.round((loadedBytes / totalBytes) * 100));
-              window.dispatchEvent(
-                new CustomEvent("dataZipProgress", {
-                  detail: { loaded: loadedBytes, total: totalBytes, percentage },
-                }),
-              );
+              if (typeof window !== "undefined" && typeof CustomEvent !== "undefined") {
+                window.dispatchEvent(
+                  new CustomEvent("dataZipProgress", {
+                    detail: { loaded: loadedBytes, total: totalBytes, percentage },
+                  }),
+                );
+              }
             }
           }
         }
@@ -204,7 +209,12 @@ export async function readImageData(path: string, zipKey: string = "main"): Prom
   const blob = await readBlob(path, "image/png", zipKey);
   if (!blob) return null;
   const bitmap = await createImageBitmap(blob);
-  const canvas = document.createElement("canvas");
+  let canvas: any;
+  if (typeof document !== "undefined") {
+    canvas = document.createElement("canvas");
+  } else {
+    canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  }
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
   const ctx = canvas.getContext("2d")!;
@@ -214,13 +224,20 @@ export async function readImageData(path: string, zipKey: string = "main"): Prom
 }
 
 /**
- * Read a PNG from one of the zip archives and return it as an HTMLCanvasElement.
+ * Read a PNG from one of the zip archives and return it as an OffscreenCanvas (worker safe) or HTMLCanvasElement.
  */
-export async function readCanvas(path: string, zipKey: string = "main"): Promise<HTMLCanvasElement | null> {
+export async function readCanvas(path: string, zipKey: string = "main"): Promise<HTMLCanvasElement | OffscreenCanvas | null> {
   const blob = await readBlob(path, "image/png", zipKey);
   if (!blob) return null;
   const bitmap = await createImageBitmap(blob);
-  const canvas = document.createElement("canvas");
+  
+  let canvas: any;
+  if (typeof document !== "undefined") {
+    canvas = document.createElement("canvas");
+  } else {
+    canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  }
+  
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
   const ctx = canvas.getContext("2d", { willReadFrequently: true })!;

@@ -6,6 +6,9 @@ import fs from "fs";
 const isProAvailable = fs.existsSync(resolve(__dirname, "../noitamap-pro/src/pro-entry.ts"));
 
 export default defineConfig({
+  worker: {
+    format: "es",
+  },
   server: {
     fs: {
       allow: [".."],

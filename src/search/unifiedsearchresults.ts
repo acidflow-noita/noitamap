@@ -34,6 +34,15 @@ export class UnifiedSearchResults extends EventEmitter2 {
     this.wrapper = wrapper;
     this.wrapper.innerHTML = "";
     this.bindEvents();
+
+    // Re-translate proximity hints when language changes without recreating elements
+    i18next.on("languageChanged", () => {
+      const proximitySpans = this.wrapper.querySelectorAll(".proximity-hint");
+      proximitySpans.forEach((span) => {
+        const chunksAway = parseInt((span as HTMLElement).dataset.chunksAway || "0", 10);
+        span.textContent = i18next.t("search.chunksAway", "~{{count}} chunks away", { count: chunksAway });
+      });
+    });
   }
 
   /** Efficiently re-sort existing result elements by proximity to (x, y) */
@@ -452,6 +461,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
               const proximitySpan = document.createElement("span");
               proximitySpan.className = "ms-2 text-secondary proximity-hint";
               proximitySpan.style.fontSize = "0.8em";
+              proximitySpan.dataset.chunksAway = chunksAway.toString();
               proximitySpan.textContent = i18next.t("search.chunksAway", "~{{count}} chunks away", { count: chunksAway });
               contentDiv.appendChild(proximitySpan);
             }

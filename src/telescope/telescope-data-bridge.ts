@@ -113,6 +113,8 @@ export function installFetchInterceptor(): void {
  * Decodes PNGs in pure JS to bypass canvas fingerprinting blocks in privacy browsers.
  */
 export function installImageSrcInterceptor(): void {
+  if (typeof HTMLImageElement === "undefined") return;
+  
   const descriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src");
   if (!descriptor || !descriptor.set) return;
 

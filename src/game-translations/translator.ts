@@ -15,13 +15,27 @@ class GameTranslator {
     return originalName;
   }
 
+  private cache = new Map<string, string>();
+
+  constructor() {
+    i18next.on('languageChanged', () => {
+      this.cache.clear();
+    });
+  }
+
   // Generic method for translating any game content type
   translateContent(contentType: string, originalName: string): string {
+    const cacheKey = `${contentType}:${originalName}`;
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey)!;
+    }
+
     // Try to get translation from the current language's gameContent section
     const gameContentKey = `gameContent.${contentType}.${originalName}`;
     const translated = i18next.t(gameContentKey, { defaultValue: null });
 
     if (translated && translated !== gameContentKey) {
+      this.cache.set(cacheKey, translated);
       return translated;
     }
 
@@ -29,6 +43,7 @@ class GameTranslator {
     const uiKey = `gameContent.ui.${originalName}`;
     const uiTranslated = i18next.t(uiKey, { defaultValue: null });
     if (uiTranslated && uiTranslated !== uiKey) {
+      this.cache.set(cacheKey, uiTranslated);
       return uiTranslated;
     }
 
@@ -39,11 +54,13 @@ class GameTranslator {
       const catKey = `gameContent.${cat}.${lowerName}`;
       const catTranslated = i18next.t(catKey, { defaultValue: null });
       if (catTranslated && catTranslated !== catKey) {
+        this.cache.set(cacheKey, catTranslated);
         return catTranslated;
       }
     }
 
     // Fallback to original name
+    this.cache.set(cacheKey, originalName);
     return originalName;
   }
 

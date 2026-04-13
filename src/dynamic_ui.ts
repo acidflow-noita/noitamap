@@ -10,6 +10,7 @@ import { fetchDailySeed } from "./data_sources/daily_seed";
 import { updateURLWithSeed } from "./data_sources/url";
 import { getCurrentDynamicSeed, runDynamicMap } from "./dynamic-map";
 import type { DynamicMapOptions } from "./dynamic-map";
+import { isSpoilerFree } from "./spoiler-free";
 
 const NERD_MODE_URL = "https://lymm37.github.io/noita-telescope/";
 const DYNAMIC_MAP_NAME = "dynamic-main-branch";
@@ -65,6 +66,9 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   seedInput.maxLength = 10;
   seedInput.size = 10;
   seedInput.className = "form-control form-control-sm";
+  if (isSpoilerFree()) {
+    seedInput.style.webkitTextSecurity = "disc";
+  }
   seedInput.setAttribute("data-i18n-placeholder", "dynamicMap.placeholder");
   seedInput.placeholder = i18next.t("dynamicMap.placeholder");
   // Popover -- title is the section, content is set dynamically by updateSeedTooltip()

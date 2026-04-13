@@ -12,6 +12,7 @@ import {
 } from "./telescope-data-bridge";
 import { getDataZip } from "../data-archive";
 import { clearCache } from "./tile-cache";
+import PwWorker from "./pw-worker?worker";
 
 // Telescope modules
 let generateBiomeData: any;
@@ -482,7 +483,38 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   const { NollaPrng } = telescopeMods.nollaPrngMod;
   const { GUN_NAMES } = telescopeMods.wandConfigMod;
 
-  for (const pw of parallelWorlds) {
+  // Split parallel worlds into main (0) and background (-1, 1, etc)
+  const mainWorlds = parallelWorlds.filter((w) => w === 0);
+  const backgroundWorlds = parallelWorlds.filter((w) => w !== 0);
+
+  // Dispatch background worlds to Web Workers to prevent UI thread lock
+  const workerPromises = backgroundWorlds.map((pw) => {
+    return new Promise<{ pw: number; pois: any[]; pixelScenes: any[] }>((resolve, reject) => {
+      const worker = new PwWorker();
+      worker.onmessage = (e) => {
+        if (e.data.success) resolve(e.data);
+        else reject(new Error(e.data.error || "Worker failed"));
+        worker.terminate();
+      };
+      worker.onerror = (err) => {
+        reject(err);
+        worker.terminate();
+      };
+      worker.postMessage({
+        biomeData,
+        tileSpawns,
+        seed,
+        ngPlus,
+        pw,
+        gameMode,
+        perks,
+        skipCosmeticScenes: false
+      });
+    });
+  });
+
+  // Synchronously process main worlds (PW 0) for instant UI response
+  for (const pw of mainWorlds) {
     const pwKey = `${pw},0`; // vertical PW always 0 for noitamap
 
     const scanResults = scanSpawnFunctions(
@@ -705,6 +737,79 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       }
     }
     poisByPW[pwKey] = combinedPois;
+  }
+
+  // Wait for background worlds to finish
+  if (workerPromises.length > 0) {
+    console.log(`[Telescope] Waiting for ${workerPromises.length} background parallel worlds...`);
+    const workerResults = await Promise.all(workerPromises);
+    for (const res of workerResults) {
+      const pwKey = `${res.pw},0`;
+      let workerPois = res.pois;
+
+      // Apply patches and deduplication for worker POIs exactly as main thread does
+      
+      // Boss overrides for worker
+      const pitBossIndexWorker = workerPois.findIndex(
+        (p: any) =>
+          p.x === 3750 &&
+          (p.type === "boss_pit" || p.name === "Pit boss" || p.name?.includes("tuntija") || p.item?.includes("tuntija")),
+      );
+      if (pitBossIndexWorker !== -1) {
+        workerPois.splice(pitBossIndexWorker, 1);
+        workerPois.push({
+          pw: res.pw,
+          type: "boss_pit",
+          name: "Sauvojen tuntija",
+          x: 3750, 
+          y: 1100,
+          biome: "orb_room_bridge",
+          items: [{item: "Wand (Tier 10)"}],
+        } as any);
+      } else {
+        workerPois.push({
+          pw: res.pw,
+          type: "boss_pit",
+          name: "Sauvojen tuntija",
+          x: 3750, 
+          y: 1100,
+          biome: "orb_room_bridge",
+          items: [{item: "Wand (Tier 10)"}],
+        } as any);
+      }
+
+      // Deduplicate friend worker
+      const friendPoisWorker = workerPois.filter((p: any) => p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss");
+      if (friendPoisWorker.length > 0) {
+        const keep = friendPoisWorker.find((p: any) => p.type === "friend") || friendPoisWorker[0];
+        workerPois = workerPois.filter((p: any) => !(p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss"));
+        workerPois.push(keep);
+      }
+
+      // Deduplicate alchemist_boss worker
+      const alchemistPoisWorker = workerPois.filter((p: any) => p.type === "alchemist_boss" || (p.type === "entity" && p.entity === "boss_alchemist"));
+      if (alchemistPoisWorker.length > 0) {
+        const keep = alchemistPoisWorker.find((p: any) => p.type === "alchemist_boss") || alchemistPoisWorker[0];
+        workerPois = workerPois.filter((p: any) => !(p.type === "alchemist_boss" || (p.type === "entity" && p.entity === "boss_alchemist")));
+        workerPois.push(keep);
+      }
+
+      // Apply NollaPrng logic for Wand generation in background worlds
+      for (const poi of workerPois) {
+        if (poi.type === "wand" && (!poi.name || poi.name === "Taikasauva")) {
+          const prng = new NollaPrng(0);
+          prng.SetRandomSeed(seed + ngPlus, poi.x, poi.y);
+          const nameIdx = Math.floor(GUN_NAMES.length * prng.Next());
+          poi.name = GUN_NAMES[nameIdx];
+        }
+      }
+
+      poisByPW[pwKey] = workerPois;
+      if (res.pixelScenes) {
+        if (!pixelScenesByPW[pwKey]) pixelScenesByPW[pwKey] = [];
+        pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(res.pixelScenes);
+      }
+    }
   }
 
   // Step 5: Eye messages (main world only)

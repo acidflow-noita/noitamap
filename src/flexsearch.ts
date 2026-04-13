@@ -58,8 +58,17 @@ export const searchOverlays = (mapName: MapName, query: string, filters: Set<str
     if (!overlays.has(key)) return [];
 
     // Determine overlay type from the key (format: "type:index")
-    const overlayType = (key as any).split(':')[0] as 'bosses' | 'items' | 'structures' | 'orbs';
-    if (filters.size > 0 && !filters.has(overlayType)) return [];
+    const overlayType = (key as any).split(':')[0] as string;
+    const shortKeys: Record<string, string> = {
+      'bosses': 'b',
+      'items': 'i',
+      'structures': 'st',
+      'orbs': 'or',
+      'spatialAwareness': 'sa',
+      'hiddenMessages': 'msg'
+    };
+    const filterKey = shortKeys[overlayType] || overlayType;
+    if (filters.size > 0 && !filters.has(filterKey)) return [];
 
     const originalData = overlays.get(key)!;
 
