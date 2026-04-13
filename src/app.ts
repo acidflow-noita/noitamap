@@ -115,7 +115,7 @@ export class App extends EventEmitter2 {
 
         // Add popover for disabled buttons
         overlayLabel.setAttribute("data-bs-toggle", "popover");
-        overlayLabel.setAttribute("data-bs-placement", "top");
+        overlayLabel.setAttribute("data-bs-placement", "bottom");
         overlayLabel.setAttribute("data-bs-trigger", "hover focus");
         overlayLabel.setAttribute("data-i18n-title", "overlay.notAvailable.title");
         overlayLabel.setAttribute("data-bs-title", "Not Available");
@@ -134,7 +134,7 @@ export class App extends EventEmitter2 {
 
         // Restore original popover attributes for enabled buttons
         overlayLabel.setAttribute("data-bs-toggle", "popover");
-        overlayLabel.setAttribute("data-bs-placement", "top");
+        overlayLabel.setAttribute("data-bs-placement", "bottom");
         overlayLabel.setAttribute("data-bs-trigger", "hover focus");
         overlayLabel.setAttribute("data-i18n-title", `${key}.title`);
         overlayLabel.setAttribute("data-i18n-content", `${key}.content`);

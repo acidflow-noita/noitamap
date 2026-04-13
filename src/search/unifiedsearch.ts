@@ -783,7 +783,7 @@ export class UnifiedSearch extends EventEmitter2 {
       const labelText = FILTER_LABELS[filter.type] || filter.type;
       // Use Bootstrap popover instead of plain title
       filterLabel.dataset.bsToggle = "popover";
-      filterLabel.dataset.bsPlacement = "top";
+      filterLabel.dataset.bsPlacement = "bottom";
       filterLabel.dataset.bsTrigger = "hover";
       filterLabel.dataset.bsHtml = "true";
       filterLabel.dataset.bsTitle = labelText;

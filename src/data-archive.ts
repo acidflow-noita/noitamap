@@ -5,7 +5,16 @@
  */
 import JSZip from "jszip";
 
-const BASE_URL = typeof import.meta !== "undefined" && import.meta.env ? import.meta.env.BASE_URL : "/";
+function getBaseUrl() {
+  if (typeof document !== "undefined") {
+    // Main thread: resolve relative to current page
+    return new URL("./", document.baseURI || location.href).href;
+  }
+  // Worker: Resolve to the root origin to avoid fetching from /assets/
+  return new URL("/", self.location.href).href;
+}
+
+const BASE_URL = getBaseUrl();
 const ZIP_URLS: Record<string, string> = {
   main: BASE_URL + "data.zip",
   pixel_scenes: BASE_URL + "pixel_scenes.zip",
