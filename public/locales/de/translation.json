@@ -4,7 +4,8 @@
     "indexing": "Daten werden geladen...",
     "indexingHint": "Du kannst die Karte erkunden, wahrend die Daten geladen werden",
     "popoverTitle": "Suchen",
-    "popoverContent": "Suchen Sie nach Zaubersprüchen, Gegenständen, Zauberstäben, Bossen, Kreaturen, Tränken, Strukturen und mehr. Verwenden Sie die Filterschaltflächen unten, um die Ergebnisse nach Kategorie einzugrenzen."
+    "popoverContent": "Suchen Sie nach Zaubersprüchen, Gegenständen, Zauberstäben, Bossen, Kreaturen, Tränken, Strukturen und mehr. Verwenden Sie die Filterschaltflächen unten, um die Ergebnisse nach Kategorie einzugrenzen.",
+    "chunksAway": "~{{count}} Chunks entfernt"
   },
   "spell_prefix": "Zauber",
   "tiers_prefix": "Stufen",

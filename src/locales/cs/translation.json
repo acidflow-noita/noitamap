@@ -4,7 +4,8 @@
     "indexing": "Nacitani dat...",
     "indexingHint": "Mapu muzete prohlizet, zatimco se data nacitaji",
     "popoverTitle": "Vyhledávání",
-    "popoverContent": "Hledejte kouzla, předměty, hůlky, bossy, stvoření, lektvary, struktury a další. Pomocí níže uvedených tlačítek filtru můžete zúžit výsledky podle kategorie."
+    "popoverContent": "Hledejte kouzla, předměty, hůlky, bossy, stvoření, lektvary, struktury a další. Pomocí níže uvedených tlačítek filtru můžete zúžit výsledky podle kategorie.",
+    "chunksAway": "~{{count}} chunku daleko"
   },
   "spell_prefix": "Kouzlo",
   "tiers_prefix": "Úrovně",

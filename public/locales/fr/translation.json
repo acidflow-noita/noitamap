@@ -4,7 +4,8 @@
     "indexing": "Chargement des donnees...",
     "indexingHint": "Vous pouvez naviguer sur la carte pendant le chargement des donnees",
     "popoverTitle": "Recherche",
-    "popoverContent": "Recherchez des sorts, des objets, des baguettes, des boss, des créatures, des potions, des structures et bien plus encore. Utilisez les boutons de filtre ci-dessous pour affiner les résultats par catégorie."
+    "popoverContent": "Recherchez des sorts, des objets, des baguettes, des boss, des créatures, des potions, des structures et bien plus encore. Utilisez les boutons de filtre ci-dessous pour affiner les résultats par catégorie.",
+    "chunksAway": "~{{count}} chunks de distance"
   },
   "spell_prefix": "Sort",
   "tiers_prefix": "Niveaux",

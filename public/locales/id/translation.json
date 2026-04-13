@@ -4,7 +4,8 @@
     "indexing": "Memuat data...",
     "indexingHint": "Anda dapat menjelajahi peta saat data sedang dimuat",
     "popoverTitle": "Mencari",
-    "popoverContent": "Cari mantra, item, tongkat sihir, bos, makhluk, ramuan, struktur, dan banyak lagi. Gunakan tombol filter di bawah untuk mempersempit hasil berdasarkan kategori."
+    "popoverContent": "Cari mantra, item, tongkat sihir, bos, makhluk, ramuan, struktur, dan banyak lagi. Gunakan tombol filter di bawah untuk mempersempit hasil berdasarkan kategori.",
+    "chunksAway": "~{{count}} chunk jauhnya"
   },
   "spell_prefix": "Mantra",
   "tiers_prefix": "Tingkat",

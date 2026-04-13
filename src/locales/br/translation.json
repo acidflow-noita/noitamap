@@ -4,7 +4,8 @@
     "indexing": "Carregando dados...",
     "indexingHint": "Voce pode navegar pelo mapa enquanto os dados carregam",
     "popoverTitle": "Procurar",
-    "popoverContent": "Procure feitiços, itens, varinhas, chefes, criaturas, poções, estruturas e muito mais. Use os botões de filtro abaixo para restringir os resultados por categoria."
+    "popoverContent": "Procure feitiços, itens, varinhas, chefes, criaturas, poções, estruturas e muito mais. Use os botões de filtro abaixo para restringir os resultados por categoria.",
+    "chunksAway": "~{{count}} chunks de distancia"
   },
   "spell_prefix": "Feitiço",
   "tiers_prefix": "Níveis",

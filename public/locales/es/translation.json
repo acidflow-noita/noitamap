@@ -4,7 +4,8 @@
     "indexing": "Cargando datos...",
     "indexingHint": "Puedes navegar por el mapa mientras se cargan los datos",
     "popoverTitle": "Buscar",
-    "popoverContent": "Busque hechizos, objetos, varitas, jefes, criaturas, pociones, estructuras y más. Utilice los botones de filtro a continuación para limitar los resultados por categoría."
+    "popoverContent": "Busque hechizos, objetos, varitas, jefes, criaturas, pociones, estructuras y más. Utilice los botones de filtro a continuación para limitar los resultados por categoría.",
+    "chunksAway": "~{{count}} chunks de distancia"
   },
   "spell_prefix": "Hechizo",
   "tiers_prefix": "Niveles",

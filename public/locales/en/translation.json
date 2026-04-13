@@ -4,7 +4,8 @@
     "indexing": "Loading data...",
     "indexingHint": "You can navigate the map while data is loading",
     "popoverTitle": "Search",
-    "popoverContent": "Search for spells, items, wands, bosses, creatures, potions, structures, and more. Use the filter buttons below to narrow results by category."
+    "popoverContent": "Search for spells, items, wands, bosses, creatures, potions, structures, and more. Use the filter buttons below to narrow results by category.",
+    "chunksAway": "~{{count}} chunks away"
   },
   "searchFilters": {
     "wands": "Filter results to show only wands",

@@ -4,7 +4,8 @@
     "indexing": "Gegevens laden...",
     "indexingHint": "Je kunt de kaart verkennen terwijl de gegevens laden",
     "popoverTitle": "Zoekopdracht",
-    "popoverContent": "Zoek naar spreuken, items, toverstokken, bazen, wezens, drankjes, structuren en meer. Gebruik de onderstaande filterknoppen om de resultaten per categorie te verfijnen."
+    "popoverContent": "Zoek naar spreuken, items, toverstokken, bazen, wezens, drankjes, structuren en meer. Gebruik de onderstaande filterknoppen om de resultaten per categorie te verfijnen.",
+    "chunksAway": "~{{count}} chunks verwijderd"
   },
   "spell_prefix": "Spreuk",
   "tiers_prefix": "Niveaus",

@@ -249,6 +249,51 @@ export class UnifiedSearch extends EventEmitter2 {
     }
   }
 
+  /** Refresh filter popover translations after language change */
+  refreshFilterTranslations() {
+    const FILTER_LABELS: Record<string, string> = {
+      w: i18next.t("filterLabels.wands", "Wands"),
+      s: i18next.t("filterLabels.spells", "Spells"),
+      i: i18next.t("filterLabels.items", "Items"),
+      c: i18next.t("filterLabels.chests", "Chests"),
+      hm: i18next.t("filterLabels.holyMountains", "Holy Mountains"),
+      p: i18next.t("filterLabels.potions", "Potions & Flasks"),
+      h: i18next.t("filterLabels.hearts", "Hearts & Heals"),
+      b: i18next.t("filterLabels.bosses", "Bosses"),
+      e: i18next.t("filterLabels.creatures", "Enemies"),
+      st: i18next.t("filterLabels.structures", "Structures"),
+      or: i18next.t("filterLabels.orbs", "Orbs"),
+      sa: i18next.t("filterLabels.spatialAwareness", "Spatial Awareness"),
+      msg: i18next.t("filterLabels.hiddenMessages", "Hidden Messages"),
+    };
+    const FILTER_DESCRIPTIONS: Record<string, string> = {
+      w: i18next.t("searchFilters.wands", "Filter results to show only wands"),
+      s: i18next.t("searchFilters.spells", "Filter results to show only spells"),
+      i: i18next.t("searchFilters.items", "Filter results to show only items"),
+      c: i18next.t("searchFilters.chests", "Filter results to show only chests"),
+      hm: i18next.t("searchFilters.holyMountains", "Filter results to show only Holy Mountain shops"),
+      p: i18next.t("searchFilters.potions", "Filter results to show only potions"),
+      h: i18next.t("searchFilters.hearts", "Filter results to show only hearts"),
+      b: i18next.t("searchFilters.bosses", "Filter results to show only bosses"),
+      e: i18next.t("searchFilters.creatures", "Filter results to show only creatures"),
+      st: i18next.t("searchFilters.structures", "Filter results to show only structures"),
+      or: i18next.t("searchFilters.orbs", "Filter results to show only orbs"),
+      sa: i18next.t("searchFilters.spatialAwareness", "Filter results to show only spatial awareness points"),
+      msg: i18next.t("searchFilters.hiddenMessages", "Filter results to show only hidden messages"),
+    };
+
+    for (const label of document.querySelectorAll<HTMLLabelElement>('#unifiedSearchFilterBox label[data-filter-type]')) {
+      const type = label.dataset.filterType!;
+      const title = FILTER_LABELS[type] || type;
+      label.dataset.bsTitle = title;
+      label.dataset.bsContent = FILTER_DESCRIPTIONS[type] || title;
+      // Dispose and re-create popover with new content
+      const existing = (window as any).bootstrap?.Popover?.getInstance(label);
+      if (existing) existing.dispose();
+      new (window as any).bootstrap.Popover(label);
+    }
+  }
+
   setSearchValueWithoutTriggering(value: string) {
     this.searchInput.value = value;
     this.lastSearchText = value;
@@ -419,6 +464,7 @@ export class UnifiedSearch extends EventEmitter2 {
 
   // Method to refresh search results with new translations
   refreshTranslations() {
+    this.refreshFilterTranslations();
     if (this.searchInput.value.trim() !== "") {
       // Force update by clearing lastSearchText and calling updateSearchResults
       this.lastSearchText = "";
@@ -743,6 +789,7 @@ export class UnifiedSearch extends EventEmitter2 {
       filterLabel.dataset.bsHtml = "true";
       filterLabel.dataset.bsTitle = labelText;
       filterLabel.dataset.bsContent = FILTER_DESCRIPTIONS[filter.type] || labelText;
+      filterLabel.dataset.filterType = filter.type;
       const filterCheckbox = document.createElement("input");
       filterCheckbox.type = "checkbox";
       filterCheckbox.value = filter.type;
@@ -776,7 +823,7 @@ export class UnifiedSearch extends EventEmitter2 {
       filterIcon.alt = "";
       filterIcon.classList.add("pixelated-image");
       filterIcon.draggable = false;
-      if (filter.type === "wands") {
+      if (filter.type === "w") {
         filterIcon.style.transform = "rotate(90deg)";
       }
       filterLabel.appendChild(filterIcon);

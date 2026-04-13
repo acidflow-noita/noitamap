@@ -4,7 +4,8 @@
     "indexing": "加载数据中...",
     "indexingHint": "数据加载时您可以浏览地图",
     "popoverTitle": "搜索",
-    "popoverContent": "搜索咒语、物品、魔杖、Boss、生物、药剂、结构等等。使用下面的过滤按钮按类别缩小结果范围。"
+    "popoverContent": "搜索咒语、物品、魔杖、Boss、生物、药剂、结构等等。使用下面的过滤按钮按类别缩小结果范围。",
+    "chunksAway": "~{{count}} 个区块之外"
   },
   "spell_prefix": "法术",
   "tiers_prefix": "等级",

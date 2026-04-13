@@ -75,7 +75,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
       const chunksAway = Math.round(Math.hypot(p.x - playerX, p.y - playerY) / CHUNK_SIZE);
       const proximitySpan = el.querySelector(".proximity-hint");
       if (proximitySpan) {
-        proximitySpan.textContent = `~${chunksAway} chunks away`;
+        proximitySpan.textContent = i18next.t("search.chunksAway", "~{{count}} chunks away", { count: chunksAway });
       }
     }
     this.wrapper.appendChild(fragment);
@@ -452,7 +452,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
               const proximitySpan = document.createElement("span");
               proximitySpan.className = "ms-2 text-secondary proximity-hint";
               proximitySpan.style.fontSize = "0.8em";
-              proximitySpan.textContent = `~${chunksAway} chunks away`;
+              proximitySpan.textContent = i18next.t("search.chunksAway", "~{{count}} chunks away", { count: chunksAway });
               contentDiv.appendChild(proximitySpan);
             }
 

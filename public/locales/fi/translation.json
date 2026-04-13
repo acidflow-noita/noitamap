@@ -4,7 +4,8 @@
     "indexing": "Ladataan tietoja...",
     "indexingHint": "Voit selata karttaa tietojen latauksen aikana",
     "popoverTitle": "Haku",
-    "popoverContent": "Etsi loitsuja, esineitä, sauvoja, pomoja, olentoja, juomia, rakenteita ja muuta. Käytä alla olevia suodatinpainikkeita rajataksesi tuloksia luokittain."
+    "popoverContent": "Etsi loitsuja, esineitä, sauvoja, pomoja, olentoja, juomia, rakenteita ja muuta. Käytä alla olevia suodatinpainikkeita rajataksesi tuloksia luokittain.",
+    "chunksAway": "~{{count}} chunkkia kaukana"
   },
   "spell_prefix": "Loitsu",
   "tiers_prefix": "Tasot",

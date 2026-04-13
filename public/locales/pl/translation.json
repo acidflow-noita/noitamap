@@ -4,7 +4,8 @@
     "indexing": "Ladowanie danych...",
     "indexingHint": "Mozesz przegladac mape podczas ladowania danych",
     "popoverTitle": "Szukaj",
-    "popoverContent": "Szukaj zaklęć, przedmiotów, różdżek, bossów, stworzeń, mikstur, struktur i nie tylko. Użyj poniższych przycisków filtrowania, aby zawęzić wyniki według kategorii."
+    "popoverContent": "Szukaj zaklęć, przedmiotów, różdżek, bossów, stworzeń, mikstur, struktur i nie tylko. Użyj poniższych przycisków filtrowania, aby zawęzić wyniki według kategorii.",
+    "chunksAway": "~{{count}} chunkow dalej"
   },
   "spell_prefix": "Zaklęcie",
   "tiers_prefix": "Poziomy",

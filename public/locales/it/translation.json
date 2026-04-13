@@ -4,7 +4,8 @@
     "indexing": "Caricamento dati...",
     "indexingHint": "Puoi navigare la mappa mentre i dati vengono caricati",
     "popoverTitle": "Ricerca",
-    "popoverContent": "Cerca incantesimi, oggetti, bacchette, boss, creature, pozioni, strutture e altro ancora. Utilizza i pulsanti filtro qui sotto per restringere i risultati per categoria."
+    "popoverContent": "Cerca incantesimi, oggetti, bacchette, boss, creature, pozioni, strutture e altro ancora. Utilizza i pulsanti filtro qui sotto per restringere i risultati per categoria.",
+    "chunksAway": "~{{count}} chunk di distanza"
   },
   "spell_prefix": "Incantesimo",
   "tiers_prefix": "Livelli",

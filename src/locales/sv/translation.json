@@ -4,7 +4,8 @@
     "indexing": "Laddar data...",
     "indexingHint": "Du kan utforska kartan medan data laddas",
     "popoverTitle": "Söka",
-    "popoverContent": "Sök efter trollformler, föremål, trollstavar, bossar, varelser, drycker, strukturer och mer. Använd filterknapparna nedan för att begränsa resultaten efter kategori."
+    "popoverContent": "Sök efter trollformler, föremål, trollstavar, bossar, varelser, drycker, strukturer och mer. Använd filterknapparna nedan för att begränsa resultaten efter kategori.",
+    "chunksAway": "~{{count}} chunks bort"
   },
   "spell_prefix": "Trollformel",
   "tiers_prefix": "Nivåer",
