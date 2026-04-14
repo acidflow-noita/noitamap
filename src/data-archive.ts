@@ -27,11 +27,11 @@ const zips: Record<string, JSZip | null> = {};
 /**
  * Lazily fetch and cache a zip archive.
  */
+const isWorker = typeof document === "undefined";
+
 export async function getZip(key: string = "main", silent: boolean = false): Promise<JSZip | null> {
   if (zips[key]) return zips[key];
   if (zipPromises[key]) return zipPromises[key];
-
-  console.trace(`[DataArchive] Someone requested getZip('${key}') - tracing stack`);
 
   const url = ZIP_URLS[key];
   if (!url) {
@@ -39,15 +39,46 @@ export async function getZip(key: string = "main", silent: boolean = false): Pro
     return null;
   }
 
-  zipPromises[key] = new Promise((resolve, reject) => {
+  zipPromises[key] = isWorker ? _loadZipWorkerFast(key, url) : _loadZipMainThread(key, url, silent);
+
+  return zipPromises[key];
+}
+
+/** Worker fast path: read from Cache API, parse, done. No locks, no HEAD, no network. */
+async function _loadZipWorkerFast(key: string, url: string): Promise<JSZip | null> {
+  try {
+    const t0 = performance.now();
+    const cache = await caches.open(`noitamap-archive-${key}-v2`);
+    const response = await cache.match(url);
+    if (!response || !response.ok) {
+      console.warn(`[DataArchive/Worker] ${key}.zip not in cache, cannot load`);
+      return null;
+    }
+    const buf = await response.arrayBuffer();
+    const instance = await JSZip.loadAsync(buf);
+    zips[key] = instance;
+    console.log(`[DataArchive/Worker] ${key}.zip ready in ${(performance.now() - t0).toFixed(0)}ms`);
+    return instance;
+  } catch (e) {
+    console.error(`[DataArchive/Worker] Failed to load ${key}.zip:`, e);
+    return null;
+  }
+}
+
+/** Main thread path: HEAD validation, lock, network fetch with progress, cache write. */
+async function _loadZipMainThread(key: string, url: string, silent: boolean): Promise<JSZip | null> {
+  return new Promise((resolve) => {
     navigator.locks.request(`zip-fetch-${key}`, async () => {
       try {
+        // Re-check after acquiring lock (another tab may have loaded it)
+        if (zips[key]) { resolve(zips[key]); return; }
+
         console.log(`[DataArchive] Loading ${url}...`);
 
       const cacheName = `noitamap-archive-${key}-v2`;
       const cache = await caches.open(cacheName);
 
-      // 1. Do a quick HEAD request to get the latest file metadata from the server
+      // HEAD request to validate cache freshness
       let serverMeta = "";
       try {
         const headResp = await fetch(url, { method: "HEAD", cache: "no-cache" });
@@ -172,8 +203,6 @@ export async function getZip(key: string = "main", silent: boolean = false): Pro
     }
     }); // end locks.request
   }); // end new Promise
-
-  return zipPromises[key];
 }
 
 /** Legacy alias */

@@ -100,14 +100,9 @@ export async function getFromZipFirst(url: string): Promise<Blob> {
       }
     }
 
-    // If we didn't find it in any zip, try a real network fetch as last resort
-    const response = await fetch(url);
-    const contentType = response.headers.get("Content-Type") || "";
-    if (response.ok && contentType.startsWith("image/")) {
-      return response.blob();
-    }
-
-    console.warn(`[zip-shim] Not found in zips and non-image response for ${url} (${contentType}), using fallback PNG`);
+    // File not in any zip — return fallback PNG immediately.
+    // Network fetch is pointless: the SPA server returns HTML for missing assets.
+    console.warn(`[zip-shim] Not found in zips: ${url}, using fallback PNG`);
     return new Blob([FALLBACK_PNG], { type: "image/png" });
   } catch (e) {
     console.warn(`[zip-shim] Failed to resolve ${url}, using fallback PNG`, e);

@@ -72,6 +72,8 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
     "auto-increment-seed": false,
     "enable-edge-noise": false,
     "fix-holy-mountain-edge-noise": false,
+    "enable-hamis-hints": false,
+    "exclude-negative-verticals": false,
     "rng-info": false,
   };
 
@@ -186,6 +188,7 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
     "unlock-folder-picker": "input",
     "unlock-none": "button",
     "unlocks-list": "div",
+    "search-rare-btn": "button",
   };
   for (const [id, tagName] of Object.entries(displayElements)) {
     if (document.getElementById(id)) continue;
