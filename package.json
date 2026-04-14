@@ -66,6 +66,8 @@
   },
   "devDependencies": {
     "@designsystemsinternational/flags": "^0.2.0",
+    "@emnapi/core": "^1.9.2",
+    "@emnapi/runtime": "^1.9.2",
     "@types/bootstrap": "^5.2.10",
     "@types/jsdom": "^27.0.0",
     "@types/lz-string": "^1.3.34",
