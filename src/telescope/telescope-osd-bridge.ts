@@ -930,6 +930,10 @@ async function addBiomeLayersProgressively(
     window.dispatchEvent(new CustomEvent("biomeGenerationProgress", { detail: { percentage: progressStart } }));
 
     for (const pvt of [-1, 0, 1]) {
+      // Skip vertical PW if the corresponding biome pixel data doesn't exist
+      if (pvt < 0 && !biomeData.heavenPixels) continue;
+      if (pvt > 0 && !biomeData.hellPixels) continue;
+
       // Yield briefly so the browser can paint the progress update before we block the main thread.
       await new Promise((r) => setTimeout(r, 0));
       if (currentGenerationId !== generationId) return;
