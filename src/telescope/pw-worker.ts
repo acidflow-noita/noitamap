@@ -64,10 +64,14 @@ self.onmessage = async (e) => {
       pixelScenes = pixelScenes.concat(staticResults.pixelScenes);
     }
 
-    // 4. Vertical PWs (sky/hell) — scan spawns + static scenes
+    // 4. Vertical PWs (sky/hell)
     const verticalPois = [];
     for (const pvt of [-1, 1]) {
-      // Scan spawn functions for vertical PW (shops, spawns, etc.)
+      const vtSpecial = getSpecialPoIs(biomeData, seed, ngPlus, pw, pvt, perks, gameMode);
+      if (vtSpecial && vtSpecial.length > 0) {
+        verticalPois.push(...vtSpecial);
+      }
+
       const vtScan = scanSpawnFunctions(biomeData, tileSpawns, seed, ngPlus, pw, pvt, skipCosmeticScenes, perks, gameMode);
       if (vtScan.generatedSpawns && vtScan.generatedSpawns.length > 0) {
         verticalPois.push(...vtScan.generatedSpawns);

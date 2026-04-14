@@ -929,93 +929,95 @@ async function addBiomeLayersProgressively(
     const progressStart = Math.round((pwIdx / totalPWs) * 100);
     window.dispatchEvent(new CustomEvent("biomeGenerationProgress", { detail: { percentage: progressStart } }));
 
-    // Yield briefly so the browser can paint the progress update before we block the main thread.
-    await new Promise((r) => setTimeout(r, 0));
-    if (currentGenerationId !== generationId) return;
+    for (const pvt of [-1, 0, 1]) {
+      // Yield briefly so the browser can paint the progress update before we block the main thread.
+      await new Promise((r) => setTimeout(r, 0));
+      if (currentGenerationId !== generationId) return;
 
-    // Compute all overlays for this PW at once (CPU-bound, ~1-2s)
-    const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(
-      biomeData,
-      tileLayers,
-      pw,
-      0 /* pwVertical */,
-      isNGP,
-    );
+      // Compute all overlays for this PW at once (CPU-bound, ~1-2s)
+      const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(
+        biomeData,
+        tileLayers,
+        pw,
+        pvt,
+        isNGP,
+      );
 
-    if (currentGenerationId !== generationId) return;
+      if (currentGenerationId !== generationId) return;
 
-    // ── Composite all biome overlays into one canvas per PW ──────────────
-    // Instead of adding 50+ individual TiledImages (which overwhelms the
-    // canvas drawer in Firefox), we merge them into a single image.
+      // ── Composite all biome overlays into one canvas per PW ──────────────
+      // Instead of adding 50+ individual TiledImages (which overwhelms the
+      // canvas drawer in Firefox), we merge them into a single image.
 
-    // First pass: determine bounding box across all non-empty overlays
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    const validOverlays: { overlay: OffscreenCanvas; x: number; y: number; osdWidth: number }[] = [];
+      // First pass: determine bounding box across all non-empty overlays
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      const validOverlays: { overlay: OffscreenCanvas; x: number; y: number; osdWidth: number }[] = [];
 
-    for (const biomeName of allBiomesToRender) {
-      const layerIdxArr = layerIndicesByBiome.get(biomeName);
-      if (!layerIdxArr) continue;
+      for (const biomeName of allBiomesToRender) {
+        const layerIdxArr = layerIndicesByBiome.get(biomeName);
+        if (!layerIdxArr) continue;
 
-      for (const layerIdx of layerIdxArr) {
-        const overlay = overlays[layerIdx];
-        if (!overlay || overlay.width === 0 || overlay.height === 0) continue;
+        for (const layerIdx of layerIdxArr) {
+          const overlay = overlays[layerIdx];
+          if (!overlay || overlay.width === 0 || overlay.height === 0) continue;
 
-        const layer = tileLayers[layerIdx];
-        const x = -(worldCenter * 512) + pw * pwOffsetPixels + layer.correctedX;
-        const y = anchorY + layer.correctedY;
-        const osdWidth = overlay.width * 10;
-        const osdHeight = overlay.height * 10;
+          const layer = tileLayers[layerIdx];
+          const x = -(worldCenter * 512) + pw * pwOffsetPixels + layer.correctedX;
+          const y = anchorY + layer.correctedY + pvt * 24576;
+          const osdWidth = overlay.width * 10;
+          const osdHeight = overlay.height * 10;
 
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x + osdWidth);
-        maxY = Math.max(maxY, y + osdHeight);
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x + osdWidth);
+          maxY = Math.max(maxY, y + osdHeight);
 
-        validOverlays.push({ overlay, x, y, osdWidth });
-      }
-    }
-
-    if (validOverlays.length === 0) continue;
-
-    // Create a composited canvas at the same pixel density (1 pixel = 10 OSD units)
-    const compositeW = Math.ceil((maxX - minX) / 10);
-    const compositeH = Math.ceil((maxY - minY) / 10);
-    const compositeCanvas = new OffscreenCanvas(compositeW, compositeH);
-    const compositeCtx = compositeCanvas.getContext("2d")!;
-
-    // Show privacy browser warning toast once per session if canvas tainting detected
-    if (isCanvasTainted() && !privacyToastShown) {
-      privacyToastShown = true;
-      const toastEl = document.getElementById("privacyBrowserToast");
-      if (toastEl) {
-        // @ts-ignore — Bootstrap is loaded globally
-        new bootstrap.Toast(toastEl).show();
-      }
-    }
-
-    // ── GPU-accelerated compositing (all browsers) ──
-    for (const { overlay, x, y } of validOverlays) {
-      const px = Math.round((x - minX) / 10);
-      const py = Math.round((y - minY) / 10);
-      compositeCtx.drawImage(overlay, px, py);
-    }
-    const url = await offscreenCanvasToBlobUrl(compositeCanvas);
-    if (currentGenerationId !== generationId) return;
-
-    const osdWidth = compositeW * 10;
-    viewer.addTiledImage({
-      tileSource: { type: "image", url, buildPyramid: false },
-      x: minX,
-      y: minY,
-      width: osdWidth,
-      success: (event: any) => {
-        if (currentGenerationId !== generationId) {
-          try { viewer.world.removeItem(event.item); } catch {}
-          return;
+          validOverlays.push({ overlay, x, y, osdWidth });
         }
-        dynamicTiledImages.add(event.item);
-      },
-    });
+      }
+
+      if (validOverlays.length === 0) continue;
+
+      // Create a composited canvas at the same pixel density (1 pixel = 10 OSD units)
+      const compositeW = Math.ceil((maxX - minX) / 10);
+      const compositeH = Math.ceil((maxY - minY) / 10);
+      const compositeCanvas = new OffscreenCanvas(compositeW, compositeH);
+      const compositeCtx = compositeCanvas.getContext("2d")!;
+
+      // Show privacy browser warning toast once per session if canvas tainting detected
+      if (isCanvasTainted() && !privacyToastShown) {
+        privacyToastShown = true;
+        const toastEl = document.getElementById("privacyBrowserToast");
+        if (toastEl) {
+          // @ts-ignore — Bootstrap is loaded globally
+          new bootstrap.Toast(toastEl).show();
+        }
+      }
+
+      // ── GPU-accelerated compositing (all browsers) ──
+      for (const { overlay, x, y } of validOverlays) {
+        const px = Math.round((x - minX) / 10);
+        const py = Math.round((y - minY) / 10);
+        compositeCtx.drawImage(overlay, px, py);
+      }
+      const url = await offscreenCanvasToBlobUrl(compositeCanvas);
+      if (currentGenerationId !== generationId) return;
+
+      const osdWidth = compositeW * 10;
+      viewer.addTiledImage({
+        tileSource: { type: "image", url, buildPyramid: false },
+        x: minX,
+        y: minY,
+        width: osdWidth,
+        success: (event: any) => {
+          if (currentGenerationId !== generationId) {
+            try { viewer.world.removeItem(event.item); } catch {}
+            return;
+          }
+          dynamicTiledImages.add(event.item);
+        },
+      });
+    }
 
     // Report completion of this PW
     const progressEnd = Math.round(((pwIdx + 1) / totalPWs) * 100);
@@ -2027,7 +2029,7 @@ function getWikiUrl(poi: any): string | null {
   return `https://noita.wiki.gg/wiki/${wikiName.replace(/\s+/g, "_")}`;
 }
 
-/** Wrap an element in an anchor tag pointing to the wiki. */
+/** Wrap an element in an anchor tag pointing to the wiki, with underline and external link icon. */
 function wrapWithWikiLink(el: HTMLElement, poi: any): HTMLElement {
   const url = getWikiUrl(poi);
   if (!url) return el;
@@ -2035,10 +2037,14 @@ function wrapWithWikiLink(el: HTMLElement, poi: any): HTMLElement {
   a.href = url;
   a.target = "_blank";
   a.rel = "noopener";
-  a.style.cssText = "text-decoration:none;color:inherit";
-  a.onmouseenter = () => { a.style.textDecoration = "underline"; };
-  a.onmouseleave = () => { a.style.textDecoration = "none"; };
+  a.style.cssText = "text-decoration:underline;text-decoration-color:rgba(255,255,255,0.3);color:inherit;display:inline-flex;align-items:center;gap:4px";
+  a.onmouseenter = () => { a.style.textDecorationColor = "rgba(255,255,255,0.7)"; };
+  a.onmouseleave = () => { a.style.textDecorationColor = "rgba(255,255,255,0.3)"; };
   a.appendChild(el);
+  const icon = document.createElement("i");
+  icon.className = "bi bi-box-arrow-up-right";
+  icon.style.cssText = "font-size:10px;opacity:0.5;flex-shrink:0";
+  a.appendChild(icon);
   return a;
 }
 
@@ -2174,7 +2180,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     });
     header.appendChild(spriteImg);
     const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;color:#c8a2ff;font-size:14px";
+    title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:14px";
     title.textContent = poi.name || gameTranslator.translateItem("Wand");
     header.appendChild(wrapWithWikiLink(title, poi));
     tooltipEl.appendChild(header);
@@ -2282,7 +2288,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
     const label = poi.item ?? poi.type;
     const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;color:#ffd700;font-size:14px";
+    title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:14px";
     // Show HP info for heart items, spell names for spells
     if (poi.item === "spell" && (poi as any).spell) {
       title.textContent = gameTranslator.translateSpell(getSpellName(String((poi as any).spell)));
@@ -2327,7 +2333,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     });
     header.appendChild(spriteImg);
     const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;color:#66ccff;font-size:14px";
+    title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:14px";
     title.textContent = gameTranslator.translateSpell(getSpellName(poi.item || "")) || "Spell";
     header.appendChild(wrapWithWikiLink(title, poi));
     tooltipEl.appendChild(header);
@@ -2357,17 +2363,19 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const translationKey = `animal_${entityId}`;
     const translated = gameTranslator.translateItem(translationKey);
     const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;color:#ff8844;font-size:14px";
-    // Show creature alias
+    title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:14px";
+    // Show creature name
     const creature = CREATURE_DATA[entityId];
-    title.textContent = creature?.name ? creature.name : ((translated !== translationKey) ? translated : rawName.replace(/_/g, " "));
+    const baseName = creature?.name ? creature.name : ((translated !== translationKey) ? translated : rawName.replace(/_/g, " "));
+    title.textContent = baseName;
     titleCol.appendChild(wrapWithWikiLink(title, poi));
     if (creature?.alias) {
       const aliasDiv = document.createElement("div");
-      aliasDiv.style.cssText = "color:#9a9;font-size:12px;font-style:italic";
+      aliasDiv.style.cssText = "color:#999;font-size:12px;font-style:italic";
       aliasDiv.textContent = creature.alias;
       titleCol.appendChild(aliasDiv);
     }
+
     header.appendChild(titleCol);
     tooltipEl.appendChild(header);
 
@@ -2463,7 +2471,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       // Blood + Corpse
       if (creature.blood || creature.corpse) {
         const matDiv = document.createElement("div");
-        matDiv.style.cssText = "margin-top:3px;color:#a88";
+        matDiv.style.cssText = "margin-top:3px;color:#999";
         const parts = [];
         if (creature.blood) parts.push(`Blood: ${creature.blood}`);
         if (creature.corpse) parts.push(`Corpse: ${creature.corpse}`);

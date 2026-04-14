@@ -426,6 +426,7 @@ body.toggle-hidden div.osOverlayHighlight {
   background-color: #0f172a; /* slate-900 */
   border: 1px solid #475569; /* slate-600 */
   color: #e2e8f0; /* slate-200 */
+  font-size: 14px;
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
@@ -438,8 +439,10 @@ body.toggle-hidden div.osOverlayHighlight {
   background-color: #1e293b; /* slate-800 */
 }
 
-#searchInput::placeholder {
+#searchInput::placeholder,
+.search-input::placeholder {
   font-style: italic;
+  font-size: 14px;
 }
 
 #search-form:focus-visible + #searchResults:has(> .search-result),

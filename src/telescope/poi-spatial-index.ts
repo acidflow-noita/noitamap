@@ -197,7 +197,8 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
   if (poi.type === "chest") return "item:chest_random";
   if (poi.type === "pacifist_chest") return "item:chest_random";
   if (poi.type === "great_chest") return "item:chest_random_super";
-  if (poi.type === "shop" || poi.type === "holy_mountain_shop") return null;
+  if (poi.type === "shop") return "enemy:necromancer_shop";
+  if (poi.type === "holy_mountain_shop") return null; // HM shops are shown via their contents
   if (poi.type === "laboratory") return null;
   if (poi.type === "eye_room") return null;
 
@@ -316,6 +317,7 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
             const radius = count > 1 ? 12 : 0;
             const offsetPoi = {
               ...innerItem,
+              isHorde: true, // tag for tooltip display
               biome: innerItem.biome || poi.biome, // propagate biome from parent
               x: innerItem.x + Math.cos(angle) * radius,
               y: innerItem.y + Math.sin(angle) * radius,
