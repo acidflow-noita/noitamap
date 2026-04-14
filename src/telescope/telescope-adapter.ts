@@ -539,10 +539,23 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(staticResults.pixelScenes);
     }
 
-    // Also generate static scenes for heaven (pwVertical=-1) and hell (pwVertical=+1)
-    // to capture shops and temples that fall outside the main world's vertical range
+    // Also generate for heaven (pwVertical=-1) and hell (pwVertical=+1)
+    // to capture shops and spawns that fall outside the main world's vertical range
     const verticalPois: POI[] = [];
     for (const pvt of [-1, 1]) {
+      // Scan spawn functions for vertical PW (generates shops, spawns, etc.)
+      const vtScan = scanSpawnFunctions(
+        biomeData, tileSpawns, seed, ngPlus, pw, pvt,
+        false /* skipCosmeticScenes */, perks, gameMode,
+      );
+      if (vtScan.generatedSpawns && vtScan.generatedSpawns.length > 0) {
+        verticalPois.push(...vtScan.generatedSpawns);
+      }
+      if (vtScan.finalPixelScenes && vtScan.finalPixelScenes.length > 0) {
+        pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(vtScan.finalPixelScenes);
+      }
+
+      // Static pixel scenes (hardcoded positions)
       const vtResults = addStaticPixelScenes(seed, ngPlus, pw, pvt, biomeData, false, perks, false, gameMode);
       if (vtResults && vtResults.pixelScenes && vtResults.pixelScenes.length > 0) {
         pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(vtResults.pixelScenes);

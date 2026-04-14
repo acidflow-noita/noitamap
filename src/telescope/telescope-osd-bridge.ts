@@ -1952,9 +1952,96 @@ interface OrbClickTarget {
 let activeOrbTargets: OrbClickTarget[] = [];
 
 /**
- * Show a popup for a marker at the given screen position.
- * Styled to match noitamap's dark theme with game-style presentation.
+ * Resolve a wiki URL for a POI, mirroring telescope's tooltip_generator.js logic.
+ * Returns null if no sensible wiki page can be determined.
  */
+function getWikiUrl(poi: any): string | null {
+  const type = poi.type || "";
+  let name = poi.name || poi.item || type;
+  let wikiName = name;
+
+  // Boss type mappings
+  const BOSS_WIKI: Record<string, string> = {
+    alchemist_boss: "Ylialkemisti",
+    pyramid_boss: "Kolmisilm\u00e4n_koipi",
+    triangle_boss: "Gate_Guardian",
+    dragon: "Suomuhauki",
+    boss_wizard: "Mestarien_mestari",
+    boss_ghost: "Unohdettu",
+    boss_sky: "Kivi",
+    islandspirit: "Tapion_vasalli",
+    boss_centipede: "Kolmisilm\u00e4",
+    boss_robot: "Kolmisilm\u00e4n_koipi",
+    boss_meat: "Kolmisilm\u00e4n_syd\u00e4n",
+    boss_pit: "Sauvojen_tuntija",
+    friend: "Toveri",
+  };
+  if (BOSS_WIKI[type]) wikiName = BOSS_WIKI[type];
+
+  // Spell
+  if (type === "spell" || (type === "item" && poi.item === "spell")) {
+    const spellId = poi.spell || poi.item || "";
+    return `https://noita.wiki.gg/wiki/${spellId}`;
+  }
+
+  // Wand
+  if (type === "wand") {
+    const n = (name || "").toLowerCase();
+    if (n.includes("ruusu")) wikiName = "Ruusu";
+    else if (n.includes("kiekurakeppi")) wikiName = "Kiekurakeppi";
+    else if (n.includes("valtikka")) wikiName = "Valtikka";
+    else if (n.includes("vasta")) wikiName = "Vasta";
+    else if (n.includes("vihta")) wikiName = "Vihta";
+    else if (n.includes("arpaluu")) wikiName = "Arpaluu";
+    else if (n.includes("varpuluuta")) wikiName = "Varpuluuta";
+    else if (n.includes("taikasauva")) wikiName = "Taikasauva";
+    else wikiName = "Wands";
+  }
+
+  // Shops
+  if (type === "holy_mountain_shop" || type === "shop") wikiName = "Holy_Mountain";
+
+  // Containers
+  if (type === "chest") wikiName = "Treasure_Chest";
+  if (type === "great_chest") wikiName = "Treasure_Chest";
+  if (type === "eye_room") wikiName = "Eye_Room";
+
+  // Item types
+  if (type === "item") {
+    const item = poi.item || "";
+    if (item === "orb") wikiName = "Orb_of_True_Knowledge";
+    else if (item === "heart" || item === "heart_bigger" || item === "full_heal") wikiName = "Health";
+    else if (item === "gold" || item === "goldnugget") wikiName = "Gold";
+    else if (item.includes("potion")) wikiName = "Potions";
+    else if (item.includes("pouch") || item === "powder_stash") wikiName = "Powder_Pouch";
+    else if (item === "emerald_tablet") wikiName = "Emerald_Tablet";
+    else if (item.includes("egg")) wikiName = "Egg";
+    else wikiName = item;
+  }
+
+  // Entity / creature
+  if (type === "entity" && poi.entity) {
+    wikiName = String(poi.entity).split("/").pop()?.replace(".xml", "") || name;
+  }
+
+  return `https://noita.wiki.gg/wiki/${wikiName.replace(/\s+/g, "_")}`;
+}
+
+/** Wrap an element in an anchor tag pointing to the wiki. */
+function wrapWithWikiLink(el: HTMLElement, poi: any): HTMLElement {
+  const url = getWikiUrl(poi);
+  if (!url) return el;
+  const a = document.createElement("a");
+  a.href = url;
+  a.target = "_blank";
+  a.rel = "noopener";
+  a.style.cssText = "text-decoration:none;color:inherit";
+  a.onmouseenter = () => { a.style.textDecoration = "underline"; };
+  a.onmouseleave = () => { a.style.textDecoration = "none"; };
+  a.appendChild(el);
+  return a;
+}
+
 function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): void {
   // Remove previous popup
   if (tooltipEl) {
@@ -2089,7 +2176,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const title = document.createElement("div");
     title.style.cssText = "font-weight:bold;color:#c8a2ff;font-size:14px";
     title.textContent = poi.name || gameTranslator.translateItem("Wand");
-    header.appendChild(title);
+    header.appendChild(wrapWithWikiLink(title, poi));
     tooltipEl.appendChild(header);
 
     // Wand stats — telescope POIs put stats as top-level snake_case fields,
@@ -2203,7 +2290,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     else if (poi.item === "heart_bigger") title.textContent = "Heart (+50 HP)";
     else if (poi.item === "full_heal") title.textContent = "Full Heal";
     else title.textContent = gameTranslator.translateItem(label).replace(/_/g, " ");
-    header.appendChild(title);
+    header.appendChild(wrapWithWikiLink(title, poi));
     tooltipEl.appendChild(header);
 
     if (poi.material) {
@@ -2242,7 +2329,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const title = document.createElement("div");
     title.style.cssText = "font-weight:bold;color:#66ccff;font-size:14px";
     title.textContent = gameTranslator.translateSpell(getSpellName(poi.item || "")) || "Spell";
-    header.appendChild(title);
+    header.appendChild(wrapWithWikiLink(title, poi));
     tooltipEl.appendChild(header);
   } else if ((poi.type === "entity" && (poi as any).entity) || ["alchemist_boss", "boss_wizard", "boss_meat", "islandspirit", "boss_sky", "boss_robot", "boss_centipede", "triangle_boss", "pyramid_boss", "dragon", "boss_ghost", "friend"].includes(poi.type || "")) {
     const isSpecialEntity = poi.type !== "entity";
@@ -2274,7 +2361,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // Show creature alias
     const creature = CREATURE_DATA[entityId];
     title.textContent = creature?.name ? creature.name : ((translated !== translationKey) ? translated : rawName.replace(/_/g, " "));
-    titleCol.appendChild(title);
+    titleCol.appendChild(wrapWithWikiLink(title, poi));
     if (creature?.alias) {
       const aliasDiv = document.createElement("div");
       aliasDiv.style.cssText = "color:#9a9;font-size:12px;font-style:italic";
@@ -2398,7 +2485,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     title.style.cssText = "font-weight:bold;font-size:16px;margin-bottom:4px";
     const label = poi.type || "Unknown";
     title.textContent = gameTranslator.translateItem(label).replace(/_/g, " ");
-    tooltipEl.appendChild(title);
+    tooltipEl.appendChild(wrapWithWikiLink(title, poi));
     if (poi.item) {
       const itemDiv = document.createElement("div");
       itemDiv.style.cssText = "color:#aaa;font-size:14px";
