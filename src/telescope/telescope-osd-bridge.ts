@@ -2391,7 +2391,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         const parts = [];
         if (creature.category) parts.push(creature.category);
         if (creature.faction) parts.push(`(${creature.faction})`);
-        catDiv.textContent = parts.join(" ");
+        const catText = parts.join(" ");
+        catDiv.textContent = (poi as any).isHorde ? `Horde: ${catText}` : catText;
         statsDiv.appendChild(catDiv);
       }
 
@@ -2399,7 +2400,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       if (creature.health) {
         const hpDiv = document.createElement("div");
         hpDiv.style.cssText = "color:#ddd;font-size:14px;margin-bottom:2px";
-        hpDiv.innerHTML = `<span style="color:#e55;font-weight:bold">HP:</span> ${creature.health}`;
+        hpDiv.textContent = `HP: ${creature.health}`;
         statsDiv.appendChild(hpDiv);
       }
 
@@ -2407,7 +2408,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       if (creature.attacks) {
         const atkDiv = document.createElement("div");
         atkDiv.style.cssText = "color:#ddd;font-size:14px;margin-bottom:2px";
-        atkDiv.innerHTML = `<span style="color:#f80;font-weight:bold">Attacks:</span> ${creature.attacks}`;
+        atkDiv.textContent = `Attacks: ${creature.attacks}`;
         statsDiv.appendChild(atkDiv);
       }
 
@@ -2415,7 +2416,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       if (creature.immunities) {
         const immDiv = document.createElement("div");
         immDiv.style.cssText = "color:#ddd;font-size:14px;margin-top:4px";
-        immDiv.innerHTML = `<span style="color:#6bf;font-weight:bold">Immunities:</span> ${creature.immunities}`;
+        immDiv.textContent = `Immunities: ${creature.immunities}`;
         statsDiv.appendChild(immDiv);
       }
 
