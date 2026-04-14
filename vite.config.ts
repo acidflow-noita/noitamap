@@ -5,9 +5,29 @@ import fs from "fs";
 
 const isProAvailable = fs.existsSync(resolve(__dirname, "../noitamap-pro/src/pro-entry.ts"));
 
+const shimTelescopePlugin = {
+  name: "shim-telescope-app",
+  enforce: "pre" as const,
+  resolveId(id: string, importer?: string) {
+    // Intercept any import of app.js or zip_extraction.js originating from within the telescope library
+    // to prevent side-effects (init()) and redundant/broken zip terminal logic.
+    const isTelescopeImport = importer && (importer.includes("noita-telescope") || importer.includes("telescope"));
+
+    if (isTelescopeImport || id.includes("noita-telescope/")) {
+      if (id.endsWith("app.js") || id.includes("/app.js")) {
+        return resolve(__dirname, "src/telescope/telescope-app-shim.js");
+      }
+      if (id.endsWith("zip_extraction.js") || id.includes("/zip_extraction.js")) {
+        return resolve(__dirname, "src/telescope/zip-extraction-shim.ts");
+      }
+    }
+  },
+};
+
 export default defineConfig({
   worker: {
     format: "es",
+    plugins: () => [shimTelescopePlugin],
   },
   server: {
     fs: {
@@ -29,24 +49,7 @@ export default defineConfig({
           .replace(/content="map\.runfast\.stream"/g, `content="${domain}"`);
       },
     },
-    {
-      name: "shim-telescope-app",
-      enforce: "pre",
-      resolveId(id, importer) {
-        // Intercept any import of app.js or zip_extraction.js originating from within the telescope library
-        // to prevent side-effects (init()) and redundant/broken zip terminal logic.
-        const isTelescopeImport = importer && (importer.includes("noita-telescope") || importer.includes("telescope"));
-
-        if (isTelescopeImport || id.includes("noita-telescope/")) {
-          if (id.endsWith("app.js") || id.includes("/app.js")) {
-            return resolve(__dirname, "src/telescope/telescope-app-shim.js");
-          }
-          if (id.endsWith("zip_extraction.js") || id.includes("/zip_extraction.js")) {
-            return resolve(__dirname, "src/telescope/zip-extraction-shim.ts");
-          }
-        }
-      },
-    },
+    shimTelescopePlugin,
   ],
   resolve: {
     alias: {
