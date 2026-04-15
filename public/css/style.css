@@ -908,6 +908,28 @@ body.toggle-hidden div.osOverlayHighlight {
   background: #14b8a6;
 } /* teal-500 */
 
+/* Indeterminate animation on the loading bar track during generation gap */
+@keyframes track-indeterminate {
+  0% { left: -30%; }
+  100% { left: 100%; }
+}
+
+.loading-strip-bar-track.indeterminate {
+  position: relative;
+}
+
+.loading-strip-bar-track.indeterminate::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -30%;
+  width: 30%;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, transparent, rgba(45, 212, 191, 0.5), transparent);
+  animation: track-indeterminate 1.5s ease-in-out infinite;
+}
+
 /* ── Search indexing placeholder ─────────────────────────────────────────── */
 
 .search-indexing-notice {

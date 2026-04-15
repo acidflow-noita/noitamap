@@ -25,10 +25,6 @@ export const createMapLinks = (): HTMLUListElement => {
       'maps.regular',
       'maps.newGamePlus',
       'maps.nightmare',
-      'maps.biomeMap',
-      'maps.biomeMapCaptured',
-      'maps.mapTestPng',
-      'maps.regularBeta',
     ];
 
     const shouldTranslate = def.labelKey && translatableKeys.includes(def.labelKey);
@@ -116,10 +112,6 @@ export const updateMapLinkTranslations = (): void => {
       'maps.regular',
       'maps.newGamePlus',
       'maps.nightmare',
-      'maps.biomeMap',
-      'maps.biomeMapCaptured',
-      'maps.mapTestPng',
-      'maps.regularBeta',
     ];
 
     const shouldTranslate = def.labelKey && translatableKeys.includes(def.labelKey);

@@ -280,6 +280,9 @@ let currentGenerationId = 0;
  * Remove all dynamic map overlays from the viewer.
  */
 export function clearDynamicOverlays(viewer: any): void {
+  // Invalidate any in-flight async generation so it won't render on top of the new map
+  currentGenerationId++;
+
   // Remove ALL world items that aren't base static DZI tiles.
   // This is more robust than tracking individual items, because addTiledImage
   // success callbacks are async and can slip past Set-based tracking.

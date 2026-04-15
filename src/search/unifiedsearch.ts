@@ -124,12 +124,29 @@ export class UnifiedSearch extends EventEmitter2 {
   private dynamicPOIMap: Map<string, DynamicPOI> = new Map(); // fast id→POI lookup
   private indexingState: "idle" | "indexing" | "ready" = "idle";
 
-  public currentMap: MapName;
+  private _currentMap: MapName;
+
+  public get currentMap(): MapName { return this._currentMap; }
+  public set currentMap(value: MapName) {
+    const wasDynamic = this._currentMap === "dynamic-main-branch";
+    const isDynamic = value === "dynamic-main-branch";
+    this._currentMap = value;
+    if (wasDynamic !== isDynamic) {
+      this.rebuildFilters(value);
+      // Clear search state so stale results don't persist
+      this.searchInput.value = "";
+      this.activeFilters.clear();
+      this.lastSearchText = "__force__";
+      this.lastSearchFilters = "";
+      this.lastViewportKey = "";
+      this.updateSearchResults();
+    }
+  }
 
   private constructor({ currentMap, form, searchInput, searchResults, initialFilters }: UnifiedSearchConstructOptions) {
     super();
 
-    this.currentMap = currentMap;
+    this._currentMap = currentMap;
     this.form = form;
     this.searchInput = searchInput;
     this.searchResults = searchResults;
@@ -247,6 +264,128 @@ export class UnifiedSearch extends EventEmitter2 {
         this.updateSearchResults();
       });
     }
+  }
+
+  /** Rebuild filter checkboxes when switching between dynamic and static map types. */
+  private rebuildFilters(newMap: MapName): void {
+    const filterBox = document.getElementById("unifiedSearchFilterBox");
+    if (!filterBox) return;
+
+    // Dispose existing popovers
+    filterBox.querySelectorAll('[data-bs-toggle="popover"]').forEach((el: Element) => {
+      const existing = (window as any).bootstrap?.Popover?.getInstance(el);
+      if (existing) existing.dispose();
+    });
+    filterBox.innerHTML = "";
+
+    const isDynamicMap = newMap === "dynamic-main-branch";
+    const filters: Array<{ type: string; iconSrc?: string; atlasKey?: string }> = isDynamicMap
+      ? [
+          { type: "w", atlasKey: "wand:handgun" },
+          { type: "s", atlasKey: "spell:mana" },
+          { type: "i", atlasKey: "item:wandstone" },
+          { type: "c", atlasKey: "item:chest_random_super" },
+          { type: "hm", iconSrc: "assets/icons/spatial_awareness/spatial_awareness_holy_mountain.png" },
+          { type: "p", atlasKey: "item:potion:acid" },
+          { type: "h", atlasKey: "item:heart_extrahp" },
+          { type: "b", iconSrc: "assets/icons/overlay-toggles/icon-bosses.webp" },
+          { type: "e", atlasKey: "spell:exploding_deer" },
+        ]
+      : [
+          { type: "s", iconSrc: "assets/icons/spells/light_bullet.png" },
+          { type: "st", iconSrc: "assets/icons/overlay-toggles/icon-structures.svg" },
+          { type: "b", iconSrc: "assets/icons/overlay-toggles/icon-bosses.webp" },
+          { type: "i", iconSrc: "assets/icons/overlay-toggles/icon-items.webp" },
+          { type: "or", iconSrc: "assets/icons/overlay-toggles/icon-orbs.webp" },
+          { type: "sa", iconSrc: "assets/icons/overlay-toggles/icon-spatial-awareness.webp" },
+          { type: "msg", iconSrc: "assets/icons/overlay-toggles/icon-hidden-messages.webp" },
+        ];
+
+    const FILTER_LABELS: Record<string, string> = {
+      w: i18next.t("filterLabels.wands", "Wands"),
+      s: i18next.t("filterLabels.spells", "Spells"),
+      i: i18next.t("filterLabels.items", "Items"),
+      c: i18next.t("filterLabels.chests", "Chests"),
+      hm: i18next.t("filterLabels.holyMountains", "Holy Mountains"),
+      p: i18next.t("filterLabels.potions", "Potions & Flasks"),
+      h: i18next.t("filterLabels.hearts", "Hearts & Heals"),
+      b: i18next.t("filterLabels.bosses", "Bosses"),
+      e: i18next.t("filterLabels.creatures", "Enemies"),
+      st: i18next.t("filterLabels.structures", "Structures"),
+      or: i18next.t("filterLabels.orbs", "Orbs"),
+      sa: i18next.t("filterLabels.spatialAwareness", "Spatial Awareness"),
+      msg: i18next.t("filterLabels.hiddenMessages", "Hidden Messages"),
+    };
+    const FILTER_DESCRIPTIONS: Record<string, string> = {
+      w: i18next.t("searchFilters.wands", "Filter results to show only wands"),
+      s: i18next.t("searchFilters.spells", "Filter results to show only spells"),
+      i: i18next.t("searchFilters.items", "Filter results to show only items"),
+      c: i18next.t("searchFilters.chests", "Filter results to show only chests"),
+      hm: i18next.t("searchFilters.holyMountains", "Filter results to show only Holy Mountain shops"),
+      p: i18next.t("searchFilters.potions", "Filter results to show only potions"),
+      h: i18next.t("searchFilters.hearts", "Filter results to show only hearts"),
+      b: i18next.t("searchFilters.bosses", "Filter results to show only bosses"),
+      e: i18next.t("searchFilters.creatures", "Filter results to show only creatures"),
+      st: i18next.t("searchFilters.structures", "Filter results to show only structures"),
+      or: i18next.t("searchFilters.orbs", "Filter results to show only orbs"),
+      sa: i18next.t("searchFilters.spatialAwareness", "Filter results to show only spatial awareness points"),
+      msg: i18next.t("searchFilters.hiddenMessages", "Filter results to show only hidden messages"),
+    };
+
+    for (const filter of filters) {
+      const filterLabel = document.createElement("label");
+      filterLabel.tabIndex = 0;
+      const labelText = FILTER_LABELS[filter.type] || filter.type;
+      filterLabel.dataset.bsToggle = "popover";
+      filterLabel.dataset.bsPlacement = "bottom";
+      filterLabel.dataset.bsTrigger = "hover";
+      filterLabel.dataset.bsHtml = "true";
+      filterLabel.dataset.bsTitle = labelText;
+      filterLabel.dataset.bsContent = FILTER_DESCRIPTIONS[filter.type] || labelText;
+      filterLabel.dataset.filterType = filter.type;
+      const filterCheckbox = document.createElement("input");
+      filterCheckbox.type = "checkbox";
+      filterCheckbox.value = filter.type;
+      filterCheckbox.dataset.filter = "true";
+      filterLabel.appendChild(filterCheckbox);
+      const filterIcon = document.createElement("img");
+      if (filter.atlasKey) {
+        const key = filter.atlasKey;
+        import("../telescope/poi-spatial-index").then((mod) => {
+          mod.loadSpritesheetAndAtlas().then(({ atlas, spritesheet }: any) => {
+            const entry = atlas[key];
+            if (!entry) return;
+            const frame = mod.FIRST_FRAME_SIZE[key];
+            const srcW = frame ? frame.w : entry.w;
+            const srcH = frame ? frame.h : entry.h;
+            const canvas = document.createElement("canvas");
+            canvas.width = srcW;
+            canvas.height = srcH;
+            const ctx = canvas.getContext("2d")!;
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(spritesheet, entry.x, entry.y, srcW, srcH, 0, 0, srcW, srcH);
+            canvas.toBlob((blob) => {
+              if (blob) filterIcon.src = URL.createObjectURL(blob);
+            }, "image/png");
+          });
+        });
+      } else {
+        filterIcon.src = filter.iconSrc!;
+      }
+      filterIcon.alt = "";
+      filterIcon.classList.add("pixelated-image");
+      if (filter.type === "w") filterIcon.classList.add("filter-wand");
+      filterIcon.draggable = false;
+      filterLabel.appendChild(filterIcon);
+      filterBox.appendChild(filterLabel);
+    }
+
+    // Initialize Bootstrap popovers
+    // @ts-ignore
+    filterBox.querySelectorAll('[data-bs-toggle="popover"]').forEach((el: HTMLElement) => new bootstrap.Popover(el));
+
+    // Re-bind filter checkbox events
+    this.bindFilterEvents();
   }
 
   /** Refresh filter popover translations after language change */

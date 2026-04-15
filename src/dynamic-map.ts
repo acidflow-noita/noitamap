@@ -54,6 +54,7 @@ let currentIsDaily: boolean = false;
 let currentUnlocksKey: string | null = null;
 let lastResult: GenerationResult | null = null;
 let dynamicRendered: boolean = false;
+let generationToken: number = 0;
 
 /** Get the seed currently displayed on the dynamic map */
 export function getCurrentDynamicSeed(): number | null {
@@ -160,9 +161,13 @@ export async function runDynamicMap(
 
   onLoadingChange?.(true);
 
+  // Capture token so we can detect if clearDynamicMap was called mid-pipeline
+  const myToken = ++generationToken;
+
   // Yield so the browser can paint the loading indicator before telescope
   // blocks the main thread during initialization (~700ms first load).
   await new Promise((r) => setTimeout(r, 0));
+  if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
 
   // Ensure persistent biome backgrounds are present in OSD — fills the
   // biome boundary shapes with correct textures so there are no "black holes".
@@ -178,6 +183,7 @@ export async function runDynamicMap(
   try {
      // 0b. Ensure telescope is initialized (runs LIB_VERSION cache bust BEFORE cache check)
     await initTelescope();
+    if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
 
     // 1. Check cache (skip if unlocks changed for same seed)
     let t = performance.now();
@@ -197,6 +203,7 @@ export async function runDynamicMap(
       t = performance.now();
       console.log(`[DynamicMap] Generating seed ${seed} (unlocks: ${unlocks ? unlocks.length + "/" + UNLOCK_KEYS.length : "all"})...`);
       result = await generateDynamicMap({ seed, ngPlus: 0, dailySeed: isDaily, unlocks });
+      if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
       console.log(`[DynamicMap] Generation: ${((performance.now() - t) / 1000).toFixed(2)}s`);
 
       // 3. Store in cache (fire-and-forget -- don't block render)
@@ -252,6 +259,7 @@ export async function runDynamicMap(
       `[DynamicMap] Rendering seed ${seed} with ${result.parallelWorlds?.length || 3} worlds, worldCenter=${result.worldCenter}`,
     );
     await renderGenerationResult(viewer as any, result, unlocks, isDaily);
+    if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
     console.log(`[DynamicMap] Render: ${((performance.now() - t) / 1000).toFixed(2)}s`);
     lastResult = result;
     dynamicRendered = true;
@@ -307,6 +315,7 @@ export function clearDynamicMap(viewer: any): void {
   currentIsDaily = false;
   currentUnlocksKey = null;
   dynamicRendered = false;
+  generationToken++;
   clearSeedParams();
 }
 

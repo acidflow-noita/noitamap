@@ -177,6 +177,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       bar.style.width = "100%";
       if (title) title.textContent = i18next.isInitialized ? i18next.t("loading.mapData.generating") : "Generating Biomes";
       if (status) status.textContent = "33%";
+      // Add indeterminate animation to the track so the loading bar doesn't appear frozen
+      const track = document.querySelector(".loading-strip-bar-track");
+      if (track) track.classList.add("indeterminate");
     }
   }) as EventListener);
 
@@ -185,6 +188,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const status = _getStatusText();
     if (!bar) return;
 
+    // Stop indeterminate animation once real progress arrives
+    const track = document.querySelector(".loading-strip-bar-track");
+    if (track) track.classList.remove("indeterminate");
     showLoadingStrip();
     bar.style.width = `${e.detail.percentage}%`;
     if (status) status.textContent = `${Math.round(33 + e.detail.percentage / 3)}%`;

@@ -68,27 +68,12 @@
       {
         "label": "Mod",
         "labelKey": "badges.mod",
-        "class": "text-bg-info",
+        "class": "text-bg-light",
         "icon": "bi bi-tools"
       }
     ],
     "patchDate": "2024-08-12",
     "seed": "78633194",
-    "tileSets": ["middle", "left", "right"]
-  },
-  {
-    "key": "regular-beta",
-    "label": "Regular",
-    "labelKey": "maps.regularBeta",
-    "badges": [
-      {
-        "label": "β branch",
-        "labelKey": "badges.betaBranch",
-        "class": "text-bg-info"
-      }
-    ],
-    "patchDate": "2024-08-12",
-    "seed": "78633191",
     "tileSets": ["middle", "left", "right"]
   },
   {
@@ -209,53 +194,5 @@
     "seed": "786433191",
     "tileSets": ["middle"],
     "modUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=3356681136"
-  },
-  {
-    "key": "biomemap-main-branch",
-    "label": "Biome Map",
-    "labelKey": "maps.biomeMap",
-    "badges": [
-      {
-        "label": "Special",
-        "labelKey": "badges.special",
-        "class": "text-bg-primary",
-        "icon": "bi bi-gear-wide-connected"
-      }
-    ],
-    "patchDate": "2024-08-12",
-    "seed": "78633191",
-    "tileSets": ["middle"]
-  },
-  {
-    "key": "biomemaprendered-main-branch",
-    "label": "Biome Map Captured",
-    "labelKey": "maps.biomeMapCaptured",
-    "badges": [
-      {
-        "label": "Special",
-        "labelKey": "badges.special",
-        "class": "text-bg-primary",
-        "icon": "bi bi-gear-wide-connected"
-      }
-    ],
-    "patchDate": "2024-08-12",
-    "seed": "78633191",
-    "tileSets": ["middle"]
-  },
-  {
-    "key": "maptestdev",
-    "label": "Map Test PNG",
-    "labelKey": "maps.mapTestPng",
-    "badges": [
-      {
-        "label": "Special",
-        "labelKey": "badges.special",
-        "class": "text-bg-primary",
-        "icon": "bi bi-gear-wide-connected"
-      }
-    ],
-    "patchDate": "2024-08-12",
-    "seed": "78633191",
-    "tileSets": ["middle"]
   }
 ]
