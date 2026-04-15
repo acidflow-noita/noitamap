@@ -148,8 +148,8 @@ export async function cacheGeneration(cacheKey: string, seed: number, result: an
       biomeDataPixels: result.biomeData?.pixels
         ? new Uint32Array(result.biomeData.pixels).buffer
         : new ArrayBuffer(0),
-      biomeDataW: result.biomeData?.w ?? 0,
-      biomeDataH: result.biomeData?.h ?? 0,
+      biomeDataW: result.isNGP ? 72 : 70,
+      biomeDataH: 48,
       poisByPW: result.poisByPW,
       pixelScenesByPW,
     };
@@ -207,11 +207,25 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
       minY: layer.minY,
     }));
 
-    // Reconstruct biomeData with pixels
-    const biomeData = entry.biomeDataPixels?.byteLength
-      ? { pixels: new Uint32Array(entry.biomeDataPixels), w: entry.biomeDataW, h: entry.biomeDataH }
-      : { pixels: new Uint32Array(0), w: 0, h: 0 };
+    // Reconstruct biomeData with pixels, heavenPixels, and hellPixels
+    let biomeData: any = { pixels: new Uint32Array(0), w: 0, h: 0 };
+    if (entry.biomeDataPixels?.byteLength) {
+      const pixels = new Uint32Array(entry.biomeDataPixels);
+      // Derive w/h from isNGP; fall back to stored values for forward compat
+      const w = (entry.biomeDataW > 0) ? entry.biomeDataW : (entry.isNGP ? 72 : 70);
+      const h = (entry.biomeDataH > 0) ? entry.biomeDataH : 48;
+      const heavenPixels = new Uint32Array(pixels.length);
+      const hellPixels = new Uint32Array(pixels.length);
 
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          heavenPixels[y * w + x] = pixels[x % w]; // Repeat first row
+          hellPixels[y * w + x] = pixels[(h - 1) * w + (x % w)]; // Repeat last row
+        }
+      }
+
+      biomeData = { pixels, heavenPixels, hellPixels, w, h };
+    }
     // Restore pixel scene metadata + imgElement from cached RGBA data
     const pixelScenesByPW: Record<string, any[]> = {};
     for (const [pw, scenes] of Object.entries(entry.pixelScenesByPW)) {

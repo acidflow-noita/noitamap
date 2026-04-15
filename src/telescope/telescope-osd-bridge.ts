@@ -918,21 +918,25 @@ async function addBiomeLayersProgressively(
   console.log(`[OSD Bridge] unordered biomes to render:`, unorderedBiomes);
 
   const anchorY = -(14 * 512);
-  const totalPWs = pwOrder.length;
+
+  // Count total steps for progress: each PW × number of active vertical planes
+  // Order: main world first (0), then heaven (-1), then hell (1)
+  const pvtList = [0, -1, 1].filter((pvt) => {
+    if (pvt < 0 && !biomeData.heavenPixels) return false;
+    if (pvt > 0 && !biomeData.hellPixels) return false;
+    return true;
+  });
+  const totalSteps = pwOrder.length * pvtList.length;
+  let stepsDone = 0;
 
   for (let pwIdx = 0; pwIdx < pwOrder.length; pwIdx++) {
     const pw = pwOrder[pwIdx];
     if (currentGenerationId !== generationId) return;
 
-    // Report the START of this PW's computation BEFORE the CPU-heavy work.
-    // This ensures the bar visually advances before we get blocked.
-    const progressStart = Math.round((pwIdx / totalPWs) * 100);
-    window.dispatchEvent(new CustomEvent("biomeGenerationProgress", { detail: { percentage: progressStart } }));
-
-    for (const pvt of [-1, 0, 1]) {
-      // Skip vertical PW if the corresponding biome pixel data doesn't exist
-      if (pvt < 0 && !biomeData.heavenPixels) continue;
-      if (pvt > 0 && !biomeData.hellPixels) continue;
+    for (const pvt of pvtList) {
+      // Report progress before CPU-heavy work
+      const progress = Math.round((stepsDone / totalSteps) * 100);
+      window.dispatchEvent(new CustomEvent("biomeGenerationProgress", { detail: { percentage: progress } }));
 
       // Yield briefly so the browser can paint the progress update before we block the main thread.
       await new Promise((r) => setTimeout(r, 0));
@@ -980,7 +984,7 @@ async function addBiomeLayersProgressively(
         }
       }
 
-      if (validOverlays.length === 0) continue;
+      if (validOverlays.length === 0) { stepsDone++; continue; }
 
       // Create a composited canvas at the same pixel density (1 pixel = 10 OSD units)
       const compositeW = Math.ceil((maxX - minX) / 10);
@@ -1021,12 +1025,13 @@ async function addBiomeLayersProgressively(
           dynamicTiledImages.add(event.item);
         },
       });
-    }
 
-    // Report completion of this PW
-    const progressEnd = Math.round(((pwIdx + 1) / totalPWs) * 100);
-    window.dispatchEvent(new CustomEvent("biomeGenerationProgress", { detail: { percentage: progressEnd } }));
+      stepsDone++;
+    }
   }
+
+  // Report 100% completion
+  window.dispatchEvent(new CustomEvent("biomeGenerationProgress", { detail: { percentage: 100 } }));
 }
 
 // ─── Pixel Scene Config ─────────────────────────────────────────────────────
@@ -1067,11 +1072,6 @@ export const pixelSceneConfig = {
     "null_room",
     "eyespot",
     "orbroom",
-    "altar_top",
-    "altar_right",
-    "altar_right_snowcastle",
-    "altar_left",
-    "altar",
     "yourroom",
     "yourroom_entrance",
     "yourroom_npc",
