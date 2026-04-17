@@ -16,6 +16,7 @@ import { parseURL, updateURLWithSeed, clearSeedParams } from "./data_sources/url
 import { getCachedGeneration, cacheGeneration } from "./telescope/tile-cache";
 import { generateDynamicMap, initTelescope, type GenerationResult } from "./telescope/telescope-adapter";
 import { getUnlocksFromURL, unlocksChanged, UNLOCK_KEYS } from "./unlocks";
+import { isLightMode } from "./light-mode";
 import {
   renderGenerationResult,
   clearDynamicOverlays,
@@ -137,7 +138,8 @@ export async function runDynamicMap(
 
   // Read unlock state from URL (caches to localStorage automatically)
   const unlocks = getUnlocksFromURL();
-  const unlockKey = unlocks ? unlocks.sort().join(",") : "all";
+  const lightMode = isLightMode();
+  const unlockKey = (unlocks ? unlocks.sort().join(",") : "all") + (lightMode ? "|lm" : "");
 
   // 0. Skip only if same seed, same unlocks, and overlays still present.
   if (seed === currentSeed && unlockKey === currentUnlocksKey && dynamicRendered && hasDynamicOverlays()) {
@@ -202,7 +204,7 @@ export async function runDynamicMap(
       // 2. Generate with unlock state
       t = performance.now();
       console.log(`[DynamicMap] Generating seed ${seed} (unlocks: ${unlocks ? unlocks.length + "/" + UNLOCK_KEYS.length : "all"})...`);
-      result = await generateDynamicMap({ seed, ngPlus: 0, dailySeed: isDaily, unlocks });
+      result = await generateDynamicMap({ seed, ngPlus: 0, dailySeed: isDaily, unlocks, parallelWorlds: lightMode ? [0] : undefined });
       if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
       console.log(`[DynamicMap] Generation: ${((performance.now() - t) / 1000).toFixed(2)}s`);
 

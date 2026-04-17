@@ -84,11 +84,25 @@ function draw() {
   ctx.stroke();
 }
 
+const STORAGE_KEY = "chunkGridVisible";
+
+export function isChunkGridVisible(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 export function initChunkGrid(osdViewer: any) {
   viewer = osdViewer;
 }
 
 export function showChunkGrid(show: boolean) {
+  try {
+    if (show) localStorage.setItem(STORAGE_KEY, "1");
+    else localStorage.removeItem(STORAGE_KEY);
+  } catch {}
   if (show === visible) return;
   visible = show;
 

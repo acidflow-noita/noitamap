@@ -618,11 +618,9 @@ body.toggle-hidden div.osOverlayHighlight {
   margin: 0.25rem !important;
 }
 
-/* Make search form wider to prevent placeholder clipping and add focus glow padding */
+/* Make search form wider to prevent placeholder clipping */
 #search-form {
   min-width: 280px;
-  padding-left: 0.25rem;
-  padding-right: 0.25rem;
 }
 
 #shareButton i {

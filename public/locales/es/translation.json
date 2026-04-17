@@ -4643,5 +4643,14 @@
   "chunkGrid": {
     "title": "Cuadricula de chunks",
     "content": "Alternar superposición de cuadrícula de límites de fragmentos"
+  },
+  "lightMode": {
+    "label": "Light mode",
+    "title": "Light mode",
+    "content": "Only generate the main world. Skips east/west parallel worlds to reduce memory use on mobile / low-RAM devices. Enabled by default on small screens."
+  },
+  "mainWorldOnly": {
+    "title": "Main world only",
+    "content": "Only load the main world. Skips east/west parallel worlds (both the static background and dynamic POIs). Reduces memory use on mobile / low-RAM devices. On by default on small screens."
   }
 }

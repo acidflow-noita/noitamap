@@ -89,13 +89,14 @@ import { getAllMapDefinitions } from "./data_sources/map_definitions";
 import { initMouseTracker } from "./mouse_tracker";
 import { isRenderer, getStoredRenderer, setStoredRenderer } from "./renderer_settings";
 import { isSpoilerFree, setSpoilerFree } from "./spoiler-free";
+import { isLightMode, setLightMode } from "./light-mode";
 import { createLanguageSelector } from "./language-selector";
 import { updateTranslations } from "./i18n-dom";
 import { initKonamiCode } from "./konami";
 import { AuthUI } from "./auth/auth-ui";
 import { authService } from "./auth/auth-service";
 import { DrawingUI } from "./drawing/drawing-ui";
-import { initChunkGrid, showChunkGrid } from "./drawing/chunk-grid";
+import { initChunkGrid, showChunkGrid, isChunkGridVisible } from "./drawing/chunk-grid";
 
 // Global reference to unified search for translation updates
 let globalUnifiedSearch: UnifiedSearch | null = null;
@@ -287,6 +288,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   initChunkGrid(app.osd.viewer);
   const chunkGridToggler = document.getElementById("chunkGridToggler") as HTMLInputElement | null;
   if (chunkGridToggler) {
+    chunkGridToggler.checked = isChunkGridVisible();
+    if (chunkGridToggler.checked) showChunkGrid(true);
     chunkGridToggler.addEventListener("change", () => showChunkGrid(chunkGridToggler.checked));
   }
 
@@ -809,6 +812,26 @@ document.addEventListener("DOMContentLoaded", async () => {
       spoilerFreeToggle.blur();
       document.querySelectorAll('.popover').forEach((el: Element) => el.remove());
       // Defer reload briefly so the DOM cleanup above takes effect
+      setTimeout(() => window.location.reload(), 50);
+    });
+  }
+
+  // Handle light-mode toggle — full reload so OSD re-opens without the
+  // left/right PW static tile sources. Dynamic generation is IDB-cached,
+  // so the reload cost is essentially just a page refresh.
+  const lightModeToggle = document.getElementById("lightModeToggle") as HTMLInputElement | null;
+  if (lightModeToggle) {
+    lightModeToggle.checked = isLightMode();
+    lightModeToggle.addEventListener("change", () => {
+      setLightMode(lightModeToggle.checked);
+      const label = document.querySelector<HTMLElement>('label[for="lightModeToggle"]');
+      if (label) {
+        const popover = bootstrap.Popover.getInstance(label);
+        if (popover) popover.dispose();
+        label.blur();
+      }
+      lightModeToggle.blur();
+      document.querySelectorAll('.popover').forEach((el: Element) => el.remove());
       setTimeout(() => window.location.reload(), 50);
     });
   }

@@ -286,6 +286,20 @@
                 ><i class="bi bi-eye-slash"></i>
               </label>
 
+              <input type="checkbox" class="btn-check" id="lightModeToggle" autocomplete="off" />
+              <label
+                class="icon-button btn btn-sm btn-outline-light me-2 dynamic-map-only"
+                for="lightModeToggle"
+                data-bs-toggle="popover"
+                data-bs-placement="top"
+                data-bs-trigger="hover focus"
+                data-i18n-title="mainWorldOnly.title"
+                data-bs-title="Main world only"
+                data-i18n-content="mainWorldOnly.content"
+                data-bs-content="Only load the main world. Skips east/west parallel worlds (both the static background and dynamic POIs). Reduces memory use on mobile / low-RAM devices. On by default on small screens."
+                ><i class="bi bi-speedometer"></i>
+              </label>
+
               <form id="search-form" role="search" class="flex-grow-1 me-2">
                 <input
                   id="unified-search-input"

@@ -1,5 +1,6 @@
 import { fetchMapVersions, getTileData, MapName } from "./data_sources/tile_data";
 import { createOverlays } from "./data_sources/overlays";
+import { isLightMode } from "./light-mode";
 
 import { CHUNK_SIZE } from "./constants";
 
@@ -151,7 +152,12 @@ export class AppOSD {
   }
 
   private static getTileSources(mapName: MapName): string[] {
-    return getTileData(mapName).map((tileData) => tileData.url);
+    let sources = getTileData(mapName).map((tileData) => tileData.url);
+    // Light mode on the dynamic map: skip left/right PW backgrounds, keep only middle.
+    if (mapName === "dynamic-main-branch" && isLightMode()) {
+      sources = sources.filter((url) => !/-left\.|-right\./.test(url));
+    }
+    return sources;
   }
 
   private getAllItems(): any[] {

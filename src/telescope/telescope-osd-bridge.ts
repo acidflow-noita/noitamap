@@ -28,6 +28,7 @@ import type { MarkerData, MarkerItem } from "./poi-spatial-index";
 import { createMarkerTileSource } from "./marker-tile-source";
 import { gameTranslator } from "../game-translations/translator";
 import { isSpoilerFree, getSpoilerCategory, getSpoilerLabel, applySpoilerFree } from "../spoiler-free";
+import { isLightMode } from "../light-mode";
 import { clearTargetPoiId } from "../data_sources/url";
 import spells from "../data/spells.json";
 import { CREATURE_DATA } from "../data/creature-data";
@@ -366,7 +367,8 @@ export function addBiomeBgToOSD(viewer: any): void {
   if (!_bgCompositeBlob || !_bgGeometry) return;
   const { gx, gy, w } = _bgGeometry;
   const pwOffsetPixels = 70 * 512;
-  for (const pw of [-1, 0, 1]) {
+  const pws = isLightMode() ? [0] : [-1, 0, 1];
+  for (const pw of pws) {
     const url = URL.createObjectURL(_bgCompositeBlob);
     viewer.addTiledImage({
       tileSource: { type: "image", url, buildPyramid: false },
@@ -841,9 +843,10 @@ async function addBiomeBackgrounds(viewer: OSDViewer, generationId: number): Pro
   const url = await offscreenCanvasToBlobUrl(canvas);
   if (currentGenerationId !== generationId) return;
 
-  // Add the bg canvas for PW 0, -1, and +1
+  // Add the bg canvas for PW 0, -1, and +1 (skip side PWs in light mode)
   const pwOffsetPixels = 70 * 512; // TODO: use isNGP for 72
-  for (const pw of [-1, 0, 1]) {
+  const bgPws = isLightMode() ? [0] : [-1, 0, 1];
+  for (const pw of bgPws) {
     const pwX = globalMinGX + pw * pwOffsetPixels;
     viewer.addTiledImage({
       tileSource: { type: "image", url, buildPyramid: false },

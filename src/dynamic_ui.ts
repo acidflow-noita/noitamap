@@ -203,6 +203,11 @@ export function updateDynamicUIVisibility(currentMap: string): void {
   toolbarEl.classList.toggle("d-none", !isDynamic);
   toolbarEl.classList.toggle("d-flex", isDynamic);
 
+  // Toggle any dynamic-map-only controls outside the toolbar (e.g. light-mode switch in navbar)
+  document.querySelectorAll(".dynamic-map-only").forEach((el) => {
+    (el as HTMLElement).classList.toggle("d-none", !isDynamic);
+  });
+
   // Hide overlay toggles on dynamic map, except those that work on the dynamic map.
   const overlaySelector = document.getElementById("overlay-selector");
   if (overlaySelector) {
