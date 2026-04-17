@@ -1389,6 +1389,19 @@ function resolveScenePath(
   return undefined;
 }
 
+// Spawn-marker colors found in temple wang templates (DEFAULT_SPAWNS + TEMPLES_COMMON_SPAWNS).
+// These would otherwise show as visible dots on the map since the temple _fg.png bypasses
+// telescope's normal spawn-pixel scanning pipeline.
+const TEMPLE_SPAWN_STRIP_COLORS = new Set<number>([
+  0xff0000, 0x800000, 0x00ff00, 0xc88d1a, 0xc88000, 0xc80040, 0xffff00, 0xff0aff, 0xff0080,
+  0xff8000, 0xc84040, 0x804040, 0x96c850, 0x60a064, 0x50a000, 0xbca0f0, 0x00ff5a, 0x78ffff,
+  0x50a0f0, 0xbf26a6, 0x04a977, 0xffd171, 0xffd181, 0xffff81, 0xc7eb28, 0xe8ff80, 0x2768de,
+  0x2768df, 0x6b4f9b, 0xd7b3e8,
+  0x805000, 0x397780, 0x00ffa0, 0x1ca7ff, 0xffeed0, 0xffeed1, 0xffeed2, 0xffeed3, 0xffeed4,
+  0xffeed5, 0xffeed6, 0xffeeda, 0xffeedb, 0xffeedc, 0xffeedd, 0xffeede, 0xffeedf,
+  0xffaaaa, 0xffaadd,
+]);
+
 /** Decode a PNG from data.zip, applying background transparency. */
 async function decodeScenePng(zip: any, path: string): Promise<ImageData | null> {
   const file = zip.file(path);
@@ -1411,6 +1424,13 @@ async function decodeScenePng(zip: any, path: string): Promise<ImageData | null>
       if (d[i] === tlR && d[i + 1] === tlG && d[i + 2] === tlB) d[i + 3] = 0;
       if (d[i] === 0 && d[i + 1] === 0 && d[i + 2] === 66) d[i + 3] = 0; // Noita air color
       if (d[i] === 255 && d[i + 1] === 0 && d[i + 2] === 255) d[i + 3] = 0; // Magenta placeholder
+    }
+  }
+  if (path.includes("/temples-assets/") && path.endsWith("_fg.png")) {
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] === 0) continue;
+      const c = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2];
+      if (TEMPLE_SPAWN_STRIP_COLORS.has(c)) d[i + 3] = 0;
     }
   }
   return new ImageData(new Uint8ClampedArray(d as any), decoded.width, decoded.height);
