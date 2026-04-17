@@ -964,6 +964,29 @@ body.toggle-hidden div.osOverlayHighlight {
   border-radius: 3px;
 }
 
+/* Prevent auth/drawing buttons from covering navbar dropdown menus */
+#auth-container,
+#auth-button-wrapper,
+#drawing-ui-wrapper {
+  position: relative;
+  z-index: auto;
+}
+
+/* Ensure navbar dropdowns paint above sibling buttons */
+#map-selector {
+  position: relative;
+  z-index: 1050;
+}
+
+/* "Nothing found" empty-state message */
+.search-no-results {
+  padding: 16px;
+  text-align: center;
+  color: #888;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
 /* ── Auth dropdown: ensure it renders above other navbar elements ────────── */
 
 #auth-button-wrapper {

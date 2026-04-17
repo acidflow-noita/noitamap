@@ -238,6 +238,15 @@ export class UnifiedSearchResults extends EventEmitter2 {
     this.wrapper.appendChild(notice);
   }
 
+  /** Show a "no results" placeholder when search yields nothing. */
+  setNoResults(): void {
+    this.clearResults(false);
+    const li = document.createElement("li");
+    li.className = "search-no-results";
+    li.textContent = i18next.t("search.noResults", "Nothing found");
+    this.wrapper.appendChild(li);
+  }
+
   setResults(results: UnifiedSearchResult[]) {
     this.clearResults(results.length === 0);
 
@@ -460,12 +469,12 @@ export class UnifiedSearchResults extends EventEmitter2 {
             }
             contentDiv.appendChild(nameDiv);
 
-            if ((result as any).chunksAway !== null) {
-              const chunksAway = (result as any).chunksAway as number;
+            if ((result as any).chunksAway != null && !isNaN((result as any).chunksAway)) {
+              const chunksAway = Number((result as any).chunksAway) || 0;
               const proximitySpan = document.createElement("span");
               proximitySpan.className = "ms-2 text-secondary proximity-hint";
               proximitySpan.style.fontSize = "0.8em";
-              proximitySpan.dataset.chunksAway = chunksAway.toString();
+              proximitySpan.dataset.chunksAway = String(chunksAway);
               proximitySpan.textContent = i18next.t("search.chunksAway", "~{{count}} chunks away", { count: chunksAway });
               contentDiv.appendChild(proximitySpan);
             }

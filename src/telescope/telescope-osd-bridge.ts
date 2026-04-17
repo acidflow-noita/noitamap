@@ -1057,6 +1057,7 @@ export const pixelSceneConfig = {
     "funroom",
     "lavalake_racing",
     "secret_lab",
+    "altar_top",
     "altar_top_ending",
     "hourglass_chamber",
     "watercave",
@@ -1352,6 +1353,9 @@ async function getScenePngIndex(): Promise<ScenePngIndex> {
       };
       addTo("_visual.png", visualByPath, visualByName);
       addTo("_background.png", bgByPath, bgByName);
+      addTo("_bg.png", bgByPath, bgByName);
+      // Temple foreground scenes use _fg.png instead of _visual.png
+      addTo("_fg.png", visualByPath, visualByName);
       // Top-level plain .png files (no subdirectory, no _visual/_background suffix) —
       // these are full pixel scene visuals like watercave_layout_X.png
       if (!inner.includes("/") && !inner.endsWith("_visual.png") && !inner.endsWith("_background.png")) {

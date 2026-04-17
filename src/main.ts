@@ -85,6 +85,7 @@ import { UnifiedSearch } from "./search/unifiedsearch";
 import { asMapName, MapName } from "./data_sources/tile_data";
 import { addEventListenerForId, assertElementById, debounce } from "./util";
 import { createMapLinks, NAV_LINK_IDENTIFIER } from "./nav";
+import { getAllMapDefinitions } from "./data_sources/map_definitions";
 import { initMouseTracker } from "./mouse_tracker";
 import { isRenderer, getStoredRenderer, setStoredRenderer } from "./renderer_settings";
 import { isSpoilerFree, setSpoilerFree } from "./spoiler-free";
@@ -265,6 +266,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   globalApp = app;
   console.log(`[Noitamap] Active OSD drawer: ${(app.osd as any).drawer?.getType?.() ?? storedRenderer}`);
+
+  // Helper to update the map selector button text to show current map
+  const updateMapSelectorText = (mapName: string) => {
+    const defs = getAllMapDefinitions();
+    const match = defs.find(([key]) => key === mapName);
+    if (match) {
+      const def = match[1];
+      const translatableKeys = ['maps.mapDynamic','maps.regular','maps.newGamePlus','maps.nightmare'];
+      const shouldTranslate = def.labelKey && translatableKeys.includes(def.labelKey);
+      mapSelectorButton.textContent = shouldTranslate
+        ? i18next.t(def.labelKey || '', { defaultValue: def.label })
+        : def.label;
+    }
+  };
+  // Set initial button text
+  updateMapSelectorText(app.getMap());
 
   // Chunk grid toggle
   initChunkGrid(app.osd.viewer);
@@ -616,6 +633,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Add "active" class to the nav-link identified by `mapName`
     currentMapLink.classList.add("active");
+
+    // Update button text to show current map name
+    updateMapSelectorText(state.map);
   });
 
   const loadingIndicator = assertElementById("loadingIndicator", HTMLElement);

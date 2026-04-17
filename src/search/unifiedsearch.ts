@@ -785,7 +785,11 @@ export class UnifiedSearch extends EventEmitter2 {
 
       const combinedResults: any[] = [...dynamicResults];
 
-      this.searchResults.setResults(combinedResults);
+      if (combinedResults.length === 0) {
+        this.searchResults.setNoResults();
+      } else {
+        this.searchResults.setResults(combinedResults);
+      }
       return;
     }
 
@@ -832,7 +836,11 @@ export class UnifiedSearch extends EventEmitter2 {
       combinedResults.push(...spellResults);
     }
 
-    this.searchResults.setResults(combinedResults);
+    if (combinedResults.length === 0) {
+      this.searchResults.setNoResults();
+    } else {
+      this.searchResults.setResults(combinedResults);
+    }
   }
 
   static create({ currentMap, form, initialFilters }: UnifiedSearchCreateOptions) {
@@ -1068,6 +1076,18 @@ export class UnifiedSearch extends EventEmitter2 {
         overlayDiv.style.display = "block";
         isOverlayVisible = true;
         (instance as any).explicitShowRequested = false; // consume it
+      }
+    };
+
+    // Show overlay for "Nothing found" state too
+    const origSetNoResults = searchResults.setNoResults.bind(searchResults);
+    searchResults.setNoResults = () => {
+      origSetNoResults();
+      if (document.activeElement === searchInput || (instance as any).explicitShowRequested) {
+        positionOverlay();
+        overlayDiv.style.display = "block";
+        isOverlayVisible = true;
+        (instance as any).explicitShowRequested = false;
       }
     };
 

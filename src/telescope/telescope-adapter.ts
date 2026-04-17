@@ -568,6 +568,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       if (vtResults && vtResults.pois && vtResults.pois.length > 0) {
         verticalPois.push(...vtResults.pois);
       }
+
     }
 
     // Post-process POIs to fix wand names without modifying library code
@@ -826,6 +827,45 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       if (res.pixelScenes) {
         if (!pixelScenesByPW[pwKey]) pixelScenesByPW[pwKey] = [];
         pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(res.pixelScenes);
+      }
+    }
+  }
+
+  // Inject temple foreground pixel scenes for heaven/hell across ALL parallel worlds.
+  // addStaticPixelScenes skips chunk-based scenes when pwIndexVertical !== 0,
+  // so Spirited (potion_mimics) and Ominous (darkness) temple foregrounds
+  // never get generated. We scan biomeData.pixels directly and create pixel
+  // scene entries whose keys match the _fg.png index in data.zip.
+  // Scale wang pixel dimensions (TILE_SIZE=10) to match main-world wang renderer output.
+  const TEMPLE_BIOME_COLORS: Record<number, { key: string; name: string; w: number; h: number }> = {
+    0xffff00fe: { key: 'static_tile/temples-assets/potion_mimics', name: 'potion_mimics', w: 1530, h: 1540 },
+    0xffff00fd: { key: 'static_tile/temples-assets/darkness', name: 'darkness', w: 1530, h: 940 },
+  };
+  const templeMw = getWorldSize(ngPlus > 0, gameMode);
+  for (const pw of parallelWorlds) {
+    const pwKey = `${pw},0`;
+    if (!pixelScenesByPW[pwKey]) pixelScenesByPW[pwKey] = [];
+    for (const pvt of [-1, 1]) {
+      // Only place one image per temple type (they span multiple biome chunks)
+      const placed = new Set<number>();
+      for (let by = 0; by < 48; by++) {
+        for (let bx = 0; bx < templeMw; bx++) {
+          const biomeColor = biomeData.pixels[by * templeMw + bx];
+          const templeInfo = TEMPLE_BIOME_COLORS[biomeColor];
+          if (!templeInfo || placed.has(biomeColor)) continue;
+          placed.add(biomeColor);
+          const chunkX = bx * 512 - templeMw * 256 + pw * templeMw * 512;
+          const chunkY = by * 512 - 14 * 512 + pvt * 48 * 512;
+          pixelScenesByPW[pwKey].push({
+            imgElement: null as any,
+            x: chunkX,
+            y: chunkY,
+            width: templeInfo.w,
+            height: templeInfo.h,
+            name: templeInfo.name,
+            key: templeInfo.key,
+          });
+        }
       }
     }
   }
