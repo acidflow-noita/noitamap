@@ -93,6 +93,17 @@ function getParam(url: URL, shortName: string, longName: string): string | null 
 }
 
 /**
+ * Convert a URL `z` (logZoom) int into OSD viewport zoom.
+ * Inverse of `logZoomFromZoom`. Larger logZoom = more zoomed out.
+ */
+export const zoomFromLogZoom = (logZoom: number): number => Math.pow(2, logZoom / -100);
+
+/**
+ * Convert an OSD viewport zoom into the URL `z` (logZoom) int.
+ */
+export const logZoomFromZoom = (zoom: number): number => Math.log2(zoom) * -100;
+
+/**
  * Take the window's URL and return partial application state
  * Accepts both short (z, m, o, s) and long (zoom, map, overlays, sidebar) param names
  */
@@ -103,7 +114,7 @@ export function parseURL(): URLState {
   const y = intQueryValue(url.searchParams.get('y'));
 
   const logZoom = intQueryValue(getParam(url, 'z', 'zoom'));
-  const zoom = logZoom !== null ? Math.pow(2, logZoom / -100) : null;
+  const zoom = logZoom !== null ? zoomFromLogZoom(logZoom) : null;
 
   // Accept both short and long map names
   const mapParam = getParam(url, 'm', 'map');
@@ -200,7 +211,7 @@ export function updateURL(data: AppState) {
 
   url.searchParams.set('x', data.pos.x.toFixed(0));
   url.searchParams.set('y', data.pos.y.toFixed(0));
-  url.searchParams.set('z', (Math.log2(data.pos.zoom) * -100).toFixed(0));
+  url.searchParams.set('z', logZoomFromZoom(data.pos.zoom).toFixed(0));
   url.searchParams.set('m', mapToShort(data.map as MapName));
   // Note: we don't dynamically update the URL with the search query character by character
   // If we wanted to, we would set 'q' param here. Let's just leave it out from AppState updates.
