@@ -18,6 +18,7 @@ const DYNAMIC_MAP_NAME = "dynamic-main-branch";
 // ─── State ───────────────────────────────────────────────────────────────────
 
 let toolbarEl: HTMLElement | null = null;
+let toolbarItems: HTMLElement[] = [];
 let seedInput: HTMLInputElement | null = null;
 let generateBtn: HTMLButtonElement | null = null;
 let dailySeedBtn: HTMLButtonElement | null = null;
@@ -36,14 +37,18 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   const buttonContainer = document.querySelector<HTMLElement>(".collapse.navbar-collapse .d-flex.flex-wrap");
   if (!buttonContainer) return;
 
-  toolbarEl = document.createElement("div");
+  // An invisible anchor comment marks where the dynamic buttons get inserted.
+  // Buttons are inserted as DIRECT children of the navbar row (no wrapper div)
+  // so every gap between every pair of adjacent items comes from the single
+  // `gap` on the navbar row — no nested flex-container/flex-item discrepancy.
+  toolbarEl = document.createElement("span");
   toolbarEl.id = "dynamic-map-toolbar";
-  toolbarEl.className = "d-none d-flex flex-wrap align-items-center gap-1 me-1";
+  toolbarEl.style.display = "none"; // keep for translation-refresh queries below (no-op in layout)
 
   // ── Daily Seed button ──
   dailySeedBtn = document.createElement("button");
   dailySeedBtn.id = "dynamicDailySeedButton";
-  dailySeedBtn.className = "btn btn-sm btn-outline-info text-nowrap";
+  dailySeedBtn.className = "icon-button btn btn-sm btn-outline-info text-nowrap";
   // Popover (same style as share button / overlay toggles)
   dailySeedBtn.setAttribute("data-bs-toggle", "popover");
   dailySeedBtn.setAttribute("data-bs-placement", "bottom");
@@ -53,9 +58,9 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   dailySeedBtn.setAttribute("data-i18n-content", "dynamicMap.dailyDescription");
   dailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.dailyDescription"));
   dailySeedBtn.setAttribute("tabindex", "0");
-  dailySeedBtn.innerHTML = `<i class="bi bi-calendar-day me-1"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.daily">${i18next.t("dynamicMap.daily")}</span>`;
+  dailySeedBtn.innerHTML = `<i class="bi bi-calendar-day"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.daily">${i18next.t("dynamicMap.daily")}</span>`;
   dailySeedBtn.addEventListener("click", () => onDailySeedClick());
-  toolbarEl.appendChild(dailySeedBtn);
+  toolbarItems.push(dailySeedBtn);
 
   // ── Seed input ──
   seedInput = document.createElement("input");
@@ -88,7 +93,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
     }
     updateGenerateButtonState();
   });
-  toolbarEl.appendChild(seedInput);
+  toolbarItems.push(seedInput);
 
   // Wrapper span so popover works even when button is disabled (Bootstrap requirement)
   const generateWrapper = document.createElement("span");
@@ -104,32 +109,34 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
 
   generateBtn = document.createElement("button");
   generateBtn.id = "dynamicGenerateButton";
-  generateBtn.className = "btn btn-sm btn-outline-light text-nowrap";
-  generateBtn.innerHTML = `<i class="bi bi-play-fill me-1"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
+  generateBtn.className = "icon-button btn btn-sm btn-outline-light text-nowrap";
+  generateBtn.innerHTML = `<i class="bi bi-play-fill"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
   generateBtn.addEventListener("click", () => onGenerateClick());
 
   generateWrapper.appendChild(generateBtn);
-  toolbarEl.appendChild(generateWrapper);
+  toolbarItems.push(generateWrapper);
 
   // ── Lymm's Telescope button ──
   const nerdBtn = document.createElement("a");
   nerdBtn.id = "dynamicNerdModeButton";
-  nerdBtn.className = "btn btn-sm btn-outline-secondary text-nowrap";
+  nerdBtn.className = "icon-button btn btn-sm btn-outline-secondary text-nowrap";
   nerdBtn.href = NERD_MODE_URL;
   nerdBtn.target = "_blank";
   nerdBtn.rel = "noopener noreferrer";
-  nerdBtn.innerHTML = `<i class="bi bi-box-arrow-up-right me-1"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.nerdMode.label">${i18next.t("dynamicMap.nerdMode.label")}</span>`;
+  nerdBtn.innerHTML = `<i class="bi bi-box-arrow-up-right"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.nerdMode.label">${i18next.t("dynamicMap.nerdMode.label")}</span>`;
   nerdBtn.addEventListener("click", () => {
     const seed = new URLSearchParams(window.location.search).get("se");
     nerdBtn.href = seed ? `${NERD_MODE_URL}?seed=${seed}` : NERD_MODE_URL;
   });
-  toolbarEl.appendChild(nerdBtn);
+  toolbarItems.push(nerdBtn);
+
+  // Hide items initially; updateDynamicUIVisibility flips them on for dynamic maps.
+  toolbarItems.forEach(el => { el.style.display = "none"; });
 
   const overlaySel = buttonContainer.querySelector("#overlay-selector");
-  if (overlaySel) {
-    buttonContainer.insertBefore(toolbarEl, overlaySel);
-  } else {
-    buttonContainer.appendChild(toolbarEl);
+  for (const el of toolbarItems) {
+    if (overlaySel) buttonContainer.insertBefore(el, overlaySel);
+    else buttonContainer.appendChild(el);
   }
 
   // Initialize popovers and tooltips
@@ -150,7 +157,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
 // ─── Translation Refresh ─────────────────────────────────────────────────────
 
 function refreshDynamicUITranslations(): void {
-  if (!toolbarEl) return;
+  if (!toolbarItems.length) return;
 
   // Daily seed button
   if (dailySeedBtn) {
@@ -185,23 +192,27 @@ function refreshDynamicUITranslations(): void {
     if (nerdSpan) nerdSpan.textContent = i18next.t("dynamicMap.nerdMode.label");
   }
 
-  // Dispose and reinitialize ALL popovers in the toolbar
-  toolbarEl.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => {
-    // @ts-ignore
-    const existing = bootstrap.Popover.getInstance(el);
-    if (existing) existing.dispose();
-    // @ts-ignore
-    new bootstrap.Popover(el);
+  // Dispose and reinitialize ALL popovers in the toolbar items
+  toolbarItems.forEach(item => {
+    const targets: Element[] = [];
+    if (item.matches('[data-bs-toggle="popover"]')) targets.push(item);
+    item.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => targets.push(el));
+    targets.forEach(el => {
+      // @ts-ignore
+      const existing = bootstrap.Popover.getInstance(el);
+      if (existing) existing.dispose();
+      // @ts-ignore
+      new bootstrap.Popover(el);
+    });
   });
 }
 
 // ─── Visibility ──────────────────────────────────────────────────────────────
 
 export function updateDynamicUIVisibility(currentMap: string): void {
-  if (!toolbarEl) return;
+  if (!toolbarItems.length) return;
   const isDynamic = currentMap === DYNAMIC_MAP_NAME;
-  toolbarEl.classList.toggle("d-none", !isDynamic);
-  toolbarEl.classList.toggle("d-flex", isDynamic);
+  toolbarItems.forEach(el => { el.style.display = isDynamic ? "" : "none"; });
 
   // Toggle any dynamic-map-only controls outside the toolbar (e.g. light-mode switch in navbar)
   document.querySelectorAll(".dynamic-map-only").forEach((el) => {
@@ -314,8 +325,8 @@ function setBusy(busy: boolean): void {
   if (generateBtn) {
     generateBtn.disabled = busy;
     generateBtn.innerHTML = busy
-      ? `<span class="spinner-border spinner-border-sm me-1" role="status"></span><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`
-      : `<i class="bi bi-play-fill me-1"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
+      ? `<span class="spinner-border spinner-border-sm" role="status"></span><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`
+      : `<i class="bi bi-play-fill"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
   }
   if (dailySeedBtn) dailySeedBtn.disabled = busy;
 }

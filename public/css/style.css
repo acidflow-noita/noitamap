@@ -652,11 +652,6 @@ body.toggle-hidden div.osOverlayHighlight {
   min-width: 280px;
 }
 
-#shareButton i {
-  margin-top: -1px;
-  margin-right: -3px;
-}
-
 /* Fix renderer info button to show popover */
 #renderer-form .btn:first-child {
   cursor: pointer;
@@ -853,7 +848,7 @@ body.toggle-hidden div.osOverlayHighlight {
   top: 100%;
   left: 0;
   right: 0;
-  z-index: 1040;
+  z-index: 1; /* sits below Bootstrap dropdowns (1000) so menus open over it */
   pointer-events: none;
   display: none;
   opacity: 0;
