@@ -10,6 +10,8 @@ import spells from "../data/spells.json";
 import { EventEmitter2 } from "eventemitter2";
 import type { DynamicPOI } from "../dynamic-map";
 import { CREATURE_ALIASES, CREATURE_DATA } from "../data/creature-data";
+import { authService } from "../auth/auth-service";
+import { AuthUI } from "../auth/auth-ui";
 
 // Inlined from poi-spatial-index to avoid pulling Flatbush into the main bundle
 const CONTAINER_TYPES = new Set([
@@ -40,6 +42,232 @@ const CONTAINER_TYPES = new Set([
 
 const CHEST_TYPES = new Set(["chest", "great_chest", "pacifist_chest"]);
 const HOLY_MOUNTAIN_TYPES = new Set(["holy_mountain_shop"]);
+
+/**
+ * Append AP/LC recipe-finder buttons to the dynamic filter bar.
+ * Buttons gate on auth: non-pro users see a Pro-locked popover and get the
+ * Get Pro modal on click. Pro users trigger the handler exposed by the
+ * pro bundle (window.__noitamap.handleAlchemyRecipe), loading the bundle
+ * on demand.
+ */
+/**
+ * Show an immediate placeholder in the search-results overlay so the user
+ * knows their AP/LC click registered, even while the pro bundle is still
+ * loading on first use. Cleared by showRecipe (or clearRecipe) once the
+ * pro bundle takes over rendering.
+ */
+function showAlchemyLoading(kind: "ap" | "lc" | null): void {
+  const overlay = document.getElementById("unifiedSearchResultsOverlay") as HTMLDivElement | null;
+  const ul = document.getElementById("unifiedSearchResults") as HTMLUListElement | null;
+  if (!overlay || !ul) return;
+  if (kind === null) {
+    ul.innerHTML = "";
+    overlay.style.display = "none";
+    return;
+  }
+  ul.innerHTML = "";
+  const li = document.createElement("li");
+  li.className = "alchemy-loading";
+  li.textContent = `${kind.toUpperCase()}: ${i18next.t("search.indexing", "Loading...")}`;
+  ul.appendChild(li);
+  overlay.style.display = "block";
+  const input = document.getElementById("unified-search-input");
+  if (input) {
+    const rect = input.getBoundingClientRect();
+    overlay.style.left = `${rect.left + window.scrollX}px`;
+    overlay.style.top = `${rect.bottom + window.scrollY}px`;
+    overlay.style.width = `${rect.width}px`;
+  }
+}
+
+function appendAlchemyStubs(filterBox: HTMLElement): void {
+  const icons: Record<"ap" | "lc", string> = {
+    ap: "assets/icons/overlay-toggles/icon-alchemy-ap.webp",
+    lc: "assets/icons/overlay-toggles/icon-alchemy-lc.webp",
+  };
+  for (const kind of ["ap", "lc"] as const) {
+    const label = document.createElement("label");
+    label.className = "alchemy-filter-btn pro-accent";
+    label.tabIndex = 0;
+    label.dataset.alchemy = kind;
+
+    const titleKey = `alchemy.${kind}.title`;
+    const contentKey = `alchemy.${kind}.content`;
+    const proOnlyKey = `alchemy.${kind}.proOnly`;
+    const defaultTitle = kind === "ap" ? "Alchemic Precursor" : "Lively Concoction";
+    label.dataset.bsToggle = "popover";
+    label.dataset.bsPlacement = "bottom";
+    label.dataset.bsTrigger = "hover focus";
+    label.dataset.bsHtml = "true";
+    label.dataset.bsTitle = i18next.t(titleKey, defaultTitle);
+    label.dataset.i18nTitle = titleKey;
+    label.dataset.i18nContent = contentKey;
+    label.dataset.i18nProOnly = proOnlyKey;
+
+    const img = document.createElement("img");
+    img.src = icons[kind];
+    img.alt = kind.toUpperCase();
+    img.classList.add("pixelated-image", "alchemy-filter-icon");
+    img.draggable = false;
+    label.appendChild(img);
+
+    const badge = document.createElement("span");
+    badge.className = "alchemy-filter-badge";
+    badge.textContent = i18next.t(`alchemy.${kind}.label`, kind.toUpperCase());
+    label.appendChild(badge);
+
+    const refreshDisabledState = () => {
+      const state = authService.getState();
+      const locked = !state.authenticated || !state.isSubscriber;
+      label.classList.toggle("alchemy-filter-btn--locked", locked);
+      label.setAttribute("aria-disabled", locked ? "true" : "false");
+      label.dataset.bsContent = i18next.t(
+        locked ? proOnlyKey : contentKey,
+        locked
+          ? `${defaultTitle} recipe finder. Pro feature — sign in with Patreon to unlock.`
+          : `Find the nearest ingredients for the ${defaultTitle} recipe.`,
+      );
+      const existing = (window as any).bootstrap?.Popover?.getInstance(label);
+      if (existing) {
+        existing.setContent({
+          ".popover-header": label.dataset.bsTitle!,
+          ".popover-body": label.dataset.bsContent,
+        });
+      }
+    };
+    refreshDisabledState();
+
+    label.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const state = authService.getState();
+      if (!state.authenticated || !state.isSubscriber) {
+        AuthUI.showGetProModal();
+        return;
+      }
+      // Dismiss hover/focus popover so it doesn't linger on top of results.
+      const pop = (window as any).bootstrap?.Popover?.getInstance(label);
+      if (pop) pop.hide();
+      // Keep focus on the search input so the overlay's :focus-within check
+      // doesn't let hideOverlay() close the results.
+      const searchInput = document.getElementById("unified-search-input") as HTMLInputElement | null;
+      searchInput?.focus({ preventScroll: true });
+
+      // Decide toggle direction BEFORE touching state so the first async
+      // tick doesn't race with the optimistic active-class flip.
+      const alreadyActive = label.classList.contains("active");
+      const nextKind: typeof kind | null = alreadyActive ? null : kind;
+
+      // Immediate visual feedback so the user knows the click registered even
+      // while the pro bundle is still loading on the first call.
+      for (const b of document.querySelectorAll<HTMLLabelElement>(".alchemy-filter-btn")) {
+        b.classList.toggle("active", b.dataset.alchemy === nextKind);
+      }
+
+      // AP/LC are exclusive with the category filters — clear any active ones
+      // when entering alchemy mode so results aren't mixed/confusing.
+      if (nextKind !== null) {
+        for (const cb of document.querySelectorAll<HTMLInputElement>(
+          '#unifiedSearchFilterBox input[type="checkbox"][data-filter]',
+        )) {
+          if (cb.checked) {
+            cb.checked = false;
+            cb.dispatchEvent(new Event("change"));
+          }
+        }
+      }
+
+      showAlchemyLoading(nextKind);
+
+      const hooks = (window as any).__noitamap;
+      if (!hooks) return;
+      if (typeof hooks.handleAlchemyRecipe !== "function") {
+        if (typeof hooks.requestProLoad === "function") {
+          await hooks.requestProLoad();
+        }
+      }
+      if (typeof hooks.handleAlchemyRecipe === "function") {
+        hooks.handleAlchemyRecipe(nextKind);
+      }
+    });
+
+    // Refresh gating when auth state flips (login/logout).
+    authService.subscribe(refreshDisabledState);
+
+    filterBox.appendChild(label);
+  }
+  ensureAlchemyStubStyles();
+}
+
+function ensureAlchemyStubStyles(): void {
+  if (document.getElementById("alchemy-stub-style")) return;
+  const s = document.createElement("style");
+  s.id = "alchemy-stub-style";
+  s.textContent = `
+#unifiedSearchFilterBox .alchemy-filter-btn {
+  position: relative;
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #3a2d0d 0%, #241a05 100%);
+  border: 1px solid #b08a2a;
+  box-shadow: 0 0 0 1px rgba(255, 211, 110, 0.08) inset, 0 0 6px rgba(176, 138, 42, 0.25);
+  color: #ffd36e;
+  cursor: pointer; user-select: none;
+  transition: box-shadow 0.15s, transform 0.15s, background 0.15s;
+}
+#unifiedSearchFilterBox .alchemy-filter-btn .alchemy-filter-icon {
+  width: 22px; height: 22px;
+}
+#unifiedSearchFilterBox .alchemy-filter-btn .alchemy-filter-badge {
+  position: absolute; bottom: -2px; right: -2px;
+  font: bold 9px/1 monospace; color: #ffd36e;
+  background: #241a05; border: 1px solid #b08a2a;
+  border-radius: 3px; padding: 1px 3px;
+  pointer-events: none;
+}
+#unifiedSearchFilterBox .alchemy-filter-btn:hover {
+  background: linear-gradient(180deg, #5a4418 0%, #362605 100%);
+  box-shadow: 0 0 0 1px rgba(255, 211, 110, 0.2) inset, 0 0 10px rgba(255, 211, 110, 0.35);
+  transform: translateY(-1px);
+}
+#unifiedSearchFilterBox .alchemy-filter-btn.active {
+  background: linear-gradient(180deg, #8a6a20 0%, #5a4418 100%);
+  border-color: #ffd36e;
+  box-shadow: 0 0 0 2px rgba(255, 211, 110, 0.45), 0 0 12px rgba(255, 211, 110, 0.5);
+}
+#unifiedSearchFilterBox .alchemy-filter-btn--locked {
+  opacity: 0.55;
+  filter: grayscale(0.4);
+}
+#unifiedSearchFilterBox .alchemy-filter-btn--locked:hover {
+  opacity: 0.75;
+  transform: none;
+}
+
+/* Shared pro-accent treatment for Pro-gated buttons (Get Pro, Drawing toggle). */
+.pro-accent.icon-button,
+.pro-accent.btn-outline-light,
+#auth-container .pro-accent {
+  border-color: #b08a2a !important;
+  color: #ffd36e !important;
+  background: linear-gradient(180deg, rgba(90,68,24,0.35) 0%, rgba(36,26,5,0.35) 100%) !important;
+  box-shadow: 0 0 0 1px rgba(255, 211, 110, 0.1) inset, 0 0 6px rgba(176, 138, 42, 0.25) !important;
+  transition: box-shadow 0.15s, background 0.15s !important;
+}
+.pro-accent.icon-button:hover,
+.pro-accent.btn-outline-light:hover,
+#auth-container .pro-accent:hover {
+  background: linear-gradient(180deg, rgba(138,106,32,0.55) 0%, rgba(90,68,24,0.45) 100%) !important;
+  border-color: #ffd36e !important;
+  color: #ffd36e !important;
+  box-shadow: 0 0 0 1px rgba(255, 211, 110, 0.25) inset, 0 0 10px rgba(255, 211, 110, 0.35) !important;
+}
+.pro-accent .pro-icon { filter: drop-shadow(0 0 3px rgba(255, 211, 110, 0.5)); }
+  `;
+  document.head.appendChild(s);
+}
+
 const BOSS_TYPES = new Set([
   "triangle_boss",
   "alchemist_boss",
@@ -125,6 +353,47 @@ export class UnifiedSearch extends EventEmitter2 {
   private indexingState: "idle" | "indexing" | "ready" = "idle";
 
   private _currentMap: MapName;
+  /** When set, alchemy recipe is displayed; suppress text-query / viewport-based result refreshes. */
+  private alchemyActive: boolean = false;
+  private indexingListeners: Set<(s: "idle" | "indexing" | "ready") => void> = new Set();
+
+  public getIndexingState(): "idle" | "indexing" | "ready" {
+    return this.indexingState;
+  }
+
+  public onIndexingStateChange(cb: (s: "idle" | "indexing" | "ready") => void): () => void {
+    this.indexingListeners.add(cb);
+    return () => this.indexingListeners.delete(cb);
+  }
+
+  public setAlchemyActive(active: boolean): void {
+    const wasActive = this.alchemyActive;
+    this.alchemyActive = active;
+    if (!active) {
+      for (const b of document.querySelectorAll<HTMLLabelElement>(".alchemy-filter-btn")) {
+        b.classList.remove("active");
+      }
+      // When exiting alchemy mode, repopulate the results so the overlay
+      // isn't left empty and can show "10 nearest" / the active query.
+      if (wasActive) {
+        this.lastSearchText = "__force__";
+        this.lastViewportKey = "";
+        this.updateSearchResults();
+      }
+    }
+  }
+
+  private clearAlchemyIfActive(): void {
+    if (!this.alchemyActive) return;
+    this.alchemyActive = false;
+    for (const b of document.querySelectorAll<HTMLLabelElement>(".alchemy-filter-btn")) {
+      b.classList.remove("active");
+    }
+    const hooks = (window as any).__noitamap;
+    if (hooks && typeof hooks.handleAlchemyRecipe === "function") {
+      hooks.handleAlchemyRecipe(null);
+    }
+  }
 
   public get currentMap(): MapName { return this._currentMap; }
   public set currentMap(value: MapName) {
@@ -168,6 +437,7 @@ export class UnifiedSearch extends EventEmitter2 {
 
   /** Notify the search that the map viewport has moved. Re-sorts results by proximity. */
   notifyViewportChanged(): void {
+    if (this.alchemyActive) return;
     if (this.currentMap !== "dynamic-main-branch") return;
     if (this.isInteracting) return; // Skip sorting while user is actively moving the map
 
@@ -213,6 +483,7 @@ export class UnifiedSearch extends EventEmitter2 {
         switch (ev.key) {
           case "Escape":
             this.searchInput.value = "";
+            this.clearAlchemyIfActive();
             this.updateSearchResults();
             break;
           case "ArrowDown":
@@ -223,6 +494,8 @@ export class UnifiedSearch extends EventEmitter2 {
             return;
         }
       }
+      // Any typed character should exit alchemy mode so the user can search.
+      this.clearAlchemyIfActive();
       debounced();
     });
 
@@ -380,6 +653,8 @@ export class UnifiedSearch extends EventEmitter2 {
       filterBox.appendChild(filterLabel);
     }
 
+    if (isDynamicMap) appendAlchemyStubs(filterBox);
+
     // Initialize Bootstrap popovers
     // @ts-ignore
     filterBox.querySelectorAll('[data-bs-toggle="popover"]').forEach((el: HTMLElement) => new bootstrap.Popover(el));
@@ -463,6 +738,12 @@ export class UnifiedSearch extends EventEmitter2 {
   setIndexingState(state: "idle" | "indexing" | "ready"): void {
     const prev = this.indexingState;
     this.indexingState = state;
+    if (prev !== state) {
+      for (const cb of this.indexingListeners) {
+        try { cb(state); } catch { /* ignore listener errors */ }
+      }
+    }
+    if (this.alchemyActive) return;
     // When transitioning to 'ready', force a search refresh so results appear
     if (state === "ready" && prev === "indexing") {
       this.lastSearchText = "__force__";
@@ -618,6 +899,7 @@ export class UnifiedSearch extends EventEmitter2 {
   }
 
   private updateSearchResults() {
+    if (this.alchemyActive) return;
     const searchText = this.searchInput.value;
     // Also check viewport position for dynamic map proximity sorting
     const urlParams = new URLSearchParams(window.location.search);
@@ -973,6 +1255,8 @@ export class UnifiedSearch extends EventEmitter2 {
       filterLabel.appendChild(filterIcon);
       filterBox.appendChild(filterLabel);
     }
+
+    if (isDynamicMap) appendAlchemyStubs(filterBox);
 
     overlayDiv.appendChild(filterBox);
 

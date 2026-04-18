@@ -88,7 +88,7 @@ import { createMapLinks, NAV_LINK_IDENTIFIER, getMapLabel, renderMapBadges, refr
 import { getAllMapDefinitions } from "./data_sources/map_definitions";
 import { initMouseTracker } from "./mouse_tracker";
 import { isRenderer, getStoredRenderer, setStoredRenderer } from "./renderer_settings";
-import { isSpoilerFree, setSpoilerFree } from "./spoiler-free";
+import { isSpoilerFree, setSpoilerFree, onSpoilerFreeChange } from "./spoiler-free";
 import { isLightMode, setLightMode } from "./light-mode";
 import { createLanguageSelector } from "./language-selector";
 import { updateTranslations } from "./i18n-dom";
@@ -108,6 +108,7 @@ const mapChangeCallbacks: Array<(mapName: string) => void> = [];
 
 // Reference to unified search so the pro hook can update it
 let _unifiedSearch: UnifiedSearch | null = null;
+let _currentDynamicPOIs: DynamicPOI[] = [];
 
 // Export function to refresh search translations
 export const refreshSearchTranslations = () => {
@@ -445,6 +446,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       lastSessionIsDaily = isDaily;
     },
     onPOIsReady: (pois: DynamicPOI[]) => {
+      _currentDynamicPOIs = pois;
       unifiedSearch.setDynamicPOIs(pois);
       unifiedSearch.setIndexingState('ready');
       // If we had a search query, trigger it now that dynamic POIs are indexed
@@ -499,7 +501,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     setMap: (mapName: string) => app.setMap(asMapName(mapName) ?? (mapName as any)),
     updateURLWithSidebar,
     urlState: { sidebarOpen: urlState.sidebarOpen, canvas: urlState.canvas, seed: urlState.seed },
-    getSeedParams: () => ({ seed: getCurrentDynamicSeed() ?? undefined }),
+    getSeedParams: () => ({ seed: getCurrentDynamicSeed() ?? undefined, isDaily: getCurrentIsDaily() }),
     setSeedParams: (seed: number) => {
       updateURLWithSeed(seed, false);
       // Always update seed UI immediately
@@ -533,6 +535,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       showOverlay(key as any, show);
       updateURLWithOverlays(getEnabledOverlays());
+    },
+    getDynamicPOIs: () => _currentDynamicPOIs,
+    isSpoilerFree: () => isSpoilerFree(),
+    isLightMode: () => isLightMode(),
+    onSpoilerFreeChange: (cb: (enabled: boolean) => void) => onSpoilerFreeChange(cb),
+    setAlchemyActive: (active: boolean) => _unifiedSearch?.setAlchemyActive(active),
+    getIndexingState: () => _unifiedSearch?.getIndexingState() ?? "idle",
+    onIndexingStateChange: (cb: (s: "idle" | "indexing" | "ready") => void) => {
+      _unifiedSearch?.onIndexingStateChange(cb);
     },
   };
   window.__noitamap = proHooks;
@@ -577,6 +588,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       return false;
     }
   };
+
+  // Expose a pro-load requester so non-pro search components (AP/LC buttons)
+  // can trigger pro loading after an auth check.
+  (proHooks as any).requestProLoad = loadProBundle;
 
   // Initialize Drawing UI (Brush Button)
   // This handles the "Get Pro" modal for unauthed users and loads the pro bundle for subscribers

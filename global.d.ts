@@ -51,7 +51,7 @@ declare global {
     /** The URL state parsed at page load (sidebar state, canvas, etc.) */
     urlState: { sidebarOpen?: boolean; canvas?: 'map' | 'black' | 'white'; seed?: number };
     /** Get active seed params */
-    getSeedParams: () => { seed?: number };
+    getSeedParams: () => { seed?: number; isDaily?: boolean };
     /** Set active seed active params */
     setSeedParams: (seed: number) => void;
     /** Set the canvas background and update URL */
@@ -74,6 +74,28 @@ declare global {
     handleImportDrop?: (file: File) => Promise<void>;
     /** Pro handler for vectorizing a dropped image (set by pro bundle) */
     handleVectorizeDrop?: (file: File) => Promise<void>;
+    /** Get the current dynamic map POIs (empty on static maps) */
+    getDynamicPOIs: () => Array<{
+      id: string; type: string; item?: string; name?: string;
+      worldX: number; worldY: number; material?: string; items?: any[];
+      [key: string]: any;
+    }>;
+    /** Current spoiler-free state */
+    isSpoilerFree: () => boolean;
+    /** Current light-mode (main-world-only) state */
+    isLightMode: () => boolean;
+    /** Toggle alchemy-mode — suppresses search result refreshes while a recipe is rendered. */
+    setAlchemyActive: (active: boolean) => void;
+    /** Current dynamic-POI indexing state: idle / indexing / ready. */
+    getIndexingState: () => "idle" | "indexing" | "ready";
+    /** Subscribe to dynamic-POI indexing state changes. */
+    onIndexingStateChange: (cb: (state: "idle" | "indexing" | "ready") => void) => void;
+    /** Subscribe to spoiler-free toggle changes */
+    onSpoilerFreeChange: (cb: (enabled: boolean) => void) => void;
+    /** Request the pro bundle to be loaded (set by main app) */
+    requestProLoad?: () => Promise<boolean>;
+    /** Handle AP/LC recipe request — set by pro bundle after init. Pass null to clear. */
+    handleAlchemyRecipe?: (kind: "ap" | "lc" | null) => void;
   }
 
   interface Window {

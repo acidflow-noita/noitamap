@@ -183,7 +183,7 @@ export class AuthUI {
       // "Get Pro" usually implies a call to action.
       // Let's keep it as "Get Pro" (standard style) but the modal has the official login button.
 
-      btn.className = "btn btn-sm btn-outline-light";
+      btn.className = "btn btn-sm btn-outline-light pro-accent";
       btn.removeAttribute("data-bs-toggle");
       btn.removeAttribute("aria-expanded");
       btn.innerHTML = `<img src="assets/icons/website-icons/noitamap-pro-icon.svg" alt="" class="pro-icon"> <span class="auth-text">${i18next.t("auth.getPro", "Get Pro")}</span>`;
