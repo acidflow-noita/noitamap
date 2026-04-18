@@ -163,6 +163,42 @@ document.addEventListener("DOMContentLoaded", async () => {
   const _getStatusText = () => document.getElementById("map-loading-status");
   const _getTitle = () => document.getElementById("map-loading-title");
 
+  // Pin the phase label column to the widest of the three phase translations
+  // in the current language, so the percent column never shifts when the
+  // phase text changes. Re-measure on language change.
+  const _phaseKeys = [
+    "loading.mapData.downloading",
+    "loading.mapData.generating",
+    "loading.mapData.addingItems",
+  ];
+  const _recomputePhaseMinWidth = () => {
+    const phaseEl = _getTitle();
+    if (!phaseEl) return;
+    const probe = document.createElement("span");
+    const cs = getComputedStyle(phaseEl);
+    probe.style.position = "absolute";
+    probe.style.visibility = "hidden";
+    probe.style.whiteSpace = "nowrap";
+    probe.style.fontFamily = cs.fontFamily;
+    probe.style.fontSize = cs.fontSize;
+    probe.style.fontWeight = cs.fontWeight;
+    probe.style.fontStyle = cs.fontStyle;
+    probe.style.letterSpacing = cs.letterSpacing;
+    probe.style.fontFeatureSettings = cs.fontFeatureSettings;
+    document.body.appendChild(probe);
+    let maxW = 0;
+    for (const k of _phaseKeys) {
+      probe.textContent = i18next.isInitialized ? i18next.t(k) : k;
+      if (probe.offsetWidth > maxW) maxW = probe.offsetWidth;
+    }
+    probe.remove();
+    const fontSizePx = parseFloat(cs.fontSize) || 16;
+    phaseEl.style.minWidth = `${(maxW / fontSizePx).toFixed(3)}em`;
+  };
+  if (i18next.isInitialized) _recomputePhaseMinWidth();
+  else i18next.on("initialized", _recomputePhaseMinWidth);
+  i18next.on("languageChanged", _recomputePhaseMinWidth);
+
   window.addEventListener("dataZipProgress", ((e: CustomEvent) => {
     const bar = _getDownloadBar();
     const status = _getStatusText();

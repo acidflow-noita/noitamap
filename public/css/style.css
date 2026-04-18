@@ -850,30 +850,14 @@ body.toggle-hidden div.osOverlayHighlight {
 
 #map-loading-strip {
   position: absolute;
-  top: calc(100% + 1.5vh);
-  left: 5%;
-  right: 5%;
+  top: 100%;
+  left: 0;
+  right: 0;
   z-index: 1040;
   pointer-events: none;
-  display: none; /* toggled by JS */
+  display: none;
   opacity: 0;
-  transition: opacity 0.35s ease;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-@media (min-width: 768px) {
-  #map-loading-strip {
-    left: 15%;
-    right: 15%;
-  }
-}
-
-@media (min-width: 1200px) {
-  #map-loading-strip {
-    left: 30%;
-    right: 30%;
-  }
+  transition: opacity 0.3s ease;
 }
 
 #map-loading-strip.visible {
@@ -886,75 +870,111 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 .loading-strip-inner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
-  background: oklch(12.9% 0.042 264.695); /* same as .navbar.mapNavbar */
-  border: 1px solid #334155; /* slate-700 */
-  border-radius: 8px;
-}
-
-.loading-strip-phase {
-  color: #ccc;
-  font-size: 0.82rem;
-  white-space: nowrap;
-  min-width: 140px;
-}
-
-.loading-strip-pct {
-  color: #999;
-  font-size: 0.78rem;
-  font-feature-settings: "tnum";
-  min-width: 32px;
-  text-align: right;
+  position: relative;
 }
 
 .loading-strip-bar-track {
-  flex: 1;
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.08);
+  position: relative;
+  height: 0.2rem;
   display: flex;
+  background: rgba(148, 163, 184, 0.08); /* slate-400 @ 8% */
   overflow: hidden;
 }
 
 .loading-strip-bar {
-  height: 100%;
-  max-width: 33.4%;
-  transition: width 0.25s ease;
-}
-
-.seg-download {
-  background: #0f766e;
-} /* teal-700 */
-.seg-generation {
-  background: #0d9488;
-} /* teal-600 */
-.seg-items {
-  background: #14b8a6;
-} /* teal-500 */
-
-/* Indeterminate animation on the loading bar track during generation gap */
-@keyframes track-indeterminate {
-  0% { left: -30%; }
-  100% { left: 100%; }
-}
-
-.loading-strip-bar-track.indeterminate {
   position: relative;
+  height: 100%;
+  max-width: 33.34%;
+  background: linear-gradient(90deg, #0891b2 0%, #22d3ee 100%); /* cyan-600 → cyan-400 */
+  box-shadow: 0 0 0.375rem rgba(34, 211, 238, 0.55);
+  transition: width 0.25s ease;
+  overflow: hidden;
 }
 
-.loading-strip-bar-track.indeterminate::after {
+/* The three phases share the same look — the strip reads as a single fill. */
+.seg-download,
+.seg-generation,
+.seg-items {
+  background: linear-gradient(90deg, #0891b2 0%, #22d3ee 100%);
+}
+
+/* Shimmer sweeping inside each filled bar segment — clipped to the fill width
+   so no glow bleeds into the empty track. */
+.loading-strip-bar::after {
   content: "";
   position: absolute;
-  top: 0;
-  left: -30%;
-  width: 30%;
-  height: 100%;
-  border-radius: 3px;
-  background: linear-gradient(90deg, transparent, rgba(45, 212, 191, 0.5), transparent);
-  animation: track-indeterminate 1.5s ease-in-out infinite;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: loading-strip-shimmer 1.4s linear infinite;
+  pointer-events: none;
+}
+
+/* Shimmer on the empty track (subtle) for the indeterminate-gap phase. */
+.loading-strip-bar-track::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(34, 211, 238, 0.18) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: loading-strip-shimmer 2.2s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes loading-strip-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Legacy "indeterminate" class from JS — no-op now, shimmer is always on. */
+.loading-strip-bar-track.indeterminate::after { /* handled by base rule */ }
+
+/* Floating pill label. Anchored by its RIGHT edge to a fixed offset from
+   center, so the percent (which sits at the pill's right edge) never shifts
+   horizontally when the phase label changes width — the phase grows leftward
+   into the pill instead. */
+.loading-strip-label {
+  position: absolute;
+  top: 1rem;
+  right: calc(50% - 8rem);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.625rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.72rem;
+  line-height: 1.1;
+  color: #cbd5e1; /* slate-300 */
+  background: rgba(9, 13, 20, 0.82);
+  border: 1px solid #22d3ee; /* cyan-400 — matches loading bar */
+  border-radius: 999px;
+  white-space: nowrap;
+  backdrop-filter: blur(0.375rem);
+  -webkit-backdrop-filter: blur(0.375rem);
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.35);
+}
+
+.loading-strip-phase {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.loading-strip-pct {
+  color: #22d3ee; /* cyan-400 */
+  font-feature-settings: "tnum" 1, "zero" 1, "ss01" 1, "ss02" 1, "cv01" 1, "cv02" 1, "cv03" 1, "cv04" 1, "cv09" 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  min-width: 3ch;
+  text-align: right;
 }
 
 /* ── Search indexing placeholder ─────────────────────────────────────────── */

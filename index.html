@@ -614,12 +614,14 @@
         <!-- Non-blocking loading status strip — hangs below the nav -->
         <div id="map-loading-strip">
           <div class="loading-strip-inner">
-            <span id="map-loading-title" class="loading-strip-phase">Downloading World Data</span>
-            <span id="map-loading-status" class="loading-strip-pct">0%</span>
             <div class="loading-strip-bar-track">
               <div id="loading-bar-download" class="loading-strip-bar seg-download" style="width:0%"></div>
               <div id="loading-bar-generation" class="loading-strip-bar seg-generation" style="width:0%"></div>
               <div id="loading-bar-items" class="loading-strip-bar seg-items" style="width:0%"></div>
+            </div>
+            <div class="loading-strip-label">
+              <span id="map-loading-title" class="loading-strip-phase">Downloading World Data</span>
+              <span id="map-loading-status" class="loading-strip-pct">0%</span>
             </div>
           </div>
         </div>
