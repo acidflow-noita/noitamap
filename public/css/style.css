@@ -90,37 +90,66 @@ html {
 
 /* ── Dropdown menus: match Tailwind 4 dark palette ──────────────────────── */
 
-/* Custom badges to override ugly bootstrap colors in the map dropdown */
-.dropdown-menu .badge.text-bg-primary {
+/* Custom badges to override ugly bootstrap colors in the map dropdown and the
+   map selector button (icon-only badges). Palette shared so the button reflects
+   the selected map's badge colors exactly. */
+.dropdown-menu .badge.text-bg-primary,
+.map-badge-icon-only.text-bg-primary {
   background-color: #451a03 !important; /* amber-950 */
   color: #fbbf24 !important; /* amber-400 */
   border: 1px solid #92400e !important; /* amber-800 */
 }
 
-.dropdown-menu .badge.text-bg-success {
+.dropdown-menu .badge.text-bg-success,
+.map-badge-icon-only.text-bg-success {
   background-color: #022c22 !important; /* emerald-950 */
   color: #34d399 !important; /* emerald-400 */
   border: 1px solid #065f46 !important; /* emerald-800 */
 }
 
-.dropdown-menu .badge.text-bg-info {
+.dropdown-menu .badge.text-bg-info,
+.map-badge-icon-only.text-bg-info {
   background-color: #083344 !important; /* cyan-950 */
   color: #22d3ee !important; /* cyan-400 */
   border: 1px solid #155e75 !important; /* cyan-800 */
 }
 
-.dropdown-menu .badge.text-bg-light {
+.dropdown-menu .badge.text-bg-light,
+.map-badge-icon-only.text-bg-light {
   background-color: #0f172a !important; /* slate-900 */
   color: #94a3b8 !important; /* slate-400 */
   border: 1px solid #1e293b !important; /* slate-800 */
 }
 
 /* Date badge generated dynamically in nav.ts uses border-info-subtle */
-.dropdown-menu .badge.border-info-subtle {
+.dropdown-menu .badge.border-info-subtle,
+.map-badge-icon-only.border-info-subtle {
   background-color: transparent !important;
   color: #64748b !important; /* slate-500 */
   border-color: #334155 !important; /* slate-700 */
   font-weight: normal;
+}
+
+/* Icon-only badges rendered inside the map selector button. Compact, no text,
+   but still carry a hover popover with the full badge label. */
+.map-badge-icon-only {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35em;
+  height: 1.35em;
+  padding: 0;
+  font-size: 0.85em;
+  line-height: 1;
+  border-radius: 0.3rem;
+}
+
+.map-badge-icon-only + .map-badge-icon-only {
+  margin-left: 0.2rem;
+}
+
+#mapSelectorButton .map-badge-icon-only:first-of-type {
+  margin-left: 0.25rem;
 }
 
 .dropdown-menu {

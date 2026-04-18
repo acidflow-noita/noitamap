@@ -30,8 +30,8 @@
     }
   },
   "maps": {
-    "regular": "Normal",
-    "newGamePlus": "Novo jogo+",
+    "regular": "Mapa normal",
+    "newGamePlus": "Mapa novo jogo+",
     "apotheosis": "Apotheosis",
     "regularBeta": "Normal",
     "purgatory": "Purgatory",
@@ -41,11 +41,11 @@
     "noitavaniaNewGamePlus": "Noitavania NG+",
     "alternateBiomes": "Alternate Biomes",
     "deepEnd": "Deep End",
-    "nightmare": "Pesadelo",
+    "nightmare": "Mapa pesadelo",
     "biomeMap": "Mapa de biomas",
     "biomeMapCaptured": "Mapa de biomas capturado",
     "mapTestPng": "Mapa de teste PNG",
-    "mapDynamic": "Dinâmico"
+    "mapDynamic": "Mapa dinâmico"
   },
   "badges": {
     "latest": "Mais recente",

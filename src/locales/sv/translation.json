@@ -30,8 +30,8 @@
     }
   },
   "maps": {
-    "regular": "Vanlig",
-    "newGamePlus": "Nytt spel+",
+    "regular": "Vanlig karta",
+    "newGamePlus": "Nytt spel+ karta",
     "apotheosis": "Apotheosis",
     "regularBeta": "Vanlig",
     "purgatory": "Purgatory",
@@ -41,11 +41,11 @@
     "noitavaniaNewGamePlus": "Noitavania NG+",
     "alternateBiomes": "Alternate Biomes",
     "deepEnd": "Deep End",
-    "nightmare": "Mardröm",
+    "nightmare": "Mardrömskarta",
     "biomeMap": "Biomkarta",
     "biomeMapCaptured": "Biomkarta fångad",
     "mapTestPng": "Karttest PNG",
-    "mapDynamic": "Dynamisk"
+    "mapDynamic": "Dynamisk karta"
   },
   "badges": {
     "latest": "Senaste",

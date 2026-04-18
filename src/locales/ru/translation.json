@@ -30,8 +30,8 @@
     }
   },
   "maps": {
-    "regular": "Обычная",
-    "newGamePlus": "Новая Игра+",
+    "regular": "Обычная карта",
+    "newGamePlus": "Карта новой игры+",
     "apotheosis": "Apotheosis",
     "regularBeta": "Обычная",
     "purgatory": "Purgatory",
@@ -41,11 +41,11 @@
     "noitavaniaNewGamePlus": "Noitavania NG+",
     "alternateBiomes": "Alternate Biomes",
     "deepEnd": "Deep End",
-    "nightmare": "Кошмар",
+    "nightmare": "Карта кошмара",
     "biomeMap": "Карта биомов",
     "biomeMapCaptured": "Карта биомов (захват)",
     "mapTestPng": "Тестовая карта PNG",
-    "mapDynamic": "Динамическая"
+    "mapDynamic": "Динамическая карта"
   },
   "badges": {
     "latest": "Последняя",

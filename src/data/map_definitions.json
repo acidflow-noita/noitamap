@@ -17,13 +17,14 @@
   },
   {
     "key": "regular-main-branch",
-    "label": "Regular",
+    "label": "Regular map",
     "labelKey": "maps.regular",
     "badges": [
       {
         "label": "Latest",
         "labelKey": "badges.latest",
-        "class": "text-bg-success"
+        "class": "text-bg-success",
+        "icon": "bi bi-check-circle-fill"
       }
     ],
     "patchDate": "2024-08-12",
@@ -32,13 +33,14 @@
   },
   {
     "key": "new-game-plus-main-branch",
-    "label": "New Game+",
+    "label": "New Game+ map",
     "labelKey": "maps.newGamePlus",
     "badges": [
       {
         "label": "Latest",
         "labelKey": "badges.latest",
-        "class": "text-bg-success"
+        "class": "text-bg-success",
+        "icon": "bi bi-check-circle-fill"
       }
     ],
     "patchDate": "2024-08-12",
@@ -47,13 +49,14 @@
   },
   {
     "key": "nightmare-main-branch",
-    "label": "Nightmare",
+    "label": "Nightmare map",
     "labelKey": "maps.nightmare",
     "badges": [
       {
         "label": "Latest",
         "labelKey": "badges.latest",
-        "class": "text-bg-success"
+        "class": "text-bg-success",
+        "icon": "bi bi-check-circle-fill"
       }
     ],
     "patchDate": "2024-08-12",

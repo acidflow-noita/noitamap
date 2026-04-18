@@ -30,8 +30,8 @@
     }
   },
   "maps": {
-    "regular": "Běžná",
-    "newGamePlus": "Nová hra+",
+    "regular": "Běžná mapa",
+    "newGamePlus": "Mapa nové hry+",
     "apotheosis": "Apotheosis",
     "regularBeta": "Běžná",
     "purgatory": "Purgatory",
@@ -41,11 +41,11 @@
     "noitavaniaNewGamePlus": "Noitavania NG+",
     "alternateBiomes": "Alternate Biomes",
     "deepEnd": "Deep End",
-    "nightmare": "Noční můra",
+    "nightmare": "Mapa noční můry",
     "biomeMap": "Mapa biomů",
     "biomeMapCaptured": "Mapa biomů zachycená",
     "mapTestPng": "Testovací mapa PNG",
-    "mapDynamic": "Dynamická"
+    "mapDynamic": "Dynamická mapa"
   },
   "badges": {
     "latest": "Nejnovější",

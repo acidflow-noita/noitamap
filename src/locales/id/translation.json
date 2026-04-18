@@ -30,9 +30,9 @@
     }
   },
   "maps": {
-    "regular": "Reguler",
-    "newGamePlus": "New Game+",
-    "nightmare": "Nightmare",
+    "regular": "Peta reguler",
+    "newGamePlus": "Peta New Game+",
+    "nightmare": "Peta Nightmare",
     "apotheosis": "Apotheosis",
     "regularBeta": "Reguler",
     "purgatory": "Purgatory",
@@ -45,7 +45,7 @@
     "biomeMap": "Biome Map",
     "biomeMapCaptured": "Biome Map Captured",
     "mapTestPng": "Map Test PNG",
-    "mapDynamic": "Dinamis"
+    "mapDynamic": "Peta dinamis"
   },
   "badges": {
     "latest": "Terbaru",

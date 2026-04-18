@@ -30,8 +30,8 @@
     }
   },
   "maps": {
-    "regular": "常规",
-    "newGamePlus": "新游戏+",
+    "regular": "常规地图",
+    "newGamePlus": "新游戏+地图",
     "apotheosis": "Apotheosis",
     "regularBeta": "常规",
     "purgatory": "Purgatory",
@@ -41,11 +41,11 @@
     "noitavaniaNewGamePlus": "Noitavania NG+",
     "alternateBiomes": "Alternate Biomes",
     "deepEnd": "Deep End",
-    "nightmare": "噩梦",
+    "nightmare": "噩梦地图",
     "biomeMap": "生物群系地图",
     "biomeMapCaptured": "生物群系地图已捕获",
     "mapTestPng": "地图测试 PNG",
-    "mapDynamic": "动态"
+    "mapDynamic": "动态地图"
   },
   "badges": {
     "latest": "最新",

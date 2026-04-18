@@ -30,8 +30,8 @@
     }
   },
   "maps": {
-    "regular": "通常",
-    "newGamePlus": "ニューゲーム+",
+    "regular": "通常マップ",
+    "newGamePlus": "ニューゲーム+マップ",
     "apotheosis": "Apotheosis",
     "regularBeta": "通常",
     "purgatory": "Purgatory",
@@ -41,11 +41,11 @@
     "noitavaniaNewGamePlus": "Noitavania NG+",
     "alternateBiomes": "Alternate Biomes",
     "deepEnd": "Deep End",
-    "nightmare": "ナイトメア",
+    "nightmare": "ナイトメアマップ",
     "biomeMap": "バイオームマップ",
     "biomeMapCaptured": "バイオームマップ キャプチャ済み",
     "mapTestPng": "マップテスト PNG",
-    "mapDynamic": "ダイナミック"
+    "mapDynamic": "ダイナミックマップ"
   },
   "badges": {
     "latest": "最新",

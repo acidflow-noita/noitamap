@@ -30,8 +30,8 @@
     }
   },
   "maps": {
-    "regular": "Normaal",
-    "newGamePlus": "Nieuw spel+",
+    "regular": "Normale kaart",
+    "newGamePlus": "Nieuw spel+ kaart",
     "apotheosis": "Apotheosis",
     "regularBeta": "Normaal",
     "purgatory": "Purgatory",
@@ -41,11 +41,11 @@
     "noitavaniaNewGamePlus": "Noitavania NG+",
     "alternateBiomes": "Alternate Biomes",
     "deepEnd": "Deep End",
-    "nightmare": "Nachtmerrie",
+    "nightmare": "Nachtmerrie-kaart",
     "biomeMap": "Bioom kaart",
     "biomeMapCaptured": "Bioom kaart vastgelegd",
     "mapTestPng": "Kaart test PNG",
-    "mapDynamic": "Dynamisch"
+    "mapDynamic": "Dynamische kaart"
   },
   "badges": {
     "latest": "Nieuwste",

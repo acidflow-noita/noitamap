@@ -61,9 +61,9 @@
     }
   },
   "maps": {
-    "regular": "Regular",
-    "newGamePlus": "New Game+",
-    "nightmare": "Nightmare",
+    "regular": "Regular map",
+    "newGamePlus": "New Game+ map",
+    "nightmare": "Nightmare map",
     "apotheosis": "Apotheosis",
     "regularBeta": "Regular",
     "purgatory": "Purgatory",
@@ -76,7 +76,7 @@
     "biomeMap": "Biome Map",
     "biomeMapCaptured": "Biome Map Captured",
     "mapTestPng": "Map Test PNG",
-    "mapDynamic": "Dynamic"
+    "mapDynamic": "Dynamic map"
   },
   "dynamicMap": {
     "generate": {

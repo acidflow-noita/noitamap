@@ -30,8 +30,8 @@
     }
   },
   "maps": {
-    "regular": "Звичайна",
-    "newGamePlus": "Нова гра+",
+    "regular": "Звичайна карта",
+    "newGamePlus": "Карта нової гри+",
     "apotheosis": "Apotheosis",
     "regularBeta": "Звичайна",
     "purgatory": "Purgatory",
@@ -41,11 +41,11 @@
     "noitavaniaNewGamePlus": "Noitavania NG+",
     "alternateBiomes": "Alternate Biomes",
     "deepEnd": "Deep End",
-    "nightmare": "Кошмар",
+    "nightmare": "Карта кошмару",
     "biomeMap": "Карта біомів",
     "biomeMapCaptured": "Карта біомів захоплена",
     "mapTestPng": "Тестова карта PNG",
-    "mapDynamic": "Динамічна"
+    "mapDynamic": "Динамічна карта"
   },
   "badges": {
     "latest": "Остання",
