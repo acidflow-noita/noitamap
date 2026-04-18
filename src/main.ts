@@ -97,6 +97,7 @@ import { AuthUI } from "./auth/auth-ui";
 import { authService } from "./auth/auth-service";
 import { DrawingUI } from "./drawing/drawing-ui";
 import { initChunkGrid, showChunkGrid, isChunkGridVisible } from "./drawing/chunk-grid";
+import { getMaterialInfo, primeMaterialInfo } from "./material-info";
 
 // Global reference to unified search for translation updates
 let globalUnifiedSearch: UnifiedSearch | null = null;
@@ -545,6 +546,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     onIndexingStateChange: (cb: (s: "idle" | "indexing" | "ready") => void) => {
       _unifiedSearch?.onIndexingStateChange(cb);
     },
+    getMaterialInfo: (id: string) => getMaterialInfo(id),
+    primeMaterialInfo: () => primeMaterialInfo(),
   };
   window.__noitamap = proHooks;
 

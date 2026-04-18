@@ -90,6 +90,23 @@ declare global {
     getIndexingState: () => "idle" | "indexing" | "ready";
     /** Subscribe to dynamic-POI indexing state changes. */
     onIndexingStateChange: (cb: (state: "idle" | "indexing" | "ready") => void) => void;
+    /**
+     * Look up a material entry from FULL_MATERIALS_FINAL.json (Noita's
+     * material dump). Returns null if the JSON isn't loaded yet or the id
+     * isn't known. Call `primeMaterialInfo()` once beforehand to warm the
+     * cache asynchronously.
+     */
+    getMaterialInfo: (id: string) => null | {
+      id: string;
+      ui_name?: string;
+      name_translation_placeholder?: string;
+      cell_type?: string;
+      graphics?: { color?: string | null; [k: string]: any };
+      wang_color?: string | null;
+      [k: string]: any;
+    };
+    /** Preload FULL_MATERIALS_FINAL.json into the in-memory cache. */
+    primeMaterialInfo: () => Promise<void>;
     /** Subscribe to spoiler-free toggle changes */
     onSpoilerFreeChange: (cb: (enabled: boolean) => void) => void;
     /** Request the pro bundle to be loaded (set by main app) */
