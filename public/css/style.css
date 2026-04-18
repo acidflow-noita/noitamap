@@ -1030,8 +1030,5 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 /* ── Auth dropdown: ensure it renders above other navbar elements ────────── */
-
-#auth-button-wrapper {
-  position: relative;
-  z-index: 1050;
-}
+/* (intentionally left blank — #auth-button-wrapper is handled above with
+   z-index: auto so it doesn't cover navbar dropdown menus.) */

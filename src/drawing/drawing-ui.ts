@@ -26,7 +26,7 @@ export class DrawingUI {
     wrapper.innerHTML = `
       <input type="checkbox" class="btn-check" id="drawToggleBtn" autocomplete="off">
       <label class="icon-button btn btn-sm btn-outline-light text-nowrap" for="drawToggleBtn"
-        data-bs-toggle="popover" data-bs-placement="top" data-bs-trigger="hover focus"
+        data-bs-toggle="popover" data-bs-placement="bottom" data-bs-trigger="hover focus"
         data-i18n-title="drawing.toggle.title" 
         data-bs-title="${i18next.t("drawing.toggle.title", "Drawing Tools")}"
         data-i18n-content="drawing.toggle.content" 

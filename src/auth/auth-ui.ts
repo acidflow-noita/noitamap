@@ -116,7 +116,6 @@ export class AuthUI {
   private createButton(): HTMLElement {
     const wrapper = document.createElement("div");
     wrapper.id = "auth-button-wrapper";
-    wrapper.className = "me-2";
     // Initial state placeholder
     wrapper.innerHTML = `
       <button id="authButton" class="btn btn-sm btn-outline-light" type="button">
