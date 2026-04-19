@@ -24,8 +24,10 @@
   border-radius: var(--bs-border-radius);
   box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
   display: none;
-  min-width: 400px;
-  max-width: 500px;
+  /* Width hugs the filter group / results; clamped by viewport on mobile. */
+  width: fit-content;
+  min-width: 0;
+  max-width: calc(100vw - 16px);
   overflow: hidden; /* Filters stay at top */
 }
 
@@ -33,7 +35,7 @@
   display: flex !important;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.5rem;
   background-color: var(--bs-dark);
   border: 1px solid var(--bs-border-color);

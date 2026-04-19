@@ -76,7 +76,8 @@ function showAlchemyLoading(kind: "ap" | "lc" | null): void {
     const rect = input.getBoundingClientRect();
     overlay.style.left = `${rect.left + window.scrollX}px`;
     overlay.style.top = `${rect.bottom + window.scrollY}px`;
-    overlay.style.width = `${rect.width}px`;
+    overlay.style.width = "";
+    overlay.style.maxWidth = `${Math.max(0, window.innerWidth - rect.left - 8)}px`;
   }
 }
 
@@ -1268,12 +1269,19 @@ export class UnifiedSearch extends EventEmitter2 {
     searchResultsUL.id = "unifiedSearchResults";
     overlayDiv.appendChild(searchResultsUL);
 
-    // Position overlay below the input
+    // Target width for the overlay — wide enough to keep every filter
+    // (including AP/LC) on one line. Clamped to avoid overflowing the
+    // viewport on narrow screens.
+
+    // Position overlay below the input. Width is driven by CSS
+    // (fit-content, clamped to viewport), not JS, so the overlay hugs the
+    // filter row exactly with no side gutters.
     function positionOverlay() {
       const rect = searchInput.getBoundingClientRect();
       overlayDiv.style.left = `${rect.left + window.scrollX}px`;
       overlayDiv.style.top = `${rect.bottom + window.scrollY}px`;
-      overlayDiv.style.width = `${rect.width}px`;
+      overlayDiv.style.width = "";
+      overlayDiv.style.maxWidth = `${Math.max(0, window.innerWidth - rect.left - 8)}px`;
     }
 
     let isOverlayVisible = false;

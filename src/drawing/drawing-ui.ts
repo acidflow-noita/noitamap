@@ -1,6 +1,7 @@
 import { authService } from "../auth/auth-service";
 import { AuthUI } from "../auth/auth-ui";
 import i18next from "../i18n";
+import { showDrawingSkeleton, hideDrawingSkeleton } from "./drawing-skeleton";
 
 export interface DrawingUIOptions {
   onEnableDrawing: () => Promise<boolean>;
@@ -60,10 +61,8 @@ export class DrawingUI {
     const state = authService.getState();
 
     // 1. Check Auth & Subscription
-    // Allow if subscriber OR if user is "wuote" (just in case auth service check fails locally but we want to allow override)
-    // Actually authService now handles the ID check.
     if (!state.authenticated || !state.isSubscriber) {
-      e.preventDefault(); // Stop checkbox from toggling
+      e.preventDefault();
       AuthUI.showGetProModal();
       // We no longer return early here. We want to load the pro bundle anyway
       // so the user can see the unauthenticated/non-subscriber sidebar state.
@@ -76,22 +75,22 @@ export class DrawingUI {
       if (!(window as any).noitamap_pro_loaded) {
         e.preventDefault(); // Pause toggle while loading
 
-        // Show some loading feedback?
-        document.body.style.cursor = "wait";
+        // Instant UI response: slide in skeleton sidebar + toolbar so the
+        // user sees the panel appear immediately while the pro bundle
+        // downloads and evaluates in the background.
+        showDrawingSkeleton();
 
+        let loaded = false;
         try {
-          const loaded = await this.options.onEnableDrawing();
+          loaded = await this.options.onEnableDrawing();
           if (loaded) {
             target.checked = true;
-            // Trigger change event so pro bundle listener picks it up
+            // Open the real sidebar first so it's mounted underneath the
+            // skeleton, then slide the skeleton out for a seamless handoff.
             target.dispatchEvent(new Event("change"));
-
-            // Also explicitly open sidebar if needed?
-            // The change event should be enough if pro bundle is listening.
-            // We'll ensure pro bundle attaches listener on init.
           }
         } finally {
-          document.body.style.cursor = "";
+          hideDrawingSkeleton();
         }
       }
     }
