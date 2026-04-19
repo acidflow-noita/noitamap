@@ -54,6 +54,7 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
     "debug-original-biome-map": false,
     "debug-small-pois": false,
     "debug-edge-noise": false,
+    "debug-block-edge-spawns": false,
     "skip-cosmetic-scenes": false,
     "exclude-taikasauva": false,
     "exclude-edge-cases": false,
