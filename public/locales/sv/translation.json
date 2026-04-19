@@ -4645,34 +4645,34 @@
     "content": "Växla rutnätsöverlagring för bitgränser"
   },
   "lightMode": {
-    "label": "Light mode",
-    "title": "Light mode",
-    "content": "Only generate the main world. Skips east/west parallel worlds to reduce memory use on mobile / low-RAM devices. Enabled by default on small screens."
+    "label": "Lättviktsläge",
+    "title": "Lättviktsläge",
+    "content": "Generera bara huvudvärlden för att minska minnesanvändningen på mobila enheter och enheter med låg RAM. Hoppar över öst/väst parallella världar. Aktiverad som standard på små skärmar."
   },
   "mainWorldOnly": {
-    "title": "Main world only",
-    "content": "Only load the main world. Skips east/west parallel worlds (both the static background and dynamic POIs). Reduces memory use on mobile / low-RAM devices. On by default on small screens."
+    "title": "Endast huvudvärlden",
+    "content": "Ladda bara huvudvärlden. Hoppar över öst/väst parallella världar (både den statiska bakgrunden och dynamiska POI). Minskar minnesanvändning på mobila/låg-RAM-enheter. På som standard på små skärmar."
   },
   "alchemy": {
     "ap": {
       "label": "AP",
       "title": "Alchemic Precursor",
-      "content": "Find the nearest ingredients for the Alchemic Precursor recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Alchemic Precursor recipe finder. Pro feature — sign in with Patreon to unlock."
+      "content": "Hitta de närmaste ingredienserna för Alchemic Precursor-receptet i förhållande till den aktuella visningsporten. Pro funktion.",
+      "proOnly": "Alchemic Precursor receptsökare. Pro-funktion – logga in med Patreon för att låsa upp."
     },
     "lc": {
       "label": "LC",
       "title": "Lively Concoction",
-      "content": "Find the nearest ingredients for the Lively Concoction recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Lively Concoction recipe finder. Pro feature — sign in with Patreon to unlock."
+      "content": "Hitta de närmaste ingredienserna för Lively Concoction-receptet i förhållande till den aktuella visningsporten. Pro funktion.",
+      "proOnly": "Lively Concoction receptsökare. Pro-funktion – logga in med Patreon för att låsa upp."
     },
-    "noSeed": "No seed loaded — open the dynamic map first.",
-    "notFound": "Not found on map",
-    "ingredient": "Ingredient",
-    "chunksAway": "~{{count}} chunks away",
-    "notFoundAllWorlds": "Not found in three worlds",
-    "notFoundMainWorld": "Not found in the main world",
-    "findInTelescope": "find using Telescope",
-    "searching": "Searching…"
+    "noSeed": "Inget seed laddat – öppna den dynamiska kartan först.",
+    "notFound": "Hittas inte på kartan",
+    "ingredient": "Ingrediens",
+    "chunksAway": "~{{count}} bitar bort",
+    "notFoundAllWorlds": "Finns inte i tre världar",
+    "notFoundMainWorld": "Finns inte i huvudvärlden",
+    "findInTelescope": "hitta med hjälp av teleskop",
+    "searching": "Sökande…"
   }
 }

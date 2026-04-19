@@ -4645,34 +4645,34 @@
     "content": "Перемкнути накладення сітки меж фрагмента"
   },
   "lightMode": {
-    "label": "Light mode",
-    "title": "Light mode",
-    "content": "Only generate the main world. Skips east/west parallel worlds to reduce memory use on mobile / low-RAM devices. Enabled by default on small screens."
+    "label": "Полегшений режим",
+    "title": "Полегшений режим",
+    "content": "Згенеруйте лише основний світ, щоб зменшити використання пам’яті на мобільних пристроях і пристроях із низьким обсягом оперативної пам’яті. Пропускає паралельні світи схід/захід. Увімкнено за замовчуванням на маленьких екранах."
   },
   "mainWorldOnly": {
-    "title": "Main world only",
-    "content": "Only load the main world. Skips east/west parallel worlds (both the static background and dynamic POIs). Reduces memory use on mobile / low-RAM devices. On by default on small screens."
+    "title": "Тільки головний світ",
+    "content": "Завантажуйте лише основний світ. Пропускає паралельні світи схід/захід (як статичний фон, так і динамічні POI). Зменшує використання пам’яті на мобільних пристроях/пристроях із низьким обсягом оперативної пам’яті. Увімкнено за умовчанням на маленьких екранах."
   },
   "alchemy": {
     "ap": {
       "label": "AP",
-      "title": "Alchemic Precursor",
-      "content": "Find the nearest ingredients for the Alchemic Precursor recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Alchemic Precursor recipe finder. Pro feature — sign in with Patreon to unlock."
+      "title": "Алхімічний Попередник",
+      "content": "Знайдіть найближчі інгредієнти для рецепту Алхімічний Попередник відносно поточного вікна перегляду. Pro функція.",
+      "proOnly": "Алхімічний Попередник пошук рецептів. Професійна функція — увійдіть за допомогою Patreon, щоб розблокувати."
     },
     "lc": {
       "label": "LC",
-      "title": "Lively Concoction",
-      "content": "Find the nearest ingredients for the Lively Concoction recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Lively Concoction recipe finder. Pro feature — sign in with Patreon to unlock."
+      "title": "Жвава Суміш",
+      "content": "Знайдіть найближчі інгредієнти для рецепту Жвава Суміш відносно поточного вікна перегляду. Pro функція.",
+      "proOnly": "Жвава Суміш пошук рецептів. Професійна функція — увійдіть за допомогою Patreon, щоб розблокувати."
     },
-    "noSeed": "No seed loaded — open the dynamic map first.",
-    "notFound": "Not found on map",
-    "ingredient": "Ingredient",
-    "chunksAway": "~{{count}} chunks away",
-    "notFoundAllWorlds": "Not found in three worlds",
-    "notFoundMainWorld": "Not found in the main world",
-    "findInTelescope": "find using Telescope",
-    "searching": "Searching…"
+    "noSeed": "Начальний матеріал не завантажено — спочатку відкрийте динамічну карту.",
+    "notFound": "Не знайдено на карті",
+    "ingredient": "Інгредієнт",
+    "chunksAway": "~{{count}} блоків",
+    "notFoundAllWorlds": "Не знайдено в трьох світах",
+    "notFoundMainWorld": "Не знайдено в основному світі",
+    "findInTelescope": "знайти за допомогою телескопа",
+    "searching": "Пошук…"
   }
 }

@@ -4645,34 +4645,34 @@
     "content": "切换块边界网格覆盖"
   },
   "lightMode": {
-    "label": "Light mode",
-    "title": "Light mode",
-    "content": "Only generate the main world. Skips east/west parallel worlds to reduce memory use on mobile / low-RAM devices. Enabled by default on small screens."
+    "label": "轻量级模式",
+    "title": "轻量级模式",
+    "content": "仅生成主世界，以减少移动设备和低 RAM 设备上的内存使用。跳过东/西平行世界。在小屏幕上默认启用。"
   },
   "mainWorldOnly": {
-    "title": "Main world only",
-    "content": "Only load the main world. Skips east/west parallel worlds (both the static background and dynamic POIs). Reduces memory use on mobile / low-RAM devices. On by default on small screens."
+    "title": "仅限主世界",
+    "content": "只加载主世界。跳过东/西平行世界（静态背景和动态 POI）。减少移动/低 RAM 设备上的内存使用。在小屏幕上默认打开。"
   },
   "alchemy": {
     "ap": {
-      "label": "AP",
-      "title": "Alchemic Precursor",
-      "content": "Find the nearest ingredients for the Alchemic Precursor recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Alchemic Precursor recipe finder. Pro feature — sign in with Patreon to unlock."
+      "label": "美联社",
+      "title": "炼金溶液",
+      "content": "查找相对于当前视口的 炼金溶液 配方最近的成分。专业功能。",
+      "proOnly": "炼金溶液 食谱查找器。专业版功能 — 使用 Patreon 登录即可解锁。"
     },
     "lc": {
       "label": "LC",
-      "title": "Lively Concoction",
-      "content": "Find the nearest ingredients for the Lively Concoction recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Lively Concoction recipe finder. Pro feature — sign in with Patreon to unlock."
+      "title": "活泼混合物",
+      "content": "查找相对于当前视口的 活泼混合物 配方最近的成分。专业功能。",
+      "proOnly": "活泼混合物 食谱查找器。专业版功能 — 使用 Patreon 登录即可解锁。"
     },
-    "noSeed": "No seed loaded — open the dynamic map first.",
-    "notFound": "Not found on map",
-    "ingredient": "Ingredient",
-    "chunksAway": "~{{count}} chunks away",
-    "notFoundAllWorlds": "Not found in three worlds",
-    "notFoundMainWorld": "Not found in the main world",
-    "findInTelescope": "find using Telescope",
-    "searching": "Searching…"
+    "noSeed": "未加载种子 - 首先打开动态地图。",
+    "notFound": "地图上找不到",
+    "ingredient": "成分",
+    "chunksAway": "~{{count}} 块远",
+    "notFoundAllWorlds": "三个世界都找不到",
+    "notFoundMainWorld": "主世界中找不到",
+    "findInTelescope": "使用望远镜寻找",
+    "searching": "正在寻找..."
   }
 }

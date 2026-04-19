@@ -4645,34 +4645,34 @@
     "content": "Переключить наложение сетки границ фрагментов"
   },
   "lightMode": {
-    "label": "Light mode",
-    "title": "Light mode",
-    "content": "Only generate the main world. Skips east/west parallel worlds to reduce memory use on mobile / low-RAM devices. Enabled by default on small screens."
+    "label": "Облегченный режим",
+    "title": "Облегченный режим",
+    "content": "Создавайте только основной мир, чтобы уменьшить использование памяти на мобильных устройствах и устройствах с низким объемом оперативной памяти. Пропускает параллельные миры восток/запад. Включено по умолчанию на маленьких экранах."
   },
   "mainWorldOnly": {
-    "title": "Main world only",
-    "content": "Only load the main world. Skips east/west parallel worlds (both the static background and dynamic POIs). Reduces memory use on mobile / low-RAM devices. On by default on small screens."
+    "title": "Только основной мир",
+    "content": "Загружайте только основной мир. Пропускает параллельные миры восток/запад (как статический фон, так и динамические POI). Уменьшает использование памяти на мобильных устройствах/устройствах с низким объемом оперативной памяти. Включено по умолчанию на маленьких экранах."
   },
   "alchemy": {
     "ap": {
-      "label": "AP",
-      "title": "Alchemic Precursor",
-      "content": "Find the nearest ingredients for the Alchemic Precursor recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Alchemic Precursor recipe finder. Pro feature — sign in with Patreon to unlock."
+      "label": "АП",
+      "title": "Алхимический Прекурсор",
+      "content": "Найдите ближайшие ингредиенты для рецепта Алхимический Прекурсор относительно текущего окна просмотра. Профессиональная функция.",
+      "proOnly": "Алхимический Прекурсор поиск рецептов. Функция Pro — войдите в систему с помощью Patreon, чтобы разблокировать."
     },
     "lc": {
       "label": "LC",
-      "title": "Lively Concoction",
-      "content": "Find the nearest ingredients for the Lively Concoction recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Lively Concoction recipe finder. Pro feature — sign in with Patreon to unlock."
+      "title": "Живой Концентрат",
+      "content": "Найдите ближайшие ингредиенты для рецепта Живой Концентрат относительно текущего окна просмотра. Профессиональная функция.",
+      "proOnly": "Живой Концентрат Поиск рецептов. Функция Pro — войдите в систему с помощью Patreon, чтобы разблокировать."
     },
-    "noSeed": "No seed loaded — open the dynamic map first.",
-    "notFound": "Not found on map",
-    "ingredient": "Ingredient",
-    "chunksAway": "~{{count}} chunks away",
-    "notFoundAllWorlds": "Not found in three worlds",
-    "notFoundMainWorld": "Not found in the main world",
-    "findInTelescope": "find using Telescope",
-    "searching": "Searching…"
+    "noSeed": "Семя не загружено — сначала откройте динамическую карту.",
+    "notFound": "Не найден на карте",
+    "ingredient": "Ингредиент",
+    "chunksAway": "~{{count}} кусков",
+    "notFoundAllWorlds": "Не встречается в трёх мирах",
+    "notFoundMainWorld": "Не встречается в основном мире",
+    "findInTelescope": "найти с помощью телескопа",
+    "searching": "Идет поиск…"
   }
 }

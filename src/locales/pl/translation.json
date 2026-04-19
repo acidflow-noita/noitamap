@@ -4645,34 +4645,34 @@
     "content": "Przełącz nakładkę siatki granic porcji"
   },
   "lightMode": {
-    "label": "Light mode",
-    "title": "Light mode",
-    "content": "Only generate the main world. Skips east/west parallel worlds to reduce memory use on mobile / low-RAM devices. Enabled by default on small screens."
+    "label": "Tryb lekki",
+    "title": "Tryb lekki",
+    "content": "Generuj tylko główny świat, aby zmniejszyć zużycie pamięci na urządzeniach mobilnych i urządzeniach z małą ilością pamięci RAM. Pomija równoległe światy wschód/zachód. Domyślnie włączone na małych ekranach."
   },
   "mainWorldOnly": {
-    "title": "Main world only",
-    "content": "Only load the main world. Skips east/west parallel worlds (both the static background and dynamic POIs). Reduces memory use on mobile / low-RAM devices. On by default on small screens."
+    "title": "Tylko główny świat",
+    "content": "Załaduj tylko główny świat. Pomija równoległe światy wschód/zachód (zarówno statyczne tło, jak i dynamiczne punkty POI). Zmniejsza zużycie pamięci na urządzeniach mobilnych/urządzeniach o małej ilości pamięci RAM. Domyślnie włączone na małych ekranach."
   },
   "alchemy": {
     "ap": {
       "label": "AP",
-      "title": "Alchemic Precursor",
-      "content": "Find the nearest ingredients for the Alchemic Precursor recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Alchemic Precursor recipe finder. Pro feature — sign in with Patreon to unlock."
+      "title": "Prekursor Alchemiczny",
+      "content": "Znajdź składniki najbliższe przepisowi Prekursor Alchemiczny względem bieżącej rzutni. Funkcja profesjonalna.",
+      "proOnly": "Wyszukiwarka przepisów Prekursor Alchemiczny. Funkcja Pro — zaloguj się na Patreonie, aby odblokować."
     },
     "lc": {
       "label": "LC",
-      "title": "Lively Concoction",
-      "content": "Find the nearest ingredients for the Lively Concoction recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Lively Concoction recipe finder. Pro feature — sign in with Patreon to unlock."
+      "title": "Żywa Mieszanina",
+      "content": "Znajdź składniki najbliższe przepisowi Żywa Mieszanina względem bieżącej rzutni. Funkcja profesjonalna.",
+      "proOnly": "Żywa Mieszanina wyszukiwarka przepisów. Funkcja Pro — zaloguj się na Patreonie, aby odblokować."
     },
-    "noSeed": "No seed loaded — open the dynamic map first.",
-    "notFound": "Not found on map",
-    "ingredient": "Ingredient",
-    "chunksAway": "~{{count}} chunks away",
-    "notFoundAllWorlds": "Not found in three worlds",
-    "notFoundMainWorld": "Not found in the main world",
-    "findInTelescope": "find using Telescope",
-    "searching": "Searching…"
+    "noSeed": "Nie załadowano materiału siewnego — najpierw otwórz mapę dynamiczną.",
+    "notFound": "Nie znaleziono na mapie",
+    "ingredient": "Składnik",
+    "chunksAway": "~{{count}} kawałków dalej",
+    "notFoundAllWorlds": "Nie występuje w trzech światach",
+    "notFoundMainWorld": "Nie występuje w głównym świecie",
+    "findInTelescope": "znaleźć za pomocą teleskopu",
+    "searching": "Badawczy…"
   }
 }

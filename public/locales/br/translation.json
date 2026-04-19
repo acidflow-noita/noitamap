@@ -4645,34 +4645,34 @@
     "content": "Alternar sobreposição de grade de limites de blocos"
   },
   "lightMode": {
-    "label": "Light mode",
-    "title": "Light mode",
-    "content": "Only generate the main world. Skips east/west parallel worlds to reduce memory use on mobile / low-RAM devices. Enabled by default on small screens."
+    "label": "Modo leve",
+    "title": "Modo leve",
+    "content": "Gere apenas o mundo principal para reduzir o uso de memória em dispositivos móveis e com pouca RAM. Ignora mundos paralelos leste/oeste. Ativado por padrão em telas pequenas."
   },
   "mainWorldOnly": {
-    "title": "Main world only",
-    "content": "Only load the main world. Skips east/west parallel worlds (both the static background and dynamic POIs). Reduces memory use on mobile / low-RAM devices. On by default on small screens."
+    "title": "Somente mundo principal",
+    "content": "Carregue apenas o mundo principal. Ignora mundos paralelos leste/oeste (tanto o plano de fundo estático quanto os POIs dinâmicos). Reduz o uso de memória em dispositivos móveis/com pouca RAM. Ativado por padrão em telas pequenas."
   },
   "alchemy": {
     "ap": {
-      "label": "AP",
-      "title": "Alchemic Precursor",
-      "content": "Find the nearest ingredients for the Alchemic Precursor recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Alchemic Precursor recipe finder. Pro feature — sign in with Patreon to unlock."
+      "label": "PA",
+      "title": "Precursor Alquímico",
+      "content": "Encontre os ingredientes mais próximos para a receita Precursor Alquímico em relação à janela de visualização atual. Recurso profissional.",
+      "proOnly": "Precursor Alquímico localizador de receitas. Recurso Pro – faça login com o Patreon para desbloquear."
     },
     "lc": {
       "label": "LC",
-      "title": "Lively Concoction",
-      "content": "Find the nearest ingredients for the Lively Concoction recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Lively Concoction recipe finder. Pro feature — sign in with Patreon to unlock."
+      "title": "Mistura Vívida",
+      "content": "Encontre os ingredientes mais próximos para a receita Mistura Vívida em relação à janela de visualização atual. Recurso profissional.",
+      "proOnly": "Mistura Vívida localizador de receitas. Recurso Pro – faça login com o Patreon para desbloquear."
     },
-    "noSeed": "No seed loaded — open the dynamic map first.",
-    "notFound": "Not found on map",
-    "ingredient": "Ingredient",
-    "chunksAway": "~{{count}} chunks away",
-    "notFoundAllWorlds": "Not found in three worlds",
-    "notFoundMainWorld": "Not found in the main world",
-    "findInTelescope": "find using Telescope",
-    "searching": "Searching…"
+    "noSeed": "Nenhuma semente carregada – abra o mapa dinâmico primeiro.",
+    "notFound": "Não encontrado no mapa",
+    "ingredient": "Ingrediente",
+    "chunksAway": "~{{count}} pedaços de distância",
+    "notFoundAllWorlds": "Não encontrado em três mundos",
+    "notFoundMainWorld": "Não encontrado no mundo principal",
+    "findInTelescope": "encontrar usando o telescópio",
+    "searching": "Procurando…"
   }
 }

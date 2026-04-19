@@ -4645,34 +4645,34 @@
     "content": "Přepnout překrytí mřížky hranic bloků"
   },
   "lightMode": {
-    "label": "Light mode",
-    "title": "Light mode",
-    "content": "Only generate the main world. Skips east/west parallel worlds to reduce memory use on mobile / low-RAM devices. Enabled by default on small screens."
+    "label": "Lehký režim",
+    "title": "Lehký režim",
+    "content": "Generujte hlavní svět pouze za účelem snížení využití paměti na mobilních zařízeních a zařízeních s nízkou RAM. Přeskočí východní/západní paralelní světy. Ve výchozím nastavení na malých obrazovkách povoleno."
   },
   "mainWorldOnly": {
-    "title": "Main world only",
-    "content": "Only load the main world. Skips east/west parallel worlds (both the static background and dynamic POIs). Reduces memory use on mobile / low-RAM devices. On by default on small screens."
+    "title": "Pouze hlavní svět",
+    "content": "Načtěte pouze hlavní svět. Přeskočí východní/západní paralelní světy (statické pozadí i dynamická POI). Snižuje využití paměti na mobilních zařízeních / zařízeních s nízkou RAM. Ve výchozím nastavení na malých obrazovkách zapnuto."
   },
   "alchemy": {
     "ap": {
       "label": "AP",
       "title": "Alchemic Precursor",
-      "content": "Find the nearest ingredients for the Alchemic Precursor recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Alchemic Precursor recipe finder. Pro feature — sign in with Patreon to unlock."
+      "content": "Najděte nejbližší ingredience pro recept Alchemic Precursor vzhledem k aktuálnímu výřezu. Pro funkce.",
+      "proOnly": "Alchemic Precursor vyhledávač receptů. Pro funkce – pro odemknutí se přihlaste pomocí Patreonu."
     },
     "lc": {
       "label": "LC",
       "title": "Lively Concoction",
-      "content": "Find the nearest ingredients for the Lively Concoction recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Lively Concoction recipe finder. Pro feature — sign in with Patreon to unlock."
+      "content": "Najděte nejbližší ingredience pro recept Lively Concoction vzhledem k aktuálnímu výřezu. Pro funkce.",
+      "proOnly": "Lively Concoction vyhledávač receptů. Pro funkce – pro odemknutí se přihlaste pomocí Patreonu."
     },
-    "noSeed": "No seed loaded — open the dynamic map first.",
-    "notFound": "Not found on map",
-    "ingredient": "Ingredient",
-    "chunksAway": "~{{count}} chunks away",
-    "notFoundAllWorlds": "Not found in three worlds",
-    "notFoundMainWorld": "Not found in the main world",
-    "findInTelescope": "find using Telescope",
-    "searching": "Searching…"
+    "noSeed": "Není načteno žádné semeno – nejprve otevřete dynamickou mapu.",
+    "notFound": "Na mapě nenalezeno",
+    "ingredient": "Přísada",
+    "chunksAway": "~{{count}} kousků pryč",
+    "notFoundAllWorlds": "Nenalezen ve třech světech",
+    "notFoundMainWorld": "Nenalezeno v hlavním světě",
+    "findInTelescope": "najít pomocí dalekohledu",
+    "searching": "Vyhledávání…"
   }
 }

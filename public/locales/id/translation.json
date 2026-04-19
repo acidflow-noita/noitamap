@@ -4645,34 +4645,34 @@
     "content": "Alihkan hamparan kisi batas bongkahan"
   },
   "lightMode": {
-    "label": "Light mode",
-    "title": "Light mode",
-    "content": "Only generate the main world. Skips east/west parallel worlds to reduce memory use on mobile / low-RAM devices. Enabled by default on small screens."
+    "label": "Modus ringan",
+    "title": "Modus ringan",
+    "content": "Hanya menghasilkan dunia utama untuk mengurangi penggunaan memori pada perangkat seluler dan RAM rendah. Melewati dunia paralel timur/barat. Diaktifkan secara default pada layar kecil."
   },
   "mainWorldOnly": {
-    "title": "Main world only",
-    "content": "Only load the main world. Skips east/west parallel worlds (both the static background and dynamic POIs). Reduces memory use on mobile / low-RAM devices. On by default on small screens."
+    "title": "Dunia utama saja",
+    "content": "Hanya memuat dunia utama. Melewati dunia paralel timur/barat (latar belakang statis dan POI dinamis). Mengurangi penggunaan memori pada perangkat seluler/RAM rendah. Aktif secara default di layar kecil."
   },
   "alchemy": {
     "ap": {
       "label": "AP",
       "title": "Alchemic Precursor",
-      "content": "Find the nearest ingredients for the Alchemic Precursor recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Alchemic Precursor recipe finder. Pro feature — sign in with Patreon to unlock."
+      "content": "Temukan bahan-bahan terdekat untuk resep Alchemic Precursor relatif terhadap area pandang saat ini. Fitur profesional.",
+      "proOnly": "Alchemic Precursor pencari resep. Fitur Pro — masuk dengan Patreon untuk membuka kunci."
     },
     "lc": {
       "label": "LC",
       "title": "Lively Concoction",
-      "content": "Find the nearest ingredients for the Lively Concoction recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Lively Concoction recipe finder. Pro feature — sign in with Patreon to unlock."
+      "content": "Temukan bahan-bahan terdekat untuk resep Lively Concoction relatif terhadap area pandang saat ini. Fitur profesional.",
+      "proOnly": "Lively Concoction pencari resep. Fitur Pro — masuk dengan Patreon untuk membuka kunci."
     },
-    "noSeed": "No seed loaded — open the dynamic map first.",
-    "notFound": "Not found on map",
-    "ingredient": "Ingredient",
-    "chunksAway": "~{{count}} chunks away",
-    "notFoundAllWorlds": "Not found in three worlds",
-    "notFoundMainWorld": "Not found in the main world",
-    "findInTelescope": "find using Telescope",
-    "searching": "Searching…"
+    "noSeed": "Tidak ada benih yang dimuat — buka peta dinamis terlebih dahulu.",
+    "notFound": "Tidak ditemukan di peta",
+    "ingredient": "Bahan",
+    "chunksAway": "~{{count}} potongannya",
+    "notFoundAllWorlds": "Tidak ditemukan di tiga dunia",
+    "notFoundMainWorld": "Tidak ditemukan di dunia utama",
+    "findInTelescope": "temukan menggunakan Teleskop",
+    "searching": "Mencari…"
   }
 }

@@ -4645,34 +4645,34 @@
     "content": "Attiva/disattiva la sovrapposizione della griglia dei limiti dei blocchi"
   },
   "lightMode": {
-    "label": "Light mode",
-    "title": "Light mode",
-    "content": "Only generate the main world. Skips east/west parallel worlds to reduce memory use on mobile / low-RAM devices. Enabled by default on small screens."
+    "label": "Modalità leggera",
+    "title": "Modalità leggera",
+    "content": "Genera solo il mondo principale per ridurre l'utilizzo della memoria su dispositivi mobili e con poca RAM. Salta i mondi paralleli est/ovest. Abilitato per impostazione predefinita su schermi piccoli."
   },
   "mainWorldOnly": {
-    "title": "Main world only",
-    "content": "Only load the main world. Skips east/west parallel worlds (both the static background and dynamic POIs). Reduces memory use on mobile / low-RAM devices. On by default on small screens."
+    "title": "Solo mondo principale",
+    "content": "Carica solo il mondo principale. Salta i mondi paralleli est/ovest (sia lo sfondo statico che i PDI dinamici). Riduce l'utilizzo della memoria su dispositivi mobili/con poca RAM. Attivo per impostazione predefinita su schermi piccoli."
   },
   "alchemy": {
     "ap": {
       "label": "AP",
-      "title": "Alchemic Precursor",
-      "content": "Find the nearest ingredients for the Alchemic Precursor recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Alchemic Precursor recipe finder. Pro feature — sign in with Patreon to unlock."
+      "title": "Precursore Alchemico",
+      "content": "Trova gli ingredienti più vicini per la ricetta Precursore Alchemico rispetto alla finestra corrente. Funzionalità professionale.",
+      "proOnly": "Trova ricette Precursore Alchemico. Funzionalità Pro: accedi con Patreon per sbloccare."
     },
     "lc": {
       "label": "LC",
-      "title": "Lively Concoction",
-      "content": "Find the nearest ingredients for the Lively Concoction recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Lively Concoction recipe finder. Pro feature — sign in with Patreon to unlock."
+      "title": "Intruglio Brioso",
+      "content": "Trova gli ingredienti più vicini per la ricetta Intruglio Brioso rispetto alla finestra corrente. Funzionalità professionale.",
+      "proOnly": "Intruglio Brioso ricerca ricette. Funzionalità Pro: accedi con Patreon per sbloccare."
     },
-    "noSeed": "No seed loaded — open the dynamic map first.",
-    "notFound": "Not found on map",
-    "ingredient": "Ingredient",
-    "chunksAway": "~{{count}} chunks away",
-    "notFoundAllWorlds": "Not found in three worlds",
-    "notFoundMainWorld": "Not found in the main world",
-    "findInTelescope": "find using Telescope",
-    "searching": "Searching…"
+    "noSeed": "Nessun seed caricato: apri prima la mappa dinamica.",
+    "notFound": "Non trovato sulla mappa",
+    "ingredient": "Ingrediente",
+    "chunksAway": "~{{count}} pezzi di distanza",
+    "notFoundAllWorlds": "Non trovato in tre mondi",
+    "notFoundMainWorld": "Non trovato nel mondo principale",
+    "findInTelescope": "trovare utilizzando il telescopio",
+    "searching": "Ricerca…"
   }
 }
