@@ -75,6 +75,14 @@ const SKIP_SUFFIXES = [
   "_hotspot",
   "_hotspots",
   "_uv_src",
+  "_normals",
+];
+
+// Substrings anywhere in the PNG path that cause it to be skipped
+const SKIP_SUBSTRINGS = [
+  "/image_emitters/",
+  "/stain",
+  "_stain",
 ];
 
 // Directories whose PNGs should be rotated 90° CCW (wand sprites)
@@ -339,9 +347,11 @@ async function main() {
     for (const skip of SKIP_DIRS) {
       if (relPath.startsWith(skip)) return;
     }
-    // Skip image_emitters anywhere in path
-    if (relPath.includes("/image_emitters/")) return;
-    // Skip filename patterns (_hotspot, _hotspots, _uv_src)
+    // Skip image_emitters and stain files anywhere in path
+    for (const sub of SKIP_SUBSTRINGS) {
+      if (relPath.includes(sub)) return;
+    }
+    // Skip filename patterns (_hotspot, _hotspots, _uv_src, _normals)
     const baseName = path.basename(relPath, ".png");
     for (const suffix of SKIP_SUFFIXES) {
       if (baseName.endsWith(suffix)) return;
@@ -569,6 +579,69 @@ async function main() {
       atlas[to] = { ...atlas[from] };
     }
   }
+
+  // ─── Entity aliases: enemy:<basename> → actual atlas key ───────────────────
+  // Telescope strips entity paths to the basename (e.g., "failed_alchemist"
+  // from "data/entities/animals/failed_alchemist.xml"). For entities whose
+  // sprite doesn't live at data/enemies_gfx/<basename>.png, the atlas key
+  // built from the sprite path differs from enemy:<basename>, so POI
+  // markers and tooltips can't find a sprite. We resolve each entity's
+  // SpriteComponent image_file chain (entity XML → maybe another XML → PNG)
+  // and register the PNG's atlas key under enemy:<basename>.
+  async function resolveEntitySprite(zip, xmlPath, depth = 0) {
+    if (depth > 6) return null;
+    const f = zip.file(xmlPath);
+    if (!f) return null;
+    const txt = await f.async("text");
+    // <Sprite filename="X[.png]" /> — leaf sprite XML; extension is optional in Noita XMLs
+    const fnMatch = txt.match(/<Sprite\b[^/>]*\sfilename="([^"]+)"/);
+    if (fnMatch) {
+      const fn = fnMatch[1];
+      return fn.endsWith(".png") ? fn : fn + ".png";
+    }
+    // image_file="..." — either a PNG or another XML to follow
+    const imMatch = txt.match(/image_file="([^"]+)"/);
+    if (imMatch) {
+      const target = imMatch[1];
+      if (target.endsWith(".png")) return target;
+      if (target.endsWith(".xml")) {
+        const resolved = await resolveEntitySprite(zip, target, depth + 1);
+        if (resolved) return resolved;
+      }
+    }
+    // <Base file="..."> — follow inheritance chain
+    const baseMatch = txt.match(/<Base\b[^>]*\sfile="([^"]+)"/);
+    if (baseMatch) return resolveEntitySprite(zip, baseMatch[1], depth + 1);
+    return null;
+  }
+
+  const entityXmlPaths = [];
+  zip.forEach((relPath) => {
+    if (!relPath.startsWith("data/entities/")) return;
+    if (!relPath.endsWith(".xml")) return;
+    // Skip non-entity XMLs (particle effects, sprite definitions, etc.)
+    const base = path.basename(relPath, ".xml");
+    if (base.endsWith("_sprite") || base.endsWith("_particles") ||
+        base.endsWith("_fx") || base.endsWith("_emitter") ||
+        base.endsWith("_animated") || base.endsWith("_damage") ||
+        base.endsWith("_effect") || base.endsWith("_marker")) return;
+    entityXmlPaths.push(relPath);
+  });
+
+  let entityAliasCount = 0;
+  for (const xmlPath of entityXmlPaths) {
+    const entityName = path.basename(xmlPath, ".xml");
+    const aliasKey = `enemy:${entityName}`;
+    if (atlas[aliasKey]) continue;
+    const spritePng = await resolveEntitySprite(zip, xmlPath);
+    if (!spritePng) continue;
+    const targetKey = getAtlasKey(spritePng, false);
+    if (targetKey && atlas[targetKey]) {
+      atlas[aliasKey] = { ...atlas[targetKey] };
+      entityAliasCount++;
+    }
+  }
+  console.log(`[build-spritesheet] Added ${entityAliasCount} entity sprite aliases`);
 
   const sheetW = SHEET_MAX_W;
   const sheetH = curY + rowHeight;
