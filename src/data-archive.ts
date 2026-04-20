@@ -68,15 +68,18 @@ async function _loadZipWorkerFast(key: string, url: string): Promise<JSZip | nul
 /** Main thread path: HEAD validation, lock, network fetch with progress, cache write. */
 async function _loadZipMainThread(key: string, url: string, silent: boolean): Promise<JSZip | null> {
   return new Promise((resolve) => {
-    navigator.locks.request(`zip-fetch-${key}`, async () => {
+    const run = async () => {
       try {
         // Re-check after acquiring lock (another tab may have loaded it)
         if (zips[key]) { resolve(zips[key]); return; }
 
         console.log(`[DataArchive] Loading ${url}...`);
 
+      // Cache Storage API requires secure context (HTTPS). iOS Safari on
+      // plain HTTP has no `caches` — fall through to network-only.
+      const cachesAvailable = typeof caches !== "undefined";
       const cacheName = `noitamap-archive-${key}-v2`;
-      const cache = await caches.open(cacheName);
+      const cache = cachesAvailable ? await caches.open(cacheName) : null;
 
       // HEAD request to validate cache freshness
       let serverMeta = "";
@@ -93,7 +96,7 @@ async function _loadZipMainThread(key: string, url: string, silent: boolean): Pr
         console.warn(`[DataArchive] HEAD request failed for ${url}, falling back to cache if available`, e);
       }
 
-      let response = await cache.match(url);
+      let response = cache ? await cache.match(url) : null;
       let buf: ArrayBuffer | null = null;
       let shouldUseCache = false;
 
@@ -185,7 +188,7 @@ async function _loadZipMainThread(key: string, url: string, silent: boolean): Pr
           statusText: fetchResp.statusText,
           headers: headers,
         });
-        await cache.put(url, cacheResponse);
+        if (cache) await cache.put(url, cacheResponse);
       }
 
       if (!buf) throw new Error(`Failed to obtain array buffer for ${url}`);
@@ -197,11 +200,19 @@ async function _loadZipMainThread(key: string, url: string, silent: boolean): Pr
     } catch (e) {
       console.error(`[DataArchive] Failed to load ${url}:`, e);
       try {
-        await caches.delete(`noitamap-archive-${key}-v2`);
+        if (typeof caches !== "undefined") await caches.delete(`noitamap-archive-${key}-v2`);
       } catch (err) {}
       resolve(null);
     }
-    }); // end locks.request
+    }; // end run()
+    // Web Locks API requires a secure context (HTTPS). In HTTP dev or
+    // restricted contexts (some private tabs), navigator.locks is undefined.
+    // Fall back to running without a cross-tab lock.
+    if (typeof navigator !== "undefined" && navigator.locks?.request) {
+      navigator.locks.request(`zip-fetch-${key}`, run);
+    } else {
+      run();
+    }
   }); // end new Promise
 }
 
