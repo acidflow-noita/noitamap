@@ -4674,5 +4674,10 @@
     "notFoundMainWorld": "Nie występuje w głównym świecie",
     "findInTelescope": "znaleźć za pomocą teleskopu",
     "searching": "Badawczy…"
+  },
+  "highValueFilter": {
+    "title": "High-value items",
+    "content": "Highlight rare spells, orbs, and landmark items on the map. Matching markers are scaled up with a soft gold glow; everything else is dimmed for contrast. Pro feature.",
+    "proOnly": "High-value highlight. Pro feature — sign in with Patreon to unlock."
   }
 }

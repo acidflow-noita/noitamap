@@ -31,6 +31,19 @@ class AuthService {
   private listeners: Set<(state: AuthState) => void> = new Set();
 
   /**
+   * Resolves once `init()` has finished (success or failure). Code that needs
+   * the definitively-resolved auth state (e.g., gated URL-param features)
+   * should await this instead of relying on subscribe(), since subscribe()
+   * may be registered AFTER the initial notifyListeners() call.
+   */
+  ready: Promise<AuthState>;
+  private resolveReady!: (state: AuthState) => void;
+
+  constructor() {
+    this.ready = new Promise<AuthState>((resolve) => { this.resolveReady = resolve; });
+  }
+
+  /**
    * Initialize auth state from URL params or stored token
    */
   async init(): Promise<AuthState> {
@@ -60,6 +73,7 @@ class AuthService {
     }
 
     await this.checkAuth();
+    this.resolveReady(this.state);
     return this.state;
   }
 

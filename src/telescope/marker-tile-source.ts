@@ -31,6 +31,28 @@ export function setDetailVisible(v: boolean): boolean {
   return true;
 }
 
+// High-value highlight filter. When a predicate is set, matching markers get
+// a gold radial halo drawn UNDER the sprite. Sprites themselves (matched or
+// not) are never changed — no dimming, no scaling, nothing subtractive.
+// Pro bundle registers the predicate via the `setHighValuePredicate` hook.
+type POIPredicate = (poi: any) => boolean;
+let _highValuePredicate: POIPredicate | null = null;
+
+export function isHighValueActive(): boolean {
+  return _highValuePredicate !== null;
+}
+
+/** Set the high-value predicate. Pass null to disable. Returns true if the state changed. */
+export function setHighValuePredicate(pred: POIPredicate | null): boolean {
+  const was = _highValuePredicate !== null;
+  const now = pred !== null;
+  if (was === now && _highValuePredicate === pred) return false;
+  _highValuePredicate = pred;
+  return true;
+}
+
+const GLOW_COLOR_RING = "oklch(74.6% 0.16 232.661 / 0.95)";
+
 export function createMarkerTileSource(markerData: MarkerData): any {
   const { index, spritesheet, atlas, items, originX, originY, bboxWidth, bboxHeight } = markerData;
 
@@ -122,6 +144,7 @@ export function createMarkerTileSource(markerData: MarkerData): any {
     if (results.length > 0) {
       const drawScale = TILE_SIZE / bw;
       const skipDetail = !_detailVisible;
+      const hvPred = _highValuePredicate;
 
       for (const idx of results) {
         const item = items[idx];
@@ -132,6 +155,23 @@ export function createMarkerTileSource(markerData: MarkerData): any {
         const rootKey = rawKeysRaw[0];
         const atlasKeyScrubbed = applySpoilerFree(rootKey, atlas);
         const drawKeys = (atlasKeyScrubbed !== rootKey) ? [atlasKeyScrubbed] : rawKeysRaw;
+
+        const isHV = hvPred ? hvPred(item.poi) : false;
+
+        // Draw a crisp cyan ring UNDER the sprite when the filter is active.
+        // Stroke only — no fill — so the game visuals behind it stay visible.
+        if (isHV) {
+          const anchorX = (item.osdX - originX - bx) * drawScale;
+          const anchorY = (item.osdY - originY - by) * drawScale;
+          const baseSize = Math.max(item.w, item.h) * drawScale;
+          const r = Math.max(6, baseSize * 0.8);
+
+          ctx.strokeStyle = GLOW_COLOR_RING;
+          ctx.lineWidth = Math.max(1, drawScale);
+          ctx.beginPath();
+          ctx.arc(anchorX, anchorY, r, 0, Math.PI * 2);
+          ctx.stroke();
+        }
 
         let isMain = true;
         let rootW = 0;

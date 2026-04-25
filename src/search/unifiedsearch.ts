@@ -12,6 +12,7 @@ import type { DynamicPOI } from "../dynamic-map";
 import { CREATURE_ALIASES, CREATURE_DATA } from "../data/creature-data";
 import { authService } from "../auth/auth-service";
 import { AuthUI } from "../auth/auth-ui";
+import { updateURLWithSearch } from "../data_sources/url";
 
 // Inlined from poi-spatial-index to avoid pulling Flatbush into the main bundle
 const CONTAINER_TYPES = new Set([
@@ -200,6 +201,241 @@ function appendAlchemyStubs(filterBox: HTMLElement): void {
   ensureAlchemyStubStyles();
 }
 
+/**
+ * Show an immediate "Loading..." row in the results overlay so the gem click
+ * has visible feedback while the pro bundle / POI index catches up. Mirrors
+ * the `showAlchemyLoading` behaviour for AP/LC.
+ */
+function showHighValueLoading(): void {
+  const overlay = document.getElementById("unifiedSearchResultsOverlay") as HTMLDivElement | null;
+  const ul = document.getElementById("unifiedSearchResults") as HTMLUListElement | null;
+  if (!overlay || !ul) return;
+  ul.innerHTML = "";
+  const li = document.createElement("li");
+  li.className = "alchemy-loading";
+  li.textContent = `${i18next.t("highValueFilter.title", "High-value items")}: ${i18next.t("search.indexing", "Loading...")}`;
+  ul.appendChild(li);
+  overlay.style.display = "block";
+  // Pin overlay width to the filter row so it doesn't shrink when the
+  // "Loading..." content is shorter than the usual result rows.
+  const filterBox = document.getElementById("unifiedSearchFilterBox");
+  const input = document.getElementById("unified-search-input");
+  if (filterBox && input) {
+    const inputRect = input.getBoundingClientRect();
+    const filterRect = filterBox.getBoundingClientRect();
+    const pinWidth = Math.max(inputRect.width, filterRect.right - inputRect.left);
+    overlay.style.left = `${inputRect.left + window.scrollX}px`;
+    overlay.style.top = `${inputRect.bottom + window.scrollY}px`;
+    overlay.style.minWidth = `${pinWidth}px`;
+    overlay.style.maxWidth = `${Math.max(0, window.innerWidth - inputRect.left - 8)}px`;
+  }
+}
+
+/**
+ * Live reference to the active UnifiedSearch instance, set by its constructor.
+ * Used by appendHighValueStub so the gem button can drive search-result
+ * filtering even when the stub is first created by the static factory
+ * (before the instance exists).
+ */
+let _activeSearch: UnifiedSearch | null = null;
+
+/**
+ * Append the "high-value items" gem toggle to the dynamic filter bar.
+ * Pro-gated like AP/LC. Flips the map-marker highlight predicate via the
+ * hook registered by the pro bundle (handleHighValueToggle), and also
+ * narrows the search results list to only high-value items while active.
+ */
+function appendHighValueStub(filterBox: HTMLElement, search?: UnifiedSearch): void {
+  const label = document.createElement("label");
+  label.className = "high-value-filter-btn pro-accent";
+  label.tabIndex = 0;
+  label.id = "highValueFilterBtn";
+
+  const titleKey = "highValueFilter.title";
+  const contentKey = "highValueFilter.content";
+  const proOnlyKey = "highValueFilter.proOnly";
+  const defaultTitle = "High-value items";
+
+  label.dataset.bsToggle = "popover";
+  label.dataset.bsPlacement = "bottom";
+  label.dataset.bsTrigger = "hover focus";
+  label.dataset.bsHtml = "true";
+  label.dataset.bsTitle = i18next.t(titleKey, defaultTitle);
+  label.dataset.i18nTitle = titleKey;
+  label.dataset.i18nContent = contentKey;
+  label.dataset.i18nProOnly = proOnlyKey;
+
+  // Inline Bootstrap Icons "gem" — no new asset needed.
+  label.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16" class="high-value-filter-icon" aria-hidden="true">
+      <path d="M3.1.7a.5.5 0 0 1 .4-.2h9a.5.5 0 0 1 .4.2l2.976 3.974c.149.185.156.45.01.644L8.4 15.3a.5.5 0 0 1-.8 0L.1 5.3a.5.5 0 0 1 0-.6zm11.386 3.785-1.806-2.41-.776 2.413zm-3.633.004.961-2.989H4.186l.963 2.995zM5.47 5.495 8 13.366l2.532-7.876zm-1.371-.999-.78-2.422-1.818 2.425zM1.499 5.5l5.113 6.817-2.192-6.82zm7.889 6.817 5.123-6.83-2.928.002z"/>
+    </svg>
+  `;
+
+  const refreshDisabledState = () => {
+    const state = authService.getState();
+    const locked = !state.authenticated || !state.isSubscriber;
+    label.classList.toggle("high-value-filter-btn--locked", locked);
+    label.setAttribute("aria-disabled", locked ? "true" : "false");
+    label.dataset.bsContent = i18next.t(
+      locked ? proOnlyKey : contentKey,
+      locked
+        ? `${defaultTitle}. Pro feature — sign in with Patreon to unlock.`
+        : "Highlight rare spells, orbs, and landmark items. Matching markers are scaled up and glow; others are dimmed.",
+    );
+    const existing = (window as any).bootstrap?.Popover?.getInstance(label);
+    if (existing) {
+      existing.setContent({
+        ".popover-header": label.dataset.bsTitle!,
+        ".popover-body": label.dataset.bsContent,
+      });
+    }
+  };
+  refreshDisabledState();
+  authService.subscribe(refreshDisabledState);
+
+  const applyActiveClass = (on: boolean) => {
+    label.classList.toggle("active", on);
+  };
+
+  const applyToSearch = (on: boolean) => {
+    const s = search ?? _activeSearch;
+    if (!s) return;
+    if (on) s.activeFilters.add("hv");
+    else s.activeFilters.delete("hv");
+    // Re-render the search results list so it reflects the new filter set.
+    s.updateSearchResults();
+  };
+
+  const toggleFilter = async (nextActive: boolean) => {
+    const hooks = window.__noitamap;
+    if (!hooks) return;
+    // Ensure pro bundle is loaded so handleHighValueToggle is registered.
+    if (typeof hooks.handleHighValueToggle !== "function") {
+      if (typeof hooks.requestProLoad === "function") {
+        await hooks.requestProLoad();
+      }
+    }
+    if (typeof hooks.handleHighValueToggle === "function") {
+      hooks.handleHighValueToggle(nextActive);
+    } else {
+      console.warn("[HighValueFilter] pro bundle did not register handleHighValueToggle");
+    }
+    // Update search results AFTER pro is loaded so isHighValuePOI is available.
+    applyToSearch(nextActive);
+  };
+
+  label.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const state = authService.getState();
+    if (!state.authenticated || !state.isSubscriber) {
+      AuthUI.showGetProModal();
+      return;
+    }
+    const pop = (window as any).bootstrap?.Popover?.getInstance(label);
+    if (pop) pop.hide();
+
+    const alreadyActive = label.classList.contains("active");
+    const next = !alreadyActive;
+    applyActiveClass(next);
+
+    // Keep focus on the search input so the overlay can open, and show an
+    // immediate placeholder while the pro bundle / POI index catches up.
+    if (next) {
+      const searchInput = document.getElementById("unified-search-input") as HTMLInputElement | null;
+      searchInput?.focus({ preventScroll: true });
+      showHighValueLoading();
+    }
+
+    await toggleFilter(next);
+
+    // Persist filter state to URL so reload / share-link works.
+    const s = search ?? _activeSearch;
+    if (s) updateURLWithSearch(s.searchInput.value, s.activeFilters);
+
+    // If the index is still building, re-run when it becomes ready.
+    if (next) {
+      if (s && s.getIndexingState() !== "ready") {
+        const off = s.onIndexingStateChange((st) => {
+          if (st === "ready") {
+            off();
+            s.updateSearchResults();
+          }
+        });
+      }
+    }
+  });
+
+  filterBox.appendChild(label);
+  ensureHighValueStubStyles();
+
+  // Restore from URL on rebuild (e.g., page load with ?f=hv,...).
+  // Wait for auth to be definitively resolved before deciding. Pro users:
+  // visually activate + invoke the pro toggle. Non-pro users: silently strip
+  // "hv" from activeFilters AND refresh the search results so the user isn't
+  // stuck looking at an empty list (matchesFilters returns false for every
+  // POI when "hv" is set but the pro predicate isn't loaded).
+  authService.ready.then((st) => {
+    const s = search ?? _activeSearch;
+    if (!s || !s.activeFilters.has("hv")) return;
+    if (st.authenticated && st.isSubscriber) {
+      applyActiveClass(true);
+      toggleFilter(true);
+    } else {
+      s.activeFilters.delete("hv");
+      updateURLWithSearch(s.searchInput.value, s.activeFilters);
+      s.updateSearchResults();
+    }
+  });
+}
+
+function ensureHighValueStubStyles(): void {
+  if (document.getElementById("high-value-stub-style")) return;
+  const s = document.createElement("style");
+  s.id = "high-value-stub-style";
+  s.textContent = `
+#unifiedSearchFilterBox .high-value-filter-btn {
+  position: relative;
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #3a2d0d 0%, #241a05 100%);
+  border: 1px solid #b08a2a;
+  box-shadow: 0 0 0 1px rgba(255, 211, 110, 0.08) inset, 0 0 6px rgba(176, 138, 42, 0.25);
+  color: #ffd36e;
+  cursor: pointer; user-select: none;
+  transition: box-shadow 0.15s, transform 0.15s, background 0.15s;
+}
+#unifiedSearchFilterBox .high-value-filter-btn .high-value-filter-icon {
+  width: 20px; height: 20px;
+  filter: drop-shadow(0 0 2px rgba(255, 211, 110, 0.35));
+}
+#unifiedSearchFilterBox .high-value-filter-btn:hover {
+  background: linear-gradient(180deg, #5a4418 0%, #362605 100%);
+  box-shadow: 0 0 0 1px rgba(255, 211, 110, 0.2) inset, 0 0 10px rgba(255, 211, 110, 0.35);
+  transform: translateY(-1px);
+}
+#unifiedSearchFilterBox .high-value-filter-btn.active {
+  background: linear-gradient(180deg, #8a6a20 0%, #5a4418 100%);
+  border-color: #ffd36e;
+  box-shadow: 0 0 0 2px rgba(255, 211, 110, 0.45), 0 0 12px rgba(255, 211, 110, 0.5);
+}
+#unifiedSearchFilterBox .high-value-filter-btn.active .high-value-filter-icon {
+  filter: drop-shadow(0 0 4px rgba(255, 211, 110, 0.9));
+}
+#unifiedSearchFilterBox .high-value-filter-btn--locked {
+  opacity: 0.55;
+  filter: grayscale(0.4);
+}
+#unifiedSearchFilterBox .high-value-filter-btn--locked:hover {
+  opacity: 0.75;
+  transform: none;
+}
+  `;
+  document.head.appendChild(s);
+}
+
 function ensureAlchemyStubStyles(): void {
   if (document.getElementById("alchemy-stub-style")) return;
   const s = document.createElement("style");
@@ -287,6 +523,21 @@ const BOSS_TYPES = new Set([
 /** Check if a POI matches any of the active filters. */
 function matchesFilters(p: DynamicPOI, activeFilters: Set<string>): boolean {
   if (activeFilters.size === 0) return true;
+  // Treat "hv" as a no-op while the pro predicate isn't loaded yet so the
+  // user isn't stuck looking at an empty list during bundle load / before
+  // the non-pro strip-from-URL fires.
+  const hvPred = window.__noitamap?.isHighValuePOI;
+  const hvIneffective = activeFilters.has("hv") && !hvPred;
+  if (hvIneffective && activeFilters.size === 1) return true;
+  if (activeFilters.has("hv") && hvPred) {
+    if (hvPred(p)) return true;
+    // Also match high-value inner items inside containers (chests, HM shops, etc.).
+    if (Array.isArray(p.items)) {
+      for (const ci of p.items) {
+        if (ci && hvPred(ci)) return true;
+      }
+    }
+  }
   if (activeFilters.has("w") && p.type === "wand") return true;
   if (activeFilters.has("s") && p.type === "item" && p.item === "spell") return true;
   if (activeFilters.has("i") && p.type === "item") return true;
@@ -396,7 +647,9 @@ export class UnifiedSearch extends EventEmitter2 {
     }
   }
 
-  public get currentMap(): MapName { return this._currentMap; }
+  public get currentMap(): MapName {
+    return this._currentMap;
+  }
   public set currentMap(value: MapName) {
     const wasDynamic = this._currentMap === "dynamic-main-branch";
     const isDynamic = value === "dynamic-main-branch";
@@ -423,6 +676,8 @@ export class UnifiedSearch extends EventEmitter2 {
     if (initialFilters) {
       initialFilters.forEach((f) => this.activeFilters.add(f));
     }
+
+    _activeSearch = this;
 
     this.bindEvents();
   }
@@ -655,6 +910,7 @@ export class UnifiedSearch extends EventEmitter2 {
     }
 
     if (isDynamicMap) appendAlchemyStubs(filterBox);
+    if (isDynamicMap) appendHighValueStub(filterBox, this);
 
     // Initialize Bootstrap popovers
     // @ts-ignore
@@ -697,7 +953,9 @@ export class UnifiedSearch extends EventEmitter2 {
       msg: i18next.t("searchFilters.hiddenMessages", "Filter results to show only hidden messages"),
     };
 
-    for (const label of document.querySelectorAll<HTMLLabelElement>('#unifiedSearchFilterBox label[data-filter-type]')) {
+    for (const label of document.querySelectorAll<HTMLLabelElement>(
+      "#unifiedSearchFilterBox label[data-filter-type]",
+    )) {
       const type = label.dataset.filterType!;
       const title = FILTER_LABELS[type] || type;
       label.dataset.bsTitle = title;
@@ -741,7 +999,11 @@ export class UnifiedSearch extends EventEmitter2 {
     this.indexingState = state;
     if (prev !== state) {
       for (const cb of this.indexingListeners) {
-        try { cb(state); } catch { /* ignore listener errors */ }
+        try {
+          cb(state);
+        } catch {
+          /* ignore listener errors */
+        }
       }
     }
     if (this.alchemyActive) return;
@@ -886,7 +1148,7 @@ export class UnifiedSearch extends EventEmitter2 {
   // Method to refresh search results with new translations
   refreshTranslations() {
     this.refreshFilterTranslations();
-    
+
     // Force update by ignoring last search state
     this.lastSearchText = "__force__";
     this.updateSearchResults();
@@ -899,7 +1161,7 @@ export class UnifiedSearch extends EventEmitter2 {
     this.updateSearchResults();
   }
 
-  private updateSearchResults() {
+  public updateSearchResults() {
     if (this.alchemyActive) return;
     const searchText = this.searchInput.value;
     // Also check viewport position for dynamic map proximity sorting
@@ -1258,6 +1520,10 @@ export class UnifiedSearch extends EventEmitter2 {
     }
 
     if (isDynamicMap) appendAlchemyStubs(filterBox);
+    // Note: `this` in this static factory is the class itself, not an instance.
+    // The stub is appended without a search-ref here; the instance's constructor
+    // calls rebuildFilters(), which re-creates the stub with `this` bound.
+    if (isDynamicMap) appendHighValueStub(filterBox);
 
     overlayDiv.appendChild(filterBox);
 
@@ -1273,14 +1539,21 @@ export class UnifiedSearch extends EventEmitter2 {
     // (including AP/LC) on one line. Clamped to avoid overflowing the
     // viewport on narrow screens.
 
-    // Position overlay below the input. Width is driven by CSS
-    // (fit-content, clamped to viewport), not JS, so the overlay hugs the
-    // filter row exactly with no side gutters.
+    // Position overlay below the input. Width is pinned to the filter row
+    // so the overlay hugs it exactly and doesn't jitter when short content
+    // (loading placeholders, no-results) makes the overlay shrink via
+    // fit-content.
     function positionOverlay() {
       const rect = searchInput.getBoundingClientRect();
+      const filterBox = document.getElementById("unifiedSearchFilterBox");
       overlayDiv.style.left = `${rect.left + window.scrollX}px`;
       overlayDiv.style.top = `${rect.bottom + window.scrollY}px`;
       overlayDiv.style.width = "";
+      if (filterBox) {
+        const filterRect = filterBox.getBoundingClientRect();
+        const pinWidth = Math.max(rect.width, filterRect.right - rect.left);
+        overlayDiv.style.minWidth = `${pinWidth}px`;
+      }
       overlayDiv.style.maxWidth = `${Math.max(0, window.innerWidth - rect.left - 8)}px`;
     }
 
@@ -1315,13 +1588,17 @@ export class UnifiedSearch extends EventEmitter2 {
 
     // Close overlay when clicking outside
     // Use capture phase to intercept pointerdown before OpenSeadragon stops propagation
-    document.addEventListener("pointerdown", (e) => {
-      if (isOverlayVisible && !overlayDiv.contains(e.target as Node) && e.target !== searchInput) {
-        overlayDiv.style.display = "none";
-        isOverlayVisible = false;
-        searchInput.blur();
-      }
-    }, true);
+    document.addEventListener(
+      "pointerdown",
+      (e) => {
+        if (isOverlayVisible && !overlayDiv.contains(e.target as Node) && e.target !== searchInput) {
+          overlayDiv.style.display = "none";
+          isOverlayVisible = false;
+          searchInput.blur();
+        }
+      },
+      true,
+    );
 
     // Close overlay when language changes
     i18next.on("languageChanged", () => {
@@ -1331,13 +1608,17 @@ export class UnifiedSearch extends EventEmitter2 {
     });
 
     // Close overlay when clicking outside, use capture to bypass OpenSeadragon swallowing pointer events
-    document.addEventListener("pointerdown", (e) => {
-      if (isOverlayVisible && !overlayDiv.contains(e.target as Node) && e.target !== searchInput) {
-        overlayDiv.style.display = "none";
-        isOverlayVisible = false;
-        searchInput.blur();
-      }
-    }, true);
+    document.addEventListener(
+      "pointerdown",
+      (e) => {
+        if (isOverlayVisible && !overlayDiv.contains(e.target as Node) && e.target !== searchInput) {
+          overlayDiv.style.display = "none";
+          isOverlayVisible = false;
+          searchInput.blur();
+        }
+      },
+      true,
+    );
 
     // Close overlay when language changes
     i18next.on("languageChanged", () => {

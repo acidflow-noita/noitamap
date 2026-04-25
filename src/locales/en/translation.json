@@ -4633,6 +4633,11 @@
     "title": "Spoiler-free",
     "content": "Hide wand, spell, item identities on the map and in the search results. Wands show up as the starter wand, spells and items show up as unidentified."
   },
+  "highValueFilter": {
+    "title": "High-value items",
+    "content": "Mark rare spells, orbs, and landmark items on the map with a cyan ring, and narrow the search results list to only those POIs. Regular markers are unchanged. Pro feature.",
+    "proOnly": "High-value highlight. Pro feature — sign in with Patreon to unlock."
+  },
   "mainWorldOnly": {
     "title": "Main world only",
     "content": "Only load the main world. Skips east/west parallel worlds (both the static background and dynamic POIs). Reduces memory use on mobile / low-RAM devices. On by default on small screens."

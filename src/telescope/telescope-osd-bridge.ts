@@ -1986,6 +1986,11 @@ let tooltipEl: HTMLDivElement | null = null;
 let canvasClickHandler: ((event: any) => void) | null = null;
 let markerTiledImage: any = null;
 
+/** Access to the active marker tiled image so consumers can force a reset/redraw. */
+export function getMarkerTiledImage(): any {
+  return markerTiledImage;
+}
+
 // Zoom threshold below which detail POIs (wands/items/potions/creatures) are
 // culled from the marker tile layer. Expressed in URL logZoom units (the `z` param)
 // and converted to OSD viewport zoom via the shared helper so this can't drift

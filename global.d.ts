@@ -113,6 +113,17 @@ declare global {
     requestProLoad?: () => Promise<boolean>;
     /** Handle AP/LC recipe request — set by pro bundle after init. Pass null to clear. */
     handleAlchemyRecipe?: (kind: "ap" | "lc" | null) => void;
+    /**
+     * Install / clear the high-value highlight predicate. When a function is
+     * passed, POIs that return true are drawn with emphasis (scale + glow),
+     * and non-matching POIs are dimmed. Null restores default rendering.
+     * Triggers a marker-tile reset + redraw.
+     */
+    setHighValuePredicate: (pred: ((poi: any) => boolean) | null) => void;
+    /** Toggle the high-value filter — set by pro bundle after init. */
+    handleHighValueToggle?: (active: boolean) => void;
+    /** High-value predicate — set by pro bundle after init. Drives BOTH map highlight and search filter. */
+    isHighValuePOI?: (poi: any) => boolean;
   }
 
   interface Window {
