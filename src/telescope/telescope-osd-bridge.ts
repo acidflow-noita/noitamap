@@ -316,6 +316,11 @@ export function clearDynamicOverlays(viewer: any): void {
   dynamicOverlayElements = [];
   activeOrbTargets = [];
 
+  // Drop any HV ring overlays from the previous generation. The predicate is
+  // retained — when the new markerData is set the rings rebuild for that map.
+  clearHighValueOverlays(viewer);
+  activeMarkerData = null;
+
   // Delay revocation to give OSD time to release the resources
   const urlsToRevoke = [...dynamicBlobUrls];
   dynamicBlobUrls = [];
@@ -1991,6 +1996,59 @@ export function getMarkerTiledImage(): any {
   return markerTiledImage;
 }
 
+// ─── High-value highlight overlays ─────────────────────────────────────────
+// HV rings are rendered as DOM overlays (CSS border-radius circles) instead of
+// rasterized into marker tiles. Vector rendering avoids the canvas-downsampling
+// artifacts (blurry / "color squares") the rasterized ring suffered in Chrome,
+// and lets the browser anti-alias the outline at every zoom level.
+let _hvOverlayElements: HTMLDivElement[] = [];
+let _hvPredicate: ((poi: any) => boolean) | null = null;
+const HV_RING_COLOR = "oklch(74.6% 0.16 232.661 / 0.95)";
+
+function clearHighValueOverlays(viewer: any): void {
+  for (const el of _hvOverlayElements) {
+    try { viewer.removeOverlay(el); } catch {}
+    el.remove();
+  }
+  _hvOverlayElements = [];
+}
+
+function rebuildHighValueOverlays(): void {
+  const viewer = (window as any).__osdViewer;
+  if (!viewer) return;
+  clearHighValueOverlays(viewer);
+  if (!_hvPredicate || !activeMarkerData) return;
+
+  const items = activeMarkerData.items;
+  let added = 0;
+  for (const item of items) {
+    if (!_hvPredicate(item.poi)) continue;
+    const r = Math.max(8, Math.max(item.w, item.h) * 0.8);
+    const el = document.createElement("div");
+    el.className = "poi-hv-ring";
+    el.style.cssText =
+      "width:100%;height:100%;border:2px solid " + HV_RING_COLOR +
+      ";border-radius:50%;pointer-events:none;box-sizing:border-box;";
+    viewer.addOverlay({
+      element: el,
+      location: new (OpenSeadragon as any).Rect(item.osdX - r, item.osdY - r, r * 2, r * 2),
+    });
+    _hvOverlayElements.push(el);
+    added++;
+  }
+  console.log(`[HighValueFilter] applied ${added} ring overlays`);
+}
+
+/**
+ * Set the high-value predicate and rebuild the ring overlays. Pass null to
+ * clear. The predicate is retained across map regenerations so a freshly
+ * generated map auto-applies the rings.
+ */
+export function applyHighValueOverlays(predicate: ((poi: any) => boolean) | null): void {
+  _hvPredicate = predicate;
+  rebuildHighValueOverlays();
+}
+
 // Zoom threshold below which detail POIs (wands/items/potions/creatures) are
 // culled from the marker tile layer. Expressed in URL logZoom units (the `z` param)
 // and converted to OSD viewport zoom via the shared helper so this can't drift
@@ -3202,6 +3260,9 @@ export async function renderGenerationResult(viewer: OSDViewer, result: Generati
   const markerTileSource = createMarkerTileSource(markerData);
   installClickHandler(viewer, markerData);
   activeMarkerData = markerData;
+  // If the HV filter was active before this generation, re-apply rings to the
+  // new map. No-op when the predicate is null.
+  rebuildHighValueOverlays();
 
   let itemsProgressDone = false;
   const emitItemsDone = () => {

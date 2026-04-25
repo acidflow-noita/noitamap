@@ -115,9 +115,8 @@ declare global {
     handleAlchemyRecipe?: (kind: "ap" | "lc" | null) => void;
     /**
      * Install / clear the high-value highlight predicate. When a function is
-     * passed, POIs that return true are drawn with emphasis (scale + glow),
-     * and non-matching POIs are dimmed. Null restores default rendering.
-     * Triggers a marker-tile reset + redraw.
+     * passed, matching POIs get a cyan ring DOM overlay around them. Pass null
+     * to remove all rings.
      */
     setHighValuePredicate: (pred: ((poi: any) => boolean) | null) => void;
     /** Toggle the high-value filter — set by pro bundle after init. */

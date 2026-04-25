@@ -549,16 +549,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     getMaterialInfo: (id: string) => getMaterialInfo(id),
     primeMaterialInfo: () => primeMaterialInfo(),
     setHighValuePredicate: (pred: ((poi: any) => boolean) | null) => {
-      import("./telescope/marker-tile-source").then(({ setHighValuePredicate }) => {
-        const changed = setHighValuePredicate(pred);
-        console.log(`[HighValueFilter] setHighValuePredicate(${pred ? "fn" : "null"}) changed=${changed}`);
-        if (!changed) return;
-        import("./telescope/telescope-osd-bridge").then(({ getMarkerTiledImage }) => {
-          const tiled = getMarkerTiledImage();
-          console.log(`[HighValueFilter] markerTiledImage=${tiled ? "present" : "null"}`);
-          try { tiled?.reset(); } catch (e) { console.warn("[HighValueFilter] reset failed", e); }
-          try { (app.osd as any).world?.draw?.(); } catch (e) { console.warn("[HighValueFilter] draw failed", e); }
-        });
+      import("./telescope/telescope-osd-bridge").then(({ applyHighValueOverlays }) => {
+        applyHighValueOverlays(pred);
       });
     },
   };
