@@ -14,23 +14,6 @@ declare const OpenSeadragon: any;
 const TILE_SIZE = 512;
 let tileSourceCounter = 0;
 
-// Module-level detail visibility flag. When false, detail markers
-// (wands, items, potions, creatures) are skipped at tileExists + draw time
-// so zoomed-out tiles render far fewer sprites. Flipped by the OSD bridge
-// based on current viewport zoom.
-let _detailVisible = true;
-
-export function isDetailVisible(): boolean {
-  return _detailVisible;
-}
-
-/** Set detail visibility. Returns true if the value changed. */
-export function setDetailVisible(v: boolean): boolean {
-  if (_detailVisible === v) return false;
-  _detailVisible = v;
-  return true;
-}
-
 // High-value overlay rendering moved to telescope-osd-bridge as DOM overlays.
 // Vector rendering avoids the canvas-downsampling artifacts ("color squares")
 // that the rasterized ring suffered at non-integer zoom levels in Chrome.
@@ -86,13 +69,7 @@ export function createMarkerTileSource(markerData: MarkerData): any {
     const { bx, by, bw, bh } = tileBounds(level, x, y);
     const pad = maxMarkerDim;
     const results = index.search(bx - pad, by - pad, bx + bw + pad, by + bh + pad);
-    if (results.length === 0) return false;
-    if (_detailVisible) return true;
-    // Detail hidden: only report tile as existing if it has at least one non-detail marker.
-    for (const idx of results) {
-      if (!items[idx].isDetail) return true;
-    }
-    return false;
+    return results.length > 0;
   };
 
   let downloadCount = 0;
@@ -125,12 +102,10 @@ export function createMarkerTileSource(markerData: MarkerData): any {
 
     if (results.length > 0) {
       const drawScale = TILE_SIZE / bw;
-      const skipDetail = !_detailVisible;
 
       for (const idx of results) {
         const item = items[idx];
         if (!item) continue;
-        if (skipDetail && item.isDetail) continue;
 
         const rawKeysRaw = Array.isArray(item.spriteKey) ? item.spriteKey : [item.spriteKey];
         const rootKey = rawKeysRaw[0];

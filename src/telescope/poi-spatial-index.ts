@@ -31,8 +31,6 @@ export interface MarkerItem {
   osdY: number;
   w: number;
   h: number;
-  /** True for low-importance markers hidden at low zoom (wands, items, potions, creatures). */
-  isDetail: boolean;
 }
 
 export interface MarkerData {
@@ -253,33 +251,6 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
 
 // ─── Build marker data ──────────────────────────────────────────────────────
 
-/**
- * Containers whose own sprite is null — the inner items ARE the visual landmark
- * on the map. Treat their inner items as non-detail so HM shops, labs, altars
- * etc. remain visible when the zoomed-out detail cull is active.
- */
-const LANDMARK_CONTAINERS = new Set([
-  "holy_mountain_shop",
-  "laboratory",
-  "eye_room",
-  "wand_altar",
-  "snowy_room",
-  "robot_egg",
-]);
-
-/** Hidden at low zoom: clutter markers (wands, potions/items, creatures, spells). */
-export function isDetailPOI(poi: POI): boolean {
-  const t = poi.type;
-  if (t === "wand") return true;
-  if (t === "entity") return true;
-  if (t === "spell") return true;
-  if (t === "item") {
-    // Keep orbs visible — they're landmarks.
-    if ((poi as any).item === "orb") return false;
-    return true;
-  }
-  return false;
-}
 
 function addMarkerItem(
   items: MarkerItem[],
@@ -287,7 +258,6 @@ function addMarkerItem(
   pw: number,
   worldCenter: number,
   atlas: Record<string, AtlasEntry>,
-  forceMajor: boolean = false,
 ): void {
   const keyRaw = getSpriteKey(poi, atlas);
   if (!keyRaw) return;
@@ -304,7 +274,6 @@ function addMarkerItem(
     osdY: poi.y,
     w: frame ? frame.w : entry.w,
     h: frame ? frame.h : entry.h,
-    isDetail: forceMajor ? false : isDetailPOI(poi),
   });
 }
 
@@ -333,9 +302,6 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
         const innerItems = poi.items.filter((i: any) => !i.ignore);
         const count = innerItems.length;
         const isBoss = BOSS_DROP_TYPES.has(poi.type);
-        // Landmark containers have no sprite of their own — their inner items act as the map marker,
-        // so force them to major so they're visible at zoomed-out levels.
-        const landmarkInner = LANDMARK_CONTAINERS.has(poi.type);
         for (let ci = 0; ci < count; ci++) {
           const innerItem = innerItems[ci];
           if (isBoss) {
@@ -359,7 +325,7 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
             };
             addMarkerItem(items, offsetPoi, pw, worldCenter, atlas);
           } else {
-            addMarkerItem(items, innerItem, pw, worldCenter, atlas, landmarkInner);
+            addMarkerItem(items, innerItem, pw, worldCenter, atlas);
           }
         }
       }

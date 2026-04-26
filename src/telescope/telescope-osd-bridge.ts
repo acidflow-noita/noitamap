@@ -25,11 +25,11 @@ import {
   drawSpriteToCanvas,
 } from "./poi-spatial-index";
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
-import { createMarkerTileSource, setDetailVisible, isDetailVisible } from "./marker-tile-source";
+import { createMarkerTileSource } from "./marker-tile-source";
 import { gameTranslator } from "../game-translations/translator";
 import { isSpoilerFree, getSpoilerCategory, getSpoilerLabel, applySpoilerFree } from "../spoiler-free";
 import { isLightMode } from "../light-mode";
-import { clearTargetPoiId, zoomFromLogZoom } from "../data_sources/url";
+import { clearTargetPoiId } from "../data_sources/url";
 import spells from "../data/spells.json";
 import { CREATURE_DATA } from "../data/creature-data";
 
@@ -284,12 +284,6 @@ export function clearDynamicOverlays(viewer: any): void {
   // Invalidate any in-flight async generation so it won't render on top of the new map
   currentGenerationId++;
 
-  // Detach the zoom-driven detail visibility handler — a new one is
-  // registered when the next marker tiled image is added.
-  if (detailZoomHandler) {
-    try { viewer.removeHandler("zoom", detailZoomHandler); } catch {}
-    detailZoomHandler = null;
-  }
   markerTiledImage = null;
 
   // Remove ALL world items that aren't base static DZI tiles.
@@ -2049,14 +2043,6 @@ export function applyHighValueOverlays(predicate: ((poi: any) => boolean) | null
   rebuildHighValueOverlays();
 }
 
-// Zoom threshold below which detail POIs (wands/items/potions/creatures) are
-// culled from the marker tile layer. Expressed in URL logZoom units (the `z` param)
-// and converted to OSD viewport zoom via the shared helper so this can't drift
-// from url.ts. `z` is inverted — larger `z` = more zoomed out.
-const DETAIL_LOG_ZOOM_THRESHOLD = 1250;
-const DETAIL_ZOOM_THRESHOLD = zoomFromLogZoom(DETAIL_LOG_ZOOM_THRESHOLD);
-let detailZoomHandler: ((e: any) => void) | null = null;
-
 // Orb click data — stored here so the canvas-click handler can detect orb clicks
 interface OrbClickTarget {
   osdX: number;
@@ -3286,31 +3272,6 @@ export async function renderGenerationResult(viewer: OSDViewer, result: Generati
       event.item._isMarkerLayer = true;
       dynamicTiledImages.add(event.item);
       markerTiledImage = event.item;
-
-      // Set initial detail visibility from the current viewport zoom, then
-      // register a zoom handler that re-evaluates on crossing the threshold.
-      // When the flag flips we reset the marker tiled image's tile cache so
-      // OSD re-renders tiles with the new filter applied.
-      try {
-        const initialZoom = viewer.viewport.getZoom();
-        const shouldShow = initialZoom >= DETAIL_ZOOM_THRESHOLD;
-        console.log(`[DetailCull] init zoom=${initialZoom.toExponential(3)} threshold=${DETAIL_ZOOM_THRESHOLD.toExponential(3)} show=${shouldShow}`);
-        setDetailVisible(shouldShow);
-      } catch {}
-
-      if (detailZoomHandler) {
-        try { viewer.removeHandler("zoom", detailZoomHandler); } catch {}
-      }
-      detailZoomHandler = (e: any) => {
-        const z = e?.zoom ?? viewer.viewport.getZoom();
-        const shouldShow = z >= DETAIL_ZOOM_THRESHOLD;
-        if (setDetailVisible(shouldShow)) {
-          console.log(`[DetailCull] flip zoom=${z.toExponential(3)} show=${shouldShow}`);
-          try { markerTiledImage?.reset(); } catch {}
-          try { viewer.world?.draw?.(); } catch {}
-        }
-      };
-      viewer.addHandler("zoom", detailZoomHandler);
 
       emitItemsDone();
     },
