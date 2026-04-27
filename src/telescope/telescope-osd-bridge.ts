@@ -32,6 +32,7 @@ import { isLightMode } from "../light-mode";
 import { clearTargetPoiId } from "../data_sources/url";
 import spells from "../data/spells.json";
 import { CREATURE_DATA } from "../data/creature-data";
+import { buildExtendedSection } from "../extended-info";
 
 declare const OpenSeadragon: any;
 
@@ -2122,7 +2123,12 @@ function getWikiUrl(poi: any): string | null {
 
   // Entity / creature
   if (type === "entity" && poi.entity) {
-    wikiName = String(poi.entity).split("/").pop()?.replace(".xml", "") || name;
+    const rawEntity = String(poi.entity).split("/").pop()?.replace(".xml", "") || name;
+    // Prefer the wikipage from CREATURE_DATA if we have it — many entities
+    // (traps, nests, boss orbs, crystals) have entity names that don't
+    // correspond to a real wiki page (e.g. "arrowtrap_left" → /wiki/Traps).
+    const creature = CREATURE_DATA[rawEntity.toLowerCase()];
+    wikiName = creature?.wikipage || rawEntity;
   }
 
   return `https://noita.wiki.gg/wiki/${wikiName.replace(/\s+/g, "_")}`;
@@ -2404,6 +2410,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       const materialLabel = gameTranslator.translateItem("inventory_actiontype_material");
       mat.textContent = `${materialLabel}: ${gameTranslator.translateMaterial(poi.material)}`;
       tooltipEl.appendChild(mat);
+      tooltipEl.appendChild(buildExtendedSection("material", String(poi.material)));
     }
     if (poi.amount) {
       const amt = document.createElement("div");
@@ -2436,6 +2443,9 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     title.textContent = gameTranslator.translateSpell(getSpellName(poi.item || "")) || "Spell";
     header.appendChild(wrapWithWikiLink(title, poi));
     tooltipEl.appendChild(header);
+    if (poi.item) {
+      tooltipEl.appendChild(buildExtendedSection("spell", String(poi.item)));
+    }
   } else if ((poi.type === "entity" && (poi as any).entity) || ["alchemist_boss", "boss_wizard", "boss_meat", "islandspirit", "boss_sky", "boss_robot", "boss_centipede", "triangle_boss", "pyramid_boss", "dragon", "boss_ghost", "friend"].includes(poi.type || "")) {
     const isSpecialEntity = poi.type !== "entity";
     const header = document.createElement("div");
@@ -2478,109 +2488,15 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     header.appendChild(titleCol);
     tooltipEl.appendChild(header);
 
-    // Rich creature stats from CREATURE_DATA
-    if (creature) {
-      const statsDiv = document.createElement("div");
-      statsDiv.style.cssText = "margin-top:6px;font-size:13px;line-height:1.6;color:#ccc";
-
-      // Category + Faction
-      if (creature.category || creature.faction) {
-        const catDiv = document.createElement("div");
-        catDiv.style.cssText = "color:#888;margin-bottom:2px";
-        const parts = [];
-        if (creature.category) parts.push(creature.category);
-        if (creature.faction) parts.push(`(${creature.faction})`);
-        const catText = parts.join(" ");
-        catDiv.textContent = (poi as any).isHorde ? `Horde: ${catText}` : catText;
-        statsDiv.appendChild(catDiv);
-      }
-
-      // Health
-      if (creature.health) {
-        const hpDiv = document.createElement("div");
-        hpDiv.style.cssText = "color:#ddd;font-size:14px;margin-bottom:2px";
-        hpDiv.textContent = `HP: ${creature.health}`;
-        statsDiv.appendChild(hpDiv);
-      }
-
-      // Attacks
-      if (creature.attacks) {
-        const atkDiv = document.createElement("div");
-        atkDiv.style.cssText = "color:#ddd;font-size:14px;margin-bottom:2px";
-        atkDiv.textContent = `Attacks: ${creature.attacks}`;
-        statsDiv.appendChild(atkDiv);
-      }
-
-      // Immunities
-      if (creature.immunities) {
-        const immDiv = document.createElement("div");
-        immDiv.style.cssText = "color:#ddd;font-size:14px;margin-top:4px";
-        immDiv.textContent = `Immunities: ${creature.immunities}`;
-        statsDiv.appendChild(immDiv);
-      }
-
-      // Damage multipliers (table)
-      if (creature.dmgMults) {
-        const dmgDiv = document.createElement("div");
-        dmgDiv.style.cssText = "margin-top:4px;border-top:1px solid #333;padding-top:4px";
-        const dmgLabel = document.createElement("div");
-        dmgLabel.style.cssText = "color:#888;font-size:12px;margin-bottom:2px";
-        dmgLabel.textContent = "Damage multipliers:";
-        dmgDiv.appendChild(dmgLabel);
-        
-        const table = document.createElement("table");
-        table.style.cssText = "font-size:12px;border-spacing:0;width:100%";
-        
-        const dmgIcons = undefined;
-
-        const mults = Object.entries(creature.dmgMults);
-        for (const [key, valRaw] of mults) {
-          let valStr = String(valRaw);
-          if (valStr === "1x") valStr = "1.0";
-          
-          let info = { icon: key === "radioactive" ? "Toxic" : key.charAt(0).toUpperCase() + key.slice(1) };
-          const tr = document.createElement("tr");
-          const tdLabel = document.createElement("td");
-          tdLabel.style.cssText = `color:#ccc;text-align:left;padding-right:12px;padding-bottom:2px;font-weight:bold`;
-          tdLabel.textContent = `${info.icon}:`;
-          const tdVal = document.createElement("td");
-          tdVal.style.cssText = `text-align:right;color:#fff;padding-bottom:2px`;
-          tdVal.textContent = valStr;
-          tr.appendChild(tdLabel);
-          tr.appendChild(tdVal);
-          table.appendChild(tr);
-        }
-        dmgDiv.appendChild(table);
-        statsDiv.appendChild(dmgDiv);
-      }
-
-      // Spawn location
-      if (creature.spawnLocation) {
-        const spawnDiv = document.createElement("div");
-        spawnDiv.style.cssText = "margin-top:4px";
-        spawnDiv.innerHTML = `<span style="color:#888">Found in biomes:</span> ${creature.spawnLocation}`;
-        statsDiv.appendChild(spawnDiv);
-      }
-      if (creature.ngPlusSpawn) {
-        const ngDiv = document.createElement("div");
-        ngDiv.style.cssText = "margin-top:2px";
-        ngDiv.innerHTML = `<span style="color:#888">Found in biomes (NG+):</span> ${creature.ngPlusSpawn}`;
-        statsDiv.appendChild(ngDiv);
-      }
-
-      // Blood + Corpse
-      if (creature.blood || creature.corpse) {
-        const matDiv = document.createElement("div");
-        matDiv.style.cssText = "margin-top:3px;color:#999";
-        const parts = [];
-        if (creature.blood) parts.push(`Blood: ${creature.blood}`);
-        if (creature.corpse) parts.push(`Corpse: ${creature.corpse}`);
-        matDiv.textContent = parts.join(" | ");
-        statsDiv.appendChild(matDiv);
-      }
-
-      tooltipEl.appendChild(statsDiv);
+    // Horde marker (free) — full creature stats are in the pro extended section.
+    if ((poi as any).isHorde && creature?.category) {
+      const catDiv = document.createElement("div");
+      catDiv.style.cssText = "color:#888;margin-top:2px;font-size:12px";
+      catDiv.textContent = `Horde: ${creature.category}`;
+      tooltipEl.appendChild(catDiv);
     }
+
+    tooltipEl.appendChild(buildExtendedSection("creature", entityId));
 
     if (poi.biome) {
       const biomeDiv = document.createElement("div");

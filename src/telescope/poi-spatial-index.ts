@@ -283,6 +283,31 @@ const BOSS_DROP_TYPES = new Set(["triangle_boss", "alchemist_boss", "pyramid_bos
 /** Enemy/prop spawn containers: spread inner items to avoid overlap. */
 const ENEMY_SPAWN_TYPES = new Set(["enemies", "props"]);
 
+/**
+ * Some "container" entities visually contain another entity that spawns when
+ * the container is broken. Both are emitted as siblings in the POI's items
+ * array, but rendering both produces duplicate markers (e.g. one Houre + one
+ * Houre Crystal at the same spot). Skip the contained entity when its
+ * container sibling is present.
+ *
+ * Format: [containerEntityPathRegex, containedEntityPathRegex].
+ */
+const CONTAINED_BY_SIBLING: Array<[RegExp, RegExp]> = [
+  [/\/buildings\/ghost_crystal/, /\/animals\/ghost\.xml$/],
+];
+
+function shouldSkipDueToContainer(item: any, siblings: any[]): boolean {
+  const itemEntity = String(item?.entity || "");
+  if (!itemEntity) return false;
+  for (const [containerRe, containedRe] of CONTAINED_BY_SIBLING) {
+    if (!containedRe.test(itemEntity)) continue;
+    if (siblings.some((s) => s !== item && containerRe.test(String(s?.entity || "")))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export async function buildMarkerData(result: GenerationResult): Promise<MarkerData> {
   const [spritesheet, atlas] = await Promise.all([loadSpritesheet(), loadAtlas()]);
 
@@ -304,6 +329,7 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
         const isBoss = BOSS_DROP_TYPES.has(poi.type);
         for (let ci = 0; ci < count; ci++) {
           const innerItem = innerItems[ci];
+          if (shouldSkipDueToContainer(innerItem, innerItems)) continue;
           if (isBoss) {
             // Boss drops: spread horizontally + push down below the boss sprite
             const pushDown = poi.type === "triangle_boss" ? 70 : 50;

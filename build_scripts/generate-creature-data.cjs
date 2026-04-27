@@ -1,8 +1,8 @@
 /**
  * generate-creature-data.cjs
  *
- * Processes task/FULL_CREATURES_FINAL.json into a clean TypeScript data module
- * for use in:
+ * Processes noitamap/public/assets/full_creatures.json into a clean TypeScript
+ * data module for use in:
  *   - Task 2: Creature aliases for search
  *   - Task 3b: Rich creature popup data
  *
@@ -15,7 +15,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const INPUT = path.resolve(__dirname, "..", "..", "task", "FULL_CREATURES_FINAL.json");
+const INPUT = path.resolve(__dirname, "..", "public", "assets", "full_creatures.json");
 const OUTPUT = path.resolve(__dirname, "..", "src", "data", "creature-data.ts");
 
 // ─── HTML/Wiki markup cleaners ───────────────────────────────────────────────
@@ -144,27 +144,80 @@ function parseDmgMults(creature) {
 
 // ─── Main ────────────────────────────────────────────────────────────────────
 
+/**
+ * Slugify a string for use as a creature id. Lowercase ASCII only; non-alnum
+ * runs collapse to a single underscore. Used to synthesise ids for entries
+ * that lack a native one (traps, nests, boss orbs, crystals).
+ */
+function slugify(s) {
+  if (!s) return "";
+  return String(s)
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "") // strip combining marks (ä → a, etc.)
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+/**
+ * Synthesise an id for a creature that has no native id. Synthetic ids are
+ * prefixed with `_` so they're never confused with real entity ids.
+ * Disambiguates collisions by appending the wikipage slug.
+ */
+function syntheticId(c, taken) {
+  const base = slugify(c.alias || c.name);
+  if (!base) return null;
+  const candidates = [
+    `_${base}`,
+    `_${base}__${slugify(c.wikipage || "")}`,
+    `_${base}__${slugify(c.name || "")}`,
+  ].filter((x) => x && !x.endsWith("__"));
+  for (const id of candidates) {
+    if (!taken.has(id)) return id;
+  }
+  let i = 2;
+  while (taken.has(`_${base}_${i}`)) i++;
+  return `_${base}_${i}`;
+}
+
 function main() {
   console.log("[generate-creature-data] Reading FULL_CREATURES_FINAL.json...");
   const raw = JSON.parse(fs.readFileSync(INPUT, "utf-8"));
   console.log(`[generate-creature-data] Found ${raw.length} creature entries`);
 
   const data = {};
-  let skipped = 0;
+  const taken = new Set();
+  let synthesised = 0;
+
+  // Map<id, sourceCreatureRef> so we can apply entity-name aliases below.
+  const sourceById = new Map();
 
   for (const c of raw) {
-    // Must have an id to be usable (it maps to translation keys like animal_<id>)
-    if (!c.id) {
-      skipped++;
-      continue;
+    let id = c.id;
+    let isSynthetic = false;
+    if (!id) {
+      id = syntheticId(c, taken);
+      if (!id) continue;
+      synthesised++;
+      isSynthetic = true;
     }
 
     // Skip duplicate ids — keep the first occurrence
-    if (data[c.id]) continue;
+    if (data[id]) continue;
+    taken.add(id);
+    sourceById.set(id, c);
 
-    data[c.id] = {
-      alias: cleanWikiText(c.alias) || null,
-      name: cleanWikiText(c.name) || null,
+    const aliasClean = cleanWikiText(c.alias) || null;
+    const nameClean = cleanWikiText(c.name) || null;
+    // For entries without a native id, the `name` field is often the generic
+    // wikipage title (e.g. "Nest") while `alias` carries the discriminating
+    // label (e.g. "Amppari Hive"). Prefer the alias as the displayed name in
+    // that case so popups don't show a useless generic label.
+    const displayName = isSynthetic && aliasClean ? aliasClean : nameClean;
+
+    data[id] = {
+      alias: aliasClean,
+      name: displayName,
       health: parseHealth(c.health),
       attacks: parseAttacks(c.attackType),
       spawnLocation: cleanWikiText(c.spawnLocation) || null,
@@ -175,11 +228,57 @@ function main() {
       category: c.category || null,
       faction: c.faction || null,
       dmgMults: parseDmgMults(c),
+      wikipage: c.wikipage || null,
     };
   }
 
+  // Hand-curated mapping of bartender's no-id entries to the actual noita
+  // entity names emitted by the telescope simulation. Without this, traps,
+  // nests, crystals and boss orbs render with raw entity names like
+  // "arrowtrap_left" / "arrowtrap_right" and have no creature data.
+  // Match keys: { wikipage, alias }.
+  const NO_ID_ENTITY_ALIASES = [
+    { wikipage: "Traps", alias: "Arrow Trap", entities: ["arrowtrap_left", "arrowtrap_right"] },
+    { wikipage: "Traps", alias: "Fire Trap", entities: ["firetrap_left", "firetrap_right"] },
+    { wikipage: "Traps", alias: "Acid Trap", entities: ["spittrap_left", "spittrap_right"] },
+    { wikipage: "Traps", alias: "Thunder Trap", entities: ["thundertrap_left", "thundertrap_right"] },
+    { wikipage: "Amppari", alias: "Amppari Hive", entities: ["flynest"] },
+    { wikipage: "Hämis", alias: "Hämis Nest", entities: ["spidernest"] },
+    { wikipage: "Tulikärpänen", alias: "Firefly Hive", entities: ["firebugnest"] },
+    { wikipage: "Houre", alias: "Houre Crystal", entities: ["ghost_crystal"] },
+    { wikipage: "Epäalkemisti", alias: "Death Orb", entities: ["orb_death"] },
+    {
+      wikipage: "Mestarien mestari",
+      alias: "Death Orb",
+      entities: ["wizard_orb_death", "boss_wizard_orb_death"],
+    },
+    {
+      wikipage: "Mestarien mestari",
+      alias: "Blood Orb",
+      entities: ["orb_blood", "wizard_orb_blood", "boss_wizard_orb_blood"],
+    },
+  ];
+
+  let aliasCount = 0;
+  for (const [id, src] of sourceById.entries()) {
+    if (src.id) continue; // only synthetic entries
+    const match = NO_ID_ENTITY_ALIASES.find(
+      (m) => m.wikipage === src.wikipage && m.alias === src.alias,
+    );
+    if (!match) continue;
+    for (const ent of match.entities) {
+      if (!data[ent]) {
+        data[ent] = data[id];
+        aliasCount++;
+      }
+    }
+  }
+  console.log(`[generate-creature-data] Emitted ${aliasCount} entity-name aliases`);
+
   const count = Object.keys(data).length;
-  console.log(`[generate-creature-data] Processed ${count} creatures (skipped ${skipped} without id)`);
+  console.log(
+    `[generate-creature-data] Processed ${count} creatures (${synthesised} with synthesised ids)`,
+  );
 
   // Generate TypeScript module
   const tsContent = `/**
@@ -218,6 +317,8 @@ export interface CreatureInfo {
   faction: string | null;
   /** Damage multipliers (only non-null entries) */
   dmgMults: Record<string, string> | null;
+  /** Wiki page slug (e.g. "Rotta", "Traps", "Amppari") for noita.wiki.gg URLs */
+  wikipage: string | null;
 }
 
 /**

@@ -14,6 +14,7 @@ import i18next from 'i18next';
 import hiddenMessages from '../data/hidden_messages.json';
 import { clearTargetPoiId } from './url';
 import { drawSpriteToCanvas, getSpriteOffset, loadSpritesheetAndAtlas } from '../telescope/poi-spatial-index';
+import { buildExtendedCreatureSectionByName } from '../extended-info';
 
 // Preload atlas so boss sprites are ready when overlays are created
 loadSpritesheetAndAtlas().catch(() => {});
@@ -505,6 +506,10 @@ function createOverlayPopup({ name, aliases, text, wiki, fileName, x, y }: Point
     }
     textElement.textContent = translatedText;
     popup.appendChild(textElement);
+  }
+
+  if (overlayType === 'bosses') {
+    popup.appendChild(buildExtendedCreatureSectionByName(name, aliases));
   }
 
   if (wiki !== undefined) {

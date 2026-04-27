@@ -540,7 +540,7 @@ function matchesFilters(p: DynamicPOI, activeFilters: Set<string>): boolean {
   }
   if (activeFilters.has("w") && p.type === "wand") return true;
   if (activeFilters.has("s") && p.type === "item" && p.item === "spell") return true;
-  if (activeFilters.has("i") && p.type === "item") return true;
+  if (activeFilters.has("i") && p.type === "item" && p.item !== "spell") return true;
   if (activeFilters.has("c") && CHEST_TYPES.has(p.type)) return true;
   if (activeFilters.has("hm") && HOLY_MOUNTAIN_TYPES.has(p.type)) return true;
   if (
@@ -1345,7 +1345,7 @@ export class UnifiedSearch extends EventEmitter2 {
     // Combine results, prioritizing map results first
     const combinedResults: any[] = [...mapResults];
 
-    if (this.activeFilters.has("spells") || this.activeFilters.size === 0) {
+    if (this.activeFilters.has("s") || this.activeFilters.size === 0) {
       // Search for spells with translation support
       const spellResults = spells
         .filter((spell) => {

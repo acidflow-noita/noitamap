@@ -34,6 +34,8 @@ export interface CreatureInfo {
   faction: string | null;
   /** Damage multipliers (only non-null entries) */
   dmgMults: Record<string, string> | null;
+  /** Wiki page slug (e.g. "Rotta", "Traps", "Amppari") for noita.wiki.gg URLs */
+  wikipage: string | null;
 }
 
 /**
@@ -59,7 +61,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "explosion": "0.8",
       "fire": "0",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Aave"
   },
   "confusespirit": {
     "alias": "Fog Spirit",
@@ -79,7 +82,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "explosion": "0.8",
       "fire": "0",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Aave"
   },
   "slimespirit": {
     "alias": "Bog Spirit",
@@ -99,7 +103,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "explosion": "0.8",
       "fire": "0",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Aave"
   },
   "weakspirit": {
     "alias": "Depression Spirit",
@@ -119,7 +124,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "explosion": "0.8",
       "fire": "0",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Aave"
   },
   "giantshooter": {
     "alias": "Mother Slime",
@@ -144,7 +150,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Äitinuljaska"
   },
   "giantshooter_weak": {
     "alias": "Weak Mother Slime",
@@ -169,7 +176,34 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Äitinuljaska"
+  },
+  "_amppari_hive": {
+    "alias": "Amppari Hive",
+    "name": "Amppari Hive",
+    "health": "125",
+    "attacks": null,
+    "spawnLocation": "Fungal Caverns, Underground Jungle, The Tower",
+    "ngPlusSpawn": null,
+    "immunities": null,
+    "blood": "none",
+    "corpse": "Nest (Material)",
+    "category": null,
+    "faction": "nest",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "1x",
+      "electricity": "1x",
+      "fire": "1x",
+      "ice": "1x",
+      "drill": "1x",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Amppari"
   },
   "fly": {
     "alias": "Wasp",
@@ -194,7 +228,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Amppari"
   },
   "duck": {
     "alias": "Duck",
@@ -219,7 +254,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Ankka"
   },
   "firemage": {
     "alias": "Hellfire Mage",
@@ -244,7 +280,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Eldari"
   },
   "hpcrystal": {
     "alias": "Recovery Crystal",
@@ -269,7 +306,34 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1.2",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Elvytyskristalli"
+  },
+  "_death_orb": {
+    "alias": "Death Orb",
+    "name": "Death Orb",
+    "health": "62.5",
+    "attacks": null,
+    "spawnLocation": "Ancient Laboratory, Magical Temple, Temple of the Art",
+    "ngPlusSpawn": null,
+    "immunities": "freeze, electricity, burn, suffocation",
+    "blood": "Spark",
+    "corpse": "Crystal",
+    "category": null,
+    "faction": null,
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "0.0",
+      "explosion": "1x",
+      "electricity": "1x",
+      "fire": "0.0",
+      "ice": "1x",
+      "drill": "0.4",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Epäalkemisti"
   },
   "failed_alchemist_b": {
     "alias": "Non-alchemist",
@@ -294,7 +358,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Epäalkemisti"
   },
   "fish": {
     "alias": "Fish",
@@ -319,7 +384,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Eväkäs"
   },
   "gate_monster_a": {
     "alias": "Goalkeeper",
@@ -344,7 +410,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Gate Guardian"
   },
   "gate_monster_b": {
     "alias": "Goalkeeper",
@@ -369,7 +436,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Gate Guardian"
   },
   "gate_monster_c": {
     "alias": "Goalkeeper",
@@ -394,7 +462,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Gate Guardian"
   },
   "gate_monster_d": {
     "alias": "Sieve",
@@ -419,7 +488,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Gate Guardian"
   },
   "darkghost": {
     "alias": "Wraith",
@@ -444,7 +514,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.0",
       "radioactive": "1x",
       "holy": "0.0"
-    }
+    },
+    "wikipage": "Haamu"
   },
   "snowcrystal": {
     "alias": "Ghost Crystal",
@@ -469,7 +540,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1.2",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Haamukivi"
   },
   "wizard_hearty": {
     "alias": "Master of Wounding",
@@ -494,7 +566,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Haavoittajamestari"
   },
   "necromancer": {
     "alias": "Shapechanger",
@@ -519,7 +592,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Hahmonvaihtaja"
   },
   "scavenger_invis": {
     "alias": "Stealth Hiisi",
@@ -544,7 +618,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Häivehiisi"
   },
   "lukki_tiny": {
     "alias": "Small Spider",
@@ -569,7 +644,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Hämähäkki"
   },
   "lukki_longleg": {
     "alias": "Daddy Longlegs",
@@ -594,7 +670,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Hämähäkki"
   },
   "lukki": {
     "alias": "Spider",
@@ -619,7 +696,34 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Hämähäkki"
+  },
+  "_hamis_nest": {
+    "alias": "Hämis Nest",
+    "name": "Hämis Nest",
+    "health": "125",
+    "attacks": null,
+    "spawnLocation": "Fungal Caverns, Underground Jungle",
+    "ngPlusSpawn": null,
+    "immunities": null,
+    "blood": "none",
+    "corpse": "Nest (Material)",
+    "category": null,
+    "faction": "nest",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "1x",
+      "electricity": "1x",
+      "fire": "1x",
+      "ice": "1x",
+      "drill": "1x",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Hämis"
   },
   "longleg": {
     "alias": "Spidey",
@@ -644,7 +748,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Hämis"
   },
   "acidshooter_weak": {
     "alias": "Weak Acid Slime",
@@ -669,7 +774,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Happonuljaska"
   },
   "acidshooter": {
     "alias": "Acid Slime",
@@ -694,7 +800,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Happonuljaska"
   },
   "shotgunner_hell": {
     "alias": "Hell Shotgun Hiisi",
@@ -719,7 +826,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "2.0"
-    }
+    },
+    "wikipage": "Haulikkohiisi"
   },
   "shotgunner": {
     "alias": "Shotgun Hiisi",
@@ -744,7 +852,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Haulikkohiisi"
   },
   "shotgunner_weak": {
     "alias": "Weak Shotgun Hiisi",
@@ -769,7 +878,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Haulikkohiisi"
   },
   "missilecrab": {
     "alias": "Cricket",
@@ -794,7 +904,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Heinäsirkka"
   },
   "spitmonster": {
     "alias": "Hell Spitter",
@@ -819,7 +930,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Helvetin sylkijä"
   },
   "gazer": {
     "alias": "Hell Gazer",
@@ -844,7 +956,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1.5"
-    }
+    },
+    "wikipage": "Helvetinkatse"
   },
   "worm_end": {
     "alias": "Hell Worm",
@@ -869,7 +982,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.4",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Helvetinmato"
   },
   "mimic_potion": {
     "alias": "Potion Mimic",
@@ -885,7 +999,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     "faction": "ghost",
     "dmgMults": {
       "fire": "0.2"
-    }
+    },
+    "wikipage": "Henkevä potu"
   },
   "giant": {
     "alias": "Rock Giant",
@@ -910,7 +1025,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Hiidenkivi"
   },
   "wraith_glowing": {
     "alias": "Glowing Creep",
@@ -935,7 +1051,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "0.1"
-    }
+    },
+    "wikipage": "Hohtava hyypiö"
   },
   "statue_physics": {
     "alias": "Glowing Mask",
@@ -960,7 +1077,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Hohtonaamio"
   },
   "ghost": {
     "alias": "Delirium",
@@ -985,7 +1103,34 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0",
       "radioactive": "1x",
       "holy": "0"
-    }
+    },
+    "wikipage": "Houre"
+  },
+  "_houre_crystal": {
+    "alias": "Houre Crystal",
+    "name": "Houre Crystal",
+    "health": "500",
+    "attacks": "Freezing projectile",
+    "spawnLocation": "Temple of the Art, Wizards' Den, Snowy Chasm",
+    "ngPlusSpawn": null,
+    "immunities": "suffocation, fire",
+    "blood": "Blue Sand",
+    "corpse": "Ice",
+    "category": null,
+    "faction": "ghost",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "1x",
+      "electricity": "1x",
+      "fire": "1x",
+      "ice": "1x",
+      "drill": "1x",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Houre"
   },
   "fungus_giga": {
     "alias": "Pollen Morel",
@@ -1010,7 +1155,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Huhtasieni"
   },
   "zombie": {
     "alias": "Hound",
@@ -1035,7 +1181,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Hurtta"
   },
   "zombie_weak": {
     "alias": "Weak Hound",
@@ -1060,7 +1207,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Hurtta"
   },
   "wraith": {
     "alias": "Creep",
@@ -1085,7 +1233,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Hyypiö"
   },
   "scavenger_clusterbomb": {
     "alias": "Hiisi Bomber",
@@ -1110,7 +1259,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Isohiisi"
   },
   "tank_rocket": {
     "alias": "Rocket Tank",
@@ -1135,7 +1285,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "IT-Tankki"
   },
   "icer": {
     "alias": "Icer",
@@ -1160,7 +1311,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Jäähdytyslaite"
   },
   "iceskull": {
     "alias": "Ice Spirit",
@@ -1185,7 +1337,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Jäätiö"
   },
   "frog_big": {
     "alias": "Big Toad",
@@ -1210,7 +1363,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Jättikonna"
   },
   "drone_lasership": {
     "alias": "Giant Laser-Drone",
@@ -1235,7 +1389,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Jättilaser-lennokki"
   },
   "worm_big": {
     "alias": "Giant Worm",
@@ -1260,7 +1415,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.4",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Jättimato"
   },
   "miner_santa": {
     "alias": "Christmas Hiisi",
@@ -1285,7 +1441,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Jouluhiisi"
   },
   "failed_alchemist": {
     "alias": "Damned Alchemist",
@@ -1310,7 +1467,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Kadotettu alkemisti"
   },
   "skullfly": {
     "alias": "Skull Fly",
@@ -1335,7 +1493,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Kallokärpänen"
   },
   "skullrat": {
     "alias": "Skull Rat",
@@ -1360,7 +1519,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Kallorotta"
   },
   "worm_skull": {
     "alias": "Death Worm",
@@ -1385,7 +1545,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Kalmamato"
   },
   "lukki_dark": {
     "alias": "Toothy spider",
@@ -1410,7 +1571,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Kammolukki"
   },
   "lukki_creepy_long": {
     "alias": "Faceless spider",
@@ -1435,7 +1597,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Kasvoton Lukki"
   },
   "ultimate_killer": {
     "alias": "Horror Monster",
@@ -1460,7 +1623,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "0"
-    }
+    },
+    "wikipage": "Kauhuhirviö"
   },
   "scavenger_shield": {
     "alias": "Shield Hiisi",
@@ -1485,7 +1649,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Kilpihiisi"
   },
   "crystal_physics": {
     "alias": "Cursed Crystal",
@@ -1510,7 +1675,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Kirottu kristalli"
   },
   "phantom_b": {
     "alias": "Angry Phantom",
@@ -1535,7 +1701,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Kiukkukalma"
   },
   "blob": {
     "alias": "Angry Blob",
@@ -1560,7 +1727,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Kiukkumöykky"
   },
   "boss_sky": {
     "alias": "Stone",
@@ -1575,17 +1743,10 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     "category": "Bosses",
     "faction": "ghost",
     "dmgMults": {
-      "melee": "1x",
-      "projectile": "1x",
-      "slice": "1x",
-      "explosion": "1x",
-      "electricity": "1x",
-      "fire": "1x",
-      "ice": "1x",
-      "drill": "0.5",
-      "radioactive": "1x",
-      "holy": "1x"
-    }
+      "fire": "0.2",
+      "drill": "0.5"
+    },
+    "wikipage": "Kivi"
   },
   "tank": {
     "alias": "Tank",
@@ -1610,7 +1771,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "KK-Tankki"
   },
   "wizard_homing": {
     "alias": "Master of Homing",
@@ -1635,7 +1797,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Kohdennusmestari"
   },
   "boss_centipede_minion": {
     "alias": "Three-Eye's Helper",
@@ -1660,7 +1823,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Kolmisilmä"
   },
   "boss_centipede": {
     "alias": "Three-Eye",
@@ -1685,7 +1849,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "0.2"
-    }
+    },
+    "wikipage": "Kolmisilmä"
   },
   "boss_limbs": {
     "alias": "Three-Eye's Legs",
@@ -1710,7 +1875,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.0",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Kolmisilmän koipi"
   },
   "slimeshooter_boss_limbs": {
     "alias": "Guardian Slime",
@@ -1735,7 +1901,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Kolmisilmän koipi"
   },
   "boss_robot": {
     "alias": "Three-Eye's Eye",
@@ -1760,7 +1927,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Kolmisilmän silmä"
   },
   "boss_meat": {
     "alias": "Three-Eye's Heart",
@@ -1782,7 +1950,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "electricity": "0",
       "fire": "1.2",
       "drill": "0.9"
-    }
+    },
+    "wikipage": "Kolmisilmän sydän"
   },
   "frog": {
     "alias": "Toad",
@@ -1807,7 +1976,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Konna"
   },
   "healerdrone_physics": {
     "alias": "Repair Drone",
@@ -1832,7 +2002,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Korjauslennokki"
   },
   "scavenger_grenade": {
     "alias": "Hiisi Grenadier",
@@ -1857,7 +2028,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Kranuhiisi"
   },
   "playerghost": {
     "alias": "Ghost",
@@ -1882,7 +2054,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Kummitus"
   },
   "piranha": {
     "alias": "Hunchback",
@@ -1907,7 +2080,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Kyrmyniska"
   },
   "fungus": {
     "alias": "Shuffling Fungus",
@@ -1932,7 +2106,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Laahustussieni"
   },
   "sheep_bat": {
     "alias": "Flying Sheep",
@@ -1957,7 +2132,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Lammas"
   },
   "sheep_fly": {
     "alias": "Buzzing Sheep",
@@ -1982,7 +2158,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Lammas"
   },
   "sheep": {
     "alias": "Sheep",
@@ -2007,7 +2184,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Lammas"
   },
   "tank_super": {
     "alias": "Laser Tank",
@@ -2032,7 +2210,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Laser-Tankki"
   },
   "drone_physics": {
     "alias": "Drone",
@@ -2057,7 +2236,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Lennokki"
   },
   "bat": {
     "alias": "Bat",
@@ -2082,7 +2262,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Lepakko"
   },
   "flamer": {
     "alias": "Flamer",
@@ -2107,7 +2288,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Liekkari"
   },
   "fireskull": {
     "alias": "Fire Spirit",
@@ -2132,7 +2314,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Liekkiö"
   },
   "scavenger_glue": {
     "alias": "Glue Hiisi",
@@ -2157,7 +2340,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Liimahiisi"
   },
   "slimeshooter": {
     "alias": "Toxic Slime",
@@ -2182,7 +2366,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Limanuljaska"
   },
   "slimeshooter_weak": {
     "alias": "Weak Toxic Slime",
@@ -2207,7 +2392,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Limanuljaska"
   },
   "maggot_tiny": {
     "alias": "Slime Maggot",
@@ -2232,7 +2418,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Limatoukka"
   },
   "pebble": {
     "alias": "Rock Spirit",
@@ -2257,7 +2444,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Lohkare"
   },
   "wizard_neutral": {
     "alias": "Master of Grounding",
@@ -2282,7 +2470,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Maadoittajamestari"
   },
   "shaman": {
     "alias": "Swampling",
@@ -2307,7 +2496,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Märkiäinen"
   },
   "minipit": {
     "alias": "Tiny Minion",
@@ -2332,7 +2522,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Marraskone"
   },
   "necrobot_super": {
     "alias": "Super Necrobot",
@@ -2357,7 +2548,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Marraskone"
   },
   "bigzombiehead": {
     "alias": "Rotting Head",
@@ -2382,7 +2574,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Mätänevä ruumis"
   },
   "bigzombie": {
     "alias": "Rotting Corpse",
@@ -2407,7 +2600,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Mätänevä ruumis"
   },
   "bigzombietorso": {
     "alias": "Rotting Body",
@@ -2432,7 +2626,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Mätänevä ruumis"
   },
   "meatmaggot": {
     "alias": "Putrid Crawler",
@@ -2450,7 +2645,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "projectile": "0.5",
       "slice": "1.2",
       "drill": "0.5"
-    }
+    },
+    "wikipage": "Mätäryömijä"
   },
   "chest_mimic": {
     "alias": "Mimic",
@@ -2475,7 +2671,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Matkija"
   },
   "chest_leggy": {
     "alias": "Leggy Mimic",
@@ -2500,7 +2697,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "2.0"
-    }
+    },
+    "wikipage": "Matkija"
   },
   "worm": {
     "alias": "Worm",
@@ -2525,7 +2723,60 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.4",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Mato"
+  },
+  "_blood_orb": {
+    "alias": "Blood Orb",
+    "name": "Blood Orb",
+    "health": "150000",
+    "attacks": "Blood Link",
+    "spawnLocation": "Throne Room",
+    "ngPlusSpawn": null,
+    "immunities": "touch-spell,freezestun,stun,physics,polymorph",
+    "blood": "Blood",
+    "corpse": "Blood",
+    "category": null,
+    "faction": null,
+    "dmgMults": {
+      "melee": "0.2",
+      "projectile": "0.2",
+      "slice": "0.2",
+      "explosion": "0.2",
+      "electricity": "0.2",
+      "fire": "0.2",
+      "ice": "0.2",
+      "drill": "1x",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Mestarien mestari"
+  },
+  "_death_orb__mestarien_mestari": {
+    "alias": "Death Orb",
+    "name": "Death Orb",
+    "health": "500",
+    "attacks": "Curse",
+    "spawnLocation": "Throne Room",
+    "ngPlusSpawn": null,
+    "immunities": "touch-spell,freezestun,stun,physics,polymorph",
+    "blood": "Blood",
+    "corpse": "Blood",
+    "category": null,
+    "faction": null,
+    "dmgMults": {
+      "melee": "0.5",
+      "projectile": "0.5",
+      "slice": "0.5",
+      "explosion": "0.5",
+      "electricity": "0.5",
+      "fire": "0.5",
+      "ice": "0.5",
+      "drill": "1x",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Mestarien mestari"
   },
   "boss_wizard": {
     "alias": "Master of Masters",
@@ -2550,7 +2801,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Mestarien mestari"
   },
   "scavenger_mine": {
     "alias": "Hiisi Mine Thrower",
@@ -2575,7 +2827,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Miinankylväjä"
   },
   "player": {
     "alias": "Me",
@@ -2600,7 +2853,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1.5"
-    }
+    },
+    "wikipage": "Minä"
   },
   "miniblob": {
     "alias": "Blob",
@@ -2625,7 +2879,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Möykky"
   },
   "lasershooter": {
     "alias": "Gazer",
@@ -2650,7 +2905,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Mulkkio"
   },
   "monk": {
     "alias": "Monk",
@@ -2675,7 +2931,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Munkki"
   },
   "wizard_poly": {
     "alias": "Master of Polymorphing",
@@ -2700,7 +2957,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Muodonmuutosmestari"
   },
   "ant": {
     "alias": "Ant",
@@ -2725,7 +2983,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Murkku"
   },
   "scavenger_poison": {
     "alias": "Hiisi Poisoner",
@@ -2750,7 +3009,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Myrkkyhiisi"
   },
   "fungus_tiny": {
     "alias": "Funeral Bell",
@@ -2775,7 +3035,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Myrkkynääpikkä"
   },
   "eel": {
     "alias": "Lamprey",
@@ -2800,7 +3061,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Nahkiainen"
   },
   "deer": {
     "alias": "Deer",
@@ -2825,7 +3087,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Nelikoipi"
   },
   "fungus_big": {
     "alias": "Club-foot",
@@ -2850,7 +3113,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Nuijamalikka"
   },
   "ethereal_being": {
     "alias": "Non-existent",
@@ -2875,7 +3139,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Olematon"
   },
   "dark_alchemist": {
     "alias": "Memory of Evil",
@@ -2900,7 +3165,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Pahan muisto"
   },
   "icemage": {
     "alias": "Old Man Winter",
@@ -2925,7 +3191,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Pakkasukko"
   },
   "wizard_returner": {
     "alias": "Master of Returning",
@@ -2950,7 +3217,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Palauttajamestari"
   },
   "scavenger_heal": {
     "alias": "Hiisi Healer",
@@ -2975,7 +3243,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Parantajahiisi"
   },
   "statue": {
     "alias": "Statue",
@@ -3000,7 +3269,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Patsas"
   },
   "spearbot": {
     "alias": "Lance Sentry",
@@ -3025,7 +3295,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "0.5"
-    }
+    },
+    "wikipage": "Peitsivartija"
   },
   "wand_ghost_charmed": {
     "alias": "Charmed Magic Wand",
@@ -3050,7 +3321,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Pheromone"
   },
   "worm_tiny": {
     "alias": "Small Worm",
@@ -3075,7 +3347,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.4",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Pikkumato"
   },
   "tentacler_small": {
     "alias": "Small Tentacler",
@@ -3100,7 +3373,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Pikkuturso"
   },
   "shooterflower": {
     "alias": "Plasma Flower",
@@ -3125,7 +3399,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Plasmakukka"
   },
   "elk": {
     "alias": "Reindeer",
@@ -3150,7 +3425,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Poro"
   },
   "alchemist": {
     "alias": "Hiisi Alchemist",
@@ -3175,7 +3451,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Puistokemisti"
   },
   "bloom": {
     "alias": "Bloom",
@@ -3200,7 +3477,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Puska"
   },
   "neutralizer": {
     "alias": "Stopper",
@@ -3225,7 +3503,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Pysäyttäjä"
   },
   "coward": {
     "alias": "Coward",
@@ -3250,7 +3529,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Raukka"
   },
   "roboguard": {
     "alias": "Robo-Cop",
@@ -3275,7 +3555,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Robottikyttä"
   },
   "rat": {
     "alias": "Rat",
@@ -3300,7 +3581,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Rotta"
   },
   "plague_rats_rat": {
     "alias": "Plague Rat",
@@ -3325,7 +3607,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Ruttorotta"
   },
   "scavenger_smg": {
     "alias": "Hiisi Gunner",
@@ -3350,7 +3633,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Rynkkyhiisi"
   },
   "goblin_bomb": {
     "alias": "Firecracker Goblin",
@@ -3375,7 +3659,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Sähikäismenninkäinen"
   },
   "thunderskull": {
     "alias": "Thunder Spirit",
@@ -3400,7 +3685,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "0.7"
-    }
+    },
+    "wikipage": "Sähkiö"
   },
   "assassin": {
     "alias": "Assassin Robot",
@@ -3425,7 +3711,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Salamurhaajarobotti"
   },
   "wizard_twitchy": {
     "alias": "Master of Twitching",
@@ -3450,7 +3737,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Sätkymestari"
   },
   "parallel_tentacles": {
     "alias": "Three-eye's Minion",
@@ -3475,7 +3763,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Sauvojen tuntija"
   },
   "boss_pit": {
     "alias": "Connoisseur of Wands",
@@ -3500,7 +3789,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0",
       "radioactive": "1x",
       "holy": "0.4"
-    }
+    },
+    "wikipage": "Sauvojen tuntija"
   },
   "wizard_tele": {
     "alias": "Master of Teleportation",
@@ -3525,7 +3815,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Siirtäjämestari"
   },
   "scorpion": {
     "alias": "Scorpion",
@@ -3550,7 +3841,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Skorpioni"
   },
   "necromancer_super": {
     "alias": "Cop",
@@ -3575,7 +3867,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "0"
-    }
+    },
+    "wikipage": "Skoude"
   },
   "sniper_hell": {
     "alias": "Hiisi Hell Sniper",
@@ -3600,7 +3893,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "2.0"
-    }
+    },
+    "wikipage": "Snipuhiisi"
   },
   "sniper": {
     "alias": "Hiisi Sniper",
@@ -3625,7 +3919,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Snipuhiisi"
   },
   "wizard_dark": {
     "alias": "Master of Blinding",
@@ -3650,7 +3945,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Sokaisunmestari"
   },
   "phantom_a": {
     "alias": "Spiral Phantom",
@@ -3675,7 +3971,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Spiraalikalma"
   },
   "firemage_weak": {
     "alias": "Fire Mage",
@@ -3700,7 +3997,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Stendari"
   },
   "necromancer_shop": {
     "alias": "Guard",
@@ -3725,7 +4023,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "0.3"
-    }
+    },
+    "wikipage": "Stevari"
   },
   "boss_dragon": {
     "alias": "Dragon",
@@ -3750,7 +4049,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Suomuhauki"
   },
   "wolf": {
     "alias": "Wolf",
@@ -3775,7 +4075,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Susi"
   },
   "thundermage_big": {
     "alias": "Great Thunder Mage",
@@ -3800,7 +4101,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "0.5"
-    }
+    },
+    "wikipage": "Suur-Ukko"
   },
   "fish_large": {
     "alias": "Large Fish",
@@ -3825,7 +4127,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Suureväkäs"
   },
   "bigbat": {
     "alias": "Large Bat",
@@ -3850,7 +4153,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Suurlepakko"
   },
   "ghoul": {
     "alias": "Spitter",
@@ -3875,7 +4179,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Sylkyri"
   },
   "fish_giga": {
     "alias": "Creature of the Deep",
@@ -3900,7 +4205,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.0",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Syväolento"
   },
   "wand_ghost": {
     "alias": "Magic Wand",
@@ -3925,7 +4231,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Taikasauva"
   },
   "skygazer": {
     "alias": "Sky Gazer",
@@ -3950,7 +4257,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "0.5"
-    }
+    },
+    "wikipage": "Taivaankatse"
   },
   "skycrystal_physics": {
     "alias": "Celestial Crystal",
@@ -3975,7 +4283,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "0.5"
-    }
+    },
+    "wikipage": "Taivaskristalli"
   },
   "islandspirit": {
     "alias": "Tapio's Vassal",
@@ -3995,7 +4304,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "electricity": "0.6",
       "fire": "0.4",
       "holy": "0"
-    }
+    },
+    "wikipage": "Tapion vasalli"
   },
   "cook": {
     "alias": "Hiisi Chef",
@@ -4020,7 +4330,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Tappurahiisi"
   },
   "miner_hell": {
     "alias": "Hell Miner Hiisi",
@@ -4045,7 +4356,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "2.0"
-    }
+    },
+    "wikipage": "Tappurahiisi"
   },
   "miner": {
     "alias": "Miner Hiisi",
@@ -4070,7 +4382,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Tappurahiisi"
   },
   "miner_weak": {
     "alias": "Weak Hiisi Miner",
@@ -4095,7 +4408,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Tappurahiisi"
   },
   "sentry": {
     "alias": "Observer",
@@ -4120,7 +4434,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Tarkkailija"
   },
   "soldier": {
     "alias": "Executioner",
@@ -4145,7 +4460,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Teloittaja"
   },
   "scavenger_leader": {
     "alias": "Hiisi Leader",
@@ -4170,7 +4486,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Toimari"
   },
   "turret": {
     "alias": "Turret",
@@ -4195,7 +4512,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Torjuntalaite"
   },
   "maggot": {
     "alias": "Maggot",
@@ -4220,7 +4538,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Toukka"
   },
   "friend": {
     "alias": "Friend",
@@ -4232,8 +4551,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     "immunities": "physics",
     "blood": "Blood",
     "corpse": "Meat of an Innocent Creature",
-    "category": "",
-    "faction": "",
+    "category": "Bosses",
+    "faction": "orcs",
     "dmgMults": {
       "melee": "1x",
       "projectile": "1x",
@@ -4245,7 +4564,112 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Toveri"
+  },
+  "_arrow_trap": {
+    "alias": "Arrow Trap",
+    "name": "Arrow Trap",
+    "health": "37.5",
+    "attacks": "Arrow (Projectile): 12.5",
+    "spawnLocation": "Temple of the Art, Pyramid, The Work (Hell), Wizards' Den",
+    "ngPlusSpawn": null,
+    "immunities": "freeze, electricity",
+    "blood": "Sand",
+    "corpse": "Plastic",
+    "category": null,
+    "faction": "trap",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "0.3",
+      "electricity": "1x",
+      "fire": "0.0",
+      "ice": "1x",
+      "drill": "0.4",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Traps"
+  },
+  "_fire_trap": {
+    "alias": "Fire Trap",
+    "name": "Fire Trap",
+    "health": "112.5",
+    "attacks": "Fire: 12.5",
+    "spawnLocation": "Temple of the Art, Wizards' Den",
+    "ngPlusSpawn": null,
+    "immunities": "freeze, electricity",
+    "blood": "Sand",
+    "corpse": "Plastic",
+    "category": null,
+    "faction": "trap",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "0.2",
+      "electricity": "0.1",
+      "fire": "0.0",
+      "ice": "1x",
+      "drill": "0.4",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Traps"
+  },
+  "_acid_trap": {
+    "alias": "Acid Trap",
+    "name": "Acid Trap",
+    "health": "87.5",
+    "attacks": "Acid spit (Projectile): 5",
+    "spawnLocation": "Temple of the Art, Wizards' Den",
+    "ngPlusSpawn": null,
+    "immunities": "freeze, electricity",
+    "blood": "Sand",
+    "corpse": "Plastic",
+    "category": null,
+    "faction": "trap",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "0.2",
+      "electricity": "0.0",
+      "fire": "0.0",
+      "ice": "1x",
+      "drill": "0.4",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Traps"
+  },
+  "_thunder_trap": {
+    "alias": "Thunder Trap",
+    "name": "Thunder Trap",
+    "health": "137.5",
+    "attacks": "Electric spark (Electricity): 25",
+    "spawnLocation": "Temple of the Art, Wizards' Den",
+    "ngPlusSpawn": null,
+    "immunities": "freeze, electricity",
+    "blood": "Sand",
+    "corpse": "Plastic",
+    "category": null,
+    "faction": "trap",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "0.2",
+      "electricity": "0.0",
+      "fire": "0.0",
+      "ice": "1x",
+      "drill": "0.4",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Traps"
   },
   "miner_fire": {
     "alias": "Fire Hiisi",
@@ -4270,7 +4694,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Tulihiisi"
   },
   "bigfirebug": {
     "alias": "Greater firefly",
@@ -4295,7 +4720,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Tulikärpänen"
   },
   "firebug": {
     "alias": "Lesser firefly",
@@ -4320,7 +4746,34 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Tulikärpänen"
+  },
+  "_firefly_hive": {
+    "alias": "Firefly Hive",
+    "name": "Firefly Hive",
+    "health": "125",
+    "attacks": null,
+    "spawnLocation": "Coal Pits",
+    "ngPlusSpawn": null,
+    "immunities": null,
+    "blood": "Lava",
+    "corpse": "Nest (Material) (Firebug)",
+    "category": null,
+    "faction": "nest",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "1x",
+      "electricity": "1x",
+      "fire": "1x",
+      "ice": "1x",
+      "drill": "1x",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Tulikärpänen"
   },
   "necrobot": {
     "alias": "Necrobot",
@@ -4345,7 +4798,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Tuonelankone"
   },
   "tentacler": {
     "alias": "Tentacler",
@@ -4370,7 +4824,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Turso"
   },
   "drone_shield": {
     "alias": "Safety Drone",
@@ -4395,7 +4850,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Turvalennokki"
   },
   "wizard_weaken": {
     "alias": "Master of Vulnerability",
@@ -4420,7 +4876,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Turvattomuusmestari"
   },
   "barfer": {
     "alias": "Bloated Wizard",
@@ -4445,7 +4902,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Turvonnu velho"
   },
   "thundermage": {
     "alias": "Thunder Mage",
@@ -4470,7 +4928,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "0.5"
-    }
+    },
+    "wikipage": "Ukko"
   },
   "wraith_storm": {
     "alias": "Thunder Creep",
@@ -4495,7 +4954,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "1x",
       "holy": "0.3"
-    }
+    },
+    "wikipage": "Ukkoshyypiö"
   },
   "boss_ghost": {
     "alias": "Forgotten",
@@ -4520,7 +4980,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "0.5"
-    }
+    },
+    "wikipage": "Unohdettu"
   },
   "boss_ghost_polyp": {
     "alias": "Fade",
@@ -4545,7 +5006,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Unohdettu"
   },
   "wizard_swapper": {
     "alias": "Master of Exchange",
@@ -4570,7 +5032,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Vaihdosmestari"
   },
   "hidden": {
     "alias": "Spy",
@@ -4595,7 +5058,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.1",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Vakoilija"
   },
   "enlightened_alchemist": {
     "alias": "Enlightened Alchemist",
@@ -4620,7 +5084,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "0.2"
-    }
+    },
+    "wikipage": "Valaistunut alkemisti"
   },
   "shaman_wind": {
     "alias": "Lie",
@@ -4645,7 +5110,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Valhe"
   },
   "lurker": {
     "alias": "Shadow Bubble",
@@ -4670,7 +5136,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.5",
       "radioactive": "0.0",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Varjokupla"
   },
   "bloodcrystal_physics": {
     "alias": "Blood Crystal",
@@ -4695,7 +5162,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "1x",
       "radioactive": "1x",
       "holy": "1.2"
-    }
+    },
+    "wikipage": "Verikristalli"
   },
   "boss_alchemist": {
     "alias": "High Alchemist",
@@ -4720,7 +5188,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "0.5"
-    }
+    },
+    "wikipage": "Ylialkemisti"
   },
   "parallel_alchemist": {
     "alias": "Alchemist's Shadow",
@@ -4745,7 +5214,476 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "drill": "0.7",
       "radioactive": "1x",
       "holy": "1x"
-    }
+    },
+    "wikipage": "Ylialkemisti"
+  },
+  "flynest": {
+    "alias": "Amppari Hive",
+    "name": "Amppari Hive",
+    "health": "125",
+    "attacks": null,
+    "spawnLocation": "Fungal Caverns, Underground Jungle, The Tower",
+    "ngPlusSpawn": null,
+    "immunities": null,
+    "blood": "none",
+    "corpse": "Nest (Material)",
+    "category": null,
+    "faction": "nest",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "1x",
+      "electricity": "1x",
+      "fire": "1x",
+      "ice": "1x",
+      "drill": "1x",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Amppari"
+  },
+  "orb_death": {
+    "alias": "Death Orb",
+    "name": "Death Orb",
+    "health": "62.5",
+    "attacks": null,
+    "spawnLocation": "Ancient Laboratory, Magical Temple, Temple of the Art",
+    "ngPlusSpawn": null,
+    "immunities": "freeze, electricity, burn, suffocation",
+    "blood": "Spark",
+    "corpse": "Crystal",
+    "category": null,
+    "faction": null,
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "0.0",
+      "explosion": "1x",
+      "electricity": "1x",
+      "fire": "0.0",
+      "ice": "1x",
+      "drill": "0.4",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Epäalkemisti"
+  },
+  "spidernest": {
+    "alias": "Hämis Nest",
+    "name": "Hämis Nest",
+    "health": "125",
+    "attacks": null,
+    "spawnLocation": "Fungal Caverns, Underground Jungle",
+    "ngPlusSpawn": null,
+    "immunities": null,
+    "blood": "none",
+    "corpse": "Nest (Material)",
+    "category": null,
+    "faction": "nest",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "1x",
+      "electricity": "1x",
+      "fire": "1x",
+      "ice": "1x",
+      "drill": "1x",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Hämis"
+  },
+  "ghost_crystal": {
+    "alias": "Houre Crystal",
+    "name": "Houre Crystal",
+    "health": "500",
+    "attacks": "Freezing projectile",
+    "spawnLocation": "Temple of the Art, Wizards' Den, Snowy Chasm",
+    "ngPlusSpawn": null,
+    "immunities": "suffocation, fire",
+    "blood": "Blue Sand",
+    "corpse": "Ice",
+    "category": null,
+    "faction": "ghost",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "1x",
+      "electricity": "1x",
+      "fire": "1x",
+      "ice": "1x",
+      "drill": "1x",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Houre"
+  },
+  "orb_blood": {
+    "alias": "Blood Orb",
+    "name": "Blood Orb",
+    "health": "150000",
+    "attacks": "Blood Link",
+    "spawnLocation": "Throne Room",
+    "ngPlusSpawn": null,
+    "immunities": "touch-spell,freezestun,stun,physics,polymorph",
+    "blood": "Blood",
+    "corpse": "Blood",
+    "category": null,
+    "faction": null,
+    "dmgMults": {
+      "melee": "0.2",
+      "projectile": "0.2",
+      "slice": "0.2",
+      "explosion": "0.2",
+      "electricity": "0.2",
+      "fire": "0.2",
+      "ice": "0.2",
+      "drill": "1x",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Mestarien mestari"
+  },
+  "wizard_orb_blood": {
+    "alias": "Blood Orb",
+    "name": "Blood Orb",
+    "health": "150000",
+    "attacks": "Blood Link",
+    "spawnLocation": "Throne Room",
+    "ngPlusSpawn": null,
+    "immunities": "touch-spell,freezestun,stun,physics,polymorph",
+    "blood": "Blood",
+    "corpse": "Blood",
+    "category": null,
+    "faction": null,
+    "dmgMults": {
+      "melee": "0.2",
+      "projectile": "0.2",
+      "slice": "0.2",
+      "explosion": "0.2",
+      "electricity": "0.2",
+      "fire": "0.2",
+      "ice": "0.2",
+      "drill": "1x",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Mestarien mestari"
+  },
+  "boss_wizard_orb_blood": {
+    "alias": "Blood Orb",
+    "name": "Blood Orb",
+    "health": "150000",
+    "attacks": "Blood Link",
+    "spawnLocation": "Throne Room",
+    "ngPlusSpawn": null,
+    "immunities": "touch-spell,freezestun,stun,physics,polymorph",
+    "blood": "Blood",
+    "corpse": "Blood",
+    "category": null,
+    "faction": null,
+    "dmgMults": {
+      "melee": "0.2",
+      "projectile": "0.2",
+      "slice": "0.2",
+      "explosion": "0.2",
+      "electricity": "0.2",
+      "fire": "0.2",
+      "ice": "0.2",
+      "drill": "1x",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Mestarien mestari"
+  },
+  "wizard_orb_death": {
+    "alias": "Death Orb",
+    "name": "Death Orb",
+    "health": "500",
+    "attacks": "Curse",
+    "spawnLocation": "Throne Room",
+    "ngPlusSpawn": null,
+    "immunities": "touch-spell,freezestun,stun,physics,polymorph",
+    "blood": "Blood",
+    "corpse": "Blood",
+    "category": null,
+    "faction": null,
+    "dmgMults": {
+      "melee": "0.5",
+      "projectile": "0.5",
+      "slice": "0.5",
+      "explosion": "0.5",
+      "electricity": "0.5",
+      "fire": "0.5",
+      "ice": "0.5",
+      "drill": "1x",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Mestarien mestari"
+  },
+  "boss_wizard_orb_death": {
+    "alias": "Death Orb",
+    "name": "Death Orb",
+    "health": "500",
+    "attacks": "Curse",
+    "spawnLocation": "Throne Room",
+    "ngPlusSpawn": null,
+    "immunities": "touch-spell,freezestun,stun,physics,polymorph",
+    "blood": "Blood",
+    "corpse": "Blood",
+    "category": null,
+    "faction": null,
+    "dmgMults": {
+      "melee": "0.5",
+      "projectile": "0.5",
+      "slice": "0.5",
+      "explosion": "0.5",
+      "electricity": "0.5",
+      "fire": "0.5",
+      "ice": "0.5",
+      "drill": "1x",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Mestarien mestari"
+  },
+  "arrowtrap_left": {
+    "alias": "Arrow Trap",
+    "name": "Arrow Trap",
+    "health": "37.5",
+    "attacks": "Arrow (Projectile): 12.5",
+    "spawnLocation": "Temple of the Art, Pyramid, The Work (Hell), Wizards' Den",
+    "ngPlusSpawn": null,
+    "immunities": "freeze, electricity",
+    "blood": "Sand",
+    "corpse": "Plastic",
+    "category": null,
+    "faction": "trap",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "0.3",
+      "electricity": "1x",
+      "fire": "0.0",
+      "ice": "1x",
+      "drill": "0.4",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Traps"
+  },
+  "arrowtrap_right": {
+    "alias": "Arrow Trap",
+    "name": "Arrow Trap",
+    "health": "37.5",
+    "attacks": "Arrow (Projectile): 12.5",
+    "spawnLocation": "Temple of the Art, Pyramid, The Work (Hell), Wizards' Den",
+    "ngPlusSpawn": null,
+    "immunities": "freeze, electricity",
+    "blood": "Sand",
+    "corpse": "Plastic",
+    "category": null,
+    "faction": "trap",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "0.3",
+      "electricity": "1x",
+      "fire": "0.0",
+      "ice": "1x",
+      "drill": "0.4",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Traps"
+  },
+  "firetrap_left": {
+    "alias": "Fire Trap",
+    "name": "Fire Trap",
+    "health": "112.5",
+    "attacks": "Fire: 12.5",
+    "spawnLocation": "Temple of the Art, Wizards' Den",
+    "ngPlusSpawn": null,
+    "immunities": "freeze, electricity",
+    "blood": "Sand",
+    "corpse": "Plastic",
+    "category": null,
+    "faction": "trap",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "0.2",
+      "electricity": "0.1",
+      "fire": "0.0",
+      "ice": "1x",
+      "drill": "0.4",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Traps"
+  },
+  "firetrap_right": {
+    "alias": "Fire Trap",
+    "name": "Fire Trap",
+    "health": "112.5",
+    "attacks": "Fire: 12.5",
+    "spawnLocation": "Temple of the Art, Wizards' Den",
+    "ngPlusSpawn": null,
+    "immunities": "freeze, electricity",
+    "blood": "Sand",
+    "corpse": "Plastic",
+    "category": null,
+    "faction": "trap",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "0.2",
+      "electricity": "0.1",
+      "fire": "0.0",
+      "ice": "1x",
+      "drill": "0.4",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Traps"
+  },
+  "spittrap_left": {
+    "alias": "Acid Trap",
+    "name": "Acid Trap",
+    "health": "87.5",
+    "attacks": "Acid spit (Projectile): 5",
+    "spawnLocation": "Temple of the Art, Wizards' Den",
+    "ngPlusSpawn": null,
+    "immunities": "freeze, electricity",
+    "blood": "Sand",
+    "corpse": "Plastic",
+    "category": null,
+    "faction": "trap",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "0.2",
+      "electricity": "0.0",
+      "fire": "0.0",
+      "ice": "1x",
+      "drill": "0.4",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Traps"
+  },
+  "spittrap_right": {
+    "alias": "Acid Trap",
+    "name": "Acid Trap",
+    "health": "87.5",
+    "attacks": "Acid spit (Projectile): 5",
+    "spawnLocation": "Temple of the Art, Wizards' Den",
+    "ngPlusSpawn": null,
+    "immunities": "freeze, electricity",
+    "blood": "Sand",
+    "corpse": "Plastic",
+    "category": null,
+    "faction": "trap",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "0.2",
+      "electricity": "0.0",
+      "fire": "0.0",
+      "ice": "1x",
+      "drill": "0.4",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Traps"
+  },
+  "thundertrap_left": {
+    "alias": "Thunder Trap",
+    "name": "Thunder Trap",
+    "health": "137.5",
+    "attacks": "Electric spark (Electricity): 25",
+    "spawnLocation": "Temple of the Art, Wizards' Den",
+    "ngPlusSpawn": null,
+    "immunities": "freeze, electricity",
+    "blood": "Sand",
+    "corpse": "Plastic",
+    "category": null,
+    "faction": "trap",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "0.2",
+      "electricity": "0.0",
+      "fire": "0.0",
+      "ice": "1x",
+      "drill": "0.4",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Traps"
+  },
+  "thundertrap_right": {
+    "alias": "Thunder Trap",
+    "name": "Thunder Trap",
+    "health": "137.5",
+    "attacks": "Electric spark (Electricity): 25",
+    "spawnLocation": "Temple of the Art, Wizards' Den",
+    "ngPlusSpawn": null,
+    "immunities": "freeze, electricity",
+    "blood": "Sand",
+    "corpse": "Plastic",
+    "category": null,
+    "faction": "trap",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "0.2",
+      "electricity": "0.0",
+      "fire": "0.0",
+      "ice": "1x",
+      "drill": "0.4",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Traps"
+  },
+  "firebugnest": {
+    "alias": "Firefly Hive",
+    "name": "Firefly Hive",
+    "health": "125",
+    "attacks": null,
+    "spawnLocation": "Coal Pits",
+    "ngPlusSpawn": null,
+    "immunities": null,
+    "blood": "Lava",
+    "corpse": "Nest (Material) (Firebug)",
+    "category": null,
+    "faction": "nest",
+    "dmgMults": {
+      "melee": "1x",
+      "projectile": "1x",
+      "slice": "1x",
+      "explosion": "1x",
+      "electricity": "1x",
+      "fire": "1x",
+      "ice": "1x",
+      "drill": "1x",
+      "radioactive": "1x",
+      "holy": "1x"
+    },
+    "wikipage": "Tulikärpänen"
   }
 };
 
@@ -4760,10 +5698,12 @@ export const CREATURE_ALIASES: Record<string, string> = {
   "weakspirit": "Depression Spirit",
   "giantshooter": "Mother Slime",
   "giantshooter_weak": "Weak Mother Slime",
+  "_amppari_hive": "Amppari Hive",
   "fly": "Wasp",
   "duck": "Duck",
   "firemage": "Hellfire Mage",
   "hpcrystal": "Recovery Crystal",
+  "_death_orb": "Death Orb",
   "failed_alchemist_b": "Non-alchemist",
   "fish": "Fish",
   "gate_monster_a": "Goalkeeper",
@@ -4778,6 +5718,7 @@ export const CREATURE_ALIASES: Record<string, string> = {
   "lukki_tiny": "Small Spider",
   "lukki_longleg": "Daddy Longlegs",
   "lukki": "Spider",
+  "_hamis_nest": "Hämis Nest",
   "longleg": "Spidey",
   "acidshooter_weak": "Weak Acid Slime",
   "acidshooter": "Acid Slime",
@@ -4793,6 +5734,7 @@ export const CREATURE_ALIASES: Record<string, string> = {
   "wraith_glowing": "Glowing Creep",
   "statue_physics": "Glowing Mask",
   "ghost": "Delirium",
+  "_houre_crystal": "Houre Crystal",
   "fungus_giga": "Pollen Morel",
   "zombie": "Hound",
   "zombie_weak": "Weak Hound",
@@ -4855,6 +5797,8 @@ export const CREATURE_ALIASES: Record<string, string> = {
   "chest_mimic": "Mimic",
   "chest_leggy": "Leggy Mimic",
   "worm": "Worm",
+  "_blood_orb": "Blood Orb",
+  "_death_orb__mestarien_mestari": "Death Orb",
   "boss_wizard": "Master of Masters",
   "scavenger_mine": "Hiisi Mine Thrower",
   "player": "Me",
@@ -4924,9 +5868,14 @@ export const CREATURE_ALIASES: Record<string, string> = {
   "turret": "Turret",
   "maggot": "Maggot",
   "friend": "Friend",
+  "_arrow_trap": "Arrow Trap",
+  "_fire_trap": "Fire Trap",
+  "_acid_trap": "Acid Trap",
+  "_thunder_trap": "Thunder Trap",
   "miner_fire": "Fire Hiisi",
   "bigfirebug": "Greater firefly",
   "firebug": "Lesser firefly",
+  "_firefly_hive": "Firefly Hive",
   "necrobot": "Necrobot",
   "tentacler": "Tentacler",
   "drone_shield": "Safety Drone",
@@ -4943,5 +5892,23 @@ export const CREATURE_ALIASES: Record<string, string> = {
   "lurker": "Shadow Bubble",
   "bloodcrystal_physics": "Blood Crystal",
   "boss_alchemist": "High Alchemist",
-  "parallel_alchemist": "Alchemist's Shadow"
+  "parallel_alchemist": "Alchemist's Shadow",
+  "flynest": "Amppari Hive",
+  "orb_death": "Death Orb",
+  "spidernest": "Hämis Nest",
+  "ghost_crystal": "Houre Crystal",
+  "orb_blood": "Blood Orb",
+  "wizard_orb_blood": "Blood Orb",
+  "boss_wizard_orb_blood": "Blood Orb",
+  "wizard_orb_death": "Death Orb",
+  "boss_wizard_orb_death": "Death Orb",
+  "arrowtrap_left": "Arrow Trap",
+  "arrowtrap_right": "Arrow Trap",
+  "firetrap_left": "Fire Trap",
+  "firetrap_right": "Fire Trap",
+  "spittrap_left": "Acid Trap",
+  "spittrap_right": "Acid Trap",
+  "thundertrap_left": "Thunder Trap",
+  "thundertrap_right": "Thunder Trap",
+  "firebugnest": "Firefly Hive"
 };

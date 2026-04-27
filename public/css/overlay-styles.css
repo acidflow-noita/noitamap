@@ -126,6 +126,176 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
   color: #ffc107;
 }
 
+/* ─── Extended-info section (pro-gated) ─────────────────────────────────── */
+
+/* Modal must render above the marker tooltip (z-index: 10000) and OSD overlay
+   popups so the auth/login modal isn't visually buried under the popup the
+   user clicked the CTA from. Bootstrap's default modal z-index (1055) loses
+   to the marker tooltip. */
+.modal { z-index: 100000 !important; }
+.modal-backdrop { z-index: 99999 !important; }
+
+/* Bartender material-type colors — matched 1:1 with bartender's custom.css. */
+.material-type-solid  { color: oklch(70.9% 0.01 56.259); }
+.material-type-liquid { color: oklch(80.9% 0.105 251.813); }
+.material-type-powder { color: oklch(91% 0.096 180.426); }
+.material-type-gas    { color: oklch(83.3% 0.145 321.434); }
+.material-type-fire   { color: oklch(80.8% 0.114 19.571); }
+.material-type-acid   { color: oklch(72.3% 0.219 149.579); }
+
+.extended-info-section {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #333;
+  font-size: 12px;
+  color: #ccc;
+}
+
+.extended-info-header {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.extended-info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  line-height: 1.4;
+}
+
+.extended-info-label {
+  color: #888;
+}
+
+.extended-info-value {
+  color: #ddd;
+}
+
+.extended-info-subhead {
+  margin-top: 6px;
+  margin-bottom: 2px;
+  font-size: 11px;
+  color: #888;
+}
+
+.extended-info-table {
+  width: 100%;
+  border-spacing: 0;
+  font-size: 12px;
+}
+
+.extended-info-table td {
+  padding: 1px 0;
+}
+
+.extended-info-table td:first-child {
+  color: #aaa;
+  padding-right: 12px;
+}
+
+.extended-info-table td:last-child {
+  text-align: right;
+  color: #fff;
+}
+
+.extended-info-desc {
+  font-style: italic;
+  color: #bbb;
+  margin-bottom: 4px;
+}
+
+.extended-info-reactions {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+/* Bartender link: matches the in-popup wiki link (text + bi-box-arrow-up-right
+   icon, click target = visible content only). */
+.extended-info-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #ffc107 !important;
+  font-size: 12px;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 193, 7, 0.4);
+  width: max-content;
+}
+
+.extended-info-link:hover {
+  color: #ffd36e !important;
+  text-decoration-color: rgba(255, 211, 110, 0.8);
+}
+
+.extended-info-link i {
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+.extended-info-mat-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.extended-info-mat-entry {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.extended-info-mat-kind {
+  color: #888;
+  font-size: 11px;
+}
+
+.extended-info-loading,
+.extended-info-empty {
+  font-size: 11px;
+  color: #777;
+  font-style: italic;
+}
+
+/* Placeholder shown to non-pro users — no real data is rendered. */
+.extended-info-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px dashed #b08a2a;
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(90, 68, 24, 0.18) 0%, rgba(36, 26, 5, 0.18) 100%);
+}
+
+.extended-info-placeholder-label {
+  color: #ffd36e;
+  font-size: 12px;
+}
+
+.extended-info-cta {
+  background: rgba(255, 211, 110, 0.12);
+  border: 1px solid #b08a2a;
+  color: #ffd36e;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.extended-info-cta:hover {
+  background: rgba(255, 211, 110, 0.22);
+  border-color: #ffd36e;
+}
+
 #osContainer .overlay {
   display: none !important;
   position: relative; /* Ensure z-index works */
