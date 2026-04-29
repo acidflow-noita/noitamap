@@ -627,22 +627,50 @@ function rowWithNode(label: string, valueNode: HTMLElement): HTMLElement {
   return r;
 }
 
-function dmgMultsTable(mults: [string, string | null | undefined][]): HTMLElement | null {
-  const present = mults.filter(([, v]) => v != null && v !== "");
-  if (present.length === 0) return null;
-  const tbl = document.createElement("table");
-  tbl.className = "extended-info-table";
+/** Append key-value pairs as rows into the parent. Returns count of rows added. */
+function appendKVRows(
+  parent: HTMLElement,
+  pairs: [string, string | number | null | undefined][],
+): number {
+  const present = pairs.filter(([, v]) => v != null && v !== "" && v !== 0);
   for (const [k, v] of present) {
-    const tr = document.createElement("tr");
-    const td1 = document.createElement("td");
-    td1.textContent = k;
-    const td2 = document.createElement("td");
-    td2.textContent = String(v);
-    tr.appendChild(td1);
-    tr.appendChild(td2);
-    tbl.appendChild(tr);
+    const r = row(k, String(v));
+    if (r) parent.appendChild(r);
   }
-  return tbl;
+  return present.length;
+}
+
+/**
+ * Normalise a damage-multiplier string to a consistent decimal format.
+ * "1x" → "1.0", "0" → "0.0", "0.8" → "0.8", "≤1.0" → "≤1.0"
+ */
+function formatDmgMult(v: string): string {
+  // Preserve prefix like "≤"
+  const m = v.match(/^([^\d.-]*)(-?[\d.]+)x?$/);
+  if (!m) return v;                       // e.g. special notes — pass through
+  const prefix = m[1];
+  const n = parseFloat(m[2]);
+  if (isNaN(n)) return v;
+  // Show one decimal place for clean numbers, more if needed (e.g. 0.01)
+  const formatted = Number.isInteger(n * 10) ? n.toFixed(1) : String(n);
+  return `${prefix}${formatted}`;
+}
+
+/**
+ * Create a group wrapper for a logical section.
+ * Groups with >= COLS_THRESHOLD rows get CSS multi-column layout;
+ * smaller groups stay single-column.
+ */
+const COLS_THRESHOLD = 5;
+
+function group(heading: string | null, rowCount: number): HTMLElement {
+  const g = document.createElement("div");
+  g.className =
+    rowCount >= COLS_THRESHOLD
+      ? "extended-info-group extended-info-group--cols"
+      : "extended-info-group";
+  if (heading) g.appendChild(subhead(heading));
+  return g;
 }
 
 function subhead(text: string): HTMLElement {
@@ -659,33 +687,28 @@ function renderCreature(id: string): HTMLElement | null {
   const root = document.createElement("div");
   root.className = "extended-info-creature";
 
-  const append = (el: HTMLElement | null) => {
-    if (el) root.appendChild(el);
-  };
+  // ── Top-level stats ──
+  const topRows: HTMLElement[] = [];
 
-  // Faction (and category if present, in parens — preserves original layout
-  // where the displayed text was e.g. "Ghosts (ghost)").
   if (c.category || c.faction) {
     const parts: string[] = [];
     if (c.category) parts.push(c.category);
     if (c.faction) parts.push(`(${c.faction})`);
-    append(row("Faction", parts.join(" ")));
+    const r = row("Faction", parts.join(" "));
+    if (r) topRows.push(r);
+  }
+  if (c.health) { const r = row("HP", stripWiki(c.health)); if (r) topRows.push(r); }
+  if (c.attackType) { const r = row("Attacks", parseAttacks(c.attackType)); if (r) topRows.push(r); }
+  if (c.immunities) { const r = row("Immunities", stripWiki(c.immunities)); if (r) topRows.push(r); }
+
+  if (topRows.length > 0) {
+    const g = group(null, topRows.length);
+    for (const r of topRows) g.appendChild(r);
+    root.appendChild(g);
   }
 
-  // HP
-  if (c.health) {
-    const hp = stripWiki(c.health);
-    append(row("HP", hp));
-  }
-
-  // Attacks
-  if (c.attackType) append(row("Attacks", parseAttacks(c.attackType)));
-
-  // Immunities
-  if (c.immunities) append(row("Immunities", stripWiki(c.immunities)));
-
-  // Damage multipliers
-  const mults: [string, string | null | undefined][] = [
+  // ── Damage multipliers ──
+  const multsRaw: [string, string | null | undefined][] = [
     ["Melee", c.dmgMultMelee],
     ["Projectile", c.dmgMultProjectile],
     ["Slice", c.dmgMultSlice],
@@ -697,43 +720,41 @@ function renderCreature(id: string): HTMLElement | null {
     ["Radioactive", c.dmgMultRadioactive],
     ["Holy", c.dmgMultHoly],
   ];
-  const dmgTbl = dmgMultsTable(mults);
-  if (dmgTbl) {
-    root.appendChild(subhead(i18next.t("extended.dmgMults", "Damage multipliers")));
-    root.appendChild(dmgTbl);
+  const mults: [string, string | null | undefined][] = multsRaw.map(
+    ([k, v]) => [k, v != null && v !== "" ? formatDmgMult(v) : v],
+  );
+  const multsPresent = mults.filter(([, v]) => v != null && v !== "");
+  if (multsPresent.length > 0) {
+    const g = group(i18next.t("extended.dmgMults", "Damage multipliers"), multsPresent.length);
+    appendKVRows(g, mults);
+    root.appendChild(g);
   }
 
-  // Spawn
-  if (c.spawnLocation) append(row("Spawn", stripWiki(c.spawnLocation)));
-  if (c.ngplusSpawnLocation) append(row("Spawn (NG+)", stripWiki(c.ngplusSpawnLocation)));
+  // ── Spawn / Materials / Polymorph ──
+  const bottomRows: HTMLElement[] = [];
 
-  // Blood / Corpse — link to bartender when we have the material id
-  // (FULL_CREATURES_FINAL.json carries blood_material_id / corpse_material_id).
-  if (c.blood || c.corpse) {
-    const wrap = document.createElement("div");
-    wrap.className = "extended-info-row";
-    const lab = document.createElement("span");
-    lab.className = "extended-info-label";
-    lab.textContent = "Materials:";
-    wrap.appendChild(lab);
-    const valWrap = document.createElement("span");
-    valWrap.className = "extended-info-value extended-info-mat-list";
-    if (c.blood) {
-      const node = creatureMaterialNode("Blood", stripWiki(c.blood), c.blood_material_id);
-      valWrap.appendChild(node);
-    }
-    if (c.corpse) {
-      const node = creatureMaterialNode("Corpse", stripWiki(c.corpse), c.corpse_material_id);
-      valWrap.appendChild(node);
-    }
-    wrap.appendChild(valWrap);
-    root.appendChild(wrap);
+  if (c.spawnLocation) { const r = row("Spawn", stripWiki(c.spawnLocation)); if (r) bottomRows.push(r); }
+  if (c.ngplusSpawnLocation) { const r = row("Spawn (NG+)", stripWiki(c.ngplusSpawnLocation)); if (r) bottomRows.push(r); }
+
+  // Blood / Corpse — individual rows, each with a bartender link
+  if (c.blood) {
+    const node = creatureMaterialNode(stripWiki(c.blood), c.blood_material_id);
+    bottomRows.push(rowWithNode("Blood", node));
+  }
+  if (c.corpse) {
+    const node = creatureMaterialNode(stripWiki(c.corpse), c.corpse_material_id);
+    bottomRows.push(rowWithNode("Corpse", node));
   }
 
-  // Polymorph & notes
-  if (c.chaosPolymorph) append(row("Polymorph (chaos)", c.chaosPolymorph));
-  if (c.unstablePolymorph) append(row("Polymorph (unstable)", c.unstablePolymorph));
-  if (c.dmgMultNotes && c.dmgMultNotes !== "1x") append(row("Notes", c.dmgMultNotes));
+  if (c.chaosPolymorph) { const r = row("Polymorph (chaos)", c.chaosPolymorph); if (r) bottomRows.push(r); }
+  if (c.unstablePolymorph) { const r = row("Polymorph (unstable)", c.unstablePolymorph); if (r) bottomRows.push(r); }
+  if (c.dmgMultNotes && c.dmgMultNotes !== "1x") { const r = row("Notes", c.dmgMultNotes); if (r) bottomRows.push(r); }
+
+  if (bottomRows.length > 0) {
+    const g = group(null, bottomRows.length);
+    for (const r of bottomRows) g.appendChild(r);
+    root.appendChild(g);
+  }
 
   return root.childElementCount > 0 ? root : null;
 }
@@ -752,25 +773,30 @@ function renderSpell(id: string): HTMLElement | null {
     root.appendChild(desc);
   }
 
-  const append = (el: HTMLElement | null) => {
-    if (el) root.appendChild(el);
-  };
+  // ── Top-level spell stats — many rows, use column layout ──
+  const statsRows: [string, string | number | null | undefined][] = [
+    ["Type", s.type],
+    ["Mana", s.manaDrain != null ? String(s.manaDrain) : null],
+    ["Uses", s.uses ? String(s.uses) : null],
+    ["Cast delay", s.castDelay],
+    ["Recharge", s.rechargeDelay],
+    ["Speed", s.speed != null && s.speed !== "" ? String(s.speed) : null],
+    ["Spread", s.spread ? String(s.spread) : null],
+    ["Lifetime", s.lifetime ? String(s.lifetime) : null],
+    ["Recoil", s.recoil],
+    ["Bounces", s.bounces],
+    ["Crit", s.criticalChance],
+    ["Price", s.price != null ? String(s.price) : null],
+    ["Unlock", s.unlockCondition ?? null],
+  ];
+  const statsPresent = statsRows.filter(([, v]) => v != null && v !== "");
+  if (statsPresent.length > 0) {
+    const g = group(null, statsPresent.length);
+    appendKVRows(g, statsRows);
+    root.appendChild(g);
+  }
 
-  append(row("Type", s.type));
-  append(row("Mana", s.manaDrain != null ? String(s.manaDrain) : null));
-  append(row("Uses", s.uses ? String(s.uses) : null));
-  append(row("Cast delay", s.castDelay));
-  append(row("Recharge", s.rechargeDelay));
-  append(row("Speed", s.speed != null && s.speed !== "" ? String(s.speed) : null));
-  append(row("Spread", s.spread ? String(s.spread) : null));
-  append(row("Lifetime", s.lifetime ? String(s.lifetime) : null));
-  append(row("Recoil", s.recoil));
-  append(row("Bounces", s.bounces));
-  append(row("Crit", s.criticalChance));
-  append(row("Price", s.price != null ? String(s.price) : null));
-  if (s.unlockCondition) append(row("Unlock", s.unlockCondition));
-
-  // Damage breakdown
+  // ── Damage breakdown ──
   const dmgs: [string, number | null | undefined][] = [
     ["Projectile", s.damageProjectile],
     ["Melee", s.damageMelee],
@@ -783,41 +809,22 @@ function renderSpell(id: string): HTMLElement | null {
     ["Healing", s.damageHealing],
     ["Holy", s.damageHoly],
   ];
-  const present = dmgs.filter(([, v]) => v != null && v !== 0);
-  if (present.length > 0) {
-    root.appendChild(subhead(i18next.t("extended.damage", "Damage")));
-    const tbl = document.createElement("table");
-    tbl.className = "extended-info-table";
-    for (const [k, v] of present) {
-      const tr = document.createElement("tr");
-      const td1 = document.createElement("td");
-      td1.textContent = k;
-      const td2 = document.createElement("td");
-      td2.textContent = String(v);
-      tr.appendChild(td1);
-      tr.appendChild(td2);
-      tbl.appendChild(tr);
-    }
-    root.appendChild(tbl);
+  const dmgsPresent = dmgs.filter(([, v]) => v != null && v !== 0);
+  if (dmgsPresent.length > 0) {
+    const g = group(i18next.t("extended.damage", "Damage"), dmgsPresent.length);
+    appendKVRows(g, dmgs);
+    root.appendChild(g);
   }
 
-  // Tier spawn probability
+  // ── Tier spawn probability ──
   if (Array.isArray(s.spellTier) && s.spellTier.length > 0) {
-    root.appendChild(subhead(i18next.t("extended.tiers", "Tier spawn rate")));
-    const tbl = document.createElement("table");
-    tbl.className = "extended-info-table";
-    for (let i = 0; i < s.spellTier.length; i++) {
-      const tr = document.createElement("tr");
-      const td1 = document.createElement("td");
-      td1.textContent = `T${s.spellTier[i]}`;
-      const td2 = document.createElement("td");
+    const tierPairs: [string, string][] = s.spellTier.map((t: string, i: number) => {
       const p = s.spawnProbability?.[i];
-      td2.textContent = p != null ? String(p) : "-";
-      tr.appendChild(td1);
-      tr.appendChild(td2);
-      tbl.appendChild(tr);
-    }
-    root.appendChild(tbl);
+      return [`T${t}`, p != null ? String(p) : "-"];
+    });
+    const g = group(i18next.t("extended.tiers", "Tier spawn rate"), tierPairs.length);
+    appendKVRows(g, tierPairs);
+    root.appendChild(g);
   }
 
   return root.childElementCount > 0 ? root : null;
@@ -830,8 +837,10 @@ function renderMaterial(id: string): HTMLElement | null {
   const root = document.createElement("div");
   root.className = "extended-info-material";
 
-  const append = (el: HTMLElement | null) => {
-    if (el) root.appendChild(el);
+  // ── Collect all top-level property rows, then wrap in a group ──
+  const propRows: HTMLElement[] = [];
+  const pushRow = (el: HTMLElement | null) => {
+    if (el) propRows.push(el);
   };
 
   // Type — colored span using bartender's material-type-* class
@@ -839,32 +848,31 @@ function renderMaterial(id: string): HTMLElement | null {
   const typeSpan = document.createElement("span");
   typeSpan.className = `extended-info-value material-type-${slug}`;
   typeSpan.textContent = materialTypeLabel(slug);
-  append(rowWithNode("Type", typeSpan));
+  pushRow(rowWithNode("Type", typeSpan));
 
-  // Density is meaningful for liquid/solid/powder/gas (relative to others).
-  if (m.density != null) append(row("Density", String(m.density)));
+  if (m.density != null) pushRow(row("Density", String(m.density)));
 
   // Solid / powder mining stats
   if (slug === "solid" || slug === "powder") {
-    if (m.hardness != null) append(row("Hardness", String(m.hardness)));
-    if (m.durability != null && m.durability !== 0) append(row("Durability", String(m.durability)));
-    if (m.crackability != null && m.crackability !== 0) append(row("Crackability", String(m.crackability)));
+    if (m.hardness != null) pushRow(row("Hardness", String(m.hardness)));
+    if (m.durability != null && m.durability !== 0) pushRow(row("Durability", String(m.durability)));
+    if (m.crackability != null && m.crackability !== 0) pushRow(row("Crackability", String(m.crackability)));
   }
 
   // Liquid-specific
   if (slug === "liquid") {
-    if (m.liquid_viscosity != null) append(row("Viscosity", String(m.liquid_viscosity)));
-    if (m.liquid_gravity != null) append(row("Liquid gravity", String(m.liquid_gravity)));
+    if (m.liquid_viscosity != null) pushRow(row("Viscosity", String(m.liquid_viscosity)));
+    if (m.liquid_gravity != null) pushRow(row("Liquid gravity", String(m.liquid_gravity)));
   }
 
-  if (m.electrical_conductivity) append(row("Conducts electricity", "yes"));
-  if (m.slippery) append(row("Slippery", "yes"));
-  if (m.burnable) append(row("Burnable", "yes"));
-  if (m.on_fire) append(row("Always burning", "yes"));
+  if (m.electrical_conductivity) pushRow(row("Conducts electricity", "yes"));
+  if (m.slippery) pushRow(row("Slippery", "yes"));
+  if (m.burnable) pushRow(row("Burnable", "yes"));
+  if (m.on_fire) pushRow(row("Always burning", "yes"));
   if (m.autoignition_temperature != null && m.autoignition_temperature !== 100) {
-    append(row("Autoignition", String(m.autoignition_temperature)));
+    pushRow(row("Autoignition", String(m.autoignition_temperature)));
   }
-  if (m.cold_freezes_to_material_name) append(row("Freezes to", m.cold_freezes_to_material_name));
+  if (m.cold_freezes_to_material_name) pushRow(row("Freezes to", m.cold_freezes_to_material_name));
 
   // Danger flags
   const dangers: string[] = [];
@@ -872,7 +880,14 @@ function renderMaterial(id: string): HTMLElement | null {
   if (m.danger_radioactive) dangers.push("radioactive");
   if (m.danger_poison) dangers.push("poison");
   if (m.danger_water) dangers.push("water");
-  if (dangers.length > 0) append(row("Dangers", dangers.join(", ")));
+  if (dangers.length > 0) pushRow(row("Dangers", dangers.join(", ")));
+
+  // Wrap collected rows in a group
+  if (propRows.length > 0) {
+    const g = group(null, propRows.length);
+    for (const r of propRows) g.appendChild(r);
+    root.appendChild(g);
+  }
 
   // Stain effects (status effects applied when stained)
   if (Array.isArray(m.stain_effects) && m.stain_effects.length > 0) {
@@ -884,8 +899,9 @@ function renderMaterial(id: string): HTMLElement | null {
       if (r) items.push(r);
     }
     if (items.length) {
-      root.appendChild(subhead(i18next.t("extended.stainEffects", "Stain effects")));
-      for (const r of items) root.appendChild(r);
+      const g = group(i18next.t("extended.stainEffects", "Stain effects"), items.length);
+      for (const r of items) g.appendChild(r);
+      root.appendChild(g);
     }
   }
 
@@ -899,8 +915,9 @@ function renderMaterial(id: string): HTMLElement | null {
       if (r) items.push(r);
     }
     if (items.length) {
-      root.appendChild(subhead(i18next.t("extended.ingestionEffects", "Ingestion effects")));
-      for (const r of items) root.appendChild(r);
+      const g = group(i18next.t("extended.ingestionEffects", "Ingestion effects"), items.length);
+      for (const r of items) g.appendChild(r);
+      root.appendChild(g);
     }
   }
 
@@ -921,7 +938,9 @@ function renderMaterial(id: string): HTMLElement | null {
         tagsNode.appendChild(document.createTextNode(", "));
       }
     });
-    append(rowWithNode("Tags", tagsNode));
+    const tagGroup = group(null, 1);
+    tagGroup.appendChild(rowWithNode("Tags", tagsNode));
+    root.appendChild(tagGroup);
   }
 
   // Reaction links — link out only.
@@ -976,31 +995,21 @@ function externalLink(href: string, label: string): HTMLElement {
 }
 
 /**
- * Render a "Blood: <link>" or "Corpse: <link>" fragment for the creature
- * material row. When we have the bartender material id, wrap it in a link
- * to bartender's reactions page (as reagent — the most useful default since
- * blood/corpse are inputs to alchemy). Without the id we fall back to plain
- * text using the wiki name.
+ * Render a material value node (link or plain text) for the creature card.
+ * Used for Blood / Corpse rows. When we have the bartender material id we
+ * link to bartender's reactions page; otherwise plain text.
  */
 function creatureMaterialNode(
-  kind: string,
   displayName: string,
   materialId: string | null | undefined,
 ): HTMLElement {
-  const wrap = document.createElement("span");
-  wrap.className = "extended-info-mat-entry";
-  const k = document.createElement("span");
-  k.className = "extended-info-mat-kind";
-  k.textContent = `${kind}: `;
-  wrap.appendChild(k);
   if (materialId) {
-    wrap.appendChild(externalLink(bartenderReagentLink(materialId), displayName));
-  } else {
-    const t = document.createElement("span");
-    t.textContent = displayName;
-    wrap.appendChild(t);
+    return externalLink(bartenderReagentLink(materialId), displayName);
   }
-  return wrap;
+  const t = document.createElement("span");
+  t.className = "extended-info-value";
+  t.textContent = displayName;
+  return t;
 }
 
 // ─── Wiki text utilities ─────────────────────────────────────────────────────

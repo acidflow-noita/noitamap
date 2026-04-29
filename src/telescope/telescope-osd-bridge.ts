@@ -2170,9 +2170,9 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     border: 0.15em solid #3a3a5c;
     border-radius: 0.5em;
     padding: 0.75em 1em;
-    font-size: 13px;
-    min-width: 10em;
-    max-width: 24em;
+    font-size: 14px;
+    min-width: 14em;
+    max-width: min(50em, 92vw);
     pointer-events: auto;
     box-shadow: 0 0.4em 1.4em rgba(0,0,0,0.7);
     font-family: monospace;
@@ -2263,8 +2263,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       const rect = tooltipEl.getBoundingClientRect();
       if (tx + rect.width > vw - pad) tx = screenX - rect.width - pad;
       if (ty + rect.height > vh - pad) ty = screenY - rect.height - pad;
-      if (tx < pad) tx = pad;
-      if (ty < pad) ty = pad;
+      tx = Math.max(pad, Math.min(tx, vw - rect.width - pad));
+      ty = Math.max(pad, Math.min(ty, vh - rect.height - pad));
       tooltipEl.style.left = `${tx}px`;
       tooltipEl.style.top = `${ty}px`;
     });
@@ -2279,7 +2279,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     header.style.cssText = "display:flex;align-items:center;gap:0.6em;margin-bottom:0.5em";
     const spriteImg = document.createElement("img");
     spriteImg.style.cssText =
-      "width:2em;height:2em;image-rendering:pixelated;object-fit:contain;transform:rotate(90deg)";
+      "width:2.4em;height:2.4em;image-rendering:pixelated;object-fit:contain;transform:rotate(90deg)";
     getPOISpriteFirstFrame({ type: "wand", sprite: poi.sprite }).then((url) => {
       if (url) spriteImg.src = url;
     });
@@ -2344,7 +2344,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       spellsRow.style.cssText = "display:flex;flex-wrap:wrap;gap:0.2em;margin-top:0.3em";
       for (const slot of displaySlots) {
         const container = document.createElement("div");
-        container.style.cssText = `position:relative;display:inline-block;width:1.7em;height:1.7em;background:#111;border-radius:0.2em;border:0.065em solid ${slot.isAC ? "#c8a2ff" : "#333"}`;
+        container.style.cssText = `position:relative;display:inline-block;width:2.0em;height:2.0em;background:#111;border-radius:0.2em;border:0.065em solid ${slot.isAC ? "#c8a2ff" : "#333"}`;
         if (slot.id) {
           container.title = gameTranslator.translateSpell(getSpellName(slot.id));
         }
@@ -2352,12 +2352,12 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           const badge = document.createElement("div");
           badge.textContent = "AC";
           badge.style.cssText =
-            "position:absolute;top:-5px;left:-5px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:bold;background:white;color:black;border-radius:50%;border:1px solid #333;z-index:2";
+            "position:absolute;top:-5px;left:-5px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:bold;background:white;color:black;border-radius:50%;border:1px solid #333;z-index:2";
           container.appendChild(badge);
         }
         if (slot.id) {
           const img = document.createElement("img");
-          img.style.cssText = "width:20px;height:20px;image-rendering:pixelated;display:block;margin:auto";
+          img.style.cssText = "width:24px;height:24px;image-rendering:pixelated;display:block;margin:auto";
           getPOISpriteFirstFrame({ type: "spell", item: String(slot.id) }).then((url) => {
             if (url) {
               img.src = url;
@@ -2385,7 +2385,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const header = document.createElement("div");
     header.style.cssText = "display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em";
     const spriteImg = document.createElement("img");
-    spriteImg.style.cssText = "width:24px;height:24px;image-rendering:pixelated;object-fit:contain";
+    spriteImg.style.cssText = "width:28px;height:28px;image-rendering:pixelated;object-fit:contain";
     getPOISpriteFirstFrame(poi as any).then((url) => {
       if (url) spriteImg.src = url;
     });
@@ -2433,7 +2433,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const header = document.createElement("div");
     header.style.cssText = "display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em";
     const spriteImg = document.createElement("img");
-    spriteImg.style.cssText = "width:24px;height:24px;image-rendering:pixelated;display:block";
+    spriteImg.style.cssText = "width:28px;height:28px;image-rendering:pixelated;display:block";
     getPOISpriteFirstFrame({ type: "spell", item: poi.item }).then((url) => {
       if (url) spriteImg.src = url;
     });
@@ -2451,7 +2451,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const header = document.createElement("div");
     header.style.cssText = "display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em";
     const spriteImg = document.createElement("img");
-    spriteImg.style.cssText = "width:32px;height:32px;image-rendering:pixelated;object-fit:contain";
+    spriteImg.style.cssText = "width:38px;height:38px;image-rendering:pixelated;object-fit:contain";
     getPOISpriteFirstFrame(poi as any).then((url) => {
       if (url) spriteImg.src = url;
     });
@@ -2643,7 +2643,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
   document.body.appendChild(tooltipEl);
 
-  // Position popup near click, clamped to viewport
+  // Position popup near click, clamped to viewport.
   const pad = 12;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -2652,10 +2652,16 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   requestAnimationFrame(() => {
     if (!tooltipEl) return;
     const rect = tooltipEl.getBoundingClientRect();
+    // Horizontal: try right of cursor, fall back to left, then clamp
     if (tx + rect.width > vw - pad) tx = screenX - rect.width - pad;
-    if (ty + rect.height > vh - pad) ty = screenY - rect.height - pad;
     if (tx < pad) tx = pad;
+    // If still wider than viewport, pin to left edge
+    if (rect.width > vw - 2 * pad) tx = pad;
+
+    // Vertical: try below cursor, fall back to above, then clamp to top
+    if (ty + rect.height > vh - pad) ty = screenY - rect.height - pad;
     if (ty < pad) ty = pad;
+
     tooltipEl.style.left = `${tx}px`;
     tooltipEl.style.top = `${ty}px`;
   });
@@ -2789,7 +2795,7 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
 
 export function openTooltipForPOI(poiId: string, viewer: any): void {
   if (!globalMarkerData || !poiId || poiId === "undefined" || poiId === "null") return;
-  
+
   // Find the exact marker item based on its reference or fallback ID
   const item = globalMarkerData.items.find(i => {
     const primaryId = (i.poi as any).id;
@@ -2802,22 +2808,27 @@ export function openTooltipForPOI(poiId: string, viewer: any): void {
 
   // Force pan to it first
   viewer.viewport.panTo(pt, true);
-  
-  // Wait a tick for viewport bounds to settle before displaying tooltip
+
+  // Wait for viewport to settle before displaying tooltip.
+  // Use a longer delay than click-based tooltips because panTo needs time
+  // to finish its animation and update the pixel mapping.
   setTimeout(() => {
      const pixel = viewer.viewport.pixelFromPoint(pt);
      const canvasRect = (viewer.canvas as HTMLElement).getBoundingClientRect();
-     // 'pixel' denotes physical monitor pixel coordinates relative to the canvas, NOT game world coordinates.
-     // If the viewport jump hasn't fully rendered, pixel positioning might end up outside the physical window.
-     // We clamp it safely using the actual DOM canvas dimensions.
      const isOffScreen = pixel.x < -100 || pixel.x > canvasRect.width + 100 ||
                          pixel.y < -100 || pixel.y > canvasRect.height + 100;
-     
-     const tx = isOffScreen ? (canvasRect.width / 2) : pixel.x;
-     const ty = isOffScreen ? (canvasRect.height / 2) : pixel.y;
-     
-     showMarkerTooltip(item, canvasRect.left + tx, canvasRect.top + ty);
-  }, 100);
+
+     // Position the tooltip near the marker, but bias toward the center of the
+     // viewport so the card has room to render fully on screen.
+     const markerX = isOffScreen ? (canvasRect.width / 2) : pixel.x;
+     const markerY = isOffScreen ? (canvasRect.height / 2) : pixel.y;
+
+     // Place the tooltip slightly above center so it doesn't overflow the bottom
+     const screenX = canvasRect.left + Math.min(markerX, canvasRect.width * 0.6);
+     const screenY = canvasRect.top + Math.min(markerY, canvasRect.height * 0.35);
+
+     showMarkerTooltip(item, screenX, screenY);
+  }, 250);
 }
 
 // ─── Boss Sprite Overlays ──────────────────────────────────────────────────
@@ -2934,7 +2945,7 @@ function showOrbTooltip(orb: { name?: string; text?: string; x: number; y: numbe
     border: 0.15em solid #3a3a5c;
     border-radius: 0.6em;
     padding: 0.75em 1em;
-    font-size: 13px;
+    font-size: 14px;
     max-width: 26em;
     pointer-events: auto;
     box-shadow: 0 0.45em 1.5em rgba(0,0,0,0.7);
@@ -2959,7 +2970,7 @@ function showOrbTooltip(orb: { name?: string; text?: string; x: number; y: numbe
   header.style.cssText = "display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em";
   const spriteImg = document.createElement("img");
   spriteImg.src = iconUrl;
-  spriteImg.style.cssText = "width:24px;height:30px;image-rendering:pixelated;object-fit:contain";
+  spriteImg.style.cssText = "width:28px;height:36px;image-rendering:pixelated;object-fit:contain";
   header.appendChild(spriteImg);
   const title = document.createElement("div");
   title.style.cssText = "font-weight:bold;color:#ffd700;font-size:1.1em";

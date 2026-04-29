@@ -82,8 +82,8 @@ div:has(> div > .osOverlayPOI) {
   background-color: #1a1f2a;
   left: 50%;
   bottom: 100%;
-  min-width: 14em;
-  max-width: 90vw;
+  min-width: 22em;
+  max-width: min(50em, 92vw);
   transition: 0.1s ease-out;
   box-shadow: 0 0.25em 1em rgba(0, 0, 0, 0.6);
 }
@@ -99,6 +99,11 @@ div:has(> div > .osOverlayPOI) {
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
+}
+
+/* Hide the arrow when the popup has been repositioned to fixed */
+.osOverlayPopup.popup-repositioned::before {
+  display: none;
 }
 
 div:has(> .osOverlayPOI):hover .osOverlayPopup,
@@ -144,6 +149,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 .material-type-fire   { color: oklch(80.8% 0.114 19.571); }
 .material-type-acid   { color: oklch(72.3% 0.219 149.579); }
 
+/* ── Section wrapper ── */
 .extended-info-section {
   margin-top: 0.85em;
   padding-top: 0.85em;
@@ -161,18 +167,52 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
   margin-bottom: 0.6em;
 }
 
-/* ── Key-value rows: two-column grid ── */
+/*
+ * ── Card layout ──
+ *
+ * Card roots are plain block containers.  Each logical section (subhead +
+ * its rows) is wrapped in an .extended-info-group.  Groups with many rows
+ * (>= 5) get the --cols modifier which uses CSS multi-column layout so
+ * rows flow into two balanced columns.  Smaller groups stay single-column.
+ */
+.extended-info-creature,
+.extended-info-spell,
+.extended-info-material {
+  display: block;
+}
+
+/* ── Group wrappers ── */
+.extended-info-group {
+  break-inside: avoid;
+}
+
+/* Vertical rhythm between sibling groups */
+.extended-info-group + .extended-info-group {
+  margin-top: 0.55em;
+  padding-top: 0.45em;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Large groups: flow rows into 2 balanced columns */
+.extended-info-group--cols {
+  columns: 2 10em;
+  column-gap: 1.2em;
+}
+
+/* Each row is a self-contained label:value grid. */
 .extended-info-row {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 0 0.8em;
-  padding: 0.1em 0;
-  line-height: 1.5;
+  gap: 0 0.6em;
+  align-items: baseline;
+  break-inside: avoid;
+  padding: 0.08em 0;
 }
 
 .extended-info-label {
-  color: #999;
+  color: #888;
   white-space: nowrap;
+  font-size: 0.93em;
 }
 
 .extended-info-value {
@@ -182,45 +222,32 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 
 /* ── Subheadings ── */
 .extended-info-subhead {
-  margin-top: 0.6em;
   margin-bottom: 0.15em;
-  font-size: 0.8em;
-  color: #999;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-/* ── Data tables (damage mults, tier spawn rates) ── */
-.extended-info-table {
-  width: 100%;
-  border-spacing: 0;
-  font-size: 0.92em;
-}
-
-.extended-info-table td {
-  padding: 0.05em 0;
-}
-
-.extended-info-table td:first-child {
+  font-size: 0.78em;
+  font-weight: 600;
   color: #aaa;
-  padding-right: 0.8em;
-  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
-
-.extended-info-table td:last-child {
-  color: #fff;
+/* Inside a --cols group, the subhead spans all columns */
+.extended-info-group--cols > .extended-info-subhead {
+  column-span: all;
 }
 
 /* ── Description (spell) ── */
 .extended-info-desc {
+  break-inside: avoid;
   font-style: italic;
   color: #bbb;
-  margin-bottom: 0.4em;
+  margin-bottom: 0.3em;
 }
 
 /* ── Reaction links ── */
 .extended-info-reactions {
-  margin-top: 0.4em;
+  break-inside: avoid;
+  margin-top: 0.55em;
+  padding-top: 0.45em;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
   align-items: flex-start;

@@ -362,6 +362,79 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
 }
 
 /**
+ * Reposition a popup so it stays fully visible within the viewport.
+ * Called on mouseenter after the popup has layout.
+ *
+ * Default CSS position: above the icon, centered (bottom: 100%, left: 50%,
+ * transform: translate(-50%, -0.35em)).  We override with inline styles only
+ * when the popup would be clipped, and clear them on mouseleave.
+ */
+function repositionPopup(popup: HTMLElement): void {
+  const rect = popup.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const pad = 8; // minimum distance from viewport edge
+
+  let needsOverride = false;
+  // Start from the CSS-computed position
+  let top = rect.top;
+  let left = rect.left;
+
+  // Clipped at top → flip to below the icon
+  if (rect.top < pad) {
+    const parent = popup.parentElement;
+    if (parent) {
+      const parentRect = parent.getBoundingClientRect();
+      top = parentRect.bottom + pad;
+      needsOverride = true;
+    }
+  }
+
+  // Clipped at bottom (rare, but possible if flipped or popup is huge)
+  if (top + rect.height > vh - pad) {
+    top = vh - pad - rect.height;
+    needsOverride = true;
+  }
+
+  // If popup is taller than viewport, pin to top
+  if (top < pad) {
+    top = pad;
+    needsOverride = true;
+  }
+
+  // Clipped at right
+  if (rect.right > vw - pad) {
+    left = vw - pad - rect.width;
+    needsOverride = true;
+  }
+
+  // Clipped at left
+  if (left < pad) {
+    left = pad;
+    needsOverride = true;
+  }
+
+  if (needsOverride) {
+    popup.classList.add('popup-repositioned');
+    popup.style.position = 'fixed';
+    popup.style.left = `${left}px`;
+    popup.style.top = `${top}px`;
+    popup.style.bottom = 'auto';
+    popup.style.transform = 'none';
+  }
+}
+
+/** Clear any inline repositioning overrides so CSS defaults take over again. */
+function resetPopupPosition(popup: HTMLElement): void {
+  popup.classList.remove('popup-repositioned');
+  popup.style.position = '';
+  popup.style.left = '';
+  popup.style.top = '';
+  popup.style.bottom = '';
+  popup.style.transform = '';
+}
+
+/**
  * Return the DOM element for the popup on a POI
  */
 function createOverlayPopup({ name, aliases, text, wiki, fileName, x, y }: PointOfInterest, overlayType?: OverlayKey) {
@@ -571,16 +644,25 @@ function createPOI(poi: PointOfInterest, overlayType?: OverlayKey): OSDOverlay {
 
   const popup = createOverlayPopup(poi, overlayType);
   el.appendChild(popup);
-  
+
+  // ── Viewport-aware popup repositioning ──
+  // The popup defaults to above the icon via CSS (bottom: 100%, left: 50%).
+  // On hover we measure its rect and reposition if it would be clipped.
   el.addEventListener('mouseenter', () => {
     const url = new URL(window.location.href);
     url.searchParams.set("poi", `st-${Math.round(x)}_${Math.round(y)}`);
     window.history.replaceState({}, "", url.toString());
+
+    // Wait one frame so the popup is visible and has layout
+    requestAnimationFrame(() => {
+      repositionPopup(popup);
+    });
   });
   
-  // Clean up URL parameter cleanly when popup closes (mouse leaves)
+  // Clean up URL parameter and reset popup position when popup closes
   el.addEventListener('mouseleave', () => {
     (window as any).clearTargetPoiId?.() || clearTargetPoiId();
+    resetPopupPosition(popup);
   });
 
   return {
