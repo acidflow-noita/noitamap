@@ -539,17 +539,14 @@ function renderProPlaceholder(kind: ExtendedKind): HTMLElement {
   const fields = document.createElement("div");
   fields.className = "extended-info-placeholder-fields";
   for (const label of PREVIEW_FIELDS[kind]) {
-    const r = document.createElement("div");
-    r.className = "extended-info-placeholder-row";
     const l = document.createElement("span");
     l.className = "extended-info-label";
     l.textContent = `${label}:`;
     const skel = document.createElement("span");
     skel.className = "extended-info-skeleton";
     if (SKELETON_WIDTHS[label]) skel.style.width = SKELETON_WIDTHS[label];
-    r.appendChild(l);
-    r.appendChild(skel);
-    fields.appendChild(r);
+    fields.appendChild(l);
+    fields.appendChild(skel);
   }
   placeholder.appendChild(fields);
 
