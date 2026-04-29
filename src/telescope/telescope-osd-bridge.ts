@@ -2142,13 +2142,13 @@ function wrapWithWikiLink(el: HTMLElement, poi: any): HTMLElement {
   a.href = url;
   a.target = "_blank";
   a.rel = "noopener";
-  a.style.cssText = "text-decoration:underline;text-decoration-color:rgba(255,255,255,0.3);color:inherit;display:inline-flex;align-items:center;gap:4px";
+  a.style.cssText = "text-decoration:underline;text-decoration-color:rgba(255,255,255,0.3);color:inherit;display:inline-flex;align-items:center;gap:0.3em";
   a.onmouseenter = () => { a.style.textDecorationColor = "rgba(255,255,255,0.7)"; };
   a.onmouseleave = () => { a.style.textDecorationColor = "rgba(255,255,255,0.3)"; };
   a.appendChild(el);
   const icon = document.createElement("i");
   icon.className = "bi bi-box-arrow-up-right";
-  icon.style.cssText = "font-size:10px;opacity:0.5;flex-shrink:0";
+  icon.style.cssText = "font-size:0.75em;opacity:0.5;flex-shrink:0";
   a.appendChild(icon);
   return a;
 }
@@ -2165,16 +2165,16 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   tooltipEl.style.cssText = `
     position: fixed;
     z-index: 10000;
-    background: #1a1a2e;
+    background: #1a1f2a;
     color: #e0e0e0;
-    border: 2px solid #3a3a5c;
-    border-radius: 8px;
-    padding: 10px 14px;
+    border: 0.15em solid #3a3a5c;
+    border-radius: 0.5em;
+    padding: 0.75em 1em;
     font-size: 13px;
-    min-width: 150px;
-    max-width: 340px;
+    min-width: 10em;
+    max-width: 24em;
     pointer-events: auto;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.7);
+    box-shadow: 0 0.4em 1.4em rgba(0,0,0,0.7);
     font-family: monospace;
     line-height: 1.5;
   `;
@@ -2182,16 +2182,16 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   // Top controls container — in normal flow, pushed to right
   const topBar = document.createElement("div");
   topBar.style.cssText = `
-    display: flex; gap: 6px; align-items: center; justify-content: flex-end;
-    margin: -2px -6px 4px 0;
+    display: flex; gap: 0.4em; align-items: center; justify-content: flex-end;
+    margin: -0.15em -0.4em 0.3em 0;
     flex-shrink: 0;
   `;
 
   const shareBtn = document.createElement("button");
   shareBtn.style.cssText = `
-    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); 
-    border-radius: 4px; color: #ccc; cursor: pointer; padding: 2px 8px; 
-    display: flex; align-items: center; justify-content: center; font-size: 12px;
+    background: rgba(255,255,255,0.1); border: 0.065em solid rgba(255,255,255,0.2);
+    border-radius: 0.25em; color: #ccc; cursor: pointer; padding: 0.15em 0.5em;
+    display: flex; align-items: center; justify-content: center; font-size: 0.85em;
     transition: all 0.2s;
   `;
   shareBtn.innerHTML = '<i class="bi bi-share"></i>';
@@ -2201,8 +2201,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   
   const closeBtn = document.createElement("button");
   closeBtn.style.cssText = `
-    background: transparent; border: none; padding: 2px 6px;
-    cursor: pointer; color: #888; font-size: 18px; line-height: 1;
+    background: transparent; border: none; padding: 0.15em 0.4em;
+    cursor: pointer; color: #888; font-size: 1.25em; line-height: 1;
     display: flex; align-items: center; justify-content: center;
     transition: color 0.2s;
   `;
@@ -2242,13 +2242,13 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const colorMap = { wand: "#c8a2ff", spell: "#66ccff", something: "#ffd700" };
 
     const title = document.createElement("div");
-    title.style.cssText = `font-weight:bold;color:${colorMap[category]};font-size:14px;margin-bottom:4px`;
+    title.style.cssText = `font-weight:bold;color:${colorMap[category]};font-size:1.1em;margin-bottom:0.3em`;
     title.textContent = label;
     tooltipEl.appendChild(title);
 
     // Footer with position only
     const footer = document.createElement("div");
-    footer.style.cssText = "margin-top:6px;color:#666;font-size:11px;border-top:1px solid #333;padding-top:4px";
+    footer.style.cssText = "margin-top:0.5em;color:#666;font-size:0.85em;border-top:0.065em solid #333;padding-top:0.3em";
     footer.textContent = `PW ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
     tooltipEl.appendChild(footer);
 
@@ -2276,16 +2276,16 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   if (poi.type === "wand") {
     // Header with sprite
     const header = document.createElement("div");
-    header.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:6px";
+    header.style.cssText = "display:flex;align-items:center;gap:0.6em;margin-bottom:0.5em";
     const spriteImg = document.createElement("img");
     spriteImg.style.cssText =
-      "width:32px;height:32px;image-rendering:pixelated;object-fit:contain;transform:rotate(90deg)";
+      "width:2em;height:2em;image-rendering:pixelated;object-fit:contain;transform:rotate(90deg)";
     getPOISpriteFirstFrame({ type: "wand", sprite: poi.sprite }).then((url) => {
       if (url) spriteImg.src = url;
     });
     header.appendChild(spriteImg);
     const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:14px";
+    title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:1.1em";
     title.textContent = poi.name || gameTranslator.translateItem("Wand");
     header.appendChild(wrapWithWikiLink(title, poi));
     tooltipEl.appendChild(header);
@@ -2295,7 +2295,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const s = poi.stats || poi;
     const statsDiv = document.createElement("div");
     statsDiv.style.cssText =
-      "display:grid;grid-template-columns:auto auto;gap:1px 12px;font-size:12px;margin-bottom:6px;color:#bbb";
+      "display:grid;grid-template-columns:auto auto;gap:0.1em 0.85em;font-size:0.85em;margin-bottom:0.5em;color:#bbb";
     const addStat = (label: string, value: string) => {
       const l = document.createElement("span");
       l.style.color = "#888";
@@ -2341,10 +2341,10 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     }
     if (displaySlots.length > 0) {
       const spellsRow = document.createElement("div");
-      spellsRow.style.cssText = "display:flex;flex-wrap:wrap;gap:3px;margin-top:4px";
+      spellsRow.style.cssText = "display:flex;flex-wrap:wrap;gap:0.2em;margin-top:0.3em";
       for (const slot of displaySlots) {
         const container = document.createElement("div");
-        container.style.cssText = `position:relative;display:inline-block;width:22px;height:22px;background:#111;border-radius:3px;border:1px solid ${slot.isAC ? "#c8a2ff" : "#333"}`;
+        container.style.cssText = `position:relative;display:inline-block;width:1.7em;height:1.7em;background:#111;border-radius:0.2em;border:0.065em solid ${slot.isAC ? "#c8a2ff" : "#333"}`;
         if (slot.id) {
           container.title = gameTranslator.translateSpell(getSpellName(slot.id));
         }
@@ -2383,7 +2383,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   ) {
     // Header with sprite
     const header = document.createElement("div");
-    header.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px";
+    header.style.cssText = "display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em";
     const spriteImg = document.createElement("img");
     spriteImg.style.cssText = "width:24px;height:24px;image-rendering:pixelated;object-fit:contain";
     getPOISpriteFirstFrame(poi as any).then((url) => {
@@ -2393,7 +2393,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
     const label = poi.item ?? poi.type;
     const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:14px";
+    title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:1.1em";
     // Show HP info for heart items, spell names for spells
     if (poi.item === "spell" && (poi as any).spell) {
       title.textContent = gameTranslator.translateSpell(getSpellName(String((poi as any).spell)));
@@ -2406,7 +2406,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
     if (poi.material) {
       const mat = document.createElement("div");
-      mat.style.cssText = "color:#aaa;font-size:12px";
+      mat.style.cssText = "color:#aaa;font-size:0.85em";
       const materialLabel = gameTranslator.translateItem("inventory_actiontype_material");
       mat.textContent = `${materialLabel}: ${gameTranslator.translateMaterial(poi.material)}`;
       tooltipEl.appendChild(mat);
@@ -2414,13 +2414,13 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     }
     if (poi.amount) {
       const amt = document.createElement("div");
-      amt.style.cssText = "color:#aaa;font-size:12px";
+      amt.style.cssText = "color:#aaa;font-size:0.85em";
       amt.textContent = `Amount: ${poi.amount}`;
       tooltipEl.appendChild(amt);
     }
     if (poi.contents && poi.contents.length) {
       const contentsDiv = document.createElement("div");
-      contentsDiv.style.cssText = "margin-top:2px;color:#aaa;font-size:12px";
+      contentsDiv.style.cssText = "margin-top:0.15em;color:#aaa;font-size:0.85em";
       contentsDiv.textContent = `Contains: ${poi.contents
         .map((c: any) => {
           const cName = typeof c === "string" ? c : (c.name ?? c.item ?? String(c));
@@ -2431,7 +2431,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     }
   } else if (poi.type === "spell") {
     const header = document.createElement("div");
-    header.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px";
+    header.style.cssText = "display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em";
     const spriteImg = document.createElement("img");
     spriteImg.style.cssText = "width:24px;height:24px;image-rendering:pixelated;display:block";
     getPOISpriteFirstFrame({ type: "spell", item: poi.item }).then((url) => {
@@ -2439,7 +2439,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     });
     header.appendChild(spriteImg);
     const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:14px";
+    title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:1.1em";
     title.textContent = gameTranslator.translateSpell(getSpellName(poi.item || "")) || "Spell";
     header.appendChild(wrapWithWikiLink(title, poi));
     tooltipEl.appendChild(header);
@@ -2449,7 +2449,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   } else if ((poi.type === "entity" && (poi as any).entity) || ["alchemist_boss", "boss_wizard", "boss_meat", "islandspirit", "boss_sky", "boss_robot", "boss_centipede", "triangle_boss", "pyramid_boss", "dragon", "boss_ghost", "friend"].includes(poi.type || "")) {
     const isSpecialEntity = poi.type !== "entity";
     const header = document.createElement("div");
-    header.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px";
+    header.style.cssText = "display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em";
     const spriteImg = document.createElement("img");
     spriteImg.style.cssText = "width:32px;height:32px;image-rendering:pixelated;object-fit:contain";
     getPOISpriteFirstFrame(poi as any).then((url) => {
@@ -2472,7 +2472,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const translationKey = `animal_${entityId}`;
     const translated = gameTranslator.translateItem(translationKey);
     const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:14px";
+    title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:1.1em";
     // Show creature name
     const creature = CREATURE_DATA[entityId];
     const baseName = creature?.name ? creature.name : ((translated !== translationKey) ? translated : rawName.replace(/_/g, " "));
@@ -2480,7 +2480,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     titleCol.appendChild(wrapWithWikiLink(title, poi));
     if (creature?.alias) {
       const aliasDiv = document.createElement("div");
-      aliasDiv.style.cssText = "color:#999;font-size:12px;font-style:italic";
+      aliasDiv.style.cssText = "color:#999;font-size:0.85em;font-style:italic";
       aliasDiv.textContent = creature.alias;
       titleCol.appendChild(aliasDiv);
     }
@@ -2491,7 +2491,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // Horde marker (free) — full creature stats are in the pro extended section.
     if ((poi as any).isHorde && creature?.category) {
       const catDiv = document.createElement("div");
-      catDiv.style.cssText = "color:#888;margin-top:2px;font-size:12px";
+      catDiv.style.cssText = "color:#888;margin-top:0.15em;font-size:0.85em";
       catDiv.textContent = `Horde: ${creature.category}`;
       tooltipEl.appendChild(catDiv);
     }
@@ -2500,19 +2500,19 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
     if (poi.biome) {
       const biomeDiv = document.createElement("div");
-      biomeDiv.style.cssText = "color:#888;font-size:13px;margin-top:3px";
+      biomeDiv.style.cssText = "color:#888;font-size:1em;margin-top:0.2em";
       biomeDiv.textContent = `Biome: ${gameTranslator.translateItem(poi.biome)}`;
       tooltipEl.appendChild(biomeDiv);
     }
   } else {
     const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;font-size:16px;margin-bottom:4px";
+    title.style.cssText = "font-weight:bold;font-size:1.25em;margin-bottom:0.3em";
     const label = poi.type || "Unknown";
     title.textContent = gameTranslator.translateItem(label).replace(/_/g, " ");
     tooltipEl.appendChild(wrapWithWikiLink(title, poi));
     if (poi.item) {
       const itemDiv = document.createElement("div");
-      itemDiv.style.cssText = "color:#aaa;font-size:14px";
+      itemDiv.style.cssText = "color:#aaa;font-size:1.1em";
       itemDiv.textContent = gameTranslator.translateItem(poi.item).replace(/_/g, " ");
       tooltipEl.appendChild(itemDiv);
     }
@@ -2521,14 +2521,14 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   // Container contents — show items inside chests/shops/bosses
   if (CONTAINER_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {
     const contDiv = document.createElement("div");
-    contDiv.style.cssText = "margin-top:6px;border-top:1px solid #333;padding-top:4px";
+    contDiv.style.cssText = "margin-top:0.5em;border-top:0.065em solid #333;padding-top:0.3em";
     const contLabel = document.createElement("div");
-    contLabel.style.cssText = "font-size:13px;color:#888;margin-bottom:3px";
+    contLabel.style.cssText = "font-size:1em;color:#888;margin-bottom:0.2em";
     const isBossDrop = ["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon", "boss_wizard", "boss_ghost", "boss_sky", "islandspirit", "boss_centipede", "boss_robot", "boss_meat", "friend"].includes(poi.type || "");
     contLabel.textContent = isBossDrop ? "Drops:" : "Contains:";
     contDiv.appendChild(contLabel);
     const contRow = document.createElement("div");
-    contRow.style.cssText = "display:flex;flex-wrap:wrap;gap:3px;align-items:center";
+    contRow.style.cssText = "display:flex;flex-wrap:wrap;gap:0.2em;align-items:center";
     for (const ci of poi.items) {
       if (ci.ignore) continue;
       const ciKey = getSpriteKey(ci, getAtlas() || undefined);
@@ -2542,7 +2542,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       if (ci.type === "wand") {
         const wandBox = document.createElement("div");
         wandBox.style.cssText =
-          "display:flex;align-items:center;gap:2px;background:#111;border-radius:3px;padding:2px 4px;border:1px solid #333";
+          "display:flex;align-items:center;gap:0.15em;background:#111;border-radius:0.2em;padding:0.15em 0.3em;border:0.065em solid #333";
         if (ciKey) {
           const canvas = drawSpriteToCanvas(ciKey, 20, 20);
           if (canvas) {
@@ -2562,7 +2562,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         }
         if (spellIds.length > 4) {
           const more = document.createElement("span");
-          more.style.cssText = "font-size:10px;color:#888";
+          more.style.cssText = "font-size:0.75em;color:#888";
           more.textContent = `+${spellIds.length - 4}`;
           wandBox.appendChild(more);
         }
@@ -2574,13 +2574,13 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       if (ci.item === "gold" || ci.item === "goldnugget") {
         const goldBox = document.createElement("div");
         goldBox.style.cssText =
-          "display:flex;align-items:center;gap:3px;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
+          "display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333";
         if (ciKey) {
           const canvas = drawSpriteToCanvas(ciKey, 20, 20);
           if (canvas) goldBox.appendChild(canvas);
         }
         const label = document.createElement("span");
-        label.style.cssText = "font-size:11px;color:#ffd700";
+        label.style.cssText = "font-size:0.8em;color:#ffd700";
         label.textContent = ci.amount ? `$${ci.amount}` : "Gold";
         goldBox.appendChild(label);
         contRow.appendChild(goldBox);
@@ -2591,13 +2591,13 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       if (ci.item === "heart" || ci.item === "heart_bigger" || ci.item === "full_heal") {
         const heartBox = document.createElement("div");
         heartBox.style.cssText =
-          "display:flex;align-items:center;gap:3px;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
+          "display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333";
         if (ciKey) {
           const canvas = drawSpriteToCanvas(ciKey, 20, 20);
           if (canvas) heartBox.appendChild(canvas);
         }
         const label = document.createElement("span");
-        label.style.cssText = "font-size:11px;color:#ff6b6b";
+        label.style.cssText = "font-size:0.8em;color:#ff6b6b";
         if (ci.item === "heart") label.textContent = "+25 HP";
         else if (ci.item === "heart_bigger") label.textContent = "+50 HP";
         else label.textContent = "Full Heal";
@@ -2615,11 +2615,11 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       if (ciKey) {
         const itemBox = document.createElement("div");
         itemBox.style.cssText =
-          "display:flex;align-items:center;gap:3px;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
+          "display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333";
         const canvas = drawSpriteToCanvas(ciKey, 20, 20);
         if (canvas) itemBox.appendChild(canvas);
         const textSpan = document.createElement("span");
-        textSpan.style.cssText = "font-size:11px;color:#aaa";
+        textSpan.style.cssText = "font-size:0.8em;color:#aaa";
         textSpan.textContent = displayName;
         itemBox.appendChild(textSpan);
         contRow.appendChild(itemBox);
@@ -2627,7 +2627,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       }
       const span = document.createElement("span");
       span.style.cssText =
-        "font-size:11px;color:#aaa;background:#111;border-radius:2px;padding:1px 4px;border:1px solid #333";
+        "font-size:0.8em;color:#aaa;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333";
       span.textContent = displayName;
       contRow.appendChild(span);
     }
@@ -2637,7 +2637,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
   // Footer: position info
   const footer = document.createElement("div");
-  footer.style.cssText = "margin-top:6px;color:#666;font-size:11px;border-top:1px solid #333;padding-top:4px";
+  footer.style.cssText = "margin-top:0.5em;color:#666;font-size:0.85em;border-top:0.065em solid #333;padding-top:0.3em";
   footer.textContent = `PW ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
   tooltipEl.appendChild(footer);
 
@@ -2931,21 +2931,21 @@ function showOrbTooltip(orb: { name?: string; text?: string; x: number; y: numbe
     z-index: 10000;
     background: #1a1a2e;
     color: #e0e0e0;
-    border: 2px solid #3a3a5c;
-    border-radius: 8px;
-    padding: 10px 14px;
+    border: 0.15em solid #3a3a5c;
+    border-radius: 0.6em;
+    padding: 0.75em 1em;
     font-size: 13px;
-    max-width: 340px;
+    max-width: 26em;
     pointer-events: auto;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.7);
+    box-shadow: 0 0.45em 1.5em rgba(0,0,0,0.7);
     font-family: monospace;
     line-height: 1.5;
   `;
 
   const closeBtn = document.createElement("div");
   closeBtn.style.cssText = `
-    position: absolute; top: 4px; right: 8px;
-    cursor: pointer; color: #666; font-size: 16px;
+    position: absolute; top: 0.3em; right: 0.6em;
+    cursor: pointer; color: #666; font-size: 1.25em;
     line-height: 1;
   `;
   closeBtn.textContent = "x";
@@ -2956,26 +2956,26 @@ function showOrbTooltip(orb: { name?: string; text?: string; x: number; y: numbe
   tooltipEl.appendChild(closeBtn);
 
   const header = document.createElement("div");
-  header.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:4px";
+  header.style.cssText = "display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em";
   const spriteImg = document.createElement("img");
   spriteImg.src = iconUrl;
   spriteImg.style.cssText = "width:24px;height:30px;image-rendering:pixelated;object-fit:contain";
   header.appendChild(spriteImg);
   const title = document.createElement("div");
-  title.style.cssText = "font-weight:bold;color:#ffd700;font-size:14px";
+  title.style.cssText = "font-weight:bold;color:#ffd700;font-size:1.1em";
   title.textContent = orb.name || "Orb";
   header.appendChild(title);
   tooltipEl.appendChild(header);
 
   if (orb.text) {
     const desc = document.createElement("div");
-    desc.style.cssText = "color:#aaa;font-size:12px;font-style:italic;margin-top:2px";
+    desc.style.cssText = "color:#aaa;font-size:0.85em;font-style:italic;margin-top:0.15em";
     desc.textContent = orb.text;
     tooltipEl.appendChild(desc);
   }
 
   const footer = document.createElement("div");
-  footer.style.cssText = "margin-top:6px;color:#666;font-size:11px;border-top:1px solid #333;padding-top:4px";
+  footer.style.cssText = "margin-top:0.5em;color:#666;font-size:0.85em;border-top:0.065em solid #333;padding-top:0.3em";
   footer.textContent = `(${Math.round(orb.x)}, ${Math.round(orb.y)})`;
   tooltipEl.appendChild(footer);
 

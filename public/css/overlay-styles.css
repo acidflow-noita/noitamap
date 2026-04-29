@@ -74,17 +74,18 @@ div:has(> div > .osOverlayPOI) {
   position: absolute;
   visibility: hidden;
   opacity: 0;
-  transform: translate(-50%, -5px) scale(0.9);
-  padding: 0.5em;
-  border: 2px solid var(--border-color);
-  border-radius: 0.25em;
-  background-color: #222933;
+  transform: translate(-50%, -0.3em) scale(0.9);
+  font-size: 14px;
+  padding: 0.85em 1.1em;
+  border: 0.125em solid var(--border-color);
+  border-radius: 0.4em;
+  background-color: #1a1f2a;
   left: 50%;
   bottom: 100%;
-  min-width: 50vw;
+  min-width: 14em;
   max-width: 90vw;
   transition: 0.1s ease-out;
-  box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0.25em 1em rgba(0, 0, 0, 0.6);
 }
 
 .osOverlayPopup::before {
@@ -92,9 +93,9 @@ div:has(> div > .osOverlayPOI) {
   position: absolute;
   width: 0;
   height: 0;
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-top: 10px solid var(--border-color);
+  border-left: 0.625em solid transparent;
+  border-right: 0.625em solid transparent;
+  border-top: 0.625em solid var(--border-color);
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
@@ -104,7 +105,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 .osOverlayPopup.force-show {
   visibility: visible;
   opacity: 1;
-  transform: translate(-50%, -5px) scale(1);
+  transform: translate(-50%, -0.35em) scale(1);
 }
 
 .osOverlayPopup h2 {
@@ -144,56 +145,62 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 .material-type-acid   { color: oklch(72.3% 0.219 149.579); }
 
 .extended-info-section {
-  margin-top: 8px;
-  padding-top: 6px;
-  border-top: 1px solid #333;
-  font-size: 12px;
+  margin-top: 0.85em;
+  padding-top: 0.85em;
+  border-top: 0.065em solid #3a3a4a;
+  font-size: 1em;
   color: #ccc;
 }
 
 .extended-info-header {
-  font-size: 11px;
+  font-size: 0.85em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #888;
-  margin-bottom: 4px;
+  letter-spacing: 0.06em;
+  color: #777;
+  margin-bottom: 0.7em;
 }
 
 .extended-info-row {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  line-height: 1.4;
+  gap: 1.5em;
+  line-height: 1.7;
+  padding: 0.2em 0;
 }
 
 .extended-info-label {
-  color: #888;
+  color: #999;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .extended-info-value {
   color: #ddd;
+  text-align: right;
 }
 
 .extended-info-subhead {
-  margin-top: 6px;
-  margin-bottom: 2px;
-  font-size: 11px;
-  color: #888;
+  margin-top: 0.7em;
+  margin-bottom: 0.25em;
+  font-size: 0.85em;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .extended-info-table {
   width: 100%;
   border-spacing: 0;
-  font-size: 12px;
+  font-size: 0.9em;
 }
 
 .extended-info-table td {
-  padding: 1px 0;
+  padding: 0.15em 0;
 }
 
 .extended-info-table td:first-child {
   color: #aaa;
-  padding-right: 12px;
+  padding-right: 1em;
 }
 
 .extended-info-table td:last-child {
@@ -204,15 +211,15 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 .extended-info-desc {
   font-style: italic;
   color: #bbb;
-  margin-bottom: 4px;
+  margin-bottom: 0.5em;
 }
 
 .extended-info-reactions {
-  margin-top: 4px;
+  margin-top: 0.4em;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: 0.2em;
 }
 
 /* Bartender link: matches the in-popup wiki link (text + bi-box-arrow-up-right
@@ -220,9 +227,9 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 .extended-info-link {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 0.3em;
   color: #ffc107 !important;
-  font-size: 12px;
+  font-size: 0.9em;
   text-decoration: underline;
   text-decoration-color: rgba(255, 193, 7, 0.4);
   width: max-content;
@@ -234,7 +241,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 }
 
 .extended-info-link i {
-  font-size: 10px;
+  font-size: 0.75em;
   opacity: 0.6;
 }
 
@@ -242,51 +249,90 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 1px;
+  gap: 0.1em;
 }
 
 .extended-info-mat-entry {
   display: inline-flex;
   align-items: baseline;
-  gap: 2px;
+  gap: 0.15em;
 }
 
 .extended-info-mat-kind {
   color: #888;
-  font-size: 11px;
+  font-size: 0.9em;
 }
 
 .extended-info-loading,
 .extended-info-empty {
-  font-size: 11px;
+  font-size: 0.9em;
   color: #777;
   font-style: italic;
 }
 
-/* Placeholder shown to non-pro users — no real data is rendered. */
+/* Tag links in material popups */
+.extended-info-tag-link {
+  color: #ffc107;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 193, 7, 0.4);
+}
+.extended-info-tag-link:hover {
+  color: #ffd36e;
+  text-decoration-color: rgba(255, 211, 110, 0.8);
+}
+
+/* Placeholder shown to non-pro users -- field names visible, values as skeletons. */
 .extended-info-placeholder {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  padding: 6px 8px;
-  border: 1px dashed #b08a2a;
-  border-radius: 4px;
+  align-items: stretch;
+  gap: 0.5em;
+  padding: 0.5em 0.6em;
+  border: 0.065em dashed #b08a2a;
+  border-radius: 0.25em;
   background: linear-gradient(180deg, rgba(90, 68, 24, 0.18) 0%, rgba(36, 26, 5, 0.18) 100%);
 }
 
 .extended-info-placeholder-label {
   color: #ffd36e;
-  font-size: 12px;
+  font-size: 0.9em;
+}
+
+.extended-info-placeholder-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+}
+
+.extended-info-placeholder-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1em;
+  line-height: 1.5;
+}
+
+.extended-info-placeholder-row .extended-info-label {
+  color: #998a6e;
+}
+
+/* Skeleton bar replacing the old blurred fake values */
+.extended-info-skeleton {
+  display: inline-block;
+  width: 4em;
+  height: 0.75em;
+  border-radius: 0.15em;
+  background: rgba(160, 130, 60, 0.22);
 }
 
 .extended-info-cta {
+  align-self: flex-start;
   background: rgba(255, 211, 110, 0.12);
-  border: 1px solid #b08a2a;
+  border: 0.065em solid #b08a2a;
   color: #ffd36e;
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 3px;
+  font-size: 0.9em;
+  padding: 0.2em 0.6em;
+  border-radius: 0.2em;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
@@ -348,12 +394,12 @@ img[src$="spatial_awareness_special_spot.png"] {
   0% {
     transform: translate(-50%, -50%) scale(1);
     opacity: 1;
-    border-width: 3px;
+    border-width: 0.2em;
   }
   100% {
     transform: translate(-50%, -50%) scale(3);
     opacity: 0;
-    border-width: 1px;
+    border-width: 0.065em;
   }
 }
 

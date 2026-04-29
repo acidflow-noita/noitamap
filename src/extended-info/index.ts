@@ -347,6 +347,18 @@ export function bartenderProductLink(materialId: string): string {
  * label like "Volatile liquid" which doesn't match the bartender slug set.
  */
 function materialTypeSlug(m: ExtendedMaterial): string {
+  // Prefer the wiki-derived `type` field — the engine's `cell_type` is
+  // misleading (Noita marks many powders/solids as "liquid" internally).
+  const wt = (m.type || "").toLowerCase();
+  if (wt === "liquid") return "liquid";
+  if (wt === "solid") return "solid";
+  if (wt === "gas") return "gas";
+  if (wt === "fire") return "fire";
+  if (wt === "powder") return "powder";
+  if (wt === "acid") return "acid";
+  if (wt && wt !== "no type") return wt;
+
+  // Fallback to cell_type only when type is absent / "no type".
   const ct = (m.cell_type || "").toLowerCase();
   if (ct === "liquid") return "liquid";
   if (ct === "solid") return "solid";
@@ -417,7 +429,7 @@ export function buildExtendedSection(kind: ExtendedKind, id: string): HTMLElemen
     if (!isProUser()) {
       wrap.style.display = "";
       header.textContent = i18next.t("extended.title", "Extended info");
-      body.appendChild(renderProPlaceholder());
+      body.appendChild(renderProPlaceholder(kind));
       return;
     }
     renderProBody(wrap, header, body, kind, id);
@@ -457,7 +469,7 @@ export function buildExtendedCreatureSectionByName(name: string, aliases?: strin
     body.innerHTML = "";
     if (!isProUser()) {
       wrap.style.display = "";
-      body.appendChild(renderProPlaceholder());
+      body.appendChild(renderProPlaceholder("creature"));
       return;
     }
     const loading = document.createElement("div");
@@ -492,22 +504,59 @@ export function buildExtendedCreatureSectionByName(name: string, aliases?: strin
   return wrap;
 }
 
-function renderProPlaceholder(): HTMLElement {
+const PREVIEW_FIELDS: Record<ExtendedKind, string[]> = {
+  creature: [
+    "Faction", "HP", "Attacks", "Immunities", "Spawn", "Blood",
+    "Damage multipliers",
+  ],
+  spell: [
+    "Type", "Mana", "Cast delay", "Recharge time", "Speed",
+    "Damage", "Spread",
+  ],
+  material: [
+    "Type", "Density", "Hardness", "Viscosity", "Burnable",
+    "Dangers", "Tags", "Reactions",
+  ],
+};
+
+/** Realistic skeleton widths per field label so the placeholder looks plausible. */
+const SKELETON_WIDTHS: Record<string, string> = {
+  // creature
+  Faction: "5em", HP: "2.5em", Attacks: "7em", Immunities: "6em",
+  Spawn: "4em", Blood: "4.5em", "Damage multipliers": "8em",
+  // spell
+  Type: "4em", Mana: "2em", "Cast delay": "3em", "Recharge time": "3em",
+  Speed: "2.5em", Damage: "3em", Spread: "2em",
+  // material
+  Density: "3em", Hardness: "2.5em", Viscosity: "3em", Burnable: "2em",
+  Dangers: "5em", Tags: "6em", Reactions: "5em",
+};
+
+function renderProPlaceholder(kind: ExtendedKind): HTMLElement {
   const placeholder = document.createElement("div");
   placeholder.className = "extended-info-placeholder pro-accent";
 
-  const label = document.createElement("div");
-  label.className = "extended-info-placeholder-label";
-  label.textContent = i18next.t(
-    "extended.proOnly",
-    "Detailed stats are available to Pro users.",
-  );
-  placeholder.appendChild(label);
+  const fields = document.createElement("div");
+  fields.className = "extended-info-placeholder-fields";
+  for (const label of PREVIEW_FIELDS[kind]) {
+    const r = document.createElement("div");
+    r.className = "extended-info-placeholder-row";
+    const l = document.createElement("span");
+    l.className = "extended-info-label";
+    l.textContent = `${label}:`;
+    const skel = document.createElement("span");
+    skel.className = "extended-info-skeleton";
+    if (SKELETON_WIDTHS[label]) skel.style.width = SKELETON_WIDTHS[label];
+    r.appendChild(l);
+    r.appendChild(skel);
+    fields.appendChild(r);
+  }
+  placeholder.appendChild(fields);
 
   const cta = document.createElement("button");
   cta.type = "button";
   cta.className = "btn btn-sm extended-info-cta";
-  cta.textContent = i18next.t("extended.cta", "Sign in with Patreon");
+  cta.textContent = i18next.t("extended.cta", "Unlock with Pro");
   cta.addEventListener("click", (e) => {
     e.stopPropagation();
     dismissEnclosingPopup(cta);
@@ -858,9 +907,24 @@ function renderMaterial(id: string): HTMLElement | null {
     }
   }
 
-  // Tags
+  // Tags — each tag links to its wiki category page.
   if (Array.isArray(m.tags) && m.tags.length > 0) {
-    append(row("Tags", m.tags.join(", ")));
+    const tagsNode = document.createElement("span");
+    tagsNode.className = "extended-info-value";
+    m.tags.forEach((tag, i) => {
+      const bare = tag.replace(/^\[|\]$/g, "");
+      const a = document.createElement("a");
+      a.href = `https://noita.wiki.gg/wiki/Category:Materials_tagged_with_${encodeURIComponent(bare)}`;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = tag;
+      a.className = "extended-info-tag-link";
+      tagsNode.appendChild(a);
+      if (i < m.tags!.length - 1) {
+        tagsNode.appendChild(document.createTextNode(", "));
+      }
+    });
+    append(rowWithNode("Tags", tagsNode));
   }
 
   // Reaction links — link out only.
