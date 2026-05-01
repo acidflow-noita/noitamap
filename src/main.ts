@@ -904,4 +904,26 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   initKonamiCode();
+
+  // After the page is up, preload every supported language's translation
+  // bundle in the background so language switches are instant. The user's
+  // active language is already loaded by the i18next init above; we kick off
+  // the rest from an idle callback so it doesn't compete with map rendering.
+  const preloadAllLocales = () => {
+    const all = Object.keys(SUPPORTED_LANGUAGES);
+    const loaded = (i18next.languages as string[] | undefined) ?? [i18next.language];
+    const toLoad = all.filter((lng) => !loaded.includes(lng));
+    if (toLoad.length === 0) return;
+    i18next
+      .loadLanguages(toLoad)
+      .catch((err) => console.warn("[Noitamap] Preload of locales failed:", err));
+  };
+  const idle = (window as any).requestIdleCallback as
+    | ((cb: () => void, opts?: { timeout: number }) => number)
+    | undefined;
+  if (typeof idle === "function") {
+    idle(preloadAllLocales, { timeout: 5000 });
+  } else {
+    setTimeout(preloadAllLocales, 2000);
+  }
 });

@@ -371,13 +371,88 @@ function materialTypeSlug(m: ExtendedMaterial): string {
 /** Display name for the material type, matching bartender's casing. */
 function materialTypeLabel(slug: string): string {
   switch (slug) {
-    case "liquid": return "Liquid";
-    case "solid": return "Solid";
-    case "gas": return "Gas";
-    case "fire": return "Fire";
-    case "powder": return "Powder";
-    default: return slug.charAt(0).toUpperCase() + slug.slice(1);
+    case "liquid":
+      return i18next.t("extended.matType.liquid", "Liquid");
+    case "solid":
+      return i18next.t("extended.matType.solid", "Solid");
+    case "gas":
+      return i18next.t("extended.matType.gas", "Gas");
+    case "fire":
+      return i18next.t("extended.matType.fire", "Fire");
+    case "powder":
+      return i18next.t("extended.matType.powder", "Powder");
+    default:
+      return i18next.t(`extended.matType.${slug}`, slug.charAt(0).toUpperCase() + slug.slice(1));
   }
+}
+
+// Immunities are translated via flat `extended.immunity.<slug>` keys baked
+// into every locale's translation.json. The slug is derived from the wiki
+// token by lowercasing and replacing non-alphanumerics with underscores —
+// this is just key normalisation, not a translation lookup. Translators edit
+// the EN/JA/etc. values in the JSON directly.
+function immunitySlug(token: string): string {
+  return token
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+// Capitalise the first character if it's a Latin letter; leave non-Latin
+// scripts (Cyrillic, CJK) alone since case rules differ.
+function capFirst(s: string): string {
+  if (!s) return s;
+  const c = s.charAt(0);
+  return c >= "a" && c <= "z" ? c.toUpperCase() + s.slice(1) : s;
+}
+
+function translateImmunityToken(token: string): string {
+  const t = token.trim();
+  if (!t) return token;
+  const slug = immunitySlug(t);
+  if (!slug) return capFirst(t);
+  return i18next.t(`extended.immunity.${slug}`, { defaultValue: capFirst(t) });
+}
+
+function translateImmunities(s: string | null | undefined): string {
+  const cleaned = stripWiki(s);
+  if (!cleaned) return "";
+  return cleaned
+    .split(",")
+    .map((p) => translateImmunityToken(p))
+    .filter(Boolean)
+    .join(", ");
+}
+
+// ─── Biome name translation ──────────────────────────────────────────────────
+// Spawn-location names from the wiki (e.g. "Coal Pits") are translated through
+// flat `extended.spawn.<slug>` keys that live in every locale's translation.json
+// — populated once by build_scripts/bake-spawn-translations.cjs. Translators
+// edit those JSON values directly; nothing here decides what a name maps to.
+function spawnSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/&#?\w+;/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function translateBiomeName(rawName: string): string {
+  const name = rawName.trim();
+  if (!name) return name;
+  const slug = spawnSlug(name);
+  if (!slug) return name;
+  return i18next.t(`extended.spawn.${slug}`, { defaultValue: name });
+}
+
+function translateBiomeList(s: string | null | undefined): string {
+  const cleaned = stripWiki(s);
+  if (!cleaned) return "";
+  return cleaned
+    .split(",")
+    .map((p) => translateBiomeName(p))
+    .filter(Boolean)
+    .join(", ");
 }
 
 /**
@@ -409,6 +484,65 @@ function dismissEnclosingPopup(el: HTMLElement): void {
 
 export type ExtendedKind = "creature" | "spell" | "material";
 
+// Single global languageChanged listener that re-renders ONLY currently
+// visible extended-info sections. Hidden popups (visibility:hidden /
+// display:none / opacity:0 — every osOverlayPopup that hasn't been hovered)
+// are marked stale and re-render the next time the user hovers their popup,
+// via the document-level mouseover hook below. This matters because re-
+// rendering all sections on every language change forces the lazy
+// full_creatures / full_spells / full_materials JSON loads (~3.4 MB total)
+// for pro users on the very first switch, which made it feel like FOREVER.
+let langListenerInstalled = false;
+function isSectionVisible(sec: HTMLElement): boolean {
+  const popup = sec.closest(".marker-tooltip, .osOverlayPopup") as HTMLElement | null;
+  const target = popup ?? sec;
+  if (!target.isConnected) return false;
+  const cs = getComputedStyle(target);
+  if (cs.display === "none") return false;
+  if (cs.visibility === "hidden") return false;
+  if (parseFloat(cs.opacity) === 0) return false;
+  return true;
+}
+
+function ensureLangListener(): void {
+  if (langListenerInstalled) return;
+  langListenerInstalled = true;
+  i18next.on("languageChanged", () => {
+    document.querySelectorAll<HTMLElement>(".extended-info-section").forEach((wrap) => {
+      const fn = (wrap as any).__rerender as (() => void) | undefined;
+      if (typeof fn !== "function") return;
+      const header = wrap.querySelector<HTMLElement>(".extended-info-header");
+      if (header) header.textContent = i18next.t("extended.title", "Extended info");
+      if (isSectionVisible(wrap)) {
+        fn();
+      } else {
+        wrap.dataset.langStale = "1";
+      }
+    });
+  });
+
+  // ONE document-level mouseover that flushes any stale section in the
+  // popup the user is now hovering. Cheap when nothing is stale (no DOM
+  // queries hit). No per-section listener accumulation.
+  document.addEventListener(
+    "mouseover",
+    (e) => {
+      const t = e.target;
+      if (!(t instanceof Element)) return;
+      const popup = t.closest(".osOverlayPopup, .marker-tooltip");
+      if (!popup) return;
+      const stale = popup.querySelectorAll<HTMLElement>(".extended-info-section[data-lang-stale='1']");
+      if (stale.length === 0) return;
+      stale.forEach((sec) => {
+        delete sec.dataset.langStale;
+        const fn = (sec as any).__rerender as (() => void) | undefined;
+        if (typeof fn === "function") fn();
+      });
+    },
+    { passive: true },
+  );
+}
+
 export function buildExtendedSection(kind: ExtendedKind, id: string): HTMLElement {
   const wrap = document.createElement("div");
   wrap.className = "extended-info-section";
@@ -435,11 +569,13 @@ export function buildExtendedSection(kind: ExtendedKind, id: string): HTMLElemen
     renderProBody(wrap, header, body, kind, id);
   };
 
+  (wrap as any).__rerender = render;
   render();
+  ensureLangListener();
 
-  const unsub = authService.subscribe(() => {
+  const unsubAuth = authService.subscribe(() => {
     if (!wrap.isConnected) {
-      unsub();
+      unsubAuth();
       return;
     }
     render();
@@ -493,10 +629,13 @@ export function buildExtendedCreatureSectionByName(name: string, aliases?: strin
     });
   };
 
+  (wrap as any).__rerender = render;
   render();
-  const unsub = authService.subscribe(() => {
+  ensureLangListener();
+
+  const unsubAuth = authService.subscribe(() => {
     if (!wrap.isConnected) {
-      unsub();
+      unsubAuth();
       return;
     }
     render();
@@ -504,32 +643,66 @@ export function buildExtendedCreatureSectionByName(name: string, aliases?: strin
   return wrap;
 }
 
-const PREVIEW_FIELDS: Record<ExtendedKind, string[]> = {
+// Each preview field is [i18n key, English fallback]. The fallback also doubles
+// as the lookup into SKELETON_WIDTHS so the skeleton width stays stable
+// regardless of locale.
+const PREVIEW_FIELDS: Record<ExtendedKind, Array<[string, string]>> = {
   creature: [
-    "Faction", "HP", "Attacks", "Immunities", "Spawn", "Blood",
-    "Damage multipliers",
+    ["extended.row.faction", "Faction"],
+    ["extended.row.hp", "HP"],
+    ["extended.row.attacks", "Attacks"],
+    ["extended.row.immunities", "Immunities"],
+    ["extended.row.spawn", "Spawn"],
+    ["extended.row.blood", "Blood"],
+    ["extended.dmgMults", "Damage multipliers"],
   ],
   spell: [
-    "Type", "Mana", "Cast delay", "Recharge time", "Speed",
-    "Damage", "Spread",
+    ["extended.row.type", "Type"],
+    ["extended.row.mana", "Mana"],
+    ["extended.row.castDelay", "Cast delay"],
+    ["extended.row.rechargeTime", "Recharge time"],
+    ["extended.row.speed", "Speed"],
+    ["extended.damage", "Damage"],
+    ["extended.row.spread", "Spread"],
   ],
   material: [
-    "Type", "Density", "Hardness", "Viscosity", "Burnable",
-    "Dangers", "Tags", "Reactions",
+    ["extended.row.type", "Type"],
+    ["extended.row.density", "Density"],
+    ["extended.row.hardness", "Hardness"],
+    ["extended.row.viscosity", "Viscosity"],
+    ["extended.row.burnable", "Burnable"],
+    ["extended.row.dangers", "Dangers"],
+    ["extended.row.tags", "Tags"],
+    ["extended.row.reactions", "Reactions"],
   ],
 };
 
 /** Realistic skeleton widths per field label so the placeholder looks plausible. */
 const SKELETON_WIDTHS: Record<string, string> = {
   // creature
-  Faction: "5em", HP: "2.5em", Attacks: "7em", Immunities: "6em",
-  Spawn: "4em", Blood: "4.5em", "Damage multipliers": "8em",
+  Faction: "5em",
+  HP: "2.5em",
+  Attacks: "7em",
+  Immunities: "6em",
+  Spawn: "4em",
+  Blood: "4.5em",
+  "Damage multipliers": "8em",
   // spell
-  Type: "4em", Mana: "2em", "Cast delay": "3em", "Recharge time": "3em",
-  Speed: "2.5em", Damage: "3em", Spread: "2em",
+  Type: "4em",
+  Mana: "2em",
+  "Cast delay": "3em",
+  "Recharge time": "3em",
+  Speed: "2.5em",
+  Damage: "3em",
+  Spread: "2em",
   // material
-  Density: "3em", Hardness: "2.5em", Viscosity: "3em", Burnable: "2em",
-  Dangers: "5em", Tags: "6em", Reactions: "5em",
+  Density: "3em",
+  Hardness: "2.5em",
+  Viscosity: "3em",
+  Burnable: "2em",
+  Dangers: "5em",
+  Tags: "6em",
+  Reactions: "5em",
 };
 
 function renderProPlaceholder(kind: ExtendedKind): HTMLElement {
@@ -538,13 +711,13 @@ function renderProPlaceholder(kind: ExtendedKind): HTMLElement {
 
   const fields = document.createElement("div");
   fields.className = "extended-info-placeholder-fields";
-  for (const label of PREVIEW_FIELDS[kind]) {
+  for (const [i18nKey, fallback] of PREVIEW_FIELDS[kind]) {
     const l = document.createElement("span");
     l.className = "extended-info-label";
-    l.textContent = `${label}:`;
+    l.textContent = `${i18next.t(i18nKey, fallback)}:`;
     const skel = document.createElement("span");
     skel.className = "extended-info-skeleton";
-    if (SKELETON_WIDTHS[label]) skel.style.width = SKELETON_WIDTHS[label];
+    if (SKELETON_WIDTHS[fallback]) skel.style.width = SKELETON_WIDTHS[fallback];
     fields.appendChild(l);
     fields.appendChild(skel);
   }
@@ -628,14 +801,31 @@ function rowWithNode(label: string, valueNode: HTMLElement): HTMLElement {
 }
 
 /** Append key-value pairs as rows into the parent. Returns count of rows added. */
-function appendKVRows(
-  parent: HTMLElement,
-  pairs: [string, string | number | null | undefined][],
-): number {
+function appendKVRows(parent: HTMLElement, pairs: [string, string | number | null | undefined][]): number {
   const present = pairs.filter(([, v]) => v != null && v !== "" && v !== 0);
   for (const [k, v] of present) {
     const r = row(k, String(v));
     if (r) parent.appendChild(r);
+  }
+  return present.length;
+}
+
+const DMG_COLOR_RESIST = "oklch(57.7% 0.245 27.325)"; // < 1.0 → tougher (red)
+const DMG_COLOR_VULNERABLE = "oklch(72.3% 0.219 149.579)"; // > 1.0 → weaker (green)
+
+/** Append damage-multiplier rows with color coding (>1.0 green, <1.0 red). */
+function appendDmgMultRows(parent: HTMLElement, pairs: [string, string | number | null | undefined][]): number {
+  const present = pairs.filter(([, v]) => v != null && v !== "" && v !== 0);
+  for (const [k, v] of present) {
+    const r = row(k, String(v));
+    if (!r) continue;
+    const numStr = String(v).replace(/^[^\d.-]*/, "");
+    const numVal = parseFloat(numStr);
+    if (!isNaN(numVal) && numVal !== 1.0) {
+      const valSpan = r.querySelector(".extended-info-value") as HTMLElement | null;
+      if (valSpan) valSpan.style.color = numVal < 1.0 ? DMG_COLOR_RESIST : DMG_COLOR_VULNERABLE;
+    }
+    parent.appendChild(r);
   }
   return present.length;
 }
@@ -647,7 +837,7 @@ function appendKVRows(
 function formatDmgMult(v: string): string {
   // Preserve prefix like "≤"
   const m = v.match(/^([^\d.-]*)(-?[\d.]+)x?$/);
-  if (!m) return v;                       // e.g. special notes — pass through
+  if (!m) return v; // e.g. special notes — pass through
   const prefix = m[1];
   const n = parseFloat(m[2]);
   if (isNaN(n)) return v;
@@ -665,10 +855,7 @@ const COLS_THRESHOLD = 5;
 
 function group(heading: string | null, rowCount: number): HTMLElement {
   const g = document.createElement("div");
-  g.className =
-    rowCount >= COLS_THRESHOLD
-      ? "extended-info-group extended-info-group--cols"
-      : "extended-info-group";
+  g.className = rowCount >= COLS_THRESHOLD ? "extended-info-group extended-info-group--cols" : "extended-info-group";
   if (heading) g.appendChild(subhead(heading));
   return g;
 }
@@ -694,12 +881,21 @@ function renderCreature(id: string): HTMLElement | null {
     const parts: string[] = [];
     if (c.category) parts.push(c.category);
     if (c.faction) parts.push(`(${c.faction})`);
-    const r = row("Faction", parts.join(" "));
+    const r = row(i18next.t("extended.row.faction", "Faction"), parts.join(" "));
     if (r) topRows.push(r);
   }
-  if (c.health) { const r = row("HP", stripWiki(c.health)); if (r) topRows.push(r); }
-  if (c.attackType) { const r = row("Attacks", parseAttacks(c.attackType)); if (r) topRows.push(r); }
-  if (c.immunities) { const r = row("Immunities", stripWiki(c.immunities)); if (r) topRows.push(r); }
+  if (c.health) {
+    const r = row(i18next.t("extended.row.hp", "HP"), stripWiki(c.health));
+    if (r) topRows.push(r);
+  }
+  if (c.attackType) {
+    const r = row(i18next.t("extended.row.attacks", "Attacks"), parseAttacks(c.attackType));
+    if (r) topRows.push(r);
+  }
+  if (c.immunities) {
+    const r = row(i18next.t("extended.row.immunities", "Immunities"), translateImmunities(c.immunities));
+    if (r) topRows.push(r);
+  }
 
   if (topRows.length > 0) {
     const g = group(null, topRows.length);
@@ -709,46 +905,62 @@ function renderCreature(id: string): HTMLElement | null {
 
   // ── Damage multipliers ──
   const multsRaw: [string, string | null | undefined][] = [
-    ["Melee", c.dmgMultMelee],
-    ["Projectile", c.dmgMultProjectile],
-    ["Slice", c.dmgMultSlice],
-    ["Explosion", c.dmgMultExplosion],
-    ["Electricity", c.dmgMultElectricity],
-    ["Fire", c.dmgMultFire],
-    ["Ice", c.dmgMultIce],
-    ["Drill", c.dmgMultDrill],
-    ["Radioactive", c.dmgMultRadioactive],
-    ["Holy", c.dmgMultHoly],
+    [i18next.t("extended.dmg.melee", "Melee"), c.dmgMultMelee],
+    [i18next.t("extended.dmg.projectile", "Projectile"), c.dmgMultProjectile],
+    [i18next.t("extended.dmg.slice", "Slice"), c.dmgMultSlice],
+    [i18next.t("extended.dmg.explosion", "Explosion"), c.dmgMultExplosion],
+    [i18next.t("extended.dmg.electricity", "Electricity"), c.dmgMultElectricity],
+    [i18next.t("extended.dmg.fire", "Fire"), c.dmgMultFire],
+    [i18next.t("extended.dmg.ice", "Ice"), c.dmgMultIce],
+    [i18next.t("extended.dmg.drill", "Drill"), c.dmgMultDrill],
+    [i18next.t("extended.dmg.radioactive", "Radioactive"), c.dmgMultRadioactive],
+    [i18next.t("extended.dmg.holy", "Holy"), c.dmgMultHoly],
   ];
-  const mults: [string, string | null | undefined][] = multsRaw.map(
-    ([k, v]) => [k, v != null && v !== "" ? formatDmgMult(v) : v],
-  );
+  const mults: [string, string | null | undefined][] = multsRaw.map(([k, v]) => [
+    k,
+    v != null && v !== "" ? formatDmgMult(v) : v,
+  ]);
   const multsPresent = mults.filter(([, v]) => v != null && v !== "");
   if (multsPresent.length > 0) {
     const g = group(i18next.t("extended.dmgMults", "Damage multipliers"), multsPresent.length);
-    appendKVRows(g, mults);
+    appendDmgMultRows(g, mults);
     root.appendChild(g);
   }
 
   // ── Spawn / Materials / Polymorph ──
   const bottomRows: HTMLElement[] = [];
 
-  if (c.spawnLocation) { const r = row("Spawn", stripWiki(c.spawnLocation)); if (r) bottomRows.push(r); }
-  if (c.ngplusSpawnLocation) { const r = row("Spawn (NG+)", stripWiki(c.ngplusSpawnLocation)); if (r) bottomRows.push(r); }
+  if (c.spawnLocation) {
+    const r = row(i18next.t("extended.row.spawn", "Spawn"), translateBiomeList(c.spawnLocation));
+    if (r) bottomRows.push(r);
+  }
+  if (c.ngplusSpawnLocation) {
+    const r = row(i18next.t("extended.row.spawnNgplus", "Spawn (NG+)"), translateBiomeList(c.ngplusSpawnLocation));
+    if (r) bottomRows.push(r);
+  }
 
   // Blood / Corpse — individual rows, each with a bartender link
   if (c.blood) {
     const node = creatureMaterialNode(stripWiki(c.blood), c.blood_material_id);
-    bottomRows.push(rowWithNode("Blood", node));
+    bottomRows.push(rowWithNode(i18next.t("extended.row.blood", "Blood"), node));
   }
   if (c.corpse) {
     const node = creatureMaterialNode(stripWiki(c.corpse), c.corpse_material_id);
-    bottomRows.push(rowWithNode("Corpse", node));
+    bottomRows.push(rowWithNode(i18next.t("extended.row.corpse", "Corpse"), node));
   }
 
-  if (c.chaosPolymorph) { const r = row("Polymorph (chaos)", c.chaosPolymorph); if (r) bottomRows.push(r); }
-  if (c.unstablePolymorph) { const r = row("Polymorph (unstable)", c.unstablePolymorph); if (r) bottomRows.push(r); }
-  if (c.dmgMultNotes && c.dmgMultNotes !== "1x") { const r = row("Notes", c.dmgMultNotes); if (r) bottomRows.push(r); }
+  if (c.chaosPolymorph) {
+    const r = row(i18next.t("extended.row.polyChaos", "Polymorph (chaos)"), c.chaosPolymorph);
+    if (r) bottomRows.push(r);
+  }
+  if (c.unstablePolymorph) {
+    const r = row(i18next.t("extended.row.polyUnstable", "Polymorph (unstable)"), c.unstablePolymorph);
+    if (r) bottomRows.push(r);
+  }
+  if (c.dmgMultNotes && c.dmgMultNotes !== "1x") {
+    const r = row(i18next.t("extended.row.notes", "Notes"), c.dmgMultNotes);
+    if (r) bottomRows.push(r);
+  }
 
   if (bottomRows.length > 0) {
     const g = group(null, bottomRows.length);
@@ -775,19 +987,19 @@ function renderSpell(id: string): HTMLElement | null {
 
   // ── Top-level spell stats — many rows, use column layout ──
   const statsRows: [string, string | number | null | undefined][] = [
-    ["Type", s.type],
-    ["Mana", s.manaDrain != null ? String(s.manaDrain) : null],
-    ["Uses", s.uses ? String(s.uses) : null],
-    ["Cast delay", s.castDelay],
-    ["Recharge", s.rechargeDelay],
-    ["Speed", s.speed != null && s.speed !== "" ? String(s.speed) : null],
-    ["Spread", s.spread ? String(s.spread) : null],
-    ["Lifetime", s.lifetime ? String(s.lifetime) : null],
-    ["Recoil", s.recoil],
-    ["Bounces", s.bounces],
-    ["Crit", s.criticalChance],
-    ["Price", s.price != null ? String(s.price) : null],
-    ["Unlock", s.unlockCondition ?? null],
+    [i18next.t("extended.row.type", "Type"), s.type],
+    [i18next.t("extended.row.mana", "Mana"), s.manaDrain != null ? String(s.manaDrain) : null],
+    [i18next.t("extended.row.uses", "Uses"), s.uses ? String(s.uses) : null],
+    [i18next.t("extended.row.castDelay", "Cast delay"), s.castDelay],
+    [i18next.t("extended.row.recharge", "Recharge"), s.rechargeDelay],
+    [i18next.t("extended.row.speed", "Speed"), s.speed != null && s.speed !== "" ? String(s.speed) : null],
+    [i18next.t("extended.row.spread", "Spread"), s.spread ? String(s.spread) : null],
+    [i18next.t("extended.row.lifetime", "Lifetime"), s.lifetime ? String(s.lifetime) : null],
+    [i18next.t("extended.row.recoil", "Recoil"), s.recoil],
+    [i18next.t("extended.row.bounces", "Bounces"), s.bounces],
+    [i18next.t("extended.row.crit", "Crit"), s.criticalChance],
+    [i18next.t("extended.row.price", "Price"), s.price != null ? String(s.price) : null],
+    [i18next.t("extended.row.unlock", "Unlock"), s.unlockCondition ?? null],
   ];
   const statsPresent = statsRows.filter(([, v]) => v != null && v !== "");
   if (statsPresent.length > 0) {
@@ -798,16 +1010,16 @@ function renderSpell(id: string): HTMLElement | null {
 
   // ── Damage breakdown ──
   const dmgs: [string, number | null | undefined][] = [
-    ["Projectile", s.damageProjectile],
-    ["Melee", s.damageMelee],
-    ["Electric", s.damageElectric],
-    ["Fire", s.damageFire],
-    ["Explosion", s.damageExplosion],
-    ["Ice", s.damageIce],
-    ["Slice", s.damageSlice],
-    ["Drill", s.damageDrill],
-    ["Healing", s.damageHealing],
-    ["Holy", s.damageHoly],
+    [i18next.t("extended.dmg.projectile", "Projectile"), s.damageProjectile],
+    [i18next.t("extended.dmg.melee", "Melee"), s.damageMelee],
+    [i18next.t("extended.dmg.electric", "Electric"), s.damageElectric],
+    [i18next.t("extended.dmg.fire", "Fire"), s.damageFire],
+    [i18next.t("extended.dmg.explosion", "Explosion"), s.damageExplosion],
+    [i18next.t("extended.dmg.ice", "Ice"), s.damageIce],
+    [i18next.t("extended.dmg.slice", "Slice"), s.damageSlice],
+    [i18next.t("extended.dmg.drill", "Drill"), s.damageDrill],
+    [i18next.t("extended.dmg.healing", "Healing"), s.damageHealing],
+    [i18next.t("extended.dmg.holy", "Holy"), s.damageHoly],
   ];
   const dmgsPresent = dmgs.filter(([, v]) => v != null && v !== 0);
   if (dmgsPresent.length > 0) {
@@ -848,39 +1060,46 @@ function renderMaterial(id: string): HTMLElement | null {
   const typeSpan = document.createElement("span");
   typeSpan.className = `extended-info-value material-type-${slug}`;
   typeSpan.textContent = materialTypeLabel(slug);
-  pushRow(rowWithNode("Type", typeSpan));
+  pushRow(rowWithNode(i18next.t("extended.row.type", "Type"), typeSpan));
 
-  if (m.density != null) pushRow(row("Density", String(m.density)));
+  if (m.density != null) pushRow(row(i18next.t("extended.row.density", "Density"), String(m.density)));
 
   // Solid / powder mining stats
   if (slug === "solid" || slug === "powder") {
-    if (m.hardness != null) pushRow(row("Hardness", String(m.hardness)));
-    if (m.durability != null && m.durability !== 0) pushRow(row("Durability", String(m.durability)));
-    if (m.crackability != null && m.crackability !== 0) pushRow(row("Crackability", String(m.crackability)));
+    if (m.hardness != null) pushRow(row(i18next.t("extended.row.hardness", "Hardness"), String(m.hardness)));
+    if (m.durability != null && m.durability !== 0)
+      pushRow(row(i18next.t("extended.row.durability", "Durability"), String(m.durability)));
+    if (m.crackability != null && m.crackability !== 0)
+      pushRow(row(i18next.t("extended.row.crackability", "Crackability"), String(m.crackability)));
   }
 
   // Liquid-specific
   if (slug === "liquid") {
-    if (m.liquid_viscosity != null) pushRow(row("Viscosity", String(m.liquid_viscosity)));
-    if (m.liquid_gravity != null) pushRow(row("Liquid gravity", String(m.liquid_gravity)));
+    if (m.liquid_viscosity != null)
+      pushRow(row(i18next.t("extended.row.viscosity", "Viscosity"), String(m.liquid_viscosity)));
+    if (m.liquid_gravity != null)
+      pushRow(row(i18next.t("extended.row.liquidGravity", "Liquid gravity"), String(m.liquid_gravity)));
   }
 
-  if (m.electrical_conductivity) pushRow(row("Conducts electricity", "yes"));
-  if (m.slippery) pushRow(row("Slippery", "yes"));
-  if (m.burnable) pushRow(row("Burnable", "yes"));
-  if (m.on_fire) pushRow(row("Always burning", "yes"));
+  const yes = i18next.t("extended.yes", "yes");
+  if (m.electrical_conductivity)
+    pushRow(row(i18next.t("extended.row.conductsElectricity", "Conducts electricity"), yes));
+  if (m.slippery) pushRow(row(i18next.t("extended.row.slippery", "Slippery"), yes));
+  if (m.burnable) pushRow(row(i18next.t("extended.row.burnable", "Burnable"), yes));
+  if (m.on_fire) pushRow(row(i18next.t("extended.row.alwaysBurning", "Always burning"), yes));
   if (m.autoignition_temperature != null && m.autoignition_temperature !== 100) {
-    pushRow(row("Autoignition", String(m.autoignition_temperature)));
+    pushRow(row(i18next.t("extended.row.autoignition", "Autoignition"), String(m.autoignition_temperature)));
   }
-  if (m.cold_freezes_to_material_name) pushRow(row("Freezes to", m.cold_freezes_to_material_name));
+  if (m.cold_freezes_to_material_name)
+    pushRow(row(i18next.t("extended.row.freezesTo", "Freezes to"), m.cold_freezes_to_material_name));
 
   // Danger flags
   const dangers: string[] = [];
-  if (m.danger_fire) dangers.push("fire");
-  if (m.danger_radioactive) dangers.push("radioactive");
-  if (m.danger_poison) dangers.push("poison");
-  if (m.danger_water) dangers.push("water");
-  if (dangers.length > 0) pushRow(row("Dangers", dangers.join(", ")));
+  if (m.danger_fire) dangers.push(i18next.t("extended.danger.fire", "fire"));
+  if (m.danger_radioactive) dangers.push(i18next.t("extended.danger.radioactive", "radioactive"));
+  if (m.danger_poison) dangers.push(i18next.t("extended.danger.poison", "poison"));
+  if (m.danger_water) dangers.push(i18next.t("extended.danger.water", "water"));
+  if (dangers.length > 0) pushRow(row(i18next.t("extended.row.dangers", "Dangers"), dangers.join(", ")));
 
   // Wrap collected rows in a group
   if (propRows.length > 0) {
@@ -939,7 +1158,7 @@ function renderMaterial(id: string): HTMLElement | null {
       }
     });
     const tagGroup = group(null, 1);
-    tagGroup.appendChild(rowWithNode("Tags", tagsNode));
+    tagGroup.appendChild(rowWithNode(i18next.t("extended.row.tags", "Tags"), tagsNode));
     root.appendChild(tagGroup);
   }
 
@@ -948,25 +1167,13 @@ function renderMaterial(id: string): HTMLElement | null {
   if (roles.asReagent || roles.asResult) {
     const linksWrap = document.createElement("div");
     linksWrap.className = "extended-info-reactions";
-    linksWrap.appendChild(
-      subhead(i18next.t("extended.reactionsHeader", "Material reactions on Bartender")),
-    );
+    linksWrap.appendChild(subhead(i18next.t("extended.reactionsHeader", "Material reactions on Bartender")));
 
     if (roles.asReagent) {
-      linksWrap.appendChild(
-        externalLink(
-          bartenderReagentLink(id),
-          i18next.t("extended.asReagent", "View as reagent"),
-        ),
-      );
+      linksWrap.appendChild(externalLink(bartenderReagentLink(id), i18next.t("extended.asReagent", "View as reagent")));
     }
     if (roles.asResult) {
-      linksWrap.appendChild(
-        externalLink(
-          bartenderProductLink(id),
-          i18next.t("extended.asProduct", "View as product"),
-        ),
-      );
+      linksWrap.appendChild(externalLink(bartenderProductLink(id), i18next.t("extended.asProduct", "View as product")));
     }
     root.appendChild(linksWrap);
   }
@@ -999,10 +1206,7 @@ function externalLink(href: string, label: string): HTMLElement {
  * Used for Blood / Corpse rows. When we have the bartender material id we
  * link to bartender's reactions page; otherwise plain text.
  */
-function creatureMaterialNode(
-  displayName: string,
-  materialId: string | null | undefined,
-): HTMLElement {
+function creatureMaterialNode(displayName: string, materialId: string | null | undefined): HTMLElement {
   if (materialId) {
     return externalLink(bartenderReagentLink(materialId), displayName);
   }

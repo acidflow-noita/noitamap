@@ -1986,6 +1986,22 @@ let tooltipEl: HTMLDivElement | null = null;
 let canvasClickHandler: ((event: any) => void) | null = null;
 let markerTiledImage: any = null;
 
+// Marker tooltips bake i18next translations into textContent at render time.
+// Keep a rebuild closure on the active tooltip element so a mid-display
+// language switch re-renders the same tooltip in place rather than dismissing
+// it. If the closure is missing (older path), fall back to dismissing so the
+// next hover/click can rebuild.
+i18next.on("languageChanged", () => {
+  const el = tooltipEl as (HTMLDivElement & { __rebuild?: () => void }) | null;
+  if (!el) return;
+  if (typeof el.__rebuild === "function") {
+    el.__rebuild();
+  } else {
+    el.remove();
+    tooltipEl = null;
+  }
+});
+
 /** Access to the active marker tiled image so consumers can force a reset/redraw. */
 export function getMarkerTiledImage(): any {
   return markerTiledImage;
@@ -2161,6 +2177,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   }
 
   tooltipEl = document.createElement("div");
+  // Allow the languageChanged listener to rebuild this tooltip in place.
+  (tooltipEl as any).__rebuild = () => showMarkerTooltip(item, screenX, screenY);
   tooltipEl.className = "marker-tooltip";
   tooltipEl.style.cssText = `
     position: fixed;
@@ -2171,8 +2189,9 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     border-radius: 0.5em;
     padding: 0.75em 1em;
     font-size: 14px;
-    min-width: 14em;
-    max-width: min(50em, 92vw);
+    box-sizing: border-box;
+    width: 32em;
+    max-width: min(56em, 95vw);
     pointer-events: auto;
     box-shadow: 0 0.4em 1.4em rgba(0,0,0,0.7);
     font-family: monospace;
@@ -2306,21 +2325,21 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       statsDiv.appendChild(v);
     };
     const shuffle = s.shuffle ?? s.deck_shuffle;
-    if (shuffle != null) addStat("Shuffle:", shuffle ? "Yes" : "No");
+    if (shuffle != null) addStat(`${i18next.t("wand.shuffle", "Shuffle")}:`, shuffle ? i18next.t("common.yes", "Yes") : i18next.t("common.no", "No"));
     const spc = s.spellsPerCast ?? s.spells_per_cast ?? s.actions_per_round;
-    if (spc != null) addStat("Spells/Cast:", String(Math.floor(Number(spc))));
+    if (spc != null) addStat(`${i18next.t("wand.spellsPerCast", "Spells/Cast")}:`, String(Math.floor(Number(spc))));
     const cd = s.castDelay ?? s.cast_delay ?? s.fire_rate_wait;
-    if (cd != null) addStat("Cast Delay:", String(Math.floor(Number(cd))));
+    if (cd != null) addStat(`${i18next.t("wand.castDelay", "Cast Delay")}:`, String(Math.floor(Number(cd))));
     const rt = s.rechargeTime ?? s.recharge_time ?? s.reload_time;
-    if (rt != null) addStat("Recharge:", String(Math.floor(Number(rt))));
+    if (rt != null) addStat(`${i18next.t("wand.recharge", "Recharge")}:`, String(Math.floor(Number(rt))));
     const mm = s.manaMax ?? s.mana_max;
-    if (mm != null) addStat("Mana:", String(Math.floor(Number(mm))));
+    if (mm != null) addStat(`${i18next.t("wand.mana", "Mana")}:`, String(Math.floor(Number(mm))));
     const mc = s.manaChargeSpeed ?? s.mana_charge_speed;
-    if (mc != null) addStat("Regen:", String(Math.floor(Number(mc))));
+    if (mc != null) addStat(`${i18next.t("wand.regen", "Regen")}:`, String(Math.floor(Number(mc))));
     const cap = s.capacity ?? s.deck_capacity;
-    if (cap != null) addStat("Capacity:", String(Math.floor(Number(cap))));
+    if (cap != null) addStat(`${i18next.t("wand.capacity", "Capacity")}:`, String(Math.floor(Number(cap))));
     const spread = s.spread ?? s.spread_degrees;
-    if (spread != null) addStat("Spread:", `${Math.floor(Number(spread))} deg`);
+    if (spread != null) addStat(`${i18next.t("wand.spread", "Spread")}:`, `${Math.floor(Number(spread))} ${i18next.t("wand.degAbbrev", "deg")}`);
     if (statsDiv.childNodes.length > 0) tooltipEl.appendChild(statsDiv);
 
     // Spell icons (always casts + regular) — show full wand capacity
@@ -2397,9 +2416,9 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // Show HP info for heart items, spell names for spells
     if (poi.item === "spell" && (poi as any).spell) {
       title.textContent = gameTranslator.translateSpell(getSpellName(String((poi as any).spell)));
-    } else if (poi.item === "heart") title.textContent = "Heart (+25 HP)";
-    else if (poi.item === "heart_bigger") title.textContent = "Heart (+50 HP)";
-    else if (poi.item === "full_heal") title.textContent = "Full Heal";
+    } else if (poi.item === "heart") title.textContent = i18next.t("poi.heartSmall", "Heart (+25 HP)");
+    else if (poi.item === "heart_bigger") title.textContent = i18next.t("poi.heartBig", "Heart (+50 HP)");
+    else if (poi.item === "full_heal") title.textContent = i18next.t("poi.fullHeal", "Full Heal");
     else title.textContent = gameTranslator.translateItem(label).replace(/_/g, " ");
     header.appendChild(wrapWithWikiLink(title, poi));
     tooltipEl.appendChild(header);
@@ -2415,13 +2434,13 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     if (poi.amount) {
       const amt = document.createElement("div");
       amt.style.cssText = "color:#aaa;font-size:0.85em";
-      amt.textContent = `Amount: ${poi.amount}`;
+      amt.textContent = `${i18next.t("poi.amount", "Amount")}: ${poi.amount}`;
       tooltipEl.appendChild(amt);
     }
     if (poi.contents && poi.contents.length) {
       const contentsDiv = document.createElement("div");
       contentsDiv.style.cssText = "margin-top:0.15em;color:#aaa;font-size:0.85em";
-      contentsDiv.textContent = `Contains: ${poi.contents
+      contentsDiv.textContent = `${i18next.t("poi.contains", "Contains")}: ${poi.contents
         .map((c: any) => {
           const cName = typeof c === "string" ? c : (c.name ?? c.item ?? String(c));
           return gameTranslator.translateItem(cName);
@@ -2501,7 +2520,11 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     if (poi.biome) {
       const biomeDiv = document.createElement("div");
       biomeDiv.style.cssText = "color:#888;font-size:1em;margin-top:0.2em";
-      biomeDiv.textContent = `Biome: ${gameTranslator.translateItem(poi.biome)}`;
+      const biomeKey = String(poi.biome).startsWith("biome_") ? String(poi.biome) : `biome_${poi.biome}`;
+      const biomeLabel = i18next.t(`gameContent.biomes.${biomeKey}`, {
+        defaultValue: gameTranslator.translateContent("biomes", String(poi.biome)),
+      });
+      biomeDiv.textContent = `${i18next.t("poi.biome", "Biome")}: ${biomeLabel}`;
       tooltipEl.appendChild(biomeDiv);
     }
   } else {
@@ -2581,7 +2604,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         }
         const label = document.createElement("span");
         label.style.cssText = "font-size:0.8em;color:#ffd700";
-        label.textContent = ci.amount ? `$${ci.amount}` : "Gold";
+        label.textContent = ci.amount ? `$${ci.amount}` : i18next.t("poi.gold", "Gold");
         goldBox.appendChild(label);
         contRow.appendChild(goldBox);
         continue;
@@ -2598,9 +2621,9 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         }
         const label = document.createElement("span");
         label.style.cssText = "font-size:0.8em;color:#ff6b6b";
-        if (ci.item === "heart") label.textContent = "+25 HP";
-        else if (ci.item === "heart_bigger") label.textContent = "+50 HP";
-        else label.textContent = "Full Heal";
+        if (ci.item === "heart") label.textContent = i18next.t("poi.heartShort", "+25 HP");
+        else if (ci.item === "heart_bigger") label.textContent = i18next.t("poi.heartBiggerShort", "+50 HP");
+        else label.textContent = i18next.t("poi.fullHeal", "Full Heal");
         heartBox.appendChild(label);
         contRow.appendChild(heartBox);
         continue;
@@ -2936,6 +2959,7 @@ function showOrbTooltip(orb: { name?: string; text?: string; x: number; y: numbe
   }
 
   tooltipEl = document.createElement("div");
+  (tooltipEl as any).__rebuild = () => showOrbTooltip(orb, iconUrl, screenX, screenY);
   tooltipEl.className = "marker-tooltip";
   tooltipEl.style.cssText = `
     position: fixed;
@@ -2946,7 +2970,9 @@ function showOrbTooltip(orb: { name?: string; text?: string; x: number; y: numbe
     border-radius: 0.6em;
     padding: 0.75em 1em;
     font-size: 14px;
-    max-width: 26em;
+    box-sizing: border-box;
+    width: 32em;
+    max-width: min(56em, 95vw);
     pointer-events: auto;
     box-shadow: 0 0.45em 1.5em rgba(0,0,0,0.7);
     font-family: monospace;

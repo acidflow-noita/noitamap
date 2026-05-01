@@ -82,8 +82,8 @@ div:has(> div > .osOverlayPOI) {
   background-color: #1a1f2a;
   left: 50%;
   bottom: 100%;
-  min-width: 22em;
-  max-width: min(50em, 92vw);
+  min-width: 32em;
+  max-width: min(56em, 95vw);
   transition: 0.1s ease-out;
   box-shadow: 0 0.25em 1em rgba(0, 0, 0, 0.6);
 }
@@ -193,16 +193,19 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Large groups: flow rows into 2 balanced columns */
+/* Large groups: flow rows into 2 balanced columns. Min column width is wide
+   enough that long translated labels (e.g. JP "近接ダメージ", DE "Elektrischer
+   Sch.") don't squeeze the value column to the point that single numbers
+   like "1.0" wrap to multiple lines. */
 .extended-info-group--cols {
-  columns: 2 10em;
+  columns: 2 14em;
   column-gap: 1.2em;
 }
 
 /* Each row is a self-contained label:value grid. */
 .extended-info-row {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 0 0.6em;
   align-items: baseline;
   break-inside: avoid;
@@ -217,7 +220,11 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 
 .extended-info-value {
   color: #ddd;
+  /* break-word lets very long single words wrap at the line edge but does NOT
+     break inside short tokens like "1.0" or "0.8" — that was causing single
+     numbers to split across three lines in narrow popup grids. */
   word-break: break-word;
+  min-width: 0;
 }
 
 /* ── Subheadings ── */
