@@ -3,13 +3,15 @@
  *
  * IndexedDB cache for telescope generation results.
  * Keyed by seed — stores raw tile buffers, biome data, and POIs.
- * No canvas blobs stored — overlays are recomputed from raw data on restore.
+ * Also stores rendered biome layer blobs per (pw, pvt) so cache hits skip
+ * the ~1.5-2s of CPU-bound tile-overlay generation on reload.
  * Prunes entries older than 30 days.
  */
 
 const DB_NAME = "noitamap-telescope";
-const DB_VERSION = 5; // bumped: composite cacheKey (seed-unlocks)
+const DB_VERSION = 6; // bumped: added biome_renders store
 const STORE_NAME = "generations";
+const RENDER_STORE_NAME = "biome_renders";
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 interface CachedTileLayer {
@@ -24,6 +26,19 @@ interface CachedTileLayer {
   mapH: number;
   minX: number;
   minY: number;
+}
+
+export interface CachedBiomeRender {
+  /** "${cacheKey}|${pw},${pvt}" */
+  renderKey: string;
+  cacheKey: string;
+  timestamp: number;
+  pw: number;
+  pvt: number;
+  blob: Blob;
+  minX: number;
+  minY: number;
+  osdWidth: number;
 }
 
 interface CachedGeneration {
@@ -58,13 +73,24 @@ interface CachedGeneration {
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
+    req.onupgradeneeded = (event) => {
       const db = req.result;
-      // Delete old store if upgrading from v1 (had blob data)
-      if (db.objectStoreNames.contains(STORE_NAME)) {
-        db.deleteObjectStore(STORE_NAME);
+      const oldVersion = event.oldVersion;
+      // Bumping past v5 (the schema-change version) wiped data. From v6 onward
+      // the upgrade is additive — keep existing cached generations when adding
+      // new stores.
+      if (oldVersion < 5) {
+        if (db.objectStoreNames.contains(STORE_NAME)) {
+          db.deleteObjectStore(STORE_NAME);
+        }
+        db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
+      } else if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
       }
-      db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
+      if (!db.objectStoreNames.contains(RENDER_STORE_NAME)) {
+        const renderStore = db.createObjectStore(RENDER_STORE_NAME, { keyPath: "renderKey" });
+        renderStore.createIndex("cacheKey", "cacheKey", { unique: false });
+      }
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -298,16 +324,78 @@ async function pruneOldEntries(): Promise<void> {
 export async function clearCache(): Promise<void> {
   try {
     const db = await openDB();
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    const store = tx.objectStore(STORE_NAME);
-    store.clear();
+    const tx = db.transaction([STORE_NAME, RENDER_STORE_NAME], "readwrite");
+    tx.objectStore(STORE_NAME).clear();
+    tx.objectStore(RENDER_STORE_NAME).clear();
     await new Promise<void>((resolve, reject) => {
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
     db.close();
-    console.log("[TileCache] Cache cleared");
+    console.log("[TileCache] Cache cleared (generations + biome_renders)");
   } catch (e) {
     console.warn("[TileCache] Failed to clear cache:", e);
   }
 }
+
+// ─── Biome render cache (rendered blobs per pw,pvt) ─────────────────────────
+
+function renderKeyFor(cacheKey: string, pw: number, pvt: number): string {
+  return `${cacheKey}|${pw},${pvt}`;
+}
+
+export async function getCachedBiomeRender(
+  cacheKey: string,
+  pw: number,
+  pvt: number,
+): Promise<CachedBiomeRender | null> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(RENDER_STORE_NAME, "readonly");
+    const req = tx.objectStore(RENDER_STORE_NAME).get(renderKeyFor(cacheKey, pw, pvt));
+    const entry: CachedBiomeRender | undefined = await new Promise((resolve, reject) => {
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    db.close();
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > MAX_AGE_MS) return null;
+    return entry;
+  } catch (e) {
+    console.warn("[TileCache] Failed to read biome render cache:", e);
+    return null;
+  }
+}
+
+export async function cacheBiomeRender(
+  cacheKey: string,
+  pw: number,
+  pvt: number,
+  blob: Blob,
+  geom: { minX: number; minY: number; osdWidth: number },
+): Promise<void> {
+  try {
+    const db = await openDB();
+    const entry: CachedBiomeRender = {
+      renderKey: renderKeyFor(cacheKey, pw, pvt),
+      cacheKey,
+      timestamp: Date.now(),
+      pw,
+      pvt,
+      blob,
+      minX: geom.minX,
+      minY: geom.minY,
+      osdWidth: geom.osdWidth,
+    };
+    const tx = db.transaction(RENDER_STORE_NAME, "readwrite");
+    tx.objectStore(RENDER_STORE_NAME).put(entry);
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  } catch (e) {
+    console.warn("[TileCache] Failed to cache biome render:", e);
+  }
+}
+

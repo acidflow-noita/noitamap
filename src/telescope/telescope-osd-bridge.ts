@@ -10,7 +10,8 @@ import { getPixelSceneImgElement, recolorPixelSceneForBiome, TILE_OVERLAY_COLORS
 import { getDataZip } from "../data-archive";
 import { installTelescopeShim, isCanvasTainted } from "./telescope-dom-shim";
 import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope-data-bridge";
-import { decodePngToRgba, rgbaToPngBlobUrl } from "./png-decode";
+import { decodePngToRgba, rgbaToPngBlobUrl, rgbaToPngBlob } from "./png-decode";
+import { getCachedBiomeRender, cacheBiomeRender } from "./tile-cache";
 import i18next from "../i18n";
 import {
   buildMarkerData,
@@ -578,35 +579,29 @@ async function _renderBiomeComposite(
  * Convert an OffscreenCanvas to a blob URL.
  */
 async function offscreenCanvasToBlobUrl(canvas: OffscreenCanvas): Promise<string> {
-  // 1. Prefer the raw ImageData captured by the putImageData shim
-  const rawData = (canvas as any).__noitamap_rawImageData as ImageData | undefined;
-  if (rawData) {
-
-    const url = await rgbaToPngBlobUrl(rawData.data, rawData.width, rawData.height);
-    dynamicBlobUrls.push(url);
-    return url;
-  }
-
-  // 2. For composited canvases (biome backgrounds, etc.) use getImageData
-  //    which is shimmed to return pristine pixels in LibreWolf/Safari ITP.
-  //    This avoids convertToBlob which gets randomized by fingerprint protection.
-  try {
-    const ctx = canvas.getContext("2d");
-    if (ctx && canvas.width > 0 && canvas.height > 0) {
-
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const url = await rgbaToPngBlobUrl(imageData.data, imageData.width, imageData.height);
-      dynamicBlobUrls.push(url);
-      return url;
-    }
-  } catch {}
-
-  // 3. Last resort fallback
-
-  const blob = await canvas.convertToBlob({ type: "image/png" });
+  const blob = await offscreenCanvasToBlob(canvas);
   const url = URL.createObjectURL(blob);
   dynamicBlobUrls.push(url);
   return url;
+}
+
+/**
+ * Convert an OffscreenCanvas to a PNG Blob (used for caching to IndexedDB).
+ * Mirrors offscreenCanvasToBlobUrl's fingerprint-protection-friendly path.
+ */
+async function offscreenCanvasToBlob(canvas: OffscreenCanvas): Promise<Blob> {
+  const rawData = (canvas as any).__noitamap_rawImageData as ImageData | undefined;
+  if (rawData) {
+    return await rgbaToPngBlob(rawData.data, rawData.width, rawData.height);
+  }
+  try {
+    const ctx = canvas.getContext("2d");
+    if (ctx && canvas.width > 0 && canvas.height > 0) {
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      return await rgbaToPngBlob(imageData.data, imageData.width, imageData.height);
+    }
+  } catch {}
+  return await canvas.convertToBlob({ type: "image/png" });
 }
 
 /**
@@ -890,6 +885,7 @@ async function addBiomeLayersProgressively(
   result: GenerationResult,
   generationId: number,
   onFirstPwReady?: () => void,
+  cacheKey?: string,
 ): Promise<void> {
   // Fire a 0% event before the blocking ensureTelescopeModules() call
   // so the loading bar becomes visible/active immediately.
@@ -957,6 +953,38 @@ async function addBiomeLayersProgressively(
       await new Promise((r) => setTimeout(r, 0));
       if (currentGenerationId !== generationId) return;
 
+      const isFirstPw = pw === 0 && pvt === 0;
+
+      // ── Cache fast path: blob already rendered for this (seed, pw, pvt) ──
+      if (cacheKey) {
+        const cached = await getCachedBiomeRender(cacheKey, pw, pvt);
+        if (currentGenerationId !== generationId) return;
+        if (cached) {
+          const url = URL.createObjectURL(cached.blob);
+          dynamicBlobUrls.push(url);
+          viewer.addTiledImage({
+            tileSource: { type: "image", url, buildPyramid: false },
+            x: cached.minX,
+            y: cached.minY,
+            width: cached.osdWidth,
+            success: (event: any) => {
+              if (currentGenerationId !== generationId) {
+                try { viewer.world.removeItem(event.item); } catch {}
+                return;
+              }
+              dynamicTiledImages.add(event.item);
+            },
+          });
+          if (isFirstPw && onFirstPwReady) {
+            try { onFirstPwReady(); } catch (e) { console.warn("[OSD Bridge] onFirstPwReady threw:", e); }
+            await new Promise((r) => setTimeout(r, 0));
+            await new Promise((r) => requestAnimationFrame(() => r(null)));
+          }
+          stepsDone++;
+          continue;
+        }
+      }
+
       // Compute all overlays for this PW at once (CPU-bound, ~1-2s)
       const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(
         biomeData,
@@ -1023,11 +1051,19 @@ async function addBiomeLayersProgressively(
         const py = Math.round((y - minY) / 10);
         compositeCtx.drawImage(overlay, px, py);
       }
-      const url = await offscreenCanvasToBlobUrl(compositeCanvas);
+      const blob = await offscreenCanvasToBlob(compositeCanvas);
+      const url = URL.createObjectURL(blob);
+      dynamicBlobUrls.push(url);
       if (currentGenerationId !== generationId) return;
 
       const osdWidth = compositeW * 10;
-      const isFirstPw = pw === 0 && pvt === 0;
+      // Persist the rendered blob so future loads of this seed skip the
+      // ~100-200ms tile-overlay computation per PW.
+      if (cacheKey) {
+        cacheBiomeRender(cacheKey, pw, pvt, blob, { minX, minY, osdWidth }).catch((e) =>
+          console.warn("[OSD Bridge] cacheBiomeRender failed:", e),
+        );
+      }
       viewer.addTiledImage({
         tileSource: { type: "image", url, buildPyramid: false },
         x: minX,
@@ -3182,6 +3218,7 @@ export async function renderGenerationResult(
   unlocks?: string[] | null,
   isDaily?: boolean,
   onFirstPaint?: () => void,
+  cacheKey?: string,
 ): Promise<void> {
   const generationId = ++currentGenerationId;
   (window as any).__osdViewer = viewer;
@@ -3211,7 +3248,7 @@ export async function renderGenerationResult(
   if (currentGenerationId !== generationId) return;
 
   // Adding biomes initializes the OSD viewport bounds.
-  await addBiomeLayersProgressively(viewer, result, generationId, onFirstPaint);
+  await addBiomeLayersProgressively(viewer, result, generationId, onFirstPaint, cacheKey);
   if (currentGenerationId !== generationId) return;
 
   // Pixel scenes render on top of biome overlays, below POI markers.

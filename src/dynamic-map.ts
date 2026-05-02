@@ -270,7 +270,7 @@ export async function runDynamicMap(
       console.log(`[DynamicMap] First paint (PW 0,0): ${((performance.now() - t) / 1000).toFixed(2)}s`);
       onLoadingChange?.(false);
     };
-    await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint);
+    await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint, cacheKey);
     if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
     console.log(`[DynamicMap] Render: ${((performance.now() - t) / 1000).toFixed(2)}s`);
     lastResult = result;
