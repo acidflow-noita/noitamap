@@ -11,7 +11,7 @@ import { getDataZip } from "../data-archive";
 import { installTelescopeShim, isCanvasTainted } from "./telescope-dom-shim";
 import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope-data-bridge";
 import { decodePngToRgba, rgbaToPngBlobUrl, rgbaToPngBlob } from "./png-decode";
-import { getCachedBiomeRender, cacheBiomeRender } from "./tile-cache";
+import { getCachedBiomeRender, cacheBiomeRender, getCachedSceneBitmap, cacheSceneBitmap, getCachedSceneBitmapKeys } from "./tile-cache";
 import i18next from "../i18n";
 import {
   buildMarkerData,
@@ -1558,6 +1558,181 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
 }
 
 /**
+ * Composite a single pixel scene's three layers into one ImageBitmap (and
+ * return its PNG-encoded blob for caching). Centralized here so both the
+ * render path and the background prefetch use the same logic.
+ *
+ * Returns null when no layers can be loaded for this key.
+ */
+async function compositeSceneBitmap(
+  key: string,
+  scene: { imgElement: any; width: number; height: number; name: string; key: string },
+  idx: { visualByPath: Map<string, string>; visualByName: Map<string, string>; bgByPath: Map<string, string>; bgByName: Map<string, string> },
+): Promise<{ bitmap: ImageBitmap; blob: Blob | null; width: number; height: number; kind: "composite" | "fallback" } | null> {
+  const slashIdx = key.indexOf("/");
+  const biome = slashIdx >= 0 ? key.substring(0, slashIdx) : "";
+  const name = slashIdx >= 0 ? key.substring(slashIdx + 1) : key;
+
+  const skipBg = biome === "temple" || biome === "general";
+
+  const override = pixelSceneConfig.layerOverrides[name] || pixelSceneConfig.layerOverrides[key];
+  const wantBg = override?.background ?? pixelSceneConfig.layers.background;
+  const wantMid = override?.mid ?? pixelSceneConfig.layers.mid;
+  const wantVis = override?.visual ?? pixelSceneConfig.layers.visual;
+
+  const visualPath = wantVis ? resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, key) : undefined;
+  const bgPath = skipBg || !wantBg ? undefined : resolveScenePath(idx.bgByPath, idx.bgByName, biome, name, key);
+
+  const zip = await getDataZip();
+  let bgData: ImageData | null = null;
+  let visualData: ImageData | null = null;
+
+  if (zip && bgPath) {
+    bgData = await decodeScenePng(zip, bgPath).catch(() => null);
+    if (bgData && scene.width > 0 && bgData.width < scene.width / 2) bgData = null;
+  }
+  if (zip && visualPath) {
+    visualData = await decodeScenePng(zip, visualPath).catch(() => null);
+  }
+
+  let midBitmap: ImageBitmap | null = null;
+  if (wantMid && scene.imgElement) {
+    midBitmap = await imgElementToBitmap(scene.imgElement, scene.width, scene.height);
+  } else if (wantMid) {
+    const rawImgEl = getPixelSceneImgElement(scene.key);
+    if (rawImgEl) {
+      let recolored = rawImgEl;
+      try {
+        recolored = recolorPixelSceneForBiome(scene.name, rawImgEl, biome);
+        for (let i = 0; i < recolored.length; i += 4) {
+          if (recolored[i] === 0xff && recolored[i + 1] === 0x00 && recolored[i + 2] === 0xff) {
+            if (recolored[i + 3] === 0xff) {
+              recolored[i] = 0x5a;
+              recolored[i + 1] = 0x63;
+              recolored[i + 2] = 0x69;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("[OSD Bridge] Failed to recolor pixel scene fallback:", scene.key, e);
+      }
+      midBitmap = await imgElementToBitmap(recolored, scene.width, scene.height);
+    }
+  }
+
+  const hasBg = !!bgData;
+  const hasMid = !!midBitmap;
+  const hasVis = !!visualData;
+  if (!hasBg && !hasMid && !hasVis) return null;
+
+  // Always go through a canvas so we can produce a cacheable Blob.
+  const w = scene.width || Math.max(bgData?.width ?? 0, visualData?.width ?? 0, midBitmap?.width ?? 0);
+  const h = scene.height || Math.max(bgData?.height ?? 0, visualData?.height ?? 0, midBitmap?.height ?? 0);
+  const canvas = new OffscreenCanvas(w, h);
+  const ctx = canvas.getContext("2d")!;
+  ctx.imageSmoothingEnabled = false;
+
+  let bgBmp: ImageBitmap | null = null;
+  let visBmp: ImageBitmap | null = null;
+  if (bgData) {
+    bgBmp = await createImageBitmap(bgData);
+    ctx.drawImage(bgBmp, 0, 0);
+  }
+  if (midBitmap) ctx.drawImage(midBitmap, 0, 0);
+  if (visualData) {
+    visBmp = await createImageBitmap(visualData);
+    ctx.drawImage(visBmp, 0, 0);
+  }
+
+  const bitmap = await createImageBitmap(canvas);
+  let blob: Blob | null = null;
+  try {
+    blob = await canvas.convertToBlob({ type: "image/png" });
+  } catch (e) {
+    console.warn("[OSD Bridge] convertToBlob failed (scene won't be cached):", key, e);
+  }
+
+  if (bgBmp) bgBmp.close();
+  if (midBitmap) midBitmap.close();
+  if (visBmp) visBmp.close();
+
+  const kind: "composite" | "fallback" = hasBg || hasVis ? "composite" : "fallback";
+  return { bitmap, blob, width: w, height: h, kind };
+}
+
+let _scenePrefetchInflight: Promise<void> | null = null;
+
+/**
+ * Composite and persist every pixel scene key telescope knows about,
+ * skipping ones already in the IDB cache. Fires once per session in the
+ * background after the first render so future seed switches have zero
+ * pixel-scene compositing work.
+ */
+export function prefetchAllSceneBitmaps(): Promise<void> {
+  if (_scenePrefetchInflight) return _scenePrefetchInflight;
+  _scenePrefetchInflight = (async () => {
+    try {
+      const adapter = await import("./telescope-adapter");
+      const allKeysFn = (adapter as any).getAllPixelSceneKeys as (() => string[]) | undefined;
+      const dataFn = (adapter as any).getPixelSceneData as ((key: string) => any) | undefined;
+      if (!allKeysFn || !dataFn) {
+        console.warn("[OSD Bridge] Pixel-scene prefetch unavailable: telescope adapter did not export key list");
+        return;
+      }
+      const allKeys = allKeysFn();
+      if (allKeys.length === 0) return;
+      const cached = await getCachedSceneBitmapKeys();
+      const missing = allKeys.filter((k) => !cached.has(k));
+      if (missing.length === 0) {
+        console.log(`[OSD Bridge] Pixel-scene prefetch: all ${allKeys.length} keys already cached`);
+        return;
+      }
+      console.log(`[OSD Bridge] Pixel-scene prefetch: ${missing.length}/${allKeys.length} missing — warming cache in background...`);
+      const idx = await getScenePngIndex();
+      let warmed = 0;
+      let skipped = 0;
+      const t0 = performance.now();
+      // Process serially to keep main-thread pressure low.
+      for (const key of missing) {
+        const data = dataFn(key);
+        if (!data) { skipped++; continue; }
+        const scene = {
+          imgElement: data.imgElement || null,
+          width: data.width || 0,
+          height: data.height || 0,
+          name: data.name || key.substring(key.indexOf("/") + 1),
+          key,
+        };
+        try {
+          const composited = await compositeSceneBitmap(key, scene, idx);
+          if (!composited) { skipped++; continue; }
+          composited.bitmap.close();
+          if (composited.blob) {
+            await cacheSceneBitmap(key, composited.blob, composited.width, composited.height);
+            warmed++;
+          } else {
+            skipped++;
+          }
+        } catch (e) {
+          skipped++;
+          console.warn("[OSD Bridge] Prefetch composite failed:", key, e);
+        }
+        // Yield between keys so UI stays responsive.
+        await new Promise((r) => setTimeout(r, 0));
+      }
+      console.log(
+        `[OSD Bridge] Pixel-scene prefetch: warmed ${warmed}, skipped ${skipped}, took ${((performance.now() - t0) / 1000).toFixed(2)}s`,
+      );
+    } catch (e) {
+      console.warn("[OSD Bridge] Pixel-scene prefetch failed:", e);
+    } finally {
+      _scenePrefetchInflight = null;
+    }
+  })();
+  return _scenePrefetchInflight;
+}
+
+/**
  * Add pixel scenes for all parallel worlds to the viewer.
  *
  * Loads _visual.png from data.zip for proper pre-colored images.
@@ -1623,9 +1798,11 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   );
 
   // 2. Build composite bitmaps: _background.png (bottom) + imgElement (middle) + _visual.png (top)
+  // Per-key bitmaps are seed-independent — cache them in IDB so future seeds reuse the work.
   const BATCH = 50;
   const keyArr = Array.from(uniqueKeys.entries());
   let compositeCount = 0;
+  let cacheHitCount = 0;
   let fallbackCount = 0;
   let missingCount = 0;
   const idx = await getScenePngIndex();
@@ -1635,122 +1812,32 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     const batch = keyArr.slice(i, i + BATCH);
     await Promise.all(
       batch.map(async ([key, scene]) => {
-        const slashIdx = key.indexOf("/");
-        const biome = slashIdx >= 0 ? key.substring(0, slashIdx) : "";
-        const name = slashIdx >= 0 ? key.substring(slashIdx + 1) : key;
-
-        const skipBg = biome === "temple" || biome === "general";
-
-        // Resolve per-scene layer overrides (fall back to global)
-        const override = pixelSceneConfig.layerOverrides[name] || pixelSceneConfig.layerOverrides[key];
-        const wantBg = override?.background ?? pixelSceneConfig.layers.background;
-        const wantMid = override?.mid ?? pixelSceneConfig.layers.mid;
-        const wantVis = override?.visual ?? pixelSceneConfig.layers.visual;
-
-        const visualPath = wantVis ? resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, key) : undefined;
-        const bgPath = skipBg || !wantBg ? undefined : resolveScenePath(idx.bgByPath, idx.bgByName, biome, name, key);
-
-        const zip = await getDataZip();
-        let bgData: ImageData | null = null;
-        let visualData: ImageData | null = null;
-
-        if (zip && bgPath) {
-          bgData = await decodeScenePng(zip, bgPath).catch(() => null);
-          // Skip tiny material-variant patches
-          if (bgData && scene.width > 0 && bgData.width < scene.width / 2) bgData = null;
-        }
-        if (zip && visualPath) {
-          visualData = await decodeScenePng(zip, visualPath).catch(() => null);
-        }
-
-        // Middle layer: telescope's recolored imgElement (with magenta/air fix)
-        // NOTE: Telescope's refactored loadPixelScene no longer sets imgElement on
-        // returned scene objects. The raw data in PIXEL_SCENE_DATA[key].imgElement
-        // is UN-RECOLORED (gray terrain pixels show as white), so we must apply
-        // recolorPixelSceneForBiome to map those colors to the actual biome materials.
-        let midBitmap: ImageBitmap | null = null;
-        if (wantMid && scene.imgElement) {
-          // Old telescope path: imgElement is already recolored — use directly
-          midBitmap = await imgElementToBitmap(scene.imgElement, scene.width, scene.height);
-        } else if (wantMid) {
-          // No visual/bg PNGs available or telescope refactored them away — use raw imgElement as fallback, but recolor it
-          const rawImgEl = getPixelSceneImgElement(scene.key);
-          if (rawImgEl) {
-             let recolored = rawImgEl;
-             try {
-                recolored = recolorPixelSceneForBiome(scene.name, rawImgEl, biome);
-
-                // Telescope's internal recolor lookup sometimes misses biomes (like the vault on the foreground map)
-                // and defaults to magenta (0xff00ff). Because our imgElementToBitmap interprets 
-                // pure magenta as a transparent placeholder, the terrain gets erased!
-                // We fix it by converting any opaque magenta back into a reliable metal-grey terrain color.
-                for (let i = 0; i < recolored.length; i += 4) {
-                  if (recolored[i] === 0xff && recolored[i+1] === 0x00 && recolored[i+2] === 0xff) {
-                    if (recolored[i+3] === 0xff) {
-                      recolored[i] = 0x5a;
-                      recolored[i+1] = 0x63;
-                      recolored[i+2] = 0x69;
-                    }
-                  }
-                }
-             } catch (e) {
-                console.warn("[OSD Bridge] Failed to recolor pixel scene fallback:", scene.key, e);
-             }
-             midBitmap = await imgElementToBitmap(recolored, scene.width, scene.height);
+        // ── Cache fast path ────────────────────────────────────────────────
+        const cached = await getCachedSceneBitmap(key);
+        if (cached) {
+          try {
+            const bmp = await createImageBitmap(cached.blob);
+            bitmapByKey.set(key, bmp);
+            cacheHitCount++;
+            return;
+          } catch {
+            // fall through to recompute
           }
         }
 
-        // Determine what layers we have
-        const hasBg = !!bgData;
-        const hasMid = !!midBitmap;
-        const hasVis = !!visualData;
-
-        if (!hasBg && !hasMid && !hasVis) {
+        const composited = await compositeSceneBitmap(key, scene, idx);
+        if (!composited) {
           missingCount++;
           return;
         }
-
-        // Single layer — no compositing needed
-        if (!hasBg && !hasVis && hasMid) {
-          bitmapByKey.set(key, midBitmap!);
-          fallbackCount++;
-          return;
+        bitmapByKey.set(key, composited.bitmap);
+        if (composited.kind === "fallback") fallbackCount++;
+        else compositeCount++;
+        if (composited.blob) {
+          cacheSceneBitmap(key, composited.blob, composited.width, composited.height).catch((e) =>
+            console.warn("[OSD Bridge] cacheSceneBitmap failed:", key, e),
+          );
         }
-        if (!hasBg && !hasMid && hasVis) {
-          bitmapByKey.set(key, await createImageBitmap(visualData!));
-          compositeCount++;
-          return;
-        }
-        if (hasBg && !hasMid && !hasVis) {
-          bitmapByKey.set(key, await createImageBitmap(bgData!));
-          compositeCount++;
-          return;
-        }
-
-        // Multi-layer composite: bg → imgElement → visual
-        const w = scene.width || Math.max(bgData?.width ?? 0, visualData?.width ?? 0);
-        const h = scene.height || Math.max(bgData?.height ?? 0, visualData?.height ?? 0);
-        const canvas = new OffscreenCanvas(w, h);
-        const ctx = canvas.getContext("2d")!;
-        ctx.imageSmoothingEnabled = false;
-
-        if (bgData) {
-          const bmp = await createImageBitmap(bgData);
-          ctx.drawImage(bmp, 0, 0);
-          bmp.close();
-        }
-        if (midBitmap) {
-          ctx.drawImage(midBitmap, 0, 0);
-          midBitmap.close();
-        }
-        if (visualData) {
-          const bmp = await createImageBitmap(visualData);
-          ctx.drawImage(bmp, 0, 0);
-          bmp.close();
-        }
-
-        bitmapByKey.set(key, await createImageBitmap(canvas));
-        compositeCount++;
       }),
     );
   }
@@ -1758,7 +1845,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   if (currentGenerationId !== generationId) return;
   console.log(
     `[OSD Bridge] Pixel scene bitmaps: ${bitmapByKey.size}/${uniqueKeys.size} ` +
-      `(${compositeCount} composite, ${fallbackCount} fallback, ${missingCount} missing)`,
+      `(${cacheHitCount} cache, ${compositeCount} composite, ${fallbackCount} fallback, ${missingCount} missing)`,
   );
 
   // 3. Build items array and compute bounding box

@@ -300,6 +300,13 @@ export async function runDynamicMap(
     }
     console.log(`[DynamicMap] POI export + index: ${((performance.now() - t) / 1000).toFixed(2)}s`);
 
+    // Background prefetch: composite & cache every pixel-scene bitmap telescope
+    // knows about. Fires once per session after the first successful render so
+    // future seed switches don't pay any compositing cost.
+    import("./telescope/telescope-osd-bridge").then(({ prefetchAllSceneBitmaps }) => {
+      prefetchAllSceneBitmaps();
+    }).catch(() => {});
+
     return result;
   } catch (err) {
     console.error("[DynamicMap] Pipeline failed:", err);

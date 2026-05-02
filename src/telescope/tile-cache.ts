@@ -9,9 +9,10 @@
  */
 
 const DB_NAME = "noitamap-telescope";
-const DB_VERSION = 6; // bumped: added biome_renders store
+const DB_VERSION = 7; // bumped: added pixel_scene_bitmaps store
 const STORE_NAME = "generations";
 const RENDER_STORE_NAME = "biome_renders";
+const SCENE_BITMAP_STORE_NAME = "pixel_scene_bitmaps";
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 interface CachedTileLayer {
@@ -90,6 +91,9 @@ function openDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(RENDER_STORE_NAME)) {
         const renderStore = db.createObjectStore(RENDER_STORE_NAME, { keyPath: "renderKey" });
         renderStore.createIndex("cacheKey", "cacheKey", { unique: false });
+      }
+      if (!db.objectStoreNames.contains(SCENE_BITMAP_STORE_NAME)) {
+        db.createObjectStore(SCENE_BITMAP_STORE_NAME, { keyPath: "key" });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -324,15 +328,16 @@ async function pruneOldEntries(): Promise<void> {
 export async function clearCache(): Promise<void> {
   try {
     const db = await openDB();
-    const tx = db.transaction([STORE_NAME, RENDER_STORE_NAME], "readwrite");
+    const tx = db.transaction([STORE_NAME, RENDER_STORE_NAME, SCENE_BITMAP_STORE_NAME], "readwrite");
     tx.objectStore(STORE_NAME).clear();
     tx.objectStore(RENDER_STORE_NAME).clear();
+    tx.objectStore(SCENE_BITMAP_STORE_NAME).clear();
     await new Promise<void>((resolve, reject) => {
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
     db.close();
-    console.log("[TileCache] Cache cleared (generations + biome_renders)");
+    console.log("[TileCache] Cache cleared (generations + biome_renders + pixel_scene_bitmaps)");
   } catch (e) {
     console.warn("[TileCache] Failed to clear cache:", e);
   }
@@ -396,6 +401,68 @@ export async function cacheBiomeRender(
     db.close();
   } catch (e) {
     console.warn("[TileCache] Failed to cache biome render:", e);
+  }
+}
+
+// ─── Pixel scene bitmap cache (seed-independent, by scene key) ─────────────
+
+export interface CachedSceneBitmap {
+  key: string;
+  blob: Blob;
+  width: number;
+  height: number;
+  timestamp: number;
+}
+
+export async function getCachedSceneBitmap(key: string): Promise<CachedSceneBitmap | null> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(SCENE_BITMAP_STORE_NAME, "readonly");
+    const req = tx.objectStore(SCENE_BITMAP_STORE_NAME).get(key);
+    const entry: CachedSceneBitmap | undefined = await new Promise((resolve, reject) => {
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    db.close();
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > MAX_AGE_MS) return null;
+    return entry;
+  } catch (e) {
+    console.warn("[TileCache] Failed to read scene bitmap cache:", e);
+    return null;
+  }
+}
+
+export async function getCachedSceneBitmapKeys(): Promise<Set<string>> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(SCENE_BITMAP_STORE_NAME, "readonly");
+    const req = tx.objectStore(SCENE_BITMAP_STORE_NAME).getAllKeys();
+    const keys: IDBValidKey[] = await new Promise((resolve, reject) => {
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    db.close();
+    return new Set(keys.map((k) => String(k)));
+  } catch (e) {
+    console.warn("[TileCache] Failed to read scene bitmap keys:", e);
+    return new Set();
+  }
+}
+
+export async function cacheSceneBitmap(key: string, blob: Blob, width: number, height: number): Promise<void> {
+  try {
+    const db = await openDB();
+    const entry: CachedSceneBitmap = { key, blob, width, height, timestamp: Date.now() };
+    const tx = db.transaction(SCENE_BITMAP_STORE_NAME, "readwrite");
+    tx.objectStore(SCENE_BITMAP_STORE_NAME).put(entry);
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  } catch (e) {
+    console.warn("[TileCache] Failed to cache scene bitmap:", e);
   }
 }
 

@@ -32,6 +32,18 @@ export function getPixelSceneImgElement(key: string): Uint8Array | null {
   if (!PIXEL_SCENE_DATA || !PIXEL_SCENE_DATA[key]) return null;
   return PIXEL_SCENE_DATA[key].imgElement || null;
 }
+
+/** Returns the full pixel-scene record (imgElement, width, height, name, etc). */
+export function getPixelSceneData(key: string): any | null {
+  if (!PIXEL_SCENE_DATA || !PIXEL_SCENE_DATA[key]) return null;
+  return PIXEL_SCENE_DATA[key];
+}
+
+/** Returns every pixel scene key telescope has loaded (after initTelescope). */
+export function getAllPixelSceneKeys(): string[] {
+  if (!PIXEL_SCENE_DATA) return [];
+  return Object.keys(PIXEL_SCENE_DATA);
+}
 let loadPixelSceneData: any;
 export let recolorPixelSceneForBiome: any;
 let GENERATOR_CONFIG: any;
