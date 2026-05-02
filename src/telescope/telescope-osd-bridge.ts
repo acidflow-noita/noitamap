@@ -889,6 +889,7 @@ async function addBiomeLayersProgressively(
   viewer: OSDViewer,
   result: GenerationResult,
   generationId: number,
+  onFirstPwReady?: () => void,
 ): Promise<void> {
   // Fire a 0% event before the blocking ensureTelescopeModules() call
   // so the loading bar becomes visible/active immediately.
@@ -1026,6 +1027,7 @@ async function addBiomeLayersProgressively(
       if (currentGenerationId !== generationId) return;
 
       const osdWidth = compositeW * 10;
+      const isFirstPw = pw === 0 && pvt === 0;
       viewer.addTiledImage({
         tileSource: { type: "image", url, buildPyramid: false },
         x: minX,
@@ -1039,6 +1041,16 @@ async function addBiomeLayersProgressively(
           dynamicTiledImages.add(event.item);
         },
       });
+
+      if (isFirstPw && onFirstPwReady) {
+        // Fire after queueing PW 0,0 (don't wait for OSD's success callback —
+        // it's blocked by the loop's subsequent CPU-heavy iterations).
+        // Yield twice so the browser can paint the indicator hiding before
+        // the next PW iteration blocks the main thread for ~100ms.
+        try { onFirstPwReady(); } catch (e) { console.warn("[OSD Bridge] onFirstPwReady threw:", e); }
+        await new Promise((r) => setTimeout(r, 0));
+        await new Promise((r) => requestAnimationFrame(() => r(null)));
+      }
 
       stepsDone++;
     }
@@ -3164,7 +3176,13 @@ async function addOrbOverlays(
   console.log(`[OSD Bridge] Added ${addedCount} orb overlays (${unlockSet ? 'unlock-aware' : 'all visible'})`);
 }
 
-export async function renderGenerationResult(viewer: OSDViewer, result: GenerationResult, unlocks?: string[] | null, isDaily?: boolean): Promise<void> {
+export async function renderGenerationResult(
+  viewer: OSDViewer,
+  result: GenerationResult,
+  unlocks?: string[] | null,
+  isDaily?: boolean,
+  onFirstPaint?: () => void,
+): Promise<void> {
   const generationId = ++currentGenerationId;
   (window as any).__osdViewer = viewer;
 
@@ -3193,7 +3211,7 @@ export async function renderGenerationResult(viewer: OSDViewer, result: Generati
   if (currentGenerationId !== generationId) return;
 
   // Adding biomes initializes the OSD viewport bounds.
-  await addBiomeLayersProgressively(viewer, result, generationId);
+  await addBiomeLayersProgressively(viewer, result, generationId, onFirstPaint);
   if (currentGenerationId !== generationId) return;
 
   // Pixel scenes render on top of biome overlays, below POI markers.

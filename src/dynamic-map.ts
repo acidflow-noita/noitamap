@@ -260,7 +260,17 @@ export async function runDynamicMap(
     console.log(
       `[DynamicMap] Rendering seed ${seed} with ${result.parallelWorlds?.length || 3} worlds, worldCenter=${result.worldCenter}`,
     );
-    await renderGenerationResult(viewer as any, result, unlocks, isDaily);
+    // Hide loading indicator as soon as the main world's biome layer paints,
+    // not after the full multi-PW render finishes. The remaining PWs / pixel
+    // scenes / POIs continue rendering in the background.
+    let firstPaintFired = false;
+    const onFirstPaint = () => {
+      if (firstPaintFired || myToken !== generationToken) return;
+      firstPaintFired = true;
+      console.log(`[DynamicMap] First paint (PW 0,0): ${((performance.now() - t) / 1000).toFixed(2)}s`);
+      onLoadingChange?.(false);
+    };
+    await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint);
     if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
     console.log(`[DynamicMap] Render: ${((performance.now() - t) / 1000).toFixed(2)}s`);
     lastResult = result;
