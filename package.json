@@ -7,11 +7,12 @@
   "scripts": {
     "preinstall": "git submodule update --init --recursive",
     "test": "vitest run",
-    "build": "npm run sync-translations && npm run add-biome-translations && npm run bake-extended-translations && npm run check-translations && npm run copy-flags && npm run copy-locales && npm run build-spritesheet && npm run generate-reaction-roles && npm run generate-material-effects && npm run generate-creature-data && vite build",
+    "build": "npm run sync-translations && npm run add-biome-translations && npm run bake-extended-translations && npm run generate-creature-data && npm run bake-creature-translations && npm run check-translations && npm run copy-flags && npm run copy-locales && npm run build-spritesheet && npm run generate-reaction-roles && npm run generate-material-effects && vite build",
     "build-spritesheet": "node build_scripts/build-spritesheet.cjs",
     "generate-reaction-roles": "node build_scripts/generate-reaction-roles.cjs",
     "generate-material-effects": "node build_scripts/generate-material-effects.cjs",
     "generate-creature-data": "node build_scripts/generate-creature-data.cjs",
+    "bake-creature-translations": "node build_scripts/bake-creature-translations.cjs",
     "copy-flags": "node build_scripts/copy-flags.cjs",
     "add-biome-translations": "node build_scripts/add-biome-translations.cjs",
     "bake-extended-translations": "node build_scripts/bake-extended-translations.cjs",

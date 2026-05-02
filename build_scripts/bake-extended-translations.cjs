@@ -64,6 +64,19 @@ const LOCALE_TO_CSV_COL = {
 //             is written; when absent, EN fallback is used (writes only if
 //             the key is missing — see Behavior above).
 const KEYS = [
+  // Section headers / status text used by the extended-info popup section.
+  { key: "extended.title", en: "Extended info" },
+  { key: "extended.loading", en: "Loading..." },
+  { key: "extended.cta", en: "Unlock with Pro" },
+  { key: "extended.dmgMults", en: "Damage multipliers" },
+  { key: "extended.damage", en: "Damage" },
+  { key: "extended.tiers", en: "Tier spawn rate" },
+  { key: "extended.stainEffects", en: "Stain effects" },
+  { key: "extended.ingestionEffects", en: "Ingestion effects" },
+  { key: "extended.reactionsHeader", en: "Material reactions on Bartender" },
+  { key: "extended.asReagent", en: "View as reagent" },
+  { key: "extended.asProduct", en: "View as product" },
+
   // Extended-info row labels.
   { key: "extended.row.faction", en: "Faction" },
   { key: "extended.row.hp", en: "HP" },
@@ -184,6 +197,7 @@ const KEYS = [
   { key: "poi.contains", en: "Contains" },
   { key: "poi.gold", en: "Gold" },
   { key: "poi.biome", en: "Biome" },
+  { key: "poi.horde", en: "Horde" },
   { key: "poi.heartSmall", en: "Heart (+25 HP)" },
   { key: "poi.heartBig", en: "Heart (+50 HP)" },
   { key: "poi.fullHeal", en: "Full Heal" },
@@ -241,6 +255,147 @@ const SPAWN_NAME_TO_CSV_KEY = {
   "Parallel Worlds": null,
   "Treasure Chest": null,
   "Buried skull": null,
+};
+
+// ─── gameContent.items.* — POI labels used by the popup card ────────────────
+// Each key here maps a raw POI label (the value telescope-osd-bridge.ts /
+// overlays.ts pass to gameTranslator.translateItem) to the matching CSV row
+// that holds the localised display name. Build-time only — runtime is just a
+// plain i18next.t() lookup against the static JSON.
+//
+// Coverage spans the items emitted by Noita's POI scanner: wands, chests,
+// potions, pouches, runestones, eggs, shops, hearts, musicstones, sampo,
+// evil eye, etc. Generic types like "chest" / "great_chest" point at the
+// closest CSV row so EN gets the proper UI name ("Treasure chest") rather
+// than the snake_case key.
+const POI_NAME_TO_CSV_KEY = {
+  // Wands — generic + specific in-game wand variants.
+  "Wand": "item_wand",
+  "wand": "item_wand",
+  "wand_unshuffle": "item_wand",
+  "broken_wand": "item_broken_wand",
+  "wand_kiekurakeppi": "item_wand_kiekurakeppi",
+  "wand_valtikka": "item_wand_valtikka",
+  "wand_ruusu": "item_wand_ruusu",
+  "wand_riimusauva": "item_wand_riimusauva",
+  "wand_arpaluu": "item_wand_arpaluu",
+  "wand_varpuluuta": "item_wand_varpuluuta",
+  "vault_puzzle_arpaluu": "item_wand_arpaluu",
+  "vault_puzzle_varpuluuta": "item_wand_varpuluuta",
+  "vasta": "item_vasta",
+  "vihta": "item_vihta",
+
+  // Spells.
+  "spell": "inventory_actiontype_other",
+  "Spell": "inventory_actiontype_other",
+  "spell_refresh": "item_spell_refresh",
+
+  // Potions / pouches / jars.
+  "potion": "item_potion",
+  "potion_normal": "item_potion",
+  "potion_random": "item_potion",
+  "potion_secret": "item_potion",
+  "potion_mimic_empty": "item_potion_empty",
+  "mimic_potion": "item_potion",
+  "flask": "item_potion",
+  "pouch": "item_powder_stash_3",
+  "powder_stash": "item_powder_stash",
+  "powder_pouch": "item_powder_stash_3",
+  "jar": "item_jar",
+
+  // Gold / hearts.
+  "gold": "mat_gold",
+  "goldnugget": "item_goldnugget",
+  "heart": null,                       // localized via poi.heartSmall i18n key
+  "heart_bigger": null,                // localized via poi.heartBig i18n key
+  "heart_mimic": "item_potion_mimic",
+  "full_heal": null,                   // localized via poi.fullHeal i18n key
+
+  // Orbs.
+  "orb": "item_orb",
+  "true_orb": "item_orb",
+  "shiny_orb": "item_orb",
+  "greed_orb": "item_greed_crystal",
+
+  // Chests + chest types.
+  "chest": "item_chest_treasure",
+  "great_chest": "item_chest_treasure_super",
+  "pacifist_chest": "item_chest_treasure_pacifist",
+  "treasure": "item_chest_treasure",
+  "chest_dark": "item_chest_dark",
+  "chest_light": "item_chest_light",
+  "chest_leggy": "item_chest_treasure",
+
+  // Shops / rooms (use biome rows since the CSV has no item_* match).
+  "holy_mountain_shop": "biome_holymountain",
+  "shop": "biome_shop_room",
+  "eye_room": "biome_boss_sky",
+  "greed_room": "biome_greed_room",
+
+  // Musical instruments / runestones / story items.
+  "ocarina": "item_ocarina",
+  "kantele": "item_kantele",
+  "musicstone": "item_musicstone",
+  "music_machine": "item_musicstone",
+  "sampo": "item_mcguffin_12",
+  "kuu": "item_moon",
+  "moon": "item_moon",
+  "ukkoskivi": "item_thunderstone",
+  "thunderstone": "item_thunderstone",
+  "kakkakikkare": "item_kakka",
+  "paha_silma": "item_evil_eye",
+  "evil_eye": "item_evil_eye",
+  "sunseed": "item_sunseed",
+  "wandstone": "item_wandstone",
+  "key": "item_key",
+  "crystal_key": "item_key",
+  "emerald_tablet": "booktitle00",
+
+  // Eggs.
+  "egg": "item_egg",
+  "egg_fire": "item_egg_fire",
+  "egg_monster": "item_egg_worm",
+  "egg_purple": "item_egg_purple",
+  "egg_slime": "item_egg_slime",
+  "egg_hollow": "item_egg_hollow",
+  "egg_worm": "item_egg_worm",
+
+  // Bombs / dies / gourd / greed.
+  "bomb": "action_bomb",
+  "gourd": "item_gourd",
+  "greed_die": "item_greed_die",
+  "greed_crystal": "item_greed_crystal",
+  "chaos_die": "item_greed_die",       // no exact CSV match; keep close family
+  "fire_die": "item_greed_die",
+  "heart_die": "item_greed_die",
+
+  // Runestones (full set from the CSV).
+  "runestone_laser": "item_runestone_laser",
+  "runestone_fireball": "item_runestone_fireball",
+  "runestone_lava": "item_runestone_lava",
+  "runestone_disc": "item_runestone_disc",
+  "runestone_null": "item_runestone_null",
+  "runestone_slow": "item_runestone_slow",
+
+  // Portals.
+  "portal": "streamingevent_portal_random",
+  "buried_eye_teleporter": "streamingevent_portal_random",
+
+  // Misc / no good CSV match (fall back to capitalised label).
+  "Heart": null,
+  "Spell book": null,
+  "music_speaker": null,
+  "altar_inert": null,
+  "meditation_cube": null,
+  "mimic": null,
+  "blocked_by_unlock": null,
+  "kivi": null,
+  "kummitus": null,
+  "vuoksikivi": null,
+  "kiuaskivi": null,
+  "oil_receptacle_puzzle": null,
+  "water_receptacle_puzzle": null,
+  "steam_receptacle_puzzle": null,
 };
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -355,6 +510,29 @@ function main() {
         if (setNested(json, dottedKey, fromCsv, { force: true })) csvWrites++;
       } else {
         if (setNested(json, dottedKey, enName, { force: false })) enFallbackAdds++;
+      }
+    }
+
+    // gameContent.items.<poi-name> — generic POI labels (Wand, potion, chest,
+    // orb, …). These match the strings telescope-osd-bridge.ts passes to
+    // gameTranslator.translateItem, so the runtime path is just an i18next
+    // lookup against the JSON. Unlike the KEYS table above we DO use the CSV
+    // value for the EN locale here so popups read "Treasure chest" / "Potion"
+    // / "Wand" / etc. — the proper UI display names — instead of the raw
+    // lowercase POI keys.
+    for (const [poiName, csvKey] of Object.entries(POI_NAME_TO_CSV_KEY)) {
+      const dottedKey = `gameContent.items.${poiName}`;
+      // First try the locale's own CSV column. If that's blank (some rows
+      // are flagged "doesn't need to be translated" for certain languages),
+      // fall back to the EN column so the JSON gets a proper UI display name
+      // ("Kuu", "Ukkoskivi", "Kantele", …) instead of the lowercase POI key.
+      const fromCsv =
+        csvValue(rows, colIndex, csvKey, csvCol) ||
+        csvValue(rows, colIndex, csvKey, "en");
+      if (fromCsv != null) {
+        if (setNested(json, dottedKey, fromCsv, { force: true })) csvWrites++;
+      } else {
+        if (setNested(json, dottedKey, poiName, { force: false })) enFallbackAdds++;
       }
     }
 

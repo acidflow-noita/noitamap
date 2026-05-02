@@ -2492,16 +2492,35 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const translated = gameTranslator.translateItem(translationKey);
     const title = document.createElement("div");
     title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:1.1em";
-    // Show creature name
+    // Title: pulled straight from the locale JSONs via gameTranslator. The
+    // animal_<id> entries are baked into src/locales/*/translation.json by
+    // build_scripts/bake-creature-translations.cjs at build time. Falls back
+    // to creature.name (Finnish) only when the JSON has no entry.
     const creature = CREATURE_DATA[entityId];
-    const baseName = creature?.name ? creature.name : ((translated !== translationKey) ? translated : rawName.replace(/_/g, " "));
+    const baseName =
+      (translated !== translationKey ? translated : null) ||
+      creature?.name ||
+      rawName.replace(/_/g, " ");
     title.textContent = baseName;
     titleCol.appendChild(wrapWithWikiLink(title, poi));
-    if (creature?.alias) {
-      const aliasDiv = document.createElement("div");
-      aliasDiv.style.cssText = "color:#999;font-size:0.85em;font-style:italic";
-      aliasDiv.textContent = creature.alias;
-      titleCol.appendChild(aliasDiv);
+    // Subtitle shows alternate names so players can cross-reference. Matches
+    // the search-results UX: in non-English locales we surface the official
+    // Finnish name; the English alias is always shown when it differs.
+    if (creature) {
+      const currentLang = i18next.language || "en";
+      const parts: string[] = [];
+      if (currentLang !== "en" && creature.name && creature.name !== baseName) {
+        parts.push(`"${creature.name}"`);
+      }
+      if (creature.alias && creature.alias !== baseName) {
+        parts.push(`"${creature.alias}"`);
+      }
+      if (parts.length > 0) {
+        const aliasDiv = document.createElement("div");
+        aliasDiv.style.cssText = "color:#999;font-size:0.85em;font-style:italic";
+        aliasDiv.textContent = parts.join(", ");
+        titleCol.appendChild(aliasDiv);
+      }
     }
 
     header.appendChild(titleCol);
@@ -2511,7 +2530,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     if ((poi as any).isHorde && creature?.category) {
       const catDiv = document.createElement("div");
       catDiv.style.cssText = "color:#888;margin-top:0.15em;font-size:0.85em";
-      catDiv.textContent = `Horde: ${creature.category}`;
+      catDiv.textContent = `${i18next.t("poi.horde", "Horde")}: ${creature.category}`;
       tooltipEl.appendChild(catDiv);
     }
 

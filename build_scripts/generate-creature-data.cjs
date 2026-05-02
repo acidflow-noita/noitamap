@@ -142,6 +142,22 @@ function parseDmgMults(creature) {
   return hasAny ? mults : null;
 }
 
+// Bartender CSV-style language code → app locale code (matches src/locales).
+// Used by build_scripts/bake-creature-translations.cjs.
+const BARTENDER_LANG_TO_LOCALE = {
+  en: "en",
+  ru: "ru",
+  "pt-br": "br",
+  "es-es": "es",
+  de: "de",
+  "fr-fr": "fr",
+  it: "it",
+  pl: "pl",
+  "zh-cn": "zh",
+  jp: "ja",
+};
+module.exports = { BARTENDER_LANG_TO_LOCALE };
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 /**
@@ -351,4 +367,6 @@ ${Object.entries(data)
   console.log("[generate-creature-data] Done.");
 }
 
-main();
+if (require.main === module) {
+  main();
+}
