@@ -267,7 +267,7 @@ function addMarkerItem(
   const frame = FIRST_FRAME_SIZE[rootKey];
   // Lift wand and item-type POIs slightly so their sprites sit above the
   // ground/container they spawn on instead of being half-buried in it.
-  const yOffset = poi.type === "wand" ? -5 : poi.type === "item" ? -1 : 0;
+  const yOffset = poi.type === "wand" ? -5 : poi.type === "item" ? -2 : 0;
   items.push({
     poi,
     pw,
