@@ -102,12 +102,24 @@ self.onmessage = async (e) => {
       combinedPois.push(...verticalPois);
     }
 
+    // Strip imgElement before postMessage. The bytes live in PIXEL_SCENE_DATA
+    // on the main thread already; serialising them per-scene was making FF's
+    // structured clone take ~30+ seconds on cache-miss generation. Main thread
+    // rehydrates imgElement from its own PIXEL_SCENE_DATA[scene.key].
+    const slimPixelScenes = pixelScenes.map((s: any) => {
+      if (!s) return s;
+      // Avoid mutating the underlying telescope object (it's shared with
+      // PIXEL_SCENE_DATA records). Return a shallow copy without imgElement.
+      const { imgElement: _drop, ...rest } = s;
+      return rest;
+    });
+
     // Return the payload back to main thread to apply Wand patching and boss patching
     self.postMessage({
       success: true,
       pw,
       pois: combinedPois,
-      pixelScenes: pixelScenes
+      pixelScenes: slimPixelScenes
     });
   } catch (error) {
     self.postMessage({ success: false, error: (error as Error).message });

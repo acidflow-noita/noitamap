@@ -837,6 +837,15 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
 
       poisByPW[pwKey] = workerPois;
       if (res.pixelScenes) {
+        // Worker stripped imgElement before postMessage to avoid FF's slow
+        // structured clone of large per-scene byte arrays. Rehydrate from this
+        // thread's PIXEL_SCENE_DATA so downstream code (compositing, etc) sees
+        // the same shape as before.
+        for (const s of res.pixelScenes) {
+          if (s && s.imgElement === undefined && s.key && PIXEL_SCENE_DATA?.[s.key]) {
+            s.imgElement = PIXEL_SCENE_DATA[s.key].imgElement || null;
+          }
+        }
         if (!pixelScenesByPW[pwKey]) pixelScenesByPW[pwKey] = [];
         pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(res.pixelScenes);
       }

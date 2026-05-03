@@ -66,8 +66,10 @@ async function loadSpritesheet(): Promise<HTMLImageElement> {
 
 async function loadAtlas(): Promise<Record<string, AtlasEntry>> {
   if (cachedAtlas) return cachedAtlas;
-  const resp = await fetch("./assets/atlas.json");
-  cachedAtlas = await resp.json();
+  // Bundled at build time so we don't trip CSP `connect-src` (the deployed
+  // site has it set to `none`, which broke marker sprites on FF/Debian).
+  const mod = await import("../data/atlas.json");
+  cachedAtlas = (mod as any).default || (mod as any);
   return cachedAtlas!;
 }
 

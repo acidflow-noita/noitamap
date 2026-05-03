@@ -11,7 +11,7 @@ import { getDataZip } from "../data-archive";
 import { installTelescopeShim, isCanvasTainted } from "./telescope-dom-shim";
 import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope-data-bridge";
 import { decodePngToRgba, rgbaToPngBlobUrl, rgbaToPngBlob } from "./png-decode";
-import { getCachedBiomeRender, cacheBiomeRender, getCachedSceneBitmap, cacheSceneBitmap, getCachedSceneBitmapKeys } from "./tile-cache";
+import { getCachedBiomeRender, cacheBiomeRender, getCachedSceneBitmap, cacheSceneBitmap, getCachedSceneBitmapKeys, getCachedSceneBitmapsBulk, getCachedBiomeRendersForKey } from "./tile-cache";
 import i18next from "../i18n";
 import {
   buildMarkerData,
@@ -940,6 +940,11 @@ async function addBiomeLayersProgressively(
   const totalSteps = pwOrder.length * pvtList.length;
   let stepsDone = 0;
 
+  // Bulk-fetch all cached biome renders for this seed in one IDB transaction.
+  // Way faster than N separate IDB reads (each transaction has high overhead in
+  // Brave/FF — ~5s extra on F5 with 9 PWs).
+  const bulkBiomeCache = cacheKey ? await getCachedBiomeRendersForKey(cacheKey) : new Map();
+
   for (let pwIdx = 0; pwIdx < pwOrder.length; pwIdx++) {
     const pw = pwOrder[pwIdx];
     if (currentGenerationId !== generationId) return;
@@ -957,8 +962,7 @@ async function addBiomeLayersProgressively(
 
       // ── Cache fast path: blob already rendered for this (seed, pw, pvt) ──
       if (cacheKey) {
-        const cached = await getCachedBiomeRender(cacheKey, pw, pvt);
-        if (currentGenerationId !== generationId) return;
+        const cached = bulkBiomeCache.get(`${pw},${pvt}`);
         if (cached) {
           const url = URL.createObjectURL(cached.blob);
           dynamicBlobUrls.push(url);
@@ -1625,10 +1629,33 @@ async function compositeSceneBitmap(
   const hasVis = !!visualData;
   if (!hasBg && !hasMid && !hasVis) return null;
 
-  // Always go through a canvas so we can produce a cacheable Blob.
-  const w = scene.width || Math.max(bgData?.width ?? 0, visualData?.width ?? 0, midBitmap?.width ?? 0);
-  const h = scene.height || Math.max(bgData?.height ?? 0, visualData?.height ?? 0, midBitmap?.height ?? 0);
-  const canvas = new OffscreenCanvas(w, h);
+  // Determine canvas dimensions matching the original per-branch behavior:
+  // single-layer paths used the source's own dimensions, multi-layer used
+  // scene.width/height (or max of bg/vis as fallback). Going through a canvas
+  // for every path is necessary so we can convertToBlob for the IDB cache.
+  let cw: number;
+  let ch: number;
+  let kind: "composite" | "fallback";
+  if (hasMid && !hasBg && !hasVis) {
+    cw = midBitmap!.width;
+    ch = midBitmap!.height;
+    kind = "fallback";
+  } else if (hasVis && !hasBg && !hasMid) {
+    cw = visualData!.width;
+    ch = visualData!.height;
+    kind = "composite";
+  } else if (hasBg && !hasMid && !hasVis) {
+    cw = bgData!.width;
+    ch = bgData!.height;
+    kind = "composite";
+  } else {
+    cw = scene.width || Math.max(bgData?.width ?? 0, visualData?.width ?? 0);
+    ch = scene.height || Math.max(bgData?.height ?? 0, visualData?.height ?? 0);
+    kind = "composite";
+  }
+  if (cw <= 0 || ch <= 0) return null;
+
+  const canvas = new OffscreenCanvas(cw, ch);
   const ctx = canvas.getContext("2d")!;
   ctx.imageSmoothingEnabled = false;
 
@@ -1656,8 +1683,7 @@ async function compositeSceneBitmap(
   if (midBitmap) midBitmap.close();
   if (visBmp) visBmp.close();
 
-  const kind: "composite" | "fallback" = hasBg || hasVis ? "composite" : "fallback";
-  return { bitmap, blob, width: w, height: h, kind };
+  return { bitmap, blob, width: cw, height: ch, kind };
 }
 
 let _scenePrefetchInflight: Promise<void> | null = null;
@@ -1807,13 +1833,18 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   let missingCount = 0;
   const idx = await getScenePngIndex();
 
+  // Bulk-fetch every cached bitmap in one IDB transaction. This avoids
+  // ~138 separate read transactions which add 1-3s on Brave/FF.
+  const allKeys = keyArr.map(([k]) => k);
+  const bulkSceneCache = await getCachedSceneBitmapsBulk(allKeys);
+
   for (let i = 0; i < keyArr.length; i += BATCH) {
     if (currentGenerationId !== generationId) return;
     const batch = keyArr.slice(i, i + BATCH);
     await Promise.all(
       batch.map(async ([key, scene]) => {
         // ── Cache fast path ────────────────────────────────────────────────
-        const cached = await getCachedSceneBitmap(key);
+        const cached = bulkSceneCache.get(key);
         if (cached) {
           try {
             const bmp = await createImageBitmap(cached.blob);
@@ -3198,24 +3229,16 @@ function showOrbTooltip(orb: { name?: string; text?: string; x: number; y: numbe
  */
 import orbsData from "../data/orbs.json";
 
-const _orbIconCache = new Map<string, string>(); // icon path → blob URL
+const _orbIconCache = new Map<string, string>(); // icon path → URL
 
 async function loadOrbIconByPath(iconPath: string): Promise<string | null> {
   if (_orbIconCache.has(iconPath)) return _orbIconCache.get(iconPath)!;
+  // Don't fetch — that goes through CSP `connect-src` (which is `'none'` in
+  // production) and breaks orb rendering on FF/Debian. <img src> uses
+  // `img-src` instead and is always allowed. The browser caches it.
   const url = `./${iconPath}`;
-  try {
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      console.warn(`[OSD Bridge] Failed to load orb icon: ${url} (${resp.status})`);
-      return null;
-    }
-    const blob = await resp.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    _orbIconCache.set(iconPath, blobUrl);
-    return blobUrl;
-  } catch {
-    return null;
-  }
+  _orbIconCache.set(iconPath, url);
+  return url;
 }
 
 const ORB_OVERLAY_UNLOCK_KEYS = [
@@ -3334,8 +3357,39 @@ export async function renderGenerationResult(
   addBiomeBgToOSD(viewer);
   if (currentGenerationId !== generationId) return;
 
+  // Wrap onFirstPaint so the moment PW 0,0 of the new seed is in place we
+  // ALSO purge the previous render's items. This avoids holding two full
+  // generations in memory through the rest of the pipeline (~5-6s on FF
+  // and Brave) and prevents the visible "old + new stacked" flicker the
+  // user saw on heaven/hell.
+  let oldItemsCleanedUp = false;
+  const cleanupOldItems = () => {
+    if (oldItemsCleanedUp) return;
+    oldItemsCleanedUp = true;
+    try {
+      const world = viewer.world;
+      for (const item of oldWorldItems) {
+        try { world.removeItem(item); } catch {}
+      }
+    } catch {}
+    for (const el of oldOverlayEls) {
+      try { viewer.removeOverlay(el); el.remove(); } catch {}
+    }
+    // Defer URL revoke a bit so any in-flight OSD tile request that already
+    // grabbed the URL can still resolve.
+    setTimeout(() => {
+      for (const url of oldBlobUrls) {
+        URL.revokeObjectURL(url);
+      }
+    }, 500);
+  };
+  const wrappedOnFirstPaint = () => {
+    cleanupOldItems();
+    try { onFirstPaint?.(); } catch (e) { console.warn("[OSD Bridge] onFirstPaint threw:", e); }
+  };
+
   // Adding biomes initializes the OSD viewport bounds.
-  await addBiomeLayersProgressively(viewer, result, generationId, onFirstPaint, cacheKey);
+  await addBiomeLayersProgressively(viewer, result, generationId, wrappedOnFirstPaint, cacheKey);
   if (currentGenerationId !== generationId) return;
 
   // Pixel scenes render on top of biome overlays, below POI markers.
@@ -3398,22 +3452,9 @@ export async function renderGenerationResult(
   // Fallback: if OSD callback hasn't fired within 3s, force-complete the bar
   setTimeout(emitItemsDone, 3000);
 
-  // Remove old items NOW — new content is fully added and covering them.
-  // This creates a seamless swap with no visible gap.
-  try {
-    const world = viewer.world;
-    for (const item of oldWorldItems) {
-      try { world.removeItem(item); } catch {}
-    }
-  } catch {}
-  for (const el of oldOverlayEls) {
-    try { viewer.removeOverlay(el); el.remove(); } catch {}
-  }
-  setTimeout(() => {
-    for (const url of oldBlobUrls) {
-      URL.revokeObjectURL(url);
-    }
-  }, 2000);
+  // Safety net: if first-paint never fired (e.g., empty result, error path),
+  // make sure stale items don't linger forever.
+  cleanupOldItems();
 }
 
 export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: number; worldX: number; worldY: number }> {

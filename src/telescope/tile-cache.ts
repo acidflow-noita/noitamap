@@ -9,7 +9,7 @@
  */
 
 const DB_NAME = "noitamap-telescope";
-const DB_VERSION = 7; // bumped: added pixel_scene_bitmaps store
+const DB_VERSION = 8; // bumped: invalidate pixel_scene_bitmaps (sizing bug fixed)
 const STORE_NAME = "generations";
 const RENDER_STORE_NAME = "biome_renders";
 const SCENE_BITMAP_STORE_NAME = "pixel_scene_bitmaps";
@@ -93,6 +93,11 @@ function openDB(): Promise<IDBDatabase> {
         renderStore.createIndex("cacheKey", "cacheKey", { unique: false });
       }
       if (!db.objectStoreNames.contains(SCENE_BITMAP_STORE_NAME)) {
+        db.createObjectStore(SCENE_BITMAP_STORE_NAME, { keyPath: "key" });
+      } else if (oldVersion < 8) {
+        // v8 fixes the temple/single-layer scene sizing bug — wipe the bitmap
+        // store so cached corrupt bitmaps get re-composited.
+        db.deleteObjectStore(SCENE_BITMAP_STORE_NAME);
         db.createObjectStore(SCENE_BITMAP_STORE_NAME, { keyPath: "key" });
       }
     };
@@ -431,6 +436,69 @@ export async function getCachedSceneBitmap(key: string): Promise<CachedSceneBitm
     console.warn("[TileCache] Failed to read scene bitmap cache:", e);
     return null;
   }
+}
+
+/**
+ * Bulk fetch many scene bitmaps in one IDB transaction. Far faster than N
+ * single-key lookups in browsers with high per-transaction overhead (Brave, FF).
+ */
+export async function getCachedSceneBitmapsBulk(keys: string[]): Promise<Map<string, CachedSceneBitmap>> {
+  const result = new Map<string, CachedSceneBitmap>();
+  if (keys.length === 0) return result;
+  try {
+    const db = await openDB();
+    const tx = db.transaction(SCENE_BITMAP_STORE_NAME, "readonly");
+    const store = tx.objectStore(SCENE_BITMAP_STORE_NAME);
+    const now = Date.now();
+    await Promise.all(
+      keys.map(
+        (key) =>
+          new Promise<void>((resolve) => {
+            const req = store.get(key);
+            req.onsuccess = () => {
+              const entry = req.result as CachedSceneBitmap | undefined;
+              if (entry && now - entry.timestamp <= MAX_AGE_MS) {
+                result.set(key, entry);
+              }
+              resolve();
+            };
+            req.onerror = () => resolve();
+          }),
+      ),
+    );
+    db.close();
+  } catch (e) {
+    console.warn("[TileCache] Failed bulk scene bitmap read:", e);
+  }
+  return result;
+}
+
+/**
+ * Bulk fetch every cached biome render for a generation cacheKey in one IDB
+ * transaction. Returns a map keyed by "pw,pvt".
+ */
+export async function getCachedBiomeRendersForKey(cacheKey: string): Promise<Map<string, CachedBiomeRender>> {
+  const result = new Map<string, CachedBiomeRender>();
+  try {
+    const db = await openDB();
+    const tx = db.transaction(RENDER_STORE_NAME, "readonly");
+    const store = tx.objectStore(RENDER_STORE_NAME);
+    const idxReq = store.index("cacheKey").getAll(cacheKey);
+    const entries: CachedBiomeRender[] = await new Promise((resolve) => {
+      idxReq.onsuccess = () => resolve((idxReq.result as CachedBiomeRender[]) || []);
+      idxReq.onerror = () => resolve([]);
+    });
+    db.close();
+    const now = Date.now();
+    for (const e of entries) {
+      if (now - e.timestamp <= MAX_AGE_MS) {
+        result.set(`${e.pw},${e.pvt}`, e);
+      }
+    }
+  } catch (e) {
+    console.warn("[TileCache] Failed bulk biome render read:", e);
+  }
+  return result;
 }
 
 export async function getCachedSceneBitmapKeys(): Promise<Set<string>> {
