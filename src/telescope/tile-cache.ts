@@ -9,7 +9,7 @@
  */
 
 const DB_NAME = "noitamap-telescope";
-const DB_VERSION = 8; // bumped: invalidate pixel_scene_bitmaps (sizing bug fixed)
+const DB_VERSION = 9; // bumped: drop imgData from generation entries (FF was 2.4s/read)
 const STORE_NAME = "generations";
 const RENDER_STORE_NAME = "biome_renders";
 const SCENE_BITMAP_STORE_NAME = "pixel_scene_bitmaps";
@@ -100,6 +100,13 @@ function openDB(): Promise<IDBDatabase> {
         db.deleteObjectStore(SCENE_BITMAP_STORE_NAME);
         db.createObjectStore(SCENE_BITMAP_STORE_NAME, { keyPath: "key" });
       }
+      // v9: generation entries bundled imgData per pixel scene (~MBs each).
+      // Cache reads were taking ~2.4s on FF. Drop those entries; new ones
+      // are written without imgData.
+      if (oldVersion >= 5 && oldVersion < 9 && db.objectStoreNames.contains(STORE_NAME)) {
+        db.deleteObjectStore(STORE_NAME);
+        db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
+      }
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -131,32 +138,15 @@ export async function cacheGeneration(cacheKey: string, seed: number, result: an
       minY: layer.minY,
     }));
 
-    // Store pixel scene metadata + raw imgElement RGBA data
+    // Store pixel scene metadata only. We deliberately do NOT serialise
+    // imgElement/imgData anymore — those bytes are duplicated:
+    //   - PIXEL_SCENE_DATA[key].imgElement holds them on the main thread
+    //   - pixel_scene_bitmaps store holds the composited PNG-encoded blob
+    // Persisting them here used to inflate each generation entry to many MB,
+    // which made `getCachedGeneration` take ~2-3s on FF (per IDB read).
     const pixelScenesByPW: Record<string, any[]> = {};
     for (const [pw, scenes] of Object.entries(result.pixelScenesByPW) as [string, any[]][]) {
       pixelScenesByPW[pw] = scenes.map((scene: any) => {
-        // Extract raw RGBA bytes from imgElement for serialization
-        let imgData: ArrayBuffer | null = null;
-        if (scene.imgElement) {
-          if (scene.imgElement instanceof Uint8Array || scene.imgElement instanceof Uint8ClampedArray) {
-            imgData = scene.imgElement.buffer.slice(
-              scene.imgElement.byteOffset,
-              scene.imgElement.byteOffset + scene.imgElement.byteLength,
-            );
-          } else if (scene.imgElement instanceof HTMLCanvasElement) {
-            const ctx = scene.imgElement.getContext("2d");
-            if (ctx) {
-              const id = ctx.getImageData(0, 0, scene.width, scene.height);
-              imgData = id.data.buffer.slice(id.data.byteOffset, id.data.byteOffset + id.data.byteLength);
-            }
-          } else if (scene.imgElement instanceof OffscreenCanvas) {
-            const ctx = scene.imgElement.getContext("2d");
-            if (ctx) {
-              const id = ctx.getImageData(0, 0, scene.width, scene.height);
-              imgData = id.data.buffer.slice(id.data.byteOffset, id.data.byteOffset + id.data.byteLength);
-            }
-          }
-        }
         return {
           x: scene.x,
           y: scene.y,
@@ -165,7 +155,7 @@ export async function cacheGeneration(cacheKey: string, seed: number, result: an
           name: scene.name,
           key: scene.key,
           variantKey: scene.variantKey || "",
-          imgData,
+          imgData: null,
         };
       });
     }

@@ -75,8 +75,6 @@ async function loadAtlas(): Promise<Record<string, AtlasEntry>> {
 
 // ─── Coordinate conversion ─────────────────────────────────────────────────
 
-
-
 // ─── Multi-frame sprite first-frame dimensions ─────────────────────────────
 export const FIRST_FRAME_SIZE: Record<string, { w: number; h: number }> = {
   "item:torch": { w: 16, h: 16 },
@@ -253,7 +251,6 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
 
 // ─── Build marker data ──────────────────────────────────────────────────────
 
-
 function addMarkerItem(
   items: MarkerItem[],
   poi: POI,
@@ -268,19 +265,34 @@ function addMarkerItem(
 
   const entry = atlas[rootKey];
   const frame = FIRST_FRAME_SIZE[rootKey];
+  // Lift wand and item-type POIs slightly so their sprites sit above the
+  // ground/container they spawn on instead of being half-buried in it.
+  const yOffset = poi.type === "wand" ? -5 : poi.type === "item" ? -1 : 0;
   items.push({
     poi,
     pw,
     spriteKey: keyRaw,
     osdX: poi.x,
-    osdY: poi.y,
+    osdY: poi.y + yOffset,
     w: frame ? frame.w : entry.w,
     h: frame ? frame.h : entry.h,
   });
 }
 
 /** Boss container types whose drops should be offset to avoid overlapping the boss sprite. */
-const BOSS_DROP_TYPES = new Set(["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon", "boss_wizard", "boss_ghost", "boss_sky", "islandspirit", "boss_centipede", "boss_robot", "boss_meat"]);
+const BOSS_DROP_TYPES = new Set([
+  "triangle_boss",
+  "alchemist_boss",
+  "pyramid_boss",
+  "dragon",
+  "boss_wizard",
+  "boss_ghost",
+  "boss_sky",
+  "islandspirit",
+  "boss_centipede",
+  "boss_robot",
+  "boss_meat",
+]);
 
 /** Enemy/prop spawn containers: spread inner items to avoid overlap. */
 const ENEMY_SPAWN_TYPES = new Set(["enemies", "props"]);
@@ -294,9 +306,7 @@ const ENEMY_SPAWN_TYPES = new Set(["enemies", "props"]);
  *
  * Format: [containerEntityPathRegex, containedEntityPathRegex].
  */
-const CONTAINED_BY_SIBLING: Array<[RegExp, RegExp]> = [
-  [/\/buildings\/ghost_crystal/, /\/animals\/ghost\.xml$/],
-];
+const CONTAINED_BY_SIBLING: Array<[RegExp, RegExp]> = [[/\/buildings\/ghost_crystal/, /\/animals\/ghost\.xml$/]];
 
 function shouldSkipDueToContainer(item: any, siblings: any[]): boolean {
   const itemEntity = String(item?.entity || "");
@@ -335,9 +345,10 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
           if (isBoss) {
             // Boss drops: spread horizontally + push down below the boss sprite
             const pushDown = poi.type === "triangle_boss" ? 70 : 50;
-            const offsetPoi = count > 1
-              ? { ...innerItem, x: innerItem.x + (ci - (count - 1) / 2) * 20, y: innerItem.y + pushDown }
-              : { ...innerItem, y: innerItem.y + pushDown };
+            const offsetPoi =
+              count > 1
+                ? { ...innerItem, x: innerItem.x + (ci - (count - 1) / 2) * 20, y: innerItem.y + pushDown }
+                : { ...innerItem, y: innerItem.y + pushDown };
             addMarkerItem(items, offsetPoi, pw, worldCenter, atlas);
           } else if (ENEMY_SPAWN_TYPES.has(poi.type)) {
             // Enemy spawns: spread items in a small circle around the spawn point
@@ -416,7 +427,11 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
  * Synchronous — no blob URL creation needed.
  * Returns the canvas, or null if all sprite keys are missing.
  */
-export function drawSpriteToCanvas(keyRaw: string | string[], displayW: number, displayH: number): HTMLCanvasElement | null {
+export function drawSpriteToCanvas(
+  keyRaw: string | string[],
+  displayW: number,
+  displayH: number,
+): HTMLCanvasElement | null {
   if (!cachedSpritesheet || !cachedAtlas) return null;
   const keys = Array.isArray(keyRaw) ? keyRaw : [keyRaw];
   let canvas: HTMLCanvasElement | null = null;
@@ -445,14 +460,14 @@ export function drawSpriteToCanvas(keyRaw: string | string[], displayW: number, 
       const rootW = rootFrame ? rootFrame.w : rootEntry.w;
       const rootH = rootFrame ? rootFrame.h : rootEntry.h;
       rootScale = Math.min(displayW / rootW, displayH / rootH, 1);
-      
+
       const r_ox = rootEntry.ox ?? rootW / 2;
       const r_oy = rootEntry.oy ?? rootH / 2;
       // We want root's origin to be perfectly centered, adjusted for its size taking up space
       const rootDrawW = rootW * rootScale;
       const rootDrawH = rootH * rootScale;
-      rootCenterX = (displayW - rootDrawW) / 2 + (r_ox * rootScale);
-      rootCenterY = (displayH - rootDrawH) / 2 + (r_oy * rootScale);
+      rootCenterX = (displayW - rootDrawW) / 2 + r_ox * rootScale;
+      rootCenterY = (displayH - rootDrawH) / 2 + r_oy * rootScale;
     }
 
     const frame = FIRST_FRAME_SIZE[key];
@@ -463,8 +478,8 @@ export function drawSpriteToCanvas(keyRaw: string | string[], displayW: number, 
 
     const drawW = srcW * rootScale;
     const drawH = srcH * rootScale;
-    const drawX = rootCenterX - (l_ox * rootScale);
-    const drawY = rootCenterY - (l_oy * rootScale);
+    const drawX = rootCenterX - l_ox * rootScale;
+    const drawY = rootCenterY - l_oy * rootScale;
 
     ctx.drawImage(cachedSpritesheet, entry.x, entry.y, srcW, srcH, drawX, drawY, drawW, drawH);
   }
@@ -477,7 +492,11 @@ export function drawSpriteToCanvas(keyRaw: string | string[], displayW: number, 
  * Returns { dx, dy } — CSS translate values to shift the sprite so the hotspot
  * aligns with the entity position. If no offset data, returns center offset.
  */
-export function getSpriteOffset(keyRaw: string | string[], displayW: number, displayH: number): { dx: number; dy: number } {
+export function getSpriteOffset(
+  keyRaw: string | string[],
+  displayW: number,
+  displayH: number,
+): { dx: number; dy: number } {
   if (!cachedAtlas) return { dx: -displayW / 2, dy: -displayH / 2 };
   const key = Array.isArray(keyRaw) ? keyRaw[0] : keyRaw; // use root body component for offsets
   const resolvedKey = applySpoilerFree(key, cachedAtlas);
