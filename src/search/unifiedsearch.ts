@@ -1548,27 +1548,30 @@ export class UnifiedSearch extends EventEmitter2 {
       overlayDiv.style.left = `${rect.left + window.scrollX}px`;
       overlayDiv.style.top = `${rect.bottom + window.scrollY}px`;
       let desired = rect.width;
-      if (filterBox) {
-        // Measure the filter row's natural (un-wrapped) width by
-        // temporarily letting the overlay shrink to its content. The CSS
-        // for filter buttons is fixed-size, so this is stable across
-        // result-list changes once images load.
-        const orig = {
-          width: overlayDiv.style.width,
-          minWidth: overlayDiv.style.minWidth,
-          maxWidth: overlayDiv.style.maxWidth,
-        };
-        overlayDiv.style.minWidth = "0";
-        overlayDiv.style.maxWidth = "none";
-        overlayDiv.style.width = "max-content";
-        const filterWrap = filterBox.style.flexWrap;
-        filterBox.style.flexWrap = "nowrap";
-        const naturalWidth = filterBox.scrollWidth;
-        filterBox.style.flexWrap = filterWrap;
-        overlayDiv.style.width = orig.width;
-        overlayDiv.style.minWidth = orig.minWidth;
-        overlayDiv.style.maxWidth = orig.maxWidth;
-        desired = Math.max(rect.width, naturalWidth + 16); // +16px breathing room
+      if (filterBox && filterBox.children.length > 0) {
+        // Compute the natural width arithmetically from the filter box's
+        // fixed-size children. Measuring via scrollWidth fails when the
+        // overlay is display:none (focus → positionOverlay → display=block)
+        // and over-reports when the results UL has wide content.
+        const cs = getComputedStyle(filterBox);
+        const gap = parseFloat(cs.columnGap) || parseFloat(cs.gap) || 0;
+        const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+        const borderX = (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0);
+        let buttonsTotal = 0;
+        let n = 0;
+        for (const child of Array.from(filterBox.children)) {
+          if (!(child instanceof HTMLElement)) continue;
+          if (getComputedStyle(child).display === "none") continue;
+          const ccs = getComputedStyle(child);
+          const w = parseFloat(ccs.width) || child.offsetWidth || 32;
+          const ml = parseFloat(ccs.marginLeft) || 0;
+          const mr = parseFloat(ccs.marginRight) || 0;
+          buttonsTotal += w + ml + mr;
+          n++;
+        }
+        const natural = buttonsTotal + Math.max(0, n - 1) * gap + padX + borderX;
+        // +4px safety margin so subpixel rounding doesn't wrap the last button.
+        desired = Math.max(rect.width, Math.ceil(natural) + 4);
       }
       const cap = Math.max(0, window.innerWidth - rect.left - 8);
       const fixed = Math.min(desired, cap);
