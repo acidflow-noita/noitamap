@@ -5066,5 +5066,13 @@
     "heartBiggerShort": "+50 PV",
     "biome": "Bioma",
     "horde": "Horda"
+  },
+  "skipCreatures": {
+    "title": "Não adicionar criaturas",
+    "content": "Ignora inimigos/criaturas em todo lugar - não são adicionados ao mapa nem aparecem na busca. Reduz drasticamente o número de marcadores (~32k dos POIs da seed diária são criaturas). Ativado por padrão em telas pequenas."
+  },
+  "perfMode": {
+    "title": "Desempenho",
+    "content": "Opções de desempenho para dispositivos lentos e telas pequenas."
   }
 }

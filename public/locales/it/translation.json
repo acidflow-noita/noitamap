@@ -5066,5 +5066,13 @@
     "heartBiggerShort": "+50 CV",
     "biome": "Bioma",
     "horde": "Orda"
+  },
+  "skipCreatures": {
+    "title": "Non aggiungere creature",
+    "content": "Salta nemici/creature ovunque - non vengono aggiunti alla mappa né mostrati nella ricerca. Riduce drasticamente il numero di marcatori (~32k dei POI del seed giornaliero sono creature). Attivo di default sugli schermi piccoli."
+  },
+  "perfMode": {
+    "title": "Prestazioni",
+    "content": "Opzioni di prestazioni per dispositivi lenti e schermi piccoli."
   }
 }

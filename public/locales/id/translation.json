@@ -5066,5 +5066,13 @@
     "heartBiggerShort": "+50 HP",
     "biome": "Bioma",
     "horde": "Gerombolan"
+  },
+  "skipCreatures": {
+    "title": "Jangan tambahkan makhluk",
+    "content": "Lewati musuh/makhluk di mana saja - tidak ditambahkan ke peta dan tidak muncul di pencarian. Sangat mengurangi jumlah penanda (~32k POI seed harian adalah makhluk). Aktif secara default di layar kecil."
+  },
+  "perfMode": {
+    "title": "Performa",
+    "content": "Opsi performa untuk perangkat lambat dan layar kecil."
   }
 }

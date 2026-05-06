@@ -8,6 +8,7 @@
 import Flatbush from "flatbush";
 import type { GenerationResult, POI } from "./telescope-adapter";
 import { applySpoilerFree } from "../spoiler-free";
+import { isSkipCreatures } from "../skip-creatures";
 import spells from "../data/spells.json";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -197,7 +198,7 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
   if (poi.type === "chest") return "item:chest_random";
   if (poi.type === "pacifist_chest") return "item:chest_random";
   if (poi.type === "great_chest") return "item:chest_random_super";
-  if (poi.type === "shop") return "enemy:necromancer_shop";
+  if (poi.type === "shop") return null;
   if (poi.type === "holy_mountain_shop") return null; // HM shops are shown via their contents
   if (poi.type === "laboratory") return null;
   if (poi.type === "eye_room") return null;
@@ -251,6 +252,45 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
 
 // ─── Build marker data ──────────────────────────────────────────────────────
 
+// ─── Marker Y-offset overrides ─────────────────────────────────────────────
+// Some sprites need to be lifted up so they don't half-bury into the ground
+// or the container they spawn on. Lookup is by atlas sprite key (the same
+// key returned by getSpriteKey).
+//
+// 1. Exact match in MARKER_Y_OFFSET wins
+// 2. Otherwise the first matching prefix in MARKER_Y_OFFSET_PREFIXES wins
+// 3. Default is 0 (no shift)
+//
+// Negative numbers move the sprite UP. Coordinates are in OSD viewport units,
+// which match world pixels at 1:1 — so -5 is "up by 5 in-game pixels".
+
+const MARKER_Y_OFFSET: Record<string, number> = {
+  // Hearts already include their visual stem in the sprite — no shift.
+  "item:heart": 0,
+  "item:heart_extrahp": 0,
+  "item:heart_extrahp_evil": 0,
+};
+
+const MARKER_Y_OFFSET_PREFIXES: Array<{ prefix: string; offset: number }> = [
+  // Wands need the most lift so they look held above the ground/altar.
+  { prefix: "wand:", offset: -5 },
+  // Items in pouches/potions/etc rest on a surface — slight lift.
+  { prefix: "item:potion", offset: -3 },
+  { prefix: "item:pouch", offset: -3 },
+  { prefix: "item:bomb", offset: -3 },
+  { prefix: "item:goldnugget", offset: -3 },
+  // Generic item fallback (covers torch, broken_wand, jar, perk, egg, etc).
+  { prefix: "item:", offset: -3 },
+];
+
+function resolveMarkerYOffset(spriteKey: string): number {
+  if (MARKER_Y_OFFSET[spriteKey] !== undefined) return MARKER_Y_OFFSET[spriteKey];
+  for (const { prefix, offset } of MARKER_Y_OFFSET_PREFIXES) {
+    if (spriteKey.startsWith(prefix)) return offset;
+  }
+  return 0;
+}
+
 function addMarkerItem(
   items: MarkerItem[],
   poi: POI,
@@ -265,9 +305,7 @@ function addMarkerItem(
 
   const entry = atlas[rootKey];
   const frame = FIRST_FRAME_SIZE[rootKey];
-  // Lift wand and item-type POIs slightly so their sprites sit above the
-  // ground/container they spawn on instead of being half-buried in it.
-  const yOffset = poi.type === "wand" ? -5 : poi.type === "item" ? -2 : 0;
+  const yOffset = resolveMarkerYOffset(rootKey);
   items.push({
     poi,
     pw,
@@ -325,12 +363,17 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
 
   const { poisByPW, worldCenter } = result;
   const items: MarkerItem[] = [];
+  const skipCreatures = isSkipCreatures();
 
   for (const [pwKey, pois] of Object.entries(poisByPW)) {
     const [pwStr] = pwKey.split(",");
     const pw = parseInt(pwStr);
 
     for (const poi of pois) {
+      // "Don't add creatures" toggle: skip enemy/prop spawn containers and
+      // their unwrapped contents entirely.
+      if (skipCreatures && (poi.type === "enemies" || poi.type === "props")) continue;
+
       // Add the POI itself as a marker
       addMarkerItem(items, poi, pw, worldCenter, atlas);
 

@@ -5066,5 +5066,13 @@
     "heartBiggerShort": "+50 hk",
     "biome": "Biome",
     "horde": "Hord"
+  },
+  "skipCreatures": {
+    "title": "Lägg inte till varelser",
+    "content": "Hoppar över fiender/varelser överallt - de läggs inte till på kartan och visas inte i sökningen. Minskar antalet markörer avsevärt (~32k av det dagliga seedets POI:er är varelser). Aktiverat som standard på små skärmar."
+  },
+  "perfMode": {
+    "title": "Prestanda",
+    "content": "Prestandaalternativ för långsamma enheter och små skärmar."
   }
 }

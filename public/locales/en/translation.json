@@ -4848,6 +4848,14 @@
     "title": "Main world only",
     "content": "Only load the main world. Skips east/west parallel worlds (both the static background and dynamic POIs). Reduces memory use on mobile / low-RAM devices. On by default on small screens."
   },
+  "skipCreatures": {
+    "title": "Don't add creatures",
+    "content": "Skip enemies/creatures everywhere — they're not added to the map and not surfaced in search. Massively reduces marker count (~32k of the daily seed's POIs are creatures). On by default on small screens."
+  },
+  "perfMode": {
+    "title": "Performance",
+    "content": "Performance options for slow devices and small screens."
+  },
   "privacyBrowser": {
     "title": "Privacy Browser Detected",
     "message": "Your browser's canvas fingerprint protection causes dynamic map rendering to display incorrectly. For the best experience with seed-based maps, please use a Chromium-based browser such as Chrome, Edge, or Brave. Static (pre-captured) maps are unaffected."

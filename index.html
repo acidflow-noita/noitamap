@@ -200,14 +200,15 @@
           <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
         <div class="toast-body" data-i18n="privacyBrowser.message">
-          Your browser's canvas fingerprint protection causes dynamic map rendering to display incorrectly. For the best experience with seed-based maps, please use a Chromium-based browser such as <strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Brave</strong>. Static (pre-captured) maps are unaffected.
+          Your browser's canvas fingerprint protection causes dynamic map rendering to display incorrectly. For the best
+          experience with seed-based maps, please use a Chromium-based browser such as <strong>Chrome</strong>,
+          <strong>Edge</strong>, or <strong>Brave</strong>. Static (pre-captured) maps are unaffected.
         </div>
       </div>
     </div>
     <!-- Drawing sidebar container -->
     <div id="drawing-sidebar-container"></div>
     <div class="full-viewport-wrapper flex flex-col-reverse">
-
       <!-- osContainer comes first so that it's "beneath" menu drop-downs -->
       <div id="osContainer"></div>
       <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark navbar-expand-lg">
@@ -286,19 +287,74 @@
                 ><i class="bi bi-eye-slash"></i>
               </label>
 
-              <input type="checkbox" class="btn-check" id="lightModeToggle" autocomplete="off" />
-              <label
-                class="icon-button btn btn-sm btn-outline-light dynamic-map-only"
-                for="lightModeToggle"
-                data-bs-toggle="popover"
-                data-bs-placement="bottom"
-                data-bs-trigger="hover focus"
-                data-i18n-title="mainWorldOnly.title"
-                data-bs-title="Main world only"
-                data-i18n-content="mainWorldOnly.content"
-                data-bs-content="Only load the main world. Skips east/west parallel worlds (both the static background and dynamic POIs). Reduces memory use on mobile / low-RAM devices. On by default on small screens."
-                ><i class="bi bi-speedometer"></i>
-              </label>
+              <div class="dropdown dynamic-map-only" id="perfModeDropdown">
+                <button
+                  type="button"
+                  class="icon-button btn btn-sm btn-outline-light dropdown-toggle"
+                  id="perfModeButton"
+                  data-bs-toggle="dropdown"
+                  data-bs-auto-close="outside"
+                  aria-expanded="false"
+                  data-i18n-title="perfMode.title"
+                  data-bs-title="Performance"
+                  data-i18n-content="perfMode.content"
+                  data-bs-content="Performance options for slow devices and small screens."
+                >
+                  <i class="bi bi-speedometer"></i>
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="perfModeButton">
+                  <li
+                    data-bs-toggle="popover"
+                    data-bs-placement="bottom"
+                    data-bs-trigger="hover"
+                    data-i18n-title="mainWorldOnly.title"
+                    data-bs-title="Main world only"
+                    data-i18n-content="mainWorldOnly.content"
+                    data-bs-content="Only load the main world. Skips east/west parallel worlds (both the static background and dynamic POIs). Reduces memory use on mobile / low-RAM devices. On by default on small screens."
+                  >
+                    <div class="dropdown-item form-check form-switch d-flex align-items-center gap-2 mb-0">
+                      <input
+                        class="form-check-input m-0"
+                        type="checkbox"
+                        role="switch"
+                        id="lightModeToggle"
+                        autocomplete="off"
+                      />
+                      <label
+                        class="form-check-label flex-grow-1"
+                        for="lightModeToggle"
+                        style="cursor: pointer"
+                        data-i18n="mainWorldOnly.title"
+                      >Render main world only</label>
+                    </div>
+                  </li>
+                  <li
+                    data-bs-toggle="popover"
+                    data-bs-placement="bottom"
+                    data-bs-trigger="hover"
+                    data-i18n-title="skipCreatures.title"
+                    data-bs-title="Don't add creatures"
+                    data-i18n-content="skipCreatures.content"
+                    data-bs-content="Skip enemies/creatures everywhere — they're not added to the map and not surfaced in search. Massively reduces marker count (~32k of the daily seed's POIs are creatures). On by default on small screens."
+                  >
+                    <div class="dropdown-item form-check form-switch d-flex align-items-center gap-2 mb-0">
+                      <input
+                        class="form-check-input m-0"
+                        type="checkbox"
+                        role="switch"
+                        id="skipCreaturesToggle"
+                        autocomplete="off"
+                      />
+                      <label
+                        class="form-check-label flex-grow-1"
+                        for="skipCreaturesToggle"
+                        style="cursor: pointer"
+                        data-i18n="skipCreatures.title"
+                      >Don't add creatures</label>
+                    </div>
+                  </li>
+                </ul>
+              </div>
 
               <form id="search-form" role="search" class="flex-grow-1">
                 <input
@@ -470,18 +526,13 @@
                   data-i18n-content="biomeBoundaries.content"
                   data-bs-content="Toggle biome boundaries overlay"
                   ><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="1" y="1" width="6" height="6" rx="1" fill="rgb(0, 128, 168)"/>
-                    <rect x="9" y="1" width="6" height="6" rx="1" fill="rgb(255, 106, 2)"/>
-                    <rect x="1" y="9" width="6" height="6" rx="1" fill="rgb(214, 216, 227)"/>
-                    <rect x="9" y="9" width="6" height="6" rx="1" fill="rgb(255, 209, 5)"/>
+                    <rect x="1" y="1" width="6" height="6" rx="1" fill="rgb(0, 128, 168)" />
+                    <rect x="9" y="1" width="6" height="6" rx="1" fill="rgb(255, 106, 2)" />
+                    <rect x="1" y="9" width="6" height="6" rx="1" fill="rgb(214, 216, 227)" />
+                    <rect x="9" y="9" width="6" height="6" rx="1" fill="rgb(255, 209, 5)" />
                   </svg>
                 </label>
-                <input
-                  id="chunkGridToggler"
-                  type="checkbox"
-                  class="btn-check"
-                  autocomplete="off"
-                />
+                <input id="chunkGridToggler" type="checkbox" class="btn-check" autocomplete="off" />
                 <label
                   class="icon-button btn btn-sm btn-outline-light text-nowrap"
                   for="chunkGridToggler"
@@ -615,9 +666,9 @@
         <div id="map-loading-strip">
           <div class="loading-strip-inner">
             <div class="loading-strip-bar-track">
-              <div id="loading-bar-download" class="loading-strip-bar seg-download" style="width:0%"></div>
-              <div id="loading-bar-generation" class="loading-strip-bar seg-generation" style="width:0%"></div>
-              <div id="loading-bar-items" class="loading-strip-bar seg-items" style="width:0%"></div>
+              <div id="loading-bar-download" class="loading-strip-bar seg-download" style="width: 0%"></div>
+              <div id="loading-bar-generation" class="loading-strip-bar seg-generation" style="width: 0%"></div>
+              <div id="loading-bar-items" class="loading-strip-bar seg-items" style="width: 0%"></div>
             </div>
             <div class="loading-strip-label">
               <span id="map-loading-title" class="loading-strip-phase">Downloading World Data</span>

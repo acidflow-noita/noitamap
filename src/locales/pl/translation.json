@@ -5066,5 +5066,13 @@
     "heartBiggerShort": "+50 KM",
     "biome": "Biom",
     "horde": "Horda"
+  },
+  "skipCreatures": {
+    "title": "Nie dodawaj stworzeń",
+    "content": "Pomija wrogów/stworzenia wszędzie - nie są dodawane do mapy ani wyświetlane w wyszukiwaniu. Znacznie zmniejsza liczbę znaczników (~32k POI z dziennego seeda to stworzenia). Domyślnie włączone na małych ekranach."
+  },
+  "perfMode": {
+    "title": "Wydajność",
+    "content": "Opcje wydajności dla wolnych urządzeń i małych ekranów."
   }
 }

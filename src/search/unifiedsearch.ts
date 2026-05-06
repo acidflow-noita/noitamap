@@ -1539,22 +1539,42 @@ export class UnifiedSearch extends EventEmitter2 {
     // (including AP/LC) on one line. Clamped to avoid overflowing the
     // viewport on narrow screens.
 
-    // Position overlay below the input. Width is pinned to the filter row
-    // so the overlay hugs it exactly and doesn't jitter when short content
-    // (loading placeholders, no-results) makes the overlay shrink via
-    // fit-content.
+    // Position overlay below the input. Width is locked to the natural
+    // (un-wrapped) width of the filter row + a small padding so all filters
+    // stay on one line and the panel never resizes when results change.
     function positionOverlay() {
       const rect = searchInput.getBoundingClientRect();
       const filterBox = document.getElementById("unifiedSearchFilterBox");
       overlayDiv.style.left = `${rect.left + window.scrollX}px`;
       overlayDiv.style.top = `${rect.bottom + window.scrollY}px`;
-      overlayDiv.style.width = "";
+      let desired = rect.width;
       if (filterBox) {
-        const filterRect = filterBox.getBoundingClientRect();
-        const pinWidth = Math.max(rect.width, filterRect.right - rect.left);
-        overlayDiv.style.minWidth = `${pinWidth}px`;
+        // Measure the filter row's natural (un-wrapped) width by
+        // temporarily letting the overlay shrink to its content. The CSS
+        // for filter buttons is fixed-size, so this is stable across
+        // result-list changes once images load.
+        const orig = {
+          width: overlayDiv.style.width,
+          minWidth: overlayDiv.style.minWidth,
+          maxWidth: overlayDiv.style.maxWidth,
+        };
+        overlayDiv.style.minWidth = "0";
+        overlayDiv.style.maxWidth = "none";
+        overlayDiv.style.width = "max-content";
+        const filterWrap = filterBox.style.flexWrap;
+        filterBox.style.flexWrap = "nowrap";
+        const naturalWidth = filterBox.scrollWidth;
+        filterBox.style.flexWrap = filterWrap;
+        overlayDiv.style.width = orig.width;
+        overlayDiv.style.minWidth = orig.minWidth;
+        overlayDiv.style.maxWidth = orig.maxWidth;
+        desired = Math.max(rect.width, naturalWidth + 16); // +16px breathing room
       }
-      overlayDiv.style.maxWidth = `${Math.max(0, window.innerWidth - rect.left - 8)}px`;
+      const cap = Math.max(0, window.innerWidth - rect.left - 8);
+      const fixed = Math.min(desired, cap);
+      overlayDiv.style.width = `${fixed}px`;
+      overlayDiv.style.minWidth = `${fixed}px`;
+      overlayDiv.style.maxWidth = `${fixed}px`;
     }
 
     let isOverlayVisible = false;

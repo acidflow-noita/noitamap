@@ -5066,5 +5066,13 @@
     "heartBiggerShort": "+50 hv",
     "biome": "Biomi",
     "horde": "Lauma"
+  },
+  "skipCreatures": {
+    "title": "Älä lisää olentoja",
+    "content": "Ohittaa viholliset/olennot kaikkialla - niitä ei lisätä kartalle eikä haku löydä niitä. Vähentää merkittävästi merkkien määrää (~32k päivittäisen seedin POIsta on olentoja). Oletuksena päällä pienissä näytöissä."
+  },
+  "perfMode": {
+    "title": "Suorituskyky",
+    "content": "Suorituskykyasetukset hitaille laitteille ja pienille näytöille."
   }
 }

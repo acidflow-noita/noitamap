@@ -5066,5 +5066,13 @@
     "heartBiggerShort": "+50 HP",
     "biome": "Biom",
     "horde": "Horda"
+  },
+  "skipCreatures": {
+    "title": "Nepřidávat tvory",
+    "content": "Přeskočí nepřátele/tvory všude - nejsou přidáni na mapu ani se nezobrazí ve vyhledávání. Výrazně snižuje počet značek (~32k POI denního seedu jsou tvorové). Standardně zapnuto na malých obrazovkách."
+  },
+  "perfMode": {
+    "title": "Výkon",
+    "content": "Možnosti výkonu pro pomalá zařízení a malé obrazovky."
   }
 }

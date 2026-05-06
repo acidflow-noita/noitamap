@@ -7,7 +7,7 @@
   --bs-border-color: #334155; /* slate-700 */
   --bs-body-bg: #020617; /* slate-950 */
   --bs-tertiary-bg: #1e293b; /* slate-800 */
-  
+
   /* Popover overwrites */
   --bs-popover-bg: #1e293b !important;
   --bs-popover-border-color: #334155 !important;
@@ -214,22 +214,22 @@ html {
   --bs-font-sans-serif: Inter, sans-serif;
   font-family: Inter, sans-serif;
   font-feature-settings:
-    "liga" 1, /* standard ligatures */
-    "calt" 1, /* contextual alternates */
-    "dlig" 1, /* discretionary ligatures */
-    "case" 1, /* case-sensitive forms */
-    "ss01" 1, /* open digits */
-    "ss02" 1, /* ambiguous characters */
-    "ss03" 1, /* lowercase r curves */
-    "ss04" 1, /* disambiguation */
-    "cv01" 1, /* alt 1 */
-    "cv02" 1, /* alt 2 */
-    "cv03" 1, /* alt 3 */
-    "cv04" 1, /* alt 4 */
-    "cv09" 1, /* flat-top 6/9 */
-    "cv10" 1, /* alt G */
-    "zero" 1, /* slashed zero */
-    "tnum" 1; /* tabular numerals */
+    "liga" 1,
+    /* standard ligatures */ "calt" 1,
+    /* contextual alternates */ "dlig" 1,
+    /* discretionary ligatures */ "case" 1,
+    /* case-sensitive forms */ "ss01" 1,
+    /* open digits */ "ss02" 1,
+    /* ambiguous characters */ "ss03" 1,
+    /* lowercase r curves */ "ss04" 1,
+    /* disambiguation */ "cv01" 1,
+    /* alt 1 */ "cv02" 1,
+    /* alt 2 */ "cv03" 1,
+    /* alt 3 */ "cv04" 1,
+    /* alt 4 */ "cv09" 1,
+    /* flat-top 6/9 */ "cv10" 1,
+    /* alt G */ "zero" 1,
+    /* slashed zero */ "tnum" 1; /* tabular numerals */
 }
 
 @supports (font-variation-settings: normal) {
@@ -641,7 +641,6 @@ body.toggle-hidden div.osOverlayHighlight {
   margin-left: 0 !important;
 }
 
-
 /* Fix inconsistent gaps between menu elements */
 .navbar .d-flex > * {
   margin: 0.25rem !important;
@@ -737,7 +736,20 @@ body.toggle-hidden div.osOverlayHighlight {
 
 #unifiedSearchResultsOverlay {
   min-width: 600px;
-  max-width: 800px;
+  max-width: 600px;
+  width: 600px;
+}
+
+/* Ensure result rows can't push the panel wider than its fixed width:
+   long children (wand sprite + spell row, item icon strips) must wrap. */
+#unifiedSearchResults .search-result,
+#unifiedSearchResults .search-result > * {
+  min-width: 0;
+  max-width: 100%;
+}
+#unifiedSearchResults .container-items-row {
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 
 /* Multi-line search result styles */
@@ -823,7 +835,16 @@ body.toggle-hidden div.osOverlayHighlight {
 /* Seed input -- daily seed colored, custom seed white */
 #dynamicSeedInput {
   width: auto !important;
-  font-feature-settings: "tnum" 1, "zero" 1, "ss01" 1, "ss02" 1, "cv01" 1, "cv02" 1, "cv03" 1, "cv04" 1, "cv09" 1;
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1,
+    "ss01" 1,
+    "ss02" 1,
+    "cv01" 1,
+    "cv02" 1,
+    "cv03" 1,
+    "cv04" 1,
+    "cv09" 1;
   letter-spacing: 0.5px;
 }
 
@@ -899,12 +920,7 @@ body.toggle-hidden div.osOverlayHighlight {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.45) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
   transform: translateX(-100%);
   animation: loading-strip-shimmer 1.4s linear infinite;
   pointer-events: none;
@@ -915,24 +931,25 @@ body.toggle-hidden div.osOverlayHighlight {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(34, 211, 238, 0.18) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg, transparent 0%, rgba(34, 211, 238, 0.18) 50%, transparent 100%);
   transform: translateX(-100%);
   animation: loading-strip-shimmer 2.2s linear infinite;
   pointer-events: none;
 }
 
 @keyframes loading-strip-shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 /* Legacy "indeterminate" class from JS — no-op now, shimmer is always on. */
-.loading-strip-bar-track.indeterminate::after { /* handled by base rule */ }
+.loading-strip-bar-track.indeterminate::after {
+  /* handled by base rule */
+}
 
 /* Floating pill label. Anchored by its RIGHT edge to a fixed offset from
    center, so the percent (which sits at the pill's right edge) never shifts
@@ -965,7 +982,16 @@ body.toggle-hidden div.osOverlayHighlight {
 
 .loading-strip-pct {
   color: #22d3ee; /* cyan-400 */
-  font-feature-settings: "tnum" 1, "zero" 1, "ss01" 1, "ss02" 1, "cv01" 1, "cv02" 1, "cv03" 1, "cv04" 1, "cv09" 1;
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1,
+    "ss01" 1,
+    "ss02" 1,
+    "cv01" 1,
+    "cv02" 1,
+    "cv03" 1,
+    "cv04" 1,
+    "cv09" 1;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.03em;
   min-width: 3ch;
@@ -1032,3 +1058,23 @@ body.toggle-hidden div.osOverlayHighlight {
 /* ── Auth dropdown: ensure it renders above other navbar elements ────────── */
 /* (intentionally left blank — #auth-button-wrapper is handled above with
    z-index: auto so it doesn't cover navbar dropdown menus.) */
+
+/* ── Bootstrap switches inside dropdown items (perf mode menu) ───────────── */
+/* Bootstrap's .form-check-input[type=checkbox] on a switch has margin-left:-2.5em
+   by default, which bleeds left past the dropdown edge. Reset both margins and
+   use flexbox so the thumb sits fully inside the menu. */
+#perfModeDropdown .dropdown-item.form-check.form-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  padding-left: 1rem;
+}
+
+#perfModeDropdown .dropdown-item.form-check.form-switch .form-check-input {
+  margin-top: 0;
+  margin-left: 0; /* cancel Bootstrap's -2.5em that causes left-side clipping */
+  flex-shrink: 0;
+  position: static;
+}

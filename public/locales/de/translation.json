@@ -5066,5 +5066,13 @@
     "heartBiggerShort": "+50 PS",
     "biome": "Biom",
     "horde": "Horde"
+  },
+  "skipCreatures": {
+    "title": "Keine Kreaturen hinzufügen",
+    "content": "Überspringt Feinde/Kreaturen überall - sie werden weder zur Karte hinzugefügt noch in der Suche angezeigt. Reduziert die Anzahl der Marker drastisch (~32k der POIs des täglichen Seeds sind Kreaturen). Auf kleinen Bildschirmen standardmäßig aktiviert."
+  },
+  "perfMode": {
+    "title": "Leistung",
+    "content": "Leistungsoptionen für langsame Geräte und kleine Bildschirme."
   }
 }

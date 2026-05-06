@@ -5066,5 +5066,13 @@
     "heartBiggerShort": "+50 PK",
     "biome": "Bioom",
     "horde": "Horde"
+  },
+  "skipCreatures": {
+    "title": "Geen wezens toevoegen",
+    "content": "Slaat vijanden/wezens overal over - ze worden niet toegevoegd aan de kaart en verschijnen niet in de zoekresultaten. Vermindert het aantal markeringen aanzienlijk (~32k van de POI's van de dagelijkse seed zijn wezens). Standaard ingeschakeld op kleine schermen."
+  },
+  "perfMode": {
+    "title": "Prestaties",
+    "content": "Prestatieopties voor langzame apparaten en kleine schermen."
   }
 }

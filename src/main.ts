@@ -90,6 +90,7 @@ import { initMouseTracker } from "./mouse_tracker";
 import { isRenderer, getStoredRenderer, setStoredRenderer } from "./renderer_settings";
 import { isSpoilerFree, setSpoilerFree, onSpoilerFreeChange } from "./spoiler-free";
 import { isLightMode, setLightMode } from "./light-mode";
+import { isSkipCreatures, setSkipCreatures } from "./skip-creatures";
 import { createLanguageSelector } from "./language-selector";
 import { updateTranslations } from "./i18n-dom";
 import { initKonamiCode } from "./konami";
@@ -447,8 +448,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       lastSessionIsDaily = isDaily;
     },
     onPOIsReady: (pois: DynamicPOI[]) => {
-      _currentDynamicPOIs = pois;
-      unifiedSearch.setDynamicPOIs(pois);
+      // Honour the "Don't add creatures" toggle in search too. Inner items
+      // unwrapped from "enemies"/"props" containers carry type "entity" and
+      // would otherwise still surface in search even though the map filter
+      // hides them. Bosses use boss_* types and pass through.
+      const filtered = isSkipCreatures()
+        ? pois.filter((p) => p.type !== "entity" && p.type !== "enemies" && p.type !== "props")
+        : pois;
+      _currentDynamicPOIs = filtered;
+      unifiedSearch.setDynamicPOIs(filtered);
       unifiedSearch.setIndexingState('ready');
       // If we had a search query, trigger it now that dynamic POIs are indexed
       if (initialSearchQuery) {
@@ -779,6 +787,56 @@ document.addEventListener("DOMContentLoaded", async () => {
   for (const el of document.querySelectorAll('[data-bs-toggle="popover"]')) {
     new bootstrap.Popover(el);
   }
+  // The perfMode button uses data-bs-toggle="dropdown", so attach its popover
+  // programmatically. Manual trigger + our own mouseenter/mouseleave/click
+  // handlers — Bootstrap's hover trigger gets confused by the dispose/create
+  // cycle that happens during language changes, leaving popovers stuck shown.
+  const perfModeBtn = document.getElementById("perfModeButton");
+  const makePerfBtnPopover = () =>
+    perfModeBtn ? new bootstrap.Popover(perfModeBtn, { trigger: "manual", placement: "bottom" }) : null;
+  if (perfModeBtn) makePerfBtnPopover();
+  const perfDropdownEl = document.getElementById("perfModeDropdown");
+  if (perfDropdownEl && perfModeBtn) {
+    const isPerfDropdownOpen = () =>
+      perfModeBtn.getAttribute("aria-expanded") === "true" ||
+      !!perfDropdownEl.querySelector(".dropdown-menu.show");
+    const showPerfPopover = () => {
+      if (isPerfDropdownOpen()) return;
+      bootstrap.Popover.getInstance(perfModeBtn)?.show();
+    };
+    const hidePerfPopover = () => {
+      bootstrap.Popover.getInstance(perfModeBtn)?.hide();
+    };
+    perfModeBtn.addEventListener("mouseenter", showPerfPopover);
+    perfModeBtn.addEventListener("mouseleave", hidePerfPopover);
+    perfModeBtn.addEventListener("focus", showPerfPopover);
+    perfModeBtn.addEventListener("blur", hidePerfPopover);
+
+    perfModeBtn.addEventListener("show.bs.dropdown", hidePerfPopover);
+    perfModeBtn.addEventListener("hidden.bs.dropdown", () => {
+      perfDropdownEl.querySelectorAll('[data-bs-toggle="popover"]').forEach((el: Element) => {
+        bootstrap.Popover.getInstance(el)?.hide();
+      });
+    });
+
+    // Bootstrap's outside-click dismiss doesn't fire reliably when the click
+    // lands on the OpenSeadragon canvas (its pointer/mouse tracker swallows
+    // the click event before it bubbles to document). Use capture-phase
+    // listeners as a safety net so the menu and popover always dismiss.
+    const closeOutside = (e: Event) => {
+      const target = e.target as Node;
+      const inDropdown = perfDropdownEl.contains(target);
+      if (isPerfDropdownOpen() && !inDropdown) {
+        bootstrap.Dropdown.getOrCreateInstance(perfModeBtn).hide();
+      }
+      if (!inDropdown && !perfModeBtn.contains(target)) {
+        hidePerfPopover();
+      }
+    };
+    document.addEventListener("pointerdown", closeOutside, true);
+    document.addEventListener("mousedown", closeOutside, true);
+    document.addEventListener("click", closeOutside, true);
+  }
   // Initialize Bootstrap tooltips
   for (const el of document.querySelectorAll('[data-bs-toggle="tooltip"]')) {
     new bootstrap.Tooltip(el);
@@ -891,14 +949,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     lightModeToggle.checked = isLightMode();
     lightModeToggle.addEventListener("change", () => {
       setLightMode(lightModeToggle.checked);
-      const label = document.querySelector<HTMLElement>('label[for="lightModeToggle"]');
-      if (label) {
-        const popover = bootstrap.Popover.getInstance(label);
-        if (popover) popover.dispose();
-        label.blur();
-      }
       lightModeToggle.blur();
-      document.querySelectorAll('.popover').forEach((el: Element) => el.remove());
+      setTimeout(() => window.location.reload(), 50);
+    });
+  }
+
+  // "Don't add creatures" toggle — strips enemy/prop POIs from the marker
+  // layer. Doesn't need a full reload (no biome/PW change), but we re-render
+  // so the marker layer rebuilds without enemies.
+  const skipCreaturesToggle = document.getElementById("skipCreaturesToggle") as HTMLInputElement | null;
+  if (skipCreaturesToggle) {
+    skipCreaturesToggle.checked = isSkipCreatures();
+    skipCreaturesToggle.addEventListener("change", () => {
+      setSkipCreatures(skipCreaturesToggle.checked);
+      skipCreaturesToggle.blur();
       setTimeout(() => window.location.reload(), 50);
     });
   }

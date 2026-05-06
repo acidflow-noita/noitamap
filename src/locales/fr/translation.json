@@ -5066,5 +5066,13 @@
     "heartBiggerShort": "+50 PV",
     "biome": "Biome",
     "horde": "Horde"
+  },
+  "skipCreatures": {
+    "title": "Ne pas ajouter de créatures",
+    "content": "Ignore les ennemis/créatures partout - ils ne sont pas ajoutés à la carte ni présentés dans la recherche. Réduit massivement le nombre de marqueurs (~32k des POI du seed quotidien sont des créatures). Activé par défaut sur les petits écrans."
+  },
+  "perfMode": {
+    "title": "Performance",
+    "content": "Options de performance pour les appareils lents et les petits écrans."
   }
 }
