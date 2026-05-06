@@ -783,18 +783,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Dismiss any lingering popovers left over from a pre-reload state
   document.querySelectorAll('.popover').forEach((el: Element) => el.remove());
 
-  // Initialize Bootstrap popovers
+  // Initialize Bootstrap popovers (skip elements already initialised by
+  // createDynamicUI / DrawingUI / UnifiedSearch to avoid the "Bootstrap
+  // doesn't allow more than one instance per element" error).
   for (const el of document.querySelectorAll('[data-bs-toggle="popover"]')) {
-    new bootstrap.Popover(el);
+    if (!bootstrap.Popover.getInstance(el)) {
+      new bootstrap.Popover(el);
+    }
   }
   // The perfMode button uses data-bs-toggle="dropdown", so attach its popover
-  // programmatically. Manual trigger + our own mouseenter/mouseleave/click
-  // handlers — Bootstrap's hover trigger gets confused by the dispose/create
-  // cycle that happens during language changes, leaving popovers stuck shown.
+  // to the dropdown wrapper element.
   const perfModeBtn = document.getElementById("perfModeButton");
-  const makePerfBtnPopover = () =>
-    perfModeBtn ? new bootstrap.Popover(perfModeBtn, { trigger: "manual", placement: "bottom" }) : null;
-  if (perfModeBtn) makePerfBtnPopover();
   const perfDropdownEl = document.getElementById("perfModeDropdown");
   if (perfDropdownEl && perfModeBtn) {
     const isPerfDropdownOpen = () =>
@@ -802,15 +801,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       !!perfDropdownEl.querySelector(".dropdown-menu.show");
     const showPerfPopover = () => {
       if (isPerfDropdownOpen()) return;
-      bootstrap.Popover.getInstance(perfModeBtn)?.show();
+      bootstrap.Popover.getInstance(perfDropdownEl)?.show();
     };
     const hidePerfPopover = () => {
-      bootstrap.Popover.getInstance(perfModeBtn)?.hide();
+      bootstrap.Popover.getInstance(perfDropdownEl)?.hide();
     };
-    perfModeBtn.addEventListener("mouseenter", showPerfPopover);
-    perfModeBtn.addEventListener("mouseleave", hidePerfPopover);
-    perfModeBtn.addEventListener("focus", showPerfPopover);
-    perfModeBtn.addEventListener("blur", hidePerfPopover);
+    perfDropdownEl.addEventListener("mouseenter", showPerfPopover);
+    perfDropdownEl.addEventListener("mouseleave", hidePerfPopover);
+    perfDropdownEl.addEventListener("focus", showPerfPopover);
+    perfDropdownEl.addEventListener("blur", hidePerfPopover);
 
     perfModeBtn.addEventListener("show.bs.dropdown", hidePerfPopover);
     perfModeBtn.addEventListener("hidden.bs.dropdown", () => {
@@ -829,7 +828,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (isPerfDropdownOpen() && !inDropdown) {
         bootstrap.Dropdown.getOrCreateInstance(perfModeBtn).hide();
       }
-      if (!inDropdown && !perfModeBtn.contains(target)) {
+      if (!inDropdown && !perfDropdownEl.contains(target)) {
         hidePerfPopover();
       }
     };

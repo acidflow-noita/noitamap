@@ -287,7 +287,15 @@
                 ><i class="bi bi-eye-slash"></i>
               </label>
 
-              <div class="dropdown dynamic-map-only" id="perfModeDropdown">
+              <div class="dropdown dynamic-map-only" id="perfModeDropdown"
+                  data-bs-toggle="popover"
+                  data-bs-placement="bottom"
+                  data-bs-trigger="manual"
+                  data-i18n-title="perfMode.title"
+                  data-bs-title="Performance"
+                  data-i18n-content="perfMode.content"
+                  data-bs-content="Performance options for slow devices and small screens."
+              >
                 <button
                   type="button"
                   class="icon-button btn btn-sm btn-outline-light dropdown-toggle"
@@ -295,10 +303,6 @@
                   data-bs-toggle="dropdown"
                   data-bs-auto-close="outside"
                   aria-expanded="false"
-                  data-i18n-title="perfMode.title"
-                  data-bs-title="Performance"
-                  data-i18n-content="perfMode.content"
-                  data-bs-content="Performance options for slow devices and small screens."
                 >
                   <i class="bi bi-speedometer"></i>
                 </button>

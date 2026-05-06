@@ -58,19 +58,7 @@ export function updateTranslations() {
     new bootstrap.Popover(popoverTriggerEl);
   });
 
-  // The perfMode button uses data-bs-toggle="dropdown", so the loop above
-  // skips it. Refresh its popover manually so the translated title/content
-  // take effect. Manual trigger — main.ts owns show/hide via mouse/focus
-  // listeners attached to the button (those persist across language
-  // changes; only the Popover instance gets re-created here).
-  const perfModeBtn = document.getElementById("perfModeButton");
-  if (perfModeBtn) {
-    // @ts-ignore
-    const existing = bootstrap.Popover.getInstance(perfModeBtn);
-    if (existing) existing.dispose();
-    // @ts-ignore
-    new bootstrap.Popover(perfModeBtn, { trigger: "manual", placement: "bottom" });
-  }
+
 
   const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
   tooltipTriggerList.forEach(tooltipTriggerEl => {
