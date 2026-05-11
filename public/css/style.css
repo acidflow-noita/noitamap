@@ -1078,3 +1078,21 @@ body.toggle-hidden div.osOverlayHighlight {
   flex-shrink: 0;
   position: static;
 }
+
+/* Mobile: perf-mode menu would otherwise extend past the right edge of the
+   viewport because it's left-aligned to a button that sits in the middle of
+   the wrapped navbar. Anchor it to the .navbar (closest positioned ancestor)
+   with safe horizontal insets so the full menu stays on-screen. */
+@media (max-width: 575px) {
+  #perfModeDropdown {
+    position: static;
+  }
+  #perfModeDropdown .dropdown-menu {
+    left: 0.5rem;
+    right: 0.5rem;
+    top: 100%;
+    width: auto;
+    max-width: calc(100vw - 1rem);
+    margin-top: 0.25rem;
+  }
+}
