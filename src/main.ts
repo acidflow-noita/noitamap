@@ -1,5 +1,6 @@
 import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
 import { setupDropOverlay } from "./drop-overlay";
+import { negotiateTabHandoff } from "./tab-coordinator";
 import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed, showLoadingStrip, hideLoadingStrip } from "./dynamic_ui";
 import {
   runDynamicMapFromURL,
@@ -119,7 +120,13 @@ export const refreshSearchTranslations = () => {
   }
 };
 
+// Start cross-tab handoff negotiation as early as possible (the mod opens a
+// new browser tab on every M-press; if another noitamap tab is already open
+// we want it to take over so this duplicate tab can self-close).
+const _tabHandoff = negotiateTabHandoff();
+
 document.addEventListener("DOMContentLoaded", async () => {
+  if (!(await _tabHandoff)) return;
   // Start preloading the atlas for search results immediately
   import("./telescope/poi-spatial-index")
     .then((m) => m.loadSpritesheetAndAtlas())
