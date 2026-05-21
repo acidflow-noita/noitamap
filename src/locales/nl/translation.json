@@ -857,7 +857,7 @@
       "Secrets of rebuilding have been unlocked to you": "De geheimen van wederopbouw zijn aan je onthuld"
     },
     "biomes": {
-      "Mines": "mines",
+      "Mines": "Mines",
       "Lukki Lair": "Lukki lair",
       "Wizards' Den": "Wizards' den",
       "Frozen Vault": "Frozen vault",
@@ -884,8 +884,8 @@
       "Hiisi Base Spell Shop": "Hiisi Base Spell Shop",
       "biome_boss_arena": "The Laboratory",
       "biome_boss_victoryroom": "The Work",
-      "biome_coalmine": "mines",
-      "biome_coalmine_alt": "collapsed mines",
+      "biome_coalmine": "Mines",
+      "biome_coalmine_alt": "Collapsed mines",
       "biome_crypt": "Temple of the Art",
       "biome_desert": "Desert",
       "biome_dragoncave": "Dragoncave",
@@ -897,7 +897,7 @@
       "biome_lava": "Volcanic Lake",
       "biome_lavacave": "Volcanic Cave",
       "biome_magic_gate": "Sanctuary",
-      "biome_null": "unknown",
+      "biome_null": "Unknown",
       "biome_pyramid": "Pyramid",
       "biome_rainforest": "Underground Jungle",
       "biome_sandcave": "Sandcave",
@@ -905,11 +905,11 @@
       "biome_shop_room": "Secret Shop",
       "biome_snowcastle": "Hiisi Base",
       "biome_snowcave": "Snowy Depths",
-      "biome_town_under": "twisty passages",
+      "biome_town_under": "Twisty passages",
       "biome_vault": "The Vault",
-      "biome_wandcave": "magical temple",
-      "biome_water": "water",
-      "biome_winter": "snowy wasteland",
+      "biome_wandcave": "Magical temple",
+      "biome_water": "Water",
+      "biome_winter": "Snowy wasteland",
       "biome_holymountain": "Holy Mountain",
       "biome_east": "East $0",
       "biome_west": "West $0",
@@ -1727,8 +1727,8 @@
       "boss_limbs_limb_attacker": "Spider leg",
       "biome_boss_arena": "The Laboratory",
       "biome_boss_victoryroom": "The Work",
-      "biome_coalmine": "mines",
-      "biome_coalmine_alt": "collapsed mines",
+      "biome_coalmine": "Mines",
+      "biome_coalmine_alt": "Collapsed mines",
       "biome_crypt": "Temple of the Art",
       "biome_desert": "Desert",
       "biome_dragoncave": "Dragoncave",
@@ -1740,7 +1740,7 @@
       "biome_lava": "Volcanic Lake",
       "biome_lavacave": "Volcanic Cave",
       "biome_magic_gate": "Sanctuary",
-      "biome_null": "unknown",
+      "biome_null": "Unknown",
       "biome_pyramid": "Pyramid",
       "biome_rainforest": "Underground Jungle",
       "biome_sandcave": "Sandcave",
@@ -1748,11 +1748,11 @@
       "biome_shop_room": "Secret Shop",
       "biome_snowcastle": "Hiisi Base",
       "biome_snowcave": "Snowy Depths",
-      "biome_town_under": "twisty passages",
+      "biome_town_under": "Twisty passages",
       "biome_vault": "The Vault",
-      "biome_wandcave": "magical temple",
-      "biome_water": "water",
-      "biome_winter": "snowy wasteland",
+      "biome_wandcave": "Magical temple",
+      "biome_water": "Water",
+      "biome_winter": "Snowy wasteland",
       "biome_holymountain": "Holy Mountain",
       "biome_east": "East $0",
       "biome_west": "West $0",
@@ -5074,5 +5074,98 @@
   "perfMode": {
     "title": "Prestaties",
     "content": "Prestatieopties voor langzame apparaten en kleine schermen."
+  },
+  "seedReport": {
+    "title": "Zaadrapport",
+    "close": "Dichtbij",
+    "unknownBiome": "Onbekend",
+    "noTrackedItems": "Geen bijgehouden items in deze wereld.",
+    "toggle": {
+      "title": "Zaadrapport",
+      "content": "Statistieken per wereld, per bioom voor het huidige zaad."
+    },
+    "pw": {
+      "main": "Belangrijkste wereld",
+      "west": "West {{n}}",
+      "east": "Oost {{n}}"
+    },
+    "col": {
+      "biome": "Bioom",
+      "chests": "Kisten",
+      "greatChests": "Grote kisten",
+      "hvSpells": "Hoogwaardige spreuken",
+      "rareMaterials": "Zeldzame materialen"
+    },
+    "empty": {
+      "noSeed": "Wachten tot de dynamische kaart klaar is – het rapport verschijnt hier.",
+      "indexing": "Wachten tot de dynamische kaart klaar is – het rapport verschijnt hier."
+    },
+    "spells": {
+      "title": "Hoogwaardige spreuken",
+      "empty": "Geen hoogwaardige spreuken in dit zaad."
+    },
+    "spell": {
+      "category": {
+        "triggers": "Triggers / Timers",
+        "divides": "Verdeel spreuken",
+        "material": "Materiële spreuken",
+        "healing": "Genezing",
+        "nolla": "Nolla",
+        "greeks": "Spreuken met Griekse letters",
+        "summonTaikasauva": "Roep Taikasauva op",
+        "utility": "Hulpmiddelen",
+        "damage": "Schade",
+        "other": "Overige"
+      }
+    },
+    "rareMaterial": {
+      "ambrosia": "Ambrozijn",
+      "livelyconcoction": "Levendig brouwsel",
+      "deathium": "Deathium",
+      "urine": "Urine",
+      "healthium": "Healthium"
+    },
+    "compare": {
+      "comparedTo": "vs {{target}} (seed {{seed}})",
+      "todayDaily": "de dagelijkse dag van vandaag",
+      "yesterdayDaily": "de dagelijkse dag van gisteren",
+      "unavailable": "geen vergelijking beschikbaar",
+      "notCached": "vs {{target}} (seed {{seed}}) - bezoek het één keer om vergelijkingsgegevens te laden"
+    },
+    "spider": {
+      "title": "Overzicht per wereld",
+      "rareMaterialsHint": "Telt elke POI met materiaal van: ambrosia, magic_liquid_hp_regeneration (Lively Concoction, inclusief onstabiel), just_death (Deathium) of urine. Inclusief zakjes, drankjes en materiaal-AOI POI's.",
+      "axis": {
+        "greatChests": "Grote kisten",
+        "chests": "Kisten",
+        "shops": "Winkels",
+        "wands": "Toverstokken",
+        "hearts": "Harten",
+        "potions": "Drankjes",
+        "pouches": "Zakjes",
+        "hvSpells": "Hoogwaardige spreuken",
+        "rareMaterials": "Zeldzame materialen",
+        "mimics": "Bootst na",
+        "dangerousCreatures": "Gevaarlijke wezens"
+      },
+      "legend": {
+        "current": "Huidig ​​zaad",
+        "previousDaily": "Vorig dagelijks zaad",
+        "average": "Gemiddelde basislijn"
+      },
+      "creaturesNote": "Wezens zijn verborgen op de kaart (prestatiemodus), maar worden nog steeds meegeteld in de onderstaande statistieken."
+    },
+    "faceted": {
+      "title": "Uitsplitsing per bioom per categorie"
+    },
+    "locked": {
+      "title": "Het seed-rapport is een Pro-functie",
+      "body": "Abonneer om per-PW / per-bioom tellingen, hoogwaardige spreuken en zeldzame materiaallocaties voor de huidige seed te zien.",
+      "cta": "Ontgrendel met Pro"
+    },
+    "spoilerFree": {
+      "title": "Spoilervrije modus staat aan",
+      "body": "Statistieken zijn verborgen in de spoilervrije modus. Schakel deze uit om ze te tonen."
+    }
   }
 }

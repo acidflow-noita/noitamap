@@ -27,6 +27,7 @@ interface Env {
 }
 
 const NOLLA_URL = "https://takapuoli.noitagame.com/callback";
+const PUBLIC_SEED_URL = "https://daily-seed.acidflow.stream/current_seed.txt";
 
 /** Parse the seed from Nolla's semicolon-delimited response. */
 function parseSeed(text: string): number | null {
@@ -35,17 +36,33 @@ function parseSeed(text: string): number | null {
   return isNaN(seed) ? null : seed;
 }
 
+/**
+ * Read the seed currently published at the daily-seed-serve worker. That value
+ * becomes "yesterday's daily" once we deploy a fresh current_seed.txt.
+ * Returns null if the worker hasn't been deployed yet or the fetch fails.
+ */
+async function fetchPublishedCurrentSeed(): Promise<number | null> {
+  try {
+    const resp = await fetch(PUBLIC_SEED_URL, { cf: { cacheTtl: 0 } as any });
+    if (!resp.ok) return null;
+    const seed = parseInt((await resp.text()).trim(), 10);
+    return isNaN(seed) ? null : seed;
+  } catch {
+    return null;
+  }
+}
+
 /** Build the _headers file content for CORS + caching. */
 function headersFileContent(): string {
-  return (
+  const block = (path: string) =>
     [
-      "/current_seed.txt",
+      path,
       "  Access-Control-Allow-Origin: *",
       "  Access-Control-Allow-Methods: GET, OPTIONS",
       "  Cache-Control: public, max-age=300, s-maxage=300",
       "  Content-Type: text/plain; charset=utf-8",
-    ].join("\n") + "\n"
-  );
+    ].join("\n");
+  return [block("/current_seed.txt"), "", block("/previous_seed.txt"), ""].join("\n");
 }
 
 /**
@@ -57,11 +74,15 @@ function headersFileContent(): string {
  */
 async function deployStaticAssets(
   seed: number,
+  previousSeed: number | null,
   apiToken: string,
   accountId: string,
   workerName: string,
 ): Promise<void> {
   const seedContent = seed.toString() + "\n";
+  // Fall back to the new seed if we couldn't read a previous one (first
+  // ever deploy); the diff client treats prev == current as "no comparison".
+  const previousContent = (previousSeed ?? seed).toString() + "\n";
   const headersContent = headersFileContent();
 
   const apiBase = `https://api.cloudflare.com/client/v4/accounts/${accountId}`;
@@ -69,12 +90,15 @@ async function deployStaticAssets(
   // Encode to bytes + base64
   const encoder = new TextEncoder();
   const seedBytes = encoder.encode(seedContent);
+  const prevBytes = encoder.encode(previousContent);
   const headersBytes = encoder.encode(headersContent);
   const seedB64 = bytesToBase64(seedBytes);
+  const prevB64 = bytesToBase64(prevBytes);
   const headersB64 = bytesToBase64(headersBytes);
 
   // Hash = sha256(base64(content) + extension) truncated to 32 hex chars
   const seedHash = await assetHash(seedB64, ".txt");
+  const prevHash = await assetHash(prevB64, ".txt");
   const headersHash = await assetHash(headersB64, "");
 
   // --- Step 1: Create upload session ---
@@ -87,6 +111,7 @@ async function deployStaticAssets(
     body: JSON.stringify({
       manifest: {
         "/current_seed.txt": { hash: seedHash, size: seedBytes.byteLength },
+        "/previous_seed.txt": { hash: prevHash, size: prevBytes.byteLength },
         "/_headers": { hash: headersHash, size: headersBytes.byteLength },
       },
     }),
@@ -104,6 +129,7 @@ async function deployStaticAssets(
   // --- Step 2: Upload files ---
   const hashToB64: Record<string, string> = {
     [seedHash]: seedB64,
+    [prevHash]: prevB64,
     [headersHash]: headersB64,
   };
 
@@ -174,8 +200,15 @@ async function runUpdate(env: Env): Promise<string> {
   // Resolve secrets from Secrets Store
   const [apiToken, accountId] = await Promise.all([env.CF_API_TOKEN.get(), env.CF_ACCOUNT_ID.get()]);
 
-  // 1. Fetch seed from Nolla
-  const resp = await fetch(NOLLA_URL);
+  // 0. Read whatever current_seed.txt the static worker is currently serving.
+  //    That value becomes "previous" after we deploy today's fresh one. Done
+  //    in parallel with the Nolla fetch so the daily update stays snappy.
+  const [resp, previousSeed] = await Promise.all([
+    fetch(NOLLA_URL),
+    fetchPublishedCurrentSeed(),
+  ]);
+
+  // 1. Parse Nolla response
   if (!resp.ok) {
     const msg = `Nolla fetch failed: ${resp.status} ${resp.statusText}`;
     console.error(msg);
@@ -188,11 +221,11 @@ async function runUpdate(env: Env): Promise<string> {
     console.error(msg);
     throw new Error(msg);
   }
-  console.log(`Fetched daily seed: ${seed}`);
+  console.log(`Fetched daily seed: ${seed} (previous published: ${previousSeed ?? "<none>"})`);
 
-  // 2. Deploy to the static seed worker
-  await deployStaticAssets(seed, apiToken, accountId, env.SEED_WORKER_NAME);
-  return `Deployed seed: ${seed}`;
+  // 2. Deploy to the static seed worker (publishes current + previous)
+  await deployStaticAssets(seed, previousSeed, apiToken, accountId, env.SEED_WORKER_NAME);
+  return `Deployed seed: ${seed} (previous: ${previousSeed ?? "<none>"})`;
 }
 
 export default {

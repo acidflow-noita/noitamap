@@ -24,6 +24,20 @@ const LANGUAGE_MAP = {
   id: "id",
 };
 
+/**
+ * Biome labels in common.csv keep their lowercase in-game form ("mines",
+ * "twisty passages") because that's how they appear inside Noita's
+ * sentences. Our UI shows them as standalone headings/labels so they need
+ * a leading capital. Applied at bake-time only — common.csv stays untouched.
+ */
+function capitalizeFirst(s) {
+  if (typeof s !== "string" || s.length === 0) return s;
+  const first = s.charAt(0);
+  const upper = first.toUpperCase();
+  if (upper === first) return s;
+  return upper + s.slice(1);
+}
+
 function parseCSVLine(line) {
   const result = [];
   let current = "";
@@ -237,6 +251,12 @@ function updateLanguageFiles() {
           const capitalized = translatedName.charAt(0).toUpperCase() + translatedName.slice(1);
           existingTranslations.gameContent.materials[materialId] = capitalized;
           matAddedCount++;
+        } else if (key.startsWith("biome_")) {
+          // Biome labels live mid-sentence in Noita's source CSV ("mines",
+          // "twisty passages") but we render them as standalone UI labels —
+          // force a leading capital here so the source CSV stays untouched.
+          existingTranslations.gameContent.ui[key] = capitalizeFirst(translatedName);
+          uiAddedCount++;
         } else {
           // Add all other keys to UI category as a fallback
           existingTranslations.gameContent.ui[key] = translatedName;
@@ -302,8 +322,9 @@ function updateLanguageFiles() {
                 // Find translation in CSV by matching English name
                 for (const [csvKey, translationData] of translations.entries()) {
                   if (translationData["en"]?.toLowerCase() === englishName.toLowerCase()) {
-                    const translatedName = translationData[csvLang];
+                    let translatedName = translationData[csvLang];
                     if (translatedName && translatedName !== englishName) {
+                      if (key === "biomes") translatedName = capitalizeFirst(translatedName);
                       existingTranslations.gameContent[key][englishName] = translatedName;
                       contentAddedCount++;
                     }
@@ -316,8 +337,9 @@ function updateLanguageFiles() {
                   item.text.forEach((textItem) => {
                     for (const [csvKey, translationData] of translations.entries()) {
                       if (translationData["en"]?.toLowerCase() === textItem.toLowerCase()) {
-                        const translatedName = translationData[csvLang];
+                        let translatedName = translationData[csvLang];
                         if (translatedName && translatedName !== textItem) {
+                          if (key === "biomes") translatedName = capitalizeFirst(translatedName);
                           existingTranslations.gameContent[key][textItem] = translatedName;
                           contentAddedCount++;
                         }

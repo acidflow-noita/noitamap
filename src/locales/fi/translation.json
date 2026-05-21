@@ -857,7 +857,7 @@
       "Secrets of rebuilding have been unlocked to you": "Jälleenrakentamisen salaisuudet on paljastettu sinulle"
     },
     "biomes": {
-      "Mines": "mines",
+      "Mines": "Mines",
       "Coal Pits": "Hiilikaivokset",
       "Fungal Caverns": "Sieniguolat",
       "Snowy Depths": "Lumiset syvyydet",
@@ -884,8 +884,8 @@
       "Hiisi Base Spell Shop": "Hiisi Base Spell Shop",
       "biome_boss_arena": "The Laboratory",
       "biome_boss_victoryroom": "The Work",
-      "biome_coalmine": "mines",
-      "biome_coalmine_alt": "collapsed mines",
+      "biome_coalmine": "Mines",
+      "biome_coalmine_alt": "Collapsed mines",
       "biome_crypt": "Temple of the Art",
       "biome_desert": "Desert",
       "biome_dragoncave": "Dragoncave",
@@ -897,7 +897,7 @@
       "biome_lava": "Volcanic Lake",
       "biome_lavacave": "Volcanic Cave",
       "biome_magic_gate": "Sanctuary",
-      "biome_null": "unknown",
+      "biome_null": "Unknown",
       "biome_pyramid": "Pyramid",
       "biome_rainforest": "Underground Jungle",
       "biome_sandcave": "Sandcave",
@@ -905,11 +905,11 @@
       "biome_shop_room": "Secret Shop",
       "biome_snowcastle": "Hiisi Base",
       "biome_snowcave": "Snowy Depths",
-      "biome_town_under": "twisty passages",
+      "biome_town_under": "Twisty passages",
       "biome_vault": "The Vault",
-      "biome_wandcave": "magical temple",
-      "biome_water": "water",
-      "biome_winter": "snowy wasteland",
+      "biome_wandcave": "Magical temple",
+      "biome_water": "Water",
+      "biome_winter": "Snowy wasteland",
       "biome_holymountain": "Holy Mountain",
       "biome_east": "East $0",
       "biome_west": "West $0",
@@ -1727,8 +1727,8 @@
       "boss_limbs_limb_attacker": "Spider leg",
       "biome_boss_arena": "The Laboratory",
       "biome_boss_victoryroom": "The Work",
-      "biome_coalmine": "mines",
-      "biome_coalmine_alt": "collapsed mines",
+      "biome_coalmine": "Mines",
+      "biome_coalmine_alt": "Collapsed mines",
       "biome_crypt": "Temple of the Art",
       "biome_desert": "Desert",
       "biome_dragoncave": "Dragoncave",
@@ -1740,7 +1740,7 @@
       "biome_lava": "Volcanic Lake",
       "biome_lavacave": "Volcanic Cave",
       "biome_magic_gate": "Sanctuary",
-      "biome_null": "unknown",
+      "biome_null": "Unknown",
       "biome_pyramid": "Pyramid",
       "biome_rainforest": "Underground Jungle",
       "biome_sandcave": "Sandcave",
@@ -1748,11 +1748,11 @@
       "biome_shop_room": "Secret Shop",
       "biome_snowcastle": "Hiisi Base",
       "biome_snowcave": "Snowy Depths",
-      "biome_town_under": "twisty passages",
+      "biome_town_under": "Twisty passages",
       "biome_vault": "The Vault",
-      "biome_wandcave": "magical temple",
-      "biome_water": "water",
-      "biome_winter": "snowy wasteland",
+      "biome_wandcave": "Magical temple",
+      "biome_water": "Water",
+      "biome_winter": "Snowy wasteland",
       "biome_holymountain": "Holy Mountain",
       "biome_east": "East $0",
       "biome_west": "West $0",
@@ -5074,5 +5074,98 @@
   "perfMode": {
     "title": "Suorituskyky",
     "content": "Suorituskykyasetukset hitaille laitteille ja pienille näytöille."
+  },
+  "seedReport": {
+    "title": "Siemenraportti",
+    "close": "Lähellä",
+    "unknownBiome": "Tuntematon",
+    "noTrackedItems": "Ei seurattuja kohteita tässä maailmassa.",
+    "toggle": {
+      "title": "Siemenraportti",
+      "content": "Maailman ja biomikohtaiset tilastot nykyiselle siemenelle."
+    },
+    "pw": {
+      "main": "Päämaailma",
+      "west": "Länsi {{n}}",
+      "east": "Itä {{n}}"
+    },
+    "col": {
+      "biome": "Biomi",
+      "chests": "Arkut",
+      "greatChests": "Hienot rinnat",
+      "hvSpells": "Arvokkaita loitsuja",
+      "rareMaterials": "Harvinaisia ​​materiaaleja"
+    },
+    "empty": {
+      "noSeed": "Odotetaan, että dynaaminen kartta valmistuu – raportti tulee tähän.",
+      "indexing": "Odotetaan, että dynaaminen kartta valmistuu – raportti tulee tähän."
+    },
+    "spells": {
+      "title": "Arvokkaita loitsuja",
+      "empty": "Tässä siemenessä ei ole arvokkaita loitsuja."
+    },
+    "spell": {
+      "category": {
+        "triggers": "Liipaisimet / ajastimet",
+        "divides": "Jaa loitsuja",
+        "material": "Aineelliset loitsut",
+        "healing": "Parantuminen",
+        "nolla": "Nolla",
+        "greeks": "Kreikan kirjaimen loitsuja",
+        "summonTaikasauva": "Kutsu Taikasauva",
+        "utility": "Apukeinot",
+        "damage": "Vahinko",
+        "other": "Muut"
+      }
+    },
+    "rareMaterial": {
+      "ambrosia": "Ambrosia",
+      "livelyconcoction": "Elävä keitto",
+      "deathium": "Deathium",
+      "urine": "Virtsa",
+      "healthium": "Healthium"
+    },
+    "compare": {
+      "comparedTo": "vs {{target}} (siemen {{seed}})",
+      "todayDaily": "tämän päivän päivittäin",
+      "yesterdayDaily": "eilinen päivä",
+      "unavailable": "ei vertailua saatavilla",
+      "notCached": "vs {{target}} (siemen {{seed}}) - käy kerran ladataksesi vertailutiedot"
+    },
+    "spider": {
+      "title": "Maailmankohtainen yleiskatsaus",
+      "rareMaterialsHint": "Laskee jokaisen POI:n, joka sisältää materiaalia: ambrosia, magic_liquid_hp_regeneration (Lively Concoction, mukaan lukien epävakaa), just_death (Deathium) tai virtsa. Sisältää pussit, juomat ja materiaali-AOI POI:t.",
+      "axis": {
+        "greatChests": "Hienot rinnat",
+        "chests": "Arkut",
+        "shops": "Kaupat",
+        "wands": "sauvat",
+        "hearts": "Sydämiä",
+        "potions": "juomat",
+        "pouches": "Pussit",
+        "hvSpells": "Arvokkaita loitsuja",
+        "rareMaterials": "Harvinaisia ​​materiaaleja",
+        "mimics": "Jäljittelee",
+        "dangerousCreatures": "Vaarallisia olentoja"
+      },
+      "legend": {
+        "current": "Nykyinen siemen",
+        "previousDaily": "Edellinen päivittäinen siemen",
+        "average": "Keskimääräinen lähtötaso"
+      },
+      "creaturesNote": "Olennot ovat piilossa kartalta (suorituskykytila), mutta ne lasketaan silti alla oleviin tilastoihin."
+    },
+    "faceted": {
+      "title": "Biomikohtainen erittely luokittain"
+    },
+    "locked": {
+      "title": "Siemenraportti on Pro-ominaisuus",
+      "body": "Tilaa nähdäksesi PW/bioomi-laskennat, arvokkaat loitsut ja harvinaisten materiaalien sijainnit nykyiselle siemenelle.",
+      "cta": "Avaa Prolla"
+    },
+    "spoilerFree": {
+      "title": "Spoileriton tila on käytössä",
+      "body": "Tilastot on piilotettu spoilerittomassa tilassa. Poista käytöstä paljastaaksesi ne."
+    }
   }
 }

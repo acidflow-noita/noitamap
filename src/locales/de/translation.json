@@ -897,7 +897,7 @@
       "biome_lava": "Vulkanischer See",
       "biome_lavacave": "Vulkanischer Höhle",
       "biome_magic_gate": "Heiligtum",
-      "biome_null": "unbekannt",
+      "biome_null": "Unbekannt",
       "biome_pyramid": "Pyramide",
       "biome_rainforest": "Unterirdischer Dschungel",
       "biome_sandcave": "Sandhöhle",
@@ -905,11 +905,11 @@
       "biome_shop_room": "Geheimer Laden",
       "biome_snowcastle": "Hiisi-Basis",
       "biome_snowcave": "Verschneite Tiefen",
-      "biome_town_under": "gewundene Gänge",
+      "biome_town_under": "Gewundene Gänge",
       "biome_vault": "Das Gewölbe",
-      "biome_wandcave": "magischer Tempel",
+      "biome_wandcave": "Magischer Tempel",
       "biome_water": "Wasser",
-      "biome_winter": "verschneites Ödland",
+      "biome_winter": "Verschneites Ödland",
       "biome_holymountain": "Heiliger Berg",
       "biome_east": "$0 - Ost",
       "biome_west": "$0 - West",
@@ -1714,7 +1714,7 @@
       "biome_lava": "Vulkanischer See",
       "biome_lavacave": "Vulkanischer Höhle",
       "biome_magic_gate": "Heiligtum",
-      "biome_null": "unbekannt",
+      "biome_null": "Unbekannt",
       "biome_pyramid": "Pyramide",
       "biome_rainforest": "Unterirdischer Dschungel",
       "biome_sandcave": "Sandhöhle",
@@ -1722,11 +1722,11 @@
       "biome_shop_room": "Geheimer Laden",
       "biome_snowcastle": "Hiisi-Basis",
       "biome_snowcave": "Verschneite Tiefen",
-      "biome_town_under": "gewundene Gänge",
+      "biome_town_under": "Gewundene Gänge",
       "biome_vault": "Das Gewölbe",
-      "biome_wandcave": "magischer Tempel",
+      "biome_wandcave": "Magischer Tempel",
       "biome_water": "Wasser",
-      "biome_winter": "verschneites Ödland",
+      "biome_winter": "Verschneites Ödland",
       "biome_holymountain": "Heiliger Berg",
       "biome_east": "$0 - Ost",
       "biome_west": "$0 - West",
@@ -5074,5 +5074,98 @@
   "perfMode": {
     "title": "Leistung",
     "content": "Leistungsoptionen für langsame Geräte und kleine Bildschirme."
+  },
+  "seedReport": {
+    "title": "Samenbericht",
+    "close": "Schließen",
+    "unknownBiome": "Unbekannt",
+    "noTrackedItems": "Keine verfolgten Artikel auf dieser Welt.",
+    "toggle": {
+      "title": "Samenbericht",
+      "content": "Statistiken pro Welt und pro Biom für den aktuellen Samen."
+    },
+    "pw": {
+      "main": "Hauptwelt",
+      "west": "Westen {{n}}",
+      "east": "Osten {{n}}"
+    },
+    "col": {
+      "biome": "Biom",
+      "chests": "Truhen",
+      "greatChests": "Tolle Truhen",
+      "hvSpells": "Hochwertige Zauber",
+      "rareMaterials": "Seltene Materialien"
+    },
+    "empty": {
+      "noSeed": "Die dynamische Karte wird noch geladen – der Bericht erscheint hier.",
+      "indexing": "Die dynamische Karte wird noch geladen – der Bericht erscheint hier."
+    },
+    "spells": {
+      "title": "Hochwertige Zauber",
+      "empty": "In diesem Samen sind keine hochwertigen Zaubersprüche enthalten."
+    },
+    "spell": {
+      "category": {
+        "triggers": "Auslöser / Timer",
+        "divides": "Zauber aufteilen",
+        "material": "Materielle Zauber",
+        "healing": "Heilung",
+        "nolla": "Nolla",
+        "greeks": "Zaubersprüche mit griechischen Buchstaben",
+        "summonTaikasauva": "Beschwöre Taikasauva",
+        "utility": "Nützliches",
+        "damage": "Schaden",
+        "other": "Sonstige"
+      }
+    },
+    "rareMaterial": {
+      "ambrosia": "Ambrosia",
+      "livelyconcoction": "Lebhafte Mischung",
+      "deathium": "Deathium",
+      "urine": "Urin",
+      "healthium": "Healthium"
+    },
+    "compare": {
+      "comparedTo": "vs {{target}} (Seed {{seed}})",
+      "todayDaily": "heute täglich",
+      "yesterdayDaily": "die Tageszeitung von gestern",
+      "unavailable": "kein Vergleich verfügbar",
+      "notCached": "vs {{target}} (Seed {{seed}}) - einmal besuchen, um Vergleichsdaten zu laden"
+    },
+    "spider": {
+      "title": "Übersicht pro Welt",
+      "rareMaterialsHint": "Zählt jeden POI, der folgende Materialien enthält: Ambrosia, magic_liquid_hp_regeneration (lebhafte Mischung, einschließlich instabil), just_death (Deathium) oder Urin. Enthält Beutel, Tränke und Material-AOI-POIs.",
+      "axis": {
+        "greatChests": "Tolle Truhen",
+        "chests": "Truhen",
+        "shops": "Geschäfte",
+        "wands": "Zauberstäbe",
+        "hearts": "Herzen",
+        "potions": "Zaubertränke",
+        "pouches": "Beutel",
+        "hvSpells": "Hochwertige Zauber",
+        "rareMaterials": "Seltene Materialien",
+        "mimics": "Nachahmungen",
+        "dangerousCreatures": "Gefährliche Kreaturen"
+      },
+      "legend": {
+        "current": "Aktueller Samen",
+        "previousDaily": "Vorheriger täglicher Samen",
+        "average": "Durchschnittlicher Ausgangswert"
+      },
+      "creaturesNote": "Kreaturen werden auf der Karte ausgeblendet (Leistungsmodus), werden aber dennoch in den Statistiken unten gezählt."
+    },
+    "faceted": {
+      "title": "Aufschlüsselung pro Biom nach Kategorie"
+    },
+    "locked": {
+      "title": "Der Seed-Bericht ist eine Pro-Funktion",
+      "body": "Abonniere, um pro PW / pro Biom Zählungen, hochwertige Zauber und Fundorte seltener Materialien für den aktuellen Seed zu sehen.",
+      "cta": "Mit Pro freischalten"
+    },
+    "spoilerFree": {
+      "title": "Spoilerfreier Modus ist aktiv",
+      "body": "Statistiken sind im spoilerfreien Modus ausgeblendet. Schalte ihn aus, um sie anzuzeigen."
+    }
   }
 }

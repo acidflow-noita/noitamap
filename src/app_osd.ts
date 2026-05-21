@@ -266,63 +266,101 @@ export class AppOSD {
     }
   }
 
-  panToTarget(x: number, y: number) {
+  /**
+   * Cinematic pan to a target point: zooms out so origin + destination are
+   * both visible, holds, zooms back in. Draws a SVG arrow trail and a pulse
+   * marker on the destination.
+   *
+   * @param x   actual world-X of the POI (arrow points here, pulse appears here)
+   * @param y   actual world-Y of the POI
+   * @param opts.offsetXPx  pixel offset to shift the *viewport center* by, so
+   *                        the POI lands left/right of dead-center when a
+   *                        sidebar covers part of the canvas. The trail and
+   *                        pulse stay anchored to (x, y).
+   */
+  panToTarget(x: number, y: number, opts?: { offsetXPx?: number }): Promise<void> {
     const viewport = this.viewport;
     const here = viewport.getCenter();
-    const there = new OpenSeadragon.Point(x, y);
 
-    // Cancel any in-progress pan
+    // Cancel any in-progress pan. Without removing the previous pan's
+    // animation-finish handler we'd end up running the OLD onAnimFinish too
+    // when the new pan starts animating — that handler still closes over the
+    // previous destRect and would yank the view to the wrong target, which
+    // is the "first click goes somewhere random, subsequent clicks work"
+    // bug seen with rapid row clicks in the seed-report sidebar.
     if (this.panTimer) clearTimeout(this.panTimer);
+    if (this.activeAnimFinish) {
+      this.viewer.removeHandler("animation-finish", this.activeAnimFinish);
+      this.activeAnimFinish = null;
+    }
     this.removePanTrail();
 
+    // Translate the pixel offset into world coords so we can shift the view
+    // centre without moving the POI marker / arrow target.
+    const offsetXPx = opts?.offsetXPx ?? 0;
+    const offsetWorldX = offsetXPx
+      ? viewport.deltaPointsFromPixels(new OpenSeadragon.Point(offsetXPx, 0), true).x
+      : 0;
+    const viewX = x + offsetWorldX;
+    const viewY = y;
+    const there = new OpenSeadragon.Point(viewX, viewY);
+
     // If already at destination or extremely close, just snap
-    const dist = Math.sqrt((here.x - x) ** 2 + (here.y - y) ** 2);
+    const dist = Math.sqrt((here.x - viewX) ** 2 + (here.y - viewY) ** 2);
     if (dist < CHUNK_SIZE * 0.5) {
-      const destRect = new OpenSeadragon.Rect(x - CHUNK_SIZE / 2, y - CHUNK_SIZE / 2, CHUNK_SIZE, CHUNK_SIZE);
+      const destRect = new OpenSeadragon.Rect(viewX - CHUNK_SIZE / 2, viewY - CHUNK_SIZE / 2, CHUNK_SIZE, CHUNK_SIZE);
       this.withSlowAnimation(() => viewport.fitBounds(destRect));
       this.addPulseMarker(x, y);
-      return;
+      return Promise.resolve();
     }
 
-    // ─── Phase 1: Zoom out to show both origin and destination ───
-    const padding = 1.3; // 30% padding around the bounding box
-    const midX = (here.x + there.x) / 2;
-    const midY = (here.y + there.y) / 2;
-    const spanW = Math.abs(here.x - there.x) * padding;
-    const spanH = Math.abs(here.y - there.y) * padding;
-    const overviewRect = new OpenSeadragon.Rect(
-      midX - spanW / 2,
-      midY - spanH / 2,
-      Math.max(spanW, CHUNK_SIZE * 2),
-      Math.max(spanH, CHUNK_SIZE * 2),
-    );
+    return new Promise<void>((resolve) => {
+      // ─── Phase 1: Zoom out to show both origin and destination ───
+      const padding = 1.3; // 30% padding around the bounding box
+      const midX = (here.x + there.x) / 2;
+      const midY = (here.y + there.y) / 2;
+      const spanW = Math.abs(here.x - there.x) * padding;
+      const spanH = Math.abs(here.y - there.y) * padding;
+      const overviewRect = new OpenSeadragon.Rect(
+        midX - spanW / 2,
+        midY - spanH / 2,
+        Math.max(spanW, CHUNK_SIZE * 2),
+        Math.max(spanH, CHUNK_SIZE * 2),
+      );
 
-    // Show SVG trail line from here → there
-    this.addPanTrail(here.x, here.y, x, y);
+      // Show SVG trail line from here → ACTUAL POI position (not the shifted
+      // view centre — the arrow has to point at the spell, not at empty space)
+      this.addPanTrail(here.x, here.y, x, y);
 
-    // Phase 1: zoom out to overview
-    this.withSlowAnimation(() => viewport.fitBounds(overviewRect));
+      // Phase 1: zoom out to overview
+      this.withSlowAnimation(() => viewport.fitBounds(overviewRect));
 
-    // ─── Phase 2: After phase 1 animation completes, zoom into destination ───
-    const destRect = new OpenSeadragon.Rect(x - CHUNK_SIZE / 2, y - CHUNK_SIZE / 2, CHUNK_SIZE, CHUNK_SIZE);
+      // ─── Phase 2: After phase 1 animation completes, zoom into destination ───
+      const destRect = new OpenSeadragon.Rect(viewX - CHUNK_SIZE / 2, viewY - CHUNK_SIZE / 2, CHUNK_SIZE, CHUNK_SIZE);
 
-    // Use animation-finish event for precise synchronization
-    const onAnimFinish = () => {
-      this.viewer.removeHandler("animation-finish", onAnimFinish);
-      // Hold the overview for 3s so the user can see the full path
-      this.panTimer = setTimeout(() => {
-        this.panTimer = undefined;
-        this.withSlowAnimation(() => viewport.fitBounds(destRect));
-        // Remove trail and add pulse after phase 2 starts
+      // Use animation-finish event for precise synchronization
+      const onAnimFinish = () => {
+        this.viewer.removeHandler("animation-finish", onAnimFinish);
+        this.activeAnimFinish = null;
+        // Hold the overview for 1s so the user can see the full path
         this.panTimer = setTimeout(() => {
-          this.removePanTrail();
-          this.addPulseMarker(x, y);
-        }, 800);
-      }, 1000);
-    };
-    this.viewer.addHandler("animation-finish", onAnimFinish);
+          this.panTimer = undefined;
+          this.withSlowAnimation(() => viewport.fitBounds(destRect));
+          // Remove trail and add pulse after phase 2 starts. Pulse must be at
+          // the actual POI, not the shifted view centre.
+          this.panTimer = setTimeout(() => {
+            this.removePanTrail();
+            this.addPulseMarker(x, y);
+            resolve();
+          }, 800);
+        }, 1000);
+      };
+      this.activeAnimFinish = onAnimFinish;
+      this.viewer.addHandler("animation-finish", onAnimFinish);
+    });
   }
   private panTimer: any = undefined;
+  private activeAnimFinish: (() => void) | null = null;
 
   /** Add an SVG trail line overlay connecting origin to destination */
   private addPanTrail(x1: number, y1: number, x2: number, y2: number) {

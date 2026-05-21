@@ -897,7 +897,7 @@
       "biome_lava": "Lac volcanique",
       "biome_lavacave": "Grotte volcanique",
       "biome_magic_gate": "Sanctuaire",
-      "biome_null": "inconnu",
+      "biome_null": "Inconnu",
       "biome_pyramid": "Pyramide",
       "biome_rainforest": "Jungle souterraine",
       "biome_sandcave": "Grotte de sable",
@@ -1714,7 +1714,7 @@
       "biome_lava": "Lac volcanique",
       "biome_lavacave": "Grotte volcanique",
       "biome_magic_gate": "Sanctuaire",
-      "biome_null": "inconnu",
+      "biome_null": "Inconnu",
       "biome_pyramid": "Pyramide",
       "biome_rainforest": "Jungle souterraine",
       "biome_sandcave": "Grotte de sable",
@@ -5074,5 +5074,98 @@
   "perfMode": {
     "title": "Performance",
     "content": "Options de performance pour les appareils lents et les petits écrans."
+  },
+  "seedReport": {
+    "title": "Rapport sur les semences",
+    "close": "Fermer",
+    "unknownBiome": "Inconnu",
+    "noTrackedItems": "Aucun objet suivi dans ce monde.",
+    "toggle": {
+      "title": "Rapport sur les semences",
+      "content": "Statistiques par monde et par biome pour la graine actuelle."
+    },
+    "pw": {
+      "main": "Monde principal",
+      "west": "Ouest {{n}}",
+      "east": "Est {{n}}"
+    },
+    "col": {
+      "biome": "Biome",
+      "chests": "Coffres",
+      "greatChests": "Grands coffres",
+      "hvSpells": "Sorts de grande valeur",
+      "rareMaterials": "Des matériaux rares"
+    },
+    "empty": {
+      "noSeed": "En attente de la fin de la carte dynamique - le rapport apparaîtra ici.",
+      "indexing": "En attente de la fin de la carte dynamique - le rapport apparaîtra ici."
+    },
+    "spells": {
+      "title": "Sorts de grande valeur",
+      "empty": "Aucun sort de grande valeur dans cette graine."
+    },
+    "spell": {
+      "category": {
+        "triggers": "Déclencheurs/minuteries",
+        "divides": "Diviser les sorts",
+        "material": "Sorts matériels",
+        "healing": "Guérison",
+        "nolla": "Nolla",
+        "greeks": "Sorts de lettres grecques",
+        "summonTaikasauva": "Invocation de Taikasauva",
+        "utility": "Utilitaire",
+        "damage": "Dégâts",
+        "other": "Autres"
+      }
+    },
+    "rareMaterial": {
+      "ambrosia": "Ambroisie",
+      "livelyconcoction": "Concoction animée",
+      "deathium": "Mortium",
+      "urine": "Urine",
+      "healthium": "Healthium"
+    },
+    "compare": {
+      "comparedTo": "vs {{target}} (graine {{seed}})",
+      "todayDaily": "le quotidien d'aujourd'hui",
+      "yesterdayDaily": "le quotidien d'hier",
+      "unavailable": "aucune comparaison disponible",
+      "notCached": "vs {{target}} (graine {{seed}}) - visitez-la une fois pour charger les données de comparaison"
+    },
+    "spider": {
+      "title": "Aperçu par monde",
+      "rareMaterialsHint": "Compte chaque POI transportant un matériau de : ambroisie, magic_liquid_hp_regénération (Lively Concoction, y compris unstable), just_death (Deathium) ou urine. Comprend des pochettes, des potions et des POI matériels-AOI.",
+      "axis": {
+        "greatChests": "Grands coffres",
+        "chests": "Coffres",
+        "shops": "Boutiques",
+        "wands": "Baguettes",
+        "hearts": "Cœurs",
+        "potions": "Potions",
+        "pouches": "Pochettes",
+        "hvSpells": "Sorts de grande valeur",
+        "rareMaterials": "Des matériaux rares",
+        "mimics": "Imite",
+        "dangerousCreatures": "Créatures dangereuses"
+      },
+      "legend": {
+        "current": "Semence actuelle",
+        "previousDaily": "Graine quotidienne précédente",
+        "average": "Base de référence moyenne"
+      },
+      "creaturesNote": "Les créatures sont masquées de la carte (mode performance), mais elles sont toujours comptées dans les statistiques ci-dessous."
+    },
+    "faceted": {
+      "title": "Répartition par biome par catégorie"
+    },
+    "locked": {
+      "title": "Le rapport de graine est une fonctionnalité Pro",
+      "body": "Abonnez-vous pour voir les comptages par PW / par biome, les sorts de grande valeur et les emplacements des matériaux rares pour la graine actuelle.",
+      "cta": "Débloquer avec Pro"
+    },
+    "spoilerFree": {
+      "title": "Le mode sans spoilers est activé",
+      "body": "Les statistiques sont masquées en mode sans spoilers. Désactivez-le pour les afficher."
+    }
   }
 }

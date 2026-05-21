@@ -1,4 +1,97 @@
 {
+  "seedReport": {
+    "title": "Seed report",
+    "close": "Close",
+    "unknownBiome": "Unknown",
+    "noTrackedItems": "No tracked items in this world.",
+    "toggle": {
+      "title": "Seed report",
+      "content": "Per-world, per-biome stats for the current seed."
+    },
+    "pw": {
+      "main": "Main world",
+      "west": "West {{n}}",
+      "east": "East {{n}}"
+    },
+    "col": {
+      "biome": "Biome",
+      "chests": "Chests",
+      "greatChests": "Great",
+      "hvSpells": "High value spells",
+      "rareMaterials": "Rare mats"
+    },
+    "empty": {
+      "noSeed": "Waiting for the dynamic map to finish - the report will appear here.",
+      "indexing": "Waiting for the dynamic map to finish - the report will appear here."
+    },
+    "spells": {
+      "title": "High value spells",
+      "empty": "No spells in this seed."
+    },
+    "spell": {
+      "category": {
+        "triggers": "Triggers / Timers",
+        "divides": "Divides",
+        "material": "Material spells",
+        "healing": "Healing",
+        "nolla": "Nolla",
+        "greeks": "Greeks",
+        "summonTaikasauva": "Summon Taikasauva",
+        "utility": "Utility",
+        "damage": "Damage",
+        "other": "Other"
+      }
+    },
+    "rareMaterial": {
+      "ambrosia": "Ambrosia",
+      "healthium": "Healthium",
+      "livelyconcoction": "Lively Concoction",
+      "deathium": "Deathium",
+      "urine": "Urine"
+    },
+    "compare": {
+      "comparedTo": "vs {{target}} (seed {{seed}})",
+      "todayDaily": "today's daily",
+      "yesterdayDaily": "yesterday's daily",
+      "unavailable": "no comparison available",
+      "notCached": "vs {{target}} (seed {{seed}}) - visit it once to load comparison data"
+    },
+    "spider": {
+      "title": "Per-world overview",
+      "rareMaterialsHint": "Counts every POI carrying a material of: ambrosia, magic_liquid_hp_regeneration (Healthium), magic_liquid_hp_regeneration_unstable (Lively Concoction), just_death (Deathium), or urine. Includes pouches, potions, and material-AOI POIs.",
+      "creaturesNote": "Creatures are hidden from the map (performance mode), but they are still counted in the stats below.",
+      "axis": {
+        "greatChests": "Great chests",
+        "chests": "Chests",
+        "shops": "Shops",
+        "wands": "Wands",
+        "hearts": "Hearts",
+        "potions": "Potions",
+        "pouches": "Pouches",
+        "hvSpells": "High value spells",
+        "rareMaterials": "Rare materials",
+        "mimics": "Mimics",
+        "dangerousCreatures": "Dangerous creatures"
+      },
+      "legend": {
+        "current": "Current seed",
+        "previousDaily": "Previous daily",
+        "average": "Average baseline"
+      }
+    },
+    "faceted": {
+      "title": "Per-biome breakdown by category"
+    },
+    "locked": {
+      "title": "Seed report is a Pro feature",
+      "body": "Subscribe to see per-PW / per-biome counts, high value spells, and rare material locations for the current seed.",
+      "cta": "Unlock with Pro"
+    },
+    "spoilerFree": {
+      "title": "Spoiler-free mode is on",
+      "body": "Stats are hidden while spoiler-free is on. Disable it to reveal them."
+    }
+  },
   "search": {
     "placeholder": "Find spells, items, bosses, places…",
     "indexing": "Loading data...",
@@ -941,7 +1034,7 @@
       "Orb: Cement": "Orb: Cement"
     },
     "biomes": {
-      "Mines": "mines",
+      "Mines": "Mines",
       "Coal Pits": "Coal Pits",
       "Fungal Caverns": "Fungal Caverns",
       "Snowy Depths": "Snowy Depths",
@@ -968,8 +1061,8 @@
       "Hiisi Base Spell Shop": "Hiisi Base Spell Shop",
       "biome_boss_arena": "The Laboratory",
       "biome_boss_victoryroom": "The Work",
-      "biome_coalmine": "mines",
-      "biome_coalmine_alt": "collapsed mines",
+      "biome_coalmine": "Mines",
+      "biome_coalmine_alt": "Collapsed mines",
       "biome_crypt": "Temple of the Art",
       "biome_desert": "Desert",
       "biome_dragoncave": "Dragoncave",
@@ -981,7 +1074,7 @@
       "biome_lava": "Volcanic Lake",
       "biome_lavacave": "Volcanic Cave",
       "biome_magic_gate": "Sanctuary",
-      "biome_null": "unknown",
+      "biome_null": "Unknown",
       "biome_pyramid": "Pyramid",
       "biome_rainforest": "Underground Jungle",
       "biome_sandcave": "Sandcave",
@@ -989,11 +1082,11 @@
       "biome_shop_room": "Secret Shop",
       "biome_snowcastle": "Hiisi Base",
       "biome_snowcave": "Snowy Depths",
-      "biome_town_under": "twisty passages",
+      "biome_town_under": "Twisty passages",
       "biome_vault": "The Vault",
-      "biome_wandcave": "magical temple",
-      "biome_water": "water",
-      "biome_winter": "snowy wasteland",
+      "biome_wandcave": "Magical temple",
+      "biome_water": "Water",
+      "biome_winter": "Snowy wasteland",
       "biome_holymountain": "Holy Mountain",
       "biome_east": "East $0",
       "biome_west": "West $0",
@@ -1790,8 +1883,8 @@
       "boss_limbs_limb_attacker": "Spider leg",
       "biome_boss_arena": "The Laboratory",
       "biome_boss_victoryroom": "The Work",
-      "biome_coalmine": "mines",
-      "biome_coalmine_alt": "collapsed mines",
+      "biome_coalmine": "Mines",
+      "biome_coalmine_alt": "Collapsed mines",
       "biome_crypt": "Temple of the Art",
       "biome_desert": "Desert",
       "biome_dragoncave": "Dragoncave",
@@ -1803,7 +1896,7 @@
       "biome_lava": "Volcanic Lake",
       "biome_lavacave": "Volcanic Cave",
       "biome_magic_gate": "Sanctuary",
-      "biome_null": "unknown",
+      "biome_null": "Unknown",
       "biome_pyramid": "Pyramid",
       "biome_rainforest": "Underground Jungle",
       "biome_sandcave": "Sandcave",
@@ -1811,11 +1904,11 @@
       "biome_shop_room": "Secret Shop",
       "biome_snowcastle": "Hiisi Base",
       "biome_snowcave": "Snowy Depths",
-      "biome_town_under": "twisty passages",
+      "biome_town_under": "Twisty passages",
       "biome_vault": "The Vault",
-      "biome_wandcave": "magical temple",
-      "biome_water": "water",
-      "biome_winter": "snowy wasteland",
+      "biome_wandcave": "Magical temple",
+      "biome_water": "Water",
+      "biome_winter": "Snowy wasteland",
       "biome_holymountain": "Holy Mountain",
       "biome_east": "East $0",
       "biome_west": "West $0",

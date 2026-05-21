@@ -857,7 +857,7 @@
       "Secrets of rebuilding have been unlocked to you": "Sekrety odbudowy zostały ci ujawnione"
     },
     "biomes": {
-      "Mines": "kopalnie",
+      "Mines": "Kopalnie",
       "Coal Pits": "Kopalnia węgla",
       "Fungal Caverns": "Grzybowa pieczara",
       "Snowy Depths": "Śnieżne głębiny",
@@ -884,8 +884,8 @@
       "Hiisi Base Spell Shop": "Hiisi Base Spell Shop",
       "biome_boss_arena": "Laboratorium",
       "biome_boss_victoryroom": "Dzieło",
-      "biome_coalmine": "kopalnie",
-      "biome_coalmine_alt": "zawalone kopalnie",
+      "biome_coalmine": "Kopalnie",
+      "biome_coalmine_alt": "Zawalone kopalnie",
       "biome_crypt": "Świątynia Sztuki",
       "biome_desert": "Pustynia",
       "biome_dragoncave": "Jaskinia smoka",
@@ -1701,8 +1701,8 @@
       "boss_limbs_limb_attacker": "Odnóże pająka",
       "biome_boss_arena": "Laboratorium",
       "biome_boss_victoryroom": "Dzieło",
-      "biome_coalmine": "kopalnie",
-      "biome_coalmine_alt": "zawalone kopalnie",
+      "biome_coalmine": "Kopalnie",
+      "biome_coalmine_alt": "Zawalone kopalnie",
       "biome_crypt": "Świątynia Sztuki",
       "biome_desert": "Pustynia",
       "biome_dragoncave": "Jaskinia smoka",
@@ -5074,5 +5074,98 @@
   "perfMode": {
     "title": "Wydajność",
     "content": "Opcje wydajności dla wolnych urządzeń i małych ekranów."
+  },
+  "seedReport": {
+    "title": "Raport z nasion",
+    "close": "Zamknąć",
+    "unknownBiome": "Nieznany",
+    "noTrackedItems": "Brak śledzonych przedmiotów na tym świecie.",
+    "toggle": {
+      "title": "Raport z nasion",
+      "content": "Statystyki na świat i na biom dla bieżącego materiału siewnego."
+    },
+    "pw": {
+      "main": "Główny świat",
+      "west": "Zachód {{n}}",
+      "east": "Wschód {{n}}"
+    },
+    "col": {
+      "biome": "Biom",
+      "chests": "Skrzynie",
+      "greatChests": "Świetne skrzynie",
+      "hvSpells": "Zaklęcia o dużej wartości",
+      "rareMaterials": "Rzadkie materiały"
+    },
+    "empty": {
+      "noSeed": "Oczekiwanie na zakończenie dynamicznej mapy - raport pojawi się tutaj.",
+      "indexing": "Oczekiwanie na zakończenie dynamicznej mapy - raport pojawi się tutaj."
+    },
+    "spells": {
+      "title": "Zaklęcia o dużej wartości",
+      "empty": "W tym ziarnie nie ma zaklęć o wysokiej wartości."
+    },
+    "spell": {
+      "category": {
+        "triggers": "Wyzwalacze/timery",
+        "divides": "Dziel zaklęcia",
+        "material": "Materialne zaklęcia",
+        "healing": "Gojenie : zdrowienie",
+        "nolla": "Nolla",
+        "greeks": "Zaklęcia z literą grecką",
+        "summonTaikasauva": "Przywołaj Taikasauvę",
+        "utility": "Użytkowe",
+        "damage": "Obrażenia",
+        "other": "Inne"
+      }
+    },
+    "rareMaterial": {
+      "ambrosia": "Ambrozja",
+      "livelyconcoction": "Żywa mikstura",
+      "deathium": "Śmierć",
+      "urine": "Mocz",
+      "healthium": "Healthium"
+    },
+    "compare": {
+      "comparedTo": "vs {{target}} (ziarno {{seed}})",
+      "todayDaily": "dzisiejsza codzienność",
+      "yesterdayDaily": "wczorajszy dziennik",
+      "unavailable": "brak możliwości porównania",
+      "notCached": "vs {{target}} (ziarno {{seed}}) - odwiedź je raz, aby załadować porównanie"
+    },
+    "spider": {
+      "title": "Przegląd według świata",
+      "rareMaterialsHint": "Zlicza każdy POI niosący materiał: ambrozję, magic_liquid_hp_regenerację (żywą miksturę, w tym niestabilną), just_death (śmierć) lub mocz. Zawiera woreczki, mikstury i materiały AOI POI.",
+      "axis": {
+        "greatChests": "Świetne skrzynie",
+        "chests": "Skrzynie",
+        "shops": "Sklepy",
+        "wands": "Różdżki",
+        "hearts": "Kiery",
+        "potions": "Mikstury",
+        "pouches": "Woreczki",
+        "hvSpells": "Zaklęcia o dużej wartości",
+        "rareMaterials": "Rzadkie materiały",
+        "mimics": "Naśladuje",
+        "dangerousCreatures": "Niebezpieczne stworzenia"
+      },
+      "legend": {
+        "current": "Aktualne ziarno",
+        "previousDaily": "Poprzednie nasiona dzienne",
+        "average": "Średni poziom bazowy"
+      },
+      "creaturesNote": "Stworzenia są ukryte na mapie (tryb wydajności), ale nadal są liczone w statystykach poniżej."
+    },
+    "faceted": {
+      "title": "Podział na biomy według kategorii"
+    },
+    "locked": {
+      "title": "Raport ziarna to funkcja Pro",
+      "body": "Subskrybuj, aby zobaczyć liczby per PW / per biom, zaklęcia o dużej wartości i lokalizacje rzadkich materiałów dla bieżącego ziarna.",
+      "cta": "Odblokuj z Pro"
+    },
+    "spoilerFree": {
+      "title": "Tryb bez spoilerów jest włączony",
+      "body": "Statystyki są ukryte w trybie bez spoilerów. Wyłącz go, aby je odsłonić."
+    }
   }
 }

@@ -75,6 +75,7 @@ import {
   getEnabledOverlays,
   updateURLWithOverlays,
   updateURLWithSidebar,
+  updateURLWithSeedReport,
   updateURLWithCanvas,
   updateURLWithSeed,
   updateURLWithSearch,
@@ -98,6 +99,7 @@ import { initKonamiCode } from "./konami";
 import { AuthUI } from "./auth/auth-ui";
 import { authService } from "./auth/auth-service";
 import { DrawingUI } from "./drawing/drawing-ui";
+import { createSeedReportButton } from "./seed-report-button";
 import { initChunkGrid, showChunkGrid, isChunkGridVisible } from "./drawing/chunk-grid";
 import { getMaterialInfo, primeMaterialInfo } from "./material-info";
 
@@ -112,6 +114,13 @@ const mapChangeCallbacks: Array<(mapName: string) => void> = [];
 // Reference to unified search so the pro hook can update it
 let _unifiedSearch: UnifiedSearch | null = null;
 let _currentDynamicPOIs: DynamicPOI[] = [];
+/**
+ * Unfiltered POI list — keeps `entity`, `enemies`, `props` even when the
+ * "skip creatures" performance toggle hides them on the map. Used by the
+ * pro bundle's Seed Report so creature stats are correct regardless of the
+ * map-rendering toggle.
+ */
+let _allDynamicPOIs: DynamicPOI[] = [];
 
 // Export function to refresh search translations
 export const refreshSearchTranslations = () => {
@@ -455,6 +464,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       lastSessionIsDaily = isDaily;
     },
     onPOIsReady: (pois: DynamicPOI[]) => {
+      // Keep the full unfiltered list for stats (Seed Report counts creatures
+      // regardless of the perf-mode "skip creatures" toggle).
+      _allDynamicPOIs = pois;
       // Honour the "Don't add creatures" toggle in search too. Inner items
       // unwrapped from "enemies"/"props" containers carry type "entity" and
       // would otherwise still surface in search even though the map filter
@@ -476,7 +488,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (initialTargetPoiId) {
         const capturedPoiId = initialTargetPoiId;
         initialTargetPoiId = undefined;
-        import('./telescope/telescope-osd-bridge').then(m => {
+        // If the URL also requested the seed-report sidebar (?sr=1), wait a
+        // brief moment for it to mount + open before triggering the tooltip
+        // pan — otherwise the cinematic pan would compute its sidebar offset
+        // before the sidebar is visible and the POI ends up behind the panel.
+        const waitForSidebar = async (): Promise<void> => {
+          const urlState = (await import("./data_sources/url")).parseURL();
+          if (!urlState.seedReportOpen) return;
+          for (let i = 0; i < 30; i++) {
+            const el = document.getElementById("seed-report-sidebar");
+            if (el && el.classList.contains("open")) return;
+            await new Promise((r) => setTimeout(r, 100));
+          }
+        };
+        Promise.all([
+          import('./telescope/telescope-osd-bridge'),
+          waitForSidebar(),
+        ]).then(([m]) => {
           m.openTooltipForPOI(capturedPoiId, app.osd);
         });
       }
@@ -553,8 +581,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       updateURLWithOverlays(getEnabledOverlays());
     },
     getDynamicPOIs: () => _currentDynamicPOIs,
+    /**
+     * Full POI list (no skip-creatures filter applied). Used by the pro
+     * Seed Report so creature axes stay populated even with the perf toggle
+     * active.
+     */
+    getAllDynamicPOIs: () => _allDynamicPOIs,
     isSpoilerFree: () => isSpoilerFree(),
     isLightMode: () => isLightMode(),
+    isSkipCreatures: () => isSkipCreatures(),
     onSpoilerFreeChange: (cb: (enabled: boolean) => void) => onSpoilerFreeChange(cb),
     setAlchemyActive: (active: boolean) => _unifiedSearch?.setAlchemyActive(active),
     getIndexingState: () => _unifiedSearch?.getIndexingState() ?? "idle",
@@ -563,10 +598,35 @@ document.addEventListener("DOMContentLoaded", async () => {
     },
     getMaterialInfo: (id: string) => getMaterialInfo(id),
     primeMaterialInfo: () => primeMaterialInfo(),
+    getFlatPOIsForSeed: async (seed: number) => {
+      // Cache-only lookup. We intentionally do NOT fall back to
+      // `generateDynamicMap` here — that call has telescope-wide side effects
+      // (setUnlocks, biome data, pixel scene cache writes) which break the
+      // currently-rendered map (e.g. sky/hell HMs disappear). The Seed Report
+      // tolerates a missing diff and shows a hint instead.
+      try {
+        const { getCachedGeneration } = await import("./telescope/tile-cache");
+        const { getAllPOIsFlat } = await import("./telescope/telescope-osd-bridge");
+        const cached = await getCachedGeneration(`${seed}-all`);
+        if (cached?.poisByPW) return getAllPOIsFlat({ poisByPW: cached.poisByPW } as any);
+        return null;
+      } catch (e) {
+        console.warn("[Noitamap] getFlatPOIsForSeed failed:", e);
+        return null;
+      }
+    },
     setHighValuePredicate: (pred: ((poi: any) => boolean) | null) => {
       import("./telescope/telescope-osd-bridge").then(({ applyHighValueOverlays }) => {
         applyHighValueOverlays(pred);
       });
+    },
+    openPOIById: (poiId: string, opts?: { sidebarRightPx?: number }) => {
+      import("./telescope/telescope-osd-bridge").then((m) => {
+        m.openTooltipForPOI(poiId, app.osd, opts);
+      });
+    },
+    showGetProModal: () => {
+      AuthUI.showGetProModal();
     },
   };
   window.__noitamap = proHooks;
@@ -621,6 +681,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   new DrawingUI(authContainer, {
     onEnableDrawing: loadProBundle,
   });
+
+  // Seed Report toggle button — sits next to the drawing toggle.
+  // Auto-loads the pro bundle on first click.
+  {
+    const drawingWrap = document.getElementById("drawing-ui-wrapper");
+    if (drawingWrap) {
+      createSeedReportButton(drawingWrap, { loadProBundle });
+    }
+  }
 
   // Initialize Drop Overlay
   setupDropOverlay(i18next, loadProBundle);

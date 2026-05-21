@@ -857,7 +857,7 @@
       "Secrets of rebuilding have been unlocked to you": "Os segredos da reconstrução foram revelados a você"
     },
     "biomes": {
-      "Mines": "minas",
+      "Mines": "Minas",
       "Coal Pits": "Fossos de Carvão",
       "Fungal Caverns": "Cavernas Fúngicas",
       "Snowy Depths": "Profundezas Nevadas",
@@ -884,8 +884,8 @@
       "Hiisi Base Spell Shop": "Hiisi Base Spell Shop",
       "biome_boss_arena": "O Laboratório",
       "biome_boss_victoryroom": "A Obra",
-      "biome_coalmine": "minas",
-      "biome_coalmine_alt": "minas desabadas",
+      "biome_coalmine": "Minas",
+      "biome_coalmine_alt": "Minas desabadas",
       "biome_crypt": "Templo da Arte",
       "biome_desert": "Deserto",
       "biome_dragoncave": "Caverna do Dragão",
@@ -897,7 +897,7 @@
       "biome_lava": "Lago Vulcânico",
       "biome_lavacave": "Caverna Vulcânica",
       "biome_magic_gate": "Santuário",
-      "biome_null": "desconhecido",
+      "biome_null": "Desconhecido",
       "biome_pyramid": "Pirâmide",
       "biome_rainforest": "Selva Subterrânea",
       "biome_sandcave": "Caverna de Areia",
@@ -905,11 +905,11 @@
       "biome_shop_room": "Loja Secreta",
       "biome_snowcastle": "Base Hiisi",
       "biome_snowcave": "Profundezas Nevadas",
-      "biome_town_under": "passagens tortuosas",
+      "biome_town_under": "Passagens tortuosas",
       "biome_vault": "O Cofre",
-      "biome_wandcave": "templo mágico",
-      "biome_water": "água",
-      "biome_winter": "ermo nevado",
+      "biome_wandcave": "Templo mágico",
+      "biome_water": "Água",
+      "biome_winter": "Ermo nevado",
       "biome_holymountain": "Montanha Sagrada",
       "biome_east": "$0 Oriental",
       "biome_west": "$0 Ocidental",
@@ -1701,8 +1701,8 @@
       "boss_limbs_limb_attacker": "Pata de aranha",
       "biome_boss_arena": "O Laboratório",
       "biome_boss_victoryroom": "A Obra",
-      "biome_coalmine": "minas",
-      "biome_coalmine_alt": "minas desabadas",
+      "biome_coalmine": "Minas",
+      "biome_coalmine_alt": "Minas desabadas",
       "biome_crypt": "Templo da Arte",
       "biome_desert": "Deserto",
       "biome_dragoncave": "Caverna do Dragão",
@@ -1714,7 +1714,7 @@
       "biome_lava": "Lago Vulcânico",
       "biome_lavacave": "Caverna Vulcânica",
       "biome_magic_gate": "Santuário",
-      "biome_null": "desconhecido",
+      "biome_null": "Desconhecido",
       "biome_pyramid": "Pirâmide",
       "biome_rainforest": "Selva Subterrânea",
       "biome_sandcave": "Caverna de Areia",
@@ -1722,11 +1722,11 @@
       "biome_shop_room": "Loja Secreta",
       "biome_snowcastle": "Base Hiisi",
       "biome_snowcave": "Profundezas Nevadas",
-      "biome_town_under": "passagens tortuosas",
+      "biome_town_under": "Passagens tortuosas",
       "biome_vault": "O Cofre",
-      "biome_wandcave": "templo mágico",
-      "biome_water": "água",
-      "biome_winter": "ermo nevado",
+      "biome_wandcave": "Templo mágico",
+      "biome_water": "Água",
+      "biome_winter": "Ermo nevado",
       "biome_holymountain": "Montanha Sagrada",
       "biome_east": "$0 Oriental",
       "biome_west": "$0 Ocidental",
@@ -5074,5 +5074,98 @@
   "perfMode": {
     "title": "Desempenho",
     "content": "Opções de desempenho para dispositivos lentos e telas pequenas."
+  },
+  "seedReport": {
+    "title": "Relatório inicial",
+    "close": "Fechar",
+    "unknownBiome": "Desconhecido",
+    "noTrackedItems": "Nenhum item rastreado neste mundo.",
+    "toggle": {
+      "title": "Relatório inicial",
+      "content": "Estatísticas por mundo e por bioma para a semente atual."
+    },
+    "pw": {
+      "main": "Mundo principal",
+      "west": "Oeste {{n}}",
+      "east": "Leste {{n}}"
+    },
+    "col": {
+      "biome": "Bioma",
+      "chests": "Baús",
+      "greatChests": "Grandes baús",
+      "hvSpells": "Feitiços de alto valor",
+      "rareMaterials": "Materiais raros"
+    },
+    "empty": {
+      "noSeed": "Aguardando o mapa dinâmico terminar - o relatório aparecerá aqui.",
+      "indexing": "Aguardando o mapa dinâmico terminar - o relatório aparecerá aqui."
+    },
+    "spells": {
+      "title": "Feitiços de alto valor",
+      "empty": "Não há feitiços de alto valor nesta semente."
+    },
+    "spell": {
+      "category": {
+        "triggers": "Gatilhos / Temporizadores",
+        "divides": "Dividir feitiços",
+        "material": "Feitiços materiais",
+        "healing": "Cura",
+        "nolla": "Nolla",
+        "greeks": "Feitiços de letras gregas",
+        "summonTaikasauva": "Invocar Taikasauva",
+        "utility": "Utilidade",
+        "damage": "Dano",
+        "other": "Outros"
+      }
+    },
+    "rareMaterial": {
+      "ambrosia": "Ambrósia",
+      "livelyconcoction": "Mistura animada",
+      "deathium": "Morte",
+      "urine": "Urina",
+      "healthium": "Healthium"
+    },
+    "compare": {
+      "comparedTo": "vs {{target}} (semente {{seed}})",
+      "todayDaily": "diário de hoje",
+      "yesterdayDaily": "diário de ontem",
+      "unavailable": "nenhuma comparação disponível",
+      "notCached": "vs {{target}} (semente {{seed}}) - visite-o uma vez para carregar os dados de comparação"
+    },
+    "spider": {
+      "title": "Visão geral por mundo",
+      "rareMaterialsHint": "Conta cada POI que contém um material de: ambrosia, magic_liquid_hp_regeneration (Lively Concoction, incluindo instável), just_death (Deathium) ou urina. Inclui bolsas, poções e POIs de material-AOI.",
+      "axis": {
+        "greatChests": "Grandes baús",
+        "chests": "Baús",
+        "shops": "Lojas",
+        "wands": "Varinhas",
+        "hearts": "Corações",
+        "potions": "Poções",
+        "pouches": "Bolsas",
+        "hvSpells": "Feitiços de alto valor",
+        "rareMaterials": "Materiais raros",
+        "mimics": "Imita",
+        "dangerousCreatures": "Criaturas perigosas"
+      },
+      "legend": {
+        "current": "Semente atual",
+        "previousDaily": "Semente diária anterior",
+        "average": "Linha de base média"
+      },
+      "creaturesNote": "As criaturas ficam ocultas no mapa (modo desempenho), mas ainda são contadas nas estatísticas abaixo."
+    },
+    "faceted": {
+      "title": "Divisão por bioma por categoria"
+    },
+    "locked": {
+      "title": "O relatório de semente é um recurso Pro",
+      "body": "Assine para ver as contagens por PW / por bioma, feitiços de alto valor e locais de materiais raros para a semente atual.",
+      "cta": "Desbloquear com Pro"
+    },
+    "spoilerFree": {
+      "title": "Modo sem spoilers ativado",
+      "body": "As estatísticas ficam ocultas no modo sem spoilers. Desative-o para vê-las."
+    }
   }
 }

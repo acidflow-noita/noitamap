@@ -1102,6 +1102,17 @@ export class UnifiedSearch extends EventEmitter2 {
         parts.push(gameTranslator.translateMaterial(p.material));
       }
 
+      // Loose spell POI on the ground: { type: "spell", item: "LIGHT_BULLET" }.
+      // Index the spell's English + translated name so users can search by
+      // human label ("spark bolt") instead of just the raw id.
+      if (p.type === "spell" && p.item) {
+        const spell = spellById.get(p.item);
+        if (spell) {
+          parts.push(spell.name);
+          parts.push(gameTranslator.translateSpell(spell.name));
+        }
+      }
+
       // Index spell names (both ids and translated names)
       for (const spellId of [...(p.cards || []), ...(p.always_casts || [])]) {
         parts.push(spellId);

@@ -5074,5 +5074,98 @@
   "perfMode": {
     "title": "性能",
     "content": "适用于低速设备和小屏幕的性能选项。"
+  },
+  "seedReport": {
+    "title": "种子报告",
+    "close": "关闭",
+    "unknownBiome": "未知",
+    "noTrackedItems": "这个世界上没有被追踪的物品。",
+    "toggle": {
+      "title": "种子报告",
+      "content": "当前种子的每个世界、每个生物群落统计数据。"
+    },
+    "pw": {
+      "main": "主要世界",
+      "west": "西{{n}}",
+      "east": "东{{n}}"
+    },
+    "col": {
+      "biome": "生物群落",
+      "chests": "宝箱",
+      "greatChests": "伟大的胸部",
+      "hvSpells": "高价值法术",
+      "rareMaterials": "稀有材料"
+    },
+    "empty": {
+      "noSeed": "正在等待动态地图完成 - 报告将显示在此处。",
+      "indexing": "正在等待动态地图完成 - 报告将显示在此处。"
+    },
+    "spells": {
+      "title": "高价值法术",
+      "empty": "该种子中没有高价值法术。"
+    },
+    "spell": {
+      "category": {
+        "triggers": "触发器/定时器",
+        "divides": "划分法术",
+        "material": "物质法术",
+        "healing": "康复",
+        "nolla": "诺拉",
+        "greeks": "希腊字母拼写",
+        "summonTaikasauva": "召唤泰卡萨瓦",
+        "utility": "实用",
+        "damage": "伤害",
+        "other": "其他"
+      }
+    },
+    "rareMaterial": {
+      "ambrosia": "豚草属",
+      "livelyconcoction": "活泼的混合物",
+      "deathium": "死神",
+      "urine": "尿",
+      "healthium": "Healthium"
+    },
+    "compare": {
+      "comparedTo": "对比 {{target}} (种子 {{seed}})",
+      "todayDaily": "今天的每日",
+      "yesterdayDaily": "昨天的日报",
+      "unavailable": "无法比较",
+      "notCached": "对比 {{target}} (种子 {{seed}}) - 访问一次以加载对比数据"
+    },
+    "spider": {
+      "title": "每个世界的概述",
+      "rareMaterialsHint": "计算每个携带以下材料的 POI：ambrosia、magic_liquid_hp_regenesis（活泼混合物，包括不稳定）、just_death（死亡金属）或尿液。包括袋子、药水和材料-AOI POI。",
+      "axis": {
+        "greatChests": "伟大的胸部",
+        "chests": "宝箱",
+        "shops": "商店",
+        "wands": "魔杖",
+        "hearts": "红心",
+        "potions": "药水",
+        "pouches": "袋",
+        "hvSpells": "高价值法术",
+        "rareMaterials": "稀有材料",
+        "mimics": "模仿者",
+        "dangerousCreatures": "危险的生物"
+      },
+      "legend": {
+        "current": "当前种子",
+        "previousDaily": "以前的每日种子",
+        "average": "平均基线"
+      },
+      "creaturesNote": "生物在地图上隐藏（性能模式），但它们仍然计入下面的统计数据中。"
+    },
+    "faceted": {
+      "title": "按生物群落类别细分"
+    },
+    "locked": {
+      "title": "种子报告是 Pro 功能",
+      "body": "订阅以查看当前种子的每个 PW / 每个生物群系的计数、高价值法术和稀有材料位置。",
+      "cta": "使用 Pro 解锁"
+    },
+    "spoilerFree": {
+      "title": "已开启防剧透模式",
+      "body": "防剧透模式开启时统计数据已隐藏。关闭后即可查看。"
+    }
   }
 }

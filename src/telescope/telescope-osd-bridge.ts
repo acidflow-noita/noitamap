@@ -3001,42 +3001,125 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
   viewer.addHandler("canvas-drag", hideMarkerTooltip);
 }
 
-export function openTooltipForPOI(poiId: string, viewer: any): void {
-  if (!globalMarkerData || !poiId || poiId === "undefined" || poiId === "null") return;
+export function openTooltipForPOI(
+  poiId: string,
+  viewer: any,
+  opts?: { sidebarRightPx?: number; fallbackX?: number; fallbackY?: number },
+): void {
+  if (!poiId || poiId === "undefined" || poiId === "null") return;
+
+  // Close any tooltip card that was already open. Otherwise the previous POI's
+  // card sits on screen for ~2 s during the cinematic pan before getting
+  // replaced, which looks like the click did nothing.
+  hideMarkerTooltip();
 
   // Find the exact marker item based on its reference or fallback ID
-  const item = globalMarkerData.items.find(i => {
-    const primaryId = (i.poi as any).id;
-    return primaryId === poiId;
-  });
+  const item = globalMarkerData
+    ? globalMarkerData.items.find(i => {
+        const primaryId = (i.poi as any).id;
+        return primaryId === poiId;
+      })
+    : undefined;
+
+  // Decide where to pan to. Prefer the marker's exact position; otherwise use
+  // the caller-supplied fallback world coords (so the cinematic pan still
+  // fires even when markerData hasn't indexed this POI — e.g. perf-mode
+  // hides creatures from the marker layer but the seed report still lists
+  // them).
+  const baseX = item ? item.osdX : opts?.fallbackX;
+  const baseY = item ? item.osdY : opts?.fallbackY;
+  if (baseX === undefined || baseY === undefined) return;
+  const pt = new (OpenSeadragon as any).Point(baseX, baseY);
+
+  // Sidebar awareness: callers (seed-report row clicks) can pass an explicit
+  // width. For all other entry points (e.g. share-link auto-open via
+  // `?poi=…&sr=1`), auto-detect the seed-report sidebar's current visible
+  // width by querying the DOM. The element exists and is open whenever its
+  // `.open` class is set; if not present or closed, width is 0.
+  let sidebarPx = opts?.sidebarRightPx ?? 0;
+  if (sidebarPx === 0) {
+    const srEl = document.getElementById("seed-report-sidebar");
+    if (srEl && srEl.classList.contains("open")) {
+      sidebarPx = srEl.getBoundingClientRect().width;
+    }
+  }
+
+  // Use the AppOSD wrapper's cinematic panToTarget when available — it draws
+  // the SVG trail/arrow + pulse marker, matching the behaviour the search
+  // results use. Falls back to viewport.panTo on plain OpenSeadragon viewers.
+  const usePanToTarget = typeof viewer.panToTarget === "function";
+  let panPromise: Promise<void> | null = null;
+  if (usePanToTarget) {
+    panPromise = viewer.panToTarget(pt.x, pt.y, { offsetXPx: sidebarPx / 2 });
+  } else {
+    // Plain OSD viewer: no offset support, just pan.
+    let panTarget = pt;
+    if (sidebarPx > 0) {
+      const shift = viewer.viewport.deltaPointsFromPixels(
+        new (OpenSeadragon as any).Point(sidebarPx / 2, 0),
+        true,
+      );
+      panTarget = new (OpenSeadragon as any).Point(pt.x + shift.x, pt.y);
+    }
+    viewer.viewport.panTo(panTarget, true);
+  }
+
+  // No item -> no tooltip card, just the cinematic pan. Useful for seed-report
+  // rows whose POI was excluded from the marker layer (perf-mode creatures,
+  // etc.) but still has world coords.
   if (!item) return;
 
-  // Convert map coordinates to viewer pixel coordinates
-  const pt = new (OpenSeadragon as any).Point(item.osdX, item.osdY);
+  // Show the tooltip AFTER the cinematic pan settles. Prefer awaiting the
+  // pan Promise when panToTarget returns one; fall back to a fixed delay
+  // for plain viewport.panTo.
+  const showTooltipNow = () => {
+    const pixel = viewer.viewport.pixelFromPoint(pt);
+    const canvasRect = (viewer.canvas as HTMLElement).getBoundingClientRect();
+    const isOffScreen = pixel.x < -100 || pixel.x > canvasRect.width + 100 ||
+                        pixel.y < -100 || pixel.y > canvasRect.height + 100;
 
-  // Force pan to it first
-  viewer.viewport.panTo(pt, true);
+    // Re-detect the sidebar at tooltip-show time too — the user may have
+    // opened/closed it during the multi-second pan animation.
+    let liveSidebarPx = sidebarPx;
+    const srEl = document.getElementById("seed-report-sidebar");
+    if (srEl && srEl.classList.contains("open")) {
+      liveSidebarPx = srEl.getBoundingClientRect().width;
+    }
 
-  // Wait for viewport to settle before displaying tooltip.
-  // Use a longer delay than click-based tooltips because panTo needs time
-  // to finish its animation and update the pixel mapping.
-  setTimeout(() => {
-     const pixel = viewer.viewport.pixelFromPoint(pt);
-     const canvasRect = (viewer.canvas as HTMLElement).getBoundingClientRect();
-     const isOffScreen = pixel.x < -100 || pixel.x > canvasRect.width + 100 ||
-                         pixel.y < -100 || pixel.y > canvasRect.height + 100;
+    // Position the tooltip near the marker (slightly above + to the right of
+    // the POI), clamped so it never extends into the right-side sidebar.
+    const TOOLTIP_W = 32 * 14; // matches the `width: 32em` + 14px base font
+    const TOOLTIP_GAP = 16;    // breathing room between POI and card
+    const markerX = isOffScreen ? canvasRect.width / 2 : pixel.x;
+    const markerY = isOffScreen ? canvasRect.height / 2 : pixel.y;
 
-     // Position the tooltip near the marker, but bias toward the center of the
-     // viewport so the card has room to render fully on screen.
-     const markerX = isOffScreen ? (canvasRect.width / 2) : pixel.x;
-     const markerY = isOffScreen ? (canvasRect.height / 2) : pixel.y;
+    // Right edge available for the tooltip = canvas right minus sidebar.
+    const rightEdge = canvasRect.right - liveSidebarPx - TOOLTIP_GAP;
+    // Preferred: place the tooltip's LEFT edge slightly to the right of the
+    // POI marker so the card doesn't overlap the spell sprite itself.
+    let screenX = canvasRect.left + markerX + TOOLTIP_GAP;
+    if (screenX + TOOLTIP_W > rightEdge) {
+      // Not enough room on the right — flip to the left of the marker.
+      const leftAttempt = canvasRect.left + markerX - TOOLTIP_GAP - TOOLTIP_W;
+      if (leftAttempt >= canvasRect.left + 8) {
+        screenX = leftAttempt;
+      } else {
+        // Neither side fits cleanly — pin to the left edge so the card stays
+        // entirely visible (better than half-behind the sidebar).
+        screenX = canvasRect.left + 8;
+      }
+    }
+    let screenY = canvasRect.top + Math.min(markerY, canvasRect.height * 0.35);
+    if (screenY < canvasRect.top + 8) screenY = canvasRect.top + 8;
 
-     // Place the tooltip slightly above center so it doesn't overflow the bottom
-     const screenX = canvasRect.left + Math.min(markerX, canvasRect.width * 0.6);
-     const screenY = canvasRect.top + Math.min(markerY, canvasRect.height * 0.35);
+    showMarkerTooltip(item, screenX, screenY);
+  };
 
-     showMarkerTooltip(item, screenX, screenY);
-  }, 250);
+  if (panPromise && typeof panPromise.then === "function") {
+    panPromise.then(showTooltipNow).catch(() => showTooltipNow());
+  } else {
+    setTimeout(showTooltipNow, 250);
+  }
 }
 
 // ─── Boss Sprite Overlays ──────────────────────────────────────────────────

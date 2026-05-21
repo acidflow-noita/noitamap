@@ -857,7 +857,7 @@
       "Secrets of rebuilding have been unlocked to you": "Вам открылись тайны восстановления"
     },
     "biomes": {
-      "Mines": "шахты",
+      "Mines": "Шахты",
       "Coal Pits": "Угольные карьеры",
       "Fungal Caverns": "Грибные пещеры",
       "Snowy Depths": "Снежные глубины",
@@ -884,8 +884,8 @@
       "Hiisi Base Spell Shop": "Hiisi Base Spell Shop",
       "biome_boss_arena": "Лаборатория",
       "biome_boss_victoryroom": "Работа",
-      "biome_coalmine": "шахты",
-      "biome_coalmine_alt": "обрушенные шахты",
+      "biome_coalmine": "Шахты",
+      "biome_coalmine_alt": "Обрушенные шахты",
       "biome_crypt": "Храм Искусства",
       "biome_desert": "Пустыня",
       "biome_dragoncave": "Драконья пещера",
@@ -897,7 +897,7 @@
       "biome_lava": "Вулканическое озеро",
       "biome_lavacave": "Вулканическая пещера",
       "biome_magic_gate": "Святилище",
-      "biome_null": "неизвестно",
+      "biome_null": "Неизвестно",
       "biome_pyramid": "Пирамида",
       "biome_rainforest": "Подземные джунгли",
       "biome_sandcave": "Песчаная пещера",
@@ -905,11 +905,11 @@
       "biome_shop_room": "Секретный магазин",
       "biome_snowcastle": "База Хийси",
       "biome_snowcave": "Снежные глубины",
-      "biome_town_under": "извилистые ходы",
+      "biome_town_under": "Извилистые ходы",
       "biome_vault": "Убежище",
-      "biome_wandcave": "волшебный храм",
-      "biome_water": "вода",
-      "biome_winter": "снежная пустошь",
+      "biome_wandcave": "Волшебный храм",
+      "biome_water": "Вода",
+      "biome_winter": "Снежная пустошь",
       "biome_holymountain": "Святая гора",
       "biome_east": "$0, восток",
       "biome_west": "$0, запад",
@@ -1701,8 +1701,8 @@
       "boss_limbs_limb_attacker": "Паучья нога",
       "biome_boss_arena": "Лаборатория",
       "biome_boss_victoryroom": "Работа",
-      "biome_coalmine": "шахты",
-      "biome_coalmine_alt": "обрушенные шахты",
+      "biome_coalmine": "Шахты",
+      "biome_coalmine_alt": "Обрушенные шахты",
       "biome_crypt": "Храм Искусства",
       "biome_desert": "Пустыня",
       "biome_dragoncave": "Драконья пещера",
@@ -1714,7 +1714,7 @@
       "biome_lava": "Вулканическое озеро",
       "biome_lavacave": "Вулканическая пещера",
       "biome_magic_gate": "Святилище",
-      "biome_null": "неизвестно",
+      "biome_null": "Неизвестно",
       "biome_pyramid": "Пирамида",
       "biome_rainforest": "Подземные джунгли",
       "biome_sandcave": "Песчаная пещера",
@@ -1722,11 +1722,11 @@
       "biome_shop_room": "Секретный магазин",
       "biome_snowcastle": "База Хийси",
       "biome_snowcave": "Снежные глубины",
-      "biome_town_under": "извилистые ходы",
+      "biome_town_under": "Извилистые ходы",
       "biome_vault": "Убежище",
-      "biome_wandcave": "волшебный храм",
-      "biome_water": "вода",
-      "biome_winter": "снежная пустошь",
+      "biome_wandcave": "Волшебный храм",
+      "biome_water": "Вода",
+      "biome_winter": "Снежная пустошь",
       "biome_holymountain": "Святая гора",
       "biome_east": "$0, восток",
       "biome_west": "$0, запад",
@@ -5074,5 +5074,98 @@
   "perfMode": {
     "title": "Производительность",
     "content": "Параметры производительности для медленных устройств и маленьких экранов."
+  },
+  "seedReport": {
+    "title": "Отчёт по сиду",
+    "close": "Закрыть",
+    "unknownBiome": "Неизвестный",
+    "noTrackedItems": "В этом мире нет отслеживаемых объектов.",
+    "toggle": {
+      "title": "Отчёт по сиду",
+      "content": "Статистика по миру и биомам для текущего сида."
+    },
+    "pw": {
+      "main": "Основной мир",
+      "west": "Запад {{n}}",
+      "east": "Восток {{n}}"
+    },
+    "col": {
+      "biome": "Биом",
+      "chests": "Сундуки",
+      "greatChests": "Великие",
+      "hvSpells": "Ценные заклинания",
+      "rareMaterials": "Редкие материалы"
+    },
+    "empty": {
+      "noSeed": "Ожидание завершения динамической карты — отчёт появится здесь.",
+      "indexing": "Ожидание завершения динамической карты — отчёт появится здесь."
+    },
+    "spells": {
+      "title": "Ценные заклинания",
+      "empty": "В этом сиде нет ценных заклинаний."
+    },
+    "spell": {
+      "category": {
+        "triggers": "Триггеры / Таймеры",
+        "divides": "Делители",
+        "material": "Материальные заклинания",
+        "healing": "Лечение",
+        "nolla": "Нолла",
+        "greeks": "Греческие буквы",
+        "summonTaikasauva": "Призыв Тайкасаувы",
+        "utility": "Утилитарные",
+        "damage": "Урон",
+        "other": "Прочие"
+      }
+    },
+    "rareMaterial": {
+      "ambrosia": "Амброзия",
+      "livelyconcoction": "Живая концоктия",
+      "deathium": "Смертий",
+      "urine": "Моча",
+      "healthium": "Healthium"
+    },
+    "compare": {
+      "comparedTo": "vs {{target}} (сид {{seed}})",
+      "todayDaily": "сегодняшним дейли",
+      "yesterdayDaily": "вчерашним дейли",
+      "unavailable": "сравнение недоступно",
+      "notCached": "vs {{target}} (сид {{seed}}) - откройте его один раз, чтобы загрузить данные сравнения"
+    },
+    "spider": {
+      "title": "Обзор по миру",
+      "rareMaterialsHint": "Подсчитывает каждый POI, несущий материал: амброзия, Magic_liquid_hp_regeneration (Живая смесь, включая нестабильную), just_death (Смерть) или моча. Включает мешочки, зелья и POI материалов.",
+      "axis": {
+        "greatChests": "Великие сундуки",
+        "chests": "Сундуки",
+        "shops": "Магазины",
+        "wands": "Палочки",
+        "hearts": "Сердца",
+        "potions": "Зелья",
+        "pouches": "Мешочки",
+        "hvSpells": "Ценные заклинания",
+        "rareMaterials": "Редкие материалы",
+        "mimics": "Мимики",
+        "dangerousCreatures": "Опасные существа"
+      },
+      "legend": {
+        "current": "Текущий сид",
+        "previousDaily": "Предыдущий дейли",
+        "average": "Средний по дейли"
+      },
+      "creaturesNote": "Существа скрыты с карты (режим производительности), но они все равно учитываются в статистике ниже."
+    },
+    "faceted": {
+      "title": "Разбивка по биомам по категориям"
+    },
+    "locked": {
+      "title": "Отчёт о сиде — функция Pro",
+      "body": "Подпишитесь, чтобы видеть счётчики по PW / по биомам, ценные заклинания и места редких материалов для текущего сида.",
+      "cta": "Открыть с Pro"
+    },
+    "spoilerFree": {
+      "title": "Включён режим без спойлеров",
+      "body": "Статистика скрыта в режиме без спойлеров. Отключите режим, чтобы её увидеть."
+    }
   }
 }

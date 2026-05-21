@@ -5074,5 +5074,98 @@
   "perfMode": {
     "title": "パフォーマンス",
     "content": "低速デバイスや小さい画面向けのパフォーマンスオプション。"
+  },
+  "seedReport": {
+    "title": "シードレポート",
+    "close": "近い",
+    "unknownBiome": "未知",
+    "noTrackedItems": "この世界には追跡可能なアイテムはありません。",
+    "toggle": {
+      "title": "シードレポート",
+      "content": "現在のシードのワールドごと、バイオームごとの統計。"
+    },
+    "pw": {
+      "main": "メインワールド",
+      "west": "西{{n}}",
+      "east": "東{{n}}"
+    },
+    "col": {
+      "biome": "バイオーム",
+      "chests": "チェスト",
+      "greatChests": "素晴らしいチェスト",
+      "hvSpells": "高価値の呪文",
+      "rareMaterials": "希少な素材"
+    },
+    "empty": {
+      "noSeed": "ダイナミックマップの生成を待っています - レポートはここに表示されます。",
+      "indexing": "ダイナミックマップの生成を待っています - レポートはここに表示されます。"
+    },
+    "spells": {
+      "title": "高価値の呪文",
+      "empty": "このシードには高価値の呪文はありません。"
+    },
+    "spell": {
+      "category": {
+        "triggers": "トリガー/タイマー",
+        "divides": "呪文を分割する",
+        "material": "物質的な呪文",
+        "healing": "ヒーリング",
+        "nolla": "ノーラ",
+        "greeks": "ギリシャ文字の呪文",
+        "summonTaikasauva": "タイカサウバを召喚する",
+        "utility": "ユーティリティ",
+        "damage": "ダメージ",
+        "other": "その他"
+      }
+    },
+    "rareMaterial": {
+      "ambrosia": "アンブロシア",
+      "livelyconcoction": "生き生きとした調合",
+      "deathium": "デスシウム",
+      "urine": "尿",
+      "healthium": "Healthium"
+    },
+    "compare": {
+      "comparedTo": "vs {{target}} (シード {{seed}})",
+      "todayDaily": "今日の毎日",
+      "yesterdayDaily": "昨日の日常",
+      "unavailable": "比較データはありません",
+      "notCached": "vs {{target}} (シード {{seed}}) - 一度訪れて比較データを読み込んでください"
+    },
+    "spider": {
+      "title": "ワールドごとの概要",
+      "rareMaterialsHint": "ambrosia、magic_liquid_hp_regeneration (Lively Concoction、不安定なものを含む)、just_death (Deathium)、または尿のマテリアルを運ぶすべての POI をカウントします。ポーチ、ポーション、マテリアル AOI POI が含まれます。",
+      "axis": {
+        "greatChests": "素晴らしいチェスト",
+        "chests": "チェスト",
+        "shops": "ショップ",
+        "wands": "ワンド",
+        "hearts": "ハート",
+        "potions": "ポーション",
+        "pouches": "パウチ",
+        "hvSpells": "高価値の呪文",
+        "rareMaterials": "希少な素材",
+        "mimics": "ミミック",
+        "dangerousCreatures": "危険な生き物"
+      },
+      "legend": {
+        "current": "現在のシード",
+        "previousDaily": "以前の毎日のシード",
+        "average": "平均ベースライン"
+      },
+      "creaturesNote": "クリーチャーはマップ (パフォーマンス モード) から非表示になりますが、以下の統計では引き続きカウントされます。"
+    },
+    "faceted": {
+      "title": "カテゴリごとのバイオームごとの内訳"
+    },
+    "locked": {
+      "title": "シードレポートはProの機能です",
+      "body": "サブスクリプションで、現在のシードのPW別 / バイオーム別の数、高価値の呪文、レア素材の場所を確認できます。",
+      "cta": "Proで解除"
+    },
+    "spoilerFree": {
+      "title": "ネタバレ防止モードがオンです",
+      "body": "ネタバレ防止モードでは統計が非表示になります。オフにすると表示されます。"
+    }
   }
 }

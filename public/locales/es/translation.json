@@ -857,7 +857,7 @@
       "Secrets of rebuilding have been unlocked to you": "Los secretos de la reconstrucción te han sido revelados"
     },
     "biomes": {
-      "Mines": "minas",
+      "Mines": "Minas",
       "Coal Pits": "Simas de carbón",
       "Fungal Caverns": "Cavernas de los hongos",
       "Snowy Depths": "Profundidades nevadas",
@@ -884,8 +884,8 @@
       "Hiisi Base Spell Shop": "Hiisi Base Spell Shop",
       "biome_boss_arena": "El Laboratorio",
       "biome_boss_victoryroom": "La Obra maestra",
-      "biome_coalmine": "minas",
-      "biome_coalmine_alt": "minas derrumbadas",
+      "biome_coalmine": "Minas",
+      "biome_coalmine_alt": "Minas derrumbadas",
       "biome_crypt": "Templo del Arte",
       "biome_desert": "Desierto",
       "biome_dragoncave": "Cueva de dragón",
@@ -897,7 +897,7 @@
       "biome_lava": "Lago volcánico",
       "biome_lavacave": "Cueva volcánica",
       "biome_magic_gate": "Santuario",
-      "biome_null": "desconocido",
+      "biome_null": "Desconocido",
       "biome_pyramid": "Pirámide",
       "biome_rainforest": "Jungla subterránea",
       "biome_sandcave": "Cueva de arena",
@@ -905,11 +905,11 @@
       "biome_shop_room": "Tienda secreta",
       "biome_snowcastle": "Base Hiisi",
       "biome_snowcave": "Profundidades nevadas",
-      "biome_town_under": "pasadizos retorcidos",
+      "biome_town_under": "Pasadizos retorcidos",
       "biome_vault": "La Cámara",
-      "biome_wandcave": "templo mágico",
-      "biome_water": "agua",
-      "biome_winter": "yermo nevado",
+      "biome_wandcave": "Templo mágico",
+      "biome_water": "Agua",
+      "biome_winter": "Yermo nevado",
       "biome_holymountain": "Montaña Sagrada",
       "biome_east": "$0 del este",
       "biome_west": "$0 del oeste",
@@ -1701,8 +1701,8 @@
       "boss_limbs_limb_attacker": "Pata de araña",
       "biome_boss_arena": "El Laboratorio",
       "biome_boss_victoryroom": "La Obra maestra",
-      "biome_coalmine": "minas",
-      "biome_coalmine_alt": "minas derrumbadas",
+      "biome_coalmine": "Minas",
+      "biome_coalmine_alt": "Minas derrumbadas",
       "biome_crypt": "Templo del Arte",
       "biome_desert": "Desierto",
       "biome_dragoncave": "Cueva de dragón",
@@ -1714,7 +1714,7 @@
       "biome_lava": "Lago volcánico",
       "biome_lavacave": "Cueva volcánica",
       "biome_magic_gate": "Santuario",
-      "biome_null": "desconocido",
+      "biome_null": "Desconocido",
       "biome_pyramid": "Pirámide",
       "biome_rainforest": "Jungla subterránea",
       "biome_sandcave": "Cueva de arena",
@@ -1722,11 +1722,11 @@
       "biome_shop_room": "Tienda secreta",
       "biome_snowcastle": "Base Hiisi",
       "biome_snowcave": "Profundidades nevadas",
-      "biome_town_under": "pasadizos retorcidos",
+      "biome_town_under": "Pasadizos retorcidos",
       "biome_vault": "La Cámara",
-      "biome_wandcave": "templo mágico",
-      "biome_water": "agua",
-      "biome_winter": "yermo nevado",
+      "biome_wandcave": "Templo mágico",
+      "biome_water": "Agua",
+      "biome_winter": "Yermo nevado",
       "biome_holymountain": "Montaña Sagrada",
       "biome_east": "$0 del este",
       "biome_west": "$0 del oeste",
@@ -5074,5 +5074,98 @@
   "perfMode": {
     "title": "Rendimiento",
     "content": "Opciones de rendimiento para dispositivos lentos y pantallas pequeñas."
+  },
+  "seedReport": {
+    "title": "Informe de semillas",
+    "close": "Cerca",
+    "unknownBiome": "Desconocido",
+    "noTrackedItems": "No hay artículos rastreados en este mundo.",
+    "toggle": {
+      "title": "Informe de semillas",
+      "content": "Estadísticas por mundo y por bioma para la semilla actual."
+    },
+    "pw": {
+      "main": "mundo principal",
+      "west": "Oeste {{n}}",
+      "east": "Este {{n}}"
+    },
+    "col": {
+      "biome": "Bioma",
+      "chests": "Cofres",
+      "greatChests": "Grandes cofres",
+      "hvSpells": "Hechizos de alto valor",
+      "rareMaterials": "Materiales raros"
+    },
+    "empty": {
+      "noSeed": "Esperando a que termine el mapa dinámico - el informe aparecerá aquí.",
+      "indexing": "Esperando a que termine el mapa dinámico - el informe aparecerá aquí."
+    },
+    "spells": {
+      "title": "Hechizos de alto valor",
+      "empty": "No hay hechizos de alto valor en esta semilla."
+    },
+    "spell": {
+      "category": {
+        "triggers": "Activadores / Temporizadores",
+        "divides": "Dividir hechizos",
+        "material": "Hechizos materiales",
+        "healing": "Cicatrización",
+        "nolla": "nola",
+        "greeks": "Hechizos con letras griegas",
+        "summonTaikasauva": "Invocar a Taikasauva",
+        "utility": "Utilidad",
+        "damage": "Daño",
+        "other": "Otros"
+      }
+    },
+    "rareMaterial": {
+      "ambrosia": "Ambrosía",
+      "livelyconcoction": "Brebaje animado",
+      "deathium": "Muerte",
+      "urine": "Orina",
+      "healthium": "Healthium"
+    },
+    "compare": {
+      "comparedTo": "vs {{target}} (semilla {{seed}})",
+      "todayDaily": "el diario de hoy",
+      "yesterdayDaily": "el diario de ayer",
+      "unavailable": "no hay comparación disponible",
+      "notCached": "vs {{target}} (semilla {{seed}}) - visítalo una vez para cargar la comparación"
+    },
+    "spider": {
+      "title": "Descripción general por mundo",
+      "rareMaterialsHint": "Cuenta cada PDI que lleva un material de: ambrosía, magic_liquid_hp_regeneration (brebaje animado, incluido el inestable), just_death (Deathium) u orina. Incluye bolsas, pociones y puntos de interés AOI de material.",
+      "axis": {
+        "greatChests": "Grandes cofres",
+        "chests": "Cofres",
+        "shops": "Tiendas",
+        "wands": "varitas",
+        "hearts": "Copas",
+        "potions": "Pociones",
+        "pouches": "Bolsas",
+        "hvSpells": "Hechizos de alto valor",
+        "rareMaterials": "Materiales raros",
+        "mimics": "imita",
+        "dangerousCreatures": "Criaturas peligrosas"
+      },
+      "legend": {
+        "current": "Semilla actual",
+        "previousDaily": "Semilla diaria anterior",
+        "average": "Línea de base promedio"
+      },
+      "creaturesNote": "Las criaturas están ocultas en el mapa (modo de rendimiento), pero aún se cuentan en las estadísticas siguientes."
+    },
+    "faceted": {
+      "title": "Desglose por bioma por categoría"
+    },
+    "locked": {
+      "title": "El informe de semilla es una función Pro",
+      "body": "Suscríbete para ver los recuentos por PW / por bioma, hechizos de alto valor y ubicaciones de materiales raros para la semilla actual.",
+      "cta": "Desbloquear con Pro"
+    },
+    "spoilerFree": {
+      "title": "Modo sin spoilers activado",
+      "body": "Las estadísticas están ocultas con el modo sin spoilers. Desactívalo para mostrarlas."
+    }
   }
 }

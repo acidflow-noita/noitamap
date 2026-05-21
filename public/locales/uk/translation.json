@@ -857,8 +857,8 @@
       "Secrets of rebuilding have been unlocked to you": "Вам відкрилися таємниці відновлення"
     },
     "biomes": {
-      "Mines": "копалень",
-      "Coal Pits": "вугільних копалень",
+      "Mines": "Копалень",
+      "Coal Pits": "Вугільних копалень",
       "Fungal Caverns": "Грибних печер",
       "Snowy Depths": "Засніжених глибин",
       "Hiisi Base": "Бази Hiisi",
@@ -884,13 +884,13 @@
       "Hiisi Base Spell Shop": "Hiisi Base Spell Shop",
       "biome_boss_arena": "Лабораторії",
       "biome_boss_victoryroom": "Твору",
-      "biome_coalmine": "копалень",
-      "biome_coalmine_alt": "обвалених копалень",
+      "biome_coalmine": "Копалень",
+      "biome_coalmine_alt": "Обвалених копалень",
       "biome_crypt": "Храму Мистецтва",
-      "biome_desert": "пустелі",
-      "biome_dragoncave": "печери дракона",
+      "biome_desert": "Пустелі",
+      "biome_dragoncave": "Печери дракона",
       "biome_ending_placeholder": "Гробниці Майстра Знаків",
-      "biome_excavationsite": "вугільних копалень",
+      "biome_excavationsite": "Вугільних копалень",
       "biome_fungicave": "Грибних печер",
       "biome_gold": "Золото",
       "biome_lake": "Озера",
@@ -905,7 +905,7 @@
       "biome_shop_room": "Секретного магазину",
       "biome_snowcastle": "Бази Hiisi",
       "biome_snowcave": "Засніжених глибин",
-      "biome_town_under": "звивистих проходів",
+      "biome_town_under": "Звивистих проходів",
       "biome_vault": "Сховища",
       "biome_wandcave": "Магічного храму",
       "biome_water": "Води",
@@ -1727,13 +1727,13 @@
       "boss_limbs_limb_attacker": "Ноги павука",
       "biome_boss_arena": "Лабораторії",
       "biome_boss_victoryroom": "Твору",
-      "biome_coalmine": "копалень",
-      "biome_coalmine_alt": "обвалених копалень",
+      "biome_coalmine": "Копалень",
+      "biome_coalmine_alt": "Обвалених копалень",
       "biome_crypt": "Храму Мистецтва",
-      "biome_desert": "пустелі",
-      "biome_dragoncave": "печери дракона",
+      "biome_desert": "Пустелі",
+      "biome_dragoncave": "Печери дракона",
       "biome_ending_placeholder": "Гробниці Майстра Знаків",
-      "biome_excavationsite": "вугільних копалень",
+      "biome_excavationsite": "Вугільних копалень",
       "biome_fungicave": "Грибних печер",
       "biome_gold": "Золото",
       "biome_lake": "Озера",
@@ -1748,7 +1748,7 @@
       "biome_shop_room": "Секретного магазину",
       "biome_snowcastle": "Бази Hiisi",
       "biome_snowcave": "Засніжених глибин",
-      "biome_town_under": "звивистих проходів",
+      "biome_town_under": "Звивистих проходів",
       "biome_vault": "Сховища",
       "biome_wandcave": "Магічного храму",
       "biome_water": "Води",
@@ -5074,5 +5074,98 @@
   "perfMode": {
     "title": "Продуктивність",
     "content": "Параметри продуктивності для повільних пристроїв і малих екранів."
+  },
+  "seedReport": {
+    "title": "Звіт про насіння",
+    "close": "Закрити",
+    "unknownBiome": "Невідомий",
+    "noTrackedItems": "Немає відстежених елементів у цьому світі.",
+    "toggle": {
+      "title": "Звіт про насіння",
+      "content": "Статистика для кожного світу, кожного біому для поточного насіння."
+    },
+    "pw": {
+      "main": "Головний світ",
+      "west": "Захід {{n}}",
+      "east": "Схід {{n}}"
+    },
+    "col": {
+      "biome": "Біом",
+      "chests": "Скрині",
+      "greatChests": "Чудові скрині",
+      "hvSpells": "Цінні заклинання",
+      "rareMaterials": "Рідкісні матеріали"
+    },
+    "empty": {
+      "noSeed": "Очікування завершення динамічної карти — звіт з'явиться тут.",
+      "indexing": "Очікування завершення динамічної карти — звіт з'явиться тут."
+    },
+    "spells": {
+      "title": "Цінні заклинання",
+      "empty": "У цьому насінні немає високоцінних заклинань."
+    },
+    "spell": {
+      "category": {
+        "triggers": "Тригери / Таймери",
+        "divides": "Розділіть чари",
+        "material": "Матеріальні заклинання",
+        "healing": "Загоєння",
+        "nolla": "Нолла",
+        "greeks": "Заклинання грецькими буквами",
+        "summonTaikasauva": "Викликати Тайксаву",
+        "utility": "Допоміжні",
+        "damage": "Шкода",
+        "other": "Інші"
+      }
+    },
+    "rareMaterial": {
+      "ambrosia": "Амброзія",
+      "livelyconcoction": "Жвава суміш",
+      "deathium": "Деатіум",
+      "urine": "сечі",
+      "healthium": "Healthium"
+    },
+    "compare": {
+      "comparedTo": "vs {{target}} (сід {{seed}})",
+      "todayDaily": "сьогоднішній день",
+      "yesterdayDaily": "вчорашній щоденник",
+      "unavailable": "порівняння недоступне",
+      "notCached": "vs {{target}} (сід {{seed}}) - відкрийте один раз, щоб завантажити дані для порівняння"
+    },
+    "spider": {
+      "title": "Огляд по світу",
+      "rareMaterialsHint": "Підраховує кожну POI, що містить такі речовини: амброзія, magic_liquid_hp_regeneration (Lively Cocoction, включаючи нестабільну), just_death (Deathium) або сеча. Включає пакети, зілля та об’єкти AOI для матеріалів.",
+      "axis": {
+        "greatChests": "Чудові скрині",
+        "chests": "Скрині",
+        "shops": "Магазини",
+        "wands": "Жезли",
+        "hearts": "Серця",
+        "potions": "Зілля",
+        "pouches": "мішечки",
+        "hvSpells": "Цінні заклинання",
+        "rareMaterials": "Рідкісні матеріали",
+        "mimics": "Міміки",
+        "dangerousCreatures": "Небезпечні істоти"
+      },
+      "legend": {
+        "current": "Актуальне насіння",
+        "previousDaily": "Попередній щоденний посів",
+        "average": "Середня базова лінія"
+      },
+      "creaturesNote": "Істоти приховані на карті (режим продуктивності), але вони все одно враховуються в статистиці нижче."
+    },
+    "faceted": {
+      "title": "Розбивка біомів за категоріями"
+    },
+    "locked": {
+      "title": "Звіт за сідом — це функція Pro",
+      "body": "Підпишіться, щоб бачити підрахунки по PW / по біомах, цінні заклинання та локації рідкісних матеріалів для поточного сіду.",
+      "cta": "Розблокувати з Pro"
+    },
+    "spoilerFree": {
+      "title": "Увімкнено режим без спойлерів",
+      "body": "Статистику приховано в режимі без спойлерів. Вимкніть, щоб побачити її."
+    }
   }
 }

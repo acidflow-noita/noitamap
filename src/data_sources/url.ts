@@ -17,6 +17,8 @@ import {
 export interface URLState extends Partial<AppState> {
   overlays?: OverlayKey[];
   sidebarOpen?: boolean;
+  /** Seed Report sidebar open state — `?sr=1`. */
+  seedReportOpen?: boolean;
   canvas?: 'map' | 'black' | 'white';
   /** Seed number for dynamic map */
   seed?: number;
@@ -33,7 +35,7 @@ export interface URLState extends Partial<AppState> {
  * Desired URL param order: x, y, z (zoom), m (map), se (seed), ds (daily seed), o (overlays), s (sidebar), c (canvas), poi (targetPoiId), q (search), f (filters)
  * Short params used for encoding, decoder accepts both short and long names
  */
-const PARAM_ORDER = ['x', 'y', 'z', 'm', 'se', 'ds', 'o', 's', 'c', 'poi', 'q', 'f'];
+const PARAM_ORDER = ['x', 'y', 'z', 'm', 'se', 'ds', 'o', 's', 'c', 'poi', 'q', 'f', 'sr'];
 
 /**
  * Reorder URL search params to maintain consistent order
@@ -180,7 +182,11 @@ export function parseURL(): URLState {
   const poiParam = getParam(url, 'poi', 'targetPoiId') || getParam(url, 'pid', 'targetPoiId');
   const targetPoiId = poiParam || undefined;
 
-  return { pos, map, overlays, sidebarOpen, canvas, seed, dailySeed, query, filters, targetPoiId };
+  // Seed report open state — accept `sr` (short) or `seedReport` (long).
+  const seedReportParam = getParam(url, 'sr', 'seedReport');
+  const seedReportOpen = seedReportParam === '1' || seedReportParam === 'true';
+
+  return { pos, map, overlays, sidebarOpen, canvas, seed, dailySeed, query, filters, targetPoiId, seedReportOpen };
 }
 
 /**
@@ -282,6 +288,21 @@ export function updateURLWithSidebar(isOpen: boolean) {
     url.searchParams.set('s', shortValue);
   } else {
     url.searchParams.delete('s');
+  }
+  reorderParams(url);
+  window.history.replaceState(null, '', url.toString());
+}
+
+/**
+ * Update URL with Seed Report open state (`sr=1` when open, removed otherwise).
+ */
+export function updateURLWithSeedReport(isOpen: boolean) {
+  const url = new URL(window.location.toString());
+  if (isOpen) {
+    url.searchParams.set('sr', '1');
+  } else {
+    url.searchParams.delete('sr');
+    url.searchParams.delete('seedReport');
   }
   reorderParams(url);
   window.history.replaceState(null, '', url.toString());

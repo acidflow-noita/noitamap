@@ -857,7 +857,7 @@
       "Secrets of rebuilding have been unlocked to you": "Återuppbyggnadens hemligheter har uppenbarats för dig"
     },
     "biomes": {
-      "Mines": "mines",
+      "Mines": "Mines",
       "Coal Pits": "Kolgruvor",
       "Fungal Caverns": "Svampgrottor",
       "Snowy Depths": "Snöiga djup",
@@ -884,8 +884,8 @@
       "Hiisi Base Spell Shop": "Hiisi Base Spell Shop",
       "biome_boss_arena": "The Laboratory",
       "biome_boss_victoryroom": "The Work",
-      "biome_coalmine": "mines",
-      "biome_coalmine_alt": "collapsed mines",
+      "biome_coalmine": "Mines",
+      "biome_coalmine_alt": "Collapsed mines",
       "biome_crypt": "Temple of the Art",
       "biome_desert": "Desert",
       "biome_dragoncave": "Dragoncave",
@@ -897,7 +897,7 @@
       "biome_lava": "Volcanic Lake",
       "biome_lavacave": "Volcanic Cave",
       "biome_magic_gate": "Sanctuary",
-      "biome_null": "unknown",
+      "biome_null": "Unknown",
       "biome_pyramid": "Pyramid",
       "biome_rainforest": "Underground Jungle",
       "biome_sandcave": "Sandcave",
@@ -905,11 +905,11 @@
       "biome_shop_room": "Secret Shop",
       "biome_snowcastle": "Hiisi Base",
       "biome_snowcave": "Snowy Depths",
-      "biome_town_under": "twisty passages",
+      "biome_town_under": "Twisty passages",
       "biome_vault": "The Vault",
-      "biome_wandcave": "magical temple",
-      "biome_water": "water",
-      "biome_winter": "snowy wasteland",
+      "biome_wandcave": "Magical temple",
+      "biome_water": "Water",
+      "biome_winter": "Snowy wasteland",
       "biome_holymountain": "Holy Mountain",
       "biome_east": "East $0",
       "biome_west": "West $0",
@@ -1727,8 +1727,8 @@
       "boss_limbs_limb_attacker": "Spider leg",
       "biome_boss_arena": "The Laboratory",
       "biome_boss_victoryroom": "The Work",
-      "biome_coalmine": "mines",
-      "biome_coalmine_alt": "collapsed mines",
+      "biome_coalmine": "Mines",
+      "biome_coalmine_alt": "Collapsed mines",
       "biome_crypt": "Temple of the Art",
       "biome_desert": "Desert",
       "biome_dragoncave": "Dragoncave",
@@ -1740,7 +1740,7 @@
       "biome_lava": "Volcanic Lake",
       "biome_lavacave": "Volcanic Cave",
       "biome_magic_gate": "Sanctuary",
-      "biome_null": "unknown",
+      "biome_null": "Unknown",
       "biome_pyramid": "Pyramid",
       "biome_rainforest": "Underground Jungle",
       "biome_sandcave": "Sandcave",
@@ -1748,11 +1748,11 @@
       "biome_shop_room": "Secret Shop",
       "biome_snowcastle": "Hiisi Base",
       "biome_snowcave": "Snowy Depths",
-      "biome_town_under": "twisty passages",
+      "biome_town_under": "Twisty passages",
       "biome_vault": "The Vault",
-      "biome_wandcave": "magical temple",
-      "biome_water": "water",
-      "biome_winter": "snowy wasteland",
+      "biome_wandcave": "Magical temple",
+      "biome_water": "Water",
+      "biome_winter": "Snowy wasteland",
       "biome_holymountain": "Holy Mountain",
       "biome_east": "East $0",
       "biome_west": "West $0",
@@ -5074,5 +5074,98 @@
   "perfMode": {
     "title": "Prestanda",
     "content": "Prestandaalternativ för långsamma enheter och små skärmar."
+  },
+  "seedReport": {
+    "title": "Frörapport",
+    "close": "Nära",
+    "unknownBiome": "Okänd",
+    "noTrackedItems": "Inga spårade föremål i denna värld.",
+    "toggle": {
+      "title": "Frörapport",
+      "content": "Per-värld, per-biome-statistik för det aktuella fröet."
+    },
+    "pw": {
+      "main": "Huvudvärlden",
+      "west": "Västra {{n}}",
+      "east": "Östra {{n}}"
+    },
+    "col": {
+      "biome": "Biome",
+      "chests": "kistor",
+      "greatChests": "Stora kistor",
+      "hvSpells": "Värdefulla trollformler",
+      "rareMaterials": "Sällsynta material"
+    },
+    "empty": {
+      "noSeed": "Väntar på att den dynamiska kartan ska bli klar – rapporten visas här.",
+      "indexing": "Väntar på att den dynamiska kartan ska bli klar – rapporten visas här."
+    },
+    "spells": {
+      "title": "Värdefulla trollformler",
+      "empty": "Inga högvärdiga trollformler i detta frö."
+    },
+    "spell": {
+      "category": {
+        "triggers": "Triggers / Timers",
+        "divides": "Dela trollformler",
+        "material": "Materialtrollformler",
+        "healing": "Healing",
+        "nolla": "Nolla",
+        "greeks": "trollformler med grekiska bokstäver",
+        "summonTaikasauva": "Kalla Taikasauva",
+        "utility": "Verktyg",
+        "damage": "Skada",
+        "other": "Övriga"
+      }
+    },
+    "rareMaterial": {
+      "ambrosia": "Ambrosia",
+      "livelyconcoction": "Livlig hopkok",
+      "deathium": "Deathium",
+      "urine": "Urin",
+      "healthium": "Healthium"
+    },
+    "compare": {
+      "comparedTo": "vs {{target}} (frö {{seed}})",
+      "todayDaily": "dagens vardag",
+      "yesterdayDaily": "gårdagens dagstidning",
+      "unavailable": "ingen jämförelse tillgänglig",
+      "notCached": "vs {{target}} (frö {{seed}}) - besök det en gång för att läsa in jämförelsedata"
+    },
+    "spider": {
+      "title": "Översikt per värld",
+      "rareMaterialsHint": "Räknar varje POI som bär ett material av: ambrosia, magic_liquid_hp_regeneration (Lively Concoction, inklusive instable), just_death (Deathium) eller urin. Inkluderar påsar, potions och material-AOI POIs.",
+      "axis": {
+        "greatChests": "Stora kistor",
+        "chests": "kistor",
+        "shops": "Butiker",
+        "wands": "Stavar",
+        "hearts": "Hjärtan",
+        "potions": "Potions",
+        "pouches": "Påsar",
+        "hvSpells": "Värdefulla trollformler",
+        "rareMaterials": "Sällsynta material",
+        "mimics": "Härmar",
+        "dangerousCreatures": "Farliga varelser"
+      },
+      "legend": {
+        "current": "Nuvarande frö",
+        "previousDaily": "Tidigare dagligt frö",
+        "average": "Genomsnittlig baslinje"
+      },
+      "creaturesNote": "Varelser är dolda från kartan (prestandaläge), men de räknas fortfarande i statistiken nedan."
+    },
+    "faceted": {
+      "title": "Fördelning per biom efter kategori"
+    },
+    "locked": {
+      "title": "Frörapporten är en Pro-funktion",
+      "body": "Prenumerera för att se räkningar per PW / per biom, värdefulla trollformler och platser för sällsynta material för det aktuella fröet.",
+      "cta": "Lås upp med Pro"
+    },
+    "spoilerFree": {
+      "title": "Spoilerfritt läge är på",
+      "body": "Statistiken är dold i spoilerfritt läge. Stäng av det för att visa den."
+    }
   }
 }

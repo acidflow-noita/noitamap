@@ -884,8 +884,8 @@
       "Hiisi Base Spell Shop": "Hiisi Base Spell Shop",
       "biome_boss_arena": "The Laboratory",
       "biome_boss_victoryroom": "The Work",
-      "biome_coalmine": "mines",
-      "biome_coalmine_alt": "collapsed mines",
+      "biome_coalmine": "Mines",
+      "biome_coalmine_alt": "Collapsed mines",
       "biome_crypt": "Temple of the Art",
       "biome_desert": "Desert",
       "biome_dragoncave": "Dragoncave",
@@ -897,7 +897,7 @@
       "biome_lava": "Volcanic Lake",
       "biome_lavacave": "Volcanic Cave",
       "biome_magic_gate": "Sanctuary",
-      "biome_null": "unknown",
+      "biome_null": "Unknown",
       "biome_pyramid": "Pyramid",
       "biome_rainforest": "Underground Jungle",
       "biome_sandcave": "Sandcave",
@@ -905,11 +905,11 @@
       "biome_shop_room": "Secret Shop",
       "biome_snowcastle": "Hiisi Base",
       "biome_snowcave": "Snowy Depths",
-      "biome_town_under": "twisty passages",
+      "biome_town_under": "Twisty passages",
       "biome_vault": "The Vault",
-      "biome_wandcave": "magical temple",
-      "biome_water": "water",
-      "biome_winter": "snowy wasteland",
+      "biome_wandcave": "Magical temple",
+      "biome_water": "Water",
+      "biome_winter": "Snowy wasteland",
       "biome_holymountain": "Holy Mountain",
       "biome_east": "East $0",
       "biome_west": "West $0",
@@ -1727,8 +1727,8 @@
       "boss_limbs_limb_attacker": "Spider leg",
       "biome_boss_arena": "The Laboratory",
       "biome_boss_victoryroom": "The Work",
-      "biome_coalmine": "mines",
-      "biome_coalmine_alt": "collapsed mines",
+      "biome_coalmine": "Mines",
+      "biome_coalmine_alt": "Collapsed mines",
       "biome_crypt": "Temple of the Art",
       "biome_desert": "Desert",
       "biome_dragoncave": "Dragoncave",
@@ -1740,7 +1740,7 @@
       "biome_lava": "Volcanic Lake",
       "biome_lavacave": "Volcanic Cave",
       "biome_magic_gate": "Sanctuary",
-      "biome_null": "unknown",
+      "biome_null": "Unknown",
       "biome_pyramid": "Pyramid",
       "biome_rainforest": "Underground Jungle",
       "biome_sandcave": "Sandcave",
@@ -1748,11 +1748,11 @@
       "biome_shop_room": "Secret Shop",
       "biome_snowcastle": "Hiisi Base",
       "biome_snowcave": "Snowy Depths",
-      "biome_town_under": "twisty passages",
+      "biome_town_under": "Twisty passages",
       "biome_vault": "The Vault",
-      "biome_wandcave": "magical temple",
-      "biome_water": "water",
-      "biome_winter": "snowy wasteland",
+      "biome_wandcave": "Magical temple",
+      "biome_water": "Water",
+      "biome_winter": "Snowy wasteland",
       "biome_holymountain": "Holy Mountain",
       "biome_east": "East $0",
       "biome_west": "West $0",
@@ -5074,5 +5074,98 @@
   "perfMode": {
     "title": "Performa",
     "content": "Opsi performa untuk perangkat lambat dan layar kecil."
+  },
+  "seedReport": {
+    "title": "Laporan benih",
+    "close": "Menutup",
+    "unknownBiome": "Tidak dikenal",
+    "noTrackedItems": "Tidak ada item yang dilacak di dunia ini.",
+    "toggle": {
+      "title": "Laporan benih",
+      "content": "Statistik per dunia dan per bioma untuk benih saat ini."
+    },
+    "pw": {
+      "main": "Dunia utama",
+      "west": "Barat {{n}}",
+      "east": "Timur {{n}}"
+    },
+    "col": {
+      "biome": "Bioma",
+      "chests": "Peti",
+      "greatChests": "Peti yang bagus",
+      "hvSpells": "Mantra bernilai tinggi",
+      "rareMaterials": "Bahan langka"
+    },
+    "empty": {
+      "noSeed": "Menunggu peta dinamis selesai - laporan akan muncul di sini.",
+      "indexing": "Menunggu peta dinamis selesai - laporan akan muncul di sini."
+    },
+    "spells": {
+      "title": "Mantra bernilai tinggi",
+      "empty": "Tidak ada mantra bernilai tinggi di benih ini."
+    },
+    "spell": {
+      "category": {
+        "triggers": "Pemicu / Timer",
+        "divides": "Bagilah mantra",
+        "material": "Mantra materi",
+        "healing": "Penyembuhan",
+        "nolla": "Nolla",
+        "greeks": "Mantra huruf Yunani",
+        "summonTaikasauva": "Panggil Taikasauva",
+        "utility": "Utilitas",
+        "damage": "Kerusakan",
+        "other": "Lainnya"
+      }
+    },
+    "rareMaterial": {
+      "ambrosia": "Ambrosia",
+      "livelyconcoction": "Ramuan Hidup",
+      "deathium": "kematian",
+      "urine": "Air seni",
+      "healthium": "Healthium"
+    },
+    "compare": {
+      "comparedTo": "vs {{target}} (benih {{seed}})",
+      "todayDaily": "harian hari ini",
+      "yesterdayDaily": "harian kemarin",
+      "unavailable": "tidak ada perbandingan yang tersedia",
+      "notCached": "vs {{target}} (benih {{seed}}) - kunjungi sekali untuk memuat data perbandingan"
+    },
+    "spider": {
+      "title": "Ikhtisar per dunia",
+      "rareMaterialsHint": "Menghitung setiap POI yang membawa bahan: ambrosia, magic_liquid_hp_regenerasi (Ramuan Hidup, termasuk tidak stabil), just_death (Deathium), atau urin. Termasuk kantong, ramuan, dan POI material-AOI.",
+      "axis": {
+        "greatChests": "Peti yang bagus",
+        "chests": "Peti",
+        "shops": "Toko",
+        "wands": "tongkat sihir",
+        "hearts": "hati",
+        "potions": "Ramuan",
+        "pouches": "kantong",
+        "hvSpells": "Mantra bernilai tinggi",
+        "rareMaterials": "Bahan langka",
+        "mimics": "Meniru",
+        "dangerousCreatures": "Makhluk berbahaya"
+      },
+      "legend": {
+        "current": "Benih saat ini",
+        "previousDaily": "Benih harian sebelumnya",
+        "average": "Rata-rata garis dasar"
+      },
+      "creaturesNote": "Makhluk disembunyikan dari peta (mode kinerja), tetapi mereka masih dihitung dalam statistik di bawah."
+    },
+    "faceted": {
+      "title": "Pengelompokan per bioma berdasarkan kategori"
+    },
+    "locked": {
+      "title": "Laporan benih adalah fitur Pro",
+      "body": "Berlangganan untuk melihat hitungan per PW / per bioma, mantra bernilai tinggi, dan lokasi material langka untuk benih saat ini.",
+      "cta": "Buka dengan Pro"
+    },
+    "spoilerFree": {
+      "title": "Mode bebas spoiler aktif",
+      "body": "Statistik disembunyikan saat mode bebas spoiler aktif. Matikan untuk melihatnya."
+    }
   }
 }

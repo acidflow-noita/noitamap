@@ -123,6 +123,18 @@ declare global {
     handleHighValueToggle?: (active: boolean) => void;
     /** High-value predicate — set by pro bundle after init. Drives BOTH map highlight and search filter. */
     isHighValuePOI?: (poi: any) => boolean;
+    /** Open or close the Seed Report sidebar — set by pro bundle after init. */
+    handleSeedReportToggle?: (open: boolean) => void;
+    /** Open the telescope tooltip ("POI card") for a dynamic POI by id. */
+    openPOIById?: (poiId: string, opts?: { sidebarRightPx?: number }) => void;
+    /** Show the "Get Pro" auth modal (lives in main bundle, exposed for pro bundle). */
+    showGetProModal?: () => void;
+    /** Unfiltered POI list (preserves creatures regardless of perf toggle). */
+    getAllDynamicPOIs?: () => Array<{ id: string; type: string; [k: string]: any }>;
+    /** Cache-only POI lookup for a given seed (used by seed-report comparison). */
+    getFlatPOIsForSeed?: (seed: number) => Promise<any[] | null>;
+    /** "Skip creatures" perf-mode flag. */
+    isSkipCreatures?: () => boolean;
   }
 
   interface Window {

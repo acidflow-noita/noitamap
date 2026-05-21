@@ -49,6 +49,20 @@ function parseCSVLine(line) {
   return result;
 }
 
+/**
+ * common.csv keeps the in-game lowercase labels (e.g. "mines", "twisty
+ * passages") because that's how they appear inside Noita's sentences. In our
+ * UI these are standalone headings/labels and need a leading capital. We
+ * apply the fix here at bake-time so the source CSV stays untouched.
+ */
+function capitalizeFirst(s) {
+  if (typeof s !== "string" || s.length === 0) return s;
+  const first = s.charAt(0);
+  const upper = first.toUpperCase();
+  if (upper === first) return s;
+  return upper + s.slice(1);
+}
+
 function loadBiomeTranslations() {
   const csvPath = path.join(__dirname, "../public/data/translations.csv");
   const content = fs.readFileSync(csvPath, "utf8");
@@ -106,11 +120,12 @@ function main() {
 
       let addedCount = 0;
 
-      // Add all biome translations
+      // Add all biome translations (capitalized at bake-time so source CSV
+      // stays immutable)
       biomeTranslations.forEach((translations, key) => {
         const translatedName = translations[csvLang];
         if (translatedName) {
-          existingTranslations.gameContent.biomes[key] = translatedName;
+          existingTranslations.gameContent.biomes[key] = capitalizeFirst(translatedName);
           addedCount++;
         }
       });
