@@ -5,3 +5,6 @@
 /public/js
 .claude/*
 .claude/settings.local.json
+
+# Secret source data not for distribution (historic daily seeds, etc.)
+/src/data/optional_data/
