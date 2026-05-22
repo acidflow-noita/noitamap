@@ -253,6 +253,12 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
   const el = document.createElement('div');
   el.style.pointerEvents = 'none'; // Container doesn't handle events
   el.dataset.biomeName = text;
+  // Also expose the raw biome slug (e.g. "coalmine", not the file label) so
+  // external tooling (console commands, filters) can target overlays by the
+  // same slug the in-game data uses.
+  if (biomeName) {
+    el.dataset.biomeSlug = biomeName.replace(/^biome_/, '');
+  }
   el.classList.add('biome-overlay-path');
   
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');

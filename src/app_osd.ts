@@ -282,12 +282,7 @@ export class AppOSD {
     const viewport = this.viewport;
     const here = viewport.getCenter();
 
-    // Cancel any in-progress pan. Without removing the previous pan's
-    // animation-finish handler we'd end up running the OLD onAnimFinish too
-    // when the new pan starts animating — that handler still closes over the
-    // previous destRect and would yank the view to the wrong target, which
-    // is the "first click goes somewhere random, subsequent clicks work"
-    // bug seen with rapid row clicks in the seed-report sidebar.
+    // Cancel any in-progress pan (animation-finish handler + queued timers).
     if (this.panTimer) clearTimeout(this.panTimer);
     if (this.activeAnimFinish) {
       this.viewer.removeHandler("animation-finish", this.activeAnimFinish);
@@ -295,59 +290,101 @@ export class AppOSD {
     }
     this.removePanTrail();
 
-    // Translate the pixel offset into world coords so we can shift the view
-    // centre without moving the POI marker / arrow target.
+    // ─── Sidebar-aware fitBounds helper ───────────────────────────────────
+    //
+    // `offsetXPx` is half the sidebar width — i.e. the canvas pixel shift we
+    // want to apply so that the POI lands at the centre of the *visible*
+    // canvas (canvas minus sidebar), not the centre of the full canvas.
+    //
+    // We can't just shift the rect by a constant world-units value: fitBounds
+    // picks a zoom such that *either* the rect's width or its height fully
+    // fits the canvas, whichever is the binding constraint. If the rect is
+    // taller than canvas-aspect, height wins and horizontal shift has to be
+    // scaled differently than if width wins.
+    //
+    // Solution: instead of letting fitBounds choose the zoom, build a rect
+    // whose aspect ratio matches the canvas, centred so that the *content*
+    // (the POI plus any other point we want visible) sits inside the visible
+    // (non-sidebar) portion. fitBounds with a canvas-aspect rect always
+    // produces an exact 1:1 fit, so the geometry is predictable.
     const offsetXPx = opts?.offsetXPx ?? 0;
-    const offsetWorldX = offsetXPx
-      ? viewport.deltaPointsFromPixels(new OpenSeadragon.Point(offsetXPx, 0), true).x
-      : 0;
-    const viewX = x + offsetWorldX;
-    const viewY = y;
-    const there = new OpenSeadragon.Point(viewX, viewY);
+    const canvasEl = this.viewer.canvas as HTMLElement;
+    const canvasPxW = canvasEl?.clientWidth || 1200;
+    const canvasPxH = canvasEl?.clientHeight || 800;
+    const visiblePxW = Math.max(1, canvasPxW - offsetXPx * 2); // offsetXPx == sidebarPx/2
+    const canvasAspect = canvasPxW / canvasPxH;
 
-    // If already at destination or extremely close, just snap
-    const dist = Math.sqrt((here.x - viewX) ** 2 + (here.y - viewY) ** 2);
+    /**
+     * Build a fitBounds rect that:
+     *   - Forces the canvas aspect ratio (so fitBounds is an exact fit, not
+     *     letter-boxed).
+     *   - Sizes the rect so the requested `contentW x contentH` content area
+     *     (centred at contentCx, contentCy) lands fully inside the *visible*
+     *     portion of the canvas.
+     *   - Shifts the rect centre to the right of the content centre by the
+     *     world-units equivalent of `offsetXPx` so the content lines up with
+     *     the visible-canvas centre, not the full-canvas centre.
+     */
+    const buildSidebarRect = (
+      contentCx: number,
+      contentCy: number,
+      contentW: number,
+      contentH: number,
+    ) => {
+      // Zoom that fits the content in the visible region (sidebar excluded
+      // horizontally). Choose the more-constrained dimension.
+      const zoomForW = visiblePxW / contentW;
+      const zoomForH = canvasPxH / contentH;
+      const zoom = Math.min(zoomForW, zoomForH);
+      // At that zoom, the canvas spans `canvasPxW / zoom` world units.
+      const rectW = canvasPxW / zoom;
+      const rectH = canvasPxH / zoom;
+      // Bias the rect centre right so the content centre lines up with the
+      // visible-canvas centre. In world units: (sidebarPx / 2) / zoom.
+      const shift = offsetXPx > 0 ? offsetXPx / zoom : 0;
+      // Sanity: enforce canvas aspect (should already match by construction).
+      const _ = canvasAspect; // keep ref so the value is used.
+      void _;
+      return new OpenSeadragon.Rect(
+        contentCx + shift - rectW / 2,
+        contentCy - rectH / 2,
+        rectW,
+        rectH,
+      );
+    };
+
+    // ─── Short-distance shortcut: snap to a single chunk view ─────────────
+    const destContentW = CHUNK_SIZE;
+    const destContentH = CHUNK_SIZE;
+    const dist = Math.sqrt((here.x - x) ** 2 + (here.y - y) ** 2);
     if (dist < CHUNK_SIZE * 0.5) {
-      const destRect = new OpenSeadragon.Rect(viewX - CHUNK_SIZE / 2, viewY - CHUNK_SIZE / 2, CHUNK_SIZE, CHUNK_SIZE);
+      const destRect = buildSidebarRect(x, y, destContentW, destContentH);
       this.withSlowAnimation(() => viewport.fitBounds(destRect));
       this.addPulseMarker(x, y);
       return Promise.resolve();
     }
 
     return new Promise<void>((resolve) => {
-      // ─── Phase 1: Zoom out to show both origin and destination ───
-      const padding = 1.3; // 30% padding around the bounding box
-      const midX = (here.x + there.x) / 2;
-      const midY = (here.y + there.y) / 2;
-      const spanW = Math.abs(here.x - there.x) * padding;
-      const spanH = Math.abs(here.y - there.y) * padding;
-      const overviewRect = new OpenSeadragon.Rect(
-        midX - spanW / 2,
-        midY - spanH / 2,
-        Math.max(spanW, CHUNK_SIZE * 2),
-        Math.max(spanH, CHUNK_SIZE * 2),
-      );
+      // ─── Phase 1: Zoom out to show origin + POI, with sidebar margin ────
+      const padding = 1.3;
+      const midX = (here.x + x) / 2;
+      const midY = (here.y + y) / 2;
+      const spanW = Math.max(Math.abs(here.x - x) * padding, CHUNK_SIZE * 2);
+      const spanH = Math.max(Math.abs(here.y - y) * padding, CHUNK_SIZE * 2);
+      const overviewRect = buildSidebarRect(midX, midY, spanW, spanH);
 
-      // Show SVG trail line from here → ACTUAL POI position (not the shifted
-      // view centre — the arrow has to point at the spell, not at empty space)
       this.addPanTrail(here.x, here.y, x, y);
-
-      // Phase 1: zoom out to overview
       this.withSlowAnimation(() => viewport.fitBounds(overviewRect));
 
-      // ─── Phase 2: After phase 1 animation completes, zoom into destination ───
-      const destRect = new OpenSeadragon.Rect(viewX - CHUNK_SIZE / 2, viewY - CHUNK_SIZE / 2, CHUNK_SIZE, CHUNK_SIZE);
+      // ─── Phase 2: After phase 1 settles, zoom into the destination ──────
+      const destRect = buildSidebarRect(x, y, destContentW, destContentH);
 
-      // Use animation-finish event for precise synchronization
       const onAnimFinish = () => {
         this.viewer.removeHandler("animation-finish", onAnimFinish);
         this.activeAnimFinish = null;
-        // Hold the overview for 1s so the user can see the full path
         this.panTimer = setTimeout(() => {
           this.panTimer = undefined;
           this.withSlowAnimation(() => viewport.fitBounds(destRect));
-          // Remove trail and add pulse after phase 2 starts. Pulse must be at
-          // the actual POI, not the shifted view centre.
           this.panTimer = setTimeout(() => {
             this.removePanTrail();
             this.addPulseMarker(x, y);

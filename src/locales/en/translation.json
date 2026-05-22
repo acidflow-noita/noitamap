@@ -4,6 +4,11 @@
     "close": "Close",
     "unknownBiome": "Unknown",
     "noTrackedItems": "No tracked items in this world.",
+    "mainPathOnly": {
+      "label": "Main path only",
+      "title": "Main path only",
+      "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
+    },
     "toggle": {
       "title": "Seed report",
       "content": "Per-world, per-biome stats for the current seed."
@@ -17,6 +22,7 @@
       "biome": "Biome",
       "chests": "Chests",
       "greatChests": "Great",
+      "wands": "Wands",
       "hvSpells": "High value spells",
       "rareMaterials": "Rare mats"
     },
@@ -26,7 +32,9 @@
     },
     "spells": {
       "title": "High value spells",
-      "empty": "No spells in this seed."
+      "empty": "No spells in this seed.",
+      "noneFound": "none found",
+      "onWands": "on wands"
     },
     "spell": {
       "category": {
@@ -50,16 +58,17 @@
       "urine": "Urine"
     },
     "compare": {
-      "comparedTo": "vs {{target}} (seed {{seed}})",
+      "comparedTo": "compared to {{target}} (seed {{seed}})",
       "todayDaily": "today's daily",
       "yesterdayDaily": "yesterday's daily",
       "unavailable": "no comparison available",
-      "notCached": "vs {{target}} (seed {{seed}}) - visit it once to load comparison data"
+      "notCached": "compared to {{target}} (seed {{seed}}) - visit that seed once to load comparison data"
     },
     "spider": {
       "title": "Per-world overview",
       "rareMaterialsHint": "Counts every POI carrying a material of: ambrosia, magic_liquid_hp_regeneration (Healthium), magic_liquid_hp_regeneration_unstable (Lively Concoction), just_death (Deathium), or urine. Includes pouches, potions, and material-AOI POIs.",
       "creaturesNote": "Creatures are hidden from the map (performance mode), but they are still counted in the stats below.",
+      "creaturesNoteTitle": "Performance mode",
       "axis": {
         "greatChests": "Great chests",
         "chests": "Chests",

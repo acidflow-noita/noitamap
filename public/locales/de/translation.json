@@ -5094,7 +5094,8 @@
       "chests": "Truhen",
       "greatChests": "Tolle Truhen",
       "hvSpells": "Hochwertige Zauber",
-      "rareMaterials": "Seltene Materialien"
+      "rareMaterials": "Seltene Materialien",
+      "wands": "Wands"
     },
     "empty": {
       "noSeed": "Die dynamische Karte wird noch geladen – der Bericht erscheint hier.",
@@ -5102,7 +5103,9 @@
     },
     "spells": {
       "title": "Hochwertige Zauber",
-      "empty": "In diesem Samen sind keine hochwertigen Zaubersprüche enthalten."
+      "empty": "In diesem Samen sind keine hochwertigen Zaubersprüche enthalten.",
+      "noneFound": "none found",
+      "onWands": "on wands"
     },
     "spell": {
       "category": {
@@ -5126,11 +5129,11 @@
       "healthium": "Healthium"
     },
     "compare": {
-      "comparedTo": "vs {{target}} (Seed {{seed}})",
+      "comparedTo": "im Vergleich zu {{target}} (Seed {{seed}})",
       "todayDaily": "heute täglich",
       "yesterdayDaily": "die Tageszeitung von gestern",
       "unavailable": "kein Vergleich verfügbar",
-      "notCached": "vs {{target}} (Seed {{seed}}) - einmal besuchen, um Vergleichsdaten zu laden"
+      "notCached": "im Vergleich zu {{target}} (Seed {{seed}}) - besuche diesen Seed einmal, um Vergleichsdaten zu laden"
     },
     "spider": {
       "title": "Übersicht pro Welt",
@@ -5153,7 +5156,8 @@
         "previousDaily": "Vorheriger täglicher Samen",
         "average": "Durchschnittlicher Ausgangswert"
       },
-      "creaturesNote": "Kreaturen werden auf der Karte ausgeblendet (Leistungsmodus), werden aber dennoch in den Statistiken unten gezählt."
+      "creaturesNote": "Kreaturen werden auf der Karte ausgeblendet (Leistungsmodus), werden aber dennoch in den Statistiken unten gezählt.",
+      "creaturesNoteTitle": "Performance mode"
     },
     "faceted": {
       "title": "Aufschlüsselung pro Biom nach Kategorie"
@@ -5166,6 +5170,26 @@
     "spoilerFree": {
       "title": "Spoilerfreier Modus ist aktiv",
       "body": "Statistiken sind im spoilerfreien Modus ausgeblendet. Schalte ihn aus, um sie anzuzeigen."
-    }
+    },
+    "mainPathOnly": {
+      "0": "M",
+      "1": "a",
+      "2": "i",
+      "3": "n",
+      "4": " ",
+      "5": "p",
+      "6": "a",
+      "7": "t",
+      "8": "h",
+      "9": " ",
+      "10": "o",
+      "11": "n",
+      "12": "l",
+      "13": "y",
+      "label": "Main path only",
+      "title": "Main path only",
+      "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
+    },
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   }
 }

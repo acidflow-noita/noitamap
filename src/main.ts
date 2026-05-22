@@ -82,6 +82,7 @@ import {
   clearTargetPoiId,
 } from "./data_sources/url";
 import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from "./data_sources/overlays";
+import { isMainPathBiome } from "./data_sources/main-path-biomes";
 import { overlayToShort } from "./data_sources/param-mappings";
 import { UnifiedSearch } from "./search/unifiedsearch";
 import { asMapName, MapName } from "./data_sources/tile_data";
@@ -948,6 +949,57 @@ document.addEventListener("DOMContentLoaded", async () => {
     return url.toString();
   };
   (window as any).getShareUrl = getShareUrl;
+
+  // ─── Console command: main-path-only biome boundaries view ──────────────
+  // Dev/power-user helper. Toggling re-applies inline styles on every
+  // .biome-overlay-path so:
+  //   - Main-path biomes stay visible at the same opacity as a hovered
+  //     boundary (~0.75) so the "active path" reads clearly.
+  //   - All non-main-path boundaries are hidden completely.
+  // The overlay layer must already be enabled (the biome-boundaries toggle
+  // in the sidebar / `bb` URL param) for this to do anything visible.
+  let mainPathBoundariesOn = false;
+  const applyMainPathBoundaries = () => {
+    const paths = document.querySelectorAll<HTMLElement>('.biome-overlay-path');
+    paths.forEach((el) => {
+      const slug = el.dataset.biomeSlug ?? '';
+      const main = isMainPathBiome(slug);
+      const svgPaths = el.querySelectorAll<SVGPathElement>('svg path');
+      if (mainPathBoundariesOn) {
+        if (main) {
+          el.style.display = '';
+          svgPaths.forEach((p) => {
+            p.style.fillOpacity = '0.75';
+            p.style.filter = '';
+          });
+        } else {
+          el.style.display = 'none';
+        }
+      } else {
+        // Restore defaults: visible, idle opacity, no filter.
+        el.style.display = '';
+        svgPaths.forEach((p) => {
+          p.style.fillOpacity = '0.3';
+          p.style.filter = '';
+        });
+      }
+    });
+  };
+  (window as any).toggleMainPathBoundaries = (force?: boolean): boolean => {
+    mainPathBoundariesOn = typeof force === 'boolean' ? force : !mainPathBoundariesOn;
+    applyMainPathBoundaries();
+    console.log(
+      `[noitamap] main-path-only biome boundaries: ${mainPathBoundariesOn ? 'ON' : 'OFF'}` +
+      (mainPathBoundariesOn
+        ? ' — non-main-path boundaries hidden, main-path biomes shown at hover opacity.'
+        : ' — restored to default styling.'),
+    );
+    return mainPathBoundariesOn;
+  };
+  // Re-apply whenever the overlay layer is rebuilt (map change, etc.).
+  app.osd.addHandler('open', () => {
+    if (mainPathBoundariesOn) setTimeout(applyMainPathBoundaries, 0);
+  });
 
   const shareEl = assertElementById("shareButton", HTMLElement);
   shareEl.addEventListener("click", async (ev) => {

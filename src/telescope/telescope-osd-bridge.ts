@@ -2335,6 +2335,70 @@ function wrapWithWikiLink(el: HTMLElement, poi: any): HTMLElement {
   return a;
 }
 
+/**
+ * Pick a viewport-pixel position for the marker tooltip card such that:
+ *  - the card never extends into a right-side overlay (the seed-report
+ *    sidebar, when open) — its right edge is clamped against the visible
+ *    canvas (canvas right minus sidebar width).
+ *  - the card prefers the LEFT side of the marker when a sidebar is open,
+ *    so the card lives on the opposite side of the screen from the sidebar.
+ *  - if neither side fits, the card pins to whichever edge gives more room.
+ *
+ * Used by both the direct canvas-click handler and the seed-report
+ * row-click flow, so click-anywhere POI cards stay clear of the sidebar.
+ */
+function placeTooltipForMarker(
+  viewer: any,
+  _item: MarkerItem,
+  clickX: number,
+  clickY: number,
+): { x: number; y: number } {
+  const canvasEl = viewer.canvas as HTMLElement;
+  const canvasRect = canvasEl.getBoundingClientRect();
+  const TOOLTIP_W = 32 * 14; // width: 32em at 14px base
+  const TOOLTIP_GAP = 16;
+
+  let sidebarPx = 0;
+  const srEl = document.getElementById("seed-report-sidebar");
+  if (srEl && srEl.classList.contains("open")) {
+    sidebarPx = srEl.getBoundingClientRect().width;
+  }
+
+  // Right-most pixel the card may occupy.
+  const rightEdge = canvasRect.right - sidebarPx - TOOLTIP_GAP;
+  const leftEdge = canvasRect.left + 8;
+
+  // When the sidebar is open, prefer LEFT placement (card on opposite side
+  // from the sidebar). Otherwise default to right of the click.
+  let x: number;
+  if (sidebarPx > 0) {
+    const leftAttempt = clickX - TOOLTIP_GAP - TOOLTIP_W;
+    if (leftAttempt >= leftEdge) {
+      x = leftAttempt;
+    } else {
+      // Not enough room on the left — try right, then pin to whichever edge fits.
+      const rightAttempt = clickX + TOOLTIP_GAP;
+      if (rightAttempt + TOOLTIP_W <= rightEdge) {
+        x = rightAttempt;
+      } else {
+        x = leftEdge;
+      }
+    }
+  } else {
+    const rightAttempt = clickX + TOOLTIP_GAP;
+    if (rightAttempt + TOOLTIP_W <= rightEdge) {
+      x = rightAttempt;
+    } else {
+      const leftAttempt = clickX - TOOLTIP_GAP - TOOLTIP_W;
+      x = leftAttempt >= leftEdge ? leftAttempt : leftEdge;
+    }
+  }
+
+  let y = Math.min(clickY, canvasRect.top + canvasRect.height * 0.35);
+  if (y < canvasRect.top + 8) y = canvasRect.top + 8;
+  return { x, y };
+}
+
 function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): void {
   // Remove previous popup
   if (tooltipEl) {
@@ -2746,34 +2810,50 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           ? gameTranslator.translateSpell(getSpellName(String(ci.spell)))
           : gameTranslator.translateItem(ciName);
 
-      // Wands: show sprite (rotated) + spell icons
+      // Wands: show sprite (rotated) + spell icons (padded to wand capacity)
       if (ci.type === "wand") {
         const wandBox = document.createElement("div");
         wandBox.style.cssText =
-          "display:flex;align-items:center;gap:0.15em;background:#111;border-radius:0.2em;padding:0.15em 0.3em;border:0.065em solid #333";
+          "display:flex;align-items:flex-start;gap:0.15em;background:#111;border-radius:0.2em;padding:0.15em 0.3em;border:0.065em solid #333";
         if (ciKey) {
           const canvas = drawSpriteToCanvas(ciKey, 20, 20);
           if (canvas) {
-            canvas.style.cssText += ";transform:rotate(90deg)";
+            canvas.style.cssText += ";transform:rotate(90deg);flex:0 0 auto";
             canvas.title = ci.name || "Wand";
             wandBox.appendChild(canvas);
           }
         }
-        const spellIds = [...(ci.always_casts || []), ...(ci.cards || [])];
-        for (const sid of spellIds.slice(0, 4)) {
-          const spellKey = resolveSpellKey(String(sid));
-          const spellCanvas = drawSpriteToCanvas(spellKey, 16, 16);
-          if (spellCanvas) {
-            spellCanvas.title = gameTranslator.translateSpell(getSpellName(String(sid)));
-            wandBox.appendChild(spellCanvas);
+        // Pad to deck_capacity so the row matches the wand's actual slot count.
+        // Always casts first, then regular spells, then null placeholders up to capacity.
+        const acList: any[] = ci.always_casts || [];
+        const cardList: any[] = ci.cards || [];
+        const capRaw = (ci as any).deck_capacity ?? (ci as any).capacity ?? null;
+        const cap = capRaw != null ? Math.max(0, Math.floor(Number(capRaw))) : cardList.length;
+        const slots: Array<{ id: string | null; isAC: boolean }> = [];
+        for (const sp of acList) slots.push({ id: typeof sp === "string" ? sp : (sp?.id ?? sp ?? null), isAC: true });
+        for (let i = 0; i < cap; i++) {
+          const sp = cardList[i];
+          slots.push({ id: sp ? (typeof sp === "string" ? sp : (sp?.id ?? sp)) : null, isAC: false });
+        }
+        // Grid of fixed 15-slot rows so wrapping is deterministic across cards.
+        const slotsGrid = document.createElement("div");
+        slotsGrid.style.cssText =
+          "display:grid;grid-template-columns:repeat(15,16px);gap:0.15em;align-items:center";
+        for (const slot of slots) {
+          const cell = document.createElement("div");
+          cell.style.cssText = `width:16px;height:16px;display:flex;align-items:center;justify-content:center;background:#0a0a0a;border:0.065em solid ${slot.isAC ? "#c8a2ff" : "#222"};border-radius:0.15em;box-sizing:border-box`;
+          if (slot.id) {
+            const spellKey = resolveSpellKey(String(slot.id));
+            const spellCanvas = drawSpriteToCanvas(spellKey, 14, 14);
+            if (spellCanvas) {
+              spellCanvas.title = gameTranslator.translateSpell(getSpellName(String(slot.id)));
+              cell.appendChild(spellCanvas);
+            }
           }
+          slotsGrid.appendChild(cell);
         }
-        if (spellIds.length > 4) {
-          const more = document.createElement("span");
-          more.style.cssText = "font-size:0.75em;color:#888";
-          more.textContent = `+${spellIds.length - 4}`;
-          wandBox.appendChild(more);
-        }
+        wandBox.appendChild(slotsGrid);
+
         contRow.appendChild(wandBox);
         continue;
       }
@@ -2940,7 +3020,8 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
     const item = findNearestMarker(event);
     if (item) {
       event.preventDefaultAction = true;
-      showMarkerTooltip(item, event.originalEvent.clientX, event.originalEvent.clientY);
+      const { x, y } = placeTooltipForMarker(viewer, item, event.originalEvent.clientX, event.originalEvent.clientY);
+      showMarkerTooltip(item, x, y);
       return;
     }
 
@@ -3078,40 +3159,15 @@ export function openTooltipForPOI(
     const isOffScreen = pixel.x < -100 || pixel.x > canvasRect.width + 100 ||
                         pixel.y < -100 || pixel.y > canvasRect.height + 100;
 
-    // Re-detect the sidebar at tooltip-show time too — the user may have
-    // opened/closed it during the multi-second pan animation.
-    let liveSidebarPx = sidebarPx;
-    const srEl = document.getElementById("seed-report-sidebar");
-    if (srEl && srEl.classList.contains("open")) {
-      liveSidebarPx = srEl.getBoundingClientRect().width;
-    }
-
-    // Position the tooltip near the marker (slightly above + to the right of
-    // the POI), clamped so it never extends into the right-side sidebar.
-    const TOOLTIP_W = 32 * 14; // matches the `width: 32em` + 14px base font
-    const TOOLTIP_GAP = 16;    // breathing room between POI and card
     const markerX = isOffScreen ? canvasRect.width / 2 : pixel.x;
     const markerY = isOffScreen ? canvasRect.height / 2 : pixel.y;
+    const clickX = canvasRect.left + markerX;
+    const clickY = canvasRect.top + markerY;
 
-    // Right edge available for the tooltip = canvas right minus sidebar.
-    const rightEdge = canvasRect.right - liveSidebarPx - TOOLTIP_GAP;
-    // Preferred: place the tooltip's LEFT edge slightly to the right of the
-    // POI marker so the card doesn't overlap the spell sprite itself.
-    let screenX = canvasRect.left + markerX + TOOLTIP_GAP;
-    if (screenX + TOOLTIP_W > rightEdge) {
-      // Not enough room on the right — flip to the left of the marker.
-      const leftAttempt = canvasRect.left + markerX - TOOLTIP_GAP - TOOLTIP_W;
-      if (leftAttempt >= canvasRect.left + 8) {
-        screenX = leftAttempt;
-      } else {
-        // Neither side fits cleanly — pin to the left edge so the card stays
-        // entirely visible (better than half-behind the sidebar).
-        screenX = canvasRect.left + 8;
-      }
-    }
-    let screenY = canvasRect.top + Math.min(markerY, canvasRect.height * 0.35);
-    if (screenY < canvasRect.top + 8) screenY = canvasRect.top + 8;
-
+    // Delegate to the shared placement helper so direct map clicks and
+    // seed-report row clicks behave identically — left-side when sidebar is
+    // open, right-side otherwise.
+    const { x: screenX, y: screenY } = placeTooltipForMarker(viewer, item, clickX, clickY);
     showMarkerTooltip(item, screenX, screenY);
   };
 
@@ -3559,6 +3615,7 @@ export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: numb
           flat.push({
             ...inner,
             pw,
+            parentType: poi.type,
             biome: inner.biome || poi.biome,
             worldX: inner.x ?? poi.x,
             worldY: inner.y ?? poi.y,

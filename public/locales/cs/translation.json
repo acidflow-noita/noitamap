@@ -5094,7 +5094,8 @@
       "chests": "Truhly",
       "greatChests": "Skvělé truhly",
       "hvSpells": "Kouzla vysoké hodnoty",
-      "rareMaterials": "Vzácné materiály"
+      "rareMaterials": "Vzácné materiály",
+      "wands": "Wands"
     },
     "empty": {
       "noSeed": "Čeká se na dokončení dynamické mapy – sestava se zde zobrazí.",
@@ -5102,7 +5103,9 @@
     },
     "spells": {
       "title": "Kouzla vysoké hodnoty",
-      "empty": "V tomto semínku nejsou žádná kouzla vysoké hodnoty."
+      "empty": "V tomto semínku nejsou žádná kouzla vysoké hodnoty.",
+      "noneFound": "none found",
+      "onWands": "on wands"
     },
     "spell": {
       "category": {
@@ -5126,11 +5129,11 @@
       "healthium": "Healthium"
     },
     "compare": {
-      "comparedTo": "vs {{target}} (semínko {{seed}})",
+      "comparedTo": "ve srovnání s {{target}} (semínko {{seed}})",
       "todayDaily": "dnešní den",
       "yesterdayDaily": "včerejší den",
       "unavailable": "žádné srovnání není k dispozici",
-      "notCached": "vs {{target}} (semínko {{seed}}) - navštivte jej jednou pro načtení srovnání"
+      "notCached": "ve srovnání s {{target}} (semínko {{seed}}) - navštivte to semínko jednou pro načtení srovnání"
     },
     "spider": {
       "title": "Přehled podle světa",
@@ -5153,7 +5156,8 @@
         "previousDaily": "Předchozí denní semeno",
         "average": "Průměrná základní linie"
       },
-      "creaturesNote": "Bytosti jsou skryty na mapě (režim výkonu), ale stále se počítají ve statistikách níže."
+      "creaturesNote": "Bytosti jsou skryty na mapě (režim výkonu), ale stále se počítají ve statistikách níže.",
+      "creaturesNoteTitle": "Performance mode"
     },
     "faceted": {
       "title": "Rozdělení podle biomů podle kategorií"
@@ -5166,6 +5170,26 @@
     "spoilerFree": {
       "title": "Režim bez spoilerů je zapnutý",
       "body": "Statistiky jsou skryté, dokud je režim bez spoilerů zapnutý. Vypněte jej, abyste je odhalili."
-    }
+    },
+    "mainPathOnly": {
+      "0": "M",
+      "1": "a",
+      "2": "i",
+      "3": "n",
+      "4": " ",
+      "5": "p",
+      "6": "a",
+      "7": "t",
+      "8": "h",
+      "9": " ",
+      "10": "o",
+      "11": "n",
+      "12": "l",
+      "13": "y",
+      "label": "Main path only",
+      "title": "Main path only",
+      "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
+    },
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   }
 }

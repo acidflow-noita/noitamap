@@ -5094,7 +5094,8 @@
       "chests": "Cofres",
       "greatChests": "Grandes cofres",
       "hvSpells": "Hechizos de alto valor",
-      "rareMaterials": "Materiales raros"
+      "rareMaterials": "Materiales raros",
+      "wands": "Wands"
     },
     "empty": {
       "noSeed": "Esperando a que termine el mapa dinámico - el informe aparecerá aquí.",
@@ -5102,7 +5103,9 @@
     },
     "spells": {
       "title": "Hechizos de alto valor",
-      "empty": "No hay hechizos de alto valor en esta semilla."
+      "empty": "No hay hechizos de alto valor en esta semilla.",
+      "noneFound": "none found",
+      "onWands": "on wands"
     },
     "spell": {
       "category": {
@@ -5126,11 +5129,11 @@
       "healthium": "Healthium"
     },
     "compare": {
-      "comparedTo": "vs {{target}} (semilla {{seed}})",
+      "comparedTo": "comparado con {{target}} (semilla {{seed}})",
       "todayDaily": "el diario de hoy",
       "yesterdayDaily": "el diario de ayer",
       "unavailable": "no hay comparación disponible",
-      "notCached": "vs {{target}} (semilla {{seed}}) - visítalo una vez para cargar la comparación"
+      "notCached": "comparado con {{target}} (semilla {{seed}}) - visita esa semilla una vez para cargar los datos de comparación"
     },
     "spider": {
       "title": "Descripción general por mundo",
@@ -5153,7 +5156,8 @@
         "previousDaily": "Semilla diaria anterior",
         "average": "Línea de base promedio"
       },
-      "creaturesNote": "Las criaturas están ocultas en el mapa (modo de rendimiento), pero aún se cuentan en las estadísticas siguientes."
+      "creaturesNote": "Las criaturas están ocultas en el mapa (modo de rendimiento), pero aún se cuentan en las estadísticas siguientes.",
+      "creaturesNoteTitle": "Performance mode"
     },
     "faceted": {
       "title": "Desglose por bioma por categoría"
@@ -5166,6 +5170,26 @@
     "spoilerFree": {
       "title": "Modo sin spoilers activado",
       "body": "Las estadísticas están ocultas con el modo sin spoilers. Desactívalo para mostrarlas."
-    }
+    },
+    "mainPathOnly": {
+      "0": "M",
+      "1": "a",
+      "2": "i",
+      "3": "n",
+      "4": " ",
+      "5": "p",
+      "6": "a",
+      "7": "t",
+      "8": "h",
+      "9": " ",
+      "10": "o",
+      "11": "n",
+      "12": "l",
+      "13": "y",
+      "label": "Main path only",
+      "title": "Main path only",
+      "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
+    },
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   }
 }

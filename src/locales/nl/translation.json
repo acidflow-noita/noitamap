@@ -5094,7 +5094,8 @@
       "chests": "Kisten",
       "greatChests": "Grote kisten",
       "hvSpells": "Hoogwaardige spreuken",
-      "rareMaterials": "Zeldzame materialen"
+      "rareMaterials": "Zeldzame materialen",
+      "wands": "Wands"
     },
     "empty": {
       "noSeed": "Wachten tot de dynamische kaart klaar is – het rapport verschijnt hier.",
@@ -5102,7 +5103,9 @@
     },
     "spells": {
       "title": "Hoogwaardige spreuken",
-      "empty": "Geen hoogwaardige spreuken in dit zaad."
+      "empty": "Geen hoogwaardige spreuken in dit zaad.",
+      "noneFound": "none found",
+      "onWands": "on wands"
     },
     "spell": {
       "category": {
@@ -5126,11 +5129,11 @@
       "healthium": "Healthium"
     },
     "compare": {
-      "comparedTo": "vs {{target}} (seed {{seed}})",
+      "comparedTo": "vergeleken met {{target}} (seed {{seed}})",
       "todayDaily": "de dagelijkse dag van vandaag",
       "yesterdayDaily": "de dagelijkse dag van gisteren",
       "unavailable": "geen vergelijking beschikbaar",
-      "notCached": "vs {{target}} (seed {{seed}}) - bezoek het één keer om vergelijkingsgegevens te laden"
+      "notCached": "vergeleken met {{target}} (seed {{seed}}) - bezoek die seed één keer om vergelijkingsgegevens te laden"
     },
     "spider": {
       "title": "Overzicht per wereld",
@@ -5153,7 +5156,8 @@
         "previousDaily": "Vorig dagelijks zaad",
         "average": "Gemiddelde basislijn"
       },
-      "creaturesNote": "Wezens zijn verborgen op de kaart (prestatiemodus), maar worden nog steeds meegeteld in de onderstaande statistieken."
+      "creaturesNote": "Wezens zijn verborgen op de kaart (prestatiemodus), maar worden nog steeds meegeteld in de onderstaande statistieken.",
+      "creaturesNoteTitle": "Performance mode"
     },
     "faceted": {
       "title": "Uitsplitsing per bioom per categorie"
@@ -5166,6 +5170,26 @@
     "spoilerFree": {
       "title": "Spoilervrije modus staat aan",
       "body": "Statistieken zijn verborgen in de spoilervrije modus. Schakel deze uit om ze te tonen."
-    }
+    },
+    "mainPathOnly": {
+      "0": "M",
+      "1": "a",
+      "2": "i",
+      "3": "n",
+      "4": " ",
+      "5": "p",
+      "6": "a",
+      "7": "t",
+      "8": "h",
+      "9": " ",
+      "10": "o",
+      "11": "n",
+      "12": "l",
+      "13": "y",
+      "label": "Main path only",
+      "title": "Main path only",
+      "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
+    },
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   }
 }

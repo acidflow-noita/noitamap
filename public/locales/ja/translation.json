@@ -5094,7 +5094,8 @@
       "chests": "チェスト",
       "greatChests": "素晴らしいチェスト",
       "hvSpells": "高価値の呪文",
-      "rareMaterials": "希少な素材"
+      "rareMaterials": "希少な素材",
+      "wands": "Wands"
     },
     "empty": {
       "noSeed": "ダイナミックマップの生成を待っています - レポートはここに表示されます。",
@@ -5102,7 +5103,9 @@
     },
     "spells": {
       "title": "高価値の呪文",
-      "empty": "このシードには高価値の呪文はありません。"
+      "empty": "このシードには高価値の呪文はありません。",
+      "noneFound": "none found",
+      "onWands": "on wands"
     },
     "spell": {
       "category": {
@@ -5126,11 +5129,11 @@
       "healthium": "Healthium"
     },
     "compare": {
-      "comparedTo": "vs {{target}} (シード {{seed}})",
+      "comparedTo": "{{target}}との比較 (シード {{seed}})",
       "todayDaily": "今日の毎日",
       "yesterdayDaily": "昨日の日常",
       "unavailable": "比較データはありません",
-      "notCached": "vs {{target}} (シード {{seed}}) - 一度訪れて比較データを読み込んでください"
+      "notCached": "{{target}}との比較 (シード {{seed}}) - そのシードを一度訪れて比較データを読み込んでください"
     },
     "spider": {
       "title": "ワールドごとの概要",
@@ -5153,7 +5156,8 @@
         "previousDaily": "以前の毎日のシード",
         "average": "平均ベースライン"
       },
-      "creaturesNote": "クリーチャーはマップ (パフォーマンス モード) から非表示になりますが、以下の統計では引き続きカウントされます。"
+      "creaturesNote": "クリーチャーはマップ (パフォーマンス モード) から非表示になりますが、以下の統計では引き続きカウントされます。",
+      "creaturesNoteTitle": "Performance mode"
     },
     "faceted": {
       "title": "カテゴリごとのバイオームごとの内訳"
@@ -5166,6 +5170,26 @@
     "spoilerFree": {
       "title": "ネタバレ防止モードがオンです",
       "body": "ネタバレ防止モードでは統計が非表示になります。オフにすると表示されます。"
-    }
+    },
+    "mainPathOnly": {
+      "0": "M",
+      "1": "a",
+      "2": "i",
+      "3": "n",
+      "4": " ",
+      "5": "p",
+      "6": "a",
+      "7": "t",
+      "8": "h",
+      "9": " ",
+      "10": "o",
+      "11": "n",
+      "12": "l",
+      "13": "y",
+      "label": "Main path only",
+      "title": "Main path only",
+      "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
+    },
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   }
 }

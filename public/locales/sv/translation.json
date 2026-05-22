@@ -5094,7 +5094,8 @@
       "chests": "kistor",
       "greatChests": "Stora kistor",
       "hvSpells": "Värdefulla trollformler",
-      "rareMaterials": "Sällsynta material"
+      "rareMaterials": "Sällsynta material",
+      "wands": "Wands"
     },
     "empty": {
       "noSeed": "Väntar på att den dynamiska kartan ska bli klar – rapporten visas här.",
@@ -5102,7 +5103,9 @@
     },
     "spells": {
       "title": "Värdefulla trollformler",
-      "empty": "Inga högvärdiga trollformler i detta frö."
+      "empty": "Inga högvärdiga trollformler i detta frö.",
+      "noneFound": "none found",
+      "onWands": "on wands"
     },
     "spell": {
       "category": {
@@ -5126,11 +5129,11 @@
       "healthium": "Healthium"
     },
     "compare": {
-      "comparedTo": "vs {{target}} (frö {{seed}})",
+      "comparedTo": "jämfört med {{target}} (frö {{seed}})",
       "todayDaily": "dagens vardag",
       "yesterdayDaily": "gårdagens dagstidning",
       "unavailable": "ingen jämförelse tillgänglig",
-      "notCached": "vs {{target}} (frö {{seed}}) - besök det en gång för att läsa in jämförelsedata"
+      "notCached": "jämfört med {{target}} (frö {{seed}}) - besök det fröet en gång för att läsa in jämförelsedata"
     },
     "spider": {
       "title": "Översikt per värld",
@@ -5153,7 +5156,8 @@
         "previousDaily": "Tidigare dagligt frö",
         "average": "Genomsnittlig baslinje"
       },
-      "creaturesNote": "Varelser är dolda från kartan (prestandaläge), men de räknas fortfarande i statistiken nedan."
+      "creaturesNote": "Varelser är dolda från kartan (prestandaläge), men de räknas fortfarande i statistiken nedan.",
+      "creaturesNoteTitle": "Performance mode"
     },
     "faceted": {
       "title": "Fördelning per biom efter kategori"
@@ -5166,6 +5170,26 @@
     "spoilerFree": {
       "title": "Spoilerfritt läge är på",
       "body": "Statistiken är dold i spoilerfritt läge. Stäng av det för att visa den."
-    }
+    },
+    "mainPathOnly": {
+      "0": "M",
+      "1": "a",
+      "2": "i",
+      "3": "n",
+      "4": " ",
+      "5": "p",
+      "6": "a",
+      "7": "t",
+      "8": "h",
+      "9": " ",
+      "10": "o",
+      "11": "n",
+      "12": "l",
+      "13": "y",
+      "label": "Main path only",
+      "title": "Main path only",
+      "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
+    },
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   }
 }

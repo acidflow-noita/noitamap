@@ -5094,7 +5094,8 @@
       "chests": "Peti",
       "greatChests": "Peti yang bagus",
       "hvSpells": "Mantra bernilai tinggi",
-      "rareMaterials": "Bahan langka"
+      "rareMaterials": "Bahan langka",
+      "wands": "Wands"
     },
     "empty": {
       "noSeed": "Menunggu peta dinamis selesai - laporan akan muncul di sini.",
@@ -5102,7 +5103,9 @@
     },
     "spells": {
       "title": "Mantra bernilai tinggi",
-      "empty": "Tidak ada mantra bernilai tinggi di benih ini."
+      "empty": "Tidak ada mantra bernilai tinggi di benih ini.",
+      "noneFound": "none found",
+      "onWands": "on wands"
     },
     "spell": {
       "category": {
@@ -5126,11 +5129,11 @@
       "healthium": "Healthium"
     },
     "compare": {
-      "comparedTo": "vs {{target}} (benih {{seed}})",
+      "comparedTo": "dibandingkan dengan {{target}} (benih {{seed}})",
       "todayDaily": "harian hari ini",
       "yesterdayDaily": "harian kemarin",
       "unavailable": "tidak ada perbandingan yang tersedia",
-      "notCached": "vs {{target}} (benih {{seed}}) - kunjungi sekali untuk memuat data perbandingan"
+      "notCached": "dibandingkan dengan {{target}} (benih {{seed}}) - kunjungi benih itu sekali untuk memuat data perbandingan"
     },
     "spider": {
       "title": "Ikhtisar per dunia",
@@ -5153,7 +5156,8 @@
         "previousDaily": "Benih harian sebelumnya",
         "average": "Rata-rata garis dasar"
       },
-      "creaturesNote": "Makhluk disembunyikan dari peta (mode kinerja), tetapi mereka masih dihitung dalam statistik di bawah."
+      "creaturesNote": "Makhluk disembunyikan dari peta (mode kinerja), tetapi mereka masih dihitung dalam statistik di bawah.",
+      "creaturesNoteTitle": "Performance mode"
     },
     "faceted": {
       "title": "Pengelompokan per bioma berdasarkan kategori"
@@ -5166,6 +5170,26 @@
     "spoilerFree": {
       "title": "Mode bebas spoiler aktif",
       "body": "Statistik disembunyikan saat mode bebas spoiler aktif. Matikan untuk melihatnya."
-    }
+    },
+    "mainPathOnly": {
+      "0": "M",
+      "1": "a",
+      "2": "i",
+      "3": "n",
+      "4": " ",
+      "5": "p",
+      "6": "a",
+      "7": "t",
+      "8": "h",
+      "9": " ",
+      "10": "o",
+      "11": "n",
+      "12": "l",
+      "13": "y",
+      "label": "Main path only",
+      "title": "Main path only",
+      "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
+    },
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   }
 }

@@ -5094,7 +5094,8 @@
       "chests": "Arkut",
       "greatChests": "Hienot rinnat",
       "hvSpells": "Arvokkaita loitsuja",
-      "rareMaterials": "Harvinaisia ​​materiaaleja"
+      "rareMaterials": "Harvinaisia ​​materiaaleja",
+      "wands": "Wands"
     },
     "empty": {
       "noSeed": "Odotetaan, että dynaaminen kartta valmistuu – raportti tulee tähän.",
@@ -5102,7 +5103,9 @@
     },
     "spells": {
       "title": "Arvokkaita loitsuja",
-      "empty": "Tässä siemenessä ei ole arvokkaita loitsuja."
+      "empty": "Tässä siemenessä ei ole arvokkaita loitsuja.",
+      "noneFound": "none found",
+      "onWands": "on wands"
     },
     "spell": {
       "category": {
@@ -5126,11 +5129,11 @@
       "healthium": "Healthium"
     },
     "compare": {
-      "comparedTo": "vs {{target}} (siemen {{seed}})",
+      "comparedTo": "verrattuna {{target}} (siemen {{seed}})",
       "todayDaily": "tämän päivän päivittäin",
       "yesterdayDaily": "eilinen päivä",
       "unavailable": "ei vertailua saatavilla",
-      "notCached": "vs {{target}} (siemen {{seed}}) - käy kerran ladataksesi vertailutiedot"
+      "notCached": "verrattuna {{target}} (siemen {{seed}}) - käy kyseisessä siemenessä kerran ladataksesi vertailutiedot"
     },
     "spider": {
       "title": "Maailmankohtainen yleiskatsaus",
@@ -5153,7 +5156,8 @@
         "previousDaily": "Edellinen päivittäinen siemen",
         "average": "Keskimääräinen lähtötaso"
       },
-      "creaturesNote": "Olennot ovat piilossa kartalta (suorituskykytila), mutta ne lasketaan silti alla oleviin tilastoihin."
+      "creaturesNote": "Olennot ovat piilossa kartalta (suorituskykytila), mutta ne lasketaan silti alla oleviin tilastoihin.",
+      "creaturesNoteTitle": "Performance mode"
     },
     "faceted": {
       "title": "Biomikohtainen erittely luokittain"
@@ -5166,6 +5170,26 @@
     "spoilerFree": {
       "title": "Spoileriton tila on käytössä",
       "body": "Tilastot on piilotettu spoilerittomassa tilassa. Poista käytöstä paljastaaksesi ne."
-    }
+    },
+    "mainPathOnly": {
+      "0": "M",
+      "1": "a",
+      "2": "i",
+      "3": "n",
+      "4": " ",
+      "5": "p",
+      "6": "a",
+      "7": "t",
+      "8": "h",
+      "9": " ",
+      "10": "o",
+      "11": "n",
+      "12": "l",
+      "13": "y",
+      "label": "Main path only",
+      "title": "Main path only",
+      "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
+    },
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   }
 }

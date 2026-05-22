@@ -5094,7 +5094,8 @@
       "chests": "Сундуки",
       "greatChests": "Великие",
       "hvSpells": "Ценные заклинания",
-      "rareMaterials": "Редкие материалы"
+      "rareMaterials": "Редкие материалы",
+      "wands": "Wands"
     },
     "empty": {
       "noSeed": "Ожидание завершения динамической карты — отчёт появится здесь.",
@@ -5102,7 +5103,9 @@
     },
     "spells": {
       "title": "Ценные заклинания",
-      "empty": "В этом сиде нет ценных заклинаний."
+      "empty": "В этом сиде нет ценных заклинаний.",
+      "noneFound": "none found",
+      "onWands": "on wands"
     },
     "spell": {
       "category": {
@@ -5126,11 +5129,11 @@
       "healthium": "Healthium"
     },
     "compare": {
-      "comparedTo": "vs {{target}} (сид {{seed}})",
+      "comparedTo": "в сравнении с {{target}} (сид {{seed}})",
       "todayDaily": "сегодняшним дейли",
       "yesterdayDaily": "вчерашним дейли",
       "unavailable": "сравнение недоступно",
-      "notCached": "vs {{target}} (сид {{seed}}) - откройте его один раз, чтобы загрузить данные сравнения"
+      "notCached": "в сравнении с {{target}} (сид {{seed}}) - откройте этот сид один раз, чтобы загрузить данные сравнения"
     },
     "spider": {
       "title": "Обзор по миру",
@@ -5153,7 +5156,8 @@
         "previousDaily": "Предыдущий дейли",
         "average": "Средний по дейли"
       },
-      "creaturesNote": "Существа скрыты с карты (режим производительности), но они все равно учитываются в статистике ниже."
+      "creaturesNote": "Существа скрыты с карты (режим производительности), но они все равно учитываются в статистике ниже.",
+      "creaturesNoteTitle": "Performance mode"
     },
     "faceted": {
       "title": "Разбивка по биомам по категориям"
@@ -5166,6 +5170,26 @@
     "spoilerFree": {
       "title": "Включён режим без спойлеров",
       "body": "Статистика скрыта в режиме без спойлеров. Отключите режим, чтобы её увидеть."
-    }
+    },
+    "mainPathOnly": {
+      "0": "M",
+      "1": "a",
+      "2": "i",
+      "3": "n",
+      "4": " ",
+      "5": "p",
+      "6": "a",
+      "7": "t",
+      "8": "h",
+      "9": " ",
+      "10": "o",
+      "11": "n",
+      "12": "l",
+      "13": "y",
+      "label": "Main path only",
+      "title": "Main path only",
+      "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
+    },
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   }
 }

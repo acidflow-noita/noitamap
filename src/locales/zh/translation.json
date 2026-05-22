@@ -5094,7 +5094,8 @@
       "chests": "宝箱",
       "greatChests": "伟大的胸部",
       "hvSpells": "高价值法术",
-      "rareMaterials": "稀有材料"
+      "rareMaterials": "稀有材料",
+      "wands": "Wands"
     },
     "empty": {
       "noSeed": "正在等待动态地图完成 - 报告将显示在此处。",
@@ -5102,7 +5103,9 @@
     },
     "spells": {
       "title": "高价值法术",
-      "empty": "该种子中没有高价值法术。"
+      "empty": "该种子中没有高价值法术。",
+      "noneFound": "none found",
+      "onWands": "on wands"
     },
     "spell": {
       "category": {
@@ -5126,11 +5129,11 @@
       "healthium": "Healthium"
     },
     "compare": {
-      "comparedTo": "对比 {{target}} (种子 {{seed}})",
+      "comparedTo": "与 {{target}} 对比 (种子 {{seed}})",
       "todayDaily": "今天的每日",
       "yesterdayDaily": "昨天的日报",
       "unavailable": "无法比较",
-      "notCached": "对比 {{target}} (种子 {{seed}}) - 访问一次以加载对比数据"
+      "notCached": "与 {{target}} 对比 (种子 {{seed}}) - 访问一次该种子以加载对比数据"
     },
     "spider": {
       "title": "每个世界的概述",
@@ -5153,7 +5156,8 @@
         "previousDaily": "以前的每日种子",
         "average": "平均基线"
       },
-      "creaturesNote": "生物在地图上隐藏（性能模式），但它们仍然计入下面的统计数据中。"
+      "creaturesNote": "生物在地图上隐藏（性能模式），但它们仍然计入下面的统计数据中。",
+      "creaturesNoteTitle": "Performance mode"
     },
     "faceted": {
       "title": "按生物群落类别细分"
@@ -5166,6 +5170,26 @@
     "spoilerFree": {
       "title": "已开启防剧透模式",
       "body": "防剧透模式开启时统计数据已隐藏。关闭后即可查看。"
-    }
+    },
+    "mainPathOnly": {
+      "0": "M",
+      "1": "a",
+      "2": "i",
+      "3": "n",
+      "4": " ",
+      "5": "p",
+      "6": "a",
+      "7": "t",
+      "8": "h",
+      "9": " ",
+      "10": "o",
+      "11": "n",
+      "12": "l",
+      "13": "y",
+      "label": "Main path only",
+      "title": "Main path only",
+      "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
+    },
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   }
 }

@@ -181,7 +181,18 @@ export class App extends EventEmitter2 {
       x,
       y,
     });
-    this.osd.panToTarget(x, y);
+
+    // If the seed-report sidebar is open it covers the right edge of the
+    // canvas. Mirror what telescope-osd-bridge does for POI clicks: shift the
+    // viewport centre left by half the sidebar width so the cinematic pan's
+    // destination (arrow target + final zoom-in framing) lands inside the
+    // visible portion of the map instead of behind the sidebar.
+    let offsetXPx = 0;
+    const srEl = document.getElementById("seed-report-sidebar");
+    if (srEl && srEl.classList.contains("open")) {
+      offsetXPx = srEl.getBoundingClientRect().width / 2;
+    }
+    this.osd.panToTarget(x, y, { offsetXPx });
   }
 
   public home() {
