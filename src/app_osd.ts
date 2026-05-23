@@ -373,7 +373,15 @@ export class AppOSD {
       const spanH = Math.max(Math.abs(here.y - y) * padding, CHUNK_SIZE * 2);
       const overviewRect = buildSidebarRect(midX, midY, spanW, spanH);
 
-      this.addPanTrail(here.x, here.y, x, y);
+      // Arrow tail should start at the *visible* viewport centre, not the
+      // full-canvas centre (which sits behind the sidebar when one is open).
+      // The destination POI already lands in the visible region thanks to the
+      // sidebar offset baked into buildSidebarRect — without this shift the
+      // tail starts mid-sidebar and the arrow looks crooked.
+      const startVisibleShiftWorld = offsetXPx > 0
+        ? viewport.deltaPointsFromPixels(new OpenSeadragon.Point(offsetXPx, 0), true).x
+        : 0;
+      this.addPanTrail(here.x - startVisibleShiftWorld, here.y, x, y);
       this.withSlowAnimation(() => viewport.fitBounds(overviewRect));
 
       // ─── Phase 2: After phase 1 settles, zoom into the destination ──────
@@ -404,44 +412,90 @@ export class AppOSD {
     this.removePanTrail();
     const container = this.viewer.container as HTMLElement;
 
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(SVG_NS, "svg");
     svg.setAttribute("class", "pan-trail-svg");
     svg.style.cssText = `
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       pointer-events: none; z-index: 9999; overflow: visible;
     `;
 
-    // Defs for the marching ants effect
+    // Unique IDs per-instance — if two trails ever co-exist (shouldn't, but be
+    // safe) their <defs> won't collide.
+    const uid = `pt-${Math.random().toString(36).slice(2, 8)}`;
+    const gradId = `${uid}-grad`;
+    const arrowId = `${uid}-arrow`;
+    const glowId = `${uid}-glow`;
+    const trailColor = "oklch(72% 0.18 152)";
+    const trailColorBright = "oklch(82% 0.21 152)";
+
+    // ── Defs: soft glow filter, tapered arrowhead, fade-in gradient stroke ──
+    // The gradient runs along the line in user-space coords so the trail
+    // fades up from a faint tail to a bright arrowhead. Endpoints get updated
+    // every frame in updatePanTrailPositions().
     svg.innerHTML = `
       <defs>
-        <marker id="pan-trail-arrow" viewBox="0 0 10 10" refX="8" refY="5"
-                markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M 2 1 L 8 5 L 2 9" fill="none" stroke="oklch(62.7% 0.194 149.214)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        <filter id="${glowId}" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2.5" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+        <linearGradient id="${gradId}" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stop-color="${trailColor}" stop-opacity="0"/>
+          <stop offset="25%"  stop-color="${trailColor}" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="${trailColorBright}" stop-opacity="1"/>
+        </linearGradient>
+        <marker id="${arrowId}" viewBox="0 0 12 12" refX="10" refY="6"
+                markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+          <path d="M 0 0 L 12 6 L 0 12 L 3 6 Z"
+                fill="${trailColorBright}"
+                stroke="${trailColorBright}" stroke-linejoin="round" stroke-width="1"/>
         </marker>
       </defs>
     `;
 
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("class", "pan-trail-line");
-    line.setAttribute("stroke", "oklch(62.7% 0.194 149.214)");
-    line.setAttribute("stroke-width", "8");
-    line.setAttribute("stroke-dasharray", "10,8");
-    line.setAttribute("stroke-opacity", "0.8");
-    line.setAttribute("marker-end", "url(#pan-trail-arrow)");
-    svg.appendChild(line);
+    // Quadratic-Bezier curve from start to end. Control point is set in
+    // updatePanTrailPositions so the arc reacts to the user's viewport (the
+    // perpendicular sag is in *pixel* space and depends on the current
+    // on-screen distance between the two points).
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("class", "pan-trail-line");
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", `url(#${gradId})`);
+    path.setAttribute("stroke-width", "4");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-dasharray", "12,9");
+    path.setAttribute("marker-end", `url(#${arrowId})`);
+    path.setAttribute("filter", `url(#${glowId})`);
+    svg.appendChild(path);
 
-    // Destination dot
-    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    // Destination: a small filled dot plus a thin outer ring for a "target"
+    // motif. Subtler than the old fat green blob.
+    const ring = document.createElementNS(SVG_NS, "circle");
+    ring.setAttribute("class", "pan-trail-ring");
+    ring.setAttribute("r", "10");
+    ring.setAttribute("fill", "none");
+    ring.setAttribute("stroke", trailColorBright);
+    ring.setAttribute("stroke-width", "1.5");
+    ring.setAttribute("stroke-opacity", "0.7");
+    svg.appendChild(ring);
+
+    const dot = document.createElementNS(SVG_NS, "circle");
     dot.setAttribute("class", "pan-trail-dot");
-    dot.setAttribute("r", "6");
-    dot.setAttribute("fill", "oklch(62.7% 0.194 149.214)");
-    dot.setAttribute("fill-opacity", "0.9");
+    dot.setAttribute("r", "3.5");
+    dot.setAttribute("fill", trailColorBright);
+    dot.setAttribute("filter", `url(#${glowId})`);
     svg.appendChild(dot);
+
+    // Pick up the gradient element so we can update its endpoints per frame.
+    const gradient = svg.querySelector(`#${gradId}`) as SVGLinearGradientElement;
 
     container.appendChild(svg);
 
     // Store trail data for position updates
-    this.panTrailData = { svg, line, dot, x1, y1, x2, y2 };
+    this.panTrailData = { svg, path, dot, ring, gradient, x1, y1, x2, y2 };
     this.updatePanTrailPositions();
 
     // Start marching ants animation
@@ -455,8 +509,10 @@ export class AppOSD {
 
   private panTrailData: {
     svg: SVGSVGElement;
-    line: SVGLineElement;
+    path: SVGPathElement;
     dot: SVGCircleElement;
+    ring: SVGCircleElement;
+    gradient: SVGLinearGradientElement;
     x1: number;
     y1: number;
     x2: number;
@@ -468,23 +524,58 @@ export class AppOSD {
 
   private animatePanTrail = () => {
     if (!this.panTrailData) return;
-    this.panTrailDashOffset -= 0.5;
-    this.panTrailData.line.setAttribute("stroke-dashoffset", String(this.panTrailDashOffset));
+    // Subtle dash flow toward the destination — slow enough to feel like
+    // motion, fast enough to read as "this is going somewhere".
+    this.panTrailDashOffset -= 0.6;
+    this.panTrailData.path.setAttribute("stroke-dashoffset", String(this.panTrailDashOffset));
     this.panTrailAnimFrame = requestAnimationFrame(this.animatePanTrail);
   };
 
   private updatePanTrailPositions() {
     if (!this.panTrailData) return;
-    const { line, dot, x1, y1, x2, y2 } = this.panTrailData;
+    const { path, dot, ring, gradient, x1, y1, x2, y2 } = this.panTrailData;
     const viewport = this.viewport;
     const p1 = viewport.viewportToViewerElementCoordinates(new OpenSeadragon.Point(x1, y1));
     const p2 = viewport.viewportToViewerElementCoordinates(new OpenSeadragon.Point(x2, y2));
-    line.setAttribute("x1", String(p1.x));
-    line.setAttribute("y1", String(p1.y));
-    line.setAttribute("x2", String(p2.x));
-    line.setAttribute("y2", String(p2.y));
+
+    // Quadratic-Bezier control point: midpoint pushed perpendicular to the
+    // line so the trail arcs (instead of being a straight line — straight
+    // lines on top of a draggable map look like a bad debug overlay).
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    // Arc "sag" — proportional to length, clamped so very short arrows still
+    // get a visible curve and very long ones don't bend into the moon.
+    const sag = Math.min(160, Math.max(24, dist * 0.18));
+    // Perpendicular unit vector. Default sag direction = up-and-left of the
+    // line normal (negative perpendicular) so arcs tend to curve upward.
+    let perpX = 0;
+    let perpY = 0;
+    if (dist > 0.0001) {
+      perpX = -dy / dist;
+      perpY = dx / dist;
+      // Force upward bias: if the perpendicular points down, flip it.
+      if (perpY > 0) {
+        perpX = -perpX;
+        perpY = -perpY;
+      }
+    }
+    const cx = (p1.x + p2.x) / 2 + perpX * sag;
+    const cy = (p1.y + p2.y) / 2 + perpY * sag;
+
+    path.setAttribute("d", `M ${p1.x} ${p1.y} Q ${cx} ${cy} ${p2.x} ${p2.y}`);
+
+    // Gradient runs along the straight start→end vector. Userspace coords so
+    // the fade tracks the trail no matter how big the canvas is.
+    gradient.setAttribute("x1", String(p1.x));
+    gradient.setAttribute("y1", String(p1.y));
+    gradient.setAttribute("x2", String(p2.x));
+    gradient.setAttribute("y2", String(p2.y));
+
     dot.setAttribute("cx", String(p2.x));
     dot.setAttribute("cy", String(p2.y));
+    ring.setAttribute("cx", String(p2.x));
+    ring.setAttribute("cy", String(p2.y));
   }
 
   private removePanTrail() {

@@ -10,6 +10,7 @@
 export const MAIN_PATH_BIOMES = new Set<string>([
   "coalmine",
   "coalmine_alt",
+  "excavationsite",
   "fungicave",
   "snowcave",
   "snowcastle",
