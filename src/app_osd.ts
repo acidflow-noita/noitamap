@@ -12,6 +12,20 @@ export type ZoomPos = {
   zoom: number;
 };
 
+/**
+ * easeInOutExpo — exponential ease-in-out, the easings.net equivalent of
+ * cubic-bezier(0.87, 0, 0.13, 1). Slow start, accelerating sharply through
+ * the middle, slow finish. Used as the timing function for the cinematic
+ * pan-to-target so the camera never stalls but still feels weighted.
+ */
+function easeInOutExpo(t: number): number {
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  return t < 0.5
+    ? Math.pow(2, 20 * t - 10) / 2
+    : (2 - Math.pow(2, -20 * t + 10)) / 2;
+}
+
 type DziTileSource = any;
 
 export class AppOSD {
@@ -282,12 +296,8 @@ export class AppOSD {
     const viewport = this.viewport;
     const here = viewport.getCenter();
 
-    // Cancel any in-progress pan (animation-finish handler + queued timers).
-    if (this.panTimer) clearTimeout(this.panTimer);
-    if (this.activeAnimFinish) {
-      this.viewer.removeHandler("animation-finish", this.activeAnimFinish);
-      this.activeAnimFinish = null;
-    }
+    // Cancel any in-progress pan animation + queued timers.
+    this.cancelActivePan();
     this.removePanTrail();
 
     // ─── Sidebar-aware fitBounds helper ───────────────────────────────────
@@ -296,55 +306,27 @@ export class AppOSD {
     // want to apply so that the POI lands at the centre of the *visible*
     // canvas (canvas minus sidebar), not the centre of the full canvas.
     //
-    // We can't just shift the rect by a constant world-units value: fitBounds
-    // picks a zoom such that *either* the rect's width or its height fully
-    // fits the canvas, whichever is the binding constraint. If the rect is
-    // taller than canvas-aspect, height wins and horizontal shift has to be
-    // scaled differently than if width wins.
-    //
-    // Solution: instead of letting fitBounds choose the zoom, build a rect
-    // whose aspect ratio matches the canvas, centred so that the *content*
-    // (the POI plus any other point we want visible) sits inside the visible
-    // (non-sidebar) portion. fitBounds with a canvas-aspect rect always
-    // produces an exact 1:1 fit, so the geometry is predictable.
+    // Solution: build a rect whose aspect ratio matches the canvas, centred so
+    // the content sits inside the visible (non-sidebar) portion. fitBounds
+    // with a canvas-aspect rect always produces an exact 1:1 fit.
     const offsetXPx = opts?.offsetXPx ?? 0;
     const canvasEl = this.viewer.canvas as HTMLElement;
     const canvasPxW = canvasEl?.clientWidth || 1200;
     const canvasPxH = canvasEl?.clientHeight || 800;
     const visiblePxW = Math.max(1, canvasPxW - offsetXPx * 2); // offsetXPx == sidebarPx/2
-    const canvasAspect = canvasPxW / canvasPxH;
 
-    /**
-     * Build a fitBounds rect that:
-     *   - Forces the canvas aspect ratio (so fitBounds is an exact fit, not
-     *     letter-boxed).
-     *   - Sizes the rect so the requested `contentW x contentH` content area
-     *     (centred at contentCx, contentCy) lands fully inside the *visible*
-     *     portion of the canvas.
-     *   - Shifts the rect centre to the right of the content centre by the
-     *     world-units equivalent of `offsetXPx` so the content lines up with
-     *     the visible-canvas centre, not the full-canvas centre.
-     */
     const buildSidebarRect = (
       contentCx: number,
       contentCy: number,
       contentW: number,
       contentH: number,
     ) => {
-      // Zoom that fits the content in the visible region (sidebar excluded
-      // horizontally). Choose the more-constrained dimension.
       const zoomForW = visiblePxW / contentW;
       const zoomForH = canvasPxH / contentH;
       const zoom = Math.min(zoomForW, zoomForH);
-      // At that zoom, the canvas spans `canvasPxW / zoom` world units.
       const rectW = canvasPxW / zoom;
       const rectH = canvasPxH / zoom;
-      // Bias the rect centre right so the content centre lines up with the
-      // visible-canvas centre. In world units: (sidebarPx / 2) / zoom.
       const shift = offsetXPx > 0 ? offsetXPx / zoom : 0;
-      // Sanity: enforce canvas aspect (should already match by construction).
-      const _ = canvasAspect; // keep ref so the value is used.
-      void _;
       return new OpenSeadragon.Rect(
         contentCx + shift - rectW / 2,
         contentCy - rectH / 2,
@@ -364,48 +346,120 @@ export class AppOSD {
       return Promise.resolve();
     }
 
+    // ─── Continuous fly-to animation ──────────────────────────────────────
+    //
+    // The previous implementation ran phase-1 (zoom out to overview) and
+    // phase-2 (zoom into destination) as two separate `fitBounds` calls with
+    // a 1s setTimeout *hold* between them — that hold is the "stuck" feeling
+    // users reported. Replaced with a single requestAnimationFrame loop that
+    // morphs the viewport bounds through three keyframes
+    // (start → overview → dest) along a quadratic Bezier so the camera never
+    // stops moving:
+    //
+    //   rectAtT(t) = (1-t)^2*start + 2*(1-t)*t*overview + t^2*dest
+    //
+    // Combined with easeInOutExpo on `t`, the perceived velocity is slow at
+    // the very start (gentle takeoff), peaks in the middle when the camera
+    // is zoomed out (so we cover ground fast), and decelerates into the
+    // destination — exactly the "fly-to" feel without any hold.
+    //
+    // The arrow trail's pixel positions are updated inline each frame
+    // because `fitBounds(rect, immediately=true)` skips OSD's spring system
+    // and therefore doesn't fire the `animation` event that the trail
+    // listens to elsewhere.
+    const startRect = viewport.getBounds();
+    const padding = 1.3;
+    const midX = (here.x + x) / 2;
+    const midY = (here.y + y) / 2;
+    const spanW = Math.max(Math.abs(here.x - x) * padding, CHUNK_SIZE * 2);
+    const spanH = Math.max(Math.abs(here.y - y) * padding, CHUNK_SIZE * 2);
+    const overviewRect = buildSidebarRect(midX, midY, spanW, spanH);
+    const destRect = buildSidebarRect(x, y, destContentW, destContentH);
+
+    // Duration scales with on-screen-ish distance, clamped so short hops
+    // don't feel instant and long ones don't drag.
+    const flyDistance = Math.sqrt((here.x - x) ** 2 + (here.y - y) ** 2);
+    const duration = Math.max(1400, Math.min(2600, 1100 + flyDistance * 0.08));
+
+    // Arrow tail anchors at the *visible* viewport centre (left of the
+    // sidebar), not the full-canvas centre — otherwise it starts mid-sidebar
+    // and the arrow looks crooked.
+    const startVisibleShiftWorld = offsetXPx > 0
+      ? viewport.deltaPointsFromPixels(new OpenSeadragon.Point(offsetXPx, 0), true).x
+      : 0;
+    this.addPanTrail(here.x - startVisibleShiftWorld, here.y, x, y);
+
     return new Promise<void>((resolve) => {
-      // ─── Phase 1: Zoom out to show origin + POI, with sidebar margin ────
-      const padding = 1.3;
-      const midX = (here.x + x) / 2;
-      const midY = (here.y + y) / 2;
-      const spanW = Math.max(Math.abs(here.x - x) * padding, CHUNK_SIZE * 2);
-      const spanH = Math.max(Math.abs(here.y - y) * padding, CHUNK_SIZE * 2);
-      const overviewRect = buildSidebarRect(midX, midY, spanW, spanH);
+      const startTime = performance.now();
+      let cancelled = false;
+      const onCancel = () => { cancelled = true; };
+      this.activePanCancel = onCancel;
 
-      // Arrow tail should start at the *visible* viewport centre, not the
-      // full-canvas centre (which sits behind the sidebar when one is open).
-      // The destination POI already lands in the visible region thanks to the
-      // sidebar offset baked into buildSidebarRect — without this shift the
-      // tail starts mid-sidebar and the arrow looks crooked.
-      const startVisibleShiftWorld = offsetXPx > 0
-        ? viewport.deltaPointsFromPixels(new OpenSeadragon.Point(offsetXPx, 0), true).x
-        : 0;
-      this.addPanTrail(here.x - startVisibleShiftWorld, here.y, x, y);
-      this.withSlowAnimation(() => viewport.fitBounds(overviewRect));
+      const tick = (now: number) => {
+        if (cancelled) return;
+        const t = Math.min(1, (now - startTime) / duration);
+        const easedT = easeInOutExpo(t);
 
-      // ─── Phase 2: After phase 1 settles, zoom into the destination ──────
-      const destRect = buildSidebarRect(x, y, destContentW, destContentH);
+        // Quadratic-Bezier rect interpolation through (start, overview, dest).
+        // The curve passes through start and dest exactly and bends *toward*
+        // the overview rect at the middle — so the camera never pauses on
+        // the overview, just sweeps through it.
+        const u = 1 - easedT;
+        const w0 = u * u;
+        const w1 = 2 * u * easedT;
+        const w2 = easedT * easedT;
+        const rect = new OpenSeadragon.Rect(
+          w0 * startRect.x + w1 * overviewRect.x + w2 * destRect.x,
+          w0 * startRect.y + w1 * overviewRect.y + w2 * destRect.y,
+          w0 * startRect.width + w1 * overviewRect.width + w2 * destRect.width,
+          w0 * startRect.height + w1 * overviewRect.height + w2 * destRect.height,
+        );
 
-      const onAnimFinish = () => {
-        this.viewer.removeHandler("animation-finish", onAnimFinish);
-        this.activeAnimFinish = null;
-        this.panTimer = setTimeout(() => {
-          this.panTimer = undefined;
-          this.withSlowAnimation(() => viewport.fitBounds(destRect));
+        // Apply immediately so OSD doesn't superimpose its own spring on
+        // top of our rAF-driven curve.
+        viewport.fitBounds(rect, true);
+        this.updatePanTrailPositions();
+
+        if (t < 1) {
+          this.activePanRaf = requestAnimationFrame(tick);
+        } else {
+          this.activePanRaf = 0;
+          this.activePanCancel = null;
+          this.addPulseMarker(x, y);
+          // Let the arrow linger briefly after the camera arrives so the
+          // user can register where it landed; clean up after.
           this.panTimer = setTimeout(() => {
             this.removePanTrail();
-            this.addPulseMarker(x, y);
-            resolve();
-          }, 800);
-        }, 1000);
+            this.panTimer = undefined;
+          }, 600);
+          resolve();
+        }
       };
-      this.activeAnimFinish = onAnimFinish;
-      this.viewer.addHandler("animation-finish", onAnimFinish);
+      this.activePanRaf = requestAnimationFrame(tick);
     });
   }
+
   private panTimer: any = undefined;
-  private activeAnimFinish: (() => void) | null = null;
+  private activePanRaf: number = 0;
+  private activePanCancel: (() => void) | null = null;
+
+  /** Stop any active fly-to animation immediately. Called by the next pan
+   *  before it kicks off so we don't have two rAF loops fighting over the
+   *  viewport. */
+  private cancelActivePan(): void {
+    if (this.activePanCancel) {
+      this.activePanCancel();
+      this.activePanCancel = null;
+    }
+    if (this.activePanRaf) {
+      cancelAnimationFrame(this.activePanRaf);
+      this.activePanRaf = 0;
+    }
+    if (this.panTimer) {
+      clearTimeout(this.panTimer);
+      this.panTimer = undefined;
+    }
+  }
 
   /** Add an SVG trail line overlay connecting origin to destination */
   private addPanTrail(x1: number, y1: number, x2: number, y2: number) {
@@ -432,7 +486,8 @@ export class AppOSD {
     // ── Defs: soft glow filter, tapered arrowhead, fade-in gradient stroke ──
     // The gradient runs along the line in user-space coords so the trail
     // fades up from a faint tail to a bright arrowhead. Endpoints get updated
-    // every frame in updatePanTrailPositions().
+    // every frame in updatePanTrailPositions(). Opacities are bumped so the
+    // tail is still clearly readable instead of fading into the map.
     svg.innerHTML = `
       <defs>
         <filter id="${glowId}" x="-50%" y="-50%" width="200%" height="200%">
@@ -443,8 +498,8 @@ export class AppOSD {
           </feMerge>
         </filter>
         <linearGradient id="${gradId}" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stop-color="${trailColor}" stop-opacity="0"/>
-          <stop offset="25%"  stop-color="${trailColor}" stop-opacity="0.35"/>
+          <stop offset="0%"   stop-color="${trailColor}" stop-opacity="0.55"/>
+          <stop offset="60%"  stop-color="${trailColor}" stop-opacity="0.85"/>
           <stop offset="100%" stop-color="${trailColorBright}" stop-opacity="1"/>
         </linearGradient>
         <marker id="${arrowId}" viewBox="0 0 12 12" refX="10" refY="6"
@@ -494,8 +549,45 @@ export class AppOSD {
 
     container.appendChild(svg);
 
+    // ── Lock the arc's shape in WORLD space, once. ──────────────────────
+    // The arc is a quadratic Bezier with a single control point. If we
+    // recompute that control point from per-frame *pixel* deltas the curve
+    // morphs as the viewport zooms (pixel distance shrinks at the overview
+    // and grows at the destination, so the sag scales differently each
+    // frame), and for near-vertical motion the perpendicular sign can flip
+    // around floating-point zero — which is the "arrow bows left then
+    // right" effect.
+    //
+    // Fix: compute the control point ONCE in world coords from the locked
+    // travel direction, then transform to pixel space each frame. The
+    // viewport transform is uniform-scale + translate, so the curve's
+    // shape (sag-to-length ratio) is invariant under it.
+    const dxW = x2 - x1;
+    const dyW = y2 - y1;
+    const lenW = Math.sqrt(dxW * dxW + dyW * dyW);
+    let cxW = (x1 + x2) / 2;
+    let cyW = (y1 + y2) / 2;
+    if (lenW > 1e-6) {
+      // Right-perpendicular of the travel direction.
+      let perpXW = dyW / lenW;
+      let perpYW = -dxW / lenW;
+      // Visual bias: prefer arcs that bow *upward* in screen space (negative
+      // Y). If the perpendicular points down, flip it. This decision is made
+      // ONCE from constant world coords, so there's no mid-animation sign
+      // flip even on near-vertical paths.
+      if (perpYW > 0) {
+        perpXW = -perpXW;
+        perpYW = -perpYW;
+      }
+      // Sag = 18% of line length. In world space, so the arc scales
+      // proportionally with the path — never "warps" relative to the line.
+      const sagW = lenW * 0.18;
+      cxW += perpXW * sagW;
+      cyW += perpYW * sagW;
+    }
+
     // Store trail data for position updates
-    this.panTrailData = { svg, path, dot, ring, gradient, x1, y1, x2, y2 };
+    this.panTrailData = { svg, path, dot, ring, gradient, x1, y1, x2, y2, cxW, cyW };
     this.updatePanTrailPositions();
 
     // Start marching ants animation
@@ -517,6 +609,8 @@ export class AppOSD {
     y1: number;
     x2: number;
     y2: number;
+    cxW: number;
+    cyW: number;
   } | null = null;
   private panTrailAnimFrame: number = 0;
   private panTrailDashOffset: number = 0;
@@ -533,37 +627,17 @@ export class AppOSD {
 
   private updatePanTrailPositions() {
     if (!this.panTrailData) return;
-    const { path, dot, ring, gradient, x1, y1, x2, y2 } = this.panTrailData;
+    const { path, dot, ring, gradient, x1, y1, x2, y2, cxW, cyW } = this.panTrailData;
     const viewport = this.viewport;
     const p1 = viewport.viewportToViewerElementCoordinates(new OpenSeadragon.Point(x1, y1));
     const p2 = viewport.viewportToViewerElementCoordinates(new OpenSeadragon.Point(x2, y2));
+    // World control point → pixel control point. Because the viewport
+    // transform is uniform-scale + translate, this preserves the arc's
+    // shape: the curve looks identical relative to the line at every zoom
+    // level. No more "warping" or direction flips during the cinematic.
+    const cp = viewport.viewportToViewerElementCoordinates(new OpenSeadragon.Point(cxW, cyW));
 
-    // Quadratic-Bezier control point: midpoint pushed perpendicular to the
-    // line so the trail arcs (instead of being a straight line — straight
-    // lines on top of a draggable map look like a bad debug overlay).
-    const dx = p2.x - p1.x;
-    const dy = p2.y - p1.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    // Arc "sag" — proportional to length, clamped so very short arrows still
-    // get a visible curve and very long ones don't bend into the moon.
-    const sag = Math.min(160, Math.max(24, dist * 0.18));
-    // Perpendicular unit vector. Default sag direction = up-and-left of the
-    // line normal (negative perpendicular) so arcs tend to curve upward.
-    let perpX = 0;
-    let perpY = 0;
-    if (dist > 0.0001) {
-      perpX = -dy / dist;
-      perpY = dx / dist;
-      // Force upward bias: if the perpendicular points down, flip it.
-      if (perpY > 0) {
-        perpX = -perpX;
-        perpY = -perpY;
-      }
-    }
-    const cx = (p1.x + p2.x) / 2 + perpX * sag;
-    const cy = (p1.y + p2.y) / 2 + perpY * sag;
-
-    path.setAttribute("d", `M ${p1.x} ${p1.y} Q ${cx} ${cy} ${p2.x} ${p2.y}`);
+    path.setAttribute("d", `M ${p1.x} ${p1.y} Q ${cp.x} ${cp.y} ${p2.x} ${p2.y}`);
 
     // Gradient runs along the straight start→end vector. Userspace coords so
     // the fade tracks the trail no matter how big the canvas is.
