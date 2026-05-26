@@ -500,6 +500,26 @@ function ensureAlchemyStubStyles(): void {
   color: #ffd36e !important;
   box-shadow: 0 0 0 1px rgba(255, 211, 110, 0.25) inset, 0 0 10px rgba(255, 211, 110, 0.35) !important;
 }
+/* Toggle/active state — used by Bootstrap's btn-check pattern (the
+ * checkbox-input + label pair) and by buttons that get an explicit .active
+ * class. Inverts the gradient and brightens the gold so the "on" state is
+ * unmistakable. Applies to every Pro-gated toggle (Drawing, Seed Report,
+ * Main-path filter, etc.) so they all share one visual language. */
+.btn-check:checked + .pro-accent.btn-outline-light,
+.pro-accent.btn-outline-light.active,
+.pro-accent.icon-button.active {
+  background: linear-gradient(180deg, #ffd36e 0%, #d4a437 100%) !important;
+  border-color: #ffd36e !important;
+  color: #1a1305 !important;
+  box-shadow: 0 0 0 1px rgba(255, 211, 110, 0.4) inset, 0 0 12px rgba(255, 211, 110, 0.55) !important;
+}
+.btn-check:checked + .pro-accent.btn-outline-light:hover,
+.pro-accent.btn-outline-light.active:hover,
+.pro-accent.icon-button.active:hover {
+  background: linear-gradient(180deg, #ffdf8a 0%, #e2b343 100%) !important;
+  border-color: #ffdf8a !important;
+  color: #1a1305 !important;
+}
 .pro-accent .pro-icon { filter: drop-shadow(0 0 3px rgba(255, 211, 110, 0.5)); }
   `;
   document.head.appendChild(s);

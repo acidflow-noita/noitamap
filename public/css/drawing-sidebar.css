@@ -103,7 +103,9 @@
   border-radius: 0.75rem;
   transform: translateX(calc(100% + 2rem));
   transition: transform 0.3s ease;
-  z-index: 1000;
+  /* Stay below the navbar's Bootstrap dropdowns (default z-index 1000) so
+   * My-account / language / perf-mode menus open OVER the sidebar. */
+  z-index: 990;
   overflow: hidden;
   display: flex;
   flex-direction: column;

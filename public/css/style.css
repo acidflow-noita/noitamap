@@ -1040,6 +1040,25 @@ body.toggle-hidden div.osOverlayHighlight {
   z-index: auto;
 }
 
+/* Force every navbar dropdown menu above the right-edge sidebars (Seed
+ * Report at z-index 990, Drawing at 990). Bootstrap's default
+ * --bs-dropdown-zindex of 1000 should be enough but Popper-positioned menus
+ * sometimes end up in a different stacking context — pin them explicitly. */
+.navbar .dropdown-menu,
+#auth-container .dropdown-menu,
+#auth-button-wrapper .dropdown-menu {
+  z-index: 1100 !important;
+}
+
+/* Bootstrap popovers default to z-index 1070, but the POI tooltip card
+ * (`.marker-tooltip`) is fixed at z-index 10000 — so popovers triggered
+ * from controls inside the POI card (lock toggle, share button hover,
+ * etc.) get painted *behind* the card itself and become unreachable.
+ * Pin popovers above the tooltip. */
+.popover {
+  z-index: 10100 !important;
+}
+
 /* Ensure navbar dropdowns paint above sibling buttons */
 #map-selector {
   position: relative;

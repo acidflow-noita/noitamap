@@ -178,6 +178,22 @@
     "drawingNotFound": "The shared drawing could not be found. It may have been deleted from the host. Ask the person who shared the link to send you the source image file, then use the Import button in the drawing panel.",
     "drawingNotFoundTitle": "Drawing Not Found"
   },
+  "unlocks": {
+    "tooltip": {
+      "title": {
+        "all": "Everything unlocked",
+        "none": "Nothing unlocked",
+        "mod": "Mod-supplied unlocks",
+        "indexing": "Computing alternate state"
+      },
+      "body": {
+        "all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
+        "none": "Nothing unlocked. Click to switch back to everything unlocked.",
+        "mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
+        "indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment."
+      }
+    }
+  },
   "overlay": {
     "notAvailable": {
       "title": "Not Available",

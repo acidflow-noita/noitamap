@@ -16,6 +16,7 @@ import { parseURL, updateURLWithSeed, clearSeedParams } from "./data_sources/url
 import { getCachedGeneration, cacheGeneration } from "./telescope/tile-cache";
 import { generateDynamicMap, initTelescope, type GenerationResult } from "./telescope/telescope-adapter";
 import { getUnlocksFromURL, unlocksChanged, UNLOCK_KEYS } from "./unlocks";
+import { prewarmAlt, resetAltCache } from "./unlocks-toggle";
 import { isLightMode } from "./light-mode";
 import {
   renderGenerationResult,
@@ -255,6 +256,16 @@ export async function runDynamicMap(
       assignIds(pois as any[]);
     }
 
+    // 4.6. Kick off background pre-warm of the *alternate* unlocks variant
+    //      (e.g. nothing-unlocked when primary is all-unlocked, and vice
+    //      versa). Biome layout is identical between variants — only spell
+    //      pools differ — so this hidden second generation gives POI cards
+    //      an instant lock-toggle later without a full reload. Fire-and-
+    //      forget: if it fails or is racy with a seed change, no harm done.
+    void prewarmAlt(seed, isDaily).catch((e) =>
+      console.warn("[DynamicMap] alt-unlocks pre-warm failed:", e),
+    );
+
     // 5. Render onto OSD (skeleton placeholders are removed inside after real biome backgrounds load)
     t = performance.now();
     console.log(
@@ -336,6 +347,8 @@ export function clearDynamicMap(viewer: any): void {
   dynamicRendered = false;
   generationToken++;
   clearSeedParams();
+  // Drop pre-warmed alt-unlocks POIs — they belong to the seed we just left.
+  resetAltCache();
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

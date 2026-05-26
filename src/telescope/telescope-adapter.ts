@@ -334,11 +334,18 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   );
   const t0 = performance.now();
 
-  // Set unlocks: daily seed = ALL ON, otherwise use provided unlocks (empty = nothing unlocked)
-  if (dailySeed) {
+  // Set unlocks:
+  //   daily seed                -> ALL unlocked (locked-in for daily fairness)
+  //   opts.unlocks == null      -> ALL unlocked (no URL param, no mod data
+  //                                — match telescope's native default so
+  //                                fresh visitors see the same wand contents
+  //                                they would in standalone telescope)
+  //   opts.unlocks == []        -> NOTHING unlocked (explicit empty list)
+  //   opts.unlocks = [keys...]  -> exactly those keys unlocked (mod source)
+  if (dailySeed || opts.unlocks == null) {
     setUnlocks(Object.keys(UNLOCKABLES));
   } else {
-    setUnlocks(opts.unlocks || []);
+    setUnlocks(opts.unlocks);
   }
 
   // World dimensions

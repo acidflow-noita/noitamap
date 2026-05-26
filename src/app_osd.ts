@@ -13,17 +13,16 @@ export type ZoomPos = {
 };
 
 /**
- * easeInOutExpo — exponential ease-in-out, the easings.net equivalent of
- * cubic-bezier(0.87, 0, 0.13, 1). Slow start, accelerating sharply through
- * the middle, slow finish. Used as the timing function for the cinematic
- * pan-to-target so the camera never stalls but still feels weighted.
+ * easeInOutCubic — gentle ease-in-out with a much more linear profile than
+ * easeInOutExpo. Used as the timing function for the cinematic pan-to-target
+ * so the camera takes off, sweeps, and lands without the asymptotic "flat
+ * tail" the exponential version had (which read as "choppy / stuck" right
+ * before the camera finally settled).
  */
-function easeInOutExpo(t: number): number {
+function easeInOutCubic(t: number): number {
   if (t <= 0) return 0;
   if (t >= 1) return 1;
-  return t < 0.5
-    ? Math.pow(2, 20 * t - 10) / 2
-    : (2 - Math.pow(2, -20 * t + 10)) / 2;
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 type DziTileSource = any;
@@ -397,8 +396,14 @@ export class AppOSD {
 
       const tick = (now: number) => {
         if (cancelled) return;
-        const t = Math.min(1, (now - startTime) / duration);
-        const easedT = easeInOutExpo(t);
+        const rawT = Math.min(1, (now - startTime) / duration);
+        // Snap straight to t=1 once we're close enough — easeInOutCubic's
+        // tail is gentle but still leaves ~30ms of barely-perceptible motion
+        // at high t; killing it removes the residual "choppy" arrival feel
+        // without users noticing the cut.
+        const done = rawT >= 0.985;
+        const t = done ? 1 : rawT;
+        const easedT = done ? 1 : easeInOutCubic(t);
 
         // Quadratic-Bezier rect interpolation through (start, overview, dest).
         // The curve passes through start and dest exactly and bends *toward*

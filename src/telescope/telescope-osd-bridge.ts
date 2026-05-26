@@ -14,6 +14,18 @@ import { decodePngToRgba, rgbaToPngBlobUrl, rgbaToPngBlob } from "./png-decode";
 import { getCachedBiomeRender, cacheBiomeRender, getCachedSceneBitmap, cacheSceneBitmap, getCachedSceneBitmapKeys, getCachedSceneBitmapsBulk, getCachedBiomeRendersForKey } from "./tile-cache";
 import i18next from "../i18n";
 import {
+  getActiveDescriptor,
+  cycleDescriptor,
+  primaryDescriptor,
+  isModSourced,
+  isVariantReady,
+  onAltReady,
+  getPoiVariant,
+  descriptorIcon,
+  requestVariant,
+  type UnlockDescriptor,
+} from "../unlocks-toggle";
+import {
   buildMarkerData,
   getAtlas,
   getSpritesheet,
@@ -2356,7 +2368,10 @@ function placeTooltipForMarker(
   const canvasEl = viewer.canvas as HTMLElement;
   const canvasRect = canvasEl.getBoundingClientRect();
   const TOOLTIP_W = 32 * 14; // width: 32em at 14px base
-  const TOOLTIP_GAP = 16;
+  // Breathing room between the POI marker and the tooltip card. The old 16px
+  // hugged the POI sprite tightly — bump to ~5vh (clamped) so the card sits
+  // clearly away from the marker on any screen size.
+  const TOOLTIP_GAP = Math.max(32, Math.round(window.innerHeight * 0.05));
 
   let sidebarPx = 0;
   const srEl = document.getElementById("seed-report-sidebar");
@@ -2447,6 +2462,109 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   shareBtn.title = i18next.t("share.copyLink", { defaultValue: "Copy direct link" });
   shareBtn.onmouseenter = () => { shareBtn.style.background = "rgba(255,255,255,0.2)"; };
   shareBtn.onmouseleave = () => { shareBtn.style.background = "rgba(255,255,255,0.1)"; };
+
+  // ── Unlocks lock/unlock toggle ───────────────────────────────────────
+  // Sits left of the share button. Reflects the CURRENT unlocks variant
+  // ("everything unlocked" / "nothing unlocked" / mod-sourced) and toggles
+  // to the opposite variant on click. POI card contents below this row are
+  // built from the variant we resolved at the top of the function, so the
+  // re-render swap is instant once the alt variant is pre-warmed.
+  const lockBtn = document.createElement("button");
+  lockBtn.setAttribute("data-bs-toggle", "popover");
+  lockBtn.setAttribute("data-bs-trigger", "hover focus");
+  lockBtn.setAttribute("data-bs-placement", "bottom");
+  lockBtn.style.cssText = `
+    background: rgba(255,255,255,0.1); border: 0.065em solid rgba(255,255,255,0.2);
+    border-radius: 0.25em; color: #ccc; cursor: pointer; padding: 0.15em 0.5em;
+    display: flex; align-items: center; justify-content: center; font-size: 0.85em;
+    transition: all 0.2s;
+  `;
+  const applyLockBtnStyle = () => {
+    const active = getActiveDescriptor();
+    const modSourced = isModSourced();
+    const ready = isVariantReady(active);
+    lockBtn.innerHTML = `<i class="bi ${descriptorIcon(active)}"></i>`;
+    // Blue tint only when the *active* variant is the mod-supplied one —
+    // signals to the user that the displayed contents came from save00.
+    const blueState = active === "mod";
+    if (blueState) {
+      lockBtn.style.background = "rgba(59, 130, 246, 0.18)";
+      lockBtn.style.borderColor = "#3b82f6";
+      lockBtn.style.color = "#bfdbfe";
+    } else {
+      lockBtn.style.background = "rgba(255,255,255,0.1)";
+      lockBtn.style.borderColor = "rgba(255,255,255,0.2)";
+      lockBtn.style.color = "#ccc";
+    }
+    lockBtn.style.opacity = ready ? "1" : "0.55";
+    lockBtn.style.cursor = ready ? "pointer" : "wait";
+
+    // Popover title + body — all i18n-keyed; English defaults supplied
+    // inline so other locales gracefully fall back.
+    const titleKey = ready
+      ? `unlocks.tooltip.title.${active}`
+      : "unlocks.tooltip.title.indexing";
+    const bodyKey = ready
+      ? (modSourced ? `unlocks.tooltip.body.${active}_3state` : `unlocks.tooltip.body.${active}`)
+      : "unlocks.tooltip.body.indexing";
+    const titleDefaults: Record<string, string> = {
+      "unlocks.tooltip.title.all": "Everything unlocked",
+      "unlocks.tooltip.title.none": "Nothing unlocked",
+      "unlocks.tooltip.title.mod": "Mod-supplied unlocks",
+      "unlocks.tooltip.title.indexing": "Computing alternate state",
+    };
+    const bodyDefaults: Record<string, string> = {
+      "unlocks.tooltip.body.all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
+      "unlocks.tooltip.body.none": "Nothing unlocked. Click to switch back to everything unlocked.",
+      "unlocks.tooltip.body.all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
+      "unlocks.tooltip.body.none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
+      "unlocks.tooltip.body.mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked.",
+      "unlocks.tooltip.body.mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
+      "unlocks.tooltip.body.indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment.",
+    };
+    lockBtn.setAttribute("data-bs-title", i18next.t(titleKey, { defaultValue: titleDefaults[titleKey] }));
+    lockBtn.setAttribute("data-bs-content", i18next.t(bodyKey, { defaultValue: bodyDefaults[bodyKey] }));
+    try {
+      const bs = (window as any).bootstrap;
+      if (bs?.Popover) {
+        const existing = bs.Popover.getInstance(lockBtn);
+        if (existing) existing.dispose();
+        new bs.Popover(lockBtn);
+      }
+    } catch { /* noop */ }
+  };
+  applyLockBtnStyle();
+  lockBtn.onmouseenter = () => {
+    if (!isVariantReady(getActiveDescriptor())) return;
+    const blueState = getActiveDescriptor() === "mod";
+    lockBtn.style.background = blueState ? "rgba(59, 130, 246, 0.3)" : "rgba(255,255,255,0.2)";
+  };
+  lockBtn.onmouseleave = () => {
+    const blueState = getActiveDescriptor() === "mod";
+    lockBtn.style.background = blueState ? "rgba(59, 130, 246, 0.18)" : "rgba(255,255,255,0.1)";
+  };
+  lockBtn.onclick = async (e) => {
+    e.stopPropagation();
+    // Cycle to next descriptor (2-state without ?u=, 3-state with).
+    const next: UnlockDescriptor = cycleDescriptor();
+    // If the next variant isn't pre-warmed yet, kick a generation and
+    // re-render this card with the "indexing" body in the meantime. The
+    // onAltReady listener installed below will re-render once data lands.
+    if (!isVariantReady(next)) {
+      applyLockBtnStyle();
+      try { await requestVariant(next); } catch { /* surfaced inline */ }
+    }
+    const rebuild = (tooltipEl as any)?.__rebuild;
+    if (typeof rebuild === "function") rebuild();
+  };
+  // If any not-yet-ready variant becomes available while this card is
+  // open, refresh the style + popover so the loading state clears.
+  if (!isVariantReady(getActiveDescriptor())) {
+    onAltReady(() => {
+      if (!tooltipEl) return;
+      applyLockBtnStyle();
+    });
+  }
   
   const closeBtn = document.createElement("button");
   closeBtn.style.cssText = `
@@ -2464,11 +2582,22 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     hideMarkerTooltip();
   };
   
+  topBar.appendChild(lockBtn);
   topBar.appendChild(shareBtn);
   topBar.appendChild(closeBtn);
   tooltipEl.appendChild(topBar);
 
-  const poi = item.poi;
+  // Resolve the effective POI for rendering: when the user has cycled the
+  // unlocks toggle to a non-primary descriptor AND that variant is
+  // pre-warmed, swap to the alt POI (same id — biome layout is identical
+  // between variants, only wand/chest/loose-loot spell rolls differ).
+  // Falls back to the primary when alt isn't ready or no alt exists for
+  // this id.
+  const _activeDesc = getActiveDescriptor();
+  const _altPoi = _activeDesc !== primaryDescriptor()
+    ? getPoiVariant(_activeDesc, (item.poi as any)?.id)
+    : null;
+  const poi = _altPoi || item.poi;
   
   // Instantly update the URL to point to this popup
   const url = new URL(window.location.href);
