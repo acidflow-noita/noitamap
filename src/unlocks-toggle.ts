@@ -39,6 +39,7 @@ const altCache = new Map<string, GenerationResult>();
 const altIndexes = new Map<string, Map<string, any>>();
 const pendingDescriptors = new Set<string>();
 let readyListeners: Array<() => void> = [];
+const persistentReadyListeners: Array<() => void> = [];
 let viewListeners: Array<(v: UnlockDescriptor) => void> = [];
 
 let lastSeedSeen: number | null = null;
@@ -133,9 +134,24 @@ export function getPoiVariant(desc: UnlockDescriptor, primaryId: string | undefi
   return idx?.get(primaryId) ?? null;
 }
 
-export function onAltReady(cb: () => void): () => void {
-  readyListeners.push(cb);
-  return () => { readyListeners = readyListeners.filter((c) => c !== cb); };
+export function getAltResult(desc: UnlockDescriptor, seed?: number): GenerationResult | null {
+  if (desc === primaryDescriptor()) return null;
+  const s = seed ?? lastSeedSeen;
+  if (s == null) return null;
+  return altCache.get(`${s}|${desc}`) ?? null;
+}
+
+export function onAltReady(cb: () => void, persistent = false): () => void {
+  if (persistent) {
+    persistentReadyListeners.push(cb);
+    return () => {
+      const idx = persistentReadyListeners.indexOf(cb);
+      if (idx !== -1) persistentReadyListeners.splice(idx, 1);
+    };
+  } else {
+    readyListeners.push(cb);
+    return () => { readyListeners = readyListeners.filter((c) => c !== cb); };
+  }
 }
 
 /** Walk a flat POI tree and index every node by id. */
@@ -168,19 +184,27 @@ async function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescrip
       unlocks: descriptorToUnlocks(desc),
       parallelWorlds: isLightMode() ? [0] : undefined,
     });
-    // Mirror dynamic-map.ts's id-assignment so ids align with the primary
-    // result — same biome layout means same traversal order.
-    let idx = 0;
-    const assign = (arr: any[]) => {
-      for (const p of arr) {
-        if (!p.id) p.id = `d-${idx++}`;
-        if (Array.isArray(p.items)) assign(p.items);
-      }
+    // Assign stable IDs based on coordinates and PW key
+    const assignIds = (poiArr: any[], prefix: string) => {
+      if (!Array.isArray(poiArr)) return;
+      poiArr.forEach((poi, index) => {
+        if (!poi.id) {
+          const type = poi.type || "unknown";
+          const x = Math.round(poi.x || 0);
+          const y = Math.round(poi.y || 0);
+          poi.id = `d-${prefix}_${type}_${x}_${y}_${index}`;
+        }
+        if (poi.items) {
+          assignIds(poi.items, `${poi.id}_item`);
+        }
+      });
     };
-    for (const pois of Object.values(result.poisByPW)) assign(pois as any[]);
+    for (const [pwKey, pois] of Object.entries(result.poisByPW)) {
+      assignIds(pois as any[], `pw_${pwKey.replace(/,/g, '_')}`);
+    }
     altCache.set(cacheKey, result);
     altIndexes.set(cacheKey, indexPois(result));
-    const listeners = readyListeners.slice();
+    const listeners = [...readyListeners, ...persistentReadyListeners];
     for (const cb of listeners) {
       try { cb(); } catch { /* swallow */ }
     }

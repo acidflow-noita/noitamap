@@ -190,6 +190,9 @@
         "all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
         "none": "Nothing unlocked. Click to switch back to everything unlocked.",
         "mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
+        "all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
+        "none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
+        "mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked.",
         "indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment."
       }
     }

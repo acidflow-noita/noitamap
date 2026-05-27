@@ -148,9 +148,9 @@ export async function runDynamicMap(
     // Still re-emit POIs so search is populated (it may have been cleared)
     if (onPOIsReady && lastResult) {
       const flat = getAllPOIsFlat(lastResult);
-      const dynamicPOIs: DynamicPOI[] = flat.map((p, i) => ({
+      const dynamicPOIs: DynamicPOI[] = flat.map((p) => ({
         ...p,
-        id: `d-${i}`,
+        id: (p as any).id,
         name: buildPOIName(p),
       }));
       onPOIsReady(dynamicPOIs);
@@ -240,20 +240,22 @@ export async function runDynamicMap(
     }
 
     // 4.5. Assign persistent IDs to POIs recursively so nested items (e.g., boss drops, spawned wands) can be deep-linked
-    let globalPoiIndex = 0;
-    const assignIds = (poiArr: any[]) => {
+    const assignIds = (poiArr: any[], prefix: string) => {
       if (!Array.isArray(poiArr)) return;
-      for (const poi of poiArr) {
+      poiArr.forEach((poi, index) => {
         if (!poi.id) {
-          poi.id = `d-${globalPoiIndex++}`;
+          const type = poi.type || "unknown";
+          const x = Math.round(poi.x || 0);
+          const y = Math.round(poi.y || 0);
+          poi.id = `d-${prefix}_${type}_${x}_${y}_${index}`;
         }
         if (poi.items) {
-          assignIds(poi.items);
+          assignIds(poi.items, `${poi.id}_item`);
         }
-      }
+      });
     };
-    for (const pois of Object.values(result.poisByPW)) {
-      assignIds(pois as any[]);
+    for (const [pwKey, pois] of Object.entries(result.poisByPW)) {
+      assignIds(pois as any[], `pw_${pwKey.replace(/,/g, '_')}`);
     }
 
     // 4.6. Kick off background pre-warm of the *alternate* unlocks variant
@@ -353,7 +355,7 @@ export function clearDynamicMap(viewer: any): void {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function buildPOIName(p: any): string {
+export function buildPOIName(p: any): string {
   if (p.type === "wand" && p.name) return p.name;
   if (p.item) return p.item;
   if (p.type === "entity" && p.entity) return p.entity;

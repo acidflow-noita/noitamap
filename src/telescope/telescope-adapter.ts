@@ -296,7 +296,7 @@ async function _doInitTelescope(): Promise<void> {
 
   // 10. Cache bust check: If we just updated the library, clear the generation cache
   // to ensure fixed logic actually runs instead of showing old empty results.
-  const LIB_VERSION = "2026-04-01-orb-unlocks";
+  const LIB_VERSION = "2026-05-27-loadout-gate";
   if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
     console.log("[Telescope] Library version updated, clearing generation cache...");
     try {
@@ -527,7 +527,9 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         pw,
         gameMode,
         perks,
-        skipCosmeticScenes: false
+        skipCosmeticScenes: false,
+        unlocks: (dailySeed || opts.unlocks == null) ? null : opts.unlocks,
+        dailySeed,
       });
     });
   });
@@ -751,6 +753,15 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       } as any);
     }
 
+    // Deduplicate starting_loadout — telescope's addStaticPixelScenes adds
+    // one for every (pw,pvt) pair (9 total in non-light mode), but only one
+    // makes sense in the rendered map.
+    const loadoutPois = combinedPois.filter((p: any) => p.type === "starting_loadout");
+    if (loadoutPois.length > 1) {
+      combinedPois = combinedPois.filter((p: any) => p.type !== "starting_loadout");
+      combinedPois.push(loadoutPois[0]);
+    }
+
     // Deduplicate friend
     const friendPois = combinedPois.filter((p: any) => p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss");
     if (friendPois.length > 0) {
@@ -815,6 +826,9 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
           items: [{item: "Wand (Tier 10)"}],
         } as any);
       }
+
+      // Drop starting_loadout from side PWs — only the pw=0 instance is kept
+      workerPois = workerPois.filter((p: any) => p.type !== "starting_loadout");
 
       // Deduplicate friend worker
       const friendPoisWorker = workerPois.filter((p: any) => p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss");

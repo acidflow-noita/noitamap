@@ -9,8 +9,21 @@ import {
   getCurrentDynamicSeed,
   getCurrentIsDaily,
   getLastGenerationResult,
+  buildPOIName,
 } from "./dynamic-map";
 import type { DynamicPOI } from "./dynamic-map";
+import {
+  onActiveDescriptorChange,
+  onAltReady,
+  getActiveDescriptor,
+  primaryDescriptor,
+  getAltResult,
+  isVariantReady,
+  UnlockDescriptor,
+} from "./unlocks-toggle";
+import { rebuildAltLayers, getAllPOIsFlat } from "./telescope/telescope-osd-bridge";
+import { decodeUnlocks } from "./unlocks";
+import type { GenerationResult } from "./telescope/telescope-adapter";
 
 // --- Dev Console Commands (Early Initialization) ---
 const isDev =
@@ -530,6 +543,74 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   createDynamicUI(dynamicOpts);
   updateDynamicUIVisibility(app.getMap());
+
+  // Helper to rebuild/update search, markers, and sidebar when active unlock descriptor changes
+  const refreshActiveVariant = async () => {
+    const seed = getCurrentDynamicSeed();
+    if (seed === null) return;
+    const activeDesc = getActiveDescriptor();
+    const primary = primaryDescriptor();
+    const isDaily = getCurrentIsDaily();
+
+    let result: GenerationResult | null = null;
+    if (activeDesc === primary) {
+      result = getLastGenerationResult();
+    } else {
+      result = getAltResult(activeDesc, seed);
+    }
+
+    if (!result) {
+      if (unifiedSearch) {
+        unifiedSearch.setIndexingState("indexing");
+      }
+      return;
+    }
+
+    // Update POI lists
+    const flat = getAllPOIsFlat(result);
+    _allDynamicPOIs = flat.map((p) => ({
+      ...p,
+      id: (p as any).id,
+      name: buildPOIName(p),
+    }));
+    const filtered = isSkipCreatures()
+      ? _allDynamicPOIs.filter((p) => p.type !== "entity" && p.type !== "enemies" && p.type !== "props")
+      : _allDynamicPOIs;
+    _currentDynamicPOIs = filtered;
+
+    // Update search index
+    if (unifiedSearch) {
+      unifiedSearch.setDynamicPOIs(_currentDynamicPOIs);
+      unifiedSearch.setIndexingState("ready");
+      unifiedSearch.updateSearchResults();
+    }
+
+    // Determine unlocks list to pass to rebuildAltLayers
+    const descriptorToUnlocks = (desc: UnlockDescriptor): string[] | null => {
+      if (desc === "all") return null;
+      if (desc === "none") return [];
+      const params = new URLSearchParams(window.location.search);
+      const encoded = params.get("u");
+      if (encoded) {
+        try {
+          return decodeUnlocks(encoded);
+        } catch {}
+      }
+      return null;
+    };
+    const unlocksList = descriptorToUnlocks(activeDesc);
+
+    // Rebuild marker tiled image layer + orb overlays
+    rebuildAltLayers(app.osd, result, unlocksList, isDaily);
+  };
+
+  onActiveDescriptorChange(() => {
+    refreshActiveVariant();
+  });
+
+  onAltReady(() => {
+    refreshActiveVariant();
+  }, true); // register as persistent listener
 
   // Auto-start generation if landing on dynamic map
   if (app.getMap() === "dynamic-main-branch") {

@@ -28,13 +28,22 @@ installImageSrcInterceptor();
 
 self.onmessage = async (e) => {
   try {
-    const { biomeData, tileSpawns, seed, ngPlus, pw, gameMode, perks, skipCosmeticScenes } = e.data;
+    const { biomeData, tileSpawns, seed, ngPlus, pw, gameMode, perks, skipCosmeticScenes, unlocks, dailySeed } = e.data;
 
     // Dynamically import AFTER shims are correctly established
     const { scanSpawnFunctions, getSpecialPoIs } = await import("../../lib/noita-telescope/js/poi_scanner.js");
     const { addStaticPixelScenes } = await import("../../lib/noita-telescope/js/static_spawns.js");
     const { updateSettings } = await import("../../lib/noita-telescope/js/settings.js");
     const { loadPixelSceneData } = await import("../../lib/noita-telescope/js/pixel_scene_generation.js");
+    const { setUnlocks, UNLOCKABLES } = await import("../../lib/noita-telescope/js/unlocks.js");
+
+    // Mirror telescope-adapter's setUnlocks logic so side PWs roll wand/chest
+    // spell pools against the same unlock set as PW 0.
+    if (dailySeed || unlocks == null) {
+      setUnlocks(Object.keys(UNLOCKABLES));
+    } else {
+      setUnlocks(unlocks);
+    }
 
     // Initialize required telescope settings — must mirror the main-thread
     // init in telescope-adapter.ts. Missing `showEnemies: true` here was why

@@ -2414,9 +2414,26 @@ function placeTooltipForMarker(
   return { x, y };
 }
 
+function cleanupPopovers(el: HTMLElement): void {
+  try {
+    const bs = (window as any).bootstrap;
+    if (bs?.Popover) {
+      const popovers = el.querySelectorAll('[data-bs-toggle="popover"]');
+      for (const pop of popovers) {
+        const instance = bs.Popover.getInstance(pop);
+        if (instance) {
+          instance.hide();
+          instance.dispose();
+        }
+      }
+    }
+  } catch { /* noop */ }
+}
+
 function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): void {
   // Remove previous popup
   if (tooltipEl) {
+    cleanupPopovers(tooltipEl);
     tooltipEl.remove();
     tooltipEl = null;
   }
@@ -2464,106 +2481,110 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   shareBtn.onmouseleave = () => { shareBtn.style.background = "rgba(255,255,255,0.1)"; };
 
   // ── Unlocks lock/unlock toggle ───────────────────────────────────────
-  // Sits left of the share button. Reflects the CURRENT unlocks variant
-  // ("everything unlocked" / "nothing unlocked" / mod-sourced) and toggles
-  // to the opposite variant on click. POI card contents below this row are
-  // built from the variant we resolved at the top of the function, so the
-  // re-render swap is instant once the alt variant is pre-warmed.
-  const lockBtn = document.createElement("button");
-  lockBtn.setAttribute("data-bs-toggle", "popover");
-  lockBtn.setAttribute("data-bs-trigger", "hover focus");
-  lockBtn.setAttribute("data-bs-placement", "bottom");
-  lockBtn.style.cssText = `
-    background: rgba(255,255,255,0.1); border: 0.065em solid rgba(255,255,255,0.2);
-    border-radius: 0.25em; color: #ccc; cursor: pointer; padding: 0.15em 0.5em;
-    display: flex; align-items: center; justify-content: center; font-size: 0.85em;
-    transition: all 0.2s;
-  `;
-  const applyLockBtnStyle = () => {
-    const active = getActiveDescriptor();
-    const modSourced = isModSourced();
-    const ready = isVariantReady(active);
-    lockBtn.innerHTML = `<i class="bi ${descriptorIcon(active)}"></i>`;
-    // Blue tint only when the *active* variant is the mod-supplied one —
-    // signals to the user that the displayed contents came from save00.
-    const blueState = active === "mod";
-    if (blueState) {
-      lockBtn.style.background = "rgba(59, 130, 246, 0.18)";
-      lockBtn.style.borderColor = "#3b82f6";
-      lockBtn.style.color = "#bfdbfe";
-    } else {
-      lockBtn.style.background = "rgba(255,255,255,0.1)";
-      lockBtn.style.borderColor = "rgba(255,255,255,0.2)";
-      lockBtn.style.color = "#ccc";
-    }
-    lockBtn.style.opacity = ready ? "1" : "0.55";
-    lockBtn.style.cursor = ready ? "pointer" : "wait";
+  // Only show on POI types whose contents are affected by spell unlocks.
+  const UNLOCK_AFFECTED_TYPES = new Set([
+    "wand", "spell", "holy_mountain_shop", "shop", "wand_altar",
+    "chest", "great_chest", "pacifist_chest", "laboratory", "snowy_room",
+    "starting_loadout",
+  ]);
+  const _poiType = item.poi.type;
+  const _isSpellItem = _poiType === "item" && (item.poi as any).item === "spell";
+  const showLockBtn = UNLOCK_AFFECTED_TYPES.has(_poiType) || _isSpellItem;
 
-    // Popover title + body — all i18n-keyed; English defaults supplied
-    // inline so other locales gracefully fall back.
-    const titleKey = ready
-      ? `unlocks.tooltip.title.${active}`
-      : "unlocks.tooltip.title.indexing";
-    const bodyKey = ready
-      ? (modSourced ? `unlocks.tooltip.body.${active}_3state` : `unlocks.tooltip.body.${active}`)
-      : "unlocks.tooltip.body.indexing";
-    const titleDefaults: Record<string, string> = {
-      "unlocks.tooltip.title.all": "Everything unlocked",
-      "unlocks.tooltip.title.none": "Nothing unlocked",
-      "unlocks.tooltip.title.mod": "Mod-supplied unlocks",
-      "unlocks.tooltip.title.indexing": "Computing alternate state",
-    };
-    const bodyDefaults: Record<string, string> = {
-      "unlocks.tooltip.body.all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-      "unlocks.tooltip.body.none": "Nothing unlocked. Click to switch back to everything unlocked.",
-      "unlocks.tooltip.body.all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-      "unlocks.tooltip.body.none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
-      "unlocks.tooltip.body.mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked.",
-      "unlocks.tooltip.body.mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
-      "unlocks.tooltip.body.indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment.",
-    };
-    lockBtn.setAttribute("data-bs-title", i18next.t(titleKey, { defaultValue: titleDefaults[titleKey] }));
-    lockBtn.setAttribute("data-bs-content", i18next.t(bodyKey, { defaultValue: bodyDefaults[bodyKey] }));
-    try {
-      const bs = (window as any).bootstrap;
-      if (bs?.Popover) {
-        const existing = bs.Popover.getInstance(lockBtn);
-        if (existing) existing.dispose();
-        new bs.Popover(lockBtn);
+  let lockBtn: HTMLButtonElement | null = null;
+  if (showLockBtn) {
+    lockBtn = document.createElement("button");
+    lockBtn.setAttribute("data-bs-toggle", "popover");
+    lockBtn.setAttribute("data-bs-trigger", "hover focus");
+    lockBtn.setAttribute("data-bs-placement", "bottom");
+    lockBtn.style.cssText = `
+      background: rgba(255,255,255,0.1); border: 0.065em solid rgba(255,255,255,0.2);
+      border-radius: 0.25em; color: #ccc; cursor: pointer; padding: 0.15em 0.5em;
+      display: flex; align-items: center; justify-content: center; font-size: 0.85em;
+      transition: all 0.2s;
+    `;
+    const applyLockBtnStyle = () => {
+      if (!lockBtn) return;
+      const active = getActiveDescriptor();
+      const modSourced = isModSourced();
+      const ready = isVariantReady(active);
+      lockBtn.innerHTML = `<i class="bi ${descriptorIcon(active)}"></i>`;
+      const blueState = active === "mod";
+      if (blueState) {
+        lockBtn.style.background = "rgba(59, 130, 246, 0.18)";
+        lockBtn.style.borderColor = "#3b82f6";
+        lockBtn.style.color = "#bfdbfe";
+      } else {
+        lockBtn.style.background = "rgba(255,255,255,0.1)";
+        lockBtn.style.borderColor = "rgba(255,255,255,0.2)";
+        lockBtn.style.color = "#ccc";
       }
-    } catch { /* noop */ }
-  };
-  applyLockBtnStyle();
-  lockBtn.onmouseenter = () => {
-    if (!isVariantReady(getActiveDescriptor())) return;
-    const blueState = getActiveDescriptor() === "mod";
-    lockBtn.style.background = blueState ? "rgba(59, 130, 246, 0.3)" : "rgba(255,255,255,0.2)";
-  };
-  lockBtn.onmouseleave = () => {
-    const blueState = getActiveDescriptor() === "mod";
-    lockBtn.style.background = blueState ? "rgba(59, 130, 246, 0.18)" : "rgba(255,255,255,0.1)";
-  };
-  lockBtn.onclick = async (e) => {
-    e.stopPropagation();
-    // Cycle to next descriptor (2-state without ?u=, 3-state with).
-    const next: UnlockDescriptor = cycleDescriptor();
-    // If the next variant isn't pre-warmed yet, kick a generation and
-    // re-render this card with the "indexing" body in the meantime. The
-    // onAltReady listener installed below will re-render once data lands.
-    if (!isVariantReady(next)) {
-      applyLockBtnStyle();
-      try { await requestVariant(next); } catch { /* surfaced inline */ }
+      lockBtn.style.opacity = ready ? "1" : "0.55";
+      lockBtn.style.cursor = ready ? "pointer" : "wait";
+
+      const titleKey = ready
+        ? `unlocks.tooltip.title.${active}`
+        : "unlocks.tooltip.title.indexing";
+      const bodyKey = ready
+        ? (modSourced ? `unlocks.tooltip.body.${active}_3state` : `unlocks.tooltip.body.${active}`)
+        : "unlocks.tooltip.body.indexing";
+      const titleDefaults: Record<string, string> = {
+        "unlocks.tooltip.title.all": "Everything unlocked",
+        "unlocks.tooltip.title.none": "Nothing unlocked",
+        "unlocks.tooltip.title.mod": "Mod-supplied unlocks",
+        "unlocks.tooltip.title.indexing": "Computing alternate state",
+      };
+      const bodyDefaults: Record<string, string> = {
+        "unlocks.tooltip.body.all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
+        "unlocks.tooltip.body.none": "Nothing unlocked. Click to switch back to everything unlocked.",
+        "unlocks.tooltip.body.all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
+        "unlocks.tooltip.body.none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
+        "unlocks.tooltip.body.mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked.",
+        "unlocks.tooltip.body.mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
+        "unlocks.tooltip.body.indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment.",
+      };
+      lockBtn.setAttribute("data-bs-title", i18next.t(titleKey, { defaultValue: titleDefaults[titleKey] }));
+      lockBtn.setAttribute("data-bs-content", i18next.t(bodyKey, { defaultValue: bodyDefaults[bodyKey] }));
+      try {
+        const bs = (window as any).bootstrap;
+        if (bs?.Popover) {
+          const existing = bs.Popover.getInstance(lockBtn);
+          if (existing) existing.dispose();
+          new bs.Popover(lockBtn);
+        }
+      } catch { /* noop */ }
+    };
+    applyLockBtnStyle();
+    lockBtn.onmouseenter = () => {
+      if (!lockBtn || !isVariantReady(getActiveDescriptor())) return;
+      const blueState = getActiveDescriptor() === "mod";
+      lockBtn.style.background = blueState ? "rgba(59, 130, 246, 0.3)" : "rgba(255,255,255,0.2)";
+    };
+    lockBtn.onmouseleave = () => {
+      if (!lockBtn) return;
+      const blueState = getActiveDescriptor() === "mod";
+      lockBtn.style.background = blueState ? "rgba(59, 130, 246, 0.18)" : "rgba(255,255,255,0.1)";
+    };
+    lockBtn.onclick = async (e) => {
+      e.stopPropagation();
+      // Dispose any visible popover before cycling
+      if (lockBtn) cleanupPopovers(lockBtn.parentElement || lockBtn);
+      const next: UnlockDescriptor = cycleDescriptor();
+      if (!isVariantReady(next)) {
+        applyLockBtnStyle();
+        try { await requestVariant(next); } catch { /* surfaced inline */ }
+      }
+      const rebuild = (tooltipEl as any)?.__rebuild;
+      if (typeof rebuild === "function") rebuild();
+    };
+    // If any not-yet-ready variant becomes available while this card is
+    // open, refresh the style + popover so the loading state clears.
+    if (!isVariantReady(getActiveDescriptor())) {
+      onAltReady(() => {
+        if (!tooltipEl) return;
+        applyLockBtnStyle();
+      });
     }
-    const rebuild = (tooltipEl as any)?.__rebuild;
-    if (typeof rebuild === "function") rebuild();
-  };
-  // If any not-yet-ready variant becomes available while this card is
-  // open, refresh the style + popover so the loading state clears.
-  if (!isVariantReady(getActiveDescriptor())) {
-    onAltReady(() => {
-      if (!tooltipEl) return;
-      applyLockBtnStyle();
-    });
   }
   
   const closeBtn = document.createElement("button");
@@ -2582,7 +2603,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     hideMarkerTooltip();
   };
   
-  topBar.appendChild(lockBtn);
+  if (lockBtn) topBar.appendChild(lockBtn);
   topBar.appendChild(shareBtn);
   topBar.appendChild(closeBtn);
   tooltipEl.appendChild(topBar);
@@ -3088,6 +3109,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
 function hideMarkerTooltip(): void {
   if (tooltipEl) {
+    cleanupPopovers(tooltipEl);
     tooltipEl.remove();
     tooltipEl = null;
     clearTargetPoiId();
@@ -3407,6 +3429,7 @@ async function addBossOverlays(viewer: OSDViewer, result: GenerationResult, gene
 
 function showOrbTooltip(orb: { name?: string; text?: string; x: number; y: number }, iconUrl: string, screenX: number, screenY: number): void {
   if (tooltipEl) {
+    cleanupPopovers(tooltipEl);
     tooltipEl.remove();
     tooltipEl = null;
   }
@@ -3723,6 +3746,68 @@ export async function renderGenerationResult(
   // Safety net: if first-paint never fired (e.g., empty result, error path),
   // make sure stale items don't linger forever.
   cleanupOldItems();
+}
+
+export async function rebuildAltLayers(
+  viewer: any,
+  result: GenerationResult,
+  unlocks: string[] | null,
+  isDaily: boolean,
+): Promise<void> {
+  const generationId = currentGenerationId;
+
+  // 1. Remove previous marker layer
+  if (markerTiledImage) {
+    try {
+      viewer.world.removeItem(markerTiledImage);
+    } catch {}
+    dynamicTiledImages.delete(markerTiledImage);
+    markerTiledImage = null;
+  }
+
+  // 2. Remove previous orb overlays
+  for (const el of dynamicOverlayElements) {
+    try {
+      viewer.removeOverlay(el);
+    } catch {}
+    el.remove();
+  }
+  dynamicOverlayElements = [];
+
+  // 3. Rebuild orb overlays
+  await addOrbOverlays(viewer, result, generationId, unlocks, isDaily);
+  if (currentGenerationId !== generationId) return;
+
+  // 4. Build new marker data
+  const markerData = await buildMarkerData(result);
+  if (currentGenerationId !== generationId) return;
+
+  // 5. Add as a custom OSD tiled layer
+  const markerTileSource = createMarkerTileSource(markerData);
+  installClickHandler(viewer, markerData);
+  activeMarkerData = markerData;
+  rebuildHighValueOverlays();
+
+  viewer.addTiledImage({
+    tileSource: markerTileSource,
+    x: markerData.originX,
+    y: markerData.originY,
+    width: markerData.bboxWidth,
+    success: (event: any) => {
+      if (currentGenerationId !== generationId) {
+        try {
+          viewer.world.removeItem(event.item);
+        } catch {}
+        return;
+      }
+      event.item._isMarkerLayer = true;
+      dynamicTiledImages.add(event.item);
+      markerTiledImage = event.item;
+    },
+    error: (err: any) => {
+      console.warn("[OSD Bridge] Failed to add marker tiled image:", err);
+    },
+  });
 }
 
 export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: number; worldX: number; worldY: number }> {
