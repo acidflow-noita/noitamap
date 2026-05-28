@@ -5203,11 +5203,11 @@
       "body": {
         "none": "Mude para mostrar conjuntos de varinhas/feitiços como se você não tivesse desbloqueado nada.",
         "none_active": "Atualmente não mostrando nada desbloqueado.",
-        "mod": "Mude para mostrar conjuntos de varinhas/feitiços usando seus desbloqueios no jogo (lido em save00 pelo mod Noitamap).",
-        "mod_active": "Atualmente mostrando seus desbloqueios no jogo (lido em save00 pelo mod Noitamap).",
-        "modDisabled": "Use o mod Noitamap para ver o conteúdo preciso da varinha e do feitiço para sua corrida atual. O mod lê seus desbloqueios diretamente do save00.",
+        "mod": "Mude para os desbloqueios atuais do jogo enquanto usa o Mod Noitamap. Indisponível quando não estiver usando o mod.",
         "all": "Mude para mostrar conjuntos de varinhas/feitiços como se você tivesse desbloqueado tudo. Padrão do telescópio.",
-        "all_active": "Atualmente mostrando tudo desbloqueado. Isso corresponde ao padrão do Telescope – o mesmo conteúdo que todos veem, independentemente do progresso."
+        "all_active": "Atualmente mostrando tudo desbloqueado. Isso corresponde ao padrão do Telescope – o mesmo conteúdo que todos veem, independentemente do progresso.",
+        "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
       }
     }
   }

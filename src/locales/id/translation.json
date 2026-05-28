@@ -5203,11 +5203,11 @@
       "body": {
         "none": "Beralih untuk menampilkan kumpulan tongkat/mantra seolah-olah Anda tidak membuka kunci apa pun.",
         "none_active": "Saat ini tidak menunjukkan apa pun yang terbuka.",
-        "mod": "Beralih untuk menampilkan kumpulan tongkat/mantra menggunakan pembukaan kunci dalam game Anda (baca dari save00 oleh mod Noitamap).",
-        "mod_active": "Saat ini menampilkan pembukaan kunci dalam game Anda (baca dari save00 oleh mod Noitamap).",
-        "modDisabled": "Gunakan mod Noitamap untuk melihat isi tongkat dan mantra yang akurat untuk lari Anda saat ini. Mod membaca pembukaan kunci Anda langsung dari save00.",
+        "mod": "Beralih ke pembukaan kunci dalam game Anda saat ini saat menggunakan Noitamap Mod. Tidak tersedia saat tidak menggunakan mod.",
         "all": "Beralih untuk menampilkan kumpulan tongkat/mantra seolah-olah Anda telah membuka semuanya. Default teleskop.",
-        "all_active": "Saat ini menunjukkan semuanya tidak terkunci. Ini cocok dengan default Telescope — konten yang sama yang dilihat semua orang, apa pun kemajuannya."
+        "all_active": "Saat ini menunjukkan semuanya tidak terkunci. Ini cocok dengan default Telescope — konten yang sama yang dilihat semua orang, apa pun kemajuannya.",
+        "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
       }
     }
   }

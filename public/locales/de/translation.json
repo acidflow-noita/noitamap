@@ -5203,11 +5203,11 @@
       "body": {
         "none": "Wechseln Sie zur Anzeige der Zauberstab-/Zaubervorräte, als ob Sie nichts freigeschaltet hätten.",
         "none_active": "Derzeit wird nichts Entsperrtes angezeigt.",
-        "mod": "Wechseln Sie zur Anzeige von Zauberstab-/Zaubervorräten mithilfe Ihrer Freischaltungen im Spiel (vom Noitamap-Mod aus save00 gelesen).",
-        "mod_active": "Zeigt derzeit Ihre Freischaltungen im Spiel an (vom Noitamap-Mod aus save00 gelesen).",
-        "modDisabled": "Verwenden Sie den Noitamap-Mod, um genaue Zauberstab- und Zauberinhalte für Ihren aktuellen Lauf anzuzeigen. Der Mod liest deine Freischaltungen direkt aus save00.",
+        "mod": "Wechseln Sie zu Ihren aktuellen Freischaltungen im Spiel, während Sie Noitamap Mod verwenden. Nicht verfügbar, wenn der Mod nicht verwendet wird.",
         "all": "Wechseln Sie zur Anzeige der Zauberstab-/Zaubervorräte, als ob Sie alles freigeschaltet hätten. Standardeinstellung des Teleskops.",
-        "all_active": "Zeigt derzeit alles freigeschaltet an. Dies entspricht der Standardeinstellung von Telescope – derselbe Inhalt, den jeder sieht, unabhängig vom Fortschritt."
+        "all_active": "Zeigt derzeit alles freigeschaltet an. Dies entspricht der Standardeinstellung von Telescope – derselbe Inhalt, den jeder sieht, unabhängig vom Fortschritt.",
+        "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
       }
     }
   }

@@ -5203,11 +5203,11 @@
       "body": {
         "none": "Vaihda näyttämään sauva-/loitsualtaat ikään kuin et olisi avannut mitään.",
         "none_active": "Tällä hetkellä ei näy mitään lukitsematonta.",
-        "mod": "Vaihda näyttämään sauva-/loitsupoolit pelin sisäisillä avauksillasi (luettu Noitamap-modin save00:sta).",
-        "mod_active": "Tällä hetkellä näytetään pelin sisäiset avaukset (luettu Noitamap-modin save00:sta).",
-        "modDisabled": "Käytä Noitamapin modia nähdäksesi tarkan sauvan ja loitsusisällön nykyiselle juoksullesi. Modi lukee avauksesi suoraan save00:sta.",
+        "mod": "Vaihda nykyisiin pelin sisäisiin avauksiin käyttäessäsi Noitamap Modia. Ei käytettävissä, kun modia ei käytetä.",
         "all": "Vaihda näyttämään sauva-/loitsualtaat ikään kuin olisit avannut kaiken. Teleskoopin oletusarvo.",
-        "all_active": "Tällä hetkellä näyttää kaikki lukitsematon. Tämä vastaa Teleskoopin oletusarvoa – kaikki näkevät saman sisällön edistymisestä riippumatta."
+        "all_active": "Tällä hetkellä näyttää kaikki lukitsematon. Tämä vastaa Teleskoopin oletusarvoa – kaikki näkevät saman sisällön edistymisestä riippumatta.",
+        "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
       }
     }
   }

@@ -5203,11 +5203,11 @@
       "body": {
         "none": "Passez à l’affichage des pools de baguettes/sorts comme si vous n’aviez rien débloqué.",
         "none_active": "N'affichant actuellement rien de déverrouillé.",
-        "mod": "Passez à l'affichage des pools de baguettes/sorts en utilisant vos déverrouillages dans le jeu (lu depuis save00 par le mod Noitamap).",
-        "mod_active": "Affichage actuel de vos déverrouillages dans le jeu (lu depuis save00 par le mod Noitamap).",
-        "modDisabled": "Utilisez le mod Noitamap pour voir le contenu précis de la baguette et des sorts pour votre course en cours. Le mod lit vos déverrouillages directement depuis save00.",
+        "mod": "Basculez vers vos déverrouillages actuels dans le jeu tout en utilisant Noitamap Mod. Indisponible lorsque vous n'utilisez pas le mod.",
         "all": "Passez à l’affichage des pools de baguettes/sorts comme si vous aviez tout débloqué. Valeur par défaut du télescope.",
-        "all_active": "Affiche actuellement tout ce qui est déverrouillé. Cela correspond à la valeur par défaut de Telescope : le même contenu que tout le monde voit, quelle que soit la progression."
+        "all_active": "Affiche actuellement tout ce qui est déverrouillé. Cela correspond à la valeur par défaut de Telescope : le même contenu que tout le monde voit, quelle que soit la progression.",
+        "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
       }
     }
   }

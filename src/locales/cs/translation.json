@@ -5203,11 +5203,11 @@
       "body": {
         "none": "Přepněte na zobrazení bazénů hůlek/kouzel, jako byste nic neodemkli.",
         "none_active": "Momentálně nezobrazuje nic odemčeného.",
-        "mod": "Přepněte na zobrazování bazénů hůlek/kouzel pomocí odemknutí ve hře (přečtěte si ze save00 pomocí modu Noitamap).",
-        "mod_active": "Aktuálně se zobrazují vaše odemknutí ve hře (přečteno ze save00 pomocí modu Noitamap).",
-        "modDisabled": "Použijte mod Noitamap k zobrazení přesného obsahu hůlky a kouzel pro váš aktuální běh. Mod čte vaše odemknutí přímo ze save00.",
+        "mod": "Při používání Noitamap Mod přepněte na aktuální odemknutí ve hře. Nedostupné, když mod nepoužíváte.",
         "all": "Přepněte na zobrazení bazénů hůlek/kouzel, jako byste vše odemkli. Výchozí nastavení dalekohledu.",
-        "all_active": "Momentálně se zobrazuje vše odemčené. To odpovídá výchozímu nastavení Telescope — stejný obsah, který vidí všichni bez ohledu na pokrok."
+        "all_active": "Momentálně se zobrazuje vše odemčené. To odpovídá výchozímu nastavení Telescope — stejný obsah, který vidí všichni bez ohledu na pokrok.",
+        "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
       }
     }
   }

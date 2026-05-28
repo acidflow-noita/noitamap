@@ -5203,11 +5203,11 @@
       "body": {
         "none": "何もロックを解除していないかのように、杖/呪文プールの表示に切り替えます。",
         "none_active": "現在ロック解除されたものは何も表示されていません。",
-        "mod": "ゲーム内のロック解除 (Noitamap mod によって save00 から読み取られる) を使用して、杖/呪文プールの表示に切り替えます。",
-        "mod_active": "現在、ゲーム内のロック解除が表示されています (Noitamap mod によって save00 から読み取られます)。",
-        "modDisabled": "Noitamap mod を使用して、現在のランの正確な杖と呪文の内容を確認します。 MOD は、save00 からロック解除を直接読み取ります。",
+        "mod": "Noitamap Mod を使用している間は、現在のゲーム内ロック解除に切り替えてください。 MODを使用していない場合は利用できません。",
         "all": "すべてのロックを解除したかのように、杖/呪文プールの表示に切り替えます。望遠鏡のデフォルト。",
-        "all_active": "現在ロック解除されたものをすべて表示しています。これは Telescope のデフォルトと一致します。つまり、進行状況に関係なく全員に同じコンテンツが表示されます。"
+        "all_active": "現在ロック解除されたものをすべて表示しています。これは Telescope のデフォルトと一致します。つまり、進行状況に関係なく全員に同じコンテンツが表示されます。",
+        "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
       }
     }
   }

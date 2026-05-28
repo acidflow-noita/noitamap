@@ -5203,11 +5203,11 @@
       "body": {
         "none": "Byt till att visa trollstavspooler som om du inte hade låst upp någonting.",
         "none_active": "Visar för närvarande inget upplåst.",
-        "mod": "Byt till att visa trollstavspooler med dina upplåsningar i spelet (läs från save00 av Noitamap-moden).",
-        "mod_active": "Visar för närvarande dina upplåsningar i spelet (läs från save00 av Noitamap-moden).",
-        "modDisabled": "Använd Noitamap-moden för att se exakt trollstavs- och stavningsinnehåll för din nuvarande löpning. Modden läser dina upplåsningar direkt från save00.",
+        "mod": "Växla till dina nuvarande upplåsningar i spelet medan du använder Noitamap Mod. Ej tillgänglig när du inte använder moden.",
         "all": "Byt till att visa trollstavspooler som om du hade låst upp allt. Teleskopets standard.",
-        "all_active": "Visar för närvarande allt upplåst. Detta matchar Telescopes standard - samma innehåll som alla ser oavsett framsteg."
+        "all_active": "Visar för närvarande allt upplåst. Detta matchar Telescopes standard - samma innehåll som alla ser oavsett framsteg.",
+        "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
       }
     }
   }

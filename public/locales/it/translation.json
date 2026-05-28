@@ -5203,11 +5203,11 @@
       "body": {
         "none": "Passa a mostrare le riserve di bacchette/incantesimi come se non avessi sbloccato nulla.",
         "none_active": "Attualmente non mostra nulla di sbloccato.",
-        "mod": "Passa alla visualizzazione delle riserve di bacchette/incantesimi utilizzando gli sblocchi di gioco (leggi da save00 dal mod Noitamap).",
-        "mod_active": "Attualmente vengono mostrati i tuoi sblocchi di gioco (leggi da save00 dal mod Noitamap).",
-        "modDisabled": "Usa la mod Noitamap per vedere i contenuti accurati della bacchetta e degli incantesimi per la tua corsa attuale. La mod legge i tuoi sblocchi direttamente da save00.",
+        "mod": "Passa ai tuoi attuali sblocchi di gioco mentre usi Noitamap Mod. Non disponibile quando non si utilizza il mod.",
         "all": "Passa a mostrare le riserve di bacchette/incantesimi come se avessi sbloccato tutto. L'impostazione predefinita del telescopio.",
-        "all_active": "Attualmente mostra tutto sbloccato. Ciò corrisponde all'impostazione predefinita di Telescope: lo stesso contenuto che tutti vedono indipendentemente dai progressi."
+        "all_active": "Attualmente mostra tutto sbloccato. Ciò corrisponde all'impostazione predefinita di Telescope: lo stesso contenuto che tutti vedono indipendentemente dai progressi.",
+        "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
       }
     }
   }

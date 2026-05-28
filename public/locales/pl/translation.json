@@ -5203,11 +5203,11 @@
       "body": {
         "none": "Przełącz na pokazywanie puli różdżek/zaklęć tak, jakbyś niczego nie odblokował.",
         "none_active": "Obecnie nie pokazuje nic odblokowanego.",
-        "mod": "Przełącz na pokazywanie puli różdżek/zaklęć, korzystając z odblokowań w grze (odczytanych z zapisu 00 przez mod Noitamap).",
-        "mod_active": "Aktualnie wyświetlają się odblokowania w grze (odczytane z save00 przez mod Noitamap).",
-        "modDisabled": "Użyj mod Noitamap, aby zobaczyć dokładną zawartość różdżki i zaklęcia dla bieżącego biegu. Mod odczytuje twoje odblokowania bezpośrednio z save00.",
+        "mod": "Przełącz się na bieżące odblokowania w grze podczas korzystania z Noitamap Mod. Niedostępne, gdy nie korzystasz z moda.",
         "all": "Przełącz na pokazywanie puli różdżek/zaklęć tak, jakbyś odblokował wszystko. Domyślne ustawienie teleskopu.",
-        "all_active": "Obecnie pokazuje wszystko odblokowane. Jest to zgodne z domyślnymi ustawieniami Teleskopu — ta sama treść, którą wszyscy widzą, niezależnie od postępu."
+        "all_active": "Obecnie pokazuje wszystko odblokowane. Jest to zgodne z domyślnymi ustawieniami Teleskopu — ta sama treść, którą wszyscy widzą, niezależnie od postępu.",
+        "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
       }
     }
   }

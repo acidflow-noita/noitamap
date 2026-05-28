@@ -5204,10 +5204,10 @@
         "none": "切换到显示魔杖/法术池，就好像您没有解锁任何东西一样。",
         "none_active": "目前显示没有任何内容被解锁。",
         "mod": "使用游戏内解锁切换到显示魔杖/法术池（由 Noitamap mod 从 save00 读取）。",
-        "mod_active": "当前显示您的游戏内解锁（Noitamap mod 从 save00 读取）。",
-        "modDisabled": "使用 Noitamap mod 查看当前运行的准确魔杖和咒语内容。该模组直接从 save00 读取您的解锁内容。",
         "all": "切换到显示魔杖/法术池，就好像您已经解锁了所有内容一样。望远镜的默认设置。",
-        "all_active": "目前显示一切已解锁。这与 Telescope 的默认设置相符——无论进度如何，每个人都会看到相同的内容。"
+        "all_active": "目前显示一切已解锁。这与 Telescope 的默认设置相符——无论进度如何，每个人都会看到相同的内容。",
+        "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
       }
     }
   }

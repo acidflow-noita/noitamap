@@ -189,7 +189,7 @@
       "body": {
         "none": "Switch to showing wand/spell pools as if you had unlocked nothing.",
         "none_active": "Currently showing nothing unlocked.",
-        "mod": "Switch to showing wand/spell pools using your in-game unlocks (read from save00 by the Noitamap mod).",
+        "mod": "Switch to your current in-game unlocks while using Noitamap Mod. Unavailable when not using the mod.",
         "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
         "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00.",
         "all": "Switch to showing wand/spell pools as if you had unlocked everything. Telescope's default.",
