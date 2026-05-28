@@ -2588,9 +2588,14 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         e.stopPropagation();
         if (btn.disabled) return;
         if (getActiveDescriptor() === b.desc) return;
-        setActiveDescriptor(b.desc);
+        // URL first: refreshActiveVariant (fired by setActiveDescriptor) reads
+        // ?u= via getUnlocksFromURL() to decide what unlock list to feed the
+        // alt-layer rebuild. The URL has to reflect the new descriptor before
+        // those listeners run, otherwise switching back to "mod" would feed
+        // the stale "none"/"all" URL value into chest/orb overlay updates.
         const { updateURLWithUnlocks } = await import("../data_sources/url");
         updateURLWithUnlocks(b.desc);
+        setActiveDescriptor(b.desc);
         if (!isVariantReady(b.desc)) {
           applyLockBtnStyle();
           try { await requestVariant(b.desc); } catch { /* surfaced inline */ }

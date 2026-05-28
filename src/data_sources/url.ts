@@ -309,17 +309,40 @@ export function updateURLWithSeedReport(isOpen: boolean) {
 }
 
 /**
- * Update URL with the active unlocks descriptor. `all` / `none` are written as
- * shareable shorthand tokens; `mod` preserves whatever `u=<base64>` value the
- * in-game mod set, untouched.
+ * Update URL with the active unlocks descriptor.
+ *   - `all` / `none` are written as shareable shorthand tokens.
+ *   - `mod` restores the cached base64 unlock payload from localStorage (the
+ *     one captured the first time the in-game mod deeplinked with
+ *     ?u=<base64>). If no cache exists, the param is stripped.
+ *
+ * Also syncs `noitamap-unlocks-url-key` so unlocks-toggle's
+ * resetViewIfModChanged() doesn't treat the write as a fresh mod deeplink
+ * and stomp the user's chosen view.
  */
 export function updateURLWithUnlocks(desc: 'all' | 'none' | 'mod') {
   const url = new URL(window.location.toString());
-  if (desc === 'all') url.searchParams.set('u', 'all');
-  else if (desc === 'none') url.searchParams.set('u', 'none');
-  // desc === 'mod': leave existing ?u=<base64> as-is
+  if (desc === 'all') {
+    url.searchParams.set('u', 'all');
+  } else if (desc === 'none') {
+    url.searchParams.set('u', 'none');
+  } else {
+    // desc === 'mod' — restore the cached base64 payload, or strip if none.
+    try {
+      const cached = localStorage.getItem('noitamap-unlocks');
+      if (cached) url.searchParams.set('u', cached);
+      else url.searchParams.delete('u');
+    } catch {
+      url.searchParams.delete('u');
+    }
+  }
   reorderParams(url);
   window.history.replaceState(null, '', url.toString());
+  // Keep the URL_KEY_STORAGE in lockstep so the unlocks-toggle module
+  // doesn't interpret our own write as an external mod re-deeplink.
+  try {
+    const cur = url.searchParams.get('u') || '';
+    localStorage.setItem('noitamap-unlocks-url-key', cur);
+  } catch { /* noop */ }
 }
 
 /**
