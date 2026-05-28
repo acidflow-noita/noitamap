@@ -5193,21 +5193,21 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   },
   "unlocks": {
-    "tooltip": {
+    "btn": {
       "title": {
-        "all": "Everything unlocked",
-        "none": "Nothing unlocked",
-        "mod": "Mod-supplied unlocks",
-        "indexing": "Computing alternate state"
+        "none": "Нічого не розблоковано",
+        "mod": "Ваші поточні розблокування",
+        "modDisabled": "Відкрийте карту з мода Noitamap",
+        "all": "Все розблоковано"
       },
       "body": {
-        "all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none": "Nothing unlocked. Click to switch back to everything unlocked.",
-        "mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
-        "indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment.",
-        "all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
-        "mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked."
+        "none": "Переключіться на показ паличок/заклинань так, ніби ви нічого не розблокували.",
+        "none_active": "Наразі нічого не розблоковано.",
+        "mod": "Переключіться на показ паличок/заклинань за допомогою розблокувань у грі (прочитано з save00 модом Noitamap).",
+        "mod_active": "Наразі показано ваші розблокування в грі (прочитано з save00 модом Noitamap).",
+        "modDisabled": "Використовуйте мод Noitamap, щоб побачити точний вміст палички та заклинань для вашого поточного забігу. Мод читає ваші розблокування безпосередньо з save00.",
+        "all": "Переключіться на показ чарівних паличок/заклинань, ніби ви все розблокували. Телескоп за замовчуванням.",
+        "all_active": "Наразі все розблоковано. Це відповідає стандартним параметрам Telescope — однаковий вміст, який бачать усі незалежно від прогресу."
       }
     }
   }

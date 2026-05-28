@@ -15,7 +15,7 @@ import { fetchDailySeed } from "./data_sources/daily_seed";
 import { parseURL, updateURLWithSeed, clearSeedParams } from "./data_sources/url";
 import { getCachedGeneration, cacheGeneration } from "./telescope/tile-cache";
 import { generateDynamicMap, initTelescope, type GenerationResult } from "./telescope/telescope-adapter";
-import { getUnlocksFromURL, unlocksChanged, UNLOCK_KEYS } from "./unlocks";
+import { getUnlocksFromURL, unlocksChanged, UNLOCK_KEYS, getUrlUnlockKind } from "./unlocks";
 import { prewarmAlt, resetAltCache } from "./unlocks-toggle";
 import { isLightMode } from "./light-mode";
 import {
@@ -137,8 +137,13 @@ export async function runDynamicMap(
     }
   }
 
-  // Read unlock state from URL (caches to localStorage automatically)
-  const unlocks = getUnlocksFromURL();
+  // Read unlock state from URL (caches to localStorage automatically).
+  // The shareable shorthand tokens (`u=all`, `u=none`) override the mod
+  // list — `none` means "render with nothing unlocked", `all` means default.
+  let unlocks = getUnlocksFromURL();
+  const urlKind = getUrlUnlockKind();
+  if (urlKind === "none") unlocks = [];
+  // (urlKind === "all" → unlocks stays null → telescope's default = all)
   const lightMode = isLightMode();
   const unlockKey = (unlocks ? unlocks.sort().join(",") : "all") + (lightMode ? "|lm" : "");
 

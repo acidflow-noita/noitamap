@@ -179,21 +179,21 @@
     "drawingNotFoundTitle": "Drawing Not Found"
   },
   "unlocks": {
-    "tooltip": {
+    "btn": {
       "title": {
-        "all": "Everything unlocked",
         "none": "Nothing unlocked",
-        "mod": "Mod-supplied unlocks",
-        "indexing": "Computing alternate state"
+        "mod": "Your current unlocks",
+        "modDisabled": "Open the map from the Noitamap mod",
+        "all": "Everything unlocked"
       },
       "body": {
-        "all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none": "Nothing unlocked. Click to switch back to everything unlocked.",
-        "mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
-        "all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
-        "mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked.",
-        "indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment."
+        "none": "Switch to showing wand/spell pools as if you had unlocked nothing.",
+        "none_active": "Currently showing nothing unlocked.",
+        "mod": "Switch to showing wand/spell pools using your in-game unlocks (read from save00 by the Noitamap mod).",
+        "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00.",
+        "all": "Switch to showing wand/spell pools as if you had unlocked everything. Telescope's default.",
+        "all_active": "Currently showing everything unlocked. This matches Telescope's default — same content everyone sees regardless of progress."
       }
     }
   },

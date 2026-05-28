@@ -5193,21 +5193,21 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   },
   "unlocks": {
-    "tooltip": {
+    "btn": {
       "title": {
-        "all": "Everything unlocked",
-        "none": "Nothing unlocked",
-        "mod": "Mod-supplied unlocks",
-        "indexing": "Computing alternate state"
+        "none": "Niets ontgrendeld",
+        "mod": "Je huidige ontgrendeling",
+        "modDisabled": "Open de kaart vanuit de Noitamap-mod",
+        "all": "Alles ontgrendeld"
       },
       "body": {
-        "all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none": "Nothing unlocked. Click to switch back to everything unlocked.",
-        "mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
-        "indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment.",
-        "all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
-        "mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked."
+        "none": "Schakel over naar het weergeven van toverstok-/spreukenpools alsof je niets hebt ontgrendeld.",
+        "none_active": "Er is momenteel niets ontgrendeld.",
+        "mod": "Schakel over naar het tonen van toverstok-/spreukpools met behulp van je in-game ontgrendelingen (gelezen vanaf save00 door de Noitamap-mod).",
+        "mod_active": "Toont momenteel je in-game ontgrendelingen (gelezen vanaf save00 door de Noitamap-mod).",
+        "modDisabled": "Gebruik de Noitamap-mod om de nauwkeurige toverstok- en spreukinhoud voor je huidige run te bekijken. De mod leest je ontgrendelingen rechtstreeks uit save00.",
+        "all": "Schakel over naar het weergeven van toverstok-/spreukenpools alsof je alles hebt ontgrendeld. Standaard van de telescoop.",
+        "all_active": "Momenteel wordt alles ontgrendeld weergegeven. Dit komt overeen met de standaard van Telescope: dezelfde inhoud die iedereen ziet, ongeacht de voortgang."
       }
     }
   }

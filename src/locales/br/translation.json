@@ -5193,21 +5193,21 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   },
   "unlocks": {
-    "tooltip": {
+    "btn": {
       "title": {
-        "all": "Everything unlocked",
-        "none": "Nothing unlocked",
-        "mod": "Mod-supplied unlocks",
-        "indexing": "Computing alternate state"
+        "none": "Nada desbloqueado",
+        "mod": "Seus desbloqueios atuais",
+        "modDisabled": "Abra o mapa do mod Noitamap",
+        "all": "Tudo desbloqueado"
       },
       "body": {
-        "all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none": "Nothing unlocked. Click to switch back to everything unlocked.",
-        "mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
-        "indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment.",
-        "all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
-        "mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked."
+        "none": "Mude para mostrar conjuntos de varinhas/feitiços como se você não tivesse desbloqueado nada.",
+        "none_active": "Atualmente não mostrando nada desbloqueado.",
+        "mod": "Mude para mostrar conjuntos de varinhas/feitiços usando seus desbloqueios no jogo (lido em save00 pelo mod Noitamap).",
+        "mod_active": "Atualmente mostrando seus desbloqueios no jogo (lido em save00 pelo mod Noitamap).",
+        "modDisabled": "Use o mod Noitamap para ver o conteúdo preciso da varinha e do feitiço para sua corrida atual. O mod lê seus desbloqueios diretamente do save00.",
+        "all": "Mude para mostrar conjuntos de varinhas/feitiços como se você tivesse desbloqueado tudo. Padrão do telescópio.",
+        "all_active": "Atualmente mostrando tudo desbloqueado. Isso corresponde ao padrão do Telescope – o mesmo conteúdo que todos veem, independentemente do progresso."
       }
     }
   }

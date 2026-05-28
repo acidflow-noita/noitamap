@@ -92,6 +92,9 @@ export function getUnlocksFromURL(): string[] | null {
   const params = new URLSearchParams(window.location.search);
   const encoded = params.get("u");
 
+  // Shorthand tokens for shareable views — not a mod-supplied list.
+  if (encoded === "all" || encoded === "none") return null;
+
   if (encoded) {
     // URL has fresh unlock data -- cache it
     try {
@@ -107,6 +110,17 @@ export function getUnlocksFromURL(): string[] | null {
   } catch (_) {}
 
   return null;
+}
+
+/** Classify the `?u=` query param. "mod" = base64url-encoded full list (from
+ *  the in-game mod). "all" / "none" = shareable view shorthands. null = absent. */
+export type UrlUnlockKind = "all" | "none" | "mod" | null;
+export function getUrlUnlockKind(): UrlUnlockKind {
+  const u = new URLSearchParams(window.location.search).get("u");
+  if (!u) return null;
+  if (u === "all") return "all";
+  if (u === "none") return "none";
+  return "mod";
 }
 
 /** Check if the unlock state from URL differs from cached state.

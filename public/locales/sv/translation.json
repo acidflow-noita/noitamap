@@ -5193,21 +5193,21 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   },
   "unlocks": {
-    "tooltip": {
+    "btn": {
       "title": {
-        "all": "Everything unlocked",
-        "none": "Nothing unlocked",
-        "mod": "Mod-supplied unlocks",
-        "indexing": "Computing alternate state"
+        "none": "Inget låst upp",
+        "mod": "Din nuvarande låser upp",
+        "modDisabled": "Öppna kartan från Noitamap mod",
+        "all": "Allt upplåst"
       },
       "body": {
-        "all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none": "Nothing unlocked. Click to switch back to everything unlocked.",
-        "mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
-        "indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment.",
-        "all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
-        "mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked."
+        "none": "Byt till att visa trollstavspooler som om du inte hade låst upp någonting.",
+        "none_active": "Visar för närvarande inget upplåst.",
+        "mod": "Byt till att visa trollstavspooler med dina upplåsningar i spelet (läs från save00 av Noitamap-moden).",
+        "mod_active": "Visar för närvarande dina upplåsningar i spelet (läs från save00 av Noitamap-moden).",
+        "modDisabled": "Använd Noitamap-moden för att se exakt trollstavs- och stavningsinnehåll för din nuvarande löpning. Modden läser dina upplåsningar direkt från save00.",
+        "all": "Byt till att visa trollstavspooler som om du hade låst upp allt. Teleskopets standard.",
+        "all_active": "Visar för närvarande allt upplåst. Detta matchar Telescopes standard - samma innehåll som alla ser oavsett framsteg."
       }
     }
   }

@@ -5193,21 +5193,21 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   },
   "unlocks": {
-    "tooltip": {
+    "btn": {
       "title": {
-        "all": "Everything unlocked",
-        "none": "Nothing unlocked",
-        "mod": "Mod-supplied unlocks",
-        "indexing": "Computing alternate state"
+        "none": "Rien de débloqué",
+        "mod": "Vos déblocages actuels",
+        "modDisabled": "Ouvrez la carte depuis le mod Noitamap",
+        "all": "Tout débloqué"
       },
       "body": {
-        "all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none": "Nothing unlocked. Click to switch back to everything unlocked.",
-        "mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
-        "indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment.",
-        "all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
-        "mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked."
+        "none": "Passez à l’affichage des pools de baguettes/sorts comme si vous n’aviez rien débloqué.",
+        "none_active": "N'affichant actuellement rien de déverrouillé.",
+        "mod": "Passez à l'affichage des pools de baguettes/sorts en utilisant vos déverrouillages dans le jeu (lu depuis save00 par le mod Noitamap).",
+        "mod_active": "Affichage actuel de vos déverrouillages dans le jeu (lu depuis save00 par le mod Noitamap).",
+        "modDisabled": "Utilisez le mod Noitamap pour voir le contenu précis de la baguette et des sorts pour votre course en cours. Le mod lit vos déverrouillages directement depuis save00.",
+        "all": "Passez à l’affichage des pools de baguettes/sorts comme si vous aviez tout débloqué. Valeur par défaut du télescope.",
+        "all_active": "Affiche actuellement tout ce qui est déverrouillé. Cela correspond à la valeur par défaut de Telescope : le même contenu que tout le monde voit, quelle que soit la progression."
       }
     }
   }

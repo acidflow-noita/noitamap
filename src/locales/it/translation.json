@@ -5193,21 +5193,21 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   },
   "unlocks": {
-    "tooltip": {
+    "btn": {
       "title": {
-        "all": "Everything unlocked",
-        "none": "Nothing unlocked",
-        "mod": "Mod-supplied unlocks",
-        "indexing": "Computing alternate state"
+        "none": "Niente di sbloccato",
+        "mod": "I tuoi attuali sblocchi",
+        "modDisabled": "Apri la mappa dal mod Noitamap",
+        "all": "Tutto sbloccato"
       },
       "body": {
-        "all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none": "Nothing unlocked. Click to switch back to everything unlocked.",
-        "mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
-        "indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment.",
-        "all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
-        "mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked."
+        "none": "Passa a mostrare le riserve di bacchette/incantesimi come se non avessi sbloccato nulla.",
+        "none_active": "Attualmente non mostra nulla di sbloccato.",
+        "mod": "Passa alla visualizzazione delle riserve di bacchette/incantesimi utilizzando gli sblocchi di gioco (leggi da save00 dal mod Noitamap).",
+        "mod_active": "Attualmente vengono mostrati i tuoi sblocchi di gioco (leggi da save00 dal mod Noitamap).",
+        "modDisabled": "Usa la mod Noitamap per vedere i contenuti accurati della bacchetta e degli incantesimi per la tua corsa attuale. La mod legge i tuoi sblocchi direttamente da save00.",
+        "all": "Passa a mostrare le riserve di bacchette/incantesimi come se avessi sbloccato tutto. L'impostazione predefinita del telescopio.",
+        "all_active": "Attualmente mostra tutto sbloccato. Ciò corrisponde all'impostazione predefinita di Telescope: lo stesso contenuto che tutti vedono indipendentemente dai progressi."
       }
     }
   }

@@ -26,7 +26,7 @@
  */
 
 import { generateDynamicMap, type GenerationResult } from "./telescope/telescope-adapter";
-import { getUnlocksFromURL } from "./unlocks";
+import { getUnlocksFromURL, getUrlUnlockKind } from "./unlocks";
 import { isLightMode } from "./light-mode";
 
 export type UnlockDescriptor = "all" | "none" | "mod";
@@ -44,10 +44,11 @@ let viewListeners: Array<(v: UnlockDescriptor) => void> = [];
 
 let lastSeedSeen: number | null = null;
 
-/** True if the page was opened with a `?u=` URL parameter — i.e. the
- *  noitamap in-game mod supplied a fresh unlock list from save00. */
+/** True if the page was opened with a `?u=<base64>` URL parameter — i.e. the
+ *  noitamap in-game mod supplied a fresh unlock list from save00. The
+ *  shareable shorthand tokens (`?u=all`, `?u=none`) are NOT mod-sourced. */
 export function isModSourced(): boolean {
-  return new URLSearchParams(window.location.search).has("u");
+  return getUrlUnlockKind() === "mod";
 }
 
 /** Set of view descriptors the user can cycle through. */
@@ -55,19 +56,34 @@ export function availableDescriptors(): UnlockDescriptor[] {
   return isModSourced() ? ["mod", "all", "none"] : ["all", "none"];
 }
 
+// The primary descriptor is *locked* to whatever URL state was present on
+// first call (i.e. the descriptor used to GENERATE the initial map). User
+// toggles never change this — they only flip the *active* view, which may
+// pull alt-cached variants. Recomputed only on page reload.
+let _primary: UnlockDescriptor | null = null;
+
 /** Which variant is used to *generate* the visible map / primary POI list. */
 export function primaryDescriptor(): UnlockDescriptor {
-  return isModSourced() ? "mod" : "all";
+  if (_primary !== null) return _primary;
+  const kind = getUrlUnlockKind();
+  if (kind === "mod") _primary = "mod";
+  else if (kind === "none") _primary = "none";
+  else _primary = "all";
+  return _primary;
 }
 
-/** Reset persisted view if the `?u=` value just changed (mod re-deeplink). */
+/** Reset persisted view only when the URL just took on a fresh mod payload
+ *  (base64 list). The `all`/`none` shorthand tokens are user-initiated view
+ *  changes — never reset on those. */
 function resetViewIfModChanged(): void {
   try {
     const cur = new URLSearchParams(window.location.search).get("u") || "";
     const last = localStorage.getItem(URL_KEY_STORAGE) || "";
-    if (cur !== last) {
-      localStorage.setItem(URL_KEY_STORAGE, cur);
-      localStorage.setItem(VIEW_STORAGE, primaryDescriptor());
+    if (cur === last) return;
+    localStorage.setItem(URL_KEY_STORAGE, cur);
+    const curIsMod = cur !== "" && cur !== "all" && cur !== "none";
+    if (curIsMod) {
+      localStorage.setItem(VIEW_STORAGE, "mod");
     }
   } catch { /* private mode etc. */ }
 }

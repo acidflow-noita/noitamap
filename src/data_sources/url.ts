@@ -32,16 +32,16 @@ export interface URLState extends Partial<AppState> {
 }
 
 /**
- * Desired URL param order: x, y, z (zoom), m (map), se (seed), ds (daily seed), o (overlays), s (sidebar), c (canvas), poi (targetPoiId), q (search), f (filters)
+ * Desired URL param order: x, y, z (zoom), m (map), se (seed), ds (daily seed), o (overlays), s (sidebar), c (canvas), poi (targetPoiId), q (search), f (filters), sr (seed report), u (unlocks descriptor / mod payload)
  * Short params used for encoding, decoder accepts both short and long names
  */
-const PARAM_ORDER = ['x', 'y', 'z', 'm', 'se', 'ds', 'o', 's', 'c', 'poi', 'q', 'f', 'sr'];
+const PARAM_ORDER = ['x', 'y', 'z', 'm', 'se', 'ds', 'o', 's', 'c', 'poi', 'q', 'f', 'sr', 'u'];
 
 /**
  * Reorder URL search params to maintain consistent order
  * Also cleans up old long param names, replacing them with short versions
  */
-function reorderParams(url: URL): void {
+export function reorderParams(url: URL): void {
   const params: [string, string][] = [];
 
   // Map old param names to new short names for cleanup
@@ -304,6 +304,20 @@ export function updateURLWithSeedReport(isOpen: boolean) {
     url.searchParams.delete('sr');
     url.searchParams.delete('seedReport');
   }
+  reorderParams(url);
+  window.history.replaceState(null, '', url.toString());
+}
+
+/**
+ * Update URL with the active unlocks descriptor. `all` / `none` are written as
+ * shareable shorthand tokens; `mod` preserves whatever `u=<base64>` value the
+ * in-game mod set, untouched.
+ */
+export function updateURLWithUnlocks(desc: 'all' | 'none' | 'mod') {
+  const url = new URL(window.location.toString());
+  if (desc === 'all') url.searchParams.set('u', 'all');
+  else if (desc === 'none') url.searchParams.set('u', 'none');
+  // desc === 'mod': leave existing ?u=<base64> as-is
   reorderParams(url);
   window.history.replaceState(null, '', url.toString());
 }

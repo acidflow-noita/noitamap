@@ -15,13 +15,12 @@ import { getCachedBiomeRender, cacheBiomeRender, getCachedSceneBitmap, cacheScen
 import i18next from "../i18n";
 import {
   getActiveDescriptor,
-  cycleDescriptor,
+  setActiveDescriptor,
   primaryDescriptor,
   isModSourced,
   isVariantReady,
   onAltReady,
   getPoiVariant,
-  descriptorIcon,
   requestVariant,
   type UnlockDescriptor,
 } from "../unlocks-toggle";
@@ -2312,6 +2311,7 @@ function getWikiUrl(poi: any): string | null {
     else if (item.includes("pouch") || item === "powder_stash") wikiName = "Powder_Pouch";
     else if (item === "emerald_tablet") wikiName = "Emerald_Tablet";
     else if (item.includes("egg")) wikiName = "Egg";
+    else if (item === "meditation_cube") wikiName = "Meditation_Chamber";
     else wikiName = item;
   }
 
@@ -2427,6 +2427,14 @@ function cleanupPopovers(el: HTMLElement): void {
         }
       }
     }
+    // Manually-managed popovers (no data-bs-toggle) tag their host with
+    // __disposePopover. Walk the subtree (incl. root) and dispose any.
+    const visit = (node: Element) => {
+      const disp = (node as any).__disposePopover;
+      if (typeof disp === "function") disp();
+    };
+    visit(el);
+    el.querySelectorAll("*").forEach(visit);
   } catch { /* noop */ }
 }
 
@@ -2491,94 +2499,135 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   const _isSpellItem = _poiType === "item" && (item.poi as any).item === "spell";
   const showLockBtn = UNLOCK_AFFECTED_TYPES.has(_poiType) || _isSpellItem;
 
-  let lockBtn: HTMLButtonElement | null = null;
+  let lockBtn: HTMLElement | null = null;
   if (showLockBtn) {
-    lockBtn = document.createElement("button");
-    lockBtn.setAttribute("data-bs-toggle", "popover");
-    lockBtn.setAttribute("data-bs-trigger", "hover focus");
-    lockBtn.setAttribute("data-bs-placement", "bottom");
-    lockBtn.style.cssText = `
-      background: rgba(255,255,255,0.1); border: 0.065em solid rgba(255,255,255,0.2);
-      border-radius: 0.25em; color: #ccc; cursor: pointer; padding: 0.15em 0.5em;
-      display: flex; align-items: center; justify-content: center; font-size: 0.85em;
-      transition: all 0.2s;
-    `;
-    const applyLockBtnStyle = () => {
-      if (!lockBtn) return;
-      const active = getActiveDescriptor();
-      const modSourced = isModSourced();
-      const ready = isVariantReady(active);
-      lockBtn.innerHTML = `<i class="bi ${descriptorIcon(active)}"></i>`;
-      const blueState = active === "mod";
-      if (blueState) {
-        lockBtn.style.background = "rgba(59, 130, 246, 0.18)";
-        lockBtn.style.borderColor = "#3b82f6";
-        lockBtn.style.color = "#bfdbfe";
-      } else {
-        lockBtn.style.background = "rgba(255,255,255,0.1)";
-        lockBtn.style.borderColor = "rgba(255,255,255,0.2)";
-        lockBtn.style.color = "#ccc";
-      }
-      lockBtn.style.opacity = ready ? "1" : "0.55";
-      lockBtn.style.cursor = ready ? "pointer" : "wait";
+    // Three-button group: [None] [Mod] [All]. Each button switches directly
+    // to its descriptor. The Mod button is disabled when no in-game unlock
+    // data is available (i.e. the user hasn't opened the map via the
+    // Noitamap mod yet, or never has).
+    lockBtn = document.createElement("div");
+    lockBtn.className = "btn-group btn-group-sm";
+    lockBtn.setAttribute("role", "group");
+    lockBtn.style.cssText = "font-size: 0.85em;";
 
-      const titleKey = ready
-        ? `unlocks.tooltip.title.${active}`
-        : "unlocks.tooltip.title.indexing";
-      const bodyKey = ready
-        ? (modSourced ? `unlocks.tooltip.body.${active}_3state` : `unlocks.tooltip.body.${active}`)
-        : "unlocks.tooltip.body.indexing";
-      const titleDefaults: Record<string, string> = {
-        "unlocks.tooltip.title.all": "Everything unlocked",
-        "unlocks.tooltip.title.none": "Nothing unlocked",
-        "unlocks.tooltip.title.mod": "Mod-supplied unlocks",
-        "unlocks.tooltip.title.indexing": "Computing alternate state",
+    const modSourcedAtBuild = isModSourced();
+    const hasCachedModData = (() => {
+      try { return !!localStorage.getItem("noitamap-unlocks"); } catch { return false; }
+    })();
+    const modAvailable = modSourcedAtBuild || hasCachedModData;
+
+    // ── Helper: native Bootstrap hover popover with small show/hide delays
+    //    so the cursor can transit between the trigger and the popover panel
+    //    without flicker.
+    const attachHoverPopover = (el: HTMLElement, getTitle: () => string, getBody: () => string) => {
+      const bs = (window as any).bootstrap;
+      if (!bs?.Popover) return;
+      el.setAttribute("data-bs-placement", "bottom");
+      el.setAttribute("data-bs-title", getTitle());
+      el.setAttribute("data-bs-content", getBody());
+      const inst = new bs.Popover(el, {
+        trigger: "hover",
+        placement: "bottom",
+        delay: { show: 80, hide: 120 },
+        container: "body",
+      });
+      (el as any).__refreshPopover = () => {
+        try {
+          inst._config.title = getTitle();
+          inst._config.content = getBody();
+          el.setAttribute("data-bs-title", getTitle());
+          el.setAttribute("data-bs-content", getBody());
+        } catch { /* noop */ }
       };
-      const bodyDefaults: Record<string, string> = {
-        "unlocks.tooltip.body.all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "unlocks.tooltip.body.none": "Nothing unlocked. Click to switch back to everything unlocked.",
-        "unlocks.tooltip.body.all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "unlocks.tooltip.body.none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
-        "unlocks.tooltip.body.mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked.",
-        "unlocks.tooltip.body.mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
-        "unlocks.tooltip.body.indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment.",
-      };
-      lockBtn.setAttribute("data-bs-title", i18next.t(titleKey, { defaultValue: titleDefaults[titleKey] }));
-      lockBtn.setAttribute("data-bs-content", i18next.t(bodyKey, { defaultValue: bodyDefaults[bodyKey] }));
-      try {
-        const bs = (window as any).bootstrap;
-        if (bs?.Popover) {
-          const existing = bs.Popover.getInstance(lockBtn);
-          if (existing) existing.dispose();
-          new bs.Popover(lockBtn);
+      (el as any).__disposePopover = () => { try { inst.dispose(); } catch { /* noop */ } };
+    };
+
+    const tk = (k: string, fallback: string) => i18next.t(k, { defaultValue: fallback });
+
+    type DescBtn = { desc: UnlockDescriptor; icon: string; title: () => string; body: () => string };
+    const buttons: DescBtn[] = [
+      {
+        desc: "mod",
+        icon: "bi-controller",
+        title: () => modAvailable
+          ? tk("unlocks.btn.title.mod", "Your current unlocks")
+          : tk("unlocks.btn.title.modDisabled", "Open the map from the Noitamap mod"),
+        body: () => tk(
+          "unlocks.btn.body.mod",
+          "Switch to your current in-game unlocks while using Noitamap Mod. Unavailable when not using the mod.",
+        ),
+      },
+      {
+        desc: "none",
+        icon: "bi-lock-fill",
+        title: () => tk("unlocks.btn.title.none", "Nothing unlocked"),
+        body: () => getActiveDescriptor() === "none"
+          ? tk("unlocks.btn.body.none_active", "Currently showing nothing unlocked.")
+          : tk("unlocks.btn.body.none", "Switch to showing wand/spell pools as if you had unlocked nothing."),
+      },
+      {
+        desc: "all",
+        icon: "bi-unlock-fill",
+        title: () => tk("unlocks.btn.title.all", "Everything unlocked"),
+        body: () => getActiveDescriptor() === "all"
+          ? tk("unlocks.btn.body.all_active", "Currently showing everything unlocked. This matches Telescope's default — same content everyone sees regardless of progress.")
+          : tk("unlocks.btn.body.all", "Switch to showing wand/spell pools as if you had unlocked everything. Telescope's default."),
+      },
+    ];
+
+    const btnEls: Record<string, HTMLButtonElement> = {};
+    for (const b of buttons) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btn-sm btn-outline-secondary";
+      btn.innerHTML = `<i class="bi ${b.icon}"></i>`;
+      btn.style.cssText = "padding: 0.15em 0.55em; display: inline-flex; align-items: center; justify-content: center; line-height: 1;";
+      if (b.desc === "mod" && !modAvailable) btn.disabled = true;
+      attachHoverPopover(btn, b.title, b.body);
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (btn.disabled) return;
+        if (getActiveDescriptor() === b.desc) return;
+        setActiveDescriptor(b.desc);
+        const { updateURLWithUnlocks } = await import("../data_sources/url");
+        updateURLWithUnlocks(b.desc);
+        if (!isVariantReady(b.desc)) {
+          applyLockBtnStyle();
+          try { await requestVariant(b.desc); } catch { /* surfaced inline */ }
         }
-      } catch { /* noop */ }
+        const rebuild = (tooltipEl as any)?.__rebuild;
+        if (typeof rebuild === "function") rebuild();
+      });
+      btnEls[b.desc] = btn;
+      lockBtn.appendChild(btn);
+    }
+
+    const applyLockBtnStyle = () => {
+      const active = getActiveDescriptor();
+      for (const b of buttons) {
+        const btn = btnEls[b.desc];
+        if (!btn) continue;
+        const ready = isVariantReady(b.desc);
+        const isActive = active === b.desc;
+        btn.classList.toggle("active", isActive);
+        // Visual states:
+        //   active        → solid primary
+        //   inactive      → outline-secondary
+        //   mod-disabled  → outline-secondary, muted
+        if (isActive) {
+          btn.classList.remove("btn-outline-secondary");
+          if (!btn.classList.contains("btn-primary")) btn.classList.add("btn-primary");
+        } else {
+          btn.classList.remove("btn-primary");
+          if (!btn.classList.contains("btn-outline-secondary")) btn.classList.add("btn-outline-secondary");
+        }
+        btn.style.opacity = ready || isActive ? "1" : "0.55";
+        (btn as any).__refreshPopover?.();
+      }
     };
     applyLockBtnStyle();
-    lockBtn.onmouseenter = () => {
-      if (!lockBtn || !isVariantReady(getActiveDescriptor())) return;
-      const blueState = getActiveDescriptor() === "mod";
-      lockBtn.style.background = blueState ? "rgba(59, 130, 246, 0.3)" : "rgba(255,255,255,0.2)";
-    };
-    lockBtn.onmouseleave = () => {
-      if (!lockBtn) return;
-      const blueState = getActiveDescriptor() === "mod";
-      lockBtn.style.background = blueState ? "rgba(59, 130, 246, 0.18)" : "rgba(255,255,255,0.1)";
-    };
-    lockBtn.onclick = async (e) => {
-      e.stopPropagation();
-      // Dispose any visible popover before cycling
-      if (lockBtn) cleanupPopovers(lockBtn.parentElement || lockBtn);
-      const next: UnlockDescriptor = cycleDescriptor();
-      if (!isVariantReady(next)) {
-        applyLockBtnStyle();
-        try { await requestVariant(next); } catch { /* surfaced inline */ }
-      }
-      const rebuild = (tooltipEl as any)?.__rebuild;
-      if (typeof rebuild === "function") rebuild();
-    };
-    // If any not-yet-ready variant becomes available while this card is
-    // open, refresh the style + popover so the loading state clears.
+
+    // Refresh on alt-ready so loading state clears in place.
     if (!isVariantReady(getActiveDescriptor())) {
       onAltReady(() => {
         if (!tooltipEl) return;
@@ -3236,7 +3285,7 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
 export function openTooltipForPOI(
   poiId: string,
   viewer: any,
-  opts?: { sidebarRightPx?: number; fallbackX?: number; fallbackY?: number },
+  opts?: { sidebarRightPx?: number; fallbackX?: number; fallbackY?: number; fallbackPoi?: any },
 ): void {
   if (!poiId || poiId === "undefined" || poiId === "null") return;
 
@@ -3246,12 +3295,32 @@ export function openTooltipForPOI(
   hideMarkerTooltip();
 
   // Find the exact marker item based on its reference or fallback ID
-  const item = globalMarkerData
+  let item = globalMarkerData
     ? globalMarkerData.items.find(i => {
         const primaryId = (i.poi as any).id;
         return primaryId === poiId;
       })
     : undefined;
+
+  // If markerData hasn't indexed this POI yet (e.g. search fired before the
+  // marker layer rebuilt for the current variant), synthesise an item from
+  // the caller-supplied fallback so the tooltip still opens.
+  if (!item && opts?.fallbackPoi) {
+    const fp = opts.fallbackPoi;
+    const atlas = getAtlas();
+    const keyRaw = atlas ? getSpriteKey(fp, atlas) : null;
+    const rootKey = Array.isArray(keyRaw) ? keyRaw[0] : (keyRaw ?? "");
+    const entry = atlas && rootKey ? atlas[rootKey] : null;
+    item = {
+      poi: fp,
+      pw: fp.pw ?? 0,
+      spriteKey: keyRaw ?? "",
+      osdX: fp.x,
+      osdY: fp.y,
+      w: entry?.w ?? 16,
+      h: entry?.h ?? 16,
+    };
+  }
 
   // Decide where to pan to. Prefer the marker's exact position; otherwise use
   // the caller-supplied fallback world coords (so the cinematic pan still

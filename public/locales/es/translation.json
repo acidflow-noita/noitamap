@@ -5193,21 +5193,21 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   },
   "unlocks": {
-    "tooltip": {
+    "btn": {
       "title": {
-        "all": "Everything unlocked",
-        "none": "Nothing unlocked",
-        "mod": "Mod-supplied unlocks",
-        "indexing": "Computing alternate state"
+        "none": "Nada desbloqueado",
+        "mod": "Tus desbloqueos actuales",
+        "modDisabled": "Abre el mapa desde el mod Noitamap",
+        "all": "Todo desbloqueado"
       },
       "body": {
-        "all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none": "Nothing unlocked. Click to switch back to everything unlocked.",
-        "mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
-        "indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment.",
-        "all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
-        "mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked."
+        "none": "Cambia para mostrar grupos de varitas/hechizos como si no hubieras desbloqueado nada.",
+        "none_active": "Actualmente no muestra nada desbloqueado.",
+        "mod": "Cambia para mostrar grupos de varitas/hechizos usando tus desbloqueos en el juego (leído de save00 por el mod de Noitamap).",
+        "mod_active": "Actualmente muestra tus desbloqueos en el juego (leído de save00 por el mod de Noitamap).",
+        "modDisabled": "Utilice el mod Noitamap para ver el contenido preciso de la varita y los hechizos para su ejecución actual. El mod lee tus desbloqueos directamente desde save00.",
+        "all": "Cambia para mostrar grupos de varitas/hechizos como si hubieras desbloqueado todo. El valor predeterminado del telescopio.",
+        "all_active": "Actualmente muestra todo desbloqueado. Esto coincide con el valor predeterminado de Telescope: el mismo contenido que todos ven independientemente del progreso."
       }
     }
   }

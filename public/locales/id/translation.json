@@ -5193,21 +5193,21 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   },
   "unlocks": {
-    "tooltip": {
+    "btn": {
       "title": {
-        "all": "Everything unlocked",
-        "none": "Nothing unlocked",
-        "mod": "Mod-supplied unlocks",
-        "indexing": "Computing alternate state"
+        "none": "Tidak ada yang terbuka",
+        "mod": "Pembukaan Anda saat ini",
+        "modDisabled": "Buka peta dari mod Noitamap",
+        "all": "Semuanya tidak terkunci"
       },
       "body": {
-        "all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none": "Nothing unlocked. Click to switch back to everything unlocked.",
-        "mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
-        "indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment.",
-        "all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
-        "mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked."
+        "none": "Beralih untuk menampilkan kumpulan tongkat/mantra seolah-olah Anda tidak membuka kunci apa pun.",
+        "none_active": "Saat ini tidak menunjukkan apa pun yang terbuka.",
+        "mod": "Beralih untuk menampilkan kumpulan tongkat/mantra menggunakan pembukaan kunci dalam game Anda (baca dari save00 oleh mod Noitamap).",
+        "mod_active": "Saat ini menampilkan pembukaan kunci dalam game Anda (baca dari save00 oleh mod Noitamap).",
+        "modDisabled": "Gunakan mod Noitamap untuk melihat isi tongkat dan mantra yang akurat untuk lari Anda saat ini. Mod membaca pembukaan kunci Anda langsung dari save00.",
+        "all": "Beralih untuk menampilkan kumpulan tongkat/mantra seolah-olah Anda telah membuka semuanya. Default teleskop.",
+        "all_active": "Saat ini menunjukkan semuanya tidak terkunci. Ini cocok dengan default Telescope — konten yang sama yang dilihat semua orang, apa pun kemajuannya."
       }
     }
   }

@@ -5193,21 +5193,21 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   },
   "unlocks": {
-    "tooltip": {
+    "btn": {
       "title": {
-        "all": "Everything unlocked",
-        "none": "Nothing unlocked",
-        "mod": "Mod-supplied unlocks",
-        "indexing": "Computing alternate state"
+        "none": "Nic není odemčeno",
+        "mod": "Váš aktuální se odemkne",
+        "modDisabled": "Otevřete mapu z modu Noitamap",
+        "all": "Vše odemčeno"
       },
       "body": {
-        "all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none": "Nothing unlocked. Click to switch back to everything unlocked.",
-        "mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
-        "indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment.",
-        "all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
-        "mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked."
+        "none": "Přepněte na zobrazení bazénů hůlek/kouzel, jako byste nic neodemkli.",
+        "none_active": "Momentálně nezobrazuje nic odemčeného.",
+        "mod": "Přepněte na zobrazování bazénů hůlek/kouzel pomocí odemknutí ve hře (přečtěte si ze save00 pomocí modu Noitamap).",
+        "mod_active": "Aktuálně se zobrazují vaše odemknutí ve hře (přečteno ze save00 pomocí modu Noitamap).",
+        "modDisabled": "Použijte mod Noitamap k zobrazení přesného obsahu hůlky a kouzel pro váš aktuální běh. Mod čte vaše odemknutí přímo ze save00.",
+        "all": "Přepněte na zobrazení bazénů hůlek/kouzel, jako byste vše odemkli. Výchozí nastavení dalekohledu.",
+        "all_active": "Momentálně se zobrazuje vše odemčené. To odpovídá výchozímu nastavení Telescope — stejný obsah, který vidí všichni bez ohledu na pokrok."
       }
     }
   }

@@ -22,7 +22,7 @@ import {
   UnlockDescriptor,
 } from "./unlocks-toggle";
 import { rebuildAltLayers, getAllPOIsFlat } from "./telescope/telescope-osd-bridge";
-import { decodeUnlocks } from "./unlocks";
+import { getUnlocksFromURL } from "./unlocks";
 import type { GenerationResult } from "./telescope/telescope-adapter";
 
 // --- Dev Console Commands (Early Initialization) ---
@@ -92,6 +92,7 @@ import {
   updateURLWithCanvas,
   updateURLWithSeed,
   updateURLWithSearch,
+  reorderParams,
   clearTargetPoiId,
 } from "./data_sources/url";
 import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from "./data_sources/overlays";
@@ -589,14 +590,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const descriptorToUnlocks = (desc: UnlockDescriptor): string[] | null => {
       if (desc === "all") return null;
       if (desc === "none") return [];
-      const params = new URLSearchParams(window.location.search);
-      const encoded = params.get("u");
-      if (encoded) {
-        try {
-          return decodeUnlocks(encoded);
-        } catch {}
-      }
-      return null;
+      // desc === "mod": defer to the URL/localStorage decoder so the `all` /
+      // `none` shorthand tokens never get parsed as base64.
+      return getUnlocksFromURL();
     };
     const unlocksList = descriptorToUnlocks(activeDesc);
 
@@ -794,19 +790,34 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Trigger overlays for the selected spell
       selectSpell(result.spell, app);
     } else {
-      app.goto(result);
-      
+      // Mirror the seed-report row behaviour: openTooltipForPOI handles the
+      // cinematic pan AND opens the POI card once the pan settles. Pass the
+      // POI itself as fallback so the card opens even if markerData hasn't
+      // indexed this id for the current unlocks variant.
+      const poiId = result.id;
+      if (poiId && app.getMap() === "dynamic-main-branch") {
+        import("./telescope/telescope-osd-bridge").then((m) => {
+          m.openTooltipForPOI(poiId, app.osd, {
+            fallbackX: result.x,
+            fallbackY: result.y,
+            fallbackPoi: result,
+          });
+        });
+      } else {
+        app.goto(result);
+      }
+
       // Instantly update the URL to point to this selected POI
       if (result.id || (result.x != null && result.y != null)) {
          const pid = result.id || `st-${Math.round(result.x)}_${Math.round(result.y)}`;
          const url = new URL(window.location.href);
          url.searchParams.set("poi", pid);
-         
+
          const qValue = unifiedSearch.getCurrentQuery();
          if (qValue) {
             url.searchParams.set("q", qValue);
          }
-         
+         reorderParams(url);
          window.history.replaceState({}, "", url.toString());
       }
     }
@@ -1027,6 +1038,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       url.searchParams.delete("py");
       url.searchParams.set("poi", poiId);
     }
+
+    // Encode the active unlock view into the link so the recipient sees the
+    // same wand/spell/chest contents. `mod` (base64url full list) is left
+    // as-is: it's already in the URL from the in-game deeplink, and re-sharing
+    // the mod payload is useful when the recipient wants to see the sender's
+    // current progress.
+    try {
+      const desc = getActiveDescriptor();
+      if (desc === "none") url.searchParams.set("u", "none");
+      else if (desc === "all") url.searchParams.set("u", "all");
+      // desc === "mod": preserve whatever `u=` value is already on the URL
+    } catch { /* noop */ }
+    reorderParams(url);
     return url.toString();
   };
   (window as any).getShareUrl = getShareUrl;

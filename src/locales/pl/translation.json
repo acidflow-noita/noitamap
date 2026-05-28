@@ -5193,21 +5193,21 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   },
   "unlocks": {
-    "tooltip": {
+    "btn": {
       "title": {
-        "all": "Everything unlocked",
-        "none": "Nothing unlocked",
-        "mod": "Mod-supplied unlocks",
-        "indexing": "Computing alternate state"
+        "none": "Nic odblokowanego",
+        "mod": "Twój obecny zostanie odblokowany",
+        "modDisabled": "Otwórz mapę z moda Noitamap",
+        "all": "Wszystko odblokowane"
       },
       "body": {
-        "all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none": "Nothing unlocked. Click to switch back to everything unlocked.",
-        "mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
-        "indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment.",
-        "all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
-        "mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked."
+        "none": "Przełącz na pokazywanie puli różdżek/zaklęć tak, jakbyś niczego nie odblokował.",
+        "none_active": "Obecnie nie pokazuje nic odblokowanego.",
+        "mod": "Przełącz na pokazywanie puli różdżek/zaklęć, korzystając z odblokowań w grze (odczytanych z zapisu 00 przez mod Noitamap).",
+        "mod_active": "Aktualnie wyświetlają się odblokowania w grze (odczytane z save00 przez mod Noitamap).",
+        "modDisabled": "Użyj mod Noitamap, aby zobaczyć dokładną zawartość różdżki i zaklęcia dla bieżącego biegu. Mod odczytuje twoje odblokowania bezpośrednio z save00.",
+        "all": "Przełącz na pokazywanie puli różdżek/zaklęć tak, jakbyś odblokował wszystko. Domyślne ustawienie teleskopu.",
+        "all_active": "Obecnie pokazuje wszystko odblokowane. Jest to zgodne z domyślnymi ustawieniami Teleskopu — ta sama treść, którą wszyscy widzą, niezależnie od postępu."
       }
     }
   }

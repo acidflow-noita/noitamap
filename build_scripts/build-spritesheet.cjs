@@ -56,6 +56,17 @@ const SCAN_DIRS = [
   "data/projectiles_gfx/",
 ];
 
+// Explicit single-PNG inclusions outside SCAN_DIRS.
+// Pairs of [zipPath, atlasKey] — the PNG is loaded as-is (no XML, no rotation,
+// no heuristic crop) and registered under the given key.
+const INCLUDE_EXTRA_PNGS = [
+  // Meditation Cube visual — pixel scene loaded by data/scripts/biomes/excavationsite.lua
+  // (spawn_meditation_cube → LoadPixelScene with meditation_cube_visual.png).
+  // Telescope surfaces this as {type:'item', item:'meditation_cube'} → key
+  // item:meditation_cube, which would otherwise be missing.
+  ["data/biome_impl/excavationsite/meditation_cube_visual.png", "item:meditation_cube"],
+];
+
 // Paths to SKIP when scanning — not useful as standalone sprites
 const SKIP_DIRS = [
   "data/items_gfx/in_hand/",  // Hand-held overlays, not standalone sprites
@@ -367,6 +378,21 @@ async function main() {
 
   console.log(`[build-spritesheet] Found ${allPngPaths.length} PNG files across ${SCAN_DIRS.length} directories`);
 
+  // ─── Explicit single-PNG inclusions outside SCAN_DIRS ───────────────────
+  // Each entry forces a specific PNG into the spritesheet under a fixed key,
+  // bypassing the normal directory scan + key derivation.
+  const extraInclusions = []; // {zipPath, key}
+  for (const [zipPath, key] of INCLUDE_EXTRA_PNGS) {
+    if (!zip.file(zipPath)) {
+      console.warn(`[build-spritesheet] WARNING: extra PNG missing in data.zip: ${zipPath}`);
+      continue;
+    }
+    extraInclusions.push({ zipPath, key });
+  }
+  if (extraInclusions.length) {
+    console.log(`[build-spritesheet] Queued ${extraInclusions.length} explicit extra PNG(s)`);
+  }
+
   let skippedLarge = 0;
   let skippedTransparent = 0;
   let processed = 0;
@@ -477,6 +503,25 @@ async function main() {
   }
 
   console.log(`[build-spritesheet] Processed: ${processed}, Skipped large: ${skippedLarge}, Skipped transparent: ${skippedTransparent}`);
+
+  // ─── Explicit extra PNGs (verbatim, no XML / no heuristic crop) ────────
+  let extrasAdded = 0;
+  for (const { zipPath, key } of extraInclusions) {
+    if (seenKeys.has(key)) continue;
+    let buf;
+    try { buf = await zip.file(zipPath).async("arraybuffer"); } catch { continue; }
+    let img;
+    try { img = decodePng(buf); } catch { continue; }
+    if (img.width > MAX_SPRITE_DIM || img.height > MAX_SPRITE_DIM) {
+      console.warn(`[build-spritesheet] WARNING: extra PNG too large, skipped: ${zipPath} (${img.width}x${img.height})`);
+      continue;
+    }
+    if (isFullyTransparent(img.data)) continue;
+    sprites.push({ key, data: img.data, width: img.width, height: img.height });
+    seenKeys.add(key);
+    extrasAdded++;
+  }
+  if (extrasAdded) console.log(`[build-spritesheet] Added ${extrasAdded} explicit extra PNG(s)`);
 
   // ─── Backward-compatible aliases ───────────────────────────────────────────
   // The runtime code uses keys like "item:chest_random" which maps to buildings_gfx.

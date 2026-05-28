@@ -5193,21 +5193,21 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
   },
   "unlocks": {
-    "tooltip": {
+    "btn": {
       "title": {
-        "all": "Everything unlocked",
-        "none": "Nothing unlocked",
-        "mod": "Mod-supplied unlocks",
-        "indexing": "Computing alternate state"
+        "none": "何もロックが解除されていません",
+        "mod": "現在のロック解除",
+        "modDisabled": "Noitamap modからマップを開きます",
+        "all": "すべてのロックが解除されました"
       },
       "body": {
-        "all": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none": "Nothing unlocked. Click to switch back to everything unlocked.",
-        "mod": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to compare against everything unlocked.",
-        "indexing": "Computing the alternate unlocks state in the background — the toggle will be available in a moment.",
-        "all_3state": "Everything unlocked (matches Telescope). Click to switch to nothing unlocked.",
-        "none_3state": "Nothing unlocked. Click to switch back to your mod-supplied unlocks.",
-        "mod_3state": "Current unlocks match your in-game progress (read from save00 by the Noitamap mod). Click to switch to everything unlocked."
+        "none": "何もロックを解除していないかのように、杖/呪文プールの表示に切り替えます。",
+        "none_active": "現在ロック解除されたものは何も表示されていません。",
+        "mod": "ゲーム内のロック解除 (Noitamap mod によって save00 から読み取られる) を使用して、杖/呪文プールの表示に切り替えます。",
+        "mod_active": "現在、ゲーム内のロック解除が表示されています (Noitamap mod によって save00 から読み取られます)。",
+        "modDisabled": "Noitamap mod を使用して、現在のランの正確な杖と呪文の内容を確認します。 MOD は、save00 からロック解除を直接読み取ります。",
+        "all": "すべてのロックを解除したかのように、杖/呪文プールの表示に切り替えます。望遠鏡のデフォルト。",
+        "all_active": "現在ロック解除されたものをすべて表示しています。これは Telescope のデフォルトと一致します。つまり、進行状況に関係なく全員に同じコンテンツが表示されます。"
       }
     }
   }
