@@ -5071,6 +5071,10 @@
     "title": "Geen wezens toevoegen",
     "content": "Slaat vijanden/wezens overal over - ze worden niet toegevoegd aan de kaart en verschijnen niet in de zoekresultaten. Vermindert het aantal markeringen aanzienlijk (~32k van de POI's van de dagelijkse seed zijn wezens). Standaard ingeschakeld op kleine schermen."
   },
+  "simplisticBackground": {
+    "title": "Een simplistische kaartachtergrond gebruiken",
+    "content": "Vervang de achtergrondtegels van de gestreamde kaart door een kleine platte afbeelding per parallelle wereld. Grote bandbreedte/geheugenbesparing op langzame verbindingen en apparaten met weinig RAM; de achtergrond ziet er blokkerig uit."
+  },
   "perfMode": {
     "title": "Prestaties",
     "content": "Prestatieopties voor langzame apparaten en kleine schermen."

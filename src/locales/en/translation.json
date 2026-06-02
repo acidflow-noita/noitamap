@@ -4973,6 +4973,10 @@
     "title": "Don't add creatures",
     "content": "Skip enemies/creatures everywhere — they're not added to the map and not surfaced in search. Massively reduces marker count (~32k of the daily seed's POIs are creatures). On by default on small screens."
   },
+  "simplisticBackground": {
+    "title": "Use simplistic map background",
+    "content": "Replace the streamed map background tiles with a tiny flat image per parallel world. Big bandwidth/memory saver on slow connections and low-RAM devices; the background looks blocky."
+  },
   "perfMode": {
     "title": "Performance",
     "content": "Performance options for slow devices and small screens."

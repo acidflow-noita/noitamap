@@ -5071,6 +5071,10 @@
     "title": "Nie dodawaj stworzeń",
     "content": "Pomija wrogów/stworzenia wszędzie - nie są dodawane do mapy ani wyświetlane w wyszukiwaniu. Znacznie zmniejsza liczbę znaczników (~32k POI z dziennego seeda to stworzenia). Domyślnie włączone na małych ekranach."
   },
+  "simplisticBackground": {
+    "title": "Użyj uproszczonego tła mapy",
+    "content": "Zamień kafelki tła mapy przesyłanej strumieniowo na mały, płaski obraz dla każdego świata równoległego. Duża przepustowość/oszczędność pamięci na wolnych połączeniach i urządzeniach z małą ilością pamięci RAM; tło wygląda blokowo."
+  },
   "perfMode": {
     "title": "Wydajność",
     "content": "Opcje wydajności dla wolnych urządzeń i małych ekranów."

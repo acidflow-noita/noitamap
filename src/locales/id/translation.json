@@ -5071,6 +5071,10 @@
     "title": "Jangan tambahkan makhluk",
     "content": "Lewati musuh/makhluk di mana saja - tidak ditambahkan ke peta dan tidak muncul di pencarian. Sangat mengurangi jumlah penanda (~32k POI seed harian adalah makhluk). Aktif secara default di layar kecil."
   },
+  "simplisticBackground": {
+    "title": "Gunakan latar belakang peta yang sederhana",
+    "content": "Ganti ubin latar belakang peta yang dialirkan dengan gambar datar kecil per dunia paralel. Penghemat bandwidth/memori besar pada koneksi lambat dan perangkat dengan RAM rendah; latar belakang terlihat kotak-kotak."
+  },
   "perfMode": {
     "title": "Performa",
     "content": "Opsi performa untuk perangkat lambat dan layar kecil."

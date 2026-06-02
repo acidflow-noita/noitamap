@@ -5071,6 +5071,10 @@
     "title": "Keine Kreaturen hinzufügen",
     "content": "Überspringt Feinde/Kreaturen überall - sie werden weder zur Karte hinzugefügt noch in der Suche angezeigt. Reduziert die Anzahl der Marker drastisch (~32k der POIs des täglichen Seeds sind Kreaturen). Auf kleinen Bildschirmen standardmäßig aktiviert."
   },
+  "simplisticBackground": {
+    "title": "Einfachen Kartenhintergrund verwenden",
+    "content": "Ersetzen Sie die gestreamten Kartenhintergrundkacheln durch ein kleines flaches Bild pro Parallelwelt. Große Bandbreiten-/Speichereinsparung bei langsamen Verbindungen und Geräten mit wenig RAM; Der Hintergrund sieht blockig aus."
+  },
   "perfMode": {
     "title": "Leistung",
     "content": "Leistungsoptionen für langsame Geräte und kleine Bildschirme."

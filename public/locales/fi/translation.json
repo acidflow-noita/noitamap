@@ -5071,6 +5071,10 @@
     "title": "Älä lisää olentoja",
     "content": "Ohittaa viholliset/olennot kaikkialla - niitä ei lisätä kartalle eikä haku löydä niitä. Vähentää merkittävästi merkkien määrää (~32k päivittäisen seedin POIsta on olentoja). Oletuksena päällä pienissä näytöissä."
   },
+  "simplisticBackground": {
+    "title": "Käytä yksinkertaista karttataustaa",
+    "content": "Korvaa suoratoistokartan taustalaatat pienellä litteällä kuvalla rinnakkaismaailmaa kohti. Suuri kaistanleveyden/muistin säästö hitaat yhteydet ja vähän RAM-laitteita; tausta näyttää jäykältä."
+  },
   "perfMode": {
     "title": "Suorituskyky",
     "content": "Suorituskykyasetukset hitaille laitteille ja pienille näytöille."

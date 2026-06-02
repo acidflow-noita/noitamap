@@ -5071,6 +5071,10 @@
     "title": "Ne pas ajouter de créatures",
     "content": "Ignore les ennemis/créatures partout - ils ne sont pas ajoutés à la carte ni présentés dans la recherche. Réduit massivement le nombre de marqueurs (~32k des POI du seed quotidien sont des créatures). Activé par défaut sur les petits écrans."
   },
+  "simplisticBackground": {
+    "title": "Utiliser un arrière-plan de carte simpliste",
+    "content": "Remplacez les tuiles d'arrière-plan de la carte diffusées par une petite image plate par monde parallèle. Gros économiseur de bande passante/mémoire sur les connexions lentes et les appareils à faible RAM ; l'arrière-plan semble en blocs."
+  },
   "perfMode": {
     "title": "Performance",
     "content": "Options de performance pour les appareils lents et les petits écrans."

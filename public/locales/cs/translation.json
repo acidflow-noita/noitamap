@@ -5071,6 +5071,10 @@
     "title": "Nepřidávat tvory",
     "content": "Přeskočí nepřátele/tvory všude - nejsou přidáni na mapu ani se nezobrazí ve vyhledávání. Výrazně snižuje počet značek (~32k POI denního seedu jsou tvorové). Standardně zapnuto na malých obrazovkách."
   },
+  "simplisticBackground": {
+    "title": "Používat zjednodušené pozadí mapy",
+    "content": "Nahraďte streamované dlaždice pozadí mapy malým plochým obrázkem pro paralelní svět. Velká šířka pásma/úspora paměti na pomalých připojeních a zařízeních s nízkou RAM; pozadí vypadá hranaté."
+  },
   "perfMode": {
     "title": "Výkon",
     "content": "Možnosti výkonu pro pomalá zařízení a malé obrazovky."

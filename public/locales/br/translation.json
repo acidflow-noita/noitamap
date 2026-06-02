@@ -5071,6 +5071,10 @@
     "title": "Não adicionar criaturas",
     "content": "Ignora inimigos/criaturas em todo lugar - não são adicionados ao mapa nem aparecem na busca. Reduz drasticamente o número de marcadores (~32k dos POIs da seed diária são criaturas). Ativado por padrão em telas pequenas."
   },
+  "simplisticBackground": {
+    "title": "Usar um fundo de mapa simplista",
+    "content": "Substitua os blocos de fundo do mapa transmitido por uma pequena imagem plana por mundo paralelo. Grande economia de largura de banda/memória em conexões lentas e dispositivos com pouca RAM; o fundo parece em blocos."
+  },
   "perfMode": {
     "title": "Desempenho",
     "content": "Opções de desempenho para dispositivos lentos e telas pequenas."

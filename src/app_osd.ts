@@ -1,10 +1,16 @@
 import { fetchMapVersions, getTileData, MapName } from "./data_sources/tile_data";
 import { createOverlays } from "./data_sources/overlays";
 import { isLightMode } from "./light-mode";
+import { isSimplisticBackground } from "./simplistic-background";
 
 import { CHUNK_SIZE } from "./constants";
 
 declare const OpenSeadragon: any;
+
+// Flat per-PW background used by the "Use simplistic map background" perf
+// toggle. Lives in public/assets/. One image px == one 512px chunk, so it is
+// displayed at CHUNK_SIZE (512x) its natural size.
+const BG_PERF_URL = "./assets/bg_perf_mode.png";
 
 export type ZoomPos = {
   x: number;
@@ -173,6 +179,44 @@ export class AppOSD {
     return sources;
   }
 
+  // Cached natural size of the simplistic-background PNG, loaded once.
+  private static _bgNatural: { w: number; h: number } | null = null;
+  private static async loadBgNatural(): Promise<{ w: number; h: number }> {
+    if (this._bgNatural) return this._bgNatural;
+    const img = new Image();
+    img.src = BG_PERF_URL;
+    await img.decode();
+    this._bgNatural = { w: img.naturalWidth, h: img.naturalHeight };
+    return this._bgNatural;
+  }
+
+  /** Build flat-image tile sources for the simplistic background: one
+   *  `bg_perf_mode.png` per PW, anchored at each PW's real top-left (read from
+   *  the bundled dziContent — no network) and displayed at CHUNK_SIZE per px.
+   *  Setting `width` alone preserves aspect ratio, so 1px -> 512px on both
+   *  axes per the user's spec. */
+  private static async getSimplisticSources(mapName: MapName): Promise<any[]> {
+    const { w } = await this.loadBgNatural();
+    const displayW = w * CHUNK_SIZE;
+    let data = getTileData(mapName);
+    // Match getTileSources light-mode parity: drop left/right PW backgrounds.
+    if (mapName === "dynamic-main-branch" && isLightMode()) {
+      data = data.filter((d) => !/-left\.|-right\./.test(d.url));
+    }
+    return data.map((d) => {
+      const dz = JSON.parse(d.dziContent).Image;
+      return {
+        // `__simplisticBase` marks this as a persistent base layer so the
+        // telescope bridge's overlay-cleanup predicates don't treat it as a
+        // stale dynamic tile and purge it after generation renders.
+        tileSource: { type: "image", url: BG_PERF_URL, buildPyramid: false, __simplisticBase: true },
+        x: Number(dz.TopLeft.X),
+        y: Number(dz.TopLeft.Y),
+        width: displayW,
+      };
+    });
+  }
+
   private getAllItems(): any[] {
     const items = [];
     for (let i = 0; i < this.world.getItemCount(); i++) {
@@ -257,9 +301,21 @@ export class AppOSD {
     if (mapName === this.mapName) return;
     this.mapName = mapName;
     await this.bindCacheBustHandler();
-    const tileSources = AppOSD.getTileSources(mapName);
     this.world.removeAll();
-    this.open(tileSources);
+    let sources: any = AppOSD.getTileSources(mapName);
+    // Simplistic background only applies to the dynamic map (its PNG is sized
+    // to that map's per-PW geometry, and the toggle is only offered there).
+    if (isSimplisticBackground() && mapName === "dynamic-main-branch") {
+      // The flat-PNG background is an optional perf asset. If it can't be
+      // loaded/decoded, fall back to the normal tile sources instead of
+      // letting the rejection bubble up and abort the whole app init.
+      try {
+        sources = await AppOSD.getSimplisticSources(mapName);
+      } catch (e) {
+        console.warn("[AppOSD] Simplistic background unavailable, using normal tiles:", e);
+      }
+    }
+    this.open(sources);
     this.clearOverlays();
     const overlays = createOverlays(mapName);
     for (const overlay of overlays) {

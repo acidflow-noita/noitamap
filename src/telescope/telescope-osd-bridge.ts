@@ -306,8 +306,9 @@ export function clearDynamicOverlays(viewer: any): void {
     const world = viewer.world;
     for (let i = world.getItemCount() - 1; i >= 0; i--) {
       const item = world.getItemAt(i);
-      // Skip base static DZI tiles (they have a string tilesUrl)
-      if (item && typeof item.source?.tilesUrl !== "string") {
+      // Skip base layers: static DZI tiles (string tilesUrl) and the
+      // simplistic flat-PNG background (tagged __simplisticBase).
+      if (item && typeof item.source?.tilesUrl !== "string" && !(item.source as any)?.__simplisticBase) {
         world.removeItem(item);
       }
     }
@@ -3706,7 +3707,7 @@ export async function renderGenerationResult(
     const world = viewer.world;
     for (let i = 0; i < world.getItemCount(); i++) {
       const item = world.getItemAt(i);
-      if (item && typeof item.source?.tilesUrl !== "string") {
+      if (item && typeof item.source?.tilesUrl !== "string" && !(item.source as any)?.__simplisticBase) {
         oldWorldItems.push(item);
       }
     }

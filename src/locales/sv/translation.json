@@ -5071,6 +5071,10 @@
     "title": "Lägg inte till varelser",
     "content": "Hoppar över fiender/varelser överallt - de läggs inte till på kartan och visas inte i sökningen. Minskar antalet markörer avsevärt (~32k av det dagliga seedets POI:er är varelser). Aktiverat som standard på små skärmar."
   },
+  "simplisticBackground": {
+    "title": "Använd förenklad kartbakgrund",
+    "content": "Byt ut de strömmade kartbakgrundsbrickorna med en liten platt bild per parallell värld. Stor bandbredd/minnesbesparing på långsamma anslutningar och enheter med låg RAM; bakgrunden ser blockig ut."
+  },
   "perfMode": {
     "title": "Prestanda",
     "content": "Prestandaalternativ för långsamma enheter och små skärmar."

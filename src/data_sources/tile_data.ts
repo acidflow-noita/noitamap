@@ -2,7 +2,7 @@ import json from '../data/tilesources.json';
 
 export type TileData = {
   url: string;
-  // dziContent: string;
+  dziContent: string;
 };
 
 export type MapName = keyof typeof tileSources;

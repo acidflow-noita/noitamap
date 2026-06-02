@@ -70,6 +70,10 @@ export function createSeedReportButton(
   // Letting the change event fire also persists ?sr=1 in the URL so the
   // sidebar reopens after a perf-mode reload.
   input.addEventListener("click", () => {
+    // Only nag when opening. On a checkbox the checked state is already
+    // flipped by the time click fires, so a false value means the user is
+    // closing the panel — that must never show the CTA.
+    if (!input.checked) return;
     const state = authService.getState();
     if (!state.authenticated || !state.isSubscriber) {
       AuthUI.showGetProModal();

@@ -108,6 +108,7 @@ import { isRenderer, getStoredRenderer, setStoredRenderer } from "./renderer_set
 import { isSpoilerFree, setSpoilerFree, onSpoilerFreeChange } from "./spoiler-free";
 import { isLightMode, setLightMode } from "./light-mode";
 import { isSkipCreatures, setSkipCreatures } from "./skip-creatures";
+import { isSimplisticBackground, setSimplisticBackground } from "./simplistic-background";
 import { createLanguageSelector } from "./language-selector";
 import { updateTranslations } from "./i18n-dom";
 import { initKonamiCode } from "./konami";
@@ -1195,6 +1196,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     skipCreaturesToggle.addEventListener("change", () => {
       setSkipCreatures(skipCreaturesToggle.checked);
       skipCreaturesToggle.blur();
+      setTimeout(() => window.location.reload(), 50);
+    });
+  }
+
+  // "Use simplistic map background" toggle — swaps the streamed DZI tile
+  // pyramids for a flat per-PW PNG. The choice is applied when OSD opens the
+  // map (AppOSD.setMap), so reload to rebuild the viewer from scratch.
+  const simplisticBackgroundToggle = document.getElementById("simplisticBackgroundToggle") as HTMLInputElement | null;
+  if (simplisticBackgroundToggle) {
+    simplisticBackgroundToggle.checked = isSimplisticBackground();
+    simplisticBackgroundToggle.addEventListener("change", () => {
+      setSimplisticBackground(simplisticBackgroundToggle.checked);
+      simplisticBackgroundToggle.blur();
       setTimeout(() => window.location.reload(), 50);
     });
   }
