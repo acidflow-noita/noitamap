@@ -39,7 +39,7 @@
  * EXECUTION
  *   - Launches a headless Playwright Chromium.
  *   - A pool of N pages (default 4, --concurrency=N) processes seeds in
- *     parallel. Each page navigates to `?se=<seed>&ds=1`, waits for indexing,
+ *     parallel. Each page navigates to `?se=<seed>&u=all`, waits for indexing,
  *     reads window.__noitamap.getAllDynamicPOIs(), and aggregates.
  *   - Progress is persisted incrementally (every PERSIST_EVERY_MS) so a
  *     long run can be Ctrl-C'd and resumed.
@@ -141,6 +141,11 @@ function emptyBiomeCounts() {
   for (const k of BIOME_METRICS) o[k] = 0;
   return o;
 }
+
+// Averages are reported as 2-decimal floats (e.g. 3.71). Per-seed counts stay
+// integers; only the cross-seed averages carry a fraction, and two decimals is
+// enough precision for the baseline dots/labels.
+const round2 = (n) => Math.round(n * 100) / 100;
 
 function normaliseBiomeSlug(raw) {
   if (!raw) return UNKNOWN_BIOME;
@@ -288,7 +293,7 @@ function computeAverages(stats) {
   const axesAvg = { "-1": emptyAxes(), "0": emptyAxes(), "1": emptyAxes() };
   for (const pwKey of ["-1", "0", "1"]) {
     if (axesCounts[pwKey] === 0) continue;
-    for (const k of SPIDER_AXIS_ORDER) axesAvg[pwKey][k] = axesSums[pwKey][k] / axesCounts[pwKey];
+    for (const k of SPIDER_AXIS_ORDER) axesAvg[pwKey][k] = round2(axesSums[pwKey][k] / axesCounts[pwKey]);
   }
 
   // Per-biome averages — keyed by (pw, biomeSlug).
@@ -318,7 +323,7 @@ function computeAverages(stats) {
     for (const slug of Object.keys(biomeSums[pwKey])) {
       const n = biomeCounts[pwKey][slug] || 1;
       biomesAvg[pwKey][slug] = emptyBiomeCounts();
-      for (const k of BIOME_METRICS) biomesAvg[pwKey][slug][k] = biomeSums[pwKey][slug][k] / n;
+      for (const k of BIOME_METRICS) biomesAvg[pwKey][slug][k] = round2(biomeSums[pwKey][slug][k] / n);
     }
   }
 
@@ -475,9 +480,10 @@ async function main() {
     page.on("console", (msg) => {
       if (msg.type() === "error") {
         const txt = msg.text();
-        // Suppress the noisy "favicon" / asset errors that don't affect
-        // generation; surface anything else.
-        if (!/favicon|404/i.test(txt)) console.warn(`[w${workerId}] ${txt}`);
+        // Suppress noise that doesn't affect generation: favicon/404 asset
+        // misses and net::ERR_NAME_NOT_RESOLVED (an optional remote host —
+        // auth/daily-seed/analytics — that dynamic POI gen never depends on).
+        if (!/favicon|404|ERR_NAME_NOT_RESOLVED/i.test(txt)) console.warn(`[w${workerId}] ${txt}`);
       }
     });
 
@@ -485,7 +491,12 @@ async function main() {
       const seed = pending.shift();
       if (seed === undefined) break;
 
-      const url = `${baseUrl}/?map=dynamic-main-branch&se=${seed}&ds=1`;
+      // IMPORTANT: do NOT pass ds=1 here. resolveSeed() treats ds=1 as
+      // "daily seed mode" and ignores ?se=, fetching TODAY's daily seed
+      // instead — every seed would generate the same world. Pass the seed
+      // explicitly and force all unlocks on with u=all, which reproduces the
+      // daily seed's content (all unlocks) without the seed override.
+      const url = `${baseUrl}/?map=dynamic-main-branch&se=${seed}&u=all`;
       try {
         await page.goto(url, { waitUntil: "domcontentloaded", timeout: NAV_TIMEOUT_MS });
         await page.waitForFunction(() => {
@@ -495,7 +506,11 @@ async function main() {
           const state = hooks.getIndexingState && hooks.getIndexingState();
           if (state !== "ready") return false;
           return hooks.getAllDynamicPOIs().length > 0;
-        }, { timeout: READY_TIMEOUT_MS });
+          // NOTE: options is the THIRD arg of waitForFunction(fn, arg, options).
+          // Passing { timeout } as the 2nd arg makes Playwright treat it as the
+          // page-function argument and silently fall back to its 30s default,
+          // so the 180s budget below was being dropped. Pass undefined for arg.
+        }, undefined, { timeout: READY_TIMEOUT_MS });
 
         const pois = await page.evaluate(() => window.__noitamap.getAllDynamicPOIs());
         const { axes, biomes } = aggregateAll(pois);
