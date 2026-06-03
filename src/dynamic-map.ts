@@ -71,6 +71,70 @@ export function getLastGenerationResult(): GenerationResult | null {
   return lastResult;
 }
 
+// ─── Background comparison-seed prewarm (seed report) ────────────────────────
+
+/** Cache key for a daily-style (all-unlocks) generation of `seed`. Must match
+ *  the key the live daily render writes (including the light-mode suffix) so
+ *  the seed-report comparison lookup hits. Dailies always render all-unlocked,
+ *  so the unlock portion is always "all". */
+export function dailyCacheKey(seed: number): string {
+  return `${seed}-all${isLightMode() ? "|lm" : ""}`;
+}
+
+// Dedupe concurrent requests for the same seed; serialize the heavy
+// generations so at most one background gen runs at a time.
+const pendingSeedCaches = new Map<number, Promise<boolean>>();
+let bgGenChain: Promise<unknown> = Promise.resolve();
+
+/**
+ * Ensure a seed's POIs are generated and cached in IndexedDB for the seed
+ * report's background comparison. Never renders and never reads the live map's
+ * OSD state, so it is safe once the current map has settled (the seed report
+ * calls it only after indexing is "ready"). Resolves true when the seed is
+ * cached (already present or freshly generated), false on failure.
+ */
+export function ensureSeedCached(seed: number, isDaily: boolean): Promise<boolean> {
+  const existing = pendingSeedCaches.get(seed);
+  if (existing) return existing;
+
+  const run = (async (): Promise<boolean> => {
+    const key = dailyCacheKey(seed);
+    try {
+      if (await getCachedGeneration(key)) return true;
+    } catch {
+      /* cache read failed - fall through and regenerate */
+    }
+
+    const gen = bgGenChain.then(async () => {
+      await initTelescope();
+      return generateDynamicMap({
+        seed,
+        ngPlus: 0,
+        dailySeed: isDaily,
+        unlocks: null,
+        parallelWorlds: isLightMode() ? [0] : undefined,
+      });
+    });
+    // Keep the serial chain alive even if this generation throws.
+    bgGenChain = gen.catch(() => undefined);
+
+    const result = await gen;
+    if (!result) return false;
+    await cacheGeneration(key, seed, result);
+    return true;
+  })()
+    .catch((e) => {
+      console.warn(`[DynamicMap] ensureSeedCached(${seed}) failed:`, e);
+      return false;
+    })
+    .finally(() => {
+      pendingSeedCaches.delete(seed);
+    });
+
+  pendingSeedCaches.set(seed, run);
+  return run;
+}
+
 // ─── Seed resolution ─────────────────────────────────────────────────────────
 
 /**

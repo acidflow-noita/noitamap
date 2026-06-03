@@ -133,6 +133,8 @@ declare global {
     getAllDynamicPOIs?: () => Array<{ id: string; type: string; [k: string]: any }>;
     /** Cache-only POI lookup for a given seed (used by seed-report comparison). */
     getFlatPOIsForSeed?: (seed: number) => Promise<any[] | null>;
+    /** Background-generate + cache a seed so getFlatPOIsForSeed hits next time. */
+    requestSeedStats?: (seed: number) => Promise<boolean>;
     /** "Skip creatures" perf-mode flag. */
     isSkipCreatures?: () => boolean;
   }

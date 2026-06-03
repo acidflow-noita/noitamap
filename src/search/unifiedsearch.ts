@@ -1247,6 +1247,7 @@ export class UnifiedSearch extends EventEmitter2 {
         const displayResults = sortedPOIs.map((p) => {
           const chunksAway = Math.round(Math.hypot(p.worldX - playerX, p.worldY - playerY) / CHUNK_SIZE);
           return {
+            id: p.id,
             overlayType: "poi" as const,
             name: p.name ?? p.type,
             displayName: p.name ?? p.type,
@@ -1336,6 +1337,7 @@ export class UnifiedSearch extends EventEmitter2 {
         }
 
         return {
+          id: p.id,
           overlayType: "poi" as const,
           name: finalName,
           displayName: finalName,

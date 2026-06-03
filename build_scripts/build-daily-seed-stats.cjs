@@ -13,7 +13,8 @@
  *     seeds: [seed, ...],
  *     stats: {
  *       [seed]: {
- *         axes: { "-1": Axes, "0": Axes, "1": Axes },
+ *         axes:         { "-1": Axes, "0": Axes, "1": Axes },
+ *         axesMainPath: { "-1": Axes, "0": Axes, "1": Axes }, // main-path biomes only
  *         biomes: {
  *           "-1": { [biomeSlug]: BiomeCounts },
  *           "0":  { ... },
@@ -22,7 +23,8 @@
  *       }
  *     },
  *     averages: {
- *       axes:   { "-1": Axes, "0": Axes, "1": Axes },
+ *       axes:         { "-1": Axes, "0": Axes, "1": Axes },
+ *       axesMainPath: { "-1": Axes, "0": Axes, "1": Axes },
  *       biomes: {
  *         "-1": { [biomeSlug]: BiomeCounts },
  *         "0":  { ... },
@@ -32,9 +34,10 @@
  *     count, axisOrder, biomeMetrics, generatedAt
  *   }
  *
- * SECONDARY OUTPUT (committed, shippable): the axes averages are also baked
- * into noitamap-pro/src/seed-report/daily-seed-baseline.json so the pro seed
- * report can ship the "Average baseline" series without the gitignored json.
+ * SECONDARY OUTPUT (committed, shippable): the axes averages (full world AND
+ * main-path-only) are baked into noitamap-pro/src/seed-report/daily-seed-baseline.json
+ * so the pro seed report can ship the "Average baseline" series (which tracks
+ * the "main path only" toggle) without the gitignored json.
  *
  * EXECUTION
  *   - Launches a headless Playwright Chromium.
@@ -152,24 +155,71 @@ function normaliseBiomeSlug(raw) {
   return String(raw).replace(/^\$?biome_/, "");
 }
 
+// Main-path biome slugs, parsed at runtime from the public source of truth
+// (noitamap/src/data_sources/main-path-biomes.ts) so this script never holds a
+// hand-maintained copy that can drift from the sidebar's "main path only"
+// filter.
+function loadMainPathSlugs() {
+  const tsPath = path.join(ROOT, "src", "data_sources", "main-path-biomes.ts");
+  const text = fs.readFileSync(tsPath, "utf8");
+  const block = text.match(/MAIN_PATH_BIOMES\s*=\s*new Set<string>\(\[([\s\S]*?)\]\)/);
+  if (!block) throw new Error(`[stats] could not parse MAIN_PATH_BIOMES from ${tsPath}`);
+  const slugs = (block[1].match(/["']([^"']+)["']/g) || []).map((s) => s.replace(/["']/g, ""));
+  if (slugs.length === 0) throw new Error(`[stats] MAIN_PATH_BIOMES parsed empty from ${tsPath}`);
+  return new Set(slugs);
+}
+const MAIN_PATH_SLUGS = loadMainPathSlugs();
+const isMainPathSlug = (slug) => MAIN_PATH_SLUGS.has(slug);
+
 function getSpellIdFromPoi(poi) {
   if (poi.type === "item" && poi.item === "spell" && poi.spell) return String(poi.spell);
   if (poi.type === "spell" && poi.item) return String(poi.item);
   return null;
 }
 
-/** Walks the flat POI list once, producing BOTH the per-PW dot-plot axes
- *  and the per-biome counts. Mirrors what the seed report's
- *  `aggregateSpiderAxes` (legacy name) and `aggregate` produce, but counts
- *  only — no refs/coords are persisted (we don't need them for averages or
- *  diffs). */
+/** Per-PW dot-plot axis counts for a single POI, applied to bucket `a`. Single
+ *  source so the full-world and main-path-only accumulators can never drift.
+ *  Mirror of pro's aggregateSpiderAxes. */
+function applyAxisCounts(a, poi) {
+  const t = poi.type;
+  if (t === "great_chest") a.greatChests++;
+  else if (t === "chest") a.chests++;
+  else if (t === "shop") a.shops++;
+  else if (t === "wand") a.wands++;
+  else if (t === "item") {
+    const it = poi.item;
+    if (it) {
+      if (HEART_ITEMS.has(it)) a.hearts++;
+      else if (POTION_ITEMS.has(it)) a.potions++;
+      else if (POUCH_ITEMS.has(it)) a.pouches++;
+      else if (MIMIC_ITEMS.has(it)) a.mimics++;
+      else if (it === "spell" && poi.spell && isHVSpell(String(poi.spell))) a.hvSpells++;
+    }
+  } else if (t === "spell") {
+    if (poi.item && isHVSpell(String(poi.item))) a.hvSpells++;
+  } else if (t === "entity") {
+    const ent = poi.entity ? String(poi.entity).split("/").pop().replace(/\.xml$/i, "") : null;
+    if (ent && DANGEROUS_ENTITIES.has(ent)) a.dangerousCreatures++;
+  }
+  if (poi.material && RARE_MATERIAL_IDS.has(poi.material)) a.rareMaterials++;
+}
+
+/** Walks the flat POI list once, producing the per-PW dot-plot axes (full world
+ *  AND main-path-only) plus the per-biome counts. Mirrors what the seed
+ *  report's aggregateSpiderAxes and aggregate produce, but counts only - no
+ *  refs/coords are persisted (we don't need them for averages or diffs). */
 function aggregateAll(pois) {
   const axes = {};
+  const axesMainPath = {};
   const biomes = {};
 
   function axesBucket(pw) {
     if (!axes[pw]) axes[pw] = emptyAxes();
     return axes[pw];
+  }
+  function axesMainPathBucket(pw) {
+    if (!axesMainPath[pw]) axesMainPath[pw] = emptyAxes();
+    return axesMainPath[pw];
   }
   function biomeBucket(pw, slug) {
     if (!biomes[pw]) biomes[pw] = {};
@@ -180,32 +230,14 @@ function aggregateAll(pois) {
   for (const poi of pois) {
     const pw = poi.pw ?? 0;
     const slug = normaliseBiomeSlug(poi.biome);
-    const a = axesBucket(pw);
     const b = biomeBucket(pw, slug);
     const t = poi.type;
 
-    // Per-PW axes (mirror of pro's aggregateSpiderAxes — drives the dot
-    // plot's average-baseline series).
-    if (t === "great_chest") a.greatChests++;
-    else if (t === "chest") a.chests++;
-    else if (t === "shop") a.shops++;
-    else if (t === "wand") a.wands++;
-    else if (t === "item") {
-      const it = poi.item;
-      if (it) {
-        if (HEART_ITEMS.has(it)) a.hearts++;
-        else if (POTION_ITEMS.has(it)) a.potions++;
-        else if (POUCH_ITEMS.has(it)) a.pouches++;
-        else if (MIMIC_ITEMS.has(it)) a.mimics++;
-        else if (it === "spell" && poi.spell && isHVSpell(String(poi.spell))) a.hvSpells++;
-      }
-    } else if (t === "spell") {
-      if (poi.item && isHVSpell(String(poi.item))) a.hvSpells++;
-    } else if (t === "entity") {
-      const ent = poi.entity ? String(poi.entity).split("/").pop().replace(/\.xml$/i, "") : null;
-      if (ent && DANGEROUS_ENTITIES.has(ent)) a.dangerousCreatures++;
-    }
-    if (poi.material && RARE_MATERIAL_IDS.has(poi.material)) a.rareMaterials++;
+    // Per-PW axes (drives the dot plot's average-baseline series). The
+    // main-path bucket gets the SAME counts gated on biome membership, so its
+    // baseline matches the sidebar's live "main path only" filter.
+    applyAxisCounts(axesBucket(pw), poi);
+    if (isMainPathSlug(slug)) applyAxisCounts(axesMainPathBucket(pw), poi);
 
     // Per-biome counts (mirror of pro's aggregate.ts BiomeStats counts).
     if (t === "chest" || t === "pacifist_chest") b.chests++;
@@ -216,7 +248,7 @@ function aggregateAll(pois) {
     if (poi.material && RARE_MATERIAL_IDS.has(poi.material)) b.rareMaterialsTotal++;
   }
 
-  return { axes, biomes };
+  return { axes, axesMainPath, biomes };
 }
 
 // ─── CSV ────────────────────────────────────────────────────────────────────
@@ -277,23 +309,38 @@ function migrateLegacyEntry(entry) {
 }
 
 function computeAverages(stats) {
-  // Axes averages — same as before.
+  // Axes averages - full world AND main-path-only (two parallel accumulators),
+  // each per PW.
   const axesSums = { "-1": emptyAxes(), "0": emptyAxes(), "1": emptyAxes() };
   const axesCounts = { "-1": 0, "0": 0, "1": 0 };
+  const axesMainSums = { "-1": emptyAxes(), "0": emptyAxes(), "1": emptyAxes() };
+  const axesMainCounts = { "-1": 0, "0": 0, "1": 0 };
   for (const seedKey of Object.keys(stats)) {
     const entry = stats[seedKey];
-    if (!entry?.axes) continue;
-    for (const pwKey of ["-1", "0", "1"]) {
-      const ax = entry.axes[pwKey];
-      if (!ax) continue;
-      for (const k of SPIDER_AXIS_ORDER) axesSums[pwKey][k] += ax[k] ?? 0;
-      axesCounts[pwKey]++;
+    if (entry?.axes) {
+      for (const pwKey of ["-1", "0", "1"]) {
+        const ax = entry.axes[pwKey];
+        if (!ax) continue;
+        for (const k of SPIDER_AXIS_ORDER) axesSums[pwKey][k] += ax[k] ?? 0;
+        axesCounts[pwKey]++;
+      }
+    }
+    if (entry?.axesMainPath) {
+      for (const pwKey of ["-1", "0", "1"]) {
+        const ax = entry.axesMainPath[pwKey];
+        if (!ax) continue;
+        for (const k of SPIDER_AXIS_ORDER) axesMainSums[pwKey][k] += ax[k] ?? 0;
+        axesMainCounts[pwKey]++;
+      }
     }
   }
   const axesAvg = { "-1": emptyAxes(), "0": emptyAxes(), "1": emptyAxes() };
+  const axesMainAvg = { "-1": emptyAxes(), "0": emptyAxes(), "1": emptyAxes() };
   for (const pwKey of ["-1", "0", "1"]) {
-    if (axesCounts[pwKey] === 0) continue;
-    for (const k of SPIDER_AXIS_ORDER) axesAvg[pwKey][k] = round2(axesSums[pwKey][k] / axesCounts[pwKey]);
+    if (axesCounts[pwKey] > 0)
+      for (const k of SPIDER_AXIS_ORDER) axesAvg[pwKey][k] = round2(axesSums[pwKey][k] / axesCounts[pwKey]);
+    if (axesMainCounts[pwKey] > 0)
+      for (const k of SPIDER_AXIS_ORDER) axesMainAvg[pwKey][k] = round2(axesMainSums[pwKey][k] / axesMainCounts[pwKey]);
   }
 
   // Per-biome averages — keyed by (pw, biomeSlug).
@@ -327,7 +374,7 @@ function computeAverages(stats) {
     }
   }
 
-  return { axes: axesAvg, biomes: biomesAvg };
+  return { axes: axesAvg, axesMainPath: axesMainAvg, biomes: biomesAvg };
 }
 
 function writeOutput(stats) {
@@ -359,11 +406,12 @@ function writeProBaseline(stats) {
     console.warn(`[stats] pro seed-report dir not found, skipping baseline export: ${dir}`);
     return;
   }
-  const { axes } = computeAverages(stats);
+  const { axes, axesMainPath } = computeAverages(stats);
   const payload = {
     count: Object.keys(stats).length,
     generatedAt: new Date().toISOString(),
     axes,
+    axesMainPath,
   };
   fs.writeFileSync(PRO_BASELINE_PATH, JSON.stringify(payload, null, 2) + "\n");
   console.log(`[stats] wrote pro baseline extract (${payload.count} seeds) -> ${PRO_BASELINE_PATH}`);
@@ -429,11 +477,11 @@ async function main() {
     }
   }
 
-  // A seed needs (re)computing when either its axes OR its biomes are missing.
-  // This re-runs legacy axes-only entries to fill in biome counts.
+  // A seed needs (re)computing when its axes, biomes, OR main-path axes are
+  // missing. This re-runs legacy entries to fill in the new axesMainPath field.
   const queue = allSeeds.filter((s) => {
     const e = stats[s];
-    return !e || !e.axes || !e.biomes;
+    return !e || !e.axes || !e.biomes || !e.axesMainPath;
   });
   console.log(
     `[stats] ${Object.keys(stats).length} cached, ${queue.length} to (re)compute`,
@@ -513,13 +561,18 @@ async function main() {
         }, undefined, { timeout: READY_TIMEOUT_MS });
 
         const pois = await page.evaluate(() => window.__noitamap.getAllDynamicPOIs());
-        const { axes, biomes } = aggregateAll(pois);
+        const { axes, axesMainPath, biomes } = aggregateAll(pois);
         // Pad with empty PWs so the consumer can rely on -1/0/1 always present.
         stats[seed] = {
           axes: {
             "-1": axes["-1"] ?? emptyAxes(),
             "0":  axes["0"]  ?? emptyAxes(),
             "1":  axes["1"]  ?? emptyAxes(),
+          },
+          axesMainPath: {
+            "-1": axesMainPath["-1"] ?? emptyAxes(),
+            "0":  axesMainPath["0"]  ?? emptyAxes(),
+            "1":  axesMainPath["1"]  ?? emptyAxes(),
           },
           biomes: {
             "-1": biomes["-1"] ?? {},

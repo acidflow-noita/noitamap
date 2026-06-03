@@ -10,6 +10,8 @@ import {
   getCurrentIsDaily,
   getLastGenerationResult,
   buildPOIName,
+  dailyCacheKey,
+  ensureSeedCached,
 } from "./dynamic-map";
 import type { DynamicPOI } from "./dynamic-map";
 import {
@@ -678,20 +680,31 @@ document.addEventListener("DOMContentLoaded", async () => {
     getMaterialInfo: (id: string) => getMaterialInfo(id),
     primeMaterialInfo: () => primeMaterialInfo(),
     getFlatPOIsForSeed: async (seed: number) => {
-      // Cache-only lookup. We intentionally do NOT fall back to
-      // `generateDynamicMap` here — that call has telescope-wide side effects
-      // (setUnlocks, biome data, pixel scene cache writes) which break the
-      // currently-rendered map (e.g. sky/hell HMs disappear). The Seed Report
-      // tolerates a missing diff and shows a hint instead.
+      // Cache-only lookup. We intentionally do NOT generate here - that has
+      // telescope-wide side effects (setUnlocks, biome data, pixel scene cache
+      // writes) which can disturb the currently-rendered map. Background
+      // generation is done separately via requestSeedStats (below), which runs
+      // only after the current map has settled.
       try {
         const { getCachedGeneration } = await import("./telescope/tile-cache");
         const { getAllPOIsFlat } = await import("./telescope/telescope-osd-bridge");
-        const cached = await getCachedGeneration(`${seed}-all`);
+        const cached = await getCachedGeneration(dailyCacheKey(seed));
         if (cached?.poisByPW) return getAllPOIsFlat({ poisByPW: cached.poisByPW } as any);
         return null;
       } catch (e) {
         console.warn("[Noitamap] getFlatPOIsForSeed failed:", e);
         return null;
+      }
+    },
+    requestSeedStats: async (seed: number) => {
+      // Background-generate + cache a comparison seed's POIs so a subsequent
+      // getFlatPOIsForSeed hits. The comparison target is always a daily seed
+      // (all-unlocked). Safe to call after the live map is ready.
+      try {
+        return await ensureSeedCached(seed, true);
+      } catch (e) {
+        console.warn("[Noitamap] requestSeedStats failed:", e);
+        return false;
       }
     },
     setHighValuePredicate: (pred: ((poi: any) => boolean) | null) => {
