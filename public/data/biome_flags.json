@@ -1,0 +1,763 @@
+{
+  "generated": "scripts/generate.mjs biome-flags",
+  "source": "data.wak.unpacked",
+  "biomeCount": 175,
+  "xmlSetCounts": {
+    "noise_biome_edges": 39,
+    "fat_biome_edges": 13
+  },
+  "biomes": [
+    {
+      "color": "0x0000ff",
+      "xmlName": "water"
+    },
+    {
+      "color": "0x0046ff",
+      "xmlName": "snowcastle"
+    },
+    {
+      "color": "0x006b1e",
+      "xmlName": "forest"
+    },
+    {
+      "color": "0x006c42",
+      "xmlName": "wandcave"
+    },
+    {
+      "color": "0x008000",
+      "xmlName": "vault"
+    },
+    {
+      "color": "0x008040",
+      "xmlName": "vault_entrance"
+    },
+    {
+      "color": "0x008080",
+      "xmlName": "mountain_left"
+    },
+    {
+      "color": "0x0080a8",
+      "xmlName": "vault_frozen"
+    },
+    {
+      "color": "0x018080",
+      "xmlName": "mountain_left_2"
+    },
+    {
+      "color": "0x028080",
+      "xmlName": "mountain_left_3"
+    },
+    {
+      "color": "0x085b77",
+      "xmlName": "boss_limbs_arena",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x0a95a4",
+      "xmlName": "funroom"
+    },
+    {
+      "color": "0x0da899",
+      "xmlName": "boss_arena_top",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x1133f1",
+      "xmlName": "lake"
+    },
+    {
+      "color": "0x1133f3",
+      "xmlName": "lake_blood"
+    },
+    {
+      "color": "0x1158f1",
+      "xmlName": "lake_deep"
+    },
+    {
+      "color": "0x11a3fc",
+      "xmlName": "lake_statue"
+    },
+    {
+      "color": "0x124445",
+      "xmlName": "excavationsite",
+      "noise_biome_edges": 1
+    },
+    {
+      "color": "0x14e1d7",
+      "xmlName": "mountain_tree"
+    },
+    {
+      "color": "0x14eed7",
+      "xmlName": "boss_arena",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x157cb0",
+      "xmlName": "essenceroom"
+    },
+    {
+      "color": "0x157cb5",
+      "xmlName": "essenceroom_hell"
+    },
+    {
+      "color": "0x157cb6",
+      "xmlName": "essenceroom_alc"
+    },
+    {
+      "color": "0x157cb7",
+      "xmlName": "mystery_teleport"
+    },
+    {
+      "color": "0x157cb8",
+      "xmlName": "essenceroom_air"
+    },
+    {
+      "color": "0x167f5f",
+      "xmlName": "pyramid_hallway"
+    },
+    {
+      "color": "0x1775d5",
+      "xmlName": "snowcave"
+    },
+    {
+      "color": "0x18a0d6",
+      "xmlName": "snowcave_secret_chamber"
+    },
+    {
+      "color": "0x18d6d6",
+      "xmlName": "snowcastle_hourglass_chamber"
+    },
+    {
+      "color": "0x1f3b62",
+      "xmlName": "mestari_secret"
+    },
+    {
+      "color": "0x1f3b64",
+      "xmlName": "ghost_secret"
+    },
+    {
+      "color": "0x204060",
+      "xmlName": "mountain_hall"
+    },
+    {
+      "color": "0x208080",
+      "xmlName": "mountain_left_entrance"
+    },
+    {
+      "color": "0x214060",
+      "xmlName": "mountain_hall_2"
+    },
+    {
+      "color": "0x224060",
+      "xmlName": "mountain_hall_trailer"
+    },
+    {
+      "color": "0x234060",
+      "xmlName": "mountain_hall_4"
+    },
+    {
+      "color": "0x24888a",
+      "xmlName": "excavationsite_cube_chamber"
+    },
+    {
+      "color": "0x2dc010",
+      "xmlName": "hills_flat"
+    },
+    {
+      "color": "0x2e99d1",
+      "xmlName": "gourd_room"
+    },
+    {
+      "color": "0x3046c1",
+      "xmlName": "watercave"
+    },
+    {
+      "color": "0x326655",
+      "xmlName": "rock_room"
+    },
+    {
+      "color": "0x33e311",
+      "xmlName": "hills2"
+    },
+    {
+      "color": "0x364d24",
+      "xmlName": "dragoncave",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x36d517",
+      "xmlName": "hills"
+    },
+    {
+      "color": "0x36d5c9",
+      "xmlName": "clouds",
+      "noise_biome_edges": 1
+    },
+    {
+      "color": "0x375c00",
+      "xmlName": "rainforest_dark"
+    },
+    {
+      "color": "0x39401a",
+      "xmlName": "niilo_testroom",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x39401b",
+      "xmlName": "niilo_testroom_b",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x39401c",
+      "xmlName": "niilo_testroom_c",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x39401d",
+      "xmlName": "niilo_testroom_d",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x39a760",
+      "xmlName": "gun_room"
+    },
+    {
+      "color": "0x3c0f0a",
+      "xmlName": "the_end"
+    },
+    {
+      "color": "0x3d3d3d",
+      "xmlName": "solid_wall",
+      "fat_biome_edges": 0
+    },
+    {
+      "color": "0x3d3e37",
+      "xmlName": "solid_wall_tower_1",
+      "noise_biome_edges": 1
+    },
+    {
+      "color": "0x3d3e38",
+      "xmlName": "solid_wall_tower_2",
+      "noise_biome_edges": 1
+    },
+    {
+      "color": "0x3d3e39",
+      "xmlName": "solid_wall_tower_3"
+    },
+    {
+      "color": "0x3d3e3a",
+      "xmlName": "solid_wall_tower_4"
+    },
+    {
+      "color": "0x3d3e3b",
+      "xmlName": "solid_wall_tower_5"
+    },
+    {
+      "color": "0x3d3e3c",
+      "xmlName": "solid_wall_tower_6"
+    },
+    {
+      "color": "0x3d3e3d",
+      "xmlName": "solid_wall_tower_7"
+    },
+    {
+      "color": "0x3d3e3e",
+      "xmlName": "solid_wall_tower_8"
+    },
+    {
+      "color": "0x3d3e3f",
+      "xmlName": "solid_wall_tower_9"
+    },
+    {
+      "color": "0x3d3e40",
+      "xmlName": "hills"
+    },
+    {
+      "color": "0x3d3e41",
+      "xmlName": "solid_wall_tower_10"
+    },
+    {
+      "color": "0x3d5a3d",
+      "xmlName": "lavalake",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x3d5a4f",
+      "xmlName": "lavalake_pit",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x3d5a50",
+      "xmlName": "smokecave_right"
+    },
+    {
+      "color": "0x3d5a51",
+      "xmlName": "smokecave_middle"
+    },
+    {
+      "color": "0x3d5a52",
+      "xmlName": "smokecave_left"
+    },
+    {
+      "color": "0x3d5a5b",
+      "xmlName": "sandroom"
+    },
+    {
+      "color": "0x3d5ab2",
+      "xmlName": "shop_room"
+    },
+    {
+      "color": "0x3f3d3e",
+      "xmlName": "solid_wall_tower",
+      "fat_biome_edges": 0
+    },
+    {
+      "color": "0x3f55d1",
+      "xmlName": "greed_room"
+    },
+    {
+      "color": "0x408080",
+      "xmlName": "mountain_right"
+    },
+    {
+      "color": "0x4118d6",
+      "xmlName": "lavalake_racing",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x418080",
+      "xmlName": "mountain_right_entrance"
+    },
+    {
+      "color": "0x42244d",
+      "xmlName": "solid_wall_hidden_cavern",
+      "fat_biome_edges": 0
+    },
+    {
+      "color": "0x428080",
+      "xmlName": "mountain_right_entrance_2"
+    },
+    {
+      "color": "0x438080",
+      "xmlName": "mountain_right_2"
+    },
+    {
+      "color": "0x48e311",
+      "xmlName": "empty"
+    },
+    {
+      "color": "0x4e5267",
+      "xmlName": "robobase"
+    },
+    {
+      "color": "0x50eed7",
+      "xmlName": "boss_victoryroom",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x567cb0",
+      "xmlName": "moon_room"
+    },
+    {
+      "color": "0x572828",
+      "xmlName": "meat"
+    },
+    {
+      "color": "0x57cace",
+      "xmlName": "ocarina"
+    },
+    {
+      "color": "0x57dace",
+      "xmlName": "alchemist_secret"
+    },
+    {
+      "color": "0x5a9628",
+      "xmlName": "temple_wall_ending",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x5a9629",
+      "xmlName": "ending_placeholder"
+    },
+    {
+      "color": "0x5f8fab",
+      "xmlName": "teleroom",
+      "fat_biome_edges": 0
+    },
+    {
+      "color": "0x608080",
+      "xmlName": "mountain_left_stub"
+    },
+    {
+      "color": "0x684c4c",
+      "xmlName": "solid_wall_damage",
+      "fat_biome_edges": 0
+    },
+    {
+      "color": "0x6ba04b",
+      "xmlName": "town_under"
+    },
+    {
+      "color": "0x6db55a",
+      "xmlName": "friend_1",
+      "fat_biome_edges": 0
+    },
+    {
+      "color": "0x6db55b",
+      "xmlName": "friend_2",
+      "fat_biome_edges": 0
+    },
+    {
+      "color": "0x6db55c",
+      "xmlName": "friend_3",
+      "fat_biome_edges": 0
+    },
+    {
+      "color": "0x6db55d",
+      "xmlName": "friend_4",
+      "fat_biome_edges": 0
+    },
+    {
+      "color": "0x6db55e",
+      "xmlName": "friend_5",
+      "fat_biome_edges": 0
+    },
+    {
+      "color": "0x6db55f",
+      "xmlName": "friend_6",
+      "fat_biome_edges": 0
+    },
+    {
+      "color": "0x6dcb28",
+      "xmlName": "temple_wall",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x6dcba2",
+      "xmlName": "end_wall",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x726186",
+      "xmlName": "wizardcave"
+    },
+    {
+      "color": "0x775ddb",
+      "xmlName": "snowcastle_cavern",
+      "fat_biome_edges": 0
+    },
+    {
+      "color": "0x77a5bd",
+      "xmlName": "winter_caves",
+      "noise_biome_edges": 1
+    },
+    {
+      "color": "0x786c42",
+      "xmlName": "crypt"
+    },
+    {
+      "color": "0x796620",
+      "xmlName": "meatroom"
+    },
+    {
+      "color": "0x7be311",
+      "xmlName": "snowcave_tunnel",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x804169",
+      "xmlName": "wizardcave_entrance"
+    },
+    {
+      "color": "0x808000",
+      "xmlName": "rainforest"
+    },
+    {
+      "color": "0x89a04b",
+      "xmlName": "liquidcave"
+    },
+    {
+      "color": "0x93cb4c",
+      "xmlName": "temple_altar",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x93cb4d",
+      "xmlName": "temple_altar_left",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x93cb4e",
+      "xmlName": "temple_altar_right",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x93cb4f",
+      "xmlName": "temple_altar_right_snowcave",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x93cb5a",
+      "xmlName": "temple_altar_right_snowcastle",
+      "noise_biome_edges": 1
+    },
+    {
+      "color": "0x93cb5c",
+      "xmlName": "temple_altar_secret",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x967f11",
+      "xmlName": "pyramid"
+    },
+    {
+      "color": "0x967f5f",
+      "xmlName": "pyramid_entrance"
+    },
+    {
+      "color": "0x968f5f",
+      "xmlName": "pyramid_left"
+    },
+    {
+      "color": "0x968f96",
+      "xmlName": "pyramid_right"
+    },
+    {
+      "color": "0x99cb4c",
+      "xmlName": "temple_altar_empty",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x99cb4d",
+      "xmlName": "temple_altar_left_empty",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x99cb4e",
+      "xmlName": "temple_altar_right_empty",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x99cb4f",
+      "xmlName": "temple_altar_right_snowcave_empty",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0x99cb5a",
+      "xmlName": "temple_altar_right_snowcastle_empty",
+      "noise_biome_edges": 1
+    },
+    {
+      "color": "0x9c6c42",
+      "xmlName": "magic_gate"
+    },
+    {
+      "color": "0x9d893d",
+      "xmlName": "roboroom"
+    },
+    {
+      "color": "0x9d99d1",
+      "xmlName": "song_room"
+    },
+    {
+      "color": "0x9e4302",
+      "xmlName": "robot_egg",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0xa08400",
+      "xmlName": "rainforest_open"
+    },
+    {
+      "color": "0xa861ff",
+      "xmlName": "fungiforest"
+    },
+    {
+      "color": "0xad8111",
+      "xmlName": "bridge"
+    },
+    {
+      "color": "0xb70000",
+      "xmlName": "biome_watchtower"
+    },
+    {
+      "color": "0xb8a928",
+      "xmlName": "solid_wall_temple",
+      "fat_biome_edges": 0
+    },
+    {
+      "color": "0xbaa345",
+      "xmlName": "secret_lab"
+    },
+    {
+      "color": "0xc00020",
+      "xmlName": "secret_entrance"
+    },
+    {
+      "color": "0xc02020",
+      "xmlName": "secret_altar"
+    },
+    {
+      "color": "0xc08080",
+      "xmlName": "mountain_top"
+    },
+    {
+      "color": "0xc08082",
+      "xmlName": "mountain_floating_island"
+    },
+    {
+      "color": "0xc88f5f",
+      "xmlName": "pyramid_top"
+    },
+    {
+      "color": "0xcc9944",
+      "xmlName": "desert"
+    },
+    {
+      "color": "0xd3e6f0",
+      "xmlName": "the_sky"
+    },
+    {
+      "color": "0xd56517",
+      "xmlName": "coalmine_alt"
+    },
+    {
+      "color": "0xd57917",
+      "xmlName": "coalmine",
+      "noise_biome_edges": 1
+    },
+    {
+      "color": "0xd6d8e3",
+      "xmlName": "winter"
+    },
+    {
+      "color": "0xe08080",
+      "xmlName": "mountain_right_stub",
+      "noise_biome_edges": 1
+    },
+    {
+      "color": "0xe17e32",
+      "xmlName": "null_room"
+    },
+    {
+      "color": "0xe1cd32",
+      "xmlName": "sandcave"
+    },
+    {
+      "color": "0xe861f0",
+      "xmlName": "fungicave"
+    },
+    {
+      "color": "0xeba500",
+      "xmlName": "scale"
+    },
+    {
+      "color": "0xf0d517",
+      "xmlName": "roadblock"
+    },
+    {
+      "color": "0xf6cfad",
+      "xmlName": "laboratory"
+    },
+    {
+      "color": "0xf7cf8d",
+      "xmlName": "mountain_lake"
+    },
+    {
+      "color": "0xfe0000",
+      "xmlName": "sky_light_injector"
+    },
+    {
+      "color": "0xff00fb",
+      "xmlName": "biome_barren"
+    },
+    {
+      "color": "0xff00fc",
+      "xmlName": "biome_boss_sky"
+    },
+    {
+      "color": "0xff00fd",
+      "xmlName": "biome_darkness"
+    },
+    {
+      "color": "0xff00fe",
+      "xmlName": "biome_potion_mimics"
+    },
+    {
+      "color": "0xff00ff",
+      "xmlName": "null"
+    },
+    {
+      "color": "0xff6a02",
+      "xmlName": "lava",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0xff8080",
+      "xmlName": "mountain_center"
+    },
+    {
+      "color": "0xffa717",
+      "xmlName": "lava_90percent",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0xffd100",
+      "xmlName": "orbroom_00"
+    },
+    {
+      "color": "0xffd101",
+      "xmlName": "orbroom_01"
+    },
+    {
+      "color": "0xffd102",
+      "xmlName": "orbroom_02"
+    },
+    {
+      "color": "0xffd103",
+      "xmlName": "orbroom_03"
+    },
+    {
+      "color": "0xffd104",
+      "xmlName": "orbroom_04"
+    },
+    {
+      "color": "0xffd105",
+      "xmlName": "orbroom_05"
+    },
+    {
+      "color": "0xffd106",
+      "xmlName": "orbroom_06"
+    },
+    {
+      "color": "0xffd107",
+      "xmlName": "orbroom_07"
+    },
+    {
+      "color": "0xffd108",
+      "xmlName": "orbroom_08"
+    },
+    {
+      "color": "0xffd109",
+      "xmlName": "orbroom_09"
+    },
+    {
+      "color": "0xffd110",
+      "xmlName": "orbroom_10"
+    },
+    {
+      "color": "0xffd111",
+      "xmlName": "orbroom_11",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0xffe42c",
+      "xmlName": "lava",
+      "noise_biome_edges": 0
+    },
+    {
+      "color": "0xffff00",
+      "xmlName": "gold"
+    }
+  ]
+}
