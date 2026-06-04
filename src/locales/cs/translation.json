@@ -5137,7 +5137,11 @@
       "todayDaily": "dnešní den",
       "yesterdayDaily": "včerejší den",
       "unavailable": "žádné srovnání není k dispozici",
-      "notCached": "ve srovnání s {{target}} (semínko {{seed}}) - navštivte to semínko jednou pro načtení srovnání"
+      "notCached": "ve srovnání s {{target}} (semínko {{seed}}) - navštivte to semínko jednou pro načtení srovnání",
+      "switchSeedHint": "Kliknutím přepnete na toto semínko",
+      "switchSeedTitle": "Porovnávané semínko",
+      "noYesterday": "Včerejší denní semínko není dostupné - porovnání pouze s průměrem",
+      "noToday": "Dnešní denní semínko není dostupné - porovnání pouze s průměrem"
     },
     "spider": {
       "title": "Přehled podle světa",

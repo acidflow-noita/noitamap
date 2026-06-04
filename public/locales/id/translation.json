@@ -5137,7 +5137,11 @@
       "todayDaily": "harian hari ini",
       "yesterdayDaily": "harian kemarin",
       "unavailable": "tidak ada perbandingan yang tersedia",
-      "notCached": "dibandingkan dengan {{target}} (benih {{seed}}) - kunjungi benih itu sekali untuk memuat data perbandingan"
+      "notCached": "dibandingkan dengan {{target}} (benih {{seed}}) - kunjungi benih itu sekali untuk memuat data perbandingan",
+      "switchSeedHint": "Klik untuk beralih ke benih ini",
+      "switchSeedTitle": "Benih perbandingan",
+      "noYesterday": "Benih harian kemarin tidak tersedia - hanya membandingkan dengan baseline",
+      "noToday": "Benih harian hari ini tidak tersedia - hanya membandingkan dengan baseline"
     },
     "spider": {
       "title": "Ikhtisar per dunia",

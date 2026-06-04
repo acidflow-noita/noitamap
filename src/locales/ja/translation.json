@@ -5137,7 +5137,11 @@
       "todayDaily": "今日の毎日",
       "yesterdayDaily": "昨日の日常",
       "unavailable": "比較データはありません",
-      "notCached": "{{target}}との比較 (シード {{seed}}) - そのシードを一度訪れて比較データを読み込んでください"
+      "notCached": "{{target}}との比較 (シード {{seed}}) - そのシードを一度訪れて比較データを読み込んでください",
+      "switchSeedHint": "クリックしてこのシードに切り替えます",
+      "switchSeedTitle": "比較シード",
+      "noYesterday": "昨日のデイリーシードは利用できません - 平均との比較のみ",
+      "noToday": "今日のデイリーシードは利用できません - 平均との比較のみ"
     },
     "spider": {
       "title": "ワールドごとの概要",

@@ -5137,7 +5137,11 @@
       "todayDaily": "tämän päivän päivittäin",
       "yesterdayDaily": "eilinen päivä",
       "unavailable": "ei vertailua saatavilla",
-      "notCached": "verrattuna {{target}} (siemen {{seed}}) - käy kyseisessä siemenessä kerran ladataksesi vertailutiedot"
+      "notCached": "verrattuna {{target}} (siemen {{seed}}) - käy kyseisessä siemenessä kerran ladataksesi vertailutiedot",
+      "switchSeedHint": "Vaihda tähän siemeneen napsauttamalla",
+      "switchSeedTitle": "Vertailusiemen",
+      "noYesterday": "Eilinen päivittäinen siemen ei ole saatavilla - vertailu vain keskiarvoon",
+      "noToday": "Tämän päivän päivittäinen siemen ei ole saatavilla - vertailu vain keskiarvoon"
     },
     "spider": {
       "title": "Maailmankohtainen yleiskatsaus",

@@ -5137,7 +5137,11 @@
       "todayDaily": "le quotidien d'aujourd'hui",
       "yesterdayDaily": "le quotidien d'hier",
       "unavailable": "aucune comparaison disponible",
-      "notCached": "comparé à {{target}} (graine {{seed}}) - visitez cette graine une fois pour charger les données de comparaison"
+      "notCached": "comparé à {{target}} (graine {{seed}}) - visitez cette graine une fois pour charger les données de comparaison",
+      "switchSeedHint": "Cliquez pour passer à cette graine",
+      "switchSeedTitle": "Graine de comparaison",
+      "noYesterday": "La graine quotidienne d'hier est indisponible - comparaison avec la moyenne uniquement",
+      "noToday": "La graine quotidienne d'aujourd'hui est indisponible - comparaison avec la moyenne uniquement"
     },
     "spider": {
       "title": "Aperçu par monde",

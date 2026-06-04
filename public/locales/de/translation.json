@@ -5137,7 +5137,11 @@
       "todayDaily": "heute täglich",
       "yesterdayDaily": "die Tageszeitung von gestern",
       "unavailable": "kein Vergleich verfügbar",
-      "notCached": "im Vergleich zu {{target}} (Seed {{seed}}) - besuche diesen Seed einmal, um Vergleichsdaten zu laden"
+      "notCached": "im Vergleich zu {{target}} (Seed {{seed}}) - besuche diesen Seed einmal, um Vergleichsdaten zu laden",
+      "switchSeedHint": "Klicken, um zu diesem Seed zu wechseln",
+      "switchSeedTitle": "Vergleichs-Seed",
+      "noYesterday": "Der gestrige tägliche Seed ist nicht verfügbar - Vergleich nur mit dem Durchschnitt",
+      "noToday": "Der heutige tägliche Seed ist nicht verfügbar - Vergleich nur mit dem Durchschnitt"
     },
     "spider": {
       "title": "Übersicht pro Welt",

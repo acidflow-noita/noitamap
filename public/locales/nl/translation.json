@@ -5137,7 +5137,11 @@
       "todayDaily": "de dagelijkse dag van vandaag",
       "yesterdayDaily": "de dagelijkse dag van gisteren",
       "unavailable": "geen vergelijking beschikbaar",
-      "notCached": "vergeleken met {{target}} (seed {{seed}}) - bezoek die seed één keer om vergelijkingsgegevens te laden"
+      "notCached": "vergeleken met {{target}} (seed {{seed}}) - bezoek die seed één keer om vergelijkingsgegevens te laden",
+      "switchSeedHint": "Klik om naar deze seed te schakelen",
+      "switchSeedTitle": "Vergelijkings-seed",
+      "noYesterday": "De dagelijkse seed van gisteren is niet beschikbaar - alleen vergelijken met het gemiddelde",
+      "noToday": "De dagelijkse seed van vandaag is niet beschikbaar - alleen vergelijken met het gemiddelde"
     },
     "spider": {
       "title": "Overzicht per wereld",

@@ -5137,7 +5137,11 @@
       "todayDaily": "dagens vardag",
       "yesterdayDaily": "gårdagens dagstidning",
       "unavailable": "ingen jämförelse tillgänglig",
-      "notCached": "jämfört med {{target}} (frö {{seed}}) - besök det fröet en gång för att läsa in jämförelsedata"
+      "notCached": "jämfört med {{target}} (frö {{seed}}) - besök det fröet en gång för att läsa in jämförelsedata",
+      "switchSeedHint": "Klicka för att byta till detta frö",
+      "switchSeedTitle": "Jämförelsefrö",
+      "noYesterday": "Gårdagens dagliga frö är inte tillgängligt - jämför endast med medelvärdet",
+      "noToday": "Dagens dagliga frö är inte tillgängligt - jämför endast med medelvärdet"
     },
     "spider": {
       "title": "Översikt per värld",

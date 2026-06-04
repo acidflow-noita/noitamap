@@ -5137,7 +5137,11 @@
       "todayDaily": "今天的每日",
       "yesterdayDaily": "昨天的日报",
       "unavailable": "无法比较",
-      "notCached": "与 {{target}} 对比 (种子 {{seed}}) - 访问一次该种子以加载对比数据"
+      "notCached": "与 {{target}} 对比 (种子 {{seed}}) - 访问一次该种子以加载对比数据",
+      "switchSeedHint": "点击切换到此种子",
+      "switchSeedTitle": "对比种子",
+      "noYesterday": "昨天的每日种子不可用 - 仅与基线对比",
+      "noToday": "今天的每日种子不可用 - 仅与基线对比"
     },
     "spider": {
       "title": "每个世界的概述",

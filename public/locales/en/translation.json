@@ -62,7 +62,11 @@
       "todayDaily": "today's daily",
       "yesterdayDaily": "yesterday's daily",
       "unavailable": "no comparison available",
-      "notCached": "compared to {{target}} (seed {{seed}}) - visit that seed once to load comparison data"
+      "notCached": "compared to {{target}} (seed {{seed}}) - visit that seed once to load comparison data",
+      "switchSeedHint": "Click to switch to this seed",
+      "switchSeedTitle": "Comparison seed",
+      "noYesterday": "Yesterday's daily seed is unavailable - comparing to the baseline only",
+      "noToday": "Today's daily seed is unavailable - comparing to the baseline only"
     },
     "spider": {
       "title": "Per-world overview",

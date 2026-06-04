@@ -5137,7 +5137,11 @@
       "todayDaily": "quotidiano di oggi",
       "yesterdayDaily": "quotidiano di ieri",
       "unavailable": "nessun confronto disponibile",
-      "notCached": "rispetto a {{target}} (seme {{seed}}) - visita quel seme una volta per caricare i dati di confronto"
+      "notCached": "rispetto a {{target}} (seme {{seed}}) - visita quel seme una volta per caricare i dati di confronto",
+      "switchSeedHint": "Clicca per passare a questo seme",
+      "switchSeedTitle": "Seme di confronto",
+      "noYesterday": "Il seme giornaliero di ieri non è disponibile - confronto solo con la media",
+      "noToday": "Il seme giornaliero di oggi non è disponibile - confronto solo con la media"
     },
     "spider": {
       "title": "Panoramica per mondo",

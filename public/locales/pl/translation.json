@@ -5137,7 +5137,11 @@
       "todayDaily": "dzisiejsza codzienność",
       "yesterdayDaily": "wczorajszy dziennik",
       "unavailable": "brak możliwości porównania",
-      "notCached": "w porównaniu do {{target}} (ziarno {{seed}}) - odwiedź to ziarno raz, aby załadować dane porównawcze"
+      "notCached": "w porównaniu do {{target}} (ziarno {{seed}}) - odwiedź to ziarno raz, aby załadować dane porównawcze",
+      "switchSeedHint": "Kliknij, aby przełączyć na to ziarno",
+      "switchSeedTitle": "Ziarno porównania",
+      "noYesterday": "Wczorajsze dzienne ziarno jest niedostępne - porównanie tylko ze średnią",
+      "noToday": "Dzisiejsze dzienne ziarno jest niedostępne - porównanie tylko ze średnią"
     },
     "spider": {
       "title": "Przegląd według świata",

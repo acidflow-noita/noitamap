@@ -5137,7 +5137,11 @@
       "todayDaily": "el diario de hoy",
       "yesterdayDaily": "el diario de ayer",
       "unavailable": "no hay comparación disponible",
-      "notCached": "comparado con {{target}} (semilla {{seed}}) - visita esa semilla una vez para cargar los datos de comparación"
+      "notCached": "comparado con {{target}} (semilla {{seed}}) - visita esa semilla una vez para cargar los datos de comparación",
+      "switchSeedHint": "Haz clic para cambiar a esta semilla",
+      "switchSeedTitle": "Semilla de comparación",
+      "noYesterday": "La semilla diaria de ayer no está disponible - comparando solo con la base de referencia",
+      "noToday": "La semilla diaria de hoy no está disponible - comparando solo con la base de referencia"
     },
     "spider": {
       "title": "Descripción general por mundo",
