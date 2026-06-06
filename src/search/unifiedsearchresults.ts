@@ -7,6 +7,7 @@ import { getPOISpriteFirstFrame } from "../telescope/telescope-osd-bridge";
 import spells from "../data/spells.json";
 import { gameTranslator } from "../game-translations/translator";
 import { isSpoilerFree } from "../spoiler-free";
+import { attachAlwaysCastPopover, dismissPopovers } from "../popover-util";
 import { CREATURE_DATA } from "../data/creature-data";
 
 export type UnifiedSearchResult =
@@ -171,6 +172,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
     this.currentElement = null;
     this.elementByTarget.clear();
     this.lastSortedOrder = "";
+    dismissPopovers(this.wrapper);
     this.wrapper.innerHTML = "";
     this.wrapper.scrollTop = 0;
     this.elementByTarget.clear();
@@ -509,6 +511,8 @@ export class UnifiedSearchResults extends EventEmitter2 {
               const spellsDiv = document.createElement("div");
               spellsDiv.className = "wand-spells-container mt-1 d-flex flex-wrap gap-1";
               spellsDiv.style.alignItems = "center";
+              // Leave room for the AC badge that overhangs the first icon's top-left
+              spellsDiv.style.marginLeft = "6px";
 
               const addSpellIcons = (spellNames: string[], isAlwaysCast: boolean) => {
                 for (const spellName of spellNames) {
@@ -540,6 +544,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
                       acBadge.style.lineHeight = "1";
                       acBadge.style.border = "1px solid #333";
                       acBadge.style.zIndex = "2";
+                      attachAlwaysCastPopover(acBadge);
                       imgContainer.appendChild(acBadge);
                     }
 

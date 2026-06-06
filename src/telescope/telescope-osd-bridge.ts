@@ -13,6 +13,7 @@ import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope
 import { decodePngToRgba, rgbaToPngBlobUrl, rgbaToPngBlob } from "./png-decode";
 import { getCachedBiomeRender, cacheBiomeRender, getCachedSceneBitmap, cacheSceneBitmap, getCachedSceneBitmapKeys, getCachedSceneBitmapsBulk, getCachedBiomeRendersForKey } from "./tile-cache";
 import i18next from "../i18n";
+import { attachAlwaysCastPopover, dismissPopovers } from "../popover-util";
 import {
   getActiveDescriptor,
   setActiveDescriptor,
@@ -2416,27 +2417,7 @@ function placeTooltipForMarker(
 }
 
 function cleanupPopovers(el: HTMLElement): void {
-  try {
-    const bs = (window as any).bootstrap;
-    if (bs?.Popover) {
-      const popovers = el.querySelectorAll('[data-bs-toggle="popover"]');
-      for (const pop of popovers) {
-        const instance = bs.Popover.getInstance(pop);
-        if (instance) {
-          instance.hide();
-          instance.dispose();
-        }
-      }
-    }
-    // Manually-managed popovers (no data-bs-toggle) tag their host with
-    // __disposePopover. Walk the subtree (incl. root) and dispose any.
-    const visit = (node: Element) => {
-      const disp = (node as any).__disposePopover;
-      if (typeof disp === "function") disp();
-    };
-    visit(el);
-    el.querySelectorAll("*").forEach(visit);
-  } catch { /* noop */ }
+  dismissPopovers(el);
 }
 
 function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): void {
@@ -2807,6 +2788,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           badge.textContent = "AC";
           badge.style.cssText =
             "position:absolute;top:-5px;left:-5px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:bold;background:white;color:black;border-radius:50%;border:1px solid #333;z-index:2";
+          attachAlwaysCastPopover(badge);
           container.appendChild(badge);
         }
         if (slot.id) {
