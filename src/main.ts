@@ -23,7 +23,7 @@ import {
   isVariantReady,
   UnlockDescriptor,
 } from "./unlocks-toggle";
-import { rebuildAltLayers, getAllPOIsFlat } from "./telescope/telescope-osd-bridge";
+import { rebuildAltLayers, getAllPOIsFlat, exportBiomeRegionImages } from "./telescope/telescope-osd-bridge";
 import { getUnlocksFromURL } from "./unlocks";
 import type { GenerationResult } from "./telescope/telescope-adapter";
 
@@ -77,6 +77,18 @@ if (isDev) {
       a.click();
       URL.revokeObjectURL(url);
       console.log(`Exported data for seed ${result.seed}`);
+    },
+    // Biomes are ready once a full render has completed (lastResult is set
+    // after renderGenerationResult, which awaits the biome pass). Used by
+    // build-daily-seed-images.cjs to wait for biomes, not POIs.
+    biomesReady: () => {
+      const r = getLastGenerationResult();
+      return !!(r && r.tileLayers && r.tileLayers.length);
+    },
+    exportBiomeRegions: async () => {
+      const result = getLastGenerationResult();
+      if (!result) return null;
+      return exportBiomeRegionImages(result);
     },
   };
   console.log('[Noitamap] Dev mode detected, "noitamap" commands available.');

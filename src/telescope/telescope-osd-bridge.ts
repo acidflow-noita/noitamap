@@ -1113,6 +1113,154 @@ async function addBiomeLayersProgressively(
   window.dispatchEvent(new CustomEvent("biomeGenerationProgress", { detail: { percentage: 100 } }));
 }
 
+// ─── Headless biome-region export (build-daily-seed-images.cjs) ─────────────
+
+export interface BiomeRegionImage {
+  pw: number;
+  pvt: number;
+  /** OSD top-left corner (seed-anchored world coords) — the x/y the live render
+   *  passes to viewer.addTiledImage. Use as-is when re-loading the pyramid. */
+  minX: number;
+  minY: number;
+  /** OSD width of the placed image (= compositeW * scale). */
+  osdWidth: number;
+  /** Nearest-neighbour factor OSD applies on display (= osdWidth / compositeW).
+   *  The 10x upscale itself is done downstream by aseprite, not here. */
+  scale: number;
+  compositeW: number;
+  compositeH: number;
+  /** PNG bytes (base64) of the native composite. The 10x "full" image is
+   *  produced separately (aseprite CLI) — see build-daily-seed-images.cjs. */
+  small: string;
+}
+
+async function blobToBase64(blob: Blob): Promise<string> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let bin = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK) as any);
+  }
+  return btoa(bin);
+}
+
+/**
+ * Re-render the 9 biome regions (3 horizontal PWs × 3 verticals: main/heaven/
+ * hell) for a finished generation and return them as PNGs, biomes only — no
+ * POIs, pixel scenes, or markers. Mirrors addBiomeLayersProgressively's
+ * composite path (no OSD / cache / progress side effects) so the offline images
+ * match the live map pixel-for-pixel. Empty regions are skipped and logged so a
+ * caller can tell when fewer than 9 came back.
+ */
+export async function exportBiomeRegionImages(
+  result: GenerationResult,
+): Promise<BiomeRegionImage[]> {
+  await ensureTelescopeModules();
+
+  const { tileLayers, biomeData, isNGP, worldCenter, parallelWorlds } = result;
+  const w = isNGP ? 72 : 70;
+  const pwOffsetPixels = w * 512;
+  const pws = parallelWorlds || [-1, 0, 1];
+  const pwOrder = [...pws].sort((a, b) => {
+    if (a === 0) return -1;
+    if (b === 0) return 1;
+    return b - a;
+  });
+
+  const layerIndicesByBiome = new Map<string, number[]>();
+  for (let i = 0; i < tileLayers.length; i++) {
+    const layer = tileLayers[i];
+    if (layer.biomeName) {
+      const arr = layerIndicesByBiome.get(layer.biomeName);
+      if (arr) arr.push(i);
+      else layerIndicesByBiome.set(layer.biomeName, [i]);
+    }
+  }
+  const orderedBiomes = BIOME_RENDER_ORDER.filter((b) => !SKIP_BIOMES.has(b));
+  const orderedSet = new Set<string>(orderedBiomes);
+  const unorderedBiomes: string[] = [];
+  for (const [biomeName] of layerIndicesByBiome) {
+    if (!orderedSet.has(biomeName) && !SKIP_BIOMES.has(biomeName)) unorderedBiomes.push(biomeName);
+  }
+  const allBiomesToRender = [...orderedBiomes, ...unorderedBiomes];
+
+  const anchorY = -(14 * 512);
+  const pvtList = [0, -1, 1].filter((pvt) => {
+    if (pvt < 0 && !biomeData.heavenPixels) return false;
+    if (pvt > 0 && !biomeData.hellPixels) return false;
+    return true;
+  });
+
+  const out: BiomeRegionImage[] = [];
+
+  for (const pw of pwOrder) {
+    for (const pvt of pvtList) {
+      const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(
+        biomeData, tileLayers, pw, pvt, isNGP,
+      );
+
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      const validOverlays: { overlay: OffscreenCanvas; x: number; y: number }[] = [];
+      for (const biomeName of allBiomesToRender) {
+        const layerIdxArr = layerIndicesByBiome.get(biomeName);
+        if (!layerIdxArr) continue;
+        for (const layerIdx of layerIdxArr) {
+          const overlay = overlays[layerIdx];
+          if (!overlay || overlay.width === 0 || overlay.height === 0) continue;
+          const layer = tileLayers[layerIdx];
+          const x = -(worldCenter * 512) + pw * pwOffsetPixels + layer.correctedX;
+          const y = anchorY + layer.correctedY + pvt * 24576;
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x + overlay.width * 10);
+          maxY = Math.max(maxY, y + overlay.height * 10);
+          validOverlays.push({ overlay, x, y });
+        }
+      }
+      if (validOverlays.length === 0) {
+        console.warn(`[export] skipped empty region pw=${pw} pvt=${pvt}`);
+        continue;
+      }
+
+      const compositeW = Math.ceil((maxX - minX) / 10);
+      const compositeH = Math.ceil((maxY - minY) / 10);
+      const compositeCanvas = new OffscreenCanvas(compositeW, compositeH);
+      const compositeCtx = compositeCanvas.getContext("2d")!;
+      for (const { overlay, x, y } of validOverlays) {
+        compositeCtx.drawImage(overlay, Math.round((x - minX) / 10), Math.round((y - minY) / 10));
+      }
+
+      // Assert no opaque fill: the composite starts fully transparent and we
+      // only drawImage biome overlays, so gaps must keep alpha < 255. A fully
+      // opaque composite means a background leaked in.
+      const smallData = compositeCtx.getImageData(0, 0, compositeW, compositeH);
+      let hasAlpha = false;
+      for (let i = 3; i < smallData.data.length; i += 4) {
+        if (smallData.data[i] < 255) { hasAlpha = true; break; }
+      }
+      if (!hasAlpha) console.warn(`[export] pw=${pw} pvt=${pvt} composite is fully opaque (expected transparent gaps)`);
+
+      const osdWidth = compositeW * 10;
+      const scale = osdWidth / compositeW; // = 10; applied downstream by aseprite
+
+      // Only the native composite is emitted. The 10x upscale is a separate
+      // step (aseprite CLI in build-daily-seed-images.cjs): a single
+      // OffscreenCanvas at compositeW*10 x compositeH*10 exceeds the browser's
+      // max canvas size for the larger regions and comes back zero-sized.
+      const small = await blobToBase64(await rgbaToPngBlob(smallData.data, compositeW, compositeH));
+
+      out.push({
+        pw, pvt,
+        minX: Math.round(minX), minY: Math.round(minY),
+        osdWidth, scale, compositeW, compositeH,
+        small,
+      });
+    }
+  }
+
+  return out;
+}
+
 // ─── Pixel Scene Config ─────────────────────────────────────────────────────
 
 /** Runtime pixel scene toggle config. Categories can be turned on/off. */
