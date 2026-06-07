@@ -314,8 +314,52 @@ async function main() {
   try {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
+
+    // CF's WAF can 403 acidflow.stream requests originating from GHA runner IPs.
+    // The biome export doesn't need the background-map pixels at all — OSD
+    // only needs each layer's .dzi descriptor (dimensions/topleft) so its
+    // viewport math works. So:
+    //   * serve baked .dzi descriptors from $BAKED_DZI_DIR (image-build time
+    //     curl into /app/baked-dzi),
+    //   * 204 every _files/<level>/<x>_<y>.<ext> tile request so OSD treats
+    //     it as "no tile here" and proceeds.
+    // Disable with --no-bg-route (handy for local debugging when you DO want
+    // to see the background).
+    if (!args["no-bg-route"]) {
+      const bakedDir = process.env.BAKED_DZI_DIR || "/app/baked-dzi";
+      await page.route(/https?:\/\/[^/]*acidflow\.stream\/maps\//, (route) => {
+        const url = route.request().url();
+        // Match .../maps/<host>/<file>.dzi (descriptor) vs ..._files/.../tile.
+        const m = url.match(/\/maps\/[^/]+\/([^/?#]+)\.dzi(?:[?#]|$)/);
+        if (m) {
+          const local = require("path").join(bakedDir, `${m[1]}.dzi`);
+          if (require("fs").existsSync(local)) {
+            const body = require("fs").readFileSync(local);
+            return route.fulfill({ status: 200, contentType: "application/json", body }).catch(() => route.abort("failed"));
+          }
+        }
+        // Anything else under /maps/ (tiles, missing .dzi) -> 204.
+        return route.fulfill({ status: 204, body: "" }).catch(() => route.abort("failed"));
+      });
+    }
+
     let lastPageErr = null;
-    page.on("pageerror", (e) => { lastPageErr = e.message; console.warn(`[page error] ${e.message}`); });
+    page.on("pageerror", (e) => {
+      // e may be an Error, plain Object, or primitive — surface every form so
+      // the next CI failure tells us exactly what broke instead of "[Object]".
+      let serialized;
+      try {
+        serialized = e && (e.stack || e.message) ? (e.stack || e.message) : JSON.stringify(e);
+      } catch { serialized = String(e); }
+      lastPageErr = serialized;
+      console.warn(`[page error] ${serialized}`);
+    });
+    page.on("requestfailed", (req) => {
+      const f = req.failure();
+      if (f && !/favicon|ERR_NAME_NOT_RESOLVED|ERR_BLOCKED|ERR_FAILED/i.test(f.errorText || "")) {
+        console.warn(`[page reqfail] ${req.method()} ${req.url()} -- ${f.errorText}`);
+      }
+    });
     page.on("console", (msg) => {
       const txt = msg.text();
       if (msg.type() === "error") {
