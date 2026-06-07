@@ -29,12 +29,15 @@
  *     --in=<dir>      input dir (default ../optional_data; expects manifest.json + full/)
  *     --out=<dir>     output dir (default <in>/dzi)
  *     --stitch=<bin>  path to stitch (default "stitch" on PATH)
+ *     --webp-level=N  WebP lossless effort 0-9 (default 0; output is always lossless,
+ *                     N controls encode speed vs file size: 0 = fast/largest, 9 = slow/smallest)
+ *     --force         re-stitch regions whose .dzi already exists
  */
 
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { execFileSync } = require("child_process");
+const { execFileSync, spawnSync } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "..");
 
@@ -63,6 +66,9 @@ async function main() {
   const inDir = args.in ? path.resolve(args.in) : path.join(ROOT, "optional_data");
   const outDir = args.out ? path.resolve(args.out) : path.join(inDir, "dzi");
   const stitchBin = args.stitch || "stitch";
+  // WebP lossless effort. 0 = fast/largest, 9 = slow/smallest. Output is
+  // bit-exact lossless at every level — only encode time and file size differ.
+  const webpLevel = args["webp-level"] !== undefined ? String(parseInt(args["webp-level"], 10)) : "0";
 
   const manifestPath = path.join(inDir, "manifest.json");
   if (!fs.existsSync(manifestPath)) {
@@ -139,7 +145,7 @@ async function main() {
         "--output", outPath,
         "--blend-tile-limit", "1",
         "--dzi-tile-size", "512",
-        "--webp-level", "9",
+        "--webp-level", webpLevel,
         "--xmin", String(r.minX),
         "--ymin", String(r.minY),
         "--xmax", String(xmax),
@@ -147,10 +153,20 @@ async function main() {
       ];
       console.log(`[stitch] pw=${r.pw} pvt=${r.pvt} ${baseName} (${r.fullW}x${r.fullH})`);
       const t = Date.now();
-      try {
-        execFileSync(stitchBin, stitchArgs, { stdio: "inherit" });
-      } catch (e) {
-        console.error(`[stitch] failed on ${baseName}: ${e.message}`);
+      // spawnSync (not execFileSync): an OOM-kill from the kernel exits the
+      // child with no stderr, and execFileSync swallows the signal info into a
+      // generic message. spawnSync exposes result.signal so we can tell SIGKILL
+      // (OOM) apart from a real stitch error.
+      const result = spawnSync(stitchBin, stitchArgs, { stdio: "inherit" });
+      if (result.error) {
+        console.error(`[stitch] failed to spawn on ${baseName}: ${result.error.message}`);
+        continue;
+      }
+      if (result.status !== 0) {
+        const sig = result.signal ? ` signal=${result.signal}` : "";
+        const code = result.status === null ? "null" : String(result.status);
+        const hint = result.signal === "SIGKILL" ? " (likely OOM-killed by host kernel; try GOMAXPROCS=2)" : "";
+        console.error(`[stitch] failed on ${baseName}: status=${code}${sig}${hint}`);
         continue;
       }
       console.log(`[stitch] ${baseName} done in ${fmt(Date.now() - t)}`);
