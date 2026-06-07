@@ -41,12 +41,20 @@ const ROOT = path.resolve(__dirname, "..");
 const fmt = (ms) => (ms / 1000).toFixed(1) + "s";
 
 function parseArgs() {
-  return Object.fromEntries(
-    process.argv.slice(2).map((a) => {
-      const m = a.match(/^--([^=]+)(?:=(.*))?$/);
-      return m ? [m[1], m[2] ?? "true"] : [a, "true"];
-    }),
-  );
+  const out = {};
+  const argv = process.argv.slice(2);
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    const m = a.match(/^--([^=]+)(?:=(.*))?$/);
+    if (!m) { out[a] = "true"; continue; }
+    const key = m[1];
+    if (m[2] !== undefined) { out[key] = m[2]; continue; }
+    // --key (no =): consume next arg as value if it isn't another flag.
+    const next = argv[i + 1];
+    if (next !== undefined && !/^--/.test(next)) { out[key] = next; i++; }
+    else { out[key] = "true"; }
+  }
+  return out;
 }
 
 async function main() {
@@ -85,13 +93,28 @@ async function main() {
 
   fs.mkdirSync(outDir, { recursive: true });
 
+  const force = !!args["force"];
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "stitch-"));
-  let count = 0;
+  let count = 0, skipped = 0;
   try {
     for (const r of manifest.regions) {
       const src = path.join(fullDir, r.file);
       if (!fs.existsSync(src)) {
         console.warn(`[stitch] missing ${src}; skipping pw=${r.pw} pvt=${r.pvt}`);
+        continue;
+      }
+
+      const baseName = `dynamic-daily-${r.minX}-${r.minY}`;
+      const outPath = path.join(outDir, `${baseName}.dzi`);
+      const filesDir = path.join(outDir, `${baseName}_files`);
+
+      // Resumability: skip regions whose DZI already exists from a prior run.
+      // The .dzi descriptor is written last by stitch, so its presence implies
+      // the _files/ pyramid is complete. Pass --force to redo.
+      if (!force && fs.existsSync(outPath) && fs.existsSync(filesDir)) {
+        console.log(`[stitch] checkpoint: ${baseName}.dzi exists, skipping (pass --force to redo)`);
+        skipped++;
+        count++;
         continue;
       }
 
@@ -105,12 +128,8 @@ async function main() {
       try { fs.linkSync(src, path.join(regionTmp, tileName)); }
       catch { fs.copyFileSync(src, path.join(regionTmp, tileName)); }
 
-      const baseName = `dynamic-daily-${r.minX}-${r.minY}`;
-      const outPath = path.join(outDir, `${baseName}.dzi`);
-
-      // Wipe any prior <baseName>_files/ so a smaller pyramid replaces a
-      // larger one cleanly (stitch only writes the levels it produces).
-      const filesDir = path.join(outDir, `${baseName}_files`);
+      // Wipe any prior partial <baseName>_files/ so a smaller pyramid replaces
+      // a larger one cleanly (stitch only writes the levels it produces).
       fs.rmSync(filesDir, { recursive: true, force: true });
 
       const xmax = r.minX + r.fullW;

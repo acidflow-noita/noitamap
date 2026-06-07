@@ -194,12 +194,22 @@ async function runUpscale({ items, smallDir, fullDir, asepritePath, mode }) {
 
 async function main() {
   START = Date.now();
-  const args = Object.fromEntries(
-    process.argv.slice(2).map((a) => {
+  // Parse both `--k=v` and `--k v` forms; falling back to "true" for bare flags.
+  const args = (() => {
+    const out = {};
+    const argv = process.argv.slice(2);
+    for (let i = 0; i < argv.length; i++) {
+      const a = argv[i];
       const m = a.match(/^--([^=]+)(?:=(.*))?$/);
-      return m ? [m[1], m[2] ?? "true"] : [a, "true"];
-    }),
-  );
+      if (!m) { out[a] = "true"; continue; }
+      const key = m[1];
+      if (m[2] !== undefined) { out[key] = m[2]; continue; }
+      const next = argv[i + 1];
+      if (next !== undefined && !/^--/.test(next)) { out[key] = next; i++; }
+      else { out[key] = "true"; }
+    }
+    return out;
+  })();
   const baseUrl = args.url || "http://localhost:5173";
   const outDir = args.out ? path.resolve(args.out) : path.join(ROOT, "optional_data");
   const smallDir = path.join(outDir, "small");
@@ -243,6 +253,32 @@ async function main() {
     } catch (e) {
       console.error(`[images] could not fetch daily seed from ${DAILY_SEED_URL}: ${e.message}. Pass --seed=<n> to override.`);
       process.exit(1);
+    }
+  }
+
+  // Resumability: if a previous run for this exact seed left a complete set of
+  // smalls/fulls + manifest under <outDir>, skip the (very expensive) headless
+  // render and reuse them. Manifest is the authoritative marker — only written
+  // at the end of the render phase, so its presence means smalls + fulls are
+  // in place. Pass --force-render to bypass.
+  const manifestPath = path.join(outDir, "manifest.json");
+  if (!args["force-render"] && fs.existsSync(manifestPath)) {
+    try {
+      const cached = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      if (cached.seed === seed && Array.isArray(cached.regions) && cached.regions.length) {
+        const allPresent = cached.regions.every((r) =>
+          fs.existsSync(path.join(smallDir, r.file)) && fs.existsSync(path.join(fullDir, r.file)),
+        );
+        if (allPresent) {
+          console.log(`[images] checkpoint: reusing ${cached.regions.length} small+full PNGs for seed ${seed} from ${outDir} (pass --force-render to redo)  (total ${fmt(Date.now() - START)})`);
+          return;
+        }
+        console.log(`[images] checkpoint stale (some PNGs missing) — re-rendering`);
+      } else if (cached.seed !== seed) {
+        console.log(`[images] checkpoint is for seed ${cached.seed}, but this run is for ${seed} — re-rendering`);
+      }
+    } catch (e) {
+      console.warn(`[images] could not read existing manifest (${e.message}) — re-rendering`);
     }
   }
 
@@ -353,11 +389,16 @@ async function main() {
     process.exit(1);
   }
 
-  // Wipe + rewrite each run (no per-seed subfolder).
+  // Reset output dirs only after a successful render — that way if a previous
+  // run wrote a partial manifest, the checkpoint logic above had a chance to
+  // detect it. We delete and recreate so leftover files from a previous seed
+  // never linger.
   for (const d of [smallDir, fullDir]) {
     fs.rmSync(d, { recursive: true, force: true });
     fs.mkdirSync(d, { recursive: true });
   }
+  // Also drop any stale manifest from a previous seed/run before we start writing.
+  fs.rmSync(manifestPath, { force: true });
 
   // 1. Write the native composites (the browser only emits these — a 10x
   //    canvas exceeds the browser's max size for the larger regions).
