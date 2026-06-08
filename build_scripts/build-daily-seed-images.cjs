@@ -206,43 +206,57 @@ async function upscalePngWithBg({ overlayPath, maskPath, bgBlack, biomeBitmaps, 
     const maskBase = sy * w * 4;
     for (let sx = 0; sx < w; sx++) {
       // Decide bg for this small-px (constant across the F×F output block).
-      let bgR = 0, bgG = 0, bgB = 0; // default: opaque black
+      // - maskInside=true: pixel is covered by a biome polygon. Use its bg
+      //   bitmap (or opaque black if the bitmap is missing).
+      // - maskInside=false on a main-world region: pixel is *outside* any
+      //   biome polygon. The static background DZI fills this space, so we
+      //   write transparent (alpha=0) and let it show through.
+      // - bgBlack=true (heaven/hell): no static bg under those Y ranges, so
+      //   the whole bg is opaque black regardless of mask.
       let bgBmp = null;
-      if (!bgBlack) {
+      let maskInside = false;
+      if (bgBlack) {
+        maskInside = true; // treat the whole region as "filled, no static bg"
+      } else {
         const mi = maskBase + sx * 4;
-        const ma = maskBuf[mi + 3];
-        if (ma > 0) {
+        if (maskBuf[mi + 3] > 0) {
+          maskInside = true;
           const idx = (maskBuf[mi] << 16) | (maskBuf[mi + 1] << 8) | maskBuf[mi + 2];
           bgBmp = biomeBitmaps[idx] || null;
         }
       }
-      // Overlay sample.
       const os = overlayBase + sx * overlayCh;
       const oR = overlay[os], oG = overlay[os + 1], oB = overlay[os + 2];
       const oA = overlayCh === 4 ? overlay[os + 3] : 255;
 
-      // Emit F output pixels for this source column. The bg sample varies per
-      // output px (we tile the native-scale bg PNG at 1:1 with output pixels);
-      // overlay is the same nearest-neighbour replicated value across the block.
       const outBaseX = sx * F;
       for (let k = 0; k < F; k++) {
         const outX = outBaseX + k;
-        // Sample bg at (outX, output-y placeholder — we use sy*F here for row
-        // origin; the vertical tiling happens because we repeat this row F
-        // times below, each with a different `outY` for bg-y).
-        let bR = bgR, bG = bgG, bB = bgB;
+        let bR = 0, bG = 0, bB = 0;
         if (bgBmp) {
           const bx = outX % bgBmp.w;
-          const by = (sy * F) % bgBmp.h;   // first of the F rows; per-row offset added on replication
+          const by = (sy * F) % bgBmp.h;
           const bi = (by * bgBmp.w + bx) * bgBmp.ch;
           bR = bgBmp.data[bi]; bG = bgBmp.data[bi + 1]; bB = bgBmp.data[bi + 2];
         }
-        if (oA === 255) {
+        if (!maskInside) {
+          // Outside any biome polygon on a main-world region. Pass through:
+          // overlay pixel if opaque, otherwise transparent so the static bg
+          // DZI shows through. Premultiplied src-over against transparent dst
+          // collapses to (src.rgb * src.a, src.a).
+          if (oA === 255) { row[o++] = oR; row[o++] = oG; row[o++] = oB; row[o++] = 255; }
+          else if (oA === 0) { row[o++] = 0; row[o++] = 0; row[o++] = 0; row[o++] = 0; }
+          else {
+            row[o++] = ((oR * oA) + 127) >> 8;
+            row[o++] = ((oG * oA) + 127) >> 8;
+            row[o++] = ((oB * oA) + 127) >> 8;
+            row[o++] = oA;
+          }
+        } else if (oA === 255) {
           row[o++] = oR; row[o++] = oG; row[o++] = oB; row[o++] = 255;
         } else if (oA === 0) {
           row[o++] = bR; row[o++] = bG; row[o++] = bB; row[o++] = 255;
         } else {
-          // Premul-source-over: out = src + dst*(1-srcA).
           const inv = 255 - oA;
           row[o++] = ((oR * oA) + (bR * inv) + 127) >> 8;
           row[o++] = ((oG * oA) + (bG * inv) + 127) >> 8;
@@ -264,9 +278,13 @@ async function upscalePngWithBg({ overlayPath, maskPath, bgBlack, biomeBitmaps, 
         const oR = overlay[os], oG = overlay[os + 1], oB = overlay[os + 2];
         const oA = overlayCh === 4 ? overlay[os + 3] : 255;
         let bgBmp = null;
-        if (!bgBlack) {
+        let maskInside = false;
+        if (bgBlack) {
+          maskInside = true;
+        } else {
           const mi = maskBase + sx * 4;
           if (maskBuf[mi + 3] > 0) {
+            maskInside = true;
             const idx = (maskBuf[mi] << 16) | (maskBuf[mi + 1] << 8) | maskBuf[mi + 2];
             bgBmp = biomeBitmaps[idx] || null;
           }
@@ -281,7 +299,16 @@ async function upscalePngWithBg({ overlayPath, maskPath, bgBlack, biomeBitmaps, 
             const bi = (by * bgBmp.w + bx) * bgBmp.ch;
             bR = bgBmp.data[bi]; bG = bgBmp.data[bi + 1]; bB = bgBmp.data[bi + 2];
           }
-          if (oA === 255) { row2[o2++] = oR; row2[o2++] = oG; row2[o2++] = oB; row2[o2++] = 255; }
+          if (!maskInside) {
+            if (oA === 255) { row2[o2++] = oR; row2[o2++] = oG; row2[o2++] = oB; row2[o2++] = 255; }
+            else if (oA === 0) { row2[o2++] = 0; row2[o2++] = 0; row2[o2++] = 0; row2[o2++] = 0; }
+            else {
+              row2[o2++] = ((oR * oA) + 127) >> 8;
+              row2[o2++] = ((oG * oA) + 127) >> 8;
+              row2[o2++] = ((oB * oA) + 127) >> 8;
+              row2[o2++] = oA;
+            }
+          } else if (oA === 255) { row2[o2++] = oR; row2[o2++] = oG; row2[o2++] = oB; row2[o2++] = 255; }
           else if (oA === 0) { row2[o2++] = bR; row2[o2++] = bG; row2[o2++] = bB; row2[o2++] = 255; }
           else {
             const inv = 255 - oA;
