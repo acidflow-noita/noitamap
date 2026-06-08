@@ -31,13 +31,15 @@
  *     --stitch=<bin>  path to stitch (default "stitch" on PATH)
  *     --webp-level=N  WebP lossless effort 0-9 (default 0; output is always lossless,
  *                     N controls encode speed vs file size: 0 = fast/largest, 9 = slow/smallest)
+ *     --concurrency=N regions stitched in parallel (default 4, or env STITCH_CONCURRENCY).
+ *                     Each stitch peaks at ~3.2 GB; size to host RAM.
  *     --force         re-stitch regions whose .dzi already exists
  */
 
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { execFileSync, spawnSync } = require("child_process");
+const { execFileSync, spawn } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "..");
 
@@ -69,6 +71,14 @@ async function main() {
   // WebP lossless effort. 0 = fast/largest, 9 = slow/smallest. Output is
   // bit-exact lossless at every level — only encode time and file size differ.
   const webpLevel = args["webp-level"] !== undefined ? String(parseInt(args["webp-level"], 10)) : "0";
+  // Region-level parallelism. Each stitch process holds ~3.2 GB while encoding.
+  // After the biome-baker stitch patch (BlendMethodFast on single-tile inputs)
+  // the per-process mutex contention is gone, so running all 9 regions
+  // concurrently is the fastest setting on a beefy host. Default 9 = max
+  // concurrency for our 9 regions; lower it for tighter RAM budgets.
+  // 9 * 3.2 GB ≈ 29 GB peak — fits easily on saas-linux-large-amd64 (32 GB)
+  // and trivially on 2xlarge (128 GB). On free GHA (16 GB) keep this at 2.
+  const concurrency = Math.max(1, parseInt(args.concurrency || process.env.STITCH_CONCURRENCY || "9", 10));
 
   const manifestPath = path.join(inDir, "manifest.json");
   if (!fs.existsSync(manifestPath)) {
@@ -101,77 +111,95 @@ async function main() {
 
   const force = !!args["force"];
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "stitch-"));
-  let count = 0, skipped = 0;
-  try {
-    for (const r of manifest.regions) {
-      const src = path.join(fullDir, r.file);
-      if (!fs.existsSync(src)) {
-        console.warn(`[stitch] missing ${src}; skipping pw=${r.pw} pvt=${r.pvt}`);
-        continue;
-      }
 
-      const baseName = `dynamic-daily-${r.minX}-${r.minY}`;
-      const outPath = path.join(outDir, `${baseName}.dzi`);
-      const filesDir = path.join(outDir, `${baseName}_files`);
+  // One task per region. Each task does its own filesystem prep, runs stitch
+  // async via spawn, and prints a single grouped block to stdout when done so
+  // concurrent stitches don't interleave their progress lines.
+  const tasks = manifest.regions.map((r) => ({
+    r,
+    baseName: `dynamic-daily-${r.minX}-${r.minY}`,
+  }));
 
-      // Resumability: skip regions whose DZI already exists from a prior run.
-      // The .dzi descriptor is written last by stitch, so its presence implies
-      // the _files/ pyramid is complete. Pass --force to redo.
-      if (!force && fs.existsSync(outPath) && fs.existsSync(filesDir)) {
-        console.log(`[stitch] checkpoint: ${baseName}.dzi exists, skipping (pass --force to redo)`);
-        skipped++;
-        count++;
-        continue;
-      }
-
-      // stitch's input glob expects "<X>,<Y>.png" (comma). Use a private dir per
-      // region so the *.png glob matches exactly one tile.
-      const regionTmp = path.join(tmpRoot, `r${r.minX}_${r.minY}`);
-      fs.mkdirSync(regionTmp, { recursive: true });
-      const tileName = `${r.minX},${r.minY}.png`;
-      // Hard-link if possible (instant, no copy of ~120MB); fall back to copy
-      // across filesystems / on Windows when crossing a drive.
-      try { fs.linkSync(src, path.join(regionTmp, tileName)); }
-      catch { fs.copyFileSync(src, path.join(regionTmp, tileName)); }
-
-      // Wipe any prior partial <baseName>_files/ so a smaller pyramid replaces
-      // a larger one cleanly (stitch only writes the levels it produces).
-      fs.rmSync(filesDir, { recursive: true, force: true });
-
-      const xmax = r.minX + r.fullW;
-      const ymax = r.minY + r.fullH;
-      const stitchArgs = [
-        "--input", regionTmp,
-        "--output", outPath,
-        "--blend-tile-limit", "1",
-        "--dzi-tile-size", "512",
-        "--webp-level", webpLevel,
-        "--xmin", String(r.minX),
-        "--ymin", String(r.minY),
-        "--xmax", String(xmax),
-        "--ymax", String(ymax),
-      ];
-      console.log(`[stitch] pw=${r.pw} pvt=${r.pvt} ${baseName} (${r.fullW}x${r.fullH})`);
-      const t = Date.now();
-      // spawnSync (not execFileSync): an OOM-kill from the kernel exits the
-      // child with no stderr, and execFileSync swallows the signal info into a
-      // generic message. spawnSync exposes result.signal so we can tell SIGKILL
-      // (OOM) apart from a real stitch error.
-      const result = spawnSync(stitchBin, stitchArgs, { stdio: "inherit" });
-      if (result.error) {
-        console.error(`[stitch] failed to spawn on ${baseName}: ${result.error.message}`);
-        continue;
-      }
-      if (result.status !== 0) {
-        const sig = result.signal ? ` signal=${result.signal}` : "";
-        const code = result.status === null ? "null" : String(result.status);
-        const hint = result.signal === "SIGKILL" ? " (likely OOM-killed by host kernel; try GOMAXPROCS=2)" : "";
-        console.error(`[stitch] failed on ${baseName}: status=${code}${sig}${hint}`);
-        continue;
-      }
-      console.log(`[stitch] ${baseName} done in ${fmt(Date.now() - t)}`);
-      count++;
+  const runRegion = async ({ r, baseName }) => {
+    const src = path.join(fullDir, r.file);
+    if (!fs.existsSync(src)) {
+      console.warn(`[stitch] missing ${src}; skipping pw=${r.pw} pvt=${r.pvt}`);
+      return { ok: false, skipped: true };
     }
+    const outPath = path.join(outDir, `${baseName}.dzi`);
+    const filesDir = path.join(outDir, `${baseName}_files`);
+
+    // Resumability: skip regions whose DZI already exists from a prior run.
+    if (!force && fs.existsSync(outPath) && fs.existsSync(filesDir)) {
+      console.log(`[stitch] checkpoint: ${baseName}.dzi exists, skipping (pass --force to redo)`);
+      return { ok: true, checkpoint: true };
+    }
+
+    // stitch's input glob expects "<X>,<Y>.png" (comma). One private dir per
+    // region so the *.png glob matches exactly one tile and the regex doesn't
+    // panic on our hyphen-prefixed filename.
+    const regionTmp = path.join(tmpRoot, `r${r.minX}_${r.minY}`);
+    fs.mkdirSync(regionTmp, { recursive: true });
+    const tileName = `${r.minX},${r.minY}.png`;
+    try { fs.linkSync(src, path.join(regionTmp, tileName)); }
+    catch { fs.copyFileSync(src, path.join(regionTmp, tileName)); }
+
+    fs.rmSync(filesDir, { recursive: true, force: true });
+
+    const stitchArgs = [
+      "--input", regionTmp,
+      "--output", outPath,
+      "--blend-tile-limit", "1",
+      "--dzi-tile-size", "512",
+      "--webp-level", webpLevel,
+      "--xmin", String(r.minX),
+      "--ymin", String(r.minY),
+      "--xmax", String(r.minX + r.fullW),
+      "--ymax", String(r.minY + r.fullH),
+    ];
+
+    const t = Date.now();
+    const child = spawn(stitchBin, stitchArgs, { stdio: ["ignore", "pipe", "pipe"] });
+    let buf = "";
+    child.stdout.on("data", (d) => { buf += d.toString(); });
+    child.stderr.on("data", (d) => { buf += d.toString(); });
+
+    const result = await new Promise((res) => {
+      child.on("error", (e) => res({ error: e }));
+      child.on("close", (code, sig) => res({ status: code, signal: sig }));
+    });
+
+    // Flush this region's output as one grouped block so concurrent stitches
+    // don't interleave their newline-progress lines into noise.
+    const header = `\n----- [stitch] pw=${r.pw} pvt=${r.pvt} ${baseName} (${r.fullW}x${r.fullH}) -----`;
+    if (result.error) {
+      process.stdout.write(`${header}\n${buf}[stitch] failed to spawn on ${baseName}: ${result.error.message}\n`);
+      return { ok: false };
+    }
+    if (result.status !== 0) {
+      const sig = result.signal ? ` signal=${result.signal}` : "";
+      const code = result.status === null ? "null" : String(result.status);
+      const hint = result.signal === "SIGKILL" ? " (likely OOM-killed by host kernel; lower STITCH_CONCURRENCY)" : "";
+      process.stdout.write(`${header}\n${buf}[stitch] failed on ${baseName}: status=${code}${sig}${hint}\n`);
+      return { ok: false };
+    }
+    process.stdout.write(`${header}\n${buf}[stitch] ${baseName} done in ${fmt(Date.now() - t)}\n`);
+    return { ok: true };
+  };
+
+  // Concurrency-limited pool. Pulls off the queue as workers free up.
+  let count = 0;
+  const queue = tasks.slice();
+  console.log(`[stitch] running ${queue.length} regions with concurrency=${concurrency}, webp-level=${webpLevel}`);
+  try {
+    const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+      while (queue.length) {
+        const task = queue.shift();
+        const r = await runRegion(task);
+        if (r.ok) count++;
+      }
+    });
+    await Promise.all(workers);
   } finally {
     fs.rmSync(tmpRoot, { recursive: true, force: true });
   }
