@@ -1124,14 +1124,32 @@ export interface BiomeRegionImage {
   minY: number;
   /** OSD width of the placed image (= compositeW * scale). */
   osdWidth: number;
-  /** Nearest-neighbour factor OSD applies on display (= osdWidth / compositeW).
-   *  The 10x upscale itself is done downstream by aseprite, not here. */
+  /** Nearest-neighbour factor OSD applies on display. The 10x upscale + bg
+   *  composite happens downstream in build-daily-seed-images.cjs. */
   scale: number;
   compositeW: number;
   compositeH: number;
-  /** PNG bytes (base64) of the native composite. The 10x "full" image is
-   *  produced separately (aseprite CLI) — see build-daily-seed-images.cjs. */
+  /** PNG bytes (base64) of the native overlay composite. */
   small: string;
+  /** PNG bytes (base64) of the per-pixel biome-bg index mask, at the same
+   *  scale as `small`. RGB encodes a biome index (look up in biomeIndex);
+   *  alpha=255 means "use that biome's bg PNG", alpha=0 means "no biome —
+   *  fill black opaque". Only present for pvt=0 (main world); heaven/hell
+   *  regions get a uniform-black bg downstream and skip the mask. */
+  mask?: string;
+  /** When true, downstream upscaler should fill the entire bg with opaque
+   *  black (heaven/hell regions). When false, use `mask` to pick per-pixel
+   *  bg PNG. Mutually exclusive with mask presence. */
+  bgBlack: boolean;
+}
+
+export interface BiomeRegionExportResult {
+  /** Per-region output. */
+  regions: BiomeRegionImage[];
+  /** Biome-index lookup: index -> biome bg PNG filename (basename of
+   *  noitamap/public/biome_bg/<filename>). Indices are RGB-encoded in the
+   *  per-region mask PNGs. Stable across one bake's regions. */
+  biomeIndex: Record<number, string>;
 }
 
 async function blobToBase64(blob: Blob): Promise<string> {
@@ -1146,15 +1164,15 @@ async function blobToBase64(blob: Blob): Promise<string> {
 
 /**
  * Re-render the 9 biome regions (3 horizontal PWs × 3 verticals: main/heaven/
- * hell) for a finished generation and return them as PNGs, biomes only — no
- * POIs, pixel scenes, or markers. Mirrors addBiomeLayersProgressively's
- * composite path (no OSD / cache / progress side effects) so the offline images
- * match the live map pixel-for-pixel. Empty regions are skipped and logged so a
- * caller can tell when fewer than 9 came back.
+ * hell) for a finished generation, plus per-region biome-bg masks (main world
+ * only) so a downstream Node compositor can stamp the live map's biome
+ * backgrounds in at native scale before stitching. Heaven/hell regions get a
+ * solid black bg downstream (matches the live map, which doesn't paint biome
+ * bgs in those planes). Empty regions are skipped and logged.
  */
 export async function exportBiomeRegionImages(
   result: GenerationResult,
-): Promise<BiomeRegionImage[]> {
+): Promise<BiomeRegionExportResult> {
   await ensureTelescopeModules();
 
   const { tileLayers, biomeData, isNGP, worldCenter, parallelWorlds } = result;
@@ -1190,6 +1208,32 @@ export async function exportBiomeRegionImages(
     if (pvt > 0 && !biomeData.hellPixels) return false;
     return true;
   });
+
+  // Load the static-map biome boundary polygons (same source the live bg
+  // renderer uses). Polygons live in static-map coords:
+  //   gx = svgX * CHUNK_SIZE + MAP_TOP_LEFT_X
+  //   gy = svgY * CHUNK_SIZE + BIOME_IMAGE_TOP_Y
+  // Per pw the bg translates by pw * pwOffsetPixels horizontally.
+  const boundaryData = (await import("../data/biome_boundries_py.json")).default as any;
+  const biomesWithBg = (boundaryData?.biomes ?? []).filter(
+    (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename),
+  );
+  // Stable index assignment: each biome's `filename` -> integer index ≥ 1.
+  // 0 is reserved for "no biome" (alpha=0 in the mask).
+  const biomeIndex: Record<number, string> = {};
+  const indexByFilename = new Map<string, number>();
+  biomesWithBg.forEach((b: any, i: number) => {
+    const idx = i + 1;
+    indexByFilename.set(b.filename, idx);
+    // Value is the bg PNG basename so the Node side can fetch
+    // noitamap/public/biome_bg/<file>.
+    const bgPath = BIOME_BACKGROUND_MAP[b.filename];
+    biomeIndex[idx] = bgPath.split("/").pop() || bgPath;
+  });
+
+  const CHUNK = 512;
+  const MAP_TOP_LEFT_X = -17920;
+  const BIOME_IMAGE_TOP_Y = -14 * CHUNK;
 
   const out: BiomeRegionImage[] = [];
 
@@ -1230,35 +1274,75 @@ export async function exportBiomeRegionImages(
         compositeCtx.drawImage(overlay, Math.round((x - minX) / 10), Math.round((y - minY) / 10));
       }
 
-      // Assert no opaque fill: the composite starts fully transparent and we
-      // only drawImage biome overlays, so gaps must keep alpha < 255. A fully
-      // opaque composite means a background leaked in.
       const smallData = compositeCtx.getImageData(0, 0, compositeW, compositeH);
-      let hasAlpha = false;
-      for (let i = 3; i < smallData.data.length; i += 4) {
-        if (smallData.data[i] < 255) { hasAlpha = true; break; }
-      }
-      if (!hasAlpha) console.warn(`[export] pw=${pw} pvt=${pvt} composite is fully opaque (expected transparent gaps)`);
-
       const osdWidth = compositeW * 10;
-      const scale = osdWidth / compositeW; // = 10; applied downstream by aseprite
-
-      // Only the native composite is emitted. The 10x upscale is a separate
-      // step (aseprite CLI in build-daily-seed-images.cjs): a single
-      // OffscreenCanvas at compositeW*10 x compositeH*10 exceeds the browser's
-      // max canvas size for the larger regions and comes back zero-sized.
+      const scale = osdWidth / compositeW;
       const small = await blobToBase64(await rgbaToPngBlob(smallData.data, compositeW, compositeH));
+
+      // Per-region biome-index mask. Main world only — heaven/hell get a flat
+      // black bg downstream. Mask is at the same pixel scale as `small`
+      // (1px = 10 OSD units) so the Node upscaler can sample it cheaply when
+      // emitting full-res scanlines.
+      let mask: string | undefined;
+      const bgBlack = pvt !== 0;
+      if (!bgBlack) {
+        const maskCanvas = new OffscreenCanvas(compositeW, compositeH);
+        const maskCtx = maskCanvas.getContext("2d")!;
+        // Translate biome-polygon static-map coords into this region's local
+        // (compositeW, compositeH) space. The region's top-left is (minX, minY)
+        // in OSD coords; biomes' static-map gx/gy translate by pw horizontally.
+        const pwShift = pw * pwOffsetPixels;
+        for (const biome of biomesWithBg) {
+          const idx = indexByFilename.get(biome.filename);
+          if (!idx) continue;
+          const rawParts = (biome.svg_map_path as string).split(" ");
+          maskCtx.beginPath();
+          let prev: string | null = null;
+          for (let j = 0; j < rawParts.length; j++) {
+            const part = rawParts[j];
+            if (part === "M" || part === "L" || part === "Z") {
+              if (part === "Z") maskCtx.closePath();
+              prev = part;
+              continue;
+            }
+            const xVal = Number(part);
+            const yPart = rawParts[j + 1];
+            if (yPart === undefined) break;
+            const yVal = Number(yPart);
+            const gx = xVal * CHUNK + MAP_TOP_LEFT_X + pwShift;
+            const gy = yVal * CHUNK + BIOME_IMAGE_TOP_Y;
+            // Convert to local mask coords (1px = 10 OSD units).
+            const cx = (gx - minX) / 10;
+            const cy = (gy - minY) / 10;
+            if (prev === "M") maskCtx.moveTo(cx, cy);
+            else maskCtx.lineTo(cx, cy);
+            j++; // skip the y part we just consumed
+            prev = "L";
+          }
+          maskCtx.fillStyle = `rgb(${(idx >> 16) & 0xff}, ${(idx >> 8) & 0xff}, ${idx & 0xff})`;
+          maskCtx.fill();
+        }
+        const maskData = maskCtx.getImageData(0, 0, compositeW, compositeH);
+        // Force alpha to 255 wherever any biome was painted, 0 elsewhere — so
+        // the Node side has a clean alpha=255 / alpha=0 mask with no
+        // antialiased edges. (Canvas2D may have anti-aliased polygon edges.)
+        for (let i = 0; i < maskData.data.length; i += 4) {
+          const any = maskData.data[i] | maskData.data[i + 1] | maskData.data[i + 2];
+          maskData.data[i + 3] = any ? 255 : 0;
+        }
+        mask = await blobToBase64(await rgbaToPngBlob(maskData.data, compositeW, compositeH));
+      }
 
       out.push({
         pw, pvt,
         minX: Math.round(minX), minY: Math.round(minY),
         osdWidth, scale, compositeW, compositeH,
-        small,
+        small, mask, bgBlack,
       });
     }
   }
 
-  return out;
+  return { regions: out, biomeIndex };
 }
 
 // ─── Pixel Scene Config ─────────────────────────────────────────────────────

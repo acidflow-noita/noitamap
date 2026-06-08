@@ -152,6 +152,169 @@ async function upscalePngNearest(inputPath, outputPath, factor) {
 }
 
 /**
+ * Same streaming nearest-neighbour upscale as above, but composites a biome
+ * background underneath the overlay before encoding. Used for main-world
+ * (pvt=0) regions where the mask tells us per-pixel which biome bg to use.
+ *
+ * - `overlayPath`: small composite (RGBA) — overlay on top.
+ * - `maskPath`: small biome-index mask (RGB encodes biome idx; alpha=255 inside,
+ *               alpha=0 outside). Same dimensions as the overlay.
+ * - `bgPath`: when present, fills the bg with one biome's tile uniformly (used
+ *             when bgBlack is true OR mask absent — heaven/hell etc.). Black
+ *             fill is selected by passing bgPath = null.
+ * - `biomeBitmaps`: { idx -> { w, h, data: Buffer } } pre-decoded bg PNGs.
+ * - `factor`: upscale factor.
+ *
+ * Per output pixel:
+ *   1. mask sampled at (sx, sy) (small-px coords).
+ *   2. if mask alpha=0  ->  pixel = black (or transparent? see note below).
+ *      if mask alpha>0  ->  bg = biomeBitmaps[idx] tiled at native scale.
+ *   3. overlay pixel is alpha-blended over the bg.
+ *
+ * Note on "no biome" gaps: filled opaque black, matching the live map's habit
+ * of letting the canvas show through where no biome polygon covers.
+ */
+async function upscalePngWithBg({ overlayPath, maskPath, bgBlack, biomeBitmaps, factor, outputPath }) {
+  const overlayPng = decodePng(fs.readFileSync(overlayPath));
+  const w = overlayPng.width, h = overlayPng.height;
+  const overlayCh = overlayPng.channels || 4;
+  const overlay = overlayPng.data;
+
+  let maskBuf = null;
+  if (!bgBlack) {
+    const m = decodePng(fs.readFileSync(maskPath));
+    if (m.width !== w || m.height !== h) {
+      throw new Error(`mask dims ${m.width}x${m.height} != overlay ${w}x${h}`);
+    }
+    maskBuf = m.data; // RGBA: R,G,B encode idx (24-bit), A=255 inside / 0 outside
+  }
+
+  const F = factor;
+  const W = w * F, H = h * F;
+  const def = zlib.createDeflate({ level: 6 });
+  const parts = [];
+  def.on("data", (d) => parts.push(d));
+  const deflated = new Promise((res, rej) => { def.on("end", res); def.on("error", rej); });
+  const writeDef = streamWriter(def);
+
+  const rowLen = 1 + W * 4;
+  for (let sy = 0; sy < h; sy++) {
+    const row = Buffer.allocUnsafe(rowLen);
+    row[0] = 0;
+    let o = 1;
+    const overlayBase = sy * w * overlayCh;
+    const maskBase = sy * w * 4;
+    for (let sx = 0; sx < w; sx++) {
+      // Decide bg for this small-px (constant across the F×F output block).
+      let bgR = 0, bgG = 0, bgB = 0; // default: opaque black
+      let bgBmp = null;
+      if (!bgBlack) {
+        const mi = maskBase + sx * 4;
+        const ma = maskBuf[mi + 3];
+        if (ma > 0) {
+          const idx = (maskBuf[mi] << 16) | (maskBuf[mi + 1] << 8) | maskBuf[mi + 2];
+          bgBmp = biomeBitmaps[idx] || null;
+        }
+      }
+      // Overlay sample.
+      const os = overlayBase + sx * overlayCh;
+      const oR = overlay[os], oG = overlay[os + 1], oB = overlay[os + 2];
+      const oA = overlayCh === 4 ? overlay[os + 3] : 255;
+
+      // Emit F output pixels for this source column. The bg sample varies per
+      // output px (we tile the native-scale bg PNG at 1:1 with output pixels);
+      // overlay is the same nearest-neighbour replicated value across the block.
+      const outBaseX = sx * F;
+      for (let k = 0; k < F; k++) {
+        const outX = outBaseX + k;
+        // Sample bg at (outX, output-y placeholder — we use sy*F here for row
+        // origin; the vertical tiling happens because we repeat this row F
+        // times below, each with a different `outY` for bg-y).
+        let bR = bgR, bG = bgG, bB = bgB;
+        if (bgBmp) {
+          const bx = outX % bgBmp.w;
+          const by = (sy * F) % bgBmp.h;   // first of the F rows; per-row offset added on replication
+          const bi = (by * bgBmp.w + bx) * bgBmp.ch;
+          bR = bgBmp.data[bi]; bG = bgBmp.data[bi + 1]; bB = bgBmp.data[bi + 2];
+        }
+        if (oA === 255) {
+          row[o++] = oR; row[o++] = oG; row[o++] = oB; row[o++] = 255;
+        } else if (oA === 0) {
+          row[o++] = bR; row[o++] = bG; row[o++] = bB; row[o++] = 255;
+        } else {
+          // Premul-source-over: out = src + dst*(1-srcA).
+          const inv = 255 - oA;
+          row[o++] = ((oR * oA) + (bR * inv) + 127) >> 8;
+          row[o++] = ((oG * oA) + (bG * inv) + 127) >> 8;
+          row[o++] = ((oB * oA) + (bB * inv) + 127) >> 8;
+          row[o++] = 255;
+        }
+      }
+    }
+    // Per-row bg-y replication: the row we just built used by=sy*F (first of
+    // the F output rows). For k=1..F-1 we rebuild only the bg component with
+    // the right by offset.
+    await writeDef(row);
+    for (let k = 1; k < F; k++) {
+      const row2 = Buffer.allocUnsafe(rowLen);
+      row2[0] = 0;
+      let o2 = 1;
+      for (let sx = 0; sx < w; sx++) {
+        const os = overlayBase + sx * overlayCh;
+        const oR = overlay[os], oG = overlay[os + 1], oB = overlay[os + 2];
+        const oA = overlayCh === 4 ? overlay[os + 3] : 255;
+        let bgBmp = null;
+        if (!bgBlack) {
+          const mi = maskBase + sx * 4;
+          if (maskBuf[mi + 3] > 0) {
+            const idx = (maskBuf[mi] << 16) | (maskBuf[mi + 1] << 8) | maskBuf[mi + 2];
+            bgBmp = biomeBitmaps[idx] || null;
+          }
+        }
+        const outBaseX = sx * F;
+        for (let kx = 0; kx < F; kx++) {
+          const outX = outBaseX + kx;
+          let bR = 0, bG = 0, bB = 0;
+          if (bgBmp) {
+            const bx = outX % bgBmp.w;
+            const by = (sy * F + k) % bgBmp.h;
+            const bi = (by * bgBmp.w + bx) * bgBmp.ch;
+            bR = bgBmp.data[bi]; bG = bgBmp.data[bi + 1]; bB = bgBmp.data[bi + 2];
+          }
+          if (oA === 255) { row2[o2++] = oR; row2[o2++] = oG; row2[o2++] = oB; row2[o2++] = 255; }
+          else if (oA === 0) { row2[o2++] = bR; row2[o2++] = bG; row2[o2++] = bB; row2[o2++] = 255; }
+          else {
+            const inv = 255 - oA;
+            row2[o2++] = ((oR * oA) + (bR * inv) + 127) >> 8;
+            row2[o2++] = ((oG * oA) + (bG * inv) + 127) >> 8;
+            row2[o2++] = ((oB * oA) + (bB * inv) + 127) >> 8;
+            row2[o2++] = 255;
+          }
+        }
+      }
+      await writeDef(row2);
+    }
+  }
+  def.end();
+  await deflated;
+  const idat = Buffer.concat(parts);
+
+  const ws = fs.createWriteStream(outputPath);
+  const finished = new Promise((res, rej) => { ws.on("error", rej); ws.on("finish", res); });
+  const writeWs = streamWriter(ws);
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(H, 4);
+  ihdr[8] = 8; ihdr[9] = 6;
+  await writeWs(PNG_SIG);
+  await writeWs(pngChunk("IHDR", ihdr));
+  await writeWs(pngChunk("IDAT", idat));
+  await writeWs(pngChunk("IEND", Buffer.alloc(0)));
+  ws.end();
+  await finished;
+  return { W, H };
+}
+
+/**
  * Upscale every item (small -> full). mode: "auto" (aseprite, fall back to the
  * Node upscaler on first ENOENT), "aseprite" (require it), or "node" (force).
  */
@@ -214,27 +377,59 @@ async function main() {
   const outDir = args.out ? path.resolve(args.out) : path.join(ROOT, "optional_data");
   const smallDir = path.join(outDir, "small");
   const fullDir = path.join(outDir, "full");
+  const maskDir = path.join(outDir, "mask");
+  const biomeBgSrcDir = path.join(ROOT, "public", "biome_bg");
   const asepritePath = args.aseprite || "aseprite";
   const mode = args.upscaler || "auto";
   const scaleOverride = args.scale ? Number(args.scale) : null;
   const readyTimeoutMs = (args.timeout ? Number(args.timeout) : 300) * 1000;
 
-  // ── Upscale-only: skip the browser, upscale the smalls already on disk ──
+  // ── Upscale-only: skip the browser, composite+upscale smalls already on disk ──
   if (args["upscale-only"]) {
     if (!fs.existsSync(smallDir)) {
       console.error(`[images] --upscale-only: no smalls at ${smallDir}`);
       process.exit(1);
     }
-    const names = fs.readdirSync(smallDir).filter((f) => f.endsWith(".png"));
-    if (names.length === 0) {
-      console.error(`[images] --upscale-only: no PNGs in ${smallDir}`);
+    const cachedManifest = fs.existsSync(manifestPath)
+      ? JSON.parse(fs.readFileSync(manifestPath, "utf8"))
+      : null;
+    if (!cachedManifest || !cachedManifest.regions || !cachedManifest.biomeIndex) {
+      console.error(`[images] --upscale-only: ${manifestPath} missing/incomplete (need regions + biomeIndex). Re-run without --upscale-only.`);
       process.exit(1);
     }
     fs.rmSync(fullDir, { recursive: true, force: true });
     fs.mkdirSync(fullDir, { recursive: true });
-    const items = names.map((name) => ({ name, scale: scaleOverride || 10 }));
-    console.log(`[images] upscale-only: ${names.length} smalls, x${scaleOverride || 10}, method=${mode}`);
-    const n = await runUpscale({ items, smallDir, fullDir, asepritePath, mode });
+
+    const biomeBitmaps = {};
+    for (const [idxStr, bgFile] of Object.entries(cachedManifest.biomeIndex)) {
+      const p = path.join(biomeBgSrcDir, bgFile);
+      if (!fs.existsSync(p)) { console.warn(`[images] biome bg missing: ${p}`); continue; }
+      const png = decodePng(fs.readFileSync(p));
+      biomeBitmaps[Number(idxStr)] = { w: png.width, h: png.height, ch: png.channels || 4, data: png.data };
+    }
+
+    const factor = scaleOverride || cachedManifest.scale || 10;
+    let n = 0;
+    for (const r of cachedManifest.regions) {
+      const overlayPath = path.join(smallDir, r.file);
+      const maskCandidate = path.join(maskDir, r.file);
+      const hasMask = fs.existsSync(maskCandidate);
+      const ts = Date.now();
+      try {
+        const { W, H } = await upscalePngWithBg({
+          overlayPath,
+          maskPath: hasMask ? maskCandidate : null,
+          bgBlack: !hasMask,
+          biomeBitmaps,
+          factor,
+          outputPath: path.join(fullDir, r.file),
+        });
+        n++;
+        console.log(`[images] composited ${r.file} x${factor} -> ${W}x${H} (${fmt(Date.now() - ts)})`);
+      } catch (e) {
+        console.error(`[images] failed on ${r.file}: ${e.message}`);
+      }
+    }
     console.log(`[images] done: ${n} full PNGs -> ${fullDir}  (total ${fmt(Date.now() - START)})`);
     return;
   }
@@ -311,6 +506,7 @@ async function main() {
   const launchArgs = (process.env.PLAYWRIGHT_CHROMIUM_ARGS || "").trim().split(/\s+/).filter(Boolean);
   const browser = await playwright.chromium.launch({ headless: true, args: launchArgs });
   let regions;
+  let biomeIndex;
   try {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
@@ -420,7 +616,9 @@ async function main() {
     console.log(`[images] biomes ready in ${fmt(Date.now() - tWait)}`);
 
     const tEval = Date.now();
-    regions = await page.evaluate(() => window.noitamap.exportBiomeRegions());
+    const exportResult = await page.evaluate(() => window.noitamap.exportBiomeRegions());
+    regions = exportResult ? exportResult.regions : null;
+    biomeIndex = exportResult ? exportResult.biomeIndex : null;
     console.log(`[images] exported ${regions ? regions.length : 0} regions in ${fmt(Date.now() - tEval)}`);
     await page.close();
     await ctx.close();
@@ -437,37 +635,78 @@ async function main() {
   // run wrote a partial manifest, the checkpoint logic above had a chance to
   // detect it. We delete and recreate so leftover files from a previous seed
   // never linger.
-  for (const d of [smallDir, fullDir]) {
+  for (const d of [smallDir, fullDir, maskDir]) {
     fs.rmSync(d, { recursive: true, force: true });
     fs.mkdirSync(d, { recursive: true });
   }
   // Also drop any stale manifest from a previous seed/run before we start writing.
   fs.rmSync(manifestPath, { force: true });
 
-  // 1. Write the native composites (the browser only emits these — a 10x
-  //    canvas exceeds the browser's max size for the larger regions).
-  // Filenames use a seed-independent prefix so successive daily runs overwrite
-  // the same paths (biome-region bounding boxes are seed-stable).
+  // 1. Write the native composites + masks. Browser only emits the small
+  //    composite + (for main-world regions) a per-pixel biome-index mask;
+  //    bgs are baked underneath in the upscale step.
   const regionFile = (r) => `dynamic-daily-${r.minX}-${r.minY}.png`;
   const tWrite = Date.now();
   for (const r of regions) {
     const name = regionFile(r);
     fs.writeFileSync(path.join(smallDir, name), Buffer.from(r.small, "base64"));
-    console.log(`[images] pw=${r.pw} pvt=${r.pvt} small ${name} ${r.compositeW}x${r.compositeH}`);
+    if (r.mask) fs.writeFileSync(path.join(maskDir, name), Buffer.from(r.mask, "base64"));
+    console.log(`[images] pw=${r.pw} pvt=${r.pvt} small ${name} ${r.compositeW}x${r.compositeH}${r.mask ? " (+ mask)" : r.bgBlack ? " (black bg)" : ""}`);
   }
   console.log(`[images] wrote ${regions.length} small PNGs in ${fmt(Date.now() - tWrite)} -> ${smallDir}`);
 
-  // 2. Upscale each composite to native game resolution (separate step).
+  // 2. Pre-decode the bg PNGs the masks reference. Indexed by biome-index
+  //    integer (mask RGB encodes that index). One-time decode reused across
+  //    every main-world region.
+  const biomeBitmaps = {};
+  if (biomeIndex) {
+    for (const [idxStr, bgFile] of Object.entries(biomeIndex)) {
+      const p = path.join(biomeBgSrcDir, bgFile);
+      if (!fs.existsSync(p)) {
+        console.warn(`[images] biome bg missing on disk: ${p} (idx=${idxStr})`);
+        continue;
+      }
+      const png = decodePng(fs.readFileSync(p));
+      biomeBitmaps[Number(idxStr)] = {
+        w: png.width, h: png.height, ch: png.channels || 4, data: png.data,
+      };
+    }
+    console.log(`[images] pre-decoded ${Object.keys(biomeBitmaps).length}/${Object.keys(biomeIndex).length} biome bgs`);
+  }
+
+  // 3. Upscale each region with bg composited underneath. Main-world regions
+  //    use their per-pixel mask; heaven/hell get a flat black bg via bgBlack.
   const tUp = Date.now();
-  const items = regions.map((r) => ({ name: regionFile(r), scale: scaleOverride || r.scale }));
-  const fullCount = await runUpscale({ items, smallDir, fullDir, asepritePath, mode });
-  console.log(`[images] upscaled ${fullCount} full PNGs in ${fmt(Date.now() - tUp)}`);
+  let fullCount = 0;
+  for (const r of regions) {
+    const name = regionFile(r);
+    const factor = scaleOverride || r.scale;
+    const ts = Date.now();
+    try {
+      const { W, H } = await upscalePngWithBg({
+        overlayPath: path.join(smallDir, name),
+        maskPath: r.mask ? path.join(maskDir, name) : null,
+        bgBlack: !!r.bgBlack,
+        biomeBitmaps,
+        factor,
+        outputPath: path.join(fullDir, name),
+      });
+      fullCount++;
+      console.log(`[images] composited ${name} x${factor} -> ${W}x${H} (${fmt(Date.now() - ts)})`);
+    } catch (e) {
+      console.error(`[images] failed on ${name}: ${e.message}`);
+    }
+  }
+  console.log(`[images] upscaled+composited ${fullCount} full PNGs in ${fmt(Date.now() - tUp)}`);
 
   // 3. Manifest: stitch driver reads this for per-region bounds (no PNG re-parse).
+  //    biomeIndex is included so --upscale-only re-runs can re-decode the same
+  //    set of biome bg PNGs without re-running the browser.
   const manifest = {
     seed,
     generatedAt: new Date().toISOString(),
     scale: scaleOverride || (regions[0] && regions[0].scale) || 10,
+    biomeIndex: biomeIndex || {},
     regions: regions.map((r) => {
       const s = scaleOverride || r.scale;
       return {
@@ -475,6 +714,8 @@ async function main() {
         file: regionFile(r),
         minX: r.minX, minY: r.minY,
         fullW: r.compositeW * s, fullH: r.compositeH * s,
+        bgBlack: !!r.bgBlack,
+        hasMask: !!r.mask,
       };
     }),
   };
