@@ -2,23 +2,26 @@
 /**
  * Drive the noita-mapcap `stitch` Go binary over the 9 full-resolution biome
  * region images produced by build-daily-seed-images.cjs, producing 9 DZI
- * pyramids — one per region — written to a flat output directory. The DZIs
- * later get uploaded to Cloudflare and the live map fetches them by URL.
+ * pyramids grouped by parallel world. Each world's subdir is a self-contained
+ * deploy root for one CF Static Assets worker.
  *
  * INPUT
- *   <in>/manifest.json                       (per-region bounds + filenames)
+ *   <in>/manifest.json                          (per-region bounds + filenames)
  *   <in>/full/dynamic-daily-<minX>-<minY>.png
  *
  * OUTPUT (overwritten each run; same paths every day so URLs stay stable)
- *   <out>/dynamic-daily-<minX>-<minY>.dzi
- *   <out>/dynamic-daily-<minX>-<minY>_files/<level>/<iX>_<iY>.webp
+ *   <out>/<world>/dynamic-daily-<minX>-<minY>.dzi
+ *   <out>/<world>/dynamic-daily-<minX>-<minY>_files/<level>/<iX>_<iY>.webp
+ *   <out>/<world>/manifest.json                 (DZIs in this world + their bounds)
+ *
+ * <world> is derived from `pw`: 0 -> middle, <0 -> left, >0 -> right.
+ * Each world holds 3 DZIs (heaven/main/hell) -> ~12k files, comfortably under
+ * the 20k Static Assets per-worker file limit.
  *
  * stitch CONTRACT
- *   - Filename regex inside <input>: ^(-?\d+),(-?\d+)\.png$ (COMMA, e.g.
- *     "18940,-7168.png"). Our PNGs are named "dynamic-daily-<x>-<y>.png", so
- *     each region is *copied* into its own private temp dir under that comma
- *     name before invocation. stitch's *.png glob then sees exactly one tile
- *     and the regex matches.
+ *   - Filename regex inside <input>: ^(-?\d+),(-?\d+)\.png$ (COMMA). Our PNGs
+ *     use a different naming, so each region is *linked or copied* into its
+ *     own private temp dir under the comma name before invocation.
  *   - A tile occupies world rect [X, X+w) x [Y, Y+h), where w/h are the PNG's
  *     pixel dimensions. Our 10x fulls are 1:1 with world units, so per region:
  *       --xmin <minX> --ymin <minY> --xmax <minX+fullW> --ymax <minY+fullH>
@@ -115,19 +118,26 @@ async function main() {
   // One task per region. Each task does its own filesystem prep, runs stitch
   // async via spawn, and prints a single grouped block to stdout when done so
   // concurrent stitches don't interleave their progress lines.
+  // Per-world subdirs (left/middle/right) so each is its own deploy root for
+  // a CF Static Assets worker. World is decided by `pw`: 0=middle, -1=left,
+  // 1=right. Files within a world (heaven/main/hell) live together.
+  const worldFor = (pw) => (pw === 0 ? "middle" : pw < 0 ? "left" : "right");
   const tasks = manifest.regions.map((r) => ({
     r,
+    world: worldFor(r.pw),
     baseName: `dynamic-daily-${r.minX}-${r.minY}`,
   }));
 
-  const runRegion = async ({ r, baseName }) => {
+  const runRegion = async ({ r, world, baseName }) => {
     const src = path.join(fullDir, r.file);
     if (!fs.existsSync(src)) {
       console.warn(`[stitch] missing ${src}; skipping pw=${r.pw} pvt=${r.pvt}`);
       return { ok: false, skipped: true };
     }
-    const outPath = path.join(outDir, `${baseName}.dzi`);
-    const filesDir = path.join(outDir, `${baseName}_files`);
+    const worldDir = path.join(outDir, world);
+    fs.mkdirSync(worldDir, { recursive: true });
+    const outPath = path.join(worldDir, `${baseName}.dzi`);
+    const filesDir = path.join(worldDir, `${baseName}_files`);
 
     // Resumability: skip regions whose DZI already exists from a prior run.
     if (!force && fs.existsSync(outPath) && fs.existsSync(filesDir)) {
@@ -208,6 +218,28 @@ async function main() {
     console.error(`[stitch] produced 0 DZIs (total ${fmt(Date.now() - START)})`);
     process.exit(1);
   }
+
+  // Per-world manifest: each CF Static Assets worker carries its own pointer
+  // file listing the DZIs it serves + their OSD bounds, so the map fetches one
+  // small JSON per world instead of stitching together a global view itself.
+  const byWorld = { left: [], middle: [], right: [] };
+  for (const r of manifest.regions) {
+    const world = worldFor(r.pw);
+    const baseName = `dynamic-daily-${r.minX}-${r.minY}`;
+    if (!fs.existsSync(path.join(outDir, world, `${baseName}.dzi`))) continue;
+    byWorld[world].push({
+      pw: r.pw, pvt: r.pvt,
+      dzi: `${baseName}.dzi`,
+      minX: r.minX, minY: r.minY,
+      fullW: r.fullW, fullH: r.fullH,
+    });
+  }
+  for (const [world, regions] of Object.entries(byWorld)) {
+    if (regions.length === 0) continue;
+    const m = { seed: manifest.seed, generatedAt: manifest.generatedAt, world, regions };
+    fs.writeFileSync(path.join(outDir, world, "manifest.json"), JSON.stringify(m, null, 2));
+  }
+
   console.log(`[stitch] done: ${count} DZIs -> ${outDir}  (total ${fmt(Date.now() - START)})`);
 }
 
