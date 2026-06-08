@@ -152,36 +152,33 @@ async function upscalePngNearest(inputPath, outputPath, factor) {
 }
 
 /**
- * Same streaming nearest-neighbour upscale as above, but composites a biome
- * background underneath the overlay before encoding. Used for main-world
- * (pvt=0) regions where the mask tells us per-pixel which biome bg to use.
+ * Streaming nearest-neighbour upscale that composites a biome background
+ * underneath the overlay before encoding. Used for ALL regions:
  *
- * - `overlayPath`: small composite (RGBA) — overlay on top.
- * - `maskPath`: small biome-index mask (RGB encodes biome idx; alpha=255 inside,
- *               alpha=0 outside). Same dimensions as the overlay.
- * - `bgPath`: when present, fills the bg with one biome's tile uniformly (used
- *             when bgBlack is true OR mask absent — heaven/hell etc.). Black
- *             fill is selected by passing bgPath = null.
- * - `biomeBitmaps`: { idx -> { w, h, data: Buffer } } pre-decoded bg PNGs.
- * - `factor`: upscale factor.
+ * - Main-world regions (pvt=0) provide a `maskPath`. The mask's RGB encodes
+ *   a biome index per pixel and alpha=255 inside / 0 outside biome polygons.
+ * - Heaven/hell regions (pvt!=0) pass `maskPath=null`. They have no biome
+ *   bgs (live render doesn't paint any either), so every overlay-transparent
+ *   pixel stays transparent.
  *
  * Per output pixel:
- *   1. mask sampled at (sx, sy) (small-px coords).
- *   2. if mask alpha=0  ->  pixel = black (or transparent? see note below).
- *      if mask alpha>0  ->  bg = biomeBitmaps[idx] tiled at native scale.
- *   3. overlay pixel is alpha-blended over the bg.
- *
- * Note on "no biome" gaps: filled opaque black, matching the live map's habit
- * of letting the canvas show through where no biome polygon covers.
+ *   1. mask sample (if mask present) -> biome bitmap (or null).
+ *   2. overlay sample.
+ *   3. inside biome polygon: bg pixel (or black if bitmap missing) under the
+ *      overlay; alpha-blend; output is opaque.
+ *   4. outside biome polygon (or no mask at all): if overlay opaque, emit
+ *      overlay pixel; otherwise emit fully transparent so the static bg /
+ *      OSD viewport bg shows through. We never fill empty space with opaque
+ *      black — that would occlude static map tiles and inflate WebP size.
  */
-async function upscalePngWithBg({ overlayPath, maskPath, bgBlack, biomeBitmaps, factor, outputPath }) {
+async function upscalePngWithBg({ overlayPath, maskPath, biomeBitmaps, factor, outputPath }) {
   const overlayPng = decodePng(fs.readFileSync(overlayPath));
   const w = overlayPng.width, h = overlayPng.height;
   const overlayCh = overlayPng.channels || 4;
   const overlay = overlayPng.data;
 
   let maskBuf = null;
-  if (!bgBlack) {
+  if (maskPath) {
     const m = decodePng(fs.readFileSync(maskPath));
     if (m.width !== w || m.height !== h) {
       throw new Error(`mask dims ${m.width}x${m.height} != overlay ${w}x${h}`);
@@ -205,19 +202,16 @@ async function upscalePngWithBg({ overlayPath, maskPath, bgBlack, biomeBitmaps, 
     const overlayBase = sy * w * overlayCh;
     const maskBase = sy * w * 4;
     for (let sx = 0; sx < w; sx++) {
-      // Decide bg for this small-px (constant across the F×F output block).
-      // - maskInside=true: pixel is covered by a biome polygon. Use its bg
-      //   bitmap (or opaque black if the bitmap is missing).
-      // - maskInside=false on a main-world region: pixel is *outside* any
-      //   biome polygon. The static background DZI fills this space, so we
-      //   write transparent (alpha=0) and let it show through.
-      // - bgBlack=true (heaven/hell): no static bg under those Y ranges, so
-      //   the whole bg is opaque black regardless of mask.
+      // Inside-biome decision per source pixel:
+      // - maskBuf present + alpha>0: pixel sits inside a biome polygon. Use
+      //   that biome's bg PNG (or fall through to opaque black if missing).
+      // - maskBuf present + alpha=0: pixel is on the static map between
+      //   biomes -> emit transparent (alpha=0) so static bg DZIs show.
+      // - maskBuf absent (heaven/hell): treat every pixel as "outside" so
+      //   overlay-transparent pixels stay transparent.
       let bgBmp = null;
       let maskInside = false;
-      if (bgBlack) {
-        maskInside = true; // treat the whole region as "filled, no static bg"
-      } else {
+      if (maskBuf) {
         const mi = maskBase + sx * 4;
         if (maskBuf[mi + 3] > 0) {
           maskInside = true;
@@ -240,10 +234,8 @@ async function upscalePngWithBg({ overlayPath, maskPath, bgBlack, biomeBitmaps, 
           bR = bgBmp.data[bi]; bG = bgBmp.data[bi + 1]; bB = bgBmp.data[bi + 2];
         }
         if (!maskInside) {
-          // Outside any biome polygon on a main-world region. Pass through:
-          // overlay pixel if opaque, otherwise transparent so the static bg
-          // DZI shows through. Premultiplied src-over against transparent dst
-          // collapses to (src.rgb * src.a, src.a).
+          // Outside biome: pass overlay through with its own alpha (0 if the
+          // overlay is empty here -> static bg shows through).
           if (oA === 255) { row[o++] = oR; row[o++] = oG; row[o++] = oB; row[o++] = 255; }
           else if (oA === 0) { row[o++] = 0; row[o++] = 0; row[o++] = 0; row[o++] = 0; }
           else {
@@ -279,9 +271,7 @@ async function upscalePngWithBg({ overlayPath, maskPath, bgBlack, biomeBitmaps, 
         const oA = overlayCh === 4 ? overlay[os + 3] : 255;
         let bgBmp = null;
         let maskInside = false;
-        if (bgBlack) {
-          maskInside = true;
-        } else {
+        if (maskBuf) {
           const mi = maskBase + sx * 4;
           if (maskBuf[mi + 3] > 0) {
             maskInside = true;
@@ -446,7 +436,6 @@ async function main() {
         const { W, H } = await upscalePngWithBg({
           overlayPath,
           maskPath: hasMask ? maskCandidate : null,
-          bgBlack: !hasMask,
           biomeBitmaps,
           factor,
           outputPath: path.join(fullDir, r.file),
@@ -678,7 +667,7 @@ async function main() {
     const name = regionFile(r);
     fs.writeFileSync(path.join(smallDir, name), Buffer.from(r.small, "base64"));
     if (r.mask) fs.writeFileSync(path.join(maskDir, name), Buffer.from(r.mask, "base64"));
-    console.log(`[images] pw=${r.pw} pvt=${r.pvt} small ${name} ${r.compositeW}x${r.compositeH}${r.mask ? " (+ mask)" : r.bgBlack ? " (black bg)" : ""}`);
+    console.log(`[images] pw=${r.pw} pvt=${r.pvt} small ${name} ${r.compositeW}x${r.compositeH}${r.mask ? " (+ mask)" : ""}`);
   }
   console.log(`[images] wrote ${regions.length} small PNGs in ${fmt(Date.now() - tWrite)} -> ${smallDir}`);
 
@@ -702,7 +691,8 @@ async function main() {
   }
 
   // 3. Upscale each region with bg composited underneath. Main-world regions
-  //    use their per-pixel mask; heaven/hell get a flat black bg via bgBlack.
+  //    use their per-pixel mask; heaven/hell pass maskPath=null which makes
+  //    every overlay-transparent pixel stay transparent.
   const tUp = Date.now();
   let fullCount = 0;
   for (const r of regions) {
@@ -713,7 +703,6 @@ async function main() {
       const { W, H } = await upscalePngWithBg({
         overlayPath: path.join(smallDir, name),
         maskPath: r.mask ? path.join(maskDir, name) : null,
-        bgBlack: !!r.bgBlack,
         biomeBitmaps,
         factor,
         outputPath: path.join(fullDir, name),
@@ -741,7 +730,6 @@ async function main() {
         file: regionFile(r),
         minX: r.minX, minY: r.minY,
         fullW: r.compositeW * s, fullH: r.compositeH * s,
-        bgBlack: !!r.bgBlack,
         hasMask: !!r.mask,
       };
     }),

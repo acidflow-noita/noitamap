@@ -1134,14 +1134,10 @@ export interface BiomeRegionImage {
   small: string;
   /** PNG bytes (base64) of the per-pixel biome-bg index mask, at the same
    *  scale as `small`. RGB encodes a biome index (look up in biomeIndex);
-   *  alpha=255 means "use that biome's bg PNG", alpha=0 means "no biome —
-   *  fill black opaque". Only present for pvt=0 (main world); heaven/hell
-   *  regions get a uniform-black bg downstream and skip the mask. */
+   *  alpha=255 means "use that biome's bg PNG", alpha=0 means "outside biome —
+   *  transparent, let static bg show through". Only present for pvt=0 (main
+   *  world); heaven/hell regions skip the mask and emit transparent gaps. */
   mask?: string;
-  /** When true, downstream upscaler should fill the entire bg with opaque
-   *  black (heaven/hell regions). When false, use `mask` to pick per-pixel
-   *  bg PNG. Mutually exclusive with mask presence. */
-  bgBlack: boolean;
 }
 
 export interface BiomeRegionExportResult {
@@ -1280,13 +1276,11 @@ export async function exportBiomeRegionImages(
       const scale = osdWidth / compositeW;
       const small = await blobToBase64(await rgbaToPngBlob(smallData.data, compositeW, compositeH));
 
-      // Per-region biome-index mask. Main world only — heaven/hell get a flat
-      // black bg downstream. Mask is at the same pixel scale as `small`
-      // (1px = 10 OSD units) so the Node upscaler can sample it cheaply when
-      // emitting full-res scanlines.
+      // Per-region biome-index mask. Main world only — biome polygons are
+      // anchored to the static-map (boundary JSON only covers main-world
+      // biomes), so heaven/hell skip the mask and emit transparent gaps.
       let mask: string | undefined;
-      const bgBlack = pvt !== 0;
-      if (!bgBlack) {
+      if (pvt === 0) {
         const maskCanvas = new OffscreenCanvas(compositeW, compositeH);
         const maskCtx = maskCanvas.getContext("2d")!;
         // Translate biome-polygon static-map coords into this region's local
@@ -1338,7 +1332,7 @@ export async function exportBiomeRegionImages(
         pw, pvt,
         minX: Math.round(minX), minY: Math.round(minY),
         osdWidth, scale, compositeW, compositeH,
-        small, mask, bgBlack,
+        small, mask,
       });
     }
   }
@@ -3935,8 +3929,13 @@ export async function renderGenerationResult(
   dynamicTiledImages.clear();
   activeOrbTargets = [];
 
-  // Add biome backgrounds as the bottom-most new layer
-  addBiomeBgToOSD(viewer);
+  // Add biome backgrounds as the bottom-most new layer.
+  // Skipped when baked DZIs will replace them — the baked tiles already
+  // include the biome bgs and the placeholder would otherwise flash visibly
+  // under them on every refresh.
+  if (!bakedDZIs || bakedDZIs.length === 0) {
+    addBiomeBgToOSD(viewer);
+  }
   if (currentGenerationId !== generationId) return;
 
   // Wrap onFirstPaint so the moment PW 0,0 of the new seed is in place we
