@@ -39,6 +39,7 @@ import {
 } from "./poi-spatial-index";
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
 import { createMarkerTileSource } from "./marker-tile-source";
+import { addBakedDZIsToOSD, type BakedDziPlacement } from "./baked-dzi-loader";
 import { gameTranslator } from "../game-translations/translator";
 import { isSpoilerFree, getSpoilerCategory, getSpoilerLabel, applySpoilerFree } from "../spoiler-free";
 import { isLightMode } from "../light-mode";
@@ -3909,6 +3910,7 @@ export async function renderGenerationResult(
   isDaily?: boolean,
   onFirstPaint?: () => void,
   cacheKey?: string,
+  bakedDZIs?: BakedDziPlacement[] | null,
 ): Promise<void> {
   const generationId = ++currentGenerationId;
   (window as any).__osdViewer = viewer;
@@ -3968,9 +3970,31 @@ export async function renderGenerationResult(
     try { onFirstPaint?.(); } catch (e) { console.warn("[OSD Bridge] onFirstPaint threw:", e); }
   };
 
-  // Adding biomes initializes the OSD viewport bounds.
-  await addBiomeLayersProgressively(viewer, result, generationId, wrappedOnFirstPaint, cacheKey);
-  if (currentGenerationId !== generationId) return;
+  // Biome layer: prefer baked DZIs from CF Static Assets workers when the
+  // probe in dynamic-map.ts already validated them for this seed. Falls back
+  // to the live dynamic composite when no baked set is available (any non-
+  // daily seed or a deploy that hasn't caught up yet).
+  if (bakedDZIs && bakedDZIs.length > 0) {
+    let firstPaintFired = false;
+    addBakedDZIsToOSD(viewer, bakedDZIs, (item, _placement) => {
+      if (currentGenerationId !== generationId) {
+        try { viewer.world.removeItem(item); } catch {}
+        return;
+      }
+      dynamicTiledImages.add(item);
+      if (!firstPaintFired) {
+        firstPaintFired = true;
+        try { wrappedOnFirstPaint(); } catch (e) { console.warn("[OSD Bridge] baked onFirstPaint threw:", e); }
+      }
+    });
+    // Initialise viewport bounds the same way the live composite path does
+    // (addTiledImage is async but the bounds are known the instant the call
+    // returns; OSD will fit-to-bounds on the next tick).
+  } else {
+    // Adding biomes initializes the OSD viewport bounds.
+    await addBiomeLayersProgressively(viewer, result, generationId, wrappedOnFirstPaint, cacheKey);
+    if (currentGenerationId !== generationId) return;
+  }
 
   // Pixel scenes render on top of biome overlays, below POI markers.
   await addPixelScenes(viewer, result, generationId);

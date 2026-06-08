@@ -11,7 +11,7 @@
  *   7. Index POIs into FlexSearch for dynamic search
  */
 
-import { fetchDailySeed } from "./data_sources/daily_seed";
+import { fetchDailySeed, fetchPreviousDailySeed } from "./data_sources/daily_seed";
 import { parseURL, updateURLWithSeed, clearSeedParams } from "./data_sources/url";
 import { getCachedGeneration, cacheGeneration } from "./telescope/tile-cache";
 import { generateDynamicMap, initTelescope, type GenerationResult } from "./telescope/telescope-adapter";
@@ -26,6 +26,7 @@ import {
   ensurePersistentBiomeBackgrounds,
   resetPersistentBiomeBackgrounds,
 } from "./telescope/telescope-osd-bridge";
+import { probeBakedDZIs, type BakedDziProbeResult } from "./telescope/baked-dzi-loader";
 
 // ─── Types & state ───────────────────────────────────────────────────────────
 
@@ -257,6 +258,29 @@ export async function runDynamicMap(
     await initTelescope();
     if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
 
+    // 0c. Fire the baked-DZI probe in parallel with telescope generation. We
+    //     still need telescope to run regardless (POIs, pixel scenes, drawing,
+    //     etc. come from it) — only the biome composite phase is replaced
+    //     when the probe wins. Probe is all-or-nothing across the 3 worlds:
+    //     a partial deploy => fall back to live composite for the whole map.
+    //     For non-daily seeds the probe is skipped entirely (no bake to find).
+    const bakedProbePromise: Promise<BakedDziProbeResult | null> = (async () => {
+      try {
+        const [todayDaily, prevDaily] = await Promise.all([
+          fetchDailySeed().catch(() => null),
+          fetchPreviousDailySeed().catch(() => null),
+        ]);
+        let prefix: "daily" | "previous-daily" | null = null;
+        if (todayDaily !== null && seed === todayDaily) prefix = "daily";
+        else if (prevDaily !== null && seed === prevDaily) prefix = "previous-daily";
+        if (!prefix) return null;
+        return await probeBakedDZIs(prefix, seed);
+      } catch (e) {
+        console.warn("[DynamicMap] baked-DZI probe threw:", e);
+        return null;
+      }
+    })();
+
     // 1. Check cache (skip if unlocks changed for same seed)
     let t = performance.now();
     let result: GenerationResult | null = null;
@@ -352,7 +376,20 @@ export async function runDynamicMap(
       console.log(`[DynamicMap] First paint (PW 0,0): ${((performance.now() - t) / 1000).toFixed(2)}s`);
       onLoadingChange?.(false);
     };
-    await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint, cacheKey);
+    // Await the probe (started during step 0c, in parallel with telescope).
+    // By now telescope has done all its heavy lifting so awaiting here costs
+    // ~0ms in the common case where the network probe finished first.
+    const bakedProbe = await bakedProbePromise;
+    if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
+    const bakedDZIs = bakedProbe && bakedProbe.baked ? bakedProbe.placements : null;
+    if (bakedProbe) {
+      if (bakedProbe.baked) {
+        console.log(`[DynamicMap] Using baked ${bakedProbe.prefix}-* DZIs (${bakedProbe.placements.length} regions); skipping live biome composite`);
+      } else {
+        console.log(`[DynamicMap] Baked DZIs not used: ${bakedProbe.reason}`);
+      }
+    }
+    await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint, cacheKey, bakedDZIs);
     if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
     console.log(`[DynamicMap] Render: ${((performance.now() - t) / 1000).toFixed(2)}s`);
     lastResult = result;
