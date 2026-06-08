@@ -169,31 +169,46 @@ async function main() {
     ];
 
     const t = Date.now();
+    // Stream each child's stdout/stderr live, prefixed with a per-region tag,
+    // so we get progress visibility during the stitch instead of one batch
+    // dump on completion. Concurrent regions interleave but each line is
+    // complete (the stitch patch already terminates lines with \n), so it's
+    // grep-friendly: e.g. `grep "[middle/main]" log` to follow one region.
+    const tag = `[${world}/${r.pvt === -1 ? "heaven" : r.pvt === 1 ? "hell" : "main"}]`;
     const child = spawn(stitchBin, stitchArgs, { stdio: ["ignore", "pipe", "pipe"] });
-    let buf = "";
-    child.stdout.on("data", (d) => { buf += d.toString(); });
-    child.stderr.on("data", (d) => { buf += d.toString(); });
+    const prefixStream = (stream) => {
+      let pending = "";
+      stream.setEncoding("utf8");
+      stream.on("data", (chunk) => {
+        pending += chunk;
+        const lines = pending.split("\n");
+        pending = lines.pop();
+        for (const line of lines) process.stdout.write(`${tag} ${line}\n`);
+      });
+      stream.on("end", () => {
+        if (pending) process.stdout.write(`${tag} ${pending}\n`);
+      });
+    };
+    prefixStream(child.stdout);
+    prefixStream(child.stderr);
 
     const result = await new Promise((res) => {
       child.on("error", (e) => res({ error: e }));
       child.on("close", (code, sig) => res({ status: code, signal: sig }));
     });
 
-    // Flush this region's output as one grouped block so concurrent stitches
-    // don't interleave their newline-progress lines into noise.
-    const header = `\n----- [stitch] pw=${r.pw} pvt=${r.pvt} ${baseName} (${r.fullW}x${r.fullH}) -----`;
     if (result.error) {
-      process.stdout.write(`${header}\n${buf}[stitch] failed to spawn on ${baseName}: ${result.error.message}\n`);
+      console.error(`${tag} [stitch] failed to spawn on ${baseName}: ${result.error.message}`);
       return { ok: false };
     }
     if (result.status !== 0) {
       const sig = result.signal ? ` signal=${result.signal}` : "";
       const code = result.status === null ? "null" : String(result.status);
       const hint = result.signal === "SIGKILL" ? " (likely OOM-killed by host kernel; lower STITCH_CONCURRENCY)" : "";
-      process.stdout.write(`${header}\n${buf}[stitch] failed on ${baseName}: status=${code}${sig}${hint}\n`);
+      console.error(`${tag} [stitch] failed on ${baseName}: status=${code}${sig}${hint}`);
       return { ok: false };
     }
-    process.stdout.write(`${header}\n${buf}[stitch] ${baseName} done in ${fmt(Date.now() - t)}\n`);
+    console.log(`${tag} [stitch] ${baseName} done in ${fmt(Date.now() - t)}`);
     return { ok: true };
   };
 
