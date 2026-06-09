@@ -234,16 +234,12 @@ async function upscalePngWithBg({ overlayPath, maskPath, biomeBitmaps, factor, o
           bR = bgBmp.data[bi]; bG = bgBmp.data[bi + 1]; bB = bgBmp.data[bi + 2];
         }
         if (!maskInside) {
-          // Outside biome: pass overlay through with its own alpha (0 if the
-          // overlay is empty here -> static bg shows through).
-          if (oA === 255) { row[o++] = oR; row[o++] = oG; row[o++] = oB; row[o++] = 255; }
-          else if (oA === 0) { row[o++] = 0; row[o++] = 0; row[o++] = 0; row[o++] = 0; }
-          else {
-            row[o++] = ((oR * oA) + 127) >> 8;
-            row[o++] = ((oG * oA) + 127) >> 8;
-            row[o++] = ((oB * oA) + 127) >> 8;
-            row[o++] = oA;
-          }
+          // Outside biome: pass overlay through verbatim with STRAIGHT (un-
+          // premultiplied) RGBA. Browsers expect straight RGBA in PNG/WebP
+          // and premultiply on draw. Multiplying RGB by alpha here would
+          // produce a dark halo when OSD composites the tile over the
+          // static-bg DZI underneath.
+          row[o++] = oR; row[o++] = oG; row[o++] = oB; row[o++] = oA;
         } else if (oA === 255) {
           row[o++] = oR; row[o++] = oG; row[o++] = oB; row[o++] = 255;
         } else if (oA === 0) {
@@ -290,14 +286,8 @@ async function upscalePngWithBg({ overlayPath, maskPath, biomeBitmaps, factor, o
             bR = bgBmp.data[bi]; bG = bgBmp.data[bi + 1]; bB = bgBmp.data[bi + 2];
           }
           if (!maskInside) {
-            if (oA === 255) { row2[o2++] = oR; row2[o2++] = oG; row2[o2++] = oB; row2[o2++] = 255; }
-            else if (oA === 0) { row2[o2++] = 0; row2[o2++] = 0; row2[o2++] = 0; row2[o2++] = 0; }
-            else {
-              row2[o2++] = ((oR * oA) + 127) >> 8;
-              row2[o2++] = ((oG * oA) + 127) >> 8;
-              row2[o2++] = ((oB * oA) + 127) >> 8;
-              row2[o2++] = oA;
-            }
+            // Outside biome: straight RGBA passthrough (see comment in row 1 loop).
+            row2[o2++] = oR; row2[o2++] = oG; row2[o2++] = oB; row2[o2++] = oA;
           } else if (oA === 255) { row2[o2++] = oR; row2[o2++] = oG; row2[o2++] = oB; row2[o2++] = 255; }
           else if (oA === 0) { row2[o2++] = bR; row2[o2++] = bG; row2[o2++] = bB; row2[o2++] = 255; }
           else {

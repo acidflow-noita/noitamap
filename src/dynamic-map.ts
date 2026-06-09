@@ -242,12 +242,44 @@ export async function runDynamicMap(
   await new Promise((r) => setTimeout(r, 0));
   if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
 
-  // Ensure persistent biome backgrounds are present in OSD — fills the
-  // biome boundary shapes with correct textures so there are no "black holes".
-  // Only does work on the first call; subsequent calls are no-ops.
-  // Skipped when this seed will be served from baked DZIs: the baked tiles
-  // already include all the biome bgs and the placeholder would otherwise
-  // flash visibly under the baked tiles on every refresh.
+  // Fire the baked-DZI probe FIRST, ahead of telescope init. The probe is
+  // pure network work and doesn't depend on telescope. Painting baked DZIs
+  // the moment they arrive lets the user see the map within ~150-300ms of
+  // page load instead of waiting for the ~700ms telescope init + cache check
+  // + (in worst case) full generation.
+  // Lives at function scope so the later render() call can reference it.
+  let bakedAlreadyPainted = false;
+  const bakedProbePromise: Promise<BakedDziProbeResult | null> = (async () => {
+    try {
+      const [todayDaily, prevDaily] = await Promise.all([
+        fetchDailySeed().catch(() => null),
+        fetchPreviousDailySeed().catch(() => null),
+      ]);
+      let prefix: "daily" | "previous-daily" | null = null;
+      if (todayDaily !== null && seed === todayDaily) prefix = "daily";
+      else if (prevDaily !== null && seed === prevDaily) prefix = "previous-daily";
+      if (!prefix) return null;
+      const probe = await probeBakedDZIs(prefix, seed);
+      if (probe.baked && myToken === generationToken && !bakedAlreadyPainted) {
+        console.log(`[DynamicMap] Baked ${probe.prefix}-* hit, painting biomes immediately`);
+        const bridge = await import("./telescope/telescope-osd-bridge");
+        const loader = await import("./telescope/baked-dzi-loader");
+        bridge.clearDynamicOverlays(viewer as any);
+        loader.addBakedDZIsToOSD(viewer as any, probe.placements);
+        bakedAlreadyPainted = true;
+        onLoadingChange?.(false);
+      }
+      return probe;
+    } catch (e) {
+      console.warn("[DynamicMap] baked-DZI probe threw:", e);
+      return null;
+    }
+  })();
+
+  // Determine if this seed will likely be served from baked DZIs. When yes,
+  // skip the static placeholder bg fills (the baked tiles already include
+  // them; the placeholder would otherwise flash visibly on every refresh).
+  // The seed lookups here hit the same in-memory cache the probe just used.
   const [_todayD, _prevD] = await Promise.all([
     fetchDailySeed().catch(() => null),
     fetchPreviousDailySeed().catch(() => null),
@@ -267,45 +299,6 @@ export async function runDynamicMap(
      // 0b. Ensure telescope is initialized (runs LIB_VERSION cache bust BEFORE cache check)
     await initTelescope();
     if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
-
-    // 0c. Fire the baked-DZI probe in parallel with telescope generation,
-    //     and if it resolves with a baked hit BEFORE telescope finishes, paint
-    //     the DZIs onto OSD right away. The user sees the baked map at the
-    //     same speed as the static map fetches, not after telescope's 3-5s.
-    //     Telescope still runs in the background for POIs/pixel scenes/etc.
-    //     For non-daily seeds the probe is skipped (no bake to find).
-    let bakedAlreadyPainted = false;
-    const bakedProbePromise: Promise<BakedDziProbeResult | null> = (async () => {
-      try {
-        const [todayDaily, prevDaily] = await Promise.all([
-          fetchDailySeed().catch(() => null),
-          fetchPreviousDailySeed().catch(() => null),
-        ]);
-        let prefix: "daily" | "previous-daily" | null = null;
-        if (todayDaily !== null && seed === todayDaily) prefix = "daily";
-        else if (prevDaily !== null && seed === prevDaily) prefix = "previous-daily";
-        if (!prefix) return null;
-        const probe = await probeBakedDZIs(prefix, seed);
-        if (probe.baked && myToken === generationToken && !bakedAlreadyPainted) {
-          // Paint baked DZIs the moment we have them — don't wait for
-          // telescope generation, render() will skip biomes entirely below.
-          console.log(`[DynamicMap] Baked ${probe.prefix}-* hit, painting biomes immediately`);
-          (await import("./telescope/telescope-osd-bridge")).clearDynamicOverlays(viewer as any);
-          (await import("./telescope/baked-dzi-loader")).addBakedDZIsToOSD(
-            viewer as any,
-            probe.placements,
-          );
-          bakedAlreadyPainted = true;
-          // Hide the loading indicator — biomes are visible. POIs etc. are
-          // still on their way; map is interactive immediately.
-          onLoadingChange?.(false);
-        }
-        return probe;
-      } catch (e) {
-        console.warn("[DynamicMap] baked-DZI probe threw:", e);
-        return null;
-      }
-    })();
 
     // 1. Check cache (skip if unlocks changed for same seed)
     let t = performance.now();
