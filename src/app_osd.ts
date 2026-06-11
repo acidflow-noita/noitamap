@@ -69,12 +69,13 @@ export class AppOSD {
       })(),
       imageSmoothingEnabled: false,
       debugMode: false,
-      // Only the canvas (context2d) drawer consults this; the webgl drawer
-      // ignores it entirely. ONLY_AT_REST: transparent layers (baked biome
-      // DZIs, live composite, marker tiles) snap to whole pixels once the
-      // viewport settles (no seams/fringe at rest) while staying smooth
-      // during zoom animation.
-      subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ONLY_AT_REST,
+      // No subpixel rounding on the canvas drawer: baked biome DZIs are opaque
+      // (flattened onto black at bake time), so the transparency draw path --
+      // the only consumer of this setting -- never applies to them, and
+      // rounding mid-animation causes visible judder for layers it does hit.
+      subPixelRoundingForTransparency: useWebGL
+        ? OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS
+        : OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.NEVER,
       minScrollDeltaTime: 10,
       springStiffness: 50,
       preserveViewport: true,

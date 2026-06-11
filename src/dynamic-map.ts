@@ -249,8 +249,13 @@ export async function runDynamicMap(
   // + (in worst case) full generation.
   // Lives at function scope so the later render() call can reference it.
   let bakedAlreadyPainted = false;
-  const bakedProbePromise: Promise<BakedDziProbeResult | null> = (async () => {
+  // ?nb=1 disables the baked fast path entirely. The bake page uses it so a
+  // re-bake of an already-deployed seed still runs a real local generation
+  // (the export hooks need live tileLayers, which the baked path never has).
+  const noBaked = new URLSearchParams(window.location.search).has("nb");
+  const bakedProbePromise: Promise<{ probe: BakedDziProbeResult; generation: GenerationResult | null } | null> = (async () => {
     try {
+      if (noBaked) return null;
       const [todayDaily, prevDaily] = await Promise.all([
         fetchDailySeed().catch(() => null),
         fetchPreviousDailySeed().catch(() => null),
@@ -260,7 +265,8 @@ export async function runDynamicMap(
       else if (prevDaily !== null && seed === prevDaily) prefix = "previous-daily";
       if (!prefix) return null;
       const probe = await probeBakedDZIs(prefix, seed);
-      if (probe.baked && myToken === generationToken && !bakedAlreadyPainted) {
+      if (!probe.baked) return { probe, generation: null };
+      if (myToken === generationToken && !bakedAlreadyPainted) {
         console.log(`[DynamicMap] Baked ${probe.prefix}-* hit, painting biomes immediately`);
         const bridge = await import("./telescope/telescope-osd-bridge");
         const loader = await import("./telescope/baked-dzi-loader");
@@ -270,11 +276,29 @@ export async function runDynamicMap(
         const placements = isLightMode()
           ? probe.placements.filter((p) => p.pw === 0)
           : probe.placements;
-        loader.addBakedDZIsToOSD(viewer as any, placements);
+        // addTiledImage is async: if the user switches seed while these are
+        // in flight, they'd land AFTER the next clearDynamicOverlays pass and
+        // linger as stale tiles. Remove on arrival when outdated.
+        loader.addBakedDZIsToOSD(viewer as any, placements, (item) => {
+          if (myToken !== generationToken) {
+            try { (viewer as any).world.removeItem(item); } catch {}
+          }
+        });
         bakedAlreadyPainted = true;
         onLoadingChange?.(false);
       }
-      return probe;
+      // Baked generation data (POIs, pixel scenes, biome map) rides on the
+      // same workers as the DZIs. It was baked with u=all, so it's only valid
+      // for the default all-unlocked state; restricted-unlock views keep the
+      // baked DZIs but run telescope for their own POI pools.
+      let generation: GenerationResult | null = null;
+      if (unlocks === null) {
+        const { fetchBakedGeneration } = await import("./telescope/baked-generation");
+        const worlds: ("left" | "middle" | "right")[] = isLightMode() ? ["middle"] : ["left", "middle", "right"];
+        generation = await fetchBakedGeneration(prefix, worlds, seed);
+        if (!generation) console.log("[DynamicMap] No baked generation.json; falling back to telescope for POIs");
+      }
+      return { probe, generation };
     } catch (e) {
       console.warn("[DynamicMap] baked-DZI probe threw:", e);
       return null;
@@ -301,15 +325,29 @@ export async function runDynamicMap(
   onSeedResolved?.(seed, isDaily);
 
   try {
-     // 0b. Ensure telescope is initialized (runs LIB_VERSION cache bust BEFORE cache check)
+    // 0b. Await the probe. Non-daily seeds resolve ~instantly (seed lookups
+    // are cached, prefix misses return null immediately). A generation.json
+    // hit means telescope is NEVER initialized: biome map, POIs and pixel
+    // scenes all come prebaked from the static workers.
+    const bakedData = await bakedProbePromise;
+    if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
+
+    let t = performance.now();
+    let result: GenerationResult | null = null;
+    const cacheKey = `${seed}-${unlockKey}`;
+
+    if (bakedData?.generation) {
+      result = bakedData.generation;
+      console.log(`[DynamicMap] Baked generation.json hit — skipping telescope entirely`);
+      // Seed the IDB cache so seed-report comparisons and tomorrow's
+      // "previous daily" lookups work offline (fire-and-forget).
+      cacheGeneration(cacheKey, seed, result).catch(() => {});
+    } else {
+    // Ensure telescope is initialized (runs LIB_VERSION cache bust BEFORE cache check)
     await initTelescope();
     if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
 
     // 1. Check cache (skip if unlocks changed for same seed)
-    let t = performance.now();
-    let result: GenerationResult | null = null;
-    const cacheKey = `${seed}-${unlockKey}`;
-    
     if (!forceRegenerate) {
       console.log(`[DynamicMap] Checking cache for key ${cacheKey}...`);
       result = await getCachedGeneration(cacheKey);
@@ -329,6 +367,7 @@ export async function runDynamicMap(
       // 3. Store in cache (fire-and-forget -- don't block render)
       cacheGeneration(cacheKey, seed, result).catch((e) => console.warn("[DynamicMap] Cache write failed:", e));
     }
+    } // end telescope path
 
     // 4. Stamp orb POIs with collected flag based on current unlock state.
     //    Daily seed: NEVER mark as collected — always show orbs with spells inside,
@@ -400,11 +439,8 @@ export async function runDynamicMap(
       console.log(`[DynamicMap] First paint (PW 0,0): ${((performance.now() - t) / 1000).toFixed(2)}s`);
       onLoadingChange?.(false);
     };
-    // Await the probe (started during step 0c, in parallel with telescope).
-    // By now telescope has done all its heavy lifting so awaiting here costs
-    // ~0ms in the common case where the network probe finished first.
-    const bakedProbe = await bakedProbePromise;
-    if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
+    // Probe result was already awaited at step 0b.
+    const bakedProbe = bakedData?.probe ?? null;
     // Light mode: only the middle world's baked DZI is loaded (matches
     // generateDynamicMap's parallelWorlds: [0] above).
     const bakedDZIs = bakedProbe && bakedProbe.baked

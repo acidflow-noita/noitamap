@@ -467,9 +467,11 @@ async function main() {
     try {
       const cached = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
       if (cached.seed === seed && Array.isArray(cached.regions) && cached.regions.length) {
-        const allPresent = cached.regions.every((r) =>
-          fs.existsSync(path.join(smallDir, r.file)) && fs.existsSync(path.join(fullDir, r.file)),
-        );
+        const allPresent =
+          fs.existsSync(path.join(outDir, "generation.json")) &&
+          cached.regions.every((r) =>
+            fs.existsSync(path.join(smallDir, r.file)) && fs.existsSync(path.join(fullDir, r.file)),
+          );
         if (allPresent) {
           console.log(`[images] checkpoint: reusing ${cached.regions.length} small+full PNGs for seed ${seed} from ${outDir} (pass --force-render to redo)  (total ${fmt(Date.now() - START)})`);
           return;
@@ -513,6 +515,7 @@ async function main() {
   const browser = await playwright.chromium.launch({ headless: true, args: launchArgs });
   let regions;
   let biomeIndex;
+  let generationData;
   try {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
@@ -583,8 +586,10 @@ async function main() {
 
     // u=all reproduces the daily seed's content (all unlocks). Do NOT pass ds=1
     // (that ignores ?se= and fetches today's daily). dynamic-main-branch is the
-    // map the renderer biome-composites.
-    const url = `${baseUrl}/?map=dynamic-main-branch&se=${seed}&u=all`;
+    // map the renderer biome-composites. nb=1 disables the client's baked fast
+    // path: a re-bake of an already-deployed seed must still generate locally
+    // (the export hooks need live tileLayers, which the baked path never has).
+    const url = `${baseUrl}/?map=dynamic-main-branch&se=${seed}&u=all&nb=1`;
     console.log(`[images] seed ${seed} -> ${url}`);
     const tNav = Date.now();
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: NAV_TIMEOUT_MS });
@@ -626,6 +631,17 @@ async function main() {
     regions = exportResult ? exportResult.regions : null;
     biomeIndex = exportResult ? exportResult.biomeIndex : null;
     console.log(`[images] exported ${regions ? regions.length : 0} regions in ${fmt(Date.now() - tEval)}`);
+
+    // Full generation data (POIs, pixel scenes, biome map). stitch-dzis.cjs
+    // splits this per world so the live map can render the daily without
+    // running telescope at all.
+    generationData = await page.evaluate(() =>
+      typeof window.noitamap.exportGenerationData === "function" ? window.noitamap.exportGenerationData() : null,
+    );
+    if (!generationData) {
+      throw new Error("exportGenerationData returned nothing — POI bake is a required artifact");
+    }
+    console.log(`[images] exported generation data (${Object.keys(generationData.poisByPW || {}).length} pw slices)`);
     await page.close();
     await ctx.close();
   } finally {
@@ -725,6 +741,7 @@ async function main() {
     }),
   };
   fs.writeFileSync(path.join(outDir, "manifest.json"), JSON.stringify(manifest, null, 2));
+  fs.writeFileSync(path.join(outDir, "generation.json"), JSON.stringify(generationData));
 
   console.log(`[images] done: ${regions.length} small + ${fullCount} full PNGs + manifest -> ${outDir}  (total ${fmt(Date.now() - START)})`);
   if (regions.length < 9) {

@@ -19,7 +19,7 @@
  */
 
 const WORLDS = ["left", "middle", "right"] as const;
-type World = (typeof WORLDS)[number];
+export type World = (typeof WORLDS)[number];
 
 /**
  * Per-PW DZI placement read out of a world's manifest. Coordinates match the
@@ -68,7 +68,7 @@ interface PerWorldManifest {
   regions: PerWorldManifestRegion[];
 }
 
-function originFor(prefix: "daily" | "previous-daily", world: World): string {
+export function originFor(prefix: "daily" | "previous-daily", world: World): string {
   return `https://${prefix}-${world}.acidflow.stream`;
 }
 
@@ -157,15 +157,11 @@ export function addBakedDZIsToOSD(
       y: p.y,
       width: p.width,
       success: (event: any) => {
-        // OSD's default TileSource.hasTransparency() only matches ".png", so
-        // our transparent .webp tiles are treated as opaque. Opaque tiles skip
-        // the transparency render path (sketch-canvas isolation + clearRect of
-        // the stale lower pyramid level under each tile), which leaves the
-        // previous level's edge pixels visible through transparent areas while
-        // zooming -- the biome edges ghost/"wobble" until tiles settle. Marking
-        // the source transparent restores the same path the live PNG composite
-        // and any transparent DZI already use.
-        try { event.item.source.hasTransparency = () => true; } catch {}
+        // Tag the source so clearDynamicOverlays / renderGenerationResult can
+        // tell baked biome DZIs apart from the static base map's DZIs (both
+        // have a string tilesUrl, which is what the base-layer heuristic
+        // keys on). Without the tag, baked tiles survive every seed switch.
+        try { event.item.source.__bakedDzi = true; } catch {}
         try {
           onAdded?.(event.item, p);
         } catch (e) {

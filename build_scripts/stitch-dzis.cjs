@@ -271,6 +271,31 @@ async function main() {
     fs.writeFileSync(path.join(outDir, world, "manifest.json"), JSON.stringify(m, null, 2));
   }
 
+  // Per-world generation.json (POIs, pixel scenes, biome map) so the live map
+  // renders the daily without running telescope. Keys in poisByPW /
+  // pixelScenesByPW are "pw,pvt"; slice by which world that pw belongs to.
+  const genPath = path.join(inDir, "generation.json");
+  if (fs.existsSync(genPath)) {
+    const gen = JSON.parse(fs.readFileSync(genPath, "utf8"));
+    const sliceByWorld = (obj, world) =>
+      Object.fromEntries(Object.entries(obj || {}).filter(([k]) => worldFor(parseInt(k, 10)) === world));
+    for (const [world, regions] of Object.entries(byWorld)) {
+      if (regions.length === 0) continue;
+      fs.writeFileSync(
+        path.join(outDir, world, "generation.json"),
+        JSON.stringify({
+          ...gen,
+          parallelWorlds: (gen.parallelWorlds || []).filter((pw) => worldFor(pw) === world),
+          poisByPW: sliceByWorld(gen.poisByPW, world),
+          pixelScenesByPW: sliceByWorld(gen.pixelScenesByPW, world),
+        }),
+      );
+    }
+    console.log(`[stitch] wrote per-world generation.json (baked POIs)`);
+  } else {
+    console.warn(`[stitch] no ${genPath} — POIs will fall back to client-side telescope`);
+  }
+
   console.log(`[stitch] done: ${count} DZIs -> ${outDir}  (total ${fmt(Date.now() - START)})`);
 }
 

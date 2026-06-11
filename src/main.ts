@@ -91,6 +91,16 @@ if (isDev) {
       if (!result) return null;
       return exportBiomeRegionImages(result);
     },
+    // Serialized generation result (POIs, pixel scenes, biome map) for the
+    // bake pipeline. build-daily-seed-images.cjs writes this as
+    // generation.json; stitch-dzis.cjs splits it per world; the live map
+    // loads it from the static workers and skips telescope entirely.
+    exportGenerationData: async () => {
+      const result = getLastGenerationResult();
+      if (!result) return null;
+      const { serializeGenerationForBake } = await import("./telescope/baked-generation");
+      return serializeGenerationForBake(result);
+    },
     // Dev-only OSD drawer override. Default everywhere is "canvas" (the prod
     // setting in renderer_settings.ts). On localhost/dev.noitamap.com this
     // hook flips it via localStorage so we can A/B test perf and baked-DZI
@@ -316,8 +326,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!bar) return;
 
     showLoadingStrip();
+    // Baked fast path: download/generation phases never ran (their bars are
+    // untouched), so the items phase is the WHOLE strip — title it correctly
+    // and show a true 0-100% instead of the 3-phase 66-100% tail.
+    const itemsOnly =
+      !parseFloat(_getDownloadBar()?.style.width || "0") && !parseFloat(_getGenerationBar()?.style.width || "0");
+    const title = _getTitle();
+    if (title) title.textContent = i18next.isInitialized ? i18next.t("loading.mapData.addingItems") : "Adding items and wands";
     bar.style.width = `${e.detail.percentage}%`;
-    if (status) status.textContent = `${Math.round(66 + e.detail.percentage / 3)}%`;
+    if (status) {
+      status.textContent = itemsOnly
+        ? `${Math.round(e.detail.percentage)}%`
+        : `${Math.round(66 + e.detail.percentage / 3)}%`;
+    }
 
     if (e.detail.percentage >= 100) {
       requestAnimationFrame(() => {

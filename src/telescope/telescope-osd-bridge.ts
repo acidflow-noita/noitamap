@@ -309,8 +309,11 @@ export function clearDynamicOverlays(viewer: any): void {
     for (let i = world.getItemCount() - 1; i >= 0; i--) {
       const item = world.getItemAt(i);
       // Skip base layers: static DZI tiles (string tilesUrl) and the
-      // simplistic flat-PNG background (tagged __simplisticBase).
-      if (item && typeof item.source?.tilesUrl !== "string" && !(item.source as any)?.__simplisticBase) {
+      // simplistic flat-PNG background (tagged __simplisticBase). Baked
+      // biome DZIs also have a string tilesUrl — the __bakedDzi tag set in
+      // addBakedDZIsToOSD is what marks them as removable seed content.
+      const src = item?.source as any;
+      if (item && (typeof src?.tilesUrl !== "string" || src?.__bakedDzi) && !src?.__simplisticBase) {
         world.removeItem(item);
       }
     }
@@ -1274,10 +1277,10 @@ export async function exportBiomeRegionImages(
       const smallData = compositeCtx.getImageData(0, 0, compositeW, compositeH);
       // Force overlay alpha to binary (0/255 with 128 threshold). The overlay
       // bitmaps from createTileOverlaysCheap can carry soft-alpha edge pixels
-      // (especially on the right side of biome chunks where coverage decays
-      // in scan-row order). Soft edges blend over the static bg DZIs / black
-      // void on heaven/hell and show as a visible fringe at zoom. Snapping
-      // alpha kills the fringe at the source.
+      // which blend badly when the upscale step composites biome bgs
+      // underneath. Snapping alpha kills the fringe at the source. The final
+      // flatten-to-opaque-black happens later, in upscalePngWithBg, AFTER the
+      // bgs are baked underneath.
       for (let i = 3; i < smallData.data.length; i += 4) {
         smallData.data[i] = smallData.data[i] >= 128 ? 255 : 0;
       }
@@ -3931,7 +3934,12 @@ export async function renderGenerationResult(
     const world = viewer.world;
     for (let i = 0; i < world.getItemCount(); i++) {
       const item = world.getItemAt(i);
-      if (item && typeof item.source?.tilesUrl !== "string" && !(item.source as any)?.__simplisticBase) {
+      // Same base-layer test as clearDynamicOverlays: previous-seed baked
+      // DZIs (string tilesUrl + __bakedDzi tag) must land in the snapshot or
+      // they survive the post-first-paint cleanup. Current-seed baked items
+      // painted early by dynamic-map get spliced back out during adoption.
+      const src = item?.source as any;
+      if (item && (typeof src?.tilesUrl !== "string" || src?.__bakedDzi) && !src?.__simplisticBase) {
         oldWorldItems.push(item);
       }
     }
