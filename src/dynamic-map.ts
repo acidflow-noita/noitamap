@@ -265,7 +265,12 @@ export async function runDynamicMap(
         const bridge = await import("./telescope/telescope-osd-bridge");
         const loader = await import("./telescope/baked-dzi-loader");
         bridge.clearDynamicOverlays(viewer as any);
-        loader.addBakedDZIsToOSD(viewer as any, probe.placements);
+        // Light mode: only paint the middle world (pw=0). The other two worlds'
+        // DZIs are still on CF — we just don't ask OSD to load them.
+        const placements = isLightMode()
+          ? probe.placements.filter((p) => p.pw === 0)
+          : probe.placements;
+        loader.addBakedDZIsToOSD(viewer as any, placements);
         bakedAlreadyPainted = true;
         onLoadingChange?.(false);
       }
@@ -400,7 +405,11 @@ export async function runDynamicMap(
     // ~0ms in the common case where the network probe finished first.
     const bakedProbe = await bakedProbePromise;
     if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
-    const bakedDZIs = bakedProbe && bakedProbe.baked ? bakedProbe.placements : null;
+    // Light mode: only the middle world's baked DZI is loaded (matches
+    // generateDynamicMap's parallelWorlds: [0] above).
+    const bakedDZIs = bakedProbe && bakedProbe.baked
+      ? (lightMode ? bakedProbe.placements.filter((p) => p.pw === 0) : bakedProbe.placements)
+      : null;
     if (bakedProbe) {
       if (bakedProbe.baked) {
         console.log(`[DynamicMap] Using baked ${bakedProbe.prefix}-* DZIs (${bakedProbe.placements.length} regions); skipping live biome composite`);
@@ -408,7 +417,7 @@ export async function runDynamicMap(
         console.log(`[DynamicMap] Baked DZIs not used: ${bakedProbe.reason}`);
       }
     }
-    await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint, cacheKey, bakedDZIs);
+    await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint, cacheKey, bakedDZIs, bakedAlreadyPainted);
     if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
     console.log(`[DynamicMap] Render: ${((performance.now() - t) / 1000).toFixed(2)}s`);
     lastResult = result;

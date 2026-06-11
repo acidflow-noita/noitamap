@@ -7,10 +7,14 @@
  * 2. Deploys a new version of daily-seed-serve (static assets worker)
  *    containing the updated current_seed.txt and _headers file,
  *    using the Cloudflare Workers Versions + Deployments API.
+ * 3. Triggers the biome-baker GitLab pipeline for the new seed (promote
+ *    yesterday's bake to previous-daily-*, bake + deploy today's to daily-*).
  *
  * Required secrets (in Secrets Store 291b9519666945a1a56adbb686c62d76):
  *   CF_API_TOKEN  — API token with Workers Scripts:Edit on the account
  *   CF_ACCOUNT_ID — Cloudflare account ID
+ *   GITLAB_BIOME_BAKER_TRIGGER_TOKEN — GitLab pipeline trigger token for the
+ *                   biome-baker project (83006723)
  */
 
 // Secrets Store bindings return objects with .get(), plain vars are strings
@@ -22,12 +26,15 @@ interface Env {
   // Secrets Store bindings
   CF_API_TOKEN: SecretStoreSecret;
   CF_ACCOUNT_ID: SecretStoreSecret;
+  GITLAB_BIOME_BAKER_TRIGGER_TOKEN: SecretStoreSecret;
   // Plain environment variables (from wrangler.jsonc vars)
   SEED_WORKER_NAME: string;
 }
 
 const NOLLA_URL = "https://takapuoli.noitagame.com/callback";
 const PUBLIC_SEED_URL = "https://daily-seed.acidflow.stream/current_seed.txt";
+const GITLAB_TRIGGER_URL = "https://gitlab.com/api/v4/projects/83006723/trigger/pipeline";
+const GITLAB_REF = "main";
 
 /** Parse the seed from Nolla's semicolon-delimited response. */
 function parseSeed(text: string): number | null {
@@ -178,6 +185,38 @@ async function deployStaticAssets(
   console.log(`Deployed daily-seed-serve with seed: ${seed}`);
 }
 
+/**
+ * Trigger the biome-baker pipeline on GitLab. The pipeline promotes
+ * yesterday's bake to the previous-daily-* workers (no re-bake), then bakes
+ * the new seed and deploys it to daily-*. Retries transient failures; throws
+ * if the trigger never lands so the cron invocation shows up as failed.
+ */
+async function triggerBake(env: Env, seed: number): Promise<void> {
+  const token = await env.GITLAB_BIOME_BAKER_TRIGGER_TOKEN.get();
+  const body = new FormData();
+  body.set("token", token);
+  body.set("ref", GITLAB_REF);
+  body.set("variables[SEED]", String(seed));
+  body.set("variables[BAKE_KIND]", "daily");
+
+  let lastError = "";
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const resp = await fetch(GITLAB_TRIGGER_URL, { method: "POST", body });
+    if (resp.ok) {
+      const { id, web_url } = (await resp.json()) as { id: number; web_url: string };
+      console.log(`Triggered bake pipeline #${id}: ${web_url}`);
+      return;
+    }
+    lastError = `HTTP ${resp.status}: ${await resp.text()}`;
+    console.warn(`Bake trigger attempt ${attempt}/3 failed: ${lastError}`);
+    if (attempt < 3) await new Promise((r) => setTimeout(r, 2000 * attempt));
+  }
+  throw new Error(
+    `Bake trigger failed after 3 attempts (${lastError}). Seed files ARE deployed; ` +
+      `start the bake manually: GitLab > Run pipeline on ${GITLAB_REF} with SEED=${seed}.`,
+  );
+}
+
 /** Convert Uint8Array to base64 string. */
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
@@ -225,7 +264,15 @@ async function runUpdate(env: Env): Promise<string> {
 
   // 2. Deploy to the static seed worker (publishes current + previous)
   await deployStaticAssets(seed, previousSeed, apiToken, accountId, env.SEED_WORKER_NAME);
-  return `Deployed seed: ${seed} (previous: ${previousSeed ?? "<none>"})`;
+
+  // 3. Queue the daily bake. Skipped when the published seed already matched
+  //    (manual /update re-run): the run that actually flipped the seed
+  //    triggered the pipeline for it.
+  if (seed !== previousSeed) {
+    await triggerBake(env, seed);
+    return `Deployed seed: ${seed} (previous: ${previousSeed ?? "<none>"}); bake triggered`;
+  }
+  return `Deployed seed: ${seed} (unchanged); bake not re-triggered`;
 }
 
 export default {

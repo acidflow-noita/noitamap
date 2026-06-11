@@ -26,6 +26,7 @@ import {
 import { rebuildAltLayers, getAllPOIsFlat, exportBiomeRegionImages } from "./telescope/telescope-osd-bridge";
 import { getUnlocksFromURL } from "./unlocks";
 import type { GenerationResult } from "./telescope/telescope-adapter";
+import { isRenderer, getStoredRenderer, setStoredRenderer, clearStoredRenderer } from "./renderer_settings";
 
 // --- Dev Console Commands (Early Initialization) ---
 const isDev =
@@ -90,6 +91,26 @@ if (isDev) {
       if (!result) return null;
       return exportBiomeRegionImages(result);
     },
+    // Dev-only OSD drawer override. Default everywhere is "canvas" (the prod
+    // setting in renderer_settings.ts). On localhost/dev.noitamap.com this
+    // hook flips it via localStorage so we can A/B test perf and baked-DZI
+    // edge fringing at zoom without shipping webgl to users.
+    //   noitamap.setRenderer("webgl")  -> opt in, reload page
+    //   noitamap.setRenderer("canvas") -> opt back to default, reload
+    //   noitamap.getRenderer()         -> see what the next reload will use
+    //   noitamap.clearRenderer()       -> wipe override, fall back to default
+    setRenderer: (r: "canvas" | "webgl") => {
+      if (r !== "canvas" && r !== "webgl") {
+        console.warn('Use "canvas" or "webgl"'); return;
+      }
+      setStoredRenderer(r);
+      console.log(`[Noitamap] Renderer set to "${r}". Reload the page to apply.`);
+    },
+    getRenderer: () => getStoredRenderer(),
+    clearRenderer: () => {
+      clearStoredRenderer();
+      console.log("[Noitamap] Renderer override cleared. Reload to use the default.");
+    },
   };
   console.log('[Noitamap] Dev mode detected, "noitamap" commands available.');
 }
@@ -118,7 +139,6 @@ import { addEventListenerForId, assertElementById, debounce } from "./util";
 import { createMapLinks, NAV_LINK_IDENTIFIER, getMapLabel, renderMapBadges, refreshBadgePopovers } from "./nav";
 import { getAllMapDefinitions } from "./data_sources/map_definitions";
 import { initMouseTracker } from "./mouse_tracker";
-import { isRenderer, getStoredRenderer, setStoredRenderer } from "./renderer_settings";
 import { isSpoilerFree, setSpoilerFree, onSpoilerFreeChange } from "./spoiler-free";
 import { isLightMode, setLightMode } from "./light-mode";
 import { isSkipCreatures, setSkipCreatures } from "./skip-creatures";

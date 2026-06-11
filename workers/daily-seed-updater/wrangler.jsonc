@@ -14,7 +14,8 @@
     "SEED_WORKER_NAME": "daily-seed-serve",
   },
   // Secrets Store bindings — same store as noitamap-auth.
-  // Add CF_API_TOKEN and CF_ACCOUNT_ID to store ID 291b9519666945a1a56adbb686c62d76.
+  // Add CF_API_TOKEN, CF_ACCOUNT_ID and GITLAB_BIOME_BAKER_TRIGGER_TOKEN to
+  // store ID 291b9519666945a1a56adbb686c62d76.
   "secrets_store_secrets": [
     {
       "binding": "CF_API_TOKEN",
@@ -25,6 +26,11 @@
       "binding": "CF_ACCOUNT_ID",
       "store_id": "291b9519666945a1a56adbb686c62d76",
       "secret_name": "CF_ACCOUNT_ID",
+    },
+    {
+      "binding": "GITLAB_BIOME_BAKER_TRIGGER_TOKEN",
+      "store_id": "291b9519666945a1a56adbb686c62d76",
+      "secret_name": "GITLAB_BIOME_BAKER_TRIGGER_TOKEN",
     },
   ],
 }

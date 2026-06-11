@@ -1272,6 +1272,15 @@ export async function exportBiomeRegionImages(
       }
 
       const smallData = compositeCtx.getImageData(0, 0, compositeW, compositeH);
+      // Force overlay alpha to binary (0/255 with 128 threshold). The overlay
+      // bitmaps from createTileOverlaysCheap can carry soft-alpha edge pixels
+      // (especially on the right side of biome chunks where coverage decays
+      // in scan-row order). Soft edges blend over the static bg DZIs / black
+      // void on heaven/hell and show as a visible fringe at zoom. Snapping
+      // alpha kills the fringe at the source.
+      for (let i = 3; i < smallData.data.length; i += 4) {
+        smallData.data[i] = smallData.data[i] >= 128 ? 255 : 0;
+      }
       const osdWidth = compositeW * 10;
       const scale = osdWidth / compositeW;
       const small = await blobToBase64(await rgbaToPngBlob(smallData.data, compositeW, compositeH));
@@ -3905,6 +3914,11 @@ export async function renderGenerationResult(
   onFirstPaint?: () => void,
   cacheKey?: string,
   bakedDZIs?: BakedDziPlacement[] | null,
+  // When true, dynamic-map already painted the baked DZIs directly the moment
+  // the probe resolved (instant load). renderGenerationResult must NOT add
+  // them again — doing so triggers a flicker when the second copy paints and
+  // confuses the `cleanupOldItems` snapshot that runs after first-paint.
+  bakedDZIsAlreadyOnScreen?: boolean,
 ): Promise<void> {
   const generationId = ++currentGenerationId;
   (window as any).__osdViewer = viewer;
@@ -3974,21 +3988,43 @@ export async function renderGenerationResult(
   // to the live dynamic composite when no baked set is available (any non-
   // daily seed or a deploy that hasn't caught up yet).
   if (bakedDZIs && bakedDZIs.length > 0) {
-    let firstPaintFired = false;
-    addBakedDZIsToOSD(viewer, bakedDZIs, (item, _placement) => {
-      if (currentGenerationId !== generationId) {
-        try { viewer.world.removeItem(item); } catch {}
-        return;
-      }
-      dynamicTiledImages.add(item);
-      if (!firstPaintFired) {
-        firstPaintFired = true;
-        try { wrappedOnFirstPaint(); } catch (e) { console.warn("[OSD Bridge] baked onFirstPaint threw:", e); }
-      }
-    });
-    // Initialise viewport bounds the same way the live composite path does
-    // (addTiledImage is async but the bounds are known the instant the call
-    // returns; OSD will fit-to-bounds on the next tick).
+    if (bakedDZIsAlreadyOnScreen) {
+      // dynamic-map painted these the moment the probe resolved. Just hook
+      // them into our cleanup tracking so removeItem() works on next reseed.
+      try {
+        const w = viewer.world;
+        for (let i = 0; i < w.getItemCount(); i++) {
+          const item = w.getItemAt(i);
+          const url = item?.source?.tilesUrl;
+          // DziTileSource rewrites ".../foo.dzi" into tilesUrl ".../foo_files/",
+          // so match against that form, not the raw .dzi URL.
+          if (typeof url === "string" && bakedDZIs.some((p) => url.startsWith(p.dziUrl.replace(/\.dzi$/, "_files/")))) {
+            dynamicTiledImages.add(item);
+            // Drop from oldWorldItems snapshot so cleanupOldItems doesn't
+            // remove the DZIs we just painted.
+            const idx = oldWorldItems.indexOf(item);
+            if (idx >= 0) oldWorldItems.splice(idx, 1);
+          }
+        }
+      } catch {}
+      // First-paint already fired in dynamic-map (loading bar hid then).
+      // Still call wrappedOnFirstPaint to trigger oldItems cleanup for any
+      // PRE-baked-paint state (probably nothing in our flow, but defensive).
+      try { wrappedOnFirstPaint(); } catch {}
+    } else {
+      let firstPaintFired = false;
+      addBakedDZIsToOSD(viewer, bakedDZIs, (item, _placement) => {
+        if (currentGenerationId !== generationId) {
+          try { viewer.world.removeItem(item); } catch {}
+          return;
+        }
+        dynamicTiledImages.add(item);
+        if (!firstPaintFired) {
+          firstPaintFired = true;
+          try { wrappedOnFirstPaint(); } catch (e) { console.warn("[OSD Bridge] baked onFirstPaint threw:", e); }
+        }
+      });
+    }
   } else {
     // Adding biomes initializes the OSD viewport bounds.
     await addBiomeLayersProgressively(viewer, result, generationId, wrappedOnFirstPaint, cacheKey);

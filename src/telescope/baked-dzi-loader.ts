@@ -157,6 +157,15 @@ export function addBakedDZIsToOSD(
       y: p.y,
       width: p.width,
       success: (event: any) => {
+        // OSD's default TileSource.hasTransparency() only matches ".png", so
+        // our transparent .webp tiles are treated as opaque. Opaque tiles skip
+        // the transparency render path (sketch-canvas isolation + clearRect of
+        // the stale lower pyramid level under each tile), which leaves the
+        // previous level's edge pixels visible through transparent areas while
+        // zooming -- the biome edges ghost/"wobble" until tiles settle. Marking
+        // the source transparent restores the same path the live PNG composite
+        // and any transparent DZI already use.
+        try { event.item.source.hasTransparency = () => true; } catch {}
         try {
           onAdded?.(event.item, p);
         } catch (e) {

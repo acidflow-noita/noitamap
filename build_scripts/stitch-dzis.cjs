@@ -24,7 +24,8 @@
  *     own private temp dir under the comma name before invocation.
  *   - A tile occupies world rect [X, X+w) x [Y, Y+h), where w/h are the PNG's
  *     pixel dimensions. Our 10x fulls are 1:1 with world units, so per region:
- *       --xmin <minX> --ymin <minY> --xmax <minX+fullW> --ymax <minY+fullH>
+ *       --xmin <minX> --ymin <minY> --xmax <minX+pad512(fullW)> --ymax <minY+pad512(fullH)>
+ *     (bounds padded up to 512-multiples; see comment at stitchArgs)
  *
  * USAGE
  *   node build_scripts/stitch-dzis.cjs --out /out
@@ -47,6 +48,8 @@ const { execFileSync, spawn } = require("child_process");
 const ROOT = path.resolve(__dirname, "..");
 
 const fmt = (ms) => (ms / 1000).toFixed(1) + "s";
+
+const pad512 = (v) => Math.ceil(v / 512) * 512;
 
 function parseArgs() {
   const out = {};
@@ -162,10 +165,18 @@ async function main() {
       "--blend-tile-limit", "1",
       "--dzi-tile-size", "512",
       "--webp-level", webpLevel,
+      // Pad the output canvas up to a multiple of 512 (right/bottom only;
+      // minX/minY stay the OSD anchor). The static map DZIs are exact
+      // 512-multiples (35840x73728) so every pyramid level halves to integers;
+      // our raw bounds (e.g. 32770x24570) make every level odd/ceil()-padded
+      // with a 1px ragged last tile column, which renders worse in OSD. The
+      // margin is transparent and free: file count is unchanged (65 ragged
+      // columns -> 65 exact), and the padded heaven/main/hell slots (24570 ->
+      // 24576) abut exactly with no overlap into neighbouring regions.
       "--xmin", String(r.minX),
       "--ymin", String(r.minY),
-      "--xmax", String(r.minX + r.fullW),
-      "--ymax", String(r.minY + r.fullH),
+      "--xmax", String(r.minX + pad512(r.fullW)),
+      "--ymax", String(r.minY + pad512(r.fullH)),
     ];
 
     const t = Date.now();
@@ -241,12 +252,17 @@ async function main() {
   for (const r of manifest.regions) {
     const world = worldFor(r.pw);
     const baseName = `dynamic-daily-${r.minX}-${r.minY}`;
-    if (!fs.existsSync(path.join(outDir, world, `${baseName}.dzi`))) continue;
+    const dziPath = path.join(outDir, world, `${baseName}.dzi`);
+    if (!fs.existsSync(dziPath)) continue;
+    // Publish the dims the DZI actually has (padded by this run, or whatever
+    // a checkpoint-reused older DZI was built with) -- OSD scales the image
+    // to the manifest width, so a mismatch would shrink/misalign the layer.
+    const img = JSON.parse(fs.readFileSync(dziPath, "utf8")).Image;
     byWorld[world].push({
       pw: r.pw, pvt: r.pvt,
       dzi: `${baseName}.dzi`,
       minX: r.minX, minY: r.minY,
-      fullW: r.fullW, fullH: r.fullH,
+      fullW: Number(img.Size.Width), fullH: Number(img.Size.Height),
     });
   }
   for (const [world, regions] of Object.entries(byWorld)) {
