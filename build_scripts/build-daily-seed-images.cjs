@@ -561,14 +561,20 @@ async function main() {
     });
     page.on("requestfailed", (req) => {
       const f = req.failure();
-      if (f && !/favicon|ERR_NAME_NOT_RESOLVED|ERR_BLOCKED|ERR_FAILED/i.test(f.errorText || "")) {
+      // google-analytics: headless page has no business phoning home; its
+      // aborted beacon POST is not a bake failure.
+      if (f && !/favicon|google-analytics|ERR_NAME_NOT_RESOLVED|ERR_BLOCKED|ERR_FAILED/i.test((f.errorText || "") + req.url())) {
         console.warn(`[page reqfail] ${req.method()} ${req.url()} -- ${f.errorText}`);
       }
     });
     page.on("console", (msg) => {
       const txt = msg.text();
       if (msg.type() === "error") {
-        if (!/favicon|404|ERR_NAME_NOT_RESOLVED/i.test(txt)) console.warn(`[page] ${txt}`);
+        // "Tile ... failed to load" is expected with the bg route active: every
+        // background tile request is fulfilled with an empty 204 (see above),
+        // which OSD reports as a per-tile load error. Only real errors matter.
+        const expectedTileNoise = !args["no-bg-route"] && /Tile %s failed to load/.test(txt);
+        if (!expectedTileNoise && !/favicon|404|ERR_NAME_NOT_RESOLVED/i.test(txt)) console.warn(`[page] ${txt}`);
       } else if (/^\[export\]/.test(txt)) {
         console.log(`[page] ${txt}`);
       }
