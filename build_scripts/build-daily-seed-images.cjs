@@ -63,6 +63,9 @@ let START = 0;
 
 // ─── Streaming nearest-neighbour PNG upscaler (no deps) ─────────────────────
 const PNG_SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+// Vertical world slot in game px (heaven/main/hell each occupy one slot).
+const SLOT_H_PX = 24576;
+const padSlotH = (v) => (v < SLOT_H_PX && SLOT_H_PX - v < 10 ? SLOT_H_PX : v);
 const CRC_TABLE = (() => {
   const t = new Uint32Array(256);
   for (let n = 0; n < 256; n++) {
@@ -188,6 +191,12 @@ async function upscalePngWithBg({ overlayPath, maskPath, biomeBitmaps, factor, o
 
   const F = factor;
   const W = w * F, H = h * F;
+  // World slots are 24576 px tall but the biome map can only yield
+  // floor(24576/10)=2457 small px -> 24570 px regions. Pad to the slot height
+  // by replicating the last row so the per-world merge stitch has zero
+  // uncovered (zero-filled) canvas between vertically abutting regions.
+  const padH = H < SLOT_H_PX && SLOT_H_PX - H < F ? SLOT_H_PX - H : 0;
+  let lastRow = null;
   const def = zlib.createDeflate({ level: 6 });
   const parts = [];
   def.on("data", (d) => parts.push(d));
@@ -300,8 +309,10 @@ async function upscalePngWithBg({ overlayPath, maskPath, biomeBitmaps, factor, o
         }
       }
       await writeDef(row2);
+      lastRow = row2;
     }
   }
+  for (let i = 0; i < padH; i++) await writeDef(lastRow);
   def.end();
   await deflated;
   const idat = Buffer.concat(parts);
@@ -310,7 +321,7 @@ async function upscalePngWithBg({ overlayPath, maskPath, biomeBitmaps, factor, o
   const finished = new Promise((res, rej) => { ws.on("error", rej); ws.on("finish", res); });
   const writeWs = streamWriter(ws);
   const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(H, 4);
+  ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(H + padH, 4);
   ihdr[8] = 8; ihdr[9] = 6;
   await writeWs(PNG_SIG);
   await writeWs(pngChunk("IHDR", ihdr));
@@ -318,7 +329,7 @@ async function upscalePngWithBg({ overlayPath, maskPath, biomeBitmaps, factor, o
   await writeWs(pngChunk("IEND", Buffer.alloc(0)));
   ws.end();
   await finished;
-  return { W, H };
+  return { W, H: H + padH };
 }
 
 /**
@@ -741,7 +752,7 @@ async function main() {
         pw: r.pw, pvt: r.pvt,
         file: regionFile(r),
         minX: r.minX, minY: r.minY,
-        fullW: r.compositeW * s, fullH: r.compositeH * s,
+        fullW: r.compositeW * s, fullH: padSlotH(r.compositeH * s),
         hasMask: !!r.mask,
       };
     }),

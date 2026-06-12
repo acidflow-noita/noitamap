@@ -27,9 +27,11 @@ export type World = (typeof WORLDS)[number];
  */
 export interface BakedDziPlacement {
   pw: number;
-  pvt: number;
+  /** Legacy (pre-merge bakes had one DZI per heaven/main/hell slot). Merged
+   *  per-world DZIs span all three slots and omit it. */
+  pvt?: number;
   /** Absolute DZI URL on a CF worker, e.g.
-   *  https://daily-middle.acidflow.stream/dynamic-daily--16900--7168.dzi */
+   *  https://daily-middle.acidflow.stream/dynamic-daily-middle.dzi */
   dziUrl: string;
   /** Top-left in OSD coords (seed-anchored world coords). */
   x: number;
@@ -54,7 +56,8 @@ export type BakedDziProbeResult = BakedDziProbeOk | BakedDziProbeMiss;
 
 interface PerWorldManifestRegion {
   pw: number;
-  pvt: number;
+  /** Absent in merged per-world manifests (one DZI spans all three slots). */
+  pvt?: number;
   dzi: string;
   minX: number;
   minY: number;

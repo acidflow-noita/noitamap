@@ -1,30 +1,35 @@
 #!/usr/bin/env node
 /**
- * Drive the noita-mapcap `stitch` Go binary over the 9 full-resolution biome
- * region images produced by build-daily-seed-images.cjs, producing 9 DZI
- * pyramids grouped by parallel world. Each world's subdir is a self-contained
- * deploy root for one CF Static Assets worker.
+ * Drive the noita-mapcap `stitch` Go binary over the full-resolution biome
+ * region images produced by build-daily-seed-images.cjs, producing ONE merged
+ * DZI per parallel world (heaven+main+hell on a single canvas; regions are
+ * padded to exact 24576-tall slots so they abut gap-free). One TiledImage per
+ * world in OSD = no internal seams to shimmer at zoom. Each world's subdir is
+ * a self-contained deploy root for one CF Static Assets worker.
  *
  * INPUT
  *   <in>/manifest.json                          (per-region bounds + filenames)
  *   <in>/full/dynamic-daily-<minX>-<minY>.png
+ *   <in>/generation.json                        (optional; POIs/scenes/biome map)
  *
  * OUTPUT (overwritten each run; same paths every day so URLs stay stable)
- *   <out>/<world>/dynamic-daily-<minX>-<minY>.dzi
- *   <out>/<world>/dynamic-daily-<minX>-<minY>_files/<level>/<iX>_<iY>.webp
- *   <out>/<world>/manifest.json                 (DZIs in this world + their bounds)
+ *   <out>/<world>/dynamic-daily-<world>.dzi
+ *   <out>/<world>/dynamic-daily-<world>_files/<level>/<iX>_<iY>.webp
+ *   <out>/<world>/manifest.json                 (one region entry: the merged DZI)
+ *   <out>/<world>/generation.json               (per-world POI/scene slice)
  *
  * <world> is derived from `pw`: 0 -> middle, <0 -> left, >0 -> right.
- * Each world holds 3 DZIs (heaven/main/hell) -> ~12k files, comfortably under
- * the 20k Static Assets per-worker file limit.
+ * A merged world pyramid is ~12.5k files, comfortably under the 20k Static
+ * Assets per-worker file limit.
  *
  * stitch CONTRACT
- *   - Filename regex inside <input>: ^(-?\d+),(-?\d+)\.png$ (COMMA). Our PNGs
- *     use a different naming, so each region is *linked or copied* into its
- *     own private temp dir under the comma name before invocation.
+ *   - Filename regex inside <input>: ^(-?\d+),(-?\d+)\.png$ (COMMA). Each
+ *     world's regions are linked/copied into a private temp dir under their
+ *     world-coordinate comma names.
  *   - A tile occupies world rect [X, X+w) x [Y, Y+h), where w/h are the PNG's
- *     pixel dimensions. Our 10x fulls are 1:1 with world units, so per region:
- *       --xmin <minX> --ymin <minY> --xmax <minX+fullW> --ymax <minY+fullH>
+ *     pixel dimensions. Our 10x fulls are 1:1 with world units; bounds are the
+ *     exact union of the world's slot-padded regions, so no canvas pixel is
+ *     left uncovered (uncovered = zero-filled = renders black).
  *
  * USAGE
  *   node build_scripts/stitch-dzis.cjs --out /out
@@ -34,9 +39,9 @@
  *     --stitch=<bin>  path to stitch (default "stitch" on PATH)
  *     --webp-level=N  WebP lossless effort 0-9 (default 0; output is always lossless,
  *                     N controls encode speed vs file size: 0 = fast/largest, 9 = slow/smallest)
- *     --concurrency=N regions stitched in parallel (default 4, or env STITCH_CONCURRENCY).
- *                     Each stitch peaks at ~3.2 GB; size to host RAM.
- *     --force         re-stitch regions whose .dzi already exists
+ *     --concurrency=N worlds stitched in parallel (default 3, or env STITCH_CONCURRENCY).
+ *                     Each merged-world stitch peaks at ~10-12 GB; size to host RAM.
+ *     --force         re-stitch worlds whose .dzi already exists
  */
 
 const fs = require("fs");
@@ -74,14 +79,12 @@ async function main() {
   // WebP lossless effort. 0 = fast/largest, 9 = slow/smallest. Output is
   // bit-exact lossless at every level — only encode time and file size differ.
   const webpLevel = args["webp-level"] !== undefined ? String(parseInt(args["webp-level"], 10)) : "0";
-  // Region-level parallelism. Each stitch process holds ~3.2 GB while encoding.
-  // After the biome-baker stitch patch (BlendMethodFast on single-tile inputs)
-  // the per-process mutex contention is gone, so running all 9 regions
-  // concurrently is the fastest setting on a beefy host. Default 9 = max
-  // concurrency for our 9 regions; lower it for tighter RAM budgets.
-  // 9 * 3.2 GB ≈ 29 GB peak — fits easily on saas-linux-large-amd64 (32 GB)
-  // and trivially on 2xlarge (128 GB). On free GHA (16 GB) keep this at 2.
-  const concurrency = Math.max(1, parseInt(args.concurrency || process.env.STITCH_CONCURRENCY || "9", 10));
+  // World-level parallelism. Each merged-world stitch holds the full
+  // 32770x73728 RGBA canvas (~9.7 GB) plus encode overhead, so budget
+  // ~10-12 GB per process. Default 3 = all worlds in parallel (~35 GB peak),
+  // which fits saas-linux-2xlarge (128 GB) easily and saas-linux-large
+  // (32 GB) tightly. On 16 GB hosts run 1 at a time.
+  const concurrency = Math.max(1, parseInt(args.concurrency || process.env.STITCH_CONCURRENCY || "3", 10));
 
   const manifestPath = path.join(inDir, "manifest.json");
   if (!fs.existsSync(manifestPath)) {
@@ -115,23 +118,27 @@ async function main() {
   const force = !!args["force"];
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "stitch-"));
 
-  // One task per region. Each task does its own filesystem prep, runs stitch
-  // async via spawn, and prints a single grouped block to stdout when done so
-  // concurrent stitches don't interleave their progress lines.
-  // Per-world subdirs (left/middle/right) so each is its own deploy root for
-  // a CF Static Assets worker. World is decided by `pw`: 0=middle, -1=left,
-  // 1=right. Files within a world (heaven/main/hell) live together.
+  // One task per WORLD: the world's heaven/main/hell region PNGs (padded to
+  // exact 24576-tall slots by build-daily-seed-images) are stitched into a
+  // SINGLE DZI. One TiledImage per world in OSD means no internal seams to
+  // shimmer at zoom and a third of the layer count. World is decided by `pw`:
+  // 0=middle, <0=left, >0=right. Each world subdir is a self-contained deploy
+  // root for one CF Static Assets worker.
   const worldFor = (pw) => (pw === 0 ? "middle" : pw < 0 ? "left" : "right");
-  const tasks = manifest.regions.map((r) => ({
-    r,
-    world: worldFor(r.pw),
-    baseName: `dynamic-daily-${r.minX}-${r.minY}`,
-  }));
+  const byWorldRegions = { left: [], middle: [], right: [] };
+  for (const r of manifest.regions) byWorldRegions[worldFor(r.pw)].push(r);
+  const tasks = Object.entries(byWorldRegions)
+    .filter(([, rs]) => rs.length > 0)
+    .map(([world, rs]) => ({ world, regions: rs, baseName: `dynamic-daily-${world}` }));
 
-  const runRegion = async ({ r, world, baseName }) => {
-    const src = path.join(fullDir, r.file);
-    if (!fs.existsSync(src)) {
-      console.warn(`[stitch] missing ${src}; skipping pw=${r.pw} pvt=${r.pvt}`);
+  const runWorld = async ({ world, regions, baseName }) => {
+    const present = regions.filter((r) => {
+      if (fs.existsSync(path.join(fullDir, r.file))) return true;
+      console.warn(`[stitch] missing ${r.file}; ${world} will have a hole at pvt=${r.pvt}`);
+      return false;
+    });
+    if (present.length === 0) {
+      console.warn(`[stitch] no region PNGs for ${world}; skipping`);
       return { ok: false, skipped: true };
     }
     const worldDir = path.join(outDir, world);
@@ -139,45 +146,52 @@ async function main() {
     const outPath = path.join(worldDir, `${baseName}.dzi`);
     const filesDir = path.join(worldDir, `${baseName}_files`);
 
-    // Resumability: skip regions whose DZI already exists from a prior run.
+    // Resumability: skip worlds whose DZI already exists from a prior run.
     if (!force && fs.existsSync(outPath) && fs.existsSync(filesDir)) {
       console.log(`[stitch] checkpoint: ${baseName}.dzi exists, skipping (pass --force to redo)`);
       return { ok: true, checkpoint: true };
     }
 
     // stitch's input glob expects "<X>,<Y>.png" (comma). One private dir per
-    // region so the *.png glob matches exactly one tile and the regex doesn't
-    // panic on our hyphen-prefixed filename.
-    const regionTmp = path.join(tmpRoot, `r${r.minX}_${r.minY}`);
-    fs.mkdirSync(regionTmp, { recursive: true });
-    const tileName = `${r.minX},${r.minY}.png`;
-    try { fs.linkSync(src, path.join(regionTmp, tileName)); }
-    catch { fs.copyFileSync(src, path.join(regionTmp, tileName)); }
+    // world; each region links in under its world coordinates so the stitcher
+    // composes all three onto one canvas.
+    const worldTmp = path.join(tmpRoot, `w_${world}`);
+    fs.mkdirSync(worldTmp, { recursive: true });
+    for (const r of present) {
+      const tileName = `${r.minX},${r.minY}.png`;
+      const src = path.join(fullDir, r.file);
+      try { fs.linkSync(src, path.join(worldTmp, tileName)); }
+      catch { fs.copyFileSync(src, path.join(worldTmp, tileName)); }
+    }
 
     fs.rmSync(filesDir, { recursive: true, force: true });
 
+    // Bounds = exact union of the slot-padded region PNGs. Regions abut
+    // exactly (24576-tall slots), so the canvas has zero uncovered
+    // (zero-filled -> renders black) pixels.
+    const minX = Math.min(...present.map((r) => r.minX));
+    const minY = Math.min(...present.map((r) => r.minY));
+    const maxX = Math.max(...present.map((r) => r.minX + r.fullW));
+    const maxY = Math.max(...present.map((r) => r.minY + r.fullH));
     const stitchArgs = [
-      "--input", regionTmp,
+      "--input", worldTmp,
       "--output", outPath,
       "--blend-tile-limit", "1",
       "--dzi-tile-size", "512",
       "--webp-level", webpLevel,
-      // Bounds must EXACTLY match the input PNG: any canvas the tile doesn't
-      // cover is zero-filled by the stitcher and renders as opaque black in
-      // the flattened pipeline (the 510px right bar / 6px boundary strips).
-      "--xmin", String(r.minX),
-      "--ymin", String(r.minY),
-      "--xmax", String(r.minX + r.fullW),
-      "--ymax", String(r.minY + r.fullH),
+      "--xmin", String(minX),
+      "--ymin", String(minY),
+      "--xmax", String(maxX),
+      "--ymax", String(maxY),
     ];
 
     const t = Date.now();
-    // Stream each child's stdout/stderr live, prefixed with a per-region tag,
+    // Stream each child's stdout/stderr live, prefixed with a per-world tag,
     // so we get progress visibility during the stitch instead of one batch
-    // dump on completion. Concurrent regions interleave but each line is
+    // dump on completion. Concurrent worlds interleave but each line is
     // complete (the stitch patch already terminates lines with \n), so it's
-    // grep-friendly: e.g. `grep "[middle/main]" log` to follow one region.
-    const tag = `[${world}/${r.pvt === -1 ? "heaven" : r.pvt === 1 ? "hell" : "main"}]`;
+    // grep-friendly: e.g. `grep "[middle]" log` to follow one world.
+    const tag = `[${world}]`;
     const child = spawn(stitchBin, stitchArgs, { stdio: ["ignore", "pipe", "pipe"] });
     const prefixStream = (stream) => {
       let pending = "";
@@ -218,12 +232,12 @@ async function main() {
   // Concurrency-limited pool. Pulls off the queue as workers free up.
   let count = 0;
   const queue = tasks.slice();
-  console.log(`[stitch] running ${queue.length} regions with concurrency=${concurrency}, webp-level=${webpLevel}`);
+  console.log(`[stitch] running ${queue.length} worlds with concurrency=${concurrency}, webp-level=${webpLevel}`);
   try {
     const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
       while (queue.length) {
         const task = queue.shift();
-        const r = await runRegion(task);
+        const r = await runWorld(task);
         if (r.ok) count++;
       }
     });
@@ -238,22 +252,22 @@ async function main() {
   }
 
   // Per-world manifest: each CF Static Assets worker carries its own pointer
-  // file listing the DZIs it serves + their OSD bounds, so the map fetches one
+  // file listing the DZI it serves + its OSD bounds, so the map fetches one
   // small JSON per world instead of stitching together a global view itself.
+  // One merged DZI per world = one region entry spanning heaven+main+hell.
   const byWorld = { left: [], middle: [], right: [] };
-  for (const r of manifest.regions) {
-    const world = worldFor(r.pw);
-    const baseName = `dynamic-daily-${r.minX}-${r.minY}`;
+  for (const { world, regions, baseName } of tasks) {
     const dziPath = path.join(outDir, world, `${baseName}.dzi`);
     if (!fs.existsSync(dziPath)) continue;
-    // Publish the dims the DZI actually has (padded by this run, or whatever
-    // a checkpoint-reused older DZI was built with) -- OSD scales the image
+    // Publish the dims the DZI actually has (this run's, or whatever a
+    // checkpoint-reused older DZI was built with) -- OSD scales the image
     // to the manifest width, so a mismatch would shrink/misalign the layer.
     const img = JSON.parse(fs.readFileSync(dziPath, "utf8")).Image;
     byWorld[world].push({
-      pw: r.pw, pvt: r.pvt,
+      pw: regions[0].pw,
       dzi: `${baseName}.dzi`,
-      minX: r.minX, minY: r.minY,
+      minX: Math.min(...regions.map((r) => r.minX)),
+      minY: Math.min(...regions.map((r) => r.minY)),
       fullW: Number(img.Size.Width), fullH: Number(img.Size.Height),
     });
   }

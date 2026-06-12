@@ -1162,6 +1162,112 @@ async function blobToBase64(blob: Blob): Promise<string> {
   return btoa(bin);
 }
 
+// ─── Decoration bake export (pixel scenes + POI marker sprites) ─────────────
+//
+// The bake page calls prepareDecorationExport() once (builds the full draw
+// list: every scene composite + every marker sprite at world coords), then
+// exportDecorationCell() per non-empty 2048px grid cell. The node compositor
+// alpha-blends the cells onto the upscaled region fulls before stitching, so
+// the deployed pyramids carry scenes + creatures in their pixels and the live
+// map skips both visual layers entirely (clicks keep working off the spatial
+// index; see renderGenerationResult's decorBaked path).
+
+interface DecorDraw {
+  img: CanvasImageSource;
+  // Optional spritesheet source rect (markers); scenes draw the full bitmap.
+  sx?: number; sy?: number; sw?: number; sh?: number;
+  x: number; y: number; w: number; h: number;
+}
+const DECOR_CELL = 2048;
+let _decorDraws: DecorDraw[] | null = null;
+
+export async function prepareDecorationExport(
+  result: GenerationResult,
+): Promise<{ cellSize: number; cells: { cx: number; cy: number }[] } | null> {
+  const draws: DecorDraw[] = [];
+
+  // 1. Pixel scenes (z-order below markers, so pushed first).
+  const built = await buildSceneBitmaps(result, null);
+  if (!built) return null;
+  for (const scene of built.validScenes) {
+    const bmp = built.bitmapByKey.get(scene.key);
+    if (!bmp) continue;
+    draws.push({ img: bmp, x: scene.x, y: scene.y, w: scene.width, h: scene.height });
+  }
+  const sceneCount = draws.length;
+
+  // 2. POI marker sprites. Mirrors marker-tile-source.ts at drawScale=1 with
+  // no spoiler scrub (bake is always full-detail; spoiler-free is disabled on
+  // baked seeds client-side).
+  const md = await buildMarkerData(result);
+  for (const item of md.items) {
+    const keys = Array.isArray(item.spriteKey) ? item.spriteKey : [item.spriteKey];
+    let isMain = true;
+    let rootOX = 0, rootOY = 0;
+    for (const k of keys) {
+      const a = md.atlas[k];
+      if (!a) continue;
+      if (isMain) {
+        isMain = false;
+        rootOX = a.ox ?? item.w / 2;
+        rootOY = a.oy ?? item.h / 2;
+      }
+      // Same math as the tile source: layer top-left = marker centre minus the
+      // root layer's origin (per-layer l_ox cancels out at drawScale=1).
+      draws.push({
+        img: md.spritesheet,
+        sx: a.x, sy: a.y, sw: a.w, sh: a.h,
+        x: item.osdX - rootOX, y: item.osdY - rootOY, w: a.w, h: a.h,
+      });
+    }
+  }
+  _decorDraws = draws;
+
+  // Non-empty cells on the absolute world grid (cell x0 = cx * DECOR_CELL).
+  const cellSet = new Set<string>();
+  for (const d of draws) {
+    const cx0 = Math.floor(d.x / DECOR_CELL), cx1 = Math.floor((d.x + d.w - 1) / DECOR_CELL);
+    const cy0 = Math.floor(d.y / DECOR_CELL), cy1 = Math.floor((d.y + d.h - 1) / DECOR_CELL);
+    for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) cellSet.add(`${cx},${cy}`);
+  }
+  const cells = [...cellSet].map((s) => {
+    const [cx, cy] = s.split(",").map(Number);
+    return { cx, cy };
+  });
+  console.log(
+    `[OSD Bridge] Decor export prepared: ${sceneCount} scenes + ${draws.length - sceneCount} sprite layers, ${cells.length} cells`,
+  );
+  return { cellSize: DECOR_CELL, cells };
+}
+
+/** Render one decor grid cell; returns a PNG data URL or null when empty. */
+export function exportDecorationCell(cx: number, cy: number): string | null {
+  if (!_decorDraws) return null;
+  const x0 = cx * DECOR_CELL, y0 = cy * DECOR_CELL;
+  const hits = _decorDraws.filter(
+    (d) => d.x < x0 + DECOR_CELL && d.x + d.w > x0 && d.y < y0 + DECOR_CELL && d.y + d.h > y0,
+  );
+  if (hits.length === 0) return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = DECOR_CELL;
+  canvas.height = DECOR_CELL;
+  const ctx = canvas.getContext("2d")!;
+  ctx.imageSmoothingEnabled = false;
+  for (const d of hits) {
+    if (d.sw !== undefined) {
+      ctx.drawImage(d.img, d.sx!, d.sy!, d.sw!, d.sh!, d.x - x0, d.y - y0, d.w, d.h);
+    } else {
+      ctx.drawImage(d.img, d.x - x0, d.y - y0, d.w, d.h);
+    }
+  }
+  return canvas.toDataURL("image/png");
+}
+
+export function releaseDecorationExport(): void {
+  _decorDraws = null;
+}
+
+
 /**
  * Re-render the 9 biome regions (3 horizontal PWs × 3 verticals: main/heaven/
  * hell) for a finished generation, plus per-region biome-bg masks (main world
@@ -2018,27 +2124,17 @@ export function prefetchAllSceneBitmaps(): Promise<void> {
  * Groups by scene key for bitmap caching. Builds a Flatbush spatial index
  * and creates ONE custom OSD tile source for efficient rendering.
  */
-export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult, generationId: number): Promise<void> {
-  if (!pixelSceneConfig.enabled) return;
-
-  const { pixelScenesByPW, worldCenter } = result;
-
-  const allScenes = Object.values(pixelScenesByPW).flat();
-
-  // Debug: check for specific expected scenes
-  const debugNames = new Set(["friendroom", "cavern", "side_cavern_left", "side_cavern_right"]);
-  const found = allScenes.filter((s) => s && debugNames.has(s.name));
-  if (found.length > 0) {
-    console.log(
-      `[OSD Bridge] Found expected scenes:`,
-      found.map((s) => `${s.name} (${s.key}) at (${s.x},${s.y})`),
-    );
-  } else {
-    console.log(
-      `[OSD Bridge] Missing expected scenes: friendroom, cavern, side_cavern_*. Telescope may not be generating them.`,
-    );
-  }
-
+/**
+ * Build the composite bitmap for every renderable pixel scene in `result`.
+ * Shared by the live scene tile source (addPixelScenes) and the decoration
+ * bake export. Pass generationId=null to skip cancellation checks (bake).
+ * Returns null when cancelled mid-build.
+ */
+async function buildSceneBitmaps(
+  result: GenerationResult,
+  generationId: number | null,
+): Promise<{ validScenes: PixelScene[]; bitmapByKey: Map<string, ImageBitmap> } | null> {
+  const allScenes = Object.values(result.pixelScenesByPW).flat();
   const validScenes = allScenes.filter((s) => {
     if (!s || s.width <= 0 || s.height <= 0) return false;
     if (pixelSceneConfig.skipNames.has(s.name)) return false;
@@ -2049,34 +2145,17 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     if (pixelSceneConfig.skipFn && pixelSceneConfig.skipFn(s)) return false;
     return true;
   });
-  if (validScenes.length === 0) return;
-
-  // Populate debug scene list for __pixelSceneList()
-  _lastLoadedScenes = allScenes.map((s) => ({
-    name: s.name,
-    key: s.key,
-    x: s.x,
-    y: s.y,
-    category: getSceneCategory(s),
-  }));
-
-  // 1. Collect unique scene keys (biome/name) for _visual.png loading
   const bitmapByKey = new Map<string, ImageBitmap>();
-  const uniqueKeys = new Map<string, PixelScene>();
+  if (validScenes.length === 0) return { validScenes, bitmapByKey };
 
+  const uniqueKeys = new Map<string, PixelScene>();
   for (const scene of validScenes) {
-    if (!uniqueKeys.has(scene.key)) {
-      uniqueKeys.set(scene.key, scene);
-    }
+    if (!uniqueKeys.has(scene.key)) uniqueKeys.set(scene.key, scene);
   }
 
-  console.log(
-    `[OSD Bridge] Pixel scenes: ${allScenes.length} total, ${validScenes.length} valid, ` +
-      `${uniqueKeys.size} unique keys`,
-  );
-
-  // 2. Build composite bitmaps: _background.png (bottom) + imgElement (middle) + _visual.png (top)
-  // Per-key bitmaps are seed-independent — cache them in IDB so future seeds reuse the work.
+  // Per-key bitmaps are seed-independent — cache them in IDB so future seeds
+  // reuse the work. Bulk-fetch every cached bitmap in one IDB transaction
+  // (~138 separate read transactions add 1-3s on Brave/FF).
   const BATCH = 50;
   const keyArr = Array.from(uniqueKeys.entries());
   let compositeCount = 0;
@@ -2084,14 +2163,10 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   let fallbackCount = 0;
   let missingCount = 0;
   const idx = await getScenePngIndex();
-
-  // Bulk-fetch every cached bitmap in one IDB transaction. This avoids
-  // ~138 separate read transactions which add 1-3s on Brave/FF.
-  const allKeys = keyArr.map(([k]) => k);
-  const bulkSceneCache = await getCachedSceneBitmapsBulk(allKeys);
+  const bulkSceneCache = await getCachedSceneBitmapsBulk(keyArr.map(([k]) => k));
 
   for (let i = 0; i < keyArr.length; i += BATCH) {
-    if (currentGenerationId !== generationId) return;
+    if (generationId !== null && currentGenerationId !== generationId) return null;
     const batch = keyArr.slice(i, i + BATCH);
     await Promise.all(
       batch.map(async ([key, scene]) => {
@@ -2125,11 +2200,53 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     );
   }
 
-  if (currentGenerationId !== generationId) return;
   console.log(
     `[OSD Bridge] Pixel scene bitmaps: ${bitmapByKey.size}/${uniqueKeys.size} ` +
       `(${cacheHitCount} cache, ${compositeCount} composite, ${fallbackCount} fallback, ${missingCount} missing)`,
   );
+  return { validScenes, bitmapByKey };
+}
+
+export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult, generationId: number): Promise<void> {
+  if (!pixelSceneConfig.enabled) return;
+
+  const { pixelScenesByPW, worldCenter } = result;
+
+  const allScenes = Object.values(pixelScenesByPW).flat();
+
+  // Debug: check for specific expected scenes
+  const debugNames = new Set(["friendroom", "cavern", "side_cavern_left", "side_cavern_right"]);
+  const found = allScenes.filter((s) => s && debugNames.has(s.name));
+  if (found.length > 0) {
+    console.log(
+      `[OSD Bridge] Found expected scenes:`,
+      found.map((s) => `${s.name} (${s.key}) at (${s.x},${s.y})`),
+    );
+  } else {
+    console.log(
+      `[OSD Bridge] Missing expected scenes: friendroom, cavern, side_cavern_*. Telescope may not be generating them.`,
+    );
+  }
+
+  const built = await buildSceneBitmaps(result, generationId);
+  if (!built) return; // cancelled
+  const { validScenes, bitmapByKey } = built;
+  if (validScenes.length === 0) return;
+
+  // Populate debug scene list for __pixelSceneList()
+  _lastLoadedScenes = allScenes.map((s) => ({
+    name: s.name,
+    key: s.key,
+    x: s.x,
+    y: s.y,
+    category: getSceneCategory(s),
+  }));
+
+  console.log(
+    `[OSD Bridge] Pixel scenes: ${allScenes.length} total, ${validScenes.length} valid`,
+  );
+
+  if (currentGenerationId !== generationId) return;
 
   // 3. Build items array and compute bounding box
   interface SceneItem {
