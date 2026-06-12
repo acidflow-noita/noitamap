@@ -1221,6 +1221,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Handle spoiler-free toggle — reload page to re-render all tiles
   // (same approach as renderer toggle, OSD tile cache can't be selectively invalidated)
   const spoilerFreeToggle = document.getElementById("spoilerFreeToggle") as HTMLInputElement | null;
+  // Baked seeds flatten wand/spell/item identities into the DZI pixels, so
+  // spoiler-free cannot strip them — disable the toggle and explain why in
+  // the popover. Event fired by dynamic-map.ts whenever the baked state of
+  // the current view changes.
+  window.addEventListener("bakedSeedChange", ((e: CustomEvent) => {
+    const label = document.querySelector<HTMLElement>('label[for="spoilerFreeToggle"]');
+    if (!spoilerFreeToggle || !label) return;
+    const baked = !!e.detail?.baked;
+    spoilerFreeToggle.disabled = baked;
+    // Bootstrap's .btn-check:disabled + .btn sets pointer-events: none, which
+    // would also kill the hover popover that explains the disabling. Restore.
+    label.style.pointerEvents = baked ? "auto" : "";
+    const contentKey = baked ? "spoilerFree.unavailableDaily" : "spoilerFree.content";
+    label.setAttribute("data-i18n-content", contentKey);
+    label.setAttribute("data-bs-content", i18next.t(contentKey));
+    const existing = bootstrap.Popover.getInstance(label);
+    if (existing) existing.dispose();
+    new bootstrap.Popover(label);
+  }) as EventListener);
   if (spoilerFreeToggle) {
     spoilerFreeToggle.checked = isSpoilerFree();
     spoilerFreeToggle.addEventListener("change", () => {

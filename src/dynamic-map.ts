@@ -264,6 +264,21 @@ export async function runDynamicMap(
       if (todayDaily !== null && seed === todayDaily) prefix = "daily";
       else if (prevDaily !== null && seed === prevDaily) prefix = "previous-daily";
       if (!prefix) return null;
+      // Generation data (POIs, pixel scenes, biome map) rides on the same
+      // workers as the DZIs. Fetch it in PARALLEL with the probe: once the
+      // probe paints, OSD floods these same origins with hundreds of tile
+      // requests and a late generation.json queues behind all of them (the
+      // "POIs take forever" symptom). Baked with u=all, so only valid for
+      // the default all-unlocked state; restricted-unlock views keep the
+      // baked DZIs but run telescope for their own POI pools.
+      const generationPromise: Promise<GenerationResult | null> =
+        unlocks === null
+          ? (async () => {
+              const { fetchBakedGeneration } = await import("./telescope/baked-generation");
+              const worlds: ("left" | "middle" | "right")[] = isLightMode() ? ["middle"] : ["left", "middle", "right"];
+              return fetchBakedGeneration(prefix, worlds, seed);
+            })().catch(() => null)
+          : Promise.resolve(null);
       const probe = await probeBakedDZIs(prefix, seed);
       if (!probe.baked) return { probe, generation: null };
       if (myToken === generationToken && !bakedAlreadyPainted) {
@@ -287,17 +302,8 @@ export async function runDynamicMap(
         bakedAlreadyPainted = true;
         onLoadingChange?.(false);
       }
-      // Baked generation data (POIs, pixel scenes, biome map) rides on the
-      // same workers as the DZIs. It was baked with u=all, so it's only valid
-      // for the default all-unlocked state; restricted-unlock views keep the
-      // baked DZIs but run telescope for their own POI pools.
-      let generation: GenerationResult | null = null;
-      if (unlocks === null) {
-        const { fetchBakedGeneration } = await import("./telescope/baked-generation");
-        const worlds: ("left" | "middle" | "right")[] = isLightMode() ? ["middle"] : ["left", "middle", "right"];
-        generation = await fetchBakedGeneration(prefix, worlds, seed);
-        if (!generation) console.log("[DynamicMap] No baked generation.json; falling back to telescope for POIs");
-      }
+      const generation = await generationPromise;
+      if (!generation && unlocks === null) console.log("[DynamicMap] No baked generation.json; falling back to telescope for POIs");
       return { probe, generation };
     } catch (e) {
       console.warn("[DynamicMap] baked-DZI probe threw:", e);
@@ -331,6 +337,10 @@ export async function runDynamicMap(
     // scenes all come prebaked from the static workers.
     const bakedData = await bakedProbePromise;
     if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
+    // UI hooks (spoiler-free toggle) need to know when the view is served
+    // from baked pyramids: identities are flattened into the pixels there,
+    // so spoiler-free cannot work and the toggle gets disabled.
+    window.dispatchEvent(new CustomEvent("bakedSeedChange", { detail: { baked: !!bakedData?.probe?.baked } }));
 
     let t = performance.now();
     let result: GenerationResult | null = null;
@@ -521,6 +531,7 @@ export function clearDynamicMap(viewer: any): void {
   clearSeedParams();
   // Drop pre-warmed alt-unlocks POIs — they belong to the seed we just left.
   resetAltCache();
+  window.dispatchEvent(new CustomEvent("bakedSeedChange", { detail: { baked: false } }));
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

@@ -255,20 +255,25 @@ export class AppOSD {
 
   getCombinedItemsRect(): any {
     if (this.world.getItemCount() === 0) return this.world.getHomeBounds();
-    const dims = { x: Infinity, y: Infinity, width: 0, height: 0 };
+    // True union of the DZI items' rects. Dynamic maps stack baked/composite
+    // layers ON TOP of the static base DZIs, so summing widths (the old code)
+    // produced a rect several times wider than the world and goto/home gained
+    // huge dead space to the right. Non-DZI sources (marker/POI overlay tile
+    // sources, which can overhang the world rect) are excluded.
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     let found = false;
     for (let i = 0; i < this.world.getItemCount(); i++) {
       const tiledImage = this.world.getItemAt(i);
       if (!("Image" in tiledImage.source)) continue;
       const item = tiledImage.getBoundsNoRotate();
-      dims.x = Math.min(dims.x, item.x);
-      dims.y = Math.min(dims.y, item.y);
-      dims.width += item.width;
-      dims.height = Math.max(dims.height, item.height);
+      minX = Math.min(minX, item.x);
+      minY = Math.min(minY, item.y);
+      maxX = Math.max(maxX, item.x + item.width);
+      maxY = Math.max(maxY, item.y + item.height);
       found = true;
     }
     if (!found) return this.world.getHomeBounds();
-    return new OpenSeadragon.Rect(dims.x, dims.y, dims.width, dims.height);
+    return new OpenSeadragon.Rect(minX, minY, maxX - minX, maxY - minY);
   }
 
   getZoomPos(): ZoomPos {

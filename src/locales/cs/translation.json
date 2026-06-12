@@ -4810,7 +4810,8 @@
   },
   "spoilerFree": {
     "title": "Bez spoileru",
-    "content": "Skryt identity hulek, kouzel a predmetu na mape a ve vysledcich hledani. Hulky se zobrazi jako pocatecni hulka, kouzla a predmety se zobrazi jako neidentifikovane."
+    "content": "Skryt identity hulek, kouzel a predmetu na mape a ve vysledcich hledani. Hulky se zobrazi jako pocatecni hulka, kouzla a predmety se zobrazi jako neidentifikovane.",
+    "unavailableDaily": "Rezim bez spoileru neni dostupny pro denni seedy"
   },
   "privacyBrowser": {
     "title": "Zjisten prohlizec ochrany soukromi",
