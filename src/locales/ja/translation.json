@@ -4803,7 +4803,8 @@
     "seedTooltipDaily": "これはデイリーランのシードです",
     "seedTooltipCustom": "これは手動で選択されたシードです",
     "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed"
+    "previousDailyDescription": "Load yesterday's daily game seed",
+    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
   },
   "alive_wand": "(生きている杖)",
   "konami": {

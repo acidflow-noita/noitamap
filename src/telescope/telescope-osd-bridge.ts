@@ -282,6 +282,32 @@ async function ensureTelescopeModules(): Promise<void> {
 
 type OSDViewer = any;
 
+/**
+ * Identify a tiled image as removable seed content, regardless of whether its
+ * source.__bakedDzi tag has been set yet. The tag is only applied inside the
+ * OSD `success` callback, which fires asynchronously after the first tile
+ * loads — between addTiledImage() and success the item is already in the
+ * world but un-tagged. A reseed in that window would otherwise treat the
+ * in-flight DZI as a base layer (string tilesUrl, no tag) and leave it
+ * lingering on top of the new map. Matching the worker hostnames closes the
+ * race deterministically.
+ */
+function isDynamicSeedItem(item: any): boolean {
+  const src = item?.source as any;
+  if (!src) return false;
+  if (src.__simplisticBase) return false;
+  if (src.__bakedDzi) return true;
+  const url: unknown = src.tilesUrl;
+  if (typeof url !== "string") {
+    // Custom (non-DZI) tile sources: marker layers, biome bg blob URLs, etc.
+    return true;
+  }
+  // Baked DZIs come from the daily-{left,middle,right}.acidflow.stream and
+  // previous-daily-{left,middle,right}.acidflow.stream workers. Anything from
+  // those origins is seed-content and must be removable on reseed.
+  return /^https:\/\/(?:previous-)?daily-(?:left|middle|right)\.acidflow\.stream\//.test(url);
+}
+
 const dynamicTiledImages: Set<any> = new Set();
 let dynamicOverlayElements: HTMLElement[] = [];
 let dynamicBlobUrls: string[] = [];
@@ -309,11 +335,10 @@ export function clearDynamicOverlays(viewer: any): void {
     for (let i = world.getItemCount() - 1; i >= 0; i--) {
       const item = world.getItemAt(i);
       // Skip base layers: static DZI tiles (string tilesUrl) and the
-      // simplistic flat-PNG background (tagged __simplisticBase). Baked
-      // biome DZIs also have a string tilesUrl — the __bakedDzi tag set in
-      // addBakedDZIsToOSD is what marks them as removable seed content.
-      const src = item?.source as any;
-      if (item && (typeof src?.tilesUrl !== "string" || src?.__bakedDzi) && !src?.__simplisticBase) {
+      // simplistic flat-PNG background. isDynamicSeedItem also matches baked
+      // DZIs by worker hostname, so in-flight items whose success callback
+      // hasn't yet set __bakedDzi still get cleaned up.
+      if (item && isDynamicSeedItem(item)) {
         world.removeItem(item);
       }
     }
@@ -4057,12 +4082,10 @@ export async function renderGenerationResult(
     const world = viewer.world;
     for (let i = 0; i < world.getItemCount(); i++) {
       const item = world.getItemAt(i);
-      // Same base-layer test as clearDynamicOverlays: previous-seed baked
-      // DZIs (string tilesUrl + __bakedDzi tag) must land in the snapshot or
-      // they survive the post-first-paint cleanup. Current-seed baked items
-      // painted early by dynamic-map get spliced back out during adoption.
-      const src = item?.source as any;
-      if (item && (typeof src?.tilesUrl !== "string" || src?.__bakedDzi) && !src?.__simplisticBase) {
+      // Same base-layer test as clearDynamicOverlays. Routed through
+      // isDynamicSeedItem so in-flight baked DZIs whose async success callback
+      // hasn't yet tagged source.__bakedDzi are still captured for cleanup.
+      if (item && isDynamicSeedItem(item)) {
         oldWorldItems.push(item);
       }
     }

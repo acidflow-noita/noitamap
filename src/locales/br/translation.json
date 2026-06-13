@@ -4803,7 +4803,8 @@
     "seedTooltipDaily": "Esta e a seed da corrida diaria",
     "seedTooltipCustom": "Esta e uma seed selecionada manualmente",
     "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed"
+    "previousDailyDescription": "Load yesterday's daily game seed",
+    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
   },
   "alive_wand": "(varinha viva)",
   "konami": {

@@ -4803,7 +4803,8 @@
     "seedTooltipDaily": "To jest seed dziennego biegu",
     "seedTooltipCustom": "To jest recznie wybrany seed",
     "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed"
+    "previousDailyDescription": "Load yesterday's daily game seed",
+    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
   },
   "alive_wand": "(zywa rozdzka)",
   "konami": {

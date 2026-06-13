@@ -4803,7 +4803,8 @@
     "seedTooltipDaily": "Це сід щоденного забігу",
     "seedTooltipCustom": "Це вручну обраний сід",
     "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed"
+    "previousDailyDescription": "Load yesterday's daily game seed",
+    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
   },
   "alive_wand": "(жива паличка)",
   "konami": {

@@ -6,7 +6,7 @@
  */
 
 import i18next from "i18next";
-import { fetchDailySeed, fetchPreviousDailySeed } from "./data_sources/daily_seed";
+import { fetchDailySeed, fetchPreviousDailySeed, getCachedPreviousDailySeed } from "./data_sources/daily_seed";
 import { updateURLWithSeed } from "./data_sources/url";
 import { getCurrentDynamicSeed, runDynamicMap } from "./dynamic-map";
 import type { DynamicMapOptions } from "./dynamic-map";
@@ -14,6 +14,11 @@ import { isSpoilerFree } from "./spoiler-free";
 
 const NERD_MODE_URL = "https://lymm37.github.io/noita-telescope/";
 const DYNAMIC_MAP_NAME = "dynamic-main-branch";
+
+/** Tri-state for seed-input flavouring. "daily" = today's daily, drawn teal.
+ *  "previousDaily" = yesterday's daily, drawn yellow. "custom" = arbitrary
+ *  user-entered seed, default colour. */
+export type SeedKind = "daily" | "previousDaily" | "custom";
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
@@ -75,7 +80,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   dailySeedBtn.setAttribute("data-i18n-content", "dynamicMap.dailyDescription");
   dailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.dailyDescription"));
   dailySeedBtn.setAttribute("tabindex", "0");
-  dailySeedBtn.innerHTML = `<i class="bi bi-calendar-event"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.daily">${i18next.t("dynamicMap.daily")}</span>`;
+  dailySeedBtn.innerHTML = `<i class="bi bi-calendar-heart"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.daily">${i18next.t("dynamicMap.daily")}</span>`;
   dailySeedBtn.addEventListener("click", () => onDailySeedClick());
   toolbarItems.push(dailySeedBtn);
 
@@ -106,7 +111,8 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
     if (seedInput) {
       seedInput.value = seedInput.value.replace(/\D/g, "");
       seedInput.classList.remove("seed-daily");
-      updateSeedTooltip(false);
+      seedInput.classList.remove("seed-prev-daily");
+      updateSeedTooltip("custom");
     }
     updateGenerateButtonState();
   });
@@ -196,9 +202,18 @@ function refreshDynamicUITranslations(): void {
   if (seedInput) {
     seedInput.placeholder = i18next.t("dynamicMap.placeholder");
     seedInput.setAttribute("data-bs-title", i18next.t("dynamicMap.placeholder"));
-    // Determine current tooltip flavour (daily or custom)
-    const isDaily = seedInput.classList.contains("seed-daily");
-    const contentKey = isDaily ? "dynamicMap.seedTooltipDaily" : "dynamicMap.seedTooltipCustom";
+    // Determine current tooltip flavour (daily, previous-daily, or custom)
+    const kind: SeedKind = seedInput.classList.contains("seed-prev-daily")
+      ? "previousDaily"
+      : seedInput.classList.contains("seed-daily")
+        ? "daily"
+        : "custom";
+    const contentKey =
+      kind === "daily"
+        ? "dynamicMap.seedTooltipDaily"
+        : kind === "previousDaily"
+          ? "dynamicMap.seedTooltipPreviousDaily"
+          : "dynamicMap.seedTooltipCustom";
     seedInput.setAttribute("data-bs-content", i18next.t(contentKey));
   }
 
@@ -293,7 +308,15 @@ async function onDailySeedClick(): Promise<void> {
   setBusy(true);
   try {
     const seed = await fetchDailySeed();
-    if (seedInput) seedInput.value = String(seed);
+    if (seedInput) {
+      seedInput.value = String(seed);
+      // Apply the colour immediately. onSeedResolved would do this after
+      // runDynamicMap finishes, but that's seconds later — by then the user
+      // has already seen the wrong colour.
+      seedInput.classList.add("seed-daily");
+      seedInput.classList.remove("seed-prev-daily");
+      updateSeedTooltip("daily");
+    }
     const currentSeed = getCurrentDynamicSeed();
 
     if (seed !== currentSeed) {
@@ -322,7 +345,12 @@ async function onPrevDailySeedClick(): Promise<void> {
       console.warn("[DynamicUI] Previous daily seed unavailable.");
       return;
     }
-    if (seedInput) seedInput.value = String(seed);
+    if (seedInput) {
+      seedInput.value = String(seed);
+      seedInput.classList.add("seed-prev-daily");
+      seedInput.classList.remove("seed-daily");
+      updateSeedTooltip("previousDaily");
+    }
     const currentSeed = getCurrentDynamicSeed();
 
     if (seed !== currentSeed) {
@@ -453,8 +481,21 @@ export function setDynamicUISeed(seed: number, isDaily: boolean): void {
   if (seedInput) {
     seedInput.value = "";
     seedInput.value = String(seed);
-    seedInput.classList.toggle("seed-daily", isDaily);
-    updateSeedTooltip(isDaily);
+    // Distinguish today's daily from yesterday's. We rely on the cached
+    // previous-daily seed (populated by the speculative fetch in
+    // index.html or by an earlier UI interaction) so this stays synchronous —
+    // a network round trip here would race the colour change against the
+    // user's eyes. If the prev-daily worker hasn't responded yet, the seed
+    // falls through as a generic daily, which is fine.
+    const prevDaily = getCachedPreviousDailySeed();
+    const kind: SeedKind = !isDaily
+      ? "custom"
+      : prevDaily !== null && seed === prevDaily
+        ? "previousDaily"
+        : "daily";
+    seedInput.classList.toggle("seed-daily", kind === "daily");
+    seedInput.classList.toggle("seed-prev-daily", kind === "previousDaily");
+    updateSeedTooltip(kind);
   }
   updateGenerateButtonState();
 }
@@ -463,12 +504,17 @@ export function setDynamicUISeed(seed: number, isDaily: boolean): void {
 
 let seedTooltipInstance: any = null;
 
-function updateSeedTooltip(isDaily: boolean): void {
+function updateSeedTooltip(kind: SeedKind): void {
   if (!seedInput) return;
-  const key = isDaily ? "dynamicMap.seedTooltipDaily" : "dynamicMap.seedTooltipCustom";
+  const key =
+    kind === "daily"
+      ? "dynamicMap.seedTooltipDaily"
+      : kind === "previousDaily"
+        ? "dynamicMap.seedTooltipPreviousDaily"
+        : "dynamicMap.seedTooltipCustom";
   const text = i18next.t(key);
   seedInput.setAttribute("data-bs-content", text);
-  
+
   // @ts-ignore Update active popover DOM if it is currently visible
   const instance = bootstrap.Popover.getInstance(seedInput);
   if (instance && instance.tip) {

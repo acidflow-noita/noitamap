@@ -4803,7 +4803,8 @@
     "seedTooltipDaily": "Toto je seed denniho behu",
     "seedTooltipCustom": "Toto je manualne zvoleny seed",
     "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed"
+    "previousDailyDescription": "Load yesterday's daily game seed",
+    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
   },
   "alive_wand": "(ziva hulka)",
   "konami": {

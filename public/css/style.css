@@ -864,6 +864,10 @@ body.toggle-hidden div.osOverlayHighlight {
   color: #14b8a6; /* teal-500 */
 }
 
+#dynamicSeedInput.seed-prev-daily {
+  color: #eab308; /* yellow-500 */
+}
+
 /* Generate button: match sidebar disabled styling */
 #dynamicGenerateButton {
 }

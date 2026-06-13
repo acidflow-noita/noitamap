@@ -4803,7 +4803,8 @@
     "seedTooltipDaily": "Dies ist der taegliche Lauf-Seed",
     "seedTooltipCustom": "Dies ist ein manuell ausgewaehlter Seed",
     "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed"
+    "previousDailyDescription": "Load yesterday's daily game seed",
+    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
   },
   "alive_wand": "(lebender Zauberstab)",
   "konami": {

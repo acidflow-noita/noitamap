@@ -236,6 +236,7 @@
     "previousDaily": "Previous daily seed",
     "previousDailyDescription": "Load yesterday's daily game seed",
     "seedTooltipDaily": "This is the daily run seed",
+    "seedTooltipPreviousDaily": "This is yesterday's daily run seed",
     "seedTooltipCustom": "This is a manually selected seed",
     "placeholder": "Game seed",
     "nerdMode": {

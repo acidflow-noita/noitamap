@@ -77,3 +77,23 @@ export function clearDailySeedCache(): void {
   cachedPrevSeed = null;
   cachedPrevUTCDate = null;
 }
+
+/** Synchronous accessor for the cached previous-daily seed (today's UTC day
+ *  only). Returns null if uncached, expired, or the worker hadn't responded
+ *  yet. UI code uses this to recolour the seed input without awaiting another
+ *  network round trip. */
+export function getCachedPreviousDailySeed(): number | null {
+  if (cachedPrevSeed !== null && cachedPrevUTCDate === currentUTCDate()) {
+    return cachedPrevSeed;
+  }
+  return null;
+}
+
+/** Synchronous accessor for the cached current-daily seed. Same caveats as
+ *  getCachedPreviousDailySeed. */
+export function getCachedDailySeed(): number | null {
+  if (cachedSeed !== null && cachedUTCDate === currentUTCDate()) {
+    return cachedSeed;
+  }
+  return null;
+}

@@ -4803,7 +4803,8 @@
     "seedTooltipDaily": "Tama on paivittaisen kierroksen siemen",
     "seedTooltipCustom": "Tama on manuaalisesti valittu siemen",
     "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed"
+    "previousDailyDescription": "Load yesterday's daily game seed",
+    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
   },
   "alive_wand": "(elava sauva)",
   "konami": {

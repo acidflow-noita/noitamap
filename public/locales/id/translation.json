@@ -4803,7 +4803,8 @@
     "seedTooltipDaily": "Ini adalah seed lari harian",
     "seedTooltipCustom": "Ini adalah seed yang dipilih secara manual",
     "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed"
+    "previousDailyDescription": "Load yesterday's daily game seed",
+    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
   },
   "alive_wand": "(tongkat hidup)",
   "konami": {

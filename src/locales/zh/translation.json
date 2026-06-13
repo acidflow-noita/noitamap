@@ -4803,7 +4803,8 @@
     "seedTooltipDaily": "这是每日跑的种子",
     "seedTooltipCustom": "这是手动选择的种子",
     "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed"
+    "previousDailyDescription": "Load yesterday's daily game seed",
+    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
   },
   "alive_wand": "(活体魔杖)",
   "konami": {
