@@ -4801,7 +4801,9 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "Nacist denni herni seed, sdileny vsemi hraci dnes",
     "seedTooltipDaily": "Toto je seed denniho behu",
-    "seedTooltipCustom": "Toto je manualne zvoleny seed"
+    "seedTooltipCustom": "Toto je manualne zvoleny seed",
+    "previousDaily": "Previous daily seed",
+    "previousDailyDescription": "Load yesterday's daily game seed"
   },
   "alive_wand": "(ziva hulka)",
   "konami": {

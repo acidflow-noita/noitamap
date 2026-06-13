@@ -4801,7 +4801,9 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "Den taeglichen Spiel-Seed laden, der heute von allen Spielern geteilt wird",
     "seedTooltipDaily": "Dies ist der taegliche Lauf-Seed",
-    "seedTooltipCustom": "Dies ist ein manuell ausgewaehlter Seed"
+    "seedTooltipCustom": "Dies ist ein manuell ausgewaehlter Seed",
+    "previousDaily": "Previous daily seed",
+    "previousDailyDescription": "Load yesterday's daily game seed"
   },
   "alive_wand": "(lebender Zauberstab)",
   "konami": {

@@ -4801,7 +4801,9 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "今日のデイリーシードを読み込む（全プレイヤー共通）",
     "seedTooltipDaily": "これはデイリーランのシードです",
-    "seedTooltipCustom": "これは手動で選択されたシードです"
+    "seedTooltipCustom": "これは手動で選択されたシードです",
+    "previousDaily": "Previous daily seed",
+    "previousDailyDescription": "Load yesterday's daily game seed"
   },
   "alive_wand": "(生きている杖)",
   "konami": {

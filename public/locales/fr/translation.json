@@ -4801,7 +4801,9 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "Charger la seed quotidienne du jeu, partagee par tous les joueurs aujourd'hui",
     "seedTooltipDaily": "C'est la seed de la course quotidienne",
-    "seedTooltipCustom": "C'est une seed selectionnee manuellement"
+    "seedTooltipCustom": "C'est une seed selectionnee manuellement",
+    "previousDaily": "Previous daily seed",
+    "previousDailyDescription": "Load yesterday's daily game seed"
   },
   "alive_wand": "(baguette vivante)",
   "konami": {

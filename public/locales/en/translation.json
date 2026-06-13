@@ -233,6 +233,8 @@
     },
     "daily": "Daily",
     "dailyDescription": "Load the daily game seed, shared by all players today",
+    "previousDaily": "Previous daily seed",
+    "previousDailyDescription": "Load yesterday's daily game seed",
     "seedTooltipDaily": "This is the daily run seed",
     "seedTooltipCustom": "This is a manually selected seed",
     "placeholder": "Game seed",

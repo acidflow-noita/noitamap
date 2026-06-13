@@ -6,7 +6,7 @@
  */
 
 import i18next from "i18next";
-import { fetchDailySeed } from "./data_sources/daily_seed";
+import { fetchDailySeed, fetchPreviousDailySeed } from "./data_sources/daily_seed";
 import { updateURLWithSeed } from "./data_sources/url";
 import { getCurrentDynamicSeed, runDynamicMap } from "./dynamic-map";
 import type { DynamicMapOptions } from "./dynamic-map";
@@ -22,6 +22,7 @@ let toolbarItems: HTMLElement[] = [];
 let seedInput: HTMLInputElement | null = null;
 let generateBtn: HTMLButtonElement | null = null;
 let dailySeedBtn: HTMLButtonElement | null = null;
+let prevDailySeedBtn: HTMLButtonElement | null = null;
 let dynamicOpts: DynamicMapOptions | null = null;
 let isBusy = false;
 let generatePopoverInstance: any = null;
@@ -45,6 +46,22 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   toolbarEl.id = "dynamic-map-toolbar";
   toolbarEl.style.display = "none"; // keep for translation-refresh queries below (no-op in layout)
 
+  // ── Previous Daily Seed button (icon-only, sits to the left of Daily) ──
+  prevDailySeedBtn = document.createElement("button");
+  prevDailySeedBtn.id = "dynamicPrevDailySeedButton";
+  prevDailySeedBtn.className = "icon-button btn btn-sm btn-outline-warning text-nowrap";
+  prevDailySeedBtn.setAttribute("data-bs-toggle", "popover");
+  prevDailySeedBtn.setAttribute("data-bs-placement", "bottom");
+  prevDailySeedBtn.setAttribute("data-bs-trigger", "hover focus");
+  prevDailySeedBtn.setAttribute("data-i18n-title", "dynamicMap.previousDaily");
+  prevDailySeedBtn.setAttribute("data-bs-title", i18next.t("dynamicMap.previousDaily"));
+  prevDailySeedBtn.setAttribute("data-i18n-content", "dynamicMap.previousDailyDescription");
+  prevDailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.previousDailyDescription"));
+  prevDailySeedBtn.setAttribute("tabindex", "0");
+  prevDailySeedBtn.innerHTML = `<i class="bi bi-calendar2-event"></i>`;
+  prevDailySeedBtn.addEventListener("click", () => onPrevDailySeedClick());
+  toolbarItems.push(prevDailySeedBtn);
+
   // ── Daily Seed button ──
   dailySeedBtn = document.createElement("button");
   dailySeedBtn.id = "dynamicDailySeedButton";
@@ -58,7 +75,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   dailySeedBtn.setAttribute("data-i18n-content", "dynamicMap.dailyDescription");
   dailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.dailyDescription"));
   dailySeedBtn.setAttribute("tabindex", "0");
-  dailySeedBtn.innerHTML = `<i class="bi bi-calendar-day"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.daily">${i18next.t("dynamicMap.daily")}</span>`;
+  dailySeedBtn.innerHTML = `<i class="bi bi-calendar-event"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.daily">${i18next.t("dynamicMap.daily")}</span>`;
   dailySeedBtn.addEventListener("click", () => onDailySeedClick());
   toolbarItems.push(dailySeedBtn);
 
@@ -143,6 +160,8 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   // @ts-ignore
   new bootstrap.Popover(dailySeedBtn);
   // @ts-ignore
+  if (prevDailySeedBtn) new bootstrap.Popover(prevDailySeedBtn);
+  // @ts-ignore
   seedTooltipInstance = new bootstrap.Popover(seedInput);
   // @ts-ignore
   generatePopoverInstance = new bootstrap.Popover(generateWrapper);
@@ -165,6 +184,12 @@ function refreshDynamicUITranslations(): void {
     dailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.dailyDescription"));
     const span = dailySeedBtn.querySelector("span[data-i18n]");
     if (span) span.textContent = i18next.t("dynamicMap.daily");
+  }
+
+  // Previous daily seed button (icon-only, no inner span to refresh)
+  if (prevDailySeedBtn) {
+    prevDailySeedBtn.setAttribute("data-bs-title", i18next.t("dynamicMap.previousDaily"));
+    prevDailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.previousDailyDescription"));
   }
 
   // Seed input
@@ -288,6 +313,37 @@ async function onDailySeedClick(): Promise<void> {
   }
 }
 
+async function onPrevDailySeedClick(): Promise<void> {
+  if (isBusy || !dynamicOpts) return;
+  setBusy(true);
+  try {
+    const seed = await fetchPreviousDailySeed();
+    if (seed === null) {
+      console.warn("[DynamicUI] Previous daily seed unavailable.");
+      return;
+    }
+    if (seedInput) seedInput.value = String(seed);
+    const currentSeed = getCurrentDynamicSeed();
+
+    if (seed !== currentSeed) {
+      // Previous daily renders as a daily (all-unlocked, baked DZIs available
+      // on the previous-daily-* workers).
+      updateURLWithSeed(seed, true);
+      showLoadingStrip();
+      await runDynamicMap(seed, true, dynamicOpts);
+    } else {
+      console.log("[DynamicUI] Previous daily seed matches current seed, skipping.");
+    }
+  } catch (e) {
+    console.error("[DynamicUI] Previous daily seed fetch failed:", e);
+  } finally {
+    setTimeout(() => {
+      setBusy(false);
+      updateGenerateButtonState();
+    }, 300);
+  }
+}
+
 async function onGenerateClick(): Promise<void> {
   if (isBusy || !dynamicOpts || !seedInput) return;
   const rawVal = seedInput.value.trim();
@@ -329,6 +385,7 @@ function setBusy(busy: boolean): void {
       : `<i class="bi bi-play-fill"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
   }
   if (dailySeedBtn) dailySeedBtn.disabled = busy;
+  if (prevDailySeedBtn) prevDailySeedBtn.disabled = busy;
 }
 
 function updateGenerateButtonState(): void {

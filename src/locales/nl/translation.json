@@ -4801,7 +4801,9 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "Laad de dagelijkse game-seed, gedeeld door alle spelers vandaag",
     "seedTooltipDaily": "Dit is de dagelijkse run-seed",
-    "seedTooltipCustom": "Dit is een handmatig geselecteerde seed"
+    "seedTooltipCustom": "Dit is een handmatig geselecteerde seed",
+    "previousDaily": "Previous daily seed",
+    "previousDailyDescription": "Load yesterday's daily game seed"
   },
   "alive_wand": "(levende toverstaf)",
   "konami": {

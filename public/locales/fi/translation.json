@@ -4801,7 +4801,9 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "Lataa paivan pelisiemen, jonka kaikki pelaajat jakavat tanaan",
     "seedTooltipDaily": "Tama on paivittaisen kierroksen siemen",
-    "seedTooltipCustom": "Tama on manuaalisesti valittu siemen"
+    "seedTooltipCustom": "Tama on manuaalisesti valittu siemen",
+    "previousDaily": "Previous daily seed",
+    "previousDailyDescription": "Load yesterday's daily game seed"
   },
   "alive_wand": "(elava sauva)",
   "konami": {

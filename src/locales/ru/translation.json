@@ -4801,7 +4801,9 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "Загрузить ежедневный сид игры, общий для всех игроков сегодня",
     "seedTooltipDaily": "Это сид ежедневного забега",
-    "seedTooltipCustom": "Это вручную выбранный сид"
+    "seedTooltipCustom": "Это вручную выбранный сид",
+    "previousDaily": "Previous daily seed",
+    "previousDailyDescription": "Load yesterday's daily game seed"
   },
   "alive_wand": "(живая палочка)",
   "konami": {

@@ -832,6 +832,18 @@ body.toggle-hidden div.osOverlayHighlight {
   color: #5eead4; /* teal-300 */
 }
 
+#dynamicPrevDailySeedButton {
+  color: #ca8a04; /* yellow-600 */
+  border-color: #ca8a0473; /* yellow-600 / 45% */
+}
+
+#dynamicPrevDailySeedButton:hover,
+#dynamicPrevDailySeedButton:focus {
+  background-color: #ca8a0433; /* yellow-600 / 20% */
+  border-color: #ca8a04b3; /* yellow-600 / 70% */
+  color: #fde047; /* yellow-300 */
+}
+
 /* Seed input -- daily seed colored, custom seed white */
 #dynamicSeedInput {
   width: auto !important;

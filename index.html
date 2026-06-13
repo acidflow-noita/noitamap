@@ -28,6 +28,56 @@
     <link rel="icon" href="assets/favicon/favicon.ico" type="image/x-icon" />
     <link rel="preconnect" href="https://rsms.me/" />
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <!-- Preconnect to the daily-bake CF Static Assets workers so the TLS
+         handshake is done before main.ts asks for manifests/tiles. Saves
+         ~100-300ms on cold loads. The seed-source worker is hit even earlier
+         (by the inline speculative-fetch script just below). -->
+    <link rel="preconnect" href="https://daily-seed.acidflow.stream" crossorigin />
+    <link rel="preconnect" href="https://daily-left.acidflow.stream" crossorigin />
+    <link rel="preconnect" href="https://daily-middle.acidflow.stream" crossorigin />
+    <link rel="preconnect" href="https://daily-right.acidflow.stream" crossorigin />
+    <link rel="preconnect" href="https://previous-daily-left.acidflow.stream" crossorigin />
+    <link rel="preconnect" href="https://previous-daily-middle.acidflow.stream" crossorigin />
+    <link rel="preconnect" href="https://previous-daily-right.acidflow.stream" crossorigin />
+    <!-- Speculative manifest prefetch. Fires the moment the parser hits this
+         tag, well before the main bundle parses. By the time dynamic-map.ts
+         calls fetch() against these URLs the responses are already in the
+         browser's HTTP cache (memory cache or disk), so the second fetch is
+         instant. The bundle's flow is unchanged; this is just a warm cache.
+
+         We don't know yet whether the page is showing a daily / previous-daily /
+         arbitrary seed — so we kick off all six. The cost on a non-daily page
+         is six tiny manifest.json fetches that go unused; manifests are <1 KB
+         each on the wire, so the bandwidth hit is negligible. -->
+    <script>
+      (function () {
+        try {
+          // Skip when ?nb=1 disables the baked fast path (bake page uses this
+          // so a re-bake of an already-deployed seed runs a real local
+          // generation instead of pulling its own old artifacts).
+          var qs = window.location.search || "";
+          if (qs.indexOf("nb=1") !== -1) return;
+          var origins = [
+            "https://daily-left.acidflow.stream",
+            "https://daily-middle.acidflow.stream",
+            "https://daily-right.acidflow.stream",
+            "https://previous-daily-left.acidflow.stream",
+            "https://previous-daily-middle.acidflow.stream",
+            "https://previous-daily-right.acidflow.stream",
+          ];
+          for (var i = 0; i < origins.length; i++) {
+            // no-store would defeat the warm-cache purpose; default is fine.
+            // Failures are non-fatal: the app's own probe handles the real
+            // resolution.
+            fetch(origins[i] + "/manifest.json").catch(function () {});
+          }
+          // The seed-source worker is the gating call before the manifest
+          // probes can resolve a prefix; warm it too.
+          fetch("https://daily-seed.acidflow.stream/current_seed.txt").catch(function () {});
+          fetch("https://daily-seed.acidflow.stream/previous_seed.txt").catch(function () {});
+        } catch (e) {}
+      })();
+    </script>
     <script
       src="https://cdn.jsdelivr.net/npm/openseadragon@6.0.0/build/openseadragon/openseadragon.min.js"
       crossorigin="anonymous"

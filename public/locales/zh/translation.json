@@ -4801,7 +4801,9 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "加载今日的每日种子，所有玩家共享",
     "seedTooltipDaily": "这是每日跑的种子",
-    "seedTooltipCustom": "这是手动选择的种子"
+    "seedTooltipCustom": "这是手动选择的种子",
+    "previousDaily": "Previous daily seed",
+    "previousDailyDescription": "Load yesterday's daily game seed"
   },
   "alive_wand": "(活体魔杖)",
   "konami": {

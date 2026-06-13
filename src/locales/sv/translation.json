@@ -4801,7 +4801,9 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "Ladda dagens spel-seed, delad av alla spelare idag",
     "seedTooltipDaily": "Detta ar det dagliga loppets seed",
-    "seedTooltipCustom": "Detta ar en manuellt valt seed"
+    "seedTooltipCustom": "Detta ar en manuellt valt seed",
+    "previousDaily": "Previous daily seed",
+    "previousDailyDescription": "Load yesterday's daily game seed"
   },
   "alive_wand": "(levande trollstav)",
   "konami": {

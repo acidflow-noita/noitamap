@@ -4801,7 +4801,9 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "Muat seed harian permainan, dibagikan oleh semua pemain hari ini",
     "seedTooltipDaily": "Ini adalah seed lari harian",
-    "seedTooltipCustom": "Ini adalah seed yang dipilih secara manual"
+    "seedTooltipCustom": "Ini adalah seed yang dipilih secara manual",
+    "previousDaily": "Previous daily seed",
+    "previousDailyDescription": "Load yesterday's daily game seed"
   },
   "alive_wand": "(tongkat hidup)",
   "konami": {
