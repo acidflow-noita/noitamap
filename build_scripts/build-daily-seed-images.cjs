@@ -62,42 +62,6 @@ const DAILY_SEED_URL = "https://daily-seed.acidflow.stream/current_seed.txt";
 const fmt = (ms) => (ms / 1000).toFixed(1) + "s";
 let START = 0;
 
-// ─── Worker_threads entry ───────────────────────────────────────────────────
-// The compositor (upscalePngWithBg) is a heavy synchronous pixel loop pinned
-// to one core. To use the 32-vCPU runner the parent spawns one worker per
-// region; each worker re-decodes the biome bgs (cheap, ~13 tiny PNGs) once
-// and runs the compositor for its assigned region. The decor cell band cache
-// inside the compositor stays per-worker so peak RAM is ~one row of cells
-// per concurrent region (cap workers via UPSCALE_CONCURRENCY).
-if (!isMainThread && workerData && workerData.kind === "upscale-region") {
-  (async () => {
-    try {
-      const { region, params, biomeBgSrcDir, biomeIndex } = workerData;
-      const biomeBitmaps = {};
-      for (const [idxStr, bgFile] of Object.entries(biomeIndex || {})) {
-        const p = path.join(biomeBgSrcDir, bgFile);
-        if (!fs.existsSync(p)) continue;
-        const png = decodePng(fs.readFileSync(p));
-        biomeBitmaps[Number(idxStr)] = { w: png.width, h: png.height, ch: png.channels || 4, data: png.data };
-      }
-      const { W, H } = await upscalePngWithBg({
-        overlayPath: params.overlayPath,
-        maskPath: params.maskPath,
-        biomeBitmaps,
-        factor: params.factor,
-        outputPath: params.outputPath,
-        regionMinX: params.regionMinX,
-        regionMinY: params.regionMinY,
-        decor: params.decor,
-      });
-      parentPort.postMessage({ ok: true, region, W, H });
-    } catch (e) {
-      parentPort.postMessage({ ok: false, error: e && e.message ? e.message : String(e) });
-    }
-  })();
-  return;
-}
-
 /**
  * Run `upscalePngWithBg` over N regions concurrently using worker_threads.
  * Default concurrency = regions.length (there are only 9 regions per bake, so
@@ -885,8 +849,53 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error(e);
-  if (START) console.error(`[images] failed after ${fmt(Date.now() - START)}`);
-  process.exit(1);
-});
+if (isMainThread) {
+  main().catch((e) => {
+    console.error(e);
+    if (START) console.error(`[images] failed after ${fmt(Date.now() - START)}`);
+    process.exit(1);
+  });
+}
+
+// ─── Worker_threads entry ───────────────────────────────────────────────────
+// Placed at module bottom so all `const`/function declarations above (e.g.
+// SLOT_H_PX, upscalePngWithBg) are fully initialized by the time the async
+// IIFE starts running. Putting this at the top hits TDZ on the first
+// SLOT_H_PX read because the IIFE starts synchronously to its first await.
+//
+// The compositor (upscalePngWithBg) is a heavy synchronous pixel loop pinned
+// to one core. To use the 32-vCPU runner the parent spawns one worker per
+// region; each worker re-decodes the biome bgs (cheap, ~13 tiny PNGs) once
+// and runs the compositor for its assigned region. The decor cell band cache
+// inside the compositor stays per-worker so peak RAM is ~one row of cells
+// per concurrent region (cap workers via UPSCALE_CONCURRENCY).
+//
+// `main()` above is gated by `if (isMainThread)` so worker threads do NOT
+// also kick off the full bake pipeline.
+if (!isMainThread && workerData && workerData.kind === "upscale-region") {
+  (async () => {
+    try {
+      const { region, params, biomeBgSrcDir, biomeIndex } = workerData;
+      const biomeBitmaps = {};
+      for (const [idxStr, bgFile] of Object.entries(biomeIndex || {})) {
+        const p = path.join(biomeBgSrcDir, bgFile);
+        if (!fs.existsSync(p)) continue;
+        const png = decodePng(fs.readFileSync(p));
+        biomeBitmaps[Number(idxStr)] = { w: png.width, h: png.height, ch: png.channels || 4, data: png.data };
+      }
+      const { W, H } = await upscalePngWithBg({
+        overlayPath: params.overlayPath,
+        maskPath: params.maskPath,
+        biomeBitmaps,
+        factor: params.factor,
+        outputPath: params.outputPath,
+        regionMinX: params.regionMinX,
+        regionMinY: params.regionMinY,
+        decor: params.decor,
+      });
+      parentPort.postMessage({ ok: true, region, W, H });
+    } catch (e) {
+      parentPort.postMessage({ ok: false, error: e && e.message ? e.message : String(e) });
+    }
+  })();
+}
