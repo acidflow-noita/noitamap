@@ -51,6 +51,7 @@ const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
 const { execFileSync } = require("child_process");
+const { Worker, isMainThread, parentPort, workerData } = require("worker_threads");
 const { decode: decodePng } = require("fast-png");
 
 const ROOT = path.resolve(__dirname, "..");
@@ -60,6 +61,98 @@ const DAILY_SEED_URL = "https://daily-seed.acidflow.stream/current_seed.txt";
 
 const fmt = (ms) => (ms / 1000).toFixed(1) + "s";
 let START = 0;
+
+// ─── Worker_threads entry ───────────────────────────────────────────────────
+// The compositor (upscalePngWithBg) is a heavy synchronous pixel loop pinned
+// to one core. To use the 32-vCPU runner the parent spawns one worker per
+// region; each worker re-decodes the biome bgs (cheap, ~13 tiny PNGs) once
+// and runs the compositor for its assigned region. The decor cell band cache
+// inside the compositor stays per-worker so peak RAM is ~one row of cells
+// per concurrent region (cap workers via UPSCALE_CONCURRENCY).
+if (!isMainThread && workerData && workerData.kind === "upscale-region") {
+  (async () => {
+    try {
+      const { region, params, biomeBgSrcDir, biomeIndex } = workerData;
+      const biomeBitmaps = {};
+      for (const [idxStr, bgFile] of Object.entries(biomeIndex || {})) {
+        const p = path.join(biomeBgSrcDir, bgFile);
+        if (!fs.existsSync(p)) continue;
+        const png = decodePng(fs.readFileSync(p));
+        biomeBitmaps[Number(idxStr)] = { w: png.width, h: png.height, ch: png.channels || 4, data: png.data };
+      }
+      const { W, H } = await upscalePngWithBg({
+        overlayPath: params.overlayPath,
+        maskPath: params.maskPath,
+        biomeBitmaps,
+        factor: params.factor,
+        outputPath: params.outputPath,
+        regionMinX: params.regionMinX,
+        regionMinY: params.regionMinY,
+        decor: params.decor,
+      });
+      parentPort.postMessage({ ok: true, region, W, H });
+    } catch (e) {
+      parentPort.postMessage({ ok: false, error: e && e.message ? e.message : String(e) });
+    }
+  })();
+  return;
+}
+
+/**
+ * Run `upscalePngWithBg` over N regions concurrently using worker_threads.
+ * Default concurrency = regions.length (there are only 9 regions per bake, so
+ * any higher cap is pointless); env UPSCALE_CONCURRENCY overrides. Per-worker
+ * peak RAM is ~500 MB-1 GB (overlay+mask PNGs, biome bgs, decor cell band,
+ * buffered IDAT), so all 9 in parallel ~ 9 GB on the 128 GB runner.
+ */
+async function runUpscalePool({ regions, sharedParams, regionFile, fullDir, smallDir, maskDir, biomeBgSrcDir, biomeIndex, decorParam, scaleOverride }) {
+  const cap = Math.max(
+    1,
+    parseInt(process.env.UPSCALE_CONCURRENCY || "0", 10) || regions.length,
+  );
+  console.log(`[images] upscale pool: ${regions.length} regions, concurrency=${cap}`);
+  const queue = regions.slice();
+  let done = 0, failed = 0;
+
+  const runOne = (r) => new Promise((resolve) => {
+    const name = regionFile(r);
+    const factor = scaleOverride || r.scale;
+    const params = {
+      overlayPath: path.join(smallDir, name),
+      maskPath: r.hasMask || r.mask ? path.join(maskDir, name) : null,
+      factor,
+      outputPath: path.join(fullDir, name),
+      regionMinX: r.minX,
+      regionMinY: r.minY,
+      decor: decorParam,
+    };
+    const ts = Date.now();
+    const w = new Worker(__filename, {
+      workerData: { kind: "upscale-region", region: { file: name }, params, biomeBgSrcDir, biomeIndex },
+    });
+    w.once("message", (m) => {
+      if (m && m.ok) {
+        done++;
+        console.log(`[images] composited ${name} x${factor} -> ${m.W}x${m.H} (${fmt(Date.now() - ts)})`);
+      } else {
+        failed++;
+        console.error(`[images] failed on ${name}: ${m && m.error}`);
+      }
+    });
+    w.once("error", (e) => { failed++; console.error(`[images] worker error on ${name}: ${e.message}`); });
+    w.once("exit", () => resolve());
+  });
+
+  const workers = Array.from({ length: Math.min(cap, queue.length) }, async () => {
+    while (queue.length) {
+      const r = queue.shift();
+      await runOne(r);
+    }
+  });
+  await Promise.all(workers);
+  return { done, failed };
+}
+
 
 // ─── Streaming nearest-neighbour PNG upscaler (no deps) ─────────────────────
 const PNG_SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -174,7 +267,7 @@ async function upscalePngNearest(inputPath, outputPath, factor) {
  *      OSD viewport bg shows through. We never fill empty space with opaque
  *      black — that would occlude static map tiles and inflate WebP size.
  */
-async function upscalePngWithBg({ overlayPath, maskPath, biomeBitmaps, factor, outputPath }) {
+async function upscalePngWithBg({ overlayPath, maskPath, biomeBitmaps, factor, outputPath, regionMinX = 0, regionMinY = 0, decor = null }) {
   const overlayPng = decodePng(fs.readFileSync(overlayPath));
   const w = overlayPng.width, h = overlayPng.height;
   const overlayCh = overlayPng.channels || 4;
@@ -188,6 +281,34 @@ async function upscalePngWithBg({ overlayPath, maskPath, biomeBitmaps, factor, o
     }
     maskBuf = m.data; // RGBA: R,G,B encode idx (24-bit), A=255 inside / 0 outside
   }
+
+  // Decor cell cache (sparse, one row band of cells live at a time). The
+  // browser emits cells on a fixed CELL-px world grid (CELL=2048 here);
+  // cyIdx = floor(wy/CELL). When the streaming scanline crosses a cell-row
+  // boundary, the previous row's bitmaps are dropped so peak RAM stays at
+  // ~one row of cells (~17 * 16 MB = ~272 MB worst case per region).
+  const CELL = decor && decor.cellSize ? decor.cellSize : 2048;
+  const decorCells = decor && decor.cells ? decor.cells : null;
+  const decorDir = decor && decor.dir ? decor.dir : null;
+  // cxIdx -> {data,w,h,ch} | null (null = file missing/empty, cached as miss)
+  let decorRow = null;
+  let decorRowCy = Number.NaN;
+  const loadDecorRow = (cy) => {
+    if (cy === decorRowCy) return;
+    decorRow = new Map();
+    decorRowCy = cy;
+    if (!decorCells || !decorDir) return;
+    for (const c of decorCells) {
+      if (c.cy !== cy) continue;
+      const p = path.join(decorDir, `cell_${c.cx}_${c.cy}.png`);
+      try {
+        const png = decodePng(fs.readFileSync(p));
+        decorRow.set(c.cx, { data: png.data, w: png.width, h: png.height, ch: png.channels || 4 });
+      } catch {
+        decorRow.set(c.cx, null);
+      }
+    }
+  };
 
   const F = factor;
   const W = w * F, H = h * F;
@@ -203,77 +324,77 @@ async function upscalePngWithBg({ overlayPath, maskPath, biomeBitmaps, factor, o
   const deflated = new Promise((res, rej) => { def.on("end", res); def.on("error", rej); });
   const writeDef = streamWriter(def);
 
+  // Compose one output pixel into 4 bytes at row[o..o+3]. Inputs:
+  //   biome composite (oR,oG,oB,oA + bg + maskInside) and decor sample.
+  // The biome composite's output alpha is always 0 or 255 in practice (the
+  // browser snaps overlay alpha to binary; partial-alpha blends only happen
+  // inside biome polygons, which collapse to A=255). Decor sample is
+  // straight RGBA from the browser's offscreen canvas.
+  const composite = (row, o, oR, oG, oB, oA, bR, bG, bB, maskInside, dR, dG, dB, dA) => {
+    let cR, cG, cB, cA;
+    if (!maskInside) {
+      cR = oR; cG = oG; cB = oB; cA = oA;
+    } else if (oA === 255) {
+      cR = oR; cG = oG; cB = oB; cA = 255;
+    } else if (oA === 0) {
+      cR = bR; cG = bG; cB = bB; cA = 255;
+    } else {
+      const inv = 255 - oA;
+      cR = ((oR * oA) + (bR * inv) + 127) >> 8;
+      cG = ((oG * oA) + (bG * inv) + 127) >> 8;
+      cB = ((oB * oA) + (bB * inv) + 127) >> 8;
+      cA = 255;
+    }
+    if (dA === 0) {
+      // No decor here: emit the biome composite verbatim.
+      row[o] = cR; row[o + 1] = cG; row[o + 2] = cB; row[o + 3] = cA;
+    } else if (cA === 0) {
+      // Transparent base: emit decor with its own straight RGBA so the
+      // static bg DZI shows through wherever decor is also transparent.
+      row[o] = dR; row[o + 1] = dG; row[o + 2] = dB; row[o + 3] = dA;
+    } else if (dA === 255) {
+      // Opaque decor over opaque base: decor wins, output opaque.
+      row[o] = dR; row[o + 1] = dG; row[o + 2] = dB; row[o + 3] = 255;
+    } else {
+      // Partial decor over opaque base: standard "over" with straight RGBA.
+      const inv = 255 - dA;
+      row[o] = ((dR * dA) + (cR * inv) + 127) >> 8;
+      row[o + 1] = ((dG * dA) + (cG * inv) + 127) >> 8;
+      row[o + 2] = ((dB * dA) + (cB * inv) + 127) >> 8;
+      row[o + 3] = 255;
+    }
+  };
+
+  // Sample one decor pixel at world coords. decorRow must already be loaded
+  // for the appropriate cy. Returns 0-alpha when no cell covers (wx,wy).
+  const sampleDecor = (wx, wy) => {
+    if (!decorRow || decorRow.size === 0) return [0, 0, 0, 0];
+    const cx = Math.floor(wx / CELL);
+    const cell = decorRow.get(cx);
+    if (!cell) return [0, 0, 0, 0];
+    const lx = wx - cx * CELL;
+    const ly = wy - decorRowCy * CELL;
+    if (lx < 0 || ly < 0 || lx >= cell.w || ly >= cell.h) return [0, 0, 0, 0];
+    const i = (ly * cell.w + lx) * cell.ch;
+    return [cell.data[i], cell.data[i + 1], cell.data[i + 2], cell.ch === 4 ? cell.data[i + 3] : 255];
+  };
+
   const rowLen = 1 + W * 4;
   for (let sy = 0; sy < h; sy++) {
-    const row = Buffer.allocUnsafe(rowLen);
-    row[0] = 0;
-    let o = 1;
     const overlayBase = sy * w * overlayCh;
     const maskBase = sy * w * 4;
-    for (let sx = 0; sx < w; sx++) {
-      // Inside-biome decision per source pixel:
-      // - maskBuf present + alpha>0: pixel sits inside a biome polygon. Use
-      //   that biome's bg PNG (or fall through to opaque black if missing).
-      // - maskBuf present + alpha=0: pixel is on the static map between
-      //   biomes -> emit transparent (alpha=0) so static bg DZIs show.
-      // - maskBuf absent (heaven/hell): treat every pixel as "outside" so
-      //   overlay-transparent pixels stay transparent.
-      let bgBmp = null;
-      let maskInside = false;
-      if (maskBuf) {
-        const mi = maskBase + sx * 4;
-        if (maskBuf[mi + 3] > 0) {
-          maskInside = true;
-          const idx = (maskBuf[mi] << 16) | (maskBuf[mi + 1] << 8) | maskBuf[mi + 2];
-          bgBmp = biomeBitmaps[idx] || null;
-        }
-      }
-      const os = overlayBase + sx * overlayCh;
-      const oR = overlay[os], oG = overlay[os + 1], oB = overlay[os + 2];
-      const oA = overlayCh === 4 ? overlay[os + 3] : 255;
 
-      const outBaseX = sx * F;
-      for (let k = 0; k < F; k++) {
-        const outX = outBaseX + k;
-        let bR = 0, bG = 0, bB = 0;
-        if (bgBmp) {
-          const bx = outX % bgBmp.w;
-          const by = (sy * F) % bgBmp.h;
-          const bi = (by * bgBmp.w + bx) * bgBmp.ch;
-          bR = bgBmp.data[bi]; bG = bgBmp.data[bi + 1]; bB = bgBmp.data[bi + 2];
-        }
-        if (!maskInside) {
-          // Outside biome: pass overlay through verbatim with STRAIGHT (un-
-          // premultiplied) RGBA. Browsers expect straight RGBA in PNG/WebP
-          // and premultiply on draw. Multiplying RGB by alpha here would
-          // produce a dark halo when OSD composites the tile over the
-          // static-bg DZI underneath.
-          row[o++] = oR; row[o++] = oG; row[o++] = oB; row[o++] = oA;
-        } else if (oA === 255) {
-          row[o++] = oR; row[o++] = oG; row[o++] = oB; row[o++] = 255;
-        } else if (oA === 0) {
-          row[o++] = bR; row[o++] = bG; row[o++] = bB; row[o++] = 255;
-        } else {
-          const inv = 255 - oA;
-          row[o++] = ((oR * oA) + (bR * inv) + 127) >> 8;
-          row[o++] = ((oG * oA) + (bG * inv) + 127) >> 8;
-          row[o++] = ((oB * oA) + (bB * inv) + 127) >> 8;
-          row[o++] = 255;
-        }
-      }
-    }
-    // Per-row bg-y replication: the row we just built used by=sy*F (first of
-    // the F output rows). For k=1..F-1 we rebuild only the bg component with
-    // the right by offset.
-    await writeDef(row);
-    for (let k = 1; k < F; k++) {
-      const row2 = Buffer.allocUnsafe(rowLen);
-      row2[0] = 0;
-      let o2 = 1;
+    for (let kRow = 0; kRow < F; kRow++) {
+      const outY = sy * F + kRow;
+      const worldY = regionMinY + outY;
+      if (decorCells) loadDecorRow(Math.floor(worldY / CELL));
+
+      const row = Buffer.allocUnsafe(rowLen);
+      row[0] = 0;
+      let o = 1;
       for (let sx = 0; sx < w; sx++) {
-        const os = overlayBase + sx * overlayCh;
-        const oR = overlay[os], oG = overlay[os + 1], oB = overlay[os + 2];
-        const oA = overlayCh === 4 ? overlay[os + 3] : 255;
+        // Inside-biome decision (same as before): mask alpha>0 inside polygon,
+        // mask alpha=0 outside, no mask = always outside (heaven/hell).
         let bgBmp = null;
         let maskInside = false;
         if (maskBuf) {
@@ -284,32 +405,31 @@ async function upscalePngWithBg({ overlayPath, maskPath, biomeBitmaps, factor, o
             bgBmp = biomeBitmaps[idx] || null;
           }
         }
+        const os = overlayBase + sx * overlayCh;
+        const oR = overlay[os], oG = overlay[os + 1], oB = overlay[os + 2];
+        const oA = overlayCh === 4 ? overlay[os + 3] : 255;
+
         const outBaseX = sx * F;
         for (let kx = 0; kx < F; kx++) {
           const outX = outBaseX + kx;
           let bR = 0, bG = 0, bB = 0;
           if (bgBmp) {
             const bx = outX % bgBmp.w;
-            const by = (sy * F + k) % bgBmp.h;
+            const by = outY % bgBmp.h;
             const bi = (by * bgBmp.w + bx) * bgBmp.ch;
             bR = bgBmp.data[bi]; bG = bgBmp.data[bi + 1]; bB = bgBmp.data[bi + 2];
           }
-          if (!maskInside) {
-            // Outside biome: straight RGBA passthrough (see comment in row 1 loop).
-            row2[o2++] = oR; row2[o2++] = oG; row2[o2++] = oB; row2[o2++] = oA;
-          } else if (oA === 255) { row2[o2++] = oR; row2[o2++] = oG; row2[o2++] = oB; row2[o2++] = 255; }
-          else if (oA === 0) { row2[o2++] = bR; row2[o2++] = bG; row2[o2++] = bB; row2[o2++] = 255; }
-          else {
-            const inv = 255 - oA;
-            row2[o2++] = ((oR * oA) + (bR * inv) + 127) >> 8;
-            row2[o2++] = ((oG * oA) + (bG * inv) + 127) >> 8;
-            row2[o2++] = ((oB * oA) + (bB * inv) + 127) >> 8;
-            row2[o2++] = 255;
+          let dR = 0, dG = 0, dB = 0, dA = 0;
+          if (decorCells) {
+            const s = sampleDecor(regionMinX + outX, worldY);
+            dR = s[0]; dG = s[1]; dB = s[2]; dA = s[3];
           }
+          composite(row, o, oR, oG, oB, oA, bR, bG, bB, maskInside, dR, dG, dB, dA);
+          o += 4;
         }
       }
-      await writeDef(row2);
-      lastRow = row2;
+      await writeDef(row);
+      lastRow = row;
     }
   }
   for (let i = 0; i < padH; i++) await writeDef(lastRow);
@@ -396,6 +516,7 @@ async function main() {
   const smallDir = path.join(outDir, "small");
   const fullDir = path.join(outDir, "full");
   const maskDir = path.join(outDir, "mask");
+  const decorDir = path.join(outDir, "decor");
   const biomeBgSrcDir = path.join(ROOT, "public", "biome_bg");
   const asepritePath = args.aseprite || "aseprite";
   const mode = args.upscaler || "auto";
@@ -408,46 +529,28 @@ async function main() {
       console.error(`[images] --upscale-only: no smalls at ${smallDir}`);
       process.exit(1);
     }
-    const cachedManifest = fs.existsSync(manifestPath)
-      ? JSON.parse(fs.readFileSync(manifestPath, "utf8"))
+    const upscaleOnlyManifestPath = path.join(outDir, "manifest.json");
+    const cachedManifest = fs.existsSync(upscaleOnlyManifestPath)
+      ? JSON.parse(fs.readFileSync(upscaleOnlyManifestPath, "utf8"))
       : null;
     if (!cachedManifest || !cachedManifest.regions || !cachedManifest.biomeIndex) {
-      console.error(`[images] --upscale-only: ${manifestPath} missing/incomplete (need regions + biomeIndex). Re-run without --upscale-only.`);
+      console.error(`[images] --upscale-only: ${upscaleOnlyManifestPath} missing/incomplete (need regions + biomeIndex). Re-run without --upscale-only.`);
       process.exit(1);
     }
     fs.rmSync(fullDir, { recursive: true, force: true });
     fs.mkdirSync(fullDir, { recursive: true });
 
-    const biomeBitmaps = {};
-    for (const [idxStr, bgFile] of Object.entries(cachedManifest.biomeIndex)) {
-      const p = path.join(biomeBgSrcDir, bgFile);
-      if (!fs.existsSync(p)) { console.warn(`[images] biome bg missing: ${p}`); continue; }
-      const png = decodePng(fs.readFileSync(p));
-      biomeBitmaps[Number(idxStr)] = { w: png.width, h: png.height, ch: png.channels || 4, data: png.data };
-    }
-
     const factor = scaleOverride || cachedManifest.scale || 10;
-    let n = 0;
-    for (const r of cachedManifest.regions) {
-      const overlayPath = path.join(smallDir, r.file);
-      const maskCandidate = path.join(maskDir, r.file);
-      const hasMask = fs.existsSync(maskCandidate);
-      const ts = Date.now();
-      try {
-        const { W, H } = await upscalePngWithBg({
-          overlayPath,
-          maskPath: hasMask ? maskCandidate : null,
-          biomeBitmaps,
-          factor,
-          outputPath: path.join(fullDir, r.file),
-        });
-        n++;
-        console.log(`[images] composited ${r.file} x${factor} -> ${W}x${H} (${fmt(Date.now() - ts)})`);
-      } catch (e) {
-        console.error(`[images] failed on ${r.file}: ${e.message}`);
-      }
-    }
-    console.log(`[images] done: ${n} full PNGs -> ${fullDir}  (total ${fmt(Date.now() - START)})`);
+    const decorParam = cachedManifest.decor && cachedManifest.decor.cellSize && fs.existsSync(decorDir)
+      ? { cellSize: cachedManifest.decor.cellSize, cells: cachedManifest.decor.cells || [], dir: decorDir }
+      : null;
+    const regionFileUpscale = (r) => r.file;
+    const poolRes = await runUpscalePool({
+      regions: cachedManifest.regions.map((r) => ({ ...r, scale: cachedManifest.scale || 10, hasMask: fs.existsSync(path.join(maskDir, r.file)) })),
+      sharedParams: {}, regionFile: regionFileUpscale, fullDir, smallDir, maskDir,
+      biomeBgSrcDir, biomeIndex: cachedManifest.biomeIndex || {}, decorParam, scaleOverride: factor,
+    });
+    console.log(`[images] done: ${poolRes.done} full PNGs -> ${fullDir}  (total ${fmt(Date.now() - START)})`);
     return;
   }
 
@@ -506,6 +609,9 @@ async function main() {
     );
     process.exit(1);
   }
+
+  let decorCellsForManifest = [];
+  let decorCellSize = 0;
 
   // Probe the dev server up-front so a missing server fails fast instead of
   // timing out inside Playwright navigation.
@@ -659,6 +765,41 @@ async function main() {
       throw new Error("exportGenerationData returned nothing — POI bake is a required artifact");
     }
     console.log(`[images] exported generation data (${Object.keys(generationData.poisByPW || {}).length} pw slices)`);
+
+    // Decoration export: pixel scenes + POI sprites baked into native-scale
+    // cells on a fixed world grid. The node compositor will alpha-blend each
+    // cell onto the upscaled region full before stitching, so the deployed
+    // pyramids carry scenes + creatures in their pixels (live map skips
+    // addPixelScenes + the marker tile source entirely on baked seeds).
+    fs.rmSync(decorDir, { recursive: true, force: true });
+    fs.mkdirSync(decorDir, { recursive: true });
+    const tDecor = Date.now();
+    const decorInfo = await page.evaluate(() =>
+      typeof window.noitamap.prepareDecorationExport === "function"
+        ? window.noitamap.prepareDecorationExport()
+        : null,
+    );
+    if (decorInfo && decorInfo.cells && decorInfo.cells.length) {
+      decorCellSize = decorInfo.cellSize;
+      console.log(`[images] decor: ${decorInfo.cells.length} cells x ${decorCellSize}px to render`);
+      let nRendered = 0, nEmpty = 0;
+      for (const c of decorInfo.cells) {
+        const dataUrl = await page.evaluate(
+          ({ cx, cy }) => window.noitamap.exportDecorationCell(cx, cy),
+          c,
+        );
+        if (!dataUrl) { nEmpty++; continue; }
+        const b64 = dataUrl.replace(/^data:image\/png;base64,/, "");
+        fs.writeFileSync(path.join(decorDir, `cell_${c.cx}_${c.cy}.png`), Buffer.from(b64, "base64"));
+        decorCellsForManifest.push({ cx: c.cx, cy: c.cy });
+        nRendered++;
+      }
+      await page.evaluate(() => window.noitamap.releaseDecorationExport && window.noitamap.releaseDecorationExport());
+      console.log(`[images] decor: wrote ${nRendered} cells (${nEmpty} empty) in ${fmt(Date.now() - tDecor)}`);
+    } else {
+      console.warn(`[images] decor: prepareDecorationExport returned nothing (continuing without baked scenes/sprites)`);
+    }
+
     await page.close();
     await ctx.close();
   } finally {
@@ -673,7 +814,8 @@ async function main() {
   // Reset output dirs only after a successful render — that way if a previous
   // run wrote a partial manifest, the checkpoint logic above had a chance to
   // detect it. We delete and recreate so leftover files from a previous seed
-  // never linger.
+  // never linger. decorDir was already populated above and is intentionally
+  // skipped here.
   for (const d of [smallDir, fullDir, maskDir]) {
     fs.rmSync(d, { recursive: true, force: true });
     fs.mkdirSync(d, { recursive: true });
@@ -694,58 +836,35 @@ async function main() {
   }
   console.log(`[images] wrote ${regions.length} small PNGs in ${fmt(Date.now() - tWrite)} -> ${smallDir}`);
 
-  // 2. Pre-decode the bg PNGs the masks reference. Indexed by biome-index
-  //    integer (mask RGB encodes that index). One-time decode reused across
-  //    every main-world region.
-  const biomeBitmaps = {};
-  if (biomeIndex) {
-    for (const [idxStr, bgFile] of Object.entries(biomeIndex)) {
-      const p = path.join(biomeBgSrcDir, bgFile);
-      if (!fs.existsSync(p)) {
-        console.warn(`[images] biome bg missing on disk: ${p} (idx=${idxStr})`);
-        continue;
-      }
-      const png = decodePng(fs.readFileSync(p));
-      biomeBitmaps[Number(idxStr)] = {
-        w: png.width, h: png.height, ch: png.channels || 4, data: png.data,
-      };
-    }
-    console.log(`[images] pre-decoded ${Object.keys(biomeBitmaps).length}/${Object.keys(biomeIndex).length} biome bgs`);
-  }
-
-  // 3. Upscale each region with bg composited underneath. Main-world regions
+  // 2. Upscale each region with bg composited underneath. Main-world regions
   //    use their per-pixel mask; heaven/hell pass maskPath=null which makes
-  //    every overlay-transparent pixel stay transparent.
+  //    every overlay-transparent pixel stay transparent. Decoration cells (if
+  //    any) are alpha-blended on top of the biome composite per scanline.
+  //    Regions run in parallel via worker_threads (one region per worker);
+  //    each worker re-decodes the (small) biome bg PNGs once for itself.
   const tUp = Date.now();
-  let fullCount = 0;
-  for (const r of regions) {
-    const name = regionFile(r);
-    const factor = scaleOverride || r.scale;
-    const ts = Date.now();
-    try {
-      const { W, H } = await upscalePngWithBg({
-        overlayPath: path.join(smallDir, name),
-        maskPath: r.mask ? path.join(maskDir, name) : null,
-        biomeBitmaps,
-        factor,
-        outputPath: path.join(fullDir, name),
-      });
-      fullCount++;
-      console.log(`[images] composited ${name} x${factor} -> ${W}x${H} (${fmt(Date.now() - ts)})`);
-    } catch (e) {
-      console.error(`[images] failed on ${name}: ${e.message}`);
-    }
-  }
+  const decorParam = decorCellSize
+    ? { cellSize: decorCellSize, cells: decorCellsForManifest, dir: decorDir }
+    : null;
+  const poolRes = await runUpscalePool({
+    regions, sharedParams: {}, regionFile, fullDir, smallDir, maskDir,
+    biomeBgSrcDir, biomeIndex: biomeIndex || {}, decorParam, scaleOverride,
+  });
+  const fullCount = poolRes.done;
   console.log(`[images] upscaled+composited ${fullCount} full PNGs in ${fmt(Date.now() - tUp)}`);
 
   // 3. Manifest: stitch driver reads this for per-region bounds (no PNG re-parse).
   //    biomeIndex is included so --upscale-only re-runs can re-decode the same
-  //    set of biome bg PNGs without re-running the browser.
+  //    set of biome bg PNGs without re-running the browser. decor (if present)
+  //    tells the stitch step that scenes+sprites are already baked into the
+  //    pixels and lets --upscale-only re-blend the cached cells.
   const manifest = {
     seed,
     generatedAt: new Date().toISOString(),
     scale: scaleOverride || (regions[0] && regions[0].scale) || 10,
     biomeIndex: biomeIndex || {},
+    decor: decorCellSize ? { cellSize: decorCellSize, cells: decorCellsForManifest } : null,
+    baked: decorCellSize > 0,
     regions: regions.map((r) => {
       const s = scaleOverride || r.scale;
       return {

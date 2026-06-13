@@ -4810,7 +4810,8 @@
   },
   "spoilerFree": {
     "title": "Senza spoiler",
-    "content": "Nascondi l'identita di bacchette, incantesimi e oggetti sulla mappa e nei risultati di ricerca. Le bacchette appaiono come la bacchetta iniziale, gli incantesimi e gli oggetti come non identificati."
+    "content": "Nascondi l'identita di bacchette, incantesimi e oggetti sulla mappa e nei risultati di ricerca. Le bacchette appaiono come la bacchetta iniziale, gli incantesimi e gli oggetti come non identificati.",
+    "unavailableDaily": "La modalita senza spoiler non e disponibile per i seed giornalieri"
   },
   "privacyBrowser": {
     "title": "Browser per la privacy rilevato",

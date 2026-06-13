@@ -23,7 +23,7 @@ import {
   isVariantReady,
   UnlockDescriptor,
 } from "./unlocks-toggle";
-import { rebuildAltLayers, getAllPOIsFlat, exportBiomeRegionImages } from "./telescope/telescope-osd-bridge";
+import { rebuildAltLayers, getAllPOIsFlat, exportBiomeRegionImages, prepareDecorationExport, exportDecorationCell, releaseDecorationExport } from "./telescope/telescope-osd-bridge";
 import { getUnlocksFromURL } from "./unlocks";
 import type { GenerationResult } from "./telescope/telescope-adapter";
 import { isRenderer, getStoredRenderer, setStoredRenderer, clearStoredRenderer } from "./renderer_settings";
@@ -101,6 +101,18 @@ if (isDev) {
       const { serializeGenerationForBake } = await import("./telescope/baked-generation");
       return serializeGenerationForBake(result);
     },
+    // Decoration bake (pixel scenes + POI marker sprites) at native scale.
+    // build-daily-seed-images.cjs calls prepareDecorationExport() once, then
+    // exportDecorationCell(cx, cy) per non-empty 2048px world-grid cell; the
+    // upscale step composites those cells onto the region fulls before stitch,
+    // so the deployed pyramids carry scenes + creatures in their pixels.
+    prepareDecorationExport: async () => {
+      const result = getLastGenerationResult();
+      if (!result) return null;
+      return prepareDecorationExport(result);
+    },
+    exportDecorationCell: (cx: number, cy: number) => exportDecorationCell(cx, cy),
+    releaseDecorationExport: () => releaseDecorationExport(),
     // Dev-only OSD drawer override. Default everywhere is "canvas" (the prod
     // setting in renderer_settings.ts). On localhost/dev.noitamap.com this
     // hook flips it via localStorage so we can A/B test perf and baked-DZI

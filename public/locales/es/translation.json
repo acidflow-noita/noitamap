@@ -4810,7 +4810,8 @@
   },
   "spoilerFree": {
     "title": "Sin spoilers",
-    "content": "Ocultar las identidades de varitas, hechizos y objetos en el mapa y en los resultados de busqueda. Las varitas se muestran como la varita inicial, los hechizos y objetos aparecen como no identificados."
+    "content": "Ocultar las identidades de varitas, hechizos y objetos en el mapa y en los resultados de busqueda. Las varitas se muestran como la varita inicial, los hechizos y objetos aparecen como no identificados.",
+    "unavailableDaily": "El modo sin spoilers no esta disponible para las seeds diarias"
   },
   "privacyBrowser": {
     "title": "Navegador de privacidad detectado",

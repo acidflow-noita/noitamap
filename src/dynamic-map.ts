@@ -456,14 +456,15 @@ export async function runDynamicMap(
     const bakedDZIs = bakedProbe && bakedProbe.baked
       ? (lightMode ? bakedProbe.placements.filter((p) => p.pw === 0) : bakedProbe.placements)
       : null;
+    const bakedDecorations = !!(bakedProbe && bakedProbe.baked && bakedProbe.decorationsBaked);
     if (bakedProbe) {
       if (bakedProbe.baked) {
-        console.log(`[DynamicMap] Using baked ${bakedProbe.prefix}-* DZIs (${bakedProbe.placements.length} regions); skipping live biome composite`);
+        console.log(`[DynamicMap] Using baked ${bakedProbe.prefix}-* DZIs (${bakedProbe.placements.length} regions); skipping live biome composite${bakedDecorations ? " + scenes + markers" : ""}`);
       } else {
         console.log(`[DynamicMap] Baked DZIs not used: ${bakedProbe.reason}`);
       }
     }
-    await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint, cacheKey, bakedDZIs, bakedAlreadyPainted);
+    await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint, cacheKey, bakedDZIs, bakedAlreadyPainted, bakedDecorations);
     if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
     console.log(`[DynamicMap] Render: ${((performance.now() - t) / 1000).toFixed(2)}s`);
     lastResult = result;

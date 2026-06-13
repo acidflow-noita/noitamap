@@ -4810,7 +4810,8 @@
   },
   "spoilerFree": {
     "title": "Sem spoilers",
-    "content": "Ocultar identidades de varinhas, feiticos e itens no mapa e nos resultados de busca. Varinhas aparecem como a varinha inicial, feiticos e itens aparecem como nao identificados."
+    "content": "Ocultar identidades de varinhas, feiticos e itens no mapa e nos resultados de busca. Varinhas aparecem como a varinha inicial, feiticos e itens aparecem como nao identificados.",
+    "unavailableDaily": "O modo sem spoilers nao esta disponivel para seeds diarias"
   },
   "privacyBrowser": {
     "title": "Navegador de privacidade detectado",

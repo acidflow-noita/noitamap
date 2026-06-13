@@ -273,7 +273,16 @@ async function main() {
   }
   for (const [world, regions] of Object.entries(byWorld)) {
     if (regions.length === 0) continue;
-    const m = { seed: manifest.seed, generatedAt: manifest.generatedAt, world, regions };
+    const m = {
+      seed: manifest.seed,
+      generatedAt: manifest.generatedAt,
+      world,
+      // Carry the parent bake's "baked" flag through: when true, pixel scenes
+      // + POI sprites are alpha-blended into the DZI pixels and the live map
+      // can skip addPixelScenes() / marker tile source entirely.
+      baked: !!manifest.baked,
+      regions,
+    };
     fs.writeFileSync(path.join(outDir, world, "manifest.json"), JSON.stringify(m, null, 2));
   }
 

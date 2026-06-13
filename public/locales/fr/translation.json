@@ -4810,7 +4810,8 @@
   },
   "spoilerFree": {
     "title": "Sans spoilers",
-    "content": "Masquer l'identite des baguettes, sorts et objets sur la carte et dans les resultats de recherche. Les baguettes apparaissent comme la baguette de depart, les sorts et objets comme non identifies."
+    "content": "Masquer l'identite des baguettes, sorts et objets sur la carte et dans les resultats de recherche. Les baguettes apparaissent comme la baguette de depart, les sorts et objets comme non identifies.",
+    "unavailableDaily": "Le mode sans spoilers n'est pas disponible pour les seeds quotidiennes"
   },
   "privacyBrowser": {
     "title": "Navigateur de confidentialite detecte",

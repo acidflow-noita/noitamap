@@ -4039,6 +4039,12 @@ export async function renderGenerationResult(
   // them again — doing so triggers a flicker when the second copy paints and
   // confuses the `cleanupOldItems` snapshot that runs after first-paint.
   bakedDZIsAlreadyOnScreen?: boolean,
+  // When true, the baked DZIs already carry pixel scenes + POI marker sprites
+  // in their pixels. Skip addPixelScenes() and the marker tile source entirely
+  // so the live map keeps the static-map render path: 3 baked DZIs + nothing
+  // else. POI clicks still work — they come from the spatial index built off
+  // the prebaked generation.json (installClickHandler below).
+  bakedDecorations?: boolean,
 ): Promise<void> {
   const generationId = ++currentGenerationId;
   (window as any).__osdViewer = viewer;
@@ -4156,9 +4162,12 @@ export async function renderGenerationResult(
     if (currentGenerationId !== generationId) return;
   }
 
-  // Pixel scenes render on top of biome overlays, below POI markers.
-  await addPixelScenes(viewer, result, generationId);
-  if (currentGenerationId !== generationId) return;
+  // Pixel scenes render on top of biome overlays, below POI markers. When the
+  // baked DZIs already carry scenes in their pixels, skip the live layer.
+  if (!bakedDecorations) {
+    await addPixelScenes(viewer, result, generationId);
+    if (currentGenerationId !== generationId) return;
+  }
 
   // Boss sprites render on top of pixel scenes, below item markers.
   await addBossOverlays(viewer, result, generationId);
@@ -4168,14 +4177,13 @@ export async function renderGenerationResult(
   await addOrbOverlays(viewer, result, generationId, unlocks ?? null, isDaily ?? false);
   if (currentGenerationId !== generationId) return;
 
-  // 1. Build spatial index for POIs (markers)
+  // 1. Build spatial index for POIs (markers). The index drives click hit
+  // testing and is needed even when sprites are baked into the DZI pixels.
   window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 0 } }));
   const markerData = await buildMarkerData(result);
   window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 50 } }));
   if (currentGenerationId !== generationId) return;
 
-  // 2. Add as a custom OSD tiled layer
-  const markerTileSource = createMarkerTileSource(markerData);
   installClickHandler(viewer, markerData);
   activeMarkerData = markerData;
   // If the HV filter was active before this generation, re-apply rings to the
@@ -4189,32 +4197,40 @@ export async function renderGenerationResult(
     window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 100 } }));
   };
 
-  viewer.addTiledImage({
-    tileSource: markerTileSource,
-    x: markerData.originX,
-    y: markerData.originY,
-    width: markerData.bboxWidth,
-    success: (event: any) => {
-      if (currentGenerationId !== generationId) {
-        try {
-          viewer.world.removeItem(event.item);
-        } catch {}
-        return;
-      }
-      event.item._isMarkerLayer = true;
-      dynamicTiledImages.add(event.item);
-      markerTiledImage = event.item;
+  if (bakedDecorations) {
+    // Sprites already baked into the DZI pixels — no marker tile layer to add.
+    // Click targets still work through the spatial index installed above.
+    emitItemsDone();
+  } else {
+    // 2. Add as a custom OSD tiled layer
+    const markerTileSource = createMarkerTileSource(markerData);
+    viewer.addTiledImage({
+      tileSource: markerTileSource,
+      x: markerData.originX,
+      y: markerData.originY,
+      width: markerData.bboxWidth,
+      success: (event: any) => {
+        if (currentGenerationId !== generationId) {
+          try {
+            viewer.world.removeItem(event.item);
+          } catch {}
+          return;
+        }
+        event.item._isMarkerLayer = true;
+        dynamicTiledImages.add(event.item);
+        markerTiledImage = event.item;
 
-      emitItemsDone();
-    },
-    error: (err: any) => {
-      console.warn("[OSD Bridge] Failed to add marker tiled image:", err);
-      emitItemsDone();
-    },
-  });
+        emitItemsDone();
+      },
+      error: (err: any) => {
+        console.warn("[OSD Bridge] Failed to add marker tiled image:", err);
+        emitItemsDone();
+      },
+    });
 
-  // Fallback: if OSD callback hasn't fired within 3s, force-complete the bar
-  setTimeout(emitItemsDone, 3000);
+    // Fallback: if OSD callback hasn't fired within 3s, force-complete the bar
+    setTimeout(emitItemsDone, 3000);
+  }
 
   // Safety net: if first-paint never fired (e.g., empty result, error path),
   // make sure stale items don't linger forever.

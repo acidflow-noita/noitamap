@@ -46,6 +46,13 @@ export interface BakedDziProbeOk {
    *  we matched against. Useful for debugging. */
   prefix: "daily" | "previous-daily";
   placements: BakedDziPlacement[];
+  /** True when the bake's pixels already include scenes + POI sprites (the
+   *  node compositor alpha-blended decoration cells onto each region full
+   *  before stitching). The live render can skip addPixelScenes() and the
+   *  marker tile source when this is set — clicks still work via the
+   *  spatial index built off generation.json. False on legacy bakes that
+   *  only carry biome bgs. */
+  decorationsBaked: boolean;
 }
 export interface BakedDziProbeMiss {
   baked: false;
@@ -68,6 +75,9 @@ interface PerWorldManifest {
   seed: number;
   generatedAt?: string;
   world: World;
+  /** Set by build-daily-seed-images.cjs when the upscale step blended pixel
+   *  scenes + POI sprites into the region fulls before stitch. */
+  baked?: boolean;
   regions: PerWorldManifestRegion[];
 }
 
@@ -121,8 +131,14 @@ export async function probeBakedDZIs(
   }
 
   const placements: BakedDziPlacement[] = [];
+  // Decorations are considered baked only when ALL three world manifests
+  // report it. A mixed set means a stale prev-daily worker still serves a
+  // legacy bake without baked sprites; falling back to the live decor layer
+  // for the whole map keeps rendering consistent.
+  let decorationsBaked = true;
   for (let i = 0; i < WORLDS.length; i++) {
     const m = manifests[i]!;
+    if (!m.baked) decorationsBaked = false;
     const origin = originFor(prefix, WORLDS[i]);
     for (const r of m.regions) {
       placements.push({
@@ -135,7 +151,7 @@ export async function probeBakedDZIs(
       });
     }
   }
-  return { baked: true, prefix, placements };
+  return { baked: true, prefix, placements, decorationsBaked };
 }
 
 /**
