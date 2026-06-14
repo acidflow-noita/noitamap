@@ -6,7 +6,7 @@
  */
 
 import i18next from "i18next";
-import { fetchDailySeed, fetchPreviousDailySeed, getCachedPreviousDailySeed } from "./data_sources/daily_seed";
+import { fetchDailySeed, fetchPreviousDailySeed, getCachedPreviousDailySeed, getCachedDailySeed } from "./data_sources/daily_seed";
 import { updateURLWithSeed } from "./data_sources/url";
 import { getCurrentDynamicSeed, runDynamicMap } from "./dynamic-map";
 import type { DynamicMapOptions } from "./dynamic-map";
@@ -481,18 +481,25 @@ export function setDynamicUISeed(seed: number, isDaily: boolean): void {
   if (seedInput) {
     seedInput.value = "";
     seedInput.value = String(seed);
-    // Distinguish today's daily from yesterday's. We rely on the cached
-    // previous-daily seed (populated by the speculative fetch in
-    // index.html or by an earlier UI interaction) so this stays synchronous —
-    // a network round trip here would race the colour change against the
-    // user's eyes. If the prev-daily worker hasn't responded yet, the seed
-    // falls through as a generic daily, which is fine.
+    // Auto-detect the kind from the cached daily/previous-daily seeds. The
+    // `isDaily` arg is only a hint — callers like noitamap-pro's seed-report
+    // click handler always pass false, but if the seed equals today's or
+    // yesterday's daily we still want the right colour. The cached lookups
+    // are populated by the speculative fetch in index.html so they're warm
+    // by the time any user click lands.
     const prevDaily = getCachedPreviousDailySeed();
-    const kind: SeedKind = !isDaily
-      ? "custom"
-      : prevDaily !== null && seed === prevDaily
-        ? "previousDaily"
-        : "daily";
+    const today = getCachedDailySeed();
+    let kind: SeedKind;
+    if (prevDaily !== null && seed === prevDaily) {
+      kind = "previousDaily";
+    } else if (today !== null && seed === today) {
+      kind = "daily";
+    } else if (isDaily) {
+      // Caller asserts daily but neither cache matches yet — trust the hint.
+      kind = "daily";
+    } else {
+      kind = "custom";
+    }
     seedInput.classList.toggle("seed-daily", kind === "daily");
     seedInput.classList.toggle("seed-prev-daily", kind === "previousDaily");
     updateSeedTooltip(kind);
