@@ -169,7 +169,12 @@ export function addBakedDZIsToOSD(
   placements: BakedDziPlacement[],
   onAdded?: (item: any, placement: BakedDziPlacement) => void,
 ): void {
-  for (const p of placements) {
+  // Middle world (pw 0) must paint first: it's the main visible area on a
+  // fresh daily load. placements arrive in left/middle/right order, so OSD
+  // would otherwise stream left, then middle, then right. Sort by |pw| so the
+  // center loads first and the closest parallel worlds follow it outward.
+  const ordered = [...placements].sort((a, b) => Math.abs(a.pw) - Math.abs(b.pw));
+  for (const p of ordered) {
     viewer.addTiledImage({
       tileSource: p.dziUrl,
       x: p.x,
