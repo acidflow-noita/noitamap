@@ -1118,6 +1118,15 @@ export class UnifiedSearch extends EventEmitter2 {
         parts.push("flask");
       }
 
+      // "Alive" wands (Taikasauva): p.name was overwritten with the gun-name
+      // adjective, so the display "Taikasauva <Adj> wand" never reaches the
+      // index. Add the Taikasauva label (+ translated name) so text search hits.
+      if ((p as any).isTaikasauva) {
+        parts.push("Taikasauva", "alive wand");
+        const tk = gameTranslator.translateItem("animal_wand_ghost");
+        if (tk && tk !== "animal_wand_ghost") parts.push(tk);
+      }
+
       // Add translated material name for potions/pouches
       if (p.material) {
         parts.push(gameTranslator.translateMaterial(p.material));
@@ -1351,6 +1360,7 @@ export class UnifiedSearch extends EventEmitter2 {
           type: p.type,
           sprite: p.sprite,
           wandName: p.name,
+          isTaikasauva: (p as any).isTaikasauva === true,
           cards: p.cards,
           alwaysCasts: p.always_casts,
           item: p.item,

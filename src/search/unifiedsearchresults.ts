@@ -345,18 +345,36 @@ export class UnifiedSearchResults extends EventEmitter2 {
               img.style.height = "32px";
               img.style.objectFit = "contain";
               const isTaikasauvaResult = (result as any).isTaikasauva === true;
+              img.style.transform = "rotate(90deg)";
+              getPOISpriteFirstFrame({ type: "wand", sprite: (result as any).sprite }).then((url) => {
+                if (url) img.src = url;
+              });
               if (isTaikasauvaResult) {
-                // "Alive" wand: show the wand_ghost bestiary sprite instead of the wand.
+                // "Alive" wand: keep the real wand sprite (its silhouette is
+                // identifying info) and add a Taikasauva ghost badge in the
+                // corner to flag it as alive — like the AC badge, but bigger so
+                // the ghost stays recognizable. search.css forces `flex:1` on
+                // every `> div` of a d-flex row, so the wrapper MUST override
+                // flex (else it stretches full-width and the badge flies off).
+                img.classList.remove("me-2");
+                img.style.display = "block";
+                const wandWrap = document.createElement("div");
+                wandWrap.className = "me-2";
+                wandWrap.style.cssText = "position:relative;flex:0 0 32px;width:32px;height:32px;overflow:visible";
+                wandWrap.appendChild(img);
+                const ghost = document.createElement("img");
+                ghost.className = "pixelated-image";
+                ghost.title = "Alive wand";
+                ghost.style.cssText =
+                  "position:absolute;right:-4px;bottom:-4px;width:16px;height:16px;object-fit:contain;z-index:2;pointer-events:none";
                 getTaikasauvaIcon().then((url) => {
-                  if (url) img.src = url;
+                  if (url) ghost.src = url;
                 });
+                wandWrap.appendChild(ghost);
+                listItem.appendChild(wandWrap);
               } else {
-                img.style.transform = "rotate(90deg)";
-                getPOISpriteFirstFrame({ type: "wand", sprite: (result as any).sprite }).then((url) => {
-                  if (url) img.src = url;
-                });
+                listItem.appendChild(img);
               }
-              listItem.appendChild(img);
             } else if ((result as any).isDynamic && (result as any).type) {
               // Non-wand POIs: use atlas for fast image loading
               listItem.classList.add("d-flex", "align-items-center");

@@ -395,12 +395,12 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
                 : { ...innerItem, y: innerItem.y + pushDown };
             addMarkerItem(items, offsetPoi, pw, worldCenter, atlas);
           } else if (poi.type === "starting_loadout") {
-            // Mina's loadout: spread horizontally, push down a short distance
-            // (player sprite is only ~19px tall).
+            // Mina's loadout: spread horizontally, lifted above the player
+            // sprite and nudged right so all three items stay clear of Mina.
             const offsetPoi =
               count > 1
-                ? { ...innerItem, x: innerItem.x + (ci - (count - 1) / 2) * 18, y: innerItem.y + 24 }
-                : { ...innerItem, y: innerItem.y + 24 };
+                ? { ...innerItem, x: innerItem.x + (ci - (count - 1) / 2) * 18 + 6, y: innerItem.y - 51 }
+                : { ...innerItem, x: innerItem.x + 6, y: innerItem.y - 51 };
             addMarkerItem(items, offsetPoi, pw, worldCenter, atlas);
           } else if (ENEMY_SPAWN_TYPES.has(poi.type)) {
             // Enemy spawns: spread items in a small circle around the spawn point
