@@ -587,10 +587,13 @@ export class UnifiedSearchResults extends EventEmitter2 {
 
                     const img = document.createElement("img");
                     img.className = "pixelated-image";
-                    img.style.width = "20px";
-                    img.style.height = "20px";
                     img.style.display = "block";
                     img.title = gameTranslator.translateSpell(spell.name);
+                    // 2x native for crisp integer scaling (matches the POI card).
+                    img.onload = () => {
+                      img.style.width = `${img.naturalWidth * 2}px`;
+                      img.style.height = `${img.naturalHeight * 2}px`;
+                    };
 
                     getPOISpriteFirstFrame({ type: "spell", item: spell.id }).then((url) => {
                       if (url) {
@@ -642,10 +645,13 @@ export class UnifiedSearchResults extends EventEmitter2 {
                   if (item.sprite) {
                     const wandImg = document.createElement("img");
                     wandImg.classList.add("pixelated-image");
-                    wandImg.style.width = "24px";
-                    wandImg.style.height = "24px";
                     wandImg.style.objectFit = "contain";
                     wandImg.style.transform = "rotate(90deg)";
+                    // 2x native for crisp integer scaling (matches the POI card).
+                    wandImg.onload = () => {
+                      wandImg.style.width = `${wandImg.naturalWidth * 2}px`;
+                      wandImg.style.height = `${wandImg.naturalHeight * 2}px`;
+                    };
                     getPOISpriteFirstFrame({ type: "wand", sprite: item.sprite }).then((url) => {
                       if (url) wandImg.src = url;
                     });
@@ -659,8 +665,10 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     if (spell) {
                       const spellImg = document.createElement("img");
                       spellImg.className = "pixelated-image";
-                      spellImg.style.width = "16px";
-                      spellImg.style.height = "16px";
+                      spellImg.onload = () => {
+                        spellImg.style.width = `${spellImg.naturalWidth * 2}px`;
+                        spellImg.style.height = `${spellImg.naturalHeight * 2}px`;
+                      };
                       spellImg.title = gameTranslator.translateSpell(spell.name);
 
                       getPOISpriteFirstFrame({ type: "spell", item: spell.id }).then((url) => {
@@ -688,12 +696,14 @@ export class UnifiedSearchResults extends EventEmitter2 {
                   // Non-wand item: show sprite icon
                   const itemImg = document.createElement("img");
                   itemImg.classList.add("pixelated-image");
-                  itemImg.style.width = "20px";
-                  itemImg.style.height = "20px";
                   itemImg.style.backgroundColor = "#1a1a1a";
                   itemImg.style.borderRadius = "2px";
                   itemImg.style.padding = "1px";
                   itemImg.style.border = "1px solid #333";
+                  itemImg.onload = () => {
+                    itemImg.style.width = `${itemImg.naturalWidth * 2}px`;
+                    itemImg.style.height = `${itemImg.naturalHeight * 2}px`;
+                  };
                   const itemName = item.item || item.type || "";
                   itemImg.title = itemName;
                   getPOISpriteFirstFrame(item).then((url) => {

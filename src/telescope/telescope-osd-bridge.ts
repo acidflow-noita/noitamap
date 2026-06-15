@@ -37,6 +37,7 @@ import {
   CONTAINER_TYPES,
   CHEST_ONLY_TYPES,
   drawSpriteToCanvas,
+  getSpriteNativeSize,
 } from "./poi-spatial-index";
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
 import { createMarkerTileSource } from "./marker-tile-source";
@@ -3305,7 +3306,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       spellsRow.style.cssText = "display:flex;flex-wrap:wrap;gap:0.2em;margin-top:0.3em";
       for (const slot of displaySlots) {
         const container = document.createElement("div");
-        container.style.cssText = `position:relative;display:inline-block;width:2.0em;height:2.0em;background:#111;border-radius:0.2em;border:0.065em solid ${slot.isAC ? "#c8a2ff" : "#333"}`;
+        container.style.cssText = `position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:#111;border-radius:0.2em;border:0.065em solid ${slot.isAC ? "#c8a2ff" : "#333"}`;
         if (slot.id) {
           container.title = gameTranslator.translateSpell(getSpellName(slot.id));
         }
@@ -3319,7 +3320,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         }
         if (slot.id) {
           const img = document.createElement("img");
-          img.style.cssText = "width:24px;height:24px;image-rendering:pixelated;display:block;margin:auto";
+          img.style.cssText = "width:32px;height:32px;image-rendering:pixelated;display:block;margin:auto";
           getPOISpriteFirstFrame({ type: "spell", item: String(slot.id) }).then((url) => {
             if (url) {
               img.src = url;
@@ -3514,6 +3515,18 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     contDiv.appendChild(contLabel);
     const contRow = document.createElement("div");
     contRow.style.cssText = "display:flex;flex-wrap:wrap;gap:0.2em;align-items:center";
+    // Render a content sprite at an integer multiple of its native size so
+    // nearest-neighbour scaling stays perfectly sharp (sprites have varied
+    // native sizes; spells are 16px, items/wands differ).
+    const scaledSprite = (key: string | string[], mult = 2): HTMLCanvasElement | null => {
+      const n = getSpriteNativeSize(key);
+      if (!n) return null;
+      const c = drawSpriteToCanvas(key, n.w, n.h);
+      if (!c) return null;
+      c.style.width = `${n.w * mult}px`;
+      c.style.height = `${n.h * mult}px`;
+      return c;
+    };
     for (const ci of poi.items) {
       if (ci.ignore) continue;
       const ciKey = getSpriteKey(ci, getAtlas() || undefined);
@@ -3523,15 +3536,18 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           ? gameTranslator.translateSpell(getSpellName(String(ci.spell)))
           : gameTranslator.translateItem(ciName);
 
-      // Wands: show sprite (rotated) + spell icons (padded to wand capacity)
+      // Wands: show sprite (rotated) + spell icons (padded to wand capacity).
+      // Everything rendered at 2x native for crisp, integer-scaled pixels —
+      // matching the regular wand POI card.
       if (ci.type === "wand") {
         const wandBox = document.createElement("div");
         wandBox.style.cssText =
-          "display:flex;align-items:flex-start;gap:0.15em;background:#111;border-radius:0.2em;padding:0.15em 0.3em;border:0.065em solid #333";
+          "display:flex;align-items:flex-start;gap:0.2em;background:#111;border-radius:0.2em;padding:0.15em 0.3em;border:0.065em solid #333";
         if (ciKey) {
-          const canvas = drawSpriteToCanvas(ciKey, 20, 20);
+          const canvas = scaledSprite(ciKey);
           if (canvas) {
-            canvas.style.cssText += ";transform:rotate(90deg);flex:0 0 auto";
+            canvas.style.transform = "rotate(90deg)";
+            canvas.style.flex = "0 0 auto";
             canvas.title = ci.name || "Wand";
             wandBox.appendChild(canvas);
           }
@@ -3548,16 +3564,13 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           const sp = cardList[i];
           slots.push({ id: sp ? (typeof sp === "string" ? sp : (sp?.id ?? sp)) : null, isAC: false });
         }
-        // Grid of fixed 15-slot rows so wrapping is deterministic across cards.
         const slotsGrid = document.createElement("div");
-        slotsGrid.style.cssText =
-          "display:grid;grid-template-columns:repeat(15,16px);gap:0.15em;align-items:center";
+        slotsGrid.style.cssText = "display:flex;flex-wrap:wrap;gap:0.2em;align-items:center";
         for (const slot of slots) {
           const cell = document.createElement("div");
-          cell.style.cssText = `width:16px;height:16px;display:flex;align-items:center;justify-content:center;background:#0a0a0a;border:0.065em solid ${slot.isAC ? "#c8a2ff" : "#222"};border-radius:0.15em;box-sizing:border-box`;
+          cell.style.cssText = `width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#0a0a0a;border:0.065em solid ${slot.isAC ? "#c8a2ff" : "#222"};border-radius:0.15em;box-sizing:border-box`;
           if (slot.id) {
-            const spellKey = resolveSpellKey(String(slot.id));
-            const spellCanvas = drawSpriteToCanvas(spellKey, 14, 14);
+            const spellCanvas = scaledSprite(resolveSpellKey(String(slot.id)));
             if (spellCanvas) {
               spellCanvas.title = gameTranslator.translateSpell(getSpellName(String(slot.id)));
               cell.appendChild(spellCanvas);
@@ -3577,7 +3590,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         goldBox.style.cssText =
           "display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333";
         if (ciKey) {
-          const canvas = drawSpriteToCanvas(ciKey, 20, 20);
+          const canvas = scaledSprite(ciKey);
           if (canvas) goldBox.appendChild(canvas);
         }
         const label = document.createElement("span");
@@ -3594,7 +3607,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         heartBox.style.cssText =
           "display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333";
         if (ciKey) {
-          const canvas = drawSpriteToCanvas(ciKey, 20, 20);
+          const canvas = scaledSprite(ciKey);
           if (canvas) heartBox.appendChild(canvas);
         }
         const label = document.createElement("span");
@@ -3617,7 +3630,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         const itemBox = document.createElement("div");
         itemBox.style.cssText =
           "display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333";
-        const canvas = drawSpriteToCanvas(ciKey, 20, 20);
+        const canvas = scaledSprite(ciKey);
         if (canvas) itemBox.appendChild(canvas);
         const textSpan = document.createElement("span");
         textSpan.style.cssText = "font-size:0.8em;color:#aaa";

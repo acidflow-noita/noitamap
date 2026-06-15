@@ -477,6 +477,21 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
 }
 
 /**
+ * Native (unscaled) pixel size of a sprite in the atlas, so callers can display
+ * it at an integer multiple (×2, ×3) for crisp nearest-neighbour scaling.
+ * Returns null if the atlas isn't loaded or the key is missing.
+ */
+export function getSpriteNativeSize(keyRaw: string | string[]): { w: number; h: number } | null {
+  if (!cachedAtlas) return null;
+  const key = Array.isArray(keyRaw) ? keyRaw[0] : keyRaw;
+  const resolved = applySpoilerFree(key, cachedAtlas);
+  const e = cachedAtlas[resolved] || cachedAtlas[key];
+  if (!e) return null;
+  const frame = FIRST_FRAME_SIZE[resolved] || FIRST_FRAME_SIZE[key];
+  return { w: frame ? frame.w : e.w, h: frame ? frame.h : e.h };
+}
+
+/**
  * Draw a sprite (or array of sprite layers) from the atlas directly onto a canvas element.
  * Synchronous — no blob URL creation needed.
  * Returns the canvas, or null if all sprite keys are missing.
