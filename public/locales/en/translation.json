@@ -188,7 +188,8 @@
         "none": "Nothing unlocked",
         "mod": "Your current unlocks",
         "modDisabled": "Open the map from the Noitamap mod",
-        "all": "Everything unlocked"
+        "all": "Everything unlocked",
+        "dailyDisabled": "Daily seed"
       },
       "body": {
         "none": "Switch to showing wand/spell pools as if you had unlocked nothing.",
@@ -197,7 +198,8 @@
         "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
         "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00.",
         "all": "Switch to showing wand/spell pools as if you had unlocked everything. Telescope's default.",
-        "all_active": "Currently showing everything unlocked. This matches Telescope's default — same content everyone sees regardless of progress."
+        "all_active": "Currently showing everything unlocked. This matches Telescope's default — same content everyone sees regardless of progress.",
+        "dailyDisabled": "Daily seed always has everything unlocked."
       }
     }
   },

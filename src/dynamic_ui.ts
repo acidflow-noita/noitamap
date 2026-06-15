@@ -288,8 +288,20 @@ export function updateDynamicUIVisibility(currentMap: string): void {
   }
 
   if (isDynamic) {
-    // Pre-initialize telescope modules in background so first generation is faster
-    import("./telescope/telescope-adapter").then((m) => m.initTelescope()).catch(() => {});
+    // Pre-initialize telescope modules in the background so a later custom-seed
+    // generation is faster — but DEFER it to idle. Run eagerly it downloads
+    // data.zip + pixel_scenes.zip + wang_tiles.zip and spins up wasm on the
+    // main thread, which on a baked daily (telescope never used) just starves
+    // the biome DZI tiles trying to paint. runDynamicMap still calls
+    // initTelescope() itself when a generation actually needs it.
+    {
+      const warm = () => { import("./telescope/telescope-adapter").then((m) => m.initTelescope()).catch(() => {}); };
+      const ric = (window as any).requestIdleCallback as
+        | ((cb: () => void, opts?: { timeout: number }) => number)
+        | undefined;
+      if (ric) ric(warm, { timeout: 5000 });
+      else setTimeout(warm, 2000);
+    }
     // Only populate seedInput from last-known seed if the input is empty.
     // setSeedParams may have already written the pending seed here;
     // overwriting it with getCurrentDynamicSeed() would show the OLD seed.

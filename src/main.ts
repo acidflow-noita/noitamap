@@ -12,6 +12,7 @@ import {
   buildPOIName,
   dailyCacheKey,
   ensureSeedCached,
+  startDailyFastPath,
 } from "./dynamic-map";
 import type { DynamicPOI } from "./dynamic-map";
 import {
@@ -405,6 +406,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   globalApp = app;
   console.log(`[Noitamap] Active OSD drawer: ${(app.osd as any).drawer?.getType?.() ?? storedRenderer}`);
+
+  // Kick the daily baked-overlay fast path off NOW, in parallel with all the UI
+  // wiring below. With no custom seed in the URL we know it's today's daily, so
+  // its seed + baked-manifest round-trips run during init and are already
+  // resolved by the time the dynamic pipeline (line ~681) reaches its probe —
+  // letting the daily biome DZIs queue onto OSD nearly as early as the static
+  // background instead of after all the setup + serial fetches.
+  startDailyFastPath();
 
   // Helper to update the map selector button: shows the current map's full
   // label plus icon-only versions of its badges. Hover popovers on the badges

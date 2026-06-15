@@ -4802,9 +4802,9 @@
     "dailyDescription": "Charger la seed quotidienne du jeu, partagee par tous les joueurs aujourd'hui",
     "seedTooltipDaily": "C'est la seed de la course quotidienne",
     "seedTooltipCustom": "C'est une seed selectionnee manuellement",
-    "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed",
-    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
+    "previousDaily": "Seed quotidienne precedente",
+    "previousDailyDescription": "Charger la seed quotidienne d'hier",
+    "seedTooltipPreviousDaily": "C'est la seed de la course quotidienne d'hier"
   },
   "alive_wand": "(baguette vivante)",
   "konami": {
@@ -5210,7 +5210,8 @@
         "none": "Rien de débloqué",
         "mod": "Vos déblocages actuels",
         "modDisabled": "Ouvrez la carte depuis le mod Noitamap",
-        "all": "Tout débloqué"
+        "all": "Tout débloqué",
+        "dailyDisabled": "Seed quotidienne"
       },
       "body": {
         "none": "Passez à l’affichage des pools de baguettes/sorts comme si vous n’aviez rien débloqué.",
@@ -5219,7 +5220,8 @@
         "all": "Passez à l’affichage des pools de baguettes/sorts comme si vous aviez tout débloqué. Valeur par défaut du télescope.",
         "all_active": "Affiche actuellement tout ce qui est déverrouillé. Cela correspond à la valeur par défaut de Telescope : le même contenu que tout le monde voit, quelle que soit la progression.",
         "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
-        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00.",
+        "dailyDisabled": "La seed quotidienne a toujours tout débloqué."
       }
     }
   }

@@ -4802,9 +4802,9 @@
     "dailyDescription": "Ladda dagens spel-seed, delad av alla spelare idag",
     "seedTooltipDaily": "Detta ar det dagliga loppets seed",
     "seedTooltipCustom": "Detta ar en manuellt valt seed",
-    "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed",
-    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
+    "previousDaily": "Foregaende dagliga seed",
+    "previousDailyDescription": "Ladda gardagens spel-seed",
+    "seedTooltipPreviousDaily": "Detta ar gardagens dagliga lopps seed"
   },
   "alive_wand": "(levande trollstav)",
   "konami": {
@@ -5210,7 +5210,8 @@
         "none": "Inget låst upp",
         "mod": "Din nuvarande låser upp",
         "modDisabled": "Öppna kartan från Noitamap mod",
-        "all": "Allt upplåst"
+        "all": "Allt upplåst",
+        "dailyDisabled": "Daglig seed"
       },
       "body": {
         "none": "Byt till att visa trollstavspooler som om du inte hade låst upp någonting.",
@@ -5219,7 +5220,8 @@
         "all": "Byt till att visa trollstavspooler som om du hade låst upp allt. Teleskopets standard.",
         "all_active": "Visar för närvarande allt upplåst. Detta matchar Telescopes standard - samma innehåll som alla ser oavsett framsteg.",
         "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
-        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00.",
+        "dailyDisabled": "Den dagliga seeden har alltid allt upplåst."
       }
     }
   }

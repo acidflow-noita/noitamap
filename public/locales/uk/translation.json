@@ -4802,9 +4802,9 @@
     "dailyDescription": "Завантажити щоденний сід гри, спільний для всіх гравців сьогодні",
     "seedTooltipDaily": "Це сід щоденного забігу",
     "seedTooltipCustom": "Це вручну обраний сід",
-    "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed",
-    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
+    "previousDaily": "Попередній щоденний сід",
+    "previousDailyDescription": "Завантажити вчорашній щоденний сід гри",
+    "seedTooltipPreviousDaily": "Це сід вчорашнього щоденного забігу"
   },
   "alive_wand": "(жива паличка)",
   "konami": {
@@ -5210,7 +5210,8 @@
         "none": "Нічого не розблоковано",
         "mod": "Ваші поточні розблокування",
         "modDisabled": "Відкрийте карту з мода Noitamap",
-        "all": "Все розблоковано"
+        "all": "Все розблоковано",
+        "dailyDisabled": "Щоденний сід"
       },
       "body": {
         "none": "Переключіться на показ паличок/заклинань так, ніби ви нічого не розблокували.",
@@ -5219,7 +5220,8 @@
         "all": "Переключіться на показ чарівних паличок/заклинань, ніби ви все розблокували. Телескоп за замовчуванням.",
         "all_active": "Наразі все розблоковано. Це відповідає стандартним параметрам Telescope — однаковий вміст, який бачать усі незалежно від прогресу.",
         "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
-        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00.",
+        "dailyDisabled": "У щоденному сіді завжди все розблоковано."
       }
     }
   }

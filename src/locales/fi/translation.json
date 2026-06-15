@@ -4802,9 +4802,9 @@
     "dailyDescription": "Lataa paivan pelisiemen, jonka kaikki pelaajat jakavat tanaan",
     "seedTooltipDaily": "Tama on paivittaisen kierroksen siemen",
     "seedTooltipCustom": "Tama on manuaalisesti valittu siemen",
-    "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed",
-    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
+    "previousDaily": "Edellinen paivittainen siemen",
+    "previousDailyDescription": "Lataa eilisen paivan pelisiemen",
+    "seedTooltipPreviousDaily": "Tama on eilisen paivittaisen kierroksen siemen"
   },
   "alive_wand": "(elava sauva)",
   "konami": {
@@ -5210,7 +5210,8 @@
         "none": "Mikään ei avattu",
         "mod": "Nykyiset avauksesi",
         "modDisabled": "Avaa kartta Noitamapin modista",
-        "all": "Kaikki avattu"
+        "all": "Kaikki avattu",
+        "dailyDisabled": "Päivittäinen siemen"
       },
       "body": {
         "none": "Vaihda näyttämään sauva-/loitsualtaat ikään kuin et olisi avannut mitään.",
@@ -5219,7 +5220,8 @@
         "all": "Vaihda näyttämään sauva-/loitsualtaat ikään kuin olisit avannut kaiken. Teleskoopin oletusarvo.",
         "all_active": "Tällä hetkellä näyttää kaikki lukitsematon. Tämä vastaa Teleskoopin oletusarvoa – kaikki näkevät saman sisällön edistymisestä riippumatta.",
         "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
-        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00.",
+        "dailyDisabled": "Päivittäisessä siemenessä on aina kaikki avattu."
       }
     }
   }

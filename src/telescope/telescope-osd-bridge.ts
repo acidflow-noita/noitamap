@@ -25,6 +25,7 @@ import {
   requestVariant,
   type UnlockDescriptor,
 } from "../unlocks-toggle";
+import { getCurrentIsDaily } from "../dynamic-map";
 import {
   buildMarkerData,
   getAtlas,
@@ -2939,14 +2940,21 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     ];
 
     const btnEls: Record<string, HTMLButtonElement> = {};
+    // Daily seeds are always all-unlocked, so the toggle is locked to "all":
+    // disable every other variant button (mod/none) and leave "all" active.
+    const isDailySeed = getCurrentIsDaily();
     for (const b of buttons) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "btn btn-sm btn-outline-secondary";
       btn.innerHTML = `<i class="bi ${b.icon}"></i>`;
       btn.style.cssText = "padding: 0.15em 0.55em; display: inline-flex; align-items: center; justify-content: center; line-height: 1;";
-      if (b.desc === "mod" && !modAvailable) btn.disabled = true;
-      attachHoverPopover(btn, b.title, b.body);
+      const modDisabled = b.desc === "mod" && !modAvailable;
+      // Daily: lock everything but "all" — dailies are always all-unlocked.
+      const dailyLocked = isDailySeed && b.desc !== "all";
+      if (dailyLocked || modDisabled) btn.disabled = true;
+      const popTitle = dailyLocked ? () => tk("unlocks.btn.title.dailyDisabled", "Daily seed") : b.title;
+      const popBody = dailyLocked ? () => tk("unlocks.btn.body.dailyDisabled", "Daily seed always has everything unlocked.") : b.body;
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
         if (btn.disabled) return;
@@ -2967,7 +2975,19 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         if (typeof rebuild === "function") rebuild();
       });
       btnEls[b.desc] = btn;
-      lockBtn.appendChild(btn);
+      if (dailyLocked) {
+        // A real `disabled` button fires no mouse events, so per the Bootstrap
+        // docs the popover must be triggered from a focusable wrapper span.
+        const wrap = document.createElement("span");
+        wrap.className = "d-inline-block";
+        wrap.tabIndex = 0;
+        wrap.appendChild(btn);
+        attachHoverPopover(wrap, popTitle, popBody);
+        lockBtn.appendChild(wrap);
+      } else {
+        attachHoverPopover(btn, popTitle, popBody);
+        lockBtn.appendChild(btn);
+      }
     }
 
     const applyLockBtnStyle = () => {

@@ -4802,9 +4802,9 @@
     "dailyDescription": "Laad de dagelijkse game-seed, gedeeld door alle spelers vandaag",
     "seedTooltipDaily": "Dit is de dagelijkse run-seed",
     "seedTooltipCustom": "Dit is een handmatig geselecteerde seed",
-    "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed",
-    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
+    "previousDaily": "Vorige dagelijkse seed",
+    "previousDailyDescription": "Laad de dagelijkse game-seed van gisteren",
+    "seedTooltipPreviousDaily": "Dit is de dagelijkse run-seed van gisteren"
   },
   "alive_wand": "(levende toverstaf)",
   "konami": {
@@ -5210,7 +5210,8 @@
         "none": "Niets ontgrendeld",
         "mod": "Je huidige ontgrendeling",
         "modDisabled": "Open de kaart vanuit de Noitamap-mod",
-        "all": "Alles ontgrendeld"
+        "all": "Alles ontgrendeld",
+        "dailyDisabled": "Dagelijkse seed"
       },
       "body": {
         "none": "Schakel over naar het weergeven van toverstok-/spreukenpools alsof je niets hebt ontgrendeld.",
@@ -5219,7 +5220,8 @@
         "all": "Schakel over naar het weergeven van toverstok-/spreukenpools alsof je alles hebt ontgrendeld. Standaard van de telescoop.",
         "all_active": "Momenteel wordt alles ontgrendeld weergegeven. Dit komt overeen met de standaard van Telescope: dezelfde inhoud die iedereen ziet, ongeacht de voortgang.",
         "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
-        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00.",
+        "dailyDisabled": "Bij de dagelijkse seed is altijd alles ontgrendeld."
       }
     }
   }

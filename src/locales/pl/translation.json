@@ -4802,9 +4802,9 @@
     "dailyDescription": "Zaladuj dzienny seed gry, wspoldzielony przez wszystkich graczy dzis",
     "seedTooltipDaily": "To jest seed dziennego biegu",
     "seedTooltipCustom": "To jest recznie wybrany seed",
-    "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed",
-    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
+    "previousDaily": "Poprzedni dzienny seed",
+    "previousDailyDescription": "Zaladuj wczorajszy dzienny seed gry",
+    "seedTooltipPreviousDaily": "To jest seed wczorajszego dziennego biegu"
   },
   "alive_wand": "(zywa rozdzka)",
   "konami": {
@@ -5210,7 +5210,8 @@
         "none": "Nic odblokowanego",
         "mod": "Twój obecny zostanie odblokowany",
         "modDisabled": "Otwórz mapę z moda Noitamap",
-        "all": "Wszystko odblokowane"
+        "all": "Wszystko odblokowane",
+        "dailyDisabled": "Dzienny seed"
       },
       "body": {
         "none": "Przełącz na pokazywanie puli różdżek/zaklęć tak, jakbyś niczego nie odblokował.",
@@ -5219,7 +5220,8 @@
         "all": "Przełącz na pokazywanie puli różdżek/zaklęć tak, jakbyś odblokował wszystko. Domyślne ustawienie teleskopu.",
         "all_active": "Obecnie pokazuje wszystko odblokowane. Jest to zgodne z domyślnymi ustawieniami Teleskopu — ta sama treść, którą wszyscy widzą, niezależnie od postępu.",
         "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
-        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00.",
+        "dailyDisabled": "Dzienny seed ma zawsze wszystko odblokowane."
       }
     }
   }

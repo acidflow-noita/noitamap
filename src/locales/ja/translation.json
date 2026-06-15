@@ -4802,9 +4802,9 @@
     "dailyDescription": "今日のデイリーシードを読み込む（全プレイヤー共通）",
     "seedTooltipDaily": "これはデイリーランのシードです",
     "seedTooltipCustom": "これは手動で選択されたシードです",
-    "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed",
-    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
+    "previousDaily": "前回のデイリーシード",
+    "previousDailyDescription": "昨日のデイリーシードを読み込む",
+    "seedTooltipPreviousDaily": "これは昨日のデイリーランのシードです"
   },
   "alive_wand": "(生きている杖)",
   "konami": {
@@ -5210,7 +5210,8 @@
         "none": "何もロックが解除されていません",
         "mod": "現在のロック解除",
         "modDisabled": "Noitamap modからマップを開きます",
-        "all": "すべてのロックが解除されました"
+        "all": "すべてのロックが解除されました",
+        "dailyDisabled": "デイリーシード"
       },
       "body": {
         "none": "何もロックを解除していないかのように、杖/呪文プールの表示に切り替えます。",
@@ -5219,7 +5220,8 @@
         "all": "すべてのロックを解除したかのように、杖/呪文プールの表示に切り替えます。望遠鏡のデフォルト。",
         "all_active": "現在ロック解除されたものをすべて表示しています。これは Telescope のデフォルトと一致します。つまり、進行状況に関係なく全員に同じコンテンツが表示されます。",
         "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
-        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00.",
+        "dailyDisabled": "デイリーシードでは常にすべてのロックが解除されています。"
       }
     }
   }

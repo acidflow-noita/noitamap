@@ -4802,9 +4802,9 @@
     "dailyDescription": "Den taeglichen Spiel-Seed laden, der heute von allen Spielern geteilt wird",
     "seedTooltipDaily": "Dies ist der taegliche Lauf-Seed",
     "seedTooltipCustom": "Dies ist ein manuell ausgewaehlter Seed",
-    "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed",
-    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
+    "previousDaily": "Vorheriger taeglicher Seed",
+    "previousDailyDescription": "Den taeglichen Spiel-Seed von gestern laden",
+    "seedTooltipPreviousDaily": "Dies ist der taegliche Lauf-Seed von gestern"
   },
   "alive_wand": "(lebender Zauberstab)",
   "konami": {
@@ -5210,7 +5210,8 @@
         "none": "Nichts freigeschaltet",
         "mod": "Ihre aktuellen Freischaltungen",
         "modDisabled": "Öffne die Karte über den Noitamap-Mod",
-        "all": "Alles freigeschaltet"
+        "all": "Alles freigeschaltet",
+        "dailyDisabled": "Tägliche Seed"
       },
       "body": {
         "none": "Wechseln Sie zur Anzeige der Zauberstab-/Zaubervorräte, als ob Sie nichts freigeschaltet hätten.",
@@ -5219,7 +5220,8 @@
         "all": "Wechseln Sie zur Anzeige der Zauberstab-/Zaubervorräte, als ob Sie alles freigeschaltet hätten. Standardeinstellung des Teleskops.",
         "all_active": "Zeigt derzeit alles freigeschaltet an. Dies entspricht der Standardeinstellung von Telescope – derselbe Inhalt, den jeder sieht, unabhängig vom Fortschritt.",
         "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
-        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00.",
+        "dailyDisabled": "Bei der täglichen Seed ist immer alles freigeschaltet."
       }
     }
   }

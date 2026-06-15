@@ -4802,9 +4802,9 @@
     "dailyDescription": "Cargar la seed diaria del juego, compartida por todos los jugadores hoy",
     "seedTooltipDaily": "Esta es la seed de la carrera diaria",
     "seedTooltipCustom": "Esta es una seed seleccionada manualmente",
-    "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed",
-    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
+    "previousDaily": "Seed diaria anterior",
+    "previousDailyDescription": "Cargar la seed diaria de ayer",
+    "seedTooltipPreviousDaily": "Esta es la seed de la carrera diaria de ayer"
   },
   "alive_wand": "(varita viva)",
   "konami": {
@@ -5210,7 +5210,8 @@
         "none": "Nada desbloqueado",
         "mod": "Tus desbloqueos actuales",
         "modDisabled": "Abre el mapa desde el mod Noitamap",
-        "all": "Todo desbloqueado"
+        "all": "Todo desbloqueado",
+        "dailyDisabled": "Seed diaria"
       },
       "body": {
         "none": "Cambia para mostrar grupos de varitas/hechizos como si no hubieras desbloqueado nada.",
@@ -5219,7 +5220,8 @@
         "all": "Cambia para mostrar grupos de varitas/hechizos como si hubieras desbloqueado todo. El valor predeterminado del telescopio.",
         "all_active": "Actualmente muestra todo desbloqueado. Esto coincide con el valor predeterminado de Telescope: el mismo contenido que todos ven independientemente del progreso.",
         "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
-        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00.",
+        "dailyDisabled": "La seed diaria siempre tiene todo desbloqueado."
       }
     }
   }

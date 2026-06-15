@@ -16,8 +16,20 @@ import { clearTargetPoiId } from './url';
 import { drawSpriteToCanvas, getSpriteOffset, loadSpritesheetAndAtlas } from '../telescope/poi-spatial-index';
 import { buildExtendedCreatureSectionByName } from '../extended-info';
 
-// Preload atlas so boss sprites are ready when overlays are created
-loadSpritesheetAndAtlas().catch(() => {});
+// Preload the POI atlas, but DEFER it to browser idle. Loading it eagerly at
+// module init pulls a ~1.25 MB spritesheet + atlas decode onto the main thread
+// during the exact window the baked daily biome DZIs are trying to paint, so
+// the overlay can't draw until the sprites finish. Sprites aren't needed for
+// the biome layer; let the tiles render first, then warm the atlas. createPOI
+// still lazily awaits loadSpritesheetAndAtlas() on demand if a card opens first.
+{
+  const warmAtlas = () => { loadSpritesheetAndAtlas().catch(() => {}); };
+  const ric = (window as any).requestIdleCallback as
+    | ((cb: () => void, opts?: { timeout: number }) => number)
+    | undefined;
+  if (ric) ric(warmAtlas, { timeout: 4000 });
+  else setTimeout(warmAtlas, 1500);
+}
 
 declare const OpenSeadragon: any;
 

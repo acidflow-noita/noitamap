@@ -4802,9 +4802,9 @@
     "dailyDescription": "Muat seed harian permainan, dibagikan oleh semua pemain hari ini",
     "seedTooltipDaily": "Ini adalah seed lari harian",
     "seedTooltipCustom": "Ini adalah seed yang dipilih secara manual",
-    "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed",
-    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
+    "previousDaily": "Seed harian sebelumnya",
+    "previousDailyDescription": "Muat seed harian permainan kemarin",
+    "seedTooltipPreviousDaily": "Ini adalah seed lari harian kemarin"
   },
   "alive_wand": "(tongkat hidup)",
   "konami": {
@@ -5210,7 +5210,8 @@
         "none": "Tidak ada yang terbuka",
         "mod": "Pembukaan Anda saat ini",
         "modDisabled": "Buka peta dari mod Noitamap",
-        "all": "Semuanya tidak terkunci"
+        "all": "Semuanya tidak terkunci",
+        "dailyDisabled": "Seed harian"
       },
       "body": {
         "none": "Beralih untuk menampilkan kumpulan tongkat/mantra seolah-olah Anda tidak membuka kunci apa pun.",
@@ -5219,7 +5220,8 @@
         "all": "Beralih untuk menampilkan kumpulan tongkat/mantra seolah-olah Anda telah membuka semuanya. Default teleskop.",
         "all_active": "Saat ini menunjukkan semuanya tidak terkunci. Ini cocok dengan default Telescope — konten yang sama yang dilihat semua orang, apa pun kemajuannya.",
         "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
-        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00.",
+        "dailyDisabled": "Pada seed harian semuanya selalu tidak terkunci."
       }
     }
   }

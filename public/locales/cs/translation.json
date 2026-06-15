@@ -4802,9 +4802,9 @@
     "dailyDescription": "Nacist denni herni seed, sdileny vsemi hraci dnes",
     "seedTooltipDaily": "Toto je seed denniho behu",
     "seedTooltipCustom": "Toto je manualne zvoleny seed",
-    "previousDaily": "Previous daily seed",
-    "previousDailyDescription": "Load yesterday's daily game seed",
-    "seedTooltipPreviousDaily": "This is yesterday's daily run seed"
+    "previousDaily": "Predchozi denni seed",
+    "previousDailyDescription": "Nacist vcerejsi denni herni seed",
+    "seedTooltipPreviousDaily": "Toto je seed vcerejsiho denniho behu"
   },
   "alive_wand": "(ziva hulka)",
   "konami": {
@@ -5210,7 +5210,8 @@
         "none": "Nic není odemčeno",
         "mod": "Váš aktuální se odemkne",
         "modDisabled": "Otevřete mapu z modu Noitamap",
-        "all": "Vše odemčeno"
+        "all": "Vše odemčeno",
+        "dailyDisabled": "Denní seed"
       },
       "body": {
         "none": "Přepněte na zobrazení bazénů hůlek/kouzel, jako byste nic neodemkli.",
@@ -5219,7 +5220,8 @@
         "all": "Přepněte na zobrazení bazénů hůlek/kouzel, jako byste vše odemkli. Výchozí nastavení dalekohledu.",
         "all_active": "Momentálně se zobrazuje vše odemčené. To odpovídá výchozímu nastavení Telescope — stejný obsah, který vidí všichni bez ohledu na pokrok.",
         "mod_active": "Currently showing your in-game unlocks (read from save00 by the Noitamap mod).",
-        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00."
+        "modDisabled": "Use the Noitamap mod to see accurate wand and spell contents for your current run. The mod reads your unlocks directly from save00.",
+        "dailyDisabled": "Denní seed má vždy vše odemčeno."
       }
     }
   }

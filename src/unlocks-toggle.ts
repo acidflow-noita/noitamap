@@ -28,6 +28,7 @@
 import { generateDynamicMap, type GenerationResult } from "./telescope/telescope-adapter";
 import { getUnlocksFromURL, getUrlUnlockKind } from "./unlocks";
 import { isLightMode } from "./light-mode";
+import { getCurrentIsDaily } from "./dynamic-map";
 
 export type UnlockDescriptor = "all" | "none" | "mod";
 
@@ -53,6 +54,11 @@ export function isModSourced(): boolean {
 
 /** Set of view descriptors the user can cycle through. */
 export function availableDescriptors(): UnlockDescriptor[] {
+  // Daily seeds are always all-unlocked: the lock toggle is disabled and only
+  // "all" is valid. This also makes prewarmAlt a no-op on dailies (its loop is
+  // "every available descriptor except the primary 'all'"), so the wasteful ~4s
+  // background generation that was throttling the baked-DZI load never runs.
+  if (getCurrentIsDaily()) return ["all"];
   return isModSourced() ? ["mod", "all", "none"] : ["all", "none"];
 }
 
@@ -89,6 +95,10 @@ function resetViewIfModChanged(): void {
 }
 
 export function getActiveDescriptor(): UnlockDescriptor {
+  // Daily: force all-unlocked regardless of any view persisted from a prior
+  // non-daily session, so the map/orbs/chests/cards never try to show a
+  // restricted variant that is never generated for dailies.
+  if (getCurrentIsDaily()) return "all";
   resetViewIfModChanged();
   let stored: string | null = null;
   try { stored = localStorage.getItem(VIEW_STORAGE); } catch { /* noop */ }
