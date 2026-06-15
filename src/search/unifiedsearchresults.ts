@@ -3,7 +3,7 @@ import { Spell } from "../data_sources/overlays";
 import { EventEmitter2 } from "eventemitter2";
 import i18next from "../i18n";
 import { getSpellAvailability } from "../util";
-import { getPOISpriteFirstFrame } from "../telescope/telescope-osd-bridge";
+import { getPOISpriteFirstFrame, getTaikasauvaIcon } from "../telescope/telescope-osd-bridge";
 import spells from "../data/spells.json";
 import { gameTranslator } from "../game-translations/translator";
 import { isSpoilerFree } from "../spoiler-free";
@@ -344,10 +344,18 @@ export class UnifiedSearchResults extends EventEmitter2 {
               img.style.width = "32px";
               img.style.height = "32px";
               img.style.objectFit = "contain";
-              img.style.transform = "rotate(90deg)";
-              getPOISpriteFirstFrame({ type: "wand", sprite: (result as any).sprite }).then((url) => {
-                if (url) img.src = url;
-              });
+              const isTaikasauvaResult = (result as any).isTaikasauva === true;
+              if (isTaikasauvaResult) {
+                // "Alive" wand: show the wand_ghost bestiary sprite instead of the wand.
+                getTaikasauvaIcon().then((url) => {
+                  if (url) img.src = url;
+                });
+              } else {
+                img.style.transform = "rotate(90deg)";
+                getPOISpriteFirstFrame({ type: "wand", sprite: (result as any).sprite }).then((url) => {
+                  if (url) img.src = url;
+                });
+              }
               listItem.appendChild(img);
             } else if ((result as any).isDynamic && (result as any).type) {
               // Non-wand POIs: use atlas for fast image loading
@@ -386,11 +394,22 @@ export class UnifiedSearchResults extends EventEmitter2 {
                   nameDiv.textContent = "Wand";
                 } else {
                   const wandName = (result as any).wandName || (result as any).name || "Magic";
-                  if (wandName.toUpperCase() === "TAIKASAUVA") {
-                    const aliveWandText = i18next.t("alive_wand", "(alive wand)");
-                    nameDiv.textContent = `TAIKASAUVA ${aliveWandText}`;
+                  if ((result as any).isTaikasauva === true) {
+                    // "Alive" wand: "Taikasauva <Adj> wand" (adj from adapter override).
+                    const tk = gameTranslator.translateItem("animal_wand_ghost");
+                    const baseName = tk !== "animal_wand_ghost" ? tk : "Taikasauva";
+                    const adj = wandName && wandName !== "Taikasauva" ? wandName : "";
+                    if (adj) {
+                      nameDiv.textContent = /\bwand\b\s*$/i.test(adj) ? `${baseName} ${adj}` : `${baseName} ${adj} wand`;
+                    } else {
+                      nameDiv.textContent = baseName;
+                    }
+                    const sub = document.createElement("div");
+                    sub.style.cssText = "color:#9a9;font-size:0.82em;font-style:italic";
+                    sub.textContent = '"Alive wand"';
+                    nameDiv.appendChild(sub);
                   } else {
-                    nameDiv.textContent = `${wandName} wand`;
+                    nameDiv.textContent = /\bwand\b\s*$/i.test(wandName) ? wandName : `${wandName} wand`;
                   }
                 }
               } else {

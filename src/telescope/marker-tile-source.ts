@@ -112,6 +112,11 @@ export function createMarkerTileSource(markerData: MarkerData): any {
         const atlasKeyScrubbed = applySpoilerFree(rootKey, atlas);
         const drawKeys = (atlasKeyScrubbed !== rootKey) ? [atlasKeyScrubbed] : rawKeysRaw;
 
+        // "Alive" wands (Taikasauva): wand atlas sprites are baked tip-up, so an
+        // extra 90deg CCW rotation makes the in-world sprite point left, marking
+        // it as alive while keeping the real wand graphic.
+        const isTaikasauva = !!(item.poi && (item.poi as any).isTaikasauva);
+
         let isMain = true;
         let rootW = 0;
         let rootH = 0;
@@ -148,11 +153,25 @@ export function createMarkerTileSource(markerData: MarkerData): any {
           // Skip markers smaller than 1px
           if (drawW < 1 || drawH < 1) continue;
 
-          ctx.drawImage(
-            spritesheet,
-            atlasEntry.x, atlasEntry.y, srcW, srcH,
-            drawX, drawY, drawW, drawH,
-          );
+          if (isTaikasauva) {
+            const cx = drawX + drawW / 2;
+            const cy = drawY + drawH / 2;
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(-Math.PI / 2); // tip-up -> tip-left
+            ctx.drawImage(
+              spritesheet,
+              atlasEntry.x, atlasEntry.y, srcW, srcH,
+              -drawW / 2, -drawH / 2, drawW, drawH,
+            );
+            ctx.restore();
+          } else {
+            ctx.drawImage(
+              spritesheet,
+              atlasEntry.x, atlasEntry.y, srcW, srcH,
+              drawX, drawY, drawW, drawH,
+            );
+          }
         }
       }
     }

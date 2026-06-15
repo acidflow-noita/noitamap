@@ -30,6 +30,10 @@ const DATA_ZIP = path.resolve(__dirname, "..", "public", "data.zip");
 const OUT_DIR = path.resolve(__dirname, "..", "public", "assets");
 const OUT_PNG = path.join(OUT_DIR, "spritesheet.png");
 const OUT_JSON = path.join(OUT_DIR, "atlas.json");
+// Runtime atlas: the app imports the atlas from src/data/atlas.json (bundled),
+// while it still fetches the spritesheet from public/assets/spritesheet.png.
+// Write the atlas to BOTH so the bundled atlas never desyncs from the sheet.
+const RUNTIME_JSON = path.resolve(__dirname, "..", "src", "data", "atlas.json");
 
 // Max spritesheet width — sprites are packed left-to-right, row by row
 const SHEET_MAX_W = 4096;
@@ -546,6 +550,20 @@ async function main() {
     console.warn("[build-spritesheet] WARNING: item:handgun not found, cannot create wand:handgun");
   }
 
+  // ─── wand:bomb_wand (rotated) — used by the starting loadout ───────────────
+  // bomb_wand.png lives in items_gfx/ root, keyed as item:bomb_wand. Mirror
+  // the handgun treatment so the starting bomb wand renders on the map.
+  const bombWandSprite = sprites.find((s) => s.key === "item:bomb_wand");
+  if (bombWandSprite) {
+    const rotated = rotateCCW(bombWandSprite.data, bombWandSprite.width, bombWandSprite.height);
+    const wandBomb = { key: "wand:bomb_wand", data: rotated.data, width: rotated.width, height: rotated.height };
+    sprites.push(wandBomb);
+    seenKeys.add("wand:bomb_wand");
+    console.log("[build-spritesheet] Added wand:bomb_wand (rotated from item:bomb_wand)");
+  } else {
+    console.warn("[build-spritesheet] WARNING: item:bomb_wand not found, cannot create wand:bomb_wand");
+  }
+
   // ─── Custom Material Icons from src/material-icons ─────────────────────────
   const MATERIAL_ICONS_DIR = path.resolve(__dirname, "..", "src", "material-icons");
   if (fs.existsSync(MATERIAL_ICONS_DIR)) {
@@ -723,8 +741,12 @@ async function main() {
   fs.writeFileSync(OUT_PNG, pngBuf);
   console.log(`[build-spritesheet] Wrote ${OUT_PNG} (${(pngBuf.length / 1024).toFixed(1)} KB)`);
 
-  fs.writeFileSync(OUT_JSON, JSON.stringify(atlas, null, 2));
+  const atlasJson = JSON.stringify(atlas, null, 2);
+  fs.writeFileSync(OUT_JSON, atlasJson);
   console.log(`[build-spritesheet] Wrote ${OUT_JSON} (${Object.keys(atlas).length} entries)`);
+
+  fs.writeFileSync(RUNTIME_JSON, atlasJson);
+  console.log(`[build-spritesheet] Wrote ${RUNTIME_JSON} (runtime bundled atlas)`);
 
   console.log("[build-spritesheet] Done.");
 }

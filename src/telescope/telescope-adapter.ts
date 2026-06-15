@@ -296,7 +296,7 @@ async function _doInitTelescope(): Promise<void> {
 
   // 10. Cache bust check: If we just updated the library, clear the generation cache
   // to ensure fixed logic actually runs instead of showing old empty results.
-  const LIB_VERSION = "2026-05-27-loadout-gate";
+  const LIB_VERSION = "2026-06-15-taikasauva-tag";
   if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
     console.log("[Telescope] Library version updated, clearing generation cache...");
     try {
@@ -779,6 +779,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     }
     for (const poi of combinedPois) {
       if (poi.type === "wand" && (!poi.name || poi.name === "Taikasauva")) {
+        if (poi.name === "Taikasauva") (poi as any).isTaikasauva = true;
         const prng = new NollaPrng(0);
         prng.SetRandomSeed(seed + ngPlus, poi.x, poi.y);
         const nameIdx = Math.floor(GUN_NAMES.length * prng.Next());
@@ -849,6 +850,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       // Apply NollaPrng logic for Wand generation in background worlds
       for (const poi of workerPois) {
         if (poi.type === "wand" && (!poi.name || poi.name === "Taikasauva")) {
+          if (poi.name === "Taikasauva") (poi as any).isTaikasauva = true;
           const prng = new NollaPrng(0);
           prng.SetRandomSeed(seed + ngPlus, poi.x, poi.y);
           const nameIdx = Math.floor(GUN_NAMES.length * prng.Next());

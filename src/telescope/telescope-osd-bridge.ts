@@ -158,10 +158,20 @@ export async function getWandSprite(spriteName: string): Promise<string | null> 
   const paths = [
     `data/items_gfx/wands/${spriteName}.png`,
     `data/items_gfx/wands/${spriteName}`,
+    // Some starting/special wands live one level up (e.g. data/items_gfx/bomb_wand.png).
+    `data/items_gfx/${spriteName}.png`,
+    `data/items_gfx/${spriteName}`,
     spriteName.startsWith("data/") ? spriteName : null,
-  ].filter(Boolean) as string[];
+  ];
+  const lastSlash = spriteName.lastIndexOf("/");
+  if (lastSlash >= 0) {
+    const base = spriteName.slice(lastSlash + 1);
+    paths.push(`data/items_gfx/wands/${base}.png`);
+    paths.push(`data/items_gfx/${base}.png`);
+  }
+  const filtered = paths.filter(Boolean) as string[];
 
-  for (const path of paths) {
+  for (const path of filtered) {
     const file = zip.file(path);
     if (file) {
       const blob = await file.async("blob");
@@ -171,6 +181,27 @@ export async function getWandSprite(spriteName: string): Promise<string | null> 
     }
   }
   return null;
+}
+
+/**
+ * Fetch the wand_ghost (Taikasauva) bestiary icon from data.zip. Falls back
+ * to the spell:summon_wandghost atlas sprite if the data.zip fetch fails.
+ */
+export async function getTaikasauvaIcon(): Promise<string | null> {
+  const cacheKey = "ui_animal_icons/wand_ghost";
+  if (spriteUrlCache.has(cacheKey)) return spriteUrlCache.get(cacheKey)!;
+  const zip = await getDataZip();
+  if (zip) {
+    const file = zip.file("data/ui_gfx/animal_icons/wand_ghost.png");
+    if (file) {
+      const blob = await file.async("blob");
+      const url = URL.createObjectURL(blob);
+      spriteUrlCache.set(cacheKey, url);
+      return url;
+    }
+  }
+  // Fallback: summon_wandghost spell icon (always in atlas)
+  return getPOISpriteFirstFrame({ type: "spell", item: "SUMMON_WANDGHOST" });
 }
 
 /**
@@ -185,11 +216,26 @@ export async function getRotatedWandSprite(spriteName: string): Promise<{ url: s
   const paths = [
     `data/items_gfx/wands/${spriteName}.png`,
     `data/items_gfx/wands/${spriteName}`,
+    // Some starting/special wands live one level up (e.g. data/items_gfx/bomb_wand.png).
+    `data/items_gfx/${spriteName}.png`,
+    `data/items_gfx/${spriteName}`,
     spriteName.startsWith("data/") ? spriteName : null,
-  ].filter(Boolean) as string[];
+  ];
+
+  // Also try the basename only — starting loadout sprites come through as
+  // "custom/handgun" / "custom/bomb_wand" but the actual files are at
+  // data/items_gfx/handgun.png and data/items_gfx/bomb_wand.png (no "custom/"
+  // prefix in the real archive).
+  const lastSlash = spriteName.lastIndexOf("/");
+  if (lastSlash >= 0) {
+    const base = spriteName.slice(lastSlash + 1);
+    paths.push(`data/items_gfx/wands/${base}.png`);
+    paths.push(`data/items_gfx/${base}.png`);
+  }
+  const filtered = paths.filter(Boolean) as string[];
 
   let file = null;
-  for (const path of paths) {
+  for (const path of filtered) {
     file = zip.file(path);
     if (file) break;
   }
@@ -1203,6 +1249,8 @@ interface DecorDraw {
   // Optional spritesheet source rect (markers); scenes draw the full bitmap.
   sx?: number; sy?: number; sw?: number; sh?: number;
   x: number; y: number; w: number; h: number;
+  // Taikasauva ("alive") wands draw rotated 90deg CCW (tip-up -> tip-left).
+  rot?: boolean;
 }
 const DECOR_CELL = 2048;
 let _decorDraws: DecorDraw[] | null = null;
@@ -1228,6 +1276,7 @@ export async function prepareDecorationExport(
   const md = await buildMarkerData(result);
   for (const item of md.items) {
     const keys = Array.isArray(item.spriteKey) ? item.spriteKey : [item.spriteKey];
+    const isTaikasauva = !!(item.poi && (item.poi as any).isTaikasauva);
     let isMain = true;
     let rootOX = 0, rootOY = 0;
     for (const k of keys) {
@@ -1244,6 +1293,7 @@ export async function prepareDecorationExport(
         img: md.spritesheet,
         sx: a.x, sy: a.y, sw: a.w, sh: a.h,
         x: item.osdX - rootOX, y: item.osdY - rootOY, w: a.w, h: a.h,
+        rot: isTaikasauva,
       });
     }
   }
@@ -1281,7 +1331,17 @@ export function exportDecorationCell(cx: number, cy: number): string | null {
   ctx.imageSmoothingEnabled = false;
   for (const d of hits) {
     if (d.sw !== undefined) {
-      ctx.drawImage(d.img, d.sx!, d.sy!, d.sw!, d.sh!, d.x - x0, d.y - y0, d.w, d.h);
+      if (d.rot) {
+        const cx = d.x - x0 + d.w / 2;
+        const cy = d.y - y0 + d.h / 2;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(-Math.PI / 2); // tip-up -> tip-left
+        ctx.drawImage(d.img, d.sx!, d.sy!, d.sw!, d.sh!, -d.w / 2, -d.h / 2, d.w, d.h);
+        ctx.restore();
+      } else {
+        ctx.drawImage(d.img, d.sx!, d.sy!, d.sw!, d.sh!, d.x - x0, d.y - y0, d.w, d.h);
+      }
     } else {
       ctx.drawImage(d.img, d.x - x0, d.y - y0, d.w, d.h);
     }
@@ -2481,7 +2541,21 @@ export async function addPOIOverlays(viewer: OSDViewer, result: GenerationResult
   const { poisByPW, worldCenter } = result;
 
   const allPois = Object.values(poisByPW).flat();
-  const wandsOnly = allPois.filter((p) => p.type === "wand");
+  const wandsOnly: any[] = allPois.filter((p) => p.type === "wand").map((p) => p);
+
+  // Pull wand items out of starting_loadout containers so they render via the
+  // dynamic data.zip path (with CCW rotation) — the static atlas pipeline
+  // skips wands without baked wand:<filename> keys (e.g. bomb_wand).
+  for (const poi of allPois) {
+    if (poi.type !== "starting_loadout" || !Array.isArray((poi as any).items)) continue;
+    const inner = ((poi as any).items as any[]).filter((i) => i && !i.ignore && i.type === "wand");
+    const count = inner.length;
+    for (let ci = 0; ci < count; ci++) {
+      const item = inner[ci];
+      const offsetX = count > 1 ? (ci - (count - 1) / 2) * 18 : 0;
+      wandsOnly.push({ ...item, x: (item.x ?? poi.x) + offsetX, y: (item.y ?? poi.y) + 24 });
+    }
+  }
 
   if (wandsOnly.length === 0) {
     console.log("[OSD Bridge] No wand POIs to render");
@@ -2515,11 +2589,15 @@ export async function addPOIOverlays(viewer: OSDViewer, result: GenerationResult
     const el = document.createElement("img");
     el.src = rotated.url;
     el.className = "dynamic-poi poi-wand";
+    // Taikasauva ("alive" wand): blob is CCW-90 (tip-up); rotate another
+    // CCW 90° so the tip points left, distinguishing it from regular wands.
+    const isTaikasauva = (poi as any).isTaikasauva === true;
     el.style.cssText = `
       image-rendering: pixelated;
       width: 100%;
       height: 100%;
       cursor: pointer;
+      ${isTaikasauva ? "transform: rotate(-90deg);" : ""}
     `;
 
     const x = poi.x;
@@ -3110,20 +3188,67 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   }
 
   if (poi.type === "wand") {
+    const isTaikasauva = (poi as any).isTaikasauva === true;
     // Header with sprite
     const header = document.createElement("div");
     header.style.cssText = "display:flex;align-items:center;gap:0.6em;margin-bottom:0.5em";
     const spriteImg = document.createElement("img");
-    spriteImg.style.cssText =
-      "width:2.4em;height:2.4em;image-rendering:pixelated;object-fit:contain;transform:rotate(90deg)";
-    getPOISpriteFirstFrame({ type: "wand", sprite: poi.sprite }).then((url) => {
-      if (url) spriteImg.src = url;
-    });
+    if (isTaikasauva) {
+      // "Alive" wand: show the wand_ghost bestiary sprite (no rotation —
+      // bestiary icon is already in its natural facing).
+      spriteImg.style.cssText = "width:2.4em;height:2.4em;image-rendering:pixelated;object-fit:contain";
+      getTaikasauvaIcon().then((url) => {
+        if (url) spriteImg.src = url;
+      });
+    } else {
+      // Use getRotatedWandSprite (data.zip + CCW90) so wands without baked
+      // wand:<filename> atlas keys (e.g. bomb_wand) still render correctly.
+      // CSS rotate(90deg) on top of CCW-90 = native (tip-right).
+      spriteImg.style.cssText =
+        "width:2.4em;height:2.4em;image-rendering:pixelated;object-fit:contain;transform:rotate(90deg)";
+      if (poi.sprite) {
+        const parts = String(poi.sprite).split("/");
+        const filename = parts[parts.length - 1].replace(/\.png$/, "");
+        getRotatedWandSprite(filename).then((res) => {
+          if (res) spriteImg.src = res.url;
+          else getPOISpriteFirstFrame({ type: "wand", sprite: poi.sprite }).then((url) => {
+            if (url) spriteImg.src = url;
+          });
+        });
+      } else {
+        getPOISpriteFirstFrame({ type: "wand", sprite: poi.sprite }).then((url) => {
+          if (url) spriteImg.src = url;
+        });
+      }
+    }
     header.appendChild(spriteImg);
+    const titleCol = document.createElement("div");
     const title = document.createElement("div");
     title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:1.1em";
-    title.textContent = poi.name || gameTranslator.translateItem("Wand");
-    header.appendChild(wrapWithWikiLink(title, poi));
+    if (isTaikasauva) {
+      // Pull from animal_wand_ghost (baked into translation.json from common.csv)
+      const tk = gameTranslator.translateItem("animal_wand_ghost");
+      const baseName = tk !== "animal_wand_ghost" ? tk : "Taikasauva";
+      // Adjective got assigned by the adapter override (GUN_NAMES). Format
+      // as "Taikasauva <Adj> wand" — and don't double "wand" if the
+      // adjective name already ends with "wand".
+      const adj = poi.name && poi.name !== "Taikasauva" ? poi.name : "";
+      if (adj) {
+        title.textContent = /\bwand\b\s*$/i.test(adj) ? `${baseName} ${adj}` : `${baseName} ${adj} wand`;
+      } else {
+        title.textContent = baseName;
+      }
+    } else {
+      title.textContent = poi.name || gameTranslator.translateItem("Wand");
+    }
+    titleCol.appendChild(wrapWithWikiLink(title, poi));
+    if (isTaikasauva) {
+      const sub = document.createElement("div");
+      sub.style.cssText = "color:#aaa;font-size:0.85em;font-style:italic";
+      sub.textContent = '"Alive wand"';
+      titleCol.appendChild(sub);
+    }
+    header.appendChild(titleCol);
     tooltipEl.appendChild(header);
 
     // Wand stats — telescope POIs put stats as top-level snake_case fields,

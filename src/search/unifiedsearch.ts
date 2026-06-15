@@ -39,6 +39,7 @@ const CONTAINER_TYPES = new Set([
   "boss_robot",
   "boss_meat",
   "friend",
+  "starting_loadout",
 ]);
 
 const CHEST_TYPES = new Set(["chest", "great_chest", "pacifist_chest"]);
@@ -1259,6 +1260,7 @@ export class UnifiedSearch extends EventEmitter2 {
             type: p.type,
             sprite: p.sprite,
             wandName: p.name,
+            isTaikasauva: (p as any).isTaikasauva === true,
             cards: p.cards,
             alwaysCasts: p.always_casts,
             item: p.item,

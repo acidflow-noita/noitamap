@@ -111,6 +111,7 @@ const CONTAINER_TYPES = new Set([
   "boss_robot",
   "boss_meat",
   "boss_pit",
+  "starting_loadout",
 ]);
 
 /** Chest-like containers: show only the chest sprite on map, contents in popup/search only. */
@@ -392,6 +393,14 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
               count > 1
                 ? { ...innerItem, x: innerItem.x + (ci - (count - 1) / 2) * 20, y: innerItem.y + pushDown }
                 : { ...innerItem, y: innerItem.y + pushDown };
+            addMarkerItem(items, offsetPoi, pw, worldCenter, atlas);
+          } else if (poi.type === "starting_loadout") {
+            // Mina's loadout: spread horizontally, push down a short distance
+            // (player sprite is only ~19px tall).
+            const offsetPoi =
+              count > 1
+                ? { ...innerItem, x: innerItem.x + (ci - (count - 1) / 2) * 18, y: innerItem.y + 24 }
+                : { ...innerItem, y: innerItem.y + 24 };
             addMarkerItem(items, offsetPoi, pw, worldCenter, atlas);
           } else if (ENEMY_SPAWN_TYPES.has(poi.type)) {
             // Enemy spawns: spread items in a small circle around the spawn point
