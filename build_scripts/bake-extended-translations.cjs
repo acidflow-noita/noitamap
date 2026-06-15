@@ -308,7 +308,7 @@ const POI_NAME_TO_CSV_KEY = {
   "goldnugget": "item_goldnugget",
   "heart": null,                       // localized via poi.heartSmall i18n key
   "heart_bigger": null,                // localized via poi.heartBig i18n key
-  "heart_mimic": "item_potion_mimic",
+  "heart_mimic": "animal_dark_alchemist",  // "Pahan muisto" — heart mimic's in-game entity name (NOT item_potion_mimic = the potion mimic)
   "full_heal": null,                   // localized via poi.fullHeal i18n key
 
   // Orbs.

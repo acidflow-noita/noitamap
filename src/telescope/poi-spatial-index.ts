@@ -169,6 +169,8 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     if (item === "gold" || item === "goldnugget") return "item:goldnugget_01";
     if (item === "heart") return "item:heart_extrahp";
     if (item === "heart_bigger" || item === "heart_extra") return "item:heart_extrahp";
+    // Heart mimic ("Pahan muisto") disguises as the extra-HP heart pickup.
+    if (item === "heart_mimic") return "item:heart_extrahp";
     if (item === "full_heal") return "item:heart";
     if (item === "chest") return "item:chest";
     if (item === "chest_present") return "item:chest_present";
