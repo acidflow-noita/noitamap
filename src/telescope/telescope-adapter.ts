@@ -135,6 +135,23 @@ export interface GenerateOptions {
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
+/**
+ * Telescope spaces the three tower wands (biome solid_wall_tower_10) 100px
+ * apart "to make interaction easier". On the map that reads as too wide a
+ * spread. Re-center the trio at their mean X and pack them GAP px apart.
+ */
+function retowerWands(pois: POI[]): void {
+  const tower = pois.filter((p: any) => p.type === "wand" && p.biome === "solid_wall_tower_10");
+  if (tower.length < 2) return;
+  const GAP = 40;
+  tower.sort((a, b) => a.x - b.x);
+  const mid = (tower[0].x + tower[tower.length - 1].x) / 2;
+  const start = mid - (GAP * (tower.length - 1)) / 2;
+  tower.forEach((p, i) => {
+    p.x = start + i * GAP;
+  });
+}
+
 let initialized = false;
 let initPromise: Promise<void> | null = null;
 let biomeAssets: { ng0: Uint32Array | null; ngp: Uint32Array | null; nightmare: Uint32Array | null } = { ng0: null, ngp: null, nightmare: null };
@@ -783,6 +800,11 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       }
     }
 
+    // Tower wands (biome solid_wall_tower_10) are spaced 100px apart by
+    // telescope to ease interaction. Squeeze them tighter (40px) so the trio
+    // reads as one cluster on the map.
+    retowerWands(combinedPois);
+
     // Deduplicate starting_loadout — telescope's addStaticPixelScenes adds
     // one for every (pw,pvt) pair (9 total in non-light mode), but only one
     // makes sense in the rendered map.
@@ -870,6 +892,9 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
           poi.name = GUN_NAMES[nameIdx];
         }
       }
+
+      // Tighten tower wand spacing for side PWs too.
+      retowerWands(workerPois);
 
       poisByPW[pwKey] = workerPois;
       if (res.pixelScenes) {

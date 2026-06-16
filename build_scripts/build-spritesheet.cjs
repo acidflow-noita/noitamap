@@ -564,6 +564,27 @@ async function main() {
     console.warn("[build-spritesheet] WARNING: item:bomb_wand not found, cannot create wand:bomb_wand");
   }
 
+  // ─── wand:custom/kantele, wand:custom/flute (rotated) ──────────────────────
+  // Kantele (Kantele) and Huilu (flute) live as item sprites (item:kantele /
+  // item:flute, from data/items_gfx/{kantele,flute}.png) but telescope assigns
+  // them sprite "custom/kantele" / "custom/flute". Bake rotated wand:custom/*
+  // copies (tip-up, like every other wand:* sprite) so they render correctly
+  // AND with the right orientation on the map. Same treatment as handgun above.
+  for (const [itemKey, wandKey] of [
+    ["item:kantele", "wand:custom/kantele"],
+    ["item:flute", "wand:custom/flute"],
+  ]) {
+    const src = sprites.find((s) => s.key === itemKey);
+    if (src) {
+      const rotated = rotateCCW(src.data, src.width, src.height);
+      sprites.push({ key: wandKey, data: rotated.data, width: rotated.width, height: rotated.height });
+      seenKeys.add(wandKey);
+      console.log(`[build-spritesheet] Added ${wandKey} (rotated from ${itemKey})`);
+    } else {
+      console.warn(`[build-spritesheet] WARNING: ${itemKey} not found, cannot create ${wandKey}`);
+    }
+  }
+
   // ─── Custom Material Icons from src/material-icons ─────────────────────────
   const MATERIAL_ICONS_DIR = path.resolve(__dirname, "..", "src", "material-icons");
   if (fs.existsSync(MATERIAL_ICONS_DIR)) {

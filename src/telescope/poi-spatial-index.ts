@@ -132,6 +132,50 @@ function resolveSpellKey(spellId: string): string {
   return _spellIdToSpriteKey.get(spellId) ?? `spell:${spellId.toLowerCase()}`;
 }
 
+// Telescope wand `sprite` values that don't line up with any committed atlas
+// `wand:` key. Map them to the real atlas key so they render on the map (the
+// marker renderer only draws from the atlas — no per-marker data.zip fallback).
+//
+// NOTE: custom/kantele and custom/flute are NOT remapped here — build-spritesheet
+// bakes rotated wand:custom/kantele and wand:custom/flute sprites from their item
+// PNGs, so resolveWandSpriteKey's full-path lookup finds them directly (correct
+// image + correct tip-up orientation).
+const WAND_SPRITE_REMAP: Record<string, string> = {
+  // Experimental wands 1 & 2 have no baked sprite of their own; reuse the
+  // "honest" experimental-wand sprite that is in the atlas.
+  "custom/experimental_wand_1": "wand:custom/actual_wand_honest",
+  "custom/experimental_wand_2": "wand:custom/actual_wand_honest",
+};
+
+/**
+ * Resolve a telescope wand `sprite` string to an atlas key.
+ *
+ * Telescope sprites come as either a bare name ("wand_0001"), a "custom/<name>"
+ * path, or a starting-loadout basename ("custom/handgun"). The baked atlas keys
+ * are `wand:<relative path under items_gfx/wands>` — which for custom wands KEEPS
+ * the "custom/" segment (wand:custom/good_01) but for handgun/bomb_wand is just
+ * the basename (wand:handgun). So try, in order: explicit remap, the full path,
+ * then the basename. Returns the first key present in the atlas; if none match
+ * (atlas missing in tests, or sprite genuinely absent) falls back to the
+ * full-path key so the data.zip fallback in getPOISpriteFirstFrame can try.
+ */
+function resolveWandSpriteKey(sprite: string, atlas?: Record<string, AtlasEntry>): string {
+  const clean = sprite.replace(/\.png$/, "");
+  const remapped = WAND_SPRITE_REMAP[clean];
+  if (remapped) {
+    if (!atlas || atlas[remapped]) return remapped;
+  }
+  const fullKey = `wand:${clean}`;
+  const base = clean.slice(clean.lastIndexOf("/") + 1);
+  const baseKey = `wand:${base}`;
+  if (atlas) {
+    if (atlas[fullKey]) return fullKey;
+    if (atlas[baseKey]) return baseKey;
+    if (remapped && atlas[remapped]) return remapped;
+  }
+  return fullKey;
+}
+
 function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | string[] | null {
   // Spells inside containers have {type: 'item', item: 'spell', spell: 'SPELL_ID'}
   if (poi.type === "item" && poi.item === "spell" && (poi as any).spell) {
@@ -143,9 +187,7 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
   }
 
   if (poi.type === "wand" && poi.sprite) {
-    const parts = poi.sprite.split("/");
-    const filename = parts[parts.length - 1].replace(/\.png$/, "");
-    return `wand:${filename}`;
+    return resolveWandSpriteKey(poi.sprite, atlas);
   }
 
   if (poi.type === "item" && poi.item) {
@@ -232,6 +274,13 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
   };
   if (BOSS_SPRITE_KEYS[poi.type]) {
     return BOSS_SPRITE_KEYS[poi.type];
+  }
+
+  // Starting loadout (Mina's spawn): show the player character sprite as the
+  // marker instead of nothing. Its contents (wands/flask) are unwrapped and
+  // rendered separately above the player.
+  if (poi.type === "starting_loadout") {
+    return "enemy:player";
   }
 
   // Enemy/prop spawn containers — don't render the container itself, only inner items
