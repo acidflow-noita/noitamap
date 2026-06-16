@@ -111,6 +111,7 @@ const CONTAINER_TYPES = new Set([
   "boss_robot",
   "boss_meat",
   "boss_pit",
+  "tiny",
   "starting_loadout",
 ]);
 
@@ -227,6 +228,7 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     boss_robot: "enemy:boss_robot_body",
     boss_meat: "enemy:boss_meat_body",
     boss_pit: "enemy:boss_pit",
+    tiny: "enemy:maggot_tiny",
   };
   if (BOSS_SPRITE_KEYS[poi.type]) {
     return BOSS_SPRITE_KEYS[poi.type];
@@ -320,6 +322,24 @@ function addMarkerItem(
   });
 }
 
+/**
+ * Add an invisible, clickable hit-area for a POI that is already painted into
+ * the baked background (e.g. the Gate Guardian, whose sprite is captured when
+ * the world background is rendered). spriteKey is empty so the marker renderer
+ * skips drawing it, but it still lands in the Flatbush click index.
+ */
+function addClickOnlyMarker(items: MarkerItem[], poi: POI, pw: number, w = 64, h = 64): void {
+  items.push({
+    poi,
+    pw,
+    spriteKey: "",
+    osdX: poi.x,
+    osdY: poi.y,
+    w,
+    h,
+  });
+}
+
 /** Boss container types whose drops should be offset to avoid overlapping the boss sprite. */
 const BOSS_DROP_TYPES = new Set([
   "triangle_boss",
@@ -333,6 +353,8 @@ const BOSS_DROP_TYPES = new Set([
   "boss_centipede",
   "boss_robot",
   "boss_meat",
+  "boss_pit",
+  "tiny",
 ]);
 
 /** Enemy/prop spawn containers: spread inner items to avoid overlap. */
@@ -378,7 +400,13 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
       if (skipCreatures && (poi.type === "enemies" || poi.type === "props")) continue;
 
       // Add the POI itself as a marker
-      addMarkerItem(items, poi, pw, worldCenter, atlas);
+      if (poi.type === "triangle_boss") {
+        // Gate Guardian is already painted into the baked background — add only
+        // an invisible click target so the card opens on map click.
+        addClickOnlyMarker(items, poi, pw);
+      } else {
+        addMarkerItem(items, poi, pw, worldCenter, atlas);
+      }
 
       // Unwrap container contents as separate markers (except chest types which just show the chest icon)
       if (CONTAINER_TYPES.has(poi.type) && !CHEST_ONLY_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {

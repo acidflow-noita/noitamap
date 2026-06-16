@@ -539,6 +539,8 @@ const BOSS_TYPES = new Set([
   "boss_centipede",
   "boss_robot",
   "boss_meat",
+  "boss_pit",
+  "tiny",
 ]);
 
 /** Check if a POI matches any of the active filters. */
@@ -1094,6 +1096,8 @@ export class UnifiedSearch extends EventEmitter2 {
         entityNameForSearch = "boss_meat";
       } else if (p.type === "boss_pit") {
         entityNameForSearch = "boss_pit";
+      } else if (p.type === "tiny") {
+        entityNameForSearch = "maggot_tiny";
       } else if (p.type === "islandspirit") {
         entityNameForSearch = "boss_spirit";
       }

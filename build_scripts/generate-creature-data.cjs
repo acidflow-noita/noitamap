@@ -291,6 +291,29 @@ function main() {
   }
   console.log(`[generate-creature-data] Emitted ${aliasCount} entity-name aliases`);
 
+  // Hand-injected composite bosses that have no single source entity. The
+  // Gate Guardian (triangle boss) is four gate monsters (Veska, Molari, Mokke,
+  // Seula) treated as one POI; we key it "boss_gate" to match the telescope
+  // POI mapping. Reuses gate_monster_a's stats.
+  if (!data["boss_gate"]) {
+    const g = data["gate_monster_a"] || {};
+    data["boss_gate"] = {
+      alias: "Gate Guardian",
+      name: "Veska, Molari, Mokke, Seula",
+      health: g.health || "2000",
+      attacks: g.attacks || "Curse: 2.5 (1F)",
+      spawnLocation: "Magical Temple (wandcave)",
+      ngPlusSpawn: null,
+      immunities: g.immunities || null,
+      blood: g.blood || null,
+      corpse: g.corpse || null,
+      category: "Bosses",
+      faction: g.faction || "ghost",
+      dmgMults: g.dmgMults || null,
+      wikipage: "Gate Guardian",
+    };
+  }
+
   const count = Object.keys(data).length;
   console.log(
     `[generate-creature-data] Processed ${count} creatures (${synthesised} with synthesised ids)`,

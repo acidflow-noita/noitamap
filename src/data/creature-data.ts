@@ -5684,6 +5684,32 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "holy": "1x"
     },
     "wikipage": "Tulikärpänen"
+  },
+  "boss_gate": {
+    "alias": "Gate Guardian",
+    "name": "Veska, Molari, Mokke, Seula",
+    "health": "2000",
+    "attacks": "Curse: 2.5 (1F)",
+    "spawnLocation": "Magical Temple (wandcave)",
+    "ngPlusSpawn": null,
+    "immunities": "necro, glue, suffocation, fire, physics, electricity",
+    "blood": "Spark (Red)",
+    "corpse": "Dense Rock",
+    "category": "Bosses",
+    "faction": "ghost",
+    "dmgMults": {
+      "melee": "0.1",
+      "projectile": "0.1",
+      "slice": "1x",
+      "explosion": "1.2",
+      "electricity": "0.0",
+      "fire": "0.0",
+      "ice": "0.0",
+      "drill": "1x",
+      "radioactive": "0.0",
+      "holy": "1x"
+    },
+    "wikipage": "Gate Guardian"
   }
 };
 
@@ -5910,5 +5936,6 @@ export const CREATURE_ALIASES: Record<string, string> = {
   "spittrap_right": "Acid Trap",
   "thundertrap_left": "Thunder Trap",
   "thundertrap_right": "Thunder Trap",
-  "firebugnest": "Firefly Hive"
+  "firebugnest": "Firefly Hive",
+  "boss_gate": "Gate Guardian"
 };

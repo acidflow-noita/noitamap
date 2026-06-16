@@ -46,3 +46,5 @@ export * as pngSanitizerMod from "noita-telescope/png_sanitizer.js";
 export * as settingsMod from "noita-telescope/settings.js";
 // @ts-ignore
 export * as enemyConfigMod from "noita-telescope/enemy_config.js";
+// @ts-ignore
+export * as miscGenMod from "noita-telescope/misc_generation.js";

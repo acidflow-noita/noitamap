@@ -501,6 +501,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   const telescopeMods = await import("./telescope-exports");
   const { NollaPrng } = telescopeMods.nollaPrngMod;
   const { GUN_NAMES } = telescopeMods.wandConfigMod;
+  const { getPitBossDrops } = telescopeMods.miscGenMod;
 
   // Split parallel worlds into main (0) and background (-1, 1, etc)
   const mainWorlds = parallelWorlds.filter((w) => w === 0);
@@ -742,15 +743,44 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         items: [{item: "Experimental Wand (Saha)"}],
       } as any);
 
-      // Add Squidward / Pit Boss (Sauvojen tuntija)
+      // Add Squidward / Pit Boss (Sauvojen tuntija). Telescope computes the two
+      // wands (Tier 5 unshuffle + Tier 6); the two spells (Matosade/Worm Rain,
+      // Meteorisade/Meteor Rain) and the first-kill Full Health Regeneration are
+      // fixed drops, not RNG, so they're appended here. full_heal -> item:heart
+      // (the plain, no-extra-HP heart sprite).
+      const pitDrops = getPitBossDrops(seed, ngPlus, "orb_room_bridge", 3750, 1100, perks);
       combinedPois.push({
         type: "boss_pit",
         name: "Sauvojen tuntija",
-        x: 3750, 
+        x: 3750,
         y: 1100,
         biome: "orb_room_bridge",
-        items: [{item: "Wand (Tier 10)"}],
+        items: [
+          ...pitDrops.items,
+          { type: "item", item: "spell", spell: "WORM_RAIN", x: 3726, y: 1140 },
+          { type: "item", item: "spell", spell: "METEOR_RAIN", x: 3774, y: 1140 },
+          { type: "item", item: "full_heal", name: "Full Heal (On first kill)", x: 3750, y: 1160 },
+        ],
       } as any);
+
+      // Telescope's addStaticPixelScenes already emits the Tiny / Limatoukka
+      // (Slime Maggot) drop POI natively (static_spawns.js, type "tiny" at
+      // ~14941,16454). It was previously invisible because "tiny" had no sprite
+      // / container handling; now that it renders, just tag it with a name for
+      // search instead of pushing a second copy.
+      for (const p of combinedPois) {
+        if (p.type === "tiny" && !(p as any).name) (p as any).name = "Limatoukka";
+      }
+
+      // Telescope emits the pyramid boss drop for every vertical call
+      // (pvt = -1, 0, +1) because its guard checks pwIndex === 0 but not
+      // pwIndexVertical — so the main world ends up with 3 identical copies.
+      // Collapse to one.
+      const pyramidPois = combinedPois.filter((p: any) => p.type === "pyramid_boss");
+      if (pyramidPois.length > 1) {
+        combinedPois = combinedPois.filter((p: any) => p.type !== "pyramid_boss");
+        combinedPois.push(pyramidPois[0]);
+      }
     }
 
     // Deduplicate starting_loadout — telescope's addStaticPixelScenes adds
@@ -798,34 +828,17 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       let workerPois = res.pois;
 
       // Apply patches and deduplication for worker POIs exactly as main thread does
-      
-      // Boss overrides for worker
-      const pitBossIndexWorker = workerPois.findIndex(
-        (p: any) =>
-          p.x === 3750 &&
-          (p.type === "boss_pit" || p.name === "Pit boss" || p.name?.includes("tuntija") || p.item?.includes("tuntija")),
-      );
-      if (pitBossIndexWorker !== -1) {
-        workerPois.splice(pitBossIndexWorker, 1);
-        workerPois.push({
-          pw: res.pw,
-          type: "boss_pit",
-          name: "Sauvojen tuntija",
-          x: 3750, 
-          y: 1100,
-          biome: "orb_room_bridge",
-          items: [{item: "Wand (Tier 10)"}],
-        } as any);
-      } else {
-        workerPois.push({
-          pw: res.pw,
-          type: "boss_pit",
-          name: "Sauvojen tuntija",
-          x: 3750, 
-          y: 1100,
-          biome: "orb_room_bridge",
-          items: [{item: "Wand (Tier 10)"}],
-        } as any);
+
+      // boss_pit is added once in the pw===0 main block; the native "tiny" only
+      // spawns at pwIndex===0 too. Background PWs (-1/+1) should carry neither —
+      // strip defensively so a stray copy can't reach the map/search.
+      workerPois = workerPois.filter((p: any) => p.type !== "boss_pit" && p.type !== "tiny");
+
+      // Collapse telescope's triplicated pyramid boss (one per vertical call).
+      const pyramidPoisWorker = workerPois.filter((p: any) => p.type === "pyramid_boss");
+      if (pyramidPoisWorker.length > 1) {
+        workerPois = workerPois.filter((p: any) => p.type !== "pyramid_boss");
+        workerPois.push(pyramidPoisWorker[0]);
       }
 
       // Drop starting_loadout from side PWs — only the pw=0 instance is kept

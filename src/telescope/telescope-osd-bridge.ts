@@ -2732,6 +2732,7 @@ function getWikiUrl(poi: any): string | null {
     boss_robot: "Kolmisilm\u00e4n_koipi",
     boss_meat: "Kolmisilm\u00e4n_syd\u00e4n",
     boss_pit: "Sauvojen_tuntija",
+    tiny: "Limatoukka",
     friend: "Toveri",
   };
   if (BOSS_WIKI[type]) wikiName = BOSS_WIKI[type];
@@ -3409,7 +3410,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     if (poi.item) {
       tooltipEl.appendChild(buildExtendedSection("spell", String(poi.item)));
     }
-  } else if ((poi.type === "entity" && (poi as any).entity) || ["alchemist_boss", "boss_wizard", "boss_meat", "islandspirit", "boss_sky", "boss_robot", "boss_centipede", "triangle_boss", "pyramid_boss", "dragon", "boss_ghost", "friend"].includes(poi.type || "")) {
+  } else if ((poi.type === "entity" && (poi as any).entity) || ["alchemist_boss", "boss_wizard", "boss_meat", "islandspirit", "boss_sky", "boss_robot", "boss_centipede", "triangle_boss", "pyramid_boss", "dragon", "boss_ghost", "friend", "boss_pit", "tiny"].includes(poi.type || "")) {
     const isSpecialEntity = poi.type !== "entity";
     const header = document.createElement("div");
     header.style.cssText = "display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em";
@@ -3428,7 +3429,9 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       alchemist_boss: "boss_alchemist",
       pyramid_boss: "boss_limbs",
       dragon: "boss_dragon",
-      triangle_boss: "boss_pit",
+      triangle_boss: "boss_gate",
+      boss_pit: "boss_pit",
+      tiny: "maggot_tiny",
     };
     if (bossMap[entityId]) entityId = bossMap[entityId];
 
@@ -3510,7 +3513,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     contDiv.style.cssText = "margin-top:0.5em;border-top:0.065em solid #333;padding-top:0.3em";
     const contLabel = document.createElement("div");
     contLabel.style.cssText = "font-size:1em;color:#888;margin-bottom:0.2em";
-    const isBossDrop = ["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon", "boss_wizard", "boss_ghost", "boss_sky", "islandspirit", "boss_centipede", "boss_robot", "boss_meat", "friend"].includes(poi.type || "");
+    const isBossDrop = ["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon", "boss_wizard", "boss_ghost", "boss_sky", "islandspirit", "boss_centipede", "boss_robot", "boss_meat", "friend", "boss_pit", "tiny"].includes(poi.type || "");
     contLabel.textContent = isBossDrop ? "Drops:" : "Contains:";
     contDiv.appendChild(contLabel);
     const contRow = document.createElement("div");
@@ -3619,7 +3622,10 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         }
         const label = document.createElement("span");
         label.style.cssText = "font-size:0.8em;color:#ff6b6b";
-        if (ci.item === "heart") label.textContent = i18next.t("poi.heartShort", "+25 HP");
+        // Honour an explicit name override (e.g. boss-specific "Full regen
+        // (On first kill)") before falling back to the generic HP label.
+        if (ci.name) label.textContent = ci.name;
+        else if (ci.item === "heart") label.textContent = i18next.t("poi.heartShort", "+25 HP");
         else if (ci.item === "heart_bigger") label.textContent = i18next.t("poi.heartBiggerShort", "+50 HP");
         else label.textContent = i18next.t("poi.fullHeal", "Full Heal");
         heartBox.appendChild(label);
