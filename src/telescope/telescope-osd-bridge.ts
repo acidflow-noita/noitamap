@@ -3542,14 +3542,21 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       if (ci.type === "wand") {
         const wandBox = document.createElement("div");
         wandBox.style.cssText =
-          "display:flex;align-items:flex-start;gap:0.2em;background:#111;border-radius:0.2em;padding:0.15em 0.3em;border:0.065em solid #333";
+          "display:flex;align-items:center;gap:0.4em;flex:1 1 100%;min-width:0;background:#111;border-radius:0.2em;padding:0.15em 0.3em;border:0.065em solid #333";
         if (ciKey) {
-          const canvas = scaledSprite(ciKey);
-          if (canvas) {
+          const n = getSpriteNativeSize(ciKey);
+          // 3x so the (thin) wand reads at roughly spell-cell height and isn't
+          // dwarfed by the 2x spell squares — still an integer (sharp) scale.
+          const canvas = scaledSprite(ciKey, 3);
+          if (canvas && n) {
             canvas.style.transform = "rotate(90deg)";
-            canvas.style.flex = "0 0 auto";
             canvas.title = ci.name || "Wand";
-            wandBox.appendChild(canvas);
+            // Rotated 90deg: the layout box must use the SWAPPED dimensions or
+            // the wide visual overflows its tall box and clips.
+            const wrap = document.createElement("div");
+            wrap.style.cssText = `flex:0 0 auto;display:flex;align-items:center;justify-content:center;width:${n.h * 3}px;height:${n.w * 3}px`;
+            wrap.appendChild(canvas);
+            wandBox.appendChild(wrap);
           }
         }
         // Pad to deck_capacity so the row matches the wand's actual slot count.
@@ -3565,7 +3572,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           slots.push({ id: sp ? (typeof sp === "string" ? sp : (sp?.id ?? sp)) : null, isAC: false });
         }
         const slotsGrid = document.createElement("div");
-        slotsGrid.style.cssText = "display:flex;flex-wrap:wrap;gap:0.2em;align-items:center";
+        slotsGrid.style.cssText = "display:flex;flex-wrap:wrap;gap:0.2em;align-items:center;flex:1 1 0;min-width:0";
         for (const slot of slots) {
           const cell = document.createElement("div");
           cell.style.cssText = `width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#0a0a0a;border:0.065em solid ${slot.isAC ? "#c8a2ff" : "#222"};border-radius:0.15em;box-sizing:border-box`;

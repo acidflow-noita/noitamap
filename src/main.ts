@@ -754,16 +754,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     getMaterialInfo: (id: string) => getMaterialInfo(id),
     primeMaterialInfo: () => primeMaterialInfo(),
     getFlatPOIsForSeed: async (seed: number) => {
-      // Cache-only lookup. We intentionally do NOT generate here - that has
-      // telescope-wide side effects (setUnlocks, biome data, pixel scene cache
-      // writes) which can disturb the currently-rendered map. Background
-      // generation is done separately via requestSeedStats (below), which runs
-      // only after the current map has settled.
+      // Cache-only lookup first. We intentionally do NOT generate here - that
+      // has telescope-wide side effects (setUnlocks, biome data, pixel scene
+      // cache writes) which can disturb the currently-rendered map.
       try {
         const { getCachedGeneration } = await import("./telescope/tile-cache");
         const { getAllPOIsFlat } = await import("./telescope/telescope-osd-bridge");
         const cached = await getCachedGeneration(dailyCacheKey(seed));
         if (cached?.poisByPW) return getAllPOIsFlat({ poisByPW: cached.poisByPW } as any);
+        // The comparison target is ALWAYS a daily seed, whose POIs are already
+        // baked + served as generation.json by the CI pipeline. Fetch them
+        // directly (instant) instead of regenerating client-side. Try today's
+        // and yesterday's worker origins; fetchBakedGeneration validates the
+        // seed, so a mismatch just falls through.
+        const { fetchBakedGeneration } = await import("./telescope/baked-generation");
+        const { isLightMode } = await import("./light-mode");
+        const worlds: ("left" | "middle" | "right")[] = isLightMode() ? ["middle"] : ["left", "middle", "right"];
+        for (const prefix of ["daily", "previous-daily"] as const) {
+          const gen = await fetchBakedGeneration(prefix, worlds, seed).catch(() => null);
+          if (gen?.poisByPW) return getAllPOIsFlat({ poisByPW: gen.poisByPW } as any);
+        }
         return null;
       } catch (e) {
         console.warn("[Noitamap] getFlatPOIsForSeed failed:", e);
@@ -779,6 +789,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       } catch (e) {
         console.warn("[Noitamap] requestSeedStats failed:", e);
         return false;
+      }
+    },
+    // Blob URL for a wand's sprite (first frame, atlas or data.zip). Used by the
+    // pro seed-report to draw wand icons — wands are procedural, so there's no
+    // static asset the pro bundle could reference on its own.
+    getWandIconUrl: async (sprite: string): Promise<string | null> => {
+      try {
+        const { getPOISpriteFirstFrame } = await import("./telescope/telescope-osd-bridge");
+        return await getPOISpriteFirstFrame({ type: "wand", sprite });
+      } catch (e) {
+        console.warn("[Noitamap] getWandIconUrl failed:", e);
+        return null;
       }
     },
     setHighValuePredicate: (pred: ((poi: any) => boolean) | null) => {

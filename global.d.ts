@@ -135,6 +135,8 @@ declare global {
     getFlatPOIsForSeed?: (seed: number) => Promise<any[] | null>;
     /** Background-generate + cache a seed so getFlatPOIsForSeed hits next time. */
     requestSeedStats?: (seed: number) => Promise<boolean>;
+    /** Blob URL for a wand's sprite (first frame) — pro seed-report wand icons. */
+    getWandIconUrl?: (sprite: string) => Promise<string | null>;
     /** "Skip creatures" perf-mode flag. */
     isSkipCreatures?: () => boolean;
   }
