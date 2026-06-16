@@ -10,6 +10,7 @@ import spells from "../data/spells.json";
 import { EventEmitter2 } from "eventemitter2";
 import type { DynamicPOI } from "../dynamic-map";
 import { CREATURE_ALIASES, CREATURE_DATA } from "../data/creature-data";
+import { SPECIAL_WAND_ALIAS } from "../data/special-wands";
 import { authService } from "../auth/auth-service";
 import { AuthUI } from "../auth/auth-ui";
 import { updateURLWithSearch } from "../data_sources/url";
@@ -1129,6 +1130,13 @@ export class UnifiedSearch extends EventEmitter2 {
         parts.push("Taikasauva", "alive wand");
         const tk = gameTranslator.translateItem("animal_wand_ghost");
         if (tk && tk !== "animal_wand_ghost") parts.push(tk);
+      }
+
+      // Special named wands (Huilu/Kantele) carry only their Finnish name. Add
+      // the English alias so e.g. "flute" finds Huilu. Keyed by sprite (stable).
+      if (p.type === "wand" && (p as any).sprite) {
+        const alias = SPECIAL_WAND_ALIAS[String((p as any).sprite)];
+        if (alias) parts.push(alias);
       }
 
       // Add translated material name for potions/pouches

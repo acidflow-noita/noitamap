@@ -48,6 +48,7 @@ import { isLightMode } from "../light-mode";
 import { clearTargetPoiId } from "../data_sources/url";
 import spells from "../data/spells.json";
 import { CREATURE_DATA } from "../data/creature-data";
+import { SPECIAL_WAND_ALIAS } from "../data/special-wands";
 import { buildExtendedSection } from "../extended-info";
 
 declare const OpenSeadragon: any;
@@ -2482,9 +2483,27 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   });
 
   console.log(`[OSD Bridge] Added ${items.length} pixel scenes as single tile source`);
+}
 
-  // Debug: expose hover query for pixel scene identification
-  // Enable with: __pixelSceneHover(true)   Disable with: __pixelSceneHover(false)
+/**
+ * Register the pixel-scene hover debug helper on window.
+ *
+ * Enable with `__pixelSceneHover(true)` / disable with `__pixelSceneHover(false)`
+ * — hovering shows the scene key(s) under the cursor. Builds its own Flatbush
+ * index from result.pixelScenesByPW so it works on BAKED/daily seeds too, where
+ * addPixelScenes is skipped (scenes are pre-rendered into the DZI pixels).
+ */
+async function registerPixelSceneHoverDebug(viewer: OSDViewer, result: GenerationResult): Promise<void> {
+  const allScenes = Object.values(result.pixelScenesByPW).flat().filter(Boolean) as any[];
+  const items = allScenes.map((s) => ({ osdX: s.x, osdY: s.y, w: s.width, h: s.height, sceneKey: s.key }));
+
+  const Flatbush = (await import("flatbush")).default;
+  const index = new Flatbush(Math.max(1, items.length));
+  for (const item of items) {
+    index.add(item.osdX, item.osdY, item.osdX + item.w, item.osdY + item.h);
+  }
+  index.finish();
+
   (window as any).__pixelSceneHover = (enable: boolean) => {
     const handlerKey = "__psHoverHandler";
     const osdCanvas = viewer.canvas as HTMLElement;
@@ -2500,9 +2519,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     }
     const handler = (event: MouseEvent) => {
       const vp = viewer.viewport.windowToViewportCoordinates(new OpenSeadragon.Point(event.clientX, event.clientY));
-      const wx = vp.x - originX;
-      const wy = vp.y - originY;
-      const hits = index.search(wx, wy, wx, wy);
+      const hits = index.search(vp.x, vp.y, vp.x, vp.y);
       const el = document.getElementById("__ps-debug-tooltip")!;
       if (hits.length > 0) {
         const names = hits.map((i: number) => items[i]?.sceneKey).filter(Boolean);
@@ -2518,7 +2535,6 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     };
     (window as any)[handlerKey] = handler;
     osdCanvas.addEventListener("mousemove", handler);
-    // Create tooltip element
     if (!document.getElementById("__ps-debug-tooltip")) {
       const el = document.createElement("div");
       el.id = "__ps-debug-tooltip";
@@ -2526,7 +2542,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
         "position:fixed;background:#000c;color:#0f0;font:12px monospace;padding:4px 8px;pointer-events:none;z-index:99999;display:none;border-radius:4px;white-space:pre";
       document.body.appendChild(el);
     }
-    console.log("[PixelScene] Hover debug enabled — hover over pixel scenes to see their keys");
+    console.log(`[PixelScene] Hover debug enabled — hover over pixel scenes to see their keys (${items.length} scenes indexed)`);
   };
 }
 
@@ -3248,6 +3264,12 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       const sub = document.createElement("div");
       sub.style.cssText = "color:#aaa;font-size:0.85em;font-style:italic";
       sub.textContent = '"Alive wand"';
+      titleCol.appendChild(sub);
+    } else if (poi.sprite && SPECIAL_WAND_ALIAS[String(poi.sprite)] && SPECIAL_WAND_ALIAS[String(poi.sprite)] !== poi.name) {
+      // Named special wand (Huilu/Kantele): show the English alias as subtitle.
+      const sub = document.createElement("div");
+      sub.style.cssText = "color:#aaa;font-size:0.85em;font-style:italic";
+      sub.textContent = SPECIAL_WAND_ALIAS[String(poi.sprite)];
       titleCol.appendChild(sub);
     }
     header.appendChild(titleCol);
@@ -4362,6 +4384,11 @@ export async function renderGenerationResult(
     await addPixelScenes(viewer, result, generationId);
     if (currentGenerationId !== generationId) return;
   }
+
+  // Pixel-scene hover debug (__pixelSceneHover) — register unconditionally so it
+  // works on baked/daily seeds where addPixelScenes is skipped.
+  await registerPixelSceneHoverDebug(viewer, result);
+  if (currentGenerationId !== generationId) return;
 
   // Boss sprites render on top of pixel scenes, below item markers.
   await addBossOverlays(viewer, result, generationId);
