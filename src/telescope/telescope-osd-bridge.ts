@@ -1849,6 +1849,7 @@ async function getScenePngIndex(): Promise<ScenePngIndex> {
   // NOTE: plain .png in biome_impl are material color maps, NOT visuals.
   // Do not use them as visual fallbacks.
   if (zip) {
+    const plainPngCandidates: Array<{ key: string; path: string }> = [];
     zip.forEach((relativePath: string) => {
       if (!relativePath.startsWith("data/biome_impl/") || !relativePath.endsWith(".png")) return;
       const inner = relativePath.substring("data/biome_impl/".length);
@@ -1866,13 +1867,19 @@ async function getScenePngIndex(): Promise<ScenePngIndex> {
       // Temple foreground scenes use _fg.png instead of _visual.png
       addTo("_fg.png", visualByPath, visualByName);
       // Top-level plain .png files (no subdirectory, no _visual/_background suffix) —
-      // these are full pixel scene visuals like watercave_layout_X.png
-      if (!inner.includes("/") && !inner.endsWith("_visual.png") && !inner.endsWith("_background.png")) {
+      // these are full pixel scene visuals like watercave_layout_X.png. Defer them
+      // to a second pass: a plain .png that has a sibling _visual/_background (e.g.
+      // essenceroom.png next to essenceroom_visual.png) is a MATERIAL COLORMAP, not
+      // a visual, and must not shadow the real visual in visualByName.
+      if (!inner.includes("/") && !inner.endsWith("_visual.png") && !inner.endsWith("_background.png") && !inner.endsWith("_bg.png")) {
         const key = inner.substring(0, inner.length - ".png".length);
-        // Add as visual by name so resolveScenePath can find them
-        if (!visualByName.has(key)) visualByName.set(key, relativePath);
+        plainPngCandidates.push({ key, path: relativePath });
       }
     });
+    for (const { key, path } of plainPngCandidates) {
+      if (visualByPath.has(key) || bgByPath.has(key)) continue; // colormap with dedicated layers
+      if (!visualByName.has(key)) visualByName.set(key, path);
+    }
   }
   _pngIndex = { visualByPath, visualByName, bgByPath, bgByName };
   console.log(`[OSD Bridge] Scene PNG index: ${visualByPath.size} visual, ${bgByPath.size} background`);
@@ -1988,8 +1995,11 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
   const idx = await getScenePngIndex();
 
   const visualPath = resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, sceneKey);
-  // Skip backgrounds for biomes where the prebaked map already provides the bg
-  const skipBg = biome === "temple" || biome === "general";
+  // Skip backgrounds for biomes where the prebaked map already provides the bg.
+  // temple* covers the holy-mountain temple AND every temple_altar[_left/right...]
+  // variant — their dark _background.png otherwise composites over the correct
+  // prebaked map background and kills the altar's final texture.
+  const skipBg = biome.startsWith("temple") || biome === "general";
   const bgPath = skipBg ? undefined : resolveScenePath(idx.bgByPath, idx.bgByName, biome, name, sceneKey);
 
   if (!visualPath && !bgPath) {
@@ -2096,7 +2106,9 @@ async function compositeSceneBitmap(
   const biome = slashIdx >= 0 ? key.substring(0, slashIdx) : "";
   const name = slashIdx >= 0 ? key.substring(slashIdx + 1) : key;
 
-  const skipBg = biome === "temple" || biome === "general";
+  // temple* covers the holy-mountain temple AND every temple_altar[_*] variant;
+  // their _background.png otherwise composites over the correct prebaked map bg.
+  const skipBg = biome.startsWith("temple") || biome === "general";
 
   const override = pixelSceneConfig.layerOverrides[name] || pixelSceneConfig.layerOverrides[key];
   const wantBg = override?.background ?? pixelSceneConfig.layers.background;

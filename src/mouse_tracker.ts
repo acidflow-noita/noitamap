@@ -1,4 +1,5 @@
 import { CHUNK_SIZE } from './constants';
+import { materialAtWorld, primeMaterialHover } from './material-hover';
 
 declare const OpenSeadragon: any;
 
@@ -20,6 +21,10 @@ function parseCoordinates(text: string) {
 }
 
 export const initMouseTracker = ({ osd, tooltipElement, osdElement }: MouseTrackerOptions) => {
+  primeMaterialHover();
+  let lastPixelX: number | null = null;
+  let lastPixelY: number | null = null;
+  let lastMaterialHtml = '';
   new OpenSeadragon.MouseTracker({
     element: osdElement,
     moveHandler: (event: any) => {
@@ -27,11 +32,21 @@ export const initMouseTracker = ({ osd, tooltipElement, osdElement }: MouseTrack
 
       const webPoint = event.position;
       const viewportPoint = osd.viewport.pointFromPixel(webPoint);
-      const pixelX = Math.floor(viewportPoint.x).toString();
-      const pixelY = Math.floor(viewportPoint.y).toString();
+      const px = Math.floor(viewportPoint.x);
+      const py = Math.floor(viewportPoint.y);
+      const pixelX = px.toString();
+      const pixelY = py.toString();
       const chunkX = Math.floor(viewportPoint.x / CHUNK_SIZE).toString();
       const chunkY = Math.floor(viewportPoint.y / CHUNK_SIZE).toString();
-      tooltipElement.children[0].innerHTML = `(${pixelX}, ${pixelY})<br>chunk: (${chunkX}, ${chunkY})`;
+      // Material lookup is dynamic-map only (baked maps ship no per-pixel
+      // material buffers). Recompute only when the integer coord changes.
+      if (px !== lastPixelX || py !== lastPixelY) {
+        lastPixelX = px;
+        lastPixelY = py;
+        const mat = materialAtWorld(px, py);
+        lastMaterialHtml = mat ? `<br>material: ${mat}` : '';
+      }
+      tooltipElement.children[0].innerHTML = `(${pixelX}, ${pixelY})<br>chunk: (${chunkX}, ${chunkY})${lastMaterialHtml}`;
       tooltipElement.style.left = `${event.originalEvent.pageX}px`;
       tooltipElement.style.top = `${event.originalEvent.pageY}px`;
     },

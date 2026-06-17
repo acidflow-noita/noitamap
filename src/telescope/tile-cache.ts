@@ -9,7 +9,7 @@
  */
 
 const DB_NAME = "noitamap-telescope";
-const DB_VERSION = 10; // bumped: pixel-scene fill + temple wang recolor (wipes stale scene bitmaps)
+const DB_VERSION = 11; // bumped: essenceroom visual-vs-colormap + altar bg-skip (wipes stale scene bitmaps)
 const STORE_NAME = "generations";
 const RENDER_STORE_NAME = "biome_renders";
 const SCENE_BITMAP_STORE_NAME = "pixel_scene_bitmaps";
@@ -94,11 +94,13 @@ function openDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(SCENE_BITMAP_STORE_NAME)) {
         db.createObjectStore(SCENE_BITMAP_STORE_NAME, { keyPath: "key" });
-      } else if (oldVersion < 10) {
+      } else if (oldVersion < 11) {
         // v8 fixed the temple/single-layer scene sizing bug. v10 recolors
         // pixel-scene fills (f0bbee -> chosen material) and temple wang
-        // templates (white slab -> templeslab brown). Wipe the bitmap store so
-        // cached pre-recolor (raw/white) bitmaps get re-composited.
+        // templates (white slab -> templeslab brown). v11 stops a material
+        // colormap (essenceroom.png) shadowing the real _visual.png and skips
+        // the baked-in _background.png for temple_altar* scenes. Wipe so stale
+        // pre-fix bitmaps get re-composited.
         db.deleteObjectStore(SCENE_BITMAP_STORE_NAME);
         db.createObjectStore(SCENE_BITMAP_STORE_NAME, { keyPath: "key" });
       }
