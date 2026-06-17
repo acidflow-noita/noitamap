@@ -52,7 +52,18 @@ const path = require("path");
 const zlib = require("zlib");
 const { execFileSync } = require("child_process");
 const { Worker, isMainThread, parentPort, workerData } = require("worker_threads");
-const { decode: decodePng } = require("fast-png");
+const { decode: decodePngRaw, convertIndexedToRgb } = require("fast-png");
+
+// fast-png does NOT expand palette-indexed PNGs: it returns raw index bytes
+// (channels:1) plus a separate `.palette`. Some game bg textures ship indexed
+// (e.g. background_wandcave.png), which then bake as ~black because the
+// compositor reads index bytes as RGB. Always expand to truecolor on decode.
+function decodePng(buf) {
+  const png = decodePngRaw(buf);
+  if (!png.palette) return png;
+  const ch = png.palette[0].length; // 3 (RGB) or 4 (RGBA)
+  return { width: png.width, height: png.height, channels: ch, depth: 8, data: convertIndexedToRgb(png) };
+}
 
 const ROOT = path.resolve(__dirname, "..");
 const NAV_TIMEOUT_MS = 90_000;
