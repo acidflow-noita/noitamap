@@ -4801,7 +4801,7 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "Nacist denni herni seed, sdileny vsemi hraci dnes",
     "seedTooltipDaily": "Toto je seed denniho behu",
-    "seedTooltipCustom": "Toto je manualne zvoleny seed",
+    "seedTooltipCustom": "Noita ma o neco vic nez 2 miliardy realnych seedu. Platny seed je libovolne cele cislo od 1 do 2 147 483 647. Dnesni denni seed je zobrazen <span style=\"color:#14b8a6;font-weight:600\">tyrkysove</span>, vcerejsi denni seed <span style=\"color:#eab308;font-weight:600\">tmave zlute</span>.",
     "previousDaily": "Predchozi denni seed",
     "previousDailyDescription": "Nacist vcerejsi denni herni seed",
     "seedTooltipPreviousDaily": "Toto je seed vcerejsiho denniho behu"

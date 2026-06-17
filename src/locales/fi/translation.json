@@ -4801,7 +4801,7 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "Lataa paivan pelisiemen, jonka kaikki pelaajat jakavat tanaan",
     "seedTooltipDaily": "Tama on paivittaisen kierroksen siemen",
-    "seedTooltipCustom": "Tama on manuaalisesti valittu siemen",
+    "seedTooltipCustom": "Noitassa on reilut 2 miljardia oikeaa siementa. Mika tahansa kokonaisluku valilta 1-2 147 483 647 kelpaa siemeneksi. Taman paivan paivittainen siemen nakyy <span style=\"color:#14b8a6;font-weight:600\">turkoosina</span>, eilisen <span style=\"color:#eab308;font-weight:600\">tummankeltaisena</span>.",
     "previousDaily": "Edellinen paivittainen siemen",
     "previousDailyDescription": "Lataa eilisen paivan pelisiemen",
     "seedTooltipPreviousDaily": "Tama on eilisen paivittaisen kierroksen siemen"

@@ -15,6 +15,10 @@ import { isSpoilerFree } from "./spoiler-free";
 const NERD_MODE_URL = "https://lymm37.github.io/noita-telescope/";
 const DYNAMIC_MAP_NAME = "dynamic-main-branch";
 
+// Noita seeds are 32-bit signed ints; valid range is 1 .. 2147483647.
+const MIN_SEED = 1;
+const MAX_SEED = 2147483647;
+
 /** Tri-state for seed-input flavouring. "daily" = today's daily, drawn teal.
  *  "previousDaily" = yesterday's daily, drawn yellow. "custom" = arbitrary
  *  user-entered seed, default colour. */
@@ -92,6 +96,8 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   seedInput.pattern = "[0-9]*";
   seedInput.maxLength = 10;
   seedInput.size = 10;
+  seedInput.min = String(MIN_SEED);
+  seedInput.max = String(MAX_SEED);
   seedInput.className = "form-control form-control-sm";
   if (isSpoilerFree()) {
     seedInput.style.webkitTextSecurity = "disc";
@@ -109,7 +115,13 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   });
   seedInput.addEventListener("input", () => {
     if (seedInput) {
-      seedInput.value = seedInput.value.replace(/\D/g, "");
+      let digits = seedInput.value.replace(/\D/g, "");
+      // Clamp to the valid Noita seed range (1 .. 2147483647).
+      if (digits) {
+        const n = parseInt(digits, 10);
+        if (n > MAX_SEED) digits = String(MAX_SEED);
+      }
+      seedInput.value = digits;
       seedInput.classList.remove("seed-daily");
       seedInput.classList.remove("seed-prev-daily");
       updateSeedTooltip("custom");
@@ -167,8 +179,8 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   new bootstrap.Popover(dailySeedBtn);
   // @ts-ignore
   if (prevDailySeedBtn) new bootstrap.Popover(prevDailySeedBtn);
-  // @ts-ignore
-  seedTooltipInstance = new bootstrap.Popover(seedInput);
+  // @ts-ignore -- html+no-sanitize so the inline-coloured "teal"/"dark yellow" words render
+  seedTooltipInstance = new bootstrap.Popover(seedInput, { html: true, sanitize: false });
   // @ts-ignore
   generatePopoverInstance = new bootstrap.Popover(generateWrapper);
 
@@ -198,23 +210,12 @@ function refreshDynamicUITranslations(): void {
     prevDailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.previousDailyDescription"));
   }
 
-  // Seed input
+  // Seed input -- popover always describes the valid seed range, regardless
+  // of daily/previous/custom flavour (that distinction is conveyed by colour).
   if (seedInput) {
     seedInput.placeholder = i18next.t("dynamicMap.placeholder");
     seedInput.setAttribute("data-bs-title", i18next.t("dynamicMap.placeholder"));
-    // Determine current tooltip flavour (daily, previous-daily, or custom)
-    const kind: SeedKind = seedInput.classList.contains("seed-prev-daily")
-      ? "previousDaily"
-      : seedInput.classList.contains("seed-daily")
-        ? "daily"
-        : "custom";
-    const contentKey =
-      kind === "daily"
-        ? "dynamicMap.seedTooltipDaily"
-        : kind === "previousDaily"
-          ? "dynamicMap.seedTooltipPreviousDaily"
-          : "dynamicMap.seedTooltipCustom";
-    seedInput.setAttribute("data-bs-content", i18next.t(contentKey));
+    seedInput.setAttribute("data-bs-content", i18next.t("dynamicMap.seedTooltipCustom"));
   }
 
   // Generate button text + wrapper popover
@@ -241,8 +242,8 @@ function refreshDynamicUITranslations(): void {
       // @ts-ignore
       const existing = bootstrap.Popover.getInstance(el);
       if (existing) existing.dispose();
-      // @ts-ignore
-      new bootstrap.Popover(el);
+      // @ts-ignore -- seed input needs html+no-sanitize to colour the swatch words
+      new bootstrap.Popover(el, el === seedInput ? { html: true, sanitize: false } : undefined);
     });
   });
 }
@@ -392,7 +393,7 @@ async function onGenerateClick(): Promise<void> {
     return;
   }
   const seed = parseInt(rawVal, 10);
-  if (isNaN(seed)) {
+  if (isNaN(seed) || seed < MIN_SEED || seed > MAX_SEED) {
     seedInput.classList.add("is-invalid");
     setTimeout(() => seedInput?.classList.remove("is-invalid"), 1500);
     return;
@@ -523,15 +524,11 @@ export function setDynamicUISeed(seed: number, isDaily: boolean): void {
 
 let seedTooltipInstance: any = null;
 
-function updateSeedTooltip(kind: SeedKind): void {
+function updateSeedTooltip(_kind: SeedKind): void {
   if (!seedInput) return;
-  const key =
-    kind === "daily"
-      ? "dynamicMap.seedTooltipDaily"
-      : kind === "previousDaily"
-        ? "dynamicMap.seedTooltipPreviousDaily"
-        : "dynamicMap.seedTooltipCustom";
-  const text = i18next.t(key);
+  // The seed input popover always describes the valid seed range; the
+  // daily/previous/custom distinction is shown via the input colour instead.
+  const text = i18next.t("dynamicMap.seedTooltipCustom");
   seedInput.setAttribute("data-bs-content", text);
 
   // @ts-ignore Update active popover DOM if it is currently visible

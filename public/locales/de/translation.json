@@ -4801,7 +4801,7 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "Den taeglichen Spiel-Seed laden, der heute von allen Spielern geteilt wird",
     "seedTooltipDaily": "Dies ist der taegliche Lauf-Seed",
-    "seedTooltipCustom": "Dies ist ein manuell ausgewaehlter Seed",
+    "seedTooltipCustom": "Noita hat etwas mehr als 2 Milliarden echte Seeds. Jede ganze Zahl von 1 bis 2.147.483.647 ist ein gueltiger Seed. Der heutige tagliche Seed wird in <span style=\"color:#14b8a6;font-weight:600\">Tuerkis</span> angezeigt, der von gestern in <span style=\"color:#eab308;font-weight:600\">Dunkelgelb</span>.",
     "previousDaily": "Vorheriger taeglicher Seed",
     "previousDailyDescription": "Den taeglichen Spiel-Seed von gestern laden",
     "seedTooltipPreviousDaily": "Dies ist der taegliche Lauf-Seed von gestern"

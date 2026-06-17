@@ -4801,7 +4801,7 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "加载今日的每日种子，所有玩家共享",
     "seedTooltipDaily": "这是每日跑的种子",
-    "seedTooltipCustom": "这是手动选择的种子",
+    "seedTooltipCustom": "Noita 拥有 20 多亿个真实种子。1 到 2,147,483,647 之间的任意整数都是有效种子。今天的每日种子显示为<span style=\"color:#14b8a6;font-weight:600\">青色</span>，昨天的每日种子显示为<span style=\"color:#eab308;font-weight:600\">暗黄色</span>。",
     "previousDaily": "上一个每日种子",
     "previousDailyDescription": "加载昨天的每日种子",
     "seedTooltipPreviousDaily": "这是昨天每日跑的种子"

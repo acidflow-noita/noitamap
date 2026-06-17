@@ -4801,7 +4801,7 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "Laad de dagelijkse game-seed, gedeeld door alle spelers vandaag",
     "seedTooltipDaily": "Dit is de dagelijkse run-seed",
-    "seedTooltipCustom": "Dit is een handmatig geselecteerde seed",
+    "seedTooltipCustom": "Noita heeft ruim 2 miljard echte seeds. Elk geheel getal van 1 tot 2.147.483.647 is een geldige seed. De dagelijkse seed van vandaag wordt in <span style=\"color:#14b8a6;font-weight:600\">turquoise</span> getoond; die van gisteren in <span style=\"color:#eab308;font-weight:600\">donkergeel</span>.",
     "previousDaily": "Vorige dagelijkse seed",
     "previousDailyDescription": "Laad de dagelijkse game-seed van gisteren",
     "seedTooltipPreviousDaily": "Dit is de dagelijkse run-seed van gisteren"
