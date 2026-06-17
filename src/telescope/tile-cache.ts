@@ -9,7 +9,7 @@
  */
 
 const DB_NAME = "noitamap-telescope";
-const DB_VERSION = 9; // bumped: drop imgData from generation entries (FF was 2.4s/read)
+const DB_VERSION = 10; // bumped: pixel-scene fill + temple wang recolor (wipes stale scene bitmaps)
 const STORE_NAME = "generations";
 const RENDER_STORE_NAME = "biome_renders";
 const SCENE_BITMAP_STORE_NAME = "pixel_scene_bitmaps";
@@ -94,9 +94,11 @@ function openDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(SCENE_BITMAP_STORE_NAME)) {
         db.createObjectStore(SCENE_BITMAP_STORE_NAME, { keyPath: "key" });
-      } else if (oldVersion < 8) {
-        // v8 fixes the temple/single-layer scene sizing bug — wipe the bitmap
-        // store so cached corrupt bitmaps get re-composited.
+      } else if (oldVersion < 10) {
+        // v8 fixed the temple/single-layer scene sizing bug. v10 recolors
+        // pixel-scene fills (f0bbee -> chosen material) and temple wang
+        // templates (white slab -> templeslab brown). Wipe the bitmap store so
+        // cached pre-recolor (raw/white) bitmaps get re-composited.
         db.deleteObjectStore(SCENE_BITMAP_STORE_NAME);
         db.createObjectStore(SCENE_BITMAP_STORE_NAME, { keyPath: "key" });
       }

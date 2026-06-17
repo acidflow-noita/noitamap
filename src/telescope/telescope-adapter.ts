@@ -46,6 +46,8 @@ export function getAllPixelSceneKeys(): string[] {
 }
 let loadPixelSceneData: any;
 export let recolorPixelSceneForBiome: any;
+export let recolorPixelScene: any;
+export let MATERIAL_COLOR_CONVERSION: Record<number, number> = {};
 let GENERATOR_CONFIG: any;
 let UNLOCKABLES: any;
 let setUnlocks: any;
@@ -208,6 +210,7 @@ async function _doInitTelescope(): Promise<void> {
   const pngSanitizerMod = telescope.pngSanitizerMod;
   const appMod = telescope.appMod;
   const settingsMod = telescope.settingsMod;
+  const potionConfigMod = telescope.potionConfigMod;
 
   // 4b. Push our shim settings into telescope's centralized appSettings.
   //     Telescope refactored from reading DOM checkboxes directly to using
@@ -234,6 +237,8 @@ async function _doInitTelescope(): Promise<void> {
   PIXEL_SCENE_DATA = pixelSceneMod.PIXEL_SCENE_DATA;
   loadPixelSceneData = pixelSceneMod.loadPixelSceneData;
   recolorPixelSceneForBiome = pixelSceneMod.recolorPixelSceneForBiome;
+  recolorPixelScene = pixelSceneMod.recolorPixelScene;
+  MATERIAL_COLOR_CONVERSION = potionConfigMod.MATERIAL_COLOR_CONVERSION;
   GENERATOR_CONFIG = genConfigMod.GENERATOR_CONFIG;
   UNLOCKABLES = unlocksMod.UNLOCKABLES;
   setUnlocks = unlocksMod.setUnlocks;

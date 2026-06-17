@@ -6,7 +6,7 @@
  */
 
 import type { GenerationResult, POI, PixelScene, TileLayer } from "./telescope-adapter";
-import { getPixelSceneImgElement, recolorPixelSceneForBiome, TILE_OVERLAY_COLORS } from "./telescope-adapter";
+import { getPixelSceneImgElement, recolorPixelSceneForBiome, recolorPixelScene, MATERIAL_COLOR_CONVERSION, TILE_OVERLAY_COLORS } from "./telescope-adapter";
 import { getDataZip } from "../data-archive";
 import { installTelescopeShim, isCanvasTainted } from "./telescope-dom-shim";
 import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope-data-bridge";
@@ -1266,7 +1266,7 @@ export async function prepareDecorationExport(
   const built = await buildSceneBitmaps(result, null);
   if (!built) return null;
   for (const scene of built.validScenes) {
-    const bmp = built.bitmapByKey.get(scene.key);
+    const bmp = built.bitmapByKey.get(sceneRenderKey(scene));
     if (!bmp) continue;
     draws.push({ img: bmp, x: scene.x, y: scene.y, w: scene.width, h: scene.height });
   }
@@ -1936,10 +1936,34 @@ async function decodeScenePng(zip: any, path: string): Promise<ImageData | null>
     }
   }
   if (path.includes("/temples-assets/") && path.endsWith("_fg.png")) {
+    // The _fg.png is the temple biome's wang template (BIOME_WANG_TILE per
+    // biome_darkness.xml / biome_potion_mimics.xml), NOT finished art. Drawing
+    // it raw shows the template's white slab fill + spawn-marker dots ("mostly
+    // white"). Recolor it like the main-world wang renderer: known wang colors
+    // -> material texture color, grayscale/white slab fill -> templeslab brown,
+    // air/black/markers -> transparent. (templeslab_static texture = 0x4b413f.)
+    const TEMPLESLAB = 0x4b413f;
     for (let i = 0; i < d.length; i += 4) {
       if (d[i + 3] === 0) continue;
-      const c = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2];
-      if (TEMPLE_SPAWN_STRIP_COLORS.has(c)) d[i + 3] = 0;
+      const r = d[i],
+        g = d[i + 1],
+        b = d[i + 2];
+      const c = (r << 16) | (g << 8) | b;
+      if (c === 0x000000 || c === 0x000042 || TEMPLE_SPAWN_STRIP_COLORS.has(c)) {
+        d[i + 3] = 0;
+        continue;
+      }
+      const tex = MATERIAL_COLOR_CONVERSION[c];
+      if (tex !== undefined) {
+        d[i] = (tex >> 16) & 0xff;
+        d[i + 1] = (tex >> 8) & 0xff;
+        d[i + 2] = tex & 0xff;
+      } else if (r === g && g === b) {
+        d[i] = (TEMPLESLAB >> 16) & 0xff;
+        d[i + 1] = (TEMPLESLAB >> 8) & 0xff;
+        d[i + 2] = TEMPLESLAB & 0xff;
+      }
+      // else: leave unknown template colors untouched
     }
   }
   return new ImageData(new Uint8ClampedArray(d as any), decoded.width, decoded.height);
@@ -2008,6 +2032,55 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
 }
 
 /**
+ * Per-instance render key. Pixel-scene fills (oiltank, vault liquids, etc.)
+ * pick a material via PRNG and encode it in variantKey as `f0bbee=<wang>`. Two
+ * instances of the same scene.key with different liquids must NOT share a
+ * cached bitmap, so fold the material part of the variant into the key. The
+ * biome part is omitted (it's already implied by scene.key), so non-fill scenes
+ * keep their plain key and stay prefetch/cache compatible.
+ */
+function sceneRenderKey(scene: { key: string; variantKey?: string }): string {
+  const vk = scene.variantKey || "";
+  if (!vk) return scene.key;
+  const mat = vk.split("&").filter((p) => p && !p.startsWith("biome="));
+  return mat.length ? `${scene.key}|${mat.join("&")}` : scene.key;
+}
+
+/**
+ * Recolor a pixel scene's base image the way telescope's overlay worker does
+ * (overlay_worker.js): walk variantKey parts in order — `biome=X` runs the
+ * biome recolor (grays->terrain, air->bg, wang->material texture); any other
+ * `marker=wang` pair recolors that fill marker to the chosen material's wang
+ * color, which the following biome pass then turns into the texture color.
+ * Falls back to a plain biome recolor when variantKey has no biome segment.
+ */
+function recolorSceneVariant(
+  base: Uint8Array | Uint8ClampedArray,
+  scene: { name: string; variantKey?: string },
+  biome: string,
+): Uint8Array | Uint8ClampedArray {
+  let out: any = base;
+  let didBiome = false;
+  const vk = scene.variantKey || "";
+  if (vk) {
+    for (const part of vk.split("&")) {
+      const eq = part.indexOf("=");
+      if (eq < 0) continue;
+      const l = part.slice(0, eq);
+      const r = part.slice(eq + 1);
+      if (l === "biome") {
+        out = recolorPixelSceneForBiome(scene.name, out, r);
+        didBiome = true;
+      } else if (l && r) {
+        out = recolorPixelScene(out, parseInt(l, 16), parseInt(r, 16));
+      }
+    }
+  }
+  if (!didBiome) out = recolorPixelSceneForBiome(scene.name, out, biome);
+  return out;
+}
+
+/**
  * Composite a single pixel scene's three layers into one ImageBitmap (and
  * return its PNG-encoded blob for caching). Centralized here so both the
  * render path and the background prefetch use the same logic.
@@ -2016,7 +2089,7 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
  */
 async function compositeSceneBitmap(
   key: string,
-  scene: { imgElement: any; width: number; height: number; name: string; key: string },
+  scene: { imgElement: any; width: number; height: number; name: string; key: string; variantKey?: string },
   idx: { visualByPath: Map<string, string>; visualByName: Map<string, string>; bgByPath: Map<string, string>; bgByName: Map<string, string> },
 ): Promise<{ bitmap: ImageBitmap; blob: Blob | null; width: number; height: number; kind: "composite" | "fallback" } | null> {
   const slashIdx = key.indexOf("/");
@@ -2046,14 +2119,16 @@ async function compositeSceneBitmap(
   }
 
   let midBitmap: ImageBitmap | null = null;
-  if (wantMid && scene.imgElement) {
-    midBitmap = await imgElementToBitmap(scene.imgElement, scene.width, scene.height);
-  } else if (wantMid) {
-    const rawImgEl = getPixelSceneImgElement(scene.key);
-    if (rawImgEl) {
-      let recolored = rawImgEl;
+  if (wantMid) {
+    const arr =
+      scene.imgElement instanceof Uint8Array || scene.imgElement instanceof Uint8ClampedArray
+        ? scene.imgElement
+        : null;
+    const baseImg = arr || getPixelSceneImgElement(scene.key);
+    if (baseImg) {
+      let recolored: any = baseImg;
       try {
-        recolored = recolorPixelSceneForBiome(scene.name, rawImgEl, biome);
+        recolored = recolorSceneVariant(baseImg, scene, biome);
         for (let i = 0; i < recolored.length; i += 4) {
           if (recolored[i] === 0xff && recolored[i + 1] === 0x00 && recolored[i + 2] === 0xff) {
             if (recolored[i + 3] === 0xff) {
@@ -2064,9 +2139,12 @@ async function compositeSceneBitmap(
           }
         }
       } catch (e) {
-        console.warn("[OSD Bridge] Failed to recolor pixel scene fallback:", scene.key, e);
+        recolored = baseImg;
+        console.warn("[OSD Bridge] Failed to recolor pixel scene:", scene.key, e);
       }
       midBitmap = await imgElementToBitmap(recolored, scene.width, scene.height);
+    } else if (scene.imgElement) {
+      midBitmap = await imgElementToBitmap(scene.imgElement, scene.width, scene.height);
     }
   }
 
@@ -2238,14 +2316,15 @@ async function buildSceneBitmaps(
 
   const uniqueKeys = new Map<string, PixelScene>();
   for (const scene of validScenes) {
-    if (!uniqueKeys.has(scene.key)) uniqueKeys.set(scene.key, scene);
+    const rk = sceneRenderKey(scene);
+    if (!uniqueKeys.has(rk)) uniqueKeys.set(rk, scene);
   }
 
   // Per-key bitmaps are seed-independent — cache them in IDB so future seeds
   // reuse the work. Bulk-fetch every cached bitmap in one IDB transaction
   // (~138 separate read transactions add 1-3s on Brave/FF).
   const BATCH = 50;
-  const keyArr = Array.from(uniqueKeys.entries());
+  const keyArr = Array.from(uniqueKeys.entries()); // [renderKey, scene]
   let compositeCount = 0;
   let cacheHitCount = 0;
   let fallbackCount = 0;
@@ -2257,13 +2336,13 @@ async function buildSceneBitmaps(
     if (generationId !== null && currentGenerationId !== generationId) return null;
     const batch = keyArr.slice(i, i + BATCH);
     await Promise.all(
-      batch.map(async ([key, scene]) => {
+      batch.map(async ([rk, scene]) => {
         // ── Cache fast path ────────────────────────────────────────────────
-        const cached = bulkSceneCache.get(key);
+        const cached = bulkSceneCache.get(rk);
         if (cached) {
           try {
             const bmp = await createImageBitmap(cached.blob);
-            bitmapByKey.set(key, bmp);
+            bitmapByKey.set(rk, bmp);
             cacheHitCount++;
             return;
           } catch {
@@ -2271,17 +2350,17 @@ async function buildSceneBitmaps(
           }
         }
 
-        const composited = await compositeSceneBitmap(key, scene, idx);
+        const composited = await compositeSceneBitmap(scene.key, scene, idx);
         if (!composited) {
           missingCount++;
           return;
         }
-        bitmapByKey.set(key, composited.bitmap);
+        bitmapByKey.set(rk, composited.bitmap);
         if (composited.kind === "fallback") fallbackCount++;
         else compositeCount++;
         if (composited.blob) {
-          cacheSceneBitmap(key, composited.blob, composited.width, composited.height).catch((e) =>
-            console.warn("[OSD Bridge] cacheSceneBitmap failed:", key, e),
+          cacheSceneBitmap(rk, composited.blob, composited.width, composited.height).catch((e) =>
+            console.warn("[OSD Bridge] cacheSceneBitmap failed:", rk, e),
           );
         }
       }),
@@ -2351,11 +2430,12 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     maxY = -Infinity;
 
   for (const scene of validScenes) {
-    if (!bitmapByKey.has(scene.key)) continue;
+    const rk = sceneRenderKey(scene);
+    if (!bitmapByKey.has(rk)) continue;
     // Raw engine coordinates align exactly to 1:1 mapped grid.
     const x = scene.x;
     const y = scene.y;
-    items.push({ osdX: x, osdY: y, w: scene.width, h: scene.height, sceneKey: scene.key });
+    items.push({ osdX: x, osdY: y, w: scene.width, h: scene.height, sceneKey: rk });
     if (x < minX) minX = x;
     if (y < minY) minY = y;
     if (x + scene.width > maxX) maxX = x + scene.width;
