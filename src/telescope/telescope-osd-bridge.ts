@@ -1575,6 +1575,14 @@ export const pixelSceneConfig = {
     "altar_top_blood",
     "altar_top_oil",
     "altar_top_radioactive",
+    // Holy-mountain altars are fully rendered into the prebaked background map;
+    // the pixel scene would repaint slab + art on top. Same names cover both the
+    // spawn-function ("temple/altar*") and biome-color ("temple_altar*/altar*")
+    // sources. No collision: coalmine/snowcave altars use distinct *_capsule names.
+    "altar",
+    "altar_left",
+    "altar_right",
+    "altar_right_snowcastle",
     "teleportroom",
     "mystery_teleport",
     "robot_egg",
@@ -1995,11 +2003,8 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
   const idx = await getScenePngIndex();
 
   const visualPath = resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, sceneKey);
-  // Skip backgrounds for biomes where the prebaked map already provides the bg.
-  // temple* covers the holy-mountain temple AND every temple_altar[_left/right...]
-  // variant — their dark _background.png otherwise composites over the correct
-  // prebaked map background and kills the altar's final texture.
-  const skipBg = biome.startsWith("temple") || biome === "general";
+  // Skip backgrounds for biomes where the prebaked map already provides the bg
+  const skipBg = biome === "temple" || biome === "general";
   const bgPath = skipBg ? undefined : resolveScenePath(idx.bgByPath, idx.bgByName, biome, name, sceneKey);
 
   if (!visualPath && !bgPath) {
@@ -2106,9 +2111,7 @@ async function compositeSceneBitmap(
   const biome = slashIdx >= 0 ? key.substring(0, slashIdx) : "";
   const name = slashIdx >= 0 ? key.substring(slashIdx + 1) : key;
 
-  // temple* covers the holy-mountain temple AND every temple_altar[_*] variant;
-  // their _background.png otherwise composites over the correct prebaked map bg.
-  const skipBg = biome.startsWith("temple") || biome === "general";
+  const skipBg = biome === "temple" || biome === "general";
 
   const override = pixelSceneConfig.layerOverrides[name] || pixelSceneConfig.layerOverrides[key];
   const wantBg = override?.background ?? pixelSceneConfig.layers.background;
