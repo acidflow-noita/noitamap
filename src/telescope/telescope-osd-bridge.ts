@@ -60,7 +60,9 @@ function getSpellName(id: string): string {
     _spellNameById = new Map();
     for (const s of spells) _spellNameById.set(s.id, s.name);
   }
-  return _spellNameById.get(id) ?? id;
+  // Spawners may emit lowercase ids ('rainbow_trail'); spells.json ids are
+  // UPPERCASE — try the id verbatim, then uppercased, before the raw fallback.
+  return _spellNameById.get(id) ?? _spellNameById.get(id.toUpperCase()) ?? id;
 }
 
 let CHUNK_SIZE: number;
@@ -2825,6 +2827,10 @@ let activeOrbTargets: OrbClickTarget[] = [];
  * Returns null if no sensible wiki page can be determined.
  */
 function getWikiUrl(poi: any): string | null {
+  // An explicit wiki URL on the POI wins (e.g. essences point at a specific
+  // section anchor that can't be derived from type/item).
+  if (poi.wiki) return poi.wiki;
+
   const type = poi.type || "";
   let name = poi.name || poi.item || type;
   let wikiName = name;
@@ -2840,9 +2846,10 @@ function getWikiUrl(poi: any): string | null {
     boss_sky: "Kivi",
     islandspirit: "Tapion_vasalli",
     boss_centipede: "Kolmisilm\u00e4",
-    boss_robot: "Kolmisilm\u00e4n_koipi",
+    boss_robot: "Kolmisilm\u00e4n_silm\u00e4",
     boss_meat: "Kolmisilm\u00e4n_syd\u00e4n",
     boss_pit: "Sauvojen_tuntija",
+    boss_fish: "Syväolento",
     tiny: "Limatoukka",
     friend: "Toveri",
   };
@@ -2850,8 +2857,13 @@ function getWikiUrl(poi: any): string | null {
 
   // Spell
   if (type === "spell" || (type === "item" && poi.item === "spell")) {
-    const spellId = poi.spell || poi.item || "";
-    return `https://noita.wiki.gg/wiki/${spellId}`;
+    const spellId = String(poi.spell || poi.item || "");
+    // Wiki pages use the spell's display name (e.g. "Rainbow Trail" →
+    // Rainbow_Trail), not the raw id (rainbow_trail). getSpellName normalizes
+    // case, so a lowercase id still resolves to the proper English name.
+    const spellName = getSpellName(spellId);
+    const page = (spellName || spellId).replace(/\s+/g, "_");
+    return `https://noita.wiki.gg/wiki/${page}`;
   }
 
   // Wand
@@ -2887,6 +2899,11 @@ function getWikiUrl(poi: any): string | null {
     else if (item === "emerald_tablet") wikiName = "Emerald_Tablet";
     else if (item.includes("egg")) wikiName = "Egg";
     else if (item === "meditation_cube") wikiName = "Meditation_Chamber";
+    else if (item === "great_chest") wikiName = "Great_Treasure_Chest";
+    else if (item === "perk") wikiName = poi.name ? String(poi.name).replace(/\s+/g, "_") : "Perks";
+    else if (item === "wandstone") wikiName = "Sauvan_Ydin";
+    else if (item === "sunseed") wikiName = "Sun_Seed";
+    else if (item === "book") wikiName = "A_Cunning_Contraption";
     else wikiName = item;
   }
 
@@ -2897,7 +2914,9 @@ function getWikiUrl(poi: any): string | null {
     // (traps, nests, boss orbs, crystals) have entity names that don't
     // correspond to a real wiki page (e.g. "arrowtrap_left" → /wiki/Traps).
     const creature = CREATURE_DATA[rawEntity.toLowerCase()];
-    wikiName = creature?.wikipage || rawEntity;
+    // Kolmisilmä's reward orb (boss_centipede_sampo) is the Sampo on the wiki.
+    if (rawEntity.toLowerCase() === "boss_centipede_sampo") wikiName = "Sampo";
+    else wikiName = creature?.wikipage || rawEntity;
   }
 
   return `https://noita.wiki.gg/wiki/${wikiName.replace(/\s+/g, "_")}`;
@@ -3478,14 +3497,41 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // Show HP info for heart items, spell names for spells
     if (poi.item === "spell" && (poi as any).spell) {
       title.textContent = gameTranslator.translateSpell(getSpellName(String((poi as any).spell)));
+    } else if (poi.item === "essence" && poi.material) {
+      const k = `item_essence_${poi.material}`;
+      const t = gameTranslator.translateItem(k);
+      title.textContent = t !== k ? t : (poi.name || "Essence");
+    } else if (poi.item === "perk" && (poi as any).perk) {
+      const k = `perk_${String((poi as any).perk).toLowerCase()}`;
+      const t = gameTranslator.translateItem(k);
+      title.textContent = t !== k ? t : (poi.name || "Perk");
     } else if (poi.item === "heart") title.textContent = i18next.t("poi.heartSmall", "Heart (+25 HP)");
     else if (poi.item === "heart_bigger") title.textContent = i18next.t("poi.heartBig", "Heart (+50 HP)");
     else if (poi.item === "full_heal") title.textContent = i18next.t("poi.fullHeal", "Full Heal");
-    else title.textContent = gameTranslator.translateItem(label).replace(/_/g, " ");
+    else if ((poi as any).nameKey) {
+      // Drops carrying an explicit translation key (e.g. item_wandstone,
+      // booktitle_mestari) resolve their real in-game name from common.csv.
+      const k = String((poi as any).nameKey);
+      const t = gameTranslator.translateItem(k);
+      title.textContent = t !== k ? t : (poi.name || label);
+    } else title.textContent = poi.name || gameTranslator.translateItem(label).replace(/_/g, " ");
     header.appendChild(wrapWithWikiLink(title, poi));
     tooltipEl.appendChild(header);
 
-    if (poi.material) {
+    // Subtitle / description for items that have an itemdesc_<item> entry
+    // (e.g. wandstone). Mirrors the in-game pickup description.
+    {
+      const descKey = `itemdesc_${poi.item}`;
+      const desc = gameTranslator.translateItem(descKey);
+      if (desc && desc !== descKey) {
+        const sub = document.createElement("div");
+        sub.style.cssText = "color:#9a9;font-size:0.82em;font-style:italic;margin-bottom:0.2em";
+        sub.textContent = desc;
+        tooltipEl.appendChild(sub);
+      }
+    }
+
+    if (poi.material && poi.item !== "essence") {
       const mat = document.createElement("div");
       mat.style.cssText = "color:#aaa;font-size:0.85em";
       const materialLabel = gameTranslator.translateItem("inventory_actiontype_material");
@@ -3527,7 +3573,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     if (poi.item) {
       tooltipEl.appendChild(buildExtendedSection("spell", String(poi.item)));
     }
-  } else if ((poi.type === "entity" && (poi as any).entity) || ["alchemist_boss", "boss_wizard", "boss_meat", "islandspirit", "boss_sky", "boss_robot", "boss_centipede", "triangle_boss", "pyramid_boss", "dragon", "boss_ghost", "friend", "boss_pit", "tiny"].includes(poi.type || "")) {
+  } else if ((poi.type === "entity" && (poi as any).entity) || ["alchemist_boss", "boss_wizard", "boss_meat", "islandspirit", "boss_sky", "boss_robot", "boss_centipede", "triangle_boss", "pyramid_boss", "dragon", "boss_ghost", "friend", "boss_pit", "boss_fish", "tiny"].includes(poi.type || "")) {
     const isSpecialEntity = poi.type !== "entity";
     const header = document.createElement("div");
     header.style.cssText = "display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em";
@@ -3548,6 +3594,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       dragon: "boss_dragon",
       triangle_boss: "boss_gate",
       boss_pit: "boss_pit",
+      boss_fish: "fish_giga",
       tiny: "maggot_tiny",
     };
     if (bossMap[entityId]) entityId = bossMap[entityId];
@@ -3564,6 +3611,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const baseName =
       (translated !== translationKey ? translated : null) ||
       creature?.name ||
+      (isSpecialEntity ? null : (poi as any).name) ||
       rawName.replace(/_/g, " ");
     title.textContent = baseName;
     titleCol.appendChild(wrapWithWikiLink(title, poi));
@@ -3625,12 +3673,12 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   }
 
   // Container contents — show items inside chests/shops/bosses
-  if (CONTAINER_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {
+  if (CONTAINER_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items) && poi.items.some((i: any) => !i.ignore)) {
     const contDiv = document.createElement("div");
     contDiv.style.cssText = "margin-top:0.5em;border-top:0.065em solid #333;padding-top:0.3em";
     const contLabel = document.createElement("div");
     contLabel.style.cssText = "font-size:1em;color:#888;margin-bottom:0.2em";
-    const isBossDrop = ["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon", "boss_wizard", "boss_ghost", "boss_sky", "islandspirit", "boss_centipede", "boss_robot", "boss_meat", "friend", "boss_pit", "tiny"].includes(poi.type || "");
+    const isBossDrop = ["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon", "boss_wizard", "boss_ghost", "boss_sky", "islandspirit", "boss_centipede", "boss_robot", "boss_meat", "friend", "boss_pit", "boss_fish", "tiny"].includes(poi.type || "");
     contLabel.textContent = isBossDrop ? "Drops:" : "Contains:";
     contDiv.appendChild(contLabel);
     const contRow = document.createElement("div");
@@ -3652,8 +3700,19 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       const ciKey = getSpriteKey(ci, getAtlas() || undefined);
       const ciName = ci.name || ci.item || ci.type || "";
       const translatedName =
-        ci.item === "spell" && ci.spell
+        ci.nameKey
+          ? (() => {
+              const t = gameTranslator.translateItem(String(ci.nameKey));
+              return t !== ci.nameKey ? t : (ci.name || ciName);
+            })()
+          : ci.item === "spell" && ci.spell
           ? gameTranslator.translateSpell(getSpellName(String(ci.spell)))
+          : ci.item === "perk" && ci.perk
+          ? (() => {
+              const k = `perk_${String(ci.perk).toLowerCase()}`;
+              const t = gameTranslator.translateItem(k);
+              return t !== k ? t : (ci.name || ciName);
+            })()
           : gameTranslator.translateItem(ciName);
 
       // Wands: show sprite (rotated) + spell icons (padded to wand capacity).
@@ -3752,7 +3811,14 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
       // Default: sprite + text label (with material for flasks/potions)
       let displayName = translatedName;
-      if (ci.material) {
+      // Essences carry `material` only to resolve their sprite/translation —
+      // their name is already complete ("Essence of Earth"), so skip the
+      // ": <material>" suffix that flasks/pouches use.
+      if (ci.material && ci.item === "essence") {
+        const key = `item_essence_${ci.material}`;
+        const t = gameTranslator.translateItem(key);
+        displayName = t !== key ? t : (ci.name || translatedName);
+      } else if (ci.material) {
         const matName = gameTranslator.translateMaterial(ci.material);
         displayName = `${translatedName}: ${matName}`;
       }

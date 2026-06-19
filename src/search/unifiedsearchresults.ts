@@ -448,8 +448,16 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     const matName = gameTranslator.translateMaterial(r.material);
                     label = `${matName} ${itemName === "pouch" ? "pouch" : "potion"}`;
                   } else if (itemName === "spell" && r.spell) {
-                    const spell = spells.find((s: any) => s.id === r.spell);
+                    const spell = spells.find((s: any) => s.id === r.spell || s.id === String(r.spell).toUpperCase());
                     label = gameTranslator.translateSpell(spell ? spell.name : r.spell);
+                  } else if (itemName === "essence" && r.material) {
+                    const key = `item_essence_${r.material}`;
+                    const translated = gameTranslator.translateItem(key);
+                    label = translated !== key ? translated : (r.name || "Essence");
+                  } else if (itemName === "perk" && r.perk) {
+                    const key = `perk_${String(r.perk).toLowerCase()}`;
+                    const translated = gameTranslator.translateItem(key);
+                    label = translated !== key ? translated : (r.name || "Perk");
                   } else if (itemName === "gold" && r.amount) {
                     label = `Gold $${r.amount}`;
                   } else if (itemName === "heart") {
@@ -458,20 +466,51 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     label = "Heart (+50 HP)";
                   } else if (itemName === "full_heal") {
                     label = "Full Heal";
+                  } else if (r.nameKey) {
+                    const t = gameTranslator.translateItem(String(r.nameKey));
+                    label = t !== r.nameKey ? t : (r.name || itemName.replace(/_/g, " "));
                   } else {
                     label = itemName.replace(/_/g, " ");
                   }
                 } else if (r.type === "entity" && r.entity) {
                   const translationKey = `animal_${String(r.entity).toLowerCase()}`;
                   const translated = gameTranslator.translateItem(translationKey);
-                  label = translated !== translationKey ? translated : String(r.entity).replace(/_/g, " ");
+                  // Prefer the creature translation; else the POI's explicit
+                  // name (e.g. boss reward "Sampo"); else humanized entity id.
+                  label =
+                    translated !== translationKey
+                      ? translated
+                      : (r.name || String(r.entity).replace(/_/g, " "));
                 } else if (r.type === "enemy") {
                   label = r.enemy || r.type;
                 } else {
-                  // Containers and other types: capitalize and humanize
-                  label = (r.type || displayName)
-                    .replace(/_/g, " ")
-                    .replace(/\b\w/g, (c: string) => c.toUpperCase());
+                  // Containers and bosses: translate via the creature key in
+                  // common.csv (animal_<id>), mirroring the boss card. Most boss
+                  // types map 1:1 (animal_boss_meat, etc.); a few need remapping
+                  // to their actual creature id. Falls back to the POI name, then
+                  // a humanized type.
+                  const BOSS_ANIMAL_ID: Record<string, string> = {
+                    alchemist_boss: "boss_alchemist",
+                    pyramid_boss: "boss_limbs",
+                    dragon: "boss_dragon",
+                    triangle_boss: "boss_gate",
+                    boss_pit: "boss_pit",
+                    boss_fish: "fish_giga",
+                    tiny: "maggot_tiny",
+                  };
+                  const animalId = BOSS_ANIMAL_ID[r.type] || r.type;
+                  const animalKey = `animal_${animalId}`;
+                  const animalName = gameTranslator.translateItem(animalKey);
+                  if (animalName !== animalKey) {
+                    label = animalName;
+                  } else if (r.name && r.name !== r.type) {
+                    const translated = gameTranslator.translateItem(r.name);
+                    label = translated !== r.name ? translated : r.name;
+                  } else {
+                    label = (r.type || displayName)
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (c: string) => c.toUpperCase());
+                  }
                 }
                 nameDiv.textContent = label;
 

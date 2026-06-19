@@ -39,6 +39,7 @@ const CONTAINER_TYPES = new Set([
   "boss_centipede",
   "boss_robot",
   "boss_meat",
+  "boss_fish",
   "friend",
   "starting_loadout",
 ]);
@@ -541,6 +542,7 @@ const BOSS_TYPES = new Set([
   "boss_robot",
   "boss_meat",
   "boss_pit",
+  "boss_fish",
   "tiny",
 ]);
 
@@ -1097,6 +1099,8 @@ export class UnifiedSearch extends EventEmitter2 {
         entityNameForSearch = "boss_meat";
       } else if (p.type === "boss_pit") {
         entityNameForSearch = "boss_pit";
+      } else if (p.type === "boss_fish") {
+        entityNameForSearch = "fish_giga";
       } else if (p.type === "tiny") {
         entityNameForSearch = "maggot_tiny";
       } else if (p.type === "islandspirit") {
@@ -1144,6 +1148,21 @@ export class UnifiedSearch extends EventEmitter2 {
         parts.push(gameTranslator.translateMaterial(p.material));
       }
 
+      // Essences: index the translated name (item_essence_<material>) so they
+      // are searchable in every language, not just by the English name.
+      if (p.item === "essence" && p.material) {
+        const key = `item_essence_${p.material}`;
+        const t = gameTranslator.translateItem(key);
+        if (t && t !== key) parts.push(t);
+      }
+
+      // Perks: index the translated perk name (perk_<id>).
+      if (p.item === "perk" && (p as any).perk) {
+        const key = `perk_${String((p as any).perk).toLowerCase()}`;
+        const t = gameTranslator.translateItem(key);
+        if (t && t !== key) parts.push(t);
+      }
+
       // Loose spell POI on the ground: { type: "spell", item: "LIGHT_BULLET" }.
       // Index the spell's English + translated name so users can search by
       // human label ("spark bolt") instead of just the raw id.
@@ -1171,12 +1190,36 @@ export class UnifiedSearch extends EventEmitter2 {
           if (ci.ignore) continue;
           if (ci.item) parts.push(ci.item);
           if (ci.name) parts.push(ci.name);
+          if (ci.nameKey) {
+            const t = gameTranslator.translateItem(String(ci.nameKey));
+            if (t && t !== ci.nameKey) parts.push(t);
+          }
           if (ci.material) {
             parts.push(ci.material);
             parts.push(gameTranslator.translateMaterial(ci.material));
           }
           if (ci.enemy) parts.push(ci.enemy);
-          if (ci.spell) parts.push(ci.spell);
+          if (ci.spell) {
+            parts.push(ci.spell);
+            // Index the spell's English + translated name so a drop like
+            // {spell:"MASS_POLYMORPH"} is findable by "Muodonmuutos".
+            const sp = spellById.get(ci.spell) || spellById.get(String(ci.spell).toUpperCase());
+            if (sp) {
+              parts.push(sp.name);
+              parts.push(gameTranslator.translateSpell(sp.name));
+            }
+          }
+          // Essence / perk drops: index their translated names.
+          if (ci.item === "essence" && ci.material) {
+            const k = `item_essence_${ci.material}`;
+            const t = gameTranslator.translateItem(k);
+            if (t && t !== k) parts.push(t);
+          }
+          if (ci.item === "perk" && ci.perk) {
+            const k = `perk_${String(ci.perk).toLowerCase()}`;
+            const t = gameTranslator.translateItem(k);
+            if (t && t !== k) parts.push(t);
+          }
           if (ci.item === "potion" || ci.item === "potion_normal") {
             parts.push("flask");
           }
@@ -1291,6 +1334,8 @@ export class UnifiedSearch extends EventEmitter2 {
             items: p.items,
             amount: p.amount,
             spell: p.spell,
+            nameKey: (p as any).nameKey,
+            perk: (p as any).perk,
           };
         });
 
@@ -1382,6 +1427,8 @@ export class UnifiedSearch extends EventEmitter2 {
           items: p.items,
           amount: p.amount,
           spell: p.spell,
+          nameKey: (p as any).nameKey,
+          perk: (p as any).perk,
         } as any;
       });
 

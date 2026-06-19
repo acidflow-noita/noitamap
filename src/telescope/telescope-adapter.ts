@@ -681,7 +681,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
           x: pos.x + 256,
           y: pos.y + 256,
           biome: `friend_${friendRoom}`,
-          items: [{item: "Full Health Regeneration"}],
+          items: [{ type: "item", item: "full_heal", name: "Full Health Regeneration" }],
         } as any);
       }
 
@@ -701,7 +701,15 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         x: 12573,
         y: 15178,
         biome: "mestari_secret",
-        items: [{item: "Sauvan Ydin (Wand Core)"}, {item: "Book: A Cunning Contraption"}, {item: "Spell: Wand Refresh"}, {item: "Spell: Add Trigger"}, {item: "Spell: Add Timer"}, {item: "Spell: Add Expiration Trigger"}, {item: "Spell: Spell Duplication"}],
+        items: [
+          { type: "item", item: "wandstone", nameKey: "item_wandstone", name: "Sauvan Ydin" },
+          { type: "item", item: "book", nameKey: "booktitle_mestari", name: "A Cunning Contraption" },
+          { type: "item", item: "spell", spell: "RESET" },
+          { type: "item", item: "spell", spell: "ADD_TRIGGER" },
+          { type: "item", item: "spell", spell: "ADD_TIMER" },
+          { type: "item", item: "spell", spell: "ADD_DEATH_TRIGGER" },
+          { type: "item", item: "spell", spell: "DUPLICATE" },
+        ],
       } as any);
 
       // Add forgotten (boss_ghost) manually due to lack of telescope coverage
@@ -711,7 +719,10 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         x: (9 - 32) * 512 + 256,
         y: (39 - 14) * 512 + 256,
         biome: "boss_arena",
-        items: [{item: "Sun Seed"}, {item: "Full Health Regeneration"}],
+        items: [
+          { type: "item", item: "sunseed", name: "Sun Seed" },
+          { type: "item", item: "full_heal", name: "Full Health Regeneration" },
+        ],
       } as any);
 
       // Add Kivi (Rock Boss)
@@ -721,7 +732,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         x: 7300,
         y: -4574,
         biome: "boss_sky",
-        items: [{item: "Kummitus"}],
+        items: [{ type: "entity", entity: "playerghost", name: "Kummitus" }],
       } as any);
 
       // Add Tapion Vasalli (Deer Boss)
@@ -732,7 +743,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         y: 57,
         biome: "lake_island",
         icon: "assets/icons/bosses/deer.png",
-        items: [{item: "Spell: Muodonmuutos"}],
+        items: [{ type: "item", item: "spell", spell: "MASS_POLYMORPH" }],
       } as any);
 
       // Add Kolmisilmä (Kolmi)
@@ -742,7 +753,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         x: 3556,
         y: 13026,
         biome: "boss_arena",
-        items: [{item: "boss_centipede_sampo"}],
+        items: [{ type: "entity", entity: "boss_centipede_sampo", name: "Sampo", x: 3555, y: 13050 }],
       } as any);
 
       // Add Mecha Kolmi
@@ -752,7 +763,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         x: 13987,
         y: 11123,
         biome: "boss_arena",
-        items: [{item: "Spell: Spatial Awareness"}],
+        items: [{ type: "item", item: "perk", perk: "map", name: "Spatial Awareness" }],
       } as any);
 
       // Add Meat Boss (Kolmisilmän sydän)
@@ -762,7 +773,23 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         x: 6915,
         y: 8448,
         biome: "boss_arena",
-        items: [{item: "Experimental Wand (Saha)"}],
+        items: [{ type: "wand", sprite: "custom/chainsaw", name: "Saha" }],
+      } as any);
+
+      // Add Syväolento (Leviathan / Levi boss). No body sprite exists in the
+      // atlas (only eye/orb parts), so the eye (last open frame) IS the boss
+      // marker. Placed at the eye's in-world position; clicking it opens the
+      // Syväolento card.
+      combinedPois.push({
+        type: "boss_fish",
+        name: "Syväolento",
+        x: -13967,
+        y: 10029,
+        biome: "lake",
+        items: [
+          { type: "item", item: "full_heal", name: "Full Health Regeneration" },
+          { type: "item", item: "great_chest", nameKey: "item_chest_treasure_super", name: "Great Treasure Chest" },
+        ],
       } as any);
 
       // Add Squidward / Pit Boss (Sauvojen tuntija). Telescope computes the two
@@ -959,6 +986,42 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
 
   // Step 5: Eye messages (main world only)
   const eyes = findEyeMessages(biomeData.pixels, seed, ngPlus);
+
+  // Essence rooms (Essence of Earth/Air/Water/Spirits). These are fixed
+  // biome-map rooms (hasStuff:false) so telescope never emits a POI for them.
+  // Scan biomeData.pixels for the four essence biome colors and place one POI
+  // at the chunk center of each. (Fire essence only exists at NG+ essence
+  // altars, not as a biome room, so it is not emitted here.) Main world only.
+  {
+    const essMw = getWorldSize(isNGP, gameMode);
+    const ESSENCE_COLORS: Record<number, { material: string; name: string; wiki: string }> = {
+      0xff157cb0: { material: "laser", name: "Essence of Earth", wiki: "https://noita.wiki.gg/wiki/Essences#Essence_of_Earth" },
+      0xff157cb8: { material: "air", name: "Essence of Air", wiki: "https://noita.wiki.gg/wiki/Essences#Essence_of_Air" },
+      0xff157cb5: { material: "water", name: "Essence of Water", wiki: "https://noita.wiki.gg/wiki/Essences#Essence_of_Water" },
+      0xff157cb6: { material: "alcohol", name: "Essence of Spirits", wiki: "https://noita.wiki.gg/wiki/Essences#Essence_of_Spirits" },
+    };
+    const mainKey = "0,0";
+    if (poisByPW[mainKey]) {
+      const seen = new Set<number>();
+      for (let by = 0; by < 48; by++) {
+        for (let bx = 0; bx < essMw; bx++) {
+          const color = biomeData.pixels[by * essMw + bx] >>> 0;
+          const info = ESSENCE_COLORS[color];
+          if (!info || seen.has(color)) continue;
+          seen.add(color);
+          poisByPW[mainKey].push({
+            type: "item",
+            item: "essence",
+            material: info.material,
+            name: info.name,
+            wiki: info.wiki,
+            x: bx * 512 + 256 - essMw * 256,
+            y: by * 512 + 256 - 14 * 512,
+          } as any);
+        }
+      }
+    }
+  }
 
   const t1 = performance.now();
   console.log(`[Telescope] Generation complete in ${((t1 - t0) / 1000).toFixed(2)}s`);

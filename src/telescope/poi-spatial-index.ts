@@ -111,6 +111,7 @@ const CONTAINER_TYPES = new Set([
   "boss_robot",
   "boss_meat",
   "boss_pit",
+  "boss_fish",
   "tiny",
   "starting_loadout",
 ]);
@@ -129,7 +130,13 @@ function resolveSpellKey(spellId: string): string {
       _spellIdToSpriteKey.set(s.id, `spell:${s.sprite.replace(/\.png$/, "")}`);
     }
   }
-  return _spellIdToSpriteKey.get(spellId) ?? `spell:${spellId.toLowerCase()}`;
+  // Some spawners emit lowercase ids (e.g. static_spawns' 'rainbow_trail');
+  // spells.json ids are UPPERCASE, so normalize before the exact-match lookup.
+  return (
+    _spellIdToSpriteKey.get(spellId) ??
+    _spellIdToSpriteKey.get(spellId.toUpperCase()) ??
+    `spell:${spellId.toLowerCase()}`
+  );
 }
 
 // Telescope wand `sprite` values that don't line up with any committed atlas
@@ -216,14 +223,30 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     if (item === "heart_mimic") return "item:heart_extrahp";
     if (item === "full_heal") return "item:heart";
     if (item === "chest") return "item:chest";
+    if (item === "great_chest") return "item:chest_random_super";
     if (item === "chest_present") return "item:chest_present";
     if (item === "spell_refresh") return "item:spell_refresh";
     if (item === "broken_wand") return "item:broken_wand";
     if (item === "jar") return "item:jar";
-    if (item === "bomb") return "item:bomb";
+    // The raw items_gfx bomb icon (item:bomb) is an 8x8 sprite that reads as a
+    // gold blob on the map. Use the recognizable Bomb spell action icon instead.
+    if (item === "bomb") return "spell:bomb";
     if (item === "bomb_holy") return "item:bomb_holy";
     if (item === "bomb_holy_giga") return "item:bomb_holy_giga";
     if (item === "torch") return "item:torch";
+    // Wand Core (Sauvan Ydin): the items_gfx sprite is a tiny 8x8 stone; the
+    // ui_gfx icon is the recognizable inventory version.
+    if (item === "wandstone") return "ui_item:wandstone";
+    // Essences (Essence of Earth/Air/Water/Spirits/Fire). The id carried in
+    // `material` maps to atlas essence:<material>. Earth uses the 'laser' key.
+    if (item === "essence") {
+      const mat = (poi as any).material;
+      if (mat) {
+        const key = `essence:${mat}`;
+        if (!atlas || atlas[key]) return key;
+      }
+      return "essence:laser";
+    }
     if (item === "orb") {
       if ((poi as any).collected) return "item:orbs/orb"; // empty orb — spell already collected
       // Orb with spell still inside — show specific orb image
@@ -234,7 +257,16 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
       }
       return "item:orb"; // fallback
     }
-    if (item === "perk") return "item:perk";
+    if (item === "perk") {
+      // Specific perk by id (e.g. {item:'perk', perk:'map'} → perk:map,
+      // "Spatial Awareness"). Falls back to the generic perk icon.
+      const perkId = (poi as any).perk;
+      if (perkId) {
+        const key = `perk:${String(perkId).toLowerCase()}`;
+        if (!atlas || atlas[key]) return key;
+      }
+      return "item:perk";
+    }
     if (item === "emerald_tablet") return "item:emerald_tablet";
     if (item === "egg" || item.startsWith("egg_")) return `item:${item}`;
     return `item:${item}`;
@@ -270,6 +302,9 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     boss_robot: "enemy:boss_robot_body",
     boss_meat: "enemy:boss_meat_body",
     boss_pit: "enemy:boss_pit",
+    // Syväolento (Leviathan): no body sprite in the atlas. Its eye (last open
+    // frame, baked as enemy:boss_fish_eye_open) IS the boss marker.
+    boss_fish: "enemy:boss_fish_eye_open",
     tiny: "enemy:maggot_tiny",
   };
   if (BOSS_SPRITE_KEYS[poi.type]) {
@@ -403,6 +438,7 @@ const BOSS_DROP_TYPES = new Set([
   "boss_robot",
   "boss_meat",
   "boss_pit",
+  "boss_fish",
   "tiny",
 ]);
 
@@ -466,12 +502,18 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
           const innerItem = innerItems[ci];
           if (shouldSkipDueToContainer(innerItem, innerItems)) continue;
           if (isBoss) {
-            // Boss drops: spread horizontally + push down below the boss sprite
+            // Boss drops: spread horizontally + push down below the boss sprite.
+            // Drops may omit their own x/y (most hardcoded boss drops do), so
+            // anchor to the boss POI's position. Without this the offset math
+            // yields NaN coords, which makes the marker's bbox match EVERY
+            // click query (drop card opens on empty map clicks).
+            const baseX = Number.isFinite(innerItem.x) ? innerItem.x : poi.x;
+            const baseY = Number.isFinite(innerItem.y) ? innerItem.y : poi.y;
             const pushDown = poi.type === "triangle_boss" ? 70 : 50;
             const offsetPoi =
               count > 1
-                ? { ...innerItem, x: innerItem.x + (ci - (count - 1) / 2) * 20, y: innerItem.y + pushDown }
-                : { ...innerItem, y: innerItem.y + pushDown };
+                ? { ...innerItem, x: baseX + (ci - (count - 1) / 2) * 20, y: baseY + pushDown }
+                : { ...innerItem, x: baseX, y: baseY + pushDown };
             addMarkerItem(items, offsetPoi, pw, worldCenter, atlas);
           } else if (poi.type === "starting_loadout") {
             // Mina's loadout: spread horizontally, lifted above the player

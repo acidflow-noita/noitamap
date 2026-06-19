@@ -585,6 +585,24 @@ async function main() {
     }
   }
 
+  // ─── enemy:boss_fish_eye_open — last "open" frame of Syväolento's eye ───────
+  // The eye spritesheet (data/entities/animals/boss_fish/eye.png) has an "open"
+  // animation at pos_y=72, 5 frames of 50x72 laid out left-to-right. We want
+  // the fully-open eye (last frame) as a standalone map marker. Crop it here.
+  try {
+    const eyeBuf = await zip.file("data/entities/animals/boss_fish/eye.png").async("arraybuffer");
+    const eye = decodePng(eyeBuf);
+    const FW = 50, FH = 72, ROW_Y = 72, LAST_X = 4 * FW; // 5th frame (0-indexed 4)
+    const frame = cropToFrame(eye.data, eye.width, eye.height, FW, FH, LAST_X, ROW_Y);
+    sprites.push({ key: "enemy:boss_fish_eye_open", data: frame.data, width: frame.width, height: frame.height });
+    seenKeys.add("enemy:boss_fish_eye_open");
+    console.log("[build-spritesheet] Added enemy:boss_fish_eye_open (last open frame of boss_fish/eye.png)");
+  } catch (e) {
+    console.warn("[build-spritesheet] WARNING: could not bake enemy:boss_fish_eye_open:", e.message);
+  }
+
+  // ─── animal_icon:fish_giga — Syväolento's UI/search icon ───────────────────
+
   // ─── Custom Material Icons from src/material-icons ─────────────────────────
   const MATERIAL_ICONS_DIR = path.resolve(__dirname, "..", "src", "material-icons");
   if (fs.existsSync(MATERIAL_ICONS_DIR)) {

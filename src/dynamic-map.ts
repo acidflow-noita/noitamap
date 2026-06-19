@@ -581,6 +581,9 @@ export function clearDynamicMap(viewer: any): void {
 export function buildPOIName(p: any): string {
   if (p.type === "wand" && p.name) return p.name;
   if (p.item) return p.item;
+  // An entity may carry an explicit display name (e.g. a boss reward "Sampo");
+  // prefer it over the raw entity id (boss_centipede_sampo).
+  if (p.type === "entity" && p.name) return p.name;
   if (p.type === "entity" && p.entity) return p.entity;
   if (p.name) return p.name;
   if (p.type) return p.type;
