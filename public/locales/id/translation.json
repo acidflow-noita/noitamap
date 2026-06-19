@@ -4814,7 +4814,7 @@
   "spoilerFree": {
     "title": "Bebas spoiler",
     "content": "Sembunyikan identitas tongkat, mantra, dan item di peta dan di hasil pencarian. Tongkat muncul sebagai tongkat awal, mantra dan item muncul sebagai tidak teridentifikasi.",
-    "unavailableDaily": "Mode bebas spoiler tidak tersedia untuk seed harian"
+    "unavailableDaily": "\"{{feature}}\" tidak tersedia untuk seed harian"
   },
   "privacyBrowser": {
     "title": "Browser privasi terdeteksi",

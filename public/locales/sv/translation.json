@@ -4814,7 +4814,7 @@
   "spoilerFree": {
     "title": "Spoilerfritt",
     "content": "Dolj identiteten for trollstavar, trollformler och foremal pa kartan och i sokresultaten. Trollstavar visas som startstavaren, trollformler och foremal visas som oidentifierade.",
-    "unavailableDaily": "Spoilerfritt lage ar inte tillgangligt for dagliga seeds"
+    "unavailableDaily": "\"{{feature}}\" ar inte tillgangligt for dagliga seeds"
   },
   "privacyBrowser": {
     "title": "Integritetswebblasare upptackt",

@@ -4814,7 +4814,7 @@
   "spoilerFree": {
     "title": "Juonipaljastukseton",
     "content": "Piilota sauvojen, loitsujen ja esineiden henkilollisyydet kartalla ja hakutuloksissa. Sauvat nayttavat aloitussauvalta, loitsut ja esineet nayttavat tunnistamattomilta.",
-    "unavailableDaily": "Juonipaljastukseton tila ei ole kaytettavissa paivittaisille siemenille"
+    "unavailableDaily": "\"{{feature}}\" ei ole kaytettavissa paivittaisille siemenille"
   },
   "privacyBrowser": {
     "title": "Yksityisyysselain havaittu",

@@ -4814,7 +4814,7 @@
   "spoilerFree": {
     "title": "Spoilervrij",
     "content": "Verberg de identiteit van toverstaven, spreuken en voorwerpen op de kaart en in zoekresultaten. Toverstaven worden weergegeven als de starttoverstaf, spreuken en voorwerpen als niet-geidentificeerd.",
-    "unavailableDaily": "Spoilervrije modus is niet beschikbaar voor dagelijkse seeds"
+    "unavailableDaily": "\"{{feature}}\" is niet beschikbaar voor dagelijkse seeds"
   },
   "privacyBrowser": {
     "title": "Privacybrowser gedetecteerd",

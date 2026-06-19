@@ -333,6 +333,7 @@
                 data-i18n-title="spoilerFree.title"
                 data-bs-title="Spoiler-free"
                 data-i18n-content="spoilerFree.content"
+                data-i18n-content-feature="spoilerFree.title"
                 data-bs-content="Hide wand, spell, item identities on the map. Wands show up as the starter wand, spells and items show up as unidentified."
                 ><i class="bi bi-eye-slash"></i>
               </label>
@@ -383,12 +384,14 @@
                     </div>
                   </li>
                   <li
+                    id="skipCreaturesPopover"
                     data-bs-toggle="popover"
                     data-bs-placement="bottom"
                     data-bs-trigger="hover"
                     data-i18n-title="skipCreatures.title"
                     data-bs-title="Don't add creatures"
                     data-i18n-content="skipCreatures.content"
+                    data-i18n-content-feature="skipCreatures.title"
                     data-bs-content="Skip enemies/creatures everywhere — they're not added to the map and not surfaced in search. Massively reduces marker count (~32k of the daily seed's POIs are creatures). On by default on small screens."
                   >
                     <div class="dropdown-item form-check form-switch d-flex align-items-center gap-2 mb-0">
@@ -408,12 +411,14 @@
                     </div>
                   </li>
                   <li
+                    id="simplisticBackgroundPopover"
                     data-bs-toggle="popover"
                     data-bs-placement="bottom"
                     data-bs-trigger="hover"
                     data-i18n-title="simplisticBackground.title"
                     data-bs-title="Use simplistic map background"
                     data-i18n-content="simplisticBackground.content"
+                    data-i18n-content-feature="simplisticBackground.title"
                     data-bs-content="Replace the streamed map background tiles with a tiny flat image per parallel world. Big bandwidth/memory saver on slow connections and low-RAM devices; the background looks blocky."
                   >
                     <div class="dropdown-item form-check form-switch d-flex align-items-center gap-2 mb-0">

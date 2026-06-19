@@ -1269,19 +1269,48 @@ document.addEventListener("DOMContentLoaded", async () => {
   // the popover. Event fired by dynamic-map.ts whenever the baked state of
   // the current view changes.
   window.addEventListener("bakedSeedChange", ((e: CustomEvent) => {
-    const label = document.querySelector<HTMLElement>('label[for="spoilerFreeToggle"]');
-    if (!spoilerFreeToggle || !label) return;
     const baked = !!e.detail?.baked;
-    spoilerFreeToggle.disabled = baked;
-    // Bootstrap's .btn-check:disabled + .btn sets pointer-events: none, which
-    // would also kill the hover popover that explains the disabling. Restore.
-    label.style.pointerEvents = baked ? "auto" : "";
-    const contentKey = baked ? "spoilerFree.unavailableDaily" : "spoilerFree.content";
-    label.setAttribute("data-i18n-content", contentKey);
-    label.setAttribute("data-bs-content", i18next.t(contentKey));
-    const existing = bootstrap.Popover.getInstance(label);
-    if (existing) existing.dispose();
-    new bootstrap.Popover(label);
+
+    const label = document.querySelector<HTMLElement>('label[for="spoilerFreeToggle"]');
+    if (spoilerFreeToggle && label) {
+      spoilerFreeToggle.disabled = baked;
+      // Bootstrap's .btn-check:disabled + .btn sets pointer-events: none, which
+      // would also kill the hover popover that explains the disabling. Restore.
+      label.style.pointerEvents = baked ? "auto" : "";
+      const contentKey = baked ? "spoilerFree.unavailableDaily" : "spoilerFree.content";
+      // unavailableDaily interpolates {{feature}} (the toggle's own name).
+      const opts = baked ? { feature: i18next.t("spoilerFree.title") } : undefined;
+      label.setAttribute("data-i18n-content", contentKey);
+      label.setAttribute("data-bs-content", i18next.t(contentKey, opts as any) as string);
+      const existing = bootstrap.Popover.getInstance(label);
+      if (existing) existing.dispose();
+      new bootstrap.Popover(label);
+    }
+
+    // Daily baked maps already have all POIs baked in and render fast, so the
+    // "Don't add creatures" / "Use simplistic map background" perf toggles serve
+    // no purpose — disable them and explain why via their popovers. Each popover
+    // host carries data-i18n-content-feature (its own title key) so the
+    // "<feature> is unavailable for daily seeds" string interpolates and
+    // survives language switches (see i18n-dom.ts).
+    const perfToggles: [string, string, string][] = [
+      ["skipCreaturesToggle", "skipCreaturesPopover", "skipCreatures.content"],
+      ["simplisticBackgroundToggle", "simplisticBackgroundPopover", "simplisticBackground.content"],
+    ];
+    for (const [toggleId, popoverId, defaultContentKey] of perfToggles) {
+      const toggle = document.getElementById(toggleId) as HTMLInputElement | null;
+      const host = document.getElementById(popoverId);
+      if (!toggle || !host) continue;
+      toggle.disabled = baked;
+      const featureKey = host.getAttribute("data-i18n-content-feature");
+      const contentKey = baked ? "spoilerFree.unavailableDaily" : defaultContentKey;
+      const opts = baked && featureKey ? { feature: i18next.t(featureKey) } : undefined;
+      host.setAttribute("data-i18n-content", contentKey);
+      host.setAttribute("data-bs-content", i18next.t(contentKey, opts as any) as string);
+      const existing = bootstrap.Popover.getInstance(host);
+      if (existing) existing.dispose();
+      new bootstrap.Popover(host);
+    }
   }) as EventListener);
   if (spoilerFreeToggle) {
     spoilerFreeToggle.checked = isSpoilerFree();

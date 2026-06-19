@@ -4814,7 +4814,7 @@
   "spoilerFree": {
     "title": "ネタバレなし",
     "content": "地図と検索結果で杖、呪文、アイテムの正体を隠す。杖は初期杖として、呪文とアイテムは未識別として表示されます。",
-    "unavailableDaily": "デイリーシードではネタバレなしモードは利用できません"
+    "unavailableDaily": "\"{{feature}}\"はデイリーシードでは利用できません"
   },
   "privacyBrowser": {
     "title": "プライバシーブラウザを検出",

@@ -4814,7 +4814,7 @@
   "spoilerFree": {
     "title": "Bez spoilerow",
     "content": "Ukryj tozsamosc rozdzek, zaklec i przedmiotow na mapie i w wynikach wyszukiwania. Rozdzki pojawiaja sie jako startowa rozdzka, zaklecia i przedmioty pojawiaja sie jako niezidentyfikowane.",
-    "unavailableDaily": "Tryb bez spoilerow jest niedostepny dla dziennych seedow"
+    "unavailableDaily": "\"{{feature}}\" jest niedostepny dla dziennych seedow"
   },
   "privacyBrowser": {
     "title": "Wykryto przegladarke prywatnosci",

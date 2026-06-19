@@ -34,7 +34,12 @@ export function updateTranslations() {
   elementsWithDataI18nContent.forEach(element => {
     const key = element.getAttribute('data-i18n-content');
     if (key) {
-      const translatedContent = i18next.t(key);
+      // Optional companion attribute: when present, its value is a translation
+      // key whose translated text is interpolated as {{feature}} into the
+      // content string (used by the "<X> is unavailable for daily seeds" popovers).
+      const featureKey = element.getAttribute('data-i18n-content-feature');
+      const opts = featureKey ? { feature: i18next.t(featureKey) } : undefined;
+      const translatedContent = i18next.t(key, opts as any) as string;
       element.setAttribute('data-bs-content', translatedContent);
     }
   });

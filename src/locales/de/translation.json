@@ -4814,7 +4814,7 @@
   "spoilerFree": {
     "title": "Spoilerfrei",
     "content": "Identitaeten von Zauberstaeben, Zaubern und Gegenstaenden auf der Karte und in den Suchergebnissen ausblenden. Zauberstaebe werden als Startzauberstab angezeigt, Zauber und Gegenstaende als unidentifiziert.",
-    "unavailableDaily": "Der Spoilerfrei-Modus ist fuer taegliche Seeds nicht verfuegbar"
+    "unavailableDaily": "\"{{feature}}\" ist fuer taegliche Seeds nicht verfuegbar"
   },
   "privacyBrowser": {
     "title": "Datenschutz-Browser erkannt",
