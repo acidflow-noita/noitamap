@@ -38,6 +38,9 @@ export interface BakedDziPlacement {
   y: number;
   /** Width of the placed image in OSD coords. */
   width: number;
+  /** Per-bake cache-bust token (manifest generatedAt, else seed). Appended as
+   *  ?v= so a new daily bake on the same worker origin isn't served stale. */
+  bust: string;
 }
 
 export interface BakedDziProbeOk {
@@ -140,6 +143,10 @@ export async function probeBakedDZIs(
     const m = manifests[i]!;
     if (!m.baked) decorationsBaked = false;
     const origin = originFor(prefix, WORLDS[i]);
+    // Per-bake token: prefer the manifest timestamp, fall back to the seed.
+    // Stable within a bake (tiles stay browser-cached all day) but changes on
+    // every re-bake, so a new daily isn't served stale from the HTTP cache.
+    const bust = (m.generatedAt && String(m.generatedAt)) || String(m.seed);
     for (const r of m.regions) {
       placements.push({
         pw: r.pw,
@@ -148,6 +155,7 @@ export async function probeBakedDZIs(
         x: r.minX,
         y: r.minY,
         width: r.fullW,
+        bust,
       });
     }
   }
@@ -185,7 +193,17 @@ export function addBakedDZIsToOSD(
         // tell baked biome DZIs apart from the static base map's DZIs (both
         // have a string tilesUrl, which is what the base-layer heuristic
         // keys on). Without the tag, baked tiles survive every seed switch.
-        try { event.item.source.__bakedDzi = true; } catch {}
+        try {
+          event.item.source.__bakedDzi = true;
+        } catch {}
+        // Per-bake cache-bust. The global add-item handler (app_osd) only knows
+        // versions for the static map origins, so without this baked tiles get
+        // a constant "?v=undefined" and a new daily is served stale until a
+        // hard refresh. __bakedBust tells that handler to leave us alone.
+        try {
+          event.item.source.__bakedBust = true;
+          event.item.source.queryParams = `?v=${encodeURIComponent(p.bust)}`;
+        } catch {}
         try {
           onAdded?.(event.item, p);
         } catch (e) {

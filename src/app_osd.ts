@@ -296,10 +296,16 @@ export class AppOSD {
     const versions = await fetchMapVersions(this.mapName);
     this.cacheBustHandler = (event: any) => {
       const source = event.item.source as any;
+      // Baked daily DZIs carry their own per-bake cache-bust (set in
+      // addBakedDZIsToOSD from the manifest). Don't clobber it.
+      if (source.__bakedDzi || source.__bakedBust) return;
       if (typeof source.tilesUrl === "string") {
         try {
           const version = versions[new URL(source.tilesUrl).origin];
-          source.queryParams = `?v=${version}`;
+          // Only bust origins we have a real version for. Unknown origins
+          // (e.g. the daily workers) would otherwise get a constant
+          // "?v=undefined" that never changes across bakes -> stale tiles.
+          if (version !== undefined) source.queryParams = `?v=${version}`;
         } catch (e) {}
       }
     };
