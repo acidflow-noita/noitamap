@@ -12,6 +12,7 @@
     "generate-reaction-roles": "node build_scripts/generate-reaction-roles.cjs",
     "generate-material-effects": "node build_scripts/generate-material-effects.cjs",
     "generate-creature-data": "node build_scripts/generate-creature-data.cjs",
+    "generate-perk-wiki": "node build_scripts/generate-perk-wiki.cjs",
     "bake-creature-translations": "node build_scripts/bake-creature-translations.cjs",
     "copy-flags": "node build_scripts/copy-flags.cjs",
     "copy-telescope-data": "node build_scripts/copy-telescope-data.cjs",

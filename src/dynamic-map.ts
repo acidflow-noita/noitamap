@@ -27,6 +27,7 @@ import {
   resetPersistentBiomeBackgrounds,
 } from "./telescope/telescope-osd-bridge";
 import { probeBakedDZIs, type BakedDziProbeResult } from "./telescope/baked-dzi-loader";
+import { gameTranslator } from "./game-translations/translator";
 
 // ─── Types & state ───────────────────────────────────────────────────────────
 
@@ -580,6 +581,12 @@ export function clearDynamicMap(viewer: any): void {
 
 export function buildPOIName(p: any): string {
   if (p.type === "wand" && p.name) return p.name;
+  // Perks: prefer the proper in-game name (perk_<id>) over the raw "perk" item id.
+  if (p.item === "perk" && p.perk) {
+    const k = `perk_${String(p.perk).toLowerCase()}`;
+    const t = gameTranslator.translateItem(k);
+    if (t !== k) return t;
+  }
   if (p.item) return p.item;
   // An entity may carry an explicit display name (e.g. a boss reward "Sampo");
   // prefer it over the raw entity id (boss_centipede_sampo).

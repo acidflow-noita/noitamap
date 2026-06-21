@@ -1023,6 +1023,55 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     }
   }
 
+  // Generated Holy Mountain perks (new game only; PWs -1/0/1). Only the main
+  // world (pw 0) shows concrete perks: the perk deck index is a single global
+  // counter that advances in the order Holy Mountains are actually visited, and
+  // the east/west worlds are reached by horizontal travel, so their perks
+  // depend on the player's (unknowable) travel history. For pw -1/+1 we still
+  // emit one POI per perk slot at the correct positions, but flagged `unknown`
+  // so the UI shows an "unidentified" marker + an explanatory message instead
+  // of a wrong (mirrored) perk. perkPickups={} = no-pickup vanilla layout.
+  if (ngPlus === 0) {
+    const { getAllTemplePerks } = telescopeMods.perksMod;
+    for (const pw of parallelWorlds) {
+      if (pw < -1 || pw > 1) continue; // middle + immediate east/west only
+      const pwKey = `${pw},0`;
+      if (!poisByPW[pwKey]) poisByPW[pwKey] = [];
+      const { allTemplePerks } = getAllTemplePerks(seed, 0, pw, null, {}, gameMode);
+      allTemplePerks.forEach((templePerks: any[], templeIndex: number) => {
+        // East/west parallel worlds don't have the 7th (last) Holy Mountain,
+        // so there are no perks to generate there.
+        if (pw !== 0 && templeIndex >= 6) return;
+        for (const p of templePerks) {
+          if (pw !== 0) {
+            // Side worlds: position is known, identity is not (travel-order
+            // dependent). Emit a placeholder per slot.
+            poisByPW[pwKey].push({
+              type: "item",
+              item: "perk",
+              unknown: true,
+              x: p.x,
+              y: p.y,
+              biome: "holy_mountain",
+            } as any);
+            continue;
+          }
+          if (!p.perk) continue;
+          poisByPW[pwKey].push({
+            type: "item",
+            item: "perk",
+            perk: p.perk,
+            x: p.x,
+            y: p.y,
+            biome: "holy_mountain",
+            alwaysCast: p.alwaysCast,
+            hypotheticalGamble: p.hypotheticalGamble,
+          } as any);
+        }
+      });
+    }
+  }
+
   const t1 = performance.now();
   console.log(`[Telescope] Generation complete in ${((t1 - t0) / 1000).toFixed(2)}s`);
 

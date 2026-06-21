@@ -4833,7 +4833,8 @@
     "structures": "Suodata tulokset näyttääksesi vain rakenteet",
     "orbs": "Suodata tulokset näyttääksesi vain pallot",
     "spatialAwareness": "Suodata tulokset näyttääksesi vain tilatietoisuuspisteet",
-    "hiddenMessages": "Suodata tulokset näyttääksesi vain piilotetut viestit"
+    "hiddenMessages": "Suodata tulokset näyttääksesi vain piilotetut viestit",
+    "perks": "Suodata tulokset näyttämään vain perkit"
   },
   "filterLabels": {
     "wands": "sauvat",
@@ -4848,7 +4849,8 @@
     "structures": "Rakenteet",
     "orbs": "Orbs",
     "spatialAwareness": "Tilatietoisuus",
-    "hiddenMessages": "Piilotetut viestit"
+    "hiddenMessages": "Piilotetut viestit",
+    "perks": "Perkit"
   },
   "chunkGrid": {
     "title": "Osittainen verkko",
@@ -5224,5 +5226,12 @@
         "dailyDisabled": "Päivittäisessä siemenessä on aina kaikki avattu."
       }
     }
+  },
+  "perk": {
+    "alwaysCast": "Always Cast",
+    "gambleGrants": "Gamble grants",
+    "unknownTitle": "Tuntematon perk",
+    "unknownParallel": "Holy Mountainien ja rinnakkaismaailmojen latausjärjestyksellä on merkitystä. Ilman \"matkahistoriaasi\" perkkejä on mahdotonta näyttää tarkasti.",
+    "noitoolNote": "Huomaa, että perkit näytetään ikään kuin olisit kulkenut jokaisen Holy Mountainin tavallisessa järjestyksessä normaalilla läpipeluulla etkä olisi poiminut ylimääräistä perkkiä. Jos haluat täysin tarkan tiedon siitä, mitkä perkit näet, käytä {{link}} \"Advanced\"-tilassa."
   }
 }

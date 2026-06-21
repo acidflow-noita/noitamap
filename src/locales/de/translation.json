@@ -4833,7 +4833,8 @@
     "structures": "Filtern Sie die Ergebnisse, um nur Strukturen anzuzeigen",
     "orbs": "Filtern Sie die Ergebnisse, um nur Kugeln anzuzeigen",
     "spatialAwareness": "Filtern Sie die Ergebnisse, um nur räumliche Wahrnehmungspunkte anzuzeigen",
-    "hiddenMessages": "Filtern Sie die Ergebnisse, um nur ausgeblendete Nachrichten anzuzeigen"
+    "hiddenMessages": "Filtern Sie die Ergebnisse, um nur ausgeblendete Nachrichten anzuzeigen",
+    "perks": "Ergebnisse filtern, um nur Boni anzuzeigen"
   },
   "filterLabels": {
     "wands": "Zauberstäbe",
@@ -4848,7 +4849,8 @@
     "structures": "Strukturen",
     "orbs": "Kugeln",
     "spatialAwareness": "Raumbewusstsein",
-    "hiddenMessages": "Versteckte Nachrichten"
+    "hiddenMessages": "Versteckte Nachrichten",
+    "perks": "Boni"
   },
   "chunkGrid": {
     "title": "Chunk-Gitter",
@@ -5224,5 +5226,12 @@
         "dailyDisabled": "Bei der täglichen Seed ist immer alles freigeschaltet."
       }
     }
+  },
+  "perk": {
+    "alwaysCast": "Always Cast",
+    "gambleGrants": "Gamble grants",
+    "unknownTitle": "Unbekannter Bonus",
+    "unknownParallel": "Die Ladereihenfolge der Heiligen Berge und Parallelwelten ist entscheidend. Ohne deinen \"Reiseverlauf\" zu kennen, ist es unmöglich, die Boni genau anzuzeigen.",
+    "noitoolNote": "Beachte, dass die Boni so angezeigt werden, als hättest du in einem normalen Durchgang alle Heiligen Berge in der üblichen Reihenfolge durchquert und keinen zusätzlichen Bonus aufgenommen. Wenn du absolute Genauigkeit darüber willst, welche Boni du sehen wirst, nutze {{link}} im \"Advanced\"-Modus."
   }
 }

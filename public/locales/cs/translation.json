@@ -4833,7 +4833,8 @@
     "structures": "Filtrujte výsledky tak, aby byly zobrazeny pouze struktury",
     "orbs": "Filtrujte výsledky, abyste zobrazili pouze koule",
     "spatialAwareness": "Filtrujte výsledky, abyste zobrazili pouze body prostorového povědomí",
-    "hiddenMessages": "Filtrovat výsledky, aby se zobrazily pouze skryté zprávy"
+    "hiddenMessages": "Filtrovat výsledky, aby se zobrazily pouze skryté zprávy",
+    "perks": "Filtrovat výsledky a zobrazit pouze perky"
   },
   "filterLabels": {
     "wands": "Hůlky",
@@ -4848,7 +4849,8 @@
     "structures": "Struktury",
     "orbs": "Orby",
     "spatialAwareness": "Prostorové povědomí",
-    "hiddenMessages": "Skryté zprávy"
+    "hiddenMessages": "Skryté zprávy",
+    "perks": "Perky"
   },
   "chunkGrid": {
     "title": "Kusová mřížka",
@@ -5224,5 +5226,12 @@
         "dailyDisabled": "Denní seed má vždy vše odemčeno."
       }
     }
+  },
+  "perk": {
+    "alwaysCast": "Always Cast",
+    "gambleGrants": "Gamble grants",
+    "unknownTitle": "Neznámý perk",
+    "unknownParallel": "Na pořadí načítání Holy Mountains a paralelních světů záleží. Bez znalosti tvé \"historie cestování\" nelze perky přesně zobrazit.",
+    "noitoolNote": "Pozor, perky se zobrazují, jako bys prošel všemi Holy Mountains v běžném pořadí při normálním běhu a nesebral žádný perk navíc. Pokud chceš naprostou přesnost v tom, jaké perky uvidíš, použij {{link}} v režimu \"Advanced\"."
   }
 }

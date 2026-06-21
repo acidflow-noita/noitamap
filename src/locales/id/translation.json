@@ -4833,7 +4833,8 @@
     "structures": "Filter hasil untuk hanya menampilkan struktur",
     "orbs": "Filter hasil untuk hanya menampilkan bola",
     "spatialAwareness": "Filter hasil untuk hanya menampilkan titik kesadaran spasial",
-    "hiddenMessages": "Filter hasil untuk hanya menampilkan pesan tersembunyi"
+    "hiddenMessages": "Filter hasil untuk hanya menampilkan pesan tersembunyi",
+    "perks": "Saring hasil untuk menampilkan hanya perk"
   },
   "filterLabels": {
     "wands": "tongkat sihir",
@@ -4848,7 +4849,8 @@
     "structures": "Struktur",
     "orbs": "bola",
     "spatialAwareness": "Kesadaran Spasial",
-    "hiddenMessages": "Pesan Tersembunyi"
+    "hiddenMessages": "Pesan Tersembunyi",
+    "perks": "Perk"
   },
   "chunkGrid": {
     "title": "Kotak Potongan",
@@ -5224,5 +5226,12 @@
         "dailyDisabled": "Pada seed harian semuanya selalu tidak terkunci."
       }
     }
+  },
+  "perk": {
+    "alwaysCast": "Always Cast",
+    "gambleGrants": "Gamble grants",
+    "unknownTitle": "Perk tidak diketahui",
+    "unknownParallel": "Urutan pemuatan Holy Mountain dan dunia paralel itu penting. Tanpa mengetahui \"riwayat perjalanan\" Anda, mustahil menampilkan perk secara akurat.",
+    "noitoolNote": "Perhatikan bahwa perk ditampilkan seolah-olah Anda melewati setiap Holy Mountain dalam urutan normal pada permainan biasa dan tidak mengambil perk tambahan. Jika Anda ingin akurasi mutlak tentang perk yang akan Anda lihat, gunakan {{link}} dalam mode \"Advanced\"."
   }
 }

@@ -154,6 +154,24 @@ const WAND_SPRITE_REMAP: Record<string, string> = {
   "custom/experimental_wand_2": "wand:custom/actual_wand_honest",
 };
 
+// A handful of perk ids don't match their atlas icon filename (the atlas keys
+// are item:perks/<icon filename>, not item:perks/<perk id>). Map the id to the
+// real icon file so the marker/card/search icon resolves.
+const PERK_ICON_REMAP: Record<string, string> = {
+  wand_radar: "radar_wand",
+  item_radar: "radar_item",
+  moon_radar: "radar_moon",
+  bleed_oil: "oil_blood",
+  bleed_gas: "gas_blood",
+  no_more_knockback: "no_player_knockback",
+};
+
+/** Atlas key for a perk id's in-world icon (item:perks/<icon filename>). */
+export function perkAtlasKey(perkId: string): string {
+  const id = String(perkId).toLowerCase();
+  return `item:perks/${PERK_ICON_REMAP[id] || id}`;
+}
+
 /**
  * Resolve a telescope wand `sprite` string to an atlas key.
  *
@@ -258,11 +276,15 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
       return "item:orb"; // fallback
     }
     if (item === "perk") {
-      // Specific perk by id (e.g. {item:'perk', perk:'map'} → perk:map,
-      // "Spatial Awareness"). Falls back to the generic perk icon.
+      // Parallel-world perks are travel-order dependent and unknowable — show
+      // the "unidentified" question-mark sprite instead of a concrete perk.
+      if ((poi as any).unknown) return "spell:unidentified";
+      // Specific perk by id (e.g. {item:'perk', perk:'critical_hit'} →
+      // item:perks/critical_hit). Falls back to the generic perk icon.
       const perkId = (poi as any).perk;
       if (perkId) {
-        const key = `perk:${String(perkId).toLowerCase()}`;
+        const id = String(perkId).toLowerCase();
+        const key = `item:perks/${PERK_ICON_REMAP[id] || id}`;
         if (!atlas || atlas[key]) return key;
       }
       return "item:perk";

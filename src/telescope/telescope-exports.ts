@@ -50,3 +50,5 @@ export * as enemyConfigMod from "noita-telescope/enemy_config.js";
 export * as miscGenMod from "noita-telescope/misc_generation.js";
 // @ts-ignore
 export * as potionConfigMod from "noita-telescope/potion_config.js";
+// @ts-ignore
+export * as perksMod from "noita-telescope/perks.js";

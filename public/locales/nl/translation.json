@@ -4833,7 +4833,8 @@
     "structures": "Filter de resultaten om alleen structuren weer te geven",
     "orbs": "Filter de resultaten om alleen lichtbollen weer te geven",
     "spatialAwareness": "Filter de resultaten om alleen ruimtelijke bewustzijnspunten weer te geven",
-    "hiddenMessages": "Filter de resultaten om alleen verborgen berichten weer te geven"
+    "hiddenMessages": "Filter de resultaten om alleen verborgen berichten weer te geven",
+    "perks": "Resultaten filteren om alleen perks te tonen"
   },
   "filterLabels": {
     "wands": "Toverstokken",
@@ -4848,7 +4849,8 @@
     "structures": "Structuren",
     "orbs": "Orbs",
     "spatialAwareness": "Ruimtelijk bewustzijn",
-    "hiddenMessages": "Verborgen berichten"
+    "hiddenMessages": "Verborgen berichten",
+    "perks": "Perks"
   },
   "chunkGrid": {
     "title": "Chunk-raster",
@@ -5224,5 +5226,12 @@
         "dailyDisabled": "Bij de dagelijkse seed is altijd alles ontgrendeld."
       }
     }
+  },
+  "perk": {
+    "alwaysCast": "Always Cast",
+    "gambleGrants": "Gamble grants",
+    "unknownTitle": "Onbekende perk",
+    "unknownParallel": "De laadvolgorde van Holy Mountains en parallelle werelden is van belang. Zonder je \"reisgeschiedenis\" te kennen, is het onmogelijk om de perks nauwkeurig te tonen.",
+    "noitoolNote": "Let op: de perks worden getoond alsof je in een normale run door elke Holy Mountain in de gebruikelijke volgorde bent gegaan en geen extra perk hebt opgepakt. Als je absolute precisie wilt over welke perks je gaat zien, gebruik dan {{link}} in de \"Advanced\"-modus."
   }
 }

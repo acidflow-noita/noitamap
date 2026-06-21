@@ -4833,7 +4833,8 @@
     "structures": "Filtrera resultat för att endast visa strukturer",
     "orbs": "Filtrera resultat för att endast visa klot",
     "spatialAwareness": "Filtrera resultat för att endast visa rumsliga medvetenhetspunkter",
-    "hiddenMessages": "Filtrera resultat för att endast visa dolda meddelanden"
+    "hiddenMessages": "Filtrera resultat för att endast visa dolda meddelanden",
+    "perks": "Filtrera resultaten för att bara visa perks"
   },
   "filterLabels": {
     "wands": "Stavar",
@@ -4848,7 +4849,8 @@
     "structures": "Strukturer",
     "orbs": "Orbs",
     "spatialAwareness": "Rumslig medvetenhet",
-    "hiddenMessages": "Dolda meddelanden"
+    "hiddenMessages": "Dolda meddelanden",
+    "perks": "Perks"
   },
   "chunkGrid": {
     "title": "Chunk Grid",
@@ -5224,5 +5226,12 @@
         "dailyDisabled": "Den dagliga seeden har alltid allt upplåst."
       }
     }
+  },
+  "perk": {
+    "alwaysCast": "Always Cast",
+    "gambleGrants": "Gamble grants",
+    "unknownTitle": "Okänd perk",
+    "unknownParallel": "Laddningsordningen för Holy Mountains och parallella världar spelar roll. Utan att känna till din \"resehistorik\" är det omöjligt att visa perks korrekt.",
+    "noitoolNote": "Observera att perks visas som om du gått igenom varje Holy Mountain i normal ordning under en vanlig runda och inte plockat upp någon extra perk. Om du vill ha absolut precision om vilka perks du kommer att se, använd {{link}} i \"Advanced\"-läget."
   }
 }

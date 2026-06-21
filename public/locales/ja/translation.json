@@ -4833,7 +4833,8 @@
     "structures": "結果をフィルタリングして構造のみを表示する",
     "orbs": "結果をフィルターしてオーブのみを表示する",
     "spatialAwareness": "結果をフィルタリングして空間認識ポイントのみを表示する",
-    "hiddenMessages": "結果をフィルタリングして非表示のメッセージのみを表示する"
+    "hiddenMessages": "結果をフィルタリングして非表示のメッセージのみを表示する",
+    "perks": "結果をフィルターして特典のみ表示"
   },
   "filterLabels": {
     "wands": "ワンド",
@@ -4848,7 +4849,8 @@
     "structures": "構造物",
     "orbs": "オーブ",
     "spatialAwareness": "空間認識",
-    "hiddenMessages": "隠しメッセージ"
+    "hiddenMessages": "隠しメッセージ",
+    "perks": "特典"
   },
   "chunkGrid": {
     "title": "チャンクグリッド",
@@ -5224,5 +5226,12 @@
         "dailyDisabled": "デイリーシードでは常にすべてのロックが解除されています。"
       }
     }
+  },
+  "perk": {
+    "alwaysCast": "Always Cast",
+    "gambleGrants": "Gamble grants",
+    "unknownTitle": "不明な特典",
+    "unknownParallel": "聖なる山と並行世界の読み込み順序が影響します。あなたの「移動履歴」が分からなければ、特典を正確に表示することはできません。",
+    "noitoolNote": "特典は、通常のプレイで聖なる山をすべて通常の順序で通過し、追加の特典を拾わなかった場合を想定して表示されています。どの特典が出るかを正確に知りたい場合は、{{link}} の「Advanced」モードを使用してください。"
   }
 }

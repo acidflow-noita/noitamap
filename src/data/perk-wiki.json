@@ -1,0 +1,462 @@
+{
+  "ABILITY_ACTIONS_MATERIALIZED": {
+    "wikipage": "Bombs Materialized",
+    "image": "Perk ability actions materialized.png"
+  },
+  "ADVENTURER": {
+    "wikipage": "Healthy Exploration",
+    "image": "Perk_adventurer.png"
+  },
+  "ALWAYS_CAST": {
+    "wikipage": "Always Cast (Perk)",
+    "image": "Perk_always_cast.png"
+  },
+  "ANGRY_GHOST": {
+    "wikipage": "Angry Ghost",
+    "image": "Perk_Angry_ghost.png"
+  },
+  "ANGRY_LEVITATION": {
+    "wikipage": "Rage-fueled Levitation",
+    "image": "Perk_angry_levitation.png"
+  },
+  "ATTACK_FOOT": {
+    "wikipage": "Lukki Mutation",
+    "image": "Perk attack foot.png"
+  },
+  "ATTRACT_ITEMS": {
+    "wikipage": "Attract Gold",
+    "image": "Perk_attract_items.png"
+  },
+  "BLEED_GAS": {
+    "wikipage": "Gas Blood",
+    "image": "Perk_gas_blood.png"
+  },
+  "BLEED_OIL": {
+    "wikipage": "Oil Blood",
+    "image": "Perk_oil_blood.png"
+  },
+  "BLEED_SLIME": {
+    "wikipage": "Slime Blood",
+    "image": "Perk_slime_blood.png"
+  },
+  "BOUNCE": {
+    "wikipage": "Bouncing Spells",
+    "image": "Perk_bounce.png"
+  },
+  "BREATH_UNDERWATER": {
+    "wikipage": "Breathless",
+    "image": "Perk breath underwater.png"
+  },
+  "CONTACT_DAMAGE": {
+    "wikipage": "Contact Damage",
+    "image": "Perk_contact_damage.png"
+  },
+  "CORDYCEPS": {
+    "wikipage": "Cordyceps",
+    "image": "Perk_cordyceps.png"
+  },
+  "CRITICAL_HIT": {
+    "wikipage": "Critical Hit +",
+    "image": "Perk_critical_hit.png"
+  },
+  "DEATH_GHOST": {
+    "wikipage": "Mournful Spirit",
+    "image": "Perk_death_ghost.png"
+  },
+  "DISSOLVE_POWDERS": {
+    "wikipage": "Dissolve Powders",
+    "image": "Perk_dissolve_powders.png"
+  },
+  "DUPLICATE_PROJECTILE": {
+    "wikipage": "Projectile Duplication",
+    "image": "Perk_projectile_duplication.png"
+  },
+  "EDIT_WANDS_EVERYWHERE": {
+    "wikipage": "Tinker with Wands Everywhere",
+    "image": "Perk edit wands everywhere.png"
+  },
+  "ELECTRICITY": {
+    "wikipage": "Electricity",
+    "image": "Perk_electricity.png"
+  },
+  "ESSENCE_AIR": {
+    "wikipage": "Essences",
+    "image": "Special Perk essence air.png"
+  },
+  "ESSENCE_ALCOHOL": {
+    "wikipage": "Essences",
+    "image": "Special Perk essence alcohol.png"
+  },
+  "ESSENCE_FIRE": {
+    "wikipage": "Essences",
+    "image": "Special Perk essence fire.png"
+  },
+  "ESSENCE_LASER": {
+    "wikipage": "Essences",
+    "image": "Special Perk essence earth.png"
+  },
+  "ESSENCE_WATER": {
+    "wikipage": "Essences",
+    "image": "Special Perk essence water.png"
+  },
+  "EXPLODING_CORPSES": {
+    "wikipage": "Exploding Corpses",
+    "image": "Perk exploding corpses.png"
+  },
+  "EXPLODING_GOLD": {
+    "wikipage": "Exploding Gold",
+    "image": "Perk exploding gold.png"
+  },
+  "EXTRA_HP": {
+    "wikipage": "Extra Health",
+    "image": "Perk extra hp.png"
+  },
+  "EXTRA_KNOCKBACK": {
+    "wikipage": "Extra Knockback on Spells",
+    "image": "Perk_extra_knockback.png"
+  },
+  "EXTRA_MANA": {
+    "wikipage": "High Mana, Low Capacity",
+    "image": "Perk_extra_mana.png"
+  },
+  "EXTRA_MONEY": {
+    "wikipage": "Greed",
+    "image": "Perk extra money.png"
+  },
+  "EXTRA_MONEY_TRICK_KILL": {
+    "wikipage": "Trick Greed",
+    "image": "Perk extra money trick kill.png"
+  },
+  "EXTRA_PERK": {
+    "wikipage": "Extra Perk",
+    "image": "Perk_extra_perk.png"
+  },
+  "EXTRA_POTION_CAPACITY": {
+    "wikipage": "Extra Potion Capacity",
+    "image": "Perk_extra_potion_capacity.png"
+  },
+  "EXTRA_SHOP_ITEM": {
+    "wikipage": "Extra Item in Holy Mountain",
+    "image": "Perk_extra_shop_item.png"
+  },
+  "EXTRA_SLOTS": {
+    "wikipage": "Extra Wand Capacity",
+    "image": "Perk_extra_slots.png"
+  },
+  "FAST_PROJECTILES": {
+    "wikipage": "Faster Projectiles",
+    "image": "Perk_fast_projectiles.png"
+  },
+  "FASTER_LEVITATION": {
+    "wikipage": "Faster Levitation",
+    "image": "Perk faster levitation.png"
+  },
+  "FASTER_WANDS": {
+    "wikipage": "Faster Wands",
+    "image": "Perk_faster_wands.png"
+  },
+  "FIRE_GAS": {
+    "wikipage": "Gas Fire",
+    "image": "Perk gas fire.png"
+  },
+  "FOOD_CLOCK": {
+    "wikipage": "Eat Your Vegetables",
+    "image": "Perk_mystery_eggplant.png"
+  },
+  "FREEZE_FIELD": {
+    "wikipage": "Freeze Field",
+    "image": "Perk freeze field.png"
+  },
+  "FUNGAL_DISEASE": {
+    "wikipage": "Fungal Disease",
+    "image": "Perk_fungal_disease.png"
+  },
+  "GAMBLE": {
+    "wikipage": "Gamble",
+    "image": "Perk_gamble.png"
+  },
+  "GENOME_MORE_HATRED": {
+    "wikipage": "More Hatred",
+    "image": "Perk genome more hatred.png"
+  },
+  "GENOME_MORE_LOVE": {
+    "wikipage": "More Love",
+    "image": "Perk genome more love.png"
+  },
+  "GLASS_CANNON": {
+    "wikipage": "Glass Cannon",
+    "image": "Perk glass cannon.png"
+  },
+  "GLOBAL_GORE": {
+    "wikipage": "More Blood",
+    "image": "Perk global gore.png"
+  },
+  "GOLD_IS_FOREVER": {
+    "wikipage": "Gold is Forever",
+    "image": "Perk Money is Forever.jpg"
+  },
+  "HEARTS_MORE_EXTRA_HP": {
+    "wikipage": "Stronger Hearts",
+    "image": "Perk hearts more extra hp.png"
+  },
+  "HIGH_GRAVITY": {
+    "wikipage": "High Gravity",
+    "image": "Perk_high_gravity.png"
+  },
+  "HOMUNCULUS": {
+    "wikipage": "Homunculus",
+    "image": "Perk_homunculus.png"
+  },
+  "HOVER_BOOST": {
+    "wikipage": "Strong Levitation",
+    "image": "Perk hover boost.png"
+  },
+  "HUNGRY_GHOST": {
+    "wikipage": "Hungry Ghost",
+    "image": "Perk_hungry_ghost.png"
+  },
+  "INVISIBILITY": {
+    "wikipage": "Invisibility",
+    "image": "Perk invisibility.png"
+  },
+  "IRON_STOMACH": {
+    "wikipage": "Iron Stomach",
+    "image": "Perk_iron_stomach.png"
+  },
+  "ITEM_RADAR": {
+    "wikipage": "Item Radar",
+    "image": "Perk radar item.png"
+  },
+  "LASER_AIM": {
+    "wikipage": "Pinpointer",
+    "image": "Perk_laser_aim.png"
+  },
+  "LEGGY_FEET": {
+    "wikipage": "Leggy Mutation",
+    "image": "Perk_leggy_feet.png"
+  },
+  "LEVITATION_TRAIL": {
+    "wikipage": "Levitation Trail",
+    "image": "Perk Levitation Trail.png"
+  },
+  "LOW_GRAVITY": {
+    "wikipage": "Low Gravity",
+    "image": "Perk_low_gravity.png"
+  },
+  "LOW_HP_DAMAGE_BOOST": {
+    "wikipage": "Living on the Edge",
+    "image": "Perk low hp damage boost.png"
+  },
+  "LOW_RECOIL": {
+    "wikipage": "Low Recoil",
+    "image": "Perk_low_recoil.png"
+  },
+  "LOWER_SPREAD": {
+    "wikipage": "Concentrated Spells",
+    "image": "Perk_lower_spread.png"
+  },
+  "LUKKI_MINION": {
+    "wikipage": "Lukki Minion",
+    "image": "Perk_lukki_minion.png"
+  },
+  "MANA_FROM_KILLS": {
+    "wikipage": "Kills To Mana",
+    "image": "Perk_kills_to_mana.png"
+  },
+  "MAP": {
+    "wikipage": "Spatial Awareness",
+    "image": "Perk_map.png"
+  },
+  "MEGA_BEAM_STONE": {
+    "wikipage": "Summon Sädekivi",
+    "image": "Perk_mega_beam_stone.png"
+  },
+  "MOLD": {
+    "wikipage": "Fungal Colony",
+    "image": "Perk_mold.png"
+  },
+  "MOON_RADAR": {
+    "wikipage": "Moon Radar",
+    "image": "Perk_moon_radar.png"
+  },
+  "MOVEMENT_FASTER": {
+    "wikipage": "Faster Movement",
+    "image": "Perk movement faster.png"
+  },
+  "NO_MORE_KNOCKBACK": {
+    "wikipage": "No More Knockback",
+    "image": "Perk_no_more_knockback.png"
+  },
+  "NO_MORE_SHUFFLE": {
+    "wikipage": "No More Shuffle",
+    "image": "Perk_No_More_Shuffle.png"
+  },
+  "NO_WAND_EDITING": {
+    "wikipage": "No Wand Tinkering",
+    "image": "Perk no wand editing.png"
+  },
+  "ORBIT": {
+    "wikipage": "Phasing",
+    "image": "Perk Phasing.png"
+  },
+  "PEACE_WITH_GODS": {
+    "wikipage": "Peace with Gods",
+    "image": "Perk_peace_with_gods.png"
+  },
+  "PERKS_LOTTERY": {
+    "wikipage": "Perk Lottery",
+    "image": "Perk_perks_lottery.png"
+  },
+  "PERSONAL_LASER": {
+    "wikipage": "Personal Plasma Beam",
+    "image": "Perk_personal_laser.png"
+  },
+  "PLAGUE_RATS": {
+    "wikipage": "Plague Rats",
+    "image": "Perk_plague_rats.png"
+  },
+  "PROJECTILE_EATER_SECTOR": {
+    "wikipage": "Projectile Eater",
+    "image": "Perk_projectile_eater_sector.png"
+  },
+  "PROJECTILE_HOMING": {
+    "wikipage": "Homing Shots",
+    "image": "Perk projectile homing.png"
+  },
+  "PROJECTILE_HOMING_SHOOTER": {
+    "wikipage": "Boomerang Spells",
+    "image": "Perk projectile homing shooter.png"
+  },
+  "PROJECTILE_REPULSION": {
+    "wikipage": "Projectile Repulsion Field",
+    "image": "Perk_projectile_repulsion.png"
+  },
+  "PROJECTILE_REPULSION_SECTOR": {
+    "wikipage": "Projectile Repulsion Sector",
+    "image": "Perk_projectile_repulsion_sector.png"
+  },
+  "PROJECTILE_SLOW_FIELD": {
+    "wikipage": "Projectile Slower",
+    "image": "Perk_projectile_slow_field.png"
+  },
+  "PROTECTION_ELECTRICITY": {
+    "wikipage": "Electricity Immunity",
+    "image": "Perk protection electricity.png"
+  },
+  "PROTECTION_EXPLOSION": {
+    "wikipage": "Explosion Immunity",
+    "image": "Perk protection explosion.png"
+  },
+  "PROTECTION_FIRE": {
+    "wikipage": "Fire Immunity",
+    "image": "Perk protection fire.png"
+  },
+  "PROTECTION_MELEE": {
+    "wikipage": "Melee Immunity",
+    "image": "Perk protection melee.png"
+  },
+  "PROTECTION_RADIOACTIVITY": {
+    "wikipage": "Toxic Immunity",
+    "image": "Perk protection radioactivity.png"
+  },
+  "RADAR_ENEMY": {
+    "wikipage": "Enemy Radar",
+    "image": "Perk enemy detector.png"
+  },
+  "REMOVE_FOG_OF_WAR": {
+    "wikipage": "All-Seeing Eye (Perk)",
+    "image": "Perk remove fog of war.png"
+  },
+  "REPELLING_CAPE": {
+    "wikipage": "Repelling Cape",
+    "image": "Perk repelling cape.png"
+  },
+  "RESPAWN": {
+    "wikipage": "Extra Life",
+    "image": "Perk respawn.png"
+  },
+  "REVENGE_BULLET": {
+    "wikipage": "Revenge Bullets",
+    "image": "Perk_revenge_bullets.png"
+  },
+  "REVENGE_EXPLOSION": {
+    "wikipage": "Revenge Explosion",
+    "image": "Perk_revenge_explosion.png"
+  },
+  "REVENGE_RATS": {
+    "wikipage": "Revenge Rats",
+    "image": "Perk_revenge_rats.png"
+  },
+  "REVENGE_TENTACLE": {
+    "wikipage": "Revenge Tentacle",
+    "image": "Perk_revenge_tentacle.png"
+  },
+  "RISKY_CRITICAL": {
+    "wikipage": "Close Call",
+    "image": "Perk_risky_critical.png"
+  },
+  "SAVING_GRACE": {
+    "wikipage": "Saving Grace",
+    "image": "Perk saving grace.png"
+  },
+  "SHIELD": {
+    "wikipage": "Permanent Shield",
+    "image": "Perk shield.png"
+  },
+  "SPEED_DIVER": {
+    "wikipage": "Fast Swimming",
+    "image": "Perk_speed_diver.png"
+  },
+  "STAINLESS_ARMOUR": {
+    "wikipage": "Stainless Armour",
+    "image": "Perk stainless armour.png"
+  },
+  "STRONG_KICK": {
+    "wikipage": "Never Skip Leg Day",
+    "image": "Perk strong kick.png"
+  },
+  "TELEKINESIS": {
+    "wikipage": "Telekinetic Kick",
+    "image": "Perk Telekinetic Kick.png"
+  },
+  "TELEPORTITIS": {
+    "wikipage": "Teleportitis",
+    "image": "Perk teleportitis.png"
+  },
+  "TELEPORTITIS_DODGE": {
+    "wikipage": "Teleportitis Dodge",
+    "image": "Perk teleportitis dodge.png"
+  },
+  "TRICK_BLOOD_MONEY": {
+    "wikipage": "Trick Blood Money",
+    "image": "Perk Trick Blood Money.png"
+  },
+  "UNLIMITED_SPELLS": {
+    "wikipage": "Unlimited Spells",
+    "image": "Perk Unlimited Spells.png"
+  },
+  "VAMPIRISM": {
+    "wikipage": "Vampirism",
+    "image": "Perk vampirism.png"
+  },
+  "VOMIT_RATS": {
+    "wikipage": "Spontaneous Generation",
+    "image": "Perk_vomit_rats.png"
+  },
+  "WAND_EXPERIMENTER": {
+    "wikipage": "Wand Experimenter",
+    "image": "Perk Wand Experimenter.png"
+  },
+  "WAND_RADAR": {
+    "wikipage": "Wand Radar",
+    "image": "Perk wand radar.png"
+  },
+  "WORM_ATTRACTOR": {
+    "wikipage": "Worm Attractor",
+    "image": "Perk worm attractor.png"
+  },
+  "WORM_SMALLER_HOLES": {
+    "wikipage": "Feared by Worms",
+    "image": "Perk remove worm and lukki digging.png"
+  }
+}

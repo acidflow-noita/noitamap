@@ -566,7 +566,8 @@ function matchesFilters(p: DynamicPOI, activeFilters: Set<string>): boolean {
   }
   if (activeFilters.has("w") && p.type === "wand") return true;
   if (activeFilters.has("s") && p.type === "item" && p.item === "spell") return true;
-  if (activeFilters.has("i") && p.type === "item" && p.item !== "spell") return true;
+  if (activeFilters.has("i") && p.type === "item" && p.item !== "spell" && p.item !== "perk") return true;
+  if (activeFilters.has("pk") && p.type === "item" && p.item === "perk") return true;
   if (activeFilters.has("c") && CHEST_TYPES.has(p.type)) return true;
   if (activeFilters.has("hm") && HOLY_MOUNTAIN_TYPES.has(p.type)) return true;
   if (
@@ -843,6 +844,7 @@ export class UnifiedSearch extends EventEmitter2 {
           { type: "hm", iconSrc: "assets/icons/spatial_awareness/spatial_awareness_holy_mountain.png" },
           { type: "p", atlasKey: "item:potion:acid" },
           { type: "h", atlasKey: "item:heart_extrahp" },
+          { type: "pk", atlasKey: "item:perks/critical_hit" },
           { type: "b", iconSrc: "assets/icons/overlay-toggles/icon-bosses.webp" },
           { type: "e", atlasKey: "spell:exploding_deer" },
         ]
@@ -864,6 +866,7 @@ export class UnifiedSearch extends EventEmitter2 {
       hm: i18next.t("filterLabels.holyMountains", "Holy Mountains"),
       p: i18next.t("filterLabels.potions", "Potions & Flasks"),
       h: i18next.t("filterLabels.hearts", "Hearts & Heals"),
+      pk: i18next.t("filterLabels.perks", "Perks"),
       b: i18next.t("filterLabels.bosses", "Bosses"),
       e: i18next.t("filterLabels.creatures", "Enemies"),
       st: i18next.t("filterLabels.structures", "Structures"),
@@ -879,6 +882,7 @@ export class UnifiedSearch extends EventEmitter2 {
       hm: i18next.t("searchFilters.holyMountains", "Filter results to show only Holy Mountain shops"),
       p: i18next.t("searchFilters.potions", "Filter results to show only potions"),
       h: i18next.t("searchFilters.hearts", "Filter results to show only hearts"),
+      pk: i18next.t("searchFilters.perks", "Filter results to show only perks"),
       b: i18next.t("searchFilters.bosses", "Filter results to show only bosses"),
       e: i18next.t("searchFilters.creatures", "Filter results to show only creatures"),
       st: i18next.t("searchFilters.structures", "Filter results to show only structures"),
@@ -956,6 +960,7 @@ export class UnifiedSearch extends EventEmitter2 {
       hm: i18next.t("filterLabels.holyMountains", "Holy Mountains"),
       p: i18next.t("filterLabels.potions", "Potions & Flasks"),
       h: i18next.t("filterLabels.hearts", "Hearts & Heals"),
+      pk: i18next.t("filterLabels.perks", "Perks"),
       b: i18next.t("filterLabels.bosses", "Bosses"),
       e: i18next.t("filterLabels.creatures", "Enemies"),
       st: i18next.t("filterLabels.structures", "Structures"),
@@ -971,6 +976,7 @@ export class UnifiedSearch extends EventEmitter2 {
       hm: i18next.t("searchFilters.holyMountains", "Filter results to show only Holy Mountain shops"),
       p: i18next.t("searchFilters.potions", "Filter results to show only potions"),
       h: i18next.t("searchFilters.hearts", "Filter results to show only hearts"),
+      pk: i18next.t("searchFilters.perks", "Filter results to show only perks"),
       b: i18next.t("searchFilters.bosses", "Filter results to show only bosses"),
       e: i18next.t("searchFilters.creatures", "Filter results to show only creatures"),
       st: i18next.t("searchFilters.structures", "Filter results to show only structures"),
@@ -1528,6 +1534,7 @@ export class UnifiedSearch extends EventEmitter2 {
           { type: "hm", iconSrc: "assets/icons/spatial_awareness/spatial_awareness_holy_mountain.png" },
           { type: "p", atlasKey: "item:potion:acid" },
           { type: "h", atlasKey: "item:heart_extrahp" },
+          { type: "pk", atlasKey: "item:perks/critical_hit" },
           { type: "b", iconSrc: "assets/icons/overlay-toggles/icon-bosses.webp" },
           { type: "e", atlasKey: "spell:exploding_deer" },
         ]
@@ -1549,6 +1556,7 @@ export class UnifiedSearch extends EventEmitter2 {
       hm: i18next.t("filterLabels.holyMountains", "Holy Mountains"),
       p: i18next.t("filterLabels.potions", "Potions & Flasks"),
       h: i18next.t("filterLabels.hearts", "Hearts & Heals"),
+      pk: i18next.t("filterLabels.perks", "Perks"),
       b: i18next.t("filterLabels.bosses", "Bosses"),
       e: i18next.t("filterLabels.creatures", "Enemies"),
       st: i18next.t("filterLabels.structures", "Structures"),
@@ -1565,6 +1573,7 @@ export class UnifiedSearch extends EventEmitter2 {
       hm: i18next.t("searchFilters.holyMountains", "Filter results to show only Holy Mountain shops"),
       p: i18next.t("searchFilters.potions", "Filter results to show only potions"),
       h: i18next.t("searchFilters.hearts", "Filter results to show only hearts"),
+      pk: i18next.t("searchFilters.perks", "Filter results to show only perks"),
       b: i18next.t("searchFilters.bosses", "Filter results to show only bosses"),
       e: i18next.t("searchFilters.creatures", "Filter results to show only creatures"),
       st: i18next.t("searchFilters.structures", "Filter results to show only structures"),

@@ -4833,7 +4833,8 @@
     "structures": "Filtrer les résultats pour afficher uniquement les structures",
     "orbs": "Filtrer les résultats pour afficher uniquement les orbes",
     "spatialAwareness": "Filtrer les résultats pour afficher uniquement les points de conscience spatiale",
-    "hiddenMessages": "Filtrer les résultats pour afficher uniquement les messages masqués"
+    "hiddenMessages": "Filtrer les résultats pour afficher uniquement les messages masqués",
+    "perks": "Filtrer les résultats pour n'afficher que les avantages"
   },
   "filterLabels": {
     "wands": "Baguettes",
@@ -4848,7 +4849,8 @@
     "structures": "Structures",
     "orbs": "Orbes",
     "spatialAwareness": "Conscience spatiale",
-    "hiddenMessages": "Messages cachés"
+    "hiddenMessages": "Messages cachés",
+    "perks": "Avantages"
   },
   "chunkGrid": {
     "title": "Grille de morceaux",
@@ -5224,5 +5226,12 @@
         "dailyDisabled": "La seed quotidienne a toujours tout débloqué."
       }
     }
+  },
+  "perk": {
+    "alwaysCast": "Always Cast",
+    "gambleGrants": "Gamble grants",
+    "unknownTitle": "Avantage inconnu",
+    "unknownParallel": "L'ordre de chargement des Montagnes sacrées et des mondes parallèles est important. Sans connaître votre \"historique de voyage\", il est impossible d'afficher les avantages avec précision.",
+    "noitoolNote": "Notez que les avantages sont affichés comme si vous aviez traversé toutes les Montagnes sacrées dans l'ordre normal lors d'une partie normale sans ramasser d'avantage supplémentaire. Si vous voulez une précision absolue sur les avantages que vous allez voir, utilisez {{link}} en mode \"Advanced\"."
   }
 }

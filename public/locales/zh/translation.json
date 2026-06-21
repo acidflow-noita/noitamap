@@ -4833,7 +4833,8 @@
     "structures": "过滤结果以仅显示结构",
     "orbs": "过滤结果以仅显示球体",
     "spatialAwareness": "过滤结果以仅显示空间感知点",
-    "hiddenMessages": "过滤结果以仅显示隐藏的消息"
+    "hiddenMessages": "过滤结果以仅显示隐藏的消息",
+    "perks": "筛选结果，仅显示特性"
   },
   "filterLabels": {
     "wands": "魔杖",
@@ -4848,7 +4849,8 @@
     "structures": "结构",
     "orbs": "球体",
     "spatialAwareness": "空间意识",
-    "hiddenMessages": "隐藏消息"
+    "hiddenMessages": "隐藏消息",
+    "perks": "特性"
   },
   "chunkGrid": {
     "title": "块网格",
@@ -5224,5 +5226,12 @@
         "dailyDisabled": "每日种子始终解锁所有内容。"
       }
     }
+  },
+  "perk": {
+    "alwaysCast": "Always Cast",
+    "gambleGrants": "Gamble grants",
+    "unknownTitle": "未知特性",
+    "unknownParallel": "神圣之山与平行世界的加载顺序很重要。在不知道你的\"旅行历史\"的情况下，无法准确显示特性。",
+    "noitoolNote": "请注意，这些特性是按照你在普通游戏中以常规顺序经过每一座神圣之山且未拾取额外特性的情况显示的。如果你想绝对精确地知道将会看到哪些特性，请在\"Advanced\"模式下使用 {{link}}。"
   }
 }

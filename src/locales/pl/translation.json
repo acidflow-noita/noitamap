@@ -4833,7 +4833,8 @@
     "structures": "Filtruj wyniki, aby wyświetlić tylko struktury",
     "orbs": "Filtruj wyniki, aby wyświetlić tylko kule",
     "spatialAwareness": "Filtruj wyniki, aby wyświetlić tylko punkty świadomości przestrzennej",
-    "hiddenMessages": "Filtruj wyniki, aby wyświetlić tylko ukryte wiadomości"
+    "hiddenMessages": "Filtruj wyniki, aby wyświetlić tylko ukryte wiadomości",
+    "perks": "Filtruj wyniki, aby pokazać tylko profity"
   },
   "filterLabels": {
     "wands": "Różdżki",
@@ -4848,7 +4849,8 @@
     "structures": "Struktury",
     "orbs": "Kule",
     "spatialAwareness": "Świadomość przestrzenna",
-    "hiddenMessages": "Ukryte wiadomości"
+    "hiddenMessages": "Ukryte wiadomości",
+    "perks": "Profity"
   },
   "chunkGrid": {
     "title": "Siatka kawałków",
@@ -5224,5 +5226,12 @@
         "dailyDisabled": "Dzienny seed ma zawsze wszystko odblokowane."
       }
     }
+  },
+  "perk": {
+    "alwaysCast": "Always Cast",
+    "gambleGrants": "Gamble grants",
+    "unknownTitle": "Nieznany profit",
+    "unknownParallel": "Kolejność wczytywania Świętych Gór i światów równoległych ma znaczenie. Bez znajomości twojej \"historii podróży\" nie da się dokładnie pokazać profitów.",
+    "noitoolNote": "Pamiętaj, że profity są pokazane tak, jakbyś przeszedł przez wszystkie Święte Góry w normalnej kolejności podczas zwykłej rozgrywki i nie podniósł dodatkowego profitu. Jeśli chcesz mieć absolutną pewność, jakie profity zobaczysz, użyj {{link}} w trybie \"Advanced\"."
   }
 }

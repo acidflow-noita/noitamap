@@ -4833,7 +4833,8 @@
     "structures": "Filtre os resultados para mostrar apenas estruturas",
     "orbs": "Filtre os resultados para mostrar apenas orbes",
     "spatialAwareness": "Filtre os resultados para mostrar apenas pontos de consciência espacial",
-    "hiddenMessages": "Filtre os resultados para mostrar apenas mensagens ocultas"
+    "hiddenMessages": "Filtre os resultados para mostrar apenas mensagens ocultas",
+    "perks": "Filtrar resultados para mostrar apenas vantagens"
   },
   "filterLabels": {
     "wands": "Varinhas",
@@ -4848,7 +4849,8 @@
     "structures": "Estruturas",
     "orbs": "Orbes",
     "spatialAwareness": "Consciência Espacial",
-    "hiddenMessages": "Mensagens ocultas"
+    "hiddenMessages": "Mensagens ocultas",
+    "perks": "Vantagens"
   },
   "chunkGrid": {
     "title": "Grade de pedaços",
@@ -5224,5 +5226,12 @@
         "dailyDisabled": "A seed diária sempre tem tudo desbloqueado."
       }
     }
+  },
+  "perk": {
+    "alwaysCast": "Always Cast",
+    "gambleGrants": "Gamble grants",
+    "unknownTitle": "Vantagem desconhecida",
+    "unknownParallel": "A ordem de carregamento das Montanhas Sagradas e dos mundos paralelos importa. Sem conhecer seu \"histórico de viagem\", é impossível mostrar as vantagens com precisão.",
+    "noitoolNote": "Observe que as vantagens são mostradas como se você tivesse passado por todas as Montanhas Sagradas na ordem normal em uma jornada comum e não tivesse pego nenhuma vantagem extra. Se você quer precisão absoluta sobre quais vantagens vai ver, use {{link}} no modo \"Advanced\"."
   }
 }

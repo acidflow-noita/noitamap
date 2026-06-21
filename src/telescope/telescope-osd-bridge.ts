@@ -25,7 +25,7 @@ import {
   requestVariant,
   type UnlockDescriptor,
 } from "../unlocks-toggle";
-import { getCurrentIsDaily } from "../dynamic-map";
+import { getCurrentIsDaily, getCurrentDynamicSeed } from "../dynamic-map";
 import {
   buildMarkerData,
   getAtlas,
@@ -38,6 +38,7 @@ import {
   CHEST_ONLY_TYPES,
   drawSpriteToCanvas,
   getSpriteNativeSize,
+  perkAtlasKey,
 } from "./poi-spatial-index";
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
 import { createMarkerTileSource } from "./marker-tile-source";
@@ -50,6 +51,19 @@ import spells from "../data/spells.json";
 import { CREATURE_DATA } from "../data/creature-data";
 import { SPECIAL_WAND_ALIAS } from "../data/special-wands";
 import { buildExtendedSection } from "../extended-info";
+import perkWiki from "../data/perk-wiki.json";
+
+// id -> { wikipage, image } from the noita.wiki.gg Perks cargo table
+// (baked by build_scripts/generate-perk-wiki.cjs).
+const PERK_WIKI: Record<string, { wikipage?: string; image?: string }> = perkWiki as any;
+
+/** Wiki image URL for a perk whose icon is missing from the local atlas. */
+function perkWikiImageUrl(perkId?: string): string | null {
+  if (!perkId) return null;
+  const e = PERK_WIKI[String(perkId).toUpperCase()];
+  if (e?.image) return `https://noita.wiki.gg/wiki/Special:FilePath/${encodeURIComponent(e.image)}`;
+  return null;
+}
 
 declare const OpenSeadragon: any;
 
@@ -2900,7 +2914,23 @@ function getWikiUrl(poi: any): string | null {
     else if (item.includes("egg")) wikiName = "Egg";
     else if (item === "meditation_cube") wikiName = "Meditation_Chamber";
     else if (item === "great_chest") wikiName = "Great_Treasure_Chest";
-    else if (item === "perk") wikiName = poi.name ? String(poi.name).replace(/\s+/g, "_") : "Perks";
+    else if (item === "perk") {
+      // Unknown parallel-world perk has no concrete identity -> no wiki page.
+      if (poi.unknown) return null;
+      // Per-perk wiki page (Critical_Hit_+, Glass_Cannon, ...). Prefer the
+      // authoritative cargo wikipage; fall back to the translated perk name;
+      // last resort the generic Perks page.
+      const pid = String(poi.perk || "");
+      const entry = pid ? PERK_WIKI[pid.toUpperCase()] : undefined;
+      if (entry?.wikipage) return `https://noita.wiki.gg/wiki/${entry.wikipage.replace(/\s+/g, "_")}`;
+      if (pid) {
+        const k = `perk_${pid.toLowerCase()}`;
+        const nm = gameTranslator.translateItem(k);
+        wikiName = nm !== k ? nm : (poi.name ? String(poi.name) : "Perks");
+      } else {
+        wikiName = poi.name ? String(poi.name) : "Perks";
+      }
+    }
     else if (item === "wandstone") wikiName = "Sauvan_Ydin";
     else if (item === "sunseed") wikiName = "Sun_Seed";
     else if (item === "book") wikiName = "A_Cunning_Contraption";
@@ -3501,6 +3531,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       const k = `item_essence_${poi.material}`;
       const t = gameTranslator.translateItem(k);
       title.textContent = t !== k ? t : (poi.name || "Essence");
+    } else if (poi.item === "perk" && (poi as any).unknown) {
+      title.textContent = i18next.t("perk.unknownTitle", "Unknown Perk");
     } else if (poi.item === "perk" && (poi as any).perk) {
       const k = `perk_${String((poi as any).perk).toLowerCase()}`;
       const t = gameTranslator.translateItem(k);
@@ -3518,8 +3550,101 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     header.appendChild(wrapWithWikiLink(title, poi));
     tooltipEl.appendChild(header);
 
-    // Subtitle / description for items that have an itemdesc_<item> entry
-    // (e.g. wandstone). Mirrors the in-game pickup description.
+    // Unknown (parallel-world) perk: explain why the identity can't be shown.
+    if (poi.item === "perk" && (poi as any).unknown) {
+      const d = document.createElement("div");
+      d.style.cssText = "color:#9a9;font-size:0.82em;font-style:italic;margin-bottom:0.2em";
+      d.textContent = i18next.t(
+        "perk.unknownParallel",
+        "Loading order for holy mountains and parallel worlds matters. Without knowing your \"travel history\" it is impossible to accurately show the perks.",
+      );
+      tooltipEl.appendChild(d);
+    }
+
+    // Perk extras: in-game description plus the data the perk algorithm
+    // surfaces for free — ALWAYS_CAST's bound spell and GAMBLE's two
+    // hypothetical perks.
+    if (poi.item === "perk" && (poi as any).perk) {
+      const perkId = String((poi as any).perk).toLowerCase();
+      const descKey = `perkdesc_${perkId}`;
+      const desc = gameTranslator.translateItem(descKey);
+      if (desc && desc !== descKey) {
+        const d = document.createElement("div");
+        d.style.cssText = "color:#9a9;font-size:0.82em;font-style:italic;margin-bottom:0.2em";
+        d.textContent = desc;
+        tooltipEl.appendChild(d);
+      }
+      const ac = (poi as any).alwaysCast;
+      if (ac) {
+        const acId = String(typeof ac === "string" ? ac : (ac.id ?? ac));
+        const acName = gameTranslator.translateSpell(getSpellName(acId));
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex;align-items:center;gap:0.3em;font-size:0.85em;color:#c8a2ff;margin-top:0.2em";
+        const lbl = document.createElement("span");
+        lbl.textContent = `${i18next.t("perk.alwaysCast", "Always Cast")}:`;
+        row.appendChild(lbl);
+        const img = document.createElement("img");
+        img.style.cssText = "width:24px;height:24px;image-rendering:pixelated";
+        img.title = acName;
+        getPOISpriteFirstFrame({ type: "spell", item: acId }).then((u) => { if (u) img.src = u; });
+        row.appendChild(img);
+        const nm = document.createElement("span");
+        nm.textContent = acName;
+        row.appendChild(nm);
+        tooltipEl.appendChild(row);
+      }
+      const gamble = (poi as any).hypotheticalGamble;
+      if (gamble && Array.isArray(gamble.perks) && gamble.perks.length) {
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex;align-items:center;gap:0.4em;flex-wrap:wrap;font-size:0.85em;color:#bbb;margin-top:0.2em";
+        const lbl = document.createElement("span");
+        lbl.textContent = `${i18next.t("perk.gambleGrants", "Gamble grants")}:`;
+        row.appendChild(lbl);
+        for (const gp of gamble.perks) {
+          const gid = String(gp).toLowerCase();
+          const gk = `perk_${gid}`;
+          const gname = gameTranslator.translateItem(gk);
+          const label = gname !== gk ? gname : String(gp);
+          const box = document.createElement("div");
+          box.style.cssText = "display:flex;align-items:center;gap:0.2em";
+          const gimg = document.createElement("img");
+          gimg.style.cssText = "width:22px;height:22px;image-rendering:pixelated";
+          gimg.title = label;
+          getPOISpriteFirstFrame({ type: "item", item: "perk", perk: gp } as any).then((u) => { if (u) gimg.src = u; });
+          box.appendChild(gimg);
+          const gspan = document.createElement("span");
+          gspan.textContent = label;
+          box.appendChild(gspan);
+          row.appendChild(box);
+        }
+        tooltipEl.appendChild(row);
+      }
+    }
+
+    // Footnote shown on every perk card: perks are computed for the regular
+    // single-world traversal with no extra pickups. Link out to Noitool for
+    // travel-history-accurate results, carrying the current seed.
+    if (poi.item === "perk") {
+      const seed = getCurrentDynamicSeed();
+      const noitoolUrl = seed != null ? `https://www.noitool.com/info?seed=${seed}` : "https://www.noitool.com/info";
+      const link = document.createElement("a");
+      link.href = noitoolUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "Noitool";
+      link.style.cssText = "color:#7ab8ff;text-decoration:underline";
+      const note = document.createElement("div");
+      note.style.cssText = "color:#888;font-size:0.78em;font-style:italic;margin-top:0.4em";
+      const tpl = i18next.t(
+        "perk.noitoolNote",
+        'Note, that perks are shown as if you went through every holy mountain in regular order on a normal run and did not pick up extra perk. If you want to have absolute precision in what perks you are going to see, use {{link}} in "Advanced" mode',
+      );
+      const parts = tpl.split("{{link}}");
+      note.appendChild(document.createTextNode(parts[0] ?? ""));
+      note.appendChild(link);
+      note.appendChild(document.createTextNode(parts[1] ?? ""));
+      tooltipEl.appendChild(note);
+    }
     {
       const descKey = `itemdesc_${poi.item}`;
       const desc = gameTranslator.translateItem(descKey);
@@ -4735,6 +4860,16 @@ export async function getPOISpriteFirstFrame(poi: {
     const loaded = await loadSpritesheetAndAtlas();
     atlas = loaded.atlas;
     spritesheet = loaded.spritesheet;
+  }
+
+  // Perk whose specific icon isn't baked into the local atlas (e.g. Stainless
+  // Armour) — fall back to the wiki image instead of the generic perk square.
+  if (poi.type === "item" && (poi as any).item === "perk" && (poi as any).perk) {
+    const specific = perkAtlasKey(String((poi as any).perk));
+    if (atlas && !atlas[specific]) {
+      const wikiUrl = perkWikiImageUrl(String((poi as any).perk));
+      if (wikiUrl) return wikiUrl;
+    }
   }
 
   const rawKey = getSpriteKey(poi as POI, atlas);
