@@ -5,6 +5,7 @@ import i18next from "../i18n";
 import { getSpellAvailability } from "../util";
 import { getPOISpriteFirstFrame, getTaikasauvaIcon } from "../telescope/telescope-osd-bridge";
 import { perkNameKey } from "../telescope/perk-i18n";
+import { canonicalEntityId } from "../telescope/entity-canonical";
 import spells from "../data/spells.json";
 import { gameTranslator } from "../game-translations/translator";
 import { isSpoilerFree } from "../spoiler-free";
@@ -474,7 +475,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     label = itemName.replace(/_/g, " ");
                   }
                 } else if (r.type === "entity" && r.entity) {
-                  const translationKey = `animal_${String(r.entity).toLowerCase()}`;
+                  const translationKey = `animal_${canonicalEntityId(String(r.entity))}`;
                   const translated = gameTranslator.translateItem(translationKey);
                   // Prefer the creature translation; else the POI's explicit
                   // name (e.g. boss reward "Sampo"); else humanized entity id.
@@ -517,7 +518,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
 
                 // Show creature alias subtitle for entities
                 if (r.type === "entity" && r.entity && !isSpoilerFree()) {
-                  const entityId = String(r.entity).toLowerCase();
+                  const entityId = canonicalEntityId(String(r.entity));
                   const creatureInfo = CREATURE_DATA[entityId];
                   if (creatureInfo) {
                     const currentLang = i18next.language || "en";

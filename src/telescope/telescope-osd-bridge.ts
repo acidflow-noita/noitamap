@@ -43,6 +43,7 @@ import {
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
 import { createMarkerTileSource } from "./marker-tile-source";
 import { perkNameKey, perkDescKey } from "./perk-i18n";
+import { canonicalEntityId } from "./entity-canonical";
 import { addBakedDZIsToOSD, type BakedDziPlacement } from "./baked-dzi-loader";
 import { gameTranslator } from "../game-translations/translator";
 import { isSpoilerFree, getSpoilerCategory, getSpoilerLabel, applySpoilerFree } from "../spoiler-free";
@@ -2956,7 +2957,7 @@ function getWikiUrl(poi: any): string | null {
 
   // Entity / creature
   if (type === "entity" && poi.entity) {
-    const rawEntity = String(poi.entity).split("/").pop()?.replace(".xml", "") || name;
+    const rawEntity = canonicalEntityId(String(poi.entity));
     // Prefer the wikipage from CREATURE_DATA if we have it — many entities
     // (traps, nests, boss orbs, crystals) have entity names that don't
     // correspond to a real wiki page (e.g. "arrowtrap_left" → /wiki/Traps).
@@ -3727,8 +3728,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     header.appendChild(spriteImg);
     const titleCol = document.createElement("div");
     const rawName = String((poi as any).entity || poi.type);
-    let entityId = rawName.toLowerCase();
-    
+    let entityId = canonicalEntityId(rawName);
+
     // Map telescope boss types to actual CREATURE_DATA IDs
     const bossMap: Record<string, string> = {
       alchemist_boss: "boss_alchemist",

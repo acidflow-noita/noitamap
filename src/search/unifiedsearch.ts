@@ -15,6 +15,7 @@ import { authService } from "../auth/auth-service";
 import { AuthUI } from "../auth/auth-ui";
 import { updateURLWithSearch } from "../data_sources/url";
 import { perkNameKey } from "../telescope/perk-i18n";
+import { canonicalEntityId } from "../telescope/entity-canonical";
 
 // Inlined from poi-spatial-index to avoid pulling Flatbush into the main bundle
 const CONTAINER_TYPES = new Set([
@@ -1086,7 +1087,7 @@ export class UnifiedSearch extends EventEmitter2 {
       // Add entity name and translated name for creature search
       let entityNameForSearch = "";
       if (p.type === "entity" && (p as any).entity) {
-        entityNameForSearch = String((p as any).entity).toLowerCase();
+        entityNameForSearch = canonicalEntityId(String((p as any).entity));
       } else if (p.type === "alchemist_boss") {
         entityNameForSearch = "boss_alchemist";
       } else if (p.type === "mestari_boss") {
