@@ -1181,6 +1181,17 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
           } as any);
         }
       }
+      // Essence of Fire is not a biome room (so the scan above misses it); it
+      // sits at a fixed overworld essence-altar spot. Add it explicitly.
+      poisByPW[mainKey].push({
+        type: "item",
+        item: "essence",
+        material: "fire",
+        name: "Essence of Fire",
+        wiki: "https://noita.wiki.gg/wiki/Essences#Essence_of_Fire",
+        x: -14062,
+        y: 370,
+      } as any);
     }
   }
 
