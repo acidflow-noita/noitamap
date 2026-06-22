@@ -15,6 +15,7 @@
     <meta charset="utf-8" />
     <title>Noita Map</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <meta name="gitlab-dast-validation" content="26d164aa-5aa7-4b60-bb61-e10a81376df5" />
     <meta name="description" content="Ultrafast superzoom map for Noita. Map for the video game Noita." />
     <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon/favicon-32x32.png" />
@@ -338,14 +339,16 @@
                 ><i class="bi bi-eye-slash"></i>
               </label>
 
-              <div class="dropdown dynamic-map-only" id="perfModeDropdown"
-                  data-bs-toggle="popover"
-                  data-bs-placement="bottom"
-                  data-bs-trigger="manual"
-                  data-i18n-title="perfMode.title"
-                  data-bs-title="Performance"
-                  data-i18n-content="perfMode.content"
-                  data-bs-content="Performance options for slow devices and small screens."
+              <div
+                class="dropdown dynamic-map-only"
+                id="perfModeDropdown"
+                data-bs-toggle="popover"
+                data-bs-placement="bottom"
+                data-bs-trigger="manual"
+                data-i18n-title="perfMode.title"
+                data-bs-title="Performance"
+                data-i18n-content="perfMode.content"
+                data-bs-content="Performance options for slow devices and small screens."
               >
                 <button
                   type="button"
@@ -380,7 +383,8 @@
                         for="lightModeToggle"
                         style="cursor: pointer"
                         data-i18n="mainWorldOnly.title"
-                      >Render main world only</label>
+                        >Render main world only</label
+                      >
                     </div>
                   </li>
                   <li
@@ -407,7 +411,8 @@
                         for="skipCreaturesToggle"
                         style="cursor: pointer"
                         data-i18n="skipCreatures.title"
-                      >Don't add creatures</label>
+                        >Don't add creatures</label
+                      >
                     </div>
                   </li>
                   <li
@@ -434,7 +439,8 @@
                         for="simplisticBackgroundToggle"
                         style="cursor: pointer"
                         data-i18n="simplisticBackground.title"
-                      >Use simplistic map background</label>
+                        >Use simplistic map background</label
+                      >
                     </div>
                   </li>
                 </ul>
