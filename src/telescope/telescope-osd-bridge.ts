@@ -2161,12 +2161,19 @@ async function compositeSceneBitmap(
       try {
         recolored = recolorSceneVariant(baseImg, scene, biome);
         for (let i = 0; i < recolored.length; i += 4) {
-          if (recolored[i] === 0xff && recolored[i + 1] === 0x00 && recolored[i + 2] === 0xff) {
+          const pr = recolored[i], pg = recolored[i + 1], pb = recolored[i + 2];
+          if (pr === 0xff && pg === 0x00 && pb === 0xff) {
             if (recolored[i + 3] === 0xff) {
               recolored[i] = 0x5a;
               recolored[i + 1] = 0x63;
               recolored[i + 2] = 0x69;
             }
+          } else if (pr === 0x23 && pg === 0x5a && pb === 0x15) {
+            // Music-machine spawn pixel (0x235a15) is registered as a spawn
+            // function only in snowchasm, so telescope's clearSpawnPixels never
+            // recognizes it in overworld scenes (music_machine_stand) and leaves
+            // it as a raw teal dot. Scrub it to transparent.
+            recolored[i + 3] = 0;
           }
         }
       } catch (e) {
@@ -2898,7 +2905,12 @@ function getWikiUrl(poi: any): string | null {
   if (type === "holy_mountain_shop" || type === "shop") wikiName = "Holy_Mountain";
 
   // Containers
-  if (type === "chest") wikiName = "Treasure_Chest";
+  if (type === "chest") {
+    const variant = (poi as any).chestVariant;
+    if (variant === "dark") wikiName = "Crystal_Key#Dark_Chest";
+    else if (variant === "coral") wikiName = "Crystal_Key#Coral_Chest";
+    else wikiName = "Treasure_Chest";
+  }
   if (type === "great_chest") wikiName = "Treasure_Chest";
   if (type === "eye_room") wikiName = "Eye_Room";
 
@@ -2934,6 +2946,10 @@ function getWikiUrl(poi: any): string | null {
     else if (item === "wandstone") wikiName = "Sauvan_Ydin";
     else if (item === "sunseed") wikiName = "Sun_Seed";
     else if (item === "book") wikiName = "A_Cunning_Contraption";
+    else if (item === "musicstone") wikiName = "Kuulokivi";
+    else if (item === "karl") wikiName = "Racetrack";
+    else if (item === "essence_eater") wikiName = "Essence_Eater";
+    else if (item === "music_machine") wikiName = "Music_Machine";
     else wikiName = item;
   }
 
@@ -3650,8 +3666,9 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       const desc = gameTranslator.translateItem(descKey);
       if (desc && desc !== descKey) {
         const sub = document.createElement("div");
-        sub.style.cssText = "color:#9a9;font-size:0.82em;font-style:italic;margin-bottom:0.2em";
-        sub.textContent = desc;
+        sub.style.cssText = "color:#9a9;font-size:0.82em;font-style:italic;margin-bottom:0.2em;white-space:pre-line";
+        // In-game description text encodes line breaks as a literal backslash-n.
+        sub.textContent = desc.replace(/\\n/g, "\n");
         tooltipEl.appendChild(sub);
       }
     }
@@ -3968,6 +3985,26 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     }
     contDiv.appendChild(contRow);
     tooltipEl.appendChild(contDiv);
+  }
+
+  // Dark chest: first-open also unlocks the Copy Trail spell.
+  if (poi.type === "chest" && (poi as any).chestVariant === "dark") {
+    const unlockDiv = document.createElement("div");
+    unlockDiv.style.cssText = "margin-top:0.4em;display:flex;align-items:center;gap:0.3em;color:#888;font-size:1em";
+    const lbl = document.createElement("span");
+    lbl.textContent = i18next.t("poi.unlocks", "Unlocks") + ":";
+    unlockDiv.appendChild(lbl);
+    const c = drawSpriteToCanvas("spell:larpa_chaos_2", 16, 16);
+    if (c) {
+      c.style.width = "32px";
+      c.style.height = "32px";
+      unlockDiv.appendChild(c);
+    }
+    const nm = document.createElement("span");
+    nm.style.cssText = "color:#aaa";
+    nm.textContent = gameTranslator.translateSpell(getSpellName("LARPA_CHAOS_2"));
+    unlockDiv.appendChild(nm);
+    tooltipEl.appendChild(unlockDiv);
   }
 
   // Footer: position info

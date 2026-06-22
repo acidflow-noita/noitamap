@@ -291,11 +291,24 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     }
     if (item === "emerald_tablet") return "item:emerald_tablet";
     if (item === "egg" || item.startsWith("egg_")) return `item:${item}`;
+    // Karl (racecar) and Essence Eater have no item:* sprite — use the entity sprite.
+    if (item === "karl") return "enemy:racing_cart";
+    if (item === "essence_eater") return "enemy:essence_eater";
+    // Kuulokivi: the items_gfx sprite is tiny; use the ui_gfx inventory icon.
+    if (item === "musicstone") return "ui_item:musicstone";
+    if (item === "music_machine") return "prop:music_machine";
     return `item:${item}`;
   }
 
   // Containers — show the chest sprite on the map
-  if (poi.type === "chest") return "item:chest_random";
+  if (poi.type === "chest") {
+    // Crystal-Key chests use their own building sprite; regular chests use the
+    // generic random-chest icon.
+    const variant = (poi as any).chestVariant;
+    if (variant === "dark") return "building:chest_dark";
+    if (variant === "coral") return "building:chest_light";
+    return "item:chest_random";
+  }
   if (poi.type === "pacifist_chest") return "item:chest_random";
   if (poi.type === "great_chest") return "item:chest_random_super";
   if (poi.type === "shop") return null;

@@ -581,6 +581,12 @@ export function clearDynamicMap(viewer: any): void {
 
 export function buildPOIName(p: any): string {
   if (p.type === "wand" && p.name) return p.name;
+  // Explicit in-game name key (item_chest_dark, item_chest_light, item_musicstone,
+  // item_essence_stone, ...) is the authoritative localized name — prefer it.
+  if (p.nameKey) {
+    const t = gameTranslator.translateItem(String(p.nameKey));
+    if (t !== p.nameKey) return t;
+  }
   // Perks: prefer the proper in-game name (perk_<id>) over the raw "perk" item id.
   if (p.item === "perk" && p.perk) {
     const k = `perk_${String(p.perk).toLowerCase()}`;

@@ -6,10 +6,7 @@
  */
 
 import { installTelescopeShim } from "./telescope-dom-shim";
-import {
-  installFetchInterceptor,
-  installImageSrcInterceptor,
-} from "./telescope-data-bridge";
+import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope-data-bridge";
 import { getDataZip } from "../data-archive";
 import { clearCache } from "./tile-cache";
 import PwWorker from "./pw-worker?worker";
@@ -156,7 +153,11 @@ function retowerWands(pois: POI[]): void {
 
 let initialized = false;
 let initPromise: Promise<void> | null = null;
-let biomeAssets: { ng0: Uint32Array | null; ngp: Uint32Array | null; nightmare: Uint32Array | null } = { ng0: null, ngp: null, nightmare: null };
+let biomeAssets: { ng0: Uint32Array | null; ngp: Uint32Array | null; nightmare: Uint32Array | null } = {
+  ng0: null,
+  ngp: null,
+  nightmare: null,
+};
 
 // ─── Initialization ─────────────────────────────────────────────────────────
 
@@ -221,7 +222,7 @@ async function _doInitTelescope(): Promise<void> {
     recolorMaterials: true,
     enableEdgeNoise: true,
     fixHolyMountainEdgeNoise: true,
-    enableStaticPixelScenes: 'all',
+    enableStaticPixelScenes: "all",
     skipCosmeticScenes: false,
     excludeTaikasauva: false,
     excludeEdgeCases: false,
@@ -376,7 +377,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   const useNGPDimensions = isNGP || gameMode === "nightmare";
   const w = useNGPDimensions ? BIOME_CONFIG.W_NGP : BIOME_CONFIG.W_NG0;
   const h = useNGPDimensions ? BIOME_CONFIG.H_NGP : BIOME_CONFIG.H_NG0;
-  const base = isNGP ? biomeAssets.ngp : (gameMode === "nightmare" ? biomeAssets.nightmare : biomeAssets.ng0);
+  const base = isNGP ? biomeAssets.ngp : gameMode === "nightmare" ? biomeAssets.nightmare : biomeAssets.ng0;
 
   if (!base) throw new Error("[Telescope] Biome map assets not loaded");
 
@@ -385,11 +386,14 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
 
   // Debug: Log all unique colors to see if they match constants
   const uniqueColors = new Set(Array.from(biomeData.pixels));
-  console.log("[Telescope Debug] Unique colors in biomeData:", Array.from(uniqueColors).map((c: any) => "0x" + (c >>> 0).toString(16).padStart(8, '0')));
+  console.log(
+    "[Telescope Debug] Unique colors in biomeData:",
+    Array.from(uniqueColors).map((c: any) => "0x" + (c >>> 0).toString(16).padStart(8, "0")),
+  );
 
   // Fix: Ensure alpha is set. The library might return signed or unsigned depending on bits.
   for (let i = 0; i < biomeData.pixels.length; i++) {
-    biomeData.pixels[i] = (biomeData.pixels[i] | 0xFF000000) >>> 0;
+    biomeData.pixels[i] = (biomeData.pixels[i] | 0xff000000) >>> 0;
   }
 
   // Step 1b: Populate the shimmed app's recolorOffscreen canvas.
@@ -400,7 +404,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     recolorCanvas.height = h;
     const ctx = recolorCanvas.getContext("2d")!;
     const id = ctx.createImageData(w, h);
-    
+
     // The library's app.recolorOffscreenBuffer is RGB only (stride 3)
     const outBuffer = new Uint8Array(w * h * 3);
 
@@ -421,7 +425,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
           color = BIOME_COLOR_LOOKUP[color];
         }
       }
-      
+
       const r = (color >> 16) & 0xff;
       const g = (color >> 8) & 0xff;
       const b = color & 0xff;
@@ -551,7 +555,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         gameMode,
         perks,
         skipCosmeticScenes: false,
-        unlocks: (dailySeed || opts.unlocks == null) ? null : opts.unlocks,
+        unlocks: dailySeed || opts.unlocks == null ? null : opts.unlocks,
         dailySeed,
       });
     });
@@ -593,10 +597,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       }
 
       // Scan spawn functions (same wang tile spawns, offset vertically — matches telescope behavior)
-      const vtScan = scanSpawnFunctions(
-        biomeData, tileSpawns, seed, ngPlus, pw, pvt,
-        false, perks, gameMode,
-      );
+      const vtScan = scanSpawnFunctions(biomeData, tileSpawns, seed, ngPlus, pw, pvt, false, perks, gameMode);
       if (vtScan.generatedSpawns && vtScan.generatedSpawns.length > 0) {
         verticalPois.push(...vtScan.generatedSpawns);
       }
@@ -612,7 +613,6 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       if (vtResults && vtResults.pois && vtResults.pois.length > 0) {
         verticalPois.push(...vtResults.pois);
       }
-
     }
 
     // Post-process POIs to fix wand names without modifying library code
@@ -627,21 +627,21 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     // Orb index -> unlock key mapping (derived from game entity data).
     // Order matches telescope's addOrb() call order = game's orb_id order.
     const ORB_UNLOCK_KEYS = [
-      "sea_lava",        // orb_00 - Pyramid
+      "sea_lava", // orb_00 - Pyramid
       "crumbling_earth", // orb_01 - Floating Island
-      "tentacle",        // orb_02 - Vault
-      "nuke",            // orb_03 - Pyramid (Inside) -- NOTE: telescope places Vault before Pyramid Inside
-      "necromancy",      // orb_04 - Hell
-      "bomb_holy",       // orb_05 - Snowcave
-      "spiral_shot",     // orb_06 - Desert
-      "cloud_thunder",   // orb_07 - Nuke (location name)
-      "firework",        // orb_08 - Orb 1
-      "exploding_deer",  // orb_09 - Orb 2
+      "tentacle", // orb_02 - Vault
+      "nuke", // orb_03 - Pyramid (Inside) -- NOTE: telescope places Vault before Pyramid Inside
+      "necromancy", // orb_04 - Hell
+      "bomb_holy", // orb_05 - Snowcave
+      "spiral_shot", // orb_06 - Desert
+      "cloud_thunder", // orb_07 - Nuke (location name)
+      "firework", // orb_08 - Orb 1
+      "exploding_deer", // orb_09 - Orb 2
       "material_cement", // orb_10 - Orb 3
     ];
     if (pw === 0 && biomeData.orbs && Array.isArray(biomeData.orbs)) {
       // Daily seed: never mark collected — always show orbs with spells inside
-      const unlockSet = (!dailySeed && opts.unlocks) ? new Set(opts.unlocks) : null;
+      const unlockSet = !dailySeed && opts.unlocks ? new Set(opts.unlocks) : null;
       for (let i = 0; i < biomeData.orbs.length; i++) {
         const orb = biomeData.orbs[i];
         const unlockKey = ORB_UNLOCK_KEYS[i] || null;
@@ -847,18 +847,27 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     }
 
     // Deduplicate friend
-    const friendPois = combinedPois.filter((p: any) => p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss");
+    const friendPois = combinedPois.filter(
+      (p: any) => p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss",
+    );
     if (friendPois.length > 0) {
       const keep = friendPois.find((p: any) => p.type === "friend") || friendPois[0];
-      combinedPois = combinedPois.filter((p: any) => !(p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss"));
+      combinedPois = combinedPois.filter(
+        (p: any) =>
+          !(p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss"),
+      );
       combinedPois.push(keep);
     }
 
     // Deduplicate alchemist_boss
-    const alchemistPois = combinedPois.filter((p: any) => p.type === "alchemist_boss" || (p.type === "entity" && p.entity === "boss_alchemist"));
+    const alchemistPois = combinedPois.filter(
+      (p: any) => p.type === "alchemist_boss" || (p.type === "entity" && p.entity === "boss_alchemist"),
+    );
     if (alchemistPois.length > 0) {
       const keep = alchemistPois.find((p: any) => p.type === "alchemist_boss") || alchemistPois[0];
-      combinedPois = combinedPois.filter((p: any) => !(p.type === "alchemist_boss" || (p.type === "entity" && p.entity === "boss_alchemist")));
+      combinedPois = combinedPois.filter(
+        (p: any) => !(p.type === "alchemist_boss" || (p.type === "entity" && p.entity === "boss_alchemist")),
+      );
       combinedPois.push(keep);
     }
     for (const poi of combinedPois) {
@@ -899,18 +908,27 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       workerPois = workerPois.filter((p: any) => p.type !== "starting_loadout");
 
       // Deduplicate friend worker
-      const friendPoisWorker = workerPois.filter((p: any) => p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss");
+      const friendPoisWorker = workerPois.filter(
+        (p: any) => p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss",
+      );
       if (friendPoisWorker.length > 0) {
         const keep = friendPoisWorker.find((p: any) => p.type === "friend") || friendPoisWorker[0];
-        workerPois = workerPois.filter((p: any) => !(p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss"));
+        workerPois = workerPois.filter(
+          (p: any) =>
+            !(p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss"),
+        );
         workerPois.push(keep);
       }
 
       // Deduplicate alchemist_boss worker
-      const alchemistPoisWorker = workerPois.filter((p: any) => p.type === "alchemist_boss" || (p.type === "entity" && p.entity === "boss_alchemist"));
+      const alchemistPoisWorker = workerPois.filter(
+        (p: any) => p.type === "alchemist_boss" || (p.type === "entity" && p.entity === "boss_alchemist"),
+      );
       if (alchemistPoisWorker.length > 0) {
         const keep = alchemistPoisWorker.find((p: any) => p.type === "alchemist_boss") || alchemistPoisWorker[0];
-        workerPois = workerPois.filter((p: any) => !(p.type === "alchemist_boss" || (p.type === "entity" && p.entity === "boss_alchemist")));
+        workerPois = workerPois.filter(
+          (p: any) => !(p.type === "alchemist_boss" || (p.type === "entity" && p.entity === "boss_alchemist")),
+        );
         workerPois.push(keep);
       }
 
@@ -945,6 +963,133 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     }
   }
 
+  // Crystal-Key chests + other fixed world-item markers that the public map's
+  // static "Items" overlay shows but telescope never emits. One of each per
+  // parallel world (same local coords, shifted by the PW stride). Done here in
+  // the noitamap adapter (NOT the telescope lib) so it covers both the main
+  // world and the worker-generated background PWs. Chest contents are the
+  // deterministic first-open spell rewards (Noita's chest_dark.lua /
+  // chest_light.lua); repeat-open gives 3 frame-RNG picks which are unknowable.
+  if (ngPlus === 0) {
+    const fixedItemsMw = getWorldSize(isNGP, gameMode);
+    const chestSpells = (ids: string[], x: number, y: number) =>
+      ids.map((s, i) => ({ type: "item", item: "spell", spell: s, x: x + i * 12, y }));
+    for (const pw of parallelWorlds) {
+      const pwKey = `${pw},0`;
+      if (!poisByPW[pwKey]) continue;
+      const pwOffsetX = pw * fixedItemsMw * 512;
+      const darkX = 3840 + pwOffsetX;
+      const darkY = 15599;
+      poisByPW[pwKey].push({
+        type: "chest",
+        chestVariant: "dark",
+        nameKey: "item_chest_dark",
+        name: "Dark chest",
+        x: darkX,
+        y: darkY,
+        biome: "lavacave",
+        items: chestSpells(
+          ["ALL_ACID", "ALL_NUKES", "ALL_DISCS", "ALL_ROCKETS", "ALL_BLACKHOLES", "ALL_DEATHCROSSES"],
+          darkX,
+          darkY,
+        ),
+      } as any);
+      const coralX = 11519 + pwOffsetX;
+      const coralY = -4886;
+      poisByPW[pwKey].push({
+        type: "chest",
+        chestVariant: "coral",
+        nameKey: "item_chest_light",
+        name: "Coral chest",
+        x: coralX,
+        y: coralY,
+        biome: "desert",
+        items: chestSpells(["DIVIDE_2", "DIVIDE_3", "DIVIDE_4", "BURST_8", "BURST_X"], coralX, coralY),
+      } as any);
+      poisByPW[pwKey].push({
+        type: "item",
+        item: "musicstone",
+        nameKey: "item_musicstone",
+        name: "Kuulokivi",
+        x: -3324 + pwOffsetX,
+        y: 3328,
+        biome: "mountain_tree",
+      } as any);
+      poisByPW[pwKey].push({
+        type: "item",
+        item: "karl",
+        name: "Karl",
+        x: 3239 + pwOffsetX,
+        y: 2400,
+        biome: "snowcave",
+      } as any);
+      // Overworld Music Machines (music boxes). Telescope only registers the
+      // spawn pixel for snowchasm, so the overworld ones are never emitted —
+      // add them here. No in-game name key exists for the prop, so plain labels.
+      // Tweak this single offset to nudge every music machine's marker until the
+      // alignment looks right (x = right, y = up is negative).
+      const musicMachineLocalAlignmentFix = { x: 13, y: -5 };
+      const mmx = musicMachineLocalAlignmentFix.x;
+      const mmy = musicMachineLocalAlignmentFix.y;
+      poisByPW[pwKey].push({
+        type: "item",
+        item: "music_machine",
+        name: "Music Machine (Pond)",
+        x: 2799 + pwOffsetX + mmx,
+        y: 282 + mmy,
+        biome: "lake",
+      } as any);
+      poisByPW[pwKey].push({
+        type: "item",
+        item: "music_machine",
+        name: "Music Machine (Lake)",
+        x: -12188 + pwOffsetX + mmx,
+        y: -385 + mmy,
+        biome: "lake",
+      } as any);
+      poisByPW[pwKey].push({
+        type: "item",
+        item: "music_machine",
+        name: "Music Machine (Tree)",
+        x: -1919 + pwOffsetX + mmx,
+        y: -1366 + mmy,
+        biome: "mountain_tree",
+      } as any);
+      poisByPW[pwKey].push({
+        type: "item",
+        item: "music_machine",
+        name: "Music Machine (Desert)",
+        x: 14678 + pwOffsetX + mmx,
+        y: -35 + mmy,
+        biome: "desert",
+      } as any);
+    }
+
+    // Essence Eaters guarding the overworld essence altars. Absolute world
+    // positions (one per parallel world already baked into the coords), so they
+    // are placed once each rather than offset inside the PW loop.
+    const essenceEaters: Array<[number, number]> = [
+      [12569, 16],
+      [23783, 16],
+      [-23783, 16], // desert EEs (PW 0 / +1 / -1)
+      [48925, 4], // desert EE (far east)
+      [-6883, -169],
+      [29469, -174],
+      [-43235, -174], // snow-wasteland EEs (PW 0 / +1 / -1)
+    ];
+    for (const [ex, ey] of essenceEaters) {
+      poisByPW["0,0"]?.push({
+        type: "item",
+        item: "essence_eater",
+        nameKey: "item_essence_stone",
+        name: "Essence Eater",
+        x: ex,
+        y: ey,
+        biome: "desert",
+      } as any);
+    }
+  }
+
   // Inject temple foreground pixel scenes for heaven/hell across ALL parallel worlds.
   // addStaticPixelScenes skips chunk-based scenes when pwIndexVertical !== 0,
   // so Spirited (potion_mimics) and Ominous (darkness) temple foregrounds
@@ -952,8 +1097,8 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   // scene entries whose keys match the _fg.png index in data.zip.
   // Scale wang pixel dimensions (TILE_SIZE=10) to match main-world wang renderer output.
   const TEMPLE_BIOME_COLORS: Record<number, { key: string; name: string; w: number; h: number }> = {
-    0xffff00fe: { key: 'static_tile/temples-assets/potion_mimics', name: 'potion_mimics', w: 1530, h: 1540 },
-    0xffff00fd: { key: 'static_tile/temples-assets/darkness', name: 'darkness', w: 1530, h: 940 },
+    0xffff00fe: { key: "static_tile/temples-assets/potion_mimics", name: "potion_mimics", w: 1530, h: 1540 },
+    0xffff00fd: { key: "static_tile/temples-assets/darkness", name: "darkness", w: 1530, h: 940 },
   };
   const templeMw = getWorldSize(ngPlus > 0, gameMode);
   for (const pw of parallelWorlds) {
@@ -995,10 +1140,26 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   {
     const essMw = getWorldSize(isNGP, gameMode);
     const ESSENCE_COLORS: Record<number, { material: string; name: string; wiki: string }> = {
-      0xff157cb0: { material: "laser", name: "Essence of Earth", wiki: "https://noita.wiki.gg/wiki/Essences#Essence_of_Earth" },
-      0xff157cb8: { material: "air", name: "Essence of Air", wiki: "https://noita.wiki.gg/wiki/Essences#Essence_of_Air" },
-      0xff157cb5: { material: "water", name: "Essence of Water", wiki: "https://noita.wiki.gg/wiki/Essences#Essence_of_Water" },
-      0xff157cb6: { material: "alcohol", name: "Essence of Spirits", wiki: "https://noita.wiki.gg/wiki/Essences#Essence_of_Spirits" },
+      0xff157cb0: {
+        material: "laser",
+        name: "Essence of Earth",
+        wiki: "https://noita.wiki.gg/wiki/Essences#Essence_of_Earth",
+      },
+      0xff157cb8: {
+        material: "air",
+        name: "Essence of Air",
+        wiki: "https://noita.wiki.gg/wiki/Essences#Essence_of_Air",
+      },
+      0xff157cb5: {
+        material: "water",
+        name: "Essence of Water",
+        wiki: "https://noita.wiki.gg/wiki/Essences#Essence_of_Water",
+      },
+      0xff157cb6: {
+        material: "alcohol",
+        name: "Essence of Spirits",
+        wiki: "https://noita.wiki.gg/wiki/Essences#Essence_of_Spirits",
+      },
     };
     const mainKey = "0,0";
     if (poisByPW[mainKey]) {

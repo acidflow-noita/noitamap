@@ -1075,6 +1075,13 @@ export class UnifiedSearch extends EventEmitter2 {
       // Concatenate all searchable fields into one text blob
       const parts: string[] = [p.name ?? "", p.type ?? "", p.item ?? "", p.enemy ?? "", p.material ?? ""];
 
+      // POIs carrying an explicit in-game translation key (e.g. item_chest_dark,
+      // item_chest_light, item_musicstone) are searchable by their localized name.
+      if ((p as any).nameKey) {
+        const t = gameTranslator.translateItem(String((p as any).nameKey));
+        if (t && t !== (p as any).nameKey) parts.push(t);
+      }
+
       // Add entity name and translated name for creature search
       let entityNameForSearch = "";
       if (p.type === "entity" && (p as any).entity) {
@@ -1341,6 +1348,7 @@ export class UnifiedSearch extends EventEmitter2 {
             amount: p.amount,
             spell: p.spell,
             nameKey: (p as any).nameKey,
+            chestVariant: (p as any).chestVariant,
             perk: (p as any).perk,
           };
         });
@@ -1434,6 +1442,7 @@ export class UnifiedSearch extends EventEmitter2 {
           amount: p.amount,
           spell: p.spell,
           nameKey: (p as any).nameKey,
+          chestVariant: (p as any).chestVariant,
           perk: (p as any).perk,
         } as any;
       });
