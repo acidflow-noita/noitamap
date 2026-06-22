@@ -27,6 +27,7 @@ import {
   resetPersistentBiomeBackgrounds,
 } from "./telescope/telescope-osd-bridge";
 import { probeBakedDZIs, type BakedDziProbeResult } from "./telescope/baked-dzi-loader";
+import { perkNameKey } from "./telescope/perk-i18n";
 import { gameTranslator } from "./game-translations/translator";
 
 // ─── Types & state ───────────────────────────────────────────────────────────
@@ -589,7 +590,7 @@ export function buildPOIName(p: any): string {
   }
   // Perks: prefer the proper in-game name (perk_<id>) over the raw "perk" item id.
   if (p.item === "perk" && p.perk) {
-    const k = `perk_${String(p.perk).toLowerCase()}`;
+    const k = perkNameKey(p.perk);
     const t = gameTranslator.translateItem(k);
     if (t !== k) return t;
   }

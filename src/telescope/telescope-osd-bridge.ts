@@ -42,6 +42,7 @@ import {
 } from "./poi-spatial-index";
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
 import { createMarkerTileSource } from "./marker-tile-source";
+import { perkNameKey, perkDescKey } from "./perk-i18n";
 import { addBakedDZIsToOSD, type BakedDziPlacement } from "./baked-dzi-loader";
 import { gameTranslator } from "../game-translations/translator";
 import { isSpoilerFree, getSpoilerCategory, getSpoilerLabel, applySpoilerFree } from "../spoiler-free";
@@ -2936,7 +2937,7 @@ function getWikiUrl(poi: any): string | null {
       const entry = pid ? PERK_WIKI[pid.toUpperCase()] : undefined;
       if (entry?.wikipage) return `https://noita.wiki.gg/wiki/${entry.wikipage.replace(/\s+/g, "_")}`;
       if (pid) {
-        const k = `perk_${pid.toLowerCase()}`;
+        const k = perkNameKey(pid);
         const nm = gameTranslator.translateItem(k);
         wikiName = nm !== k ? nm : (poi.name ? String(poi.name) : "Perks");
       } else {
@@ -3550,7 +3551,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     } else if (poi.item === "perk" && (poi as any).unknown) {
       title.textContent = i18next.t("perk.unknownTitle", "Unknown Perk");
     } else if (poi.item === "perk" && (poi as any).perk) {
-      const k = `perk_${String((poi as any).perk).toLowerCase()}`;
+      const k = perkNameKey((poi as any).perk);
       const t = gameTranslator.translateItem(k);
       title.textContent = t !== k ? t : (poi.name || "Perk");
     } else if (poi.item === "heart") title.textContent = i18next.t("poi.heartSmall", "Heart (+25 HP)");
@@ -3582,7 +3583,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // hypothetical perks.
     if (poi.item === "perk" && (poi as any).perk) {
       const perkId = String((poi as any).perk).toLowerCase();
-      const descKey = `perkdesc_${perkId}`;
+      const descKey = perkDescKey(perkId);
       const desc = gameTranslator.translateItem(descKey);
       if (desc && desc !== descKey) {
         const d = document.createElement("div");
@@ -3617,8 +3618,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         lbl.textContent = `${i18next.t("perk.gambleGrants", "Gamble grants")}:`;
         row.appendChild(lbl);
         for (const gp of gamble.perks) {
-          const gid = String(gp).toLowerCase();
-          const gk = `perk_${gid}`;
+          const gk = perkNameKey(gp);
           const gname = gameTranslator.translateItem(gk);
           const label = gname !== gk ? gname : String(gp);
           const box = document.createElement("div");
@@ -3851,7 +3851,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           ? gameTranslator.translateSpell(getSpellName(String(ci.spell)))
           : ci.item === "perk" && ci.perk
           ? (() => {
-              const k = `perk_${String(ci.perk).toLowerCase()}`;
+              const k = perkNameKey(ci.perk);
               const t = gameTranslator.translateItem(k);
               return t !== k ? t : (ci.name || ciName);
             })()

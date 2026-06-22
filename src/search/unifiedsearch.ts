@@ -14,6 +14,7 @@ import { SPECIAL_WAND_ALIAS } from "../data/special-wands";
 import { authService } from "../auth/auth-service";
 import { AuthUI } from "../auth/auth-ui";
 import { updateURLWithSearch } from "../data_sources/url";
+import { perkNameKey } from "../telescope/perk-i18n";
 
 // Inlined from poi-spatial-index to avoid pulling Flatbush into the main bundle
 const CONTAINER_TYPES = new Set([
@@ -1171,7 +1172,7 @@ export class UnifiedSearch extends EventEmitter2 {
 
       // Perks: index the translated perk name (perk_<id>).
       if (p.item === "perk" && (p as any).perk) {
-        const key = `perk_${String((p as any).perk).toLowerCase()}`;
+        const key = perkNameKey((p as any).perk);
         const t = gameTranslator.translateItem(key);
         if (t && t !== key) parts.push(t);
       }
@@ -1229,7 +1230,7 @@ export class UnifiedSearch extends EventEmitter2 {
             if (t && t !== k) parts.push(t);
           }
           if (ci.item === "perk" && ci.perk) {
-            const k = `perk_${String(ci.perk).toLowerCase()}`;
+            const k = perkNameKey(ci.perk);
             const t = gameTranslator.translateItem(k);
             if (t && t !== k) parts.push(t);
           }

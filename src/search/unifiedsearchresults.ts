@@ -4,6 +4,7 @@ import { EventEmitter2 } from "eventemitter2";
 import i18next from "../i18n";
 import { getSpellAvailability } from "../util";
 import { getPOISpriteFirstFrame, getTaikasauvaIcon } from "../telescope/telescope-osd-bridge";
+import { perkNameKey } from "../telescope/perk-i18n";
 import spells from "../data/spells.json";
 import { gameTranslator } from "../game-translations/translator";
 import { isSpoilerFree } from "../spoiler-free";
@@ -455,7 +456,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     const translated = gameTranslator.translateItem(key);
                     label = translated !== key ? translated : (r.name || "Essence");
                   } else if (itemName === "perk" && r.perk) {
-                    const key = `perk_${String(r.perk).toLowerCase()}`;
+                    const key = perkNameKey(r.perk);
                     const translated = gameTranslator.translateItem(key);
                     label = translated !== key ? translated : (r.name || "Perk");
                   } else if (itemName === "gold" && r.amount) {
