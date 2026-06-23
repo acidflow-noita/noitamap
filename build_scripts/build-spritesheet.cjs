@@ -585,6 +585,28 @@ async function main() {
     }
   }
 
+  // ─── wand:custom/experimental_wand_1, _2 (rotated) ─────────────────────────
+  // Experimental Wands ("It's a wand, ok?") live OUTSIDE the scanned wand dir,
+  // at data/entities/items/wands/experimental/*.png, so the normal scan never
+  // bakes a wand:custom/experimental_wand_N key. Telescope names these sprites
+  // "custom/experimental_wand_N", so without this block the map marker (and the
+  // baked daily DZI) has no sprite even though the card/search resolve via the
+  // data.zip fallback. Load + rotate them like every other wand:* sprite.
+  for (const n of ["experimental_wand_1", "experimental_wand_2"]) {
+    const wandKey = `wand:custom/${n}`;
+    if (seenKeys.has(wandKey)) continue;
+    try {
+      const buf = await zip.file(`data/entities/items/wands/experimental/${n}.png`).async("arraybuffer");
+      const img = decodePng(buf);
+      const rotated = rotateCCW(img.data, img.width, img.height);
+      sprites.push({ key: wandKey, data: rotated.data, width: rotated.width, height: rotated.height });
+      seenKeys.add(wandKey);
+      console.log(`[build-spritesheet] Added ${wandKey} (rotated from entities/items/wands/experimental/${n}.png)`);
+    } catch (e) {
+      console.warn(`[build-spritesheet] WARNING: could not bake ${wandKey}:`, e.message);
+    }
+  }
+
   // ─── enemy:boss_fish_eye_open — last "open" frame of Syväolento's eye ───────
   // The eye spritesheet (data/entities/animals/boss_fish/eye.png) has an "open"
   // animation at pos_y=72, 5 frames of 50x72 laid out left-to-right. We want

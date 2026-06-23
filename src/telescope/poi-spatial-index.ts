@@ -143,16 +143,11 @@ function resolveSpellKey(spellId: string): string {
 // `wand:` key. Map them to the real atlas key so they render on the map (the
 // marker renderer only draws from the atlas — no per-marker data.zip fallback).
 //
-// NOTE: custom/kantele and custom/flute are NOT remapped here — build-spritesheet
-// bakes rotated wand:custom/kantele and wand:custom/flute sprites from their item
-// PNGs, so resolveWandSpriteKey's full-path lookup finds them directly (correct
-// image + correct tip-up orientation).
-const WAND_SPRITE_REMAP: Record<string, string> = {
-  // Experimental wands 1 & 2 have no baked sprite of their own; reuse the
-  // "honest" experimental-wand sprite that is in the atlas.
-  "custom/experimental_wand_1": "wand:custom/actual_wand_honest",
-  "custom/experimental_wand_2": "wand:custom/actual_wand_honest",
-};
+// NOTE: custom/kantele, custom/flute, and custom/experimental_wand_1/2 are NOT
+// remapped here — build-spritesheet bakes rotated wand:custom/<name> sprites
+// from their source PNGs, so resolveWandSpriteKey's full-path lookup finds them
+// directly (correct image + correct tip-up orientation).
+const WAND_SPRITE_REMAP: Record<string, string> = {};
 
 // A handful of perk ids don't match their atlas icon filename (the atlas keys
 // are item:perks/<icon filename>, not item:perks/<perk id>). Map the id to the
