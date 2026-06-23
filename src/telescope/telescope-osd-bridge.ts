@@ -3548,10 +3548,12 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       }
     }
 
-    // Footnote shown on every perk card: perks are computed for the regular
-    // single-world traversal with no extra pickups. Link out to Noitool for
-    // travel-history-accurate results, carrying the current seed.
-    if (poi.item === "perk") {
+    // Footnote shown on Holy-Mountain perk cards: perks are computed for the
+    // regular single-world traversal with no extra pickups. Link out to Noitool
+    // for travel-history-accurate results, carrying the current seed. Skipped
+    // for fixed-location perks (poi.fixed), whose identity is not traversal-
+    // dependent (e.g. Moon Radar).
+    if (poi.item === "perk" && !(poi as any).fixed) {
       const seed = getCurrentDynamicSeed();
       const noitoolUrl = seed != null ? `https://www.noitool.com/info?seed=${seed}` : "https://www.noitool.com/info";
       const link = document.createElement("a");

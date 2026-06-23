@@ -766,6 +766,20 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         items: [{ type: "item", item: "perk", perk: "map", name: "Spatial Awareness" }],
       } as any);
 
+      // Moon Radar: a fixed-location perk pickup in the "???" room east of the
+      // Overgrown Cavern. Flagged not_in_default_perk_pool in telescope's
+      // perks.js, so it never appears in a generated Holy Mountain deck and
+      // telescope emits no POI for it — add it here at its fixed world spot.
+      combinedPois.push({
+        type: "item",
+        item: "perk",
+        perk: "moon_radar",
+        x: 16128,
+        y: 3332,
+        biome: "moon_room",
+        fixed: true,
+      } as any);
+
       // Add Meat Boss (Kolmisilmän sydän)
       combinedPois.push({
         type: "boss_meat",
