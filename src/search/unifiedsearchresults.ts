@@ -468,6 +468,10 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     label = "Heart (+50 HP)";
                   } else if (itemName === "full_heal") {
                     label = "Full Heal";
+                  } else if (itemName === "emerald_tablet") {
+                    // Carries a descriptive per-location name ("Emerald Tablet
+                    // (Holy Bomb)"); use it instead of the humanized item id.
+                    label = r.name || "Emerald Tablet";
                   } else if (r.nameKey) {
                     const t = gameTranslator.translateItem(String(r.nameKey));
                     label = t !== r.nameKey ? t : (r.name || itemName.replace(/_/g, " "));
@@ -515,6 +519,20 @@ export class UnifiedSearchResults extends EventEmitter2 {
                   }
                 }
                 nameDiv.textContent = label;
+
+                // Emerald Tablet proper title (e.g. "Secretorum Hermetis")
+                // shown as a subtitle under the location name.
+                if (r.type === "item" && r.item === "emerald_tablet" && r.titleKey) {
+                  const t = gameTranslator.translateItem(String(r.titleKey));
+                  if (t && t !== r.titleKey) {
+                    const titleLine = document.createElement("div");
+                    titleLine.textContent = t;
+                    titleLine.style.fontSize = "0.82em";
+                    titleLine.style.color = "#9a9";
+                    titleLine.style.fontStyle = "italic";
+                    nameDiv.appendChild(titleLine);
+                  }
+                }
 
                 // Show creature alias subtitle for entities
                 if (r.type === "entity" && r.entity && !isSpoilerFree()) {

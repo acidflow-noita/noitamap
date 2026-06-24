@@ -285,6 +285,12 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
       return "item:perk";
     }
     if (item === "emerald_tablet") return "item:emerald_tablet";
+    // Lore books (A Cunning Contraption, Alchemist's Note, ...) use the small
+    // book prop sprite; there is no plain item:book key in the atlas.
+    if (item === "book") return "item:book_s";
+    // Paha Silmä (Evil Eye): use the ui_gfx inventory icon (ui_item:evil_eye);
+    // the items_gfx world sprite (item:evil_eye) reads wrong on the map.
+    if (item === "paha_silma") return "ui_item:evil_eye";
     if (item === "egg" || item.startsWith("egg_")) return `item:${item}`;
     // Karl (racecar) and Essence Eater have no item:* sprite — use the entity sprite.
     if (item === "karl") return "enemy:racing_cart";
@@ -388,6 +394,9 @@ const MARKER_Y_OFFSET: Record<string, number> = {
   "item:heart": 0,
   "item:heart_extrahp": 0,
   "item:heart_extrahp_evil": 0,
+  // Emerald Tablets sink into the floor at the orb-relative spawn point; lift
+  // them so the sprite sits on the surface.
+  "item:emerald_tablet": -30,
 };
 
 const MARKER_Y_OFFSET_PREFIXES: Array<{ prefix: string; offset: number }> = [
@@ -515,9 +524,10 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
       if (skipCreatures && (poi.type === "enemies" || poi.type === "props")) continue;
 
       // Add the POI itself as a marker
-      if (poi.type === "triangle_boss") {
-        // Gate Guardian is already painted into the baked background — add only
-        // an invisible click target so the card opens on map click.
+      if (poi.type === "triangle_boss" || (poi as any).clickOnly) {
+        // Gate Guardian / lake-hut book etc. are already painted into the baked
+        // background — add only an invisible click target so the card opens on
+        // map click.
         addClickOnlyMarker(items, poi, pw);
       } else {
         addMarkerItem(items, poi, pw, worldCenter, atlas);

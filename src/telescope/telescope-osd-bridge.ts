@@ -2835,6 +2835,7 @@ function getWikiUrl(poi: any): string | null {
     else if (item.includes("potion")) wikiName = "Potions";
     else if (item.includes("pouch") || item === "powder_stash") wikiName = "Powder_Pouch";
     else if (item === "emerald_tablet") wikiName = "Emerald_Tablet";
+    else if (item === "paha_silma") wikiName = "Paha_Silmä";
     else if (item.includes("egg")) wikiName = "Egg";
     else if (item === "meditation_cube") wikiName = "Meditation_Chamber";
     else if (item === "great_chest") wikiName = "Great_Treasure_Chest";
@@ -3477,6 +3478,27 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     } else title.textContent = poi.name || gameTranslator.translateItem(label).replace(/_/g, " ");
     header.appendChild(wrapWithWikiLink(title, poi));
     tooltipEl.appendChild(header);
+
+    // Proper in-game title (e.g. "Secretorum Hermetis", "Tabula Smaragdina",
+    // "Emerald Tablet - volume II") shown as a subheading under the location name.
+    if ((poi as any).titleKey) {
+      const t = gameTranslator.translateItem(String((poi as any).titleKey));
+      if (t && t !== (poi as any).titleKey) {
+        const sub = document.createElement("div");
+        sub.style.cssText = "color:#bbb;font-size:0.85em;font-style:italic;margin-bottom:0.2em";
+        sub.textContent = t;
+        tooltipEl.appendChild(sub);
+      }
+    }
+
+    // Flavour text (e.g. lore book contents) — preserve the original line breaks.
+    if ((poi as any).description) {
+      const d = document.createElement("div");
+      d.style.cssText =
+        "color:#9a9;font-size:0.82em;font-style:italic;white-space:pre-line;text-align:center;margin-bottom:0.2em";
+      d.textContent = String((poi as any).description);
+      tooltipEl.appendChild(d);
+    }
 
     // Unknown (parallel-world) perk: explain why the identity can't be shown.
     if (poi.item === "perk" && (poi as any).unknown) {

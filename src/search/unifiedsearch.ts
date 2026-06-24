@@ -1151,6 +1151,24 @@ export class UnifiedSearch extends EventEmitter2 {
         if (tk && tk !== "animal_wand_ghost") parts.push(tk);
       }
 
+      // Paha Silmä (Evil Eye): the POI carries only its Finnish name. Add the
+      // English aliases so "evil eye" / "eye" find it. Keyed on item id so it
+      // works on both freshly generated and previously baked POIs.
+      if (p.type === "item" && p.item === "paha_silma") {
+        parts.push("Paha Silmä", "paha silma", "evil eye", "eye");
+      }
+
+      // Emerald Tablets: index the proper title ("Secretorum Hermetis",
+      // "Tabula Smaragdina", "Emerald Tablet - volume II") so they are findable
+      // by their in-game name, not just "tablet".
+      if (p.type === "item" && p.item === "emerald_tablet") {
+        parts.push("tablet", "emerald tablet");
+        if ((p as any).titleKey) {
+          const t = gameTranslator.translateItem(String((p as any).titleKey));
+          if (t && t !== (p as any).titleKey) parts.push(t);
+        }
+      }
+
       // Special named wands (Huilu/Kantele) carry only their Finnish name. Add
       // the English alias so e.g. "flute" finds Huilu. Keyed by sprite (stable).
       if (p.type === "wand" && (p as any).sprite) {
@@ -1352,6 +1370,7 @@ export class UnifiedSearch extends EventEmitter2 {
             nameKey: (p as any).nameKey,
             chestVariant: (p as any).chestVariant,
             perk: (p as any).perk,
+            titleKey: (p as any).titleKey,
           };
         });
 

@@ -9,6 +9,7 @@ import { installTelescopeShim } from "./telescope-dom-shim";
 import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope-data-bridge";
 import { getDataZip } from "../data-archive";
 import { clearCache } from "./tile-cache";
+import orbsData from "../data/orbs.json";
 import PwWorker from "./pw-worker?worker";
 
 // Telescope modules
@@ -319,7 +320,7 @@ async function _doInitTelescope(): Promise<void> {
 
   // 10. Cache bust check: If we just updated the library, clear the generation cache
   // to ensure fixed logic actually runs instead of showing old empty results.
-  const LIB_VERSION = "2026-06-15-taikasauva-tag";
+  const LIB_VERSION = "2026-06-24-tablet-tree-nudge";
   if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
     console.log("[Telescope] Library version updated, clearing generation cache...");
     try {
@@ -690,6 +691,19 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         if (poi.type === "item" && (poi as any).item === "gourd" && (poi as any).biome === `friend_${friendRoom}`) {
           poi.y += 80;
         }
+        // Reposition the gourd_room gourd to its real in-world spot (telescope's
+        // chunk-center estimate sits too high/left).
+        if (poi.type === "item" && (poi as any).item === "gourd" && (poi as any).biome === "gourd_room") {
+          poi.x = -16183;
+          poi.y = -6272;
+        }
+        // Paha Silmä (Evil Eye): telescope emits a bare {item:'paha_silma'} with
+        // no name. Attach the in-game name key (item_evil_eye -> "Paha Silmä")
+        // so the card title and search resolve it instead of showing the raw id.
+        if (poi.type === "item" && (poi as any).item === "paha_silma") {
+          (poi as any).name = "Paha Silmä";
+          (poi as any).nameKey = "item_evil_eye";
+        }
       }
 
       // Add mestari_secret boss (boss_wizard) at mestari_secret orbroom center
@@ -703,13 +717,46 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         biome: "mestari_secret",
         items: [
           { type: "item", item: "wandstone", nameKey: "item_wandstone", name: "Sauvan Ydin" },
-          { type: "item", item: "book", nameKey: "booktitle_mestari", name: "A Cunning Contraption" },
           { type: "item", item: "spell", spell: "RESET" },
           { type: "item", item: "spell", spell: "ADD_TRIGGER" },
           { type: "item", item: "spell", spell: "ADD_TIMER" },
           { type: "item", item: "spell", spell: "ADD_DEATH_TRIGGER" },
           { type: "item", item: "spell", spell: "DUPLICATE" },
         ],
+      } as any);
+
+      // "A Cunning Contraption" (booktitle_mestari) sits in the mestari_secret
+      // room as a standalone world item, NOT a boss drop — own clickable POI.
+      combinedPois.push({
+        type: "item",
+        item: "book",
+        nameKey: "booktitle_mestari",
+        name: "A Cunning Contraption",
+        wiki: "https://noita.wiki.gg/wiki/Books",
+        x: 12573,
+        y: 15230,
+        biome: "mestari_secret",
+      } as any);
+
+      // "Alchemist's Note" (booktitle_fisher): the book inside the lake fisher's
+      // hut is painted into the baked background, so it needs no sprite on the
+      // map — only an invisible click target (clickOnly) that opens its card.
+      combinedPois.push({
+        type: "item",
+        item: "book",
+        clickOnly: true,
+        nameKey: "booktitle_fisher",
+        name: "Alchemist's Note",
+        wiki: "https://noita.wiki.gg/wiki/Books",
+        description:
+          "Here I'm safe. I am safe.\n" +
+          "I left the others behind. And I have locked my research so that only those with real understanding can reach it.\n" +
+          "I should not worry. As long as I resist the temptation. I will be safe.\n" +
+          "I know my limits. Here I am far away from them.\n" +
+          "I should not worry.",
+        x: -12440,
+        y: 200,
+        biome: "lake",
       } as any);
 
       // Add forgotten (boss_ghost) manually due to lack of telescope coverage
@@ -1102,6 +1149,55 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         biome: "desert",
       } as any);
     }
+
+    // Emerald Tablets (orb-room lore books). The orbs themselves render on the
+    // dynamic map from data/orbs.json (biomeData.orbs is empty on NG), and each
+    // orbroom_NN.lua spawns book_NN at (orb - 30, orb + 40). So derive one
+    // Emerald Tablet POI per dynamic-map orb directly from orbs.json. The orb's
+    // icon index (orb_NN.png) maps to its volume title (booktitleNN in common.csv).
+    for (const orb of orbsData as any[]) {
+      if (!orb.maps || !orb.maps.includes("dynamic-main-branch")) continue;
+      const idxMatch = String(orb.icon || "").match(/orb_(\d+)\.png/);
+      const titleKey = idxMatch ? `booktitle${idxMatch[1]}` : undefined;
+      // Per-orb spawn nudges where the generic (orb-30, +40) offset lands wrong.
+      const isSeaOfLava = String(orb.name || "").includes("Sea of Lava");
+      poisByPW["0,0"]?.push({
+        type: "item",
+        item: "emerald_tablet",
+        name: orb.name ? `Emerald Tablet (${String(orb.name).replace(/^Orb:\s*/, "")})` : "Emerald Tablet",
+        titleKey,
+        wiki: "https://noita.wiki.gg/wiki/Emerald_Tablet",
+        x: orb.x - 30 + (isSeaOfLava ? 10 : 0),
+        y: orb.y + 40 + (isSeaOfLava ? -10 : 0),
+        biome: "orb_room",
+      } as any);
+    }
+
+    // Lava-lake Emerald Tablet ("Tabula Smaragdina", book_corpse). Spawned by the
+    // lavalake static scene, not orbs.json — placed explicitly at the world coord.
+    poisByPW["0,0"]?.push({
+      type: "item",
+      item: "emerald_tablet",
+      name: "Emerald Tablet (Lava lake)",
+      titleKey: "booktitle_corpse",
+      wiki: "https://noita.wiki.gg/wiki/Emerald_Tablet",
+      x: 2337,
+      y: 843,
+      biome: "lavalake",
+    } as any);
+
+    // Tree Emerald Tablet ("Secretorum Hermetis", book_tree). Spawned by the
+    // mountain_tree static scene (mountain_tree.lua spawn_book), not orbs.json.
+    poisByPW["0,0"]?.push({
+      type: "item",
+      item: "emerald_tablet",
+      name: "Emerald Tablet (Tree)",
+      titleKey: "booktitle_tree",
+      wiki: "https://noita.wiki.gg/wiki/Emerald_Tablet",
+      x: -1328,
+      y: -156,
+      biome: "mountain_tree",
+    } as any);
   }
 
   // Inject temple foreground pixel scenes for heaven/hell across ALL parallel worlds.
