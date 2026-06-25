@@ -5,7 +5,7 @@
     "directory": "./public",
   },
   "vars": {
-    "ALLOWED_ORIGINS": "http://localhost:5173,https://noitamap.com,https://dev.noitamap.com,https://dynamic-map.noitamap.com,https://dynamic-map.noitamap.pages.dev",
+    "ALLOWED_ORIGINS": "http://localhost:5173,https://noitamap.com,https://dev.noitamap.com,https://dynamic-map.noitamap.com,https://dynamic-map.noitamap.pages.dev,https://sage.runfast.stream",
   },
   "routes": [
     {
