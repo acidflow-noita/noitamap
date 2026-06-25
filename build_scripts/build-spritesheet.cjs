@@ -58,6 +58,10 @@ const SCAN_DIRS = [
   "data/props_gfx/",
   "data/props_breakable_gfx/",
   "data/projectiles_gfx/",
+  // Achievement Pillars segments (data/biome_impl/pillars/*.png) — each
+  // pillar_part_<code>.png is an engraved 48x48 achievement icon, stacked by
+  // mountain_tree.lua spawn_pillars. Baked so the structure can be rendered.
+  "data/biome_impl/pillars/",
 ];
 
 // Explicit single-PNG inclusions outside SCAN_DIRS.
@@ -322,6 +326,12 @@ function getAtlasKey(zipPath, isWand) {
   if (zipPath.startsWith("data/projectiles_gfx/")) {
     const rel = zipPath.slice("data/projectiles_gfx/".length).replace(/\.png$/, "");
     return `projectile:${rel}`;
+  }
+
+  // Achievement Pillar segments → pillar:<basename> (e.g. pillar:pillar_part_secretcd)
+  if (zipPath.startsWith("data/biome_impl/pillars/")) {
+    const name = path.basename(zipPath, ".png");
+    return `pillar:${name}`;
   }
 
   // Generic fallback for remaining ui_gfx
@@ -658,6 +668,30 @@ async function main() {
   }
 
   console.log(`[build-spritesheet] Total sprites: ${sprites.length}`);
+
+  // ─── Grayscale variants for pillar segments ────────────────────────────────
+  // Achievement-pillar segments render in full colour when the achievement is
+  // unlocked and desaturated ("not unlocked yet") otherwise. Bake a grayscale
+  // twin (pillar_gray:<name>) for every pillar:<name> so the locked state is a
+  // plain atlas-key swap at render time — no per-marker canvas filter needed.
+  {
+    let grayCount = 0;
+    for (const s of sprites.slice()) {
+      if (!s.key.startsWith("pillar:")) continue;
+      const grayKey = s.key.replace(/^pillar:/, "pillar_gray:");
+      if (seenKeys.has(grayKey)) continue;
+      const g = new Uint8ClampedArray(s.data.length);
+      for (let i = 0; i < s.data.length; i += 4) {
+        const lum = (s.data[i] * 0.299 + s.data[i + 1] * 0.587 + s.data[i + 2] * 0.114) | 0;
+        g[i] = g[i + 1] = g[i + 2] = lum;
+        g[i + 3] = s.data[i + 3];
+      }
+      sprites.push({ key: grayKey, data: g, width: s.width, height: s.height });
+      seenKeys.add(grayKey);
+      grayCount++;
+    }
+    if (grayCount) console.log(`[build-spritesheet] Added ${grayCount} grayscale pillar variants`);
+  }
 
   // ─── Pack sprites into rows ────────────────────────────────────────────────
   const atlas = {};

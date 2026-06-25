@@ -288,6 +288,16 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     // Lore books (A Cunning Contraption, Alchemist's Note, ...) use the small
     // book prop sprite; there is no plain item:book key in the atlas.
     if (item === "book") return "item:book_s";
+    // Achievement Pillar segments. Structural pieces (base/fade/cap) are always
+    // full colour; engraved achievement segments use the grayscale twin when locked.
+    if (item === "pillar_segment") {
+      const code = (poi as any).segCode as string;
+      const locked = (poi as any).locked as boolean;
+      if (!code) return "pillar:pillar_part";
+      if (code === "fade") return "pillar:pillar_part_fade";
+      if (code.startsWith("pillar_end_")) return `pillar:${code}`;
+      return `${locked ? "pillar_gray:pillar_part_" : "pillar:pillar_part_"}${code}`;
+    }
     // Paha Silmä (Evil Eye): use the ui_gfx inventory icon (ui_item:evil_eye);
     // the items_gfx world sprite (item:evil_eye) reads wrong on the map.
     if (item === "paha_silma") return "ui_item:evil_eye";

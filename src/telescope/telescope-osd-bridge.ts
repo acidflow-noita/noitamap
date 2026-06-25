@@ -41,6 +41,7 @@ import {
   perkAtlasKey,
 } from "./poi-spatial-index";
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
+import { poiPillarAssociation } from "../data/pillars";
 import { createMarkerTileSource } from "./marker-tile-source";
 import { perkNameKey, perkDescKey } from "./perk-i18n";
 import { canonicalEntityId } from "./entity-canonical";
@@ -3209,6 +3210,47 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     hideMarkerTooltip();
   };
   
+  // "Pillar" button: any POI tied to an achievement segment (bosses, essences,
+  // orbs, crystal-key chests, ...) gets a button that flies to its pillar
+  // column. Skipped on the pillar segments themselves. Association is derived
+  // from the same PILLAR_REQUIREMENTS targets the forward links use.
+  if ((item.poi as any).item !== "pillar_segment") {
+    const assoc = poiPillarAssociation(item.poi);
+    if (assoc) {
+      const pillarBtn = document.createElement("button");
+      pillarBtn.style.cssText = `
+        background: rgba(255,255,255,0.1); border: 0.065em solid rgba(255,255,255,0.2);
+        border-radius: 0.25em; color: #ccc; cursor: pointer; padding: 0.15em 0.5em;
+        display: flex; align-items: center; gap: 0.3em; justify-content: center; font-size: 0.85em;
+        transition: all 0.2s;
+      `;
+      pillarBtn.innerHTML =
+        '<i class="bi bi-bookmark-star"></i><span>' + i18next.t("poi.pillarSingular", "Achievement pillar") + "</span>";
+      pillarBtn.title = i18next.t("poi.pillarGoto", "Show on map");
+      pillarBtn.onmouseenter = () => { pillarBtn.style.background = "rgba(255,255,255,0.2)"; };
+      pillarBtn.onmouseleave = () => { pillarBtn.style.background = "rgba(255,255,255,0.1)"; };
+      pillarBtn.onclick = (e) => {
+        e.stopPropagation();
+        const v = (window as any).__osdViewer;
+        if (!v) return;
+        // Open the SPECIFIC segment's card for this achievement (this also
+        // closes the current card and runs the cinematic goto). Fall back to a
+        // plain pan to the column if the segment marker isn't indexed.
+        const seg = globalMarkerData?.items.find(
+          (it) => (it.poi as any).item === "pillar_segment" && (it.poi as any).flag === assoc.flag,
+        )?.poi as any;
+        if (seg) {
+          openTooltipForPOI(seg.id, v, { fallbackX: seg.x, fallbackY: seg.y, fallbackPoi: seg });
+        } else if (typeof v.panToTarget === "function") {
+          v.panToTarget(assoc.x, assoc.y);
+        } else if (v.viewport) {
+          v.viewport.panTo(new (OpenSeadragon as any).Point(assoc.x, assoc.y), true);
+        }
+      };
+      topBar.appendChild(pillarBtn);
+    }
+  }
+
   if (lockBtn) topBar.appendChild(lockBtn);
   topBar.appendChild(shareBtn);
   topBar.appendChild(closeBtn);
@@ -3466,6 +3508,11 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       const k = perkNameKey((poi as any).perk);
       const t = gameTranslator.translateItem(k);
       title.textContent = t !== k ? t : (poi.name || "Perk");
+    } else if ((poi as any).item === "pillar_segment") {
+      const flag = String((poi as any).flag || "");
+      if (flag.startsWith("__struct")) title.textContent = i18next.t("poi.pillars", "Achievement Pillars");
+      else if ((poi as any).locked) title.textContent = i18next.t("poi.pillarLocked", "Not unlocked yet");
+      else title.textContent = (poi as any).name || i18next.t("poi.pillars", "Achievement Pillars");
     } else if (poi.item === "heart") title.textContent = i18next.t("poi.heartSmall", "Heart (+25 HP)");
     else if (poi.item === "heart_bigger") title.textContent = i18next.t("poi.heartBig", "Heart (+50 HP)");
     else if (poi.item === "full_heal") title.textContent = i18next.t("poi.fullHeal", "Full Heal");
@@ -3478,6 +3525,130 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     } else title.textContent = poi.name || gameTranslator.translateItem(label).replace(/_/g, " ");
     header.appendChild(wrapWithWikiLink(title, poi));
     tooltipEl.appendChild(header);
+
+    // Pillar segment: show which pillar (theme) and what unlocks the engraving.
+    // Skipped for the plain structural pieces (base/fade/cap, __struct flags).
+    if ((poi as any).item === "pillar_segment" && !String((poi as any).flag || "").startsWith("__struct")) {
+      const theme = String((poi as any).theme || "");
+      if (theme) {
+        const sub = document.createElement("div");
+        sub.style.cssText = "color:#bbb;font-size:0.85em;font-style:italic;margin-bottom:0.2em";
+        sub.textContent = i18next.t(theme, theme);
+        tooltipEl.appendChild(sub);
+      }
+      // "To unlock: ..." line, resolved from the structured spec so the name is
+      // pulled from the verified common.csv translation (all 16 langs) and only
+      // the short template/phrase comes from the locale files. When the spec
+      // names a boss POI (targetType), the name becomes a clickable link that
+      // flies the map to that boss and opens its card (reusing openTooltipForPOI).
+      const spec = (poi as any).reqSpec;
+      if (spec) {
+        const d = document.createElement("div");
+        d.style.cssText = "color:#aaa;font-size:0.85em;margin-bottom:0.2em";
+        const lead = document.createElement("span");
+        lead.textContent = `${i18next.t("poi.pillarHowTo", "To unlock")}: `;
+        d.appendChild(lead);
+
+        // Small map-pin glyph ("you are here"), placed to the RIGHT of the link
+        // label with a gap.
+        const PIN_SVG =
+          '<svg width="11" height="11" viewBox="0 0 24 24" style="vertical-align:-1px;margin-left:3px" fill="currentColor" aria-hidden="true">' +
+          '<path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>';
+
+        // Fly the map to a link target. Resolution order: explicit POI type;
+        // essence material; crystal-key chest variant; any orb; fixed coords.
+        // Reuses the same cinematic goto search results / seed report use
+        // (panToTarget draws the arrow + pulse, openTooltipForPOI opens the card).
+        const travelTo = (link: import("../data/pillars").PillarTarget) => {
+          const v = (window as any).__osdViewer;
+          if (!v) return;
+          const open = (p: any) =>
+            openTooltipForPOI(p.id, v, { fallbackX: p.x, fallbackY: p.y, fallbackPoi: p });
+          const find = (pred: (p: any) => boolean) =>
+            globalMarkerData?.items.find((it) => pred(it.poi as any))?.poi as any;
+          let p: any;
+          if (link.targetType) p = find((q) => q.type === link.targetType);
+          else if (link.material) p = find((q) => q.item === "essence" && q.material === link.material);
+          else if (link.chestVariant) p = find((q) => q.chestVariant === link.chestVariant);
+          else if (link.orb) p = find((q) => q.item === "orb");
+          if (p) { open(p); return; }
+          if (typeof link.x === "number" && typeof link.y === "number") {
+            if (typeof v.panToTarget === "function") v.panToTarget(link.x, link.y);
+            else if (v.viewport) v.viewport.panTo(new (OpenSeadragon as any).Point(link.x, link.y), true);
+          }
+        };
+
+        const makePin = (label: string, link: import("../data/pillars").PillarTarget) => {
+          const a = document.createElement("a");
+          a.href = "#";
+          a.style.cssText =
+            "color:#7ab8ff;text-decoration:underline dashed;cursor:pointer;white-space:nowrap";
+          a.title = i18next.t("poi.pillarGoto", "Show on map");
+          const s = document.createElement("span");
+          s.textContent = label;
+          a.appendChild(s);
+          a.insertAdjacentHTML("beforeend", PIN_SVG);
+          a.addEventListener("click", (ev) => {
+            ev.preventDefault();
+            travelTo(link);
+          });
+          return a;
+        };
+
+        // Render `sentence` into `d`, wrapping each link's label (where it
+        // appears literally) in a dashed pin-link. Labels not found inline
+        // (locale phrased the place differently) get a trailing pin chip so the
+        // travel affordance is never lost.
+        const renderWithLinks = (
+          sentence: string,
+          links: Array<import("../data/pillars").PillarLink>,
+        ) => {
+          const matches: Array<{ start: number; end: number; link: (typeof links)[number] }> = [];
+          const trailing: typeof links = [];
+          for (const link of links) {
+            const idx = sentence.indexOf(link.label);
+            if (idx >= 0 && !matches.some((m) => idx < m.end && idx + link.label.length > m.start)) {
+              matches.push({ start: idx, end: idx + link.label.length, link });
+            } else {
+              trailing.push(link);
+            }
+          }
+          matches.sort((a, b) => a.start - b.start);
+          let cursor = 0;
+          for (const m of matches) {
+            if (m.start > cursor) d.appendChild(document.createTextNode(sentence.slice(cursor, m.start)));
+            d.appendChild(makePin(m.link.label, m.link));
+            cursor = m.end;
+          }
+          if (cursor < sentence.length) d.appendChild(document.createTextNode(sentence.slice(cursor)));
+          for (const link of trailing) {
+            d.appendChild(document.createTextNode(" "));
+            d.appendChild(makePin(link.label, link));
+          }
+        };
+
+        if (spec.tmpl && (spec.nameKey || spec.creatureId)) {
+          // Boss/essence: name from verified common.csv (nameKey), or from
+          // CREATURE_DATA when there is no localized animal_* key (gate guardian).
+          let resolvedName: string;
+          if (spec.nameKey) {
+            const name = gameTranslator.translateItem(spec.nameKey);
+            resolvedName = name && name !== spec.nameKey ? name : i18next.t(spec.nameKey, spec.nameKey);
+          } else {
+            const cd = CREATURE_DATA[spec.creatureId as string];
+            resolvedName = cd?.alias || cd?.name || String(spec.creatureId);
+          }
+          const sentence = i18next.t(spec.tmpl, { name: resolvedName });
+          const tgt = spec.target ?? (spec.targetType ? { targetType: spec.targetType } : null);
+          renderWithLinks(sentence, tgt ? [{ label: resolvedName, ...tgt }] : []);
+        } else if (spec.key) {
+          // Free-form phrase; linkify any entity/place names it references.
+          const sentence = i18next.t(spec.key, spec.key);
+          renderWithLinks(sentence, spec.links || []);
+        }
+        tooltipEl.appendChild(d);
+      }
+    }
 
     // Proper in-game title (e.g. "Secretorum Hermetis", "Tabula Smaragdina",
     // "Emerald Tablet - volume II") shown as a subheading under the location name.
@@ -3984,6 +4155,24 @@ function hideMarkerTooltip(): void {
     clearTargetPoiId();
   }
 }
+
+// ESC closes any open POI card, regardless of focus/state. Installed once at
+// module load (capture phase so it wins over other handlers).
+let _escHandlerInstalled = false;
+function installEscToCloseCard(): void {
+  if (_escHandlerInstalled || typeof document === "undefined") return;
+  _escHandlerInstalled = true;
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.key === "Escape" && tooltipEl) {
+        hideMarkerTooltip();
+      }
+    },
+    { capture: true },
+  );
+}
+installEscToCloseCard();
 
 let canvasMoveCleanup: (() => void) | null = null;
 let globalMarkerData: MarkerData | null = null;
@@ -4686,6 +4875,9 @@ export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: numb
     const pw = parseInt(pwStr);
     for (const poi of pois) {
       const isEnemySpawn = poi.type === "enemies" || poi.type === "props";
+      // Pillar segments are a decorative structure (~120 tiles); keep them off
+      // the search list. They still render + open cards via the map markers.
+      if ((poi as any).item === "pillar_segment") continue;
       // Enemy/prop spawn containers: only emit inner items, not the parent
       if (!isEnemySpawn) {
         flat.push({ ...poi, pw, worldX: poi.x, worldY: poi.y });

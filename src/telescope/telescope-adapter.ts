@@ -10,6 +10,7 @@ import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope
 import { getDataZip } from "../data-archive";
 import { clearCache } from "./tile-cache";
 import orbsData from "../data/orbs.json";
+import { buildPillarSegments, makePillarUnlockPredicate, PILLAR_BASE } from "../data/pillars";
 import PwWorker from "./pw-worker?worker";
 
 // Telescope modules
@@ -320,7 +321,7 @@ async function _doInitTelescope(): Promise<void> {
 
   // 10. Cache bust check: If we just updated the library, clear the generation cache
   // to ensure fixed logic actually runs instead of showing old empty results.
-  const LIB_VERSION = "2026-06-24-tablet-tree-nudge";
+  const LIB_VERSION = "2026-06-25-pillars-v6";
   if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
     console.log("[Telescope] Library version updated, clearing generation cache...");
     try {
@@ -1198,6 +1199,17 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       y: -156,
       biome: "mountain_tree",
     } as any);
+
+    // Achievement Pillars (mountain_tree.lua spawn_pillars): 6 pillars built
+    // from per-achievement segments. Daily / no-mod -> everything unlocked
+    // (full colour); mod -> only the keys opts.unlocks reported, the rest
+    // desaturated. Anchored at the items.json "Pillars" coord.
+    {
+      const isUnlocked = makePillarUnlockPredicate(dailySeed ? null : (opts.unlocks ?? null));
+      for (const seg of buildPillarSegments(PILLAR_BASE.x, PILLAR_BASE.y, isUnlocked)) {
+        poisByPW["0,0"]?.push(seg as any);
+      }
+    }
   }
 
   // Inject temple foreground pixel scenes for heaven/hell across ALL parallel worlds.

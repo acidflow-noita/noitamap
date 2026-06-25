@@ -1,0 +1,476 @@
+/**
+ * pillars.ts
+ *
+ * Achievement Pillars reconstruction. Ported from Noita's
+ * data/scripts/biomes/mountain_tree.lua `spawn_pillars`:
+ *
+ *   - 6 pillars, COUNT*INC wide, INC apart, centred on the spawn point.
+ *   - Each pillar i has a fixed category of achievements (FLAGS[i]).
+ *   - Build order (bottom -> top): a `fade` cap below, the base segment, 3 plain
+ *     segments, then ONE engraved segment (pillar_part_<code>) per achievement,
+ *     then an end cap (pillar_end_0X).
+ *   - In-game only UNLOCKED achievements get a segment. We always emit every
+ *     segment and mark locked ones so they render desaturated ("not unlocked yet").
+ *
+ * Segment art is baked into the spritesheet as pillar:<basename> (and a
+ * grayscale twin pillar_gray:<basename>) by build-spritesheet.cjs.
+ */
+
+const COUNT = 6;
+const WIDTH = 660;
+const INC = WIDTH / COUNT; // 110
+const SIZE = 48; // segment height/width in world px
+const ABOVE = 3; // plain segments above the base before achievements
+
+// End-cap selection per pillar, verbatim from spawn_pillars.
+const END_CAPS = ["pillar_end_01", "pillar_end_03", "pillar_end_06", "pillar_end_02", "pillar_end_05", "pillar_end_04"];
+
+// Wiki section anchor per pillar index (the page splits into 6 named sections).
+const PILLAR_SECTIONS = [
+  "Pillar_of_Sacrifice_&_Transformation",
+  "Pillar_of_the_Essences",
+  "Pillar_of_Completions",
+  "Pillar_of_Bosses",
+  "Pillar_of_Accomplishments",
+  "Pillar_of_Secrets",
+];
+
+// i18n key for each pillar's heading (resolved on the card). Full phrase per
+// language so e.g. "Pillar of Bosses" reads naturally everywhere.
+const PILLAR_THEMES = [
+  "pillar.theme.sacrifice",
+  "pillar.theme.essences",
+  "pillar.theme.completions",
+  "pillar.theme.bosses",
+  "pillar.theme.accomplishments",
+  "pillar.theme.secrets",
+];
+
+/**
+ * How each achievement segment is unlocked, as a structured spec resolved to
+ * localized text at render time (telescope-osd-bridge resolvePillarRequirement).
+ *
+ *   tmpl       - i18n template key containing {{name}} (e.g. "pillar.req.defeat").
+ *   nameKey    - common.csv key whose verified translation fills {{name}}. Names
+ *                are NEVER blind-translated — they come from the game data that
+ *                is already localized in all 16 languages.
+ *   key        - i18n key for a self-contained phrase with no {{name}} param.
+ *   targetType - POI `type` to fly-to + open when the {{name}} link is clicked
+ *                (reuses the search/seed-report cinematic goto). Optional.
+ *
+ * boss `animal_*` and `item_essence_*` keys are the same ones the boss cards and
+ * essence cards already use, so they are guaranteed present in common.csv.
+ */
+export interface PillarTarget {
+  /** POI type to resolve a seed-dependent travel target via the marker index. */
+  targetType?: string;
+  /** Essence material (fire/water/laser/air/alcohol) — matches the essence POI. */
+  material?: string;
+  /** Crystal-key chest variant (dark/coral) — matches the chest POI. */
+  chestVariant?: string;
+  /** Any orb POI (the orb-pickup achievements). */
+  orb?: boolean;
+  /** Fixed world coords for static structures (e.g. the Avarice Diamond). */
+  x?: number;
+  y?: number;
+}
+
+export interface PillarLink extends PillarTarget {
+  /**
+   * Literal term to find inside the resolved sentence and turn into a dashed
+   * pin-link. Proper nouns (Toveri, Tapion vasalli, Kolmisilmä) are kept
+   * untranslated in every locale, so a literal match works language-wide.
+   * Place names (Avarice Diamond) match inline in English and fall back to a
+   * trailing pin chip in locales whose sentence phrased the place differently.
+   */
+  label: string;
+}
+
+export interface PillarReqSpec {
+  tmpl?: string;
+  nameKey?: string;
+  /** CREATURE_DATA id whose alias names {{name}} when no animal_* key exists
+   *  (e.g. the Gate Guardian has no localized animal_boss_gate entry). */
+  creatureId?: string;
+  key?: string;
+  targetType?: string;
+  /** Where the {{name}} in a tmpl phrase travels to (essence/chest/orb/coords). */
+  target?: PillarTarget;
+  /** Inline travel links for the free-form `key` phrases. */
+  links?: PillarLink[];
+}
+
+// Reusable travel-link presets. Coords for fixed structures come from
+// src/data/structures.json; POI-type links resolve to the generated POI.
+const LINK_TOVERI: PillarLink = { label: "Toveri", targetType: "friend" };
+const LINK_AVARICE: PillarLink = { label: "Avarice Diamond", x: 9472, y: 4330 };
+const LINK_TAPIO: PillarLink = { label: "Tapion vasalli", targetType: "islandspirit" };
+const LINK_KOLMI: PillarLink = { label: "Kolmisilmä", targetType: "boss_centipede" };
+
+// Fixed-structure travel targets (coords from src/data/structures.json). These
+// are where the achievement's unlock actually happens in the world (derived
+// from the AddFlagPersistent call sites in data/scripts/**). Used as the
+// segment's `target` so the {{name}}/phrase links fly to the right spot.
+const T_MOUNTAIN_ALTAR: PillarTarget = { x: 781, y: -1167 };
+const T_THE_WORK: PillarTarget = { x: 6397, y: 15072 };
+const T_MOON: PillarTarget = { x: 259, y: -25847 };
+const T_DARK_MOON: PillarTarget = { x: 261, y: 37764 };
+const T_SCALES: PillarTarget = { x: 13060, y: 8 };
+const T_GREED_PEDESTAL: PillarTarget = { x: -1376, y: -415 };
+const T_NULL_ALTAR: PillarTarget = { x: 14080, y: 7510 };
+const T_MEDITATION: PillarTarget = { x: -4349, y: 2303 };
+const T_BURIED_EYE: PillarTarget = { x: 3894, y: 4405 };
+const T_HOURGLASS: PillarTarget = { x: -2221, y: 5247 };
+const T_END_OF_EVERYTHING: PillarTarget = { x: -4862, y: 15110 };
+const T_GOURD_CAVE: PillarTarget = { x: -16134, y: -6312 };
+const T_EXP_WAND_DIAMOND: PillarTarget = { x: 16127, y: 9986 };
+const T_TOWER_PORTAL: PillarTarget = { x: 9984, y: 4358 };
+
+export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
+  // Pillar 1 — Sacrifice & Transformation
+  // Altar sacrifices all happen at the Mountain Altar (altar_tablet_magic.lua).
+  misc_chest_rain: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.treasureChest", target: T_MOUNTAIN_ALTAR },
+  misc_util_rain: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.utilityBox", target: T_MOUNTAIN_ALTAR },
+  misc_worm_rain: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.wormCrystal", target: T_MOUNTAIN_ALTAR },
+  misc_greed_rain: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.greedCrystal", target: T_MOUNTAIN_ALTAR },
+  misc_altar_tablet: { key: "pillar.req.altarTablet", links: [{ label: "Mountain Altar", ...T_MOUNTAIN_ALTAR }] },
+  misc_mimic_potion_rain: {
+    tmpl: "pillar.req.sacrifice",
+    nameKey: "pillar.item.potionMimic",
+    target: T_MOUNTAIN_ALTAR,
+  },
+  misc_monk_bots: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.monkStatue", target: T_MOUNTAIN_ALTAR },
+  misc_sun_effect: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.sunstone", target: T_MOUNTAIN_ALTAR },
+  misc_darksun_effect: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.darkSunstone", target: T_MOUNTAIN_ALTAR },
+  secret_tower: { key: "pillar.req.tower", links: [{ label: "The Tower", ...T_TOWER_PORTAL }] },
+  player_status_ghostly: { key: "pillar.req.transformGhostly" },
+  player_status_ratty: { key: "pillar.req.transformRatty" },
+  player_status_funky: { key: "pillar.req.transformFunky" },
+  player_status_lukky: { key: "pillar.req.transformLukky" },
+  player_status_halo: { key: "pillar.req.transformHalo" },
+  // Pillar 2 — Essences (names from common.csv item_essence_*; link to the essence POI)
+  essence_fire: { tmpl: "pillar.req.collect", nameKey: "item_essence_fire", target: { material: "fire" } },
+  essence_water: { tmpl: "pillar.req.collect", nameKey: "item_essence_water", target: { material: "water" } },
+  essence_laser: { tmpl: "pillar.req.collect", nameKey: "item_essence_laser", target: { material: "laser" } },
+  essence_air: { tmpl: "pillar.req.collect", nameKey: "item_essence_air", target: { material: "air" } },
+  essence_alcohol: { tmpl: "pillar.req.collect", nameKey: "item_essence_alcohol", target: { material: "alcohol" } },
+  secret_moon: { key: "pillar.req.voidMoon", links: [{ label: "Moon", ...T_MOON }] },
+  secret_moon2: { key: "pillar.req.drunkMoon", links: [{ label: "Moon", ...T_MOON }] },
+  special_mood: { key: "pillar.req.gourdMoon", links: [LINK_KOLMI, { label: "Moon", ...T_MOON }] },
+  secret_dmoon: { key: "pillar.req.bloodMoon", links: [{ label: "Dark Moon", ...T_DARK_MOON }] },
+  dead_mood: { key: "pillar.req.darkGourdMoon", links: [{ label: "Dark Moon", ...T_DARK_MOON }] },
+  secret_sun_collision: { key: "pillar.req.asAboveSoBelow", links: [{ label: "Moon", ...T_MOON }] },
+  secret_darksun_collision: { key: "pillar.req.asAboveSoBelowDark", links: [{ label: "Dark Moon", ...T_DARK_MOON }] },
+  // Pillar 3 — Completions
+  progress_ending0: { key: "pillar.req.endingGreed" },
+  progress_ending1_toxic: { key: "pillar.req.endingToxic" },
+  progress_ending1_gold: { key: "pillar.req.endingPure" },
+  progress_ending2: { key: "pillar.req.endingPeaceful" },
+  progress_newgameplusplus3: { key: "pillar.req.endingNgpp" },
+  progress_nightmare: { key: "pillar.req.endingNightmare" },
+  // Pillar 4 — Bosses (names from common.csv animal_*; links fly to the boss POI)
+  miniboss_dragon: { tmpl: "pillar.req.defeat", nameKey: "animal_boss_dragon", targetType: "dragon" },
+  miniboss_limbs: { tmpl: "pillar.req.defeat", nameKey: "animal_boss_limbs", targetType: "pyramid_boss" },
+  miniboss_meat: { tmpl: "pillar.req.defeat", nameKey: "animal_boss_meat", targetType: "boss_meat" },
+  miniboss_ghost: { tmpl: "pillar.req.defeat", nameKey: "animal_boss_ghost", targetType: "boss_ghost" },
+  miniboss_pit: { tmpl: "pillar.req.defeat", nameKey: "animal_boss_pit", targetType: "boss_pit" },
+  miniboss_alchemist: { tmpl: "pillar.req.defeat", nameKey: "animal_boss_alchemist", targetType: "alchemist_boss" },
+  miniboss_robot: { tmpl: "pillar.req.defeat", nameKey: "animal_boss_robot", targetType: "boss_robot" },
+  miniboss_wizard: { tmpl: "pillar.req.defeat", nameKey: "animal_boss_wizard", targetType: "boss_wizard" },
+  miniboss_maggot: { tmpl: "pillar.req.defeat", nameKey: "animal_maggot_tiny", targetType: "tiny" },
+  miniboss_fish: { tmpl: "pillar.req.defeat", nameKey: "animal_fish_giga", targetType: "boss_fish" },
+  miniboss_islandspirit: { tmpl: "pillar.req.defeat", nameKey: "animal_islandspirit", targetType: "islandspirit" },
+  miniboss_threelk: { key: "pillar.req.threelk", links: [LINK_TAPIO] },
+  miniboss_gate_monsters: { tmpl: "pillar.req.defeat", creatureId: "boss_gate", targetType: "triangle_boss" },
+  final_secret_orb3: { tmpl: "pillar.req.defeat", nameKey: "animal_friend", targetType: "friend" },
+  miniboss_sky: { tmpl: "pillar.req.defeat", nameKey: "animal_boss_sky", targetType: "boss_sky" },
+  boss_centipede: { tmpl: "pillar.req.defeat", nameKey: "animal_boss_centipede", targetType: "boss_centipede" },
+  // Pillar 5 — Accomplishments
+  progress_orb_1: { key: "pillar.req.orb1", target: { orb: true } },
+  progress_orb_evil: { key: "pillar.req.orbEvil", target: { orb: true } },
+  progress_orb_all: { key: "pillar.req.orbAll", target: { orb: true } },
+  progress_pacifist: { key: "pillar.req.pacifist" },
+  progress_nogold: { key: "pillar.req.nogold" },
+  progress_clock: { key: "pillar.req.speedrun5", target: T_THE_WORK },
+  progress_minit: { key: "pillar.req.speedrun1", target: T_THE_WORK },
+  progress_nohit: { key: "pillar.req.nohit" },
+  progress_sun: { key: "pillar.req.uusiAurinko", target: T_SCALES },
+  progress_darksun: { key: "pillar.req.pimeaAurinko", target: T_SCALES },
+  progress_sunkill: { key: "pillar.req.benignSunshine", target: T_SCALES },
+  secret_supernova: { key: "pillar.req.supernova", links: [{ label: "Moon", ...T_MOON }] },
+  // Pillar 6 — Secrets
+  secret_greed: { key: "pillar.req.greed", links: [{ label: "Greed Curse Pedestal", ...T_GREED_PEDESTAL }] },
+  final_secret_orb: { key: "pillar.req.friendship", links: [LINK_AVARICE] },
+  final_secret_orb2: { key: "pillar.req.friendship2", links: [LINK_TOVERI, LINK_AVARICE] },
+  secret_chest_dark: { key: "pillar.req.darkChest", target: { chestVariant: "dark" } },
+  secret_chest_light: { key: "pillar.req.coralChest", target: { chestVariant: "coral" } },
+  card_unlocked_everything: {
+    key: "pillar.req.endOfEverything",
+    links: [{ label: "End of Everything", ...T_END_OF_EVERYTHING }],
+  },
+  card_unlocked_divide: { key: "pillar.req.avarice", links: [LINK_AVARICE] },
+  secret_fruit: { key: "pillar.req.secretFruit", links: [{ label: "Gourd Cave", ...T_GOURD_CAVE }] },
+  secret_allessences: { key: "pillar.req.allEssences", target: T_THE_WORK },
+  secret_meditation: { key: "pillar.req.meditation", links: [{ label: "Meditation Cube", ...T_MEDITATION }] },
+  secret_buried_eye: { key: "pillar.req.buriedEye", links: [{ label: "Buried Eye", ...T_BURIED_EYE }] },
+  secret_hourglass: { key: "pillar.req.hourglass", links: [{ label: "Hourglass", ...T_HOURGLASS }] },
+  progress_hut_a: { key: "pillar.req.expWandGlimmer", target: T_EXP_WAND_DIAMOND },
+  progress_hut_b: { key: "pillar.req.expWandRequirements", target: T_EXP_WAND_DIAMOND },
+  secret_null: { key: "pillar.req.nullAltar", links: [{ label: "Nullifying Altar", ...T_NULL_ALTAR }] },
+};
+
+/**
+ * [persistentFlag, segmentCode] per pillar, in stacking order, exactly as the
+ * game lists them. segmentCode -> pillar_part_<code>.png.
+ */
+export const PILLAR_FLAGS: Array<Array<[string, string]>> = [
+  [
+    ["misc_chest_rain", "crain"],
+    ["misc_util_rain", "urain"],
+    ["misc_worm_rain", "wrain"],
+    ["misc_greed_rain", "grain"],
+    ["misc_altar_tablet", "train"],
+    ["misc_mimic_potion_rain", "mrain"],
+    ["misc_monk_bots", "mbots"],
+    ["misc_sun_effect", "seffect"],
+    ["misc_darksun_effect", "dseffect"],
+    ["secret_tower", "secrett"],
+    ["player_status_ghostly", "pghost"],
+    ["player_status_ratty", "prat"],
+    ["player_status_funky", "pfungi"],
+    ["player_status_lukky", "plukki"],
+    ["player_status_halo", "phalo"],
+  ],
+  [
+    ["essence_fire", "essencef"],
+    ["essence_water", "essencew"],
+    ["essence_laser", "essencee"],
+    ["essence_air", "essencea"],
+    ["essence_alcohol", "essenceal"],
+    ["secret_moon", "moon"],
+    ["secret_moon2", "moona"],
+    ["special_mood", "moong"],
+    ["secret_dmoon", "dmoon"],
+    ["dead_mood", "dmoong"],
+    ["secret_sun_collision", "sunmoon"],
+    ["secret_darksun_collision", "dsunmoon"],
+  ],
+  [
+    ["progress_ending0", "end0"],
+    ["progress_ending1_toxic", "endt"],
+    ["progress_ending1_gold", "endb"],
+    ["progress_ending2", "endg"],
+    ["progress_newgameplusplus3", "endp"],
+    ["progress_nightmare", "endn"],
+  ],
+  [
+    ["miniboss_dragon", "minid"],
+    ["miniboss_limbs", "minil"],
+    ["miniboss_meat", "meat"],
+    ["miniboss_ghost", "minigh"],
+    ["miniboss_pit", "minip"],
+    ["miniboss_alchemist", "minia"],
+    ["miniboss_robot", "minir"],
+    ["miniboss_wizard", "meme"],
+    ["miniboss_maggot", "maggot"],
+    ["miniboss_fish", "fish"],
+    ["miniboss_islandspirit", "elk"],
+    ["miniboss_threelk", "threelk"],
+    ["miniboss_gate_monsters", "minigm"],
+    ["final_secret_orb3", "yeah3"],
+    ["miniboss_sky", "minisky"],
+    ["boss_centipede", "boss"],
+  ],
+  [
+    ["progress_orb_1", "orbf"],
+    ["progress_orb_evil", "orbe"],
+    ["progress_orb_all", "orba"],
+    ["progress_pacifist", "pacifist"],
+    ["progress_nogold", "nogold"],
+    ["progress_clock", "clock"],
+    ["progress_minit", "minit"],
+    ["progress_nohit", "nohit"],
+    ["progress_sun", "sun"],
+    ["progress_darksun", "dsun"],
+    ["progress_sunkill", "sunkill"],
+    ["secret_supernova", "col"],
+  ],
+  [
+    ["secret_greed", "secretg"],
+    ["final_secret_orb", "yeah"],
+    ["final_secret_orb2", "yeah2"],
+    ["secret_chest_dark", "secretcd"],
+    ["secret_chest_light", "secretcl"],
+    ["card_unlocked_everything", "secretall"],
+    ["card_unlocked_divide", "secretten"],
+    ["secret_fruit", "secretf"],
+    ["secret_allessences", "secretae"],
+    ["secret_meditation", "secretme"],
+    ["secret_buried_eye", "secretbe"],
+    ["secret_hourglass", "secrethg"],
+    ["progress_hut_a", "huta"],
+    ["progress_hut_b", "hutb"],
+    ["secret_null", "null"],
+  ],
+];
+
+/**
+ * Map the pillar's persistent flags onto the noitamap unlock keys we actually
+ * receive from the mod (src/unlocks.ts UNLOCK_KEYS). Only the overlapping ones
+ * are known; flags with no entry are "no data" and, in mod mode, render locked.
+ */
+const FLAG_TO_UNLOCK_KEY: Record<string, string> = {
+  progress_orb_1: "sea_lava",
+  progress_orb_all: "everything",
+  miniboss_dragon: "dragon",
+  miniboss_pit: "tentacle",
+  miniboss_wizard: "mestari",
+  secret_chest_dark: "secret_chest_dark",
+  secret_chest_light: "secret_chest_light",
+  card_unlocked_everything: "everything",
+  card_unlocked_divide: "divide",
+};
+
+/** Human-readable achievement label from the flag (fallback for the card). */
+export function pillarFlagName(flag: string): string {
+  return flag
+    .replace(/^(misc|secret|progress|player_status|miniboss|essence|final_secret|card_unlocked|special|dead)_/, "$1: ")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export interface PillarSegmentPOI {
+  type: "item";
+  item: "pillar_segment";
+  x: number;
+  y: number;
+  flag: string;
+  segCode: string;
+  name: string;
+  locked: boolean;
+  biome: string;
+  wiki: string;
+  pillarIndex: number;
+  theme: string;
+  reqSpec?: PillarReqSpec;
+}
+
+/**
+ * Build every pillar segment POI for the Achievement Pillars centred at
+ * (baseX, baseY). `isUnlocked(flag)` decides colour vs grayscale. Plain
+ * structural segments (base/fade/cap) are emitted as always-unlocked decoration.
+ */
+export function buildPillarSegments(
+  baseX: number,
+  baseY: number,
+  isUnlocked: (flag: string) => boolean,
+): PillarSegmentPOI[] {
+  const out: PillarSegmentPOI[] = [];
+  // Markers render centred on (x,y); the lua positions are top-left, so offset
+  // by half a segment to keep the 48px tiles stacking seamlessly.
+  const seg = (
+    x: number,
+    y: number,
+    segCode: string,
+    flag: string,
+    name: string,
+    locked: boolean,
+    pillarIndex: number,
+  ): void => {
+    out.push({
+      type: "item",
+      item: "pillar_segment",
+      x: x + SIZE / 2,
+      y: y + SIZE / 2,
+      flag,
+      segCode,
+      name,
+      locked,
+      biome: "mountain_tree",
+      wiki: `https://noita.wiki.gg/wiki/Achievement_Pillars#${PILLAR_SECTIONS[pillarIndex]}`,
+      pillarIndex,
+      theme: PILLAR_THEMES[pillarIndex],
+      reqSpec: PILLAR_REQUIREMENTS[flag],
+    });
+  };
+
+  for (let i = 0; i < COUNT; i++) {
+    const px = baseX - COUNT * INC * 0.5 + i * INC;
+
+    // fade cap just below the base, then the base segment at baseY
+    seg(px, baseY + SIZE, "fade", `__struct_fade_${i}`, "Pillar", false, i);
+    seg(px, baseY, "", `__struct_base_${i}`, "Pillar", false, i);
+
+    // 3 plain segments above the base
+    let py = baseY;
+    for (let j = 0; j < ABOVE; j++) {
+      py -= SIZE;
+      seg(px, py, "", `__struct_plain_${i}_${j}`, "Pillar", false, i);
+    }
+
+    // one engraved segment per achievement, stacking upward
+    for (const [flag, segCode] of PILLAR_FLAGS[i]) {
+      py -= SIZE;
+      seg(px, py, segCode, flag, pillarFlagName(flag), !isUnlocked(flag), i);
+    }
+
+    // end cap on top
+    py -= SIZE;
+    const cap = END_CAPS[i % END_CAPS.length];
+    seg(px, py, cap, `__struct_cap_${i}`, "Pillar", false, i);
+  }
+  return out;
+}
+
+/** World anchor of the Achievement Pillars structure (matches the adapter). */
+export const PILLAR_BASE = { x: -1536, y: -1340 };
+
+/** Centre X of pillar column `i` (mirrors buildPillarSegments layout). */
+export function pillarColumnX(pillarIndex: number): number {
+  return PILLAR_BASE.x - COUNT * INC * 0.5 + pillarIndex * INC + SIZE / 2;
+}
+
+/**
+ * Reverse association: given an arbitrary map POI, return the pillar it belongs
+ * to (so its card can show a "Pillar" button that flies to that column). Built
+ * from the same PILLAR_REQUIREMENTS targets used for the forward links, so the
+ * two directions can never drift. Returns null when the POI isn't tied to any
+ * achievement segment.
+ */
+export function poiPillarAssociation(poi: any): { pillarIndex: number; flag: string; x: number; y: number } | null {
+  if (!poi) return null;
+  const type = String(poi.type || "");
+  const item = String(poi.item || "");
+  const material = String(poi.material || "");
+  const chestVariant = String(poi.chestVariant || "");
+  const isOrb = item === "orb";
+
+  for (let i = 0; i < PILLAR_FLAGS.length; i++) {
+    for (const [flag] of PILLAR_FLAGS[i]) {
+      const spec = PILLAR_REQUIREMENTS[flag];
+      if (!spec) continue;
+      const t = spec.target;
+      const matchType = spec.targetType && spec.targetType === type;
+      const matchMat = t?.material && t.material === material;
+      const matchChest = t?.chestVariant && t.chestVariant === chestVariant;
+      const matchOrb = t?.orb && isOrb;
+      if (matchType || matchMat || matchChest || matchOrb) {
+        return { pillarIndex: i, flag, x: pillarColumnX(i), y: PILLAR_BASE.y - 4 * SIZE };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Predicate factory. unlocks === null -> daily / no-mod: everything unlocked.
+ * Otherwise (mod): unlocked only if the flag maps to a key the mod reported.
+ */
+export function makePillarUnlockPredicate(unlocks: string[] | null | undefined): (flag: string) => boolean {
+  if (unlocks == null) return () => true;
+  const set = new Set(unlocks);
+  return (flag: string) => {
+    const key = FLAG_TO_UNLOCK_KEY[flag];
+    return key != null && set.has(key);
+  };
+}
