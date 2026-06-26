@@ -73,6 +73,9 @@ const INCLUDE_EXTRA_PNGS = [
   // Telescope surfaces this as {type:'item', item:'meditation_cube'} → key
   // item:meditation_cube, which would otherwise be missing.
   ["data/biome_impl/excavationsite/meditation_cube_visual.png", "item:meditation_cube"],
+  // Potion mimic (Henkevä potu) UI icon — telescope emits {item:'mimic_potion'}.
+  // The items_gfx has no matching sprite; use the dedicated animal icon.
+  ["data/ui_gfx/animal_icons/mimic_potion.png", "item:mimic_potion"],
 ];
 
 // Paths to SKIP when scanning — not useful as standalone sprites

@@ -468,6 +468,9 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     label = "Heart (+50 HP)";
                   } else if (itemName === "full_heal") {
                     label = "Full Heal";
+                  } else if (itemName === "mimic_potion") {
+                    const t = gameTranslator.translateItem("animal_mimic_potion");
+                    label = t !== "animal_mimic_potion" ? t : "Henkevä potu";
                   } else if (itemName === "emerald_tablet") {
                     // Carries a descriptive per-location name ("Emerald Tablet
                     // (Holy Bomb)"); use it instead of the humanized item id.

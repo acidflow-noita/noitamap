@@ -41436,1670 +41436,1676 @@
     "w": 16,
     "h": 16
   },
-  "item:potion:acid": {
+  "item:mimic_potion": {
     "x": 3202,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:alcohol": {
+  "item:potion:acid": {
     "x": 3219,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:aluminium_molten": {
+  "item:potion:alcohol": {
     "x": 3236,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:aluminium_oxide_molten": {
+  "item:potion:aluminium_molten": {
     "x": 3253,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:aluminium_robot_molten": {
+  "item:potion:aluminium_oxide_molten": {
     "x": 3270,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:beer": {
+  "item:potion:aluminium_robot_molten": {
     "x": 3287,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:blood": {
+  "item:potion:beer": {
     "x": 3304,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:blood_cold": {
+  "item:potion:blood": {
     "x": 3321,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:blood_fading": {
+  "item:potion:blood_cold": {
     "x": 3338,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:blood_fading_slow": {
+  "item:potion:blood_fading": {
     "x": 3355,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:blood_fungi": {
+  "item:potion:blood_fading_slow": {
     "x": 3372,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:blood_worm": {
+  "item:potion:blood_fungi": {
     "x": 3389,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:bone": {
+  "item:potion:blood_worm": {
     "x": 3406,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:brass": {
+  "item:potion:bone": {
     "x": 3423,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:brass_molten": {
+  "item:potion:brass": {
     "x": 3440,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:burning_powder": {
+  "item:potion:brass_molten": {
     "x": 3457,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:bush_seed": {
+  "item:potion:burning_powder": {
     "x": 3474,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:ceiling_plant_material": {
+  "item:potion:bush_seed": {
     "x": 3491,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:cement": {
+  "item:potion:ceiling_plant_material": {
     "x": 3508,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:cloud_blood": {
+  "item:potion:cement": {
     "x": 3525,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:cloud_radioactive": {
+  "item:potion:cloud_blood": {
     "x": 3542,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:cloud_slime": {
+  "item:potion:cloud_radioactive": {
     "x": 3559,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:coal": {
+  "item:potion:cloud_slime": {
     "x": 3576,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:concrete_sand": {
+  "item:potion:coal": {
     "x": 3593,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:copper": {
+  "item:potion:concrete_sand": {
     "x": 3610,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:copper_molten": {
+  "item:potion:copper": {
     "x": 3627,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:creepy_liquid": {
+  "item:potion:copper_molten": {
     "x": 3644,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:cursed_liquid": {
+  "item:potion:creepy_liquid": {
     "x": 3661,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:diamond": {
+  "item:potion:cursed_liquid": {
     "x": 3678,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:endslime": {
+  "item:potion:diamond": {
     "x": 3695,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:endslime_blood": {
+  "item:potion:endslime": {
     "x": 3712,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:explosion_dirt": {
+  "item:potion:endslime_blood": {
     "x": 3729,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:fire": {
+  "item:potion:explosion_dirt": {
     "x": 3746,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:fungi": {
+  "item:potion:fire": {
     "x": 3763,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:fungisoil": {
+  "item:potion:fungi": {
     "x": 3780,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:fungi_creeping": {
+  "item:potion:fungisoil": {
     "x": 3797,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:fungi_creeping_secret": {
+  "item:potion:fungi_creeping": {
     "x": 3814,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:fungi_green": {
+  "item:potion:fungi_creeping_secret": {
     "x": 3831,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:fungi_yellow": {
+  "item:potion:fungi_green": {
     "x": 3848,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:fungus_powder": {
+  "item:potion:fungi_yellow": {
     "x": 3865,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:fungus_powder_bad": {
+  "item:potion:fungus_powder": {
     "x": 3882,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:glass_broken": {
+  "item:potion:fungus_powder_bad": {
     "x": 3899,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:glass_broken_molten": {
+  "item:potion:glass_broken": {
     "x": 3916,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:glass_molten": {
+  "item:potion:glass_broken_molten": {
     "x": 3933,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:glowshroom": {
+  "item:potion:glass_molten": {
     "x": 3950,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:glue": {
+  "item:potion:glowshroom": {
     "x": 3967,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:gold": {
+  "item:potion:glue": {
     "x": 3984,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:gold_molten": {
+  "item:potion:gold": {
     "x": 4001,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:gold_radioactive": {
+  "item:potion:gold_molten": {
     "x": 4018,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:grass": {
+  "item:potion:gold_radioactive": {
     "x": 4035,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:grass_dark": {
+  "item:potion:grass": {
     "x": 4052,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:grass_darker": {
+  "item:potion:grass_dark": {
     "x": 4069,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:grass_dry": {
+  "item:potion:grass_darker": {
     "x": 0,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:grass_holy": {
+  "item:potion:grass_dry": {
     "x": 17,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:grass_ice": {
+  "item:potion:grass_holy": {
     "x": 34,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:gunpowder": {
+  "item:potion:grass_ice": {
     "x": 51,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:gunpowder_explosive": {
+  "item:potion:gunpowder": {
     "x": 68,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:gunpowder_tnt": {
+  "item:potion:gunpowder_explosive": {
     "x": 85,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:gunpowder_unstable": {
+  "item:potion:gunpowder_tnt": {
     "x": 102,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:gunpowder_unstable_big": {
+  "item:potion:gunpowder_unstable": {
     "x": 119,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:gunpowder_unstable_boss_limbs": {
+  "item:potion:gunpowder_unstable_big": {
     "x": 136,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:honey": {
+  "item:potion:gunpowder_unstable_boss_limbs": {
     "x": 153,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:ice": {
+  "item:potion:honey": {
     "x": 170,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:juhannussima": {
+  "item:potion:ice": {
     "x": 187,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:just_death": {
+  "item:potion:juhannussima": {
     "x": 204,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:lava": {
+  "item:potion:just_death": {
     "x": 221,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:lavasand": {
+  "item:potion:lava": {
     "x": 238,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:liquid_fire": {
+  "item:potion:lavasand": {
     "x": 255,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:liquid_fire_weak": {
+  "item:potion:liquid_fire": {
     "x": 272,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid": {
+  "item:potion:liquid_fire_weak": {
     "x": 289,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_berserk": {
+  "item:potion:magic_liquid": {
     "x": 306,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_charm": {
+  "item:potion:magic_liquid_berserk": {
     "x": 323,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_faster_levitation": {
+  "item:potion:magic_liquid_charm": {
     "x": 340,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_faster_levitation_and_movement": {
+  "item:potion:magic_liquid_faster_levitation": {
     "x": 357,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_hp_regeneration": {
+  "item:potion:magic_liquid_faster_levitation_and_movement": {
     "x": 374,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_hp_regeneration_unstable": {
+  "item:potion:magic_liquid_hp_regeneration": {
     "x": 391,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_invisibility": {
+  "item:potion:magic_liquid_hp_regeneration_unstable": {
     "x": 408,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_mana_regeneration": {
+  "item:potion:magic_liquid_invisibility": {
     "x": 425,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_movement_faster": {
+  "item:potion:magic_liquid_mana_regeneration": {
     "x": 442,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_polymorph": {
+  "item:potion:magic_liquid_movement_faster": {
     "x": 459,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_protection_all": {
+  "item:potion:magic_liquid_polymorph": {
     "x": 476,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_random_polymorph": {
+  "item:potion:magic_liquid_protection_all": {
     "x": 493,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_teleportation": {
+  "item:potion:magic_liquid_random_polymorph": {
     "x": 510,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_unstable_polymorph": {
+  "item:potion:magic_liquid_teleportation": {
     "x": 527,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_unstable_teleportation": {
+  "item:potion:magic_liquid_unstable_polymorph": {
     "x": 544,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_weakness": {
+  "item:potion:magic_liquid_unstable_teleportation": {
     "x": 561,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:magic_liquid_worm_attractor": {
+  "item:potion:magic_liquid_weakness": {
     "x": 578,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:mammi": {
+  "item:potion:magic_liquid_worm_attractor": {
     "x": 595,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:material_confusion": {
+  "item:potion:mammi": {
     "x": 612,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:material_darkness": {
+  "item:potion:material_confusion": {
     "x": 629,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:material_rainbow": {
+  "item:potion:material_darkness": {
     "x": 646,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:meat_slime_sand": {
+  "item:potion:material_rainbow": {
     "x": 663,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:metal_molten": {
+  "item:potion:meat_slime_sand": {
     "x": 680,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:metal_nohit_molten": {
+  "item:potion:metal_molten": {
     "x": 697,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:metal_prop_molten": {
+  "item:potion:metal_nohit_molten": {
     "x": 714,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:metal_rust_molten": {
+  "item:potion:metal_prop_molten": {
     "x": 731,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:metal_sand": {
+  "item:potion:metal_rust_molten": {
     "x": 748,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:metal_sand_molten": {
+  "item:potion:metal_sand": {
     "x": 765,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:midas": {
+  "item:potion:metal_sand_molten": {
     "x": 782,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:midas_precursor": {
+  "item:potion:midas": {
     "x": 799,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:milk": {
+  "item:potion:midas_precursor": {
     "x": 816,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:mimic_liquid": {
+  "item:potion:milk": {
     "x": 833,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:molut": {
+  "item:potion:mimic_liquid": {
     "x": 850,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:monster_powder_test": {
+  "item:potion:molut": {
     "x": 867,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:moss": {
+  "item:potion:monster_powder_test": {
     "x": 884,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:moss_rust": {
+  "item:potion:moss": {
     "x": 901,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:mud": {
+  "item:potion:moss_rust": {
     "x": 918,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:mushroom": {
+  "item:potion:mud": {
     "x": 935,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:mushroom_giant_blue": {
+  "item:potion:mushroom": {
     "x": 952,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:mushroom_giant_red": {
+  "item:potion:mushroom_giant_blue": {
     "x": 969,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:mushroom_seed": {
+  "item:potion:mushroom_giant_red": {
     "x": 986,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:oil": {
+  "item:potion:mushroom_seed": {
     "x": 1003,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:orb_powder": {
+  "item:potion:oil": {
     "x": 1020,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:peat": {
+  "item:potion:orb_powder": {
     "x": 1037,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:pea_soup": {
+  "item:potion:peat": {
     "x": 1054,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:plant_material": {
+  "item:potion:pea_soup": {
     "x": 1071,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:plant_material_dark": {
+  "item:potion:plant_material": {
     "x": 1088,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:plant_material_red": {
+  "item:potion:plant_material_dark": {
     "x": 1105,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:plant_seed": {
+  "item:potion:plant_material_red": {
     "x": 1122,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:plasma_fading": {
+  "item:potion:plant_seed": {
     "x": 1139,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:plasma_fading_bright": {
+  "item:potion:plasma_fading": {
     "x": 1156,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:plasma_fading_green": {
+  "item:potion:plasma_fading_bright": {
     "x": 1173,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:plasma_fading_pink": {
+  "item:potion:plasma_fading_green": {
     "x": 1190,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:plastic_grey": {
+  "item:potion:plasma_fading_pink": {
     "x": 1207,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:plastic_grey_molten": {
+  "item:potion:plastic_grey": {
     "x": 1224,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:plastic_molten": {
+  "item:potion:plastic_grey_molten": {
     "x": 1241,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:plastic_prop_molten": {
+  "item:potion:plastic_molten": {
     "x": 1258,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:plastic_red": {
+  "item:potion:plastic_prop_molten": {
     "x": 1275,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:plastic_red_molten": {
+  "item:potion:plastic_red": {
     "x": 1292,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:poison": {
+  "item:potion:plastic_red_molten": {
     "x": 1309,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:poo": {
+  "item:potion:poison": {
     "x": 1326,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:porridge": {
+  "item:potion:poo": {
     "x": 1343,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:purifying_powder": {
+  "item:potion:porridge": {
     "x": 1360,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:pus": {
+  "item:potion:purifying_powder": {
     "x": 1377,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:radioactive_liquid": {
+  "item:potion:pus": {
     "x": 1394,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:radioactive_liquid_fading": {
+  "item:potion:radioactive_liquid": {
     "x": 1411,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:radioactive_liquid_yellow": {
+  "item:potion:radioactive_liquid_fading": {
     "x": 1428,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:rat_powder": {
+  "item:potion:radioactive_liquid_yellow": {
     "x": 1445,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:rocket_particles": {
+  "item:potion:rat_powder": {
     "x": 1462,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:rotten_meat": {
+  "item:potion:rocket_particles": {
     "x": 1479,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:rotten_meat_radioactive": {
+  "item:potion:rotten_meat": {
     "x": 1496,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:salt": {
+  "item:potion:rotten_meat_radioactive": {
     "x": 1513,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:sand": {
+  "item:potion:salt": {
     "x": 1530,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:sandstone": {
+  "item:potion:sand": {
     "x": 1547,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:sandstone_surface": {
+  "item:potion:sandstone": {
     "x": 1564,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:sand_blue": {
+  "item:potion:sandstone_surface": {
     "x": 1581,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:sand_herb": {
+  "item:potion:sand_blue": {
     "x": 1598,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:sand_petrify": {
+  "item:potion:sand_herb": {
     "x": 1615,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:sand_surface": {
+  "item:potion:sand_petrify": {
     "x": 1632,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:shock_powder": {
+  "item:potion:sand_surface": {
     "x": 1649,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:silver": {
+  "item:potion:shock_powder": {
     "x": 1666,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:silver_molten": {
+  "item:potion:silver": {
     "x": 1683,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:sima": {
+  "item:potion:silver_molten": {
     "x": 1700,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:slime": {
+  "item:potion:sima": {
     "x": 1717,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:slime_green": {
+  "item:potion:slime": {
     "x": 1734,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:slime_yellow": {
+  "item:potion:slime_green": {
     "x": 1751,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:slush": {
+  "item:potion:slime_yellow": {
     "x": 1768,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:smoke": {
+  "item:potion:slush": {
     "x": 1785,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:snow": {
+  "item:potion:smoke": {
     "x": 1802,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:snow_sticky": {
+  "item:potion:snow": {
     "x": 1819,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:sodium": {
+  "item:potion:snow_sticky": {
     "x": 1836,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:sodium_unstable": {
+  "item:potion:sodium": {
     "x": 1853,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:soil": {
+  "item:potion:sodium_unstable": {
     "x": 1870,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:soil_dark": {
+  "item:potion:soil": {
     "x": 1887,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:soil_dead": {
+  "item:potion:soil_dark": {
     "x": 1904,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:soil_lush": {
+  "item:potion:soil_dead": {
     "x": 1921,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:soil_lush_dark": {
+  "item:potion:soil_lush": {
     "x": 1938,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:spore": {
+  "item:potion:soil_lush_dark": {
     "x": 1955,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:steelmoss_slanted_molten": {
+  "item:potion:spore": {
     "x": 1972,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:steelmoss_static_molten": {
+  "item:potion:steelmoss_slanted_molten": {
     "x": 1989,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:steelsmoke_static_molten": {
+  "item:potion:steelmoss_static_molten": {
     "x": 2006,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:steel_molten": {
+  "item:potion:steelsmoke_static_molten": {
     "x": 2023,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:steel_rust_molten": {
+  "item:potion:steel_molten": {
     "x": 2040,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:steel_sand": {
+  "item:potion:steel_rust_molten": {
     "x": 2057,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:steel_static_molten": {
+  "item:potion:steel_sand": {
     "x": 2074,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:sulphur": {
+  "item:potion:steel_static_molten": {
     "x": 2091,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:swamp": {
+  "item:potion:sulphur": {
     "x": 2108,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:urine": {
+  "item:potion:swamp": {
     "x": 2125,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:void_liquid": {
+  "item:potion:urine": {
     "x": 2142,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:vomit": {
+  "item:potion:void_liquid": {
     "x": 2159,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:water": {
+  "item:potion:vomit": {
     "x": 2176,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:water_fading": {
+  "item:potion:water": {
     "x": 2193,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:water_ice": {
+  "item:potion:water_fading": {
     "x": 2210,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:water_salt": {
+  "item:potion:water_ice": {
     "x": 2227,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:water_swamp": {
+  "item:potion:water_salt": {
     "x": 2244,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:water_temp": {
+  "item:potion:water_swamp": {
     "x": 2261,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:wax": {
+  "item:potion:water_temp": {
     "x": 2278,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:wax_molten": {
+  "item:potion:wax": {
     "x": 2295,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:bone": {
+  "item:potion:wax_molten": {
     "x": 2312,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:brass": {
+  "item:pouch:bone": {
     "x": 2329,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:burning_powder": {
+  "item:pouch:brass": {
     "x": 2346,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:bush_seed": {
+  "item:pouch:burning_powder": {
     "x": 2363,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:ceiling_plant_material": {
+  "item:pouch:bush_seed": {
     "x": 2380,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:coal": {
+  "item:pouch:ceiling_plant_material": {
     "x": 2397,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:concrete_sand": {
+  "item:pouch:coal": {
     "x": 2414,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:copper": {
+  "item:pouch:concrete_sand": {
     "x": 2431,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:diamond": {
+  "item:pouch:copper": {
     "x": 2448,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:endslime_blood": {
+  "item:pouch:diamond": {
     "x": 2465,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:explosion_dirt": {
+  "item:pouch:endslime_blood": {
     "x": 2482,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:fungi": {
+  "item:pouch:explosion_dirt": {
     "x": 2499,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:fungisoil": {
+  "item:pouch:fungi": {
     "x": 2516,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:fungi_creeping": {
+  "item:pouch:fungisoil": {
     "x": 2533,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:fungi_creeping_secret": {
+  "item:pouch:fungi_creeping": {
     "x": 2550,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:fungi_green": {
+  "item:pouch:fungi_creeping_secret": {
     "x": 2567,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:fungi_yellow": {
+  "item:pouch:fungi_green": {
     "x": 2584,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:fungus_powder": {
+  "item:pouch:fungi_yellow": {
     "x": 2601,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:fungus_powder_bad": {
+  "item:pouch:fungus_powder": {
     "x": 2618,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:glass_broken": {
+  "item:pouch:fungus_powder_bad": {
     "x": 2635,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:glowshroom": {
+  "item:pouch:glass_broken": {
     "x": 2652,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:glue": {
+  "item:pouch:glowshroom": {
     "x": 2669,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:gold": {
+  "item:pouch:glue": {
     "x": 2686,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:gold_radioactive": {
+  "item:pouch:gold": {
     "x": 2703,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:grass": {
+  "item:pouch:gold_radioactive": {
     "x": 2720,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:grass_dark": {
+  "item:pouch:grass": {
     "x": 2737,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:grass_darker": {
+  "item:pouch:grass_dark": {
     "x": 2754,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:grass_dry": {
+  "item:pouch:grass_darker": {
     "x": 2771,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:grass_holy": {
+  "item:pouch:grass_dry": {
     "x": 2788,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:grass_ice": {
+  "item:pouch:grass_holy": {
     "x": 2805,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:gunpowder": {
+  "item:pouch:grass_ice": {
     "x": 2822,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:gunpowder_explosive": {
+  "item:pouch:gunpowder": {
     "x": 2839,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:gunpowder_tnt": {
+  "item:pouch:gunpowder_explosive": {
     "x": 2856,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:gunpowder_unstable": {
+  "item:pouch:gunpowder_tnt": {
     "x": 2873,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:gunpowder_unstable_big": {
+  "item:pouch:gunpowder_unstable": {
     "x": 2890,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:gunpowder_unstable_boss_limbs": {
+  "item:pouch:gunpowder_unstable_big": {
     "x": 2907,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:honey": {
+  "item:pouch:gunpowder_unstable_boss_limbs": {
     "x": 2924,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:ice": {
+  "item:pouch:honey": {
     "x": 2941,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:lavasand": {
+  "item:pouch:ice": {
     "x": 2958,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:mammi": {
+  "item:pouch:lavasand": {
     "x": 2975,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:meat_slime_sand": {
+  "item:pouch:mammi": {
     "x": 2992,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:metal_sand": {
+  "item:pouch:meat_slime_sand": {
     "x": 3009,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:monster_powder_test": {
+  "item:pouch:metal_sand": {
     "x": 3026,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:moss": {
+  "item:pouch:monster_powder_test": {
     "x": 3043,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:moss_rust": {
+  "item:pouch:moss": {
     "x": 3060,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:mud": {
+  "item:pouch:moss_rust": {
     "x": 3077,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:mushroom": {
+  "item:pouch:mud": {
     "x": 3094,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:mushroom_giant_blue": {
+  "item:pouch:mushroom": {
     "x": 3111,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:mushroom_giant_red": {
+  "item:pouch:mushroom_giant_blue": {
     "x": 3128,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:mushroom_seed": {
+  "item:pouch:mushroom_giant_red": {
     "x": 3145,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:orb_powder": {
+  "item:pouch:mushroom_seed": {
     "x": 3162,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:plant_material": {
+  "item:pouch:orb_powder": {
     "x": 3179,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:plant_material_dark": {
+  "item:pouch:plant_material": {
     "x": 3196,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:plant_material_red": {
+  "item:pouch:plant_material_dark": {
     "x": 3213,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:plant_seed": {
+  "item:pouch:plant_material_red": {
     "x": 3230,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:plasma_fading_green": {
+  "item:pouch:plant_seed": {
     "x": 3247,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:plasma_fading_pink": {
+  "item:pouch:plasma_fading_green": {
     "x": 3264,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:plastic_grey": {
+  "item:pouch:plasma_fading_pink": {
     "x": 3281,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:plastic_red": {
+  "item:pouch:plastic_grey": {
     "x": 3298,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:poo": {
+  "item:pouch:plastic_red": {
     "x": 3315,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:purifying_powder": {
+  "item:pouch:poo": {
     "x": 3332,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:rat_powder": {
+  "item:pouch:purifying_powder": {
     "x": 3349,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:rotten_meat": {
+  "item:pouch:rat_powder": {
     "x": 3366,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:rotten_meat_radioactive": {
+  "item:pouch:rotten_meat": {
     "x": 3383,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:salt": {
+  "item:pouch:rotten_meat_radioactive": {
     "x": 3400,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:sand": {
+  "item:pouch:salt": {
     "x": 3417,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:sandstone": {
+  "item:pouch:sand": {
     "x": 3434,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:sandstone_surface": {
+  "item:pouch:sandstone": {
     "x": 3451,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:sand_blue": {
+  "item:pouch:sandstone_surface": {
     "x": 3468,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:sand_herb": {
+  "item:pouch:sand_blue": {
     "x": 3485,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:sand_petrify": {
+  "item:pouch:sand_herb": {
     "x": 3502,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:sand_surface": {
+  "item:pouch:sand_petrify": {
     "x": 3519,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:shock_powder": {
+  "item:pouch:sand_surface": {
     "x": 3536,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:silver": {
+  "item:pouch:shock_powder": {
     "x": 3553,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:snow": {
+  "item:pouch:silver": {
     "x": 3570,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:snow_sticky": {
+  "item:pouch:snow": {
     "x": 3587,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:sodium": {
+  "item:pouch:snow_sticky": {
     "x": 3604,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:sodium_unstable": {
+  "item:pouch:sodium": {
     "x": 3621,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:soil": {
+  "item:pouch:sodium_unstable": {
     "x": 3638,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:soil_dark": {
+  "item:pouch:soil": {
     "x": 3655,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:soil_dead": {
+  "item:pouch:soil_dark": {
     "x": 3672,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:soil_lush": {
+  "item:pouch:soil_dead": {
     "x": 3689,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:soil_lush_dark": {
+  "item:pouch:soil_lush": {
     "x": 3706,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:spore": {
+  "item:pouch:soil_lush_dark": {
     "x": 3723,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:steel_sand": {
+  "item:pouch:spore": {
     "x": 3740,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:sulphur": {
+  "item:pouch:steel_sand": {
     "x": 3757,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:wax": {
+  "item:pouch:sulphur": {
     "x": 3774,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "building:temple_duplicator": {
+  "item:pouch:wax": {
     "x": 3791,
+    "y": 620,
+    "w": 16,
+    "h": 16
+  },
+  "building:temple_duplicator": {
+    "x": 3808,
     "y": 620,
     "w": 65,
     "h": 15
   },
   "item:easter/golden_idol": {
-    "x": 3857,
+    "x": 3874,
     "y": 620,
     "w": 12,
     "h": 15
   },
   "item:erect_wand": {
-    "x": 3870,
+    "x": 3887,
     "y": 620,
     "w": 7,
     "h": 15,
@@ -43124,7 +43130,7 @@
     ]
   },
   "wand:custom/wood_01": {
-    "x": 3878,
+    "x": 3895,
     "y": 620,
     "w": 6,
     "h": 15,
@@ -43149,133 +43155,133 @@
     ]
   },
   "wand:wand_0016": {
-    "x": 3885,
+    "x": 3902,
     "y": 620,
     "w": 13,
     "h": 15
   },
   "wand:wand_0025": {
-    "x": 3899,
+    "x": 3916,
     "y": 620,
     "w": 7,
     "h": 15
   },
   "wand:wand_0028": {
-    "x": 3907,
+    "x": 3924,
     "y": 620,
     "w": 15,
     "h": 15
   },
   "wand:wand_0046": {
-    "x": 3923,
+    "x": 3940,
     "y": 620,
     "w": 7,
     "h": 15
   },
   "wand:wand_0092": {
-    "x": 3931,
+    "x": 3948,
     "y": 620,
     "w": 7,
     "h": 15
   },
   "wand:wand_0134": {
-    "x": 3939,
+    "x": 3956,
     "y": 620,
     "w": 9,
     "h": 15
   },
   "wand:wand_0153": {
-    "x": 3949,
+    "x": 3966,
     "y": 620,
     "w": 7,
     "h": 15
   },
   "wand:wand_0159": {
-    "x": 3957,
+    "x": 3974,
     "y": 620,
     "w": 9,
     "h": 15
   },
   "wand:wand_0307": {
-    "x": 3967,
+    "x": 3984,
     "y": 620,
     "w": 17,
     "h": 15
   },
   "wand:wand_0410": {
-    "x": 3985,
+    "x": 4002,
     "y": 620,
     "w": 17,
     "h": 15
   },
   "wand:wand_0489": {
-    "x": 4003,
+    "x": 4020,
     "y": 620,
     "w": 7,
     "h": 15
   },
   "wand:wand_0536": {
-    "x": 4011,
+    "x": 4028,
     "y": 620,
     "w": 9,
     "h": 15
   },
   "wand:wand_0585": {
-    "x": 4021,
+    "x": 4038,
     "y": 620,
     "w": 7,
     "h": 15
   },
   "wand:wand_0713": {
-    "x": 4029,
+    "x": 4046,
     "y": 620,
     "w": 7,
     "h": 15
   },
   "wand:wand_0766": {
-    "x": 4037,
+    "x": 4054,
     "y": 620,
     "w": 9,
     "h": 15
   },
   "wand:wand_0837": {
-    "x": 4047,
+    "x": 4064,
     "y": 620,
     "w": 11,
     "h": 15
   },
   "wand:wand_0969": {
-    "x": 4059,
+    "x": 4076,
     "y": 620,
     "w": 7,
     "h": 15
   },
   "wand:wand_0981": {
-    "x": 4067,
+    "x": 4084,
     "y": 620,
     "w": 7,
     "h": 15
   },
   "wand:wand_0993": {
-    "x": 4075,
-    "y": 620,
+    "x": 0,
+    "y": 637,
     "w": 9,
     "h": 15
   },
   "wand:wand_0996": {
-    "x": 0,
+    "x": 10,
     "y": 637,
     "w": 13,
     "h": 15
   },
   "projectile:bomb_cart": {
-    "x": 14,
+    "x": 24,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "projectile:racing_cart": {
-    "x": 30,
+    "x": 40,
     "y": 637,
     "w": 14,
     "h": 15,
@@ -43311,7 +43317,7 @@
     ]
   },
   "projectile:racing_cart_killer": {
-    "x": 45,
+    "x": 55,
     "y": 637,
     "w": 14,
     "h": 15,
@@ -43347,7 +43353,7 @@
     ]
   },
   "projectile:rocket_roll": {
-    "x": 60,
+    "x": 70,
     "y": 637,
     "w": 15,
     "h": 15,
@@ -43371,7 +43377,7 @@
     ]
   },
   "prop:minecart": {
-    "x": 76,
+    "x": 86,
     "y": 637,
     "w": 18,
     "h": 15,
@@ -43396,145 +43402,145 @@
     ]
   },
   "prop:minecart_wheel_left": {
-    "x": 95,
+    "x": 105,
     "y": 637,
     "w": 18,
     "h": 15
   },
   "prop:minecart_wheel_right": {
-    "x": 114,
+    "x": 124,
     "y": 637,
     "w": 18,
     "h": 15
   },
   "prop:skateboard": {
-    "x": 133,
+    "x": 143,
     "y": 637,
     "w": 24,
     "h": 15
   },
   "prop:skateboard__wheel_left": {
-    "x": 158,
+    "x": 168,
     "y": 637,
     "w": 24,
     "h": 15
   },
   "prop:skateboard_wheel_left": {
-    "x": 183,
+    "x": 193,
     "y": 637,
     "w": 20,
     "h": 15
   },
   "prop:skateboard_wheel_right": {
-    "x": 204,
+    "x": 214,
     "y": 637,
     "w": 24,
     "h": 15
   },
   "prop:suspended_container": {
-    "x": 229,
+    "x": 239,
     "y": 637,
     "w": 42,
     "h": 15
   },
   "prop:table": {
-    "x": 272,
+    "x": 282,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "prop:temple_rubble_01": {
-    "x": 288,
+    "x": 298,
     "y": 637,
     "w": 20,
     "h": 15
   },
   "prop:temple_rubble_02": {
-    "x": 309,
+    "x": 319,
     "y": 637,
     "w": 20,
     "h": 15
   },
   "prop:temple_rubble_03": {
-    "x": 330,
+    "x": 340,
     "y": 637,
     "w": 20,
     "h": 15
   },
   "prop:temple_rubble_04": {
-    "x": 351,
+    "x": 361,
     "y": 637,
     "w": 20,
     "h": 15
   },
   "prop:temple_rubble_05": {
-    "x": 372,
+    "x": 382,
     "y": 637,
     "w": 20,
     "h": 15
   },
   "prop:temple_rubble_06": {
-    "x": 393,
+    "x": 403,
     "y": 637,
     "w": 20,
     "h": 15
   },
   "prop:trap_01": {
-    "x": 414,
+    "x": 424,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "prop:trap_02": {
-    "x": 430,
+    "x": 440,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "prop:trap_acid": {
-    "x": 446,
+    "x": 456,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "prop:trap_electricity": {
-    "x": 462,
+    "x": 472,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "prop:trap_ignite_a": {
-    "x": 478,
+    "x": 488,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "prop:trap_ignite_b": {
-    "x": 494,
+    "x": 504,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "prop:trap_laser": {
-    "x": 510,
+    "x": 520,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "prop:trap_laser_b": {
-    "x": 526,
+    "x": 536,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "prop:trap_laser_left": {
-    "x": 542,
+    "x": 552,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "enemy:fungus_tiny": {
-    "x": 558,
+    "x": 568,
     "y": 637,
     "w": 13,
     "h": 14,
@@ -43610,7 +43616,7 @@
     ]
   },
   "enemy:fungus_tiny_b": {
-    "x": 572,
+    "x": 582,
     "y": 637,
     "w": 13,
     "h": 14,
@@ -43686,7 +43692,7 @@
     ]
   },
   "wand:custom/chainsaw": {
-    "x": 586,
+    "x": 596,
     "y": 637,
     "w": 6,
     "h": 14,
@@ -43712,265 +43718,265 @@
     ]
   },
   "wand:wand_0059": {
-    "x": 593,
+    "x": 603,
     "y": 637,
     "w": 5,
     "h": 14
   },
   "wand:wand_0067": {
-    "x": 599,
+    "x": 609,
     "y": 637,
     "w": 11,
     "h": 14
   },
   "wand:wand_0096": {
-    "x": 611,
+    "x": 621,
     "y": 637,
     "w": 15,
     "h": 14
   },
   "wand:wand_0102": {
-    "x": 627,
+    "x": 637,
     "y": 637,
     "w": 15,
     "h": 14
   },
   "wand:wand_0110": {
-    "x": 643,
+    "x": 653,
     "y": 637,
     "w": 5,
     "h": 14
   },
   "wand:wand_0141": {
-    "x": 649,
+    "x": 659,
     "y": 637,
     "w": 5,
     "h": 14
   },
   "wand:wand_0162": {
-    "x": 655,
+    "x": 665,
     "y": 637,
     "w": 13,
     "h": 14
   },
   "wand:wand_0166": {
-    "x": 669,
+    "x": 679,
     "y": 637,
     "w": 7,
     "h": 14
   },
   "wand:wand_0234": {
-    "x": 677,
+    "x": 687,
     "y": 637,
     "w": 17,
     "h": 14
   },
   "wand:wand_0261": {
-    "x": 695,
+    "x": 705,
     "y": 637,
     "w": 13,
     "h": 14
   },
   "wand:wand_0279": {
-    "x": 709,
+    "x": 719,
     "y": 637,
     "w": 11,
     "h": 14
   },
   "wand:wand_0342": {
-    "x": 721,
+    "x": 731,
     "y": 637,
     "w": 7,
     "h": 14
   },
   "wand:wand_0363": {
-    "x": 729,
+    "x": 739,
     "y": 637,
     "w": 11,
     "h": 14
   },
   "wand:wand_0364": {
-    "x": 741,
+    "x": 751,
     "y": 637,
     "w": 7,
     "h": 14
   },
   "wand:wand_0430": {
-    "x": 749,
+    "x": 759,
     "y": 637,
     "w": 9,
     "h": 14
   },
   "wand:wand_0436": {
-    "x": 759,
+    "x": 769,
     "y": 637,
     "w": 13,
     "h": 14
   },
   "wand:wand_0442": {
-    "x": 773,
+    "x": 783,
     "y": 637,
     "w": 5,
     "h": 14
   },
   "wand:wand_0461": {
-    "x": 779,
+    "x": 789,
     "y": 637,
     "w": 5,
     "h": 14
   },
   "wand:wand_0468": {
-    "x": 785,
+    "x": 795,
     "y": 637,
     "w": 15,
     "h": 14
   },
   "wand:wand_0491": {
-    "x": 801,
+    "x": 811,
     "y": 637,
     "w": 5,
     "h": 14
   },
   "wand:wand_0501": {
-    "x": 807,
+    "x": 817,
     "y": 637,
     "w": 7,
     "h": 14
   },
   "wand:wand_0503": {
-    "x": 815,
+    "x": 825,
     "y": 637,
     "w": 11,
     "h": 14
   },
   "wand:wand_0511": {
-    "x": 827,
+    "x": 837,
     "y": 637,
     "w": 7,
     "h": 14
   },
   "wand:wand_0577": {
-    "x": 835,
+    "x": 845,
     "y": 637,
     "w": 11,
     "h": 14
   },
   "wand:wand_0589": {
-    "x": 847,
+    "x": 857,
     "y": 637,
     "w": 11,
     "h": 14
   },
   "wand:wand_0615": {
-    "x": 859,
+    "x": 869,
     "y": 637,
     "w": 9,
     "h": 14
   },
   "wand:wand_0626": {
-    "x": 869,
+    "x": 879,
     "y": 637,
     "w": 7,
     "h": 14
   },
   "wand:wand_0633": {
-    "x": 877,
+    "x": 887,
     "y": 637,
     "w": 7,
     "h": 14
   },
   "wand:wand_0644": {
-    "x": 885,
+    "x": 895,
     "y": 637,
     "w": 9,
     "h": 14
   },
   "wand:wand_0698": {
-    "x": 895,
+    "x": 905,
     "y": 637,
     "w": 11,
     "h": 14
   },
   "wand:wand_0726": {
-    "x": 907,
+    "x": 917,
     "y": 637,
     "w": 13,
     "h": 14
   },
   "wand:wand_0731": {
-    "x": 921,
+    "x": 931,
     "y": 637,
     "w": 9,
     "h": 14
   },
   "wand:wand_0735": {
-    "x": 931,
+    "x": 941,
     "y": 637,
     "w": 5,
     "h": 14
   },
   "wand:wand_0811": {
-    "x": 937,
+    "x": 947,
     "y": 637,
     "w": 11,
     "h": 14
   },
   "wand:wand_0812": {
-    "x": 949,
+    "x": 959,
     "y": 637,
     "w": 13,
     "h": 14
   },
   "wand:wand_0902": {
-    "x": 963,
-    "y": 637,
-    "w": 9,
-    "h": 14
-  },
-  "wand:wand_0913": {
     "x": 973,
     "y": 637,
     "w": 9,
     "h": 14
   },
-  "wand:wand_0917": {
+  "wand:wand_0913": {
     "x": 983,
+    "y": 637,
+    "w": 9,
+    "h": 14
+  },
+  "wand:wand_0917": {
+    "x": 993,
     "y": 637,
     "w": 5,
     "h": 14
   },
   "wand:wand_0932": {
-    "x": 989,
+    "x": 999,
     "y": 637,
     "w": 15,
     "h": 14
   },
   "wand:wand_0948": {
-    "x": 1005,
+    "x": 1015,
     "y": 637,
     "w": 11,
     "h": 14
   },
   "wand:wand_0951": {
-    "x": 1017,
+    "x": 1027,
     "y": 637,
     "w": 9,
     "h": 14
   },
   "wand:wand_0953": {
-    "x": 1027,
+    "x": 1037,
     "y": 637,
     "w": 11,
     "h": 14
   },
   "wand:wand_0972": {
-    "x": 1039,
+    "x": 1049,
     "y": 637,
     "w": 9,
     "h": 14
   },
   "projectile:mine_player": {
-    "x": 1049,
+    "x": 1059,
     "y": 637,
     "w": 13,
     "h": 14,
@@ -44005,7 +44011,7 @@
     ]
   },
   "projectile:pollen_ball": {
-    "x": 1063,
+    "x": 1073,
     "y": 637,
     "w": 14,
     "h": 14,
@@ -44031,7 +44037,7 @@
     ]
   },
   "prop:brewing_stand": {
-    "x": 1078,
+    "x": 1088,
     "y": 637,
     "w": 16,
     "h": 14,
@@ -44057,7 +44063,7 @@
     ]
   },
   "prop:candle_1": {
-    "x": 1095,
+    "x": 1105,
     "y": 637,
     "w": 9,
     "h": 14,
@@ -44092,7 +44098,7 @@
     ]
   },
   "prop:candle_1_emissive": {
-    "x": 1105,
+    "x": 1115,
     "y": 637,
     "w": 9,
     "h": 14,
@@ -44127,7 +44133,7 @@
     ]
   },
   "prop:candle_2": {
-    "x": 1115,
+    "x": 1125,
     "y": 637,
     "w": 9,
     "h": 14,
@@ -44162,7 +44168,7 @@
     ]
   },
   "prop:candle_2_emissive": {
-    "x": 1125,
+    "x": 1135,
     "y": 637,
     "w": 9,
     "h": 14,
@@ -44197,7 +44203,7 @@
     ]
   },
   "prop:candle_3": {
-    "x": 1135,
+    "x": 1145,
     "y": 637,
     "w": 9,
     "h": 14,
@@ -44232,7 +44238,7 @@
     ]
   },
   "prop:candle_3_emissive": {
-    "x": 1145,
+    "x": 1155,
     "y": 637,
     "w": 9,
     "h": 14,
@@ -44267,55 +44273,55 @@
     ]
   },
   "prop:furniture_rocking_chair": {
-    "x": 1155,
+    "x": 1165,
     "y": 637,
     "w": 14,
     "h": 14
   },
   "prop:furniture_tombstone_01": {
-    "x": 1170,
+    "x": 1180,
     "y": 637,
     "w": 12,
     "h": 14
   },
   "prop:physics_candle_1": {
-    "x": 1183,
-    "y": 637,
-    "w": 9,
-    "h": 14
-  },
-  "prop:physics_candle_2": {
     "x": 1193,
     "y": 637,
     "w": 9,
     "h": 14
   },
-  "prop:physics_candle_3": {
+  "prop:physics_candle_2": {
     "x": 1203,
     "y": 637,
     "w": 9,
     "h": 14
   },
-  "prop:torch_hang_base": {
+  "prop:physics_candle_3": {
     "x": 1213,
+    "y": 637,
+    "w": 9,
+    "h": 14
+  },
+  "prop:torch_hang_base": {
+    "x": 1223,
     "y": 637,
     "w": 11,
     "h": 14
   },
   "prop:torch_hang_base_blue": {
-    "x": 1225,
+    "x": 1235,
     "y": 637,
     "w": 11,
     "h": 14
   },
   "prop:torch_hang_base_ghostly": {
-    "x": 1237,
+    "x": 1247,
     "y": 637,
     "w": 11,
     "h": 14
   },
   "prop:torch_hang_overlay": {
-    "x": 1249,
+    "x": 1259,
     "y": 637,
     "w": 11,
     "h": 14,
@@ -44350,7 +44356,7 @@
     ]
   },
   "prop:torch_hang_overlay_blue": {
-    "x": 1261,
+    "x": 1271,
     "y": 637,
     "w": 11,
     "h": 14,
@@ -44385,7 +44391,7 @@
     ]
   },
   "prop:torch_hang_overlay_ghostly": {
-    "x": 1273,
+    "x": 1283,
     "y": 637,
     "w": 11,
     "h": 14,
@@ -44420,499 +44426,499 @@
     ]
   },
   "prop:worm_deflector_crystal": {
-    "x": 1285,
+    "x": 1295,
     "y": 637,
     "w": 8,
     "h": 14
   },
   "wand:custom/kantele": {
-    "x": 1294,
+    "x": 1304,
     "y": 637,
     "w": 7,
     "h": 14
   },
   "wand:custom/experimental_wand_1": {
-    "x": 1302,
+    "x": 1312,
     "y": 637,
     "w": 8,
     "h": 14
   },
   "wand:custom/experimental_wand_2": {
-    "x": 1311,
+    "x": 1321,
     "y": 637,
     "w": 8,
     "h": 14
   },
   "building:chest_dark": {
-    "x": 1320,
+    "x": 1330,
     "y": 637,
     "w": 18,
     "h": 13
   },
   "building:chest_dark_open": {
-    "x": 1339,
+    "x": 1349,
     "y": 637,
     "w": 18,
     "h": 13
   },
   "building:chest_light": {
-    "x": 1358,
+    "x": 1368,
     "y": 637,
     "w": 18,
     "h": 13
   },
   "building:chest_random": {
-    "x": 1377,
+    "x": 1387,
     "y": 637,
     "w": 18,
     "h": 13
   },
   "building:chest_random_super": {
-    "x": 1396,
+    "x": 1406,
     "y": 637,
     "w": 18,
     "h": 13
   },
   "building:chest_steel": {
-    "x": 1415,
+    "x": 1425,
     "y": 637,
     "w": 18,
     "h": 13
   },
   "wand:wand_0003": {
-    "x": 1434,
+    "x": 1444,
     "y": 637,
     "w": 9,
     "h": 13
   },
   "wand:wand_0012": {
-    "x": 1444,
+    "x": 1454,
     "y": 637,
     "w": 13,
     "h": 13
   },
   "wand:wand_0013": {
-    "x": 1458,
+    "x": 1468,
     "y": 637,
     "w": 11,
     "h": 13
   },
   "wand:wand_0030": {
-    "x": 1470,
+    "x": 1480,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0036": {
-    "x": 1478,
+    "x": 1488,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0045": {
-    "x": 1486,
+    "x": 1496,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0054": {
-    "x": 1494,
+    "x": 1504,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0070": {
-    "x": 1502,
+    "x": 1512,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0074": {
-    "x": 1510,
+    "x": 1520,
     "y": 637,
     "w": 15,
     "h": 13
   },
   "wand:wand_0099": {
-    "x": 1526,
+    "x": 1536,
     "y": 637,
     "w": 9,
     "h": 13
   },
   "wand:wand_0109": {
-    "x": 1536,
+    "x": 1546,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0117": {
-    "x": 1544,
+    "x": 1554,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0119": {
-    "x": 1552,
+    "x": 1562,
     "y": 637,
     "w": 9,
     "h": 13
   },
   "wand:wand_0170": {
-    "x": 1562,
+    "x": 1572,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0180": {
-    "x": 1570,
+    "x": 1580,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0189": {
-    "x": 1578,
+    "x": 1588,
     "y": 637,
     "w": 9,
     "h": 13
   },
   "wand:wand_0198": {
-    "x": 1588,
+    "x": 1598,
     "y": 637,
     "w": 13,
     "h": 13
   },
   "wand:wand_0200": {
-    "x": 1602,
+    "x": 1612,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0206": {
-    "x": 1610,
+    "x": 1620,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0217": {
-    "x": 1618,
+    "x": 1628,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0239": {
-    "x": 1626,
+    "x": 1636,
     "y": 637,
     "w": 17,
     "h": 13
   },
   "wand:wand_0283": {
-    "x": 1644,
+    "x": 1654,
     "y": 637,
     "w": 9,
     "h": 13
   },
   "wand:wand_0297": {
-    "x": 1654,
+    "x": 1664,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0298": {
-    "x": 1662,
+    "x": 1672,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0300": {
-    "x": 1670,
+    "x": 1680,
     "y": 637,
     "w": 11,
     "h": 13
   },
   "wand:wand_0308": {
-    "x": 1682,
+    "x": 1692,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0328": {
-    "x": 1690,
+    "x": 1700,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0334": {
-    "x": 1698,
+    "x": 1708,
     "y": 637,
     "w": 11,
     "h": 13
   },
   "wand:wand_0348": {
-    "x": 1710,
+    "x": 1720,
     "y": 637,
     "w": 13,
     "h": 13
   },
   "wand:wand_0361": {
-    "x": 1724,
+    "x": 1734,
     "y": 637,
     "w": 15,
     "h": 13
   },
   "wand:wand_0369": {
-    "x": 1740,
+    "x": 1750,
     "y": 637,
     "w": 9,
     "h": 13
   },
   "wand:wand_0396": {
-    "x": 1750,
+    "x": 1760,
     "y": 637,
     "w": 17,
     "h": 13
   },
   "wand:wand_0416": {
-    "x": 1768,
+    "x": 1778,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0427": {
-    "x": 1776,
+    "x": 1786,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0431": {
-    "x": 1784,
+    "x": 1794,
     "y": 637,
     "w": 15,
     "h": 13
   },
   "wand:wand_0438": {
-    "x": 1800,
+    "x": 1810,
     "y": 637,
     "w": 9,
     "h": 13
   },
   "wand:wand_0476": {
-    "x": 1810,
+    "x": 1820,
     "y": 637,
     "w": 17,
     "h": 13
   },
   "wand:wand_0498": {
-    "x": 1828,
+    "x": 1838,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0508": {
-    "x": 1836,
+    "x": 1846,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0532": {
-    "x": 1844,
+    "x": 1854,
     "y": 637,
     "w": 13,
     "h": 13
   },
   "wand:wand_0545": {
-    "x": 1858,
+    "x": 1868,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0551": {
-    "x": 1866,
+    "x": 1876,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0561": {
-    "x": 1874,
+    "x": 1884,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0565": {
-    "x": 1882,
+    "x": 1892,
     "y": 637,
     "w": 17,
     "h": 13
   },
   "wand:wand_0572": {
-    "x": 1900,
+    "x": 1910,
     "y": 637,
     "w": 13,
     "h": 13
   },
   "wand:wand_0637": {
-    "x": 1914,
+    "x": 1924,
     "y": 637,
     "w": 17,
     "h": 13
   },
   "wand:wand_0655": {
-    "x": 1932,
+    "x": 1942,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0664": {
-    "x": 1940,
+    "x": 1950,
     "y": 637,
     "w": 13,
     "h": 13
   },
   "wand:wand_0679": {
-    "x": 1954,
+    "x": 1964,
     "y": 637,
     "w": 13,
     "h": 13
   },
   "wand:wand_0695": {
-    "x": 1968,
-    "y": 637,
-    "w": 9,
-    "h": 13
-  },
-  "wand:wand_0696": {
     "x": 1978,
     "y": 637,
     "w": 9,
     "h": 13
   },
-  "wand:wand_0746": {
+  "wand:wand_0696": {
     "x": 1988,
+    "y": 637,
+    "w": 9,
+    "h": 13
+  },
+  "wand:wand_0746": {
+    "x": 1998,
     "y": 637,
     "w": 11,
     "h": 13
   },
   "wand:wand_0751": {
-    "x": 2000,
+    "x": 2010,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0771": {
-    "x": 2008,
+    "x": 2018,
     "y": 637,
     "w": 9,
     "h": 13
   },
   "wand:wand_0786": {
-    "x": 2018,
+    "x": 2028,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0787": {
-    "x": 2026,
+    "x": 2036,
     "y": 637,
     "w": 11,
     "h": 13
   },
   "wand:wand_0791": {
-    "x": 2038,
-    "y": 637,
-    "w": 9,
-    "h": 13
-  },
-  "wand:wand_0823": {
     "x": 2048,
     "y": 637,
     "w": 9,
     "h": 13
   },
-  "wand:wand_0828": {
+  "wand:wand_0823": {
     "x": 2058,
+    "y": 637,
+    "w": 9,
+    "h": 13
+  },
+  "wand:wand_0828": {
+    "x": 2068,
     "y": 637,
     "w": 11,
     "h": 13
   },
   "wand:wand_0835": {
-    "x": 2070,
+    "x": 2080,
     "y": 637,
     "w": 9,
     "h": 13
   },
   "wand:wand_0844": {
-    "x": 2080,
+    "x": 2090,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0857": {
-    "x": 2088,
+    "x": 2098,
     "y": 637,
     "w": 9,
     "h": 13
   },
   "wand:wand_0863": {
-    "x": 2098,
+    "x": 2108,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0894": {
-    "x": 2106,
+    "x": 2116,
     "y": 637,
     "w": 17,
     "h": 13
   },
   "wand:wand_0899": {
-    "x": 2124,
+    "x": 2134,
     "y": 637,
     "w": 9,
     "h": 13
   },
   "wand:wand_0922": {
-    "x": 2134,
+    "x": 2144,
     "y": 637,
     "w": 11,
     "h": 13
   },
   "wand:wand_0923": {
-    "x": 2146,
+    "x": 2156,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0934": {
-    "x": 2154,
+    "x": 2164,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0937": {
-    "x": 2162,
+    "x": 2172,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0964": {
-    "x": 2170,
+    "x": 2180,
     "y": 637,
     "w": 13,
     "h": 13
   },
   "wand:wand_0978": {
-    "x": 2184,
+    "x": 2194,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "wand:wand_0990": {
-    "x": 2192,
+    "x": 2202,
     "y": 637,
     "w": 13,
     "h": 13
   },
   "projectile:duck": {
-    "x": 2206,
+    "x": 2216,
     "y": 637,
     "w": 14,
     "h": 13,
@@ -44937,7 +44943,7 @@
     ]
   },
   "projectile:skull": {
-    "x": 2221,
+    "x": 2231,
     "y": 637,
     "w": 12,
     "h": 13,
@@ -44962,67 +44968,67 @@
     ]
   },
   "prop:cart_top": {
-    "x": 2234,
+    "x": 2244,
     "y": 637,
     "w": 27,
     "h": 13
   },
   "prop:cart_wheel": {
-    "x": 2262,
+    "x": 2272,
     "y": 637,
     "w": 27,
     "h": 13
   },
   "prop:chair_1": {
-    "x": 2290,
+    "x": 2300,
     "y": 637,
     "w": 8,
     "h": 13
   },
   "prop:chair_2": {
-    "x": 2299,
+    "x": 2309,
     "y": 637,
     "w": 8,
     "h": 13
   },
   "prop:furniture_table_leg_l": {
-    "x": 2308,
+    "x": 2318,
     "y": 637,
     "w": 23,
     "h": 13
   },
   "prop:furniture_table_leg_r": {
-    "x": 2332,
+    "x": 2342,
     "y": 637,
     "w": 23,
     "h": 13
   },
   "prop:furniture_table_middle": {
-    "x": 2356,
+    "x": 2366,
     "y": 637,
     "w": 23,
     "h": 13
   },
   "prop:furniture_table_top": {
-    "x": 2380,
+    "x": 2390,
     "y": 637,
     "w": 23,
     "h": 13
   },
   "prop:furniture_wood_chair": {
-    "x": 2404,
+    "x": 2414,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "prop:lantern": {
-    "x": 2412,
+    "x": 2422,
     "y": 637,
     "w": 9,
     "h": 13
   },
   "prop:lantern_flame": {
-    "x": 2422,
+    "x": 2432,
     "y": 637,
     "w": 9,
     "h": 13,
@@ -45057,13 +45063,13 @@
     ]
   },
   "prop:lantern_small": {
-    "x": 2432,
+    "x": 2442,
     "y": 637,
     "w": 9,
     "h": 13
   },
   "prop:lantern_small_flame": {
-    "x": 2442,
+    "x": 2452,
     "y": 637,
     "w": 9,
     "h": 13,
@@ -45098,25 +45104,25 @@
     ]
   },
   "prop:tnt_box": {
-    "x": 2452,
+    "x": 2462,
     "y": 637,
     "w": 13,
     "h": 13
   },
   "prop:torch_hang_unlit": {
-    "x": 2466,
+    "x": 2476,
     "y": 637,
     "w": 11,
     "h": 13
   },
   "wand:bomb_wand": {
-    "x": 2478,
+    "x": 2488,
     "y": 637,
     "w": 7,
     "h": 13
   },
   "building:lasergun": {
-    "x": 2486,
+    "x": 2496,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -45142,7 +45148,7 @@
     ]
   },
   "enemy:duck": {
-    "x": 2499,
+    "x": 2509,
     "y": 637,
     "w": 13,
     "h": 12,
@@ -45248,7 +45254,7 @@
     ]
   },
   "enemy:mine": {
-    "x": 2513,
+    "x": 2523,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -45284,7 +45290,7 @@
     ]
   },
   "enemy:mine_emissive": {
-    "x": 2526,
+    "x": 2536,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -45320,7 +45326,7 @@
     ]
   },
   "enemy:worm_body": {
-    "x": 2539,
+    "x": 2549,
     "y": 637,
     "w": 14,
     "h": 12,
@@ -45346,7 +45352,7 @@
     ]
   },
   "enemy:worm_head": {
-    "x": 2554,
+    "x": 2564,
     "y": 637,
     "w": 17,
     "h": 12,
@@ -45382,7 +45388,7 @@
     ]
   },
   "enemy:worm_tail": {
-    "x": 2572,
+    "x": 2582,
     "y": 637,
     "w": 14,
     "h": 12,
@@ -45408,7 +45414,7 @@
     ]
   },
   "enemy:boss_sky_boss_sky": {
-    "x": 2587,
+    "x": 2597,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -45416,25 +45422,25 @@
     "oy": 6
   },
   "item:beer_bottle": {
-    "x": 2600,
+    "x": 2610,
     "y": 637,
     "w": 12,
     "h": 12
   },
   "item:bomb_holy": {
-    "x": 2613,
+    "x": 2623,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "item:book_s_small": {
-    "x": 2621,
+    "x": 2631,
     "y": 637,
     "w": 10,
     "h": 12
   },
   "item:book_small": {
-    "x": 2632,
+    "x": 2642,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -45459,13 +45465,13 @@
     ]
   },
   "item:broken_wand": {
-    "x": 2643,
+    "x": 2653,
     "y": 637,
     "w": 12,
     "h": 12
   },
   "item:canister": {
-    "x": 2656,
+    "x": 2666,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -45473,7 +45479,7 @@
     "oy": 6
   },
   "item:chest": {
-    "x": 2667,
+    "x": 2677,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -45481,7 +45487,7 @@
     "oy": 6
   },
   "item:chest_present": {
-    "x": 2680,
+    "x": 2690,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -45489,7 +45495,7 @@
     "oy": 6
   },
   "item:crate": {
-    "x": 2693,
+    "x": 2703,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -45497,19 +45503,19 @@
     "oy": 6
   },
   "item:emerald_tablet": {
-    "x": 2704,
+    "x": 2714,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "item:goldnugget_12px": {
-    "x": 2716,
+    "x": 2726,
     "y": 637,
     "w": 12,
     "h": 12
   },
   "item:health": {
-    "x": 2729,
+    "x": 2739,
     "y": 637,
     "w": 13,
     "h": 12,
@@ -45535,13 +45541,13 @@
     ]
   },
   "item:laboratory_tablet": {
-    "x": 2743,
+    "x": 2753,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "item:medkit": {
-    "x": 2755,
+    "x": 2765,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -45549,13 +45555,13 @@
     "oy": 12
   },
   "item:powder_stash": {
-    "x": 2768,
+    "x": 2778,
     "y": 637,
     "w": 10,
     "h": 12
   },
   "item:pressure_bottle": {
-    "x": 2779,
+    "x": 2789,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -45563,19 +45569,19 @@
     "oy": 6
   },
   "item:rock": {
-    "x": 2790,
+    "x": 2800,
     "y": 637,
     "w": 12,
     "h": 12
   },
   "item:safe_haven": {
-    "x": 2803,
+    "x": 2813,
     "y": 637,
     "w": 12,
     "h": 12
   },
   "item:scroll_small": {
-    "x": 2816,
+    "x": 2826,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -45600,13 +45606,13 @@
     ]
   },
   "item:sunseed_2": {
-    "x": 2827,
+    "x": 2837,
     "y": 637,
     "w": 12,
     "h": 12
   },
   "item:torch": {
-    "x": 2840,
+    "x": 2850,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -45660,469 +45666,469 @@
     ]
   },
   "wand:wand_0017": {
-    "x": 2853,
+    "x": 2863,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0018": {
-    "x": 2861,
+    "x": 2871,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "wand:wand_0022": {
-    "x": 2873,
+    "x": 2883,
     "y": 637,
     "w": 9,
     "h": 12
   },
   "wand:wand_0058": {
-    "x": 2883,
+    "x": 2893,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0076": {
-    "x": 2891,
+    "x": 2901,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0106": {
-    "x": 2899,
+    "x": 2909,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "wand:wand_0108": {
-    "x": 2911,
+    "x": 2921,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0114": {
-    "x": 2919,
+    "x": 2929,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0120": {
-    "x": 2927,
+    "x": 2937,
     "y": 637,
     "w": 17,
     "h": 12
   },
   "wand:wand_0131": {
-    "x": 2945,
+    "x": 2955,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0138": {
-    "x": 2953,
+    "x": 2963,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "wand:wand_0190": {
-    "x": 2965,
+    "x": 2975,
     "y": 637,
     "w": 9,
     "h": 12
   },
   "wand:wand_0193": {
-    "x": 2975,
+    "x": 2985,
     "y": 637,
     "w": 13,
     "h": 12
   },
   "wand:wand_0211": {
-    "x": 2989,
+    "x": 2999,
     "y": 637,
     "w": 17,
     "h": 12
   },
   "wand:wand_0229": {
-    "x": 3007,
+    "x": 3017,
     "y": 637,
     "w": 17,
     "h": 12
   },
   "wand:wand_0231": {
-    "x": 3025,
+    "x": 3035,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0252": {
-    "x": 3033,
+    "x": 3043,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "wand:wand_0295": {
-    "x": 3045,
+    "x": 3055,
     "y": 637,
     "w": 13,
     "h": 12
   },
   "wand:wand_0296": {
-    "x": 3059,
+    "x": 3069,
     "y": 637,
     "w": 15,
     "h": 12
   },
   "wand:wand_0302": {
-    "x": 3075,
+    "x": 3085,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "wand:wand_0324": {
-    "x": 3087,
-    "y": 637,
-    "w": 9,
-    "h": 12
-  },
-  "wand:wand_0330": {
     "x": 3097,
     "y": 637,
     "w": 9,
     "h": 12
   },
-  "wand:wand_0337": {
+  "wand:wand_0330": {
     "x": 3107,
     "y": 637,
     "w": 9,
     "h": 12
   },
-  "wand:wand_0346": {
+  "wand:wand_0337": {
     "x": 3117,
+    "y": 637,
+    "w": 9,
+    "h": 12
+  },
+  "wand:wand_0346": {
+    "x": 3127,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0353": {
-    "x": 3125,
+    "x": 3135,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0380": {
-    "x": 3133,
+    "x": 3143,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0385": {
-    "x": 3141,
+    "x": 3151,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0391": {
-    "x": 3149,
+    "x": 3159,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0394": {
-    "x": 3157,
+    "x": 3167,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "wand:wand_0395": {
-    "x": 3169,
+    "x": 3179,
     "y": 637,
     "w": 17,
     "h": 12
   },
   "wand:wand_0409": {
-    "x": 3187,
+    "x": 3197,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "wand:wand_0417": {
-    "x": 3199,
+    "x": 3209,
     "y": 637,
     "w": 5,
     "h": 12
   },
   "wand:wand_0435": {
-    "x": 3205,
+    "x": 3215,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0444": {
-    "x": 3213,
+    "x": 3223,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0465": {
-    "x": 3221,
+    "x": 3231,
     "y": 637,
     "w": 17,
     "h": 12
   },
   "wand:wand_0471": {
-    "x": 3239,
+    "x": 3249,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0484": {
-    "x": 3247,
+    "x": 3257,
     "y": 637,
     "w": 5,
     "h": 12
   },
   "wand:wand_0487": {
-    "x": 3253,
+    "x": 3263,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0512": {
-    "x": 3261,
+    "x": 3271,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "wand:wand_0527": {
-    "x": 3273,
+    "x": 3283,
     "y": 637,
     "w": 15,
     "h": 12
   },
   "wand:wand_0549": {
-    "x": 3289,
+    "x": 3299,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "wand:wand_0569": {
-    "x": 3301,
+    "x": 3311,
     "y": 637,
     "w": 5,
     "h": 12
   },
   "wand:wand_0574": {
-    "x": 3307,
+    "x": 3317,
     "y": 637,
     "w": 13,
     "h": 12
   },
   "wand:wand_0575": {
-    "x": 3321,
+    "x": 3331,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "wand:wand_0593": {
-    "x": 3333,
+    "x": 3343,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0594": {
-    "x": 3341,
+    "x": 3351,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0609": {
-    "x": 3349,
+    "x": 3359,
     "y": 637,
     "w": 13,
     "h": 12
   },
   "wand:wand_0618": {
-    "x": 3363,
+    "x": 3373,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0636": {
-    "x": 3371,
+    "x": 3381,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0640": {
-    "x": 3379,
+    "x": 3389,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0654": {
-    "x": 3387,
+    "x": 3397,
     "y": 637,
     "w": 5,
     "h": 12
   },
   "wand:wand_0656": {
-    "x": 3393,
+    "x": 3403,
     "y": 637,
     "w": 13,
     "h": 12
   },
   "wand:wand_0666": {
-    "x": 3407,
+    "x": 3417,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "wand:wand_0668": {
-    "x": 3419,
+    "x": 3429,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "wand:wand_0676": {
-    "x": 3431,
+    "x": 3441,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0683": {
-    "x": 3439,
+    "x": 3449,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0691": {
-    "x": 3447,
+    "x": 3457,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "wand:wand_0721": {
-    "x": 3459,
+    "x": 3469,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0724": {
-    "x": 3467,
+    "x": 3477,
     "y": 637,
     "w": 3,
     "h": 12
   },
   "wand:wand_0734": {
-    "x": 3471,
+    "x": 3481,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0739": {
-    "x": 3479,
+    "x": 3489,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0740": {
-    "x": 3487,
+    "x": 3497,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0782": {
-    "x": 3495,
+    "x": 3505,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "wand:wand_0798": {
-    "x": 3507,
+    "x": 3517,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0800": {
-    "x": 3515,
+    "x": 3525,
     "y": 637,
     "w": 9,
     "h": 12
   },
   "wand:wand_0855": {
-    "x": 3525,
+    "x": 3535,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0873": {
-    "x": 3533,
+    "x": 3543,
     "y": 637,
     "w": 15,
     "h": 12
   },
   "wand:wand_0892": {
-    "x": 3549,
+    "x": 3559,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "wand:wand_0898": {
-    "x": 3561,
+    "x": 3571,
     "y": 637,
     "w": 5,
     "h": 12
   },
   "wand:wand_0927": {
-    "x": 3567,
+    "x": 3577,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0935": {
-    "x": 3575,
+    "x": 3585,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0958": {
-    "x": 3583,
+    "x": 3593,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0962": {
-    "x": 3591,
+    "x": 3601,
     "y": 637,
     "w": 7,
     "h": 12
   },
   "wand:wand_0970": {
-    "x": 3599,
+    "x": 3609,
     "y": 637,
     "w": 15,
     "h": 12
   },
   "wand:wand_0979": {
-    "x": 3615,
+    "x": 3625,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "wand:wand_0988": {
-    "x": 3627,
+    "x": 3637,
     "y": 637,
     "w": 15,
     "h": 12
   },
   "wand:wand_1000": {
-    "x": 3643,
+    "x": 3653,
     "y": 637,
     "w": 5,
     "h": 12
   },
   "projectile:bomb": {
-    "x": 3649,
+    "x": 3659,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -46148,7 +46154,7 @@
     ]
   },
   "projectile:darkflame": {
-    "x": 3662,
+    "x": 3672,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -46184,7 +46190,7 @@
     ]
   },
   "projectile:grenade_large": {
-    "x": 3675,
+    "x": 3685,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -46210,7 +46216,7 @@
     ]
   },
   "projectile:ice": {
-    "x": 3688,
+    "x": 3698,
     "y": 637,
     "w": 14,
     "h": 12,
@@ -46246,7 +46252,7 @@
     ]
   },
   "projectile:polyorb": {
-    "x": 3703,
+    "x": 3713,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -46272,13 +46278,13 @@
     ]
   },
   "projectile:rock_projectile": {
-    "x": 3716,
+    "x": 3726,
     "y": 637,
     "w": 12,
     "h": 12
   },
   "projectile:slime": {
-    "x": 3729,
+    "x": 3739,
     "y": 637,
     "w": 15,
     "h": 12,
@@ -46314,7 +46320,7 @@
     ]
   },
   "projectile:slimeball_small": {
-    "x": 3745,
+    "x": 3755,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -46350,7 +46356,7 @@
     ]
   },
   "projectile:slimeball_small_red": {
-    "x": 3758,
+    "x": 3768,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -46386,7 +46392,7 @@
     ]
   },
   "projectile:spitter": {
-    "x": 3771,
+    "x": 3781,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -46412,7 +46418,7 @@
     ]
   },
   "projectile:spitter_green": {
-    "x": 3784,
+    "x": 3794,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -46438,7 +46444,7 @@
     ]
   },
   "projectile:spitter_purple": {
-    "x": 3797,
+    "x": 3807,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -46464,13 +46470,13 @@
     ]
   },
   "projectile:stone": {
-    "x": 3810,
+    "x": 3820,
     "y": 637,
     "w": 12,
     "h": 12
   },
   "prop:barrel": {
-    "x": 3823,
+    "x": 3833,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -46478,7 +46484,7 @@
     "oy": 6
   },
   "prop:barrel_broken": {
-    "x": 3834,
+    "x": 3844,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -46486,19 +46492,19 @@
     "oy": 6
   },
   "prop:barrel_burning": {
-    "x": 3845,
+    "x": 3855,
     "y": 637,
     "w": 10,
     "h": 12
   },
   "prop:barrel_radioactive": {
-    "x": 3856,
+    "x": 3866,
     "y": 637,
     "w": 10,
     "h": 12
   },
   "prop:barrel_small": {
-    "x": 3867,
+    "x": 3877,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -46506,7 +46512,7 @@
     "oy": 6
   },
   "prop:barrel_unstable": {
-    "x": 3878,
+    "x": 3888,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -46514,79 +46520,79 @@
     "oy": 6
   },
   "prop:barrel_water": {
-    "x": 3889,
+    "x": 3899,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "prop:bucket": {
-    "x": 3901,
+    "x": 3911,
     "y": 637,
     "w": 10,
     "h": 12
   },
   "prop:furniture_castle_divan": {
-    "x": 3912,
+    "x": 3922,
     "y": 637,
     "w": 25,
     "h": 12
   },
   "prop:stone_02": {
-    "x": 3938,
+    "x": 3948,
     "y": 637,
     "w": 12,
     "h": 12
   },
   "prop:stone_03": {
-    "x": 3951,
+    "x": 3961,
     "y": 637,
     "w": 12,
     "h": 12
   },
   "prop:stone_04": {
-    "x": 3964,
+    "x": 3974,
     "y": 637,
     "w": 12,
     "h": 12
   },
   "prop:suspended_tank_acid": {
-    "x": 3977,
+    "x": 3987,
     "y": 637,
     "w": 22,
     "h": 12
   },
   "prop:suspended_tank_radioactive": {
-    "x": 4000,
+    "x": 4010,
     "y": 637,
     "w": 22,
     "h": 12
   },
   "ui_item:laboratory_tablet": {
-    "x": 4023,
+    "x": 4033,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "status:alcoholic": {
-    "x": 4035,
+    "x": 4045,
     "y": 637,
     "w": 12,
     "h": 12
   },
   "status:antigravity": {
-    "x": 4048,
+    "x": 4058,
     "y": 637,
     "w": 12,
     "h": 12
   },
   "status:attacking_player": {
-    "x": 4061,
+    "x": 4071,
     "y": 637,
     "w": 12,
     "h": 12
   },
   "status:berserk": {
-    "x": 4074,
+    "x": 4084,
     "y": 637,
     "w": 12,
     "h": 12
@@ -52940,13 +52946,13 @@
     "h": 1
   },
   "item:chest_random": {
-    "x": 1377,
+    "x": 1387,
     "y": 637,
     "w": 18,
     "h": 13
   },
   "item:chest_random_super": {
-    "x": 1396,
+    "x": 1406,
     "y": 637,
     "w": 18,
     "h": 13
@@ -53388,7 +53394,7 @@
     ]
   },
   "enemy:firepillar": {
-    "x": 3675,
+    "x": 3685,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -53414,7 +53420,7 @@
     ]
   },
   "enemy:firepillar_part": {
-    "x": 3675,
+    "x": 3685,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -54773,7 +54779,7 @@
     ]
   },
   "enemy:slime_boss_limbs": {
-    "x": 3745,
+    "x": 3755,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -55044,7 +55050,7 @@
     ]
   },
   "enemy:rocket_roll": {
-    "x": 60,
+    "x": 70,
     "y": 637,
     "w": 15,
     "h": 15,
@@ -55068,7 +55074,7 @@
     ]
   },
   "enemy:boss_sky": {
-    "x": 2587,
+    "x": 2597,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -56018,7 +56024,7 @@
     ]
   },
   "enemy:worm": {
-    "x": 2554,
+    "x": 2564,
     "y": 637,
     "w": 17,
     "h": 12,
@@ -59819,7 +59825,7 @@
     "h": 23
   },
   "enemy:base_torch": {
-    "x": 2840,
+    "x": 2850,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -60029,19 +60035,19 @@
     ]
   },
   "enemy:chest_dark": {
-    "x": 1320,
+    "x": 1330,
     "y": 637,
     "w": 18,
     "h": 13
   },
   "enemy:chest_light": {
-    "x": 1358,
+    "x": 1368,
     "y": 637,
     "w": 18,
     "h": 13
   },
   "enemy:chest_steel": {
-    "x": 1415,
+    "x": 1425,
     "y": 637,
     "w": 18,
     "h": 13
@@ -60349,7 +60355,7 @@
     ]
   },
   "enemy:lasergun": {
-    "x": 2486,
+    "x": 2496,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -60419,7 +60425,7 @@
     "h": 32
   },
   "enemy:physics_worm_deflector_crystal": {
-    "x": 1285,
+    "x": 1295,
     "y": 637,
     "w": 8,
     "h": 14
@@ -60431,7 +60437,7 @@
     "h": 32
   },
   "enemy:racing_cart": {
-    "x": 30,
+    "x": 40,
     "y": 637,
     "w": 14,
     "h": 15,
@@ -60994,7 +61000,7 @@
     ]
   },
   "enemy:temple_duplicator": {
-    "x": 3791,
+    "x": 3808,
     "y": 620,
     "w": 65,
     "h": 15
@@ -61660,91 +61666,91 @@
     ]
   },
   "enemy:base_book": {
-    "x": 2704,
+    "x": 2714,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "enemy:base_forged": {
-    "x": 2743,
+    "x": 2753,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "enemy:book_00": {
-    "x": 2704,
+    "x": 2714,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "enemy:book_01": {
-    "x": 2704,
+    "x": 2714,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "enemy:book_02": {
-    "x": 2704,
+    "x": 2714,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "enemy:book_03": {
-    "x": 2704,
+    "x": 2714,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "enemy:book_04": {
-    "x": 2704,
+    "x": 2714,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "enemy:book_05": {
-    "x": 2704,
+    "x": 2714,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "enemy:book_06": {
-    "x": 2704,
+    "x": 2714,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "enemy:book_07": {
-    "x": 2704,
+    "x": 2714,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "enemy:book_08": {
-    "x": 2704,
+    "x": 2714,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "enemy:book_09": {
-    "x": 2704,
+    "x": 2714,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "enemy:book_10": {
-    "x": 2704,
+    "x": 2714,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "enemy:book_all_spells": {
-    "x": 2743,
+    "x": 2753,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "enemy:book_barren": {
-    "x": 2632,
+    "x": 2642,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -61769,7 +61775,7 @@
     ]
   },
   "enemy:book_bunker": {
-    "x": 2632,
+    "x": 2642,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -61794,13 +61800,13 @@
     ]
   },
   "enemy:book_corpse": {
-    "x": 2704,
+    "x": 2714,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "enemy:book_diamond": {
-    "x": 2632,
+    "x": 2642,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -61825,7 +61831,7 @@
     ]
   },
   "enemy:book_essences": {
-    "x": 2632,
+    "x": 2642,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -61850,7 +61856,7 @@
     ]
   },
   "enemy:book_hint": {
-    "x": 2632,
+    "x": 2642,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -61875,7 +61881,7 @@
     ]
   },
   "enemy:book_mestari": {
-    "x": 2632,
+    "x": 2642,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -61900,7 +61906,7 @@
     ]
   },
   "enemy:book_moon": {
-    "x": 2632,
+    "x": 2642,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -61925,7 +61931,7 @@
     ]
   },
   "enemy:book_music_a": {
-    "x": 2632,
+    "x": 2642,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -61950,7 +61956,7 @@
     ]
   },
   "enemy:book_music_b": {
-    "x": 2632,
+    "x": 2642,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -61975,7 +61981,7 @@
     ]
   },
   "enemy:book_music_c": {
-    "x": 2632,
+    "x": 2642,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -62000,7 +62006,7 @@
     ]
   },
   "enemy:book_robot": {
-    "x": 2632,
+    "x": 2642,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -62025,43 +62031,43 @@
     ]
   },
   "enemy:book_s_a": {
-    "x": 2621,
+    "x": 2631,
     "y": 637,
     "w": 10,
     "h": 12
   },
   "enemy:book_s_b": {
-    "x": 2621,
+    "x": 2631,
     "y": 637,
     "w": 10,
     "h": 12
   },
   "enemy:book_s_c": {
-    "x": 2621,
+    "x": 2631,
     "y": 637,
     "w": 10,
     "h": 12
   },
   "enemy:book_s_d": {
-    "x": 2621,
+    "x": 2631,
     "y": 637,
     "w": 10,
     "h": 12
   },
   "enemy:book_s_e": {
-    "x": 2621,
+    "x": 2631,
     "y": 637,
     "w": 10,
     "h": 12
   },
   "enemy:book_tree": {
-    "x": 2704,
+    "x": 2714,
     "y": 637,
     "w": 11,
     "h": 12
   },
   "enemy:beer_bottle": {
-    "x": 2600,
+    "x": 2610,
     "y": 637,
     "w": 12,
     "h": 12
@@ -62509,13 +62515,13 @@
     "h": 20
   },
   "enemy:bloodmoney_10000": {
-    "x": 3857,
+    "x": 3874,
     "y": 620,
     "w": 12,
     "h": 15
   },
   "enemy:bloodmoney_200": {
-    "x": 2716,
+    "x": 2726,
     "y": 637,
     "w": 12,
     "h": 12
@@ -62533,7 +62539,7 @@
     "h": 9
   },
   "enemy:bloodmoney_x": {
-    "x": 2716,
+    "x": 2726,
     "y": 637,
     "w": 12,
     "h": 12
@@ -62545,7 +62551,7 @@
     "h": 8
   },
   "enemy:broken_wand": {
-    "x": 2643,
+    "x": 2653,
     "y": 637,
     "w": 12,
     "h": 12
@@ -62577,13 +62583,13 @@
     ]
   },
   "enemy:chest_random": {
-    "x": 1377,
+    "x": 1387,
     "y": 637,
     "w": 18,
     "h": 13
   },
   "enemy:chest_random_super": {
-    "x": 1396,
+    "x": 1406,
     "y": 637,
     "w": 18,
     "h": 13
@@ -62691,13 +62697,13 @@
     "h": 20
   },
   "enemy:goldnugget_10000": {
-    "x": 3857,
+    "x": 3874,
     "y": 620,
     "w": 12,
     "h": 15
   },
   "enemy:goldnugget_200": {
-    "x": 2716,
+    "x": 2726,
     "y": 637,
     "w": 12,
     "h": 12
@@ -62715,7 +62721,7 @@
     "h": 9
   },
   "enemy:goldnugget_x": {
-    "x": 2716,
+    "x": 2726,
     "y": 637,
     "w": 12,
     "h": 12
@@ -62965,7 +62971,7 @@
     "h": 16
   },
   "enemy:safe_haven": {
-    "x": 2803,
+    "x": 2813,
     "y": 637,
     "w": 12,
     "h": 12
@@ -64454,7 +64460,7 @@
     ]
   },
   "enemy:chest_random_dummy": {
-    "x": 1377,
+    "x": 1387,
     "y": 637,
     "w": 18,
     "h": 13
@@ -65234,7 +65240,7 @@
     ]
   },
   "enemy:greed_crystal": {
-    "x": 1285,
+    "x": 1295,
     "y": 637,
     "w": 8,
     "h": 14
@@ -65398,7 +65404,7 @@
     ]
   },
   "enemy:orbit_fireballs_fireball": {
-    "x": 3675,
+    "x": 3685,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -68245,7 +68251,7 @@
     ]
   },
   "enemy:bomb_cart": {
-    "x": 14,
+    "x": 24,
     "y": 637,
     "w": 15,
     "h": 15
@@ -68433,7 +68439,7 @@
     ]
   },
   "enemy:darkflame_stationary": {
-    "x": 3662,
+    "x": 3672,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -69524,7 +69530,7 @@
     ]
   },
   "enemy:grenade_large": {
-    "x": 3675,
+    "x": 3685,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -70363,7 +70369,7 @@
     ]
   },
   "enemy:rock": {
-    "x": 3716,
+    "x": 3726,
     "y": 637,
     "w": 12,
     "h": 12
@@ -70488,7 +70494,7 @@
     ]
   },
   "enemy:slime": {
-    "x": 3729,
+    "x": 3739,
     "y": 637,
     "w": 15,
     "h": 12,
@@ -70524,7 +70530,7 @@
     ]
   },
   "enemy:spitter": {
-    "x": 3771,
+    "x": 3781,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -70550,7 +70556,7 @@
     ]
   },
   "enemy:spitter_tier_2": {
-    "x": 3784,
+    "x": 3794,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -70576,7 +70582,7 @@
     ]
   },
   "enemy:spitter_tier_3": {
-    "x": 3797,
+    "x": 3807,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -70810,7 +70816,7 @@
     "h": 32
   },
   "enemy:tntbox": {
-    "x": 2452,
+    "x": 2462,
     "y": 637,
     "w": 13,
     "h": 13
@@ -71364,7 +71370,7 @@
     ]
   },
   "enemy:ice": {
-    "x": 3688,
+    "x": 3698,
     "y": 637,
     "w": 14,
     "h": 12,
@@ -71741,7 +71747,7 @@
     ]
   },
   "enemy:mine_scavenger": {
-    "x": 2513,
+    "x": 2523,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -72505,7 +72511,7 @@
     ]
   },
   "enemy:pollen_ball": {
-    "x": 1063,
+    "x": 1073,
     "y": 637,
     "w": 14,
     "h": 14,
@@ -72531,7 +72537,7 @@
     ]
   },
   "enemy:polyorb": {
-    "x": 3703,
+    "x": 3713,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -72593,7 +72599,7 @@
     ]
   },
   "enemy:present": {
-    "x": 2680,
+    "x": 2690,
     "y": 637,
     "w": 12,
     "h": 12,
@@ -72601,7 +72607,7 @@
     "oy": 6
   },
   "enemy:radioactive_blob": {
-    "x": 3729,
+    "x": 3739,
     "y": 637,
     "w": 15,
     "h": 12,
@@ -72637,7 +72643,7 @@
     ]
   },
   "enemy:radioactive_blob_trail": {
-    "x": 3729,
+    "x": 3739,
     "y": 637,
     "w": 15,
     "h": 12,
@@ -73113,7 +73119,7 @@
     "h": 50
   },
   "enemy:candle_1": {
-    "x": 1095,
+    "x": 1105,
     "y": 637,
     "w": 9,
     "h": 14,
@@ -73148,7 +73154,7 @@
     ]
   },
   "enemy:candle_2": {
-    "x": 1115,
+    "x": 1125,
     "y": 637,
     "w": 9,
     "h": 14,
@@ -73183,7 +73189,7 @@
     ]
   },
   "enemy:candle_3": {
-    "x": 1135,
+    "x": 1145,
     "y": 637,
     "w": 9,
     "h": 14,
@@ -73315,7 +73321,7 @@
     "h": 18
   },
   "enemy:furniture_castle_divan": {
-    "x": 3912,
+    "x": 3922,
     "y": 637,
     "w": 25,
     "h": 12
@@ -73363,7 +73369,7 @@
     "h": 26
   },
   "enemy:furniture_rocking_chair": {
-    "x": 1155,
+    "x": 1165,
     "y": 637,
     "w": 14,
     "h": 14
@@ -73375,13 +73381,13 @@
     "h": 10
   },
   "enemy:furniture_table": {
-    "x": 2380,
+    "x": 2390,
     "y": 637,
     "w": 23,
     "h": 13
   },
   "enemy:furniture_tombstone_01": {
-    "x": 1170,
+    "x": 1180,
     "y": 637,
     "w": 12,
     "h": 14
@@ -73405,7 +73411,7 @@
     "h": 25
   },
   "enemy:furniture_wood_chair": {
-    "x": 2404,
+    "x": 2414,
     "y": 637,
     "w": 7,
     "h": 13
@@ -73515,13 +73521,13 @@
     "h": 6
   },
   "enemy:lantern_small": {
-    "x": 2432,
+    "x": 2442,
     "y": 637,
     "w": 9,
     "h": 13
   },
   "enemy:minecart": {
-    "x": 76,
+    "x": 86,
     "y": 637,
     "w": 18,
     "h": 15,
@@ -73552,55 +73558,55 @@
     "h": 11
   },
   "enemy:trap_circle_acid": {
-    "x": 446,
+    "x": 456,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "enemy:trap_electricity": {
-    "x": 462,
+    "x": 472,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "enemy:trap_electricity_enabled": {
-    "x": 462,
+    "x": 472,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "enemy:trap_electricity_suspended": {
-    "x": 462,
+    "x": 472,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "enemy:trap_ignite": {
-    "x": 478,
+    "x": 488,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "enemy:trap_ignite_enabled": {
-    "x": 478,
+    "x": 488,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "enemy:trap_laser": {
-    "x": 510,
+    "x": 520,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "enemy:trap_laser_enabled": {
-    "x": 510,
+    "x": 520,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "enemy:trap_laser_enabled_left": {
-    "x": 542,
+    "x": 552,
     "y": 637,
     "w": 15,
     "h": 15
@@ -73618,13 +73624,13 @@
     "h": 10
   },
   "enemy:physics_barrel_burning": {
-    "x": 3845,
+    "x": 3855,
     "y": 637,
     "w": 10,
     "h": 12
   },
   "enemy:physics_barrel_oil": {
-    "x": 3878,
+    "x": 3888,
     "y": 637,
     "w": 10,
     "h": 12,
@@ -73632,13 +73638,13 @@
     "oy": 6
   },
   "enemy:physics_barrel_radioactive": {
-    "x": 3856,
+    "x": 3866,
     "y": 637,
     "w": 10,
     "h": 12
   },
   "enemy:physics_barrel_water": {
-    "x": 3889,
+    "x": 3899,
     "y": 637,
     "w": 11,
     "h": 12
@@ -73730,7 +73736,7 @@
     "h": 9
   },
   "enemy:physics_brewing_stand": {
-    "x": 1078,
+    "x": 1088,
     "y": 637,
     "w": 16,
     "h": 14,
@@ -73756,7 +73762,7 @@
     ]
   },
   "enemy:physics_bucket": {
-    "x": 3901,
+    "x": 3911,
     "y": 637,
     "w": 10,
     "h": 12
@@ -73768,55 +73774,55 @@
     "h": 22
   },
   "enemy:physics_candle_1": {
-    "x": 1183,
-    "y": 637,
-    "w": 9,
-    "h": 14
-  },
-  "enemy:physics_candle_2": {
     "x": 1193,
     "y": 637,
     "w": 9,
     "h": 14
   },
-  "enemy:physics_candle_3": {
+  "enemy:physics_candle_2": {
     "x": 1203,
     "y": 637,
     "w": 9,
     "h": 14
   },
+  "enemy:physics_candle_3": {
+    "x": 1213,
+    "y": 637,
+    "w": 9,
+    "h": 14
+  },
   "enemy:physics_cart": {
-    "x": 2234,
+    "x": 2244,
     "y": 637,
     "w": 27,
     "h": 13
   },
   "enemy:physics_chain_torch": {
-    "x": 2466,
+    "x": 2476,
     "y": 637,
     "w": 11,
     "h": 13
   },
   "enemy:physics_chain_torch_blue": {
-    "x": 2466,
+    "x": 2476,
     "y": 637,
     "w": 11,
     "h": 13
   },
   "enemy:physics_chain_torch_ghostly": {
-    "x": 2466,
+    "x": 2476,
     "y": 637,
     "w": 11,
     "h": 13
   },
   "enemy:physics_chair_1": {
-    "x": 2290,
+    "x": 2300,
     "y": 637,
     "w": 8,
     "h": 13
   },
   "enemy:physics_chair_2": {
-    "x": 2299,
+    "x": 2309,
     "y": 637,
     "w": 8,
     "h": 13
@@ -73983,13 +73989,13 @@
     "h": 2
   },
   "enemy:physics_lantern": {
-    "x": 2412,
+    "x": 2422,
     "y": 637,
     "w": 9,
     "h": 13
   },
   "enemy:physics_lantern_small": {
-    "x": 2432,
+    "x": 2442,
     "y": 637,
     "w": 9,
     "h": 13
@@ -74019,7 +74025,7 @@
     "h": 129
   },
   "enemy:physics_minecart": {
-    "x": 76,
+    "x": 86,
     "y": 637,
     "w": 18,
     "h": 15,
@@ -74080,7 +74086,7 @@
     "h": 20
   },
   "enemy:physics_skateboard": {
-    "x": 133,
+    "x": 143,
     "y": 637,
     "w": 24,
     "h": 15
@@ -74136,19 +74142,19 @@
     "h": 6
   },
   "enemy:physics_stone_02": {
-    "x": 3938,
+    "x": 3948,
     "y": 637,
     "w": 12,
     "h": 12
   },
   "enemy:physics_stone_03": {
-    "x": 3951,
+    "x": 3961,
     "y": 637,
     "w": 12,
     "h": 12
   },
   "enemy:physics_stone_04": {
-    "x": 3964,
+    "x": 3974,
     "y": 637,
     "w": 12,
     "h": 12
@@ -74160,7 +74166,7 @@
     "h": 40
   },
   "enemy:physics_table": {
-    "x": 272,
+    "x": 282,
     "y": 637,
     "w": 15,
     "h": 15
@@ -74172,37 +74178,37 @@
     "h": 61
   },
   "enemy:physics_temple_rubble_01": {
-    "x": 288,
+    "x": 298,
     "y": 637,
     "w": 20,
     "h": 15
   },
   "enemy:physics_temple_rubble_02": {
-    "x": 309,
+    "x": 319,
     "y": 637,
     "w": 20,
     "h": 15
   },
   "enemy:physics_temple_rubble_03": {
-    "x": 330,
+    "x": 340,
     "y": 637,
     "w": 20,
     "h": 15
   },
   "enemy:physics_temple_rubble_04": {
-    "x": 351,
+    "x": 361,
     "y": 637,
     "w": 20,
     "h": 15
   },
   "enemy:physics_temple_rubble_05": {
-    "x": 372,
+    "x": 382,
     "y": 637,
     "w": 20,
     "h": 15
   },
   "enemy:physics_temple_rubble_06": {
-    "x": 393,
+    "x": 403,
     "y": 637,
     "w": 20,
     "h": 15
@@ -74226,31 +74232,31 @@
     "h": 19
   },
   "enemy:physics_trap_circle_acid": {
-    "x": 446,
+    "x": 456,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "enemy:physics_trap_electricity": {
-    "x": 462,
+    "x": 472,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "enemy:physics_trap_electricity_enabled": {
-    "x": 462,
+    "x": 472,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "enemy:physics_trap_ignite": {
-    "x": 478,
+    "x": 488,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "enemy:physics_trap_ignite_enabled": {
-    "x": 478,
+    "x": 488,
     "y": 637,
     "w": 15,
     "h": 15
@@ -74536,7 +74542,7 @@
     "h": 22
   },
   "enemy:suspended_container": {
-    "x": 229,
+    "x": 239,
     "y": 637,
     "w": 42,
     "h": 15
@@ -74548,13 +74554,13 @@
     "h": 20
   },
   "enemy:suspended_tank_acid": {
-    "x": 3977,
+    "x": 3987,
     "y": 637,
     "w": 22,
     "h": 12
   },
   "enemy:suspended_tank_radioactive": {
-    "x": 4000,
+    "x": 4010,
     "y": 637,
     "w": 22,
     "h": 12
@@ -74662,7 +74668,7 @@
     "h": 30
   },
   "enemy:_test_physics_light": {
-    "x": 1213,
+    "x": 1223,
     "y": 637,
     "w": 11,
     "h": 14
@@ -74674,7 +74680,7 @@
     "h": 40
   },
   "enemy:verlet_worm": {
-    "x": 2554,
+    "x": 2564,
     "y": 637,
     "w": 17,
     "h": 12,
@@ -74710,7 +74716,7 @@
     ]
   },
   "enemy:worm_part_body": {
-    "x": 2539,
+    "x": 2549,
     "y": 637,
     "w": 14,
     "h": 12,
@@ -74736,7 +74742,7 @@
     ]
   },
   "enemy:worm_part_head": {
-    "x": 2554,
+    "x": 2564,
     "y": 637,
     "w": 17,
     "h": 12,
@@ -74772,7 +74778,7 @@
     ]
   },
   "enemy:worm_part_tail": {
-    "x": 2572,
+    "x": 2582,
     "y": 637,
     "w": 14,
     "h": 12,
@@ -74810,7 +74816,7 @@
     "h": 6
   },
   "enemy:physics2_lantern_small": {
-    "x": 2432,
+    "x": 2442,
     "y": 637,
     "w": 9,
     "h": 13
@@ -74822,7 +74828,7 @@
     "h": 2
   },
   "enemy:physics2_minecart": {
-    "x": 76,
+    "x": 86,
     "y": 637,
     "w": 18,
     "h": 15,
@@ -74859,13 +74865,13 @@
     "h": 2
   },
   "enemy:physics2_trap_electricity_enabled": {
-    "x": 462,
+    "x": 472,
     "y": 637,
     "w": 15,
     "h": 15
   },
   "enemy:physics2_trap_electricity_enabled_static": {
-    "x": 462,
+    "x": 472,
     "y": 637,
     "w": 15,
     "h": 15

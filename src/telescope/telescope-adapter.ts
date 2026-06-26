@@ -10,7 +10,7 @@ import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope
 import { getDataZip } from "../data-archive";
 import { clearCache } from "./tile-cache";
 import orbsData from "../data/orbs.json";
-import { buildPillarSegments, makePillarUnlockPredicate, PILLAR_BASE } from "../data/pillars";
+import { buildPillarSegments, makePillarUnlockPredicate, makePillarUnlockPredicateFromFlags, PILLAR_BASE } from "../data/pillars";
 import PwWorker from "./pw-worker?worker";
 
 // Telescope modules
@@ -132,6 +132,10 @@ export interface GenerateOptions {
   gameMode?: string;
   /** Unlocked spell keys. null = all unlocked. */
   unlocks?: string[] | null;
+  /** Raw achievement flags from the mod's dedicated pillar channel (`&p=`).
+   *  When provided, drives pillar segment lock state directly; falls back to
+   *  `unlocks` (spell-key inference) when null/undefined. */
+  pillarFlags?: string[] | null;
 }
 
 // ─── State ──────────────────────────────────────────────────────────────────
@@ -1125,7 +1129,88 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         y: -35 + mmy,
         biome: "desert",
       } as any);
+
+      // Altar-sacrifice props (Pillar of Sacrifice & Transformation). These are
+      // game-side biome/structure props the telescope scanner never emits, so
+      // place them statically. Coords are pw-local + pwOffsetX. Sprites already
+      // baked into the atlas (enemy:physics_worm_deflector_crystal, etc.).
+
+      // Worm Crystal (worm deflector): one per Holy Mountain altar. The altar
+      // anchors are templeX/templeY (temple_generation.js, already noitamap world
+      // coords — the same values the shop/pacifist-chest POIs use). The deflector
+      // pixel sits at the altar centre, crystal at pixel + 5y (temple_altar.lua:219).
+      const HM_TEMPLE_X = [-32, -32, -32, -32, -32, -32, 2560];
+      const HM_TEMPLE_Y = [1410, 2946, 4994, 6530, 8578, 10626, 13181];
+      // Nudge to align the crystal/statue markers with the baked altar art.
+      const wormFix = { x: 0, y: 5 };
+      for (let hm = 0; hm < HM_TEMPLE_X.length; hm++) {
+        poisByPW[pwKey].push({
+          type: "item",
+          item: "worm_crystal",
+          nameKey: "building_worm_deflector",
+          name: "Worm crystal",
+          x: HM_TEMPLE_X[hm] + pwOffsetX + wormFix.x,
+          y: HM_TEMPLE_Y[hm] + wormFix.y,
+          biome: "temple_altar",
+        } as any);
+        // Greed-Cursed Crystal: spawns at the HM statue when the greed curse is
+        // active (temple_altar_left.lua:233). Always shown here per design.
+        poisByPW[pwKey].push({
+          type: "item",
+          item: "greed_crystal",
+          nameKey: "item_greed_crystal",
+          name: "Greed-Cursed Crystal",
+          x: HM_TEMPLE_X[hm] + pwOffsetX + wormFix.x,
+          y: HM_TEMPLE_Y[hm] + wormFix.y - 48,
+          biome: "temple_altar",
+        } as any);
+      }
+
     }
+
+    // Hand Statues (Munkki spawners): snowcave init() picks 8 positions seeded by
+    // the world seed within x:[-2350,2350], y:[3140,4500] and loads
+    // statue_hand.png at (pos-22) (snowcave.lua:1068-1088). Reproduce the same
+    // ProceduralRandomi draws so the positions match the seed exactly. These do
+    // NOT spawn in parallel worlds (wiki: Munkki), so main world (pw 0) only.
+    {
+      const handPrng = new NollaPrng(0);
+      for (let i = 1; i <= 8; i++) {
+        const px = handPrng.ProceduralRandomi(seed, 109, i * 53, -2350, 2350);
+        const py = handPrng.ProceduralRandomi(seed, 111, i * 2.9, 3140, 4500);
+        poisByPW["0,0"]?.push({
+          type: "item",
+          item: "statue_hand",
+          name: "Hand statue",
+          wiki: "https://noita.wiki.gg/wiki/Munkki",
+          x: px,
+          y: py,
+          biome: "snowcave",
+        } as any);
+      }
+    }
+
+    // Sun Rock / Dark Sun Rock: spawned at the Scales when progress_sun /
+    // progress_darksun are set (scale.lua). Daily = everything unlocked, so both
+    // appear. Single fixed overworld coord (the Scales, structures.json).
+    poisByPW["0,0"]?.push({
+      type: "item",
+      item: "sun_rock",
+      name: "Sunstone",
+      wiki: "https://noita.wiki.gg/wiki/Celestial_Scale",
+      x: 13030,
+      y: 8,
+      biome: "wandcave",
+    } as any);
+    poisByPW["0,0"]?.push({
+      type: "item",
+      item: "darksun_rock",
+      name: "Dark Sunstone",
+      wiki: "https://noita.wiki.gg/wiki/Celestial_Scale",
+      x: 13090,
+      y: 8,
+      biome: "wandcave",
+    } as any);
 
     // Essence Eaters guarding the overworld essence altars. Absolute world
     // positions (one per parallel world already baked into the coords), so they
@@ -1202,10 +1287,15 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
 
     // Achievement Pillars (mountain_tree.lua spawn_pillars): 6 pillars built
     // from per-achievement segments. Daily / no-mod -> everything unlocked
-    // (full colour); mod -> only the keys opts.unlocks reported, the rest
-    // desaturated. Anchored at the items.json "Pillars" coord.
+    // (full colour). Mod with the dedicated pillar channel (opts.pillarFlags,
+    // `&p=`) -> exact per-achievement state. Older mod / `&u=`-only -> coarse
+    // spell-key inference (FLAG_TO_UNLOCK_KEY). Anchored at items.json "Pillars".
     {
-      const isUnlocked = makePillarUnlockPredicate(dailySeed ? null : (opts.unlocks ?? null));
+      const isUnlocked = dailySeed
+        ? () => true
+        : opts.pillarFlags != null
+          ? makePillarUnlockPredicateFromFlags(opts.pillarFlags)
+          : makePillarUnlockPredicate(opts.unlocks ?? null);
       for (const seg of buildPillarSegments(PILLAR_BASE.x, PILLAR_BASE.y, isUnlocked)) {
         poisByPW["0,0"]?.push(seg as any);
       }

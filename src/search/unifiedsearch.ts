@@ -1158,6 +1158,13 @@ export class UnifiedSearch extends EventEmitter2 {
         parts.push("Paha Silmä", "paha silma", "evil eye", "eye");
       }
 
+      // Potion mimic (Henkevä potu): index its creature name + English aliases.
+      if (p.type === "item" && p.item === "mimic_potion") {
+        const t = gameTranslator.translateItem("animal_mimic_potion");
+        if (t && t !== "animal_mimic_potion") parts.push(t);
+        parts.push("Henkevä potu", "potion mimic", "mimic potion", "mimicium");
+      }
+
       // Emerald Tablets: index the proper title ("Secretorum Hermetis",
       // "Tabula Smaragdina", "Emerald Tablet - volume II") so they are findable
       // by their in-game name, not just "tablet".

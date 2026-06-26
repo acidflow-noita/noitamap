@@ -27,6 +27,7 @@
 
 import { generateDynamicMap, type GenerationResult } from "./telescope/telescope-adapter";
 import { getUnlocksFromURL, getUrlUnlockKind } from "./unlocks";
+import { getPillarFlagsFromURL } from "./pillars-unlocks";
 import { isLightMode } from "./light-mode";
 import { getCurrentIsDaily } from "./dynamic-map";
 
@@ -208,6 +209,8 @@ async function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescrip
       ngPlus: 0,
       dailySeed: isDaily,
       unlocks: descriptorToUnlocks(desc),
+      // Pillars track real achievements, independent of the spell-unlock toggle.
+      pillarFlags: getPillarFlagsFromURL(),
       parallelWorlds: isLightMode() ? [0] : undefined,
     });
     // Assign stable IDs based on coordinates and PW key

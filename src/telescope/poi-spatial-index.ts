@@ -100,6 +100,7 @@ const CONTAINER_TYPES = new Set([
   "robot_egg",
   "chest",
   "great_chest",
+  "utility_box",
   "laboratory",
   "enemies",
   "props",
@@ -117,7 +118,7 @@ const CONTAINER_TYPES = new Set([
 ]);
 
 /** Chest-like containers: show only the chest sprite on map, contents in popup/search only. */
-const CHEST_ONLY_TYPES = new Set(["chest", "pacifist_chest", "great_chest"]);
+const CHEST_ONLY_TYPES = new Set(["chest", "pacifist_chest", "great_chest", "utility_box"]);
 // ─── Sprite key resolution ──────────────────────────────────────────────────
 
 // Spell ID → atlas sprite key (handles ID/filename mismatches like
@@ -305,6 +306,12 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     // Karl (racecar) and Essence Eater have no item:* sprite — use the entity sprite.
     if (item === "karl") return "enemy:racing_cart";
     if (item === "essence_eater") return "enemy:essence_eater";
+    // Altar-sacrifice props: no item:* sprite, use the baked entity sprites.
+    if (item === "worm_crystal") return "enemy:physics_worm_deflector_crystal";
+    if (item === "greed_crystal") return "enemy:greed_crystal";
+    if (item === "statue_hand") return "enemy:statue_hand_1";
+    if (item === "sun_rock") return "enemy:physics_sun_rock";
+    if (item === "darksun_rock") return "enemy:physics_darksun_rock";
     // Kuulokivi: the items_gfx sprite is tiny; use the ui_gfx inventory icon.
     if (item === "musicstone") return "ui_item:musicstone";
     if (item === "music_machine") return "prop:music_machine";
@@ -322,6 +329,7 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
   }
   if (poi.type === "pacifist_chest") return "item:chest_random";
   if (poi.type === "great_chest") return "item:chest_random_super";
+  if (poi.type === "utility_box") return "item:utility_box";
   if (poi.type === "shop") return null;
   if (poi.type === "holy_mountain_shop") return null; // HM shops are shown via their contents
   if (poi.type === "laboratory") return null;

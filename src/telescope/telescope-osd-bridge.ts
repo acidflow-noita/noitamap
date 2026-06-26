@@ -41,7 +41,7 @@ import {
   perkAtlasKey,
 } from "./poi-spatial-index";
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
-import { poiPillarAssociation } from "../data/pillars";
+import { poiPillarAssociation, pillarLocationForFlag } from "../data/pillars";
 import { createMarkerTileSource } from "./marker-tile-source";
 import { perkNameKey, perkDescKey } from "./perk-i18n";
 import { canonicalEntityId } from "./entity-canonical";
@@ -2864,6 +2864,7 @@ function getWikiUrl(poi: any): string | null {
     else if (item === "karl") wikiName = "Racetrack";
     else if (item === "essence_eater") wikiName = "Essence_Eater";
     else if (item === "music_machine") wikiName = "Music_Machine";
+    else if (item === "mimic_potion") wikiName = "Henkevä_potu";
     else wikiName = item;
   }
 
@@ -2879,7 +2880,10 @@ function getWikiUrl(poi: any): string | null {
     else wikiName = creature?.wikipage || rawEntity;
   }
 
-  return `https://noita.wiki.gg/wiki/${wikiName.replace(/\s+/g, "_")}`;
+  // encodeURI (not encodeURIComponent) so non-ASCII names like "Henkevä potu"
+  // become %C3%A4 while reserved chars in page titles (apostrophes, parens, &)
+  // stay literal and keep matching the wiki's canonical URLs.
+  return `https://noita.wiki.gg/wiki/${encodeURI(wikiName.replace(/\s+/g, "_"))}`;
 }
 
 /** Wrap an element in an anchor tag pointing to the wiki, with underline and external link icon. */
@@ -3215,8 +3219,18 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   // column. Skipped on the pillar segments themselves. Association is derived
   // from the same PILLAR_REQUIREMENTS targets the forward links use.
   if ((item.poi as any).item !== "pillar_segment") {
-    const assoc = poiPillarAssociation(item.poi);
+    // Default association from the POI's identity. When this card was opened by
+    // clicking a SPECIFIC pillar segment's link (some entities — Toveri,
+    // Kolmisilmä — belong to two pillars), lead the button back to THAT pillar
+    // instead. The origin is consumed once, then cleared.
+    const defaultAssoc = poiPillarAssociation(item.poi);
+    let assoc = defaultAssoc;
+    if (pillarLinkOrigin && pillarLinkOrigin.poiId === (item.poi as any).id) {
+      assoc = pillarLocationForFlag(pillarLinkOrigin.flag) ?? defaultAssoc;
+    }
+    pillarLinkOrigin = null;
     if (assoc) {
+      const a = assoc;
       const pillarBtn = document.createElement("button");
       pillarBtn.style.cssText = `
         background: rgba(255,255,255,0.1); border: 0.065em solid rgba(255,255,255,0.2);
@@ -3237,14 +3251,14 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         // closes the current card and runs the cinematic goto). Fall back to a
         // plain pan to the column if the segment marker isn't indexed.
         const seg = globalMarkerData?.items.find(
-          (it) => (it.poi as any).item === "pillar_segment" && (it.poi as any).flag === assoc.flag,
+          (it) => (it.poi as any).item === "pillar_segment" && (it.poi as any).flag === a.flag,
         )?.poi as any;
         if (seg) {
           openTooltipForPOI(seg.id, v, { fallbackX: seg.x, fallbackY: seg.y, fallbackPoi: seg });
         } else if (typeof v.panToTarget === "function") {
-          v.panToTarget(assoc.x, assoc.y);
+          v.panToTarget(a.x, a.y);
         } else if (v.viewport) {
-          v.viewport.panTo(new (OpenSeadragon as any).Point(assoc.x, assoc.y), true);
+          v.viewport.panTo(new (OpenSeadragon as any).Point(a.x, a.y), true);
         }
       };
       topBar.appendChild(pillarBtn);
@@ -3513,6 +3527,10 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       if (flag.startsWith("__struct")) title.textContent = i18next.t("poi.pillars", "Achievement Pillars");
       else if ((poi as any).locked) title.textContent = i18next.t("poi.pillarLocked", "Not unlocked yet");
       else title.textContent = (poi as any).name || i18next.t("poi.pillars", "Achievement Pillars");
+    } else if ((poi as any).item === "mimic_potion") {
+      // Potion mimic (Henkevä potu): name from the creature key, not item_*.
+      const t = gameTranslator.translateItem("animal_mimic_potion");
+      title.textContent = t !== "animal_mimic_potion" ? t : "Henkevä potu";
     } else if (poi.item === "heart") title.textContent = i18next.t("poi.heartSmall", "Heart (+25 HP)");
     else if (poi.item === "heart_bigger") title.textContent = i18next.t("poi.heartBig", "Heart (+50 HP)");
     else if (poi.item === "full_heal") title.textContent = i18next.t("poi.fullHeal", "Full Heal");
@@ -3562,12 +3580,38 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         const travelTo = (link: import("../data/pillars").PillarTarget) => {
           const v = (window as any).__osdViewer;
           if (!v) return;
-          const open = (p: any) =>
+          const open = (p: any) => {
+            // Remember which pillar segment we came from, so p's reverse
+            // "Pillar" button leads back to THIS pillar (entities tied to two
+            // pillars otherwise always point at their default association).
+            const fromFlag = String((poi as any).flag || "");
+            pillarLinkOrigin = fromFlag ? { poiId: String(p.id), flag: fromFlag } : null;
             openTooltipForPOI(p.id, v, { fallbackX: p.x, fallbackY: p.y, fallbackPoi: p });
-          const find = (pred: (p: any) => boolean) =>
-            globalMarkerData?.items.find((it) => pred(it.poi as any))?.poi as any;
+          };
+          // Resolve a link target to a concrete POI. The same entity (boss,
+          // essence, orb, ...) exists in every parallel world, so prefer the
+          // MAIN WORLD instance (pw 0); within the preferred pool pick the one
+          // nearest this pillar segment (the pillar lives in the main world near
+          // spawn, so "nearest the segment" == nearest the pillar). Falls back
+          // to any-world matches when none exist in the main world.
+          const sx = (poi as any).x as number, sy = (poi as any).y as number;
+          const find = (pred: (p: any) => boolean) => {
+            const matches = (globalMarkerData?.items ?? []).filter((it) => pred(it.poi as any));
+            if (matches.length === 0) return undefined;
+            const main = matches.filter((it) => (it.pw ?? (it.poi as any).pw ?? 0) === 0);
+            const pool = main.length ? main : matches;
+            let best = pool[0];
+            let bestD = Infinity;
+            for (const it of pool) {
+              const q = it.poi as any;
+              const d = (q.x - sx) ** 2 + (q.y - sy) ** 2;
+              if (d < bestD) { bestD = d; best = it; }
+            }
+            return best.poi as any;
+          };
           let p: any;
           if (link.targetType) p = find((q) => q.type === link.targetType);
+          else if (link.itemId) p = find((q) => q.item === link.itemId);
           else if (link.material) p = find((q) => q.item === "essence" && q.material === link.material);
           else if (link.chestVariant) p = find((q) => q.chestVariant === link.chestVariant);
           else if (link.orb) p = find((q) => q.item === "orb");
@@ -3639,8 +3683,14 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
             resolvedName = cd?.alias || cd?.name || String(spec.creatureId);
           }
           const sentence = i18next.t(spec.tmpl, { name: resolvedName });
+          // The {{name}} links to its OWN POI only when the spec gives it a
+          // target (e.g. mimic_potion). Abstract sacrifice items (Treasure
+          // Chest, Worm Crystal, ...) have no map POI, so the name stays plain
+          // text. Any spec.links (e.g. the Mountain Altar where the sacrifice
+          // happens) are appended as trailing pins by renderWithLinks.
           const tgt = spec.target ?? (spec.targetType ? { targetType: spec.targetType } : null);
-          renderWithLinks(sentence, tgt ? [{ label: resolvedName, ...tgt }] : []);
+          const nameLinks = tgt ? [{ label: resolvedName, ...tgt }] : [];
+          renderWithLinks(sentence, [...nameLinks, ...(spec.links || [])]);
         } else if (spec.key) {
           // Free-form phrase; linkify any entity/place names it references.
           const sentence = i18next.t(spec.key, spec.key);
@@ -4176,6 +4226,12 @@ installEscToCloseCard();
 
 let canvasMoveCleanup: (() => void) | null = null;
 let globalMarkerData: MarkerData | null = null;
+
+// When a pillar segment's forward link flies to a POI, remember which segment
+// flag it came from so that POI's reverse "Pillar" button can lead back to the
+// SAME pillar (some entities — Toveri, Kolmisilmä — belong to two pillars).
+// Keyed by destination POI id; consumed once when that card opens.
+let pillarLinkOrigin: { poiId: string; flag: string } | null = null;
 
 /**
  * Install a canvas-click handler on the viewer to detect marker clicks,

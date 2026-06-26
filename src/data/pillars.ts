@@ -64,6 +64,8 @@ const PILLAR_THEMES = [
 export interface PillarTarget {
   /** POI type to resolve a seed-dependent travel target via the marker index. */
   targetType?: string;
+  /** POI item id to match (e.g. mimic_potion) via the marker index. */
+  itemId?: string;
   /** Essence material (fire/water/laser/air/alcohol) — matches the essence POI. */
   material?: string;
   /** Crystal-key chest variant (dark/coral) — matches the chest POI. */
@@ -106,12 +108,14 @@ const LINK_TOVERI: PillarLink = { label: "Toveri", targetType: "friend" };
 const LINK_AVARICE: PillarLink = { label: "Avarice Diamond", x: 9472, y: 4330 };
 const LINK_TAPIO: PillarLink = { label: "Tapion vasalli", targetType: "islandspirit" };
 const LINK_KOLMI: PillarLink = { label: "Kolmisilmä", targetType: "boss_centipede" };
+const LINK_ALTAR: PillarLink = { label: "Mountain Altar", x: 781, y: -1167 };
 
 // Fixed-structure travel targets (coords from src/data/structures.json). These
 // are where the achievement's unlock actually happens in the world (derived
 // from the AddFlagPersistent call sites in data/scripts/**). Used as the
 // segment's `target` so the {{name}}/phrase links fly to the right spot.
-const T_MOUNTAIN_ALTAR: PillarTarget = { x: 781, y: -1167 };
+// (The Mountain Altar coord lives on LINK_ALTAR below, since it is a sacrifice
+// destination link rather than an item target.)
 const T_THE_WORK: PillarTarget = { x: 6397, y: 15072 };
 const T_MOON: PillarTarget = { x: 259, y: -25847 };
 const T_DARK_MOON: PillarTarget = { x: 261, y: 37764 };
@@ -129,19 +133,26 @@ const T_TOWER_PORTAL: PillarTarget = { x: 9984, y: 4358 };
 export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
   // Pillar 1 — Sacrifice & Transformation
   // Altar sacrifices all happen at the Mountain Altar (altar_tablet_magic.lua).
-  misc_chest_rain: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.treasureChest", target: T_MOUNTAIN_ALTAR },
-  misc_util_rain: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.utilityBox", target: T_MOUNTAIN_ALTAR },
-  misc_worm_rain: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.wormCrystal", target: T_MOUNTAIN_ALTAR },
-  misc_greed_rain: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.greedCrystal", target: T_MOUNTAIN_ALTAR },
-  misc_altar_tablet: { key: "pillar.req.altarTablet", links: [{ label: "Mountain Altar", ...T_MOUNTAIN_ALTAR }] },
+  // Sacrifice items have no map POI of their own, so {{name}} stays plain text
+  // and the Mountain Altar (where the sacrifice happens) is the travel link.
+  // Treasure Chest and Utility Box DO spawn as map POIs (chest_generation.js,
+  // utility_box_generation.js), so {{name}} links to the nearest one. The other
+  // sacrifice items (worm/greed crystal, monk statue, sun/dark sunstone) are
+  // game-side props the telescope generator never emits, so they stay plain text.
+  misc_chest_rain: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.treasureChest", target: { targetType: "chest" }, links: [LINK_ALTAR] },
+  misc_util_rain: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.utilityBox", target: { targetType: "utility_box" }, links: [LINK_ALTAR] },
+  misc_worm_rain: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.wormCrystal", target: { itemId: "worm_crystal" }, links: [LINK_ALTAR] },
+  misc_greed_rain: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.greedCrystal", target: { itemId: "greed_crystal" }, links: [LINK_ALTAR] },
+  misc_altar_tablet: { key: "pillar.req.altarTablet", links: [LINK_ALTAR] },
   misc_mimic_potion_rain: {
     tmpl: "pillar.req.sacrifice",
-    nameKey: "pillar.item.potionMimic",
-    target: T_MOUNTAIN_ALTAR,
+    nameKey: "animal_mimic_potion",
+    target: { itemId: "mimic_potion" },
+    links: [LINK_ALTAR],
   },
-  misc_monk_bots: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.monkStatue", target: T_MOUNTAIN_ALTAR },
-  misc_sun_effect: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.sunstone", target: T_MOUNTAIN_ALTAR },
-  misc_darksun_effect: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.darkSunstone", target: T_MOUNTAIN_ALTAR },
+  misc_monk_bots: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.monkStatue", target: { itemId: "statue_hand" }, links: [LINK_ALTAR] },
+  misc_sun_effect: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.sunstone", target: { itemId: "sun_rock" }, links: [LINK_ALTAR] },
+  misc_darksun_effect: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.darkSunstone", target: { itemId: "darksun_rock" }, links: [LINK_ALTAR] },
   secret_tower: { key: "pillar.req.tower", links: [{ label: "The Tower", ...T_TOWER_PORTAL }] },
   player_status_ghostly: { key: "pillar.req.transformGhostly" },
   player_status_ratty: { key: "pillar.req.transformRatty" },
@@ -431,6 +442,22 @@ export function pillarColumnX(pillarIndex: number): number {
 }
 
 /**
+ * Forward resolver: given an achievement flag, return the pillar column it lives
+ * in (and a travel anchor). Used for the dynamic reverse button — when a POI is
+ * reached by clicking a specific pillar segment's link, the button should lead
+ * back to THAT pillar, not the POI's default association. Returns null for an
+ * unknown flag.
+ */
+export function pillarLocationForFlag(flag: string): { pillarIndex: number; flag: string; x: number; y: number } | null {
+  for (let i = 0; i < PILLAR_FLAGS.length; i++) {
+    if (PILLAR_FLAGS[i].some(([f]) => f === flag)) {
+      return { pillarIndex: i, flag, x: pillarColumnX(i), y: PILLAR_BASE.y - 4 * SIZE };
+    }
+  }
+  return null;
+}
+
+/**
  * Reverse association: given an arbitrary map POI, return the pillar it belongs
  * to (so its card can show a "Pillar" button that flies to that column). Built
  * from the same PILLAR_REQUIREMENTS targets used for the forward links, so the
@@ -451,10 +478,12 @@ export function poiPillarAssociation(poi: any): { pillarIndex: number; flag: str
       if (!spec) continue;
       const t = spec.target;
       const matchType = spec.targetType && spec.targetType === type;
+      const matchTargetType = t?.targetType && t.targetType === type;
+      const matchItem = t?.itemId && t.itemId === item;
       const matchMat = t?.material && t.material === material;
       const matchChest = t?.chestVariant && t.chestVariant === chestVariant;
       const matchOrb = t?.orb && isOrb;
-      if (matchType || matchMat || matchChest || matchOrb) {
+      if (matchType || matchTargetType || matchItem || matchMat || matchChest || matchOrb) {
         return { pillarIndex: i, flag, x: pillarColumnX(i), y: PILLAR_BASE.y - 4 * SIZE };
       }
     }
@@ -463,8 +492,11 @@ export function poiPillarAssociation(poi: any): { pillarIndex: number; flag: str
 }
 
 /**
- * Predicate factory. unlocks === null -> daily / no-mod: everything unlocked.
- * Otherwise (mod): unlocked only if the flag maps to a key the mod reported.
+ * Predicate factory for the spell-unlock fallback (`&u=`). unlocks === null ->
+ * daily / no-mod: everything unlocked. Otherwise a pillar flag is unlocked only
+ * if it maps (FLAG_TO_UNLOCK_KEY) to a spell key the mod reported. This is the
+ * coarse fallback used when the dedicated pillar channel (`&p=`) is absent; see
+ * makePillarUnlockPredicateFromFlags for the accurate path.
  */
 export function makePillarUnlockPredicate(unlocks: string[] | null | undefined): (flag: string) => boolean {
   if (unlocks == null) return () => true;
@@ -473,4 +505,14 @@ export function makePillarUnlockPredicate(unlocks: string[] | null | undefined):
     const key = FLAG_TO_UNLOCK_KEY[flag];
     return key != null && set.has(key);
   };
+}
+
+/**
+ * Accurate predicate from the dedicated pillar channel (`&p=`, src/
+ * pillars-unlocks.ts): the mod reports the raw achievement flags it read via
+ * HasFlagPersistent, so a segment is unlocked iff its flag is in that set.
+ */
+export function makePillarUnlockPredicateFromFlags(flags: string[]): (flag: string) => boolean {
+  const set = new Set(flags);
+  return (flag: string) => set.has(flag);
 }

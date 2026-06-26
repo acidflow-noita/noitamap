@@ -16,6 +16,7 @@ import { parseURL, updateURLWithSeed, clearSeedParams } from "./data_sources/url
 import { getCachedGeneration, cacheGeneration } from "./telescope/tile-cache";
 import { generateDynamicMap, initTelescope, type GenerationResult } from "./telescope/telescope-adapter";
 import { getUnlocksFromURL, unlocksChanged, UNLOCK_KEYS, getUrlUnlockKind } from "./unlocks";
+import { getPillarFlagsFromURL } from "./pillars-unlocks";
 import { prewarmAlt, resetAltCache } from "./unlocks-toggle";
 import { isLightMode } from "./light-mode";
 import {
@@ -242,7 +243,12 @@ export async function runDynamicMap(
   if (urlKind === "none") unlocks = [];
   // (urlKind === "all" → unlocks stays null → telescope's default = all)
   const lightMode = isLightMode();
-  const unlockKey = (unlocks ? unlocks.sort().join(",") : "all") + (lightMode ? "|lm" : "");
+  // Dedicated pillar achievement channel (`&p=`). Independent of `&u=`: it only
+  // affects pillar segment lock state, but a change must still re-render, so it
+  // joins the cache key.
+  const pillarFlags = getPillarFlagsFromURL();
+  const pillarKey = pillarFlags ? "p" + pillarFlags.length + ":" + pillarFlags.slice().sort().join(",") : "p-";
+  const unlockKey = (unlocks ? unlocks.sort().join(",") : "all") + (lightMode ? "|lm" : "") + "|" + pillarKey;
 
   // 0. Skip only if same seed, same unlocks, and overlays still present.
   if (seed === currentSeed && unlockKey === currentUnlocksKey && dynamicRendered && hasDynamicOverlays()) {
@@ -413,7 +419,7 @@ export async function runDynamicMap(
       // 2. Generate with unlock state
       t = performance.now();
       console.log(`[DynamicMap] Generating seed ${seed} (unlocks: ${unlocks ? unlocks.length + "/" + UNLOCK_KEYS.length : "all"})...`);
-      result = await generateDynamicMap({ seed, ngPlus: 0, dailySeed: isDaily, unlocks, parallelWorlds: lightMode ? [0] : undefined });
+      result = await generateDynamicMap({ seed, ngPlus: 0, dailySeed: isDaily, unlocks, pillarFlags, parallelWorlds: lightMode ? [0] : undefined });
       if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
       console.log(`[DynamicMap] Generation: ${((performance.now() - t) / 1000).toFixed(2)}s`);
 
