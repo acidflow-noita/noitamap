@@ -118,7 +118,7 @@ export class AuthUI {
     wrapper.id = "auth-button-wrapper";
     // Initial state placeholder
     wrapper.innerHTML = `
-      <button id="authButton" class="btn btn-sm btn-outline-light" type="button">
+      <button id="authButton" class="btn-sm-outline" type="button">
         <img src="assets/icons/website-icons/noitamap-pro-icon.svg" alt="" class="pro-icon">
         <span class="auth-text">${i18next.t("auth.getPro", "Get Pro")}</span>
       </button>
@@ -137,7 +137,7 @@ export class AuthUI {
 
     if (state.authenticated) {
       // Show username with dropdown
-      btn.className = "btn btn-sm btn-outline-success dropdown-toggle";
+      btn.className = "btn-sm-outline";
       btn.setAttribute("data-bs-toggle", "dropdown");
       btn.setAttribute("aria-expanded", "false");
       btn.innerHTML = `<i class="bi bi-person-check me-1"></i> <span class="auth-text">${i18next.t("auth.yourAccount", "Your account")}</span>`;
@@ -183,7 +183,7 @@ export class AuthUI {
       // "Get Pro" usually implies a call to action.
       // Let's keep it as "Get Pro" (standard style) but the modal has the official login button.
 
-      btn.className = "btn btn-sm btn-outline-light pro-accent";
+      btn.className = "btn-sm-outline pro-accent";
       btn.removeAttribute("data-bs-toggle");
       btn.removeAttribute("aria-expanded");
       btn.innerHTML = `<img src="assets/icons/website-icons/noitamap-pro-icon.svg" alt="" class="pro-icon"> <span class="auth-text">${i18next.t("auth.getPro", "Get Pro")}</span>`;
@@ -200,58 +200,50 @@ export class AuthUI {
     const existing = document.getElementById("getProModal");
     if (existing) existing.remove();
 
-    const modal = document.createElement("div");
+    // Basecoat dialog == a native <dialog> opened with showModal(). No JS lib.
+    const modal = document.createElement("dialog");
     modal.id = "getProModal";
-    modal.className = "modal fade";
-    modal.tabIndex = -1;
+    modal.className = "dialog";
     modal.setAttribute("aria-labelledby", "getProModalLabel");
-    modal.setAttribute("aria-hidden", "true");
     modal.innerHTML = `
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark text-light">
-          <div class="modal-header border-secondary">
-            <h5 class="modal-title" id="getProModalLabel">
-              <i class="bi bi-brush me-2"></i>${i18next.t("auth.proFeatures", "Pro Features")}  
-            </h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      <article>
+        <header>
+          <h2 id="getProModalLabel"><i class="bi bi-brush"></i> ${i18next.t("auth.proFeatures", "Pro Features")}</h2>
+          <p>${i18next.t("auth.proDescription", "Drawing tools and other pro features are available to Patreon supporters.")}</p>
+        </header>
+        <section>
+          <ul class="flex flex-col gap-2 text-sm">
+            <li class="flex items-center gap-2"><i class="bi bi-brush text-brand"></i>${i18next.t("auth.featureDrawing", "Drawing & annotation tools")}</li>
+            <li class="flex items-center gap-2"><i class="bi bi-share text-brand"></i>${i18next.t("auth.featureShare", "Share drawings via URL or screenshot")}</li>
+            <li class="flex items-center gap-2"><i class="bi bi-save text-brand"></i>${i18next.t("auth.featureSave", "Save & manage multiple drawings")}</li>
+          </ul>
+          <div class="flex flex-col items-center gap-3 mt-5">
+            <button id="patreonLoginBtn" class="btn-patreon w-full justify-center">
+              ${PATREON_SYMBOL_WHITE}
+              ${i18next.t("auth.loginWithPatreon", "Sign in with Patreon")}
+            </button>
+            <a href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer" class="btn-patron w-full justify-center">
+              <i class="bi bi-box-arrow-up-right"></i>${i18next.t("auth.becomePatron", "Become a Patron")}
+            </a>
           </div>
-          <div class="modal-body">
-            <p>${i18next.t("auth.proDescription", "Drawing tools and other pro features are available to Patreon supporters.")}</p>
-            <ul class="list-unstyled mb-3">
-              <li class="mb-2"><i class="bi bi-brush me-2 text-info"></i>${i18next.t("auth.featureDrawing", "Drawing & annotation tools")}</li>
-              <li class="mb-2"><i class="bi bi-share me-2 text-info"></i>${i18next.t("auth.featureShare", "Share drawings via URL or screenshot")}</li>
-              <li class="mb-2"><i class="bi bi-save me-2 text-info"></i>${i18next.t("auth.featureSave", "Save & manage multiple drawings")}</li>
-            </ul>
-            <hr class="border-secondary">
-            <div class="d-flex flex-column align-items-center gap-3">
-              <button id="patreonLoginBtn" class="btn-patreon w-75 justify-content-center">
-                ${PATREON_SYMBOL_WHITE}
-                ${i18next.t("auth.loginWithPatreon", "Sign in with Patreon")}
-              </button>
-              <a href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer" class="btn-patron w-75 justify-content-center">
-                <i class="bi bi-box-arrow-up-right"></i>${i18next.t("auth.becomePatron", "Become a Patron")}
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
+        </section>
+        <form method="dialog">
+          <button aria-label="Close"><i class="bi bi-x-lg"></i></button>
+        </form>
+      </article>
     `;
 
     document.body.appendChild(modal);
-
-    const bsModal = new bootstrap.Modal(modal);
-    bsModal.show();
+    modal.showModal();
 
     // Bind Patreon login handler
     modal.querySelector("#patreonLoginBtn")?.addEventListener("click", () => {
-      bsModal.hide();
+      modal.close();
       authService.login();
     });
 
-    // Clean up on hide
-    modal.addEventListener("hidden.bs.modal", () => {
-      modal.remove();
-    });
+    // Clean up after the dialog closes (button, Esc, or backdrop)
+    modal.addEventListener("close", () => modal.remove());
   }
 
   private handleClick(): void {

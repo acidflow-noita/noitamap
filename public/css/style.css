@@ -152,13 +152,10 @@ html {
   margin-left: 0.25rem;
 }
 
-.dropdown-menu {
-  --bs-dropdown-link-active-bg: var(--accent-bg);
-  --bs-dropdown-link-active-color: var(--accent-color);
-  background-color: oklch(15.6% 0.026 264.695); /* ~slate-900 */
-  border: 1px solid #334155; /* slate-700 */
-  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.4);
-}
+/* Basecoat owns .dropdown-menu (a relative inline-flex wrapper) and the
+   [data-popover] panel (bg-popover/border/shadow/rounded). The old
+   Bootstrap-era rule here painted a slate box + border + shadow around each
+   trigger BUTTON, which is the wrapper now -- pure visual harm. Removed. */
 
 .dropdown-item,
 .dropdown-menu .nav-link {
@@ -450,29 +447,9 @@ body.toggle-hidden div.osOverlayHighlight {
   padding: 0;
 }
 
-#searchInput,
-.search-input {
-  background-color: #0f172a; /* slate-900 */
-  border: 1px solid #475569; /* slate-600 */
-  color: #e2e8f0; /* slate-200 */
-  font-size: 14px;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
-}
-
-#searchInput:focus,
-.search-input:focus {
-  border-color: #94a3b8; /* slate-400 */
-  box-shadow: 0 0 0 2px #4755691a; /* slate-600 / 10% */
-  background-color: #1e293b; /* slate-800 */
-}
-
-#searchInput::placeholder,
-.search-input::placeholder {
-  font-style: italic;
-  font-size: 14px;
-}
+/* Basecoat's .input class styles the unified search box now (consistent bg,
+   border, rounding, focus-ring with the rest of the UI). The old hand-rolled
+   slate override lived here and fought Basecoat. Removed. */
 
 #search-form:focus-visible + #searchResults:has(> .search-result),
 #searchResults:active,
@@ -646,10 +623,9 @@ body.toggle-hidden div.osOverlayHighlight {
   margin: 0.25rem !important;
 }
 
-/* Make search form wider to prevent placeholder clipping */
-#search-form {
-  min-width: 280px;
-}
+/* #search-form sizing is handled by Tailwind utilities in the markup
+   (flex-1 min-w-0 max-w-sm) so it grows to fill the bar but shrinks to fit
+   one row. The old min-width:280px floor fought that. Removed. */
 
 /* Fix renderer info button to show popover */
 #renderer-form .btn:first-child {

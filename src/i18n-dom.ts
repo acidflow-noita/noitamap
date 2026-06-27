@@ -52,6 +52,15 @@ export function updateTranslations() {
     }
   });
 
+  // Basecoat CSS tooltips: translate data-i18n-tooltip -> data-tooltip.
+  const elementsWithDataI18nTooltip = document.querySelectorAll('[data-i18n-tooltip]');
+  elementsWithDataI18nTooltip.forEach(element => {
+    const key = element.getAttribute('data-i18n-tooltip');
+    if (key) {
+      element.setAttribute('data-tooltip', i18next.t(key));
+    }
+  });
+
   const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
   popoverTriggerList.forEach(popoverTriggerEl => {
     // @ts-ignore

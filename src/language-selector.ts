@@ -34,7 +34,7 @@ export function createLanguageSelector() {
     const li = document.createElement('li');
     const a = document.createElement('a');
     a.href = '#';
-    a.classList.add('dropdown-item', 'd-flex', 'justify-content-between', 'align-items-center');
+    a.setAttribute('role', 'menuitem');
     a.dataset.lang = code;
 
     a.innerHTML = `<span><img src="./flags/${flag}.svg" class="flag-icon me-2" style="width: 16px; height: 12px;">${name}</span>`;

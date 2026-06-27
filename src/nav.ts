@@ -54,23 +54,21 @@ const createBadgeSpan = (badge: Badge, isDynamic: boolean, iconOnly: boolean, is
     ? i18next.t(badge.labelKey, { defaultValue: badge.label })
     : badge.label;
 
-  span.dataset.bsToggle = 'popover';
-  span.dataset.bsPlacement = 'bottom';
-  span.dataset.bsTrigger = 'hover';
-  span.dataset.bsHtml = 'true';
   span.setAttribute('tabindex', '0');
-  span.dataset.bsTitle = translatedBadgeLabel;
-
+  let tooltipText: string;
   if (isDateBadge) {
-    span.dataset.bsContent = isDynamic
+    tooltipText = isDynamic
       ? i18next.t('badges.dynamicDateTooltip')
       : i18next.t('badges.patchDateTooltip');
   } else if (badge.labelKey) {
     const tooltipKey = `badges.${badge.labelKey}Tooltip`;
-    span.dataset.bsContent = i18next.t(tooltipKey, { defaultValue: translatedBadgeLabel });
+    tooltipText = i18next.t(tooltipKey, { defaultValue: translatedBadgeLabel });
   } else {
-    span.dataset.bsContent = translatedBadgeLabel;
+    tooltipText = translatedBadgeLabel;
   }
+  // Icon-only badges (map-selector button) show no text, so the tooltip carries
+  // the label; full badges already show their label, so it carries the description.
+  span.dataset.tooltip = iconOnly ? translatedBadgeLabel : tooltipText;
 
   if (badge.icon) {
     const icon = document.createElement('i');
@@ -92,22 +90,16 @@ export const renderMapBadges = (parent: HTMLElement, def: MapDefinition, iconOnl
   });
 };
 
-/** Re-initialize bootstrap popovers on any .badge[data-bs-toggle="popover"] under `root`. */
-export const refreshBadgePopovers = (root: HTMLElement): void => {
-  root.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => {
-    // @ts-ignore
-    const existing = bootstrap.Popover.getInstance(el);
-    if (existing) existing.dispose();
-    // @ts-ignore
-    new bootstrap.Popover(el);
-  });
+/** Badges use CSS [data-tooltip]; no JS init needed (kept for call-site compatibility). */
+export const refreshBadgePopovers = (_root: HTMLElement): void => {
+  /* no-op since the Tailwind/Basecoat migration */
 };
 
 const buildDropdownLink = (mapName: string, def: MapDefinition): HTMLAnchorElement => {
   const a = document.createElement('a');
-  a.classList.add(NAV_LINK_IDENTIFIER, 'text-nowrap', 'dropdown-item', 'd-flex', 'align-items-center', 'gap-1');
+  a.classList.add(NAV_LINK_IDENTIFIER, 'text-nowrap');
+  a.setAttribute('role', 'menuitem');
   a.href = '#';
-  a.dataset.bsToggle = 'pill';
   a.dataset.mapKey = mapName;
 
   const labelSpan = document.createElement('span');

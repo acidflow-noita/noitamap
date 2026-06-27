@@ -1,3 +1,6 @@
+import "./bootstrap-shim";
+import "./styles/app.css";
+import "basecoat-css/all";
 import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
 import { setupDropOverlay } from "./drop-overlay";
 import { negotiateTabHandoff } from "./tab-coordinator";
@@ -497,7 +500,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const authContainer = document.createElement("div");
   authContainer.id = "auth-container";
   // Find the container div that holds all the buttons
-  const buttonContainer = document.querySelector(".collapse.navbar-collapse .d-flex.flex-wrap");
+  const buttonContainer = document.querySelector(".navbar-inner");
   if (buttonContainer) {
     buttonContainer.appendChild(authContainer);
   }

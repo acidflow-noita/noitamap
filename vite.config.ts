@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import { resolve } from "path";
 
 import fs from "fs";
+import tailwindcss from "@tailwindcss/vite";
 
 const isProAvailable = fs.existsSync(resolve(__dirname, "../noitamap-pro/src/pro-entry.ts"));
 
@@ -35,6 +36,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    tailwindcss(),
     {
       name: "og-meta-rewrite",
       transformIndexHtml(html) {

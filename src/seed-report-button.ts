@@ -26,16 +26,13 @@ export function createSeedReportButton(
   if (document.getElementById(BTN_ID)) return;
 
   const wrap = document.createElement("div");
-  wrap.className = "btn-group me-2";
+  wrap.className = "shrink-0 inline-flex";
   wrap.id = "seed-report-ui-wrapper";
   wrap.innerHTML = `
     <input type="checkbox" class="btn-check" id="${BTN_ID}" autocomplete="off">
-    <label class="icon-button btn btn-sm btn-outline-light text-nowrap pro-accent" for="${BTN_ID}"
-      data-bs-toggle="popover" data-bs-placement="bottom" data-bs-trigger="hover focus"
-      data-i18n-title="seedReport.toggle.title"
-      data-bs-title="${i18next.t("seedReport.toggle.title", "Seed report")}"
-      data-i18n-content="seedReport.toggle.content"
-      data-bs-content="${i18next.t("seedReport.toggle.content", "Per-PW, per-biome stats for the current seed.")}">
+    <label class="btn-sm-icon-outline shrink-0 pro-accent" for="${BTN_ID}"
+      data-i18n-tooltip="seedReport.toggle.title"
+      data-tooltip="${i18next.t("seedReport.toggle.title", "Seed report")}">
       <i class="bi bi-bar-chart-line"></i>
     </label>
   `;

@@ -1,0 +1,126 @@
+/*
+ * noitamap UI design system entry - Tailwind v4 + Basecoat. Dark mode only.
+ * Tokens map to Tailwind's named palette (slate + teal + amber + red).
+ *
+ * Bootstrap was removed in the atomic cutover (Task 1), so the full Tailwind pipeline +
+ * Basecoat are on: preflight provides base resets, Basecoat provides the shadcn components.
+ * Nothing to collide with. The Basecoat JS (`basecoat-css/all`) is wired in main.ts from Task 2.
+ */
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@import "basecoat-css";
+
+/* ---- Design tokens (dark-only). Overrides Basecoat's shadcn token block. ----
+   Applied to both :root and .dark so the app is always dark regardless of the class. */
+:root,
+.dark {
+  --radius: 0.5rem;
+
+  --background: var(--color-slate-950);
+  --foreground: var(--color-slate-100);
+
+  --card: var(--color-slate-900);
+  --card-foreground: var(--color-slate-100);
+  --popover: var(--color-slate-800);
+  --popover-foreground: var(--color-slate-100);
+
+  /* Neutral primary fill for restraint; teal is the accent (ring / links / active). */
+  --primary: var(--color-slate-100);
+  --primary-foreground: var(--color-slate-950);
+
+  --secondary: var(--color-slate-800);
+  --secondary-foreground: var(--color-slate-100);
+
+  --muted: var(--color-slate-800);
+  --muted-foreground: var(--color-slate-400);
+
+  --accent: var(--color-slate-700);
+  --accent-foreground: var(--color-slate-50);
+
+  --destructive: var(--color-red-500);
+  --destructive-foreground: var(--color-slate-50);
+
+  --border: var(--color-slate-700);
+  --input: var(--color-slate-700);
+  --ring: var(--color-teal-500);
+
+  /* App brand + meaning tokens, used sparingly. */
+  --brand: var(--color-teal-500);
+  --brand-foreground: var(--color-teal-300);
+  --warning: var(--color-amber-400);
+  --warning-foreground: var(--color-amber-300);
+
+  color-scheme: dark;
+}
+
+/* Expose brand/warning to Tailwind utilities: text-brand, bg-warning, border-brand, etc.
+   `inline` so the utility resolves through to the overridable token at use-time. */
+@theme inline {
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   MIGRATION BASELINE - temporary, REMOVE in Task 8.
+   Bootstrap's CSS used to hide several elements (toasts/modals via display:none,
+   .d-none, [hidden]) and the navbar relied on Bootstrap to manage the `.collapse`
+   class. With Bootstrap removed, those elements leak as raw text and Tailwind's
+   own `.collapse` utility (visibility:collapse) hides the still-Bootstrap navbar
+   menu. Re-provide the hiding and keep the navbar visible until each surface is
+   converted to Basecoat (toasts T5, navbar T2, modals T5).
+   ─────────────────────────────────────────────────────────────────────────── */
+.toast:not(.show) { display: none !important; }
+.modal:not(.show) { display: none !important; }
+.d-none { display: none !important; }
+[hidden] { display: none !important; }
+.navbar-collapse { visibility: visible !important; }
+
+/* ── Navbar (T2) ─────────────────────────────────────────────────────────── */
+/* The bar background/border come from style.css .navbar.mapNavbar (slate). */
+.navbar.mapNavbar {
+  display: block;
+  width: 100%;
+}
+.navbar-brand img {
+  display: block;
+}
+
+/* btn-check pattern without Bootstrap: hide the input, style the checked label
+   as a pressed control (mirrors Basecoat's aria-pressed='true'). Used by the
+   spoiler toggle and the overlay segmented group. */
+.btn-check {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.btn-check:checked + label {
+  @apply bg-accent text-accent-foreground;
+}
+.btn-check:disabled + label {
+  @apply opacity-50 pointer-events-none;
+}
+.btn-check:focus-visible + label {
+  @apply ring-[3px] ring-ring/50;
+}
+
+/* Segmented toggle buttons (overlay group): 32px square, ghost until active. */
+.seg-toggle {
+  @apply inline-flex items-center justify-center size-8 cursor-pointer bg-background text-muted-foreground transition-colors;
+}
+.seg-toggle:hover {
+  @apply bg-accent text-accent-foreground;
+}
+.seg-toggle > i,
+.seg-toggle > svg {
+  pointer-events: none;
+}
+

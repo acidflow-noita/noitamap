@@ -44,7 +44,7 @@ let generatePopoverInstance: any = null;
 export function createDynamicUI(opts: DynamicMapOptions): void {
   dynamicOpts = opts;
 
-  const buttonContainer = document.querySelector<HTMLElement>(".collapse.navbar-collapse .d-flex.flex-wrap");
+  const buttonContainer = document.querySelector<HTMLElement>(".navbar-inner");
   if (!buttonContainer) return;
 
   // An invisible anchor comment marks where the dynamic buttons get inserted.
@@ -58,14 +58,9 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   // ── Previous Daily Seed button (icon-only, sits to the left of Daily) ──
   prevDailySeedBtn = document.createElement("button");
   prevDailySeedBtn.id = "dynamicPrevDailySeedButton";
-  prevDailySeedBtn.className = "icon-button btn btn-sm btn-outline-warning text-nowrap";
-  prevDailySeedBtn.setAttribute("data-bs-toggle", "popover");
-  prevDailySeedBtn.setAttribute("data-bs-placement", "bottom");
-  prevDailySeedBtn.setAttribute("data-bs-trigger", "hover focus");
-  prevDailySeedBtn.setAttribute("data-i18n-title", "dynamicMap.previousDaily");
-  prevDailySeedBtn.setAttribute("data-bs-title", i18next.t("dynamicMap.previousDaily"));
-  prevDailySeedBtn.setAttribute("data-i18n-content", "dynamicMap.previousDailyDescription");
-  prevDailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.previousDailyDescription"));
+  prevDailySeedBtn.className = "btn-sm-icon-outline text-nowrap";
+  prevDailySeedBtn.setAttribute("data-i18n-tooltip", "dynamicMap.previousDaily");
+  prevDailySeedBtn.setAttribute("data-tooltip", i18next.t("dynamicMap.previousDaily"));
   prevDailySeedBtn.setAttribute("tabindex", "0");
   prevDailySeedBtn.innerHTML = `<i class="bi bi-calendar2-event"></i>`;
   prevDailySeedBtn.addEventListener("click", () => onPrevDailySeedClick());
@@ -74,17 +69,11 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   // ── Daily Seed button ──
   dailySeedBtn = document.createElement("button");
   dailySeedBtn.id = "dynamicDailySeedButton";
-  dailySeedBtn.className = "icon-button btn btn-sm btn-outline-info text-nowrap";
-  // Popover (same style as share button / overlay toggles)
-  dailySeedBtn.setAttribute("data-bs-toggle", "popover");
-  dailySeedBtn.setAttribute("data-bs-placement", "bottom");
-  dailySeedBtn.setAttribute("data-bs-trigger", "hover focus");
-  dailySeedBtn.setAttribute("data-i18n-title", "dynamicMap.daily");
-  dailySeedBtn.setAttribute("data-bs-title", i18next.t("dynamicMap.daily"));
-  dailySeedBtn.setAttribute("data-i18n-content", "dynamicMap.dailyDescription");
-  dailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.dailyDescription"));
+  dailySeedBtn.className = "btn-sm-outline text-nowrap";
+  dailySeedBtn.setAttribute("data-i18n-tooltip", "dynamicMap.dailyDescription");
+  dailySeedBtn.setAttribute("data-tooltip", i18next.t("dynamicMap.dailyDescription"));
   dailySeedBtn.setAttribute("tabindex", "0");
-  dailySeedBtn.innerHTML = `<i class="bi bi-calendar-heart"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.daily">${i18next.t("dynamicMap.daily")}</span>`;
+  dailySeedBtn.innerHTML = `<i class="bi bi-calendar-heart"></i><span class="hidden xl:inline" data-i18n="dynamicMap.daily">${i18next.t("dynamicMap.daily")}</span>`;
   dailySeedBtn.addEventListener("click", () => onDailySeedClick());
   toolbarItems.push(dailySeedBtn);
 
@@ -98,7 +87,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   seedInput.size = 10;
   seedInput.min = String(MIN_SEED);
   seedInput.max = String(MAX_SEED);
-  seedInput.className = "form-control form-control-sm";
+  seedInput.className = "input h-8";
   if (isSpoilerFree()) {
     seedInput.style.webkitTextSecurity = "disc";
   }
@@ -144,8 +133,8 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
 
   generateBtn = document.createElement("button");
   generateBtn.id = "dynamicGenerateButton";
-  generateBtn.className = "icon-button btn btn-sm btn-outline-light text-nowrap";
-  generateBtn.innerHTML = `<i class="bi bi-play-fill"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
+  generateBtn.className = "btn-sm-outline text-nowrap";
+  generateBtn.innerHTML = `<i class="bi bi-play-fill"></i><span class="hidden xl:inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
   generateBtn.addEventListener("click", () => onGenerateClick());
 
   generateWrapper.appendChild(generateBtn);
@@ -154,11 +143,11 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   // ── Lymm's Telescope button ──
   const nerdBtn = document.createElement("a");
   nerdBtn.id = "dynamicNerdModeButton";
-  nerdBtn.className = "icon-button btn btn-sm btn-outline-secondary text-nowrap";
+  nerdBtn.className = "btn-sm-outline text-nowrap";
   nerdBtn.href = NERD_MODE_URL;
   nerdBtn.target = "_blank";
   nerdBtn.rel = "noopener noreferrer";
-  nerdBtn.innerHTML = `<i class="bi bi-box-arrow-up-right"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.nerdMode.label">${i18next.t("dynamicMap.nerdMode.label")}</span>`;
+  nerdBtn.innerHTML = `<i class="bi bi-box-arrow-up-right"></i><span class="hidden xl:inline" data-i18n="dynamicMap.nerdMode.label">${i18next.t("dynamicMap.nerdMode.label")}</span>`;
   nerdBtn.addEventListener("click", () => {
     const seed = new URLSearchParams(window.location.search).get("se");
     nerdBtn.href = seed ? `${NERD_MODE_URL}?seed=${seed}` : NERD_MODE_URL;
@@ -422,8 +411,8 @@ function setBusy(busy: boolean): void {
   if (generateBtn) {
     generateBtn.disabled = busy;
     generateBtn.innerHTML = busy
-      ? `<span class="spinner-border spinner-border-sm" role="status"></span><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`
-      : `<i class="bi bi-play-fill"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
+      ? `<span class="inline-block size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" role="status"></span><span class="hidden xl:inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`
+      : `<i class="bi bi-play-fill"></i><span class="hidden xl:inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
   }
   if (dailySeedBtn) dailySeedBtn.disabled = busy;
   if (prevDailySeedBtn) prevDailySeedBtn.disabled = busy;

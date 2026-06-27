@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en" data-bs-theme="dark" class="dark">
   <head>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-DNR100WX23"></script>
@@ -84,12 +84,6 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     ></script>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
-      crossorigin="anonymous"
-    />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
     <!-- Custom CSS loaded AFTER Bootstrap so overrides take effect -->
     <link rel="stylesheet" href="/css/overlay-styles.css" />
@@ -262,496 +256,98 @@
     <div class="full-viewport-wrapper flex flex-col-reverse">
       <!-- osContainer comes first so that it's "beneath" menu drop-downs -->
       <div id="osContainer"></div>
-      <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark navbar-expand-lg">
-        <div class="container-fluid">
-          <a id="navbar-brand" class="navbar-brand" href="#">
-            <img
-              src="./assets/NoitamapLogo.svg"
-              alt="Noitamap Logo"
-              class="d-inline-block"
-              style="width: 41px; height: 49px"
-            />
+      <nav class="navbar mapNavbar w-full">
+        <div class="navbar-inner flex items-center gap-1 w-full px-2 py-1.5 min-w-0">
+          <a id="navbar-brand" class="navbar-brand shrink-0 mr-1 inline-flex" href="#">
+            <img src="./assets/NoitamapLogo.svg" alt="Noitamap Logo" style="width: 26px; height: 31px" />
           </a>
-          <button
-            class="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#collapsibleMapMenu"
-            aria-controls="collapsibleMapMenu"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
-          >
-            <span class="navbar-toggler-icon"></span>
-          </button>
 
-          <div class="collapse navbar-collapse" id="collapsibleMapMenu">
-            <!-- Dropdown and buttons container -->
-            <div class="d-flex flex-wrap align-items-center justify-content-start me-auto" style="gap: 0.2rem">
-              <!-- <a id="donateButton" href="https://runfast.stream/donate" target="_blank" class="icon-button btn btn-sm btn-outline-info btn-custom text-nowrap m-2" target="_blank" role="button">
-                <i class="bi bi-suit-heart-fill"></i><span>Donate</span>
-              </a> -->
-
-              <div id="map-selector" class="dropdown">
-                <button
-                  id="mapSelectorButton"
-                  class="btn btn-sm btn-outline-light dropdown-toggle"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  data-i18n="availableMaps"
-                >
-                  Available Maps
-                </button>
-                <ul class="dropdown-menu" id="navLinksList">
-                  <li><a class="dropdown-item text-muted" href="#" style="pointer-events: none">Loading maps...</a></li>
-                </ul>
+              <div id="map-selector" class="dropdown-menu shrink-0">
+                <button id="mapSelectorButton" class="btn-sm-outline" type="button" data-i18n="availableMaps">Available Maps</button>
+                <div data-popover aria-hidden="true">
+                  <ul role="menu" id="navLinksList" class="min-w-56">
+                    <li><a role="menuitem" class="text-muted-foreground" href="#" style="pointer-events: none">Loading maps...</a></li>
+                  </ul>
+                </div>
               </div>
 
-              <div id="language-selector" class="dropdown">
-                <button
-                  id="languageSelectorButton"
-                  class="btn btn-sm btn-outline-light dropdown-toggle"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                >
+              <div id="language-selector" class="dropdown-menu shrink-0">
+                <button id="languageSelectorButton" class="btn-sm-icon-outline" type="button" aria-label="Language">
                   <span class="flag-icon flag-icon-us"></span>
                 </button>
-                <ul class="dropdown-menu" id="languageLinksList">
-                  <li>
-                    <a class="dropdown-item text-muted" href="#" style="pointer-events: none">Loading languages...</a>
-                  </li>
-                </ul>
+                <div data-popover aria-hidden="true">
+                  <ul role="menu" id="languageLinksList" class="min-w-48">
+                    <li><a role="menuitem" class="text-muted-foreground" href="#" style="pointer-events: none">Loading languages...</a></li>
+                  </ul>
+                </div>
               </div>
 
               <input type="checkbox" class="btn-check" id="spoilerFreeToggle" autocomplete="off" />
-              <label
-                class="icon-button btn btn-sm btn-outline-light"
-                for="spoilerFreeToggle"
-                data-bs-toggle="popover"
-                data-bs-placement="bottom"
-                data-bs-trigger="hover focus"
-                data-i18n-title="spoilerFree.title"
-                data-bs-title="Spoiler-free"
-                data-i18n-content="spoilerFree.content"
-                data-i18n-content-feature="spoilerFree.title"
-                data-bs-content="Hide wand, spell, item identities on the map. Wands show up as the starter wand, spells and items show up as unidentified."
-                ><i class="bi bi-eye-slash"></i>
-              </label>
+              <label class="btn-sm-icon-outline shrink-0" for="spoilerFreeToggle" data-i18n-tooltip="spoilerFree.title" data-tooltip="Spoiler-free"><i class="bi bi-eye-slash"></i></label>
 
-              <div
-                class="dropdown dynamic-map-only"
-                id="perfModeDropdown"
-                data-bs-toggle="popover"
-                data-bs-placement="bottom"
-                data-bs-trigger="manual"
-                data-i18n-title="perfMode.title"
-                data-bs-title="Performance"
-                data-i18n-content="perfMode.content"
-                data-bs-content="Performance options for slow devices and small screens."
-              >
-                <button
-                  type="button"
-                  class="icon-button btn btn-sm btn-outline-light dropdown-toggle"
-                  id="perfModeButton"
-                  data-bs-toggle="dropdown"
-                  data-bs-auto-close="outside"
-                  aria-expanded="false"
-                >
-                  <i class="bi bi-speedometer"></i>
-                </button>
-                <ul class="dropdown-menu" aria-labelledby="perfModeButton">
-                  <li
-                    data-bs-toggle="popover"
-                    data-bs-placement="bottom"
-                    data-bs-trigger="hover"
-                    data-i18n-title="mainWorldOnly.title"
-                    data-bs-title="Main world only"
-                    data-i18n-content="mainWorldOnly.content"
-                    data-bs-content="Only load the main world. Skips east/west parallel worlds (both the static background and dynamic POIs). Reduces memory use on mobile / low-RAM devices. On by default on small screens."
-                  >
-                    <div class="dropdown-item form-check form-switch d-flex align-items-center gap-2 mb-0">
-                      <input
-                        class="form-check-input m-0"
-                        type="checkbox"
-                        role="switch"
-                        id="lightModeToggle"
-                        autocomplete="off"
-                      />
-                      <label
-                        class="form-check-label flex-grow-1"
-                        for="lightModeToggle"
-                        style="cursor: pointer"
-                        data-i18n="mainWorldOnly.title"
-                        >Render main world only</label
-                      >
-                    </div>
-                  </li>
-                  <li
-                    id="skipCreaturesPopover"
-                    data-bs-toggle="popover"
-                    data-bs-placement="bottom"
-                    data-bs-trigger="hover"
-                    data-i18n-title="skipCreatures.title"
-                    data-bs-title="Don't add creatures"
-                    data-i18n-content="skipCreatures.content"
-                    data-i18n-content-feature="skipCreatures.title"
-                    data-bs-content="Skip enemies/creatures everywhere — they're not added to the map and not surfaced in search. Massively reduces marker count (~32k of the daily seed's POIs are creatures). On by default on small screens."
-                  >
-                    <div class="dropdown-item form-check form-switch d-flex align-items-center gap-2 mb-0">
-                      <input
-                        class="form-check-input m-0"
-                        type="checkbox"
-                        role="switch"
-                        id="skipCreaturesToggle"
-                        autocomplete="off"
-                      />
-                      <label
-                        class="form-check-label flex-grow-1"
-                        for="skipCreaturesToggle"
-                        style="cursor: pointer"
-                        data-i18n="skipCreatures.title"
-                        >Don't add creatures</label
-                      >
-                    </div>
-                  </li>
-                  <li
-                    id="simplisticBackgroundPopover"
-                    data-bs-toggle="popover"
-                    data-bs-placement="bottom"
-                    data-bs-trigger="hover"
-                    data-i18n-title="simplisticBackground.title"
-                    data-bs-title="Use simplistic map background"
-                    data-i18n-content="simplisticBackground.content"
-                    data-i18n-content-feature="simplisticBackground.title"
-                    data-bs-content="Replace the streamed map background tiles with a tiny flat image per parallel world. Big bandwidth/memory saver on slow connections and low-RAM devices; the background looks blocky."
-                  >
-                    <div class="dropdown-item form-check form-switch d-flex align-items-center gap-2 mb-0">
-                      <input
-                        class="form-check-input m-0"
-                        type="checkbox"
-                        role="switch"
-                        id="simplisticBackgroundToggle"
-                        autocomplete="off"
-                      />
-                      <label
-                        class="form-check-label flex-grow-1"
-                        for="simplisticBackgroundToggle"
-                        style="cursor: pointer"
-                        data-i18n="simplisticBackground.title"
-                        >Use simplistic map background</label
-                      >
-                    </div>
-                  </li>
-                </ul>
-              </div>
-
-              <form id="search-form" role="search" class="flex-grow-1">
-                <input
-                  id="unified-search-input"
-                  class="form-control search-input"
-                  type="search"
-                  data-i18n-placeholder="search.placeholder"
-                  placeholder="Find spells, items, bosses, places…"
-                  aria-label="unified search"
-                  autocomplete="off"
-                  spellcheck="false"
-                  data-bs-toggle="popover"
-                  data-bs-placement="bottom"
-                  data-bs-trigger="hover"
-                  data-bs-html="true"
-                  data-i18n-title="search.popoverTitle"
-                  data-bs-title="Search"
-                  data-i18n-content="search.popoverContent"
-                  data-bs-content="Search for spells, items, wands, bosses, creatures, potions, structures, and more. Use the filter buttons below to narrow results by category."
-                />
-              </form>
-
-              <a
-                tabindex="0"
-                id="shareButton"
-                class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                role="button"
-                data-bs-toggle="popover"
-                data-bs-placement="bottom"
-                data-bs-trigger="hover focus"
-                data-i18n-title="shareLink.title"
-                data-bs-title="Share Link"
-                data-i18n-content="shareLink.content"
-                data-bs-content="Copy a shareable link to your clipboard"
-              >
-                <i class="bi bi-share"></i>
-              </a>
-
-              <div id="overlay-selector" class="btn-group" role="group">
-                <input
-                  id="structuresToggler"
-                  type="checkbox"
-                  class="btn-check overlayToggler"
-                  autocomplete="off"
-                  data-overlay-key="structures"
-                />
-                <label
-                  class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                  for="structuresToggler"
-                  data-bs-toggle="popover"
-                  data-bs-placement="bottom"
-                  data-bs-trigger="hover focus"
-                  data-i18n-title="structures.title"
-                  data-bs-title="Structures"
-                  data-i18n-content="structures.content"
-                  data-bs-content="Toggle structures overlay"
-                  ><i class="icon-structures"></i
-                ></label>
-                <input
-                  id="bossesToggler"
-                  type="checkbox"
-                  class="btn-check overlayToggler"
-                  autocomplete="off"
-                  data-overlay-key="bosses"
-                />
-                <label
-                  class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                  for="bossesToggler"
-                  data-bs-toggle="popover"
-                  data-bs-placement="bottom"
-                  data-bs-trigger="hover focus"
-                  data-i18n-title="bosses.title"
-                  data-bs-title="Bosses"
-                  data-i18n-content="bosses.content"
-                  data-bs-content="Toggle bosses overlay"
-                  ><i class="icon-bosses pixelated-image"></i
-                ></label>
-                <input
-                  id="itemsToggler"
-                  type="checkbox"
-                  class="btn-check overlayToggler"
-                  autocomplete="off"
-                  data-overlay-key="items"
-                />
-                <label
-                  class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                  for="itemsToggler"
-                  data-bs-toggle="popover"
-                  data-bs-placement="bottom"
-                  data-bs-trigger="hover focus"
-                  data-i18n-title="items.title"
-                  data-bs-title="Items"
-                  data-i18n-content="items.content"
-                  data-bs-content="Toggle items overlay"
-                  ><i class="icon-items pixelated-image"></i>
-                </label>
-                <input
-                  id="orbsToggler"
-                  type="checkbox"
-                  class="btn-check overlayToggler"
-                  autocomplete="off"
-                  data-overlay-key="orbs"
-                />
-                <label
-                  class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                  for="orbsToggler"
-                  data-bs-toggle="popover"
-                  data-bs-placement="bottom"
-                  data-bs-trigger="hover focus"
-                  data-i18n-title="orbs.title"
-                  data-bs-title="Orbs"
-                  data-i18n-content="orbs.content"
-                  data-bs-content="Toggle orbs overlay"
-                  ><i class="icon-orbs pixelated-image"></i
-                ></label>
-                <input
-                  id="spatialAwarenessToggler"
-                  type="checkbox"
-                  class="btn-check overlayToggler"
-                  autocomplete="off"
-                  data-overlay-key="spatialAwareness"
-                />
-                <label
-                  class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                  for="spatialAwarenessToggler"
-                  data-bs-toggle="popover"
-                  data-bs-placement="bottom"
-                  data-bs-trigger="hover focus"
-                  data-i18n-title="spatialAwareness.title"
-                  data-bs-title="Spatial Awareness"
-                  data-i18n-content="spatialAwareness.content"
-                  data-bs-content="Toggle spatial awareness perk overlay"
-                  ><i class="icon-spatialAwareness pixelated-image"></i
-                ></label>
-                <input
-                  id="hiddenMessagesToggler"
-                  type="checkbox"
-                  class="btn-check overlayToggler"
-                  autocomplete="off"
-                  data-overlay-key="hiddenMessages"
-                />
-                <label
-                  class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                  for="hiddenMessagesToggler"
-                  data-bs-toggle="popover"
-                  data-bs-placement="bottom"
-                  data-bs-trigger="hover focus"
-                  data-i18n-title="hiddenMessages.title"
-                  data-bs-title="Hidden Messages"
-                  data-i18n-content="hiddenMessages.content"
-                  data-bs-content="Toggle hidden messages overlay"
-                  ><i class="icon-hiddenMessages pixelated-image"></i
-                ></label>
-                <input
-                  id="biomeBoundariesToggler"
-                  type="checkbox"
-                  class="btn-check overlayToggler"
-                  autocomplete="off"
-                  data-overlay-key="biomeBoundaries"
-                />
-                <label
-                  class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                  for="biomeBoundariesToggler"
-                  data-bs-toggle="popover"
-                  data-bs-placement="bottom"
-                  data-bs-trigger="hover focus"
-                  data-i18n-title="biomeBoundaries.title"
-                  data-bs-title="Biome Boundaries"
-                  data-i18n-content="biomeBoundaries.content"
-                  data-bs-content="Toggle biome boundaries overlay"
-                  ><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="1" y="1" width="6" height="6" rx="1" fill="rgb(0, 128, 168)" />
-                    <rect x="9" y="1" width="6" height="6" rx="1" fill="rgb(255, 106, 2)" />
-                    <rect x="1" y="9" width="6" height="6" rx="1" fill="rgb(214, 216, 227)" />
-                    <rect x="9" y="9" width="6" height="6" rx="1" fill="rgb(255, 209, 5)" />
-                  </svg>
-                </label>
-                <input id="chunkGridToggler" type="checkbox" class="btn-check" autocomplete="off" />
-                <label
-                  class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                  for="chunkGridToggler"
-                  data-bs-toggle="popover"
-                  data-bs-placement="bottom"
-                  data-bs-trigger="hover focus"
-                  data-i18n-title="chunkGrid.title"
-                  data-bs-title="Chunk Grid"
-                  data-i18n-content="chunkGrid.content"
-                  data-bs-content="Toggle chunk boundaries grid overlay"
-                  ><i class="bi bi-grid-3x3"></i
-                ></label>
-              </div>
-
-              <form id="renderer-form" class="input-group-sm d-flex" style="display: none">
-                <div class="btn-group btn-group-sm me-2" role="group" aria-label="Renderer selection">
-                  <input
-                    type="radio"
-                    class="btn-check"
-                    name="renderer"
-                    id="canvas-renderer"
-                    value="canvas"
-                    autocomplete="off"
-                    checked
-                  />
-                  <label
-                    class="btn btn-sm btn-outline-light"
-                    for="canvas-renderer"
-                    data-bs-toggle="popover"
-                    data-bs-placement="bottom"
-                    data-bs-trigger="hover focus"
-                    data-i18n-title="renderer.canvas.title"
-                    data-bs-title="Canvas Rendering"
-                    data-i18n-content="renderer.canvas.content"
-                    data-bs-content="Standard HTML5 Canvas rendering. Works on all browsers but may be slightly less crisp when zooming quickly."
-                    ><i class="bi bi-browser-firefox"></i
-                  ></label>
-                  <input
-                    type="radio"
-                    class="btn-check"
-                    name="renderer"
-                    id="webgl-renderer"
-                    value="webgl"
-                    autocomplete="off"
-                  />
-                  <label
-                    class="btn btn-sm btn-outline-light"
-                    for="webgl-renderer"
-                    data-bs-toggle="popover"
-                    data-bs-placement="bottom"
-                    data-bs-trigger="hover focus"
-                    data-i18n-title="renderer.webgl.title"
-                    data-bs-title="WebGL Rendering"
-                    data-i18n-content="renderer.webgl.content"
-                    data-bs-content="Hardware-accelerated WebGL rendering. If you're using a Chromium-based browser (Chrome, Edge, Brave, etc.) the tiles will be less blurry while zooming in quickly."
-                    ><i class="bi bi-browser-chrome"></i
-                  ></label>
+              <div class="popover dynamic-map-only shrink-0" id="perfModeDropdown">
+                <button type="button" class="btn-sm-icon-outline" id="perfModeButton" data-i18n-tooltip="perfMode.title" data-tooltip="Performance"><i class="bi bi-speedometer"></i></button>
+                <div data-popover aria-hidden="true">
+                  <div class="flex flex-col gap-1 min-w-64">
+                    <label class="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent" for="lightModeToggle">
+                      <input type="checkbox" role="switch" id="lightModeToggle" class="input" autocomplete="off" />
+                      <span class="flex-1" data-i18n="mainWorldOnly.title">Render main world only</span>
+                    </label>
+                    <label class="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent" id="skipCreaturesPopover" for="skipCreaturesToggle">
+                      <input type="checkbox" role="switch" id="skipCreaturesToggle" class="input" autocomplete="off" />
+                      <span class="flex-1" data-i18n="skipCreatures.title">Don't add creatures</span>
+                    </label>
+                    <label class="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent" id="simplisticBackgroundPopover" for="simplisticBackgroundToggle">
+                      <input type="checkbox" role="switch" id="simplisticBackgroundToggle" class="input" autocomplete="off" />
+                      <span class="flex-1" data-i18n="simplisticBackground.title">Use simplistic map background</span>
+                    </label>
+                  </div>
                 </div>
+              </div>
+
+              <form id="search-form" role="search" class="flex-1 min-w-0 max-w-sm">
+                <input id="unified-search-input" class="input search-input w-full h-8" type="search"
+                  data-i18n-placeholder="search.placeholder" placeholder="Find spells, items, bosses, places…"
+                  aria-label="unified search" autocomplete="off" spellcheck="false" />
               </form>
-              <a
-                id="installModButton"
-                href="https://runfast.stream/noitamap-mod"
-                target="_blank"
-                class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                data-bs-toggle="popover"
-                data-bs-placement="bottom"
-                data-bs-trigger="hover focus"
-                data-i18n-title="mod.title"
-                data-bs-title="Noita Map Mod"
-                data-i18n-content="mod.content"
-                data-bs-content="Install the Noita Map mod"
-              >
-                <i class="bi bi-download"></i><span>Mod</span>
-              </a>
-              <a
-                href="https://discord.gg/R2PHyHMYgx"
-                class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                target="_blank"
-                role="button"
-                data-bs-toggle="popover"
-                data-bs-placement="bottom"
-                data-bs-trigger="hover focus"
-                data-i18n-title="discord.title"
-                data-bs-title="Discord"
-                data-i18n-content="discord.content"
-                data-bs-content="Join the Discord server"
-              >
-                <i class="bi bi-discord"></i>
-              </a>
-              <a
-                href="https://github.com/acidflow-noita/noitamap"
-                class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                target="_blank"
-                role="button"
-                data-bs-toggle="popover"
-                data-bs-placement="bottom"
-                data-bs-trigger="hover focus"
-                data-i18n-title="github.title"
-                data-bs-title="GitHub"
-                data-i18n-content="github.content"
-                data-bs-content="View the source code on GitHub"
-              >
-                <i class="bi bi-github"></i>
-              </a>
-              <a
-                id="goToMainWebsiteButton"
-                href="https://runfast.stream"
-                target="_blank"
-                class="btn btn-sm btn-outline-warning"
-                data-bs-toggle="popover"
-                data-bs-placement="bottom"
-                data-bs-trigger="hover focus"
-                data-i18n-title="runfast.title"
-                data-bs-title="Runfast.Stream"
-                data-i18n-content="runfast.content"
-                data-bs-content="Go to the main runfast.stream website"
-              >
-                <i class="icon-runfast"></i>
-              </a>
-              <!-- Disable the dono link -->
-              <!-- <div class="me-2 bg-glow rounded-full inline-block">
-                <a href="https://runfast.stream/donate" style="text-decoration: none" target="_blank">
-                  <div id="dono-button" class="test overflow-hidden bg-main text-white border border-1 border-light rounded-full px-2 py-1 inline-block" data-i18n="donate">Donate</div>
-                </a>
-                <div class="bg-glow-inner"></div>
-              </div> -->
+
+              <a tabindex="0" id="shareButton" class="btn-sm-icon-outline shrink-0" role="button" data-i18n-tooltip="shareLink.title" data-tooltip="Share Link"><i class="bi bi-share"></i></a>
+
+              <div id="overlay-selector" class="inline-flex shrink-0 rounded-md border border-border divide-x divide-border overflow-hidden" role="group">
+                <input id="structuresToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="structures" />
+                <label class="seg-toggle" for="structuresToggler" data-i18n-tooltip="structures.title" data-tooltip="Structures"><i class="icon-structures"></i></label>
+                <input id="bossesToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="bosses" />
+                <label class="seg-toggle" for="bossesToggler" data-i18n-tooltip="bosses.title" data-tooltip="Bosses"><i class="icon-bosses pixelated-image"></i></label>
+                <input id="itemsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="items" />
+                <label class="seg-toggle" for="itemsToggler" data-i18n-tooltip="items.title" data-tooltip="Items"><i class="icon-items pixelated-image"></i></label>
+                <input id="orbsToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="orbs" />
+                <label class="seg-toggle" for="orbsToggler" data-i18n-tooltip="orbs.title" data-tooltip="Orbs"><i class="icon-orbs pixelated-image"></i></label>
+                <input id="spatialAwarenessToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="spatialAwareness" />
+                <label class="seg-toggle" for="spatialAwarenessToggler" data-i18n-tooltip="spatialAwareness.title" data-tooltip="Spatial Awareness"><i class="icon-spatialAwareness pixelated-image"></i></label>
+                <input id="hiddenMessagesToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="hiddenMessages" />
+                <label class="seg-toggle" for="hiddenMessagesToggler" data-i18n-tooltip="hiddenMessages.title" data-tooltip="Hidden Messages"><i class="icon-hiddenMessages pixelated-image"></i></label>
+                <input id="biomeBoundariesToggler" type="checkbox" class="btn-check overlayToggler" autocomplete="off" data-overlay-key="biomeBoundaries" />
+                <label class="seg-toggle" for="biomeBoundariesToggler" data-i18n-tooltip="biomeBoundaries.title" data-tooltip="Biome Boundaries"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="6" height="6" rx="1" fill="rgb(0, 128, 168)" /><rect x="9" y="1" width="6" height="6" rx="1" fill="rgb(255, 106, 2)" /><rect x="1" y="9" width="6" height="6" rx="1" fill="rgb(214, 216, 227)" /><rect x="9" y="9" width="6" height="6" rx="1" fill="rgb(255, 209, 5)" /></svg></label>
+                <input id="chunkGridToggler" type="checkbox" class="btn-check" autocomplete="off" />
+                <label class="seg-toggle" for="chunkGridToggler" data-i18n-tooltip="chunkGrid.title" data-tooltip="Chunk Grid"><i class="bi bi-grid-3x3"></i></label>
+              </div>
+
+              <form id="renderer-form" class="hidden" style="display: none">
+                <input type="radio" name="renderer" id="canvas-renderer" value="canvas" autocomplete="off" checked />
+                <input type="radio" name="renderer" id="webgl-renderer" value="webgl" autocomplete="off" />
+              </form>
+              <div class="dropdown-menu shrink-0" id="nav-more">
+                <button type="button" class="btn-sm-icon-outline" aria-label="More" data-tooltip="More"><i class="bi bi-three-dots-vertical"></i></button>
+                <div data-popover aria-hidden="true" data-align="end">
+                  <div role="menu" class="min-w-48">
+                    <a role="menuitem" id="installModButton" href="https://runfast.stream/noitamap-mod" target="_blank"><i class="bi bi-download"></i><span data-i18n="mod.title">Noita Map Mod</span></a>
+                    <a role="menuitem" href="https://discord.gg/R2PHyHMYgx" target="_blank"><i class="bi bi-discord"></i><span data-i18n="discord.title">Discord</span></a>
+                    <a role="menuitem" href="https://github.com/acidflow-noita/noitamap" target="_blank"><i class="bi bi-github"></i><span data-i18n="github.title">GitHub</span></a>
+                    <a role="menuitem" id="goToMainWebsiteButton" href="https://runfast.stream" target="_blank"><i class="icon-runfast"></i><span data-i18n="runfast.title">Runfast.Stream</span></a>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
         <!-- Non-blocking loading status strip — hangs below the nav -->
         <div id="map-loading-strip">
           <div class="loading-strip-inner">
@@ -774,11 +370,6 @@
       <div class="coordinate-content"></div>
     </div>
     <div id="opacitySliderWrapper"></div>
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
-      crossorigin="anonymous"
-    ></script>
     <script src="https://unpkg.com/flexsearch@0.8.212/dist/flexsearch.bundle.min.js"></script>
     <script src="https://unpkg.com/eventemitter2@6.4.9/lib/eventemitter2.js"></script>
     <script type="module" src="/src/main.ts"></script>
