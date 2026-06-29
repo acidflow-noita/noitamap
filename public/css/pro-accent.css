@@ -1,0 +1,131 @@
+/* pro-accent.css - Pro-gated buttons & filter chips. Identity = an animated
+   rainbow gradient BORDER over a raised-slate surface (no purple fills). The
+   double-background trick: a solid slate layer clipped to padding-box is the
+   fill; the panning --pro-gradient clipped to border-box shows only through the
+   transparent border. Glow (box-shadow) appears on hover/active. */
+
+/* Pro-gated filter buttons (high-value, alchemy) share one look. */
+#unifiedSearchFilterBox .high-value-filter-btn,
+#unifiedSearchFilterBox .alchemy-filter-btn {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-control);
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--pro-surface), var(--pro-surface)) padding-box,
+    var(--pro-gradient) border-box;
+  background-size: 200% 100%;
+  animation: pro-border-pan 6s linear infinite;
+  color: var(--pro-fg);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+
+#unifiedSearchFilterBox .high-value-filter-btn .high-value-filter-icon {
+  width: 20px;
+  height: 20px;
+}
+
+#unifiedSearchFilterBox .alchemy-filter-btn .alchemy-filter-icon {
+  width: 22px;
+  height: 22px;
+}
+
+#unifiedSearchFilterBox .alchemy-filter-btn .alchemy-filter-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  font: bold 9px/1 monospace;
+  color: var(--pro-tint);
+  background: var(--surface-1);
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  padding: 1px 3px;
+  pointer-events: none;
+}
+
+#unifiedSearchFilterBox .high-value-filter-btn:hover,
+#unifiedSearchFilterBox .alchemy-filter-btn:hover {
+  background:
+    linear-gradient(var(--pro-surface-hi), var(--pro-surface-hi)) padding-box,
+    var(--pro-gradient) border-box;
+  background-size: 200% 100%;
+  box-shadow: 0 0 0.5rem var(--pro-glow);
+  transform: translateY(-1px);
+}
+
+#unifiedSearchFilterBox .high-value-filter-btn.active,
+#unifiedSearchFilterBox .alchemy-filter-btn.active {
+  background:
+    linear-gradient(var(--pro-surface-hi), var(--pro-surface-hi)) padding-box,
+    var(--pro-gradient) border-box;
+  background-size: 200% 100%;
+  box-shadow: 0 0 0.6rem var(--pro-glow);
+}
+
+#unifiedSearchFilterBox .high-value-filter-btn--locked,
+#unifiedSearchFilterBox .alchemy-filter-btn--locked {
+  opacity: 0.55;
+  filter: grayscale(0.4);
+}
+
+#unifiedSearchFilterBox .high-value-filter-btn--locked:hover,
+#unifiedSearchFilterBox .alchemy-filter-btn--locked:hover {
+  opacity: 0.75;
+  transform: none;
+}
+
+/* Shared Pro-accent buttons (Get Pro, Drawing / Seed-Report toggles). The
+   !important beats Bootstrap's btn-outline-light variable styling. */
+.pro-accent.icon-button,
+.pro-accent.btn-outline-light,
+#auth-container .pro-accent {
+  border: 1.5px solid transparent !important;
+  color: var(--pro-fg) !important;
+  background:
+    linear-gradient(var(--pro-surface), var(--pro-surface)) padding-box,
+    var(--pro-gradient) border-box !important;
+  background-size: 200% 100% !important;
+  animation: pro-border-pan 6s linear infinite;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.15s !important;
+}
+
+.pro-accent.icon-button:hover,
+.pro-accent.btn-outline-light:hover,
+#auth-container .pro-accent:hover {
+  background:
+    linear-gradient(var(--pro-surface-hi), var(--pro-surface-hi)) padding-box,
+    var(--pro-gradient) border-box !important;
+  background-size: 200% 100% !important;
+  box-shadow: 0 0 0.5rem var(--pro-glow) !important;
+  color: var(--pro-fg) !important;
+}
+
+/* Toggle/active state - btn-check pattern + explicit .active. Lighter slate
+   surface + stronger glow; the gradient border keeps panning. */
+.btn-check:checked + .pro-accent.btn-outline-light,
+.pro-accent.btn-outline-light.active,
+.pro-accent.icon-button.active {
+  background:
+    linear-gradient(var(--pro-surface-hi), var(--pro-surface-hi)) padding-box,
+    var(--pro-gradient) border-box !important;
+  background-size: 200% 100% !important;
+  box-shadow: 0 0 0.6rem var(--pro-glow) !important;
+  color: var(--pro-fg) !important;
+}
+
+.btn-check:checked + .pro-accent.btn-outline-light:hover,
+.pro-accent.btn-outline-light.active:hover,
+.pro-accent.icon-button.active:hover {
+  box-shadow: 0 0 0.75rem var(--pro-glow) !important;
+}

@@ -48,10 +48,46 @@
   }
 }
 
+/* ── Biome boundary paths ────────────────────────────────────────────────
+   Per-biome colour is set inline as `color` (from biome_color data). All
+   static + hover styling lives here so the browser handles hover with zero
+   per-event JS (was a full 129-overlay DOM walk per mouseenter/leave). */
+.biome-overlay-path path {
+  fill: currentColor;
+  fill-opacity: 0.3;
+  stroke: oklch(0 0 0);
+  stroke-width: 24;
+  pointer-events: visibleFill; /* hit-test the whole polygon interior so hover is
+                                  stable even where the fill is faint/cleared */
+  cursor: pointer;
+  transition:
+    fill-opacity 0.15s,
+    stroke-opacity 0.15s,
+    stroke-width 0.15s;
+}
+
+/* Hover: keep a faint fill (interior / map content stays readable through it)
+   and emphasise the *boundary*: the biome's own colour, thicker, drawn over a
+   thin dark casing for contrast on any background. */
+.biome-overlay-path:hover path {
+  fill-opacity: 0.08;
+  stroke: currentColor;
+  stroke-width: 56;
+  stroke-opacity: 1;
+  paint-order: stroke;
+}
+
+/* Focus effect: while any biome is hovered, dim the others a little so the
+   active one reads clearly — but keep them visible. One :has() rule, no JS. */
+body:has(.biome-overlay-path:hover) .biome-overlay-path:not(:hover) path {
+  fill-opacity: 0.18;
+  stroke-opacity: 0.5;
+}
+
 div:has(> div > .osOverlayPOI) {
   position: relative;
   transform: translate(-50%, -50%);
-  --border-color: #47546b;
+  --border-color: var(--border-strong);
   pointer-events: auto;
   z-index: 10;
 }
@@ -79,13 +115,13 @@ div:has(> div > .osOverlayPOI) {
   padding: 0.85em 1.1em;
   border: 0.125em solid var(--border-color);
   border-radius: 0.4em;
-  background-color: #1a1f2a;
+  background-color: var(--surface-1);
   left: 50%;
   bottom: 100%;
   min-width: 32em;
   max-width: min(56em, 95vw);
   transition: 0.1s ease-out;
-  box-shadow: 0 0.25em 1em rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-panel);
 }
 
 .osOverlayPopup::before {
@@ -120,16 +156,16 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 
 .osOverlayPopup h3 {
   font-size: 1em;
-  color: #ccc;
+  color: var(--text-muted);
 }
 
 .osOverlayPopup p {
   font-size: 0.9em;
-  color: #ccc;
+  color: var(--text-muted);
 }
 
 .osOverlayPopup a {
-  color: #ffc107;
+  color: var(--accent-fg);
 }
 
 /* ─── Extended-info section (pro-gated) ─────────────────────────────────── */
@@ -153,17 +189,17 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 .extended-info-section {
   margin-top: 0.85em;
   padding-top: 0.85em;
-  border-top: 0.065em solid #3a3a4a;
+  border-top: 0.065em solid var(--border-strong);
   font-size: 1em;
   line-height: 1.5;
-  color: #ccc;
+  color: var(--text-muted);
 }
 
 .extended-info-header {
   font-size: 0.8em;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #777;
+  color: var(--text-faint);
   margin-bottom: 0.6em;
 }
 
@@ -190,7 +226,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 .extended-info-group + .extended-info-group {
   margin-top: 0.55em;
   padding-top: 0.45em;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid oklch(1 0 0 / 0.06);
 }
 
 /* Large groups: flow rows into 2 balanced columns. Min column width is wide
@@ -213,13 +249,13 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 }
 
 .extended-info-label {
-  color: #888;
+  color: var(--text-faint);
   white-space: nowrap;
   font-size: 0.93em;
 }
 
 .extended-info-value {
-  color: #ddd;
+  color: var(--text);
   /* break-word lets very long single words wrap at the line edge but does NOT
      break inside short tokens like "1.0" or "0.8" — that was causing single
      numbers to split across three lines in narrow popup grids. */
@@ -232,7 +268,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
   margin-bottom: 0.15em;
   font-size: 0.78em;
   font-weight: 600;
-  color: #aaa;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -245,7 +281,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 .extended-info-desc {
   break-inside: avoid;
   font-style: italic;
-  color: #bbb;
+  color: var(--text-muted);
   margin-bottom: 0.3em;
 }
 
@@ -254,7 +290,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
   break-inside: avoid;
   margin-top: 0.55em;
   padding-top: 0.45em;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid oklch(1 0 0 / 0.06);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -266,16 +302,16 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
   display: inline-flex;
   align-items: center;
   gap: 0.25em;
-  color: #ffc107 !important;
+  color: var(--accent-fg) !important;
   font-size: 0.92em;
   text-decoration: underline;
-  text-decoration-color: rgba(255, 193, 7, 0.4);
+  text-decoration-color: color-mix(in oklch, var(--accent-fg) 40%, transparent);
   width: max-content;
 }
 
 .extended-info-link:hover {
-  color: #ffd36e !important;
-  text-decoration-color: rgba(255, 211, 110, 0.8);
+  color: var(--accent-strong) !important;
+  text-decoration-color: color-mix(in oklch, var(--accent-fg) 80%, transparent);
 }
 
 .extended-info-link i {
@@ -297,7 +333,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 }
 
 .extended-info-mat-kind {
-  color: #888;
+  color: var(--text-faint);
   font-size: 0.92em;
 }
 
@@ -305,34 +341,41 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 .extended-info-loading,
 .extended-info-empty {
   font-size: 0.92em;
-  color: #777;
+  color: var(--text-faint);
   font-style: italic;
 }
 
 /* ── Tag links in material popups ── */
 .extended-info-tag-link {
-  color: #ffc107;
+  color: var(--accent-fg);
   text-decoration: underline;
-  text-decoration-color: rgba(255, 193, 7, 0.4);
+  text-decoration-color: color-mix(in oklch, var(--accent-fg) 40%, transparent);
 }
 .extended-info-tag-link:hover {
-  color: #ffd36e;
-  text-decoration-color: rgba(255, 211, 110, 0.8);
+  color: var(--accent-strong);
+  text-decoration-color: color-mix(in oklch, var(--accent-fg) 80%, transparent);
 }
 
 /* ── Placeholder (non-pro users) ── */
+/* Raised-slate panel (no purple fill) with an animated rainbow gradient
+   border — the Pro identity. Double-background: slate padding-box fill +
+   panning --pro-gradient border-box. */
 .extended-info-placeholder {
   display: flex;
   flex-direction: column;
   gap: 0.5em;
   padding: 0.5em 0.65em;
-  border: 0.065em dashed #b08a2a;
-  border-radius: 0.25em;
-  background: linear-gradient(180deg, rgba(90, 68, 24, 0.18) 0%, rgba(36, 26, 5, 0.18) 100%);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-control);
+  background:
+    linear-gradient(var(--pro-surface), var(--pro-surface)) padding-box,
+    var(--pro-gradient) border-box;
+  background-size: 200% 100%;
+  animation: pro-border-pan 6s linear infinite;
 }
 
 .extended-info-placeholder-label {
-  color: #ffd36e;
+  color: var(--pro-fg);
   font-size: 0.92em;
 }
 
@@ -344,7 +387,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 }
 
 .extended-info-placeholder-fields .extended-info-label {
-  color: #998a6e;
+  color: var(--text-faint);
 }
 
 /* Skeleton bar — static, no animation */
@@ -353,24 +396,28 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
   width: 4em;
   height: 0.7em;
   border-radius: 0.15em;
-  background: rgba(160, 130, 60, 0.22);
+  background: var(--surface-1);
 }
 
 .extended-info-cta {
   align-self: flex-start;
-  background: rgba(255, 211, 110, 0.12);
-  border: 0.065em solid #b08a2a;
-  color: #ffd36e;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--pro-surface-hi), var(--pro-surface-hi)) padding-box,
+    var(--pro-gradient) border-box;
+  background-size: 200% 100%;
+  animation: pro-border-pan 6s linear infinite;
+  color: var(--pro-fg);
+  font-weight: 600;
   font-size: 0.92em;
   padding: 0.2em 0.55em;
-  border-radius: 0.2em;
+  border-radius: var(--radius-control);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: box-shadow 0.15s;
 }
 
 .extended-info-cta:hover {
-  background: rgba(255, 211, 110, 0.22);
-  border-color: #ffd36e;
+  box-shadow: 0 0 0.5rem var(--pro-glow);
 }
 
 #osContainer .overlay {

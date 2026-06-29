@@ -13,10 +13,6 @@ const PATREON_SYMBOL_WHITE = `
         c55.78-74.81,127.6-95.94,216.01-117.82C929.71,603.22,1033.27,483.3,1033.05,324.45z"/>
 </svg>`;
 
-// Official Patreon Colors
-const PATREON_COLOR = "#FF424D";
-const PATREON_NAVY = "#052D49";
-
 /**
  * Create and manage the auth button in the navbar
  */
@@ -26,73 +22,7 @@ export class AuthUI {
 
   constructor(container: HTMLElement) {
     this.container = container;
-    this.injectStyles();
     this.init();
-  }
-
-  private injectStyles(): void {
-    const styleId = "patreon-auth-styles";
-    if (document.getElementById(styleId)) return;
-
-    const style = document.createElement("style");
-    style.id = styleId;
-    style.textContent = `
-      .btn-patreon {
-        background-color: ${PATREON_COLOR};
-        color: white;
-        border: none;
-        border-radius: 20px; /* Pill shape */
-        padding: 8px 16px;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        transition: background-color 0.2s;
-      }
-      .btn-patreon:hover {
-        background-color: #E63B45; /* Slightly darker coral */
-        color: white;
-      }
-      .btn-patreon svg {
-        width: 18px;
-        height: 18px;
-      }
-      .btn-patreon-outline {
-        background-color: transparent;
-        color: ${PATREON_COLOR};
-        border: 1px solid ${PATREON_COLOR};
-        border-radius: 20px;
-        padding: 8px 16px;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.2s;
-      }
-      .btn-patreon-outline:hover {
-        background-color: rgba(255, 66, 77, 0.1);
-        color: ${PATREON_COLOR};
-      }
-      .btn-patron {
-        background-color: oklch(82.8% 0.189 84.429);
-        color: #000;
-        border: none;
-        border-radius: 20px;
-        padding: 8px 16px;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        transition: background-color 0.2s;
-        text-decoration: none;
-      }
-      .btn-patron:hover {
-        background-color: oklch(77% 0.189 84.429);
-        color: #000;
-      }
-    `;
-    document.head.appendChild(style);
   }
 
   private async init(): Promise<void> {
@@ -209,26 +139,17 @@ export class AuthUI {
     modal.innerHTML = `
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-dark text-light">
-          <div class="modal-header border-secondary">
-            <h5 class="modal-title" id="getProModalLabel">
-              <i class="bi bi-brush me-2"></i>${i18next.t("auth.proFeatures", "Pro Features")}  
-            </h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          <div class="modal-header border-0 pb-0">
+            <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body">
-            <p>${i18next.t("auth.proDescription", "Drawing tools and other pro features are available to Patreon supporters.")}</p>
-            <ul class="list-unstyled mb-3">
-              <li class="mb-2"><i class="bi bi-brush me-2 text-info"></i>${i18next.t("auth.featureDrawing", "Drawing & annotation tools")}</li>
-              <li class="mb-2"><i class="bi bi-share me-2 text-info"></i>${i18next.t("auth.featureShare", "Share drawings via URL or screenshot")}</li>
-              <li class="mb-2"><i class="bi bi-save me-2 text-info"></i>${i18next.t("auth.featureSave", "Save & manage multiple drawings")}</li>
-            </ul>
-            <hr class="border-secondary">
+          <div class="modal-body pt-0">
+            <p class="text-center text-light mb-3">${i18next.t("auth.proDescription", "Drawing tools and other pro features are available to Patreon supporters.")}</p>
             <div class="d-flex flex-column align-items-center gap-3">
-              <button id="patreonLoginBtn" class="btn-patreon w-75 justify-content-center">
+              <button id="patreonLoginBtn" class="btn-patreon justify-content-center">
                 ${PATREON_SYMBOL_WHITE}
                 ${i18next.t("auth.loginWithPatreon", "Sign in with Patreon")}
               </button>
-              <a href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer" class="btn-patron w-75 justify-content-center">
+              <a href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer" class="btn-patron justify-content-center">
                 <i class="bi bi-box-arrow-up-right"></i>${i18next.t("auth.becomePatron", "Become a Patron")}
               </a>
             </div>

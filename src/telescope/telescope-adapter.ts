@@ -10,7 +10,12 @@ import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope
 import { getDataZip } from "../data-archive";
 import { clearCache } from "./tile-cache";
 import orbsData from "../data/orbs.json";
-import { buildPillarSegments, makePillarUnlockPredicate, makePillarUnlockPredicateFromFlags, PILLAR_BASE } from "../data/pillars";
+import {
+  buildPillarSegments,
+  makePillarUnlockPredicate,
+  makePillarUnlockPredicateFromFlags,
+  PILLAR_BASE,
+} from "../data/pillars";
 import PwWorker from "./pw-worker?worker";
 
 // Telescope modules
@@ -1142,7 +1147,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       const HM_TEMPLE_X = [-32, -32, -32, -32, -32, -32, 2560];
       const HM_TEMPLE_Y = [1410, 2946, 4994, 6530, 8578, 10626, 13181];
       // Nudge to align the crystal/statue markers with the baked altar art.
-      const wormFix = { x: 0, y: 5 };
+      const wormFix = { x: -280, y: 45 };
       for (let hm = 0; hm < HM_TEMPLE_X.length; hm++) {
         poisByPW[pwKey].push({
           type: "item",
@@ -1165,7 +1170,6 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
           biome: "temple_altar",
         } as any);
       }
-
     }
 
     // Hand Statues (Munkki spawners): snowcave init() picks 8 positions seeded by

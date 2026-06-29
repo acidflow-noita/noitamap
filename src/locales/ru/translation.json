@@ -4801,7 +4801,7 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "Загрузить ежедневный сид игры, общий для всех игроков сегодня",
     "seedTooltipDaily": "Это сид ежедневного забега",
-    "seedTooltipCustom": "В Noita чуть больше 2 миллиардов реальных сидов. Подходит любое целое число от 1 до 2 147 483 647. Сегодняшний ежедневный сид показан <span style=\"color:#14b8a6;font-weight:600\">бирюзовым</span>, вчерашний - <span style=\"color:#eab308;font-weight:600\">темно-желтым</span>.",
+    "seedTooltipCustom": "В Noita чуть больше 2 миллиардов реальных сидов. Подходит любое целое число от 1 до 2 147 483 647. Сегодняшний ежедневный сид показан <span style=\"color:var(--daily-fg);font-weight:600\">бирюзовым</span>, вчерашний - <span style=\"color:var(--prev-fg);font-weight:600\">темно-желтым</span>.",
     "previousDaily": "Предыдущий ежедневный сид",
     "previousDailyDescription": "Загрузить вчерашний ежедневный сид игры",
     "seedTooltipPreviousDaily": "Это вчерашний сид ежедневного забега"

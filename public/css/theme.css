@@ -1,0 +1,101 @@
+/* theme.css - design tokens (Tailwind 4.3 oklch). Loaded first, after Bootstrap. */
+:root {
+  /* Neutrals (slate) */
+  --bg:            oklch(0.129 0.042 264.695); /* slate-950 */
+  --surface-1:     oklch(0.208 0.042 265.755); /* slate-900 */
+  --surface-2:     oklch(0.279 0.041 260.031); /* slate-800 */
+  --border:        oklch(0.372 0.044 257.287 / 0.6); /* slate-700/60 */
+  --border-strong: oklch(0.372 0.044 257.287); /* slate-700 */
+  --text:          oklch(0.929 0.013 255.508); /* slate-200 */
+  --text-muted:    oklch(0.704 0.040 256.788); /* slate-400 */
+  --text-faint:    oklch(0.554 0.046 257.417); /* slate-500 */
+
+  /* Accent: blue */
+  --accent-fg:     oklch(0.707 0.165 254.624); /* blue-400 */
+  --accent-strong: oklch(0.623 0.214 259.815); /* blue-500 */
+  --accent-bg:     oklch(0.623 0.214 259.815 / 0.14);
+
+  /* Daily seed: emerald (== success status) */
+  --daily-fg:      oklch(0.765 0.177 163.223); /* emerald-400 */
+  --daily-strong:  oklch(0.696 0.170 162.480); /* emerald-500 */
+  --daily-bg:      oklch(0.696 0.170 162.480 / 0.14);
+
+  /* Previous daily: orange */
+  --prev-fg:       oklch(0.750 0.183 55.934); /* orange-400 */
+  --prev-strong:   oklch(0.705 0.213 47.604); /* orange-500 */
+  --prev-bg:       oklch(0.705 0.213 47.604 / 0.14);
+
+  /* Pro / premium: animated rainbow gradient BORDER over a raised-slate
+     surface — NO purple fills. The slow-panning gradient border (optionally a
+     faint glow) is the identity; panels/buttons stay slate so big patches read
+     clean. The gradient loops (starts+ends cyan) so the pan is seamless. */
+  --pro-surface:    var(--surface-2);                  /* raised slate panel/button */
+  --pro-surface-hi: oklch(0.32 0.041 260);             /* hover/active — a touch lighter */
+  --pro-fg:         var(--text);                        /* labels = bright text */
+  --pro-tint:       oklch(0.789 0.154 211.53);          /* cyan-400 — small functional marks */
+  --pro-glow:       oklch(0.789 0.154 211.53 / 0.35);   /* subtle glow (hover/active) */
+  --pro-gradient:   linear-gradient(90deg,
+                      oklch(0.789 0.154 211.53) 0%,    /* cyan-400 */
+                      oklch(0.707 0.165 254.624) 25%,  /* blue-400 */
+                      oklch(0.765 0.177 163.223) 50%,  /* emerald-400 */
+                      oklch(0.828 0.189 84.429) 75%,   /* amber-400 */
+                      oklch(0.789 0.154 211.53) 100%); /* cyan-400 (loop) */
+
+  /* Status */
+  --success-fg: var(--daily-fg);   --success-bg: var(--daily-bg);
+  --warning-fg: oklch(0.828 0.189 84.429);   --warning-bg: oklch(0.828 0.189 84.429 / 0.14); /* amber-400 */
+  --danger-fg:  oklch(0.704 0.191 22.216);   --danger-bg:  oklch(0.704 0.191 22.216 / 0.14); /* red-400 */
+  --info-fg: var(--accent-fg);     --info-bg: var(--accent-bg);
+
+  /* Elevation (neutral, no color) */
+  --shadow-panel: 0 0.5rem 1.5rem oklch(0 0 0 / 0.45);
+  --shadow-pop:   0 0.25rem 0.75rem oklch(0 0 0 / 0.4);
+
+  /* Radius scale */
+  --radius-control: 0.5rem;
+  --radius-panel:   0.75rem;
+  --radius-pill:    999px;
+
+  /* Frosted layer */
+  --glass-bg:   oklch(0.208 0.042 265.755 / 0.85);
+  --glass-blur: blur(0.5rem);
+
+  /* Bootstrap variable overrides (migrated from style.css) */
+  --bs-dark: var(--surface-1);
+  --bs-dark-rgb: 15, 23, 42; /* rgb triplet REQUIRED by Bootstrap's internal rgba(var(--bs-dark-rgb), a); not a rendered literal. slate-900 */
+  --bs-secondary: var(--border-strong);
+  --bs-secondary-bg: var(--surface-2);
+  --bs-secondary-border-subtle: var(--border-strong);
+  --bs-border-color: var(--border-strong);
+  --bs-body-bg: var(--bg);
+  --bs-tertiary-bg: var(--surface-2);
+  --bs-popover-bg: var(--surface-1) !important;
+  --bs-popover-border-color: var(--border-strong) !important;
+  --bs-popover-header-bg: var(--bg) !important;
+  --bs-popover-header-color: var(--text) !important;
+  --bs-popover-body-color: var(--text) !important;
+  --bs-body-font-family: Inter, sans-serif;
+  --bs-font-sans-serif: Inter, sans-serif;
+}
+
+/* Animated rainbow gradient border for Pro surfaces. The double-background
+   technique: a solid slate layer clipped to padding-box (the fill) plus the
+   panning gradient clipped to border-box (shows only in the transparent
+   border). Driven by the gradient-border recipe in pro-accent.css / the
+   pro-injected stylesheets; the keyframe lives here so it's global. */
+@keyframes pro-border-pan {
+  from { background-position: 0% 50%; }
+  to   { background-position: 200% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Gradient stays, panning stops. */
+  .pro-accent.btn-outline-light,
+  .pro-accent.icon-button,
+  #auth-container .pro-accent,
+  #unifiedSearchFilterBox .high-value-filter-btn,
+  #unifiedSearchFilterBox .alchemy-filter-btn,
+  .extended-info-cta,
+  .sr-locked-cta {
+    animation: none !important;
+  }
+}

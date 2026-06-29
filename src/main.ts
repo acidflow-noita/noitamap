@@ -1191,10 +1191,11 @@ document.addEventListener("DOMContentLoaded", async () => {
           el.style.display = 'none';
         }
       } else {
-        // Restore defaults: visible, idle opacity, no filter.
+        // Restore defaults: clear inline overrides so CSS owns idle + hover
+        // styling (.biome-overlay-path path in overlay-styles.css).
         el.style.display = '';
         svgPaths.forEach((p) => {
-          p.style.fillOpacity = '0.3';
+          p.style.fillOpacity = '';
           p.style.filter = '';
         });
       }

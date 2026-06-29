@@ -248,7 +248,7 @@
     "previousDailyDescription": "Load yesterday's daily game seed",
     "seedTooltipDaily": "This is the daily run seed",
     "seedTooltipPreviousDaily": "This is yesterday's daily run seed",
-    "seedTooltipCustom": "Noita has just over 2 billion real seeds. Any whole number from 1 to 2,147,483,647 is a valid seed. Today's daily seed shows in <span style=\"color:#14b8a6;font-weight:600\">teal</span>; yesterday's daily shows in <span style=\"color:#eab308;font-weight:600\">dark yellow</span>.",
+    "seedTooltipCustom": "Noita has just over 2 billion real seeds. Any whole number from 1 to 2,147,483,647 is a valid seed. Today's daily seed shows in <span style=\"color:var(--daily-fg);font-weight:600\">teal</span>; yesterday's daily shows in <span style=\"color:var(--prev-fg);font-weight:600\">dark yellow</span>.",
     "placeholder": "Game seed",
     "nerdMode": {
       "label": "Lymm's Telescope",

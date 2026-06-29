@@ -1,0 +1,82 @@
+/* auth.css - auth modal buttons. Patreon brand color preserved (oklch form). */
+:root {
+  --patreon: oklch(0.628 0.224 21.1); /* #FF424D brand */
+}
+
+/* Shared sizing so every Patreon button (modal, drawing sidebar, seed report)
+   is identical regardless of its container — one consistent pill width,
+   centered, with a sane max so it never stretches full-width in a wide modal. */
+.btn-patreon,
+.btn-patron {
+  width: 100%;
+  max-width: 15rem;
+  margin-inline: auto;
+  justify-content: center;
+}
+
+.btn-patreon {
+  background-color: var(--patreon);
+  color: oklch(1 0 0);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.btn-patreon:hover {
+  background-color: oklch(0.58 0.224 21.1); /* darker brand */
+  color: oklch(1 0 0);
+}
+
+.btn-patreon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-patreon-outline {
+  background-color: transparent;
+  color: var(--patreon);
+  border: 1px solid var(--patreon);
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.btn-patreon-outline:hover {
+  background-color: oklch(0.628 0.224 21.1 / 0.1);
+  color: var(--patreon);
+}
+
+/* "Become a Patron" — Pro identity: animated rainbow gradient border over a
+   raised-slate surface (matches the other Pro CTAs). */
+.btn-patron {
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-pill);
+  background:
+    linear-gradient(var(--pro-surface-hi), var(--pro-surface-hi)) padding-box,
+    var(--pro-gradient) border-box;
+  background-size: 200% 100%;
+  animation: pro-border-pan 6s linear infinite;
+  color: var(--pro-fg);
+  padding: 8px 16px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: box-shadow 0.15s;
+  text-decoration: none;
+}
+
+.btn-patron:hover {
+  box-shadow: 0 0 0.6rem var(--pro-glow);
+  color: var(--pro-fg);
+}

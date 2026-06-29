@@ -203,7 +203,6 @@ function appendAlchemyStubs(filterBox: HTMLElement): void {
 
     filterBox.appendChild(label);
   }
-  ensureAlchemyStubStyles();
 }
 
 /**
@@ -373,7 +372,6 @@ function appendHighValueStub(filterBox: HTMLElement, search?: UnifiedSearch): vo
   });
 
   filterBox.appendChild(label);
-  ensureHighValueStubStyles();
 
   // Restore from URL on rebuild (e.g., page load with ?f=hv,...).
   // Wait for auth to be definitively resolved before deciding. Pro users:
@@ -393,141 +391,6 @@ function appendHighValueStub(filterBox: HTMLElement, search?: UnifiedSearch): vo
       s.updateSearchResults();
     }
   });
-}
-
-function ensureHighValueStubStyles(): void {
-  if (document.getElementById("high-value-stub-style")) return;
-  const s = document.createElement("style");
-  s.id = "high-value-stub-style";
-  s.textContent = `
-#unifiedSearchFilterBox .high-value-filter-btn {
-  position: relative;
-  width: 32px; height: 32px;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 4px;
-  background: linear-gradient(180deg, #3a2d0d 0%, #241a05 100%);
-  border: 1px solid #b08a2a;
-  box-shadow: 0 0 0 1px rgba(255, 211, 110, 0.08) inset, 0 0 6px rgba(176, 138, 42, 0.25);
-  color: #ffd36e;
-  cursor: pointer; user-select: none;
-  transition: box-shadow 0.15s, transform 0.15s, background 0.15s;
-}
-#unifiedSearchFilterBox .high-value-filter-btn .high-value-filter-icon {
-  width: 20px; height: 20px;
-  filter: drop-shadow(0 0 2px rgba(255, 211, 110, 0.35));
-}
-#unifiedSearchFilterBox .high-value-filter-btn:hover {
-  background: linear-gradient(180deg, #5a4418 0%, #362605 100%);
-  box-shadow: 0 0 0 1px rgba(255, 211, 110, 0.2) inset, 0 0 10px rgba(255, 211, 110, 0.35);
-  transform: translateY(-1px);
-}
-#unifiedSearchFilterBox .high-value-filter-btn.active {
-  background: linear-gradient(180deg, #8a6a20 0%, #5a4418 100%);
-  border-color: #ffd36e;
-  box-shadow: 0 0 0 2px rgba(255, 211, 110, 0.45), 0 0 12px rgba(255, 211, 110, 0.5);
-}
-#unifiedSearchFilterBox .high-value-filter-btn.active .high-value-filter-icon {
-  filter: drop-shadow(0 0 4px rgba(255, 211, 110, 0.9));
-}
-#unifiedSearchFilterBox .high-value-filter-btn--locked {
-  opacity: 0.55;
-  filter: grayscale(0.4);
-}
-#unifiedSearchFilterBox .high-value-filter-btn--locked:hover {
-  opacity: 0.75;
-  transform: none;
-}
-  `;
-  document.head.appendChild(s);
-}
-
-function ensureAlchemyStubStyles(): void {
-  if (document.getElementById("alchemy-stub-style")) return;
-  const s = document.createElement("style");
-  s.id = "alchemy-stub-style";
-  s.textContent = `
-#unifiedSearchFilterBox .alchemy-filter-btn {
-  position: relative;
-  width: 32px; height: 32px;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 4px;
-  background: linear-gradient(180deg, #3a2d0d 0%, #241a05 100%);
-  border: 1px solid #b08a2a;
-  box-shadow: 0 0 0 1px rgba(255, 211, 110, 0.08) inset, 0 0 6px rgba(176, 138, 42, 0.25);
-  color: #ffd36e;
-  cursor: pointer; user-select: none;
-  transition: box-shadow 0.15s, transform 0.15s, background 0.15s;
-}
-#unifiedSearchFilterBox .alchemy-filter-btn .alchemy-filter-icon {
-  width: 22px; height: 22px;
-}
-#unifiedSearchFilterBox .alchemy-filter-btn .alchemy-filter-badge {
-  position: absolute; bottom: -2px; right: -2px;
-  font: bold 9px/1 monospace; color: #ffd36e;
-  background: #241a05; border: 1px solid #b08a2a;
-  border-radius: 3px; padding: 1px 3px;
-  pointer-events: none;
-}
-#unifiedSearchFilterBox .alchemy-filter-btn:hover {
-  background: linear-gradient(180deg, #5a4418 0%, #362605 100%);
-  box-shadow: 0 0 0 1px rgba(255, 211, 110, 0.2) inset, 0 0 10px rgba(255, 211, 110, 0.35);
-  transform: translateY(-1px);
-}
-#unifiedSearchFilterBox .alchemy-filter-btn.active {
-  background: linear-gradient(180deg, #8a6a20 0%, #5a4418 100%);
-  border-color: #ffd36e;
-  box-shadow: 0 0 0 2px rgba(255, 211, 110, 0.45), 0 0 12px rgba(255, 211, 110, 0.5);
-}
-#unifiedSearchFilterBox .alchemy-filter-btn--locked {
-  opacity: 0.55;
-  filter: grayscale(0.4);
-}
-#unifiedSearchFilterBox .alchemy-filter-btn--locked:hover {
-  opacity: 0.75;
-  transform: none;
-}
-
-/* Shared pro-accent treatment for Pro-gated buttons (Get Pro, Drawing toggle). */
-.pro-accent.icon-button,
-.pro-accent.btn-outline-light,
-#auth-container .pro-accent {
-  border-color: #b08a2a !important;
-  color: #ffd36e !important;
-  background: linear-gradient(180deg, rgba(90,68,24,0.35) 0%, rgba(36,26,5,0.35) 100%) !important;
-  box-shadow: 0 0 0 1px rgba(255, 211, 110, 0.1) inset, 0 0 6px rgba(176, 138, 42, 0.25) !important;
-  transition: box-shadow 0.15s, background 0.15s !important;
-}
-.pro-accent.icon-button:hover,
-.pro-accent.btn-outline-light:hover,
-#auth-container .pro-accent:hover {
-  background: linear-gradient(180deg, rgba(138,106,32,0.55) 0%, rgba(90,68,24,0.45) 100%) !important;
-  border-color: #ffd36e !important;
-  color: #ffd36e !important;
-  box-shadow: 0 0 0 1px rgba(255, 211, 110, 0.25) inset, 0 0 10px rgba(255, 211, 110, 0.35) !important;
-}
-/* Toggle/active state — used by Bootstrap's btn-check pattern (the
- * checkbox-input + label pair) and by buttons that get an explicit .active
- * class. Inverts the gradient and brightens the gold so the "on" state is
- * unmistakable. Applies to every Pro-gated toggle (Drawing, Seed Report,
- * Main-path filter, etc.) so they all share one visual language. */
-.btn-check:checked + .pro-accent.btn-outline-light,
-.pro-accent.btn-outline-light.active,
-.pro-accent.icon-button.active {
-  background: linear-gradient(180deg, #ffd36e 0%, #d4a437 100%) !important;
-  border-color: #ffd36e !important;
-  color: #1a1305 !important;
-  box-shadow: 0 0 0 1px rgba(255, 211, 110, 0.4) inset, 0 0 12px rgba(255, 211, 110, 0.55) !important;
-}
-.btn-check:checked + .pro-accent.btn-outline-light:hover,
-.pro-accent.btn-outline-light.active:hover,
-.pro-accent.icon-button.active:hover {
-  background: linear-gradient(180deg, #ffdf8a 0%, #e2b343 100%) !important;
-  border-color: #ffdf8a !important;
-  color: #1a1305 !important;
-}
-.pro-accent .pro-icon { filter: drop-shadow(0 0 3px rgba(255, 211, 110, 0.5)); }
-  `;
-  document.head.appendChild(s);
 }
 
 const BOSS_TYPES = new Set([
@@ -1313,8 +1176,13 @@ export class UnifiedSearch extends EventEmitter2 {
     const isDynamic = this.currentMap === "dynamic-main-branch";
 
     // Read player position from URL for proximity sorting (needed for both empty & non-empty search on dynamic map)
-    const playerX = parseFloat(urlParams.get("x") ?? "") || null;
-    const playerY = parseFloat(urlParams.get("y") ?? "") || null;
+    // NB: use Number.isNaN, NOT `|| null` — `parseFloat("0") || null` is null,
+    // which broke the "10 nearest" view whenever the viewport sat at x=0 or y=0
+    // (the default whole-world baked-daily view).
+    const px = parseFloat(urlParams.get("x") ?? "");
+    const py = parseFloat(urlParams.get("y") ?? "");
+    const playerX = Number.isNaN(px) ? null : px;
+    const playerY = Number.isNaN(py) ? null : py;
 
     if (searchText === "") {
       resetBiomeOverlays();

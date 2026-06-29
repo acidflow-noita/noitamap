@@ -1,4 +1,6 @@
-import biomeBoundariesData from "../data/biome_boundries_py.json";
+// Tailwind-remapped biome colors (max hue separation between adjacent biomes).
+// Swap back to "../data/biome_boundries_py.json" to compare against the original.
+import biomeBoundariesData from "../data/biome_boundries_py.tailwind.json";
 import { PathOfInterest } from "../data_sources/overlays";
 
 const BIOME_IMAGE_TOP_CHUNK = -14;

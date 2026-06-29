@@ -4801,7 +4801,7 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "Zaladuj dzienny seed gry, wspoldzielony przez wszystkich graczy dzis",
     "seedTooltipDaily": "To jest seed dziennego biegu",
-    "seedTooltipCustom": "Noita ma nieco ponad 2 miliardy prawdziwych seedow. Kazda liczba calkowita od 1 do 2 147 483 647 jest poprawnym seedem. Dzisiejszy seed dzienny jest wyswietlany na <span style=\"color:#14b8a6;font-weight:600\">turkusowo</span>, wczorajszy na <span style=\"color:#eab308;font-weight:600\">ciemnozolto</span>.",
+    "seedTooltipCustom": "Noita ma nieco ponad 2 miliardy prawdziwych seedow. Kazda liczba calkowita od 1 do 2 147 483 647 jest poprawnym seedem. Dzisiejszy seed dzienny jest wyswietlany na <span style=\"color:var(--daily-fg);font-weight:600\">turkusowo</span>, wczorajszy na <span style=\"color:var(--prev-fg);font-weight:600\">ciemnozolto</span>.",
     "previousDaily": "Poprzedni dzienny seed",
     "previousDailyDescription": "Zaladuj wczorajszy dzienny seed gry",
     "seedTooltipPreviousDaily": "To jest seed wczorajszego dziennego biegu"

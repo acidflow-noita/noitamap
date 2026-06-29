@@ -283,43 +283,44 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
 
   const visiblePaths: SVGPathElement[] = [];
 
-  // Create separate path elements for each polygon
+  // Create separate path elements for each polygon. Static styling (fill-opacity,
+  // stroke, hover emphasis) lives in CSS (.biome-overlay-path path in
+  // overlay-styles.css) so the browser handles hover with no per-event JS. Only
+  // the per-biome colour is dynamic: set it as `color` so CSS `fill: currentColor`
+  // paints the region and the hover rule (stroke: currentColor) tints the
+  // emphasised boundary outline to match the biome.
   for (const polygonPath of polygons) {
-    // Create visible path for this polygon
     const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     pathEl.setAttribute('d', polygonPath);
-    pathEl.style.fill = color;
-    pathEl.style.fillOpacity = '0.3';
-    pathEl.style.stroke = '#000000';
-    pathEl.style.strokeWidth = '50';
-    pathEl.style.transition = 'fill-opacity 0.2s, filter 0.2s';
-    pathEl.style.pointerEvents = 'visiblePainted'; // Only respond to events on visible painted areas
-    pathEl.style.cursor = 'pointer';
+    pathEl.style.color = color;
     svg.appendChild(pathEl);
     visiblePaths.push(pathEl);
   }
 
   el.appendChild(svg);
 
-  // Attach event handlers to each polygon path
+  // Attach event handlers to each polygon path. Hover *emphasis* (boundary
+  // outline + dimming other biomes) is pure CSS (.biome-overlay-path:hover in
+  // overlay-styles.css), so these listeners only drive the name tooltip — a
+  // single shared element. No per-hover DOM walk over the other 128 overlays.
   visiblePaths.forEach(pathEl => {
     pathEl.addEventListener('mouseenter', () => {
       const tooltip = getBiomeTooltip();
-      
+
       // Check if we have a biome name and if it's not empty
       if (biomeName && biomeName.trim() !== '' && biomeName !== '_EMPTY_') {
         // biomeName is either already "biome_xxx" or just "xxx"
         // If it doesn't start with "biome_", prepend it
         const translationKey = biomeName.startsWith('biome_') ? biomeName : `biome_${biomeName}`;
-        
+
         // Try to get translation from gameContent.biomes using the full key
         let translatedName = i18next.t(`gameContent.biomes.${translationKey}`, { defaultValue: null });
-        
+
         // If not found, fall back to just the biome name
         if (!translatedName) {
           translatedName = biomeName;
         }
-        
+
         // Format: Translated Name\n(filename)
         tooltip.innerHTML = `${translatedName}<br><span style="font-family: Inter, sans-serif; font-feature-settings: 'tnum', 'zero', 'cv09', 'cv02', 'cv03', 'cv04'; font-weight: 400; opacity: 0.7;">(${text})</span>`;
       } else {
@@ -327,45 +328,12 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
         const noInGameName = i18next.t('noInGameName');
         tooltip.innerHTML = `${noInGameName}<br><span style="font-family: Inter, sans-serif; font-feature-settings: 'tnum', 'zero', 'cv09', 'cv02', 'cv03', 'cv04'; font-weight: 400; opacity: 0.7;">(${text})</span>`;
       }
-      
+
       tooltip.style.display = 'block';
-      
-      // Increase fill opacity, keep black stroke
-      visiblePaths.forEach(p => {
-        p.style.fillOpacity = '0.75';
-      });
-      
-      document.querySelectorAll('.biome-overlay-path').forEach((otherEl) => {
-        if (otherEl !== el) {
-          const otherPaths = otherEl.querySelectorAll('path');
-          otherPaths.forEach(p => {
-            (p as SVGPathElement).style.fillOpacity = '0.3';
-            (p as SVGPathElement).style.strokeOpacity = '0.3';
-          });
-        }
-      });
     });
 
     pathEl.addEventListener('mouseleave', () => {
-      const tooltip = getBiomeTooltip();
-      tooltip.style.display = 'none';
-      
-      // Reset to default state
-      visiblePaths.forEach(p => {
-        p.style.fillOpacity = '0.3';
-        p.style.stroke = '#000000';
-        p.style.strokeOpacity = '1';
-      });
-      
-      document.querySelectorAll('.biome-overlay-path').forEach((otherEl) => {
-        if (otherEl !== el) {
-          const otherPaths = otherEl.querySelectorAll('path');
-          otherPaths.forEach(p => {
-            (p as SVGPathElement).style.fillOpacity = '0.3';
-            (p as SVGPathElement).style.strokeOpacity = '1';
-          });
-        }
-      });
+      getBiomeTooltip().style.display = 'none';
     });
 
     pathEl.addEventListener('mousemove', (e) => {

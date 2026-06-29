@@ -4801,7 +4801,7 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "Muat seed harian permainan, dibagikan oleh semua pemain hari ini",
     "seedTooltipDaily": "Ini adalah seed lari harian",
-    "seedTooltipCustom": "Noita memiliki lebih dari 2 miliar seed nyata. Bilangan bulat berapa pun dari 1 hingga 2.147.483.647 adalah seed yang valid. Seed harian hari ini ditampilkan dengan warna <span style=\"color:#14b8a6;font-weight:600\">tosca</span>; seed harian kemarin ditampilkan dengan warna <span style=\"color:#eab308;font-weight:600\">kuning tua</span>.",
+    "seedTooltipCustom": "Noita memiliki lebih dari 2 miliar seed nyata. Bilangan bulat berapa pun dari 1 hingga 2.147.483.647 adalah seed yang valid. Seed harian hari ini ditampilkan dengan warna <span style=\"color:var(--daily-fg);font-weight:600\">tosca</span>; seed harian kemarin ditampilkan dengan warna <span style=\"color:var(--prev-fg);font-weight:600\">kuning tua</span>.",
     "previousDaily": "Seed harian sebelumnya",
     "previousDailyDescription": "Muat seed harian permainan kemarin",
     "seedTooltipPreviousDaily": "Ini adalah seed lari harian kemarin"

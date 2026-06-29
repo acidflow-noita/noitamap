@@ -4801,7 +4801,7 @@
     "alreadyGenerated": "Map is already generated for this seed, changing the seed number to another one will regenerate the map",
     "dailyDescription": "今日のデイリーシードを読み込む（全プレイヤー共通）",
     "seedTooltipDaily": "これはデイリーランのシードです",
-    "seedTooltipCustom": "Noita には20億を超える実在のシードがあります。1から2,147,483,647までの整数なら有効なシードです。今日のデイリーシードは<span style=\"color:#14b8a6;font-weight:600\">ティール色</span>、昨日のデイリーシードは<span style=\"color:#eab308;font-weight:600\">濃い黄色</span>で表示されます。",
+    "seedTooltipCustom": "Noita には20億を超える実在のシードがあります。1から2,147,483,647までの整数なら有効なシードです。今日のデイリーシードは<span style=\"color:var(--daily-fg);font-weight:600\">ティール色</span>、昨日のデイリーシードは<span style=\"color:var(--prev-fg);font-weight:600\">濃い黄色</span>で表示されます。",
     "previousDaily": "前回のデイリーシード",
     "previousDailyDescription": "昨日のデイリーシードを読み込む",
     "seedTooltipPreviousDaily": "これは昨日のデイリーランのシードです"

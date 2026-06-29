@@ -86,7 +86,10 @@ export class AppOSD {
     });
 
     this.addHandler("canvas-key", (event: any) => {
-      if (["q", "w", "e", "r", "a", "s", "d", "f"].includes(event.originalEvent.key)) {
+      // Case-insensitive so Shift+R (key "R") is caught too — OSD binds r/R to
+      // rotate the viewport, which we disallow entirely (Shift+R is the drawing
+      // tool's filled-rectangle hotkey and must not also spin the map).
+      if (["q", "w", "e", "r", "a", "s", "d", "f"].includes(event.originalEvent.key.toLowerCase())) {
         event.preventDefaultAction = true;
       }
     });

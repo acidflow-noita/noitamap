@@ -1,21 +1,3 @@
-:root {
-  --bs-dark: #0f172a; /* slate-900 */
-  --bs-dark-rgb: 15, 23, 42;
-  --bs-secondary: #475569; /* slate-600 */
-  --bs-secondary-bg: #334155; /* slate-700 */
-  --bs-secondary-border-subtle: #475569; /* slate-600 */
-  --bs-border-color: #334155; /* slate-700 */
-  --bs-body-bg: #020617; /* slate-950 */
-  --bs-tertiary-bg: #1e293b; /* slate-800 */
-
-  /* Popover overwrites */
-  --bs-popover-bg: #1e293b !important;
-  --bs-popover-border-color: #334155 !important;
-  --bs-popover-header-bg: #0f172a !important;
-  --bs-popover-header-color: #f8fafc !important;
-  --bs-popover-body-color: #e2e8f0 !important;
-}
-
 #renderer-form {
   display: none !important;
 }
@@ -29,17 +11,17 @@ html {
 }
 
 .popover .popover-arrow::after {
-  border-bottom-color: #1e293b !important;
-  border-top-color: #1e293b !important;
+  border-bottom-color: var(--surface-1) !important;
+  border-top-color: var(--surface-1) !important;
 }
 
 .popover .popover-arrow::before {
-  border-bottom-color: #334155 !important;
-  border-top-color: #334155 !important;
+  border-bottom-color: var(--border-strong) !important;
+  border-top-color: var(--border-strong) !important;
 }
 
 .popover-header {
-  border-bottom: 1px solid #334155 !important;
+  border-bottom: 1px solid var(--border-strong) !important;
 }
 
 .pro-icon {
@@ -53,39 +35,40 @@ html {
 }
 
 .navbar.mapNavbar {
-  background-color: oklch(12.9% 0.042 264.695) !important;
-  border-bottom: 1px solid #334155; /* slate-700 */
+  background-color: var(--bg) !important;
+  border-bottom: 1px solid var(--border-strong);
 }
 
 /* ── UI Facelift: soften aggressive outlines (Tailwind 4 palette) ──────── */
 
 .navbar .btn-outline-light {
-  --bs-btn-color: #cbd5e1; /* slate-300 */
-  --bs-btn-border-color: #475569; /* slate-600 */
-  --bs-btn-hover-color: #f1f5f9; /* slate-100 */
-  --bs-btn-hover-bg: #33415540; /* slate-700 / 25% */
-  --bs-btn-hover-border-color: #94a3b8; /* slate-400 */
-  --bs-btn-active-color: #f8fafc; /* slate-50 */
-  --bs-btn-active-bg: #47556940; /* slate-600 / 25% */
-  --bs-btn-active-border-color: #94a3b8; /* slate-400 */
+  --bs-btn-color: var(--text-muted);
+  --bs-btn-border-color: var(--border-strong);
+  --bs-btn-hover-color: var(--text);
+  --bs-btn-hover-bg: var(--accent-bg);
+  --bs-btn-hover-border-color: var(--accent-strong);
+  --bs-btn-active-color: var(--accent-fg);
+  --bs-btn-active-bg: var(--accent-bg);
+  --bs-btn-active-border-color: var(--accent-strong);
 }
 
+/* Facelift: checked toggle = calm accent-tinted state (was inverted solid-light block) */
 .navbar .btn-check:checked + .btn-outline-light {
-  --bs-btn-active-color: #0f172a; /* slate-900 */
-  --bs-btn-active-bg: #cbd5e1; /* slate-300 */
-  --bs-btn-active-border-color: #cbd5e1; /* slate-300 */
-  color: #0f172a;
-  background-color: #cbd5e1;
-  border-color: #cbd5e1;
+  --bs-btn-active-color: var(--accent-fg);
+  --bs-btn-active-bg: var(--accent-bg);
+  --bs-btn-active-border-color: var(--accent-strong);
+  color: var(--accent-fg);
+  background-color: var(--accent-bg);
+  border-color: var(--accent-strong);
 }
 
 /* Soften runfast (warning) button */
 .navbar #goToMainWebsiteButton {
-  --bs-btn-color: #94a3b8; /* slate-400 */
-  --bs-btn-border-color: #475569; /* slate-600 */
-  --bs-btn-hover-color: #fbbf24; /* amber-400 */
-  --bs-btn-hover-border-color: #fbbf2466; /* amber-400 / 40% */
-  --bs-btn-hover-bg: #fbbf2414; /* amber-400 / 8% */
+  --bs-btn-color: var(--text-muted);
+  --bs-btn-border-color: var(--border-strong);
+  --bs-btn-hover-color: var(--warning-fg);
+  --bs-btn-hover-border-color: var(--warning-fg);
+  --bs-btn-hover-bg: var(--warning-bg);
 }
 
 /* ── Dropdown menus: match Tailwind 4 dark palette ──────────────────────── */
@@ -95,38 +78,38 @@ html {
    the selected map's badge colors exactly. */
 .dropdown-menu .badge.text-bg-primary,
 .map-badge-icon-only.text-bg-primary {
-  background-color: #451a03 !important; /* amber-950 */
-  color: #fbbf24 !important; /* amber-400 */
-  border: 1px solid #92400e !important; /* amber-800 */
+  background-color: var(--warning-bg) !important;
+  color: var(--warning-fg) !important;
+  border: 1px solid oklch(0.555 0.163 48.998) !important; /* amber-800 */
 }
 
 .dropdown-menu .badge.text-bg-success,
 .map-badge-icon-only.text-bg-success {
-  background-color: #022c22 !important; /* emerald-950 */
-  color: #34d399 !important; /* emerald-400 */
-  border: 1px solid #065f46 !important; /* emerald-800 */
+  background-color: var(--daily-bg) !important;
+  color: var(--daily-fg) !important;
+  border: 1px solid oklch(0.508 0.118 165.612) !important; /* emerald-800 */
 }
 
 .dropdown-menu .badge.text-bg-info,
 .map-badge-icon-only.text-bg-info {
-  background-color: #083344 !important; /* cyan-950 */
-  color: #22d3ee !important; /* cyan-400 */
-  border: 1px solid #155e75 !important; /* cyan-800 */
+  background-color: var(--info-bg) !important;
+  color: var(--info-fg) !important;
+  border: 1px solid oklch(0.424 0.199 265.638) !important; /* blue-800 */
 }
 
 .dropdown-menu .badge.text-bg-light,
 .map-badge-icon-only.text-bg-light {
-  background-color: #0f172a !important; /* slate-900 */
-  color: #94a3b8 !important; /* slate-400 */
-  border: 1px solid #1e293b !important; /* slate-800 */
+  background-color: var(--surface-1) !important;
+  color: var(--text-muted) !important;
+  border: 1px solid var(--surface-2) !important;
 }
 
 /* Date badge generated dynamically in nav.ts uses border-info-subtle */
 .dropdown-menu .badge.border-info-subtle,
 .map-badge-icon-only.border-info-subtle {
   background-color: transparent !important;
-  color: #64748b !important; /* slate-500 */
-  border-color: #334155 !important; /* slate-700 */
+  color: var(--text-faint) !important;
+  border-color: var(--border-strong) !important;
   font-weight: normal;
 }
 
@@ -141,7 +124,7 @@ html {
   padding: 0;
   font-size: 0.85em;
   line-height: 1;
-  border-radius: 0.3rem;
+  border-radius: var(--radius-control);
 }
 
 .map-badge-icon-only + .map-badge-icon-only {
@@ -154,21 +137,22 @@ html {
 
 .dropdown-menu {
   --bs-dropdown-link-active-bg: var(--accent-bg);
-  --bs-dropdown-link-active-color: var(--accent-color);
-  background-color: oklch(15.6% 0.026 264.695); /* ~slate-900 */
-  border: 1px solid #334155; /* slate-700 */
-  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.4);
+  --bs-dropdown-link-active-color: var(--accent-fg);
+  background-color: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-panel);
 }
 
 .dropdown-item,
 .dropdown-menu .nav-link {
-  color: #cbd5e1; /* slate-300 */
+  color: var(--text-muted);
 }
 
 .dropdown-item:focus,
 .dropdown-item:hover {
-  background-color: #33415560; /* slate-700 / 37% */
-  color: #f1f5f9; /* slate-100 */
+  background-color: oklch(1 0 0 / 0.06);
+  color: var(--text);
 }
 
 /* Active state inside dropdowns (maps, language, etc.) */
@@ -176,7 +160,7 @@ html {
 .dropdown-menu .nav-link.active:focus,
 .dropdown-menu .nav-link.active:hover {
   background-color: var(--accent-bg);
-  color: var(--accent-color);
+  color: var(--accent-fg);
 }
 
 .flex {
@@ -205,13 +189,6 @@ html {
 }
 
 :root {
-  /* ── Accent color: change these two values to retheme all active/selected states ── */
-  --accent-color: #14b8a6; /* teal-500 */
-  --accent-bg: #14b8a622; /* teal-500 / 13% */
-
-  /* Override Bootstrap font stack so all components (popovers, tooltips, etc.) use Inter */
-  --bs-body-font-family: Inter, sans-serif;
-  --bs-font-sans-serif: Inter, sans-serif;
   font-family: Inter, sans-serif;
   font-feature-settings:
     "liga" 1,
@@ -243,7 +220,7 @@ html {
 .coordinate {
   position: absolute;
   pointer-events: none;
-  color: white;
+  color: oklch(1 0 0);
   font-family: Inter, sans-serif;
   font-feature-settings: "tnum", "zero", "cv09", "cv02", "cv03", "cv04";
   font-weight: 400;
@@ -299,8 +276,6 @@ html {
     1 86.7%,
     1 100%
   );
-  /*animation-timing-function: linear;*/
-  /* use this if you don't like the above */
 }
 
 .loadingIndicator::after {
@@ -316,36 +291,6 @@ html {
     1px 0 white,
     0 -1px white;
   opacity: 0.4;
-}
-
-@-ms-keyframes spin {
-  from {
-    -ms-transform: rotate(0deg);
-  }
-
-  to {
-    -ms-transform: rotate(360deg);
-  }
-}
-
-@-moz-keyframes spin {
-  from {
-    -moz-transform: rotate(0deg);
-  }
-
-  to {
-    -moz-transform: rotate(360deg);
-  }
-}
-
-@-webkit-keyframes spin {
-  from {
-    -webkit-transform: rotate(0deg);
-  }
-
-  to {
-    -webkit-transform: rotate(360deg);
-  }
 }
 
 @keyframes spin {
@@ -368,6 +313,10 @@ body.toggle-hidden div.osOverlayHighlight {
   gap: 4px;
   flex-wrap: nowrap;
   align-items: center;
+  justify-content: center;
+  min-height: 31px; /* standard btn-sm height — keeps icon-only buttons (e.g. the
+                       drawing toggle, whose lone SVG is shorter than a glyph)
+                       square/consistent with text buttons in the navbar */
 }
 
 .icon-runfast {
@@ -441,10 +390,10 @@ body.toggle-hidden div.osOverlayHighlight {
   position: absolute;
   top: 100%;
   max-width: 100%;
-  background: #000a;
+  background: var(--glass-bg);
   height: 0;
-  border: 0px solid #fff;
-  border-radius: 0.25em;
+  border: 0px solid var(--border);
+  border-radius: var(--radius-control);
   overflow: hidden;
   list-style-type: none;
   padding: 0;
@@ -452,9 +401,9 @@ body.toggle-hidden div.osOverlayHighlight {
 
 #searchInput,
 .search-input {
-  background-color: #0f172a; /* slate-900 */
-  border: 1px solid #475569; /* slate-600 */
-  color: #e2e8f0; /* slate-200 */
+  background-color: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
   font-size: 14px;
   transition:
     border-color 0.2s,
@@ -463,9 +412,9 @@ body.toggle-hidden div.osOverlayHighlight {
 
 #searchInput:focus,
 .search-input:focus {
-  border-color: #94a3b8; /* slate-400 */
-  box-shadow: 0 0 0 2px #4755691a; /* slate-600 / 10% */
-  background-color: #1e293b; /* slate-800 */
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 2px var(--accent-bg);
+  background-color: var(--surface-2);
 }
 
 #searchInput::placeholder,
@@ -483,7 +432,7 @@ body.toggle-hidden div.osOverlayHighlight {
 
 .search-result {
   padding: 0.5em;
-  border-bottom: 1px solid #fff8;
+  border-bottom: 1px solid var(--border);
   overflow: hidden;
   text-wrap: nowrap;
   text-overflow: ellipsis;
@@ -492,11 +441,11 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 .search-result:hover {
-  background: #fff2;
+  background: oklch(1 0 0 / 0.06);
 }
 
 .search-result:focus {
-  background: #fff2;
+  background: oklch(1 0 0 / 0.06);
 }
 
 #osContainer :focus-visible {
@@ -507,10 +456,10 @@ body.toggle-hidden div.osOverlayHighlight {
   visibility: hidden;
   position: absolute;
   top: 100%;
-  background: #000a;
-  backdrop-filter: blur(0.25em);
-  border: 1px solid #fff8;
-  border-radius: 0.25em;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
   overflow-y: auto;
   max-height: calc(100vh - 100%);
   padding: 0;
@@ -525,7 +474,7 @@ body.toggle-hidden div.osOverlayHighlight {
 #spellList li {
   list-style-type: none;
   padding: 0.5em;
-  border-bottom: 1px solid #fff8;
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
   user-select: none;
   display: flex;
@@ -534,7 +483,7 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 #spellList li:hover {
-  background: #fff2;
+  background: oklch(1 0 0 / 0.06);
 }
 
 #spellList li img {
@@ -560,12 +509,12 @@ body.toggle-hidden div.osOverlayHighlight {
     top: 100%;
     max-height: calc(100vh - 100%);
     overflow: auto;
-    background: #000a;
-    border: 1px solid #fff8;
-    border-radius: 0.25em;
+    background: var(--glass-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
     padding: 0.5em;
     visibility: hidden;
-    backdrop-filter: blur(0.25em);
+    backdrop-filter: var(--glass-blur);
 
     & > blockquote {
       font-size: 0.75em;
@@ -585,19 +534,6 @@ body.toggle-hidden div.osOverlayHighlight {
 .icon-label-hover:focus .label-text,
 .icon-label-hover:focus-visible .label-text {
   display: inline;
-}
-
-#unifiedSearchResultsOverlay {
-  position: absolute;
-  z-index: 9999;
-  background: #181a20ee;
-  border-radius: 0.25em;
-  box-shadow: 0 2px 16px #000a;
-  padding: 0;
-  margin: 0;
-  min-width: 300px;
-  max-width: 400px;
-  overflow: visible;
 }
 
 #unifiedSearchResults {
@@ -621,7 +557,7 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 #overlay-selector {
-  border-radius: 4px;
+  border-radius: var(--radius-control);
 }
 
 #overlay-selector .btn {
@@ -668,7 +604,7 @@ body.toggle-hidden div.osOverlayHighlight {
 
 #unifiedSearchResults .search-result {
   padding: 0.5em;
-  border-bottom: 1px solid #fff8;
+  border-bottom: 1px solid var(--border);
   overflow: hidden;
   text-wrap: nowrap;
   text-overflow: ellipsis;
@@ -685,7 +621,7 @@ body.toggle-hidden div.osOverlayHighlight {
 
 #unifiedSearchResults .search-result:hover,
 #unifiedSearchResults .search-result:focus {
-  background: #fff2;
+  background: oklch(1 0 0 / 0.06);
 }
 
 #spellModalOverlay {
@@ -694,7 +630,7 @@ body.toggle-hidden div.osOverlayHighlight {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.7);
+  background: oklch(0 0 0 / 0.7);
   display: none;
   z-index: 10000;
   justify-content: center;
@@ -706,16 +642,16 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 #spellModalContent {
-  background: #222933;
+  background: var(--surface-1);
   padding: 2em;
-  border-radius: 0.5em;
+  border-radius: var(--radius-panel);
   min-width: 300px;
   max-width: 90vw;
   max-height: 90vh;
   overflow: auto;
   position: relative;
-  color: #fff;
-  box-shadow: 0 2px 32px #000a;
+  color: var(--text);
+  box-shadow: var(--shadow-panel);
 }
 
 #closeSpellModal {
@@ -725,20 +661,16 @@ body.toggle-hidden div.osOverlayHighlight {
   font-size: 1.5em;
   background: none;
   border: none;
-  color: #fff;
+  color: var(--text);
   cursor: pointer;
   transition: color 0.2s;
 }
 
 #closeSpellModal:hover {
-  color: #ffc107;
+  color: var(--warning-fg);
 }
 
-#unifiedSearchResultsOverlay {
-  min-width: 600px;
-  max-width: 600px;
-  width: 600px;
-}
+/* #unifiedSearchResultsOverlay is defined solely in search.css (loads last). */
 
 /* Ensure result rows can't push the panel wider than its fixed width:
    long children (wand sprite + spell row, item icon strips) must wrap. */
@@ -763,14 +695,14 @@ body.toggle-hidden div.osOverlayHighlight {
 .spell-main-line,
 .overlay-main-line {
   font-weight: 500;
-  color: #fff;
+  color: var(--text);
 }
 
 .search-result-english,
 .spell-english-line,
 .overlay-english-line {
   font-size: 0.85em;
-  color: #888;
+  color: var(--text-muted);
   font-style: italic;
   margin-top: 2px;
 }
@@ -779,7 +711,7 @@ body.toggle-hidden div.osOverlayHighlight {
 .spell-info-line,
 .overlay-aliases-line {
   font-size: 0.85em;
-  color: #666;
+  color: var(--text-faint);
   margin-top: 2px;
 }
 
@@ -820,28 +752,33 @@ body.toggle-hidden div.osOverlayHighlight {
 
 /* ── Dynamic map toolbar ─────────────────────────────────────────────────── */
 
+/* Daily / prev-daily buttons carry Bootstrap's btn-outline-info / -warning
+   base classes, whose --bs-btn-* palette (cyan / amber) would otherwise leak
+   through in focus/active/disabled states. Override the full variable set so
+   the button is one consistent hue everywhere — and use --daily-fg / --prev-fg
+   so it matches the seed-input tint and the seed-report links exactly. */
 #dynamicDailySeedButton {
-  color: #0d9488; /* teal-600 */
-  border-color: #0d948873; /* teal-600 / 45% */
-}
-
-#dynamicDailySeedButton:hover,
-#dynamicDailySeedButton:focus {
-  background-color: #0d948833; /* teal-600 / 20% */
-  border-color: #0d9488b3; /* teal-600 / 70% */
-  color: #5eead4; /* teal-300 */
+  --bs-btn-color: var(--daily-fg);
+  --bs-btn-border-color: color-mix(in oklch, var(--daily-fg) 45%, transparent);
+  --bs-btn-hover-color: var(--daily-fg);
+  --bs-btn-hover-bg: var(--daily-bg);
+  --bs-btn-hover-border-color: color-mix(in oklch, var(--daily-fg) 70%, transparent);
+  --bs-btn-focus-border-color: color-mix(in oklch, var(--daily-fg) 70%, transparent);
+  --bs-btn-active-color: var(--daily-fg);
+  --bs-btn-active-bg: var(--daily-bg);
+  --bs-btn-active-border-color: color-mix(in oklch, var(--daily-fg) 70%, transparent);
 }
 
 #dynamicPrevDailySeedButton {
-  color: #ca8a04; /* yellow-600 */
-  border-color: #ca8a0473; /* yellow-600 / 45% */
-}
-
-#dynamicPrevDailySeedButton:hover,
-#dynamicPrevDailySeedButton:focus {
-  background-color: #ca8a0433; /* yellow-600 / 20% */
-  border-color: #ca8a04b3; /* yellow-600 / 70% */
-  color: #fde047; /* yellow-300 */
+  --bs-btn-color: var(--prev-fg);
+  --bs-btn-border-color: color-mix(in oklch, var(--prev-fg) 45%, transparent);
+  --bs-btn-hover-color: var(--prev-fg);
+  --bs-btn-hover-bg: var(--prev-bg);
+  --bs-btn-hover-border-color: color-mix(in oklch, var(--prev-fg) 70%, transparent);
+  --bs-btn-focus-border-color: color-mix(in oklch, var(--prev-fg) 70%, transparent);
+  --bs-btn-active-color: var(--prev-fg);
+  --bs-btn-active-bg: var(--prev-bg);
+  --bs-btn-active-border-color: color-mix(in oklch, var(--prev-fg) 70%, transparent);
 }
 
 /* Seed input -- daily seed colored, custom seed white */
@@ -861,11 +798,11 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 #dynamicSeedInput.seed-daily {
-  color: #14b8a6; /* teal-500 */
+  color: var(--daily-fg);
 }
 
 #dynamicSeedInput.seed-prev-daily {
-  color: #eab308; /* yellow-500 */
+  color: var(--prev-fg);
 }
 
 /* Generate button: match sidebar disabled styling */
@@ -873,8 +810,8 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 #dynamicGenerateButton:disabled {
-  --bs-btn-disabled-border-color: #33415580; /* slate-700 / 50% */
-  --bs-btn-disabled-color: #64748b; /* slate-500 */
+  --bs-btn-disabled-border-color: var(--border);
+  --bs-btn-disabled-color: var(--text-faint);
   --bs-btn-disabled-opacity: 0.5;
 }
 
@@ -909,7 +846,7 @@ body.toggle-hidden div.osOverlayHighlight {
   position: relative;
   height: 0.2rem;
   display: flex;
-  background: rgba(148, 163, 184, 0.08); /* slate-400 @ 8% */
+  background: oklch(0.704 0.040 256.788 / 0.08); /* slate-400 @ 8% */
   overflow: hidden;
 }
 
@@ -917,8 +854,7 @@ body.toggle-hidden div.osOverlayHighlight {
   position: relative;
   height: 100%;
   max-width: 33.34%;
-  background: linear-gradient(90deg, #0891b2 0%, #22d3ee 100%); /* cyan-600 → cyan-400 */
-  box-shadow: 0 0 0.375rem rgba(34, 211, 238, 0.55);
+  background: var(--accent-strong);
   transition: width 0.25s ease;
   overflow: hidden;
 }
@@ -927,7 +863,7 @@ body.toggle-hidden div.osOverlayHighlight {
 .seg-download,
 .seg-generation,
 .seg-items {
-  background: linear-gradient(90deg, #0891b2 0%, #22d3ee 100%);
+  background: var(--accent-strong);
 }
 
 /* Shimmer sweeping inside each filled bar segment — clipped to the fill width
@@ -936,7 +872,7 @@ body.toggle-hidden div.osOverlayHighlight {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, oklch(1 0 0 / 0.45) 50%, transparent 100%);
   transform: translateX(-100%);
   animation: loading-strip-shimmer 1.4s linear infinite;
   pointer-events: none;
@@ -947,7 +883,7 @@ body.toggle-hidden div.osOverlayHighlight {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(34, 211, 238, 0.18) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, oklch(1 0 0 / 0.1) 50%, transparent 100%);
   transform: translateX(-100%);
   animation: loading-strip-shimmer 2.2s linear infinite;
   pointer-events: none;
@@ -960,11 +896,6 @@ body.toggle-hidden div.osOverlayHighlight {
   100% {
     transform: translateX(100%);
   }
-}
-
-/* Legacy "indeterminate" class from JS — no-op now, shimmer is always on. */
-.loading-strip-bar-track.indeterminate::after {
-  /* handled by base rule */
 }
 
 /* Floating pill label. Anchored by its RIGHT edge to a fixed offset from
@@ -981,14 +912,14 @@ body.toggle-hidden div.osOverlayHighlight {
   padding: 0.25rem 0.75rem;
   font-size: 0.72rem;
   line-height: 1.1;
-  color: #cbd5e1; /* slate-300 */
-  background: rgba(9, 13, 20, 0.82);
-  border: 1px solid #22d3ee; /* cyan-400 — matches loading bar */
-  border-radius: 999px;
+  color: var(--text-muted);
+  background: var(--glass-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
   white-space: nowrap;
-  backdrop-filter: blur(0.375rem);
-  -webkit-backdrop-filter: blur(0.375rem);
-  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.35);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-pop);
 }
 
 .loading-strip-phase {
@@ -997,7 +928,7 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 .loading-strip-pct {
-  color: #22d3ee; /* cyan-400 */
+  color: var(--text);
   font-feature-settings:
     "tnum" 1,
     "zero" 1,
@@ -1021,7 +952,7 @@ body.toggle-hidden div.osOverlayHighlight {
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  color: #999;
+  color: var(--text-muted);
   font-size: 0.85rem;
 }
 
@@ -1042,7 +973,7 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 .skeleton-pulse {
-  background: linear-gradient(90deg, #2a2d35 25%, #3a3d45 50%, #2a2d35 75%);
+  background: linear-gradient(90deg, var(--surface-1) 25%, var(--surface-2) 50%, var(--surface-1) 75%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.6s ease infinite;
   border-radius: 3px;
@@ -1085,7 +1016,7 @@ body.toggle-hidden div.osOverlayHighlight {
 .search-no-results {
   padding: 16px;
   text-align: center;
-  color: #888;
+  color: var(--text-muted);
   font-size: 0.9rem;
   font-style: italic;
 }
