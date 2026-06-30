@@ -185,7 +185,12 @@ async function handlePatreonCallback(request: Request, env: Env, secrets: Secret
     return redirectToError(env, "expired_state");
   }
 
-  const finalRedirectUrl = redirectUrl || "https://noitamap.com";
+  // SECURITY: the signed state only proves WE signed the redirect — an attacker
+  // can still request /auth/login?redirect=https://evil with their own browser
+  // and get it signed. Validate the redirect's origin against ALLOWED_ORIGINS
+  // before we ever append the token to it, or we hand the victim's JWT to any
+  // site (open redirect → token exfiltration).
+  const finalRedirectUrl = allowedRedirect(redirectUrl, env);
 
   if (error) {
     return Response.redirect(`${finalRedirectUrl}?auth_error=${encodeURIComponent(error)}`, 302);
@@ -323,6 +328,24 @@ async function handleAuthCheck(request: Request, secrets: Secrets, allowedOrigin
 function getAllowedOrigin(origin: string, env: Env): string {
   const allowed = env.ALLOWED_ORIGINS.split(",").map((o) => o.trim());
   return allowed.includes(origin) ? origin : allowed[0];
+}
+
+/**
+ * Resolve the post-login redirect to a trusted absolute URL. The token is
+ * appended to this URL, so it MUST point at an allowed origin — otherwise the
+ * flow is an open redirect that leaks the JWT. Returns the original URL when
+ * its origin is allowlisted, else the first allowed origin as a safe fallback.
+ */
+function allowedRedirect(redirectUrl: string, env: Env): string {
+  const allowed = env.ALLOWED_ORIGINS.split(",").map((o) => o.trim()).filter(Boolean);
+  const fallback = allowed[0] || "https://noitamap.com";
+  if (!redirectUrl) return fallback;
+  try {
+    const u = new URL(redirectUrl);
+    return allowed.includes(u.origin) ? redirectUrl : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 function handleCORS(allowedOrigin: string): Response {

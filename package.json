@@ -8,7 +8,7 @@
     "preinstall": "git submodule update --init --recursive",
     "test": "vitest run",
     "build": "npm run sync-translations && npm run add-biome-translations && npm run bake-extended-translations && npm run generate-creature-data && npm run bake-creature-translations && npm run check-translations && npm run copy-flags && npm run copy-locales && npm run copy-telescope-data && npm run build-spritesheet && npm run generate-reaction-roles && npm run generate-material-effects && vite build",
-    "check-poi-coverage": "vitest run tests/poi-name-coverage.test.ts tests/poi-sprite-coverage.test.ts",
+    "check-poi-coverage": "vitest run tests/poi-name-coverage.test.ts tests/poi-sprite-coverage.test.ts tests/poi-item-emission-coverage.test.ts",
     "build-spritesheet": "node build_scripts/build-spritesheet.cjs",
     "generate-reaction-roles": "node build_scripts/generate-reaction-roles.cjs",
     "generate-material-effects": "node build_scripts/generate-material-effects.cjs",

@@ -1448,6 +1448,37 @@ export async function exportBiomeRegionImages(
   const MAP_TOP_LEFT_X = -17920;
   const BIOME_IMAGE_TOP_Y = -14 * CHUNK;
 
+  // Fold POI marker extents into region bounds. Region X/Y come only from biome
+  // tile overlays, but markers are baked into decor cells at absolute world
+  // coords and the upscale compositor only samples decor inside [minX, maxX) x
+  // [minY, maxY). A marker past the biome edge (e.g. the gun_room "It's a wand,
+  // ok?" experimental wand at x~16121, east of pw=0's biome edge ~15870 and west
+  // of pw=1's ~18940) lands in an inter-region gap and is clipped from the baked
+  // DZI on every bake — even though the live map shows it (markers are a separate
+  // OSD layer there). Group marker extents by world column (round(osdX/stride))
+  // so a cross-column POI misfiled into another pw's poisByPW bucket expands the
+  // region it actually sits in, never balloons a wrong region or double-draws.
+  const markerBoundsByCol = new Map<number, { minX: number; minY: number; maxX: number; maxY: number }>();
+  try {
+    const md = await buildMarkerData(result);
+    for (const it of md.items) {
+      const col = Math.round(it.osdX / pwOffsetPixels);
+      const l = it.osdX - it.w / 2, r = it.osdX + it.w / 2;
+      const t = it.osdY - it.h / 2, b = it.osdY + it.h / 2;
+      const cur = markerBoundsByCol.get(col);
+      if (cur) {
+        if (l < cur.minX) cur.minX = l;
+        if (r > cur.maxX) cur.maxX = r;
+        if (t < cur.minY) cur.minY = t;
+        if (b > cur.maxY) cur.maxY = b;
+      } else {
+        markerBoundsByCol.set(col, { minX: l, minY: t, maxX: r, maxY: b });
+      }
+    }
+  } catch (e) {
+    console.warn("[export] marker-bounds fold skipped:", e);
+  }
+
   const out: BiomeRegionImage[] = [];
 
   for (const pw of pwOrder) {
@@ -1477,6 +1508,18 @@ export async function exportBiomeRegionImages(
       if (validOverlays.length === 0) {
         console.warn(`[export] skipped empty region pw=${pw} pvt=${pvt}`);
         continue;
+      }
+
+      // Expand to cover markers in this pw's world column so decor sprites past
+      // the biome edge (inter-region gaps) aren't clipped from the baked DZI.
+      // Markers only sit on the main plane (pvt=0); heaven/hell bands carry no
+      // decor at the markers' Y, so widening them would just grow the canvas.
+      const mb = pvt === 0 ? markerBoundsByCol.get(pw) : undefined;
+      if (mb) {
+        if (mb.minX < minX) minX = mb.minX;
+        if (mb.maxX > maxX) maxX = mb.maxX;
+        if (mb.minY < minY) minY = mb.minY;
+        if (mb.maxY > maxY) maxY = mb.maxY;
       }
 
       const compositeW = Math.ceil((maxX - minX) / 10);

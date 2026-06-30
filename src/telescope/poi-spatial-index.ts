@@ -287,8 +287,12 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     }
     if (item === "emerald_tablet") return "item:emerald_tablet";
     // Lore books (A Cunning Contraption, Alchemist's Note, ...) use the small
-    // book prop sprite; there is no plain item:book key in the atlas.
-    if (item === "book") return "item:book_s";
+    // book prop sprite. The Mestarien mestari room "book" is a regular brown
+    // book in-world, so it uses the full-size book sprite (item:book).
+    if (item === "book") {
+      if ((poi as any).nameKey === "booktitle_mestari") return "item:book";
+      return "item:book_s";
+    }
     // Achievement Pillar segments. Structural pieces (base/fade/cap) are always
     // full colour; engraved achievement segments use the grayscale twin when locked.
     if (item === "pillar_segment") {
@@ -302,10 +306,27 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     // Paha Silmä (Evil Eye): use the ui_gfx inventory icon (ui_item:evil_eye);
     // the items_gfx world sprite (item:evil_eye) reads wrong on the map.
     if (item === "paha_silma") return "ui_item:evil_eye";
-    if (item === "egg" || item.startsWith("egg_")) return `item:${item}`;
+    // Eggs: egg_purple/egg_slime have an items_gfx sprite (item:egg_*); the
+    // other variants (fire/monster) only exist as baked entity sprites, so fall
+    // back to enemy:egg_* when there's no item: key.
+    if (item === "egg" || item.startsWith("egg_")) {
+      const k = `item:${item}`;
+      if (!atlas || atlas[k]) return k;
+      const e = `enemy:${item}`;
+      if (atlas[e]) return e;
+      return k;
+    }
     // Karl (racecar) and Essence Eater have no item:* sprite — use the entity sprite.
     if (item === "karl") return "enemy:racing_cart";
     if (item === "essence_eater") return "enemy:essence_eater";
+    // Vuoksikivi (Waterstone): chest-loot item. Telescope emits a bare
+    // {item:'vuoksikivi'} with no item:vuoksikivi atlas key — use the
+    // items_gfx waterstone sprite.
+    if (item === "vuoksikivi") return "item:waterstone";
+    // Sampo: the legendary artifact has no item:* icon — use the entity sprite.
+    if (item === "sampo") return "enemy:sampo";
+    // Greed die (chest/utility-box loot): use the prop sprite (no item: key).
+    if (item === "greed_die") return "prop:greed_die";
     // Altar-sacrifice props: no item:* sprite, use the baked entity sprites.
     if (item === "worm_crystal") return "enemy:physics_worm_deflector_crystal";
     if (item === "greed_crystal") return "enemy:greed_crystal";
@@ -325,6 +346,7 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     const variant = (poi as any).chestVariant;
     if (variant === "dark") return "building:chest_dark";
     if (variant === "coral") return "building:chest_light";
+    if (variant === "steel") return "building:chest_steel";
     return "item:chest_random";
   }
   if (poi.type === "pacifist_chest") return "item:chest_random";

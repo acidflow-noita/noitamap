@@ -692,6 +692,11 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
           x: pos.x + 256,
           y: pos.y + 256,
           biome: `friend_${friendRoom}`,
+          // The friend cave renders the `cavern` pixel scene, which already
+          // contains Toveri's sprite. Drawing the enemy:friend marker on top
+          // doubles it — so this is a clickOnly hit target (card opens on
+          // click; no second sprite painted on map or baked into the DZI).
+          clickOnly: true,
           items: [{ type: "item", item: "full_heal", name: "Full Health Regeneration" }],
         } as any);
       }
@@ -1214,6 +1219,18 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       x: 13090,
       y: 8,
       biome: "wandcave",
+    } as any);
+
+    // Iron (steel) chest containing the Essence of Earth (EoE). Fixed
+    // main-world spawn the telescope scanner never emits — place it statically.
+    poisByPW["0,0"]?.push({
+      type: "chest",
+      chestVariant: "steel",
+      name: "Iron chest",
+      x: -5035,
+      y: 157,
+      biome: "excavationsite",
+      items: [{ type: "item", item: "essence", material: "laser", name: "Essence of Earth", nameKey: "item_essence_laser" }],
     } as any);
 
     // Essence Eaters guarding the overworld essence altars. Absolute world

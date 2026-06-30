@@ -9,6 +9,11 @@ npm run generate
 # Build (sync-translations → add-biome-translations → check-translations → copy-flags → copy-locales → vite build)
 npm run build
 
+# POI sprite/name coverage — warn-only (never blocks deploy). Surfaces empty-square
+# POIs (missing atlas sprite) and raw-name POIs in the CI log without failing.
+npm run check-poi-coverage || echo "::warning::POI coverage check reported gaps (see above) — not blocking deploy"
+
+
 # Copy tilesources.json into dist for runtime access
 cp src/data/tilesources.json dist/tilesources.json
 

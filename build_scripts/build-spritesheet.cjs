@@ -35,6 +35,26 @@ const OUT_JSON = path.join(OUT_DIR, "atlas.json");
 // Write the atlas to BOTH so the bundled atlas never desyncs from the sheet.
 const RUNTIME_JSON = path.resolve(__dirname, "..", "src", "data", "atlas.json");
 
+// On Windows the output file can be transiently locked by another process
+// (Defender real-time scan, or a vite dev server serving public/assets/), which
+// surfaces as errno -4094 (UNKNOWN) / EBUSY / EPERM on open-for-write. The lock
+// window is short, so retry the write a few times with a small backoff instead
+// of failing the whole build.
+function writeFileSyncRetry(file, data, retries = 8, delayMs = 150) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      fs.writeFileSync(file, data);
+      return;
+    } catch (err) {
+      const transient = err && (err.code === "EBUSY" || err.code === "EPERM" || err.code === "UNKNOWN");
+      if (!transient || attempt > retries) throw err;
+      console.warn(`[build-spritesheet] write ${path.basename(file)} locked (${err.code}), retry ${attempt}/${retries}`);
+      const until = Date.now() + delayMs * attempt;
+      while (Date.now() < until) {} // sync busy-wait (this is a one-shot build script)
+    }
+  }
+}
+
 // Max spritesheet width — sprites are packed left-to-right, row by row
 const SHEET_MAX_W = 4096;
 
@@ -119,6 +139,14 @@ const NO_HEURISTIC_CROP_DIRS = [
   "data/props_gfx/",
   "data/props_breakable_gfx/",
 ];
+
+// Specific enemy PNGs that ship WITHOUT a companion .xml but are genuinely
+// wider than tall (single non-animated frame). The width>height heuristic would
+// square-crop them and lose the right edge. Korjauslennokki (Repair Drone) is
+// 12x8 — its emissive twin's XML confirms a single 12x8 "stand" frame.
+const NO_HEURISTIC_CROP_FILES = new Set([
+  "data/enemies_gfx/healerdrone.png",
+]);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -465,7 +493,8 @@ async function main() {
     }
 
     // Crop animated sprites to first frame of the default/idle animation
-    const noHeuristicCrop = NO_HEURISTIC_CROP_DIRS.some((d) => p.startsWith(d));
+    const noHeuristicCrop =
+      NO_HEURISTIC_CROP_DIRS.some((d) => p.startsWith(d)) || NO_HEURISTIC_CROP_FILES.has(p);
     if (xmlData && xmlData.frame_width && xmlData.frame_height) {
       // Find the best animation to use for the first frame:
       // 1. The animation matching default_animation name
@@ -836,14 +865,14 @@ async function main() {
   }
 
   const pngBuf = PNG.sync.write(sheet, { colorType: 6 });
-  fs.writeFileSync(OUT_PNG, pngBuf);
+  writeFileSyncRetry(OUT_PNG, pngBuf);
   console.log(`[build-spritesheet] Wrote ${OUT_PNG} (${(pngBuf.length / 1024).toFixed(1)} KB)`);
 
   const atlasJson = JSON.stringify(atlas, null, 2);
-  fs.writeFileSync(OUT_JSON, atlasJson);
+  writeFileSyncRetry(OUT_JSON, atlasJson);
   console.log(`[build-spritesheet] Wrote ${OUT_JSON} (${Object.keys(atlas).length} entries)`);
 
-  fs.writeFileSync(RUNTIME_JSON, atlasJson);
+  writeFileSyncRetry(RUNTIME_JSON, atlasJson);
   console.log(`[build-spritesheet] Wrote ${RUNTIME_JSON} (runtime bundled atlas)`);
 
   console.log("[build-spritesheet] Done.");
