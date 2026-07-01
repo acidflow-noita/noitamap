@@ -692,11 +692,12 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
           x: pos.x + 256,
           y: pos.y + 256,
           biome: `friend_${friendRoom}`,
-          // The friend cave renders the `cavern` pixel scene, which already
-          // contains Toveri's sprite. Drawing the enemy:friend marker on top
-          // doubles it — so this is a clickOnly hit target (card opens on
-          // click; no second sprite painted on map or baked into the DZI).
-          clickOnly: true,
+          // Toveri is a spawned entity, NOT part of the friend cave's `cavern`
+          // pixel scene (that scene is room art only). So he needs a real
+          // marker: getSpriteKey maps type "friend" -> enemy:friend, drawn once
+          // by the marker tile source (live) and the decor bake (DZI). The old
+          // addBossOverlays path that used to double him was removed, so there
+          // is no second sprite to collide with.
           items: [{ type: "item", item: "full_heal", name: "Full Health Regeneration" }],
         } as any);
       }
