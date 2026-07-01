@@ -5064,6 +5064,8 @@
   "poi": {
     "amount": "数量",
     "contains": "包含",
+    "drops": "掉落物",
+    "essenceEaterConvert": "精髓吞噬者会将携带的任何精髓转化为对应的元素石。",
     "gold": "金子",
     "heartSmall": "心脏 (+25 HP)",
     "heartBig": "心脏 (+50 HP)",

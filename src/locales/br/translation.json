@@ -5064,6 +5064,8 @@
   "poi": {
     "amount": "Quantia",
     "contains": "Contém",
+    "drops": "Espólio",
+    "essenceEaterConvert": "Os Papa-essência convertem qualquer Essência carregada na pedra elemental correspondente.",
     "gold": "Ouro",
     "heartSmall": "Coração (+25 HP)",
     "heartBig": "Coração (+50 HP)",

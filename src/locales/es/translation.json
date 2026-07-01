@@ -5064,6 +5064,8 @@
   "poi": {
     "amount": "Cantidad",
     "contains": "Contiene",
+    "drops": "Botín",
+    "essenceEaterConvert": "Los Tragaesencia convierten cualquier Esencia que lleves en su piedra elemental correspondiente.",
     "gold": "Oro",
     "heartSmall": "Corazón (+25 puntos de vida)",
     "heartBig": "Corazón (+50 puntos de vida)",

@@ -1222,16 +1222,18 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       biome: "wandcave",
     } as any);
 
-    // Iron (steel) chest containing the Essence of Earth (EoE). Fixed
-    // main-world spawn the telescope scanner never emits — place it statically.
+    // Iron (steel) chest holding The End Of Everything (ALL_SPELLS) in the deep
+    // End of Everything room. Fixed main-world spawn the telescope scanner never
+    // emits — place it statically.
     poisByPW["0,0"]?.push({
       type: "chest",
       chestVariant: "steel",
       name: "Iron chest",
-      x: -5035,
-      y: 157,
-      biome: "excavationsite",
-      items: [{ type: "item", item: "essence", material: "laser", name: "Essence of Earth", nameKey: "item_essence_laser" }],
+      x: -5036,
+      y: 15149,
+      biome: "the_end",
+      wiki: "https://noita.wiki.gg/wiki/The_End_of_Everything",
+      items: [{ type: "item", item: "spell", spell: "ALL_SPELLS", name: "The End Of Everything" }],
     } as any);
 
     // Essence Eaters guarding the overworld essence altars. Absolute world
@@ -1247,6 +1249,13 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       [-43235, -174], // snow-wasteland EEs (PW 0 / +1 / -1)
     ];
     for (const [ex, ey] of essenceEaters) {
+      // Essence Eaters convert any carried essence into its corresponding
+      // elemental stone (https://noita.wiki.gg/wiki/Essence_Eater). The stones
+      // are NOT world spawns — they only appear if the player sacrifices an
+      // essence here — so they are listed as this POI's potential drops in the
+      // card, not painted as separate map markers. stoneDrops sprites resolve
+      // via getSpriteKey (vuoksikivi -> item:waterstone; kiuaskivi/ukkoskivi/
+      // kakkakikkare via their maps; stonestone via the default item:<id>).
       poisByPW["0,0"]?.push({
         type: "item",
         item: "essence_eater",
@@ -1255,6 +1264,13 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         x: ex,
         y: ey,
         biome: "desert",
+        stoneDrops: [
+          { item: "kiuaskivi", nameKey: "item_brimstone", name: "Kiuaskivi" }, // Essence of Fire
+          { item: "vuoksikivi", nameKey: "item_waterstone", name: "Vuoksikivi" }, // Essence of Water
+          { item: "ukkoskivi", nameKey: "item_thunderstone", name: "Ukkoskivi" }, // Essence of Air
+          { item: "stonestone", nameKey: "item_stonestone", name: "Tannerkivi" }, // Essence of Earth
+          { item: "kakkakikkare", nameKey: "item_kakka", name: "Kakkakikkare" }, // Essence of Spirits
+        ],
       } as any);
     }
 

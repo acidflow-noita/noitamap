@@ -220,13 +220,10 @@ const NOT_A_MARKER = new Set([
 
 const NO_SPRITE_YET: Record<string, string> = {
   true_orb: "no item:true_orb; ultra-rare chest loot",
-  kakkakikkare: "no sprite; rare chest gag item",
   treasure: "no item:treasure key",
   kuu: "no item:kuu (the Moon) sprite",
-  kivi: "no item:kivi sprite",
-  kummitus: "no item:kummitus sprite",
-  kiuaskivi: "no item:kiuaskivi (Sauna Stone) sprite",
-  ukkoskivi: "no item:ukkoskivi (Thunderstone) sprite",
+  kivi: "no item:kivi sprite (stone boss; only in commented-out dead code)",
+  kummitus: "no item:kummitus sprite (only in commented-out dead code)",
   chaos_die: "no item:chaos_die sprite (prop:greed_die exists for greed only)",
   shiny_orb: "no item:shiny_orb sprite",
   greed_orb: "no item:greed_orb sprite",

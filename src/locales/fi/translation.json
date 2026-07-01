@@ -5064,6 +5064,8 @@
   "poi": {
     "amount": "Määrä",
     "contains": "Sisältää",
+    "drops": "Pudotukset",
+    "essenceEaterConvert": "Essence Eaterit muuttavat kantamasi essenssin vastaavaksi elementtikiveksi.",
     "gold": "Kulta",
     "heartSmall": "Sydän (+25 hv)",
     "heartBig": "Sydän (+50 hv)",

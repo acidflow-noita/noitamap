@@ -5064,6 +5064,8 @@
   "poi": {
     "amount": "額",
     "contains": "含まれています",
+    "drops": "ドロップ",
+    "essenceEaterConvert": "エッセンスイーターは、持っているエッセンスを対応する元素の石に変換します。",
     "gold": "金",
     "heartSmall": "ハート (+25 HP)",
     "heartBig": "ハート (+50 HP)",

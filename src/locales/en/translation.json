@@ -5176,6 +5176,8 @@
   "poi": {
     "amount": "Amount",
     "contains": "Contains",
+    "drops": "Drops",
+    "essenceEaterConvert": "Essence Eaters convert any carried Essence into its corresponding elemental stone.",
     "gold": "Gold",
     "heartSmall": "Heart (+25 HP)",
     "heartBig": "Heart (+50 HP)",

@@ -5064,6 +5064,8 @@
   "poi": {
     "amount": "Kwota",
     "contains": "Zawiera",
+    "drops": "Łup",
+    "essenceEaterConvert": "Pożeracze esencji zamieniają każdą przenoszoną esencję w odpowiadający jej kamień żywiołu.",
     "gold": "Złoto",
     "heartSmall": "Serce (+25 PŻ)",
     "heartBig": "Serce (+50 PŻ)",

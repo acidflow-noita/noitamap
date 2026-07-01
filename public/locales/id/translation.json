@@ -5064,6 +5064,8 @@
   "poi": {
     "amount": "Jumlah",
     "contains": "Berisi",
+    "drops": "Jatuhan",
+    "essenceEaterConvert": "Essence Eater mengubah Esens apa pun yang dibawa menjadi batu elemental yang sesuai.",
     "gold": "Emas",
     "heartSmall": "Jantung (+25 HP)",
     "heartBig": "Jantung (+50 HP)",

@@ -5064,6 +5064,8 @@
   "poi": {
     "amount": "Hoeveelheid",
     "contains": "Bevat",
+    "drops": "Buit",
+    "essenceEaterConvert": "Essence Eaters zetten elke meegedragen Essence om in de bijbehorende elementaire steen.",
     "gold": "Goud",
     "heartSmall": "Hart (+25 PK)",
     "heartBig": "Hart (+50 PK)",

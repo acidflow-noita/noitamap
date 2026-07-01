@@ -5064,6 +5064,8 @@
   "poi": {
     "amount": "Montant",
     "contains": "Contient",
+    "drops": "Butin",
+    "essenceEaterConvert": "Les Dévoreurs d'essence transforment toute Essence transportée en la pierre élémentaire correspondante.",
     "gold": "Or",
     "heartSmall": "Cœur (+25 PV)",
     "heartBig": "Cœur (+50 PV)",

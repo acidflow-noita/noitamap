@@ -319,10 +319,14 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     // Karl (racecar) and Essence Eater have no item:* sprite — use the entity sprite.
     if (item === "karl") return "enemy:racing_cart";
     if (item === "essence_eater") return "enemy:essence_eater";
-    // Vuoksikivi (Waterstone): chest-loot item. Telescope emits a bare
-    // {item:'vuoksikivi'} with no item:vuoksikivi atlas key — use the
-    // items_gfx waterstone sprite.
-    if (item === "vuoksikivi") return "item:waterstone";
+    // Essence stones (Essence Eater conversions + chest/potion loot). Telescope
+    // emits bare Finnish ids with no matching item:<id> atlas key; map each to
+    // its items_gfx sprite. Tannerkivi's id (stonestone) already matches its
+    // atlas key item:stonestone, so it resolves via the default item:<id> path.
+    if (item === "vuoksikivi") return "item:waterstone"; // Essence of Water
+    if (item === "kiuaskivi") return "item:brimstone"; // Essence of Fire
+    if (item === "ukkoskivi") return "item:thunderstone"; // Essence of Air
+    if (item === "kakkakikkare") return "item:kakke"; // Essence of Spirits
     // Sampo: the legendary artifact has no item:* icon — use the entity sprite.
     if (item === "sampo") return "enemy:sampo";
     // Greed die (chest/utility-box loot): use the prop sprite (no item: key).

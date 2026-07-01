@@ -39,6 +39,12 @@ html {
   border-bottom: 1px solid var(--border-strong);
 }
 
+/* Logo is a brand link, not selectable content — a drag-select starting on the
+   map shouldn't sweep it into the highlight. */
+#navbar-brand {
+  user-select: none;
+}
+
 /* ── UI Facelift: soften aggressive outlines (Tailwind 4 palette) ──────── */
 
 .navbar .btn-outline-light {
@@ -220,6 +226,7 @@ html {
 .coordinate {
   position: absolute;
   pointer-events: none;
+  user-select: none;
   color: oklch(1 0 0);
   font-family: Inter, sans-serif;
   font-feature-settings: "tnum", "zero", "cv09", "cv02", "cv03", "cv04";

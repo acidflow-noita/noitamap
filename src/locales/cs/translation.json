@@ -5064,6 +5064,8 @@
   "poi": {
     "amount": "Množství",
     "contains": "Obsahuje",
+    "drops": "Kořist",
+    "essenceEaterConvert": "Essence Eateři přemění jakoukoli nesenou esenci na odpovídající živlový kámen.",
     "gold": "Zlato",
     "heartSmall": "Srdce (+25 HP)",
     "heartBig": "Srdce (+50 HP)",

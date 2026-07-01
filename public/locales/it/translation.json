@@ -5064,6 +5064,8 @@
   "poi": {
     "amount": "Quantità",
     "contains": "Contiene",
+    "drops": "Bottino",
+    "essenceEaterConvert": "I Mangia-essenza trasformano qualsiasi Essenza trasportata nella corrispondente pietra elementale.",
     "gold": "Oro",
     "heartSmall": "Cuore (+25 HP)",
     "heartBig": "Cuore (+50 HP)",

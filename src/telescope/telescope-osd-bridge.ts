@@ -3897,6 +3897,45 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         .join(", ")}`;
       tooltipEl.appendChild(contentsDiv);
     }
+    // Essence Eater: explain the conversion and show the possible stone drops.
+    // These are NOT world spawns — the player gets one only by sacrificing a
+    // carried essence here — so they live in the card, not as map markers.
+    const stoneDrops = (poi as any).stoneDrops as Array<{ item: string; nameKey: string; name: string }> | undefined;
+    if (poi.item === "essence_eater" && Array.isArray(stoneDrops) && stoneDrops.length) {
+      const note = document.createElement("div");
+      note.style.cssText = "color:#9a9;font-size:0.82em;font-style:italic;margin:0.3em 0 0.2em;line-height:1.4";
+      note.textContent = i18next.t(
+        "poi.essenceEaterConvert",
+        "Essence Eaters convert any carried Essence into its corresponding elemental stone.",
+      );
+      tooltipEl.appendChild(note);
+
+      const dropsDiv = document.createElement("div");
+      dropsDiv.style.cssText = "margin-top:0.3em;border-top:0.065em solid #333;padding-top:0.3em";
+      const dropsLabel = document.createElement("div");
+      dropsLabel.style.cssText = "font-size:1em;color:#888;margin-bottom:0.2em";
+      dropsLabel.textContent = `${i18next.t("poi.drops", "Drops")}:`;
+      dropsDiv.appendChild(dropsLabel);
+      const dropsRow = document.createElement("div");
+      dropsRow.style.cssText = "display:flex;flex-wrap:wrap;gap:0.2em;align-items:center";
+      for (const s of stoneDrops) {
+        const box = document.createElement("div");
+        box.style.cssText =
+          "display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333";
+        const img = document.createElement("img");
+        img.style.cssText = "width:20px;height:20px;image-rendering:pixelated;object-fit:contain";
+        getPOISpriteFirstFrame({ type: "item", item: s.item }).then((u) => { if (u) img.src = u; });
+        box.appendChild(img);
+        const label = document.createElement("span");
+        label.style.cssText = "font-size:0.8em;color:#aaa";
+        const t = gameTranslator.translateItem(s.nameKey);
+        label.textContent = t !== s.nameKey ? t : s.name;
+        box.appendChild(label);
+        dropsRow.appendChild(box);
+      }
+      dropsDiv.appendChild(dropsRow);
+      tooltipEl.appendChild(dropsDiv);
+    }
   } else if (poi.type === "spell") {
     const header = document.createElement("div");
     header.style.cssText = "display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em";

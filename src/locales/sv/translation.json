@@ -5064,6 +5064,8 @@
   "poi": {
     "amount": "Belopp",
     "contains": "Innehåller",
+    "drops": "Byte",
+    "essenceEaterConvert": "Essence Eaters omvandlar varje buren essens till motsvarande elementarsten.",
     "gold": "Guld",
     "heartSmall": "Hjärta (+25 hk)",
     "heartBig": "Hjärta (+50 hk)",

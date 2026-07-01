@@ -5064,6 +5064,8 @@
   "poi": {
     "amount": "Menge",
     "contains": "Enthält",
+    "drops": "Beute",
+    "essenceEaterConvert": "Essenzfresser wandeln jede mitgeführte Essenz in den entsprechenden Elementarstein um.",
     "gold": "Gold",
     "heartSmall": "Herz (+25 HP)",
     "heartBig": "Herz (+50 HP)",
