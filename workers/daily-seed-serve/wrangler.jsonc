@@ -1,6 +1,6 @@
 {
   "name": "daily-seed-serve",
-  "compatibility_date": "2026-02-19",
+  "compatibility_date": "2026-06-01",
   "assets": {
     "directory": "./public",
   },
