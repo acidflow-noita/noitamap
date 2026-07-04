@@ -5,7 +5,8 @@
     "indexingHint": "Du kannst die Karte erkunden, wahrend die Daten geladen werden",
     "popoverTitle": "Suchen",
     "popoverContent": "Suchen Sie nach Zaubersprüchen, Gegenständen, Zauberstäben, Bossen, Kreaturen, Tränken, Strukturen und mehr. Verwenden Sie die Filterschaltflächen unten, um die Ergebnisse nach Kategorie einzugrenzen.",
-    "chunksAway": "~{{count}} Chunks entfernt"
+    "chunksAway": "~{{count}} Chunks entfernt",
+    "openTelescope": "Open in Telescope"
   },
   "spell_prefix": "Zauber",
   "tiers_prefix": "Stufen",
@@ -5078,7 +5079,8 @@
     "pillarLocked": "Noch nicht freigeschaltet",
     "pillarHowTo": "Freischalten durch",
     "pillarGoto": "Auf der Karte anzeigen",
-    "pillarSingular": "Achievement pillar"
+    "pillarSingular": "Achievement pillar",
+    "pillarSearch": "Search the map"
   },
   "skipCreatures": {
     "title": "Keine Kreaturen hinzufügen",
@@ -5312,6 +5314,11 @@
       "monkStatue": "eine Mönchsstatue",
       "sunstone": "ein Sonnenstein",
       "darkSunstone": "ein Dunkler Sonnenstein"
+    },
+    "searchNone": "Not found in the three worlds shown here.",
+    "halo": {
+      "light": "light perks",
+      "dark": "dark perks"
     }
   }
 }

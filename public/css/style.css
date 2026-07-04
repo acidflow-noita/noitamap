@@ -774,6 +774,14 @@ body.toggle-hidden div.osOverlayHighlight {
   --bs-btn-active-color: var(--daily-fg);
   --bs-btn-active-bg: var(--daily-bg);
   --bs-btn-active-border-color: color-mix(in oklch, var(--daily-fg) 70%, transparent);
+  /* Disabled state fires on every load (setBusy disables the button while
+     busy); without these it falls back to btn-outline-info's cyan and the
+     button flickers blue mid-load. */
+  --bs-btn-disabled-color: var(--daily-fg);
+  --bs-btn-disabled-border-color: color-mix(in oklch, var(--daily-fg) 45%, transparent);
+  /* Keyboard-focus ring is the last btn-outline-info cyan left; pin it to
+     emerald-400 too. */
+  --bs-btn-focus-shadow-rgb: 52, 211, 153;
 }
 
 #dynamicPrevDailySeedButton {
@@ -786,6 +794,8 @@ body.toggle-hidden div.osOverlayHighlight {
   --bs-btn-active-color: var(--prev-fg);
   --bs-btn-active-bg: var(--prev-bg);
   --bs-btn-active-border-color: color-mix(in oklch, var(--prev-fg) 70%, transparent);
+  --bs-btn-disabled-color: var(--prev-fg);
+  --bs-btn-disabled-border-color: color-mix(in oklch, var(--prev-fg) 45%, transparent);
 }
 
 /* Seed input -- daily seed colored, custom seed white */

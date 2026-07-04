@@ -16,6 +16,68 @@ import { AuthUI } from "../auth/auth-ui";
 import { updateURLWithSearch } from "../data_sources/url";
 import { perkNameKey } from "../telescope/perk-i18n";
 import { canonicalEntityId } from "../telescope/entity-canonical";
+import { ITEM_SEARCH_NAME_KEYS, PILLAR_PLACES } from "../data/pillars";
+import orbsData from "../data/orbs.json";
+
+/**
+ * The 11 Orbs of True Knowledge as synthetic search POIs. On NG the generator
+ * emits no orb POIs (biomeData.orbs is empty) — the map draws them from
+ * data/orbs.json as a dedicated overlay — so without this they are invisible
+ * to search and the Orbs filter. They are search-index-only: cards open via
+ * openTooltipForPOI's fallbackPoi path, markers stay untouched (the overlay
+ * already renders the icons). orbIndex is parsed from the icon filename
+ * (orb_<idx>.png), same as the overlay's collected detection.
+ */
+let trueOrbPOIs: DynamicPOI[] | null = null;
+function getTrueOrbPOIs(): DynamicPOI[] {
+  if (!trueOrbPOIs) {
+    trueOrbPOIs = (orbsData as any[])
+      .filter((o) => Array.isArray(o.maps) && o.maps.includes("dynamic-main-branch"))
+      .map((o) => {
+        const m = String(o.icon || "").match(/orb_(\d+)\.png$/);
+        const orbIndex = m ? parseInt(m[1], 10) : undefined;
+        return {
+          id: `d-true-orb-${orbIndex ?? `${o.x}_${o.y}`}`,
+          type: "item",
+          item: "orb",
+          orbIndex,
+          name: o.name,
+          x: o.x,
+          y: o.y,
+          worldX: o.x,
+          worldY: o.y,
+          pw: 0,
+          biome: "orb_room",
+        };
+      });
+  }
+  return trueOrbPOIs;
+}
+
+/**
+ * Fixed pillar places (Mountain Altar, Nullifying Altar, ...) as synthetic
+ * search POIs. They have no generated POI and no atlas sprite, so they can't be
+ * map markers — but injecting them into the search index means closing their
+ * card isn't permanent: the place name stays searchable and reopens the card
+ * via openTooltipForPOI's fallbackPoi path. Rebuilt per language so the label
+ * follows a labelKey. See PILLAR_PLACES in data/pillars.
+ */
+function getPillarPlacePOIs(): DynamicPOI[] {
+  return PILLAR_PLACES.map((p) => {
+    const name = p.labelKey ? String(i18next.t(p.labelKey, p.label || p.labelKey)) : p.label;
+    return {
+      id: `d-pillar-place-${p.key.replace(",", "_")}`,
+      type: "pillar_place",
+      name,
+      wiki: p.wiki,
+      x: p.x,
+      y: p.y,
+      worldX: p.x,
+      worldY: p.y,
+      pw: 0,
+    };
+  });
+}
 
 // Inlined from poi-spatial-index to avoid pulling Flatbush into the main bundle
 const CONTAINER_TYPES = new Set([
@@ -453,6 +515,7 @@ function matchesFilters(p: DynamicPOI, activeFilters: Set<string>): boolean {
     return true;
   if (activeFilters.has("b") && BOSS_TYPES.has(p.type)) return true;
   if (activeFilters.has("e") && p.type === "entity") return true;
+  if (activeFilters.has("or") && p.type === "item" && p.item === "orb") return true;
   return false;
 }
 export type UnifiedSearchCreateOptions = {
@@ -473,6 +536,8 @@ export interface UnifiedSearch {
   activeFilters: Set<string>;
   searchInput: HTMLInputElement;
   triggerSearch(value: string, selectIndex?: number): void;
+  triggerSearchWithFallback(value: string, note: { text: string; telescopeUrl: string }): void;
+  setCategoryFilter(filter?: string): void;
   getCurrentQuery(): string;
   showOverlay(): void;
   on(event: "selected", listener: (target: TargetOfInterest | { type: "spell"; spell: any }) => void): this;
@@ -500,6 +565,8 @@ export class UnifiedSearch extends EventEmitter2 {
   /** When set, alchemy recipe is displayed; suppress text-query / viewport-based result refreshes. */
   private alchemyActive: boolean = false;
   private indexingListeners: Set<(s: "idle" | "indexing" | "ready") => void> = new Set();
+  /** One-shot Telescope fallback note for the next no-results render (pillar search links). */
+  private pendingNoResultNote: { text: string; telescopeUrl: string } | null = null;
 
   public getIndexingState(): "idle" | "indexing" | "ready" {
     return this.indexingState;
@@ -712,6 +779,7 @@ export class UnifiedSearch extends EventEmitter2 {
           { type: "pk", atlasKey: "item:perks/critical_hit" },
           { type: "b", iconSrc: "assets/icons/overlay-toggles/icon-bosses.webp" },
           { type: "e", atlasKey: "spell:exploding_deer" },
+          { type: "or", iconSrc: "assets/icons/overlay-toggles/icon-orbs.webp" },
         ]
       : [
           { type: "s", iconSrc: "assets/icons/spells/light_bullet.png" },
@@ -879,8 +947,43 @@ export class UnifiedSearch extends EventEmitter2 {
     this.updateSearchResults();
   }
 
+  /**
+   * Pillar search link: run a query and, if it finds nothing on this seed's
+   * visible map, show a Telescope fallback note (the target may still exist
+   * off-screen or in a parallel world the map didn't render). The note is
+   * consumed on the next render.
+   */
+  triggerSearchWithFallback(value: string, note: { text: string; telescopeUrl: string }): void {
+    this.pendingNoResultNote = note;
+    this.triggerSearch(value);
+  }
+
+  /**
+   * Replace the active category filters with exactly `filter` (or none),
+   * keeping the pro high-value overlay ("hv") untouched — pillar search links
+   * co-activate the one filter that matches their target, and a lingering
+   * filter from a previous link would hide the new results (e.g. a perks
+   * filter left on while searching utility boxes). Checkbox UI is synced.
+   */
+  setCategoryFilter(filter?: string): void {
+    for (const f of [...this.activeFilters]) if (f !== "hv") this.activeFilters.delete(f);
+    if (filter) this.activeFilters.add(filter);
+    for (const cb of document.querySelectorAll<HTMLInputElement>(
+      '#unifiedSearchFilterBox input[type="checkbox"][data-filter]',
+    )) {
+      cb.checked = this.activeFilters.has(cb.value);
+    }
+  }
+
   /** Replace the dynamic POI index (called by the generation pipeline). */
   setDynamicPOIs(pois: DynamicPOI[]): void {
+    // Append the true-orb synthetic POIs (see getTrueOrbPOIs) unless the
+    // generation already carries real orb POIs (NG+ maps, where
+    // biomeData.orbs is populated). Empty input means the map was cleared —
+    // keep it empty.
+    if (pois.length > 0 && !pois.some((p) => p.item === "orb")) {
+      pois = pois.concat(getTrueOrbPOIs());
+    }
     this.dynamicPOIs = pois;
     this.rebuildDynamicIndex(pois);
     // Always refresh search results — triggers initial "10 nearest" display
@@ -945,6 +1048,17 @@ export class UnifiedSearch extends EventEmitter2 {
       if ((p as any).nameKey) {
         const t = gameTranslator.translateItem(String((p as any).nameKey));
         if (t && t !== (p as any).nameKey) parts.push(t);
+      }
+
+      // Pillar search links put a localized item name in the search bar. Index
+      // that same name (keyed on POI type or item id, see ITEM_SEARCH_NAME_KEYS)
+      // so multi-instance sacrifice items / orbs are found in every language.
+      {
+        const nameKey = ITEM_SEARCH_NAME_KEYS[p.type] ?? ITEM_SEARCH_NAME_KEYS[p.item ?? ""];
+        if (nameKey) {
+          const t = gameTranslator.translateItem(nameKey);
+          if (t && t !== nameKey) parts.push(t);
+        }
       }
 
       // Add entity name and translated name for creature search
@@ -1148,6 +1262,12 @@ export class UnifiedSearch extends EventEmitter2 {
   refreshTranslations() {
     this.refreshFilterTranslations();
 
+    // Rebuild the dynamic index: some POIs (orbs, sacrifice items) are only
+    // searchable by their localized name (ITEM_SEARCH_NAME_KEYS), so the index
+    // holds the previous language's tokens until rebuilt. Without this, a query
+    // in the new language misses them.
+    if (this.dynamicPOIs.length > 0) this.rebuildDynamicIndex(this.dynamicPOIs);
+
     // Force update by ignoring last search state
     this.lastSearchText = "__force__";
     this.updateSearchResults();
@@ -1162,6 +1282,10 @@ export class UnifiedSearch extends EventEmitter2 {
 
   public updateSearchResults() {
     if (this.alchemyActive) return;
+    // Consume any pending pillar-search fallback note exactly once per render,
+    // so a stale note can't leak onto a later hand-typed query that misses.
+    const pillarNote = this.pendingNoResultNote ?? undefined;
+    this.pendingNoResultNote = null;
     const searchText = this.searchInput.value;
     // Also check viewport position for dynamic map proximity sorting
     const urlParams = new URLSearchParams(window.location.search);
@@ -1246,6 +1370,7 @@ export class UnifiedSearch extends EventEmitter2 {
             chestVariant: (p as any).chestVariant,
             perk: (p as any).perk,
             titleKey: (p as any).titleKey,
+            orbIndex: (p as any).orbIndex,
           };
         });
 
@@ -1267,19 +1392,31 @@ export class UnifiedSearch extends EventEmitter2 {
 
       let matched: DynamicPOI[] = [];
 
+      // "a | b | c" runs one search per term and unions the results (FlexSearch
+      // has no OR inside a single query string — tokens are ANDed). Used by the
+      // pillar transformation links; also works when typed by hand.
+      const orTerms = searchText.includes("|")
+        ? searchText.split("|").map((s) => s.trim()).filter(Boolean)
+        : [searchText];
+
       if (this.dynamicIndex) {
         // Query the FlexSearch index for matching POI ids with a high limit (default is 100)
-        const found = this.dynamicIndex.search(searchText, 10000).flatMap((v: any) => v.result);
-        const ids = new Set<string>(found);
+        const ids = new Set<string>();
+        for (const term of orTerms) {
+          const found = this.dynamicIndex.search(term, 10000).flatMap((v: any) => v.result);
+          for (const id of found) ids.add(id);
+        }
         matched = [...ids].map((id) => this.dynamicPOIMap.get(id)).filter(Boolean) as DynamicPOI[];
       } else {
         // Fallback: brute-force filter if index not built yet
-        const searchLower = searchText.toLowerCase();
-        matched = this.dynamicPOIs.filter(
-          (p) =>
-            (p.name ?? p.type ?? "").toLowerCase().includes(searchLower) ||
-            (p.item ?? "").toLowerCase().includes(searchLower) ||
-            p.type.toLowerCase().includes(searchLower),
+        const termsLower = orTerms.map((t) => t.toLowerCase());
+        matched = this.dynamicPOIs.filter((p) =>
+          termsLower.some(
+            (searchLower) =>
+              (p.name ?? p.type ?? "").toLowerCase().includes(searchLower) ||
+              (p.item ?? "").toLowerCase().includes(searchLower) ||
+              p.type.toLowerCase().includes(searchLower),
+          ),
         );
       }
 
@@ -1340,13 +1477,18 @@ export class UnifiedSearch extends EventEmitter2 {
           nameKey: (p as any).nameKey,
           chestVariant: (p as any).chestVariant,
           perk: (p as any).perk,
+          orbIndex: (p as any).orbIndex,
         } as any;
       });
 
       const combinedResults: any[] = [...dynamicResults];
 
       if (combinedResults.length === 0) {
-        this.searchResults.setNoResults();
+        // A pillar transformation/item search that found nothing on this seed's
+        // rendered map: the perk/item may still exist off-screen or in a
+        // parallel world the map didn't draw, so point the user at Telescope
+        // (seed baked into the URL, mirroring the toolbar Telescope button).
+        this.searchResults.setNoResults(pillarNote);
       } else {
         this.searchResults.setResults(combinedResults);
       }
@@ -1442,6 +1584,7 @@ export class UnifiedSearch extends EventEmitter2 {
           { type: "pk", atlasKey: "item:perks/critical_hit" },
           { type: "b", iconSrc: "assets/icons/overlay-toggles/icon-bosses.webp" },
           { type: "e", atlasKey: "spell:exploding_deer" },
+          { type: "or", iconSrc: "assets/icons/overlay-toggles/icon-orbs.webp" },
         ]
       : [
           { type: "s", iconSrc: "assets/icons/spells/light_bullet.png" },
@@ -1695,8 +1838,8 @@ export class UnifiedSearch extends EventEmitter2 {
 
     // Show overlay for "Nothing found" state too
     const origSetNoResults = searchResults.setNoResults.bind(searchResults);
-    searchResults.setNoResults = () => {
-      origSetNoResults();
+    searchResults.setNoResults = (...args) => {
+      origSetNoResults(...args);
       if (document.activeElement === searchInput || (instance as any).explicitShowRequested) {
         positionOverlay();
         overlayDiv.style.display = "block";

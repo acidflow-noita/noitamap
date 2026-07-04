@@ -5,7 +5,8 @@
     "indexingHint": "Voit selata karttaa tietojen latauksen aikana",
     "popoverTitle": "Haku",
     "popoverContent": "Etsi loitsuja, esineitä, sauvoja, pomoja, olentoja, juomia, rakenteita ja muuta. Käytä alla olevia suodatinpainikkeita rajataksesi tuloksia luokittain.",
-    "chunksAway": "~{{count}} chunkkia kaukana"
+    "chunksAway": "~{{count}} chunkkia kaukana",
+    "openTelescope": "Open in Telescope"
   },
   "spell_prefix": "Loitsu",
   "tiers_prefix": "Tasot",
@@ -5078,7 +5079,8 @@
     "pillarLocked": "Ei vielä avattu",
     "pillarHowTo": "Lukituksen avaaminen",
     "pillarGoto": "Näytä kartalla",
-    "pillarSingular": "Achievement pillar"
+    "pillarSingular": "Achievement pillar",
+    "pillarSearch": "Search the map"
   },
   "skipCreatures": {
     "title": "Älä lisää olentoja",
@@ -5312,6 +5314,11 @@
       "monkStatue": "munkkipatsas",
       "sunstone": "aurinkokivi",
       "darkSunstone": "pimeä aurinkokivi"
+    },
+    "searchNone": "Not found in the three worlds shown here.",
+    "halo": {
+      "light": "light perks",
+      "dark": "dark perks"
     }
   }
 }

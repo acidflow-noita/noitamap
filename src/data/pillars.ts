@@ -70,11 +70,33 @@ export interface PillarTarget {
   material?: string;
   /** Crystal-key chest variant (dark/coral) — matches the chest POI. */
   chestVariant?: string;
-  /** Any orb POI (the orb-pickup achievements). */
-  orb?: boolean;
   /** Fixed world coords for static structures (e.g. the Avarice Diamond). */
   x?: number;
   y?: number;
+  /**
+   * Search-driven target: clicking populates the search bar with the localized
+   * names of these telescope perk ids, OR-combined ("a | b | c"), instead of
+   * flying to one POI. Used by the transformation segments (any of N perks
+   * scattered across the worlds triggers progress).
+   */
+  searchPerks?: string[];
+  /**
+   * Search-driven flavour of the identity fields above: instead of flying to
+   * the single nearest match, populate the search bar (localized item name,
+   * see ITEM_SEARCH_NAME_KEYS) so the user sees ALL instances, nearest first.
+   * Used for multi-instance items (chests, sacrifice items). The identity
+   * fields stay authoritative for the reverse "Pillar" button.
+   */
+  search?: boolean;
+  /**
+   * Category filter to co-activate when this search link fires, so the results
+   * list is narrowed to the right kind of POI (e.g. a chest search also flips
+   * the Chests filter, dropping wands/items that merely mention "chest").
+   * MUST be a filter that INCLUDES the target's POI type/item, or the target
+   * would be filtered OUT — e.g. utility_box has no matching filter, so it gets
+   * none. Values match the dynamic-map filter keys in unifiedsearch.ts.
+   */
+  searchFilter?: string;
 }
 
 export interface PillarLink extends PillarTarget {
@@ -85,8 +107,35 @@ export interface PillarLink extends PillarTarget {
    * Place names (Avarice Diamond) match inline in English and fall back to a
    * trailing pin chip in locales whose sentence phrased the place differently.
    */
-  label: string;
+  label?: string;
+  /** i18n key resolved at render time — for localized chip labels (halo). */
+  labelKey?: string;
+  /**
+   * Wiki page of a coords-only destination (altars, moons, ...). These spots
+   * have no generated POI — nothing clickable at the target — so when set,
+   * travelling there synthesizes a place card (label + this wiki + the
+   * "Pillar" back-button) instead of a bare pan.
+   */
+  wiki?: string;
 }
+
+/**
+ * POI item/type id -> common.csv key of its proper in-game name. Serves two
+ * sides of the same feature: unifiedsearch indexes the localized name on the
+ * matching POIs, and pillar search links put that same localized name into the
+ * search bar, so the OR query hits in every language. Ids with no in-game
+ * name (statue_hand, sun_rock, darksun_rock props) fall back to the raw id,
+ * which is always indexed.
+ */
+export const ITEM_SEARCH_NAME_KEYS: Record<string, string> = {
+  chest: "item_chest_treasure",
+  great_chest: "item_chest_treasure_super",
+  utility_box: "item_utility_box",
+  worm_crystal: "building_worm_deflector",
+  greed_crystal: "item_greed_crystal",
+  mimic_potion: "animal_mimic_potion",
+  orb: "item_orb",
+};
 
 export interface PillarReqSpec {
   tmpl?: string;
@@ -100,6 +149,18 @@ export interface PillarReqSpec {
   target?: PillarTarget;
   /** Inline travel links for the free-form `key` phrases. */
   links?: PillarLink[];
+  /**
+   * Wrap the WHOLE resolved phrase in a single link to this target (used by the
+   * transformation segments, whose localized phrases can't carry a stable
+   * inline label to match against).
+   */
+  phraseTarget?: PillarTarget;
+  /**
+   * Per-achievement wiki page override. Default is the Achievement Pillars
+   * section of the segment's pillar; transformations point at their own
+   * Transformations section instead.
+   */
+  wiki?: string;
 }
 
 // Reusable travel-link presets. Coords for fixed structures come from
@@ -108,7 +169,12 @@ const LINK_TOVERI: PillarLink = { label: "Toveri", targetType: "friend" };
 const LINK_AVARICE: PillarLink = { label: "Avarice Diamond", x: 9472, y: 4330 };
 const LINK_TAPIO: PillarLink = { label: "Tapion vasalli", targetType: "islandspirit" };
 const LINK_KOLMI: PillarLink = { label: "Kolmisilmä", targetType: "boss_centipede" };
-const LINK_ALTAR: PillarLink = { label: "Mountain Altar", x: 781, y: -1167 };
+const LINK_ALTAR: PillarLink = {
+  label: "Mountain Altar",
+  x: 781,
+  y: -1167,
+  wiki: "https://noita.wiki.gg/wiki/Mountain_Altar",
+};
 
 // Fixed-structure travel targets (coords from src/data/structures.json). These
 // are where the achievement's unlock actually happens in the world (derived
@@ -130,35 +196,119 @@ const T_GOURD_CAVE: PillarTarget = { x: -16134, y: -6312 };
 const T_EXP_WAND_DIAMOND: PillarTarget = { x: 16127, y: 9986 };
 const T_TOWER_PORTAL: PillarTarget = { x: 9984, y: 4358 };
 
+// Transformations wiki page (per-transformation section anchors).
+const WIKI_TRANSFORMATIONS = "https://noita.wiki.gg/wiki/Transformations";
+
+/**
+ * Perk ids (telescope ids, resolved via perkNameKey -> common.csv) that add a
+ * level toward each transformation. Straight from the game's
+ * data/scripts/perks/perk_list.lua call sites of add_<x>_level:
+ *   ratty:   PLAGUE_RATS, REVENGE_RATS, VOMIT_RATS ("Spontaneous Generation")
+ *   funky:   CORDYCEPS, MOLD ("Fungal Colony"), FUNGAL_DISEASE
+ *   ghostly: ANGRY_GHOST, HUNGRY_GHOST, DEATH_GHOST ("Mournful Spirit")
+ *   lukky:   ATTACK_FOOT ("Lukki Mutation"), LEGGY_FEET, LUKKI_MINION
+ *   halo:    +/-3 net alignment; light +1 and dark -1 perks listed separately.
+ */
+const PERKS_RATTY = ["plague_rats", "revenge_rats", "vomit_rats"];
+const PERKS_FUNKY = ["cordyceps", "mold", "fungal_disease"];
+const PERKS_GHOSTLY = ["angry_ghost", "hungry_ghost", "death_ghost"];
+const PERKS_LUKKY = ["attack_foot", "leggy_feet", "lukki_minion"];
+const PERKS_HALO_LIGHT = ["saving_grace", "respawn", "genome_more_love", "peace_with_gods"];
+const PERKS_HALO_DARK = ["exploding_corpses", "global_gore", "vampirism", "genome_more_hatred"];
+
 export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
   // Pillar 1 — Sacrifice & Transformation
   // Altar sacrifices all happen at the Mountain Altar (altar_tablet_magic.lua).
-  // Sacrifice items have no map POI of their own, so {{name}} stays plain text
-  // and the Mountain Altar (where the sacrifice happens) is the travel link.
-  // Treasure Chest and Utility Box DO spawn as map POIs (chest_generation.js,
-  // utility_box_generation.js), so {{name}} links to the nearest one. The other
-  // sacrifice items (worm/greed crystal, monk statue, sun/dark sunstone) are
-  // game-side props the telescope generator never emits, so they stay plain text.
-  misc_chest_rain: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.treasureChest", target: { targetType: "chest" }, links: [LINK_ALTAR] },
-  misc_util_rain: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.utilityBox", target: { targetType: "utility_box" }, links: [LINK_ALTAR] },
-  misc_worm_rain: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.wormCrystal", target: { itemId: "worm_crystal" }, links: [LINK_ALTAR] },
-  misc_greed_rain: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.greedCrystal", target: { itemId: "greed_crystal" }, links: [LINK_ALTAR] },
+  // Sacrifice items exist in multiple places across the worlds, so their
+  // {{name}} is a SEARCH link (populates the search bar with the localized
+  // item name; results are proximity-sorted) rather than a jump to one
+  // arbitrary instance. The Mountain Altar (where the sacrifice happens)
+  // stays a direct travel link.
+  misc_chest_rain: {
+    tmpl: "pillar.req.sacrifice",
+    nameKey: "pillar.item.treasureChest",
+    target: { targetType: "chest", search: true, searchFilter: "c" },
+    links: [LINK_ALTAR],
+  },
+  misc_util_rain: {
+    tmpl: "pillar.req.sacrifice",
+    nameKey: "pillar.item.utilityBox",
+    // utility_box is its own POI type — no dynamic filter includes it, so no
+    // searchFilter (co-activating one would hide the result).
+    target: { targetType: "utility_box", search: true },
+    links: [LINK_ALTAR],
+  },
+  misc_worm_rain: {
+    tmpl: "pillar.req.sacrifice",
+    nameKey: "pillar.item.wormCrystal",
+    target: { itemId: "worm_crystal", search: true, searchFilter: "i" },
+    links: [LINK_ALTAR],
+  },
+  misc_greed_rain: {
+    tmpl: "pillar.req.sacrifice",
+    nameKey: "pillar.item.greedCrystal",
+    target: { itemId: "greed_crystal", search: true, searchFilter: "i" },
+    links: [LINK_ALTAR],
+  },
   misc_altar_tablet: { key: "pillar.req.altarTablet", links: [LINK_ALTAR] },
   misc_mimic_potion_rain: {
     tmpl: "pillar.req.sacrifice",
     nameKey: "animal_mimic_potion",
-    target: { itemId: "mimic_potion" },
+    target: { itemId: "mimic_potion", search: true, searchFilter: "i" },
     links: [LINK_ALTAR],
   },
-  misc_monk_bots: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.monkStatue", target: { itemId: "statue_hand" }, links: [LINK_ALTAR] },
-  misc_sun_effect: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.sunstone", target: { itemId: "sun_rock" }, links: [LINK_ALTAR] },
-  misc_darksun_effect: { tmpl: "pillar.req.sacrifice", nameKey: "pillar.item.darkSunstone", target: { itemId: "darksun_rock" }, links: [LINK_ALTAR] },
+  misc_monk_bots: {
+    tmpl: "pillar.req.sacrifice",
+    nameKey: "pillar.item.monkStatue",
+    target: { itemId: "statue_hand", search: true, searchFilter: "i" },
+    links: [LINK_ALTAR],
+  },
+  misc_sun_effect: {
+    tmpl: "pillar.req.sacrifice",
+    nameKey: "pillar.item.sunstone",
+    target: { itemId: "sun_rock", search: true, searchFilter: "i" },
+    links: [LINK_ALTAR],
+  },
+  misc_darksun_effect: {
+    tmpl: "pillar.req.sacrifice",
+    nameKey: "pillar.item.darkSunstone",
+    target: { itemId: "darksun_rock", search: true, searchFilter: "i" },
+    links: [LINK_ALTAR],
+  },
   secret_tower: { key: "pillar.req.tower", links: [{ label: "The Tower", ...T_TOWER_PORTAL }] },
-  player_status_ghostly: { key: "pillar.req.transformGhostly" },
-  player_status_ratty: { key: "pillar.req.transformRatty" },
-  player_status_funky: { key: "pillar.req.transformFunky" },
-  player_status_lukky: { key: "pillar.req.transformLukky" },
-  player_status_halo: { key: "pillar.req.transformHalo" },
+  // Transformations: the whole phrase is a search link that fills the search
+  // bar with the contributing perks (OR), and the card's wiki link points at
+  // the transformation's own section instead of the Achievement Pillars page.
+  player_status_ghostly: {
+    key: "pillar.req.transformGhostly",
+    phraseTarget: { searchPerks: PERKS_GHOSTLY },
+    wiki: `${WIKI_TRANSFORMATIONS}#Ghostly_Transformation`,
+  },
+  player_status_ratty: {
+    key: "pillar.req.transformRatty",
+    phraseTarget: { searchPerks: PERKS_RATTY },
+    wiki: `${WIKI_TRANSFORMATIONS}#Ratty_Transformation`,
+  },
+  player_status_funky: {
+    key: "pillar.req.transformFunky",
+    phraseTarget: { searchPerks: PERKS_FUNKY },
+    wiki: `${WIKI_TRANSFORMATIONS}#Funky_Transformation`,
+  },
+  player_status_lukky: {
+    key: "pillar.req.transformLukky",
+    phraseTarget: { searchPerks: PERKS_LUKKY },
+    wiki: `${WIKI_TRANSFORMATIONS}#Lukki_Transformation`,
+  },
+  // Halo needs 3 picks of the SAME polarity, so light and dark get separate
+  // search chips instead of one mixed query.
+  player_status_halo: {
+    key: "pillar.req.transformHalo",
+    links: [
+      { labelKey: "pillar.halo.light", searchPerks: PERKS_HALO_LIGHT },
+      { labelKey: "pillar.halo.dark", searchPerks: PERKS_HALO_DARK },
+    ],
+    wiki: `${WIKI_TRANSFORMATIONS}#Halo_Transformation`,
+  },
   // Pillar 2 — Essences (names from common.csv item_essence_*; link to the essence POI)
   essence_fire: { tmpl: "pillar.req.collect", nameKey: "item_essence_fire", target: { material: "fire" } },
   essence_water: { tmpl: "pillar.req.collect", nameKey: "item_essence_water", target: { material: "water" } },
@@ -197,9 +347,17 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
   miniboss_sky: { tmpl: "pillar.req.defeat", nameKey: "animal_boss_sky", targetType: "boss_sky" },
   boss_centipede: { tmpl: "pillar.req.defeat", nameKey: "animal_boss_centipede", targetType: "boss_centipede" },
   // Pillar 5 — Accomplishments
-  progress_orb_1: { key: "pillar.req.orb1", target: { orb: true } },
-  progress_orb_evil: { key: "pillar.req.orbEvil", target: { orb: true } },
-  progress_orb_all: { key: "pillar.req.orbAll", target: { orb: true } },
+  // Orbs of True Knowledge: the 11 true orbs are real search POIs (item "orb",
+  // injected from data/orbs.json — the generator emits none on NG). The WHOLE
+  // phrase is a search link (like the transformations) that fills the bar with
+  // the localized in-game name "Orb" (item_orb) and co-activates the Orbs
+  // filter, so results are exactly the 11 true orbs — never energy-orb spells
+  // or wands that merely carry them. progress_orb_evil unlocks via the
+  // corrupted (NG+) orbs, which sit in the same 11 orb rooms, so the same
+  // search shows where to go.
+  progress_orb_1: { key: "pillar.req.orb1", phraseTarget: { itemId: "orb", search: true, searchFilter: "or" } },
+  progress_orb_evil: { key: "pillar.req.orbEvil", phraseTarget: { itemId: "orb", search: true, searchFilter: "or" } },
+  progress_orb_all: { key: "pillar.req.orbAll", phraseTarget: { itemId: "orb", search: true, searchFilter: "or" } },
   progress_pacifist: { key: "pillar.req.pacifist" },
   progress_nogold: { key: "pillar.req.nogold" },
   progress_clock: { key: "pillar.req.speedrun5", target: T_THE_WORK },
@@ -227,7 +385,10 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
   secret_hourglass: { key: "pillar.req.hourglass", links: [{ label: "Hourglass", ...T_HOURGLASS }] },
   progress_hut_a: { key: "pillar.req.expWandGlimmer", target: T_EXP_WAND_DIAMOND },
   progress_hut_b: { key: "pillar.req.expWandRequirements", target: T_EXP_WAND_DIAMOND },
-  secret_null: { key: "pillar.req.nullAltar", links: [{ label: "Nullifying Altar", ...T_NULL_ALTAR }] },
+  secret_null: {
+    key: "pillar.req.nullAltar",
+    links: [{ label: "Nullifying Altar", wiki: "https://noita.wiki.gg/wiki/Nullifying_Altar", ...T_NULL_ALTAR }],
+  },
 };
 
 /**
@@ -398,7 +559,9 @@ export function buildPillarSegments(
       name,
       locked,
       biome: "mountain_tree",
-      wiki: `https://noita.wiki.gg/wiki/Achievement_Pillars#${PILLAR_SECTIONS[pillarIndex]}`,
+      wiki:
+        PILLAR_REQUIREMENTS[flag]?.wiki ??
+        `https://noita.wiki.gg/wiki/Achievement_Pillars#${PILLAR_SECTIONS[pillarIndex]}`,
       pillarIndex,
       theme: PILLAR_THEMES[pillarIndex],
       reqSpec: PILLAR_REQUIREMENTS[flag],
@@ -470,20 +633,27 @@ export function poiPillarAssociation(poi: any): { pillarIndex: number; flag: str
   const item = String(poi.item || "");
   const material = String(poi.material || "");
   const chestVariant = String(poi.chestVariant || "");
-  const isOrb = item === "orb";
+  const perk = item === "perk" ? String(poi.perk || "").toLowerCase() : "";
+
+  const perkInTarget = (t: PillarTarget | undefined) => !!(perk && t?.searchPerks?.includes(perk));
 
   for (let i = 0; i < PILLAR_FLAGS.length; i++) {
     for (const [flag] of PILLAR_FLAGS[i]) {
       const spec = PILLAR_REQUIREMENTS[flag];
       if (!spec) continue;
-      const t = spec.target;
+      // Identity fields may live on target (tmpl {{name}} links) or on
+      // phraseTarget (whole-phrase links, e.g. the orb search).
+      const t = spec.target ?? spec.phraseTarget;
       const matchType = spec.targetType && spec.targetType === type;
       const matchTargetType = t?.targetType && t.targetType === type;
       const matchItem = t?.itemId && t.itemId === item;
       const matchMat = t?.material && t.material === material;
       const matchChest = t?.chestVariant && t.chestVariant === chestVariant;
-      const matchOrb = t?.orb && isOrb;
-      if (matchType || matchTargetType || matchItem || matchMat || matchChest || matchOrb) {
+      // Transformation perks: any perk that adds a level toward the segment's
+      // transformation (searchPerks of the phrase link or the halo chips).
+      const matchPerk =
+        perkInTarget(t) || perkInTarget(spec.phraseTarget) || (spec.links ?? []).some((l) => perkInTarget(l));
+      if (matchType || matchTargetType || matchItem || matchMat || matchChest || matchPerk) {
         return { pillarIndex: i, flag, x: pillarColumnX(i), y: PILLAR_BASE.y - 4 * SIZE };
       }
     }
@@ -515,4 +685,65 @@ export function makePillarUnlockPredicate(unlocks: string[] | null | undefined):
 export function makePillarUnlockPredicateFromFlags(flags: string[]): (flag: string) => boolean {
   const set = new Set(flags);
   return (flag: string) => set.has(flag);
+}
+
+export interface PillarPlace {
+  /** Rounded "x,y" key — stable id + reverse-association match. */
+  key: string;
+  label: string;
+  labelKey?: string;
+  wiki: string;
+  x: number;
+  y: number;
+  /** Pillar column this place belongs to (for the reverse "Pillar" button). */
+  pillarIndex: number;
+  flag: string;
+}
+
+/**
+ * Fixed world places referenced by pillar links that carry both coords and a
+ * wiki page (Mountain Altar, Nullifying Altar, ...). These have no generated
+ * POI and no atlas sprite, so they can't be map markers — instead they are
+ * injected as search-only synthetic POIs (see unifiedsearch getPillarPlacePOIs)
+ * so closing their card isn't permanent: the place name stays searchable.
+ *
+ * Built by scanning PILLAR_REQUIREMENTS so it can never drift from the links.
+ * Deduped by rounded coords; first occurrence wins the pillar association.
+ */
+export const PILLAR_PLACES: PillarPlace[] = (() => {
+  const out: PillarPlace[] = [];
+  const seen = new Set<string>();
+  const consider = (link: PillarLink | undefined, pillarIndex: number, flag: string): void => {
+    if (!link || typeof link.x !== "number" || typeof link.y !== "number" || !link.wiki) return;
+    const key = `${Math.round(link.x)},${Math.round(link.y)}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({
+      key,
+      label: link.label ?? "",
+      labelKey: link.labelKey,
+      wiki: link.wiki,
+      x: link.x,
+      y: link.y,
+      pillarIndex,
+      flag,
+    });
+  };
+  for (let i = 0; i < PILLAR_FLAGS.length; i++) {
+    for (const [flag] of PILLAR_FLAGS[i]) {
+      const spec = PILLAR_REQUIREMENTS[flag];
+      if (!spec) continue;
+      for (const l of spec.links ?? []) consider(l, i, flag);
+    }
+  }
+  return out;
+})();
+
+/** Reverse association for a synthesized pillar_place POI, matched by coords. */
+export function pillarPlaceAssociation(poi: any): { pillarIndex: number; flag: string; x: number; y: number } | null {
+  if (!poi || poi.type !== "pillar_place") return null;
+  const key = `${Math.round(poi.x)},${Math.round(poi.y)}`;
+  const place = PILLAR_PLACES.find((p) => p.key === key);
+  if (!place) return null;
+  return { pillarIndex: place.pillarIndex, flag: place.flag, x: pillarColumnX(place.pillarIndex), y: PILLAR_BASE.y - 4 * SIZE };
 }

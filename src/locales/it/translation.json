@@ -5,7 +5,8 @@
     "indexingHint": "Puoi navigare la mappa mentre i dati vengono caricati",
     "popoverTitle": "Ricerca",
     "popoverContent": "Cerca incantesimi, oggetti, bacchette, boss, creature, pozioni, strutture e altro ancora. Utilizza i pulsanti filtro qui sotto per restringere i risultati per categoria.",
-    "chunksAway": "~{{count}} chunk di distanza"
+    "chunksAway": "~{{count}} chunk di distanza",
+    "openTelescope": "Open in Telescope"
   },
   "spell_prefix": "Incantesimo",
   "tiers_prefix": "Livelli",
@@ -5078,7 +5079,8 @@
     "pillarLocked": "Non ancora sbloccato",
     "pillarHowTo": "Per sbloccare",
     "pillarGoto": "Mostra sulla mappa",
-    "pillarSingular": "Achievement pillar"
+    "pillarSingular": "Achievement pillar",
+    "pillarSearch": "Search the map"
   },
   "skipCreatures": {
     "title": "Non aggiungere creature",
@@ -5312,6 +5314,11 @@
       "monkStatue": "una Statua del monaco",
       "sunstone": "una Pietra del Sole",
       "darkSunstone": "una Pietra del Sole oscura"
+    },
+    "searchNone": "Not found in the three worlds shown here.",
+    "halo": {
+      "light": "light perks",
+      "dark": "dark perks"
     }
   }
 }

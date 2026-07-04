@@ -242,13 +242,33 @@ export class UnifiedSearchResults extends EventEmitter2 {
     this.wrapper.appendChild(notice);
   }
 
-  /** Show a "no results" placeholder when search yields nothing. */
-  setNoResults(): void {
+  /**
+   * Show a "no results" placeholder when search yields nothing. When `note` is
+   * given (pillar search links that found nothing on this seed's visible map),
+   * append an explanatory line plus a seeded Telescope link — the target might
+   * still exist off-screen / in a parallel world the map didn't render.
+   */
+  setNoResults(note?: { text: string; telescopeUrl: string }): void {
     this.clearResults(false);
     const li = document.createElement("li");
     li.className = "search-no-results";
     li.textContent = i18next.t("search.noResults", "Nothing found");
     this.wrapper.appendChild(li);
+
+    if (note) {
+      const noteLi = document.createElement("li");
+      noteLi.className = "search-no-results-note";
+      noteLi.style.cssText = "padding:0.4em 0.75em;color:#aaa;font-size:0.85em;line-height:1.4";
+      noteLi.appendChild(document.createTextNode(note.text + " "));
+      const a = document.createElement("a");
+      a.href = note.telescopeUrl;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.style.cssText = "color:#7ab8ff;text-decoration:underline";
+      a.textContent = i18next.t("search.openTelescope", "Open in Telescope");
+      noteLi.appendChild(a);
+      this.wrapper.appendChild(noteLi);
+    }
   }
 
   setResults(results: UnifiedSearchResult[]) {
@@ -475,6 +495,9 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     // Carries a descriptive per-location name ("Emerald Tablet
                     // (Holy Bomb)"); use it instead of the humanized item id.
                     label = r.name || "Emerald Tablet";
+                  } else if (itemName === "orb") {
+                    // True orbs carry a descriptive name ("Orb: Sea of Lava").
+                    label = r.name && r.name !== "orb" ? r.name : "Orb";
                   } else if (r.nameKey) {
                     const t = gameTranslator.translateItem(String(r.nameKey));
                     label = t !== r.nameKey ? t : (r.name || itemName.replace(/_/g, " "));

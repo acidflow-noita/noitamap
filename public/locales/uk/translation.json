@@ -5,7 +5,8 @@
     "indexingHint": "Ви можете переміщатися по карті, поки дані завантажуються",
     "popoverTitle": "Пошук",
     "popoverContent": "Шукайте заклинання, предмети, чарівні палички, босів, істот, зілля, структури тощо. Використовуйте кнопки фільтра нижче, щоб звузити результати за категоріями.",
-    "chunksAway": "~{{count}} чанкiв"
+    "chunksAway": "~{{count}} чанкiв",
+    "openTelescope": "Open in Telescope"
   },
   "spell_prefix": "Заклинання",
   "tiers_prefix": "Рівні",
@@ -5078,7 +5079,8 @@
     "pillarLocked": "Ще не розблоковано",
     "pillarHowTo": "Щоб розблокувати",
     "pillarGoto": "Показати на карті",
-    "pillarSingular": "Achievement pillar"
+    "pillarSingular": "Achievement pillar",
+    "pillarSearch": "Search the map"
   },
   "skipCreatures": {
     "title": "Не додавати істот",
@@ -5312,6 +5314,11 @@
       "monkStatue": "статуя ченця",
       "sunstone": "сонячний камінь",
       "darkSunstone": "темний сонячний камінь"
+    },
+    "searchNone": "Not found in the three worlds shown here.",
+    "halo": {
+      "light": "light perks",
+      "dark": "dark perks"
     }
   }
 }

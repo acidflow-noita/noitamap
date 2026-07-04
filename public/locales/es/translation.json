@@ -5,7 +5,8 @@
     "indexingHint": "Puedes navegar por el mapa mientras se cargan los datos",
     "popoverTitle": "Buscar",
     "popoverContent": "Busque hechizos, objetos, varitas, jefes, criaturas, pociones, estructuras y más. Utilice los botones de filtro a continuación para limitar los resultados por categoría.",
-    "chunksAway": "~{{count}} chunks de distancia"
+    "chunksAway": "~{{count}} chunks de distancia",
+    "openTelescope": "Open in Telescope"
   },
   "spell_prefix": "Hechizo",
   "tiers_prefix": "Niveles",
@@ -5078,7 +5079,8 @@
     "pillarLocked": "Aún no desbloqueado",
     "pillarHowTo": "Para desbloquear",
     "pillarGoto": "Mostrar en el mapa",
-    "pillarSingular": "Achievement pillar"
+    "pillarSingular": "Achievement pillar",
+    "pillarSearch": "Search the map"
   },
   "skipCreatures": {
     "title": "No añadir criaturas",
@@ -5312,6 +5314,11 @@
       "monkStatue": "una estatua de monje",
       "sunstone": "una Piedra solar",
       "darkSunstone": "una Piedra solar oscura"
+    },
+    "searchNone": "Not found in the three worlds shown here.",
+    "halo": {
+      "light": "light perks",
+      "dark": "dark perks"
     }
   }
 }

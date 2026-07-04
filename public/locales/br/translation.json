@@ -5,7 +5,8 @@
     "indexingHint": "Voce pode navegar pelo mapa enquanto os dados carregam",
     "popoverTitle": "Procurar",
     "popoverContent": "Procure feitiços, itens, varinhas, chefes, criaturas, poções, estruturas e muito mais. Use os botões de filtro abaixo para restringir os resultados por categoria.",
-    "chunksAway": "~{{count}} chunks de distancia"
+    "chunksAway": "~{{count}} chunks de distancia",
+    "openTelescope": "Open in Telescope"
   },
   "spell_prefix": "Feitiço",
   "tiers_prefix": "Níveis",
@@ -5078,7 +5079,8 @@
     "pillarLocked": "Ainda não desbloqueado",
     "pillarHowTo": "Para desbloquear",
     "pillarGoto": "Mostrar no mapa",
-    "pillarSingular": "Achievement pillar"
+    "pillarSingular": "Achievement pillar",
+    "pillarSearch": "Search the map"
   },
   "skipCreatures": {
     "title": "Não adicionar criaturas",
@@ -5312,6 +5314,11 @@
       "monkStatue": "uma estátua de Monge",
       "sunstone": "uma Pedra do Sol",
       "darkSunstone": "uma Pedra do Sol Sombria"
+    },
+    "searchNone": "Not found in the three worlds shown here.",
+    "halo": {
+      "light": "light perks",
+      "dark": "dark perks"
     }
   }
 }

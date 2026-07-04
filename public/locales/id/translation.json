@@ -5,7 +5,8 @@
     "indexingHint": "Anda dapat menjelajahi peta saat data sedang dimuat",
     "popoverTitle": "Mencari",
     "popoverContent": "Cari mantra, item, tongkat sihir, bos, makhluk, ramuan, struktur, dan banyak lagi. Gunakan tombol filter di bawah untuk mempersempit hasil berdasarkan kategori.",
-    "chunksAway": "~{{count}} chunk jauhnya"
+    "chunksAway": "~{{count}} chunk jauhnya",
+    "openTelescope": "Open in Telescope"
   },
   "spell_prefix": "Mantra",
   "tiers_prefix": "Tingkat",
@@ -5078,7 +5079,8 @@
     "pillarLocked": "Belum terbuka",
     "pillarHowTo": "Untuk membuka",
     "pillarGoto": "Tampilkan di peta",
-    "pillarSingular": "Achievement pillar"
+    "pillarSingular": "Achievement pillar",
+    "pillarSearch": "Search the map"
   },
   "skipCreatures": {
     "title": "Jangan tambahkan makhluk",
@@ -5312,6 +5314,11 @@
       "monkStatue": "Patung Biarawan",
       "sunstone": "Batu Matahari",
       "darkSunstone": "Batu Matahari Gelap"
+    },
+    "searchNone": "Not found in the three worlds shown here.",
+    "halo": {
+      "light": "light perks",
+      "dark": "dark perks"
     }
   }
 }

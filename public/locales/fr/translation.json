@@ -5,7 +5,8 @@
     "indexingHint": "Vous pouvez naviguer sur la carte pendant le chargement des donnees",
     "popoverTitle": "Recherche",
     "popoverContent": "Recherchez des sorts, des objets, des baguettes, des boss, des créatures, des potions, des structures et bien plus encore. Utilisez les boutons de filtre ci-dessous pour affiner les résultats par catégorie.",
-    "chunksAway": "~{{count}} chunks de distance"
+    "chunksAway": "~{{count}} chunks de distance",
+    "openTelescope": "Open in Telescope"
   },
   "spell_prefix": "Sort",
   "tiers_prefix": "Niveaux",
@@ -5078,7 +5079,8 @@
     "pillarLocked": "Pas encore débloqué",
     "pillarHowTo": "Pour débloquer",
     "pillarGoto": "Afficher sur la carte",
-    "pillarSingular": "Achievement pillar"
+    "pillarSingular": "Achievement pillar",
+    "pillarSearch": "Search the map"
   },
   "skipCreatures": {
     "title": "Ne pas ajouter de créatures",
@@ -5312,6 +5314,11 @@
       "monkStatue": "une Statue de moine",
       "sunstone": "une Pierre solaire",
       "darkSunstone": "une Pierre solaire sombre"
+    },
+    "searchNone": "Not found in the three worlds shown here.",
+    "halo": {
+      "light": "light perks",
+      "dark": "dark perks"
     }
   }
 }

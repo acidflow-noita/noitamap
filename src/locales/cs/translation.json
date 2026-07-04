@@ -5,7 +5,8 @@
     "indexingHint": "Mapu muzete prohlizet, zatimco se data nacitaji",
     "popoverTitle": "Vyhledávání",
     "popoverContent": "Hledejte kouzla, předměty, hůlky, bossy, stvoření, lektvary, struktury a další. Pomocí níže uvedených tlačítek filtru můžete zúžit výsledky podle kategorie.",
-    "chunksAway": "~{{count}} chunku daleko"
+    "chunksAway": "~{{count}} chunku daleko",
+    "openTelescope": "Open in Telescope"
   },
   "spell_prefix": "Kouzlo",
   "tiers_prefix": "Úrovně",
@@ -5078,7 +5079,8 @@
     "pillarLocked": "Zatím neodemčeno",
     "pillarHowTo": "Pro odemknutí",
     "pillarGoto": "Zobrazit na mapě",
-    "pillarSingular": "Achievement pillar"
+    "pillarSingular": "Achievement pillar",
+    "pillarSearch": "Search the map"
   },
   "skipCreatures": {
     "title": "Nepřidávat tvory",
@@ -5312,6 +5314,11 @@
       "monkStatue": "Socha mnicha",
       "sunstone": "Sluneční kámen",
       "darkSunstone": "Temný sluneční kámen"
+    },
+    "searchNone": "Not found in the three worlds shown here.",
+    "halo": {
+      "light": "light perks",
+      "dark": "dark perks"
     }
   }
 }

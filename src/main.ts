@@ -816,6 +816,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     showGetProModal: () => {
       AuthUI.showGetProModal();
     },
+    triggerPillarSearch: (query: string, note?: { text: string; telescopeUrl: string }, filter?: string) => {
+      if (!_unifiedSearch) return;
+      // Swap the active category filters for the one matching this link's
+      // target (or clear them) BEFORE searching, so results aren't hidden by a
+      // filter left over from a previous pillar link.
+      _unifiedSearch.setCategoryFilter(filter);
+      // triggerSearch* set explicitShowRequested, so the results overlay opens
+      // via the setResults/setNoResults wrappers without a stale-input search.
+      if (note) _unifiedSearch.triggerSearchWithFallback(query, note);
+      else _unifiedSearch.triggerSearch(query);
+      updateURLWithSearch(query, _unifiedSearch.activeFilters);
+    },
   };
   window.__noitamap = proHooks;
 

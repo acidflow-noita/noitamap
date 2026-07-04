@@ -5,7 +5,8 @@
     "indexingHint": "Вы можете перемещаться по карте, пока данные загружаются",
     "popoverTitle": "Поиск",
     "popoverContent": "Ищите заклинания, предметы, жезлы, боссов, существ, зелья, постройки и многое другое. Используйте кнопки фильтра ниже, чтобы сузить результаты по категориям.",
-    "chunksAway": "~{{count}} чанков"
+    "chunksAway": "~{{count}} чанков",
+    "openTelescope": "Open in Telescope"
   },
   "spell_prefix": "Заклинание",
   "tiers_prefix": "Уровни",
@@ -5078,7 +5079,8 @@
     "pillarLocked": "Ещё не разблокировано",
     "pillarHowTo": "Чтобы разблокировать",
     "pillarGoto": "Показать на карте",
-    "pillarSingular": "Achievement pillar"
+    "pillarSingular": "Achievement pillar",
+    "pillarSearch": "Search the map"
   },
   "skipCreatures": {
     "title": "Не добавлять существ",
@@ -5312,6 +5314,11 @@
       "monkStatue": "Статуя Мункки",
       "sunstone": "Солнечный камень",
       "darkSunstone": "Темный солнечный камень"
+    },
+    "searchNone": "Not found in the three worlds shown here.",
+    "halo": {
+      "light": "light perks",
+      "dark": "dark perks"
     }
   }
 }

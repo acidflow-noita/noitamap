@@ -139,6 +139,13 @@ declare global {
     getWandIconUrl?: (sprite: string) => Promise<string | null>;
     /** "Skip creatures" perf-mode flag. */
     isSkipCreatures?: () => boolean;
+    /**
+     * Populate the unified search bar and run the query (used by pillar segment
+     * cards whose "find one of N things" links search instead of flying to a
+     * single POI). When `note` is passed and the query finds nothing on the
+     * rendered map, the results overlay shows a seeded Telescope fallback link.
+     */
+    triggerPillarSearch?: (query: string, note?: { text: string; telescopeUrl: string }, filter?: string) => void;
   }
 
   interface Window {

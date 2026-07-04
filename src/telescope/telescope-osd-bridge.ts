@@ -41,7 +41,7 @@ import {
   perkAtlasKey,
 } from "./poi-spatial-index";
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
-import { poiPillarAssociation, pillarLocationForFlag } from "../data/pillars";
+import { poiPillarAssociation, pillarLocationForFlag, ITEM_SEARCH_NAME_KEYS } from "../data/pillars";
 import { createMarkerTileSource } from "./marker-tile-source";
 import { perkNameKey, perkDescKey } from "./perk-i18n";
 import { canonicalEntityId } from "./entity-canonical";
@@ -3616,6 +3616,61 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           '<svg width="11" height="11" viewBox="0 0 24 24" style="vertical-align:-1px;margin-left:3px" fill="currentColor" aria-hidden="true">' +
           '<path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>';
 
+        // Magnifier glyph — marks a link that fills the search bar (find one of
+        // N scattered things) instead of flying to a single POI.
+        const SEARCH_SVG =
+          '<svg width="11" height="11" viewBox="0 0 16 16" style="vertical-align:-1px;margin-left:3px" fill="currentColor" aria-hidden="true">' +
+          '<path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/></svg>';
+
+        // Build the OR search query for a search-driven link target:
+        //   searchPerks -> localized perk names joined with " | " (the unified
+        //                  search splits on "|" and unions the hits)
+        //   search      -> the clean in-game item name (ITEM_SEARCH_NAME_KEYS),
+        //                  which is what unifiedsearch indexes; falls back to the
+        //                  raw id for props the generator never emits.
+        const buildSearchQuery = (link: import("../data/pillars").PillarTarget): string | null => {
+          if (link.searchPerks && link.searchPerks.length) {
+            return link.searchPerks
+              .map((pid) => {
+                const key = perkNameKey(pid);
+                const t = gameTranslator.translateItem(key);
+                return t && t !== key ? t : pid;
+              })
+              .join(" | ");
+          }
+          if (link.search) {
+            const id = link.itemId ?? link.targetType ?? "";
+            const key = ITEM_SEARCH_NAME_KEYS[id];
+            if (key) {
+              const t = gameTranslator.translateItem(key);
+              if (t && t !== key) return t;
+            }
+            return id || null;
+          }
+          return null;
+        };
+
+        // Seeded Telescope fallback shown when a pillar search finds nothing on
+        // the rendered map (the perk/item may live off-screen or in a parallel
+        // world). Mirrors the toolbar Telescope button's seed handling.
+        const buildTelescopeNote = (): { text: string; telescopeUrl: string } => {
+          const seed = new URLSearchParams(window.location.search).get("se");
+          const base = "https://lymm37.github.io/noita-telescope/";
+          return {
+            text: i18next.t("pillar.searchNone", "Not found in the three worlds shown here."),
+            telescopeUrl: seed ? `${base}?seed=${seed}` : base,
+          };
+        };
+
+        const runSearch = (link: import("../data/pillars").PillarTarget) => {
+          const query = buildSearchQuery(link);
+          if (!query) return;
+          // searchPerks -> Perks filter; item searches carry their own
+          // searchFilter (only when a filter actually includes the target).
+          const filter = link.searchPerks?.length ? "pk" : link.searchFilter;
+          window.__noitamap?.triggerPillarSearch?.(query, buildTelescopeNote(), filter);
+        };
+
         // Fly the map to a link target. Resolution order: explicit POI type;
         // essence material; crystal-key chest variant; any orb; fixed coords.
         // Reuses the same cinematic goto search results / seed report use
@@ -3657,60 +3712,96 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           else if (link.itemId) p = find((q) => q.item === link.itemId);
           else if (link.material) p = find((q) => q.item === "essence" && q.material === link.material);
           else if (link.chestVariant) p = find((q) => q.chestVariant === link.chestVariant);
-          else if (link.orb) p = find((q) => q.item === "orb");
           if (p) { open(p); return; }
           if (typeof link.x === "number" && typeof link.y === "number") {
+            // Coords-only destination (altars, moons, ...): no generated POI
+            // exists there, so a bare pan leaves nothing clickable and no way
+            // back to the pillar. When the link carries a wiki page, open a
+            // synthesized place card instead — openTooltipForPOI does the
+            // cinematic pan, and open() sets pillarLinkOrigin so the card's
+            // "Pillar" button leads back to this segment.
+            const l = link as import("../data/pillars").PillarLink;
+            if (l.wiki) {
+              const name = l.label ?? (l.labelKey ? String(i18next.t(l.labelKey, l.labelKey)) : "");
+              open({
+                id: `d-pillar-place-${Math.round(link.x)}_${Math.round(link.y)}`,
+                type: "pillar_place",
+                name,
+                x: link.x,
+                y: link.y,
+                wiki: l.wiki,
+                pw: 0,
+              });
+              return;
+            }
             if (typeof v.panToTarget === "function") v.panToTarget(link.x, link.y);
             else if (v.viewport) v.viewport.panTo(new (OpenSeadragon as any).Point(link.x, link.y), true);
           }
         };
 
-        const makePin = (label: string, link: import("../data/pillars").PillarTarget) => {
+        // A pillar link is either a travel pin (fly to the single POI) or a
+        // search chip (fill the search bar with the OR query). `wrap` allows the
+        // whole-phrase transformation link to line-wrap instead of nowrap.
+        const isSearchLink = (link: import("../data/pillars").PillarTarget) =>
+          !!((link.searchPerks && link.searchPerks.length) || link.search);
+        const makePin = (
+          label: string,
+          link: import("../data/pillars").PillarLink | import("../data/pillars").PillarTarget,
+          wrap = false,
+        ) => {
+          const search = isSearchLink(link);
           const a = document.createElement("a");
           a.href = "#";
           a.style.cssText =
-            "color:#7ab8ff;text-decoration:underline dashed;cursor:pointer;white-space:nowrap";
-          a.title = i18next.t("poi.pillarGoto", "Show on map");
+            "color:#7ab8ff;text-decoration:underline dashed;cursor:pointer;" + (wrap ? "" : "white-space:nowrap");
+          a.title = search
+            ? i18next.t("poi.pillarSearch", "Search the map")
+            : i18next.t("poi.pillarGoto", "Show on map");
           const s = document.createElement("span");
           s.textContent = label;
           a.appendChild(s);
-          a.insertAdjacentHTML("beforeend", PIN_SVG);
+          a.insertAdjacentHTML("beforeend", search ? SEARCH_SVG : PIN_SVG);
           a.addEventListener("click", (ev) => {
             ev.preventDefault();
-            travelTo(link);
+            if (search) runSearch(link);
+            else travelTo(link);
           });
           return a;
         };
 
         // Render `sentence` into `d`, wrapping each link's label (where it
         // appears literally) in a dashed pin-link. Labels not found inline
-        // (locale phrased the place differently) get a trailing pin chip so the
-        // travel affordance is never lost.
+        // (locale phrased the place differently, or the link is a labelKey chip
+        // with no inline form) get a trailing pin/search chip so the affordance
+        // is never lost.
         const renderWithLinks = (
           sentence: string,
           links: Array<import("../data/pillars").PillarLink>,
         ) => {
-          const matches: Array<{ start: number; end: number; link: (typeof links)[number] }> = [];
-          const trailing: typeof links = [];
+          const resolveLabel = (link: import("../data/pillars").PillarLink): string =>
+            link.label ?? (link.labelKey ? i18next.t(link.labelKey, link.labelKey) : "");
+          const matches: Array<{ start: number; end: number; link: (typeof links)[number]; label: string }> = [];
+          const trailing: Array<{ link: (typeof links)[number]; label: string }> = [];
           for (const link of links) {
-            const idx = sentence.indexOf(link.label);
-            if (idx >= 0 && !matches.some((m) => idx < m.end && idx + link.label.length > m.start)) {
-              matches.push({ start: idx, end: idx + link.label.length, link });
+            const label = resolveLabel(link);
+            const idx = link.label ? sentence.indexOf(link.label) : -1;
+            if (idx >= 0 && !matches.some((m) => idx < m.end && idx + label.length > m.start)) {
+              matches.push({ start: idx, end: idx + label.length, link, label });
             } else {
-              trailing.push(link);
+              trailing.push({ link, label });
             }
           }
           matches.sort((a, b) => a.start - b.start);
           let cursor = 0;
           for (const m of matches) {
             if (m.start > cursor) d.appendChild(document.createTextNode(sentence.slice(cursor, m.start)));
-            d.appendChild(makePin(m.link.label, m.link));
+            d.appendChild(makePin(m.label, m.link));
             cursor = m.end;
           }
           if (cursor < sentence.length) d.appendChild(document.createTextNode(sentence.slice(cursor)));
-          for (const link of trailing) {
+          for (const t of trailing) {
             d.appendChild(document.createTextNode(" "));
-            d.appendChild(makePin(link.label, link));
+            d.appendChild(makePin(t.label, t.link));
           }
         };
 
@@ -3720,24 +3811,48 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           let resolvedName: string;
           if (spec.nameKey) {
             const name = gameTranslator.translateItem(spec.nameKey);
-            resolvedName = name && name !== spec.nameKey ? name : i18next.t(spec.nameKey, spec.nameKey);
+            resolvedName = name && name !== spec.nameKey ? name : String(i18next.t(spec.nameKey, spec.nameKey));
           } else {
             const cd = CREATURE_DATA[spec.creatureId as string];
             resolvedName = cd?.alias || cd?.name || String(spec.creatureId);
           }
           const sentence = i18next.t(spec.tmpl, { name: resolvedName });
-          // The {{name}} links to its OWN POI only when the spec gives it a
-          // target (e.g. mimic_potion). Abstract sacrifice items (Treasure
-          // Chest, Worm Crystal, ...) have no map POI, so the name stays plain
-          // text. Any spec.links (e.g. the Mountain Altar where the sacrifice
-          // happens) are appended as trailing pins by renderWithLinks.
+          // {{name}} becomes a link when the spec gives it a target: a travel
+          // pin for unique POIs (bosses/essences), or a search chip when
+          // target.search is set (sacrifice items / mimic potion exist in many
+          // places, so the name fills the search bar instead of jumping to one).
+          // Any spec.links (e.g. the Mountain Altar where the sacrifice happens)
+          // are appended as trailing pins by renderWithLinks.
           const tgt = spec.target ?? (spec.targetType ? { targetType: spec.targetType } : null);
           const nameLinks = tgt ? [{ label: resolvedName, ...tgt }] : [];
           renderWithLinks(sentence, [...nameLinks, ...(spec.links || [])]);
         } else if (spec.key) {
           // Free-form phrase; linkify any entity/place names it references.
-          const sentence = i18next.t(spec.key, spec.key);
-          renderWithLinks(sentence, spec.links || []);
+          const sentence = String(i18next.t(spec.key, spec.key));
+          if (spec.phraseTarget) {
+            // Transformation: the localized phrase carries no stable inline
+            // label, so the WHOLE phrase becomes one search chip that fills the
+            // bar with the contributing perks (OR).
+            d.appendChild(makePin(sentence, spec.phraseTarget, true));
+          } else {
+            // A search-flagged spec.target on a key phrase has no inline label
+            // in the phrase, so surface it as a trailing chip with its
+            // localized in-game name. Non-search targets (fixed coords,
+            // crystal-key chests) keep their previous behaviour of no inline
+            // chip here.
+            const links = [...(spec.links || [])];
+            if (spec.target?.search) {
+              const id = spec.target.itemId ?? spec.target.targetType ?? "";
+              const nk = ITEM_SEARCH_NAME_KEYS[id];
+              let label = id;
+              if (nk) {
+                const t = gameTranslator.translateItem(nk);
+                if (t && t !== nk) label = t;
+              }
+              if (label) links.push({ label, ...spec.target });
+            }
+            renderWithLinks(sentence, links);
+          }
         }
         tooltipEl.appendChild(d);
       }
@@ -4041,8 +4156,14 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   } else {
     const title = document.createElement("div");
     title.style.cssText = "font-weight:bold;font-size:1.25em;margin-bottom:0.3em";
-    const label = poi.type || "Unknown";
-    title.textContent = gameTranslator.translateItem(label).replace(/_/g, " ");
+    // Synthesized pillar place cards (Mountain Altar, Nullifying Altar, ...)
+    // carry their display name directly; everything else derives from type.
+    if (poi.type === "pillar_place") {
+      title.textContent = String((poi as any).name || "Unknown");
+    } else {
+      const label = poi.type || "Unknown";
+      title.textContent = gameTranslator.translateItem(label).replace(/_/g, " ");
+    }
     tooltipEl.appendChild(wrapWithWikiLink(title, poi));
     if (poi.item) {
       const itemDiv = document.createElement("div");

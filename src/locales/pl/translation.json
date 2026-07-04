@@ -5,7 +5,8 @@
     "indexingHint": "Mozesz przegladac mape podczas ladowania danych",
     "popoverTitle": "Szukaj",
     "popoverContent": "Szukaj zaklęć, przedmiotów, różdżek, bossów, stworzeń, mikstur, struktur i nie tylko. Użyj poniższych przycisków filtrowania, aby zawęzić wyniki według kategorii.",
-    "chunksAway": "~{{count}} chunkow dalej"
+    "chunksAway": "~{{count}} chunkow dalej",
+    "openTelescope": "Open in Telescope"
   },
   "spell_prefix": "Zaklęcie",
   "tiers_prefix": "Poziomy",
@@ -5078,7 +5079,8 @@
     "pillarLocked": "Jeszcze nie odblokowano",
     "pillarHowTo": "Aby odblokować",
     "pillarGoto": "Pokaż na mapie",
-    "pillarSingular": "Achievement pillar"
+    "pillarSingular": "Achievement pillar",
+    "pillarSearch": "Search the map"
   },
   "skipCreatures": {
     "title": "Nie dodawaj stworzeń",
@@ -5312,6 +5314,11 @@
       "monkStatue": "Posąg Munkki",
       "sunstone": "Słoneczny kamień",
       "darkSunstone": "Mroczny słoneczny kamień"
+    },
+    "searchNone": "Not found in the three worlds shown here.",
+    "halo": {
+      "light": "light perks",
+      "dark": "dark perks"
     }
   }
 }

@@ -5,7 +5,8 @@
     "indexingHint": "Du kan utforska kartan medan data laddas",
     "popoverTitle": "Söka",
     "popoverContent": "Sök efter trollformler, föremål, trollstavar, bossar, varelser, drycker, strukturer och mer. Använd filterknapparna nedan för att begränsa resultaten efter kategori.",
-    "chunksAway": "~{{count}} chunks bort"
+    "chunksAway": "~{{count}} chunks bort",
+    "openTelescope": "Open in Telescope"
   },
   "spell_prefix": "Trollformel",
   "tiers_prefix": "Nivåer",
@@ -5078,7 +5079,8 @@
     "pillarLocked": "Inte upplåst än",
     "pillarHowTo": "För att låsa upp",
     "pillarGoto": "Visa på kartan",
-    "pillarSingular": "Achievement pillar"
+    "pillarSingular": "Achievement pillar",
+    "pillarSearch": "Search the map"
   },
   "skipCreatures": {
     "title": "Lägg inte till varelser",
@@ -5312,6 +5314,11 @@
       "monkStatue": "en munkstaty",
       "sunstone": "en Sunstone",
       "darkSunstone": "en Dark Sunstone"
+    },
+    "searchNone": "Not found in the three worlds shown here.",
+    "halo": {
+      "light": "light perks",
+      "dark": "dark perks"
     }
   }
 }

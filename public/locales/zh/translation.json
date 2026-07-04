@@ -5,7 +5,8 @@
     "indexingHint": "数据加载时您可以浏览地图",
     "popoverTitle": "搜索",
     "popoverContent": "搜索咒语、物品、魔杖、Boss、生物、药剂、结构等等。使用下面的过滤按钮按类别缩小结果范围。",
-    "chunksAway": "~{{count}} 个区块之外"
+    "chunksAway": "~{{count}} 个区块之外",
+    "openTelescope": "Open in Telescope"
   },
   "spell_prefix": "法术",
   "tiers_prefix": "等级",
@@ -5078,7 +5079,8 @@
     "pillarLocked": "尚未解锁",
     "pillarHowTo": "解锁方法",
     "pillarGoto": "在地图上显示",
-    "pillarSingular": "Achievement pillar"
+    "pillarSingular": "Achievement pillar",
+    "pillarSearch": "Search the map"
   },
   "skipCreatures": {
     "title": "不添加生物",
@@ -5312,6 +5314,11 @@
       "monkStatue": "一座僧侣雕像",
       "sunstone": "一块太阳石",
       "darkSunstone": "一块黑暗太阳石"
+    },
+    "searchNone": "Not found in the three worlds shown here.",
+    "halo": {
+      "light": "light perks",
+      "dark": "dark perks"
     }
   }
 }

@@ -111,7 +111,8 @@
     "indexingHint": "You can navigate the map while data is loading",
     "popoverTitle": "Search",
     "popoverContent": "Search for spells, items, wands, bosses, creatures, potions, structures, and more. Use the filter buttons below to narrow results by category.",
-    "chunksAway": "~{{count}} chunks away"
+    "chunksAway": "~{{count}} chunks away",
+    "openTelescope": "Open in Telescope"
   },
   "alchemy": {
     "ap": {
@@ -5190,9 +5191,15 @@
     "pillarLocked": "Not unlocked yet",
     "pillarHowTo": "To unlock",
     "pillarGoto": "Show on map",
+    "pillarSearch": "Search the map",
     "pillarSingular": "Achievement pillar"
   },
   "pillar": {
+    "searchNone": "Not found in the three worlds shown here.",
+    "halo": {
+      "light": "light perks",
+      "dark": "dark perks"
+    },
     "theme": {
       "sacrifice": "Pillar of Sacrifice & Transformation",
       "essences": "Pillar of the Essences",
