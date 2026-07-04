@@ -41,7 +41,7 @@ import {
   perkAtlasKey,
 } from "./poi-spatial-index";
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
-import { poiPillarAssociation, pillarLocationForFlag, ITEM_SEARCH_NAME_KEYS } from "../data/pillars";
+import { poiPillarAssociation, pillarPlaceAssociation, pillarLocationForFlag, ITEM_SEARCH_NAME_KEYS } from "../data/pillars";
 import { createMarkerTileSource } from "./marker-tile-source";
 import { perkNameKey, perkDescKey } from "./perk-i18n";
 import { canonicalEntityId } from "./entity-canonical";
@@ -3262,11 +3262,12 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   // column. Skipped on the pillar segments themselves. Association is derived
   // from the same PILLAR_REQUIREMENTS targets the forward links use.
   if ((item.poi as any).item !== "pillar_segment") {
-    // Default association from the POI's identity. When this card was opened by
-    // clicking a SPECIFIC pillar segment's link (some entities — Toveri,
+    // Default association from the POI's identity. Synthesized pillar places
+    // (no identity fields) match by coords instead. When this card was opened
+    // by clicking a SPECIFIC pillar segment's link (some entities — Toveri,
     // Kolmisilmä — belong to two pillars), lead the button back to THAT pillar
     // instead. The origin is consumed once, then cleared.
-    const defaultAssoc = poiPillarAssociation(item.poi);
+    const defaultAssoc = poiPillarAssociation(item.poi) ?? pillarPlaceAssociation(item.poi);
     let assoc = defaultAssoc;
     if (pillarLinkOrigin && pillarLinkOrigin.poiId === (item.poi as any).id) {
       assoc = pillarLocationForFlag(pillarLinkOrigin.flag) ?? defaultAssoc;
@@ -3714,52 +3715,69 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           else if (link.chestVariant) p = find((q) => q.chestVariant === link.chestVariant);
           if (p) { open(p); return; }
           if (typeof link.x === "number" && typeof link.y === "number") {
-            // Coords-only destination (altars, moons, ...): no generated POI
-            // exists there, so a bare pan leaves nothing clickable and no way
-            // back to the pillar. When the link carries a wiki page, open a
-            // synthesized place card instead — openTooltipForPOI does the
-            // cinematic pan, and open() sets pillarLinkOrigin so the card's
-            // "Pillar" button leads back to this segment.
+            // Coords-only destination (altars, moons, the Tower, ...): no
+            // generated POI exists there, so open the synthesized place card —
+            // openTooltipForPOI does the cinematic pan and resolves the id to
+            // the click-only pillar_place marker (poi-spatial-index), and
+            // open() sets pillarLinkOrigin so the card's "Pillar" button leads
+            // back to this segment. Without a wiki page the card title renders
+            // as plain text.
             const l = link as import("../data/pillars").PillarLink;
-            if (l.wiki) {
-              const name = l.label ?? (l.labelKey ? String(i18next.t(l.labelKey, l.labelKey)) : "");
-              open({
-                id: `d-pillar-place-${Math.round(link.x)}_${Math.round(link.y)}`,
-                type: "pillar_place",
-                name,
-                x: link.x,
-                y: link.y,
-                wiki: l.wiki,
-                pw: 0,
-              });
-              return;
-            }
-            if (typeof v.panToTarget === "function") v.panToTarget(link.x, link.y);
-            else if (v.viewport) v.viewport.panTo(new (OpenSeadragon as any).Point(link.x, link.y), true);
+            const name = l.label ?? (l.labelKey ? String(i18next.t(l.labelKey, l.labelKey)) : "");
+            open({
+              id: `d-pillar-place-${Math.round(link.x)}_${Math.round(link.y)}`,
+              type: "pillar_place",
+              name,
+              x: link.x,
+              y: link.y,
+              wiki: l.wiki,
+              pw: 0,
+            });
           }
         };
 
-        // A pillar link is either a travel pin (fly to the single POI) or a
-        // search chip (fill the search bar with the OR query). `wrap` allows the
-        // whole-phrase transformation link to line-wrap instead of nowrap.
+        // A pillar link is either a travel pin (fly to the single POI), a
+        // search chip (fill the search bar with the OR query), or — when it
+        // carries only a wiki URL, no map target — an external wiki link
+        // ("New Game+++"). `wrap` allows the whole-phrase transformation link
+        // to line-wrap instead of nowrap.
         const isSearchLink = (link: import("../data/pillars").PillarTarget) =>
           !!((link.searchPerks && link.searchPerks.length) || link.search);
+        const isExternalLink = (link: import("../data/pillars").PillarLink) =>
+          !!link.wiki &&
+          !isSearchLink(link) &&
+          !link.targetType &&
+          !link.itemId &&
+          !link.material &&
+          !link.chestVariant &&
+          typeof link.x !== "number";
         const makePin = (
           label: string,
           link: import("../data/pillars").PillarLink | import("../data/pillars").PillarTarget,
           wrap = false,
         ) => {
           const search = isSearchLink(link);
+          const external = isExternalLink(link as import("../data/pillars").PillarLink);
           const a = document.createElement("a");
-          a.href = "#";
           a.style.cssText =
             "color:#7ab8ff;text-decoration:underline dashed;cursor:pointer;" + (wrap ? "" : "white-space:nowrap");
-          a.title = search
-            ? i18next.t("poi.pillarSearch", "Search the map")
-            : i18next.t("poi.pillarGoto", "Show on map");
           const s = document.createElement("span");
           s.textContent = label;
           a.appendChild(s);
+          if (external) {
+            a.href = String((link as import("../data/pillars").PillarLink).wiki);
+            a.target = "_blank";
+            a.rel = "noopener";
+            a.insertAdjacentHTML(
+              "beforeend",
+              '<i class="bi bi-box-arrow-up-right" style="font-size:0.75em;margin-left:3px;vertical-align:-1px"></i>',
+            );
+            return a;
+          }
+          a.href = "#";
+          a.title = search
+            ? i18next.t("poi.pillarSearch", "Search the map")
+            : i18next.t("poi.pillarGoto", "Show on map");
           a.insertAdjacentHTML("beforeend", search ? SEARCH_SVG : PIN_SVG);
           a.addEventListener("click", (ev) => {
             ev.preventDefault();
@@ -4156,10 +4174,14 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   } else {
     const title = document.createElement("div");
     title.style.cssText = "font-weight:bold;font-size:1.25em;margin-bottom:0.3em";
-    // Synthesized pillar place cards (Mountain Altar, Nullifying Altar, ...)
-    // carry their display name directly; everything else derives from type.
+    // Synthesized pillar place cards (Mountain Altar, The Tower, ...) carry
+    // their display name directly (labelKey wins so the click-only marker's
+    // baked name still translates); everything else derives from type.
     if (poi.type === "pillar_place") {
-      title.textContent = String((poi as any).name || "Unknown");
+      const pp = poi as any;
+      title.textContent = pp.labelKey
+        ? String(i18next.t(pp.labelKey, pp.name || pp.labelKey))
+        : String(pp.name || "Unknown");
     } else {
       const label = poi.type || "Unknown";
       title.textContent = gameTranslator.translateItem(label).replace(/_/g, " ");

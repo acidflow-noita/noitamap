@@ -10,6 +10,7 @@ import type { GenerationResult, POI } from "./telescope-adapter";
 import { applySpoilerFree } from "../spoiler-free";
 import { isSkipCreatures } from "../skip-creatures";
 import spells from "../data/spells.json";
+import { PILLAR_PLACES } from "../data/pillars";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -626,6 +627,29 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
         }
       }
     }
+  }
+
+  // Fixed pillar places (Mountain Altar, The Tower, Moon, ...) have no
+  // generated POI and no sprite — the structure is painted into the baked
+  // background. Add invisible click targets so their card can be (re)opened
+  // by clicking the spot, not only via a pillar link or search. Ids match
+  // unifiedsearch's synthetic search POIs so openTooltipForPOI resolves both
+  // paths to the same marker.
+  for (const p of PILLAR_PLACES) {
+    addClickOnlyMarker(
+      items,
+      {
+        id: `d-pillar-place-${p.key.replace(",", "_")}`,
+        type: "pillar_place",
+        name: p.label,
+        labelKey: p.labelKey,
+        wiki: p.wiki,
+        x: p.x,
+        y: p.y,
+        pw: 0,
+      } as any,
+      0,
+    );
   }
 
   // Compute bounding box

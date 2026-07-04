@@ -55,12 +55,12 @@ function getTrueOrbPOIs(): DynamicPOI[] {
 }
 
 /**
- * Fixed pillar places (Mountain Altar, Nullifying Altar, ...) as synthetic
- * search POIs. They have no generated POI and no atlas sprite, so they can't be
- * map markers — but injecting them into the search index means closing their
- * card isn't permanent: the place name stays searchable and reopens the card
- * via openTooltipForPOI's fallbackPoi path. Rebuilt per language so the label
- * follows a labelKey. See PILLAR_PLACES in data/pillars.
+ * Fixed pillar places (Mountain Altar, The Tower, Moon, ...) as synthetic
+ * search POIs. They have no generated POI — on the map they exist only as
+ * click-only pillar_place markers (poi-spatial-index) — and injecting them
+ * here keeps the place names searchable. Ids match those markers so
+ * openTooltipForPOI anchors the card to the map spot. Rebuilt per language so
+ * the label follows a labelKey. See PILLAR_PLACES in data/pillars.
  */
 function getPillarPlacePOIs(): DynamicPOI[] {
   return PILLAR_PLACES.map((p) => {

@@ -166,7 +166,12 @@ export interface PillarReqSpec {
 // Reusable travel-link presets. Coords for fixed structures come from
 // src/data/structures.json; POI-type links resolve to the generated POI.
 const LINK_TOVERI: PillarLink = { label: "Toveri", targetType: "friend" };
-const LINK_AVARICE: PillarLink = { label: "Avarice Diamond", x: 9472, y: 4330 };
+const LINK_AVARICE: PillarLink = {
+  label: "Avarice Diamond",
+  wiki: "https://noita.wiki.gg/wiki/The_Tower#Avarice_Diamond",
+  x: 9472,
+  y: 4330,
+};
 const LINK_TAPIO: PillarLink = { label: "Tapion vasalli", targetType: "islandspirit" };
 const LINK_KOLMI: PillarLink = { label: "Kolmisilmä", targetType: "boss_centipede" };
 const LINK_ALTAR: PillarLink = {
@@ -195,6 +200,11 @@ const T_END_OF_EVERYTHING: PillarTarget = { x: -4862, y: 15110 };
 const T_GOURD_CAVE: PillarTarget = { x: -16134, y: -6312 };
 const T_EXP_WAND_DIAMOND: PillarTarget = { x: 16127, y: 9986 };
 const T_TOWER_PORTAL: PillarTarget = { x: 9984, y: 4358 };
+
+// Moon links recur across many specs — share one const so the wiki page and
+// coords can never drift between them.
+const LINK_MOON: PillarLink = { label: "Moon", wiki: "https://noita.wiki.gg/wiki/Moon", ...T_MOON };
+const LINK_DARK_MOON: PillarLink = { label: "Dark Moon", wiki: "https://noita.wiki.gg/wiki/Dark_Moon", ...T_DARK_MOON };
 
 // Transformations wiki page (per-transformation section anchors).
 const WIKI_TRANSFORMATIONS = "https://noita.wiki.gg/wiki/Transformations";
@@ -275,7 +285,10 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
     target: { itemId: "darksun_rock", search: true, searchFilter: "i" },
     links: [LINK_ALTAR],
   },
-  secret_tower: { key: "pillar.req.tower", links: [{ label: "The Tower", ...T_TOWER_PORTAL }] },
+  secret_tower: {
+    key: "pillar.req.tower",
+    links: [{ label: "The Tower", wiki: "https://noita.wiki.gg/wiki/The_Tower", ...T_TOWER_PORTAL }],
+  },
   // Transformations: the whole phrase is a search link that fills the search
   // bar with the contributing perks (OR), and the card's wiki link points at
   // the transformation's own section instead of the Achievement Pillars page.
@@ -315,19 +328,24 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
   essence_laser: { tmpl: "pillar.req.collect", nameKey: "item_essence_laser", target: { material: "laser" } },
   essence_air: { tmpl: "pillar.req.collect", nameKey: "item_essence_air", target: { material: "air" } },
   essence_alcohol: { tmpl: "pillar.req.collect", nameKey: "item_essence_alcohol", target: { material: "alcohol" } },
-  secret_moon: { key: "pillar.req.voidMoon", links: [{ label: "Moon", ...T_MOON }] },
-  secret_moon2: { key: "pillar.req.drunkMoon", links: [{ label: "Moon", ...T_MOON }] },
-  special_mood: { key: "pillar.req.gourdMoon", links: [LINK_KOLMI, { label: "Moon", ...T_MOON }] },
-  secret_dmoon: { key: "pillar.req.bloodMoon", links: [{ label: "Dark Moon", ...T_DARK_MOON }] },
-  dead_mood: { key: "pillar.req.darkGourdMoon", links: [{ label: "Dark Moon", ...T_DARK_MOON }] },
-  secret_sun_collision: { key: "pillar.req.asAboveSoBelow", links: [{ label: "Moon", ...T_MOON }] },
-  secret_darksun_collision: { key: "pillar.req.asAboveSoBelowDark", links: [{ label: "Dark Moon", ...T_DARK_MOON }] },
+  secret_moon: { key: "pillar.req.voidMoon", links: [LINK_MOON] },
+  secret_moon2: { key: "pillar.req.drunkMoon", links: [LINK_MOON] },
+  special_mood: { key: "pillar.req.gourdMoon", links: [LINK_KOLMI, LINK_MOON] },
+  secret_dmoon: { key: "pillar.req.bloodMoon", links: [LINK_DARK_MOON] },
+  dead_mood: { key: "pillar.req.darkGourdMoon", links: [LINK_DARK_MOON] },
+  secret_sun_collision: { key: "pillar.req.asAboveSoBelow", links: [LINK_MOON] },
+  secret_darksun_collision: { key: "pillar.req.asAboveSoBelowDark", links: [LINK_DARK_MOON] },
   // Pillar 3 — Completions
   progress_ending0: { key: "pillar.req.endingGreed" },
   progress_ending1_toxic: { key: "pillar.req.endingToxic" },
   progress_ending1_gold: { key: "pillar.req.endingPure" },
   progress_ending2: { key: "pillar.req.endingPeaceful" },
-  progress_newgameplusplus3: { key: "pillar.req.endingNgpp" },
+  // "New Game+++" carries no coords — a wiki-only link renders as an external
+  // URL chip inside the phrase (see makePin's external branch).
+  progress_newgameplusplus3: {
+    key: "pillar.req.endingNgpp",
+    links: [{ label: "New Game+++", wiki: "https://noita.wiki.gg/wiki/New_Game_Plus" }],
+  },
   progress_nightmare: { key: "pillar.req.endingNightmare" },
   // Pillar 4 — Bosses (names from common.csv animal_*; links fly to the boss POI)
   miniboss_dragon: { tmpl: "pillar.req.defeat", nameKey: "animal_boss_dragon", targetType: "dragon" },
@@ -366,23 +384,40 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
   progress_sun: { key: "pillar.req.uusiAurinko", target: T_SCALES },
   progress_darksun: { key: "pillar.req.pimeaAurinko", target: T_SCALES },
   progress_sunkill: { key: "pillar.req.benignSunshine", target: T_SCALES },
-  secret_supernova: { key: "pillar.req.supernova", links: [{ label: "Moon", ...T_MOON }] },
+  secret_supernova: { key: "pillar.req.supernova", links: [LINK_MOON] },
   // Pillar 6 — Secrets
-  secret_greed: { key: "pillar.req.greed", links: [{ label: "Greed Curse Pedestal", ...T_GREED_PEDESTAL }] },
+  secret_greed: {
+    key: "pillar.req.greed",
+    links: [{ label: "Greed Curse Pedestal", wiki: "https://noita.wiki.gg/wiki/Curse_of_Greed", ...T_GREED_PEDESTAL }],
+  },
   final_secret_orb: { key: "pillar.req.friendship", links: [LINK_AVARICE] },
   final_secret_orb2: { key: "pillar.req.friendship2", links: [LINK_TOVERI, LINK_AVARICE] },
   secret_chest_dark: { key: "pillar.req.darkChest", target: { chestVariant: "dark" } },
   secret_chest_light: { key: "pillar.req.coralChest", target: { chestVariant: "coral" } },
   card_unlocked_everything: {
     key: "pillar.req.endOfEverything",
-    links: [{ label: "End of Everything", ...T_END_OF_EVERYTHING }],
+    links: [
+      { label: "End of Everything", wiki: "https://noita.wiki.gg/wiki/The_End_of_Everything", ...T_END_OF_EVERYTHING },
+    ],
   },
   card_unlocked_divide: { key: "pillar.req.avarice", links: [LINK_AVARICE] },
-  secret_fruit: { key: "pillar.req.secretFruit", links: [{ label: "Gourd Cave", ...T_GOURD_CAVE }] },
+  secret_fruit: {
+    key: "pillar.req.secretFruit",
+    links: [{ label: "Gourd Cave", wiki: "https://noita.wiki.gg/wiki/Refreshing_Gourd", ...T_GOURD_CAVE }],
+  },
   secret_allessences: { key: "pillar.req.allEssences", target: T_THE_WORK },
-  secret_meditation: { key: "pillar.req.meditation", links: [{ label: "Meditation Cube", ...T_MEDITATION }] },
-  secret_buried_eye: { key: "pillar.req.buriedEye", links: [{ label: "Buried Eye", ...T_BURIED_EYE }] },
-  secret_hourglass: { key: "pillar.req.hourglass", links: [{ label: "Hourglass", ...T_HOURGLASS }] },
+  secret_meditation: {
+    key: "pillar.req.meditation",
+    links: [{ label: "Meditation Cube", wiki: "https://noita.wiki.gg/wiki/Meditation_Chamber", ...T_MEDITATION }],
+  },
+  secret_buried_eye: {
+    key: "pillar.req.buriedEye",
+    links: [{ label: "Buried Eye", wiki: "https://noita.wiki.gg/wiki/Buried_Eye", ...T_BURIED_EYE }],
+  },
+  secret_hourglass: {
+    key: "pillar.req.hourglass",
+    links: [{ label: "Hourglass", wiki: "https://noita.wiki.gg/wiki/The_Hourglass_Chamber", ...T_HOURGLASS }],
+  },
   progress_hut_a: { key: "pillar.req.expWandGlimmer", target: T_EXP_WAND_DIAMOND },
   progress_hut_b: { key: "pillar.req.expWandRequirements", target: T_EXP_WAND_DIAMOND },
   secret_null: {
@@ -503,8 +538,102 @@ const FLAG_TO_UNLOCK_KEY: Record<string, string> = {
   card_unlocked_divide: "divide",
 };
 
+/**
+ * Curated card title per achievement flag. The naive flag prettifier below
+ * produced garbage for most flags ("Secret: Dmoon", "Special: Mood",
+ * "Essence: Laser"). Boss/creature names and essence names are the exact
+ * common.csv English values; the rest are the wiki/community names the
+ * requirement phrases already use.
+ */
+const PILLAR_TITLES: Record<string, string> = {
+  // Pillar 1 — Sacrifice & Transformation
+  misc_chest_rain: "Treasure Chest Sacrifice",
+  misc_util_rain: "Utility Box Sacrifice",
+  misc_worm_rain: "Worm Crystal Sacrifice",
+  misc_greed_rain: "Greed-Cursed Crystal Sacrifice",
+  misc_altar_tablet: "Emerald Tablet Sacrifice",
+  misc_mimic_potion_rain: "Potion Mimic Sacrifice",
+  misc_monk_bots: "Monk Statue Sacrifice",
+  misc_sun_effect: "Sunstone Sacrifice",
+  misc_darksun_effect: "Dark Sunstone Sacrifice",
+  secret_tower: "The Tower",
+  player_status_ghostly: "Ghostly Transformation",
+  player_status_ratty: "Ratty Transformation",
+  player_status_funky: "Funky Transformation",
+  player_status_lukky: "Lukki Transformation",
+  player_status_halo: "Halo Transformation",
+  // Pillar 2 — Essences
+  essence_fire: "Essence of Fire",
+  essence_water: "Essence of Water",
+  essence_laser: "Essence of Earth",
+  essence_air: "Essence of Air",
+  essence_alcohol: "Essence of Spirits",
+  secret_moon: "Void Moon",
+  secret_moon2: "Drunk Moon",
+  special_mood: "Gourd Moon",
+  secret_dmoon: "Blood Moon",
+  dead_mood: "Dark Gourd Moon",
+  secret_sun_collision: "As Above, So Below",
+  secret_darksun_collision: "As Above, So Below (Dark)",
+  // Pillar 3 — Completions
+  progress_ending0: "Greed Ending",
+  progress_ending1_toxic: "Toxic Ending",
+  progress_ending1_gold: "Pure Ending",
+  progress_ending2: "Peaceful Ending",
+  progress_newgameplusplus3: "New Game+++",
+  progress_nightmare: "Nightmare Mode",
+  // Pillar 4 — Bosses (names verbatim from common.csv animal_*)
+  miniboss_dragon: "Suomuhauki",
+  miniboss_limbs: "Kolmisilmän koipi",
+  miniboss_meat: "Kolmisilmän sydän",
+  miniboss_ghost: "Unohdettu",
+  miniboss_pit: "Sauvojen tuntija",
+  miniboss_alchemist: "Ylialkemisti",
+  miniboss_robot: "Kolmisilmän silmä",
+  miniboss_wizard: "Mestarien mestari",
+  miniboss_maggot: "Limatoukka",
+  miniboss_fish: "Syväolento",
+  miniboss_islandspirit: "Tapion vasalli",
+  miniboss_threelk: "Tapion vasalli (Threelk)",
+  miniboss_gate_monsters: "Gate Guardian",
+  final_secret_orb3: "Toveri",
+  miniboss_sky: "Kivi",
+  boss_centipede: "Kolmisilmä",
+  // Pillar 5 — Accomplishments
+  progress_orb_1: "One Orb of True Knowledge",
+  progress_orb_evil: "Corrupted Orb",
+  progress_orb_all: "All Orbs",
+  progress_pacifist: "Pacifist Run",
+  progress_nogold: "No-Gold Run",
+  progress_clock: "5-Minute Speedrun",
+  progress_minit: "1-Minute Speedrun",
+  progress_nohit: "No-Hit Run",
+  progress_sun: "Uusi Aurinko",
+  progress_darksun: "Pimeä Aurinko",
+  progress_sunkill: "Benign Sunshine",
+  secret_supernova: "Supernova",
+  // Pillar 6 — Secrets
+  secret_greed: "Greed",
+  final_secret_orb: "Friendship",
+  final_secret_orb2: "Friendship 2",
+  secret_chest_dark: "Dark Chest",
+  secret_chest_light: "Coral Chest",
+  card_unlocked_everything: "The End of Everything",
+  card_unlocked_divide: "Avarice",
+  secret_fruit: "Secret Fruit",
+  secret_allessences: "All Essences",
+  secret_meditation: "Meditation",
+  secret_buried_eye: "Buried Eye",
+  secret_hourglass: "Hourglass",
+  progress_hut_a: "Experimental Wand (Glimmer)",
+  progress_hut_b: "Experimental Wand (Requirements)",
+  secret_null: "Nullifying Altar",
+};
+
 /** Human-readable achievement label from the flag (fallback for the card). */
 export function pillarFlagName(flag: string): string {
+  const curated = PILLAR_TITLES[flag];
+  if (curated) return curated;
   return flag
     .replace(/^(misc|secret|progress|player_status|miniboss|essence|final_secret|card_unlocked|special|dead)_/, "$1: ")
     .replace(/_/g, " ")
@@ -692,7 +821,7 @@ export interface PillarPlace {
   key: string;
   label: string;
   labelKey?: string;
-  wiki: string;
+  wiki?: string;
   x: number;
   y: number;
   /** Pillar column this place belongs to (for the reverse "Pillar" button). */
@@ -701,11 +830,12 @@ export interface PillarPlace {
 }
 
 /**
- * Fixed world places referenced by pillar links that carry both coords and a
- * wiki page (Mountain Altar, Nullifying Altar, ...). These have no generated
- * POI and no atlas sprite, so they can't be map markers — instead they are
- * injected as search-only synthetic POIs (see unifiedsearch getPillarPlacePOIs)
- * so closing their card isn't permanent: the place name stays searchable.
+ * Fixed world places referenced by pillar links that carry coords (Mountain
+ * Altar, Nullifying Altar, The Tower, Moon, ...). These have no generated POI
+ * and no atlas sprite — instead they get an invisible click-only marker (see
+ * poi-spatial-index buildMarkerData) and a search-only synthetic POI (see
+ * unifiedsearch getPillarPlacePOIs), so closing their card isn't permanent:
+ * the spot stays clickable and the place name stays searchable.
  *
  * Built by scanning PILLAR_REQUIREMENTS so it can never drift from the links.
  * Deduped by rounded coords; first occurrence wins the pillar association.
@@ -714,7 +844,7 @@ export const PILLAR_PLACES: PillarPlace[] = (() => {
   const out: PillarPlace[] = [];
   const seen = new Set<string>();
   const consider = (link: PillarLink | undefined, pillarIndex: number, flag: string): void => {
-    if (!link || typeof link.x !== "number" || typeof link.y !== "number" || !link.wiki) return;
+    if (!link || typeof link.x !== "number" || typeof link.y !== "number") return;
     const key = `${Math.round(link.x)},${Math.round(link.y)}`;
     if (seen.has(key)) return;
     seen.add(key);
