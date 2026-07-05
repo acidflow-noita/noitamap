@@ -330,7 +330,7 @@ async function _doInitTelescope(): Promise<void> {
 
   // 10. Cache bust check: If we just updated the library, clear the generation cache
   // to ensure fixed logic actually runs instead of showing old empty results.
-  const LIB_VERSION = "2026-06-25-pillars-v6";
+  const LIB_VERSION = "2026-07-05-telescope-4683b94";
   if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
     console.log("[Telescope] Library version updated, clearing generation cache...");
     try {

@@ -103,6 +103,9 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
     // Search inputs
     "search-input": "",
     "search-name": "",
+    // Wand tier dual slider (search_manager reads these; 0..19 = full WAND_TIERS range = no filter)
+    "tier-min-range": "0",
+    "tier-max-range": "19",
     "search-sprite": "",
     "search-ac": "",
     "search-ac-mode": "any",
