@@ -68,11 +68,27 @@ export interface PillarTarget {
   itemId?: string;
   /** Essence material (fire/water/laser/air/alcohol) — matches the essence POI. */
   material?: string;
-  /** Crystal-key chest variant (dark/coral) — matches the chest POI. */
+  /** Crystal-key chest variant (dark/coral/steel) — matches the chest POI. */
   chestVariant?: string;
+  /** Creature id (CREATURE_DATA key) — matches the nearest entity POI. */
+  entity?: string;
+  /** Wand sprite suffix (e.g. "custom/kantele") — matches the unique wand POI. */
+  wandSprite?: string;
   /** Fixed world coords for static structures (e.g. the Avarice Diamond). */
   x?: number;
   y?: number;
+  /**
+   * Search-bar chip resolved from these common.csv keys, OR-joined localized
+   * names ("Essence of Fire | Essence of Water | ..."). Like searchPerks but
+   * for item/spell name keys.
+   */
+  searchNameKeys?: string[];
+  /**
+   * Verbatim search-bar query for POIs that only exist under hand-assigned
+   * English names (e.g. the Music Machines — no in-game name key exists).
+   * Takes precedence over the ITEM_SEARCH_NAME_KEYS lookup.
+   */
+  query?: string;
   /**
    * Search-driven target: clicking populates the search bar with the localized
    * names of these telescope perk ids, OR-combined ("a | b | c"), instead of
@@ -110,6 +126,12 @@ export interface PillarLink extends PillarTarget {
   label?: string;
   /** i18n key resolved at render time — for localized chip labels (halo). */
   labelKey?: string;
+  /**
+   * Search chips backed by a seed-dependent structure POI: when no POI with
+   * this `item` id exists in the marker index, the results banner explains
+   * that only the destination chamber matched (pillar.structureMissing).
+   */
+  structureItem?: string;
   /**
    * Wiki page of a coords-only destination (altars, moons, ...). These spots
    * have no generated POI — nothing clickable at the target — so when set,
@@ -166,6 +188,11 @@ export interface PillarReqSpec {
 // Reusable travel-link presets. Coords for fixed structures come from
 // src/data/structures.json; POI-type links resolve to the generated POI.
 const LINK_TOVERI: PillarLink = { label: "Toveri", targetType: "friend" };
+const LINK_KAUHU: PillarLink = {
+  label: "Kauhuhirviö",
+  wiki: "https://noita.wiki.gg/wiki/Kauhuhirvi%C3%B6",
+  entity: "ultimate_killer",
+};
 const LINK_AVARICE: PillarLink = {
   label: "Avarice Diamond",
   wiki: "https://noita.wiki.gg/wiki/The_Tower#Avarice_Diamond",
@@ -191,11 +218,7 @@ const T_THE_WORK: PillarTarget = { x: 6397, y: 15072 };
 const T_MOON: PillarTarget = { x: 259, y: -25847 };
 const T_DARK_MOON: PillarTarget = { x: 261, y: 37764 };
 const T_SCALES: PillarTarget = { x: 13060, y: 8 };
-const T_GREED_PEDESTAL: PillarTarget = { x: -1376, y: -415 };
 const T_NULL_ALTAR: PillarTarget = { x: 14080, y: 7510 };
-const T_MEDITATION: PillarTarget = { x: -4349, y: 2303 };
-const T_BURIED_EYE: PillarTarget = { x: 3894, y: 4405 };
-const T_HOURGLASS: PillarTarget = { x: -2221, y: 5247 };
 const T_END_OF_EVERYTHING: PillarTarget = { x: -4862, y: 15110 };
 const T_GOURD_CAVE: PillarTarget = { x: -16134, y: -6312 };
 const T_EXP_WAND_DIAMOND: PillarTarget = { x: 16127, y: 9986 };
@@ -205,6 +228,21 @@ const T_TOWER_PORTAL: PillarTarget = { x: 9984, y: 4358 };
 // coords can never drift between them.
 const LINK_MOON: PillarLink = { label: "Moon", wiki: "https://noita.wiki.gg/wiki/Moon", ...T_MOON };
 const LINK_DARK_MOON: PillarLink = { label: "Dark Moon", wiki: "https://noita.wiki.gg/wiki/Dark_Moon", ...T_DARK_MOON };
+
+// Shared by the completion segments.
+const LINK_ENDINGS: PillarLink = { label: "Endings", wiki: "https://noita.wiki.gg/wiki/Endings" };
+const LINK_THE_WORK: PillarLink = { label: "The Work", wiki: "https://noita.wiki.gg/wiki/The_Work_(End)" };
+const LINK_ORBS_11: PillarLink = { label: "11 Orbs", itemId: "orb", search: true, searchFilter: "or" };
+const LINK_ORBS_33: PillarLink = { label: "33 Orbs", itemId: "orb", search: true, searchFilter: "or" };
+
+// Essence search chips: OR-join the localized essence names (common.csv keys).
+const ESSENCE_KEYS_4 = ["item_essence_fire", "item_essence_water", "item_essence_laser", "item_essence_air"];
+const LINK_4_ESSENCES: PillarLink = { label: "4 elemental Essences", search: true, searchNameKeys: ESSENCE_KEYS_4 };
+const LINK_5_ESSENCES: PillarLink = {
+  label: "5 Essences",
+  search: true,
+  searchNameKeys: [...ESSENCE_KEYS_4, "item_essence_alcohol"],
+};
 
 // Transformations wiki page (per-transformation section anchors).
 const WIKI_TRANSFORMATIONS = "https://noita.wiki.gg/wiki/Transformations";
@@ -260,7 +298,10 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
     target: { itemId: "greed_crystal", search: true, searchFilter: "i" },
     links: [LINK_ALTAR],
   },
-  misc_altar_tablet: { key: "pillar.req.altarTablet", links: [LINK_ALTAR] },
+  misc_altar_tablet: {
+    key: "pillar.req.altarTablet",
+    links: [{ label: "3 Emerald Tablets", search: true, query: "Emerald Tablet", searchFilter: "i" }, LINK_ALTAR],
+  },
   misc_mimic_potion_rain: {
     tmpl: "pillar.req.sacrifice",
     nameKey: "animal_mimic_potion",
@@ -328,25 +369,46 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
   essence_laser: { tmpl: "pillar.req.collect", nameKey: "item_essence_laser", target: { material: "laser" } },
   essence_air: { tmpl: "pillar.req.collect", nameKey: "item_essence_air", target: { material: "air" } },
   essence_alcohol: { tmpl: "pillar.req.collect", nameKey: "item_essence_alcohol", target: { material: "alcohol" } },
-  secret_moon: { key: "pillar.req.voidMoon", links: [LINK_MOON] },
-  secret_moon2: { key: "pillar.req.drunkMoon", links: [LINK_MOON] },
-  special_mood: { key: "pillar.req.gourdMoon", links: [LINK_KOLMI, LINK_MOON] },
+  secret_moon: { key: "pillar.req.voidMoon", links: [LINK_MOON, LINK_4_ESSENCES] },
+  secret_moon2: {
+    key: "pillar.req.drunkMoon",
+    links: [LINK_MOON, LINK_5_ESSENCES, { label: "Destruction", search: true, searchNameKeys: ["action_destruction"] }],
+  },
+  special_mood: {
+    key: "pillar.req.gourdMoon",
+    links: [LINK_KOLMI, LINK_MOON, { label: "Refreshing Gourd", itemId: "gourd" }, LINK_4_ESSENCES],
+  },
   secret_dmoon: { key: "pillar.req.bloodMoon", links: [LINK_DARK_MOON] },
   dead_mood: { key: "pillar.req.darkGourdMoon", links: [LINK_DARK_MOON] },
   secret_sun_collision: { key: "pillar.req.asAboveSoBelow", links: [LINK_MOON] },
   secret_darksun_collision: { key: "pillar.req.asAboveSoBelowDark", links: [LINK_DARK_MOON] },
   // Pillar 3 — Completions
-  progress_ending0: { key: "pillar.req.endingGreed" },
-  progress_ending1_toxic: { key: "pillar.req.endingToxic" },
-  progress_ending1_gold: { key: "pillar.req.endingPure" },
-  progress_ending2: { key: "pillar.req.endingPeaceful" },
+  progress_ending0: {
+    key: "pillar.req.endingGreed",
+    links: [{ label: "Greed", wiki: "https://noita.wiki.gg/wiki/Endings" }],
+  },
+  progress_ending1_toxic: {
+    key: "pillar.req.endingToxic",
+    links: [
+      { label: "Sampo", search: true, query: "Sampo" },
+      // Inline "altar" wraps the Mountain Altar goto (label override only).
+      { ...LINK_ALTAR, label: "altar" },
+      LINK_THE_WORK,
+      LINK_ENDINGS,
+    ],
+  },
+  progress_ending1_gold: { key: "pillar.req.endingPure", links: [LINK_THE_WORK, LINK_ORBS_11, LINK_ENDINGS] },
+  progress_ending2: { key: "pillar.req.endingPeaceful", links: [LINK_THE_WORK, LINK_ORBS_33, LINK_ENDINGS] },
   // "New Game+++" carries no coords — a wiki-only link renders as an external
   // URL chip inside the phrase (see makePin's external branch).
   progress_newgameplusplus3: {
     key: "pillar.req.endingNgpp",
-    links: [{ label: "New Game+++", wiki: "https://noita.wiki.gg/wiki/New_Game_Plus" }],
+    links: [{ label: "New Game+++", wiki: "https://noita.wiki.gg/wiki/New_Game_Plus" }, LINK_ENDINGS],
   },
-  progress_nightmare: { key: "pillar.req.endingNightmare" },
+  progress_nightmare: {
+    key: "pillar.req.endingNightmare",
+    links: [{ label: "Nightmare mode", wiki: "https://noita.wiki.gg/wiki/Nightmare_mode" }, LINK_ENDINGS],
+  },
   // Pillar 4 — Bosses (names from common.csv animal_*; links fly to the boss POI)
   miniboss_dragon: { tmpl: "pillar.req.defeat", nameKey: "animal_boss_dragon", targetType: "dragon" },
   miniboss_limbs: { tmpl: "pillar.req.defeat", nameKey: "animal_boss_limbs", targetType: "pyramid_boss" },
@@ -359,7 +421,10 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
   miniboss_maggot: { tmpl: "pillar.req.defeat", nameKey: "animal_maggot_tiny", targetType: "tiny" },
   miniboss_fish: { tmpl: "pillar.req.defeat", nameKey: "animal_fish_giga", targetType: "boss_fish" },
   miniboss_islandspirit: { tmpl: "pillar.req.defeat", nameKey: "animal_islandspirit", targetType: "islandspirit" },
-  miniboss_threelk: { key: "pillar.req.threelk", links: [LINK_TAPIO] },
+  miniboss_threelk: {
+    key: "pillar.req.threelk",
+    links: [LINK_TAPIO, { label: "helpless animals", wiki: "https://noita.wiki.gg/wiki/Helpless_Animals" }],
+  },
   miniboss_gate_monsters: { tmpl: "pillar.req.defeat", creatureId: "boss_gate", targetType: "triangle_boss" },
   final_secret_orb3: { tmpl: "pillar.req.defeat", nameKey: "animal_friend", targetType: "friend" },
   miniboss_sky: { tmpl: "pillar.req.defeat", nameKey: "animal_boss_sky", targetType: "boss_sky" },
@@ -376,50 +441,137 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
   progress_orb_1: { key: "pillar.req.orb1", phraseTarget: { itemId: "orb", search: true, searchFilter: "or" } },
   progress_orb_evil: { key: "pillar.req.orbEvil", phraseTarget: { itemId: "orb", search: true, searchFilter: "or" } },
   progress_orb_all: { key: "pillar.req.orbAll", phraseTarget: { itemId: "orb", search: true, searchFilter: "or" } },
-  progress_pacifist: { key: "pillar.req.pacifist" },
-  progress_nogold: { key: "pillar.req.nogold" },
+  progress_pacifist: {
+    key: "pillar.req.pacifist",
+    links: [{ label: "pacifist", wiki: "https://noita.wiki.gg/wiki/Pacifist" }],
+  },
+  progress_nogold: {
+    key: "pillar.req.nogold",
+    links: [{ label: "gold", wiki: "https://noita.wiki.gg/wiki/Gold" }],
+  },
   progress_clock: { key: "pillar.req.speedrun5", target: T_THE_WORK },
   progress_minit: { key: "pillar.req.speedrun1", target: T_THE_WORK },
-  progress_nohit: { key: "pillar.req.nohit" },
+  progress_nohit: {
+    key: "pillar.req.nohit",
+    links: [{ label: "no-hit", wiki: "https://noita.wiki.gg/wiki/Damage_Types" }],
+  },
   progress_sun: { key: "pillar.req.uusiAurinko", target: T_SCALES },
   progress_darksun: { key: "pillar.req.pimeaAurinko", target: T_SCALES },
-  progress_sunkill: { key: "pillar.req.benignSunshine", target: T_SCALES },
+  progress_sunkill: {
+    key: "pillar.req.benignSunshine",
+    target: T_SCALES,
+    links: [LINK_KOLMI, { label: "wiki", wiki: "https://noita.wiki.gg/wiki/Uusi_Aurinko#Miscellaneous" }],
+  },
   secret_supernova: { key: "pillar.req.supernova", links: [LINK_MOON] },
   // Pillar 6 — Secrets
+  // The pedestal is a synthetic item POI (item "greed_curse", greed_curse.png
+  // sprite) pushed by telescope-adapter, so gotos land on a real marker.
   secret_greed: {
     key: "pillar.req.greed",
-    links: [{ label: "Greed Curse Pedestal", wiki: "https://noita.wiki.gg/wiki/Curse_of_Greed", ...T_GREED_PEDESTAL }],
+    target: { itemId: "greed_curse" },
+    links: [{ label: "Greed Curse Pedestal", wiki: "https://noita.wiki.gg/wiki/Curse_of_Greed", itemId: "greed_curse" }],
   },
-  final_secret_orb: { key: "pillar.req.friendship", links: [LINK_AVARICE] },
+  final_secret_orb: { key: "pillar.req.friendship", links: [LINK_KAUHU, LINK_AVARICE] },
   final_secret_orb2: { key: "pillar.req.friendship2", links: [LINK_TOVERI, LINK_AVARICE] },
-  secret_chest_dark: { key: "pillar.req.darkChest", target: { chestVariant: "dark" } },
-  secret_chest_light: { key: "pillar.req.coralChest", target: { chestVariant: "coral" } },
-  card_unlocked_everything: {
-    key: "pillar.req.endOfEverything",
+  // Crystal-key chests: phrase links for the key (wiki only — the charged key
+  // is a quest item, never a generated POI), the chargers, and the chest
+  // itself. Labels match the EN phrases inline; other locales fall back to
+  // trailing chips.
+  secret_chest_dark: {
+    key: "pillar.req.darkChest",
+    target: { chestVariant: "dark" },
     links: [
-      { label: "End of Everything", wiki: "https://noita.wiki.gg/wiki/The_End_of_Everything", ...T_END_OF_EVERYTHING },
+      { label: "Crystal Key", wiki: "https://noita.wiki.gg/wiki/Crystal_Key" },
+      { label: "Huilu", wandSprite: "custom/flute" },
+      { label: "Kantele", wandSprite: "custom/kantele" },
+      { label: "chest in eastern Hell", chestVariant: "dark" },
     ],
   },
-  card_unlocked_divide: { key: "pillar.req.avarice", links: [LINK_AVARICE] },
+  secret_chest_light: {
+    key: "pillar.req.coralChest",
+    target: { chestVariant: "coral" },
+    links: [
+      { label: "Crystal Key", wiki: "https://noita.wiki.gg/wiki/Crystal_Key" },
+      { label: "Music Machines", search: true, query: "Music Machine" },
+      { label: "Eastern Cloudscape chest", chestVariant: "coral" },
+    ],
+  },
+  // The unique steel chest inside the End of Everything room is the actual
+  // goal: the link flies to that chest POI (chestVariant steel), falling back
+  // to the room coords when no generated chest exists. The spec-level target
+  // gives the chest's own card a reverse "Pillar" button pointing HERE rather
+  // than at the generic "sacrifice a chest" segment.
+  card_unlocked_everything: {
+    key: "pillar.req.endOfEverything",
+    target: { chestVariant: "steel" },
+    links: [
+      {
+        label: "End of Everything",
+        wiki: "https://noita.wiki.gg/wiki/The_End_of_Everything",
+        chestVariant: "steel",
+        ...T_END_OF_EVERYTHING,
+      },
+    ],
+  },
+  card_unlocked_divide: {
+    key: "pillar.req.avarice",
+    links: [LINK_AVARICE, { label: "Curse of Greed", itemId: "greed_curse" }],
+  },
   secret_fruit: {
     key: "pillar.req.secretFruit",
-    links: [{ label: "Gourd Cave", wiki: "https://noita.wiki.gg/wiki/Refreshing_Gourd", ...T_GOURD_CAVE }],
+    links: [
+      LINK_KOLMI,
+      { label: "gourd", search: true, searchNameKeys: ["item_gourd"] },
+      { label: "Gourd Cave", wiki: "https://noita.wiki.gg/wiki/Refreshing_Gourd", ...T_GOURD_CAVE },
+    ],
   },
-  secret_allessences: { key: "pillar.req.allEssences", target: T_THE_WORK },
+  secret_allessences: {
+    key: "pillar.req.allEssences",
+    target: T_THE_WORK,
+    // Only the 4 elemental essences count — the Essence of Spirits must NOT
+    // be in the OR search.
+    links: [{ label: "4 normal Essences", search: true, searchNameKeys: ESSENCE_KEYS_4 }],
+  },
+  // The chip searches for the cube (telescope prop, when the seed spawns one)
+  // AND the Meditation Chamber (synthetic scene-anchored POI).
   secret_meditation: {
     key: "pillar.req.meditation",
-    links: [{ label: "Meditation Cube", wiki: "https://noita.wiki.gg/wiki/Meditation_Chamber", ...T_MEDITATION }],
+    wiki: "https://noita.wiki.gg/wiki/Meditation_Chamber",
+    target: { itemId: "meditation_cube" },
+    links: [{ label: "Meditation Cube", search: true, query: "Meditation", structureItem: "meditation_cube" }],
   },
+  // The Buried Eye spawns at a per-seed position — the chip searches for the
+  // structure AND its destination chamber (both synthetic scene-anchored POIs).
   secret_buried_eye: {
     key: "pillar.req.buriedEye",
-    links: [{ label: "Buried Eye", wiki: "https://noita.wiki.gg/wiki/Buried_Eye", ...T_BURIED_EYE }],
+    wiki: "https://noita.wiki.gg/wiki/Buried_Eye",
+    target: { itemId: "buried_eye" },
+    links: [
+      { label: "Buried Eye", search: true, query: "Buried Eye", structureItem: "buried_eye" },
+      { label: "Teleportatium", search: true, searchNameKeys: ["mat_magic_liquid_teleportation"] },
+    ],
   },
+  // The Hourglass Chamber spawns left OR right of the Hiisi Base shop (50/50
+  // per seed) — goto resolves the synthetic hourglass POI placed at the
+  // scanner's per-seed pixel-scene position, never a fixed guess.
   secret_hourglass: {
     key: "pillar.req.hourglass",
-    links: [{ label: "Hourglass", wiki: "https://noita.wiki.gg/wiki/The_Hourglass_Chamber", ...T_HOURGLASS }],
+    target: { itemId: "hourglass" },
+    links: [
+      { label: "Hourglass", itemId: "hourglass", wiki: "https://noita.wiki.gg/wiki/The_Hourglass_Chamber" },
+      { label: "Unstable Teleportatium", search: true, searchNameKeys: ["mat_magic_liquid_unstable_teleportation"] },
+    ],
   },
-  progress_hut_a: { key: "pillar.req.expWandGlimmer", target: T_EXP_WAND_DIAMOND },
-  progress_hut_b: { key: "pillar.req.expWandRequirements", target: T_EXP_WAND_DIAMOND },
+  progress_hut_a: {
+    key: "pillar.req.expWandGlimmer",
+    target: T_EXP_WAND_DIAMOND,
+    links: [{ label: "Experimental wand", wiki: "https://noita.wiki.gg/wiki/Wands#Unique_wands" }],
+  },
+  progress_hut_b: {
+    key: "pillar.req.expWandRequirements",
+    target: T_EXP_WAND_DIAMOND,
+    links: [{ label: "Experimental wand", wiki: "https://noita.wiki.gg/wiki/Wands#Unique_wands" }],
+  },
   secret_null: {
     key: "pillar.req.nullAltar",
     links: [{ label: "Nullifying Altar", wiki: "https://noita.wiki.gg/wiki/Nullifying_Altar", ...T_NULL_ALTAR }],
@@ -763,27 +915,49 @@ export function poiPillarAssociation(poi: any): { pillarIndex: number; flag: str
   const material = String(poi.material || "");
   const chestVariant = String(poi.chestVariant || "");
   const perk = item === "perk" ? String(poi.perk || "").toLowerCase() : "";
+  // Entity id: generated POIs carry a full xml path, manual ones a bare id.
+  const entity =
+    type === "entity"
+      ? String(poi.entity || "")
+          .toLowerCase()
+          .replace(/\.xml$/, "")
+          .split("/")
+          .pop() || ""
+      : "";
 
   const perkInTarget = (t: PillarTarget | undefined) => !!(perk && t?.searchPerks?.includes(perk));
 
-  for (let i = 0; i < PILLAR_FLAGS.length; i++) {
-    for (const [flag] of PILLAR_FLAGS[i]) {
-      const spec = PILLAR_REQUIREMENTS[flag];
-      if (!spec) continue;
-      // Identity fields may live on target (tmpl {{name}} links) or on
-      // phraseTarget (whole-phrase links, e.g. the orb search).
-      const t = spec.target ?? spec.phraseTarget;
-      const matchType = spec.targetType && spec.targetType === type;
-      const matchTargetType = t?.targetType && t.targetType === type;
-      const matchItem = t?.itemId && t.itemId === item;
-      const matchMat = t?.material && t.material === material;
-      const matchChest = t?.chestVariant && t.chestVariant === chestVariant;
-      // Transformation perks: any perk that adds a level toward the segment's
-      // transformation (searchPerks of the phrase link or the halo chips).
-      const matchPerk =
-        perkInTarget(t) || perkInTarget(spec.phraseTarget) || (spec.links ?? []).some((l) => perkInTarget(l));
-      if (matchType || matchTargetType || matchItem || matchMat || matchChest || matchPerk) {
-        return { pillarIndex: i, flag, x: pillarColumnX(i), y: PILLAR_BASE.y - 4 * SIZE };
+  // Two passes: specific identity (item/material/chestVariant/entity/perk)
+  // first, generic POI-type matches second. Otherwise the steel/dark/coral
+  // chests would associate with the "sacrifice a chest" segment, whose generic
+  // chest target wins by pillar order over their own achievements.
+  for (const specificOnly of [true, false]) {
+    for (let i = 0; i < PILLAR_FLAGS.length; i++) {
+      for (const [flag] of PILLAR_FLAGS[i]) {
+        const spec = PILLAR_REQUIREMENTS[flag];
+        if (!spec) continue;
+        // Identity fields may live on target (tmpl {{name}} links) or on
+        // phraseTarget (whole-phrase links, e.g. the orb search).
+        const t = spec.target ?? spec.phraseTarget;
+        let hit: boolean;
+        if (specificOnly) {
+          const matchItem = !!(t?.itemId && t.itemId === item);
+          const matchMat = !!(t?.material && t.material === material);
+          const matchChest = !!(t?.chestVariant && t.chestVariant === chestVariant);
+          // Entities are referenced from links (e.g. Kauhuhirviö on the
+          // friendship segment), not targets.
+          const matchEntity = !!(entity && (spec.links ?? []).some((l) => l.entity === entity));
+          // Transformation perks: any perk that adds a level toward the
+          // segment's transformation (phrase link searchPerks or halo chips).
+          const matchPerk =
+            perkInTarget(t) || perkInTarget(spec.phraseTarget) || (spec.links ?? []).some((l) => perkInTarget(l));
+          hit = matchItem || matchMat || matchChest || matchEntity || matchPerk;
+        } else {
+          hit = !!((spec.targetType && spec.targetType === type) || (t?.targetType && t.targetType === type));
+        }
+        if (hit) {
+          return { pillarIndex: i, flag, x: pillarColumnX(i), y: PILLAR_BASE.y - 4 * SIZE };
+        }
       }
     }
   }

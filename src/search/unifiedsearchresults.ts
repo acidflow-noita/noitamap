@@ -271,8 +271,18 @@ export class UnifiedSearchResults extends EventEmitter2 {
     }
   }
 
-  setResults(results: UnifiedSearchResult[]) {
+  setResults(results: UnifiedSearchResult[], notice?: string) {
     this.clearResults(results.length === 0);
+
+    // Info banner shown WITH results (pillar structure searches where the
+    // seed spawned no structure — only its destination chamber matched).
+    if (notice && results.length > 0) {
+      const noteLi = document.createElement("li");
+      noteLi.className = "search-result-notice";
+      noteLi.style.cssText = "padding:0.4em 0.75em;color:var(--warning-fg,#d9b44a);font-size:0.85em;line-height:1.4";
+      noteLi.textContent = notice;
+      this.wrapper.appendChild(noteLi);
+    }
 
     for (const [idx, result] of results.entries()) {
       const listItem = document.createElement("li");

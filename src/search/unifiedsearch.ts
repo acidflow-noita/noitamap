@@ -536,7 +536,7 @@ export interface UnifiedSearch {
   activeFilters: Set<string>;
   searchInput: HTMLInputElement;
   triggerSearch(value: string, selectIndex?: number): void;
-  triggerSearchWithFallback(value: string, note: { text: string; telescopeUrl: string }): void;
+  triggerSearchWithFallback(value: string, note: { text: string; telescopeUrl: string }, resultNotice?: string): void;
   setCategoryFilter(filter?: string): void;
   getCurrentQuery(): string;
   showOverlay(): void;
@@ -567,6 +567,7 @@ export class UnifiedSearch extends EventEmitter2 {
   private indexingListeners: Set<(s: "idle" | "indexing" | "ready") => void> = new Set();
   /** One-shot Telescope fallback note for the next no-results render (pillar search links). */
   private pendingNoResultNote: { text: string; telescopeUrl: string } | null = null;
+  private activeResultNotice: { text: string; forQuery: string } | null = null;
 
   public getIndexingState(): "idle" | "indexing" | "ready" {
     return this.indexingState;
@@ -944,6 +945,11 @@ export class UnifiedSearch extends EventEmitter2 {
   triggerSearch(value: string) {
     this.searchInput.value = value;
     (this as any).explicitShowRequested = true;
+    // Bypass the dedup guard in updateSearchResults: a pillar link can fire
+    // the SAME query that's already in the input (orb chips on two different
+    // cards), and without this the guard would return early, never consuming
+    // explicitShowRequested — so the results overlay wouldn't reopen.
+    this.lastSearchText = "__force__";
     this.updateSearchResults();
   }
 
@@ -951,10 +957,14 @@ export class UnifiedSearch extends EventEmitter2 {
    * Pillar search link: run a query and, if it finds nothing on this seed's
    * visible map, show a Telescope fallback note (the target may still exist
    * off-screen or in a parallel world the map didn't render). The note is
-   * consumed on the next render.
+   * consumed on the next render. `resultNotice` is the opposite case — an
+   * info banner shown WITH the results (e.g. structure searches where only
+   * the destination chamber exists on this seed); it stays attached to this
+   * exact query and disappears once the query changes.
    */
-  triggerSearchWithFallback(value: string, note: { text: string; telescopeUrl: string }): void {
+  triggerSearchWithFallback(value: string, note: { text: string; telescopeUrl: string }, resultNotice?: string): void {
     this.pendingNoResultNote = note;
+    this.activeResultNotice = resultNotice ? { text: resultNotice, forQuery: value } : null;
     this.triggerSearch(value);
   }
 
@@ -1490,7 +1500,13 @@ export class UnifiedSearch extends EventEmitter2 {
         // (seed baked into the URL, mirroring the toolbar Telescope button).
         this.searchResults.setNoResults(pillarNote);
       } else {
-        this.searchResults.setResults(combinedResults);
+        // Structure searches (Buried Eye / Meditation Cube) attach an info
+        // banner to their exact query while it stays in the bar.
+        const notice =
+          this.activeResultNotice && this.activeResultNotice.forQuery === searchText
+            ? this.activeResultNotice.text
+            : undefined;
+        this.searchResults.setResults(combinedResults, notice);
       }
       return;
     }

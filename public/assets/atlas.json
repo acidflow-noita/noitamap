@@ -47982,283 +47982,283 @@
   "item:utility_box": {
     "x": 2040,
     "y": 653,
-    "w": 10,
+    "w": 16,
     "h": 10,
     "ox": 8,
     "oy": 5
   },
   "wand:wand_0007": {
-    "x": 2051,
+    "x": 2057,
     "y": 653,
     "w": 13,
     "h": 10
   },
   "wand:wand_0023": {
-    "x": 2065,
+    "x": 2071,
     "y": 653,
     "w": 13,
     "h": 10
   },
   "wand:wand_0071": {
-    "x": 2079,
+    "x": 2085,
     "y": 653,
     "w": 11,
     "h": 10
   },
   "wand:wand_0072": {
-    "x": 2091,
+    "x": 2097,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "wand:wand_0095": {
-    "x": 2099,
+    "x": 2105,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "wand:wand_0105": {
-    "x": 2107,
+    "x": 2113,
     "y": 653,
     "w": 9,
     "h": 10
   },
   "wand:wand_0142": {
-    "x": 2117,
+    "x": 2123,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "wand:wand_0175": {
-    "x": 2125,
+    "x": 2131,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "wand:wand_0192": {
-    "x": 2133,
+    "x": 2139,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "wand:wand_0195": {
-    "x": 2141,
+    "x": 2147,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "wand:wand_0201": {
-    "x": 2149,
+    "x": 2155,
     "y": 653,
     "w": 5,
     "h": 10
   },
   "wand:wand_0204": {
-    "x": 2155,
+    "x": 2161,
     "y": 653,
     "w": 13,
     "h": 10
   },
   "wand:wand_0215": {
-    "x": 2169,
+    "x": 2175,
     "y": 653,
     "w": 15,
     "h": 10
   },
   "wand:wand_0225": {
-    "x": 2185,
+    "x": 2191,
     "y": 653,
     "w": 11,
     "h": 10
   },
   "wand:wand_0230": {
-    "x": 2197,
+    "x": 2203,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "wand:wand_0250": {
-    "x": 2205,
+    "x": 2211,
     "y": 653,
     "w": 9,
     "h": 10
   },
   "wand:wand_0326": {
-    "x": 2215,
+    "x": 2221,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "wand:wand_0339": {
-    "x": 2223,
+    "x": 2229,
     "y": 653,
     "w": 5,
     "h": 10
   },
   "wand:wand_0365": {
-    "x": 2229,
+    "x": 2235,
     "y": 653,
     "w": 13,
     "h": 10
   },
   "wand:wand_0366": {
-    "x": 2243,
+    "x": 2249,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "wand:wand_0371": {
-    "x": 2251,
+    "x": 2257,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "wand:wand_0374": {
-    "x": 2259,
+    "x": 2265,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "wand:wand_0404": {
-    "x": 2267,
+    "x": 2273,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "wand:wand_0443": {
-    "x": 2275,
+    "x": 2281,
     "y": 653,
     "w": 17,
     "h": 10
   },
   "wand:wand_0447": {
-    "x": 2293,
-    "y": 653,
-    "w": 5,
-    "h": 10
-  },
-  "wand:wand_0462": {
     "x": 2299,
     "y": 653,
     "w": 5,
     "h": 10
   },
-  "wand:wand_0463": {
+  "wand:wand_0462": {
     "x": 2305,
     "y": 653,
     "w": 5,
     "h": 10
   },
-  "wand:wand_0516": {
+  "wand:wand_0463": {
     "x": 2311,
+    "y": 653,
+    "w": 5,
+    "h": 10
+  },
+  "wand:wand_0516": {
+    "x": 2317,
     "y": 653,
     "w": 11,
     "h": 10
   },
   "wand:wand_0541": {
-    "x": 2323,
+    "x": 2329,
     "y": 653,
     "w": 17,
     "h": 10
   },
   "wand:wand_0556": {
-    "x": 2341,
+    "x": 2347,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "wand:wand_0566": {
-    "x": 2349,
+    "x": 2355,
     "y": 653,
     "w": 9,
     "h": 10
   },
   "wand:wand_0607": {
-    "x": 2359,
+    "x": 2365,
     "y": 653,
     "w": 11,
     "h": 10
   },
   "wand:wand_0616": {
-    "x": 2371,
+    "x": 2377,
     "y": 653,
     "w": 15,
     "h": 10
   },
   "wand:wand_0642": {
-    "x": 2387,
+    "x": 2393,
     "y": 653,
     "w": 11,
     "h": 10
   },
   "wand:wand_0646": {
-    "x": 2399,
+    "x": 2405,
     "y": 653,
     "w": 13,
     "h": 10
   },
   "wand:wand_0670": {
-    "x": 2413,
+    "x": 2419,
     "y": 653,
     "w": 11,
     "h": 10
   },
   "wand:wand_0674": {
-    "x": 2425,
+    "x": 2431,
     "y": 653,
     "w": 5,
     "h": 10
   },
   "wand:wand_0723": {
-    "x": 2431,
+    "x": 2437,
     "y": 653,
     "w": 13,
     "h": 10
   },
   "wand:wand_0764": {
-    "x": 2445,
+    "x": 2451,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "wand:wand_0847": {
-    "x": 2453,
+    "x": 2459,
     "y": 653,
     "w": 5,
     "h": 10
   },
   "wand:wand_0877": {
-    "x": 2459,
+    "x": 2465,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "wand:wand_0890": {
-    "x": 2467,
+    "x": 2473,
     "y": 653,
     "w": 11,
     "h": 10
   },
   "wand:wand_0895": {
-    "x": 2479,
+    "x": 2485,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "wand:wand_0919": {
-    "x": 2487,
+    "x": 2493,
     "y": 653,
     "w": 11,
     "h": 10
   },
   "wand:wand_0931": {
-    "x": 2499,
+    "x": 2505,
     "y": 653,
     "w": 5,
     "h": 10
   },
   "projectile:angry_ghost": {
-    "x": 2505,
+    "x": 2511,
     "y": 653,
     "w": 9,
     "h": 10,
@@ -48313,7 +48313,7 @@
     ]
   },
   "projectile:death_ghost": {
-    "x": 2515,
+    "x": 2521,
     "y": 653,
     "w": 9,
     "h": 10,
@@ -48368,7 +48368,7 @@
     ]
   },
   "projectile:glitter_bomb": {
-    "x": 2525,
+    "x": 2531,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -48393,7 +48393,7 @@
     ]
   },
   "projectile:heal_ghost": {
-    "x": 2536,
+    "x": 2542,
     "y": 653,
     "w": 9,
     "h": 10,
@@ -48448,7 +48448,7 @@
     ]
   },
   "projectile:hungry_ghost": {
-    "x": 2546,
+    "x": 2552,
     "y": 653,
     "w": 9,
     "h": 10,
@@ -48503,7 +48503,7 @@
     ]
   },
   "projectile:orb": {
-    "x": 2556,
+    "x": 2562,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -48529,7 +48529,7 @@
     ]
   },
   "projectile:orb_blue": {
-    "x": 2567,
+    "x": 2573,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -48555,7 +48555,7 @@
     ]
   },
   "projectile:orb_dark": {
-    "x": 2578,
+    "x": 2584,
     "y": 653,
     "w": 11,
     "h": 10,
@@ -48581,7 +48581,7 @@
     ]
   },
   "projectile:orb_green": {
-    "x": 2590,
+    "x": 2596,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -48607,7 +48607,7 @@
     ]
   },
   "projectile:orb_grey": {
-    "x": 2601,
+    "x": 2607,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -48633,7 +48633,7 @@
     ]
   },
   "projectile:orb_pink": {
-    "x": 2612,
+    "x": 2618,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -48659,7 +48659,7 @@
     ]
   },
   "projectile:orb_red": {
-    "x": 2623,
+    "x": 2629,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -48685,7 +48685,7 @@
     ]
   },
   "projectile:orb_yellow": {
-    "x": 2634,
+    "x": 2640,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -48711,7 +48711,7 @@
     ]
   },
   "projectile:playerdrone": {
-    "x": 2645,
+    "x": 2651,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -48786,7 +48786,7 @@
     ]
   },
   "projectile:shield_ghost": {
-    "x": 2656,
+    "x": 2662,
     "y": 653,
     "w": 9,
     "h": 10,
@@ -48841,7 +48841,7 @@
     ]
   },
   "projectile:slow_bullet": {
-    "x": 2666,
+    "x": 2672,
     "y": 653,
     "w": 11,
     "h": 10,
@@ -48867,7 +48867,7 @@
     ]
   },
   "projectile:tiny_ghost": {
-    "x": 2678,
+    "x": 2684,
     "y": 653,
     "w": 9,
     "h": 10,
@@ -48922,157 +48922,157 @@
     ]
   },
   "prop_break:log_vertical_10_00": {
-    "x": 2688,
+    "x": 2694,
     "y": 653,
     "w": 2,
     "h": 10
   },
   "prop_break:metalrod_vertical_10_00": {
-    "x": 2691,
+    "x": 2697,
     "y": 653,
     "w": 1,
     "h": 10
   },
   "prop_break:plank_vertical_10_00": {
-    "x": 2693,
+    "x": 2699,
     "y": 653,
     "w": 2,
     "h": 10
   },
   "prop_break:wire_vertical_10_00": {
-    "x": 2696,
+    "x": 2702,
     "y": 653,
     "w": 1,
     "h": 10
   },
   "prop:bottle_blue": {
-    "x": 2698,
+    "x": 2704,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "prop:bottle_green": {
-    "x": 2706,
+    "x": 2712,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "prop:bottle_red": {
-    "x": 2714,
+    "x": 2720,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "prop:bottle_yellow": {
-    "x": 2722,
+    "x": 2728,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "prop:furniture_castle_table": {
-    "x": 2730,
+    "x": 2736,
     "y": 653,
     "w": 23,
     "h": 10
   },
   "prop:furniture_footlocker": {
-    "x": 2754,
+    "x": 2760,
     "y": 653,
     "w": 21,
     "h": 10
   },
   "prop:furniture_stool": {
-    "x": 2776,
+    "x": 2782,
     "y": 653,
     "w": 10,
     "h": 10
   },
   "prop:furniture_wood_table": {
-    "x": 2787,
+    "x": 2793,
     "y": 653,
     "w": 27,
     "h": 10
   },
   "prop:physics_fungus_acid_foot": {
-    "x": 2815,
+    "x": 2821,
     "y": 653,
     "w": 6,
     "h": 10
   },
   "prop:physics_fungus_acid_foot_thick": {
-    "x": 2822,
+    "x": 2828,
     "y": 653,
     "w": 8,
     "h": 10
   },
   "prop:physics_fungus_acid_stalk": {
-    "x": 2831,
+    "x": 2837,
     "y": 653,
     "w": 6,
     "h": 10
   },
   "prop:physics_fungus_acid_stalk_thick": {
-    "x": 2838,
+    "x": 2844,
     "y": 653,
     "w": 6,
     "h": 10
   },
   "prop:physics_fungus_foot": {
-    "x": 2845,
+    "x": 2851,
     "y": 653,
     "w": 6,
     "h": 10
   },
   "prop:physics_fungus_foot_thick": {
-    "x": 2852,
+    "x": 2858,
     "y": 653,
     "w": 8,
     "h": 10
   },
   "prop:physics_fungus_stalk": {
-    "x": 2861,
+    "x": 2867,
     "y": 653,
     "w": 6,
     "h": 10
   },
   "prop:physics_fungus_stalk_thick": {
-    "x": 2868,
+    "x": 2874,
     "y": 653,
     "w": 6,
     "h": 10
   },
   "prop:physics_fungus_trap_foot": {
-    "x": 2875,
+    "x": 2881,
     "y": 653,
     "w": 6,
     "h": 10
   },
   "prop:physics_fungus_trap_stalk": {
-    "x": 2882,
+    "x": 2888,
     "y": 653,
     "w": 6,
     "h": 10
   },
   "prop:sandbag": {
-    "x": 2889,
+    "x": 2895,
     "y": 653,
     "w": 10,
     "h": 10
   },
   "prop:trap_laser_small": {
-    "x": 2900,
+    "x": 2906,
     "y": 653,
     "w": 10,
     "h": 10
   },
   "prop:trap_laser_small_b": {
-    "x": 2911,
+    "x": 2917,
     "y": 653,
     "w": 10,
     "h": 10
   },
   "prop:trap_laser_small_b_overlay": {
-    "x": 2922,
+    "x": 2928,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -49098,7 +49098,7 @@
     ]
   },
   "prop:trap_laser_small_overlay": {
-    "x": 2933,
+    "x": 2939,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -49124,7 +49124,7 @@
     ]
   },
   "enemy:meatmaggot_body": {
-    "x": 2944,
+    "x": 2950,
     "y": 653,
     "w": 10,
     "h": 9,
@@ -49149,7 +49149,7 @@
     ]
   },
   "enemy:meatmaggot_head": {
-    "x": 2955,
+    "x": 2961,
     "y": 653,
     "w": 10,
     "h": 9,
@@ -49184,7 +49184,7 @@
     ]
   },
   "enemy:meatmaggot_tail": {
-    "x": 2966,
+    "x": 2972,
     "y": 653,
     "w": 10,
     "h": 9,
@@ -49209,7 +49209,7 @@
     ]
   },
   "enemy:worm_tiny_body": {
-    "x": 2977,
+    "x": 2983,
     "y": 653,
     "w": 10,
     "h": 9,
@@ -49234,7 +49234,7 @@
     ]
   },
   "enemy:worm_tiny_head": {
-    "x": 2988,
+    "x": 2994,
     "y": 653,
     "w": 10,
     "h": 9,
@@ -49269,7 +49269,7 @@
     ]
   },
   "enemy:worm_tiny_tail": {
-    "x": 2999,
+    "x": 3005,
     "y": 653,
     "w": 10,
     "h": 9,
@@ -49294,19 +49294,19 @@
     ]
   },
   "enemy:boss_robot_knee": {
-    "x": 3010,
+    "x": 3016,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "enemy:boss_robot_limb_1": {
-    "x": 3020,
+    "x": 3026,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "item:chargegun": {
-    "x": 3030,
+    "x": 3036,
     "y": 653,
     "w": 15,
     "h": 9,
@@ -49331,7 +49331,7 @@
     ]
   },
   "item:flamethrower": {
-    "x": 3046,
+    "x": 3052,
     "y": 653,
     "w": 15,
     "h": 9,
@@ -49356,19 +49356,19 @@
     ]
   },
   "item:flask_liquid": {
-    "x": 3062,
+    "x": 3068,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "item:goldnugget_9px": {
-    "x": 3072,
+    "x": 3078,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "item:lightninggun": {
-    "x": 3082,
+    "x": 3088,
     "y": 653,
     "w": 17,
     "h": 9,
@@ -49393,175 +49393,175 @@
     ]
   },
   "item:wand_good_1": {
-    "x": 3100,
+    "x": 3106,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "item:wand_good_2": {
-    "x": 3110,
+    "x": 3116,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "wand:wand_0010": {
-    "x": 3120,
+    "x": 3126,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "wand:wand_0053": {
-    "x": 3130,
+    "x": 3136,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "wand:wand_0113": {
-    "x": 3140,
+    "x": 3146,
     "y": 653,
     "w": 13,
     "h": 9
   },
   "wand:wand_0150": {
-    "x": 3154,
+    "x": 3160,
     "y": 653,
     "w": 11,
     "h": 9
   },
   "wand:wand_0194": {
-    "x": 3166,
+    "x": 3172,
     "y": 653,
     "w": 7,
     "h": 9
   },
   "wand:wand_0199": {
-    "x": 3174,
+    "x": 3180,
     "y": 653,
     "w": 15,
     "h": 9
   },
   "wand:wand_0266": {
-    "x": 3190,
+    "x": 3196,
     "y": 653,
     "w": 7,
     "h": 9
   },
   "wand:wand_0316": {
-    "x": 3198,
+    "x": 3204,
     "y": 653,
     "w": 11,
     "h": 9
   },
   "wand:wand_0320": {
-    "x": 3210,
+    "x": 3216,
     "y": 653,
     "w": 11,
     "h": 9
   },
   "wand:wand_0321": {
-    "x": 3222,
+    "x": 3228,
     "y": 653,
     "w": 13,
     "h": 9
   },
   "wand:wand_0336": {
-    "x": 3236,
+    "x": 3242,
     "y": 653,
     "w": 7,
     "h": 9
   },
   "wand:wand_0354": {
-    "x": 3244,
+    "x": 3250,
     "y": 653,
     "w": 7,
     "h": 9
   },
   "wand:wand_0375": {
-    "x": 3252,
+    "x": 3258,
     "y": 653,
     "w": 7,
     "h": 9
   },
   "wand:wand_0439": {
-    "x": 3260,
+    "x": 3266,
     "y": 653,
     "w": 11,
     "h": 9
   },
   "wand:wand_0490": {
-    "x": 3272,
+    "x": 3278,
     "y": 653,
     "w": 7,
     "h": 9
   },
   "wand:wand_0493": {
-    "x": 3280,
+    "x": 3286,
     "y": 653,
     "w": 11,
     "h": 9
   },
   "wand:wand_0506": {
-    "x": 3292,
+    "x": 3298,
     "y": 653,
     "w": 7,
     "h": 9
   },
   "wand:wand_0522": {
-    "x": 3300,
+    "x": 3306,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "wand:wand_0570": {
-    "x": 3310,
+    "x": 3316,
     "y": 653,
     "w": 7,
     "h": 9
   },
   "wand:wand_0689": {
-    "x": 3318,
+    "x": 3324,
     "y": 653,
     "w": 7,
     "h": 9
   },
   "wand:wand_0709": {
-    "x": 3326,
+    "x": 3332,
     "y": 653,
     "w": 7,
     "h": 9
   },
   "wand:wand_0770": {
-    "x": 3334,
+    "x": 3340,
     "y": 653,
     "w": 7,
     "h": 9
   },
   "wand:wand_0804": {
-    "x": 3342,
+    "x": 3348,
     "y": 653,
     "w": 7,
     "h": 9
   },
   "wand:wand_0840": {
-    "x": 3350,
+    "x": 3356,
     "y": 653,
     "w": 17,
     "h": 9
   },
   "wand:wand_0907": {
-    "x": 3368,
+    "x": 3374,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "wand:wand_0991": {
-    "x": 3378,
+    "x": 3384,
     "y": 653,
     "w": 7,
     "h": 9
   },
   "projectile:bouncy_orb": {
-    "x": 3386,
+    "x": 3392,
     "y": 653,
     "w": 9,
     "h": 9,
@@ -49595,7 +49595,7 @@
     ]
   },
   "projectile:disc_bullet": {
-    "x": 3396,
+    "x": 3402,
     "y": 653,
     "w": 9,
     "h": 9,
@@ -49629,7 +49629,7 @@
     ]
   },
   "projectile:disc_bullet_2": {
-    "x": 3406,
+    "x": 3412,
     "y": 653,
     "w": 9,
     "h": 9,
@@ -49653,7 +49653,7 @@
     ]
   },
   "projectile:hook": {
-    "x": 3416,
+    "x": 3422,
     "y": 653,
     "w": 11,
     "h": 9,
@@ -49678,7 +49678,7 @@
     ]
   },
   "projectile:pipe_bomb": {
-    "x": 3428,
+    "x": 3434,
     "y": 653,
     "w": 9,
     "h": 9,
@@ -49712,7 +49712,7 @@
     ]
   },
   "projectile:pipe_bomb_crystal": {
-    "x": 3438,
+    "x": 3444,
     "y": 653,
     "w": 10,
     "h": 9,
@@ -49746,7 +49746,7 @@
     ]
   },
   "projectile:pipe_bomb_emissive": {
-    "x": 3449,
+    "x": 3455,
     "y": 653,
     "w": 9,
     "h": 9,
@@ -49780,7 +49780,7 @@
     ]
   },
   "projectile:rocket_tiny_roll": {
-    "x": 3459,
+    "x": 3465,
     "y": 653,
     "w": 9,
     "h": 9,
@@ -49804,7 +49804,7 @@
     ]
   },
   "projectile:spark": {
-    "x": 3469,
+    "x": 3475,
     "y": 653,
     "w": 10,
     "h": 9,
@@ -49827,7 +49827,7 @@
     ]
   },
   "projectile:spark_blue": {
-    "x": 3480,
+    "x": 3486,
     "y": 653,
     "w": 10,
     "h": 9,
@@ -49850,7 +49850,7 @@
     ]
   },
   "projectile:swarm_firebug": {
-    "x": 3491,
+    "x": 3497,
     "y": 653,
     "w": 9,
     "h": 9,
@@ -49874,7 +49874,7 @@
     ]
   },
   "projectile:swarm_fly": {
-    "x": 3501,
+    "x": 3507,
     "y": 653,
     "w": 9,
     "h": 9,
@@ -49898,7 +49898,7 @@
     ]
   },
   "projectile:swarm_wasp": {
-    "x": 3511,
+    "x": 3517,
     "y": 653,
     "w": 9,
     "h": 9,
@@ -49922,73 +49922,73 @@
     ]
   },
   "prop:bed": {
-    "x": 3521,
+    "x": 3527,
     "y": 653,
     "w": 24,
     "h": 9
   },
   "prop:box_small": {
-    "x": 3546,
+    "x": 3552,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "prop:propane_tank_horizontal": {
-    "x": 3556,
+    "x": 3562,
     "y": 653,
     "w": 15,
     "h": 9
   },
   "prop:skull_02": {
-    "x": 3572,
+    "x": 3578,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "prop:skull_03": {
-    "x": 3582,
+    "x": 3588,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "ui:decorations/9piece0": {
-    "x": 3592,
+    "x": 3598,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "ui:decorations/9piece0_gray": {
-    "x": 3602,
+    "x": 3608,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "status:curse_wither_electricity": {
-    "x": 3612,
+    "x": 3618,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "status:curse_wither_explosion": {
-    "x": 3622,
+    "x": 3628,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "status:curse_wither_melee": {
-    "x": 3632,
+    "x": 3638,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "status:curse_wither_projectile": {
-    "x": 3642,
+    "x": 3648,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "building:lasergate": {
-    "x": 3652,
+    "x": 3658,
     "y": 653,
     "w": 8,
     "h": 8,
@@ -50014,7 +50014,7 @@
     ]
   },
   "building:lasergate_left": {
-    "x": 3661,
+    "x": 3667,
     "y": 653,
     "w": 8,
     "h": 8,
@@ -50040,7 +50040,7 @@
     ]
   },
   "building:lasergate_right": {
-    "x": 3670,
+    "x": 3676,
     "y": 653,
     "w": 8,
     "h": 8,
@@ -50066,7 +50066,7 @@
     ]
   },
   "building:lasergate_ver": {
-    "x": 3679,
+    "x": 3685,
     "y": 653,
     "w": 8,
     "h": 8,
@@ -50092,13 +50092,13 @@
     ]
   },
   "enemy:healerdrone": {
-    "x": 3688,
+    "x": 3694,
     "y": 653,
     "w": 12,
     "h": 8
   },
   "enemy:healerdrone_emissive": {
-    "x": 3701,
+    "x": 3707,
     "y": 653,
     "w": 12,
     "h": 8,
@@ -50123,7 +50123,7 @@
     ]
   },
   "enemy:mimic_potion": {
-    "x": 3714,
+    "x": 3720,
     "y": 653,
     "w": 9,
     "h": 8,
@@ -50149,37 +50149,37 @@
     ]
   },
   "enemy:lukki_lukki_feet_chest_elbow": {
-    "x": 3724,
+    "x": 3730,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "enemy:lukki_lukki_feet_chest_knee": {
-    "x": 3733,
+    "x": 3739,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "enemy:lukki_lukki_feet_lukki_dark_knee": {
-    "x": 3742,
+    "x": 3748,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "enemy:lukki_lukki_feet_lukki_knee": {
-    "x": 3751,
+    "x": 3757,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "enemy:lukki_lukki_feet_lukki_knee2": {
-    "x": 3760,
+    "x": 3766,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "enemy:lukki_lukki_feet_lukki_sprite_creepy": {
-    "x": 3769,
+    "x": 3775,
     "y": 653,
     "w": 8,
     "h": 8,
@@ -50204,7 +50204,7 @@
     ]
   },
   "enemy:lukki_lukki_feet_lukki_sprite_creepy2": {
-    "x": 3778,
+    "x": 3784,
     "y": 653,
     "w": 8,
     "h": 8,
@@ -50229,49 +50229,49 @@
     ]
   },
   "item:bomb": {
-    "x": 3787,
+    "x": 3793,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:bone_01": {
-    "x": 3796,
+    "x": 3802,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:bone_02": {
-    "x": 3805,
+    "x": 3811,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:bone_03": {
-    "x": 3814,
+    "x": 3820,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:bone_04": {
-    "x": 3823,
+    "x": 3829,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:bone_05": {
-    "x": 3832,
+    "x": 3838,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:brimstone": {
-    "x": 3841,
+    "x": 3847,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:clusterbomb": {
-    "x": 3850,
+    "x": 3856,
     "y": 653,
     "w": 8,
     "h": 8,
@@ -50296,7 +50296,7 @@
     ]
   },
   "item:clusterbomb_fragment": {
-    "x": 3859,
+    "x": 3865,
     "y": 653,
     "w": 8,
     "h": 8,
@@ -50321,152 +50321,152 @@
     ]
   },
   "item:egg": {
-    "x": 3868,
+    "x": 3874,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:egg_purple": {
-    "x": 3877,
+    "x": 3883,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:egg_red": {
-    "x": 3886,
+    "x": 3892,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:egg_slime": {
-    "x": 3895,
+    "x": 3901,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:egg_worm": {
-    "x": 3904,
+    "x": 3910,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:jar": {
-    "x": 3913,
+    "x": 3919,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:kakke": {
-    "x": 3922,
+    "x": 3928,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:potion": {
-    "x": 3931,
+    "x": 3937,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:potion_alchemist": {
-    "x": 3940,
+    "x": 3946,
     "y": 653,
     "w": 7,
     "h": 8
   },
   "item:smallgem_01": {
-    "x": 3948,
+    "x": 3954,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:smallgem_01_mask": {
-    "x": 3957,
+    "x": 3963,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:smallgem_02": {
-    "x": 3966,
+    "x": 3972,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:smallgem_02_mask": {
-    "x": 3975,
+    "x": 3981,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:smallgem_03": {
-    "x": 3984,
+    "x": 3990,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:smallgem_03_mask": {
-    "x": 3993,
+    "x": 3999,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:smallgem_04": {
-    "x": 4002,
+    "x": 4008,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:smallgem_04_mask": {
-    "x": 4011,
+    "x": 4017,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:smallgem_05": {
-    "x": 4020,
+    "x": 4026,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:smallgem_05_mask": {
-    "x": 4029,
+    "x": 4035,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:stonestone": {
-    "x": 4038,
+    "x": 4044,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:sunseed": {
-    "x": 4047,
+    "x": 4053,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:thunderstone": {
-    "x": 4056,
+    "x": 4062,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:wandstone": {
-    "x": 4065,
+    "x": 4071,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "item:waterstone": {
-    "x": 4074,
+    "x": 4080,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "projectile:background_cleaner": {
-    "x": 4083,
-    "y": 653,
+    "x": 0,
+    "y": 666,
     "w": 8,
     "h": 8,
     "ox": 4,
@@ -50491,7 +50491,7 @@
     ]
   },
   "projectile:glue": {
-    "x": 0,
+    "x": 9,
     "y": 666,
     "w": 18,
     "h": 8,
@@ -50517,7 +50517,7 @@
     ]
   },
   "projectile:glue_anchor": {
-    "x": 19,
+    "x": 28,
     "y": 666,
     "w": 8,
     "h": 8,
@@ -50541,7 +50541,7 @@
     ]
   },
   "projectile:glue_shot": {
-    "x": 28,
+    "x": 37,
     "y": 666,
     "w": 8,
     "h": 8,
@@ -50567,32 +50567,6 @@
     ]
   },
   "projectile:grenade": {
-    "x": 37,
-    "y": 666,
-    "w": 8,
-    "h": 8,
-    "ox": 4,
-    "oy": 4,
-    "fw": 8,
-    "fh": 8,
-    "fc": 4,
-    "fpr": 4,
-    "fwait": 0.04,
-    "defanim": "fireball",
-    "anims": [
-      {
-        "name": "fireball",
-        "pos_x": 0,
-        "pos_y": 0,
-        "frame_width": 8,
-        "frame_height": 8,
-        "frame_count": 4,
-        "frame_wait": 0.04,
-        "frames_per_row": 4
-      }
-    ]
-  },
-  "projectile:grenade_blue": {
     "x": 46,
     "y": 666,
     "w": 8,
@@ -50618,7 +50592,7 @@
       }
     ]
   },
-  "projectile:grenade_green": {
+  "projectile:grenade_blue": {
     "x": 55,
     "y": 666,
     "w": 8,
@@ -50644,7 +50618,7 @@
       }
     ]
   },
-  "projectile:grenade_purple": {
+  "projectile:grenade_green": {
     "x": 64,
     "y": 666,
     "w": 8,
@@ -50670,7 +50644,7 @@
       }
     ]
   },
-  "projectile:grenade_scavenger": {
+  "projectile:grenade_purple": {
     "x": 73,
     "y": 666,
     "w": 8,
@@ -50696,7 +50670,7 @@
       }
     ]
   },
-  "projectile:grenade_scavenger_small": {
+  "projectile:grenade_scavenger": {
     "x": 82,
     "y": 666,
     "w": 8,
@@ -50722,7 +50696,7 @@
       }
     ]
   },
-  "projectile:heavy_bullet_magic": {
+  "projectile:grenade_scavenger_small": {
     "x": 91,
     "y": 666,
     "w": 8,
@@ -50731,9 +50705,9 @@
     "oy": 4,
     "fw": 8,
     "fh": 8,
-    "fc": 1,
+    "fc": 4,
     "fpr": 4,
-    "fwait": 0.2,
+    "fwait": 0.04,
     "defanim": "fireball",
     "anims": [
       {
@@ -50742,13 +50716,13 @@
         "pos_y": 0,
         "frame_width": 8,
         "frame_height": 8,
-        "frame_count": 1,
-        "frame_wait": 0.2,
+        "frame_count": 4,
+        "frame_wait": 0.04,
         "frames_per_row": 4
       }
     ]
   },
-  "projectile:heavy_bullet_poison": {
+  "projectile:heavy_bullet_magic": {
     "x": 100,
     "y": 666,
     "w": 8,
@@ -50774,8 +50748,34 @@
       }
     ]
   },
-  "projectile:rocket": {
+  "projectile:heavy_bullet_poison": {
     "x": 109,
+    "y": 666,
+    "w": 8,
+    "h": 8,
+    "ox": 4,
+    "oy": 4,
+    "fw": 8,
+    "fh": 8,
+    "fc": 1,
+    "fpr": 4,
+    "fwait": 0.2,
+    "defanim": "fireball",
+    "anims": [
+      {
+        "name": "fireball",
+        "pos_x": 0,
+        "pos_y": 0,
+        "frame_width": 8,
+        "frame_height": 8,
+        "frame_count": 1,
+        "frame_wait": 0.2,
+        "frames_per_row": 4
+      }
+    ]
+  },
+  "projectile:rocket": {
+    "x": 118,
     "y": 666,
     "w": 13,
     "h": 8,
@@ -50800,13 +50800,13 @@
     ]
   },
   "projectile:sosig": {
-    "x": 123,
+    "x": 132,
     "y": 666,
     "w": 8,
     "h": 8
   },
   "projectile:wave": {
-    "x": 132,
+    "x": 141,
     "y": 666,
     "w": 16,
     "h": 8,
@@ -50832,43 +50832,43 @@
     ]
   },
   "prop:furniture_bed": {
-    "x": 149,
+    "x": 158,
     "y": 666,
     "w": 24,
     "h": 8
   },
   "prop:minelamp": {
-    "x": 174,
+    "x": 183,
     "y": 666,
     "w": 5,
     "h": 8
   },
   "prop:minelamp_broken": {
-    "x": 180,
+    "x": 189,
     "y": 666,
     "w": 5,
     "h": 8
   },
   "prop:skull_01": {
-    "x": 186,
+    "x": 195,
     "y": 666,
     "w": 8,
     "h": 8
   },
   "prop:temporary_platform": {
-    "x": 195,
+    "x": 204,
     "y": 666,
     "w": 32,
     "h": 8
   },
   "prop:temporary_platform_wide": {
-    "x": 228,
+    "x": 237,
     "y": 666,
     "w": 88,
     "h": 8
   },
   "enemy:scorpion": {
-    "x": 317,
+    "x": 326,
     "y": 666,
     "w": 10,
     "h": 7,
@@ -50924,13 +50924,13 @@
     ]
   },
   "enemy:boss_limbs_knee": {
-    "x": 328,
+    "x": 337,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "enemy:boss_meat_knee": {
-    "x": 336,
+    "x": 345,
     "y": 666,
     "w": 7,
     "h": 7,
@@ -50954,7 +50954,7 @@
     ]
   },
   "item:assaultrifle": {
-    "x": 344,
+    "x": 353,
     "y": 666,
     "w": 14,
     "h": 7,
@@ -51138,7 +51138,7 @@
     ]
   },
   "item:bomb_wand": {
-    "x": 359,
+    "x": 368,
     "y": 666,
     "w": 13,
     "h": 7,
@@ -51163,7 +51163,7 @@
     ]
   },
   "item:building_gun": {
-    "x": 373,
+    "x": 382,
     "y": 666,
     "w": 15,
     "h": 7,
@@ -51188,7 +51188,7 @@
     ]
   },
   "item:desert_eagle": {
-    "x": 389,
+    "x": 398,
     "y": 666,
     "w": 13,
     "h": 7,
@@ -51213,13 +51213,13 @@
     ]
   },
   "item:evil_eye_iris": {
-    "x": 403,
+    "x": 412,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "item:flute": {
-    "x": 411,
+    "x": 420,
     "y": 666,
     "w": 11,
     "h": 7,
@@ -51243,7 +51243,7 @@
     ]
   },
   "item:kantele": {
-    "x": 423,
+    "x": 432,
     "y": 666,
     "w": 14,
     "h": 7,
@@ -51267,7 +51267,7 @@
     ]
   },
   "item:machinegun": {
-    "x": 438,
+    "x": 447,
     "y": 666,
     "w": 15,
     "h": 7,
@@ -51292,7 +51292,7 @@
     ]
   },
   "item:nukelauncher": {
-    "x": 454,
+    "x": 463,
     "y": 666,
     "w": 18,
     "h": 7,
@@ -51317,7 +51317,7 @@
     ]
   },
   "item:opgun": {
-    "x": 473,
+    "x": 482,
     "y": 666,
     "w": 18,
     "h": 7,
@@ -51342,7 +51342,7 @@
     ]
   },
   "item:pipe_launcher": {
-    "x": 492,
+    "x": 501,
     "y": 666,
     "w": 15,
     "h": 7,
@@ -51367,7 +51367,7 @@
     ]
   },
   "item:poisonwand": {
-    "x": 508,
+    "x": 517,
     "y": 666,
     "w": 17,
     "h": 7,
@@ -51392,7 +51392,7 @@
     ]
   },
   "item:powerdigger": {
-    "x": 526,
+    "x": 535,
     "y": 666,
     "w": 15,
     "h": 7,
@@ -51417,7 +51417,7 @@
     ]
   },
   "item:pulserifle": {
-    "x": 542,
+    "x": 551,
     "y": 666,
     "w": 18,
     "h": 7,
@@ -51442,7 +51442,7 @@
     ]
   },
   "item:rocketlauncher": {
-    "x": 561,
+    "x": 570,
     "y": 666,
     "w": 17,
     "h": 7,
@@ -51467,7 +51467,7 @@
     ]
   },
   "item:shotgun": {
-    "x": 579,
+    "x": 588,
     "y": 666,
     "w": 15,
     "h": 7,
@@ -51492,7 +51492,7 @@
     ]
   },
   "item:submachinegun": {
-    "x": 595,
+    "x": 604,
     "y": 666,
     "w": 13,
     "h": 7,
@@ -51517,7 +51517,7 @@
     ]
   },
   "item:wand_16": {
-    "x": 609,
+    "x": 618,
     "y": 666,
     "w": 15,
     "h": 7,
@@ -51542,7 +51542,7 @@
     ]
   },
   "projectile:lance_holy": {
-    "x": 625,
+    "x": 634,
     "y": 666,
     "w": 18,
     "h": 7,
@@ -51567,7 +51567,7 @@
     ]
   },
   "projectile:nuke_giga": {
-    "x": 644,
+    "x": 653,
     "y": 666,
     "w": 12,
     "h": 7,
@@ -51592,193 +51592,193 @@
     ]
   },
   "prop:overworld/pole_01_crossbeam": {
-    "x": 657,
+    "x": 666,
     "y": 666,
     "w": 22,
     "h": 7
   },
   "ui:inventory/icon_action_max_uses": {
-    "x": 680,
+    "x": 689,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_action_type": {
-    "x": 688,
+    "x": 697,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_bounces": {
-    "x": 696,
+    "x": 705,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_damage_critical_chance": {
-    "x": 704,
+    "x": 713,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_damage_curse": {
-    "x": 712,
+    "x": 721,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_damage_drill": {
-    "x": 720,
+    "x": 729,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_damage_electricity": {
-    "x": 728,
+    "x": 737,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_damage_explosion": {
-    "x": 736,
+    "x": 745,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_damage_fire": {
-    "x": 744,
+    "x": 753,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_damage_healing": {
-    "x": 752,
+    "x": 761,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_damage_holy": {
-    "x": 760,
+    "x": 769,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_damage_ice": {
-    "x": 768,
+    "x": 777,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_damage_melee": {
-    "x": 776,
+    "x": 785,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_damage_projectile": {
-    "x": 784,
+    "x": 793,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_damage_slice": {
-    "x": 792,
+    "x": 801,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_explosion_radius": {
-    "x": 800,
+    "x": 809,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_fire_rate_wait": {
-    "x": 808,
+    "x": 817,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_gun_actions_per_round": {
-    "x": 816,
+    "x": 825,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_gun_capacity": {
-    "x": 824,
+    "x": 833,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_gun_charge": {
-    "x": 832,
+    "x": 841,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_gun_permanent_actions": {
-    "x": 840,
+    "x": 849,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_gun_reload_time": {
-    "x": 848,
+    "x": 857,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_gun_shuffle": {
-    "x": 856,
+    "x": 865,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_knockback": {
-    "x": 864,
+    "x": 873,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_mana_charge_speed": {
-    "x": 872,
+    "x": 881,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_mana_drain": {
-    "x": 880,
+    "x": 889,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_mana_max": {
-    "x": 888,
+    "x": 897,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_reload_time": {
-    "x": 896,
+    "x": 905,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_speed_multiplier": {
-    "x": 904,
+    "x": 913,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "ui:inventory/icon_spread_degrees": {
-    "x": 912,
+    "x": 921,
     "y": 666,
     "w": 7,
     "h": 7
   },
   "item:cement_thrower": {
-    "x": 920,
+    "x": 929,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -51803,7 +51803,7 @@
     ]
   },
   "item:chainsaw": {
-    "x": 933,
+    "x": 942,
     "y": 666,
     "w": 14,
     "h": 6,
@@ -51829,7 +51829,7 @@
     ]
   },
   "item:digger": {
-    "x": 948,
+    "x": 957,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -51854,7 +51854,7 @@
     ]
   },
   "item:disc_gun": {
-    "x": 961,
+    "x": 970,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -51879,7 +51879,7 @@
     ]
   },
   "item:dronelauncher": {
-    "x": 974,
+    "x": 983,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -51904,25 +51904,25 @@
     ]
   },
   "item:goldnugget_01": {
-    "x": 987,
+    "x": 996,
     "y": 666,
     "w": 6,
     "h": 6
   },
   "item:goldnugget_6px": {
-    "x": 994,
+    "x": 1003,
     "y": 666,
     "w": 6,
     "h": 6
   },
   "item:goldnugget_icon": {
-    "x": 1001,
+    "x": 1010,
     "y": 666,
     "w": 6,
     "h": 6
   },
   "item:grenadelauncher": {
-    "x": 1008,
+    "x": 1017,
     "y": 666,
     "w": 17,
     "h": 6,
@@ -51947,7 +51947,7 @@
     ]
   },
   "item:handgun": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -51972,13 +51972,13 @@
     ]
   },
   "item:knife": {
-    "x": 1039,
+    "x": 1048,
     "y": 666,
     "w": 6,
     "h": 6
   },
   "item:rifle": {
-    "x": 1046,
+    "x": 1055,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -52003,13 +52003,13 @@
     ]
   },
   "item:spear": {
-    "x": 1059,
+    "x": 1068,
     "y": 666,
     "w": 6,
     "h": 6
   },
   "item:telegun": {
-    "x": 1066,
+    "x": 1075,
     "y": 666,
     "w": 14,
     "h": 6,
@@ -52034,7 +52034,7 @@
     ]
   },
   "item:torch_always_on": {
-    "x": 1081,
+    "x": 1090,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -52060,7 +52060,7 @@
     ]
   },
   "item:wand_3": {
-    "x": 1094,
+    "x": 1103,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -52085,7 +52085,7 @@
     ]
   },
   "projectile:orb_tiny": {
-    "x": 1107,
+    "x": 1116,
     "y": 666,
     "w": 6,
     "h": 6,
@@ -52111,7 +52111,7 @@
     ]
   },
   "projectile:rocket_tiny": {
-    "x": 1114,
+    "x": 1123,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -52136,7 +52136,7 @@
     ]
   },
   "projectile:tnt": {
-    "x": 1127,
+    "x": 1136,
     "y": 666,
     "w": 6,
     "h": 6,
@@ -52161,13 +52161,13 @@
     ]
   },
   "prop:stone_01": {
-    "x": 1134,
+    "x": 1143,
     "y": 666,
     "w": 6,
     "h": 6
   },
   "prop:torch_hang_chain": {
-    "x": 1141,
+    "x": 1150,
     "y": 666,
     "w": 3,
     "h": 6,
@@ -52193,13 +52193,13 @@
     ]
   },
   "prop:torch_hang_chain_ceiling": {
-    "x": 1145,
+    "x": 1154,
     "y": 666,
     "w": 3,
     "h": 6
   },
   "enemy:player_arm": {
-    "x": 1149,
+    "x": 1158,
     "y": 666,
     "w": 5,
     "h": 5,
@@ -52245,25 +52245,25 @@
     ]
   },
   "enemy:player_halo_dark": {
-    "x": 1155,
+    "x": 1164,
     "y": 666,
     "w": 5,
     "h": 5
   },
   "enemy:player_halo_light": {
-    "x": 1161,
+    "x": 1170,
     "y": 666,
     "w": 5,
     "h": 5
   },
   "enemy:boss_robot_limb_2": {
-    "x": 1167,
+    "x": 1176,
     "y": 666,
     "w": 5,
     "h": 5
   },
   "projectile:arrow": {
-    "x": 1173,
+    "x": 1182,
     "y": 666,
     "w": 9,
     "h": 5,
@@ -52287,7 +52287,7 @@
     ]
   },
   "projectile:glitter_bomb_shrapnel": {
-    "x": 1183,
+    "x": 1192,
     "y": 666,
     "w": 6,
     "h": 5,
@@ -52311,7 +52311,7 @@
     ]
   },
   "projectile:lance": {
-    "x": 1190,
+    "x": 1199,
     "y": 666,
     "w": 16,
     "h": 5,
@@ -52336,31 +52336,6 @@
     ]
   },
   "projectile:laser_big": {
-    "x": 1207,
-    "y": 666,
-    "w": 8,
-    "h": 5,
-    "ox": 2,
-    "fw": 8,
-    "fh": 5,
-    "fc": 2,
-    "fpr": 2,
-    "fwait": 0.02,
-    "defanim": "fireball",
-    "anims": [
-      {
-        "name": "fireball",
-        "pos_x": 0,
-        "pos_y": 0,
-        "frame_width": 8,
-        "frame_height": 5,
-        "frame_count": 2,
-        "frame_wait": 0.02,
-        "frames_per_row": 2
-      }
-    ]
-  },
-  "projectile:laser_green_big": {
     "x": 1216,
     "y": 666,
     "w": 8,
@@ -52385,8 +52360,33 @@
       }
     ]
   },
-  "projectile:levitation": {
+  "projectile:laser_green_big": {
     "x": 1225,
+    "y": 666,
+    "w": 8,
+    "h": 5,
+    "ox": 2,
+    "fw": 8,
+    "fh": 5,
+    "fc": 2,
+    "fpr": 2,
+    "fwait": 0.02,
+    "defanim": "fireball",
+    "anims": [
+      {
+        "name": "fireball",
+        "pos_x": 0,
+        "pos_y": 0,
+        "frame_width": 8,
+        "frame_height": 5,
+        "frame_count": 2,
+        "frame_wait": 0.02,
+        "frames_per_row": 2
+      }
+    ]
+  },
+  "projectile:levitation": {
+    "x": 1234,
     "y": 666,
     "w": 6,
     "h": 5,
@@ -52410,7 +52410,7 @@
     ]
   },
   "projectile:light_arrow": {
-    "x": 1232,
+    "x": 1241,
     "y": 666,
     "w": 9,
     "h": 5,
@@ -52435,7 +52435,7 @@
     ]
   },
   "projectile:nuke": {
-    "x": 1242,
+    "x": 1251,
     "y": 666,
     "w": 12,
     "h": 5,
@@ -52460,7 +52460,7 @@
     ]
   },
   "projectile:spore_pod_spike": {
-    "x": 1255,
+    "x": 1264,
     "y": 666,
     "w": 5,
     "h": 5,
@@ -52482,31 +52482,31 @@
     ]
   },
   "projectile:throwing_star": {
-    "x": 1261,
+    "x": 1270,
     "y": 666,
     "w": 5,
     "h": 5
   },
   "prop_break:table_a_02": {
-    "x": 1267,
+    "x": 1276,
     "y": 666,
     "w": 2,
     "h": 5
   },
   "prop_break:wire_vertical_5_00": {
-    "x": 1270,
+    "x": 1279,
     "y": 666,
     "w": 1,
     "h": 5
   },
   "prop:tubelamp": {
-    "x": 1272,
+    "x": 1281,
     "y": 666,
     "w": 19,
     "h": 5
   },
   "projectile:fireball_small": {
-    "x": 1292,
+    "x": 1301,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -52532,7 +52532,7 @@
     ]
   },
   "projectile:fireball_small_magic": {
-    "x": 1297,
+    "x": 1306,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -52558,7 +52558,7 @@
     ]
   },
   "projectile:plasmaball_small": {
-    "x": 1302,
+    "x": 1311,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -52584,7 +52584,7 @@
     ]
   },
   "projectile:rubber_ball": {
-    "x": 1307,
+    "x": 1316,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -52610,68 +52610,42 @@
     ]
   },
   "prop:glass_shard_01": {
-    "x": 1312,
+    "x": 1321,
     "y": 666,
     "w": 4,
     "h": 4
   },
   "prop:glass_shard_02": {
-    "x": 1317,
+    "x": 1326,
     "y": 666,
     "w": 4,
     "h": 4
   },
   "prop:glass_shard_03": {
-    "x": 1322,
+    "x": 1331,
     "y": 666,
     "w": 4,
     "h": 4
   },
   "prop:glass_shard_04": {
-    "x": 1327,
+    "x": 1336,
     "y": 666,
     "w": 4,
     "h": 4
   },
   "enemy:lukki_lukki_feet_lukki_limb_tiny_dark": {
-    "x": 1332,
+    "x": 1341,
     "y": 666,
     "w": 3,
     "h": 3
   },
   "projectile:invisible": {
-    "x": 1336,
+    "x": 1345,
     "y": 666,
     "w": 3,
     "h": 3
   },
   "projectile:laser": {
-    "x": 1340,
-    "y": 666,
-    "w": 8,
-    "h": 3,
-    "ox": 3,
-    "oy": 1,
-    "fw": 8,
-    "fh": 3,
-    "fc": 2,
-    "fpr": 2,
-    "fwait": 0.02,
-    "defanim": "fireball",
-    "anims": [
-      {
-        "name": "fireball",
-        "pos_x": 0,
-        "pos_y": 0,
-        "frame_width": 8,
-        "frame_height": 3,
-        "frame_count": 2,
-        "frame_wait": 0.02,
-        "frames_per_row": 2
-      }
-    ]
-  },
-  "projectile:laser_green": {
     "x": 1349,
     "y": 666,
     "w": 8,
@@ -52697,8 +52671,34 @@
       }
     ]
   },
-  "projectile:spark_tiny": {
+  "projectile:laser_green": {
     "x": 1358,
+    "y": 666,
+    "w": 8,
+    "h": 3,
+    "ox": 3,
+    "oy": 1,
+    "fw": 8,
+    "fh": 3,
+    "fc": 2,
+    "fpr": 2,
+    "fwait": 0.02,
+    "defanim": "fireball",
+    "anims": [
+      {
+        "name": "fireball",
+        "pos_x": 0,
+        "pos_y": 0,
+        "frame_width": 8,
+        "frame_height": 3,
+        "frame_count": 2,
+        "frame_wait": 0.02,
+        "frames_per_row": 2
+      }
+    ]
+  },
+  "projectile:spark_tiny": {
+    "x": 1367,
     "y": 666,
     "w": 3,
     "h": 3,
@@ -52721,7 +52721,7 @@
     ]
   },
   "enemy:boss_limbs_hair_piece": {
-    "x": 1362,
+    "x": 1371,
     "y": 666,
     "w": 2,
     "h": 2,
@@ -52729,43 +52729,43 @@
     "oy": 1
   },
   "prop_break:long_plank_a_00": {
-    "x": 1365,
+    "x": 1374,
     "y": 666,
     "w": 64,
     "h": 2
   },
   "prop_break:plank_horizontal_16_00": {
-    "x": 1430,
+    "x": 1439,
     "y": 666,
     "w": 16,
     "h": 2
   },
   "prop_break:plank_horizontal_64_00": {
-    "x": 1447,
+    "x": 1456,
     "y": 666,
     "w": 64,
     "h": 2
   },
   "prop_break:table_a_00": {
-    "x": 1512,
+    "x": 1521,
     "y": 666,
     "w": 8,
     "h": 2
   },
   "prop_break:table_a_01": {
-    "x": 1521,
+    "x": 1530,
     "y": 666,
     "w": 7,
     "h": 2
   },
   "prop:grass_stalk": {
-    "x": 1529,
+    "x": 1538,
     "y": 666,
     "w": 1,
     "h": 2
   },
   "prop:pressure_plate": {
-    "x": 1531,
+    "x": 1540,
     "y": 666,
     "w": 24,
     "h": 2,
@@ -52801,32 +52801,32 @@
     ]
   },
   "ui:inventory/inventory_colors": {
-    "x": 1556,
+    "x": 1565,
     "y": 666,
     "w": 2,
     "h": 2
   },
   "ui:inventory/inventory_colors_highlight": {
-    "x": 1559,
+    "x": 1568,
     "y": 666,
     "w": 2,
     "h": 2
   },
   "ui:inventory/inventory_editing_disabled_overlay_colors": {
-    "x": 1562,
+    "x": 1571,
     "y": 666,
     "w": 2,
     "h": 2
   },
   "enemy:boss_limbs_hair_piece_thin": {
-    "x": 1565,
+    "x": 1574,
     "y": 666,
     "w": 1,
     "h": 1,
     "ox": 0
   },
   "projectile:bullet": {
-    "x": 1567,
+    "x": 1576,
     "y": 666,
     "w": 4,
     "h": 1,
@@ -52850,7 +52850,7 @@
     ]
   },
   "projectile:bullet_magic": {
-    "x": 1572,
+    "x": 1581,
     "y": 666,
     "w": 5,
     "h": 1,
@@ -52874,13 +52874,13 @@
     ]
   },
   "projectile:dirt": {
-    "x": 1578,
+    "x": 1587,
     "y": 666,
     "w": 1,
     "h": 1
   },
   "projectile:light_bullet": {
-    "x": 1580,
+    "x": 1589,
     "y": 666,
     "w": 4,
     "h": 1,
@@ -52904,7 +52904,7 @@
     ]
   },
   "projectile:light_bullet_magic": {
-    "x": 1585,
+    "x": 1594,
     "y": 666,
     "w": 4,
     "h": 1,
@@ -52928,19 +52928,19 @@
     ]
   },
   "projectile:oil": {
-    "x": 1590,
+    "x": 1599,
     "y": 666,
     "w": 1,
     "h": 1
   },
   "prop_break:plank_horizontal_16_01": {
-    "x": 1592,
+    "x": 1601,
     "y": 666,
     "w": 16,
     "h": 1
   },
   "prop_break:wire_horizontal_10_00": {
-    "x": 1609,
+    "x": 1618,
     "y": 666,
     "w": 10,
     "h": 1
@@ -53156,7 +53156,7 @@
     "h": 16
   },
   "enemy:wand_orb": {
-    "x": 2578,
+    "x": 2584,
     "y": 653,
     "w": 11,
     "h": 10,
@@ -53550,7 +53550,7 @@
     ]
   },
   "enemy:orb_homing_part": {
-    "x": 2567,
+    "x": 2573,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -53640,7 +53640,7 @@
     "oy": 0
   },
   "enemy:orb_polymorph": {
-    "x": 2612,
+    "x": 2618,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -53666,7 +53666,7 @@
     ]
   },
   "enemy:orb_purple": {
-    "x": 2578,
+    "x": 2584,
     "y": 653,
     "w": 11,
     "h": 10,
@@ -54388,7 +54388,7 @@
     "h": 43
   },
   "enemy:hair1": {
-    "x": 1362,
+    "x": 1371,
     "y": 666,
     "w": 2,
     "h": 2,
@@ -54396,14 +54396,14 @@
     "oy": 1
   },
   "enemy:hair2": {
-    "x": 1565,
+    "x": 1574,
     "y": 666,
     "w": 1,
     "h": 1,
     "ox": 0
   },
   "enemy:hair3": {
-    "x": 1362,
+    "x": 1371,
     "y": 666,
     "w": 2,
     "h": 2,
@@ -54411,7 +54411,7 @@
     "oy": 1
   },
   "enemy:hair_piece": {
-    "x": 1362,
+    "x": 1371,
     "y": 666,
     "w": 2,
     "h": 2,
@@ -54419,7 +54419,7 @@
     "oy": 1
   },
   "enemy:hair_piece_thin": {
-    "x": 1565,
+    "x": 1574,
     "y": 666,
     "w": 1,
     "h": 1,
@@ -54532,7 +54532,7 @@
     ]
   },
   "enemy:orb_boss_limbs": {
-    "x": 2612,
+    "x": 2618,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -54907,7 +54907,7 @@
     ]
   },
   "enemy:knee": {
-    "x": 336,
+    "x": 345,
     "y": 666,
     "w": 7,
     "h": 7,
@@ -55019,13 +55019,13 @@
     ]
   },
   "enemy:limb": {
-    "x": 3020,
+    "x": 3026,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "enemy:rocket": {
-    "x": 109,
+    "x": 118,
     "y": 666,
     "w": 13,
     "h": 8,
@@ -55194,7 +55194,7 @@
     ]
   },
   "enemy:wisp": {
-    "x": 2515,
+    "x": 2521,
     "y": 653,
     "w": 9,
     "h": 10,
@@ -56376,7 +56376,7 @@
     ]
   },
   "enemy:healerdrone_physics": {
-    "x": 3688,
+    "x": 3694,
     "y": 653,
     "w": 12,
     "h": 8
@@ -56558,7 +56558,7 @@
     ]
   },
   "enemy:lukki_creepy": {
-    "x": 3769,
+    "x": 3775,
     "y": 653,
     "w": 8,
     "h": 8,
@@ -56583,7 +56583,7 @@
     ]
   },
   "enemy:lukki_creepy_long": {
-    "x": 3778,
+    "x": 3784,
     "y": 653,
     "w": 8,
     "h": 8,
@@ -56708,7 +56708,7 @@
     ]
   },
   "enemy:lukki_sprite_creepy": {
-    "x": 3769,
+    "x": 3775,
     "y": 653,
     "w": 8,
     "h": 8,
@@ -56733,7 +56733,7 @@
     ]
   },
   "enemy:lukki_sprite_creepy2": {
-    "x": 3778,
+    "x": 3784,
     "y": 653,
     "w": 8,
     "h": 8,
@@ -56970,7 +56970,7 @@
     ]
   },
   "enemy:meatmaggot": {
-    "x": 2955,
+    "x": 2961,
     "y": 653,
     "w": 10,
     "h": 9,
@@ -57299,7 +57299,7 @@
     ]
   },
   "enemy:scorpion_watchtower": {
-    "x": 317,
+    "x": 326,
     "y": 666,
     "w": 10,
     "h": 7,
@@ -57635,7 +57635,7 @@
     ]
   },
   "enemy:worm_tiny": {
-    "x": 2988,
+    "x": 2994,
     "y": 653,
     "w": 10,
     "h": 9,
@@ -57930,7 +57930,7 @@
     ]
   },
   "enemy:base_chain_torch": {
-    "x": 1145,
+    "x": 1154,
     "y": 666,
     "w": 3,
     "h": 6
@@ -59794,7 +59794,7 @@
     ]
   },
   "enemy:base_item": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -59879,7 +59879,7 @@
     ]
   },
   "enemy:base_wand_physics": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -59910,7 +59910,7 @@
     "h": 61
   },
   "enemy:cursor_pressure_plate": {
-    "x": 1531,
+    "x": 1540,
     "y": 666,
     "w": 24,
     "h": 2,
@@ -59980,7 +59980,7 @@
     "h": 16
   },
   "enemy:tiny_ghost_spawner": {
-    "x": 2678,
+    "x": 2684,
     "y": 653,
     "w": 9,
     "h": 10,
@@ -60277,7 +60277,7 @@
     ]
   },
   "enemy:lasergate_down": {
-    "x": 3652,
+    "x": 3658,
     "y": 653,
     "w": 8,
     "h": 8,
@@ -60303,7 +60303,7 @@
     ]
   },
   "enemy:lasergate_left": {
-    "x": 3652,
+    "x": 3658,
     "y": 653,
     "w": 8,
     "h": 8,
@@ -60329,7 +60329,7 @@
     ]
   },
   "enemy:lasergate_right": {
-    "x": 3652,
+    "x": 3658,
     "y": 653,
     "w": 8,
     "h": 8,
@@ -62085,7 +62085,7 @@
     "h": 11
   },
   "enemy:flute": {
-    "x": 411,
+    "x": 420,
     "y": 666,
     "w": 11,
     "h": 7,
@@ -62109,7 +62109,7 @@
     ]
   },
   "enemy:kantele": {
-    "x": 423,
+    "x": 432,
     "y": 666,
     "w": 14,
     "h": 7,
@@ -62503,7 +62503,7 @@
     "h": 10
   },
   "enemy:bloodmoney_10": {
-    "x": 994,
+    "x": 1003,
     "y": 666,
     "w": 6,
     "h": 6
@@ -62533,7 +62533,7 @@
     "h": 30
   },
   "enemy:bloodmoney_50": {
-    "x": 3072,
+    "x": 3078,
     "y": 653,
     "w": 9,
     "h": 9
@@ -62545,7 +62545,7 @@
     "h": 12
   },
   "enemy:brimstone": {
-    "x": 3841,
+    "x": 3847,
     "y": 653,
     "w": 8,
     "h": 8
@@ -62595,49 +62595,49 @@
     "h": 13
   },
   "enemy:egg_fire": {
-    "x": 3886,
+    "x": 3892,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "enemy:egg_hollow": {
-    "x": 3895,
+    "x": 3901,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "enemy:egg_monster": {
-    "x": 3868,
+    "x": 3874,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "enemy:egg_purple": {
-    "x": 3877,
+    "x": 3883,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "enemy:egg_red": {
-    "x": 3886,
+    "x": 3892,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "enemy:egg_slime": {
-    "x": 3895,
+    "x": 3901,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "enemy:egg_spiders": {
-    "x": 3877,
+    "x": 3883,
     "y": 653,
     "w": 8,
     "h": 8
   },
   "enemy:egg_worm": {
-    "x": 3904,
+    "x": 3910,
     "y": 653,
     "w": 8,
     "h": 8
@@ -62679,13 +62679,13 @@
     "h": 11
   },
   "enemy:goldnugget": {
-    "x": 987,
+    "x": 996,
     "y": 666,
     "w": 6,
     "h": 6
   },
   "enemy:goldnugget_10": {
-    "x": 994,
+    "x": 1003,
     "y": 666,
     "w": 6,
     "h": 6
@@ -62715,7 +62715,7 @@
     "h": 30
   },
   "enemy:goldnugget_50": {
-    "x": 3072,
+    "x": 3078,
     "y": 653,
     "w": 9,
     "h": 9
@@ -62911,7 +62911,7 @@
     "h": 16
   },
   "enemy:poopstone": {
-    "x": 3922,
+    "x": 3928,
     "y": 653,
     "w": 8,
     "h": 8
@@ -63003,7 +63003,7 @@
     ]
   },
   "enemy:stonestone": {
-    "x": 4038,
+    "x": 4044,
     "y": 653,
     "w": 8,
     "h": 8
@@ -63021,19 +63021,19 @@
     "h": 56
   },
   "enemy:sunseed": {
-    "x": 987,
+    "x": 996,
     "y": 666,
     "w": 6,
     "h": 6
   },
   "enemy:sunstone": {
-    "x": 3072,
+    "x": 3078,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "enemy:thunderstone": {
-    "x": 3984,
+    "x": 3990,
     "y": 653,
     "w": 8,
     "h": 8
@@ -63041,19 +63041,19 @@
   "enemy:utility_box": {
     "x": 2040,
     "y": 653,
-    "w": 10,
+    "w": 16,
     "h": 10,
     "ox": 8,
     "oy": 5
   },
   "enemy:wandstone": {
-    "x": 987,
+    "x": 996,
     "y": 666,
     "w": 6,
     "h": 6
   },
   "enemy:waterstone": {
-    "x": 4074,
+    "x": 4080,
     "y": 653,
     "w": 8,
     "h": 8
@@ -63085,7 +63085,7 @@
     ]
   },
   "enemy:shop_wand_level_01": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63110,7 +63110,7 @@
     ]
   },
   "enemy:starting_bomb_wand": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63135,7 +63135,7 @@
     ]
   },
   "enemy:starting_bomb_wand_rng": {
-    "x": 359,
+    "x": 368,
     "y": 666,
     "w": 13,
     "h": 7,
@@ -63160,7 +63160,7 @@
     ]
   },
   "enemy:starting_bomb_wand_rng_daily": {
-    "x": 359,
+    "x": 368,
     "y": 666,
     "w": 13,
     "h": 7,
@@ -63185,7 +63185,7 @@
     ]
   },
   "enemy:starting_wand": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63210,7 +63210,7 @@
     ]
   },
   "enemy:starting_wand_rng": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63235,7 +63235,7 @@
     ]
   },
   "enemy:starting_wand_rng_daily": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63260,7 +63260,7 @@
     ]
   },
   "enemy:digger_01": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63285,7 +63285,7 @@
     ]
   },
   "enemy:wand_arpaluu": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63310,7 +63310,7 @@
     ]
   },
   "enemy:wand_daily_01": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63335,7 +63335,7 @@
     ]
   },
   "enemy:wand_daily_02": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63360,7 +63360,7 @@
     ]
   },
   "enemy:wand_daily_03": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63385,7 +63385,7 @@
     ]
   },
   "enemy:wand_daily_04": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63410,7 +63410,7 @@
     ]
   },
   "enemy:wand_daily_05": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63435,7 +63435,7 @@
     ]
   },
   "enemy:wand_daily_06": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63460,7 +63460,7 @@
     ]
   },
   "enemy:wand_kiekurakeppi": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63485,7 +63485,7 @@
     ]
   },
   "enemy:wand_leukaluu": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63510,7 +63510,7 @@
     ]
   },
   "enemy:wand_level_01": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63535,7 +63535,7 @@
     ]
   },
   "enemy:wand_level_01_better": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63560,7 +63560,7 @@
     ]
   },
   "enemy:wand_level_01_p": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63585,7 +63585,7 @@
     ]
   },
   "enemy:wand_level_02": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63610,7 +63610,7 @@
     ]
   },
   "enemy:wand_level_02_better": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63635,7 +63635,7 @@
     ]
   },
   "enemy:wand_level_02_p": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63660,7 +63660,7 @@
     ]
   },
   "enemy:wand_level_03": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63685,7 +63685,7 @@
     ]
   },
   "enemy:wand_level_03_better": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63710,7 +63710,7 @@
     ]
   },
   "enemy:wand_level_03_p": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63735,7 +63735,7 @@
     ]
   },
   "enemy:wand_level_04": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63760,7 +63760,7 @@
     ]
   },
   "enemy:wand_level_04_better": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63785,7 +63785,7 @@
     ]
   },
   "enemy:wand_level_04_p": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63810,7 +63810,7 @@
     ]
   },
   "enemy:wand_level_05": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63835,7 +63835,7 @@
     ]
   },
   "enemy:wand_level_05_better": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63860,7 +63860,7 @@
     ]
   },
   "enemy:wand_level_05_p": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63885,7 +63885,7 @@
     ]
   },
   "enemy:wand_level_06": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63910,7 +63910,7 @@
     ]
   },
   "enemy:wand_level_06_better": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63935,7 +63935,7 @@
     ]
   },
   "enemy:wand_level_06_p": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63960,7 +63960,7 @@
     ]
   },
   "enemy:wand_level_10": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -63985,7 +63985,7 @@
     ]
   },
   "enemy:wand_petri": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64010,7 +64010,7 @@
     ]
   },
   "enemy:wand_ruusu": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64035,7 +64035,7 @@
     ]
   },
   "enemy:wand_unshuffle_01": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64060,7 +64060,7 @@
     ]
   },
   "enemy:wand_unshuffle_01_p": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64085,7 +64085,7 @@
     ]
   },
   "enemy:wand_unshuffle_02": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64110,7 +64110,7 @@
     ]
   },
   "enemy:wand_unshuffle_02_p": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64135,7 +64135,7 @@
     ]
   },
   "enemy:wand_unshuffle_03": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64160,7 +64160,7 @@
     ]
   },
   "enemy:wand_unshuffle_03_p": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64185,7 +64185,7 @@
     ]
   },
   "enemy:wand_unshuffle_04": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64210,7 +64210,7 @@
     ]
   },
   "enemy:wand_unshuffle_04_p": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64235,7 +64235,7 @@
     ]
   },
   "enemy:wand_unshuffle_05": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64260,7 +64260,7 @@
     ]
   },
   "enemy:wand_unshuffle_05_p": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64285,7 +64285,7 @@
     ]
   },
   "enemy:wand_unshuffle_06": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64310,7 +64310,7 @@
     ]
   },
   "enemy:wand_unshuffle_06_p": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64335,7 +64335,7 @@
     ]
   },
   "enemy:wand_unshuffle_10": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64360,7 +64360,7 @@
     ]
   },
   "enemy:wand_valtikka": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64385,7 +64385,7 @@
     ]
   },
   "enemy:wand_varpuluuta": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64410,7 +64410,7 @@
     ]
   },
   "enemy:wand_vasta": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -64435,7 +64435,7 @@
     ]
   },
   "enemy:wand_vihta": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -65430,7 +65430,7 @@
     ]
   },
   "enemy:orbit_lasers_laser": {
-    "x": 2567,
+    "x": 2573,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -65456,7 +65456,7 @@
     ]
   },
   "enemy:orbit_nukes_nuke": {
-    "x": 1242,
+    "x": 1251,
     "y": 666,
     "w": 12,
     "h": 5,
@@ -65517,7 +65517,7 @@
     ]
   },
   "enemy:angry_ghost": {
-    "x": 2505,
+    "x": 2511,
     "y": 653,
     "w": 9,
     "h": 10,
@@ -65590,7 +65590,7 @@
     "h": 10
   },
   "enemy:death_ghost": {
-    "x": 2515,
+    "x": 2521,
     "y": 653,
     "w": 9,
     "h": 10,
@@ -65651,7 +65651,7 @@
     "h": 16
   },
   "enemy:ghostly_ghost": {
-    "x": 2515,
+    "x": 2521,
     "y": 653,
     "w": 9,
     "h": 10,
@@ -65706,7 +65706,7 @@
     ]
   },
   "enemy:hungry_ghost": {
-    "x": 2546,
+    "x": 2552,
     "y": 653,
     "w": 9,
     "h": 10,
@@ -65944,7 +65944,7 @@
     ]
   },
   "enemy:spore_pod_spike": {
-    "x": 1255,
+    "x": 1264,
     "y": 666,
     "w": 5,
     "h": 5,
@@ -65966,7 +65966,7 @@
     ]
   },
   "enemy:tiny_ghost_extra": {
-    "x": 2678,
+    "x": 2684,
     "y": 653,
     "w": 9,
     "h": 10,
@@ -66206,13 +66206,13 @@
     ]
   },
   "enemy:platform_wide_collision": {
-    "x": 228,
+    "x": 237,
     "y": 666,
     "w": 88,
     "h": 8
   },
   "enemy:player_drone": {
-    "x": 2645,
+    "x": 2651,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -68227,7 +68227,7 @@
     ]
   },
   "enemy:arrow": {
-    "x": 1173,
+    "x": 1182,
     "y": 666,
     "w": 9,
     "h": 5,
@@ -68257,7 +68257,7 @@
     "h": 15
   },
   "enemy:bomb_small": {
-    "x": 3787,
+    "x": 3793,
     "y": 653,
     "w": 8,
     "h": 8
@@ -68299,7 +68299,7 @@
     ]
   },
   "enemy:bossdragon_ray": {
-    "x": 1292,
+    "x": 1301,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -68325,7 +68325,7 @@
     ]
   },
   "enemy:buckshot": {
-    "x": 1292,
+    "x": 1301,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -68351,7 +68351,7 @@
     ]
   },
   "enemy:bullet_poison": {
-    "x": 100,
+    "x": 109,
     "y": 666,
     "w": 8,
     "h": 8,
@@ -68475,7 +68475,7 @@
     ]
   },
   "enemy:all_spells_orb": {
-    "x": 2567,
+    "x": 2573,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -68501,7 +68501,7 @@
     ]
   },
   "enemy:ball_lightning": {
-    "x": 46,
+    "x": 55,
     "y": 666,
     "w": 8,
     "h": 8,
@@ -68599,7 +68599,7 @@
     ]
   },
   "enemy:bounce_laser": {
-    "x": 1349,
+    "x": 1358,
     "y": 666,
     "w": 8,
     "h": 3,
@@ -68625,8 +68625,8 @@
     ]
   },
   "enemy:bounce_spark": {
-    "x": 4083,
-    "y": 653,
+    "x": 0,
+    "y": 666,
     "w": 8,
     "h": 8,
     "ox": 4,
@@ -68651,8 +68651,8 @@
     ]
   },
   "enemy:bounce_spark_friendly_fire": {
-    "x": 4083,
-    "y": 653,
+    "x": 0,
+    "y": 666,
     "w": 8,
     "h": 8,
     "ox": 4,
@@ -68677,8 +68677,8 @@
     ]
   },
   "enemy:bounce_spark_friendly_fire_silent": {
-    "x": 4083,
-    "y": 653,
+    "x": 0,
+    "y": 666,
     "w": 8,
     "h": 8,
     "ox": 4,
@@ -68703,7 +68703,7 @@
     ]
   },
   "enemy:bouncy_orb": {
-    "x": 3386,
+    "x": 3392,
     "y": 653,
     "w": 9,
     "h": 9,
@@ -68737,8 +68737,8 @@
     ]
   },
   "enemy:bubbleshot": {
-    "x": 4083,
-    "y": 653,
+    "x": 0,
+    "y": 666,
     "w": 8,
     "h": 8,
     "ox": 4,
@@ -68763,7 +68763,7 @@
     ]
   },
   "enemy:buckshot_player": {
-    "x": 1297,
+    "x": 1306,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -68789,7 +68789,7 @@
     ]
   },
   "enemy:bullet": {
-    "x": 1232,
+    "x": 1241,
     "y": 666,
     "w": 9,
     "h": 5,
@@ -68840,7 +68840,7 @@
     ]
   },
   "enemy:chain_bolt": {
-    "x": 2666,
+    "x": 2672,
     "y": 653,
     "w": 11,
     "h": 10,
@@ -68866,7 +68866,7 @@
     ]
   },
   "enemy:chain_bolt_explosion": {
-    "x": 2666,
+    "x": 2672,
     "y": 653,
     "w": 11,
     "h": 10,
@@ -68990,7 +68990,7 @@
     ]
   },
   "enemy:death_cross_big_laser": {
-    "x": 1349,
+    "x": 1358,
     "y": 666,
     "w": 8,
     "h": 3,
@@ -69016,7 +69016,7 @@
     ]
   },
   "enemy:disc_bullet": {
-    "x": 3396,
+    "x": 3402,
     "y": 653,
     "w": 9,
     "h": 9,
@@ -69366,7 +69366,7 @@
     ]
   },
   "enemy:fireball_ray_small": {
-    "x": 82,
+    "x": 91,
     "y": 666,
     "w": 8,
     "h": 8,
@@ -69454,7 +69454,7 @@
     ]
   },
   "enemy:glitter_bomb_shrapnel": {
-    "x": 1183,
+    "x": 1192,
     "y": 666,
     "w": 6,
     "h": 5,
@@ -69478,7 +69478,7 @@
     ]
   },
   "enemy:glue_shot": {
-    "x": 28,
+    "x": 37,
     "y": 666,
     "w": 8,
     "h": 8,
@@ -69504,7 +69504,7 @@
     ]
   },
   "enemy:grenade_anti": {
-    "x": 37,
+    "x": 46,
     "y": 666,
     "w": 8,
     "h": 8,
@@ -69556,7 +69556,7 @@
     ]
   },
   "enemy:grenade_small": {
-    "x": 82,
+    "x": 91,
     "y": 666,
     "w": 8,
     "h": 8,
@@ -69582,7 +69582,7 @@
     ]
   },
   "enemy:healhurt": {
-    "x": 1232,
+    "x": 1241,
     "y": 666,
     "w": 9,
     "h": 5,
@@ -69607,7 +69607,7 @@
     ]
   },
   "enemy:hook": {
-    "x": 3416,
+    "x": 3422,
     "y": 653,
     "w": 11,
     "h": 9,
@@ -69668,7 +69668,7 @@
     ]
   },
   "enemy:light_bullet": {
-    "x": 3469,
+    "x": 3475,
     "y": 653,
     "w": 10,
     "h": 9,
@@ -69691,7 +69691,7 @@
     ]
   },
   "enemy:light_bullet_blue": {
-    "x": 3480,
+    "x": 3486,
     "y": 653,
     "w": 10,
     "h": 9,
@@ -69714,7 +69714,7 @@
     ]
   },
   "enemy:machinegun_bullet": {
-    "x": 1567,
+    "x": 1576,
     "y": 666,
     "w": 4,
     "h": 1,
@@ -69738,61 +69738,61 @@
     ]
   },
   "enemy:material_acid": {
-    "x": 1578,
+    "x": 1587,
     "y": 666,
     "w": 1,
     "h": 1
   },
   "enemy:material_blood": {
-    "x": 1578,
+    "x": 1587,
     "y": 666,
     "w": 1,
     "h": 1
   },
   "enemy:material_cement": {
-    "x": 1578,
+    "x": 1587,
     "y": 666,
     "w": 1,
     "h": 1
   },
   "enemy:material_debug": {
-    "x": 1578,
+    "x": 1587,
     "y": 666,
     "w": 1,
     "h": 1
   },
   "enemy:material_dirt": {
-    "x": 1578,
+    "x": 1587,
     "y": 666,
     "w": 1,
     "h": 1
   },
   "enemy:material_gunpowder_explosive": {
-    "x": 1578,
+    "x": 1587,
     "y": 666,
     "w": 1,
     "h": 1
   },
   "enemy:material_lava": {
-    "x": 1578,
+    "x": 1587,
     "y": 666,
     "w": 1,
     "h": 1
   },
   "enemy:material_oil": {
-    "x": 1578,
+    "x": 1587,
     "y": 666,
     "w": 1,
     "h": 1
   },
   "enemy:material_water": {
-    "x": 1578,
+    "x": 1587,
     "y": 666,
     "w": 1,
     "h": 1
   },
   "enemy:megalaser_beam": {
-    "x": 1216,
+    "x": 1225,
     "y": 666,
     "w": 8,
     "h": 5,
@@ -69869,7 +69869,7 @@
     ]
   },
   "enemy:orb_laseremitter": {
-    "x": 2567,
+    "x": 2573,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -69895,7 +69895,7 @@
     ]
   },
   "enemy:orb_laseremitter_cutter": {
-    "x": 2590,
+    "x": 2596,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -69921,7 +69921,7 @@
     ]
   },
   "enemy:orb_laseremitter_four": {
-    "x": 2567,
+    "x": 2573,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -69947,7 +69947,7 @@
     ]
   },
   "enemy:orb_laseremitter_weak": {
-    "x": 2567,
+    "x": 2573,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -69973,7 +69973,7 @@
     ]
   },
   "enemy:orb_laseremitter_weak_opposite": {
-    "x": 2567,
+    "x": 2573,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -69999,7 +69999,7 @@
     ]
   },
   "enemy:pata_rocket_1": {
-    "x": 1292,
+    "x": 1301,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -70025,7 +70025,7 @@
     ]
   },
   "enemy:pata_rocket_2": {
-    "x": 1292,
+    "x": 1301,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -70051,7 +70051,7 @@
     ]
   },
   "enemy:pata_rocket_3": {
-    "x": 1292,
+    "x": 1301,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -70077,7 +70077,7 @@
     ]
   },
   "enemy:pata_rocket_4": {
-    "x": 1292,
+    "x": 1301,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -70103,7 +70103,7 @@
     ]
   },
   "enemy:pata_rocket_5": {
-    "x": 1292,
+    "x": 1301,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -70129,7 +70129,7 @@
     ]
   },
   "enemy:pata_rocket_6": {
-    "x": 1292,
+    "x": 1301,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -70167,7 +70167,7 @@
     "h": 16
   },
   "enemy:pipe_bomb": {
-    "x": 3438,
+    "x": 3444,
     "y": 653,
     "w": 10,
     "h": 9,
@@ -70375,7 +70375,7 @@
     "h": 12
   },
   "enemy:rocket_downwards": {
-    "x": 1292,
+    "x": 1301,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -70401,7 +70401,7 @@
     ]
   },
   "enemy:rocket_player": {
-    "x": 109,
+    "x": 118,
     "y": 666,
     "w": 13,
     "h": 8,
@@ -70426,7 +70426,7 @@
     ]
   },
   "enemy:rubber_ball": {
-    "x": 1307,
+    "x": 1316,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -70452,7 +70452,7 @@
     ]
   },
   "enemy:sausage": {
-    "x": 123,
+    "x": 132,
     "y": 666,
     "w": 8,
     "h": 8
@@ -70634,7 +70634,7 @@
     ]
   },
   "enemy:swapper": {
-    "x": 2567,
+    "x": 2573,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -70660,7 +70660,7 @@
     ]
   },
   "enemy:swarm_firebug": {
-    "x": 3491,
+    "x": 3497,
     "y": 653,
     "w": 9,
     "h": 9,
@@ -70684,7 +70684,7 @@
     ]
   },
   "enemy:swarm_fly": {
-    "x": 3501,
+    "x": 3507,
     "y": 653,
     "w": 9,
     "h": 9,
@@ -70708,7 +70708,7 @@
     ]
   },
   "enemy:swarm_wasp": {
-    "x": 3511,
+    "x": 3517,
     "y": 653,
     "w": 9,
     "h": 9,
@@ -70804,7 +70804,7 @@
     ]
   },
   "enemy:temporary_platform": {
-    "x": 195,
+    "x": 204,
     "y": 666,
     "w": 32,
     "h": 8
@@ -70936,7 +70936,7 @@
     ]
   },
   "enemy:water": {
-    "x": 1578,
+    "x": 1587,
     "y": 666,
     "w": 1,
     "h": 1
@@ -70968,7 +70968,7 @@
     ]
   },
   "enemy:fireball_bigfirebug": {
-    "x": 82,
+    "x": 91,
     "y": 666,
     "w": 8,
     "h": 8,
@@ -70994,7 +70994,7 @@
     ]
   },
   "enemy:fireball_firebug": {
-    "x": 82,
+    "x": 91,
     "y": 666,
     "w": 8,
     "h": 8,
@@ -71164,7 +71164,7 @@
     ]
   },
   "enemy:glue": {
-    "x": 0,
+    "x": 9,
     "y": 666,
     "w": 18,
     "h": 8,
@@ -71190,7 +71190,7 @@
     ]
   },
   "enemy:glue_anchor": {
-    "x": 19,
+    "x": 28,
     "y": 666,
     "w": 8,
     "h": 8,
@@ -71214,32 +71214,6 @@
     ]
   },
   "enemy:grenade_leader": {
-    "x": 73,
-    "y": 666,
-    "w": 8,
-    "h": 8,
-    "ox": 4,
-    "oy": 4,
-    "fw": 8,
-    "fh": 8,
-    "fc": 4,
-    "fpr": 4,
-    "fwait": 0.04,
-    "defanim": "fireball",
-    "anims": [
-      {
-        "name": "fireball",
-        "pos_x": 0,
-        "pos_y": 0,
-        "frame_width": 8,
-        "frame_height": 8,
-        "frame_count": 4,
-        "frame_wait": 0.04,
-        "frames_per_row": 4
-      }
-    ]
-  },
-  "enemy:grenade_scavenger": {
     "x": 82,
     "y": 666,
     "w": 8,
@@ -71265,8 +71239,34 @@
       }
     ]
   },
+  "enemy:grenade_scavenger": {
+    "x": 91,
+    "y": 666,
+    "w": 8,
+    "h": 8,
+    "ox": 4,
+    "oy": 4,
+    "fw": 8,
+    "fh": 8,
+    "fc": 4,
+    "fpr": 4,
+    "fwait": 0.04,
+    "defanim": "fireball",
+    "anims": [
+      {
+        "name": "fireball",
+        "pos_x": 0,
+        "pos_y": 0,
+        "frame_width": 8,
+        "frame_height": 8,
+        "frame_count": 4,
+        "frame_wait": 0.04,
+        "frames_per_row": 4
+      }
+    ]
+  },
   "enemy:healshot": {
-    "x": 55,
+    "x": 64,
     "y": 666,
     "w": 8,
     "h": 8,
@@ -71292,7 +71292,7 @@
     ]
   },
   "enemy:healshot_safe_haven": {
-    "x": 55,
+    "x": 64,
     "y": 666,
     "w": 8,
     "h": 8,
@@ -71318,7 +71318,7 @@
     ]
   },
   "enemy:healshot_slow": {
-    "x": 55,
+    "x": 64,
     "y": 666,
     "w": 8,
     "h": 8,
@@ -71344,7 +71344,7 @@
     ]
   },
   "enemy:hiddenshot": {
-    "x": 2567,
+    "x": 2573,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -71406,7 +71406,7 @@
     ]
   },
   "enemy:invisshot": {
-    "x": 46,
+    "x": 55,
     "y": 666,
     "w": 8,
     "h": 8,
@@ -71432,32 +71432,6 @@
     ]
   },
   "enemy:laserbeam": {
-    "x": 1340,
-    "y": 666,
-    "w": 8,
-    "h": 3,
-    "ox": 3,
-    "oy": 1,
-    "fw": 8,
-    "fh": 3,
-    "fc": 2,
-    "fpr": 2,
-    "fwait": 0.02,
-    "defanim": "fireball",
-    "anims": [
-      {
-        "name": "fireball",
-        "pos_x": 0,
-        "pos_y": 0,
-        "frame_width": 8,
-        "frame_height": 3,
-        "frame_count": 2,
-        "frame_wait": 0.02,
-        "frames_per_row": 2
-      }
-    ]
-  },
-  "enemy:laserbeam_green": {
     "x": 1349,
     "y": 666,
     "w": 8,
@@ -71483,8 +71457,34 @@
       }
     ]
   },
+  "enemy:laserbeam_green": {
+    "x": 1358,
+    "y": 666,
+    "w": 8,
+    "h": 3,
+    "ox": 3,
+    "oy": 1,
+    "fw": 8,
+    "fh": 3,
+    "fc": 2,
+    "fpr": 2,
+    "fwait": 0.02,
+    "defanim": "fireball",
+    "anims": [
+      {
+        "name": "fireball",
+        "pos_x": 0,
+        "pos_y": 0,
+        "frame_width": 8,
+        "frame_height": 3,
+        "frame_count": 2,
+        "frame_wait": 0.02,
+        "frames_per_row": 2
+      }
+    ]
+  },
   "enemy:laser_bouncy": {
-    "x": 1340,
+    "x": 1349,
     "y": 666,
     "w": 8,
     "h": 3,
@@ -71510,7 +71510,7 @@
     ]
   },
   "enemy:laser_turret": {
-    "x": 1340,
+    "x": 1349,
     "y": 666,
     "w": 8,
     "h": 3,
@@ -71598,7 +71598,7 @@
     ]
   },
   "enemy:machinegun_bullet_slow": {
-    "x": 1567,
+    "x": 1576,
     "y": 666,
     "w": 4,
     "h": 1,
@@ -71622,7 +71622,7 @@
     ]
   },
   "enemy:machinegun_bullet_slower": {
-    "x": 1567,
+    "x": 1576,
     "y": 666,
     "w": 4,
     "h": 1,
@@ -71646,7 +71646,7 @@
     ]
   },
   "enemy:machinegun_bullet_tank": {
-    "x": 1567,
+    "x": 1576,
     "y": 666,
     "w": 4,
     "h": 1,
@@ -71722,7 +71722,7 @@
     ]
   },
   "enemy:megalaser_blue_beam": {
-    "x": 1207,
+    "x": 1216,
     "y": 666,
     "w": 8,
     "h": 5,
@@ -71809,7 +71809,7 @@
     ]
   },
   "enemy:orbspawner": {
-    "x": 2567,
+    "x": 2573,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -71835,7 +71835,7 @@
     ]
   },
   "enemy:orbspawner_blue": {
-    "x": 2567,
+    "x": 2573,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -71887,7 +71887,7 @@
     ]
   },
   "enemy:orb_blue": {
-    "x": 2567,
+    "x": 2573,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -71913,7 +71913,7 @@
     ]
   },
   "enemy:orb_cursed": {
-    "x": 2623,
+    "x": 2629,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -71939,7 +71939,7 @@
     ]
   },
   "enemy:orb_dark": {
-    "x": 2578,
+    "x": 2584,
     "y": 653,
     "w": 11,
     "h": 10,
@@ -71991,7 +71991,7 @@
     ]
   },
   "enemy:orb_green": {
-    "x": 2590,
+    "x": 2596,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -72017,7 +72017,7 @@
     ]
   },
   "enemy:orb_green_accelerating": {
-    "x": 2590,
+    "x": 2596,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -72043,7 +72043,7 @@
     ]
   },
   "enemy:orb_green_boss_dragon": {
-    "x": 2590,
+    "x": 2596,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -72069,7 +72069,7 @@
     ]
   },
   "enemy:orb_green_spin": {
-    "x": 2590,
+    "x": 2596,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -72095,7 +72095,7 @@
     ]
   },
   "enemy:orb_hearty": {
-    "x": 2612,
+    "x": 2618,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -72121,7 +72121,7 @@
     ]
   },
   "enemy:orb_neutral": {
-    "x": 2567,
+    "x": 2573,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -72147,7 +72147,7 @@
     ]
   },
   "enemy:orb_pink": {
-    "x": 2612,
+    "x": 2618,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -72251,7 +72251,7 @@
     ]
   },
   "enemy:orb_pink_big_super_shrapnel": {
-    "x": 1107,
+    "x": 1116,
     "y": 666,
     "w": 6,
     "h": 6,
@@ -72277,7 +72277,7 @@
     ]
   },
   "enemy:orb_pink_fast": {
-    "x": 2612,
+    "x": 2618,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -72303,7 +72303,7 @@
     ]
   },
   "enemy:orb_pink_super": {
-    "x": 2612,
+    "x": 2618,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -72329,7 +72329,7 @@
     ]
   },
   "enemy:orb_poly": {
-    "x": 2612,
+    "x": 2618,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -72355,7 +72355,7 @@
     ]
   },
   "enemy:orb_swapper": {
-    "x": 2567,
+    "x": 2573,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -72381,7 +72381,7 @@
     ]
   },
   "enemy:orb_tele": {
-    "x": 2567,
+    "x": 2573,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -72407,7 +72407,7 @@
     ]
   },
   "enemy:orb_tiny": {
-    "x": 1107,
+    "x": 1116,
     "y": 666,
     "w": 6,
     "h": 6,
@@ -72433,7 +72433,7 @@
     ]
   },
   "enemy:orb_twitchy": {
-    "x": 2601,
+    "x": 2607,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -72459,7 +72459,7 @@
     ]
   },
   "enemy:orb_weaken": {
-    "x": 2601,
+    "x": 2607,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -72485,7 +72485,7 @@
     ]
   },
   "enemy:orb_wither": {
-    "x": 2634,
+    "x": 2640,
     "y": 653,
     "w": 10,
     "h": 10,
@@ -72679,7 +72679,7 @@
     ]
   },
   "enemy:rocket_crystal_pink": {
-    "x": 1292,
+    "x": 1301,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -72705,7 +72705,7 @@
     ]
   },
   "enemy:rocket_drone": {
-    "x": 1292,
+    "x": 1301,
     "y": 666,
     "w": 4,
     "h": 4,
@@ -72731,7 +72731,7 @@
     ]
   },
   "enemy:rocket_tank": {
-    "x": 109,
+    "x": 118,
     "y": 666,
     "w": 13,
     "h": 8,
@@ -72756,7 +72756,7 @@
     ]
   },
   "enemy:rocket_tiny": {
-    "x": 1114,
+    "x": 1123,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -72781,7 +72781,7 @@
     ]
   },
   "enemy:rocket_tiny_roll": {
-    "x": 1114,
+    "x": 1123,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -72832,7 +72832,7 @@
     ]
   },
   "enemy:shieldshot": {
-    "x": 46,
+    "x": 55,
     "y": 666,
     "w": 8,
     "h": 8,
@@ -72858,7 +72858,7 @@
     ]
   },
   "enemy:sniperbullet": {
-    "x": 1567,
+    "x": 1576,
     "y": 666,
     "w": 4,
     "h": 1,
@@ -72882,7 +72882,7 @@
     ]
   },
   "enemy:sniperbullet_hell": {
-    "x": 1567,
+    "x": 1576,
     "y": 666,
     "w": 4,
     "h": 1,
@@ -73008,7 +73008,7 @@
     ]
   },
   "enemy:tnt_hell": {
-    "x": 1127,
+    "x": 1136,
     "y": 666,
     "w": 6,
     "h": 6,
@@ -73069,7 +73069,7 @@
     ]
   },
   "enemy:ultimate_killer_megabomb": {
-    "x": 1578,
+    "x": 1587,
     "y": 666,
     "w": 1,
     "h": 1
@@ -73303,7 +73303,7 @@
     "h": 16
   },
   "enemy:furniture_bed": {
-    "x": 149,
+    "x": 158,
     "y": 666,
     "w": 24,
     "h": 8
@@ -73333,7 +73333,7 @@
     "h": 23
   },
   "enemy:furniture_castle_table": {
-    "x": 2730,
+    "x": 2736,
     "y": 653,
     "w": 23,
     "h": 10
@@ -73357,7 +73357,7 @@
     "h": 11
   },
   "enemy:furniture_footlocker": {
-    "x": 2754,
+    "x": 2760,
     "y": 653,
     "w": 21,
     "h": 10
@@ -73375,7 +73375,7 @@
     "h": 14
   },
   "enemy:furniture_stool": {
-    "x": 2776,
+    "x": 2782,
     "y": 653,
     "w": 10,
     "h": 10
@@ -73417,7 +73417,7 @@
     "h": 13
   },
   "enemy:furniture_wood_table": {
-    "x": 2787,
+    "x": 2793,
     "y": 653,
     "w": 27,
     "h": 10
@@ -73503,19 +73503,19 @@
     "h": 60
   },
   "enemy:chain_torch": {
-    "x": 1145,
+    "x": 1154,
     "y": 666,
     "w": 3,
     "h": 6
   },
   "enemy:chain_torch_blue": {
-    "x": 1145,
+    "x": 1154,
     "y": 666,
     "w": 3,
     "h": 6
   },
   "enemy:chain_torch_ghostly": {
-    "x": 1145,
+    "x": 1154,
     "y": 666,
     "w": 3,
     "h": 6
@@ -73612,13 +73612,13 @@
     "h": 15
   },
   "enemy:trap_laser_toggling": {
-    "x": 2900,
+    "x": 2906,
     "y": 653,
     "w": 10,
     "h": 10
   },
   "enemy:trap_laser_toggling_left": {
-    "x": 2911,
+    "x": 2917,
     "y": 653,
     "w": 10,
     "h": 10
@@ -73650,7 +73650,7 @@
     "h": 12
   },
   "enemy:physics_bed": {
-    "x": 3521,
+    "x": 3527,
     "y": 653,
     "w": 24,
     "h": 9
@@ -73692,25 +73692,25 @@
     "h": 24
   },
   "enemy:physics_bottle_blue": {
-    "x": 2698,
+    "x": 2704,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "enemy:physics_bottle_green": {
-    "x": 2706,
+    "x": 2712,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "enemy:physics_bottle_red": {
-    "x": 2714,
+    "x": 2720,
     "y": 653,
     "w": 7,
     "h": 10
   },
   "enemy:physics_bottle_yellow": {
-    "x": 2722,
+    "x": 2728,
     "y": 653,
     "w": 7,
     "h": 10
@@ -73730,7 +73730,7 @@
     "h": 11
   },
   "enemy:physics_box_harmless_small": {
-    "x": 3546,
+    "x": 3552,
     "y": 653,
     "w": 9,
     "h": 9
@@ -73875,7 +73875,7 @@
     "h": 40
   },
   "enemy:physics_electricity_source": {
-    "x": 1134,
+    "x": 1143,
     "y": 666,
     "w": 6,
     "h": 6
@@ -73953,37 +73953,37 @@
     "h": 16
   },
   "enemy:physics_glass_shard_01": {
-    "x": 1312,
+    "x": 1321,
     "y": 666,
     "w": 4,
     "h": 4
   },
   "enemy:physics_glass_shard_02": {
-    "x": 1317,
+    "x": 1326,
     "y": 666,
     "w": 4,
     "h": 4
   },
   "enemy:physics_glass_shard_03": {
-    "x": 1322,
+    "x": 1331,
     "y": 666,
     "w": 4,
     "h": 4
   },
   "enemy:physics_glass_shard_04": {
-    "x": 1327,
+    "x": 1336,
     "y": 666,
     "w": 4,
     "h": 4
   },
   "enemy:physics_grass_01": {
-    "x": 1529,
+    "x": 1538,
     "y": 666,
     "w": 1,
     "h": 2
   },
   "enemy:physics_grass_02": {
-    "x": 1529,
+    "x": 1538,
     "y": 666,
     "w": 1,
     "h": 2
@@ -74050,7 +74050,7 @@
     ]
   },
   "enemy:physics_mining_lamp": {
-    "x": 174,
+    "x": 183,
     "y": 666,
     "w": 5,
     "h": 8
@@ -74074,7 +74074,7 @@
     "h": 16
   },
   "enemy:physics_sandbag": {
-    "x": 2889,
+    "x": 2895,
     "y": 653,
     "w": 10,
     "h": 10
@@ -74092,19 +74092,19 @@
     "h": 15
   },
   "enemy:physics_skull_01": {
-    "x": 186,
+    "x": 195,
     "y": 666,
     "w": 8,
     "h": 8
   },
   "enemy:physics_skull_02": {
-    "x": 3572,
+    "x": 3578,
     "y": 653,
     "w": 9,
     "h": 9
   },
   "enemy:physics_skull_03": {
-    "x": 3582,
+    "x": 3588,
     "y": 653,
     "w": 9,
     "h": 9
@@ -74136,7 +74136,7 @@
     ]
   },
   "enemy:physics_stone_01": {
-    "x": 1134,
+    "x": 1143,
     "y": 666,
     "w": 6,
     "h": 6
@@ -74262,7 +74262,7 @@
     "h": 15
   },
   "enemy:physics_tubelamp": {
-    "x": 1272,
+    "x": 1281,
     "y": 666,
     "w": 19,
     "h": 5
@@ -74316,7 +74316,7 @@
     "h": 22
   },
   "enemy:pressure_plate": {
-    "x": 1531,
+    "x": 1540,
     "y": 666,
     "w": 24,
     "h": 2,
@@ -74566,7 +74566,7 @@
     "h": 12
   },
   "enemy:temple_pressure_plate": {
-    "x": 1531,
+    "x": 1540,
     "y": 666,
     "w": 24,
     "h": 2,
@@ -74804,13 +74804,13 @@
     ]
   },
   "enemy:knife_pickupable": {
-    "x": 1039,
+    "x": 1048,
     "y": 666,
     "w": 6,
     "h": 6
   },
   "enemy:physics2_chain_torch": {
-    "x": 1145,
+    "x": 1154,
     "y": 666,
     "w": 3,
     "h": 6
@@ -74822,7 +74822,7 @@
     "h": 13
   },
   "enemy:physics2_long_plank": {
-    "x": 1365,
+    "x": 1374,
     "y": 666,
     "w": 64,
     "h": 2
@@ -74853,13 +74853,13 @@
     ]
   },
   "enemy:physics2_table": {
-    "x": 1512,
+    "x": 1521,
     "y": 666,
     "w": 8,
     "h": 2
   },
   "enemy:physics2_tower": {
-    "x": 1447,
+    "x": 1456,
     "y": 666,
     "w": 64,
     "h": 2
@@ -74877,7 +74877,7 @@
     "h": 15
   },
   "enemy:physics_wand": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -75458,13 +75458,13 @@
     ]
   },
   "enemy:spear": {
-    "x": 1059,
+    "x": 1068,
     "y": 666,
     "w": 6,
     "h": 6
   },
   "enemy:testwand": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,
@@ -75489,7 +75489,7 @@
     ]
   },
   "enemy:wand_debug": {
-    "x": 1026,
+    "x": 1035,
     "y": 666,
     "w": 12,
     "h": 6,

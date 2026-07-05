@@ -5319,6 +5319,7 @@
     "halo": {
       "light": "light perks",
       "dark": "dark perks"
-    }
+    },
+    "structureMissing": "No {{name}} found in the three worlds shown here — only its destination chamber is on the map."
   }
 }

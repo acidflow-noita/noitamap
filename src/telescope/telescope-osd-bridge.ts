@@ -3263,16 +3263,13 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   // from the same PILLAR_REQUIREMENTS targets the forward links use.
   if ((item.poi as any).item !== "pillar_segment") {
     // Default association from the POI's identity. Synthesized pillar places
-    // (no identity fields) match by coords instead. When this card was opened
-    // by clicking a SPECIFIC pillar segment's link (some entities — Toveri,
-    // Kolmisilmä — belong to two pillars), lead the button back to THAT pillar
-    // instead. The origin is consumed once, then cleared.
+    // (no identity fields) match by coords instead. When this POI was reached
+    // via a SPECIFIC pillar segment's link (some destinations — moons, Toveri,
+    // Kolmisilmä — serve several segments), lead the button back to THAT
+    // pillar instead. The origin persists per POI for the session.
     const defaultAssoc = poiPillarAssociation(item.poi) ?? pillarPlaceAssociation(item.poi);
-    let assoc = defaultAssoc;
-    if (pillarLinkOrigin && pillarLinkOrigin.poiId === (item.poi as any).id) {
-      assoc = pillarLocationForFlag(pillarLinkOrigin.flag) ?? defaultAssoc;
-    }
-    pillarLinkOrigin = null;
+    const originFlag = pillarOriginByPoi.get(String((item.poi as any).id));
+    const assoc = (originFlag ? pillarLocationForFlag(originFlag) : null) ?? defaultAssoc;
     if (assoc) {
       const a = assoc;
       const pillarBtn = document.createElement("button");
@@ -3538,7 +3535,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     poi.type === "item" ||
     poi.type === "chest" ||
     poi.type === "pacifist_chest" ||
-    poi.type === "great_chest"
+    poi.type === "great_chest" ||
+    poi.type === "utility_box"
   ) {
     // Header with sprite
     const header = document.createElement("div");
@@ -3640,6 +3638,18 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
               .join(" | ");
           }
           if (link.search) {
+            // Hand-named POIs (Music Machines) carry their query verbatim.
+            if (link.query) return link.query;
+            // OR-join of localized names from common.csv keys (essences,
+            // Destruction) — same shape as the searchPerks query.
+            if (link.searchNameKeys?.length) {
+              return link.searchNameKeys
+                .map((k) => {
+                  const t = gameTranslator.translateItem(k);
+                  return t && t !== k ? t : k;
+                })
+                .join(" | ");
+            }
             const id = link.itemId ?? link.targetType ?? "";
             const key = ITEM_SEARCH_NAME_KEYS[id];
             if (key) {
@@ -3669,7 +3679,20 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           // searchPerks -> Perks filter; item searches carry their own
           // searchFilter (only when a filter actually includes the target).
           const filter = link.searchPerks?.length ? "pk" : link.searchFilter;
-          window.__noitamap?.triggerPillarSearch?.(query, buildTelescopeNote(), filter);
+          // Structure-backed searches (Buried Eye / Meditation Cube): when the
+          // seed spawned no structure in the three worlds, tell the user only
+          // the destination chamber matched.
+          let resultNotice: string | undefined;
+          const structureItem = (link as import("../data/pillars").PillarLink).structureItem;
+          if (structureItem && !(globalMarkerData?.items ?? []).some((it) => (it.poi as any).item === structureItem)) {
+            const name = (link as import("../data/pillars").PillarLink).label ?? structureItem;
+            resultNotice = i18next.t("pillar.structureMissing", {
+              name,
+              defaultValue:
+                "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
+            });
+          }
+          window.__noitamap?.triggerPillarSearch?.(query, buildTelescopeNote(), filter, resultNotice);
         };
 
         // Fly the map to a link target. Resolution order: explicit POI type;
@@ -3684,7 +3707,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
             // "Pillar" button leads back to THIS pillar (entities tied to two
             // pillars otherwise always point at their default association).
             const fromFlag = String((poi as any).flag || "");
-            pillarLinkOrigin = fromFlag ? { poiId: String(p.id), flag: fromFlag } : null;
+            if (fromFlag && p.id != null) pillarOriginByPoi.set(String(p.id), fromFlag);
             openTooltipForPOI(p.id, v, { fallbackX: p.x, fallbackY: p.y, fallbackPoi: p });
           };
           // Resolve a link target to a concrete POI. The same entity (boss,
@@ -3713,6 +3736,20 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           else if (link.itemId) p = find((q) => q.item === link.itemId);
           else if (link.material) p = find((q) => q.item === "essence" && q.material === link.material);
           else if (link.chestVariant) p = find((q) => q.chestVariant === link.chestVariant);
+          else if (link.entity)
+            // Generated entity POIs carry a full xml path, manual ones a bare id.
+            p = find(
+              (q) =>
+                q.type === "entity" &&
+                String(q.entity || "")
+                  .toLowerCase()
+                  .replace(/\.xml$/, "")
+                  .endsWith(String(link.entity)),
+            );
+          else if (link.wandSprite)
+            p = find(
+              (q) => q.type === "wand" && String(q.sprite || "").replace(/\.png$/, "").endsWith(String(link.wandSprite)),
+            );
           if (p) { open(p); return; }
           if (typeof link.x === "number" && typeof link.y === "number") {
             // Coords-only destination (altars, moons, the Tower, ...): no
@@ -3750,6 +3787,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           !link.itemId &&
           !link.material &&
           !link.chestVariant &&
+          !link.entity &&
+          !link.wandSprite &&
           typeof link.x !== "number";
         const makePin = (
           label: string,
@@ -3798,11 +3837,17 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         ) => {
           const resolveLabel = (link: import("../data/pillars").PillarLink): string =>
             link.label ?? (link.labelKey ? i18next.t(link.labelKey, link.labelKey) : "");
+          // Links must wrap the DESTINATION mention, not the card's "Title: "
+          // prefix — "Void Moon: bring ... to the Moon's centre" would
+          // otherwise link the title's "Moon". Skip a short leading ": "
+          // segment when matching.
+          const colon = sentence.indexOf(": ");
+          const bodyStart = colon >= 0 && colon < 40 ? colon + 2 : 0;
           const matches: Array<{ start: number; end: number; link: (typeof links)[number]; label: string }> = [];
           const trailing: Array<{ link: (typeof links)[number]; label: string }> = [];
           for (const link of links) {
             const label = resolveLabel(link);
-            const idx = link.label ? sentence.indexOf(link.label) : -1;
+            const idx = link.label ? sentence.indexOf(link.label, bodyStart) : -1;
             if (idx >= 0 && !matches.some((m) => idx < m.end && idx + label.length > m.start)) {
               matches.push({ start: idx, end: idx + label.length, link, label });
             } else {
@@ -3842,16 +3887,27 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           // Any spec.links (e.g. the Mountain Altar where the sacrifice happens)
           // are appended as trailing pins by renderWithLinks.
           const tgt = spec.target ?? (spec.targetType ? { targetType: spec.targetType } : null);
-          const nameLinks = tgt ? [{ label: resolvedName, ...tgt }] : [];
+          // Wrap only the item name in the link — a leading article ("a
+          // Treasure Chest") stays plain text outside the dashed underline.
+          const linkLabel = resolvedName.replace(/^(?:a|an|the)\s+/i, "");
+          const nameLinks = tgt ? [{ label: linkLabel, ...tgt }] : [];
           renderWithLinks(sentence, [...nameLinks, ...(spec.links || [])]);
         } else if (spec.key) {
           // Free-form phrase; linkify any entity/place names it references.
           const sentence = String(i18next.t(spec.key, spec.key));
           if (spec.phraseTarget) {
-            // Transformation: the localized phrase carries no stable inline
-            // label, so the WHOLE phrase becomes one search chip that fills the
-            // bar with the contributing perks (OR).
-            d.appendChild(makePin(sentence, spec.phraseTarget, true));
+            // Transformation/orb phrases: the whole phrase is one search chip,
+            // except when the locale marks the linked span with [[...]] —
+            // then only that span becomes the chip ("Collect [[all 11
+            // Orbs]]"). Locales without markers keep the whole-phrase link.
+            const m = sentence.match(/^(.*?)\[\[(.+?)\]\](.*)$/s);
+            if (m) {
+              if (m[1]) d.appendChild(document.createTextNode(m[1]));
+              d.appendChild(makePin(m[2], spec.phraseTarget, true));
+              if (m[3]) d.appendChild(document.createTextNode(m[3]));
+            } else {
+              d.appendChild(makePin(sentence, spec.phraseTarget, true));
+            }
           } else {
             // A search-flagged spec.target on a key phrase has no inline label
             // in the phrase, so surface it as a trailing chip with its
@@ -4456,7 +4512,15 @@ let globalMarkerData: MarkerData | null = null;
 // flag it came from so that POI's reverse "Pillar" button can lead back to the
 // SAME pillar (some entities — Toveri, Kolmisilmä — belong to two pillars).
 // Keyed by destination POI id; consumed once when that card opens.
-let pillarLinkOrigin: { poiId: string; flag: string } | null = null;
+// Last pillar segment each POI was reached FROM via a card link. The POI's
+// "Pillar" button leads back there — some places serve several segments (the
+// Dark Moon is the destination of Blood Moon, Dark Gourd Moon AND As Above So
+// Below (Dark)), so a plain identity association would always pick one
+// arbitrary segment. Persists for the session (NOT consumed on first render),
+// so closing the card and re-clicking the spot still returns to the segment
+// the user actually came from; POIs never reached via a link fall back to the
+// default association.
+const pillarOriginByPoi = new Map<string, string>();
 
 /**
  * Install a canvas-click handler on the viewer to detect marker clicks,

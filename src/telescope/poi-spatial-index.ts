@@ -334,13 +334,17 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     if (item === "greed_die") return "prop:greed_die";
     // Altar-sacrifice props: no item:* sprite, use the baked entity sprites.
     if (item === "worm_crystal") return "enemy:physics_worm_deflector_crystal";
-    if (item === "greed_crystal") return "enemy:greed_crystal";
+    // Greed-Cursed Crystal is the GREEN curse crystal (greed_curse entity),
+    // not the greed_crystal prop.
+    if (item === "greed_crystal") return "enemy:greed_curse";
     if (item === "statue_hand") return "enemy:statue_hand_1";
     if (item === "sun_rock") return "enemy:physics_sun_rock";
     if (item === "darksun_rock") return "enemy:physics_darksun_rock";
     // Kuulokivi: the items_gfx sprite is tiny; use the ui_gfx inventory icon.
     if (item === "musicstone") return "ui_item:musicstone";
     if (item === "music_machine") return "prop:music_machine";
+    // The Hourglass Chamber synthetic POI — use the hourglass entity sprite.
+    if (item === "hourglass") return "enemy:teleport_hourglass";
     return `item:${item}`;
   }
 

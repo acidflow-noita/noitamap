@@ -146,6 +146,9 @@ const NO_HEURISTIC_CROP_DIRS = [
 // 12x8 — its emissive twin's XML confirms a single 12x8 "stand" frame.
 const NO_HEURISTIC_CROP_FILES = new Set([
   "data/enemies_gfx/healerdrone.png",
+  // Utility box item sprite is a single wide frame; the square-crop clipped it
+  // to 10x10 (right edge lost on the map, search icons and cards).
+  "data/items_gfx/utility_box.png",
 ]);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

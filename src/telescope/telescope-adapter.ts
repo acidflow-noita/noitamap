@@ -702,6 +702,22 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         } as any);
       }
 
+      // Kauhuhirviö (Horror Monster) shares the friend cave with Toveri —
+      // another hardcoded spawn the telescope scanner never emits. Offset left
+      // so the two markers don't overlap. entity id "ultimate_killer" wires up
+      // the card/search alias via CREATURE_DATA and the friendship pillar's
+      // travel link.
+      if (!combinedPois.some((p: any) => p.type === "entity" && (p as any).entity === "ultimate_killer")) {
+        combinedPois.push({
+          type: "entity",
+          entity: "ultimate_killer",
+          name: "Kauhuhirviö",
+          x: pos.x + 256 - 70,
+          y: pos.y + 256,
+          biome: `friend_${friendRoom}`,
+        } as any);
+      }
+
       // Offset gourd down so it doesn't overlap the friend boss
       for (const poi of combinedPois) {
         if (poi.type === "item" && (poi as any).item === "gourd" && (poi as any).biome === `friend_${friendRoom}`) {
@@ -1141,6 +1157,50 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         biome: "desert",
       } as any);
 
+      // The Hourglass Chamber spawns left OR right of the Hiisi Base shop
+      // (50/50 per seed). The scanner emits its pixel scene, so anchor the
+      // marker to the ACTUAL per-seed position instead of a fixed guess — the
+      // pillar goto (itemId "hourglass") resolves to this POI.
+      const hourglassScene = (pixelScenesByPW[pwKey] || []).find((s: any) => s.name === "hourglass_chamber");
+      if (hourglassScene) {
+        poisByPW[pwKey].push({
+          type: "item",
+          item: "hourglass",
+          name: "The Hourglass Chamber",
+          wiki: "https://noita.wiki.gg/wiki/The_Hourglass_Chamber",
+          x: hourglassScene.x + (hourglassScene.width || 0) / 2,
+          y: hourglassScene.y + (hourglassScene.height || 0) / 2,
+          biome: "snowcastle",
+        } as any);
+      }
+
+      // Buried Eye / Meditation Cube teleport structures + their destination
+      // chambers, anchored to the scanner's per-seed pixel scenes. All four are
+      // painted into the baked background, so the POIs are click-only targets.
+      // Named so ONE search ("Buried Eye" / "Meditation") surfaces the
+      // structure AND its chamber — the pillar chips run exactly that search.
+      const sceneMarker = (sceneName: string, item: string, name: string, wiki: string): void => {
+        const sc = (pixelScenesByPW[pwKey] || []).find((s: any) => s.name === sceneName);
+        if (!sc) return;
+        poisByPW[pwKey].push({
+          type: "item",
+          item,
+          name,
+          wiki,
+          clickOnly: true,
+          x: sc.x + (sc.width || 0) / 2,
+          y: sc.y + (sc.height || 0) / 2,
+        } as any);
+      };
+      sceneMarker("eyespot", "buried_eye", "Buried Eye", "https://noita.wiki.gg/wiki/Buried_Eye");
+      sceneMarker("secret_chamber", "buried_eye_chamber", "Buried Eye Chamber", "https://noita.wiki.gg/wiki/Buried_Eye");
+      sceneMarker(
+        "cube_chamber",
+        "meditation_chamber",
+        "Meditation Chamber",
+        "https://noita.wiki.gg/wiki/Meditation_Chamber",
+      );
+
       // Altar-sacrifice props (Pillar of Sacrifice & Transformation). These are
       // game-side biome/structure props the telescope scanner never emits, so
       // place them statically. Coords are pw-local + pwOffsetX. Sprites already
@@ -1154,6 +1214,9 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       const HM_TEMPLE_Y = [1410, 2946, 4994, 6530, 8578, 10626, 13181];
       // Nudge to align the crystal/statue markers with the baked altar art.
       const wormFix = { x: -280, y: 45 };
+      // The greed crystal floats above the HM statue, further left and higher
+      // than the worm deflector.
+      const greedFix = { x: wormFix.x - 450, y: wormFix.y - 48 - 70 };
       for (let hm = 0; hm < HM_TEMPLE_X.length; hm++) {
         poisByPW[pwKey].push({
           type: "item",
@@ -1171,8 +1234,8 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
           item: "greed_crystal",
           nameKey: "item_greed_crystal",
           name: "Greed-Cursed Crystal",
-          x: HM_TEMPLE_X[hm] + pwOffsetX + wormFix.x,
-          y: HM_TEMPLE_Y[hm] + wormFix.y - 48,
+          x: HM_TEMPLE_X[hm] + pwOffsetX + greedFix.x,
+          y: HM_TEMPLE_Y[hm] + greedFix.y,
           biome: "temple_altar",
         } as any);
       }
@@ -1199,6 +1262,19 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         } as any);
       }
     }
+
+    // Greed Curse Pedestal: the green curse crystal (greed_curse.png) on the
+    // pedestal near spawn — fixed structure, main world only. The secret_greed
+    // and avarice pillar gotos resolve to this POI (itemId "greed_curse").
+    poisByPW["0,0"]?.push({
+      type: "item",
+      item: "greed_curse",
+      name: "Greed Curse Pedestal",
+      wiki: "https://noita.wiki.gg/wiki/Curse_of_Greed",
+      x: -1376,
+      y: -415,
+      biome: "mountain_tree",
+    } as any);
 
     // Sun Rock / Dark Sun Rock: spawned at the Scales when progress_sun /
     // progress_darksun are set (scale.lua). Daily = everything unlocked, so both

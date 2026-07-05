@@ -5,11 +5,20 @@
  * silently dropped, leaving no way to reopen their card after closing it.
  */
 import { describe, it, expect } from "vitest";
-import { PILLAR_PLACES, PILLAR_FLAGS, pillarPlaceAssociation, pillarFlagName } from "../src/data/pillars";
+import {
+  PILLAR_PLACES,
+  PILLAR_FLAGS,
+  pillarPlaceAssociation,
+  pillarFlagName,
+  poiPillarAssociation,
+} from "../src/data/pillars";
 
 describe("pillar places", () => {
   it("includes every fixed-coordinate link, with or without wiki", () => {
     const labels = new Set(PILLAR_PLACES.map((p) => p.label));
+    // Buried Eye / Hourglass / Greed Curse Pedestal / Meditation Cube are
+    // deliberately NOT places anymore: they resolve to real POIs (seed-correct
+    // scene anchors / greed_curse item) or search chips instead.
     for (const expected of [
       "Mountain Altar",
       "Nullifying Altar",
@@ -17,14 +26,13 @@ describe("pillar places", () => {
       "Avarice Diamond",
       "Moon",
       "Dark Moon",
-      "Greed Curse Pedestal",
       "End of Everything",
       "Gourd Cave",
-      "Meditation Cube",
-      "Buried Eye",
-      "Hourglass",
     ]) {
       expect(labels, `missing place: ${expected}`).toContain(expected);
+    }
+    for (const gone of ["Buried Eye", "Hourglass", "Greed Curse Pedestal", "Meditation Cube"]) {
+      expect(labels, `should not be a place: ${gone}`).not.toContain(gone);
     }
   });
 
@@ -66,6 +74,27 @@ describe("pillar segment titles", () => {
         expect(pillarFlagName(flag), `uncurated title for flag: ${flag}`).not.toContain(": ");
       }
     }
+  });
+});
+
+describe("poi pillar association", () => {
+  it("specific chest variants outrank the generic sacrifice-a-chest segment", () => {
+    expect(poiPillarAssociation({ type: "chest", chestVariant: "steel" })!.flag).toBe("card_unlocked_everything");
+    expect(poiPillarAssociation({ type: "chest", chestVariant: "dark" })!.flag).toBe("secret_chest_dark");
+    expect(poiPillarAssociation({ type: "chest", chestVariant: "coral" })!.flag).toBe("secret_chest_light");
+    expect(poiPillarAssociation({ type: "chest" })!.flag).toBe("misc_chest_rain");
+  });
+
+  it("associates Kauhuhirviö with the friendship segment, path or bare id", () => {
+    expect(poiPillarAssociation({ type: "entity", entity: "data/entities/animals/ultimate_killer.xml" })!.flag).toBe(
+      "final_secret_orb",
+    );
+    expect(poiPillarAssociation({ type: "entity", entity: "ultimate_killer" })!.flag).toBe("final_secret_orb");
+  });
+
+  it("keeps generic type associations working", () => {
+    expect(poiPillarAssociation({ type: "friend" })!.flag).toBe("final_secret_orb3");
+    expect(poiPillarAssociation({ type: "utility_box" })!.flag).toBe("misc_util_rain");
   });
 });
 
