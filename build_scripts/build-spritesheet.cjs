@@ -609,6 +609,31 @@ async function main() {
     console.warn("[build-spritesheet] WARNING: item:bomb_wand not found, cannot create wand:bomb_wand");
   }
 
+  // ─── prop:worm_deflector_crystal_green (tinted) ─────────────────────────────
+  // The Greed-Cursed Crystal entity reuses worm_deflector_crystal.png tinted
+  // green by material="magic_crystal_green" at runtime (greed_crystal.xml) —
+  // no green PNG exists in the game data. Bake a green twin for the marker.
+  const wormCrystal = sprites.find((s) => s.key === "prop:worm_deflector_crystal");
+  if (wormCrystal) {
+    const tinted = new Uint8ClampedArray(wormCrystal.data);
+    for (let i = 0; i < tinted.length; i += 4) {
+      const intensity = Math.max(tinted[i], tinted[i + 1], tinted[i + 2]);
+      tinted[i] = Math.round(intensity * 0.25);
+      tinted[i + 1] = intensity;
+      tinted[i + 2] = Math.round(intensity * 0.68);
+    }
+    sprites.push({
+      key: "prop:worm_deflector_crystal_green",
+      data: tinted,
+      width: wormCrystal.width,
+      height: wormCrystal.height,
+    });
+    seenKeys.add("prop:worm_deflector_crystal_green");
+    console.log("[build-spritesheet] Added prop:worm_deflector_crystal_green (tinted worm_deflector_crystal)");
+  } else {
+    console.warn("[build-spritesheet] WARNING: prop:worm_deflector_crystal not found, cannot create green twin");
+  }
+
   // ─── wand:custom/kantele, wand:custom/flute (rotated) ──────────────────────
   // Kantele (Kantele) and Huilu (flute) live as item sprites (item:kantele /
   // item:flute, from data/items_gfx/{kantele,flute}.png) but telescope assigns

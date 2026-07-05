@@ -334,9 +334,9 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     if (item === "greed_die") return "prop:greed_die";
     // Altar-sacrifice props: no item:* sprite, use the baked entity sprites.
     if (item === "worm_crystal") return "enemy:physics_worm_deflector_crystal";
-    // Greed-Cursed Crystal is the GREEN curse crystal (greed_curse entity),
-    // not the greed_crystal prop.
-    if (item === "greed_crystal") return "enemy:greed_curse";
+    // Greed-Cursed Crystal: the game reuses the worm deflector crystal sprite
+    // tinted green via material (greed_crystal.xml) — use our baked green twin.
+    if (item === "greed_crystal") return "prop:worm_deflector_crystal_green";
     if (item === "statue_hand") return "enemy:statue_hand_1";
     if (item === "sun_rock") return "enemy:physics_sun_rock";
     if (item === "darksun_rock") return "enemy:physics_darksun_rock";

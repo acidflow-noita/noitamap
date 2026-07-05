@@ -3640,13 +3640,16 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           if (link.search) {
             // Hand-named POIs (Music Machines) carry their query verbatim.
             if (link.query) return link.query;
-            // OR-join of localized names from common.csv keys (essences,
-            // Destruction) — same shape as the searchPerks query.
+            // OR-join of localized names — item_/action_ keys resolve from the
+            // items table, mat_* keys from the materials table (they live in
+            // gameContent.materials WITHOUT the mat_ prefix; translateItem
+            // would echo the raw key into the search bar).
             if (link.searchNameKeys?.length) {
               return link.searchNameKeys
                 .map((k) => {
-                  const t = gameTranslator.translateItem(k);
-                  return t && t !== k ? t : k;
+                  const t = k.startsWith("mat_") ? gameTranslator.translateMaterial(k) : gameTranslator.translateItem(k);
+                  const failed = !t || t === k || (k.startsWith("mat_") && t === k.replace(/^mat_/, ""));
+                  return failed ? k : t;
                 })
                 .join(" | ");
             }

@@ -360,6 +360,7 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
     links: [
       { labelKey: "pillar.halo.light", searchPerks: PERKS_HALO_LIGHT },
       { labelKey: "pillar.halo.dark", searchPerks: PERKS_HALO_DARK },
+      { label: "wiki", wiki: `${WIKI_TRANSFORMATIONS}#Halo_Transformation` },
     ],
     wiki: `${WIKI_TRANSFORMATIONS}#Halo_Transformation`,
   },
