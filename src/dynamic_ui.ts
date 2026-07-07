@@ -11,6 +11,7 @@ import { updateURLWithSeed } from "./data_sources/url";
 import { getCurrentDynamicSeed, runDynamicMap } from "./dynamic-map";
 import type { DynamicMapOptions } from "./dynamic-map";
 import { isSpoilerFree } from "./spoiler-free";
+import { updateOverflowMenu } from "./overflow-menu";
 
 const NERD_MODE_URL = "https://lymm37.github.io/noita-telescope/";
 const DYNAMIC_MAP_NAME = "dynamic-main-branch";
@@ -287,6 +288,10 @@ export function updateDynamicUIVisibility(currentMap: string): void {
       visibleLabels[visibleLabels.length - 1].style.borderBottomRightRadius = r;
     }
   }
+
+  // Relocate secondary controls into the "..." menu on the dynamic map;
+  // restore them to the navbar on static maps.
+  updateOverflowMenu(currentMap);
 
   if (isDynamic) {
     // Pre-initialize telescope modules in the background so a later custom-seed

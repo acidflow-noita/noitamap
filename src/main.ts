@@ -173,6 +173,7 @@ import { AuthUI } from "./auth/auth-ui";
 import { authService } from "./auth/auth-service";
 import { DrawingUI } from "./drawing/drawing-ui";
 import { createSeedReportButton } from "./seed-report-button";
+import { placeMoreMenuLast } from "./overflow-menu";
 import { initChunkGrid, showChunkGrid, isChunkGridVisible } from "./drawing/chunk-grid";
 import { getMaterialInfo, primeMaterialInfo } from "./material-info";
 
@@ -895,6 +896,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       createSeedReportButton(drawingWrap, { loadProBundle });
     }
   }
+
+  // Now that all runtime-injected navbar buttons exist (auth/Get Pro, drawing,
+  // seed report), park the "..." overflow button at the very end of the row.
+  placeMoreMenuLast();
 
   // Initialize Drop Overlay
   setupDropOverlay(i18next, loadProBundle);

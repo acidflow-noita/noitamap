@@ -684,66 +684,69 @@
                   ></label>
                 </div>
               </form>
-              <a
-                id="installModButton"
-                href="https://runfast.stream/noitamap-mod"
-                target="_blank"
-                class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                data-bs-toggle="popover"
-                data-bs-placement="bottom"
-                data-bs-trigger="hover focus"
-                data-i18n-title="mod.title"
-                data-bs-title="Noita Map Mod"
-                data-i18n-content="mod.content"
-                data-bs-content="Install the Noita Map mod"
-              >
-                <i class="bi bi-download"></i><span>Mod</span>
-              </a>
-              <a
-                href="https://discord.gg/R2PHyHMYgx"
-                class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                target="_blank"
-                role="button"
-                data-bs-toggle="popover"
-                data-bs-placement="bottom"
-                data-bs-trigger="hover focus"
-                data-i18n-title="discord.title"
-                data-bs-title="Discord"
-                data-i18n-content="discord.content"
-                data-bs-content="Join the Discord server"
-              >
-                <i class="bi bi-discord"></i>
-              </a>
-              <a
-                href="https://github.com/acidflow-noita/noitamap"
-                class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                target="_blank"
-                role="button"
-                data-bs-toggle="popover"
-                data-bs-placement="bottom"
-                data-bs-trigger="hover focus"
-                data-i18n-title="github.title"
-                data-bs-title="GitHub"
-                data-i18n-content="github.content"
-                data-bs-content="View the source code on GitHub"
-              >
-                <i class="bi bi-github"></i>
-              </a>
-              <a
-                id="goToMainWebsiteButton"
-                href="https://runfast.stream"
-                target="_blank"
-                class="btn btn-sm btn-outline-warning"
-                data-bs-toggle="popover"
-                data-bs-placement="bottom"
-                data-bs-trigger="hover focus"
-                data-i18n-title="runfast.title"
-                data-bs-title="Runfast.Stream"
-                data-i18n-content="runfast.content"
-                data-bs-content="Go to the main runfast.stream website"
-              >
-                <i class="icon-runfast"></i>
-              </a>
+              <!-- Overflow "more" menu: secondary controls + links tucked away to de-bloat the navbar -->
+              <div class="dropdown" id="more-menu">
+                <button
+                  id="moreMenuButton"
+                  class="icon-button btn btn-sm btn-outline-light"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  data-bs-auto-close="outside"
+                  aria-expanded="false"
+                  aria-label="More"
+                >
+                  <i class="bi bi-three-dots"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="moreMenuButton">
+                  <!-- Live controls reparented here by overflow-menu.ts (spoiler-free, perf, share, telescope, overlays). -->
+                  <li id="more-menu-controls-slot">
+                    <div id="more-menu-controls" class="d-flex flex-wrap align-items-center gap-1 px-3 py-1"></div>
+                  </li>
+                  <li id="more-menu-controls-divider"><hr class="dropdown-divider" /></li>
+                  <li>
+                    <a
+                      id="installModButton"
+                      class="dropdown-item d-flex align-items-center gap-2"
+                      href="https://runfast.stream/noitamap-mod"
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      <i class="bi bi-download"></i><span data-i18n="mod.title">Noita Map Mod</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item d-flex align-items-center gap-2"
+                      href="https://discord.gg/R2PHyHMYgx"
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      <i class="bi bi-discord"></i><span data-i18n="discord.title">Discord</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item d-flex align-items-center gap-2"
+                      href="https://github.com/acidflow-noita/noitamap"
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      <i class="bi bi-github"></i><span data-i18n="github.title">GitHub</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      id="goToMainWebsiteButton"
+                      class="dropdown-item d-flex align-items-center gap-2"
+                      href="https://runfast.stream"
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      <i class="icon-runfast"></i><span data-i18n="runfast.title">Runfast.Stream</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
               <!-- Disable the dono link -->
               <!-- <div class="me-2 bg-glow rounded-full inline-block">
                 <a href="https://runfast.stream/donate" style="text-decoration: none" target="_blank">
