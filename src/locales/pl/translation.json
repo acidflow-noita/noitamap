@@ -5114,7 +5114,7 @@
       "greatChests": "Świetne skrzynie",
       "hvSpells": "Zaklęcia o dużej wartości",
       "rareMaterials": "Rzadkie materiały",
-      "wands": "Wands"
+      "wands": "Różdżki"
     },
     "empty": {
       "noSeed": "Oczekiwanie na zakończenie dynamicznej mapy - raport pojawi się tutaj.",
@@ -5123,8 +5123,8 @@
     "spells": {
       "title": "Zaklęcia o dużej wartości",
       "empty": "W tym ziarnie nie ma zaklęć o wysokiej wartości.",
-      "noneFound": "none found",
-      "onWands": "on wands"
+      "noneFound": "nie znaleziono żadnego",
+      "onWands": "na różdżkach"
     },
     "spell": {
       "category": {
@@ -5145,7 +5145,7 @@
       "livelyconcoction": "Żywa mikstura",
       "deathium": "Śmierć",
       "urine": "Mocz",
-      "healthium": "Healthium"
+      "healthium": "Zdrowie"
     },
     "compare": {
       "comparedTo": "w porównaniu do {{target}} (ziarno {{seed}})",
@@ -5176,11 +5176,12 @@
       },
       "legend": {
         "current": "Aktualne ziarno",
-        "previousDaily": "Poprzednie nasiona dzienne",
-        "average": "Średni poziom bazowy"
+        "previousDaily": "Poprzednie dzienne ziarno",
+        "average": "Średni poziom bazowy",
+        "median": "Mediana (wszystkie ziarna)"
       },
       "creaturesNote": "Stworzenia są ukryte na mapie (tryb wydajności), ale nadal są liczone w statystykach poniżej.",
-      "creaturesNoteTitle": "Performance mode"
+      "creaturesNoteTitle": "Tryb wydajności"
     },
     "faceted": {
       "title": "Podział na biomy według kategorii"
@@ -5213,7 +5214,14 @@
       "title": "Main path only",
       "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
     },
-    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
+    "tldr": {
+      "title": "Jak wypada to ziarno",
+      "more": "{{metric}}: więcej niż {{pct}}% ziaren",
+      "fewer": "{{metric}}: mniej niż {{pct}}% ziaren",
+      "typical": "{{metric}}: mniej więcej przeciętnie",
+      "foot": "Porównane ze zmierzonymi statystykami wszystkich {{count}} ziaren."
+    }
   },
   "unlocks": {
     "btn": {

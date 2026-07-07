@@ -68,7 +68,12 @@ const SOURCE_OVERRIDES = {
   "spider.axis.hvSpells": "High-value spells",
   "spider.legend.current": "Current seed",
   "spider.legend.previousDaily": "Previous daily seed",
-  "spider.legend.average": "Average baseline",
+  "spider.legend.median": "Median across all seeds",
+  "tldr.title": "How this seed compares",
+  "tldr.more": "{{metric}}: more than {{pct}}% of seeds",
+  "tldr.fewer": "{{metric}}: fewer than {{pct}}% of seeds",
+  "tldr.typical": "{{metric}}: about average",
+  "tldr.foot": "Ranked against measured statistics for all {{count}} seeds.",
 };
 
 function gtFetch(text, target) {

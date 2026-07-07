@@ -5114,7 +5114,7 @@
       "greatChests": "Hienot rinnat",
       "hvSpells": "Arvokkaita loitsuja",
       "rareMaterials": "Harvinaisia ​​materiaaleja",
-      "wands": "Wands"
+      "wands": "sauvat"
     },
     "empty": {
       "noSeed": "Odotetaan, että dynaaminen kartta valmistuu – raportti tulee tähän.",
@@ -5123,8 +5123,8 @@
     "spells": {
       "title": "Arvokkaita loitsuja",
       "empty": "Tässä siemenessä ei ole arvokkaita loitsuja.",
-      "noneFound": "none found",
-      "onWands": "on wands"
+      "noneFound": "ei löytynyt yhtään",
+      "onWands": "sauvojen päällä"
     },
     "spell": {
       "category": {
@@ -5145,7 +5145,7 @@
       "livelyconcoction": "Elävä keitto",
       "deathium": "Deathium",
       "urine": "Virtsa",
-      "healthium": "Healthium"
+      "healthium": "Terveys"
     },
     "compare": {
       "comparedTo": "verrattuna {{target}} (siemen {{seed}})",
@@ -5177,10 +5177,11 @@
       "legend": {
         "current": "Nykyinen siemen",
         "previousDaily": "Edellinen päivittäinen siemen",
-        "average": "Keskimääräinen lähtötaso"
+        "average": "Keskimääräinen lähtötaso",
+        "median": "Mediaani (kaikki siemenet)"
       },
       "creaturesNote": "Olennot ovat piilossa kartalta (suorituskykytila), mutta ne lasketaan silti alla oleviin tilastoihin.",
-      "creaturesNoteTitle": "Performance mode"
+      "creaturesNoteTitle": "Suorituskykytila"
     },
     "faceted": {
       "title": "Biomikohtainen erittely luokittain"
@@ -5213,7 +5214,14 @@
       "title": "Main path only",
       "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
     },
-    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
+    "tldr": {
+      "title": "Miten tämä siemen vertautuu",
+      "more": "{{metric}}: enemmän kuin {{pct}} %:lla siemenistä",
+      "fewer": "{{metric}}: vähemmän kuin {{pct}} %:lla siemenistä",
+      "typical": "{{metric}}: suunnilleen keskimääräinen",
+      "foot": "Vertailtu kaikkien {{count}} siemenen mitattuun tilastoon."
+    }
   },
   "unlocks": {
     "btn": {

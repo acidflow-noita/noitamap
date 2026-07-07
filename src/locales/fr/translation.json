@@ -5114,7 +5114,7 @@
       "greatChests": "Grands coffres",
       "hvSpells": "Sorts de grande valeur",
       "rareMaterials": "Des matériaux rares",
-      "wands": "Wands"
+      "wands": "Baguettes"
     },
     "empty": {
       "noSeed": "En attente de la fin de la carte dynamique - le rapport apparaîtra ici.",
@@ -5123,8 +5123,8 @@
     "spells": {
       "title": "Sorts de grande valeur",
       "empty": "Aucun sort de grande valeur dans cette graine.",
-      "noneFound": "none found",
-      "onWands": "on wands"
+      "noneFound": "aucun trouvé",
+      "onWands": "sur les baguettes"
     },
     "spell": {
       "category": {
@@ -5145,7 +5145,7 @@
       "livelyconcoction": "Concoction animée",
       "deathium": "Mortium",
       "urine": "Urine",
-      "healthium": "Healthium"
+      "healthium": "Santé"
     },
     "compare": {
       "comparedTo": "comparé à {{target}} (graine {{seed}})",
@@ -5177,10 +5177,11 @@
       "legend": {
         "current": "Semence actuelle",
         "previousDaily": "Graine quotidienne précédente",
-        "average": "Base de référence moyenne"
+        "average": "Base de référence moyenne",
+        "median": "Médiane (toutes les graines)"
       },
       "creaturesNote": "Les créatures sont masquées de la carte (mode performance), mais elles sont toujours comptées dans les statistiques ci-dessous.",
-      "creaturesNoteTitle": "Performance mode"
+      "creaturesNoteTitle": "Mode performances"
     },
     "faceted": {
       "title": "Répartition par biome par catégorie"
@@ -5213,7 +5214,14 @@
       "title": "Main path only",
       "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
     },
-    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
+    "tldr": {
+      "title": "Comment se situe cette graine",
+      "more": "{{metric}} : plus de {{pct}} % des graines",
+      "fewer": "{{metric}} : moins de {{pct}} % des graines",
+      "typical": "{{metric}} : dans la moyenne",
+      "foot": "Classé d'après les statistiques mesurées des {{count}} graines."
+    }
   },
   "unlocks": {
     "btn": {

@@ -5114,7 +5114,7 @@
       "greatChests": "Tolle Truhen",
       "hvSpells": "Hochwertige Zauber",
       "rareMaterials": "Seltene Materialien",
-      "wands": "Wands"
+      "wands": "Zauberstäbe"
     },
     "empty": {
       "noSeed": "Die dynamische Karte wird noch geladen – der Bericht erscheint hier.",
@@ -5123,8 +5123,8 @@
     "spells": {
       "title": "Hochwertige Zauber",
       "empty": "In diesem Samen sind keine hochwertigen Zaubersprüche enthalten.",
-      "noneFound": "none found",
-      "onWands": "on wands"
+      "noneFound": "keine gefunden",
+      "onWands": "auf Zauberstäben"
     },
     "spell": {
       "category": {
@@ -5176,11 +5176,12 @@
       },
       "legend": {
         "current": "Aktueller Samen",
-        "previousDaily": "Vorheriger täglicher Samen",
-        "average": "Durchschnittlicher Ausgangswert"
+        "previousDaily": "Vorheriger täglicher Seed",
+        "average": "Durchschnittlicher Ausgangswert",
+        "median": "Median (alle Seeds)"
       },
       "creaturesNote": "Kreaturen werden auf der Karte ausgeblendet (Leistungsmodus), werden aber dennoch in den Statistiken unten gezählt.",
-      "creaturesNoteTitle": "Performance mode"
+      "creaturesNoteTitle": "Leistungsmodus"
     },
     "faceted": {
       "title": "Aufschlüsselung pro Biom nach Kategorie"
@@ -5213,7 +5214,14 @@
       "title": "Main path only",
       "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
     },
-    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
+    "tldr": {
+      "title": "Wie dieser Seed abschneidet",
+      "more": "{{metric}}: mehr als {{pct}}% der Seeds",
+      "fewer": "{{metric}}: weniger als {{pct}}% der Seeds",
+      "typical": "{{metric}}: etwa durchschnittlich",
+      "foot": "Bewertet anhand gemessener Statistiken aller {{count}} Seeds."
+    }
   },
   "unlocks": {
     "btn": {

@@ -5114,7 +5114,7 @@
       "greatChests": "Grote kisten",
       "hvSpells": "Hoogwaardige spreuken",
       "rareMaterials": "Zeldzame materialen",
-      "wands": "Wands"
+      "wands": "Toverstokken"
     },
     "empty": {
       "noSeed": "Wachten tot de dynamische kaart klaar is – het rapport verschijnt hier.",
@@ -5123,8 +5123,8 @@
     "spells": {
       "title": "Hoogwaardige spreuken",
       "empty": "Geen hoogwaardige spreuken in dit zaad.",
-      "noneFound": "none found",
-      "onWands": "on wands"
+      "noneFound": "geen gevonden",
+      "onWands": "op toverstokken"
     },
     "spell": {
       "category": {
@@ -5145,7 +5145,7 @@
       "livelyconcoction": "Levendig brouwsel",
       "deathium": "Deathium",
       "urine": "Urine",
-      "healthium": "Healthium"
+      "healthium": "Gezondheid"
     },
     "compare": {
       "comparedTo": "vergeleken met {{target}} (seed {{seed}})",
@@ -5176,11 +5176,12 @@
       },
       "legend": {
         "current": "Huidig ​​zaad",
-        "previousDaily": "Vorig dagelijks zaad",
-        "average": "Gemiddelde basislijn"
+        "previousDaily": "Vorige dagelijkse seed",
+        "average": "Gemiddelde basislijn",
+        "median": "Mediaan (alle seeds)"
       },
       "creaturesNote": "Wezens zijn verborgen op de kaart (prestatiemodus), maar worden nog steeds meegeteld in de onderstaande statistieken.",
-      "creaturesNoteTitle": "Performance mode"
+      "creaturesNoteTitle": "Prestatiemodus"
     },
     "faceted": {
       "title": "Uitsplitsing per bioom per categorie"
@@ -5213,7 +5214,14 @@
       "title": "Main path only",
       "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
     },
-    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
+    "tldr": {
+      "title": "Hoe deze seed zich verhoudt",
+      "more": "{{metric}}: meer dan {{pct}}% van de seeds",
+      "fewer": "{{metric}}: minder dan {{pct}}% van de seeds",
+      "typical": "{{metric}}: ongeveer gemiddeld",
+      "foot": "Gerangschikt op gemeten statistieken van alle {{count}} seeds."
+    }
   },
   "unlocks": {
     "btn": {

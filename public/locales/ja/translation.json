@@ -5114,7 +5114,7 @@
       "greatChests": "素晴らしいチェスト",
       "hvSpells": "高価値の呪文",
       "rareMaterials": "希少な素材",
-      "wands": "Wands"
+      "wands": "ワンド"
     },
     "empty": {
       "noSeed": "ダイナミックマップの生成を待っています - レポートはここに表示されます。",
@@ -5123,8 +5123,8 @@
     "spells": {
       "title": "高価値の呪文",
       "empty": "このシードには高価値の呪文はありません。",
-      "noneFound": "none found",
-      "onWands": "on wands"
+      "noneFound": "何も見つかりませんでした",
+      "onWands": "ワンドで"
     },
     "spell": {
       "category": {
@@ -5145,7 +5145,7 @@
       "livelyconcoction": "生き生きとした調合",
       "deathium": "デスシウム",
       "urine": "尿",
-      "healthium": "Healthium"
+      "healthium": "ヘルシウム"
     },
     "compare": {
       "comparedTo": "{{target}}との比較 (シード {{seed}})",
@@ -5176,11 +5176,12 @@
       },
       "legend": {
         "current": "現在のシード",
-        "previousDaily": "以前の毎日のシード",
-        "average": "平均ベースライン"
+        "previousDaily": "前回のデイリーシード",
+        "average": "平均ベースライン",
+        "median": "中央値（全シード）"
       },
       "creaturesNote": "クリーチャーはマップ (パフォーマンス モード) から非表示になりますが、以下の統計では引き続きカウントされます。",
-      "creaturesNoteTitle": "Performance mode"
+      "creaturesNoteTitle": "パフォーマンスモード"
     },
     "faceted": {
       "title": "カテゴリごとのバイオームごとの内訳"
@@ -5213,7 +5214,14 @@
       "title": "Main path only",
       "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
     },
-    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
+    "tldr": {
+      "title": "このシードの比較",
+      "more": "{{metric}}：シードの{{pct}}%より多い",
+      "fewer": "{{metric}}：シードの{{pct}}%より少ない",
+      "typical": "{{metric}}：ほぼ平均",
+      "foot": "全{{count}}シードの実測統計に基づくランキング。"
+    }
   },
   "unlocks": {
     "btn": {

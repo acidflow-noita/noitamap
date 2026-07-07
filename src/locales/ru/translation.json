@@ -5114,7 +5114,7 @@
       "greatChests": "Великие",
       "hvSpells": "Ценные заклинания",
       "rareMaterials": "Редкие материалы",
-      "wands": "Wands"
+      "wands": "Жезлы"
     },
     "empty": {
       "noSeed": "Ожидание завершения динамической карты — отчёт появится здесь.",
@@ -5123,8 +5123,8 @@
     "spells": {
       "title": "Ценные заклинания",
       "empty": "В этом сиде нет ценных заклинаний.",
-      "noneFound": "none found",
-      "onWands": "on wands"
+      "noneFound": "ничего не найдено",
+      "onWands": "на палочках"
     },
     "spell": {
       "category": {
@@ -5145,7 +5145,7 @@
       "livelyconcoction": "Живая концоктия",
       "deathium": "Смертий",
       "urine": "Моча",
-      "healthium": "Healthium"
+      "healthium": "Здоровье"
     },
     "compare": {
       "comparedTo": "в сравнении с {{target}} (сид {{seed}})",
@@ -5176,11 +5176,12 @@
       },
       "legend": {
         "current": "Текущий сид",
-        "previousDaily": "Предыдущий дейли",
-        "average": "Средний по дейли"
+        "previousDaily": "Предыдущий ежедневный сид",
+        "average": "Средний по дейли",
+        "median": "Медиана (все сиды)"
       },
       "creaturesNote": "Существа скрыты с карты (режим производительности), но они все равно учитываются в статистике ниже.",
-      "creaturesNoteTitle": "Performance mode"
+      "creaturesNoteTitle": "Режим производительности"
     },
     "faceted": {
       "title": "Разбивка по биомам по категориям"
@@ -5213,7 +5214,14 @@
       "title": "Main path only",
       "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
     },
-    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
+    "tldr": {
+      "title": "Чем выделяется этот сид",
+      "more": "{{metric}}: больше, чем у {{pct}}% сидов",
+      "fewer": "{{metric}}: меньше, чем у {{pct}}% сидов",
+      "typical": "{{metric}}: примерно среднее",
+      "foot": "Оценка по измеренной статистике всех {{count}} сидов."
+    }
   },
   "unlocks": {
     "btn": {

@@ -4,10 +4,12 @@
     "close": "Close",
     "unknownBiome": "Unknown",
     "noTrackedItems": "No tracked items in this world.",
-    "mainPathOnly": {
-      "label": "Main path only",
-      "title": "Main path only",
-      "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
+    "tldr": {
+      "title": "How this seed compares",
+      "more": "{{metric}}: more than {{pct}}% of seeds",
+      "fewer": "{{metric}}: fewer than {{pct}}% of seeds",
+      "typical": "{{metric}}: about average",
+      "foot": "Ranked against measured stats for all {{count}} seeds."
     },
     "toggle": {
       "title": "Seed report",
@@ -89,7 +91,7 @@
       "legend": {
         "current": "Current seed",
         "previousDaily": "Previous daily",
-        "average": "Average baseline"
+        "median": "Median (all seeds)"
       }
     },
     "faceted": {

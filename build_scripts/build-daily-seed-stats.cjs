@@ -34,10 +34,10 @@
  *     count, axisOrder, biomeMetrics, generatedAt
  *   }
  *
- * SECONDARY OUTPUT (committed, shippable): the axes averages (full world AND
- * main-path-only) are baked into noitamap-pro/src/seed-report/daily-seed-baseline.json
- * so the pro seed report can ship the "Average baseline" series (which tracks
- * the "main path only" toggle) without the gitignored json.
+ * NOTE: the pro seed report's per-PW baseline is no longer sourced from here.
+ * It now ships `noitamap-pro/src/seed-report/sage-baseline.json` (medians over
+ * ALL seeds, extracted from Sage via `task/build-sage-baseline.cjs`). This
+ * script only produces the gitignored per-biome averages json.
  *
  * EXECUTION
  *   - Launches a headless Playwright Chromium.
@@ -65,12 +65,6 @@ const ROOT = path.resolve(__dirname, "..");
 const OPT_DIR = path.join(ROOT, "src", "data", "optional_data");
 const CSV_PATH = path.join(OPT_DIR, "dailySeeds.cleaned.csv");
 const OUT_PATH = path.join(OPT_DIR, "daily-seed-stats.json");
-// Small, shippable extract (axes averages only) consumed by the pro seed
-// report's "Average baseline" series. The full OUT_PATH json is gitignored
-// and far too large to ship, so we bake just the averages into pro's source.
-const PRO_BASELINE_PATH = path.resolve(
-  ROOT, "..", "noitamap-pro", "src", "seed-report", "daily-seed-baseline.json",
-);
 
 const PERSIST_EVERY_MS = 5000;
 const NAV_TIMEOUT_MS = 90_000;
@@ -397,26 +391,6 @@ function writeOutput(stats) {
   fs.renameSync(tmp, OUT_PATH);
 }
 
-/** Bake the axes averages into the pro seed report's shippable baseline file.
- *  Call at end-of-run only (not on the incremental persist cadence). No-op if
- *  the sibling pro checkout isn't present. */
-function writeProBaseline(stats) {
-  const dir = path.dirname(PRO_BASELINE_PATH);
-  if (!fs.existsSync(dir)) {
-    console.warn(`[stats] pro seed-report dir not found, skipping baseline export: ${dir}`);
-    return;
-  }
-  const { axes, axesMainPath } = computeAverages(stats);
-  const payload = {
-    count: Object.keys(stats).length,
-    generatedAt: new Date().toISOString(),
-    axes,
-    axesMainPath,
-  };
-  fs.writeFileSync(PRO_BASELINE_PATH, JSON.stringify(payload, null, 2) + "\n");
-  console.log(`[stats] wrote pro baseline extract (${payload.count} seeds) -> ${PRO_BASELINE_PATH}`);
-}
-
 // ─── Playwright orchestration ───────────────────────────────────────────────
 async function main() {
   const args = Object.fromEntries(
@@ -490,7 +464,6 @@ async function main() {
   const todo = limit ? queue.slice(0, limit) : queue;
   if (todo.length === 0) {
     writeOutput(stats);
-    writeProBaseline(stats);
     console.log(`[stats] nothing to do — output is up to date at ${OUT_PATH}`);
     return;
   }
@@ -599,7 +572,6 @@ async function main() {
   } finally {
     clearInterval(persistTimer);
     writeOutput(stats);
-    writeProBaseline(stats);
     await browser.close();
   }
   console.log(`[stats] done — wrote ${OUT_PATH}`);

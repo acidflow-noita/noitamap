@@ -5114,7 +5114,7 @@
       "greatChests": "伟大的胸部",
       "hvSpells": "高价值法术",
       "rareMaterials": "稀有材料",
-      "wands": "Wands"
+      "wands": "魔杖"
     },
     "empty": {
       "noSeed": "正在等待动态地图完成 - 报告将显示在此处。",
@@ -5123,8 +5123,8 @@
     "spells": {
       "title": "高价值法术",
       "empty": "该种子中没有高价值法术。",
-      "noneFound": "none found",
-      "onWands": "on wands"
+      "noneFound": "没有找到",
+      "onWands": "在魔杖上"
     },
     "spell": {
       "category": {
@@ -5145,7 +5145,7 @@
       "livelyconcoction": "活泼的混合物",
       "deathium": "死神",
       "urine": "尿",
-      "healthium": "Healthium"
+      "healthium": "健康"
     },
     "compare": {
       "comparedTo": "与 {{target}} 对比 (种子 {{seed}})",
@@ -5176,11 +5176,12 @@
       },
       "legend": {
         "current": "当前种子",
-        "previousDaily": "以前的每日种子",
-        "average": "平均基线"
+        "previousDaily": "上一个每日种子",
+        "average": "平均基线",
+        "median": "中位数（所有种子）"
       },
       "creaturesNote": "生物在地图上隐藏（性能模式），但它们仍然计入下面的统计数据中。",
-      "creaturesNoteTitle": "Performance mode"
+      "creaturesNoteTitle": "性能模式"
     },
     "faceted": {
       "title": "按生物群落类别细分"
@@ -5213,7 +5214,14 @@
       "title": "Main path only",
       "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
     },
-    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
+    "tldr": {
+      "title": "该种子的对比",
+      "more": "{{metric}}：多于 {{pct}}% 的种子",
+      "fewer": "{{metric}}：少于 {{pct}}% 的种子",
+      "typical": "{{metric}}：约为平均水平",
+      "foot": "根据全部 {{count}} 个种子的实测统计进行排名。"
+    }
   },
   "unlocks": {
     "btn": {

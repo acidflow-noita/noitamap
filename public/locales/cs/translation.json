@@ -5114,7 +5114,7 @@
       "greatChests": "Skvělé truhly",
       "hvSpells": "Kouzla vysoké hodnoty",
       "rareMaterials": "Vzácné materiály",
-      "wands": "Wands"
+      "wands": "Hůlky"
     },
     "empty": {
       "noSeed": "Čeká se na dokončení dynamické mapy – sestava se zde zobrazí.",
@@ -5123,8 +5123,8 @@
     "spells": {
       "title": "Kouzla vysoké hodnoty",
       "empty": "V tomto semínku nejsou žádná kouzla vysoké hodnoty.",
-      "noneFound": "none found",
-      "onWands": "on wands"
+      "noneFound": "žádný nenalezen",
+      "onWands": "na hůlkách"
     },
     "spell": {
       "category": {
@@ -5176,11 +5176,12 @@
       },
       "legend": {
         "current": "Aktuální semeno",
-        "previousDaily": "Předchozí denní semeno",
-        "average": "Průměrná základní linie"
+        "previousDaily": "Předchozí denní semínko",
+        "average": "Průměrná základní linie",
+        "median": "Medián (všechna semínka)"
       },
       "creaturesNote": "Bytosti jsou skryty na mapě (režim výkonu), ale stále se počítají ve statistikách níže.",
-      "creaturesNoteTitle": "Performance mode"
+      "creaturesNoteTitle": "Výkonový režim"
     },
     "faceted": {
       "title": "Rozdělení podle biomů podle kategorií"
@@ -5213,7 +5214,14 @@
       "title": "Main path only",
       "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
     },
-    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
+    "tldr": {
+      "title": "Jak si vede toto semínko",
+      "more": "{{metric}}: více než {{pct}}% semínek",
+      "fewer": "{{metric}}: méně než {{pct}}% semínek",
+      "typical": "{{metric}}: přibližně průměr",
+      "foot": "Hodnoceno podle naměřených statistik všech {{count}} semínek."
+    }
   },
   "unlocks": {
     "btn": {

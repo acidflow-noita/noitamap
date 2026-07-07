@@ -5114,7 +5114,7 @@
       "greatChests": "Grandes baús",
       "hvSpells": "Feitiços de alto valor",
       "rareMaterials": "Materiais raros",
-      "wands": "Wands"
+      "wands": "Varinhas"
     },
     "empty": {
       "noSeed": "Aguardando o mapa dinâmico terminar - o relatório aparecerá aqui.",
@@ -5123,8 +5123,8 @@
     "spells": {
       "title": "Feitiços de alto valor",
       "empty": "Não há feitiços de alto valor nesta semente.",
-      "noneFound": "none found",
-      "onWands": "on wands"
+      "noneFound": "nenhum encontrado",
+      "onWands": "em varinhas"
     },
     "spell": {
       "category": {
@@ -5145,7 +5145,7 @@
       "livelyconcoction": "Mistura animada",
       "deathium": "Morte",
       "urine": "Urina",
-      "healthium": "Healthium"
+      "healthium": "Saúde"
     },
     "compare": {
       "comparedTo": "em comparação com {{target}} (semente {{seed}})",
@@ -5177,10 +5177,11 @@
       "legend": {
         "current": "Semente atual",
         "previousDaily": "Semente diária anterior",
-        "average": "Linha de base média"
+        "average": "Linha de base média",
+        "median": "Mediana (todas as sementes)"
       },
       "creaturesNote": "As criaturas ficam ocultas no mapa (modo desempenho), mas ainda são contadas nas estatísticas abaixo.",
-      "creaturesNoteTitle": "Performance mode"
+      "creaturesNoteTitle": "Modo de desempenho"
     },
     "faceted": {
       "title": "Divisão por bioma por categoria"
@@ -5213,7 +5214,14 @@
       "title": "Main path only",
       "hint": "Filter the report to only count POIs in the standard main-path biomes: Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory, and the Holy Mountains between them."
     },
-    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)"
+    "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
+    "tldr": {
+      "title": "Como esta semente se compara",
+      "more": "{{metric}}: mais que {{pct}}% das sementes",
+      "fewer": "{{metric}}: menos que {{pct}}% das sementes",
+      "typical": "{{metric}}: na média",
+      "foot": "Classificado com base nas estatísticas medidas de todas as {{count}} sementes."
+    }
   },
   "unlocks": {
     "btn": {
