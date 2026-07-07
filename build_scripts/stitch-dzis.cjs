@@ -41,6 +41,12 @@
  *                     N controls encode speed vs file size: 0 = fast/largest, 9 = slow/smallest)
  *     --concurrency=N worlds stitched in parallel (default 3, or env STITCH_CONCURRENCY).
  *                     Each merged-world stitch peaks at ~10-12 GB; size to host RAM.
+ *     --world=W       stitch ONLY this world (left|middle|right), or env STITCH_WORLD.
+ *                     Used by the fan-out CI where each runner bakes one world on
+ *                     its own box so its stitch runs uncontended. Output for the
+ *                     selected world is byte-identical to the all-worlds run: the
+ *                     per-world manifest/generation slices are computed the same
+ *                     way, just restricted to W. Default: all worlds.
  *     --force         re-stitch worlds whose .dzi already exists
  */
 
@@ -127,9 +133,20 @@ async function main() {
   const worldFor = (pw) => (pw === 0 ? "middle" : pw < 0 ? "left" : "right");
   const byWorldRegions = { left: [], middle: [], right: [] };
   for (const r of manifest.regions) byWorldRegions[worldFor(r.pw)].push(r);
+
+  // Optional single-world restriction (CI fan-out: one world per runner). The
+  // slice is deterministic, so the chosen world's DZI + manifest + generation
+  // are identical to what the all-worlds run would produce for it.
+  const onlyWorld = (args.world || process.env.STITCH_WORLD || "").toLowerCase() || null;
+  if (onlyWorld && !["left", "middle", "right"].includes(onlyWorld)) {
+    console.error(`[stitch] --world must be left|middle|right (got '${args.world || process.env.STITCH_WORLD}')`);
+    process.exit(1);
+  }
+
   const tasks = Object.entries(byWorldRegions)
-    .filter(([, rs]) => rs.length > 0)
+    .filter(([world, rs]) => rs.length > 0 && (!onlyWorld || world === onlyWorld))
     .map(([world, rs]) => ({ world, regions: rs, baseName: `dynamic-daily-${world}` }));
+  if (onlyWorld) console.log(`[stitch] restricted to world '${onlyWorld}'`);
 
   const runWorld = async ({ world, regions, baseName }) => {
     const present = regions.filter((r) => {
