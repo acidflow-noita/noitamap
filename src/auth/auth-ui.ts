@@ -5,6 +5,21 @@
 import { authService, AuthState } from "./auth-service";
 import i18next from "../i18n";
 
+// Twitch login is fully wired (worker + service) but HIDDEN in the UI until
+// Twitch platform approval lands. Flip to true to reveal the modal button; no
+// other change needed. While false, no Twitch markup renders and no Twitch
+// translation keys are referenced, so nothing leaks to users.
+const TWITCH_ENABLED = false;
+
+// Official Twitch glitch mark (white, for the purple button). Geometry from
+// task/TwitchGlitchPurple.svg. Only injected when TWITCH_ENABLED.
+const TWITCH_SYMBOL_WHITE = `
+<svg viewBox="0 0 2400 2800" xmlns="http://www.w3.org/2000/svg" width="20" height="20" aria-hidden="true">
+  <path fill="#ffffff" d="M500,0L0,500v1800h600v500l500-500h400l900-900V0H500z M2200,1300l-400,400h-400l-350,350v-350H600V200h1600V1300z"/>
+  <rect x="1700" y="550" fill="#ffffff" width="200" height="600"/>
+  <rect x="1150" y="550" fill="#ffffff" width="200" height="600"/>
+</svg>`;
+
 // Official Patreon Symbol (White)
 const PATREON_SYMBOL_WHITE = `
 <svg viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
@@ -136,22 +151,42 @@ export class AuthUI {
     modal.tabIndex = -1;
     modal.setAttribute("aria-labelledby", "getProModalLabel");
     modal.setAttribute("aria-hidden", "true");
+
+    // Two provider columns: Twitch (left) and Patreon (right), each with a
+    // "sign in" and a "subscribe" button, separated by a faint "or". When
+    // TWITCH_ENABLED is off, only the Patreon column shows (centered, no "or").
+    const twitchColumnHtml = TWITCH_ENABLED
+      ? `<div class="pro-col">
+              <button id="twitchLoginBtn" class="btn-twitch justify-content-center">
+                ${TWITCH_SYMBOL_WHITE}
+                ${i18next.t("auth.loginWithTwitch", "Sign in with Twitch")}
+              </button>
+              <a href="https://www.twitch.tv/products/wuote" target="_blank" rel="noopener noreferrer" class="btn-patron justify-content-center">
+                <i class="bi bi-box-arrow-up-right"></i>${i18next.t("auth.subscribeTwitch", "Subscribe on Twitch")}
+              </a>
+            </div>
+            <div class="pro-or">${i18next.t("auth.or", "or")}</div>`
+      : "";
+
     modal.innerHTML = `
-      <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-dialog modal-dialog-centered pro-dialog">
         <div class="modal-content bg-dark text-light">
           <div class="modal-header border-0 pb-0">
             <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body pt-0">
-            <p class="text-center text-light mb-3">${i18next.t("auth.proDescription", "Drawing tools and other pro features are available to Patreon supporters.")}</p>
-            <div class="d-flex flex-column align-items-center gap-3">
-              <button id="patreonLoginBtn" class="btn-patreon justify-content-center">
-                ${PATREON_SYMBOL_WHITE}
-                ${i18next.t("auth.loginWithPatreon", "Sign in with Patreon")}
-              </button>
-              <a href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer" class="btn-patron justify-content-center">
-                <i class="bi bi-box-arrow-up-right"></i>${i18next.t("auth.becomePatron", "Become a Patron")}
-              </a>
+            <p class="text-center text-light mb-3">${i18next.t("auth.proDescription", "Drawing tools and other Pro features are available to supporters.")}</p>
+            <div class="pro-columns">
+              ${twitchColumnHtml}
+              <div class="pro-col">
+                <button id="patreonLoginBtn" class="btn-patreon justify-content-center">
+                  ${PATREON_SYMBOL_WHITE}
+                  ${i18next.t("auth.loginWithPatreon", "Sign in with Patreon")}
+                </button>
+                <a href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer" class="btn-patron justify-content-center">
+                  <i class="bi bi-box-arrow-up-right"></i>${i18next.t("auth.becomePatron", "Become a Patron")}
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -168,6 +203,14 @@ export class AuthUI {
       bsModal.hide();
       authService.login();
     });
+
+    // Bind Twitch login handler (only present when TWITCH_ENABLED)
+    if (TWITCH_ENABLED) {
+      modal.querySelector("#twitchLoginBtn")?.addEventListener("click", () => {
+        bsModal.hide();
+        authService.loginTwitch();
+      });
+    }
 
     // Clean up on hide
     modal.addEventListener("hidden.bs.modal", () => {
@@ -202,7 +245,7 @@ export function showLoginPrompt(): void {
   const confirmed = confirm(
     i18next.t(
       "auth.loginPrompt",
-      `Sign in with Patreon to use drawing tools.
+      `Sign in to use drawing tools.
 
 Drawings are saved locally and can be shared via URL.
 

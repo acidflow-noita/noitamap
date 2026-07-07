@@ -119,13 +119,13 @@
       "label": "AP",
       "title": "Alchemic Precursor",
       "content": "Find the nearest ingredients for the Alchemic Precursor recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Alchemic Precursor recipe finder. Pro feature — sign in with Patreon to unlock."
+      "proOnly": "Alchemic Precursor recipe finder. Pro feature — sign in to unlock."
     },
     "lc": {
       "label": "LC",
       "title": "Lively Concoction",
       "content": "Find the nearest ingredients for the Lively Concoction recipe relative to the current viewport. Pro feature.",
-      "proOnly": "Lively Concoction recipe finder. Pro feature — sign in with Patreon to unlock."
+      "proOnly": "Lively Concoction recipe finder. Pro feature — sign in to unlock."
     },
     "noSeed": "No seed loaded — open the dynamic map first.",
     "notFound": "Not found on map",
@@ -4786,17 +4786,17 @@
     "signedInAs": "Signed in as",
     "follower": "Follower",
     "subscriber": "Subscriber",
-    "patron": "Patreon Supporter",
+    "patron": "Pro Supporter",
     "signOut": "Sign out",
     "getPro": "Get Pro",
     "proFeatures": "Pro Features",
-    "proDescription": "Drawing tools and other pro features are available to Patreon supporters.",
+    "proDescription": "Drawing tools and other Pro features are available to supporters.",
     "featureDrawing": "Drawing & annotation tools",
     "featureShare": "Share drawings via magic screenshots",
     "featureSave": "Save & manage multiple drawings",
     "loginWithPatreon": "Sign in with Patreon",
     "becomePatron": "Become a Patron",
-    "loginPrompt": "Sign in with Patreon to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?",
+    "loginPrompt": "Sign in to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?",
     "yourAccount": "Your account",
     "proActive": "Pro active",
     "subscribeCta": "Upgrade to Pro"
@@ -4953,12 +4953,12 @@
       "importedTitle": "Imported drawing"
     },
     "auth": {
-      "subscriberOnly": "Drawing is available to Patreon members",
-      "signInPrompt": "Sign in with Patreon to access drawing tools",
+      "subscriberOnly": "Drawing is available to Pro members",
+      "signInPrompt": "Sign in to access drawing tools",
       "signInButton": "Sign in with Patreon",
       "greeting": "Hi, {{username}}!",
       "subscriberFeature": "Drawing is a subscriber-only feature",
-      "subscribePrompt": "Become a Patreon member to unlock drawing tools",
+      "subscribePrompt": "Become a supporter to unlock drawing tools",
       "subscribeButton": "Subscribe on Patreon",
       "signOut": "Sign out"
     },
@@ -4983,7 +4983,7 @@
   "highValueFilter": {
     "title": "High-value items",
     "content": "Mark rare spells, orbs, and landmark items on the map with a cyan ring, and narrow the search results list to only those POIs. Regular markers are unchanged. Pro feature.",
-    "proOnly": "High-value highlight. Pro feature — sign in with Patreon to unlock."
+    "proOnly": "High-value highlight. Pro feature — sign in to unlock."
   },
   "mainWorldOnly": {
     "title": "Main world only",

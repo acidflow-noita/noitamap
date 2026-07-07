@@ -10,7 +10,6 @@
 import i18next from "./i18n";
 import { parseURL, updateURLWithSeedReport } from "./data_sources/url";
 import { authService } from "./auth/auth-service";
-import { AuthUI } from "./auth/auth-ui";
 
 const BTN_ID = "seedReportToggleBtn";
 
@@ -65,21 +64,9 @@ export function createSeedReportButton(
     }
   }
 
-  // Gate on subscriber status — show the "Get Pro" modal but still let the
-  // toggle proceed so the sidebar opens in its locked-view (skeleton) state.
-  // Letting the change event fire also persists ?sr=1 in the URL so the
-  // sidebar reopens after a perf-mode reload.
-  input.addEventListener("click", () => {
-    // Only nag when opening. On a checkbox the checked state is already
-    // flipped by the time click fires, so a false value means the user is
-    // closing the panel — that must never show the CTA.
-    if (!input.checked) return;
-    const state = authService.getState();
-    if (!state.authenticated || !state.isSubscriber) {
-      AuthUI.showGetProModal();
-    }
-  });
-
+  // No CTA modal here: opening the seed report loads its sidebar, which renders
+  // its own inline locked-view (sign-in buttons + skeleton) for non-subscribers.
+  // A modal on top would double-nag. Just let the toggle proceed.
   input.addEventListener("change", () => {
     ensureProAndDispatch(input.checked);
   });

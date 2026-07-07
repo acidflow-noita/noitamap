@@ -30,6 +30,17 @@
     },
     { "binding": "JWT_SECRET", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "JWT_SECRET_PROD" },
     { "binding": "CREATOR_USER_ID", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "CREATOR_USER_ID" },
+    // -- Twitch (piping live, client UI hidden until platform approval) --
+    { "binding": "TWITCH_CLIENT_ID", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "NOITAMAP_TWITCH_CLIENT_ID" },
+    { "binding": "TWITCH_CLIENT_SECRET", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "NOITAMAP_TWITCH_CLIENT_SECRET" },
+    // Broadcaster id enables wuote's creator bypass (no refresh token needed).
+    { "binding": "TWITCH_BROADCASTER_ID", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "NOITAMAP_TWITCH_BROADCASTER_ID" },
+    // Uncomment AFTER the one-time /auth/twitch/broadcaster-setup grant creates
+    // this in the Secrets Store (the callback page prints it) -- needed to check
+    // OTHER viewers' subs, not for wuote's own bypass:
+    // { "binding": "TWITCH_BROADCASTER_REFRESH_TOKEN", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "NOITAMAP_TWITCH_BROADCASTER_REFRESH_TOKEN" },
+    // Optional gate for the setup route:
+    // { "binding": "TWITCH_SETUP_KEY", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "NOITAMAP_TWITCH_SETUP_KEY" },
   ],
   "env": {
     // Development environment
@@ -61,15 +72,37 @@
           "store_id": "291b9519666945a1a56adbb686c62d76",
           "secret_name": "CREATOR_USER_ID",
         },
+        // -- Twitch (shares the same app creds as prod) --
+        { "binding": "TWITCH_CLIENT_ID", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "NOITAMAP_TWITCH_CLIENT_ID" },
+        { "binding": "TWITCH_CLIENT_SECRET", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "NOITAMAP_TWITCH_CLIENT_SECRET" },
+        { "binding": "TWITCH_BROADCASTER_ID", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "NOITAMAP_TWITCH_BROADCASTER_ID" },
+        // { "binding": "TWITCH_BROADCASTER_REFRESH_TOKEN", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "NOITAMAP_TWITCH_BROADCASTER_REFRESH_TOKEN" },
+        // { "binding": "TWITCH_SETUP_KEY", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "NOITAMAP_TWITCH_SETUP_KEY" },
       ],
     },
-    // Local development environment
+    // Local development environment. Mirrors dev's secret bindings so a local
+    // `wrangler dev --env local --remote` can resolve them from the Secrets
+    // Store (local/miniflare mode has no Secrets Store, so use --remote). The
+    // main fetch handler resolves Patreon+JWT on EVERY route, so these must be
+    // present or every request 500s — even the Twitch ones.
     "local": {
       "name": "noitamap-auth-local",
       "vars": {
         "WORKER_URL": "http://localhost:8787",
         "ALLOWED_ORIGINS": "http://localhost:5173,http://localhost:3000",
       },
+      "secrets_store_secrets": [
+        { "binding": "PATREON_CLIENT_ID", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "PATREON_CLIENT_ID" },
+        { "binding": "PATREON_CLIENT_SECRET", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "PATREON_CLIENT_SECRET" },
+        { "binding": "PATREON_CAMPAIGN_ID", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "PATREON_CAMPAIGN_ID" },
+        { "binding": "JWT_SECRET", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "JWT_SECRET_DEV" },
+        { "binding": "CREATOR_USER_ID", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "CREATOR_USER_ID" },
+        { "binding": "TWITCH_CLIENT_ID", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "NOITAMAP_TWITCH_CLIENT_ID" },
+        { "binding": "TWITCH_CLIENT_SECRET", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "NOITAMAP_TWITCH_CLIENT_SECRET" },
+        { "binding": "TWITCH_BROADCASTER_ID", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "NOITAMAP_TWITCH_BROADCASTER_ID" },
+        // { "binding": "TWITCH_BROADCASTER_REFRESH_TOKEN", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "NOITAMAP_TWITCH_BROADCASTER_REFRESH_TOKEN" },
+        // { "binding": "TWITCH_SETUP_KEY", "store_id": "291b9519666945a1a56adbb686c62d76", "secret_name": "NOITAMAP_TWITCH_SETUP_KEY" },
+      ],
     },
   },
 }

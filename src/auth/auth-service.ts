@@ -9,15 +9,34 @@ export interface AuthState {
   nickname: string | null;
   isFollower: boolean;
   isSubscriber: boolean;
+  provider: "patreon" | "twitch" | null;
 }
 
-// Auth worker URL (configure based on environment)
-const AUTH_WORKER_URL =
-  window.location.hostname === "localhost" || window.location.hostname.includes("dev.")
+// Auth worker URL (configure based on environment).
+// Default: localhost + dev.* -> deployed dev worker; prod -> prod worker.
+// To test a LOCAL `wrangler dev` worker, set in the browser console:
+//   localStorage.setItem("noitamap_auth_worker", "http://localhost:8787")
+// then reload. Clear it (removeItem) to go back to the deployed dev worker.
+// The override only applies on localhost so it can never affect prod users.
+function resolveAuthWorkerUrl(): string {
+  const host = window.location.hostname;
+  const isLocal = host === "localhost" || host === "127.0.0.1";
+  if (isLocal) {
+    const override = localStorage.getItem("noitamap_auth_worker");
+    if (override) return override;
+  }
+  return isLocal || host.includes("dev.")
     ? "https://noitamap-auth-dev.wuote.workers.dev"
     : "https://noitamap-auth.wuote.workers.dev";
+}
+
+const AUTH_WORKER_URL = resolveAuthWorkerUrl();
 
 const JWT_KEY = "noitamap_jwt";
+// Long-lived refresh JWT (carries the provider refresh_token, encrypted by the
+// worker). Used to silently re-mint the access JWT so sessions survive past the
+// 24h access-token expiry without a re-login.
+const REFRESH_KEY = "noitamap_refresh_jwt";
 
 class AuthService {
   private state: AuthState = {
@@ -26,6 +45,7 @@ class AuthService {
     nickname: null,
     isFollower: false,
     isSubscriber: false,
+    provider: null,
   };
 
   private listeners: Set<(state: AuthState) => void> = new Set();
@@ -53,6 +73,7 @@ class AuthService {
     const urlParams = new URLSearchParams(window.location.search);
     const authResult = urlParams.get("auth");
     const tokenFromUrl = urlParams.get("token");
+    const refreshFromUrl = urlParams.get("refresh_token");
     const errorFromUrl = urlParams.get("auth_error");
 
     if (errorFromUrl) {
@@ -63,8 +84,10 @@ class AuthService {
 
     if (authResult === "success" && tokenFromUrl) {
       localStorage.setItem(JWT_KEY, tokenFromUrl);
+      if (refreshFromUrl) localStorage.setItem(REFRESH_KEY, refreshFromUrl);
       cleanUrl.searchParams.delete("auth");
       cleanUrl.searchParams.delete("token");
+      cleanUrl.searchParams.delete("refresh_token");
       shouldUpdateUrl = true;
     }
 
@@ -78,21 +101,18 @@ class AuthService {
   }
 
   /**
-   * Check authentication status with the auth worker
+   * Check authentication status with the auth worker. If the access token is
+   * missing or expired, transparently try /auth/refresh with the stored refresh
+   * JWT before giving up — this is what keeps sessions alive past 24h without a
+   * re-login. Sub status is re-evaluated server-side on each refresh.
    */
   async checkAuth(): Promise<AuthState> {
     try {
       const storedToken = localStorage.getItem(JWT_KEY);
       if (!storedToken) {
-        this.state = {
-          authenticated: false,
-          username: null,
-          nickname: null,
-          isFollower: false,
-          isSubscriber: false,
-        };
-        this.notifyListeners();
-        return this.state;
+        // No access token — try to mint one from the refresh token.
+        if (await this.tryRefresh()) return this.state;
+        return this.setUnauthenticated();
       }
 
       const response = await fetch(`${AUTH_WORKER_URL}/auth/check`, {
@@ -101,37 +121,83 @@ class AuthService {
 
       if (response.ok) {
         const data = await response.json();
-        this.state = {
-          authenticated: data.authenticated,
-          username: data.username || null,
-          nickname: data.vanity || data.nickname || null,
-          isFollower: data.isFollower || false,
-          isSubscriber: data.isSubscriber || false,
-        };
-        if (!data.authenticated) {
-          localStorage.removeItem(JWT_KEY);
+        if (data.authenticated) {
+          this.applyAuthData(data);
+          return this.state;
         }
-      } else {
+        // Access token rejected (expired) — attempt silent renewal.
         localStorage.removeItem(JWT_KEY);
-        this.state = {
-          authenticated: false,
-          username: null,
-          nickname: null,
-          isFollower: false,
-          isSubscriber: false,
-        };
+        if (await this.tryRefresh()) return this.state;
+        return this.setUnauthenticated();
       }
+
+      // Worker error on /auth/check — try refresh as a fallback, else drop.
+      if (await this.tryRefresh()) return this.state;
+      localStorage.removeItem(JWT_KEY);
+      return this.setUnauthenticated();
     } catch (error) {
       console.error("Auth check failed:", error);
-      this.state = {
-        authenticated: false,
-        username: null,
-        nickname: null,
-        isFollower: false,
-        isSubscriber: false,
-      };
+      return this.setUnauthenticated();
     }
+  }
 
+  /**
+   * Exchange the stored refresh JWT for a fresh access+refresh pair. Returns
+   * true and updates state on success; false (and clears tokens) on failure.
+   */
+  private async tryRefresh(): Promise<boolean> {
+    const refreshToken = localStorage.getItem(REFRESH_KEY);
+    if (!refreshToken) return false;
+    try {
+      const res = await fetch(`${AUTH_WORKER_URL}/auth/refresh`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${refreshToken}` },
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (!data.authenticated || !data.token) {
+        // Refresh token is dead (revoked/expired) — clear it so we stop trying.
+        localStorage.removeItem(REFRESH_KEY);
+        return false;
+      }
+      localStorage.setItem(JWT_KEY, data.token);
+      if (data.refresh_token) localStorage.setItem(REFRESH_KEY, data.refresh_token);
+      this.applyAuthData(data);
+      return true;
+    } catch (error) {
+      console.error("Silent refresh failed:", error);
+      return false;
+    }
+  }
+
+  private applyAuthData(data: {
+    username?: string;
+    vanity?: string;
+    nickname?: string;
+    isFollower?: boolean;
+    isSubscriber?: boolean;
+    provider?: "patreon" | "twitch";
+  }): void {
+    this.state = {
+      authenticated: true,
+      username: data.username || null,
+      nickname: data.vanity || data.nickname || null,
+      isFollower: data.isFollower || false,
+      isSubscriber: data.isSubscriber || false,
+      provider: data.provider || null,
+    };
+    this.notifyListeners();
+  }
+
+  private setUnauthenticated(): AuthState {
+    this.state = {
+      authenticated: false,
+      username: null,
+      nickname: null,
+      isFollower: false,
+      isSubscriber: false,
+      provider: null,
+    };
     this.notifyListeners();
     return this.state;
   }
@@ -145,20 +211,21 @@ class AuthService {
   }
 
   /**
+   * Start Twitch login flow. Piping is live end-to-end but the UI entry point
+   * is hidden (see TWITCH_ENABLED in auth-ui.ts) until Twitch platform approval.
+   */
+  loginTwitch(): void {
+    const redirectUrl = encodeURIComponent(window.location.href);
+    window.location.href = `${AUTH_WORKER_URL}/auth/twitch/login?redirect=${redirectUrl}`;
+  }
+
+  /**
    * Logout - clear token and reset state
    */
   async logout(): Promise<void> {
     localStorage.removeItem(JWT_KEY);
-
-    this.state = {
-      authenticated: false,
-      username: null,
-      nickname: null,
-      isFollower: false,
-      isSubscriber: false,
-    };
-
-    this.notifyListeners();
+    localStorage.removeItem(REFRESH_KEY);
+    this.setUnauthenticated();
   }
 
   /**

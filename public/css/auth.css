@@ -1,17 +1,94 @@
 /* auth.css - auth modal buttons. Patreon brand color preserved (oklch form). */
 :root {
   --patreon: oklch(0.628 0.224 21.1); /* #FF424D brand */
+  --twitch: oklch(0.512 0.226 296.5); /* #9146FF brand */
 }
 
 /* Shared sizing so every Patreon button (modal, drawing sidebar, seed report)
    is identical regardless of its container — one consistent pill width,
    centered, with a sane max so it never stretches full-width in a wide modal. */
 .btn-patreon,
-.btn-patron {
+.btn-patron,
+.btn-twitch {
   width: 100%;
   max-width: 15rem;
   margin-inline: auto;
   justify-content: center;
+}
+
+/* Twitch sign-in button. Mirrors .btn-patreon in brand purple. Only rendered
+   when TWITCH_ENABLED (auth-ui.ts); dormant until Twitch platform approval. */
+.btn-twitch {
+  background-color: var(--twitch);
+  color: oklch(1 0 0);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.btn-twitch:hover {
+  background-color: oklch(0.46 0.226 296.5); /* darker brand */
+  color: oklch(1 0 0);
+}
+
+.btn-twitch svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Get Pro modal: two provider columns (Twitch | Patreon) with a faint "or"
+   divider between them. Each column stacks its sign-in + subscribe buttons.
+   Collapses to a single stacked column on narrow screens. Also reused by the
+   seed-report locked view. */
+.pro-columns {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 1rem;
+}
+.pro-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 15rem;
+}
+/* Make the two action buttons in a column equal width and single-line so the
+   columns line up regardless of label length (no wrapping = no crooked rows). */
+.pro-col > .btn-twitch,
+.pro-col > .btn-patreon,
+.pro-col > .btn-patron {
+  width: 100%;
+  max-width: none;
+  white-space: nowrap;
+}
+.pro-or {
+  display: flex;
+  align-items: center;
+  color: oklch(1 0 0 / 0.35);
+  font-size: 0.8rem;
+  text-transform: lowercase;
+  user-select: none;
+}
+/* Widen the modal so two columns of pill buttons sit side by side without the
+   labels wrapping. */
+.modal-dialog.pro-dialog {
+  max-width: 34rem;
+}
+@media (max-width: 560px) {
+  .pro-columns {
+    flex-direction: column;
+    align-items: center;
+  }
+  .pro-or {
+    justify-content: center;
+  }
 }
 
 .btn-patreon {

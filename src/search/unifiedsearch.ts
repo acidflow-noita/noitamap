@@ -193,7 +193,7 @@ function appendAlchemyStubs(filterBox: HTMLElement): void {
       label.dataset.bsContent = i18next.t(
         locked ? proOnlyKey : contentKey,
         locked
-          ? `${defaultTitle} recipe finder. Pro feature — sign in with Patreon to unlock.`
+          ? `${defaultTitle} recipe finder. Pro feature — sign in to unlock.`
           : `Find the nearest ingredients for the ${defaultTitle} recipe.`,
       );
       const existing = (window as any).bootstrap?.Popover?.getInstance(label);
@@ -346,7 +346,7 @@ function appendHighValueStub(filterBox: HTMLElement, search?: UnifiedSearch): vo
     label.dataset.bsContent = i18next.t(
       locked ? proOnlyKey : contentKey,
       locked
-        ? `${defaultTitle}. Pro feature — sign in with Patreon to unlock.`
+        ? `${defaultTitle}. Pro feature — sign in to unlock.`
         : "Highlight rare spells, orbs, and landmark items. Matching markers are scaled up and glow; others are dimmed.",
     );
     const existing = (window as any).bootstrap?.Popover?.getInstance(label);
