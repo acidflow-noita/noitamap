@@ -5222,7 +5222,8 @@
       "phraseFarMore": "{{metric}}: znacznie więcej niż zwykle",
       "phraseFarFewer": "{{metric}}: znacznie mniej niż zwykle",
       "seedTypical": "ziarno {{value}} · typowo {{typical}}",
-      "footAll": "Sumy ze wszystkich trzech światów, porównane ze zmierzonymi statystykami wszystkich {{count}} ziaren."
+      "footAll": "Sumy ze wszystkich trzech światów, porównane ze zmierzonymi statystykami wszystkich {{count}} ziaren.",
+      "footMain": "Tylko główny świat (tryb lekki), porównany ze zmierzonymi statystykami wszystkich {{count}} ziaren."
     }
   },
   "unlocks": {

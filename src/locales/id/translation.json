@@ -5222,7 +5222,8 @@
       "phraseFarMore": "{{metric}}: jauh lebih banyak dari biasanya",
       "phraseFarFewer": "{{metric}}: jauh lebih sedikit dari biasanya",
       "seedTypical": "benih {{value}} · biasanya {{typical}}",
-      "footAll": "Total gabungan ketiga dunia, dibandingkan dengan statistik terukur seluruh {{count}} benih."
+      "footAll": "Total gabungan ketiga dunia, dibandingkan dengan statistik terukur seluruh {{count}} benih.",
+      "footMain": "Hanya dunia utama (mode ringan), dibandingkan dengan statistik terukur seluruh {{count}} benih."
     }
   },
   "unlocks": {

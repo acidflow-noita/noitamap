@@ -153,6 +153,9 @@ declare global {
   }
 }
 
+// Build stamp injected by vite `define` — cache-busts the remote pro.js fetch.
+declare const __BUILD_VERSION__: string;
+
 declare module '*.png' {
   const value: string;
   export default value;

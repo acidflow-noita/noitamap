@@ -5222,7 +5222,8 @@
       "phraseFarMore": "{{metric}} : beaucoup plus que d’habitude",
       "phraseFarFewer": "{{metric}} : beaucoup moins que d’habitude",
       "seedTypical": "graine {{value}} · typique {{typical}}",
-      "footAll": "Totaux des trois mondes cumulés, comparés aux statistiques mesurées des {{count}} graines."
+      "footAll": "Totaux des trois mondes cumulés, comparés aux statistiques mesurées des {{count}} graines.",
+      "footMain": "Monde principal uniquement (mode léger), comparé aux statistiques mesurées des {{count}} graines."
     }
   },
   "unlocks": {

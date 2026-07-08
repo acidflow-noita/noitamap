@@ -5222,7 +5222,8 @@
       "phraseFarMore": "{{metric}}：通常よりはるかに多い",
       "phraseFarFewer": "{{metric}}：通常よりはるかに少ない",
       "seedTypical": "シード {{value}}・通常 {{typical}}",
-      "footAll": "3つの世界の合計を、全{{count}}シードの実測統計と比較。"
+      "footAll": "3つの世界の合計を、全{{count}}シードの実測統計と比較。",
+      "footMain": "メインワールドのみ（軽量モード）、全{{count}}シードの実測統計と比較。"
     }
   },
   "unlocks": {

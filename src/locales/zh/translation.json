@@ -5222,7 +5222,8 @@
       "phraseFarMore": "{{metric}}：远多于平常",
       "phraseFarFewer": "{{metric}}：远少于平常",
       "seedTypical": "本种子 {{value}}·通常 {{typical}}",
-      "footAll": "三个世界的总和，与全部 {{count}} 个种子的实测统计对比。"
+      "footAll": "三个世界的总和，与全部 {{count}} 个种子的实测统计对比。",
+      "footMain": "仅主世界（轻量模式），与全部 {{count}} 个种子的实测统计对比。"
     }
   },
   "unlocks": {

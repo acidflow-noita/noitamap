@@ -5222,7 +5222,8 @@
       "phraseFarMore": "{{metric}}: veel meer dan gebruikelijk",
       "phraseFarFewer": "{{metric}}: veel minder dan gebruikelijk",
       "seedTypical": "seed {{value}} · typisch {{typical}}",
-      "footAll": "Totalen over alle drie de werelden, vergeleken met gemeten statistieken van alle {{count}} seeds."
+      "footAll": "Totalen over alle drie de werelden, vergeleken met gemeten statistieken van alle {{count}} seeds.",
+      "footMain": "Alleen de hoofdwereld (lichte modus), vergeleken met gemeten statistieken van alle {{count}} seeds."
     }
   },
   "unlocks": {

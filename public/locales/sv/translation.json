@@ -5222,7 +5222,8 @@
       "phraseFarMore": "{{metric}}: mycket mer än vanligt",
       "phraseFarFewer": "{{metric}}: mycket mindre än vanligt",
       "seedTypical": "frö {{value}} · typiskt {{typical}}",
-      "footAll": "Summor över alla tre världar, jämfört med uppmätt statistik för alla {{count}} frön."
+      "footAll": "Summor över alla tre världar, jämfört med uppmätt statistik för alla {{count}} frön.",
+      "footMain": "Endast huvudvärlden (lätt läge), jämfört med uppmätt statistik för alla {{count}} frön."
     }
   },
   "unlocks": {

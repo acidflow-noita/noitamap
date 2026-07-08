@@ -11,7 +11,8 @@
       "phraseFarMore": "Far more {{metric}} than usual",
       "phraseFarFewer": "Far fewer {{metric}} than usual",
       "seedTypical": "seed {{value}} · typical {{typical}}",
-      "footAll": "Totals across all three worlds, compared against measured stats for all {{count}} seeds."
+      "footAll": "Totals across all three worlds, compared against measured stats for all {{count}} seeds.",
+      "footMain": "Main world only (light mode), compared against measured stats for all {{count}} seeds."
     },
     "toggle": {
       "title": "Seed report",

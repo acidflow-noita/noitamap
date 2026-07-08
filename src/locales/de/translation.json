@@ -5222,7 +5222,8 @@
       "phraseFarMore": "{{metric}}: deutlich mehr als üblich",
       "phraseFarFewer": "{{metric}}: deutlich weniger als üblich",
       "seedTypical": "Seed {{value}} · typisch {{typical}}",
-      "footAll": "Summen über alle drei Welten, verglichen mit gemessenen Statistiken aller {{count}} Seeds."
+      "footAll": "Summen über alle drei Welten, verglichen mit gemessenen Statistiken aller {{count}} Seeds.",
+      "footMain": "Nur die Hauptwelt (Light-Modus), verglichen mit gemessenen Statistiken aller {{count}} Seeds."
     }
   },
   "unlocks": {

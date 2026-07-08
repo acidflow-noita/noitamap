@@ -5222,7 +5222,8 @@
       "phraseFarMore": "{{metric}}: mnohem více než obvykle",
       "phraseFarFewer": "{{metric}}: mnohem méně než obvykle",
       "seedTypical": "semínko {{value}} · obvykle {{typical}}",
-      "footAll": "Součty za všechny tři světy, porovnáno s naměřenými statistikami všech {{count}} semínek."
+      "footAll": "Součty za všechny tři světy, porovnáno s naměřenými statistikami všech {{count}} semínek.",
+      "footMain": "Pouze hlavní svět (odlehčený režim), porovnáno s naměřenými statistikami všech {{count}} semínek."
     }
   },
   "unlocks": {

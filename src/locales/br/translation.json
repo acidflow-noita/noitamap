@@ -5222,7 +5222,8 @@
       "phraseFarMore": "{{metric}}: muito mais que o habitual",
       "phraseFarFewer": "{{metric}}: muito menos que o habitual",
       "seedTypical": "semente {{value}} · típico {{typical}}",
-      "footAll": "Totais dos três mundos somados, comparados com as estatísticas medidas de todas as {{count}} sementes."
+      "footAll": "Totais dos três mundos somados, comparados com as estatísticas medidas de todas as {{count}} sementes.",
+      "footMain": "Apenas o mundo principal (modo leve), comparado com as estatísticas medidas de todas as {{count}} sementes."
     }
   },
   "unlocks": {

@@ -843,14 +843,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     if ((window as any).noitamap_pro_loaded) return true;
 
     try {
-      const proUrl = "https://noitamap-pro.acidflow.stream/pro.js";
+      // Cache-bust the remote pro bundle: without a changing URL, a returning
+      // visitor's browser keeps serving the pro.js it cached, so a redeploy
+      // (and any fix inside it) never reaches them even after a CF purge.
+      // __BUILD_VERSION__ is stamped per host build (vite define); no-cache
+      // forces a revalidation so a pro-only redeploy at the same version still
+      // refreshes.
+      const proUrl = `https://noitamap-pro.acidflow.stream/pro.js?v=${__BUILD_VERSION__}`;
       let proModule;
       // @ts-ignore
       if (import.meta.env.DEV) {
         // @ts-ignore
         proModule = await import("../../noitamap-pro/src/pro-entry.ts");
       } else {
-        const response = await fetch(proUrl);
+        const response = await fetch(proUrl, { cache: "no-cache" });
 
         if (!response.ok) {
           throw new Error(`HTTP error ${response.status}`);

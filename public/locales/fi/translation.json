@@ -5222,7 +5222,8 @@
       "phraseFarMore": "{{metric}}: paljon enemmän kuin yleensä",
       "phraseFarFewer": "{{metric}}: paljon vähemmän kuin yleensä",
       "seedTypical": "siemen {{value}} · tyypillisesti {{typical}}",
-      "footAll": "Kaikkien kolmen maailman summat, verrattuna kaikkien {{count}} siemenen mitattuihin tilastoihin."
+      "footAll": "Kaikkien kolmen maailman summat, verrattuna kaikkien {{count}} siemenen mitattuihin tilastoihin.",
+      "footMain": "Vain päämaailma (kevyt tila), verrattuna kaikkien {{count}} siemenen mitattuihin tilastoihin."
     }
   },
   "unlocks": {
