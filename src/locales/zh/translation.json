@@ -5219,6 +5219,7 @@
       "title": "该种子的对比",
       "phraseMore": "{{metric}}：多于平常",
       "phraseFewer": "{{metric}}：少于平常",
+      "phraseTypical": "{{metric}}：与平常相当",
       "phraseFarMore": "{{metric}}：远多于平常",
       "phraseFarFewer": "{{metric}}：远少于平常",
       "seedTypical": "本种子 {{value}}·通常 {{typical}}",

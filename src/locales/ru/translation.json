@@ -5219,6 +5219,7 @@
       "title": "Чем выделяется этот сид",
       "phraseMore": "{{metric}}: больше, чем обычно",
       "phraseFewer": "{{metric}}: меньше, чем обычно",
+      "phraseTypical": "{{metric}}: примерно как обычно",
       "phraseFarMore": "{{metric}}: гораздо больше, чем обычно",
       "phraseFarFewer": "{{metric}}: гораздо меньше, чем обычно",
       "seedTypical": "сид {{value}} · обычно {{typical}}",

@@ -5219,6 +5219,7 @@
       "title": "Чим вирізняється цей сід",
       "phraseMore": "{{metric}}: більше звичайного",
       "phraseFewer": "{{metric}}: менше звичайного",
+      "phraseTypical": "{{metric}}: приблизно як завжди",
       "phraseFarMore": "{{metric}}: набагато більше звичайного",
       "phraseFarFewer": "{{metric}}: набагато менше звичайного",
       "seedTypical": "сід {{value}} · зазвичай {{typical}}",

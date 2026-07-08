@@ -18,7 +18,7 @@ import { generateDynamicMap, initTelescope, type GenerationResult } from "./tele
 import { getUnlocksFromURL, unlocksChanged, UNLOCK_KEYS, getUrlUnlockKind } from "./unlocks";
 import { getPillarFlagsFromURL } from "./pillars-unlocks";
 import { prewarmAlt, resetAltCache } from "./unlocks-toggle";
-import { isLightMode, setLightModeForcedOff } from "./light-mode";
+import { isLightMode, isSmallViewport, setLightModeForcedOff } from "./light-mode";
 import {
   renderGenerationResult,
   clearDynamicOverlays,
@@ -236,19 +236,21 @@ export async function runDynamicMap(
   }
 
   // Daily and previous-daily maps are pre-baked with all three worlds on the
-  // CDN, so light mode saves nothing there — force it OFF so generation, the
-  // baked-tile filter, and the seed report all use the full 3 worlds. A custom
-  // (non-baked) seed clears the override and keeps the user's saved preference.
-  // Today's daily is already known from the auto-detect above (no extra fetch);
-  // previous-daily costs one cached lookup, and only when the seed isn't today's
-  // — the same lookup the baked probe does below, so it's paid at most once.
-  let isBakedDaily = isDaily;
-  if (!isBakedDaily) {
-    try {
-      const prevDaily = await fetchPreviousDailySeed();
-      if (prevDaily === seed) isBakedDaily = true;
-    } catch {
-      // Offline / endpoint down — fall back to the user's light-mode preference.
+  // CDN, so light mode saves no GENERATION there — force it OFF so the map and
+  // seed report use the full 3 worlds. DESKTOP ONLY: on a small viewport a
+  // baked daily still paints 3 worlds of tiles into the canvas, which is what
+  // OOM-kills iOS Safari on zoom, so mobile keeps its light-mode choice. A
+  // custom (non-baked) seed clears the override and restores the saved pref.
+  let isBakedDaily = false;
+  if (!isSmallViewport()) {
+    isBakedDaily = isDaily;
+    if (!isBakedDaily) {
+      try {
+        const prevDaily = await fetchPreviousDailySeed();
+        if (prevDaily === seed) isBakedDaily = true;
+      } catch {
+        // Offline / endpoint down — fall back to the user's light-mode pref.
+      }
     }
   }
   setLightModeForcedOff(isBakedDaily);

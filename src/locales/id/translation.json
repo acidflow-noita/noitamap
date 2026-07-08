@@ -5219,6 +5219,7 @@
       "title": "Bagaimana perbandingan benih ini",
       "phraseMore": "{{metric}}: lebih dari biasanya",
       "phraseFewer": "{{metric}}: kurang dari biasanya",
+      "phraseTypical": "{{metric}}: seperti biasa",
       "phraseFarMore": "{{metric}}: jauh lebih banyak dari biasanya",
       "phraseFarFewer": "{{metric}}: jauh lebih sedikit dari biasanya",
       "seedTypical": "benih {{value}} · biasanya {{typical}}",

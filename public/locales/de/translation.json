@@ -5219,6 +5219,7 @@
       "title": "Wie dieser Seed abschneidet",
       "phraseMore": "{{metric}}: mehr als üblich",
       "phraseFewer": "{{metric}}: weniger als üblich",
+      "phraseTypical": "{{metric}}: etwa wie üblich",
       "phraseFarMore": "{{metric}}: deutlich mehr als üblich",
       "phraseFarFewer": "{{metric}}: deutlich weniger als üblich",
       "seedTypical": "Seed {{value}} · typisch {{typical}}",

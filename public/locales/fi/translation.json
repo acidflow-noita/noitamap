@@ -5219,6 +5219,7 @@
       "title": "Miten tämä siemen vertautuu",
       "phraseMore": "{{metric}}: enemmän kuin yleensä",
       "phraseFewer": "{{metric}}: vähemmän kuin yleensä",
+      "phraseTypical": "{{metric}}: suunnilleen tavallinen",
       "phraseFarMore": "{{metric}}: paljon enemmän kuin yleensä",
       "phraseFarFewer": "{{metric}}: paljon vähemmän kuin yleensä",
       "seedTypical": "siemen {{value}} · tyypillisesti {{typical}}",

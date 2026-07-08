@@ -5219,6 +5219,7 @@
       "title": "Hoe deze seed zich verhoudt",
       "phraseMore": "{{metric}}: meer dan gebruikelijk",
       "phraseFewer": "{{metric}}: minder dan gebruikelijk",
+      "phraseTypical": "{{metric}}: ongeveer gebruikelijk",
       "phraseFarMore": "{{metric}}: veel meer dan gebruikelijk",
       "phraseFarFewer": "{{metric}}: veel minder dan gebruikelijk",
       "seedTypical": "seed {{value}} · typisch {{typical}}",

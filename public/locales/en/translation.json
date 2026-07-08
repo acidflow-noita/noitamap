@@ -8,6 +8,7 @@
       "title": "How this seed compares",
       "phraseMore": "More {{metric}} than usual",
       "phraseFewer": "Fewer {{metric}} than usual",
+      "phraseTypical": "About usual for {{metric}}",
       "phraseFarMore": "Far more {{metric}} than usual",
       "phraseFarFewer": "Far fewer {{metric}} than usual",
       "seedTypical": "seed {{value}} · typical {{typical}}",

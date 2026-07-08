@@ -5219,6 +5219,7 @@
       "title": "Come si confronta questo seme",
       "phraseMore": "{{metric}}: più del solito",
       "phraseFewer": "{{metric}}: meno del solito",
+      "phraseTypical": "{{metric}}: circa come al solito",
       "phraseFarMore": "{{metric}}: molto più del solito",
       "phraseFarFewer": "{{metric}}: molto meno del solito",
       "seedTypical": "seme {{value}} · tipico {{typical}}",

@@ -5219,6 +5219,7 @@
       "title": "Hur detta frö står sig",
       "phraseMore": "{{metric}}: mer än vanligt",
       "phraseFewer": "{{metric}}: mindre än vanligt",
+      "phraseTypical": "{{metric}}: ungefär som vanligt",
       "phraseFarMore": "{{metric}}: mycket mer än vanligt",
       "phraseFarFewer": "{{metric}}: mycket mindre än vanligt",
       "seedTypical": "frö {{value}} · typiskt {{typical}}",

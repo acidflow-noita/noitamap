@@ -5219,6 +5219,7 @@
       "title": "Comment se situe cette graine",
       "phraseMore": "{{metric}} : plus que d’habitude",
       "phraseFewer": "{{metric}} : moins que d’habitude",
+      "phraseTypical": "{{metric}} : à peu près habituel",
       "phraseFarMore": "{{metric}} : beaucoup plus que d’habitude",
       "phraseFarFewer": "{{metric}} : beaucoup moins que d’habitude",
       "seedTypical": "graine {{value}} · typique {{typical}}",

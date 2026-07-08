@@ -5219,6 +5219,7 @@
       "title": "Jak wypada to ziarno",
       "phraseMore": "{{metric}}: więcej niż zwykle",
       "phraseFewer": "{{metric}}: mniej niż zwykle",
+      "phraseTypical": "{{metric}}: mniej więcej jak zwykle",
       "phraseFarMore": "{{metric}}: znacznie więcej niż zwykle",
       "phraseFarFewer": "{{metric}}: znacznie mniej niż zwykle",
       "seedTypical": "ziarno {{value}} · typowo {{typical}}",

@@ -5219,6 +5219,7 @@
       "title": "このシードの比較",
       "phraseMore": "{{metric}}：通常より多い",
       "phraseFewer": "{{metric}}：通常より少ない",
+      "phraseTypical": "{{metric}}：ほぼ通常どおり",
       "phraseFarMore": "{{metric}}：通常よりはるかに多い",
       "phraseFarFewer": "{{metric}}：通常よりはるかに少ない",
       "seedTypical": "シード {{value}}・通常 {{typical}}",

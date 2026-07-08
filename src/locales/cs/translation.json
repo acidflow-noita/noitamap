@@ -5219,6 +5219,7 @@
       "title": "Jak si vede toto semínko",
       "phraseMore": "{{metric}}: více než obvykle",
       "phraseFewer": "{{metric}}: méně než obvykle",
+      "phraseTypical": "{{metric}}: přibližně jako obvykle",
       "phraseFarMore": "{{metric}}: mnohem více než obvykle",
       "phraseFarFewer": "{{metric}}: mnohem méně než obvykle",
       "seedTypical": "semínko {{value}} · obvykle {{typical}}",
