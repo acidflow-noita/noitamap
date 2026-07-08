@@ -18,7 +18,7 @@ import { generateDynamicMap, initTelescope, type GenerationResult } from "./tele
 import { getUnlocksFromURL, unlocksChanged, UNLOCK_KEYS, getUrlUnlockKind } from "./unlocks";
 import { getPillarFlagsFromURL } from "./pillars-unlocks";
 import { prewarmAlt, resetAltCache } from "./unlocks-toggle";
-import { isLightMode, isSmallViewport, setLightModeForcedOff } from "./light-mode";
+import { isLightMode } from "./light-mode";
 import {
   renderGenerationResult,
   clearDynamicOverlays,
@@ -234,26 +234,6 @@ export async function runDynamicMap(
       // Daily seed fetch failed — continue as non-daily
     }
   }
-
-  // Daily and previous-daily maps are pre-baked with all three worlds on the
-  // CDN, so light mode saves no GENERATION there — force it OFF so the map and
-  // seed report use the full 3 worlds. DESKTOP ONLY: on a small viewport a
-  // baked daily still paints 3 worlds of tiles into the canvas, which is what
-  // OOM-kills iOS Safari on zoom, so mobile keeps its light-mode choice. A
-  // custom (non-baked) seed clears the override and restores the saved pref.
-  let isBakedDaily = false;
-  if (!isSmallViewport()) {
-    isBakedDaily = isDaily;
-    if (!isBakedDaily) {
-      try {
-        const prevDaily = await fetchPreviousDailySeed();
-        if (prevDaily === seed) isBakedDaily = true;
-      } catch {
-        // Offline / endpoint down — fall back to the user's light-mode pref.
-      }
-    }
-  }
-  setLightModeForcedOff(isBakedDaily);
 
   // Read unlock state from URL (caches to localStorage automatically).
   // The shareable shorthand tokens (`u=all`, `u=none`) override the mod

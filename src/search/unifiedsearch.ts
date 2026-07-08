@@ -190,6 +190,12 @@ function appendAlchemyStubs(filterBox: HTMLElement): void {
       const locked = !state.authenticated || !state.isSubscriber;
       label.classList.toggle("alchemy-filter-btn--locked", locked);
       label.setAttribute("aria-disabled", locked ? "true" : "false");
+      // Losing Pro (logout / sub lapse) while a recipe is open must turn it
+      // OFF — otherwise the AP/LC results stay on screen until refresh.
+      if (locked && label.classList.contains("active")) {
+        label.classList.remove("active");
+        (window as any).__noitamap?.handleAlchemyRecipe?.(null);
+      }
       label.dataset.bsContent = i18next.t(
         locked ? proOnlyKey : contentKey,
         locked
@@ -343,6 +349,13 @@ function appendHighValueStub(filterBox: HTMLElement, search?: UnifiedSearch): vo
     const locked = !state.authenticated || !state.isSubscriber;
     label.classList.toggle("high-value-filter-btn--locked", locked);
     label.setAttribute("aria-disabled", locked ? "true" : "false");
+    // Losing Pro (logout / sub lapse) while the highlight is on must turn it
+    // OFF — otherwise the map markers stay highlighted until refresh.
+    if (locked && label.classList.contains("active")) {
+      applyActiveClass(false);
+      (window as any).__noitamap?.handleHighValueToggle?.(false);
+      applyToSearch(false);
+    }
     label.dataset.bsContent = i18next.t(
       locked ? proOnlyKey : contentKey,
       locked

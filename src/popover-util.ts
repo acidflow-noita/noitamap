@@ -75,26 +75,62 @@ function hideAllPopovers(except?: Element | null): void {
 
 let autoDismissInstalled = false;
 
+// Touch-primary device (no real hover). These are exactly the devices where
+// hover popovers misbehave: a tap fires the hover, and there's no un-hover.
+const isTouchPrimary = () =>
+  typeof window !== "undefined" &&
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(hover: none), (pointer: coarse)").matches;
+
+// Elements whose tap should perform their OWN action — navigate, toggle a
+// control, focus a field, open a dropdown — not reveal hover-help. On touch
+// these must never show a popover: the tap does the thing. This is the seed
+// link (an <a role="button"> that swaps the seed), the filter/AP/LC/gem toggle
+// <label>s, the search + seed <input>s, dropdown toggles, etc. A plain info
+// affordance (an "i" <button> whose only purpose IS the popover) is NOT
+// actionable and keeps tap-to-reveal.
+const isActionable = (el: Element | null): boolean =>
+  !!el &&
+  el.matches(
+    'a, label, input, textarea, select, [href], [role="button"], [data-bs-toggle="dropdown"], [data-bs-toggle="collapse"]',
+  );
+
 /**
- * Make Bootstrap popovers dismissable on touch devices.
+ * Make Bootstrap popovers behave on touch devices.
  *
- * Popovers use `trigger="hover focus"`, which works with a mouse (leaving the
- * element hides it) but traps touch users: a tap fires hover+focus and shows
- * the popover, and there is no "un-hover" on touch, so it stays stuck open with
- * no way to close it — brutal on mobile where these overlap the map/search.
+ * Popovers use `trigger="hover"` / `"hover focus"`, which works with a mouse
+ * (leaving the element hides it) but is broken on touch: a tap fires the hover
+ * and there is no "un-hover", so the panel sticks open — and worse, on an
+ * ACTIONABLE element the tap reveals the popover INSTEAD OF running the action
+ * (e.g. tapping the comparison-seed link showed help instead of swapping the
+ * seed). Two rules, both touch-only (desktop hover is untouched):
  *
- * One delegated `pointerup` listener fixes it for every popover (main app AND
- * anything the pro bundle adds later), no per-popover wiring:
- *   - tap ON a hover/focus trigger  -> toggle it, hide any others
- *   - tap anywhere else             -> hide all open popovers
- * Only runs for touch/pen input (`pointerType !== "mouse"`), so desktop hover
- * behaviour is untouched. Form fields keep their focus popover (intentional
- * inline help) unless the tap lands outside them.
+ * 1. Actionable trigger (link / label / form field / dropdown toggle /
+ *    role="button"): SUPPRESS the popover entirely (cancel show.bs.popover) so
+ *    the tap performs the element's real action. This is the "tapping stuff on
+ *    mobile should activate the UI element" rule.
+ *
+ * 2. Pure info affordance (an "i" button whose only job is the popover): keep
+ *    it useful — a delegated pointerup toggles the tapped one and hides the
+ *    rest; a tap elsewhere hides all.
  */
 export function installPopoverTouchDismiss(): void {
   if (autoDismissInstalled) return;
   autoDismissInstalled = true;
 
+  // 1. Suppress hover-help on actionable triggers on touch. Delegated + capture
+  //    so it catches every popover, whenever/wherever it was created.
+  document.addEventListener(
+    "show.bs.popover",
+    (e) => {
+      if (isTouchPrimary() && isActionable(e.target as Element)) {
+        e.preventDefault();
+      }
+    },
+    true,
+  );
+
+  // 2. Tap-to-dismiss for the remaining (pure-info) popovers.
   document.addEventListener(
     "pointerup",
     (e) => {
@@ -113,6 +149,11 @@ export function installPopoverTouchDismiss(): void {
         hideAllPopovers();
         return;
       }
+
+      // Actionable triggers never show a popover on touch (see #1) and the tap
+      // is "do your action" — leave them entirely alone so the native
+      // click/navigation/toggle proceeds.
+      if (isActionable(trigger)) return;
 
       const triggers = trigger.getAttribute("data-bs-trigger") || "click";
       if (!/hover|focus/.test(triggers)) return; // click popovers self-toggle

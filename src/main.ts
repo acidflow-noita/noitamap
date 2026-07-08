@@ -163,7 +163,7 @@ import { createMapLinks, NAV_LINK_IDENTIFIER, getMapLabel, renderMapBadges, refr
 import { getAllMapDefinitions } from "./data_sources/map_definitions";
 import { initMouseTracker } from "./mouse_tracker";
 import { isSpoilerFree, setSpoilerFree, onSpoilerFreeChange } from "./spoiler-free";
-import { isLightMode, isLightModePreference, setLightMode } from "./light-mode";
+import { isLightMode, setLightMode } from "./light-mode";
 import { installPopoverTouchDismiss } from "./popover-util";
 import { isSkipCreatures, setSkipCreatures } from "./skip-creatures";
 import { isSimplisticBackground, setSimplisticBackground } from "./simplistic-background";
@@ -1369,10 +1369,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // so the reload cost is essentially just a page refresh.
   const lightModeToggle = document.getElementById("lightModeToggle") as HTMLInputElement | null;
   if (lightModeToggle) {
-    // Reflect the SAVED preference, not the effective value — a daily seed
-    // may have forced light mode off (desktop), but the checkbox must still
-    // show what the user chose, or toggling it would overwrite their pref.
-    lightModeToggle.checked = isLightModePreference();
+    lightModeToggle.checked = isLightMode();
     lightModeToggle.addEventListener("change", () => {
       setLightMode(lightModeToggle.checked);
       lightModeToggle.blur();
