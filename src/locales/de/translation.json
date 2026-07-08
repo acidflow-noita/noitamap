@@ -5217,10 +5217,10 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
     "tldr": {
       "title": "Wie dieser Seed abschneidet",
-      "more": "{{metric}}: mehr als {{pct}}% der Seeds",
-      "fewer": "{{metric}}: weniger als {{pct}}% der Seeds",
-      "typical": "{{metric}}: etwa durchschnittlich",
-      "foot": "Bewertet anhand gemessener Statistiken aller {{count}} Seeds."
+      "more": "{{metric}}: mehr als üblich (Seed {{value}} · typisch {{typical}})",
+      "fewer": "{{metric}}: weniger als üblich (Seed {{value}} · typisch {{typical}})",
+      "typical": "{{metric}}: etwa üblich (Seed {{value}} · typisch {{typical}})",
+      "foot": "Verglichen mit gemessenen Statistiken aller {{count}} Seeds."
     }
   },
   "unlocks": {

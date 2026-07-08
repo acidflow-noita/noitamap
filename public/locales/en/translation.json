@@ -6,10 +6,10 @@
     "noTrackedItems": "No tracked items in this world.",
     "tldr": {
       "title": "How this seed compares",
-      "more": "{{metric}}: more than {{pct}}% of seeds",
-      "fewer": "{{metric}}: fewer than {{pct}}% of seeds",
-      "typical": "{{metric}}: about average",
-      "foot": "Ranked against measured stats for all {{count}} seeds."
+      "more": "{{metric}}: more than usual (seed {{value}} · typical {{typical}})",
+      "fewer": "{{metric}}: fewer than usual (seed {{value}} · typical {{typical}})",
+      "typical": "{{metric}}: about usual (seed {{value}} · typical {{typical}})",
+      "foot": "Compared against measured stats for all {{count}} seeds."
     },
     "toggle": {
       "title": "Seed report",

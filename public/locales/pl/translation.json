@@ -5217,10 +5217,10 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
     "tldr": {
       "title": "Jak wypada to ziarno",
-      "more": "{{metric}}: więcej niż {{pct}}% ziaren",
-      "fewer": "{{metric}}: mniej niż {{pct}}% ziaren",
-      "typical": "{{metric}}: mniej więcej przeciętnie",
-      "foot": "Porównane ze zmierzonymi statystykami wszystkich {{count}} ziaren."
+      "more": "{{metric}}: więcej niż zwykle (ziarno {{value}} · typowo {{typical}})",
+      "fewer": "{{metric}}: mniej niż zwykle (ziarno {{value}} · typowo {{typical}})",
+      "typical": "{{metric}}: mniej więcej jak zwykle (ziarno {{value}} · typowo {{typical}})",
+      "foot": "Porównano ze zmierzonymi statystykami wszystkich {{count}} ziaren."
     }
   },
   "unlocks": {

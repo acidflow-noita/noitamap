@@ -5217,10 +5217,10 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
     "tldr": {
       "title": "Come si confronta questo seme",
-      "more": "{{metric}}: più del {{pct}}% dei semi",
-      "fewer": "{{metric}}: meno del {{pct}}% dei semi",
-      "typical": "{{metric}}: nella media",
-      "foot": "Classificato rispetto alle statistiche misurate di tutti i {{count}} semi."
+      "more": "{{metric}}: più del solito (seme {{value}} · tipico {{typical}})",
+      "fewer": "{{metric}}: meno del solito (seme {{value}} · tipico {{typical}})",
+      "typical": "{{metric}}: nella norma (seme {{value}} · tipico {{typical}})",
+      "foot": "Confrontato con le statistiche misurate di tutti i {{count}} semi."
     }
   },
   "unlocks": {

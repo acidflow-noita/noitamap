@@ -5217,10 +5217,10 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
     "tldr": {
       "title": "このシードの比較",
-      "more": "{{metric}}：シードの{{pct}}%より多い",
-      "fewer": "{{metric}}：シードの{{pct}}%より少ない",
-      "typical": "{{metric}}：ほぼ平均",
-      "foot": "全{{count}}シードの実測統計に基づくランキング。"
+      "more": "{{metric}}：通常より多い（シード {{value}}・通常 {{typical}}）",
+      "fewer": "{{metric}}：通常より少ない（シード {{value}}・通常 {{typical}}）",
+      "typical": "{{metric}}：ほぼ通常どおり（シード {{value}}・通常 {{typical}}）",
+      "foot": "全{{count}}シードの実測統計との比較。"
     }
   },
   "unlocks": {

@@ -5217,10 +5217,10 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
     "tldr": {
       "title": "Чим вирізняється цей сід",
-      "more": "{{metric}}: більше, ніж у {{pct}}% сідів",
-      "fewer": "{{metric}}: менше, ніж у {{pct}}% сідів",
-      "typical": "{{metric}}: близько до середнього",
-      "foot": "Оцінка за виміряною статистикою всіх {{count}} сідів."
+      "more": "{{metric}}: більше звичайного (сід {{value}} · зазвичай {{typical}})",
+      "fewer": "{{metric}}: менше звичайного (сід {{value}} · зазвичай {{typical}})",
+      "typical": "{{metric}}: приблизно як зазвичай (сід {{value}} · зазвичай {{typical}})",
+      "foot": "Порівняння з виміряною статистикою всіх {{count}} сідів."
     }
   },
   "unlocks": {

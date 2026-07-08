@@ -70,10 +70,10 @@ const SOURCE_OVERRIDES = {
   "spider.legend.previousDaily": "Previous daily seed",
   "spider.legend.median": "Median across all seeds",
   "tldr.title": "How this seed compares",
-  "tldr.more": "{{metric}}: more than {{pct}}% of seeds",
-  "tldr.fewer": "{{metric}}: fewer than {{pct}}% of seeds",
-  "tldr.typical": "{{metric}}: about average",
-  "tldr.foot": "Ranked against measured statistics for all {{count}} seeds.",
+  "tldr.more": "{{metric}}: more than usual (seed {{value}} · typical {{typical}})",
+  "tldr.fewer": "{{metric}}: fewer than usual (seed {{value}} · typical {{typical}})",
+  "tldr.typical": "{{metric}}: about usual (seed {{value}} · typical {{typical}})",
+  "tldr.foot": "Compared against measured statistics for all {{count}} seeds.",
 };
 
 function gtFetch(text, target) {

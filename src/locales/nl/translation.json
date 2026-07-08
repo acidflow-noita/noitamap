@@ -5217,10 +5217,10 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
     "tldr": {
       "title": "Hoe deze seed zich verhoudt",
-      "more": "{{metric}}: meer dan {{pct}}% van de seeds",
-      "fewer": "{{metric}}: minder dan {{pct}}% van de seeds",
-      "typical": "{{metric}}: ongeveer gemiddeld",
-      "foot": "Gerangschikt op gemeten statistieken van alle {{count}} seeds."
+      "more": "{{metric}}: meer dan gebruikelijk (seed {{value}} · typisch {{typical}})",
+      "fewer": "{{metric}}: minder dan gebruikelijk (seed {{value}} · typisch {{typical}})",
+      "typical": "{{metric}}: ongeveer gebruikelijk (seed {{value}} · typisch {{typical}})",
+      "foot": "Vergeleken met gemeten statistieken van alle {{count}} seeds."
     }
   },
   "unlocks": {
