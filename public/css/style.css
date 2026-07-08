@@ -1078,4 +1078,28 @@ body.toggle-hidden div.osOverlayHighlight {
     max-width: calc(100vw - 1rem);
     margin-top: 0.25rem;
   }
+
+  /* Same problem for the "..." overflow menu: it's dropdown-menu-end anchored
+     to a button that sits mid-navbar once controls wrap, so Popper pushes it
+     off the right edge. Anchor it to the navbar and pin it inside the viewport.
+     The reparented controls row (perf, overlays, share, etc.) is wide, so let
+     the menu scroll vertically instead of growing past the screen. */
+  #more-menu {
+    position: static;
+  }
+  #more-menu .dropdown-menu {
+    left: 0.5rem;
+    right: 0.5rem;
+    top: 100%;
+    width: auto;
+    max-width: calc(100vw - 1rem);
+    max-height: 80vh;
+    overflow-y: auto;
+    margin-top: 0.25rem;
+  }
+  /* Keep the reparented controls wrapping inside the menu rather than forcing
+     it wider than the screen. */
+  #more-menu-controls {
+    max-width: 100%;
+  }
 }

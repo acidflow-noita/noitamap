@@ -345,15 +345,24 @@ label[data-tool="text"] {
 /* Drag and drop overlay for importing/vectorizing files */
 .drop-overlay {
   position: fixed;
-  inset: 0;
+  /* Centered bounded card, NOT a full-screen blackout — the map stays visible
+     behind it. Drag/drop is handled by document-level listeners, so the drop
+     target only needs to be the visible zones, not the whole viewport. */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(560px, 92vw);
+  height: min(360px, 70vh);
   z-index: 10000;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: stretch;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  background: oklch(0 0 0 / 0.7);
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: oklch(0 0 0 / 0.82);
+  box-shadow: 0 0.5rem 2rem oklch(0 0 0 / 0.5);
   backdrop-filter: blur(4px);
   opacity: 0;
   visibility: hidden;
@@ -370,7 +379,7 @@ label[data-tool="text"] {
 }
 
 .drop-overlay.hint {
-  animation: dropOverlayHint 5s ease-in-out forwards;
+  animation: dropOverlayHint 3s ease-in-out forwards;
 }
 
 @keyframes dropOverlayHint {
