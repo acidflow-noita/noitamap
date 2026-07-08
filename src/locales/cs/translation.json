@@ -5178,7 +5178,7 @@
         "current": "Aktuální semeno",
         "previousDaily": "Předchozí denní semínko",
         "average": "Průměrná základní linie",
-        "median": "Medián (všechna semínka)"
+        "typical": "Typické (všechna semínka)"
       },
       "creaturesNote": "Bytosti jsou skryty na mapě (režim výkonu), ale stále se počítají ve statistikách níže.",
       "creaturesNoteTitle": "Výkonový režim"
@@ -5217,10 +5217,12 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
     "tldr": {
       "title": "Jak si vede toto semínko",
-      "more": "{{metric}}: více než obvykle (semínko {{value}} · obvykle {{typical}})",
-      "fewer": "{{metric}}: méně než obvykle (semínko {{value}} · obvykle {{typical}})",
-      "typical": "{{metric}}: zhruba obvyklé (semínko {{value}} · obvykle {{typical}})",
-      "foot": "Porovnáno s naměřenými statistikami všech {{count}} semínek."
+      "phraseMore": "{{metric}}: více než obvykle",
+      "phraseFewer": "{{metric}}: méně než obvykle",
+      "phraseFarMore": "{{metric}}: mnohem více než obvykle",
+      "phraseFarFewer": "{{metric}}: mnohem méně než obvykle",
+      "seedTypical": "semínko {{value}} · obvykle {{typical}}",
+      "footAll": "Součty za všechny tři světy, porovnáno s naměřenými statistikami všech {{count}} semínek."
     }
   },
   "unlocks": {

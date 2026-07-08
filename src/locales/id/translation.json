@@ -5178,7 +5178,7 @@
         "current": "Benih saat ini",
         "previousDaily": "Benih harian sebelumnya",
         "average": "Rata-rata garis dasar",
-        "median": "Median (semua benih)"
+        "typical": "Tipikal (semua benih)"
       },
       "creaturesNote": "Makhluk disembunyikan dari peta (mode kinerja), tetapi mereka masih dihitung dalam statistik di bawah.",
       "creaturesNoteTitle": "Modus kinerja"
@@ -5217,10 +5217,12 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
     "tldr": {
       "title": "Bagaimana perbandingan benih ini",
-      "more": "{{metric}}: lebih dari biasanya (benih {{value}} · biasanya {{typical}})",
-      "fewer": "{{metric}}: kurang dari biasanya (benih {{value}} · biasanya {{typical}})",
-      "typical": "{{metric}}: kurang lebih biasa (benih {{value}} · biasanya {{typical}})",
-      "foot": "Dibandingkan dengan statistik terukur seluruh {{count}} benih."
+      "phraseMore": "{{metric}}: lebih dari biasanya",
+      "phraseFewer": "{{metric}}: kurang dari biasanya",
+      "phraseFarMore": "{{metric}}: jauh lebih banyak dari biasanya",
+      "phraseFarFewer": "{{metric}}: jauh lebih sedikit dari biasanya",
+      "seedTypical": "benih {{value}} · biasanya {{typical}}",
+      "footAll": "Total gabungan ketiga dunia, dibandingkan dengan statistik terukur seluruh {{count}} benih."
     }
   },
   "unlocks": {

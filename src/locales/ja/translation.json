@@ -5178,7 +5178,7 @@
         "current": "現在のシード",
         "previousDaily": "前回のデイリーシード",
         "average": "平均ベースライン",
-        "median": "中央値（全シード）"
+        "typical": "標準的（全シード）"
       },
       "creaturesNote": "クリーチャーはマップ (パフォーマンス モード) から非表示になりますが、以下の統計では引き続きカウントされます。",
       "creaturesNoteTitle": "パフォーマンスモード"
@@ -5217,10 +5217,12 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
     "tldr": {
       "title": "このシードの比較",
-      "more": "{{metric}}：通常より多い（シード {{value}}・通常 {{typical}}）",
-      "fewer": "{{metric}}：通常より少ない（シード {{value}}・通常 {{typical}}）",
-      "typical": "{{metric}}：ほぼ通常どおり（シード {{value}}・通常 {{typical}}）",
-      "foot": "全{{count}}シードの実測統計との比較。"
+      "phraseMore": "{{metric}}：通常より多い",
+      "phraseFewer": "{{metric}}：通常より少ない",
+      "phraseFarMore": "{{metric}}：通常よりはるかに多い",
+      "phraseFarFewer": "{{metric}}：通常よりはるかに少ない",
+      "seedTypical": "シード {{value}}・通常 {{typical}}",
+      "footAll": "3つの世界の合計を、全{{count}}シードの実測統計と比較。"
     }
   },
   "unlocks": {

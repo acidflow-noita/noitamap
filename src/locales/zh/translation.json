@@ -5178,7 +5178,7 @@
         "current": "当前种子",
         "previousDaily": "上一个每日种子",
         "average": "平均基线",
-        "median": "中位数（所有种子）"
+        "typical": "典型（所有种子）"
       },
       "creaturesNote": "生物在地图上隐藏（性能模式），但它们仍然计入下面的统计数据中。",
       "creaturesNoteTitle": "性能模式"
@@ -5217,10 +5217,12 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
     "tldr": {
       "title": "该种子的对比",
-      "more": "{{metric}}：多于平常（本种子 {{value}}·通常 {{typical}}）",
-      "fewer": "{{metric}}：少于平常（本种子 {{value}}·通常 {{typical}}）",
-      "typical": "{{metric}}：接近平常（本种子 {{value}}·通常 {{typical}}）",
-      "foot": "与全部 {{count}} 个种子的实测统计对比。"
+      "phraseMore": "{{metric}}：多于平常",
+      "phraseFewer": "{{metric}}：少于平常",
+      "phraseFarMore": "{{metric}}：远多于平常",
+      "phraseFarFewer": "{{metric}}：远少于平常",
+      "seedTypical": "本种子 {{value}}·通常 {{typical}}",
+      "footAll": "三个世界的总和，与全部 {{count}} 个种子的实测统计对比。"
     }
   },
   "unlocks": {

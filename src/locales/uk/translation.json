@@ -5178,7 +5178,7 @@
         "current": "Актуальне насіння",
         "previousDaily": "Попередній щоденний сід",
         "average": "Середня базова лінія",
-        "median": "Медіана (усі сіди)"
+        "typical": "Типовий (усі сіди)"
       },
       "creaturesNote": "Істоти приховані на карті (режим продуктивності), але вони все одно враховуються в статистиці нижче.",
       "creaturesNoteTitle": "Режим продуктивності"
@@ -5217,10 +5217,12 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
     "tldr": {
       "title": "Чим вирізняється цей сід",
-      "more": "{{metric}}: більше звичайного (сід {{value}} · зазвичай {{typical}})",
-      "fewer": "{{metric}}: менше звичайного (сід {{value}} · зазвичай {{typical}})",
-      "typical": "{{metric}}: приблизно як зазвичай (сід {{value}} · зазвичай {{typical}})",
-      "foot": "Порівняння з виміряною статистикою всіх {{count}} сідів."
+      "phraseMore": "{{metric}}: більше звичайного",
+      "phraseFewer": "{{metric}}: менше звичайного",
+      "phraseFarMore": "{{metric}}: набагато більше звичайного",
+      "phraseFarFewer": "{{metric}}: набагато менше звичайного",
+      "seedTypical": "сід {{value}} · зазвичай {{typical}}",
+      "footAll": "Суми за всі три світи, у порівнянні з виміряною статистикою всіх {{count}} сідів."
     }
   },
   "unlocks": {

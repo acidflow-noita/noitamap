@@ -5178,7 +5178,7 @@
         "current": "Текущий сид",
         "previousDaily": "Предыдущий ежедневный сид",
         "average": "Средний по дейли",
-        "median": "Медиана (все сиды)"
+        "typical": "Типичный (все сиды)"
       },
       "creaturesNote": "Существа скрыты с карты (режим производительности), но они все равно учитываются в статистике ниже.",
       "creaturesNoteTitle": "Режим производительности"
@@ -5217,10 +5217,12 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
     "tldr": {
       "title": "Чем выделяется этот сид",
-      "more": "{{metric}}: больше обычного (сид {{value}} · обычно {{typical}})",
-      "fewer": "{{metric}}: меньше обычного (сид {{value}} · обычно {{typical}})",
-      "typical": "{{metric}}: примерно как обычно (сид {{value}} · обычно {{typical}})",
-      "foot": "Сравнение с измеренной статистикой всех {{count}} сидов."
+      "phraseMore": "{{metric}}: больше, чем обычно",
+      "phraseFewer": "{{metric}}: меньше, чем обычно",
+      "phraseFarMore": "{{metric}}: гораздо больше, чем обычно",
+      "phraseFarFewer": "{{metric}}: гораздо меньше, чем обычно",
+      "seedTypical": "сид {{value}} · обычно {{typical}}",
+      "footAll": "Суммы по всем трём мирам, в сравнении с измеренной статистикой всех {{count}} сидов."
     }
   },
   "unlocks": {

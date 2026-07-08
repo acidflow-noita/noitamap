@@ -5178,7 +5178,7 @@
         "current": "Nykyinen siemen",
         "previousDaily": "Edellinen päivittäinen siemen",
         "average": "Keskimääräinen lähtötaso",
-        "median": "Mediaani (kaikki siemenet)"
+        "typical": "Tyypillinen (kaikki siemenet)"
       },
       "creaturesNote": "Olennot ovat piilossa kartalta (suorituskykytila), mutta ne lasketaan silti alla oleviin tilastoihin.",
       "creaturesNoteTitle": "Suorituskykytila"
@@ -5217,10 +5217,12 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
     "tldr": {
       "title": "Miten tämä siemen vertautuu",
-      "more": "{{metric}}: enemmän kuin yleensä (siemen {{value}} · tyypillisesti {{typical}})",
-      "fewer": "{{metric}}: vähemmän kuin yleensä (siemen {{value}} · tyypillisesti {{typical}})",
-      "typical": "{{metric}}: suunnilleen tavallinen (siemen {{value}} · tyypillisesti {{typical}})",
-      "foot": "Verrattu kaikkien {{count}} siemenen mitattuihin tilastoihin."
+      "phraseMore": "{{metric}}: enemmän kuin yleensä",
+      "phraseFewer": "{{metric}}: vähemmän kuin yleensä",
+      "phraseFarMore": "{{metric}}: paljon enemmän kuin yleensä",
+      "phraseFarFewer": "{{metric}}: paljon vähemmän kuin yleensä",
+      "seedTypical": "siemen {{value}} · tyypillisesti {{typical}}",
+      "footAll": "Kaikkien kolmen maailman summat, verrattuna kaikkien {{count}} siemenen mitattuihin tilastoihin."
     }
   },
   "unlocks": {

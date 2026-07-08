@@ -5178,7 +5178,7 @@
         "current": "Nuvarande frö",
         "previousDaily": "Tidigare dagligt frö",
         "average": "Genomsnittlig baslinje",
-        "median": "Median (alla frön)"
+        "typical": "Typiskt (alla frön)"
       },
       "creaturesNote": "Varelser är dolda från kartan (prestandaläge), men de räknas fortfarande i statistiken nedan.",
       "creaturesNoteTitle": "Prestandaläge"
@@ -5217,10 +5217,12 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
     "tldr": {
       "title": "Hur detta frö står sig",
-      "more": "{{metric}}: mer än vanligt (frö {{value}} · typiskt {{typical}})",
-      "fewer": "{{metric}}: mindre än vanligt (frö {{value}} · typiskt {{typical}})",
-      "typical": "{{metric}}: ungefär som vanligt (frö {{value}} · typiskt {{typical}})",
-      "foot": "Jämfört med uppmätt statistik för alla {{count}} frön."
+      "phraseMore": "{{metric}}: mer än vanligt",
+      "phraseFewer": "{{metric}}: mindre än vanligt",
+      "phraseFarMore": "{{metric}}: mycket mer än vanligt",
+      "phraseFarFewer": "{{metric}}: mycket mindre än vanligt",
+      "seedTypical": "frö {{value}} · typiskt {{typical}}",
+      "footAll": "Summor över alla tre världar, jämfört med uppmätt statistik för alla {{count}} frön."
     }
   },
   "unlocks": {

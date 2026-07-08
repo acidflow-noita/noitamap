@@ -64,16 +64,25 @@ class AuthService {
   }
 
   /**
-   * Initialize auth state from URL params or stored token
+   * Initialize auth state from URL params or stored token.
+   *
+   * Tokens arrive from the auth worker in the URL FRAGMENT
+   * (#auth=success&token=...&refresh_token=...) — fragments are never sent to
+   * servers, keeping the JWTs out of Referer headers and access logs. The
+   * legacy query-param form is still accepted so an older worker deploy keeps
+   * working during rollout. Both are scrubbed from the address bar.
    */
   async init(): Promise<AuthState> {
     const cleanUrl = new URL(window.location.href);
     let shouldUpdateUrl = false;
 
+    // Fragment first (current worker), then query (legacy).
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const urlParams = new URLSearchParams(window.location.search);
-    const authResult = urlParams.get("auth");
-    const tokenFromUrl = urlParams.get("token");
-    const refreshFromUrl = urlParams.get("refresh_token");
+    const fromHash = hashParams.get("auth") === "success" && hashParams.get("token");
+    const authResult = fromHash ? "success" : urlParams.get("auth");
+    const tokenFromUrl = fromHash ? hashParams.get("token") : urlParams.get("token");
+    const refreshFromUrl = fromHash ? hashParams.get("refresh_token") : urlParams.get("refresh_token");
     const errorFromUrl = urlParams.get("auth_error");
 
     if (errorFromUrl) {
@@ -85,9 +94,13 @@ class AuthService {
     if (authResult === "success" && tokenFromUrl) {
       localStorage.setItem(JWT_KEY, tokenFromUrl);
       if (refreshFromUrl) localStorage.setItem(REFRESH_KEY, refreshFromUrl);
-      cleanUrl.searchParams.delete("auth");
-      cleanUrl.searchParams.delete("token");
-      cleanUrl.searchParams.delete("refresh_token");
+      if (fromHash) {
+        cleanUrl.hash = "";
+      } else {
+        cleanUrl.searchParams.delete("auth");
+        cleanUrl.searchParams.delete("token");
+        cleanUrl.searchParams.delete("refresh_token");
+      }
       shouldUpdateUrl = true;
     }
 

@@ -338,11 +338,13 @@ async function handlePatreonCallback(request: Request, env: Env, secrets: Secret
       secrets.jwtSecret,
     );
 
-    // 5. Redirect with tokens
+    // 5. Redirect with tokens in the URL FRAGMENT, never the query string:
+    //    fragments are not sent to servers, so the JWTs stay out of Referer
+    //    headers, browser history sync, and edge/CDN access logs. The client
+    //    reads location.hash and scrubs it (auth-service.ts init()).
     const redirectUrlObj = new URL(finalRedirectUrl);
-    redirectUrlObj.searchParams.set("auth", "success");
-    redirectUrlObj.searchParams.set("token", jwt);
-    redirectUrlObj.searchParams.set("refresh_token", refreshJwt);
+    const frag = new URLSearchParams({ auth: "success", token: jwt, refresh_token: refreshJwt });
+    redirectUrlObj.hash = frag.toString();
 
     return new Response(null, {
       status: 302,
@@ -894,9 +896,10 @@ async function handleTwitchCallback(request: Request, env: Env, secrets: Secrets
       secrets.jwtSecret,
     );
 
+    // Same fragment delivery as the Patreon callback — tokens never in the
+    // query string (Referer/log leakage).
     const out = new URL(finalRedirectUrl);
-    out.searchParams.set("auth", "success");
-    out.searchParams.set("token", jwt);
+    const frag = new URLSearchParams({ auth: "success", token: jwt });
     if (viewerTokens.refresh_token) {
       const refreshJwt = await signRefreshJWT(
         {
@@ -909,8 +912,9 @@ async function handleTwitchCallback(request: Request, env: Env, secrets: Secrets
         },
         secrets.jwtSecret,
       );
-      out.searchParams.set("refresh_token", refreshJwt);
+      frag.set("refresh_token", refreshJwt);
     }
+    out.hash = frag.toString();
     return new Response(null, { status: 302, headers: { Location: out.toString() } });
   } catch (err) {
     console.error("Twitch callback exception:", err);

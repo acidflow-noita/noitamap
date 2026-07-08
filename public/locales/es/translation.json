@@ -5178,7 +5178,7 @@
         "current": "Semilla actual",
         "previousDaily": "Semilla diaria anterior",
         "average": "Línea de base promedio",
-        "median": "Mediana (todas las semillas)"
+        "typical": "Típico (todas las semillas)"
       },
       "creaturesNote": "Las criaturas están ocultas en el mapa (modo de rendimiento), pero aún se cuentan en las estadísticas siguientes.",
       "creaturesNoteTitle": "Modo de rendimiento"
@@ -5217,10 +5217,12 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
     "tldr": {
       "title": "Cómo se compara esta semilla",
-      "more": "{{metric}}: más de lo habitual (semilla {{value}} · típico {{typical}})",
-      "fewer": "{{metric}}: menos de lo habitual (semilla {{value}} · típico {{typical}})",
-      "typical": "{{metric}}: dentro de lo habitual (semilla {{value}} · típico {{typical}})",
-      "foot": "Comparado con las estadísticas medidas de todas las {{count}} semillas."
+      "phraseMore": "{{metric}}: más de lo habitual",
+      "phraseFewer": "{{metric}}: menos de lo habitual",
+      "phraseFarMore": "{{metric}}: mucho más de lo habitual",
+      "phraseFarFewer": "{{metric}}: mucho menos de lo habitual",
+      "seedTypical": "semilla {{value}} · típico {{typical}}",
+      "footAll": "Totales de los tres mundos sumados, comparados con las estadísticas medidas de todas las {{count}} semillas."
     }
   },
   "unlocks": {

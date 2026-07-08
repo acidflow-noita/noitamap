@@ -5178,7 +5178,7 @@
         "current": "Semence actuelle",
         "previousDaily": "Graine quotidienne précédente",
         "average": "Base de référence moyenne",
-        "median": "Médiane (toutes les graines)"
+        "typical": "Typique (toutes les graines)"
       },
       "creaturesNote": "Les créatures sont masquées de la carte (mode performance), mais elles sont toujours comptées dans les statistiques ci-dessous.",
       "creaturesNoteTitle": "Mode performances"
@@ -5217,10 +5217,12 @@
     "mainPathOnlyHint": "Show only biomes on the standard path (Mines, Coal Pits, Fungal Caverns, Snowy Depths, Hiisi Base, Underground Jungle, The Vault, Temple of the Art, The Laboratory)",
     "tldr": {
       "title": "Comment se situe cette graine",
-      "more": "{{metric}} : plus que d'habitude (graine {{value}} · typique {{typical}})",
-      "fewer": "{{metric}} : moins que d'habitude (graine {{value}} · typique {{typical}})",
-      "typical": "{{metric}} : dans la norme (graine {{value}} · typique {{typical}})",
-      "foot": "Comparé aux statistiques mesurées des {{count}} graines."
+      "phraseMore": "{{metric}} : plus que d’habitude",
+      "phraseFewer": "{{metric}} : moins que d’habitude",
+      "phraseFarMore": "{{metric}} : beaucoup plus que d’habitude",
+      "phraseFarFewer": "{{metric}} : beaucoup moins que d’habitude",
+      "seedTypical": "graine {{value}} · typique {{typical}}",
+      "footAll": "Totaux des trois mondes cumulés, comparés aux statistiques mesurées des {{count}} graines."
     }
   },
   "unlocks": {

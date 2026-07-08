@@ -6,10 +6,12 @@
     "noTrackedItems": "No tracked items in this world.",
     "tldr": {
       "title": "How this seed compares",
-      "more": "{{metric}}: more than usual (seed {{value}} · typical {{typical}})",
-      "fewer": "{{metric}}: fewer than usual (seed {{value}} · typical {{typical}})",
-      "typical": "{{metric}}: about usual (seed {{value}} · typical {{typical}})",
-      "foot": "Compared against measured stats for all {{count}} seeds."
+      "phraseMore": "More {{metric}} than usual",
+      "phraseFewer": "Fewer {{metric}} than usual",
+      "phraseFarMore": "Far more {{metric}} than usual",
+      "phraseFarFewer": "Far fewer {{metric}} than usual",
+      "seedTypical": "seed {{value}} · typical {{typical}}",
+      "footAll": "Totals across all three worlds, compared against measured stats for all {{count}} seeds."
     },
     "toggle": {
       "title": "Seed report",
@@ -91,7 +93,7 @@
       "legend": {
         "current": "Current seed",
         "previousDaily": "Previous daily",
-        "median": "Median (all seeds)"
+        "typical": "Typical (all seeds)"
       }
     },
     "faceted": {
