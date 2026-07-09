@@ -4663,12 +4663,23 @@
       "solid": "100%"
     },
     "actions": {
+      "keys": {
+        "ctrl": "Ctrl",
+        "shift": "Shift",
+        "del": "Del"
+      },
       "undo": "Отменить",
       "undoTitle": "Отменить (Ctrl+Z)",
       "redo": "Повторить",
       "redoTitle": "Повторить (Ctrl+Shift+Z)",
       "delete": "Удалить",
       "deleteTitle": "Удалить выделенную фигуру (Delete)",
+      "copy": "Копировать",
+      "copyTitle": "Копировать выделенные фигуры (Ctrl+C)",
+      "cut": "Вырезать",
+      "cutTitle": "Вырезать выделенные фигуры (Ctrl+X)",
+      "paste": "Вставить",
+      "pasteTitle": "Вставить фигуры (Ctrl+V)",
       "toggleFill": "Заливка",
       "toggleFillTitle": "Переключить заливку выбранной фигуры",
       "showHide": "Показать/Скрыть",

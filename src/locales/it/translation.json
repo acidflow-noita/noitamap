@@ -4656,12 +4656,23 @@
       "heavy": "Pesante"
     },
     "actions": {
+      "keys": {
+        "ctrl": "Ctrl",
+        "shift": "Maiusc",
+        "del": "Canc"
+      },
       "undo": "Annulla",
       "undoTitle": "Annulla (Ctrl+Z)",
       "redo": "Ripristina",
       "redoTitle": "Ripristina (Ctrl+Maiusc+Z)",
       "delete": "Elimina",
       "deleteTitle": "Elimina forma selezionata (Canc)",
+      "copy": "Copia",
+      "copyTitle": "Copia le forme selezionate (Ctrl+C)",
+      "cut": "Taglia",
+      "cutTitle": "Taglia le forme selezionate (Ctrl+X)",
+      "paste": "Incolla",
+      "pasteTitle": "Incolla le forme (Ctrl+V)",
       "showHide": "Mostra/Nascondi",
       "showHideTitle": "Attiva/disattiva visibilità disegno",
       "save": "Salva",

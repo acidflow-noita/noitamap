@@ -4669,12 +4669,23 @@
       "heavy": "极粗"
     },
     "actions": {
+      "keys": {
+        "ctrl": "Ctrl",
+        "shift": "Shift",
+        "del": "Del"
+      },
       "undo": "撤销",
       "undoTitle": "撤销 (Ctrl+Z)",
       "redo": "重做",
       "redoTitle": "重做 (Ctrl+Shift+Z)",
       "delete": "删除",
       "deleteTitle": "删除选中的图形 (Delete键)",
+      "copy": "复制",
+      "copyTitle": "复制选中的图形 (Ctrl+C)",
+      "cut": "剪切",
+      "cutTitle": "剪切选中的图形 (Ctrl+X)",
+      "paste": "粘贴",
+      "pasteTitle": "粘贴图形 (Ctrl+V)",
       "showHide": "显示/隐藏",
       "showHideTitle": "切换绘图可见性",
       "save": "保存",

@@ -4656,12 +4656,23 @@
       "heavy": "Muy grueso"
     },
     "actions": {
+      "keys": {
+        "ctrl": "Ctrl",
+        "shift": "Mayús",
+        "del": "Supr"
+      },
       "undo": "Deshacer",
       "undoTitle": "Deshacer (Ctrl+Z)",
       "redo": "Rehacer",
       "redoTitle": "Rehacer (Ctrl+Mayús+Z)",
       "delete": "Eliminar",
       "deleteTitle": "Eliminar forma seleccionada (Supr)",
+      "copy": "Copiar",
+      "copyTitle": "Copiar las formas seleccionadas (Ctrl+C)",
+      "cut": "Cortar",
+      "cutTitle": "Cortar las formas seleccionadas (Ctrl+X)",
+      "paste": "Pegar",
+      "pasteTitle": "Pegar formas (Ctrl+V)",
       "showHide": "Mostrar/Ocultar",
       "showHideTitle": "Alternar visibilidad del dibujo",
       "save": "Guardar",

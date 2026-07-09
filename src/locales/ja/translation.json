@@ -4656,12 +4656,23 @@
       "heavy": "極太"
     },
     "actions": {
+      "keys": {
+        "ctrl": "Ctrl",
+        "shift": "Shift",
+        "del": "Delete"
+      },
       "undo": "元に戻す",
       "undoTitle": "元に戻す (Ctrl+Z)",
       "redo": "やり直す",
       "redoTitle": "やり直す (Ctrl+Shift+Z)",
       "delete": "削除",
       "deleteTitle": "選択した図形を削除 (Deleteキー)",
+      "copy": "コピー",
+      "copyTitle": "選択した図形をコピー (Ctrl+C)",
+      "cut": "切り取り",
+      "cutTitle": "選択した図形を切り取り (Ctrl+X)",
+      "paste": "貼り付け",
+      "pasteTitle": "図形を貼り付け (Ctrl+V)",
       "showHide": "表示/非表示",
       "showHideTitle": "描画の表示を切り替え",
       "save": "保存",

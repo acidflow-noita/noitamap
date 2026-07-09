@@ -4656,12 +4656,23 @@
       "heavy": "Tučné"
     },
     "actions": {
+      "keys": {
+        "ctrl": "Ctrl",
+        "shift": "Shift",
+        "del": "Del"
+      },
       "undo": "Zpět",
       "undoTitle": "Zpět (Ctrl+Z)",
       "redo": "Znovu",
       "redoTitle": "Znovu (Ctrl+Shift+Z)",
       "delete": "Smazat",
       "deleteTitle": "Smazat vybraný tvar (Delete)",
+      "copy": "Kopírovat",
+      "copyTitle": "Kopírovat vybrané tvary (Ctrl+C)",
+      "cut": "Vyjmout",
+      "cutTitle": "Vyjmout vybrané tvary (Ctrl+X)",
+      "paste": "Vložit",
+      "pasteTitle": "Vložit tvary (Ctrl+V)",
       "showHide": "Zobrazit/Skrýt",
       "showHideTitle": "Přepnout viditelnost kresby",
       "save": "Uložit",

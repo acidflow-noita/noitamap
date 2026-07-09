@@ -4656,12 +4656,23 @@
       "heavy": "Pesado"
     },
     "actions": {
+      "keys": {
+        "ctrl": "Ctrl",
+        "shift": "Shift",
+        "del": "Del"
+      },
       "undo": "Desfazer",
       "undoTitle": "Desfazer (Ctrl+Z)",
       "redo": "Refazer",
       "redoTitle": "Refazer (Ctrl+Shift+Z)",
       "delete": "Excluir",
       "deleteTitle": "Excluir forma selecionada (Delete)",
+      "copy": "Copiar",
+      "copyTitle": "Copiar formas selecionadas (Ctrl+C)",
+      "cut": "Recortar",
+      "cutTitle": "Recortar formas selecionadas (Ctrl+X)",
+      "paste": "Colar",
+      "pasteTitle": "Colar formas (Ctrl+V)",
       "showHide": "Mostrar/Ocultar",
       "showHideTitle": "Alternar visibilidade do desenho",
       "save": "Salvar",

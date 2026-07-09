@@ -4656,12 +4656,23 @@
       "heavy": "Zwaar"
     },
     "actions": {
+      "keys": {
+        "ctrl": "Ctrl",
+        "shift": "Shift",
+        "del": "Del"
+      },
       "undo": "Ongedaan maken",
       "undoTitle": "Ongedaan maken (Ctrl+Z)",
       "redo": "Opnieuw",
       "redoTitle": "Opnieuw (Ctrl+Shift+Z)",
       "delete": "Verwijderen",
       "deleteTitle": "Geselecteerde vorm verwijderen (Delete)",
+      "copy": "Kopiëren",
+      "copyTitle": "Geselecteerde vormen kopiëren (Ctrl+C)",
+      "cut": "Knippen",
+      "cutTitle": "Geselecteerde vormen knippen (Ctrl+X)",
+      "paste": "Plakken",
+      "pasteTitle": "Vormen plakken (Ctrl+V)",
       "showHide": "Tonen/Verbergen",
       "showHideTitle": "Tekening zichtbaarheid wisselen",
       "save": "Opslaan",

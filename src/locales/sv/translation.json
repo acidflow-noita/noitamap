@@ -4656,12 +4656,23 @@
       "heavy": "Kraftig"
     },
     "actions": {
+      "keys": {
+        "ctrl": "Ctrl",
+        "shift": "Shift",
+        "del": "Del"
+      },
       "undo": "Ångra",
       "undoTitle": "Ångra (Ctrl+Z)",
       "redo": "Gör om",
       "redoTitle": "Gör om (Ctrl+Shift+Z)",
       "delete": "Ta bort",
       "deleteTitle": "Ta bort markerad form (Delete)",
+      "copy": "Kopiera",
+      "copyTitle": "Kopiera markerade former (Ctrl+C)",
+      "cut": "Klipp ut",
+      "cutTitle": "Klipp ut markerade former (Ctrl+X)",
+      "paste": "Klistra in",
+      "pasteTitle": "Klistra in former (Ctrl+V)",
       "showHide": "Visa/Dölj",
       "showHideTitle": "Växla ritningens synlighet",
       "save": "Spara",

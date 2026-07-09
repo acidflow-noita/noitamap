@@ -4656,12 +4656,23 @@
       "heavy": "Sangat tebal"
     },
     "actions": {
+      "keys": {
+        "ctrl": "Ctrl",
+        "shift": "Shift",
+        "del": "Del"
+      },
       "undo": "Urungkan",
       "undoTitle": "Urungkan (Ctrl+Z)",
       "redo": "Ulangi",
       "redoTitle": "Ulangi (Ctrl+Shift+Z)",
       "delete": "Hapus",
       "deleteTitle": "Hapus bentuk terpilih (Delete)",
+      "copy": "Salin",
+      "copyTitle": "Salin bentuk terpilih (Ctrl+C)",
+      "cut": "Potong",
+      "cutTitle": "Potong bentuk terpilih (Ctrl+X)",
+      "paste": "Tempel",
+      "pasteTitle": "Tempel bentuk (Ctrl+V)",
       "showHide": "Tampil/Sembunyikan",
       "showHideTitle": "Alihkan visibilitas gambar",
       "save": "Simpan",

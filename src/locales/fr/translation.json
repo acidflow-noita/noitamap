@@ -4656,12 +4656,23 @@
       "heavy": "Gras"
     },
     "actions": {
+      "keys": {
+        "ctrl": "Ctrl",
+        "shift": "Maj",
+        "del": "Suppr"
+      },
       "undo": "Annuler",
       "undoTitle": "Annuler (Ctrl+Z)",
       "redo": "Rétablir",
       "redoTitle": "Rétablir (Ctrl+Maj+Z)",
       "delete": "Supprimer",
       "deleteTitle": "Supprimer la forme sélectionnée (Suppr)",
+      "copy": "Copier",
+      "copyTitle": "Copier les formes sélectionnées (Ctrl+C)",
+      "cut": "Couper",
+      "cutTitle": "Couper les formes sélectionnées (Ctrl+X)",
+      "paste": "Coller",
+      "pasteTitle": "Coller les formes (Ctrl+V)",
       "showHide": "Afficher/Masquer",
       "showHideTitle": "Basculer la visibilité du dessin",
       "save": "Enregistrer",

@@ -4663,12 +4663,23 @@
       "heavy": "Жирна"
     },
     "actions": {
+      "keys": {
+        "ctrl": "Ctrl",
+        "shift": "Shift",
+        "del": "Del"
+      },
       "undo": "Скасувати",
       "undoTitle": "Скасувати (Ctrl+Z)",
       "redo": "Повторити",
       "redoTitle": "Повторити (Ctrl+Shift+Z)",
       "delete": "Видалити",
       "deleteTitle": "Видалити виділену фігуру (Delete)",
+      "copy": "Копіювати",
+      "copyTitle": "Копіювати виділені фігури (Ctrl+C)",
+      "cut": "Вирізати",
+      "cutTitle": "Вирізати виділені фігури (Ctrl+X)",
+      "paste": "Вставити",
+      "pasteTitle": "Вставити фігури (Ctrl+V)",
       "showHide": "Показати/Сховати",
       "showHideTitle": "Перемкнути видимість малюнка",
       "save": "Зберегти",

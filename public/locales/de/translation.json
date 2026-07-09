@@ -4656,12 +4656,23 @@
       "heavy": "Fett"
     },
     "actions": {
+      "keys": {
+        "ctrl": "Strg",
+        "shift": "Umschalt",
+        "del": "Entf"
+      },
       "undo": "Rückgängig",
       "undoTitle": "Rückgängig (Strg+Z)",
       "redo": "Wiederholen",
       "redoTitle": "Wiederholen (Strg+Umschalt+Z)",
       "delete": "Löschen",
       "deleteTitle": "Ausgewählte Form löschen (Entf-Taste)",
+      "copy": "Kopieren",
+      "copyTitle": "Ausgewählte Formen kopieren (Strg+C)",
+      "cut": "Ausschneiden",
+      "cutTitle": "Ausgewählte Formen ausschneiden (Strg+X)",
+      "paste": "Einfügen",
+      "pasteTitle": "Formen einfügen (Strg+V)",
       "showHide": "Ein-/Ausblenden",
       "showHideTitle": "Zeichnung ein-/ausblenden",
       "save": "Speichern",

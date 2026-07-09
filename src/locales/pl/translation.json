@@ -4656,12 +4656,23 @@
       "heavy": "Bardzo gruby"
     },
     "actions": {
+      "keys": {
+        "ctrl": "Ctrl",
+        "shift": "Shift",
+        "del": "Del"
+      },
       "undo": "Cofnij",
       "undoTitle": "Cofnij (Ctrl+Z)",
       "redo": "Ponów",
       "redoTitle": "Ponów (Ctrl+Shift+Z)",
       "delete": "Usuń",
       "deleteTitle": "Usuń zaznaczony kształt (Delete)",
+      "copy": "Kopiuj",
+      "copyTitle": "Kopiuj zaznaczone kształty (Ctrl+C)",
+      "cut": "Wytnij",
+      "cutTitle": "Wytnij zaznaczone kształty (Ctrl+X)",
+      "paste": "Wklej",
+      "pasteTitle": "Wklej kształty (Ctrl+V)",
       "showHide": "Pokaż/Ukryj",
       "showHideTitle": "Przełącz widoczność rysunku",
       "save": "Zapisz",

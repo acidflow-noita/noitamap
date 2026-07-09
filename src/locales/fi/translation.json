@@ -4656,12 +4656,23 @@
       "heavy": "Raskas"
     },
     "actions": {
+      "keys": {
+        "ctrl": "Ctrl",
+        "shift": "Shift",
+        "del": "Del"
+      },
       "undo": "Kumoa",
       "undoTitle": "Kumoa (Ctrl+Z)",
       "redo": "Tee uudelleen",
       "redoTitle": "Tee uudelleen (Ctrl+Shift+Z)",
       "delete": "Poista",
       "deleteTitle": "Poista valittu muoto (Delete)",
+      "copy": "Kopioi",
+      "copyTitle": "Kopioi valitut muodot (Ctrl+C)",
+      "cut": "Leikkaa",
+      "cutTitle": "Leikkaa valitut muodot (Ctrl+X)",
+      "paste": "Liitä",
+      "pasteTitle": "Liitä muodot (Ctrl+V)",
       "showHide": "Näytä/Piilota",
       "showHideTitle": "Vaihda piirroksen näkyvyyttä",
       "save": "Tallenna",
