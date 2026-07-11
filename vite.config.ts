@@ -68,16 +68,15 @@ export default defineConfig({
       ),
       // Redirect CDN imports used by telescope to local npm packages so they get bundled.
       "https://cdn.jsdelivr.net/npm/upng-js@2.1.0/+esm": "upng-js",
+      "virtual:noitamap-pro": isProAvailable
+        ? resolve(__dirname, "../noitamap-pro/src/pro-entry.ts")
+        : resolve(__dirname, "src/pro-unavailable.ts"),
       ...(isProAvailable
         ? {
             "noitamap/data_sources/tile_data": resolve(__dirname, "src/data_sources/tile_data.ts"),
             "noitamap/data_sources/map_definitions": resolve(__dirname, "src/data_sources/map_definitions.ts"),
             "noitamap/data_sources/param-mappings": resolve(__dirname, "src/data_sources/param-mappings.ts"),
             "noitamap/data_sources/overlays": resolve(__dirname, "src/data_sources/overlays.ts"),
-            "noitamap/app_osd": resolve(__dirname, "src/app_osd.ts"),
-            "noitamap/util": resolve(__dirname, "src/util.ts"),
-            "noitamap/auth/auth-service": resolve(__dirname, "src/auth/auth-service.ts"),
-            "noitamap/i18n": resolve(__dirname, "src/i18n.ts"),
             "noitamap/data-archive": resolve(__dirname, "src/data-archive.ts"),
           }
         : {}),
@@ -97,7 +96,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
-        ...(isProAvailable ? { pro: resolve(__dirname, "../noitamap-pro/src/pro-entry.ts") } : {}),
       },
       output: {
         // Force manual chunking for vendor dependencies

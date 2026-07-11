@@ -8,3 +8,9 @@
 
 # Secret source data not for distribution (historic daily seeds, etc.)
 /src/data/optional_data/
+
+# Internal security audit - never distribute
+/SECURITY-AUDIT.md
+
+# Header config is managed via Cloudflare dashboard rules, not file-based
+/public/_headers

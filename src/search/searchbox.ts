@@ -101,7 +101,7 @@ export class SearchBox extends EventEmitter2 {
 
     const searchResultsUL = document.createElement('ul');
     searchResultsUL.id = 'searchResults';
-    form.innerHTML = '';
+    form.replaceChildren();
     form.appendChild(searchInput);
     form.appendChild(searchResultsUL);
 

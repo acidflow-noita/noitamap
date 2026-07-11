@@ -426,7 +426,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!match) return;
     const def = match[1];
     mapSelectorButton.removeAttribute('data-i18n');
-    mapSelectorButton.innerHTML = '';
+    mapSelectorButton.replaceChildren();
     mapSelectorButton.classList.add('d-inline-flex', 'align-items-center', 'gap-1');
 
     const labelSpan = document.createElement('span');
@@ -855,9 +855,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       // @ts-ignore
       if (import.meta.env.DEV) {
         // @ts-ignore
-        proModule = await import("../../noitamap-pro/src/pro-entry.ts");
+        proModule = await import("virtual:noitamap-pro");
       } else {
-        const response = await fetch(proUrl, { cache: "no-cache" });
+        const token = authService.getToken();
+        if (!token) throw new Error("Missing authentication token");
+        const response = await fetch(proUrl, {
+          cache: "no-cache",
+          headers: { Authorization: "Bearer " + token },
+        });
 
         if (!response.ok) {
           throw new Error(`HTTP error ${response.status}`);

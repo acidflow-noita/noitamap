@@ -145,16 +145,20 @@ declare global {
      * single POI). When `note` is passed and the query finds nothing on the
      * rendered map, the results overlay shows a seeded Telescope fallback link.
      */
-    triggerPillarSearch?: (query: string, note?: { text: string; telescopeUrl: string }, filter?: string) => void;
+    triggerPillarSearch?: (query: string, note?: { text: string; telescopeUrl: string }, filter?: string, resultNotice?: string) => void;
   }
 
   interface Window {
     __noitamap?: NoitamapProHooks;
   }
+
+  const __BUILD_VERSION__: string;
+
+  interface CSSStyleDeclaration {
+    webkitTextSecurity?: string;
+  }
 }
 
-// Build stamp injected by vite `define` — cache-busts the remote pro.js fetch.
-declare const __BUILD_VERSION__: string;
 
 declare module '*.png' {
   const value: string;
@@ -184,4 +188,8 @@ declare module '*.webp' {
 declare module '*.svg' {
   const value: string;
   export default value;
+}
+
+declare module 'virtual:noitamap-pro' {
+  export function init(hooks: NoitamapProHooks): Promise<void>;
 }

@@ -28,7 +28,7 @@ export function createLanguageSelector() {
   };
 
   // Clear placeholder content and create language dropdown items
-  languageLinksList.innerHTML = '';
+  languageLinksList.replaceChildren();
 
   Object.entries(SUPPORTED_LANGUAGES).forEach(([code, { name, flag }]) => {
     const li = document.createElement('li');

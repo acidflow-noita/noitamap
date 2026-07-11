@@ -121,7 +121,7 @@ const buildDropdownLink = (mapName: string, def: MapDefinition): HTMLAnchorEleme
 
 export const createMapLinks = (): HTMLUListElement => {
   const navLinksUl = assertElementById('navLinksList', HTMLUListElement);
-  navLinksUl.innerHTML = '';
+  navLinksUl.replaceChildren();
 
   for (const [mapName, def] of getAllMapDefinitions()) {
     const li = document.createElement('li');
@@ -139,7 +139,7 @@ export const updateMapLinkTranslations = (): void => {
     const link = navLinksUl.querySelector(`[data-map-key="${mapName}"]`) as HTMLAnchorElement | null;
     if (!link) continue;
     const wasActive = link.classList.contains('active');
-    link.innerHTML = '';
+    link.replaceChildren();
 
     const labelSpan = document.createElement('span');
     labelSpan.className = 'me-2';

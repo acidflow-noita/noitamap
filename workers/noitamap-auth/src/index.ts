@@ -44,17 +44,21 @@ interface Env {
 }
 
 // Resolved secrets for use throughout request handling
-interface Secrets {
+interface SessionSecrets {
+  jwtSecret: string;
+}
+
+interface Secrets extends SessionSecrets {
   patreonClientId: string;
   patreonClientSecret: string;
   patreonCampaignId: string;
-  jwtSecret: string;
   creatorUserId: string;
 }
 
 // -- Types --
 
 interface JWTPayload {
+  typ?: "access";
   sub: string; // user_id
   username: string;
   nickname: string | null;
@@ -112,6 +116,8 @@ const JWT_EXPIRY_SECONDS = 24 * 60 * 60; // 24 hours
 // without another OAuth round-trip. Worker stays stateless — no D1/KV.
 const REFRESH_JWT_EXPIRY_SECONDS = 90 * 24 * 60 * 60; // 90 days
 const STATE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+const MAX_BEARER_TOKEN_LENGTH = 16 * 1024;
+const OAUTH_STATE_COOKIE = "noitamap_oauth_state";
 
 // -- Refresh-token crypto (AES-GCM) --
 // The provider refresh_token is a bearer credential for the user's Patreon/
@@ -164,14 +170,25 @@ interface RefreshPayload {
   exp: number;
 }
 
+interface OAuthState {
+  kind: "patreon" | "twitch" | "twitch-setup";
+  redirectUrl: string;
+  nonce: string;
+  expiresAt: number;
+}
+
 // -- Main Worker --
 
-async function resolveSecrets(env: Env): Promise<Secrets> {
+async function resolveSessionSecrets(env: Env): Promise<SessionSecrets> {
+  return { jwtSecret: await env.JWT_SECRET.get() };
+}
+
+async function resolveSecrets(env: Env, existingJwtSecret?: string): Promise<Secrets> {
   const [patreonClientId, patreonClientSecret, patreonCampaignId, jwtSecret, creatorUserId] = await Promise.all([
     env.PATREON_CLIENT_ID.get(),
     env.PATREON_CLIENT_SECRET.get(),
     env.PATREON_CAMPAIGN_ID.get(),
-    env.JWT_SECRET.get(),
+    existingJwtSecret ?? env.JWT_SECRET.get(),
     env.CREATOR_USER_ID.get(),
   ]);
   return { patreonClientId, patreonClientSecret, patreonCampaignId, jwtSecret, creatorUserId };
@@ -183,40 +200,41 @@ export default {
     const origin = request.headers.get("Origin") || "";
     const allowedOrigin = getAllowedOrigin(origin, env);
 
-    // CORS Preflight
-    if (request.method === "OPTIONS") {
-      return handleCORS(allowedOrigin);
-    }
+    if (request.method === "OPTIONS") return handleCORS(allowedOrigin);
+    if (origin && !allowedOrigin) return textResponse("Forbidden", 403);
 
     try {
-      const secrets = await resolveSecrets(env);
-
       switch (url.pathname) {
         case "/auth/login":
-          return handlePatreonLogin(request, env, secrets);
+          if (request.method !== "GET") return methodNotAllowed("GET");
+          return handlePatreonLogin(request, env, await resolveSecrets(env));
         case "/auth/callback":
-          return handlePatreonCallback(request, env, secrets);
+          if (request.method !== "GET") return methodNotAllowed("GET");
+          return handlePatreonCallback(request, env, await resolveSecrets(env));
         case "/auth/check":
-          return handleAuthCheck(request, secrets, allowedOrigin);
+          if (request.method !== "GET") return methodNotAllowed("GET", allowedOrigin);
+          return handleAuthCheck(request, (await resolveSessionSecrets(env)).jwtSecret, allowedOrigin);
         case "/auth/refresh":
-          return handleRefresh(request, env, secrets, allowedOrigin);
-        // -- Twitch (piping live, client UI hidden until platform approval) --
+          if (request.method !== "POST") return methodNotAllowed("POST", allowedOrigin);
+          return handleRefresh(request, env, await resolveSessionSecrets(env), allowedOrigin);
         case "/auth/twitch/login":
-          return handleTwitchLogin(request, env, secrets);
+          if (request.method !== "GET") return methodNotAllowed("GET");
+          return handleTwitchLogin(request, env, await resolveSessionSecrets(env));
         case "/auth/twitch/callback":
-          return handleTwitchCallback(request, env, secrets);
-        // One-time broadcaster grant: wuote hits this once to mint the
-        // channel:read:subscriptions refresh token that the sub-check uses.
+          if (request.method !== "GET") return methodNotAllowed("GET");
+          return handleTwitchCallback(request, env, await resolveSessionSecrets(env));
         case "/auth/twitch/broadcaster-setup":
-          return handleBroadcasterSetup(request, env, secrets);
+          if (request.method !== "GET") return methodNotAllowed("GET");
+          return handleBroadcasterSetup(request, env, await resolveSessionSecrets(env));
         case "/auth/twitch/broadcaster-callback":
-          return handleBroadcasterCallback(request, env, secrets);
+          if (request.method !== "GET") return methodNotAllowed("GET");
+          return handleBroadcasterCallback(request, env, await resolveSessionSecrets(env));
         default:
-          return new Response("Not Found", { status: 404 });
+          return textResponse("Not Found", 404);
       }
     } catch (error) {
       console.error("Worker Error:", error);
-      return new Response("Internal Server Error", { status: 500 });
+      return textResponse("Internal Server Error", 500);
     }
   },
 };
@@ -225,12 +243,13 @@ export default {
 
 async function handlePatreonLogin(request: Request, env: Env, secrets: Secrets): Promise<Response> {
   const url = new URL(request.url);
-  const redirectUrl = url.searchParams.get("redirect") || "";
+  const redirectUrl = allowedRedirect(url.searchParams.get("redirect") || "", env);
 
-  // Create a signed state token: base64url(payload).base64url(hmac)
-  const expiresAt = Date.now() + STATE_EXPIRY_MS;
-  const statePayload = `${redirectUrl}|${expiresAt}`;
-  const state = await signState(statePayload, secrets.jwtSecret);
+  const nonce = base64url(crypto.getRandomValues(new Uint8Array(32)));
+  const state = await signState(
+    JSON.stringify({ kind: "patreon", redirectUrl, nonce, expiresAt: Date.now() + STATE_EXPIRY_MS }),
+    secrets.jwtSecret,
+  );
 
   // Construct the callback URL
   const callbackUri = `${env.WORKER_URL}/auth/callback`;
@@ -243,7 +262,7 @@ async function handlePatreonLogin(request: Request, env: Env, secrets: Secrets):
   authUrl.searchParams.set("scope", "identity identity.memberships");
   authUrl.searchParams.set("state", state);
 
-  return Response.redirect(authUrl.toString(), 302);
+  return redirectResponse(authUrl.toString(), oauthStateCookie(nonce, request));
 }
 
 async function handlePatreonCallback(request: Request, env: Env, secrets: Secrets): Promise<Response> {
@@ -252,31 +271,14 @@ async function handlePatreonCallback(request: Request, env: Env, secrets: Secret
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
 
-  // Validate & decode state
-  if (!state) return redirectToError(env, "missing_state");
+  if (!state) return redirectToError(env, "missing_state", request);
 
-  const statePayload = await verifyState(state, secrets.jwtSecret);
-  if (!statePayload) return redirectToError(env, "invalid_state");
+  const oauthState = await verifyOAuthState(state, request, "patreon", secrets.jwtSecret);
+  if (!oauthState) return redirectToError(env, "invalid_state", request);
+  const finalRedirectUrl = allowedRedirect(oauthState.redirectUrl, env);
 
-  const [redirectUrl, expiresAtStr] = statePayload.split("|");
-  const expiresAt = parseInt(expiresAtStr, 10);
-  if (isNaN(expiresAt) || Date.now() > expiresAt) {
-    return redirectToError(env, "expired_state");
-  }
-
-  // SECURITY: the signed state only proves WE signed the redirect — an attacker
-  // can still request /auth/login?redirect=https://evil with their own browser
-  // and get it signed. Validate the redirect's origin against ALLOWED_ORIGINS
-  // before we ever append the token to it, or we hand the victim's JWT to any
-  // site (open redirect → token exfiltration).
-  const finalRedirectUrl = allowedRedirect(redirectUrl, env);
-
-  if (error) {
-    return Response.redirect(`${finalRedirectUrl}?auth_error=${encodeURIComponent(error)}`, 302);
-  }
-  if (!code) {
-    return Response.redirect(`${finalRedirectUrl}?auth_error=missing_code`, 302);
-  }
+  if (error) return redirectWithError(finalRedirectUrl, error, request);
+  if (!code) return redirectWithError(finalRedirectUrl, "missing_code", request);
 
   try {
     // 1. Exchange Code for Token
@@ -293,9 +295,8 @@ async function handlePatreonCallback(request: Request, env: Env, secrets: Secret
     });
 
     if (!tokenResponse.ok) {
-      const errText = await tokenResponse.text();
-      console.error("Patreon Token Error:", errText);
-      return Response.redirect(`${finalRedirectUrl}?auth_error=token_exchange_failed`, 302);
+      console.error("Patreon token exchange failed:", tokenResponse.status);
+      return redirectWithError(finalRedirectUrl, "token_exchange_failed", request);
     }
 
     const tokenData = (await tokenResponse.json()) as PatreonTokenResponse;
@@ -305,7 +306,7 @@ async function handlePatreonCallback(request: Request, env: Env, secrets: Secret
     //      cancellations without forcing the user to log in again).
     const membership = await fetchPatreonMembership(tokenData.access_token, secrets);
     if (!membership) {
-      return Response.redirect(`${finalRedirectUrl}?auth_error=identity_fetch_failed`, 302);
+      return redirectWithError(finalRedirectUrl, "identity_fetch_failed", request);
     }
 
     // 4. Issue a short access JWT + a long refresh JWT. The refresh JWT carries
@@ -315,6 +316,7 @@ async function handlePatreonCallback(request: Request, env: Env, secrets: Secret
     const now = Math.floor(Date.now() / 1000);
     const jwt = await signJWT(
       {
+        typ: "access",
         sub: membership.userId,
         username: membership.username,
         nickname: membership.nickname,
@@ -346,13 +348,10 @@ async function handlePatreonCallback(request: Request, env: Env, secrets: Secret
     const frag = new URLSearchParams({ auth: "success", token: jwt, refresh_token: refreshJwt });
     redirectUrlObj.hash = frag.toString();
 
-    return new Response(null, {
-      status: 302,
-      headers: { Location: redirectUrlObj.toString() },
-    });
+    return redirectResponse(redirectUrlObj.toString(), clearOAuthStateCookie(request));
   } catch (err) {
     console.error("Callback Exception:", err);
-    return Response.redirect(`${finalRedirectUrl}?auth_error=server_error`, 302);
+    return redirectWithError(finalRedirectUrl, "server_error", request);
   }
 }
 
@@ -384,7 +383,7 @@ async function fetchPatreonMembership(accessToken: string, secrets: Secrets): Pr
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!identityResponse.ok) {
-    console.error("Patreon Identity Error:", await identityResponse.text());
+    console.error("Patreon identity fetch failed:", identityResponse.status);
     return null;
   }
 
@@ -420,14 +419,10 @@ async function fetchPatreonMembership(accessToken: string, secrets: Secrets): Pr
   };
 }
 
-async function handleAuthCheck(request: Request, secrets: Secrets, allowedOrigin: string): Promise<Response> {
-  const authHeader = request.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return jsonResponse({ authenticated: false }, allowedOrigin);
-  }
-
-  const token = authHeader.substring(7);
-  const payload = await verifyJWT(token, secrets.jwtSecret);
+async function handleAuthCheck(request: Request, jwtSecret: string, allowedOrigin: string | null): Promise<Response> {
+  const token = getBearerToken(request);
+  if (!token) return jsonResponse({ authenticated: false }, allowedOrigin);
+  const payload = await verifyJWT(token, jwtSecret);
   if (!payload) {
     return jsonResponse({ authenticated: false }, allowedOrigin);
   }
@@ -451,19 +446,24 @@ async function handleAuthCheck(request: Request, secrets: Secrets, allowedOrigin
  * access token, RE-CHECK membership (so a cancelled sub loses Pro on the next
  * renewal), and return a new access+refresh pair. Stateless — no session store.
  */
-async function handleRefresh(request: Request, env: Env, secrets: Secrets, allowedOrigin: string): Promise<Response> {
-  const authHeader = request.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) return jsonResponse({ authenticated: false }, allowedOrigin);
+async function handleRefresh(request: Request, env: Env, secrets: SessionSecrets, allowedOrigin: string | null): Promise<Response> {
+  const token = getBearerToken(request);
+  if (!token) return jsonResponse({ authenticated: false }, allowedOrigin);
 
-  const refresh = await verifyRefreshJWT(authHeader.substring(7), secrets.jwtSecret);
+  const refresh = await verifyRefreshJWT(token, secrets.jwtSecret);
   if (!refresh) return jsonResponse({ authenticated: false }, allowedOrigin);
 
   const providerRefreshToken = await decryptSecret(refresh.enc, secrets.jwtSecret);
   if (!providerRefreshToken) return jsonResponse({ authenticated: false }, allowedOrigin);
 
   try {
-    if (refresh.provider === "patreon") return await refreshPatreon(providerRefreshToken, secrets, allowedOrigin);
-    if (refresh.provider === "twitch") return await refreshTwitch(env, providerRefreshToken, secrets, allowedOrigin);
+    if (refresh.provider === "patreon") {
+      const patreonSecrets = await resolveSecrets(env, secrets.jwtSecret);
+      return await refreshPatreon(providerRefreshToken, refresh.sub, patreonSecrets, allowedOrigin);
+    }
+    if (refresh.provider === "twitch") {
+      return await refreshTwitch(env, providerRefreshToken, refresh.sub, secrets, allowedOrigin);
+    }
     return jsonResponse({ authenticated: false }, allowedOrigin);
   } catch (err) {
     console.error("Refresh exception:", err);
@@ -475,11 +475,11 @@ async function handleRefresh(request: Request, env: Env, secrets: Secrets, allow
 async function issueSessionJson(
   payload: { sub: string; username: string; nickname: string | null; is_follower: boolean; is_subscriber: boolean; provider: "patreon" | "twitch" },
   providerRefreshToken: string,
-  secrets: Secrets,
-  allowedOrigin: string,
+  secrets: SessionSecrets,
+  allowedOrigin: string | null,
 ): Promise<Response> {
   const now = Math.floor(Date.now() / 1000);
-  const token = await signJWT({ ...payload, iat: now, exp: now + JWT_EXPIRY_SECONDS }, secrets.jwtSecret);
+  const token = await signJWT({ typ: "access", ...payload, iat: now, exp: now + JWT_EXPIRY_SECONDS }, secrets.jwtSecret);
   const refresh_token = await signRefreshJWT(
     {
       typ: "refresh",
@@ -505,7 +505,12 @@ async function issueSessionJson(
   );
 }
 
-async function refreshPatreon(providerRefreshToken: string, secrets: Secrets, allowedOrigin: string): Promise<Response> {
+async function refreshPatreon(
+  providerRefreshToken: string,
+  expectedUserId: string,
+  secrets: Secrets,
+  allowedOrigin: string | null,
+): Promise<Response> {
   const tokenRes = await fetch("https://www.patreon.com/api/oauth2/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -517,12 +522,14 @@ async function refreshPatreon(providerRefreshToken: string, secrets: Secrets, al
     }),
   });
   if (!tokenRes.ok) {
-    console.error("Patreon refresh failed:", await tokenRes.text());
+    console.error("Patreon refresh failed:", tokenRes.status);
     return jsonResponse({ authenticated: false }, allowedOrigin);
   }
   const tokenData = (await tokenRes.json()) as PatreonTokenResponse;
   const membership = await fetchPatreonMembership(tokenData.access_token, secrets);
-  if (!membership) return jsonResponse({ authenticated: false }, allowedOrigin);
+  if (!membership || membership.userId !== expectedUserId) {
+    return jsonResponse({ authenticated: false }, allowedOrigin);
+  }
 
   // Patreon rotates the refresh_token (single-use); store the new one, or fall
   // back to the one we just used if a rotation wasn't returned.
@@ -541,7 +548,13 @@ async function refreshPatreon(providerRefreshToken: string, secrets: Secrets, al
   );
 }
 
-async function refreshTwitch(env: Env, viewerRefreshToken: string, secrets: Secrets, allowedOrigin: string): Promise<Response> {
+async function refreshTwitch(
+  env: Env,
+  viewerRefreshToken: string,
+  expectedUserId: string,
+  secrets: SessionSecrets,
+  allowedOrigin: string | null,
+): Promise<Response> {
   const twitch = await resolveTwitchSecrets(env);
   if (!twitch) return jsonResponse({ authenticated: false }, allowedOrigin);
 
@@ -556,12 +569,14 @@ async function refreshTwitch(env: Env, viewerRefreshToken: string, secrets: Secr
     }),
   });
   if (!tokenRes.ok) {
-    console.error("Twitch viewer refresh failed:", await tokenRes.text());
+    console.error("Twitch viewer refresh failed:", tokenRes.status);
     return jsonResponse({ authenticated: false }, allowedOrigin);
   }
   const tokenData = (await tokenRes.json()) as { access_token: string; refresh_token?: string };
   const viewer = await fetchTwitchUser(tokenData.access_token, twitch.clientId);
-  if (!viewer) return jsonResponse({ authenticated: false }, allowedOrigin);
+  if (!viewer || viewer.id !== expectedUserId) {
+    return jsonResponse({ authenticated: false }, allowedOrigin);
+  }
 
   const isSubscriber = await checkTwitchSubscription(env, twitch, viewer.id);
   return issueSessionJson(
@@ -581,9 +596,12 @@ async function refreshTwitch(env: Env, viewerRefreshToken: string, secrets: Secr
 
 // -- Helpers --
 
-function getAllowedOrigin(origin: string, env: Env): string {
-  const allowed = env.ALLOWED_ORIGINS.split(",").map((o) => o.trim());
-  return allowed.includes(origin) ? origin : allowed[0];
+function allowedOrigins(env: Env): string[] {
+  return env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean);
+}
+
+function getAllowedOrigin(origin: string, env: Env): string | null {
+  return origin && allowedOrigins(env).includes(origin) ? origin : null;
 }
 
 /**
@@ -593,7 +611,7 @@ function getAllowedOrigin(origin: string, env: Env): string {
  * its origin is allowlisted, else the first allowed origin as a safe fallback.
  */
 function allowedRedirect(redirectUrl: string, env: Env): string {
-  const allowed = env.ALLOWED_ORIGINS.split(",").map((o) => o.trim()).filter(Boolean);
+  const allowed = allowedOrigins(env);
   const fallback = allowed[0] || "https://noitamap.com";
   if (!redirectUrl) return fallback;
   try {
@@ -604,35 +622,121 @@ function allowedRedirect(redirectUrl: string, env: Env): string {
   }
 }
 
-function handleCORS(allowedOrigin: string): Response {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      "Access-Control-Allow-Origin": allowedOrigin,
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Allow-Credentials": "true",
-      "Access-Control-Max-Age": "86400",
-    },
+function responseHeaders(allowedOrigin: string | null = null): Headers {
+  const headers = new Headers({
+    "Cache-Control": "no-store",
+    "Referrer-Policy": "no-referrer",
+    "X-Content-Type-Options": "nosniff",
   });
+  if (allowedOrigin) {
+    headers.set("Access-Control-Allow-Origin", allowedOrigin);
+    headers.set("Vary", "Origin");
+  }
+  return headers;
 }
 
-function jsonResponse(data: unknown, allowedOrigin: string): Response {
-  return new Response(JSON.stringify(data), {
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": allowedOrigin,
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Allow-Credentials": "true",
-    },
-  });
+function handleCORS(allowedOrigin: string | null): Response {
+  if (!allowedOrigin) return textResponse("Forbidden", 403);
+  const headers = responseHeaders(allowedOrigin);
+  headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
+  headers.set("Access-Control-Max-Age", "86400");
+  return new Response(null, { status: 204, headers });
 }
 
-function redirectToError(env: Env, error: string): Response {
-  const allowed = env.ALLOWED_ORIGINS.split(",").map((o) => o.trim());
-  const fallback = allowed[0] || "https://noitamap.com";
-  return Response.redirect(`${fallback}?auth_error=${error}`, 302);
+function jsonResponse(data: unknown, allowedOrigin: string | null, status = 200): Response {
+  const headers = responseHeaders(allowedOrigin);
+  headers.set("Content-Type", "application/json; charset=utf-8");
+  return new Response(JSON.stringify(data), { status, headers });
+}
+
+function textResponse(body: string, status: number, allowedOrigin: string | null = null): Response {
+  const headers = responseHeaders(allowedOrigin);
+  headers.set("Content-Type", "text/plain; charset=utf-8");
+  return new Response(body, { status, headers });
+}
+
+function methodNotAllowed(allowedMethod: string, allowedOrigin: string | null = null): Response {
+  const response = textResponse("Method Not Allowed", 405, allowedOrigin);
+  response.headers.set("Allow", allowedMethod);
+  return response;
+}
+
+function getBearerToken(request: Request): string | null {
+  const match = request.headers.get("Authorization")?.match(/^Bearer\s+(\S+)$/i);
+  const token = match?.[1] || "";
+  return token && token.length <= MAX_BEARER_TOKEN_LENGTH ? token : null;
+}
+
+function oauthStateCookie(nonce: string, request: Request, maxAge = Math.ceil(STATE_EXPIRY_MS / 1000)): string {
+  const secure = new URL(request.url).protocol === "https:" ? "; Secure" : "";
+  return `${OAUTH_STATE_COOKIE}=${nonce}; Path=/auth; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
+}
+
+function clearOAuthStateCookie(request: Request): string {
+  return oauthStateCookie("", request, 0);
+}
+
+function requestCookie(request: Request, name: string): string | null {
+  for (const part of (request.headers.get("Cookie") || "").split(";")) {
+    const separator = part.indexOf("=");
+    if (separator < 0) continue;
+    if (part.slice(0, separator).trim() === name) return part.slice(separator + 1).trim();
+  }
+  return null;
+}
+
+async function verifyOAuthState(
+  state: string,
+  request: Request,
+  kind: OAuthState["kind"],
+  secret: string,
+): Promise<OAuthState | null> {
+  if (state.length > MAX_BEARER_TOKEN_LENGTH) return null;
+  const payload = await verifyState(state, secret);
+  if (!payload) return null;
+  try {
+    const parsed = JSON.parse(payload) as OAuthState;
+    const cookieNonce = requestCookie(request, OAUTH_STATE_COOKIE);
+    const now = Date.now();
+    if (
+      parsed.kind !== kind ||
+      typeof parsed.redirectUrl !== "string" ||
+      typeof parsed.nonce !== "string" ||
+      parsed.nonce.length < 32 ||
+      !Number.isFinite(parsed.expiresAt) ||
+      parsed.expiresAt < now ||
+      parsed.expiresAt > now + STATE_EXPIRY_MS ||
+      !cookieNonce ||
+      cookieNonce !== parsed.nonce
+    ) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function redirectResponse(location: string, stateCookie?: string): Response {
+  const headers = responseHeaders();
+  headers.set("Location", location);
+  if (stateCookie) headers.set("Set-Cookie", stateCookie);
+  return new Response(null, { status: 302, headers });
+}
+
+function redirectWithError(redirectUrl: string, error: string, request: Request): Response {
+  const target = new URL(redirectUrl);
+  target.searchParams.set("auth_error", error);
+  return redirectResponse(target.toString(), clearOAuthStateCookie(request));
+}
+
+function redirectToError(env: Env, error: string, request?: Request): Response {
+  const fallback = allowedOrigins(env)[0] || "https://noitamap.com";
+  if (request) return redirectWithError(fallback, error, request);
+  const target = new URL(fallback);
+  target.searchParams.set("auth_error", error);
+  return redirectResponse(target.toString());
 }
 
 // -- HMAC State Utils --
@@ -682,7 +786,9 @@ function base64url(data: ArrayBuffer | Uint8Array): string {
 }
 
 function base64urlToBytes(b64url: string): Uint8Array {
-  const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
+  if (!/^[A-Za-z0-9_-]*$/.test(b64url) || b64url.length % 4 === 1) throw new Error("Invalid base64url");
+  const unpadded = b64url.replace(/-/g, "+").replace(/_/g, "/");
+  const b64 = unpadded.padEnd(unpadded.length + ((4 - (unpadded.length % 4)) % 4), "=");
   const bin = atob(b64);
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
@@ -703,17 +809,32 @@ async function signRefreshJWT(payload: RefreshPayload, secret: string): Promise<
 }
 
 async function verifyRefreshJWT(token: string, secret: string): Promise<RefreshPayload | null> {
+  if (token.length > MAX_BEARER_TOKEN_LENGTH) return null;
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   const [headerB64, payloadB64, sigB64] = parts;
   const enc = new TextEncoder();
   try {
+    if (!validJwtHeader(headerB64)) return null;
     const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
     const valid = await crypto.subtle.verify("HMAC", key, base64urlToBytes(sigB64), enc.encode(`${headerB64}.${payloadB64}`));
     if (!valid) return null;
     const payload = JSON.parse(new TextDecoder().decode(base64urlToBytes(payloadB64))) as RefreshPayload;
-    if (payload.typ !== "refresh") return null;
-    if (payload.exp < Date.now() / 1000) return null;
+    const now = Date.now() / 1000;
+    if (
+      payload.typ !== "refresh" ||
+      typeof payload.sub !== "string" ||
+      !payload.sub ||
+      (payload.provider !== "patreon" && payload.provider !== "twitch") ||
+      typeof payload.enc !== "string" ||
+      !payload.enc ||
+      !Number.isFinite(payload.iat) ||
+      !Number.isFinite(payload.exp) ||
+      payload.iat > now + 60 ||
+      payload.exp <= now
+    ) {
+      return null;
+    }
     return payload;
   } catch {
     return null;
@@ -734,7 +855,13 @@ async function signJWT(payload: JWTPayload, secret: string): Promise<string> {
   return `${input}.${base64url(sig)}`;
 }
 
+function validJwtHeader(headerB64: string): boolean {
+  const header = JSON.parse(new TextDecoder().decode(base64urlToBytes(headerB64))) as Record<string, unknown>;
+  return header.alg === "HS256" && header.typ === "JWT";
+}
+
 async function verifyJWT(token: string, secret: string): Promise<JWTPayload | null> {
+  if (token.length > MAX_BEARER_TOKEN_LENGTH) return null;
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   const [headerB64, payloadB64, sigB64] = parts;
@@ -742,21 +869,31 @@ async function verifyJWT(token: string, secret: string): Promise<JWTPayload | nu
   const enc = new TextEncoder();
 
   try {
+    if (!validJwtHeader(headerB64)) return null;
     const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [
       "verify",
     ]);
-    const sigStr = sigB64.replace(/-/g, "+").replace(/_/g, "/");
-    const binSig = atob(sigStr);
-    const sigBytes = new Uint8Array(binSig.length);
-    for (let i = 0; i < binSig.length; i++) sigBytes[i] = binSig.charCodeAt(i);
-
-    const valid = await crypto.subtle.verify("HMAC", key, sigBytes, enc.encode(input));
+    const valid = await crypto.subtle.verify("HMAC", key, base64urlToBytes(sigB64), enc.encode(input));
     if (!valid) return null;
 
-    const payloadStr = atob(payloadB64.replace(/-/g, "+").replace(/_/g, "/"));
-    const payload = JSON.parse(payloadStr) as JWTPayload;
-
-    if (payload.exp < Date.now() / 1000) return null;
+    const payload = JSON.parse(new TextDecoder().decode(base64urlToBytes(payloadB64))) as JWTPayload;
+    const now = Date.now() / 1000;
+    if (
+      (payload.typ !== undefined && payload.typ !== "access") ||
+      typeof payload.sub !== "string" ||
+      !payload.sub ||
+      typeof payload.username !== "string" ||
+      !(payload.nickname === null || typeof payload.nickname === "string") ||
+      typeof payload.is_follower !== "boolean" ||
+      typeof payload.is_subscriber !== "boolean" ||
+      (payload.provider !== undefined && payload.provider !== "patreon" && payload.provider !== "twitch") ||
+      !Number.isFinite(payload.iat) ||
+      !Number.isFinite(payload.exp) ||
+      payload.iat > now + 60 ||
+      payload.exp <= now
+    ) {
+      return null;
+    }
     return payload;
   } catch {
     return null;
@@ -806,15 +943,18 @@ async function resolveTwitchSecrets(env: Env): Promise<TwitchSecrets | null> {
   return { clientId, clientSecret };
 }
 
-async function handleTwitchLogin(request: Request, env: Env, secrets: Secrets): Promise<Response> {
+async function handleTwitchLogin(request: Request, env: Env, secrets: SessionSecrets): Promise<Response> {
   const twitch = await resolveTwitchSecrets(env);
   if (!twitch) return new Response("Twitch login not configured", { status: 503 });
 
   const url = new URL(request.url);
-  const redirectUrl = url.searchParams.get("redirect") || "";
+  const redirectUrl = allowedRedirect(url.searchParams.get("redirect") || "", env);
 
-  const expiresAt = Date.now() + STATE_EXPIRY_MS;
-  const state = await signState(`${redirectUrl}|${expiresAt}`, secrets.jwtSecret);
+  const nonce = base64url(crypto.getRandomValues(new Uint8Array(32)));
+  const state = await signState(
+    JSON.stringify({ kind: "twitch", redirectUrl, nonce, expiresAt: Date.now() + STATE_EXPIRY_MS }),
+    secrets.jwtSecret,
+  );
 
   const authUrl = new URL(TWITCH_AUTHORIZE_URL);
   authUrl.searchParams.set("client_id", twitch.clientId);
@@ -825,10 +965,10 @@ async function handleTwitchLogin(request: Request, env: Env, secrets: Secrets): 
   authUrl.searchParams.set("scope", "");
   authUrl.searchParams.set("state", state);
 
-  return Response.redirect(authUrl.toString(), 302);
+  return redirectResponse(authUrl.toString(), oauthStateCookie(nonce, request));
 }
 
-async function handleTwitchCallback(request: Request, env: Env, secrets: Secrets): Promise<Response> {
+async function handleTwitchCallback(request: Request, env: Env, secrets: SessionSecrets): Promise<Response> {
   const twitch = await resolveTwitchSecrets(env);
   if (!twitch) return redirectToError(env, "twitch_not_configured");
 
@@ -837,20 +977,13 @@ async function handleTwitchCallback(request: Request, env: Env, secrets: Secrets
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
 
-  if (!state) return redirectToError(env, "missing_state");
-  const statePayload = await verifyState(state, secrets.jwtSecret);
-  if (!statePayload) return redirectToError(env, "invalid_state");
+  if (!state) return redirectToError(env, "missing_state", request);
+  const oauthState = await verifyOAuthState(state, request, "twitch", secrets.jwtSecret);
+  if (!oauthState) return redirectToError(env, "invalid_state", request);
+  const finalRedirectUrl = allowedRedirect(oauthState.redirectUrl, env);
 
-  const [redirectUrl, expiresAtStr] = statePayload.split("|");
-  const expiresAt = parseInt(expiresAtStr, 10);
-  if (isNaN(expiresAt) || Date.now() > expiresAt) return redirectToError(env, "expired_state");
-
-  // Same open-redirect defence as Patreon: the token is appended to this URL,
-  // so it MUST point at an allowlisted origin.
-  const finalRedirectUrl = allowedRedirect(redirectUrl, env);
-
-  if (error) return Response.redirect(`${finalRedirectUrl}?auth_error=${encodeURIComponent(error)}`, 302);
-  if (!code) return Response.redirect(`${finalRedirectUrl}?auth_error=missing_code`, 302);
+  if (error) return redirectWithError(finalRedirectUrl, error, request);
+  if (!code) return redirectWithError(finalRedirectUrl, "missing_code", request);
 
   try {
     // 1. Exchange code for the viewer's user access token.
@@ -866,14 +999,14 @@ async function handleTwitchCallback(request: Request, env: Env, secrets: Secrets
       }),
     });
     if (!tokenRes.ok) {
-      console.error("Twitch token exchange failed:", await tokenRes.text());
-      return Response.redirect(`${finalRedirectUrl}?auth_error=token_exchange_failed`, 302);
+      console.error("Twitch token exchange failed:", tokenRes.status);
+      return redirectWithError(finalRedirectUrl, "token_exchange_failed", request);
     }
     const viewerTokens = (await tokenRes.json()) as { access_token: string; refresh_token?: string };
 
     // 2. Identify the viewer (helix/users returns the token owner).
     const viewer = await fetchTwitchUser(viewerTokens.access_token, twitch.clientId);
-    if (!viewer) return Response.redirect(`${finalRedirectUrl}?auth_error=identity_fetch_failed`, 302);
+    if (!viewer) return redirectWithError(finalRedirectUrl, "identity_fetch_failed", request);
 
     // 3. Subscription check via the broadcaster token (may be dormant).
     const isSubscriber = await checkTwitchSubscription(env, twitch, viewer.id);
@@ -884,6 +1017,7 @@ async function handleTwitchCallback(request: Request, env: Env, secrets: Secrets
     const now = Math.floor(Date.now() / 1000);
     const jwt = await signJWT(
       {
+        typ: "access",
         sub: viewer.id,
         username: viewer.display_name || viewer.login || "Twitch user",
         nickname: viewer.display_name || null,
@@ -904,7 +1038,7 @@ async function handleTwitchCallback(request: Request, env: Env, secrets: Secrets
       const refreshJwt = await signRefreshJWT(
         {
           typ: "refresh",
-          sub: viewer.id,
+        sub: viewer.id,
           provider: "twitch",
           enc: await encryptSecret(viewerTokens.refresh_token, secrets.jwtSecret),
           iat: now,
@@ -915,10 +1049,10 @@ async function handleTwitchCallback(request: Request, env: Env, secrets: Secrets
       frag.set("refresh_token", refreshJwt);
     }
     out.hash = frag.toString();
-    return new Response(null, { status: 302, headers: { Location: out.toString() } });
+    return redirectResponse(out.toString(), clearOAuthStateCookie(request));
   } catch (err) {
     console.error("Twitch callback exception:", err);
-    return Response.redirect(`${finalRedirectUrl}?auth_error=server_error`, 302);
+    return redirectWithError(finalRedirectUrl, "server_error", request);
   }
 }
 
@@ -933,7 +1067,7 @@ async function fetchTwitchUser(accessToken: string, clientId: string): Promise<T
     headers: { Authorization: `Bearer ${accessToken}`, "Client-Id": clientId },
   });
   if (!res.ok) {
-    console.error("Twitch users fetch failed:", await res.text());
+    console.error("Twitch users fetch failed:", res.status);
     return null;
   }
   const data = (await res.json()) as { data: TwitchUser[] };
@@ -971,7 +1105,7 @@ async function checkTwitchSubscription(env: Env, twitch: TwitchSecrets, viewerId
   // subscribed. Anything else => fail closed (treat as not subscribed).
   if (res.status === 404) return false;
   if (!res.ok) {
-    console.error("Twitch subscriptions check failed:", res.status, await res.text());
+    console.error("Twitch subscriptions check failed:", res.status);
     return false;
   }
   const data = (await res.json()) as { data: unknown[] };
@@ -991,7 +1125,7 @@ async function refreshBroadcasterToken(twitch: TwitchSecrets, refreshToken: stri
     }),
   });
   if (!res.ok) {
-    console.error("Twitch broadcaster token refresh failed:", await res.text());
+    console.error("Twitch broadcaster token refresh failed:", res.status);
     return null;
   }
   return ((await res.json()) as { access_token: string }).access_token;
@@ -1003,19 +1137,21 @@ async function refreshBroadcasterToken(twitch: TwitchSecrets, refreshToken: stri
 // broadcaster_id + refresh_token to paste into the Secrets Store as
 // NOITAMAP_TWITCH_BROADCASTER_ID / NOITAMAP_TWITCH_BROADCASTER_REFRESH_TOKEN.
 
-async function handleBroadcasterSetup(request: Request, env: Env, secrets: Secrets): Promise<Response> {
+async function handleBroadcasterSetup(request: Request, env: Env, secrets: SessionSecrets): Promise<Response> {
   const twitch = await resolveTwitchSecrets(env);
   if (!twitch) return new Response("Twitch not configured", { status: 503 });
 
-  // Optional shared-secret gate (set NOITAMAP_TWITCH_SETUP_KEY to enable).
+  // Keep this sensitive route disabled unless an explicit one-time key exists.
   const setupKey = await getSecret(env.TWITCH_SETUP_KEY);
-  if (setupKey) {
-    const provided = new URL(request.url).searchParams.get("key");
-    if (provided !== setupKey) return new Response("Forbidden", { status: 403 });
-  }
+  if (!setupKey) return textResponse("Not Found", 404);
+  const provided = new URL(request.url).searchParams.get("key");
+  if (provided !== setupKey) return textResponse("Forbidden", 403);
 
-  const expiresAt = Date.now() + STATE_EXPIRY_MS;
-  const state = await signState(`setup|${expiresAt}`, secrets.jwtSecret);
+  const nonce = base64url(crypto.getRandomValues(new Uint8Array(32)));
+  const state = await signState(
+    JSON.stringify({ kind: "twitch-setup", redirectUrl: "", nonce, expiresAt: Date.now() + STATE_EXPIRY_MS }),
+    secrets.jwtSecret,
+  );
 
   const authUrl = new URL(TWITCH_AUTHORIZE_URL);
   authUrl.searchParams.set("client_id", twitch.clientId);
@@ -1025,10 +1161,10 @@ async function handleBroadcasterSetup(request: Request, env: Env, secrets: Secre
   authUrl.searchParams.set("force_verify", "true");
   authUrl.searchParams.set("state", state);
 
-  return Response.redirect(authUrl.toString(), 302);
+  return redirectResponse(authUrl.toString(), oauthStateCookie(nonce, request));
 }
 
-async function handleBroadcasterCallback(request: Request, env: Env, secrets: Secrets): Promise<Response> {
+async function handleBroadcasterCallback(request: Request, env: Env, secrets: SessionSecrets): Promise<Response> {
   const twitch = await resolveTwitchSecrets(env);
   if (!twitch) return new Response("Twitch not configured", { status: 503 });
 
@@ -1037,10 +1173,8 @@ async function handleBroadcasterCallback(request: Request, env: Env, secrets: Se
   const state = url.searchParams.get("state");
   if (!code || !state) return new Response("missing code/state", { status: 400 });
 
-  const statePayload = await verifyState(state, secrets.jwtSecret);
-  if (!statePayload || !statePayload.startsWith("setup|")) return new Response("invalid state", { status: 400 });
-  const expiresAt = parseInt(statePayload.split("|")[1], 10);
-  if (isNaN(expiresAt) || Date.now() > expiresAt) return new Response("expired state", { status: 400 });
+  const oauthState = await verifyOAuthState(state, request, "twitch-setup", secrets.jwtSecret);
+  if (!oauthState) return textResponse("invalid state", 400);
 
   const tokenRes = await fetch(TWITCH_TOKEN_URL, {
     method: "POST",
@@ -1053,11 +1187,18 @@ async function handleBroadcasterCallback(request: Request, env: Env, secrets: Se
       redirect_uri: `${env.WORKER_URL}/auth/twitch/broadcaster-callback`,
     }),
   });
-  if (!tokenRes.ok) return new Response(`token exchange failed: ${await tokenRes.text()}`, { status: 502 });
+  if (!tokenRes.ok) {
+    console.error("Twitch broadcaster token exchange failed:", tokenRes.status);
+    return textResponse("token exchange failed", 502);
+  }
 
   const tokenData = (await tokenRes.json()) as { access_token: string; refresh_token: string };
   const broadcaster = await fetchTwitchUser(tokenData.access_token, twitch.clientId);
-  if (!broadcaster) return new Response("failed to read broadcaster identity", { status: 502 });
+  if (!broadcaster) return textResponse("failed to read broadcaster identity", 502);
+  const expectedBroadcasterId = await getSecret(env.TWITCH_BROADCASTER_ID);
+  if (expectedBroadcasterId && broadcaster.id !== expectedBroadcasterId) {
+    return textResponse("wrong broadcaster account", 403);
+  }
 
   const body = [
     "Twitch broadcaster grant OK. Store these in the CF Secrets Store, then add",
@@ -1074,6 +1215,9 @@ async function handleBroadcasterCallback(request: Request, env: Env, secrets: Se
       "Content-Type": "text/plain; charset=utf-8",
       "Cache-Control": "no-store",
       "X-Robots-Tag": "noindex, nofollow",
+      "Referrer-Policy": "no-referrer",
+      "X-Content-Type-Options": "nosniff",
+      "Set-Cookie": clearOAuthStateCookie(request),
     },
   });
 }
