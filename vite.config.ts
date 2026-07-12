@@ -71,6 +71,9 @@ export default defineConfig({
       "virtual:noitamap-pro": isProAvailable
         ? resolve(__dirname, "../noitamap-pro/src/pro-entry.ts")
         : resolve(__dirname, "src/pro-unavailable.ts"),
+      "virtual:noitamap-public-report": isProAvailable
+        ? resolve(__dirname, "../noitamap-pro/src/public-report-entry.ts")
+        : resolve(__dirname, "src/public-report-unavailable.ts"),
       ...(isProAvailable
         ? {
             "noitamap/data_sources/tile_data": resolve(__dirname, "src/data_sources/tile_data.ts"),

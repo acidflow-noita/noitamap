@@ -189,7 +189,3 @@ declare module '*.svg' {
   const value: string;
   export default value;
 }
-
-declare module 'virtual:noitamap-pro' {
-  export function init(hooks: NoitamapProHooks): Promise<void>;
-}
