@@ -10,8 +10,9 @@ Write-Host "Added timestamp $timestamp to file: $filePath"
 # Get the current directory name
 $dirName = Split-Path -Path $PWD -Leaf
 
-# Deploy command
-$deployCommand = "wrangler pages deploy .\public\ --project-name $dirName"
-Invoke-Expression $deployCommand
+& wrangler pages deploy .\public\ --project-name $dirName
+if ($LASTEXITCODE -ne 0) {
+    throw "Wrangler deploy failed for $dirName with exit code $LASTEXITCODE"
+}
 
 Write-Host "Deploy command executed for directory: $dirName"

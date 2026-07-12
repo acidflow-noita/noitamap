@@ -16,7 +16,7 @@ export class SearchResults extends EventEmitter2 {
     super();
 
     this.wrapper = wrapper;
-    this.wrapper.innerHTML = '';
+    this.wrapper.replaceChildren();
     this.bindEvents();
   }
 
@@ -91,7 +91,7 @@ export class SearchResults extends EventEmitter2 {
 
   private clearResults(hide: boolean = true) {
     this.currentElement = null;
-    this.wrapper.innerHTML = '';
+    this.wrapper.replaceChildren();
     // this.wrapper.style.display = hide ? 'none' : 'block';
   }
 

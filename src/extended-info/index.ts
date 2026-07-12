@@ -559,7 +559,7 @@ export function buildExtendedSection(kind: ExtendedKind, id: string): HTMLElemen
   wrap.appendChild(body);
 
   const render = () => {
-    body.innerHTML = "";
+    body.replaceChildren();
     if (!isProUser()) {
       wrap.style.display = "";
       header.textContent = i18next.t("extended.title", "Extended info");
@@ -602,7 +602,7 @@ export function buildExtendedCreatureSectionByName(name: string, aliases?: strin
   const tryNames = [name, ...(aliases ?? [])];
 
   const render = () => {
-    body.innerHTML = "";
+    body.replaceChildren();
     if (!isProUser()) {
       wrap.style.display = "";
       body.appendChild(renderProPlaceholder("creature"));
@@ -619,7 +619,7 @@ export function buildExtendedCreatureSectionByName(name: string, aliases?: strin
         id = getCreatureIdByName(n);
         if (id) break;
       }
-      body.innerHTML = "";
+      body.replaceChildren();
       const node = id ? renderCreature(id) : null;
       if (node) {
         body.appendChild(node);
@@ -751,7 +751,7 @@ function renderProBody(
 
   const fill = (cb: () => HTMLElement | null) => {
     const node = cb();
-    body.innerHTML = "";
+    body.replaceChildren();
     if (node) {
       wrap.style.display = "";
       body.appendChild(node);

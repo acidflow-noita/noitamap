@@ -1,7 +1,7 @@
 /**
  * Seed Report toggle button.
  *
- * Lives in the main bundle so it's visible to everyone (auto-loads the pro
+ * Lives in the main bundle so it's visible to everyone (auto-loads the appropriate report
  * bundle on first click). The actual sidebar lives in noitamap-pro.
  *
  * Persists open state in the URL via `?sr=1` (handled in data_sources/url).
@@ -14,8 +14,8 @@ import { authService } from "./auth/auth-service";
 const BTN_ID = "seedReportToggleBtn";
 
 export interface SeedReportButtonOptions {
-  /** Load (or no-op) the pro bundle. */
-  loadProBundle: () => Promise<boolean>;
+  /** Load the subscriber or public report bundle for the resolved auth state. */
+  loadReportBundle: () => Promise<boolean>;
 }
 
 export function createSeedReportButton(
@@ -57,7 +57,7 @@ export function createSeedReportButton(
     const hooks = (window as any).__noitamap;
     if (!hooks) return;
     if (typeof hooks.handleSeedReportToggle !== "function") {
-      await opts.loadProBundle();
+      await opts.loadReportBundle();
     }
     if (typeof hooks.handleSeedReportToggle === "function") {
       hooks.handleSeedReportToggle(open);

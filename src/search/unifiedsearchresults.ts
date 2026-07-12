@@ -35,7 +35,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
     super();
 
     this.wrapper = wrapper;
-    this.wrapper.innerHTML = "";
+    this.wrapper.replaceChildren();
     this.bindEvents();
 
     // Re-translate proximity hints when language changes without recreating elements
@@ -175,7 +175,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
     this.elementByTarget.clear();
     this.lastSortedOrder = "";
     dismissPopovers(this.wrapper);
-    this.wrapper.innerHTML = "";
+    this.wrapper.replaceChildren();
     this.wrapper.scrollTop = 0;
     this.elementByTarget.clear();
     this.lastSortedOrder = "";

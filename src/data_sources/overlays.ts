@@ -754,7 +754,7 @@ const createSpan = (content: string) => {
 export const resetBiomeOverlays = () => {
   biomeOverlays.forEach((overlay: OSDOverlay) => {
     const container = overlay.element.firstChild as HTMLDivElement;
-    container.innerHTML = '';
+    container.replaceChildren();
     overlay.element.classList.remove('show');
   });
 };
@@ -990,7 +990,7 @@ export const initSpellSelector = (app: any) => {
   const spellListElement = assertElementById('spellList', HTMLUListElement);
 
   const displayMatchingSpells = (search: string) => {
-    spellListElement.innerHTML = '';
+    spellListElement.replaceChildren();
     if (search === '') {
       return;
     }

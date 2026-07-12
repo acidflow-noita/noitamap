@@ -454,13 +454,12 @@ function updateGenerateButtonState(): void {
   wrapper.setAttribute("data-bs-content", content);
   wrapper.setAttribute("data-bs-title", title);
 
-  // @ts-ignore Update active popover DOM if it is currently visible
-  const instance = bootstrap.Popover.getInstance(wrapper);
-  if (instance && instance.tip) {
-    const header = instance.tip.querySelector('.popover-header');
-    if (header) header.innerHTML = title;
-    const body = instance.tip.querySelector('.popover-body');
-    if (body) body.innerHTML = content;
+  const tip = (bootstrap.Popover.getInstance(wrapper) as unknown as { tip?: HTMLElement } | null)?.tip;
+  if (tip) {
+    const header = tip.querySelector('.popover-header');
+    if (header) header.textContent = title;
+    const body = tip.querySelector('.popover-body');
+    if (body) body.textContent = content;
   }
 }
 
@@ -536,10 +535,7 @@ function updateSeedTooltip(_kind: SeedKind): void {
   const text = i18next.t("dynamicMap.seedTooltipCustom");
   seedInput.setAttribute("data-bs-content", text);
 
-  // @ts-ignore Update active popover DOM if it is currently visible
-  const instance = bootstrap.Popover.getInstance(seedInput);
-  if (instance && instance.tip) {
-    const body = instance.tip.querySelector('.popover-body');
-    if (body) body.innerHTML = text;
-  }
+  const tip = (bootstrap.Popover.getInstance(seedInput) as unknown as { tip?: HTMLElement } | null)?.tip;
+  const body = tip?.querySelector('.popover-body');
+  if (body) body.textContent = text;
 }

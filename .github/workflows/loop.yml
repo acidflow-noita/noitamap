@@ -2,6 +2,9 @@ name: Loop cacheKeys workflow
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   getRepoCacheVars:
     runs-on: ubuntu-latest
@@ -10,6 +13,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
+          token: ${{ secrets.GH_ACIDFRLOW_COMMIT_TO_REPO }}
 
       - name: Print all var names with values before change
         run: |
@@ -89,8 +93,8 @@ jobs:
         id: commit
         run: |
 
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Actions"
+          git config user.email "action@github.com"
+          git config user.name "GitHub Actions"
           git add public/index.html
           if [ -z "$(git status --porcelain)" ]; then
             echo "No changes to commit"
@@ -102,6 +106,4 @@ jobs:
         shell: bash
       - name: Push changes
         if: steps.commit.outputs.push == 'true'
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GH_ACIDFRLOW_COMMIT_TO_REPO }}
+        run: git push origin "HEAD:${GITHUB_REF_NAME}"

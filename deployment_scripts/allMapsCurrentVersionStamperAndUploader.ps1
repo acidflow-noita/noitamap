@@ -21,11 +21,15 @@ Get-ChildItem -Directory | ForEach-Object {
     $dirName = $_.Name
 
     Push-Location -Path $dirPath
-
-    $deployCommand = "wrangler pages deploy .\public\ --project-name $dirName"
-    Invoke-Expression $deployCommand
-
-    Pop-Location
+    try {
+        & wrangler pages deploy .\public\ --project-name $dirName
+        if ($LASTEXITCODE -ne 0) {
+            throw "Wrangler deploy failed for $dirName with exit code $LASTEXITCODE"
+        }
+    }
+    finally {
+        Pop-Location
+    }
 
     Write-Host "Deploy command executed for directory: $dirName"
 

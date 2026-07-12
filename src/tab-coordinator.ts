@@ -49,14 +49,13 @@ function stripModMarker(href: string): string {
 if (channel) {
   channel.addEventListener("message", (ev) => {
     const msg = ev.data;
-    if (!msg || typeof msg !== "object") return;
-    if (msg.type !== "handoff") return;
+    if (!msg || typeof msg !== "object" || msg.type !== "handoff") return;
+    if (typeof msg.sourceId !== "string" || typeof msg.url !== "string") return;
     try {
+      const target = new URL(msg.url);
+      if (target.origin !== window.location.origin || !urlHasModMarker(target.toString())) return;
       channel!.postMessage({ type: "handoff-ack", sourceId: msg.sourceId });
-    } catch {}
-    try {
-      const cleaned = stripModMarker(msg.url);
-      window.location.replace(cleaned);
+      window.location.replace(stripModMarker(target.toString()));
     } catch (e) {
       console.warn("[Noitamap] handoff URL invalid", e);
     }

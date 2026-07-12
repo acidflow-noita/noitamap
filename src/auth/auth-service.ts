@@ -66,17 +66,14 @@ class AuthService {
   /**
    * Initialize auth state from URL params or stored token.
    *
-   * Tokens arrive from the auth worker in the URL FRAGMENT
-   * (#auth=success&token=...&refresh_token=...) — fragments are never sent to
-   * servers, keeping the JWTs out of Referer headers and access logs. The
-   * legacy query-param form is still accepted so an older worker deploy keeps
-   * working during rollout. Both are scrubbed from the address bar.
+   * Current Workers return credentials in the URL fragment. The legacy query
+   * format remains accepted during deployment rollout; both forms are scrubbed
+   * from the address bar immediately after they are read.
    */
   async init(): Promise<AuthState> {
     const cleanUrl = new URL(window.location.href);
     let shouldUpdateUrl = false;
 
-    // Fragment first (current worker), then query (legacy).
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const urlParams = new URLSearchParams(window.location.search);
     const fromHash = hashParams.get("auth") === "success" && hashParams.get("token");
@@ -94,6 +91,7 @@ class AuthService {
     if (authResult === "success" && tokenFromUrl) {
       localStorage.setItem(JWT_KEY, tokenFromUrl);
       if (refreshFromUrl) localStorage.setItem(REFRESH_KEY, refreshFromUrl);
+      else localStorage.removeItem(REFRESH_KEY);
       if (fromHash) {
         cleanUrl.hash = "";
       } else {

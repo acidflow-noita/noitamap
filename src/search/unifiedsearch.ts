@@ -129,11 +129,11 @@ function showAlchemyLoading(kind: "ap" | "lc" | null): void {
   const ul = document.getElementById("unifiedSearchResults") as HTMLUListElement | null;
   if (!overlay || !ul) return;
   if (kind === null) {
-    ul.innerHTML = "";
+    ul.replaceChildren();
     overlay.style.display = "none";
     return;
   }
-  ul.innerHTML = "";
+  ul.replaceChildren();
   const li = document.createElement("li");
   li.className = "alchemy-loading";
   li.textContent = `${kind.toUpperCase()}: ${i18next.t("search.indexing", "Loading...")}`;
@@ -282,7 +282,7 @@ function showHighValueLoading(): void {
   const overlay = document.getElementById("unifiedSearchResultsOverlay") as HTMLDivElement | null;
   const ul = document.getElementById("unifiedSearchResults") as HTMLUListElement | null;
   if (!overlay || !ul) return;
-  ul.innerHTML = "";
+  ul.replaceChildren();
   const li = document.createElement("li");
   li.className = "alchemy-loading";
   li.textContent = `${i18next.t("highValueFilter.title", "High-value items")}: ${i18next.t("search.indexing", "Loading...")}`;
@@ -778,7 +778,7 @@ export class UnifiedSearch extends EventEmitter2 {
       const existing = (window as any).bootstrap?.Popover?.getInstance(el);
       if (existing) existing.dispose();
     });
-    filterBox.innerHTML = "";
+    filterBox.replaceChildren();
 
     const isDynamicMap = newMap === "dynamic-main-branch";
     const filters: Array<{ type: string; iconSrc?: string; atlasKey?: string }> = isDynamicMap
@@ -1588,7 +1588,7 @@ export class UnifiedSearch extends EventEmitter2 {
       searchResultsOverlay.id = "unifiedSearchResultsOverlay";
       document.body.appendChild(searchResultsOverlay);
     } else {
-      searchResultsOverlay.innerHTML = "";
+      searchResultsOverlay.replaceChildren();
     }
     // Type assertion to satisfy linter
     const overlayDiv = searchResultsOverlay as HTMLDivElement;

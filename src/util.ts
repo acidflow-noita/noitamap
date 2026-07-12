@@ -22,7 +22,7 @@ import { Spell } from './data_sources/overlays';
  */
 export const debounce = <Arg extends any, Args extends Arg[]>(delay: number, func: (...args: Args) => void) => {
   let latest: Args = [] as unknown as Args;
-  let timer: NodeJS.Timeout | undefined = undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
 
   return (...args: Args) => {
     latest = args;
