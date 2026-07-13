@@ -39,7 +39,9 @@ interface Env {
   TWITCH_CLIENT_SECRET?: SecretStoreSecret;
   TWITCH_BROADCASTER_ID?: SecretStoreSecret;
   TWITCH_BROADCASTER_REFRESH_TOKEN?: SecretStoreSecret;
-  // Optional shared-secret gate for the broadcaster-setup route.
+  // Writable storage persists Twitch's rotated broadcaster credentials.
+  TWITCH_TOKEN_STORE?: KVNamespace;
+  // One-time shared-secret gate. Leave unbound after setup is complete.
   TWITCH_SETUP_KEY?: SecretStoreSecret;
 }
 
@@ -923,6 +925,16 @@ interface TwitchSecrets {
   clientSecret: string;
 }
 
+interface BroadcasterTokenState {
+  accessToken: string;
+  accessTokenExpiresAt: number;
+  refreshToken: string;
+}
+
+const TWITCH_BROADCASTER_TOKEN_KEY = "broadcaster-token-v1";
+let broadcasterTokenCache: BroadcasterTokenState | null = null;
+let broadcasterTokenRefresh: Promise<string | null> | null = null;
+
 /** Resolve a Secrets Store binding to its string, or null if absent/unreadable. */
 async function getSecret(binding?: SecretStoreSecret): Promise<string | null> {
   if (!binding || typeof binding.get !== "function") return null;
@@ -1088,10 +1100,7 @@ async function checkTwitchSubscription(env: Env, twitch: TwitchSecrets, viewerId
   // before the refresh-token grant is done.
   if (viewerId === broadcasterId) return true;
 
-  const refreshToken = await getSecret(env.TWITCH_BROADCASTER_REFRESH_TOKEN);
-  if (!refreshToken) return false; // can't query subs without the broadcaster token
-
-  const broadcasterToken = await refreshBroadcasterToken(twitch, refreshToken);
+  const broadcasterToken = await getBroadcasterAccessToken(env, twitch);
   if (!broadcasterToken) return false;
 
   const url = new URL(TWITCH_SUBS_URL);
@@ -1112,23 +1121,95 @@ async function checkTwitchSubscription(env: Env, twitch: TwitchSecrets, viewerId
   return Array.isArray(data.data) && data.data.length > 0;
 }
 
-/** Mint a fresh broadcaster access token from the stored refresh token. */
-async function refreshBroadcasterToken(twitch: TwitchSecrets, refreshToken: string): Promise<string | null> {
-  const res = await fetch(TWITCH_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: twitch.clientId,
-      client_secret: twitch.clientSecret,
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-    }),
-  });
-  if (!res.ok) {
-    console.error("Twitch broadcaster token refresh failed:", res.status);
+async function readBroadcasterTokenState(env: Env): Promise<BroadcasterTokenState | null> {
+  if (!env.TWITCH_TOKEN_STORE) return null;
+  try {
+    const raw = await env.TWITCH_TOKEN_STORE.get(TWITCH_BROADCASTER_TOKEN_KEY);
+    if (!raw) return null;
+    const state = JSON.parse(raw) as BroadcasterTokenState;
+    if (
+      typeof state.accessToken !== "string" ||
+      !Number.isFinite(state.accessTokenExpiresAt) ||
+      typeof state.refreshToken !== "string" ||
+      !state.refreshToken
+    ) {
+      return null;
+    }
+    return state;
+  } catch (error) {
+    console.error("Twitch broadcaster token storage read failed:", error);
     return null;
   }
-  return ((await res.json()) as { access_token: string }).access_token;
+}
+
+async function writeBroadcasterTokenState(env: Env, state: BroadcasterTokenState): Promise<boolean> {
+  if (!env.TWITCH_TOKEN_STORE) return false;
+  try {
+    await env.TWITCH_TOKEN_STORE.put(TWITCH_BROADCASTER_TOKEN_KEY, JSON.stringify(state));
+    broadcasterTokenCache = state;
+    return true;
+  } catch (error) {
+    console.error("Twitch broadcaster token storage write failed:", error);
+    return false;
+  }
+}
+
+async function getBroadcasterAccessToken(env: Env, twitch: TwitchSecrets): Promise<string | null> {
+  const now = Date.now();
+  if (broadcasterTokenCache && broadcasterTokenCache.accessTokenExpiresAt > now + 60_000) {
+    return broadcasterTokenCache.accessToken;
+  }
+
+  const stored = await readBroadcasterTokenState(env);
+  if (stored?.accessToken && stored.accessTokenExpiresAt > now + 60_000) {
+    broadcasterTokenCache = stored;
+    return stored.accessToken;
+  }
+
+  if (broadcasterTokenRefresh) return broadcasterTokenRefresh;
+  broadcasterTokenRefresh = (async () => {
+    const refreshToken = stored?.refreshToken || (await getSecret(env.TWITCH_BROADCASTER_REFRESH_TOKEN));
+    if (!refreshToken) return null;
+
+    const res = await fetch(TWITCH_TOKEN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: twitch.clientId,
+        client_secret: twitch.clientSecret,
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+      }),
+    });
+    if (!res.ok) {
+      console.error("Twitch broadcaster token refresh failed:", res.status);
+      return null;
+    }
+
+    const tokenData = (await res.json()) as {
+      access_token: string;
+      refresh_token?: string;
+      expires_in?: number;
+    };
+    if (!tokenData.access_token) return null;
+    const state: BroadcasterTokenState = {
+      accessToken: tokenData.access_token,
+      accessTokenExpiresAt: Date.now() + Math.max(60, tokenData.expires_in || 3600) * 1000,
+      refreshToken: tokenData.refresh_token || refreshToken,
+    };
+    if (!(await writeBroadcasterTokenState(env, state))) {
+      // A rotated token that cannot be persisted would strand the next refresh.
+      if (state.refreshToken !== refreshToken) return null;
+      broadcasterTokenCache = state;
+    }
+    return state.accessToken;
+  })();
+
+  try {
+    return await broadcasterTokenRefresh;
+  } finally {
+    broadcasterTokenRefresh = null;
+  }
 }
 
 // -- One-time broadcaster grant --------------------------------------------
@@ -1192,7 +1273,7 @@ async function handleBroadcasterCallback(request: Request, env: Env, secrets: Se
     return textResponse("token exchange failed", 502);
   }
 
-  const tokenData = (await tokenRes.json()) as { access_token: string; refresh_token: string };
+  const tokenData = (await tokenRes.json()) as { access_token: string; refresh_token: string; expires_in?: number };
   const broadcaster = await fetchTwitchUser(tokenData.access_token, twitch.clientId);
   if (!broadcaster) return textResponse("failed to read broadcaster identity", 502);
   const expectedBroadcasterId = await getSecret(env.TWITCH_BROADCASTER_ID);
@@ -1200,14 +1281,18 @@ async function handleBroadcasterCallback(request: Request, env: Env, secrets: Se
     return textResponse("wrong broadcaster account", 403);
   }
 
+  const stored = await writeBroadcasterTokenState(env, {
+    accessToken: tokenData.access_token,
+    accessTokenExpiresAt: Date.now() + Math.max(60, tokenData.expires_in || 3600) * 1000,
+    refreshToken: tokenData.refresh_token,
+  });
+  if (!stored) return textResponse("failed to persist broadcaster token", 502);
+
   const body = [
-    "Twitch broadcaster grant OK. Store these in the CF Secrets Store, then add",
-    "the two bindings to wrangler.jsonc and redeploy:",
-    "",
-    `  NOITAMAP_TWITCH_BROADCASTER_ID            = ${broadcaster.id}   (${broadcaster.display_name})`,
-    `  NOITAMAP_TWITCH_BROADCASTER_REFRESH_TOKEN = ${tokenData.refresh_token}`,
-    "",
-    "Do not share the refresh token. This page is not cached or indexed.",
+    "Twitch broadcaster grant OK.",
+    `Broadcaster: ${broadcaster.display_name} (${broadcaster.id})`,
+    "The rotating broadcaster credentials were stored in Workers KV.",
+    "Remove the TWITCH_SETUP_KEY binding and redeploy to disable setup.",
   ].join("\n");
 
   return new Response(body, {
