@@ -4585,16 +4585,16 @@
     "follower": "Follower",
     "subscriber": "Abonnent",
     "signOut": "Abmelden",
-    "patron": "Patreon-Unterstuetzer",
+    "patron": "Pro-Unterstützer",
     "getPro": "Pro holen",
     "proFeatures": "Pro-Funktionen",
-    "proDescription": "Zeichenwerkzeuge und andere Pro-Funktionen sind fuer Patreon-Unterstuetzer verfuegbar.",
+    "proDescription": "Den Unterstützern stehen Zeichenwerkzeuge und andere Pro-Funktionen zur Verfügung.",
     "featureDrawing": "Zeichen- und Anmerkungswerkzeuge",
     "featureShare": "Zeichnungen per Magic-Screenshots teilen",
     "featureSave": "Mehrere Zeichnungen speichern und verwalten",
     "loginWithPatreon": "Mit Patreon anmelden",
     "becomePatron": "Patron werden",
-    "loginPrompt": "Melde dich mit Patreon an, um die Zeichenwerkzeuge zu nutzen.\n\nZeichnungen werden lokal gespeichert und koennen per URL geteilt werden.\n\nMoechtest du dich anmelden?",
+    "loginPrompt": "Melden Sie sich an, um Zeichenwerkzeuge zu verwenden.\n\nZeichnungen werden lokal gespeichert und können per URL geteilt werden.\n\nMöchten Sie sich anmelden?",
     "yourAccount": "Dein Konto",
     "proActive": "Pro aktiv",
     "subscribeCta": "Auf Pro upgraden"
@@ -4715,12 +4715,12 @@
       "renameTitle": "Zeichnung umbenennen"
     },
     "auth": {
-      "subscriberOnly": "Zeichnen ist für Patreon-Mitglieder verfügbar",
-      "signInPrompt": "Melde dich mit Patreon an, um die Zeichenwerkzeuge zu nutzen",
+      "subscriberOnly": "Das Zeichnen ist für Pro-Mitglieder möglich",
+      "signInPrompt": "Melden Sie sich an, um auf Zeichenwerkzeuge zuzugreifen",
       "signInButton": "Mit Patreon anmelden",
       "greeting": "Hallo, {{username}}!",
       "subscriberFeature": "Zeichnen ist eine Abonnenten-Funktion",
-      "subscribePrompt": "Werde Patreon-Mitglied, um die Zeichenwerkzeuge freizuschalten",
+      "subscribePrompt": "Werden Sie Unterstützer, um Zeichenwerkzeuge freizuschalten",
       "subscribeButton": "Auf Patreon unterstützen",
       "signOut": "Abmelden"
     },
@@ -4882,13 +4882,13 @@
       "label": "AP",
       "title": "Alchemistische Vorstufe",
       "content": "Finden Sie die nächstgelegenen Zutaten für das Alchemistische Vorstufe-Rezept relativ zum aktuellen Ansichtsfenster. Pro-Funktion.",
-      "proOnly": "Alchemistische Vorstufe Rezeptfinder. Pro-Funktion: Melden Sie sich zum Entsperren bei Patreon an."
+      "proOnly": "Rezeptfinder für Alchemic Precursor. Pro-Funktion: Zum Entsperren anmelden."
     },
     "lc": {
       "label": "LC",
       "title": "Lebhaftes Gebräu",
       "content": "Finden Sie die nächstgelegenen Zutaten für das Lebhaftes Gebräu-Rezept relativ zum aktuellen Ansichtsfenster. Pro-Funktion.",
-      "proOnly": "Lebhaftes Gebräu Rezeptfinder. Pro-Funktion: Melden Sie sich zum Entsperren bei Patreon an."
+      "proOnly": "Rezeptfinder für Lively Concoction. Pro-Funktion: Zum Entsperren anmelden."
     },
     "noSeed": "Kein Seed geladen – öffnen Sie zuerst die dynamische Karte.",
     "notFound": "Nicht auf der Karte gefunden",
@@ -4902,7 +4902,7 @@
   "highValueFilter": {
     "title": "High-value items",
     "content": "Highlight rare spells, orbs, and landmark items on the map. Matching markers are scaled up with a soft gold glow; everything else is dimmed for contrast. Pro feature.",
-    "proOnly": "High-value highlight. Pro feature — sign in with Patreon to unlock."
+    "proOnly": "Hochwertiges Highlight. Pro-Funktion: Zum Entsperren anmelden."
   },
   "extended": {
     "row": {

@@ -9,7 +9,7 @@ import i18next from "../i18n";
 // Twitch platform approval lands. Flip to true to reveal the modal button; no
 // other change needed. While false, no Twitch markup renders and no Twitch
 // translation keys are referenced, so nothing leaks to users.
-const TWITCH_ENABLED = false;
+const TWITCH_ENABLED = true;
 
 // Official Twitch glitch mark (white, for the purple button). Geometry from
 // task/TwitchGlitchPurple.svg. Only injected when TWITCH_ENABLED.

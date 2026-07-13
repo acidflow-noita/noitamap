@@ -16,8 +16,7 @@
   justify-content: center;
 }
 
-/* Twitch sign-in button. Mirrors .btn-patreon in brand purple. Only rendered
-   when TWITCH_ENABLED (auth-ui.ts); dormant until Twitch platform approval. */
+/* Twitch sign-in button. Mirrors .btn-patreon in brand purple. */
 .btn-twitch {
   background-color: var(--twitch);
   color: oklch(1 0 0);
@@ -28,7 +27,26 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  position: relative;
   transition: background-color 0.2s;
+}
+
+.btn-twitch::after {
+  content: "Beta";
+  position: absolute;
+  top: -0.45rem;
+  right: -0.35rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius-pill);
+  background: oklch(0.9 0.14 95);
+  color: oklch(0.25 0.04 296.5);
+  box-shadow: 0 1px 4px oklch(0 0 0 / 0.35);
+  font-size: 0.625rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  pointer-events: none;
 }
 
 .btn-twitch:hover {
