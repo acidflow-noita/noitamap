@@ -4585,16 +4585,16 @@
     "follower": "Volger",
     "subscriber": "Abonnee",
     "signOut": "Uitloggen",
-    "patron": "Patreon-ondersteuner",
+    "patron": "Pro-supporter",
     "getPro": "Pro verkrijgen",
     "proFeatures": "Pro-functies",
-    "proDescription": "Tekentools en andere pro-functies zijn beschikbaar voor Patreon-ondersteuners.",
+    "proDescription": "Tekenhulpmiddelen en andere Pro-functies zijn beschikbaar voor supporters.",
     "featureDrawing": "Teken- en annotatietools",
     "featureShare": "Deel tekeningen via magische schermafbeeldingen",
     "featureSave": "Meerdere tekeningen opslaan en beheren",
     "loginWithPatreon": "Inloggen met Patreon",
     "becomePatron": "Word patron",
-    "loginPrompt": "Log in met Patreon om de tekentools te gebruiken.\n\nTekeningen worden lokaal opgeslagen en kunnen worden gedeeld via URL.\n\nWil je inloggen?",
+    "loginPrompt": "Meld u aan om tekenhulpmiddelen te gebruiken.\n\nTekeningen worden lokaal opgeslagen en kunnen via URL worden gedeeld.\n\nWilt u zich aanmelden?",
     "yourAccount": "Jouw account",
     "proActive": "Pro actief",
     "subscribeCta": "Upgraden naar Pro"
@@ -4715,12 +4715,12 @@
       "renameTitle": "Tekening hernoemen"
     },
     "auth": {
-      "subscriberOnly": "Tekenen is beschikbaar voor Patreon-leden",
-      "signInPrompt": "Log in met Patreon om toegang te krijgen tot tekengereedschap",
+      "subscriberOnly": "Tekening is beschikbaar voor Pro-leden",
+      "signInPrompt": "Meld u aan om toegang te krijgen tot tekenhulpmiddelen",
       "signInButton": "Inloggen met Patreon",
       "greeting": "Hallo, {{username}}!",
       "subscriberFeature": "Tekenen is een functie alleen voor abonnees",
-      "subscribePrompt": "Word Patreon-lid om tekengereedschap te ontgrendelen",
+      "subscribePrompt": "Word een supporter om tekenhulpmiddelen te ontgrendelen",
       "subscribeButton": "Steunen op Patreon",
       "signOut": "Uitloggen"
     },
@@ -4882,13 +4882,13 @@
       "label": "AP",
       "title": "Alchemic Precursor",
       "content": "Zoek de dichtstbijzijnde ingrediënten voor het Alchemic Precursor-recept ten opzichte van de huidige viewport. Pro-functie.",
-      "proOnly": "Alchemic Precursor receptenzoeker. Pro-functie: log in met Patreon om te ontgrendelen."
+      "proOnly": "Receptzoeker voor alchemistische voorlopers. Pro-functie: log in om te ontgrendelen."
     },
     "lc": {
       "label": "LC",
       "title": "Lively Concoction",
       "content": "Zoek de dichtstbijzijnde ingrediënten voor het Lively Concoction-recept ten opzichte van de huidige viewport. Pro-functie.",
-      "proOnly": "Lively Concoction receptenzoeker. Pro-functie: log in met Patreon om te ontgrendelen."
+      "proOnly": "Levendige brouwreceptzoeker. Pro-functie: log in om te ontgrendelen."
     },
     "noSeed": "Geen zaad geladen: open eerst de dynamische kaart.",
     "notFound": "Niet gevonden op kaart",
@@ -4902,7 +4902,7 @@
   "highValueFilter": {
     "title": "High-value items",
     "content": "Highlight rare spells, orbs, and landmark items on the map. Matching markers are scaled up with a soft gold glow; everything else is dimmed for contrast. Pro feature.",
-    "proOnly": "High-value highlight. Pro feature — sign in with Patreon to unlock."
+    "proOnly": "Hoogwaardig hoogtepunt. Pro-functie: log in om te ontgrendelen."
   },
   "extended": {
     "row": {

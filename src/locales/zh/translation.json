@@ -4585,16 +4585,16 @@
     "follower": "关注者",
     "subscriber": "订阅者",
     "signOut": "退出",
-    "patron": "Patreon支持者",
+    "patron": "专业支持者",
     "getPro": "获取 Pro",
     "proFeatures": "Pro 功能",
-    "proDescription": "绘图工具和其他Pro功能可供 Patreon 支持者使用。",
+    "proDescription": "支持者可以使用绘图工具和其他 Pro 功能。",
     "featureDrawing": "绘图与标注工具",
     "featureShare": "通过魔法截图分享绘画",
     "featureSave": "保存和管理多个绘画",
     "loginWithPatreon": "通过 Patreon 登录",
     "becomePatron": "成为赞助者",
-    "loginPrompt": "通过 Patreon 登录以使用绘图工具。\n\n绘画保存在本地，可通过 URL 分享。\n\n是否登录？",
+    "loginPrompt": "登录以使用绘图工具。\n\n图纸保存在本地，可以通过 URL 共享。\n\n您想登录吗？",
     "yourAccount": "你的账户",
     "proActive": "Pro 已激活",
     "subscribeCta": "升级到 Pro"
@@ -4728,12 +4728,12 @@
       "renameTitle": "重命名绘画"
     },
     "auth": {
-      "subscriberOnly": "绘图功能仅对 Patreon 会员开放",
-      "signInPrompt": "通过 Patreon 登录以使用绘图工具",
+      "subscriberOnly": "专业会员可以使用绘图",
+      "signInPrompt": "登录以访问绘图工具",
       "signInButton": "使用 Patreon 登录",
       "greeting": "你好，{{username}}！",
       "subscriberFeature": "绘图是订阅者专属功能",
-      "subscribePrompt": "成为 Patreon 会员以解锁绘图工具",
+      "subscribePrompt": "成为解锁绘图工具的支持者",
       "subscribeButton": "在 Patreon 上支持",
       "signOut": "退出登录"
     },
@@ -4882,13 +4882,13 @@
       "label": "美联社",
       "title": "炼金溶液",
       "content": "查找相对于当前视口的 炼金溶液 配方最近的成分。专业功能。",
-      "proOnly": "炼金溶液 食谱查找器。专业版功能 — 使用 Patreon 登录即可解锁。"
+      "proOnly": "炼金术前体配方查找器。专业版功能 — 登录解锁。"
     },
     "lc": {
       "label": "LC",
       "title": "活泼混合物",
       "content": "查找相对于当前视口的 活泼混合物 配方最近的成分。专业功能。",
-      "proOnly": "活泼混合物 食谱查找器。专业版功能 — 使用 Patreon 登录即可解锁。"
+      "proOnly": "活泼的混合物食谱查找器。专业版功能 — 登录解锁。"
     },
     "noSeed": "未加载种子 - 首先打开动态地图。",
     "notFound": "地图上找不到",
@@ -4902,7 +4902,7 @@
   "highValueFilter": {
     "title": "High-value items",
     "content": "Highlight rare spells, orbs, and landmark items on the map. Matching markers are scaled up with a soft gold glow; everything else is dimmed for contrast. Pro feature.",
-    "proOnly": "High-value highlight. Pro feature — sign in with Patreon to unlock."
+    "proOnly": "高颜值亮点。专业版功能 — 登录解锁。"
   },
   "extended": {
     "row": {

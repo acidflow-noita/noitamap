@@ -174,7 +174,6 @@ import { AuthUI } from "./auth/auth-ui";
 import { authService } from "./auth/auth-service";
 import { DrawingUI } from "./drawing/drawing-ui";
 import { createSeedReportButton } from "./seed-report-button";
-import { reportBundleFor } from "./report-bundle";
 import { placeMoreMenuLast } from "./overflow-menu";
 import { initChunkGrid, showChunkGrid, isChunkGridVisible } from "./drawing/chunk-grid";
 import { getMaterialInfo, primeMaterialInfo } from "./material-info";
@@ -858,19 +857,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // @ts-ignore
         proModule = await import("virtual:noitamap-pro");
       } else {
-        const token = authService.getToken();
-        if (!token) throw new Error("Missing authentication token");
-        let response: Response;
-        try {
-          response = await fetch(proUrl, {
-            cache: "no-cache",
-            headers: { Authorization: "Bearer " + token },
-          });
-        } catch {
-          // Rollout compatibility: the old static asset host may reject the
-          // Authorization preflight before the gated Worker is deployed.
-          response = await fetch(proUrl, { cache: "no-cache" });
-        }
+        const response = await fetch(proUrl, { cache: "no-cache" });
 
         if (!response.ok) {
           throw new Error(`HTTP error ${response.status}`);
@@ -898,46 +885,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
-  const loadPublicReportBundle = async (): Promise<boolean> => {
-    if ((window as any).noitamap_pro_loaded || (window as any).noitamap_public_report_loaded) return true;
-
-    try {
-      let reportModule;
-      if (import.meta.env.DEV) {
-        reportModule = await import("virtual:noitamap-public-report");
-      } else {
-        const reportUrl = `https://noitamap-pro.acidflow.stream/public-report.js?v=${__BUILD_VERSION__}`;
-        let response = await fetch(reportUrl, { cache: "no-cache" });
-        if (!response.ok) {
-          // Rollout compatibility: before public-report.js is deployed, the
-          // previous public pro.js still contains the anonymous locked report.
-          const legacyUrl = `https://noitamap-pro.acidflow.stream/pro.js?v=${__BUILD_VERSION__}`;
-          response = await fetch(legacyUrl, { cache: "no-cache" });
-        }
-        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-        const code = await response.text();
-        const blobUrl = URL.createObjectURL(new Blob([code], { type: "application/javascript" }));
-        try {
-          reportModule = await import(/* @vite-ignore */ blobUrl);
-        } finally {
-          URL.revokeObjectURL(blobUrl);
-        }
-      }
-
-      await reportModule.init(proHooks);
-      (window as any).noitamap_public_report_loaded = true;
-      return true;
-    } catch (error) {
-      console.error("[Noitamap] Failed to load public Seed Report:", error);
-      return false;
-    }
-  };
-
-  const loadSeedReportBundle = async (): Promise<boolean> => {
-    const state = await authService.ready;
-    return reportBundleFor(state) === "subscriber" ? loadProBundle() : loadPublicReportBundle();
-  };
-
   // Expose a pro-load requester so non-pro search components (AP/LC buttons)
   // can trigger pro loading after an auth check.
   (proHooks as any).requestProLoad = loadProBundle;
@@ -949,11 +896,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // Seed Report toggle button — sits next to the drawing toggle.
-  // Loads the public TLDR bundle for non-subscribers and the protected Pro bundle for subscribers.
+  // Auto-loads the Pro bundle on first click. The bundle renders the subscriber
+  // tools or the existing locked/skeleton views from the resolved auth state.
   {
     const drawingWrap = document.getElementById("drawing-ui-wrapper");
     if (drawingWrap) {
-      createSeedReportButton(drawingWrap, { loadReportBundle: loadSeedReportBundle });
+      createSeedReportButton(drawingWrap, { loadProBundle });
     }
   }
 

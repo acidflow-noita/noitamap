@@ -4585,16 +4585,16 @@
     "follower": "Obserwujący",
     "subscriber": "Subskrybent",
     "signOut": "Wyloguj sie",
-    "patron": "Wspirajacy na Patreonie",
+    "patron": "Wsparcie Pro",
     "getPro": "Zdobadz Pro",
     "proFeatures": "Funkcje Pro",
-    "proDescription": "Narzedzia do rysowania i inne funkcje pro sa dostepne dla wspierajacych na Patreonie.",
+    "proDescription": "Narzędzia do rysowania i inne funkcje Pro są dostępne dla zwolenników.",
     "featureDrawing": "Narzedzia do rysowania i adnotacji",
     "featureShare": "Udostepniaj rysunki za pomoca magicznych zrzutow ekranu",
     "featureSave": "Zapisywanie i zarzadzanie wieloma rysunkami",
     "loginWithPatreon": "Zaloguj sie przez Patreon",
     "becomePatron": "Zostan patronem",
-    "loginPrompt": "Zaloguj sie przez Patreon, aby uzywac narzedzi do rysowania.\n\nRysunki sa zapisywane lokalnie i moga byc udostepniane przez URL.\n\nCzy chcesz sie zalogowac?",
+    "loginPrompt": "Zaloguj się, aby korzystać z narzędzi do rysowania.\n\nRysunki są zapisywane lokalnie i można je udostępniać za pośrednictwem adresu URL.\n\nCzy chcesz się zalogować?",
     "yourAccount": "Twoje konto",
     "proActive": "Pro aktywne",
     "subscribeCta": "Ulepsz do Pro"
@@ -4715,12 +4715,12 @@
       "renameTitle": "Zmien nazwe rysunku"
     },
     "auth": {
-      "subscriberOnly": "Rysowanie jest dostępne dla członków Patreona",
-      "signInPrompt": "Zaloguj się przez Patreon, aby uzyskać dostęp do narzędzi rysowania",
+      "subscriberOnly": "Rysunek jest dostępny dla członków Pro",
+      "signInPrompt": "Zaloguj się, aby uzyskać dostęp do narzędzi do rysowania",
       "signInButton": "Zaloguj przez Patreon",
       "greeting": "Cześć, {{username}}!",
       "subscriberFeature": "Rysowanie to funkcja tylko dla subskrybentów",
-      "subscribePrompt": "Zostań członkiem Patreona, aby odblokować narzędzia rysowania",
+      "subscribePrompt": "Zostań zwolennikiem, aby odblokować narzędzia do rysowania",
       "subscribeButton": "Wesprzyj na Patreonie",
       "signOut": "Wyloguj"
     },
@@ -4882,13 +4882,13 @@
       "label": "AP",
       "title": "Prekursor Alchemiczny",
       "content": "Znajdź składniki najbliższe przepisowi Prekursor Alchemiczny względem bieżącej rzutni. Funkcja profesjonalna.",
-      "proOnly": "Wyszukiwarka przepisów Prekursor Alchemiczny. Funkcja Pro — zaloguj się na Patreonie, aby odblokować."
+      "proOnly": "Wyszukiwarka przepisów na prekursory alchemiczne. Funkcja Pro — zaloguj się, aby odblokować."
     },
     "lc": {
       "label": "LC",
       "title": "Żywa Mieszanina",
       "content": "Znajdź składniki najbliższe przepisowi Żywa Mieszanina względem bieżącej rzutni. Funkcja profesjonalna.",
-      "proOnly": "Żywa Mieszanina wyszukiwarka przepisów. Funkcja Pro — zaloguj się na Patreonie, aby odblokować."
+      "proOnly": "Żywa wyszukiwarka przepisów na mikstury. Funkcja Pro — zaloguj się, aby odblokować."
     },
     "noSeed": "Nie załadowano materiału siewnego — najpierw otwórz mapę dynamiczną.",
     "notFound": "Nie znaleziono na mapie",
@@ -4902,7 +4902,7 @@
   "highValueFilter": {
     "title": "High-value items",
     "content": "Highlight rare spells, orbs, and landmark items on the map. Matching markers are scaled up with a soft gold glow; everything else is dimmed for contrast. Pro feature.",
-    "proOnly": "High-value highlight. Pro feature — sign in with Patreon to unlock."
+    "proOnly": "Podkreślenie o wysokiej wartości. Funkcja Pro — zaloguj się, aby odblokować."
   },
   "extended": {
     "row": {

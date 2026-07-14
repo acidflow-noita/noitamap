@@ -4585,16 +4585,16 @@
     "follower": "Follower",
     "subscriber": "Abbonato",
     "signOut": "Esci",
-    "patron": "Sostenitore Patreon",
+    "patron": "Sostenitore professionista",
     "getPro": "Ottieni Pro",
     "proFeatures": "Funzionalita Pro",
-    "proDescription": "Gli strumenti di disegno e altre funzionalita pro sono disponibili per i sostenitori di Patreon.",
+    "proDescription": "Strumenti di disegno e altre funzionalità Pro sono disponibili per i sostenitori.",
     "featureDrawing": "Strumenti di disegno e annotazione",
     "featureShare": "Condividi disegni tramite screenshot magici",
     "featureSave": "Salva e gestisci disegni multipli",
     "loginWithPatreon": "Accedi con Patreon",
     "becomePatron": "Diventa patron",
-    "loginPrompt": "Accedi con Patreon per usare gli strumenti di disegno.\n\nI disegni vengono salvati localmente e possono essere condivisi tramite URL.\n\nVuoi accedere?",
+    "loginPrompt": "Accedi per utilizzare gli strumenti di disegno.\n\nI disegni vengono salvati localmente e possono essere condivisi tramite URL.\n\nDesideri accedere?",
     "yourAccount": "Il tuo account",
     "proActive": "Pro attivo",
     "subscribeCta": "Passa a Pro"
@@ -4715,12 +4715,12 @@
       "renameTitle": "Rinomina disegno"
     },
     "auth": {
-      "subscriberOnly": "Il disegno è disponibile per i membri Patreon",
-      "signInPrompt": "Accedi con Patreon per accedere agli strumenti di disegno",
+      "subscriberOnly": "Il disegno è disponibile per i membri Pro",
+      "signInPrompt": "Accedi per accedere agli strumenti di disegno",
       "signInButton": "Accedi con Patreon",
       "greeting": "Ciao, {{username}}!",
       "subscriberFeature": "Il disegno è una funzione riservata agli abbonati",
-      "subscribePrompt": "Diventa membro Patreon per sbloccare gli strumenti di disegno",
+      "subscribePrompt": "Diventa un sostenitore per sbloccare gli strumenti di disegno",
       "subscribeButton": "Supporta su Patreon",
       "signOut": "Esci"
     },
@@ -4882,13 +4882,13 @@
       "label": "AP",
       "title": "Precursore Alchemico",
       "content": "Trova gli ingredienti più vicini per la ricetta Precursore Alchemico rispetto alla finestra corrente. Funzionalità professionale.",
-      "proOnly": "Trova ricette Precursore Alchemico. Funzionalità Pro: accedi con Patreon per sbloccare."
+      "proOnly": "Trova ricette Precursore Alchemico. Funzionalità Pro: accedi per sbloccare."
     },
     "lc": {
       "label": "LC",
       "title": "Intruglio Brioso",
       "content": "Trova gli ingredienti più vicini per la ricetta Intruglio Brioso rispetto alla finestra corrente. Funzionalità professionale.",
-      "proOnly": "Intruglio Brioso ricerca ricette. Funzionalità Pro: accedi con Patreon per sbloccare."
+      "proOnly": "Trova ricette di Concoction vivace. Funzionalità Pro: accedi per sbloccare."
     },
     "noSeed": "Nessun seed caricato: apri prima la mappa dinamica.",
     "notFound": "Non trovato sulla mappa",
@@ -4902,7 +4902,7 @@
   "highValueFilter": {
     "title": "High-value items",
     "content": "Highlight rare spells, orbs, and landmark items on the map. Matching markers are scaled up with a soft gold glow; everything else is dimmed for contrast. Pro feature.",
-    "proOnly": "High-value highlight. Pro feature — sign in with Patreon to unlock."
+    "proOnly": "Evidenziazione di alto valore. Funzionalità Pro: accedi per sbloccare."
   },
   "extended": {
     "row": {

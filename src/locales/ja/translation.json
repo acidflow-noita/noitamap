@@ -4585,16 +4585,16 @@
     "follower": "フォロワー",
     "subscriber": "サブスクライバー",
     "signOut": "ログアウト",
-    "patron": "Patreonサポーター",
+    "patron": "プロサポーター",
     "getPro": "Proを取得",
     "proFeatures": "Pro機能",
-    "proDescription": "描画ツールやその他のPro機能はPatreonサポーターに提供されています。",
+    "proDescription": "サポーターは描画ツールやその他の Pro 機能を利用できます。",
     "featureDrawing": "描画・注釈ツール",
     "featureShare": "マジックスクリーンショットで描画を共有",
     "featureSave": "複数の描画を保存・管理",
     "loginWithPatreon": "Patreonでログイン",
     "becomePatron": "パトロンになる",
-    "loginPrompt": "Patreonでログインして描画ツールを使用します。\n\n描画はローカルに保存され、URLで共有できます。\n\nログインしますか？",
+    "loginPrompt": "描画ツールを使用するにはサインインします。\n\n図面はローカルに保存され、URL 経由で共有できます。\n\nサインインしますか?",
     "yourAccount": "アカウント",
     "proActive": "Pro 有効",
     "subscribeCta": "Pro にアップグレード"
@@ -4715,12 +4715,12 @@
       "renameTitle": "描画の名前を変更"
     },
     "auth": {
-      "subscriberOnly": "描画機能はPatreonメンバー限定です",
-      "signInPrompt": "描画ツールにアクセスするにはPatreonでログインしてください",
+      "subscriberOnly": "Pro メンバーは描画を利用できます",
+      "signInPrompt": "サインインして描画ツールにアクセスする",
       "signInButton": "Patreonでログイン",
       "greeting": "こんにちは、{{username}}さん！",
       "subscriberFeature": "描画はサブスクライバー限定機能です",
-      "subscribePrompt": "Patreonメンバーになって描画ツールをアンロック",
+      "subscribePrompt": "サポーターになって描画ツールのロックを解除しましょう",
       "subscribeButton": "Patreonで支援する",
       "signOut": "ログアウト"
     },
@@ -4882,13 +4882,13 @@
       "label": "AP",
       "title": "錬金術の先駆者",
       "content": "現在のビューポートを基準にして、錬金術の先駆者 レシピに最も近い材料を見つけます。プロ機能。",
-      "proOnly": "錬金術の先駆者 のレシピ検索。プロ機能 — Patreon にサインインしてロックを解除します。"
+      "proOnly": "アルケミックプリカーサーのレシピファインダー。 Pro 機能 — サインインしてロックを解除します。"
     },
     "lc": {
       "label": "LC",
       "title": "活発な調合",
       "content": "現在のビューポートを基準にして、活発な調合 レシピに最も近い材料を見つけます。プロ機能。",
-      "proOnly": "活発な調合のレシピ検索。プロ機能 — Patreon にサインインしてロックを解除します。"
+      "proOnly": "Lively Concoction レシピファインダー。 Pro 機能 — サインインしてロックを解除します。"
     },
     "noSeed": "シードがロードされていません - まず動的マップを開きます。",
     "notFound": "地図上に見つからない",
@@ -4902,7 +4902,7 @@
   "highValueFilter": {
     "title": "High-value items",
     "content": "Highlight rare spells, orbs, and landmark items on the map. Matching markers are scaled up with a soft gold glow; everything else is dimmed for contrast. Pro feature.",
-    "proOnly": "High-value highlight. Pro feature — sign in with Patreon to unlock."
+    "proOnly": "価値の高いハイライト。 Pro 機能 — サインインしてロックを解除します。"
   },
   "extended": {
     "row": {

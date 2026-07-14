@@ -4585,16 +4585,16 @@
     "follower": "Sledující",
     "subscriber": "Odběratel",
     "signOut": "Odhlasit se",
-    "patron": "Podpurce na Patreonu",
+    "patron": "Profesionální podporovatel",
     "getPro": "Ziskat Pro",
     "proFeatures": "Funkce Pro",
-    "proDescription": "Nastroje pro kresleni a dalsi pro funkce jsou k dispozici pro podporovatele na Patreonu.",
+    "proDescription": "Příznivcům jsou k dispozici nástroje pro kreslení a další funkce Pro.",
     "featureDrawing": "Nastroje pro kresleni a anotaci",
     "featureShare": "Sdileni kresby pres magicke snimky",
     "featureSave": "Ulozeni a sprava vice kreseb",
     "loginWithPatreon": "Prihlasit se pres Patreon",
     "becomePatron": "Stat se patronem",
-    "loginPrompt": "Prihlaste se pres Patreon pro pouziti kreslicich nastroju.\n\nKresby se ukladaji lokalne a lze je sdilet prostrednictvim URL.\n\nChcete se prihlasit?",
+    "loginPrompt": "Chcete-li používat nástroje kreslení, přihlaste se.\n\nVýkresy se ukládají lokálně a lze je sdílet prostřednictvím adresy URL.\n\nChcete se přihlásit?",
     "yourAccount": "Vas ucet",
     "proActive": "Pro aktivni",
     "subscribeCta": "Prejit na Pro"
@@ -4715,12 +4715,12 @@
       "renameTitle": "Prejmenovat kresbu"
     },
     "auth": {
-      "subscriberOnly": "Kreslení je dostupné pro členy Patreonu",
-      "signInPrompt": "Přihlaste se přes Patreon pro přístup k nástrojům kreslení",
+      "subscriberOnly": "Kreslení je k dispozici členům Pro",
+      "signInPrompt": "Chcete-li získat přístup k nástrojům kreslení, přihlaste se",
       "signInButton": "Přihlásit se přes Patreon",
       "greeting": "Ahoj, {{username}}!",
       "subscriberFeature": "Kreslení je funkce pouze pro odběratele",
-      "subscribePrompt": "Staňte se členem Patreonu pro odemknutí nástrojů kreslení",
+      "subscribePrompt": "Staňte se podporovatelem a odemkněte nástroje pro kreslení",
       "subscribeButton": "Podpořit na Patreonu",
       "signOut": "Odhlásit se"
     },
@@ -4882,13 +4882,13 @@
       "label": "AP",
       "title": "Alchemic Precursor",
       "content": "Najděte nejbližší ingredience pro recept Alchemic Precursor vzhledem k aktuálnímu výřezu. Pro funkce.",
-      "proOnly": "Alchemic Precursor vyhledávač receptů. Pro funkce – pro odemknutí se přihlaste pomocí Patreonu."
+      "proOnly": "Vyhledávač receptů Alchemic Precursor. Funkce Pro – pro odemknutí se přihlaste."
     },
     "lc": {
       "label": "LC",
       "title": "Lively Concoction",
       "content": "Najděte nejbližší ingredience pro recept Lively Concoction vzhledem k aktuálnímu výřezu. Pro funkce.",
-      "proOnly": "Lively Concoction vyhledávač receptů. Pro funkce – pro odemknutí se přihlaste pomocí Patreonu."
+      "proOnly": "Lively Concoction vyhledávač receptů. Funkce Pro – pro odemknutí se přihlaste."
     },
     "noSeed": "Není načteno žádné semeno – nejprve otevřete dynamickou mapu.",
     "notFound": "Na mapě nenalezeno",
@@ -4902,7 +4902,7 @@
   "highValueFilter": {
     "title": "High-value items",
     "content": "Highlight rare spells, orbs, and landmark items on the map. Matching markers are scaled up with a soft gold glow; everything else is dimmed for contrast. Pro feature.",
-    "proOnly": "High-value highlight. Pro feature — sign in with Patreon to unlock."
+    "proOnly": "Zvýraznění vysoké hodnoty. Funkce Pro – pro odemknutí se přihlaste."
   },
   "extended": {
     "row": {

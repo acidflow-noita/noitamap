@@ -4585,16 +4585,16 @@
     "follower": "Seuraaja",
     "subscriber": "Tilaaja",
     "signOut": "Kirjaudu ulos",
-    "patron": "Patreon-tukija",
+    "patron": "Pro-tuki",
     "getPro": "Hanki Pro",
     "proFeatures": "Pro-ominaisuudet",
-    "proDescription": "Piirustustyokalut ja muut pro-ominaisuudet ovat saatavilla Patreon-tukijoille.",
+    "proDescription": "Piirustustyökalut ja muut Pro-ominaisuudet ovat kannattajien saatavilla.",
     "featureDrawing": "Piirustus- ja merkinttyokalut",
     "featureShare": "Jaa piirustuksia maagisten kuvakaappausten avulla",
     "featureSave": "Tallenna ja hallinnoi useita piirustuksia",
     "loginWithPatreon": "Kirjaudu Patreonilla",
     "becomePatron": "Ryhdy tukijaksi",
-    "loginPrompt": "Kirjaudu Patreonilla kayttaaksesi piirustustyokaluja.\n\nPiirustukset tallennetaan paikallisesti ja niita voi jakaa URL:n kautta.\n\nHaluatko kirjautua?",
+    "loginPrompt": "Kirjaudu sisään käyttääksesi piirustustyökaluja.\n\nPiirustukset tallennetaan paikallisesti ja ne voidaan jakaa URL-osoitteen kautta.\n\nHaluatko kirjautua sisään?",
     "yourAccount": "Tilisi",
     "proActive": "Pro aktiivinen",
     "subscribeCta": "Paivita Pro-versioon"
@@ -4715,12 +4715,12 @@
       "renameTitle": "Nimeaa piirustus uudelleen"
     },
     "auth": {
-      "subscriberOnly": "Piirtäminen on käytettävissä Patreon-jäsenille",
-      "signInPrompt": "Kirjaudu Patreonilla päästäksesi piirtotyökaluihin",
+      "subscriberOnly": "Piirustus on Pro-jäsenten saatavilla",
+      "signInPrompt": "Kirjaudu sisään käyttääksesi piirustustyökaluja",
       "signInButton": "Kirjaudu Patreonilla",
       "greeting": "Hei, {{username}}!",
       "subscriberFeature": "Piirtäminen on vain tilaajille",
-      "subscribePrompt": "Liity Patreon-jäseneksi avataksesi piirtotyökalut",
+      "subscribePrompt": "Ryhdy tukijaksi avataksesi piirustustyökalut",
       "subscribeButton": "Tue Patreonissa",
       "signOut": "Kirjaudu ulos"
     },
@@ -4882,13 +4882,13 @@
       "label": "AP",
       "title": "Alchemic Precursor",
       "content": "Etsi lähimmät ainesosat Alchemic Precursor-reseptille suhteessa nykyiseen kuvaporttiin. Pro ominaisuus.",
-      "proOnly": "Alchemic Precursor reseptihaku. Pro-ominaisuus — kirjaudu sisään Patreonilla avataksesi lukituksen."
+      "proOnly": "Alchemic Precursor -reseptien etsijä. Pro-ominaisuus – kirjaudu sisään avataksesi lukituksen."
     },
     "lc": {
       "label": "LC",
       "title": "Lively Concoction",
       "content": "Etsi lähimmät ainekset Lively Concoction-reseptille suhteessa nykyiseen kuvaporttiin. Pro ominaisuus.",
-      "proOnly": "Lively Concoction reseptihaku. Pro-ominaisuus — kirjaudu sisään Patreonilla avataksesi lukituksen."
+      "proOnly": "Vilkas keitosreseptien etsijä. Pro-ominaisuus – kirjaudu sisään avataksesi lukituksen."
     },
     "noSeed": "Ei siemeniä ladattu — avaa ensin dynaaminen kartta.",
     "notFound": "Ei löydy kartalta",
@@ -4902,7 +4902,7 @@
   "highValueFilter": {
     "title": "High-value items",
     "content": "Highlight rare spells, orbs, and landmark items on the map. Matching markers are scaled up with a soft gold glow; everything else is dimmed for contrast. Pro feature.",
-    "proOnly": "High-value highlight. Pro feature — sign in with Patreon to unlock."
+    "proOnly": "Arvokas kohokohta. Pro-ominaisuus – kirjaudu sisään avataksesi lukituksen."
   },
   "extended": {
     "row": {
