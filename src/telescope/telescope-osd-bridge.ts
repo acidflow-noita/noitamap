@@ -4277,6 +4277,17 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       c.style.height = `${n.h * mult}px`;
       return c;
     };
+    // Chest generation dedups identical contents and stores the tally in
+    // `count` (see chest_generation.js). Surface it as an "xN" badge so a chest
+    // holding e.g. 39 flasks reads correctly instead of showing a single item.
+    const countBadge = (ci: any): HTMLElement | null => {
+      const n = Number(ci.count);
+      if (!Number.isFinite(n) || n <= 1) return null;
+      const b = document.createElement("span");
+      b.style.cssText = "font-size:0.8em;color:#fff;font-weight:bold;margin-left:0.15em";
+      b.textContent = `x${n}`;
+      return b;
+    };
     for (const ci of poi.items) {
       if (ci.ignore) continue;
       const ciKey = getSpriteKey(ci, getAtlas() || undefined);
@@ -4348,6 +4359,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         }
         wandBox.appendChild(slotsGrid);
 
+        { const cb = countBadge(ci); if (cb) wandBox.appendChild(cb); }
         contRow.appendChild(wandBox);
         continue;
       }
@@ -4365,6 +4377,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         label.style.cssText = "font-size:0.8em;color:#ffd700";
         label.textContent = ci.amount ? `$${ci.amount}` : i18next.t("poi.gold", "Gold");
         goldBox.appendChild(label);
+        { const cb = countBadge(ci); if (cb) goldBox.appendChild(cb); }
         contRow.appendChild(goldBox);
         continue;
       }
@@ -4387,6 +4400,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         else if (ci.item === "heart_bigger") label.textContent = i18next.t("poi.heartBiggerShort", "+50 HP");
         else label.textContent = i18next.t("poi.fullHeal", "Full Heal");
         heartBox.appendChild(label);
+        { const cb = countBadge(ci); if (cb) heartBox.appendChild(cb); }
         contRow.appendChild(heartBox);
         continue;
       }
@@ -4414,6 +4428,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         textSpan.style.cssText = "font-size:0.8em;color:#aaa";
         textSpan.textContent = displayName;
         itemBox.appendChild(textSpan);
+        { const cb = countBadge(ci); if (cb) itemBox.appendChild(cb); }
         contRow.appendChild(itemBox);
         continue;
       }
@@ -4422,6 +4437,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         "font-size:0.8em;color:#aaa;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333";
       span.textContent = displayName;
       contRow.appendChild(span);
+      { const cb = countBadge(ci); if (cb) contRow.appendChild(cb); }
     }
     contDiv.appendChild(contRow);
     tooltipEl.appendChild(contDiv);
