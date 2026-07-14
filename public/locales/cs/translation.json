@@ -4597,7 +4597,8 @@
     "loginPrompt": "Chcete-li používat nástroje kreslení, přihlaste se.\n\nVýkresy se ukládají lokálně a lze je sdílet prostřednictvím adresy URL.\n\nChcete se přihlásit?",
     "yourAccount": "Vas ucet",
     "proActive": "Pro aktivni",
-    "subscribeCta": "Prejit na Pro"
+    "subscribeCta": "Prejit na Pro",
+    "switchProviderConfirm": "Přihlášením přes {{next}} budete odhlášeni z {{current}}.\n\nPřístup k Pro pak bude záviset na vašem předplatném {{next}}.\n\nChcete se přihlásit přes {{next}}?"
   },
   "loading": {
     "maps": "Načítání map...",

@@ -4597,7 +4597,8 @@
     "loginPrompt": "Masuk untuk menggunakan alat menggambar.\n\nGambar disimpan secara lokal dan dapat dibagikan melalui URL.\n\nApakah Anda ingin masuk?",
     "yourAccount": "Akun Anda",
     "proActive": "Pro aktif",
-    "subscribeCta": "Tingkatkan ke Pro"
+    "subscribeCta": "Tingkatkan ke Pro",
+    "switchProviderConfirm": "Masuk dengan {{next}} akan mengeluarkan Anda dari {{current}}.\n\nAkses Pro kemudian akan bergantung pada langganan {{next}} Anda.\n\nApakah Anda ingin beralih ke {{next}}?"
   },
   "loading": {
     "maps": "Memuat peta...",

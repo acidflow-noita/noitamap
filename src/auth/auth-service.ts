@@ -3,6 +3,8 @@
  * Stateless JWT-only auth — tokens expire after 24 hours.
  */
 
+import i18next from "../i18n";
+
 export interface AuthState {
   authenticated: boolean;
   username: string | null;
@@ -214,18 +216,37 @@ class AuthService {
   }
 
   /**
+   * Sessions are single-provider: signing in with the other provider replaces
+   * the current session, and Pro follows the new provider's sub. Warn first.
+   */
+  private confirmProviderSwitch(next: "patreon" | "twitch"): boolean {
+    const current = this.state.provider;
+    if (!this.state.authenticated || !current || current === next) return true;
+    const labels = { patreon: "Patreon", twitch: "Twitch" };
+    return window.confirm(
+      i18next.t("auth.switchProviderConfirm", {
+        defaultValue:
+          "Signing in with {{next}} will sign you out of {{current}}.\n\nPro access will then be based on your {{next}} subscription.\n\nSwitch to {{next}}?",
+        current: labels[current],
+        next: labels[next],
+      }),
+    );
+  }
+
+  /**
    * Start login flow - redirects to OAuth provider
    */
   login(): void {
+    if (!this.confirmProviderSwitch("patreon")) return;
     const redirectUrl = encodeURIComponent(window.location.href);
     window.location.href = `${AUTH_WORKER_URL}/auth/login?redirect=${redirectUrl}`;
   }
 
   /**
-   * Start Twitch login flow. Piping is live end-to-end but the UI entry point
-   * is hidden (see TWITCH_ENABLED in auth-ui.ts) until Twitch platform approval.
+   * Start Twitch login flow (UI entry points are gated by TWITCH_ENABLED).
    */
   loginTwitch(): void {
+    if (!this.confirmProviderSwitch("twitch")) return;
     const redirectUrl = encodeURIComponent(window.location.href);
     window.location.href = `${AUTH_WORKER_URL}/auth/twitch/login?redirect=${redirectUrl}`;
   }

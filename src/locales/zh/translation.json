@@ -4597,7 +4597,8 @@
     "loginPrompt": "登录以使用绘图工具。\n\n图纸保存在本地，可以通过 URL 共享。\n\n您想登录吗？",
     "yourAccount": "你的账户",
     "proActive": "Pro 已激活",
-    "subscribeCta": "升级到 Pro"
+    "subscribeCta": "升级到 Pro",
+    "switchProviderConfirm": "通过 {{next}} 登录后，您将退出 {{current}}。\n\n之后，Pro 权限将取决于您的 {{next}} 订阅。\n\n要切换到 {{next}} 吗？"
   },
   "loading": {
     "maps": "加载地图中...",

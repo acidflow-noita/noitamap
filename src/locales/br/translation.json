@@ -4597,7 +4597,8 @@
     "loginPrompt": "Faça login para usar ferramentas de desenho.\n\nOs desenhos são salvos localmente e podem ser compartilhados via URL.\n\nGostaria de fazer login?",
     "yourAccount": "Sua conta",
     "proActive": "Pro ativo",
-    "subscribeCta": "Atualizar para Pro"
+    "subscribeCta": "Atualizar para Pro",
+    "switchProviderConfirm": "Ao entrar com {{next}}, você será desconectado de {{current}}.\n\nO acesso Pro passará a depender da sua assinatura do {{next}}.\n\nDeseja entrar com {{next}}?"
   },
   "loading": {
     "maps": "Carregando mapas...",
