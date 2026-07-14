@@ -4585,16 +4585,16 @@
     "follower": "Фоловер",
     "subscriber": "Підписник",
     "signOut": "Вийти",
-    "patron": "Підтримувач на Patreon",
+    "patron": "Професійний прибічник",
     "getPro": "Отримати Pro",
     "proFeatures": "Функції Pro",
-    "proDescription": "Інструменти малювання та інші Pro-функції доступні підтримувачам на Patreon.",
+    "proDescription": "Інструменти малювання та інші функції Pro доступні для прихильників.",
     "featureDrawing": "Інструменти малювання та анотації",
     "featureShare": "Діліться малюнками через магічні скріншоти",
     "featureSave": "Збереження та керування кількома малюнками",
     "loginWithPatreon": "Увійти через Patreon",
     "becomePatron": "Стати патроном",
-    "loginPrompt": "Увійдіть через Patreon, щоб використовувати інструменти малювання.\n\nМалюнки зберігаються локально та можуть бути поширені через URL.\n\nУвійти?",
+    "loginPrompt": "Увійдіть, щоб використовувати інструменти малювання.\n\nМалюнки зберігаються локально, і ними можна поділитися через URL-адресу.\n\nВи бажаєте увійти?",
     "yourAccount": "Ваш акаунт",
     "proActive": "Pro активний",
     "subscribeCta": "Оновити до Pro"
@@ -4722,12 +4722,12 @@
       "renameTitle": "Перейменувати малюнок"
     },
     "auth": {
-      "subscriberOnly": "Малювання доступне учасникам Patreon",
-      "signInPrompt": "Увійдіть через Patreon для доступу до інструментів малювання",
+      "subscriberOnly": "Малювання доступне для членів Pro",
+      "signInPrompt": "Увійдіть, щоб отримати доступ до інструментів малювання",
       "signInButton": "Увійти через Patreon",
       "greeting": "Привіт, {{username}}!",
       "subscriberFeature": "Малювання — функція лише для підписників",
-      "subscribePrompt": "Станьте учасником Patreon, щоб розблокувати інструменти малювання",
+      "subscribePrompt": "Станьте прихильником, щоб розблокувати інструменти малювання",
       "subscribeButton": "Підтримати на Patreon",
       "signOut": "Вийти"
     },
@@ -4882,13 +4882,13 @@
       "label": "AP",
       "title": "Алхімічний Попередник",
       "content": "Знайдіть найближчі інгредієнти для рецепту Алхімічний Попередник відносно поточного вікна перегляду. Pro функція.",
-      "proOnly": "Алхімічний Попередник пошук рецептів. Професійна функція — увійдіть за допомогою Patreon, щоб розблокувати."
+      "proOnly": "Пошук рецептів Alchemic Precursor. Професійна функція — увійдіть, щоб розблокувати."
     },
     "lc": {
       "label": "LC",
       "title": "Жвава Суміш",
       "content": "Знайдіть найближчі інгредієнти для рецепту Жвава Суміш відносно поточного вікна перегляду. Pro функція.",
-      "proOnly": "Жвава Суміш пошук рецептів. Професійна функція — увійдіть за допомогою Patreon, щоб розблокувати."
+      "proOnly": "Пошук рецептів Lively Cocoction. Професійна функція — увійдіть, щоб розблокувати."
     },
     "noSeed": "Начальний матеріал не завантажено — спочатку відкрийте динамічну карту.",
     "notFound": "Не знайдено на карті",
@@ -4902,7 +4902,7 @@
   "highValueFilter": {
     "title": "High-value items",
     "content": "Highlight rare spells, orbs, and landmark items on the map. Matching markers are scaled up with a soft gold glow; everything else is dimmed for contrast. Pro feature.",
-    "proOnly": "High-value highlight. Pro feature — sign in with Patreon to unlock."
+    "proOnly": "Висока цінність. Професійна функція — увійдіть, щоб розблокувати."
   },
   "extended": {
     "row": {

@@ -98,11 +98,13 @@ export class AuthUI {
 
       dropdown = document.createElement("ul");
       dropdown.className = "dropdown-menu dropdown-menu-end";
+      const providerLabel = state.provider === "twitch" ? "Twitch" : "Patreon";
       dropdown.innerHTML = `
+          <li><span class="dropdown-item-text text-secondary small"><i class="bi bi-box-arrow-in-right me-1"></i>${i18next.t("auth.yourAccount", "Your account")}: ${providerLabel}</span></li>
           ${
             state.isSubscriber
               ? `<li><span class="dropdown-item-text text-success small"><img src="assets/icons/website-icons/noitamap-pro-icon.svg" alt="" class="pro-icon">${i18next.t("auth.proActive", "Pro active")}</span></li>`
-              : `<li><a class="dropdown-item small" href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer"><i class="bi bi-star me-1"></i>${i18next.t("auth.subscribeCta", "Upgrade to Pro")}</a></li>`
+              : `<li><button class="dropdown-item small" id="upgradeProBtn"><i class="bi bi-star me-1"></i>${i18next.t("auth.subscribeCta", "Upgrade to Pro")}</button></li>`
           }
           <li><hr class="dropdown-divider"></li>
           <li><button class="dropdown-item" id="logoutBtn"><i class="bi bi-box-arrow-right me-1"></i>${i18next.t("auth.signOut", "Sign out")}</button></li>
@@ -120,6 +122,7 @@ export class AuthUI {
         e.preventDefault();
         this.handleLogout();
       });
+      dropdown.querySelector("#upgradeProBtn")?.addEventListener("click", () => AuthUI.showGetProModal());
     } else {
       // Show "Get Pro" button
       // We keep the "Get Pro" style for the navbar button to match the theme,
@@ -155,12 +158,22 @@ export class AuthUI {
     // Two provider columns: Twitch (left) and Patreon (right), each with a
     // "sign in" and a "subscribe" button, separated by a faint "or". When
     // TWITCH_ENABLED is off, only the Patreon column shows (centered, no "or").
+    const state = authService.getState();
+    const twitchLoginHtml = state.provider === "twitch"
+      ? ""
+      : `<button id="twitchLoginBtn" class="btn-twitch justify-content-center">
+          ${TWITCH_SYMBOL_WHITE}
+          ${i18next.t("auth.loginWithTwitch", "Sign in with Twitch")}
+        </button>`;
+    const patreonLoginHtml = state.provider === "patreon"
+      ? ""
+      : `<button id="patreonLoginBtn" class="btn-patreon justify-content-center">
+          ${PATREON_SYMBOL_WHITE}
+          ${i18next.t("auth.loginWithPatreon", "Sign in with Patreon")}
+        </button>`;
     const twitchColumnHtml = TWITCH_ENABLED
       ? `<div class="pro-col">
-              <button id="twitchLoginBtn" class="btn-twitch justify-content-center">
-                ${TWITCH_SYMBOL_WHITE}
-                ${i18next.t("auth.loginWithTwitch", "Sign in with Twitch")}
-              </button>
+              ${twitchLoginHtml}
               <a href="https://www.twitch.tv/products/wuote" target="_blank" rel="noopener noreferrer" class="btn-patron justify-content-center">
                 <i class="bi bi-box-arrow-up-right"></i>${i18next.t("auth.subscribeTwitch", "Subscribe on Twitch")}
               </a>
@@ -179,10 +192,7 @@ export class AuthUI {
             <div class="pro-columns">
               ${twitchColumnHtml}
               <div class="pro-col">
-                <button id="patreonLoginBtn" class="btn-patreon justify-content-center">
-                  ${PATREON_SYMBOL_WHITE}
-                  ${i18next.t("auth.loginWithPatreon", "Sign in with Patreon")}
-                </button>
+                ${patreonLoginHtml}
                 <a href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer" class="btn-patron justify-content-center">
                   <i class="bi bi-box-arrow-up-right"></i>${i18next.t("auth.becomePatron", "Become a Patron")}
                 </a>

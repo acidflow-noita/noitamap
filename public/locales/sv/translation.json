@@ -4585,16 +4585,16 @@
     "follower": "Följare",
     "subscriber": "Prenumerant",
     "signOut": "Logga ut",
-    "patron": "Patreon-supportrar",
+    "patron": "Pro supporter",
     "getPro": "Skaffa Pro",
     "proFeatures": "Pro-funktioner",
-    "proDescription": "Ritverktyg och andra pro-funktioner ar tillgangliga for Patreon-supportrar.",
+    "proDescription": "Ritverktyg och andra Pro-funktioner är tillgängliga för supportrar.",
     "featureDrawing": "Rit- och anteckningsverktyg",
     "featureShare": "Dela teckningar via magiska skarmdumpar",
     "featureSave": "Spara och hantera flera teckningar",
     "loginWithPatreon": "Logga in med Patreon",
     "becomePatron": "Bli patron",
-    "loginPrompt": "Logga in med Patreon for att anvanda ritverktygen.\n\nTeckningar sparas lokalt och kan delas via URL.\n\nVill du logga in?",
+    "loginPrompt": "Logga in för att använda ritverktyg.\n\nRitningar sparas lokalt och kan delas via URL.\n\nVill du logga in?",
     "yourAccount": "Ditt konto",
     "proActive": "Pro aktivt",
     "subscribeCta": "Uppgradera till Pro"
@@ -4715,12 +4715,12 @@
       "renameTitle": "Byt namn pa teckningen"
     },
     "auth": {
-      "subscriberOnly": "Ritning är tillgängligt för Patreon-medlemmar",
-      "signInPrompt": "Logga in med Patreon för att få tillgång till ritverktyg",
+      "subscriberOnly": "Ritning är tillgänglig för Pro-medlemmar",
+      "signInPrompt": "Logga in för att komma åt ritverktyg",
       "signInButton": "Logga in med Patreon",
       "greeting": "Hej, {{username}}!",
       "subscriberFeature": "Ritning är en funktion endast för prenumeranter",
-      "subscribePrompt": "Bli Patreon-medlem för att låsa upp ritverktyg",
+      "subscribePrompt": "Bli en supporter för att låsa upp ritverktyg",
       "subscribeButton": "Stöd på Patreon",
       "signOut": "Logga ut"
     },
@@ -4882,13 +4882,13 @@
       "label": "AP",
       "title": "Alchemic Precursor",
       "content": "Hitta de närmaste ingredienserna för Alchemic Precursor-receptet i förhållande till den aktuella visningsporten. Pro funktion.",
-      "proOnly": "Alchemic Precursor receptsökare. Pro-funktion – logga in med Patreon för att låsa upp."
+      "proOnly": "Alchemic Precursor receptsökare. Pro-funktion – logga in för att låsa upp."
     },
     "lc": {
       "label": "LC",
       "title": "Lively Concoction",
       "content": "Hitta de närmaste ingredienserna för Lively Concoction-receptet i förhållande till den aktuella visningsporten. Pro funktion.",
-      "proOnly": "Lively Concoction receptsökare. Pro-funktion – logga in med Patreon för att låsa upp."
+      "proOnly": "Lively Concoction receptsökare. Pro-funktion – logga in för att låsa upp."
     },
     "noSeed": "Inget seed laddat – öppna den dynamiska kartan först.",
     "notFound": "Hittas inte på kartan",
@@ -4902,7 +4902,7 @@
   "highValueFilter": {
     "title": "High-value items",
     "content": "Highlight rare spells, orbs, and landmark items on the map. Matching markers are scaled up with a soft gold glow; everything else is dimmed for contrast. Pro feature.",
-    "proOnly": "High-value highlight. Pro feature — sign in with Patreon to unlock."
+    "proOnly": "Högvärdig höjdpunkt. Pro-funktion – logga in för att låsa upp."
   },
   "extended": {
     "row": {
