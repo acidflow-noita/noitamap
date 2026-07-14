@@ -4597,7 +4597,8 @@
     "loginPrompt": "Accedi per utilizzare gli strumenti di disegno.\n\nI disegni vengono salvati localmente e possono essere condivisi tramite URL.\n\nDesideri accedere?",
     "yourAccount": "Il tuo account",
     "proActive": "Pro attivo",
-    "subscribeCta": "Passa a Pro"
+    "subscribeCta": "Passa a Pro",
+    "switchProviderConfirm": "Accedendo con {{next}} verrai disconnesso da {{current}}.\n\nL'accesso Pro dipenderà quindi dal tuo abbonamento {{next}}.\n\nDesideri passare a {{next}}?"
   },
   "loading": {
     "maps": "Caricamento mappe...",

@@ -4597,7 +4597,8 @@
     "loginPrompt": "Meld u aan om tekenhulpmiddelen te gebruiken.\n\nTekeningen worden lokaal opgeslagen en kunnen via URL worden gedeeld.\n\nWilt u zich aanmelden?",
     "yourAccount": "Jouw account",
     "proActive": "Pro actief",
-    "subscribeCta": "Upgraden naar Pro"
+    "subscribeCta": "Upgraden naar Pro",
+    "switchProviderConfirm": "Als u inlogt met {{next}}, wordt u uitgelogd bij {{current}}.\n\nPro-toegang is daarna afhankelijk van uw {{next}}-abonnement.\n\nWilt u overschakelen naar {{next}}?"
   },
   "loading": {
     "maps": "Kaarten laden...",

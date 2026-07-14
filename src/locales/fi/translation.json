@@ -4597,7 +4597,8 @@
     "loginPrompt": "Kirjaudu sisään käyttääksesi piirustustyökaluja.\n\nPiirustukset tallennetaan paikallisesti ja ne voidaan jakaa URL-osoitteen kautta.\n\nHaluatko kirjautua sisään?",
     "yourAccount": "Tilisi",
     "proActive": "Pro aktiivinen",
-    "subscribeCta": "Paivita Pro-versioon"
+    "subscribeCta": "Paivita Pro-versioon",
+    "switchProviderConfirm": "Kirjautuminen {{next}}-tilillä kirjaa sinut ulos {{current}}-tililtä.\n\nPro-käyttöoikeus määräytyy sen jälkeen {{next}}-tilauksesi mukaan.\n\nHaluatko vaihtaa {{next}}-tiliin?"
   },
   "loading": {
     "maps": "Ladataan karttoja...",

@@ -4597,7 +4597,8 @@
     "loginPrompt": "Zaloguj się, aby korzystać z narzędzi do rysowania.\n\nRysunki są zapisywane lokalnie i można je udostępniać za pośrednictwem adresu URL.\n\nCzy chcesz się zalogować?",
     "yourAccount": "Twoje konto",
     "proActive": "Pro aktywne",
-    "subscribeCta": "Ulepsz do Pro"
+    "subscribeCta": "Ulepsz do Pro",
+    "switchProviderConfirm": "Logując się przez {{next}}, wylogujesz się z {{current}}.\n\nDostęp do Pro będzie wtedy zależał od Twojej subskrypcji {{next}}.\n\nCzy chcesz się przełączyć na {{next}}?"
   },
   "loading": {
     "maps": "Ładowanie map...",

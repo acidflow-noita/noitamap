@@ -4597,7 +4597,8 @@
     "loginPrompt": "Inicia sesión para utilizar herramientas de dibujo.\n\nLos dibujos se guardan localmente y se pueden compartir a través de URL.\n\n¿Quieres iniciar sesión?",
     "yourAccount": "Tu cuenta",
     "proActive": "Pro activo",
-    "subscribeCta": "Actualizar a Pro"
+    "subscribeCta": "Actualizar a Pro",
+    "switchProviderConfirm": "Al iniciar sesión con {{next}}, se cerrará tu sesión de {{current}}.\n\nEl acceso Pro dependerá entonces de tu suscripción de {{next}}.\n\n¿Quieres iniciar sesión con {{next}}?"
   },
   "loading": {
     "maps": "Cargando mapas...",

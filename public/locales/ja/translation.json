@@ -4597,7 +4597,8 @@
     "loginPrompt": "描画ツールを使用するにはサインインします。\n\n図面はローカルに保存され、URL 経由で共有できます。\n\nサインインしますか?",
     "yourAccount": "アカウント",
     "proActive": "Pro 有効",
-    "subscribeCta": "Pro にアップグレード"
+    "subscribeCta": "Pro にアップグレード",
+    "switchProviderConfirm": "{{next}}でログインすると、{{current}}からログアウトされます。\n\nその後、Pro へのアクセスは {{next}} のサブスクリプションによって決まります。\n\n{{next}}に切り替えますか?"
   },
   "loading": {
     "maps": "マップを読み込み中...",

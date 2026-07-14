@@ -4805,7 +4805,8 @@
     "loginPrompt": "Sign in to use drawing tools.\n\nDrawings are saved locally and can be shared via URL.\n\nWould you like to sign in?",
     "yourAccount": "Your account",
     "proActive": "Pro active",
-    "subscribeCta": "Upgrade to Pro"
+    "subscribeCta": "Upgrade to Pro",
+    "switchProviderConfirm": "Signing in with {{next}} will sign you out of {{current}}.\n\nPro access will then be based on your {{next}} subscription.\n\nSwitch to {{next}}?"
   },
   "loading": {
     "maps": "Loading maps...",

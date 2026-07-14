@@ -4597,7 +4597,8 @@
     "loginPrompt": "Connectez-vous pour utiliser les outils de dessin.\n\nLes dessins sont enregistrés localement et peuvent être partagés via une URL.\n\nSouhaitez-vous vous connecter ?",
     "yourAccount": "Votre compte",
     "proActive": "Pro actif",
-    "subscribeCta": "Passer a Pro"
+    "subscribeCta": "Passer a Pro",
+    "switchProviderConfirm": "En vous connectant avec {{next}}, vous serez déconnecté de {{current}}.\n\nL'accès Pro dépendra alors de votre abonnement {{next}}.\n\nSouhaitez-vous passer à {{next}} ?"
   },
   "loading": {
     "maps": "Chargement des cartes...",

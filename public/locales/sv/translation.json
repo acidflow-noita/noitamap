@@ -4597,7 +4597,8 @@
     "loginPrompt": "Logga in för att använda ritverktyg.\n\nRitningar sparas lokalt och kan delas via URL.\n\nVill du logga in?",
     "yourAccount": "Ditt konto",
     "proActive": "Pro aktivt",
-    "subscribeCta": "Uppgradera till Pro"
+    "subscribeCta": "Uppgradera till Pro",
+    "switchProviderConfirm": "Om du loggar in med {{next}} loggas du ut från {{current}}.\n\nPro-åtkomsten baseras därefter på din {{next}}-prenumeration.\n\nVill du byta till {{next}}?"
   },
   "loading": {
     "maps": "Laddar kartor...",

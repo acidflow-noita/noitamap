@@ -4597,7 +4597,8 @@
     "loginPrompt": "Melden Sie sich an, um Zeichenwerkzeuge zu verwenden.\n\nZeichnungen werden lokal gespeichert und können per URL geteilt werden.\n\nMöchten Sie sich anmelden?",
     "yourAccount": "Dein Konto",
     "proActive": "Pro aktiv",
-    "subscribeCta": "Auf Pro upgraden"
+    "subscribeCta": "Auf Pro upgraden",
+    "switchProviderConfirm": "Wenn Sie sich mit {{next}} anmelden, werden Sie von {{current}} abgemeldet.\n\nDer Pro-Zugriff richtet sich dann nach Ihrem {{next}}-Abonnement.\n\nMöchten Sie zu {{next}} wechseln?"
   },
   "loading": {
     "maps": "Karten werden geladen...",
