@@ -4847,7 +4847,8 @@
     "orbs": "Filtrer les résultats pour afficher uniquement les orbes",
     "spatialAwareness": "Filtrer les résultats pour afficher uniquement les points de conscience spatiale",
     "hiddenMessages": "Filtrer les résultats pour afficher uniquement les messages masqués",
-    "perks": "Filtrer les résultats pour n'afficher que les avantages"
+    "perks": "Filtrer les résultats pour n'afficher que les avantages",
+    "pillars": "Filtrer les résultats pour afficher uniquement les Piliers d'exploits"
   },
   "filterLabels": {
     "wands": "Baguettes",
@@ -4863,7 +4864,8 @@
     "orbs": "Orbes",
     "spatialAwareness": "Conscience spatiale",
     "hiddenMessages": "Messages cachés",
-    "perks": "Avantages"
+    "perks": "Avantages",
+    "pillars": "Piliers d'exploits"
   },
   "chunkGrid": {
     "title": "Grille de morceaux",

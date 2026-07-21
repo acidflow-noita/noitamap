@@ -505,6 +505,18 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     // Carries a descriptive per-location name ("Emerald Tablet
                     // (Holy Bomb)"); use it instead of the humanized item id.
                     label = r.name || "Emerald Tablet";
+                  } else if (itemName === "pillar_segment") {
+                    // Achievement subject's verified common.csv name when the
+                    // spec has one (bosses/essences), else the curated title.
+                    // (Locked state only affects rendering colour — the card
+                    // openly shows the requirement, so no need to hide names.)
+                    let nm = r.name && r.name !== "pillar_segment" ? r.name : "";
+                    const nameKey = r.reqSpec?.nameKey;
+                    if (nameKey) {
+                      const t = gameTranslator.translateItem(String(nameKey));
+                      if (t && t !== nameKey) nm = t;
+                    }
+                    label = nm || i18next.t("poi.pillars", "Achievement Pillars");
                   } else if (itemName === "orb") {
                     // True orbs carry a descriptive name ("Orb: Sea of Lava").
                     label = r.name && r.name !== "orb" ? r.name : "Orb";
@@ -568,6 +580,17 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     titleLine.style.fontStyle = "italic";
                     nameDiv.appendChild(titleLine);
                   }
+                }
+
+                // Pillar segment: localized pillar theme ("Pillar of Bosses")
+                // as a subtitle under the achievement title.
+                if (r.type === "item" && r.item === "pillar_segment" && r.theme) {
+                  const themeLine = document.createElement("div");
+                  themeLine.textContent = i18next.t(String(r.theme), String(r.theme));
+                  themeLine.style.fontSize = "0.82em";
+                  themeLine.style.color = "#9a9";
+                  themeLine.style.fontStyle = "italic";
+                  nameDiv.appendChild(themeLine);
                 }
 
                 // Show creature alias subtitle for entities

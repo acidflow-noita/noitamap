@@ -58,14 +58,22 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 /* Base image rules */
 #unifiedSearchFilterBox label img {
   width: 24px;
   height: 24px;
-  transition: filter 0.2s;
+  filter: saturate(0.7) brightness(0.86);
+  opacity: 0.78;
+  transition:
+    filter 0.2s,
+    opacity 0.2s,
+    transform 0.2s;
   image-rendering: pixelated;
 }
 
@@ -74,15 +82,24 @@
   border-color: var(--border-strong);
 }
 
-/* Active/Checked State - accent-tinted (was bootstrap white) */
+#unifiedSearchFilterBox label:hover img {
+  filter: saturate(0.95) brightness(1);
+  opacity: 0.95;
+}
+
+/* Active filters keep their original colour and gain a clear accent ring. */
 #unifiedSearchFilterBox label:has(input:checked) {
   background-color: var(--accent-bg);
   border-color: var(--accent-strong);
-  box-shadow: none;
+  box-shadow:
+    0 0 0 1px var(--accent-strong),
+    inset 0 0 10px color-mix(in srgb, var(--accent-strong) 18%, transparent);
 }
 
 #unifiedSearchFilterBox label:has(input:checked) img {
-  filter: none;
+  filter: saturate(1.15) brightness(1.08) contrast(1.04);
+  opacity: 1;
+  transform: scale(1.08);
 }
 
 #unifiedSearchFilterBox input {

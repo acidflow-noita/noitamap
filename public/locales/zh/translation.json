@@ -4847,7 +4847,8 @@
     "orbs": "过滤结果以仅显示球体",
     "spatialAwareness": "过滤结果以仅显示空间感知点",
     "hiddenMessages": "过滤结果以仅显示隐藏的消息",
-    "perks": "筛选结果，仅显示特性"
+    "perks": "筛选结果，仅显示特性",
+    "pillars": "过滤结果以仅显示成就之柱"
   },
   "filterLabels": {
     "wands": "魔杖",
@@ -4863,7 +4864,8 @@
     "orbs": "球体",
     "spatialAwareness": "空间意识",
     "hiddenMessages": "隐藏消息",
-    "perks": "特性"
+    "perks": "特性",
+    "pillars": "成就之柱"
   },
   "chunkGrid": {
     "title": "块网格",

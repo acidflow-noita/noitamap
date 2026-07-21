@@ -809,6 +809,14 @@ export interface PillarSegmentPOI {
   reqSpec?: PillarReqSpec;
 }
 
+export function isAchievementPillarSegment(poi: any): boolean {
+  return (
+    poi?.type === "item" &&
+    poi.item === "pillar_segment" &&
+    !String(poi.flag || "").startsWith("__struct")
+  );
+}
+
 /**
  * Build every pillar segment POI for the Achievement Pillars centred at
  * (baseX, baseY). `isUnlocked(flag)` decides colour vs grayscale. Plain

@@ -4847,7 +4847,8 @@
     "orbs": "Filtre os resultados para mostrar apenas orbes",
     "spatialAwareness": "Filtre os resultados para mostrar apenas pontos de consciência espacial",
     "hiddenMessages": "Filtre os resultados para mostrar apenas mensagens ocultas",
-    "perks": "Filtrar resultados para mostrar apenas vantagens"
+    "perks": "Filtrar resultados para mostrar apenas vantagens",
+    "pillars": "Filtre os resultados para mostrar apenas os Pilares de Conquistas"
   },
   "filterLabels": {
     "wands": "Varinhas",
@@ -4863,7 +4864,8 @@
     "orbs": "Orbes",
     "spatialAwareness": "Consciência Espacial",
     "hiddenMessages": "Mensagens ocultas",
-    "perks": "Vantagens"
+    "perks": "Vantagens",
+    "pillars": "Pilares de Conquistas"
   },
   "chunkGrid": {
     "title": "Grade de pedaços",

@@ -4847,7 +4847,8 @@
     "orbs": "結果をフィルターしてオーブのみを表示する",
     "spatialAwareness": "結果をフィルタリングして空間認識ポイントのみを表示する",
     "hiddenMessages": "結果をフィルタリングして非表示のメッセージのみを表示する",
-    "perks": "結果をフィルターして特典のみ表示"
+    "perks": "結果をフィルターして特典のみ表示",
+    "pillars": "結果をフィルタリングして達成の柱のみを表示する"
   },
   "filterLabels": {
     "wands": "ワンド",
@@ -4863,7 +4864,8 @@
     "orbs": "オーブ",
     "spatialAwareness": "空間認識",
     "hiddenMessages": "隠しメッセージ",
-    "perks": "特典"
+    "perks": "特典",
+    "pillars": "達成の柱"
   },
   "chunkGrid": {
     "title": "チャンクグリッド",

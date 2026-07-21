@@ -4847,7 +4847,8 @@
     "orbs": "Filter hasil untuk hanya menampilkan bola",
     "spatialAwareness": "Filter hasil untuk hanya menampilkan titik kesadaran spasial",
     "hiddenMessages": "Filter hasil untuk hanya menampilkan pesan tersembunyi",
-    "perks": "Saring hasil untuk menampilkan hanya perk"
+    "perks": "Saring hasil untuk menampilkan hanya perk",
+    "pillars": "Filter hasil untuk hanya menampilkan Pilar Pencapaian"
   },
   "filterLabels": {
     "wands": "tongkat sihir",
@@ -4863,7 +4864,8 @@
     "orbs": "bola",
     "spatialAwareness": "Kesadaran Spasial",
     "hiddenMessages": "Pesan Tersembunyi",
-    "perks": "Perk"
+    "perks": "Perk",
+    "pillars": "Pilar Pencapaian"
   },
   "chunkGrid": {
     "title": "Kotak Potongan",

@@ -4847,7 +4847,8 @@
     "orbs": "Suodata tulokset näyttääksesi vain pallot",
     "spatialAwareness": "Suodata tulokset näyttääksesi vain tilatietoisuuspisteet",
     "hiddenMessages": "Suodata tulokset näyttääksesi vain piilotetut viestit",
-    "perks": "Suodata tulokset näyttämään vain perkit"
+    "perks": "Suodata tulokset näyttämään vain perkit",
+    "pillars": "Suodata tulokset näyttääksesi vain saavutuspylväät"
   },
   "filterLabels": {
     "wands": "sauvat",
@@ -4863,7 +4864,8 @@
     "orbs": "Orbs",
     "spatialAwareness": "Tilatietoisuus",
     "hiddenMessages": "Piilotetut viestit",
-    "perks": "Perkit"
+    "perks": "Perkit",
+    "pillars": "Saavutuspylväät"
   },
   "chunkGrid": {
     "title": "Osittainen verkko",

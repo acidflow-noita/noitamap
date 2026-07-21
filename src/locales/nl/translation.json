@@ -4847,7 +4847,8 @@
     "orbs": "Filter de resultaten om alleen lichtbollen weer te geven",
     "spatialAwareness": "Filter de resultaten om alleen ruimtelijke bewustzijnspunten weer te geven",
     "hiddenMessages": "Filter de resultaten om alleen verborgen berichten weer te geven",
-    "perks": "Resultaten filteren om alleen perks te tonen"
+    "perks": "Resultaten filteren om alleen perks te tonen",
+    "pillars": "Filter de resultaten om alleen prestatiepilaren weer te geven"
   },
   "filterLabels": {
     "wands": "Toverstokken",
@@ -4863,7 +4864,8 @@
     "orbs": "Orbs",
     "spatialAwareness": "Ruimtelijk bewustzijn",
     "hiddenMessages": "Verborgen berichten",
-    "perks": "Perks"
+    "perks": "Perks",
+    "pillars": "Prestatiepilaren"
   },
   "chunkGrid": {
     "title": "Chunk-raster",

@@ -4847,7 +4847,8 @@
     "orbs": "Filtrar resultados para mostrar solo orbes",
     "spatialAwareness": "Filtrar resultados para mostrar solo puntos de conciencia espacial",
     "hiddenMessages": "Filtrar resultados para mostrar solo mensajes ocultos",
-    "perks": "Filtrar los resultados para mostrar solo ventajas"
+    "perks": "Filtrar los resultados para mostrar solo ventajas",
+    "pillars": "Filtrar resultados para mostrar solo los Pilares de Logros"
   },
   "filterLabels": {
     "wands": "varitas",
@@ -4863,7 +4864,8 @@
     "orbs": "Orbes",
     "spatialAwareness": "Conciencia espacial",
     "hiddenMessages": "Mensajes ocultos",
-    "perks": "Ventajas"
+    "perks": "Ventajas",
+    "pillars": "Pilares de Logros"
   },
   "chunkGrid": {
     "title": "Cuadricula de chunks",

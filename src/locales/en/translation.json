@@ -156,7 +156,8 @@
     "structures": "Filter results to show only structures",
     "orbs": "Filter results to show only orbs",
     "spatialAwareness": "Filter results to show only spatial awareness points",
-    "hiddenMessages": "Filter results to show only hidden messages"
+    "hiddenMessages": "Filter results to show only hidden messages",
+    "pillars": "Filter results to show only Achievement Pillar segments"
   },
   "filterLabels": {
     "wands": "Wands",
@@ -172,7 +173,8 @@
     "structures": "Structures",
     "orbs": "Orbs",
     "spatialAwareness": "Spatial Awareness",
-    "hiddenMessages": "Hidden Messages"
+    "hiddenMessages": "Hidden Messages",
+    "pillars": "Achievement Pillars"
   },
   "spell_prefix": "Spell",
   "tiers_prefix": "Tiers",

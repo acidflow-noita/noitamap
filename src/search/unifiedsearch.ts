@@ -16,7 +16,7 @@ import { AuthUI } from "../auth/auth-ui";
 import { updateURLWithSearch } from "../data_sources/url";
 import { perkNameKey } from "../telescope/perk-i18n";
 import { canonicalEntityId } from "../telescope/entity-canonical";
-import { ITEM_SEARCH_NAME_KEYS, PILLAR_PLACES } from "../data/pillars";
+import { isAchievementPillarSegment, ITEM_SEARCH_NAME_KEYS, PILLAR_PLACES } from "../data/pillars";
 import orbsData from "../data/orbs.json";
 
 /**
@@ -486,6 +486,26 @@ const BOSS_TYPES = new Set([
   "tiny",
 ]);
 
+// Pillar requirement targetType -> CREATURE_DATA id, so boss segments index the
+// same English aliases as the boss POIs (mirrors entityNameForSearch below).
+const PILLAR_TARGET_CREATURE: Record<string, string> = {
+  alchemist_boss: "boss_alchemist",
+  pyramid_boss: "boss_limbs",
+  dragon: "boss_dragon",
+  triangle_boss: "boss_gate",
+  boss_fish: "fish_giga",
+  tiny: "maggot_tiny",
+  islandspirit: "islandspirit",
+  friend: "friend",
+  boss_ghost: "boss_ghost",
+  boss_sky: "boss_sky",
+  boss_wizard: "boss_wizard",
+  boss_centipede: "boss_centipede",
+  boss_robot: "boss_robot",
+  boss_meat: "boss_meat",
+  boss_pit: "boss_pit",
+};
+
 /** Check if a POI matches any of the active filters. */
 function matchesFilters(p: DynamicPOI, activeFilters: Set<string>): boolean {
   if (activeFilters.size === 0) return true;
@@ -506,8 +526,16 @@ function matchesFilters(p: DynamicPOI, activeFilters: Set<string>): boolean {
   }
   if (activeFilters.has("w") && p.type === "wand") return true;
   if (activeFilters.has("s") && p.type === "item" && p.item === "spell") return true;
-  if (activeFilters.has("i") && p.type === "item" && p.item !== "spell" && p.item !== "perk") return true;
+  if (
+    activeFilters.has("i") &&
+    p.type === "item" &&
+    p.item !== "spell" &&
+    p.item !== "perk" &&
+    !isAchievementPillarSegment(p)
+  )
+    return true;
   if (activeFilters.has("pk") && p.type === "item" && p.item === "perk") return true;
+  if (activeFilters.has("pi") && isAchievementPillarSegment(p)) return true;
   if (activeFilters.has("c") && CHEST_TYPES.has(p.type)) return true;
   if (activeFilters.has("hm") && HOLY_MOUNTAIN_TYPES.has(p.type)) return true;
   if (
@@ -794,6 +822,7 @@ export class UnifiedSearch extends EventEmitter2 {
           { type: "b", iconSrc: "assets/icons/overlay-toggles/icon-bosses.webp" },
           { type: "e", atlasKey: "spell:exploding_deer" },
           { type: "or", iconSrc: "assets/icons/overlay-toggles/icon-orbs.webp" },
+          { type: "pi", atlasKey: "pillar:pillar_part_secretall" },
         ]
       : [
           { type: "s", iconSrc: "assets/icons/spells/light_bullet.png" },
@@ -818,6 +847,7 @@ export class UnifiedSearch extends EventEmitter2 {
       e: i18next.t("filterLabels.creatures", "Enemies"),
       st: i18next.t("filterLabels.structures", "Structures"),
       or: i18next.t("filterLabels.orbs", "Orbs"),
+      pi: i18next.t("filterLabels.pillars", "Achievement Pillars"),
       sa: i18next.t("filterLabels.spatialAwareness", "Spatial Awareness"),
       msg: i18next.t("filterLabels.hiddenMessages", "Hidden Messages"),
     };
@@ -834,6 +864,7 @@ export class UnifiedSearch extends EventEmitter2 {
       e: i18next.t("searchFilters.creatures", "Filter results to show only creatures"),
       st: i18next.t("searchFilters.structures", "Filter results to show only structures"),
       or: i18next.t("searchFilters.orbs", "Filter results to show only orbs"),
+      pi: i18next.t("searchFilters.pillars", "Filter results to show only Achievement Pillar segments"),
       sa: i18next.t("searchFilters.spatialAwareness", "Filter results to show only spatial awareness points"),
       msg: i18next.t("searchFilters.hiddenMessages", "Filter results to show only hidden messages"),
     };
@@ -912,6 +943,7 @@ export class UnifiedSearch extends EventEmitter2 {
       e: i18next.t("filterLabels.creatures", "Enemies"),
       st: i18next.t("filterLabels.structures", "Structures"),
       or: i18next.t("filterLabels.orbs", "Orbs"),
+      pi: i18next.t("filterLabels.pillars", "Achievement Pillars"),
       sa: i18next.t("filterLabels.spatialAwareness", "Spatial Awareness"),
       msg: i18next.t("filterLabels.hiddenMessages", "Hidden Messages"),
     };
@@ -928,6 +960,7 @@ export class UnifiedSearch extends EventEmitter2 {
       e: i18next.t("searchFilters.creatures", "Filter results to show only creatures"),
       st: i18next.t("searchFilters.structures", "Filter results to show only structures"),
       or: i18next.t("searchFilters.orbs", "Filter results to show only orbs"),
+      pi: i18next.t("searchFilters.pillars", "Filter results to show only Achievement Pillar segments"),
       sa: i18next.t("searchFilters.spatialAwareness", "Filter results to show only spatial awareness points"),
       msg: i18next.t("searchFilters.hiddenMessages", "Filter results to show only hidden messages"),
     };
@@ -1081,6 +1114,35 @@ export class UnifiedSearch extends EventEmitter2 {
         if (nameKey) {
           const t = gameTranslator.translateItem(nameKey);
           if (t && t !== nameKey) parts.push(t);
+        }
+      }
+
+      // Achievement pillar segments: index the curated title (p.name), the
+      // localized pillar theme ("Pillar of Bosses") and, when the requirement
+      // names a boss/essence via a common.csv key, that verified localized
+      // name — so "Suomuhauki" or its translation finds the boss's segment.
+      // Boss segments also index the English community alias ("Dragon"),
+      // mirroring the boss POIs themselves.
+      if (isAchievementPillarSegment(p)) {
+        parts.push("pillar", "achievement");
+        const theme = (p as any).theme;
+        if (theme) {
+          const t = i18next.t(String(theme), String(theme));
+          if (t) parts.push(t);
+        }
+        const spec = (p as any).reqSpec;
+        const reqNameKey = spec?.nameKey;
+        if (reqNameKey) {
+          const t = gameTranslator.translateItem(String(reqNameKey));
+          if (t && t !== reqNameKey) parts.push(t);
+        }
+        const cid = spec?.creatureId ?? (spec?.targetType ? PILLAR_TARGET_CREATURE[spec.targetType] : undefined);
+        if (cid) {
+          const alias = CREATURE_ALIASES[cid];
+          if (alias) parts.push(alias);
+          const data = CREATURE_DATA[cid];
+          if (data?.name) parts.push(data.name);
+          if (data?.alias) parts.push(data.alias);
         }
       }
 
@@ -1394,6 +1456,13 @@ export class UnifiedSearch extends EventEmitter2 {
             perk: (p as any).perk,
             titleKey: (p as any).titleKey,
             orbIndex: (p as any).orbIndex,
+            flag: (p as any).flag,
+            segCode: (p as any).segCode,
+            locked: (p as any).locked,
+            pillarIndex: (p as any).pillarIndex,
+            theme: (p as any).theme,
+            reqSpec: (p as any).reqSpec,
+            wiki: (p as any).wiki,
           };
         });
 
@@ -1501,6 +1570,13 @@ export class UnifiedSearch extends EventEmitter2 {
           chestVariant: (p as any).chestVariant,
           perk: (p as any).perk,
           orbIndex: (p as any).orbIndex,
+          flag: (p as any).flag,
+          segCode: (p as any).segCode,
+          locked: (p as any).locked,
+          pillarIndex: (p as any).pillarIndex,
+          theme: (p as any).theme,
+          reqSpec: (p as any).reqSpec,
+          wiki: (p as any).wiki,
         } as any;
       });
 
@@ -1614,6 +1690,7 @@ export class UnifiedSearch extends EventEmitter2 {
           { type: "b", iconSrc: "assets/icons/overlay-toggles/icon-bosses.webp" },
           { type: "e", atlasKey: "spell:exploding_deer" },
           { type: "or", iconSrc: "assets/icons/overlay-toggles/icon-orbs.webp" },
+          { type: "pi", atlasKey: "pillar:pillar_part_secretall" },
         ]
       : [
           { type: "s", iconSrc: "assets/icons/spells/light_bullet.png" },
@@ -1638,6 +1715,7 @@ export class UnifiedSearch extends EventEmitter2 {
       e: i18next.t("filterLabels.creatures", "Enemies"),
       st: i18next.t("filterLabels.structures", "Structures"),
       or: i18next.t("filterLabels.orbs", "Orbs"),
+      pi: i18next.t("filterLabels.pillars", "Achievement Pillars"),
       sa: i18next.t("filterLabels.spatialAwareness", "Spatial Awareness"),
       msg: i18next.t("filterLabels.hiddenMessages", "Hidden Messages"),
     };
@@ -1655,6 +1733,7 @@ export class UnifiedSearch extends EventEmitter2 {
       e: i18next.t("searchFilters.creatures", "Filter results to show only creatures"),
       st: i18next.t("searchFilters.structures", "Filter results to show only structures"),
       or: i18next.t("searchFilters.orbs", "Filter results to show only orbs"),
+      pi: i18next.t("searchFilters.pillars", "Filter results to show only Achievement Pillar segments"),
       sa: i18next.t("searchFilters.spatialAwareness", "Filter results to show only spatial awareness points"),
       msg: i18next.t("searchFilters.hiddenMessages", "Filter results to show only hidden messages"),
     };

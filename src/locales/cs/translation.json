@@ -4847,7 +4847,8 @@
     "orbs": "Filtrujte výsledky, abyste zobrazili pouze koule",
     "spatialAwareness": "Filtrujte výsledky, abyste zobrazili pouze body prostorového povědomí",
     "hiddenMessages": "Filtrovat výsledky, aby se zobrazily pouze skryté zprávy",
-    "perks": "Filtrovat výsledky a zobrazit pouze perky"
+    "perks": "Filtrovat výsledky a zobrazit pouze perky",
+    "pillars": "Filtrujte výsledky, abyste zobrazili pouze Pilíře úspěchů"
   },
   "filterLabels": {
     "wands": "Hůlky",
@@ -4863,7 +4864,8 @@
     "orbs": "Orby",
     "spatialAwareness": "Prostorové povědomí",
     "hiddenMessages": "Skryté zprávy",
-    "perks": "Perky"
+    "perks": "Perky",
+    "pillars": "Pilíře úspěchů"
   },
   "chunkGrid": {
     "title": "Kusová mřížka",

@@ -41,7 +41,13 @@ import {
   perkAtlasKey,
 } from "./poi-spatial-index";
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
-import { poiPillarAssociation, pillarPlaceAssociation, pillarLocationForFlag, ITEM_SEARCH_NAME_KEYS } from "../data/pillars";
+import {
+  isAchievementPillarSegment,
+  poiPillarAssociation,
+  pillarPlaceAssociation,
+  pillarLocationForFlag,
+  ITEM_SEARCH_NAME_KEYS,
+} from "../data/pillars";
 import { createMarkerTileSource } from "./marker-tile-source";
 import { perkNameKey, perkDescKey } from "./perk-i18n";
 import { canonicalEntityId } from "./entity-canonical";
@@ -5239,9 +5245,11 @@ export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: numb
     const pw = parseInt(pwStr);
     for (const poi of pois) {
       const isEnemySpawn = poi.type === "enemies" || poi.type === "props";
-      // Pillar segments are a decorative structure (~120 tiles); keep them off
-      // the search list. They still render + open cards via the map markers.
-      if ((poi as any).item === "pillar_segment") continue;
+      // Index engraved achievement segments, but omit the plain structural
+      // base/fade/cap pieces so pillar search results stay useful.
+      if ((poi as any).item === "pillar_segment" && !isAchievementPillarSegment(poi)) {
+        continue;
+      }
       // Enemy/prop spawn containers: only emit inner items, not the parent
       if (!isEnemySpawn) {
         flat.push({ ...poi, pw, worldX: poi.x, worldY: poi.y });

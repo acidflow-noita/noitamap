@@ -4847,7 +4847,8 @@
     "orbs": "Filtern Sie die Ergebnisse, um nur Kugeln anzuzeigen",
     "spatialAwareness": "Filtern Sie die Ergebnisse, um nur räumliche Wahrnehmungspunkte anzuzeigen",
     "hiddenMessages": "Filtern Sie die Ergebnisse, um nur ausgeblendete Nachrichten anzuzeigen",
-    "perks": "Ergebnisse filtern, um nur Boni anzuzeigen"
+    "perks": "Ergebnisse filtern, um nur Boni anzuzeigen",
+    "pillars": "Filtern Sie die Ergebnisse, um nur die Säulen der Errungenschaften anzuzeigen"
   },
   "filterLabels": {
     "wands": "Zauberstäbe",
@@ -4863,7 +4864,8 @@
     "orbs": "Kugeln",
     "spatialAwareness": "Raumbewusstsein",
     "hiddenMessages": "Versteckte Nachrichten",
-    "perks": "Boni"
+    "perks": "Boni",
+    "pillars": "Säulen der Errungenschaften"
   },
   "chunkGrid": {
     "title": "Chunk-Gitter",

@@ -4847,7 +4847,8 @@
     "orbs": "Filtrera resultat för att endast visa klot",
     "spatialAwareness": "Filtrera resultat för att endast visa rumsliga medvetenhetspunkter",
     "hiddenMessages": "Filtrera resultat för att endast visa dolda meddelanden",
-    "perks": "Filtrera resultaten för att bara visa perks"
+    "perks": "Filtrera resultaten för att bara visa perks",
+    "pillars": "Filtrera resultat för att endast visa bedriftspelare"
   },
   "filterLabels": {
     "wands": "Stavar",
@@ -4863,7 +4864,8 @@
     "orbs": "Orbs",
     "spatialAwareness": "Rumslig medvetenhet",
     "hiddenMessages": "Dolda meddelanden",
-    "perks": "Perks"
+    "perks": "Perks",
+    "pillars": "Bedriftspelare"
   },
   "chunkGrid": {
     "title": "Chunk Grid",

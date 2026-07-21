@@ -604,6 +604,9 @@ export function buildPOIName(p: any): string {
   // (Sea of Lava)"); prefer it over the raw item id so search results are
   // distinguishable and "tablet" tokenizes as its own word.
   if (p.item === "emerald_tablet") return p.name || "Emerald Tablet";
+  // Achievement pillar segments carry the curated achievement title
+  // ("Suomuhauki", "The Tower") — never surface the raw "pillar_segment" id.
+  if (p.item === "pillar_segment") return p.name || "Achievement Pillar";
   if (p.item) return p.item;
   // An entity may carry an explicit display name (e.g. a boss reward "Sampo");
   // prefer it over the raw entity id (boss_centipede_sampo).

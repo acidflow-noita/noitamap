@@ -4847,7 +4847,8 @@
     "orbs": "Filtra i risultati per mostrare solo le sfere",
     "spatialAwareness": "Filtra i risultati per mostrare solo i punti di consapevolezza spaziale",
     "hiddenMessages": "Filtra i risultati per mostrare solo i messaggi nascosti",
-    "perks": "Filtra i risultati per mostrare solo i vantaggi"
+    "perks": "Filtra i risultati per mostrare solo i vantaggi",
+    "pillars": "Filtra i risultati per mostrare solo i Pilastri delle Imprese"
   },
   "filterLabels": {
     "wands": "Bacchette",
@@ -4863,7 +4864,8 @@
     "orbs": "Sfere",
     "spatialAwareness": "Consapevolezza spaziale",
     "hiddenMessages": "Messaggi nascosti",
-    "perks": "Vantaggi"
+    "perks": "Vantaggi",
+    "pillars": "Pilastri delle Imprese"
   },
   "chunkGrid": {
     "title": "Griglia a blocchi",

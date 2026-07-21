@@ -4847,7 +4847,8 @@
     "orbs": "Filtruj wyniki, aby wyświetlić tylko kule",
     "spatialAwareness": "Filtruj wyniki, aby wyświetlić tylko punkty świadomości przestrzennej",
     "hiddenMessages": "Filtruj wyniki, aby wyświetlić tylko ukryte wiadomości",
-    "perks": "Filtruj wyniki, aby pokazać tylko profity"
+    "perks": "Filtruj wyniki, aby pokazać tylko profity",
+    "pillars": "Filtruj wyniki, aby wyświetlić tylko Filary Osiągnięć"
   },
   "filterLabels": {
     "wands": "Różdżki",
@@ -4863,7 +4864,8 @@
     "orbs": "Kule",
     "spatialAwareness": "Świadomość przestrzenna",
     "hiddenMessages": "Ukryte wiadomości",
-    "perks": "Profity"
+    "perks": "Profity",
+    "pillars": "Filary Osiągnięć"
   },
   "chunkGrid": {
     "title": "Siatka kawałków",
