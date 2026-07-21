@@ -16,7 +16,7 @@ import { AuthUI } from "../auth/auth-ui";
 import { updateURLWithSearch } from "../data_sources/url";
 import { perkNameKey } from "../telescope/perk-i18n";
 import { canonicalEntityId } from "../telescope/entity-canonical";
-import { isAchievementPillarSegment, pillarSegmentTitle, ITEM_SEARCH_NAME_KEYS, PILLAR_PLACES } from "../data/pillars";
+import { isAchievementPillarSegment, pillarSegmentTitle, resolvePillarLinkLabel, ITEM_SEARCH_NAME_KEYS, PILLAR_PLACES } from "../data/pillars";
 import orbsData from "../data/orbs.json";
 
 /**
@@ -64,7 +64,12 @@ function getTrueOrbPOIs(): DynamicPOI[] {
  */
 function getPillarPlacePOIs(): DynamicPOI[] {
   return PILLAR_PLACES.map((p) => {
-    const name = p.labelKey ? String(i18next.t(p.labelKey, p.label || p.labelKey)) : p.label;
+    const name = resolvePillarLinkLabel(
+      p,
+      (k) => gameTranslator.translateItem(k),
+      (k) => gameTranslator.translateMaterial(k),
+      (k, dv) => String(i18next.t(k, dv)),
+    );
     return {
       id: `d-pillar-place-${p.key.replace(",", "_")}`,
       type: "pillar_place",

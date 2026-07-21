@@ -647,6 +647,7 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
         type: "pillar_place",
         name: p.label,
         labelKey: p.labelKey,
+        labelNameKey: p.labelNameKey,
         wiki: p.wiki,
         x: p.x,
         y: p.y,

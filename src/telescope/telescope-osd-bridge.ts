@@ -44,6 +44,7 @@ import type { MarkerData, MarkerItem } from "./poi-spatial-index";
 import {
   isAchievementPillarSegment,
   pillarSegmentTitle,
+  resolvePillarLinkLabel,
   poiPillarAssociation,
   pillarPlaceAssociation,
   pillarLocationForFlag,
@@ -3851,7 +3852,12 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           links: Array<import("../data/pillars").PillarLink>,
         ) => {
           const resolveLabel = (link: import("../data/pillars").PillarLink): string =>
-            link.label ?? (link.labelKey ? i18next.t(link.labelKey, link.labelKey) : "");
+            resolvePillarLinkLabel(
+              link,
+              (k) => gameTranslator.translateItem(k),
+              (k) => gameTranslator.translateMaterial(k),
+              (k, dv) => String(i18next.t(k, dv)),
+            );
           // Links must wrap the DESTINATION mention, not the card's "Title: "
           // prefix — "Void Moon: bring ... to the Moon's centre" would
           // otherwise link the title's "Moon". Skip a short leading ": "
@@ -3861,10 +3867,16 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           const matches: Array<{ start: number; end: number; link: (typeof links)[number]; label: string }> = [];
           const trailing: Array<{ link: (typeof links)[number]; label: string }> = [];
           for (const link of links) {
+            // `label` is the LOCALIZED text shown in the pin; the span located in
+            // the sentence is the English `link.label` literal (proper nouns stay
+            // English in every locale's req string), so the matched span length
+            // MUST use link.label.length, not the localized label's length —
+            // otherwise the cursor drifts and mangles the surrounding text.
             const label = resolveLabel(link);
             const idx = link.label ? sentence.indexOf(link.label, bodyStart) : -1;
-            if (idx >= 0 && !matches.some((m) => idx < m.end && idx + label.length > m.start)) {
-              matches.push({ start: idx, end: idx + label.length, link, label });
+            const span = link.label?.length ?? 0;
+            if (idx >= 0 && !matches.some((m) => idx < m.end && idx + span > m.start)) {
+              matches.push({ start: idx, end: idx + span, link, label });
             } else {
               trailing.push({ link, label });
             }
@@ -4250,9 +4262,17 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // baked name still translates); everything else derives from type.
     if (poi.type === "pillar_place") {
       const pp = poi as any;
-      title.textContent = pp.labelKey
-        ? String(i18next.t(pp.labelKey, pp.name || pp.labelKey))
-        : String(pp.name || "Unknown");
+      // labelNameKey (common.csv) / labelKey (locale) win over the baked name so
+      // the click-only marker's place name still localizes. See PILLAR_PLACES.
+      title.textContent =
+        pp.labelNameKey || pp.labelKey
+          ? resolvePillarLinkLabel(
+              pp,
+              (k) => gameTranslator.translateItem(k),
+              (k) => gameTranslator.translateMaterial(k),
+              (k, dv) => String(i18next.t(k, dv)),
+            )
+          : String(pp.name || "Unknown");
     } else {
       const label = poi.type || "Unknown";
       title.textContent = gameTranslator.translateItem(label).replace(/_/g, " ");

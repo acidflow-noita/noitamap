@@ -127,6 +127,16 @@ export interface PillarLink extends PillarTarget {
   /** i18n key resolved at render time — for localized chip labels (halo). */
   labelKey?: string;
   /**
+   * common.csv key of the link's official in-game name (animal_*, item_*,
+   * mat_*, building_*, action_*). When set, the DISPLAYED label resolves to the
+   * verified translation (all 16 langs) — same source the destination card uses
+   * — while `label` stays the literal used to locate the span in the (English-
+   * proper-noun) sentence. Names are NEVER blind-translated: only keys already
+   * present in common.csv are used. Community/wiki names with no in-game term
+   * (Avarice Diamond, Mountain Altar, The Work) carry no key and stay literal.
+   */
+  labelNameKey?: string;
+  /**
    * Search chips backed by a seed-dependent structure POI: when no POI with
    * this `item` id exists in the marker index, the results banner explains
    * that only the destination chamber matched (pillar.structureMissing).
@@ -187,9 +197,13 @@ export interface PillarReqSpec {
 
 // Reusable travel-link presets. Coords for fixed structures come from
 // src/data/structures.json; POI-type links resolve to the generated POI.
-const LINK_TOVERI: PillarLink = { label: "Toveri", targetType: "friend" };
+// labelNameKey names the verified common.csv term so the chip/inline label is
+// localized exactly like the destination card (proper nouns are transliterated
+// per common.csv, never invented here).
+const LINK_TOVERI: PillarLink = { label: "Toveri", labelNameKey: "animal_friend", targetType: "friend" };
 const LINK_KAUHU: PillarLink = {
   label: "Kauhuhirviö",
+  labelNameKey: "animal_ultimate_killer",
   wiki: "https://noita.wiki.gg/wiki/Kauhuhirvi%C3%B6",
   entity: "ultimate_killer",
 };
@@ -199,8 +213,8 @@ const LINK_AVARICE: PillarLink = {
   x: 9472,
   y: 4330,
 };
-const LINK_TAPIO: PillarLink = { label: "Tapion vasalli", targetType: "islandspirit" };
-const LINK_KOLMI: PillarLink = { label: "Kolmisilmä", targetType: "boss_centipede" };
+const LINK_TAPIO: PillarLink = { label: "Tapion vasalli", labelNameKey: "animal_islandspirit", targetType: "islandspirit" };
+const LINK_KOLMI: PillarLink = { label: "Kolmisilmä", labelNameKey: "animal_boss_centipede", targetType: "boss_centipede" };
 const LINK_ALTAR: PillarLink = {
   label: "Mountain Altar",
   x: 781,
@@ -226,8 +240,8 @@ const T_TOWER_PORTAL: PillarTarget = { x: 9984, y: 4358 };
 
 // Moon links recur across many specs — share one const so the wiki page and
 // coords can never drift between them.
-const LINK_MOON: PillarLink = { label: "Moon", wiki: "https://noita.wiki.gg/wiki/Moon", ...T_MOON };
-const LINK_DARK_MOON: PillarLink = { label: "Dark Moon", wiki: "https://noita.wiki.gg/wiki/Dark_Moon", ...T_DARK_MOON };
+const LINK_MOON: PillarLink = { label: "Moon", labelNameKey: "item_moon", wiki: "https://noita.wiki.gg/wiki/Moon", ...T_MOON };
+const LINK_DARK_MOON: PillarLink = { label: "Dark Moon", labelNameKey: "item_moon", wiki: "https://noita.wiki.gg/wiki/Dark_Moon", ...T_DARK_MOON };
 
 // Shared by the completion segments.
 const LINK_ENDINGS: PillarLink = { label: "Endings", wiki: "https://noita.wiki.gg/wiki/Endings" };
@@ -373,11 +387,11 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
   secret_moon: { key: "pillar.req.voidMoon", links: [LINK_MOON, LINK_4_ESSENCES] },
   secret_moon2: {
     key: "pillar.req.drunkMoon",
-    links: [LINK_MOON, LINK_5_ESSENCES, { label: "Destruction", search: true, searchNameKeys: ["action_destruction"] }],
+    links: [LINK_MOON, LINK_5_ESSENCES, { label: "Destruction", labelNameKey: "action_destruction", search: true, searchNameKeys: ["action_destruction"] }],
   },
   special_mood: {
     key: "pillar.req.gourdMoon",
-    links: [LINK_KOLMI, LINK_MOON, { label: "Refreshing Gourd", itemId: "gourd" }, LINK_4_ESSENCES],
+    links: [LINK_KOLMI, LINK_MOON, { label: "Refreshing Gourd", labelNameKey: "item_gourd", itemId: "gourd" }, LINK_4_ESSENCES],
   },
   secret_dmoon: { key: "pillar.req.bloodMoon", links: [LINK_DARK_MOON] },
   dead_mood: { key: "pillar.req.darkGourdMoon", links: [LINK_DARK_MOON] },
@@ -482,7 +496,7 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
     key: "pillar.req.darkChest",
     target: { chestVariant: "dark" },
     links: [
-      { label: "Crystal Key", wiki: "https://noita.wiki.gg/wiki/Crystal_Key" },
+      { label: "Crystal Key", labelNameKey: "item_key", wiki: "https://noita.wiki.gg/wiki/Crystal_Key" },
       { label: "Huilu", wandSprite: "custom/flute" },
       { label: "Kantele", wandSprite: "custom/kantele" },
       { label: "chest in eastern Hell", chestVariant: "dark" },
@@ -492,7 +506,7 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
     key: "pillar.req.coralChest",
     target: { chestVariant: "coral" },
     links: [
-      { label: "Crystal Key", wiki: "https://noita.wiki.gg/wiki/Crystal_Key" },
+      { label: "Crystal Key", labelNameKey: "item_key", wiki: "https://noita.wiki.gg/wiki/Crystal_Key" },
       { label: "Music Machines", search: true, query: "Music Machine" },
       { label: "Eastern Cloudscape chest", chestVariant: "coral" },
     ],
@@ -522,7 +536,7 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
     key: "pillar.req.secretFruit",
     links: [
       LINK_KOLMI,
-      { label: "gourd", search: true, searchNameKeys: ["item_gourd"] },
+      { label: "gourd", labelNameKey: "item_gourd", search: true, searchNameKeys: ["item_gourd"] },
       { label: "Gourd Cave", wiki: "https://noita.wiki.gg/wiki/Refreshing_Gourd", ...T_GOURD_CAVE },
     ],
   },
@@ -549,7 +563,7 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
     target: { itemId: "buried_eye" },
     links: [
       { label: "Buried Eye", search: true, query: "Buried Eye", structureItem: "buried_eye" },
-      { label: "Teleportatium", search: true, searchNameKeys: ["mat_magic_liquid_teleportation"] },
+      { label: "Teleportatium", labelNameKey: "mat_magic_liquid_teleportation", search: true, searchNameKeys: ["mat_magic_liquid_teleportation"] },
     ],
   },
   // The Hourglass Chamber spawns left OR right of the Hiisi Base shop (50/50
@@ -560,22 +574,22 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
     target: { itemId: "hourglass" },
     links: [
       { label: "Hourglass", itemId: "hourglass", wiki: "https://noita.wiki.gg/wiki/The_Hourglass_Chamber" },
-      { label: "Unstable Teleportatium", search: true, searchNameKeys: ["mat_magic_liquid_unstable_teleportation"] },
+      { label: "Unstable Teleportatium", labelNameKey: "mat_magic_liquid_unstable_teleportation", search: true, searchNameKeys: ["mat_magic_liquid_unstable_teleportation"] },
     ],
   },
   progress_hut_a: {
     key: "pillar.req.expWandGlimmer",
     target: T_EXP_WAND_DIAMOND,
-    links: [{ label: "Experimental wand", wiki: "https://noita.wiki.gg/wiki/Wands#Unique_wands" }],
+    links: [{ label: "Experimental wand", labelNameKey: "item_wand_experimental_1", wiki: "https://noita.wiki.gg/wiki/Wands#Unique_wands" }],
   },
   progress_hut_b: {
     key: "pillar.req.expWandRequirements",
     target: T_EXP_WAND_DIAMOND,
-    links: [{ label: "Experimental wand", wiki: "https://noita.wiki.gg/wiki/Wands#Unique_wands" }],
+    links: [{ label: "Experimental wand", labelNameKey: "item_wand_experimental_1", wiki: "https://noita.wiki.gg/wiki/Wands#Unique_wands" }],
   },
   secret_null: {
     key: "pillar.req.nullAltar",
-    links: [{ label: "Nullifying Altar", wiki: "https://noita.wiki.gg/wiki/Nullifying_Altar", ...T_NULL_ALTAR }],
+    links: [{ label: "Nullifying Altar", labelNameKey: "building_altar_null", wiki: "https://noita.wiki.gg/wiki/Nullifying_Altar", ...T_NULL_ALTAR }],
   },
 };
 
@@ -1028,6 +1042,8 @@ export interface PillarPlace {
   key: string;
   label: string;
   labelKey?: string;
+  /** common.csv key for the localized name (see PillarLink.labelNameKey). */
+  labelNameKey?: string;
   wiki?: string;
   x: number;
   y: number;
@@ -1059,6 +1075,7 @@ export const PILLAR_PLACES: PillarPlace[] = (() => {
       key,
       label: link.label ?? "",
       labelKey: link.labelKey,
+      labelNameKey: link.labelNameKey,
       wiki: link.wiki,
       x: link.x,
       y: link.y,
@@ -1075,6 +1092,30 @@ export const PILLAR_PLACES: PillarPlace[] = (() => {
   }
   return out;
 })();
+
+/**
+ * Localized display label for a pillar link / place. labelNameKey ->
+ * common.csv (verified in-game name, all 16 langs; the same source the
+ * destination card uses), else labelKey -> locale file, else the English
+ * `label` literal (community/wiki names with no official in-game term). No name
+ * is ever blind-translated — labelNameKey only ever points at a key that exists
+ * in common.csv.
+ */
+export function resolvePillarLinkLabel(
+  link: { label?: string; labelKey?: string; labelNameKey?: string },
+  translateItem: (key: string) => string,
+  translateMaterial: (key: string) => string,
+  t: (key: string, defaultValue: string) => string,
+): string {
+  if (link.labelNameKey) {
+    const tr = link.labelNameKey.startsWith("mat_")
+      ? translateMaterial(link.labelNameKey)
+      : translateItem(link.labelNameKey);
+    if (tr && tr !== link.labelNameKey) return tr;
+  }
+  if (link.labelKey) return t(link.labelKey, link.label ?? link.labelKey);
+  return link.label ?? "";
+}
 
 /** Reverse association for a synthesized pillar_place POI, matched by coords. */
 export function pillarPlaceAssociation(poi: any): { pillarIndex: number; flag: string; x: number; y: number } | null {
