@@ -11,6 +11,7 @@ import { gameTranslator } from "../game-translations/translator";
 import { isSpoilerFree } from "../spoiler-free";
 import { attachAlwaysCastPopover, dismissPopovers } from "../popover-util";
 import { CREATURE_DATA } from "../data/creature-data";
+import { pillarSegmentTitle } from "../data/pillars";
 
 export type UnifiedSearchResult =
   | TargetOfInterest
@@ -506,17 +507,14 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     // (Holy Bomb)"); use it instead of the humanized item id.
                     label = r.name || "Emerald Tablet";
                   } else if (itemName === "pillar_segment") {
-                    // Achievement subject's verified common.csv name when the
-                    // spec has one (bosses/essences), else the curated title.
-                    // (Locked state only affects rendering colour — the card
-                    // openly shows the requirement, so no need to hide names.)
-                    let nm = r.name && r.name !== "pillar_segment" ? r.name : "";
-                    const nameKey = r.reqSpec?.nameKey;
-                    if (nameKey) {
-                      const t = gameTranslator.translateItem(String(nameKey));
-                      if (t && t !== nameKey) nm = t;
-                    }
-                    label = nm || i18next.t("poi.pillars", "Achievement Pillars");
+                    // Localized achievement title: common.csv name when the
+                    // spec has one, else the pillar.title.<flag> locale key,
+                    // else the curated English title.
+                    label = pillarSegmentTitle(
+                      r,
+                      (k) => gameTranslator.translateItem(k),
+                      (k, dv) => i18next.t(k, dv),
+                    );
                   } else if (itemName === "orb") {
                     // True orbs carry a descriptive name ("Orb: Sea of Lava").
                     label = r.name && r.name !== "orb" ? r.name : "Orb";

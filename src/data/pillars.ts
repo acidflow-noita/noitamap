@@ -793,6 +793,30 @@ export function pillarFlagName(flag: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/**
+ * Localized display title for an achievement segment. Resolution order:
+ *   1. reqSpec.nameKey -> verified common.csv translation (bosses, essences);
+ *      Finnish proper nouns marked "doesn't need to be translated" fall through.
+ *   2. pillar.title.<flag> locale key (community/Steam names with no in-game
+ *      term; per-locale values derived from the approved pillar.req phrases).
+ *   3. The curated English title (poi.name / PILLAR_TITLES).
+ * Translators injected to keep this module free of i18n imports.
+ */
+export function pillarSegmentTitle(
+  poi: { flag?: string; name?: string; reqSpec?: PillarReqSpec },
+  translateItem: (key: string) => string,
+  t: (key: string, defaultValue: string) => string,
+): string {
+  const flag = String(poi.flag || "");
+  const nameKey = poi.reqSpec?.nameKey ?? PILLAR_REQUIREMENTS[flag]?.nameKey;
+  if (nameKey) {
+    const tr = translateItem(nameKey);
+    if (tr && tr !== nameKey) return tr;
+  }
+  const fallback = poi.name || pillarFlagName(flag);
+  return t(`pillar.title.${flag}`, fallback);
+}
+
 export interface PillarSegmentPOI {
   type: "item";
   item: "pillar_segment";

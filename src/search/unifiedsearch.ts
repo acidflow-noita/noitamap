@@ -16,7 +16,7 @@ import { AuthUI } from "../auth/auth-ui";
 import { updateURLWithSearch } from "../data_sources/url";
 import { perkNameKey } from "../telescope/perk-i18n";
 import { canonicalEntityId } from "../telescope/entity-canonical";
-import { isAchievementPillarSegment, ITEM_SEARCH_NAME_KEYS, PILLAR_PLACES } from "../data/pillars";
+import { isAchievementPillarSegment, pillarSegmentTitle, ITEM_SEARCH_NAME_KEYS, PILLAR_PLACES } from "../data/pillars";
 import orbsData from "../data/orbs.json";
 
 /**
@@ -1130,12 +1130,15 @@ export class UnifiedSearch extends EventEmitter2 {
           const t = i18next.t(String(theme), String(theme));
           if (t) parts.push(t);
         }
+        // Localized title (common.csv name / pillar.title.<flag>); the English
+        // curated title is already in the blob via p.name.
+        const title = pillarSegmentTitle(
+          p as any,
+          (k) => gameTranslator.translateItem(k),
+          (k, dv) => i18next.t(k, dv),
+        );
+        if (title) parts.push(title);
         const spec = (p as any).reqSpec;
-        const reqNameKey = spec?.nameKey;
-        if (reqNameKey) {
-          const t = gameTranslator.translateItem(String(reqNameKey));
-          if (t && t !== reqNameKey) parts.push(t);
-        }
         const cid = spec?.creatureId ?? (spec?.targetType ? PILLAR_TARGET_CREATURE[spec.targetType] : undefined);
         if (cid) {
           const alias = CREATURE_ALIASES[cid];

@@ -43,6 +43,7 @@ import {
 import type { MarkerData, MarkerItem } from "./poi-spatial-index";
 import {
   isAchievementPillarSegment,
+  pillarSegmentTitle,
   poiPillarAssociation,
   pillarPlaceAssociation,
   pillarLocationForFlag,
@@ -3574,7 +3575,12 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       const flag = String((poi as any).flag || "");
       if (flag.startsWith("__struct")) title.textContent = i18next.t("poi.pillars", "Achievement Pillars");
       else if ((poi as any).locked) title.textContent = i18next.t("poi.pillarLocked", "Not unlocked yet");
-      else title.textContent = (poi as any).name || i18next.t("poi.pillars", "Achievement Pillars");
+      else
+        title.textContent = pillarSegmentTitle(
+          poi as any,
+          (k) => gameTranslator.translateItem(k),
+          (k, dv) => i18next.t(k, dv),
+        );
     } else if ((poi as any).item === "mimic_potion") {
       // Potion mimic (Henkevä potu): name from the creature key, not item_*.
       const t = gameTranslator.translateItem("animal_mimic_potion");
