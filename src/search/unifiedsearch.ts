@@ -16,7 +16,7 @@ import { AuthUI } from "../auth/auth-ui";
 import { updateURLWithSearch } from "../data_sources/url";
 import { perkNameKey } from "../telescope/perk-i18n";
 import { canonicalEntityId } from "../telescope/entity-canonical";
-import { isAchievementPillarSegment, pillarSegmentTitle, resolvePillarLinkLabel, ITEM_SEARCH_NAME_KEYS, PILLAR_PLACES } from "../data/pillars";
+import { isAchievementPillarSegment, pillarSegmentTitle, resolvePillarLinkLabel, resolvePillarItemName, ITEM_SEARCH_NAME_KEYS, ITEM_LOCALE_NAME_KEYS, PILLAR_PLACES } from "../data/pillars";
 import orbsData from "../data/orbs.json";
 
 /**
@@ -582,7 +582,7 @@ export interface UnifiedSearch {
   activeFilters: Set<string>;
   searchInput: HTMLInputElement;
   triggerSearch(value: string, selectIndex?: number): void;
-  triggerSearchWithFallback(value: string, note: { text: string; telescopeUrl: string }, resultNotice?: string): void;
+  triggerSearchWithFallback(value: string, note: { text: string; telescopeUrl: string }, resultNotice?: string, rebuild?: () => string): void;
   setCategoryFilter(filter?: string): void;
   getCurrentQuery(): string;
   showOverlay(): void;
@@ -614,6 +614,14 @@ export class UnifiedSearch extends EventEmitter2 {
   /** One-shot Telescope fallback note for the next no-results render (pillar search links). */
   private pendingNoResultNote: { text: string; telescopeUrl: string } | null = null;
   private activeResultNotice: { text: string; forQuery: string } | null = null;
+  /**
+   * When the active query came from a pillar search link, this rebuilds it in
+   * the CURRENT language. Only the active i18n bundle is loaded, so a localized
+   * query ("Сундук с сокровищами") can't match an index re-tokenized into
+   * another language after a language switch — refreshTranslations() calls this
+   * to re-translate the box query so results survive the switch.
+   */
+  private activeQueryRebuild: (() => string) | null = null;
 
   public getIndexingState(): "idle" | "indexing" | "ready" {
     return this.indexingState;
@@ -758,6 +766,8 @@ export class UnifiedSearch extends EventEmitter2 {
       }
       // Any typed character should exit alchemy mode so the user can search.
       this.clearAlchemyIfActive();
+      // Manual typing invalidates the pillar-search re-translation binding.
+      this.activeQueryRebuild = null;
       debounced();
     });
 
@@ -1013,9 +1023,10 @@ export class UnifiedSearch extends EventEmitter2 {
    * the destination chamber exists on this seed); it stays attached to this
    * exact query and disappears once the query changes.
    */
-  triggerSearchWithFallback(value: string, note: { text: string; telescopeUrl: string }, resultNotice?: string): void {
+  triggerSearchWithFallback(value: string, note: { text: string; telescopeUrl: string }, resultNotice?: string, rebuild?: () => string): void {
     this.pendingNoResultNote = note;
     this.activeResultNotice = resultNotice ? { text: resultNotice, forQuery: value } : null;
+    this.activeQueryRebuild = rebuild ?? null;
     this.triggerSearch(value);
   }
 
@@ -1120,6 +1131,10 @@ export class UnifiedSearch extends EventEmitter2 {
           const t = gameTranslator.translateItem(nameKey);
           if (t && t !== nameKey) parts.push(t);
         }
+        // Props with no in-game name (statue_hand, sunstones): index the
+        // approved pillar.item.* translation so the pillar link's query hits.
+        const localeKey = ITEM_LOCALE_NAME_KEYS[p.item ?? ""] ?? ITEM_LOCALE_NAME_KEYS[p.type];
+        if (localeKey) parts.push(resolvePillarItemName(localeKey, (k, dv) => String(i18next.t(k, dv))));
       }
 
       // Achievement pillar segments: index the curated title (p.name), the
@@ -1360,6 +1375,15 @@ export class UnifiedSearch extends EventEmitter2 {
     // holds the previous language's tokens until rebuilt. Without this, a query
     // in the new language misses them.
     if (this.dynamicPOIs.length > 0) this.rebuildDynamicIndex(this.dynamicPOIs);
+
+    // A pillar-search query is a localized item name; after the index is
+    // re-tokenized into the new language the old-language text no longer
+    // matches (only the active i18n bundle is loaded). Re-translate the box
+    // query so the same search keeps working across a language switch.
+    if (this.activeQueryRebuild) {
+      const next = this.activeQueryRebuild();
+      if (next) this.searchInput.value = next;
+    }
 
     // Force update by ignoring last search state
     this.lastSearchText = "__force__";

@@ -6,7 +6,8 @@
     "popoverTitle": "搜索",
     "popoverContent": "搜索咒语、物品、魔杖、Boss、生物、药剂、结构等等。使用下面的过滤按钮按类别缩小结果范围。",
     "chunksAway": "~{{count}} 个区块之外",
-    "openTelescope": "Open in Telescope"
+    "openTelescope": "在 Telescope 中打开",
+    "noResults": "未找到结果"
   },
   "spell_prefix": "法术",
   "tiers_prefix": "等级",
@@ -5093,8 +5094,8 @@
     "pillarLocked": "尚未解锁",
     "pillarHowTo": "解锁方法",
     "pillarGoto": "在地图上显示",
-    "pillarSingular": "Achievement pillar",
-    "pillarSearch": "Search the map"
+    "pillarSingular": "成就之柱",
+    "pillarSearch": "在地图上搜索"
   },
   "skipCreatures": {
     "title": "不添加生物",
@@ -5341,12 +5342,12 @@
       "sunstone": "一块太阳石",
       "darkSunstone": "一块黑暗太阳石"
     },
-    "searchNone": "Not found in the three worlds shown here.",
+    "searchNone": "在显示的三个世界中未找到。",
     "halo": {
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
+    "structureMissing": "在显示的三个世界中未找到 {{name}} — 地图上只有其目标房间。",
     "title": {
       "misc_chest_rain": "献祭：宝箱",
       "misc_util_rain": "献祭：杂物箱",

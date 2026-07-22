@@ -45,6 +45,8 @@ import {
   isAchievementPillarSegment,
   pillarSegmentTitle,
   resolvePillarLinkLabel,
+  resolvePillarItemName,
+  ITEM_LOCALE_NAME_KEYS,
   poiPillarAssociation,
   pillarPlaceAssociation,
   pillarLocationForFlag,
@@ -3672,6 +3674,10 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
               const t = gameTranslator.translateItem(key);
               if (t && t !== key) return t;
             }
+            // Props with no in-game name (statue_hand, sunstones): use the
+            // approved pillar.item.* translation as the query.
+            const localeKey = ITEM_LOCALE_NAME_KEYS[id];
+            if (localeKey) return resolvePillarItemName(localeKey, (k, dv) => String(i18next.t(k, dv)));
             return id || null;
           }
           return null;
@@ -3708,7 +3714,15 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
                 "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
             });
           }
-          window.__noitamap?.triggerPillarSearch?.(query, buildTelescopeNote(), filter, resultNotice);
+          window.__noitamap?.triggerPillarSearch?.(
+            query,
+            buildTelescopeNote(),
+            filter,
+            resultNotice,
+            // Re-derive the localized query in the active language after a
+            // language switch (buildSearchQuery reads current i18n state).
+            () => buildSearchQuery(link) ?? query,
+          );
         };
 
         // Fly the map to a link target. Resolution order: explicit POI type;

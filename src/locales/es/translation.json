@@ -6,7 +6,8 @@
     "popoverTitle": "Buscar",
     "popoverContent": "Busque hechizos, objetos, varitas, jefes, criaturas, pociones, estructuras y más. Utilice los botones de filtro a continuación para limitar los resultados por categoría.",
     "chunksAway": "~{{count}} chunks de distancia",
-    "openTelescope": "Open in Telescope"
+    "openTelescope": "Abrir en Telescope",
+    "noResults": "No se encontró nada"
   },
   "spell_prefix": "Hechizo",
   "tiers_prefix": "Niveles",
@@ -5093,8 +5094,8 @@
     "pillarLocked": "Aún no desbloqueado",
     "pillarHowTo": "Para desbloquear",
     "pillarGoto": "Mostrar en el mapa",
-    "pillarSingular": "Achievement pillar",
-    "pillarSearch": "Search the map"
+    "pillarSingular": "Pilar de Logros",
+    "pillarSearch": "Buscar en el mapa"
   },
   "skipCreatures": {
     "title": "No añadir criaturas",
@@ -5341,12 +5342,12 @@
       "sunstone": "una Piedra solar",
       "darkSunstone": "una Piedra solar oscura"
     },
-    "searchNone": "Not found in the three worlds shown here.",
+    "searchNone": "No encontrado en los tres mundos mostrados.",
     "halo": {
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
+    "structureMissing": "No se encontró {{name}} en los tres mundos mostrados — solo su cámara de destino está en el mapa.",
     "title": {
       "misc_chest_rain": "Sacrificio: Cofre del tesoro",
       "misc_util_rain": "Sacrificio: Caja de utilidad",

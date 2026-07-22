@@ -169,6 +169,35 @@ export const ITEM_SEARCH_NAME_KEYS: Record<string, string> = {
   orb: "item_orb",
 };
 
+/**
+ * POI item id -> LOCALE-FILE key (i18next) of its display name, for the
+ * sacrifice props with NO in-game name in common.csv. These reuse the EXISTING
+ * pillar.item.* translations (already approved, all 16 langs) — the same keys
+ * the "Sacrifice {{name}}" sentence uses. Those carry a leading article in some
+ * locales ("a Monk statue"), which resolvePillarItemName() strips for use as a
+ * standalone label / search query. No new terminology is introduced.
+ */
+export const ITEM_LOCALE_NAME_KEYS: Record<string, string> = {
+  statue_hand: "pillar.item.monkStatue",
+  sun_rock: "pillar.item.sunstone",
+  darksun_rock: "pillar.item.darkSunstone",
+};
+
+/** Leading indefinite/definite articles across the supported locales. */
+const LEADING_ARTICLE = /^(a|an|the|eine|einen|ein|une|un|una|el|la|los|las|le|les|il|lo|een|en|ett)\s+/i;
+
+/**
+ * Resolve a pillar.item.* (or any) locale key to an article-free display name,
+ * suitable as a standalone search-result label / card title / search query.
+ */
+export function resolvePillarItemName(
+  key: string,
+  t: (key: string, defaultValue: string) => string,
+): string {
+  const v = t(key, key);
+  return (v === key ? key : v).replace(LEADING_ARTICLE, "");
+}
+
 export interface PillarReqSpec {
   tmpl?: string;
   nameKey?: string;

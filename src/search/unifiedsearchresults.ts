@@ -11,7 +11,7 @@ import { gameTranslator } from "../game-translations/translator";
 import { isSpoilerFree } from "../spoiler-free";
 import { attachAlwaysCastPopover, dismissPopovers } from "../popover-util";
 import { CREATURE_DATA } from "../data/creature-data";
-import { pillarSegmentTitle } from "../data/pillars";
+import { pillarSegmentTitle, ITEM_SEARCH_NAME_KEYS, ITEM_LOCALE_NAME_KEYS, resolvePillarItemName } from "../data/pillars";
 
 export type UnifiedSearchResult =
   | TargetOfInterest
@@ -477,7 +477,11 @@ export class UnifiedSearchResults extends EventEmitter2 {
                 let label = displayName;
                 if (r.type === "item") {
                   const itemName = r.item || "item";
-                  if ((itemName === "potion" || itemName === "potion_normal" || itemName === "pouch") && r.material) {
+                  if (ITEM_LOCALE_NAME_KEYS[itemName]) {
+                    // Sacrifice props with no in-game name (hand/monk statue,
+                    // sunstones) reuse the approved pillar.item.* translations.
+                    label = resolvePillarItemName(ITEM_LOCALE_NAME_KEYS[itemName], (k, dv) => i18next.t(k, dv));
+                  } else if ((itemName === "potion" || itemName === "potion_normal" || itemName === "pouch") && r.material) {
                     const matName = gameTranslator.translateMaterial(r.material);
                     label = `${matName} ${itemName === "pouch" ? "pouch" : "potion"}`;
                   } else if (itemName === "spell" && r.spell) {
@@ -535,6 +539,14 @@ export class UnifiedSearchResults extends EventEmitter2 {
                       : (r.name || String(r.entity).replace(/_/g, " "));
                 } else if (r.type === "enemy") {
                   label = r.enemy || r.type;
+                } else if (r.nameKey || ITEM_SEARCH_NAME_KEYS[r.type] || ITEM_SEARCH_NAME_KEYS[r.item ?? ""]) {
+                  // Any POI carrying a verified in-game name key (chests via
+                  // nameKey, or chest/utility_box/worm_crystal/... via the
+                  // type/item -> common.csv map) resolves through common.csv so
+                  // the label matches its card in every language.
+                  const key = String(r.nameKey || ITEM_SEARCH_NAME_KEYS[r.type] || ITEM_SEARCH_NAME_KEYS[r.item ?? ""]);
+                  const t = gameTranslator.translateItem(key);
+                  label = t !== key ? t : (r.name || key.replace(/^item_|^animal_|^building_/, "").replace(/_/g, " "));
                 } else {
                   // Containers and bosses: translate via the creature key in
                   // common.csv (animal_<id>), mirroring the boss card. Most boss

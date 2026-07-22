@@ -6,7 +6,8 @@
     "popoverTitle": "Procurar",
     "popoverContent": "Procure feitiços, itens, varinhas, chefes, criaturas, poções, estruturas e muito mais. Use os botões de filtro abaixo para restringir os resultados por categoria.",
     "chunksAway": "~{{count}} chunks de distancia",
-    "openTelescope": "Open in Telescope"
+    "openTelescope": "Abrir no Telescope",
+    "noResults": "Nada encontrado"
   },
   "spell_prefix": "Feitiço",
   "tiers_prefix": "Níveis",
@@ -5093,8 +5094,8 @@
     "pillarLocked": "Ainda não desbloqueado",
     "pillarHowTo": "Para desbloquear",
     "pillarGoto": "Mostrar no mapa",
-    "pillarSingular": "Achievement pillar",
-    "pillarSearch": "Search the map"
+    "pillarSingular": "Pilar de Conquistas",
+    "pillarSearch": "Buscar no mapa"
   },
   "skipCreatures": {
     "title": "Não adicionar criaturas",
@@ -5341,12 +5342,12 @@
       "sunstone": "uma Pedra do Sol",
       "darkSunstone": "uma Pedra do Sol Sombria"
     },
-    "searchNone": "Not found in the three worlds shown here.",
+    "searchNone": "Não encontrado nos três mundos exibidos.",
     "halo": {
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
+    "structureMissing": "Nenhum {{name}} encontrado nos três mundos exibidos — apenas sua câmara de destino está no mapa.",
     "title": {
       "misc_chest_rain": "Sacrifício: Baú de tesouro",
       "misc_util_rain": "Sacrifício: Caixa de utilidade",

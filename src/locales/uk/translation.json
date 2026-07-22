@@ -6,7 +6,8 @@
     "popoverTitle": "Пошук",
     "popoverContent": "Шукайте заклинання, предмети, чарівні палички, босів, істот, зілля, структури тощо. Використовуйте кнопки фільтра нижче, щоб звузити результати за категоріями.",
     "chunksAway": "~{{count}} чанкiв",
-    "openTelescope": "Open in Telescope"
+    "openTelescope": "Відкрити в Telescope",
+    "noResults": "Нічого не знайдено"
   },
   "spell_prefix": "Заклинання",
   "tiers_prefix": "Рівні",
@@ -5093,8 +5094,8 @@
     "pillarLocked": "Ще не розблоковано",
     "pillarHowTo": "Щоб розблокувати",
     "pillarGoto": "Показати на карті",
-    "pillarSingular": "Achievement pillar",
-    "pillarSearch": "Search the map"
+    "pillarSingular": "Стовп досягнень",
+    "pillarSearch": "Шукати на карті"
   },
   "skipCreatures": {
     "title": "Не додавати істот",
@@ -5341,12 +5342,12 @@
       "sunstone": "сонячний камінь",
       "darkSunstone": "темний сонячний камінь"
     },
-    "searchNone": "Not found in the three worlds shown here.",
+    "searchNone": "Не знайдено в трьох показаних світах.",
     "halo": {
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
+    "structureMissing": "{{name}} не знайдено в трьох показаних світах — на карті лише цільова кімната.",
     "title": {
       "misc_chest_rain": "Жертвоприношення: Скринька скарбів",
       "misc_util_rain": "Жертвоприношення: Коробка корисностей",

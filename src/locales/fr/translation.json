@@ -6,7 +6,8 @@
     "popoverTitle": "Recherche",
     "popoverContent": "Recherchez des sorts, des objets, des baguettes, des boss, des créatures, des potions, des structures et bien plus encore. Utilisez les boutons de filtre ci-dessous pour affiner les résultats par catégorie.",
     "chunksAway": "~{{count}} chunks de distance",
-    "openTelescope": "Open in Telescope"
+    "openTelescope": "Ouvrir dans Telescope",
+    "noResults": "Aucun résultat"
   },
   "spell_prefix": "Sort",
   "tiers_prefix": "Niveaux",
@@ -5093,8 +5094,8 @@
     "pillarLocked": "Pas encore débloqué",
     "pillarHowTo": "Pour débloquer",
     "pillarGoto": "Afficher sur la carte",
-    "pillarSingular": "Achievement pillar",
-    "pillarSearch": "Search the map"
+    "pillarSingular": "Pilier d'exploits",
+    "pillarSearch": "Rechercher sur la carte"
   },
   "skipCreatures": {
     "title": "Ne pas ajouter de créatures",
@@ -5341,12 +5342,12 @@
       "sunstone": "une Pierre solaire",
       "darkSunstone": "une Pierre solaire sombre"
     },
-    "searchNone": "Not found in the three worlds shown here.",
+    "searchNone": "Introuvable dans les trois mondes affichés.",
     "halo": {
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
+    "structureMissing": "Aucun {{name}} trouvé dans les trois mondes affichés — seule sa chambre de destination est sur la carte.",
     "title": {
       "misc_chest_rain": "Sacrifice: Coffre au trésor",
       "misc_util_rain": "Sacrifice: Boîte utile",

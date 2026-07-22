@@ -6,7 +6,8 @@
     "popoverTitle": "Haku",
     "popoverContent": "Etsi loitsuja, esineitä, sauvoja, pomoja, olentoja, juomia, rakenteita ja muuta. Käytä alla olevia suodatinpainikkeita rajataksesi tuloksia luokittain.",
     "chunksAway": "~{{count}} chunkkia kaukana",
-    "openTelescope": "Open in Telescope"
+    "openTelescope": "Avaa Telescopessa",
+    "noResults": "Ei tuloksia"
   },
   "spell_prefix": "Loitsu",
   "tiers_prefix": "Tasot",
@@ -5093,8 +5094,8 @@
     "pillarLocked": "Ei vielä avattu",
     "pillarHowTo": "Lukituksen avaaminen",
     "pillarGoto": "Näytä kartalla",
-    "pillarSingular": "Achievement pillar",
-    "pillarSearch": "Search the map"
+    "pillarSingular": "Saavutuspylväs",
+    "pillarSearch": "Etsi kartalta"
   },
   "skipCreatures": {
     "title": "Älä lisää olentoja",
@@ -5341,12 +5342,12 @@
       "sunstone": "aurinkokivi",
       "darkSunstone": "pimeä aurinkokivi"
     },
-    "searchNone": "Not found in the three worlds shown here.",
+    "searchNone": "Ei löytynyt kolmesta näytetystä maailmasta.",
     "halo": {
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
+    "structureMissing": "{{name}} ei löytynyt kolmesta näytetystä maailmasta — vain kohdekammio on kartalla.",
     "title": {
       "misc_chest_rain": "Uhraus: Aarrearkku",
       "misc_util_rain": "Uhraus: Tarvikelaatikko",

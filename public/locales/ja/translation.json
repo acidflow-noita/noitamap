@@ -6,7 +6,8 @@
     "popoverTitle": "検索",
     "popoverContent": "呪文、アイテム、杖、ボス、クリーチャー、ポーション、建造物などを検索します。下のフィルタ ボタンを使用して、結果をカテゴリ別に絞り込みます。",
     "chunksAway": "~{{count}} チャンク先",
-    "openTelescope": "Open in Telescope"
+    "openTelescope": "Telescopeで開く",
+    "noResults": "見つかりませんでした"
   },
   "spell_prefix": "呪文",
   "tiers_prefix": "ティア",
@@ -5093,8 +5094,8 @@
     "pillarLocked": "まだロック解除されていません",
     "pillarHowTo": "ロックを解除するには",
     "pillarGoto": "地図上に表示",
-    "pillarSingular": "Achievement pillar",
-    "pillarSearch": "Search the map"
+    "pillarSingular": "達成の柱",
+    "pillarSearch": "地図で検索"
   },
   "skipCreatures": {
     "title": "クリーチャーを追加しない",
@@ -5341,12 +5342,12 @@
       "sunstone": "太陽石",
       "darkSunstone": "闇の太陽石"
     },
-    "searchNone": "Not found in the three worlds shown here.",
+    "searchNone": "表示されている3つの世界には見つかりませんでした。",
     "halo": {
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
+    "structureMissing": "表示されている3つの世界に{{name}}は見つかりませんでした — 地図上には目的地の部屋のみがあります。",
     "title": {
       "misc_chest_rain": "生贄：宝箱",
       "misc_util_rain": "生贄：ユーティリティーボックス",

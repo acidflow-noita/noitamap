@@ -6,7 +6,8 @@
     "popoverTitle": "Поиск",
     "popoverContent": "Ищите заклинания, предметы, жезлы, боссов, существ, зелья, постройки и многое другое. Используйте кнопки фильтра ниже, чтобы сузить результаты по категориям.",
     "chunksAway": "~{{count}} чанков",
-    "openTelescope": "Open in Telescope"
+    "openTelescope": "Открыть в Telescope",
+    "noResults": "Ничего не найдено"
   },
   "spell_prefix": "Заклинание",
   "tiers_prefix": "Уровни",
@@ -5093,8 +5094,8 @@
     "pillarLocked": "Ещё не разблокировано",
     "pillarHowTo": "Чтобы разблокировать",
     "pillarGoto": "Показать на карте",
-    "pillarSingular": "Achievement pillar",
-    "pillarSearch": "Search the map"
+    "pillarSingular": "Столп достижений",
+    "pillarSearch": "Искать на карте"
   },
   "skipCreatures": {
     "title": "Не добавлять существ",
@@ -5341,12 +5342,12 @@
       "sunstone": "Солнечный камень",
       "darkSunstone": "Темный солнечный камень"
     },
-    "searchNone": "Not found in the three worlds shown here.",
+    "searchNone": "Не найдено в трёх показанных мирах.",
     "halo": {
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
+    "structureMissing": "{{name}} не найден в трёх показанных мирах — на карте только целевая комната.",
     "title": {
       "misc_chest_rain": "Жертвоприношение: Сундук с сокровищами",
       "misc_util_rain": "Жертвоприношение: Коробка с полезностями",

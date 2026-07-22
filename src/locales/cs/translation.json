@@ -6,7 +6,8 @@
     "popoverTitle": "Vyhledávání",
     "popoverContent": "Hledejte kouzla, předměty, hůlky, bossy, stvoření, lektvary, struktury a další. Pomocí níže uvedených tlačítek filtru můžete zúžit výsledky podle kategorie.",
     "chunksAway": "~{{count}} chunku daleko",
-    "openTelescope": "Open in Telescope"
+    "openTelescope": "Otevřít v Telescope",
+    "noResults": "Nic nenalezeno"
   },
   "spell_prefix": "Kouzlo",
   "tiers_prefix": "Úrovně",
@@ -5093,8 +5094,8 @@
     "pillarLocked": "Zatím neodemčeno",
     "pillarHowTo": "Pro odemknutí",
     "pillarGoto": "Zobrazit na mapě",
-    "pillarSingular": "Achievement pillar",
-    "pillarSearch": "Search the map"
+    "pillarSingular": "Pilíř úspěchů",
+    "pillarSearch": "Hledat na mapě"
   },
   "skipCreatures": {
     "title": "Nepřidávat tvory",
@@ -5341,12 +5342,12 @@
       "sunstone": "Sluneční kámen",
       "darkSunstone": "Temný sluneční kámen"
     },
-    "searchNone": "Not found in the three worlds shown here.",
+    "searchNone": "Nenalezeno ve třech zobrazených světech.",
     "halo": {
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
+    "structureMissing": "{{name}} nenalezen ve třech zobrazených světech — na mapě je pouze cílová komora.",
     "title": {
       "misc_chest_rain": "Oběť: Truhla s pokladem",
       "misc_util_rain": "Oběť: Užitková bedna",

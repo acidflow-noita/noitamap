@@ -145,7 +145,7 @@ declare global {
      * single POI). When `note` is passed and the query finds nothing on the
      * rendered map, the results overlay shows a seeded Telescope fallback link.
      */
-    triggerPillarSearch?: (query: string, note?: { text: string; telescopeUrl: string }, filter?: string, resultNotice?: string) => void;
+    triggerPillarSearch?: (query: string, note?: { text: string; telescopeUrl: string }, filter?: string, resultNotice?: string, rebuild?: () => string) => void;
   }
 
   interface Window {

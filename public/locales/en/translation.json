@@ -118,7 +118,8 @@
     "popoverTitle": "Search",
     "popoverContent": "Search for spells, items, wands, bosses, creatures, potions, structures, and more. Use the filter buttons below to narrow results by category.",
     "chunksAway": "~{{count}} chunks away",
-    "openTelescope": "Open in Telescope"
+    "openTelescope": "Open in Telescope",
+    "noResults": "Nothing found"
   },
   "alchemy": {
     "ap": {

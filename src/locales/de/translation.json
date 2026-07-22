@@ -6,7 +6,8 @@
     "popoverTitle": "Suchen",
     "popoverContent": "Suchen Sie nach Zaubersprüchen, Gegenständen, Zauberstäben, Bossen, Kreaturen, Tränken, Strukturen und mehr. Verwenden Sie die Filterschaltflächen unten, um die Ergebnisse nach Kategorie einzugrenzen.",
     "chunksAway": "~{{count}} Chunks entfernt",
-    "openTelescope": "Open in Telescope"
+    "openTelescope": "In Telescope öffnen",
+    "noResults": "Nichts gefunden"
   },
   "spell_prefix": "Zauber",
   "tiers_prefix": "Stufen",
@@ -5093,8 +5094,8 @@
     "pillarLocked": "Noch nicht freigeschaltet",
     "pillarHowTo": "Freischalten durch",
     "pillarGoto": "Auf der Karte anzeigen",
-    "pillarSingular": "Achievement pillar",
-    "pillarSearch": "Search the map"
+    "pillarSingular": "Säule der Errungenschaften",
+    "pillarSearch": "Auf der Karte suchen"
   },
   "skipCreatures": {
     "title": "Keine Kreaturen hinzufügen",
@@ -5341,12 +5342,12 @@
       "sunstone": "ein Sonnenstein",
       "darkSunstone": "ein Dunkler Sonnenstein"
     },
-    "searchNone": "Not found in the three worlds shown here.",
+    "searchNone": "In den drei gezeigten Welten nicht gefunden.",
     "halo": {
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
+    "structureMissing": "Kein {{name}} in den drei gezeigten Welten gefunden — nur die Zielkammer ist auf der Karte.",
     "title": {
       "misc_chest_rain": "Opferung: Schatztruhe",
       "misc_util_rain": "Opferung: Kiste mit nützlichen Dingen",

@@ -6,7 +6,8 @@
     "popoverTitle": "Zoekopdracht",
     "popoverContent": "Zoek naar spreuken, items, toverstokken, bazen, wezens, drankjes, structuren en meer. Gebruik de onderstaande filterknoppen om de resultaten per categorie te verfijnen.",
     "chunksAway": "~{{count}} chunks verwijderd",
-    "openTelescope": "Open in Telescope"
+    "openTelescope": "Openen in Telescope",
+    "noResults": "Niets gevonden"
   },
   "spell_prefix": "Spreuk",
   "tiers_prefix": "Niveaus",
@@ -5093,8 +5094,8 @@
     "pillarLocked": "Nog niet ontgrendeld",
     "pillarHowTo": "Om te ontgrendelen",
     "pillarGoto": "Toon op kaart",
-    "pillarSingular": "Achievement pillar",
-    "pillarSearch": "Search the map"
+    "pillarSingular": "Prestatiepilaar",
+    "pillarSearch": "Zoek op de kaart"
   },
   "skipCreatures": {
     "title": "Geen wezens toevoegen",
@@ -5341,12 +5342,12 @@
       "sunstone": "een Sunstone",
       "darkSunstone": "een Dark Sunstone"
     },
-    "searchNone": "Not found in the three worlds shown here.",
+    "searchNone": "Niet gevonden in de drie getoonde werelden.",
     "halo": {
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
+    "structureMissing": "Geen {{name}} gevonden in de drie getoonde werelden — alleen de bestemmingskamer staat op de kaart.",
     "title": {
       "misc_chest_rain": "Offer: Treasure Chest",
       "misc_util_rain": "Offer: Utility Box",

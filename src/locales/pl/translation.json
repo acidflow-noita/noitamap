@@ -6,7 +6,8 @@
     "popoverTitle": "Szukaj",
     "popoverContent": "Szukaj zaklęć, przedmiotów, różdżek, bossów, stworzeń, mikstur, struktur i nie tylko. Użyj poniższych przycisków filtrowania, aby zawęzić wyniki według kategorii.",
     "chunksAway": "~{{count}} chunkow dalej",
-    "openTelescope": "Open in Telescope"
+    "openTelescope": "Otwórz w Telescope",
+    "noResults": "Nic nie znaleziono"
   },
   "spell_prefix": "Zaklęcie",
   "tiers_prefix": "Poziomy",
@@ -5093,8 +5094,8 @@
     "pillarLocked": "Jeszcze nie odblokowano",
     "pillarHowTo": "Aby odblokować",
     "pillarGoto": "Pokaż na mapie",
-    "pillarSingular": "Achievement pillar",
-    "pillarSearch": "Search the map"
+    "pillarSingular": "Filar Osiągnięć",
+    "pillarSearch": "Szukaj na mapie"
   },
   "skipCreatures": {
     "title": "Nie dodawaj stworzeń",
@@ -5341,12 +5342,12 @@
       "sunstone": "Słoneczny kamień",
       "darkSunstone": "Mroczny słoneczny kamień"
     },
-    "searchNone": "Not found in the three worlds shown here.",
+    "searchNone": "Nie znaleziono w trzech pokazanych światach.",
     "halo": {
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
+    "structureMissing": "Nie znaleziono {{name}} w trzech pokazanych światach — na mapie jest tylko komora docelowa.",
     "title": {
       "misc_chest_rain": "Ofiara: Skrzynia skarbów",
       "misc_util_rain": "Ofiara: Pudełko użyteczności",

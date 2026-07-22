@@ -823,6 +823,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       note?: { text: string; telescopeUrl: string },
       filter?: string,
       resultNotice?: string,
+      rebuild?: () => string,
     ) => {
       if (!_unifiedSearch) return;
       // Swap the active category filters for the one matching this link's
@@ -831,7 +832,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       _unifiedSearch.setCategoryFilter(filter);
       // triggerSearch* set explicitShowRequested, so the results overlay opens
       // via the setResults/setNoResults wrappers without a stale-input search.
-      if (note) _unifiedSearch.triggerSearchWithFallback(query, note, resultNotice);
+      if (note) _unifiedSearch.triggerSearchWithFallback(query, note, resultNotice, rebuild);
       else _unifiedSearch.triggerSearch(query);
       updateURLWithSearch(query, _unifiedSearch.activeFilters);
     },

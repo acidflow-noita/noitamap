@@ -6,7 +6,8 @@
     "popoverTitle": "Söka",
     "popoverContent": "Sök efter trollformler, föremål, trollstavar, bossar, varelser, drycker, strukturer och mer. Använd filterknapparna nedan för att begränsa resultaten efter kategori.",
     "chunksAway": "~{{count}} chunks bort",
-    "openTelescope": "Open in Telescope"
+    "openTelescope": "Öppna i Telescope",
+    "noResults": "Inget hittades"
   },
   "spell_prefix": "Trollformel",
   "tiers_prefix": "Nivåer",
@@ -5093,8 +5094,8 @@
     "pillarLocked": "Inte upplåst än",
     "pillarHowTo": "För att låsa upp",
     "pillarGoto": "Visa på kartan",
-    "pillarSingular": "Achievement pillar",
-    "pillarSearch": "Search the map"
+    "pillarSingular": "Bedriftspelare",
+    "pillarSearch": "Sök på kartan"
   },
   "skipCreatures": {
     "title": "Lägg inte till varelser",
@@ -5341,12 +5342,12 @@
       "sunstone": "en Sunstone",
       "darkSunstone": "en Dark Sunstone"
     },
-    "searchNone": "Not found in the three worlds shown here.",
+    "searchNone": "Hittades inte i de tre visade världarna.",
     "halo": {
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
+    "structureMissing": "Ingen {{name}} hittades i de tre visade världarna — endast dess målkammare finns på kartan.",
     "title": {
       "misc_chest_rain": "Offer: Treasure chest",
       "misc_util_rain": "Offer: Utility Box",

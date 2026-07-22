@@ -6,7 +6,8 @@
     "popoverTitle": "Ricerca",
     "popoverContent": "Cerca incantesimi, oggetti, bacchette, boss, creature, pozioni, strutture e altro ancora. Utilizza i pulsanti filtro qui sotto per restringere i risultati per categoria.",
     "chunksAway": "~{{count}} chunk di distanza",
-    "openTelescope": "Open in Telescope"
+    "openTelescope": "Apri in Telescope",
+    "noResults": "Nessun risultato"
   },
   "spell_prefix": "Incantesimo",
   "tiers_prefix": "Livelli",
@@ -5093,8 +5094,8 @@
     "pillarLocked": "Non ancora sbloccato",
     "pillarHowTo": "Per sbloccare",
     "pillarGoto": "Mostra sulla mappa",
-    "pillarSingular": "Achievement pillar",
-    "pillarSearch": "Search the map"
+    "pillarSingular": "Pilastro delle Imprese",
+    "pillarSearch": "Cerca sulla mappa"
   },
   "skipCreatures": {
     "title": "Non aggiungere creature",
@@ -5341,12 +5342,12 @@
       "sunstone": "una Pietra del Sole",
       "darkSunstone": "una Pietra del Sole oscura"
     },
-    "searchNone": "Not found in the three worlds shown here.",
+    "searchNone": "Non trovato nei tre mondi mostrati.",
     "halo": {
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
+    "structureMissing": "Nessun {{name}} trovato nei tre mondi mostrati — solo la sua camera di destinazione è sulla mappa.",
     "title": {
       "misc_chest_rain": "Sacrificio: Forziere del tesoro",
       "misc_util_rain": "Sacrificio: Cassetta degli attrezzi",
