@@ -5081,6 +5081,7 @@
     "amount": "Määrä",
     "contains": "Sisältää",
     "drops": "Pudotukset",
+    "pw": "PW",
     "essenceEaterConvert": "Essence Eaterit muuttavat kantamasi essenssin vastaavaksi elementtikiveksi.",
     "gold": "Kulta",
     "heartSmall": "Sydän (+25 hv)",
@@ -5333,11 +5334,6 @@
       "nullAltar": "Nullifying Altar"
     },
     "item": {
-      "treasureChest": "aarrearkku",
-      "utilityBox": "tarvikelaatikko",
-      "wormCrystal": "matokristalli",
-      "greedCrystal": "Greed-kirottu kristalli",
-      "potionMimic": "juomamatkija",
       "monkStatue": "munkkipatsas",
       "sunstone": "aurinkokivi",
       "darkSunstone": "pimeä aurinkokivi"

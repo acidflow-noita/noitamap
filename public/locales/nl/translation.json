@@ -5081,6 +5081,7 @@
     "amount": "Hoeveelheid",
     "contains": "Bevat",
     "drops": "Buit",
+    "pw": "PW",
     "essenceEaterConvert": "Essence Eaters zetten elke meegedragen Essence om in de bijbehorende elementaire steen.",
     "gold": "Goud",
     "heartSmall": "Hart (+25 PK)",
@@ -5333,11 +5334,6 @@
       "nullAltar": "Nullifying Altar"
     },
     "item": {
-      "treasureChest": "een Treasure Chest",
-      "utilityBox": "een Utility Box",
-      "wormCrystal": "een Worm Crystal",
-      "greedCrystal": "een Greed-Cursed Crystal",
-      "potionMimic": "een Potion-mimic",
       "monkStatue": "een Monk-standbeeld",
       "sunstone": "een Sunstone",
       "darkSunstone": "een Dark Sunstone"

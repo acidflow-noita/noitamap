@@ -5081,6 +5081,7 @@
     "amount": "Quantità",
     "contains": "Contiene",
     "drops": "Bottino",
+    "pw": "MP",
     "essenceEaterConvert": "I Mangia-essenza trasformano qualsiasi Essenza trasportata nella corrispondente pietra elementale.",
     "gold": "Oro",
     "heartSmall": "Cuore (+25 HP)",
@@ -5333,11 +5334,6 @@
       "nullAltar": "Annullamento Altare"
     },
     "item": {
-      "treasureChest": "un Forziere del tesoro",
-      "utilityBox": "una Cassetta degli accessori",
-      "wormCrystal": "un Cristallo del verme",
-      "greedCrystal": "un Cristallo con maledizione di avidità",
-      "potionMimic": "una Pozione mimetica",
       "monkStatue": "una Statua del monaco",
       "sunstone": "una Pietra del Sole",
       "darkSunstone": "una Pietra del Sole oscura"
@@ -5347,7 +5343,7 @@
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "Nessun {{name}} trovato nei tre mondi mostrati — solo la sua camera di destinazione è sulla mappa.",
+    "structureMissing": "Impossibile trovare {{name}} nei tre mondi mostrati — solo la sua camera di destinazione è sulla mappa.",
     "title": {
       "misc_chest_rain": "Sacrificio: Forziere del tesoro",
       "misc_util_rain": "Sacrificio: Cassetta degli attrezzi",

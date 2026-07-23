@@ -5081,6 +5081,7 @@
     "amount": "Množství",
     "contains": "Obsahuje",
     "drops": "Kořist",
+    "pw": "PW",
     "essenceEaterConvert": "Essence Eateři přemění jakoukoli nesenou esenci na odpovídající živlový kámen.",
     "gold": "Zlato",
     "heartSmall": "Srdce (+25 HP)",
@@ -5280,9 +5281,9 @@
       "secrets": "Pilíř tajemství"
     },
     "req": {
-      "defeat": "Porazte {{name}}",
-      "collect": "Seberte {{name}}",
-      "sacrifice": "Obětujte {{name}} na oltáři",
+      "defeat": "Porazte protivníka: {{name}}",
+      "collect": "Seberte předmět: {{name}}",
+      "sacrifice": "Obětujte na oltáři: {{name}}",
       "altarTablet": "Obětujte na oltáři 3 Emerald Tablets",
       "tower": "Vystoupejte na The Tower a vyjděte vrcholovým portálem",
       "transformGhostly": "Spusťte proměnu Ghostly",
@@ -5333,11 +5334,6 @@
       "nullAltar": "Nullifying Altar"
     },
     "item": {
-      "treasureChest": "Truhla s pokladem",
-      "utilityBox": "Užitková bedna",
-      "wormCrystal": "Worm Crystal",
-      "greedCrystal": "Greed-cursed crystal",
-      "potionMimic": "Napodobenina lektvaru",
       "monkStatue": "Socha mnicha",
       "sunstone": "Sluneční kámen",
       "darkSunstone": "Temný sluneční kámen"
@@ -5347,7 +5343,7 @@
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "{{name}} nenalezen ve třech zobrazených světech — na mapě je pouze cílová komora.",
+    "structureMissing": "Nenalezeno ve třech zobrazených světech: {{name}} — na mapě je pouze cílová komora.",
     "title": {
       "misc_chest_rain": "Oběť: Truhla s pokladem",
       "misc_util_rain": "Oběť: Užitková bedna",

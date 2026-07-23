@@ -5081,6 +5081,7 @@
     "amount": "Menge",
     "contains": "Enthält",
     "drops": "Beute",
+    "pw": "PW",
     "essenceEaterConvert": "Essenzfresser wandeln jede mitgeführte Essenz in den entsprechenden Elementarstein um.",
     "gold": "Gold",
     "heartSmall": "Herz (+25 HP)",
@@ -5333,11 +5334,6 @@
       "nullAltar": "Altar der Aufhebung"
     },
     "item": {
-      "treasureChest": "eine Schatztruhe",
-      "utilityBox": "eine Werkzeugkiste",
-      "wormCrystal": "ein Wurmkristall",
-      "greedCrystal": "ein durch Gier verfluchter Kristall",
-      "potionMimic": "ein Trank-Mimic",
       "monkStatue": "eine Mönchsstatue",
       "sunstone": "ein Sonnenstein",
       "darkSunstone": "ein Dunkler Sonnenstein"
@@ -5347,7 +5343,7 @@
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "Kein {{name}} in den drei gezeigten Welten gefunden — nur die Zielkammer ist auf der Karte.",
+    "structureMissing": "In den drei gezeigten Welten nicht gefunden: {{name}} — nur die Zielkammer ist auf der Karte.",
     "title": {
       "misc_chest_rain": "Opferung: Schatztruhe",
       "misc_util_rain": "Opferung: Kiste mit nützlichen Dingen",

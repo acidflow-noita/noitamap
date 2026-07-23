@@ -5081,6 +5081,7 @@
     "amount": "Kwota",
     "contains": "Zawiera",
     "drops": "Łup",
+    "pw": "PW",
     "essenceEaterConvert": "Pożeracze esencji zamieniają każdą przenoszoną esencję w odpowiadający jej kamień żywiołu.",
     "gold": "Złoto",
     "heartSmall": "Serce (+25 PŻ)",
@@ -5280,9 +5281,9 @@
       "secrets": "Filar Sekretów"
     },
     "req": {
-      "defeat": "Pokonaj {{name}}",
-      "collect": "Zbierz {{name}}",
-      "sacrifice": "Złóż {{name}} w ofierze na ołtarzu",
+      "defeat": "Pokonaj przeciwnika: {{name}}",
+      "collect": "Zbierz przedmiot: {{name}}",
+      "sacrifice": "Złóż ofiarę na ołtarzu: {{name}}",
       "altarTablet": "Złóż w ofierze 3 Emerald Tablets na ołtarzu",
       "tower": "Wstąp na Wieżę i wyjdź przez portal na szczycie",
       "transformGhostly": "Wywołaj przemianę Ghostly",
@@ -5333,11 +5334,6 @@
       "nullAltar": "Ołtarz unieważniania"
     },
     "item": {
-      "treasureChest": "Skrzynia skarbów",
-      "utilityBox": "Skrzynka narzędziowa",
-      "wormCrystal": "Kryształ robaka",
-      "greedCrystal": "Kryształ z klątwą chciwości",
-      "potionMimic": "Imitacja mikstury",
       "monkStatue": "Posąg Munkki",
       "sunstone": "Słoneczny kamień",
       "darkSunstone": "Mroczny słoneczny kamień"
@@ -5347,7 +5343,7 @@
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "Nie znaleziono {{name}} w trzech pokazanych światach — na mapie jest tylko komora docelowa.",
+    "structureMissing": "Nie znaleziono w trzech pokazanych światach: {{name}} — na mapie jest tylko komora docelowa.",
     "title": {
       "misc_chest_rain": "Ofiara: Skrzynia skarbów",
       "misc_util_rain": "Ofiara: Pudełko użyteczności",

@@ -5081,6 +5081,7 @@
     "amount": "額",
     "contains": "含まれています",
     "drops": "ドロップ",
+    "pw": "並行世界",
     "essenceEaterConvert": "エッセンスイーターは、持っているエッセンスを対応する元素の石に変換します。",
     "gold": "金",
     "heartSmall": "ハート (+25 HP)",
@@ -5333,11 +5334,6 @@
       "nullAltar": "取り消しの祭壇"
     },
     "item": {
-      "treasureChest": "宝箱",
-      "utilityBox": "ユーティリティーボックス",
-      "wormCrystal": "蠕虫クリスタル",
-      "greedCrystal": "貪欲の呪いのクリスタル",
-      "potionMimic": "ポーションのミミック",
       "monkStatue": "マンッキの像",
       "sunstone": "太陽石",
       "darkSunstone": "闇の太陽石"

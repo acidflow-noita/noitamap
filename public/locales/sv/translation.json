@@ -5081,6 +5081,7 @@
     "amount": "Belopp",
     "contains": "Innehåller",
     "drops": "Byte",
+    "pw": "PW",
     "essenceEaterConvert": "Essence Eaters omvandlar varje buren essens till motsvarande elementarsten.",
     "gold": "Guld",
     "heartSmall": "Hjärta (+25 hk)",
@@ -5333,11 +5334,6 @@
       "nullAltar": "Nullifying Altar"
     },
     "item": {
-      "treasureChest": "en Treasure chest",
-      "utilityBox": "en Utility Box",
-      "wormCrystal": "en Worm crystal",
-      "greedCrystal": "en Greed-cursed crystal",
-      "potionMimic": "en Potion mimic",
       "monkStatue": "en munkstaty",
       "sunstone": "en Sunstone",
       "darkSunstone": "en Dark Sunstone"
@@ -5347,7 +5343,7 @@
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "Ingen {{name}} hittades i de tre visade världarna — endast dess målkammare finns på kartan.",
+    "structureMissing": "Hittades inte i de tre visade världarna: {{name}} — endast dess målkammare finns på kartan.",
     "title": {
       "misc_chest_rain": "Offer: Treasure chest",
       "misc_util_rain": "Offer: Utility Box",

@@ -53,7 +53,10 @@ const PILLAR_THEMES = [
  *   tmpl       - i18n template key containing {{name}} (e.g. "pillar.req.defeat").
  *   nameKey    - common.csv key whose verified translation fills {{name}}. Names
  *                are NEVER blind-translated — they come from the game data that
- *                is already localized in all 16 languages.
+ *                is already localized in all 16 languages. The three sacrifice
+ *                props with NO in-game name (monk statue, sunstones) carry a
+ *                pillar.item.* locale key instead (resolution falls back to
+ *                i18next when the key is not in common.csv).
  *   key        - i18n key for a self-contained phrase with no {{name}} param.
  *   targetType - POI `type` to fly-to + open when the {{name}} link is clicked
  *                (reuses the search/seed-report cinematic goto). Optional.
@@ -317,13 +320,13 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
   // stays a direct travel link.
   misc_chest_rain: {
     tmpl: "pillar.req.sacrifice",
-    nameKey: "pillar.item.treasureChest",
+    nameKey: "item_chest_treasure",
     target: { targetType: "chest", search: true, searchFilter: "c" },
     links: [LINK_ALTAR],
   },
   misc_util_rain: {
     tmpl: "pillar.req.sacrifice",
-    nameKey: "pillar.item.utilityBox",
+    nameKey: "item_utility_box",
     // utility_box is its own POI type — no dynamic filter includes it, so no
     // searchFilter (co-activating one would hide the result).
     target: { targetType: "utility_box", search: true },
@@ -331,13 +334,13 @@ export const PILLAR_REQUIREMENTS: Record<string, PillarReqSpec> = {
   },
   misc_worm_rain: {
     tmpl: "pillar.req.sacrifice",
-    nameKey: "pillar.item.wormCrystal",
+    nameKey: "building_worm_deflector",
     target: { itemId: "worm_crystal", search: true, searchFilter: "i" },
     links: [LINK_ALTAR],
   },
   misc_greed_rain: {
     tmpl: "pillar.req.sacrifice",
-    nameKey: "pillar.item.greedCrystal",
+    nameKey: "item_greed_crystal",
     target: { itemId: "greed_crystal", search: true, searchFilter: "i" },
     links: [LINK_ALTAR],
   },
@@ -837,11 +840,24 @@ export function pillarFlagName(flag: string): string {
 }
 
 /**
+ * Authoritative requirement spec for a pillar-segment POI. POIs round-trip
+ * through the IndexedDB generation cache and the baked generation.json with
+ * reqSpec serialized inline, so a cached POI can carry a STALE spec from an
+ * older build. Always prefer the live PILLAR_REQUIREMENTS table (keyed by the
+ * stable flag); the embedded copy is only a fallback.
+ */
+export function pillarReqSpec(poi: { flag?: string; reqSpec?: PillarReqSpec }): PillarReqSpec | undefined {
+  return PILLAR_REQUIREMENTS[String(poi.flag || "")] ?? poi.reqSpec;
+}
+
+/**
  * Localized display title for an achievement segment. Resolution order:
- *   1. reqSpec.nameKey -> verified common.csv translation (bosses, essences);
- *      Finnish proper nouns marked "doesn't need to be translated" fall through.
- *   2. pillar.title.<flag> locale key (community/Steam names with no in-game
- *      term; per-locale values derived from the approved pillar.req phrases).
+ *   1. pillar.title.<flag> locale key (framed titles like "Sacrifice: X" and
+ *      community/Steam names; per-locale values derived from the approved
+ *      pillar.req phrases + baked common.csv names).
+ *   2. reqSpec.nameKey -> verified common.csv translation (bosses, essences,
+ *      which have no pillar.title entry); Finnish proper nouns marked
+ *      "doesn't need to be translated" fall through.
  *   3. The curated English title (poi.name / PILLAR_TITLES).
  * Translators injected to keep this module free of i18n imports.
  */
@@ -851,13 +867,14 @@ export function pillarSegmentTitle(
   t: (key: string, defaultValue: string) => string,
 ): string {
   const flag = String(poi.flag || "");
-  const nameKey = poi.reqSpec?.nameKey ?? PILLAR_REQUIREMENTS[flag]?.nameKey;
+  const titled = t(`pillar.title.${flag}`, "");
+  if (titled) return titled;
+  const nameKey = PILLAR_REQUIREMENTS[flag]?.nameKey ?? poi.reqSpec?.nameKey;
   if (nameKey) {
     const tr = translateItem(nameKey);
     if (tr && tr !== nameKey) return tr;
   }
-  const fallback = poi.name || pillarFlagName(flag);
-  return t(`pillar.title.${flag}`, fallback);
+  return poi.name || pillarFlagName(flag);
 }
 
 export interface PillarSegmentPOI {

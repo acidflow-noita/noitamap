@@ -44,6 +44,7 @@ import type { MarkerData, MarkerItem } from "./poi-spatial-index";
 import {
   isAchievementPillarSegment,
   pillarSegmentTitle,
+  pillarReqSpec,
   resolvePillarLinkLabel,
   resolvePillarItemName,
   ITEM_LOCALE_NAME_KEYS,
@@ -3361,7 +3362,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // Footer with position only
     const footer = document.createElement("div");
     footer.style.cssText = "margin-top:0.5em;color:#666;font-size:0.85em;border-top:0.065em solid #333;padding-top:0.3em";
-    footer.textContent = `PW ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
+    footer.textContent = `${i18next.t("poi.pw", "PW")} ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
     tooltipEl.appendChild(footer);
 
     document.body.appendChild(tooltipEl);
@@ -3616,7 +3617,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       // the short template/phrase comes from the locale files. When the spec
       // names a boss POI (targetType), the name becomes a clickable link that
       // flies the map to that boss and opens its card (reusing openTooltipForPOI).
-      const spec = (poi as any).reqSpec;
+      const spec = pillarReqSpec(poi as any);
       if (spec) {
         const d = document.createElement("div");
         d.style.cssText = "color:#aaa;font-size:0.85em;margin-bottom:0.2em";
@@ -4307,7 +4308,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const contLabel = document.createElement("div");
     contLabel.style.cssText = "font-size:1em;color:#888;margin-bottom:0.2em";
     const isBossDrop = ["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon", "boss_wizard", "boss_ghost", "boss_sky", "islandspirit", "boss_centipede", "boss_robot", "boss_meat", "friend", "boss_pit", "boss_fish", "tiny"].includes(poi.type || "");
-    contLabel.textContent = isBossDrop ? "Drops:" : "Contains:";
+    contLabel.textContent = isBossDrop ? `${i18next.t("poi.drops", "Drops")}:` : `${i18next.t("poi.contains", "Contains")}:`;
     contDiv.appendChild(contLabel);
     const contRow = document.createElement("div");
     contRow.style.cssText = "display:flex;flex-wrap:wrap;gap:0.2em;align-items:center";
@@ -4512,7 +4513,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   // Footer: position info
   const footer = document.createElement("div");
   footer.style.cssText = "margin-top:0.5em;color:#666;font-size:0.85em;border-top:0.065em solid #333;padding-top:0.3em";
-  footer.textContent = `PW ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
+  footer.textContent = `${i18next.t("poi.pw", "PW")} ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
   tooltipEl.appendChild(footer);
 
   document.body.appendChild(tooltipEl);

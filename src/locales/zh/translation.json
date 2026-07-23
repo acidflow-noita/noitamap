@@ -5081,6 +5081,7 @@
     "amount": "数量",
     "contains": "包含",
     "drops": "掉落物",
+    "pw": "平行世界",
     "essenceEaterConvert": "精髓吞噬者会将携带的任何精髓转化为对应的元素石。",
     "gold": "金子",
     "heartSmall": "心脏 (+25 HP)",
@@ -5333,11 +5334,6 @@
       "nullAltar": "无效化祭坛"
     },
     "item": {
-      "treasureChest": "一个宝箱",
-      "utilityBox": "一个杂物箱",
-      "wormCrystal": "一个蠕虫晶体",
-      "greedCrystal": "一个贪婪诅咒的晶体",
-      "potionMimic": "一个魔药拟态",
       "monkStatue": "一座僧侣雕像",
       "sunstone": "一块太阳石",
       "darkSunstone": "一块黑暗太阳石"

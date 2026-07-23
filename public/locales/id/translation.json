@@ -5081,6 +5081,7 @@
     "amount": "Jumlah",
     "contains": "Berisi",
     "drops": "Jatuhan",
+    "pw": "PW",
     "essenceEaterConvert": "Essence Eater mengubah Esens apa pun yang dibawa menjadi batu elemental yang sesuai.",
     "gold": "Emas",
     "heartSmall": "Jantung (+25 HP)",
@@ -5333,11 +5334,6 @@
       "nullAltar": "Nullifying Altar"
     },
     "item": {
-      "treasureChest": "Peti Harta",
-      "utilityBox": "Kotak Utilitas",
-      "wormCrystal": "Kristal Cacing",
-      "greedCrystal": "Kristal Terkutuk Greed",
-      "potionMimic": "Mimic Ramuan",
       "monkStatue": "Patung Biarawan",
       "sunstone": "Batu Matahari",
       "darkSunstone": "Batu Matahari Gelap"

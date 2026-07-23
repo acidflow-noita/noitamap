@@ -5081,6 +5081,7 @@
     "amount": "Cantidad",
     "contains": "Contiene",
     "drops": "Botín",
+    "pw": "MP",
     "essenceEaterConvert": "Los Tragaesencia convierten cualquier Esencia que lleves en su piedra elemental correspondiente.",
     "gold": "Oro",
     "heartSmall": "Corazón (+25 puntos de vida)",
@@ -5333,11 +5334,6 @@
       "nullAltar": "Altar anulador"
     },
     "item": {
-      "treasureChest": "un cofre del tesoro",
-      "utilityBox": "una caja de utilidades",
-      "wormCrystal": "un Cristal de gusano",
-      "greedCrystal": "un Cristal maldito verde",
-      "potionMimic": "un imitador de poción",
       "monkStatue": "una estatua de monje",
       "sunstone": "una Piedra solar",
       "darkSunstone": "una Piedra solar oscura"

@@ -16,7 +16,7 @@ import { AuthUI } from "../auth/auth-ui";
 import { updateURLWithSearch } from "../data_sources/url";
 import { perkNameKey } from "../telescope/perk-i18n";
 import { canonicalEntityId } from "../telescope/entity-canonical";
-import { isAchievementPillarSegment, pillarSegmentTitle, resolvePillarLinkLabel, resolvePillarItemName, ITEM_SEARCH_NAME_KEYS, ITEM_LOCALE_NAME_KEYS, PILLAR_PLACES } from "../data/pillars";
+import { isAchievementPillarSegment, pillarSegmentTitle, pillarReqSpec, resolvePillarLinkLabel, resolvePillarItemName, ITEM_SEARCH_NAME_KEYS, ITEM_LOCALE_NAME_KEYS, PILLAR_PLACES } from "../data/pillars";
 import orbsData from "../data/orbs.json";
 
 /**
@@ -1158,7 +1158,7 @@ export class UnifiedSearch extends EventEmitter2 {
           (k, dv) => i18next.t(k, dv),
         );
         if (title) parts.push(title);
-        const spec = (p as any).reqSpec;
+        const spec = pillarReqSpec(p as any);
         const cid = spec?.creatureId ?? (spec?.targetType ? PILLAR_TARGET_CREATURE[spec.targetType] : undefined);
         if (cid) {
           const alias = CREATURE_ALIASES[cid];
@@ -1493,7 +1493,7 @@ export class UnifiedSearch extends EventEmitter2 {
             locked: (p as any).locked,
             pillarIndex: (p as any).pillarIndex,
             theme: (p as any).theme,
-            reqSpec: (p as any).reqSpec,
+            reqSpec: pillarReqSpec(p as any),
             wiki: (p as any).wiki,
           };
         });
@@ -1607,7 +1607,7 @@ export class UnifiedSearch extends EventEmitter2 {
           locked: (p as any).locked,
           pillarIndex: (p as any).pillarIndex,
           theme: (p as any).theme,
-          reqSpec: (p as any).reqSpec,
+          reqSpec: pillarReqSpec(p as any),
           wiki: (p as any).wiki,
         } as any;
       });

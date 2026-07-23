@@ -5199,6 +5199,7 @@
     "amount": "Amount",
     "contains": "Contains",
     "drops": "Drops",
+    "pw": "PW",
     "essenceEaterConvert": "Essence Eaters convert any carried Essence into its corresponding elemental stone.",
     "gold": "Gold",
     "heartSmall": "Heart (+25 HP)",
@@ -5284,11 +5285,6 @@
       "nullAltar": "Nullifying Altar"
     },
     "item": {
-      "treasureChest": "a Treasure Chest",
-      "utilityBox": "a Utility Box",
-      "wormCrystal": "a Worm Crystal",
-      "greedCrystal": "a Greed-Cursed Crystal",
-      "potionMimic": "a Potion mimic",
       "monkStatue": "a Monk statue",
       "sunstone": "a Sunstone",
       "darkSunstone": "a Dark Sunstone"

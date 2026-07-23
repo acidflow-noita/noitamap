@@ -5081,6 +5081,7 @@
     "amount": "Quantia",
     "contains": "Contém",
     "drops": "Espólio",
+    "pw": "MP",
     "essenceEaterConvert": "Os Papa-essência convertem qualquer Essência carregada na pedra elemental correspondente.",
     "gold": "Ouro",
     "heartSmall": "Coração (+25 HP)",
@@ -5333,11 +5334,6 @@
       "nullAltar": "Altar da anulação"
     },
     "item": {
-      "treasureChest": "um Baú de tesouro",
-      "utilityBox": "uma Caixa de utilidades",
-      "wormCrystal": "um Cristal do verme",
-      "greedCrystal": "um Cristal com maldição da ganância",
-      "potionMimic": "um imitador de poção",
       "monkStatue": "uma estátua de Monge",
       "sunstone": "uma Pedra do Sol",
       "darkSunstone": "uma Pedra do Sol Sombria"
@@ -5347,7 +5343,7 @@
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "Nenhum {{name}} encontrado nos três mundos exibidos — apenas sua câmara de destino está no mapa.",
+    "structureMissing": "Não foi possível encontrar {{name}} nos três mundos exibidos — apenas sua câmara de destino está no mapa.",
     "title": {
       "misc_chest_rain": "Sacrifício: Baú de tesouro",
       "misc_util_rain": "Sacrifício: Caixa de utilidade",

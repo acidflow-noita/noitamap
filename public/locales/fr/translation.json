@@ -5081,6 +5081,7 @@
     "amount": "Montant",
     "contains": "Contient",
     "drops": "Butin",
+    "pw": "MP",
     "essenceEaterConvert": "Les Dévoreurs d'essence transforment toute Essence transportée en la pierre élémentaire correspondante.",
     "gold": "Or",
     "heartSmall": "Cœur (+25 PV)",
@@ -5333,11 +5334,6 @@
       "nullAltar": "Autel d'annulation"
     },
     "item": {
-      "treasureChest": "un Coffre au trésor",
-      "utilityBox": "une Boîte utilitaire",
-      "wormCrystal": "un Cristal de ver",
-      "greedCrystal": "un Cristal maudit par l'avidité",
-      "potionMimic": "un Mimic de potion",
       "monkStatue": "une Statue de moine",
       "sunstone": "une Pierre solaire",
       "darkSunstone": "une Pierre solaire sombre"
@@ -5347,7 +5343,7 @@
       "light": "light perks",
       "dark": "dark perks"
     },
-    "structureMissing": "Aucun {{name}} trouvé dans les trois mondes affichés — seule sa chambre de destination est sur la carte.",
+    "structureMissing": "Introuvable dans les trois mondes affichés : {{name}} — seule sa chambre de destination est sur la carte.",
     "title": {
       "misc_chest_rain": "Sacrifice: Coffre au trésor",
       "misc_util_rain": "Sacrifice: Boîte utile",
