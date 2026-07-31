@@ -142,5 +142,11 @@
       "url": "https://dynamic-main-branch-right.acidflow.stream/maps/dynamic-main-branch-right/dynamic-main-branch-right-2025-01-25-78633191.dzi",
       "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"35840\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"17920\",\"Y\":\"-31744\"}}}\n"
     }
+  ],
+  "ups-main": [
+    {
+      "url": "https://ups-main.sage-data.xyz/map.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"png\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"16384\",\"Height\":\"27648\"},\"TopLeft\":{\"X\":\"-7680\",\"Y\":\"-4608\"}}}\n"
+    }
   ]
 }

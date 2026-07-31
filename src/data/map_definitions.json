@@ -197,5 +197,20 @@
     "seed": "786433191",
     "tileSets": ["middle"],
     "modUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=3356681136"
+  },
+  {
+    "key": "ups-main",
+    "label": "UPS",
+    "badges": [
+      {
+        "label": "Latest",
+        "labelKey": "badges.latest",
+        "class": "text-bg-success",
+        "icon": "bi bi-check-circle-fill"
+      }
+    ],
+    "patchDate": "2026-07-29",
+    "seed": "0",
+    "tileSets": ["middle"]
   }
 ]

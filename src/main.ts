@@ -299,6 +299,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     const title = _getTitle();
     if (!bar) return;
 
+    // data.zip is shared world data fetched for every map, but the phases this
+    // strip reports — biome generation, then item placement — only ever run on
+    // the dynamic map, and only itemsGenerationProgress(100) hides the strip
+    // again. On a static map nothing fires that event, so showing the strip here
+    // left it pinned open forever under an indeterminate spinner, advertising
+    // biome generation that never starts. Static maps get no strip at all; the
+    // ordinary spinner already covers their tile loading.
+    if (app.getMap() !== "dynamic-main-branch") return;
+
     showLoadingStrip();
 
     if (e.detail.percentage < 100) {

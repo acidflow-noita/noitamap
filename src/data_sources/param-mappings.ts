@@ -46,6 +46,7 @@ const MAP_SHORT_TO_FULL: Record<string, MapName> = {
   br: 'biomemaprendered-main-branch',
   mt: 'maptestdev',
   dy: 'dynamic-main-branch',
+  up: 'ups-main',
 };
 
 const MAP_FULL_TO_SHORT: Record<MapName, string> = {
@@ -65,6 +66,7 @@ const MAP_FULL_TO_SHORT: Record<MapName, string> = {
   'biomemaprendered-main-branch': 'br',
   'maptestdev': 'mt',
   'dynamic-main-branch': 'dy',
+  'ups-main': 'up',
 };
 
 /**
