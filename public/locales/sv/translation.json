@@ -4872,6 +4872,10 @@
     "title": "Chunk Grid",
     "content": "Växla rutnätsöverlagring för bitgränser"
   },
+  "sideworld": {
+    "title": "Sidovärld",
+    "content": "Växla sidovärlden från TeleWasher över kartan"
+  },
   "lightMode": {
     "label": "Lättviktsläge",
     "title": "Lättviktsläge",

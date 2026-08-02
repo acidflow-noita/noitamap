@@ -4872,6 +4872,10 @@
     "title": "Kusová mřížka",
     "content": "Přepnout překrytí mřížky hranic bloků"
   },
+  "sideworld": {
+    "title": "Vedlejší svět",
+    "content": "Přepnout překrytí vedlejšího světa TeleWasher"
+  },
   "lightMode": {
     "label": "Lehký režim",
     "title": "Lehký režim",

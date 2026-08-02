@@ -102,29 +102,22 @@ export class App extends EventEmitter2 {
       const overlayLabel = this.overlayButtons.querySelector(`label[for="${overlayToggle.id}"]`) as HTMLLabelElement;
 
       overlayToggle.disabled = !enabled;
+      // Hide rather than grey out: on a map with few applicable overlays the
+      // row was mostly dead buttons whose only affordance was a "Not available"
+      // popover. The label carries the visual, so both move together.
+      overlayToggle.classList.toggle("d-none", !enabled);
+      overlayLabel.classList.toggle("d-none", !enabled);
 
       if (!enabled) {
         overlayToggle.checked = false;
         showOverlay(key as OverlayKey, false);
 
-        // Dispose of any existing popover first
+        // A hidden button cannot be hovered, so its popover is now pure
+        // leakage — dispose it and leave it disposed.
         const existingPopover = bootstrap.Popover.getInstance(overlayLabel);
         if (existingPopover) {
           existingPopover.dispose();
         }
-
-        // Add popover for disabled buttons
-        overlayLabel.setAttribute("data-bs-toggle", "popover");
-        overlayLabel.setAttribute("data-bs-placement", "bottom");
-        overlayLabel.setAttribute("data-bs-trigger", "hover focus");
-        overlayLabel.setAttribute("data-i18n-title", "overlay.notAvailable.title");
-        overlayLabel.setAttribute("data-bs-title", "Not Available");
-        overlayLabel.setAttribute("data-i18n-content", "overlay.notAvailable.content");
-        overlayLabel.setAttribute("data-bs-content", "Not available for this map");
-        overlayLabel.setAttribute("tabindex", "0");
-
-        // Initialize the popover
-        new bootstrap.Popover(overlayLabel);
       } else {
         // Dispose of existing popover if any
         const existingPopover = bootstrap.Popover.getInstance(overlayLabel);

@@ -4872,6 +4872,10 @@
     "title": "块网格",
     "content": "切换块边界网格覆盖"
   },
+  "sideworld": {
+    "title": "副世界",
+    "content": "切换 TeleWasher 副世界覆盖层"
+  },
   "lightMode": {
     "label": "轻量级模式",
     "title": "轻量级模式",

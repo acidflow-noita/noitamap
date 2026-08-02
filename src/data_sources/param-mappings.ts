@@ -47,6 +47,10 @@ const MAP_SHORT_TO_FULL: Record<string, MapName> = {
   mt: 'maptestdev',
   dy: 'dynamic-main-branch',
   up: 'ups-main',
+  // Overlay-only: layered over ups-main by the sideworld toggle rather than
+  // selected as a map, but MapName is derived from tilesources.json so both
+  // records must list it.
+  qs: 'qlc-sideworld',
 };
 
 const MAP_FULL_TO_SHORT: Record<MapName, string> = {
@@ -67,6 +71,7 @@ const MAP_FULL_TO_SHORT: Record<MapName, string> = {
   'maptestdev': 'mt',
   'dynamic-main-branch': 'dy',
   'ups-main': 'up',
+  'qlc-sideworld': 'qs',
 };
 
 /**

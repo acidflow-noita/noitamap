@@ -326,6 +326,13 @@ body.toggle-hidden div.osOverlayHighlight {
                        square/consistent with text buttons in the navbar */
 }
 
+/* Bootstrap's .d-none is a single class (0-1-0) and loses to .icon-button.btn
+   (0-2-0) above, so overlay buttons hidden for the current map stayed visible.
+   Match that specificity to make hiding actually take effect. */
+.icon-button.btn.d-none {
+  display: none;
+}
+
 .icon-runfast {
   background-image: url(../assets/runfast-logo.svg);
   background-size: cover;

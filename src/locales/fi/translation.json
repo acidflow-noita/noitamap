@@ -4872,6 +4872,10 @@
     "title": "Osittainen verkko",
     "content": "Ota lohkorajojen ruudukon peitto päälle/pois"
   },
+  "sideworld": {
+    "title": "Sivumaailma",
+    "content": "Vaihda TeleWasherin sivumaailman peitto"
+  },
   "lightMode": {
     "label": "Kevyt tila",
     "title": "Kevyt tila",

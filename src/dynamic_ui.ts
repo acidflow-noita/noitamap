@@ -251,6 +251,29 @@ function refreshDynamicUITranslations(): void {
 
 // ─── Visibility ──────────────────────────────────────────────────────────────
 
+/**
+ * Restore btn-group corner rounding on the first and last VISIBLE labels.
+ *
+ * Bootstrap squares off the inner edges of every button in a .btn-group via
+ * :first-child/:last-child, which are blind to .d-none — so once buttons are
+ * hidden per map the surviving ends keep their square inner corners. Exported
+ * because the sideworld toggle can appear/disappear independently of a map
+ * change, and it is the last button in the group when present.
+ */
+export function roundVisibleOverlayGroupEdges(): void {
+  const overlaySelector = document.getElementById("overlay-selector");
+  if (!overlaySelector) return;
+  const labels = overlaySelector.querySelectorAll<HTMLLabelElement>("label.btn");
+  for (const label of labels) label.style.borderRadius = "";
+  const visible = overlaySelector.querySelectorAll<HTMLLabelElement>("label.btn:not(.d-none)");
+  if (!visible.length) return;
+  const r = "var(--bs-border-radius)";
+  visible[0].style.borderTopLeftRadius = r;
+  visible[0].style.borderBottomLeftRadius = r;
+  visible[visible.length - 1].style.borderTopRightRadius = r;
+  visible[visible.length - 1].style.borderBottomRightRadius = r;
+}
+
 export function updateDynamicUIVisibility(currentMap: string): void {
   if (!toolbarItems.length) return;
   const isDynamic = currentMap === DYNAMIC_MAP_NAME;
@@ -261,7 +284,15 @@ export function updateDynamicUIVisibility(currentMap: string): void {
     (el as HTMLElement).classList.toggle("d-none", !isDynamic);
   });
 
-  // Hide overlay toggles on dynamic map, except those that work on the dynamic map.
+  // Hide overlay toggles that do nothing on the current map.
+  //
+  // This deliberately does NOT decide visibility on its own for static maps:
+  // App.updateOverlaySelectors already hid every toggler whose overlay data
+  // has no entry for the current map, and this function runs afterwards. Using
+  // `isDynamic` as the only input re-showed all seven on maps like ups-main,
+  // undoing that work — and then computed the btn-group corner rounding from
+  // the wrong visible set. Respect the disabled flag App set, and only add the
+  // dynamic map's extra restriction on top.
   const overlaySelector = document.getElementById("overlay-selector");
   if (overlaySelector) {
     const dynamicOverlayKeys = new Set(["biomeBoundaries"]);
@@ -269,7 +300,9 @@ export function updateDynamicUIVisibility(currentMap: string): void {
     for (const toggler of togglers) {
       const label = overlaySelector.querySelector<HTMLLabelElement>(`label[for="${toggler.id}"]`);
       const key = toggler.dataset.overlayKey;
-      const shouldHide = isDynamic && !dynamicOverlayKeys.has(key || "");
+      const unavailableForMap = toggler.disabled;
+      const hiddenByDynamicMap = isDynamic && !dynamicOverlayKeys.has(key || "");
+      const shouldHide = unavailableForMap || hiddenByDynamicMap;
       toggler.classList.toggle("d-none", shouldHide);
       if (label) {
         label.classList.toggle("d-none", shouldHide);
@@ -278,15 +311,7 @@ export function updateDynamicUIVisibility(currentMap: string): void {
       }
     }
 
-    // Fix btn-group border-radius on first/last visible labels
-    const visibleLabels = overlaySelector.querySelectorAll<HTMLLabelElement>("label.btn:not(.d-none)");
-    if (visibleLabels.length > 0) {
-      const r = "var(--bs-border-radius)";
-      visibleLabels[0].style.borderTopLeftRadius = r;
-      visibleLabels[0].style.borderBottomLeftRadius = r;
-      visibleLabels[visibleLabels.length - 1].style.borderTopRightRadius = r;
-      visibleLabels[visibleLabels.length - 1].style.borderBottomRightRadius = r;
-    }
+    roundVisibleOverlayGroupEdges();
   }
 
   // Relocate secondary controls into the "..." menu on the dynamic map;

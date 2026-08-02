@@ -4872,6 +4872,10 @@
     "title": "Griglia a blocchi",
     "content": "Attiva/disattiva la sovrapposizione della griglia dei limiti dei blocchi"
   },
+  "sideworld": {
+    "title": "Mondo secondario",
+    "content": "Attiva/disattiva overlay mondo secondario del TeleWasher"
+  },
   "lightMode": {
     "label": "Modalità leggera",
     "title": "Modalità leggera",

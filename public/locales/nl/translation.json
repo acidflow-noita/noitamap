@@ -4872,6 +4872,10 @@
     "title": "Chunk-raster",
     "content": "Schakel de rasteroverlay van blokgrenzen in of uit"
   },
+  "sideworld": {
+    "title": "Zijwereld",
+    "content": "Schakel de zijwereld van de TeleWasher over de kaart"
+  },
   "lightMode": {
     "label": "Lichtgewicht modus",
     "title": "Lichtgewicht modus",

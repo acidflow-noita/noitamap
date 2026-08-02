@@ -4872,6 +4872,10 @@
     "title": "チャンクグリッド",
     "content": "チャンク境界のグリッド オーバーレイを切り替えます"
   },
+  "sideworld": {
+    "title": "サイドワールド",
+    "content": "TeleWasher のサイドワールドオーバーレイを切り替え"
+  },
   "lightMode": {
     "label": "軽量モード",
     "title": "軽量モード",

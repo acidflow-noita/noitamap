@@ -4872,6 +4872,10 @@
     "title": "Cuadricula de chunks",
     "content": "Alternar superposición de cuadrícula de límites de fragmentos"
   },
+  "sideworld": {
+    "title": "Mundo secundario",
+    "content": "Alternar superposición del mundo secundario del TeleWasher"
+  },
   "lightMode": {
     "label": "Modo ligero",
     "title": "Modo ligero",

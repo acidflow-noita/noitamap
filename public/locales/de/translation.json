@@ -4872,6 +4872,10 @@
     "title": "Chunk-Gitter",
     "content": "Schalten Sie die Rasterüberlagerung der Blockgrenzen um"
   },
+  "sideworld": {
+    "title": "Nebenwelt",
+    "content": "Nebenwelt des TeleWashers über der Karte umschalten"
+  },
   "lightMode": {
     "label": "Leichter Modus",
     "title": "Leichter Modus",

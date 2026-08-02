@@ -4872,6 +4872,10 @@
     "title": "Kotak Potongan",
     "content": "Alihkan hamparan kisi batas bongkahan"
   },
+  "sideworld": {
+    "title": "Dunia sampingan",
+    "content": "Alihkan hamparan dunia sampingan TeleWasher"
+  },
   "lightMode": {
     "label": "Modus ringan",
     "title": "Modus ringan",

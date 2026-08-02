@@ -4872,6 +4872,10 @@
     "title": "Grade de pedaços",
     "content": "Alternar sobreposição de grade de limites de blocos"
   },
+  "sideworld": {
+    "title": "Mundo secundário",
+    "content": "Alternar sobreposição do mundo secundário do TeleWasher"
+  },
   "lightMode": {
     "label": "Modo leve",
     "title": "Modo leve",

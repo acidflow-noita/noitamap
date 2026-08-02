@@ -4872,6 +4872,10 @@
     "title": "Siatka kawałków",
     "content": "Przełącz nakładkę siatki granic porcji"
   },
+  "sideworld": {
+    "title": "Świat poboczny",
+    "content": "Przełącz nakładkę świata pobocznego TeleWasher"
+  },
   "lightMode": {
     "label": "Tryb lekki",
     "title": "Tryb lekki",

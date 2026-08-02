@@ -176,6 +176,8 @@ import { DrawingUI } from "./drawing/drawing-ui";
 import { createSeedReportButton } from "./seed-report-button";
 import { placeMoreMenuLast } from "./overflow-menu";
 import { initChunkGrid, showChunkGrid, isChunkGridVisible } from "./drawing/chunk-grid";
+import { initSideworld, toggleSideworld, mapHasSideworld, resetSideworld } from "./sideworld";
+import { roundVisibleOverlayGroupEdges } from "./dynamic_ui";
 import { getMaterialInfo, primeMaterialInfo } from "./material-info";
 
 // Global reference to unified search for translation updates
@@ -458,6 +460,35 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (chunkGridToggler.checked) showChunkGrid(true);
     chunkGridToggler.addEventListener("change", () => showChunkGrid(chunkGridToggler.checked));
   }
+
+  // Sideworld overlay toggle — QLC map only.
+  initSideworld(app.osd.viewer);
+  const sideworldToggler = document.getElementById("sideworldToggler") as HTMLInputElement | null;
+  const sideworldLabel = document.querySelector('label[for="sideworldToggler"]') as HTMLElement | null;
+  const syncSideworldButton = () => {
+    const available = mapHasSideworld(app.getMap());
+    sideworldToggler?.classList.toggle("d-none", !available);
+    sideworldLabel?.classList.toggle("d-none", !available);
+    if (!available && sideworldToggler) sideworldToggler.checked = false;
+  };
+  if (sideworldToggler) {
+    sideworldToggler.addEventListener("change", async () => {
+      // The overlay reports what actually happened: if the tile source fails
+      // to load, the checkbox must not stay lit claiming it is showing.
+      const shown = await toggleSideworld(sideworldToggler.checked);
+      sideworldToggler.checked = shown;
+      // The toggle is the last button in the group, so its visibility changes
+      // which labels are the group's rounded ends.
+      roundVisibleOverlayGroupEdges();
+    });
+  }
+  syncSideworldButton();
+  app.on("state-change", () => {
+    // Switching maps re-opens the viewer, destroying every tiled image, so the
+    // overlay's own flag has to be cleared alongside the button.
+    if (!mapHasSideworld(app.getMap())) resetSideworld();
+    syncSideworldButton();
+  });
 
   let initialSearchQuery = urlState.query;
   let initialTargetPoiId = urlState.targetPoiId;

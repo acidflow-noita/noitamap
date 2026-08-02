@@ -148,5 +148,11 @@
       "url": "https://qlc-main.acidflow.stream/map.dzi",
       "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"png\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"16384\",\"Height\":\"27648\"},\"TopLeft\":{\"X\":\"-7680\",\"Y\":\"-4608\"}}}\n"
     }
+  ],
+  "qlc-sideworld": [
+    {
+      "url": "https://qlc-sideworld.acidflow.stream/map.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"png\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"3072\",\"Height\":\"2048\"},\"TopLeft\":{\"X\":\"-2560\",\"Y\":\"-1024\"}}}\n"
+    }
   ]
 }

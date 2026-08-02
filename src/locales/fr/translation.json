@@ -4872,6 +4872,10 @@
     "title": "Grille de morceaux",
     "content": "Activer/désactiver la superposition de la grille des limites des morceaux"
   },
+  "sideworld": {
+    "title": "Monde annexe",
+    "content": "Basculer la superposition du monde annexe du TeleWasher"
+  },
   "lightMode": {
     "label": "Mode léger",
     "title": "Mode léger",

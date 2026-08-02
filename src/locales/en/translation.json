@@ -308,6 +308,10 @@
     "title": "Chunk Grid",
     "content": "Toggle chunk boundaries grid overlay"
   },
+  "sideworld": {
+    "title": "Sideworld",
+    "content": "Toggle the TeleWasher sideworld over the map"
+  },
   "hiddenMessages": {
     "title": "Hidden Messages",
     "content": "Toggle hidden messages overlay"
