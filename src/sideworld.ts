@@ -28,6 +28,8 @@ let viewer: any = null;
 let visible = false;
 /** Guards against double-adds while addTiledImage's async open is in flight. */
 let pending = false;
+/** The border overlay element, tracked so it can be removed with the tiles. */
+let borderEl: HTMLElement | null = null;
 
 export function initSideworld(osdViewer: any): void {
   viewer = osdViewer;
@@ -90,9 +92,50 @@ async function addSideworld(): Promise<void> {
       error: (event: any) => reject(event?.message ?? new Error('sideworld tile source failed to load')),
     });
   });
+
+  addBorder(x, y, width, Number(image.Size.Height));
+}
+
+/**
+ * Frame the sideworld with a border so it reads as a distinct region rather
+ * than part of the base map.
+ *
+ * An OSD overlay <div> rather than anything drawn into the canvas: OSD
+ * composites every tiled image into one canvas, so there is no per-image
+ * element to style, and a canvas-drawn border would have to be re-rendered on
+ * every pan/zoom. An overlay is positioned in viewport coordinates and tracks
+ * pan/zoom for free, in both the HTML and WebGL drawers.
+ *
+ * The rect comes from the descriptor's own TopLeft/Size, so it always matches
+ * whatever the last bake actually produced instead of hardcoded bounds.
+ */
+function addBorder(x: number, y: number, width: number, height: number): void {
+  if (!viewer) return;
+  const el = document.createElement('div');
+  el.className = 'qlc-sideworld-border';
+  // pointer-events: none so the frame never eats clicks meant for the map.
+  el.style.cssText = 'pointer-events: none;';
+  viewer.addOverlay({
+    element: el,
+    location: new OpenSeadragon.Rect(x, y, width, height),
+  });
+  borderEl = el;
+}
+
+function removeBorder(): void {
+  if (borderEl && viewer) {
+    try {
+      viewer.removeOverlay(borderEl);
+    } catch {
+      // Already gone (e.g. a map switch cleared every overlay); nothing to do.
+    }
+    borderEl.remove();
+  }
+  borderEl = null;
 }
 
 function removeSideworld(): void {
+  removeBorder();
   const item = findItem();
   if (item && viewer) viewer.world.removeItem(item);
 }
@@ -132,5 +175,9 @@ export async function toggleSideworld(next?: boolean): Promise<boolean> {
  * that tracks whether it is showing.
  */
 export function resetSideworld(): void {
+  // setMap re-opens the viewer, which drops tiled images AND overlays, so the
+  // element is already detached — just clear the handle so a later toggle does
+  // not try to remove a stale node.
+  borderEl = null;
   visible = false;
 }

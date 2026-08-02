@@ -1110,3 +1110,16 @@ body.toggle-hidden div.osOverlayHighlight {
     max-width: 100%;
   }
 }
+
+/* Frame for the QLC sideworld overlay (see src/sideworld.ts).
+   An OSD overlay div sized to the bake's own rect, so it tracks pan/zoom with
+   the tiles. box-sizing keeps the border inside that rect instead of straddling
+   it, and the outer shadow separates the frame from the dark terrain the
+   sideworld sits on without tinting the tiles themselves. */
+.qlc-sideworld-border {
+  box-sizing: border-box;
+  border: 2px solid rgba(120, 210, 255, 0.85);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.55),
+    0 0 18px rgba(120, 210, 255, 0.35);
+}
