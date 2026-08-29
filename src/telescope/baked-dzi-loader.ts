@@ -196,6 +196,28 @@ export function addBakedDZIsToOSD(
         try {
           event.item.source.__bakedDzi = true;
         } catch {}
+        // Tell OSD these tiles have an alpha channel. This is NOT cosmetic:
+        // OSD only clears a tile's destination rect before drawing when
+        // `tile.hasTransparency` is set (openseadragon.js:24513,
+        // `if (opacity === 1 && tile.hasTransparency)`). Without the clear, the
+        // previous contents of that rect survive underneath, so during a fast
+        // zoom the coarser level you were just looking at stays visible through
+        // every transparent pixel of the level that replaces it.
+        //
+        // OSD's default is `hasTransparency: (ctx, url) => url.match('.png')`
+        // (openseadragon.js:14903). Our baked tiles are .webp, so the default
+        // returns null and the overlay is treated as OPAQUE. Every other
+        // transparent layer here already overrides this — pixel scenes
+        // (telescope-osd-bridge), GL terrain (gl-terrain-tile-source), markers
+        // (marker-tile-source) — and none of them exhibit the artifact.
+        //
+        // It shows up worst in heaven/hell because those tiers have no biome
+        // backgrounds (biome_boundries_py.json's polygons all lie inside the
+        // main slot), leaving them ~80% transparent — i.e. almost the whole
+        // area is a window onto whatever was not cleared.
+        try {
+          event.item.source.hasTransparency = () => true;
+        } catch {}
         // Per-bake cache-bust. The global add-item handler (app_osd) only knows
         // versions for the static map origins, so without this baked tiles get
         // a constant "?v=undefined" and a new daily is served stale until a
