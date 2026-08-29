@@ -27,9 +27,10 @@
  *     world's regions are linked/copied into a private temp dir under their
  *     world-coordinate comma names.
  *   - A tile occupies world rect [X, X+w) x [Y, Y+h), where w/h are the PNG's
- *     pixel dimensions. Our 10x fulls are 1:1 with world units; bounds are the
- *     exact union of the world's slot-padded regions, so no canvas pixel is
- *     left uncovered (uncovered = zero-filled = renders black).
+ *     pixel dimensions. Our 10x fulls are 1:1 with world units. Bounds are the
+ *     union of the world's slot-padded regions SNAPPED OUT to ORIGIN_ALIGN, so
+ *     the canvas does have uncovered pixels; they come out transparent only
+ *     because biome-baker patches stitch's colorBackground (see ORIGIN_ALIGN).
  *
  * USAGE
  *   node build_scripts/stitch-dzis.cjs --out /out
@@ -183,9 +184,9 @@ async function main() {
 
     fs.rmSync(filesDir, { recursive: true, force: true });
 
-    // Bounds = exact union of the slot-padded region PNGs. Regions abut
-    // exactly (24576-tall slots), so the canvas has zero uncovered
-    // (zero-filled -> renders black) pixels.
+    // Raw union of the slot-padded region PNGs. Regions abut exactly (24576-tall
+    // slots), so the union itself is gap-free; the snapping below is what adds
+    // uncovered canvas.
     const rawMinX = Math.min(...present.map((r) => r.minX));
     const rawMinY = Math.min(...present.map((r) => r.minY));
     const rawMaxX = Math.max(...present.map((r) => r.minX + r.fullW));
@@ -213,17 +214,24 @@ async function main() {
     // same binary and input, xmin 0 gives 0 bad levels, xmin -16900 gives 6.
     //
     // ORIGIN_ALIGN 4096 (2^12) pushes the first bad level to 4, i.e. a level where
-    // the entire world is under ~130px wide, for ~3.6k px of transparent padding on
-    // a 33k-wide world. The alternative — patching dzi.go to derive level bounds the
-    // DZI way — needs no padding but changes upstream tiling maths, so this stays on
-    // our side of the fence.
+    // the entire world is under ~130px wide, for ~3.6k px of padding on a 33k-wide
+    // world. The alternative — patching dzi.go to derive level bounds the DZI way —
+    // needs no padding but changes upstream tiling maths, so this stays on our side
+    // of the fence.
+    //
+    // REQUIRES biome-baker/stitch-patches/02-transparent-background.patch. The
+    // padding is canvas that no input PNG covers, and upstream stitch fills that
+    // with OPAQUE BLACK (colorBackground), which bakes a black bar along every
+    // world edge and hides the static map behind it. Patch 02 makes it transparent.
+    // A stitch image rebuilt WITHOUT that patch will silently reintroduce the bars,
+    // so if they ever come back, check the image before touching this maths.
     const ORIGIN_ALIGN = 4096;
     const floorTo = (v, n) => Math.floor(v / n) * n;
     const ceilTo = (v, n) => Math.ceil(v / n) * n;
     const minX = floorTo(rawMinX, ORIGIN_ALIGN);
     const minY = floorTo(rawMinY, ORIGIN_ALIGN);
-    // Keep the SIZE aligned too: a level's width must stay exactly halvable, and
-    // the padding is transparent so it costs nothing but bytes.
+    // Keep the SIZE aligned too, so each level's width stays exactly halvable.
+    // Costs bytes only (the padding compresses to almost nothing as flat alpha-0).
     const maxX = ceilTo(rawMaxX, ORIGIN_ALIGN);
     const maxY = ceilTo(rawMaxY, ORIGIN_ALIGN);
     if (minX !== rawMinX || minY !== rawMinY || maxX !== rawMaxX || maxY !== rawMaxY) {
@@ -323,11 +331,31 @@ async function main() {
     // checkpoint-reused older DZI was built with) -- OSD scales the image
     // to the manifest width, so a mismatch would shrink/misalign the layer.
     const img = JSON.parse(fs.readFileSync(dziPath, "utf8")).Image;
+    // Origin AND size both come from the descriptor, and that pairing is the
+    // point: ORIGIN_ALIGN snaps the canvas outward, so the raw region union no
+    // longer describes where the canvas starts. Publishing the union min next to
+    // the snapped Size (which is what this did originally) placed the layer at
+    // the union origin while sizing it for the padded canvas -- translating the
+    // whole baked overlay by the padding (measured on the live bake: x=508/3580/
+    // 2556, y=1024) and dragging the padding strips in over the static map.
+    // TopLeft is stitch's own record of the canvas origin, so reading both from
+    // the same file keeps them consistent by construction.
+    const topLeft = img.TopLeft || {};
+    const rawUnionX = Math.min(...regions.map((r) => r.minX));
+    const rawUnionY = Math.min(...regions.map((r) => r.minY));
+    const hasTopLeft = topLeft.X !== undefined && topLeft.Y !== undefined;
+    if (!hasTopLeft) {
+      console.warn(
+        `[stitch] ${baseName}.dzi has no Image.TopLeft — falling back to the raw region ` +
+          `union origin (${rawUnionX},${rawUnionY}). If the canvas was snapped, the baked ` +
+          `layer will be drawn offset by the padding.`,
+      );
+    }
     byWorld[world].push({
       pw: regions[0].pw,
       dzi: `${baseName}.dzi`,
-      minX: Math.min(...regions.map((r) => r.minX)),
-      minY: Math.min(...regions.map((r) => r.minY)),
+      minX: hasTopLeft ? Number(topLeft.X) : rawUnionX,
+      minY: hasTopLeft ? Number(topLeft.Y) : rawUnionY,
       fullW: Number(img.Size.Width), fullH: Number(img.Size.Height),
     });
   }

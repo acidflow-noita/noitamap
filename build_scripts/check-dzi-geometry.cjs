@@ -37,6 +37,15 @@ const MIN_VISIBLE_WIDTH = Number(process.env.MIN_VISIBLE_WIDTH || 256);
 
 function findDzis(dir) {
   const out = [];
+  if (!fs.existsSync(dir)) {
+    console.error(`No such directory: ${dir}`);
+    console.error("Note: /out is the path INSIDE the bake container. Locally, point");
+    console.error("this at wherever stitch-dzis.cjs wrote its output, e.g.");
+    console.error("  node build_scripts/check-dzi-geometry.cjs --dir ./optional_data/dzi");
+    console.error("or pass descriptors directly:");
+    console.error("  node build_scripts/check-dzi-geometry.cjs path/to/dynamic-daily-middle.dzi");
+    process.exit(2);
+  }
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, entry.name);
     if (entry.isDirectory()) out.push(...findDzis(p));
