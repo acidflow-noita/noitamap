@@ -186,10 +186,53 @@ async function main() {
     // Bounds = exact union of the slot-padded region PNGs. Regions abut
     // exactly (24576-tall slots), so the canvas has zero uncovered
     // (zero-filled -> renders black) pixels.
-    const minX = Math.min(...present.map((r) => r.minX));
-    const minY = Math.min(...present.map((r) => r.minY));
-    const maxX = Math.max(...present.map((r) => r.minX + r.fullW));
-    const maxY = Math.max(...present.map((r) => r.minY + r.fullH));
+    const rawMinX = Math.min(...present.map((r) => r.minX));
+    const rawMinY = Math.min(...present.map((r) => r.minY));
+    const rawMaxX = Math.max(...present.map((r) => r.minX + r.fullW));
+    const rawMaxY = Math.max(...present.map((r) => r.minY + r.fullH));
+
+    // Snap the output origin to a power of two, or the coarse pyramid levels
+    // come out geometrically wrong and the map visibly glitches as you zoom out.
+    //
+    // stitch derives each level's bounds by iteratively halving the ABSOLUTE world
+    // bounds with DivideFloor(min) / DivideCeil(max) (dzi.go ExportDZITiles). A DZI
+    // consumer instead computes level width as ceil(Size.Width / 2^k). Those agree
+    // only while the origin is still divisible by the level's scale; once it is
+    // not, floor() pushes the min outward and the level ends up 1px wider than the
+    // descriptor declares. OSD sizes its destination rect from the descriptor, so
+    // that level is drawn stretched — by a constant 1px, which as a FRACTION of the
+    // level width doubles every level down (0.4% at level 8, 1.6% at 6, 12.5% at 3).
+    // That is the "false colour blocks / distortion when zooming out" on the baked
+    // biome map, and why it worsens the further out you go.
+    //
+    // The first broken level is maxLevel - v - 1, where v is the origin's
+    // power-of-two divisibility. Verified against the deployed pyramid: all three
+    // worlds have minX ending in ...900 / ...740 / ...940, v = 2, maxLevel 17, so
+    // the model predicts first-bad-level 14 — and 14 is exactly where measurement
+    // showed every right-edge tile become 1px too wide. Reproduced in isolation too:
+    // same binary and input, xmin 0 gives 0 bad levels, xmin -16900 gives 6.
+    //
+    // ORIGIN_ALIGN 4096 (2^12) pushes the first bad level to 4, i.e. a level where
+    // the entire world is under ~130px wide, for ~3.6k px of transparent padding on
+    // a 33k-wide world. The alternative — patching dzi.go to derive level bounds the
+    // DZI way — needs no padding but changes upstream tiling maths, so this stays on
+    // our side of the fence.
+    const ORIGIN_ALIGN = 4096;
+    const floorTo = (v, n) => Math.floor(v / n) * n;
+    const ceilTo = (v, n) => Math.ceil(v / n) * n;
+    const minX = floorTo(rawMinX, ORIGIN_ALIGN);
+    const minY = floorTo(rawMinY, ORIGIN_ALIGN);
+    // Keep the SIZE aligned too: a level's width must stay exactly halvable, and
+    // the padding is transparent so it costs nothing but bytes.
+    const maxX = ceilTo(rawMaxX, ORIGIN_ALIGN);
+    const maxY = ceilTo(rawMaxY, ORIGIN_ALIGN);
+    if (minX !== rawMinX || minY !== rawMinY || maxX !== rawMaxX || maxY !== rawMaxY) {
+      console.log(
+        `[${world}] origin snapped to ${ORIGIN_ALIGN}: ` +
+          `x ${rawMinX}..${rawMaxX} -> ${minX}..${maxX}, y ${rawMinY}..${rawMaxY} -> ${minY}..${maxY} ` +
+          `(pyramid geometry stays exact down to a far coarser level)`,
+      );
+    }
     const stitchArgs = [
       "--input", worldTmp,
       "--output", outPath,
