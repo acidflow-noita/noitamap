@@ -15,6 +15,13 @@ import { getCachedBiomeRender, cacheBiomeRender, getCachedSceneBitmap, cacheScen
 import i18next from "../i18n";
 import { attachAlwaysCastPopover, dismissPopovers } from "../popover-util";
 import {
+  ensureGLTerrain,
+  clearGLTerrain,
+  glCoversVerticalPlane,
+  createGLTerrainTileSource,
+  type GLTerrainDeps,
+} from "./gl-terrain-tile-source";
+import {
   getActiveDescriptor,
   setActiveDescriptor,
   primaryDescriptor,
@@ -100,6 +107,8 @@ let TILE_FOREGROUND_COLORS: any;
 let BIOME_COLOR_LOOKUP: any;
 let createTileOverlaysCheap: any;
 let getWorldSize: any;
+/** Set only when the aliased telescope fork ships js/gl/ (vitaminmoo render-perf). */
+let glTerrainDeps: GLTerrainDeps | null = null;
 let _telescopeModulesLoaded = false;
 let privacyToastShown = false;
 
@@ -348,6 +357,24 @@ async function ensureTelescopeModules(): Promise<void> {
   createTileOverlaysCheap = imageMod.createTileOverlaysCheap;
   getWorldSize = utilsMod.getWorldSize;
 
+  // GL final-pixel terrain renderer. Only the vitaminmoo/render-perf fork has
+  // js/gl/, so this is optional: on a fork without it the import fails and the
+  // biome path stays on the CPU composite.
+  try {
+    // @ts-ignore — virtual module; see the alias in vite.config.ts.
+    const glMod: any = await import("virtual:gl-terrain");
+    if (glMod?.GLTerrainRenderer) {
+      glTerrainDeps = {
+        GLTerrainRenderer: glMod.GLTerrainRenderer,
+        getWorldCenter: utilsMod.getWorldCenter,
+        GENERATOR_CONFIG: genMod.GENERATOR_CONFIG,
+      };
+      console.log("[OSD Bridge] GL terrain renderer available");
+    }
+  } catch (e) {
+    console.log("[OSD Bridge] no GL terrain renderer on this telescope fork (CPU composite only)");
+  }
+
   // Apply truthy color hack: the library uses `if (foregroundColor)` which
   // fails for color 0 (black). Change 0→1 (near-black) to make it truthy.
   if (TILE_FOREGROUND_COLORS) {
@@ -403,6 +430,10 @@ let currentGenerationId = 0;
 export function clearDynamicOverlays(viewer: any): void {
   // Invalidate any in-flight async generation so it won't render on top of the new map
   currentGenerationId++;
+
+  // Drop the GL terrain's GPU resources: they are keyed to the outgoing seed's
+  // layer buffers, and the atlas alone is several MiB of texture.
+  clearGLTerrain();
 
   markerTiledImage = null;
 
@@ -505,6 +536,9 @@ export function addBiomeBgToOSD(viewer: any): void {
       x: gx + pw * pwOffsetPixels,
       y: gy,
       width: w,
+      success: (event: any) => {
+        try { event.item.source.__biomeBg = true; } catch {}
+      },
     });
   }
 }
@@ -982,6 +1016,7 @@ async function addBiomeBackgrounds(viewer: OSDViewer, generationId: number): Pro
           try { viewer.world.removeItem(event.item); } catch {}
           return;
         }
+        try { event.item.source.__biomeBg = true; } catch {}
         dynamicTiledImages.add(event.item);
       },
     });
@@ -1049,6 +1084,28 @@ async function addBiomeLayersProgressively(
   console.log(`[OSD Bridge] biome layer names in tileLayers:`, Array.from(layerIndicesByBiome.keys()));
   console.log(`[OSD Bridge] unordered biomes to render:`, unorderedBiomes);
 
+  // Layers the GPU terrain is allowed to draw.
+  //
+  // Filtering by biome NAME is not enough. The CPU path also silently drops any
+  // layer whose createTileOverlaysCheap output is empty — biomes with no wang
+  // tiles, biomes outside BIOME_COLORS_WITH_TILES, and interiors it declines to
+  // approximate. buildChunkIndirection() has no such notion: it assigns a chunk
+  // to a region whenever the region claims that chunk AND the biome-map colour
+  // matches (js/gl/indirection.js:164-171), so the GPU drew biomes the CPU path
+  // renders as nothing — cloudscape and friends appearing where they should not
+  // be, and skipped interiors like snowcastle_cavern showing over the background.
+  //
+  // So the allowed set is taken from what the CPU path ACTUALLY DREW on the first
+  // main-plane region: the layer indices that produced a non-empty overlay. That
+  // is authoritative rather than a guess about which predicate matters, and it
+  // keeps the two renderers agreeing on WHAT is drawn while differing only in how
+  // faithfully it is expanded to full resolution. Chunks whose owning region is
+  // filtered out resolve to NO_REGION and come out transparent.
+  //
+  // Captured once (the set does not vary by parallel world) so ensureResources
+  // is not rebuilt per PW.
+  let glTileLayers: any[] | null = null;
+
   const anchorY = -(14 * 512);
 
   // Count total steps for progress: each PW × number of active vertical planes
@@ -1097,6 +1154,7 @@ async function addBiomeLayersProgressively(
                 try { viewer.world.removeItem(event.item); } catch {}
                 return;
               }
+              try { event.item.source.__biomeComposite = true; } catch {}
               dynamicTiledImages.add(event.item);
             },
           });
@@ -1128,6 +1186,10 @@ async function addBiomeLayersProgressively(
       // First pass: determine bounding box across all non-empty overlays
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       const validOverlays: { overlay: OffscreenCanvas; x: number; y: number; osdWidth: number }[] = [];
+      // Layer indices the CPU path actually DREW this iteration. This is the
+      // authoritative "what belongs on screen" set — see the note where
+      // glDrawnLayerIdx is consumed.
+      const drawnLayerIdx = new Set<number>();
 
       for (const biomeName of allBiomesToRender) {
         const layerIdxArr = layerIndicesByBiome.get(biomeName);
@@ -1149,10 +1211,68 @@ async function addBiomeLayersProgressively(
           maxY = Math.max(maxY, y + osdHeight);
 
           validOverlays.push({ overlay, x, y, osdWidth });
+          drawnLayerIdx.add(layerIdx);
         }
       }
 
       if (validOverlays.length === 0) { stepsDone++; continue; }
+
+      // ── GPU final-pixel path ────────────────────────────────────────────────
+      // When the WebGL2 terrain renderer is available, replace this region's
+      // flat composite with a pyramidal tile source that re-derives every pixel
+      // at full resolution from the same layer buffers (read-only, so the CPU
+      // bake and the POI scanner are unaffected).
+      //
+      // Only pwVertical 0: upstream's chunk-indirection design cannot express
+      // heaven/hell, which broadcast row 0 / row 47 across the whole band, so
+      // those planes keep the CPU composite below. Mixed rendering is
+      // deliberate.
+      if (pvt === 0 && glTerrainDeps) {
+        // Capture the allowed layer set from the first main-plane region.
+        if (!glTileLayers) {
+          glTileLayers = tileLayers.filter((_: any, i: number) => drawnLayerIdx.has(i));
+          console.log(
+            `[OSD Bridge] GL terrain layers: ${glTileLayers.length}/${tileLayers.length} ` +
+              `(${tileLayers.length - glTileLayers.length} excluded — CPU path draws them as nothing)`,
+          );
+        }
+      }
+      if (pvt === 0 && glTerrainDeps && glTileLayers && glTileLayers.length && ensureGLTerrain(glTerrainDeps, {
+        tileLayers: glTileLayers, biomeData, isNGP: !!result.isNGP,
+        gameMode: (result as any).gameMode, seed: result.seed,
+      }) && glCoversVerticalPlane(0)) {
+        const glSource = createGLTerrainTileSource({
+          deps: glTerrainDeps,
+          gen: {
+            tileLayers: glTileLayers, biomeData, isNGP: !!result.isNGP,
+            gameMode: (result as any).gameMode, seed: result.seed,
+          },
+          pw,
+          worldX: minX,
+          worldY: minY,
+          worldW: maxX - minX,
+          worldH: maxY - minY,
+        });
+        viewer.addTiledImage({
+          tileSource: glSource,
+          x: minX,
+          y: minY,
+          width: maxX - minX,
+          success: (event: any) => {
+            if (currentGenerationId !== generationId) {
+              try { viewer.world.removeItem(event.item); } catch {}
+              return;
+            }
+            dynamicTiledImages.add(event.item);
+          },
+        });
+        if (isFirstPw && onFirstPwReady) {
+          try { onFirstPwReady(); } catch (e) { console.warn("[OSD Bridge] onFirstPwReady threw:", e); }
+          await new Promise((r) => setTimeout(r, 0));
+        }
+        stepsDone++;
+        continue;
+      }
 
       // Create a composited canvas at the same pixel density (1 pixel = 10 OSD units)
       const compositeW = Math.ceil((maxX - minX) / 10);
@@ -1199,6 +1319,7 @@ async function addBiomeLayersProgressively(
             try { viewer.world.removeItem(event.item); } catch {}
             return;
           }
+          try { event.item.source.__biomeComposite = true; } catch {}
           dynamicTiledImages.add(event.item);
         },
       });
@@ -1841,6 +1962,106 @@ let _lastLoadedScenes: Array<{ name: string; key: string; x: number; y: number; 
     }
   }
   console.log("[OSD] Toggled base map tiles visibility");
+};
+
+// ─── Layer inspection / isolation (console debugging) ────────────────────────
+//
+// The dynamic map stacks several independent layers that are easy to confuse
+// when chasing a visual artefact. These let you see exactly which layer is
+// responsible for what is on screen.
+//
+//   __layers()              list every world item with its kind and bounds
+//   __hide("biomeBg")       hide one kind
+//   __show("biomeBg")       show it again
+//   __only("glTerrain")     show ONE kind, hide everything else
+//   __showAll()             restore everything
+//
+// Kinds: staticBase (the seed-invariant main-branch DZIs), bakedDzi (daily bake),
+// biomeBg (the biome background composites — the "bg map"), biomeComposite (the
+// CPU wang-tile biome layer), glTerrain (the GPU final-pixel terrain), synthetic
+// (marker / pixel-scene tile sources), other.
+
+function _layerKind(source: any): string {
+  if (!source) return "other";
+  if (source.__glTerrain) return "glTerrain";
+  if (source.__bakedDzi) return "bakedDzi";
+  if (source.__biomeBg) return "biomeBg";
+  if (source.__biomeComposite) return "biomeComposite";
+  // Synthetic on-demand sources use a custom scheme in getTileUrl.
+  try {
+    const u = source.getTileUrl?.(source.maxLevel ?? 0, 0, 0);
+    if (typeof u === "string" && /^(marker-tile|pixel-scene-tile):/.test(u)) return "synthetic";
+  } catch {
+    /* not addressable */
+  }
+  if (typeof source.tilesUrl === "string") return "staticBase";
+  return "other";
+}
+
+function _eachLayer(fn: (item: any, kind: string, i: number) => void): void {
+  const osd = (window as any).__osdViewer;
+  if (!osd?.world) {
+    console.log("[OSD] no viewer — open the dynamic map first");
+    return;
+  }
+  for (let i = 0; i < osd.world.getItemCount(); i++) {
+    const item = osd.world.getItemAt(i);
+    fn(item, _layerKind(item.source), i);
+  }
+}
+
+(window as any).__layers = () => {
+  const rows: any[] = [];
+  _eachLayer((item, kind, i) => {
+    const b = item.getBounds(true);
+    const s = item.source || {};
+    rows.push({
+      i,
+      kind,
+      src: `${s.width}x${s.height}`,
+      levels: `${s.minLevel ?? 0}..${s.maxLevel ?? 0}`,
+      x: Math.round(b.x),
+      y: Math.round(b.y),
+      w: Math.round(b.width),
+      h: Math.round(b.height),
+      opacity: item.getOpacity(),
+    });
+  });
+  console.table(rows);
+  const byKind: Record<string, number> = {};
+  for (const r of rows) byKind[r.kind] = (byKind[r.kind] || 0) + 1;
+  console.log("[OSD] layer kinds:", byKind);
+  return rows;
+};
+
+(window as any).__hide = (kind: string) => {
+  let n = 0;
+  _eachLayer((item, k) => {
+    if (k === kind) { item.setOpacity(0); n++; }
+  });
+  console.log(`[OSD] hid ${n} "${kind}" layer(s)`);
+};
+
+(window as any).__show = (kind: string) => {
+  let n = 0;
+  _eachLayer((item, k) => {
+    if (k === kind) { item.setOpacity(1); n++; }
+  });
+  console.log(`[OSD] showed ${n} "${kind}" layer(s)`);
+};
+
+(window as any).__only = (kind: string) => {
+  let on = 0, off = 0;
+  _eachLayer((item, k) => {
+    if (k === kind) { item.setOpacity(1); on++; } else { item.setOpacity(0); off++; }
+  });
+  console.log(`[OSD] showing ${on} "${kind}" layer(s), hid ${off} other(s)`);
+};
+
+(window as any).__showAll = () => {
+  let n = 0;
+  _eachLayer((item) => { item.setOpacity(1); n++; });
+  console.log(`[OSD] restored ${n} layer(s)`);
 };
 
 // ─── Pixel Scenes ───────────────────────────────────────────────────────────

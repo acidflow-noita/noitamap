@@ -1,3 +1,8 @@
 [submodule "lib/noita-telescope"]
 	path = lib/noita-telescope
 	url = https://github.com/Lymm37/noita-telescope.git
+[submodule "lib/noita-telescope-vm"]
+	path = lib/noita-telescope-vm
+	url = https://github.com/vitaminmoo/noita-telescope.git
+	branch = render-perf
+	shallow = true

@@ -14,3 +14,12 @@
 
 # Header config is managed via Cloudflare dashboard rules, not file-based
 /public/_headers
+# Runtime atlases the WebGL2 final-pixel terrain renderer fetches. Generated into
+# public/data by build_scripts/copy-telescope-data.cjs from whichever telescope
+# fork is selected (only the vitaminmoo render-perf one has them), so they are
+# build output, not source. ~4.7 MiB.
+/public/data/material_atlas.bin
+/public/data/material_atlas.json
+/public/data/edge_atlas.bin
+/public/data/biome_backgrounds.json
+/public/data/background_data.json

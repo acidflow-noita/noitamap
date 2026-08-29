@@ -27,7 +27,7 @@ import {
 import { rebuildAltLayers, getAllPOIsFlat, exportBiomeRegionImages, prepareDecorationExport, exportDecorationCell, releaseDecorationExport } from "./telescope/telescope-osd-bridge";
 import { getUnlocksFromURL } from "./unlocks";
 import type { GenerationResult } from "./telescope/telescope-adapter";
-import { isRenderer, getStoredRenderer, setStoredRenderer, clearStoredRenderer } from "./renderer_settings";
+import { isRenderer, getStoredRenderer, setStoredRenderer, clearStoredRenderer, isGLTerrainEnabled, setGLTerrain, getGLTerrainSupersampleCap, setGLTerrainSupersampleCap } from "./renderer_settings";
 
 // --- Dev Console Commands (Early Initialization) ---
 const isDev =
@@ -87,6 +87,8 @@ if (isDev) {
       const r = getLastGenerationResult();
       return !!(r && r.tileLayers && r.tileLayers.length);
     },
+    /** Raw generation result, for console inspection and debug harnesses. */
+    getGeneration: () => getLastGenerationResult(),
     exportBiomeRegions: async () => {
       const result = getLastGenerationResult();
       if (!result) return null;
@@ -134,6 +136,22 @@ if (isDev) {
       clearStoredRenderer();
       console.log("[Noitamap] Renderer override cleared. Reload to use the default.");
     },
+    // WebGL2 final-pixel biome terrain (ported from vitaminmoo/render-perf).
+    // Off by default while it is brought up. Replaces the flat biome composite
+    // with on-demand GPU tiles that re-derive every pixel at full resolution;
+    // zoomed-out tiles supersample rather than dropping detail, so nothing is
+    // discarded at any zoom. Heaven/hell stay on the CPU composite.
+    setGLTerrain: (on: boolean) => {
+      setGLTerrain(!!on);
+      console.log(`[Noitamap] GL final-pixel terrain ${on ? "ENABLED" : "DISABLED"}. Reload to apply.`);
+    },
+    getGLTerrain: () => isGLTerrainEnabled(),
+    // Max supersample factor for zoomed-out GL tiles (1 = off, default 8).
+    setGLTerrainSupersample: (n: number) => {
+      setGLTerrainSupersampleCap(n);
+      console.log(`[Noitamap] GL terrain supersample cap = ${getGLTerrainSupersampleCap()}. Reload to apply.`);
+    },
+    getGLTerrainSupersample: () => getGLTerrainSupersampleCap(),
   };
   console.log('[Noitamap] Dev mode detected, "noitamap" commands available.');
 }

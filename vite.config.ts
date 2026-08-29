@@ -5,6 +5,48 @@ import fs from "fs";
 
 const isProAvailable = fs.existsSync(resolve(__dirname, "../noitamap-pro/src/pro-entry.ts"));
 
+// Which telescope fork the build resolves.
+//
+// lib/noita-telescope       Lymm37 fork. The DEFAULT, and what production ships.
+// lib/noita-telescope-vm    vitaminmoo's render-perf branch, the only fork carrying
+//                           the WebGL2 final-pixel terrain renderer (js/gl/,
+//                           js/engine_resolve/). OPT-IN while that work is brought up.
+//
+// It has to be one fork for the whole generation path, not a per-module mix: the
+// GPU renderer consumes the SAME assembled layer buffers and config tables the CPU
+// bake and POI scanner read, and that shared-buffer invariant is what stops the two
+// renderers disagreeing on content. render-perf also changed tile_generator.js,
+// generator_config.js and utils.js substantially, so feeding it buffers from the
+// other fork would break exactly that guarantee.
+//
+// Defaulting to the OLD fork keeps this commit inert: the hosted map and the CI
+// bake behave exactly as before, and the GL work only activates when someone asks
+// for it deliberately. Opt in with:
+//     NOITAMAP_TELESCOPE=lib/noita-telescope-vm npm run dev
+// (the same variable must be set for build_scripts/copy-telescope-data.cjs, which
+// carries that fork's runtime atlases into public/data.)
+const TELESCOPE_DEFAULT = "lib/noita-telescope";
+const TELESCOPE_REQUESTED = process.env.NOITAMAP_TELESCOPE || TELESCOPE_DEFAULT;
+let TELESCOPE_DIR = TELESCOPE_REQUESTED;
+if (!fs.existsSync(resolve(__dirname, TELESCOPE_DIR, "js"))) {
+  // A missing OPT-IN fork must never take the build (and therefore the daily bake)
+  // down: fall back to the default, which git submodule update always provides.
+  if (TELESCOPE_DIR !== TELESCOPE_DEFAULT && fs.existsSync(resolve(__dirname, TELESCOPE_DEFAULT, "js"))) {
+    console.warn(
+      `[vite] telescope fork "${TELESCOPE_DIR}" not checked out — falling back to ${TELESCOPE_DEFAULT}. ` +
+        `Run: git submodule update --init --recursive`,
+    );
+    TELESCOPE_DIR = TELESCOPE_DEFAULT;
+  } else {
+    throw new Error(
+      `Telescope fork not found at ${resolve(__dirname, TELESCOPE_DIR, "js")}. ` +
+        `Run \`git submodule update --init --recursive\`.`,
+    );
+  }
+}
+const TELESCOPE_JS = resolve(__dirname, TELESCOPE_DIR, "js");
+console.log(`[vite] telescope fork: ${TELESCOPE_DIR}`);
+
 const shimTelescopePlugin = {
   name: "shim-telescope-app",
   enforce: "pre" as const,
@@ -54,15 +96,23 @@ export default defineConfig({
   resolve: {
     alias: {
       // Telescope submodule — always available (free feature)
-      "noita-telescope": resolve(__dirname, "lib/noita-telescope/js"),
+      "noita-telescope": TELESCOPE_JS,
+      // The WebGL2 final-pixel terrain renderer exists only on the vitaminmoo
+      // render-perf fork. A literal dynamic-import specifier would be resolved by
+      // Vite's dependency scan and fail the BUILD on the fork without it, which a
+      // runtime try/catch cannot prevent — so route it through a virtual module
+      // that falls back to a stub, the same way virtual:noitamap-pro does.
+      "virtual:gl-terrain": fs.existsSync(resolve(TELESCOPE_JS, "gl/terrain_renderer.js"))
+        ? resolve(TELESCOPE_JS, "gl/terrain_renderer.js")
+        : resolve(__dirname, "src/telescope/gl-terrain-unavailable.ts"),
       // Shim telescope's app.js to remove the app.init() side-effect that crashes library usage.
       // We alias both the module name and the absolute path used by relative imports inside the submodule.
       "noita-telescope/app.js": resolve(__dirname, "src/telescope/telescope-app-shim.js"),
-      [resolve(__dirname, "lib/noita-telescope/js/app.js")]: resolve(__dirname, "src/telescope/telescope-app-shim.js"),
+      [resolve(TELESCOPE_JS, "app.js")]: resolve(__dirname, "src/telescope/telescope-app-shim.js"),
       // Shim telescope's zip_extraction.js (imports from CDN that Vite can't bundle).
       // Our shim directly reads from our zip archives.
       "noita-telescope/zip_extraction.js": resolve(__dirname, "src/telescope/zip-extraction-shim.ts"),
-      [resolve(__dirname, "lib/noita-telescope/js/zip_extraction.js")]: resolve(
+      [resolve(TELESCOPE_JS, "zip_extraction.js")]: resolve(
         __dirname,
         "src/telescope/zip-extraction-shim.ts",
       ),
