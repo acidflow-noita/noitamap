@@ -149,6 +149,46 @@ async function main() {
     .map(([world, rs]) => ({ world, regions: rs, baseName: `dynamic-daily-${world}` }));
   if (onlyWorld) console.log(`[stitch] restricted to world '${onlyWorld}'`);
 
+  // A stitch child can die mid-export (OOM kill under concurrency is the
+  // realistic case: all three worlds hit their peak-memory phase together, the
+  // kernel kills one, the survivors then finish). stitch writes the .dzi
+  // descriptor BEFORE any tiles (export-dzi.go), so a corpse looks exactly like
+  // a finished world to every existence check -- which is how a bake once
+  // shipped a left world with half of level 17 and no coarser levels at all,
+  // while the job reported success and deploy went ahead. Never trust the
+  // descriptor's existence; count the tiles it promises.
+  const verifyPyramid = (dziPath, filesDir) => {
+    let img;
+    try {
+      img = JSON.parse(fs.readFileSync(dziPath, "utf8")).Image;
+    } catch (e) {
+      return { ok: false, reason: `unreadable descriptor: ${e.message}` };
+    }
+    const W = Number(img.Size.Width);
+    const H = Number(img.Size.Height);
+    const tileSize = Number(img.TileSize) || 512;
+    const ext = `.${img.Format || "webp"}`;
+    const maxLevel = Math.ceil(Math.log2(Math.max(W, H)));
+    for (let level = maxLevel; level >= 0; level--) {
+      const scale = 2 ** (maxLevel - level);
+      const cols = Math.ceil(Math.ceil(W / scale) / tileSize);
+      const rows = Math.ceil(Math.ceil(H / scale) / tileSize);
+      const dir = path.join(filesDir, String(level));
+      let actual = 0;
+      try {
+        actual = fs.readdirSync(dir).filter((f) => f.endsWith(ext)).length;
+      } catch {
+        return { ok: false, reason: `level ${level} directory missing (expected ${cols * rows} tiles)` };
+      }
+      // Transparent tiles are still written (verified on live bakes: the padding
+      // tiles are 200s), so a shortfall always means a dead or truncated export.
+      if (actual < cols * rows) {
+        return { ok: false, reason: `level ${level} has ${actual}/${cols * rows} tiles` };
+      }
+    }
+    return { ok: true };
+  };
+
   const runWorld = async ({ world, regions, baseName }) => {
     const present = regions.filter((r) => {
       if (fs.existsSync(path.join(fullDir, r.file))) return true;
@@ -164,10 +204,16 @@ async function main() {
     const outPath = path.join(worldDir, `${baseName}.dzi`);
     const filesDir = path.join(worldDir, `${baseName}_files`);
 
-    // Resumability: skip worlds whose DZI already exists from a prior run.
+    // Resumability: skip worlds whose DZI already exists from a prior run --
+    // but only after verifying the pyramid is complete, or a truncated corpse
+    // from a killed run becomes a permanent checkpoint.
     if (!force && fs.existsSync(outPath) && fs.existsSync(filesDir)) {
-      console.log(`[stitch] checkpoint: ${baseName}.dzi exists, skipping (pass --force to redo)`);
-      return { ok: true, checkpoint: true };
+      const v = verifyPyramid(outPath, filesDir);
+      if (v.ok) {
+        console.log(`[stitch] checkpoint: ${baseName}.dzi exists and verifies, skipping (pass --force to redo)`);
+        return { ok: true, checkpoint: true };
+      }
+      console.warn(`[stitch] checkpoint REJECTED for ${baseName}: ${v.reason}; re-stitching`);
     }
 
     // stitch's input glob expects "<X>,<Y>.png" (comma). One private dir per
@@ -291,6 +337,20 @@ async function main() {
       const code = result.status === null ? "null" : String(result.status);
       const hint = result.signal === "SIGKILL" ? " (likely OOM-killed by host kernel; lower STITCH_CONCURRENCY)" : "";
       console.error(`${tag} [stitch] failed on ${baseName}: status=${code}${sig}${hint}`);
+      // Remove the partial output. stitch writes the descriptor before any
+      // tiles, so leaving the corpse means every later existence check -- the
+      // checkpoint above, the manifest writer below, entrypoint reruns --
+      // mistakes it for a finished world.
+      fs.rmSync(outPath, { force: true });
+      fs.rmSync(filesDir, { recursive: true, force: true });
+      return { ok: false };
+    }
+    // Exit 0 is still not proof: verify the pyramid before trusting it.
+    const v = verifyPyramid(outPath, filesDir);
+    if (!v.ok) {
+      console.error(`${tag} [stitch] ${baseName} exited 0 but pyramid is incomplete: ${v.reason}`);
+      fs.rmSync(outPath, { force: true });
+      fs.rmSync(filesDir, { recursive: true, force: true });
       return { ok: false };
     }
     console.log(`${tag} [stitch] ${baseName} done in ${fmt(Date.now() - t)}`);
@@ -314,8 +374,18 @@ async function main() {
     fs.rmSync(tmpRoot, { recursive: true, force: true });
   }
 
-  if (count === 0) {
-    console.error(`[stitch] produced 0 DZIs (total ${fmt(Date.now() - START)})`);
+  if (count < tasks.length) {
+    // Partial success must fail the JOB, not just log. A bake once deployed
+    // with the left world absent: one stitch child was killed, the other two
+    // finished, the old exit-0-if-any-world-succeeded policy let deploy run,
+    // and the live map silently showed static background where a parallel
+    // world should be. The completed worlds' output stays in /out (they are
+    // valid checkpoints -- a rerun re-verifies and reuses them and only redoes
+    // the missing world), but the exit code stops CI from deploying a bake
+    // with a hole in it.
+    console.error(
+      `[stitch] produced ${count}/${tasks.length} DZIs -- refusing success with missing worlds (total ${fmt(Date.now() - START)})`,
+    );
     process.exit(1);
   }
 

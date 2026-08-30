@@ -276,6 +276,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const _getItemsBar = () => document.getElementById("loading-bar-items") as HTMLElement | null;
   const _getStatusText = () => document.getElementById("map-loading-status");
   const _getTitle = () => document.getElementById("map-loading-title");
+  // Whether the current dynamic view is served from baked DZIs. Kept in sync
+  // by the bakedSeedChange listener below. The loading strip narrates the
+  // download -> generate -> items pipeline, and on a baked view that pipeline
+  // never runs -- so strip events triggered by background work must not show it
+  // (see the dataZipProgress handler).
+  let bakedViewActive = false;
 
   // Pin the phase label column to the widest of the three phase translations
   // in the current language, so the percent column never shifts when the
@@ -327,6 +333,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     // biome generation that never starts. Static maps get no strip at all; the
     // ordinary spinner already covers their tile loading.
     if (app.getMap() !== "dynamic-main-branch") return;
+    // Baked views never generate: data.zip is only being fetched here for
+    // background consumers (pixel-scene prefetch, POI tooling, the alt-unlocks
+    // pre-warm). On 100% this handler flips the strip into its indeterminate
+    // "Generating Biomes / 33%" state -- and on a baked map nothing ever fires
+    // biomeGenerationProgress or itemsGenerationProgress, so that stuck 33%
+    // strip sat there until a refresh. This was THE "stuck at 33%" regression:
+    // it reappeared whenever any code path (re)fetched data.zip after a baked
+    // fast-path load.
+    if (bakedViewActive) return;
 
     showLoadingStrip();
 
@@ -1363,6 +1378,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   // the current view changes.
   window.addEventListener("bakedSeedChange", ((e: CustomEvent) => {
     const baked = !!e.detail?.baked;
+    bakedViewActive = baked;
+    // The probe can resolve AFTER a dataZipProgress(100) already flipped the
+    // strip into its indeterminate "Generating Biomes / 33%" state (the fetch
+    // races the probe). Dismiss it: on a baked view no generation follows, so
+    // nothing else will ever hide that strip.
+    if (baked) {
+      const gen = _getGenerationBar();
+      const dl = _getDownloadBar();
+      const items = _getItemsBar();
+      if (dl) dl.style.width = "0%";
+      if (gen) gen.style.width = "0%";
+      if (items) items.style.width = "0%";
+      document.querySelector(".loading-strip-bar-track")?.classList.remove("indeterminate");
+      hideLoadingStrip();
+    }
 
     const label = document.querySelector<HTMLElement>('label[for="spoilerFreeToggle"]');
     if (spoilerFreeToggle && label) {
