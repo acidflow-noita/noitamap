@@ -5,22 +5,36 @@
  * Adds biome overlays progressively (per-biome, per-PW) for visual feedback.
  */
 
-import type { GenerationResult, POI, PixelScene, TileLayer } from "./telescope-adapter";
-import { getPixelSceneImgElement, recolorPixelSceneForBiome, recolorPixelScene, MATERIAL_COLOR_CONVERSION, TILE_OVERLAY_COLORS } from "./telescope-adapter";
-import { getDataZip } from "../data-archive";
-import { installTelescopeShim, isCanvasTainted } from "./telescope-dom-shim";
-import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope-data-bridge";
-import { decodePngToRgba, rgbaToPngBlobUrl, rgbaToPngBlob } from "./png-decode";
-import { getCachedBiomeRender, cacheBiomeRender, getCachedSceneBitmap, cacheSceneBitmap, getCachedSceneBitmapKeys, getCachedSceneBitmapsBulk, getCachedBiomeRendersForKey } from "./tile-cache";
-import i18next from "../i18n";
-import { attachAlwaysCastPopover, dismissPopovers } from "../popover-util";
+import type { GenerationResult, POI, PixelScene, TileLayer } from './telescope-adapter';
+import {
+  getPixelSceneImgElement,
+  recolorPixelSceneForBiome,
+  recolorPixelScene,
+  MATERIAL_COLOR_CONVERSION,
+  TILE_OVERLAY_COLORS,
+} from './telescope-adapter';
+import { getDataZip } from '../data-archive';
+import { installTelescopeShim, isCanvasTainted } from './telescope-dom-shim';
+import { installFetchInterceptor, installImageSrcInterceptor } from './telescope-data-bridge';
+import { decodePngToRgba, rgbaToPngBlobUrl, rgbaToPngBlob } from './png-decode';
+import {
+  getCachedBiomeRender,
+  cacheBiomeRender,
+  getCachedSceneBitmap,
+  cacheSceneBitmap,
+  getCachedSceneBitmapKeys,
+  getCachedSceneBitmapsBulk,
+  getCachedBiomeRendersForKey,
+} from './tile-cache';
+import i18next from '../i18n';
+import { attachAlwaysCastPopover, dismissPopovers } from '../popover-util';
 import {
   ensureGLTerrain,
   clearGLTerrain,
   glCoversVerticalPlane,
   createGLTerrainTileSource,
   type GLTerrainDeps,
-} from "./gl-terrain-tile-source";
+} from './gl-terrain-tile-source';
 import {
   getActiveDescriptor,
   setActiveDescriptor,
@@ -31,8 +45,8 @@ import {
   getPoiVariant,
   requestVariant,
   type UnlockDescriptor,
-} from "../unlocks-toggle";
-import { getCurrentIsDaily, getCurrentDynamicSeed } from "../dynamic-map";
+} from '../unlocks-toggle';
+import { getCurrentIsDaily, getCurrentDynamicSeed } from '../dynamic-map';
 import {
   buildMarkerData,
   getAtlas,
@@ -46,8 +60,8 @@ import {
   drawSpriteToCanvas,
   getSpriteNativeSize,
   perkAtlasKey,
-} from "./poi-spatial-index";
-import type { MarkerData, MarkerItem } from "./poi-spatial-index";
+} from './poi-spatial-index';
+import type { MarkerData, MarkerItem } from './poi-spatial-index';
 import {
   isAchievementPillarSegment,
   pillarSegmentTitle,
@@ -59,20 +73,20 @@ import {
   pillarPlaceAssociation,
   pillarLocationForFlag,
   ITEM_SEARCH_NAME_KEYS,
-} from "../data/pillars";
-import { createMarkerTileSource } from "./marker-tile-source";
-import { perkNameKey, perkDescKey } from "./perk-i18n";
-import { canonicalEntityId } from "./entity-canonical";
-import { addBakedDZIsToOSD, type BakedDziPlacement } from "./baked-dzi-loader";
-import { gameTranslator } from "../game-translations/translator";
-import { isSpoilerFree, getSpoilerCategory, getSpoilerLabel, applySpoilerFree } from "../spoiler-free";
-import { isLightMode } from "../light-mode";
-import { clearTargetPoiId } from "../data_sources/url";
-import spells from "../data/spells.json";
-import { CREATURE_DATA } from "../data/creature-data";
-import { SPECIAL_WAND_ALIAS } from "../data/special-wands";
-import { buildExtendedSection } from "../extended-info";
-import perkWiki from "../data/perk-wiki.json";
+} from '../data/pillars';
+import { createMarkerTileSource } from './marker-tile-source';
+import { perkNameKey, perkDescKey } from './perk-i18n';
+import { canonicalEntityId } from './entity-canonical';
+import { addBakedDZIsToOSD, type BakedDziPlacement } from './baked-dzi-loader';
+import { gameTranslator } from '../game-translations/translator';
+import { isSpoilerFree, getSpoilerCategory, getSpoilerLabel, applySpoilerFree } from '../spoiler-free';
+import { isLightMode } from '../light-mode';
+import { clearTargetPoiId } from '../data_sources/url';
+import spells from '../data/spells.json';
+import { CREATURE_DATA } from '../data/creature-data';
+import { SPECIAL_WAND_ALIAS } from '../data/special-wands';
+import { buildExtendedSection } from '../extended-info';
+import perkWiki from '../data/perk-wiki.json';
 
 // id -> { wikipage, image } from the noita.wiki.gg Perks cargo table
 // (baked by build_scripts/generate-perk-wiki.cjs).
@@ -117,69 +131,69 @@ let privacyToastShown = false;
 /** Ordered list of biome keys for progressive rendering. */
 const BIOME_RENDER_ORDER: string[] = [
   // Main biomes
-  "coalmine",
-  "coalmine_alt",
-  "excavationsite",
-  "fungicave",
-  "snowcave",
-  "snowcastle",
-  "rainforest",
-  "rainforest_open",
-  "vault",
-  "crypt",
-  "liquidcave",
-  "pyramid",
-  "wandcave",
-  "sandcave",
-  "the_end",
-  "fungiforest",
-  "rainforest_dark",
-  "wizardcave",
-  "robobase",
-  "meat",
-  "vault_frozen",
-  "clouds",
-  "the_sky",
-  "snowchasm",
+  'coalmine',
+  'coalmine_alt',
+  'excavationsite',
+  'fungicave',
+  'snowcave',
+  'snowcastle',
+  'rainforest',
+  'rainforest_open',
+  'vault',
+  'crypt',
+  'liquidcave',
+  'pyramid',
+  'wandcave',
+  'sandcave',
+  'the_end',
+  'fungiforest',
+  'rainforest_dark',
+  'wizardcave',
+  'robobase',
+  'meat',
+  'vault_frozen',
+  'clouds',
+  'the_sky',
+  'snowchasm',
   // Tower variants
-  "tower_end",
-  "tower_crypt",
-  "tower_vault",
-  "tower_rainforest",
-  "tower_fungicave",
-  "tower_snowcastle",
-  "tower_snowcave",
-  "tower_excavationsite",
-  "tower_coalmine",
+  'tower_end',
+  'tower_crypt',
+  'tower_vault',
+  'tower_rainforest',
+  'tower_fungicave',
+  'tower_snowcastle',
+  'tower_snowcave',
+  'tower_excavationsite',
+  'tower_coalmine',
   // Extra generation biomes
-  "boss_arena",
-  "snowcave_secret_chamber",
-  "excavationsite_cube_chamber",
-  "snowcastle_cavern",
-  "snowcastle_hourglass_chamber",
-  "pyramid_top",
-  "robot_egg",
-  "secret_lab",
-  "wizardcave_entrance",
-  "dragoncave",
+  'boss_arena',
+  'snowcave_secret_chamber',
+  'excavationsite_cube_chamber',
+  'snowcastle_cavern',
+  'snowcastle_hourglass_chamber',
+  'pyramid_top',
+  'robot_egg',
+  'secret_lab',
+  'wizardcave_entrance',
+  'dragoncave',
 ];
 
 /** Biomes already baked into the static OSD background map — skip overlay rendering AND biome backgrounds. */
 const SKIP_BIOMES = new Set([
-  "temple_altar",
-  "dragoncave",
-  "snowcastle_hourglass_chamber",
-  "snowcastle_cavern",
-  "snowcave_secret_chamber",
-  "excavationsite_cube_chamber",
-  "secret_lab",
-  "lavalake",
-  "biome_watchtower",
-  "biome_potion_mimics",
-  "biome_darkness",
-  "biome_boss_sky",
-  "biome_barren",
-  "lake_deep",
+  'temple_altar',
+  'dragoncave',
+  'snowcastle_hourglass_chamber',
+  'snowcastle_cavern',
+  'snowcave_secret_chamber',
+  'excavationsite_cube_chamber',
+  'secret_lab',
+  'lavalake',
+  'biome_watchtower',
+  'biome_potion_mimics',
+  'biome_darkness',
+  'biome_boss_sky',
+  'biome_barren',
+  'lake_deep',
 ]);
 
 // ─── Sprite Cache ───────────────────────────────────────────────────────────
@@ -202,9 +216,9 @@ export async function getWandSprite(spriteName: string): Promise<string | null> 
     // Some starting/special wands live one level up (e.g. data/items_gfx/bomb_wand.png).
     `data/items_gfx/${spriteName}.png`,
     `data/items_gfx/${spriteName}`,
-    spriteName.startsWith("data/") ? spriteName : null,
+    spriteName.startsWith('data/') ? spriteName : null,
   ];
-  const lastSlash = spriteName.lastIndexOf("/");
+  const lastSlash = spriteName.lastIndexOf('/');
   if (lastSlash >= 0) {
     const base = spriteName.slice(lastSlash + 1);
     paths.push(`data/items_gfx/wands/${base}.png`);
@@ -215,7 +229,7 @@ export async function getWandSprite(spriteName: string): Promise<string | null> 
   for (const path of filtered) {
     const file = zip.file(path);
     if (file) {
-      const blob = await file.async("blob");
+      const blob = await file.async('blob');
       const url = URL.createObjectURL(blob);
       spriteUrlCache.set(spriteName, url);
       return url;
@@ -229,20 +243,20 @@ export async function getWandSprite(spriteName: string): Promise<string | null> 
  * to the spell:summon_wandghost atlas sprite if the data.zip fetch fails.
  */
 export async function getTaikasauvaIcon(): Promise<string | null> {
-  const cacheKey = "ui_animal_icons/wand_ghost";
+  const cacheKey = 'ui_animal_icons/wand_ghost';
   if (spriteUrlCache.has(cacheKey)) return spriteUrlCache.get(cacheKey)!;
   const zip = await getDataZip();
   if (zip) {
-    const file = zip.file("data/ui_gfx/animal_icons/wand_ghost.png");
+    const file = zip.file('data/ui_gfx/animal_icons/wand_ghost.png');
     if (file) {
-      const blob = await file.async("blob");
+      const blob = await file.async('blob');
       const url = URL.createObjectURL(blob);
       spriteUrlCache.set(cacheKey, url);
       return url;
     }
   }
   // Fallback: summon_wandghost spell icon (always in atlas)
-  return getPOISpriteFirstFrame({ type: "spell", item: "SUMMON_WANDGHOST" });
+  return getPOISpriteFirstFrame({ type: 'spell', item: 'SUMMON_WANDGHOST' });
 }
 
 /**
@@ -260,14 +274,14 @@ export async function getRotatedWandSprite(spriteName: string): Promise<{ url: s
     // Some starting/special wands live one level up (e.g. data/items_gfx/bomb_wand.png).
     `data/items_gfx/${spriteName}.png`,
     `data/items_gfx/${spriteName}`,
-    spriteName.startsWith("data/") ? spriteName : null,
+    spriteName.startsWith('data/') ? spriteName : null,
   ];
 
   // Also try the basename only — starting loadout sprites come through as
   // "custom/handgun" / "custom/bomb_wand" but the actual files are at
   // data/items_gfx/handgun.png and data/items_gfx/bomb_wand.png (no "custom/"
   // prefix in the real archive).
-  const lastSlash = spriteName.lastIndexOf("/");
+  const lastSlash = spriteName.lastIndexOf('/');
   if (lastSlash >= 0) {
     const base = spriteName.slice(lastSlash + 1);
     paths.push(`data/items_gfx/wands/${base}.png`);
@@ -282,7 +296,7 @@ export async function getRotatedWandSprite(spriteName: string): Promise<{ url: s
   }
   if (!file) return null;
 
-  const buf = await file.async("arraybuffer");
+  const buf = await file.async('arraybuffer');
   const srcImg = decodePngToRgba(buf);
   const sw = srcImg.width;
   const sh = srcImg.height;
@@ -328,7 +342,7 @@ async function ensureTelescopeModules(): Promise<void> {
   installFetchInterceptor();
   installImageSrcInterceptor();
 
-  const telescope = await import("./telescope-exports");
+  const telescope = await import('./telescope-exports');
   const constantsMod = telescope.constantsMod;
   const biomeMod = telescope.biomeGenMod;
   const genMod = telescope.genConfigMod;
@@ -362,17 +376,17 @@ async function ensureTelescopeModules(): Promise<void> {
   // biome path stays on the CPU composite.
   try {
     // @ts-ignore — virtual module; see the alias in vite.config.ts.
-    const glMod: any = await import("virtual:gl-terrain");
+    const glMod: any = await import('virtual:gl-terrain');
     if (glMod?.GLTerrainRenderer) {
       glTerrainDeps = {
         GLTerrainRenderer: glMod.GLTerrainRenderer,
         getWorldCenter: utilsMod.getWorldCenter,
         GENERATOR_CONFIG: genMod.GENERATOR_CONFIG,
       };
-      console.log("[OSD Bridge] GL terrain renderer available");
+      console.log('[OSD Bridge] GL terrain renderer available');
     }
   } catch (e) {
-    console.log("[OSD Bridge] no GL terrain renderer on this telescope fork (CPU composite only)");
+    console.log('[OSD Bridge] no GL terrain renderer on this telescope fork (CPU composite only)');
   }
 
   // Apply truthy color hack: the library uses `if (foregroundColor)` which
@@ -404,7 +418,7 @@ function isDynamicSeedItem(item: any): boolean {
   if (src.__simplisticBase) return false;
   if (src.__bakedDzi) return true;
   const url: unknown = src.tilesUrl;
-  if (typeof url !== "string") {
+  if (typeof url !== 'string') {
     // Custom (non-DZI) tile sources: marker layers, biome bg blob URLs, etc.
     return true;
   }
@@ -488,8 +502,8 @@ export function hasDynamicOverlays(): boolean {
 
 // ─── Biome background layer ─────────────────────────────────────────────────
 
-const BIOME_BG_CACHE_NAME = "noitamap-biome-bg-v1";
-const BIOME_BG_CACHE_KEY = "/biome_bg_composite.png";
+const BIOME_BG_CACHE_NAME = 'noitamap-biome-bg-v1';
+const BIOME_BG_CACHE_KEY = '/biome_bg_composite.png';
 
 /** In-memory cache of the composite blob + positioning metadata */
 let _bgCompositeBlob: Blob | null = null;
@@ -532,12 +546,14 @@ export function addBiomeBgToOSD(viewer: any): void {
   for (const pw of pws) {
     const url = URL.createObjectURL(_bgCompositeBlob);
     viewer.addTiledImage({
-      tileSource: { type: "image", url, buildPyramid: false },
+      tileSource: { type: 'image', url, buildPyramid: false },
       x: gx + pw * pwOffsetPixels,
       y: gy,
       width: w,
       success: (event: any) => {
-        try { event.item.source.__biomeBg = true; } catch {}
+        try {
+          event.item.source.__biomeBg = true;
+        } catch {}
       },
     });
   }
@@ -546,11 +562,11 @@ export function addBiomeBgToOSD(viewer: any): void {
 async function _initBiomeBg(viewer: any): Promise<void> {
   // Compute geometry (only once)
   if (!_bgGeometry) {
-    const boundaryData = (await import("../data/biome_boundries_py.json")).default;
+    const boundaryData = (await import('../data/biome_boundries_py.json')).default;
     if (!boundaryData?.biomes) return;
 
     const biomesWithBg = boundaryData.biomes.filter(
-      (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename),
+      (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename)
     );
     if (biomesWithBg.length === 0) return;
 
@@ -558,20 +574,28 @@ async function _initBiomeBg(viewer: any): Promise<void> {
     const BIOME_IMAGE_TOP_Y = -14 * CHUNK_SIZE;
     const MAP_TOP_LEFT_X = -17920;
 
-    let globalMinGX = Infinity, globalMinGY = Infinity, globalMaxGX = -Infinity, globalMaxGY = -Infinity;
+    let globalMinGX = Infinity,
+      globalMinGY = Infinity,
+      globalMaxGX = -Infinity,
+      globalMaxGY = -Infinity;
     for (const biome of biomesWithBg) {
-      const rawParts = biome.svg_map_path.split(" ");
+      const rawParts = biome.svg_map_path.split(' ');
       let isX = true;
       for (const part of rawParts) {
-        if (part === "M" || part === "L" || part === "Z") { isX = true; continue; }
+        if (part === 'M' || part === 'L' || part === 'Z') {
+          isX = true;
+          continue;
+        }
         const v = Number(part);
         if (isX) {
           const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
-          globalMinGX = Math.min(globalMinGX, gx); globalMaxGX = Math.max(globalMaxGX, gx);
+          globalMinGX = Math.min(globalMinGX, gx);
+          globalMaxGX = Math.max(globalMaxGX, gx);
           isX = false;
         } else {
           const gy = v * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
-          globalMinGY = Math.min(globalMinGY, gy); globalMaxGY = Math.max(globalMaxGY, gy);
+          globalMinGY = Math.min(globalMinGY, gy);
+          globalMaxGY = Math.max(globalMaxGY, gy);
           isX = true;
         }
       }
@@ -596,44 +620,53 @@ async function _initBiomeBg(viewer: any): Promise<void> {
         console.log(`[OSD Bridge] Biome bg composite loaded from cache (${_bgCompositeBlob.size} bytes)`);
       }
     } catch (e) {
-      console.warn("[OSD Bridge] Cache API read failed:", e);
+      console.warn('[OSD Bridge] Cache API read failed:', e);
     }
 
     // Render if not cached
     if (!_bgCompositeBlob) {
-      const boundaryData = (await import("../data/biome_boundries_py.json")).default;
+      const boundaryData = (await import('../data/biome_boundries_py.json')).default;
       const biomesWithBg = boundaryData.biomes.filter(
-        (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename),
+        (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename)
       );
-      console.log("[OSD Bridge] Rendering biome bg composite...");
+      console.log('[OSD Bridge] Rendering biome bg composite...');
       _bgCompositeBlob = await _renderBiomeComposite(
-        biomesWithBg, _bgGeometry.gx, _bgGeometry.gy, _bgGeometry.w, _bgGeometry.h,
+        biomesWithBg,
+        _bgGeometry.gx,
+        _bgGeometry.gy,
+        _bgGeometry.w,
+        _bgGeometry.h
       );
       if (!_bgCompositeBlob) return;
 
       // Cache for next page load
       try {
         const cache = await caches.open(BIOME_BG_CACHE_NAME);
-        await cache.put(BIOME_BG_CACHE_KEY, new Response(_bgCompositeBlob, {
-          headers: { "Content-Type": "image/png" },
-        }));
+        await cache.put(
+          BIOME_BG_CACHE_KEY,
+          new Response(_bgCompositeBlob, {
+            headers: { 'Content-Type': 'image/png' },
+          })
+        );
         console.log(`[OSD Bridge] Biome bg composite cached (${_bgCompositeBlob.size} bytes)`);
       } catch (e) {
-        console.warn("[OSD Bridge] Cache API write failed:", e);
+        console.warn('[OSD Bridge] Cache API write failed:', e);
       }
     }
   }
 
   // Add initial preview to OSD
   addBiomeBgToOSD(viewer);
-  console.log("[OSD Bridge] Biome bg preview added to OSD (3 PWs)");
+  console.log('[OSD Bridge] Biome bg preview added to OSD (3 PWs)');
 }
 
 /** Render the biome background composite on an OffscreenCanvas. */
 async function _renderBiomeComposite(
   biomesWithBg: any[],
-  globalMinGX: number, globalMinGY: number,
-  regionW: number, regionH: number,
+  globalMinGX: number,
+  globalMinGY: number,
+  regionW: number,
+  regionH: number
 ): Promise<Blob | null> {
   const CHUNK_SIZE = 512;
   const BIOME_IMAGE_TOP_Y = -14 * CHUNK_SIZE;
@@ -646,16 +679,18 @@ async function _renderBiomeComposite(
   }
 
   const bgCache = new Map<string, ImageBitmap>();
-  await Promise.all([...neededPaths].map(async (zipPath) => {
-    try {
-      const filename = zipPath.split("/").pop()!;
-      const resp = await fetch(`./biome_bg/${filename}`);
-      if (!resp.ok) return;
-      const blob = await resp.blob();
-      const bmp = await createImageBitmap(blob);
-      bgCache.set(zipPath, bmp);
-    } catch {}
-  }));
+  await Promise.all(
+    [...neededPaths].map(async zipPath => {
+      try {
+        const filename = zipPath.split('/').pop()!;
+        const resp = await fetch(`./biome_bg/${filename}`);
+        if (!resp.ok) return;
+        const blob = await resp.blob();
+        const bmp = await createImageBitmap(blob);
+        bgCache.set(zipPath, bmp);
+      } catch {}
+    })
+  );
 
   const scale = 0.1;
   const cw = Math.ceil(regionW * scale);
@@ -663,7 +698,7 @@ async function _renderBiomeComposite(
   if (cw <= 0 || ch <= 0) return null;
 
   const canvas = new OffscreenCanvas(cw, ch);
-  const ctx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext('2d')!;
   ctx.imageSmoothingEnabled = false;
 
   for (const biome of biomesWithBg) {
@@ -671,18 +706,28 @@ async function _renderBiomeComposite(
     const bgBitmap = bgCache.get(bgPath);
     if (!bgBitmap) continue;
 
-    const rawParts = biome.svg_map_path.split(" ");
-    let minGX = Infinity, minGY = Infinity, maxGX = -Infinity, maxGY = -Infinity;
+    const rawParts = biome.svg_map_path.split(' ');
+    let minGX = Infinity,
+      minGY = Infinity,
+      maxGX = -Infinity,
+      maxGY = -Infinity;
     let isX = true;
     for (const part of rawParts) {
-      if (part === "M" || part === "L" || part === "Z") { isX = true; continue; }
+      if (part === 'M' || part === 'L' || part === 'Z') {
+        isX = true;
+        continue;
+      }
       const v = Number(part);
       if (isX) {
         const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
-        minGX = Math.min(minGX, gx); maxGX = Math.max(maxGX, gx); isX = false;
+        minGX = Math.min(minGX, gx);
+        maxGX = Math.max(maxGX, gx);
+        isX = false;
       } else {
         const gy = v * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
-        minGY = Math.min(minGY, gy); maxGY = Math.max(maxGY, gy); isX = true;
+        minGY = Math.min(minGY, gy);
+        maxGY = Math.max(maxGY, gy);
+        isX = true;
       }
     }
     if (!isFinite(minGX)) continue;
@@ -692,9 +737,10 @@ async function _renderBiomeComposite(
     let isXp = true;
     for (let j = 0; j < rawParts.length; j++) {
       const part = rawParts[j];
-      if (part === "M" || part === "L" || part === "Z") {
-        if (part === "Z") ctx.closePath();
-        isXp = true; continue;
+      if (part === 'M' || part === 'L' || part === 'Z') {
+        if (part === 'Z') ctx.closePath();
+        isXp = true;
+        continue;
       }
       const v = Number(part);
       if (isXp) {
@@ -705,10 +751,13 @@ async function _renderBiomeComposite(
           const cx = (gx - globalMinGX) * scale;
           const cy = (gy - globalMinGY) * scale;
           const prevCmd = rawParts[j - 1];
-          if (prevCmd === "M") ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+          if (prevCmd === 'M') ctx.moveTo(cx, cy);
+          else ctx.lineTo(cx, cy);
         }
         isXp = false;
-      } else { isXp = true; }
+      } else {
+        isXp = true;
+      }
     }
     ctx.clip();
 
@@ -726,9 +775,8 @@ async function _renderBiomeComposite(
     ctx.restore();
   }
 
-  return canvas.convertToBlob({ type: "image/png" });
+  return canvas.convertToBlob({ type: 'image/png' });
 }
-
 
 /**
  * Convert an OffscreenCanvas to a blob URL.
@@ -750,13 +798,13 @@ async function offscreenCanvasToBlob(canvas: OffscreenCanvas): Promise<Blob> {
     return await rgbaToPngBlob(rawData.data, rawData.width, rawData.height);
   }
   try {
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     if (ctx && canvas.width > 0 && canvas.height > 0) {
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       return await rgbaToPngBlob(imageData.data, imageData.width, imageData.height);
     }
   } catch {}
-  return await canvas.convertToBlob({ type: "image/png" });
+  return await canvas.convertToBlob({ type: 'image/png' });
 }
 
 /**
@@ -770,18 +818,16 @@ async function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
     return url;
   }
 
-  const blob = await new Promise<Blob | null>((resolve) => {
-    canvas.toBlob((b) => resolve(b), "image/png");
+  const blob = await new Promise<Blob | null>(resolve => {
+    canvas.toBlob(b => resolve(b), 'image/png');
   });
 
-  if (!blob) throw new Error("Failed to create blob from canvas");
+  if (!blob) throw new Error('Failed to create blob from canvas');
 
   const url = URL.createObjectURL(blob);
   dynamicBlobUrls.push(url);
   return url;
 }
-
-
 
 // ─── Biome Background Tiling ────────────────────────────────────────────────
 
@@ -790,47 +836,47 @@ async function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
  * extracted from Noita's biome XML files in data.zip.
  */
 const BIOME_BACKGROUND_MAP: Record<string, string> = {
-  coalmine: "data/weather_gfx/background_coalmine.png",
-  coalmine_alt: "data/weather_gfx/background_coalmine.png",
-  excavationsite: "data/weather_gfx/background_excavationsite.png",
-  excavationsite_cube_chamber: "data/weather_gfx/background_cave_04_alt3.png",
-  snowcave: "data/weather_gfx/background_snowcave.png",
-  snowcave_secret_chamber: "data/weather_gfx/background_snowcave.png",
-  snowcastle: "data/weather_gfx/background_snowcastle.png",
-  snowcastle_cavern: "data/weather_gfx/background_cave_02.png",
-  snowcastle_hourglass_chamber: "data/weather_gfx/background_cave_04_alt3.png",
-  fungicave: "data/weather_gfx/background_fungicave_01.png",
-  fungiforest: "data/weather_gfx/background_fungiforest_01.png",
-  rainforest: "data/weather_gfx/background_rainforest.png",
-  rainforest_open: "data/weather_gfx/background_rainforest.png",
-  rainforest_dark: "data/weather_gfx/background_rainforest_dark.png",
-  vault: "data/weather_gfx/background_vault.png",
-  vault_frozen: "data/weather_gfx/background_vault_frozen.png",
-  crypt: "data/weather_gfx/background_crypt.png",
-  wandcave: "data/weather_gfx/background_wandcave.png",
-  wizardcave: "data/weather_gfx/background_wizardcave.png",
-  robobase: "data/weather_gfx/background_robobase.png",
-  the_end: "data/weather_gfx/background_the_end.png",
-  meat: "data/weather_gfx/background_the_end.png",
-  pyramid: "data/weather_gfx/background_pyramid.png",
-  liquidcave: "data/weather_gfx/background_cave_04_alt.png",
-  sandcave: "data/weather_gfx/background_cave_09.png",
-  dragoncave: "data/weather_gfx/background_cave_02.png",
-  lavalake: "data/weather_gfx/background_cave_04_alt.png",
-  temple_altar: "data/weather_gfx/background_cave_02.png",
-  secret_lab: "data/weather_gfx/background_snowcave.png",
-  winter_caves: "data/weather_gfx/background_snowcave.png",
+  coalmine: 'data/weather_gfx/background_coalmine.png',
+  coalmine_alt: 'data/weather_gfx/background_coalmine.png',
+  excavationsite: 'data/weather_gfx/background_excavationsite.png',
+  excavationsite_cube_chamber: 'data/weather_gfx/background_cave_04_alt3.png',
+  snowcave: 'data/weather_gfx/background_snowcave.png',
+  snowcave_secret_chamber: 'data/weather_gfx/background_snowcave.png',
+  snowcastle: 'data/weather_gfx/background_snowcastle.png',
+  snowcastle_cavern: 'data/weather_gfx/background_cave_02.png',
+  snowcastle_hourglass_chamber: 'data/weather_gfx/background_cave_04_alt3.png',
+  fungicave: 'data/weather_gfx/background_fungicave_01.png',
+  fungiforest: 'data/weather_gfx/background_fungiforest_01.png',
+  rainforest: 'data/weather_gfx/background_rainforest.png',
+  rainforest_open: 'data/weather_gfx/background_rainforest.png',
+  rainforest_dark: 'data/weather_gfx/background_rainforest_dark.png',
+  vault: 'data/weather_gfx/background_vault.png',
+  vault_frozen: 'data/weather_gfx/background_vault_frozen.png',
+  crypt: 'data/weather_gfx/background_crypt.png',
+  wandcave: 'data/weather_gfx/background_wandcave.png',
+  wizardcave: 'data/weather_gfx/background_wizardcave.png',
+  robobase: 'data/weather_gfx/background_robobase.png',
+  the_end: 'data/weather_gfx/background_the_end.png',
+  meat: 'data/weather_gfx/background_the_end.png',
+  pyramid: 'data/weather_gfx/background_pyramid.png',
+  liquidcave: 'data/weather_gfx/background_cave_04_alt.png',
+  sandcave: 'data/weather_gfx/background_cave_09.png',
+  dragoncave: 'data/weather_gfx/background_cave_02.png',
+  lavalake: 'data/weather_gfx/background_cave_04_alt.png',
+  temple_altar: 'data/weather_gfx/background_cave_02.png',
+  secret_lab: 'data/weather_gfx/background_snowcave.png',
+  winter_caves: 'data/weather_gfx/background_snowcave.png',
   // Tower floors (top to bottom = main biomes in reverse)
-  solid_wall_tower_9: "data/weather_gfx/background_the_end.png",
-  solid_wall_tower_8: "data/weather_gfx/background_crypt.png",
-  solid_wall_tower_7: "data/weather_gfx/background_vault.png",
-  solid_wall_tower_6: "data/weather_gfx/background_rainforest.png",
-  solid_wall_tower_5: "data/weather_gfx/background_fungicave_01.png",
-  solid_wall_tower_4: "data/weather_gfx/background_snowcastle.png",
-  solid_wall_tower_3: "data/weather_gfx/background_snowcave.png",
-  solid_wall_tower_2: "data/weather_gfx/background_excavationsite.png",
-  solid_wall_tower_1: "data/weather_gfx/background_coalmine.png",
-  solid_wall_tower_10: "data/weather_gfx/background_crypt.png",
+  solid_wall_tower_9: 'data/weather_gfx/background_the_end.png',
+  solid_wall_tower_8: 'data/weather_gfx/background_crypt.png',
+  solid_wall_tower_7: 'data/weather_gfx/background_vault.png',
+  solid_wall_tower_6: 'data/weather_gfx/background_rainforest.png',
+  solid_wall_tower_5: 'data/weather_gfx/background_fungicave_01.png',
+  solid_wall_tower_4: 'data/weather_gfx/background_snowcastle.png',
+  solid_wall_tower_3: 'data/weather_gfx/background_snowcave.png',
+  solid_wall_tower_2: 'data/weather_gfx/background_excavationsite.png',
+  solid_wall_tower_1: 'data/weather_gfx/background_coalmine.png',
+  solid_wall_tower_10: 'data/weather_gfx/background_crypt.png',
 };
 
 /** Cache of loaded background ImageBitmaps, keyed by zip path */
@@ -840,7 +886,7 @@ const _bgBitmapCache = new Map<string, ImageBitmap>();
 async function loadBiomeBackground(zipPath: string): Promise<ImageBitmap | null> {
   const cached = _bgBitmapCache.get(zipPath);
   if (cached) return cached;
-  const { readImage } = await import("../data-archive");
+  const { readImage } = await import('../data-archive');
   const bmp = await readImage(zipPath).catch(() => null);
   if (bmp) _bgBitmapCache.set(zipPath, bmp);
   return bmp;
@@ -852,17 +898,17 @@ async function loadBiomeBackground(zipPath: string): Promise<ImageBitmap | null>
  */
 function svgPathToPath2D(svgPath: string): Path2D {
   const p = new Path2D();
-  const parts = svgPath.split(" ");
+  const parts = svgPath.split(' ');
   let i = 0;
   while (i < parts.length) {
     const cmd = parts[i];
-    if (cmd === "M" || cmd === "L") {
+    if (cmd === 'M' || cmd === 'L') {
       const x = Number(parts[i + 1]);
       const y = Number(parts[i + 2]);
-      if (cmd === "M") p.moveTo(x, y);
+      if (cmd === 'M') p.moveTo(x, y);
       else p.lineTo(x, y);
       i += 3;
-    } else if (cmd === "Z") {
+    } else if (cmd === 'Z') {
       p.closePath();
       i++;
     } else {
@@ -879,12 +925,12 @@ function svgPathToPath2D(svgPath: string): Path2D {
  * the canvas is added as a static OSD layer below biome overlays.
  */
 async function addBiomeBackgrounds(viewer: OSDViewer, generationId: number): Promise<void> {
-  const boundaryData = (await import("../data/biome_boundries_py.json")).default;
+  const boundaryData = (await import('../data/biome_boundries_py.json')).default;
   if (!boundaryData?.biomes) return;
 
   // Determine which biomes need backgrounds
   const biomesWithBg = boundaryData.biomes.filter(
-    (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename),
+    (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename)
   );
   if (biomesWithBg.length === 0) return;
 
@@ -893,7 +939,7 @@ async function addBiomeBackgrounds(viewer: OSDViewer, generationId: number): Pro
   for (const b of biomesWithBg) {
     neededPaths.add(BIOME_BACKGROUND_MAP[b.filename]);
   }
-  await Promise.all([...neededPaths].map((p) => loadBiomeBackground(p)));
+  await Promise.all([...neededPaths].map(p => loadBiomeBackground(p)));
   console.log(`[OSD Bridge] Pre-loaded ${neededPaths.size} biome background textures`);
 
   const CHUNK_SIZE = 512;
@@ -903,20 +949,28 @@ async function addBiomeBackgrounds(viewer: OSDViewer, generationId: number): Pro
   const MAP_TOP_LEFT_X = -17920; // PW 0 origin
 
   // Compute global bounding box across ALL biomes
-  let globalMinGX = Infinity, globalMinGY = Infinity, globalMaxGX = -Infinity, globalMaxGY = -Infinity;
+  let globalMinGX = Infinity,
+    globalMinGY = Infinity,
+    globalMaxGX = -Infinity,
+    globalMaxGY = -Infinity;
   for (const biome of biomesWithBg) {
-    const rawParts = biome.svg_map_path.split(" ");
+    const rawParts = biome.svg_map_path.split(' ');
     let isX = true;
     for (const part of rawParts) {
-      if (part === "M" || part === "L" || part === "Z") { isX = true; continue; }
+      if (part === 'M' || part === 'L' || part === 'Z') {
+        isX = true;
+        continue;
+      }
       const v = Number(part);
       if (isX) {
         const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
-        globalMinGX = Math.min(globalMinGX, gx); globalMaxGX = Math.max(globalMaxGX, gx);
+        globalMinGX = Math.min(globalMinGX, gx);
+        globalMaxGX = Math.max(globalMaxGX, gx);
         isX = false;
       } else {
         const gy = v * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
-        globalMinGY = Math.min(globalMinGY, gy); globalMaxGY = Math.max(globalMaxGY, gy);
+        globalMinGY = Math.min(globalMinGY, gy);
+        globalMaxGY = Math.max(globalMaxGY, gy);
         isX = true;
       }
     }
@@ -933,7 +987,7 @@ async function addBiomeBackgrounds(viewer: OSDViewer, generationId: number): Pro
   if (cw <= 0 || ch <= 0) return;
 
   const canvas = new OffscreenCanvas(cw, ch);
-  const ctx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext('2d')!;
   ctx.imageSmoothingEnabled = false;
 
   for (const biome of biomesWithBg) {
@@ -942,18 +996,28 @@ async function addBiomeBackgrounds(viewer: OSDViewer, generationId: number): Pro
     const bgBitmap = _bgBitmapCache.get(bgPath);
     if (!bgBitmap) continue;
 
-    const rawParts = biome.svg_map_path.split(" ");
-    let minGX = Infinity, minGY = Infinity, maxGX = -Infinity, maxGY = -Infinity;
+    const rawParts = biome.svg_map_path.split(' ');
+    let minGX = Infinity,
+      minGY = Infinity,
+      maxGX = -Infinity,
+      maxGY = -Infinity;
     let isX = true;
     for (const part of rawParts) {
-      if (part === "M" || part === "L" || part === "Z") { isX = true; continue; }
+      if (part === 'M' || part === 'L' || part === 'Z') {
+        isX = true;
+        continue;
+      }
       const v = Number(part);
       if (isX) {
         const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
-        minGX = Math.min(minGX, gx); maxGX = Math.max(maxGX, gx); isX = false;
+        minGX = Math.min(minGX, gx);
+        maxGX = Math.max(maxGX, gx);
+        isX = false;
       } else {
         const gy = v * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
-        minGY = Math.min(minGY, gy); maxGY = Math.max(maxGY, gy); isX = true;
+        minGY = Math.min(minGY, gy);
+        maxGY = Math.max(maxGY, gy);
+        isX = true;
       }
     }
     if (!isFinite(minGX)) continue;
@@ -963,9 +1027,10 @@ async function addBiomeBackgrounds(viewer: OSDViewer, generationId: number): Pro
     let isXp = true;
     for (let j = 0; j < rawParts.length; j++) {
       const part = rawParts[j];
-      if (part === "M" || part === "L" || part === "Z") {
-        if (part === "Z") ctx.closePath();
-        isXp = true; continue;
+      if (part === 'M' || part === 'L' || part === 'Z') {
+        if (part === 'Z') ctx.closePath();
+        isXp = true;
+        continue;
       }
       const v = Number(part);
       if (isXp) {
@@ -976,10 +1041,13 @@ async function addBiomeBackgrounds(viewer: OSDViewer, generationId: number): Pro
           const cx = (gx - globalMinGX) * scale;
           const cy = (gy - globalMinGY) * scale;
           const prevCmd = rawParts[j - 1];
-          if (prevCmd === "M") ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+          if (prevCmd === 'M') ctx.moveTo(cx, cy);
+          else ctx.lineTo(cx, cy);
         }
         isXp = false;
-      } else { isXp = true; }
+      } else {
+        isXp = true;
+      }
     }
     ctx.clip();
 
@@ -1007,16 +1075,20 @@ async function addBiomeBackgrounds(viewer: OSDViewer, generationId: number): Pro
   for (const pw of bgPws) {
     const pwX = globalMinGX + pw * pwOffsetPixels;
     viewer.addTiledImage({
-      tileSource: { type: "image", url, buildPyramid: false },
+      tileSource: { type: 'image', url, buildPyramid: false },
       x: pwX,
       y: globalMinGY,
       width: regionW,
       success: (event: any) => {
         if (currentGenerationId !== generationId) {
-          try { viewer.world.removeItem(event.item); } catch {}
+          try {
+            viewer.world.removeItem(event.item);
+          } catch {}
           return;
         }
-        try { event.item.source.__biomeBg = true; } catch {}
+        try {
+          event.item.source.__biomeBg = true;
+        } catch {}
         dynamicTiledImages.add(event.item);
       },
     });
@@ -1041,11 +1113,11 @@ async function addBiomeLayersProgressively(
   result: GenerationResult,
   generationId: number,
   onFirstPwReady?: () => void,
-  cacheKey?: string,
+  cacheKey?: string
 ): Promise<void> {
   // Fire a 0% event before the blocking ensureTelescopeModules() call
   // so the loading bar becomes visible/active immediately.
-  window.dispatchEvent(new CustomEvent("biomeGenerationProgress", { detail: { percentage: 0 } }));
+  window.dispatchEvent(new CustomEvent('biomeGenerationProgress', { detail: { percentage: 0 } }));
   await ensureTelescopeModules();
 
   const { tileLayers, biomeData, isNGP, worldCenter, parallelWorlds } = result;
@@ -1072,7 +1144,7 @@ async function addBiomeLayersProgressively(
   }
 
   // Build ordered render list (skip prebaked biomes, include fallbacks)
-  const orderedBiomes = BIOME_RENDER_ORDER.filter((b) => !SKIP_BIOMES.has(b));
+  const orderedBiomes = BIOME_RENDER_ORDER.filter(b => !SKIP_BIOMES.has(b));
   const orderedSet = new Set<string>(orderedBiomes);
   const unorderedBiomes: string[] = [];
   for (const [biomeName] of layerIndicesByBiome) {
@@ -1110,7 +1182,7 @@ async function addBiomeLayersProgressively(
 
   // Count total steps for progress: each PW × number of active vertical planes
   // Order: main world first (0), then heaven (-1), then hell (1)
-  const pvtList = [0, -1, 1].filter((pvt) => {
+  const pvtList = [0, -1, 1].filter(pvt => {
     if (pvt < 0 && !biomeData.heavenPixels) return false;
     if (pvt > 0 && !biomeData.hellPixels) return false;
     return true;
@@ -1130,10 +1202,10 @@ async function addBiomeLayersProgressively(
     for (const pvt of pvtList) {
       // Report progress before CPU-heavy work
       const progress = Math.round((stepsDone / totalSteps) * 100);
-      window.dispatchEvent(new CustomEvent("biomeGenerationProgress", { detail: { percentage: progress } }));
+      window.dispatchEvent(new CustomEvent('biomeGenerationProgress', { detail: { percentage: progress } }));
 
       // Yield briefly so the browser can paint the progress update before we block the main thread.
-      await new Promise((r) => setTimeout(r, 0));
+      await new Promise(r => setTimeout(r, 0));
       if (currentGenerationId !== generationId) return;
 
       const isFirstPw = pw === 0 && pvt === 0;
@@ -1145,23 +1217,31 @@ async function addBiomeLayersProgressively(
           const url = URL.createObjectURL(cached.blob);
           dynamicBlobUrls.push(url);
           viewer.addTiledImage({
-            tileSource: { type: "image", url, buildPyramid: false },
+            tileSource: { type: 'image', url, buildPyramid: false },
             x: cached.minX,
             y: cached.minY,
             width: cached.osdWidth,
             success: (event: any) => {
               if (currentGenerationId !== generationId) {
-                try { viewer.world.removeItem(event.item); } catch {}
+                try {
+                  viewer.world.removeItem(event.item);
+                } catch {}
                 return;
               }
-              try { event.item.source.__biomeComposite = true; } catch {}
+              try {
+                event.item.source.__biomeComposite = true;
+              } catch {}
               dynamicTiledImages.add(event.item);
             },
           });
           if (isFirstPw && onFirstPwReady) {
-            try { onFirstPwReady(); } catch (e) { console.warn("[OSD Bridge] onFirstPwReady threw:", e); }
-            await new Promise((r) => setTimeout(r, 0));
-            await new Promise((r) => requestAnimationFrame(() => r(null)));
+            try {
+              onFirstPwReady();
+            } catch (e) {
+              console.warn('[OSD Bridge] onFirstPwReady threw:', e);
+            }
+            await new Promise(r => setTimeout(r, 0));
+            await new Promise(r => requestAnimationFrame(() => r(null)));
           }
           stepsDone++;
           continue;
@@ -1169,13 +1249,7 @@ async function addBiomeLayersProgressively(
       }
 
       // Compute all overlays for this PW at once (CPU-bound, ~1-2s)
-      const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(
-        biomeData,
-        tileLayers,
-        pw,
-        pvt,
-        isNGP,
-      );
+      const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(biomeData, tileLayers, pw, pvt, isNGP);
 
       if (currentGenerationId !== generationId) return;
 
@@ -1184,7 +1258,10 @@ async function addBiomeLayersProgressively(
       // canvas drawer in Firefox), we merge them into a single image.
 
       // First pass: determine bounding box across all non-empty overlays
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
       const validOverlays: { overlay: OffscreenCanvas; x: number; y: number; osdWidth: number }[] = [];
       // Layer indices the CPU path actually DREW this iteration. This is the
       // authoritative "what belongs on screen" set — see the note where
@@ -1215,7 +1292,10 @@ async function addBiomeLayersProgressively(
         }
       }
 
-      if (validOverlays.length === 0) { stepsDone++; continue; }
+      if (validOverlays.length === 0) {
+        stepsDone++;
+        continue;
+      }
 
       // ── GPU final-pixel path ────────────────────────────────────────────────
       // When the WebGL2 terrain renderer is available, replace this region's
@@ -1233,19 +1313,32 @@ async function addBiomeLayersProgressively(
           glTileLayers = tileLayers.filter((_: any, i: number) => drawnLayerIdx.has(i));
           console.log(
             `[OSD Bridge] GL terrain layers: ${glTileLayers.length}/${tileLayers.length} ` +
-              `(${tileLayers.length - glTileLayers.length} excluded — CPU path draws them as nothing)`,
+              `(${tileLayers.length - glTileLayers.length} excluded — CPU path draws them as nothing)`
           );
         }
       }
-      if (pvt === 0 && glTerrainDeps && glTileLayers && glTileLayers.length && ensureGLTerrain(glTerrainDeps, {
-        tileLayers: glTileLayers, biomeData, isNGP: !!result.isNGP,
-        gameMode: (result as any).gameMode, seed: result.seed,
-      }) && glCoversVerticalPlane(0)) {
+      if (
+        pvt === 0 &&
+        glTerrainDeps &&
+        glTileLayers &&
+        glTileLayers.length &&
+        ensureGLTerrain(glTerrainDeps, {
+          tileLayers: glTileLayers,
+          biomeData,
+          isNGP: !!result.isNGP,
+          gameMode: (result as any).gameMode,
+          seed: result.seed,
+        }) &&
+        glCoversVerticalPlane(0)
+      ) {
         const glSource = createGLTerrainTileSource({
           deps: glTerrainDeps,
           gen: {
-            tileLayers: glTileLayers, biomeData, isNGP: !!result.isNGP,
-            gameMode: (result as any).gameMode, seed: result.seed,
+            tileLayers: glTileLayers,
+            biomeData,
+            isNGP: !!result.isNGP,
+            gameMode: (result as any).gameMode,
+            seed: result.seed,
           },
           pw,
           worldX: minX,
@@ -1260,15 +1353,21 @@ async function addBiomeLayersProgressively(
           width: maxX - minX,
           success: (event: any) => {
             if (currentGenerationId !== generationId) {
-              try { viewer.world.removeItem(event.item); } catch {}
+              try {
+                viewer.world.removeItem(event.item);
+              } catch {}
               return;
             }
             dynamicTiledImages.add(event.item);
           },
         });
         if (isFirstPw && onFirstPwReady) {
-          try { onFirstPwReady(); } catch (e) { console.warn("[OSD Bridge] onFirstPwReady threw:", e); }
-          await new Promise((r) => setTimeout(r, 0));
+          try {
+            onFirstPwReady();
+          } catch (e) {
+            console.warn('[OSD Bridge] onFirstPwReady threw:', e);
+          }
+          await new Promise(r => setTimeout(r, 0));
         }
         stepsDone++;
         continue;
@@ -1278,12 +1377,12 @@ async function addBiomeLayersProgressively(
       const compositeW = Math.ceil((maxX - minX) / 10);
       const compositeH = Math.ceil((maxY - minY) / 10);
       const compositeCanvas = new OffscreenCanvas(compositeW, compositeH);
-      const compositeCtx = compositeCanvas.getContext("2d")!;
+      const compositeCtx = compositeCanvas.getContext('2d')!;
 
       // Show privacy browser warning toast once per session if canvas tainting detected
       if (isCanvasTainted() && !privacyToastShown) {
         privacyToastShown = true;
-        const toastEl = document.getElementById("privacyBrowserToast");
+        const toastEl = document.getElementById('privacyBrowserToast');
         if (toastEl) {
           // @ts-ignore — Bootstrap is loaded globally
           new bootstrap.Toast(toastEl).show();
@@ -1305,21 +1404,25 @@ async function addBiomeLayersProgressively(
       // Persist the rendered blob so future loads of this seed skip the
       // ~100-200ms tile-overlay computation per PW.
       if (cacheKey) {
-        cacheBiomeRender(cacheKey, pw, pvt, blob, { minX, minY, osdWidth }).catch((e) =>
-          console.warn("[OSD Bridge] cacheBiomeRender failed:", e),
+        cacheBiomeRender(cacheKey, pw, pvt, blob, { minX, minY, osdWidth }).catch(e =>
+          console.warn('[OSD Bridge] cacheBiomeRender failed:', e)
         );
       }
       viewer.addTiledImage({
-        tileSource: { type: "image", url, buildPyramid: false },
+        tileSource: { type: 'image', url, buildPyramid: false },
         x: minX,
         y: minY,
         width: osdWidth,
         success: (event: any) => {
           if (currentGenerationId !== generationId) {
-            try { viewer.world.removeItem(event.item); } catch {}
+            try {
+              viewer.world.removeItem(event.item);
+            } catch {}
             return;
           }
-          try { event.item.source.__biomeComposite = true; } catch {}
+          try {
+            event.item.source.__biomeComposite = true;
+          } catch {}
           dynamicTiledImages.add(event.item);
         },
       });
@@ -1329,9 +1432,13 @@ async function addBiomeLayersProgressively(
         // it's blocked by the loop's subsequent CPU-heavy iterations).
         // Yield twice so the browser can paint the indicator hiding before
         // the next PW iteration blocks the main thread for ~100ms.
-        try { onFirstPwReady(); } catch (e) { console.warn("[OSD Bridge] onFirstPwReady threw:", e); }
-        await new Promise((r) => setTimeout(r, 0));
-        await new Promise((r) => requestAnimationFrame(() => r(null)));
+        try {
+          onFirstPwReady();
+        } catch (e) {
+          console.warn('[OSD Bridge] onFirstPwReady threw:', e);
+        }
+        await new Promise(r => setTimeout(r, 0));
+        await new Promise(r => requestAnimationFrame(() => r(null)));
       }
 
       stepsDone++;
@@ -1339,7 +1446,7 @@ async function addBiomeLayersProgressively(
   }
 
   // Report 100% completion
-  window.dispatchEvent(new CustomEvent("biomeGenerationProgress", { detail: { percentage: 100 } }));
+  window.dispatchEvent(new CustomEvent('biomeGenerationProgress', { detail: { percentage: 100 } }));
 }
 
 // ─── Headless biome-region export (build-daily-seed-images.cjs) ─────────────
@@ -1379,7 +1486,7 @@ export interface BiomeRegionExportResult {
 
 async function blobToBase64(blob: Blob): Promise<string> {
   const bytes = new Uint8Array(await blob.arrayBuffer());
-  let bin = "";
+  let bin = '';
   const CHUNK = 0x8000;
   for (let i = 0; i < bytes.length; i += CHUNK) {
     bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK) as any);
@@ -1400,8 +1507,14 @@ async function blobToBase64(blob: Blob): Promise<string> {
 interface DecorDraw {
   img: CanvasImageSource;
   // Optional spritesheet source rect (markers); scenes draw the full bitmap.
-  sx?: number; sy?: number; sw?: number; sh?: number;
-  x: number; y: number; w: number; h: number;
+  sx?: number;
+  sy?: number;
+  sw?: number;
+  sh?: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
   // Taikasauva ("alive") wands draw rotated 90deg CCW (tip-up -> tip-left).
   rot?: boolean;
 }
@@ -1409,7 +1522,7 @@ const DECOR_CELL = 2048;
 let _decorDraws: DecorDraw[] | null = null;
 
 export async function prepareDecorationExport(
-  result: GenerationResult,
+  result: GenerationResult
 ): Promise<{ cellSize: number; cells: { cx: number; cy: number }[] } | null> {
   const draws: DecorDraw[] = [];
 
@@ -1431,7 +1544,8 @@ export async function prepareDecorationExport(
     const keys = Array.isArray(item.spriteKey) ? item.spriteKey : [item.spriteKey];
     const isTaikasauva = !!(item.poi && (item.poi as any).isTaikasauva);
     let isMain = true;
-    let rootOX = 0, rootOY = 0;
+    let rootOX = 0,
+      rootOY = 0;
     for (const k of keys) {
       const a = md.atlas[k];
       if (!a) continue;
@@ -1444,8 +1558,14 @@ export async function prepareDecorationExport(
       // root layer's origin (per-layer l_ox cancels out at drawScale=1).
       draws.push({
         img: md.spritesheet,
-        sx: a.x, sy: a.y, sw: a.w, sh: a.h,
-        x: item.osdX - rootOX, y: item.osdY - rootOY, w: a.w, h: a.h,
+        sx: a.x,
+        sy: a.y,
+        sw: a.w,
+        sh: a.h,
+        x: item.osdX - rootOX,
+        y: item.osdY - rootOY,
+        w: a.w,
+        h: a.h,
         rot: isTaikasauva,
       });
     }
@@ -1455,16 +1575,18 @@ export async function prepareDecorationExport(
   // Non-empty cells on the absolute world grid (cell x0 = cx * DECOR_CELL).
   const cellSet = new Set<string>();
   for (const d of draws) {
-    const cx0 = Math.floor(d.x / DECOR_CELL), cx1 = Math.floor((d.x + d.w - 1) / DECOR_CELL);
-    const cy0 = Math.floor(d.y / DECOR_CELL), cy1 = Math.floor((d.y + d.h - 1) / DECOR_CELL);
+    const cx0 = Math.floor(d.x / DECOR_CELL),
+      cx1 = Math.floor((d.x + d.w - 1) / DECOR_CELL);
+    const cy0 = Math.floor(d.y / DECOR_CELL),
+      cy1 = Math.floor((d.y + d.h - 1) / DECOR_CELL);
     for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) cellSet.add(`${cx},${cy}`);
   }
-  const cells = [...cellSet].map((s) => {
-    const [cx, cy] = s.split(",").map(Number);
+  const cells = [...cellSet].map(s => {
+    const [cx, cy] = s.split(',').map(Number);
     return { cx, cy };
   });
   console.log(
-    `[OSD Bridge] Decor export prepared: ${sceneCount} scenes + ${draws.length - sceneCount} sprite layers, ${cells.length} cells`,
+    `[OSD Bridge] Decor export prepared: ${sceneCount} scenes + ${draws.length - sceneCount} sprite layers, ${cells.length} cells`
   );
   return { cellSize: DECOR_CELL, cells };
 }
@@ -1472,15 +1594,16 @@ export async function prepareDecorationExport(
 /** Render one decor grid cell; returns a PNG data URL or null when empty. */
 export function exportDecorationCell(cx: number, cy: number): string | null {
   if (!_decorDraws) return null;
-  const x0 = cx * DECOR_CELL, y0 = cy * DECOR_CELL;
+  const x0 = cx * DECOR_CELL,
+    y0 = cy * DECOR_CELL;
   const hits = _decorDraws.filter(
-    (d) => d.x < x0 + DECOR_CELL && d.x + d.w > x0 && d.y < y0 + DECOR_CELL && d.y + d.h > y0,
+    d => d.x < x0 + DECOR_CELL && d.x + d.w > x0 && d.y < y0 + DECOR_CELL && d.y + d.h > y0
   );
   if (hits.length === 0) return null;
-  const canvas = document.createElement("canvas");
+  const canvas = document.createElement('canvas');
   canvas.width = DECOR_CELL;
   canvas.height = DECOR_CELL;
-  const ctx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext('2d')!;
   ctx.imageSmoothingEnabled = false;
   for (const d of hits) {
     if (d.sw !== undefined) {
@@ -1499,13 +1622,12 @@ export function exportDecorationCell(cx: number, cy: number): string | null {
       ctx.drawImage(d.img, d.x - x0, d.y - y0, d.w, d.h);
     }
   }
-  return canvas.toDataURL("image/png");
+  return canvas.toDataURL('image/png');
 }
 
 export function releaseDecorationExport(): void {
   _decorDraws = null;
 }
-
 
 /**
  * Re-render the 9 biome regions (3 horizontal PWs × 3 verticals: main/heaven/
@@ -1515,9 +1637,7 @@ export function releaseDecorationExport(): void {
  * solid black bg downstream (matches the live map, which doesn't paint biome
  * bgs in those planes). Empty regions are skipped and logged.
  */
-export async function exportBiomeRegionImages(
-  result: GenerationResult,
-): Promise<BiomeRegionExportResult> {
+export async function exportBiomeRegionImages(result: GenerationResult): Promise<BiomeRegionExportResult> {
   await ensureTelescopeModules();
 
   const { tileLayers, biomeData, isNGP, worldCenter, parallelWorlds } = result;
@@ -1539,7 +1659,7 @@ export async function exportBiomeRegionImages(
       else layerIndicesByBiome.set(layer.biomeName, [i]);
     }
   }
-  const orderedBiomes = BIOME_RENDER_ORDER.filter((b) => !SKIP_BIOMES.has(b));
+  const orderedBiomes = BIOME_RENDER_ORDER.filter(b => !SKIP_BIOMES.has(b));
   const orderedSet = new Set<string>(orderedBiomes);
   const unorderedBiomes: string[] = [];
   for (const [biomeName] of layerIndicesByBiome) {
@@ -1548,7 +1668,7 @@ export async function exportBiomeRegionImages(
   const allBiomesToRender = [...orderedBiomes, ...unorderedBiomes];
 
   const anchorY = -(14 * 512);
-  const pvtList = [0, -1, 1].filter((pvt) => {
+  const pvtList = [0, -1, 1].filter(pvt => {
     if (pvt < 0 && !biomeData.heavenPixels) return false;
     if (pvt > 0 && !biomeData.hellPixels) return false;
     return true;
@@ -1559,9 +1679,9 @@ export async function exportBiomeRegionImages(
   //   gx = svgX * CHUNK_SIZE + MAP_TOP_LEFT_X
   //   gy = svgY * CHUNK_SIZE + BIOME_IMAGE_TOP_Y
   // Per pw the bg translates by pw * pwOffsetPixels horizontally.
-  const boundaryData = (await import("../data/biome_boundries_py.json")).default as any;
+  const boundaryData = (await import('../data/biome_boundries_py.json')).default as any;
   const biomesWithBg = (boundaryData?.biomes ?? []).filter(
-    (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename),
+    (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename)
   );
   // Stable index assignment: each biome's `filename` -> integer index ≥ 1.
   // 0 is reserved for "no biome" (alpha=0 in the mask).
@@ -1573,7 +1693,7 @@ export async function exportBiomeRegionImages(
     // Value is the bg PNG basename so the Node side can fetch
     // noitamap/public/biome_bg/<file>.
     const bgPath = BIOME_BACKGROUND_MAP[b.filename];
-    biomeIndex[idx] = bgPath.split("/").pop() || bgPath;
+    biomeIndex[idx] = bgPath.split('/').pop() || bgPath;
   });
 
   const CHUNK = 512;
@@ -1595,8 +1715,10 @@ export async function exportBiomeRegionImages(
     const md = await buildMarkerData(result);
     for (const it of md.items) {
       const col = Math.round(it.osdX / pwOffsetPixels);
-      const l = it.osdX - it.w / 2, r = it.osdX + it.w / 2;
-      const t = it.osdY - it.h / 2, b = it.osdY + it.h / 2;
+      const l = it.osdX - it.w / 2,
+        r = it.osdX + it.w / 2;
+      const t = it.osdY - it.h / 2,
+        b = it.osdY + it.h / 2;
       const cur = markerBoundsByCol.get(col);
       if (cur) {
         if (l < cur.minX) cur.minX = l;
@@ -1608,18 +1730,19 @@ export async function exportBiomeRegionImages(
       }
     }
   } catch (e) {
-    console.warn("[export] marker-bounds fold skipped:", e);
+    console.warn('[export] marker-bounds fold skipped:', e);
   }
 
   const out: BiomeRegionImage[] = [];
 
   for (const pw of pwOrder) {
     for (const pvt of pvtList) {
-      const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(
-        biomeData, tileLayers, pw, pvt, isNGP,
-      );
+      const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(biomeData, tileLayers, pw, pvt, isNGP);
 
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
       const validOverlays: { overlay: OffscreenCanvas; x: number; y: number }[] = [];
       for (const biomeName of allBiomesToRender) {
         const layerIdxArr = layerIndicesByBiome.get(biomeName);
@@ -1657,7 +1780,7 @@ export async function exportBiomeRegionImages(
       const compositeW = Math.ceil((maxX - minX) / 10);
       const compositeH = Math.ceil((maxY - minY) / 10);
       const compositeCanvas = new OffscreenCanvas(compositeW, compositeH);
-      const compositeCtx = compositeCanvas.getContext("2d")!;
+      const compositeCtx = compositeCanvas.getContext('2d')!;
       for (const { overlay, x, y } of validOverlays) {
         compositeCtx.drawImage(overlay, Math.round((x - minX) / 10), Math.round((y - minY) / 10));
       }
@@ -1682,7 +1805,7 @@ export async function exportBiomeRegionImages(
       let mask: string | undefined;
       if (pvt === 0) {
         const maskCanvas = new OffscreenCanvas(compositeW, compositeH);
-        const maskCtx = maskCanvas.getContext("2d")!;
+        const maskCtx = maskCanvas.getContext('2d')!;
         // Translate biome-polygon static-map coords into this region's local
         // (compositeW, compositeH) space. The region's top-left is (minX, minY)
         // in OSD coords; biomes' static-map gx/gy translate by pw horizontally.
@@ -1690,13 +1813,13 @@ export async function exportBiomeRegionImages(
         for (const biome of biomesWithBg) {
           const idx = indexByFilename.get(biome.filename);
           if (!idx) continue;
-          const rawParts = (biome.svg_map_path as string).split(" ");
+          const rawParts = (biome.svg_map_path as string).split(' ');
           maskCtx.beginPath();
           let prev: string | null = null;
           for (let j = 0; j < rawParts.length; j++) {
             const part = rawParts[j];
-            if (part === "M" || part === "L" || part === "Z") {
-              if (part === "Z") maskCtx.closePath();
+            if (part === 'M' || part === 'L' || part === 'Z') {
+              if (part === 'Z') maskCtx.closePath();
               prev = part;
               continue;
             }
@@ -1709,14 +1832,32 @@ export async function exportBiomeRegionImages(
             // Convert to local mask coords (1px = 10 OSD units).
             const cx = (gx - minX) / 10;
             const cy = (gy - minY) / 10;
-            if (prev === "M") maskCtx.moveTo(cx, cy);
+            if (prev === 'M') maskCtx.moveTo(cx, cy);
             else maskCtx.lineTo(cx, cy);
             j++; // skip the y part we just consumed
-            prev = "L";
+            prev = 'L';
           }
           maskCtx.fillStyle = `rgb(${(idx >> 16) & 0xff}, ${(idx >> 8) & 0xff}, ${idx & 0xff})`;
           maskCtx.fill();
         }
+        // Keep the mask only where some terrain overlay actually covers. The
+        // wang layers are laid out at 510 px per chunk (tile_generator.js
+        // correctedX: 51 tiles x 10 px), so every layer ends a few px short
+        // of the chunk grid the biome polygons follow. The live map never
+        // notices — the static base map shows through the strip — but the
+        // bake paints raw biome background wherever "inside polygon, overlay
+        // transparent", which turned every such strip into a dark chunk-
+        // aligned line. Dropping the mask there makes the strip transparent,
+        // matching what the live map shows.
+        const coverage = new OffscreenCanvas(compositeW, compositeH);
+        const covCtx = coverage.getContext('2d')!;
+        covCtx.fillStyle = '#fff';
+        for (const { overlay, x, y } of validOverlays) {
+          covCtx.fillRect(Math.round((x - minX) / 10), Math.round((y - minY) / 10), overlay.width, overlay.height);
+        }
+        maskCtx.globalCompositeOperation = 'destination-in';
+        maskCtx.drawImage(coverage, 0, 0);
+        maskCtx.globalCompositeOperation = 'source-over';
         const maskData = maskCtx.getImageData(0, 0, compositeW, compositeH);
         // Force alpha to 255 wherever any biome was painted, 0 elsewhere — so
         // the Node side has a clean alpha=255 / alpha=0 mask with no
@@ -1729,10 +1870,16 @@ export async function exportBiomeRegionImages(
       }
 
       out.push({
-        pw, pvt,
-        minX: Math.round(minX), minY: Math.round(minY),
-        osdWidth, scale, compositeW, compositeH,
-        small, mask,
+        pw,
+        pvt,
+        minX: Math.round(minX),
+        minY: Math.round(minY),
+        osdWidth,
+        scale,
+        compositeW,
+        compositeH,
+        small,
+        mask,
       });
     }
   }
@@ -1749,90 +1896,90 @@ export const pixelSceneConfig = {
   /** Skip lists by scene name */
   skipNames: new Set([
     // Player rooms — not relevant for map
-    "essence_altar",
-    "essence_altar_desert",
-    "fishing_hut",
-    "scale",
-    "meatroom",
-    "roboroom",
-    "gourd_room",
-    "ocarina",
-    "funroom",
-    "lavalake_racing",
-    "secret_lab",
-    "altar_top",
-    "altar_top_ending",
-    "hourglass_chamber",
-    "watercave",
-    "altar_top_water",
-    "altar_top_lava",
-    "altar_top_blood",
-    "altar_top_oil",
-    "altar_top_radioactive",
+    'essence_altar',
+    'essence_altar_desert',
+    'fishing_hut',
+    'scale',
+    'meatroom',
+    'roboroom',
+    'gourd_room',
+    'ocarina',
+    'funroom',
+    'lavalake_racing',
+    'secret_lab',
+    'altar_top',
+    'altar_top_ending',
+    'hourglass_chamber',
+    'watercave',
+    'altar_top_water',
+    'altar_top_lava',
+    'altar_top_blood',
+    'altar_top_oil',
+    'altar_top_radioactive',
     // Holy-mountain altars are fully rendered into the prebaked background map;
     // the pixel scene would repaint slab + art on top. Same names cover both the
     // spawn-function ("temple/altar*") and biome-color ("temple_altar*/altar*")
     // sources. No collision: coalmine/snowcave altars use distinct *_capsule names.
-    "altar",
-    "altar_left",
-    "altar_right",
-    "altar_right_snowcastle",
-    "teleportroom",
-    "mystery_teleport",
-    "robot_egg",
-    "secret_chamber",
-    "cube_chamber",
-    "alchemist_secret",
-    "alchemist_secret_music",
-    "null_room",
-    "eyespot",
-    "orbroom",
-    "yourroom",
-    "yourroom_entrance",
-    "yourroom_npc",
-    "yourroom_coffin",
-    "yourroom_coffin_entrance",
-    "yourroom_coffin_npc",
+    'altar',
+    'altar_left',
+    'altar_right',
+    'altar_right_snowcastle',
+    'teleportroom',
+    'mystery_teleport',
+    'robot_egg',
+    'secret_chamber',
+    'cube_chamber',
+    'alchemist_secret',
+    'alchemist_secret_music',
+    'null_room',
+    'eyespot',
+    'orbroom',
+    'yourroom',
+    'yourroom_entrance',
+    'yourroom_npc',
+    'yourroom_coffin',
+    'yourroom_coffin_entrance',
+    'yourroom_coffin_npc',
     // Boss/special scenes — misplaced if duplicated from scanner
-    "boss_arena",
-    "boss_arena_top",
-    "boss_victoryroom",
+    'boss_arena',
+    'boss_arena_top',
+    'boss_victoryroom',
     // Spliced scenes prebaked in map capture
-    "tree",
-    "mountain_lake",
-    "lavalake2",
-    "lavalake_pit_bottom",
-    "skull",
-    "skull_in_desert",
-    "lake_statue",
+    'tree',
+    'mountain_lake',
+    'lavalake2',
+    'lavalake_pit_bottom',
+    'skull',
+    'skull_in_desert',
+    'lake_statue',
     // Static scenes prebaked in map capture
-    "lavalake_pit",
-    "lavalake_pit_cracked",
-    "cauldron",
-    "cliff",
-    "rainbow_cloud",
-    "huussi",
-    "snowy_ruins_eye_pillar",
-    "desert_ruins_base_01",
-    "music_machine_stand",
-    "bunker",
-    "bunker2",
-    "greed_treasure",
+    'lavalake_pit',
+    'lavalake_pit_cracked',
+    'cauldron',
+    'cliff',
+    'rainbow_cloud',
+    'huussi',
+    'snowy_ruins_eye_pillar',
+    'desert_ruins_base_01',
+    'music_machine_stand',
+    'bunker',
+    'bunker2',
+    'greed_treasure',
     // Biome color scenes prebaked in map capture
-    "dragoncave",
-    "roadblock",
-    "wizardcave_entrance",
+    'dragoncave',
+    'roadblock',
+    'wizardcave_entrance',
     // Pyramid scenes - prebaked in map art
-    "left",
-    "right",
+    'left',
+    'right',
     // Hidden cavern - prebaked in OSD
-    "solid_wall_hidden_cavern",
+    'solid_wall_hidden_cavern',
   ]),
   /** Skip lists by biome prefix in scene key */
   skipBiomes: new Set([
-    "dragoncave", // prebaked in static map art
-    "mountain", // mountain scenes are prebaked in map capture
-    "pyramid", // pyramid scenes are prebaked in map capture
+    'dragoncave', // prebaked in static map art
+    'mountain', // mountain scenes are prebaked in map capture
+    'pyramid', // pyramid scenes are prebaked in map capture
   ]),
   /** Category toggles */
   categories: {
@@ -1848,7 +1995,7 @@ export const pixelSceneConfig = {
   /** Custom skip function — return true to skip a scene. */
   skipFn: ((s: { name: string; key: string; x: number; y: number }) => {
     // Skip lake essenceroom (prebaked at ~-14000,13570) but keep tower one (~10000,4350)
-    if (s.name === "essenceroom" && s.x < 0) return true;
+    if (s.name === 'essenceroom' && s.x < 0) return true;
     return false;
   }) as ((scene: { name: string; key: string; x: number; y: number }) => boolean) | null,
   /** Global per-layer toggles for compositing */
@@ -1875,58 +2022,58 @@ let _lastLoadedScenes: Array<{ name: string; key: string; x: number; y: number; 
 /** Debug panel (off by default, call window.__pixelSceneDebug() to open) */
 (window as any).__pixelSceneDebug = () => {
   const cfg = pixelSceneConfig;
-  console.group("%c[Pixel Scene Debug]", "color: #0af; font-weight: bold");
-  console.log("Master enabled:", cfg.enabled);
-  console.log("Skip names:", [...cfg.skipNames]);
-  console.log("Skip biomes:", [...cfg.skipBiomes]);
-  console.log("Categories:", { ...cfg.categories });
-  console.log("");
-  console.log("Commands:");
-  console.log("  __pixelSceneList()              // list all loaded scenes");
+  console.group('%c[Pixel Scene Debug]', 'color: #0af; font-weight: bold');
+  console.log('Master enabled:', cfg.enabled);
+  console.log('Skip names:', [...cfg.skipNames]);
+  console.log('Skip biomes:', [...cfg.skipBiomes]);
+  console.log('Categories:', { ...cfg.categories });
+  console.log('');
+  console.log('Commands:');
+  console.log('  __pixelSceneList()              // list all loaded scenes');
   console.log("  __pixelSceneToggle('name')      // toggle a scene name on/off in skipNames");
-  console.log("  __pixelSceneHover(true)         // enable hover to show scene names");
-  console.log("  __pixelSceneHover(false)        // disable hover");
-  console.log("");
-  console.log("Layer toggles (re-enter seed after changing):");
-  console.log("  __pixelSceneConfig.layers.background = false // global: skip _background.png");
-  console.log("  __pixelSceneConfig.layers.mid = false        // global: skip imgElement (recolored)");
-  console.log("  __pixelSceneConfig.layers.visual = false     // global: skip _visual.png");
-  console.log("");
-  console.log("Per-scene layer overrides (re-enter seed after changing):");
+  console.log('  __pixelSceneHover(true)         // enable hover to show scene names');
+  console.log('  __pixelSceneHover(false)        // disable hover');
+  console.log('');
+  console.log('Layer toggles (re-enter seed after changing):');
+  console.log('  __pixelSceneConfig.layers.background = false // global: skip _background.png');
+  console.log('  __pixelSceneConfig.layers.mid = false        // global: skip imgElement (recolored)');
+  console.log('  __pixelSceneConfig.layers.visual = false     // global: skip _visual.png');
+  console.log('');
+  console.log('Per-scene layer overrides (re-enter seed after changing):');
   console.log("  __pixelSceneConfig.layerOverrides['friendroom'] = { background: false }");
   console.log("  __pixelSceneConfig.layerOverrides['altar_top'] = { mid: false, visual: true }");
   console.log("  delete __pixelSceneConfig.layerOverrides['friendroom'] // reset to global");
-  console.log("");
-  console.log("Other:");
-  console.log("  __pixelSceneConfig.enabled = false           // disable all");
-  console.log("  __pixelSceneConfig.categories.temple = false // disable temple scenes");
+  console.log('');
+  console.log('Other:');
+  console.log('  __pixelSceneConfig.enabled = false           // disable all');
+  console.log('  __pixelSceneConfig.categories.temple = false // disable temple scenes');
   console.log("  __pixelSceneConfig.skipNames.add('orbroom')  // skip orbroom");
   console.log("  __pixelSceneConfig.skipBiomes.delete('dragoncave') // unblock dragoncave");
-  console.log("After changing, re-enter the seed to regenerate.");
+  console.log('After changing, re-enter the seed to regenerate.');
   console.groupEnd();
 };
 
 /** List all loaded pixel scenes, grouped by category */
 (window as any).__pixelSceneList = () => {
   if (_lastLoadedScenes.length === 0) {
-    console.log("[Pixel Scenes] No scenes loaded yet. Generate a seed first.");
+    console.log('[Pixel Scenes] No scenes loaded yet. Generate a seed first.');
     return;
   }
   const byCategory = new Map<string, typeof _lastLoadedScenes>();
   for (const s of _lastLoadedScenes) {
-    const cat = s.category || "uncategorized";
+    const cat = s.category || 'uncategorized';
     if (!byCategory.has(cat)) byCategory.set(cat, []);
     byCategory.get(cat)!.push(s);
   }
-  console.group(`%c[Pixel Scenes] ${_lastLoadedScenes.length} scenes loaded`, "color: #0af; font-weight: bold");
+  console.group(`%c[Pixel Scenes] ${_lastLoadedScenes.length} scenes loaded`, 'color: #0af; font-weight: bold');
   for (const [cat, scenes] of byCategory) {
     const enabled = pixelSceneConfig.categories[cat] !== false;
-    console.group(`${cat} (${scenes.length}) ${enabled ? "✓" : "✗ DISABLED"}`);
-    const uniqueNames = [...new Set(scenes.map((s) => s.name))].sort();
+    console.group(`${cat} (${scenes.length}) ${enabled ? '✓' : '✗ DISABLED'}`);
+    const uniqueNames = [...new Set(scenes.map(s => s.name))].sort();
     for (const name of uniqueNames) {
-      const count = scenes.filter((s) => s.name === name).length;
+      const count = scenes.filter(s => s.name === name).length;
       const skipped = pixelSceneConfig.skipNames.has(name);
-      console.log(`  ${skipped ? "✗" : "✓"} ${name} (×${count})${skipped ? " [SKIPPED]" : ""}`);
+      console.log(`  ${skipped ? '✗' : '✓'} ${name} (×${count})${skipped ? ' [SKIPPED]' : ''}`);
     }
     console.groupEnd();
   }
@@ -1948,7 +2095,7 @@ let _lastLoadedScenes: Array<{ name: string; key: string; x: number; y: number; 
 (window as any).__toggleBaseMap = () => {
   const osd = (window as any).__osdViewer;
   if (!osd) {
-    console.log("No OSD viewer found. Set window.__osdViewer first.");
+    console.log('No OSD viewer found. Set window.__osdViewer first.');
     return;
   }
   const world = osd.world;
@@ -1961,7 +2108,7 @@ let _lastLoadedScenes: Array<{ name: string; key: string; x: number; y: number; 
       item.setOpacity(cur > 0 ? 0 : 1);
     }
   }
-  console.log("[OSD] Toggled base map tiles visibility");
+  console.log('[OSD] Toggled base map tiles visibility');
 };
 
 // ─── Layer inspection / isolation (console debugging) ────────────────────────
@@ -1982,26 +2129,26 @@ let _lastLoadedScenes: Array<{ name: string; key: string; x: number; y: number; 
 // (marker / pixel-scene tile sources), other.
 
 function _layerKind(source: any): string {
-  if (!source) return "other";
-  if (source.__glTerrain) return "glTerrain";
-  if (source.__bakedDzi) return "bakedDzi";
-  if (source.__biomeBg) return "biomeBg";
-  if (source.__biomeComposite) return "biomeComposite";
+  if (!source) return 'other';
+  if (source.__glTerrain) return 'glTerrain';
+  if (source.__bakedDzi) return 'bakedDzi';
+  if (source.__biomeBg) return 'biomeBg';
+  if (source.__biomeComposite) return 'biomeComposite';
   // Synthetic on-demand sources use a custom scheme in getTileUrl.
   try {
     const u = source.getTileUrl?.(source.maxLevel ?? 0, 0, 0);
-    if (typeof u === "string" && /^(marker-tile|pixel-scene-tile):/.test(u)) return "synthetic";
+    if (typeof u === 'string' && /^(marker-tile|pixel-scene-tile):/.test(u)) return 'synthetic';
   } catch {
     /* not addressable */
   }
-  if (typeof source.tilesUrl === "string") return "staticBase";
-  return "other";
+  if (typeof source.tilesUrl === 'string') return 'staticBase';
+  return 'other';
 }
 
 function _eachLayer(fn: (item: any, kind: string, i: number) => void): void {
   const osd = (window as any).__osdViewer;
   if (!osd?.world) {
-    console.log("[OSD] no viewer — open the dynamic map first");
+    console.log('[OSD] no viewer — open the dynamic map first');
     return;
   }
   for (let i = 0; i < osd.world.getItemCount(); i++) {
@@ -2030,14 +2177,17 @@ function _eachLayer(fn: (item: any, kind: string, i: number) => void): void {
   console.table(rows);
   const byKind: Record<string, number> = {};
   for (const r of rows) byKind[r.kind] = (byKind[r.kind] || 0) + 1;
-  console.log("[OSD] layer kinds:", byKind);
+  console.log('[OSD] layer kinds:', byKind);
   return rows;
 };
 
 (window as any).__hide = (kind: string) => {
   let n = 0;
   _eachLayer((item, k) => {
-    if (k === kind) { item.setOpacity(0); n++; }
+    if (k === kind) {
+      item.setOpacity(0);
+      n++;
+    }
   });
   console.log(`[OSD] hid ${n} "${kind}" layer(s)`);
 };
@@ -2045,22 +2195,35 @@ function _eachLayer(fn: (item: any, kind: string, i: number) => void): void {
 (window as any).__show = (kind: string) => {
   let n = 0;
   _eachLayer((item, k) => {
-    if (k === kind) { item.setOpacity(1); n++; }
+    if (k === kind) {
+      item.setOpacity(1);
+      n++;
+    }
   });
   console.log(`[OSD] showed ${n} "${kind}" layer(s)`);
 };
 
 (window as any).__only = (kind: string) => {
-  let on = 0, off = 0;
+  let on = 0,
+    off = 0;
   _eachLayer((item, k) => {
-    if (k === kind) { item.setOpacity(1); on++; } else { item.setOpacity(0); off++; }
+    if (k === kind) {
+      item.setOpacity(1);
+      on++;
+    } else {
+      item.setOpacity(0);
+      off++;
+    }
   });
   console.log(`[OSD] showing ${on} "${kind}" layer(s), hid ${off} other(s)`);
 };
 
 (window as any).__showAll = () => {
   let n = 0;
-  _eachLayer((item) => { item.setOpacity(1); n++; });
+  _eachLayer(item => {
+    item.setOpacity(1);
+    n++;
+  });
   console.log(`[OSD] restored ${n} layer(s)`);
 };
 
@@ -2072,17 +2235,17 @@ function _eachLayer(fn: (item: any, kind: string, i: number) => void): void {
 function getSceneCategory(scene: PixelScene): string | null {
   const key = scene.key;
   const name = scene.name;
-  const biome = key.split("/")[0];
+  const biome = key.split('/')[0];
 
-  if (biome === "spliced") return "spliced";
-  if (biome.includes("temple")) return "temple";
-  if (name === "friendroom" || name === "cavern") return "friendRoom";
-  if (name.startsWith("watercave_layout")) return "watercave";
-  if (name === "side_cavern_left" || name === "side_cavern_right") return "snowcastle";
-  if (biome.startsWith("friend_")) return "friendRoom";
-  if (biome === "snowcastle_cavern" || biome === "sandcave") return "snowcastle";
+  if (biome === 'spliced') return 'spliced';
+  if (biome.includes('temple')) return 'temple';
+  if (name === 'friendroom' || name === 'cavern') return 'friendRoom';
+  if (name.startsWith('watercave_layout')) return 'watercave';
+  if (name === 'side_cavern_left' || name === 'side_cavern_right') return 'snowcastle';
+  if (biome.startsWith('friend_')) return 'friendRoom';
+  if (biome === 'snowcastle_cavern' || biome === 'sandcave') return 'snowcastle';
 
-  return "spawned"; // default for spawn-function-generated scenes
+  return 'spawned'; // default for spawn-function-generated scenes
 }
 
 /**
@@ -2093,7 +2256,7 @@ function getSceneCategory(scene: PixelScene): string | null {
 async function imgElementToBitmap(
   img: HTMLCanvasElement | OffscreenCanvas | Uint8Array | Uint8ClampedArray,
   width: number,
-  height: number,
+  height: number
 ): Promise<ImageBitmap | null> {
   try {
     if (img instanceof HTMLCanvasElement || img instanceof OffscreenCanvas) {
@@ -2124,7 +2287,7 @@ async function imgElementToBitmap(
     const imageData = new ImageData(fixed, width, height);
     return await createImageBitmap(imageData);
   } catch (e) {
-    console.warn("[OSD Bridge] imgElementToBitmap failed:", e);
+    console.warn('[OSD Bridge] imgElementToBitmap failed:', e);
     return null;
   }
 }
@@ -2153,28 +2316,33 @@ async function getScenePngIndex(): Promise<ScenePngIndex> {
   if (zip) {
     const plainPngCandidates: Array<{ key: string; path: string }> = [];
     zip.forEach((relativePath: string) => {
-      if (!relativePath.startsWith("data/biome_impl/") || !relativePath.endsWith(".png")) return;
-      const inner = relativePath.substring("data/biome_impl/".length);
+      if (!relativePath.startsWith('data/biome_impl/') || !relativePath.endsWith('.png')) return;
+      const inner = relativePath.substring('data/biome_impl/'.length);
       const addTo = (suffix: string, pathMap: Map<string, string>, nameMap: Map<string, string>) => {
         if (!inner.endsWith(suffix)) return;
         const key = inner.substring(0, inner.length - suffix.length);
         pathMap.set(key, relativePath);
-        const slash = key.lastIndexOf("/");
+        const slash = key.lastIndexOf('/');
         const nameOnly = slash >= 0 ? key.substring(slash + 1) : key;
         if (!nameMap.has(nameOnly)) nameMap.set(nameOnly, relativePath);
       };
-      addTo("_visual.png", visualByPath, visualByName);
-      addTo("_background.png", bgByPath, bgByName);
-      addTo("_bg.png", bgByPath, bgByName);
+      addTo('_visual.png', visualByPath, visualByName);
+      addTo('_background.png', bgByPath, bgByName);
+      addTo('_bg.png', bgByPath, bgByName);
       // Temple foreground scenes use _fg.png instead of _visual.png
-      addTo("_fg.png", visualByPath, visualByName);
+      addTo('_fg.png', visualByPath, visualByName);
       // Top-level plain .png files (no subdirectory, no _visual/_background suffix) —
       // these are full pixel scene visuals like watercave_layout_X.png. Defer them
       // to a second pass: a plain .png that has a sibling _visual/_background (e.g.
       // essenceroom.png next to essenceroom_visual.png) is a MATERIAL COLORMAP, not
       // a visual, and must not shadow the real visual in visualByName.
-      if (!inner.includes("/") && !inner.endsWith("_visual.png") && !inner.endsWith("_background.png") && !inner.endsWith("_bg.png")) {
-        const key = inner.substring(0, inner.length - ".png".length);
+      if (
+        !inner.includes('/') &&
+        !inner.endsWith('_visual.png') &&
+        !inner.endsWith('_background.png') &&
+        !inner.endsWith('_bg.png')
+      ) {
+        const key = inner.substring(0, inner.length - '.png'.length);
         plainPngCandidates.push({ key, path: relativePath });
       }
     });
@@ -2194,13 +2362,13 @@ function resolveScenePath(
   byName: Map<string, string>,
   biome: string,
   name: string,
-  sceneKey: string,
+  sceneKey: string
 ): string | undefined {
   let found = byPath.get(sceneKey) || byName.get(name);
   if (found) return found;
   let base = name;
-  while (base.includes("_")) {
-    base = base.substring(0, base.lastIndexOf("_"));
+  while (base.includes('_')) {
+    base = base.substring(0, base.lastIndexOf('_'));
     found = byPath.get(`${biome}/${base}`) || byName.get(base);
     if (found) return found;
   }
@@ -2211,20 +2379,18 @@ function resolveScenePath(
 // These would otherwise show as visible dots on the map since the temple _fg.png bypasses
 // telescope's normal spawn-pixel scanning pipeline.
 const TEMPLE_SPAWN_STRIP_COLORS = new Set<number>([
-  0xff0000, 0x800000, 0x00ff00, 0xc88d1a, 0xc88000, 0xc80040, 0xffff00, 0xff0aff, 0xff0080,
-  0xff8000, 0xc84040, 0x804040, 0x96c850, 0x60a064, 0x50a000, 0xbca0f0, 0x00ff5a, 0x78ffff,
-  0x50a0f0, 0xbf26a6, 0x04a977, 0xffd171, 0xffd181, 0xffff81, 0xc7eb28, 0xe8ff80, 0x2768de,
-  0x2768df, 0x6b4f9b, 0xd7b3e8,
-  0x805000, 0x397780, 0x00ffa0, 0x1ca7ff, 0xffeed0, 0xffeed1, 0xffeed2, 0xffeed3, 0xffeed4,
-  0xffeed5, 0xffeed6, 0xffeeda, 0xffeedb, 0xffeedc, 0xffeedd, 0xffeede, 0xffeedf,
-  0xffaaaa, 0xffaadd,
+  0xff0000, 0x800000, 0x00ff00, 0xc88d1a, 0xc88000, 0xc80040, 0xffff00, 0xff0aff, 0xff0080, 0xff8000, 0xc84040,
+  0x804040, 0x96c850, 0x60a064, 0x50a000, 0xbca0f0, 0x00ff5a, 0x78ffff, 0x50a0f0, 0xbf26a6, 0x04a977, 0xffd171,
+  0xffd181, 0xffff81, 0xc7eb28, 0xe8ff80, 0x2768de, 0x2768df, 0x6b4f9b, 0xd7b3e8, 0x805000, 0x397780, 0x00ffa0,
+  0x1ca7ff, 0xffeed0, 0xffeed1, 0xffeed2, 0xffeed3, 0xffeed4, 0xffeed5, 0xffeed6, 0xffeeda, 0xffeedb, 0xffeedc,
+  0xffeedd, 0xffeede, 0xffeedf, 0xffaaaa, 0xffaadd,
 ]);
 
 /** Decode a PNG from data.zip, applying background transparency. */
 async function decodeScenePng(zip: any, path: string): Promise<ImageData | null> {
   const file = zip.file(path);
   if (!file) return null;
-  const buf = await file.async("arraybuffer");
+  const buf = await file.async('arraybuffer');
   const decoded = decodePngToRgba(buf);
   const d = decoded.data;
   const tlR = d[0],
@@ -2244,7 +2410,7 @@ async function decodeScenePng(zip: any, path: string): Promise<ImageData | null>
       if (d[i] === 255 && d[i + 1] === 0 && d[i + 2] === 255) d[i + 3] = 0; // Magenta placeholder
     }
   }
-  if (path.includes("/temples-assets/") && path.endsWith("_fg.png")) {
+  if (path.includes('/temples-assets/') && path.endsWith('_fg.png')) {
     // The _fg.png is the temple biome's wang template (BIOME_WANG_TILE per
     // biome_darkness.xml / biome_potion_mimics.xml), NOT finished art. Drawing
     // it raw shows the template's white slab fill + spawn-marker dots ("mostly
@@ -2288,7 +2454,7 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
   const zip = await getDataZip();
   if (!zip) return null;
 
-  const slashIdx = sceneKey.indexOf("/");
+  const slashIdx = sceneKey.indexOf('/');
   if (slashIdx === -1) return null;
 
   const biome = sceneKey.substring(0, slashIdx);
@@ -2298,7 +2464,7 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
 
   const visualPath = resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, sceneKey);
   // Skip backgrounds for biomes where the prebaked map already provides the bg
-  const skipBg = biome === "temple" || biome === "general";
+  const skipBg = biome === 'temple' || biome === 'general';
   const bgPath = skipBg ? undefined : resolveScenePath(idx.bgByPath, idx.bgByName, biome, name, sceneKey);
 
   if (!visualPath && !bgPath) {
@@ -2324,7 +2490,7 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
       const w = Math.max(bgData.width, visualData.width);
       const h = Math.max(bgData.height, visualData.height);
       const canvas = new OffscreenCanvas(w, h);
-      const ctx = canvas.getContext("2d")!;
+      const ctx = canvas.getContext('2d')!;
       ctx.imageSmoothingEnabled = false;
       const bgBmp = await createImageBitmap(bgData);
       ctx.drawImage(bgBmp, 0, 0);
@@ -2349,10 +2515,10 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
  * keep their plain key and stay prefetch/cache compatible.
  */
 function sceneRenderKey(scene: { key: string; variantKey?: string }): string {
-  const vk = scene.variantKey || "";
+  const vk = scene.variantKey || '';
   if (!vk) return scene.key;
-  const mat = vk.split("&").filter((p) => p && !p.startsWith("biome="));
-  return mat.length ? `${scene.key}|${mat.join("&")}` : scene.key;
+  const mat = vk.split('&').filter(p => p && !p.startsWith('biome='));
+  return mat.length ? `${scene.key}|${mat.join('&')}` : scene.key;
 }
 
 /**
@@ -2366,18 +2532,18 @@ function sceneRenderKey(scene: { key: string; variantKey?: string }): string {
 function recolorSceneVariant(
   base: Uint8Array | Uint8ClampedArray,
   scene: { name: string; variantKey?: string },
-  biome: string,
+  biome: string
 ): Uint8Array | Uint8ClampedArray {
   let out: any = base;
   let didBiome = false;
-  const vk = scene.variantKey || "";
+  const vk = scene.variantKey || '';
   if (vk) {
-    for (const part of vk.split("&")) {
-      const eq = part.indexOf("=");
+    for (const part of vk.split('&')) {
+      const eq = part.indexOf('=');
       if (eq < 0) continue;
       const l = part.slice(0, eq);
       const r = part.slice(eq + 1);
-      if (l === "biome") {
+      if (l === 'biome') {
         out = recolorPixelSceneForBiome(scene.name, out, r);
         didBiome = true;
       } else if (l && r) {
@@ -2399,13 +2565,24 @@ function recolorSceneVariant(
 async function compositeSceneBitmap(
   key: string,
   scene: { imgElement: any; width: number; height: number; name: string; key: string; variantKey?: string },
-  idx: { visualByPath: Map<string, string>; visualByName: Map<string, string>; bgByPath: Map<string, string>; bgByName: Map<string, string> },
-): Promise<{ bitmap: ImageBitmap; blob: Blob | null; width: number; height: number; kind: "composite" | "fallback" } | null> {
-  const slashIdx = key.indexOf("/");
-  const biome = slashIdx >= 0 ? key.substring(0, slashIdx) : "";
+  idx: {
+    visualByPath: Map<string, string>;
+    visualByName: Map<string, string>;
+    bgByPath: Map<string, string>;
+    bgByName: Map<string, string>;
+  }
+): Promise<{
+  bitmap: ImageBitmap;
+  blob: Blob | null;
+  width: number;
+  height: number;
+  kind: 'composite' | 'fallback';
+} | null> {
+  const slashIdx = key.indexOf('/');
+  const biome = slashIdx >= 0 ? key.substring(0, slashIdx) : '';
   const name = slashIdx >= 0 ? key.substring(slashIdx + 1) : key;
 
-  const skipBg = biome === "temple" || biome === "general";
+  const skipBg = biome === 'temple' || biome === 'general';
 
   const override = pixelSceneConfig.layerOverrides[name] || pixelSceneConfig.layerOverrides[key];
   const wantBg = override?.background ?? pixelSceneConfig.layers.background;
@@ -2430,16 +2607,16 @@ async function compositeSceneBitmap(
   let midBitmap: ImageBitmap | null = null;
   if (wantMid) {
     const arr =
-      scene.imgElement instanceof Uint8Array || scene.imgElement instanceof Uint8ClampedArray
-        ? scene.imgElement
-        : null;
+      scene.imgElement instanceof Uint8Array || scene.imgElement instanceof Uint8ClampedArray ? scene.imgElement : null;
     const baseImg = arr || getPixelSceneImgElement(scene.key);
     if (baseImg) {
       let recolored: any = baseImg;
       try {
         recolored = recolorSceneVariant(baseImg, scene, biome);
         for (let i = 0; i < recolored.length; i += 4) {
-          const pr = recolored[i], pg = recolored[i + 1], pb = recolored[i + 2];
+          const pr = recolored[i],
+            pg = recolored[i + 1],
+            pb = recolored[i + 2];
           if (pr === 0xff && pg === 0x00 && pb === 0xff) {
             if (recolored[i + 3] === 0xff) {
               recolored[i] = 0x5a;
@@ -2456,7 +2633,7 @@ async function compositeSceneBitmap(
         }
       } catch (e) {
         recolored = baseImg;
-        console.warn("[OSD Bridge] Failed to recolor pixel scene:", scene.key, e);
+        console.warn('[OSD Bridge] Failed to recolor pixel scene:', scene.key, e);
       }
       midBitmap = await imgElementToBitmap(recolored, scene.width, scene.height);
     } else if (scene.imgElement) {
@@ -2475,28 +2652,28 @@ async function compositeSceneBitmap(
   // for every path is necessary so we can convertToBlob for the IDB cache.
   let cw: number;
   let ch: number;
-  let kind: "composite" | "fallback";
+  let kind: 'composite' | 'fallback';
   if (hasMid && !hasBg && !hasVis) {
     cw = midBitmap!.width;
     ch = midBitmap!.height;
-    kind = "fallback";
+    kind = 'fallback';
   } else if (hasVis && !hasBg && !hasMid) {
     cw = visualData!.width;
     ch = visualData!.height;
-    kind = "composite";
+    kind = 'composite';
   } else if (hasBg && !hasMid && !hasVis) {
     cw = bgData!.width;
     ch = bgData!.height;
-    kind = "composite";
+    kind = 'composite';
   } else {
     cw = scene.width || Math.max(bgData?.width ?? 0, visualData?.width ?? 0);
     ch = scene.height || Math.max(bgData?.height ?? 0, visualData?.height ?? 0);
-    kind = "composite";
+    kind = 'composite';
   }
   if (cw <= 0 || ch <= 0) return null;
 
   const canvas = new OffscreenCanvas(cw, ch);
-  const ctx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext('2d')!;
   ctx.imageSmoothingEnabled = false;
 
   let bgBmp: ImageBitmap | null = null;
@@ -2514,7 +2691,7 @@ async function compositeSceneBitmap(
   const bitmap = await createImageBitmap(canvas);
   let blob: Blob | null = null;
   try {
-    blob = await canvas.convertToBlob({ type: "image/png" });
+    blob = await canvas.convertToBlob({ type: 'image/png' });
   } catch (e) {
     console.warn("[OSD Bridge] convertToBlob failed (scene won't be cached):", key, e);
   }
@@ -2538,22 +2715,24 @@ export function prefetchAllSceneBitmaps(): Promise<void> {
   if (_scenePrefetchInflight) return _scenePrefetchInflight;
   _scenePrefetchInflight = (async () => {
     try {
-      const adapter = await import("./telescope-adapter");
+      const adapter = await import('./telescope-adapter');
       const allKeysFn = (adapter as any).getAllPixelSceneKeys as (() => string[]) | undefined;
       const dataFn = (adapter as any).getPixelSceneData as ((key: string) => any) | undefined;
       if (!allKeysFn || !dataFn) {
-        console.warn("[OSD Bridge] Pixel-scene prefetch unavailable: telescope adapter did not export key list");
+        console.warn('[OSD Bridge] Pixel-scene prefetch unavailable: telescope adapter did not export key list');
         return;
       }
       const allKeys = allKeysFn();
       if (allKeys.length === 0) return;
       const cached = await getCachedSceneBitmapKeys();
-      const missing = allKeys.filter((k) => !cached.has(k));
+      const missing = allKeys.filter(k => !cached.has(k));
       if (missing.length === 0) {
         console.log(`[OSD Bridge] Pixel-scene prefetch: all ${allKeys.length} keys already cached`);
         return;
       }
-      console.log(`[OSD Bridge] Pixel-scene prefetch: ${missing.length}/${allKeys.length} missing — warming cache in background...`);
+      console.log(
+        `[OSD Bridge] Pixel-scene prefetch: ${missing.length}/${allKeys.length} missing — warming cache in background...`
+      );
       const idx = await getScenePngIndex();
       let warmed = 0;
       let skipped = 0;
@@ -2561,17 +2740,23 @@ export function prefetchAllSceneBitmaps(): Promise<void> {
       // Process serially to keep main-thread pressure low.
       for (const key of missing) {
         const data = dataFn(key);
-        if (!data) { skipped++; continue; }
+        if (!data) {
+          skipped++;
+          continue;
+        }
         const scene = {
           imgElement: data.imgElement || null,
           width: data.width || 0,
           height: data.height || 0,
-          name: data.name || key.substring(key.indexOf("/") + 1),
+          name: data.name || key.substring(key.indexOf('/') + 1),
           key,
         };
         try {
           const composited = await compositeSceneBitmap(key, scene, idx);
-          if (!composited) { skipped++; continue; }
+          if (!composited) {
+            skipped++;
+            continue;
+          }
           composited.bitmap.close();
           if (composited.blob) {
             await cacheSceneBitmap(key, composited.blob, composited.width, composited.height);
@@ -2581,16 +2766,16 @@ export function prefetchAllSceneBitmaps(): Promise<void> {
           }
         } catch (e) {
           skipped++;
-          console.warn("[OSD Bridge] Prefetch composite failed:", key, e);
+          console.warn('[OSD Bridge] Prefetch composite failed:', key, e);
         }
         // Yield between keys so UI stays responsive.
-        await new Promise((r) => setTimeout(r, 0));
+        await new Promise(r => setTimeout(r, 0));
       }
       console.log(
-        `[OSD Bridge] Pixel-scene prefetch: warmed ${warmed}, skipped ${skipped}, took ${((performance.now() - t0) / 1000).toFixed(2)}s`,
+        `[OSD Bridge] Pixel-scene prefetch: warmed ${warmed}, skipped ${skipped}, took ${((performance.now() - t0) / 1000).toFixed(2)}s`
       );
     } catch (e) {
-      console.warn("[OSD Bridge] Pixel-scene prefetch failed:", e);
+      console.warn('[OSD Bridge] Pixel-scene prefetch failed:', e);
     } finally {
       _scenePrefetchInflight = null;
     }
@@ -2614,13 +2799,13 @@ export function prefetchAllSceneBitmaps(): Promise<void> {
  */
 async function buildSceneBitmaps(
   result: GenerationResult,
-  generationId: number | null,
+  generationId: number | null
 ): Promise<{ validScenes: PixelScene[]; bitmapByKey: Map<string, ImageBitmap> } | null> {
   const allScenes = Object.values(result.pixelScenesByPW).flat();
-  const validScenes = allScenes.filter((s) => {
+  const validScenes = allScenes.filter(s => {
     if (!s || s.width <= 0 || s.height <= 0) return false;
     if (pixelSceneConfig.skipNames.has(s.name)) return false;
-    const biome = s.key.split("/")[0];
+    const biome = s.key.split('/')[0];
     if (pixelSceneConfig.skipBiomes.has(biome)) return false;
     const category = getSceneCategory(s);
     if (category && !pixelSceneConfig.categories[category]) return false;
@@ -2672,20 +2857,20 @@ async function buildSceneBitmaps(
           return;
         }
         bitmapByKey.set(rk, composited.bitmap);
-        if (composited.kind === "fallback") fallbackCount++;
+        if (composited.kind === 'fallback') fallbackCount++;
         else compositeCount++;
         if (composited.blob) {
-          cacheSceneBitmap(rk, composited.blob, composited.width, composited.height).catch((e) =>
-            console.warn("[OSD Bridge] cacheSceneBitmap failed:", rk, e),
+          cacheSceneBitmap(rk, composited.blob, composited.width, composited.height).catch(e =>
+            console.warn('[OSD Bridge] cacheSceneBitmap failed:', rk, e)
           );
         }
-      }),
+      })
     );
   }
 
   console.log(
     `[OSD Bridge] Pixel scene bitmaps: ${bitmapByKey.size}/${uniqueKeys.size} ` +
-      `(${cacheHitCount} cache, ${compositeCount} composite, ${fallbackCount} fallback, ${missingCount} missing)`,
+      `(${cacheHitCount} cache, ${compositeCount} composite, ${fallbackCount} fallback, ${missingCount} missing)`
   );
   return { validScenes, bitmapByKey };
 }
@@ -2698,16 +2883,16 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   const allScenes = Object.values(pixelScenesByPW).flat();
 
   // Debug: check for specific expected scenes
-  const debugNames = new Set(["friendroom", "cavern", "side_cavern_left", "side_cavern_right"]);
-  const found = allScenes.filter((s) => s && debugNames.has(s.name));
+  const debugNames = new Set(['friendroom', 'cavern', 'side_cavern_left', 'side_cavern_right']);
+  const found = allScenes.filter(s => s && debugNames.has(s.name));
   if (found.length > 0) {
     console.log(
       `[OSD Bridge] Found expected scenes:`,
-      found.map((s) => `${s.name} (${s.key}) at (${s.x},${s.y})`),
+      found.map(s => `${s.name} (${s.key}) at (${s.x},${s.y})`)
     );
   } else {
     console.log(
-      `[OSD Bridge] Missing expected scenes: friendroom, cavern, side_cavern_*. Telescope may not be generating them.`,
+      `[OSD Bridge] Missing expected scenes: friendroom, cavern, side_cavern_*. Telescope may not be generating them.`
     );
   }
 
@@ -2717,7 +2902,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   if (validScenes.length === 0) return;
 
   // Populate debug scene list for __pixelSceneList()
-  _lastLoadedScenes = allScenes.map((s) => ({
+  _lastLoadedScenes = allScenes.map(s => ({
     name: s.name,
     key: s.key,
     x: s.x,
@@ -2725,9 +2910,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     category: getSceneCategory(s),
   }));
 
-  console.log(
-    `[OSD Bridge] Pixel scenes: ${allScenes.length} total, ${validScenes.length} valid`,
-  );
+  console.log(`[OSD Bridge] Pixel scenes: ${allScenes.length} total, ${validScenes.length} valid`);
 
   if (currentGenerationId !== generationId) return;
 
@@ -2771,7 +2954,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   const bboxHeight = maxY - minY;
 
   // 3. Build Flatbush spatial index
-  const Flatbush = (await import("flatbush")).default;
+  const Flatbush = (await import('flatbush')).default;
   const index = new Flatbush(items.length);
   for (const item of items) {
     index.add(item.osdX - originX, item.osdY - originY, item.osdX + item.w - originX, item.osdY + item.h - originY);
@@ -2832,10 +3015,10 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
       logCount++;
     }
 
-    const canvas = document.createElement("canvas");
+    const canvas = document.createElement('canvas');
     canvas.width = TILE_SIZE;
     canvas.height = TILE_SIZE;
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext('2d')!;
     ctx.imageSmoothingEnabled = false;
 
     if (results.length > 0) {
@@ -2856,7 +3039,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     }
 
     queueMicrotask(() => {
-      context.finish(canvas, null, "image");
+      context.finish(canvas, null, 'image');
     });
   };
   source.downloadTileAbort = function () {};
@@ -2891,9 +3074,9 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
  */
 async function registerPixelSceneHoverDebug(viewer: OSDViewer, result: GenerationResult): Promise<void> {
   const allScenes = Object.values(result.pixelScenesByPW).flat().filter(Boolean) as any[];
-  const items = allScenes.map((s) => ({ osdX: s.x, osdY: s.y, w: s.width, h: s.height, sceneKey: s.key }));
+  const items = allScenes.map(s => ({ osdX: s.x, osdY: s.y, w: s.width, h: s.height, sceneKey: s.key }));
 
-  const Flatbush = (await import("flatbush")).default;
+  const Flatbush = (await import('flatbush')).default;
   const index = new Flatbush(Math.max(1, items.length));
   for (const item of items) {
     index.add(item.osdX, item.osdY, item.osdX + item.w, item.osdY + item.h);
@@ -2901,44 +3084,46 @@ async function registerPixelSceneHoverDebug(viewer: OSDViewer, result: Generatio
   index.finish();
 
   (window as any).__pixelSceneHover = (enable: boolean) => {
-    const handlerKey = "__psHoverHandler";
+    const handlerKey = '__psHoverHandler';
     const osdCanvas = viewer.canvas as HTMLElement;
     if (!enable) {
       if ((window as any)[handlerKey]) {
-        osdCanvas.removeEventListener("mousemove", (window as any)[handlerKey]);
+        osdCanvas.removeEventListener('mousemove', (window as any)[handlerKey]);
         delete (window as any)[handlerKey];
-        const el = document.getElementById("__ps-debug-tooltip");
-        if (el) el.style.display = "none";
-        console.log("[PixelScene] Hover debug disabled");
+        const el = document.getElementById('__ps-debug-tooltip');
+        if (el) el.style.display = 'none';
+        console.log('[PixelScene] Hover debug disabled');
       }
       return;
     }
     const handler = (event: MouseEvent) => {
       const vp = viewer.viewport.windowToViewportCoordinates(new OpenSeadragon.Point(event.clientX, event.clientY));
       const hits = index.search(vp.x, vp.y, vp.x, vp.y);
-      const el = document.getElementById("__ps-debug-tooltip")!;
+      const el = document.getElementById('__ps-debug-tooltip')!;
       if (hits.length > 0) {
         const names = hits.map((i: number) => items[i]?.sceneKey).filter(Boolean);
         if (names.length > 0) {
-          el.textContent = names.join("\n");
-          el.style.left = event.clientX + 12 + "px";
-          el.style.top = event.clientY + 12 + "px";
-          el.style.display = "block";
+          el.textContent = names.join('\n');
+          el.style.left = event.clientX + 12 + 'px';
+          el.style.top = event.clientY + 12 + 'px';
+          el.style.display = 'block';
         }
       } else {
-        el.style.display = "none";
+        el.style.display = 'none';
       }
     };
     (window as any)[handlerKey] = handler;
-    osdCanvas.addEventListener("mousemove", handler);
-    if (!document.getElementById("__ps-debug-tooltip")) {
-      const el = document.createElement("div");
-      el.id = "__ps-debug-tooltip";
+    osdCanvas.addEventListener('mousemove', handler);
+    if (!document.getElementById('__ps-debug-tooltip')) {
+      const el = document.createElement('div');
+      el.id = '__ps-debug-tooltip';
       el.style.cssText =
-        "position:fixed;background:#000c;color:#0f0;font:12px monospace;padding:4px 8px;pointer-events:none;z-index:99999;display:none;border-radius:4px;white-space:pre";
+        'position:fixed;background:#000c;color:#0f0;font:12px monospace;padding:4px 8px;pointer-events:none;z-index:99999;display:none;border-radius:4px;white-space:pre';
       document.body.appendChild(el);
     }
-    console.log(`[PixelScene] Hover debug enabled — hover over pixel scenes to see their keys (${items.length} scenes indexed)`);
+    console.log(
+      `[PixelScene] Hover debug enabled — hover over pixel scenes to see their keys (${items.length} scenes indexed)`
+    );
   };
 }
 
@@ -2953,10 +3138,10 @@ let markerTiledImage: any = null;
 // language switch re-renders the same tooltip in place rather than dismissing
 // it. If the closure is missing (older path), fall back to dismissing so the
 // next hover/click can rebuild.
-i18next.on("languageChanged", () => {
+i18next.on('languageChanged', () => {
   const el = tooltipEl as (HTMLDivElement & { __rebuild?: () => void }) | null;
   if (!el) return;
-  if (typeof el.__rebuild === "function") {
+  if (typeof el.__rebuild === 'function') {
     el.__rebuild();
   } else {
     el.remove();
@@ -2976,11 +3161,13 @@ export function getMarkerTiledImage(): any {
 // and lets the browser anti-alias the outline at every zoom level.
 let _hvOverlayElements: HTMLDivElement[] = [];
 let _hvPredicate: ((poi: any) => boolean) | null = null;
-const HV_RING_COLOR = "oklch(74.6% 0.16 232.661 / 0.95)";
+const HV_RING_COLOR = 'oklch(74.6% 0.16 232.661 / 0.95)';
 
 function clearHighValueOverlays(viewer: any): void {
   for (const el of _hvOverlayElements) {
-    try { viewer.removeOverlay(el); } catch {}
+    try {
+      viewer.removeOverlay(el);
+    } catch {}
     el.remove();
   }
   _hvOverlayElements = [];
@@ -2997,11 +3184,12 @@ function rebuildHighValueOverlays(): void {
   for (const item of items) {
     if (!_hvPredicate(item.poi)) continue;
     const r = Math.max(8, Math.max(item.w, item.h) * 0.8);
-    const el = document.createElement("div");
-    el.className = "poi-hv-ring";
+    const el = document.createElement('div');
+    el.className = 'poi-hv-ring';
     el.style.cssText =
-      "width:100%;height:100%;border:2px solid " + HV_RING_COLOR +
-      ";border-radius:50%;pointer-events:none;box-sizing:border-box;";
+      'width:100%;height:100%;border:2px solid ' +
+      HV_RING_COLOR +
+      ';border-radius:50%;pointer-events:none;box-sizing:border-box;';
     viewer.addOverlay({
       element: el,
       location: new (OpenSeadragon as any).Rect(item.osdX - r, item.osdY - r, r * 2, r * 2),
@@ -3040,142 +3228,146 @@ function getWikiUrl(poi: any): string | null {
   // section anchor that can't be derived from type/item).
   if (poi.wiki) return poi.wiki;
 
-  const type = poi.type || "";
+  const type = poi.type || '';
   let name = poi.name || poi.item || type;
   let wikiName = name;
 
   // Boss type mappings
   const BOSS_WIKI: Record<string, string> = {
-    alchemist_boss: "Ylialkemisti",
-    pyramid_boss: "Kolmisilm\u00e4n_koipi",
-    triangle_boss: "Gate_Guardian",
-    dragon: "Suomuhauki",
-    boss_wizard: "Mestarien_mestari",
-    boss_ghost: "Unohdettu",
-    boss_sky: "Kivi",
-    islandspirit: "Tapion_vasalli",
-    boss_centipede: "Kolmisilm\u00e4",
-    boss_robot: "Kolmisilm\u00e4n_silm\u00e4",
-    boss_meat: "Kolmisilm\u00e4n_syd\u00e4n",
-    boss_pit: "Sauvojen_tuntija",
-    boss_fish: "Syväolento",
-    tiny: "Limatoukka",
-    friend: "Toveri",
+    alchemist_boss: 'Ylialkemisti',
+    pyramid_boss: 'Kolmisilm\u00e4n_koipi',
+    triangle_boss: 'Gate_Guardian',
+    dragon: 'Suomuhauki',
+    boss_wizard: 'Mestarien_mestari',
+    boss_ghost: 'Unohdettu',
+    boss_sky: 'Kivi',
+    islandspirit: 'Tapion_vasalli',
+    boss_centipede: 'Kolmisilm\u00e4',
+    boss_robot: 'Kolmisilm\u00e4n_silm\u00e4',
+    boss_meat: 'Kolmisilm\u00e4n_syd\u00e4n',
+    boss_pit: 'Sauvojen_tuntija',
+    boss_fish: 'Syväolento',
+    tiny: 'Limatoukka',
+    friend: 'Toveri',
   };
   if (BOSS_WIKI[type]) wikiName = BOSS_WIKI[type];
 
   // Spell
-  if (type === "spell" || (type === "item" && poi.item === "spell")) {
-    const spellId = String(poi.spell || poi.item || "");
+  if (type === 'spell' || (type === 'item' && poi.item === 'spell')) {
+    const spellId = String(poi.spell || poi.item || '');
     // Wiki pages use the spell's display name (e.g. "Rainbow Trail" →
     // Rainbow_Trail), not the raw id (rainbow_trail). getSpellName normalizes
     // case, so a lowercase id still resolves to the proper English name.
     const spellName = getSpellName(spellId);
-    const page = (spellName || spellId).replace(/\s+/g, "_");
+    const page = (spellName || spellId).replace(/\s+/g, '_');
     return `https://noita.wiki.gg/wiki/${page}`;
   }
 
   // Wand
-  if (type === "wand") {
-    const n = (name || "").toLowerCase();
-    if (n.includes("ruusu")) wikiName = "Ruusu";
-    else if (n.includes("kiekurakeppi")) wikiName = "Kiekurakeppi";
-    else if (n.includes("valtikka")) wikiName = "Valtikka";
-    else if (n.includes("vasta")) wikiName = "Vasta";
-    else if (n.includes("vihta")) wikiName = "Vihta";
-    else if (n.includes("arpaluu")) wikiName = "Arpaluu";
-    else if (n.includes("varpuluuta")) wikiName = "Varpuluuta";
-    else if (n.includes("taikasauva")) wikiName = "Taikasauva";
-    else wikiName = "Wands";
+  if (type === 'wand') {
+    const n = (name || '').toLowerCase();
+    if (n.includes('ruusu')) wikiName = 'Ruusu';
+    else if (n.includes('kiekurakeppi')) wikiName = 'Kiekurakeppi';
+    else if (n.includes('valtikka')) wikiName = 'Valtikka';
+    else if (n.includes('vasta')) wikiName = 'Vasta';
+    else if (n.includes('vihta')) wikiName = 'Vihta';
+    else if (n.includes('arpaluu')) wikiName = 'Arpaluu';
+    else if (n.includes('varpuluuta')) wikiName = 'Varpuluuta';
+    else if (n.includes('taikasauva')) wikiName = 'Taikasauva';
+    else wikiName = 'Wands';
   }
 
   // Shops
-  if (type === "holy_mountain_shop" || type === "shop") wikiName = "Holy_Mountain";
+  if (type === 'holy_mountain_shop' || type === 'shop') wikiName = 'Holy_Mountain';
 
   // Containers
-  if (type === "chest") {
+  if (type === 'chest') {
     const variant = (poi as any).chestVariant;
-    if (variant === "dark") wikiName = "Crystal_Key#Dark_Chest";
-    else if (variant === "coral") wikiName = "Crystal_Key#Coral_Chest";
-    else wikiName = "Treasure_Chest";
+    if (variant === 'dark') wikiName = 'Crystal_Key#Dark_Chest';
+    else if (variant === 'coral') wikiName = 'Crystal_Key#Coral_Chest';
+    else wikiName = 'Treasure_Chest';
   }
-  if (type === "great_chest") wikiName = "Treasure_Chest";
-  if (type === "eye_room") wikiName = "Eye_Room";
+  if (type === 'great_chest') wikiName = 'Treasure_Chest';
+  if (type === 'eye_room') wikiName = 'Eye_Room';
 
   // Item types
-  if (type === "item") {
-    const item = poi.item || "";
-    if (item === "orb") wikiName = "Orb_of_True_Knowledge";
-    else if (item === "heart" || item === "heart_bigger" || item === "full_heal") wikiName = "Health";
-    else if (item === "gold" || item === "goldnugget") wikiName = "Gold";
-    else if (item.includes("potion")) wikiName = "Potions";
-    else if (item.includes("pouch") || item === "powder_stash") wikiName = "Powder_Pouch";
-    else if (item === "emerald_tablet") wikiName = "Emerald_Tablet";
-    else if (item === "paha_silma") wikiName = "Paha_Silmä";
-    else if (item.includes("egg")) wikiName = "Egg";
-    else if (item === "meditation_cube") wikiName = "Meditation_Chamber";
-    else if (item === "great_chest") wikiName = "Great_Treasure_Chest";
-    else if (item === "perk") {
+  if (type === 'item') {
+    const item = poi.item || '';
+    if (item === 'orb') wikiName = 'Orb_of_True_Knowledge';
+    else if (item === 'heart' || item === 'heart_bigger' || item === 'full_heal') wikiName = 'Health';
+    else if (item === 'gold' || item === 'goldnugget') wikiName = 'Gold';
+    else if (item.includes('potion')) wikiName = 'Potions';
+    else if (item.includes('pouch') || item === 'powder_stash') wikiName = 'Powder_Pouch';
+    else if (item === 'emerald_tablet') wikiName = 'Emerald_Tablet';
+    else if (item === 'paha_silma') wikiName = 'Paha_Silmä';
+    else if (item.includes('egg')) wikiName = 'Egg';
+    else if (item === 'meditation_cube') wikiName = 'Meditation_Chamber';
+    else if (item === 'great_chest') wikiName = 'Great_Treasure_Chest';
+    else if (item === 'perk') {
       // Unknown parallel-world perk has no concrete identity -> no wiki page.
       if (poi.unknown) return null;
       // Per-perk wiki page (Critical_Hit_+, Glass_Cannon, ...). Prefer the
       // authoritative cargo wikipage; fall back to the translated perk name;
       // last resort the generic Perks page.
-      const pid = String(poi.perk || "");
+      const pid = String(poi.perk || '');
       const entry = pid ? PERK_WIKI[pid.toUpperCase()] : undefined;
-      if (entry?.wikipage) return `https://noita.wiki.gg/wiki/${entry.wikipage.replace(/\s+/g, "_")}`;
+      if (entry?.wikipage) return `https://noita.wiki.gg/wiki/${entry.wikipage.replace(/\s+/g, '_')}`;
       if (pid) {
         const k = perkNameKey(pid);
         const nm = gameTranslator.translateItem(k);
-        wikiName = nm !== k ? nm : (poi.name ? String(poi.name) : "Perks");
+        wikiName = nm !== k ? nm : poi.name ? String(poi.name) : 'Perks';
       } else {
-        wikiName = poi.name ? String(poi.name) : "Perks";
+        wikiName = poi.name ? String(poi.name) : 'Perks';
       }
-    }
-    else if (item === "wandstone") wikiName = "Sauvan_Ydin";
-    else if (item === "sunseed") wikiName = "Sun_Seed";
-    else if (item === "book") wikiName = "A_Cunning_Contraption";
-    else if (item === "musicstone") wikiName = "Kuulokivi";
-    else if (item === "karl") wikiName = "Racetrack";
-    else if (item === "essence_eater") wikiName = "Essence_Eater";
-    else if (item === "music_machine") wikiName = "Music_Machine";
-    else if (item === "mimic_potion") wikiName = "Henkevä_potu";
+    } else if (item === 'wandstone') wikiName = 'Sauvan_Ydin';
+    else if (item === 'sunseed') wikiName = 'Sun_Seed';
+    else if (item === 'book') wikiName = 'A_Cunning_Contraption';
+    else if (item === 'musicstone') wikiName = 'Kuulokivi';
+    else if (item === 'karl') wikiName = 'Racetrack';
+    else if (item === 'essence_eater') wikiName = 'Essence_Eater';
+    else if (item === 'music_machine') wikiName = 'Music_Machine';
+    else if (item === 'mimic_potion') wikiName = 'Henkevä_potu';
     else wikiName = item;
   }
 
   // Entity / creature
-  if (type === "entity" && poi.entity) {
+  if (type === 'entity' && poi.entity) {
     const rawEntity = canonicalEntityId(String(poi.entity));
     // Prefer the wikipage from CREATURE_DATA if we have it — many entities
     // (traps, nests, boss orbs, crystals) have entity names that don't
     // correspond to a real wiki page (e.g. "arrowtrap_left" → /wiki/Traps).
     const creature = CREATURE_DATA[rawEntity.toLowerCase()];
     // Kolmisilmä's reward orb (boss_centipede_sampo) is the Sampo on the wiki.
-    if (rawEntity.toLowerCase() === "boss_centipede_sampo") wikiName = "Sampo";
+    if (rawEntity.toLowerCase() === 'boss_centipede_sampo') wikiName = 'Sampo';
     else wikiName = creature?.wikipage || rawEntity;
   }
 
   // encodeURI (not encodeURIComponent) so non-ASCII names like "Henkevä potu"
   // become %C3%A4 while reserved chars in page titles (apostrophes, parens, &)
   // stay literal and keep matching the wiki's canonical URLs.
-  return `https://noita.wiki.gg/wiki/${encodeURI(wikiName.replace(/\s+/g, "_"))}`;
+  return `https://noita.wiki.gg/wiki/${encodeURI(wikiName.replace(/\s+/g, '_'))}`;
 }
 
 /** Wrap an element in an anchor tag pointing to the wiki, with underline and external link icon. */
 function wrapWithWikiLink(el: HTMLElement, poi: any): HTMLElement {
   const url = getWikiUrl(poi);
   if (!url) return el;
-  const a = document.createElement("a");
+  const a = document.createElement('a');
   a.href = url;
-  a.target = "_blank";
-  a.rel = "noopener";
-  a.style.cssText = "text-decoration:underline;text-decoration-color:rgba(255,255,255,0.3);color:inherit;display:inline-flex;align-items:center;gap:0.3em";
-  a.onmouseenter = () => { a.style.textDecorationColor = "rgba(255,255,255,0.7)"; };
-  a.onmouseleave = () => { a.style.textDecorationColor = "rgba(255,255,255,0.3)"; };
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.style.cssText =
+    'text-decoration:underline;text-decoration-color:rgba(255,255,255,0.3);color:inherit;display:inline-flex;align-items:center;gap:0.3em';
+  a.onmouseenter = () => {
+    a.style.textDecorationColor = 'rgba(255,255,255,0.7)';
+  };
+  a.onmouseleave = () => {
+    a.style.textDecorationColor = 'rgba(255,255,255,0.3)';
+  };
   a.appendChild(el);
-  const icon = document.createElement("i");
-  icon.className = "bi bi-box-arrow-up-right";
-  icon.style.cssText = "font-size:0.75em;opacity:0.5;flex-shrink:0";
+  const icon = document.createElement('i');
+  icon.className = 'bi bi-box-arrow-up-right';
+  icon.style.cssText = 'font-size:0.75em;opacity:0.5;flex-shrink:0';
   a.appendChild(icon);
   return a;
 }
@@ -3196,7 +3388,7 @@ function placeTooltipForMarker(
   viewer: any,
   _item: MarkerItem,
   clickX: number,
-  clickY: number,
+  clickY: number
 ): { x: number; y: number } {
   const canvasEl = viewer.canvas as HTMLElement;
   const canvasRect = canvasEl.getBoundingClientRect();
@@ -3207,8 +3399,8 @@ function placeTooltipForMarker(
   const TOOLTIP_GAP = Math.max(32, Math.round(window.innerHeight * 0.05));
 
   let sidebarPx = 0;
-  const srEl = document.getElementById("seed-report-sidebar");
-  if (srEl && srEl.classList.contains("open")) {
+  const srEl = document.getElementById('seed-report-sidebar');
+  if (srEl && srEl.classList.contains('open')) {
     sidebarPx = srEl.getBoundingClientRect().width;
   }
 
@@ -3259,10 +3451,10 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     tooltipEl = null;
   }
 
-  tooltipEl = document.createElement("div");
+  tooltipEl = document.createElement('div');
   // Allow the languageChanged listener to rebuild this tooltip in place.
   (tooltipEl as any).__rebuild = () => showMarkerTooltip(item, screenX, screenY);
-  tooltipEl.className = "marker-tooltip";
+  tooltipEl.className = 'marker-tooltip';
   tooltipEl.style.cssText = `
     position: fixed;
     z-index: 10000;
@@ -3282,14 +3474,14 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   `;
 
   // Top controls container — in normal flow, pushed to right
-  const topBar = document.createElement("div");
+  const topBar = document.createElement('div');
   topBar.style.cssText = `
     display: flex; gap: 0.4em; align-items: center; justify-content: flex-end;
     margin: -0.15em -0.4em 0.3em 0;
     flex-shrink: 0;
   `;
 
-  const shareBtn = document.createElement("button");
+  const shareBtn = document.createElement('button');
   shareBtn.style.cssText = `
     background: rgba(255,255,255,0.1); border: 0.065em solid rgba(255,255,255,0.2);
     border-radius: 0.25em; color: #ccc; cursor: pointer; padding: 0.15em 0.5em;
@@ -3297,19 +3489,31 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     transition: all 0.2s;
   `;
   shareBtn.innerHTML = '<i class="bi bi-share"></i>';
-  shareBtn.title = i18next.t("share.copyLink", { defaultValue: "Copy direct link" });
-  shareBtn.onmouseenter = () => { shareBtn.style.background = "rgba(255,255,255,0.2)"; };
-  shareBtn.onmouseleave = () => { shareBtn.style.background = "rgba(255,255,255,0.1)"; };
+  shareBtn.title = i18next.t('share.copyLink', { defaultValue: 'Copy direct link' });
+  shareBtn.onmouseenter = () => {
+    shareBtn.style.background = 'rgba(255,255,255,0.2)';
+  };
+  shareBtn.onmouseleave = () => {
+    shareBtn.style.background = 'rgba(255,255,255,0.1)';
+  };
 
   // ── Unlocks lock/unlock toggle ───────────────────────────────────────
   // Only show on POI types whose contents are affected by spell unlocks.
   const UNLOCK_AFFECTED_TYPES = new Set([
-    "wand", "spell", "holy_mountain_shop", "shop", "wand_altar",
-    "chest", "great_chest", "pacifist_chest", "laboratory", "snowy_room",
-    "starting_loadout",
+    'wand',
+    'spell',
+    'holy_mountain_shop',
+    'shop',
+    'wand_altar',
+    'chest',
+    'great_chest',
+    'pacifist_chest',
+    'laboratory',
+    'snowy_room',
+    'starting_loadout',
   ]);
   const _poiType = item.poi.type;
-  const _isSpellItem = _poiType === "item" && (item.poi as any).item === "spell";
+  const _isSpellItem = _poiType === 'item' && (item.poi as any).item === 'spell';
   const showLockBtn = UNLOCK_AFFECTED_TYPES.has(_poiType) || _isSpellItem;
 
   let lockBtn: HTMLElement | null = null;
@@ -3318,14 +3522,18 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // to its descriptor. The Mod button is disabled when no in-game unlock
     // data is available (i.e. the user hasn't opened the map via the
     // Noitamap mod yet, or never has).
-    lockBtn = document.createElement("div");
-    lockBtn.className = "btn-group btn-group-sm";
-    lockBtn.setAttribute("role", "group");
-    lockBtn.style.cssText = "font-size: 0.85em;";
+    lockBtn = document.createElement('div');
+    lockBtn.className = 'btn-group btn-group-sm';
+    lockBtn.setAttribute('role', 'group');
+    lockBtn.style.cssText = 'font-size: 0.85em;';
 
     const modSourcedAtBuild = isModSourced();
     const hasCachedModData = (() => {
-      try { return !!localStorage.getItem("noitamap-unlocks"); } catch { return false; }
+      try {
+        return !!localStorage.getItem('noitamap-unlocks');
+      } catch {
+        return false;
+      }
     })();
     const modAvailable = modSourcedAtBuild || hasCachedModData;
 
@@ -3335,24 +3543,32 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const attachHoverPopover = (el: HTMLElement, getTitle: () => string, getBody: () => string) => {
       const bs = (window as any).bootstrap;
       if (!bs?.Popover) return;
-      el.setAttribute("data-bs-placement", "bottom");
-      el.setAttribute("data-bs-title", getTitle());
-      el.setAttribute("data-bs-content", getBody());
+      el.setAttribute('data-bs-placement', 'bottom');
+      el.setAttribute('data-bs-title', getTitle());
+      el.setAttribute('data-bs-content', getBody());
       const inst = new bs.Popover(el, {
-        trigger: "hover",
-        placement: "bottom",
+        trigger: 'hover',
+        placement: 'bottom',
         delay: { show: 80, hide: 120 },
-        container: "body",
+        container: 'body',
       });
       (el as any).__refreshPopover = () => {
         try {
           inst._config.title = getTitle();
           inst._config.content = getBody();
-          el.setAttribute("data-bs-title", getTitle());
-          el.setAttribute("data-bs-content", getBody());
-        } catch { /* noop */ }
+          el.setAttribute('data-bs-title', getTitle());
+          el.setAttribute('data-bs-content', getBody());
+        } catch {
+          /* noop */
+        }
       };
-      (el as any).__disposePopover = () => { try { inst.dispose(); } catch { /* noop */ } };
+      (el as any).__disposePopover = () => {
+        try {
+          inst.dispose();
+        } catch {
+          /* noop */
+        }
+      };
     };
 
     const tk = (k: string, fallback: string) => i18next.t(k, { defaultValue: fallback });
@@ -3360,31 +3576,41 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     type DescBtn = { desc: UnlockDescriptor; icon: string; title: () => string; body: () => string };
     const buttons: DescBtn[] = [
       {
-        desc: "mod",
-        icon: "bi-controller",
-        title: () => modAvailable
-          ? tk("unlocks.btn.title.mod", "Your current unlocks")
-          : tk("unlocks.btn.title.modDisabled", "Open the map from the Noitamap mod"),
-        body: () => tk(
-          "unlocks.btn.body.mod",
-          "Switch to your current in-game unlocks while using Noitamap Mod. Unavailable when not using the mod.",
-        ),
+        desc: 'mod',
+        icon: 'bi-controller',
+        title: () =>
+          modAvailable
+            ? tk('unlocks.btn.title.mod', 'Your current unlocks')
+            : tk('unlocks.btn.title.modDisabled', 'Open the map from the Noitamap mod'),
+        body: () =>
+          tk(
+            'unlocks.btn.body.mod',
+            'Switch to your current in-game unlocks while using Noitamap Mod. Unavailable when not using the mod.'
+          ),
       },
       {
-        desc: "none",
-        icon: "bi-lock-fill",
-        title: () => tk("unlocks.btn.title.none", "Nothing unlocked"),
-        body: () => getActiveDescriptor() === "none"
-          ? tk("unlocks.btn.body.none_active", "Currently showing nothing unlocked.")
-          : tk("unlocks.btn.body.none", "Switch to showing wand/spell pools as if you had unlocked nothing."),
+        desc: 'none',
+        icon: 'bi-lock-fill',
+        title: () => tk('unlocks.btn.title.none', 'Nothing unlocked'),
+        body: () =>
+          getActiveDescriptor() === 'none'
+            ? tk('unlocks.btn.body.none_active', 'Currently showing nothing unlocked.')
+            : tk('unlocks.btn.body.none', 'Switch to showing wand/spell pools as if you had unlocked nothing.'),
       },
       {
-        desc: "all",
-        icon: "bi-unlock-fill",
-        title: () => tk("unlocks.btn.title.all", "Everything unlocked"),
-        body: () => getActiveDescriptor() === "all"
-          ? tk("unlocks.btn.body.all_active", "Currently showing everything unlocked. This matches Telescope's default — same content everyone sees regardless of progress.")
-          : tk("unlocks.btn.body.all", "Switch to showing wand/spell pools as if you had unlocked everything. Telescope's default."),
+        desc: 'all',
+        icon: 'bi-unlock-fill',
+        title: () => tk('unlocks.btn.title.all', 'Everything unlocked'),
+        body: () =>
+          getActiveDescriptor() === 'all'
+            ? tk(
+                'unlocks.btn.body.all_active',
+                "Currently showing everything unlocked. This matches Telescope's default — same content everyone sees regardless of progress."
+              )
+            : tk(
+                'unlocks.btn.body.all',
+                "Switch to showing wand/spell pools as if you had unlocked everything. Telescope's default."
+              ),
       },
     ];
 
@@ -3393,18 +3619,21 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // disable every other variant button (mod/none) and leave "all" active.
     const isDailySeed = getCurrentIsDaily();
     for (const b of buttons) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "btn btn-sm btn-outline-secondary";
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-sm btn-outline-secondary';
       btn.innerHTML = `<i class="bi ${b.icon}"></i>`;
-      btn.style.cssText = "padding: 0.15em 0.55em; display: inline-flex; align-items: center; justify-content: center; line-height: 1;";
-      const modDisabled = b.desc === "mod" && !modAvailable;
+      btn.style.cssText =
+        'padding: 0.15em 0.55em; display: inline-flex; align-items: center; justify-content: center; line-height: 1;';
+      const modDisabled = b.desc === 'mod' && !modAvailable;
       // Daily: lock everything but "all" — dailies are always all-unlocked.
-      const dailyLocked = isDailySeed && b.desc !== "all";
+      const dailyLocked = isDailySeed && b.desc !== 'all';
       if (dailyLocked || modDisabled) btn.disabled = true;
-      const popTitle = dailyLocked ? () => tk("unlocks.btn.title.dailyDisabled", "Daily seed") : b.title;
-      const popBody = dailyLocked ? () => tk("unlocks.btn.body.dailyDisabled", "Daily seed always has everything unlocked.") : b.body;
-      btn.addEventListener("click", async (e) => {
+      const popTitle = dailyLocked ? () => tk('unlocks.btn.title.dailyDisabled', 'Daily seed') : b.title;
+      const popBody = dailyLocked
+        ? () => tk('unlocks.btn.body.dailyDisabled', 'Daily seed always has everything unlocked.')
+        : b.body;
+      btn.addEventListener('click', async e => {
         e.stopPropagation();
         if (btn.disabled) return;
         if (getActiveDescriptor() === b.desc) return;
@@ -3413,22 +3642,26 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         // alt-layer rebuild. The URL has to reflect the new descriptor before
         // those listeners run, otherwise switching back to "mod" would feed
         // the stale "none"/"all" URL value into chest/orb overlay updates.
-        const { updateURLWithUnlocks } = await import("../data_sources/url");
+        const { updateURLWithUnlocks } = await import('../data_sources/url');
         updateURLWithUnlocks(b.desc);
         setActiveDescriptor(b.desc);
         if (!isVariantReady(b.desc)) {
           applyLockBtnStyle();
-          try { await requestVariant(b.desc); } catch { /* surfaced inline */ }
+          try {
+            await requestVariant(b.desc);
+          } catch {
+            /* surfaced inline */
+          }
         }
         const rebuild = (tooltipEl as any)?.__rebuild;
-        if (typeof rebuild === "function") rebuild();
+        if (typeof rebuild === 'function') rebuild();
       });
       btnEls[b.desc] = btn;
       if (dailyLocked) {
         // A real `disabled` button fires no mouse events, so per the Bootstrap
         // docs the popover must be triggered from a focusable wrapper span.
-        const wrap = document.createElement("span");
-        wrap.className = "d-inline-block";
+        const wrap = document.createElement('span');
+        wrap.className = 'd-inline-block';
         wrap.tabIndex = 0;
         wrap.appendChild(btn);
         attachHoverPopover(wrap, popTitle, popBody);
@@ -3446,19 +3679,19 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         if (!btn) continue;
         const ready = isVariantReady(b.desc);
         const isActive = active === b.desc;
-        btn.classList.toggle("active", isActive);
+        btn.classList.toggle('active', isActive);
         // Visual states:
         //   active        → solid primary
         //   inactive      → outline-secondary
         //   mod-disabled  → outline-secondary, muted
         if (isActive) {
-          btn.classList.remove("btn-outline-secondary");
-          if (!btn.classList.contains("btn-primary")) btn.classList.add("btn-primary");
+          btn.classList.remove('btn-outline-secondary');
+          if (!btn.classList.contains('btn-primary')) btn.classList.add('btn-primary');
         } else {
-          btn.classList.remove("btn-primary");
-          if (!btn.classList.contains("btn-outline-secondary")) btn.classList.add("btn-outline-secondary");
+          btn.classList.remove('btn-primary');
+          if (!btn.classList.contains('btn-outline-secondary')) btn.classList.add('btn-outline-secondary');
         }
-        btn.style.opacity = ready || isActive ? "1" : "0.55";
+        btn.style.opacity = ready || isActive ? '1' : '0.55';
         (btn as any).__refreshPopover?.();
       }
     };
@@ -3472,28 +3705,32 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       });
     }
   }
-  
-  const closeBtn = document.createElement("button");
+
+  const closeBtn = document.createElement('button');
   closeBtn.style.cssText = `
     background: transparent; border: none; padding: 0.15em 0.4em;
     cursor: pointer; color: #888; font-size: 1.25em; line-height: 1;
     display: flex; align-items: center; justify-content: center;
     transition: color 0.2s;
   `;
-  closeBtn.textContent = "×";
-  closeBtn.onmouseenter = () => { closeBtn.style.color = "#fff"; };
-  closeBtn.onmouseleave = () => { closeBtn.style.color = "#888"; };
+  closeBtn.textContent = '×';
+  closeBtn.onmouseenter = () => {
+    closeBtn.style.color = '#fff';
+  };
+  closeBtn.onmouseleave = () => {
+    closeBtn.style.color = '#888';
+  };
 
-  closeBtn.onclick = (e) => {
+  closeBtn.onclick = e => {
     e.stopPropagation();
     hideMarkerTooltip();
   };
-  
+
   // "Pillar" button: any POI tied to an achievement segment (bosses, essences,
   // orbs, crystal-key chests, ...) gets a button that flies to its pillar
   // column. Skipped on the pillar segments themselves. Association is derived
   // from the same PILLAR_REQUIREMENTS targets the forward links use.
-  if ((item.poi as any).item !== "pillar_segment") {
+  if ((item.poi as any).item !== 'pillar_segment') {
     // Default association from the POI's identity. Synthesized pillar places
     // (no identity fields) match by coords instead. When this POI was reached
     // via a SPECIFIC pillar segment's link (some destinations — moons, Toveri,
@@ -3504,7 +3741,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const assoc = (originFlag ? pillarLocationForFlag(originFlag) : null) ?? defaultAssoc;
     if (assoc) {
       const a = assoc;
-      const pillarBtn = document.createElement("button");
+      const pillarBtn = document.createElement('button');
       pillarBtn.style.cssText = `
         background: rgba(255,255,255,0.1); border: 0.065em solid rgba(255,255,255,0.2);
         border-radius: 0.25em; color: #ccc; cursor: pointer; padding: 0.15em 0.5em;
@@ -3512,11 +3749,15 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         transition: all 0.2s;
       `;
       pillarBtn.innerHTML =
-        '<i class="bi bi-bookmark-star"></i><span>' + i18next.t("poi.pillarSingular", "Achievement pillar") + "</span>";
-      pillarBtn.title = i18next.t("poi.pillarGoto", "Show on map");
-      pillarBtn.onmouseenter = () => { pillarBtn.style.background = "rgba(255,255,255,0.2)"; };
-      pillarBtn.onmouseleave = () => { pillarBtn.style.background = "rgba(255,255,255,0.1)"; };
-      pillarBtn.onclick = (e) => {
+        '<i class="bi bi-bookmark-star"></i><span>' + i18next.t('poi.pillarSingular', 'Achievement pillar') + '</span>';
+      pillarBtn.title = i18next.t('poi.pillarGoto', 'Show on map');
+      pillarBtn.onmouseenter = () => {
+        pillarBtn.style.background = 'rgba(255,255,255,0.2)';
+      };
+      pillarBtn.onmouseleave = () => {
+        pillarBtn.style.background = 'rgba(255,255,255,0.1)';
+      };
+      pillarBtn.onclick = e => {
         e.stopPropagation();
         const v = (window as any).__osdViewer;
         if (!v) return;
@@ -3524,11 +3765,11 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         // closes the current card and runs the cinematic goto). Fall back to a
         // plain pan to the column if the segment marker isn't indexed.
         const seg = globalMarkerData?.items.find(
-          (it) => (it.poi as any).item === "pillar_segment" && (it.poi as any).flag === a.flag,
+          it => (it.poi as any).item === 'pillar_segment' && (it.poi as any).flag === a.flag
         )?.poi as any;
         if (seg) {
           openTooltipForPOI(seg.id, v, { fallbackX: seg.x, fallbackY: seg.y, fallbackPoi: seg });
-        } else if (typeof v.panToTarget === "function") {
+        } else if (typeof v.panToTarget === 'function') {
           v.panToTarget(a.x, a.y);
         } else if (v.viewport) {
           v.viewport.panTo(new (OpenSeadragon as any).Point(a.x, a.y), true);
@@ -3550,22 +3791,22 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   // Falls back to the primary when alt isn't ready or no alt exists for
   // this id.
   const _activeDesc = getActiveDescriptor();
-  const _altPoi = _activeDesc !== primaryDescriptor()
-    ? getPoiVariant(_activeDesc, (item.poi as any)?.id)
-    : null;
+  const _altPoi = _activeDesc !== primaryDescriptor() ? getPoiVariant(_activeDesc, (item.poi as any)?.id) : null;
   const poi = _altPoi || item.poi;
-  
+
   // Instantly update the URL to point to this popup
   const url = new URL(window.location.href);
-  url.searchParams.set("poi", (poi as any).id);
-  window.history.replaceState({}, "", url.toString());
+  url.searchParams.set('poi', (poi as any).id);
+  window.history.replaceState({}, '', url.toString());
 
-  shareBtn.onclick = (e) => {
+  shareBtn.onclick = e => {
     e.stopPropagation();
     const finalUrl = (window as any).getShareUrl((poi as any).id);
     navigator.clipboard.writeText(finalUrl);
     shareBtn.innerHTML = '<i class="bi bi-check2 text-success"></i>';
-    setTimeout(() => { shareBtn.innerHTML = '<i class="bi bi-share"></i>'; }, 2000);
+    setTimeout(() => {
+      shareBtn.innerHTML = '<i class="bi bi-share"></i>';
+    }, 2000);
   };
 
   // ─── Spoiler-free mode: generic popup with no details ──────────────────
@@ -3573,17 +3814,18 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const rootKey = Array.isArray(item.spriteKey) ? item.spriteKey[0] : item.spriteKey;
     const category = getSpoilerCategory(rootKey);
     const label = getSpoilerLabel(category);
-    const colorMap = { wand: "#c8a2ff", spell: "#66ccff", something: "#ffd700" };
+    const colorMap = { wand: '#c8a2ff', spell: '#66ccff', something: '#ffd700' };
 
-    const title = document.createElement("div");
+    const title = document.createElement('div');
     title.style.cssText = `font-weight:bold;color:${colorMap[category]};font-size:1.1em;margin-bottom:0.3em`;
     title.textContent = label;
     tooltipEl.appendChild(title);
 
     // Footer with position only
-    const footer = document.createElement("div");
-    footer.style.cssText = "margin-top:0.5em;color:#666;font-size:0.85em;border-top:0.065em solid #333;padding-top:0.3em";
-    footer.textContent = `${i18next.t("poi.pw", "PW")} ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
+    const footer = document.createElement('div');
+    footer.style.cssText =
+      'margin-top:0.5em;color:#666;font-size:0.85em;border-top:0.065em solid #333;padding-top:0.3em';
+    footer.textContent = `${i18next.t('poi.pw', 'PW')} ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
     tooltipEl.appendChild(footer);
 
     document.body.appendChild(tooltipEl);
@@ -3607,17 +3849,17 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     return;
   }
 
-  if (poi.type === "wand") {
+  if (poi.type === 'wand') {
     const isTaikasauva = (poi as any).isTaikasauva === true;
     // Header with sprite
-    const header = document.createElement("div");
-    header.style.cssText = "display:flex;align-items:center;gap:0.6em;margin-bottom:0.5em";
-    const spriteImg = document.createElement("img");
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;gap:0.6em;margin-bottom:0.5em';
+    const spriteImg = document.createElement('img');
     if (isTaikasauva) {
       // "Alive" wand: show the wand_ghost bestiary sprite (no rotation —
       // bestiary icon is already in its natural facing).
-      spriteImg.style.cssText = "width:2.4em;height:2.4em;image-rendering:pixelated;object-fit:contain";
-      getTaikasauvaIcon().then((url) => {
+      spriteImg.style.cssText = 'width:2.4em;height:2.4em;image-rendering:pixelated;object-fit:contain';
+      getTaikasauvaIcon().then(url => {
         if (url) spriteImg.src = url;
       });
     } else {
@@ -3625,52 +3867,57 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       // wand:<filename> atlas keys (e.g. bomb_wand) still render correctly.
       // CSS rotate(90deg) on top of CCW-90 = native (tip-right).
       spriteImg.style.cssText =
-        "width:2.4em;height:2.4em;image-rendering:pixelated;object-fit:contain;transform:rotate(90deg)";
+        'width:2.4em;height:2.4em;image-rendering:pixelated;object-fit:contain;transform:rotate(90deg)';
       if (poi.sprite) {
-        const parts = String(poi.sprite).split("/");
-        const filename = parts[parts.length - 1].replace(/\.png$/, "");
-        getRotatedWandSprite(filename).then((res) => {
+        const parts = String(poi.sprite).split('/');
+        const filename = parts[parts.length - 1].replace(/\.png$/, '');
+        getRotatedWandSprite(filename).then(res => {
           if (res) spriteImg.src = res.url;
-          else getPOISpriteFirstFrame({ type: "wand", sprite: poi.sprite }).then((url) => {
-            if (url) spriteImg.src = url;
-          });
+          else
+            getPOISpriteFirstFrame({ type: 'wand', sprite: poi.sprite }).then(url => {
+              if (url) spriteImg.src = url;
+            });
         });
       } else {
-        getPOISpriteFirstFrame({ type: "wand", sprite: poi.sprite }).then((url) => {
+        getPOISpriteFirstFrame({ type: 'wand', sprite: poi.sprite }).then(url => {
           if (url) spriteImg.src = url;
         });
       }
     }
     header.appendChild(spriteImg);
-    const titleCol = document.createElement("div");
-    const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:1.1em";
+    const titleCol = document.createElement('div');
+    const title = document.createElement('div');
+    title.style.cssText = 'font-weight:bold;color:#e0e0e0;font-size:1.1em';
     if (isTaikasauva) {
       // Pull from animal_wand_ghost (baked into translation.json from common.csv)
-      const tk = gameTranslator.translateItem("animal_wand_ghost");
-      const baseName = tk !== "animal_wand_ghost" ? tk : "Taikasauva";
+      const tk = gameTranslator.translateItem('animal_wand_ghost');
+      const baseName = tk !== 'animal_wand_ghost' ? tk : 'Taikasauva';
       // Adjective got assigned by the adapter override (GUN_NAMES). Format
       // as "Taikasauva <Adj> wand" — and don't double "wand" if the
       // adjective name already ends with "wand".
-      const adj = poi.name && poi.name !== "Taikasauva" ? poi.name : "";
+      const adj = poi.name && poi.name !== 'Taikasauva' ? poi.name : '';
       if (adj) {
         title.textContent = /\bwand\b\s*$/i.test(adj) ? `${baseName} ${adj}` : `${baseName} ${adj} wand`;
       } else {
         title.textContent = baseName;
       }
     } else {
-      title.textContent = poi.name || gameTranslator.translateItem("Wand");
+      title.textContent = poi.name || gameTranslator.translateItem('Wand');
     }
     titleCol.appendChild(wrapWithWikiLink(title, poi));
     if (isTaikasauva) {
-      const sub = document.createElement("div");
-      sub.style.cssText = "color:#aaa;font-size:0.85em;font-style:italic";
+      const sub = document.createElement('div');
+      sub.style.cssText = 'color:#aaa;font-size:0.85em;font-style:italic';
       sub.textContent = '"Alive wand"';
       titleCol.appendChild(sub);
-    } else if (poi.sprite && SPECIAL_WAND_ALIAS[String(poi.sprite)] && SPECIAL_WAND_ALIAS[String(poi.sprite)] !== poi.name) {
+    } else if (
+      poi.sprite &&
+      SPECIAL_WAND_ALIAS[String(poi.sprite)] &&
+      SPECIAL_WAND_ALIAS[String(poi.sprite)] !== poi.name
+    ) {
       // Named special wand (Huilu/Kantele): show the English alias as subtitle.
-      const sub = document.createElement("div");
-      sub.style.cssText = "color:#aaa;font-size:0.85em;font-style:italic";
+      const sub = document.createElement('div');
+      sub.style.cssText = 'color:#aaa;font-size:0.85em;font-style:italic';
       sub.textContent = SPECIAL_WAND_ALIAS[String(poi.sprite)];
       titleCol.appendChild(sub);
     }
@@ -3680,34 +3927,42 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // Wand stats — telescope POIs put stats as top-level snake_case fields,
     // but some paths may wrap them in a stats sub-object. Check both.
     const s = poi.stats || poi;
-    const statsDiv = document.createElement("div");
+    const statsDiv = document.createElement('div');
     statsDiv.style.cssText =
-      "display:grid;grid-template-columns:auto auto;gap:0.1em 0.85em;font-size:0.85em;margin-bottom:0.5em;color:#bbb";
+      'display:grid;grid-template-columns:auto auto;gap:0.1em 0.85em;font-size:0.85em;margin-bottom:0.5em;color:#bbb';
     const addStat = (label: string, value: string) => {
-      const l = document.createElement("span");
-      l.style.color = "#888";
+      const l = document.createElement('span');
+      l.style.color = '#888';
       l.textContent = label;
-      const v = document.createElement("span");
+      const v = document.createElement('span');
       v.textContent = value;
       statsDiv.appendChild(l);
       statsDiv.appendChild(v);
     };
     const shuffle = s.shuffle ?? s.deck_shuffle;
-    if (shuffle != null) addStat(`${i18next.t("wand.shuffle", "Shuffle")}:`, shuffle ? i18next.t("common.yes", "Yes") : i18next.t("common.no", "No"));
+    if (shuffle != null)
+      addStat(
+        `${i18next.t('wand.shuffle', 'Shuffle')}:`,
+        shuffle ? i18next.t('common.yes', 'Yes') : i18next.t('common.no', 'No')
+      );
     const spc = s.spellsPerCast ?? s.spells_per_cast ?? s.actions_per_round;
-    if (spc != null) addStat(`${i18next.t("wand.spellsPerCast", "Spells/Cast")}:`, String(Math.floor(Number(spc))));
+    if (spc != null) addStat(`${i18next.t('wand.spellsPerCast', 'Spells/Cast')}:`, String(Math.floor(Number(spc))));
     const cd = s.castDelay ?? s.cast_delay ?? s.fire_rate_wait;
-    if (cd != null) addStat(`${i18next.t("wand.castDelay", "Cast Delay")}:`, String(Math.floor(Number(cd))));
+    if (cd != null) addStat(`${i18next.t('wand.castDelay', 'Cast Delay')}:`, String(Math.floor(Number(cd))));
     const rt = s.rechargeTime ?? s.recharge_time ?? s.reload_time;
-    if (rt != null) addStat(`${i18next.t("wand.recharge", "Recharge")}:`, String(Math.floor(Number(rt))));
+    if (rt != null) addStat(`${i18next.t('wand.recharge', 'Recharge')}:`, String(Math.floor(Number(rt))));
     const mm = s.manaMax ?? s.mana_max;
-    if (mm != null) addStat(`${i18next.t("wand.mana", "Mana")}:`, String(Math.floor(Number(mm))));
+    if (mm != null) addStat(`${i18next.t('wand.mana', 'Mana')}:`, String(Math.floor(Number(mm))));
     const mc = s.manaChargeSpeed ?? s.mana_charge_speed;
-    if (mc != null) addStat(`${i18next.t("wand.regen", "Regen")}:`, String(Math.floor(Number(mc))));
+    if (mc != null) addStat(`${i18next.t('wand.regen', 'Regen')}:`, String(Math.floor(Number(mc))));
     const cap = s.capacity ?? s.deck_capacity;
-    if (cap != null) addStat(`${i18next.t("wand.capacity", "Capacity")}:`, String(Math.floor(Number(cap))));
+    if (cap != null) addStat(`${i18next.t('wand.capacity', 'Capacity')}:`, String(Math.floor(Number(cap))));
     const spread = s.spread ?? s.spread_degrees;
-    if (spread != null) addStat(`${i18next.t("wand.spread", "Spread")}:`, `${Math.floor(Number(spread))} ${i18next.t("wand.degAbbrev", "deg")}`);
+    if (spread != null)
+      addStat(
+        `${i18next.t('wand.spread', 'Spread')}:`,
+        `${Math.floor(Number(spread))} ${i18next.t('wand.degAbbrev', 'deg')}`
+      );
     if (statsDiv.childNodes.length > 0) tooltipEl.appendChild(statsDiv);
 
     // Spell icons (always casts + regular) — show full wand capacity
@@ -3720,39 +3975,39 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const displaySlots: Array<{ id: string | null; isAC: boolean }> = [];
     for (let i = 0; i < acCount; i++) {
       const sp = alwaysCasts[i];
-      displaySlots.push({ id: sp ? (typeof sp === "string" ? sp : (sp.id ?? sp)) : null, isAC: true });
+      displaySlots.push({ id: sp ? (typeof sp === 'string' ? sp : (sp.id ?? sp)) : null, isAC: true });
     }
     for (let i = 0; i < deckCapacity; i++) {
       const sp = cards[i];
-      displaySlots.push({ id: sp ? (typeof sp === "string" ? sp : (sp.id ?? sp)) : null, isAC: false });
+      displaySlots.push({ id: sp ? (typeof sp === 'string' ? sp : (sp.id ?? sp)) : null, isAC: false });
     }
     if (displaySlots.length > 0) {
-      const spellsRow = document.createElement("div");
-      spellsRow.style.cssText = "display:flex;flex-wrap:wrap;gap:0.2em;margin-top:0.3em";
+      const spellsRow = document.createElement('div');
+      spellsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;margin-top:0.3em';
       for (const slot of displaySlots) {
-        const container = document.createElement("div");
-        container.style.cssText = `position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:#111;border-radius:0.2em;border:0.065em solid ${slot.isAC ? "#c8a2ff" : "#333"}`;
+        const container = document.createElement('div');
+        container.style.cssText = `position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:#111;border-radius:0.2em;border:0.065em solid ${slot.isAC ? '#c8a2ff' : '#333'}`;
         if (slot.id) {
           container.title = gameTranslator.translateSpell(getSpellName(slot.id));
         }
         if (slot.isAC) {
-          const badge = document.createElement("div");
-          badge.textContent = "AC";
+          const badge = document.createElement('div');
+          badge.textContent = 'AC';
           badge.style.cssText =
-            "position:absolute;top:-5px;left:-5px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:bold;background:white;color:black;border-radius:50%;border:1px solid #333;z-index:2";
+            'position:absolute;top:-5px;left:-5px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:bold;background:white;color:black;border-radius:50%;border:1px solid #333;z-index:2';
           attachAlwaysCastPopover(badge);
           container.appendChild(badge);
         }
         if (slot.id) {
-          const img = document.createElement("img");
-          img.style.cssText = "width:32px;height:32px;image-rendering:pixelated;display:block;margin:auto";
-          getPOISpriteFirstFrame({ type: "spell", item: String(slot.id) }).then((url) => {
+          const img = document.createElement('img');
+          img.style.cssText = 'width:32px;height:32px;image-rendering:pixelated;display:block;margin:auto';
+          getPOISpriteFirstFrame({ type: 'spell', item: String(slot.id) }).then(url => {
             if (url) {
               img.src = url;
             } else {
               img.src = `./assets/icons/spells/${String(slot.id).toLowerCase()}.png`;
               img.onerror = () => {
-                img.style.display = "none";
+                img.style.display = 'none';
               };
             }
           });
@@ -3764,72 +4019,72 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       tooltipEl.appendChild(spellsRow);
     }
   } else if (
-    poi.type === "item" ||
-    poi.type === "chest" ||
-    poi.type === "pacifist_chest" ||
-    poi.type === "great_chest" ||
-    poi.type === "utility_box"
+    poi.type === 'item' ||
+    poi.type === 'chest' ||
+    poi.type === 'pacifist_chest' ||
+    poi.type === 'great_chest' ||
+    poi.type === 'utility_box'
   ) {
     // Header with sprite
-    const header = document.createElement("div");
-    header.style.cssText = "display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em";
-    const spriteImg = document.createElement("img");
-    spriteImg.style.cssText = "width:28px;height:28px;image-rendering:pixelated;object-fit:contain";
-    getPOISpriteFirstFrame(poi as any).then((url) => {
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em';
+    const spriteImg = document.createElement('img');
+    spriteImg.style.cssText = 'width:28px;height:28px;image-rendering:pixelated;object-fit:contain';
+    getPOISpriteFirstFrame(poi as any).then(url => {
       if (url) spriteImg.src = url;
     });
     header.appendChild(spriteImg);
 
     const label = poi.item ?? poi.type;
-    const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:1.1em";
+    const title = document.createElement('div');
+    title.style.cssText = 'font-weight:bold;color:#e0e0e0;font-size:1.1em';
     // Show HP info for heart items, spell names for spells
-    if (poi.item === "spell" && (poi as any).spell) {
+    if (poi.item === 'spell' && (poi as any).spell) {
       title.textContent = gameTranslator.translateSpell(getSpellName(String((poi as any).spell)));
-    } else if (poi.item === "essence" && poi.material) {
+    } else if (poi.item === 'essence' && poi.material) {
       const k = `item_essence_${poi.material}`;
       const t = gameTranslator.translateItem(k);
-      title.textContent = t !== k ? t : (poi.name || "Essence");
-    } else if (poi.item === "perk" && (poi as any).unknown) {
-      title.textContent = i18next.t("perk.unknownTitle", "Unknown Perk");
-    } else if (poi.item === "perk" && (poi as any).perk) {
+      title.textContent = t !== k ? t : poi.name || 'Essence';
+    } else if (poi.item === 'perk' && (poi as any).unknown) {
+      title.textContent = i18next.t('perk.unknownTitle', 'Unknown Perk');
+    } else if (poi.item === 'perk' && (poi as any).perk) {
       const k = perkNameKey((poi as any).perk);
       const t = gameTranslator.translateItem(k);
-      title.textContent = t !== k ? t : (poi.name || "Perk");
-    } else if ((poi as any).item === "pillar_segment") {
-      const flag = String((poi as any).flag || "");
-      if (flag.startsWith("__struct")) title.textContent = i18next.t("poi.pillars", "Achievement Pillars");
-      else if ((poi as any).locked) title.textContent = i18next.t("poi.pillarLocked", "Not unlocked yet");
+      title.textContent = t !== k ? t : poi.name || 'Perk';
+    } else if ((poi as any).item === 'pillar_segment') {
+      const flag = String((poi as any).flag || '');
+      if (flag.startsWith('__struct')) title.textContent = i18next.t('poi.pillars', 'Achievement Pillars');
+      else if ((poi as any).locked) title.textContent = i18next.t('poi.pillarLocked', 'Not unlocked yet');
       else
         title.textContent = pillarSegmentTitle(
           poi as any,
-          (k) => gameTranslator.translateItem(k),
-          (k, dv) => i18next.t(k, dv),
+          k => gameTranslator.translateItem(k),
+          (k, dv) => i18next.t(k, dv)
         );
-    } else if ((poi as any).item === "mimic_potion") {
+    } else if ((poi as any).item === 'mimic_potion') {
       // Potion mimic (Henkevä potu): name from the creature key, not item_*.
-      const t = gameTranslator.translateItem("animal_mimic_potion");
-      title.textContent = t !== "animal_mimic_potion" ? t : "Henkevä potu";
-    } else if (poi.item === "heart") title.textContent = i18next.t("poi.heartSmall", "Heart (+25 HP)");
-    else if (poi.item === "heart_bigger") title.textContent = i18next.t("poi.heartBig", "Heart (+50 HP)");
-    else if (poi.item === "full_heal") title.textContent = i18next.t("poi.fullHeal", "Full Heal");
+      const t = gameTranslator.translateItem('animal_mimic_potion');
+      title.textContent = t !== 'animal_mimic_potion' ? t : 'Henkevä potu';
+    } else if (poi.item === 'heart') title.textContent = i18next.t('poi.heartSmall', 'Heart (+25 HP)');
+    else if (poi.item === 'heart_bigger') title.textContent = i18next.t('poi.heartBig', 'Heart (+50 HP)');
+    else if (poi.item === 'full_heal') title.textContent = i18next.t('poi.fullHeal', 'Full Heal');
     else if ((poi as any).nameKey) {
       // Drops carrying an explicit translation key (e.g. item_wandstone,
       // booktitle_mestari) resolve their real in-game name from common.csv.
       const k = String((poi as any).nameKey);
       const t = gameTranslator.translateItem(k);
-      title.textContent = t !== k ? t : (poi.name || label);
-    } else title.textContent = poi.name || gameTranslator.translateItem(label).replace(/_/g, " ");
+      title.textContent = t !== k ? t : poi.name || label;
+    } else title.textContent = poi.name || gameTranslator.translateItem(label).replace(/_/g, ' ');
     header.appendChild(wrapWithWikiLink(title, poi));
     tooltipEl.appendChild(header);
 
     // Pillar segment: show which pillar (theme) and what unlocks the engraving.
     // Skipped for the plain structural pieces (base/fade/cap, __struct flags).
-    if ((poi as any).item === "pillar_segment" && !String((poi as any).flag || "").startsWith("__struct")) {
-      const theme = String((poi as any).theme || "");
+    if ((poi as any).item === 'pillar_segment' && !String((poi as any).flag || '').startsWith('__struct')) {
+      const theme = String((poi as any).theme || '');
       if (theme) {
-        const sub = document.createElement("div");
-        sub.style.cssText = "color:#bbb;font-size:0.85em;font-style:italic;margin-bottom:0.2em";
+        const sub = document.createElement('div');
+        sub.style.cssText = 'color:#bbb;font-size:0.85em;font-style:italic;margin-bottom:0.2em';
         sub.textContent = i18next.t(theme, theme);
         tooltipEl.appendChild(sub);
       }
@@ -3840,10 +4095,10 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       // flies the map to that boss and opens its card (reusing openTooltipForPOI).
       const spec = pillarReqSpec(poi as any);
       if (spec) {
-        const d = document.createElement("div");
-        d.style.cssText = "color:#aaa;font-size:0.85em;margin-bottom:0.2em";
-        const lead = document.createElement("span");
-        lead.textContent = `${i18next.t("poi.pillarHowTo", "To unlock")}: `;
+        const d = document.createElement('div');
+        d.style.cssText = 'color:#aaa;font-size:0.85em;margin-bottom:0.2em';
+        const lead = document.createElement('span');
+        lead.textContent = `${i18next.t('poi.pillarHowTo', 'To unlock')}: `;
         d.appendChild(lead);
 
         // Small map-pin glyph ("you are here"), placed to the RIGHT of the link
@@ -3864,15 +4119,15 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         //   search      -> the clean in-game item name (ITEM_SEARCH_NAME_KEYS),
         //                  which is what unifiedsearch indexes; falls back to the
         //                  raw id for props the generator never emits.
-        const buildSearchQuery = (link: import("../data/pillars").PillarTarget): string | null => {
+        const buildSearchQuery = (link: import('../data/pillars').PillarTarget): string | null => {
           if (link.searchPerks && link.searchPerks.length) {
             return link.searchPerks
-              .map((pid) => {
+              .map(pid => {
                 const key = perkNameKey(pid);
                 const t = gameTranslator.translateItem(key);
                 return t && t !== key ? t : pid;
               })
-              .join(" | ");
+              .join(' | ');
           }
           if (link.search) {
             // Hand-named POIs (Music Machines) carry their query verbatim.
@@ -3883,14 +4138,16 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
             // would echo the raw key into the search bar).
             if (link.searchNameKeys?.length) {
               return link.searchNameKeys
-                .map((k) => {
-                  const t = k.startsWith("mat_") ? gameTranslator.translateMaterial(k) : gameTranslator.translateItem(k);
-                  const failed = !t || t === k || (k.startsWith("mat_") && t === k.replace(/^mat_/, ""));
+                .map(k => {
+                  const t = k.startsWith('mat_')
+                    ? gameTranslator.translateMaterial(k)
+                    : gameTranslator.translateItem(k);
+                  const failed = !t || t === k || (k.startsWith('mat_') && t === k.replace(/^mat_/, ''));
                   return failed ? k : t;
                 })
-                .join(" | ");
+                .join(' | ');
             }
-            const id = link.itemId ?? link.targetType ?? "";
+            const id = link.itemId ?? link.targetType ?? '';
             const key = ITEM_SEARCH_NAME_KEYS[id];
             if (key) {
               const t = gameTranslator.translateItem(key);
@@ -3909,31 +4166,31 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         // the rendered map (the perk/item may live off-screen or in a parallel
         // world). Mirrors the toolbar Telescope button's seed handling.
         const buildTelescopeNote = (): { text: string; telescopeUrl: string } => {
-          const seed = new URLSearchParams(window.location.search).get("se");
-          const base = "https://lymm37.github.io/noita-telescope/";
+          const seed = new URLSearchParams(window.location.search).get('se');
+          const base = 'https://lymm37.github.io/noita-telescope/';
           return {
-            text: i18next.t("pillar.searchNone", "Not found in the three worlds shown here."),
+            text: i18next.t('pillar.searchNone', 'Not found in the three worlds shown here.'),
             telescopeUrl: seed ? `${base}?seed=${seed}` : base,
           };
         };
 
-        const runSearch = (link: import("../data/pillars").PillarTarget) => {
+        const runSearch = (link: import('../data/pillars').PillarTarget) => {
           const query = buildSearchQuery(link);
           if (!query) return;
           // searchPerks -> Perks filter; item searches carry their own
           // searchFilter (only when a filter actually includes the target).
-          const filter = link.searchPerks?.length ? "pk" : link.searchFilter;
+          const filter = link.searchPerks?.length ? 'pk' : link.searchFilter;
           // Structure-backed searches (Buried Eye / Meditation Cube): when the
           // seed spawned no structure in the three worlds, tell the user only
           // the destination chamber matched.
           let resultNotice: string | undefined;
-          const structureItem = (link as import("../data/pillars").PillarLink).structureItem;
-          if (structureItem && !(globalMarkerData?.items ?? []).some((it) => (it.poi as any).item === structureItem)) {
-            const name = (link as import("../data/pillars").PillarLink).label ?? structureItem;
-            resultNotice = i18next.t("pillar.structureMissing", {
+          const structureItem = (link as import('../data/pillars').PillarLink).structureItem;
+          if (structureItem && !(globalMarkerData?.items ?? []).some(it => (it.poi as any).item === structureItem)) {
+            const name = (link as import('../data/pillars').PillarLink).label ?? structureItem;
+            resultNotice = i18next.t('pillar.structureMissing', {
               name,
               defaultValue:
-                "No {{name}} found in the three worlds shown here — only its destination chamber is on the map.",
+                'No {{name}} found in the three worlds shown here — only its destination chamber is on the map.',
             });
           }
           window.__noitamap?.triggerPillarSearch?.(
@@ -3943,7 +4200,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
             resultNotice,
             // Re-derive the localized query in the active language after a
             // language switch (buildSearchQuery reads current i18n state).
-            () => buildSearchQuery(link) ?? query,
+            () => buildSearchQuery(link) ?? query
           );
         };
 
@@ -3951,14 +4208,14 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         // essence material; crystal-key chest variant; any orb; fixed coords.
         // Reuses the same cinematic goto search results / seed report use
         // (panToTarget draws the arrow + pulse, openTooltipForPOI opens the card).
-        const travelTo = (link: import("../data/pillars").PillarTarget) => {
+        const travelTo = (link: import('../data/pillars').PillarTarget) => {
           const v = (window as any).__osdViewer;
           if (!v) return;
           const open = (p: any) => {
             // Remember which pillar segment we came from, so p's reverse
             // "Pillar" button leads back to THIS pillar (entities tied to two
             // pillars otherwise always point at their default association).
-            const fromFlag = String((poi as any).flag || "");
+            const fromFlag = String((poi as any).flag || '');
             if (fromFlag && p.id != null) pillarOriginByPoi.set(String(p.id), fromFlag);
             openTooltipForPOI(p.id, v, { fallbackX: p.x, fallbackY: p.y, fallbackPoi: p });
           };
@@ -3968,42 +4225,53 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           // nearest this pillar segment (the pillar lives in the main world near
           // spawn, so "nearest the segment" == nearest the pillar). Falls back
           // to any-world matches when none exist in the main world.
-          const sx = (poi as any).x as number, sy = (poi as any).y as number;
+          const sx = (poi as any).x as number,
+            sy = (poi as any).y as number;
           const find = (pred: (p: any) => boolean) => {
-            const matches = (globalMarkerData?.items ?? []).filter((it) => pred(it.poi as any));
+            const matches = (globalMarkerData?.items ?? []).filter(it => pred(it.poi as any));
             if (matches.length === 0) return undefined;
-            const main = matches.filter((it) => (it.pw ?? (it.poi as any).pw ?? 0) === 0);
+            const main = matches.filter(it => (it.pw ?? (it.poi as any).pw ?? 0) === 0);
             const pool = main.length ? main : matches;
             let best = pool[0];
             let bestD = Infinity;
             for (const it of pool) {
               const q = it.poi as any;
               const d = (q.x - sx) ** 2 + (q.y - sy) ** 2;
-              if (d < bestD) { bestD = d; best = it; }
+              if (d < bestD) {
+                bestD = d;
+                best = it;
+              }
             }
             return best.poi as any;
           };
           let p: any;
-          if (link.targetType) p = find((q) => q.type === link.targetType);
-          else if (link.itemId) p = find((q) => q.item === link.itemId);
-          else if (link.material) p = find((q) => q.item === "essence" && q.material === link.material);
-          else if (link.chestVariant) p = find((q) => q.chestVariant === link.chestVariant);
+          if (link.targetType) p = find(q => q.type === link.targetType);
+          else if (link.itemId) p = find(q => q.item === link.itemId);
+          else if (link.material) p = find(q => q.item === 'essence' && q.material === link.material);
+          else if (link.chestVariant) p = find(q => q.chestVariant === link.chestVariant);
           else if (link.entity)
             // Generated entity POIs carry a full xml path, manual ones a bare id.
             p = find(
-              (q) =>
-                q.type === "entity" &&
-                String(q.entity || "")
+              q =>
+                q.type === 'entity' &&
+                String(q.entity || '')
                   .toLowerCase()
-                  .replace(/\.xml$/, "")
-                  .endsWith(String(link.entity)),
+                  .replace(/\.xml$/, '')
+                  .endsWith(String(link.entity))
             );
           else if (link.wandSprite)
             p = find(
-              (q) => q.type === "wand" && String(q.sprite || "").replace(/\.png$/, "").endsWith(String(link.wandSprite)),
+              q =>
+                q.type === 'wand' &&
+                String(q.sprite || '')
+                  .replace(/\.png$/, '')
+                  .endsWith(String(link.wandSprite))
             );
-          if (p) { open(p); return; }
-          if (typeof link.x === "number" && typeof link.y === "number") {
+          if (p) {
+            open(p);
+            return;
+          }
+          if (typeof link.x === 'number' && typeof link.y === 'number') {
             // Coords-only destination (altars, moons, the Tower, ...): no
             // generated POI exists there, so open the synthesized place card —
             // openTooltipForPOI does the cinematic pan and resolves the id to
@@ -4011,11 +4279,11 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
             // open() sets pillarLinkOrigin so the card's "Pillar" button leads
             // back to this segment. Without a wiki page the card title renders
             // as plain text.
-            const l = link as import("../data/pillars").PillarLink;
-            const name = l.label ?? (l.labelKey ? String(i18next.t(l.labelKey, l.labelKey)) : "");
+            const l = link as import('../data/pillars').PillarLink;
+            const name = l.label ?? (l.labelKey ? String(i18next.t(l.labelKey, l.labelKey)) : '');
             open({
               id: `d-pillar-place-${Math.round(link.x)}_${Math.round(link.y)}`,
-              type: "pillar_place",
+              type: 'pillar_place',
               name,
               x: link.x,
               y: link.y,
@@ -4030,9 +4298,9 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         // carries only a wiki URL, no map target — an external wiki link
         // ("New Game+++"). `wrap` allows the whole-phrase transformation link
         // to line-wrap instead of nowrap.
-        const isSearchLink = (link: import("../data/pillars").PillarTarget) =>
+        const isSearchLink = (link: import('../data/pillars').PillarTarget) =>
           !!((link.searchPerks && link.searchPerks.length) || link.search);
-        const isExternalLink = (link: import("../data/pillars").PillarLink) =>
+        const isExternalLink = (link: import('../data/pillars').PillarLink) =>
           !!link.wiki &&
           !isSearchLink(link) &&
           !link.targetType &&
@@ -4041,36 +4309,36 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           !link.chestVariant &&
           !link.entity &&
           !link.wandSprite &&
-          typeof link.x !== "number";
+          typeof link.x !== 'number';
         const makePin = (
           label: string,
-          link: import("../data/pillars").PillarLink | import("../data/pillars").PillarTarget,
-          wrap = false,
+          link: import('../data/pillars').PillarLink | import('../data/pillars').PillarTarget,
+          wrap = false
         ) => {
           const search = isSearchLink(link);
-          const external = isExternalLink(link as import("../data/pillars").PillarLink);
-          const a = document.createElement("a");
+          const external = isExternalLink(link as import('../data/pillars').PillarLink);
+          const a = document.createElement('a');
           a.style.cssText =
-            "color:#7ab8ff;text-decoration:underline dashed;cursor:pointer;" + (wrap ? "" : "white-space:nowrap");
-          const s = document.createElement("span");
+            'color:#7ab8ff;text-decoration:underline dashed;cursor:pointer;' + (wrap ? '' : 'white-space:nowrap');
+          const s = document.createElement('span');
           s.textContent = label;
           a.appendChild(s);
           if (external) {
-            a.href = String((link as import("../data/pillars").PillarLink).wiki);
-            a.target = "_blank";
-            a.rel = "noopener";
+            a.href = String((link as import('../data/pillars').PillarLink).wiki);
+            a.target = '_blank';
+            a.rel = 'noopener';
             a.insertAdjacentHTML(
-              "beforeend",
-              '<i class="bi bi-box-arrow-up-right" style="font-size:0.75em;margin-left:3px;vertical-align:-1px"></i>',
+              'beforeend',
+              '<i class="bi bi-box-arrow-up-right" style="font-size:0.75em;margin-left:3px;vertical-align:-1px"></i>'
             );
             return a;
           }
-          a.href = "#";
+          a.href = '#';
           a.title = search
-            ? i18next.t("poi.pillarSearch", "Search the map")
-            : i18next.t("poi.pillarGoto", "Show on map");
-          a.insertAdjacentHTML("beforeend", search ? SEARCH_SVG : PIN_SVG);
-          a.addEventListener("click", (ev) => {
+            ? i18next.t('poi.pillarSearch', 'Search the map')
+            : i18next.t('poi.pillarGoto', 'Show on map');
+          a.insertAdjacentHTML('beforeend', search ? SEARCH_SVG : PIN_SVG);
+          a.addEventListener('click', ev => {
             ev.preventDefault();
             if (search) runSearch(link);
             else travelTo(link);
@@ -4083,22 +4351,19 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         // (locale phrased the place differently, or the link is a labelKey chip
         // with no inline form) get a trailing pin/search chip so the affordance
         // is never lost.
-        const renderWithLinks = (
-          sentence: string,
-          links: Array<import("../data/pillars").PillarLink>,
-        ) => {
-          const resolveLabel = (link: import("../data/pillars").PillarLink): string =>
+        const renderWithLinks = (sentence: string, links: Array<import('../data/pillars').PillarLink>) => {
+          const resolveLabel = (link: import('../data/pillars').PillarLink): string =>
             resolvePillarLinkLabel(
               link,
-              (k) => gameTranslator.translateItem(k),
-              (k) => gameTranslator.translateMaterial(k),
-              (k, dv) => String(i18next.t(k, dv)),
+              k => gameTranslator.translateItem(k),
+              k => gameTranslator.translateMaterial(k),
+              (k, dv) => String(i18next.t(k, dv))
             );
           // Links must wrap the DESTINATION mention, not the card's "Title: "
           // prefix — "Void Moon: bring ... to the Moon's centre" would
           // otherwise link the title's "Moon". Skip a short leading ": "
           // segment when matching.
-          const colon = sentence.indexOf(": ");
+          const colon = sentence.indexOf(': ');
           const bodyStart = colon >= 0 && colon < 40 ? colon + 2 : 0;
           const matches: Array<{ start: number; end: number; link: (typeof links)[number]; label: string }> = [];
           const trailing: Array<{ link: (typeof links)[number]; label: string }> = [];
@@ -4111,7 +4376,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
             const label = resolveLabel(link);
             const idx = link.label ? sentence.indexOf(link.label, bodyStart) : -1;
             const span = link.label?.length ?? 0;
-            if (idx >= 0 && !matches.some((m) => idx < m.end && idx + span > m.start)) {
+            if (idx >= 0 && !matches.some(m => idx < m.end && idx + span > m.start)) {
               matches.push({ start: idx, end: idx + span, link, label });
             } else {
               trailing.push({ link, label });
@@ -4126,7 +4391,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           }
           if (cursor < sentence.length) d.appendChild(document.createTextNode(sentence.slice(cursor)));
           for (const t of trailing) {
-            d.appendChild(document.createTextNode(" "));
+            d.appendChild(document.createTextNode(' '));
             d.appendChild(makePin(t.label, t.link));
           }
         };
@@ -4152,7 +4417,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           const tgt = spec.target ?? (spec.targetType ? { targetType: spec.targetType } : null);
           // Wrap only the item name in the link — a leading article ("a
           // Treasure Chest") stays plain text outside the dashed underline.
-          const linkLabel = resolvedName.replace(/^(?:a|an|the)\s+/i, "");
+          const linkLabel = resolvedName.replace(/^(?:a|an|the)\s+/i, '');
           const nameLinks = tgt ? [{ label: linkLabel, ...tgt }] : [];
           renderWithLinks(sentence, [...nameLinks, ...(spec.links || [])]);
         } else if (spec.key) {
@@ -4179,7 +4444,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
             // chip here.
             const links = [...(spec.links || [])];
             if (spec.target?.search) {
-              const id = spec.target.itemId ?? spec.target.targetType ?? "";
+              const id = spec.target.itemId ?? spec.target.targetType ?? '';
               const nk = ITEM_SEARCH_NAME_KEYS[id];
               let label = id;
               if (nk) {
@@ -4200,8 +4465,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     if ((poi as any).titleKey) {
       const t = gameTranslator.translateItem(String((poi as any).titleKey));
       if (t && t !== (poi as any).titleKey) {
-        const sub = document.createElement("div");
-        sub.style.cssText = "color:#bbb;font-size:0.85em;font-style:italic;margin-bottom:0.2em";
+        const sub = document.createElement('div');
+        sub.style.cssText = 'color:#bbb;font-size:0.85em;font-style:italic;margin-bottom:0.2em';
         sub.textContent = t;
         tooltipEl.appendChild(sub);
       }
@@ -4209,20 +4474,20 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
     // Flavour text (e.g. lore book contents) — preserve the original line breaks.
     if ((poi as any).description) {
-      const d = document.createElement("div");
+      const d = document.createElement('div');
       d.style.cssText =
-        "color:#9a9;font-size:0.82em;font-style:italic;white-space:pre-line;text-align:center;margin-bottom:0.2em";
+        'color:#9a9;font-size:0.82em;font-style:italic;white-space:pre-line;text-align:center;margin-bottom:0.2em';
       d.textContent = String((poi as any).description);
       tooltipEl.appendChild(d);
     }
 
     // Unknown (parallel-world) perk: explain why the identity can't be shown.
-    if (poi.item === "perk" && (poi as any).unknown) {
-      const d = document.createElement("div");
-      d.style.cssText = "color:#9a9;font-size:0.82em;font-style:italic;margin-bottom:0.2em";
+    if (poi.item === 'perk' && (poi as any).unknown) {
+      const d = document.createElement('div');
+      d.style.cssText = 'color:#9a9;font-size:0.82em;font-style:italic;margin-bottom:0.2em';
       d.textContent = i18next.t(
-        "perk.unknownParallel",
-        "Loading order for holy mountains and parallel worlds matters. Without knowing your \"travel history\" it is impossible to accurately show the perks.",
+        'perk.unknownParallel',
+        'Loading order for holy mountains and parallel worlds matters. Without knowing your "travel history" it is impossible to accurately show the perks.'
       );
       tooltipEl.appendChild(d);
     }
@@ -4230,54 +4495,59 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // Perk extras: in-game description plus the data the perk algorithm
     // surfaces for free — ALWAYS_CAST's bound spell and GAMBLE's two
     // hypothetical perks.
-    if (poi.item === "perk" && (poi as any).perk) {
+    if (poi.item === 'perk' && (poi as any).perk) {
       const perkId = String((poi as any).perk).toLowerCase();
       const descKey = perkDescKey(perkId);
       const desc = gameTranslator.translateItem(descKey);
       if (desc && desc !== descKey) {
-        const d = document.createElement("div");
-        d.style.cssText = "color:#9a9;font-size:0.82em;font-style:italic;margin-bottom:0.2em";
+        const d = document.createElement('div');
+        d.style.cssText = 'color:#9a9;font-size:0.82em;font-style:italic;margin-bottom:0.2em';
         d.textContent = desc;
         tooltipEl.appendChild(d);
       }
       const ac = (poi as any).alwaysCast;
       if (ac) {
-        const acId = String(typeof ac === "string" ? ac : (ac.id ?? ac));
+        const acId = String(typeof ac === 'string' ? ac : (ac.id ?? ac));
         const acName = gameTranslator.translateSpell(getSpellName(acId));
-        const row = document.createElement("div");
-        row.style.cssText = "display:flex;align-items:center;gap:0.3em;font-size:0.85em;color:#c8a2ff;margin-top:0.2em";
-        const lbl = document.createElement("span");
-        lbl.textContent = `${i18next.t("perk.alwaysCast", "Always Cast")}:`;
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:0.3em;font-size:0.85em;color:#c8a2ff;margin-top:0.2em';
+        const lbl = document.createElement('span');
+        lbl.textContent = `${i18next.t('perk.alwaysCast', 'Always Cast')}:`;
         row.appendChild(lbl);
-        const img = document.createElement("img");
-        img.style.cssText = "width:24px;height:24px;image-rendering:pixelated";
+        const img = document.createElement('img');
+        img.style.cssText = 'width:24px;height:24px;image-rendering:pixelated';
         img.title = acName;
-        getPOISpriteFirstFrame({ type: "spell", item: acId }).then((u) => { if (u) img.src = u; });
+        getPOISpriteFirstFrame({ type: 'spell', item: acId }).then(u => {
+          if (u) img.src = u;
+        });
         row.appendChild(img);
-        const nm = document.createElement("span");
+        const nm = document.createElement('span');
         nm.textContent = acName;
         row.appendChild(nm);
         tooltipEl.appendChild(row);
       }
       const gamble = (poi as any).hypotheticalGamble;
       if (gamble && Array.isArray(gamble.perks) && gamble.perks.length) {
-        const row = document.createElement("div");
-        row.style.cssText = "display:flex;align-items:center;gap:0.4em;flex-wrap:wrap;font-size:0.85em;color:#bbb;margin-top:0.2em";
-        const lbl = document.createElement("span");
-        lbl.textContent = `${i18next.t("perk.gambleGrants", "Gamble grants")}:`;
+        const row = document.createElement('div');
+        row.style.cssText =
+          'display:flex;align-items:center;gap:0.4em;flex-wrap:wrap;font-size:0.85em;color:#bbb;margin-top:0.2em';
+        const lbl = document.createElement('span');
+        lbl.textContent = `${i18next.t('perk.gambleGrants', 'Gamble grants')}:`;
         row.appendChild(lbl);
         for (const gp of gamble.perks) {
           const gk = perkNameKey(gp);
           const gname = gameTranslator.translateItem(gk);
           const label = gname !== gk ? gname : String(gp);
-          const box = document.createElement("div");
-          box.style.cssText = "display:flex;align-items:center;gap:0.2em";
-          const gimg = document.createElement("img");
-          gimg.style.cssText = "width:22px;height:22px;image-rendering:pixelated";
+          const box = document.createElement('div');
+          box.style.cssText = 'display:flex;align-items:center;gap:0.2em';
+          const gimg = document.createElement('img');
+          gimg.style.cssText = 'width:22px;height:22px;image-rendering:pixelated';
           gimg.title = label;
-          getPOISpriteFirstFrame({ type: "item", item: "perk", perk: gp } as any).then((u) => { if (u) gimg.src = u; });
+          getPOISpriteFirstFrame({ type: 'item', item: 'perk', perk: gp } as any).then(u => {
+            if (u) gimg.src = u;
+          });
           box.appendChild(gimg);
-          const gspan = document.createElement("span");
+          const gspan = document.createElement('span');
           gspan.textContent = label;
           box.appendChild(gspan);
           row.appendChild(box);
@@ -4291,95 +4561,97 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // for travel-history-accurate results, carrying the current seed. Skipped
     // for fixed-location perks (poi.fixed), whose identity is not traversal-
     // dependent (e.g. Moon Radar).
-    if (poi.item === "perk" && !(poi as any).fixed) {
+    if (poi.item === 'perk' && !(poi as any).fixed) {
       const seed = getCurrentDynamicSeed();
-      const noitoolUrl = seed != null ? `https://www.noitool.com/info?seed=${seed}` : "https://www.noitool.com/info";
-      const link = document.createElement("a");
+      const noitoolUrl = seed != null ? `https://www.noitool.com/info?seed=${seed}` : 'https://www.noitool.com/info';
+      const link = document.createElement('a');
       link.href = noitoolUrl;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.textContent = "Noitool";
-      link.style.cssText = "color:#7ab8ff;text-decoration:underline";
-      const note = document.createElement("div");
-      note.style.cssText = "color:#888;font-size:0.78em;font-style:italic;margin-top:0.4em";
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = 'Noitool';
+      link.style.cssText = 'color:#7ab8ff;text-decoration:underline';
+      const note = document.createElement('div');
+      note.style.cssText = 'color:#888;font-size:0.78em;font-style:italic;margin-top:0.4em';
       const tpl = i18next.t(
-        "perk.noitoolNote",
-        'Note, that perks are shown as if you went through every holy mountain in regular order on a normal run and did not pick up extra perk. If you want to have absolute precision in what perks you are going to see, use {{link}} in "Advanced" mode',
+        'perk.noitoolNote',
+        'Note, that perks are shown as if you went through every holy mountain in regular order on a normal run and did not pick up extra perk. If you want to have absolute precision in what perks you are going to see, use {{link}} in "Advanced" mode'
       );
-      const parts = tpl.split("{{link}}");
-      note.appendChild(document.createTextNode(parts[0] ?? ""));
+      const parts = tpl.split('{{link}}');
+      note.appendChild(document.createTextNode(parts[0] ?? ''));
       note.appendChild(link);
-      note.appendChild(document.createTextNode(parts[1] ?? ""));
+      note.appendChild(document.createTextNode(parts[1] ?? ''));
       tooltipEl.appendChild(note);
     }
     {
       const descKey = `itemdesc_${poi.item}`;
       const desc = gameTranslator.translateItem(descKey);
       if (desc && desc !== descKey) {
-        const sub = document.createElement("div");
-        sub.style.cssText = "color:#9a9;font-size:0.82em;font-style:italic;margin-bottom:0.2em;white-space:pre-line";
+        const sub = document.createElement('div');
+        sub.style.cssText = 'color:#9a9;font-size:0.82em;font-style:italic;margin-bottom:0.2em;white-space:pre-line';
         // In-game description text encodes line breaks as a literal backslash-n.
-        sub.textContent = desc.replace(/\\n/g, "\n");
+        sub.textContent = desc.replace(/\\n/g, '\n');
         tooltipEl.appendChild(sub);
       }
     }
 
-    if (poi.material && poi.item !== "essence") {
-      const mat = document.createElement("div");
-      mat.style.cssText = "color:#aaa;font-size:0.85em";
-      const materialLabel = gameTranslator.translateItem("inventory_actiontype_material");
+    if (poi.material && poi.item !== 'essence') {
+      const mat = document.createElement('div');
+      mat.style.cssText = 'color:#aaa;font-size:0.85em';
+      const materialLabel = gameTranslator.translateItem('inventory_actiontype_material');
       mat.textContent = `${materialLabel}: ${gameTranslator.translateMaterial(poi.material)}`;
       tooltipEl.appendChild(mat);
-      tooltipEl.appendChild(buildExtendedSection("material", String(poi.material)));
+      tooltipEl.appendChild(buildExtendedSection('material', String(poi.material)));
     }
     if (poi.amount) {
-      const amt = document.createElement("div");
-      amt.style.cssText = "color:#aaa;font-size:0.85em";
-      amt.textContent = `${i18next.t("poi.amount", "Amount")}: ${poi.amount}`;
+      const amt = document.createElement('div');
+      amt.style.cssText = 'color:#aaa;font-size:0.85em';
+      amt.textContent = `${i18next.t('poi.amount', 'Amount')}: ${poi.amount}`;
       tooltipEl.appendChild(amt);
     }
     if (poi.contents && poi.contents.length) {
-      const contentsDiv = document.createElement("div");
-      contentsDiv.style.cssText = "margin-top:0.15em;color:#aaa;font-size:0.85em";
-      contentsDiv.textContent = `${i18next.t("poi.contains", "Contains")}: ${poi.contents
+      const contentsDiv = document.createElement('div');
+      contentsDiv.style.cssText = 'margin-top:0.15em;color:#aaa;font-size:0.85em';
+      contentsDiv.textContent = `${i18next.t('poi.contains', 'Contains')}: ${poi.contents
         .map((c: any) => {
-          const cName = typeof c === "string" ? c : (c.name ?? c.item ?? String(c));
+          const cName = typeof c === 'string' ? c : (c.name ?? c.item ?? String(c));
           return gameTranslator.translateItem(cName);
         })
-        .join(", ")}`;
+        .join(', ')}`;
       tooltipEl.appendChild(contentsDiv);
     }
     // Essence Eater: explain the conversion and show the possible stone drops.
     // These are NOT world spawns — the player gets one only by sacrificing a
     // carried essence here — so they live in the card, not as map markers.
     const stoneDrops = (poi as any).stoneDrops as Array<{ item: string; nameKey: string; name: string }> | undefined;
-    if (poi.item === "essence_eater" && Array.isArray(stoneDrops) && stoneDrops.length) {
-      const note = document.createElement("div");
-      note.style.cssText = "color:#9a9;font-size:0.82em;font-style:italic;margin:0.3em 0 0.2em;line-height:1.4";
+    if (poi.item === 'essence_eater' && Array.isArray(stoneDrops) && stoneDrops.length) {
+      const note = document.createElement('div');
+      note.style.cssText = 'color:#9a9;font-size:0.82em;font-style:italic;margin:0.3em 0 0.2em;line-height:1.4';
       note.textContent = i18next.t(
-        "poi.essenceEaterConvert",
-        "Essence Eaters convert any carried Essence into its corresponding elemental stone.",
+        'poi.essenceEaterConvert',
+        'Essence Eaters convert any carried Essence into its corresponding elemental stone.'
       );
       tooltipEl.appendChild(note);
 
-      const dropsDiv = document.createElement("div");
-      dropsDiv.style.cssText = "margin-top:0.3em;border-top:0.065em solid #333;padding-top:0.3em";
-      const dropsLabel = document.createElement("div");
-      dropsLabel.style.cssText = "font-size:1em;color:#888;margin-bottom:0.2em";
-      dropsLabel.textContent = `${i18next.t("poi.drops", "Drops")}:`;
+      const dropsDiv = document.createElement('div');
+      dropsDiv.style.cssText = 'margin-top:0.3em;border-top:0.065em solid #333;padding-top:0.3em';
+      const dropsLabel = document.createElement('div');
+      dropsLabel.style.cssText = 'font-size:1em;color:#888;margin-bottom:0.2em';
+      dropsLabel.textContent = `${i18next.t('poi.drops', 'Drops')}:`;
       dropsDiv.appendChild(dropsLabel);
-      const dropsRow = document.createElement("div");
-      dropsRow.style.cssText = "display:flex;flex-wrap:wrap;gap:0.2em;align-items:center";
+      const dropsRow = document.createElement('div');
+      dropsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center';
       for (const s of stoneDrops) {
-        const box = document.createElement("div");
+        const box = document.createElement('div');
         box.style.cssText =
-          "display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333";
-        const img = document.createElement("img");
-        img.style.cssText = "width:20px;height:20px;image-rendering:pixelated;object-fit:contain";
-        getPOISpriteFirstFrame({ type: "item", item: s.item }).then((u) => { if (u) img.src = u; });
+          'display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333';
+        const img = document.createElement('img');
+        img.style.cssText = 'width:20px;height:20px;image-rendering:pixelated;object-fit:contain';
+        getPOISpriteFirstFrame({ type: 'item', item: s.item }).then(u => {
+          if (u) img.src = u;
+        });
         box.appendChild(img);
-        const label = document.createElement("span");
-        label.style.cssText = "font-size:0.8em;color:#aaa";
+        const label = document.createElement('span');
+        label.style.cssText = 'font-size:0.8em;color:#aaa';
         const t = gameTranslator.translateItem(s.nameKey);
         label.textContent = t !== s.nameKey ? t : s.name;
         box.appendChild(label);
@@ -4388,53 +4660,72 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       dropsDiv.appendChild(dropsRow);
       tooltipEl.appendChild(dropsDiv);
     }
-  } else if (poi.type === "spell") {
-    const header = document.createElement("div");
-    header.style.cssText = "display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em";
-    const spriteImg = document.createElement("img");
-    spriteImg.style.cssText = "width:28px;height:28px;image-rendering:pixelated;display:block";
-    getPOISpriteFirstFrame({ type: "spell", item: poi.item }).then((url) => {
+  } else if (poi.type === 'spell') {
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em';
+    const spriteImg = document.createElement('img');
+    spriteImg.style.cssText = 'width:28px;height:28px;image-rendering:pixelated;display:block';
+    getPOISpriteFirstFrame({ type: 'spell', item: poi.item }).then(url => {
       if (url) spriteImg.src = url;
     });
     header.appendChild(spriteImg);
-    const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:1.1em";
-    title.textContent = gameTranslator.translateSpell(getSpellName(poi.item || "")) || "Spell";
+    const title = document.createElement('div');
+    title.style.cssText = 'font-weight:bold;color:#e0e0e0;font-size:1.1em';
+    title.textContent = gameTranslator.translateSpell(getSpellName(poi.item || '')) || 'Spell';
     header.appendChild(wrapWithWikiLink(title, poi));
     tooltipEl.appendChild(header);
     if (poi.item) {
-      tooltipEl.appendChild(buildExtendedSection("spell", String(poi.item)));
+      tooltipEl.appendChild(buildExtendedSection('spell', String(poi.item)));
     }
-  } else if ((poi.type === "entity" && (poi as any).entity) || ["alchemist_boss", "boss_wizard", "boss_meat", "islandspirit", "boss_sky", "boss_robot", "boss_centipede", "triangle_boss", "pyramid_boss", "dragon", "boss_ghost", "friend", "boss_pit", "boss_fish", "tiny"].includes(poi.type || "")) {
-    const isSpecialEntity = poi.type !== "entity";
-    const header = document.createElement("div");
-    header.style.cssText = "display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em";
-    const spriteImg = document.createElement("img");
-    spriteImg.style.cssText = "width:38px;height:38px;image-rendering:pixelated;object-fit:contain";
-    getPOISpriteFirstFrame(poi as any).then((url) => {
+  } else if (
+    (poi.type === 'entity' && (poi as any).entity) ||
+    [
+      'alchemist_boss',
+      'boss_wizard',
+      'boss_meat',
+      'islandspirit',
+      'boss_sky',
+      'boss_robot',
+      'boss_centipede',
+      'triangle_boss',
+      'pyramid_boss',
+      'dragon',
+      'boss_ghost',
+      'friend',
+      'boss_pit',
+      'boss_fish',
+      'tiny',
+    ].includes(poi.type || '')
+  ) {
+    const isSpecialEntity = poi.type !== 'entity';
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em';
+    const spriteImg = document.createElement('img');
+    spriteImg.style.cssText = 'width:38px;height:38px;image-rendering:pixelated;object-fit:contain';
+    getPOISpriteFirstFrame(poi as any).then(url => {
       if (url) spriteImg.src = url;
     });
     header.appendChild(spriteImg);
-    const titleCol = document.createElement("div");
+    const titleCol = document.createElement('div');
     const rawName = String((poi as any).entity || poi.type);
     let entityId = canonicalEntityId(rawName);
 
     // Map telescope boss types to actual CREATURE_DATA IDs
     const bossMap: Record<string, string> = {
-      alchemist_boss: "boss_alchemist",
-      pyramid_boss: "boss_limbs",
-      dragon: "boss_dragon",
-      triangle_boss: "boss_gate",
-      boss_pit: "boss_pit",
-      boss_fish: "fish_giga",
-      tiny: "maggot_tiny",
+      alchemist_boss: 'boss_alchemist',
+      pyramid_boss: 'boss_limbs',
+      dragon: 'boss_dragon',
+      triangle_boss: 'boss_gate',
+      boss_pit: 'boss_pit',
+      boss_fish: 'fish_giga',
+      tiny: 'maggot_tiny',
     };
     if (bossMap[entityId]) entityId = bossMap[entityId];
 
     const translationKey = `animal_${entityId}`;
     const translated = gameTranslator.translateItem(translationKey);
-    const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;color:#e0e0e0;font-size:1.1em";
+    const title = document.createElement('div');
+    title.style.cssText = 'font-weight:bold;color:#e0e0e0;font-size:1.1em';
     // Title: pulled straight from the locale JSONs via gameTranslator. The
     // animal_<id> entries are baked into src/locales/*/translation.json by
     // build_scripts/bake-creature-translations.cjs at build time. Falls back
@@ -4444,25 +4735,25 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       (translated !== translationKey ? translated : null) ||
       creature?.name ||
       (isSpecialEntity ? null : (poi as any).name) ||
-      rawName.replace(/_/g, " ");
+      rawName.replace(/_/g, ' ');
     title.textContent = baseName;
     titleCol.appendChild(wrapWithWikiLink(title, poi));
     // Subtitle shows alternate names so players can cross-reference. Matches
     // the search-results UX: in non-English locales we surface the official
     // Finnish name; the English alias is always shown when it differs.
     if (creature) {
-      const currentLang = i18next.language || "en";
+      const currentLang = i18next.language || 'en';
       const parts: string[] = [];
-      if (currentLang !== "en" && creature.name && creature.name !== baseName) {
+      if (currentLang !== 'en' && creature.name && creature.name !== baseName) {
         parts.push(`"${creature.name}"`);
       }
       if (creature.alias && creature.alias !== baseName) {
         parts.push(`"${creature.alias}"`);
       }
       if (parts.length > 0) {
-        const aliasDiv = document.createElement("div");
-        aliasDiv.style.cssText = "color:#999;font-size:0.85em;font-style:italic";
-        aliasDiv.textContent = parts.join(", ");
+        const aliasDiv = document.createElement('div');
+        aliasDiv.style.cssText = 'color:#999;font-size:0.85em;font-style:italic';
+        aliasDiv.textContent = parts.join(', ');
         titleCol.appendChild(aliasDiv);
       }
     }
@@ -4472,31 +4763,31 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
     // Horde marker (free) — full creature stats are in the pro extended section.
     if ((poi as any).isHorde && creature?.category) {
-      const catDiv = document.createElement("div");
-      catDiv.style.cssText = "color:#888;margin-top:0.15em;font-size:0.85em";
-      catDiv.textContent = `${i18next.t("poi.horde", "Horde")}: ${creature.category}`;
+      const catDiv = document.createElement('div');
+      catDiv.style.cssText = 'color:#888;margin-top:0.15em;font-size:0.85em';
+      catDiv.textContent = `${i18next.t('poi.horde', 'Horde')}: ${creature.category}`;
       tooltipEl.appendChild(catDiv);
     }
 
-    tooltipEl.appendChild(buildExtendedSection("creature", entityId));
+    tooltipEl.appendChild(buildExtendedSection('creature', entityId));
 
     if (poi.biome) {
-      const biomeDiv = document.createElement("div");
-      biomeDiv.style.cssText = "color:#888;font-size:1em;margin-top:0.2em";
-      const biomeKey = String(poi.biome).startsWith("biome_") ? String(poi.biome) : `biome_${poi.biome}`;
+      const biomeDiv = document.createElement('div');
+      biomeDiv.style.cssText = 'color:#888;font-size:1em;margin-top:0.2em';
+      const biomeKey = String(poi.biome).startsWith('biome_') ? String(poi.biome) : `biome_${poi.biome}`;
       const biomeLabel = i18next.t(`gameContent.biomes.${biomeKey}`, {
-        defaultValue: gameTranslator.translateContent("biomes", String(poi.biome)),
+        defaultValue: gameTranslator.translateContent('biomes', String(poi.biome)),
       });
-      biomeDiv.textContent = `${i18next.t("poi.biome", "Biome")}: ${biomeLabel}`;
+      biomeDiv.textContent = `${i18next.t('poi.biome', 'Biome')}: ${biomeLabel}`;
       tooltipEl.appendChild(biomeDiv);
     }
   } else {
-    const title = document.createElement("div");
-    title.style.cssText = "font-weight:bold;font-size:1.25em;margin-bottom:0.3em";
+    const title = document.createElement('div');
+    title.style.cssText = 'font-weight:bold;font-size:1.25em;margin-bottom:0.3em';
     // Synthesized pillar place cards (Mountain Altar, The Tower, ...) carry
     // their display name directly (labelKey wins so the click-only marker's
     // baked name still translates); everything else derives from type.
-    if (poi.type === "pillar_place") {
+    if (poi.type === 'pillar_place') {
       const pp = poi as any;
       // labelNameKey (common.csv) / labelKey (locale) win over the baked name so
       // the click-only marker's place name still localizes. See PILLAR_PLACES.
@@ -4504,35 +4795,53 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         pp.labelNameKey || pp.labelKey
           ? resolvePillarLinkLabel(
               pp,
-              (k) => gameTranslator.translateItem(k),
-              (k) => gameTranslator.translateMaterial(k),
-              (k, dv) => String(i18next.t(k, dv)),
+              k => gameTranslator.translateItem(k),
+              k => gameTranslator.translateMaterial(k),
+              (k, dv) => String(i18next.t(k, dv))
             )
-          : String(pp.name || "Unknown");
+          : String(pp.name || 'Unknown');
     } else {
-      const label = poi.type || "Unknown";
-      title.textContent = gameTranslator.translateItem(label).replace(/_/g, " ");
+      const label = poi.type || 'Unknown';
+      title.textContent = gameTranslator.translateItem(label).replace(/_/g, ' ');
     }
     tooltipEl.appendChild(wrapWithWikiLink(title, poi));
     if (poi.item) {
-      const itemDiv = document.createElement("div");
-      itemDiv.style.cssText = "color:#aaa;font-size:1.1em";
-      itemDiv.textContent = gameTranslator.translateItem(poi.item).replace(/_/g, " ");
+      const itemDiv = document.createElement('div');
+      itemDiv.style.cssText = 'color:#aaa;font-size:1.1em';
+      itemDiv.textContent = gameTranslator.translateItem(poi.item).replace(/_/g, ' ');
       tooltipEl.appendChild(itemDiv);
     }
   }
 
   // Container contents — show items inside chests/shops/bosses
   if (CONTAINER_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items) && poi.items.some((i: any) => !i.ignore)) {
-    const contDiv = document.createElement("div");
-    contDiv.style.cssText = "margin-top:0.5em;border-top:0.065em solid #333;padding-top:0.3em";
-    const contLabel = document.createElement("div");
-    contLabel.style.cssText = "font-size:1em;color:#888;margin-bottom:0.2em";
-    const isBossDrop = ["triangle_boss", "alchemist_boss", "pyramid_boss", "dragon", "boss_wizard", "boss_ghost", "boss_sky", "islandspirit", "boss_centipede", "boss_robot", "boss_meat", "friend", "boss_pit", "boss_fish", "tiny"].includes(poi.type || "");
-    contLabel.textContent = isBossDrop ? `${i18next.t("poi.drops", "Drops")}:` : `${i18next.t("poi.contains", "Contains")}:`;
+    const contDiv = document.createElement('div');
+    contDiv.style.cssText = 'margin-top:0.5em;border-top:0.065em solid #333;padding-top:0.3em';
+    const contLabel = document.createElement('div');
+    contLabel.style.cssText = 'font-size:1em;color:#888;margin-bottom:0.2em';
+    const isBossDrop = [
+      'triangle_boss',
+      'alchemist_boss',
+      'pyramid_boss',
+      'dragon',
+      'boss_wizard',
+      'boss_ghost',
+      'boss_sky',
+      'islandspirit',
+      'boss_centipede',
+      'boss_robot',
+      'boss_meat',
+      'friend',
+      'boss_pit',
+      'boss_fish',
+      'tiny',
+    ].includes(poi.type || '');
+    contLabel.textContent = isBossDrop
+      ? `${i18next.t('poi.drops', 'Drops')}:`
+      : `${i18next.t('poi.contains', 'Contains')}:`;
     contDiv.appendChild(contLabel);
-    const contRow = document.createElement("div");
-    contRow.style.cssText = "display:flex;flex-wrap:wrap;gap:0.2em;align-items:center";
+    const contRow = document.createElement('div');
+    contRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center';
     // Render a content sprite at an integer multiple of its native size so
     // nearest-neighbour scaling stays perfectly sharp (sprites have varied
     // native sizes; spells are 16px, items/wands differ).
@@ -4551,49 +4860,48 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const countBadge = (ci: any): HTMLElement | null => {
       const n = Number(ci.count);
       if (!Number.isFinite(n) || n <= 1) return null;
-      const b = document.createElement("span");
-      b.style.cssText = "font-size:0.8em;color:#fff;font-weight:bold;margin-left:0.15em";
+      const b = document.createElement('span');
+      b.style.cssText = 'font-size:0.8em;color:#fff;font-weight:bold;margin-left:0.15em';
       b.textContent = `x${n}`;
       return b;
     };
     for (const ci of poi.items) {
       if (ci.ignore) continue;
       const ciKey = getSpriteKey(ci, getAtlas() || undefined);
-      const ciName = ci.name || ci.item || ci.type || "";
-      const translatedName =
-        ci.nameKey
-          ? (() => {
-              const t = gameTranslator.translateItem(String(ci.nameKey));
-              return t !== ci.nameKey ? t : (ci.name || ciName);
-            })()
-          : ci.item === "spell" && ci.spell
+      const ciName = ci.name || ci.item || ci.type || '';
+      const translatedName = ci.nameKey
+        ? (() => {
+            const t = gameTranslator.translateItem(String(ci.nameKey));
+            return t !== ci.nameKey ? t : ci.name || ciName;
+          })()
+        : ci.item === 'spell' && ci.spell
           ? gameTranslator.translateSpell(getSpellName(String(ci.spell)))
-          : ci.item === "perk" && ci.perk
-          ? (() => {
-              const k = perkNameKey(ci.perk);
-              const t = gameTranslator.translateItem(k);
-              return t !== k ? t : (ci.name || ciName);
-            })()
-          : gameTranslator.translateItem(ciName);
+          : ci.item === 'perk' && ci.perk
+            ? (() => {
+                const k = perkNameKey(ci.perk);
+                const t = gameTranslator.translateItem(k);
+                return t !== k ? t : ci.name || ciName;
+              })()
+            : gameTranslator.translateItem(ciName);
 
       // Wands: show sprite (rotated) + spell icons (padded to wand capacity).
       // Everything rendered at 2x native for crisp, integer-scaled pixels —
       // matching the regular wand POI card.
-      if (ci.type === "wand") {
-        const wandBox = document.createElement("div");
+      if (ci.type === 'wand') {
+        const wandBox = document.createElement('div');
         wandBox.style.cssText =
-          "display:flex;align-items:center;gap:0.4em;flex:1 1 100%;min-width:0;background:#111;border-radius:0.2em;padding:0.15em 0.3em;border:0.065em solid #333";
+          'display:flex;align-items:center;gap:0.4em;flex:1 1 100%;min-width:0;background:#111;border-radius:0.2em;padding:0.15em 0.3em;border:0.065em solid #333';
         if (ciKey) {
           const n = getSpriteNativeSize(ciKey);
           // 3x so the (thin) wand reads at roughly spell-cell height and isn't
           // dwarfed by the 2x spell squares — still an integer (sharp) scale.
           const canvas = scaledSprite(ciKey, 3);
           if (canvas && n) {
-            canvas.style.transform = "rotate(90deg)";
-            canvas.title = ci.name || "Wand";
+            canvas.style.transform = 'rotate(90deg)';
+            canvas.title = ci.name || 'Wand';
             // Rotated 90deg: the layout box must use the SWAPPED dimensions or
             // the wide visual overflows its tall box and clips.
-            const wrap = document.createElement("div");
+            const wrap = document.createElement('div');
             wrap.style.cssText = `flex:0 0 auto;display:flex;align-items:center;justify-content:center;width:${n.h * 3}px;height:${n.w * 3}px`;
             wrap.appendChild(canvas);
             wandBox.appendChild(wrap);
@@ -4606,16 +4914,16 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         const capRaw = (ci as any).deck_capacity ?? (ci as any).capacity ?? null;
         const cap = capRaw != null ? Math.max(0, Math.floor(Number(capRaw))) : cardList.length;
         const slots: Array<{ id: string | null; isAC: boolean }> = [];
-        for (const sp of acList) slots.push({ id: typeof sp === "string" ? sp : (sp?.id ?? sp ?? null), isAC: true });
+        for (const sp of acList) slots.push({ id: typeof sp === 'string' ? sp : (sp?.id ?? sp ?? null), isAC: true });
         for (let i = 0; i < cap; i++) {
           const sp = cardList[i];
-          slots.push({ id: sp ? (typeof sp === "string" ? sp : (sp?.id ?? sp)) : null, isAC: false });
+          slots.push({ id: sp ? (typeof sp === 'string' ? sp : (sp?.id ?? sp)) : null, isAC: false });
         }
-        const slotsGrid = document.createElement("div");
-        slotsGrid.style.cssText = "display:flex;flex-wrap:wrap;gap:0.2em;align-items:center;flex:1 1 0;min-width:0";
+        const slotsGrid = document.createElement('div');
+        slotsGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center;flex:1 1 0;min-width:0';
         for (const slot of slots) {
-          const cell = document.createElement("div");
-          cell.style.cssText = `width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#0a0a0a;border:0.065em solid ${slot.isAC ? "#c8a2ff" : "#222"};border-radius:0.15em;box-sizing:border-box`;
+          const cell = document.createElement('div');
+          cell.style.cssText = `width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#0a0a0a;border:0.065em solid ${slot.isAC ? '#c8a2ff' : '#222'};border-radius:0.15em;box-sizing:border-box`;
           if (slot.id) {
             const spellCanvas = scaledSprite(resolveSpellKey(String(slot.id)));
             if (spellCanvas) {
@@ -4627,48 +4935,57 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         }
         wandBox.appendChild(slotsGrid);
 
-        { const cb = countBadge(ci); if (cb) wandBox.appendChild(cb); }
+        {
+          const cb = countBadge(ci);
+          if (cb) wandBox.appendChild(cb);
+        }
         contRow.appendChild(wandBox);
         continue;
       }
 
       // Gold: show sprite + amount
-      if (ci.item === "gold" || ci.item === "goldnugget") {
-        const goldBox = document.createElement("div");
+      if (ci.item === 'gold' || ci.item === 'goldnugget') {
+        const goldBox = document.createElement('div');
         goldBox.style.cssText =
-          "display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333";
+          'display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333';
         if (ciKey) {
           const canvas = scaledSprite(ciKey);
           if (canvas) goldBox.appendChild(canvas);
         }
-        const label = document.createElement("span");
-        label.style.cssText = "font-size:0.8em;color:#ffd700";
-        label.textContent = ci.amount ? `$${ci.amount}` : i18next.t("poi.gold", "Gold");
+        const label = document.createElement('span');
+        label.style.cssText = 'font-size:0.8em;color:#ffd700';
+        label.textContent = ci.amount ? `$${ci.amount}` : i18next.t('poi.gold', 'Gold');
         goldBox.appendChild(label);
-        { const cb = countBadge(ci); if (cb) goldBox.appendChild(cb); }
+        {
+          const cb = countBadge(ci);
+          if (cb) goldBox.appendChild(cb);
+        }
         contRow.appendChild(goldBox);
         continue;
       }
 
       // Hearts: show sprite + HP label
-      if (ci.item === "heart" || ci.item === "heart_bigger" || ci.item === "full_heal") {
-        const heartBox = document.createElement("div");
+      if (ci.item === 'heart' || ci.item === 'heart_bigger' || ci.item === 'full_heal') {
+        const heartBox = document.createElement('div');
         heartBox.style.cssText =
-          "display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333";
+          'display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333';
         if (ciKey) {
           const canvas = scaledSprite(ciKey);
           if (canvas) heartBox.appendChild(canvas);
         }
-        const label = document.createElement("span");
-        label.style.cssText = "font-size:0.8em;color:#ff6b6b";
+        const label = document.createElement('span');
+        label.style.cssText = 'font-size:0.8em;color:#ff6b6b';
         // Honour an explicit name override (e.g. boss-specific "Full regen
         // (On first kill)") before falling back to the generic HP label.
         if (ci.name) label.textContent = ci.name;
-        else if (ci.item === "heart") label.textContent = i18next.t("poi.heartShort", "+25 HP");
-        else if (ci.item === "heart_bigger") label.textContent = i18next.t("poi.heartBiggerShort", "+50 HP");
-        else label.textContent = i18next.t("poi.fullHeal", "Full Heal");
+        else if (ci.item === 'heart') label.textContent = i18next.t('poi.heartShort', '+25 HP');
+        else if (ci.item === 'heart_bigger') label.textContent = i18next.t('poi.heartBiggerShort', '+50 HP');
+        else label.textContent = i18next.t('poi.fullHeal', 'Full Heal');
         heartBox.appendChild(label);
-        { const cb = countBadge(ci); if (cb) heartBox.appendChild(cb); }
+        {
+          const cb = countBadge(ci);
+          if (cb) heartBox.appendChild(cb);
+        }
         contRow.appendChild(heartBox);
         continue;
       }
@@ -4678,63 +4995,69 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       // Essences carry `material` only to resolve their sprite/translation —
       // their name is already complete ("Essence of Earth"), so skip the
       // ": <material>" suffix that flasks/pouches use.
-      if (ci.material && ci.item === "essence") {
+      if (ci.material && ci.item === 'essence') {
         const key = `item_essence_${ci.material}`;
         const t = gameTranslator.translateItem(key);
-        displayName = t !== key ? t : (ci.name || translatedName);
+        displayName = t !== key ? t : ci.name || translatedName;
       } else if (ci.material) {
         const matName = gameTranslator.translateMaterial(ci.material);
         displayName = `${translatedName}: ${matName}`;
       }
       if (ciKey) {
-        const itemBox = document.createElement("div");
+        const itemBox = document.createElement('div');
         itemBox.style.cssText =
-          "display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333";
+          'display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333';
         const canvas = scaledSprite(ciKey);
         if (canvas) itemBox.appendChild(canvas);
-        const textSpan = document.createElement("span");
-        textSpan.style.cssText = "font-size:0.8em;color:#aaa";
+        const textSpan = document.createElement('span');
+        textSpan.style.cssText = 'font-size:0.8em;color:#aaa';
         textSpan.textContent = displayName;
         itemBox.appendChild(textSpan);
-        { const cb = countBadge(ci); if (cb) itemBox.appendChild(cb); }
+        {
+          const cb = countBadge(ci);
+          if (cb) itemBox.appendChild(cb);
+        }
         contRow.appendChild(itemBox);
         continue;
       }
-      const span = document.createElement("span");
+      const span = document.createElement('span');
       span.style.cssText =
-        "font-size:0.8em;color:#aaa;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333";
+        'font-size:0.8em;color:#aaa;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333';
       span.textContent = displayName;
       contRow.appendChild(span);
-      { const cb = countBadge(ci); if (cb) contRow.appendChild(cb); }
+      {
+        const cb = countBadge(ci);
+        if (cb) contRow.appendChild(cb);
+      }
     }
     contDiv.appendChild(contRow);
     tooltipEl.appendChild(contDiv);
   }
 
   // Dark chest: first-open also unlocks the Copy Trail spell.
-  if (poi.type === "chest" && (poi as any).chestVariant === "dark") {
-    const unlockDiv = document.createElement("div");
-    unlockDiv.style.cssText = "margin-top:0.4em;display:flex;align-items:center;gap:0.3em;color:#888;font-size:1em";
-    const lbl = document.createElement("span");
-    lbl.textContent = i18next.t("poi.unlocks", "Unlocks") + ":";
+  if (poi.type === 'chest' && (poi as any).chestVariant === 'dark') {
+    const unlockDiv = document.createElement('div');
+    unlockDiv.style.cssText = 'margin-top:0.4em;display:flex;align-items:center;gap:0.3em;color:#888;font-size:1em';
+    const lbl = document.createElement('span');
+    lbl.textContent = i18next.t('poi.unlocks', 'Unlocks') + ':';
     unlockDiv.appendChild(lbl);
-    const c = drawSpriteToCanvas("spell:larpa_chaos_2", 16, 16);
+    const c = drawSpriteToCanvas('spell:larpa_chaos_2', 16, 16);
     if (c) {
-      c.style.width = "32px";
-      c.style.height = "32px";
+      c.style.width = '32px';
+      c.style.height = '32px';
       unlockDiv.appendChild(c);
     }
-    const nm = document.createElement("span");
-    nm.style.cssText = "color:#aaa";
-    nm.textContent = gameTranslator.translateSpell(getSpellName("LARPA_CHAOS_2"));
+    const nm = document.createElement('span');
+    nm.style.cssText = 'color:#aaa';
+    nm.textContent = gameTranslator.translateSpell(getSpellName('LARPA_CHAOS_2'));
     unlockDiv.appendChild(nm);
     tooltipEl.appendChild(unlockDiv);
   }
 
   // Footer: position info
-  const footer = document.createElement("div");
-  footer.style.cssText = "margin-top:0.5em;color:#666;font-size:0.85em;border-top:0.065em solid #333;padding-top:0.3em";
-  footer.textContent = `${i18next.t("poi.pw", "PW")} ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
+  const footer = document.createElement('div');
+  footer.style.cssText = 'margin-top:0.5em;color:#666;font-size:0.85em;border-top:0.065em solid #333;padding-top:0.3em';
+  footer.textContent = `${i18next.t('poi.pw', 'PW')} ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
   tooltipEl.appendChild(footer);
 
   document.body.appendChild(tooltipEl);
@@ -4778,16 +5101,16 @@ function hideMarkerTooltip(): void {
 // module load (capture phase so it wins over other handlers).
 let _escHandlerInstalled = false;
 function installEscToCloseCard(): void {
-  if (_escHandlerInstalled || typeof document === "undefined") return;
+  if (_escHandlerInstalled || typeof document === 'undefined') return;
   _escHandlerInstalled = true;
   document.addEventListener(
-    "keydown",
-    (e) => {
-      if (e.key === "Escape" && tooltipEl) {
+    'keydown',
+    e => {
+      if (e.key === 'Escape' && tooltipEl) {
         hideMarkerTooltip();
       }
     },
-    { capture: true },
+    { capture: true }
   );
 }
 installEscToCloseCard();
@@ -4815,10 +5138,10 @@ const pillarOriginByPoi = new Map<string, string>();
  */
 function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
   globalMarkerData = data;
-  
+
   // Remove previous handlers
   if (canvasClickHandler) {
-    viewer.removeHandler("canvas-click", canvasClickHandler);
+    viewer.removeHandler('canvas-click', canvasClickHandler);
     canvasClickHandler = null;
   }
   if (canvasMoveCleanup) {
@@ -4838,7 +5161,7 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
       localX - searchRadius,
       localY - searchRadius,
       localX + searchRadius,
-      localY + searchRadius,
+      localY + searchRadius
     );
     if (results.length === 0) return null;
 
@@ -4912,23 +5235,23 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
       localX - searchRadius,
       localY - searchRadius,
       localX + searchRadius,
-      localY + searchRadius,
+      localY + searchRadius
     );
-    osdCanvas.classList.toggle("poi-hover", results.length > 0);
+    osdCanvas.classList.toggle('poi-hover', results.length > 0);
   };
-  osdCanvas.addEventListener("mousemove", onMouseMove);
-  canvasMoveCleanup = () => osdCanvas.removeEventListener("mousemove", onMouseMove);
+  osdCanvas.addEventListener('mousemove', onMouseMove);
+  canvasMoveCleanup = () => osdCanvas.removeEventListener('mousemove', onMouseMove);
 
-  viewer.addHandler("canvas-click", canvasClickHandler);
-  viewer.addHandler("canvas-drag", hideMarkerTooltip);
+  viewer.addHandler('canvas-click', canvasClickHandler);
+  viewer.addHandler('canvas-drag', hideMarkerTooltip);
 }
 
 export function openTooltipForPOI(
   poiId: string,
   viewer: any,
-  opts?: { sidebarRightPx?: number; fallbackX?: number; fallbackY?: number; fallbackPoi?: any },
+  opts?: { sidebarRightPx?: number; fallbackX?: number; fallbackY?: number; fallbackPoi?: any }
 ): void {
-  if (!poiId || poiId === "undefined" || poiId === "null") return;
+  if (!poiId || poiId === 'undefined' || poiId === 'null') return;
 
   // Close any tooltip card that was already open. Otherwise the previous POI's
   // card sits on screen for ~2 s during the cinematic pan before getting
@@ -4950,12 +5273,12 @@ export function openTooltipForPOI(
     const fp = opts.fallbackPoi;
     const atlas = getAtlas();
     const keyRaw = atlas ? getSpriteKey(fp, atlas) : null;
-    const rootKey = Array.isArray(keyRaw) ? keyRaw[0] : (keyRaw ?? "");
+    const rootKey = Array.isArray(keyRaw) ? keyRaw[0] : (keyRaw ?? '');
     const entry = atlas && rootKey ? atlas[rootKey] : null;
     item = {
       poi: fp,
       pw: fp.pw ?? 0,
-      spriteKey: keyRaw ?? "",
+      spriteKey: keyRaw ?? '',
       osdX: fp.x,
       osdY: fp.y,
       w: entry?.w ?? 16,
@@ -4980,8 +5303,8 @@ export function openTooltipForPOI(
   // `.open` class is set; if not present or closed, width is 0.
   let sidebarPx = opts?.sidebarRightPx ?? 0;
   if (sidebarPx === 0) {
-    const srEl = document.getElementById("seed-report-sidebar");
-    if (srEl && srEl.classList.contains("open")) {
+    const srEl = document.getElementById('seed-report-sidebar');
+    if (srEl && srEl.classList.contains('open')) {
       sidebarPx = srEl.getBoundingClientRect().width;
     }
   }
@@ -4989,7 +5312,7 @@ export function openTooltipForPOI(
   // Use the AppOSD wrapper's cinematic panToTarget when available — it draws
   // the SVG trail/arrow + pulse marker, matching the behaviour the search
   // results use. Falls back to viewport.panTo on plain OpenSeadragon viewers.
-  const usePanToTarget = typeof viewer.panToTarget === "function";
+  const usePanToTarget = typeof viewer.panToTarget === 'function';
   let panPromise: Promise<void> | null = null;
   if (usePanToTarget) {
     panPromise = viewer.panToTarget(pt.x, pt.y, { offsetXPx: sidebarPx / 2 });
@@ -4997,10 +5320,7 @@ export function openTooltipForPOI(
     // Plain OSD viewer: no offset support, just pan.
     let panTarget = pt;
     if (sidebarPx > 0) {
-      const shift = viewer.viewport.deltaPointsFromPixels(
-        new (OpenSeadragon as any).Point(sidebarPx / 2, 0),
-        true,
-      );
+      const shift = viewer.viewport.deltaPointsFromPixels(new (OpenSeadragon as any).Point(sidebarPx / 2, 0), true);
       panTarget = new (OpenSeadragon as any).Point(pt.x + shift.x, pt.y);
     }
     viewer.viewport.panTo(panTarget, true);
@@ -5017,8 +5337,8 @@ export function openTooltipForPOI(
   const showTooltipNow = () => {
     const pixel = viewer.viewport.pixelFromPoint(pt);
     const canvasRect = (viewer.canvas as HTMLElement).getBoundingClientRect();
-    const isOffScreen = pixel.x < -100 || pixel.x > canvasRect.width + 100 ||
-                        pixel.y < -100 || pixel.y > canvasRect.height + 100;
+    const isOffScreen =
+      pixel.x < -100 || pixel.x > canvasRect.width + 100 || pixel.y < -100 || pixel.y > canvasRect.height + 100;
 
     const markerX = isOffScreen ? canvasRect.width / 2 : pixel.x;
     const markerY = isOffScreen ? canvasRect.height / 2 : pixel.y;
@@ -5032,7 +5352,7 @@ export function openTooltipForPOI(
     showMarkerTooltip(item, screenX, screenY);
   };
 
-  if (panPromise && typeof panPromise.then === "function") {
+  if (panPromise && typeof panPromise.then === 'function') {
     panPromise.then(showTooltipNow).catch(() => showTooltipNow());
   } else {
     setTimeout(showTooltipNow, 250);
@@ -5041,16 +5361,21 @@ export function openTooltipForPOI(
 
 // ─── Orb Overlays ─────────────────────────────────────────────────────────
 
-function showOrbTooltip(orb: { name?: string; text?: string; x: number; y: number }, iconUrl: string, screenX: number, screenY: number): void {
+function showOrbTooltip(
+  orb: { name?: string; text?: string; x: number; y: number },
+  iconUrl: string,
+  screenX: number,
+  screenY: number
+): void {
   if (tooltipEl) {
     cleanupPopovers(tooltipEl);
     tooltipEl.remove();
     tooltipEl = null;
   }
 
-  tooltipEl = document.createElement("div");
+  tooltipEl = document.createElement('div');
   (tooltipEl as any).__rebuild = () => showOrbTooltip(orb, iconUrl, screenX, screenY);
-  tooltipEl.className = "marker-tooltip";
+  tooltipEl.className = 'marker-tooltip';
   tooltipEl.style.cssText = `
     position: fixed;
     z-index: 10000;
@@ -5069,40 +5394,40 @@ function showOrbTooltip(orb: { name?: string; text?: string; x: number; y: numbe
     line-height: 1.5;
   `;
 
-  const closeBtn = document.createElement("div");
+  const closeBtn = document.createElement('div');
   closeBtn.style.cssText = `
     position: absolute; top: 0.3em; right: 0.6em;
     cursor: pointer; color: #666; font-size: 1.25em;
     line-height: 1;
   `;
-  closeBtn.textContent = "x";
-  closeBtn.onclick = (e) => {
+  closeBtn.textContent = 'x';
+  closeBtn.onclick = e => {
     e.stopPropagation();
     hideMarkerTooltip();
   };
   tooltipEl.appendChild(closeBtn);
 
-  const header = document.createElement("div");
-  header.style.cssText = "display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em";
-  const spriteImg = document.createElement("img");
+  const header = document.createElement('div');
+  header.style.cssText = 'display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em';
+  const spriteImg = document.createElement('img');
   spriteImg.src = iconUrl;
-  spriteImg.style.cssText = "width:28px;height:36px;image-rendering:pixelated;object-fit:contain";
+  spriteImg.style.cssText = 'width:28px;height:36px;image-rendering:pixelated;object-fit:contain';
   header.appendChild(spriteImg);
-  const title = document.createElement("div");
-  title.style.cssText = "font-weight:bold;color:#ffd700;font-size:1.1em";
-  title.textContent = orb.name || "Orb";
+  const title = document.createElement('div');
+  title.style.cssText = 'font-weight:bold;color:#ffd700;font-size:1.1em';
+  title.textContent = orb.name || 'Orb';
   header.appendChild(title);
   tooltipEl.appendChild(header);
 
   if (orb.text) {
-    const desc = document.createElement("div");
-    desc.style.cssText = "color:#aaa;font-size:0.85em;font-style:italic;margin-top:0.15em";
+    const desc = document.createElement('div');
+    desc.style.cssText = 'color:#aaa;font-size:0.85em;font-style:italic;margin-top:0.15em';
     desc.textContent = orb.text;
     tooltipEl.appendChild(desc);
   }
 
-  const footer = document.createElement("div");
-  footer.style.cssText = "margin-top:0.5em;color:#666;font-size:0.85em;border-top:0.065em solid #333;padding-top:0.3em";
+  const footer = document.createElement('div');
+  footer.style.cssText = 'margin-top:0.5em;color:#666;font-size:0.85em;border-top:0.065em solid #333;padding-top:0.3em';
   footer.textContent = `(${Math.round(orb.x)}, ${Math.round(orb.y)})`;
   tooltipEl.appendChild(footer);
 
@@ -5132,7 +5457,7 @@ function showOrbTooltip(orb: { name?: string; text?: string; x: number; y: numbe
  * Orb positions are fixed game locations (not seed-dependent).
  * Each entry has: name, x, y (world coords), icon path (relative to public/).
  */
-import orbsData from "../data/orbs.json";
+import orbsData from '../data/orbs.json';
 
 const _orbIconCache = new Map<string, string>(); // icon path → URL
 
@@ -5147,9 +5472,17 @@ async function loadOrbIconByPath(iconPath: string): Promise<string | null> {
 }
 
 const ORB_OVERLAY_UNLOCK_KEYS = [
-  "sea_lava", "crumbling_earth", "tentacle", "nuke", "necromancy",
-  "bomb_holy", "spiral_shot", "cloud_thunder", "firework",
-  "exploding_deer", "material_cement",
+  'sea_lava',
+  'crumbling_earth',
+  'tentacle',
+  'nuke',
+  'necromancy',
+  'bomb_holy',
+  'spiral_shot',
+  'cloud_thunder',
+  'firework',
+  'exploding_deer',
+  'material_cement',
 ];
 
 async function addOrbOverlays(
@@ -5157,14 +5490,12 @@ async function addOrbOverlays(
   result: GenerationResult,
   generationId: number,
   unlocks: string[] | null,
-  isDaily: boolean,
+  isDaily: boolean
 ): Promise<void> {
   const { worldCenter } = result;
 
   // Filter orbs for the dynamic map
-  const dynamicOrbs = orbsData.filter((orb: any) =>
-    orb.maps && orb.maps.includes("dynamic-main-branch")
-  );
+  const dynamicOrbs = orbsData.filter((orb: any) => orb.maps && orb.maps.includes('dynamic-main-branch'));
   if (dynamicOrbs.length === 0) return;
 
   // Pre-load all spell orb icons
@@ -5172,12 +5503,12 @@ async function addOrbOverlays(
   if (currentGenerationId !== generationId) return;
 
   // Build unlock set for collected detection
-  const unlockSet = (!isDaily && unlocks) ? new Set(unlocks) : null;
+  const unlockSet = !isDaily && unlocks ? new Set(unlocks) : null;
 
   // Pre-render the empty orb sprite from the atlas (item:orbs/orb)
   let emptyOrbUrl: string | null = null;
   if (unlockSet) {
-    emptyOrbUrl = await getPOISpriteFirstFrame({ type: "item", item: "orb", collected: true } as any);
+    emptyOrbUrl = await getPOISpriteFirstFrame({ type: 'item', item: 'orb', collected: true } as any);
   }
   if (currentGenerationId !== generationId) return;
 
@@ -5198,9 +5529,7 @@ async function addOrbOverlays(
     }
 
     // Use empty orb icon (item:orbs/orb) for collected, spell icon for uncollected
-    const iconUrl = (isCollected && emptyOrbUrl)
-      ? emptyOrbUrl
-      : _orbIconCache.get(orb.icon);
+    const iconUrl = isCollected && emptyOrbUrl ? emptyOrbUrl : _orbIconCache.get(orb.icon);
     if (!iconUrl) continue;
 
     const x = orb.x;
@@ -5208,11 +5537,11 @@ async function addOrbOverlays(
     const orbWidth = 20; // World-coordinate width for orb icon
     const orbHeight = 25; // 4:5 aspect ratio matching 40x50px icon
 
-    const el = document.createElement("img");
+    const el = document.createElement('img');
     el.src = iconUrl;
-    el.className = "dynamic-poi poi-orb";
-    el.title = isCollected ? "Orb (collected)" : (orb.name || "Orb");
-    el.style.cssText = "image-rendering: pixelated; width: 100%; height: 100%; cursor: pointer;";
+    el.className = 'dynamic-poi poi-orb';
+    el.title = isCollected ? 'Orb (collected)' : orb.name || 'Orb';
+    el.style.cssText = 'image-rendering: pixelated; width: 100%; height: 100%; cursor: pointer;';
 
     // Store position for canvas-click handler detection
     activeOrbTargets.push({ osdX: x, osdY: y, orb, iconUrl });
@@ -5245,7 +5574,7 @@ export async function renderGenerationResult(
   // so the live map keeps the static-map render path: 3 baked DZIs + nothing
   // else. POI clicks still work — they come from the spatial index built off
   // the prebaked generation.json (installClickHandler below).
-  bakedDecorations?: boolean,
+  bakedDecorations?: boolean
 ): Promise<void> {
   const generationId = ++currentGenerationId;
   (window as any).__osdViewer = viewer;
@@ -5294,11 +5623,16 @@ export async function renderGenerationResult(
     try {
       const world = viewer.world;
       for (const item of oldWorldItems) {
-        try { world.removeItem(item); } catch {}
+        try {
+          world.removeItem(item);
+        } catch {}
       }
     } catch {}
     for (const el of oldOverlayEls) {
-      try { viewer.removeOverlay(el); el.remove(); } catch {}
+      try {
+        viewer.removeOverlay(el);
+        el.remove();
+      } catch {}
     }
     // Defer URL revoke a bit so any in-flight OSD tile request that already
     // grabbed the URL can still resolve.
@@ -5310,7 +5644,11 @@ export async function renderGenerationResult(
   };
   const wrappedOnFirstPaint = () => {
     cleanupOldItems();
-    try { onFirstPaint?.(); } catch (e) { console.warn("[OSD Bridge] onFirstPaint threw:", e); }
+    try {
+      onFirstPaint?.();
+    } catch (e) {
+      console.warn('[OSD Bridge] onFirstPaint threw:', e);
+    }
   };
 
   // Biome layer: prefer baked DZIs from CF Static Assets workers when the
@@ -5328,7 +5666,7 @@ export async function renderGenerationResult(
           const url = item?.source?.tilesUrl;
           // DziTileSource rewrites ".../foo.dzi" into tilesUrl ".../foo_files/",
           // so match against that form, not the raw .dzi URL.
-          if (typeof url === "string" && bakedDZIs.some((p) => url.startsWith(p.dziUrl.replace(/\.dzi$/, "_files/")))) {
+          if (typeof url === 'string' && bakedDZIs.some(p => url.startsWith(p.dziUrl.replace(/\.dzi$/, '_files/')))) {
             dynamicTiledImages.add(item);
             // Drop from oldWorldItems snapshot so cleanupOldItems doesn't
             // remove the DZIs we just painted.
@@ -5340,18 +5678,26 @@ export async function renderGenerationResult(
       // First-paint already fired in dynamic-map (loading bar hid then).
       // Still call wrappedOnFirstPaint to trigger oldItems cleanup for any
       // PRE-baked-paint state (probably nothing in our flow, but defensive).
-      try { wrappedOnFirstPaint(); } catch {}
+      try {
+        wrappedOnFirstPaint();
+      } catch {}
     } else {
       let firstPaintFired = false;
       addBakedDZIsToOSD(viewer, bakedDZIs, (item, _placement) => {
         if (currentGenerationId !== generationId) {
-          try { viewer.world.removeItem(item); } catch {}
+          try {
+            viewer.world.removeItem(item);
+          } catch {}
           return;
         }
         dynamicTiledImages.add(item);
         if (!firstPaintFired) {
           firstPaintFired = true;
-          try { wrappedOnFirstPaint(); } catch (e) { console.warn("[OSD Bridge] baked onFirstPaint threw:", e); }
+          try {
+            wrappedOnFirstPaint();
+          } catch (e) {
+            console.warn('[OSD Bridge] baked onFirstPaint threw:', e);
+          }
         }
       });
     }
@@ -5379,9 +5725,9 @@ export async function renderGenerationResult(
 
   // 1. Build spatial index for POIs (markers). The index drives click hit
   // testing and is needed even when sprites are baked into the DZI pixels.
-  window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 0 } }));
+  window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 0 } }));
   const markerData = await buildMarkerData(result);
-  window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 50 } }));
+  window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 50 } }));
   if (currentGenerationId !== generationId) return;
 
   installClickHandler(viewer, markerData);
@@ -5394,7 +5740,7 @@ export async function renderGenerationResult(
   const emitItemsDone = () => {
     if (itemsProgressDone) return;
     itemsProgressDone = true;
-    window.dispatchEvent(new CustomEvent("itemsGenerationProgress", { detail: { percentage: 100 } }));
+    window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 100 } }));
   };
 
   if (bakedDecorations) {
@@ -5423,7 +5769,7 @@ export async function renderGenerationResult(
         emitItemsDone();
       },
       error: (err: any) => {
-        console.warn("[OSD Bridge] Failed to add marker tiled image:", err);
+        console.warn('[OSD Bridge] Failed to add marker tiled image:', err);
         emitItemsDone();
       },
     });
@@ -5441,7 +5787,7 @@ export async function rebuildAltLayers(
   viewer: any,
   result: GenerationResult,
   unlocks: string[] | null,
-  isDaily: boolean,
+  isDaily: boolean
 ): Promise<void> {
   const generationId = currentGenerationId;
 
@@ -5494,7 +5840,7 @@ export async function rebuildAltLayers(
       markerTiledImage = event.item;
     },
     error: (err: any) => {
-      console.warn("[OSD Bridge] Failed to add marker tiled image:", err);
+      console.warn('[OSD Bridge] Failed to add marker tiled image:', err);
     },
   });
 }
@@ -5503,13 +5849,13 @@ export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: numb
   const flat: Array<POI & { pw: number; worldX: number; worldY: number }> = [];
   const { poisByPW } = result;
   for (const [pwKey, pois] of Object.entries(poisByPW)) {
-    const [pwStr] = pwKey.split(",");
+    const [pwStr] = pwKey.split(',');
     const pw = parseInt(pwStr);
     for (const poi of pois) {
-      const isEnemySpawn = poi.type === "enemies" || poi.type === "props";
+      const isEnemySpawn = poi.type === 'enemies' || poi.type === 'props';
       // Index engraved achievement segments, but omit the plain structural
       // base/fade/cap pieces so pillar search results stay useful.
-      if ((poi as any).item === "pillar_segment" && !isAchievementPillarSegment(poi)) {
+      if ((poi as any).item === 'pillar_segment' && !isAchievementPillarSegment(poi)) {
         continue;
       }
       // Enemy/prop spawn containers: only emit inner items, not the parent
@@ -5562,7 +5908,7 @@ export async function getPOISpriteFirstFrame(poi: {
 
   // Perk whose specific icon isn't baked into the local atlas (e.g. Stainless
   // Armour) — fall back to the wiki image instead of the generic perk square.
-  if (poi.type === "item" && (poi as any).item === "perk" && (poi as any).perk) {
+  if (poi.type === 'item' && (poi as any).item === 'perk' && (poi as any).perk) {
     const specific = perkAtlasKey(String((poi as any).perk));
     if (atlas && !atlas[specific]) {
       const wikiUrl = perkWikiImageUrl(String((poi as any).perk));
@@ -5576,11 +5922,11 @@ export async function getPOISpriteFirstFrame(poi: {
   // Apply spoiler-free transformation — swap sprite key if enabled
   const rootRawKey = Array.isArray(rawKey) ? rawKey[0] : rawKey;
   const keyRawOut = applySpoilerFree(rootRawKey, atlas);
-  const finalKeys = (keyRawOut !== rootRawKey) ? [keyRawOut] : (Array.isArray(rawKey) ? rawKey : [rawKey]);
+  const finalKeys = keyRawOut !== rootRawKey ? [keyRawOut] : Array.isArray(rawKey) ? rawKey : [rawKey];
   const key = finalKeys[0];
 
   // Cache key includes spoiler-free state to avoid stale entries
-  const cacheKey = `${key}:${isSpoilerFree() ? "sf" : "ns"}`;
+  const cacheKey = `${key}:${isSpoilerFree() ? 'sf' : 'ns'}`;
   if (spriteFirstFrameCache.has(cacheKey)) return spriteFirstFrameCache.get(cacheKey)!;
 
   if (atlas && spritesheet && atlas[key]) {
@@ -5589,10 +5935,10 @@ export async function getPOISpriteFirstFrame(poi: {
     const canvasW = frame ? frame.w : rootAtlas.w;
     const canvasH = frame ? frame.h : rootAtlas.h;
 
-    const canvas = document.createElement("canvas");
+    const canvas = document.createElement('canvas');
     canvas.width = canvasW;
     canvas.height = canvasH;
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext('2d')!;
     ctx.imageSmoothingEnabled = false;
 
     // Draw all composite layers overlapping using their atlas origins
@@ -5608,36 +5954,36 @@ export async function getPOISpriteFirstFrame(poi: {
         const f = FIRST_FRAME_SIZE[k];
         const sw = f ? f.w : e.w;
         const sh = f ? f.h : e.h;
-        
+
         if (isFirst) {
           isFirst = false;
           const r_ox = e.ox ?? sw / 2;
           const r_oy = e.oy ?? sh / 2;
-          rootCenterX = (canvasW - sw * rootScale) / 2 + (r_ox * rootScale);
-          rootCenterY = (canvasH - sh * rootScale) / 2 + (r_oy * rootScale);
+          rootCenterX = (canvasW - sw * rootScale) / 2 + r_ox * rootScale;
+          rootCenterY = (canvasH - sh * rootScale) / 2 + r_oy * rootScale;
         }
 
         const l_ox = e.ox ?? sw / 2;
         const l_oy = e.oy ?? sh / 2;
-        const drawX = rootCenterX - (l_ox * rootScale);
-        const drawY = rootCenterY - (l_oy * rootScale);
-        
+        const drawX = rootCenterX - l_ox * rootScale;
+        const drawY = rootCenterY - l_oy * rootScale;
+
         ctx.drawImage(spritesheet, e.x, e.y, sw, sh, drawX, drawY, sw * rootScale, sh * rootScale);
       }
     }
 
-    const url = await new Promise<string>((resolve) => {
-      canvas.toBlob((blob) => {
-        resolve(blob ? URL.createObjectURL(blob) : "");
-      }, "image/png");
+    const url = await new Promise<string>(resolve => {
+      canvas.toBlob(blob => {
+        resolve(blob ? URL.createObjectURL(blob) : '');
+      }, 'image/png');
     });
     spriteFirstFrameCache.set(cacheKey, url || null);
     return url || null;
   }
 
   // Fallback: decode from data.zip directly (for sprites not in atlas)
-  if (key.startsWith("wand:")) {
-    const spriteName = key.replace("wand:", "");
+  if (key.startsWith('wand:')) {
+    const spriteName = key.replace('wand:', '');
     const rotated = await getRotatedWandSprite(spriteName);
     return rotated ? rotated.url : null;
   }

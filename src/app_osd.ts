@@ -1,16 +1,16 @@
-import { fetchMapVersions, getTileData, MapName } from "./data_sources/tile_data";
-import { createOverlays } from "./data_sources/overlays";
-import { isLightMode } from "./light-mode";
-import { isSimplisticBackground } from "./simplistic-background";
+import { fetchMapVersions, getTileData, MapName } from './data_sources/tile_data';
+import { createOverlays } from './data_sources/overlays';
+import { isLightMode } from './light-mode';
+import { isSimplisticBackground } from './simplistic-background';
 
-import { CHUNK_SIZE } from "./constants";
+import { CHUNK_SIZE } from './constants';
 
 declare const OpenSeadragon: any;
 
 // Flat per-PW background used by the "Use simplistic map background" perf
 // toggle. Lives in public/assets/. One image px == one 512px chunk, so it is
 // displayed at CHUNK_SIZE (512x) its natural size.
-const BG_PERF_URL = "./assets/bg_perf_mode.png";
+const BG_PERF_URL = './assets/bg_perf_mode.png';
 
 export type ZoomPos = {
   x: number;
@@ -46,36 +46,40 @@ export class AppOSD {
       maxZoomPixelRatio: 70,
       showNavigator: false,
       showNavigationControl: false,
-      crossOriginPolicy: "Anonymous",
+      crossOriginPolicy: 'Anonymous',
       drawer: (() => {
         if (!useWebGL) {
-          console.log("[OSD] Drawer: canvas (user preference)");
-          return "canvas";
+          console.log('[OSD] Drawer: canvas (user preference)');
+          return 'canvas';
         }
         try {
           if (
             OpenSeadragon.WebGLDrawer &&
-            typeof OpenSeadragon.WebGLDrawer.isSupported === "function" &&
+            typeof OpenSeadragon.WebGLDrawer.isSupported === 'function' &&
             OpenSeadragon.WebGLDrawer.isSupported()
           ) {
-            console.log("[OSD] Drawer: webgl");
-            return "webgl";
+            console.log('[OSD] Drawer: webgl');
+            return 'webgl';
           }
         } catch (e) {
-          console.warn("WebGL check failed", e);
+          console.warn('WebGL check failed', e);
         }
-        console.log("[OSD] Drawer: canvas (webgl not supported)");
-        return "canvas";
+        console.log('[OSD] Drawer: canvas (webgl not supported)');
+        return 'canvas';
       })(),
       imageSmoothingEnabled: false,
       debugMode: false,
-      // No subpixel rounding on the canvas drawer: baked biome DZIs are opaque
-      // (flattened onto black at bake time), so the transparency draw path --
-      // the only consumer of this setting -- never applies to them, and
-      // rounding mid-animation causes visible judder for layers it does hit.
+      // Baked biome DZIs are transparent overlays (baked-dzi-loader sets
+      // hasTransparency), so the canvas drawer clearRect()s every tile rect
+      // before drawing it. At a fractional position that clear partially
+      // wipes the 2px overlap strip of the neighbouring tile and the redraw
+      // only partially re-covers that pixel, leaving a partial-alpha seam on
+      // every 512px tile boundary (= chunk boundary at max level). Rounding
+      // to whole pixels removes the seam; doing it only at rest avoids the
+      // judder that rounding mid-animation causes.
       subPixelRoundingForTransparency: useWebGL
         ? OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS
-        : OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.NEVER,
+        : OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ONLY_AT_REST,
       minScrollDeltaTime: 10,
       springStiffness: 50,
       preserveViewport: true,
@@ -85,23 +89,23 @@ export class AppOSD {
       opacity: 1,
     });
 
-    this.addHandler("canvas-key", (event: any) => {
+    this.addHandler('canvas-key', (event: any) => {
       // Case-insensitive so Shift+R (key "R") is caught too — OSD binds r/R to
       // rotate the viewport, which we disallow entirely (Shift+R is the drawing
       // tool's filled-rectangle hotkey and must not also spin the map).
-      if (["q", "w", "e", "r", "a", "s", "d", "f"].includes(event.originalEvent.key.toLowerCase())) {
+      if (['q', 'w', 'e', 'r', 'a', 's', 'd', 'f'].includes(event.originalEvent.key.toLowerCase())) {
         event.preventDefaultAction = true;
       }
     });
 
-    this.world.addHandler("remove-item", (event: any) => {
+    this.world.addHandler('remove-item', (event: any) => {
       const item = event.item;
-      item.removeAllHandlers("fully-loaded-change");
+      item.removeAllHandlers('fully-loaded-change');
       this.failedItems.delete(item);
       this.notifyLoadingStatus();
     });
 
-    this.addHandler("tile-load-failed", (event: any) => {
+    this.addHandler('tile-load-failed', (event: any) => {
       const item = event.tiledImage;
       if (item) {
         this.failedItems.add(item);
@@ -109,10 +113,10 @@ export class AppOSD {
       }
     });
 
-    this.world.addHandler("add-item", (event: any) => {
+    this.world.addHandler('add-item', (event: any) => {
       const item = event.item;
-      item.addHandler("fully-loaded-change", () => this.notifyLoadingStatus());
-      if ("Image" in item.source) {
+      item.addHandler('fully-loaded-change', () => this.notifyLoadingStatus());
+      if ('Image' in item.source) {
         const image = (item.source as DziTileSource).Image;
         if (image && image.TopLeft) {
           item.setPosition(new OpenSeadragon.Point(Number(image.TopLeft.X), Number(image.TopLeft.Y)), true);
@@ -134,7 +138,7 @@ export class AppOSD {
     return this.viewer.element;
   }
   get canvas() {
-    return this.viewer.canvas || this.viewer.element.querySelector(".openseadragon-canvas");
+    return this.viewer.canvas || this.viewer.element.querySelector('.openseadragon-canvas');
   }
   get innerTracker() {
     return this.viewer.innerTracker;
@@ -178,10 +182,10 @@ export class AppOSD {
   }
 
   private static getTileSources(mapName: MapName): string[] {
-    let sources = getTileData(mapName).map((tileData) => tileData.url);
+    let sources = getTileData(mapName).map(tileData => tileData.url);
     // Light mode on the dynamic map: skip left/right PW backgrounds, keep only middle.
-    if (mapName === "dynamic-main-branch" && isLightMode()) {
-      sources = sources.filter((url) => !/-left\.|-right\./.test(url));
+    if (mapName === 'dynamic-main-branch' && isLightMode()) {
+      sources = sources.filter(url => !/-left\.|-right\./.test(url));
     }
     return sources;
   }
@@ -207,16 +211,16 @@ export class AppOSD {
     const displayW = w * CHUNK_SIZE;
     let data = getTileData(mapName);
     // Match getTileSources light-mode parity: drop left/right PW backgrounds.
-    if (mapName === "dynamic-main-branch" && isLightMode()) {
-      data = data.filter((d) => !/-left\.|-right\./.test(d.url));
+    if (mapName === 'dynamic-main-branch' && isLightMode()) {
+      data = data.filter(d => !/-left\.|-right\./.test(d.url));
     }
-    return data.map((d) => {
+    return data.map(d => {
       const dz = JSON.parse(d.dziContent).Image;
       return {
         // `__simplisticBase` marks this as a persistent base layer so the
         // telescope bridge's overlay-cleanup predicates don't treat it as a
         // stale dynamic tile and purge it after generation renders.
-        tileSource: { type: "image", url: BG_PERF_URL, buildPyramid: false, __simplisticBase: true },
+        tileSource: { type: 'image', url: BG_PERF_URL, buildPyramid: false, __simplisticBase: true },
         x: Number(dz.TopLeft.X),
         y: Number(dz.TopLeft.Y),
         width: displayW,
@@ -238,7 +242,7 @@ export class AppOSD {
       return (item as any).getDrawArea() !== null ? isReady && item.getFullyLoaded() : isReady;
     }, true);
     const isLoading = !isFullyLoaded;
-    this.listeners.forEach((fn) => fn(isLoading));
+    this.listeners.forEach(fn => fn(isLoading));
   }
 
   onLoading(cb: (isLoading: boolean) => void) {
@@ -248,9 +252,9 @@ export class AppOSD {
   private onOpen(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       if (this.isOpen()) return resolve();
-      this.addHandler("open-failed", reject);
-      this.addOnceHandler("open", (_event) => {
-        this.removeHandler("open-failed", reject);
+      this.addHandler('open-failed', reject);
+      this.addOnceHandler('open', _event => {
+        this.removeHandler('open-failed', reject);
         resolve();
       });
     });
@@ -263,11 +267,14 @@ export class AppOSD {
     // produced a rect several times wider than the world and goto/home gained
     // huge dead space to the right. Non-DZI sources (marker/POI overlay tile
     // sources, which can overhang the world rect) are excluded.
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
     let found = false;
     for (let i = 0; i < this.world.getItemCount(); i++) {
       const tiledImage = this.world.getItemAt(i);
-      if (!("Image" in tiledImage.source)) continue;
+      if (!('Image' in tiledImage.source)) continue;
       const item = tiledImage.getBoundsNoRotate();
       minX = Math.min(minX, item.x);
       minY = Math.min(minY, item.y);
@@ -294,15 +301,15 @@ export class AppOSD {
 
   private cacheBustHandler?: any;
   private async bindCacheBustHandler(): Promise<void> {
-    if (this.mapName === null) throw new Error("this.mapName should not be null");
-    if (this.cacheBustHandler) this.world.removeHandler("add-item", this.cacheBustHandler);
+    if (this.mapName === null) throw new Error('this.mapName should not be null');
+    if (this.cacheBustHandler) this.world.removeHandler('add-item', this.cacheBustHandler);
     const versions = await fetchMapVersions(this.mapName);
     this.cacheBustHandler = (event: any) => {
       const source = event.item.source as any;
       // Baked daily DZIs carry their own per-bake cache-bust (set in
       // addBakedDZIsToOSD from the manifest). Don't clobber it.
       if (source.__bakedDzi || source.__bakedBust) return;
-      if (typeof source.tilesUrl === "string") {
+      if (typeof source.tilesUrl === 'string') {
         try {
           const version = versions[new URL(source.tilesUrl).origin];
           // Only bust origins we have a real version for. Unknown origins
@@ -312,7 +319,7 @@ export class AppOSD {
         } catch (e) {}
       }
     };
-    this.world.addHandler("add-item", this.cacheBustHandler!);
+    this.world.addHandler('add-item', this.cacheBustHandler!);
   }
 
   async setMap(mapName: MapName, pos?: ZoomPos): Promise<void> {
@@ -323,14 +330,14 @@ export class AppOSD {
     let sources: any = AppOSD.getTileSources(mapName);
     // Simplistic background only applies to the dynamic map (its PNG is sized
     // to that map's per-PW geometry, and the toggle is only offered there).
-    if (isSimplisticBackground() && mapName === "dynamic-main-branch") {
+    if (isSimplisticBackground() && mapName === 'dynamic-main-branch') {
       // The flat-PNG background is an optional perf asset. If it can't be
       // loaded/decoded, fall back to the normal tile sources instead of
       // letting the rejection bubble up and abort the whole app init.
       try {
         sources = await AppOSD.getSimplisticSources(mapName);
       } catch (e) {
-        console.warn("[AppOSD] Simplistic background unavailable, using normal tiles:", e);
+        console.warn('[AppOSD] Simplistic background unavailable, using normal tiles:', e);
       }
     }
     this.open(sources);
@@ -388,24 +395,14 @@ export class AppOSD {
     const canvasPxH = canvasEl?.clientHeight || 800;
     const visiblePxW = Math.max(1, canvasPxW - offsetXPx * 2); // offsetXPx == sidebarPx/2
 
-    const buildSidebarRect = (
-      contentCx: number,
-      contentCy: number,
-      contentW: number,
-      contentH: number,
-    ) => {
+    const buildSidebarRect = (contentCx: number, contentCy: number, contentW: number, contentH: number) => {
       const zoomForW = visiblePxW / contentW;
       const zoomForH = canvasPxH / contentH;
       const zoom = Math.min(zoomForW, zoomForH);
       const rectW = canvasPxW / zoom;
       const rectH = canvasPxH / zoom;
       const shift = offsetXPx > 0 ? offsetXPx / zoom : 0;
-      return new OpenSeadragon.Rect(
-        contentCx + shift - rectW / 2,
-        contentCy - rectH / 2,
-        rectW,
-        rectH,
-      );
+      return new OpenSeadragon.Rect(contentCx + shift - rectW / 2, contentCy - rectH / 2, rectW, rectH);
     };
 
     // ─── Short-distance shortcut: snap to a single chunk view ─────────────
@@ -457,15 +454,16 @@ export class AppOSD {
     // Arrow tail anchors at the *visible* viewport centre (left of the
     // sidebar), not the full-canvas centre — otherwise it starts mid-sidebar
     // and the arrow looks crooked.
-    const startVisibleShiftWorld = offsetXPx > 0
-      ? viewport.deltaPointsFromPixels(new OpenSeadragon.Point(offsetXPx, 0), true).x
-      : 0;
+    const startVisibleShiftWorld =
+      offsetXPx > 0 ? viewport.deltaPointsFromPixels(new OpenSeadragon.Point(offsetXPx, 0), true).x : 0;
     this.addPanTrail(here.x - startVisibleShiftWorld, here.y, x, y);
 
-    return new Promise<void>((resolve) => {
+    return new Promise<void>(resolve => {
       const startTime = performance.now();
       let cancelled = false;
-      const onCancel = () => { cancelled = true; };
+      const onCancel = () => {
+        cancelled = true;
+      };
       this.activePanCancel = onCancel;
 
       const tick = (now: number) => {
@@ -491,7 +489,7 @@ export class AppOSD {
           w0 * startRect.x + w1 * overviewRect.x + w2 * destRect.x,
           w0 * startRect.y + w1 * overviewRect.y + w2 * destRect.y,
           w0 * startRect.width + w1 * overviewRect.width + w2 * destRect.width,
-          w0 * startRect.height + w1 * overviewRect.height + w2 * destRect.height,
+          w0 * startRect.height + w1 * overviewRect.height + w2 * destRect.height
         );
 
         // Apply immediately so OSD doesn't superimpose its own spring on
@@ -545,9 +543,9 @@ export class AppOSD {
     this.removePanTrail();
     const container = this.viewer.container as HTMLElement;
 
-    const SVG_NS = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(SVG_NS, "svg");
-    svg.setAttribute("class", "pan-trail-svg");
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('class', 'pan-trail-svg');
     svg.style.cssText = `
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       pointer-events: none; z-index: 9999; overflow: visible;
@@ -559,8 +557,8 @@ export class AppOSD {
     const gradId = `${uid}-grad`;
     const arrowId = `${uid}-arrow`;
     const glowId = `${uid}-glow`;
-    const trailColor = "oklch(72% 0.18 152)";
-    const trailColorBright = "oklch(82% 0.21 152)";
+    const trailColor = 'oklch(72% 0.18 152)';
+    const trailColorBright = 'oklch(82% 0.21 152)';
 
     // ── Defs: soft glow filter, tapered arrowhead, fade-in gradient stroke ──
     // The gradient runs along the line in user-space coords so the trail
@@ -594,33 +592,33 @@ export class AppOSD {
     // updatePanTrailPositions so the arc reacts to the user's viewport (the
     // perpendicular sag is in *pixel* space and depends on the current
     // on-screen distance between the two points).
-    const path = document.createElementNS(SVG_NS, "path");
-    path.setAttribute("class", "pan-trail-line");
-    path.setAttribute("fill", "none");
-    path.setAttribute("stroke", `url(#${gradId})`);
-    path.setAttribute("stroke-width", "4");
-    path.setAttribute("stroke-linecap", "round");
-    path.setAttribute("stroke-dasharray", "12,9");
-    path.setAttribute("marker-end", `url(#${arrowId})`);
-    path.setAttribute("filter", `url(#${glowId})`);
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('class', 'pan-trail-line');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', `url(#${gradId})`);
+    path.setAttribute('stroke-width', '4');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-dasharray', '12,9');
+    path.setAttribute('marker-end', `url(#${arrowId})`);
+    path.setAttribute('filter', `url(#${glowId})`);
     svg.appendChild(path);
 
     // Destination: a small filled dot plus a thin outer ring for a "target"
     // motif. Subtler than the old fat green blob.
-    const ring = document.createElementNS(SVG_NS, "circle");
-    ring.setAttribute("class", "pan-trail-ring");
-    ring.setAttribute("r", "10");
-    ring.setAttribute("fill", "none");
-    ring.setAttribute("stroke", trailColorBright);
-    ring.setAttribute("stroke-width", "1.5");
-    ring.setAttribute("stroke-opacity", "0.7");
+    const ring = document.createElementNS(SVG_NS, 'circle');
+    ring.setAttribute('class', 'pan-trail-ring');
+    ring.setAttribute('r', '10');
+    ring.setAttribute('fill', 'none');
+    ring.setAttribute('stroke', trailColorBright);
+    ring.setAttribute('stroke-width', '1.5');
+    ring.setAttribute('stroke-opacity', '0.7');
     svg.appendChild(ring);
 
-    const dot = document.createElementNS(SVG_NS, "circle");
-    dot.setAttribute("class", "pan-trail-dot");
-    dot.setAttribute("r", "3.5");
-    dot.setAttribute("fill", trailColorBright);
-    dot.setAttribute("filter", `url(#${glowId})`);
+    const dot = document.createElementNS(SVG_NS, 'circle');
+    dot.setAttribute('class', 'pan-trail-dot');
+    dot.setAttribute('r', '3.5');
+    dot.setAttribute('fill', trailColorBright);
+    dot.setAttribute('filter', `url(#${glowId})`);
     svg.appendChild(dot);
 
     // Pick up the gradient element so we can update its endpoints per frame.
@@ -674,8 +672,8 @@ export class AppOSD {
 
     // Listen to viewport changes to update line positions
     this.panTrailViewportHandler = () => this.updatePanTrailPositions();
-    this.viewer.addHandler("animation", this.panTrailViewportHandler);
-    this.viewer.addHandler("animation-finish", this.panTrailViewportHandler);
+    this.viewer.addHandler('animation', this.panTrailViewportHandler);
+    this.viewer.addHandler('animation-finish', this.panTrailViewportHandler);
   }
 
   private panTrailData: {
@@ -700,7 +698,7 @@ export class AppOSD {
     // Subtle dash flow toward the destination — slow enough to feel like
     // motion, fast enough to read as "this is going somewhere".
     this.panTrailDashOffset -= 0.6;
-    this.panTrailData.path.setAttribute("stroke-dashoffset", String(this.panTrailDashOffset));
+    this.panTrailData.path.setAttribute('stroke-dashoffset', String(this.panTrailDashOffset));
     this.panTrailAnimFrame = requestAnimationFrame(this.animatePanTrail);
   };
 
@@ -716,19 +714,19 @@ export class AppOSD {
     // level. No more "warping" or direction flips during the cinematic.
     const cp = viewport.viewportToViewerElementCoordinates(new OpenSeadragon.Point(cxW, cyW));
 
-    path.setAttribute("d", `M ${p1.x} ${p1.y} Q ${cp.x} ${cp.y} ${p2.x} ${p2.y}`);
+    path.setAttribute('d', `M ${p1.x} ${p1.y} Q ${cp.x} ${cp.y} ${p2.x} ${p2.y}`);
 
     // Gradient runs along the straight start→end vector. Userspace coords so
     // the fade tracks the trail no matter how big the canvas is.
-    gradient.setAttribute("x1", String(p1.x));
-    gradient.setAttribute("y1", String(p1.y));
-    gradient.setAttribute("x2", String(p2.x));
-    gradient.setAttribute("y2", String(p2.y));
+    gradient.setAttribute('x1', String(p1.x));
+    gradient.setAttribute('y1', String(p1.y));
+    gradient.setAttribute('x2', String(p2.x));
+    gradient.setAttribute('y2', String(p2.y));
 
-    dot.setAttribute("cx", String(p2.x));
-    dot.setAttribute("cy", String(p2.y));
-    ring.setAttribute("cx", String(p2.x));
-    ring.setAttribute("cy", String(p2.y));
+    dot.setAttribute('cx', String(p2.x));
+    dot.setAttribute('cy', String(p2.y));
+    ring.setAttribute('cx', String(p2.x));
+    ring.setAttribute('cy', String(p2.y));
   }
 
   private removePanTrail() {
@@ -737,8 +735,8 @@ export class AppOSD {
       this.panTrailAnimFrame = 0;
     }
     if (this.panTrailViewportHandler) {
-      this.viewer.removeHandler("animation", this.panTrailViewportHandler);
-      this.viewer.removeHandler("animation-finish", this.panTrailViewportHandler);
+      this.viewer.removeHandler('animation', this.panTrailViewportHandler);
+      this.viewer.removeHandler('animation-finish', this.panTrailViewportHandler);
       this.panTrailViewportHandler = null;
     }
     if (this.panTrailData) {
@@ -751,11 +749,11 @@ export class AppOSD {
   /** Add a pulsing circle at the destination that fades out */
   private addPulseMarker(x: number, y: number) {
     // Remove any existing pulse
-    const old = this.viewer.container.querySelector(".pan-pulse-marker");
+    const old = this.viewer.container.querySelector('.pan-pulse-marker');
     if (old) old.remove();
 
-    const el = document.createElement("div");
-    el.className = "pan-pulse-marker";
+    const el = document.createElement('div');
+    el.className = 'pan-pulse-marker';
     el.style.cssText = `
       position: absolute; width: 20px; height: 20px;
       border: 2px solid oklch(62.7% 0.194 149.214); border-radius: 50%;
