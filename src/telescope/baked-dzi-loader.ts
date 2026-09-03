@@ -18,8 +18,10 @@
  * telescope as before — only the biome composite is replaced.
  */
 
-const WORLDS = ["left", "middle", "right"] as const;
+const WORLDS = ['left', 'middle', 'right'] as const;
 export type World = (typeof WORLDS)[number];
+
+declare const OpenSeadragon: any;
 
 /**
  * Per-PW DZI placement read out of a world's manifest. Coordinates match the
@@ -47,7 +49,7 @@ export interface BakedDziProbeOk {
   baked: true;
   /** "daily" or "previous-daily" — picked by the caller based on which seed
    *  we matched against. Useful for debugging. */
-  prefix: "daily" | "previous-daily";
+  prefix: 'daily' | 'previous-daily';
   placements: BakedDziPlacement[];
   /** True when the bake's pixels already include scenes + POI sprites (the
    *  node compositor alpha-blended decoration cells onto each region full
@@ -84,21 +86,21 @@ interface PerWorldManifest {
   regions: PerWorldManifestRegion[];
 }
 
-export function originFor(prefix: "daily" | "previous-daily", world: World): string {
+export function originFor(prefix: 'daily' | 'previous-daily', world: World): string {
   return `https://${prefix}-${world}.acidflow.stream`;
 }
 
 async function fetchWorldManifest(
-  prefix: "daily" | "previous-daily",
+  prefix: 'daily' | 'previous-daily',
   world: World,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<PerWorldManifest | null> {
   try {
     const origin = originFor(prefix, world);
     const resp = await fetch(`${origin}/manifest.json`, { signal });
     if (!resp.ok) return null;
     const m = (await resp.json()) as PerWorldManifest;
-    if (!m || typeof m.seed !== "number" || !Array.isArray(m.regions) || m.regions.length === 0) {
+    if (!m || typeof m.seed !== 'number' || !Array.isArray(m.regions) || m.regions.length === 0) {
       return null;
     }
     return m;
@@ -116,11 +118,11 @@ async function fetchWorldManifest(
  * returned for the seed being rendered.
  */
 export async function probeBakedDZIs(
-  prefix: "daily" | "previous-daily",
+  prefix: 'daily' | 'previous-daily',
   seed: number,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<BakedDziProbeResult> {
-  const manifests = await Promise.all(WORLDS.map((w) => fetchWorldManifest(prefix, w, signal)));
+  const manifests = await Promise.all(WORLDS.map(w => fetchWorldManifest(prefix, w, signal)));
 
   for (let i = 0; i < WORLDS.length; i++) {
     const m = manifests[i];
@@ -175,7 +177,7 @@ export async function probeBakedDZIs(
 export function addBakedDZIsToOSD(
   viewer: any,
   placements: BakedDziPlacement[],
-  onAdded?: (item: any, placement: BakedDziPlacement) => void,
+  onAdded?: (item: any, placement: BakedDziPlacement) => void
 ): void {
   // Middle world (pw 0) must paint first: it's the main visible area on a
   // fresh daily load. placements arrive in left/middle/right order, so OSD
@@ -218,6 +220,17 @@ export function addBakedDZIsToOSD(
         try {
           event.item.source.hasTransparency = () => true;
         } catch {}
+        // The clear above happens at the tile's exact (fractional) screen
+        // position. Chrome anti-aliases both the clearRect and the drawImage
+        // edge, so the boundary pixel column ends up ~80% covered, and the
+        // black underneath shows through as a 1px dark seam on every 512px
+        // tile edge. The viewer-wide rule only rounds once the springs are
+        // at rest, which is why the seam appears while zooming and vanishes
+        // a moment later. Round this layer's tiles to whole pixels on every
+        // frame instead; the snap is at most half a screen pixel.
+        try {
+          event.item.subPixelRoundingForTransparency = OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS;
+        } catch {}
         // Per-bake cache-bust. The global add-item handler (app_osd) only knows
         // versions for the static map origins, so without this baked tiles get
         // a constant "?v=undefined" and a new daily is served stale until a
@@ -229,7 +242,7 @@ export function addBakedDZIsToOSD(
         try {
           onAdded?.(event.item, p);
         } catch (e) {
-          console.warn("[baked-dzi] onAdded threw:", e);
+          console.warn('[baked-dzi] onAdded threw:', e);
         }
       },
     });

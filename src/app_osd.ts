@@ -69,14 +69,11 @@ export class AppOSD {
       })(),
       imageSmoothingEnabled: false,
       debugMode: false,
-      // Baked biome DZIs are transparent overlays (baked-dzi-loader sets
-      // hasTransparency), so the canvas drawer clearRect()s every tile rect
-      // before drawing it. At a fractional position that clear partially
-      // wipes the 2px overlap strip of the neighbouring tile and the redraw
-      // only partially re-covers that pixel, leaving a partial-alpha seam on
-      // every 512px tile boundary (= chunk boundary at max level). Rounding
-      // to whole pixels removes the seam; doing it only at rest avoids the
-      // judder that rounding mid-animation causes.
+      // Canvas drawer: round transparent tiles to whole pixels once the
+      // viewport is at rest so overlap seams don't show. The baked daily
+      // overlay additionally rounds on every frame (baked-dzi-loader); the
+      // other transparent layers (markers, scenes) are sparse enough that a
+      // partial-coverage tile edge is invisible mid-animation.
       subPixelRoundingForTransparency: useWebGL
         ? OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS
         : OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ONLY_AT_REST,
