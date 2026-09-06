@@ -41646,31 +41646,31 @@
     "w": 16,
     "h": 16
   },
-  "item:potion:fungisoil": {
+  "item:potion:fungi_creeping": {
     "x": 3797,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:fungi_creeping": {
+  "item:potion:fungi_creeping_secret": {
     "x": 3814,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:fungi_creeping_secret": {
+  "item:potion:fungi_green": {
     "x": 3831,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:fungi_green": {
+  "item:potion:fungi_yellow": {
     "x": 3848,
     "y": 603,
     "w": 16,
     "h": 16
   },
-  "item:potion:fungi_yellow": {
+  "item:potion:fungisoil": {
     "x": 3865,
     "y": 603,
     "w": 16,
@@ -42120,13 +42120,13 @@
     "w": 16,
     "h": 16
   },
-  "item:potion:peat": {
+  "item:potion:pea_soup": {
     "x": 1054,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:pea_soup": {
+  "item:potion:peat": {
     "x": 1071,
     "y": 620,
     "w": 16,
@@ -42300,37 +42300,37 @@
     "w": 16,
     "h": 16
   },
-  "item:potion:sandstone": {
+  "item:potion:sand_blue": {
     "x": 1564,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:sandstone_surface": {
+  "item:potion:sand_herb": {
     "x": 1581,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:sand_blue": {
+  "item:potion:sand_petrify": {
     "x": 1598,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:sand_herb": {
+  "item:potion:sand_surface": {
     "x": 1615,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:sand_petrify": {
+  "item:potion:sandstone": {
     "x": 1632,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:sand_surface": {
+  "item:potion:sandstone_surface": {
     "x": 1649,
     "y": 620,
     "w": 16,
@@ -42450,43 +42450,43 @@
     "w": 16,
     "h": 16
   },
-  "item:potion:steelmoss_slanted_molten": {
+  "item:potion:steel_molten": {
     "x": 1989,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:steelmoss_static_molten": {
+  "item:potion:steel_rust_molten": {
     "x": 2006,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:steelsmoke_static_molten": {
+  "item:potion:steel_sand": {
     "x": 2023,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:steel_molten": {
+  "item:potion:steel_static_molten": {
     "x": 2040,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:steel_rust_molten": {
+  "item:potion:steelmoss_slanted_molten": {
     "x": 2057,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:steel_sand": {
+  "item:potion:steelmoss_static_molten": {
     "x": 2074,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:potion:steel_static_molten": {
+  "item:potion:steelsmoke_static_molten": {
     "x": 2091,
     "y": 620,
     "w": 16,
@@ -42642,31 +42642,31 @@
     "w": 16,
     "h": 16
   },
-  "item:pouch:fungisoil": {
+  "item:pouch:fungi_creeping": {
     "x": 2533,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:fungi_creeping": {
+  "item:pouch:fungi_creeping_secret": {
     "x": 2550,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:fungi_creeping_secret": {
+  "item:pouch:fungi_green": {
     "x": 2567,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:fungi_green": {
+  "item:pouch:fungi_yellow": {
     "x": 2584,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:fungi_yellow": {
+  "item:pouch:fungisoil": {
     "x": 2601,
     "y": 620,
     "w": 16,
@@ -42966,37 +42966,37 @@
     "w": 16,
     "h": 16
   },
-  "item:pouch:sandstone": {
+  "item:pouch:sand_blue": {
     "x": 3451,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:sandstone_surface": {
+  "item:pouch:sand_herb": {
     "x": 3468,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:sand_blue": {
+  "item:pouch:sand_petrify": {
     "x": 3485,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:sand_herb": {
+  "item:pouch:sand_surface": {
     "x": 3502,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:sand_petrify": {
+  "item:pouch:sandstone": {
     "x": 3519,
     "y": 620,
     "w": 16,
     "h": 16
   },
-  "item:pouch:sand_surface": {
+  "item:pouch:sandstone_surface": {
     "x": 3536,
     "y": 620,
     "w": 16,
