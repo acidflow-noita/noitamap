@@ -1,4 +1,11 @@
 {
+  "fullPixels": {
+    "description": "Renderizar el terreno de esta semilla con resolución completa de píxeles. Cambiar esta opción recarga el mapa.",
+    "baked": "Este mapa diario ya está prerrenderizado con resolución completa de píxeles.",
+    "title": "Renderizar cada píxel",
+    "rendering": "Renderizando el terreno a resolución completa…",
+    "unavailable": "El renderizado del terreno píxel a píxel no está disponible. Desactiva esta opción para usar el renderizador estándar."
+  },
   "search": {
     "placeholder": "Buscar hechizos, objetos, jefes, lugares…",
     "indexing": "Cargando datos...",

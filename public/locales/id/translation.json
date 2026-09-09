@@ -1,4 +1,11 @@
 {
+  "fullPixels": {
+    "description": "Render medan seed ini pada resolusi piksel penuh. Mengubah pengaturan ini akan memuat ulang peta.",
+    "baked": "Peta harian ini sudah diprarender pada resolusi piksel penuh.",
+    "title": "Render setiap piksel",
+    "rendering": "Merender medan dalam resolusi penuh…",
+    "unavailable": "Rendering medan per piksel tidak tersedia. Nonaktifkan opsi ini untuk menggunakan renderer standar."
+  },
   "search": {
     "placeholder": "Cari mantra, item, bos, tempat…",
     "indexing": "Memuat data...",

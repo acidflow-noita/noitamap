@@ -1,3 +1,5 @@
+import { fullPixelDataUrl } from "./full-pixel-data";
+import { isGLTerrainEnabled } from "../renderer_settings";
 /**
  * telescope-data-bridge.ts
  *
@@ -31,11 +33,14 @@ export function telescopePathToZipPath(telescopePath: string): string {
  * Intercepts global fetch() calls. If the URL starts with `./data/`,
  * it searches for the file in available zip archives.
  */
-export function installFetchInterceptor(): void {
+export function installFetchInterceptor(fullPixels = isGLTerrainEnabled()): void {
   const originalFetch = window.fetch;
 
   (window as any).fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+
+    const asset = fullPixels && fullPixelDataUrl(url);
+    if (asset) return originalFetch.call(window, asset, init);
 
     if (url.startsWith("./data/") || url.includes("/data/")) {
       const match = url.match(/data\/.+/);
@@ -70,6 +75,13 @@ export function installFetchInterceptor(): void {
                 fullZipPath.replace("data/pixel_scenes/general/cauldron", "data/biome_impl/cauldron"),
                 fullZipPath.replace("data/pixel_scenes/spliced/", "data/biome_impl/"),
                 fullZipPath.replace("data/biome_maps/", "data/biome_impl/"),
+                // render-perf ships cell-color art beside scene material PNGs;
+                // our original game archive stores it under biome_impl. Do not
+                // redirect base material PNGs: those use the specialized zip.
+                ...(fullZipPath.endsWith("_visual.png")
+                  ? [fullZipPath.replace("data/pixel_scenes/", "data/biome_impl/")]
+                  : []),
+                fullZipPath.replace("data/backgrounds/", "data/"),
               ];
               for (const fallback of fallbacks) {
                 if (fallback !== fullZipPath) {

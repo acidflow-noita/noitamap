@@ -23,3 +23,6 @@
 /public/data/edge_atlas.bin
 /public/data/biome_backgrounds.json
 /public/data/background_data.json
+
+# Native bake products and resumable tile checkpoints
+/optional_data/full-pixel-bake/

@@ -272,12 +272,12 @@ function installCanvasFingerprintBypass() {
 
       // Look up raw data in our WeakMap (works for ImageBitmap, HTMLCanvasElement, OffscreenCanvas)
       let rawData = rawDataStore.get(image);
-      if (!rawData && image instanceof HTMLCanvasElement) rawData = rawDataStore.get(image);
-      if (!rawData && image instanceof OffscreenCanvas) rawData = rawDataStore.get(image);
+      if (!rawData && typeof HTMLCanvasElement !== "undefined" && image instanceof HTMLCanvasElement) rawData = rawDataStore.get(image);
+      if (!rawData && typeof OffscreenCanvas !== "undefined" && image instanceof OffscreenCanvas) rawData = rawDataStore.get(image);
       // Also check HTMLImageElement for raw data stored by the Image.src interceptor
       // in telescope-data-bridge.ts. This is needed for biome_hacks.js's preloadOverlays()
       // which loads coalmine overlay via new Image() → drawImage → getImageData.
-      if (!rawData && image instanceof HTMLImageElement && (image as any).__noitamap_rawImageData) {
+      if (!rawData && typeof HTMLImageElement !== "undefined" && image instanceof HTMLImageElement && (image as any).__noitamap_rawImageData) {
         rawData = (image as any).__noitamap_rawImageData;
       }
 

@@ -1,4 +1,11 @@
 {
+  "fullPixels": {
+    "description": "以完整像素精度渲染此种子的地形。更改此设置会重新加载地图。",
+    "baked": "此每日地图已预渲染至完整像素精度。",
+    "title": "渲染每个像素",
+    "rendering": "正在以完整分辨率渲染地形…",
+    "unavailable": "无法使用逐像素地形渲染。请关闭此选项以使用标准渲染器。"
+  },
   "search": {
     "placeholder": "查找法术、物品、Boss、地点…",
     "indexing": "加载数据中...",

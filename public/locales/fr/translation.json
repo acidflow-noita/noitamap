@@ -1,4 +1,11 @@
 {
+  "fullPixels": {
+    "description": "Afficher le terrain de cette graine à la résolution complète, pixel par pixel. Modifier ce réglage recharge la carte.",
+    "baked": "Cette carte quotidienne est déjà précalculée à la résolution complète, pixel par pixel.",
+    "title": "Afficher chaque pixel",
+    "rendering": "Rendu du terrain en pleine résolution…",
+    "unavailable": "Le rendu du terrain pixel par pixel est indisponible. Désactivez cette option pour utiliser le rendu standard."
+  },
   "search": {
     "placeholder": "Trouver sorts, objets, boss, lieux…",
     "indexing": "Chargement des donnees...",

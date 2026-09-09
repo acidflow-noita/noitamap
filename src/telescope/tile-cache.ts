@@ -1,3 +1,5 @@
+import { serializeTileLayer, restoreTileLayer, type CachedTileLayer } from "./tile-layer-cache";
+import { telescopeCacheKey } from "./cache-identity";
 /**
  * tile-cache.ts
  *
@@ -15,19 +17,6 @@ const RENDER_STORE_NAME = "biome_renders";
 const SCENE_BITMAP_STORE_NAME = "pixel_scene_bitmaps";
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-interface CachedTileLayer {
-  biomeName: string;
-  correctedX: number;
-  correctedY: number;
-  w: number;
-  h: number;
-  buffer: ArrayBuffer | null;
-  width: number;
-  height: number;
-  mapH: number;
-  minX: number;
-  minY: number;
-}
 
 export interface CachedBiomeRender {
   /** "${cacheKey}|${pw},${pvt}" */
@@ -52,6 +41,7 @@ interface CachedGeneration {
   worldCenter: number;
   parallelWorlds: number[];
   tileLayers: CachedTileLayer[];
+  elevatorShafts?: CachedTileLayer[];
   biomeDataPixels: ArrayBuffer;
   biomeDataW: number;
   biomeDataH: number;
@@ -121,25 +111,12 @@ function openDB(): Promise<IDBDatabase> {
  * Only stores raw data (buffers, biome pixels, POIs) — no canvas blobs.
  */
 export async function cacheGeneration(cacheKey: string, seed: number, result: any): Promise<void> {
+  cacheKey = telescopeCacheKey(cacheKey);
   try {
     const db = await openDB();
 
     // Serialize tile layer raw buffers (no canvas blobs)
-    const tileLayers: CachedTileLayer[] = result.tileLayers.map((layer: any) => ({
-      biomeName: layer.biomeName || "",
-      correctedX: layer.correctedX,
-      correctedY: layer.correctedY,
-      w: layer.w,
-      h: layer.h,
-      buffer: layer.buffer
-        ? layer.buffer.buffer.slice(layer.buffer.byteOffset, layer.buffer.byteOffset + layer.buffer.byteLength)
-        : null,
-      width: layer.width,
-      height: layer.height,
-      mapH: layer.mapH,
-      minX: layer.minX,
-      minY: layer.minY,
-    }));
+    const tileLayers: CachedTileLayer[] = result.tileLayers.map(serializeTileLayer);
 
     // Store pixel scene metadata only. We deliberately do NOT serialise
     // imgElement/imgData anymore — those bytes are duplicated:
@@ -173,6 +150,7 @@ export async function cacheGeneration(cacheKey: string, seed: number, result: an
       worldCenter: result.worldCenter,
       parallelWorlds: result.parallelWorlds || [-1, 0, 1],
       tileLayers,
+      elevatorShafts: result.elevatorShafts?.map(serializeTileLayer),
       biomeDataPixels: result.biomeData?.pixels
         ? new Uint32Array(result.biomeData.pixels).buffer
         : new ArrayBuffer(0),
@@ -201,6 +179,7 @@ export async function cacheGeneration(cacheKey: string, seed: number, result: an
  * Restores raw data only — no blob deserialization needed.
  */
 export async function getCachedGeneration(cacheKey: string): Promise<any | null> {
+  cacheKey = telescopeCacheKey(cacheKey);
   try {
     const db = await openDB();
     const tx = db.transaction(STORE_NAME, "readonly");
@@ -220,20 +199,7 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
     }
 
     // Restore tile layers with raw buffers (no canvas — overlays recomputed)
-    const tileLayers = entry.tileLayers.map((layer) => ({
-      biomeName: layer.biomeName,
-      canvas: null,
-      correctedX: layer.correctedX,
-      correctedY: layer.correctedY,
-      w: layer.w,
-      h: layer.h,
-      buffer: layer.buffer ? new Uint8Array(layer.buffer) : null,
-      width: layer.width,
-      height: layer.height,
-      mapH: layer.mapH,
-      minX: layer.minX,
-      minY: layer.minY,
-    }));
+    const tileLayers = entry.tileLayers.map(restoreTileLayer);
 
     // Reconstruct biomeData with pixels, heavenPixels, and hellPixels
     let biomeData: any = { pixels: new Uint32Array(0), w: 0, h: 0 };
@@ -280,6 +246,7 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
       parallelWorlds: entry.parallelWorlds,
       biomeData,
       tileLayers,
+      elevatorShafts: entry.elevatorShafts?.map(restoreTileLayer),
       poisByPW: entry.poisByPW,
       pixelScenesByPW,
     };
@@ -352,6 +319,7 @@ export async function getCachedBiomeRender(
   pw: number,
   pvt: number,
 ): Promise<CachedBiomeRender | null> {
+  cacheKey = telescopeCacheKey(cacheKey);
   try {
     const db = await openDB();
     const tx = db.transaction(RENDER_STORE_NAME, "readonly");
@@ -377,6 +345,7 @@ export async function cacheBiomeRender(
   blob: Blob,
   geom: { minX: number; minY: number; osdWidth: number },
 ): Promise<void> {
+  cacheKey = telescopeCacheKey(cacheKey);
   try {
     const db = await openDB();
     const entry: CachedBiomeRender = {
@@ -413,6 +382,7 @@ export interface CachedSceneBitmap {
 }
 
 export async function getCachedSceneBitmap(key: string): Promise<CachedSceneBitmap | null> {
+  if (typeof indexedDB === "undefined") return null;
   try {
     const db = await openDB();
     const tx = db.transaction(SCENE_BITMAP_STORE_NAME, "readonly");
@@ -436,6 +406,7 @@ export async function getCachedSceneBitmap(key: string): Promise<CachedSceneBitm
  * single-key lookups in browsers with high per-transaction overhead (Brave, FF).
  */
 export async function getCachedSceneBitmapsBulk(keys: string[]): Promise<Map<string, CachedSceneBitmap>> {
+  if (typeof indexedDB === "undefined") return new Map();
   const result = new Map<string, CachedSceneBitmap>();
   if (keys.length === 0) return result;
   try {
@@ -471,6 +442,7 @@ export async function getCachedSceneBitmapsBulk(keys: string[]): Promise<Map<str
  * transaction. Returns a map keyed by "pw,pvt".
  */
 export async function getCachedBiomeRendersForKey(cacheKey: string): Promise<Map<string, CachedBiomeRender>> {
+  cacheKey = telescopeCacheKey(cacheKey);
   const result = new Map<string, CachedBiomeRender>();
   try {
     const db = await openDB();
@@ -495,6 +467,7 @@ export async function getCachedBiomeRendersForKey(cacheKey: string): Promise<Map
 }
 
 export async function getCachedSceneBitmapKeys(): Promise<Set<string>> {
+  if (typeof indexedDB === "undefined") return new Set();
   try {
     const db = await openDB();
     const tx = db.transaction(SCENE_BITMAP_STORE_NAME, "readonly");
@@ -512,6 +485,7 @@ export async function getCachedSceneBitmapKeys(): Promise<Set<string>> {
 }
 
 export async function cacheSceneBitmap(key: string, blob: Blob, width: number, height: number): Promise<void> {
+  if (typeof indexedDB === "undefined") return;
   try {
     const db = await openDB();
     const entry: CachedSceneBitmap = { key, blob, width, height, timestamp: Date.now() };

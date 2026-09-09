@@ -1,4 +1,11 @@
 {
+  "fullPixels": {
+    "description": "Renderizza il terreno di questo seed alla piena risoluzione dei pixel. Modificare questa impostazione ricarica la mappa.",
+    "baked": "Questa mappa giornaliera è già prerenderizzata alla piena risoluzione dei pixel.",
+    "title": "Renderizza ogni pixel",
+    "rendering": "Rendering del terreno a piena risoluzione…",
+    "unavailable": "Il rendering del terreno pixel per pixel non è disponibile. Disattiva questa opzione per usare il renderer standard."
+  },
   "search": {
     "placeholder": "Trova incantesimi, oggetti, boss, luoghi…",
     "indexing": "Caricamento dati...",

@@ -1,3 +1,5 @@
+import { withoutElevatorEndpointSpawns } from "./terrain-elevator";
+import { loadWorkerTelescopeModules } from "./load-worker-telescope";
 import { installTelescopeShim } from "./telescope-dom-shim";
 import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope-data-bridge";
 
@@ -27,15 +29,18 @@ installFetchInterceptor();
 installImageSrcInterceptor();
 
 self.onmessage = async (e) => {
+  let phase = "initializing worker modules";
   try {
-    const { biomeData, tileSpawns, seed, ngPlus, pw, gameMode, perks, skipCosmeticScenes, unlocks, dailySeed } = e.data;
+    const { biomeData, tileSpawns, seed, ngPlus, pw, gameMode, perks, skipCosmeticScenes, unlocks, dailySeed, elevatorColumns = [], elevatorSpawns = [] } = e.data;
 
-    // Dynamically import AFTER shims are correctly established
-    const { scanSpawnFunctions, getSpecialPoIs } = await import("../../lib/noita-telescope/js/poi_scanner.js");
-    const { addStaticPixelScenes } = await import("../../lib/noita-telescope/js/static_spawns.js");
-    const { updateSettings } = await import("../../lib/noita-telescope/js/settings.js");
-    const { loadPixelSceneData } = await import("../../lib/noita-telescope/js/pixel_scene_generation.js");
-    const { setUnlocks, UNLOCKABLES } = await import("../../lib/noita-telescope/js/unlocks.js");
+    // Install matching runtime-data routes before evaluating either fork.
+    installFetchInterceptor(!!e.data.fullPixels);
+    const modules = await loadWorkerTelescopeModules(!!e.data.fullPixels);
+    const { scanSpawnFunctions, getSpecialPoIs } = modules.poiScannerMod;
+    const { addStaticPixelScenes } = modules.staticSpawnsMod;
+    const { updateSettings } = modules.settingsMod;
+    const { loadPixelSceneData } = modules.pixelSceneMod;
+    const { setUnlocks, UNLOCKABLES } = modules.unlocksMod;
 
     // Mirror telescope-adapter's setUnlocks logic so side PWs roll wand/chest
     // spell pools against the same unlock set as PW 0.
@@ -62,8 +67,10 @@ self.onmessage = async (e) => {
     });
 
     // Populate worker's pixel scene cache before performing generation
+    phase = "loading pixel scenes";
     await loadPixelSceneData();
 
+    phase = "scanning main-plane spawns";
     // 1. Scan spawns
     const scanResults = scanSpawnFunctions(biomeData, tileSpawns, seed, ngPlus, pw, 0, skipCosmeticScenes, perks, gameMode);
     
@@ -86,12 +93,19 @@ self.onmessage = async (e) => {
     // 4. Vertical PWs (sky/hell)
     const verticalPois = [];
     for (const pvt of [-1, 1]) {
+      phase = `scanning vertical plane ${pvt}`;
       const vtSpecial = getSpecialPoIs(biomeData, seed, ngPlus, pw, pvt, perks, gameMode);
       if (vtSpecial && vtSpecial.length > 0) {
         verticalPois.push(...vtSpecial);
       }
 
-      const vtScan = scanSpawnFunctions(biomeData, tileSpawns, seed, ngPlus, pw, pvt, skipCosmeticScenes, perks, gameMode);
+      const vtSources = pvt === 1 ? withoutElevatorEndpointSpawns(tileSpawns, elevatorColumns, biomeData.pixels.length / 48) : tileSpawns;
+      const vtScan = scanSpawnFunctions(biomeData, vtSources, seed, ngPlus, pw, pvt, skipCosmeticScenes, perks, gameMode);
+      if (pvt === 1 && elevatorSpawns.length) {
+        const shaftScan = scanSpawnFunctions(biomeData, elevatorSpawns, seed, ngPlus, pw, 0, skipCosmeticScenes, perks, gameMode);
+        vtScan.generatedSpawns.push(...shaftScan.generatedSpawns);
+        vtScan.finalPixelScenes.push(...shaftScan.finalPixelScenes);
+      }
       if (vtScan.generatedSpawns && vtScan.generatedSpawns.length > 0) {
         verticalPois.push(...vtScan.generatedSpawns);
       }
@@ -124,6 +138,7 @@ self.onmessage = async (e) => {
     });
 
     // Return the payload back to main thread to apply Wand patching and boss patching
+    phase = "posting worker results";
     self.postMessage({
       success: true,
       pw,
@@ -131,6 +146,13 @@ self.onmessage = async (e) => {
       pixelScenes: slimPixelScenes
     });
   } catch (error) {
-    self.postMessage({ success: false, error: (error as Error).message });
+    self.postMessage({
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      phase,
+      pw: e.data.pw,
+      fullPixels: !!e.data.fullPixels,
+    });
   }
 };

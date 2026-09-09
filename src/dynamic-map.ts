@@ -1,3 +1,4 @@
+import { shouldUseBakedTerrain } from "./renderer_settings";
 /**
  * dynamic-map.ts
  *
@@ -27,7 +28,7 @@ import {
   ensurePersistentBiomeBackgrounds,
   resetPersistentBiomeBackgrounds,
 } from "./telescope/telescope-osd-bridge";
-import { probeBakedDZIs, type BakedDziProbeResult } from "./telescope/baked-dzi-loader";
+import { probeBakedDZIs, isLocalBakeView, type BakedDziProbeResult } from "./telescope/baked-dzi-loader";
 import { perkNameKey } from "./telescope/perk-i18n";
 import { gameTranslator } from "./game-translations/translator";
 
@@ -158,7 +159,7 @@ export function startDailyFastPath(): void {
   try {
     const urlState = parseURL();
     if (urlState.seed !== undefined && !urlState.dailySeed) return; // custom seed — not a daily
-    if (new URLSearchParams(window.location.search).has("nb")) return; // baked path disabled
+    if (!shouldUseBakedTerrain(window.location.search)) return; // baked path disabled
   } catch {
     return;
   }
@@ -220,7 +221,7 @@ export async function runDynamicMap(
 
   // Auto-detect daily seed: if not explicitly daily, compare against today's daily.
   // This handles the mod sending ?se=<seed> without ds=1 when the player is on a daily run.
-  let isDaily = isDailyParam;
+  let isDaily = isDailyParam || isLocalBakeView();
   if (!isDaily) {
     try {
       const dailySeed = await fetchDailySeed();
@@ -290,7 +291,7 @@ export async function runDynamicMap(
   // ?nb=1 disables the baked fast path entirely. The bake page uses it so a
   // re-bake of an already-deployed seed still runs a real local generation
   // (the export hooks need live tileLayers, which the baked path never has).
-  const noBaked = new URLSearchParams(window.location.search).has("nb");
+  const noBaked = !shouldUseBakedTerrain(window.location.search);
   const bakedProbePromise: Promise<{ probe: BakedDziProbeResult; generation: GenerationResult | null } | null> = (async () => {
     try {
       if (noBaked) return null;
@@ -298,11 +299,11 @@ export async function runDynamicMap(
       // cached (resolveSeed + the fast-path pre-warm), so this is usually free;
       // the previous-daily lookup (an extra request) only fires when the seed
       // isn't today's — keeping the common daily overlay off that RTT.
-      let prefix: "daily" | "previous-daily" | null = null;
+      let prefix: "daily" | "previous-daily" | null = isLocalBakeView() ? "daily" : null;
       const todayDaily = await fetchDailySeed().catch(() => null);
-      if (todayDaily !== null && seed === todayDaily) {
+      if (!prefix && todayDaily !== null && seed === todayDaily) {
         prefix = "daily";
-      } else {
+      } else if (!prefix) {
         const prevDaily = await fetchPreviousDailySeed().catch(() => null);
         if (prevDaily !== null && seed === prevDaily) prefix = "previous-daily";
       }
@@ -368,7 +369,7 @@ export async function runDynamicMap(
     fetchDailySeed().catch(() => null),
     fetchPreviousDailySeed().catch(() => null),
   ]);
-  const likelyBaked = (_todayD !== null && seed === _todayD) || (_prevD !== null && seed === _prevD);
+  const likelyBaked = isLocalBakeView() || (!noBaked && ((_todayD !== null && seed === _todayD) || (_prevD !== null && seed === _prevD)));
   if (!likelyBaked) {
     await ensurePersistentBiomeBackgrounds(viewer);
   }
@@ -389,7 +390,10 @@ export async function runDynamicMap(
     // UI hooks (spoiler-free toggle) need to know when the view is served
     // from baked pyramids: identities are flattened into the pixels there,
     // so spoiler-free cannot work and the toggle gets disabled.
-    window.dispatchEvent(new CustomEvent("bakedSeedChange", { detail: { baked: !!bakedData?.probe?.baked } }));
+    window.dispatchEvent(new CustomEvent("bakedSeedChange", { detail: {
+      baked: !!bakedData?.probe?.baked,
+      fullPixelsBaked: bakedData?.probe.baked === true && bakedData.probe.fullPixelsBaked,
+    } }));
 
     let t = performance.now();
     let result: GenerationResult | null = null;
@@ -410,6 +414,7 @@ export async function runDynamicMap(
     if (!forceRegenerate) {
       console.log(`[DynamicMap] Checking cache for key ${cacheKey}...`);
       result = await getCachedGeneration(cacheKey);
+      if (result && !result.tileLayers?.length) result = null; // baked metadata cannot render live terrain
       console.log(`[DynamicMap] Cache check: ${((performance.now() - t) / 1000).toFixed(2)}s (${result ? "HIT" : "MISS"})`);
     } else {
       console.log(`[DynamicMap] Unlocks changed, forcing regeneration for key ${cacheKey}`);
@@ -479,7 +484,7 @@ export async function runDynamicMap(
     //      pools differ — so this hidden second generation gives POI cards
     //      an instant lock-toggle later without a full reload. Fire-and-
     //      forget: if it fails or is racy with a seed change, no harm done.
-    void prewarmAlt(seed, isDaily).catch((e) =>
+    void prewarmAlt(seed, isDaily, !bakedData?.generation).catch((e) =>
       console.warn("[DynamicMap] alt-unlocks pre-warm failed:", e),
     );
 
@@ -581,7 +586,7 @@ export function clearDynamicMap(viewer: any): void {
   clearSeedParams();
   // Drop pre-warmed alt-unlocks POIs — they belong to the seed we just left.
   resetAltCache();
-  window.dispatchEvent(new CustomEvent("bakedSeedChange", { detail: { baked: false } }));
+  window.dispatchEvent(new CustomEvent("bakedSeedChange", { detail: { baked: false, fullPixelsBaked: false } }));
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

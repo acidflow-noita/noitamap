@@ -1,4 +1,11 @@
 {
+  "fullPixels": {
+    "description": "Renderuj teren tego ziarna w pełnej rozdzielczości pikselowej. Zmiana ustawienia powoduje ponowne wczytanie mapy.",
+    "baked": "Ta mapa dzienna jest już wstępnie wyrenderowana w pełnej rozdzielczości pikselowej.",
+    "title": "Renderuj każdy piksel",
+    "rendering": "Renderowanie terenu w pełnej rozdzielczości…",
+    "unavailable": "Renderowanie terenu piksel po pikselu jest niedostępne. Wyłącz tę opcję, aby użyć standardowego renderowania."
+  },
   "search": {
     "placeholder": "Znajdź zaklęcia, przedmioty, bossy, miejsca…",
     "indexing": "Ladowanie danych...",

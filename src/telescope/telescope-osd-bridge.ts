@@ -1,3 +1,7 @@
+import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
+import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP } from "./terrain-policy";
+import { loadTelescopeModules } from "./load-telescope";
+import { isGLTerrainEnabled } from "../renderer_settings";
 /**
  * telescope-osd-bridge.ts
  *
@@ -8,6 +12,7 @@
 import type { GenerationResult, POI, PixelScene, TileLayer } from './telescope-adapter';
 import {
   getPixelSceneImgElement,
+  getPixelSceneData,
   recolorPixelSceneForBiome,
   recolorPixelScene,
   MATERIAL_COLOR_CONVERSION,
@@ -29,10 +34,7 @@ import {
 import i18next from '../i18n';
 import { attachAlwaysCastPopover, dismissPopovers } from '../popover-util';
 import {
-  ensureGLTerrain,
   clearGLTerrain,
-  glCoversVerticalPlane,
-  createGLTerrainTileSource,
   type GLTerrainDeps,
 } from './gl-terrain-tile-source';
 import {
@@ -179,22 +181,7 @@ const BIOME_RENDER_ORDER: string[] = [
 ];
 
 /** Biomes already baked into the static OSD background map — skip overlay rendering AND biome backgrounds. */
-const SKIP_BIOMES = new Set([
-  'temple_altar',
-  'dragoncave',
-  'snowcastle_hourglass_chamber',
-  'snowcastle_cavern',
-  'snowcave_secret_chamber',
-  'excavationsite_cube_chamber',
-  'secret_lab',
-  'lavalake',
-  'biome_watchtower',
-  'biome_potion_mimics',
-  'biome_darkness',
-  'biome_boss_sky',
-  'biome_barren',
-  'lake_deep',
-]);
+
 
 // ─── Sprite Cache ───────────────────────────────────────────────────────────
 
@@ -342,7 +329,7 @@ async function ensureTelescopeModules(): Promise<void> {
   installFetchInterceptor();
   installImageSrcInterceptor();
 
-  const telescope = await import('./telescope-exports');
+  const telescope = await loadTelescopeModules();
   const constantsMod = telescope.constantsMod;
   const biomeMod = telescope.biomeGenMod;
   const genMod = telescope.genConfigMod;
@@ -371,22 +358,14 @@ async function ensureTelescopeModules(): Promise<void> {
   createTileOverlaysCheap = imageMod.createTileOverlaysCheap;
   getWorldSize = utilsMod.getWorldSize;
 
-  // GL final-pixel terrain renderer. Only the vitaminmoo/render-perf fork has
-  // js/gl/, so this is optional: on a fork without it the import fails and the
-  // biome path stays on the CPU composite.
-  try {
-    // @ts-ignore — virtual module; see the alias in vite.config.ts.
-    const glMod: any = await import('virtual:gl-terrain');
-    if (glMod?.GLTerrainRenderer) {
-      glTerrainDeps = {
-        GLTerrainRenderer: glMod.GLTerrainRenderer,
-        getWorldCenter: utilsMod.getWorldCenter,
-        GENERATOR_CONFIG: genMod.GENERATOR_CONFIG,
-      };
-      console.log('[OSD Bridge] GL terrain renderer available');
-    }
-  } catch (e) {
-    console.log('[OSD Bridge] no GL terrain renderer on this telescope fork (CPU composite only)');
+  if (isGLTerrainEnabled() && telescope.glTerrainMod?.GLTerrainRenderer) {
+    glTerrainDeps = {
+      GLTerrainRenderer: telescope.glTerrainMod.GLTerrainRenderer,
+      initMaterialAtlas: telescope.materialAtlasMod.initMaterialAtlas,
+      getWorldCenter: utilsMod.getWorldCenter,
+      getWorldSize: utilsMod.getWorldSize,
+      GENERATOR_CONFIG: genMod.GENERATOR_CONFIG,
+    };
   }
 
   // Apply truthy color hack: the library uses `if (foregroundColor)` which
@@ -515,6 +494,7 @@ let _bgInitPromise: Promise<void> | null = null;
  * cache in memory, and add to OSD as a preview. Safe to call multiple times.
  */
 export function ensurePersistentBiomeBackgrounds(viewer: any): Promise<void> {
+  if (isGLTerrainEnabled()) return Promise.resolve();
   if (!_bgInitPromise) {
     _bgInitPromise = _initBiomeBg(viewer);
   }
@@ -835,49 +815,7 @@ async function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
  * Authoritative biome → tileable background PNG mapping,
  * extracted from Noita's biome XML files in data.zip.
  */
-const BIOME_BACKGROUND_MAP: Record<string, string> = {
-  coalmine: 'data/weather_gfx/background_coalmine.png',
-  coalmine_alt: 'data/weather_gfx/background_coalmine.png',
-  excavationsite: 'data/weather_gfx/background_excavationsite.png',
-  excavationsite_cube_chamber: 'data/weather_gfx/background_cave_04_alt3.png',
-  snowcave: 'data/weather_gfx/background_snowcave.png',
-  snowcave_secret_chamber: 'data/weather_gfx/background_snowcave.png',
-  snowcastle: 'data/weather_gfx/background_snowcastle.png',
-  snowcastle_cavern: 'data/weather_gfx/background_cave_02.png',
-  snowcastle_hourglass_chamber: 'data/weather_gfx/background_cave_04_alt3.png',
-  fungicave: 'data/weather_gfx/background_fungicave_01.png',
-  fungiforest: 'data/weather_gfx/background_fungiforest_01.png',
-  rainforest: 'data/weather_gfx/background_rainforest.png',
-  rainforest_open: 'data/weather_gfx/background_rainforest.png',
-  rainforest_dark: 'data/weather_gfx/background_rainforest_dark.png',
-  vault: 'data/weather_gfx/background_vault.png',
-  vault_frozen: 'data/weather_gfx/background_vault_frozen.png',
-  crypt: 'data/weather_gfx/background_crypt.png',
-  wandcave: 'data/weather_gfx/background_wandcave.png',
-  wizardcave: 'data/weather_gfx/background_wizardcave.png',
-  robobase: 'data/weather_gfx/background_robobase.png',
-  the_end: 'data/weather_gfx/background_the_end.png',
-  meat: 'data/weather_gfx/background_the_end.png',
-  pyramid: 'data/weather_gfx/background_pyramid.png',
-  liquidcave: 'data/weather_gfx/background_cave_04_alt.png',
-  sandcave: 'data/weather_gfx/background_cave_09.png',
-  dragoncave: 'data/weather_gfx/background_cave_02.png',
-  lavalake: 'data/weather_gfx/background_cave_04_alt.png',
-  temple_altar: 'data/weather_gfx/background_cave_02.png',
-  secret_lab: 'data/weather_gfx/background_snowcave.png',
-  winter_caves: 'data/weather_gfx/background_snowcave.png',
-  // Tower floors (top to bottom = main biomes in reverse)
-  solid_wall_tower_9: 'data/weather_gfx/background_the_end.png',
-  solid_wall_tower_8: 'data/weather_gfx/background_crypt.png',
-  solid_wall_tower_7: 'data/weather_gfx/background_vault.png',
-  solid_wall_tower_6: 'data/weather_gfx/background_rainforest.png',
-  solid_wall_tower_5: 'data/weather_gfx/background_fungicave_01.png',
-  solid_wall_tower_4: 'data/weather_gfx/background_snowcastle.png',
-  solid_wall_tower_3: 'data/weather_gfx/background_snowcave.png',
-  solid_wall_tower_2: 'data/weather_gfx/background_excavationsite.png',
-  solid_wall_tower_1: 'data/weather_gfx/background_coalmine.png',
-  solid_wall_tower_10: 'data/weather_gfx/background_crypt.png',
-};
+
 
 /** Cache of loaded background ImageBitmaps, keyed by zip path */
 const _bgBitmapCache = new Map<string, ImageBitmap>();
@@ -1120,6 +1058,16 @@ async function addBiomeLayersProgressively(
   window.dispatchEvent(new CustomEvent('biomeGenerationProgress', { detail: { percentage: 0 } }));
   await ensureTelescopeModules();
 
+  if (isGLTerrainEnabled()) {
+    if (!glTerrainDeps) throw new Error("Full-resolution terrain modules are missing");
+    const { addFullPixelLayers } = await import('./full-pixel-layers');
+    const sceneData = await prepareTerrainSceneData(result);
+    await addFullPixelLayers(viewer, { ...result, sceneData }, glTerrainDeps,
+      () => currentGenerationId === generationId,
+      item => dynamicTiledImages.add(item), onFirstPwReady);
+    return;
+  }
+
   const { tileLayers, biomeData, isNGP, worldCenter, parallelWorlds } = result;
   const w = isNGP ? 72 : 70;
   const pwOffsetPixels = w * 512;
@@ -1156,28 +1104,6 @@ async function addBiomeLayersProgressively(
   console.log(`[OSD Bridge] biome layer names in tileLayers:`, Array.from(layerIndicesByBiome.keys()));
   console.log(`[OSD Bridge] unordered biomes to render:`, unorderedBiomes);
 
-  // Layers the GPU terrain is allowed to draw.
-  //
-  // Filtering by biome NAME is not enough. The CPU path also silently drops any
-  // layer whose createTileOverlaysCheap output is empty — biomes with no wang
-  // tiles, biomes outside BIOME_COLORS_WITH_TILES, and interiors it declines to
-  // approximate. buildChunkIndirection() has no such notion: it assigns a chunk
-  // to a region whenever the region claims that chunk AND the biome-map colour
-  // matches (js/gl/indirection.js:164-171), so the GPU drew biomes the CPU path
-  // renders as nothing — cloudscape and friends appearing where they should not
-  // be, and skipped interiors like snowcastle_cavern showing over the background.
-  //
-  // So the allowed set is taken from what the CPU path ACTUALLY DREW on the first
-  // main-plane region: the layer indices that produced a non-empty overlay. That
-  // is authoritative rather than a guess about which predicate matters, and it
-  // keeps the two renderers agreeing on WHAT is drawn while differing only in how
-  // faithfully it is expanded to full resolution. Chunks whose owning region is
-  // filtered out resolve to NO_REGION and come out transparent.
-  //
-  // Captured once (the set does not vary by parallel world) so ensureResources
-  // is not rebuilt per PW.
-  let glTileLayers: any[] | null = null;
-
   const anchorY = -(14 * 512);
 
   // Count total steps for progress: each PW × number of active vertical planes
@@ -1193,7 +1119,7 @@ async function addBiomeLayersProgressively(
   // Bulk-fetch all cached biome renders for this seed in one IDB transaction.
   // Way faster than N separate IDB reads (each transaction has high overhead in
   // Brave/FF — ~5s extra on F5 with 9 PWs).
-  const bulkBiomeCache = cacheKey ? await getCachedBiomeRendersForKey(cacheKey) : new Map();
+  const bulkBiomeCache = cacheKey && !isGLTerrainEnabled() ? await getCachedBiomeRendersForKey(cacheKey) : new Map();
 
   for (let pwIdx = 0; pwIdx < pwOrder.length; pwIdx++) {
     const pw = pwOrder[pwIdx];
@@ -1263,11 +1189,6 @@ async function addBiomeLayersProgressively(
         maxX = -Infinity,
         maxY = -Infinity;
       const validOverlays: { overlay: OffscreenCanvas; x: number; y: number; osdWidth: number }[] = [];
-      // Layer indices the CPU path actually DREW this iteration. This is the
-      // authoritative "what belongs on screen" set — see the note where
-      // glDrawnLayerIdx is consumed.
-      const drawnLayerIdx = new Set<number>();
-
       for (const biomeName of allBiomesToRender) {
         const layerIdxArr = layerIndicesByBiome.get(biomeName);
         if (!layerIdxArr) continue;
@@ -1288,7 +1209,6 @@ async function addBiomeLayersProgressively(
           maxY = Math.max(maxY, y + osdHeight);
 
           validOverlays.push({ overlay, x, y, osdWidth });
-          drawnLayerIdx.add(layerIdx);
         }
       }
 
@@ -1297,81 +1217,7 @@ async function addBiomeLayersProgressively(
         continue;
       }
 
-      // ── GPU final-pixel path ────────────────────────────────────────────────
-      // When the WebGL2 terrain renderer is available, replace this region's
-      // flat composite with a pyramidal tile source that re-derives every pixel
-      // at full resolution from the same layer buffers (read-only, so the CPU
-      // bake and the POI scanner are unaffected).
-      //
-      // Only pwVertical 0: upstream's chunk-indirection design cannot express
-      // heaven/hell, which broadcast row 0 / row 47 across the whole band, so
-      // those planes keep the CPU composite below. Mixed rendering is
-      // deliberate.
-      if (pvt === 0 && glTerrainDeps) {
-        // Capture the allowed layer set from the first main-plane region.
-        if (!glTileLayers) {
-          glTileLayers = tileLayers.filter((_: any, i: number) => drawnLayerIdx.has(i));
-          console.log(
-            `[OSD Bridge] GL terrain layers: ${glTileLayers.length}/${tileLayers.length} ` +
-              `(${tileLayers.length - glTileLayers.length} excluded — CPU path draws them as nothing)`
-          );
-        }
-      }
-      if (
-        pvt === 0 &&
-        glTerrainDeps &&
-        glTileLayers &&
-        glTileLayers.length &&
-        ensureGLTerrain(glTerrainDeps, {
-          tileLayers: glTileLayers,
-          biomeData,
-          isNGP: !!result.isNGP,
-          gameMode: (result as any).gameMode,
-          seed: result.seed,
-        }) &&
-        glCoversVerticalPlane(0)
-      ) {
-        const glSource = createGLTerrainTileSource({
-          deps: glTerrainDeps,
-          gen: {
-            tileLayers: glTileLayers,
-            biomeData,
-            isNGP: !!result.isNGP,
-            gameMode: (result as any).gameMode,
-            seed: result.seed,
-          },
-          pw,
-          worldX: minX,
-          worldY: minY,
-          worldW: maxX - minX,
-          worldH: maxY - minY,
-        });
-        viewer.addTiledImage({
-          tileSource: glSource,
-          x: minX,
-          y: minY,
-          width: maxX - minX,
-          success: (event: any) => {
-            if (currentGenerationId !== generationId) {
-              try {
-                viewer.world.removeItem(event.item);
-              } catch {}
-              return;
-            }
-            dynamicTiledImages.add(event.item);
-          },
-        });
-        if (isFirstPw && onFirstPwReady) {
-          try {
-            onFirstPwReady();
-          } catch (e) {
-            console.warn('[OSD Bridge] onFirstPwReady threw:', e);
-          }
-          await new Promise(r => setTimeout(r, 0));
-        }
-        stepsDone++;
-        continue;
-      }
+      if (currentGenerationId !== generationId) return;
 
       // Create a composited canvas at the same pixel density (1 pixel = 10 OSD units)
       const compositeW = Math.ceil((maxX - minX) / 10);
@@ -1522,12 +1368,18 @@ const DECOR_CELL = 2048;
 let _decorDraws: DecorDraw[] | null = null;
 
 export async function prepareDecorationExport(
-  result: GenerationResult
+  result: GenerationResult,
+  includeScenes = true
 ): Promise<{ cellSize: number; cells: { cx: number; cy: number }[] } | null> {
   const draws: DecorDraw[] = [];
 
   // 1. Pixel scenes (z-order below markers, so pushed first).
-  const built = await buildSceneBitmaps(result, null);
+  const decorationResult = includeScenes ? result : {
+    ...result,
+    pixelScenesByPW: Object.fromEntries(Object.entries(result.pixelScenesByPW).map(([key, scenes]) =>
+      [key, scenes.filter(scene => scene.key.startsWith('static_tile/'))])),
+  };
+  const built = await buildSceneBitmaps(decorationResult, null);
   if (!built) return null;
   for (const scene of built.validScenes) {
     const bmp = built.bitmapByKey.get(sceneRenderKey(scene));
@@ -2797,12 +2649,13 @@ export function prefetchAllSceneBitmaps(): Promise<void> {
  * bake export. Pass generationId=null to skip cancellation checks (bake).
  * Returns null when cancelled mid-build.
  */
-async function buildSceneBitmaps(
-  result: GenerationResult,
-  generationId: number | null
-): Promise<{ validScenes: PixelScene[]; bitmapByKey: Map<string, ImageBitmap> } | null> {
+/** The exact same skip/no-op policy applies to approximate scenes, full-pixel
+ * scenes and the native bake. Static holy mountains and authored map art must
+ * not be repainted by switching renderers. */
+function renderableScenes(result: GenerationResult): PixelScene[] {
+  if (!pixelSceneConfig.enabled) return [];
   const allScenes = Object.values(result.pixelScenesByPW).flat();
-  const validScenes = allScenes.filter(s => {
+  return allScenes.filter(s => {
     if (!s || s.width <= 0 || s.height <= 0) return false;
     if (pixelSceneConfig.skipNames.has(s.name)) return false;
     const biome = s.key.split('/')[0];
@@ -2812,6 +2665,45 @@ async function buildSceneBitmaps(
     if (pixelSceneConfig.skipFn && pixelSceneConfig.skipFn(s)) return false;
     return true;
   });
+}
+
+/** Export raw material pixels, not old flat-color scene composites. Material
+ * textures/air masks must be evaluated at each instance's world coordinates. */
+export async function prepareTerrainSceneData(result: GenerationResult): Promise<TerrainSceneData> {
+  await ensureTelescopeModules();
+  const scenes = renderableScenes(result).filter(scene => !scene.key.startsWith('static_tile/'));
+  const sources: Record<string, TerrainSceneSource> = {};
+  const zip = await getDataZip();
+  for (const scene of scenes) {
+    if (sources[scene.key]) continue;
+    const raw = getPixelSceneData(scene.key);
+    if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement))
+      throw new Error(`Missing full-resolution scene material data: ${scene.key}`);
+    const override = pixelSceneConfig.layerOverrides[scene.name] || pixelSceneConfig.layerOverrides[scene.key];
+    let backgroundArt = null;
+    if ((override?.background ?? pixelSceneConfig.layers.background) && raw.backgroundArt) {
+      // The fork records engine data paths under data/backgrounds/; the main
+      // game archive keeps them under their original data/ directory instead.
+      const path = raw.backgroundArt.replace(/^data\/backgrounds\//, 'data/');
+      const file = zip?.file(path);
+      if (!file) throw new Error(`Missing scene background: ${path}`);
+      backgroundArt = await decodePngToRgba(await file.async('arraybuffer'));
+    }
+    sources[scene.key] = {
+      data: (override?.mid ?? pixelSceneConfig.layers.mid) ? raw.imgElement : new Uint8Array(raw.imgElement.length),
+      width: raw.width, height: raw.height,
+      visualArt: (override?.visual ?? pixelSceneConfig.layers.visual) ? raw.visualArt : null,
+      backgroundArt,
+    };
+  }
+  return { sources, scenes: scenes.map(({ key, name, variantKey, x, y, width, height }) => ({ key, name, variantKey, x, y, width, height })) };
+}
+
+async function buildSceneBitmaps(
+  result: GenerationResult,
+  generationId: number | null
+): Promise<{ validScenes: PixelScene[]; bitmapByKey: Map<string, ImageBitmap> } | null> {
+  const validScenes = renderableScenes(result);
   const bitmapByKey = new Map<string, ImageBitmap>();
   if (validScenes.length === 0) return { validScenes, bitmapByKey };
 
@@ -5606,7 +5498,7 @@ export async function renderGenerationResult(
   // Skipped when baked DZIs will replace them — the baked tiles already
   // include the biome bgs and the placeholder would otherwise flash visibly
   // under them on every refresh.
-  if (!bakedDZIs || bakedDZIs.length === 0) {
+  if ((!bakedDZIs || bakedDZIs.length === 0) && !isGLTerrainEnabled()) {
     addBiomeBgToOSD(viewer);
   }
   if (currentGenerationId !== generationId) return;
@@ -5710,7 +5602,15 @@ export async function renderGenerationResult(
   // Pixel scenes render on top of biome overlays, below POI markers. When the
   // baked DZIs already carry scenes in their pixels, skip the live layer.
   if (!bakedDecorations) {
-    await addPixelScenes(viewer, result, generationId);
+    // Wang-template temple foregrounds are a separate existing static-art layer,
+    // not pixel-scene material PNGs. Keep them; all actual dynamic scenes now
+    // paint into terrain tiles so their air masks can erase the terrain.
+    const sceneResult = isGLTerrainEnabled() ? {
+      ...result,
+      pixelScenesByPW: Object.fromEntries(Object.entries(result.pixelScenesByPW).map(([key, scenes]) =>
+        [key, scenes.filter(scene => scene.key.startsWith('static_tile/'))])),
+    } : result;
+    await addPixelScenes(viewer, sceneResult, generationId);
     if (currentGenerationId !== generationId) return;
   }
 

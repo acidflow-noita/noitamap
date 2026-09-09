@@ -1,0 +1,139 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  isGLTerrainEnabled,
+  setGLTerrain,
+  shouldUseBakedTerrain,
+} from "../src/renderer_settings";
+import { telescopeCacheKey } from "../src/telescope/cache-identity";
+import {
+  serializeTileLayer,
+  restoreTileLayer,
+} from "../src/telescope/tile-layer-cache";
+import { fullPixelDataUrl } from "../src/telescope/full-pixel-data";
+import { loadTelescopeModules } from "../src/telescope/load-telescope";
+import { loadWorkerTelescopeModules } from "../src/telescope/load-worker-telescope";
+
+vi.mock("../src/telescope/telescope-exports", () => ({ fork: "legacy" }));
+vi.mock("../src/telescope/full-pixel-telescope-exports", () => ({
+  fork: "full",
+}));
+vi.mock("../src/telescope/worker-telescope-exports", () => ({
+  fork: "legacy-worker",
+}));
+vi.mock("../src/telescope/full-pixel-worker-exports", () => ({
+  fork: "full-worker",
+}));
+afterEach(() => vi.unstubAllGlobals());
+
+describe("full-pixel mode", () => {
+  it("defaults off and tolerates unavailable browser storage", () => {
+    vi.stubGlobal("localStorage", {
+      getItem() {
+        throw new Error("blocked");
+      },
+      setItem() {
+        throw new Error("blocked");
+      },
+    });
+    expect(isGLTerrainEnabled()).toBe(false);
+    expect(() => setGLTerrain(true)).not.toThrow();
+  });
+  it("persists the UI option", () => {
+    const data = new Map();
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => data.get(k),
+      setItem: (k: string, v: string) => data.set(k, v),
+    });
+    expect(isGLTerrainEnabled()).toBe(false);
+    setGLTerrain(true);
+    expect(isGLTerrainEnabled()).toBe(true);
+    setGLTerrain(false);
+    expect(isGLTerrainEnabled()).toBe(false);
+  });
+  it("bypasses daily baked images and baked JSON only when needed", () => {
+    expect(shouldUseBakedTerrain("?ds=1", false)).toBe(true);
+    expect(shouldUseBakedTerrain("?ds=1", true)).toBe(true);
+    expect(shouldUseBakedTerrain("?se=42", true)).toBe(true);
+    expect(shouldUseBakedTerrain("?nb=1", false)).toBe(false);
+  });
+  it("selects a complete matching main-thread fork", async () => {
+    expect((await loadTelescopeModules(false)).fork).toBe("legacy");
+    expect((await loadTelescopeModules(true)).fork).toBe("full");
+  });
+  it("selects the separate worker-safe entries", async () => {
+    expect((await loadWorkerTelescopeModules(false)).fork).toBe(
+      "legacy-worker",
+    );
+    expect((await loadWorkerTelescopeModules(true)).fork).toBe("full-worker");
+  });
+  it("cannot confuse legacy/daily and full-pixel generation or fallback images", () => {
+    expect(telescopeCacheKey("42-all", false)).toBe("42-all");
+    expect(telescopeCacheKey("42-all", true)).not.toBe(
+      telescopeCacheKey("42-all", false),
+    );
+    expect(telescopeCacheKey("42-all", true)).not.toBe(
+      telescopeCacheKey("43-all", true),
+    );
+  });
+  it("bundles and routes all required shader data, including cold loads", () => {
+    for (const file of [
+      "material_atlas.bin",
+      "material_atlas.json",
+      "biome_flags.json",
+      "material_data.json",
+    ]) {
+      expect(fullPixelDataUrl(`../data/${file}`)).toBeTruthy();
+      expect(fullPixelDataUrl(`https://example.com/data/${file}?v=1`)).toBe(
+        fullPixelDataUrl(`../data/${file}`),
+      );
+    }
+    expect(
+      fullPixelDataUrl("../data/biome_maps/biome_map.png"),
+    ).toBeUndefined();
+    expect(
+      fullPixelDataUrl("../data/material_atlas.bin/extra"),
+    ).toBeUndefined();
+  });
+  it("round-trips wang region ownership and copies only the live buffer bytes", () => {
+    const backing = new Uint8Array([99, 1, 2, 3, 88]);
+    const layer = {
+      biomeName: "coalmine",
+      buffer: backing.subarray(1, 4),
+      validChunks: new Set(["1,2", "2,2"]),
+      chunkBasePos: { x: 1, y: 2 },
+      minX: 1,
+      minY: 2,
+      width: 1,
+      mapH: 1,
+      height: 5,
+      w: 512,
+      h: 512,
+      correctedX: 512,
+      correctedY: 1024,
+    };
+    const stored = serializeTileLayer(layer);
+    expect(stored.validChunks).toEqual(["1,2", "2,2"]);
+    backing[1] = 77;
+    const restored = restoreTileLayer(stored);
+    expect([...restored.buffer!]).toEqual([1, 2, 3]);
+    expect(restored.validChunks).toEqual(new Set(["1,2", "2,2"]));
+    expect(restored.validChunks!.has("1,2")).toBe(true);
+    expect(restored.chunkBasePos).toEqual(layer.chunkBasePos);
+    expect(restored.minX).toBe(1);
+    expect(restored.minY).toBe(2);
+  });
+  it("preserves fill-biome identity across cached reloads", () => {
+    expect(restoreTileLayer(serializeTileLayer({ isFill: true })).isFill).toBe(
+      true,
+    );
+  });
+  it("keeps static layers distinct from empty dynamic regions", () => {
+    expect(
+      restoreTileLayer(serializeTileLayer({})).validChunks,
+    ).toBeUndefined();
+    expect(
+      restoreTileLayer(serializeTileLayer({ validChunks: new Set() }))
+        .validChunks,
+    ).toEqual(new Set());
+  });
+});

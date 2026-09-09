@@ -21,26 +21,24 @@ export interface RawImageData {
  */
 export function decodePngToRgba(buf: ArrayBuffer): RawImageData {
   const decoded = decode(new Uint8Array(buf));
-  const { width, height, palette } = decoded;
+  const { width, height, palette, transparency } = decoded;
 
   // Handle Palette-indexed PNGs explicitly
   if (palette) {
     const rgba = new Uint8ClampedArray(width * height * 4);
     const indices = decoded.data as Uint8Array;
 
-    // fast-png palette arrays are flattened eg. [R, G, B, R, G, B] or maybe with Alpha depending on transparency chunks, but usually RGB.
-    // However, they return it as an array of R,G,B (and sometimes A) arrays? Let's check fast-png types later, but typically it's number[][].
-    // Wait, fast-png returns palette as array of RGB tuples: `[R, G, B, A?]` per index.
+    // Indexed tRNS alpha is already attached to each fast-png palette entry.
     for (let i = 0; i < width * height; i++) {
       const idx = indices[i];
       const color = palette[idx];
       const rBase = i * 4;
-      if (color) {
+      if (color && (color[3] ?? 255) !== 0) {
         rgba[rBase] = color[0] ?? 0;
         rgba[rBase + 1] = color[1] ?? 0;
         rgba[rBase + 2] = color[2] ?? 0;
         rgba[rBase + 3] = color[3] ?? 255; // Alpha defaults to 255 if not in palette
-      } else {
+      } else if (!color) {
         // Fallback for out-of-bounds index
         rgba[rBase + 3] = 255;
       }
@@ -60,6 +58,18 @@ export function decodePngToRgba(buf: ArrayBuffer): RawImageData {
   for (let i = 0; i < width * height; i++) {
     const base = i * channels;
     const rBase = i * 4;
+
+    // For RGB/grayscale PNGs, fast-png returns the tRNS color key separately;
+    // it does NOT add an alpha channel. These are authored transparent pixels,
+    // not visible purple/red/orange background paint. Compare at source bit
+    // depth before 16-bit downconversion so near-key colors remain opaque.
+    if (
+      (channels === 1 && transparency?.length === 1 && pixels[base] === transparency[0]) ||
+      (channels === 3 && transparency?.length === 3 &&
+        pixels[base] === transparency[0] &&
+        pixels[base + 1] === transparency[1] &&
+        pixels[base + 2] === transparency[2])
+    ) continue; // initialized RGBA = 0, matching transparent canvas pixels
 
     const get = (offset: number) => {
       const v = pixels[base + offset] ?? 0;

@@ -1,4 +1,11 @@
 {
+  "fullPixels": {
+    "description": "Rendera terrängen för detta frö med full pixelupplösning. Om inställningen ändras laddas kartan om.",
+    "baked": "Den här dagliga kartan är redan förrenderad med full pixelupplösning.",
+    "title": "Rendera varje pixel",
+    "rendering": "Renderar terrängen i full upplösning…",
+    "unavailable": "Rendering av terrängen pixel för pixel är inte tillgänglig. Stäng av det här alternativet för att använda standardrenderaren."
+  },
   "search": {
     "placeholder": "Hitta trollformler, föremål, bossar, platser…",
     "indexing": "Laddar data...",

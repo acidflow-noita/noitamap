@@ -68,3 +68,128 @@ Get-ChildItem -Directory | ForEach-Object { & "${env:ProgramFiles}\7-Zip\7z.exe"
 ## Thanks
 
 Huge thanks to [@Dadido3](https://github.com/Dadido3), [@myndzi](https://github.com/myndzi), [@Acors24](https://github.com/Acors24) and [@dextercd](https://github.com/dextercd) for their work, their help, and advice! Thanks to [Arganvain](https://www.twitch.tv/arganvain) for fixing the logo I initially made, thanks to discord user wand_despawner for capturing several maps, thanks to discord user hey_allen for providing storage space for the map tiles' disaster recovery, thanks to discord user Bohnenkrautsaft for the suggestion to add map loading indicator, refactoring of the indicator's code, and other code fixes and improvements!
+
+## Full-pixel terrain and daily baking
+
+**Render every pixel** selects the pinned `render-perf` generation/rendering model.
+The live map generates main, heaven and hell planes independently, limits terrain
+to owned dynamic biome cells, and uses native-resolution game background textures.
+WebGL2 accelerates the main plane when available; CPU workers handle unsupported
+contexts and the vertical planes. Completed tiles and derived mip levels are
+persisted, so changing zoom does not restart completed terrain generation. Progress
+uses the existing generation strip, not a separate floating status panel.
+
+Daily and previous-daily maps prefer validated, completed full-pixel bakes and
+perform **no live terrain rendering**. Old coarse manifests are rejected only
+when full-pixel mode is requested. `?nb=1` explicitly bypasses baked output.
+
+On a completed full-pixel daily/previous-daily bake, **Render every pixel** is
+checked and disabled. Its hover/focus explanation says: “This daily map is already
+baked at full pixel resolution.” This state comes from all three completed bake
+manifests, not just the daily seed URL. It does not overwrite the saved preference:
+when switching to any unbaked seed, the toggle is available again with the prior
+setting. Live full-pixel rendering is available on production as well as localhost;
+it is not limited to daily seeds or developer mode.
+
+### Native daily bake (no GPU/browser)
+
+```bash
+node build_scripts/build-full-pixel-bake.mjs --seed=381773 --out=/path/to/out --concurrency=8 --resume
+```
+
+The script generates seed data/POIs once, renders all nine world/plane combinations,
+composites backgrounds, scenes and markers, and builds lossless WebP DZIs with
+premultiplied-alpha 2:1 reduction and consistent two-pixel overlaps. Full output
+is `left/`, `middle/`, `right/` plus `seed.txt`. Each world contains `map.dzi`,
+`map_files/`, `manifest.json` and `generation.json`. Nothing is publishable until
+all expected tiles exist. Checkpoints include code/data fingerprints; `--resume`
+reuses compatible complete work. `--prepare-only` runs just seed/decor preparation.
+
+The CI changes live in `task/biome-baker`. The configured GitLab runner is
+`saas-linux-2xlarge-amd64` (32 CPUs, 128 GB RAM), **not** the GPU runner class.
+It uses 30 CPU workers; the native image no longer includes Chromium or the Go
+stitcher. Native dependencies must be installed separately on Windows with `npm ci` (an npm
+built-in command, not a project script). Do not copy Linux `node_modules` to
+Windows. Windows end-to-end baking has not been verified by these Linux tests.
+
+### Inspect a local completed bake
+
+Start Vite with `NOITAMAP_LOCAL_BAKE=/path/to/out`, then open
+`/?m=dy&se=381773&bake=local`. The seed must match the output manifest. This
+explicit development-only route exercises the same baked loader as production.
+
+Verification covers real CPU workers, real native GL shader execution where
+Linux EGL is installed, ownership exclusions, native textures, alpha-aware mip
+reduction, matching overlaps and cache reuse. These checks do not replace manual
+browser inspection or constitute complete simulation of Noita's runtime.
+
+### Compare against the captured engine map
+
+The Regular capture at seed **786433191** is the geometry ground truth. The
+historical `78633191` in its asset filenames is a typo; comparison uses the seed
+in the capture instructions, not that filename. Never resize the generated map
+to match the capture's extra overlap column.
+
+```bash
+node build_scripts/build-full-pixel-bake.mjs --seed=786433191 --out=/path/to/reference-bake --concurrency=8
+node build_scripts/compare-engine-terrain.mjs --bake=/path/to/reference-bake --published
+```
+
+The comparison fetches coordinate-matched samples from the production Regular
+capture and Dynamic static underlay. Each output panel is **engine | generated +
+static underlay | absolute RGB difference**. `report.json` records every RGB
+mismatch. Omit `--published` to sample a `--prepare-only` native renderer instead
+of the finished DZI files. This command does not use a browser and does not
+pretend that successful rendering or CPU/GPU agreement proves engine accuracy.
+
+Heaven/hell now reuse the main world's Wang geometry and source exclusions;
+broadcasting a material row must not regenerate a continuous strip of terrain.
+Hell's background is a separate footprint and continues through the empty gaps.
+Dynamic scenes use world-positioned material textures, real force-air erasure,
+and original color/background artwork rather than flat biome-color rectangles.
+The existing static-room/holy-mountain skip policy remains shared with the
+approximate renderer. Static temple foreground templates remain a separate
+existing art layer, not new procedural fill targets.
+
+**Accuracy is not yet complete:** the reference comparison still shows cloud
+color/material differences, scene differences, and terrain-edge detail
+mismatches. These remain investigation targets, not accepted capture errors.
+See `tests/fixtures/terrain/README.md` for provenance and reproducible checks.
+
+
+### PNG background transparency regression
+
+`full-pixel-v6` honors the original PNG `tRNS` color keys. The missing RGB-key
+handling had turned authored transparent areas into purple/red/orange rectangles
+(e.g. `rainforest/plantlife_background.png`, key `#6b0080`). This is PNG metadata,
+not a rule to remove arbitrary bright colors or guess from the corner pixel.
+Completed v5 terrain tiles are invalidated and must be regenerated.
+
+```bash
+npm test -- tests/png-decode.test.ts
+node tests/helpers/verify-native-daily-bake.mjs /path/to/completed-bake
+```
+
+The decoder tests compare all engine-listed scene backgrounds with native PNG
+sample decoding. Daily artifact verification checks real published tiles,
+alpha-preserving mip reduction and overlaps. For the exact daily entrypoint test
+without resetting a local checkout, see `task/biome-baker/README.md`.
+
+
+### Bottom-row elevator continuation
+
+`full-pixel-v7` treats the isolated bottom-row `robobase` (Power Plant) stub as a
+narrow continuous shaft below the main world, not two endpoint copies of the
+same chunk. It generates only that column with the existing Wang generator and
+world seed, resolves its native material pixels at absolute coordinates, and
+scans the continued strip for its own scenes/POIs. The false lower endpoint's
+spawn copy is removed. Original main-world buffers, ordinary Power Plant regions,
+static exclusions and the other heaven/hell columns are not regenerated.
+
+The continuation covers the displayed lower plane (48 chunks, y=17,408 through
+41,983 in NG0). This does not extend the map's displayed bounds infinitely.
+The native baker and live full-pixel CPU tile worker share the same continuation;
+old v6 completed tiles need rebaking. `tests/terrain-elevator.test.ts` checks the
+exception's footprint and serialization. The native terrain runtime suites
+exercise its top/middle/bottom through real OSD jobs, and the bake-artifact
+verifier checks all 144 lower shaft chunks across the three horizontal worlds.

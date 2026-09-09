@@ -1,4 +1,11 @@
 {
+  "fullPixels": {
+    "description": "Render het terrein van deze seed op volledige pixelresolutie. Als je deze instelling wijzigt, wordt de kaart opnieuw geladen.",
+    "baked": "Deze dagelijkse kaart is al vooraf gerenderd op volledige pixelresolutie.",
+    "title": "Elke pixel renderen",
+    "rendering": "Terrein wordt op volledige resolutie gerenderd…",
+    "unavailable": "Het renderen van terrein per pixel is niet beschikbaar. Schakel deze optie uit om de standaardrenderer te gebruiken."
+  },
   "search": {
     "placeholder": "Vind spreuken, items, bazen, plaatsen…",
     "indexing": "Gegevens laden...",

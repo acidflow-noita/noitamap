@@ -1,4 +1,11 @@
 {
+  "fullPixels": {
+    "description": "Renderizar o terreno desta seed com resolução completa de pixels. Alterar esta opção recarrega o mapa.",
+    "baked": "Este mapa diário já foi pré-renderizado com resolução completa de pixels.",
+    "title": "Renderizar cada pixel",
+    "rendering": "Renderizando o terreno em resolução completa…",
+    "unavailable": "A renderização do terreno pixel a pixel não está disponível. Desative esta opção para usar o renderizador padrão."
+  },
   "search": {
     "placeholder": "Encontrar feitiços, itens, chefes, lugares…",
     "indexing": "Carregando dados...",

@@ -247,8 +247,9 @@ async function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescrip
 /** Background pre-warm of every non-primary variant. Called after the
  *  primary render completes; fires the generations sequentially so we
  *  don't thrash telescope's PRNG / cache. */
-export async function prewarmAlt(seed: number, isDaily: boolean): Promise<void> {
+export async function prewarmAlt(seed: number, isDaily: boolean, generate = true): Promise<void> {
   lastSeedSeen = seed;
+  if (!generate) return; // Baked maps generate an alternate only when explicitly requested.
   const primary = primaryDescriptor();
   for (const desc of availableDescriptors()) {
     if (desc === primary) continue;

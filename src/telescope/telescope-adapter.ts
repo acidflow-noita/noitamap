@@ -1,3 +1,6 @@
+import { prepareElevatorShafts, withoutElevatorEndpointSpawns } from "./terrain-elevator";
+import { loadTelescopeModules } from "./load-telescope";
+import { isGLTerrainEnabled } from "../renderer_settings";
 /**
  * telescope-adapter.ts
  *
@@ -118,6 +121,7 @@ export interface GenerationResult {
   worldSize: number;
   worldCenter: number;
   tileLayers: TileLayer[];
+  elevatorShafts?: TileLayer[];
   biomeData: any;
   /** POIs keyed by "pw,pwVertical" e.g. "0,0", "-1,0", "1,0" */
   poisByPW: Record<string, POI[]>;
@@ -207,7 +211,7 @@ async function _doInitTelescope(): Promise<void> {
 
   // 4. Dynamically import telescope modules (must happen AFTER interceptors are installed,
   //    because image_processing.js has top-level await that loads PNGs via new Image())
-  const telescope = await import("./telescope-exports");
+  const telescope = await loadTelescopeModules();
   const biomeGenMod = telescope.biomeGenMod;
   const tileGenMod = telescope.tileGenMod;
   const poiScannerMod = telescope.poiScannerMod;
@@ -526,6 +530,13 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     layer.pixelScenesByPW = {};
   }
 
+  // The isolated last-row Power Plant stub continues downward through the
+  // lower map. Generate its narrow strip once; scan its real placements instead
+  // of leaving a fake second endpoint and a gap between the two copies.
+  const elevatorShafts = isGLTerrainEnabled() ? await prepareElevatorShafts({ tileLayers, biomeData, seed, ngPlus, isNGP, gameMode }) : [];
+  const elevatorColumns = elevatorShafts.map(layer => layer.minX);
+  const elevatorSpawns = prescanSpawnFunctions(elevatorShafts, isNGP, gameMode).filter((spawn: any) => spawn.y >= 34 * 512 && spawn.y < 82 * 512);
+
   // Step 3: Prescan spawn functions (once per seed, reused across PWs)
   const tileSpawns = prescanSpawnFunctions(tileLayers, isNGP, gameMode);
 
@@ -535,7 +546,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   const perks: Record<string, any> = {}; // No perks active by default
 
   // Pre-load telescope modules needed for wand naming (avoid repeated dynamic imports in loop)
-  const telescopeMods = await import("./telescope-exports");
+  const telescopeMods = await loadTelescopeModules();
   const { NollaPrng } = telescopeMods.nollaPrngMod;
   const { GUN_NAMES } = telescopeMods.wandConfigMod;
   const { getPitBossDrops } = telescopeMods.miscGenMod;
@@ -550,7 +561,11 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       const worker = new PwWorker();
       worker.onmessage = (e) => {
         if (e.data.success) resolve(e.data);
-        else reject(new Error(e.data.error || "Worker failed"));
+        else {
+          const error = new Error(`PW ${pw}, ${e.data.phase || "worker"}: ${e.data.error || "Worker failed"}`);
+          if (e.data.stack) error.stack += `\nWorker stack:\n${e.data.stack}`;
+          reject(error);
+        }
         worker.terminate();
       };
       worker.onerror = (err) => {
@@ -568,6 +583,9 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         skipCosmeticScenes: false,
         unlocks: dailySeed || opts.unlocks == null ? null : opts.unlocks,
         dailySeed,
+        fullPixels: isGLTerrainEnabled(),
+        elevatorColumns,
+        elevatorSpawns,
       });
     });
   });
@@ -608,7 +626,13 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       }
 
       // Scan spawn functions (same wang tile spawns, offset vertically — matches telescope behavior)
-      const vtScan = scanSpawnFunctions(biomeData, tileSpawns, seed, ngPlus, pw, pvt, false, perks, gameMode);
+      const vtSources = pvt === 1 ? withoutElevatorEndpointSpawns(tileSpawns, elevatorColumns, worldSize) : tileSpawns;
+      const vtScan = scanSpawnFunctions(biomeData, vtSources, seed, ngPlus, pw, pvt, false, perks, gameMode);
+      if (pvt === 1 && elevatorSpawns.length) {
+        const shaftScan = scanSpawnFunctions(biomeData, elevatorSpawns, seed, ngPlus, pw, 0, false, perks, gameMode);
+        vtScan.generatedSpawns.push(...shaftScan.generatedSpawns);
+        vtScan.finalPixelScenes.push(...shaftScan.finalPixelScenes);
+      }
       if (vtScan.generatedSpawns && vtScan.generatedSpawns.length > 0) {
         verticalPois.push(...vtScan.generatedSpawns);
       }
@@ -1590,6 +1614,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     worldSize,
     worldCenter,
     tileLayers,
+    elevatorShafts,
     biomeData,
     poisByPW,
     pixelScenesByPW,

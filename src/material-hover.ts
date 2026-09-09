@@ -1,3 +1,4 @@
+import { loadTelescopeModules } from "./telescope/load-telescope";
 /**
  * material-hover.ts
  *
@@ -29,7 +30,7 @@ let _utils: UtilsMod | null = null;
 /** Kick off the telescope utils import so the move handler stays synchronous. */
 export function primeMaterialHover(): void {
   if (_utils) return;
-  import("./telescope/telescope-exports")
+  loadTelescopeModules()
     .then((t) => {
       _utils = (t as any).utilsMod;
     })

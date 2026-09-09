@@ -37,16 +37,8 @@ export function clearStoredRenderer(): void {
 // ─── GPU final-pixel terrain (render-perf port) ──────────────────────────────
 
 const GL_TERRAIN_KEY = "noitamap-gl-terrain";
-const GL_TERRAIN_SS_KEY = "noitamap-gl-terrain-supersample";
 
-/**
- * The WebGL2 final-pixel biome renderer (src/telescope/gl-terrain-tile-source.ts).
- *
- * OFF by default while it is being brought up: it replaces the biome layer
- * wholesale, so it stays opt-in until it has been compared against the CPU
- * composite path on real seeds.
- *   noitamap.setGLTerrain(true)   -> opt in, reload
- */
+/** Opt-in full-pixel terrain. Reload when changing it to select one complete fork. */
 export function isGLTerrainEnabled(): boolean {
   try {
     return localStorage.getItem(GL_TERRAIN_KEY) === "1";
@@ -63,31 +55,7 @@ export function setGLTerrain(enabled: boolean): void {
   }
 }
 
-/**
- * Max supersample factor for zoomed-out tiles.
- *
- * A tile pixel covering N world pixels is rendered at N x tile size and filtered
- * down, so no final-pixel detail is lost when zooming out. The cap bounds the
- * cost: at 8 a 512px tile renders 4096x4096 (~67 MB of GPU-side pixels) before
- * reduction, which is fine as a one-off per tile but is the knob to turn if tile
- * generation becomes the bottleneck. 1 disables supersampling entirely and gives
- * the aliased point-sampled look upstream avoided by disabling detail instead.
- */
-export function getGLTerrainSupersampleCap(): number {
-  try {
-    const v = Number(localStorage.getItem(GL_TERRAIN_SS_KEY));
-    if (Number.isFinite(v) && v >= 1 && v <= 16) return Math.round(v);
-  } catch {
-    /* fall through */
-  }
-  return 8;
+/** Full-pixel compatibility is checked against the manifest, not the seed URL. */
+export function shouldUseBakedTerrain(search: string, fullPixels = isGLTerrainEnabled()): boolean {
+  return !new URLSearchParams(search).has("nb");
 }
-
-export function setGLTerrainSupersampleCap(n: number): void {
-  try {
-    localStorage.setItem(GL_TERRAIN_SS_KEY, String(Math.max(1, Math.min(16, Math.round(n)))));
-  } catch {
-    /* storage unavailable */
-  }
-}
-

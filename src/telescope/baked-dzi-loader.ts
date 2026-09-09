@@ -1,3 +1,5 @@
+import { isGLTerrainEnabled } from "../renderer_settings";
+import { TERRAIN_VERSION } from "./terrain-policy";
 /**
  * baked-dzi-loader.ts
  *
@@ -58,6 +60,8 @@ export interface BakedDziProbeOk {
    *  spatial index built off generation.json. False on legacy bakes that
    *  only carry biome bgs. */
   decorationsBaked: boolean;
+  /** Every displayed world is already a completed full-pixel bake. */
+  fullPixelsBaked: boolean;
 }
 export interface BakedDziProbeMiss {
   baked: false;
@@ -83,10 +87,18 @@ interface PerWorldManifest {
   /** Set by build-daily-seed-images.cjs when the upscale step blended pixel
    *  scenes + POI sprites into the region fulls before stitch. */
   baked?: boolean;
+  complete?: boolean;
+  terrainVersion?: string;
   regions: PerWorldManifestRegion[];
 }
 
+/** Explicit local inspection of a completed bake, never enabled in production. */
+export function isLocalBakeView(): boolean {
+  return import.meta.env.DEV && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('bake') === 'local';
+}
+
 export function originFor(prefix: 'daily' | 'previous-daily', world: World): string {
+  if (isLocalBakeView()) return `/__local-bake/${world}`;
   return `https://${prefix}-${world}.acidflow.stream`;
 }
 
@@ -127,6 +139,9 @@ export async function probeBakedDZIs(
   for (let i = 0; i < WORLDS.length; i++) {
     const m = manifests[i];
     if (!m) return { baked: false, reason: `manifest missing/invalid for ${prefix}-${WORLDS[i]}` };
+    if (isGLTerrainEnabled() && (m.terrainVersion !== TERRAIN_VERSION || m.complete !== true)) {
+      return { baked: false, reason: `${prefix}-${WORLDS[i]} is not a completed ${TERRAIN_VERSION} bake` };
+    }
     if (m.seed !== seed) {
       return {
         baked: false,
@@ -161,7 +176,8 @@ export async function probeBakedDZIs(
       });
     }
   }
-  return { baked: true, prefix, placements, decorationsBaked };
+  const fullPixelsBaked = manifests.every(m => m?.terrainVersion === TERRAIN_VERSION && m.complete === true);
+  return { baked: true, prefix, placements, decorationsBaked, fullPixelsBaked };
 }
 
 /**

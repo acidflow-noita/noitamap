@@ -1,4 +1,11 @@
 {
+  "fullPixels": {
+    "description": "Render this seed’s terrain at full pixel resolution. Changing this setting reloads the map.",
+    "baked": "This daily map is already baked at full pixel resolution.",
+    "title": "Render every pixel",
+    "rendering": "Rendering full-resolution terrain…",
+    "unavailable": "Full-pixel terrain is unavailable. Turn this option off to use the standard renderer."
+  },
   "seedReport": {
     "title": "Seed report",
     "close": "Close",

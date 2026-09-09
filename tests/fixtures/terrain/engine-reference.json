@@ -1,0 +1,180 @@
+{
+  "seed": 786433191,
+  "source": "https://noitamap.com/ Regular, in-game capture",
+  "regular": "https://regular-main-branch-middle.acidflow.stream/maps/regular-main-branch-middle/regular-main-branch-middle-2024-08-12-78633191",
+  "staticUnderlay": "https://dynamic-main-branch-middle.acidflow.stream/maps/dynamic-main-branch-middle/dynamic-main-branch-middle-2025-01-25-78633191",
+  "filenameSeedIsHistoricalTypo": true,
+  "worldTopLeft": [
+    -17920,
+    -31744
+  ],
+  "captureSize": [
+    36352,
+    73728
+  ],
+  "worldPitch": [
+    35840,
+    24576
+  ],
+  "tileSize": 512,
+  "overlap": 2,
+  "maxLevel": 17,
+  "samples": [
+    {
+      "name": "coalmine",
+      "chunk": [
+        35,
+        15
+      ],
+      "planes": [
+        -1,
+        0,
+        1
+      ]
+    },
+    {
+      "name": "excavationsite",
+      "chunk": [
+        35,
+        18
+      ],
+      "planes": [
+        -1,
+        0,
+        1
+      ]
+    },
+    {
+      "name": "snowcave",
+      "chunk": [
+        35,
+        21
+      ],
+      "planes": [
+        -1,
+        0,
+        1
+      ]
+    },
+    {
+      "name": "vault",
+      "chunk": [
+        35,
+        32
+      ],
+      "planes": [
+        -1,
+        0,
+        1
+      ]
+    },
+    {
+      "name": "crypt",
+      "chunk": [
+        35,
+        38
+      ],
+      "planes": [
+        -1,
+        0,
+        1
+      ]
+    },
+    {
+      "name": "gap-after-coalmine",
+      "chunk": [
+        35,
+        16
+      ],
+      "planes": [
+        -1,
+        0,
+        1
+      ]
+    },
+    {
+      "name": "gap-after-snowcastle",
+      "chunk": [
+        35,
+        26
+      ],
+      "planes": [
+        -1,
+        0,
+        1
+      ]
+    },
+    {
+      "name": "gap-after-vault",
+      "chunk": [
+        35,
+        34
+      ],
+      "planes": [
+        -1,
+        0,
+        1
+      ]
+    },
+    {
+      "name": "left-of-sky-band",
+      "chunk": [
+        26,
+        21
+      ],
+      "planes": [
+        -1
+      ]
+    },
+    {
+      "name": "right-of-sky-band",
+      "chunk": [
+        42,
+        21
+      ],
+      "planes": [
+        -1
+      ]
+    },
+    {
+      "name": "winter-caves-static-rock",
+      "chunk": [
+        16,
+        20
+      ],
+      "planes": [
+        0
+      ]
+    },
+    {
+      "name": "rainforest-plantlife-transparency",
+      "chunk": [
+        32,
+        27
+      ],
+      "planes": [
+        0
+      ]
+    },
+    {
+      "name": "rainforest_open-hut01-transparency",
+      "chunk": [
+        37,
+        29
+      ],
+      "planes": [
+        0
+      ]
+    },
+    {
+      "name": "snowcave-snowcastle-transparency",
+      "chunk": [
+        36,
+        20
+      ],
+      "planes": [
+        0
+      ]
+    }
+  ]
+}

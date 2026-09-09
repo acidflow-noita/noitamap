@@ -1,4 +1,11 @@
 {
+  "fullPixels": {
+    "description": "Vykreslit terén tohoto seedu v plném rozlišení po jednotlivých pixelech. Změna nastavení znovu načte mapu.",
+    "baked": "Tato denní mapa je již předem vykreslena v plném rozlišení po jednotlivých pixelech.",
+    "title": "Vykreslit každý pixel",
+    "rendering": "Vykreslování terénu v plném rozlišení…",
+    "unavailable": "Vykreslování terénu po jednotlivých pixelech není dostupné. Vypněte tuto možnost a použijte standardní vykreslování."
+  },
   "search": {
     "placeholder": "Najít kouzla, předměty, bossy, místa…",
     "indexing": "Nacitani dat...",

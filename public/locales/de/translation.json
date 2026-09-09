@@ -1,4 +1,11 @@
 {
+  "fullPixels": {
+    "description": "Das Gelände dieses Seeds in voller Pixelauflösung rendern. Eine Änderung dieser Einstellung lädt die Karte neu.",
+    "baked": "Diese Tageskarte ist bereits in voller Pixelauflösung vorgerendert.",
+    "title": "Jedes Pixel rendern",
+    "rendering": "Gelände wird in voller Auflösung gerendert…",
+    "unavailable": "Die pixelgenaue Geländedarstellung ist nicht verfügbar. Deaktiviere diese Option, um den Standardrenderer zu verwenden."
+  },
   "search": {
     "placeholder": "Zauber, Gegenstände, Bosse, Orte finden…",
     "indexing": "Daten werden geladen...",

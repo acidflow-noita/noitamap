@@ -5,26 +5,10 @@ import fs from "fs";
 
 const isProAvailable = fs.existsSync(resolve(__dirname, "../noitamap-pro/src/pro-entry.ts"));
 
-// Which telescope fork the build resolves.
-//
-// lib/noita-telescope       Lymm37 fork. The DEFAULT, and what production ships.
-// lib/noita-telescope-vm    vitaminmoo's render-perf branch, the only fork carrying
-//                           the WebGL2 final-pixel terrain renderer (js/gl/,
-//                           js/engine_resolve/). OPT-IN while that work is brought up.
-//
-// It has to be one fork for the whole generation path, not a per-module mix: the
-// GPU renderer consumes the SAME assembled layer buffers and config tables the CPU
-// bake and POI scanner read, and that shared-buffer invariant is what stops the two
-// renderers disagreeing on content. render-perf also changed tile_generator.js,
-// generator_config.js and utils.js substantially, so feeding it buffers from the
-// other fork would break exactly that guarantee.
-//
-// Defaulting to the OLD fork keeps this commit inert: the hosted map and the CI
-// bake behave exactly as before, and the GL work only activates when someone asks
-// for it deliberately. Opt in with:
-//     NOITAMAP_TELESCOPE=lib/noita-telescope-vm npm run dev
-// (the same variable must be set for build_scripts/copy-telescope-data.cjs, which
-// carries that fork's runtime atlases into public/data.)
+// Standard interactive generation keeps its existing fork and build override.
+// The map's "Render every pixel" option independently lazy-loads the complete
+// render-perf fork via load-telescope.ts, including matching worker modules and
+// material data. Native daily baking explicitly selects the same full-pixel fork.
 const TELESCOPE_DEFAULT = "lib/noita-telescope";
 const TELESCOPE_REQUESTED = process.env.NOITAMAP_TELESCOPE || TELESCOPE_DEFAULT;
 let TELESCOPE_DIR = TELESCOPE_REQUESTED;
@@ -92,19 +76,62 @@ export default defineConfig({
       },
     },
     shimTelescopePlugin,
+    {
+      name: "local-completed-bake",
+      configureServer(server) {
+        const root = process.env.NOITAMAP_LOCAL_BAKE;
+        if (!root) return;
+        server.middlewares.use("/__local-bake", (req, res) => {
+          const path = (req.url || "").split("?")[0];
+          if (!/^\/(left|middle|right)\/(manifest\.json|generation\.json|map\.dzi|map_files\/\d+\/\d+_\d+\.webp)$/.test(path)) {
+            res.statusCode = 404; res.end(); return;
+          }
+          const file = resolve(root, '.' + path);
+          const stream = fs.createReadStream(file);
+          stream.on("error", () => { if (!res.headersSent) res.statusCode = 404; res.end(); });
+          res.setHeader("Content-Type", path.endsWith(".webp") ? "image/webp" : "application/json");
+          res.setHeader("Cache-Control", path.endsWith(".webp") ? "public, max-age=3600" : "no-store");
+          stream.pipe(res);
+        });
+      },
+    },
+    {
+      // Development-only, same-origin error capture. No browser automation and
+      // no production telemetry: lets us inspect the user's actual GL failure.
+      name: "terrain-local-diagnostics",
+      configureServer(server) {
+        const reports: unknown[] = [];
+        server.middlewares.use("/__terrain-diagnostics", (req, res) => {
+          res.setHeader("Cache-Control", "no-store");
+          if (req.method === "GET") {
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify(reports));
+            return;
+          }
+          if (req.method !== "POST") { res.statusCode = 405; res.end(); return; }
+          let body = "";
+          req.on("data", chunk => {
+            body += chunk;
+            if (body.length > 65536) req.destroy();
+          });
+          req.on("end", () => {
+            try {
+              const report = { received: new Date().toISOString(), ...JSON.parse(body) };
+              reports.push(report);
+              if (reports.length > 30) reports.shift();
+              if (report.event === "error") console.error("[Browser terrain failure]", report);
+              res.statusCode = 204; res.end();
+            } catch { res.statusCode = 400; res.end(); }
+          });
+        });
+      },
+    },
   ],
   resolve: {
     alias: {
       // Telescope submodule — always available (free feature)
       "noita-telescope": TELESCOPE_JS,
-      // The WebGL2 final-pixel terrain renderer exists only on the vitaminmoo
-      // render-perf fork. A literal dynamic-import specifier would be resolved by
-      // Vite's dependency scan and fail the BUILD on the fork without it, which a
-      // runtime try/catch cannot prevent — so route it through a virtual module
-      // that falls back to a stub, the same way virtual:noitamap-pro does.
-      "virtual:gl-terrain": fs.existsSync(resolve(TELESCOPE_JS, "gl/terrain_renderer.js"))
-        ? resolve(TELESCOPE_JS, "gl/terrain_renderer.js")
-        : resolve(__dirname, "src/telescope/gl-terrain-unavailable.ts"),
+      "noita-telescope-full-pixels": resolve(__dirname, "lib/noita-telescope-vm/js"),
       // Shim telescope's app.js to remove the app.init() side-effect that crashes library usage.
       // We alias both the module name and the absolute path used by relative imports inside the submodule.
       "noita-telescope/app.js": resolve(__dirname, "src/telescope/telescope-app-shim.js"),
@@ -157,6 +184,10 @@ export default defineConfig({
           // IMPORTANT: this MUST be separate from src/telescope/ adapter code.
           // The library has top-level `await` in image_processing.js that would
           // block the entire app if loaded eagerly with the adapter chunk.
+          if (id.includes("/lib/noita-telescope-vm/data/") && id.includes("?url")) return "terrain-assets";
+          if (id.includes("src/telescope/full-pixel-telescope-exports.ts") || id.includes("/lib/noita-telescope-vm/js/")) {
+            return "telescope-full-pixels";
+          }
           if (id.includes("src/telescope/telescope-exports.ts")) {
             return "telescope-lib";
           }

@@ -1,4 +1,11 @@
 {
+  "fullPixels": {
+    "description": "Piirrä tämän siemenen maasto täydellä pikselitarkkuudella. Asetuksen muuttaminen lataa kartan uudelleen.",
+    "baked": "Tämä päivittäinen kartta on jo esirenderöity täydellä pikselitarkkuudella.",
+    "title": "Piirrä jokainen pikseli",
+    "rendering": "Piirretään maastoa täydellä tarkkuudella…",
+    "unavailable": "Maaston pikselintarkka piirto ei ole käytettävissä. Poista tämä asetus käytöstä, jos haluat käyttää tavallista piirtotapaa."
+  },
   "search": {
     "placeholder": "Etsi loitsuja, esineitä, pomoja, paikkoja…",
     "indexing": "Ladataan tietoja...",
