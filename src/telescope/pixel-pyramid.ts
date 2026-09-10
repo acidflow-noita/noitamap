@@ -15,6 +15,10 @@ export interface PixelPyramidOptions<T> {
   height: number;
   tileSize: number;
   maxCachedTiles?: number;
+  /** Bounded sibling leaves; higher levels stay depth-first (no whole-world fan-out). */
+  leafConcurrency?: number;
+  isEmpty?: (tile: PyramidTile) => boolean;
+  createEmpty?: (tile: PyramidTile) => T;
   readTile?: (tile: PyramidTile) => Promise<T | null>;
   writeTile?: (tile: PyramidTile, image: T) => Promise<void>;
   onMissing?: (tile: PyramidTile) => void;
@@ -33,6 +37,18 @@ export interface PixelPyramidOptions<T> {
 export class PixelPyramid<T> {
   readonly maxLevel: number;
   private cache = new Map<string, T>();
+  private pending = new Map<
+    string,
+    {
+      controller: AbortController;
+      listeners: Set<{
+        progress?: (image: T, complete: boolean) => void;
+        resolve: (image: T) => void;
+        reject: (error: unknown) => void;
+      }>;
+      latest?: T;
+    }
+  >();
 
   constructor(private opts: PixelPyramidOptions<T>) {
     if (
@@ -66,30 +82,100 @@ export class PixelPyramid<T> {
     return width > 0 && height > 0 ? { level, x, y, width, height } : null;
   }
 
-  async get(
+  get(
     level: number,
     x: number,
     y: number,
     signal: AbortSignal,
     onProgress?: (image: T, complete: boolean) => void,
   ): Promise<T> {
-    signal.throwIfAborted();
+    if (signal.aborted) return Promise.reject(signal.reason);
     const tile = this.tile(level, x, y);
-    if (!tile) throw new Error(`Tile outside pyramid: ${level}/${x}/${y}`);
+    if (!tile)
+      return Promise.reject(
+        new Error(`Tile outside pyramid: ${level}/${x}/${y}`),
+      );
     const key = `${level}/${x}/${y}`;
     if (this.cache.has(key)) {
       const cached = this.cache.get(key)!;
       this.cache.delete(key);
       this.cache.set(key, cached);
       onProgress?.(cached, true);
-      return cached;
+      return Promise.resolve(cached);
     }
+    let task = this.pending.get(key);
+    const fresh = !task;
+    if (!task) {
+      task = { controller: new AbortController(), listeners: new Set() };
+      this.pending.set(key, task);
+    }
+    const shared = task;
+    const result = new Promise<T>((resolve, reject) => {
+      const remove = () => {
+        signal.removeEventListener("abort", abort);
+        shared.listeners.delete(listener);
+      };
+      const listener = {
+        progress: onProgress,
+        resolve: (image: T) => {
+          remove();
+          resolve(image);
+        },
+        reject: (error: unknown) => {
+          remove();
+          reject(error);
+        },
+      };
+      const abort = () => {
+        listener.reject(signal.reason);
+        if (!shared.listeners.size) {
+          if (this.pending.get(key) === shared) this.pending.delete(key);
+          shared.controller.abort(signal.reason);
+        }
+      };
+      shared.listeners.add(listener);
+      signal.addEventListener("abort", abort, { once: true });
+      if (shared.latest !== undefined) onProgress?.(shared.latest, false);
+    });
+    if (fresh) {
+      void this.build(tile, shared.controller.signal, (image, complete) => {
+        shared.latest = image;
+        for (const listener of shared.listeners)
+          listener.progress?.(image, complete);
+      }).then(
+        (image) => {
+          if (this.pending.get(key) === shared) this.pending.delete(key);
+          for (const listener of [...shared.listeners]) listener.resolve(image);
+        },
+        (error) => {
+          if (this.pending.get(key) === shared) this.pending.delete(key);
+          for (const listener of [...shared.listeners]) listener.reject(error);
+        },
+      );
+    }
+    return result;
+  }
+
+  private async build(
+    tile: PyramidTile,
+    signal: AbortSignal,
+    onProgress: (image: T, complete: boolean) => void,
+  ): Promise<T> {
+    signal.throwIfAborted();
+    const { level, x, y } = tile,
+      key = `${level}/${x}/${y}`;
     const stored = await this.opts.readTile?.(tile);
     signal.throwIfAborted();
     if (stored) {
       this.remember(key, stored);
       onProgress?.(stored, true);
       return stored;
+    }
+    if (this.opts.isEmpty?.(tile)) {
+      const empty = (this.opts.createEmpty ?? this.opts.create)(tile);
+      this.remember(key, empty);
+      onProgress?.(empty, true);
+      return empty;
     }
     this.opts.onMissing?.(tile);
     let result: T;
@@ -103,42 +189,56 @@ export class PixelPyramid<T> {
           const child = this.tile(level + 1, x * 2 + dx, y * 2 + dy);
           if (child) children.push({ dx, dy, tile: child });
         }
-      while (children.length) {
-        const focus = this.opts.focus?.();
-        if (focus) {
-          const scale = 2 ** (this.maxLevel - level - 1);
-          const distance = ({ tile: t }: (typeof children)[number]) => {
-            const left = t.x * this.opts.tileSize * scale,
-              top = t.y * this.opts.tileSize * scale;
-            const dx = Math.max(
-              left - focus.x,
-              0,
-              focus.x - left - t.width * scale,
-            );
-            const dy = Math.max(
-              top - focus.y,
-              0,
-              focus.y - top - t.height * scale,
-            );
-            return dx * dx + dy * dy;
-          };
-          children.sort((a, b) => distance(a) - distance(b));
+      const runChildren = async () => {
+        while (children.length) {
+          signal.throwIfAborted();
+          const focus = this.opts.focus?.();
+          if (focus) {
+            const scale = 2 ** (this.maxLevel - level - 1);
+            const distance = ({ tile: t }: (typeof children)[number]) => {
+              const left = t.x * this.opts.tileSize * scale,
+                top = t.y * this.opts.tileSize * scale;
+              const dx = Math.max(
+                left - focus.x,
+                0,
+                focus.x - left - t.width * scale,
+              );
+              const dy = Math.max(
+                top - focus.y,
+                0,
+                focus.y - top - t.height * scale,
+              );
+              return dx * dx + dy * dy;
+            };
+            children.sort((a, b) => distance(a) - distance(b));
+          }
+          const child = children.shift()!;
+          await this.get(
+            level + 1,
+            child.tile.x,
+            child.tile.y,
+            signal,
+            (image) => {
+              signal.throwIfAborted();
+              // Replace this quadrant on EVERY update, including transparent pixels.
+              // Publishing each completed leaf must not wait for its entire quadrant.
+              this.opts.reduceChild(result, image, child.dx, child.dy);
+              onProgress?.(result, false);
+            },
+          );
         }
-        const child = children.shift()!;
-        await this.get(
-          level + 1,
-          child.tile.x,
-          child.tile.y,
-          signal,
-          (image) => {
-            signal.throwIfAborted();
-            // Replace this quadrant on EVERY update, including transparent pixels.
-            // Publishing each completed leaf must not wait for its entire quadrant.
-            this.opts.reduceChild(result, image, child.dx, child.dy);
-            onProgress?.(result, false);
-          },
-        );
-      }
+      };
+      // Parallelize only the four final children. Recursing Promise.all at
+      // every level would queue the entire map and exhaust memory before the
+      // visible tiles could run. Higher levels keep their existing focus order.
+      const parallel =
+        level === this.maxLevel - 1
+          ? Math.min(
+              children.length,
+              Math.max(1, this.opts.leafConcurrency ?? 1),
+            )
+          : 1;
+      await Promise.all(Array.from({ length: parallel }, runChildren));
     }
     signal.throwIfAborted();
     await this.opts.writeTile?.(tile, result);
@@ -165,6 +265,8 @@ export class PixelPyramid<T> {
   }
 
   clear(): void {
+    for (const task of this.pending.values()) task.controller.abort();
+    this.pending.clear();
     this.cache.clear();
   }
 }

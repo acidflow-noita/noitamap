@@ -8,6 +8,7 @@ import {
   type GLTerrainSourceOpts,
 } from "../src/telescope/gl-terrain-tile-source";
 
+vi.mock("../src/telescope/terrain-footprint", () => ({ createTerrainFootprint: () => () => true }));
 vi.mock('../src/telescope/terrain-presentation', () => ({
   createTerrainPresentation: async () => (ctx:any,image:any) => ctx.drawImage(image,0,0),
 }));

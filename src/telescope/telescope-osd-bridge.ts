@@ -1,3 +1,4 @@
+import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
 import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP } from "./terrain-policy";
 import { loadTelescopeModules } from "./load-telescope";
@@ -2692,11 +2693,27 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
     sources[scene.key] = {
       data: (override?.mid ?? pixelSceneConfig.layers.mid) ? raw.imgElement : new Uint8Array(raw.imgElement.length),
       width: raw.width, height: raw.height,
+      skipEdgeTextures: !!raw.skipEdgeTextures,
       visualArt: (override?.visual ?? pixelSceneConfig.layers.visual) ? raw.visualArt : null,
       backgroundArt,
     };
   }
-  return { sources, scenes: scenes.map(({ key, name, variantKey, x, y, width, height }) => ({ key, name, variantKey, x, y, width, height })) };
+  const staticMasks: StaticTerrainMask[] = [];
+  const maskByKey = new Map<string, Uint8Array>(), placed = new Set<string>();
+  for (const scene of Object.values(result.pixelScenesByPW).flat()) {
+    // The static scene skip/no-op list still owns the same pixels. Skipping the
+    // scene's draw alone is insufficient: final terrain must not cover its art.
+    if (!(pixelSceneConfig.skipNames.has(scene.name) || pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]))) continue;
+    const raw = getPixelSceneData(scene.key);
+    if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement) || raw.width < 2 || raw.height < 2) continue;
+    const placement = `${scene.key}/${scene.x}/${scene.y}`;
+    if (placed.has(placement)) continue;
+    placed.add(placement);
+    let bits = maskByKey.get(scene.key);
+    if (!bits) { bits = staticSceneBits(raw.imgElement); maskByKey.set(scene.key, bits); }
+    staticMasks.push({ x: scene.x, y: scene.y, width: raw.width, height: raw.height, bits, airBits: staticSceneBits(raw.imgElement, true) });
+  }
+  return { sources, staticMasks, scenes: scenes.map(({ key, name, variantKey, x, y, width, height }) => ({ key, name, variantKey, x, y, width, height })) };
 }
 
 async function buildSceneBitmaps(

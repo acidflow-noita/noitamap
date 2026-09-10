@@ -136,10 +136,55 @@ world), identical direct/published final pixels and matching DZI overlaps.
 npm test -- tests/full-pixel-toggle.test.ts tests/full-pixel-mode.test.ts tests/baked-dzi-loader.test.ts
 ```
 
-The DOM unit tests (jsdom, no browser) verify that completed full-pixel daily maps
-force the checkbox checked/disabled, retain a hover/focus explanation, and do not
-change the saved preference for live seeds. Leaving a baked view restores that
-preference. Loader tests require all three worlds to report the completed current
-terrain version before the UI claims “already baked”; legacy/mixed bakes do not
-lock the full-pixel option. Both daily and previous-daily are covered, including
-users whose live-render preference is off.
+The DOM unit tests (jsdom, no browser) verify that the entire live-render control
+is hidden on baked maps and during initial bake detection, without changing the
+saved preference. Leaving a baked view restores the visible control. Language
+changes cannot make it reappear. Loader tests still validate all three complete
+world manifests before recognizing full-pixel baked output.
+
+
+## Stone stamps, static altar boundaries, liquids, and live work
+
+```bash
+npm test -- tests/terrain-edges.test.ts tests/static-terrain-mask.test.ts tests/liquid-surfaces.test.ts tests/material-cache.test.ts tests/terrain-footprint.test.ts tests/pixel-pyramid.test.ts
+npx tsx tests/helpers/measure-terrain-footprint.ts /path/to/prepared-bake
+```
+
+The edge tests run the actual EdgeGraphics stamper with the existing binary
+sprite atlas: dense stone, true-liquid exclusion, protected static pixels,
+scene force-air, and identical independent tile seams. Static-scene tests
+separate reserved material from forced air so an altar cannot become a black
+rectangle. Liquid tests cover inherited liquid/powder classification, untouched
+rock/powders, and tile-independent free surfaces. Material-cache tests preserve
+absolute-coordinate IDs; pyramid tests coalesce requests without cancelling
+other subscribers and skip only known-empty subtrees.
+
+Native OSD tests exercise both CPU fallback and GPU plus worker composition;
+they do not launch a browser. The engine-reference fixture list includes the
+reported spot near (−1553,978), the neighboring wobble, and a liquid pool.
+Full RGB differences remain recorded; passing infrastructure tests is not an
+assertion of complete engine geometry or ore-distribution accuracy.
+
+
+## Parallel live workers and actual game material flags
+
+```bash
+npm test -- tests/terrain-worker-pool.test.ts tests/pixel-pyramid.test.ts tests/liquid-surfaces.test.ts
+npm test -- tests/terrain-worker-pool-runtime.test.ts
+```
+
+The shared pool tests exercise concurrent dispatch across three plane contexts,
+resource reuse, priority changes, safe source cloning versus tile transfers,
+cancellation, seed-change disposal and startup errors. The pyramid test requires
+four concurrent leaf renders without unbounded recursive fan-out and compares
+the final reduction against serial execution.
+
+The native A/B test uses the real CPU final-pixel worker and shipped archives:
+12 identical tile jobs with one and four workers, both cold and warm. It asserts
+four simultaneous render requests and identical output hashes, then reports the
+timings without a flaky performance threshold. No browser automation is involved.
+
+Liquid tests read the actual game XML for desert `sand_static`, loose sand,
+gunpowder, coal and powdered metals, including inherited materials such as
+`purifying_powder`. All must remain outside fluid leveling. The full shader
+material list is also checked against the independent engine sand/powder types.

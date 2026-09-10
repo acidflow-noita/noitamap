@@ -350,6 +350,11 @@ export async function runDynamicMap(
           }
         });
         bakedAlreadyPainted = true;
+        // Hide live-render controls as soon as the bake is selected; fetching
+        // generation.json must not leave a disabled switch visible in between.
+        window.dispatchEvent(new CustomEvent("bakedSeedChange", { detail: {
+          baked: true, fullPixelsBaked: probe.fullPixelsBaked,
+        } }));
         onLoadingChange?.(false);
       }
       const generation = await generationPromise;

@@ -61,7 +61,7 @@ export const BIOME_BACKGROUND_MAP: Record<string, string> = {
   solid_wall_tower_10: "data/weather_gfx/background_crypt.png",
 };
 
-export const TERRAIN_VERSION = "full-pixel-v7";
+export const TERRAIN_VERSION = "full-pixel-v8";
 export const WORLD_HEIGHT = 48 * 512;
 export const WORLD_TOP = -14 * 512;
 export type VerticalPlane = -1 | 0 | 1;

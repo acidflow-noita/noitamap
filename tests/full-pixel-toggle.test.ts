@@ -20,7 +20,7 @@ beforeEach(() => {
     clear: () => values.clear(),
   });
 });
-function setup(enabled = false) {
+function setup(enabled = false, resolved = true) {
   localStorage.clear();
   setGLTerrain(enabled);
   document.body.innerHTML =
@@ -30,6 +30,7 @@ function setup(enabled = false) {
   const reload = vi.fn();
   const translate = vi.fn((key: string) => messages[key]);
   const control = createFullPixelToggle(input, container, translate, reload);
+  if (resolved) control.setBaked(false);
   return { input, container, reload, translate, control };
 }
 afterEach(() => {
@@ -39,21 +40,20 @@ afterEach(() => {
 });
 describe("full-pixel toggle for baked and arbitrary seeds", () => {
   it.each([false, true])(
-    "shows completed bakes checked/disabled without changing the saved preference (%s)",
+    "hides completed bakes without changing the saved preference (%s)",
     (preference) => {
       const { input, container, control, reload } = setup(preference);
       control.setBaked(true);
-      expect(input.checked).toBe(true);
+      expect(input.checked).toBe(preference);
       expect(input.disabled).toBe(true);
-      expect(container.title).toBe(messages["fullPixels.baked"]);
-      expect(input.labels![0].title).toBe(container.title);
-      expect(container.tabIndex).toBe(0); // disabled input's explanation remains focusable
-      expect(input.style.pointerEvents).toBe("none");
+      expect(container.hidden).toBe(true);
+      expect(container.hasAttribute("tabindex")).toBe(false);
+      expect(container.title).not.toBe(messages["fullPixels.baked"]);
       expect(isGLTerrainEnabled()).toBe(preference);
       // Guard synthetic changes too: a baked view cannot alter the saved preference.
       input.checked = false;
       input.dispatchEvent(new Event("change"));
-      expect(input.checked).toBe(true);
+      expect(input.checked).toBe(preference);
       expect(isGLTerrainEnabled()).toBe(preference);
       expect(reload).not.toHaveBeenCalled();
     },
@@ -65,12 +65,19 @@ describe("full-pixel toggle for baked and arbitrary seeds", () => {
       control.setBaked(true);
       control.setBaked(false);
       expect(input.disabled).toBe(false);
+      expect(container.hidden).toBe(false);
       expect(input.checked).toBe(preference);
       expect(input.style.pointerEvents).toBe("");
       expect(container.hasAttribute("tabindex")).toBe(false);
       expect(container.title).toBe(messages["fullPixels.description"]);
     },
   );
+  it("stays hidden while the bake probe is pending, rather than flashing on a baked daily", () => {
+    const { container, input, reload } = setup(true, false);
+    expect(container.hidden).toBe(true);
+    input.dispatchEvent(new Event("change"));
+    expect(reload).not.toHaveBeenCalled();
+  });
   it("allows enabling/disabling for an unbaked seed and persists it before reloading", () => {
     const { input, reload } = setup();
     input.checked = true;
@@ -81,12 +88,13 @@ describe("full-pixel toggle for baked and arbitrary seeds", () => {
     expect(isGLTerrainEnabled()).toBe(false);
     expect(reload).toHaveBeenCalledTimes(2);
   });
-  it("refreshes the disabled explanation when the language changes", () => {
+  it("does not reveal the hidden control when the language changes", () => {
     const { control, input, container, translate } = setup();
     control.setBaked(true);
     translate.mockImplementation((key) => `translated:${key}`);
     control.refresh();
-    expect(container.title).toBe("translated:fullPixels.baked");
+    expect(container.title).toBe("translated:fullPixels.description");
+    expect(container.hidden).toBe(true);
     expect(input.getAttribute("aria-description")).toBe(container.title);
     expect(input.disabled).toBe(true);
   });
@@ -96,7 +104,8 @@ describe("full-pixel toggle for baked and arbitrary seeds", () => {
     const input = doc.getElementById("fullPixelToggle")!;
     expect(input).not.toBeNull();
     expect(input.closest(".dynamic-map-only")).not.toBeNull();
-    expect(input.closest(".dev-only, [data-dev-only], [hidden]")).toBeNull();
+    expect(input.closest(".dev-only, [data-dev-only]")).toBeNull();
+    expect(input.closest("[hidden]")?.id).toBe("fullPixelControl");
     expect(input.hasAttribute("disabled")).toBe(false);
   });
 });

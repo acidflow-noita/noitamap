@@ -1,3 +1,5 @@
+import { terrainWorkerLimit } from "./terrain-worker-pool";
+import { createTerrainFootprint } from "./terrain-footprint";
 import type { TerrainSceneData } from "./terrain-scenes";
 import {
   terrainTileKey,
@@ -35,7 +37,11 @@ export interface GLTerrainGeneration {
   };
   /** Original world map that owns the source buffers; differs from the material
    * lookup map in heaven/hell. Must survive worker/bake serialization. */
-  sourceBiomeData?: { pixels: Uint32Array; heavenPixels?: Uint32Array; hellPixels?: Uint32Array };
+  sourceBiomeData?: {
+    pixels: Uint32Array;
+    heavenPixels?: Uint32Array;
+    hellPixels?: Uint32Array;
+  };
   isNGP: boolean;
   gameMode?: string;
   seed: number;
@@ -239,6 +245,7 @@ export function clearGLTerrain(): void {
   if (renderer && ![...planeRenderers.values()].includes(renderer))
     renderer.invalidate();
   planeRenderers.clear();
+  for (const present of presentations.values()) present.dispose?.();
   presentations.clear();
   renderer = null;
   failureReported = false;
@@ -393,7 +400,28 @@ export function createGLTerrainTileSource(opts: GLTerrainSourceOpts): any {
       tile.x,
       tile.y,
     );
+  const hasContent = createTerrainFootprint(
+    opts.gen,
+    opts.deps.GENERATOR_CONFIG,
+    opts.deps.getWorldSize(opts.gen.isNGP, opts.gen.gameMode),
+  );
   const pyramid = new PixelPyramid<HTMLCanvasElement>({
+    leafConcurrency: terrainWorkerLimit(),
+    createEmpty: (tile) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = tile.width;
+      canvas.height = tile.height;
+      return canvas;
+    },
+    isEmpty: (tile) => {
+      const scale = 2 ** (maxLevel - tile.level);
+      return !hasContent(
+        opts.worldX + tile.x * TILE_SIZE * scale,
+        opts.worldY + tile.y * TILE_SIZE * scale,
+        tile.width * scale,
+        tile.height * scale,
+      );
+    },
     readTile: (tile) => readTerrainTile(persistentKey(tile)),
     onMissing: (tile) => active.get(keyOf(tile))?.publishPreview?.(),
     writeTile: (tile, image) => writeTerrainTile(persistentKey(tile), image),
@@ -419,7 +447,7 @@ export function createGLTerrainTileSource(opts: GLTerrainSourceOpts): any {
           const dy = opts.worldY + (tile.y + 0.5) * TILE_SIZE - focus.y;
           return dx * dx + dy * dy;
         };
-        const finishPixels = (image: HTMLCanvasElement) => {
+        const finishPixels = async (image: HTMLCanvasElement) => {
           lifetime.signal.throwIfAborted();
           if (!image) throw new Error("Full-pixel terrain context was lost");
           const out = create(tile),
@@ -427,15 +455,18 @@ export function createGLTerrainTileSource(opts: GLTerrainSourceOpts): any {
           ctx.clearRect(0, 0, out.width, out.height);
           ctx.imageSmoothingEnabled = false;
           if (present)
-            present(
+            await present(
               ctx,
               image,
               opts.worldX + tile.x * TILE_SIZE,
               opts.worldY + tile.y * TILE_SIZE,
               tile.width,
               tile.height,
+              lifetime.signal,
+              priority,
             );
           else ctx.drawImage(image, 0, 0);
+          lifetime.signal.throwIfAborted();
           renderedLeaves++;
           if (performance.now() - lastProgressUpdate > 100) {
             lastProgressUpdate = performance.now();
@@ -577,7 +608,10 @@ export function createGLTerrainTileSource(opts: GLTerrainSourceOpts): any {
       controller,
       promise: null as unknown as Promise<HTMLCanvasElement>,
       publishPreview: () => {
-        if (!countedWork) { countedWork = true; tileActivity(1); }
+        if (!countedWork) {
+          countedWork = true;
+          tileActivity(1);
+        }
         if (opts.preview) queueMicrotask(deliver);
       },
     };

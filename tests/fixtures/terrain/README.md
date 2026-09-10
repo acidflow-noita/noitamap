@@ -122,3 +122,39 @@ Verification on seed 66930481:
   OSD tests include the elevator's top/middle/bottom, through the real CPU worker.
 - The production build passed; the existing missing Pro-sibling typecheck issue
   remains unrelated. No browser automation/testing was performed.
+
+
+## Stone/altar/liquid feedback, v8 (2026-09-09)
+
+Reference feedback: x=−1553, y=978, seed 786433191. Frozen before snapshots and
+33 coordinate-matched published-DZI comparisons were used during this correction.
+The full-resolution EdgeGraphics pass had been omitted entirely. Wood/metal
+could appear edged from their texture/scene art while dense stone lacked stamps.
+The pass is now present in both the live renderer and bake, using material IDs,
+scene erasures and the pinned fork's sprite atlas. No atlas was regenerated.
+
+The static Holy Mountain scene starts at y=984, 40px above its chunk. Keeping it
+in the skip list without a per-pixel mask let generated terrain cover it. v8
+reserves its authored material pixels, erases forced-air terrain and refills the
+biome background behind air. A solid/air mask is not an arbitrary rectangular crop.
+In the two-chunk 1024×40px altar-top window, exact RGB matches against the engine
+capture increased from 9,744/40,960 to 31,970/40,960; mean absolute channel error
+fell from 21.079 to 3.298. This is an improvement, NOT a 100% accuracy verdict.
+
+For the authored liquid pool near x=−2300/y=657, 130 sampled columns previously
+had surface rows 655–659; the completed v8 tiles put that surface at y=657.
+Liquid classification uses the game's inherited `liquid_sand` flag, not just its
+`cell_type` (which is also `liquid` for many powders/metals).
+
+Verification: a complete seed-786433191 v8 bake produced all 40,464 lossless tiles
+in 497.0 seconds on eight local CPU workers. 40 source backgrounds, 168 published
+leaves, nine mip tiles, 168 overlap pairs and all 144 elevator chunks passed the
+native artifact verifier. 138 focused unit tests and 17 native runtime tests
+passed; Vite build passed. The unrelated missing Pro-sibling typecheck remains.
+No browser automation/testing or production deployment was performed.
+
+Remaining: the ore/density mismatch and the adjacent biome-edge wobble are still
+open. A proposed room-boundary correction increased the reference error and was
+removed rather than shipped. No density thresholds were guessed to hide ore
+mismatches. The upstream position-seeded edge-decoration RNG is not claimed to
+recover the particular engine capture's stamp sequence.

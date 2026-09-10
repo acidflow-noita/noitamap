@@ -175,6 +175,36 @@
       "planes": [
         0
       ]
+    },
+    {
+      "name": "reported-stone-and-altar-border",
+      "chunk": [
+        32,
+        15
+      ],
+      "planes": [
+        0
+      ]
+    },
+    {
+      "name": "reported-left-wobble",
+      "chunk": [
+        31,
+        15
+      ],
+      "planes": [
+        0
+      ]
+    },
+    {
+      "name": "reported-flat-liquid-pool",
+      "chunk": [
+        30,
+        15
+      ],
+      "planes": [
+        0
+      ]
     }
   ]
 }

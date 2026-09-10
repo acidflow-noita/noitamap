@@ -118,23 +118,138 @@ describe("full-pixel pyramid", () => {
     expect(renders).toBe(256);
   });
   it("reuses persisted completed pixels without publishing a coarse preview or regenerating", async () => {
-    let renders=0,previews=0;
-    const store=new Map<string,Image>();
-    const build=()=>new PixelPyramid<Image>({width:4,height:4,tileSize:2,maxCachedTiles:1,
-      create:t=>({...t,pixels:Array(t.width*t.height).fill(0)}),
-      renderLeaf:async t=>{renders++;return{...t,pixels:Array(t.width*t.height).fill(19)};},
-      reduceChild:(parent,child,x,y)=>{parent.pixels[y*parent.width+x]=child.pixels[0];},
-      readTile:async t=>store.get(`${t.level}/${t.x}/${t.y}`)??null,
-      writeTile:async(t,image)=>{store.set(`${t.level}/${t.x}/${t.y}`,image);},
-      onMissing:()=>previews++,
-    });
-    const first=build();const image=await first.get(0,0,0,signal());
-    const before={renders,previews};const reloaded=build();
-    expect(await reloaded.get(0,0,0,signal())).toEqual(image);
-    expect({renders,previews}).toEqual(before);
-    for(let y=0;y<2;y++)for(let x=0;x<2;x++)await reloaded.get(reloaded.maxLevel,x,y,signal());
-    expect({renders,previews}).toEqual(before);
+    let renders = 0,
+      previews = 0;
+    const store = new Map<string, Image>();
+    const build = () =>
+      new PixelPyramid<Image>({
+        width: 4,
+        height: 4,
+        tileSize: 2,
+        maxCachedTiles: 1,
+        create: (t) => ({ ...t, pixels: Array(t.width * t.height).fill(0) }),
+        renderLeaf: async (t) => {
+          renders++;
+          return { ...t, pixels: Array(t.width * t.height).fill(19) };
+        },
+        reduceChild: (parent, child, x, y) => {
+          parent.pixels[y * parent.width + x] = child.pixels[0];
+        },
+        readTile: async (t) => store.get(`${t.level}/${t.x}/${t.y}`) ?? null,
+        writeTile: async (t, image) => {
+          store.set(`${t.level}/${t.x}/${t.y}`, image);
+        },
+        onMissing: () => previews++,
+      });
+    const first = build();
+    const image = await first.get(0, 0, 0, signal());
+    const before = { renders, previews };
+    const reloaded = build();
+    expect(await reloaded.get(0, 0, 0, signal())).toEqual(image);
+    expect({ renders, previews }).toEqual(before);
+    for (let y = 0; y < 2; y++)
+      for (let x = 0; x < 2; x++)
+        await reloaded.get(reloaded.maxLevel, x, y, signal());
+    expect({ renders, previews }).toEqual(before);
     expect(reloaded.cachedTiles()).toHaveLength(1);
   });
+});
 
+it("coalesces overlapping overview/detail requests before they enter the renderer", async () => {
+  let calls = 0,
+    release!: () => void;
+  const barrier = new Promise<void>((r) => (release = r));
+  const pyramid = new PixelPyramid<number>({
+    width: 2,
+    height: 2,
+    tileSize: 2,
+    create: () => 0,
+    renderLeaf: async () => {
+      calls++;
+      await barrier;
+      return 17;
+    },
+    reduceChild() {},
+  });
+  const a = pyramid.get(1, 0, 0, new AbortController().signal),
+    b = pyramid.get(1, 0, 0, new AbortController().signal);
+  await Promise.resolve();
+  expect(calls).toBe(1);
+  release();
+  expect(await Promise.all([a, b])).toEqual([17, 17]);
+});
+it("does not cancel a shared leaf that another viewport request still needs", async () => {
+  let release!: () => void;
+  const barrier = new Promise<void>((r) => (release = r));
+  const pyramid = new PixelPyramid<number>({
+    width: 2,
+    height: 2,
+    tileSize: 2,
+    create: () => 0,
+    renderLeaf: async (_, signal) => {
+      await barrier;
+      signal.throwIfAborted();
+      return 17;
+    },
+    reduceChild() {},
+  });
+  const a = new AbortController(),
+    b = new AbortController();
+  const p = pyramid.get(1, 0, 0, a.signal),
+    q = pyramid.get(1, 0, 0, b.signal);
+  a.abort();
+  await expect(p).rejects.toMatchObject({ name: "AbortError" });
+  release();
+  expect(await q).toBe(17);
+});
+it("skips an exactly empty subtree without rendering a single leaf", async () => {
+  let calls = 0;
+  const pyramid = new PixelPyramid<number>({
+    width: 32768,
+    height: 32768,
+    tileSize: 512,
+    isEmpty: () => true,
+    create: () => 0,
+    renderLeaf: async () => ++calls,
+    reduceChild() {},
+  });
+  expect(await pyramid.get(0, 0, 0, new AbortController().signal)).toBe(0);
+  expect(calls).toBe(0);
+});
+
+it("feeds a bounded batch of real leaves concurrently instead of serializing one whole subtree", async () => {
+  type Pixel = { sum: number; children?: number[] };
+  let busy = 0,
+    peak = 0,
+    calls = 0;
+  const build = (leafConcurrency: number) =>
+    new PixelPyramid<Pixel>({
+      width: 8,
+      height: 8,
+      tileSize: 1,
+      leafConcurrency,
+      create: () => ({ sum: 0, children: [0, 0, 0, 0] }),
+      renderLeaf: async (tile) => {
+        busy++;
+        peak = Math.max(peak, busy);
+        calls++;
+        await new Promise((r) => setTimeout(r, 0));
+        busy--;
+        return { sum: tile.y * 8 + tile.x + 1 };
+      },
+      reduceChild: (parent, child, dx, dy) => {
+        parent.children![dy * 2 + dx] = child.sum;
+        parent.sum = parent.children!.reduce((a, b) => a + b, 0);
+      },
+    });
+  const parallel = await build(4).get(0, 0, 0, new AbortController().signal);
+  expect(calls).toBe(64);
+  expect(peak).toBe(4);
+  peak = 0;
+  calls = 0;
+  const serial = await build(1).get(0, 0, 0, new AbortController().signal);
+  expect(peak).toBe(1);
+  expect(calls).toBe(64);
+  expect(parallel).toEqual(serial);
+  expect(parallel.sum).toBe((64 * 65) / 2);
 });

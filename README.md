@@ -83,13 +83,12 @@ Daily and previous-daily maps prefer validated, completed full-pixel bakes and
 perform **no live terrain rendering**. Old coarse manifests are rejected only
 when full-pixel mode is requested. `?nb=1` explicitly bypasses baked output.
 
-On a completed full-pixel daily/previous-daily bake, **Render every pixel** is
-checked and disabled. Its hover/focus explanation says: “This daily map is already
-baked at full pixel resolution.” This state comes from all three completed bake
-manifests, not just the daily seed URL. It does not overwrite the saved preference:
-when switching to any unbaked seed, the toggle is available again with the prior
-setting. Live full-pixel rendering is available on production as well as localhost;
-it is not limited to daily seeds or developer mode.
+On baked daily/previous-daily maps, **Render every pixel** is hidden entirely.
+The whole control is also hidden while the bake probe is pending, so it cannot
+flash before a baked map is recognized. Selecting any unbaked seed shows it again
+with the saved live-render preference. This is based on the bake actually being
+used, not just the seed URL. Live full-pixel rendering is available on production
+as well as localhost; it is not restricted to developer mode.
 
 ### Native daily bake (no GPU/browser)
 
@@ -193,3 +192,76 @@ old v6 completed tiles need rebaking. `tests/terrain-elevator.test.ts` checks th
 exception's footprint and serialization. The native terrain runtime suites
 exercise its top/middle/bottom through real OSD jobs, and the bake-artifact
 verifier checks all 144 lower shaft chunks across the three horizontal worlds.
+
+
+### Final-pixel refinement v8
+
+- EdgeGraphics stamps now run on full-resolution terrain **and scene material
+  identities** before pyramid reduction; they are not disabled at lower zoom.
+  Scene force-air and colors-file/skip-edge rules remain separate paint passes.
+- Static-scene masks protect the part of Holy Mountain altars that reaches above
+  the biome chunk. Authored air erases terrain while retaining the backdrop;
+  protected material reveals existing static art rather than painting it again.
+- Authored horizontal liquid surfaces no longer inherit terrain-edge warp. The
+  material classification reads `liquid_sand` (including inheritance) from the
+  game XML, so water-like liquids and powdered metals are not conflated. Walls,
+  bottoms, powders and other liquids are not flattened. This is not a complete
+  fluid/reaction simulation.
+- Live rendering skips known-empty pyramid subtrees, coalesces overlapping tile
+  requests, and yields CPU work by elapsed time rather than imposing a timer
+  after every 16 rows. GPU cell rendering is retained, but per-pixel scene,
+  liquid and edge composition runs in the shared worker pool instead of blocking the UI.
+  A bounded material cache shares resolver results with the edge-neighbor pass.
+
+```bash
+npx tsx tests/helpers/measure-terrain-footprint.ts /path/to/prepared-bake
+```
+
+For seed 786433191, a complete nine-plane overview skips **21,059 of 30,240**
+full-resolution leaf jobs (69.6%). This is a work-count measurement, not a claim
+of 69.6% higher browser FPS or instantaneous generation. All nonempty leaves
+still render final pixels, and lower levels still reduce all their children.
+
+The capture comparison still exposes the upstream ore/density mismatch and
+neighboring biome-edge wobble. Those are **not** claimed fixed. The attempted
+room-boundary clipping was rejected because it worsened the engine-reference
+comparison. Edge stamping uses the pinned fork's deterministic decoration pass;
+the result is not claimed pixel-identical to every captured stamp.
+
+
+### Live worker pool and liquid/powder classification
+
+Live rendering uses one **page-wide 1–6 worker pool** for all vertical planes and
+GPU finishing. The budget leaves at least one reported CPU available and respects
+`navigator.deviceMemory` where provided (1 worker at ≤2 GiB, 2 at ≤4 GiB, up to 6
+above that; up to 4 when memory is unreported). Workers initialize additional
+planes only when needed, reuse their resources, and are terminated when their
+renderers are released. This does not alter GitLab's `TERRAIN_CONCURRENCY` setting.
+Final sibling leaves are dispatched in bounded parallel batches; upper pyramid
+levels stay depth-first so the whole map is not queued at once.
+
+Native A/B measurement (same twelve full-resolution tiles, seed 786433191):
+
+| Workers | First batch, including additional worker setup | Warm batch |
+|---|---:|---:|
+| 1 | 1984 ms | 1752 ms |
+| 4 | 1232 ms | 576 ms |
+
+All rendered pixel hashes agreed. These are local native-worker timings, not a
+browser FPS guarantee or a GitLab benchmark. Reproduce with
+`npm test -- tests/terrain-worker-pool-runtime.test.ts`.
+
+`liquid_sand` is an internal Noita physics flag, not a UI material name:
+
+- `sand_static` (walkable ground): `cell_type="liquid"`, `liquid_sand="1"`,
+  `liquid_static="1"`.
+- Loose `sand`, `gunpowder`, `gold`, `copper`: `cell_type="liquid"`,
+  `liquid_sand="1"`; not static ground.
+- `water`, `blood`, `oil`, `acid`, `lava`: `liquid_sand="0"`.
+
+The level-surface correction explicitly excludes **both** static ground sand and
+loose powders/metals. Tests read the actual `public/data.zip` material XML, follow
+inheritance, and cross-check every shader material classified as sand/powder in
+the engine table. Missing flags and commented-out definitions cannot turn an
+unknown material into a fluid. This classification check does not resolve the
+separately documented ore-density placement mismatch.

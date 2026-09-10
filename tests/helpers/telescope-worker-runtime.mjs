@@ -266,10 +266,17 @@ try {
         configurable: true,
       });
     }
+    if (workerData.hardwareConcurrency !== undefined) {
+      Object.defineProperty(globalThis, "navigator", {
+        configurable: true,
+        value: { hardwareConcurrency: workerData.hardwareConcurrency, userAgent: "Noitamap native worker test" },
+      });
+    }
     const fixture = await import(pathToFileURL(workerData.entry).href);
     parentPort.postMessage({
       type: "fixture",
       data:
+        workerData.poolBenchmark ? await fixture.renderTerrainPoolFixture(workerData.seed) :
         graphics || workerData.mode === "cpu-terrain"
           ? await fixture.renderTerrainFixture(
               workerData.seed,

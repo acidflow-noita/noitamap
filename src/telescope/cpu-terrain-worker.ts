@@ -31,6 +31,9 @@ self.onmessage = async ({ data }) => {
   }
   try {
     if (type === "init") {
+      // A pool slot keeps one plane resident. Release the previous material
+      // lattice before loading a different one; never multiply it by all planes.
+      terrain = null;
       const { createCpuTerrain } = await import("./cpu-terrain-core");
       terrain = await createCpuTerrain({
         ...data.generation,
@@ -44,7 +47,7 @@ self.onmessage = async ({ data }) => {
         centerPx: terrain.centerPx,
         stats: terrain.stats,
       });
-    } else if (type === "render") {
+    } else if (type === "render" || type === "present") {
       if (!terrain) throw new Error("CPU terrain resources are not ready");
       const { x, y, width, height } = data;
       if (
@@ -57,8 +60,19 @@ self.onmessage = async ({ data }) => {
         throw new Error("Invalid CPU terrain tile dimensions");
       }
       active.add(id);
-      const pixels = new Uint8ClampedArray(width * height * 4);
-      for (let row = 0; row < height; row += 16) {
+      const pixels =
+        type === "present"
+          ? new Uint8ClampedArray(data.pixels)
+          : new Uint8ClampedArray(width * height * 4);
+      if (pixels.length !== width * height * 4)
+        throw new Error("Invalid terrain presentation buffer");
+      const hasContent = terrain.contains(x, y, width, height);
+      let yieldAt = performance.now() + 12;
+      for (
+        let row = 0;
+        type === "render" && hasContent && row < height;
+        row += 16
+      ) {
         if (cancelled.has(id)) break;
         terrain.renderRows(
           x,
@@ -68,12 +82,14 @@ self.onmessage = async ({ data }) => {
           Math.min(row + 16, height),
           pixels,
         );
-        if (row + 16 < height)
+        if (row + 16 < height && performance.now() >= yieldAt) {
           await new Promise((resolve) => setTimeout(resolve, 0));
+          yieldAt = performance.now() + 12;
+        }
       }
       if (cancelled.has(id)) self.postMessage({ id, type: "cancelled" });
       else {
-        terrain.finish(pixels, x, y, width, height);
+        if (hasContent) terrain.finish(pixels, x, y, width, height);
         self.postMessage(
           { id, type: "tile", width, height, pixels: pixels.buffer },
           [pixels.buffer],

@@ -78,6 +78,7 @@ describe("full-pixel mode", () => {
   it("bundles and routes all required shader data, including cold loads", () => {
     for (const file of [
       "material_atlas.bin",
+      "edge_atlas.bin",
       "material_atlas.json",
       "biome_flags.json",
       "material_data.json",

@@ -1,3 +1,4 @@
+import type { StaticTerrainMask } from "./static-terrain-mask";
 import Flatbush from "flatbush";
 import { compositeTerrain } from "./terrain-backgrounds";
 
@@ -16,12 +17,14 @@ export interface TerrainScene {
   height: number;
 }
 export interface TerrainSceneSource extends ScenePixels {
+  skipEdgeTextures?: boolean;
   visualArt?: ScenePixels | null;
   backgroundArt?: ScenePixels | null;
 }
 /** Raw, un-recolored sources are shared. Textures and biome bands depend on the
  * INSTANCE's absolute world coordinates, never just its scene/variant name. */
 export interface TerrainSceneData {
+  staticMasks?: StaticTerrainMask[];
   scenes: TerrainScene[];
   sources: Record<string, TerrainSceneSource>;
 }
@@ -140,6 +143,23 @@ export function createSceneTileCompositor(
       }
   }
   return {
+    paintsAt(x: number, y: number) {
+      for (const id of index?.search(x, y, x, y) ?? []) {
+        const scene = data.scenes[id],
+          source = data.sources[scene.key];
+        const px = x - scene.x,
+          py = y - scene.y;
+        if (
+          px >= 0 &&
+          py >= 0 &&
+          px < source.width &&
+          py < source.height &&
+          source.data[(py * source.width + px) * 4 + 3]
+        )
+          return true;
+      }
+      return false;
+    },
     contains(x: number, y: number, w: number, h: number) {
       return (index?.search(x, y, x + w, y + h).length ?? 0) > 0;
     },

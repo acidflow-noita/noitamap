@@ -1,40 +1,30 @@
 import { isGLTerrainEnabled, setGLTerrain } from "./renderer_settings";
 
-/** Reflect the displayed bake without overwriting the user's live-seed
- * preference. A URL that merely names the daily seed is not a completed bake. */
+/** This control is for LIVE generation only. Hide the whole wrapper while the
+ * bake probe is pending or a bake is displayed; do not change the saved setting
+ * merely because a daily/previous-daily map already contains final pixels. */
 export function createFullPixelToggle(
   input: HTMLInputElement,
   container: HTMLElement,
   translate: (key: string) => string,
   reload: () => void,
 ) {
-  let fullPixelsBaked = false;
+  let baked: boolean | null = null;
   const refresh = () => {
-    input.checked = fullPixelsBaked || isGLTerrainEnabled();
-    input.disabled = fullPixelsBaked;
-    const description = translate(
-      fullPixelsBaked ? "fullPixels.baked" : "fullPixels.description",
-    );
-    // A disabled input does not reliably receive mouse/focus events. Keep the
-    // explanation on its wrapper/label, and make the wrapper keyboard-focusable.
+    container.hidden = baked !== false;
+    input.checked = isGLTerrainEnabled();
+    input.disabled = baked !== false;
+    const description = translate("fullPixels.description");
     container.title = description;
     input.title = description;
     input.setAttribute("aria-description", description);
-    input.style.pointerEvents = fullPixelsBaked ? "none" : "";
     for (const label of input.labels ?? []) label.title = description;
-    if (fullPixelsBaked) {
-      container.tabIndex = 0;
-      container.setAttribute(
-        "aria-label",
-        `${translate("fullPixels.title")}. ${description}`,
-      );
-    } else {
-      container.removeAttribute("tabindex");
-      container.removeAttribute("aria-label");
-    }
+    // No focusable hidden wrapper or stale 'already baked' tooltip.
+    container.removeAttribute("tabindex");
+    container.removeAttribute("aria-label");
   };
   const change = () => {
-    if (fullPixelsBaked) {
+    if (baked !== false) {
       refresh();
       return;
     }
@@ -44,8 +34,8 @@ export function createFullPixelToggle(
   input.addEventListener("change", change);
   refresh();
   return {
-    setBaked(baked: boolean) {
-      fullPixelsBaked = baked;
+    setBaked(value: boolean) {
+      baked = value;
       refresh();
     },
     refresh,

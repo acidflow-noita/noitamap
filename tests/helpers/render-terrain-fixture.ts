@@ -418,3 +418,69 @@ export async function renderTerrainFixture(seed: number, cached = false) {
   }
   return result;
 }
+
+/** A/B same actual CPU renderer with one vs multiple workers. Runs in separate
+ * native worker environments, so navigator supplies the test's hardware limit.
+ * Generation is outside the measured batches; cold includes extra-worker setup,
+ * warm measures steady-state tiles. Hashes must agree at both parallelisms. */
+export async function renderTerrainPoolFixture(seed: number) {
+  const { CpuTerrainRenderer, liveTerrainWorkerStats } =
+    await import("../../src/telescope/cpu-terrain-client");
+  const generated = await generateFixture(true, seed, true);
+  const renderer = new CpuTerrainRenderer();
+  await renderer.ensureResources(generated.tileLayers!, generated.biomeData, {
+    seed,
+    isNGP: false,
+    gameMode: "normal",
+    plane: 0,
+  });
+  const samples: { x: number; y: number }[] = [];
+  for (const name of ["coalmine", "excavationsite", "snowcave", "rainforest"]) {
+    const layer = generated.tileLayers!.find(
+      (l: any) => l.biomeName === name && l.validChunks?.size >= 3,
+    );
+    if (!layer) throw new Error(`Missing benchmark biome ${name}`);
+    for (const key of [...layer.validChunks].slice(0, 3)) {
+      const [cx, cy] = String(key).split(",").map(Number);
+      samples.push({ x: cx * 512 - 17920, y: cy * 512 - 7168 });
+    }
+  }
+  const batch = async () => {
+    const start = performance.now();
+    const hashes = await Promise.all(
+      samples.map(async ({ x, y }) => {
+        const canvas = await renderer.render(
+          {
+            camX: x + 17920 + 256,
+            camY: y + 7168 + 256,
+            pw: 0,
+            width: 512,
+            height: 512,
+          },
+          new AbortController().signal,
+          () => 0,
+        );
+        const pixels = canvas
+          .getContext("2d")!
+          .getImageData(0, 0, 512, 512).data;
+        let hash = 2166136261;
+        for (const byte of pixels)
+          hash = Math.imul(hash ^ byte, 16777619) >>> 0;
+        return hash;
+      }),
+    );
+    return { ms: performance.now() - start, hashes };
+  };
+  try {
+    const cold = await batch(),
+      warm = await batch();
+    return {
+      cold,
+      warm,
+      pool: liveTerrainWorkerStats(),
+      tiles: samples.length,
+    };
+  } finally {
+    renderer.invalidate();
+  }
+}

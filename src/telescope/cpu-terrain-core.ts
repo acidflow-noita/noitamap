@@ -1,3 +1,4 @@
+import { cacheMaterialAt } from "./material-cache";
 import { buildEngineLattice } from "noita-telescope-full-pixels/engine_resolve/lattice_builder.js";
 import { createTerrainComposition } from "./terrain-composition";
 import { createPlaneMaterialField } from "./plane-material-field";
@@ -80,12 +81,6 @@ export async function createCpuTerrain(gen: GLTerrainGeneration) {
     gen.isNGP || gen.gameMode === "nightmare" ? 64 * 512 - 8 : 70 * 512;
   const plane = gen.plane ?? 0,
     offsetY = plane * WORLD_HEIGHT;
-  const composition = await createTerrainComposition(
-    gen,
-    GENERATOR_CONFIG,
-    mapWidth,
-  );
-  const ownership = composition.ownership;
   const engine = buildEngineResources(
     gen.tileLayers,
     gen.biomeData,
@@ -186,14 +181,36 @@ export async function createCpuTerrain(gen: GLTerrainGeneration) {
     );
   };
 
-  function rawColorAt(x: number, y: number, worldY: number): number {
-    if (y < -7168 || y >= 17408) return 0; // same supported vertical plane as GL
+  const materialCache = cacheMaterialAt(rawMaterialAt);
+  const composition = await createTerrainComposition(
+    gen,
+    GENERATOR_CONFIG,
+    mapWidth,
+    materialCache.materialAt,
+    engine.lattice,
+  );
+  const ownership = composition.ownership;
+  function rawMaterialAt(x: number, worldY: number): number {
+    const y = worldY - offsetY;
+    if (y < -7168 || y >= 17408) return 0;
     const shaft = shaftFields.get(
       mod(Math.floor((x + centerPx) / 512), mapWidth),
     );
-    if (shaft) {
-      const material = shaft(x, worldY);
-      if (material <= 0) return 0;
+    if (shaft) return shaft(x, worldY);
+    resolveCellFull(bmap, x, plane === 0 ? y : worldY, noiseEnabled, cell);
+    const info = engine.chunk[cell.cy * mapWidth + cell.cx];
+    if (info & 2048) return 0;
+    if (((info >> 8) & 3) === 2) return -1;
+    return planeMaterialAt
+      ? planeMaterialAt(x, worldY)
+      : field.materialAt(x, y);
+  }
+
+  function rawColorAt(x: number, y: number, worldY: number): number {
+    if (y < -7168 || y >= 17408) return 0; // same supported vertical plane as GL
+    const material = materialCache.materialAt(x, worldY);
+    if (material === 0) return 0;
+    if (material > 0) {
       const p = material * 4,
         entry = materials[p] & 255;
       return entry
@@ -205,28 +222,7 @@ export async function createCpuTerrain(gen: GLTerrainGeneration) {
             materials[p] >> 8,
           );
     }
-    resolveCellFull(bmap, x, plane === 0 ? y : worldY, noiseEnabled, cell);
-    const info = engine.chunk[cell.cy * mapWidth + cell.cx];
-    if (info & 2048) return 0; // scene-only/no-terrain chunks must remain air
-    if (((info >> 8) & 3) !== 2) {
-      const material = planeMaterialAt
-        ? planeMaterialAt(x, worldY)
-        : field.materialAt(x, y);
-      if (material === 0) return 0;
-      if (material > 0) {
-        const p = material * 4,
-          entry = materials[p] & 255;
-        if (entry) return texture(entry, x, worldY);
-        return packed(
-          materials[p + 1],
-          materials[p + 2],
-          materials[p + 3],
-          materials[p] >> 8,
-        );
-      }
-      // Unsupported resolves take exactly the legacy path below, never a blank tile.
-    }
-
+    // Unsupported topology uses the existing legacy path, never a blank tile.
     const biome = getTileOverlayBiome(
       gen.biomeData,
       x,
@@ -290,6 +286,8 @@ export async function createCpuTerrain(gen: GLTerrainGeneration) {
     mapWidth,
     centerPx,
     stats: resources.stats,
+    edgeStats: composition.edgeStats,
+    materialStats: materialCache.stats,
     colorAt,
     contains: composition.contains,
     finish: composition.finish,

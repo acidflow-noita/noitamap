@@ -438,7 +438,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   );
   i18next.on("languageChanged", fullPixelControl.refresh);
   window.addEventListener("bakedSeedChange", ((event: CustomEvent) => {
-    fullPixelControl.setBaked(event.detail?.baked === true && event.detail?.fullPixelsBaked === true);
+    fullPixelControl.setBaked(event.detail?.baked === true);
   }) as EventListener);
   window.addEventListener("fullPixelTerrainError", ((event: CustomEvent) => {
     terrainBusy = false;
