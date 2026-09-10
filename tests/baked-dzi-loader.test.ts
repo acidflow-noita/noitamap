@@ -4,7 +4,14 @@ import {
   probeBakedDZIs,
 } from "../src/telescope/baked-dzi-loader";
 import { TERRAIN_VERSION } from "../src/telescope/terrain-policy";
-afterEach(() => vi.unstubAllGlobals());
+import {
+  isGLTerrainEnabled,
+  setFullPixelTerrainForBake,
+} from "../src/renderer_settings";
+afterEach(() => {
+  setFullPixelTerrainForBake(false);
+  vi.unstubAllGlobals();
+});
 describe("baked DZI rendering", () => {
   it("preserves alpha and all mip levels on the baked overlay", () => {
     const source: Record<string, any> = { minLevel: 0 };
@@ -31,7 +38,7 @@ describe("baked DZI rendering", () => {
     expect(source.queryParams).toBe("?v=today");
   });
   it.each(["0", "1"])(
-    "identifies completed full-pixel bakes regardless of live preference (%s)",
+    "uses completed full-pixel bakes with live rendering disabled, ignoring old preference (%s)",
     async (preference) => {
       vi.stubGlobal("localStorage", { getItem: () => preference });
       vi.stubGlobal(
@@ -58,6 +65,7 @@ describe("baked DZI rendering", () => {
       );
       const result = await probeBakedDZIs("daily", 123);
       expect(result.baked).toBe(true);
+      expect(isGLTerrainEnabled()).toBe(false);
       if (result.baked) {
         expect(result.decorationsBaked).toBe(true);
         expect(result.fullPixelsBaked).toBe(true);
@@ -108,8 +116,8 @@ describe("baked DZI rendering", () => {
     const result = await probeBakedDZIs("previous-daily", 123);
     expect(result.baked && result.fullPixelsBaked).toBe(true);
   });
-  it("rejects coarse or incomplete bakes when full-pixel mode is enabled", async () => {
-    vi.stubGlobal("localStorage", { getItem: () => "1" });
+  it("rejects coarse or incomplete bakes in explicit offline full-pixel mode", async () => {
+    setFullPixelTerrainForBake(true);
     for (const incomplete of [
       {},
       { terrainVersion: TERRAIN_VERSION, complete: false },
@@ -128,4 +136,26 @@ describe("baked DZI rendering", () => {
       expect((await probeBakedDZIs("daily", 123)).baked).toBe(false);
     }
   });
+  it.each(["missing", "wrong-seed"])(
+    "leaves approximate generation selected when a daily world is %s",
+    async (failure) => {
+      vi.stubGlobal("localStorage", { getItem: () => "1" });
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (url: string) => ({
+          ok: !(failure === "missing" && url.includes("-right.")),
+          json: async () => ({
+            seed:
+              failure === "wrong-seed" && url.includes("-right.") ? 456 : 123,
+            baked: true,
+            complete: true,
+            terrainVersion: TERRAIN_VERSION,
+            regions: [{ pw: 0, dzi: "map.dzi" }],
+          }),
+        })),
+      );
+      expect((await probeBakedDZIs("daily", 123)).baked).toBe(false);
+      expect(isGLTerrainEnabled()).toBe(false);
+    },
+  );
 });

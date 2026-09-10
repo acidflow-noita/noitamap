@@ -71,24 +71,30 @@ Huge thanks to [@Dadido3](https://github.com/Dadido3), [@myndzi](https://github.
 
 ## Full-pixel terrain and daily baking
 
-**Render every pixel** selects the pinned `render-perf` generation/rendering model.
-The live map generates main, heaven and hell planes independently, limits terrain
-to owned dynamic biome cells, and uses native-resolution game background textures.
-WebGL2 accelerates the main plane when available; CPU workers handle unsupported
-contexts and the vertical planes. Completed tiles and derived mip levels are
-persisted, so changing zoom does not restart completed terrain generation. Progress
-uses the existing generation strip, not a separate floating status panel.
+**Public maps use baked pixels when available, approximate terrain otherwise.**
+The **Render every pixel** toggle is removed from every map/view, including
+localhost. The old `noitamap-gl-terrain` saved preference is ignored, and there
+is no browser-console or URL opt-in. Returning users cannot accidentally remain
+on the expensive live-render path just because they enabled it in an older build.
 
-Daily and previous-daily maps prefer validated, completed full-pixel bakes and
-perform **no live terrain rendering**. Old coarse manifests are rejected only
-when full-pixel mode is requested. `?nb=1` explicitly bypasses baked output.
+Daily and previous-daily maps still load their matching baked DZI pyramids without
+live terrain rendering. If no bake is available (including arbitrary seeds and
+failed/mismatched daily probes), the map uses the existing approximate generator.
+`?nb=1` explicitly bypasses baked output but does **not** enable live final pixels.
+Static maps and other performance controls are unchanged.
 
-On baked daily/previous-daily maps, **Render every pixel** is hidden entirely.
-The whole control is also hidden while the bake probe is pending, so it cannot
-flash before a baked map is recognized. Selecting any unbaked seed shows it again
-with the saved live-render preference. This is based on the bake actually being
-used, not just the seed URL. Live full-pixel rendering is available on production
-as well as localhost; it is not restricted to developer mode.
+This is not fixed by simply switching on GPU rendering: the retained renderer
+already uses WebGL2 for the main plane, then CPU workers for scene/liquid/edge
+composition and the vertical planes. Exact low-zoom tiles reduce all underlying
+full-resolution children, so an overview can require thousands of leaf jobs.
+More GPU composition or a different level-of-detail design could improve it, but
+the current pipeline cannot promise fast completion across low-end phones.
+Serving precomputed tiles avoids putting that full-resolution work on the device.
+
+The native baker and renderer test harnesses explicitly select full-pixel mode
+with `setFullPixelTerrainForBake`; they do not depend on browser storage. The
+pinned `render-perf` model, native backgrounds, full-resolution rendering and
+complete pyramids remain available for baking and offline performance work.
 
 ### Native daily bake (no GPU/browser)
 
@@ -207,7 +213,7 @@ verifier checks all 144 lower shaft chunks across the three horizontal worlds.
   game XML, so water-like liquids and powdered metals are not conflated. Walls,
   bottoms, powders and other liquids are not flattened. This is not a complete
   fluid/reaction simulation.
-- Live rendering skips known-empty pyramid subtrees, coalesces overlapping tile
+- The retained full-pixel renderer skips known-empty pyramid subtrees, coalesces overlapping tile
   requests, and yields CPU work by elapsed time rather than imposing a timer
   after every 16 rows. GPU cell rendering is retained, but per-pixel scene,
   liquid and edge composition runs in the shared worker pool instead of blocking the UI.
@@ -229,10 +235,11 @@ comparison. Edge stamping uses the pinned fork's deterministic decoration pass;
 the result is not claimed pixel-identical to every captured stamp.
 
 
-### Live worker pool and liquid/powder classification
+### Offline renderer diagnostics: worker pool and liquid/powder classification
 
-Live rendering uses one **page-wide 1–6 worker pool** for all vertical planes and
-GPU finishing. The budget leaves at least one reported CPU available and respects
+The retained tile renderer uses one **shared 1–6 worker pool** for all vertical
+planes and GPU finishing; public maps no longer enter this path. The budget
+leaves at least one reported CPU available and respects
 `navigator.deviceMemory` where provided (1 worker at ≤2 GiB, 2 at ≤4 GiB, up to 6
 above that; up to 4 when memory is unreported). Workers initialize additional
 planes only when needed, reuse their resources, and are terminated when their

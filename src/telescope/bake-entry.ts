@@ -1,4 +1,5 @@
 import { serializeTileLayer, restoreTileLayer } from "./tile-layer-cache";
+import { setFullPixelTerrainForBake } from "../renderer_settings";
 import { prepareTerrainPlane } from "./terrain-planes";
 import {
   TERRAIN_VERSION,
@@ -10,6 +11,9 @@ import {
 /** Exactly one seed/POI generation. Main and vertical terrain data are exported
  * read-only to all native renderer workers rather than regenerated per tile. */
 export async function prepareBake(seed: number) {
+  // Offline baking must select the full generation fork explicitly. Browser
+  // preferences (including old saved opt-ins) no longer control this mode.
+  setFullPixelTerrainForBake(true);
   const { generateDynamicMap } = await import("./telescope-adapter");
   const generation = await generateDynamicMap({
     seed,
@@ -58,6 +62,7 @@ export async function prepareBake(seed: number) {
 }
 
 export async function openBakeRenderer(snapshot: any) {
+  setFullPixelTerrainForBake(true);
   const { installTelescopeShim } = await import("./telescope-dom-shim");
   const { installFetchInterceptor } = await import("./telescope-data-bridge");
   installTelescopeShim();

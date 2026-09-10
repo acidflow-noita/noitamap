@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   isGLTerrainEnabled,
-  setGLTerrain,
+  setFullPixelTerrainForBake,
   shouldUseBakedTerrain,
 } from "../src/renderer_settings";
 import { telescopeCacheKey } from "../src/telescope/cache-identity";
@@ -23,7 +23,10 @@ vi.mock("../src/telescope/worker-telescope-exports", () => ({
 vi.mock("../src/telescope/full-pixel-worker-exports", () => ({
   fork: "full-worker",
 }));
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  setFullPixelTerrainForBake(false);
+  vi.unstubAllGlobals();
+});
 
 describe("full-pixel mode", () => {
   it("defaults off and tolerates unavailable browser storage", () => {
@@ -36,25 +39,49 @@ describe("full-pixel mode", () => {
       },
     });
     expect(isGLTerrainEnabled()).toBe(false);
-    expect(() => setGLTerrain(true)).not.toThrow();
   });
-  it("persists the UI option", () => {
-    const data = new Map();
-    vi.stubGlobal("localStorage", {
-      getItem: (k: string) => data.get(k),
-      setItem: (k: string, v: string) => data.set(k, v),
+  it.each([
+    "?m=dy&ds=1",
+    "?m=dy&pds=1",
+    "?m=dy&se=42",
+    "?m=dy&se=42&nb=1",
+    "?m=dy&se=42&u=none",
+    "?m=r",
+    "?m=n",
+    "?m=nm",
+  ])(
+    "ignores old opt-ins and selects approximate generation for %s",
+    async (search) => {
+      const getItem = vi.fn(() => "1");
+      vi.stubGlobal("localStorage", { getItem });
+      vi.stubGlobal("window", {
+        location: new URL(`https://noitamap.com/${search}`),
+      });
+      expect(isGLTerrainEnabled()).toBe(false);
+      expect((await loadTelescopeModules()).fork).toBe("legacy");
+      expect(telescopeCacheKey("42-all")).toBe("42-all");
+      expect(getItem).not.toHaveBeenCalled();
+    },
+  );
+  it("allows the native baker to select the full fork explicitly, without storage", async () => {
+    const getItem = vi.fn(() => {
+      throw new Error("No browser storage in bake");
     });
-    expect(isGLTerrainEnabled()).toBe(false);
-    setGLTerrain(true);
+    vi.stubGlobal("localStorage", { getItem });
+    setFullPixelTerrainForBake(true);
     expect(isGLTerrainEnabled()).toBe(true);
-    setGLTerrain(false);
-    expect(isGLTerrainEnabled()).toBe(false);
+    expect((await loadTelescopeModules()).fork).toBe("full");
+    expect(telescopeCacheKey("42-all")).not.toBe("42-all");
+    expect(getItem).not.toHaveBeenCalled();
   });
-  it("bypasses daily baked images and baked JSON only when needed", () => {
-    expect(shouldUseBakedTerrain("?ds=1", false)).toBe(true);
-    expect(shouldUseBakedTerrain("?ds=1", true)).toBe(true);
-    expect(shouldUseBakedTerrain("?se=42", true)).toBe(true);
-    expect(shouldUseBakedTerrain("?nb=1", false)).toBe(false);
+  it("uses baked images independently of live generation, unless explicitly bypassed", () => {
+    for (const offline of [false, true]) {
+      setFullPixelTerrainForBake(offline);
+      expect(shouldUseBakedTerrain("?ds=1")).toBe(true);
+      expect(shouldUseBakedTerrain("?pds=1")).toBe(true);
+      expect(shouldUseBakedTerrain("?se=42")).toBe(true);
+      expect(shouldUseBakedTerrain("?nb=1")).toBe(false);
+    }
   });
   it("selects a complete matching main-thread fork", async () => {
     expect((await loadTelescopeModules(false)).fork).toBe("legacy");

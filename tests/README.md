@@ -130,17 +130,22 @@ verification requires non-background terrain in **every** shaft chunk (48 per
 world), identical direct/published final pixels and matching DZI overlaps.
 
 
-## Full-pixel toggle and completed daily state
+## Public approximate terrain, removed toggle, and completed daily state
 
 ```bash
-npm test -- tests/full-pixel-toggle.test.ts tests/full-pixel-mode.test.ts tests/baked-dzi-loader.test.ts
+npm test -- tests/full-pixel-toggle.test.ts tests/full-pixel-mode.test.ts tests/baked-dzi-loader.test.ts tests/native-bake-mode.test.ts
 ```
 
-The DOM unit tests (jsdom, no browser) verify that the entire live-render control
-is hidden on baked maps and during initial bake detection, without changing the
-saved preference. Leaving a baked view restores the visible control. Language
-changes cannot make it reappear. Loader tests still validate all three complete
-world manifests before recognizing full-pixel baked output.
+The DOM/source regression tests (jsdom, no browser) verify that the live-render
+control and its browser-console hooks are removed, rather than hidden with CSS.
+Mode tests verify that old saved opt-ins cannot enable full-pixel rendering on
+daily, arbitrary, static, restricted-unlock or bake-bypass views, and that the
+approximate fork/cache namespace is selected. Native entrypoints use a separate,
+explicit internal mode; renderer tests opt into it without browser storage.
+The bake-mode tests assert that both native entrypoints select the full fork
+before generation/asset initialization, rather than inheriting the public default.
+Loader tests preserve completed daily/previous-daily baked pixels while leaving
+live rendering disabled, including when a world is missing or has the wrong seed.
 
 
 ## Stone stamps, static altar boundaries, liquids, and live work

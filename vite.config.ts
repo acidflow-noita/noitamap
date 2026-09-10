@@ -5,10 +5,10 @@ import fs from "fs";
 
 const isProAvailable = fs.existsSync(resolve(__dirname, "../noitamap-pro/src/pro-entry.ts"));
 
-// Standard interactive generation keeps its existing fork and build override.
-// The map's "Render every pixel" option independently lazy-loads the complete
-// render-perf fork via load-telescope.ts, including matching worker modules and
-// material data. Native daily baking explicitly selects the same full-pixel fork.
+// Public interactive generation uses the approximate fork and existing build
+// override. Only native baking/renderer diagnostics explicitly select the full
+// render-perf fork via load-telescope.ts, with matching workers/material data.
+// There is no public live full-pixel toggle or saved preference.
 const TELESCOPE_DEFAULT = "lib/noita-telescope";
 const TELESCOPE_REQUESTED = process.env.NOITAMAP_TELESCOPE || TELESCOPE_DEFAULT;
 let TELESCOPE_DIR = TELESCOPE_REQUESTED;

@@ -1,4 +1,5 @@
 import { prepareTerrainPlane } from "../../src/telescope/terrain-planes";
+import { setFullPixelTerrainForBake } from "../../src/renderer_settings";
 import {
   loadTerrainBackgrounds,
   textureColor,
@@ -17,6 +18,7 @@ import {
 
 /** Real shader + real OSD ImageJob: assert pixels, not just successful imports. */
 export async function renderTerrainFixture(seed: number, cached = false) {
+  setFullPixelTerrainForBake(true);
   (globalThis as any).OpenSeadragon = OpenSeadragon;
   const generated = await generateFixture(true, seed, true);
   const { terrain, materialAtlas, utils, images } =
@@ -424,6 +426,7 @@ export async function renderTerrainFixture(seed: number, cached = false) {
  * Generation is outside the measured batches; cold includes extra-worker setup,
  * warm measures steady-state tiles. Hashes must agree at both parallelisms. */
 export async function renderTerrainPoolFixture(seed: number) {
+  setFullPixelTerrainForBake(true);
   const { CpuTerrainRenderer, liveTerrainWorkerStats } =
     await import("../../src/telescope/cpu-terrain-client");
   const generated = await generateFixture(true, seed, true);

@@ -220,7 +220,6 @@ export function installNativeTerrainEnvironment({
     configurable: true,
   });
   const storage = new Map([
-    ["noitamap-gl-terrain", fullPixels ? "1" : "0"],
     ["noitamap-telescope-version", "2026-07-05-telescope-4683b94"],
   ]);
   Object.defineProperty(globalThis, "localStorage", {

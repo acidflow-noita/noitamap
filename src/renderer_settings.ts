@@ -34,28 +34,24 @@ export function clearStoredRenderer(): void {
   localStorage.removeItem(RENDERER_STORAGE_KEY);
 }
 
-// ─── GPU final-pixel terrain (render-perf port) ──────────────────────────────
+// Full-pixel generation is an OFFLINE bake/diagnostic mode, not a browser
+// preference. The old "noitamap-gl-terrain" storage value is deliberately never
+// read: hiding the checkbox alone would leave returning users on the slow path.
+let fullPixelTerrainForBake = false;
 
-const GL_TERRAIN_KEY = "noitamap-gl-terrain";
-
-/** Opt-in full-pixel terrain. Reload when changing it to select one complete fork. */
+/** Historical name shared by the renderer and generator. Public maps always
+ * use approximate live terrain; completed baked pixels are loaded separately. */
 export function isGLTerrainEnabled(): boolean {
-  try {
-    return localStorage.getItem(GL_TERRAIN_KEY) === "1";
-  } catch {
-    return false;
-  }
+  return fullPixelTerrainForBake;
 }
 
-export function setGLTerrain(enabled: boolean): void {
-  try {
-    localStorage.setItem(GL_TERRAIN_KEY, enabled ? "1" : "0");
-  } catch {
-    /* storage unavailable */
-  }
+/** Internal native-entrypoint switch. Never expose this through UI, URL state,
+ * localStorage, or the browser's noitamap console commands. */
+export function setFullPixelTerrainForBake(enabled: boolean): void {
+  fullPixelTerrainForBake = enabled;
 }
 
-/** Full-pixel compatibility is checked against the manifest, not the seed URL. */
-export function shouldUseBakedTerrain(search: string, fullPixels = isGLTerrainEnabled()): boolean {
+/** Baked pixels do not require live full-pixel generation to be enabled. */
+export function shouldUseBakedTerrain(search: string): boolean {
   return !new URLSearchParams(search).has("nb");
 }

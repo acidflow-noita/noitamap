@@ -1,4 +1,3 @@
-import { createFullPixelToggle } from "./full-pixel-toggle";
 import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
 import { setupDropOverlay } from "./drop-overlay";
 import { negotiateTabHandoff } from "./tab-coordinator";
@@ -28,7 +27,7 @@ import {
 import { rebuildAltLayers, getAllPOIsFlat, exportBiomeRegionImages, prepareDecorationExport, exportDecorationCell, releaseDecorationExport } from "./telescope/telescope-osd-bridge";
 import { getUnlocksFromURL } from "./unlocks";
 import type { GenerationResult } from "./telescope/telescope-adapter";
-import { isRenderer, getStoredRenderer, setStoredRenderer, clearStoredRenderer, isGLTerrainEnabled, setGLTerrain } from "./renderer_settings";
+import { isRenderer, getStoredRenderer, setStoredRenderer, clearStoredRenderer } from "./renderer_settings";
 
 // --- Dev Console Commands (Early Initialization) ---
 const isDev =
@@ -137,14 +136,6 @@ if (isDev) {
       clearStoredRenderer();
       console.log("[Noitamap] Renderer override cleared. Reload to use the default.");
     },
-    // WebGL2 final-pixel biome terrain (ported from vitaminmoo/render-perf).
-    // Also exposed in the map UI. Full-resolution leaves feed a real pyramid;
-    // no zoom cutoff or sampling cap. Unsupported planes keep the CPU fallback.
-    setGLTerrain: (on: boolean) => {
-      setGLTerrain(!!on);
-      console.log(`[Noitamap] GL final-pixel terrain ${on ? "ENABLED" : "DISABLED"}. Reload to apply.`);
-    },
-    getGLTerrain: () => isGLTerrainEnabled(),
   };
   console.log('[Noitamap] Dev mode detected, "noitamap" commands available.');
 }
@@ -275,8 +266,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   // never runs -- so strip events triggered by background work must not show it
   // (see the dataZipProgress handler).
   let bakedViewActive = false;
-  let terrainBusy = false;
-  let itemsReady = false;
 
   // Pin the phase label column to the widest of the three phase translations
   // in the current language, so the percent column never shifts when the
@@ -285,7 +274,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     "loading.mapData.downloading",
     "loading.mapData.generating",
     "loading.mapData.addingItems",
-    "fullPixels.rendering",
   ];
   const _recomputePhaseMinWidth = () => {
     const phaseEl = _getTitle();
@@ -376,8 +364,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }) as EventListener);
 
   window.addEventListener("itemsGenerationProgress", ((e: CustomEvent) => {
-    itemsReady = e.detail.percentage >= 100;
-    if (terrainBusy) return;
     const bar = _getItemsBar();
     const status = _getStatusText();
     if (!bar) return;
@@ -428,42 +414,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Initialize renderer from storage
   const storedRenderer = getStoredRenderer();
   (rendererForm.elements as any)["renderer"].value = storedRenderer;
-
-  const fullPixelToggle = document.getElementById("fullPixelToggle") as HTMLInputElement;
-  const fullPixelControl = createFullPixelToggle(
-    fullPixelToggle,
-    document.getElementById("fullPixelControl")!,
-    key => i18next.t(key),
-    () => window.location.reload(),
-  );
-  i18next.on("languageChanged", fullPixelControl.refresh);
-  window.addEventListener("bakedSeedChange", ((event: CustomEvent) => {
-    fullPixelControl.setBaked(event.detail?.baked === true);
-  }) as EventListener);
-  window.addEventListener("fullPixelTerrainError", ((event: CustomEvent) => {
-    terrainBusy = false;
-    console.error("[Terrain]", event.detail?.message);
-    showLoadingStrip();
-    const title = _getTitle(), status = _getStatusText();
-    if (title) { title.textContent = i18next.t("loading.mapData.generating"); title.title = `${i18next.t("fullPixels.unavailable")} ${event.detail?.message || ""}`; }
-    if (status) status.textContent = "!";
-  }) as EventListener);
-  window.addEventListener("fullPixelTerrainReset", () => { terrainBusy = false; itemsReady = false; });
-  window.addEventListener("fullPixelTerrainBusy", ((event: CustomEvent) => {
-    terrainBusy = !!event.detail.busy;
-    if (bakedViewActive) return;
-    const track = document.querySelector(".loading-strip-bar-track");
-    if (terrainBusy) {
-      showLoadingStrip();
-      const title = _getTitle(), status = _getStatusText();
-      if (title) title.textContent = i18next.t("fullPixels.rendering");
-      if (status) status.textContent = "";
-      track?.classList.add("indeterminate");
-    } else {
-      track?.classList.remove("indeterminate");
-      if (itemsReady) hideLoadingStrip();
-    }
-  }) as EventListener);
 
   // Parse URL state including overlays and drawing
   const urlState = parseURL();

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { setFullPixelTerrainForBake } from "../src/renderer_settings";
 import {
   clearGLTerrain,
   createGLTerrainTileSource,
@@ -49,8 +50,8 @@ const opts = (pw = 0): GLTerrainSourceOpts => ({
 });
 
 beforeEach(() => {
+  setFullPixelTerrainForBake(true);
   vi.stubGlobal("window", new EventTarget());
-  vi.stubGlobal("localStorage", { getItem: () => "1" });
   vi.stubGlobal("document", {
     createElement: () => {
       const canvas: any = { width: 0, height: 0 };
@@ -70,6 +71,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   clearGLTerrain();
+  setFullPixelTerrainForBake(false);
   vi.unstubAllGlobals();
 });
 
@@ -98,6 +100,14 @@ function job(source: any, level = source.maxLevel) {
 }
 
 describe("GL terrain tiles (no browser/GPU)", () => {
+  it("does not initialize live rendering for public maps with an old saved opt-in", async () => {
+    setFullPixelTerrainForBake(false);
+    vi.stubGlobal("localStorage", { getItem: () => "1" });
+    expect(await ensureGLTerrain(deps, opts().gen)).toBe(false);
+    expect(resourceBuild).not.toHaveBeenCalled();
+    expect(render).not.toHaveBeenCalled();
+  });
+
   it("waits for material textures before the first resource upload", async () => {
     let release!: () => void;
     const waiting = new Promise<void>((r) => {
