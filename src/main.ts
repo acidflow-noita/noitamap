@@ -1,3 +1,5 @@
+import { loadSpritesheetAndAtlas } from "./telescope/poi-spatial-index";
+import { getCachedGeneration } from "./telescope/tile-cache";
 import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
 import { setupDropOverlay } from "./drop-overlay";
 import { negotiateTabHandoff } from "./tab-coordinator";
@@ -24,7 +26,7 @@ import {
   isVariantReady,
   UnlockDescriptor,
 } from "./unlocks-toggle";
-import { rebuildAltLayers, getAllPOIsFlat, exportBiomeRegionImages, prepareDecorationExport, exportDecorationCell, releaseDecorationExport } from "./telescope/telescope-osd-bridge";
+import { rebuildAltLayers, getAllPOIsFlat, exportBiomeRegionImages, prepareDecorationExport, exportDecorationCell, releaseDecorationExport, openTooltipForPOI, getPOISpriteFirstFrame, applyHighValueOverlays } from "./telescope/telescope-osd-bridge";
 import { getUnlocksFromURL } from "./unlocks";
 import type { GenerationResult } from "./telescope/telescope-adapter";
 import { isRenderer, getStoredRenderer, setStoredRenderer, clearStoredRenderer } from "./renderer_settings";
@@ -216,8 +218,7 @@ const _tabHandoff = negotiateTabHandoff();
 document.addEventListener("DOMContentLoaded", async () => {
   if (!(await _tabHandoff)) return;
   // Start preloading the atlas for search results immediately
-  import("./telescope/poi-spatial-index")
-    .then((m) => m.loadSpritesheetAndAtlas())
+  loadSpritesheetAndAtlas()
     .catch((e) => console.warn("[Noitamap] Atlas preload failed:", e));
 
   try {
@@ -634,8 +635,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         initialSearchQuery = undefined;
       }
       // If we had a target POI ID to share, open its tooltip.
-      // Capture the value NOW before clearing the variable — the dynamic import
-      // is async so the .then() callback would otherwise see undefined.
+      // Capture the value NOW before clearing it — the deferred sidebar wait
+      // must not make the callback observe undefined.
       if (initialTargetPoiId) {
         const capturedPoiId = initialTargetPoiId;
         initialTargetPoiId = undefined;
@@ -644,7 +645,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // pan — otherwise the cinematic pan would compute its sidebar offset
         // before the sidebar is visible and the POI ends up behind the panel.
         const waitForSidebar = async (): Promise<void> => {
-          const urlState = (await import("./data_sources/url")).parseURL();
+          const urlState = parseURL();
           if (!urlState.seedReportOpen) return;
           for (let i = 0; i < 30; i++) {
             const el = document.getElementById("seed-report-sidebar");
@@ -652,11 +653,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             await new Promise((r) => setTimeout(r, 100));
           }
         };
-        Promise.all([
-          import('./telescope/telescope-osd-bridge'),
-          waitForSidebar(),
-        ]).then(([m]) => {
-          m.openTooltipForPOI(capturedPoiId, app.osd);
+        waitForSidebar().then(() => {
+          openTooltipForPOI(capturedPoiId, app.osd);
         });
       }
     },
@@ -664,7 +662,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   /** Run dynamic map using seed priority: URL param → last session seed → daily */
   async function runDynamicMapWithPriority(): Promise<void> {
-    const urlState = (await import("./data_sources/url")).parseURL();
+    const urlState = parseURL();
     if (urlState.seed !== undefined && !urlState.dailySeed) {
       // URL has explicit non-daily seed — highest priority
       await runDynamicMap(urlState.seed, false, dynamicOpts);
@@ -674,7 +672,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       await runDynamicMap(lastSessionSeed, lastSessionIsDaily, dynamicOpts);
     } else {
       // Fall back to daily seed resolution
-      await (await import("./dynamic-map")).runDynamicMapFromURL(dynamicOpts);
+      await runDynamicMapFromURL(dynamicOpts);
     }
   }
 
@@ -817,8 +815,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       // has telescope-wide side effects (setUnlocks, biome data, pixel scene
       // cache writes) which can disturb the currently-rendered map.
       try {
-        const { getCachedGeneration } = await import("./telescope/tile-cache");
-        const { getAllPOIsFlat } = await import("./telescope/telescope-osd-bridge");
         const cached = await getCachedGeneration(dailyCacheKey(seed));
         if (cached?.poisByPW) return getAllPOIsFlat({ poisByPW: cached.poisByPW } as any);
         // The comparison target is ALWAYS a daily seed, whose POIs are already
@@ -827,7 +823,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         // and yesterday's worker origins; fetchBakedGeneration validates the
         // seed, so a mismatch just falls through.
         const { fetchBakedGeneration } = await import("./telescope/baked-generation");
-        const { isLightMode } = await import("./light-mode");
         const worlds: ("left" | "middle" | "right")[] = isLightMode() ? ["middle"] : ["left", "middle", "right"];
         for (const prefix of ["daily", "previous-daily"] as const) {
           const gen = await fetchBakedGeneration(prefix, worlds, seed).catch(() => null);
@@ -855,7 +850,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     // static asset the pro bundle could reference on its own.
     getWandIconUrl: async (sprite: string): Promise<string | null> => {
       try {
-        const { getPOISpriteFirstFrame } = await import("./telescope/telescope-osd-bridge");
         return await getPOISpriteFirstFrame({ type: "wand", sprite });
       } catch (e) {
         console.warn("[Noitamap] getWandIconUrl failed:", e);
@@ -863,13 +857,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     },
     setHighValuePredicate: (pred: ((poi: any) => boolean) | null) => {
-      import("./telescope/telescope-osd-bridge").then(({ applyHighValueOverlays }) => {
+      Promise.resolve().then(() => {
         applyHighValueOverlays(pred);
       });
     },
     openPOIById: (poiId: string, opts?: { sidebarRightPx?: number }) => {
-      import("./telescope/telescope-osd-bridge").then((m) => {
-        m.openTooltipForPOI(poiId, app.osd, opts);
+      Promise.resolve().then(() => {
+        openTooltipForPOI(poiId, app.osd, opts);
       });
     },
     showGetProModal: () => {
@@ -994,8 +988,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       // indexed this id for the current unlocks variant.
       const poiId = result.id;
       if (poiId && app.getMap() === "dynamic-main-branch") {
-        import("./telescope/telescope-osd-bridge").then((m) => {
-          m.openTooltipForPOI(poiId, app.osd, {
+        Promise.resolve().then(() => {
+          openTooltipForPOI(poiId, app.osd, {
             fallbackX: result.x,
             fallbackY: result.y,
             fallbackPoi: result,

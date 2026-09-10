@@ -1,3 +1,4 @@
+import { loadSpritesheetAndAtlas, FIRST_FRAME_SIZE } from "../telescope/poi-spatial-index";
 import { searchOverlays } from "../flexsearch";
 import { resetBiomeOverlays } from "../data_sources/overlays";
 import { MapName } from "../data_sources/tile_data";
@@ -903,11 +904,10 @@ export class UnifiedSearch extends EventEmitter2 {
       const filterIcon = document.createElement("img");
       if (filter.atlasKey) {
         const key = filter.atlasKey;
-        import("../telescope/poi-spatial-index").then((mod) => {
-          mod.loadSpritesheetAndAtlas().then(({ atlas, spritesheet }: any) => {
+        loadSpritesheetAndAtlas().then(({ atlas, spritesheet }: any) => {
             const entry = atlas[key];
             if (!entry) return;
-            const frame = mod.FIRST_FRAME_SIZE[key];
+            const frame = FIRST_FRAME_SIZE[key];
             const srcW = frame ? frame.w : entry.w;
             const srcH = frame ? frame.h : entry.h;
             const canvas = document.createElement("canvas");
@@ -919,7 +919,6 @@ export class UnifiedSearch extends EventEmitter2 {
             canvas.toBlob((blob) => {
               if (blob) filterIcon.src = URL.createObjectURL(blob);
             }, "image/png");
-          });
         });
       } else {
         filterIcon.src = filter.iconSrc!;
@@ -1791,11 +1790,10 @@ export class UnifiedSearch extends EventEmitter2 {
       if (filter.atlasKey) {
         // Extract a single sprite from the spritesheet by atlas key
         const key = filter.atlasKey;
-        import("../telescope/poi-spatial-index").then((mod) => {
-          mod.loadSpritesheetAndAtlas().then(({ atlas, spritesheet }) => {
+        loadSpritesheetAndAtlas().then(({ atlas, spritesheet }) => {
             const entry = atlas[key];
             if (!entry) return;
-            const frame = mod.FIRST_FRAME_SIZE[key];
+            const frame = FIRST_FRAME_SIZE[key];
             const srcW = frame ? frame.w : entry.w;
             const srcH = frame ? frame.h : entry.h;
             const canvas = document.createElement("canvas");
@@ -1807,7 +1805,6 @@ export class UnifiedSearch extends EventEmitter2 {
             canvas.toBlob((blob) => {
               if (blob) filterIcon.src = URL.createObjectURL(blob);
             }, "image/png");
-          });
         });
       } else {
         filterIcon.src = filter.iconSrc!;

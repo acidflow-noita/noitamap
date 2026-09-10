@@ -11,7 +11,7 @@ import { telescopeCacheKey } from "./cache-identity";
  */
 
 const DB_NAME = "noitamap-telescope";
-const DB_VERSION = 11; // bumped: essenceroom visual-vs-colormap fix (wipes stale scene bitmaps)
+const DB_VERSION = 12; // repaired archive paths: invalidate cached placeholder inputs/renders
 const STORE_NAME = "generations";
 const RENDER_STORE_NAME = "biome_renders";
 const SCENE_BITMAP_STORE_NAME = "pixel_scene_bitmaps";
@@ -99,6 +99,14 @@ function openDB(): Promise<IDBDatabase> {
       if (oldVersion >= 5 && oldVersion < 9 && db.objectStoreNames.contains(STORE_NAME)) {
         db.deleteObjectStore(STORE_NAME);
         db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
+      }
+      // v12 replaces missing scene inputs (previously transparent 1x1 PNGs)
+      // with real assets. Clear all derived stores, even on the cache-only path
+      // that can run before telescope initialization/version checks.
+      if (oldVersion > 0 && oldVersion < 12) {
+        for (const name of [STORE_NAME, RENDER_STORE_NAME, SCENE_BITMAP_STORE_NAME]) {
+          req.transaction!.objectStore(name).clear();
+        }
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -500,4 +508,3 @@ export async function cacheSceneBitmap(key: string, blob: Blob, width: number, h
     console.warn("[TileCache] Failed to cache scene bitmap:", e);
   }
 }
-

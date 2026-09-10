@@ -1,4 +1,3 @@
-import { CpuTerrainRenderer } from "./cpu-terrain-client";
 import type {
   GLTerrainGeneration,
   GLTerrainDeps,
@@ -10,6 +9,7 @@ export async function createTerrainPresentation(
   gen: GLTerrainGeneration,
   deps: GLTerrainDeps,
 ) {
+  const { CpuTerrainRenderer } = await import("./cpu-terrain-client");
   const worker = new CpuTerrainRenderer();
   await worker.ensureResources(gen.tileLayers, gen.biomeData, {
     ...gen,

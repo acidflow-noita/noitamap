@@ -1,3 +1,4 @@
+import Flatbush from "flatbush";
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
 import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP } from "./terrain-policy";
@@ -14,12 +15,13 @@ import type { GenerationResult, POI, PixelScene, TileLayer } from './telescope-a
 import {
   getPixelSceneImgElement,
   getPixelSceneData,
+  getAllPixelSceneKeys,
   recolorPixelSceneForBiome,
   recolorPixelScene,
   MATERIAL_COLOR_CONVERSION,
   TILE_OVERLAY_COLORS,
 } from './telescope-adapter';
-import { getDataZip } from '../data-archive';
+import { getDataZip, readImage } from '../data-archive';
 import { installTelescopeShim, isCanvasTainted } from './telescope-dom-shim';
 import { installFetchInterceptor, installImageSrcInterceptor } from './telescope-data-bridge';
 import { decodePngToRgba, rgbaToPngBlobUrl, rgbaToPngBlob } from './png-decode';
@@ -84,7 +86,7 @@ import { addBakedDZIsToOSD, type BakedDziPlacement } from './baked-dzi-loader';
 import { gameTranslator } from '../game-translations/translator';
 import { isSpoilerFree, getSpoilerCategory, getSpoilerLabel, applySpoilerFree } from '../spoiler-free';
 import { isLightMode } from '../light-mode';
-import { clearTargetPoiId } from '../data_sources/url';
+import { clearTargetPoiId, updateURLWithUnlocks } from '../data_sources/url';
 import spells from '../data/spells.json';
 import { CREATURE_DATA } from '../data/creature-data';
 import { SPECIAL_WAND_ALIAS } from '../data/special-wands';
@@ -825,7 +827,6 @@ const _bgBitmapCache = new Map<string, ImageBitmap>();
 async function loadBiomeBackground(zipPath: string): Promise<ImageBitmap | null> {
   const cached = _bgBitmapCache.get(zipPath);
   if (cached) return cached;
-  const { readImage } = await import('../data-archive');
   const bmp = await readImage(zipPath).catch(() => null);
   if (bmp) _bgBitmapCache.set(zipPath, bmp);
   return bmp;
@@ -2568,14 +2569,7 @@ export function prefetchAllSceneBitmaps(): Promise<void> {
   if (_scenePrefetchInflight) return _scenePrefetchInflight;
   _scenePrefetchInflight = (async () => {
     try {
-      const adapter = await import('./telescope-adapter');
-      const allKeysFn = (adapter as any).getAllPixelSceneKeys as (() => string[]) | undefined;
-      const dataFn = (adapter as any).getPixelSceneData as ((key: string) => any) | undefined;
-      if (!allKeysFn || !dataFn) {
-        console.warn('[OSD Bridge] Pixel-scene prefetch unavailable: telescope adapter did not export key list');
-        return;
-      }
-      const allKeys = allKeysFn();
+      const allKeys = getAllPixelSceneKeys();
       if (allKeys.length === 0) return;
       const cached = await getCachedSceneBitmapKeys();
       const missing = allKeys.filter(k => !cached.has(k));
@@ -2592,7 +2586,7 @@ export function prefetchAllSceneBitmaps(): Promise<void> {
       const t0 = performance.now();
       // Process serially to keep main-thread pressure low.
       for (const key of missing) {
-        const data = dataFn(key);
+        const data = getPixelSceneData(key);
         if (!data) {
           skipped++;
           continue;
@@ -2863,7 +2857,6 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   const bboxHeight = maxY - minY;
 
   // 3. Build Flatbush spatial index
-  const Flatbush = (await import('flatbush')).default;
   const index = new Flatbush(items.length);
   for (const item of items) {
     index.add(item.osdX - originX, item.osdY - originY, item.osdX + item.w - originX, item.osdY + item.h - originY);
@@ -2985,7 +2978,6 @@ async function registerPixelSceneHoverDebug(viewer: OSDViewer, result: Generatio
   const allScenes = Object.values(result.pixelScenesByPW).flat().filter(Boolean) as any[];
   const items = allScenes.map(s => ({ osdX: s.x, osdY: s.y, w: s.width, h: s.height, sceneKey: s.key }));
 
-  const Flatbush = (await import('flatbush')).default;
   const index = new Flatbush(Math.max(1, items.length));
   for (const item of items) {
     index.add(item.osdX, item.osdY, item.osdX + item.w, item.osdY + item.h);
@@ -3551,7 +3543,6 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         // alt-layer rebuild. The URL has to reflect the new descriptor before
         // those listeners run, otherwise switching back to "mod" would feed
         // the stale "none"/"all" URL value into chest/orb overlay updates.
-        const { updateURLWithUnlocks } = await import('../data_sources/url');
         updateURLWithUnlocks(b.desc);
         setActiveDescriptor(b.desc);
         if (!isVariantReady(b.desc)) {

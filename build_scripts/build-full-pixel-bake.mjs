@@ -86,7 +86,7 @@ await build({
           if (id.includes("preload-helper")) return "bootstrap";
           if (
             id.includes("/src/") &&
-            /telescope-data-bridge|telescope-dom-shim|zip-extraction-shim|data-archive|png-decode|full-pixel-data|renderer_settings/.test(
+            /telescope-data-bridge|telescope-asset|telescope-dom-shim|zip-extraction-shim|data-archive|png-decode|full-pixel-data|renderer_settings/.test(
               id,
             )
           )

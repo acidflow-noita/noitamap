@@ -6,7 +6,7 @@
  * protection (LibreWolf, Safari ITP, iOS Safari, Firefox RFP).
  */
 
-import { decode } from "fast-png";
+import { decode, encode } from "fast-png";
 
 export interface RawImageData {
   data: Uint8ClampedArray;
@@ -126,7 +126,6 @@ export async function rgbaToPngBlobUrl(data: Uint8ClampedArray | Uint8Array, wid
 }
 
 export async function rgbaToPngBlob(data: Uint8ClampedArray | Uint8Array, width: number, height: number): Promise<Blob> {
-  const { encode } = await import("fast-png");
-  const encoded = encode({ data: new Uint8Array(data.buffer), width, height, channels: 4 });
+  const encoded = encode({ data: new Uint8Array(data.buffer, data.byteOffset, data.byteLength), width, height, channels: 4 });
   return new Blob([encoded as unknown as BlobPart], { type: "image/png" });
 }

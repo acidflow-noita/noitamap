@@ -1,207 +1,108 @@
 import { fullPixelDataUrl } from "./full-pixel-data";
 import { isGLTerrainEnabled } from "../renderer_settings";
-/**
- * telescope-data-bridge.ts
- *
- * Bridges between various zip archives (data.zip, pixel_scenes.zip, wang_tiles.zip)
- * and telescope's expected `./data/...` fetch paths.
- */
-
-import { getDataZip, getZip } from "../data-archive";
 import { decodePngToRgba, rgbaToPngBlobUrl } from "./png-decode";
+import {
+  isPackagedTelescopeAsset,
+  readTelescopeAsset,
+} from "./telescope-assets";
+import { normalizeTelescopePath } from "./telescope-asset-paths";
+export { telescopePathToZipPath } from "./telescope-asset-paths";
 
-// ─── Path Mapping ───────────────────────────────────────────────────────────
+// Install once per fetch function; rebuilding a view must not stack wrappers.
+const interceptedFetch = new WeakMap<typeof fetch, { fullPixels: boolean }>();
 
-/**
- * Maps a telescope fetch path (e.g. "./data/biome_maps/biome_map.png")
- * to the internal path inside our zip archives.
- */
-export function telescopePathToZipPath(telescopePath: string): string {
-  // Strip leading ./
-  let path = telescopePath.replace(/^\.\//, "");
-  // Telescope library uses ./data/biome_maps/ for the base maps,
-  // but Noita's data.zip has them in data/biome_impl/
-  if (path.includes("data/biome_maps/")) {
-    path = path.replace("data/biome_maps/", "data/biome_impl/");
-  }
-  return path;
-}
-
-// ─── Fetch Interceptor ──────────────────────────────────────────────────────
-
-/**
- * Intercepts global fetch() calls. If the URL starts with `./data/`,
- * it searches for the file in available zip archives.
- */
-export function installFetchInterceptor(fullPixels = isGLTerrainEnabled()): void {
+export function installFetchInterceptor(
+  fullPixels = isGLTerrainEnabled(),
+): void {
   const originalFetch = window.fetch;
-
-  (window as any).fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-
-    const asset = fullPixels && fullPixelDataUrl(url);
+  const installed = interceptedFetch.get(originalFetch);
+  if (installed) {
+    installed.fullPixels = fullPixels;
+    return;
+  }
+  const mode = { fullPixels };
+  const wrapped: typeof fetch = async (input, init) => {
+    const url =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.href
+          : input.url;
+    const method = (
+      init?.method ?? (input instanceof Request ? input.method : "GET")
+    ).toUpperCase();
+    const signal =
+      init?.signal ?? (input instanceof Request ? input.signal : undefined);
+    if (method !== "GET" && method !== "HEAD")
+      return originalFetch.call(window, input, init);
+    signal?.throwIfAborted();
+    const asset = mode.fullPixels && fullPixelDataUrl(url);
     if (asset) return originalFetch.call(window, asset, init);
-
-    if (url.startsWith("./data/") || url.includes("/data/")) {
-      const match = url.match(/data\/.+/);
-      if (match) {
-        const telescopePath = "./" + match[0];
-        const fullZipPath = telescopePathToZipPath(telescopePath);
-
-        // Search order: main -> pixel_scenes -> wang_tiles
-        const zipConfigs = [
-          { key: "main", strip: "" },
-          { key: "pixel_scenes", strip: "data/pixel_scenes/" },
-          { key: "wang_tiles", strip: "data/wang_tiles/" },
-        ];
-
-        for (const config of zipConfigs) {
-          const zip = await getZip(config.key);
-          if (zip) {
-            // 1. Try exact path (relative to zip root)
-            let zipPath =
-              config.strip && fullZipPath.startsWith(config.strip)
-                ? fullZipPath.substring(config.strip.length)
-                : fullZipPath;
-
-            let file = zip.file(zipPath);
-
-            // 2. If not found in main zip, try common Noita fallback paths
-            if (!file && config.key === "main") {
-              const fallbacks = [
-                fullZipPath.replace("data/pixel_scenes/general/", "data/biome_impl/"),
-                fullZipPath.replace("data/pixel_scenes/general/", "data/biome_impl/the_end/"),
-                fullZipPath.replace("data/pixel_scenes/general/teleportroom", "data/biome_impl/mystery_teleport"),
-                fullZipPath.replace("data/pixel_scenes/general/cauldron", "data/biome_impl/cauldron"),
-                fullZipPath.replace("data/pixel_scenes/spliced/", "data/biome_impl/"),
-                fullZipPath.replace("data/biome_maps/", "data/biome_impl/"),
-                // render-perf ships cell-color art beside scene material PNGs;
-                // our original game archive stores it under biome_impl. Do not
-                // redirect base material PNGs: those use the specialized zip.
-                ...(fullZipPath.endsWith("_visual.png")
-                  ? [fullZipPath.replace("data/pixel_scenes/", "data/biome_impl/")]
-                  : []),
-                fullZipPath.replace("data/backgrounds/", "data/"),
-              ];
-              for (const fallback of fallbacks) {
-                if (fallback !== fullZipPath) {
-                  file = zip.file(fallback);
-                  if (file) break;
-                }
-              }
-            }
-
-            if (file) {
-              try {
-                const blob = await file.async("blob");
-                const lowerName = file.name.toLowerCase();
-                const contentType = lowerName.endsWith(".png") ? "image/png"
-                  : lowerName.endsWith(".json") ? "application/json"
-                  : lowerName.endsWith(".csv") ? "text/csv"
-                  : "application/octet-stream";
-                return new Response(blob, {
-                  status: 200,
-                  statusText: "OK",
-                  headers: { "Content-Type": contentType },
-                });
-              } catch (e) {
-                console.error(`[FetchInterceptor] CRITICAL: Zip ${config.key} is corrupted (${e}). Deleting cache and aborting map load to prevent infinitely falling back to unbundled assets.`);
-                caches.delete(`noitamap-archive-${config.key}-v2`).catch(() => {});
-                throw new Error(`Data Archive ${config.key}.zip is deeply corrupted on this device. Local cache cleared. Please hard-refresh your browser!`);
-              }
-            }
-          } // end if (zip)
-        } // end for zipConfigs
-
-        // If we got here and it was a ./data/ request, we failed to find it in the zips.
-        // In original code this just falls through to returning `originalFetch`.
-      } // end if (match)
-    } // end if (url.startsWith)
-
-    // Fallback to original fetch
-    return originalFetch(input, init);
+    if (!isPackagedTelescopeAsset(url) && normalizeTelescopePath(url)) {
+      const blob = await readTelescopeAsset(url);
+      signal?.throwIfAborted();
+      if (blob)
+        return new Response(method === "HEAD" ? null : blob, {
+          headers: {
+            "Content-Type": blob.type,
+            "Content-Length": String(blob.size),
+          },
+        });
+    }
+    return originalFetch.call(window, input, init);
   };
+  interceptedFetch.set(wrapped, mode);
+  window.fetch = wrapped;
 }
 
-// ─── Image src Interceptor ───────────────────────────────────────────────────
+const interceptedImages = new WeakSet<object>();
 
-/**
- * Intercepts HTMLImageElement.prototype.src setter.
- * Decodes PNGs in pure JS to bypass canvas fingerprinting blocks in privacy browsers.
- */
+/** Decode archive PNGs in JS, keeping canvas fingerprint protection intact. */
 export function installImageSrcInterceptor(): void {
   if (typeof HTMLImageElement === "undefined") return;
-  
-  const descriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src");
-  if (!descriptor || !descriptor.set) return;
-
+  const prototype = HTMLImageElement.prototype;
+  if (interceptedImages.has(prototype)) return;
+  const descriptor = Object.getOwnPropertyDescriptor(prototype, "src");
+  if (!descriptor?.set) return;
   const originalSet = descriptor.set;
-
-  Object.defineProperty(HTMLImageElement.prototype, "src", {
-    set: function (value: string) {
+  const requests = new WeakMap<HTMLImageElement, object>();
+  Object.defineProperty(prototype, "src", {
+    ...descriptor,
+    set(value: string) {
       const self = this as HTMLImageElement;
-
-      if (typeof value === "string" && (value.startsWith("./data/") || value.includes("/data/"))) {
-        const match = value.match(/data\/.+/);
-        if (match) {
-          const telescopePath = "./" + match[0];
-          const zipPath = telescopePathToZipPath(telescopePath);
-
-          // We don't want to block the setter, so we run the search in an async task
-          (async () => {
-            const zipConfigs = [
-              { key: "main", strip: "" },
-              { key: "pixel_scenes", strip: "data/pixel_scenes/" },
-              { key: "wang_tiles", strip: "data/wang_tiles/" },
-            ];
-
-            for (const config of zipConfigs) {
-              const zip = await getZip(config.key);
-              if (!zip) continue;
-
-              let localZipPath =
-                config.strip && zipPath.startsWith(config.strip) ? zipPath.substring(config.strip.length) : zipPath;
-
-              let file = zip.file(localZipPath);
-
-              if (!file && config.key === "main") {
-                const fallbacks = [
-                  zipPath.replace("data/pixel_scenes/general/", "data/biome_impl/"),
-                  zipPath.replace("data/pixel_scenes/general/", "data/biome_impl/the_end/"),
-                  zipPath.replace("data/pixel_scenes/general/teleportroom", "data/biome_impl/mystery_teleport"),
-                  zipPath.replace("data/pixel_scenes/general/cauldron", "data/biome_impl/cauldron"),
-                  zipPath.replace("data/pixel_scenes/spliced/", "data/biome_impl/"),
-                  zipPath.replace("data/biome_maps/", "data/biome_impl/"),
-                ];
-                for (const fallback of fallbacks) {
-                  if (fallback !== zipPath) {
-                    file = zip.file(fallback);
-                    if (file) break;
-                  }
-                }
-              }
-
-              if (file) {
-                try {
-                  const buf = await file.async("arraybuffer");
-                  const { data, width, height } = decodePngToRgba(buf);
-                  const blobUrl = await rgbaToPngBlobUrl(data, width, height);
-                  originalSet.call(self, blobUrl);
-                  return;
-                } catch (err) {
-                  console.warn(`[ImageInterceptor] Failed to decode ${zipPath} from ${config.key}`, err);
-                }
-              }
-            }
-            // Fallback
-            originalSet.call(self, value);
-          })();
+      const request = {};
+      requests.set(self, request);
+      if (
+        typeof value !== "string" ||
+        isPackagedTelescopeAsset(value) ||
+        !normalizeTelescopePath(value)
+      ) {
+        originalSet.call(self, value);
+        return;
+      }
+      void (async () => {
+        const blob = await readTelescopeAsset(value);
+        if (requests.get(self) !== request) return;
+        if (!blob) {
+          originalSet.call(self, value);
           return;
         }
-      }
-
-      originalSet.call(self, value);
+        const { data, width, height } = decodePngToRgba(
+          await blob.arrayBuffer(),
+        );
+        const blobUrl = await rgbaToPngBlobUrl(data, width, height);
+        if (requests.get(self) !== request) {
+          URL.revokeObjectURL(blobUrl);
+          return;
+        }
+        originalSet.call(self, blobUrl);
+      })().catch((error) => {
+        if (requests.get(self) !== request) return;
+        console.error(`[Telescope assets] Cannot load image ${value}`, error);
+        self.dispatchEvent(new Event("error"));
+      });
     },
     configurable: true,
   });
+  interceptedImages.add(prototype);
 }

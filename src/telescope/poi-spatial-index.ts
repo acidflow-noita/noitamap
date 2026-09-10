@@ -52,10 +52,12 @@ export interface MarkerData {
 
 let cachedSpritesheet: HTMLImageElement | null = null;
 let cachedAtlas: Record<string, AtlasEntry> | null = null;
+let spritesheetLoading: Promise<HTMLImageElement> | null = null;
+let atlasLoading: Promise<Record<string, AtlasEntry>> | null = null;
 
 async function loadSpritesheet(): Promise<HTMLImageElement> {
   if (cachedSpritesheet) return cachedSpritesheet;
-  return new Promise((resolve, reject) => {
+  return spritesheetLoading ??= new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       cachedSpritesheet = img;
@@ -63,16 +65,17 @@ async function loadSpritesheet(): Promise<HTMLImageElement> {
     };
     img.onerror = reject;
     img.src = "./assets/spritesheet.png";
-  });
+  }).finally(() => { spritesheetLoading = null; });
 }
 
 async function loadAtlas(): Promise<Record<string, AtlasEntry>> {
   if (cachedAtlas) return cachedAtlas;
   // Bundled at build time so we don't trip CSP `connect-src` (the deployed
   // site has it set to `none`, which broke marker sprites on FF/Debian).
-  const mod = await import("../data/atlas.json");
-  cachedAtlas = (mod as any).default || (mod as any);
-  return cachedAtlas!;
+  return atlasLoading ??= import("../data/atlas.json").then(mod => {
+    cachedAtlas = mod.default;
+    return cachedAtlas!;
+  }).finally(() => { atlasLoading = null; });
 }
 
 // ─── Coordinate conversion ─────────────────────────────────────────────────

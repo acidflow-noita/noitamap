@@ -27,8 +27,9 @@ import {
   hasDynamicOverlays,
   ensurePersistentBiomeBackgrounds,
   resetPersistentBiomeBackgrounds,
+  prefetchAllSceneBitmaps,
 } from "./telescope/telescope-osd-bridge";
-import { probeBakedDZIs, isLocalBakeView, type BakedDziProbeResult } from "./telescope/baked-dzi-loader";
+import { addBakedDZIsToOSD, probeBakedDZIs, isLocalBakeView, type BakedDziProbeResult } from "./telescope/baked-dzi-loader";
 import { perkNameKey } from "./telescope/perk-i18n";
 import { gameTranslator } from "./game-translations/translator";
 
@@ -229,7 +230,7 @@ export async function runDynamicMap(
         isDaily = true;
         console.log(`[DynamicMap] Seed ${seed} matches today's daily seed, auto-detecting as daily`);
         // Update URL to reflect daily status so the UI shows correctly on reload
-        (await import("./data_sources/url")).updateURLWithSeed(seed, true);
+        updateURLWithSeed(seed, true);
       }
     } catch {
       // Daily seed fetch failed — continue as non-daily
@@ -333,9 +334,7 @@ export async function runDynamicMap(
       if (!probe.baked) return { probe, generation: null };
       if (myToken === generationToken && !bakedAlreadyPainted) {
         console.log(`[DynamicMap] Baked ${probe.prefix}-* hit, painting biomes immediately`);
-        const bridge = await import("./telescope/telescope-osd-bridge");
-        const loader = await import("./telescope/baked-dzi-loader");
-        bridge.clearDynamicOverlays(viewer as any);
+        clearDynamicOverlays(viewer as any);
         // Light mode: only paint the middle world (pw=0). The other two worlds'
         // DZIs are still on CF — we just don't ask OSD to load them.
         const placements = isLightMode()
@@ -344,7 +343,7 @@ export async function runDynamicMap(
         // addTiledImage is async: if the user switches seed while these are
         // in flight, they'd land AFTER the next clearDynamicOverlays pass and
         // linger as stale tiles. Remove on arrival when outdated.
-        loader.addBakedDZIsToOSD(viewer as any, placements, (item) => {
+        addBakedDZIsToOSD(viewer as any, placements, (item) => {
           if (myToken !== generationToken) {
             try { (viewer as any).world.removeItem(item); } catch {}
           }
@@ -556,9 +555,7 @@ export async function runDynamicMap(
     // Background prefetch: composite & cache every pixel-scene bitmap telescope
     // knows about. Fires once per session after the first successful render so
     // future seed switches don't pay any compositing cost.
-    import("./telescope/telescope-osd-bridge").then(({ prefetchAllSceneBitmaps }) => {
-      prefetchAllSceneBitmaps();
-    }).catch(() => {});
+    void prefetchAllSceneBitmaps().catch(() => {});
 
     return result;
   } catch (err) {
