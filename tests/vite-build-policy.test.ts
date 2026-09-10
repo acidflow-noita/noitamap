@@ -9,6 +9,19 @@ import { partitionAtlas } from "../build_scripts/vite-atlas-chunks";
 const root = resolve(import.meta.dirname, "..");
 
 describe("browser build boundaries", () => {
+  it("preserves asynchronous atlas initialization instead of adding a static dependency cycle", async () => {
+    const path = resolve(
+      root,
+      "lib/noita-telescope-vm/js/pixel_scene_generation.js",
+    );
+    const { code } = await browserTelescopeSource(
+      await readFile(path, "utf8"),
+      path,
+    );
+    expect(code).toMatch(/import\([^)]*material-atlas-entry\.ts/);
+    expect(code).not.toContain("__noitamapAtlas");
+    expect(code).not.toMatch(/import[^;]*from\s*["'][^"']*material_atlas/);
+  });
   it.each(["noita-telescope", "noita-telescope-vm"])(
     "repairs the real scale scene cache key in %s without muting diagnostics",
     async (fork) => {

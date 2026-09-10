@@ -26,11 +26,13 @@ export async function browserTelescopeSource(code: string, id: string) {
     );
     const atlasImport = /import\(['"]\.\/gl\/material_atlas\.js['"]\)/g;
     if (atlasImport.test(source)) {
-      source =
-        'import * as __noitamapAtlas from "./gl/material_atlas.js";\n' +
-        source.replace(atlasImport, "Promise.resolve(__noitamapAtlas)");
-      // Atlas initialization is still explicitly awaited at the original call
-      // site. Its module was already statically imported by the terrain fork.
+      // This import MUST stay dynamic. utils -> pixel_scene_generation ->
+      // material_atlas -> potion_config otherwise forms a static cycle, and
+      // the atlas iterates MATERIAL_DATA before its top-level await completes.
+      // A separate lazy entry preserves that boundary even when other callers
+      // already import the underlying atlas statically.
+      const entry = resolve(import.meta.dirname, "../src/telescope/material-atlas-entry.ts");
+      source = source.replace(atlasImport, `import(${JSON.stringify(entry)})`);
     }
   }
   const result = await transform(source, {
