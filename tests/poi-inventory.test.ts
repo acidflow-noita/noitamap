@@ -17,13 +17,21 @@ const countGreatChests = (pois: any[]) =>
     (p) => p.type === "great_chest" || p.item === "great_chest",
   ).length;
 
-describe("countable world inventory", () => {
-  it("matches the supplied Sage reference of 8 for seed 306813029", () => {
+describe("available inventory without parent/child duplication", () => {
+  it("has 9 available chests, of which 8 match the natural-only Sage reference", () => {
     const before = JSON.stringify(fixture);
     const flat = getAllPOIsFlat(fixture);
     expect(flat.filter((p) => p.type === "great_chest")).toHaveLength(8);
-    expect(countGreatChests(flat)).toBe(8);
-    expect(flat.filter((p) => p.parentType === "boss_fish")).toEqual([]);
+    expect(countGreatChests(flat)).toBe(9);
+    expect(countGreatChests(flat.filter((p) => !p.isBossReward))).toBe(8);
+    const drops = flat.filter((p) => p.parentType === "boss_fish");
+    expect(drops).toHaveLength(2);
+    expect(drops.every((p) => p.isBossReward === true)).toBe(true);
+    expect(drops.find((p) => p.item === "great_chest")).toMatchObject({
+      parentId: "d-pw_0_0_boss_fish_-13967_10029_11606",
+      worldX: -13967,
+      worldY: 10029,
+    });
     const boss = flat.find((p) => p.type === "boss_fish")!;
     expect(boss.items).toBeUndefined();
     expect(boss.rewards?.map((p) => p.item)).toEqual([
@@ -35,7 +43,7 @@ describe("countable world inventory", () => {
   });
 
   it.each([...BOSS_REWARD_TYPES])(
-    "does not turn %s rewards into spawned items",
+    "exposes each %s reward once, with explicit provenance",
     (type) => {
       const flat = project({
         id: "boss",
@@ -44,9 +52,17 @@ describe("countable world inventory", () => {
         y: 2,
         items: [{ id: "drop", type: "wand", cards: ["LIGHT_BULLET"] }],
       });
-      expect(flat).toHaveLength(1);
+      expect(flat).toHaveLength(2);
       expect(flat[0].type).toBe(type);
-      expect(ownedItems(flat).filter((p) => p.type === "wand")).toEqual([]);
+      expect(ownedItems(flat).filter((p) => p.type === "wand")).toHaveLength(1);
+      expect(flat[1]).toMatchObject({
+        id: "drop",
+        parentId: "boss",
+        parentType: type,
+        isBossReward: true,
+        worldX: 1,
+        worldY: 2,
+      });
       expect(getPoiPreviewItems(flat[0])?.[0].id).toBe("drop");
     },
   );
@@ -84,6 +100,42 @@ describe("countable world inventory", () => {
     expect(ownedItems(flat).filter((p) => p.type === "wand")).toHaveLength(1);
   });
 
+  it("preserves quantities without adding a boss or chest preview to the item total", () => {
+    const flat = project(
+      {
+        id: "chest",
+        type: "chest",
+        x: 0,
+        y: 0,
+        items: [
+          {
+            id: "potion-a",
+            type: "item",
+            item: "potion",
+            material: "ambrosia",
+          },
+          {
+            id: "potion-b",
+            type: "item",
+            item: "potion",
+            material: "ambrosia",
+          },
+        ],
+      },
+      {
+        id: "boss",
+        type: "boss_fish",
+        x: 10,
+        y: 20,
+        items: [{ id: "hearts", type: "item", item: "full_heal", count: 2 }],
+      },
+    );
+    expect(ownedItems(flat).filter((p) => p.item === "potion")).toHaveLength(2);
+    const hearts = ownedItems(flat).filter((p) => p.item === "full_heal");
+    expect(hearts).toHaveLength(1);
+    expect(hearts.reduce((n, p) => n + (p.count ?? 1), 0)).toBe(2);
+  });
+
   it("keeps the Sampo, which exists before Kolmisilma is defeated", () => {
     const flat = project({
       id: "kolmi",
@@ -103,6 +155,7 @@ describe("countable world inventory", () => {
     });
     expect(flat.map((p) => p.id)).toEqual(["kolmi", "sampo"]);
     expect(flat[0].rewards).toBeUndefined();
+    expect(flat.every((p) => !p.isBossReward)).toBe(true);
     expect(flat[0].items).toBeUndefined();
     expect(flat[1]).toMatchObject({
       parentType: "boss_centipede",
@@ -129,7 +182,8 @@ describe("countable world inventory", () => {
         "1,0": [{ id: "c", type: "great_chest", x: -13967, y: 10029 }],
       },
     });
-    expect(countGreatChests(flat)).toBe(3);
+    expect(countGreatChests(flat)).toBe(4);
+    expect(countGreatChests(flat.filter((p) => !p.isBossReward))).toBe(3);
     expect(
       flat.filter((p) => p.type === "great_chest").map((p) => p.id),
     ).toEqual(["a", "b", "c"]);

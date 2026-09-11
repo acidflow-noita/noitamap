@@ -220,6 +220,8 @@ export default defineConfig({
 
   define: {
     "process.env.NODE_ENV": '"production"',
+    // DEV alone does not imply that the private sibling repository is present.
+    __LOCAL_PRO_AVAILABLE__: JSON.stringify(isProAvailable),
     // Build stamp used to cache-bust the remotely-fetched pro.js. Changes on
     // every host build so a redeploy breaks browsers off the old bundle URL.
     __BUILD_VERSION__: JSON.stringify(String(Date.now())),

@@ -74,14 +74,14 @@ declare global {
     handleImportDrop?: (file: File) => Promise<void>;
     /** Pro handler for vectorizing a dropped image (set by pro bundle) */
     handleVectorizeDrop?: (file: File) => Promise<void>;
-    /** Countable dynamic world inventory (empty on static maps). Expanded
-     * children appear once as records; only unexpanded containers own `items`.
-     * World/spawn counts use the records themselves. `items` is unexpanded
-     * container loot; `previewItems` is display-only and `rewards` is
-     * conditional boss loot, neither of which adds world objects. */
+    /** Available dynamic POIs (empty on static maps). Expanded contents and
+     * boss rewards appear once as records. Filter isBossReward for Sage's
+     * natural-only totals. Only unexpanded containers own `items`; parent
+     * `previewItems` / `rewards` arrays are display-only, not extra inventory. */
     getDynamicPOIs: () => Array<{
       id: string; type: string; item?: string; name?: string;
       worldX: number; worldY: number; material?: string; items?: any[];
+      isBossReward?: boolean; parentType?: string; parentId?: string;
       [key: string]: any;
     }>;
     /** Current spoiler-free state */
@@ -133,10 +133,10 @@ declare global {
     openPOIById?: (poiId: string, opts?: { sidebarRightPx?: number }) => void;
     /** Show the "Get Pro" auth modal (lives in main bundle, exposed for pro bundle). */
     showGetProModal?: () => void;
-    /** Same countable inventory as getDynamicPOIs, before creature filtering.
-     * Count records for world totals. Loot-specific calculations may inspect
-     * unexpanded `items`, but must not also count previews or boss rewards. */
-    getAllDynamicPOIs?: () => Array<{ id: string; type: string; [k: string]: any }>;
+    /** Same available inventory as getDynamicPOIs, before creature filtering.
+     * Each boss reward is one flagged record. Do not count parent preview
+     * arrays again; filter isBossReward to compare natural totals with Sage. */
+    getAllDynamicPOIs?: () => Array<{ id: string; type: string; isBossReward?: boolean; [k: string]: any }>;
     /** Cache-only lookup using the same inventory/counting contract as the
      * active map (used by seed-report comparison, including old baked JSON). */
     getFlatPOIsForSeed?: (seed: number) => Promise<any[] | null>;
@@ -160,6 +160,7 @@ declare global {
   }
 
   const __BUILD_VERSION__: string;
+  const __LOCAL_PRO_AVAILABLE__: boolean;
 
   interface CSSStyleDeclaration {
     webkitTextSecurity?: string;

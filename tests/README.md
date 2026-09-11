@@ -15,6 +15,18 @@ npm test
 npm test -- --watch
 ```
 
+## Pro loader regression
+
+```bash
+npm test -- tests/pro-module.test.ts
+```
+
+Compiles and executes the real Pro loader in development/production with and
+without a local private checkout. A public-only dev checkout must load the
+hosted bundle, not the throwing local placeholder. Local init failures and
+hosted HTTP/module failures remain errors. The hosted module is a test fixture;
+this does not require the private repo or validate its subscriber features.
+
 ## Writing Tests
 
 ### File Naming
@@ -156,16 +168,25 @@ npm test -- tests/poi-inventory.test.ts tests/search-inventory.test.ts
 The seed-306813029 fixture contains eight actual great-chest locations and the
 Leviathan record from real app generation. The expected count of **8** is the
 supplied Sage reference; this test does not call or claim to audit Sage itself.
-Tests run the real FlexSearch indexing/filtering against that fixture and check
-that neither the boss nor its conditional chest reward adds another chest.
+Tests run the real FlexSearch indexing/filtering against that fixture. The
+correct search result is **9**: eight natural chests plus Leviathan's drop once,
+not ten (boss + drop) and not eight (drop omitted). `isBossReward` distinguishes
+the extra available reward from Sage's natural-only baseline.
 
 The same inventory projection feeds search, both Pro POI hooks, and cached/baked
-comparison seeds. Expanded shop/room/loadout items are owned once, not both as
-parent `items` and standalone records. `previewItems` preserves card previews;
-`rewards` retains conditional boss loot without treating it as already spawned.
-Unexpanded chest loot remains under `items`. The Sampo is explicitly preserved
-because it exists on its pedestal before the Kolmisilmä fight. Tests also guard
-against deleting legitimate objects that share coordinates or parallel worlds.
+comparison seeds. Boss rewards and expanded shop/room/loadout items are emitted
+once. Parent `previewItems` / `rewards` arrays are display metadata and are not
+indexed as an additional matching item. Chests remain container search results:
+two matching potions or spells inside one chest produce one chest result with
+both contents visible, not extra loose-item results. Quantity fields survive.
+The Sampo remains an ordinary pickup because it exists before the Kolmisilmä
+fight. Distinct drops that share coordinates or spell IDs are not deduplicated.
+
+Coverage includes guaranteed full-heal hearts for every boss reward type,
+door-boss spells in both spell-record formats, localized names and action IDs,
+and the public method sequence used by pillar-card search buttons. Pillar tests
+cover category-filter replacement, repeated searches, perk OR queries, language
+changes, action/material-key fallbacks and the seeded no-results link.
 
 
 ## Stone stamps, static altar boundaries, liquids, and live work

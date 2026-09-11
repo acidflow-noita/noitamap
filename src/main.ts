@@ -2,6 +2,7 @@ import { loadSpritesheetAndAtlas } from "./telescope/poi-spatial-index";
 import { getCachedGeneration } from "./telescope/tile-cache";
 import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
 import { setupDropOverlay } from "./drop-overlay";
+import { loadProModule } from "./pro-module";
 import { negotiateTabHandoff } from "./tab-coordinator";
 import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed, showLoadingStrip, hideLoadingStrip } from "./dynamic_ui";
 import {
@@ -794,9 +795,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     },
     getDynamicPOIs: () => _currentDynamicPOIs,
     /**
-     * Countable world inventory (no skip-creatures filter applied). Expanded
-     * contents appear once; conditional boss loot lives in `rewards`, not
-     * extra world records. Active and comparison seeds use the same projection.
+     * Available POI inventory (no skip-creatures filter applied). Expanded
+     * contents and boss rewards appear once; isBossReward distinguishes
+     * guaranteed loot from Sage's natural-only baseline. Parent preview arrays
+     * are display metadata, not additional inventory. Comparison seeds agree.
      */
     getAllDynamicPOIs: () => _allDynamicPOIs,
     isSpoilerFree: () => isSpoilerFree(),
@@ -896,37 +898,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if ((window as any).noitamap_pro_loaded) return true;
 
     try {
-      // Cache-bust the remote pro bundle: without a changing URL, a returning
-      // visitor's browser keeps serving the pro.js it cached, so a redeploy
-      // (and any fix inside it) never reaches them even after a CF purge.
-      // __BUILD_VERSION__ is stamped per host build (vite define); no-cache
-      // forces a revalidation so a pro-only redeploy at the same version still
-      // refreshes.
-      const proUrl = `https://noitamap-pro.acidflow.stream/pro.js?v=${__BUILD_VERSION__}`;
-      let proModule;
-      // @ts-ignore
-      if (import.meta.env.DEV) {
-        // @ts-ignore
-        proModule = await import("virtual:noitamap-pro");
-      } else {
-        const response = await fetch(proUrl, { cache: "no-cache" });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error ${response.status}`);
-        }
-
-        const code = await response.text();
-        const blob = new Blob([code], { type: "application/javascript" });
-        const blobUrl = URL.createObjectURL(blob);
-
-        proModule = await import(
-          // @ts-ignore — remote ES module loaded at runtime
-          /* @vite-ignore */ blobUrl
-        );
-
-        URL.revokeObjectURL(blobUrl);
-      }
-
+      const proModule = await loadProModule();
       await proModule.init(proHooks);
       (window as any).noitamap_pro_loaded = true;
       console.log("[Noitamap] Pro features loaded.");

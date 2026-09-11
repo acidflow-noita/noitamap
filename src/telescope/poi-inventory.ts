@@ -32,16 +32,18 @@ export type WorldPOI = POI & {
   worldY: number;
   parentType?: string;
   parentId?: string;
+  /** Available boss loot, not part of Sage's naturally spawned inventory. */
+  isBossReward?: boolean;
   /** Display only: these objects are already emitted as independent records. */
   previewItems?: POI[];
-  /** Conditional loot, intentionally absent from world-object search/counts. */
+  /** Display only: these rewards are also emitted once with isBossReward. */
   rewards?: POI[];
 };
 
 /** Preserve card previews without reintroducing them into the counted data.
- * Only UI rendering should combine these fields. World totals use the flat
- * records; loot-specific totals may inspect unexpanded `items`, never count
- * previews again, and must distinguish conditional rewards. */
+ * Only UI rendering should combine these fields. Count flat records once;
+ * filter isBossReward when comparing naturally spawned totals with Sage.
+ * Loot-specific totals may inspect unexpanded `items`, never previews again. */
 export function getPoiPreviewItems(poi: {
   [key: string]: unknown;
   items?: unknown;
@@ -54,12 +56,13 @@ export function getPoiPreviewItems(poi: {
   return undefined;
 }
 
-/** Shared search / Pro stats inventory, projected from live OR baked/cached
+/** Shared available-POI inventory, projected from live OR baked/cached
  * generation. Never mutate the raw generation: map markers and boss tooltips
  * still need the original loot, and changing counts must not require a rebake.
  *
  * An item is owned exactly once: either inside an unexpanded chest's `items`,
- * or as a standalone world record. Boss loot is separate `rewards` metadata. */
+ * or as a standalone record. Boss loot is emitted once with isBossReward;
+ * the parent's `rewards` array is only a preview, never another counted item. */
 export function getAllPOIsFlat(
   result: Pick<GenerationResult, "poisByPW">,
 ): WorldPOI[] {
@@ -92,13 +95,14 @@ export function getAllPOIsFlat(
           flat.push({ ...poi, ...position });
         }
       }
-      if (expands && !isRewardOwner) {
+      if (expands || isRewardOwner) {
         for (const child of children) {
           flat.push({
             ...child,
             pw,
             parentType: poi.type,
             parentId: poi.id,
+            ...(isRewardOwner ? { isBossReward: true } : {}),
             biome: child.biome || poi.biome,
             worldX: child.x ?? poi.x,
             worldY: child.y ?? poi.y,

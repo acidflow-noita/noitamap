@@ -503,7 +503,7 @@ function matchesFilters(p: DynamicPOI, activeFilters: Set<string>): boolean {
     }
   }
   if (activeFilters.has("w") && p.type === "wand") return true;
-  if (activeFilters.has("s") && p.type === "item" && p.item === "spell") return true;
+  if (activeFilters.has("s") && (p.type === "spell" || (p.type === "item" && p.item === "spell"))) return true;
   if (
     activeFilters.has("i") &&
     p.type === "item" &&
@@ -514,7 +514,7 @@ function matchesFilters(p: DynamicPOI, activeFilters: Set<string>): boolean {
     return true;
   if (activeFilters.has("pk") && p.type === "item" && p.item === "perk") return true;
   if (activeFilters.has("pi") && isAchievementPillarSegment(p)) return true;
-  if (activeFilters.has("c") && CHEST_TYPES.has(p.type)) return true;
+  if (activeFilters.has("c") && (CHEST_TYPES.has(p.type) || (p.type === "item" && CHEST_TYPES.has(p.item ?? "")))) return true;
   if (activeFilters.has("hm") && HOLY_MOUNTAIN_TYPES.has(p.type)) return true;
   if (
     activeFilters.has("p") &&
@@ -1080,6 +1080,29 @@ export class UnifiedSearch extends EventEmitter2 {
     const spellById = new Map<string, (typeof spells)[0]>();
     for (const s of spells) spellById.set(s.id, s);
 
+    // Both loose spells and boss/shop/chest spell records must match the same
+    // IDs and translated names. Pillar cards can also query common.csv action
+    // keys, including their raw-key fallback before a translation is available.
+    const appendSpell = (parts: string[], id: unknown) => {
+      if (typeof id !== "string" || !id) return;
+      parts.push(id);
+      const spell = spellById.get(id) ?? spellById.get(id.toUpperCase());
+      if (spell) {
+        parts.push(spell.id, spell.name, gameTranslator.translateSpell(spell.name));
+        const key = `action_${spell.id.toLowerCase()}`;
+        parts.push(key, gameTranslator.translateItem(key));
+      }
+    };
+    const spellPickupId = (poi: { type: string; item?: string; spell?: string }) =>
+      poi.type === "spell" ? poi.spell ?? poi.item : poi.item === "spell" ? poi.spell : undefined;
+    const appendPerk = (parts: string[], id: string) => {
+      const key = perkNameKey(id);
+      parts.push(id, key, gameTranslator.translateItem(key));
+    };
+    const appendMaterial = (parts: string[], id: string) => {
+      parts.push(id, id.startsWith("mat_") ? id : `mat_${id}`, gameTranslator.translateMaterial(id));
+    };
+
     for (const p of pois) {
       this.dynamicPOIMap.set(p.id, p);
 
@@ -1244,9 +1267,10 @@ export class UnifiedSearch extends EventEmitter2 {
         if (alias) parts.push(alias);
       }
 
-      // Add translated material name for potions/pouches
-      if (p.material) {
-        parts.push(gameTranslator.translateMaterial(p.material));
+      // Match the translated material and the mat_* fallback used by pillars.
+      if (p.material) appendMaterial(parts, p.material);
+      if (p.type === "item" && p.item === "full_heal") {
+        parts.push("full heal", "full health regeneration");
       }
 
       // Essences: index the translated name (item_essence_<material>) so they
@@ -1257,37 +1281,16 @@ export class UnifiedSearch extends EventEmitter2 {
         if (t && t !== key) parts.push(t);
       }
 
-      // Perks: index the translated perk name (perk_<id>).
-      if (p.item === "perk" && (p as any).perk) {
-        const key = perkNameKey((p as any).perk);
-        const t = gameTranslator.translateItem(key);
-        if (t && t !== key) parts.push(t);
-      }
-
-      // Loose spell POI on the ground: { type: "spell", item: "LIGHT_BULLET" }.
-      // Index the spell's English + translated name so users can search by
-      // human label ("spark bolt") instead of just the raw id.
-      if (p.type === "spell" && p.item) {
-        const spell = spellById.get(p.item);
-        if (spell) {
-          parts.push(spell.name);
-          parts.push(gameTranslator.translateSpell(spell.name));
-        }
-      }
-
-      // Index spell names (both ids and translated names)
+      // Preserve raw perk IDs as well as labels for pillar OR-query fallbacks.
+      if (p.item === "perk" && p.perk) appendPerk(parts, p.perk);
+      appendSpell(parts, spellPickupId(p));
       for (const spellId of [...(p.cards || []), ...(p.always_casts || [])]) {
-        parts.push(spellId);
-        const spell = spellById.get(spellId);
-        if (spell) {
-          parts.push(spell.name);
-          parts.push(gameTranslator.translateSpell(spell.name));
-        }
+        appendSpell(parts, spellId);
       }
 
       // Only unexpanded containers (e.g. chest loot) own nested items here.
-      // Expanded contents are indexed on their own records; boss rewards and
-      // preview-only contents must not make a second matching world object.
+      // Expanded contents and boss rewards are indexed on their own records.
+      // Parent preview/reward metadata must not produce a second match.
       if (p.items && Array.isArray(p.items)) {
         for (const ci of p.items) {
           if (ci.ignore) continue;
@@ -1297,42 +1300,22 @@ export class UnifiedSearch extends EventEmitter2 {
             const t = gameTranslator.translateItem(String(ci.nameKey));
             if (t && t !== ci.nameKey) parts.push(t);
           }
-          if (ci.material) {
-            parts.push(ci.material);
-            parts.push(gameTranslator.translateMaterial(ci.material));
-          }
+          if (ci.material) appendMaterial(parts, ci.material);
+          if (ci.item === "full_heal") parts.push("full heal", "full health regeneration");
           if (ci.enemy) parts.push(ci.enemy);
-          if (ci.spell) {
-            parts.push(ci.spell);
-            // Index the spell's English + translated name so a drop like
-            // {spell:"MASS_POLYMORPH"} is findable by "Muodonmuutos".
-            const sp = spellById.get(ci.spell) || spellById.get(String(ci.spell).toUpperCase());
-            if (sp) {
-              parts.push(sp.name);
-              parts.push(gameTranslator.translateSpell(sp.name));
-            }
-          }
+          appendSpell(parts, ci.spell ?? spellPickupId(ci));
           // Essence / perk drops: index their translated names.
           if (ci.item === "essence" && ci.material) {
             const k = `item_essence_${ci.material}`;
             const t = gameTranslator.translateItem(k);
             if (t && t !== k) parts.push(t);
           }
-          if (ci.item === "perk" && ci.perk) {
-            const k = perkNameKey(ci.perk);
-            const t = gameTranslator.translateItem(k);
-            if (t && t !== k) parts.push(t);
-          }
+          if (ci.item === "perk" && ci.perk) appendPerk(parts, ci.perk);
           if (ci.item === "potion" || ci.item === "potion_normal") {
             parts.push("flask");
           }
           for (const cSpellId of [...(ci.cards || []), ...(ci.always_casts || [])]) {
-            parts.push(cSpellId);
-            const spell = spellById.get(cSpellId);
-            if (spell) {
-              parts.push(spell.name);
-              parts.push(gameTranslator.translateSpell(spell.name));
-            }
+            appendSpell(parts, cSpellId);
           }
         }
       }
@@ -1459,7 +1442,11 @@ export class UnifiedSearch extends EventEmitter2 {
             enemy: p.enemy,
             entity: p.entity,
             items: getPoiPreviewItems(p),
+            isBossReward: p.isBossReward,
+            parentType: p.parentType,
+            parentId: p.parentId,
             amount: p.amount,
+            count: p.count,
             spell: p.spell,
             nameKey: (p as any).nameKey,
             chestVariant: (p as any).chestVariant,
@@ -1574,7 +1561,11 @@ export class UnifiedSearch extends EventEmitter2 {
           enemy: p.enemy,
           entity: p.entity,
           items: getPoiPreviewItems(p),
+          isBossReward: p.isBossReward,
+          parentType: p.parentType,
+          parentId: p.parentId,
           amount: p.amount,
+          count: p.count,
           spell: p.spell,
           nameKey: (p as any).nameKey,
           chestVariant: (p as any).chestVariant,
