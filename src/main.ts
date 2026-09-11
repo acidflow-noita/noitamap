@@ -794,9 +794,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     },
     getDynamicPOIs: () => _currentDynamicPOIs,
     /**
-     * Full POI list (no skip-creatures filter applied). Used by the pro
-     * Seed Report so creature axes stay populated even with the perf toggle
-     * active.
+     * Countable world inventory (no skip-creatures filter applied). Expanded
+     * contents appear once; conditional boss loot lives in `rewards`, not
+     * extra world records. Active and comparison seeds use the same projection.
      */
     getAllDynamicPOIs: () => _allDynamicPOIs,
     isSpoilerFree: () => isSpoilerFree(),

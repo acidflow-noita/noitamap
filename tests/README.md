@@ -147,6 +147,26 @@ before generation/asset initialization, rather than inheriting the public defaul
 Loader tests preserve completed daily/previous-daily baked pixels while leaving
 live rendering disabled, including when a world is missing or has the wrong seed.
 
+## Search and stats inventory: objects versus conditional rewards
+
+```bash
+npm test -- tests/poi-inventory.test.ts tests/search-inventory.test.ts
+```
+
+The seed-306813029 fixture contains eight actual great-chest locations and the
+Leviathan record from real app generation. The expected count of **8** is the
+supplied Sage reference; this test does not call or claim to audit Sage itself.
+Tests run the real FlexSearch indexing/filtering against that fixture and check
+that neither the boss nor its conditional chest reward adds another chest.
+
+The same inventory projection feeds search, both Pro POI hooks, and cached/baked
+comparison seeds. Expanded shop/room/loadout items are owned once, not both as
+parent `items` and standalone records. `previewItems` preserves card previews;
+`rewards` retains conditional boss loot without treating it as already spawned.
+Unexpanded chest loot remains under `items`. The Sampo is explicitly preserved
+because it exists on its pedestal before the Kolmisilmä fight. Tests also guard
+against deleting legitimate objects that share coordinates or parallel worlds.
+
 
 ## Stone stamps, static altar boundaries, liquids, and live work
 

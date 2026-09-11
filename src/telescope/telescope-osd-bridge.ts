@@ -1,4 +1,5 @@
 import Flatbush from "flatbush";
+import { CONTAINER_TYPES } from "./poi-containers";
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
 import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP } from "./terrain-policy";
@@ -60,15 +61,12 @@ import {
   resolveSpellKey,
   loadSpritesheetAndAtlas,
   FIRST_FRAME_SIZE,
-  CONTAINER_TYPES,
-  CHEST_ONLY_TYPES,
   drawSpriteToCanvas,
   getSpriteNativeSize,
   perkAtlasKey,
 } from './poi-spatial-index';
 import type { MarkerData, MarkerItem } from './poi-spatial-index';
 import {
-  isAchievementPillarSegment,
   pillarSegmentTitle,
   pillarReqSpec,
   resolvePillarLinkLabel,
@@ -5753,41 +5751,7 @@ export async function rebuildAltLayers(
   });
 }
 
-export function getAllPOIsFlat(result: GenerationResult): Array<POI & { pw: number; worldX: number; worldY: number }> {
-  const flat: Array<POI & { pw: number; worldX: number; worldY: number }> = [];
-  const { poisByPW } = result;
-  for (const [pwKey, pois] of Object.entries(poisByPW)) {
-    const [pwStr] = pwKey.split(',');
-    const pw = parseInt(pwStr);
-    for (const poi of pois) {
-      const isEnemySpawn = poi.type === 'enemies' || poi.type === 'props';
-      // Index engraved achievement segments, but omit the plain structural
-      // base/fade/cap pieces so pillar search results stay useful.
-      if ((poi as any).item === 'pillar_segment' && !isAchievementPillarSegment(poi)) {
-        continue;
-      }
-      // Enemy/prop spawn containers: only emit inner items, not the parent
-      if (!isEnemySpawn) {
-        flat.push({ ...poi, pw, worldX: poi.x, worldY: poi.y });
-      }
-      // Unwrap container contents for search (except chest types — those are searched via their parent entry)
-      if (CONTAINER_TYPES.has(poi.type) && !CHEST_ONLY_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {
-        for (const inner of poi.items) {
-          if (inner.ignore) continue;
-          flat.push({
-            ...inner,
-            pw,
-            parentType: poi.type,
-            biome: inner.biome || poi.biome,
-            worldX: inner.x ?? poi.x,
-            worldY: inner.y ?? poi.y,
-          });
-        }
-      }
-    }
-  }
-  return flat;
-}
+export { getAllPOIsFlat } from "./poi-inventory";
 
 // ─── getPOISpriteFirstFrame ─────────────────────────────────────────────────
 

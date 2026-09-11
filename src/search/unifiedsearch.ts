@@ -1,3 +1,4 @@
+import { getPoiPreviewItems } from "../telescope/poi-inventory";
 import { loadSpritesheetAndAtlas, FIRST_FRAME_SIZE } from "../telescope/poi-spatial-index";
 import { searchOverlays } from "../flexsearch";
 import { resetBiomeOverlays } from "../data_sources/overlays";
@@ -84,35 +85,6 @@ function getPillarPlacePOIs(): DynamicPOI[] {
     };
   });
 }
-
-// Inlined from poi-spatial-index to avoid pulling Flatbush into the main bundle
-const CONTAINER_TYPES = new Set([
-  "holy_mountain_shop",
-  "shop",
-  "eye_room",
-  "pacifist_chest",
-  "triangle_boss",
-  "alchemist_boss",
-  "pyramid_boss",
-  "dragon",
-  "wand_altar",
-  "snowy_room",
-  "robot_egg",
-  "chest",
-  "great_chest",
-  "laboratory",
-  "boss_spirit",
-  "islandspirit",
-  "boss_wizard",
-  "boss_ghost",
-  "boss_sky",
-  "boss_centipede",
-  "boss_robot",
-  "boss_meat",
-  "boss_fish",
-  "friend",
-  "starting_loadout",
-]);
 
 const CHEST_TYPES = new Set(["chest", "great_chest", "pacifist_chest"]);
 const HOLY_MOUNTAIN_TYPES = new Set(["holy_mountain_shop"]);
@@ -1113,6 +1085,10 @@ export class UnifiedSearch extends EventEmitter2 {
 
       // Concatenate all searchable fields into one text blob
       const parts: string[] = [p.name ?? "", p.type ?? "", p.item ?? "", p.enemy ?? "", p.material ?? ""];
+      // Index the same localized item/type label that the result row displays.
+      // Raw generator records often have only `great_chest`, not a nameKey.
+      const itemLabel = gameTranslator.translateItem(p.item ?? p.type);
+      if (itemLabel) parts.push(itemLabel);
 
       // POIs carrying an explicit in-game translation key (e.g. item_chest_dark,
       // item_chest_light, item_musicstone) are searchable by their localized name.
@@ -1200,6 +1176,7 @@ export class UnifiedSearch extends EventEmitter2 {
         entityNameForSearch = "boss_pit";
       } else if (p.type === "boss_fish") {
         entityNameForSearch = "fish_giga";
+        parts.push("Leviathan"); // Community name alongside Creature of the Deep / Syväolento.
       } else if (p.type === "tiny") {
         entityNameForSearch = "maggot_tiny";
       } else if (p.type === "islandspirit") {
@@ -1308,7 +1285,9 @@ export class UnifiedSearch extends EventEmitter2 {
         }
       }
 
-      // Index container item names
+      // Only unexpanded containers (e.g. chest loot) own nested items here.
+      // Expanded contents are indexed on their own records; boss rewards and
+      // preview-only contents must not make a second matching world object.
       if (p.items && Array.isArray(p.items)) {
         for (const ci of p.items) {
           if (ci.ignore) continue;
@@ -1479,7 +1458,7 @@ export class UnifiedSearch extends EventEmitter2 {
             material: p.material,
             enemy: p.enemy,
             entity: p.entity,
-            items: p.items,
+            items: getPoiPreviewItems(p),
             amount: p.amount,
             spell: p.spell,
             nameKey: (p as any).nameKey,
@@ -1594,7 +1573,7 @@ export class UnifiedSearch extends EventEmitter2 {
           material: p.material,
           enemy: p.enemy,
           entity: p.entity,
-          items: p.items,
+          items: getPoiPreviewItems(p),
           amount: p.amount,
           spell: p.spell,
           nameKey: (p as any).nameKey,

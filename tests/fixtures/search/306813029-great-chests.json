@@ -1,0 +1,91 @@
+{
+  "seed": 306813029,
+  "expectedNaturalGreatChests": 8,
+  "poisByPW": {
+    "0,0": [
+      {
+        "id": "d-pw_0_0_great_chest_-4165_8347_2241",
+        "type": "great_chest",
+        "x": -4165,
+        "y": 8347,
+        "biome": "rainforest_dark"
+      },
+      {
+        "id": "d-pw_0_0_great_chest_9915_13997_2747",
+        "type": "great_chest",
+        "x": 9915,
+        "y": 13997,
+        "biome": "wizardcave"
+      },
+      {
+        "type": "boss_fish",
+        "name": "Syv\u00e4olento",
+        "x": -13967,
+        "y": 10029,
+        "biome": "lake",
+        "items": [
+          {
+            "type": "item",
+            "item": "full_heal",
+            "name": "Full Health Regeneration",
+            "id": "d-d-pw_0_0_boss_fish_-13967_10029_11606_item_item_0_0_0"
+          },
+          {
+            "type": "item",
+            "item": "great_chest",
+            "nameKey": "item_chest_treasure_super",
+            "name": "Great Treasure Chest",
+            "id": "d-d-pw_0_0_boss_fish_-13967_10029_11606_item_item_0_0_1"
+          }
+        ],
+        "id": "d-pw_0_0_boss_fish_-13967_10029_11606"
+      }
+    ],
+    "-1,0": [
+      {
+        "id": "d-pw_-1_0_great_chest_-25255_9087_6708",
+        "type": "great_chest",
+        "x": -25255,
+        "y": 9087,
+        "biome": "solid_wall_tower_1"
+      }
+    ],
+    "1,0": [
+      {
+        "id": "d-pw_1_0_great_chest_50145_1717_1767",
+        "type": "great_chest",
+        "x": 50145,
+        "y": 1717,
+        "biome": "fungiforest"
+      },
+      {
+        "id": "d-pw_1_0_great_chest_42805_11707_2454",
+        "type": "great_chest",
+        "x": 42805,
+        "y": 11707,
+        "biome": "wizardcave"
+      },
+      {
+        "id": "d-pw_1_0_great_chest_42755_12267_2480",
+        "type": "great_chest",
+        "x": 42755,
+        "y": 12267,
+        "biome": "wizardcave"
+      },
+      {
+        "id": "d-pw_1_0_great_chest_46785_11607_2523",
+        "type": "great_chest",
+        "x": 46785,
+        "y": 11607,
+        "biome": "wizardcave"
+      },
+      {
+        "id": "d-pw_1_0_great_chest_46515_6277_7010",
+        "type": "great_chest",
+        "x": 46515,
+        "y": 6277,
+        "biome": "solid_wall_tower_6"
+      }
+    ]
+  }
+}
