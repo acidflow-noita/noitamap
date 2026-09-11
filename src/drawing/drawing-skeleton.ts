@@ -14,9 +14,17 @@
 
 const SIDEBAR_ID = "drawing-sidebar-skel";
 const TOOLBAR_ID = "drawing-toolbar-skel";
+let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
 export function showDrawingSkeleton(): void {
-  if (document.getElementById(SIDEBAR_ID)) return;
+  clearTimeout(hideTimer);
+  hideTimer = undefined;
+  const existing = document.getElementById(SIDEBAR_ID);
+  if (existing) {
+    existing.classList.add("open");
+    document.getElementById(TOOLBAR_ID)?.classList.add("open");
+    return;
+  }
 
   const sidebar = document.createElement("div");
   sidebar.id = SIDEBAR_ID;
@@ -66,17 +74,15 @@ export function showDrawingSkeleton(): void {
   toolbar.classList.add("open");
 }
 
-export function hideDrawingSkeleton(): void {
+export function hideDrawingSkeleton(immediate = false): void {
+  clearTimeout(hideTimer);
+  hideTimer = undefined;
   const sidebar = document.getElementById(SIDEBAR_ID);
   const toolbar = document.getElementById(TOOLBAR_ID);
-  if (sidebar) {
-    sidebar.classList.remove("open");
-    setTimeout(() => sidebar.remove(), 300);
-  }
-  if (toolbar) {
-    toolbar.classList.remove("open");
-    setTimeout(() => toolbar.remove(), 300);
-  }
+  if (immediate) { sidebar?.remove(); toolbar?.remove(); return; }
+  sidebar?.classList.remove("open");
+  toolbar?.classList.remove("open");
+  hideTimer = setTimeout(() => { sidebar?.remove(); toolbar?.remove(); hideTimer = undefined; }, 300);
 }
 
 /** A small "form-label" style row above each section. */

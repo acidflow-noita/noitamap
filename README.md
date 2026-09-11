@@ -272,3 +272,22 @@ inheritance, and cross-check every shader material classified as sand/powder in
 the engine table. Missing flags and commented-out definitions cannot turn an
 unknown material into a fluid. This classification check does not resolve the
 separately documented ore-density placement mismatch.
+
+## Local Pro development
+
+The private Pro repository can live inside this workspace:
+
+```bash
+mkdir -p task
+git clone --recurse-submodules <private-pro-repo-url> task/noitamap-pro
+npm --prefix task/noitamap-pro ci
+npm run dev
+```
+
+`task/noitamap-pro/` is ignored by the public repository and keeps its own Git
+history. Vite prefers that checkout, and still supports the older sibling
+`../noitamap-pro` layout. Restart the dev server after adding/removing a checkout.
+Without either checkout, development uses the hosted Pro bundle. Production
+always uses the hosted bundle, even when local Pro source exists during a build.
+Pro changes must be committed and deployed from the Pro repository separately;
+deploying the public app does not publish changes to Pro.

@@ -2,7 +2,7 @@ import { loadSpritesheetAndAtlas } from "./telescope/poi-spatial-index";
 import { getCachedGeneration } from "./telescope/tile-cache";
 import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
 import { setupDropOverlay } from "./drop-overlay";
-import { loadProModule } from "./pro-module";
+import { createProLoader } from "./pro-loader";
 import { negotiateTabHandoff } from "./tab-coordinator";
 import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed, showLoadingStrip, hideLoadingStrip } from "./dynamic_ui";
 import {
@@ -892,22 +892,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
   window.__noitamap = proHooks;
 
-  // Function to load pro bundle
-  const loadProBundle = async (): Promise<boolean> => {
-    // If already loaded, return true
-    if ((window as any).noitamap_pro_loaded) return true;
-
-    try {
-      const proModule = await loadProModule();
-      await proModule.init(proHooks);
-      (window as any).noitamap_pro_loaded = true;
-      console.log("[Noitamap] Pro features loaded.");
-      return true;
-    } catch (error) {
-      console.error("[Noitamap] Failed to load pro features:", error);
-      return false;
-    }
-  };
+  // Advertise lazy-feature support; cached older Pro bundles remain compatible.
+  proHooks.proFeatureAPI = 1;
+  const loadProBundle = createProLoader(proHooks);
 
   // Expose a pro-load requester so non-pro search components (AP/LC buttons)
   // can trigger pro loading after an auth check.
@@ -915,8 +902,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Initialize Drawing UI (Brush Button)
   // This handles the "Get Pro" modal for unauthed users and loads the pro bundle for subscribers
-  new DrawingUI(authContainer, {
-    onEnableDrawing: loadProBundle,
+  const drawingUI = new DrawingUI(authContainer, {
+    onEnableDrawing: () => loadProBundle("drawing"),
   });
 
   // Seed Report toggle button — sits next to the drawing toggle.
@@ -925,7 +912,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   {
     const drawingWrap = document.getElementById("drawing-ui-wrapper");
     if (drawingWrap) {
-      createSeedReportButton(drawingWrap, { loadProBundle });
+      createSeedReportButton(drawingWrap, { loadProBundle: () => loadProBundle("report") });
     }
   }
 
@@ -934,11 +921,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   placeMoreMenuLast();
 
   // Initialize Drop Overlay
-  setupDropOverlay(i18next, loadProBundle);
+  setupDropOverlay(i18next, () => loadProBundle("drawing"));
 
   // Dynamically load the pro bundle when URL requests sidebar (auth check handled inside pro bundle)
-  if ((isDev && localStorage.getItem("noitamap-dev-drawing") === "1") || urlState.sidebarOpen) {
-    loadProBundle();
+  if (!urlState.seedReportOpen) {
+    if (urlState.sidebarOpen) drawingUI.openFromURL();
+    else if (isDev && localStorage.getItem("noitamap-dev-drawing") === "1") loadProBundle("drawing");
   }
 
   // link to the app

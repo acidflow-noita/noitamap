@@ -1,11 +1,12 @@
 import { defineConfig } from "vite";
 import { telescopeBrowserPlugin } from "./build_scripts/vite-telescope-browser.ts";
 import { atlasChunksPlugin } from "./build_scripts/vite-atlas-chunks.ts";
+import { resolveLocalPro } from "./build_scripts/local-pro.ts";
 import { resolve } from "node:path";
 
 import fs from "node:fs";
 
-const isProAvailable = fs.existsSync(resolve(import.meta.dirname, "../noitamap-pro/src/pro-entry.ts"));
+const localPro = resolveLocalPro(import.meta.dirname);
 
 // Public interactive generation uses the approximate fork and existing build
 // override. Only native baking/renderer diagnostics explicitly select the full
@@ -162,21 +163,7 @@ export default defineConfig({
       ),
       // Redirect CDN imports used by telescope to local npm packages so they get bundled.
       "https://cdn.jsdelivr.net/npm/upng-js@2.1.0/+esm": "upng-js",
-      "virtual:noitamap-pro": isProAvailable
-        ? resolve(import.meta.dirname, "../noitamap-pro/src/pro-entry.ts")
-        : resolve(import.meta.dirname, "src/pro-unavailable.ts"),
-      "virtual:noitamap-public-report": isProAvailable
-        ? resolve(import.meta.dirname, "../noitamap-pro/src/public-report-entry.ts")
-        : resolve(import.meta.dirname, "src/public-report-unavailable.ts"),
-      ...(isProAvailable
-        ? {
-            "noitamap/data_sources/tile_data": resolve(import.meta.dirname, "src/data_sources/tile_data.ts"),
-            "noitamap/data_sources/map_definitions": resolve(import.meta.dirname, "src/data_sources/map_definitions.ts"),
-            "noitamap/data_sources/param-mappings": resolve(import.meta.dirname, "src/data_sources/param-mappings.ts"),
-            "noitamap/data_sources/overlays": resolve(import.meta.dirname, "src/data_sources/overlays.ts"),
-            "noitamap/data-archive": resolve(import.meta.dirname, "src/data-archive.ts"),
-          }
-        : {}),
+      ...localPro.aliases,
     },
   },
   build: {
@@ -221,7 +208,7 @@ export default defineConfig({
   define: {
     "process.env.NODE_ENV": '"production"',
     // DEV alone does not imply that the private sibling repository is present.
-    __LOCAL_PRO_AVAILABLE__: JSON.stringify(isProAvailable),
+    __LOCAL_PRO_AVAILABLE__: JSON.stringify(localPro.available),
     // Build stamp used to cache-bust the remotely-fetched pro.js. Changes on
     // every host build so a redeploy breaks browsers off the old bundle URL.
     __BUILD_VERSION__: JSON.stringify(String(Date.now())),

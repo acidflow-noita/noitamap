@@ -235,10 +235,18 @@ function appendAlchemyStubs(filterBox: HTMLElement): void {
       const hooks = (window as any).__noitamap;
       if (!hooks) return;
       if (typeof hooks.handleAlchemyRecipe !== "function") {
-        if (typeof hooks.requestProLoad === "function") {
-          await hooks.requestProLoad();
+        if (nextKind === null) return;
+        if (typeof hooks.requestProLoad === "function" && !await hooks.requestProLoad("alchemy")) {
+          if (label.classList.contains("active")) {
+            label.classList.remove("active");
+            showAlchemyLoading(null);
+          }
+          return;
         }
       }
+      // Ignore an older AP/LC request after the user switched/closed it, or
+      // lost the subscription while the feature was loading.
+      if (nextKind !== null && (!label.classList.contains("active") || !authService.getState().isSubscriber)) return;
       if (typeof hooks.handleAlchemyRecipe === "function") {
         hooks.handleAlchemyRecipe(nextKind);
       }
@@ -369,14 +377,20 @@ function appendHighValueStub(filterBox: HTMLElement, search?: UnifiedSearch): vo
     if (!hooks) return;
     // Ensure pro bundle is loaded so handleHighValueToggle is registered.
     if (typeof hooks.handleHighValueToggle !== "function") {
-      if (typeof hooks.requestProLoad === "function") {
-        await hooks.requestProLoad();
+      if (typeof hooks.requestProLoad === "function" && !await hooks.requestProLoad("high-value")) {
+        applyActiveClass(false);
+        applyToSearch(false);
+        return;
       }
     }
+    if (nextActive && (!label.classList.contains("active") || !authService.getState().isSubscriber)) return;
     if (typeof hooks.handleHighValueToggle === "function") {
       hooks.handleHighValueToggle(nextActive);
     } else {
       console.warn("[HighValueFilter] pro bundle did not register handleHighValueToggle");
+      applyActiveClass(false);
+      applyToSearch(false);
+      return;
     }
     // Update search results AFTER pro is loaded so isHighValuePOI is available.
     applyToSearch(nextActive);

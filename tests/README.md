@@ -234,3 +234,23 @@ Liquid tests read the actual game XML for desert `sand_static`, loose sand,
 gunpowder, coal and powdered metals, including inherited materials such as
 `purifying_powder`. All must remain outside fluid leveling. The full shader
 material list is also checked against the independent engine sand/powder types.
+
+## Lazy Pro loading
+
+```bash
+npm test -- tests/pro-loader.test.ts tests/pro-sidebar-intent.test.ts tests/pro-module.test.ts tests/vite-build-policy.test.ts
+npm --prefix task/noitamap-pro test
+```
+
+The public tests cover bootstrap coalescing, failure/retry state, optional
+feature negotiation with older Pro bundles, sidebar loading intents, and the
+production/private-source boundary. The private checkout has its own tests for
+feature dependencies, idle rendering, cached report data and targeted DOM
+updates. See its README for deployment of the complete split bundle.
+
+The public loading-UX tests (`seed-report-loading.test.ts` and
+`drawing-loading.test.ts`) verify that feedback appears before a download,
+close/switch/cancel cannot reopen a stale sidebar, an unchanged loaded feature
+does not flash a loading screen, and a failed report load exposes Retry instead
+of leaving an endless skeleton. Slow loads use status text, not a fabricated
+percentage. Loading animations honor reduced-motion preferences.

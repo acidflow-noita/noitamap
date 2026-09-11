@@ -43,7 +43,8 @@
     "./util": "./src/util.ts",
     "./auth/auth-service": "./src/auth/auth-service.ts",
     "./i18n": "./src/i18n.ts",
-    "./data-archive": "./src/data-archive.ts"
+    "./data-archive": "./src/data-archive.ts",
+    "./data/spells.json": "./src/data/spells.json"
   },
   "files": [
     "src/",

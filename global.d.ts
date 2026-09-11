@@ -33,7 +33,15 @@ declare global {
    * Hooks exposed by the public noitamap app for the pro bundle to consume.
    * The pro bundle receives this via `window.__noitamap` after the main app initializes.
    */
+  type NoitamapProFeature = "drawing" | "report" | "alchemy" | "high-value" | "effects";
+
   interface NoitamapProHooks {
+    /** Versioned capability handshake with the independently deployed Pro bundle. */
+    proFeatureAPI?: 1;
+    loadProFeature?: (feature: NoitamapProFeature) => Promise<void>;
+    isProFeatureReady?: (feature: NoitamapProFeature) => boolean;
+    /** Optional asset origin for hosted-module preview/testing. */
+    proAssetBaseUrl?: string;
     /** Initialized i18next instance (shared so the pro bundle doesn't need its own) */
     i18next: typeof import('i18next').default;
     /** Live auth service instance from the main app */
@@ -114,7 +122,7 @@ declare global {
     /** Subscribe to spoiler-free toggle changes */
     onSpoilerFreeChange: (cb: (enabled: boolean) => void) => void;
     /** Request the pro bundle to be loaded (set by main app) */
-    requestProLoad?: () => Promise<boolean>;
+    requestProLoad?: (feature?: NoitamapProFeature) => Promise<boolean>;
     /** Handle AP/LC recipe request — set by pro bundle after init. Pass null to clear. */
     handleAlchemyRecipe?: (kind: "ap" | "lc" | null) => void;
     /**

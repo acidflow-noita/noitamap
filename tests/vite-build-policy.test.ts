@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { tmpdir } from "node:os";
@@ -7,6 +7,8 @@ import { browserTelescopeSource } from "../build_scripts/vite-telescope-browser"
 import { partitionAtlas } from "../build_scripts/vite-atlas-chunks";
 
 const root = resolve(import.meta.dirname, "..");
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe("browser build boundaries", () => {
   it("preserves asynchronous atlas initialization instead of adding a static dependency cycle", async () => {
@@ -75,6 +77,9 @@ describe("browser build boundaries", () => {
   });
 
   it("builds warning-free without eagerly importing telescope or the sprite atlas", async () => {
+    // Vitest sets NODE_ENV=test, which makes Vite's DEV flag true even with
+    // mode=production. Exercise the actual npm run build environment instead.
+    vi.stubEnv("NODE_ENV", "production");
     const warnings: string[] = [];
     const logger = createLogger("warn");
     logger.warn = (message) => {
@@ -86,6 +91,13 @@ describe("browser build boundaries", () => {
     const result: any = await build({
       configFile: resolve(root, "vite.config.ts"),
       customLogger: logger,
+      plugins: [{
+        name: "assert-production-test-build",
+        configResolved(config) {
+          expect(config.isProduction).toBe(true);
+          expect(config.env.DEV).toBe(false);
+        },
+      }],
       build: {
         write: false,
         outDir: resolve(tmpdir(), "noitamap-build-policy-dry-run"),
@@ -93,6 +105,11 @@ describe("browser build boundaries", () => {
     });
     expect(warnings).toEqual([]);
     const output = result.output as any[];
+    // Even when a private checkout exists locally, public production builds
+    // must load hosted Pro on demand, never bundle the local private entry.
+    for (const file of output.filter((file) => file.type === "chunk")) {
+      expect(Object.keys(file.modules).some((id) => id.includes("/noitamap-pro/")), file.fileName).toBe(false);
+    }
     for (const file of output) {
       if (file.fileName.endsWith(".js")) {
         const code = file.type === "chunk" ? file.code : file.source;

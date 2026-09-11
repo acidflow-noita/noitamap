@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { build, createLogger, type UserConfig } from "vite";
 import appConfig from "../vite.config";
+import { resolveLocalPro } from "../build_scripts/local-pro";
 
 const root = resolve(import.meta.dirname, "..");
 const config = appConfig as UserConfig;
@@ -60,7 +60,7 @@ async function compileLoader(
       minify: false,
       modulePreload: false,
       lib: { entry: resolve(root, "src/pro-module.ts"), formats: ["es"] },
-      rollupOptions: { output: { inlineDynamicImports: true } },
+      rollupOptions: { output: { codeSplitting: false } },
     },
   });
   expect(warnings).toEqual([]);
@@ -95,14 +95,13 @@ afterEach(() => {
 
 describe("Pro module selection", () => {
   it("uses the same real checkout detection for the flag and the local alias", () => {
-    const localPath = resolve(root, "../noitamap-pro/src/pro-entry.ts");
-    const available = existsSync(localPath);
+    const localPro = resolveLocalPro(root);
     expect(config.define?.__LOCAL_PRO_AVAILABLE__).toBe(
-      JSON.stringify(available),
+      JSON.stringify(localPro.available),
     );
     const aliases = config.resolve?.alias as Record<string, string>;
     expect(aliases["virtual:noitamap-pro"]).toBe(
-      available ? localPath : resolve(root, "src/pro-unavailable.ts"),
+      localPro.aliases["virtual:noitamap-pro"],
     );
   });
 

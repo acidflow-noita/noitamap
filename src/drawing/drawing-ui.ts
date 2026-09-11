@@ -1,3 +1,8 @@
+import {
+  paintLoadingFeedback,
+  dismissLoadingPopover,
+} from "../pro-loading-feedback";
+import { requestProSidebar, onProSidebarIntent } from "../pro-sidebar-intent";
 import i18next from "../i18n";
 import { showDrawingSkeleton, hideDrawingSkeleton } from "./drawing-skeleton";
 
@@ -9,11 +14,25 @@ export class DrawingUI {
   private container: HTMLElement;
   private button: HTMLInputElement | null = null;
   private options: DrawingUIOptions;
+  private loading = false;
+  private attempt = 0;
 
   constructor(container: HTMLElement, options: DrawingUIOptions) {
     this.container = container;
     this.options = options;
     this.init();
+    onProSidebarIntent((sidebar) => {
+      if (sidebar !== "drawing" && this.loading) {
+        this.loading = false;
+        this.attempt++;
+        hideDrawingSkeleton(true);
+      }
+    });
+  }
+
+  /** Use the same responsive/cancellable flow for a restored sidebar URL. */
+  openFromURL(): void {
+    if (this.button && !this.button.checked) this.button.click();
   }
 
   private init(): void {
@@ -56,38 +75,38 @@ export class DrawingUI {
 
   private async handleClick(e: Event): Promise<void> {
     const target = e.target as HTMLInputElement;
+    dismissLoadingPopover(document.querySelector('label[for="drawToggleBtn"]'));
 
-    // Everyone (subscriber or not) gets the same flow: on first open we pause the
-    // native toggle, show the skeleton, and load the pro bundle; the pro
-    // DrawingSidebar then mounts the correct auth view (subscriber tools, or a
-    // locked "Unlock with Pro" view with the CTA inside the sidebar). Once the
-    // bundle is loaded, the toggle is free and pro-entry's `change` listener
-    // opens/closes the real sidebar — so we must NOT preventDefault here, or the
-    // checkbox never toggles and the sidebar never opens.
-
-    // Load pro bundle if needed. If we are turning it ON, make sure Pro bundle
-    // is loaded first.
-    if (target.checked) {
-      if (!(window as any).noitamap_pro_loaded) {
-        e.preventDefault(); // Pause toggle while loading
-
-        // Instant UI response: slide in skeleton sidebar + toolbar so the
-        // user sees the panel appear immediately while the pro bundle
-        // downloads and evaluates in the background.
-        showDrawingSkeleton();
-
-        let loaded = false;
-        try {
-          loaded = await this.options.onEnableDrawing();
-          if (loaded) {
-            target.checked = true;
-            // Open the real sidebar first so it's mounted underneath the
-            // skeleton, then slide the skeleton out for a seamless handoff.
-            target.dispatchEvent(new Event("change"));
-          }
-        } finally {
-          hideDrawingSkeleton();
-        }
+    if (this.loading) {
+      e.preventDefault();
+      this.loading = false;
+      this.attempt++;
+      requestProSidebar("drawing", false);
+      hideDrawingSkeleton(true);
+      return;
+    }
+    const current = requestProSidebar("drawing", target.checked);
+    if (!target.checked) return;
+    const ready =
+      window.__noitamap?.isProFeatureReady?.("drawing") ??
+      !!window.__noitamap?.handleImportDrop;
+    if (ready) return; // Pro's change handler owns the normal synchronous toggle.
+    e.preventDefault();
+    this.loading = true;
+    const attempt = ++this.attempt;
+    showDrawingSkeleton();
+    try {
+      await paintLoadingFeedback();
+      if (!current()) return;
+      const loaded = await this.options.onEnableDrawing();
+      if (loaded && current()) {
+        target.checked = true;
+        target.dispatchEvent(new Event("change"));
+      }
+    } finally {
+      if (attempt === this.attempt) {
+        this.loading = false;
+        hideDrawingSkeleton();
       }
     }
   }
