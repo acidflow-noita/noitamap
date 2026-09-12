@@ -1,0 +1,44 @@
+{
+  "seed": 786433191,
+  "worldCenter": 35,
+  "poisByPW": {
+    "0,0": [
+      {
+        "type": "item",
+        "item": "meditation_cube",
+        "x": -355,
+        "y": 1567,
+        "biome": "excavationsite"
+      },
+      {
+        "type": "item",
+        "item": "meditation_chamber",
+        "name": "Meditation Chamber",
+        "wiki": "https://noita.wiki.gg/wiki/Meditation_Chamber",
+        "clickOnly": true,
+        "x": -4352,
+        "y": 2304
+      }
+    ]
+  },
+  "pixelScenesByPW": {
+    "0,0": [
+      {
+        "key": "excavationsite/meditation_cube_visual",
+        "name": "meditation_cube_visual",
+        "width": 36,
+        "height": 37,
+        "x": -375,
+        "y": 1608
+      },
+      {
+        "key": "excavationsite_cube_chamber/cube_chamber",
+        "name": "cube_chamber",
+        "width": 512,
+        "height": 512,
+        "x": -4608,
+        "y": 2048
+      }
+    ]
+  }
+}

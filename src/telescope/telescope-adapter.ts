@@ -1,3 +1,4 @@
+import { normalizeScenePOIs } from "./scene-pois";
 import { prepareElevatorShafts, withoutElevatorEndpointSpawns } from "./terrain-elevator";
 import { loadTelescopeModules } from "./load-telescope";
 import { isGLTerrainEnabled } from "../renderer_settings";
@@ -1607,7 +1608,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   const t1 = performance.now();
   console.log(`[Telescope] Generation complete in ${((t1 - t0) / 1000).toFixed(2)}s`);
 
-  return {
+  return normalizeScenePOIs({
     seed,
     ngPlus,
     isNGP,
@@ -1620,5 +1621,5 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     pixelScenesByPW,
     eyes,
     parallelWorlds,
-  };
+  });
 }

@@ -31,6 +31,8 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
 import atlas from "../src/data/atlas.json";
+import cubeFixture from "./fixtures/search/786433191-meditation-cube.json";
+import { normalizeScenePOIs } from "../src/telescope/scene-pois";
 
 const atlasMap = atlas as Record<string, unknown>;
 const LIB_JS = join(__dirname, "..", "lib", "noita-telescope", "js");
@@ -154,6 +156,17 @@ const FIXTURES: Fixture[] = [
 ];
 
 describe("POI render coverage (real buildMarkerData)", () => {
+  it("renders the meditation cube only as its scene, with one click target and no portal-position sprite", async () => {
+    const result = normalizeScenePOIs(cubeFixture);
+    const data = await buildMarkerData(result);
+    const markers = data.items.filter((m) => m.poi.item === "meditation_cube");
+    expect(markers).toHaveLength(1);
+    expect(markers[0]).toMatchObject({ spriteKey: "", osdX: -357, osdY: 1626.5 });
+    // The atlas image is still available to search/card previews.
+    expect(rootKeyOf(getSpriteKey(markers[0].poi, atlas))).toBe("item:meditation_cube");
+    expect(data.items.some((m) => m.poi.item === "meditation_chamber")).toBe(true);
+  });
+
   it("every renderable fixture POI produces a drawn, atlas-present sprite", async () => {
     // One generation result carrying all fixtures on the main plane.
     const result = {

@@ -7,6 +7,9 @@ import {
   BOSS_REWARD_TYPES,
 } from "../src/telescope/poi-inventory";
 import fixture from "./fixtures/search/306813029-great-chests.json";
+import cubeFixture from "./fixtures/search/786433191-meditation-cube.json";
+import { normalizeScenePOIs } from "../src/telescope/scene-pois";
+import { PILLAR_REQUIREMENTS } from "../src/data/pillars";
 import { CHEST_ONLY_TYPES } from "../src/telescope/poi-containers";
 
 // Only UI/network infrastructure is mocked. The search class, FlexSearch,
@@ -143,6 +146,19 @@ function searchInventory(poisByPW: Record<string, any[]>) {
 }
 
 describe("search keeps containers useful and boss rewards individually discoverable", () => {
+  it("keeps the meditation pillar search finding the actual cube and its separate chamber", () => {
+    const result = normalizeScenePOIs(cubeFixture);
+    // The fixture is raw generator output; dynamic-map assigns IDs before
+    // handing these records to FlexSearch. Mirror that boundary here.
+    const query = searchInventory({ "0,0": result.poisByPW["0,0"].map((poi, i) => ({ ...poi, id:`cube-seed-${i}` })) });
+    const link = PILLAR_REQUIREMENTS.secret_meditation.links![0];
+    expect(link.structureItem).toBe("meditation_cube");
+    const found = query.fromPillar(link.query!);
+    expect(found.map((p: any) => p.item).sort()).toEqual(["meditation_chamber", "meditation_cube"]);
+    expect(found.find((p: any) => p.item === "meditation_cube")).toMatchObject({ x:-357,y:1626.5 });
+    expect(found.find((p: any) => p.item === "meditation_chamber")).toMatchObject({ x:-4352,y:2304 });
+  });
+
   it("returns eight natural chests plus Leviathan's reward exactly once", () => {
     const query = searchInventory(fixture.poisByPW);
     for (const filters of [[], ["c"]]) {

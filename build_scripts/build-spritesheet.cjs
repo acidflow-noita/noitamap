@@ -91,7 +91,9 @@ const INCLUDE_EXTRA_PNGS = [
   // Meditation Cube visual — pixel scene loaded by data/scripts/biomes/excavationsite.lua
   // (spawn_meditation_cube → LoadPixelScene with meditation_cube_visual.png).
   // Telescope surfaces this as {type:'item', item:'meditation_cube'} → key
-  // item:meditation_cube, which would otherwise be missing.
+  // item:meditation_cube for search/card previews (and fallback when no scene
+  // is present). Scene-backed map POIs are click-only to avoid a second cube
+  // sprite at the teleporter anchor.
   ["data/biome_impl/excavationsite/meditation_cube_visual.png", "item:meditation_cube"],
   // Potion mimic (Henkevä potu) UI icon — telescope emits {item:'mimic_potion'}.
   // The items_gfx has no matching sprite; use the dedicated animal icon.
