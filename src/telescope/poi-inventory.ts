@@ -1,3 +1,4 @@
+import { poiBiome } from "./poi-biome";
 import type { GenerationResult, POI } from "./telescope-adapter";
 import { isAchievementPillarSegment } from "../data/pillars";
 import { CONTAINER_TYPES, CHEST_ONLY_TYPES } from "./poi-containers";
@@ -79,7 +80,7 @@ export function getAllPOIsFlat(
       const isRewardOwner = BOSS_REWARD_TYPES.has(poi.type);
       const expands =
         CONTAINER_TYPES.has(poi.type) && !CHEST_ONLY_TYPES.has(poi.type);
-      const position = { pw, worldX: poi.x, worldY: poi.y };
+      const position = { pw, worldX: poi.x, worldY: poi.y, biome: poiBiome(poi) };
 
       if (!isSpawnGroup) {
         if (isRewardOwner || expands) {
@@ -103,7 +104,7 @@ export function getAllPOIsFlat(
             parentType: poi.type,
             parentId: poi.id,
             ...(isRewardOwner ? { isBossReward: true } : {}),
-            biome: child.biome || poi.biome,
+            biome: poiBiome(child) || position.biome,
             worldX: child.x ?? poi.x,
             worldY: child.y ?? poi.y,
           });

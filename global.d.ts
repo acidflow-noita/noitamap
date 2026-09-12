@@ -36,6 +36,10 @@ declare global {
   type NoitamapProFeature = "drawing" | "report" | "alchemy" | "high-value" | "effects";
 
   interface NoitamapProHooks {
+    /** Canonical localized name + real first-frame sprite (including potion tint). */
+    getPOIPreview?: (poi: { type: string; [key: string]: any }) => Promise<{ name: string; iconUrl: string | null }>;
+    /** Actual baked render path; do not infer this from the daily seed label. */
+    isBakedSeed?: () => boolean;
     /** Versioned capability handshake with the independently deployed Pro bundle. */
     proFeatureAPI?: 1;
     loadProFeature?: (feature: NoitamapProFeature) => Promise<void>;

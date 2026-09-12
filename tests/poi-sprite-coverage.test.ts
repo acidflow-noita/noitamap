@@ -245,3 +245,16 @@ describe("POI sprite coverage", () => {
     expect(orphans, `chest-only types missing from CONTAINER_TYPES: ${orphans.join(", ")}`).toEqual([]);
   });
 });
+
+it.each([
+  ["kammi", "ui_item:safe_haven"], ["kuu", "ui_item:moon"],
+  ["chaos_die", "ui_item:die"], ["shiny_orb", "ui_item:orb"],
+])("resolves chest loot alias %s to real authored pixels", (item, expected) => {
+  expect(getSpriteKey({type:"item",item},atlasMap)).toBe(expected);
+  expect(atlasMap[expected]).toBeTruthy();
+});
+
+it("uses the authored Ambrosia tint instead of an empty potion for its gameplay alias", () => {
+  expect(getSpriteKey({type:'item',item:'potion',material:'ambrosia'},atlasMap)).toBe('item:potion:magic_liquid_protection_all');
+  expect(atlasMap['item:potion:magic_liquid_protection_all']).toBeTruthy();
+});

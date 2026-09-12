@@ -1120,7 +1120,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         name: "Coral chest",
         x: coralX,
         y: coralY,
-        biome: "desert",
+        biome: "song_room",
         items: chestSpells(["DIVIDE_2", "DIVIDE_3", "DIVIDE_4", "BURST_8", "BURST_X"], coralX, coralY),
       } as any);
       poisByPW[pwKey].push({

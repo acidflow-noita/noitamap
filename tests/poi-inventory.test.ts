@@ -207,3 +207,17 @@ describe("available inventory without parent/child duplication", () => {
     ).toBe(true);
   });
 });
+
+describe("authored coral chest biome", () => {
+  it("repairs old baked/cached coral metadata in all worlds without mutating it", () => {
+    const raw = {poisByPW:Object.fromEntries([-1,0,1].map(pw=>[`${pw},0`,[
+      {id:`coral-${pw}`,type:"chest",chestVariant:"coral",biome:"desert",x:11519+pw*35840,y:-4886,items:[{type:"item",item:"spell",spell:"DIVIDE_2"}]},
+      {id:`desert-${pw}`,type:"chest",biome:"desert",x:11519+pw*35840,y:0,items:[]},
+    ]]))};
+    const before=JSON.stringify(raw);
+    const flat=getAllPOIsFlat(raw as any);
+    expect(flat.filter(p=>p.id?.startsWith("coral-")).map(p=>p.biome)).toEqual(["song_room","song_room","song_room"]);
+    expect(flat.filter(p=>p.id?.startsWith("desert-")).every(p=>p.biome==="desert")).toBe(true);
+    expect(JSON.stringify(raw)).toBe(before);expect(flat).toHaveLength(6);
+  });
+});

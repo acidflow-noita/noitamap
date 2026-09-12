@@ -1,3 +1,4 @@
+import { getPOIDisplayName } from "./telescope/poi-display-name";
 import { loadSpritesheetAndAtlas } from "./telescope/poi-spatial-index";
 import { getCachedGeneration } from "./telescope/tile-cache";
 import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
@@ -167,7 +168,7 @@ import { addEventListenerForId, assertElementById, debounce } from "./util";
 import { createMapLinks, NAV_LINK_IDENTIFIER, getMapLabel, renderMapBadges, refreshBadgePopovers } from "./nav";
 import { getAllMapDefinitions } from "./data_sources/map_definitions";
 import { initMouseTracker } from "./mouse_tracker";
-import { isSpoilerFree, setSpoilerFree, onSpoilerFreeChange } from "./spoiler-free";
+import { isSpoilerFree, setSpoilerFree, onSpoilerFreeChange, isBakedSeedView } from "./spoiler-free";
 import { isLightMode, setLightMode } from "./light-mode";
 import { installPopoverTouchDismiss } from "./popover-util";
 import { isSkipCreatures, setSkipCreatures } from "./skip-creatures";
@@ -802,6 +803,7 @@ document.addEventListener("DOMContentLoaded", async () => {
      */
     getAllDynamicPOIs: () => _allDynamicPOIs,
     isSpoilerFree: () => isSpoilerFree(),
+    isBakedSeed: () => isBakedSeedView(),
     isLightMode: () => isLightMode(),
     isSkipCreatures: () => isSkipCreatures(),
     onSpoilerFreeChange: (cb: (enabled: boolean) => void) => onSpoilerFreeChange(cb),
@@ -850,6 +852,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Blob URL for a wand's sprite (first frame, atlas or data.zip). Used by the
     // pro seed-report to draw wand icons — wands are procedural, so there's no
     // static asset the pro bundle could reference on its own.
+    // Reuse the real atlas/material tint and canonical names for report loot,
+    // instead of raw item ids or guesses at public asset filenames.
+    getPOIPreview: async (poi) => ({
+      name: getPOIDisplayName(poi),
+      iconUrl: await getPOISpriteFirstFrame(poi),
+    }),
     getWandIconUrl: async (sprite: string): Promise<string | null> => {
       try {
         return await getPOISpriteFirstFrame({ type: "wand", sprite });
@@ -1310,9 +1318,24 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Handle spoiler-free toggle — reload page to re-render all tiles
   // (same approach as renderer toggle, OSD tile cache can't be selectively invalidated)
   const spoilerFreeToggle = document.getElementById("spoilerFreeToggle") as HTMLInputElement | null;
+  const updateSpoilerControlVisibility = (baked: boolean) => {
+    const label = document.querySelector<HTMLElement>('label[for="spoilerFreeToggle"]');
+    if (!spoilerFreeToggle || !label) return;
+    spoilerFreeToggle.hidden = baked;
+    spoilerFreeToggle.disabled = baked;
+    label.hidden = baked;
+    label.style.display = baked ? "none" : "";
+    label.style.pointerEvents = "";
+    label.setAttribute("data-i18n-content", "spoilerFree.content");
+    label.setAttribute("data-bs-content", i18next.t("spoilerFree.content") as string);
+    const popover = bootstrap.Popover.getInstance(label);
+    popover?.dispose();
+    if (!baked) new bootstrap.Popover(label);
+  };
+  updateSpoilerControlVisibility(isBakedSeedView());
   // Baked seeds flatten wand/spell/item identities into the DZI pixels, so
-  // spoiler-free cannot strip them — disable the toggle and explain why in
-  // the popover. Event fired by dynamic-map.ts whenever the baked state of
+  // spoiler-free cannot strip them — hide the ineffective control. The saved
+  // preference is suspended (not cleared) while the baked map is active. Event fired by dynamic-map.ts whenever the baked state of
   // the current view changes.
   window.addEventListener("bakedSeedChange", ((e: CustomEvent) => {
     const baked = !!e.detail?.baked;
@@ -1332,21 +1355,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       hideLoadingStrip();
     }
 
-    const label = document.querySelector<HTMLElement>('label[for="spoilerFreeToggle"]');
-    if (spoilerFreeToggle && label) {
-      spoilerFreeToggle.disabled = baked;
-      // Bootstrap's .btn-check:disabled + .btn sets pointer-events: none, which
-      // would also kill the hover popover that explains the disabling. Restore.
-      label.style.pointerEvents = baked ? "auto" : "";
-      const contentKey = baked ? "spoilerFree.unavailableDaily" : "spoilerFree.content";
-      // unavailableDaily interpolates {{feature}} (the toggle's own name).
-      const opts = baked ? { feature: i18next.t("spoilerFree.title") } : undefined;
-      label.setAttribute("data-i18n-content", contentKey);
-      label.setAttribute("data-bs-content", i18next.t(contentKey, opts as any) as string);
-      const existing = bootstrap.Popover.getInstance(label);
-      if (existing) existing.dispose();
-      new bootstrap.Popover(label);
-    }
+    updateSpoilerControlVisibility(baked);
 
     // Daily baked maps already have all POIs baked in and render fast, so the
     // "Don't add creatures" / "Use simplistic map background" perf toggles serve

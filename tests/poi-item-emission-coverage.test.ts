@@ -221,11 +221,8 @@ const NOT_A_MARKER = new Set([
 const NO_SPRITE_YET: Record<string, string> = {
   true_orb: "no item:true_orb; ultra-rare chest loot",
   treasure: "no item:treasure key",
-  kuu: "no item:kuu (the Moon) sprite",
   kivi: "no item:kivi sprite (stone boss; only in commented-out dead code)",
   kummitus: "no item:kummitus sprite (only in commented-out dead code)",
-  chaos_die: "no item:chaos_die sprite (prop:greed_die exists for greed only)",
-  shiny_orb: "no item:shiny_orb sprite",
   greed_orb: "no item:greed_orb sprite",
   refresh_mimic: "no item:refresh_mimic sprite",
   mimic: "no item:mimic sprite (heart-mimic disguise handled elsewhere)",

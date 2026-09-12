@@ -254,3 +254,18 @@ close/switch/cancel cannot reopen a stale sidebar, an unchanged loaded feature
 does not flash a loading screen, and a failed report load exposes Retry instead
 of leaving an endless skeleton. Slow loads use status text, not a fabricated
 percentage. Loading animations honor reduced-motion preferences.
+
+
+## Report loot previews and coral metadata
+
+```bash
+npm test -- tests/poi-inventory.test.ts tests/poi-preview-name.test.ts tests/poi-sprite-coverage.test.ts
+node tests/pro-report.integration.mjs dist task/noitamap-pro/public
+```
+
+The integration test expects both production builds to exist. It uses the real
+local generator and atlas, with CDN library responses unchanged and unrelated
+analytics/static tiles/auth isolated. It checks `song_room` coral chests across
+three worlds, actual Kammi/material/spell/wand sprite pixels, readable V2 width,
+no horizontal overflow, and C/Shift+C through the built host's drawing UI.
+Images/results go under `/tmp/noitamap-report-integration` by default.

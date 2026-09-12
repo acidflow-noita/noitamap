@@ -14,18 +14,19 @@ const STORAGE_KEY = "noitamap-spoiler-free";
 // Default to OFF — users who want to hide spoilers toggle it on
 const stored = localStorage.getItem(STORAGE_KEY);
 let _enabled: boolean = stored === null ? false : stored === "1";
+let _bakedView = false;
 
 const _listeners: ((enabled: boolean) => void)[] = [];
 
 export function isSpoilerFree(): boolean {
-  return _enabled;
+  return _enabled && !_bakedView;
 }
 
 export function setSpoilerFree(enabled: boolean): void {
   _enabled = enabled;
   localStorage.setItem(STORAGE_KEY, enabled ? "1" : "0");
   _sfCache.clear(); // invalidate cache on change
-  for (const fn of _listeners) fn(enabled);
+  for (const fn of _listeners) fn(isSpoilerFree());
 }
 
 export function onSpoilerFreeChange(cb: (enabled: boolean) => void): void {
@@ -66,7 +67,7 @@ export function applySpoilerFree(
   key: string,
   atlas: Record<string, unknown>,
 ): string {
-  if (!_enabled) return key;
+  if (!isSpoilerFree()) return key;
 
   const cached = _sfCache.get(key);
   if (cached !== undefined) return cached;
@@ -91,4 +92,19 @@ export function applySpoilerFree(
 
   _sfCache.set(key, result);
   return result;
+}
+
+/** A baked image already contains identities. Suspend (do not erase) the
+ * user's preference so it becomes effective again on an unbaked map. */
+export function isBakedSeedView(): boolean { return _bakedView; }
+export function setBakedSeedView(baked: boolean): void {
+  const previous = isSpoilerFree();
+  _bakedView = baked;
+  _sfCache.clear();
+  if (isSpoilerFree() !== previous) for (const listener of _listeners) listener(isSpoilerFree());
+}
+// Installed at module initialization, before the fast baked probe can finish.
+// This also handles baked maps selected before the navbar controls are ready.
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+  window.addEventListener("bakedSeedChange", ((event: CustomEvent) => setBakedSeedView(!!event.detail?.baked)) as EventListener);
 }

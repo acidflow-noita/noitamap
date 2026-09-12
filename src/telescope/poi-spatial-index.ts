@@ -186,7 +186,7 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     if (item === "potion" || item === "potion_normal") {
       const mat = (poi as any).material;
       if (atlas && mat) {
-        const key = `item:potion:${mat}`;
+        const key = `item:potion:${mat === "ambrosia" ? "magic_liquid_protection_all" : mat}`;
         if (atlas[key]) return key;
       }
       return "item:potion";
@@ -194,7 +194,7 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     if (item === "pouch" || item === "powder_stash_pouch") {
       const mat = (poi as any).material;
       if (atlas && mat) {
-        const key = `item:pouch:${mat}`;
+        const key = `item:pouch:${mat === "ambrosia" ? "magic_liquid_protection_all" : mat}`;
         if (atlas[key]) return key;
       }
       return "item:pouch";
@@ -311,6 +311,11 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     if (item === "darksun_rock") return "enemy:physics_darksun_rock";
     // Kuulokivi: the items_gfx sprite is tiny; use the ui_gfx inventory icon.
     if (item === "musicstone") return "ui_item:musicstone";
+    // Chest/utility loot uses these gameplay aliases, not their sprite filenames.
+    if (item === "kammi" || item === "safe_haven") return "ui_item:safe_haven";
+    if (item === "kuu") return "ui_item:moon";
+    if (item === "chaos_die") return "ui_item:die";
+    if (item === "shiny_orb") return "ui_item:orb";
     if (item === "music_machine") return "prop:music_machine";
     // The Hourglass Chamber synthetic POI — use the hourglass entity sprite.
     if (item === "hourglass") return "enemy:teleport_hourglass";
