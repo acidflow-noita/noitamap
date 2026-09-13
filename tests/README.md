@@ -269,3 +269,28 @@ analytics/static tiles/auth isolated. It checks `song_room` coral chests across
 three worlds, actual Kammi/material/spell/wand sprite pixels, readable V2 width,
 no horizontal overflow, and C/Shift+C through the built host's drawing UI.
 Images/results go under `/tmp/noitamap-report-integration` by default.
+
+## Generation loading / optional disk cache
+
+```bash
+npm test -- tests/cache-storage.test.ts
+npm run build
+npx vite preview --host 127.0.0.1 --port 4173
+# In another terminal (Playwright Chromium and Firefox must be installed):
+node tests/helpers/cache-loading-browser.mjs
+```
+
+The browser regression uses fresh, isolated profiles against the built local
+map. It verifies cold generation, cache-hit reload, changing seeds through the
+UI, a blocked database upgrade, a long-running transaction in another tab,
+denied storage, the baked daily path, mod URL handoff while the old map is
+loading, and closing an old map tab before the new one starts. Mod seed/unlock/
+pillar URL data must survive both tab paths. Storage blockers stay active until
+the real map and POIs finish; generated POI fingerprints must match the healthy
+case. It also checks that failed cache invalidation is not marked successful.
+No baking, deployment, or Pro credentials are involved.
+
+Optional environment settings: `MAP_TEST_URL`, `MAP_TEST_BROWSERS` (comma-separated),
+`MAP_TEST_CASES`, `MAP_TEST_SEED`, and `MAP_TEST_OUTPUT`. Results and diagnostic
+logs default to `/tmp/noitamap-cache-loading`. The daily case requires access to
+the existing daily seed/asset endpoints; non-daily cases use local archives.

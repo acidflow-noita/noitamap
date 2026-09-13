@@ -338,10 +338,11 @@ async function _doInitTelescope(): Promise<void> {
   const LIB_VERSION = "2026-09-12-telescope-7fce46b-render-perf-386ee75";
   if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
     console.log("[Telescope] Library version updated, clearing generation cache...");
-    try {
-      if (typeof indexedDB !== "undefined") await clearCache();
-    } catch (e) {}
-    localStorage.setItem("noitamap-telescope-version", LIB_VERSION);
+    // A blocked/failed optional cache must not prevent generation, but must
+    // also not be marked as successfully invalidated for the next page load.
+    if (typeof indexedDB !== "undefined" && await clearCache()) {
+      localStorage.setItem("noitamap-telescope-version", LIB_VERSION);
+    }
   }
 
   initialized = true;

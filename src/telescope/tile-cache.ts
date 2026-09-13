@@ -1,3 +1,4 @@
+import { OptionalCacheDatabase, warnCacheFailure } from "./cache-storage";
 import { normalizeScenePOIs } from "./scene-pois";
 import { serializeTileLayer, restoreTileLayer, type CachedTileLayer } from "./tile-layer-cache";
 import { telescopeCacheKey } from "./cache-identity";
@@ -62,57 +63,52 @@ interface CachedGeneration {
   >;
 }
 
+const storage = new OptionalCacheDatabase(DB_NAME, DB_VERSION, (db, transaction, oldVersion) => {
+  // Bumping past v5 (the schema-change version) wiped data. From v6 onward
+  // the upgrade is additive — keep existing cached generations when adding
+  // new stores.
+  if (oldVersion < 5) {
+    if (db.objectStoreNames.contains(STORE_NAME)) {
+      db.deleteObjectStore(STORE_NAME);
+    }
+    db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
+  } else if (!db.objectStoreNames.contains(STORE_NAME)) {
+    db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
+  }
+  if (!db.objectStoreNames.contains(RENDER_STORE_NAME)) {
+    const renderStore = db.createObjectStore(RENDER_STORE_NAME, { keyPath: "renderKey" });
+    renderStore.createIndex("cacheKey", "cacheKey", { unique: false });
+  }
+  if (!db.objectStoreNames.contains(SCENE_BITMAP_STORE_NAME)) {
+    db.createObjectStore(SCENE_BITMAP_STORE_NAME, { keyPath: "key" });
+  } else if (oldVersion < 11) {
+    // v8 fixed the temple/single-layer scene sizing bug. v10 recolors
+    // pixel-scene fills (f0bbee -> chosen material) and temple wang
+    // templates (white slab -> templeslab brown). v11 stops a material
+    // colormap (essenceroom.png) shadowing the real _visual.png. Wipe so
+    // stale pre-fix bitmaps get re-composited.
+    db.deleteObjectStore(SCENE_BITMAP_STORE_NAME);
+    db.createObjectStore(SCENE_BITMAP_STORE_NAME, { keyPath: "key" });
+  }
+  // v9: generation entries bundled imgData per pixel scene (~MBs each).
+  // Cache reads were taking ~2.4s on FF. Drop those entries; new ones
+  // are written without imgData.
+  if (oldVersion >= 5 && oldVersion < 9 && db.objectStoreNames.contains(STORE_NAME)) {
+    db.deleteObjectStore(STORE_NAME);
+    db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
+  }
+  // v12 replaces missing scene inputs (previously transparent 1x1 PNGs)
+  // with real assets. Clear all derived stores, even on the cache-only path
+  // that can run before telescope initialization/version checks.
+  if (oldVersion > 0 && oldVersion < 12) {
+    for (const name of [STORE_NAME, RENDER_STORE_NAME, SCENE_BITMAP_STORE_NAME]) {
+      transaction.objectStore(name).clear();
+    }
+  }
+});
+
 function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = (event) => {
-      const db = req.result;
-      const oldVersion = event.oldVersion;
-      // Bumping past v5 (the schema-change version) wiped data. From v6 onward
-      // the upgrade is additive — keep existing cached generations when adding
-      // new stores.
-      if (oldVersion < 5) {
-        if (db.objectStoreNames.contains(STORE_NAME)) {
-          db.deleteObjectStore(STORE_NAME);
-        }
-        db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
-      } else if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
-      }
-      if (!db.objectStoreNames.contains(RENDER_STORE_NAME)) {
-        const renderStore = db.createObjectStore(RENDER_STORE_NAME, { keyPath: "renderKey" });
-        renderStore.createIndex("cacheKey", "cacheKey", { unique: false });
-      }
-      if (!db.objectStoreNames.contains(SCENE_BITMAP_STORE_NAME)) {
-        db.createObjectStore(SCENE_BITMAP_STORE_NAME, { keyPath: "key" });
-      } else if (oldVersion < 11) {
-        // v8 fixed the temple/single-layer scene sizing bug. v10 recolors
-        // pixel-scene fills (f0bbee -> chosen material) and temple wang
-        // templates (white slab -> templeslab brown). v11 stops a material
-        // colormap (essenceroom.png) shadowing the real _visual.png. Wipe so
-        // stale pre-fix bitmaps get re-composited.
-        db.deleteObjectStore(SCENE_BITMAP_STORE_NAME);
-        db.createObjectStore(SCENE_BITMAP_STORE_NAME, { keyPath: "key" });
-      }
-      // v9: generation entries bundled imgData per pixel scene (~MBs each).
-      // Cache reads were taking ~2.4s on FF. Drop those entries; new ones
-      // are written without imgData.
-      if (oldVersion >= 5 && oldVersion < 9 && db.objectStoreNames.contains(STORE_NAME)) {
-        db.deleteObjectStore(STORE_NAME);
-        db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
-      }
-      // v12 replaces missing scene inputs (previously transparent 1x1 PNGs)
-      // with real assets. Clear all derived stores, even on the cache-only path
-      // that can run before telescope initialization/version checks.
-      if (oldVersion > 0 && oldVersion < 12) {
-        for (const name of [STORE_NAME, RENDER_STORE_NAME, SCENE_BITMAP_STORE_NAME]) {
-          req.transaction!.objectStore(name).clear();
-        }
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
+  return storage.open();
 }
 
 /**
@@ -171,15 +167,11 @@ export async function cacheGeneration(cacheKey: string, seed: number, result: an
 
     const tx = db.transaction(STORE_NAME, "readwrite");
     tx.objectStore(STORE_NAME).put(entry);
-    await new Promise<void>((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
+    await storage.complete(tx);
 
-    db.close();
     console.log(`[TileCache] Cached generation for key ${cacheKey}`);
   } catch (e) {
-    console.warn("[TileCache] Failed to cache generation:", e);
+    warnCacheFailure("[TileCache] Failed to cache generation:", e);
   }
 }
 
@@ -194,12 +186,8 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
     const tx = db.transaction(STORE_NAME, "readonly");
     const req = tx.objectStore(STORE_NAME).get(cacheKey);
 
-    const entry: CachedGeneration | undefined = await new Promise((resolve, reject) => {
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
+    const entry: CachedGeneration | undefined = await storage.read(req);
 
-    db.close();
 
     if (!entry) return null;
     if (Date.now() - entry.timestamp > MAX_AGE_MS) {
@@ -260,7 +248,7 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
       pixelScenesByPW,
     });
   } catch (e) {
-    console.warn("[TileCache] Failed to read cache:", e);
+    warnCacheFailure("[TileCache] Failed to read cache:", e);
     return null;
   }
 }
@@ -286,34 +274,28 @@ async function pruneOldEntries(): Promise<void> {
       cursor.continue();
     };
 
-    await new Promise<void>((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-    db.close();
+    await storage.complete(tx);
   } catch (e) {
-    console.warn("[TileCache] Failed to prune:", e);
+    warnCacheFailure("[TileCache] Failed to prune:", e);
   }
 }
 
 /**
  * Completely clear the telescope generation cache.
  */
-export async function clearCache(): Promise<void> {
+export async function clearCache(): Promise<boolean> {
   try {
     const db = await openDB();
     const tx = db.transaction([STORE_NAME, RENDER_STORE_NAME, SCENE_BITMAP_STORE_NAME], "readwrite");
     tx.objectStore(STORE_NAME).clear();
     tx.objectStore(RENDER_STORE_NAME).clear();
     tx.objectStore(SCENE_BITMAP_STORE_NAME).clear();
-    await new Promise<void>((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-    db.close();
+    await storage.complete(tx);
     console.log("[TileCache] Cache cleared (generations + biome_renders + pixel_scene_bitmaps)");
+    return true;
   } catch (e) {
-    console.warn("[TileCache] Failed to clear cache:", e);
+    warnCacheFailure("[TileCache] Failed to clear cache:", e);
+    return false;
   }
 }
 
@@ -333,16 +315,12 @@ export async function getCachedBiomeRender(
     const db = await openDB();
     const tx = db.transaction(RENDER_STORE_NAME, "readonly");
     const req = tx.objectStore(RENDER_STORE_NAME).get(renderKeyFor(cacheKey, pw, pvt));
-    const entry: CachedBiomeRender | undefined = await new Promise((resolve, reject) => {
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-    db.close();
+    const entry: CachedBiomeRender | undefined = await storage.read(req);
     if (!entry) return null;
     if (Date.now() - entry.timestamp > MAX_AGE_MS) return null;
     return entry;
   } catch (e) {
-    console.warn("[TileCache] Failed to read biome render cache:", e);
+    warnCacheFailure("[TileCache] Failed to read biome render cache:", e);
     return null;
   }
 }
@@ -370,13 +348,9 @@ export async function cacheBiomeRender(
     };
     const tx = db.transaction(RENDER_STORE_NAME, "readwrite");
     tx.objectStore(RENDER_STORE_NAME).put(entry);
-    await new Promise<void>((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-    db.close();
+    await storage.complete(tx);
   } catch (e) {
-    console.warn("[TileCache] Failed to cache biome render:", e);
+    warnCacheFailure("[TileCache] Failed to cache biome render:", e);
   }
 }
 
@@ -396,16 +370,12 @@ export async function getCachedSceneBitmap(key: string): Promise<CachedSceneBitm
     const db = await openDB();
     const tx = db.transaction(SCENE_BITMAP_STORE_NAME, "readonly");
     const req = tx.objectStore(SCENE_BITMAP_STORE_NAME).get(key);
-    const entry: CachedSceneBitmap | undefined = await new Promise((resolve, reject) => {
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-    db.close();
+    const entry: CachedSceneBitmap | undefined = await storage.read(req);
     if (!entry) return null;
     if (Date.now() - entry.timestamp > MAX_AGE_MS) return null;
     return entry;
   } catch (e) {
-    console.warn("[TileCache] Failed to read scene bitmap cache:", e);
+    warnCacheFailure("[TileCache] Failed to read scene bitmap cache:", e);
     return null;
   }
 }
@@ -425,23 +395,14 @@ export async function getCachedSceneBitmapsBulk(keys: string[]): Promise<Map<str
     const now = Date.now();
     await Promise.all(
       keys.map(
-        (key) =>
-          new Promise<void>((resolve) => {
-            const req = store.get(key);
-            req.onsuccess = () => {
-              const entry = req.result as CachedSceneBitmap | undefined;
-              if (entry && now - entry.timestamp <= MAX_AGE_MS) {
-                result.set(key, entry);
-              }
-              resolve();
-            };
-            req.onerror = () => resolve();
-          }),
+        async (key) => {
+          const entry = await storage.read<CachedSceneBitmap | undefined>(store.get(key));
+          if (entry && now - entry.timestamp <= MAX_AGE_MS) result.set(key, entry);
+        },
       ),
     );
-    db.close();
   } catch (e) {
-    console.warn("[TileCache] Failed bulk scene bitmap read:", e);
+    warnCacheFailure("[TileCache] Failed bulk scene bitmap read:", e);
   }
   return result;
 }
@@ -458,11 +419,7 @@ export async function getCachedBiomeRendersForKey(cacheKey: string): Promise<Map
     const tx = db.transaction(RENDER_STORE_NAME, "readonly");
     const store = tx.objectStore(RENDER_STORE_NAME);
     const idxReq = store.index("cacheKey").getAll(cacheKey);
-    const entries: CachedBiomeRender[] = await new Promise((resolve) => {
-      idxReq.onsuccess = () => resolve((idxReq.result as CachedBiomeRender[]) || []);
-      idxReq.onerror = () => resolve([]);
-    });
-    db.close();
+    const entries: CachedBiomeRender[] = await storage.read(idxReq);
     const now = Date.now();
     for (const e of entries) {
       if (now - e.timestamp <= MAX_AGE_MS) {
@@ -470,7 +427,7 @@ export async function getCachedBiomeRendersForKey(cacheKey: string): Promise<Map
       }
     }
   } catch (e) {
-    console.warn("[TileCache] Failed bulk biome render read:", e);
+    warnCacheFailure("[TileCache] Failed bulk biome render read:", e);
   }
   return result;
 }
@@ -481,14 +438,10 @@ export async function getCachedSceneBitmapKeys(): Promise<Set<string>> {
     const db = await openDB();
     const tx = db.transaction(SCENE_BITMAP_STORE_NAME, "readonly");
     const req = tx.objectStore(SCENE_BITMAP_STORE_NAME).getAllKeys();
-    const keys: IDBValidKey[] = await new Promise((resolve, reject) => {
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-    db.close();
+    const keys: IDBValidKey[] = await storage.read(req);
     return new Set(keys.map((k) => String(k)));
   } catch (e) {
-    console.warn("[TileCache] Failed to read scene bitmap keys:", e);
+    warnCacheFailure("[TileCache] Failed to read scene bitmap keys:", e);
     return new Set();
   }
 }
@@ -500,12 +453,8 @@ export async function cacheSceneBitmap(key: string, blob: Blob, width: number, h
     const entry: CachedSceneBitmap = { key, blob, width, height, timestamp: Date.now() };
     const tx = db.transaction(SCENE_BITMAP_STORE_NAME, "readwrite");
     tx.objectStore(SCENE_BITMAP_STORE_NAME).put(entry);
-    await new Promise<void>((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-    db.close();
+    await storage.complete(tx);
   } catch (e) {
-    console.warn("[TileCache] Failed to cache scene bitmap:", e);
+    warnCacheFailure("[TileCache] Failed to cache scene bitmap:", e);
   }
 }
