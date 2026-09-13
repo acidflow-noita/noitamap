@@ -335,11 +335,11 @@ async function _doInitTelescope(): Promise<void> {
 
   // 10. Cache bust check: If we just updated the library, clear the generation cache
   // to ensure fixed logic actually runs instead of showing old empty results.
-  const LIB_VERSION = "2026-07-05-telescope-4683b94";
+  const LIB_VERSION = "2026-09-12-telescope-7fce46b-render-perf-386ee75";
   if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
     console.log("[Telescope] Library version updated, clearing generation cache...");
     try {
-      clearCache();
+      if (typeof indexedDB !== "undefined") await clearCache();
     } catch (e) {}
     localStorage.setItem("noitamap-telescope-version", LIB_VERSION);
   }

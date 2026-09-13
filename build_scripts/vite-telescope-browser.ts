@@ -14,16 +14,6 @@ export async function browserTelescopeSource(code: string, id: string) {
       .replace(/\bIS_NODE\b/g, "false");
   }
   if (id.endsWith("/pixel_scene_generation.js")) {
-    // The legacy fork preloads these under "general" (via OVERWORLD_SCENES),
-    // but static_spawns requests biome "scale". Use the loaded cache key;
-    // do not suppress its missing-scene warning or synthesize an empty scene.
-    const sceneKey = "function getPixelSceneKey(biomeName, sceneName) {";
-    if (!source.includes(sceneKey))
-      throw new Error(`Unknown telescope scene-key implementation: ${id}`);
-    source = source.replace(
-      sceneKey,
-      `${sceneKey}\nif (biomeName === "scale" && (sceneName === "scale" || sceneName === "scale_old")) return "general/" + sceneName;`,
-    );
     const atlasImport = /import\(['"]\.\/gl\/material_atlas\.js['"]\)/g;
     if (atlasImport.test(source)) {
       // This import MUST stay dynamic. utils -> pixel_scene_generation ->

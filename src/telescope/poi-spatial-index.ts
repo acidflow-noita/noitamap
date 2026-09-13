@@ -183,6 +183,9 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
 
   if (poi.type === "item" && poi.item) {
     const item = poi.item;
+    // New upstream oil-receptacle reward: the unfilled bottle uses the base
+    // flask sprite, not an invented liquid or a missing item:potion_empty key.
+    if (item === "potion_empty") return "item:potion";
     if (item === "potion" || item === "potion_normal") {
       const mat = (poi as any).material;
       if (atlas && mat) {

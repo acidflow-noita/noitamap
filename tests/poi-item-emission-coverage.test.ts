@@ -105,6 +105,7 @@ interface Fixture {
 }
 
 const FIXTURES: Fixture[] = [
+  { label: "empty potion (oil receptacle)", poi: { type: "item", item: "potion_empty", x:0,y:0 }, expect: "item:potion" },
   // The regressions this file exists for:
   {
     label: "friend boss (Toveri) — must draw enemy:friend, NOT be click-only",

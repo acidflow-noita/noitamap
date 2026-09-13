@@ -25,7 +25,7 @@ describe("browser build boundaries", () => {
     expect(code).not.toMatch(/import[^;]*from\s*["'][^"']*material_atlas/);
   });
   it.each(["noita-telescope", "noita-telescope-vm"])(
-    "repairs the real scale scene cache key in %s without muting diagnostics",
+    "keeps the upstream general-scene lookup in %s without rewriting its private function",
     async (fork) => {
       const path = resolve(root, `lib/${fork}/js/pixel_scene_generation.js`);
       const original = await readFile(path, "utf8");
@@ -36,17 +36,27 @@ describe("browser build boundaries", () => {
       expect(keyFunction).toBeTruthy();
       // Execute only the actual transformed pure key function; no mocked scene
       // image can make a missing cache lookup appear to succeed.
+      const config = await readFile(resolve(root, `lib/${fork}/js/pixel_scene_config.js`), "utf8");
+      const general = config.match(/export const GENERAL_SCENES\s*=\s*({[\s\S]*?})\s*;?\s*export const OVERWORLD_SCENES/)?.[1];
+      expect(general).toBeTruthy();
+      const names = new Function(`return (${general}).extras.map(scene => scene.name);`)();
+      expect(names).toEqual(expect.arrayContaining(["scale", "scale_old"]));
       const key = new Function(
         "GENERATOR_CONFIG",
         "GENERAL_SCENE_NAMES",
         `return (${keyFunction});`,
-      )({ scale: {}, coalmine: {} }, []);
+      )({ scale: {}, coalmine: {} }, names);
       expect(key("scale", "scale")).toBe("general/scale");
       expect(key("scale", "scale_old")).toBe("general/scale_old");
-      expect(key("coalmine", "scale")).toBe("coalmine/scale");
+      expect(key("coalmine", "scale")).toBe("general/scale");
+      expect(key("coalmine", "ordinary_scene")).toBe("coalmine/ordinary_scene");
       expect(code).toContain("Pixel scene data not found for key");
     },
   );
+  it("does not fail when an upstream private scene-key helper is renamed", async () => {
+    const result = await browserTelescopeSource("export const value = 1;", "/fork/pixel_scene_generation.js");
+    expect(result.code).toContain("value");
+  });
   it.each(["png_sanitizer.js", "utils.js"])(
     "removes Node-only imports from %s without suppressing warnings",
     async (file) => {

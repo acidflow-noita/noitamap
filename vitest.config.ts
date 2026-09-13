@@ -8,7 +8,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    // Nested checkouts have independent dependencies/configs and test suites.
-    exclude: [...configDefaults.exclude, "task/**"],
+    // Nested checkouts/submodules own their test runners (Telescope uses node:test, not Vitest).
+    exclude: [...configDefaults.exclude, "task/**", "lib/**"],
   },
 });

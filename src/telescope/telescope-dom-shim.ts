@@ -76,6 +76,13 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
     "enable-hamis-hints": false,
     "exclude-negative-verticals": false,
     "rng-info": false,
+    // New upstream UI settings; our generator does not enable these views.
+    "debug-pois-zoom": false,
+    "debug-highlight-pois-zoom": false,
+    "accessibility-mode": false,
+    "debug-simple-poi-symbols": false,
+    "show-always-casts": false,
+    "progress-show-missing": false,
   };
 
   const container = document.createElement("div");
@@ -139,6 +146,9 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
     "game-mode": "normal",
     "local-search-mode": "global",
     "search-radius-num": "0",
+    "debug-poi-scale": "1",
+    "debug-highlight-poi-scale": "1",
+    "lottery-count": "0",
   };
   for (const [id, value] of Object.entries(textInputs)) {
     if (document.getElementById(id)) continue;
@@ -193,6 +203,31 @@ export function installTelescopeShim(opts?: TelescopeShimOptions): void {
     "unlock-none": "button",
     "unlocks-list": "div",
     "search-rare-btn": "button",
+    "fungal-shifts-overlay": "div",
+    "fungal-shifts-button": "button",
+    "fungal-shifts-close": "button",
+    "perk-deck-overlay": "div",
+    "perk-deck-button": "button",
+    "perk-deck-close": "button",
+    "search-missing-progress-btn": "button",
+    "progress-overlay": "div",
+    "player-copy-path-btn": "button",
+    "player-file-picker": "input",
+    "alchemy-list": "div",
+    "alchemy-label": "label",
+    "debug-poi-scale-value": "span",
+    "debug-highlight-poi-scale-value": "span",
+    "shifts-list": "div",
+    "temple-list": "div",
+    "pw-label": "span",
+    "prev-pw": "button",
+    "next-pw": "button",
+    "reset-btn": "button",
+    "reroll-deck-toggle": "button",
+    "reroll-deck-list": "div",
+    "progress-lists": "div",
+    "progress-close": "button",
+    "progress-button": "button",
   };
   for (const [id, tagName] of Object.entries(displayElements)) {
     if (document.getElementById(id)) continue;
