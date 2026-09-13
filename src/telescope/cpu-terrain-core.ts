@@ -289,6 +289,7 @@ export async function createCpuTerrain(gen: GLTerrainGeneration) {
     edgeStats: composition.edgeStats,
     materialStats: materialCache.stats,
     colorAt,
+    materialAt: materialCache.materialAt,
     contains: composition.contains,
     finish: composition.finish,
     renderRows(

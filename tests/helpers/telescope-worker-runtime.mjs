@@ -18,6 +18,7 @@ import {
   DOMMatrix,
 } from "@napi-rs/canvas";
 
+let finalMessage = null;
 const root = workerData.root;
 const output = workerData.output ?? resolve(root, "dist");
 const NativeResponse = Response;
@@ -273,7 +274,7 @@ try {
       });
     }
     const fixture = await import(pathToFileURL(workerData.entry).href);
-    parentPort.postMessage({
+    finalMessage = {
       type: "fixture",
       data:
         workerData.poolBenchmark ? await fixture.renderTerrainPoolFixture(workerData.seed) :
@@ -293,7 +294,7 @@ try {
           : undefined,
       requests,
       missing,
-    });
+    };
   } else {
     await import(pathToFileURL(workerData.entry).href);
     // Exercise the shared drawImage shim with an uncached canvas: browser-only
@@ -328,14 +329,11 @@ try {
     parentPort.postMessage({ type: "ready" });
   }
 } catch (error) {
-  parentPort.postMessage({
-    type: "fatal",
-    error: error.stack,
-    requests,
-    missing,
-  });
+  finalMessage = { type: "fatal", error: error.stack, requests, missing };
 }
 
+// The parent terminates the worker after receiving its result. Release native
+// contexts and child workers FIRST; otherwise termination races Skia/EGL cleanup.
 if (graphics) graphics.dispose();
-
-for (const worker of browserWorkers) worker.terminate();
+await Promise.all([...browserWorkers].map((worker) => worker.terminate()));
+if (finalMessage) { parentPort.postMessage(finalMessage); parentPort.close(); }

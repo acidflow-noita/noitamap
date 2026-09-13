@@ -59,10 +59,15 @@ describe
           if (settled) return;
           settled = true;
           clearTimeout(timer);
-          void worker.terminate();
-          if (error)
+          if (error) {
+            void worker.terminate();
             reject(new Error(`${String(error)}\n${logs.slice(-12000)}`));
-          else resolveResult(result);
+          } else {
+            // Let native Skia/EGL references unwind instead of killing the
+            // thread while its post-result cleanup is still running.
+            const shutdown = setTimeout(() => { void worker.terminate(); reject(new Error("Native renderer cleanup timed out")); }, 5000);
+            worker.once("exit", () => { clearTimeout(shutdown); resolveResult(result); });
+          }
         };
         const timer = setTimeout(
           () => finish("Native terrain rendering timed out"),

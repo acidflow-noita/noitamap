@@ -61,7 +61,7 @@ export async function prepareBake(seed: number) {
   };
 }
 
-export async function openBakeRenderer(snapshot: any) {
+export async function openBakeRenderer(snapshot: any, backend: "cpu" | "gpu" = "cpu") {
   setFullPixelTerrainForBake(true);
   const { installTelescopeShim } = await import("./telescope-dom-shim");
   const { installFetchInterceptor } = await import("./telescope-data-bridge");
@@ -69,6 +69,10 @@ export async function openBakeRenderer(snapshot: any) {
   const { getDataZip } = await import("../data-archive");
   await getDataZip();
   installFetchInterceptor(true);
+  if (backend === "gpu") {
+    const { openGpuBakeRenderer } = await import("./gpu-bake-renderer");
+    return openGpuBakeRenderer(snapshot);
+  }
   const { createCpuTerrain } = await import("./cpu-terrain-core");
   const renderers = new Map<
     number,

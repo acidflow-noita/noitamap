@@ -35,6 +35,16 @@ const args = Object.fromEntries(
     return [k, v.length ? v.join("=") : true];
   }),
 );
+const backend = String(args.backend || "cpu");
+if (!["cpu", "gpu"].includes(backend)) throw new Error("backend must be cpu or gpu");
+let gpuInfo = null;
+if (backend === "gpu") {
+  const { createNativeGLES } = await import("./native-gles.mjs");
+  const probe = createNativeGLES({ requireHardware: true });
+  gpuInfo = probe.info;
+  console.log("[GPU preflight]", JSON.stringify(gpuInfo));
+  probe.dispose();
+}
 const out = resolve(String(args.out || "optional_data/full-pixel-bake"));
 let seed = Number(args.seed);
 if (!Number.isInteger(seed))
@@ -63,6 +73,8 @@ const limit = Math.max(
   ),
 );
 const start = Date.now();
+const metrics = { backend, gpu: gpuInfo, resumed: !!args.resume, phases: [], renderWorkers: backend === "gpu" ? 1 : limit, cpuWorkers: limit };
+let preparationStart = Date.now();
 const log = (message) =>
   console.log(
     `[full-pixel bake +${((Date.now() - start) / 1000).toFixed(1)}s] ${message}`,
@@ -179,9 +191,13 @@ if (!prepared) {
 log(
   `prepared all three vertical planes, ${prepared.width} x ${prepared.height} per world`,
 );
-if (args["prepare-only"]) process.exit(0);
+metrics.preparationMs = Date.now() - preparationStart;
+if (args["prepare-only"]) {
+  await atomicWrite(resolve(out, "benchmark.json"), JSON.stringify({ ...metrics, seed, prepareOnly: true, elapsedMs: Date.now()-start }, null, 2));
+  process.exit(0);
+}
 const data = deserialize(await readFile(snapshot));
-const renderId = `${seed}-${data.version}-${codeHash}`;
+const renderId = `${seed}-${data.version}-${codeHash}-${backend}`;
 const work = resolve(out, ".work", renderId),
   cores = resolve(work, "cores"),
   publish = resolve(work, "publish");
@@ -250,15 +266,16 @@ class Pool {
     this.waiting = [];
     this.done = 0;
     this.total = 0;
+    this.size = role === "render" && backend === "gpu" ? 1 : limit;
   }
   async start() {
     await Promise.all(
       Array.from(
-        { length: limit },
+        { length: this.size },
         () =>
           new Promise((resolveReady, reject) => {
             const worker = new Worker(workerFile, {
-              workerData: { role: this.role, root, bundle, entry, snapshot },
+              workerData: { role: this.role, root, bundle, entry, snapshot, backend },
               stdout: true,
               stderr: true,
             });
@@ -282,10 +299,12 @@ class Pool {
             worker.on("message", (m) => {
               if (m.type === "ready") {
                 state.ready = true;
+                if (m.gpu) metrics.gpu = m.gpu;
                 resolveReady();
                 this.pump();
               } else if (m.type === "error") fail(m.error);
               else if (m.type === "done") {
+                if (m.renderStats) metrics.gpuStages = m.renderStats;
                 state.task?.resolve();
                 state.task = null;
                 this.done++;
@@ -311,7 +330,8 @@ class Pool {
     this.phase = phase;
     this.done = 0;
     this.total = jobs.length;
-    log(`${phase}: ${jobs.length} jobs, ${limit} CPU workers`);
+    log(`${phase}: ${jobs.length} jobs, ${this.size} ${this.role === "render" ? backend.toUpperCase() : "CPU"} workers`);
+    const phaseStart = Date.now();
     await Promise.all(
       jobs.map(
         (job) =>
@@ -321,10 +341,20 @@ class Pool {
           }),
       ),
     );
+    metrics.phases.push({ name: phase, jobs: jobs.length, workers: this.size, elapsedMs: Date.now() - phaseStart });
   }
   async close() {
+    if (this.closing) return;
     this.closing = true;
-    await Promise.all(this.workers.map((s) => s.worker.terminate()));
+    // Dispose on the worker's owning thread, then allow native-addon cleanup
+    // to finish normally. Forced termination is only the bounded failure path.
+    await Promise.all(this.workers.map(({ worker }) => worker.threadId === -1 ? Promise.resolve() : new Promise((done) => {
+      let settled = false;
+      const finish = () => { if (!settled) { settled = true; clearTimeout(timer); done(); } };
+      const timer = setTimeout(() => { worker.terminate().then(finish, finish); }, 5000);
+      worker.once("exit", finish);
+      try { worker.postMessage({ kind: "shutdown" }); } catch { worker.terminate().then(finish, finish); }
+    })));
   }
 }
 async function pending(jobs) {
@@ -450,6 +480,7 @@ try {
       renderId,
       baked: true,
       terrainVersion: data.version,
+      renderBackend: backend,
       complete: true,
       tileCount: verified,
       generatedAt: new Date().toISOString(),
@@ -492,6 +523,10 @@ try {
   }
   if (selected.length === 3)
     await atomicWrite(resolve(out, "seed.txt"), String(seed) + "\n");
+  await atomicWrite(resolve(out, "benchmark.json"), JSON.stringify({
+    ...metrics, seed, renderId, terrainVersion: data.version, codeHash,
+    complete: selected.length === 3, tileCount: totalFiles, elapsedMs: Date.now() - start,
+  }, null, 2));
   log(
     `COMPLETE: ${selected.length} worlds, all vertical planes, ${totalFiles} lossless DZI tiles; seed ${seed}`,
   );

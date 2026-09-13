@@ -5,13 +5,20 @@ import { saveCore, makeParent, writeOverlap } from "./terrain-pyramid.mjs";
 import { pathToFileURL } from "node:url";
 import { deserialize, serialize } from "node:v8";
 import sharp from "sharp";
+import { createNativeGLES } from "./native-gles.mjs";
 import { installNativeTerrainEnvironment } from "./native-terrain-environment.mjs";
+const gpu = workerData.role === "render" && workerData.backend === "gpu"
+  ? createNativeGLES({ requireHardware: workerData.allowSoftwareGpu !== true }) : null;
 const env = installNativeTerrainEnvironment({
   ...workerData,
   workerScript: new URL(import.meta.url),
   fullPixels: true,
 });
 try {
+  if (workerData.role === "render" && workerData.backend === "gpu") {
+    const nativeCreate = document.createElement.bind(document);
+    document.createElement = (tag) => tag.toLowerCase() === "canvas" ? gpu.createCanvas() : nativeCreate(tag);
+  }
   if (workerData.role === "web-worker") {
     globalThis.postMessage = (data, transfers = []) =>
       parentPort.postMessage(data, transfers);
@@ -54,7 +61,7 @@ try {
         workerData.role === "render"
           ? deserialize(await readFile(workerData.snapshot))
           : null;
-      const renderer = snapshot ? await api.openBakeRenderer(snapshot) : null;
+      const renderer = snapshot ? await api.openBakeRenderer(snapshot, workerData.backend || "cpu") : null;
       env.restoreProcess();
       sharp.concurrency(1);
       const decorCache = new Map();
@@ -111,9 +118,16 @@ try {
           }
         return pixels;
       }
-      parentPort.postMessage({ type: "ready" });
+      parentPort.postMessage({ type: "ready", gpu: gpu?.info });
       parentPort.on("message", async (job) => {
         try {
+          if (job.kind === "shutdown") {
+            gpu?.dispose();
+            env.close();
+            parentPort.postMessage({ type: "closed" });
+            parentPort.close();
+            return;
+          }
           if (job.kind === "render") {
             const pixels = await decorate(
               renderer.render(job.x, job.y, job.width, job.height),
@@ -123,7 +137,7 @@ try {
           } else if (job.kind === "parent") await makeParent(job);
           else if (job.kind === "overlap") await writeOverlap(job);
           else throw new Error(`Unknown bake task ${job.kind}`);
-          parentPort.postMessage({ type: "done", id: job.id });
+          parentPort.postMessage({ type: "done", id: job.id, renderStats: renderer?.stats?.() });
         } catch (error) {
           parentPort.postMessage({
             type: "error",
