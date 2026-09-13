@@ -26,3 +26,5 @@
 
 # Native bake products and resumable tile checkpoints
 /optional_data/full-pixel-bake/
+
+/task/
