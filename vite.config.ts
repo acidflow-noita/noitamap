@@ -1,3 +1,4 @@
+import { terrainShaderBitsPlugin } from "./build_scripts/vite-terrain-shaders.ts";
 import { defineConfig } from "vite";
 import { telescopeBrowserPlugin } from "./build_scripts/vite-telescope-browser.ts";
 import { atlasChunksPlugin } from "./build_scripts/vite-atlas-chunks.ts";
@@ -56,7 +57,7 @@ const shimTelescopePlugin = {
 export default defineConfig({
   worker: {
     format: "es",
-    plugins: () => [shimTelescopePlugin, telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), atlasChunksPlugin(import.meta.dirname)],
+    plugins: () => [shimTelescopePlugin, telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")), atlasChunksPlugin(import.meta.dirname)],
   },
   server: {
     fs: {
@@ -77,7 +78,7 @@ export default defineConfig({
         }
       },
     },
-    telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]),
+    telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")),
     atlasChunksPlugin(import.meta.dirname),
     {
       name: "og-meta-rewrite",
