@@ -1,3 +1,5 @@
 {
-  "recommendations": ["coscreen-inc.coscreen-vsc-extension", "timonwong.shellcheck"]
+  "recommendations": [
+    "timonwong.shellcheck"
+  ]
 }

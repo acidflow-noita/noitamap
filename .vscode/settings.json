@@ -11,5 +11,6 @@
   "[html]": {
     "prettier.printWidth": 200
   },
-  "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  "git.ignoreLimitWarning": true
 }
