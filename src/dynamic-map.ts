@@ -482,16 +482,6 @@ export async function runDynamicMap(
       assignIds(pois as any[], `pw_${pwKey.replace(/,/g, '_')}`);
     }
 
-    // 4.6. Kick off background pre-warm of the *alternate* unlocks variant
-    //      (e.g. nothing-unlocked when primary is all-unlocked, and vice
-    //      versa). Biome layout is identical between variants — only spell
-    //      pools differ — so this hidden second generation gives POI cards
-    //      an instant lock-toggle later without a full reload. Fire-and-
-    //      forget: if it fails or is racy with a seed change, no harm done.
-    void prewarmAlt(seed, isDaily, !bakedData?.generation).catch((e) =>
-      console.warn("[DynamicMap] alt-unlocks pre-warm failed:", e),
-    );
-
     // 5. Render onto OSD (skeleton placeholders are removed inside after real biome backgrounds load)
     t = performance.now();
     console.log(
@@ -551,6 +541,16 @@ export async function runDynamicMap(
       onPOIsReady(dynamicPOIs);
     }
     console.log(`[DynamicMap] POI export + index: ${((performance.now() - t) / 1000).toFixed(2)}s`);
+
+    // Alternate unlock data is background work. Never compete with the first
+    // map paint/compositing. Yield a frame and a task before starting it, and
+    // discard this intent if the user has already changed seeds.
+    requestAnimationFrame(() => setTimeout(() => {
+      if (myToken !== generationToken) return;
+      void prewarmAlt(seed, isDaily, !bakedData?.generation).catch((e) =>
+        console.warn("[DynamicMap] alt-unlocks pre-warm failed:", e),
+      );
+    }, 0));
 
     // Background prefetch: composite & cache every pixel-scene bitmap telescope
     // knows about. Fires once per session after the first successful render so

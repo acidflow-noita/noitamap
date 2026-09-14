@@ -1,3 +1,4 @@
+import { snapshotWorkerScenes } from "./worker-scenes";
 import { normalizeScenePOIs } from "./scene-pois";
 import { prepareElevatorShafts, withoutElevatorEndpointSpawns } from "./terrain-elevator";
 import { loadTelescopeModules } from "./load-telescope";
@@ -557,7 +558,10 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   const mainWorlds = parallelWorlds.filter((w) => w === 0);
   const backgroundWorlds = parallelWorlds.filter((w) => w !== 0);
 
-  // Dispatch background worlds to Web Workers to prevent UI thread lock
+  // Reuse the exact scene pixels/spawns already prepared by initTelescope.
+  // Re-decoding and prescanning all 334 scenes in EACH new worker dominated
+  // cold generation (especially Firefox), before any seed-specific scan ran.
+  const workerScenes = backgroundWorlds.length ? snapshotWorkerScenes(telescopeMods.pixelSceneMod, isGLTerrainEnabled()) : null;
   const workerPromises = backgroundWorlds.map((pw) => {
     return new Promise<{ pw: number; pois: any[]; pixelScenes: any[] }>((resolve, reject) => {
       const worker = new PwWorker();
@@ -586,6 +590,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         unlocks: dailySeed || opts.unlocks == null ? null : opts.unlocks,
         dailySeed,
         fullPixels: isGLTerrainEnabled(),
+        workerScenes,
         elevatorColumns,
         elevatorSpawns,
       });

@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { readFile, stat, writeFile, mkdir } from "node:fs/promises";
 import { resolve, extname, sep } from "node:path";
-import { chromium } from "playwright";
+import { chromium, firefox } from "playwright";
 import sharp from "sharp";
 const root = resolve(import.meta.dirname, "..");
 const hostBuild = resolve(process.argv[2] || resolve(root, "dist"));
@@ -83,7 +83,7 @@ await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 let browser;
 try {
   const origin = `http://127.0.0.1:${server.address().port}`;
-  browser = await chromium.launch({ headless: true });
+  browser = await ({chromium, firefox}[process.env.TEST_BROWSER || "chromium"]).launch({ headless: true });
   const context = await browser.newContext({
     viewport: { width: 1440, height: 1000 },
   });
@@ -92,7 +92,7 @@ try {
     missing = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => {
-    if (message.type() === "error") errors.push(message.text());
+    if (message.type() === "error" || /addChild: Only Containers/.test(message.text())) errors.push(message.text());
   });
   page.on("response", (response) => {
     if (response.status() >= 400)
@@ -103,12 +103,15 @@ try {
     if (url.startsWith(origin)) return route.continue();
     if (url.startsWith("https://noitamap-pro.acidflow.stream/")) {
       const path = new URL(url).pathname;
-      if (path.endsWith(".js"))
+      if (path.endsWith(".js")) {
+        // Keep loading shells visible long enough to observe their handoff.
+        await new Promise(resolve => setTimeout(resolve, 350));
         return route.fulfill({
           body: await readFile(resolve(proBuild, "." + path)),
           contentType: "text/javascript",
           headers: { "Access-Control-Allow-Origin": "*" },
         });
+      }
     }
     if (dependencies.has(url))
       return route.fulfill({
@@ -142,6 +145,27 @@ try {
       body: JSON.stringify({ authenticated: false, user: null, drawings: [] }),
       contentType: "application/json",
     });
+  });
+  await page.addInitScript(() => {
+    window.__panelFrames = [];
+    let remaining = 0;
+    const rect = selector => {
+      const el = document.querySelector(selector);
+      if (!el || el.hidden) return null;
+      const css = getComputedStyle(el), r = el.getBoundingClientRect();
+      if (css.visibility === "hidden" || css.display === "none" || !r.width || r.left >= innerWidth || r.right <= 0) return null;
+      return {left: r.left, width: r.width, transition: css.transitionDuration};
+    };
+    const tick = () => {
+      const loading = !!document.querySelector("#drawing-sidebar-skel,#seed-report-loading");
+      if (loading) remaining = 4;
+      if (remaining-- > 0) window.__panelFrames.push({
+        drawingSkeleton: rect("#drawing-sidebar-skel"), drawing: rect("#drawing-sidebar"),
+        reportSkeleton: rect("#seed-report-loading"), report: rect("#seed-report-v2:not([hidden])"),
+      });
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
   });
   await page.goto(
     origin + "/?m=dy&se=306813029&u=all&nb=1&sr=1&reportPreview=v2",
@@ -179,6 +203,20 @@ try {
     hooks.handleSeedReportToggle(false);
     hooks.handleSeedReportToggle(true);
   });
+  // Editing a seed with the hover popover open must preserve its styled HTML.
+  const seedInput = page.locator("#dynamicSeedInput");
+  await seedInput.hover();
+  const seedTip = page.locator(".popover.show .popover-body");
+  await seedTip.waitFor();
+  assert.ok(await seedTip.locator("*").count(), "seed tooltip contains styled markup before editing");
+  await seedInput.focus();
+  await seedInput.press("End");
+  await seedInput.press("Backspace");
+  assert.ok(await seedTip.locator("*").count(), "seed tooltip must not turn HTML into text on input");
+  assert.doesNotMatch(await seedTip.innerText(), /<\/?(?:span|strong|b)\b/);
+  await seedInput.fill("306813029");
+  await seedInput.blur();
+  await page.mouse.move(0, 0);
   await page.locator("#seed-report-v2:not([hidden])").waitFor();
   await page
     .locator(".sr2-tabs button")
@@ -438,6 +476,16 @@ try {
     );
     sizes.push({ viewport: width, ...size });
   }
+  const frames = await page.evaluate(() => window.__panelFrames);
+  assert.ok(frames.some(f => f.drawingSkeleton), "drawing loading shell was observed");
+  assert.ok(frames.some(f => f.reportSkeleton), "report loading shell was observed");
+  assert.ok(!frames.some(f => f.drawingSkeleton && f.drawing), "never paint two drawing sidebars during handoff");
+  assert.ok(!frames.some(f => f.reportSkeleton && f.report), "never paint the report and its loading shell together");
+  const finalSkeleton = frames.filter(f => f.drawingSkeleton).at(-1)?.drawingSkeleton;
+  const firstReal = frames.find(f => f.drawing && !f.drawingSkeleton)?.drawing;
+  assert.ok(finalSkeleton && firstReal, "drawing transitions from placeholder to real panel");
+  assert.ok(Math.abs(finalSkeleton.left - firstReal.left) < 2, "real drawing panel replaces the shell in place, without another slide");
+  await writeFile(resolve(artifacts, "loading-frames.json"), JSON.stringify(frames));
   assert.deepEqual(errors, []);
   assert.deepEqual(missing, []);
   const result = {

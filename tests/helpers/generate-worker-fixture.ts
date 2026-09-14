@@ -1,3 +1,4 @@
+import { snapshotWorkerScenes } from "../../src/telescope/worker-scenes";
 import { installTelescopeShim } from "../../src/telescope/telescope-dom-shim";
 import { installFetchInterceptor } from "../../src/telescope/telescope-data-bridge";
 
@@ -67,6 +68,7 @@ export async function generateFixture(
     ngPlus: 0,
     gameMode: "normal",
     fullPixels,
+    workerScenes: snapshotWorkerScenes(scenes, fullPixels),
     perks: {},
     skipCosmeticScenes: false,
     unlocks: null,

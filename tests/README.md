@@ -294,3 +294,26 @@ Optional environment settings: `MAP_TEST_URL`, `MAP_TEST_BROWSERS` (comma-separa
 `MAP_TEST_CASES`, `MAP_TEST_SEED`, and `MAP_TEST_OUTPUT`. Results and diagnostic
 logs default to `/tmp/noitamap-cache-loading`. The daily case requires access to
 the existing daily seed/asset endpoints; non-daily cases use local archives.
+
+## PW startup reuse and loading UI handoffs
+
+```bash
+npm test -- tests/worker-scenes.test.ts tests/telescope-worker-runtime.test.ts tests/drawing-loading.test.ts tests/seed-report-loading.test.ts
+npm --prefix task/noitamap-pro test
+npm run build
+npm --prefix task/noitamap-pro run build
+node tests/pro-report.integration.mjs dist task/noitamap-pro/public
+TEST_BROWSER=firefox node tests/pro-report.integration.mjs dist task/noitamap-pro/public
+```
+
+PW workers receive the main thread's decoded scene pixels and prescanned spawn
+records, with fresh per-worker variant caches. Their buffers are cloned, never
+transferred away from the renderer. Native regression cases compare complete
+POI/scene output with the original archive-loading path for both Telescope forks.
+The alternate-unlocks prewarm starts only after the visible map finishes.
+
+The built-host/Pro browser regression deliberately delays feature downloads. It
+checks frame-by-frame that loading shells do not overlap the real sidebars or
+slide out over them; it also edits the seed with its popover visible and rejects
+raw HTML text and Pixi's Graphics.addChild deprecation warning. It retains the
+existing loot preview, layout, drawing fill, and screenshot/export assertions.

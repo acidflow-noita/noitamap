@@ -74,6 +74,25 @@ export function showDrawingSkeleton(): void {
   toolbar.classList.add("open");
 }
 
+/** Swap loading shells for the mounted UI in one frame, not two slide animations. */
+export function replaceDrawingSkeleton(show: () => void): void {
+  if (!document.getElementById(SIDEBAR_ID)) { show(); return; }
+  const elements = [
+    document.getElementById("drawing-sidebar"),
+    document.querySelector<HTMLElement>(`.drawing-toolbar:not(#${TOOLBAR_ID})`),
+  ].filter((element): element is HTMLElement => !!element);
+  const transitions = elements.map(element => element.style.transition);
+  for (const element of elements) element.style.transition = "none";
+  show();
+  hideDrawingSkeleton(true);
+  for (const element of elements) element.getBoundingClientRect();
+  requestAnimationFrame(() => {
+    elements.forEach((element, index) => {
+      if (element.style.transition === "none") element.style.transition = transitions[index];
+    });
+  });
+}
+
 export function hideDrawingSkeleton(immediate = false): void {
   clearTimeout(hideTimer);
   hideTimer = undefined;

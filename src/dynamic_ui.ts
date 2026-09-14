@@ -550,5 +550,6 @@ function updateSeedTooltip(_kind: SeedKind): void {
 
   const tip = (bootstrap.Popover.getInstance(seedInput) as unknown as { tip?: HTMLElement } | null)?.tip;
   const body = tip?.querySelector('.popover-body');
-  if (body) body.textContent = text;
+  // This is the same trusted translation HTML used by the initial popover.
+  if (body) body.innerHTML = text;
 }

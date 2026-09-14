@@ -12,5 +12,12 @@
     "prettier.printWidth": 200
   },
   "editor.formatOnSave": true,
-  "git.ignoreLimitWarning": true
+  "git.ignoreLimitWarning": true,
+  "search.exclude": {
+    "**/task/**": true
+  },
+  "files.watcherExclude": {
+    "**/task/**": true
+  },
+  "search.followSymlinks": false
 }

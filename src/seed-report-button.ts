@@ -132,7 +132,9 @@ export function createSeedReportButton(
       }
       // The shell is already on-screen. Replace it in place instead of
       // removing it and waiting through another slide-in animation.
-      const realPanel = document.getElementById("seed-report-sidebar");
+      const realPanel = document.getElementById(
+        new URLSearchParams(window.location.search).get("reportPreview") === "v2" ? "seed-report-v2" : "seed-report-sidebar",
+      );
       const previousTransition = realPanel?.style.transition ?? "";
       if (feedback && realPanel) realPanel.style.transition = "none";
       readyHooks.handleSeedReportToggle(true);

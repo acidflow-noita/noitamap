@@ -1,3 +1,4 @@
+import { installWorkerScenes } from "./worker-scenes";
 import { withoutElevatorEndpointSpawns } from "./terrain-elevator";
 import { loadWorkerTelescopeModules } from "./load-worker-telescope";
 import { installTelescopeShim } from "./telescope-dom-shim";
@@ -68,7 +69,12 @@ self.onmessage = async (e) => {
 
     // Populate worker's pixel scene cache before performing generation
     phase = "loading pixel scenes";
-    await loadPixelSceneData();
+    if (e.data.workerScenes) {
+      installWorkerScenes(modules.pixelSceneMod, e.data.workerScenes, !!e.data.fullPixels);
+    } else {
+      // Standalone/native callers can still initialize directly from archives.
+      await loadPixelSceneData();
+    }
 
     phase = "scanning main-plane spawns";
     // 1. Scan spawns

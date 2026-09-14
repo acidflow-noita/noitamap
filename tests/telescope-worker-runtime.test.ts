@@ -150,6 +150,16 @@ describe.sequential(
               { entry: workerEntry, output },
               { ...fixtures.get(key), pw },
             );
+            // The optimization must preserve every generated POI and scene,
+            // not just finish faster or retain the same totals.
+            if (seed === 42 && pw === 1) {
+              const reference = await execute(
+                { entry: workerEntry, output },
+                { ...fixtures.get(key), pw, workerScenes: undefined },
+              );
+              expect(result.data.pois).toEqual(reference.data.pois);
+              expect(result.data.pixelScenes).toEqual(reference.data.pixelScenes);
+            }
             expect(result.imageGlobal).toBe("undefined");
             expect(
               result.missing,

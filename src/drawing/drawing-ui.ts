@@ -4,7 +4,7 @@ import {
 } from "../pro-loading-feedback";
 import { requestProSidebar, onProSidebarIntent } from "../pro-sidebar-intent";
 import i18next from "../i18n";
-import { showDrawingSkeleton, hideDrawingSkeleton } from "./drawing-skeleton";
+import { showDrawingSkeleton, hideDrawingSkeleton, replaceDrawingSkeleton } from "./drawing-skeleton";
 
 export interface DrawingUIOptions {
   onEnableDrawing: () => Promise<boolean>;
@@ -100,8 +100,10 @@ export class DrawingUI {
       if (!current()) return;
       const loaded = await this.options.onEnableDrawing();
       if (loaded && current()) {
-        target.checked = true;
-        target.dispatchEvent(new Event("change"));
+        replaceDrawingSkeleton(() => {
+          target.checked = true;
+          target.dispatchEvent(new Event("change"));
+        });
       }
     } finally {
       if (attempt === this.attempt) {

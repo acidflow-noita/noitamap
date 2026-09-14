@@ -83,3 +83,22 @@ it("restored drawing URLs use the same cancellable feedback", async () => {
   expect(input.checked).toBe(false);
   expect(document.getElementById("drawing-sidebar-skel")).toBeNull();
 });
+it("replaces the skeleton in one frame instead of sliding two sidebars over each other", async () => {
+  const panel = document.createElement("div"); panel.id = "drawing-sidebar";
+  panel.style.transition = "transform 0.3s";
+  const toolbar = document.createElement("div"); toolbar.className = "drawing-toolbar";
+  document.body.append(panel, toolbar);
+  input.addEventListener("change", () => {
+    expect(panel.style.transition).toBe("none");
+    expect(toolbar.style.transition).toBe("none");
+    panel.classList.add("open"); toolbar.classList.add("open");
+  });
+  input.click();
+  await vi.waitFor(() => expect(load).toHaveBeenCalledTimes(1));
+  finish(true);
+  await vi.waitFor(() => expect(changed).toHaveBeenCalledOnce());
+  expect(document.getElementById("drawing-sidebar-skel")).toBeNull();
+  expect(document.getElementById("drawing-toolbar-skel")).toBeNull();
+  expect(panel.classList.contains("open")).toBe(true);
+  await vi.waitFor(() => expect(panel.style.transition).toBe("transform 0.3s"));
+});
