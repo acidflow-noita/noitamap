@@ -86,18 +86,19 @@ describe("browser build boundaries", () => {
     ).toEqual(parts);
   });
 
-  it("builds warning-free without eagerly importing telescope or the sprite atlas", async () => {
+  it("builds without bundle warnings or eager telescope/sprite-atlas imports", async () => {
     // Vitest sets NODE_ENV=test, which makes Vite's DEV flag true even with
     // mode=production. Exercise the actual npm run build environment instead.
     vi.stubEnv("NODE_ENV", "production");
     const warnings: string[] = [];
     const logger = createLogger("warn");
-    logger.warn = (message) => {
-      warnings.push(message);
+    const recordWarning = (message: string) => {
+      // Vite 8.2 adds hardware/load-dependent plugin timing diagnostics.
+      // Those are not bundle/import warnings; keep every actual warning fatal.
+      if (!message.includes("[PLUGIN_TIMINGS]")) warnings.push(message);
     };
-    logger.warnOnce = (message) => {
-      warnings.push(message);
-    };
+    logger.warn = recordWarning;
+    logger.warnOnce = recordWarning;
     const result: any = await build({
       configFile: resolve(root, "vite.config.ts"),
       customLogger: logger,

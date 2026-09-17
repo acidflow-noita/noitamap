@@ -97,8 +97,7 @@
   right: 1.5rem;
   width: 21rem;
   max-height: calc(100vh - 6rem);
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
+  background: var(--surface-1, #111827);
   border: 1px solid var(--border);
   border-radius: var(--radius-panel);
   transform: translateX(calc(100% + 2rem));
@@ -127,8 +126,7 @@
   transform: translateX(-50%) translateY(calc(100% + 2rem));
   transition: transform 0.3s ease;
   z-index: 1000;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
+  background: var(--surface-1, #111827);
   border: 1px solid var(--border);
   border-radius: var(--radius-panel);
   padding: 0.5rem 0.75rem;

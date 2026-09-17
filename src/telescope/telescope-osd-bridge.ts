@@ -1,3 +1,5 @@
+import { canOpenPOIFromCanvas, drawingOwnsMapPointer } from "../drawing/poi-interaction";
+import { onProSidebarIntent } from "../pro-sidebar-intent";
 import Flatbush from "flatbush";
 import { CONTAINER_TYPES } from "./poi-containers";
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
@@ -3343,6 +3345,7 @@ function cleanupPopovers(el: HTMLElement): void {
 }
 
 function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): void {
+  if (drawingOwnsMapPointer()) return;
   // Remove previous popup
   if (tooltipEl) {
     cleanupPopovers(tooltipEl);
@@ -5079,6 +5082,8 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
   }
 
   canvasClickHandler = (event: any) => {
+    // Leave the event untouched so the drawing tool (or temporary pan) handles it.
+    if (!canOpenPOIFromCanvas(event)) return;
     const item = findNearestMarker(event);
     if (item) {
       event.preventDefaultAction = true;
@@ -5117,6 +5122,11 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
   // Native mousemove on OSD canvas for pointer cursor (OSD has no 'canvas-move' event)
   const osdCanvas = viewer.canvas as HTMLElement;
   const onMouseMove = (e: MouseEvent) => {
+    if (drawingOwnsMapPointer()) {
+      osdCanvas.classList.remove('poi-hover');
+      hideMarkerTooltip();
+      return;
+    }
     const rect = osdCanvas.getBoundingClientRect();
     const pixelX = e.clientX - rect.left;
     const pixelY = e.clientY - rect.top;
@@ -5138,7 +5148,17 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
     osdCanvas.classList.toggle('poi-hover', results.length > 0);
   };
   osdCanvas.addEventListener('mousemove', onMouseMove);
-  canvasMoveCleanup = () => osdCanvas.removeEventListener('mousemove', onMouseMove);
+  const removeIntentListener = onProSidebarIntent(sidebar => {
+    if (sidebar === "drawing") {
+      osdCanvas.classList.remove('poi-hover');
+      hideMarkerTooltip();
+    }
+  });
+  canvasMoveCleanup = () => {
+    osdCanvas.removeEventListener('mousemove', onMouseMove);
+    osdCanvas.classList.remove('poi-hover');
+    removeIntentListener();
+  };
 
   viewer.addHandler('canvas-click', canvasClickHandler);
   viewer.addHandler('canvas-drag', hideMarkerTooltip);
@@ -5265,6 +5285,7 @@ function showOrbTooltip(
   screenX: number,
   screenY: number
 ): void {
+  if (drawingOwnsMapPointer()) return;
   if (tooltipEl) {
     cleanupPopovers(tooltipEl);
     tooltipEl.remove();
