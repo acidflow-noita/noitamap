@@ -338,7 +338,7 @@ async function onDailySeedClick(): Promise<void> {
   if (isBusy || !dynamicOpts) return;
   setBusy(true);
   try {
-    const seed = await fetchDailySeed();
+    const seed = await fetchDailySeed(true);
     if (seedInput) {
       seedInput.value = String(seed);
       // Apply the colour immediately. onSeedResolved would do this after
@@ -371,7 +371,7 @@ async function onPrevDailySeedClick(): Promise<void> {
   if (isBusy || !dynamicOpts) return;
   setBusy(true);
   try {
-    const seed = await fetchPreviousDailySeed();
+    const seed = await fetchPreviousDailySeed(true);
     if (seed === null) {
       console.warn("[DynamicUI] Previous daily seed unavailable.");
       return;

@@ -1,0 +1,233 @@
+{
+  "reuse": {
+    "main": "seedReport.pw.main",
+    "mainOnly": "seedReport.pw.main",
+    "westNumber": "seedReport.pw.west",
+    "eastNumber": "seedReport.pw.east",
+    "no": "common.no",
+    "yes": "common.yes",
+    "wand": "gameContent.items.wand",
+    "onWands": "seedReport.spells.onWands",
+    "greatChests": "seedReport.spider.axis.greatChests",
+    "close": "seedReport.close",
+    "unlock": "seedReport.locked.cta",
+    "comparisonReference": "seedReport.compare.switchSeedTitle"
+  },
+  "game": {
+    "shuffle": {
+      "csv": "inventory_shuffle",
+      "fallback": "wand.shuffle"
+    },
+    "slots": {
+      "csv": "inventory_capacity",
+      "fallback": "wand.capacity"
+    },
+    "capacityRange": {
+      "csv": "inventory_capacity",
+      "fallback": "wand.capacity"
+    },
+    "manaMax": {
+      "csv": "inventory_manamax",
+      "fallback": "wand.mana"
+    },
+    "castDelay": {
+      "csv": "inventory_castdelay",
+      "fallback": "wand.castDelay"
+    },
+    "rechargeTime": {
+      "csv": "inventory_rechargetime",
+      "fallback": "wand.recharge"
+    },
+    "spread": {
+      "csv": "inventory_spread",
+      "fallback": "wand.spread"
+    },
+    "spellsCast": {
+      "csv": "inventory_actionspercast",
+      "fallback": "wand.spellsPerCast"
+    },
+    "alwaysCast": {
+      "csv": "inventory_alwayscasts",
+      "fallback": "perk.alwaysCast"
+    },
+    "alwaysCasts": {
+      "csv": "inventory_alwayscasts",
+      "fallback": "perk.alwaysCast"
+    },
+    "coralChest": {
+      "csv": "item_chest_light",
+      "fallback": "gameContent.items.Coral Chest"
+    },
+    "pacifist": {
+      "csv": "item_chest_treasure_pacifist",
+      "fallback": "gameContent.items.pacifist_chest"
+    },
+    "census.spellTypes.projectile": {
+      "csv": "inventory_actiontype_projectile",
+      "fallback": "gameContent.ui.inventory_actiontype_projectile"
+    },
+    "census.spellTypes.staticProjectile": {
+      "csv": "inventory_actiontype_staticprojectile",
+      "fallback": "gameContent.ui.inventory_actiontype_staticprojectile"
+    },
+    "census.spellTypes.modifier": {
+      "csv": "inventory_actiontype_modifier",
+      "fallback": "gameContent.ui.inventory_actiontype_modifier"
+    },
+    "census.spellTypes.multicast": {
+      "csv": "inventory_actiontype_drawmany",
+      "fallback": "gameContent.ui.inventory_actiontype_drawmany"
+    },
+    "census.spellTypes.material": {
+      "csv": "inventory_actiontype_material",
+      "fallback": "gameContent.ui.inventory_actiontype_material"
+    },
+    "census.spellTypes.other": {
+      "csv": "inventory_actiontype_other",
+      "fallback": "gameContent.ui.inventory_actiontype_other"
+    },
+    "census.spellTypes.utility": {
+      "csv": "inventory_actiontype_utility",
+      "fallback": "gameContent.ui.inventory_actiontype_utility"
+    },
+    "census.spellTypes.passive": {
+      "csv": "inventory_actiontype_passive",
+      "fallback": "gameContent.ui.inventory_actiontype_passive"
+    },
+    "census.spellDamageTypes.projectile": {
+      "csv": "damage_projectile",
+      "fallback": "extended.dmg.projectile"
+    },
+    "census.spellDamageTypes.melee": {
+      "csv": "damage_melee",
+      "fallback": "extended.dmg.melee"
+    },
+    "census.spellDamageTypes.electric": {
+      "csv": "damage_electricity",
+      "fallback": "extended.dmg.electric"
+    },
+    "census.spellDamageTypes.fire": {
+      "csv": "damage_fire",
+      "fallback": "extended.dmg.fire"
+    },
+    "census.spellDamageTypes.explosion": {
+      "csv": "damage_explosion",
+      "fallback": "extended.dmg.explosion"
+    },
+    "census.spellDamageTypes.ice": {
+      "csv": "damage_ice",
+      "fallback": "extended.dmg.ice"
+    },
+    "census.spellDamageTypes.slice": {
+      "csv": "damage_slice",
+      "fallback": "extended.dmg.slice"
+    },
+    "census.spellDamageTypes.healing": {
+      "csv": "damage_healing",
+      "fallback": "extended.dmg.healing"
+    },
+    "census.spellDamageTypes.drill": {
+      "csv": "damage_drill",
+      "fallback": "extended.dmg.drill"
+    },
+    "census.spellDamageTypes.holy": {
+      "csv": "damage_holy",
+      "fallback": "extended.dmg.holy"
+    },
+    "census.spellDamageTypes.physicsHit": {
+      "csv": "damage_physicshit",
+      "fallback": "gameContent.ui.damage_physicshit"
+    },
+    "census.spellDamageTypes.radioactive": {
+      "csv": "damage_radioactive",
+      "fallback": "extended.dmg.radioactive"
+    },
+    "census.spellDamageTypes.poison": {
+      "csv": "damage_poison",
+      "fallback": "gameContent.ui.damage_poison"
+    },
+    "census.factionCreatures.mage_swapper": {
+      "csv": "animal_wizard_swapper",
+      "fallback": "gameContent.ui.animal_wizard_swapper"
+    },
+    "metrics.chests": {
+      "csv": "item_chest_treasure",
+      "fallback": "gameContent.items.chest"
+    },
+    "metrics.greatChests": {
+      "csv": "item_chest_treasure_super",
+      "fallback": "gameContent.items.great_chest"
+    },
+    "metrics.wands": {
+      "csv": "item_wand",
+      "fallback": "gameContent.items.wand"
+    },
+    "metrics.potions": {
+      "csv": "item_potion",
+      "fallback": "gameContent.items.potion"
+    },
+    "metrics.pouches": {
+      "csv": "item_powder_stash",
+      "fallback": "gameContent.items.pouch"
+    },
+    "spellCategory.nolla": {
+      "csv": "action_nolla",
+      "fallback": "gameContent.ui.action_nolla"
+    },
+    "spellCategory.damage": {
+      "csv": "action_chainsaw",
+      "fallback": "gameContent.ui.action_chainsaw"
+    },
+    "spellCategory.summon_taikasauva": {
+      "csv": "action_summon_wandghost",
+      "fallback": "gameContent.ui.action_summon_wandghost"
+    },
+    "spellCategory.material": {
+      "csv": "inventory_actiontype_material",
+      "fallback": "gameContent.ui.inventory_actiontype_material"
+    },
+    "spellCategory.utility": {
+      "csv": "inventory_actiontype_utility",
+      "fallback": "gameContent.ui.inventory_actiontype_utility"
+    },
+    "spellCategory.other": {
+      "csv": "inventory_actiontype_other",
+      "fallback": "gameContent.ui.inventory_actiontype_other"
+    }
+  },
+  "references": {
+    "bossBonus": "bossRewards",
+    "withAlways": "withAlwaysCast",
+    "nonShuffle": "$t(seedReport.v2.shuffle): $t(seedReport.v2.no)",
+    "withAlwaysCast": "$t(seedReport.v2.alwaysCast)",
+    "alwaysCastBreakdown": "$t(seedReport.v2.alwaysCast)",
+    "capacity20": "$t(seedReport.v2.capacityRange) ≥ 20",
+    "recharge200": "≥ 200 $t(seedReport.v2.manaPerSecond)",
+    "censusVerified": "sageCensus",
+    "census.hordeCreatures.hiisi": "census.factionCreatures.orcs",
+    "census.hordeCreatures.robots": "census.factionCreatures.robot",
+    "census.hordeCreatures.healers": "census.factionCreatures.healer",
+    "census.hordeCreatures.mages": "census.factionCreatures.mage",
+    "census.hordeCreatures.worms": "census.factionCreatures.worm",
+    "census.hordeCreatures.helplessAnimals": "census.factionCreatures.helpless",
+    "census.hordeCreatures.mimics": "$t(seedReport.spider.axis.mimics)",
+    "deckMissing": "contentsMissing",
+    "deckSeparate": "contentsOnly",
+    "noneAlways": "notInIndexedLoot",
+    "sageNatural": "sageCensus",
+    "seedFrequency": "{{count}} / {{total}}",
+    "unknownShuffle": "$t(seedReport.v2.shuffle): $t(seedReport.v2.unknown)",
+    "wandBrief": "$t(seedReport.v2.nonShuffle): {{nonShuffle}} · $t(seedReport.v2.withAlwaysCast): {{always}}",
+    "heartBrief": "$t(gameContent.items.heart): {{upgrades}} · $t(gameContent.items.full_heal): {{heals}}",
+    "targetDelta": "Δ: $t(seedReport.v2.thisSeed) − {{kind}} ({{seed}})",
+    "populationMean": "$t(seedReport.v2.mean): {{mean}} · $t(seedReport.v2.sageCensus)",
+    "dailyCensusCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.sageCensus): {{value}}",
+    "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}",
+    "spellCategory.healing": "healingTools",
+    "spellCategory.greeks": "greekTools",
+    "spellCategory.divides": "divideTools"
+  },
+  "literals": {
+    "census.factionCreatures.orcs": "Hiisi"
+  }
+}
