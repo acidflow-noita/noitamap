@@ -5122,12 +5122,12 @@
     "content": "Leistungsoptionen für langsame Geräte und kleine Bildschirme."
   },
   "seedReport": {
-    "title": "Samenbericht",
+    "title": "Seed-Bericht",
     "close": "Schließen",
     "unknownBiome": "Unbekannt",
     "noTrackedItems": "Keine verfolgten Artikel auf dieser Welt.",
     "toggle": {
-      "title": "Samenbericht",
+      "title": "Seed-Bericht",
       "content": "Statistiken pro Welt und pro Biom für den aktuellen Samen."
     },
     "pw": {
@@ -5151,7 +5151,7 @@
       "title": "Hochwertige Zauber",
       "empty": "In diesem Samen sind keine hochwertigen Zaubersprüche enthalten.",
       "noneFound": "keine gefunden",
-      "onWands": "auf Zauberstäben"
+      "onWands": "Auf Zauberstäben"
     },
     "spell": {
       "category": {
@@ -5181,7 +5181,7 @@
       "unavailable": "kein Vergleich verfügbar",
       "notCached": "im Vergleich zu {{target}} (Seed {{seed}}) - besuche diesen Seed einmal, um Vergleichsdaten zu laden",
       "switchSeedHint": "Klicken, um zu diesem Seed zu wechseln",
-      "switchSeedTitle": "Vergleichs-Seed",
+      "switchSeedTitle": "Vergleichsseed",
       "noYesterday": "Der gestrige tägliche Seed ist nicht verfügbar - Vergleich nur mit dem Durchschnitt",
       "noToday": "Der heutige tägliche Seed ist nicht verfügbar - Vergleich nur mit dem Durchschnitt"
     },
@@ -5191,14 +5191,14 @@
       "axis": {
         "greatChests": "Tolle Truhen",
         "chests": "Truhen",
-        "shops": "Geschäfte",
+        "shops": "Läden",
         "wands": "Zauberstäbe",
         "hearts": "Herzen",
         "potions": "Zaubertränke",
         "pouches": "Beutel",
         "hvSpells": "Hochwertige Zauber",
         "rareMaterials": "Seltene Materialien",
-        "mimics": "Nachahmungen",
+        "mimics": "Mimics",
         "dangerousCreatures": "Gefährliche Kreaturen"
       },
       "legend": {
@@ -5257,7 +5257,6 @@
       "west": "Westliche Welt",
       "east": "Östliche Welt",
       "bossSource": "Bossbelohnung",
-      "wandSource": "Auf Zauberstäben",
       "shopSource": "Laden",
       "roomSource": "Raum oder Behälter",
       "spawnSource": "In der Welt",
@@ -5295,7 +5294,6 @@
       "sections": "Berichtsbereiche",
       "retryCensus": "Sage-Daten erneut laden",
       "baked": "Vollständig vorberechnete Pixelkarte",
-      "daily": "Täglicher Seed",
       "generated": "Generierte Karte",
       "worldCount": "Welten: {{count}}",
       "all": "West + Hauptwelt + Ost",
@@ -5418,7 +5416,7 @@
           "mages": "Magier",
           "worms": "Würmer",
           "helplessAnimals": "Wehrlose Tiere",
-          "mimics": "$t(seedReport.spider.axis.mimics)"
+          "mimics": "Mimics"
         },
         "spellTypes": {
           "projectile": "Projektil",
@@ -5449,12 +5447,11 @@
       "todayDaily": "Heutiger Tagesseed",
       "yesterdayDaily": "Gestriger Tagesseed",
       "thisSeed": "Dieser Seed",
-      "title": "Seed-Bericht",
       "unknown": "Unbekannt",
       "metrics": {
-        "shops": "Läden",
         "hearts": "Gesundheitsgegenstände",
         "hvSpells": "Hochwertige Zauber",
+        "shops": "Läden",
         "rareMaterials": "Seltene Materialien",
         "mimics": "Mimics",
         "chests": "Schatztruhe",
@@ -5471,52 +5468,40 @@
         "nolla": "Nolla",
         "damage": "Kettensäge",
         "summon_taikasauva": "Taikasauva beschwören",
-        "material": "Substanz",
-        "utility": "Nützliches",
-        "other": "Anderes",
         "healing": "Heilzauber",
         "greeks": "Zauber mit griechischen Buchstaben",
-        "divides": "Zaubervervielfachung"
+        "divides": "Zaubervervielfachung",
+        "material": "Substanz",
+        "utility": "Nützliches",
+        "other": "Anderes"
       },
       "main": "Hauptwelt",
-      "mainOnly": "Hauptwelt",
       "westNumber": "Westen {{n}}",
       "eastNumber": "Osten {{n}}",
       "no": "NEIN",
       "yes": "Ja",
-      "wand": "Zauberstab",
-      "onWands": "auf Zauberstäben",
-      "greatChests": "Tolle Truhen",
       "close": "Schließen",
       "unlock": "Mit Pro freischalten",
-      "comparisonReference": "Vergleichs-Seed",
+      "title": "Seed-Bericht",
+      "daily": "Täglicher Seed",
+      "comparisonReference": "Vergleichsseed",
+      "wandSource": "Auf Zauberstäben",
       "shuffle": "Mischen",
       "slots": "Kapazität",
-      "capacityRange": "Kapazität",
       "manaMax": "Max. Mana",
       "castDelay": "Zauberverzögerung",
       "rechargeTime": "Wiederaufl.-Zeit",
       "spread": "Streuung",
       "spellsCast": "Zauber/Beschwörung",
       "alwaysCast": "Wirkt immer",
-      "alwaysCasts": "Wirkt immer",
       "coralChest": "Korallen-Truhe",
       "pacifist": "Belohnung des Pazifisten",
-      "bossBonus": "Bossbelohnungen",
-      "withAlwaysCast": "$t(seedReport.v2.alwaysCast)",
-      "withAlways": "$t(seedReport.v2.alwaysCast)",
       "nonShuffle": "$t(seedReport.v2.shuffle): $t(seedReport.v2.no)",
-      "alwaysCastBreakdown": "$t(seedReport.v2.alwaysCast)",
-      "capacity20": "$t(seedReport.v2.capacityRange) ≥ 20",
+      "capacity20": "$t(seedReport.v2.slots) ≥ 20",
       "recharge200": "≥ 200 $t(seedReport.v2.manaPerSecond)",
-      "censusVerified": "Natürliche Vorkommen (Sage)",
-      "deckMissing": "Diese Kartendaten enthalten keine Angaben zum Inhalt.",
-      "deckSeparate": "Inhalte werden getrennt von einzeln liegenden Objekten aufgeführt.",
-      "noneAlways": "Nicht in den Kartendaten",
-      "sageNatural": "Natürliche Vorkommen (Sage)",
       "seedFrequency": "{{count}} / {{total}}",
       "unknownShuffle": "$t(seedReport.v2.shuffle): $t(seedReport.v2.unknown)",
-      "wandBrief": "$t(seedReport.v2.nonShuffle): {{nonShuffle}} · $t(seedReport.v2.withAlwaysCast): {{always}}",
+      "wandBrief": "$t(seedReport.v2.nonShuffle): {{nonShuffle}} · $t(seedReport.v2.alwaysCast): {{always}}",
       "heartBrief": "$t(gameContent.items.heart): {{upgrades}} · $t(gameContent.items.full_heal): {{heals}}",
       "targetDelta": "Δ: $t(seedReport.v2.thisSeed) − {{kind}} ({{seed}})",
       "populationMean": "$t(seedReport.v2.mean): {{mean}} · $t(seedReport.v2.sageCensus)",
@@ -5532,7 +5517,7 @@
         "mod": "Ihre aktuellen Freischaltungen",
         "modDisabled": "Öffne die Karte über den Noitamap-Mod",
         "all": "Alles freigeschaltet",
-        "dailyDisabled": "Tägliche Seed"
+        "dailyDisabled": "Täglicher Seed"
       },
       "body": {
         "none": "Wechseln Sie zur Anzeige der Zauberstab-/Zaubervorräte, als ob Sie nichts freigeschaltet hätten.",

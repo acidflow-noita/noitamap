@@ -1,17 +1,19 @@
 {
   "reuse": {
     "main": "seedReport.pw.main",
-    "mainOnly": "seedReport.pw.main",
     "westNumber": "seedReport.pw.west",
     "eastNumber": "seedReport.pw.east",
     "no": "common.no",
     "yes": "common.yes",
-    "wand": "gameContent.items.wand",
-    "onWands": "seedReport.spells.onWands",
-    "greatChests": "seedReport.spider.axis.greatChests",
     "close": "seedReport.close",
     "unlock": "seedReport.locked.cta",
-    "comparisonReference": "seedReport.compare.switchSeedTitle"
+    "title": "seedReport.title",
+    "daily": "unlocks.btn.title.dailyDisabled",
+    "comparisonReference": "seedReport.compare.switchSeedTitle",
+    "metrics.shops": "seedReport.spider.axis.shops",
+    "metrics.rareMaterials": "seedReport.spider.axis.rareMaterials",
+    "metrics.mimics": "seedReport.spider.axis.mimics",
+    "wandSource": "seedReport.spells.onWands"
   },
   "game": {
     "shuffle": {
@@ -19,10 +21,6 @@
       "fallback": "wand.shuffle"
     },
     "slots": {
-      "csv": "inventory_capacity",
-      "fallback": "wand.capacity"
-    },
-    "capacityRange": {
       "csv": "inventory_capacity",
       "fallback": "wand.capacity"
     },
@@ -47,10 +45,6 @@
       "fallback": "wand.spellsPerCast"
     },
     "alwaysCast": {
-      "csv": "inventory_alwayscasts",
-      "fallback": "perk.alwaysCast"
-    },
-    "alwaysCasts": {
       "csv": "inventory_alwayscasts",
       "fallback": "perk.alwaysCast"
     },
@@ -181,43 +175,22 @@
     "spellCategory.summon_taikasauva": {
       "csv": "action_summon_wandghost",
       "fallback": "gameContent.ui.action_summon_wandghost"
-    },
-    "spellCategory.material": {
-      "csv": "inventory_actiontype_material",
-      "fallback": "gameContent.ui.inventory_actiontype_material"
-    },
-    "spellCategory.utility": {
-      "csv": "inventory_actiontype_utility",
-      "fallback": "gameContent.ui.inventory_actiontype_utility"
-    },
-    "spellCategory.other": {
-      "csv": "inventory_actiontype_other",
-      "fallback": "gameContent.ui.inventory_actiontype_other"
     }
   },
   "references": {
-    "bossBonus": "bossRewards",
-    "withAlways": "withAlwaysCast",
     "nonShuffle": "$t(seedReport.v2.shuffle): $t(seedReport.v2.no)",
-    "withAlwaysCast": "$t(seedReport.v2.alwaysCast)",
-    "alwaysCastBreakdown": "$t(seedReport.v2.alwaysCast)",
-    "capacity20": "$t(seedReport.v2.capacityRange) ≥ 20",
+    "capacity20": "$t(seedReport.v2.slots) ≥ 20",
     "recharge200": "≥ 200 $t(seedReport.v2.manaPerSecond)",
-    "censusVerified": "sageCensus",
     "census.hordeCreatures.hiisi": "census.factionCreatures.orcs",
     "census.hordeCreatures.robots": "census.factionCreatures.robot",
     "census.hordeCreatures.healers": "census.factionCreatures.healer",
     "census.hordeCreatures.mages": "census.factionCreatures.mage",
     "census.hordeCreatures.worms": "census.factionCreatures.worm",
     "census.hordeCreatures.helplessAnimals": "census.factionCreatures.helpless",
-    "census.hordeCreatures.mimics": "$t(seedReport.spider.axis.mimics)",
-    "deckMissing": "contentsMissing",
-    "deckSeparate": "contentsOnly",
-    "noneAlways": "notInIndexedLoot",
-    "sageNatural": "sageCensus",
+    "census.hordeCreatures.mimics": "metrics.mimics",
     "seedFrequency": "{{count}} / {{total}}",
     "unknownShuffle": "$t(seedReport.v2.shuffle): $t(seedReport.v2.unknown)",
-    "wandBrief": "$t(seedReport.v2.nonShuffle): {{nonShuffle}} · $t(seedReport.v2.withAlwaysCast): {{always}}",
+    "wandBrief": "$t(seedReport.v2.nonShuffle): {{nonShuffle}} · $t(seedReport.v2.alwaysCast): {{always}}",
     "heartBrief": "$t(gameContent.items.heart): {{upgrades}} · $t(gameContent.items.full_heal): {{heals}}",
     "targetDelta": "Δ: $t(seedReport.v2.thisSeed) − {{kind}} ({{seed}})",
     "populationMean": "$t(seedReport.v2.mean): {{mean}} · $t(seedReport.v2.sageCensus)",
@@ -225,7 +198,10 @@
     "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}",
     "spellCategory.healing": "healingTools",
     "spellCategory.greeks": "greekTools",
-    "spellCategory.divides": "divideTools"
+    "spellCategory.divides": "divideTools",
+    "spellCategory.material": "census.spellTypes.material",
+    "spellCategory.utility": "census.spellTypes.utility",
+    "spellCategory.other": "census.spellTypes.other"
   },
   "literals": {
     "census.factionCreatures.orcs": "Hiisi"

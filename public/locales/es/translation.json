@@ -5122,12 +5122,12 @@
     "content": "Opciones de rendimiento para dispositivos lentos y pantallas pequeñas."
   },
   "seedReport": {
-    "title": "Informe de semillas",
+    "title": "Informe de semilla",
     "close": "Cerca",
     "unknownBiome": "Desconocido",
     "noTrackedItems": "No hay artículos rastreados en este mundo.",
     "toggle": {
-      "title": "Informe de semillas",
+      "title": "Informe de semilla",
       "content": "Estadísticas por mundo y por bioma para la semilla actual."
     },
     "pw": {
@@ -5151,7 +5151,7 @@
       "title": "Hechizos de alto valor",
       "empty": "No hay hechizos de alto valor en esta semilla.",
       "noneFound": "no se encontró ninguno",
-      "onWands": "en varitas"
+      "onWands": "En varitas"
     },
     "spell": {
       "category": {
@@ -5198,7 +5198,7 @@
         "pouches": "Bolsas",
         "hvSpells": "Hechizos de alto valor",
         "rareMaterials": "Materiales raros",
-        "mimics": "imita",
+        "mimics": "Mímicos",
         "dangerousCreatures": "Criaturas peligrosas"
       },
       "legend": {
@@ -5257,7 +5257,6 @@
       "west": "Mundo oeste",
       "east": "Mundo este",
       "bossSource": "Recompensa de jefe",
-      "wandSource": "En varitas",
       "shopSource": "Tienda",
       "roomSource": "Sala o contenedor",
       "spawnSource": "En el mundo",
@@ -5295,7 +5294,6 @@
       "sections": "Secciones del informe",
       "retryCensus": "Reintentar cargar datos de Sage",
       "baked": "Mapa precalculado píxel a píxel",
-      "daily": "Semilla diaria",
       "generated": "Mapa generado",
       "worldCount": "Mundos: {{count}}",
       "all": "Oeste + Principal + Este",
@@ -5418,7 +5416,7 @@
           "mages": "Magos",
           "worms": "Gusanos",
           "helplessAnimals": "Animales indefensos",
-          "mimics": "$t(seedReport.spider.axis.mimics)"
+          "mimics": "Mímicos"
         },
         "spellTypes": {
           "projectile": "Proyectil",
@@ -5449,12 +5447,11 @@
       "todayDaily": "Semilla diaria de hoy",
       "yesterdayDaily": "Semilla diaria de ayer",
       "thisSeed": "Esta semilla",
-      "title": "Informe de semilla",
       "unknown": "Desconocido",
       "metrics": {
-        "shops": "Tiendas",
         "hearts": "Objetos de salud",
         "hvSpells": "Hechizos valiosos",
+        "shops": "Tiendas",
         "rareMaterials": "Materiales raros",
         "mimics": "Mímicos",
         "chests": "Cofre del tesoro",
@@ -5471,52 +5468,40 @@
         "nolla": "Nolla",
         "damage": "Motosierra",
         "summon_taikasauva": "Invocar a Taikasauva",
-        "material": "Material",
-        "utility": "Utilidad",
-        "other": "Otros",
         "healing": "Hechizos de curación",
         "greeks": "Hechizos de letras griegas",
-        "divides": "Duplicación de hechizos"
+        "divides": "Duplicación de hechizos",
+        "material": "Material",
+        "utility": "Utilidad",
+        "other": "Otros"
       },
       "main": "mundo principal",
-      "mainOnly": "mundo principal",
       "westNumber": "Oeste {{n}}",
       "eastNumber": "Este {{n}}",
       "no": "No",
       "yes": "Sí",
-      "wand": "Varita",
-      "onWands": "en varitas",
-      "greatChests": "Grandes cofres",
       "close": "Cerca",
       "unlock": "Desbloquear con Pro",
+      "title": "Informe de semilla",
+      "daily": "Semilla diaria",
       "comparisonReference": "Semilla de comparación",
+      "wandSource": "En varitas",
       "shuffle": "Aleatorio",
       "slots": "Capacidad",
-      "capacityRange": "Capacidad",
       "manaMax": "Maná máx.",
       "castDelay": "Demora lanz.",
       "rechargeTime": "Tiempo de rec.",
       "spread": "Dispersión",
       "spellsCast": "Lanzamientos",
       "alwaysCast": "Siempre lanza",
-      "alwaysCasts": "Siempre lanza",
       "coralChest": "Cofre de coral",
       "pacifist": "Recompensa del pacifista",
-      "bossBonus": "Recompensas de jefes",
-      "withAlwaysCast": "$t(seedReport.v2.alwaysCast)",
-      "withAlways": "$t(seedReport.v2.alwaysCast)",
       "nonShuffle": "$t(seedReport.v2.shuffle): $t(seedReport.v2.no)",
-      "alwaysCastBreakdown": "$t(seedReport.v2.alwaysCast)",
-      "capacity20": "$t(seedReport.v2.capacityRange) ≥ 20",
+      "capacity20": "$t(seedReport.v2.slots) ≥ 20",
       "recharge200": "≥ 200 $t(seedReport.v2.manaPerSecond)",
-      "censusVerified": "Apariciones naturales (Sage)",
-      "deckMissing": "Estos datos del mapa no incluyen el contenido.",
-      "deckSeparate": "El contenido se muestra aparte del total de objetos sueltos.",
-      "noneAlways": "No consta en los datos del mapa",
-      "sageNatural": "Apariciones naturales (Sage)",
       "seedFrequency": "{{count}} / {{total}}",
       "unknownShuffle": "$t(seedReport.v2.shuffle): $t(seedReport.v2.unknown)",
-      "wandBrief": "$t(seedReport.v2.nonShuffle): {{nonShuffle}} · $t(seedReport.v2.withAlwaysCast): {{always}}",
+      "wandBrief": "$t(seedReport.v2.nonShuffle): {{nonShuffle}} · $t(seedReport.v2.alwaysCast): {{always}}",
       "heartBrief": "$t(gameContent.items.heart): {{upgrades}} · $t(gameContent.items.full_heal): {{heals}}",
       "targetDelta": "Δ: $t(seedReport.v2.thisSeed) − {{kind}} ({{seed}})",
       "populationMean": "$t(seedReport.v2.mean): {{mean}} · $t(seedReport.v2.sageCensus)",
@@ -5532,7 +5517,7 @@
         "mod": "Tus desbloqueos actuales",
         "modDisabled": "Abre el mapa desde el mod Noitamap",
         "all": "Todo desbloqueado",
-        "dailyDisabled": "Seed diaria"
+        "dailyDisabled": "Semilla diaria"
       },
       "body": {
         "none": "Cambia para mostrar grupos de varitas/hechizos como si no hubieras desbloqueado nada.",

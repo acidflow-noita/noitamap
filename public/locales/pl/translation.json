@@ -5122,12 +5122,12 @@
     "content": "Opcje wydajności dla wolnych urządzeń i małych ekranów."
   },
   "seedReport": {
-    "title": "Raport z nasion",
+    "title": "Raport ziarna",
     "close": "Zamknąć",
     "unknownBiome": "Nieznany",
     "noTrackedItems": "Brak śledzonych przedmiotów na tym świecie.",
     "toggle": {
-      "title": "Raport z nasion",
+      "title": "Raport ziarna",
       "content": "Statystyki na świat i na biom dla bieżącego materiału siewnego."
     },
     "pw": {
@@ -5151,7 +5151,7 @@
       "title": "Zaklęcia o dużej wartości",
       "empty": "W tym ziarnie nie ma zaklęć o wysokiej wartości.",
       "noneFound": "nie znaleziono żadnego",
-      "onWands": "na różdżkach"
+      "onWands": "W różdżkach"
     },
     "spell": {
       "category": {
@@ -5181,7 +5181,7 @@
       "unavailable": "brak możliwości porównania",
       "notCached": "w porównaniu do {{target}} (ziarno {{seed}}) - odwiedź to ziarno raz, aby załadować dane porównawcze",
       "switchSeedHint": "Kliknij, aby przełączyć na to ziarno",
-      "switchSeedTitle": "Ziarno porównania",
+      "switchSeedTitle": "Ziarno porównawcze",
       "noYesterday": "Wczorajsze dzienne ziarno jest niedostępne - porównanie tylko ze średnią",
       "noToday": "Dzisiejsze dzienne ziarno jest niedostępne - porównanie tylko ze średnią"
     },
@@ -5198,7 +5198,7 @@
         "pouches": "Woreczki",
         "hvSpells": "Zaklęcia o dużej wartości",
         "rareMaterials": "Rzadkie materiały",
-        "mimics": "Naśladuje",
+        "mimics": "Mimiki",
         "dangerousCreatures": "Niebezpieczne stworzenia"
       },
       "legend": {
@@ -5257,7 +5257,6 @@
       "west": "Świat zachodni",
       "east": "Świat wschodni",
       "bossSource": "Nagroda za bossa",
-      "wandSource": "W różdżkach",
       "shopSource": "Sklep",
       "roomSource": "Pomieszczenie lub pojemnik",
       "spawnSource": "W świecie",
@@ -5295,7 +5294,6 @@
       "sections": "Sekcje raportu",
       "retryCensus": "Wczytaj ponownie dane Sage",
       "baked": "Wcześniej wygenerowana mapa pikselowa",
-      "daily": "Ziarno dnia",
       "generated": "Wygenerowana mapa",
       "worldCount": "Światy: {{count}}",
       "all": "Zachód + Główny + Wschód",
@@ -5418,7 +5416,7 @@
           "mages": "Magowie",
           "worms": "Robaki",
           "helplessAnimals": "Bezbronne zwierzęta",
-          "mimics": "$t(seedReport.spider.axis.mimics)"
+          "mimics": "Mimiki"
         },
         "spellTypes": {
           "projectile": "Pocisk",
@@ -5449,12 +5447,11 @@
       "todayDaily": "Dzisiejsze ziarno dnia",
       "yesterdayDaily": "Wczorajsze ziarno dnia",
       "thisSeed": "To ziarno",
-      "title": "Raport ziarna",
       "unknown": "Nieznane",
       "metrics": {
-        "shops": "Sklepy",
         "hearts": "Przedmioty zdrowia",
         "hvSpells": "Cenne zaklęcia",
+        "shops": "Sklepy",
         "rareMaterials": "Rzadkie materiały",
         "mimics": "Mimiki",
         "chests": "Skrzynia skarbów",
@@ -5471,52 +5468,40 @@
         "nolla": "Nolla",
         "damage": "Piła łańcuchowa",
         "summon_taikasauva": "Wezwij Taikasauvę",
-        "material": "Materiał",
-        "utility": "Użyteczn.",
-        "other": "Inne",
         "healing": "Zaklęcia leczące",
         "greeks": "Zaklęcia z greckimi literami",
-        "divides": "Powielanie zaklęć"
+        "divides": "Powielanie zaklęć",
+        "material": "Materiał",
+        "utility": "Użyteczn.",
+        "other": "Inne"
       },
       "main": "Główny świat",
-      "mainOnly": "Główny świat",
       "westNumber": "Zachód {{n}}",
       "eastNumber": "Wschód {{n}}",
       "no": "NIE",
       "yes": "Tak",
-      "wand": "Różdżka",
-      "onWands": "na różdżkach",
-      "greatChests": "Świetne skrzynie",
       "close": "Zamknąć",
       "unlock": "Odblokuj z Pro",
-      "comparisonReference": "Ziarno porównania",
+      "title": "Raport ziarna",
+      "daily": "Ziarno dnia",
+      "comparisonReference": "Ziarno porównawcze",
+      "wandSource": "W różdżkach",
       "shuffle": "Tasowanie",
       "slots": "Pojemność",
-      "capacityRange": "Pojemność",
       "manaMax": "Maks. mana",
       "castDelay": "Opóźnienie",
       "rechargeTime": "Ładowanie",
       "spread": "Rozrzut",
       "spellsCast": "Zaklęcia na rzut",
       "alwaysCast": "Zawsze rzuca",
-      "alwaysCasts": "Zawsze rzuca",
       "coralChest": "Koralowa skrzynia",
       "pacifist": "Nagroda pacyfisty",
-      "bossBonus": "Nagrody za bossów",
-      "withAlwaysCast": "$t(seedReport.v2.alwaysCast)",
-      "withAlways": "$t(seedReport.v2.alwaysCast)",
       "nonShuffle": "$t(seedReport.v2.shuffle): $t(seedReport.v2.no)",
-      "alwaysCastBreakdown": "$t(seedReport.v2.alwaysCast)",
-      "capacity20": "$t(seedReport.v2.capacityRange) ≥ 20",
+      "capacity20": "$t(seedReport.v2.slots) ≥ 20",
       "recharge200": "≥ 200 $t(seedReport.v2.manaPerSecond)",
-      "censusVerified": "Naturalne wystąpienia (Sage)",
-      "deckMissing": "Te dane mapy nie zawierają informacji o zawartości.",
-      "deckSeparate": "Zawartość jest pokazywana oddzielnie od sumy luźnych obiektów.",
-      "noneAlways": "Brak w danych mapy",
-      "sageNatural": "Naturalne wystąpienia (Sage)",
       "seedFrequency": "{{count}} / {{total}}",
       "unknownShuffle": "$t(seedReport.v2.shuffle): $t(seedReport.v2.unknown)",
-      "wandBrief": "$t(seedReport.v2.nonShuffle): {{nonShuffle}} · $t(seedReport.v2.withAlwaysCast): {{always}}",
+      "wandBrief": "$t(seedReport.v2.nonShuffle): {{nonShuffle}} · $t(seedReport.v2.alwaysCast): {{always}}",
       "heartBrief": "$t(gameContent.items.heart): {{upgrades}} · $t(gameContent.items.full_heal): {{heals}}",
       "targetDelta": "Δ: $t(seedReport.v2.thisSeed) − {{kind}} ({{seed}})",
       "populationMean": "$t(seedReport.v2.mean): {{mean}} · $t(seedReport.v2.sageCensus)",
@@ -5532,7 +5517,7 @@
         "mod": "Twój obecny zostanie odblokowany",
         "modDisabled": "Otwórz mapę z moda Noitamap",
         "all": "Wszystko odblokowane",
-        "dailyDisabled": "Dzienny seed"
+        "dailyDisabled": "Ziarno dnia"
       },
       "body": {
         "none": "Przełącz na pokazywanie puli różdżek/zaklęć tak, jakbyś niczego nie odblokował.",

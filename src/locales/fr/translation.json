@@ -5122,12 +5122,12 @@
     "content": "Options de performance pour les appareils lents et les petits écrans."
   },
   "seedReport": {
-    "title": "Rapport sur les semences",
+    "title": "Rapport de graine",
     "close": "Fermer",
     "unknownBiome": "Inconnu",
     "noTrackedItems": "Aucun objet suivi dans ce monde.",
     "toggle": {
-      "title": "Rapport sur les semences",
+      "title": "Rapport de graine",
       "content": "Statistiques par monde et par biome pour la graine actuelle."
     },
     "pw": {
@@ -5151,7 +5151,7 @@
       "title": "Sorts de grande valeur",
       "empty": "Aucun sort de grande valeur dans cette graine.",
       "noneFound": "aucun trouvé",
-      "onWands": "sur les baguettes"
+      "onWands": "Dans les baguettes"
     },
     "spell": {
       "category": {
@@ -5197,8 +5197,8 @@
         "potions": "Potions",
         "pouches": "Pochettes",
         "hvSpells": "Sorts de grande valeur",
-        "rareMaterials": "Des matériaux rares",
-        "mimics": "Imite",
+        "rareMaterials": "Matériaux rares",
+        "mimics": "Mimiques",
         "dangerousCreatures": "Créatures dangereuses"
       },
       "legend": {
@@ -5257,7 +5257,6 @@
       "west": "Monde ouest",
       "east": "Monde est",
       "bossSource": "Récompense de boss",
-      "wandSource": "Dans les baguettes",
       "shopSource": "Boutique",
       "roomSource": "Salle ou contenant",
       "spawnSource": "Dans le monde",
@@ -5295,7 +5294,6 @@
       "sections": "Sections du rapport",
       "retryCensus": "Recharger les données Sage",
       "baked": "Carte précalculée au pixel près",
-      "daily": "Graine du jour",
       "generated": "Carte générée",
       "worldCount": "Mondes : {{count}}",
       "all": "Ouest + Principal + Est",
@@ -5418,7 +5416,7 @@
           "mages": "Mages",
           "worms": "Vers",
           "helplessAnimals": "Animaux sans défense",
-          "mimics": "$t(seedReport.spider.axis.mimics)"
+          "mimics": "Mimiques"
         },
         "spellTypes": {
           "projectile": "Projectile",
@@ -5449,12 +5447,11 @@
       "todayDaily": "Graine quotidienne d’aujourd’hui",
       "yesterdayDaily": "Graine quotidienne d’hier",
       "thisSeed": "Cette graine",
-      "title": "Rapport de graine",
       "unknown": "Inconnu",
       "metrics": {
-        "shops": "Boutiques",
         "hearts": "Objets de santé",
         "hvSpells": "Sorts précieux",
+        "shops": "Boutiques",
         "rareMaterials": "Matériaux rares",
         "mimics": "Mimiques",
         "chests": "Coffre au trésor",
@@ -5471,52 +5468,40 @@
         "nolla": "Nolla",
         "damage": "Tronçonneuse",
         "summon_taikasauva": "Invocation de Taikasauva",
-        "material": "Matériau",
-        "utility": "Utilité",
-        "other": "Autre",
         "healing": "Sorts de soin",
         "greeks": "Sorts à lettres grecques",
-        "divides": "Duplication de sorts"
+        "divides": "Duplication de sorts",
+        "material": "Matériau",
+        "utility": "Utilité",
+        "other": "Autre"
       },
       "main": "Monde principal",
-      "mainOnly": "Monde principal",
       "westNumber": "Ouest {{n}}",
       "eastNumber": "Est {{n}}",
       "no": "Non",
       "yes": "Oui",
-      "wand": "Baguette",
-      "onWands": "sur les baguettes",
-      "greatChests": "Grands coffres",
       "close": "Fermer",
       "unlock": "Débloquer avec Pro",
+      "title": "Rapport de graine",
+      "daily": "Graine du jour",
       "comparisonReference": "Graine de comparaison",
+      "wandSource": "Dans les baguettes",
       "shuffle": "Aléatoire",
       "slots": "Capacité",
-      "capacityRange": "Capacité",
       "manaMax": "Mana max.",
       "castDelay": "Délai sort",
       "rechargeTime": "Tps rech.",
       "spread": "Dispersion",
       "spellsCast": "Sorts/Lancer",
       "alwaysCast": "Lancer assuré",
-      "alwaysCasts": "Lancer assuré",
       "coralChest": "Coffre de corail",
       "pacifist": "Une récompense pacifique",
-      "bossBonus": "Récompenses de boss",
-      "withAlwaysCast": "$t(seedReport.v2.alwaysCast)",
-      "withAlways": "$t(seedReport.v2.alwaysCast)",
       "nonShuffle": "$t(seedReport.v2.shuffle): $t(seedReport.v2.no)",
-      "alwaysCastBreakdown": "$t(seedReport.v2.alwaysCast)",
-      "capacity20": "$t(seedReport.v2.capacityRange) ≥ 20",
+      "capacity20": "$t(seedReport.v2.slots) ≥ 20",
       "recharge200": "≥ 200 $t(seedReport.v2.manaPerSecond)",
-      "censusVerified": "Apparitions naturelles (Sage)",
-      "deckMissing": "Ces données de carte ne contiennent pas les objets à l’intérieur.",
-      "deckSeparate": "Le contenu est présenté séparément des objets posés dans le monde.",
-      "noneAlways": "Absent des données de la carte",
-      "sageNatural": "Apparitions naturelles (Sage)",
       "seedFrequency": "{{count}} / {{total}}",
       "unknownShuffle": "$t(seedReport.v2.shuffle): $t(seedReport.v2.unknown)",
-      "wandBrief": "$t(seedReport.v2.nonShuffle): {{nonShuffle}} · $t(seedReport.v2.withAlwaysCast): {{always}}",
+      "wandBrief": "$t(seedReport.v2.nonShuffle): {{nonShuffle}} · $t(seedReport.v2.alwaysCast): {{always}}",
       "heartBrief": "$t(gameContent.items.heart): {{upgrades}} · $t(gameContent.items.full_heal): {{heals}}",
       "targetDelta": "Δ: $t(seedReport.v2.thisSeed) − {{kind}} ({{seed}})",
       "populationMean": "$t(seedReport.v2.mean): {{mean}} · $t(seedReport.v2.sageCensus)",
@@ -5532,7 +5517,7 @@
         "mod": "Vos déblocages actuels",
         "modDisabled": "Ouvrez la carte depuis le mod Noitamap",
         "all": "Tout débloqué",
-        "dailyDisabled": "Seed quotidienne"
+        "dailyDisabled": "Graine du jour"
       },
       "body": {
         "none": "Passez à l’affichage des pools de baguettes/sorts comme si vous n’aviez rien débloqué.",

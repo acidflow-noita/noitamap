@@ -5122,12 +5122,12 @@
     "content": "Opzioni di prestazioni per dispositivi lenti e schermi piccoli."
   },
   "seedReport": {
-    "title": "Rapporto sul seme",
+    "title": "Rapporto del seme",
     "close": "Vicino",
     "unknownBiome": "Sconosciuto",
     "noTrackedItems": "Nessun oggetto tracciato in questo mondo.",
     "toggle": {
-      "title": "Rapporto sul seme",
+      "title": "Rapporto del seme",
       "content": "Statistiche per mondo e per bioma per il seme attuale."
     },
     "pw": {
@@ -5151,7 +5151,7 @@
       "title": "Incantesimi di alto valore",
       "empty": "Nessun incantesimo di alto valore in questo seme.",
       "noneFound": "nessuno trovato",
-      "onWands": "sulle bacchette"
+      "onWands": "Nelle bacchette"
     },
     "spell": {
       "category": {
@@ -5198,7 +5198,7 @@
         "pouches": "Buste",
         "hvSpells": "Incantesimi di alto valore",
         "rareMaterials": "Materiali rari",
-        "mimics": "Mimi",
+        "mimics": "Mimic",
         "dangerousCreatures": "Creature pericolose"
       },
       "legend": {
@@ -5257,7 +5257,6 @@
       "west": "Mondo ovest",
       "east": "Mondo est",
       "bossSource": "Ricompensa del boss",
-      "wandSource": "Nelle bacchette",
       "shopSource": "Negozio",
       "roomSource": "Stanza o contenitore",
       "spawnSource": "Nel mondo",
@@ -5295,7 +5294,6 @@
       "sections": "Sezioni del rapporto",
       "retryCensus": "Riprova a caricare i dati Sage",
       "baked": "Mappa precalcolata pixel per pixel",
-      "daily": "Seme giornaliero",
       "generated": "Mappa generata",
       "worldCount": "Mondi: {{count}}",
       "all": "Ovest + Principale + Est",
@@ -5418,7 +5416,7 @@
           "mages": "Maghi",
           "worms": "Vermi",
           "helplessAnimals": "Animali indifesi",
-          "mimics": "$t(seedReport.spider.axis.mimics)"
+          "mimics": "Mimic"
         },
         "spellTypes": {
           "projectile": "Proiettile",
@@ -5449,12 +5447,11 @@
       "todayDaily": "Seme giornaliero di oggi",
       "yesterdayDaily": "Seme giornaliero di ieri",
       "thisSeed": "Questo seme",
-      "title": "Rapporto del seme",
       "unknown": "Sconosciuto",
       "metrics": {
-        "shops": "Negozi",
         "hearts": "Oggetti per la salute",
         "hvSpells": "Incantesimi preziosi",
+        "shops": "Negozi",
         "rareMaterials": "Materiali rari",
         "mimics": "Mimic",
         "chests": "Forziere del tesoro",
@@ -5471,52 +5468,40 @@
         "nolla": "Nolla",
         "damage": "Motosega",
         "summon_taikasauva": "Taikasauva",
-        "material": "Materiale",
-        "utility": "Utilità",
-        "other": "Altro",
         "healing": "Incantesimi di cura",
         "greeks": "Incantesimi con lettere greche",
-        "divides": "Duplicazione di incantesimi"
+        "divides": "Duplicazione di incantesimi",
+        "material": "Materiale",
+        "utility": "Utilità",
+        "other": "Altro"
       },
       "main": "Mondo principale",
-      "mainOnly": "Mondo principale",
       "westNumber": "Ovest {{n}}",
       "eastNumber": "Est {{n}}",
       "no": "NO",
       "yes": "SÌ",
-      "wand": "Bacchetta",
-      "onWands": "sulle bacchette",
-      "greatChests": "Grandi casse",
       "close": "Vicino",
       "unlock": "Sblocca con Pro",
+      "title": "Rapporto del seme",
+      "daily": "Seme giornaliero",
       "comparisonReference": "Seme di confronto",
+      "wandSource": "Nelle bacchette",
       "shuffle": "Casuale",
       "slots": "Capacità",
-      "capacityRange": "Capacità",
       "manaMax": "Mana max",
       "castDelay": "Ritardo di lancio",
       "rechargeTime": "Tempo di ric.",
       "spread": "Diffusione",
       "spellsCast": "Incan./Lancio",
       "alwaysCast": "Lancia sempre",
-      "alwaysCasts": "Lancia sempre",
       "coralChest": "Forziere di corallo",
       "pacifist": "La ricompensa del pacifista",
-      "bossBonus": "Ricompense dei boss",
-      "withAlwaysCast": "$t(seedReport.v2.alwaysCast)",
-      "withAlways": "$t(seedReport.v2.alwaysCast)",
       "nonShuffle": "$t(seedReport.v2.shuffle): $t(seedReport.v2.no)",
-      "alwaysCastBreakdown": "$t(seedReport.v2.alwaysCast)",
-      "capacity20": "$t(seedReport.v2.capacityRange) ≥ 20",
+      "capacity20": "$t(seedReport.v2.slots) ≥ 20",
       "recharge200": "≥ 200 $t(seedReport.v2.manaPerSecond)",
-      "censusVerified": "Presenze naturali (Sage)",
-      "deckMissing": "Questi dati della mappa non includono il contenuto.",
-      "deckSeparate": "Il contenuto è mostrato separatamente dal totale degli oggetti sfusi.",
-      "noneAlways": "Assente nei dati della mappa",
-      "sageNatural": "Presenze naturali (Sage)",
       "seedFrequency": "{{count}} / {{total}}",
       "unknownShuffle": "$t(seedReport.v2.shuffle): $t(seedReport.v2.unknown)",
-      "wandBrief": "$t(seedReport.v2.nonShuffle): {{nonShuffle}} · $t(seedReport.v2.withAlwaysCast): {{always}}",
+      "wandBrief": "$t(seedReport.v2.nonShuffle): {{nonShuffle}} · $t(seedReport.v2.alwaysCast): {{always}}",
       "heartBrief": "$t(gameContent.items.heart): {{upgrades}} · $t(gameContent.items.full_heal): {{heals}}",
       "targetDelta": "Δ: $t(seedReport.v2.thisSeed) − {{kind}} ({{seed}})",
       "populationMean": "$t(seedReport.v2.mean): {{mean}} · $t(seedReport.v2.sageCensus)",
@@ -5532,7 +5517,7 @@
         "mod": "I tuoi attuali sblocchi",
         "modDisabled": "Apri la mappa dal mod Noitamap",
         "all": "Tutto sbloccato",
-        "dailyDisabled": "Seed giornaliero"
+        "dailyDisabled": "Seme giornaliero"
       },
       "body": {
         "none": "Passa a mostrare le riserve di bacchette/incantesimi come se non avessi sbloccato nulla.",
