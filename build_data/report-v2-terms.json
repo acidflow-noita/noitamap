@@ -13,7 +13,8 @@
     "metrics.shops": "seedReport.spider.axis.shops",
     "metrics.rareMaterials": "seedReport.spider.axis.rareMaterials",
     "metrics.mimics": "seedReport.spider.axis.mimics",
-    "wandSource": "seedReport.spells.onWands"
+    "wandSource": "seedReport.spells.onWands",
+    "switchSeedHint": "seedReport.compare.switchSeedHint"
   },
   "game": {
     "shuffle": {
@@ -47,10 +48,6 @@
     "alwaysCast": {
       "csv": "inventory_alwayscasts",
       "fallback": "perk.alwaysCast"
-    },
-    "coralChest": {
-      "csv": "item_chest_light",
-      "fallback": "gameContent.items.Coral Chest"
     },
     "pacifist": {
       "csv": "item_chest_treasure_pacifist",
