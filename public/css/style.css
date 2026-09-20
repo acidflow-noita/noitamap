@@ -1094,7 +1094,7 @@ body.toggle-hidden div.osOverlayHighlight {
   #more-menu {
     position: static;
   }
-  #more-menu .dropdown-menu {
+  #more-menu > .dropdown-menu {
     left: 0.5rem;
     right: 0.5rem;
     top: 100%;
@@ -1109,6 +1109,35 @@ body.toggle-hidden div.osOverlayHighlight {
   #more-menu-controls {
     max-width: 100%;
   }
+}
+
+/* A dropdown cannot escape the mobile overflow menu's scroll clipping merely
+   by raising its z-index. Expand Performance in normal flow inside that menu.
+   Scope these rules to relocated controls so the navbar dropdown stays normal. */
+#more-menu-controls #perfModeDropdown:has(> .dropdown-menu.show) {
+  flex: 1 0 100%;
+  min-width: 0;
+}
+
+#more-menu-controls #perfModeDropdown > .dropdown-menu {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important; /* also neutralize a cached Popper transform */
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  max-height: none;
+  overflow: visible;
+  margin: 0.25rem 0 0;
+}
+
+#more-menu-controls #perfModeDropdown .dropdown-item {
+  white-space: normal;
+}
+
+#more-menu-controls #perfModeDropdown .form-check-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* Frame for the QLC sideworld overlay (see src/sideworld.ts).
