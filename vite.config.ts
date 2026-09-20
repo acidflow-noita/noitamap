@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import { telescopeBrowserPlugin } from "./build_scripts/vite-telescope-browser.ts";
 import { atlasChunksPlugin } from "./build_scripts/vite-atlas-chunks.ts";
 import { resolveLocalPro } from "./build_scripts/local-pro.ts";
+import { ignoreTaskScratch } from "./build_scripts/vite-watch.ts";
 import { resolve } from "node:path";
 
 import fs from "node:fs";
@@ -60,6 +61,9 @@ export default defineConfig({
     plugins: () => [shimTelescopePlugin, telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")), atlasChunksPlugin(import.meta.dirname)],
   },
   server: {
+    watch: {
+      ignored: ignoreTaskScratch(import.meta.dirname, localPro.root),
+    },
     fs: {
       allow: [".."],
     },

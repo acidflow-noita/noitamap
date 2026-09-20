@@ -1,0 +1,750 @@
+{
+  "version": 1,
+  "recipes": [
+    {
+      "keys": [
+        "temple/altar_top"
+      ],
+      "biomes": [],
+      "image": "biome_impl/temple/altar_top.png",
+      "script": "scripts/biome_scripts.lua",
+      "points": [
+        {
+          "entity": "teleport_liquid_powered",
+          "x": 264,
+          "y": 86,
+          "condition": "liquid"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "temple/altar_top_water"
+      ],
+      "biomes": [],
+      "image": "biome_impl/temple/altar_top_water.png",
+      "script": "scripts/biome_scripts.lua",
+      "points": [
+        {
+          "entity": "teleport_liquid_powered",
+          "x": 266,
+          "y": 86,
+          "condition": "liquid"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "temple/altar_top_blood"
+      ],
+      "biomes": [],
+      "image": "biome_impl/temple/altar_top_blood.png",
+      "script": "scripts/biome_scripts.lua",
+      "points": [
+        {
+          "entity": "teleport_liquid_powered",
+          "x": 266,
+          "y": 86,
+          "condition": "liquid"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "temple/altar_top_oil"
+      ],
+      "biomes": [],
+      "image": "biome_impl/temple/altar_top_oil.png",
+      "script": "scripts/biome_scripts.lua",
+      "points": [
+        {
+          "entity": "teleport_liquid_powered",
+          "x": 266,
+          "y": 86,
+          "condition": "liquid"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "temple/altar_top_radioactive"
+      ],
+      "biomes": [],
+      "image": "biome_impl/temple/altar_top_radioactive.png",
+      "script": "scripts/biome_scripts.lua",
+      "points": [
+        {
+          "entity": "teleport_liquid_powered",
+          "x": 266,
+          "y": 86,
+          "condition": "liquid"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "temple/altar_top_lava"
+      ],
+      "biomes": [],
+      "image": "biome_impl/temple/altar_top_lava.png",
+      "script": "scripts/biome_scripts.lua",
+      "points": [
+        {
+          "entity": "teleport_liquid_powered",
+          "x": 266,
+          "y": 86,
+          "condition": "liquid"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "temple/altar_top_ending"
+      ],
+      "biomes": [],
+      "image": "biome_impl/temple/altar_top_ending.png",
+      "script": "scripts/biomes/temple_wall_ending.lua",
+      "points": [
+        {
+          "entity": "teleport_ending",
+          "x": 266,
+          "y": 86,
+          "condition": "liquid"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "general/teleportroom"
+      ],
+      "biomes": [
+        6262699
+      ],
+      "image": "biome_impl/teleroom.png",
+      "script": "scripts/biomes/teleroom.lua",
+      "points": [
+        {
+          "entity": "teleport_teleroom_3",
+          "x": 127,
+          "y": 131,
+          "condition": "leviathan-unlock"
+        },
+        {
+          "entity": "teleport_teleroom_6",
+          "x": 366,
+          "y": 134,
+          "condition": "leviathan-unlock"
+        },
+        {
+          "entity": "teleport_teleroom_2",
+          "x": 125,
+          "y": 257,
+          "condition": "leviathan-unlock"
+        },
+        {
+          "entity": "teleport_teleroom_5",
+          "x": 372,
+          "y": 280,
+          "condition": "leviathan-unlock"
+        },
+        {
+          "entity": "teleport_teleroom_1",
+          "x": 137,
+          "y": 382,
+          "condition": "leviathan-unlock"
+        },
+        {
+          "entity": "teleport_teleroom_4",
+          "x": 358,
+          "y": 389,
+          "condition": "leviathan-unlock"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "general/cube_chamber",
+        "excavationsite/cube_chamber"
+      ],
+      "biomes": [
+        2394250
+      ],
+      "image": "biome_impl/excavationsite/cube_chamber.png",
+      "script": "scripts/biomes/excavationsite_cube_chamber.lua",
+      "points": [
+        {
+          "entity": "teleport_meditation_cube_return",
+          "x": 261,
+          "y": 254,
+          "condition": "return"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "general/secret_chamber",
+        "snowcave/secret_chamber"
+      ],
+      "biomes": [
+        1614038
+      ],
+      "image": "biome_impl/snowcave/secret_chamber.png",
+      "script": "scripts/biomes/snowcave_secret_chamber.lua",
+      "points": [
+        {
+          "entity": "teleport_snowcave_buried_eye_return",
+          "x": 317,
+          "y": 188,
+          "condition": "return"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "general/hourglass_chamber",
+        "snowcastle/hourglass_chamber"
+      ],
+      "biomes": [
+        1627862
+      ],
+      "image": "biome_impl/snowcastle/hourglass_chamber.png",
+      "script": "scripts/biomes/snowcastle_hourglass_chamber.lua",
+      "points": [
+        {
+          "entity": "teleport_hourglass_return",
+          "x": 256,
+          "y": 255,
+          "condition": "return"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "snowcave/buried_eye"
+      ],
+      "biomes": [],
+      "image": "biome_impl/snowcave/buried_eye.png",
+      "script": "scripts/biomes/snowcave.lua",
+      "points": [
+        {
+          "entity": "teleport_snowcave_buried_eye",
+          "x": 83,
+          "y": 105,
+          "condition": "liquid"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "snowcastle/side_cavern_left",
+        "snowcastle_cavern/side_cavern_left"
+      ],
+      "biomes": [],
+      "image": "biome_impl/snowcastle/side_cavern_left.png",
+      "script": "scripts/biomes/snowcastle_cavern.lua",
+      "points": [
+        {
+          "entity": "teleport_hourglass",
+          "x": 289,
+          "y": 68,
+          "condition": "hourglass"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "snowcastle/side_cavern_right",
+        "snowcastle_cavern/side_cavern_right"
+      ],
+      "biomes": [],
+      "image": "biome_impl/snowcastle/side_cavern_right.png",
+      "script": "scripts/biomes/snowcastle_cavern.lua",
+      "points": [
+        {
+          "entity": "teleport_hourglass",
+          "x": 222,
+          "y": 68,
+          "condition": "hourglass"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "general/mystery_teleport"
+      ],
+      "biomes": [
+        1408183
+      ],
+      "image": "biome_impl/mystery_teleport.png",
+      "script": "scripts/biomes/mystery_teleport.lua",
+      "points": [
+        {
+          "entity": "mystery_teleport",
+          "x": 255,
+          "y": 248,
+          "condition": "always"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "general/robot_egg"
+      ],
+      "biomes": [
+        10371842
+      ],
+      "image": "biome_impl/robot_egg.png",
+      "script": "scripts/biomes/robot_egg.lua",
+      "points": [
+        {
+          "entity": "teleport_robot_egg_return",
+          "x": 153,
+          "y": 174,
+          "condition": "return"
+        }
+      ]
+    },
+    {
+      "keys": [],
+      "biomes": [
+        4013633
+      ],
+      "image": "biome_impl/essenceroom.png",
+      "script": "scripts/biomes/tower_end.lua",
+      "points": [
+        {
+          "entity": "mystery_teleport_back",
+          "x": 256,
+          "y": 56,
+          "condition": "always"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "excavationsite/meditation_cube_visual",
+        "excavationsite/meditation_cube"
+      ],
+      "biomes": [],
+      "script": "scripts/biomes/excavationsite.lua",
+      "points": [
+        {
+          "entity": "teleport_meditation_cube",
+          "x": 20,
+          "y": -41,
+          "condition": "meditation"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "general/smokecave_left"
+      ],
+      "biomes": [
+        4020818
+      ],
+      "image": "biome_impl/smokecave_left.png",
+      "script": "scripts/biomes/smokecave_left.lua",
+      "points": [
+        {
+          "entity": "teleport_smokecave",
+          "x": 48,
+          "y": 291,
+          "condition": "always"
+        }
+      ]
+    },
+    {
+      "keys": [
+        "general/sandroom"
+      ],
+      "biomes": [
+        4020827
+      ],
+      "image": "biome_impl/sandroom.png",
+      "script": "scripts/biomes/sandroom.lua",
+      "points": [
+        {
+          "entity": "teleport_sandroom",
+          "x": 476,
+          "y": 317,
+          "condition": "always"
+        }
+      ]
+    }
+  ],
+  "entities": {
+    "mystery_teleport": {
+      "source": "entities/buildings/mystery_teleport.xml",
+      "target": {
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "9740",
+        "target.y": "9150"
+      }
+    },
+    "mystery_teleport_back": {
+      "source": "entities/buildings/mystery_teleport_back.xml",
+      "target": {
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "764",
+        "target.y": "-814"
+      }
+    },
+    "teleport": {
+      "source": "entities/buildings/teleport.xml",
+      "target": {
+        "target_x_is_absolute_position": "1",
+        "target.x": "-677",
+        "target.y": "280"
+      }
+    },
+    "teleport_boss_arena": {
+      "source": "entities/buildings/teleport_boss_arena.xml",
+      "target": {
+        "target_x_is_absolute_position": "1",
+        "target.x": "1891",
+        "target.y": "280"
+      }
+    },
+    "teleport_bunker": {
+      "source": "entities/buildings/teleport_bunker.xml",
+      "target": {
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "-12400",
+        "target.y": "391"
+      }
+    },
+    "teleport_bunker2": {
+      "source": "entities/buildings/teleport_bunker2.xml",
+      "target": {
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "-12800",
+        "target.y": "615"
+      }
+    },
+    "teleport_bunker_back": {
+      "source": "entities/buildings/teleport_bunker_back.xml",
+      "target": {
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "-12557",
+        "target.y": "190"
+      }
+    },
+    "teleport_desert": {
+      "source": "entities/buildings/teleport_desert.xml",
+      "target": {
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "7522",
+        "target.y": "-133"
+      }
+    },
+    "teleport_end_wall": {
+      "source": "entities/buildings/teleport_end_wall.xml",
+      "target": {
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "0",
+        "target.y": "-32"
+      }
+    },
+    "teleport_ending": {
+      "source": "entities/buildings/teleport_ending.xml",
+      "target": {
+        "_tags": "enabled_by_liquid",
+        "target_x_is_absolute_position": "1",
+        "target.x": "1891",
+        "target.y": "280"
+      }
+    },
+    "teleport_ending_victory": {
+      "source": "entities/buildings/teleport_ending_victory.xml",
+      "target": {
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "6220",
+        "target.y": "15175"
+      }
+    },
+    "teleport_excavationsite_cube_return": {
+      "source": "entities/buildings/teleport_excavationsite_cube_return.xml",
+      "target": {
+        "_tags": "enabled_by_liquid",
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "190",
+        "target.y": "3080"
+      }
+    },
+    "teleport_hourglass": {
+      "source": "entities/buildings/teleport_hourglass.xml",
+      "target": {
+        "_tags": "enabled_by_liquid",
+        "_enabled": "0",
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "-3838",
+        "target.y": "5420"
+      }
+    },
+    "teleport_hourglass_return": {
+      "source": "entities/buildings/teleport_hourglass_return.xml",
+      "target": {
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "190",
+        "target.y": "5231"
+      }
+    },
+    "teleport_lake": {
+      "source": "entities/buildings/teleport_lake.xml",
+      "target": {
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "-13421",
+        "target.y": "180"
+      }
+    },
+    "teleport_lavalake": {
+      "source": "entities/buildings/teleport_lavalake.xml",
+      "target": {
+        "target_x_is_absolute_position": "0",
+        "target.x": "-1875",
+        "target.y": "0"
+      }
+    },
+    "teleport_liquid_powered": {
+      "source": "entities/buildings/teleport_liquid_powered.xml",
+      "target": {
+        "_tags": "enabled_by_liquid",
+        "target_x_is_absolute_position": "1",
+        "target.x": "-677",
+        "target.y": "280"
+      }
+    },
+    "teleport_meditation_cube": {
+      "source": "entities/buildings/teleport_meditation_cube.xml",
+      "target": {
+        "_tags": "enabled_by_meditation",
+        "_enabled": "0",
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "-4345",
+        "target.y": "2365"
+      }
+    },
+    "teleport_meditation_cube_return": {
+      "source": "entities/buildings/teleport_meditation_cube_return.xml",
+      "target": {
+        "_tags": "enabled_by_liquid",
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "190",
+        "target.y": "1525"
+      }
+    },
+    "teleport_robot_egg_return": {
+      "source": "entities/buildings/teleport_robot_egg_return.xml",
+      "target": {
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "190",
+        "target.y": "6650"
+      }
+    },
+    "teleport_sandroom": {
+      "source": "entities/buildings/teleport_sandroom.xml",
+      "target": {
+        "target_x_is_absolute_position": "0",
+        "target.x": "-460",
+        "target.y": "150"
+      }
+    },
+    "teleport_smokecave": {
+      "source": "entities/buildings/teleport_smokecave.xml",
+      "target": {
+        "target_x_is_absolute_position": "0",
+        "target.x": "1320",
+        "target.y": "-190"
+      }
+    },
+    "teleport_snowcave_buried_eye": {
+      "source": "entities/buildings/teleport_snowcave_buried_eye.xml",
+      "target": {
+        "_tags": "enabled_by_liquid",
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "3895",
+        "target.y": "4510"
+      }
+    },
+    "teleport_snowcave_buried_eye_return": {
+      "source": "entities/buildings/teleport_snowcave_buried_eye_return.xml",
+      "target": {
+        "_tags": "enabled_by_liquid",
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "190",
+        "target.y": "3080"
+      }
+    },
+    "teleport_start": {
+      "source": "entities/buildings/teleport_start.xml",
+      "target": {
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "937",
+        "target.y": "10"
+      }
+    },
+    "teleport_teleroom": {
+      "source": "entities/buildings/teleport_teleroom.xml",
+      "target": {
+        "target_x_is_absolute_position": "1",
+        "target_y_is_absolute_position": "1",
+        "target.x": "3836",
+        "target.y": "7518"
+      }
+    },
+    "teleport_teleroom_1": {
+      "source": "entities/buildings/teleport_teleroom_1.xml",
+      "target": {
+        "_tags": "enabled_by_liquid",
+        "target.x": "-12800",
+        "target.y": "7008"
+      }
+    },
+    "teleport_teleroom_2": {
+      "source": "entities/buildings/teleport_teleroom_2.xml",
+      "target": {
+        "_tags": "enabled_by_liquid",
+        "target.x": "-17920",
+        "target.y": "-7408"
+      }
+    },
+    "teleport_teleroom_3": {
+      "source": "entities/buildings/teleport_teleroom_3.xml",
+      "target": {
+        "_tags": "enabled_by_liquid",
+        "target.x": "-13624",
+        "target.y": "-13824"
+      }
+    },
+    "teleport_teleroom_4": {
+      "source": "entities/buildings/teleport_teleroom_4.xml",
+      "target": {
+        "_tags": "enabled_by_liquid",
+        "target.x": "-4396",
+        "target.y": "8504"
+      }
+    },
+    "teleport_teleroom_5": {
+      "source": "entities/buildings/teleport_teleroom_5.xml",
+      "target": {
+        "_tags": "enabled_by_liquid",
+        "target.x": "10240",
+        "target.y": "0"
+      }
+    },
+    "teleport_teleroom_6": {
+      "source": "entities/buildings/teleport_teleroom_6.xml",
+      "target": {
+        "_tags": "enabled_by_liquid",
+        "target.x": "7480",
+        "target.y": "-12288"
+      }
+    }
+  },
+  "notPlaced": {
+    "teleport": "runtime/player event or unverified spawn anchor; XML destination is not a spawn position",
+    "teleport_boss_arena": "runtime/player event or unverified spawn anchor; XML destination is not a spawn position",
+    "teleport_bunker": "runtime/player event or unverified spawn anchor; XML destination is not a spawn position",
+    "teleport_bunker2": "runtime/player event or unverified spawn anchor; XML destination is not a spawn position",
+    "teleport_bunker_back": "runtime/player event or unverified spawn anchor; XML destination is not a spawn position",
+    "teleport_desert": "runtime/player event or unverified spawn anchor; XML destination is not a spawn position",
+    "teleport_end_wall": "runtime/player event or unverified spawn anchor; XML destination is not a spawn position",
+    "teleport_ending_victory": "runtime/player event or unverified spawn anchor; XML destination is not a spawn position",
+    "teleport_excavationsite_cube_return": "runtime/player event or unverified spawn anchor; XML destination is not a spawn position",
+    "teleport_lake": "runtime/player event or unverified spawn anchor; XML destination is not a spawn position",
+    "teleport_lavalake": "runtime/player event or unverified spawn anchor; XML destination is not a spawn position",
+    "teleport_start": "runtime/player event or unverified spawn anchor; XML destination is not a spawn position",
+    "teleport_teleroom": "runtime/player event or unverified spawn anchor; XML destination is not a spawn position"
+  },
+  "sourceHashes": {
+    "scripts/biome_scripts.lua": "8f9eb6966da9be87303fcf8dc4d43dd34b3907f8e421b04aa09b843b95f17793",
+    "biome_impl/temple/altar_top.png": "627fafd256215d21b9b6b413cfc3fd9dda53626bb6c63f02cb8b43403229c129",
+    "biome_impl/temple/altar_top_water.png": "e3514da1d3b366d76ccf7fadd4f1a59ffffd20924444b06f3126a8574d681d07",
+    "biome_impl/temple/altar_top_blood.png": "8b38f02fdafd02506b43bfd64688126f854e0e7db65f6efd93e380ad02fad77b",
+    "biome_impl/temple/altar_top_oil.png": "88b16567b721f58245b7670a4ac8376c332f0ce8fd162ef580fc3b4a4ddaba99",
+    "biome_impl/temple/altar_top_radioactive.png": "c9eaffc2be3f287233bb9d2f16cb75138c9a35f5adf4fc1a913fd07ab5be8c02",
+    "biome_impl/temple/altar_top_lava.png": "d2cb7d83ac3b793aca21f1b33e207d109d535f1ac9edd85e7ea1ae5574f43bd6",
+    "scripts/biomes/temple_wall_ending.lua": "40ddf06749bdad3cecc9beb3a57cc25ccc204b01bfaf18d4083a14f838fc4a83",
+    "biome_impl/temple/altar_top_ending.png": "8a86e7404d3a4f2105a3634ad36b4b7534f900e852302d56237f44648e5b48a4",
+    "scripts/biomes/teleroom.lua": "6f8bd2825d745b1b3898f21a2362597e58ccaef574640f2c7969b5c823fc70a2",
+    "biome_impl/teleroom.png": "ff22b386af81632ff62675857c6af8745daf196124d0b74444c18fecbe1a7c8b",
+    "scripts/biomes/excavationsite_cube_chamber.lua": "805fef671c1a338a2c376f20c9bb536e5727887262d54fba04abab5c8d5e227c",
+    "biome_impl/excavationsite/cube_chamber.png": "df917fd65d88137c6dae2be32b158622849892f6b313b83d7b5055fada904288",
+    "scripts/biomes/snowcave_secret_chamber.lua": "9033d8e02959c2198b2b1e8cb49fa9ac918c9f2cd4013c3843983691ad0b71bd",
+    "biome_impl/snowcave/secret_chamber.png": "3b6e473a901639740c6e8c4672892df1eead970aaaaad798ff450a989fd0975e",
+    "scripts/biomes/snowcastle_hourglass_chamber.lua": "d1d455f4b33689610f2326acc9adc541b2a367af3af5860d38f5d5080cfd5f01",
+    "biome_impl/snowcastle/hourglass_chamber.png": "24e5210ae7a0705dbd66c18fe6ac7dbd80138d672a32349ae95fe2e60d0bbbd8",
+    "scripts/biomes/snowcave.lua": "efd7b821af7c9784430ad2e7dd011e4a52578246c7750f8251a1c8310b801b66",
+    "biome_impl/snowcave/buried_eye.png": "b0aa2c1b38bc37e7d71e31bfa3660885219958231421b2c6e03ab010bd55fe04",
+    "scripts/biomes/snowcastle_cavern.lua": "3838c2bc4c59ca352710ef62cbb704660c9b98d01863819f856df81fadb2a626",
+    "biome_impl/snowcastle/side_cavern_left.png": "33a35d69aba09de8134738f5ef1132e647373b2c53d782f15bbac6ed8645283b",
+    "biome_impl/snowcastle/side_cavern_right.png": "86f9169f48c7ef49601e10ca523799e1ec9106299592fefe35e96730ec034369",
+    "scripts/biomes/mystery_teleport.lua": "114414cd1037551167d7cbf06a69e2a6203a2b6599d097e18040c6cc340cb376",
+    "biome_impl/mystery_teleport.png": "930ea6f4394f106cbe2c2441d7c8bb684e9fefa5976bae30ab50f5f54de56273",
+    "scripts/biomes/robot_egg.lua": "16b4a9a6ef9ecce8304b4baeda69c7620dd661babc9c56756af025273485baa5",
+    "biome_impl/robot_egg.png": "08fe290b6c989be80bd0d7705726484a17870628d74f5c1cebe12a68aecb49cd",
+    "scripts/biomes/tower_end.lua": "73d00070cab7d09a7348a5a5337eac007adb9c45fbf498fe550dae26ece1895c",
+    "biome_impl/essenceroom.png": "e8448ae7d363299f19086e5149512a0c4dbbc85d94b71bb12e557c967f37bfea",
+    "scripts/biomes/excavationsite.lua": "45e8dfc6e3f5cf23ba83dc8c970dacd22538e369e563b5f1b07ee0a2381810ea",
+    "biome/_biomes_all.xml": "1f1259e660c33c6f2c54dbedbf0d9cd201fb9caa4dc13c66c1802f024197c60d",
+    "scripts/biomes/smokecave_left.lua": "0b28ae6031e740e3c29a58675ccccd4d10e1b8bfb09fa12e7b035397c5082359",
+    "biome_impl/smokecave_left.png": "af465779da62fd5c4c9038bb8477590a533ebeda2a99917f73ba7afd6c080932",
+    "scripts/biomes/sandroom.lua": "874e8944fae4d0348f42c0b46d3b1e8e8a8052fccb0e0372dd29d2f6b0932ce4",
+    "biome_impl/sandroom.png": "48c910b1a517d42a888bd805c1512e53f1888e06f62614af55e4239d6ae57c7d",
+    "entities/buildings/mystery_teleport.xml": "f4f4644406ba84835ad521f80c11873e231fbdb551184c35c7210017e1cb37cf",
+    "entities/buildings/mystery_teleport_back.xml": "bf53d7398c4a2a04910a37e6f26b6794e3075f365a89f7a0a5e37313a3816e6b",
+    "entities/buildings/teleport.xml": "27b352ec8b52b5eb394b8dc5587cfcf16dac33f6ce2203d7c14abe4462ef2aad",
+    "entities/buildings/teleport_boss_arena.xml": "68aa72c7db8d1b8e77e68a835b83ff57c2fda9be574d627ce888ba0971399a08",
+    "entities/buildings/teleport_bunker.xml": "ffabc2a2bdf7e3bf7a56f20170a2e8d1d47d5aee0c7956a0cf0cf16aef26d683",
+    "entities/buildings/teleport_bunker2.xml": "e94e2a52d0a366e453671f24599db02da8e796daffa9619e4b29b306d9c8b21f",
+    "entities/buildings/teleport_bunker_back.xml": "96dd4b9d0f8fc0afb8dc3e1f71208a056cfee5a64122284cbaf246394a361085",
+    "entities/buildings/teleport_desert.xml": "c286bde582eb7ec06c6b0f68c34a035928470783a90e53b26315692fd609ffc2",
+    "entities/buildings/teleport_end_wall.xml": "0d19af453dd3b91f51757f2254605a36df8a8604f4294331397f4f4ed71e5c7f",
+    "entities/buildings/teleport_ending.xml": "8d12b8e6b0a1471b6f192b0216a55ab4f32cea5854667b0e7fd384cfc3c787fb",
+    "entities/buildings/teleport_ending_victory.xml": "addfd47606724282750f2e5ca75cff586a121f1092aba4347cb3c77ce9f9579d",
+    "entities/buildings/teleport_ending_victory_delay.xml": "81110ef6776add8b86efbfbec4bdab6783ce18d3afc3c7c65d44b87ebca5330d",
+    "entities/buildings/teleport_excavationsite_cube_return.xml": "d5f573498dc6e430a61de097236fbc04a009d784c6b2d4dd4d32fe099edf4b7e",
+    "entities/buildings/teleport_hourglass.xml": "a22c73ed3816622871ba5afe52239c4ff9354b2f734769d3ac89d58ac66e9027",
+    "entities/buildings/teleport_hourglass_return.xml": "d27a70399d6f9202f09ccb834b2137bb360af30e1ccb2069aa45acd20e45cb8f",
+    "entities/buildings/teleport_hourglass_return_fx.xml": "4ea47e5b20b2d0cb467209eaea2873cc2ee4f4f90b4006d0964936b4e3369156",
+    "entities/buildings/teleport_lake.xml": "b0d96bd8dae936ef0c2fc3a80ef0cefa09bd2eb19c4c095692a215330468ac31",
+    "entities/buildings/teleport_lavalake.xml": "2d4b91810e214dd07bfbb8744158284d430541941e9f4aad20e0b5a83dc06eb7",
+    "entities/buildings/teleport_liquid_powered.xml": "1275a4ffcd8a5d8a106c454bbf7c9fe5f8b8b48ccf08e5f5092a14c1be70c8df",
+    "entities/buildings/teleport_meditation_cube.xml": "7c90feb3ac264f379acaf5dd4e10fc97ee2cc1c770e3de0fb63f67b6ab4f4a38",
+    "entities/buildings/teleport_meditation_cube_playereffect.xml": "eea6bc58c76c24a22342532bd253cda0af395cf44b687509e69d4714fe57eaa1",
+    "entities/buildings/teleport_meditation_cube_return.xml": "c60fc867f1efe345005d31c4b95698bef18d0458aec0bf94027969e684e01870",
+    "entities/buildings/teleport_meditation_cube_return_fx.xml": "98f2fbe21145e3069bb50766937a44a253340a65724113526c773056edb16227",
+    "entities/buildings/teleport_robot_egg_return.xml": "eb50cda6bf5449f94e18d4036bba20deace5866b523b7037cca3402365e18741",
+    "entities/buildings/teleport_sandroom.xml": "ee8a60c76217c0376ca96a35795e8751f67b742b1b7ffe7eaebf45f1698baee7",
+    "entities/buildings/teleport_smokecave.xml": "63f8d20683c5276bfc7215329647ee9ef1493e5c9b002b6f67901d2e44803d5f",
+    "entities/buildings/teleport_snowcave_buried_eye.xml": "8631f79608c81168fbe7417d3796dcb8d4a22b96da985eb4418e101985c5c862",
+    "entities/buildings/teleport_snowcave_buried_eye_return.xml": "ebdbb913c305c70077c0ef468be476d4cf975e862b613b028bd4c17e0b17a3a3",
+    "entities/buildings/teleport_start.xml": "0df301a06e85b1dc5abf1c074f0a4cd1ee162c18fa1ad5f522eec472cb7895af",
+    "entities/buildings/teleport_teleroom.xml": "1aeb479dc5d62175152877b03b4598545dfb36cb0e6a28bda7f533206ee99566",
+    "entities/buildings/teleport_teleroom_1.xml": "cf478db1fb78107aff1c42f3dc07dbec0bb7090877e5d35cc54efc9e1c13f1f8",
+    "entities/buildings/teleport_teleroom_2.xml": "7f52108d410d7eb8ae846944b05dd5d35aec0da829d1d7d88123ec89ad11cfc6",
+    "entities/buildings/teleport_teleroom_3.xml": "457f498f9e67b2f361670bdcff78be246956495462640e35381e5b6c071fec54",
+    "entities/buildings/teleport_teleroom_4.xml": "79d75cc5e280b8e2d58e298298cf43908d87e6bf6516a6e50739f3c42b4ea3b6",
+    "entities/buildings/teleport_teleroom_5.xml": "15a5bab96fc6bad01aedbfc9636cecc98afed08f16cdb6d76eb27fd1602843a1",
+    "entities/buildings/teleport_teleroom_6.xml": "f59dbec40dbf6c1fd2a1ce65205870f46be254b9588064084ac9c0a3acd28dbb"
+  }
+}

@@ -1,3 +1,4 @@
+import { clearPortalAnimations, installPortalAnimations } from "../portals";
 import { canOpenPOIFromCanvas, drawingOwnsMapPointer } from "../drawing/poi-interaction";
 import { onProSidebarIntent } from "../pro-sidebar-intent";
 import Flatbush from "flatbush";
@@ -424,6 +425,7 @@ let currentGenerationId = 0;
  * Remove all dynamic map overlays from the viewer.
  */
 export function clearDynamicOverlays(viewer: any): void {
+  clearPortalAnimations();
   // Invalidate any in-flight async generation so it won't render on top of the new map
   currentGenerationId++;
 
@@ -5496,6 +5498,7 @@ export async function renderGenerationResult(
   bakedDecorations?: boolean
 ): Promise<void> {
   const generationId = ++currentGenerationId;
+  clearPortalAnimations();
   (window as any).__osdViewer = viewer;
 
   // Snapshot old dynamic items (tiled images + HTML overlays) BEFORE adding
@@ -5704,6 +5707,10 @@ export async function renderGenerationResult(
     // Fallback: if OSD callback hasn't fired within 3s, force-complete the bar
     setTimeout(emitItemsDone, 3000);
   }
+
+  // A separate, non-interactive animation layer; never baked into terrain or
+  // added to loot counts. Scene metadata also works on existing daily bakes.
+  installPortalAnimations(viewer, result);
 
   // Safety net: if first-paint never fired (e.g., empty result, error path),
   // make sure stale items don't linger forever.

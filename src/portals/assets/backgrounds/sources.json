@@ -1,0 +1,197 @@
+[
+  {
+    "name": "eye-room",
+    "scene": "snowcastle/hourglass_chamber",
+    "entity": "teleport_hourglass_return",
+    "size": [
+      512,
+      512
+    ],
+    "portalMarker": [
+      256,
+      255
+    ],
+    "coveredSpawnPoints": [
+      [
+        256,
+        255
+      ],
+      [
+        404,
+        256
+      ],
+      [
+        104,
+        260
+      ],
+      [
+        383,
+        273
+      ],
+      [
+        125,
+        277
+      ],
+      [
+        361,
+        290
+      ],
+      [
+        147,
+        294
+      ],
+      [
+        338,
+        304
+      ],
+      [
+        170,
+        308
+      ]
+    ],
+    "maskBounds": [
+      89,
+      169,
+      419,
+      339
+    ],
+    "preservedMetalPixels": 6956,
+    "preservedMetalSamples": [
+      [
+        235,
+        161
+      ],
+      [
+        291,
+        166
+      ],
+      [
+        204,
+        171
+      ],
+      [
+        320,
+        178
+      ],
+      [
+        350,
+        188
+      ],
+      [
+        143,
+        201
+      ],
+      [
+        110,
+        217
+      ],
+      [
+        406,
+        234
+      ],
+      [
+        89,
+        254
+      ],
+      [
+        412,
+        274
+      ],
+      [
+        119,
+        292
+      ],
+      [
+        371,
+        307
+      ],
+      [
+        155,
+        320
+      ],
+      [
+        173,
+        330
+      ],
+      [
+        204,
+        337
+      ],
+      [
+        238,
+        341
+      ],
+      [
+        264,
+        346
+      ]
+    ],
+    "opaquePixels": 39634,
+    "alphaValues": [
+      0,
+      255
+    ],
+    "inputs": {
+      "biome_impl/snowcastle/hourglass_chamber.png": "24e5210ae7a0705dbd66c18fe6ac7dbd80138d672a32349ae95fe2e60d0bbbd8",
+      "biome_impl/snowcastle/hourglass_chamber_background.png": "d2e1c70344158511dcd54971d942d8bc5d959e3b8e5630be6d2d0c2041704071",
+      "scripts/biomes/snowcastle_hourglass_chamber.lua": "d1d455f4b33689610f2326acc9adc541b2a367af3af5860d38f5d5080cfd5f01"
+    },
+    "patchSHA256": "b83b001f27255d4605bc12a1ea8f5bec62b2c40ce78a47a2b0b84c1b474c6063"
+  },
+  {
+    "name": "meditation-chamber",
+    "scene": "excavationsite/cube_chamber",
+    "entity": "teleport_meditation_cube_return",
+    "size": [
+      512,
+      512
+    ],
+    "portalMarker": [
+      261,
+      254
+    ],
+    "coveredSpawnPoints": [
+      [
+        261,
+        254
+      ],
+      [
+        350,
+        303
+      ],
+      [
+        230,
+        346
+      ],
+      [
+        209,
+        348
+      ],
+      [
+        194,
+        355
+      ]
+    ],
+    "maskBounds": [
+      106,
+      120,
+      394,
+      396
+    ],
+    "preservedMetalPixels": 0,
+    "preservedMetalSamples": [],
+    "opaquePixels": 50339,
+    "alphaValues": [
+      0,
+      97,
+      255
+    ],
+    "inputs": {
+      "biome_impl/excavationsite/cube_chamber.png": "df917fd65d88137c6dae2be32b158622849892f6b313b83d7b5055fada904288",
+      "biome_impl/excavationsite/cube_chamber_background.png": "9fe1e9bda9c24fd50e3ce3a988b2fa8af60db0ff6274025db7d0fb3c70095e93",
+      "scripts/biomes/excavationsite_cube_chamber.lua": "805fef671c1a338a2c376f20c9bb536e5727887262d54fba04abab5c8d5e227c",
+      "biome_impl/excavationsite/cube_chamber_visual.png": "a38d80ddeb463171ec67e3217176d4bf6ae444def4d7c4bcc2c3f3dc24796e28"
+    },
+    "patchSHA256": "c23760df00e5124532757429b2ca8e9088343138544a890676ccbecf27a4f0ab"
+  }
+]
