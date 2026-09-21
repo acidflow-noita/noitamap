@@ -5479,6 +5479,11 @@
         "utility": "Utility",
         "other": "Other"
       },
+      "populationStatMin": "Minimum",
+      "populationStatMax": "Maximum",
+      "populationStatMean": "Průměr",
+      "populationReference": "Statistiky Sage · přirozený výskyt",
+      "populationThreeWorldsOnly": "Sage zveřejňuje tyto referenční hodnoty pouze pro součet Západ + Hlavní + Východ.",
       "main": "Hlavní svět",
       "westNumber": "Západ {{n}}",
       "eastNumber": "Východ {{n}}",

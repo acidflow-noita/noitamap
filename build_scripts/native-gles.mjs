@@ -48,7 +48,10 @@ const C = {
 // Koffi rejects redeclaring a named prototype in the same environment.
 const QUERY_DEVICES = koffi.proto("uint NoitamapEGLQueryDevicesEXT(int max, _Out_ void **devices, _Out_ int *count)");
 
-export function createNativeGLES({ requireHardware = false } = {}) {
+export function createNativeGLES({ requireHardware = false, softwareOnly = false } = {}) {
+  if (requireHardware && softwareOnly) throw new Error("Conflicting GLES renderer requirements");
+  // Numerical shader tests can select Mesa's software device explicitly. The
+  // bake path keeps its existing hardware policy and never silently falls back.
   const egl = koffi.load("libEGL.so.1");
   const lib = koffi.load("libGLESv2.so.2");
   const platform = egl.func(
@@ -108,13 +111,13 @@ export function createNativeGLES({ requireHardware = false } = {}) {
       failures.push(`${label}: context creation failed`); continue;
     }
     const renderer = getString(0x1f01);
-    if (requireHardware && (!renderer || softwareRenderer(renderer))) {
-      failures.push(`${label}: software renderer ${renderer}`);
+    if ((requireHardware && (!renderer || softwareRenderer(renderer))) || (softwareOnly && !softwareRenderer(renderer))) {
+      failures.push(`${label}: unsuitable renderer ${renderer}`);
       makeCurrent(d, null, null, null); destroyContext(d, c); destroySurface(d, s); terminate(d); continue;
     }
     display = d; surface = s; context = c; platformName = label; break;
   }
-  if (!context) throw new Error(`GPU bake requires ${requireHardware ? "hardware " : ""}GLES3; ${failures.join("; ")}. CPU fallback is not permitted.`);
+  if (!context) throw new Error(`Native renderer requires ${softwareOnly ? "software " : requireHardware ? "hardware " : ""}GLES3; ${failures.join("; ")}. CPU fallback is not permitted.`);
 
   const gl = { ...C };
   const getInt = lib.func("void glGetIntegerv(uint name, _Out_ int *value)");

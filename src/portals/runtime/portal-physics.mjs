@@ -1,3 +1,4 @@
+import { collideParticle } from "./particle-collision.mjs";
 // Build-specific, isolated cosmetic-particle reconstruction. See docs/portal-research.md.
 // No terrain, external forces, camera culling, or other entities' shared RNG calls.
 const f = Math.fround;
@@ -252,8 +253,9 @@ export function hourglassEmitters(frame, x = 0, y = 0) {
   });
 }
 
-// 0x00713e20, no collision/attractor branch. Velocities are pixels/SECOND.
-export function stepParticle(p, time, dt = DT) {
+// 0x00713e20 with the reviewed cosmetic collision branch. Velocities are px/s.
+/** @param {import('./particle-collision.mjs').ParticleCollisionField | null | undefined} collisionField */
+export function stepParticle(p, time, dt = DT, collisionField = null) {
   p.age++;
   const nx = f(p.x + f(p.vx * dt)),
     ny = f(p.y + f(p.vy * dt));
@@ -279,16 +281,16 @@ export function stepParticle(p, time, dt = DT) {
     p.vy = f(p.vy - f(f(p.vy * p.friction) * dt));
   }
   p.life = f(p.life - dt);
+  const previousX = p.x, previousY = p.y;
+  collideParticle(p, nx, ny, collisionField);
   const speed = f(Math.sqrt(f(f(p.vx * p.vx) + f(p.vy * p.vy))));
-  const dx = f(p.x - nx),
-    dy = f(p.y - ny);
+  const dx = f(previousX - p.x),
+    dy = f(previousY - p.y);
   const distance = f(Math.sqrt(f(f(dx * dx) + f(dy * dy))));
   const tx = distance > 0 ? f(dx / distance) : 0,
     ty = distance > 0 ? f(dy / distance) : 0;
-  p.x = nx;
-  p.y = ny;
-  p.prevX = f(f(f(tx * speed) * dt) + nx);
-  p.prevY = f(ny + f(f(ty * speed) * dt));
+  p.prevX = f(f(f(tx * speed) * dt) + p.x);
+  p.prevY = f(p.y + f(f(ty * speed) * dt));
   return p.life >= 0;
 }
 
@@ -340,6 +342,7 @@ const orbital = Object.freeze({
   force: f(0.02),
   velocityY: 60,
   drawLong: true,
+  collideWithGrid: true,
 });
 export const PORTAL_EMITTERS = Object.freeze({
   ring,
@@ -527,6 +530,8 @@ export class PortalSimulation {
       dropped: 0,
       totalEmitted: 0,
     });
+    /** @type {import('./particle-collision.mjs').ParticleCollisionField | null} */
+    this.collisionField = null;
     this.retainInvisible = retainInvisible;
     this.emissionRng = new EmissionRandom(emissionSeed);
     this.lifetimeRng = new NoitaRandom(lifetimeSeed);
@@ -602,6 +607,9 @@ export class PortalSimulation {
       airflowForce: config.force,
       airflowScale: config.scale,
       drawLong: config.drawLong ?? false,
+      collideWithGrid: config.collideWithGrid === true,
+      collisionRng: this.lifetimeRng.state,
+      collisionX: f(x + 0.5), collisionY: f(y + 0.5), collisionBounce: true,
     });
     this.totalEmitted++;
   }
@@ -665,7 +673,7 @@ export class PortalSimulation {
         p.age++;
         p.life = f(p.life - DT);
         if (p.life >= 0) this.particles[write++] = p;
-      } else if (stepParticle(p, this.time)) {
+      } else if (stepParticle(p, this.time, DT, this.collisionField)) {
         this.particles[write++] = p;
         if (p.alpha > 0) visible++;
       }

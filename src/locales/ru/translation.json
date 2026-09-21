@@ -5479,6 +5479,11 @@
         "utility": "Полезное",
         "other": "Другое"
       },
+      "populationStatMin": "Минимум",
+      "populationStatMax": "Максимум",
+      "populationStatMean": "Среднее",
+      "populationReference": "Статистика Sage · естественное появление",
+      "populationThreeWorldsOnly": "Эти данные Sage доступны только для суммы западного, основного и восточного миров.",
       "main": "Основной мир",
       "westNumber": "Запад {{n}}",
       "eastNumber": "Восток {{n}}",

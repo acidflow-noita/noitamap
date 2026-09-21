@@ -5479,6 +5479,11 @@
         "utility": "Utility",
         "other": "Other"
       },
+      "populationStatMin": "Minimi",
+      "populationStatMax": "Maksimi",
+      "populationStatMean": "Keskiarvo",
+      "populationReference": "Sagen tilastot · luonnollinen esiintyminen",
+      "populationThreeWorldsOnly": "Sage julkaisee nämä vertailuarvot vain lännen, päämaailman ja idän yhteenlasketuille määrille.",
       "main": "Päämaailma",
       "westNumber": "Länsi {{n}}",
       "eastNumber": "Itä {{n}}",

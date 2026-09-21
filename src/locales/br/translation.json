@@ -5479,6 +5479,11 @@
         "utility": "Utilidade",
         "other": "Outro"
       },
+      "populationStatMin": "Mínimo",
+      "populationStatMax": "Máximo",
+      "populationStatMean": "Média",
+      "populationReference": "População do Sage · geração natural",
+      "populationThreeWorldsOnly": "O Sage publica estas referências apenas para a soma de Oeste + Principal + Leste.",
       "main": "Mundo principal",
       "westNumber": "Oeste {{n}}",
       "eastNumber": "Leste {{n}}",

@@ -3,6 +3,7 @@
 // opt-in experimental backend, NOT a claim of fully GPU-authored or bit-exact
 // Noita simulation. CPU pool accounting preserves the reference's capacity and
 // expiration rules without visiting every live particle every frame.
+import { COLLISION_RETENTION_STEPS } from "./particle-collision.mjs";
 import { DT } from "./portal-physics.mjs";
 import { PARTICLE_SHADERS } from "./gpu-particle-shaders.mjs";
 const f = Math.fround;
@@ -32,8 +33,8 @@ function flags(p) {
     (!p.drawLong && p.singleWidth === false && ["gas", "fire"].includes(p.cellType) ? 4 : 0) |
     (p.glow !== false ? 8 : 0) | (p.ultrabright ? 16 : 0) |
     (p.singleWidth === false ? 32 : 0) |
-    ((p.cellType === "gas" ? 1 : p.cellType === "fire" ? 2 : 0) << 6) |
-    ((p.mathEmitter === undefined ? 0 : p.mathEmitter + 1) << 8) | (p.back ? 4096 : 0);
+    ((p.cellType === "gas" ? 1 : p.cellType === "fire" ? 2 : p.cellType === "liquid" ? 3 : 0) << 6) |
+    ((p.mathEmitter === undefined ? 0 : p.mathEmitter + 1) << 8) | (p.back ? 4096 : 0) | (p.collideWithGrid ? 8192 : 0);
 }
 function allocate(gl, bytes) {
   const buffer = gl.createBuffer();
@@ -77,11 +78,11 @@ class ParticlePool {
     const dynamic = [], oldStart = this.start;
     let data;
     try {
-      dynamic.push(allocate(gl, capacity * 32));
-      dynamic.push(allocate(gl, capacity * 32));
+      dynamic.push(allocate(gl, capacity * 48));
+      dynamic.push(allocate(gl, capacity * 48));
       data = allocate(gl, capacity * 64);
       if (used) {
-        for (const [from, to, stride] of [[this.dynamic[this.current], dynamic[0], 32], [this.static, data, 64]]) {
+        for (const [from, to, stride] of [[this.dynamic[this.current], dynamic[0], 48], [this.static, data, 64]]) {
           gl.bindBuffer(gl.COPY_READ_BUFFER, from); gl.bindBuffer(gl.COPY_WRITE_BUFFER, to);
           gl.copyBufferSubData(gl.COPY_READ_BUFFER, gl.COPY_WRITE_BUFFER, this.start * stride, 0, used * stride);
         }
@@ -100,15 +101,21 @@ class ParticlePool {
     if (!particles.length) return;
     this.ensure(particles.length);
     const tick = this.sim.elapsedFrames;
-    const dynamic = new Float32Array(particles.length * 8), data = new Float32Array(particles.length * 16);
+    const dynamic = new Float32Array(particles.length * 12), data = new Float32Array(particles.length * 16);
     let lastDeath = tick;
     particles.forEach((p, i) => {
       const birth = tick - (importing ? p.age : 0), color = (p.color ?? DEFAULT_COLOR) >>> 0;
-      dynamic.set([p.x, p.y, p.vx, p.vy, p.prevX, p.prevY, p.alpha, p.life], i * 8);
+      const rng = p.collisionRng || 1;
+      dynamic.set([p.x, p.y, p.vx, p.vy, p.prevX, p.prevY, p.alpha, p.life,
+        p.collisionX ?? p.x, p.collisionY ?? p.y, rng & 65535,
+        (rng >>> 16) | (p.collisionBounce !== false ? 32768 : 0)], i * 12);
       data.set([p.gx, p.gy, p.friction, p.fadeRate, p.airflowForce, p.airflowScale, p.attractor ?? 0, p.maxLife,
         p.targetX ?? 0, p.targetY ?? 0, color & 65535, color >>> 16,
         flags(p), birth & 65535, birth >>> 16, p.mathEdge ?? -1], i * 16);
-      const death = tick + expirationSteps(p.life);
+      // Native life reset can extend a nearly-expired particle. Keep its slot
+      // conservatively; the shader alone decides actual death/visibility.
+      const reserve = p.collideWithGrid && this.engine.renderer.collisionField?.(this.sim) ? COLLISION_RETENTION_STEPS : 0;
+      const death = tick + expirationSteps(p.life) + reserve;
       const fade = p.fadeRate < 0 ? tick + expirationSteps(p.alpha, -f(p.fadeRate * DT), true) : Infinity;
       lastDeath = Math.max(lastDeath, death);
       this.event(death, -1, 0);
@@ -117,7 +124,7 @@ class ParticlePool {
       else if (p.fadeRate > 0 && death > tick + 1) { this.event(tick + 1, 0, 1); this.event(death, 0, -1); }
     });
     const gl = this.gl;
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.dynamic[this.current]); gl.bufferSubData(gl.ARRAY_BUFFER, this.end * 32, dynamic);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.dynamic[this.current]); gl.bufferSubData(gl.ARRAY_BUFFER, this.end * 48, dynamic);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.static); gl.bufferSubData(gl.ARRAY_BUFFER, this.end * 64, data);
     this.end += particles.length;
     this.cohorts.push({ end: this.end, death: lastDeath });
@@ -142,18 +149,19 @@ class ParticlePool {
     if (!discard && this.engine.renderer.lost) throw new Error("GPU context lost. Restart to recover the GPU-resident particle state.");
     const particles = [];
     if (!discard && this.end > this.start) {
-      const count = this.end - this.start, dynamic = new Float32Array(count * 8), data = new Float32Array(count * 16);
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.dynamic[this.current]); gl.getBufferSubData(gl.ARRAY_BUFFER, this.start * 32, dynamic);
+      const count = this.end - this.start, dynamic = new Float32Array(count * 12), data = new Float32Array(count * 16);
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.dynamic[this.current]); gl.getBufferSubData(gl.ARRAY_BUFFER, this.start * 48, dynamic);
       gl.bindBuffer(gl.ARRAY_BUFFER, this.static); gl.getBufferSubData(gl.ARRAY_BUFFER, this.start * 64, data);
       for (let i = 0; i < count; i++) {
-        const a = dynamic.subarray(i * 8, i * 8 + 8), b = data.subarray(i * 16, i * 16 + 16);
+        const a = dynamic.subarray(i * 12, i * 12 + 12), b = data.subarray(i * 16, i * 16 + 16);
         if (a[7] < 0) continue;
         const bits = b[12], emitter = (bits >> 8) & 15;
         const p = { x:a[0],y:a[1],vx:a[2],vy:a[3],prevX:a[4],prevY:a[5],alpha:a[6],life:a[7],
           gx:b[0],gy:b[1],friction:b[2],fadeRate:b[3],airflowForce:b[4],airflowScale:b[5],attractor:b[6],maxLife:b[7],
           targetX:b[8],targetY:b[9],color:(b[10] | (b[11] << 16)) >>> 0,
           age:sim.elapsedFrames-(b[13]+b[14]*65536),drawLong:!!(bits&1),onGrid:!!(bits&2),glow:!!(bits&8),ultrabright:!!(bits&16),
-          singleWidth:!(bits&32),cellType:((bits>>6)&3)===1?"gas":((bits>>6)&3)===2?"fire":"",back:!!(bits&4096) };
+          singleWidth:!(bits&32),collideWithGrid:!!(bits&8192),collisionX:a[8],collisionY:a[9],collisionRng:(a[10]|((a[11]&32767)<<16)),collisionBounce:!!(a[11]&32768),
+          cellType:((bits>>6)&3)===1?"gas":((bits>>6)&3)===2?"fire":((bits>>6)&3)===3?"liquid":"",back:!!(bits&4096) };
         if (emitter) { p.mathEmitter = emitter - 1; p.mathEdge = b[15]; }
         particles.push(p);
       }
@@ -172,10 +180,16 @@ export class GpuParticles {
   constructor(renderer, fragment) {
     this.renderer = renderer; this.gl = renderer.gl; this.pools = new Map();
     this.updateProgram = renderer.program(PARTICLE_SHADERS.updateVertex, PARTICLE_SHADERS.updateFragment,
-      ["simulationTime"], ["nextMotion", "nextAppearance"]);
+      ["simulationTime", "collisionEnabled", "collisionCells", "collisionOrigin", "collisionSize"], ["nextMotion", "nextAppearance", "nextContact"]);
     this.drawProgram = renderer.program(PARTICLE_SHADERS.drawVertex, fragment, ["origin", "overrideColor", "glowPass", "image", "textured"]);
     this.updateVAO = this.gl.createVertexArray(); this.drawVAO = this.gl.createVertexArray();
     this.feedback = this.gl.createTransformFeedback();
+    const gl = this.gl;
+    this.emptyCollisionTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.emptyCollisionTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, 1, 1, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, new Uint8Array(1));
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   }
   configure(entries, enabled) {
     for (const [key, pool] of this.pools) {
@@ -191,7 +205,7 @@ export class GpuParticles {
   inputs(pool, instanced) {
     const gl = this.gl;
     gl.bindVertexArray(instanced ? this.drawVAO : this.updateVAO);
-    for (const [buffer, first, count, stride] of [[pool.dynamic[pool.current], 0, 2, 32], [pool.static, 2, 4, 64]]) {
+    for (const [buffer, first, count, stride] of [[pool.dynamic[pool.current], 0, 2, 48], [pool.static, 2, 4, 64]]) {
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
       for (let i = 0; i < count; i++) {
         gl.enableVertexAttribArray(first + i);
@@ -199,6 +213,10 @@ export class GpuParticles {
         gl.vertexAttribDivisor(first + i, instanced ? 1 : 0);
       }
     }
+    gl.bindBuffer(gl.ARRAY_BUFFER, pool.dynamic[pool.current]);
+    gl.enableVertexAttribArray(6);
+    gl.vertexAttribPointer(6, 4, gl.FLOAT, false, 48, pool.start * 48 + 32);
+    gl.vertexAttribDivisor(6, instanced ? 1 : 0);
   }
   update(pool, time) {
     const count = pool.end - pool.start;
@@ -206,8 +224,18 @@ export class GpuParticles {
     const gl = this.gl;
     this.inputs(pool, false);
     gl.useProgram(this.updateProgram.program); gl.uniform1f(this.updateProgram.uniforms.simulationTime, time);
+    // Only the reviewed eye-room material field is enabled. Unknown/outside
+    // cells never become invented walls for other portal placements.
+    const collision = this.renderer.collisionField?.(pool.sim);
+    const uniforms = this.updateProgram.uniforms;
+    gl.uniform1i(uniforms.collisionEnabled, collision ? 1 : 0);
+    gl.activeTexture(gl.TEXTURE0 + 7);
+    gl.bindTexture(gl.TEXTURE_2D, collision?.texture ?? this.emptyCollisionTexture);
+    gl.uniform1i(uniforms.collisionCells, 7);
+    gl.uniform2f(uniforms.collisionOrigin, collision?.x ?? 0, collision?.y ?? 0);
+    gl.uniform2i(uniforms.collisionSize, collision?.width ?? 1, collision?.height ?? 1);
     gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, this.feedback);
-    gl.bindBufferRange(gl.TRANSFORM_FEEDBACK_BUFFER, 0, pool.dynamic[1 - pool.current], pool.start * 32, count * 32);
+    gl.bindBufferRange(gl.TRANSFORM_FEEDBACK_BUFFER, 0, pool.dynamic[1 - pool.current], pool.start * 48, count * 48);
     gl.enable(gl.RASTERIZER_DISCARD); gl.beginTransformFeedback(gl.POINTS); gl.drawArrays(gl.POINTS, 0, count); gl.endTransformFeedback();
     gl.disable(gl.RASTERIZER_DISCARD); gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null); gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, null);
     pool.current = 1 - pool.current;
@@ -227,6 +255,7 @@ export class GpuParticles {
   }
   dispose() {
     this.configure(new Map(), false);
+    this.gl.deleteTexture(this.emptyCollisionTexture);
     this.gl.deleteVertexArray(this.updateVAO); this.gl.deleteVertexArray(this.drawVAO); this.gl.deleteTransformFeedback(this.feedback);
   }
 }

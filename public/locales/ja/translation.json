@@ -5479,6 +5479,11 @@
         "utility": "ユーティリティー",
         "other": "その他"
       },
+      "populationStatMin": "最小値",
+      "populationStatMax": "最大値",
+      "populationStatMean": "平均値",
+      "populationReference": "Sage 全体統計 · 自然生成",
+      "populationThreeWorldsOnly": "Sage のこの全体統計は、西・メイン・東の合計のみを対象としています。",
       "main": "メインワールド",
       "westNumber": "西{{n}}",
       "eastNumber": "東{{n}}",

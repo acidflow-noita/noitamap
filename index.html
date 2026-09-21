@@ -112,6 +112,58 @@
     <meta property="og:image:secure_url" content="https://map.runfast.stream/assets/noitamap-opengraph.png" />
     <meta property="og:image:type" content="image/png" />
 
+    <!-- Experimental Discord component preview. Keep Open Graph as the fallback.
+         Static navigation only: no stale seed numbers or invented per-link state. -->
+    <script id="discord:component-embed" type="application/json">
+      {
+        "component": {
+          "type": 17,
+          "accent_color": 9133302,
+          "spoiler": false,
+          "components": [
+            {
+              "type": 10,
+              "content": "# Noita Map\nExplore the world, find loot and bosses, and inspect seed reports. Contains game spoilers."
+            },
+            {
+              "type": 12,
+              "items": [
+                {
+                  "media": {
+                    "url": "https://map.runfast.stream/assets/noitamap-opengraph.png"
+                  },
+                  "description": "Noita Map world overview"
+                }
+              ]
+            },
+            {
+              "type": 1,
+              "components": [
+                {
+                  "type": 2,
+                  "style": 5,
+                  "label": "Daily seed map",
+                  "url": "https://map.runfast.stream/?m=dy&ds=1"
+                },
+                {
+                  "type": 2,
+                  "style": 5,
+                  "label": "World atlas",
+                  "url": "https://map.runfast.stream/?m=r"
+                },
+                {
+                  "type": 2,
+                  "style": 5,
+                  "label": "New Game+ atlas",
+                  "url": "https://map.runfast.stream/?m=n"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    </script>
+
     <!-- Twitter Meta Tags -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta property="twitter:domain" content="map.runfast.stream" />

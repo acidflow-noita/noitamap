@@ -1,3 +1,4 @@
+import { collisionFieldFor } from "./particle-collision.mjs";
 import {
   PortalSimulation,
   EFFECTS,
@@ -39,7 +40,16 @@ export function decodeAssets(catalog, buffer) {
       });
     images[key] = { ...a, points };
   }
-  return { assets, images };
+  const field = catalog.eyeCollision;
+  let eyeCollision = null;
+  if (field) {
+    if (![field.offset, field.length, field.width, field.height, field.x, field.y].every(Number.isSafeInteger) ||
+        field.offset < 0 || field.width <= 0 || field.height <= 0 ||
+        field.length !== field.width * field.height || field.offset + field.length > buffer.byteLength)
+      throw new Error("Invalid eye-room collision material field");
+    eyeCollision = { ...field, cells: new Uint8Array(buffer, field.offset, field.length) };
+  }
+  return { assets, images, eyeCollision };
 }
 function integer(rng, min, max) {
   if (min === max) return min;
@@ -158,6 +168,11 @@ export class SourceSimulation extends PortalSimulation {
       ultrabright: c.ultrabright,
       back: c.back,
       cellType: material.cellType,
+      collideWithGrid: c.collideWithGrid === true,
+      // Isolated per-particle stream: same native RNG transition, not a claim
+      // to know the live game's globally interleaved cosmetic random state.
+      collisionRng: this.lifetimeRng.state,
+      collisionX: x, collisionY: y, collisionBounce: true,
       attractor: f(c.attractor),
       targetX: emitterX,
       targetY: emitterY,
@@ -401,11 +416,14 @@ export class MathSimulation extends PortalSimulation {
 }
 
 export function makeSimulation(options, catalog, resources) {
-  if (Object.hasOwn(EFFECTS, options.effect))
-    return new PortalSimulation(options);
-  if (Object.hasOwn(MATH_EFFECTS, options.effect))
-    return new MathSimulation(options);
-  const definition = catalog.effects[options.effect];
-  if (!definition) throw new RangeError("Unknown effect");
-  return new SourceSimulation(options, definition, resources, catalog);
+  let simulation;
+  if (Object.hasOwn(EFFECTS, options.effect)) simulation = new PortalSimulation(options);
+  else if (Object.hasOwn(MATH_EFFECTS, options.effect)) simulation = new MathSimulation(options);
+  else {
+    const definition = catalog.effects[options.effect];
+    if (!definition) throw new RangeError("Unknown effect");
+    simulation = new SourceSimulation(options, definition, resources, catalog);
+  }
+  simulation.collisionField = collisionFieldFor(simulation, resources.eyeCollision);
+  return simulation;
 }

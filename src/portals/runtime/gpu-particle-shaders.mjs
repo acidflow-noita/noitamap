@@ -1,3 +1,4 @@
+import { COLLISION_GLSL } from "./particle-collision.mjs";
 // GPU-resident cosmetic-particle updates and quads. This follows the reference
 // operation order, but GLSL transcendental/float precision is not a bit-exact
 // substitute for the reference's mixed double/float arithmetic.
@@ -10,6 +11,7 @@ layout(location=2) in vec4 forces;
 layout(location=3) in vec4 flow;
 layout(location=4) in vec4 targetColor;
 layout(location=5) in vec4 metadata;
+layout(location=6) in vec4 contact;
 `;
 const noise = `
 const int permutation[256] = int[256](${SIMPLEX_PERMUTATION.join(",")});
@@ -82,11 +84,13 @@ precision highp float;
 precision highp int;
 ${attributes}
 ${noise}
+${COLLISION_GLSL}
 uniform float simulationTime;
 out vec4 nextMotion;
 out vec4 nextAppearance;
+out vec4 nextContact;
 void main() {
-  nextMotion=motion;nextAppearance=appearance;
+  nextMotion=motion;nextAppearance=appearance;nextContact=contact;
   gl_Position=vec4(0,0,0,1);
   if(appearance.w<0.) return;
   const float dt=0.01666666753590107;
@@ -103,6 +107,8 @@ void main() {
     velocity.y=cos(angle)*flow.x+velocity.y;
   }
   if(forces.z!=0.) velocity-=(velocity*forces.z)*dt;
+  if((int(metadata.x)&8192)!=0)
+    collideParticle(motion.xy,position,velocity,nextAppearance.w,nextContact,(int(metadata.x)&192)==192);
   float speed=sqrt(velocity.x*velocity.x+velocity.y*velocity.y);
   vec2 delta=motion.xy-position;
   float distance=sqrt(delta.x*delta.x+delta.y*delta.y);

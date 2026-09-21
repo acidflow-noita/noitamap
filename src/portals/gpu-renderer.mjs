@@ -1,6 +1,7 @@
+import { collisionFieldFor } from "./runtime/particle-collision.mjs";
 import { GpuGridRenderer, GPU_SHADERS } from './runtime/gpu-grid-renderer.mjs';
 
-// The upstream particle update/drawing shaders remain untouched. This final
+// The particle shaders include the reviewed collision branch. This final
 // compositor replaces the laboratory's grid layout with actual map geometry.
 export const MAP_COMPOSITE_VERTEX = `#version 300 es
 uniform vec4 top;
@@ -25,7 +26,19 @@ export class MapGpuRenderer extends GpuGridRenderer {
       const debug=this.gl.getExtension('WEBGL_debug_renderer_info');
       this.device=String(this.gl.getParameter(debug?debug.UNMASKED_RENDERER_WEBGL:this.gl.RENDERER));
       this.assetBytes=Object.values(resources.assets).reduce((sum,a)=>sum+a.rgba.byteLength,0);
+      const field=resources.eyeCollision;
+      if(field){
+        const gl=this.gl,texture=gl.createTexture();this.eyeCollision={...field,texture};
+        gl.bindTexture(gl.TEXTURE_2D,texture);
+        gl.texImage2D(gl.TEXTURE_2D,0,gl.R8UI,field.width,field.height,0,gl.RED_INTEGER,gl.UNSIGNED_BYTE,field.cells);
+        for(const param of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,param,gl.NEAREST);
+        for(const param of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,param,gl.CLAMP_TO_EDGE);
+        this.assetBytes+=field.cells.byteLength;
+      }
     } catch(error){this.dispose();throw error;}
+  }
+  collisionField(sim) {
+    return collisionFieldFor(sim, this.eyeCollision);
   }
   synchronize(entries) {
     this.retain([...entries.keys()]);
@@ -112,13 +125,17 @@ export class MapGpuRenderer extends GpuGridRenderer {
   }
   diagnostics(){
     let particles=0,visibleParticles=0,particleBytes=0;
-    for(const pool of this.particles?.pools.values()??[]){particles+=pool.live;visibleParticles+=pool.visible;particleBytes+=pool.capacity*128;}
+    for(const pool of this.particles?.pools.values()??[]){particles+=pool.live;visibleParticles+=pool.visible;particleBytes+=pool.capacity*160;}
     return {device:this.device,gpuMS:this.gpuMS,particles,visibleParticles,
+      // GPU collision deaths retain scheduled slots through original expiry
+      // plus the native lifetime-reset allowance. No per-frame readback.
+      particleCountsAreUpperBounds:[...(this.particles?.pools.values()??[])].some(p=>!!this.collisionField(p.sim)),
       estimatedGPUBytes:particleBytes+this.targets.size*480*320*4+this.canvas.width*this.canvas.height*4+this.assetBytes};
   }
   dispose(){
     for(const query of this.queries??[])this.gl.deleteQuery(query);
     this.queries=[];
+    if(this.eyeCollision)this.gl.deleteTexture(this.eyeCollision.texture);
     super.dispose();
     // Release ONLY this experiment's context, never the terrain/drawing context.
     this.gl.getExtension('WEBGL_lose_context')?.loseContext();

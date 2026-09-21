@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { PortalFrameRenderer, type Runtime } from '../src/portals/worker-runtime';
+import { PortalFrameRenderer, replayStepsFor, type Runtime } from '../src/portals/worker-runtime';
 import { MAX_GPU_BYTES } from '../src/portals/geometry';
 import { FRAME_MS } from '../src/portals/protocol';
 import type { PortalPlacement } from '../src/portals/placements';
@@ -64,14 +64,14 @@ describe('worker-owned portal rendering', () => {
     const r = runtime(), renderer = new PortalFrameRenderer([portal(0), eye], 42, { minPixels: 1.5, limit: 192 }, r);
     for (let i = 0; i < 1500; i++) await renderer.frame(i, camera, FRAME_MS);
     const far = { ...camera, matrix: { ...camera.matrix, e: -100000 } };
-    // 20s of eye-room particles = 1200 replay steps at a 400/frame budget: the
-    // portal is composited on the third frame, already at the shared clock.
+    // Float32 expiry plus collision lifetime-reset allowance, at a 400/frame
+    // budget: the portal is composited on the fourth frame at the shared clock.
     let waited = 0;
     while ((await renderer.frame(1500 + waited, far, FRAME_MS)).activePortalIDs.length === 0) waited++;
     expect(waited).toBe(3);
     const sim = r.renderer.renderMap.mock.calls.at(-1)![0].get(eye.id).simulation;
     expect(sim.elapsedFrames).toBe(1500 + waited + 1); // clock kept running during the replay
-    expect(sim.particles.length).toBe(1200 + waited);
+    expect(sim.particles.length).toBe(replayStepsFor(eye.effect) + waited);
     expect(Math.max(...r.renderer.replay.mock.calls.map(c => c[2]))).toBeLessThanOrEqual(400);
   });
   it('uses upstream two-step stall cap and reports instance limits', async () => {

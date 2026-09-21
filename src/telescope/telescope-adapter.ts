@@ -1,3 +1,4 @@
+import { completeGenerationBossPOIs } from "./boss-pois";
 import { snapshotWorkerScenes } from "./worker-scenes";
 import { normalizeScenePOIs } from "./scene-pois";
 import { prepareElevatorShafts, withoutElevatorEndpointSpawns } from "./terrain-elevator";
@@ -701,59 +702,10 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         });
       }
     }
-    // Add friend boss at the correct friend cave
+    // Main-world-only items and bosses. Repeating room bosses are added by
+    // completeBossPOIs after BOTH main-world and worker results are assembled.
     if (pw === 0) {
-      const pwOffsetX = pw * 512 * 70;
-      const friendRoomPositions = [
-        { x: 6 * 512 + pwOffsetX, y: 11 * 512 },
-        { x: 8 * 512 + pwOffsetX, y: 19 * 512 },
-        { x: -10 * 512 + pwOffsetX, y: 9 * 512 },
-        { x: -21 * 512 + pwOffsetX, y: 8 * 512 },
-        { x: -22 * 512 + pwOffsetX, y: 22 * 512 },
-        { x: -10 * 512 + pwOffsetX, y: 25 * 512 },
-      ];
-      const friendPrng = new NollaPrng(0);
-      friendPrng.SetRandomSeed(seed + ngPlus, 24, 32);
-      const friendRoom = friendPrng.Random(1, 6);
-      const pos = friendRoomPositions[friendRoom - 1];
-      if (!combinedPois.some((p: any) => p.type === "friend")) {
-        combinedPois.push({
-          type: "friend",
-          name: "Toveri",
-          x: pos.x + 256,
-          y: pos.y + 256,
-          biome: `friend_${friendRoom}`,
-          // Toveri is a spawned entity, NOT part of the friend cave's `cavern`
-          // pixel scene (that scene is room art only). So he needs a real
-          // marker: getSpriteKey maps type "friend" -> enemy:friend, drawn once
-          // by the marker tile source (live) and the decor bake (DZI). The old
-          // addBossOverlays path that used to double him was removed, so there
-          // is no second sprite to collide with.
-          items: [{ type: "item", item: "full_heal", name: "Full Health Regeneration" }],
-        } as any);
-      }
-
-      // Kauhuhirviö (Horror Monster) shares the friend cave with Toveri —
-      // another hardcoded spawn the telescope scanner never emits. Offset left
-      // so the two markers don't overlap. entity id "ultimate_killer" wires up
-      // the card/search alias via CREATURE_DATA and the friendship pillar's
-      // travel link.
-      if (!combinedPois.some((p: any) => p.type === "entity" && (p as any).entity === "ultimate_killer")) {
-        combinedPois.push({
-          type: "entity",
-          entity: "ultimate_killer",
-          name: "Kauhuhirviö",
-          x: pos.x + 256 - 70,
-          y: pos.y + 256,
-          biome: `friend_${friendRoom}`,
-        } as any);
-      }
-
-      // Offset gourd down so it doesn't overlap the friend boss
       for (const poi of combinedPois) {
-        if (poi.type === "item" && (poi as any).item === "gourd" && (poi as any).biome === `friend_${friendRoom}`) {
-          poi.y += 80;
-        }
         // Reposition the gourd_room gourd to its real in-world spot (telescope's
         // chunk-center estimate sits too high/left).
         if (poi.type === "item" && (poi as any).item === "gourd" && (poi as any).biome === "gourd_room") {
@@ -768,25 +720,6 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
           (poi as any).nameKey = "item_evil_eye";
         }
       }
-
-      // Add mestari_secret boss (boss_wizard) at mestari_secret orbroom center
-      // mestari_secret is at chunk (59, 43) in biome map coordinates
-      // World coords: x = (59 - 32) * 512 + 256, y = (43 - 14) * 512 + 256
-      combinedPois.push({
-        type: "boss_wizard",
-        name: "Mestarien mestari",
-        x: 12573,
-        y: 15178,
-        biome: "mestari_secret",
-        items: [
-          { type: "item", item: "wandstone", nameKey: "item_wandstone", name: "Sauvan Ydin" },
-          { type: "item", item: "spell", spell: "RESET" },
-          { type: "item", item: "spell", spell: "ADD_TRIGGER" },
-          { type: "item", item: "spell", spell: "ADD_TIMER" },
-          { type: "item", item: "spell", spell: "ADD_DEATH_TRIGGER" },
-          { type: "item", item: "spell", spell: "DUPLICATE" },
-        ],
-      } as any);
 
       // "A Cunning Contraption" (booktitle_mestari) sits in the mestari_secret
       // room as a standalone world item, NOT a boss drop — own clickable POI.
@@ -822,19 +755,6 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         biome: "lake",
       } as any);
 
-      // Add forgotten (boss_ghost) manually due to lack of telescope coverage
-      combinedPois.push({
-        type: "boss_ghost",
-        name: "Unohdettu",
-        x: (9 - 32) * 512 + 256,
-        y: (39 - 14) * 512 + 256,
-        biome: "boss_arena",
-        items: [
-          { type: "item", item: "sunseed", name: "Sun Seed" },
-          { type: "item", item: "full_heal", name: "Full Health Regeneration" },
-        ],
-      } as any);
-
       // Add Kivi (Rock Boss)
       combinedPois.push({
         type: "boss_sky",
@@ -866,16 +786,6 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         items: [{ type: "entity", entity: "boss_centipede_sampo", name: "Sampo", x: 3555, y: 13050 }],
       } as any);
 
-      // Add Mecha Kolmi
-      combinedPois.push({
-        type: "boss_robot",
-        name: "Kolmisilmän Koipi",
-        x: 13987,
-        y: 11123,
-        biome: "boss_arena",
-        items: [{ type: "item", item: "perk", perk: "map", name: "Spatial Awareness" }],
-      } as any);
-
       // Moon Radar: a fixed-location perk pickup in the "???" room east of the
       // Overgrown Cavern. Flagged not_in_default_perk_pool in telescope's
       // perks.js, so it never appears in a generated Holy Mountain deck and
@@ -888,16 +798,6 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         y: 3332,
         biome: "moon_room",
         fixed: true,
-      } as any);
-
-      // Add Meat Boss (Kolmisilmän sydän)
-      combinedPois.push({
-        type: "boss_meat",
-        name: "Kolmisilmän sydän",
-        x: 6915,
-        y: 8448,
-        biome: "boss_arena",
-        items: [{ type: "wand", sprite: "custom/chainsaw", name: "Saha" }],
       } as any);
 
       // Add Syväolento (Leviathan / Levi boss). No body sprite exists in the
@@ -945,15 +845,6 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
         if (p.type === "tiny" && !(p as any).name) (p as any).name = "Limatoukka";
       }
 
-      // Telescope emits the pyramid boss drop for every vertical call
-      // (pvt = -1, 0, +1) because its guard checks pwIndex === 0 but not
-      // pwIndexVertical — so the main world ends up with 3 identical copies.
-      // Collapse to one.
-      const pyramidPois = combinedPois.filter((p: any) => p.type === "pyramid_boss");
-      if (pyramidPois.length > 1) {
-        combinedPois = combinedPois.filter((p: any) => p.type !== "pyramid_boss");
-        combinedPois.push(pyramidPois[0]);
-      }
     }
 
     // Tower wands (biome solid_wall_tower_10) are spaced 100px apart by
@@ -970,30 +861,6 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       combinedPois.push(loadoutPois[0]);
     }
 
-    // Deduplicate friend
-    const friendPois = combinedPois.filter(
-      (p: any) => p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss",
-    );
-    if (friendPois.length > 0) {
-      const keep = friendPois.find((p: any) => p.type === "friend") || friendPois[0];
-      combinedPois = combinedPois.filter(
-        (p: any) =>
-          !(p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss"),
-      );
-      combinedPois.push(keep);
-    }
-
-    // Deduplicate alchemist_boss
-    const alchemistPois = combinedPois.filter(
-      (p: any) => p.type === "alchemist_boss" || (p.type === "entity" && p.entity === "boss_alchemist"),
-    );
-    if (alchemistPois.length > 0) {
-      const keep = alchemistPois.find((p: any) => p.type === "alchemist_boss") || alchemistPois[0];
-      combinedPois = combinedPois.filter(
-        (p: any) => !(p.type === "alchemist_boss" || (p.type === "entity" && p.entity === "boss_alchemist")),
-      );
-      combinedPois.push(keep);
-    }
     for (const poi of combinedPois) {
       if (poi.type === "wand" && (!poi.name || poi.name === "Taikasauva")) {
         if (poi.name === "Taikasauva") (poi as any).isTaikasauva = true;
@@ -1016,45 +883,8 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
 
       // Apply patches and deduplication for worker POIs exactly as main thread does
 
-      // boss_pit is added once in the pw===0 main block; the native "tiny" only
-      // spawns at pwIndex===0 too. Background PWs (-1/+1) should carry neither —
-      // strip defensively so a stray copy can't reach the map/search.
-      workerPois = workerPois.filter((p: any) => p.type !== "boss_pit" && p.type !== "tiny");
-
-      // Collapse telescope's triplicated pyramid boss (one per vertical call).
-      const pyramidPoisWorker = workerPois.filter((p: any) => p.type === "pyramid_boss");
-      if (pyramidPoisWorker.length > 1) {
-        workerPois = workerPois.filter((p: any) => p.type !== "pyramid_boss");
-        workerPois.push(pyramidPoisWorker[0]);
-      }
-
       // Drop starting_loadout from side PWs — only the pw=0 instance is kept
       workerPois = workerPois.filter((p: any) => p.type !== "starting_loadout");
-
-      // Deduplicate friend worker
-      const friendPoisWorker = workerPois.filter(
-        (p: any) => p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss",
-      );
-      if (friendPoisWorker.length > 0) {
-        const keep = friendPoisWorker.find((p: any) => p.type === "friend") || friendPoisWorker[0];
-        workerPois = workerPois.filter(
-          (p: any) =>
-            !(p.type === "friend" || (p.type === "entity" && p.entity === "friend") || p.type === "friend_boss"),
-        );
-        workerPois.push(keep);
-      }
-
-      // Deduplicate alchemist_boss worker
-      const alchemistPoisWorker = workerPois.filter(
-        (p: any) => p.type === "alchemist_boss" || (p.type === "entity" && p.entity === "boss_alchemist"),
-      );
-      if (alchemistPoisWorker.length > 0) {
-        const keep = alchemistPoisWorker.find((p: any) => p.type === "alchemist_boss") || alchemistPoisWorker[0];
-        workerPois = workerPois.filter(
-          (p: any) => !(p.type === "alchemist_boss" || (p.type === "entity" && p.entity === "boss_alchemist")),
-        );
-        workerPois.push(keep);
-      }
 
       // Apply NollaPrng logic for Wand generation in background worlds
       for (const poi of workerPois) {
@@ -1614,7 +1444,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   const t1 = performance.now();
   console.log(`[Telescope] Generation complete in ${((t1 - t0) / 1000).toFixed(2)}s`);
 
-  return normalizeScenePOIs({
+  return normalizeScenePOIs(completeGenerationBossPOIs({
     seed,
     ngPlus,
     isNGP,
@@ -1627,5 +1457,5 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     pixelScenesByPW,
     eyes,
     parallelWorlds,
-  });
+  }));
 }

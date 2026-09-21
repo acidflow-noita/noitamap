@@ -1,0 +1,52 @@
+{
+  "executableSha256": "808d2a0ab51ea0b46e9ad2aeb3327a4b0ce3feae04f32ba26326bf585b5779bd",
+  "function": "0x00712390",
+  "syntheticFloorY": 0,
+  "syntheticCellType": 3,
+  "cosmeticRngState": 12345,
+  "results": [
+    {
+      "collide": false,
+      "bounce": false,
+      "x": 0.5,
+      "y": 0.5,
+      "vx": 0.0,
+      "vy": 60.0,
+      "life": 20.0,
+      "dead": false,
+      "queries": []
+    },
+    {
+      "collide": true,
+      "bounce": false,
+      "x": 0.5,
+      "y": -0.5,
+      "vx": 0.0,
+      "vy": 60.0,
+      "life": 20.0,
+      "dead": true,
+      "queries": [
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "collide": true,
+      "bounce": true,
+      "x": 0.5,
+      "y": -0.5,
+      "vx": -2.1524455547332764,
+      "vy": -16.007936477661133,
+      "life": 1.4477025270462036,
+      "dead": false,
+      "queries": [
+        [
+          0,
+          0
+        ]
+      ]
+    }
+  ]
+}

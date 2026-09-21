@@ -155,6 +155,8 @@ def emitter(c):
         'offsetX':n('offset.x'),'offsetY':n('offset.y'),'xMin':n('x_pos_offset_min'),'xMax':n('x_pos_offset_max'),
         'yMin':n('y_pos_offset_min'),'yMax':n('y_pos_offset_max'),'fade':b('fade_based_on_lifetime'),
         'drawLong':b('draw_as_long'),'onGrid':b('render_on_grid'),'back':b('render_back',True),
+        # ParticleEmitterComponent +0x66: native constructor defaults to true.
+        'collideWithGrid':b('collide_with_grid',True),
         'alpha':n('custom_alpha',-1),'singleWidth':b('particle_single_width',True),'ultrabright':b('render_ultrabright'),
         'chance':int(n('emission_chance',100)),'delay':int(n('delay_frames')),
         'endFrame':int(n('emitter_lifetime_frames',-1))}
@@ -232,7 +234,17 @@ def build():
     core=sprite('data/buildings_gfx/teleport_center.xml',{'additive':'1'})
     material('spark_purple');material('spark_white');material('spark_teal')
     OUT.mkdir(parents=True,exist_ok=True)
-    result={'version':1,'effects':effects,'assets':ASSETS,'imageAnimations':IMAGES,'materials':MATERIALS,'portalSprite':core,'warnings':WARNINGS}
+    # Actual material program, not the visual/background artwork. Only known
+    # air/steel cells are supplied; untouched base-biome cells stay unknown.
+    chamber_path = 'data/biome_impl/snowcastle/hourglass_chamber.png'
+    chamber = Image.open(DATA / chamber_path.removeprefix('data/')).convert('RGBA')
+    cells = bytes(1 if (r,g,b,a)==(64,64,65,255) else
+        0 if (r,g,b,a)==(0,0,66,255) else 255 for r,g,b,a in chamber.getdata())
+    collision = {'source':chamber_path,'width':chamber.width,'height':chamber.height,
+        'x':256,'y':255,'offset':len(BINARY),'length':len(cells),
+        'sha256':hashlib.sha256(cells).hexdigest()}
+    BINARY.extend(cells)
+    result={'version':1,'effects':effects,'assets':ASSETS,'imageAnimations':IMAGES,'materials':MATERIALS,'portalSprite':core,'warnings':WARNINGS,'eyeCollision':collision}
     (OUT/'effects.json').write_text(json.dumps(result,separators=(',',':'))+'\n')
     (OUT/'effects.bin').write_bytes(BINARY)
     print(f'Compiled {len(effects)} additional effects; {len(BINARY):,} bytes of targeted assets (no ZIP runtime).')

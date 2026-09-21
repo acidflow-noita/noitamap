@@ -1,3 +1,4 @@
+import { completeGenerationBossPOIs } from "./boss-pois";
 import { normalizeScenePOIs } from "./scene-pois";
 /**
  * baked-generation.ts
@@ -120,7 +121,7 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[]): Generation
     }
   }
 
-  return normalizeScenePOIs({
+  return normalizeScenePOIs(completeGenerationBossPOIs({
     seed: base.seed,
     ngPlus: base.ngPlus,
     isNGP: base.isNGP,
@@ -134,7 +135,7 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[]): Generation
     poisByPW,
     pixelScenesByPW,
     eyes: undefined,
-  }) as GenerationResult;
+  })) as GenerationResult;
 }
 
 /**

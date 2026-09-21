@@ -8,7 +8,7 @@ menu (speedometer icon; inside the “…” menu on the dynamic map) as
 the worker immediately and releases its GPU context. There is no on-screen
 diagnostics overlay; use `window.__portalOverlayStats()` in the console.
 
-This prototype uses only the experimental GPU-particle backend from
+This prototype vendors the experimental GPU-particle backend from
 `WUOTE/noita_particle_animations` commit
 `85d0740e7d592d9b65395fbdae68013f23c4acc7` (September 19, 2026,
 08:29 EDT, “Add full-gpu renderer (experimental)”). An isolated `git pull --ff-only`
@@ -16,6 +16,13 @@ on September 19 confirmed that this is still GitHub main. There is no animation 
 software renderer fallback, or CPU-physics renderer selection. The source repo
 was not modified; an isolated checkout is under `task/noita-particle-animations`.
 The earlier atlas experiment is parked under `task/portal-atlas-prototype`.
+
+Map-local changes now implement native-backed cosmetic collision against the
+reviewed eye-room material program. The nine child trails collide; the two
+parent emitters do not. Other portals and unknown terrain remain unchanged.
+See `docs/portal-collision-audit.md` for native fixtures, lifetime-reset handling,
+static-scene limitations and manual checks. Collision-mode particle counters
+are conservative upper bounds, identified by `particleCountsAreUpperBounds`.
 
 ## What to check manually
 
@@ -42,9 +49,8 @@ submission run in the worker. Only GPU-backed ImageBitmaps cross to the UI;
 there is no per-frame particle/pixel readback or CPU-renderer fallback. Worker,
 OffscreenCanvas, WebGL2 and bitmaprenderer support are required explicitly.
 
-Only one frame request may be in flight. A nonblocking GL fence waits for actual
-GPU completion before returning the bitmap, preventing a slow VM GPU from
-accumulating work indefinitely. There is no artificial idle/duty-cycle throttle.
+Only one frame request may be in flight. When `portalGpuFence=1` is requested,
+a nonblocking GL fence waits for actual GPU completion before returning the bitmap. There is no artificial idle/duty-cycle throttle.
 Timing matches upstream GridRuntime: accumulate wall-clock time and its
 fractional remainder, advance up to two native 1/60 physics steps per displayed
 frame, and bound long stalls. Both 60fps and 30fps presentation therefore advance
@@ -69,7 +75,8 @@ most two per presented frame, paused while nothing is on screen). Each portal
 targets `clock + phase`. Off-screen portals keep a particle-free "shadow"
 simulation that dry-steps emission timers and both RNG streams (~1.5 µs per
 step, ~0.5 ms per frame for all 221 placements) while lagging exactly one
-replay window (the effect's longest particle life, max 1200 steps) behind. When
+replay window (float32 expiry plus the eye collision lifetime-reset allowance,
+max 1296 steps) behind. When
 a portal enters view the shadow is cloned and that window is replayed with real
 GPU particles under a 400-steps-per-frame budget, so zooming out and back
 resumes the animation exactly where an unculled portal would be, and a heavy
@@ -132,8 +139,9 @@ A patch appears only for its portal in the currently presented GPU frame. If
 that portal is culled/capped, the original captured portal remains visible.
 Toggle-off, spoiler/hidden-tab suspension and renderer failure hide/remove the
 patches; late image loads cannot resurrect them after toggle-off or reseeding.
-No hosted background changes or seed rebake are needed. The experiment remains
-off by default, leaving the captured base map unchanged.
+No hosted background changes or seed rebake are needed. The existing animation
+switch still controls the experiment; switching it off leaves the captured base
+map unchanged.
 
 The approved masks are source-verified, not visually compared in a browser.
 Glow spilling onto walls beyond the interior mask and captured lighting still

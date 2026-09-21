@@ -5479,6 +5479,11 @@
         "utility": "Допоміжне",
         "other": "Інше"
       },
+      "populationStatMin": "Мінімум",
+      "populationStatMax": "Максимум",
+      "populationStatMean": "Середнє",
+      "populationReference": "Статистика Sage · природна поява",
+      "populationThreeWorldsOnly": "Ці дані Sage доступні лише для суми західного, основного та східного світів.",
       "main": "Головний світ",
       "westNumber": "Захід {{n}}",
       "eastNumber": "Схід {{n}}",

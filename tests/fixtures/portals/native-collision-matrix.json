@@ -1,0 +1,7558 @@
+{
+  "executableSha256": "808d2a0ab51ea0b46e9ad2aeb3327a4b0ce3feae04f32ba26326bf585b5779bd",
+  "function": "0x00712390",
+  "results": [
+    {
+      "name": "air",
+      "input": {
+        "x": 0.5,
+        "y": -0.5,
+        "vx": 0,
+        "vy": 60,
+        "life": 20,
+        "collide": false,
+        "bounce": false,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": 0.5,
+          "vx": 0.0,
+          "vy": 60.0,
+          "life": 19.983333587646484,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -0.5,
+          "rng": 12345,
+          "bounce": false
+        }
+      ]
+    },
+    {
+      "name": "kill",
+      "input": {
+        "x": 0.5,
+        "y": -0.5,
+        "vx": 0,
+        "vy": 60,
+        "life": 20,
+        "collide": true,
+        "bounce": false,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": -0.5,
+          "vx": 0.0,
+          "vy": 60.0,
+          "life": 19.983333587646484,
+          "dead": true,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": 0.5,
+          "collisionY": -0.5,
+          "rng": 12345,
+          "bounce": false
+        }
+      ]
+    },
+    {
+      "name": "bounce",
+      "input": {
+        "x": 0.5,
+        "y": -0.5,
+        "vx": 0,
+        "vy": 60,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": -0.5,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.4477025270462036,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": 0.5,
+          "collisionY": -0.5,
+          "rng": 2035175616,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "liquid",
+      "input": {
+        "x": 0.5,
+        "y": -0.5,
+        "vx": 0,
+        "vy": 60,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 1,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": -0.5,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.4477025270462036,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": 0.5,
+          "collisionY": -0.5,
+          "rng": 2035175616,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "gas",
+      "input": {
+        "x": 0.5,
+        "y": -0.5,
+        "vx": 0,
+        "vy": 60,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 2,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": 0.5,
+          "vx": 0.0,
+          "vy": 60.0,
+          "life": 19.983333587646484,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": 0.0,
+          "rng": 12345,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "fire",
+      "input": {
+        "x": 0.5,
+        "y": -0.5,
+        "vx": 0,
+        "vy": 60,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 4,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": 0.5,
+          "vx": 0.0,
+          "vy": 60.0,
+          "life": 19.983333587646484,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": 0.0,
+          "rng": 12345,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "empty",
+      "input": {
+        "x": 0.5,
+        "y": -0.5,
+        "vx": 0,
+        "vy": 60,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 0,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": 0.5,
+          "vx": 0.0,
+          "vy": 60.0,
+          "life": 19.983333587646484,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": 0.0,
+          "rng": 12345,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "liquid-particle-cannot-bounce",
+      "input": {
+        "x": 0.5,
+        "y": -0.5,
+        "vx": 0,
+        "vy": 60,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 1
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": -0.5,
+          "vx": 0.0,
+          "vy": 60.0,
+          "life": 19.983333587646484,
+          "dead": true,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": 0.5,
+          "collisionY": -0.5,
+          "rng": 12345,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "horizontal-wall",
+      "input": {
+        "x": -0.5,
+        "y": 0.5,
+        "vx": 60,
+        "vy": 0,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 3,
+        "axis": "x",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": -0.5,
+          "y": 0.5,
+          "vx": -7.159399032592773,
+          "vy": 0.0,
+          "life": 1.3339946269989014,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": -0.5,
+          "collisionY": 0.5,
+          "rng": 1790989824,
+          "bounce": false
+        }
+      ]
+    },
+    {
+      "name": "diagonal-vertical",
+      "input": {
+        "x": -0.5,
+        "y": -0.5,
+        "vx": 60,
+        "vy": 120,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": -0.5,
+          "y": -0.5,
+          "vx": 7.159399032592773,
+          "vy": -14.318798065185547,
+          "life": 1.3339946269989014,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": -0.5,
+          "collisionY": -0.5,
+          "rng": 1790989824,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "diagonal-horizontal",
+      "input": {
+        "x": -0.5,
+        "y": -0.5,
+        "vx": 120,
+        "vy": 60,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 3,
+        "axis": "x",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": -0.5,
+          "y": -0.5,
+          "vx": -14.318798065185547,
+          "vy": 7.159399032592773,
+          "life": 1.3339946269989014,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": -0.5,
+          "collisionY": -0.5,
+          "rng": 1790989824,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "negative-wall",
+      "input": {
+        "x": -3.5,
+        "y": -3.5,
+        "vx": -60,
+        "vy": 0,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 3,
+        "axis": "x",
+        "boundary": -4,
+        "positive": false,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": -3.5,
+          "y": -3.5,
+          "vx": 7.159399032592773,
+          "vy": 0.0,
+          "life": 1.3339946269989014,
+          "dead": false,
+          "queries": [
+            [
+              -4,
+              -3
+            ]
+          ],
+          "collisionX": -3.5,
+          "collisionY": -3.5,
+          "rng": 1790989824,
+          "bounce": false
+        }
+      ]
+    },
+    {
+      "name": "negative-ceiling",
+      "input": {
+        "x": -3.5,
+        "y": -3.5,
+        "vx": 0,
+        "vy": -60,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 3,
+        "axis": "y",
+        "boundary": -4,
+        "positive": false,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": -3.5,
+          "y": -3.5,
+          "vx": -2.1524455547332764,
+          "vy": 16.007936477661133,
+          "life": 1.4477025270462036,
+          "dead": false,
+          "queries": [
+            [
+              -3,
+              -4
+            ]
+          ],
+          "collisionX": -3.5,
+          "collisionY": -3.5,
+          "rng": 2035175616,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "short-life",
+      "input": {
+        "x": 0.5,
+        "y": -0.5,
+        "vx": 0,
+        "vy": 60,
+        "life": 0.8,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": -0.5,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7833333611488342,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": 0.5,
+          "collisionY": -0.5,
+          "rng": 1790989824,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "near-one-life-can-increase",
+      "input": {
+        "x": 0.5,
+        "y": -0.5,
+        "vx": 0,
+        "vy": 60,
+        "life": 1.1,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": -0.5,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.4477025270462036,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": 0.5,
+          "collisionY": -0.5,
+          "rng": 2035175616,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "fast-no-life-reduction",
+      "input": {
+        "x": 0.5,
+        "y": -0.5,
+        "vx": 0,
+        "vy": 600,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": -0.5,
+          "vx": -2.1524455547332764,
+          "vy": -160.07936096191406,
+          "life": 19.983333587646484,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": 0.5,
+          "collisionY": -0.5,
+          "rng": 1790989824,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "slow-bounce-clears-flag",
+      "input": {
+        "x": 0.5,
+        "y": -0.25,
+        "vx": 0,
+        "vy": 24,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 8,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": 0.15000003576278687,
+          "vx": 0.0,
+          "vy": 24.0,
+          "life": 19.983333587646484,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -0.25,
+          "rng": 12345,
+          "bounce": true
+        },
+        {
+          "x": 0.5,
+          "y": 0.15000003576278687,
+          "vx": -2.1524455547332764,
+          "vy": -6.40317440032959,
+          "life": 1.4477025270462036,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              1
+            ]
+          ],
+          "collisionX": 0.5,
+          "collisionY": -0.25,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.4641259014606476,
+          "y": 0.0432804599404335,
+          "vx": -2.1524455547332764,
+          "vy": -6.40317440032959,
+          "life": 1.4310358762741089,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -0.25,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.42825180292129517,
+          "y": -0.06343911588191986,
+          "vx": -2.1524455547332764,
+          "vy": -6.40317440032959,
+          "life": 1.4143692255020142,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -0.25,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.39237770438194275,
+          "y": -0.17015868425369263,
+          "vx": -2.1524455547332764,
+          "vy": -6.40317440032959,
+          "life": 1.3977025747299194,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -0.25,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.35650360584259033,
+          "y": -0.2768782675266266,
+          "vx": -2.1524455547332764,
+          "vy": -6.40317440032959,
+          "life": 1.3810359239578247,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -0.25,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.3206295073032379,
+          "y": -0.38359785079956055,
+          "vx": -2.1524455547332764,
+          "vy": -6.40317440032959,
+          "life": 1.36436927318573,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -0.25,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.2847554087638855,
+          "y": -0.4903174340724945,
+          "vx": -2.1524455547332764,
+          "vy": -6.40317440032959,
+          "life": 1.3477026224136353,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -0.25,
+          "rng": 2035175616,
+          "bounce": false
+        }
+      ]
+    },
+    {
+      "name": "repeated-bounce-then-kill",
+      "input": {
+        "x": 0.5,
+        "y": -1.5,
+        "vx": 0,
+        "vy": 60,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 120,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": -1.5,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.4477025270462036,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": 0.5,
+          "collisionY": -1.5,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 0.4641259014606476,
+          "y": -1.766798973083496,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.4310358762741089,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.5,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 0.42825180292129517,
+          "y": -2.033597946166992,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.4143692255020142,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -2
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -2.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 0.39237770438194275,
+          "y": -2.3003969192504883,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.3977025747299194,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -2.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 0.35650360584259033,
+          "y": -2.5671958923339844,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.3810359239578247,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -3
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -3.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 0.3206295073032379,
+          "y": -2.8339948654174805,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.36436927318573,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -3.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 0.2847554087638855,
+          "y": -3.1007938385009766,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.3477026224136353,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -3.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 0.24888131022453308,
+          "y": -3.3675928115844727,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.3310359716415405,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -3.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 0.21300721168518066,
+          "y": -3.6343917846679688,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.3143693208694458,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -4
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -4.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 0.17713311314582825,
+          "y": -3.901190757751465,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.297702670097351,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -4.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 0.14125901460647583,
+          "y": -4.167989730834961,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.2810360193252563,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -4.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 0.10538491606712341,
+          "y": -4.434788703918457,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.2643693685531616,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -4.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 0.069510817527771,
+          "y": -4.701587677001953,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.247702717781067,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -5
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -5.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 0.03363672271370888,
+          "y": -4.968386650085449,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.2310360670089722,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -5.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.002237372100353241,
+          "y": -5.235185623168945,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.2143694162368774,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -5.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.03811146691441536,
+          "y": -5.501984596252441,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.1977027654647827,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -6
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -6.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.07398556172847748,
+          "y": -5.7687835693359375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.181036114692688,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -6.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.1098596602678299,
+          "y": -6.035582542419434,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.1643694639205933,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -6.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.1457337588071823,
+          "y": -6.30238151550293,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.1477028131484985,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -6.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.18160785734653473,
+          "y": -6.569180488586426,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.1310361623764038,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -7
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -7.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.21748195588588715,
+          "y": -6.835979461669922,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.114369511604309,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -7.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.25335603952407837,
+          "y": -7.102778434753418,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.0977028608322144,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -7.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.2892301380634308,
+          "y": -7.369577407836914,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.0810362100601196,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -7.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.3251042366027832,
+          "y": -7.63637638092041,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.064369559288025,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -8
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -8.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.3609783351421356,
+          "y": -7.903175354003906,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.0477029085159302,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -8.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.39685243368148804,
+          "y": -8.169974327087402,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.0310362577438354,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.0,
+          "collisionY": -8.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.43272653222084045,
+          "y": -8.436773300170898,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.0143696069717407,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -8
+            ]
+          ],
+          "collisionX": -1.0,
+          "collisionY": -8.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.46860063076019287,
+          "y": -8.703572273254395,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.997702956199646,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -9
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -9.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.5044746994972229,
+          "y": -8.97037124633789,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.9810363054275513,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -8
+            ]
+          ],
+          "collisionX": -1.0,
+          "collisionY": -8.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.5403487682342529,
+          "y": -9.237170219421387,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.9643696546554565,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -9
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -9.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.576222836971283,
+          "y": -9.503969192504883,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.9477030038833618,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -9
+            ]
+          ],
+          "collisionX": -1.0,
+          "collisionY": -9.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.612096905708313,
+          "y": -9.770768165588379,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.9310363531112671,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -10
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -10.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.647970974445343,
+          "y": -10.037567138671875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.9143697023391724,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -9
+            ]
+          ],
+          "collisionX": -1.0,
+          "collisionY": -9.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.683845043182373,
+          "y": -10.304366111755371,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.8977030515670776,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -11
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -11.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.7197191119194031,
+          "y": -10.571165084838867,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.8810364007949829,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -9
+            ]
+          ],
+          "collisionX": -1.0,
+          "collisionY": -9.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.7555931806564331,
+          "y": -10.837964057922363,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.8643697500228882,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -11
+            ],
+            [
+              0,
+              -12
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -12.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.7914672493934631,
+          "y": -11.10476303100586,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.8477030992507935,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -10
+            ]
+          ],
+          "collisionX": -1.0,
+          "collisionY": -10.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.8273413181304932,
+          "y": -11.371562004089355,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.8310364484786987,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -12
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -12.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.8632153868675232,
+          "y": -11.638360977172852,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.814369797706604,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -10
+            ]
+          ],
+          "collisionX": -1.0,
+          "collisionY": -10.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.8990894556045532,
+          "y": -11.905159950256348,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7977031469345093,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -12
+            ],
+            [
+              0,
+              -13
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -13.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.9349635243415833,
+          "y": -12.171958923339844,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7810364961624146,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -11
+            ]
+          ],
+          "collisionX": -1.0,
+          "collisionY": -11.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -0.9708375930786133,
+          "y": -12.43875789642334,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7643698453903198,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -13
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -13.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.006711721420288,
+          "y": -12.705556869506836,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7477031946182251,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -12
+            ]
+          ],
+          "collisionX": -1.0,
+          "collisionY": -12.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.042585849761963,
+          "y": -12.972355842590332,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7310365438461304,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -13
+            ]
+          ],
+          "collisionX": -1.0,
+          "collisionY": -13.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.0784599781036377,
+          "y": -13.239154815673828,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7143698930740356,
+          "dead": false,
+          "queries": [],
+          "collisionX": -1.0,
+          "collisionY": -13.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.1143341064453125,
+          "y": -13.505953788757324,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.6977032423019409,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -14
+            ]
+          ],
+          "collisionX": -1.0,
+          "collisionY": -14.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.1502082347869873,
+          "y": -13.77275276184082,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.6810365915298462,
+          "dead": false,
+          "queries": [],
+          "collisionX": -1.0,
+          "collisionY": -14.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.186082363128662,
+          "y": -14.039551734924316,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.6643699407577515,
+          "dead": false,
+          "queries": [],
+          "collisionX": -1.0,
+          "collisionY": -14.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.221956491470337,
+          "y": -14.306350708007812,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.6477032899856567,
+          "dead": false,
+          "queries": [],
+          "collisionX": -1.0,
+          "collisionY": -14.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.2578306198120117,
+          "y": -14.573149681091309,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.631036639213562,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -15
+            ]
+          ],
+          "collisionX": -1.0,
+          "collisionY": -15.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.2937047481536865,
+          "y": -14.839948654174805,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.6143699884414673,
+          "dead": false,
+          "queries": [],
+          "collisionX": -1.0,
+          "collisionY": -15.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.3295788764953613,
+          "y": -15.1067476272583,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5977033376693726,
+          "dead": false,
+          "queries": [],
+          "collisionX": -1.0,
+          "collisionY": -15.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.3654530048370361,
+          "y": -15.373546600341797,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5810366868972778,
+          "dead": false,
+          "queries": [
+            [
+              -2,
+              -15
+            ]
+          ],
+          "collisionX": -2.0,
+          "collisionY": -15.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.401327133178711,
+          "y": -15.640345573425293,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5643700361251831,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -16
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -16.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.4372012615203857,
+          "y": -15.907144546508789,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5477033853530884,
+          "dead": false,
+          "queries": [
+            [
+              -2,
+              -15
+            ]
+          ],
+          "collisionX": -2.0,
+          "collisionY": -15.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.4730753898620605,
+          "y": -16.17394256591797,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5310367345809937,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -16
+            ]
+          ],
+          "collisionX": -1.0,
+          "collisionY": -16.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.5089495182037354,
+          "y": -16.44074058532715,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5143700838088989,
+          "dead": false,
+          "queries": [
+            [
+              -2,
+              -16
+            ]
+          ],
+          "collisionX": -2.0,
+          "collisionY": -16.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.5448236465454102,
+          "y": -16.707538604736328,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.4977034032344818,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -17
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -17.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.580697774887085,
+          "y": -16.974336624145508,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.4810367226600647,
+          "dead": false,
+          "queries": [
+            [
+              -2,
+              -16
+            ],
+            [
+              -3,
+              -16
+            ]
+          ],
+          "collisionX": -3.0,
+          "collisionY": -16.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.6165719032287598,
+          "y": -17.241134643554688,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.4643700420856476,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -17
+            ],
+            [
+              0,
+              -18
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -18.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.6524460315704346,
+          "y": -17.507932662963867,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.44770336151123047,
+          "dead": false,
+          "queries": [
+            [
+              -2,
+              -16
+            ],
+            [
+              -3,
+              -16
+            ]
+          ],
+          "collisionX": -3.0,
+          "collisionY": -16.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.6883201599121094,
+          "y": -17.774730682373047,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.43103668093681335,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -18
+            ],
+            [
+              0,
+              -19
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -19.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.7241942882537842,
+          "y": -18.041528701782227,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.41437000036239624,
+          "dead": false,
+          "queries": [
+            [
+              -2,
+              -17
+            ],
+            [
+              -3,
+              -16
+            ]
+          ],
+          "collisionX": -3.0,
+          "collisionY": -16.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.760068416595459,
+          "y": -18.308326721191406,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.3977033197879791,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -18
+            ],
+            [
+              0,
+              -19
+            ],
+            [
+              0,
+              -20
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -20.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.7959425449371338,
+          "y": -18.575124740600586,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.381036639213562,
+          "dead": false,
+          "queries": [
+            [
+              -2,
+              -17
+            ],
+            [
+              -3,
+              -17
+            ]
+          ],
+          "collisionX": -3.0,
+          "collisionY": -17.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.8318166732788086,
+          "y": -18.841922760009766,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.3643699586391449,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -19
+            ],
+            [
+              0,
+              -20
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -20.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.8676908016204834,
+          "y": -19.108720779418945,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.3477032780647278,
+          "dead": false,
+          "queries": [
+            [
+              -2,
+              -18
+            ],
+            [
+              -3,
+              -17
+            ]
+          ],
+          "collisionX": -3.0,
+          "collisionY": -17.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.9035649299621582,
+          "y": -19.375518798828125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.33103659749031067,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -20
+            ],
+            [
+              0,
+              -21
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -21.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.939439058303833,
+          "y": -19.642316818237305,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.31436991691589355,
+          "dead": false,
+          "queries": [
+            [
+              -2,
+              -18
+            ],
+            [
+              -3,
+              -18
+            ]
+          ],
+          "collisionX": -3.0,
+          "collisionY": -18.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -1.9753131866455078,
+          "y": -19.909114837646484,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.29770323634147644,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -20
+            ],
+            [
+              0,
+              -21
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -21.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.0111873149871826,
+          "y": -20.175912857055664,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.2810365557670593,
+          "dead": false,
+          "queries": [
+            [
+              -2,
+              -19
+            ],
+            [
+              -3,
+              -19
+            ]
+          ],
+          "collisionX": -3.0,
+          "collisionY": -19.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.0470614433288574,
+          "y": -20.442710876464844,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.2643698751926422,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -21
+            ],
+            [
+              0,
+              -21
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -21.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.0829355716705322,
+          "y": -20.709508895874023,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.2477032095193863,
+          "dead": false,
+          "queries": [
+            [
+              -3,
+              -20
+            ],
+            [
+              -4,
+              -20
+            ]
+          ],
+          "collisionX": -4.0,
+          "collisionY": -20.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.118809700012207,
+          "y": -20.976306915283203,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.23103654384613037,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -21
+            ],
+            [
+              0,
+              -21
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -21.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.154683828353882,
+          "y": -21.243104934692383,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.21436987817287445,
+          "dead": false,
+          "queries": [
+            [
+              -3,
+              -21
+            ],
+            [
+              -4,
+              -21
+            ]
+          ],
+          "collisionX": -4.0,
+          "collisionY": -21.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.1905579566955566,
+          "y": -21.509902954101562,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.19770321249961853,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -21
+            ],
+            [
+              0,
+              -21
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -21.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.2264320850372314,
+          "y": -21.776700973510742,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.1810365468263626,
+          "dead": false,
+          "queries": [
+            [
+              -3,
+              -21
+            ],
+            [
+              -4,
+              -22
+            ]
+          ],
+          "collisionX": -4.0,
+          "collisionY": -22.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.2623062133789062,
+          "y": -22.043498992919922,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.1643698811531067,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -21
+            ],
+            [
+              0,
+              -21
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -21.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.298180341720581,
+          "y": -22.3102970123291,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.14770321547985077,
+          "dead": false,
+          "queries": [
+            [
+              -3,
+              -22
+            ],
+            [
+              -3,
+              -23
+            ],
+            [
+              -4,
+              -23
+            ]
+          ],
+          "collisionX": -4.0,
+          "collisionY": -23.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.334054470062256,
+          "y": -22.57709503173828,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.13103654980659485,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -22
+            ],
+            [
+              0,
+              -21
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -21.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.3699285984039307,
+          "y": -22.84389305114746,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.11436988413333893,
+          "dead": false,
+          "queries": [
+            [
+              -3,
+              -23
+            ],
+            [
+              -4,
+              -24
+            ]
+          ],
+          "collisionX": -4.0,
+          "collisionY": -24.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.4058027267456055,
+          "y": -23.11069107055664,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.09770321846008301,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -22
+            ],
+            [
+              0,
+              -21
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -21.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.4416768550872803,
+          "y": -23.37748908996582,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.08103655278682709,
+          "dead": false,
+          "queries": [
+            [
+              -3,
+              -23
+            ],
+            [
+              -3,
+              -24
+            ],
+            [
+              -4,
+              -25
+            ]
+          ],
+          "collisionX": -4.0,
+          "collisionY": -25.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.477550983428955,
+          "y": -23.644287109375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.06436988711357117,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -22
+            ],
+            [
+              0,
+              -22
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -22.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.51342511177063,
+          "y": -23.91108512878418,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.04770322144031525,
+          "dead": false,
+          "queries": [
+            [
+              -3,
+              -24
+            ],
+            [
+              -4,
+              -24
+            ],
+            [
+              -4,
+              -25
+            ]
+          ],
+          "collisionX": -4.0,
+          "collisionY": -25.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.5492992401123047,
+          "y": -24.17788314819336,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.031036553904414177,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -23
+            ],
+            [
+              0,
+              -22
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -22.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.5851733684539795,
+          "y": -24.44468116760254,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.014369886368513107,
+          "dead": false,
+          "queries": [
+            [
+              -3,
+              -24
+            ],
+            [
+              -4,
+              -25
+            ],
+            [
+              -4,
+              -26
+            ],
+            [
+              -5,
+              -26
+            ]
+          ],
+          "collisionX": -5.0,
+          "collisionY": -26.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -2.6210474967956543,
+          "y": -24.71147918701172,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": -0.0022967811673879623,
+          "dead": false,
+          "queries": [
+            [
+              -1,
+              -23
+            ],
+            [
+              0,
+              -23
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -23.0,
+          "rng": 2035175616,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "long-sampled-motion",
+      "input": {
+        "x": 0.5,
+        "y": -6.5,
+        "vx": 0,
+        "vy": 600,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": -1.5,
+          "vx": -2.1524455547332764,
+          "vy": -160.07936096191406,
+          "life": 19.983333587646484,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -5
+            ],
+            [
+              0,
+              -4
+            ],
+            [
+              0,
+              -3
+            ],
+            [
+              0,
+              -2
+            ],
+            [
+              0,
+              -1
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -1.0,
+          "rng": 1790989824,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "sixty-sample-cap",
+      "input": {
+        "x": 0.5,
+        "y": -70.5,
+        "vx": 0,
+        "vy": 6000,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": 29.50000762939453,
+          "vx": 0.0,
+          "vy": 6000.0,
+          "life": 19.983333587646484,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -69
+            ],
+            [
+              0,
+              -68
+            ],
+            [
+              0,
+              -67
+            ],
+            [
+              0,
+              -66
+            ],
+            [
+              0,
+              -65
+            ],
+            [
+              0,
+              -64
+            ],
+            [
+              0,
+              -63
+            ],
+            [
+              0,
+              -62
+            ],
+            [
+              0,
+              -61
+            ],
+            [
+              0,
+              -60
+            ],
+            [
+              0,
+              -59
+            ],
+            [
+              0,
+              -58
+            ],
+            [
+              0,
+              -57
+            ],
+            [
+              0,
+              -56
+            ],
+            [
+              0,
+              -55
+            ],
+            [
+              0,
+              -54
+            ],
+            [
+              0,
+              -53
+            ],
+            [
+              0,
+              -52
+            ],
+            [
+              0,
+              -51
+            ],
+            [
+              0,
+              -50
+            ],
+            [
+              0,
+              -49
+            ],
+            [
+              0,
+              -48
+            ],
+            [
+              0,
+              -47
+            ],
+            [
+              0,
+              -46
+            ],
+            [
+              0,
+              -45
+            ],
+            [
+              0,
+              -44
+            ],
+            [
+              0,
+              -43
+            ],
+            [
+              0,
+              -42
+            ],
+            [
+              0,
+              -41
+            ],
+            [
+              0,
+              -40
+            ],
+            [
+              0,
+              -39
+            ],
+            [
+              0,
+              -38
+            ],
+            [
+              0,
+              -37
+            ],
+            [
+              0,
+              -36
+            ],
+            [
+              0,
+              -35
+            ],
+            [
+              0,
+              -34
+            ],
+            [
+              0,
+              -33
+            ],
+            [
+              0,
+              -32
+            ],
+            [
+              0,
+              -31
+            ],
+            [
+              0,
+              -30
+            ],
+            [
+              0,
+              -29
+            ],
+            [
+              0,
+              -28
+            ],
+            [
+              0,
+              -27
+            ],
+            [
+              0,
+              -26
+            ],
+            [
+              0,
+              -25
+            ],
+            [
+              0,
+              -24
+            ],
+            [
+              0,
+              -23
+            ],
+            [
+              0,
+              -22
+            ],
+            [
+              0,
+              -21
+            ],
+            [
+              0,
+              -20
+            ],
+            [
+              0,
+              -19
+            ],
+            [
+              0,
+              -18
+            ],
+            [
+              0,
+              -17
+            ],
+            [
+              0,
+              -16
+            ],
+            [
+              0,
+              -15
+            ],
+            [
+              0,
+              -14
+            ],
+            [
+              0,
+              -13
+            ],
+            [
+              0,
+              -12
+            ],
+            [
+              0,
+              -11
+            ],
+            [
+              0,
+              -10
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -10.0,
+          "rng": 12345,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "subpixel-motion",
+      "input": {
+        "x": 0.5,
+        "y": -1.1,
+        "vx": 0,
+        "vy": 3,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 24,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": -1.0500000715255737,
+          "vx": 0.0,
+          "vy": 3.0,
+          "life": 19.983333587646484,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 12345,
+          "bounce": true
+        },
+        {
+          "x": 0.5,
+          "y": -1.0000001192092896,
+          "vx": 0.0,
+          "vy": 3.0,
+          "life": 19.96666717529297,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 12345,
+          "bounce": true
+        },
+        {
+          "x": 0.5,
+          "y": -0.9500001072883606,
+          "vx": 0.0,
+          "vy": 3.0,
+          "life": 19.950000762939453,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 12345,
+          "bounce": true
+        },
+        {
+          "x": 0.5,
+          "y": -0.9000000953674316,
+          "vx": 0.0,
+          "vy": 3.0,
+          "life": 19.933334350585938,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 12345,
+          "bounce": true
+        },
+        {
+          "x": 0.5,
+          "y": -0.8500000834465027,
+          "vx": 0.0,
+          "vy": 3.0,
+          "life": 19.916667938232422,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 12345,
+          "bounce": true
+        },
+        {
+          "x": 0.5,
+          "y": -0.8000000715255737,
+          "vx": 0.0,
+          "vy": 3.0,
+          "life": 19.900001525878906,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 12345,
+          "bounce": true
+        },
+        {
+          "x": 0.5,
+          "y": -0.7500000596046448,
+          "vx": 0.0,
+          "vy": 3.0,
+          "life": 19.88333511352539,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 12345,
+          "bounce": true
+        },
+        {
+          "x": 0.5,
+          "y": -0.7000000476837158,
+          "vx": 0.0,
+          "vy": 3.0,
+          "life": 19.866668701171875,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 12345,
+          "bounce": true
+        },
+        {
+          "x": 0.5,
+          "y": -0.6500000357627869,
+          "vx": 0.0,
+          "vy": 3.0,
+          "life": 19.85000228881836,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 12345,
+          "bounce": true
+        },
+        {
+          "x": 0.5,
+          "y": -0.6500000357627869,
+          "vx": -2.1524455547332764,
+          "vy": -0.8003968000411987,
+          "life": 1.4477025270462036,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.4641259014606476,
+          "y": -0.6633399724960327,
+          "vx": -2.1524455547332764,
+          "vy": -0.8003968000411987,
+          "life": 1.4310358762741089,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.42825180292129517,
+          "y": -0.6766799092292786,
+          "vx": -2.1524455547332764,
+          "vy": -0.8003968000411987,
+          "life": 1.4143692255020142,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.39237770438194275,
+          "y": -0.6900198459625244,
+          "vx": -2.1524455547332764,
+          "vy": -0.8003968000411987,
+          "life": 1.3977025747299194,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.35650360584259033,
+          "y": -0.7033597826957703,
+          "vx": -2.1524455547332764,
+          "vy": -0.8003968000411987,
+          "life": 1.3810359239578247,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.3206295073032379,
+          "y": -0.7166997194290161,
+          "vx": -2.1524455547332764,
+          "vy": -0.8003968000411987,
+          "life": 1.36436927318573,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.2847554087638855,
+          "y": -0.730039656162262,
+          "vx": -2.1524455547332764,
+          "vy": -0.8003968000411987,
+          "life": 1.3477026224136353,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.24888131022453308,
+          "y": -0.7433795928955078,
+          "vx": -2.1524455547332764,
+          "vy": -0.8003968000411987,
+          "life": 1.3310359716415405,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.21300721168518066,
+          "y": -0.7567195296287537,
+          "vx": -2.1524455547332764,
+          "vy": -0.8003968000411987,
+          "life": 1.3143693208694458,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.17713311314582825,
+          "y": -0.7700594663619995,
+          "vx": -2.1524455547332764,
+          "vy": -0.8003968000411987,
+          "life": 1.297702670097351,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.14125901460647583,
+          "y": -0.7833994030952454,
+          "vx": -2.1524455547332764,
+          "vy": -0.8003968000411987,
+          "life": 1.2810360193252563,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.10538491606712341,
+          "y": -0.7967393398284912,
+          "vx": -2.1524455547332764,
+          "vy": -0.8003968000411987,
+          "life": 1.2643693685531616,
+          "dead": false,
+          "queries": [],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 2035175616,
+          "bounce": false
+        },
+        {
+          "x": 0.10538491606712341,
+          "y": -0.7967393398284912,
+          "vx": -2.1524455547332764,
+          "vy": -0.8003968000411987,
+          "life": 1.247702717781067,
+          "dead": true,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": 0.5,
+          "collisionY": -1.100000023841858,
+          "rng": 2035175616,
+          "bounce": false
+        }
+      ]
+    },
+    {
+      "name": "sample-contact-not-endpoint",
+      "input": {
+        "x": 0.5,
+        "y": -3.5,
+        "vx": 0,
+        "vy": 150,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 1,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4,
+        "collisionY": -2
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": -0.9999997615814209,
+          "vx": 0.0,
+          "vy": 150.0,
+          "life": 19.983333587646484,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              -2
+            ]
+          ],
+          "collisionX": 0.0,
+          "collisionY": -2.0,
+          "rng": 12345,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "high-rng-state",
+      "input": {
+        "x": 0.5,
+        "y": -0.5,
+        "vx": 0,
+        "vy": 60,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 2147483646,
+        "frames": 1,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 0,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 0.5,
+          "y": -0.5,
+          "vx": 2.736881732940674,
+          "vy": -16.421546936035156,
+          "life": 0.7443946599960327,
+          "dead": false,
+          "queries": [
+            [
+              0,
+              0
+            ]
+          ],
+          "collisionX": 0.5,
+          "collisionY": -0.5,
+          "rng": 524833574,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "west-world",
+      "input": {
+        "x": -35000.5,
+        "y": 2047.5,
+        "vx": 0,
+        "vy": 60,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 120,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 2048,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": -35000.5,
+          "y": 2047.5,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.4477025270462036,
+          "dead": false,
+          "queries": [
+            [
+              -35000,
+              2048
+            ]
+          ],
+          "collisionX": -35000.5,
+          "collisionY": 2047.5,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35000.53515625,
+          "y": 2047.233154296875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.4310358762741089,
+          "dead": false,
+          "queries": [],
+          "collisionX": -35000.5,
+          "collisionY": 2047.5,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35000.5703125,
+          "y": 2046.96630859375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.4143692255020142,
+          "dead": false,
+          "queries": [
+            [
+              -35000,
+              2046
+            ]
+          ],
+          "collisionX": -35000.0,
+          "collisionY": 2046.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35000.60546875,
+          "y": 2046.699462890625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.3977025747299194,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2047
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2047.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35000.640625,
+          "y": 2046.4326171875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.3810359239578247,
+          "dead": false,
+          "queries": [
+            [
+              -35000,
+              2045
+            ]
+          ],
+          "collisionX": -35000.0,
+          "collisionY": 2045.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35000.67578125,
+          "y": 2046.165771484375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.36436927318573,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2047
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2047.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35000.7109375,
+          "y": 2045.89892578125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.3477026224136353,
+          "dead": false,
+          "queries": [
+            [
+              -35000,
+              2045
+            ]
+          ],
+          "collisionX": -35000.0,
+          "collisionY": 2045.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35000.74609375,
+          "y": 2045.632080078125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.3310359716415405,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2046
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2046.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35000.78125,
+          "y": 2045.365234375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.3143693208694458,
+          "dead": false,
+          "queries": [
+            [
+              -35000,
+              2044
+            ]
+          ],
+          "collisionX": -35000.0,
+          "collisionY": 2044.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35000.81640625,
+          "y": 2045.098388671875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.297702670097351,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2046
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2046.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35000.8515625,
+          "y": 2044.83154296875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.2810360193252563,
+          "dead": false,
+          "queries": [
+            [
+              -35000,
+              2044
+            ]
+          ],
+          "collisionX": -35000.0,
+          "collisionY": 2044.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35000.88671875,
+          "y": 2044.564697265625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.2643693685531616,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2045
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2045.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35000.921875,
+          "y": 2044.2978515625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.247702717781067,
+          "dead": false,
+          "queries": [
+            [
+              -35000,
+              2043
+            ]
+          ],
+          "collisionX": -35000.0,
+          "collisionY": 2043.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35000.95703125,
+          "y": 2044.031005859375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.2310360670089722,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2045
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2045.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35000.9921875,
+          "y": 2043.76416015625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.2143694162368774,
+          "dead": false,
+          "queries": [
+            [
+              -35000,
+              2043
+            ]
+          ],
+          "collisionX": -35000.0,
+          "collisionY": 2043.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.02734375,
+          "y": 2043.497314453125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.1977027654647827,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2044
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2044.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.0625,
+          "y": 2043.23046875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.181036114692688,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2042
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2042.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.09765625,
+          "y": 2042.963623046875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.1643694639205933,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2044
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2044.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.1328125,
+          "y": 2042.69677734375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.1477028131484985,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2041
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2041.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.16796875,
+          "y": 2042.429931640625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.1310361623764038,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2043
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2043.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.203125,
+          "y": 2042.1630859375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.114369511604309,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2041
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2041.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.23828125,
+          "y": 2041.896240234375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.0977028608322144,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2043
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2043.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.2734375,
+          "y": 2041.62939453125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.0810362100601196,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2040
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2040.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.30859375,
+          "y": 2041.362548828125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.064369559288025,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2042
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2042.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.34375,
+          "y": 2041.095703125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.0477029085159302,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2040
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2040.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.37890625,
+          "y": 2040.828857421875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.0310362577438354,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2042
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2042.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.4140625,
+          "y": 2040.56201171875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.0143696069717407,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2039
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2039.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.44921875,
+          "y": 2040.295166015625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.997702956199646,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2041
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2041.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.484375,
+          "y": 2040.0283203125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.9810363054275513,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2039
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2039.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.51953125,
+          "y": 2039.761474609375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.9643696546554565,
+          "dead": false,
+          "queries": [
+            [
+              -35002,
+              2040
+            ]
+          ],
+          "collisionX": -35002.0,
+          "collisionY": 2040.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.5546875,
+          "y": 2039.49462890625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.9477030038833618,
+          "dead": false,
+          "queries": [
+            [
+              -35000,
+              2039
+            ]
+          ],
+          "collisionX": -35000.0,
+          "collisionY": 2039.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.58984375,
+          "y": 2039.227783203125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.9310363531112671,
+          "dead": false,
+          "queries": [
+            [
+              -35002,
+              2039
+            ],
+            [
+              -35003,
+              2039
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2039.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.625,
+          "y": 2038.9609375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.9143697023391724,
+          "dead": false,
+          "queries": [
+            [
+              -35000,
+              2039
+            ]
+          ],
+          "collisionX": -35000.0,
+          "collisionY": 2039.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.66015625,
+          "y": 2038.694091796875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.8977030515670776,
+          "dead": false,
+          "queries": [
+            [
+              -35002,
+              2038
+            ],
+            [
+              -35003,
+              2038
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2038.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.6953125,
+          "y": 2038.42724609375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.8810364007949829,
+          "dead": false,
+          "queries": [
+            [
+              -35000,
+              2039
+            ]
+          ],
+          "collisionX": -35000.0,
+          "collisionY": 2039.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.73046875,
+          "y": 2038.160400390625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.8643697500228882,
+          "dead": false,
+          "queries": [
+            [
+              -35002,
+              2037
+            ],
+            [
+              -35003,
+              2037
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2037.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.765625,
+          "y": 2037.8935546875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.8477030992507935,
+          "dead": false,
+          "queries": [
+            [
+              -35000,
+              2038
+            ],
+            [
+              -35000,
+              2039
+            ]
+          ],
+          "collisionX": -35000.0,
+          "collisionY": 2039.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.80078125,
+          "y": 2037.626708984375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.8310364484786987,
+          "dead": false,
+          "queries": [
+            [
+              -35002,
+              2037
+            ],
+            [
+              -35003,
+              2036
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2036.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.8359375,
+          "y": 2037.35986328125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.814369797706604,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2038
+            ],
+            [
+              -35000,
+              2039
+            ]
+          ],
+          "collisionX": -35000.0,
+          "collisionY": 2039.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.87109375,
+          "y": 2037.093017578125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7977031469345093,
+          "dead": false,
+          "queries": [
+            [
+              -35002,
+              2036
+            ],
+            [
+              -35003,
+              2035
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2035.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.90625,
+          "y": 2036.826171875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7810364961624146,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2037
+            ],
+            [
+              -35000,
+              2038
+            ]
+          ],
+          "collisionX": -35000.0,
+          "collisionY": 2038.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.94140625,
+          "y": 2036.559326171875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7643698453903198,
+          "dead": false,
+          "queries": [
+            [
+              -35002,
+              2036
+            ],
+            [
+              -35003,
+              2035
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2035.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35001.9765625,
+          "y": 2036.29248046875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7477031946182251,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2037
+            ],
+            [
+              -35000,
+              2038
+            ]
+          ],
+          "collisionX": -35000.0,
+          "collisionY": 2038.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.01171875,
+          "y": 2036.025634765625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7310365438461304,
+          "dead": false,
+          "queries": [
+            [
+              -35002,
+              2035
+            ],
+            [
+              -35003,
+              2034
+            ],
+            [
+              -35004,
+              2034
+            ]
+          ],
+          "collisionX": -35004.0,
+          "collisionY": 2034.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.046875,
+          "y": 2035.7587890625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7143698930740356,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2036
+            ],
+            [
+              -35000,
+              2037
+            ],
+            [
+              -34999,
+              2038
+            ]
+          ],
+          "collisionX": -34999.0,
+          "collisionY": 2038.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.08203125,
+          "y": 2035.491943359375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.6977032423019409,
+          "dead": false,
+          "queries": [
+            [
+              -35002,
+              2035
+            ],
+            [
+              -35003,
+              2034
+            ],
+            [
+              -35004,
+              2033
+            ],
+            [
+              -35005,
+              2033
+            ]
+          ],
+          "collisionX": -35005.0,
+          "collisionY": 2033.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.1171875,
+          "y": 2035.22509765625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.6810365915298462,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2036
+            ],
+            [
+              -35000,
+              2036
+            ],
+            [
+              -34999,
+              2037
+            ],
+            [
+              -34998,
+              2037
+            ]
+          ],
+          "collisionX": -34998.0,
+          "collisionY": 2037.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.15234375,
+          "y": 2034.958251953125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.6643699407577515,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2034
+            ],
+            [
+              -35004,
+              2033
+            ],
+            [
+              -35005,
+              2033
+            ],
+            [
+              -35006,
+              2033
+            ]
+          ],
+          "collisionX": -35006.0,
+          "collisionY": 2033.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.1875,
+          "y": 2034.69140625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.6477032899856567,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2035
+            ],
+            [
+              -35000,
+              2035
+            ],
+            [
+              -34999,
+              2036
+            ],
+            [
+              -34998,
+              2036
+            ]
+          ],
+          "collisionX": -34998.0,
+          "collisionY": 2036.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.22265625,
+          "y": 2034.424560546875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.631036639213562,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2034
+            ],
+            [
+              -35004,
+              2033
+            ],
+            [
+              -35005,
+              2033
+            ],
+            [
+              -35006,
+              2032
+            ]
+          ],
+          "collisionX": -35006.0,
+          "collisionY": 2032.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.2578125,
+          "y": 2034.15771484375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.6143699884414673,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2034
+            ],
+            [
+              -35000,
+              2035
+            ],
+            [
+              -34999,
+              2035
+            ],
+            [
+              -34998,
+              2036
+            ]
+          ],
+          "collisionX": -34998.0,
+          "collisionY": 2036.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.29296875,
+          "y": 2033.890869140625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5977033376693726,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2033
+            ],
+            [
+              -35004,
+              2033
+            ],
+            [
+              -35004,
+              2032
+            ],
+            [
+              -35005,
+              2032
+            ],
+            [
+              -35006,
+              2031
+            ]
+          ],
+          "collisionX": -35006.0,
+          "collisionY": 2031.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.328125,
+          "y": 2033.6240234375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5810366868972778,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2034
+            ],
+            [
+              -35000,
+              2035
+            ],
+            [
+              -34999,
+              2035
+            ],
+            [
+              -34999,
+              2036
+            ],
+            [
+              -34998,
+              2036
+            ]
+          ],
+          "collisionX": -34998.0,
+          "collisionY": 2036.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.36328125,
+          "y": 2033.357177734375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5643700361251831,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2033
+            ],
+            [
+              -35004,
+              2032
+            ],
+            [
+              -35005,
+              2031
+            ],
+            [
+              -35006,
+              2031
+            ]
+          ],
+          "collisionX": -35006.0,
+          "collisionY": 2031.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.3984375,
+          "y": 2033.09033203125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5477033853530884,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2033
+            ],
+            [
+              -35000,
+              2034
+            ],
+            [
+              -34999,
+              2034
+            ],
+            [
+              -34998,
+              2035
+            ]
+          ],
+          "collisionX": -34998.0,
+          "collisionY": 2035.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.43359375,
+          "y": 2032.823486328125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5310367345809937,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2032
+            ],
+            [
+              -35004,
+              2032
+            ],
+            [
+              -35005,
+              2031
+            ],
+            [
+              -35006,
+              2030
+            ]
+          ],
+          "collisionX": -35006.0,
+          "collisionY": 2030.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.46875,
+          "y": 2032.556640625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5143700838088989,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2033
+            ],
+            [
+              -35000,
+              2033
+            ],
+            [
+              -35000,
+              2034
+            ],
+            [
+              -34999,
+              2035
+            ]
+          ],
+          "collisionX": -34999.0,
+          "collisionY": 2035.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.50390625,
+          "y": 2032.289794921875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.4977034032344818,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2031
+            ],
+            [
+              -35004,
+              2031
+            ],
+            [
+              -35004,
+              2030
+            ],
+            [
+              -35005,
+              2030
+            ]
+          ],
+          "collisionX": -35005.0,
+          "collisionY": 2030.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.5390625,
+          "y": 2032.02294921875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.4810367226600647,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2032
+            ],
+            [
+              -35000,
+              2033
+            ],
+            [
+              -35000,
+              2034
+            ]
+          ],
+          "collisionX": -35000.0,
+          "collisionY": 2034.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.57421875,
+          "y": 2031.756103515625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.4643700420856476,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2031
+            ],
+            [
+              -35004,
+              2030
+            ]
+          ],
+          "collisionX": -35004.0,
+          "collisionY": 2030.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.609375,
+          "y": 2031.4892578125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.44770336151123047,
+          "dead": false,
+          "queries": [
+            [
+              -35001,
+              2032
+            ],
+            [
+              -35001,
+              2033
+            ]
+          ],
+          "collisionX": -35001.0,
+          "collisionY": 2033.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.64453125,
+          "y": 2031.222412109375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.43103668093681335,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2030
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2030.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.6796875,
+          "y": 2030.95556640625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.41437000036239624,
+          "dead": false,
+          "queries": [
+            [
+              -35002,
+              2032
+            ]
+          ],
+          "collisionX": -35002.0,
+          "collisionY": 2032.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.71484375,
+          "y": 2030.688720703125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.3977033197879791,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2030
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2030.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.75,
+          "y": 2030.421875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.381036639213562,
+          "dead": false,
+          "queries": [],
+          "collisionX": -35003.0,
+          "collisionY": 2030.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.78515625,
+          "y": 2030.155029296875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.3643699586391449,
+          "dead": false,
+          "queries": [],
+          "collisionX": -35003.0,
+          "collisionY": 2030.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.8203125,
+          "y": 2029.88818359375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.3477032780647278,
+          "dead": false,
+          "queries": [],
+          "collisionX": -35003.0,
+          "collisionY": 2030.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.85546875,
+          "y": 2029.621337890625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.33103659749031067,
+          "dead": false,
+          "queries": [],
+          "collisionX": -35003.0,
+          "collisionY": 2030.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.890625,
+          "y": 2029.3544921875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.31436991691589355,
+          "dead": false,
+          "queries": [
+            [
+              -35002,
+              2028
+            ]
+          ],
+          "collisionX": -35002.0,
+          "collisionY": 2028.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.92578125,
+          "y": 2029.087646484375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.29770323634147644,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2030
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2030.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.9609375,
+          "y": 2028.82080078125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.2810365557670593,
+          "dead": false,
+          "queries": [
+            [
+              -35002,
+              2028
+            ]
+          ],
+          "collisionX": -35002.0,
+          "collisionY": 2028.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35002.99609375,
+          "y": 2028.553955078125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.2643698751926422,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2029
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2029.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35003.03125,
+          "y": 2028.287109375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.2477032095193863,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2027
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2027.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35003.06640625,
+          "y": 2028.020263671875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.23103654384613037,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2029
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2029.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35003.1015625,
+          "y": 2027.75341796875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.21436987817287445,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2027
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2027.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35003.13671875,
+          "y": 2027.486572265625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.19770321249961853,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2028
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2028.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35003.171875,
+          "y": 2027.2197265625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.1810365468263626,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2026
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2026.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35003.20703125,
+          "y": 2026.952880859375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.1643698811531067,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2028
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2028.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35003.2421875,
+          "y": 2026.68603515625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.14770321547985077,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2025
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2025.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35003.27734375,
+          "y": 2026.419189453125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.13103654980659485,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2027
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2027.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35003.3125,
+          "y": 2026.15234375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.11436988413333893,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2025
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2025.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35003.34765625,
+          "y": 2025.885498046875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.09770321846008301,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2027
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2027.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35003.3828125,
+          "y": 2025.61865234375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.08103655278682709,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2024
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2024.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35003.41796875,
+          "y": 2025.351806640625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.06436988711357117,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2026
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2026.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35003.453125,
+          "y": 2025.0849609375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.04770322144031525,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2024
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2024.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35003.48828125,
+          "y": 2024.818115234375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.031036553904414177,
+          "dead": false,
+          "queries": [
+            [
+              -35003,
+              2025
+            ]
+          ],
+          "collisionX": -35003.0,
+          "collisionY": 2025.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35003.5234375,
+          "y": 2024.55126953125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.014369886368513107,
+          "dead": false,
+          "queries": [
+            [
+              -35004,
+              2024
+            ]
+          ],
+          "collisionX": -35004.0,
+          "collisionY": 2024.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": -35003.55859375,
+          "y": 2024.284423828125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": -0.0022967811673879623,
+          "dead": false,
+          "queries": [
+            [
+              -35002,
+              2025
+            ]
+          ],
+          "collisionX": -35002.0,
+          "collisionY": 2025.0,
+          "rng": 2035175616,
+          "bounce": true
+        }
+      ]
+    },
+    {
+      "name": "east-world",
+      "input": {
+        "x": 35000.5,
+        "y": 2047.5,
+        "vx": 0,
+        "vy": 60,
+        "life": 20,
+        "collide": true,
+        "bounce": true,
+        "rng": 12345,
+        "frames": 120,
+        "kind": 3,
+        "axis": "y",
+        "boundary": 2048,
+        "positive": true,
+        "particleKind": 4
+      },
+      "frames": [
+        {
+          "x": 35000.5,
+          "y": 2047.5,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.4477025270462036,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2048
+            ]
+          ],
+          "collisionX": 35000.5,
+          "collisionY": 2047.5,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 35000.46484375,
+          "y": 2047.233154296875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.4310358762741089,
+          "dead": false,
+          "queries": [],
+          "collisionX": 35000.5,
+          "collisionY": 2047.5,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 35000.4296875,
+          "y": 2046.96630859375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.4143692255020142,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2046
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2046.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 35000.39453125,
+          "y": 2046.699462890625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.3977025747299194,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2047
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2047.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 35000.359375,
+          "y": 2046.4326171875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.3810359239578247,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2045
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2045.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 35000.32421875,
+          "y": 2046.165771484375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.36436927318573,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2047
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2047.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 35000.2890625,
+          "y": 2045.89892578125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.3477026224136353,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2045
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2045.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 35000.25390625,
+          "y": 2045.632080078125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.3310359716415405,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2046
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2046.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 35000.21875,
+          "y": 2045.365234375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.3143693208694458,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2044
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2044.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 35000.18359375,
+          "y": 2045.098388671875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.297702670097351,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2046
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2046.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 35000.1484375,
+          "y": 2044.83154296875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.2810360193252563,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2044
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2044.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 35000.11328125,
+          "y": 2044.564697265625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.2643693685531616,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2045
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2045.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 35000.078125,
+          "y": 2044.2978515625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.247702717781067,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2043
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2043.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 35000.04296875,
+          "y": 2044.031005859375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.2310360670089722,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2045
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2045.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 35000.0078125,
+          "y": 2043.76416015625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.2143694162368774,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2043
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2043.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.97265625,
+          "y": 2043.497314453125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.1977027654647827,
+          "dead": false,
+          "queries": [],
+          "collisionX": 35000.0,
+          "collisionY": 2043.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.9375,
+          "y": 2043.23046875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.181036114692688,
+          "dead": false,
+          "queries": [],
+          "collisionX": 35000.0,
+          "collisionY": 2043.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.90234375,
+          "y": 2042.963623046875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.1643694639205933,
+          "dead": false,
+          "queries": [],
+          "collisionX": 35000.0,
+          "collisionY": 2043.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.8671875,
+          "y": 2042.69677734375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.1477028131484985,
+          "dead": false,
+          "queries": [],
+          "collisionX": 35000.0,
+          "collisionY": 2043.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.83203125,
+          "y": 2042.429931640625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.1310361623764038,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2041
+            ]
+          ],
+          "collisionX": 34999.0,
+          "collisionY": 2041.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.796875,
+          "y": 2042.1630859375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.114369511604309,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2043
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2043.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.76171875,
+          "y": 2041.896240234375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.0977028608322144,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2041
+            ]
+          ],
+          "collisionX": 34999.0,
+          "collisionY": 2041.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.7265625,
+          "y": 2041.62939453125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.0810362100601196,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2042
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2042.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.69140625,
+          "y": 2041.362548828125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.064369559288025,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2040
+            ]
+          ],
+          "collisionX": 34999.0,
+          "collisionY": 2040.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.65625,
+          "y": 2041.095703125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.0477029085159302,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2042
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2042.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.62109375,
+          "y": 2040.828857421875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.0310362577438354,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2040
+            ]
+          ],
+          "collisionX": 34999.0,
+          "collisionY": 2040.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.5859375,
+          "y": 2040.56201171875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 1.0143696069717407,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2041
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2041.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.55078125,
+          "y": 2040.295166015625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.997702956199646,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2039
+            ]
+          ],
+          "collisionX": 34999.0,
+          "collisionY": 2039.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.515625,
+          "y": 2040.0283203125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.9810363054275513,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2041
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2041.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.48046875,
+          "y": 2039.761474609375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.9643696546554565,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2039
+            ]
+          ],
+          "collisionX": 34999.0,
+          "collisionY": 2039.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.4453125,
+          "y": 2039.49462890625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.9477030038833618,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2040
+            ]
+          ],
+          "collisionX": 35000.0,
+          "collisionY": 2040.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.41015625,
+          "y": 2039.227783203125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.9310363531112671,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2038
+            ]
+          ],
+          "collisionX": 34998.0,
+          "collisionY": 2038.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.375,
+          "y": 2038.9609375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.9143697023391724,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2039
+            ],
+            [
+              35001,
+              2040
+            ]
+          ],
+          "collisionX": 35001.0,
+          "collisionY": 2040.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.33984375,
+          "y": 2038.694091796875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.8977030515670776,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2038
+            ],
+            [
+              34997,
+              2037
+            ]
+          ],
+          "collisionX": 34997.0,
+          "collisionY": 2037.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.3046875,
+          "y": 2038.42724609375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.8810364007949829,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2039
+            ],
+            [
+              35001,
+              2039
+            ],
+            [
+              35001,
+              2040
+            ]
+          ],
+          "collisionX": 35001.0,
+          "collisionY": 2040.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.26953125,
+          "y": 2038.160400390625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.8643697500228882,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2037
+            ],
+            [
+              34997,
+              2036
+            ]
+          ],
+          "collisionX": 34997.0,
+          "collisionY": 2036.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.234375,
+          "y": 2037.8935546875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.8477030992507935,
+          "dead": false,
+          "queries": [
+            [
+              35000,
+              2038
+            ],
+            [
+              35000,
+              2039
+            ],
+            [
+              35001,
+              2040
+            ]
+          ],
+          "collisionX": 35001.0,
+          "collisionY": 2040.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.19921875,
+          "y": 2037.626708984375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.8310364484786987,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2037
+            ],
+            [
+              34998,
+              2036
+            ],
+            [
+              34997,
+              2035
+            ]
+          ],
+          "collisionX": 34997.0,
+          "collisionY": 2035.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.1640625,
+          "y": 2037.35986328125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.814369797706604,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2038
+            ],
+            [
+              35000,
+              2039
+            ],
+            [
+              35001,
+              2039
+            ]
+          ],
+          "collisionX": 35001.0,
+          "collisionY": 2039.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.12890625,
+          "y": 2037.093017578125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7977031469345093,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2036
+            ],
+            [
+              34997,
+              2035
+            ]
+          ],
+          "collisionX": 34997.0,
+          "collisionY": 2035.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.09375,
+          "y": 2036.826171875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7810364961624146,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2037
+            ],
+            [
+              35000,
+              2038
+            ],
+            [
+              35001,
+              2039
+            ]
+          ],
+          "collisionX": 35001.0,
+          "collisionY": 2039.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.05859375,
+          "y": 2036.559326171875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7643698453903198,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2036
+            ],
+            [
+              34997,
+              2035
+            ],
+            [
+              34997,
+              2034
+            ]
+          ],
+          "collisionX": 34997.0,
+          "collisionY": 2034.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34999.0234375,
+          "y": 2036.29248046875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7477031946182251,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2037
+            ],
+            [
+              35000,
+              2038
+            ],
+            [
+              35001,
+              2038
+            ]
+          ],
+          "collisionX": 35001.0,
+          "collisionY": 2038.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.98828125,
+          "y": 2036.025634765625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7310365438461304,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2035
+            ],
+            [
+              34997,
+              2034
+            ],
+            [
+              34996,
+              2034
+            ]
+          ],
+          "collisionX": 34996.0,
+          "collisionY": 2034.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.953125,
+          "y": 2035.7587890625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.7143698930740356,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2036
+            ],
+            [
+              35000,
+              2037
+            ],
+            [
+              35001,
+              2037
+            ]
+          ],
+          "collisionX": 35001.0,
+          "collisionY": 2037.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.91796875,
+          "y": 2035.491943359375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.6977032423019409,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2035
+            ],
+            [
+              34997,
+              2034
+            ],
+            [
+              34996,
+              2033
+            ]
+          ],
+          "collisionX": 34996.0,
+          "collisionY": 2033.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.8828125,
+          "y": 2035.22509765625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.6810365915298462,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2036
+            ],
+            [
+              35000,
+              2036
+            ],
+            [
+              35001,
+              2037
+            ],
+            [
+              35002,
+              2037
+            ]
+          ],
+          "collisionX": 35002.0,
+          "collisionY": 2037.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.84765625,
+          "y": 2034.958251953125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.6643699407577515,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2034
+            ],
+            [
+              34997,
+              2034
+            ],
+            [
+              34996,
+              2033
+            ],
+            [
+              34995,
+              2033
+            ]
+          ],
+          "collisionX": 34995.0,
+          "collisionY": 2033.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.8125,
+          "y": 2034.69140625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.6477032899856567,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2035
+            ],
+            [
+              35000,
+              2035
+            ],
+            [
+              35001,
+              2036
+            ],
+            [
+              35002,
+              2036
+            ]
+          ],
+          "collisionX": 35002.0,
+          "collisionY": 2036.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.77734375,
+          "y": 2034.424560546875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.631036639213562,
+          "dead": false,
+          "queries": [
+            [
+              34997,
+              2034
+            ],
+            [
+              34997,
+              2033
+            ],
+            [
+              34996,
+              2033
+            ],
+            [
+              34995,
+              2032
+            ]
+          ],
+          "collisionX": 34995.0,
+          "collisionY": 2032.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.7421875,
+          "y": 2034.15771484375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.6143699884414673,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2034
+            ],
+            [
+              35000,
+              2035
+            ],
+            [
+              35001,
+              2035
+            ],
+            [
+              35002,
+              2036
+            ]
+          ],
+          "collisionX": 35002.0,
+          "collisionY": 2036.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.70703125,
+          "y": 2033.890869140625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5977033376693726,
+          "dead": false,
+          "queries": [
+            [
+              34997,
+              2033
+            ],
+            [
+              34996,
+              2032
+            ],
+            [
+              34995,
+              2032
+            ]
+          ],
+          "collisionX": 34995.0,
+          "collisionY": 2032.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.671875,
+          "y": 2033.6240234375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5810366868972778,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2034
+            ],
+            [
+              35000,
+              2034
+            ],
+            [
+              35001,
+              2035
+            ],
+            [
+              35002,
+              2035
+            ]
+          ],
+          "collisionX": 35002.0,
+          "collisionY": 2035.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.63671875,
+          "y": 2033.357177734375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5643700361251831,
+          "dead": false,
+          "queries": [
+            [
+              34997,
+              2033
+            ],
+            [
+              34996,
+              2032
+            ],
+            [
+              34995,
+              2032
+            ],
+            [
+              34995,
+              2031
+            ]
+          ],
+          "collisionX": 34995.0,
+          "collisionY": 2031.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.6015625,
+          "y": 2033.09033203125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5477033853530884,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2033
+            ],
+            [
+              35000,
+              2034
+            ],
+            [
+              35001,
+              2034
+            ],
+            [
+              35002,
+              2035
+            ]
+          ],
+          "collisionX": 35002.0,
+          "collisionY": 2035.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.56640625,
+          "y": 2032.823486328125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5310367345809937,
+          "dead": false,
+          "queries": [
+            [
+              34997,
+              2032
+            ],
+            [
+              34996,
+              2032
+            ],
+            [
+              34996,
+              2031
+            ],
+            [
+              34995,
+              2030
+            ]
+          ],
+          "collisionX": 34995.0,
+          "collisionY": 2030.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.53125,
+          "y": 2032.556640625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.5143700838088989,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2033
+            ],
+            [
+              35000,
+              2033
+            ],
+            [
+              35000,
+              2034
+            ],
+            [
+              35001,
+              2035
+            ]
+          ],
+          "collisionX": 35001.0,
+          "collisionY": 2035.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.49609375,
+          "y": 2032.289794921875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.4977034032344818,
+          "dead": false,
+          "queries": [
+            [
+              34997,
+              2031
+            ],
+            [
+              34996,
+              2030
+            ],
+            [
+              34995,
+              2029
+            ]
+          ],
+          "collisionX": 34995.0,
+          "collisionY": 2029.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.4609375,
+          "y": 2032.02294921875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.4810367226600647,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2032
+            ],
+            [
+              35000,
+              2033
+            ],
+            [
+              35000,
+              2034
+            ],
+            [
+              35001,
+              2034
+            ],
+            [
+              35002,
+              2035
+            ]
+          ],
+          "collisionX": 35002.0,
+          "collisionY": 2035.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.42578125,
+          "y": 2031.756103515625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.4643700420856476,
+          "dead": false,
+          "queries": [
+            [
+              34997,
+              2031
+            ],
+            [
+              34996,
+              2030
+            ],
+            [
+              34995,
+              2029
+            ],
+            [
+              34994,
+              2028
+            ]
+          ],
+          "collisionX": 34994.0,
+          "collisionY": 2028.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.390625,
+          "y": 2031.4892578125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.44770336151123047,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2032
+            ],
+            [
+              34999,
+              2033
+            ],
+            [
+              35000,
+              2033
+            ],
+            [
+              35001,
+              2034
+            ],
+            [
+              35002,
+              2034
+            ],
+            [
+              35003,
+              2035
+            ]
+          ],
+          "collisionX": 35003.0,
+          "collisionY": 2035.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.35546875,
+          "y": 2031.222412109375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.43103668093681335,
+          "dead": false,
+          "queries": [
+            [
+              34997,
+              2030
+            ],
+            [
+              34996,
+              2030
+            ],
+            [
+              34996,
+              2029
+            ],
+            [
+              34995,
+              2028
+            ],
+            [
+              34994,
+              2028
+            ],
+            [
+              34993,
+              2027
+            ]
+          ],
+          "collisionX": 34993.0,
+          "collisionY": 2027.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.3203125,
+          "y": 2030.95556640625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.41437000036239624,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2031
+            ],
+            [
+              34999,
+              2032
+            ],
+            [
+              35000,
+              2033
+            ],
+            [
+              35001,
+              2033
+            ],
+            [
+              35002,
+              2034
+            ],
+            [
+              35003,
+              2034
+            ],
+            [
+              35003,
+              2035
+            ]
+          ],
+          "collisionX": 35003.0,
+          "collisionY": 2035.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.28515625,
+          "y": 2030.688720703125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.3977033197879791,
+          "dead": false,
+          "queries": [
+            [
+              34997,
+              2030
+            ],
+            [
+              34996,
+              2029
+            ],
+            [
+              34996,
+              2028
+            ],
+            [
+              34995,
+              2028
+            ],
+            [
+              34994,
+              2027
+            ],
+            [
+              34993,
+              2026
+            ]
+          ],
+          "collisionX": 34993.0,
+          "collisionY": 2026.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.25,
+          "y": 2030.421875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.381036639213562,
+          "dead": false,
+          "queries": [
+            [
+              34999,
+              2031
+            ],
+            [
+              35000,
+              2032
+            ],
+            [
+              35001,
+              2033
+            ],
+            [
+              35002,
+              2033
+            ],
+            [
+              35002,
+              2034
+            ],
+            [
+              35003,
+              2035
+            ]
+          ],
+          "collisionX": 35003.0,
+          "collisionY": 2035.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.21484375,
+          "y": 2030.155029296875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.3643699586391449,
+          "dead": false,
+          "queries": [
+            [
+              34997,
+              2029
+            ],
+            [
+              34996,
+              2028
+            ],
+            [
+              34995,
+              2027
+            ],
+            [
+              34994,
+              2026
+            ],
+            [
+              34993,
+              2025
+            ]
+          ],
+          "collisionX": 34993.0,
+          "collisionY": 2025.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.1796875,
+          "y": 2029.88818359375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.3477032780647278,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2030
+            ],
+            [
+              34999,
+              2031
+            ],
+            [
+              35000,
+              2032
+            ],
+            [
+              35001,
+              2032
+            ],
+            [
+              35001,
+              2033
+            ],
+            [
+              35002,
+              2034
+            ],
+            [
+              35003,
+              2034
+            ]
+          ],
+          "collisionX": 35003.0,
+          "collisionY": 2034.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.14453125,
+          "y": 2029.621337890625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.33103659749031067,
+          "dead": false,
+          "queries": [
+            [
+              34997,
+              2029
+            ],
+            [
+              34996,
+              2028
+            ],
+            [
+              34995,
+              2027
+            ],
+            [
+              34994,
+              2026
+            ],
+            [
+              34993,
+              2025
+            ],
+            [
+              34992,
+              2025
+            ]
+          ],
+          "collisionX": 34992.0,
+          "collisionY": 2025.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.109375,
+          "y": 2029.3544921875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.31436991691589355,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2030
+            ],
+            [
+              34999,
+              2030
+            ],
+            [
+              35000,
+              2031
+            ],
+            [
+              35001,
+              2031
+            ],
+            [
+              35002,
+              2032
+            ],
+            [
+              35003,
+              2033
+            ],
+            [
+              35004,
+              2034
+            ]
+          ],
+          "collisionX": 35004.0,
+          "collisionY": 2034.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.07421875,
+          "y": 2029.087646484375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.29770323634147644,
+          "dead": false,
+          "queries": [
+            [
+              34997,
+              2028
+            ],
+            [
+              34996,
+              2028
+            ],
+            [
+              34995,
+              2027
+            ],
+            [
+              34995,
+              2026
+            ],
+            [
+              34994,
+              2026
+            ],
+            [
+              34993,
+              2025
+            ],
+            [
+              34992,
+              2024
+            ],
+            [
+              34991,
+              2024
+            ]
+          ],
+          "collisionX": 34991.0,
+          "collisionY": 2024.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.0390625,
+          "y": 2028.82080078125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.2810365557670593,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2029
+            ],
+            [
+              34999,
+              2030
+            ],
+            [
+              35000,
+              2030
+            ],
+            [
+              35001,
+              2031
+            ],
+            [
+              35002,
+              2031
+            ],
+            [
+              35003,
+              2032
+            ],
+            [
+              35003,
+              2033
+            ],
+            [
+              35004,
+              2033
+            ],
+            [
+              35005,
+              2034
+            ]
+          ],
+          "collisionX": 35005.0,
+          "collisionY": 2034.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34998.00390625,
+          "y": 2028.553955078125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.2643698751926422,
+          "dead": false,
+          "queries": [
+            [
+              34997,
+              2028
+            ],
+            [
+              34996,
+              2027
+            ],
+            [
+              34995,
+              2026
+            ],
+            [
+              34994,
+              2026
+            ],
+            [
+              34994,
+              2025
+            ],
+            [
+              34993,
+              2025
+            ],
+            [
+              34992,
+              2024
+            ],
+            [
+              34991,
+              2023
+            ],
+            [
+              34990,
+              2023
+            ]
+          ],
+          "collisionX": 34990.0,
+          "collisionY": 2023.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34997.96875,
+          "y": 2028.287109375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.2477032095193863,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2029
+            ],
+            [
+              34999,
+              2029
+            ],
+            [
+              35000,
+              2030
+            ],
+            [
+              35001,
+              2030
+            ],
+            [
+              35002,
+              2031
+            ],
+            [
+              35003,
+              2032
+            ],
+            [
+              35004,
+              2032
+            ],
+            [
+              35005,
+              2033
+            ],
+            [
+              35006,
+              2034
+            ]
+          ],
+          "collisionX": 35006.0,
+          "collisionY": 2034.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34997.93359375,
+          "y": 2028.020263671875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.23103654384613037,
+          "dead": false,
+          "queries": [
+            [
+              34997,
+              2027
+            ],
+            [
+              34996,
+              2027
+            ],
+            [
+              34995,
+              2026
+            ],
+            [
+              34994,
+              2025
+            ],
+            [
+              34993,
+              2025
+            ],
+            [
+              34993,
+              2024
+            ],
+            [
+              34992,
+              2024
+            ],
+            [
+              34991,
+              2023
+            ],
+            [
+              34990,
+              2022
+            ],
+            [
+              34989,
+              2022
+            ]
+          ],
+          "collisionX": 34989.0,
+          "collisionY": 2022.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34997.8984375,
+          "y": 2027.75341796875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.21436987817287445,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2028
+            ],
+            [
+              34999,
+              2029
+            ],
+            [
+              35000,
+              2029
+            ],
+            [
+              35001,
+              2030
+            ],
+            [
+              35002,
+              2030
+            ],
+            [
+              35002,
+              2031
+            ],
+            [
+              35003,
+              2031
+            ],
+            [
+              35004,
+              2032
+            ],
+            [
+              35005,
+              2032
+            ],
+            [
+              35006,
+              2033
+            ],
+            [
+              35007,
+              2033
+            ]
+          ],
+          "collisionX": 35007.0,
+          "collisionY": 2033.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34997.86328125,
+          "y": 2027.486572265625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.19770321249961853,
+          "dead": false,
+          "queries": [
+            [
+              34997,
+              2027
+            ],
+            [
+              34996,
+              2026
+            ],
+            [
+              34995,
+              2026
+            ],
+            [
+              34994,
+              2025
+            ],
+            [
+              34993,
+              2025
+            ],
+            [
+              34992,
+              2024
+            ],
+            [
+              34991,
+              2024
+            ],
+            [
+              34991,
+              2023
+            ],
+            [
+              34990,
+              2023
+            ],
+            [
+              34989,
+              2022
+            ],
+            [
+              34988,
+              2022
+            ]
+          ],
+          "collisionX": 34988.0,
+          "collisionY": 2022.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34997.828125,
+          "y": 2027.2197265625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.1810365468263626,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2027
+            ],
+            [
+              34999,
+              2028
+            ],
+            [
+              35000,
+              2028
+            ],
+            [
+              35001,
+              2029
+            ],
+            [
+              35002,
+              2029
+            ],
+            [
+              35003,
+              2030
+            ],
+            [
+              35004,
+              2030
+            ],
+            [
+              35004,
+              2031
+            ],
+            [
+              35005,
+              2031
+            ],
+            [
+              35006,
+              2032
+            ],
+            [
+              35007,
+              2032
+            ]
+          ],
+          "collisionX": 35007.0,
+          "collisionY": 2032.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34997.79296875,
+          "y": 2026.952880859375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.1643698811531067,
+          "dead": false,
+          "queries": [
+            [
+              34996,
+              2026
+            ],
+            [
+              34995,
+              2025
+            ],
+            [
+              34994,
+              2025
+            ],
+            [
+              34993,
+              2024
+            ],
+            [
+              34992,
+              2024
+            ],
+            [
+              34991,
+              2023
+            ],
+            [
+              34990,
+              2023
+            ],
+            [
+              34989,
+              2022
+            ]
+          ],
+          "collisionX": 34989.0,
+          "collisionY": 2022.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34997.7578125,
+          "y": 2026.68603515625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.14770321547985077,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2027
+            ],
+            [
+              34999,
+              2027
+            ],
+            [
+              35000,
+              2028
+            ],
+            [
+              35001,
+              2028
+            ],
+            [
+              35002,
+              2029
+            ],
+            [
+              35003,
+              2029
+            ],
+            [
+              35003,
+              2030
+            ],
+            [
+              35004,
+              2030
+            ],
+            [
+              35005,
+              2031
+            ],
+            [
+              35006,
+              2031
+            ]
+          ],
+          "collisionX": 35006.0,
+          "collisionY": 2031.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34997.72265625,
+          "y": 2026.419189453125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.13103654980659485,
+          "dead": false,
+          "queries": [
+            [
+              34996,
+              2026
+            ],
+            [
+              34996,
+              2025
+            ],
+            [
+              34995,
+              2025
+            ],
+            [
+              34994,
+              2024
+            ],
+            [
+              34993,
+              2024
+            ],
+            [
+              34992,
+              2023
+            ],
+            [
+              34991,
+              2023
+            ],
+            [
+              34990,
+              2022
+            ],
+            [
+              34989,
+              2022
+            ]
+          ],
+          "collisionX": 34989.0,
+          "collisionY": 2022.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34997.6875,
+          "y": 2026.15234375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.11436988413333893,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2026
+            ],
+            [
+              34999,
+              2027
+            ],
+            [
+              35000,
+              2027
+            ],
+            [
+              35001,
+              2028
+            ],
+            [
+              35002,
+              2028
+            ],
+            [
+              35003,
+              2029
+            ],
+            [
+              35004,
+              2029
+            ],
+            [
+              35005,
+              2030
+            ],
+            [
+              35006,
+              2030
+            ]
+          ],
+          "collisionX": 35006.0,
+          "collisionY": 2030.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34997.65234375,
+          "y": 2025.885498046875,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.09770321846008301,
+          "dead": false,
+          "queries": [
+            [
+              34996,
+              2025
+            ],
+            [
+              34995,
+              2025
+            ],
+            [
+              34994,
+              2024
+            ],
+            [
+              34993,
+              2023
+            ],
+            [
+              34992,
+              2023
+            ],
+            [
+              34991,
+              2023
+            ],
+            [
+              34990,
+              2022
+            ],
+            [
+              34989,
+              2022
+            ]
+          ],
+          "collisionX": 34989.0,
+          "collisionY": 2022.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34997.6171875,
+          "y": 2025.61865234375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.08103655278682709,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2026
+            ],
+            [
+              34999,
+              2026
+            ],
+            [
+              35000,
+              2027
+            ],
+            [
+              35001,
+              2027
+            ],
+            [
+              35002,
+              2027
+            ],
+            [
+              35003,
+              2028
+            ],
+            [
+              35004,
+              2028
+            ],
+            [
+              35005,
+              2028
+            ],
+            [
+              35005,
+              2029
+            ]
+          ],
+          "collisionX": 35005.0,
+          "collisionY": 2029.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34997.58203125,
+          "y": 2025.351806640625,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.06436988711357117,
+          "dead": false,
+          "queries": [
+            [
+              34996,
+              2025
+            ],
+            [
+              34995,
+              2024
+            ],
+            [
+              34994,
+              2024
+            ],
+            [
+              34994,
+              2023
+            ],
+            [
+              34993,
+              2023
+            ],
+            [
+              34992,
+              2022
+            ],
+            [
+              34991,
+              2022
+            ],
+            [
+              34990,
+              2022
+            ]
+          ],
+          "collisionX": 34990.0,
+          "collisionY": 2022.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34997.546875,
+          "y": 2025.0849609375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.04770322144031525,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2025
+            ],
+            [
+              34999,
+              2026
+            ],
+            [
+              35000,
+              2026
+            ],
+            [
+              35001,
+              2026
+            ],
+            [
+              35002,
+              2027
+            ],
+            [
+              35003,
+              2027
+            ],
+            [
+              35004,
+              2028
+            ]
+          ],
+          "collisionX": 35004.0,
+          "collisionY": 2028.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34997.51171875,
+          "y": 2024.818115234375,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.031036553904414177,
+          "dead": false,
+          "queries": [
+            [
+              34996,
+              2024
+            ],
+            [
+              34995,
+              2024
+            ],
+            [
+              34994,
+              2023
+            ],
+            [
+              34993,
+              2023
+            ],
+            [
+              34993,
+              2022
+            ],
+            [
+              34992,
+              2022
+            ],
+            [
+              34991,
+              2022
+            ]
+          ],
+          "collisionX": 34991.0,
+          "collisionY": 2022.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34997.4765625,
+          "y": 2024.55126953125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": 0.014369886368513107,
+          "dead": false,
+          "queries": [
+            [
+              34998,
+              2025
+            ],
+            [
+              34999,
+              2025
+            ],
+            [
+              35000,
+              2025
+            ],
+            [
+              35001,
+              2026
+            ],
+            [
+              35002,
+              2026
+            ],
+            [
+              35003,
+              2027
+            ],
+            [
+              35004,
+              2027
+            ]
+          ],
+          "collisionX": 35004.0,
+          "collisionY": 2027.0,
+          "rng": 2035175616,
+          "bounce": true
+        },
+        {
+          "x": 34997.44140625,
+          "y": 2024.284423828125,
+          "vx": -2.1524455547332764,
+          "vy": -16.007936477661133,
+          "life": -0.0022967811673879623,
+          "dead": false,
+          "queries": [
+            [
+              34996,
+              2024
+            ],
+            [
+              34995,
+              2023
+            ],
+            [
+              34994,
+              2023
+            ],
+            [
+              34993,
+              2023
+            ],
+            [
+              34992,
+              2022
+            ],
+            [
+              34991,
+              2022
+            ],
+            [
+              34990,
+              2021
+            ]
+          ],
+          "collisionX": 34990.0,
+          "collisionY": 2021.0,
+          "rng": 2035175616,
+          "bounce": true
+        }
+      ]
+    }
+  ]
+}

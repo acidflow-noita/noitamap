@@ -5479,6 +5479,11 @@
         "utility": "实用",
         "other": "其他"
       },
+      "populationStatMin": "最小值",
+      "populationStatMax": "最大值",
+      "populationStatMean": "平均值",
+      "populationReference": "Sage 总体统计 · 自然生成",
+      "populationThreeWorldsOnly": "Sage 仅提供西部、主世界和东部合计的这些总体参考值。",
       "main": "主要世界",
       "westNumber": "西{{n}}",
       "eastNumber": "东{{n}}",

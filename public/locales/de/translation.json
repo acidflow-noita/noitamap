@@ -5479,6 +5479,11 @@
         "utility": "Nützliches",
         "other": "Anderes"
       },
+      "populationStatMin": "Minimum",
+      "populationStatMax": "Maximum",
+      "populationStatMean": "Mittelwert",
+      "populationReference": "Sage-Gesamtstatistik · natürliche Spawns",
+      "populationThreeWorldsOnly": "Sage veröffentlicht diese Referenzwerte nur für West + Hauptwelt + Ost zusammen.",
       "main": "Hauptwelt",
       "westNumber": "Westen {{n}}",
       "eastNumber": "Osten {{n}}",

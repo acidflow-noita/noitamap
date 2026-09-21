@@ -5479,6 +5479,11 @@
         "utility": "Utility",
         "other": "Other"
       },
+      "populationStatMin": "Minimum",
+      "populationStatMax": "Maksimum",
+      "populationStatMean": "Rata-rata",
+      "populationReference": "Populasi Sage · kemunculan alami",
+      "populationThreeWorldsOnly": "Sage hanya menerbitkan referensi populasi ini untuk gabungan Barat + Utama + Timur.",
       "main": "Dunia utama",
       "westNumber": "Barat {{n}}",
       "eastNumber": "Timur {{n}}",

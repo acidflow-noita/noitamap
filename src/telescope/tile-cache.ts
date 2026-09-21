@@ -13,7 +13,7 @@ import { telescopeCacheKey } from "./cache-identity";
  */
 
 const DB_NAME = "noitamap-telescope";
-const DB_VERSION = 12; // repaired archive paths: invalidate cached placeholder inputs/renders
+const DB_VERSION = 13; // invalidate main-only boss POIs and their cached renders
 const STORE_NAME = "generations";
 const RENDER_STORE_NAME = "biome_renders";
 const SCENE_BITMAP_STORE_NAME = "pixel_scene_bitmaps";

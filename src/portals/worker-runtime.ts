@@ -1,4 +1,6 @@
 import catalog from './assets/effects.json';
+import { expirationSteps } from './runtime/gpu-particles.mjs';
+import { COLLISION_RETENTION_STEPS } from './runtime/particle-collision.mjs';
 import { decodeAssets, makeSimulation } from './runtime/effect-simulation.mjs';
 import { MapGpuRenderer } from './gpu-renderer.mjs';
 import { MAX_GPU_BYTES, visiblePortals, portalFrameBounds, type CameraMatrix } from './geometry';
@@ -9,12 +11,14 @@ import type { PortalPlacement } from './placements';
 type Entry = { portal: PortalPlacement; simulation: any; replay: 0 | 1; steps?: number };
 /** Simulation steps replayed with real particles when a portal (re)enters the
  * view: everything older than the longest particle life is invisible anyway. */
-const MAX_REPLAY_STEPS = 1200;
+const MAX_REPLAY_STEPS = expirationSteps(20) + COLLISION_RETENTION_STEPS + 1;
 const REPLAY_BUDGET_PER_FRAME = 400;
 export function replayStepsFor(effect: string): number {
-  const emitters: any[] = (catalog as any).effects?.[effect]?.emitters ?? [];
+  const aliases: Record<string, string> = { eye_room: 'teleport_hourglass_return', holy_mountain: 'teleport_liquid_powered', meditation: 'teleport_meditation_cube_return' };
+  const emitters: any[] = (catalog as any).effects?.[aliases[effect] ?? effect]?.emitters ?? [];
   const life = emitters.reduce((max, e) => Math.max(max, Number(e.lifeMax) || 0), 0);
-  return life > 0 ? Math.min(MAX_REPLAY_STEPS, Math.ceil(life * 60) + 2) : MAX_REPLAY_STEPS;
+  const reserve = ['eye_room', 'teleport_hourglass_return'].includes(effect) ? COLLISION_RETENTION_STEPS : 0;
+  return life > 0 ? Math.min(MAX_REPLAY_STEPS, expirationSteps(life) + reserve + 1) : MAX_REPLAY_STEPS;
 }
 /** A simulation whose particle list is this stub advances emission timers and
  * both RNG streams exactly (creation happens after every draw in `create()`)
@@ -44,7 +48,7 @@ export interface Backend {
   renderMap(entries: Map<string, Entry>, camera: CameraMatrix, width: number, height: number, steps: number): void;
   waitForGPU(): Promise<void>;
   finish(): ImageBitmap;
-  diagnostics(): Pick<PortalGPUStats, 'device' | 'gpuMS' | 'particles' | 'visibleParticles' | 'estimatedGPUBytes'>;
+  diagnostics(): Pick<PortalGPUStats, 'device' | 'gpuMS' | 'particles' | 'visibleParticles' | 'estimatedGPUBytes' | 'particleCountsAreUpperBounds'>;
   dispose(): void;
 }
 export interface Runtime { renderer: Backend; simulation: (portal: PortalPlacement, seed: number) => any }

@@ -5479,6 +5479,11 @@
         "utility": "Utility",
         "other": "Other"
       },
+      "populationStatMin": "Minimum",
+      "populationStatMax": "Maximum",
+      "populationStatMean": "Medelvärde",
+      "populationReference": "Sage-population · naturlig förekomst",
+      "populationThreeWorldsOnly": "Sage publicerar dessa referensvärden endast för Väst + Huvudvärld + Öst tillsammans.",
       "main": "Huvudvärlden",
       "westNumber": "Västra {{n}}",
       "eastNumber": "Östra {{n}}",

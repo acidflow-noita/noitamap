@@ -5479,6 +5479,11 @@
         "utility": "Utility",
         "other": "Other"
       },
+      "populationStatMin": "Minimum",
+      "populationStatMax": "Maximum",
+      "populationStatMean": "Gemiddelde",
+      "populationReference": "Sage-populatie · natuurlijke verschijningen",
+      "populationThreeWorldsOnly": "Sage publiceert deze referentiewaarden alleen voor West + Hoofdwereld + Oost samen.",
       "main": "Belangrijkste wereld",
       "westNumber": "West {{n}}",
       "eastNumber": "Oost {{n}}",

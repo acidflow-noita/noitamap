@@ -5479,6 +5479,11 @@
         "utility": "Utilité",
         "other": "Autre"
       },
+      "populationStatMin": "Minimum",
+      "populationStatMax": "Maximum",
+      "populationStatMean": "Moyenne",
+      "populationReference": "Population Sage · apparitions naturelles",
+      "populationThreeWorldsOnly": "Sage publie ces références uniquement pour la somme Ouest + Principal + Est.",
       "main": "Monde principal",
       "westNumber": "Ouest {{n}}",
       "eastNumber": "Est {{n}}",

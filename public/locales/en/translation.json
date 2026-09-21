@@ -339,6 +339,11 @@
         "utility": "Utility",
         "other": "Other"
       },
+      "populationStatMin": "Minimum",
+      "populationStatMax": "Maximum",
+      "populationStatMean": "Mean",
+      "populationReference": "Sage population · natural spawns",
+      "populationThreeWorldsOnly": "Sage publishes these population references only for West + Main + East combined.",
       "main": "Main world",
       "westNumber": "West {{n}}",
       "eastNumber": "East {{n}}",

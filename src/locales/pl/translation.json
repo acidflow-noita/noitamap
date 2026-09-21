@@ -5479,6 +5479,11 @@
         "utility": "Użyteczn.",
         "other": "Inne"
       },
+      "populationStatMin": "Minimum",
+      "populationStatMax": "Maksimum",
+      "populationStatMean": "Średnia",
+      "populationReference": "Statystyki Sage · naturalne występowanie",
+      "populationThreeWorldsOnly": "Sage publikuje te wartości referencyjne tylko dla sumy Zachód + Główny + Wschód.",
       "main": "Główny świat",
       "westNumber": "Zachód {{n}}",
       "eastNumber": "Wschód {{n}}",
