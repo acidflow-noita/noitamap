@@ -59,7 +59,27 @@ export const BIOME_BACKGROUND_MAP: Record<string, string> = {
   solid_wall_tower_2: "data/weather_gfx/background_excavationsite.png",
   solid_wall_tower_1: "data/weather_gfx/background_coalmine.png",
   solid_wall_tower_10: "data/weather_gfx/background_crypt.png",
+  // Fill biomes that only exist as carved pixel scenes. They own no terrain
+  // layer, so this backdrop is painted only under their scenes' force-air.
+  friend_1: "data/weather_gfx/background_cave_02.png",
+  friend_2: "data/weather_gfx/background_cave_02.png",
+  friend_3: "data/weather_gfx/background_cave_02.png",
+  friend_4: "data/weather_gfx/background_cave_02.png",
+  friend_5: "data/weather_gfx/background_cave_02.png",
+  friend_6: "data/weather_gfx/background_cave_02.png",
+  solid_wall_hidden_cavern: "data/weather_gfx/background_cave_02.png",
 };
+
+/** Biome names a scene instance was placed for (its variant `biome=` override,
+ * then its key's biome), so fill biomes without a terrain layer can still
+ * supply the backdrop the game shows inside the carved room. */
+export function sceneBiomeNames(scene: { key: string; variantKey?: string }): string[] {
+  const names: string[] = [];
+  for (const part of (scene.variantKey ?? "").split("&"))
+    if (part.startsWith("biome=")) names.push(...part.slice(6).split("@"));
+  names.push(scene.key.split("/")[0]);
+  return names;
+}
 
 export const TERRAIN_VERSION = "full-pixel-v9";
 export const WORLD_HEIGHT = 48 * 512;

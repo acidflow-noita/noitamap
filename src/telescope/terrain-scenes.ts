@@ -36,6 +36,13 @@ export type ScenePainter = (
   scene: TerrainScene,
   source: TerrainSceneSource,
 ) => PaintedScene;
+/** Backdrop for a scene's force-air cells where no biome background owns the
+ * pixel (fill biomes such as the friend caves). Returns RGBA or 0. */
+export type SceneAirBackground = (
+  scene: TerrainScene,
+  worldX: number,
+  worldY: number,
+) => number;
 
 export function readRGBA(
   data: Uint8Array | Uint8ClampedArray,
@@ -87,6 +94,7 @@ export function createSceneTileCompositor(
   data: TerrainSceneData,
   paint: ScenePainter,
   budget = 64 * 1024 * 1024,
+  airBackground: SceneAirBackground | null = null,
 ) {
   const index = data.scenes.length ? new Flatbush(data.scenes.length) : null;
   for (const scene of data.scenes) {
@@ -194,6 +202,20 @@ export function createSceneTileCompositor(
           h,
           p.airMask,
         );
+        if (!airBackground || !p.airMask) continue;
+        // Air erases terrain; in a chunk with no background owner that hole
+        // would expose the static base (solid rock at the friend caves).
+        const left = Math.max(x, scene.x),
+          top = Math.max(y, scene.y);
+        const right = Math.min(x + w, scene.x + scene.width),
+          bottom = Math.min(y + h, scene.y + scene.height);
+        for (let wy = top; wy < bottom; wy++)
+          for (let wx = left; wx < right; wx++) {
+            const s = ((wy - scene.y) * scene.width + wx - scene.x) * 4;
+            const d = ((wy - y) * w + wx - x) * 4;
+            if (!p.airMask[s + 3] || background[d + 3]) continue;
+            writeRGBA(background, d, airBackground(scene, wx, wy));
+          }
       }
     },
   };
@@ -219,7 +241,10 @@ const compositors = new WeakMap<
   TerrainSceneData,
   Promise<ReturnType<typeof createSceneTileCompositor>>
 >();
-export function createTerrainScenes(data: TerrainSceneData) {
+export function createTerrainScenes(
+  data: TerrainSceneData,
+  airBackground: SceneAirBackground | null = null,
+) {
   let pending = compositors.get(data);
   if (!pending) {
     pending = (async () => {
@@ -255,7 +280,7 @@ export function createTerrainScenes(data: TerrainSceneData) {
         applySceneForceAir(raw, p);
         applySceneVisualArt(p.pixels, source);
         return p;
-      });
+      }, 64 * 1024 * 1024, airBackground);
     })();
     compositors.set(data, pending);
   }

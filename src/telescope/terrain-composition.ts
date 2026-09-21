@@ -14,6 +14,8 @@ import { includeElevatorOwnership } from "./terrain-elevator";
 import {
   createPlaneOwnership,
   createBackgroundOwnership,
+  sceneBiomeNames,
+  BIOME_BACKGROUND_MAP,
   WORLD_HEIGHT,
 } from "./terrain-policy";
 import {
@@ -48,13 +50,26 @@ export async function createTerrainComposition(
     config,
     gen.plane ?? 0,
   );
-  const backgrounds = await loadTerrainBackgrounds(backgroundOwnership.names);
+  const sceneBackgroundName = (scene: { key: string; variantKey?: string }) =>
+    sceneBiomeNames(scene).find((name) => BIOME_BACKGROUND_MAP[name]);
+  const backgrounds = await loadTerrainBackgrounds([
+    ...backgroundOwnership.names,
+    ...(gen.sceneData?.scenes ?? [])
+      .map(sceneBackgroundName)
+      .filter((name): name is string => !!name),
+  ]);
+  const offsetY = (gen.plane ?? 0) * WORLD_HEIGHT;
   const scenes = gen.sceneData
-    ? await createTerrainScenes(gen.sceneData)
+    ? await createTerrainScenes(gen.sceneData, (scene, x, y) => {
+        const name = sceneBackgroundName(scene);
+        const texture = name ? backgrounds.get(name) : undefined;
+        return texture
+          ? textureColor(texture, x + width * 256, y - offsetY + 7168)
+          : 0;
+      })
     : null;
   const edges = await createTerrainEdges(gen, config, width, materialAt);
   const staticMask = createStaticTerrainMask(gen.sceneData?.staticMasks);
-  const offsetY = (gen.plane ?? 0) * WORLD_HEIGHT;
   const water = createLiquidSurfacePainter(
     findLiquidSurfaces(
       lattice ?? edges.lattice,
