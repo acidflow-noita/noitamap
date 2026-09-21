@@ -5117,6 +5117,10 @@
     "title": "Een simplistische kaartachtergrond gebruiken",
     "content": "Vervang de achtergrondtegels van de gestreamde kaart door een kleine platte afbeelding per parallelle wereld. Grote bandbreedte/geheugenbesparing op langzame verbindingen en apparaten met weinig RAM; de achtergrond ziet er blokkerig uit."
   },
+  "portalAnimations": {
+    "title": "Geanimeerde portalen",
+    "content": "Animeert portalen met een GPU-deeltjessimulatie van de effecten uit het spel. Alleen portalen op het scherm worden gesimuleerd. Zet uit op zwakke GPU's of als het verschuiven van de kaart traag aanvoelt. Wordt direct toegepast, zonder herladen."
+  },
   "perfMode": {
     "title": "Prestaties",
     "content": "Prestatieopties voor langzame apparaten en kleine schermen."

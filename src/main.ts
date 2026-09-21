@@ -173,6 +173,7 @@ import { isLightMode, setLightMode } from "./light-mode";
 import { installPopoverTouchDismiss } from "./popover-util";
 import { isSkipCreatures, setSkipCreatures } from "./skip-creatures";
 import { isSimplisticBackground, setSimplisticBackground } from "./simplistic-background";
+import { isPortalAnimations, setPortalAnimations } from "./portal-animations";
 import { createLanguageSelector } from "./language-selector";
 import { updateTranslations } from "./i18n-dom";
 import { initKonamiCode } from "./konami";
@@ -1437,6 +1438,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       setSimplisticBackground(simplisticBackgroundToggle.checked);
       simplisticBackgroundToggle.blur();
       setTimeout(() => window.location.reload(), 50);
+    });
+  }
+
+  // "Animated portals" toggle — drives the GPU portal renderer directly, so no
+  // reload: portals/index.ts subscribes to the setting and starts/stops the
+  // worker in place. Available on baked and generated maps alike.
+  const portalAnimationsToggle = document.getElementById("portalAnimationsToggle") as HTMLInputElement | null;
+  if (portalAnimationsToggle) {
+    portalAnimationsToggle.checked = isPortalAnimations();
+    portalAnimationsToggle.addEventListener("change", () => {
+      setPortalAnimations(portalAnimationsToggle.checked);
+      portalAnimationsToggle.blur();
     });
   }
 

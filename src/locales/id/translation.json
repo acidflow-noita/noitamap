@@ -5117,6 +5117,10 @@
     "title": "Gunakan latar belakang peta yang sederhana",
     "content": "Ganti ubin latar belakang peta yang dialirkan dengan gambar datar kecil per dunia paralel. Penghemat bandwidth/memori besar pada koneksi lambat dan perangkat dengan RAM rendah; latar belakang terlihat kotak-kotak."
   },
+  "portalAnimations": {
+    "title": "Portal beranimasi",
+    "content": "Menganimasikan portal dengan simulasi partikel GPU dari efek dalam game. Hanya portal yang terlihat di layar yang disimulasikan. Matikan pada GPU lemah atau jika menggeser peta terasa lambat. Berlaku seketika, tanpa muat ulang."
+  },
   "perfMode": {
     "title": "Performa",
     "content": "Opsi performa untuk perangkat lambat dan layar kecil."

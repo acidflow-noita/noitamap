@@ -5117,6 +5117,10 @@
     "title": "Użyj uproszczonego tła mapy",
     "content": "Zamień kafelki tła mapy przesyłanej strumieniowo na mały, płaski obraz dla każdego świata równoległego. Duża przepustowość/oszczędność pamięci na wolnych połączeniach i urządzeniach z małą ilością pamięci RAM; tło wygląda blokowo."
   },
+  "portalAnimations": {
+    "title": "Animowane portale",
+    "content": "Animuje portale za pomocą symulacji cząsteczek na GPU odtwarzającej efekty z gry. Symulowane są tylko portale widoczne na ekranie. Wyłącz na słabych GPU lub gdy przesuwanie mapy jest ociężałe. Działa natychmiast, bez przeładowania."
+  },
   "perfMode": {
     "title": "Wydajność",
     "content": "Opcje wydajności dla wolnych urządzeń i małych ekranów."

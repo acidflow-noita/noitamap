@@ -5117,6 +5117,10 @@
     "title": "Käytä yksinkertaista karttataustaa",
     "content": "Korvaa suoratoistokartan taustalaatat pienellä litteällä kuvalla rinnakkaismaailmaa kohti. Suuri kaistanleveyden/muistin säästö hitaat yhteydet ja vähän RAM-laitteita; tausta näyttää jäykältä."
   },
+  "portalAnimations": {
+    "title": "Animoidut portaalit",
+    "content": "Animoi portaalit pelin efektien GPU-hiukkassimulaatiolla. Vain ruudulla näkyvät portaalit simuloidaan. Poista käytöstä heikolla näytönohjaimella tai jos kartan vieritys tuntuu tahmealta. Tulee voimaan heti ilman uudelleenlatausta."
+  },
   "perfMode": {
     "title": "Suorituskyky",
     "content": "Suorituskykyasetukset hitaille laitteille ja pienille näytöille."

@@ -5117,6 +5117,10 @@
     "title": "Používat zjednodušené pozadí mapy",
     "content": "Nahraďte streamované dlaždice pozadí mapy malým plochým obrázkem pro paralelní svět. Velká šířka pásma/úspora paměti na pomalých připojeních a zařízeních s nízkou RAM; pozadí vypadá hranaté."
   },
+  "portalAnimations": {
+    "title": "Animované portály",
+    "content": "Animuje portály pomocí GPU simulace částic podle efektů ze hry. Simulují se jen portály na obrazovce. Vypněte na slabých GPU nebo pokud se posouvání mapy zadrhává. Projeví se okamžitě, bez obnovení stránky."
+  },
   "perfMode": {
     "title": "Výkon",
     "content": "Možnosti výkonu pro pomalá zařízení a malé obrazovky."

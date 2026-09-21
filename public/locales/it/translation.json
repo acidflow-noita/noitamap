@@ -5117,6 +5117,10 @@
     "title": "Utilizzare uno sfondo semplice della mappa",
     "content": "Sostituisci i riquadri di sfondo della mappa in streaming con una piccola immagine piatta per mondo parallelo. Grande risparmio di larghezza di banda/memoria su connessioni lente e dispositivi con poca RAM; lo sfondo sembra squadrato."
   },
+  "portalAnimations": {
+    "title": "Portali animati",
+    "content": "Anima i portali con una simulazione di particelle su GPU degli effetti del gioco. Vengono simulati solo i portali visibili sullo schermo. Disattiva su GPU deboli o se lo scorrimento della mappa risulta lento. Si applica subito, senza ricaricare."
+  },
   "perfMode": {
     "title": "Prestazioni",
     "content": "Opzioni di prestazioni per dispositivi lenti e schermi piccoli."

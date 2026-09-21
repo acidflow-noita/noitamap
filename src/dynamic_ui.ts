@@ -1,4 +1,3 @@
-import { createPortalGPUControl } from "./portals/ui";
 /**
  * dynamic_ui.ts
  *
@@ -152,9 +151,6 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
 
   generateWrapper.appendChild(generateBtn);
   toolbarItems.push(generateWrapper);
-
-  // Explicit per-page opt-in; this does not initialize WebGL until clicked.
-  toolbarItems.push(createPortalGPUControl().button);
 
   // ── Lymm's Telescope button ──
   const nerdBtn = document.createElement("a");

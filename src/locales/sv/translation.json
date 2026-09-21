@@ -5117,6 +5117,10 @@
     "title": "Använd förenklad kartbakgrund",
     "content": "Byt ut de strömmade kartbakgrundsbrickorna med en liten platt bild per parallell värld. Stor bandbredd/minnesbesparing på långsamma anslutningar och enheter med låg RAM; bakgrunden ser blockig ut."
   },
+  "portalAnimations": {
+    "title": "Animerade portaler",
+    "content": "Animerar portaler med en GPU-partikelsimulering av spelets effekter. Endast portaler på skärmen simuleras. Stäng av på svaga grafikkort eller om panorering känns seg. Gäller direkt, utan omladdning."
+  },
   "perfMode": {
     "title": "Prestanda",
     "content": "Prestandaalternativ för långsamma enheter och små skärmar."

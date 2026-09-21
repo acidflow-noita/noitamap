@@ -5117,6 +5117,10 @@
     "title": "Einfachen Kartenhintergrund verwenden",
     "content": "Ersetzen Sie die gestreamten Kartenhintergrundkacheln durch ein kleines flaches Bild pro Parallelwelt. Große Bandbreiten-/Speichereinsparung bei langsamen Verbindungen und Geräten mit wenig RAM; Der Hintergrund sieht blockig aus."
   },
+  "portalAnimations": {
+    "title": "Animierte Portale",
+    "content": "Animiert Portale mit einer GPU-Partikelsimulation der Spieleffekte. Nur sichtbare Portale werden simuliert. Bei schwacher GPU oder ruckelndem Verschieben ausschalten. Wirkt sofort, ohne Neuladen."
+  },
   "perfMode": {
     "title": "Leistung",
     "content": "Leistungsoptionen für langsame Geräte und kleine Bildschirme."

@@ -5117,6 +5117,10 @@
     "title": "Utilizar un fondo de mapa simplista",
     "content": "Reemplace los mosaicos de fondo del mapa transmitidos por una pequeña imagen plana por mundo paralelo. Gran ancho de banda/ahorro de memoria en conexiones lentas y dispositivos con poca RAM; el fondo parece en bloques."
   },
+  "portalAnimations": {
+    "title": "Portales animados",
+    "content": "Anima los portales con una simulación de partículas en la GPU de los efectos del juego. Solo se simulan los portales visibles en pantalla. Desactívalo en GPU débiles o si el desplazamiento va lento. Se aplica al instante, sin recargar."
+  },
   "perfMode": {
     "title": "Rendimiento",
     "content": "Opciones de rendimiento para dispositivos lentos y pantallas pequeñas."

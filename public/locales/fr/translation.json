@@ -5117,6 +5117,10 @@
     "title": "Utiliser un arrière-plan de carte simpliste",
     "content": "Remplacez les tuiles d'arrière-plan de la carte diffusées par une petite image plate par monde parallèle. Gros économiseur de bande passante/mémoire sur les connexions lentes et les appareils à faible RAM ; l'arrière-plan semble en blocs."
   },
+  "portalAnimations": {
+    "title": "Portails animés",
+    "content": "Anime les portails avec une simulation de particules sur GPU reproduisant les effets du jeu. Seuls les portails visibles à l'écran sont simulés. Désactivez sur un GPU faible ou si le déplacement de la carte saccade. S'applique immédiatement, sans rechargement."
+  },
   "perfMode": {
     "title": "Performance",
     "content": "Options de performance pour les appareils lents et les petits écrans."

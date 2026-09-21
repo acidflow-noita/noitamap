@@ -1,11 +1,12 @@
 import { isSpoilerFree, onSpoilerFreeChange } from '../spoiler-free';
+import { isPortalAnimations, onPortalAnimationsChange } from '../portal-animations';
 import type { PortalSeed } from './placements';
 import type { PortalGPUOverlay, PortalGPUStats } from './overlay';
 import type { PortalBackgroundPatches } from './background-patches';
 export interface PortalGPUState {
   enabled:boolean; status:'off'|'waiting'|'loading'|'running'|'error'; error:string|null; stats:PortalGPUStats|null;
 }
-let state:PortalGPUState={enabled:false,status:'off',error:null,stats:null};
+let state:PortalGPUState={enabled:isPortalAnimations(),status:isPortalAnimations()?'waiting':'off',error:null,stats:null};
 const listeners=new Set<(state:PortalGPUState)=>void>();
 let backgrounds:PortalBackgroundPatches|null=null;
 let overlay:PortalGPUOverlay|null=null,revision=0,owner:any=null,seed:PortalSeed|null=null,request:AbortController|null=null;
@@ -13,7 +14,11 @@ function publish(next:Partial<PortalGPUState>){state={...state,...next};for(cons
 export function getPortalGPUState():PortalGPUState{return state;}
 export function onPortalGPUChange(listener:(state:PortalGPUState)=>void):()=>void{listeners.add(listener);return()=>listeners.delete(listener);}
 function stop(){revision++;request?.abort();request=null;overlay?.destroy();overlay=null;backgrounds?.destroy();backgrounds=null;}
-function fail(error:unknown){stop();publish({status:'error',error:error instanceof Error?error.message:String(error),stats:null});}
+function fail(error:unknown){
+  stop();const message=error instanceof Error?error.message:String(error);
+  console.warn('[portals] animated portals disabled:',message);
+  publish({status:'error',error:message,stats:null});
+}
 async function start(){
   stop();
   if(!state.enabled)return;
@@ -37,7 +42,8 @@ async function start(){
   } catch(error){if(ticket===revision&&!controller.signal.aborted)fail(error);}
   finally {if(request===controller)request=null;}
 }
-/** Explicit per-page opt-in. Never persist enabled=true across reloads. */
+/** Follows the persisted "Animated portals" performance setting (default on).
+ * Persistence lives in ../portal-animations; this only drives the renderer. */
 export function setPortalGPUEnabled(enabled:boolean):void {
   if(state.enabled===enabled)return;
   publish({enabled,error:null,stats:null,status:enabled?'waiting':'off'});
@@ -52,6 +58,7 @@ export function installPortalAnimations(viewer:any,current:PortalSeed):void {
   clearPortalAnimations();owner=viewer;seed=current;owner.addHandler('destroy',clearPortalAnimations);
   if(state.enabled)void start();
 }
+onPortalAnimationsChange(setPortalGPUEnabled);
 onSpoilerFreeChange(()=>{overlay?.setEnabled(!isSpoilerFree());if(overlay)publish({stats:overlay.stats()});});
 export function getPortalAnimationStats(){return overlay?.stats()??state;}
 if(typeof window!=='undefined')(window as any).__portalOverlayStats=getPortalAnimationStats;

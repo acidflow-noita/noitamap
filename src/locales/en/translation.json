@@ -5285,6 +5285,10 @@
     "title": "Use simplistic map background",
     "content": "Replace the streamed map background tiles with a tiny flat image per parallel world. Big bandwidth/memory saver on slow connections and low-RAM devices; the background looks blocky."
   },
+  "portalAnimations": {
+    "title": "Animated portals",
+    "content": "Animate portals with a GPU particle simulation of the game's effects. Only portals on screen are simulated. Turn off on weak GPUs or if panning feels sluggish. Applies instantly, no reload."
+  },
   "perfMode": {
     "title": "Performance",
     "content": "Performance options for slow devices and small screens."

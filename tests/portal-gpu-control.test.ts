@@ -11,26 +11,31 @@ vi.mock('../src/portals/overlay',()=>({
     stats(){return {mode:'experimental-gpu-particles',total:1,visible:1,active:1,capped:0,particles:0,visibleParticles:0,cpuMS:0,gpuMS:null,fps:0,simFPS:0,deliveryMS:0,gpuWaitMS:0,estimatedGPUBytes:0,canvasPixels:100,device:'test GPU',suspended:false};}
   },
 }));
-vi.mock('../src/i18n',()=>({default:{t:(key:string)=>key.endsWith('teleport_generic')?'Portal':'EXPERIMENTAL',on:vi.fn(),off:vi.fn()}}));
 import { clearPortalAnimations,getPortalGPUState,installPortalAnimations,setPortalGPUEnabled } from '../src/portals';
-import { createPortalGPUControl } from '../src/portals/ui';
-let control:ReturnType<typeof createPortalGPUControl>|undefined;
+import { isPortalAnimations,setPortalAnimations } from '../src/portal-animations';
 const viewer=()=>({addHandler:vi.fn(),removeHandler:vi.fn(),addTiledImage:vi.fn(),world:{addHandler:vi.fn(),removeHandler:vi.fn(),removeItem:vi.fn(),getItemCount:vi.fn(()=>0),getItemAt:vi.fn(),setItemIndex:vi.fn()}});
 const seed={seed:42,worldSize:70,worldCenter:35,pixelScenesByPW:{'0,0':[{key:'temple/altar_top',name:'altar_top',x:0,y:984}]}};
 beforeEach(()=>{setPortalGPUEnabled(false);clearPortalAnimations();vi.clearAllMocks();runtime.load.mockResolvedValue({});runtime.construct.mockReset();});
-afterEach(()=>{control?.destroy();control=undefined;setPortalGPUEnabled(false);clearPortalAnimations();document.body.replaceChildren();});
-describe('explicit GPU-only opt-in',()=>{
+afterEach(()=>{setPortalGPUEnabled(false);clearPortalAnimations();document.body.replaceChildren();});
+describe('GPU-only portal renderer driven by the performance setting',()=>{
+  it('is on by default and persists the setting when switched',()=>{
+    const storage=(globalThis as any).localStorage as Storage|undefined;
+    expect(isPortalAnimations()).toBe(true);
+    setPortalAnimations(false);expect(isPortalAnimations()).toBe(false);
+    if(storage)expect(storage.getItem('noitamap-portal-animations')).toBe('0');
+    setPortalAnimations(true);expect(isPortalAnimations()).toBe(true);
+    if(storage)expect(storage.getItem('noitamap-portal-animations')).toBe('1');
+  });
   it('does not load resources or construct a renderer when a map opens while the toggle is off',async()=>{
     installPortalAnimations(viewer(),seed);await Promise.resolve();
     expect(getPortalGPUState().enabled).toBe(false);expect(runtime.load).not.toHaveBeenCalled();expect(runtime.construct).not.toHaveBeenCalled();
   });
-  it('toggles from the UI without a map reload and tears down immediately when switched off',async()=>{
-    installPortalAnimations(viewer(),seed);control=createPortalGPUControl();document.body.append(control.button);
-    expect(control.button.textContent).toContain('GPU');expect(control.button.title).toContain('EXPERIMENTAL');
-    expect(control.button.getAttribute('aria-pressed')).toBe('false');control.button.click();
+  it('toggles through the setting without a map reload and tears down immediately when switched off',async()=>{
+    installPortalAnimations(viewer(),seed);
+    setPortalAnimations(true);
     await vi.waitFor(()=>expect(runtime.construct).toHaveBeenCalledOnce());
-    expect(control.button.getAttribute('aria-pressed')).toBe('true');expect(control.diagnostic.hidden).toBe(false);
-    control.button.click();expect(runtime.destroy).toHaveBeenCalledOnce();expect(control.diagnostic.hidden).toBe(true);
+    expect(getPortalGPUState().enabled).toBe(true);
+    setPortalAnimations(false);expect(runtime.destroy).toHaveBeenCalledOnce();
     expect(getPortalGPUState().status).toBe('off');
   });
   it('cancels late loading after toggling off or changing seeds',async()=>{
@@ -66,9 +71,8 @@ describe('explicit GPU-only opt-in',()=>{
     showBackgrounds([args[1][0].id]);
     expect(v.addTiledImage).toHaveBeenCalledOnce();
   });
-  it('can be enabled before seed metadata arrives and does not persist the opt-in',async()=>{
-    const stored=JSON.stringify(window.localStorage);setPortalGPUEnabled(true);expect(getPortalGPUState().status).toBe('waiting');
+  it('can be enabled before seed metadata arrives',async()=>{
+    setPortalGPUEnabled(true);expect(getPortalGPUState().status).toBe('waiting');
     installPortalAnimations(viewer(),seed);await vi.waitFor(()=>expect(runtime.construct).toHaveBeenCalledOnce());
-    expect(JSON.stringify(window.localStorage)).toBe(stored);
   });
 });

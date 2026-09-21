@@ -1,8 +1,12 @@
 # Experimental GPU portals
 
-Open a dynamic seed map and click **GPU · Portal · EXP**, next to the seed
-controls. It defaults to OFF on every page load. No map reload is needed.
-Click again to stop immediately and release this experiment's GPU context.
+Animated portals are ON by default on every dynamic map (baked daily and
+browser-generated, desktop and mobile). The switch lives in the Performance
+menu (speedometer icon; inside the “…” menu on the dynamic map) as
+**Animated portals**, persisted in `localStorage` key
+`noitamap-portal-animations`. No map reload is needed; switching it off stops
+the worker immediately and releases its GPU context. There is no on-screen
+diagnostics overlay; use `window.__portalOverlayStats()` in the console.
 
 This prototype uses only the experimental GPU-particle backend from
 `WUOTE/noita_particle_animations` commit
@@ -19,14 +23,12 @@ The earlier atlas experiment is parked under `task/portal-atlas-prototype`.
   Leviathan hub portals. Portal size is in game-world pixels, not fixed UI pixels.
 - Try the meditation cube/return and Hourglass/eye-room effects.
 - Compare interaction with the toggle off and on; test turning it off mid-load.
-- Watch the lower-left diagnostics: active/visible (total) portals, particles,
+- `window.__portalOverlayStats()` reports active/visible (total) portals, particles,
   completed frame rate, simulation steps/s (target 60), worker CPU submission time,
   optional GPU timestamp time, CPU-observed GPU-fence wait, worker delivery time, estimated
   GPU memory and actual WebGL renderer string. CPU submission time is NOT GPU
   execution time. A software WebGL driver may identify itself as SwiftShader/Mesa.
-- `window.__portalOverlayStats()` gives the same diagnostics in the console.
-- To stress tiny portals too, add `portalGpuMinPixels=0` to the URL, then enable
-  the UI toggle. `portalGpuLimit` can lower the default/hard limit of 192.
+- To stress tiny portals too, add `portalGpuMinPixels=0` to the URL. `portalGpuLimit` can lower the default/hard limit of 192.
 
 ## Boundaries
 
