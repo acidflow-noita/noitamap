@@ -33,6 +33,11 @@ export class MapGpuRenderer extends GpuGridRenderer {
     // The only selected backend. Never call a CPU/software renderer or auto fallback.
     this.configureParticles(entries,true);
   }
+  replay(key, entry, steps) {
+    if(this.lost)throw new Error('Experimental GPU context lost. Toggle off and on to restart; no fallback renderer is enabled.');
+    const sim=entry.simulation;
+    for(let i=0;i<steps;i++)sim.step();
+  }
   renderMap(entries, camera, width, height, steps) {
     if(this.lost)throw new Error('Experimental GPU context lost. Toggle off and on to restart; no fallback renderer is enabled.');
     const gl=this.gl,ext=this.timerExtension;
@@ -51,9 +56,11 @@ export class MapGpuRenderer extends GpuGridRenderer {
     try {
       this.bind(null,true);
       for(const [key,entry] of entries){
-        const sim=entry.simulation;
-        for(let i=0;i<steps;i++){sim.step();this.render(sim,key,{core:true,glow:true},true);}
-        if(!steps)this.render(sim,key,{core:true,glow:true},false);
+        const sim=entry.simulation,own=entry.steps??steps;
+        // Each entry catches up to the shared clock; at most 2 steps per frame
+        // except for the final replay steps of a portal that just entered.
+        for(let i=0;i<own;i++){sim.step();this.render(sim,key,{core:true,glow:true},true);}
+        if(!own)this.render(sim,key,{core:true,glow:true},false);
         this.composeMap(key,entry.portal,camera,width,height);
       }
     } finally {

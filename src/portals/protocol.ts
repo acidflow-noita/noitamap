@@ -20,7 +20,7 @@ export interface PortalGPUStats {
   estimatedGPUBytes: number; canvasPixels: number; device: string;
   suspended: boolean; slow: boolean;
 }
-export interface PortalWorkerOptions { minPixels: number; limit: number }
+export interface PortalWorkerOptions { minPixels: number; limit: number; fence?: boolean }
 export type PortalWorkerRequest = {
   type: 'init'; resources: ArrayBuffer; portals: PortalPlacement[]; seed: number;
   options: PortalWorkerOptions;

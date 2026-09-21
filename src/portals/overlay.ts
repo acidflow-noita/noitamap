@@ -67,6 +67,7 @@ export class PortalGPUOverlay {
     const options: PortalWorkerOptions = {
       minPixels: Number.isFinite(min) && min >= 0 ? min : 1.5,
       limit: Number.isInteger(limit) && limit > 0 ? Math.min(MAX_ACTIVE_PORTALS, limit) : MAX_ACTIVE_PORTALS,
+      fence: params.get('portalGpuFence') === '1',
     };
     this.latest = { mode: 'experimental-gpu-particles', executionThread: 'worker', revision: PORTAL_RENDERER_REVISION,
       total: portals.length, visible: 0, active: 0, capped: 0, particles: 0, visibleParticles: 0,
