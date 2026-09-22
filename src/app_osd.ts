@@ -372,13 +372,28 @@ export class AppOSD {
     const distance = Math.hypot(startVisibleX - x, here.y - y);
     const curve = createPanCurve(startVisibleX, here.y, x, y);
     const startLog = Math.log(startZoom), endLog = Math.log(endZoom);
-    // Zoom directly toward the destination scale, without a midpoint detour.
-    // Adding a zoom-out pulse to this interpolation creates extra reversals
-    // when the starting and destination scales differ (in/out/in or out/in/out).
+    const midpointX = (curve.x1 + 2 * curve.cxW + curve.x2) / 4;
+    const midpointY = (curve.y1 + 2 * curve.cyW + curve.y2) / 4;
+    // At the overview, fit the entire arrow around the camera's actual curved
+    // route midpoint, including the part of the canvas covered by a sidebar.
+    const spanX = Math.max(CHUNK_SIZE, 2.3 * Math.max(
+      Math.abs(curve.x1 - midpointX), Math.abs(curve.cxW - midpointX), Math.abs(curve.x2 - midpointX)));
+    const spanY = Math.max(CHUNK_SIZE, 2.3 * Math.max(
+      Math.abs(curve.y1 - midpointY), Math.abs(curve.cyW - midpointY), Math.abs(curve.y2 - midpointY)));
+    const overviewZoom = Math.min(startZoom, endZoom, visibleWidth / (width * spanX), height / (width * spanY));
+    const overviewLog = Math.log(overviewZoom);
+    const hasOverview = distance > CHUNK_SIZE / 2;
     const duration = Math.min(1800, 650 + 180 * Math.log2(1 + distance / CHUNK_SIZE));
+    const ease = (t: number) => t * t * (3 - 2 * t);
     const apply = (t: number) => {
-      const u = t * t * (3 - 2 * t);
-      const zoom = t === 1 ? endZoom : Math.exp(startLog + (endLog - startLog) * u);
+      const u = ease(t);
+      // Preserve the cinematic zoom-out / travel / zoom-in. Separate monotonic
+      // legs meet with zero zoom velocity: no additive pulse and no extra
+      // in/out reversals while the camera keeps moving along the arrow.
+      const logZoom = !hasOverview ? startLog + (endLog - startLog) * u
+        : t <= .5 ? startLog + (overviewLog - startLog) * ease(t * 2)
+        : overviewLog + (endLog - overviewLog) * ease(t * 2 - 1);
+      const zoom = t === 1 ? endZoom : Math.exp(logZoom);
       viewport.zoomTo(zoom, null, true);
       const v = 1 - u;
       // Follow the arrow, with the visible (sidebar-free) center on the curve.
@@ -391,7 +406,7 @@ export class AppOSD {
       apply(1);
       return Promise.resolve(true);
     }
-    if (distance > CHUNK_SIZE / 2) this.addPanTrail(curve);
+    if (hasOverview) this.addPanTrail(curve);
     return new Promise<boolean>(resolve => {
       const start = performance.now();
       const events = ['canvas-drag', 'canvas-scroll', 'canvas-press', 'canvas-key', 'close'];

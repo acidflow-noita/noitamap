@@ -53,39 +53,50 @@ describe('goto camera and arrow', () => {
     expect(app.viewport.getCenter).toHaveBeenCalledWith(true);
     expect(app.viewer.addOverlay).toHaveBeenCalledOnce();
   });
-  it.each([1 / 128, 1 / 512, 1 / 1024, 1 / 50000])('never reverses or overshoots zoom mid-pan from %f', async initialZoom => {
+  it.each([1 / 128, 1 / 512, 1 / 1024, 1 / 500000])('zooms out once and in once without extra reversals from %f', async initialZoom => {
     zoom = initialZoom;
     const targetZoom = 1 / 1024;
     const done = app.panToTarget(30000, 9000, { offsetXPx: 300 });
-    let previous = initialZoom;
-    for (let t = 0; t <= 1800; t += 10) {
-      frame(t);
-      expect(zoom).toBeGreaterThanOrEqual(Math.min(initialZoom, targetZoom) - 1e-12);
+    const route = (app as any).panTrailData;
+    const duration = Math.min(1800, 650 + 180 * Math.log2(1 + Math.hypot(route.x2 - route.x1, route.y2 - route.y1) / 512));
+    let previous = initialZoom, overview = initialZoom;
+    for (let step = 0; step <= 180; step++) {
+      frame(duration * step / 180);
       expect(zoom).toBeLessThanOrEqual(Math.max(initialZoom, targetZoom) + 1e-12);
-      if (initialZoom > targetZoom) expect(zoom).toBeLessThanOrEqual(previous + 1e-12);
+      if (step <= 90) expect(zoom).toBeLessThanOrEqual(previous + 1e-12);
       else expect(zoom).toBeGreaterThanOrEqual(previous - 1e-12);
+      if (step === 90) overview = zoom;
       previous = zoom;
     }
+    frame(1800);
     expect(await done).toBe(true);
+    expect(overview).toBeLessThan(targetZoom / 10);
     expect(zoom).toBe(targetZoom);
   });
   it.each([[30000, 0, 0], [0, 30000, 300], [-30000, -10000, 300]])(
     'keeps the visible camera center on the rendered arrow toward (%s, %s), sidebar offset %s',
     async (x, y, offset) => {
-      const initialZoom = zoom;
-      const targetZoom = Math.min(1200 - offset * 2, 800) / (512 * 1200);
       const done = app.panToTarget(x, y, { offsetXPx: offset });
       const route = (app as any).panTrailData;
+      const duration = Math.min(1800, 650 + 180 * Math.log2(1 + Math.hypot(route.x2 - route.x1, route.y2 - route.y1) / 512));
       const bezier = (a: number, c: number, b: number, u: number) => (1 - u) ** 2 * a + 2 * (1 - u) * u * c + u ** 2 * b;
-      for (const time of [450, 900, 1350]) {
+      for (const time of [duration / 4, duration / 2]) {
         frame(time);
-        // Infer the camera's progress from its independent monotonic zoom.
-        const u = Math.log(zoom / initialZoom) / Math.log(targetZoom / initialZoom);
+        const t = time / duration, u = t * t * (3 - 2 * t);
         expect(center.x - offset / (1200 * zoom)).toBeCloseTo(bezier(route.x1, route.cxW, route.x2, u), 8);
         expect(center.y).toBeCloseTo(bezier(route.y1, route.cyW, route.y2, u), 8);
         const points = route.path.getAttribute('d').match(/[-+]?(?:\d*\.)?\d+(?:e[-+]?\d+)?/gi).map(Number);
         expect(bezier(points[0], points[2], points[4], u)).toBeCloseTo(600 - offset, 7);
         expect(bezier(points[1], points[3], points[5], u)).toBeCloseTo(400, 7);
+      }
+      // The original cinematic overview must reveal both ends of the arrow.
+      frame(duration / 2);
+      for (const point of [new Point(route.x1, route.y1), new Point(route.x2, route.y2)]) {
+        const pixel = app.viewport.viewportToViewerElementCoordinates(point);
+        expect(pixel.x).toBeGreaterThanOrEqual(0);
+        expect(pixel.x).toBeLessThanOrEqual(1200 - offset * 2);
+        expect(pixel.y).toBeGreaterThanOrEqual(0);
+        expect(pixel.y).toBeLessThanOrEqual(800);
       }
       frame(1800); expect(await done).toBe(true);
     },
