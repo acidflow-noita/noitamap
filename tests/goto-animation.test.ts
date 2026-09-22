@@ -44,7 +44,7 @@ describe('goto camera and arrow', () => {
     expect(document.querySelector('filter, [filter], [stroke-dasharray]')).toBeNull();
     expect(document.querySelector<SVGElement>('.pan-trail-svg')!.style.overflow).toBe('hidden');
     const scales: number[] = [];
-    for (let t = 0; t <= 1800; t += 10) { frame(t); scales.push(zoom); expect(frames.size).toBeLessThanOrEqual(1); }
+    for (let t = 0; t <= 2600; t += 10) { frame(t); scales.push(zoom); expect(frames.size).toBeLessThanOrEqual(1); }
     expect(await done).toBe(true);
     expect(zoom).toBeCloseTo(600 / (1200 * 512), 12);
     expect(center.x).toBeCloseTo(30000 + 256, 8);
@@ -58,7 +58,7 @@ describe('goto camera and arrow', () => {
     const targetZoom = 1 / 1024;
     const done = app.panToTarget(30000, 9000, { offsetXPx: 300 });
     const route = (app as any).panTrailData;
-    const duration = Math.min(1800, 650 + 180 * Math.log2(1 + Math.hypot(route.x2 - route.x1, route.y2 - route.y1) / 512));
+    const duration = Math.max(1400, Math.min(2600, 1100 + Math.hypot(route.x2 - route.x1, route.y2 - route.y1) * .08));
     let previous = initialZoom, overview = initialZoom;
     for (let step = 0; step <= 180; step++) {
       frame(duration * step / 180);
@@ -68,7 +68,7 @@ describe('goto camera and arrow', () => {
       if (step === 90) overview = zoom;
       previous = zoom;
     }
-    frame(1800);
+    frame(2600);
     expect(await done).toBe(true);
     expect(overview).toBeLessThan(targetZoom / 10);
     expect(zoom).toBe(targetZoom);
@@ -78,11 +78,11 @@ describe('goto camera and arrow', () => {
     async (x, y, offset) => {
       const done = app.panToTarget(x, y, { offsetXPx: offset });
       const route = (app as any).panTrailData;
-      const duration = Math.min(1800, 650 + 180 * Math.log2(1 + Math.hypot(route.x2 - route.x1, route.y2 - route.y1) / 512));
+      const duration = Math.max(1400, Math.min(2600, 1100 + Math.hypot(route.x2 - route.x1, route.y2 - route.y1) * .08));
       const bezier = (a: number, c: number, b: number, u: number) => (1 - u) ** 2 * a + 2 * (1 - u) * u * c + u ** 2 * b;
       for (const time of [duration / 4, duration / 2]) {
         frame(time);
-        const t = time / duration, u = t * t * (3 - 2 * t);
+        const t = Math.max(0, Math.min(1, (time / duration - .25) / .5)), u = t * t * (3 - 2 * t);
         expect(center.x - offset / (1200 * zoom)).toBeCloseTo(bezier(route.x1, route.cxW, route.x2, u), 8);
         expect(center.y).toBeCloseTo(bezier(route.y1, route.cyW, route.y2, u), 8);
         const points = route.path.getAttribute('d').match(/[-+]?(?:\d*\.)?\d+(?:e[-+]?\d+)?/gi).map(Number);
@@ -98,9 +98,45 @@ describe('goto camera and arrow', () => {
         expect(pixel.y).toBeGreaterThanOrEqual(0);
         expect(pixel.y).toBeLessThanOrEqual(800);
       }
-      frame(1800); expect(await done).toBe(true);
+      frame(2600); expect(await done).toBe(true);
     },
   );
+  it.each([0, 300])('finishes zoom-out before travel and finishes travel before zoom-in (sidebar %s)', async offset => {
+    const origin = new Point(center.x - offset / (1200 * zoom), center.y);
+    const initialZoom = zoom;
+    const done = app.panToTarget(30000, 9000, { offsetXPx: offset });
+    const visibleCenter = () => new Point(center.x - offset / (1200 * zoom), center.y);
+    // A far journey lasts 2600ms: out 0–650, travel 650–1950, in 1950–2600.
+    for (const time of [100, 300, 600, 650]) {
+      frame(time);
+      expect(visibleCenter().x).toBeCloseTo(origin.x, 8);
+      expect(visibleCenter().y).toBeCloseTo(origin.y, 8);
+    }
+    const overview = zoom;
+    expect(overview).toBeLessThan(initialZoom / 10);
+    for (const time of [700, 1000, 1300, 1700, 1950]) {
+      frame(time);
+      expect(zoom).toBe(overview);
+    }
+    expect(visibleCenter().x).toBeCloseTo(30000, 8);
+    expect(visibleCenter().y).toBeCloseTo(9000, 8);
+    for (const time of [2000, 2200, 2400, 2600]) {
+      frame(time);
+      expect(visibleCenter().x).toBeCloseTo(30000, 8);
+      expect(visibleCenter().y).toBeCloseTo(9000, 8);
+      expect(zoom).toBeGreaterThan(overview);
+    }
+    expect(await done).toBe(true);
+  });
+  it('skips the initial zoom phase when the view is already wide enough', async () => {
+    zoom = 1 / 500000;
+    const initialZoom = zoom;
+    const done = app.panToTarget(30000, 9000);
+    frame(100);
+    expect(zoom).toBeCloseTo(initialZoom, 12);
+    expect(center.x).toBeGreaterThan(0);
+    frame(2600); expect(await done).toBe(true);
+  });
   it('does not resolve short hops early or start a separate spring animation', async () => {
     const done = app.panToTarget(100, 50); const settled = vi.fn(); void done.then(settled);
     frame(50); await Promise.resolve(); expect(settled).not.toHaveBeenCalled();

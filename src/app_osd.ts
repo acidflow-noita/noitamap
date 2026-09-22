@@ -383,16 +383,21 @@ export class AppOSD {
     const overviewZoom = Math.min(startZoom, endZoom, visibleWidth / (width * spanX), height / (width * spanY));
     const overviewLog = Math.log(overviewZoom);
     const hasOverview = distance > CHUNK_SIZE / 2;
-    const duration = Math.min(1800, 650 + 180 * Math.log2(1 + distance / CHUNK_SIZE));
+    const duration = hasOverview ? Math.max(1400, Math.min(2600, 1100 + distance * .08)) : 650;
+    // Skip a zoom leg if the current view already has the required scale.
+    const travelStart = startZoom > overviewZoom * (1 + 1e-9) ? .25 : 0;
+    const travelEnd = endZoom > overviewZoom * (1 + 1e-9) ? .75 : 1;
     const ease = (t: number) => t * t * (3 - 2 * t);
     const apply = (t: number) => {
-      const u = ease(t);
-      // Preserve the cinematic zoom-out / travel / zoom-in. Separate monotonic
-      // legs meet with zero zoom velocity: no additive pulse and no extra
-      // in/out reversals while the camera keeps moving along the arrow.
+      const travel = hasOverview ? Math.max(0, Math.min(1, (t - travelStart) / (travelEnd - travelStart))) : t;
+      const u = ease(travel);
+      // Three non-overlapping phases. Keep the origin anchored while zooming
+      // out, hold the overview scale throughout travel, then keep the target
+      // anchored while zooming in. Zoom must never start halfway along the path.
       const logZoom = !hasOverview ? startLog + (endLog - startLog) * u
-        : t <= .5 ? startLog + (overviewLog - startLog) * ease(t * 2)
-        : overviewLog + (endLog - overviewLog) * ease(t * 2 - 1);
+        : t < travelStart ? startLog + (overviewLog - startLog) * ease(t / travelStart)
+        : t > travelEnd ? overviewLog + (endLog - overviewLog) * ease((t - travelEnd) / (1 - travelEnd))
+        : overviewLog;
       const zoom = t === 1 ? endZoom : Math.exp(logZoom);
       viewport.zoomTo(zoom, null, true);
       const v = 1 - u;
