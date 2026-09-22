@@ -18,6 +18,15 @@ export type ZoomPos = {
   zoom: number;
 };
 
+type PanCurve = { x1: number; y1: number; x2: number; y2: number; cxW: number; cyW: number };
+
+/** One world-space curve for both the camera route and its visible arrow. */
+function createPanCurve(x1: number, y1: number, x2: number, y2: number): PanCurve {
+  const dx = x2 - x1, dy = y2 - y1;
+  const bend = dx < 0 ? -0.18 : 0.18;
+  return { x1, y1, x2, y2, cxW: (x1 + x2) / 2 + dy * bend, cyW: (y1 + y2) / 2 - dx * bend };
+}
+
 type DziTileSource = any;
 
 export class AppOSD {
@@ -361,6 +370,7 @@ export class AppOSD {
     const endZoom = Math.min(visibleWidth, height) / (CHUNK_SIZE * width);
     const startVisibleX = here.x - offset / (width * startZoom);
     const distance = Math.hypot(startVisibleX - x, here.y - y);
+    const curve = createPanCurve(startVisibleX, here.y, x, y);
     const startLog = Math.log(startZoom), endLog = Math.log(endZoom);
     // Zoom directly toward the destination scale, without a midpoint detour.
     // Adding a zoom-out pulse to this interpolation creates extra reversals
@@ -370,16 +380,18 @@ export class AppOSD {
       const u = t * t * (3 - 2 * t);
       const zoom = t === 1 ? endZoom : Math.exp(startLog + (endLog - startLog) * u);
       viewport.zoomTo(zoom, null, true);
+      const v = 1 - u;
+      // Follow the arrow, with the visible (sidebar-free) center on the curve.
       viewport.panTo(new OpenSeadragon.Point(
-        startVisibleX * (1 - u) + x * u + offset / (width * zoom),
-        here.y * (1 - u) + y * u,
+        v * v * curve.x1 + 2 * v * u * curve.cxW + u * u * curve.x2 + offset / (width * zoom),
+        v * v * curve.y1 + 2 * v * u * curve.cyW + u * u * curve.y2,
       ), true);
     };
     if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       apply(1);
       return Promise.resolve(true);
     }
-    if (distance > CHUNK_SIZE / 2) this.addPanTrail(startVisibleX, here.y, x, y);
+    if (distance > CHUNK_SIZE / 2) this.addPanTrail(curve);
     return new Promise<boolean>(resolve => {
       const start = performance.now();
       const events = ['canvas-drag', 'canvas-scroll', 'canvas-press', 'canvas-key', 'close'];
@@ -429,7 +441,7 @@ export class AppOSD {
   }
 
   /** Add an SVG trail line overlay connecting origin to destination */
-  private addPanTrail(x1: number, y1: number, x2: number, y2: number) {
+  private addPanTrail(curve: PanCurve) {
     this.removePanTrail();
     const container = this.viewer.container as HTMLElement;
 
@@ -470,10 +482,7 @@ export class AppOSD {
       </defs>
     `;
 
-    // Quadratic-Bezier curve from start to end. Control point is set in
-    // updatePanTrailPositions so the arc reacts to the user's viewport (the
-    // perpendicular sag is in *pixel* space and depends on the current
-    // on-screen distance between the two points).
+    // Project the shared world-space route into the current viewport.
     const path = document.createElementNS(SVG_NS, 'path');
     path.setAttribute('class', 'pan-trail-line');
     path.setAttribute('fill', 'none');
@@ -505,45 +514,8 @@ export class AppOSD {
 
     container.appendChild(svg);
 
-    // ── Lock the arc's shape in WORLD space, once. ──────────────────────
-    // The arc is a quadratic Bezier with a single control point. If we
-    // recompute that control point from per-frame *pixel* deltas the curve
-    // morphs as the viewport zooms (pixel distance shrinks at the overview
-    // and grows at the destination, so the sag scales differently each
-    // frame), and for near-vertical motion the perpendicular sign can flip
-    // around floating-point zero — which is the "arrow bows left then
-    // right" effect.
-    //
-    // Fix: compute the control point ONCE in world coords from the locked
-    // travel direction, then transform to pixel space each frame. The
-    // viewport transform is uniform-scale + translate, so the curve's
-    // shape (sag-to-length ratio) is invariant under it.
-    const dxW = x2 - x1;
-    const dyW = y2 - y1;
-    const lenW = Math.sqrt(dxW * dxW + dyW * dyW);
-    let cxW = (x1 + x2) / 2;
-    let cyW = (y1 + y2) / 2;
-    if (lenW > 1e-6) {
-      // Right-perpendicular of the travel direction.
-      let perpXW = dyW / lenW;
-      let perpYW = -dxW / lenW;
-      // Visual bias: prefer arcs that bow *upward* in screen space (negative
-      // Y). If the perpendicular points down, flip it. This decision is made
-      // ONCE from constant world coords, so there's no mid-animation sign
-      // flip even on near-vertical paths.
-      if (perpYW > 0) {
-        perpXW = -perpXW;
-        perpYW = -perpYW;
-      }
-      // Sag = 18% of line length. In world space, so the arc scales
-      // proportionally with the path — never "warps" relative to the line.
-      const sagW = lenW * 0.18;
-      cxW += perpXW * sagW;
-      cyW += perpYW * sagW;
-    }
-
-    // Store trail data for position updates
-    this.panTrailData = { svg, path, dot, ring, gradient, x1, y1, x2, y2, cxW, cyW };
+    // The camera evaluates this exact same, fixed world-space curve.
+    this.panTrailData = { svg, path, dot, ring, gradient, ...curve };
     this.updatePanTrailPositions();
 
     // Listen to viewport changes to update line positions
