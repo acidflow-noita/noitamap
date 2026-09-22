@@ -362,14 +362,13 @@ export class AppOSD {
     const startVisibleX = here.x - offset / (width * startZoom);
     const distance = Math.hypot(startVisibleX - x, here.y - y);
     const startLog = Math.log(startZoom), endLog = Math.log(endZoom);
-    // Interpolate magnification, not world-space rectangle widths. The latter
-    // races through the last zoom levels on long, cross-world journeys.
-    const travelZoom = Math.min(startZoom, endZoom, visibleWidth / (width * Math.max(CHUNK_SIZE, distance * 1.3)));
-    const excursion = Math.max(0, (startLog + endLog) / 2 - Math.log(travelZoom));
+    // Zoom directly toward the destination scale, without a midpoint detour.
+    // Adding a zoom-out pulse to this interpolation creates extra reversals
+    // when the starting and destination scales differ (in/out/in or out/in/out).
     const duration = Math.min(1800, 650 + 180 * Math.log2(1 + distance / CHUNK_SIZE));
     const apply = (t: number) => {
       const u = t * t * (3 - 2 * t);
-      const zoom = Math.exp(startLog * (1 - u) + endLog * u - excursion * Math.sin(Math.PI * u) ** 2);
+      const zoom = t === 1 ? endZoom : Math.exp(startLog + (endLog - startLog) * u);
       viewport.zoomTo(zoom, null, true);
       viewport.panTo(new OpenSeadragon.Point(
         startVisibleX * (1 - u) + x * u + offset / (width * zoom),

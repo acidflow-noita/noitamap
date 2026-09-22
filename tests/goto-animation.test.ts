@@ -53,6 +53,22 @@ describe('goto camera and arrow', () => {
     expect(app.viewport.getCenter).toHaveBeenCalledWith(true);
     expect(app.viewer.addOverlay).toHaveBeenCalledOnce();
   });
+  it.each([1 / 128, 1 / 512, 1 / 1024, 1 / 50000])('never reverses or overshoots zoom mid-pan from %f', async initialZoom => {
+    zoom = initialZoom;
+    const targetZoom = 1 / 1024;
+    const done = app.panToTarget(30000, 9000, { offsetXPx: 300 });
+    let previous = initialZoom;
+    for (let t = 0; t <= 1800; t += 10) {
+      frame(t);
+      expect(zoom).toBeGreaterThanOrEqual(Math.min(initialZoom, targetZoom) - 1e-12);
+      expect(zoom).toBeLessThanOrEqual(Math.max(initialZoom, targetZoom) + 1e-12);
+      if (initialZoom > targetZoom) expect(zoom).toBeLessThanOrEqual(previous + 1e-12);
+      else expect(zoom).toBeGreaterThanOrEqual(previous - 1e-12);
+      previous = zoom;
+    }
+    expect(await done).toBe(true);
+    expect(zoom).toBe(targetZoom);
+  });
   it('does not resolve short hops early or start a separate spring animation', async () => {
     const done = app.panToTarget(100, 50); const settled = vi.fn(); void done.then(settled);
     frame(50); await Promise.resolve(); expect(settled).not.toHaveBeenCalled();
