@@ -5528,7 +5528,33 @@
       "dailyCensusCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.sageCensus): {{value}}",
       "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}"
     },
-    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)"
+    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
+    "v3": {
+      "back": "戻る",
+      "viewAll": "すべて表示",
+      "showMore": "さらに表示",
+      "showOnMap": "マップに表示",
+      "usefulSpells": "探しておきたい呪文",
+      "otherFinds": "その他の場所とアイテム",
+      "locationCount": "場所：{{count}}",
+      "quantity": "数量：{{count}}",
+      "statistics": "シード統計",
+      "compareDaily": "デイリーシードと比較",
+      "intro": "役立つ戦利品を見つけ、場所を選んでマップに表示します。",
+      "mapSource": "マップ内で確認できる戦利品のみ。統計から不明な場所を推測することはありません。",
+      "statisticsIntro": "Sage の補足データです。マップの発見物とは別に扱います。",
+      "statisticsUnavailable": "シードを照会できません。公開済みの全体統計は引き続き表示します。",
+      "proRequired": "詳しいマップの発見物は Pro で利用できます。",
+      "noWandHighlights": "すべての場所は一覧で確認できます。",
+      "spellSelection": "マップで見つかった便利な呪文の分類です。杖のデッキや容器の中身も含みます。",
+      "populationScope": "Sage に収録された {{count}} シードの自然生成統計です。マップの場所の数ではありません。",
+      "hoverHint": "発見物にカーソルを合わせるかフォーカスすると、場所を強調表示します。メインルートのバイオームはより目立ちます。",
+      "noLocation": "場所が不明",
+      "highestSeeds": "最大の個数",
+      "lowestSeeds": "最小の個数",
+      "v4Pending": "V4 の最終極値はまだ利用できません。以下は既存の公開データの参照値です。",
+      "censusVersionMismatch": "別のデータセットのシード集計は非表示です。対応する V4 データは Sage で確認してください。"
+    }
   },
   "unlocks": {
     "btn": {

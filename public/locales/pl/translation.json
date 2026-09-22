@@ -5528,7 +5528,33 @@
       "dailyCensusCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.sageCensus): {{value}}",
       "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}"
     },
-    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)"
+    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
+    "v3": {
+      "back": "Wstecz",
+      "viewAll": "Pokaż wszystkie",
+      "showMore": "Pokaż więcej",
+      "showOnMap": "Pokaż na mapie",
+      "usefulSpells": "Zaklęcia warte znalezienia",
+      "otherFinds": "Inne miejsca i przedmioty",
+      "locationCount": "Lokalizacje: {{count}}",
+      "quantity": "Liczba: {{count}}",
+      "statistics": "Statystyki ziarna",
+      "compareDaily": "Porównaj z dziennym ziarnem",
+      "intro": "Znajdź przydatne łupy, wybierz lokalizację i otwórz ją na mapie.",
+      "mapSource": "Tylko znane łupy na mapie. Brakujące lokalizacje nie są wyliczane ze statystyk.",
+      "statisticsIntro": "Dodatkowe dane Sage, oddzielone od znalezisk na mapie.",
+      "statisticsUnavailable": "Dane ziarna są niedostępne. Opublikowane statystyki ogólne nadal są widoczne.",
+      "proRequired": "Szczegółowe znaleziska są dostępne w Pro.",
+      "noWandHighlights": "Wszystkie lokalizacje są na pełnej liście.",
+      "spellSelection": "Przydatne kategorie zaklęć, w tym z różdżek i pojemników.",
+      "populationScope": "Statystyki naturalnego występowania dla {{count}} ziaren w Sage, nie liczba lokalizacji na mapie.",
+      "hoverHint": "Najedź na znalezisko lub wybierz je klawiaturą, aby podświetlić lokalizacje. Biomy głównej ścieżki są wyróżnione mocniej.",
+      "noLocation": "Lokalizacja nieznana",
+      "highestSeeds": "Największe liczby",
+      "lowestSeeds": "Najmniejsze liczby",
+      "v4Pending": "Końcowe ekstrema V4 nie są jeszcze dostępne. Poniższe wartości pochodzą z już opublikowanego zbioru.",
+      "censusVersionMismatch": "Liczby z innego zbioru danych są ukryte. Otwórz Sage, aby uzyskać zgodne dane V4."
+    }
   },
   "unlocks": {
     "btn": {

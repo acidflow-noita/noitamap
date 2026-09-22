@@ -123,7 +123,18 @@ function makeReport(locale, existing, ui, terms, csv) {
         throw new Error(`Broken nested label ${locale}/${key}: ${ref}`);
   return report;
 }
+function makeVisitorReport(locale, ui) {
+  const result = {};
+  for (const [key, translations] of Object.entries(ui)) {
+    const value = translations[locale];
+    if (typeof value !== "string" || !value.trim()) throw new Error(`Missing V3 translation ${locale}/${key}`);
+    if (tokens(value) !== tokens(translations.en)) throw new Error(`V3 placeholder mismatch ${locale}/${key}`);
+    set(result, key, value);
+  }
+  return result;
+}
 function main() {
+  const visitorUI = JSON.parse(fs.readFileSync(path.join(ROOT, "build_data/report-v3-ui.json"), "utf8"));
   const ui = JSON.parse(
     fs.readFileSync(path.join(ROOT, "build_data/report-v2-ui.json"), "utf8"),
   );
@@ -145,6 +156,7 @@ function main() {
     const file = path.join(ROOT, "src/locales", locale, "translation.json"),
       existing = JSON.parse(fs.readFileSync(file, "utf8"));
     existing.seedReport.v2 = makeReport(locale, existing, ui, terms, csv);
+    existing.seedReport.v3 = makeVisitorReport(locale, visitorUI);
     existing.seedReport.populationUnavailable =
       "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)";
     return { locale, file, existing };
@@ -154,5 +166,5 @@ function main() {
     console.log(`Report translations: ${locale}`);
   }
 }
-module.exports = { parseCsv, makeReport, CSV_LOCALES };
+module.exports = { parseCsv, makeReport, makeVisitorReport, CSV_LOCALES };
 if (require.main === module) main();

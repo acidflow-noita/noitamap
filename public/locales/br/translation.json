@@ -5528,7 +5528,33 @@
       "dailyCensusCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.sageCensus): {{value}}",
       "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}"
     },
-    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)"
+    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
+    "v3": {
+      "back": "Voltar",
+      "viewAll": "Ver todos",
+      "showMore": "Mostrar mais",
+      "showOnMap": "Mostrar no mapa",
+      "usefulSpells": "Feitiços que vale a pena encontrar",
+      "otherFinds": "Outros locais e itens",
+      "locationCount": "Locais: {{count}}",
+      "quantity": "Quantidade: {{count}}",
+      "statistics": "Estatísticas da semente",
+      "compareDaily": "Comparar com a semente diária",
+      "intro": "Encontre itens úteis, escolha um local e abra-o no mapa.",
+      "mapSource": "Apenas itens conhecidos no mapa. Locais ausentes não são inventados a partir de estatísticas.",
+      "statisticsIntro": "Dados opcionais do Sage, separados dos itens encontrados no mapa.",
+      "statisticsUnavailable": "A consulta da semente está indisponível. As estatísticas publicadas continuam visíveis.",
+      "proRequired": "Os detalhes dos itens no mapa estão disponíveis no Pro.",
+      "noWandHighlights": "Todos os locais estão na lista completa.",
+      "spellSelection": "Categorias de feitiços úteis, incluindo varinhas e recipientes.",
+      "populationScope": "Estatísticas de geração natural de {{count}} sementes do Sage, não de locais no mapa.",
+      "hoverHint": "Passe o cursor ou foque um item para destacar seus locais. Os biomas do caminho principal ficam mais visíveis.",
+      "noLocation": "Local desconhecido",
+      "highestSeeds": "Maiores quantidades",
+      "lowestSeeds": "Menores quantidades",
+      "v4Pending": "Os extremos finais da V4 ainda não estão disponíveis. As referências abaixo vêm do conjunto de dados já publicado.",
+      "censusVersionMismatch": "Contagens de outro conjunto de dados estão ocultas. Abra o Sage para os dados V4 correspondentes."
+    }
   },
   "unlocks": {
     "btn": {

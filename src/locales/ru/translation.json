@@ -5528,7 +5528,33 @@
       "dailyCensusCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.sageCensus): {{value}}",
       "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}"
     },
-    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)"
+    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
+    "v3": {
+      "back": "Назад",
+      "viewAll": "Показать все",
+      "showMore": "Показать ещё",
+      "showOnMap": "Показать на карте",
+      "usefulSpells": "Полезные заклинания",
+      "otherFinds": "Другие места и предметы",
+      "locationCount": "Мест: {{count}}",
+      "quantity": "Количество: {{count}}",
+      "statistics": "Статистика сида",
+      "compareDaily": "Сравнить с ежедневным сидом",
+      "intro": "Выберите полезную находку, затем место — и откройте его на карте.",
+      "mapSource": "Только известные находки на карте. Недостающие места не придумываются по статистике.",
+      "statisticsIntro": "Дополнительные сведения из Sage. Находки на карте учитываются отдельно.",
+      "statisticsUnavailable": "Данные сида недоступны. Опубликованная общая статистика по-прежнему показана.",
+      "proRequired": "Подробные находки на карте доступны в Pro.",
+      "noWandHighlights": "Все места доступны в полном списке.",
+      "spellSelection": "Полезные категории заклинаний на карте, включая жезлы и содержимое контейнеров.",
+      "populationScope": "Статистика естественного появления Sage по {{count}} архивным сидам. Это не количество мест на карте.",
+      "hoverHint": "Наведите курсор или выберите находку клавишей Tab, чтобы подсветить её места. Биомы основного пути выделены заметнее.",
+      "noLocation": "Место неизвестно",
+      "highestSeeds": "Наибольшее количество",
+      "lowestSeeds": "Наименьшее количество",
+      "v4Pending": "Итоговые экстремумы V4 пока недоступны. Ниже показаны данные существующего опубликованного набора.",
+      "censusVersionMismatch": "Данные сида из другого набора скрыты. Откройте Sage для соответствующих данных V4."
+    }
   },
   "unlocks": {
     "btn": {

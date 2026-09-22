@@ -34,6 +34,7 @@ export interface CachedBiomeRender {
 }
 
 interface CachedGeneration {
+  sage?: unknown;
   cacheKey: string;
   seed: number;
   timestamp: number;
@@ -153,6 +154,7 @@ export async function cacheGeneration(cacheKey: string, seed: number, result: an
       isNGP: result.isNGP,
       worldSize: result.worldSize,
       worldCenter: result.worldCenter,
+      sage: result.sage,
       parallelWorlds: result.parallelWorlds || [-1, 0, 1],
       tileLayers,
       elevatorShafts: result.elevatorShafts?.map(serializeTileLayer),
@@ -240,6 +242,7 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
       isNGP: entry.isNGP,
       worldSize: entry.worldSize,
       worldCenter: entry.worldCenter,
+      sage: entry.sage,
       parallelWorlds: entry.parallelWorlds,
       biomeData,
       tileLayers,

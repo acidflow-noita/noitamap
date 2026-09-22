@@ -5528,7 +5528,33 @@
       "dailyCensusCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.sageCensus): {{value}}",
       "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}"
     },
-    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)"
+    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
+    "v3": {
+      "back": "Zpět",
+      "viewAll": "Zobrazit vše",
+      "showMore": "Zobrazit další",
+      "showOnMap": "Ukázat na mapě",
+      "usefulSpells": "Kouzla, která stojí za nalezení",
+      "otherFinds": "Další místa a předměty",
+      "locationCount": "Počet míst: {{count}}",
+      "quantity": "Počet: {{count}}",
+      "statistics": "Statistiky seedu",
+      "compareDaily": "Porovnat s denním seedem",
+      "intro": "Najdi užitečnou kořist, vyber místo a otevři ho na mapě.",
+      "mapSource": "Jen známá kořist na mapě. Chybějící místa se nedoplňují ze statistik.",
+      "statisticsIntro": "Doplňkové údaje ze Sage. Nálezy na mapě jsou vedeny zvlášť.",
+      "statisticsUnavailable": "Údaje seedu nejsou dostupné. Zveřejněné souhrnné statistiky zůstávají zobrazené.",
+      "proRequired": "Podrobné nálezy na mapě jsou dostupné v Pro.",
+      "noWandHighlights": "Všechna místa jsou v úplném seznamu.",
+      "spellSelection": "Užitečné kategorie kouzel včetně obsahu hůlek a nádob.",
+      "populationScope": "Statistiky přirozených výskytů v {{count}} archivovaných seedech Sage, nikoli počty míst na mapě.",
+      "hoverHint": "Najeď na nález nebo ho vyber klávesnicí a zvýrazni jeho místa. Biomy hlavní cesty jsou výraznější.",
+      "noLocation": "Místo není známé",
+      "highestSeeds": "Nejvyšší počty",
+      "lowestSeeds": "Nejnižší počty",
+      "v4Pending": "Konečné extrémy V4 zatím nejsou dostupné. Níže jsou hodnoty ze stávajícího zveřejněného souboru dat.",
+      "censusVersionMismatch": "Počty z jiného souboru dat jsou skryté. Odpovídající údaje V4 najdeš v Sage."
+    }
   },
   "unlocks": {
     "btn": {

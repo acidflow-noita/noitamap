@@ -5528,7 +5528,33 @@
       "dailyCensusCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.sageCensus): {{value}}",
       "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}"
     },
-    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)"
+    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
+    "v3": {
+      "back": "Retour",
+      "viewAll": "Tout voir",
+      "showMore": "Afficher plus",
+      "showOnMap": "Voir sur la carte",
+      "usefulSpells": "Sorts à trouver",
+      "otherFinds": "Autres lieux et objets",
+      "locationCount": "Emplacements : {{count}}",
+      "quantity": "Quantité : {{count}}",
+      "statistics": "Statistiques de la graine",
+      "compareDaily": "Comparer à la graine du jour",
+      "intro": "Trouvez du butin utile, choisissez un emplacement et ouvrez-le sur la carte.",
+      "mapSource": "Uniquement le butin localisé. Les statistiques ne servent pas à inventer des emplacements.",
+      "statisticsIntro": "Détails facultatifs de Sage, séparés des trouvailles sur la carte.",
+      "statisticsUnavailable": "La graine est indisponible. Les statistiques générales publiées restent affichées.",
+      "proRequired": "Les trouvailles détaillées sont disponibles avec Pro.",
+      "noWandHighlights": "Tous les emplacements sont dans la liste complète.",
+      "spellSelection": "Catégories de sorts utiles, y compris ceux des baguettes et des contenants.",
+      "populationScope": "Statistiques des apparitions naturelles de {{count}} graines archivées dans Sage, pas des emplacements sur la carte.",
+      "hoverHint": "Survolez une trouvaille ou donnez-lui le focus pour repérer ses emplacements. Le parcours principal ressort davantage.",
+      "noLocation": "Emplacement inconnu",
+      "highestSeeds": "Quantités les plus élevées",
+      "lowestSeeds": "Quantités les plus faibles",
+      "v4Pending": "Les extrema définitifs V4 ne sont pas encore disponibles. Les références ci-dessous viennent du jeu de données déjà publié.",
+      "censusVersionMismatch": "Les comptes provenant d’un autre jeu de données sont masqués. Consultez Sage pour les données V4 correspondantes."
+    }
   },
   "unlocks": {
     "btn": {

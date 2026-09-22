@@ -5528,7 +5528,33 @@
       "dailyCensusCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.sageCensus): {{value}}",
       "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}"
     },
-    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)"
+    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
+    "v3": {
+      "back": "Indietro",
+      "viewAll": "Mostra tutti",
+      "showMore": "Mostra altro",
+      "showOnMap": "Mostra sulla mappa",
+      "usefulSpells": "Incantesimi da cercare",
+      "otherFinds": "Altri luoghi e oggetti",
+      "locationCount": "Posizioni: {{count}}",
+      "quantity": "Quantità: {{count}}",
+      "statistics": "Statistiche del seme",
+      "compareDaily": "Confronta con il seme giornaliero",
+      "intro": "Trova bottino utile, scegli una posizione e aprila sulla mappa.",
+      "mapSource": "Solo bottino noto sulla mappa. Le posizioni mancanti non sono dedotte dalle statistiche.",
+      "statisticsIntro": "Dettagli facoltativi di Sage, separati dai ritrovamenti sulla mappa.",
+      "statisticsUnavailable": "Ricerca del seme non disponibile. Le statistiche pubblicate restano visibili.",
+      "proRequired": "I dettagli dei ritrovamenti sono disponibili con Pro.",
+      "noWandHighlights": "Tutte le posizioni sono nella lista completa.",
+      "spellSelection": "Categorie di incantesimi utili, inclusi quelli di bacchette e contenitori.",
+      "populationScope": "Statistiche delle comparse naturali di {{count}} semi archiviati in Sage, non delle posizioni sulla mappa.",
+      "hoverHint": "Passa il cursore o seleziona un ritrovamento con la tastiera per evidenziarne le posizioni. Il percorso principale risalta di più.",
+      "noLocation": "Posizione sconosciuta",
+      "highestSeeds": "Quantità maggiori",
+      "lowestSeeds": "Quantità minori",
+      "v4Pending": "Gli estremi finali V4 non sono ancora disponibili. I riferimenti provengono dal dataset già pubblicato.",
+      "censusVersionMismatch": "I conteggi di un altro dataset sono nascosti. Apri Sage per i dati V4 corrispondenti."
+    }
   },
   "unlocks": {
     "btn": {

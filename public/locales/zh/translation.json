@@ -5528,7 +5528,33 @@
       "dailyCensusCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.sageCensus): {{value}}",
       "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}"
     },
-    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)"
+    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
+    "v3": {
+      "back": "返回",
+      "viewAll": "查看全部",
+      "showMore": "显示更多",
+      "showOnMap": "在地图上显示",
+      "usefulSpells": "值得寻找的法术",
+      "otherFinds": "其他地点和物品",
+      "locationCount": "位置：{{count}}",
+      "quantity": "数量：{{count}}",
+      "statistics": "种子统计",
+      "compareDaily": "与每日种子比较",
+      "intro": "寻找有用的战利品，选择位置，然后在地图上打开。",
+      "mapSource": "仅显示地图中已知的战利品。不会根据统计数据猜测缺失位置。",
+      "statisticsIntro": "来自 Sage 的可选详细数据，与地图发现分开显示。",
+      "statisticsUnavailable": "种子查询不可用。仍显示已发布的总体统计。",
+      "proRequired": "详细地图发现需要 Pro。",
+      "noWandHighlights": "所有位置都在完整列表中。",
+      "spellSelection": "地图中找到的实用法术类别，包括法杖和容器中的法术。",
+      "populationScope": "Sage 对 {{count}} 个存档种子的自然生成统计，并非地图位置数量。",
+      "hoverHint": "悬停或聚焦发现项以高亮其位置，主路线生物群系中的位置更醒目。",
+      "noLocation": "位置不可用",
+      "highestSeeds": "最高数量",
+      "lowestSeeds": "最低数量",
+      "v4Pending": "最终 V4 极值尚不可用。下方参考值来自现有的已发布数据集。",
+      "censusVersionMismatch": "已隐藏来自其他数据集的种子计数。请打开 Sage 查看匹配的 V4 数据。"
+    }
   },
   "unlocks": {
     "btn": {

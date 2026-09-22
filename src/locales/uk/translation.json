@@ -5528,7 +5528,33 @@
       "dailyCensusCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.sageCensus): {{value}}",
       "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}"
     },
-    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)"
+    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
+    "v3": {
+      "back": "Назад",
+      "viewAll": "Показати всі",
+      "showMore": "Показати ще",
+      "showOnMap": "Показати на мапі",
+      "usefulSpells": "Корисні заклинання",
+      "otherFinds": "Інші місця та предмети",
+      "locationCount": "Місць: {{count}}",
+      "quantity": "Кількість: {{count}}",
+      "statistics": "Статистика сіда",
+      "compareDaily": "Порівняти зі щоденним сідом",
+      "intro": "Виберіть корисну знахідку, потім місце — і відкрийте його на мапі.",
+      "mapSource": "Лише відомі знахідки на мапі. Відсутні місця не вигадуються за статистикою.",
+      "statisticsIntro": "Додаткові відомості із Sage. Знахідки на мапі обліковуються окремо.",
+      "statisticsUnavailable": "Дані сіда недоступні. Опублікована загальна статистика все ще відображається.",
+      "proRequired": "Докладні знахідки на мапі доступні у Pro.",
+      "noWandHighlights": "Усі місця доступні в повному списку.",
+      "spellSelection": "Корисні категорії заклинань на мапі, включно з жезлами та вмістом контейнерів.",
+      "populationScope": "Статистика природної появи Sage за {{count}} архівними сідами. Це не кількість місць на мапі.",
+      "hoverHint": "Наведіть курсор або виберіть знахідку клавішею Tab, щоб підсвітити її місця. Біоми основного шляху виділені помітніше.",
+      "noLocation": "Місце невідоме",
+      "highestSeeds": "Найбільша кількість",
+      "lowestSeeds": "Найменша кількість",
+      "v4Pending": "Остаточні екстремуми V4 ще недоступні. Нижче наведено дані наявного опублікованого набору.",
+      "censusVersionMismatch": "Дані сіда з іншого набору приховані. Відкрийте Sage для відповідних даних V4."
+    }
   },
   "unlocks": {
     "btn": {

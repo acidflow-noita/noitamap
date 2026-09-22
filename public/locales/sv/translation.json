@@ -5528,7 +5528,33 @@
       "dailyCensusCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.sageCensus): {{value}}",
       "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}"
     },
-    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)"
+    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
+    "v3": {
+      "back": "Tillbaka",
+      "viewAll": "Visa alla",
+      "showMore": "Visa fler",
+      "showOnMap": "Visa på kartan",
+      "usefulSpells": "Besvärjelser värda att hitta",
+      "otherFinds": "Andra platser och föremål",
+      "locationCount": "Platser: {{count}}",
+      "quantity": "Antal: {{count}}",
+      "statistics": "Fröstatistik",
+      "compareDaily": "Jämför med dagens frö",
+      "intro": "Hitta användbart byte, välj en plats och öppna den på kartan.",
+      "mapSource": "Endast känt byte på kartan. Saknade platser fylls inte i utifrån statistik.",
+      "statisticsIntro": "Valfria detaljer från Sage. Kartfynd hålls åtskilda.",
+      "statisticsUnavailable": "Fröuppslagning är inte tillgänglig. Publicerad populationsstatistik visas ändå.",
+      "proRequired": "Detaljerade kartfynd är tillgängliga med Pro.",
+      "noWandHighlights": "Alla platser finns i den fullständiga listan.",
+      "spellSelection": "Användbara besvärjelsekategorier, inklusive stavar och behållare.",
+      "populationScope": "Sage-statistik över naturliga förekomster i {{count}} arkiverade frön, inte antal kartplatser.",
+      "hoverHint": "Håll pekaren över ett fynd eller fokusera det för att markera platserna. Huvudvägens biomer syns tydligare.",
+      "noLocation": "Okänd plats",
+      "highestSeeds": "Högsta antal",
+      "lowestSeeds": "Lägsta antal",
+      "v4Pending": "Slutliga V4-extremvärden är ännu inte tillgängliga. Referenserna kommer från den befintliga publicerade datamängden.",
+      "censusVersionMismatch": "Antal från en annan datamängd är dolda. Öppna Sage för motsvarande V4-data."
+    }
   },
   "unlocks": {
     "btn": {

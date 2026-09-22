@@ -3302,7 +3302,7 @@ function placeTooltipForMarker(
   const TOOLTIP_GAP = Math.max(32, Math.round(window.innerHeight * 0.05));
 
   let sidebarPx = 0;
-  const srEl = document.getElementById('seed-report-sidebar');
+  const srEl = document.querySelector<HTMLElement>('#seed-report-v3.open, #seed-report-sidebar.open');
   if (srEl && srEl.classList.contains('open')) {
     sidebarPx = srEl.getBoundingClientRect().width;
   }
@@ -5223,7 +5223,7 @@ export function openTooltipForPOI(
   // `.open` class is set; if not present or closed, width is 0.
   let sidebarPx = opts?.sidebarRightPx ?? 0;
   if (sidebarPx === 0) {
-    const srEl = document.getElementById('seed-report-sidebar');
+    const srEl = document.querySelector<HTMLElement>('#seed-report-v3.open, #seed-report-sidebar.open');
     if (srEl && srEl.classList.contains('open')) {
       sidebarPx = srEl.getBoundingClientRect().width;
     }

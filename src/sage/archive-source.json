@@ -1,0 +1,16 @@
+{
+  "populationRevision": 4,
+  "schemaSha256": "e826dbc29dbe7a05ec7bcc397448350c63ebdbcf441f453282d81d5f9ed54e29",
+  "sourceManifestSha256": "f839cdd4a85b98930c8be873f48cbc9b3f69bc9be50078b6f8a301a9f8bcee39",
+  "provenance": "WUOTE/noita-sage 9ed2509; src/seedScheme.json and src/components/seedController.js",
+  "verifiedRecords": [
+    {
+      "seed": 1846689822,
+      "totalSpells": 11584
+    },
+    {
+      "seed": 2147483647,
+      "totalSpells": 3353
+    }
+  ]
+}

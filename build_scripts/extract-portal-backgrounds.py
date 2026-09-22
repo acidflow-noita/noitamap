@@ -7,7 +7,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = Path(os.environ['NOITA_DATA_DIR'])
@@ -40,6 +40,7 @@ for name, scene, script, entity, has_visual in ROOMS:
         inputs.append(visual_path)
     spawn_colors = {(54, 97, 120), (0, 255, 0), (85, 175, 140), (80, 160, 240)}
     protected = []
+    spawn_points = [(i % 512, i // 512) for i, pixel in enumerate(material.getdata()) if pixel[:3] in spawn_colors]
     # The eye's purple BACKGROUND extends behind its steel_static material
     # outline (#404041). There is no missing foreground PNG: preserve the
     # already-rendered metal, and replace air + ALL spawn positions only.
@@ -50,22 +51,35 @@ for name, scene, script, entity, has_visual in ROOMS:
                 patch.putpixel((x, y), (*patch.getpixel((x, y))[:3], 0))
             if pixel[:3] == (64, 64, 65):
                 protected.append((x, y))
-    # The meditation liquid corner remains game-state/captured liquid, not a
-    # solid painting of the background texture. All spawn pixels are covered.
-    for i, pixel in enumerate(material.getdata()):
-        if pixel[:3] == (131, 0, 0):
-            x, y = i % 512, i // 512
-            patch.putpixel((x, y), (*patch.getpixel((x, y))[:3], 0))
+    # Preserve captured blood, including spawn markers embedded INSIDE it.
+    # The source palette interrupts blood at a skull-spawn pixel (194,355).
+    # Painting background art at that single point punches a dark dot into the
+    # captured triangle. Flood only the non-liquid exterior to distinguish that
+    # enclosed marker from the other skull markers above the blood surface.
+    liquid = Image.new('L', material.size)
+    liquid.putdata([255 if pixel[:3] == (131, 0, 0) else 0 for pixel in material.getdata()])
+    exterior = liquid.copy()
+    ImageDraw.floodfill(exterior, (0, 0), 128)
+    liquid_spawn_points = [point for point in spawn_points if exterior.getpixel(point) == 0]
+    for point in liquid_spawn_points:
+        liquid.putpixel(point, 255)
+    liquid_points = [(i % 512, i // 512) for i, alpha in enumerate(liquid.getdata()) if alpha]
+    for point in liquid_points:
+        patch.putpixel(point, (*patch.getpixel(point)[:3], 0))
     marker = [(i % 512, i // 512) for i, pixel in enumerate(material.getdata()) if pixel[:3] == (54, 97, 120)]
-    spawn_points = [(i % 512, i // 512) for i, pixel in enumerate(material.getdata()) if pixel[:3] in spawn_colors]
-    if len(marker) != 1 or any(patch.getpixel(point)[3] != 255 for point in spawn_points):
+    covered_spawn_points = [point for point in spawn_points if point not in liquid_spawn_points]
+    if len(marker) != 1 or any(patch.getpixel(point)[3] != 255 for point in covered_spawn_points):
         raise ValueError(f'Spawn marker not covered with opaque clean art: {scene}')
+    if any(patch.getpixel(point)[3] != 0 for point in liquid_points):
+        raise ValueError(f'Captured liquid overwritten by patch art: {scene}')
     if any(pixel[:3] in spawn_colors and pixel[3] for pixel in patch.getdata()):
         raise ValueError(f'Spawn colors leaked into the patch: {scene}')
     mask = patch.getchannel('A')
     patch.save(OUT / f'{name}-interior.png')
     manifest.append(dict(name=name, scene=scene, entity=entity, size=list(material.size),
-        portalMarker=list(marker[0]), coveredSpawnPoints=spawn_points, maskBounds=list(mask.getbbox()),
+        portalMarker=list(marker[0]), coveredSpawnPoints=covered_spawn_points, maskBounds=list(mask.getbbox()),
+        preservedLiquidPixels=len(liquid_points), preservedLiquidSpawnPoints=liquid_spawn_points,
+        preservedLiquidSamples=liquid_points[::max(1, len(liquid_points)//16)],
         preservedMetalPixels=len(protected), preservedMetalSamples=protected[::max(1, len(protected)//16)],
         opaquePixels=sum(1 for p in mask.getdata() if p == 255),
         alphaValues=sorted(set(mask.getdata())),

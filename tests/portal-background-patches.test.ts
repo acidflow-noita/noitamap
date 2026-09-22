@@ -111,9 +111,12 @@ describe('toggle-bound portal backgrounds', () => {
     const forbidden = new Set([0x366178, 0x00ff00, 0x55af8c, 0x50a0f0]);
     for (const [sx, sy] of source.coveredSpawnPoints) {
       const offset = (sy * 512 + sx) * 4;
-      expect(image.data[offset + 3]).toBe(255); // no holes at ANY spawn marker
+      expect(image.data[offset + 3]).toBe(255); // clean art outside the preserved captured liquid
       const color = image.data[offset] << 16 | image.data[offset + 1] << 8 | image.data[offset + 2];
       expect(forbidden.has(color)).toBe(false);
+    }
+    for (const [lx, ly] of [...source.preservedLiquidSamples, ...source.preservedLiquidSpawnPoints]) {
+      expect(image.data[(ly * 512 + lx) * 4 + 3]).toBe(0);
     }
     for (const [mx, my] of source.preservedMetalSamples) {
       expect(image.data[(my * 512 + mx) * 4 + 3]).toBe(0);
@@ -122,4 +125,16 @@ describe('toggle-bound portal backgrounds', () => {
     const visual = Object.keys(source.inputs).some(path => path.endsWith('_visual.png'));
     expect(visual).toBe(source.name === 'meditation-chamber');
   });
+});
+
+it('does not stamp a background-coloured skull-spawn dot into the meditation blood triangle', () => {
+  const source = sources.find(s => s.name === 'meditation-chamber')!;
+  const image = decode(new Uint8Array(readFileSync('src/portals/assets/backgrounds/meditation-chamber-interior.png')));
+  expect(source.preservedLiquidSpawnPoints).toEqual([[194, 355]]);
+  // The marker and its liquid neighbours must all reveal the captured blood.
+  for (const [x, y] of [[194, 355], [193, 355], [195, 355], [194, 354], [194, 356]])
+    expect(image.data[(y * 512 + x) * 4 + 3]).toBe(0);
+  // Other skull markers ABOVE the liquid still need clean opaque background.
+  for (const [x, y] of [[209, 348], [230, 346]])
+    expect(image.data[(y * 512 + x) * 4 + 3]).toBe(255);
 });

@@ -55,6 +55,9 @@
       419,
       339
     ],
+    "preservedLiquidPixels": 0,
+    "preservedLiquidSpawnPoints": [],
+    "preservedLiquidSamples": [],
     "preservedMetalPixels": 6956,
     "preservedMetalSamples": [
       [
@@ -166,10 +169,6 @@
       [
         209,
         348
-      ],
-      [
-        194,
-        355
       ]
     ],
     "maskBounds": [
@@ -178,9 +177,86 @@
       394,
       396
     ],
+    "preservedLiquidPixels": 1115,
+    "preservedLiquidSpawnPoints": [
+      [
+        194,
+        355
+      ]
+    ],
+    "preservedLiquidSamples": [
+      [
+        181,
+        350
+      ],
+      [
+        250,
+        350
+      ],
+      [
+        236,
+        351
+      ],
+      [
+        227,
+        352
+      ],
+      [
+        220,
+        353
+      ],
+      [
+        216,
+        354
+      ],
+      [
+        215,
+        355
+      ],
+      [
+        217,
+        356
+      ],
+      [
+        224,
+        357
+      ],
+      [
+        233,
+        358
+      ],
+      [
+        191,
+        360
+      ],
+      [
+        209,
+        361
+      ],
+      [
+        184,
+        363
+      ],
+      [
+        213,
+        364
+      ],
+      [
+        211,
+        366
+      ],
+      [
+        195,
+        369
+      ],
+      [
+        196,
+        373
+      ]
+    ],
     "preservedMetalPixels": 0,
     "preservedMetalSamples": [],
-    "opaquePixels": 50339,
+    "opaquePixels": 50338,
     "alphaValues": [
       0,
       97,
@@ -192,6 +268,6 @@
       "scripts/biomes/excavationsite_cube_chamber.lua": "805fef671c1a338a2c376f20c9bb536e5727887262d54fba04abab5c8d5e227c",
       "biome_impl/excavationsite/cube_chamber_visual.png": "a38d80ddeb463171ec67e3217176d4bf6ae444def4d7c4bcc2c3f3dc24796e28"
     },
-    "patchSHA256": "c23760df00e5124532757429b2ca8e9088343138544a890676ccbecf27a4f0ab"
+    "patchSHA256": "c059af2e0b624b5200597073cb11c3e68ddbdc56b1cbae8ed22f39c7110ef010"
   }
 ]

@@ -29,6 +29,8 @@ export const BAKED_GENERATION_VERSION = 1;
 
 export interface BakedGenerationFile {
   version: number;
+  /** Optional validated-by-consumer report snapshot; older bakes omit it. */
+  sage?: unknown;
   seed: number;
   ngPlus: number;
   isNGP: boolean;
@@ -123,6 +125,7 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[]): Generation
 
   return normalizeScenePOIs(completeGenerationBossPOIs({
     seed: base.seed,
+    sage: files.find(file => (file.sage as any)?.seed === base.seed)?.sage,
     ngPlus: base.ngPlus,
     isNGP: base.isNGP,
     worldSize: base.worldSize,

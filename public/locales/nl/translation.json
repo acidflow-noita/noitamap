@@ -5528,7 +5528,33 @@
       "dailyCensusCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.sageCensus): {{value}}",
       "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}"
     },
-    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)"
+    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
+    "v3": {
+      "back": "Terug",
+      "viewAll": "Alles bekijken",
+      "showMore": "Meer tonen",
+      "showOnMap": "Tonen op kaart",
+      "usefulSpells": "Spreuken om te zoeken",
+      "otherFinds": "Andere plaatsen en voorwerpen",
+      "locationCount": "Locaties: {{count}}",
+      "quantity": "Aantal: {{count}}",
+      "statistics": "Seedstatistieken",
+      "compareDaily": "Vergelijk met de dagelijkse seed",
+      "intro": "Vind nuttige buit, kies een locatie en open die op de kaart.",
+      "mapSource": "Alleen bekende kaartbuit. Ontbrekende locaties worden niet uit statistieken afgeleid.",
+      "statisticsIntro": "Optionele Sage-details. Kaartvondsten blijven apart.",
+      "statisticsUnavailable": "Seedgegevens niet beschikbaar. Gepubliceerde populatiestatistieken blijven zichtbaar.",
+      "proRequired": "Gedetailleerde kaartvondsten zijn beschikbaar met Pro.",
+      "noWandHighlights": "Alle locaties staan in de volledige lijst.",
+      "spellSelection": "Nuttige spreukcategorieën, inclusief toverstokken en inhoud van houders.",
+      "populationScope": "Sage-statistieken van natuurlijke verschijningen in {{count}} gearchiveerde seeds, geen aantallen kaartlocaties.",
+      "hoverHint": "Wijs een vondst aan of focus erop om de locaties te markeren. Biomen langs de hoofdroute vallen meer op.",
+      "noLocation": "Locatie onbekend",
+      "highestSeeds": "Hoogste aantallen",
+      "lowestSeeds": "Laagste aantallen",
+      "v4Pending": "Definitieve V4-extremen zijn nog niet beschikbaar. De referenties komen uit de bestaande gepubliceerde dataset.",
+      "censusVersionMismatch": "Aantallen uit een andere dataset zijn verborgen. Open Sage voor bijpassende V4-gegevens."
+    }
   },
   "unlocks": {
     "btn": {

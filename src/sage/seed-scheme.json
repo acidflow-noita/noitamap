@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 4,
+  "recordBytes": 403,
+  "headerBytes": 8,
+  "firstSeed": 1,
+  "lastSeed": 2147483647,
+  "seedsPerFile": 61000,
+  "splitSeeds": [
+    238632000,
+    477264000,
+    715896000,
+    954528000,
+    1193160000,
+    1431792000,
+    1670424000,
+    1909056000
+  ],
+  "namePattern": "stats-{start}-{end}.bin",
+  "recordFields": [
+    { "name": "seed", "offset": 0, "type": "uint32_le" },
+    { "name": "axes", "offset": 4, "type": "uint16_le", "shape": [3, 9], "orders": ["pwOrder", "axisOrder"] },
+    { "name": "highSlotWands", "offset": 58, "type": "uint8", "shape": [3], "orders": ["pwOrder"] },
+    { "name": "hordeCreatures", "offset": 61, "type": "uint16_le", "shape": [3, 8], "orders": ["pwOrder", "hordeOrder"] },
+    { "name": "totalSpells", "offset": 109, "type": "uint16_le", "shape": [3], "orders": ["pwOrder"] },
+    { "name": "looseLootSpells", "offset": 115, "type": "uint16_le", "shape": [3], "orders": ["pwOrder"] },
+    { "name": "wandSpells", "offset": 121, "type": "uint16_le", "shape": [3], "orders": ["pwOrder"] },
+    { "name": "spellDamageTypes", "offset": 127, "type": "uint16_le", "shape": [3, 13], "orders": ["pwOrder", "spellDamageTypeOrder"] },
+    { "name": "spellTypes", "offset": 205, "type": "uint16_le", "shape": [3, 8], "orders": ["pwOrder", "spellTypeOrder"] },
+    { "name": "factionCreatures", "offset": 253, "type": "uint16_le", "shape": [3, 25], "orders": ["pwOrder", "factionOrder"] }
+  ],
+  "pwOrder": [-1, 0, 1],
+  "axisOrder": ["greatChests", "chests", "shops", "wands", "hearts", "potions", "pouches", "hvSpells", "mimics"],
+  "hordeOrder": ["monsters", "hiisi", "robots", "healers", "mages", "worms", "helplessAnimals", "mimics"],
+  "spellDamageTypeOrder": ["projectile", "melee", "electric", "fire", "explosion", "ice", "slice", "healing", "drill", "holy", "physicsHit", "radioactive", "poison"],
+  "spellTypeOrder": ["projectile", "staticProjectile", "modifier", "multicast", "material", "other", "utility", "passive"],
+  "factionOrder": ["ghost", "slimes", "nest", "fly", "helpless", "mage", "healer", "spider", "orcs", "robot", "worm", "giant", "fungus", "zombie", "ice", "apparition", "bat", "fire", "ant", "eel", "flower", "rat", "wolf", "trap", "mage_swapper"]
+}

@@ -5528,7 +5528,33 @@
       "dailyCensusCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.sageCensus): {{value}}",
       "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}"
     },
-    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)"
+    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
+    "v3": {
+      "back": "Volver",
+      "viewAll": "Ver todos",
+      "showMore": "Mostrar más",
+      "showOnMap": "Mostrar en el mapa",
+      "usefulSpells": "Hechizos que merece la pena buscar",
+      "otherFinds": "Otros lugares y objetos",
+      "locationCount": "Ubicaciones: {{count}}",
+      "quantity": "Cantidad: {{count}}",
+      "statistics": "Estadísticas de la semilla",
+      "compareDaily": "Comparar con la semilla diaria",
+      "intro": "Encuentra botín útil, elige una ubicación y ábrela en el mapa.",
+      "mapSource": "Solo botín conocido del mapa. No se inventan ubicaciones a partir de estadísticas.",
+      "statisticsIntro": "Datos opcionales de Sage, separados de los hallazgos del mapa.",
+      "statisticsUnavailable": "La consulta no está disponible. Se siguen mostrando las estadísticas publicadas.",
+      "proRequired": "Los hallazgos detallados están disponibles con Pro.",
+      "noWandHighlights": "Todas las ubicaciones están en la lista completa.",
+      "spellSelection": "Categorías de hechizos útiles, incluidos los de varitas y recipientes.",
+      "populationScope": "Estadísticas de apariciones naturales de {{count}} semillas de Sage, no de ubicaciones en el mapa.",
+      "hoverHint": "Pasa el cursor o enfoca un hallazgo para resaltar sus ubicaciones. Los biomas de la ruta principal destacan más.",
+      "noLocation": "Ubicación desconocida",
+      "highestSeeds": "Cantidades más altas",
+      "lowestSeeds": "Cantidades más bajas",
+      "v4Pending": "Los extremos finales de V4 aún no están disponibles. Las referencias provienen del conjunto de datos publicado existente.",
+      "censusVersionMismatch": "Los recuentos de otro conjunto de datos se ocultan. Abre Sage para los datos V4 correspondientes."
+    }
   },
   "unlocks": {
     "btn": {

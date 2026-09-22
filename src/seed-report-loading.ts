@@ -24,17 +24,17 @@ export function createSeedReportLoading(
       #${ID} .sr-loading-placeholder{height:4rem;border-radius:var(--radius-control);background:var(--surface-2);border:1px solid var(--border-strong);animation:sr-loading-pulse 1.3s ease-in-out infinite alternate}
       #${ID} .sr-loading-actions{display:flex;gap:.5rem;margin-top:1rem}
       @keyframes sr-loading-pulse{to{opacity:.45}}
-      #${ID}[data-preview="v2"]{top:4.5rem;right:1.25rem;width:clamp(34rem,44vw,42rem);max-width:calc(100vw - 2rem);max-height:calc(100dvh - 6rem);font-size:.875rem}
+      #${ID}[data-preview="v3"]{top:4.5rem;right:1.25rem;width:58vw;max-width:calc(100vw - 2rem);max-height:calc(100dvh - 6rem);font-size:.875rem}
       @media(prefers-reduced-motion:reduce){#${ID}{transition:none}#${ID} .sr-loading-placeholder{animation:none}}
       @media(max-width:900px){#${ID}{top:3.5rem;right:.5rem;width:calc(100vw - 1rem);max-height:calc(100vh - 4.5rem);font-size:.8rem}}
-      @media(max-width:600px){#${ID}[data-preview="v2"]{top:auto;bottom:.5rem;right:.5rem;width:calc(100vw - 1rem);max-width:none;max-height:75dvh}}
+      @media(max-width:600px){#${ID}[data-preview="v3"]{top:4rem;right:.5rem;width:calc(100vw - 1rem);max-width:none;max-height:calc(100dvh - 4.5rem)}}
     `;
     document.head.appendChild(style);
   }
   document.getElementById(ID)?.remove();
   const panel = document.createElement("section");
   panel.id = ID;
-  if (new URLSearchParams(window.location.search).get("reportPreview") === "v2") panel.dataset.preview = "v2";
+  if (["v2", "v3"].includes(new URLSearchParams(window.location.search).get("reportPreview") ?? "")) panel.dataset.preview = "v3";
   panel.setAttribute(
     "aria-label",
     i18next.t("seedReport.title", "Seed report"),

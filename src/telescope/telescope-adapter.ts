@@ -118,6 +118,8 @@ export interface PixelScene {
 }
 
 export interface GenerationResult {
+  /** Optional Sage snapshot shipped with a baked daily. */
+  sage?: unknown;
   seed: number;
   ngPlus: number;
   isNGP: boolean;

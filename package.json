@@ -45,7 +45,9 @@
     "./auth/auth-service": "./src/auth/auth-service.ts",
     "./i18n": "./src/i18n.ts",
     "./data-archive": "./src/data-archive.ts",
-    "./data/spells.json": "./src/data/spells.json"
+    "./data/spells.json": "./src/data/spells.json",
+    "./sage/records": "./src/sage/records.ts",
+    "./sage/seed-scheme.json": "./src/sage/seed-scheme.json"
   },
   "files": [
     "src/",

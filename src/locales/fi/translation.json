@@ -5528,7 +5528,33 @@
       "dailyCensusCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.sageCensus): {{value}}",
       "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}"
     },
-    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)"
+    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
+    "v3": {
+      "back": "Takaisin",
+      "viewAll": "Näytä kaikki",
+      "showMore": "Näytä lisää",
+      "showOnMap": "Näytä kartalla",
+      "usefulSpells": "Etsimisen arvoiset loitsut",
+      "otherFinds": "Muut paikat ja esineet",
+      "locationCount": "Sijainteja: {{count}}",
+      "quantity": "Määrä: {{count}}",
+      "statistics": "Siementilastot",
+      "compareDaily": "Vertaa päivän siemeneen",
+      "intro": "Etsi hyödyllistä saalista, valitse sijainti ja avaa se kartalla.",
+      "mapSource": "Vain kartalta tunnettu saalis. Puuttuvia sijainteja ei päätellä tilastoista.",
+      "statisticsIntro": "Sagen lisätietoja. Kartan löydöt pidetään erillään.",
+      "statisticsUnavailable": "Siemenhaku ei ole käytettävissä. Julkaistut kokonaistilastot näkyvät silti.",
+      "proRequired": "Tarkat karttalöydöt ovat saatavilla Prossa.",
+      "noWandHighlights": "Kaikki sijainnit ovat koko listassa.",
+      "spellSelection": "Hyödylliset loitsuluokat, mukaan lukien sauvat ja säiliöiden sisällöt.",
+      "populationScope": "Sagen luonnollisten esiintymien tilastot {{count}} arkistoidusta siemenestä, eivät karttasijaintien määrät.",
+      "hoverHint": "Vie osoitin löydön päälle tai kohdista siihen näppäimistöllä korostaaksesi sijainnit. Pääreitin biomit erottuvat selvemmin.",
+      "noLocation": "Sijainti tuntematon",
+      "highestSeeds": "Suurimmat määrät",
+      "lowestSeeds": "Pienimmät määrät",
+      "v4Pending": "V4:n lopulliset ääriarvot eivät ole vielä saatavilla. Alla olevat arvot ovat nykyisestä julkaistusta aineistosta.",
+      "censusVersionMismatch": "Toisen aineiston siemenmäärät on piilotettu. Avaa Sage vastaaville V4-tiedoille."
+    }
   },
   "unlocks": {
     "btn": {

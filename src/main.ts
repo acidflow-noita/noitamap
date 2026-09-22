@@ -1,3 +1,4 @@
+import { ReportMapHighlights } from './report-map-highlights';
 import { getPOIDisplayName } from "./telescope/poi-display-name";
 import { loadSpritesheetAndAtlas } from "./telescope/poi-spatial-index";
 import { getCachedGeneration } from "./telescope/tile-cache";
@@ -602,9 +603,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Pending seed set via setSeedParams before the map has switched to dynamic
   let pendingDynamicSeed: number | null = null;
 
+  let reportHighlights: ReportMapHighlights | null = null;
   const dynamicOpts = {
     viewer: app.osd,
     onLoadingChange: (isLoading: boolean) => {
+      if (isLoading) reportHighlights?.clear();
       loadingIndicator.style.display = isLoading ? "block" : "none";
       if (isLoading) {
         showLoadingStrip();
@@ -651,7 +654,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           const urlState = parseURL();
           if (!urlState.seedReportOpen) return;
           for (let i = 0; i < 30; i++) {
-            const el = document.getElementById("seed-report-sidebar");
+            const el = document.querySelector<HTMLElement>('#seed-report-v3.open, #seed-report-sidebar.open');
             if (el && el.classList.contains("open")) return;
             await new Promise((r) => setTimeout(r, 100));
           }
@@ -760,6 +763,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     setMap: (mapName: string) => app.setMap(asMapName(mapName) ?? (mapName as any)),
     updateURLWithSidebar,
     urlState: { sidebarOpen: urlState.sidebarOpen, canvas: urlState.canvas, seed: urlState.seed },
+    getBakedSageSnapshot: () => getLastGenerationResult()?.sage,
     getSeedParams: () => ({ seed: getCurrentDynamicSeed() ?? undefined, isDaily: getCurrentIsDaily() }),
     setSeedParams: (seed: number) => {
       updateURLWithSeed(seed, false);
@@ -866,6 +870,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.warn("[Noitamap] getWandIconUrl failed:", e);
         return null;
       }
+    },
+    setReportHighlights: (targets) => {
+      const state = authService.getState();
+      if (!state.authenticated || !state.isSubscriber || isSpoilerFree() || app.getMap() !== 'dynamic-main-branch') targets = [];
+      if (targets.length) reportHighlights ??= new ReportMapHighlights(app.osd.viewer);
+      reportHighlights?.setTargets(targets);
     },
     setHighValuePredicate: (pred: ((poi: any) => boolean) | null) => {
       Promise.resolve().then(() => {

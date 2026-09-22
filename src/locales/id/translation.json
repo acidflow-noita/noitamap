@@ -5528,7 +5528,33 @@
       "dailyCensusCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.sageCensus): {{value}}",
       "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}"
     },
-    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)"
+    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
+    "v3": {
+      "back": "Kembali",
+      "viewAll": "Lihat semua",
+      "showMore": "Tampilkan lebih banyak",
+      "showOnMap": "Tampilkan di peta",
+      "usefulSpells": "Mantra yang layak dicari",
+      "otherFinds": "Tempat dan item lainnya",
+      "locationCount": "Lokasi: {{count}}",
+      "quantity": "Jumlah: {{count}}",
+      "statistics": "Statistik seed",
+      "compareDaily": "Bandingkan dengan seed harian",
+      "intro": "Temukan jarahan berguna, pilih lokasi, lalu buka di peta.",
+      "mapSource": "Hanya jarahan yang diketahui di peta. Lokasi yang hilang tidak dibuat dari statistik.",
+      "statisticsIntro": "Detail tambahan dari Sage. Temuan di peta tetap terpisah.",
+      "statisticsUnavailable": "Pencarian seed tidak tersedia. Statistik populasi yang diterbitkan tetap ditampilkan.",
+      "proRequired": "Detail temuan peta tersedia dengan Pro.",
+      "noWandHighlights": "Semua lokasi tersedia dalam daftar lengkap.",
+      "spellSelection": "Kategori mantra berguna, termasuk isi tongkat dan wadah.",
+      "populationScope": "Statistik kemunculan alami Sage untuk {{count}} seed arsip, bukan jumlah lokasi peta.",
+      "hoverHint": "Arahkan kursor atau fokuskan temuan untuk menyorot lokasinya. Bioma jalur utama lebih menonjol.",
+      "noLocation": "Lokasi tidak diketahui",
+      "highestSeeds": "Jumlah tertinggi",
+      "lowestSeeds": "Jumlah terendah",
+      "v4Pending": "Ekstrem final V4 belum tersedia. Referensi di bawah berasal dari dataset yang sudah diterbitkan.",
+      "censusVersionMismatch": "Jumlah dari dataset berbeda disembunyikan. Buka Sage untuk data V4 yang sesuai."
+    }
   },
   "unlocks": {
     "btn": {

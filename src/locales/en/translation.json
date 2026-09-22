@@ -388,7 +388,33 @@
       "dailyCensusCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.sageCensus): {{value}}",
       "dailyCount": "$t(seedReport.v2.comparisonReference) · $t(seedReport.v2.mapInventory): {{value}}"
     },
-    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)"
+    "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
+    "v3": {
+      "back": "Back",
+      "viewAll": "View all",
+      "showMore": "Show more",
+      "showOnMap": "Show on map",
+      "usefulSpells": "Spells worth finding",
+      "otherFinds": "Other places and items",
+      "locationCount": "Locations: {{count}}",
+      "quantity": "Quantity: {{count}}",
+      "statistics": "Seed statistics",
+      "compareDaily": "Compare with the daily seed",
+      "intro": "Find useful loot, choose a location, and open it on the map.",
+      "mapSource": "Known map loot only. Missing locations are never filled in from statistics.",
+      "statisticsIntro": "Optional detail from Sage. Your map finds are kept separate.",
+      "statisticsUnavailable": "Seed lookup unavailable. The published population statistics are still shown.",
+      "proRequired": "Detailed map finds are available with Pro.",
+      "noWandHighlights": "All locations are available in the full list.",
+      "spellSelection": "Useful spell categories found in the map, including wand decks and container contents.",
+      "populationScope": "Sage natural-spawn statistics for {{count}} archived seeds. These are not map-location counts.",
+      "hoverHint": "Hover or focus a find to highlight its locations. Main-path biomes stand out.",
+      "noLocation": "Location unavailable",
+      "highestSeeds": "Highest counts",
+      "lowestSeeds": "Lowest counts",
+      "v4Pending": "Final V4 extrema are not available yet. The references below are from the existing published dataset.",
+      "censusVersionMismatch": "Seed counts from a different dataset are hidden. Open Sage for matching V4 data."
+    }
   },
   "search": {
     "placeholder": "Find spells, items, bosses, places…",

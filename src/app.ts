@@ -181,7 +181,7 @@ export class App extends EventEmitter2 {
     // destination (arrow target + final zoom-in framing) lands inside the
     // visible portion of the map instead of behind the sidebar.
     let offsetXPx = 0;
-    const srEl = document.getElementById("seed-report-sidebar");
+    const srEl = document.querySelector<HTMLElement>('#seed-report-v3.open, #seed-report-sidebar.open');
     if (srEl && srEl.classList.contains("open")) {
       offsetXPx = srEl.getBoundingClientRect().width / 2;
     }

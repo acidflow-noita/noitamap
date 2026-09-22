@@ -38,6 +38,8 @@ declare global {
   interface NoitamapProHooks {
     /** Canonical localized name + real first-frame sprite (including potion tint). */
     getPOIPreview?: (poi: { type: string; [key: string]: any }) => Promise<{ name: string; iconUrl: string | null }>;
+    /** Per-seed snapshot already loaded with generation.json; no network request. */
+    getBakedSageSnapshot?: () => unknown;
     /** Actual baked render path; do not infer this from the daily seed label. */
     isBakedSeed?: () => boolean;
     /** Versioned capability handshake with the independently deployed Pro bundle. */
@@ -135,6 +137,8 @@ declare global {
      * to remove all rings.
      */
     setHighValuePredicate: (pred: ((poi: any) => boolean) | null) => void;
+    /** Temporary report hover/focus targets. Empty clears only this preview, not persistent filters. */
+    setReportHighlights?: (targets: readonly { worldX: number; worldY: number; pw?: number; biome?: string; id?: string }[]) => void;
     /** Toggle the high-value filter — set by pro bundle after init. */
     handleHighValueToggle?: (active: boolean) => void;
     /** High-value predicate — set by pro bundle after init. Drives BOTH map highlight and search filter. */
