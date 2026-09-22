@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { portalFrameBounds } from '../src/portals/geometry';
+import { portalFrameBounds, visiblePortals } from '../src/portals/geometry';
 import type { PortalPlacement } from '../src/portals/placements';
 const portal = (x: number, y: number) => ({ x, y } as PortalPlacement);
 describe('GPU bitmap crop bounds', () => {
@@ -21,3 +21,13 @@ describe('GPU bitmap crop bounds', () => {
     }
   });
 });
+
+ it('keeps eye and meditation portals active at the same zoom, including subpixel views by default', () => {
+   const portals = ['eye_room', 'meditation'].map(effect => ({ x: 0, y: 0, effect } as PortalPlacement));
+   for (const scale of [.1, .01, .001, .0001]) {
+     const m = { a: scale, b: 0, c: 0, d: scale, e: 400, f: 300 };
+     expect(visiblePortals(portals, m, 800, 600)).toEqual(portals);
+     expect(visiblePortals(portals, m, 800, 600, 1.5).length).toBe(scale * 160 >= 1.5 ? 2 : 0);
+     expect(visiblePortals(portals, { ...m, e: -1000 }, 800, 600)).toEqual([]);
+   }
+ });

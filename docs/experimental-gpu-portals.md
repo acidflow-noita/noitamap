@@ -35,7 +35,10 @@ are conservative upper bounds, identified by `particleCountsAreUpperBounds`.
   optional GPU timestamp time, CPU-observed GPU-fence wait, worker delivery time, estimated
   GPU memory and actual WebGL renderer string. CPU submission time is NOT GPU
   execution time. A software WebGL driver may identify itself as SwiftShader/Mesa.
-- To stress tiny portals too, add `portalGpuMinPixels=0` to the URL.
+- Visible portals now stay active at every zoom by default (`portalGpuMinPixels=0`).
+  Eye-room and meditation portals use the same visibility policy. An explicit
+  positive cutoff remains available for diagnostics; offscreen and memory/instance
+  limits still apply.
   `portalGpuFence=1` restores the explicit per-frame GL fence wait in the worker
   (off by default; it cost 7-15 ms of idle worker time per frame). `portalGpuLimit` can lower the default/hard limit of 192.
 

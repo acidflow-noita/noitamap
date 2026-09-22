@@ -18,19 +18,6 @@ export type ZoomPos = {
   zoom: number;
 };
 
-/**
- * easeInOutCubic — gentle ease-in-out with a much more linear profile than
- * easeInOutExpo. Used as the timing function for the cinematic pan-to-target
- * so the camera takes off, sweeps, and lands without the asymptotic "flat
- * tail" the exponential version had (which read as "choppy / stuck" right
- * before the camera finally settled).
- */
-function easeInOutCubic(t: number): number {
-  if (t <= 0) return 0;
-  if (t >= 1) return 1;
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
 type DziTileSource = any;
 
 export class AppOSD {
@@ -357,158 +344,65 @@ export class AppOSD {
     }
   }
 
-  /**
-   * Cinematic pan to a target point: zooms out so origin + destination are
-   * both visible, holds, zooms back in. Draws a SVG arrow trail and a pulse
-   * marker on the destination.
-   *
-   * @param x   actual world-X of the POI (arrow points here, pulse appears here)
-   * @param y   actual world-Y of the POI
-   * @param opts.offsetXPx  pixel offset to shift the *viewport center* by, so
-   *                        the POI lands left/right of dead-center when a
-   *                        sidebar covers part of the canvas. The trail and
-   *                        pulse stay anchored to (x, y).
-   */
-  panToTarget(x: number, y: number, opts?: { offsetXPx?: number }): Promise<void> {
-    const viewport = this.viewport;
-    const here = viewport.getCenter();
-
-    // Cancel any in-progress pan animation + queued timers.
+  /** Fly to a POI with a single camera clock. False means interrupted. */
+  panToTarget(x: number, y: number, opts?: { offsetXPx?: number }): Promise<boolean> {
     this.cancelActivePan();
     this.removePanTrail();
-
-    // ─── Sidebar-aware fitBounds helper ───────────────────────────────────
-    //
-    // `offsetXPx` is half the sidebar width — i.e. the canvas pixel shift we
-    // want to apply so that the POI lands at the centre of the *visible*
-    // canvas (canvas minus sidebar), not the centre of the full canvas.
-    //
-    // Solution: build a rect whose aspect ratio matches the canvas, centred so
-    // the content sits inside the visible (non-sidebar) portion. fitBounds
-    // with a canvas-aspect rect always produces an exact 1:1 fit.
-    const offsetXPx = opts?.offsetXPx ?? 0;
-    const canvasEl = this.viewer.canvas as HTMLElement;
-    const canvasPxW = canvasEl?.clientWidth || 1200;
-    const canvasPxH = canvasEl?.clientHeight || 800;
-    const visiblePxW = Math.max(1, canvasPxW - offsetXPx * 2); // offsetXPx == sidebarPx/2
-
-    const buildSidebarRect = (contentCx: number, contentCy: number, contentW: number, contentH: number) => {
-      const zoomForW = visiblePxW / contentW;
-      const zoomForH = canvasPxH / contentH;
-      const zoom = Math.min(zoomForW, zoomForH);
-      const rectW = canvasPxW / zoom;
-      const rectH = canvasPxH / zoom;
-      const shift = offsetXPx > 0 ? offsetXPx / zoom : 0;
-      return new OpenSeadragon.Rect(contentCx + shift - rectW / 2, contentCy - rectH / 2, rectW, rectH);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return Promise.resolve(false);
+    const viewport = this.viewport;
+    // Read the rendered position, not the target of an unfinished OSD spring.
+    const here = viewport.getCenter(true);
+    const startZoom = viewport.getZoom(true);
+    const canvas = this.viewer.canvas as HTMLElement;
+    const width = canvas?.clientWidth || 1200;
+    const height = canvas?.clientHeight || 800;
+    const offset = Math.max(0, Math.min(opts?.offsetXPx ?? 0, (width - 1) / 2));
+    const visibleWidth = width - offset * 2;
+    const endZoom = Math.min(visibleWidth, height) / (CHUNK_SIZE * width);
+    const startVisibleX = here.x - offset / (width * startZoom);
+    const distance = Math.hypot(startVisibleX - x, here.y - y);
+    const startLog = Math.log(startZoom), endLog = Math.log(endZoom);
+    // Interpolate magnification, not world-space rectangle widths. The latter
+    // races through the last zoom levels on long, cross-world journeys.
+    const travelZoom = Math.min(startZoom, endZoom, visibleWidth / (width * Math.max(CHUNK_SIZE, distance * 1.3)));
+    const excursion = Math.max(0, (startLog + endLog) / 2 - Math.log(travelZoom));
+    const duration = Math.min(1800, 650 + 180 * Math.log2(1 + distance / CHUNK_SIZE));
+    const apply = (t: number) => {
+      const u = t * t * (3 - 2 * t);
+      const zoom = Math.exp(startLog * (1 - u) + endLog * u - excursion * Math.sin(Math.PI * u) ** 2);
+      viewport.zoomTo(zoom, null, true);
+      viewport.panTo(new OpenSeadragon.Point(
+        startVisibleX * (1 - u) + x * u + offset / (width * zoom),
+        here.y * (1 - u) + y * u,
+      ), true);
     };
-
-    // ─── Short-distance shortcut: snap to a single chunk view ─────────────
-    const destContentW = CHUNK_SIZE;
-    const destContentH = CHUNK_SIZE;
-    const dist = Math.sqrt((here.x - x) ** 2 + (here.y - y) ** 2);
-    if (dist < CHUNK_SIZE * 0.5) {
-      const destRect = buildSidebarRect(x, y, destContentW, destContentH);
-      this.withSlowAnimation(() => viewport.fitBounds(destRect));
-      this.addPulseMarker(x, y);
-      return Promise.resolve();
+    if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      apply(1);
+      return Promise.resolve(true);
     }
-
-    // ─── Continuous fly-to animation ──────────────────────────────────────
-    //
-    // The previous implementation ran phase-1 (zoom out to overview) and
-    // phase-2 (zoom into destination) as two separate `fitBounds` calls with
-    // a 1s setTimeout *hold* between them — that hold is the "stuck" feeling
-    // users reported. Replaced with a single requestAnimationFrame loop that
-    // morphs the viewport bounds through three keyframes
-    // (start → overview → dest) along a quadratic Bezier so the camera never
-    // stops moving:
-    //
-    //   rectAtT(t) = (1-t)^2*start + 2*(1-t)*t*overview + t^2*dest
-    //
-    // Combined with easeInOutExpo on `t`, the perceived velocity is slow at
-    // the very start (gentle takeoff), peaks in the middle when the camera
-    // is zoomed out (so we cover ground fast), and decelerates into the
-    // destination — exactly the "fly-to" feel without any hold.
-    //
-    // The arrow trail's pixel positions are updated inline each frame
-    // because `fitBounds(rect, immediately=true)` skips OSD's spring system
-    // and therefore doesn't fire the `animation` event that the trail
-    // listens to elsewhere.
-    const startRect = viewport.getBounds();
-    const padding = 1.3;
-    const midX = (here.x + x) / 2;
-    const midY = (here.y + y) / 2;
-    const spanW = Math.max(Math.abs(here.x - x) * padding, CHUNK_SIZE * 2);
-    const spanH = Math.max(Math.abs(here.y - y) * padding, CHUNK_SIZE * 2);
-    const overviewRect = buildSidebarRect(midX, midY, spanW, spanH);
-    const destRect = buildSidebarRect(x, y, destContentW, destContentH);
-
-    // Duration scales with on-screen-ish distance, clamped so short hops
-    // don't feel instant and long ones don't drag.
-    const flyDistance = Math.sqrt((here.x - x) ** 2 + (here.y - y) ** 2);
-    const duration = Math.max(1400, Math.min(2600, 1100 + flyDistance * 0.08));
-
-    // Arrow tail anchors at the *visible* viewport centre (left of the
-    // sidebar), not the full-canvas centre — otherwise it starts mid-sidebar
-    // and the arrow looks crooked.
-    const startVisibleShiftWorld =
-      offsetXPx > 0 ? viewport.deltaPointsFromPixels(new OpenSeadragon.Point(offsetXPx, 0), true).x : 0;
-    this.addPanTrail(here.x - startVisibleShiftWorld, here.y, x, y);
-
-    return new Promise<void>(resolve => {
-      const startTime = performance.now();
-      let cancelled = false;
-      const onCancel = () => {
-        cancelled = true;
+    if (distance > CHUNK_SIZE / 2) this.addPanTrail(startVisibleX, here.y, x, y);
+    return new Promise<boolean>(resolve => {
+      const start = performance.now();
+      const events = ['canvas-drag', 'canvas-scroll', 'canvas-press', 'canvas-key', 'close'];
+      const cleanup = () => {
+        for (const event of events) this.viewer.removeHandler(event, interrupt);
+        this.activePanCancel = null;
       };
-      this.activePanCancel = onCancel;
-
+      const interrupt = () => { this.cancelActivePan(); this.removePanTrail(); };
+      this.activePanCancel = () => { cleanup(); resolve(false); };
       const tick = (now: number) => {
-        if (cancelled) return;
-        const rawT = Math.min(1, (now - startTime) / duration);
-        // Snap straight to t=1 once we're close enough — easeInOutCubic's
-        // tail is gentle but still leaves ~30ms of barely-perceptible motion
-        // at high t; killing it removes the residual "choppy" arrival feel
-        // without users noticing the cut.
-        const done = rawT >= 0.985;
-        const t = done ? 1 : rawT;
-        const easedT = done ? 1 : easeInOutCubic(t);
-
-        // Quadratic-Bezier rect interpolation through (start, overview, dest).
-        // The curve passes through start and dest exactly and bends *toward*
-        // the overview rect at the middle — so the camera never pauses on
-        // the overview, just sweeps through it.
-        const u = 1 - easedT;
-        const w0 = u * u;
-        const w1 = 2 * u * easedT;
-        const w2 = easedT * easedT;
-        const rect = new OpenSeadragon.Rect(
-          w0 * startRect.x + w1 * overviewRect.x + w2 * destRect.x,
-          w0 * startRect.y + w1 * overviewRect.y + w2 * destRect.y,
-          w0 * startRect.width + w1 * overviewRect.width + w2 * destRect.width,
-          w0 * startRect.height + w1 * overviewRect.height + w2 * destRect.height
-        );
-
-        // Apply immediately so OSD doesn't superimpose its own spring on
-        // top of our rAF-driven curve.
-        viewport.fitBounds(rect, true);
-        this.updatePanTrailPositions();
-
-        if (t < 1) {
-          this.activePanRaf = requestAnimationFrame(tick);
-        } else {
+        const t = Math.min(1, Math.max(0, (now - start) / duration));
+        apply(t);
+        if (t < 1) this.activePanRaf = requestAnimationFrame(tick);
+        else {
           this.activePanRaf = 0;
-          this.activePanCancel = null;
+          cleanup();
           this.addPulseMarker(x, y);
-          // Let the arrow linger briefly after the camera arrives so the
-          // user can register where it landed; clean up after.
-          this.panTimer = setTimeout(() => {
-            this.removePanTrail();
-            this.panTimer = undefined;
-          }, 600);
-          resolve();
+          this.panTimer = setTimeout(() => { this.removePanTrail(); this.panTimer = undefined; }, 400);
+          resolve(true);
         }
       };
+      for (const event of events) this.viewer.addHandler(event, interrupt);
       this.activePanRaf = requestAnimationFrame(tick);
     });
   }
@@ -545,7 +439,7 @@ export class AppOSD {
     svg.setAttribute('class', 'pan-trail-svg');
     svg.style.cssText = `
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none; z-index: 9999; overflow: visible;
+      pointer-events: none; z-index: 9999; overflow: hidden; contain: strict;
     `;
 
     // Unique IDs per-instance — if two trails ever co-exist (shouldn't, but be
@@ -553,24 +447,16 @@ export class AppOSD {
     const uid = `pt-${Math.random().toString(36).slice(2, 8)}`;
     const gradId = `${uid}-grad`;
     const arrowId = `${uid}-arrow`;
-    const glowId = `${uid}-glow`;
     const trailColor = 'oklch(72% 0.18 152)';
     const trailColorBright = 'oklch(82% 0.21 152)';
 
-    // ── Defs: soft glow filter, tapered arrowhead, fade-in gradient stroke ──
+    // No SVG filters: long offscreen paths otherwise allocate huge blur surfaces.
     // The gradient runs along the line in user-space coords so the trail
     // fades up from a faint tail to a bright arrowhead. Endpoints get updated
     // every frame in updatePanTrailPositions(). Opacities are bumped so the
     // tail is still clearly readable instead of fading into the map.
     svg.innerHTML = `
       <defs>
-        <filter id="${glowId}" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="2.5" result="blur"/>
-          <feMerge>
-            <feMergeNode in="blur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
         <linearGradient id="${gradId}" gradientUnits="userSpaceOnUse">
           <stop offset="0%"   stop-color="${trailColor}" stop-opacity="0.55"/>
           <stop offset="60%"  stop-color="${trailColor}" stop-opacity="0.85"/>
@@ -595,9 +481,7 @@ export class AppOSD {
     path.setAttribute('stroke', `url(#${gradId})`);
     path.setAttribute('stroke-width', '4');
     path.setAttribute('stroke-linecap', 'round');
-    path.setAttribute('stroke-dasharray', '12,9');
     path.setAttribute('marker-end', `url(#${arrowId})`);
-    path.setAttribute('filter', `url(#${glowId})`);
     svg.appendChild(path);
 
     // Destination: a small filled dot plus a thin outer ring for a "target"
@@ -615,7 +499,6 @@ export class AppOSD {
     dot.setAttribute('class', 'pan-trail-dot');
     dot.setAttribute('r', '3.5');
     dot.setAttribute('fill', trailColorBright);
-    dot.setAttribute('filter', `url(#${glowId})`);
     svg.appendChild(dot);
 
     // Pick up the gradient element so we can update its endpoints per frame.
@@ -664,13 +547,9 @@ export class AppOSD {
     this.panTrailData = { svg, path, dot, ring, gradient, x1, y1, x2, y2, cxW, cyW };
     this.updatePanTrailPositions();
 
-    // Start marching ants animation
-    this.panTrailAnimFrame = requestAnimationFrame(this.animatePanTrail);
-
     // Listen to viewport changes to update line positions
     this.panTrailViewportHandler = () => this.updatePanTrailPositions();
-    this.viewer.addHandler('animation', this.panTrailViewportHandler);
-    this.viewer.addHandler('animation-finish', this.panTrailViewportHandler);
+    this.viewer.addHandler('update-viewport', this.panTrailViewportHandler);
   }
 
   private panTrailData: {
@@ -686,18 +565,7 @@ export class AppOSD {
     cxW: number;
     cyW: number;
   } | null = null;
-  private panTrailAnimFrame: number = 0;
-  private panTrailDashOffset: number = 0;
   private panTrailViewportHandler: (() => void) | null = null;
-
-  private animatePanTrail = () => {
-    if (!this.panTrailData) return;
-    // Subtle dash flow toward the destination — slow enough to feel like
-    // motion, fast enough to read as "this is going somewhere".
-    this.panTrailDashOffset -= 0.6;
-    this.panTrailData.path.setAttribute('stroke-dashoffset', String(this.panTrailDashOffset));
-    this.panTrailAnimFrame = requestAnimationFrame(this.animatePanTrail);
-  };
 
   private updatePanTrailPositions() {
     if (!this.panTrailData) return;
@@ -727,20 +595,14 @@ export class AppOSD {
   }
 
   private removePanTrail() {
-    if (this.panTrailAnimFrame) {
-      cancelAnimationFrame(this.panTrailAnimFrame);
-      this.panTrailAnimFrame = 0;
-    }
     if (this.panTrailViewportHandler) {
-      this.viewer.removeHandler('animation', this.panTrailViewportHandler);
-      this.viewer.removeHandler('animation-finish', this.panTrailViewportHandler);
+      this.viewer.removeHandler('update-viewport', this.panTrailViewportHandler);
       this.panTrailViewportHandler = null;
     }
     if (this.panTrailData) {
       this.panTrailData.svg.remove();
       this.panTrailData = null;
     }
-    this.panTrailDashOffset = 0;
   }
 
   /** Add a pulsing circle at the destination that fades out */

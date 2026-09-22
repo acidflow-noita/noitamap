@@ -62,10 +62,10 @@ export class PortalGPUOverlay {
     if (!context) throw new Error('GPU bitmap presentation unavailable. No CPU renderer fallback is enabled.');
     this.context = context;
     const params = new URLSearchParams(location.search);
-    const min = Number(params.get('portalGpuMinPixels') ?? 1.5);
+    const min = Number(params.get('portalGpuMinPixels') ?? 0);
     const limit = Number(params.get('portalGpuLimit') ?? MAX_ACTIVE_PORTALS);
     const options: PortalWorkerOptions = {
-      minPixels: Number.isFinite(min) && min >= 0 ? min : 1.5,
+      minPixels: Number.isFinite(min) && min >= 0 ? min : 0,
       limit: Number.isInteger(limit) && limit > 0 ? Math.min(MAX_ACTIVE_PORTALS, limit) : MAX_ACTIVE_PORTALS,
       fence: params.get('portalGpuFence') === '1',
     };

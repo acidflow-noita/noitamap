@@ -1,6 +1,5 @@
 {
   "reuse": {
-    "main": "seedReport.pw.main",
     "westNumber": "seedReport.pw.west",
     "eastNumber": "seedReport.pw.east",
     "no": "common.no",
@@ -14,7 +13,15 @@
     "metrics.rareMaterials": "seedReport.spider.axis.rareMaterials",
     "metrics.mimics": "seedReport.spider.axis.mimics",
     "wandSource": "seedReport.spells.onWands",
-    "switchSeedHint": "seedReport.compare.switchSeedHint"
+    "switchSeedHint": "seedReport.compare.switchSeedHint",
+    "divideTools": "seedReport.spell.category.divides",
+    "noneFound": "seedReport.spells.noneFound",
+    "metrics.wands": "seedReport.spider.axis.wands",
+    "metrics.chests": "seedReport.spider.axis.chests",
+    "metrics.greatChests": "seedReport.spider.axis.greatChests",
+    "metrics.hearts": "seedReport.spider.axis.hearts",
+    "metrics.potions": "seedReport.spider.axis.potions",
+    "metrics.pouches": "seedReport.spider.axis.pouches"
   },
   "game": {
     "shuffle": {
@@ -140,26 +147,6 @@
     "census.factionCreatures.mage_swapper": {
       "csv": "animal_wizard_swapper",
       "fallback": "gameContent.ui.animal_wizard_swapper"
-    },
-    "metrics.chests": {
-      "csv": "item_chest_treasure",
-      "fallback": "gameContent.items.chest"
-    },
-    "metrics.greatChests": {
-      "csv": "item_chest_treasure_super",
-      "fallback": "gameContent.items.great_chest"
-    },
-    "metrics.wands": {
-      "csv": "item_wand",
-      "fallback": "gameContent.items.wand"
-    },
-    "metrics.potions": {
-      "csv": "item_potion",
-      "fallback": "gameContent.items.potion"
-    },
-    "metrics.pouches": {
-      "csv": "item_powder_stash",
-      "fallback": "gameContent.items.pouch"
     },
     "spellCategory.nolla": {
       "csv": "action_nolla",

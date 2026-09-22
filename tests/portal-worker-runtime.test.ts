@@ -120,9 +120,9 @@ describe('worker-owned portal rendering', () => {
     expect(r.renderer.renderMap).toHaveBeenCalledOnce(); expect(r.renderer.finish).not.toHaveBeenCalled();
     complete(); await frame; expect(r.renderer.finish).toHaveBeenCalledOnce();
   });
-  it('culls subpixel portals and fails rather than switching backend on memory exhaustion', async () => {
+  it('honors an explicit subpixel cutoff and fails rather than switching backend on memory exhaustion', async () => {
     const r = runtime(), renderer = new PortalFrameRenderer([portal(0)], 42, { minPixels: 1.5, limit: 192 }, r);
-    const frame = await renderer.frame(1, { ...camera, matrix: { ...camera.matrix, a: .01, d: .01 } }, FRAME_MS);
+    const frame = await renderer.frame(1, { ...camera, matrix: { ...camera.matrix, a: .001, d: .001 } }, FRAME_MS);
     expect(frame.stats.active).toBe(0); expect(r.renderer.renderMap.mock.calls[0][0].size).toBe(0);
     r.diagnostic.estimatedGPUBytes = MAX_GPU_BYTES + 1;
     await expect(renderer.frame(2, camera, FRAME_MS)).rejects.toThrow('memory budget');

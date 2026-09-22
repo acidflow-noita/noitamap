@@ -6,12 +6,12 @@ export const MAX_GPU_BYTES=256*1024*1024;
 export function canvasResolution(width:number,height:number,dpr:number):number {
   return Math.min(2,Math.max(1,dpr||1),Math.sqrt(MAX_CANVAS_PIXELS/Math.max(1,width*height)));
 }
-export function visiblePortals(portals:PortalPlacement[],m:CameraMatrix,width:number,height:number,minPixels=1.5):PortalPlacement[]{
+export function visiblePortals(portals:PortalPlacement[],m:CameraMatrix,width:number,height:number,minPixels=0):PortalPlacement[]{
   if(![m.a,m.b,m.c,m.d,m.e,m.f,width,height].every(Number.isFinite)||width<=0||height<=0)return [];
   const scale=Math.hypot(m.a,m.b),rx=(Math.abs(m.a)*480+Math.abs(m.c)*320)/2,ry=(Math.abs(m.b)*480+Math.abs(m.d)*320)/2;
   return portals.filter(p=>{
-    const core=p.effect==='eye_room'?160:p.effect==='meditation'?60:30;
-    if(core*scale<minPixels)return false;
+    // Same visibility policy for every effect; no default zoom activation gate.
+    if(160*scale<minPixels)return false;
     const x=m.a*p.x+m.c*p.y+m.e,y=m.b*p.x+m.d*p.y+m.f;
     return x+rx>=0&&y+ry>=0&&x-rx<=width&&y-ry<=height;
   });

@@ -5273,7 +5273,9 @@ export function openTooltipForPOI(
   };
 
   if (panPromise && typeof panPromise.then === 'function') {
-    panPromise.then(showTooltipNow).catch(() => showTooltipNow());
+    panPromise.then((arrived: boolean | void) => {
+      if (arrived !== false) showTooltipNow();
+    }).catch(() => { /* An interrupted navigation must not reopen an old card. */ });
   } else {
     setTimeout(showTooltipNow, 250);
   }
