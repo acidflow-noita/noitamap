@@ -5337,7 +5337,7 @@
       "biomeContributions": "バイオーム別の内訳",
       "mapLinksHint": "座標を選ぶと、その場所とマップカードを開きます。",
       "sageCensus": "自然出現数",
-      "allSpellCopies": "呪文の総数（重複を含む）",
+      "allSpellCopies": "呪文の総数",
       "looseLootSpells": "杖の外にある呪文",
       "highSlotWands": "大容量の杖",
       "highSlotHint": "この分類に必要なスロット数はアーカイブに記載されていません。",

@@ -5337,7 +5337,7 @@
       "biomeContributions": "按生物群系统计",
       "mapLinksHint": "选择坐标可查看地图位置及其信息卡。",
       "sageCensus": "自然生成数量",
-      "allSpellCopies": "法术总数量（含重复）",
+      "allSpellCopies": "法术总数",
       "looseLootSpells": "魔杖外的法术",
       "highSlotWands": "高容量魔杖",
       "highSlotHint": "档案未说明此分类的槽位门槛。",
