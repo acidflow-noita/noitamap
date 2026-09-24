@@ -5222,7 +5222,7 @@
       "title": "Podział na biomy według kategorii"
     },
     "locked": {
-      "title": "Raport ziarna to funkcja Pro",
+      "title": "Pełny raport ziarna to funkcja Pro",
       "body": "Subskrybuj, aby zobaczyć liczby per PW / per biom, zaklęcia o dużej wartości i lokalizacje rzadkich materiałów dla bieżącego ziarna.",
       "cta": "Odblokuj z Pro"
     },
@@ -5583,7 +5583,18 @@
       "sageLinkHint": "Zobacz statystyki tego ziarna w Sage.",
       "loadingStatistics": "Wczytywanie statystyk ziarna…",
       "damageOverlap": "Zaklęcia mogą zadawać kilka rodzajów obrażeń.",
-      "biomeShops": "Sklepy w biomach"
+      "biomeShops": "Sklepy w biomach",
+      "summaryCountUnavailable": "Liczba niedostępna",
+      "summaryAtAverage": "Równo ze średnią",
+      "summaryAboveAverage": "{{percent}} powyżej średniej",
+      "summaryBelowAverage": "{{percent}} poniżej średniej",
+      "summaryAverage": "Średnia: {{count}}",
+      "summaryMostNone": "Brak w większości ziaren",
+      "summaryUnusuallyLow": "Nietypowo mało",
+      "summaryUnusuallyHigh": "Nietypowo dużo",
+      "summaryPercentileRange": "Liczby w 5. i 95. percentylu: {{low}}–{{high}}",
+      "summaryScope": "{{worlds}} · Porównanie z {{count}} ziarnami.",
+      "summaryUnavailable": "Porównanie ziarna niedostępne."
     }
   },
   "unlocks": {

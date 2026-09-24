@@ -1,7 +1,15 @@
 import { vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { resolveLocalPro } from "../../build_scripts/local-pro";
+import { createBakedSageSnapshot, decodeSageRecord } from "../../src/sage/records";
 
 /** Minimal real host contract for integration tests of the local report entries. */
 export function createReportHostFixture(state = { authenticated: false, isSubscriber: false }) {
+  const proRoot = resolveLocalPro(resolve(import.meta.dirname, "../..")).root!;
+  const archive = JSON.parse(readFileSync(resolve(proRoot, "tests/fixtures/sage/306813029.json"), "utf8"));
+  const record = { ...decodeSageRecord(Buffer.from(archive.data, "base64"), archive.seed), populationRevision: 4 };
+  const snapshot = createBakedSageSnapshot(record.seed, record);
   document.body.innerHTML = '<input id="seedReportToggleBtn" type="checkbox"><input id="drawToggleBtn" type="checkbox">';
   let authListener: (() => void) | undefined;
   const pois = [{ id: "chest-1", type: "chest", pw: 0, worldX: 0, worldY: 0 }];
@@ -27,7 +35,8 @@ export function createReportHostFixture(state = { authenticated: false, isSubscr
     authService,
     getAllDynamicPOIs: () => pois,
     getDynamicPOIs: () => [],
-    getSeedParams: () => ({ seed: 123, isDaily: false }),
+    getSeedParams: () => ({ seed: record.seed, isDaily: false }),
+    getBakedSageSnapshot: () => snapshot,
     isLightMode: () => false,
     isSpoilerFree: () => false,
     onMapChange: () => {},

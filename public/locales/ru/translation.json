@@ -5222,7 +5222,7 @@
       "title": "Разбивка по биомам по категориям"
     },
     "locked": {
-      "title": "Отчёт о сиде — функция Pro",
+      "title": "Полный отчёт по сиду — функция Pro",
       "body": "Подпишитесь, чтобы видеть счётчики по PW / по биомам, ценные заклинания и места редких материалов для текущего сида.",
       "cta": "Открыть с Pro"
     },
@@ -5583,7 +5583,18 @@
       "sageLinkHint": "Посмотреть статистику этого сида в Sage.",
       "loadingStatistics": "Загрузка статистики сида…",
       "damageOverlap": "У заклинаний может быть несколько типов урона.",
-      "biomeShops": "Магазины в биомах"
+      "biomeShops": "Магазины в биомах",
+      "summaryCountUnavailable": "Количество недоступно",
+      "summaryAtAverage": "На уровне среднего",
+      "summaryAboveAverage": "На {{percent}} выше среднего",
+      "summaryBelowAverage": "На {{percent}} ниже среднего",
+      "summaryAverage": "В среднем: {{count}}",
+      "summaryMostNone": "В большинстве сидов нет",
+      "summaryUnusuallyLow": "Необычно мало",
+      "summaryUnusuallyHigh": "Необычно много",
+      "summaryPercentileRange": "Количество на 5-м и 95-м процентилях: {{low}}–{{high}}",
+      "summaryScope": "{{worlds}} · Сравнение с {{count}} сидами.",
+      "summaryUnavailable": "Сравнение сида недоступно."
     }
   },
   "unlocks": {

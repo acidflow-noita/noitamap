@@ -5222,7 +5222,7 @@
       "title": "Aufschlüsselung pro Biom nach Kategorie"
     },
     "locked": {
-      "title": "Der Seed-Bericht ist eine Pro-Funktion",
+      "title": "Der vollständige Seed-Bericht ist eine Pro-Funktion",
       "body": "Abonniere, um pro PW / pro Biom Zählungen, hochwertige Zauber und Fundorte seltener Materialien für den aktuellen Seed zu sehen.",
       "cta": "Mit Pro freischalten"
     },
@@ -5583,7 +5583,18 @@
       "sageLinkHint": "Statistiken dieses Seeds in Sage ansehen.",
       "loadingStatistics": "Seed-Statistiken werden geladen…",
       "damageOverlap": "Zauber können mehrere Schadensarten haben.",
-      "biomeShops": "Biome-Läden"
+      "biomeShops": "Biome-Läden",
+      "summaryCountUnavailable": "Anzahl nicht verfügbar",
+      "summaryAtAverage": "Im Durchschnitt",
+      "summaryAboveAverage": "{{percent}} über dem Durchschnitt",
+      "summaryBelowAverage": "{{percent}} unter dem Durchschnitt",
+      "summaryAverage": "Durchschnitt: {{count}}",
+      "summaryMostNone": "In den meisten Seeds keine",
+      "summaryUnusuallyLow": "Ungewöhnlich wenige",
+      "summaryUnusuallyHigh": "Ungewöhnlich viele",
+      "summaryPercentileRange": "Anzahlen am 5. und 95. Perzentil: {{low}}–{{high}}",
+      "summaryScope": "{{worlds}} · Vergleich mit {{count}} Seeds.",
+      "summaryUnavailable": "Seed-Vergleich nicht verfügbar."
     }
   },
   "unlocks": {

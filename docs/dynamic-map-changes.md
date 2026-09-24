@@ -303,8 +303,12 @@ There was no equivalent generated-seed reporting workflow in production `main`.
 - The public report path does not require loading the drawing renderer.
 
 The public and subscriber entry points use the same V3 report. The free
-summary remains a shared component; detailed Finds and Statistics require Pro.
-The formatted upgrade section retains provider sign-in and subscription actions.
+summary uses nine text rows with matching Sage V4 counts, averages and percentage
+differences. Rare categories retain fractional averages; missing data is visible.
+It reuses baked/cached records and drops the legacy charts. Detailed Finds and
+Statistics require Pro, so locked reports hide their tabs and world selector.
+The summary states its loaded-world scope. The formatted upgrade section retains
+provider sign-in and subscription actions; Sage navigation requires sign-in.
 
 **Evidence:** `src/seed-report-button.ts`, `src/seed-report-loading.ts`,
 `task/noitamap-pro/src/seed-report/install.ts`,

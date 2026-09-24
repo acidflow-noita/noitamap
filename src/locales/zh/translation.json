@@ -5222,7 +5222,7 @@
       "title": "按生物群落类别细分"
     },
     "locked": {
-      "title": "种子报告是 Pro 功能",
+      "title": "完整种子报告是 Pro 功能",
       "body": "订阅以查看当前种子的每个 PW / 每个生物群系的计数、高价值法术和稀有材料位置。",
       "cta": "使用 Pro 解锁"
     },
@@ -5583,7 +5583,18 @@
       "sageLinkHint": "在 Sage 中查看此种子的统计数据。",
       "loadingStatistics": "正在加载种子统计…",
       "damageOverlap": "法术可能具有多种伤害类型。",
-      "biomeShops": "生物群系商店"
+      "biomeShops": "生物群系商店",
+      "summaryCountUnavailable": "数量不可用",
+      "summaryAtAverage": "等于平均值",
+      "summaryAboveAverage": "高于平均值 {{percent}}",
+      "summaryBelowAverage": "低于平均值 {{percent}}",
+      "summaryAverage": "平均值：{{count}}",
+      "summaryMostNone": "大多数种子中没有",
+      "summaryUnusuallyLow": "数量异常少",
+      "summaryUnusuallyHigh": "数量异常多",
+      "summaryPercentileRange": "第 5–95 百分位的数量：{{low}}–{{high}}",
+      "summaryScope": "{{worlds}} · 与 {{count}} 个种子比较。",
+      "summaryUnavailable": "种子比较不可用。"
     }
   },
   "unlocks": {

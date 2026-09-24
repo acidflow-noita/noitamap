@@ -5222,7 +5222,7 @@
       "title": "Biomikohtainen erittely luokittain"
     },
     "locked": {
-      "title": "Siemenraportti on Pro-ominaisuus",
+      "title": "Täysi siemenraportti on Pro-ominaisuus",
       "body": "Tilaa nähdäksesi PW/bioomi-laskennat, arvokkaat loitsut ja harvinaisten materiaalien sijainnit nykyiselle siemenelle.",
       "cta": "Avaa Prolla"
     },
@@ -5583,7 +5583,18 @@
       "sageLinkHint": "Katso tämän siemenen tilastot Sagessa.",
       "loadingStatistics": "Ladataan siemenen tilastoja…",
       "damageOverlap": "Loitsuilla voi olla useita vahinkotyyppejä.",
-      "biomeShops": "Biomien kaupat"
+      "biomeShops": "Biomien kaupat",
+      "summaryCountUnavailable": "Määrä ei saatavilla",
+      "summaryAtAverage": "Keskimääräinen",
+      "summaryAboveAverage": "{{percent}} keskiarvon yläpuolella",
+      "summaryBelowAverage": "{{percent}} keskiarvon alapuolella",
+      "summaryAverage": "Keskiarvo: {{count}}",
+      "summaryMostNone": "Useimmissa siemenissä ei ole yhtään",
+      "summaryUnusuallyLow": "Poikkeuksellisen vähän",
+      "summaryUnusuallyHigh": "Poikkeuksellisen paljon",
+      "summaryPercentileRange": "Määrät 5. ja 95. prosenttipisteessä: {{low}}–{{high}}",
+      "summaryScope": "{{worlds}} · Vertailu {{count}} siemeneen.",
+      "summaryUnavailable": "Siemenen vertailu ei saatavilla."
     }
   },
   "unlocks": {

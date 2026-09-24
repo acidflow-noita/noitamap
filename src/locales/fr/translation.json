@@ -5222,7 +5222,7 @@
       "title": "Répartition par biome par catégorie"
     },
     "locked": {
-      "title": "Le rapport de graine est une fonctionnalité Pro",
+      "title": "Le rapport complet de graine est une fonctionnalité Pro",
       "body": "Abonnez-vous pour voir les comptages par PW / par biome, les sorts de grande valeur et les emplacements des matériaux rares pour la graine actuelle.",
       "cta": "Débloquer avec Pro"
     },
@@ -5583,7 +5583,18 @@
       "sageLinkHint": "Consulter les statistiques de cette seed dans Sage.",
       "loadingStatistics": "Chargement des statistiques de la seed…",
       "damageOverlap": "Les sorts peuvent avoir plusieurs types de dégâts.",
-      "biomeShops": "Boutiques des biomes"
+      "biomeShops": "Boutiques des biomes",
+      "summaryCountUnavailable": "Nombre indisponible",
+      "summaryAtAverage": "Dans la moyenne",
+      "summaryAboveAverage": "{{percent}} au-dessus de la moyenne",
+      "summaryBelowAverage": "{{percent}} en dessous de la moyenne",
+      "summaryAverage": "Moyenne : {{count}}",
+      "summaryMostNone": "Aucun dans la plupart des graines",
+      "summaryUnusuallyLow": "Nombre inhabituellement faible",
+      "summaryUnusuallyHigh": "Nombre inhabituellement élevé",
+      "summaryPercentileRange": "Nombres aux 5e et 95e centiles : {{low}}–{{high}}",
+      "summaryScope": "{{worlds}} · Comparaison avec {{count}} graines.",
+      "summaryUnavailable": "Comparaison de la graine indisponible."
     }
   },
   "unlocks": {

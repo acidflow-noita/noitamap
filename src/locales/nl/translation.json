@@ -5222,7 +5222,7 @@
       "title": "Uitsplitsing per bioom per categorie"
     },
     "locked": {
-      "title": "Het seed-rapport is een Pro-functie",
+      "title": "Het volledige seedrapport is een Pro-functie",
       "body": "Abonneer om per-PW / per-bioom tellingen, hoogwaardige spreuken en zeldzame materiaallocaties voor de huidige seed te zien.",
       "cta": "Ontgrendel met Pro"
     },
@@ -5583,7 +5583,18 @@
       "sageLinkHint": "Bekijk de statistieken van deze seed in Sage.",
       "loadingStatistics": "Seed-statistieken laden…",
       "damageOverlap": "Spreuken kunnen meerdere soorten schade hebben.",
-      "biomeShops": "Winkels in biomen"
+      "biomeShops": "Winkels in biomen",
+      "summaryCountUnavailable": "Aantal niet beschikbaar",
+      "summaryAtAverage": "Gelijk aan het gemiddelde",
+      "summaryAboveAverage": "{{percent}} boven het gemiddelde",
+      "summaryBelowAverage": "{{percent}} onder het gemiddelde",
+      "summaryAverage": "Gemiddeld: {{count}}",
+      "summaryMostNone": "In de meeste seeds geen",
+      "summaryUnusuallyLow": "Ongewoon weinig",
+      "summaryUnusuallyHigh": "Ongewoon veel",
+      "summaryPercentileRange": "Aantallen op het 5e en 95e percentiel: {{low}}–{{high}}",
+      "summaryScope": "{{worlds}} · Vergeleken met {{count}} seeds.",
+      "summaryUnavailable": "Seedvergelijking niet beschikbaar."
     }
   },
   "unlocks": {

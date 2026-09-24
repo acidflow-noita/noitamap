@@ -5222,7 +5222,7 @@
       "title": "Pengelompokan per bioma berdasarkan kategori"
     },
     "locked": {
-      "title": "Laporan benih adalah fitur Pro",
+      "title": "Laporan seed lengkap adalah fitur Pro",
       "body": "Berlangganan untuk melihat hitungan per PW / per bioma, mantra bernilai tinggi, dan lokasi material langka untuk benih saat ini.",
       "cta": "Buka dengan Pro"
     },
@@ -5583,7 +5583,18 @@
       "sageLinkHint": "Lihat statistik seed ini di Sage.",
       "loadingStatistics": "Memuat statistik seed…",
       "damageOverlap": "Mantra dapat memiliki beberapa jenis kerusakan.",
-      "biomeShops": "Toko bioma"
+      "biomeShops": "Toko bioma",
+      "summaryCountUnavailable": "Jumlah tidak tersedia",
+      "summaryAtAverage": "Sama dengan rata-rata",
+      "summaryAboveAverage": "{{percent}} di atas rata-rata",
+      "summaryBelowAverage": "{{percent}} di bawah rata-rata",
+      "summaryAverage": "Rata-rata: {{count}}",
+      "summaryMostNone": "Tidak ada pada sebagian besar seed",
+      "summaryUnusuallyLow": "Jumlah sangat sedikit",
+      "summaryUnusuallyHigh": "Jumlah sangat banyak",
+      "summaryPercentileRange": "Jumlah pada persentil ke-5 dan ke-95: {{low}}–{{high}}",
+      "summaryScope": "{{worlds}} · Dibandingkan dengan {{count}} seed.",
+      "summaryUnavailable": "Perbandingan seed tidak tersedia."
     }
   },
   "unlocks": {

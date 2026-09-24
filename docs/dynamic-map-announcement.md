@@ -104,3 +104,7 @@ A separate Statistics tab shows Sage's existing population references and
 daily comparisons. Ranked seed links open Sage. Missing data is explained,
 not replaced with estimates. The old report versions and preview switcher
 have been removed.
+
+The free preview now shows compact text comparisons using the same Sage V4
+counts and averages as Statistics. It reuses baked/cached records, explains
+missing data and hides controls that require Pro access.

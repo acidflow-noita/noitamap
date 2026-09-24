@@ -5222,7 +5222,7 @@
       "title": "Fördelning per biom efter kategori"
     },
     "locked": {
-      "title": "Frörapporten är en Pro-funktion",
+      "title": "Den fullständiga frörapporten är en Pro-funktion",
       "body": "Prenumerera för att se räkningar per PW / per biom, värdefulla trollformler och platser för sällsynta material för det aktuella fröet.",
       "cta": "Lås upp med Pro"
     },
@@ -5583,7 +5583,18 @@
       "sageLinkHint": "Visa statistik för denna seed i Sage.",
       "loadingStatistics": "Läser in statistik för seed…",
       "damageOverlap": "Besvärjelser kan ha flera skadetyper.",
-      "biomeShops": "Butiker i biomer"
+      "biomeShops": "Butiker i biomer",
+      "summaryCountUnavailable": "Antal saknas",
+      "summaryAtAverage": "Lika med genomsnittet",
+      "summaryAboveAverage": "{{percent}} över genomsnittet",
+      "summaryBelowAverage": "{{percent}} under genomsnittet",
+      "summaryAverage": "Genomsnitt: {{count}}",
+      "summaryMostNone": "Saknas i de flesta frön",
+      "summaryUnusuallyLow": "Ovanligt få",
+      "summaryUnusuallyHigh": "Ovanligt många",
+      "summaryPercentileRange": "Antal vid 5:e och 95:e percentilen: {{low}}–{{high}}",
+      "summaryScope": "{{worlds}} · Jämförelse med {{count}} frön.",
+      "summaryUnavailable": "Jämförelse av fröet är inte tillgänglig."
     }
   },
   "unlocks": {

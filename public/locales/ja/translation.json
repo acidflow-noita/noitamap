@@ -5222,7 +5222,7 @@
       "title": "カテゴリごとのバイオームごとの内訳"
     },
     "locked": {
-      "title": "シードレポートはProの機能です",
+      "title": "完全なシードレポートはProの機能です",
       "body": "サブスクリプションで、現在のシードのPW別 / バイオーム別の数、高価値の呪文、レア素材の場所を確認できます。",
       "cta": "Proで解除"
     },
@@ -5583,7 +5583,18 @@
       "sageLinkHint": "このシードの統計を Sage で表示します。",
       "loadingStatistics": "シードの統計を読み込み中…",
       "damageOverlap": "呪文には複数のダメージタイプがある場合があります。",
-      "biomeShops": "バイオーム内のショップ"
+      "biomeShops": "バイオーム内のショップ",
+      "summaryCountUnavailable": "個数を取得できません",
+      "summaryAtAverage": "平均と同じ",
+      "summaryAboveAverage": "平均より {{percent}} 多い",
+      "summaryBelowAverage": "平均より {{percent}} 少ない",
+      "summaryAverage": "平均: {{count}}",
+      "summaryMostNone": "ほとんどのシードでは出現しません",
+      "summaryUnusuallyLow": "非常に少ない",
+      "summaryUnusuallyHigh": "非常に多い",
+      "summaryPercentileRange": "第5～第95パーセンタイルの個数: {{low}}～{{high}}",
+      "summaryScope": "{{worlds}} · {{count}} 個のシードとの比較。",
+      "summaryUnavailable": "シードを比較できません。"
     }
   },
   "unlocks": {

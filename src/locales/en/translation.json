@@ -109,7 +109,7 @@
       "title": "Per-biome breakdown by category"
     },
     "locked": {
-      "title": "Seed report is a Pro feature",
+      "title": "Full seed report is a Pro feature",
       "body": "Subscribe to see per-PW / per-biome counts, high value spells, and rare material locations for the current seed.",
       "cta": "Unlock with Pro"
     },
@@ -439,7 +439,18 @@
       "sageLinkHint": "View this seed’s statistics in Sage.",
       "loadingStatistics": "Loading seed statistics…",
       "damageOverlap": "Spells may have multiple damage types.",
-      "biomeShops": "Biome shops"
+      "biomeShops": "Biome shops",
+      "summaryCountUnavailable": "Count unavailable",
+      "summaryAtAverage": "At average",
+      "summaryAboveAverage": "{{percent}} above average",
+      "summaryBelowAverage": "{{percent}} below average",
+      "summaryAverage": "Average: {{count}}",
+      "summaryMostNone": "Most seeds have none",
+      "summaryUnusuallyLow": "Unusually low",
+      "summaryUnusuallyHigh": "Unusually high",
+      "summaryPercentileRange": "5th–95th percentile counts: {{low}}–{{high}}",
+      "summaryScope": "{{worlds}} · Compared with {{count}} seeds.",
+      "summaryUnavailable": "Seed comparison unavailable."
     }
   },
   "search": {

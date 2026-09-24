@@ -5222,7 +5222,7 @@
       "title": "Ripartizione per bioma per categoria"
     },
     "locked": {
-      "title": "Il report dei semi è una funzionalità Pro",
+      "title": "Il rapporto completo del seme è una funzionalità Pro",
       "body": "Abbonati per vedere i conteggi per PW / per bioma, gli incantesimi di alto valore e le posizioni dei materiali rari per il seme attuale.",
       "cta": "Sblocca con Pro"
     },
@@ -5583,7 +5583,18 @@
       "sageLinkHint": "Visualizza le statistiche di questo seed su Sage.",
       "loadingStatistics": "Caricamento delle statistiche del seed…",
       "damageOverlap": "Gli incantesimi possono avere più tipi di danno.",
-      "biomeShops": "Negozi dei biomi"
+      "biomeShops": "Negozi dei biomi",
+      "summaryCountUnavailable": "Quantità non disponibile",
+      "summaryAtAverage": "Nella media",
+      "summaryAboveAverage": "{{percent}} sopra la media",
+      "summaryBelowAverage": "{{percent}} sotto la media",
+      "summaryAverage": "Media: {{count}}",
+      "summaryMostNone": "Assente nella maggior parte dei semi",
+      "summaryUnusuallyLow": "Quantità insolitamente bassa",
+      "summaryUnusuallyHigh": "Quantità insolitamente alta",
+      "summaryPercentileRange": "Quantità al 5º e 95º percentile: {{low}}–{{high}}",
+      "summaryScope": "{{worlds}} · Confronto con {{count}} semi.",
+      "summaryUnavailable": "Confronto del seme non disponibile."
     }
   },
   "unlocks": {

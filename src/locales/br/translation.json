@@ -5222,7 +5222,7 @@
       "title": "Divisão por bioma por categoria"
     },
     "locked": {
-      "title": "O relatório de semente é um recurso Pro",
+      "title": "O relatório completo da semente é um recurso Pro",
       "body": "Assine para ver as contagens por PW / por bioma, feitiços de alto valor e locais de materiais raros para a semente atual.",
       "cta": "Desbloquear com Pro"
     },
@@ -5583,7 +5583,18 @@
       "sageLinkHint": "Ver as estatísticas desta seed no Sage.",
       "loadingStatistics": "Carregando estatísticas da seed…",
       "damageOverlap": "Feitiços podem ter vários tipos de dano.",
-      "biomeShops": "Lojas dos biomas"
+      "biomeShops": "Lojas dos biomas",
+      "summaryCountUnavailable": "Quantidade indisponível",
+      "summaryAtAverage": "Na média",
+      "summaryAboveAverage": "{{percent}} acima da média",
+      "summaryBelowAverage": "{{percent}} abaixo da média",
+      "summaryAverage": "Média: {{count}}",
+      "summaryMostNone": "Ausente na maioria das sementes",
+      "summaryUnusuallyLow": "Quantidade incomumente baixa",
+      "summaryUnusuallyHigh": "Quantidade incomumente alta",
+      "summaryPercentileRange": "Quantidades nos percentis 5 e 95: {{low}}–{{high}}",
+      "summaryScope": "{{worlds}} · Comparação com {{count}} sementes.",
+      "summaryUnavailable": "Comparação da semente indisponível."
     }
   },
   "unlocks": {

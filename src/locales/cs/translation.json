@@ -5222,7 +5222,7 @@
       "title": "Rozdělení podle biomů podle kategorií"
     },
     "locked": {
-      "title": "Zpráva o semínku je funkce Pro",
+      "title": "Úplný přehled seedu je funkce Pro",
       "body": "Předplatné odhalí počty per PW / per biom, kouzla vysoké hodnoty a místa vzácných materiálů pro aktuální semínko.",
       "cta": "Odemknout s Pro"
     },
@@ -5583,7 +5583,18 @@
       "sageLinkHint": "Zobrazit statistiky tohoto seedu v Sage.",
       "loadingStatistics": "Načítání statistik seedu…",
       "damageOverlap": "Kouzla mohou mít více typů poškození.",
-      "biomeShops": "Obchody v biomech"
+      "biomeShops": "Obchody v biomech",
+      "summaryCountUnavailable": "Počet není k dispozici",
+      "summaryAtAverage": "Odpovídá průměru",
+      "summaryAboveAverage": "{{percent}} nad průměrem",
+      "summaryBelowAverage": "{{percent}} pod průměrem",
+      "summaryAverage": "Průměr: {{count}}",
+      "summaryMostNone": "Ve většině seedů nejsou",
+      "summaryUnusuallyLow": "Neobvykle málo",
+      "summaryUnusuallyHigh": "Neobvykle mnoho",
+      "summaryPercentileRange": "Počty na 5. a 95. percentilu: {{low}}–{{high}}",
+      "summaryScope": "{{worlds}} · Srovnání s {{count}} seedy.",
+      "summaryUnavailable": "Srovnání seedu není k dispozici."
     }
   },
   "unlocks": {

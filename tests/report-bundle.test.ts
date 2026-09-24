@@ -42,7 +42,10 @@ describe.skipIf(!resolveLocalPro(resolve(import.meta.dirname, "..")).available)(
       expect(report.hidden).toBe(false);
       expect(report.classList.contains("open")).toBe(true);
       expect(!!report.querySelector(".sr-locked-banner")).toBe(!state.isSubscriber);
-      await vi.waitFor(() => expect(!!report.querySelector(".sr-tldr svg")).toBe(!state.isSubscriber));
+      await vi.waitFor(() => expect(report.querySelectorAll(".sr3-summary-row")).toHaveLength(state.isSubscriber ? 0 : 9));
+      expect(report.querySelector(".sr-tldr svg, .sr-tldr canvas")).toBeNull();
+      expect(report.querySelectorAll('[role="tab"]')).toHaveLength(state.isSubscriber ? 2 : 0);
+      expect(!!report.querySelector('[data-control="world"]')).toBe(state.isSubscriber);
       expect(document.querySelector("#seed-report-sidebar, #seed-report-v2, #seed-report-preview-tools")).toBeNull();
       expect(await load("report")).toBe(true);
       expect(document.querySelectorAll("#seed-report-v3")).toHaveLength(1);

@@ -5222,7 +5222,7 @@
       "title": "Розбивка біомів за категоріями"
     },
     "locked": {
-      "title": "Звіт за сідом — це функція Pro",
+      "title": "Повний звіт про сід — це функція Pro",
       "body": "Підпишіться, щоб бачити підрахунки по PW / по біомах, цінні заклинання та локації рідкісних матеріалів для поточного сіду.",
       "cta": "Розблокувати з Pro"
     },
@@ -5583,7 +5583,18 @@
       "sageLinkHint": "Переглянути статистику цього сіда в Sage.",
       "loadingStatistics": "Завантаження статистики сіда…",
       "damageOverlap": "Заклинання можуть мати кілька типів шкоди.",
-      "biomeShops": "Крамниці в біомах"
+      "biomeShops": "Крамниці в біомах",
+      "summaryCountUnavailable": "Кількість недоступна",
+      "summaryAtAverage": "На рівні середнього",
+      "summaryAboveAverage": "На {{percent}} вище середнього",
+      "summaryBelowAverage": "На {{percent}} нижче середнього",
+      "summaryAverage": "У середньому: {{count}}",
+      "summaryMostNone": "У більшості сідів немає",
+      "summaryUnusuallyLow": "Незвично мало",
+      "summaryUnusuallyHigh": "Незвично багато",
+      "summaryPercentileRange": "Кількість на 5-му й 95-му процентилях: {{low}}–{{high}}",
+      "summaryScope": "{{worlds}} · Порівняння з {{count}} сідами.",
+      "summaryUnavailable": "Порівняння сіда недоступне."
     }
   },
   "unlocks": {

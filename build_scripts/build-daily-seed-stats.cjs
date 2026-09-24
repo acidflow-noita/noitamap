@@ -34,10 +34,9 @@
  *     count, axisOrder, biomeMetrics, generatedAt
  *   }
  *
- * NOTE: the pro seed report's per-PW baseline is no longer sourced from here.
- * It now ships `noitamap-pro/src/seed-report/sage-baseline.json` (medians over
- * ALL seeds, extracted from Sage via `task/build-sage-baseline.cjs`). This
- * script only produces the gitignored per-biome averages json.
+ * NOTE: the report uses matching Sage V4 seed records and population references
+ * from `task/noitamap-pro/src/seed-report/sage/v4-population.json`. This script
+ * only produces the gitignored per-biome averages json.
  *
  * EXECUTION
  *   - Launches a headless Playwright Chromium.
