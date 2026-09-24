@@ -29,6 +29,7 @@ describe.skipIf(!resolveLocalPro(resolve(import.meta.dirname, "..")).available)(
       expect(report.textContent).toContain("How this seed compares");
       expect(report.textContent).toContain("Seed report is a Pro feature");
       expect(report.textContent).toContain("Sign in with Patreon");
+      expect(report.querySelector('a[href*="sage.runfast.stream"]')).toBeNull();
       report.querySelector<HTMLButtonElement>(".btn-patreon")!.click();
       expect(authService.login).toHaveBeenCalledOnce();
       expect(document.querySelector("#seed-report-sidebar, #seed-report-v2, #seed-report-preview-tools")).toBeNull();
@@ -45,12 +46,19 @@ describe.skipIf(!resolveLocalPro(resolve(import.meta.dirname, "..")).available)(
       await init(hooks); hooks.handleSeedReportToggle!(true);
       const report = document.getElementById("seed-report-v3")!;
       expect(report.querySelector(".sr-locked-banner")).not.toBeNull();
+      expect(report.querySelector(".sr3-sage-link")).toBeNull();
       await vi.waitFor(() => expect(report.querySelector(".sr-tldr")).not.toBeNull());
+      state.authenticated = true; refreshAuth();
+      expect(report.querySelector(".sr3-toolbar .sr3-sage-link")).not.toBeNull();
+      expect(report.querySelector(".sr-locked-banner")).not.toBeNull();
       state.authenticated = true; state.isSubscriber = true; refreshAuth();
       expect(report.querySelector(".sr-locked-banner")).toBeNull();
       expect(report.querySelector(".sr-tldr")).toBeNull();
       expect(report.querySelector(".sr3-find")).not.toBeNull();
       expect(document.querySelectorAll("#seed-report-v3")).toHaveLength(1);
+      state.authenticated = false; state.isSubscriber = false; refreshAuth();
+      expect(report.querySelector('a[href*="sage.runfast.stream"]')).toBeNull();
+      expect(report.querySelector(".sr-locked-banner")).not.toBeNull();
       hooks.handleSeedReportToggle!(false);
       expect(report.hidden).toBe(true);
     });
