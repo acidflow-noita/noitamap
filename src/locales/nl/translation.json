@@ -4606,7 +4606,10 @@
     "yourAccount": "Jouw account",
     "proActive": "Pro actief",
     "subscribeCta": "Upgraden naar Pro",
-    "switchProviderConfirm": "Als u inlogt met {{next}}, wordt u uitgelogd bij {{current}}.\n\nPro-toegang is daarna afhankelijk van uw {{next}}-abonnement.\n\nWilt u overschakelen naar {{next}}?"
+    "switchProviderConfirm": "Als u inlogt met {{next}}, wordt u uitgelogd bij {{current}}.\n\nPro-toegang is daarna afhankelijk van uw {{next}}-abonnement.\n\nWilt u overschakelen naar {{next}}?",
+    "loginWithTwitch": "Inloggen met Twitch",
+    "subscribeTwitch": "Abonneren op Twitch",
+    "or": "of"
   },
   "loading": {
     "maps": "Kaarten laden...",
@@ -5372,14 +5375,6 @@
       "population": "Referentiegegevens: {{count}} seeds · Sage",
       "worldsLocked": "Details per wereld vereisen Pro",
       "traitsFree": "Het overzicht en de algemene vergelijkingen blijven zonder Pro beschikbaar.",
-      "preview": {
-        "loading": "Rapportversie laden…",
-        "failed": "Deze versie kon niet worden geladen. Selecteer hem opnieuw om het nogmaals te proberen.",
-        "title": "Rapportversie kiezen",
-        "classic": "Klassiek",
-        "exit": "Rapportvoorbeeld verlaten",
-        "hint": "Rapportversie · Alt⇧R"
-      },
       "loopTools": "Nuttige spreuken",
       "spellTypes": "Spreuken op type",
       "spellDamageTypes": "Spreuken op schadetype",

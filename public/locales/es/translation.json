@@ -4606,7 +4606,10 @@
     "yourAccount": "Tu cuenta",
     "proActive": "Pro activo",
     "subscribeCta": "Actualizar a Pro",
-    "switchProviderConfirm": "Al iniciar sesión con {{next}}, se cerrará tu sesión de {{current}}.\n\nEl acceso Pro dependerá entonces de tu suscripción de {{next}}.\n\n¿Quieres iniciar sesión con {{next}}?"
+    "switchProviderConfirm": "Al iniciar sesión con {{next}}, se cerrará tu sesión de {{current}}.\n\nEl acceso Pro dependerá entonces de tu suscripción de {{next}}.\n\n¿Quieres iniciar sesión con {{next}}?",
+    "loginWithTwitch": "Iniciar sesion con Twitch",
+    "subscribeTwitch": "Suscribirse en Twitch",
+    "or": "o"
   },
   "loading": {
     "maps": "Cargando mapas...",
@@ -5372,14 +5375,6 @@
       "population": "Datos de referencia: {{count}} semillas · Sage",
       "worldsLocked": "Los detalles por mundo requieren Pro",
       "traitsFree": "El resumen y las comparaciones generales siguen disponibles sin Pro.",
-      "preview": {
-        "loading": "Cargando la versión del informe…",
-        "failed": "No se pudo cargar esta versión. Selecciónala de nuevo para reintentar.",
-        "title": "Controles de versión del informe",
-        "classic": "Clásico",
-        "exit": "Salir de la vista previa",
-        "hint": "Versión del informe · Alt⇧R"
-      },
       "loopTools": "Hechizos útiles",
       "spellTypes": "Hechizos por tipo",
       "spellDamageTypes": "Hechizos por tipo de daño",

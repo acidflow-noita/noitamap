@@ -231,14 +231,6 @@
       "population": "Reference data: {{count}} seeds · Sage",
       "worldsLocked": "World-by-world details require Pro",
       "traitsFree": "The overview and population comparisons remain available without Pro.",
-      "preview": {
-        "loading": "Loading report version…",
-        "failed": "Could not load this version. Select it again to retry.",
-        "title": "Report version controls",
-        "classic": "Classic",
-        "exit": "Exit report preview",
-        "hint": "Report version · Alt⇧R"
-      },
       "loopTools": "Useful spells",
       "spellTypes": "Spells by type",
       "spellDamageTypes": "Spells by damage type",
@@ -5152,7 +5144,10 @@
     "yourAccount": "Your account",
     "proActive": "Pro active",
     "subscribeCta": "Upgrade to Pro",
-    "switchProviderConfirm": "Signing in with {{next}} will sign you out of {{current}}.\n\nPro access will then be based on your {{next}} subscription.\n\nSwitch to {{next}}?"
+    "switchProviderConfirm": "Signing in with {{next}} will sign you out of {{current}}.\n\nPro access will then be based on your {{next}} subscription.\n\nSwitch to {{next}}?",
+    "loginWithTwitch": "Sign in with Twitch",
+    "subscribeTwitch": "Subscribe on Twitch",
+    "or": "or"
   },
   "loading": {
     "maps": "Loading maps...",

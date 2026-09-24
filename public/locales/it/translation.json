@@ -4606,7 +4606,10 @@
     "yourAccount": "Il tuo account",
     "proActive": "Pro attivo",
     "subscribeCta": "Passa a Pro",
-    "switchProviderConfirm": "Accedendo con {{next}} verrai disconnesso da {{current}}.\n\nL'accesso Pro dipenderà quindi dal tuo abbonamento {{next}}.\n\nDesideri passare a {{next}}?"
+    "switchProviderConfirm": "Accedendo con {{next}} verrai disconnesso da {{current}}.\n\nL'accesso Pro dipenderà quindi dal tuo abbonamento {{next}}.\n\nDesideri passare a {{next}}?",
+    "loginWithTwitch": "Accedi con Twitch",
+    "subscribeTwitch": "Abbonati su Twitch",
+    "or": "oppure"
   },
   "loading": {
     "maps": "Caricamento mappe...",
@@ -5372,14 +5375,6 @@
       "population": "Dati di riferimento: {{count}} semi · Sage",
       "worldsLocked": "I dettagli per mondo richiedono Pro",
       "traitsFree": "La panoramica e i confronti generali restano disponibili senza Pro.",
-      "preview": {
-        "loading": "Caricamento della versione del rapporto…",
-        "failed": "Impossibile caricare questa versione. Selezionala di nuovo per riprovare.",
-        "title": "Selezione della versione del rapporto",
-        "classic": "Classico",
-        "exit": "Esci dall’anteprima del rapporto",
-        "hint": "Versione del rapporto · Alt⇧R"
-      },
       "loopTools": "Incantesimi utili",
       "spellTypes": "Incantesimi per tipo",
       "spellDamageTypes": "Incantesimi per tipo di danno",

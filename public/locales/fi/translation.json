@@ -4606,7 +4606,10 @@
     "yourAccount": "Tilisi",
     "proActive": "Pro aktiivinen",
     "subscribeCta": "Paivita Pro-versioon",
-    "switchProviderConfirm": "Kirjautuminen {{next}}-tilillä kirjaa sinut ulos {{current}}-tililtä.\n\nPro-käyttöoikeus määräytyy sen jälkeen {{next}}-tilauksesi mukaan.\n\nHaluatko vaihtaa {{next}}-tiliin?"
+    "switchProviderConfirm": "Kirjautuminen {{next}}-tilillä kirjaa sinut ulos {{current}}-tililtä.\n\nPro-käyttöoikeus määräytyy sen jälkeen {{next}}-tilauksesi mukaan.\n\nHaluatko vaihtaa {{next}}-tiliin?",
+    "loginWithTwitch": "Kirjaudu Twitchilla",
+    "subscribeTwitch": "Tilaa Twitchissä",
+    "or": "tai"
   },
   "loading": {
     "maps": "Ladataan karttoja...",
@@ -5372,14 +5375,6 @@
       "population": "Vertailutiedot: {{count}} siementä · Sage",
       "worldsLocked": "Maailmakohtaiset tiedot vaativat Pron",
       "traitsFree": "Yleiskatsaus ja vertailut kaikkiin siemeniin ovat saatavilla ilman Prota.",
-      "preview": {
-        "loading": "Ladataan raportin versiota…",
-        "failed": "Tätä versiota ei voitu ladata. Yritä uudelleen valitsemalla se taas.",
-        "title": "Raportin version valinta",
-        "classic": "Perinteinen",
-        "exit": "Poistu raportin esikatselusta",
-        "hint": "Raportin versio · Alt⇧R"
-      },
       "loopTools": "Hyödylliset loitsut",
       "spellTypes": "Loitsut tyypeittäin",
       "spellDamageTypes": "Loitsut vahinkotyypeittäin",

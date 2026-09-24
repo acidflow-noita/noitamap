@@ -4606,7 +4606,10 @@
     "yourAccount": "Votre compte",
     "proActive": "Pro actif",
     "subscribeCta": "Passer a Pro",
-    "switchProviderConfirm": "En vous connectant avec {{next}}, vous serez déconnecté de {{current}}.\n\nL'accès Pro dépendra alors de votre abonnement {{next}}.\n\nSouhaitez-vous passer à {{next}} ?"
+    "switchProviderConfirm": "En vous connectant avec {{next}}, vous serez déconnecté de {{current}}.\n\nL'accès Pro dépendra alors de votre abonnement {{next}}.\n\nSouhaitez-vous passer à {{next}} ?",
+    "loginWithTwitch": "Se connecter avec Twitch",
+    "subscribeTwitch": "S’abonner sur Twitch",
+    "or": "ou"
   },
   "loading": {
     "maps": "Chargement des cartes...",
@@ -5372,14 +5375,6 @@
       "population": "Données de référence : {{count}} graines · Sage",
       "worldsLocked": "Les détails par monde nécessitent Pro",
       "traitsFree": "La vue d’ensemble et les comparaisons générales restent accessibles sans Pro.",
-      "preview": {
-        "loading": "Chargement de la version du rapport…",
-        "failed": "Impossible de charger cette version. Sélectionnez-la à nouveau pour réessayer.",
-        "title": "Choix de la version du rapport",
-        "classic": "Classique",
-        "exit": "Quitter l’aperçu du rapport",
-        "hint": "Version du rapport · Alt⇧R"
-      },
       "loopTools": "Sorts utiles",
       "spellTypes": "Sorts par type",
       "spellDamageTypes": "Sorts par type de dégâts",

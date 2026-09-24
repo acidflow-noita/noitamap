@@ -4606,7 +4606,10 @@
     "yourAccount": "アカウント",
     "proActive": "Pro 有効",
     "subscribeCta": "Pro にアップグレード",
-    "switchProviderConfirm": "{{next}}でログインすると、{{current}}からログアウトされます。\n\nその後、Pro へのアクセスは {{next}} のサブスクリプションによって決まります。\n\n{{next}}に切り替えますか?"
+    "switchProviderConfirm": "{{next}}でログインすると、{{current}}からログアウトされます。\n\nその後、Pro へのアクセスは {{next}} のサブスクリプションによって決まります。\n\n{{next}}に切り替えますか?",
+    "loginWithTwitch": "Twitchでログイン",
+    "subscribeTwitch": "Twitchでサブスク登録",
+    "or": "または"
   },
   "loading": {
     "maps": "マップを読み込み中...",
@@ -5372,14 +5375,6 @@
       "population": "比較基準：{{count}} シード · Sage",
       "worldsLocked": "ワールド別の詳細には Pro が必要です",
       "traitsFree": "概要と全シードとの比較は Pro なしでも利用できます。",
-      "preview": {
-        "loading": "レポートのバージョンを読み込み中…",
-        "failed": "このバージョンを読み込めませんでした。もう一度選ぶと再試行します。",
-        "title": "レポートのバージョン切り替え",
-        "classic": "従来版",
-        "exit": "レポートのプレビューを終了",
-        "hint": "レポートのバージョン · Alt⇧R"
-      },
       "loopTools": "便利な呪文",
       "spellTypes": "呪文の種類別",
       "spellDamageTypes": "呪文のダメージタイプ別",

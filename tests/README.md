@@ -260,15 +260,14 @@ percentage. Loading animations honor reduced-motion preferences.
 
 ```bash
 npm test -- tests/poi-inventory.test.ts tests/poi-preview-name.test.ts tests/poi-sprite-coverage.test.ts
-node tests/pro-report.integration.mjs dist task/noitamap-pro/public
+npm test -- tests/public-report.test.ts tests/seed-report-loading.test.ts
 ```
 
-The integration test expects both production builds to exist. It uses the real
-local generator and atlas, with CDN library responses unchanged and unrelated
-analytics/static tiles/auth isolated. It checks `song_room` coral chests across
-three worlds, actual Kammi/material/spell/wand sprite pixels, readable V2 width,
-no horizontal overflow, and C/Shift+C through the built host's drawing UI.
-Images/results go under `/tmp/noitamap-report-integration` by default.
+The inventory and preview tests cover coral metadata and canonical loot names
+and sprites. Report integration checks use the actual V3 public and lazy Pro
+installers, including upgrade controls and old preview links. The obsolete V2
+browser harness was removed with the V2 view; visual layout and production
+browser review remain manual maintainer checks.
 
 ## Generation loading / optional disk cache
 
@@ -302,8 +301,6 @@ npm test -- tests/worker-scenes.test.ts tests/telescope-worker-runtime.test.ts t
 npm --prefix task/noitamap-pro test
 npm run build
 npm --prefix task/noitamap-pro run build
-node tests/pro-report.integration.mjs dist task/noitamap-pro/public
-TEST_BROWSER=firefox node tests/pro-report.integration.mjs dist task/noitamap-pro/public
 ```
 
 PW workers receive the main thread's decoded scene pixels and prescanned spawn
@@ -312,8 +309,7 @@ transferred away from the renderer. Native regression cases compare complete
 POI/scene output with the original archive-loading path for both Telescope forks.
 The alternate-unlocks prewarm starts only after the visible map finishes.
 
-The built-host/Pro browser regression deliberately delays feature downloads. It
-checks frame-by-frame that loading shells do not overlap the real sidebars or
-slide out over them; it also edits the seed with its popover visible and rejects
-raw HTML text and Pixi's Graphics.addChild deprecation warning. It retains the
-existing loot preview, layout, drawing fill, and screenshot/export assertions.
+Loading tests delay feature initialization and verify cancellation, retry and
+handoff to the actual V3 panel. Verify the visual handoff manually after building
+both repositories. The separate Pro drawing browser suite remains available for
+manual drawing fill, layout and export regression checks.

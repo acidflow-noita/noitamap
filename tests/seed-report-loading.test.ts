@@ -13,13 +13,14 @@ let load: ReturnType<typeof vi.fn>;
 let input: HTMLInputElement;
 const click = (open: boolean) => { input.checked = open; input.dispatchEvent(new Event("change")); };
 const installReport = () => {
-  const panel = document.createElement("div"); panel.id = "seed-report-sidebar"; document.body.appendChild(panel);
+  const panel = document.createElement("div"); panel.id = "seed-report-v3"; document.body.appendChild(panel);
   const toggle = vi.fn((open: boolean) => panel.classList.toggle("open", open));
   (window as any).__noitamap.handleSeedReportToggle = toggle;
   return toggle;
 };
 beforeEach(() => {
   state.initial = false; state.updateURL.mockClear();
+  history.replaceState(null, "", "/");
   requestProSidebar("report", false);
   document.body.innerHTML = '<div><div id="drawing-ui-wrapper"></div></div>';
   (window as any).__noitamap = {};
@@ -32,6 +33,7 @@ beforeEach(() => {
 afterEach(() => {
   requestProSidebar("report", false);requestProSidebar("drawing", false);
   document.body.replaceChildren();delete (window as any).__noitamap;
+  history.replaceState(null, "", "/");
   vi.restoreAllMocks();vi.unstubAllGlobals();
 });
 
@@ -69,7 +71,7 @@ describe("immediate seed report loading feedback", () => {
     expect(document.getElementById("seed-report-loading")?.textContent).toContain("couldn't be loaded");
     load.mockImplementationOnce(async () => { installReport(); return true; });
     (document.querySelector(".sr-loading-actions button") as HTMLButtonElement).click();
-    await vi.waitFor(() => expect(document.querySelector("#seed-report-sidebar.open")).not.toBeNull());
+    await vi.waitFor(() => expect(document.querySelector("#seed-report-v3.open")).not.toBeNull());
     expect(document.getElementById("seed-report-loading")).toBeNull();
   });
   it("does not flash a loading panel once the feature is available", () => {
@@ -83,5 +85,42 @@ describe("immediate seed report loading feedback", () => {
     expect(document.getElementById("seed-report-loading")?.textContent).toContain("Still loading");
     expect(document.getElementById("seed-report-loading")?.textContent).not.toMatch(/\d+%/);
     panel.remove();vi.useRealTimers();
+  });
+
+  it.each(["", "v1", "classic", "v2", "v3"])("hands off to the sole V3 panel for legacy preview value '%s' without a second transition", async preview => {
+    history.replaceState(null, "", preview ? `/?reportPreview=${preview}` : "/");
+    click(true);
+    const loading = document.getElementById("seed-report-loading")!;
+    expect(loading.hasAttribute("data-preview")).toBe(false);
+    expect(getComputedStyle(loading).width).toBe("48vw");
+    await vi.waitFor(() => expect(load).toHaveBeenCalledOnce());
+    const panel = document.createElement("section"); panel.id = "seed-report-v3";
+    panel.style.transition = "transform 0.3s"; document.body.append(panel);
+    const toggle = vi.fn((open: boolean) => {
+      if (open) expect(panel.style.transition).toBe("none");
+      panel.classList.toggle("open", open);
+    });
+    (window as any).__noitamap.handleSeedReportToggle = toggle;
+    finish(true);
+    await vi.waitFor(() => expect(toggle).toHaveBeenCalledExactlyOnceWith(true));
+    expect(document.getElementById("seed-report-loading")).toBeNull();
+    expect(panel.classList.contains("open")).toBe(true);
+    await vi.waitFor(() => expect(panel.style.transition).toBe("transform 0.3s"));
+  });
+
+  it.each(["seed-report-sidebar", "seed-report-v2"])("hands off to a cached older bundle's %s panel during rollout", async id => {
+    click(true);
+    await vi.waitFor(() => expect(load).toHaveBeenCalledOnce());
+    const panel = document.createElement("section"); panel.id = id;
+    panel.style.transition = "transform 0.3s"; document.body.append(panel);
+    const toggle = vi.fn((open: boolean) => {
+      if (open) expect(panel.style.transition).toBe("none");
+      panel.classList.toggle("open", open);
+    });
+    (window as any).__noitamap.handleSeedReportToggle = toggle;
+    finish(true);
+    await vi.waitFor(() => expect(toggle).toHaveBeenCalledExactlyOnceWith(true));
+    expect(document.getElementById("seed-report-loading")).toBeNull();
+    await vi.waitFor(() => expect(panel.style.transition).toBe("transform 0.3s"));
   });
 });

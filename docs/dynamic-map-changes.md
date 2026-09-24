@@ -14,7 +14,9 @@ assets, dependency updates and abandoned experiments as separate user features.
   `83290744ecc32ce07dedee2629e914a8293be9ed` — “Adjust zoom timing”,
   September 21, 2026 (America/New_York). Navigation timing remains subject to
   manual visual review, despite the fix being included in this commit.
-- **Comparison checked:** September 22, 2026 (UTC).
+- **Comparison checked:** September 22, 2026 (UTC). Report sections refreshed
+  September 24 from the current working tree for the V3 default transition;
+  the other sections retain the original comparison snapshot.
 - **Scale of the branch comparison:** 420 commits not reachable from `main`;
   777 changed paths in the committed tree comparison. These are engineering
   scope figures, not 420 new features.
@@ -300,14 +302,13 @@ There was no equivalent generated-seed reporting workflow in production `main`.
   explicit rather than appearing to do nothing during a bundle request.
 - The public report path does not require loading the drawing renderer.
 
-**Accuracy wording:** the public/Classic summary and the newer V2 census are not
-identical implementations. Do not extend the V2 source-audit claim to every
-statistical calculation in the older public/Classic view.
+The public and subscriber entry points use the same V3 report. The free
+summary remains a shared component; detailed Finds and Statistics require Pro.
+The formatted upgrade section retains provider sign-in and subscription actions.
 
-**Evidence:** `src/report-bundle.ts`, `src/seed-report-button.ts`,
-`src/seed-report-loading.ts`,
-`task/noitamap-pro/src/seed-report/public-sidebar.ts`,
-`tests/public-report.test.ts`, `tests/report-bundle.test.ts`.
+**Evidence:** `src/seed-report-button.ts`, `src/seed-report-loading.ts`,
+`task/noitamap-pro/src/seed-report/install.ts`,
+`task/noitamap-pro/src/seed-report/v3/sidebar.ts`, `tests/public-report.test.ts`.
 
 ## 11. Animated portals
 
@@ -588,57 +589,52 @@ panels display the supported indexed reference data.
 `task/noitamap-pro/src/alchemy/alchemy-ui.ts`,
 `src/search/unifiedsearch.ts` (subscriber gate).
 
-### 16.6 Detailed seed reports — current default/Classic
+### 16.6 Detailed seed report — V3 is the default
 
-The full subscriber report adds detail beyond the free high-level summary:
+The report opens directly in V3. Classic/V1 and V2 report screens and the
+bottom-left version switcher have been removed; old preview links open V3.
 
-- Per-world overview/comparison visualizations.
-- Counts by biome and world with expandable object/location drilldowns.
-- High-value spell categories and individual spell occurrences.
-- Wand cards/decks and direct navigation to matching objects.
-- Comparison against the relevant daily/previous-daily target.
-- Loading states, cancellation, language refresh and spoiler-aware presentation.
+- Finds groups high-value spells, featured wands, Rare finds and other eligible
+  seed-dependent objects. Fixed instrument shops and invariant rewards remain
+  on the map but do not appear as report finds.
+- Expanding a category keeps its markers visible. Hover highlights without
+  moving the camera; Go to location navigates explicitly. Back restores the
+  preceding report page and map view.
+- Wand recommendations select maximum recharge, capacity and maximum mana.
+  Each location shows translated and internal biome names from the map's
+  boundary metadata, with compact rows and collapsible wand decks.
+- Shared site controls, a 48vw desktop panel and a collapsible mobile bottom
+  sheet replace the old layouts. Game artwork uses consistent native scaling.
+- The translated Pro-feature banner retains its original provider sign-in and
+  subscription buttons for anonymous users and non-subscribers.
+- Auth, seed and language changes update the active report; stale navigation
+  and archive requests cannot reopen a report-owned card or replace new results.
 
-**Evidence:** `task/noitamap-pro/src/seed-report/sidebar.ts`,
-`seed-report/diff.ts`, `seed-report/aggregate.ts`, `seed-report/install.ts`.
+**Evidence:** `task/noitamap-pro/src/seed-report/v3/`,
+`seed-report/install.ts`, `src/report-map-highlights.ts`, `src/report-inventory.ts`.
 
-### 16.7 Redesigned seed report V2 — opt-in preview, not the default
+### 16.7 Sage statistics and daily comparison
 
-**Release status matters:** ordinary report URLs still select Classic. V2 is
-selected by the explicit internal preview route (`reportPreview=v2`). Do not
-announce that the redesign replaced the default report unless that routing is
-changed for release.
+- Statistics is a separate tab, with exact bundled min/max/mean/median values
+  and rankings for all **270** existing Sage V4 metric/scope summaries.
+- Tables distinguish the selected seed's Sage census from map inventory.
+  Ranked seed links open Sage, preserving the current map.
+- Current daily metadata includes a validated previous-daily census when
+  available. Counts remain separate; they are never added to today's counts.
+- Arbitrary seeds fetch published Sage records on demand; comparison does not
+  generate another seed. Missing reference data stays visible with a reason.
+- Both one-world and combined-world references use Sage's published scopes.
+  No medians or missing categories are fabricated from other summaries.
+- Report wording and game names reuse the supported language catalogues.
 
-The V2 implementation adds/improves:
+**Statistical boundaries:** Sage's population covers seeds 1–2,147,483,647.
+Individual spell/material finds do not gain invented population references.
+The high-slot-wand threshold remains unspecified by its source. The report
+uses explicit unavailable states for missing references or census records.
 
-- A compact “Seed report for …” heading, clearer world labels and a wider panel.
-- Neutral, consistent controls rather than unrelated accent colours.
-- An overview oriented toward useful spells, materials and wand opportunities.
-- Clickable spell/resource entries and direct navigation for highlighted wands.
-- Readable map-inventory cards, “none found” states and world breakdowns instead
-  of a wall of numeric tables.
-- Detailed Sage statistics behind disclosures, with a correctly seeded
-  **Open in Sage** link.
-- Separate map inventory and Sage natural-spawn census sources rather than
-  treating them as interchangeable.
-- Daily comparisons that reject self-comparisons and stale/mismatched responses.
-- Authoritative static min/max/mean/median references for all **96 valid** bundled
-  Sage summaries; 480 scalar values including standard deviation matched the
-  source in the audit.
-- The 60 non-axis category references remain accessible even if that seed's
-  archive fetch fails.
-- Full report UI/catalogue translation coverage across the supported locales.
-
-**Statistical boundaries:** Sage's audited population is seeds
-1–2,147,483,647. Eight legacy axis summaries are excluded as invalid. The 60
-non-axis summaries are three-world totals, not per-world references. Individual
-resources/wand-quality features do not gain invented population summaries. The
-high-slot-wand threshold remains unspecified by its source. Missing shuffle data
-means unknown, not “shuffle enabled”.
-
-**Evidence:** `task/noitamap-pro/src/seed-report/v2/`,
-`seed-report/preview-controller.ts`, `seed-report/v2/POPULATION-AUDIT.md`,
-`build_scripts/audit-sage-population.mjs` (paths within Pro).
+**Evidence:** `task/noitamap-pro/src/seed-report/v3/statistics.ts`,
+`seed-report/sage/population-v4.ts`, `build_scripts/import-sage-v4-population.mjs`
+(paths within Pro), `src/sage/records.ts`, `build_scripts/bake-sage-seed.mjs`.
 
 ### 16.8 Pro delivery, authentication and reliability
 

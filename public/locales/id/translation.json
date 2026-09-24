@@ -4606,7 +4606,10 @@
     "yourAccount": "Akun Anda",
     "proActive": "Pro aktif",
     "subscribeCta": "Tingkatkan ke Pro",
-    "switchProviderConfirm": "Masuk dengan {{next}} akan mengeluarkan Anda dari {{current}}.\n\nAkses Pro kemudian akan bergantung pada langganan {{next}} Anda.\n\nApakah Anda ingin beralih ke {{next}}?"
+    "switchProviderConfirm": "Masuk dengan {{next}} akan mengeluarkan Anda dari {{current}}.\n\nAkses Pro kemudian akan bergantung pada langganan {{next}} Anda.\n\nApakah Anda ingin beralih ke {{next}}?",
+    "loginWithTwitch": "Masuk dengan Twitch",
+    "subscribeTwitch": "Berlangganan di Twitch",
+    "or": "atau"
   },
   "loading": {
     "maps": "Memuat peta...",
@@ -5372,14 +5375,6 @@
       "population": "Data acuan: {{count}} seed · Sage",
       "worldsLocked": "Rincian per dunia memerlukan Pro",
       "traitsFree": "Ringkasan dan perbandingan dengan semua seed tetap tersedia tanpa Pro.",
-      "preview": {
-        "loading": "Memuat versi laporan…",
-        "failed": "Versi ini tidak dapat dimuat. Pilih lagi untuk mencoba kembali.",
-        "title": "Kontrol versi laporan",
-        "classic": "Klasik",
-        "exit": "Keluar dari pratinjau laporan",
-        "hint": "Versi laporan · Alt⇧R"
-      },
       "loopTools": "Mantra berguna",
       "spellTypes": "Mantra berdasarkan tipe",
       "spellDamageTypes": "Mantra berdasarkan jenis kerusakan",

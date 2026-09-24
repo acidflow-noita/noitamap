@@ -4606,7 +4606,10 @@
     "yourAccount": "Twoje konto",
     "proActive": "Pro aktywne",
     "subscribeCta": "Ulepsz do Pro",
-    "switchProviderConfirm": "Logując się przez {{next}}, wylogujesz się z {{current}}.\n\nDostęp do Pro będzie wtedy zależał od Twojej subskrypcji {{next}}.\n\nCzy chcesz się przełączyć na {{next}}?"
+    "switchProviderConfirm": "Logując się przez {{next}}, wylogujesz się z {{current}}.\n\nDostęp do Pro będzie wtedy zależał od Twojej subskrypcji {{next}}.\n\nCzy chcesz się przełączyć na {{next}}?",
+    "loginWithTwitch": "Zaloguj sie przez Twitch",
+    "subscribeTwitch": "Subskrybuj na Twitchu",
+    "or": "lub"
   },
   "loading": {
     "maps": "Ładowanie map...",
@@ -5372,14 +5375,6 @@
       "population": "Dane odniesienia: {{count}} ziaren · Sage",
       "worldsLocked": "Szczegóły według świata wymagają Pro",
       "traitsFree": "Przegląd i porównania ze wszystkimi ziarnami pozostają dostępne bez Pro.",
-      "preview": {
-        "loading": "Wczytywanie wersji raportu…",
-        "failed": "Nie udało się wczytać tej wersji. Wybierz ją ponownie, aby spróbować jeszcze raz.",
-        "title": "Wybór wersji raportu",
-        "classic": "Klasyczny",
-        "exit": "Zamknij podgląd raportu",
-        "hint": "Wersja raportu · Alt⇧R"
-      },
       "loopTools": "Przydatne zaklęcia",
       "spellTypes": "Zaklęcia według typu",
       "spellDamageTypes": "Zaklęcia według typu obrażeń",

@@ -4606,7 +4606,10 @@
     "yourAccount": "Ditt konto",
     "proActive": "Pro aktivt",
     "subscribeCta": "Uppgradera till Pro",
-    "switchProviderConfirm": "Om du loggar in med {{next}} loggas du ut från {{current}}.\n\nPro-åtkomsten baseras därefter på din {{next}}-prenumeration.\n\nVill du byta till {{next}}?"
+    "switchProviderConfirm": "Om du loggar in med {{next}} loggas du ut från {{current}}.\n\nPro-åtkomsten baseras därefter på din {{next}}-prenumeration.\n\nVill du byta till {{next}}?",
+    "loginWithTwitch": "Logga in med Twitch",
+    "subscribeTwitch": "Prenumerera på Twitch",
+    "or": "eller"
   },
   "loading": {
     "maps": "Laddar kartor...",
@@ -5372,14 +5375,6 @@
       "population": "Referensdata: {{count}} frön · Sage",
       "worldsLocked": "Detaljer per värld kräver Pro",
       "traitsFree": "Översikten och jämförelser med alla frön finns kvar utan Pro.",
-      "preview": {
-        "loading": "Läser in rapportversion…",
-        "failed": "Kunde inte läsa in denna version. Välj den igen för att försöka på nytt.",
-        "title": "Val av rapportversion",
-        "classic": "Klassisk",
-        "exit": "Lämna rapportförhandsvisningen",
-        "hint": "Rapportversion · Alt⇧R"
-      },
       "loopTools": "Användbara besvärjelser",
       "spellTypes": "Besvärjelser efter typ",
       "spellDamageTypes": "Besvärjelser efter skadetyp",

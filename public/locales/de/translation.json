@@ -4606,7 +4606,10 @@
     "yourAccount": "Dein Konto",
     "proActive": "Pro aktiv",
     "subscribeCta": "Auf Pro upgraden",
-    "switchProviderConfirm": "Wenn Sie sich mit {{next}} anmelden, werden Sie von {{current}} abgemeldet.\n\nDer Pro-Zugriff richtet sich dann nach Ihrem {{next}}-Abonnement.\n\nMöchten Sie zu {{next}} wechseln?"
+    "switchProviderConfirm": "Wenn Sie sich mit {{next}} anmelden, werden Sie von {{current}} abgemeldet.\n\nDer Pro-Zugriff richtet sich dann nach Ihrem {{next}}-Abonnement.\n\nMöchten Sie zu {{next}} wechseln?",
+    "loginWithTwitch": "Mit Twitch anmelden",
+    "subscribeTwitch": "Auf Twitch abonnieren",
+    "or": "oder"
   },
   "loading": {
     "maps": "Karten werden geladen...",
@@ -5372,14 +5375,6 @@
       "population": "Referenzdaten: {{count}} Seeds · Sage",
       "worldsLocked": "Details nach Welt erfordern Pro",
       "traitsFree": "Übersicht und Gesamtvergleiche bleiben ohne Pro verfügbar.",
-      "preview": {
-        "loading": "Berichtsversion wird geladen…",
-        "failed": "Diese Version konnte nicht geladen werden. Zum Wiederholen erneut auswählen.",
-        "title": "Berichtsversion auswählen",
-        "classic": "Klassisch",
-        "exit": "Berichtsvorschau verlassen",
-        "hint": "Berichtsversion · Alt⇧R"
-      },
       "loopTools": "Nützliche Zauber",
       "spellTypes": "Zauber nach Typ",
       "spellDamageTypes": "Zauber nach Schadensart",

@@ -95,11 +95,12 @@ reference tools:
 - **Detailed seed reports:** world/biome counts, spell occurrences, wand details,
   location drilldowns and daily-seed comparisons.
 
-A redesigned **Seed Report V2 is also available as an opt-in preview**. It puts
-useful loot and locations first, uses a wider, more readable layout, moves the
-heavy statistics into expandable details, and links directly to the seed in
-Sage. Its supported population references have been checked against Sage's
-source data; unsupported categories are not filled with invented estimates.
+The redesigned **Seed Report is now the default**. Finds puts high-value
+spells, featured wands and Rare finds first. Expanded lists keep their markers
+visible; hover highlights without moving the map, and Go to location navigates
+explicitly. Locations show both display and internal biome names.
 
-The normal report still defaults to Classic—V2 is not being presented as a
-completed default replacement yet.
+A separate Statistics tab shows Sage's existing population references and
+daily comparisons. Ranked seed links open Sage. Missing data is explained,
+not replaced with estimates. The old report versions and preview switcher
+have been removed.

@@ -4606,7 +4606,10 @@
     "yourAccount": "你的账户",
     "proActive": "Pro 已激活",
     "subscribeCta": "升级到 Pro",
-    "switchProviderConfirm": "通过 {{next}} 登录后，您将退出 {{current}}。\n\n之后，Pro 权限将取决于您的 {{next}} 订阅。\n\n要切换到 {{next}} 吗？"
+    "switchProviderConfirm": "通过 {{next}} 登录后，您将退出 {{current}}。\n\n之后，Pro 权限将取决于您的 {{next}} 订阅。\n\n要切换到 {{next}} 吗？",
+    "loginWithTwitch": "通过 Twitch 登录",
+    "subscribeTwitch": "在 Twitch 订阅",
+    "or": "或"
   },
   "loading": {
     "maps": "加载地图中...",
@@ -5372,14 +5375,6 @@
       "population": "参考数据：{{count}} 个种子 · Sage",
       "worldsLocked": "各世界详情需要 Pro",
       "traitsFree": "概览和总体对比无需 Pro 也可查看。",
-      "preview": {
-        "loading": "正在加载报告版本……",
-        "failed": "无法加载此版本。请再次选择以重试。",
-        "title": "报告版本切换",
-        "classic": "经典版",
-        "exit": "退出报告预览",
-        "hint": "报告版本 · Alt⇧R"
-      },
       "loopTools": "实用法术",
       "spellTypes": "按类型分类的法术",
       "spellDamageTypes": "按伤害类型分类的法术",

@@ -12,29 +12,27 @@ export function createSeedReportLoading(
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
-      #${ID}{position:fixed;top:4.5rem;right:1.5rem;width:clamp(22rem,40vw,60vw);max-height:calc(100vh - 6rem);overflow:auto;z-index:991;background:var(--surface-1);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-panel);box-shadow:var(--shadow-panel);font-size:.85rem;transform:translateX(calc(100% + 2rem));transition:transform .3s ease}
-      #${ID}.open{transform:translateX(0)}
+      #${ID}{position:fixed;top:4.5rem;right:1.25rem;width:48vw;max-width:calc(100vw - 2rem);max-height:calc(100dvh - 6rem);display:flex;flex-direction:column;overflow:hidden;z-index:991;background:var(--surface-1);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-panel);box-shadow:var(--shadow-panel);font:inherit;font-size:var(--control-font-size);line-height:1.5}
+      #${ID},#${ID} *{box-sizing:border-box}
       #${ID} [hidden]{display:none!important}
-      #${ID} header{display:flex;align-items:center;justify-content:space-between;padding:.6rem .85rem;border-bottom:1px solid var(--border-strong)}
-      #${ID} h2{font-size:inherit;font-weight:600;margin:0}
-      #${ID} .sr-loading-close{background:none;border:0;color:var(--text-muted);font-size:1.25rem;cursor:pointer;padding:0 .35rem}
-      #${ID} .sr-loading-content{padding:1rem .85rem}
-      #${ID} .sr-loading-hint{color:var(--text-muted);font-size:.8rem}
-      #${ID} .sr-loading-placeholders{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:1rem}
+      #${ID} header{display:flex;align-items:center;justify-content:space-between;gap:var(--control-gap);padding:var(--panel-padding);border-bottom:1px solid var(--border-strong)}
+      #${ID} h2{font-size:var(--panel-heading-size);font-weight:500;margin:0}
+      #${ID} .sr-loading-close{flex-shrink:0;width:var(--control-height);height:var(--control-height);padding:0}
+      #${ID} .sr-loading-content{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:var(--panel-padding)}
+      #${ID} .sr-loading-hint{color:var(--text-muted);font-size:var(--control-font-size)}
+      #${ID} .sr-loading-placeholders{display:grid;grid-template-columns:1fr 1fr;gap:var(--control-gap);margin-top:var(--section-gap)}
       #${ID} .sr-loading-placeholder{height:4rem;border-radius:var(--radius-control);background:var(--surface-2);border:1px solid var(--border-strong);animation:sr-loading-pulse 1.3s ease-in-out infinite alternate}
-      #${ID} .sr-loading-actions{display:flex;gap:.5rem;margin-top:1rem}
+      #${ID} .sr-loading-actions{display:flex;gap:var(--control-gap);margin-top:var(--section-gap)}
+      #${ID} .sr-loading-sheet-handle{display:none}
       @keyframes sr-loading-pulse{to{opacity:.45}}
-      #${ID}[data-preview="v3"]{top:4.5rem;right:1.25rem;width:58vw;max-width:calc(100vw - 2rem);max-height:calc(100dvh - 6rem);font-size:.875rem}
-      @media(prefers-reduced-motion:reduce){#${ID}{transition:none}#${ID} .sr-loading-placeholder{animation:none}}
-      @media(max-width:900px){#${ID}{top:3.5rem;right:.5rem;width:calc(100vw - 1rem);max-height:calc(100vh - 4.5rem);font-size:.8rem}}
-      @media(max-width:600px){#${ID}[data-preview="v3"]{top:4rem;right:.5rem;width:calc(100vw - 1rem);max-width:none;max-height:calc(100dvh - 4.5rem)}}
+      @media(prefers-reduced-motion:reduce){#${ID} .sr-loading-placeholder{animation:none}}
+      @media(max-width:900px){#${ID}{top:auto;right:0;bottom:0;width:100vw;max-width:none;height:45dvh;max-height:45dvh;border-radius:var(--radius-panel) var(--radius-panel) 0 0}#${ID} header{padding-top:0}#${ID} .sr-loading-content{flex:1}#${ID} .sr-loading-sheet-handle{display:flex;align-items:center;justify-content:center;height:24px;flex-shrink:0}#${ID} .sr-loading-sheet-handle span{width:36px;height:4px;border-radius:4px;background:var(--text-muted)}}
     `;
     document.head.appendChild(style);
   }
   document.getElementById(ID)?.remove();
   const panel = document.createElement("section");
   panel.id = ID;
-  if (["v2", "v3"].includes(new URLSearchParams(window.location.search).get("reportPreview") ?? "")) panel.dataset.preview = "v3";
   panel.setAttribute(
     "aria-label",
     i18next.t("seedReport.title", "Seed report"),
@@ -44,8 +42,8 @@ export function createSeedReportLoading(
   title.textContent = i18next.t("seedReport.title", "Seed report");
   const close = document.createElement("button");
   close.type = "button";
-  close.className = "sr-loading-close";
-  close.textContent = "×";
+  close.className = "btn btn-sm btn-outline-light sr-loading-close";
+  close.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
   close.setAttribute("aria-label", i18next.t("seedReport.close", "Close"));
   close.addEventListener("click", onClose);
   header.append(title, close);
@@ -84,9 +82,12 @@ export function createSeedReportLoading(
   reload.addEventListener("click", () => window.location.reload());
   actions.append(retry, reload);
   content.append(status, hint, placeholders, actions);
-  panel.append(header, content);
+  const handle = document.createElement("div");
+  handle.className = "sr-loading-sheet-handle";
+  handle.setAttribute("aria-hidden", "true");
+  handle.append(document.createElement("span"));
+  panel.append(handle, header, content);
   document.body.appendChild(panel);
-  void panel.offsetWidth;
   panel.classList.add("open");
   let slowTimer: ReturnType<typeof setTimeout> | undefined;
   const loading = () => {

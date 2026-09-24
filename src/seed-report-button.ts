@@ -132,9 +132,11 @@ export function createSeedReportButton(
       }
       // The shell is already on-screen. Replace it in place instead of
       // removing it and waiting through another slide-in animation.
-      const realPanel = document.getElementById(
-        ["v2", "v3"].includes(new URLSearchParams(window.location.search).get("reportPreview") ?? "") ? "seed-report-v3" : "seed-report-sidebar",
-      );
+      // Older cached Pro bundles can still install their previous panel during
+      // rollout; the current bundle always installs V3, regardless of the URL.
+      const realPanel = document.getElementById("seed-report-v3")
+        ?? document.getElementById("seed-report-sidebar")
+        ?? document.getElementById("seed-report-v2");
       const previousTransition = realPanel?.style.transition ?? "";
       if (feedback && realPanel) realPanel.style.transition = "none";
       readyHooks.handleSeedReportToggle(true);
