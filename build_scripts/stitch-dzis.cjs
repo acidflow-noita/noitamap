@@ -459,6 +459,7 @@ async function main() {
         JSON.stringify({
           ...gen,
           parallelWorlds: (gen.parallelWorlds || []).filter((pw) => worldFor(pw) === world),
+          reportInventory: gen.reportInventory ? { ...gen.reportInventory, worlds: sliceByWorld(gen.reportInventory.worlds, world) } : undefined,
           poisByPW: sliceByWorld(gen.poisByPW, world),
           pixelScenesByPW: sliceByWorld(gen.pixelScenesByPW, world),
         }),

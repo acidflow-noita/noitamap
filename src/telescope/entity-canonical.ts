@@ -17,7 +17,6 @@ const ENTITY_CANONICAL_ID: Record<string, string> = {
   basebot_sentry: "sentry",
   basebot_soldier: "soldier",
   boss_limbs_physics: "boss_limbs",
-  chest_leggy: "lukki",
   miner_weak: "miner",
   roboguard_big: "piranha",
   shotgunner_weak: "shotgunner",
@@ -27,6 +26,10 @@ const ENTITY_CANONICAL_ID: Record<string, string> = {
   turret_right: "turret",
   zombie_weak: "zombie",
 };
+
+// chest_leggy deliberately keeps its own id. Its entity XML reuses
+// $animal_lukki, but common.csv and CREATURE_DATA have the specific species
+// animal_chest_leggy (Jalkamatkatavara), rather than the unrelated Hämähäkki.
 
 /**
  * Canonical creature id for a telescope entity reference. Accepts a bare

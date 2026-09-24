@@ -1,5 +1,5 @@
 import OpenSeadragon from 'openseadragon';
-import { canvasResolution, MAX_ACTIVE_PORTALS, reprojectCamera, type CameraMatrix } from './geometry';
+import { canvasResolution, MAX_ACTIVE_PORTALS, readCameraMatrix, reprojectCamera, type CameraMatrix } from './geometry';
 import { FRAME_MS, PORTAL_RENDERER_REVISION, type PortalCamera, type PortalGPUStats,
   type PortalWorker, type PortalWorkerResponse, type PortalWorkerOptions } from './protocol';
 import type { PortalPlacement } from './placements';
@@ -99,9 +99,7 @@ export class PortalGPUOverlay {
     if (this.destroyed) return;
     const width = this.viewer.canvas.clientWidth, height = this.viewer.canvas.clientHeight;
     const point = (x: number, y: number) => this.viewer.viewport.pixelFromPoint(new OpenSeadragon.Point(x, y), true);
-    const o = point(0, 0), x = point(1, 0), y = point(0, 1);
-    const matrix: CameraMatrix = { a: x.x - o.x, b: x.y - o.y, c: y.x - o.x, d: y.y - o.y, e: o.x, f: o.y };
-    if (this.viewer.viewport.getFlip?.()) { matrix.a *= -1; matrix.c *= -1; matrix.e = width - matrix.e; }
+    const matrix = readCameraMatrix(point, width, this.viewer.viewport.getFlip?.());
     if (!this.camera || width !== this.camera.width || height !== this.camera.height ||
       (Object.keys(matrix) as (keyof CameraMatrix)[]).some(key => matrix[key] !== this.camera!.matrix[key])) this.cameraRevision++;
     this.camera = { matrix, width, height, resolution: 1 };

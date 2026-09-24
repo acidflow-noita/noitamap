@@ -40,6 +40,8 @@ declare global {
     getPOIPreview?: (poi: { type: string; [key: string]: any }) => Promise<{ name: string; iconUrl: string | null }>;
     /** Per-seed snapshot already loaded with generation.json; no network request. */
     getBakedSageSnapshot?: () => unknown;
+    /** Validated map inventory counts shipped with a baked seed. */
+    getReportInventorySnapshot?: () => unknown;
     /** Actual baked render path; do not infer this from the daily seed label. */
     isBakedSeed?: () => boolean;
     /** Versioned capability handshake with the independently deployed Pro bundle. */
@@ -66,6 +68,10 @@ declare global {
     urlState: { sidebarOpen?: boolean; canvas?: 'map' | 'black' | 'white'; seed?: number };
     /** Get active seed params */
     getSeedParams: () => { seed?: number; isDaily?: boolean };
+    /** Comparison identity from already-known daily pointers; never fetches. */
+    getDailyComparisonTarget?: () => { kind: 'today' | 'previous'; seed?: number } | null;
+    /** Selected seed identity using the toolbar's existing daily pointers. */
+    getDailySeedIdentity?: () => 'today' | 'previous' | null;
     /** Set active seed active params */
     setSeedParams: (seed: number) => void;
     /** Set the canvas background and update URL */
@@ -138,7 +144,17 @@ declare global {
      */
     setHighValuePredicate: (pred: ((poi: any) => boolean) | null) => void;
     /** Temporary report hover/focus targets. Empty clears only this preview, not persistent filters. */
-    setReportHighlights?: (targets: readonly { worldX: number; worldY: number; pw?: number; biome?: string; id?: string }[]) => void;
+    setReportHighlights?: (targets: readonly { worldX: number; worldY: number; pw?: number; biome?: string; mainPath?: boolean; id?: string }[], options?: {
+      panelBounds?: { left: number; top: number; right: number; bottom: number };
+      restore?: boolean; camera?: 'fit' | 'keep' | 'overview'; dimContext?: boolean;
+      activeTargets?: readonly { worldX: number; worldY: number; pw?: number; biome?: string; mainPath?: boolean; id?: string }[];
+    }) => void;
+    /** Current map view, or the original view before a temporary report hover. */
+    getReportMapView?: () => { x: number; y: number; zoom: number } | null;
+    /** Explicitly restore a report history view and discard temporary camera state. */
+    restoreReportMapView?: (view: { x: number; y: number; zoom: number }) => void;
+    /** Canonical localized biome and main-path classification at a POI location. */
+    getPOIBiome?: (poi: { worldX?: number; worldY?: number; pw?: number; biome?: string; [key: string]: any }) => { displayName: string; internalName: string; mainPath: boolean } | null;
     /** Toggle the high-value filter — set by pro bundle after init. */
     handleHighValueToggle?: (active: boolean) => void;
     /** High-value predicate — set by pro bundle after init. Drives BOTH map highlight and search filter. */
@@ -146,7 +162,9 @@ declare global {
     /** Open or close the Seed Report sidebar — set by pro bundle after init. */
     handleSeedReportToggle?: (open: boolean) => void;
     /** Open the telescope tooltip ("POI card") for a dynamic POI by id. */
-    openPOIById?: (poiId: string, opts?: { sidebarRightPx?: number }) => void;
+    openPOIById?: (poiId: string, opts?: { sidebarRightPx?: number; preserveReportHighlights?: boolean; fallbackX?: number; fallbackY?: number; fallbackPoi?: any; owner?: 'report' }) => void;
+    /** Close an open POI card; reportOnly preserves cards opened by other map actions. */
+    closePOICard?: (options?: { reportOnly?: boolean }) => void;
     /** Show the "Get Pro" auth modal (lives in main bundle, exposed for pro bundle). */
     showGetProModal?: () => void;
     /** Same available inventory as getDynamicPOIs, before creature filtering.

@@ -4,12 +4,21 @@ import { refreshOverlayTranslations } from './data_sources/overlays';
 import { refreshSearchTranslations } from './main';
 
 export function updateTranslations() {
+  // Programmatic popovers retain their configuration and translate themselves.
+  // Keep their live panels too: removing only the DOM leaves Bootstrap holding
+  // a detached tip which it still considers open.
+  const ownedTips = new Set<string>();
+  document.querySelectorAll('[data-popover-owner][aria-describedby]').forEach(trigger => {
+    trigger.getAttribute('aria-describedby')?.split(/\s+/).forEach(id => ownedTips.add(id));
+  });
   // Nuke any rendered popover/tooltip elements before re-creating their
   // instances. Dispose() is supposed to clean these up, but if a popover was
   // visible when we re-create the instance (common during a language switch
   // while hovering the perf button), the rendered element can be left
   // orphaned in the DOM and never dismissed.
-  document.querySelectorAll('.popover, .tooltip').forEach((el) => el.remove());
+  document.querySelectorAll('.popover, .tooltip').forEach((el) => {
+    if (!ownedTips.has(el.id)) el.remove();
+  });
 
   const elementsWithDataI18n = document.querySelectorAll('[data-i18n]');
   elementsWithDataI18n.forEach(element => {
@@ -54,6 +63,9 @@ export function updateTranslations() {
 
   const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
   popoverTriggerList.forEach(popoverTriggerEl => {
+    // The owner (for example dynamic-seed or seed-report) handles refresh and
+    // disposal. Reconstructing here would discard its JS-only HTML/content.
+    if (popoverTriggerEl.hasAttribute('data-popover-owner')) return;
     // @ts-ignore
     const existingPopover = bootstrap.Popover.getInstance(popoverTriggerEl);
     if (existingPopover) {

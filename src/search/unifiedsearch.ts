@@ -18,6 +18,7 @@ import { AuthUI } from "../auth/auth-ui";
 import { updateURLWithSearch } from "../data_sources/url";
 import { perkNameKey } from "../telescope/perk-i18n";
 import { canonicalEntityId } from "../telescope/entity-canonical";
+import { getMimicEntityId } from '../telescope/poi-mimics';
 import { isAchievementPillarSegment, pillarSegmentTitle, pillarReqSpec, resolvePillarLinkLabel, resolvePillarItemName, ITEM_SEARCH_NAME_KEYS, ITEM_LOCALE_NAME_KEYS, PILLAR_PLACES } from "../data/pillars";
 import orbsData from "../data/orbs.json";
 
@@ -1256,11 +1257,16 @@ export class UnifiedSearch extends EventEmitter2 {
         parts.push("Paha Silmä", "paha silma", "evil eye", "eye");
       }
 
-      // Potion mimic (Henkevä potu): index its creature name + English aliases.
-      if (p.type === "item" && p.item === "mimic_potion") {
-        const t = gameTranslator.translateItem("animal_mimic_potion");
-        if (t && t !== "animal_mimic_potion") parts.push(t);
-        parts.push("Henkevä potu", "potion mimic", "mimic potion", "mimicium");
+      // Loot-shaped mimics retain their creature names and existing aliases.
+      const mimic = getMimicEntityId(p);
+      if (mimic) {
+        const key = `animal_${mimic}`;
+        const translated = gameTranslator.translateItem(key);
+        if (translated && translated !== key) parts.push(translated);
+        const creature = CREATURE_DATA[mimic];
+        if (creature?.name) parts.push(creature.name);
+        if (creature?.alias) parts.push(creature.alias);
+        if (mimic === 'mimic_potion') parts.push('mimic potion', 'mimicium');
       }
 
       // Emerald Tablets: index the proper title ("Secretorum Hermetis",

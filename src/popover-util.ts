@@ -17,7 +17,8 @@ export function attachHoverPopover(
   if (!lib?.Popover) return;
   const existing = lib.Popover.getInstance(el);
   if (existing) existing.dispose();
-  const inst = new lib.Popover(el, {
+  el.setAttribute('data-popover-owner', 'hover-help');
+  new lib.Popover(el, {
     content,
     trigger: "hover",
     placement,
@@ -25,7 +26,8 @@ export function attachHoverPopover(
     delay: { show: 80, hide: 120 },
   });
   (el as any).__disposePopover = () => {
-    try { inst.dispose(); } catch { /* noop */ }
+    delete (el as any).__disposePopover;
+    try { lib.Popover.getInstance(el)?.dispose(); } catch { /* noop */ }
   };
 }
 

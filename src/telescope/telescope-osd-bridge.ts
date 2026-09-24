@@ -1,6 +1,7 @@
 import { clearPortalAnimations, installPortalAnimations } from "../portals";
 import { canOpenPOIFromCanvas, drawingOwnsMapPointer } from "../drawing/poi-interaction";
 import { onProSidebarIntent } from "../pro-sidebar-intent";
+import { POICardLifecycle, type POICardOwner, type POICardRequest } from './poi-card-lifecycle';
 import Flatbush from "flatbush";
 import { CONTAINER_TYPES } from "./poi-containers";
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
@@ -83,6 +84,11 @@ import {
 import { createMarkerTileSource } from './marker-tile-source';
 import { perkNameKey, perkDescKey } from './perk-i18n';
 import { canonicalEntityId } from './entity-canonical';
+import { formatWandName, getPOIDisplayName } from './poi-display-name';
+import { getMimicEntityId, MIMIC_SPRITES_VERSION } from './poi-mimics';
+import { legacyMimicMarkerData } from './legacy-mimic-markers';
+import { poiNavigationOffsets } from './poi-navigation-offsets';
+import { cameraPixelDelta, readCameraMatrix } from '../portals/geometry';
 import { addBakedDZIsToOSD, type BakedDziPlacement } from './baked-dzi-loader';
 import { gameTranslator } from '../game-translations/translator';
 import { isSpoilerFree, getSpoilerCategory, getSpoilerLabel, applySpoilerFree } from '../spoiler-free';
@@ -425,6 +431,8 @@ let currentGenerationId = 0;
  * Remove all dynamic map overlays from the viewer.
  */
 export function clearDynamicOverlays(viewer: any): void {
+  resetPOICardContext(viewer);
+  suspendedMarkerContext = null;
   clearPortalAnimations();
   // Invalidate any in-flight async generation so it won't render on top of the new map
   currentGenerationId++;
@@ -1374,7 +1382,7 @@ let _decorDraws: DecorDraw[] | null = null;
 export async function prepareDecorationExport(
   result: GenerationResult,
   includeScenes = true
-): Promise<{ cellSize: number; cells: { cx: number; cy: number }[] } | null> {
+): Promise<{ cellSize: number; cells: { cx: number; cy: number }[]; mimicSpritesVersion: number } | null> {
   const draws: DecorDraw[] = [];
 
   // 1. Pixel scenes (z-order below markers, so pushed first).
@@ -1444,7 +1452,7 @@ export async function prepareDecorationExport(
   console.log(
     `[OSD Bridge] Decor export prepared: ${sceneCount} scenes + ${draws.length - sceneCount} sprite layers, ${cells.length} cells`
   );
-  return { cellSize: DECOR_CELL, cells };
+  return { cellSize: DECOR_CELL, cells, mimicSpritesVersion: MIMIC_SPRITES_VERSION };
 }
 
 /** Render one decor grid cell; returns a PNG data URL or null when empty. */
@@ -3033,6 +3041,7 @@ async function registerPixelSceneHoverDebug(viewer: OSDViewer, result: Generatio
 // ─── Active marker data (for tooltip click handling) ────────────────────────
 let activeMarkerData: MarkerData | null = null;
 let tooltipEl: HTMLDivElement | null = null;
+const poiCards = new POICardLifecycle(getCurrentDynamicSeed, removeMarkerTooltip);
 let canvasClickHandler: ((event: any) => void) | null = null;
 let markerTiledImage: any = null;
 
@@ -3181,7 +3190,8 @@ function getWikiUrl(poi: any): string | null {
   }
 
   // Shops
-  if (type === 'holy_mountain_shop' || type === 'shop') wikiName = 'Holy_Mountain';
+  if (type === 'holy_mountain_shop') wikiName = 'Holy_Mountain';
+  if (type === 'shop') return null; // A biome shop has no single known matching place page.
 
   // Containers
   if (type === 'chest') {
@@ -3196,7 +3206,9 @@ function getWikiUrl(poi: any): string | null {
   // Item types
   if (type === 'item') {
     const item = poi.item || '';
-    if (item === 'orb') wikiName = 'Orb_of_True_Knowledge';
+    const mimic = getMimicEntityId(poi);
+    if (mimic) wikiName = CREATURE_DATA[mimic]?.wikipage || CREATURE_DATA[mimic]?.name || mimic;
+    else if (item === 'orb') wikiName = 'Orb_of_True_Knowledge';
     else if (item === 'heart' || item === 'heart_bigger' || item === 'full_heal') wikiName = 'Health';
     else if (item === 'gold' || item === 'goldnugget') wikiName = 'Gold';
     else if (item.includes('potion')) wikiName = 'Potions';
@@ -3229,7 +3241,6 @@ function getWikiUrl(poi: any): string | null {
     else if (item === 'karl') wikiName = 'Racetrack';
     else if (item === 'essence_eater') wikiName = 'Essence_Eater';
     else if (item === 'music_machine') wikiName = 'Music_Machine';
-    else if (item === 'mimic_potion') wikiName = 'Henkevä_potu';
     else wikiName = item;
   }
 
@@ -3346,8 +3357,8 @@ function cleanupPopovers(el: HTMLElement): void {
   dismissPopovers(el);
 }
 
-function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): void {
-  if (drawingOwnsMapPointer()) return;
+function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, request = poiCards.begin()): void {
+  if (!request.isCurrent() || drawingOwnsMapPointer()) return;
   // Remove previous popup
   if (tooltipEl) {
     cleanupPopovers(tooltipEl);
@@ -3357,49 +3368,19 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
   tooltipEl = document.createElement('div');
   // Allow the languageChanged listener to rebuild this tooltip in place.
-  (tooltipEl as any).__rebuild = () => showMarkerTooltip(item, screenX, screenY);
+  (tooltipEl as any).__rebuild = () => showMarkerTooltip(item, screenX, screenY, request);
   tooltipEl.className = 'marker-tooltip';
-  tooltipEl.style.cssText = `
-    position: fixed;
-    z-index: 10000;
-    background: #1a1f2a;
-    color: #e0e0e0;
-    border: 0.15em solid #3a3a5c;
-    border-radius: 0.5em;
-    padding: 0.75em 1em;
-    font-size: 14px;
-    box-sizing: border-box;
-    width: 32em;
-    max-width: min(56em, 95vw);
-    pointer-events: auto;
-    box-shadow: 0 0.4em 1.4em rgba(0,0,0,0.7);
-    font-family: monospace;
-    line-height: 1.5;
-  `;
 
   // Top controls container — in normal flow, pushed to right
   const topBar = document.createElement('div');
-  topBar.style.cssText = `
-    display: flex; gap: 0.4em; align-items: center; justify-content: flex-end;
-    margin: -0.15em -0.4em 0.3em 0;
-    flex-shrink: 0;
-  `;
+  topBar.className = 'poi-card-controls';
 
   const shareBtn = document.createElement('button');
-  shareBtn.style.cssText = `
-    background: rgba(255,255,255,0.1); border: 0.065em solid rgba(255,255,255,0.2);
-    border-radius: 0.25em; color: #ccc; cursor: pointer; padding: 0.15em 0.5em;
-    display: flex; align-items: center; justify-content: center; font-size: 0.85em;
-    transition: all 0.2s;
-  `;
+  shareBtn.type = 'button';
+  shareBtn.className = 'btn btn-sm btn-outline-light poi-card-icon-button';
   shareBtn.innerHTML = '<i class="bi bi-share"></i>';
   shareBtn.title = i18next.t('share.copyLink', { defaultValue: 'Copy direct link' });
-  shareBtn.onmouseenter = () => {
-    shareBtn.style.background = 'rgba(255,255,255,0.2)';
-  };
-  shareBtn.onmouseleave = () => {
-    shareBtn.style.background = 'rgba(255,255,255,0.1)';
-  };
+  shareBtn.setAttribute('aria-label', shareBtn.title);
 
   // ── Unlocks lock/unlock toggle ───────────────────────────────────────
   // Only show on POI types whose contents are affected by spell unlocks.
@@ -3429,7 +3410,6 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     lockBtn = document.createElement('div');
     lockBtn.className = 'btn-group btn-group-sm';
     lockBtn.setAttribute('role', 'group');
-    lockBtn.style.cssText = 'font-size: 0.85em;';
 
     const modSourcedAtBuild = isModSourced();
     const hasCachedModData = (() => {
@@ -3447,10 +3427,11 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const attachHoverPopover = (el: HTMLElement, getTitle: () => string, getBody: () => string) => {
       const bs = (window as any).bootstrap;
       if (!bs?.Popover) return;
+      el.setAttribute('data-popover-owner', 'poi-unlocks');
       el.setAttribute('data-bs-placement', 'bottom');
       el.setAttribute('data-bs-title', getTitle());
       el.setAttribute('data-bs-content', getBody());
-      const inst = new bs.Popover(el, {
+      new bs.Popover(el, {
         trigger: 'hover',
         placement: 'bottom',
         delay: { show: 80, hide: 120 },
@@ -3458,6 +3439,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       });
       (el as any).__refreshPopover = () => {
         try {
+          const inst = bs.Popover.getInstance(el);
+          if (!inst) return;
           inst._config.title = getTitle();
           inst._config.content = getBody();
           el.setAttribute('data-bs-title', getTitle());
@@ -3467,8 +3450,10 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         }
       };
       (el as any).__disposePopover = () => {
+        delete (el as any).__disposePopover;
+        delete (el as any).__refreshPopover;
         try {
-          inst.dispose();
+          bs.Popover.getInstance(el)?.dispose();
         } catch {
           /* noop */
         }
@@ -3525,10 +3510,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     for (const b of buttons) {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'btn btn-sm btn-outline-secondary';
+      btn.className = 'btn btn-sm btn-outline-light poi-card-icon-button';
       btn.innerHTML = `<i class="bi ${b.icon}"></i>`;
-      btn.style.cssText =
-        'padding: 0.15em 0.55em; display: inline-flex; align-items: center; justify-content: center; line-height: 1;';
       const modDisabled = b.desc === 'mod' && !modAvailable;
       // Daily: lock everything but "all" — dailies are always all-unlocked.
       const dailyLocked = isDailySeed && b.desc !== 'all';
@@ -3583,17 +3566,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         const ready = isVariantReady(b.desc);
         const isActive = active === b.desc;
         btn.classList.toggle('active', isActive);
-        // Visual states:
-        //   active        → solid primary
-        //   inactive      → outline-secondary
-        //   mod-disabled  → outline-secondary, muted
-        if (isActive) {
-          btn.classList.remove('btn-outline-secondary');
-          if (!btn.classList.contains('btn-primary')) btn.classList.add('btn-primary');
-        } else {
-          btn.classList.remove('btn-primary');
-          if (!btn.classList.contains('btn-outline-secondary')) btn.classList.add('btn-outline-secondary');
-        }
+        btn.setAttribute('aria-pressed', String(isActive));
         btn.style.opacity = ready || isActive ? '1' : '0.55';
         (btn as any).__refreshPopover?.();
       }
@@ -3610,19 +3583,10 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   }
 
   const closeBtn = document.createElement('button');
-  closeBtn.style.cssText = `
-    background: transparent; border: none; padding: 0.15em 0.4em;
-    cursor: pointer; color: #888; font-size: 1.25em; line-height: 1;
-    display: flex; align-items: center; justify-content: center;
-    transition: color 0.2s;
-  `;
-  closeBtn.textContent = '×';
-  closeBtn.onmouseenter = () => {
-    closeBtn.style.color = '#fff';
-  };
-  closeBtn.onmouseleave = () => {
-    closeBtn.style.color = '#888';
-  };
+  closeBtn.type = 'button';
+  closeBtn.className = 'btn btn-sm btn-outline-light poi-card-icon-button';
+  closeBtn.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
+  closeBtn.setAttribute('aria-label', i18next.t('seedReport.close', 'Close'));
 
   closeBtn.onclick = e => {
     e.stopPropagation();
@@ -3645,21 +3609,11 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     if (assoc) {
       const a = assoc;
       const pillarBtn = document.createElement('button');
-      pillarBtn.style.cssText = `
-        background: rgba(255,255,255,0.1); border: 0.065em solid rgba(255,255,255,0.2);
-        border-radius: 0.25em; color: #ccc; cursor: pointer; padding: 0.15em 0.5em;
-        display: flex; align-items: center; gap: 0.3em; justify-content: center; font-size: 0.85em;
-        transition: all 0.2s;
-      `;
+      pillarBtn.type = 'button';
+      pillarBtn.className = 'btn btn-sm btn-outline-light poi-card-pillar-button';
       pillarBtn.innerHTML =
         '<i class="bi bi-bookmark-star"></i><span>' + i18next.t('poi.pillarSingular', 'Achievement pillar') + '</span>';
       pillarBtn.title = i18next.t('poi.pillarGoto', 'Show on map');
-      pillarBtn.onmouseenter = () => {
-        pillarBtn.style.background = 'rgba(255,255,255,0.2)';
-      };
-      pillarBtn.onmouseleave = () => {
-        pillarBtn.style.background = 'rgba(255,255,255,0.1)';
-      };
       pillarBtn.onclick = e => {
         e.stopPropagation();
         const v = (window as any).__osdViewer;
@@ -3717,17 +3671,17 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const rootKey = Array.isArray(item.spriteKey) ? item.spriteKey[0] : item.spriteKey;
     const category = getSpoilerCategory(rootKey);
     const label = getSpoilerLabel(category);
-    const colorMap = { wand: '#c8a2ff', spell: '#66ccff', something: '#ffd700' };
+    const colorMap = { wand: '#c8a2ff', spell: '#66ccff', something: 'var(--warning-fg)' };
 
     const title = document.createElement('div');
-    title.style.cssText = `font-weight:bold;color:${colorMap[category]};font-size:1.1em;margin-bottom:0.3em`;
+    title.style.cssText = `font-weight:bold;color:${colorMap[category]};font-size:var(--panel-heading-size);margin-bottom:0.3em`;
     title.textContent = label;
     tooltipEl.appendChild(title);
 
     // Footer with position only
     const footer = document.createElement('div');
     footer.style.cssText =
-      'margin-top:0.5em;color:#666;font-size:0.85em;border-top:0.065em solid #333;padding-top:0.3em';
+      'margin-top:0.5em;color:var(--text-faint);font-size:var(--control-font-size);border-top:0.065em solid var(--border-strong);padding-top:0.3em';
     footer.textContent = `${i18next.t('poi.pw', 'PW')} ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
     tooltipEl.appendChild(footer);
 
@@ -3746,6 +3700,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       ty = Math.max(pad, Math.min(ty, vh - rect.height - pad));
       tooltipEl.style.left = `${tx}px`;
       tooltipEl.style.top = `${ty}px`;
+      // Async details stay inside the viewport without moving the card.
+      tooltipEl.style.maxHeight = `calc(100dvh - ${ty + pad}px)`;
     });
     tooltipEl.style.left = `${tx}px`;
     tooltipEl.style.top = `${ty}px`;
@@ -3790,27 +3746,12 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     header.appendChild(spriteImg);
     const titleCol = document.createElement('div');
     const title = document.createElement('div');
-    title.style.cssText = 'font-weight:bold;color:#e0e0e0;font-size:1.1em';
-    if (isTaikasauva) {
-      // Pull from animal_wand_ghost (baked into translation.json from common.csv)
-      const tk = gameTranslator.translateItem('animal_wand_ghost');
-      const baseName = tk !== 'animal_wand_ghost' ? tk : 'Taikasauva';
-      // Adjective got assigned by the adapter override (GUN_NAMES). Format
-      // as "Taikasauva <Adj> wand" — and don't double "wand" if the
-      // adjective name already ends with "wand".
-      const adj = poi.name && poi.name !== 'Taikasauva' ? poi.name : '';
-      if (adj) {
-        title.textContent = /\bwand\b\s*$/i.test(adj) ? `${baseName} ${adj}` : `${baseName} ${adj} wand`;
-      } else {
-        title.textContent = baseName;
-      }
-    } else {
-      title.textContent = poi.name || gameTranslator.translateItem('Wand');
-    }
+    title.style.cssText = 'font-weight:bold;color:var(--text);font-size:var(--panel-heading-size)';
+    title.textContent = formatWandName(poi);
     titleCol.appendChild(wrapWithWikiLink(title, poi));
     if (isTaikasauva) {
       const sub = document.createElement('div');
-      sub.style.cssText = 'color:#aaa;font-size:0.85em;font-style:italic';
+      sub.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic';
       sub.textContent = '"Alive wand"';
       titleCol.appendChild(sub);
     } else if (
@@ -3820,7 +3761,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     ) {
       // Named special wand (Huilu/Kantele): show the English alias as subtitle.
       const sub = document.createElement('div');
-      sub.style.cssText = 'color:#aaa;font-size:0.85em;font-style:italic';
+      sub.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic';
       sub.textContent = SPECIAL_WAND_ALIAS[String(poi.sprite)];
       titleCol.appendChild(sub);
     }
@@ -3831,13 +3772,13 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // but some paths may wrap them in a stats sub-object. Check both.
     const s = poi.stats || poi;
     const statsDiv = document.createElement('div');
-    statsDiv.style.cssText =
-      'display:grid;grid-template-columns:auto auto;gap:0.1em 0.85em;font-size:0.85em;margin-bottom:0.5em;color:#bbb';
+    statsDiv.className = 'poi-card-stats';
     const addStat = (label: string, value: string) => {
       const l = document.createElement('span');
-      l.style.color = '#888';
+      l.className = 'poi-card-stat-label';
       l.textContent = label;
       const v = document.createElement('span');
+      v.className = 'poi-card-stat-value';
       v.textContent = value;
       statsDiv.appendChild(l);
       statsDiv.appendChild(v);
@@ -3889,7 +3830,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       spellsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;margin-top:0.3em';
       for (const slot of displaySlots) {
         const container = document.createElement('div');
-        container.style.cssText = `position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:#111;border-radius:0.2em;border:0.065em solid ${slot.isAC ? '#c8a2ff' : '#333'}`;
+        container.style.cssText = `position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:var(--surface-2);border-radius:0.2em;border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border-strong)'}`;
         if (slot.id) {
           container.title = gameTranslator.translateSpell(getSpellName(slot.id));
         }
@@ -3897,7 +3838,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           const badge = document.createElement('div');
           badge.textContent = 'AC';
           badge.style.cssText =
-            'position:absolute;top:-5px;left:-5px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:bold;background:white;color:black;border-radius:50%;border:1px solid #333;z-index:2';
+            'position:absolute;top:-5px;left:-5px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:bold;background:white;color:black;border-radius:50%;border:1px solid var(--border-strong);z-index:2';
           attachAlwaysCastPopover(badge);
           container.appendChild(badge);
         }
@@ -3940,7 +3881,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
     const label = poi.item ?? poi.type;
     const title = document.createElement('div');
-    title.style.cssText = 'font-weight:bold;color:#e0e0e0;font-size:1.1em';
+    title.style.cssText = 'font-weight:bold;color:var(--text);font-size:var(--panel-heading-size)';
     // Show HP info for heart items, spell names for spells
     if (poi.item === 'spell' && (poi as any).spell) {
       title.textContent = gameTranslator.translateSpell(getSpellName(String((poi as any).spell)));
@@ -3964,10 +3905,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           k => gameTranslator.translateItem(k),
           (k, dv) => i18next.t(k, dv)
         );
-    } else if ((poi as any).item === 'mimic_potion') {
-      // Potion mimic (Henkevä potu): name from the creature key, not item_*.
-      const t = gameTranslator.translateItem('animal_mimic_potion');
-      title.textContent = t !== 'animal_mimic_potion' ? t : 'Henkevä potu';
+    } else if (getMimicEntityId(poi)) {
+      title.textContent = getPOIDisplayName(poi);
     } else if (poi.item === 'heart') title.textContent = i18next.t('poi.heartSmall', 'Heart (+25 HP)');
     else if (poi.item === 'heart_bigger') title.textContent = i18next.t('poi.heartBig', 'Heart (+50 HP)');
     else if (poi.item === 'full_heal') title.textContent = i18next.t('poi.fullHeal', 'Full Heal');
@@ -3987,7 +3926,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       const theme = String((poi as any).theme || '');
       if (theme) {
         const sub = document.createElement('div');
-        sub.style.cssText = 'color:#bbb;font-size:0.85em;font-style:italic;margin-bottom:0.2em';
+        sub.style.cssText = 'color:var(--text);font-size:var(--control-font-size);font-style:italic;margin-bottom:0.2em';
         sub.textContent = i18next.t(theme, theme);
         tooltipEl.appendChild(sub);
       }
@@ -3999,7 +3938,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       const spec = pillarReqSpec(poi as any);
       if (spec) {
         const d = document.createElement('div');
-        d.style.cssText = 'color:#aaa;font-size:0.85em;margin-bottom:0.2em';
+        d.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);margin-bottom:0.2em';
         const lead = document.createElement('span');
         lead.textContent = `${i18next.t('poi.pillarHowTo', 'To unlock')}: `;
         d.appendChild(lead);
@@ -4222,7 +4161,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
           const external = isExternalLink(link as import('../data/pillars').PillarLink);
           const a = document.createElement('a');
           a.style.cssText =
-            'color:#7ab8ff;text-decoration:underline dashed;cursor:pointer;' + (wrap ? '' : 'white-space:nowrap');
+            'color:var(--accent-fg);text-decoration:underline dashed;cursor:pointer;' + (wrap ? '' : 'white-space:nowrap');
           const s = document.createElement('span');
           s.textContent = label;
           a.appendChild(s);
@@ -4369,7 +4308,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       const t = gameTranslator.translateItem(String((poi as any).titleKey));
       if (t && t !== (poi as any).titleKey) {
         const sub = document.createElement('div');
-        sub.style.cssText = 'color:#bbb;font-size:0.85em;font-style:italic;margin-bottom:0.2em';
+        sub.style.cssText = 'color:var(--text);font-size:var(--control-font-size);font-style:italic;margin-bottom:0.2em';
         sub.textContent = t;
         tooltipEl.appendChild(sub);
       }
@@ -4379,7 +4318,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     if ((poi as any).description) {
       const d = document.createElement('div');
       d.style.cssText =
-        'color:#9a9;font-size:0.82em;font-style:italic;white-space:pre-line;text-align:center;margin-bottom:0.2em';
+        'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;white-space:pre-line;text-align:center;margin-bottom:0.2em';
       d.textContent = String((poi as any).description);
       tooltipEl.appendChild(d);
     }
@@ -4387,7 +4326,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // Unknown (parallel-world) perk: explain why the identity can't be shown.
     if (poi.item === 'perk' && (poi as any).unknown) {
       const d = document.createElement('div');
-      d.style.cssText = 'color:#9a9;font-size:0.82em;font-style:italic;margin-bottom:0.2em';
+      d.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin-bottom:0.2em';
       d.textContent = i18next.t(
         'perk.unknownParallel',
         'Loading order for holy mountains and parallel worlds matters. Without knowing your "travel history" it is impossible to accurately show the perks.'
@@ -4404,7 +4343,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       const desc = gameTranslator.translateItem(descKey);
       if (desc && desc !== descKey) {
         const d = document.createElement('div');
-        d.style.cssText = 'color:#9a9;font-size:0.82em;font-style:italic;margin-bottom:0.2em';
+        d.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin-bottom:0.2em';
         d.textContent = desc;
         tooltipEl.appendChild(d);
       }
@@ -4413,7 +4352,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         const acId = String(typeof ac === 'string' ? ac : (ac.id ?? ac));
         const acName = gameTranslator.translateSpell(getSpellName(acId));
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;gap:0.3em;font-size:0.85em;color:#c8a2ff;margin-top:0.2em';
+        row.style.cssText = 'display:flex;align-items:center;gap:0.3em;font-size:var(--control-font-size);color:#c8a2ff;margin-top:0.2em';
         const lbl = document.createElement('span');
         lbl.textContent = `${i18next.t('perk.alwaysCast', 'Always Cast')}:`;
         row.appendChild(lbl);
@@ -4433,7 +4372,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       if (gamble && Array.isArray(gamble.perks) && gamble.perks.length) {
         const row = document.createElement('div');
         row.style.cssText =
-          'display:flex;align-items:center;gap:0.4em;flex-wrap:wrap;font-size:0.85em;color:#bbb;margin-top:0.2em';
+          'display:flex;align-items:center;gap:0.4em;flex-wrap:wrap;font-size:var(--control-font-size);color:var(--text);margin-top:0.2em';
         const lbl = document.createElement('span');
         lbl.textContent = `${i18next.t('perk.gambleGrants', 'Gamble grants')}:`;
         row.appendChild(lbl);
@@ -4472,9 +4411,9 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
       link.textContent = 'Noitool';
-      link.style.cssText = 'color:#7ab8ff;text-decoration:underline';
+      link.style.cssText = 'color:var(--accent-fg);text-decoration:underline';
       const note = document.createElement('div');
-      note.style.cssText = 'color:#888;font-size:0.78em;font-style:italic;margin-top:0.4em';
+      note.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin-top:0.4em';
       const tpl = i18next.t(
         'perk.noitoolNote',
         'Note, that perks are shown as if you went through every holy mountain in regular order on a normal run and did not pick up extra perk. If you want to have absolute precision in what perks you are going to see, use {{link}} in "Advanced" mode'
@@ -4490,7 +4429,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       const desc = gameTranslator.translateItem(descKey);
       if (desc && desc !== descKey) {
         const sub = document.createElement('div');
-        sub.style.cssText = 'color:#9a9;font-size:0.82em;font-style:italic;margin-bottom:0.2em;white-space:pre-line';
+        sub.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin-bottom:0.2em;white-space:pre-line';
         // In-game description text encodes line breaks as a literal backslash-n.
         sub.textContent = desc.replace(/\\n/g, '\n');
         tooltipEl.appendChild(sub);
@@ -4499,7 +4438,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
     if (poi.material && poi.item !== 'essence') {
       const mat = document.createElement('div');
-      mat.style.cssText = 'color:#aaa;font-size:0.85em';
+      mat.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size)';
       const materialLabel = gameTranslator.translateItem('inventory_actiontype_material');
       mat.textContent = `${materialLabel}: ${gameTranslator.translateMaterial(poi.material)}`;
       tooltipEl.appendChild(mat);
@@ -4507,13 +4446,13 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     }
     if (poi.amount) {
       const amt = document.createElement('div');
-      amt.style.cssText = 'color:#aaa;font-size:0.85em';
+      amt.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size)';
       amt.textContent = `${i18next.t('poi.amount', 'Amount')}: ${poi.amount}`;
       tooltipEl.appendChild(amt);
     }
     if (poi.contents && poi.contents.length) {
       const contentsDiv = document.createElement('div');
-      contentsDiv.style.cssText = 'margin-top:0.15em;color:#aaa;font-size:0.85em';
+      contentsDiv.style.cssText = 'margin-top:0.15em;color:var(--text-muted);font-size:var(--control-font-size)';
       contentsDiv.textContent = `${i18next.t('poi.contains', 'Contains')}: ${poi.contents
         .map((c: any) => {
           const cName = typeof c === 'string' ? c : (c.name ?? c.item ?? String(c));
@@ -4528,7 +4467,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const stoneDrops = (poi as any).stoneDrops as Array<{ item: string; nameKey: string; name: string }> | undefined;
     if (poi.item === 'essence_eater' && Array.isArray(stoneDrops) && stoneDrops.length) {
       const note = document.createElement('div');
-      note.style.cssText = 'color:#9a9;font-size:0.82em;font-style:italic;margin:0.3em 0 0.2em;line-height:1.4';
+      note.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin:0.3em 0 0.2em;line-height:1.4';
       note.textContent = i18next.t(
         'poi.essenceEaterConvert',
         'Essence Eaters convert any carried Essence into its corresponding elemental stone.'
@@ -4536,9 +4475,9 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       tooltipEl.appendChild(note);
 
       const dropsDiv = document.createElement('div');
-      dropsDiv.style.cssText = 'margin-top:0.3em;border-top:0.065em solid #333;padding-top:0.3em';
+      dropsDiv.style.cssText = 'margin-top:0.3em;border-top:0.065em solid var(--border-strong);padding-top:0.3em';
       const dropsLabel = document.createElement('div');
-      dropsLabel.style.cssText = 'font-size:1em;color:#888;margin-bottom:0.2em';
+      dropsLabel.style.cssText = 'font-size:1em;color:var(--text-muted);margin-bottom:0.2em';
       dropsLabel.textContent = `${i18next.t('poi.drops', 'Drops')}:`;
       dropsDiv.appendChild(dropsLabel);
       const dropsRow = document.createElement('div');
@@ -4546,7 +4485,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       for (const s of stoneDrops) {
         const box = document.createElement('div');
         box.style.cssText =
-          'display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333';
+          'display:flex;align-items:center;gap:0.2em;background:var(--surface-2);border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid var(--border-strong)';
         const img = document.createElement('img');
         img.style.cssText = 'width:20px;height:20px;image-rendering:pixelated;object-fit:contain';
         getPOISpriteFirstFrame({ type: 'item', item: s.item }).then(u => {
@@ -4554,7 +4493,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         });
         box.appendChild(img);
         const label = document.createElement('span');
-        label.style.cssText = 'font-size:0.8em;color:#aaa';
+        label.style.cssText = 'font-size:0.8em;color:var(--text-muted)';
         const t = gameTranslator.translateItem(s.nameKey);
         label.textContent = t !== s.nameKey ? t : s.name;
         box.appendChild(label);
@@ -4573,7 +4512,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     });
     header.appendChild(spriteImg);
     const title = document.createElement('div');
-    title.style.cssText = 'font-weight:bold;color:#e0e0e0;font-size:1.1em';
+    title.style.cssText = 'font-weight:bold;color:var(--text);font-size:var(--panel-heading-size)';
     title.textContent = gameTranslator.translateSpell(getSpellName(poi.item || '')) || 'Spell';
     header.appendChild(wrapWithWikiLink(title, poi));
     tooltipEl.appendChild(header);
@@ -4628,7 +4567,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     const translationKey = `animal_${entityId}`;
     const translated = gameTranslator.translateItem(translationKey);
     const title = document.createElement('div');
-    title.style.cssText = 'font-weight:bold;color:#e0e0e0;font-size:1.1em';
+    title.style.cssText = 'font-weight:bold;color:var(--text);font-size:var(--panel-heading-size)';
     // Title: pulled straight from the locale JSONs via gameTranslator. The
     // animal_<id> entries are baked into src/locales/*/translation.json by
     // build_scripts/bake-creature-translations.cjs at build time. Falls back
@@ -4655,7 +4594,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       }
       if (parts.length > 0) {
         const aliasDiv = document.createElement('div');
-        aliasDiv.style.cssText = 'color:#999;font-size:0.85em;font-style:italic';
+        aliasDiv.style.cssText = 'color:#999;font-size:var(--control-font-size);font-style:italic';
         aliasDiv.textContent = parts.join(', ');
         titleCol.appendChild(aliasDiv);
       }
@@ -4667,7 +4606,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // Horde marker (free) — full creature stats are in the pro extended section.
     if ((poi as any).isHorde && creature?.category) {
       const catDiv = document.createElement('div');
-      catDiv.style.cssText = 'color:#888;margin-top:0.15em;font-size:0.85em';
+      catDiv.style.cssText = 'color:var(--text-muted);margin-top:0.15em;font-size:var(--control-font-size)';
       catDiv.textContent = `${i18next.t('poi.horde', 'Horde')}: ${creature.category}`;
       tooltipEl.appendChild(catDiv);
     }
@@ -4676,7 +4615,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
     if (poi.biome) {
       const biomeDiv = document.createElement('div');
-      biomeDiv.style.cssText = 'color:#888;font-size:1em;margin-top:0.2em';
+      biomeDiv.style.cssText = 'color:var(--text-muted);font-size:1em;margin-top:0.2em';
       const biomeKey = String(poi.biome).startsWith('biome_') ? String(poi.biome) : `biome_${poi.biome}`;
       const biomeLabel = i18next.t(`gameContent.biomes.${biomeKey}`, {
         defaultValue: gameTranslator.translateContent('biomes', String(poi.biome)),
@@ -4690,7 +4629,9 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     // Synthesized pillar place cards (Mountain Altar, The Tower, ...) carry
     // their display name directly (labelKey wins so the click-only marker's
     // baked name still translates); everything else derives from type.
-    if (poi.type === 'pillar_place') {
+    if (poi.type === 'shop') {
+      title.textContent = getPOIDisplayName(poi);
+    } else if (poi.type === 'pillar_place') {
       const pp = poi as any;
       // labelNameKey (common.csv) / labelKey (locale) win over the baked name so
       // the click-only marker's place name still localizes. See PILLAR_PLACES.
@@ -4710,7 +4651,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
     tooltipEl.appendChild(wrapWithWikiLink(title, poi));
     if (poi.item) {
       const itemDiv = document.createElement('div');
-      itemDiv.style.cssText = 'color:#aaa;font-size:1.1em';
+      itemDiv.style.cssText = 'color:var(--text-muted);font-size:var(--panel-heading-size)';
       itemDiv.textContent = gameTranslator.translateItem(poi.item).replace(/_/g, ' ');
       tooltipEl.appendChild(itemDiv);
     }
@@ -4719,9 +4660,9 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   // Container contents — show items inside chests/shops/bosses
   if (CONTAINER_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items) && poi.items.some((i: any) => !i.ignore)) {
     const contDiv = document.createElement('div');
-    contDiv.style.cssText = 'margin-top:0.5em;border-top:0.065em solid #333;padding-top:0.3em';
+    contDiv.style.cssText = 'margin-top:0.5em;border-top:0.065em solid var(--border-strong);padding-top:0.3em';
     const contLabel = document.createElement('div');
-    contLabel.style.cssText = 'font-size:1em;color:#888;margin-bottom:0.2em';
+    contLabel.style.cssText = 'font-size:1em;color:var(--text-muted);margin-bottom:0.2em';
     const isBossDrop = [
       'triangle_boss',
       'alchemist_boss',
@@ -4793,7 +4734,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       if (ci.type === 'wand') {
         const wandBox = document.createElement('div');
         wandBox.style.cssText =
-          'display:flex;align-items:center;gap:0.4em;flex:1 1 100%;min-width:0;background:#111;border-radius:0.2em;padding:0.15em 0.3em;border:0.065em solid #333';
+          'display:flex;align-items:center;gap:0.4em;flex:1 1 100%;min-width:0;background:var(--surface-2);border-radius:0.2em;padding:0.15em 0.3em;border:0.065em solid var(--border-strong)';
         if (ciKey) {
           const n = getSpriteNativeSize(ciKey);
           // 3x so the (thin) wand reads at roughly spell-cell height and isn't
@@ -4826,7 +4767,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
         slotsGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center;flex:1 1 0;min-width:0';
         for (const slot of slots) {
           const cell = document.createElement('div');
-          cell.style.cssText = `width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#0a0a0a;border:0.065em solid ${slot.isAC ? '#c8a2ff' : '#222'};border-radius:0.15em;box-sizing:border-box`;
+          cell.style.cssText = `width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--surface-1);border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border)'};border-radius:0.15em;box-sizing:border-box`;
           if (slot.id) {
             const spellCanvas = scaledSprite(resolveSpellKey(String(slot.id)));
             if (spellCanvas) {
@@ -4850,13 +4791,13 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       if (ci.item === 'gold' || ci.item === 'goldnugget') {
         const goldBox = document.createElement('div');
         goldBox.style.cssText =
-          'display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333';
+          'display:flex;align-items:center;gap:0.2em;background:var(--surface-2);border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid var(--border-strong)';
         if (ciKey) {
           const canvas = scaledSprite(ciKey);
           if (canvas) goldBox.appendChild(canvas);
         }
         const label = document.createElement('span');
-        label.style.cssText = 'font-size:0.8em;color:#ffd700';
+        label.style.cssText = 'font-size:0.8em;color:var(--warning-fg)';
         label.textContent = ci.amount ? `$${ci.amount}` : i18next.t('poi.gold', 'Gold');
         goldBox.appendChild(label);
         {
@@ -4871,7 +4812,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       if (ci.item === 'heart' || ci.item === 'heart_bigger' || ci.item === 'full_heal') {
         const heartBox = document.createElement('div');
         heartBox.style.cssText =
-          'display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333';
+          'display:flex;align-items:center;gap:0.2em;background:var(--surface-2);border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid var(--border-strong)';
         if (ciKey) {
           const canvas = scaledSprite(ciKey);
           if (canvas) heartBox.appendChild(canvas);
@@ -4909,11 +4850,11 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       if (ciKey) {
         const itemBox = document.createElement('div');
         itemBox.style.cssText =
-          'display:flex;align-items:center;gap:0.2em;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333';
+          'display:flex;align-items:center;gap:0.2em;background:var(--surface-2);border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid var(--border-strong)';
         const canvas = scaledSprite(ciKey);
         if (canvas) itemBox.appendChild(canvas);
         const textSpan = document.createElement('span');
-        textSpan.style.cssText = 'font-size:0.8em;color:#aaa';
+        textSpan.style.cssText = 'font-size:0.8em;color:var(--text-muted)';
         textSpan.textContent = displayName;
         itemBox.appendChild(textSpan);
         {
@@ -4925,7 +4866,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       }
       const span = document.createElement('span');
       span.style.cssText =
-        'font-size:0.8em;color:#aaa;background:#111;border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid #333';
+        'font-size:0.8em;color:var(--text-muted);background:var(--surface-2);border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid var(--border-strong)';
       span.textContent = displayName;
       contRow.appendChild(span);
       {
@@ -4940,7 +4881,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
   // Dark chest: first-open also unlocks the Copy Trail spell.
   if (poi.type === 'chest' && (poi as any).chestVariant === 'dark') {
     const unlockDiv = document.createElement('div');
-    unlockDiv.style.cssText = 'margin-top:0.4em;display:flex;align-items:center;gap:0.3em;color:#888;font-size:1em';
+    unlockDiv.style.cssText = 'margin-top:0.4em;display:flex;align-items:center;gap:0.3em;color:var(--text-muted);font-size:1em';
     const lbl = document.createElement('span');
     lbl.textContent = i18next.t('poi.unlocks', 'Unlocks') + ':';
     unlockDiv.appendChild(lbl);
@@ -4951,7 +4892,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
       unlockDiv.appendChild(c);
     }
     const nm = document.createElement('span');
-    nm.style.cssText = 'color:#aaa';
+    nm.style.cssText = 'color:var(--text-muted)';
     nm.textContent = gameTranslator.translateSpell(getSpellName('LARPA_CHAOS_2'));
     unlockDiv.appendChild(nm);
     tooltipEl.appendChild(unlockDiv);
@@ -4959,7 +4900,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
   // Footer: position info
   const footer = document.createElement('div');
-  footer.style.cssText = 'margin-top:0.5em;color:#666;font-size:0.85em;border-top:0.065em solid #333;padding-top:0.3em';
+  footer.style.cssText = 'margin-top:0.5em;color:var(--text-faint);font-size:var(--control-font-size);border-top:0.065em solid var(--border-strong);padding-top:0.3em';
   footer.textContent = `${i18next.t('poi.pw', 'PW')} ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
   tooltipEl.appendChild(footer);
 
@@ -4986,18 +4927,51 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number): 
 
     tooltipEl.style.left = `${tx}px`;
     tooltipEl.style.top = `${ty}px`;
+    // Async details stay inside the viewport without moving the card.
+    tooltipEl.style.maxHeight = `calc(100dvh - ${ty + pad}px)`;
   });
   tooltipEl.style.left = `${tx}px`;
   tooltipEl.style.top = `${ty}px`;
 }
 
-function hideMarkerTooltip(): void {
+function removeMarkerTooltip(): void {
   if (tooltipEl) {
     cleanupPopovers(tooltipEl);
     tooltipEl.remove();
     tooltipEl = null;
-    clearTargetPoiId();
   }
+  clearTargetPoiId();
+}
+
+/** Close visible and pending cards; report navigation leaves independently opened map cards alone. */
+export function closePOICard(options?: { reportOnly?: boolean }): void { poiCards.close(options); }
+function hideMarkerTooltip(): void { closePOICard(); }
+export function guardPOICardContext(): () => boolean { return poiCards.guard(); }
+
+/** Invalidate outgoing map data before asynchronous seed or map replacement starts. */
+export function resetPOICardContext(viewer: any): void {
+  closePOICard();
+  viewer.cancelNavigation?.();
+  // A redundant request can return the current generation without rerendering.
+  // Keep its data inert until that exact seed is explicitly declared ready again.
+  if (globalMarkerData) suspendedMarkerContext = {
+    seed: getCurrentDynamicSeed(), data: globalMarkerData, orbs: activeOrbTargets,
+  };
+  activeMarkerData = globalMarkerData = null;
+  activeOrbTargets = [];
+  if (canvasClickHandler) viewer.removeHandler('canvas-click', canvasClickHandler);
+  canvasClickHandler = null;
+  viewer.removeHandler('canvas-drag', hideMarkerTooltip);
+  canvasMoveCleanup?.();
+  canvasMoveCleanup = null;
+}
+
+export function restorePOICardContext(viewer: any): void {
+  const context = suspendedMarkerContext;
+  if (globalMarkerData || !context || context.seed !== getCurrentDynamicSeed()) return;
+  activeMarkerData = context.data;
+  activeOrbTargets = context.orbs;
+  installClickHandler(viewer.viewer ?? viewer, context.data);
 }
 
 // ESC closes any open POI card, regardless of focus/state. Installed once at
@@ -5008,11 +4982,7 @@ function installEscToCloseCard(): void {
   _escHandlerInstalled = true;
   document.addEventListener(
     'keydown',
-    e => {
-      if (e.key === 'Escape' && tooltipEl) {
-        hideMarkerTooltip();
-      }
-    },
+    e => { poiCards.handleEscape(e); },
     { capture: true }
   );
 }
@@ -5020,6 +4990,7 @@ installEscToCloseCard();
 
 let canvasMoveCleanup: (() => void) | null = null;
 let globalMarkerData: MarkerData | null = null;
+let suspendedMarkerContext: { seed: number | null; data: MarkerData; orbs: OrbClickTarget[] } | null = null;
 
 // When a pillar segment's forward link flies to a POI, remember which segment
 // flag it came from so that POI's reverse "Pillar" button can lead back to the
@@ -5040,6 +5011,7 @@ const pillarOriginByPoi = new Map<string, string>();
  * and a mousemove handler to show pointer cursor when hovering over markers.
  */
 function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
+  suspendedMarkerContext = null;
   globalMarkerData = data;
 
   // Remove previous handlers
@@ -5163,20 +5135,21 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
   };
 
   viewer.addHandler('canvas-click', canvasClickHandler);
+  viewer.removeHandler('canvas-drag', hideMarkerTooltip);
   viewer.addHandler('canvas-drag', hideMarkerTooltip);
 }
 
 export function openTooltipForPOI(
   poiId: string,
   viewer: any,
-  opts?: { sidebarRightPx?: number; fallbackX?: number; fallbackY?: number; fallbackPoi?: any }
+  opts?: { sidebarRightPx?: number; fallbackX?: number; fallbackY?: number; fallbackPoi?: any; owner?: POICardOwner }
 ): void {
   if (!poiId || poiId === 'undefined' || poiId === 'null') return;
 
   // Close any tooltip card that was already open. Otherwise the previous POI's
   // card sits on screen for ~2 s during the cinematic pan before getting
   // replaced, which looks like the click did nothing.
-  hideMarkerTooltip();
+  const request = poiCards.begin(opts?.owner ?? poiCards.owner ?? 'map');
 
   // Find the exact marker item based on its reference or fallback ID
   let item = globalMarkerData
@@ -5216,32 +5189,29 @@ export function openTooltipForPOI(
   if (baseX === undefined || baseY === undefined) return;
   const pt = new (OpenSeadragon as any).Point(baseX, baseY);
 
-  // Sidebar awareness: callers (seed-report row clicks) can pass an explicit
-  // width. For all other entry points (e.g. share-link auto-open via
-  // `?poi=…&sr=1`), auto-detect the seed-report sidebar's current visible
-  // width by querying the DOM. The element exists and is open whenever its
-  // `.open` class is set; if not present or closed, width is 0.
-  let sidebarPx = opts?.sidebarRightPx ?? 0;
-  if (sidebarPx === 0) {
-    const srEl = document.querySelector<HTMLElement>('#seed-report-v3.open, #seed-report-sidebar.open');
-    if (srEl && srEl.classList.contains('open')) {
-      sidebarPx = srEl.getBoundingClientRect().width;
-    }
-  }
+  // The same report can be a right sidebar or a bottom sheet. Its actual
+  // overlap determines both offsets; a zero right-width is not a full-width
+  // sidebar. Retain the caller's legacy width only when no panel is measurable.
+  const srEl = document.querySelector<HTMLElement>('#seed-report-v3.open, #seed-report-sidebar.open');
+  const canvas = viewer.canvas as HTMLElement | undefined;
+  const offsets = poiNavigationOffsets(canvas?.clientWidth ?? 0, canvas?.clientHeight ?? 0,
+    srEl?.getBoundingClientRect(), canvas?.getBoundingClientRect(), opts?.sidebarRightPx);
 
   // Use the AppOSD wrapper's cinematic panToTarget when available — it draws
   // the SVG trail/arrow + pulse marker, matching the behaviour the search
   // results use. Falls back to viewport.panTo on plain OpenSeadragon viewers.
   const usePanToTarget = typeof viewer.panToTarget === 'function';
-  let panPromise: Promise<void> | null = null;
+  let panPromise: Promise<boolean | void> | null = null;
   if (usePanToTarget) {
-    panPromise = viewer.panToTarget(pt.x, pt.y, { offsetXPx: sidebarPx / 2 });
+    panPromise = viewer.panToTarget(pt.x, pt.y, { ...offsets, reportHighlight: opts?.owner === 'report' });
   } else {
-    // Plain OSD viewer: no offset support, just pan.
+    // Plain OSD viewer: use the same rendered transform as the report markers.
     let panTarget = pt;
-    if (sidebarPx > 0) {
-      const shift = viewer.viewport.deltaPointsFromPixels(new (OpenSeadragon as any).Point(sidebarPx / 2, 0), true);
-      panTarget = new (OpenSeadragon as any).Point(pt.x + shift.x, pt.y);
+    if (offsets.offsetXPx || offsets.offsetYPx) {
+      const matrix = readCameraMatrix((x, y) => viewer.viewport.pixelFromPoint(new (OpenSeadragon as any).Point(x, y), true),
+        canvas?.clientWidth ?? 0, viewer.viewport.getFlip?.() ?? false);
+      const shift = cameraPixelDelta(matrix, offsets.offsetXPx, offsets.offsetYPx);
+      if (shift) panTarget = new (OpenSeadragon as any).Point(pt.x + shift.x, pt.y + shift.y);
     }
     viewer.viewport.panTo(panTarget, true);
   }
@@ -5249,12 +5219,16 @@ export function openTooltipForPOI(
   // No item -> no tooltip card, just the cinematic pan. Useful for seed-report
   // rows whose POI was excluded from the marker layer (perf-mode creatures,
   // etc.) but still has world coords.
-  if (!item) return;
+  if (!item) {
+    request.afterNavigation(panPromise, () => {}, () => viewer.cancelNavigation?.());
+    return;
+  }
 
   // Show the tooltip AFTER the cinematic pan settles. Prefer awaiting the
   // pan Promise when panToTarget returns one; fall back to a fixed delay
   // for plain viewport.panTo.
   const showTooltipNow = () => {
+    if (!request.isCurrent()) return;
     const pixel = viewer.viewport.pixelFromPoint(pt);
     const canvasRect = (viewer.canvas as HTMLElement).getBoundingClientRect();
     const isOffScreen =
@@ -5269,16 +5243,10 @@ export function openTooltipForPOI(
     // seed-report row clicks behave identically — left-side when sidebar is
     // open, right-side otherwise.
     const { x: screenX, y: screenY } = placeTooltipForMarker(viewer, item, clickX, clickY);
-    showMarkerTooltip(item, screenX, screenY);
+    showMarkerTooltip(item, screenX, screenY, request);
   };
 
-  if (panPromise && typeof panPromise.then === 'function') {
-    panPromise.then((arrived: boolean | void) => {
-      if (arrived !== false) showTooltipNow();
-    }).catch(() => { /* An interrupted navigation must not reopen an old card. */ });
-  } else {
-    setTimeout(showTooltipNow, 250);
-  }
+  request.afterNavigation(panPromise, showTooltipNow, () => viewer.cancelNavigation?.());
 }
 
 // ─── Orb Overlays ─────────────────────────────────────────────────────────
@@ -5287,9 +5255,10 @@ function showOrbTooltip(
   orb: { name?: string; text?: string; x: number; y: number },
   iconUrl: string,
   screenX: number,
-  screenY: number
+  screenY: number,
+  request: POICardRequest = poiCards.begin()
 ): void {
-  if (drawingOwnsMapPointer()) return;
+  if (!request.isCurrent() || drawingOwnsMapPointer()) return;
   if (tooltipEl) {
     cleanupPopovers(tooltipEl);
     tooltipEl.remove();
@@ -5297,38 +5266,21 @@ function showOrbTooltip(
   }
 
   tooltipEl = document.createElement('div');
-  (tooltipEl as any).__rebuild = () => showOrbTooltip(orb, iconUrl, screenX, screenY);
+  (tooltipEl as any).__rebuild = () => showOrbTooltip(orb, iconUrl, screenX, screenY, request);
   tooltipEl.className = 'marker-tooltip';
-  tooltipEl.style.cssText = `
-    position: fixed;
-    z-index: 10000;
-    background: #1a1a2e;
-    color: #e0e0e0;
-    border: 0.15em solid #3a3a5c;
-    border-radius: 0.6em;
-    padding: 0.75em 1em;
-    font-size: 14px;
-    box-sizing: border-box;
-    width: 32em;
-    max-width: min(56em, 95vw);
-    pointer-events: auto;
-    box-shadow: 0 0.45em 1.5em rgba(0,0,0,0.7);
-    font-family: monospace;
-    line-height: 1.5;
-  `;
-
-  const closeBtn = document.createElement('div');
-  closeBtn.style.cssText = `
-    position: absolute; top: 0.3em; right: 0.6em;
-    cursor: pointer; color: #666; font-size: 1.25em;
-    line-height: 1;
-  `;
-  closeBtn.textContent = 'x';
+  const controls = document.createElement('div');
+  controls.className = 'poi-card-controls';
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'btn btn-sm btn-outline-light poi-card-icon-button';
+  closeBtn.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
+  closeBtn.setAttribute('aria-label', i18next.t('seedReport.close', 'Close'));
   closeBtn.onclick = e => {
     e.stopPropagation();
     hideMarkerTooltip();
   };
-  tooltipEl.appendChild(closeBtn);
+  controls.appendChild(closeBtn);
+  tooltipEl.appendChild(controls);
 
   const header = document.createElement('div');
   header.style.cssText = 'display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em';
@@ -5337,20 +5289,20 @@ function showOrbTooltip(
   spriteImg.style.cssText = 'width:28px;height:36px;image-rendering:pixelated;object-fit:contain';
   header.appendChild(spriteImg);
   const title = document.createElement('div');
-  title.style.cssText = 'font-weight:bold;color:#ffd700;font-size:1.1em';
+  title.style.cssText = 'font-weight:bold;color:var(--warning-fg);font-size:var(--panel-heading-size)';
   title.textContent = orb.name || 'Orb';
   header.appendChild(title);
   tooltipEl.appendChild(header);
 
   if (orb.text) {
     const desc = document.createElement('div');
-    desc.style.cssText = 'color:#aaa;font-size:0.85em;font-style:italic;margin-top:0.15em';
+    desc.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin-top:0.15em';
     desc.textContent = orb.text;
     tooltipEl.appendChild(desc);
   }
 
   const footer = document.createElement('div');
-  footer.style.cssText = 'margin-top:0.5em;color:#666;font-size:0.85em;border-top:0.065em solid #333;padding-top:0.3em';
+  footer.style.cssText = 'margin-top:0.5em;color:var(--text-faint);font-size:var(--control-font-size);border-top:0.065em solid var(--border-strong);padding-top:0.3em';
   footer.textContent = `(${Math.round(orb.x)}, ${Math.round(orb.y)})`;
   tooltipEl.appendChild(footer);
 
@@ -5370,6 +5322,8 @@ function showOrbTooltip(
     if (ty < pad) ty = pad;
     tooltipEl.style.left = `${tx}px`;
     tooltipEl.style.top = `${ty}px`;
+    // Async details stay inside the viewport without moving the card.
+    tooltipEl.style.maxHeight = `calc(100dvh - ${ty + pad}px)`;
   });
   tooltipEl.style.left = `${tx}px`;
   tooltipEl.style.top = `${ty}px`;
@@ -5494,8 +5448,8 @@ export async function renderGenerationResult(
   bakedDZIsAlreadyOnScreen?: boolean,
   // When true, the baked DZIs already carry pixel scenes + POI marker sprites
   // in their pixels. Skip addPixelScenes() and the marker tile source entirely
-  // so the live map keeps the static-map render path: 3 baked DZIs + nothing
-  // else. POI clicks still work — they come from the spatial index built off
+  // so the live map keeps the static-map render path (except a small missing-
+  // mimic overlay for older bakes). POI clicks come from the spatial index built off
   // the prebaked generation.json (installClickHandler below).
   bakedDecorations?: boolean
 ): Promise<void> {
@@ -5675,18 +5629,20 @@ export async function renderGenerationResult(
     window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 100 } }));
   };
 
-  if (bakedDecorations) {
-    // Sprites already baked into the DZI pixels — no marker tile layer to add.
-    // Click targets still work through the spatial index installed above.
+  const visibleMarkerData = bakedDecorations
+    ? legacyMimicMarkerData(markerData, result.bakedMimicSpritesVersionByPW) : markerData;
+  if (!visibleMarkerData) {
+    // New bakes include every sprite. Legacy bakes get only their missing
+    // mimic icons above the existing DZI, without regenerating terrain.
     emitItemsDone();
   } else {
     // 2. Add as a custom OSD tiled layer
-    const markerTileSource = createMarkerTileSource(markerData);
+    const markerTileSource = createMarkerTileSource(visibleMarkerData);
     viewer.addTiledImage({
       tileSource: markerTileSource,
-      x: markerData.originX,
-      y: markerData.originY,
-      width: markerData.bboxWidth,
+      x: visibleMarkerData.originX,
+      y: visibleMarkerData.originY,
+      width: visibleMarkerData.bboxWidth,
       success: (event: any) => {
         if (currentGenerationId !== generationId) {
           try {

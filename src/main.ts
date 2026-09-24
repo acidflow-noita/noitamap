@@ -1,5 +1,7 @@
 import { ReportMapHighlights } from './report-map-highlights';
+import { getCachedDailyComparisonTarget, getCachedDailySeedIdentity } from './data_sources/daily_seed';
 import { getPOIDisplayName } from "./telescope/poi-display-name";
+import { getPOIBiomeDescription } from "./data_sources/biome-names";
 import { loadSpritesheetAndAtlas } from "./telescope/poi-spatial-index";
 import { getCachedGeneration } from "./telescope/tile-cache";
 import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
@@ -29,7 +31,7 @@ import {
   isVariantReady,
   UnlockDescriptor,
 } from "./unlocks-toggle";
-import { rebuildAltLayers, getAllPOIsFlat, exportBiomeRegionImages, prepareDecorationExport, exportDecorationCell, releaseDecorationExport, openTooltipForPOI, getPOISpriteFirstFrame, applyHighValueOverlays } from "./telescope/telescope-osd-bridge";
+import { rebuildAltLayers, getAllPOIsFlat, exportBiomeRegionImages, prepareDecorationExport, exportDecorationCell, releaseDecorationExport, openTooltipForPOI, closePOICard, guardPOICardContext, resetPOICardContext, restorePOICardContext, getPOISpriteFirstFrame, applyHighValueOverlays } from "./telescope/telescope-osd-bridge";
 import { getUnlocksFromURL } from "./unlocks";
 import type { GenerationResult } from "./telescope/telescope-adapter";
 import { isRenderer, getStoredRenderer, setStoredRenderer, clearStoredRenderer } from "./renderer_settings";
@@ -166,8 +168,7 @@ import { overlayToShort } from "./data_sources/param-mappings";
 import { UnifiedSearch } from "./search/unifiedsearch";
 import { asMapName, MapName } from "./data_sources/tile_data";
 import { addEventListenerForId, assertElementById, debounce } from "./util";
-import { createMapLinks, NAV_LINK_IDENTIFIER, getMapLabel, renderMapBadges, refreshBadgePopovers } from "./nav";
-import { getAllMapDefinitions } from "./data_sources/map_definitions";
+import { createMapLinks, createMapSelectorRenderer, refreshMapSelectorDate, NAV_LINK_IDENTIFIER } from "./nav";
 import { initMouseTracker } from "./mouse_tracker";
 import { isSpoilerFree, setSpoilerFree, onSpoilerFreeChange, isBakedSeedView } from "./spoiler-free";
 import { isLightMode, setLightMode } from "./light-mode";
@@ -453,25 +454,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Helper to update the map selector button: shows the current map's full
   // label plus icon-only versions of its badges. Hover popovers on the badges
   // provide the full badge labels (same content as the dropdown items).
-  const updateMapSelectorText = (mapName: string) => {
-    const defs = getAllMapDefinitions();
-    const match = defs.find(([key]) => key === mapName);
-    if (!match) return;
-    const def = match[1];
-    mapSelectorButton.removeAttribute('data-i18n');
-    mapSelectorButton.replaceChildren();
-    mapSelectorButton.classList.add('d-inline-flex', 'align-items-center', 'gap-1');
-
-    const labelSpan = document.createElement('span');
-    labelSpan.className = 'me-2';
-    labelSpan.textContent = getMapLabel(def);
-    mapSelectorButton.appendChild(labelSpan);
-
-    renderMapBadges(mapSelectorButton, def, true);
-    refreshBadgePopovers(mapSelectorButton);
-  };
+  const updateMapSelectorText = createMapSelectorRenderer(mapSelectorButton);
   // Set initial button text
   updateMapSelectorText(app.getMap());
+  refreshMapSelectorDate(() => updateMapSelectorText(app.getMap()));
   i18next.on('languageChanged', () => updateMapSelectorText(app.getMap()));
 
   // Chunk grid toggle
@@ -505,7 +491,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
   syncSideworldButton();
+  let sideworldMap = app.getMap();
   app.on("state-change", () => {
+    const map = app.getMap();
+    if (map === sideworldMap) return;
+    sideworldMap = map;
     // Switching maps re-opens the viewer, destroying every tiled image, so the
     // overlay's own flag has to be cleared alongside the button.
     if (!mapHasSideworld(app.getMap())) resetSideworld();
@@ -527,8 +517,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Static map POI link sharing: pan to URL-encoded coordinates when map is not dynamic
   if (initialTargetPoiId && urlState.map !== "dynamic-main-branch") {
     const capturedStaticPoiId = initialTargetPoiId;
+    const contextIsCurrent = guardPOICardContext();
     initialTargetPoiId = undefined;
     setTimeout(() => {
+      if (!contextIsCurrent()) return;
       // st-X_Y format produced by the search result selector
       const match = capturedStaticPoiId.match(/^st-(-?[\d.]+)_(-?[\d.]+)$/);
       if (match) {
@@ -604,10 +596,32 @@ document.addEventListener("DOMContentLoaded", async () => {
   let pendingDynamicSeed: number | null = null;
 
   let reportHighlights: ReportMapHighlights | null = null;
+  let reportMapLoading = false;
+  let poiContextReady = false;
+  let initialTargetSeedStarted = false;
+  app.osd.addHandler('map-change-start', () => {
+    initialTargetPoiId = undefined;
+    poiContextReady = false;
+    reportHighlights?.clear(false);
+    resetPOICardContext(app.osd);
+  });
   const dynamicOpts = {
     viewer: app.osd,
+    onMapReplacementStart: () => {
+      poiContextReady = false;
+      // The original URL target belongs to the first requested generation only.
+      if (initialTargetSeedStarted) initialTargetPoiId = undefined;
+      initialTargetSeedStarted = true;
+      reportHighlights?.clear(false);
+      resetPOICardContext(app.osd);
+    },
     onLoadingChange: (isLoading: boolean) => {
-      if (isLoading) reportHighlights?.clear();
+      reportMapLoading = isLoading;
+      if (isLoading) {
+        poiContextReady = false;
+        reportHighlights?.clear(false);
+        resetPOICardContext(app.osd);
+      }
       loadingIndicator.style.display = isLoading ? "block" : "none";
       if (isLoading) {
         showLoadingStrip();
@@ -618,10 +632,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     },
     onSeedResolved: (seed: number, isDaily: boolean) => {
       setDynamicUISeed(seed, isDaily);
+      updateMapSelectorText(app.getMap());
       lastSessionSeed = seed;
       lastSessionIsDaily = isDaily;
     },
     onPOIsReady: (pois: DynamicPOI[]) => {
+      restorePOICardContext(app.osd);
+      poiContextReady = true;
       // Keep the full unfiltered list for stats (Seed Report counts creatures
       // regardless of the perf-mode "skip creatures" toggle).
       _allDynamicPOIs = pois;
@@ -645,6 +662,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       // must not make the callback observe undefined.
       if (initialTargetPoiId) {
         const capturedPoiId = initialTargetPoiId;
+        const contextIsCurrent = guardPOICardContext();
         initialTargetPoiId = undefined;
         // If the URL also requested the seed-report sidebar (?sr=1), wait a
         // brief moment for it to mount + open before triggering the tooltip
@@ -660,19 +678,20 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
         };
         waitForSidebar().then(() => {
-          openTooltipForPOI(capturedPoiId, app.osd);
+          if (contextIsCurrent() && poiContextReady && app.getMap() === 'dynamic-main-branch')
+            openTooltipForPOI(capturedPoiId, app.osd, { owner: 'map' });
         });
       }
     },
   };
 
-  /** Run dynamic map using seed priority: URL param → last session seed → daily */
+  /** Explicit seed/daily URL → last session seed → today's daily. */
   async function runDynamicMapWithPriority(): Promise<void> {
     const urlState = parseURL();
-    if (urlState.seed !== undefined && !urlState.dailySeed) {
-      // URL has explicit non-daily seed — highest priority
-      await runDynamicMap(urlState.seed, false, dynamicOpts);
-    } else if (lastSessionSeed !== null) {
+    if (urlState.seed !== undefined) {
+      // Daily-mode share links are pinned to their explicit seed too.
+      await runDynamicMap(urlState.seed, !!urlState.dailySeed, dynamicOpts);
+    } else if (!urlState.dailySeed && lastSessionSeed !== null) {
       // Restore the last seed the user was viewing
       updateURLWithSeed(lastSessionSeed, lastSessionIsDaily);
       await runDynamicMap(lastSessionSeed, lastSessionIsDaily, dynamicOpts);
@@ -764,7 +783,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateURLWithSidebar,
     urlState: { sidebarOpen: urlState.sidebarOpen, canvas: urlState.canvas, seed: urlState.seed },
     getBakedSageSnapshot: () => getLastGenerationResult()?.sage,
+    getReportInventorySnapshot: () => getLastGenerationResult()?.reportInventory,
     getSeedParams: () => ({ seed: getCurrentDynamicSeed() ?? undefined, isDaily: getCurrentIsDaily() }),
+    getDailyComparisonTarget: () => {
+      const seed = getCurrentDynamicSeed();
+      return seed === null ? null : getCachedDailyComparisonTarget(seed);
+    },
+    getDailySeedIdentity: () => {
+      const seed = getCurrentDynamicSeed();
+      // Daily generation mode also applies to historical seeds. Only the
+      // current published pointers establish today's/previous identity.
+      return seed === null ? null : getCachedDailySeedIdentity(seed);
+    },
     setSeedParams: (seed: number) => {
       updateURLWithSeed(seed, false);
       // Always update seed UI immediately
@@ -863,6 +893,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       name: getPOIDisplayName(poi),
       iconUrl: await getPOISpriteFirstFrame(poi),
     }),
+    getPOIBiome: (poi) => {
+      const seed = getCurrentDynamicSeed();
+      const descriptor = getActiveDescriptor();
+      const generation = descriptor === primaryDescriptor() ? getLastGenerationResult()
+        : seed === null ? null : getAltResult(descriptor, seed);
+      return getPOIBiomeDescription(poi, generation?.seed === seed ? generation : null);
+    },
     getWandIconUrl: async (sprite: string): Promise<string | null> => {
       try {
         return await getPOISpriteFirstFrame({ type: "wand", sprite });
@@ -871,21 +908,38 @@ document.addEventListener("DOMContentLoaded", async () => {
         return null;
       }
     },
-    setReportHighlights: (targets) => {
+    setReportHighlights: (targets, options) => {
       const state = authService.getState();
-      if (!state.authenticated || !state.isSubscriber || isSpoilerFree() || app.getMap() !== 'dynamic-main-branch') targets = [];
+      if (!poiContextReady || reportMapLoading || !state.authenticated || !state.isSubscriber || isSpoilerFree() || app.getMap() !== 'dynamic-main-branch') {
+        targets = [];
+        options = { ...options, restore: false };
+      }
       if (targets.length) reportHighlights ??= new ReportMapHighlights(app.osd.viewer);
-      reportHighlights?.setTargets(targets);
+      reportHighlights?.setTargets(targets, options);
+    },
+    getReportMapView: () => {
+      const previewOrigin = reportHighlights?.getReturnView();
+      if (previewOrigin) return previewOrigin;
+      const center = app.osd.viewport.getCenter(true), zoom = app.osd.viewport.getZoom(true);
+      return center && [center.x, center.y, zoom].every(Number.isFinite) && zoom > 0
+        ? { x: center.x, y: center.y, zoom } : null;
+    },
+    restoreReportMapView: view => {
+      if (!poiContextReady || app.getMap() !== 'dynamic-main-branch') return;
+      reportHighlights ??= new ReportMapHighlights(app.osd.viewer);
+      reportHighlights.restoreView(view);
     },
     setHighValuePredicate: (pred: ((poi: any) => boolean) | null) => {
       Promise.resolve().then(() => {
         applyHighValueOverlays(pred);
       });
     },
-    openPOIById: (poiId: string, opts?: { sidebarRightPx?: number }) => {
-      Promise.resolve().then(() => {
-        openTooltipForPOI(poiId, app.osd, opts);
-      });
+    closePOICard,
+    openPOIById: (poiId: string, opts?: { sidebarRightPx?: number; preserveReportHighlights?: boolean; fallbackX?: number; fallbackY?: number; fallbackPoi?: any; owner?: 'report' }) => {
+      if (!poiContextReady || app.getMap() !== 'dynamic-main-branch') return;
+      if (!opts?.preserveReportHighlights) reportHighlights?.clear(false);
+      if (opts?.owner === 'report') reportHighlights ??= new ReportMapHighlights(app.osd.viewer);
+      openTooltipForPOI(poiId, app.osd, { ...opts, owner: opts?.owner ?? 'map' });
     },
     showGetProModal: () => {
       AuthUI.showGetProModal();
@@ -967,13 +1021,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       // indexed this id for the current unlocks variant.
       const poiId = result.id;
       if (poiId && app.getMap() === "dynamic-main-branch") {
-        Promise.resolve().then(() => {
+        if (poiContextReady) {
           openTooltipForPOI(poiId, app.osd, {
             fallbackX: result.x,
             fallbackY: result.y,
             fallbackPoi: result,
+            owner: 'map',
           });
-        });
+        }
       } else {
         app.goto(result);
       }
@@ -1011,6 +1066,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Track previous map so state-change can detect transitions away from dynamic
   let lastKnownMap: string = app.getMap();
+  let renderedMap: string | undefined;
 
   app.on("state-change", (state) => {
     // record map / position / zoom changes to the URL when they happen
@@ -1037,7 +1093,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     lastKnownMap = state.map;
 
-    // Show/hide dynamic toolbar on map change
+    // Camera frames still update URL/search above. Toolbar DOM and Bootstrap
+    // instances only need work when the selected map actually changes.
+    if (renderedMap === state.map) return;
+    renderedMap = state.map;
     updateDynamicUIVisibility(state.map);
 
     const currentMapLink = document.querySelector(`#navLinksList [data-map-key='${state.map}']`);
@@ -1196,7 +1255,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     url.searchParams.delete("d");
 
-    // Include seed params when on dynamic map so shared link reproduces the same map
+    // Pin the seed even for daily mode: ds controls unlocks, not 'load today'.
     if (app.getMap() === "dynamic-main-branch") {
       const seed = getCurrentDynamicSeed();
       const isDaily = getCurrentIsDaily();

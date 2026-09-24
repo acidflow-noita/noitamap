@@ -105,6 +105,9 @@ interface Fixture {
 }
 
 const FIXTURES: Fixture[] = [
+  ...['mimic', 'chest_leggy', 'heart_mimic', 'refresh_mimic', 'mimic_potion'].map(item => ({
+    label: `${item} — actual species icon`, poi: { type: 'item', item, x: 7435, y: 6847 }, expect: `item:${item}`,
+  })),
   { label: "empty potion (oil receptacle)", poi: { type: "item", item: "potion_empty", x:0,y:0 }, expect: "item:potion" },
   // The regressions this file exists for:
   {
@@ -157,6 +160,22 @@ const FIXTURES: Fixture[] = [
 ];
 
 describe("POI render coverage (real buildMarkerData)", () => {
+  it('draws the exact chest mimic from daily seed 1344443116 at 7435,6847', async () => {
+    const { appSettings } = await import('../lib/noita-telescope-vm/js/settings.js');
+    const { spawnHeart } = await import('../lib/noita-telescope-vm/js/heart_generation.js');
+    const settings = appSettings as any;
+    const date = settings.date;
+    try {
+      settings.date = { month: 9, day: 24 };
+      const poi = spawnHeart(1344443116, 0, 7435, 6847, 'biome_vault');
+      expect(poi).toEqual({ type: 'item', item: 'mimic', x: 7435, y: 6847 });
+      const data = await buildMarkerData({ worldCenter: 0, poisByPW: { '0,0': [poi] } });
+      const markers = data.items.filter(item => item.poi === poi);
+      expect(markers).toHaveLength(1);
+      expect(markers[0]).toMatchObject({ spriteKey: 'item:mimic', w: 16, h: 16 });
+      expect(getSpriteKey(poi, atlasMap)).toBe('item:mimic');
+    } finally { settings.date = date; }
+  });
   it("renders the meditation cube only as its scene, with one click target and no portal-position sprite", async () => {
     const result = normalizeScenePOIs(cubeFixture);
     const data = await buildMarkerData(result);
@@ -238,8 +257,6 @@ const NO_SPRITE_YET: Record<string, string> = {
   kivi: "no item:kivi sprite (stone boss; only in commented-out dead code)",
   kummitus: "no item:kummitus sprite (only in commented-out dead code)",
   greed_orb: "no item:greed_orb sprite",
-  refresh_mimic: "no item:refresh_mimic sprite",
-  mimic: "no item:mimic sprite (heart-mimic disguise handled elsewhere)",
   potion_mimic_empty: "no item:potion_mimic_empty sprite",
   oil_receptacle_puzzle: "puzzle receptacle, no sprite",
   steam_receptacle_puzzle: "puzzle receptacle, no sprite",
@@ -248,7 +265,6 @@ const NO_SPRITE_YET: Record<string, string> = {
   vault_puzzle_arpaluu: "no item:vault_puzzle_arpaluu sprite",
   vault_puzzle_varpuluuta: "no item:vault_puzzle_varpuluuta sprite",
   trailer_altar: "trailer-only altar, no sprite",
-  chest_leggy: "lukki-chest; rendered as a creature elsewhere, no item sprite",
   oil: "branch token, not a standalone marker",
 };
 

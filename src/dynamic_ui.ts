@@ -6,7 +6,7 @@
  */
 
 import i18next from "i18next";
-import { fetchDailySeed, fetchPreviousDailySeed, getCachedPreviousDailySeed, getCachedDailySeed } from "./data_sources/daily_seed";
+import { fetchDailySeed, fetchPreviousDailySeed, getCachedDailySeedIdentity } from "./data_sources/daily_seed";
 import { updateURLWithSeed } from "./data_sources/url";
 import { getCurrentDynamicSeed, runDynamicMap } from "./dynamic-map";
 import type { DynamicMapOptions } from "./dynamic-map";
@@ -107,6 +107,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   seedInput.placeholder = i18next.t("dynamicMap.placeholder");
   // Popover -- title is the section, content is set dynamically by updateSeedTooltip()
   seedInput.setAttribute("data-bs-toggle", "popover");
+  seedInput.setAttribute("data-popover-owner", "dynamic-seed");
   seedInput.setAttribute("data-bs-placement", "bottom");
   seedInput.setAttribute("data-bs-trigger", "hover");
   seedInput.setAttribute("data-bs-title", i18next.t("dynamicMap.placeholder"));
@@ -507,25 +508,17 @@ export function hideLoadingStrip(): void {
   }, 400);
 }
 
-export function setDynamicUISeed(seed: number, isDaily: boolean): void {
+export function setDynamicUISeed(seed: number, _isDaily: boolean): void {
   if (seedInput) {
     seedInput.value = "";
     seedInput.value = String(seed);
-    // Auto-detect the kind from the cached daily/previous-daily seeds. The
-    // `isDaily` arg is only a hint — callers like noitamap-pro's seed-report
-    // click handler always pass false, but if the seed equals today's or
-    // yesterday's daily we still want the right colour. The cached lookups
-    // are populated by the speculative fetch in index.html so they're warm
-    // by the time any user click lands.
-    const prevDaily = getCachedPreviousDailySeed();
-    const today = getCachedDailySeed();
+    // Daily generation mode also covers historical seeds. Colour only a seed
+    // identified by the current published pointers, regardless of that mode.
+    const identity = getCachedDailySeedIdentity(seed);
     let kind: SeedKind;
-    if (prevDaily !== null && seed === prevDaily) {
+    if (identity === 'previous') {
       kind = "previousDaily";
-    } else if (today !== null && seed === today) {
-      kind = "daily";
-    } else if (isDaily) {
-      // Caller asserts daily but neither cache matches yet — trust the hint.
+    } else if (identity === 'today') {
       kind = "daily";
     } else {
       kind = "custom";

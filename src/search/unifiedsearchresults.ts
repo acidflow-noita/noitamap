@@ -6,6 +6,8 @@ import { getSpellAvailability } from "../util";
 import { getPOISpriteFirstFrame, getTaikasauvaIcon } from "../telescope/telescope-osd-bridge";
 import { perkNameKey } from "../telescope/perk-i18n";
 import { canonicalEntityId } from "../telescope/entity-canonical";
+import { formatWandName, getPOIDisplayName } from "../telescope/poi-display-name";
+import { getMimicEntityId } from '../telescope/poi-mimics';
 import spells from "../data/spells.json";
 import { gameTranslator } from "../game-translations/translator";
 import { isSpoilerFree } from "../spoiler-free";
@@ -442,25 +444,14 @@ export class UnifiedSearchResults extends EventEmitter2 {
             if ((result as any).isDynamic) {
               if ((result as any).type === "wand") {
                 if (isSpoilerFree()) {
-                  nameDiv.textContent = "Wand";
+                  nameDiv.textContent = formatWandName({});
                 } else {
-                  const wandName = (result as any).wandName || (result as any).name || "Magic";
+                  nameDiv.textContent = formatWandName(result as any);
                   if ((result as any).isTaikasauva === true) {
-                    // "Alive" wand: "Taikasauva <Adj> wand" (adj from adapter override).
-                    const tk = gameTranslator.translateItem("animal_wand_ghost");
-                    const baseName = tk !== "animal_wand_ghost" ? tk : "Taikasauva";
-                    const adj = wandName && wandName !== "Taikasauva" ? wandName : "";
-                    if (adj) {
-                      nameDiv.textContent = /\bwand\b\s*$/i.test(adj) ? `${baseName} ${adj}` : `${baseName} ${adj} wand`;
-                    } else {
-                      nameDiv.textContent = baseName;
-                    }
                     const sub = document.createElement("div");
                     sub.style.cssText = "color:#9a9;font-size:0.82em;font-style:italic";
                     sub.textContent = '"Alive wand"';
                     nameDiv.appendChild(sub);
-                  } else {
-                    nameDiv.textContent = /\bwand\b\s*$/i.test(wandName) ? wandName : `${wandName} wand`;
                   }
                 }
               } else {
@@ -503,9 +494,8 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     label = "Heart (+50 HP)";
                   } else if (itemName === "full_heal") {
                     label = "Full Heal";
-                  } else if (itemName === "mimic_potion") {
-                    const t = gameTranslator.translateItem("animal_mimic_potion");
-                    label = t !== "animal_mimic_potion" ? t : "Henkevä potu";
+                  } else if (getMimicEntityId(r)) {
+                    label = getPOIDisplayName(r);
                   } else if (itemName === "emerald_tablet") {
                     // Carries a descriptive per-location name ("Emerald Tablet
                     // (Holy Bomb)"); use it instead of the humanized item id.

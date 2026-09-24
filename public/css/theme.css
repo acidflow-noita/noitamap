@@ -15,15 +15,19 @@
   --accent-strong: oklch(0.623 0.214 259.815); /* blue-500 */
   --accent-bg:     oklch(0.623 0.214 259.815 / 0.14);
 
-  /* Daily seed: emerald (== success status) */
-  --daily-fg:      oklch(0.765 0.177 163.223); /* emerald-400 */
+  /* Seed identity stays green/orange, softened with the shared slate text. */
+  --daily-fg:      color-mix(in oklab, oklch(0.845 0.143 164.978) 65%, var(--text-muted)); /* emerald-300 + slate-400 */
   --daily-strong:  oklch(0.696 0.170 162.480); /* emerald-500 */
-  --daily-bg:      oklch(0.696 0.170 162.480 / 0.14);
+  --daily-bg:      oklch(0.696 0.170 162.480 / 0.08);
 
   /* Previous daily: orange */
-  --prev-fg:       oklch(0.750 0.183 55.934); /* orange-400 */
+  --prev-fg:       color-mix(in oklab, oklch(0.837 0.128 66.290) 65%, var(--text-muted)); /* orange-300 + slate-400 */
   --prev-strong:   oklch(0.705 0.213 47.604); /* orange-500 */
-  --prev-bg:       oklch(0.705 0.213 47.604 / 0.14);
+  --prev-bg:       oklch(0.705 0.213 47.604 / 0.08);
+
+  /* Report markers and their row/legend counterparts share this palette. */
+  --report-marker-context: var(--text);
+  --report-marker-selected: var(--daily-fg);
 
   /* Pro / premium: animated rainbow gradient BORDER over a raised-slate
      surface — NO purple fills. The slow-panning gradient border (optionally a
@@ -56,6 +60,31 @@
   --radius-panel:   0.75rem;
   --radius-pill:    999px;
 
+  /* One compact control scale for the menu, drawing tools and report. */
+  --control-height: 2rem;
+  --control-font-size: .875rem;
+  --control-line-height: 1.25rem;
+  --control-padding-x: .625rem;
+  --control-padding-y: .25rem;
+  --control-radius: var(--radius-control);
+  --control-gap: .375rem;
+  --control-icon-size: 1rem;
+  --control-fg: var(--text-muted);
+  --control-bg: transparent;
+  --control-border: var(--border-strong);
+  --control-hover-fg: var(--text);
+  --control-hover-bg: var(--surface-2);
+  --control-hover-border: var(--text-faint);
+  --control-active-fg: var(--text);
+  --control-active-bg: color-mix(in oklab, var(--surface-2) 85%, var(--text-faint));
+  --control-active-border: var(--text-faint);
+  --control-focus-ring: 0 0 0 .1875rem color-mix(in oklab, var(--accent-strong) 30%, transparent);
+  --panel-padding: .5rem;
+  --section-gap: .75rem;
+  --panel-heading-size: 1rem;
+  --section-heading-size: 1rem;
+  --bs-border-radius-sm: var(--control-radius);
+
   /* Frosted layer */
   --glass-bg:   oklch(0.208 0.042 265.755 / 0.85);
   --glass-blur: blur(0.5rem);
@@ -68,6 +97,9 @@
   --bs-secondary-border-subtle: var(--border-strong);
   --bs-border-color: var(--border-strong);
   --bs-body-bg: var(--bg);
+  --bs-body-color: var(--text);
+  --bs-secondary-color: var(--text-muted);
+  --bs-tertiary-color: var(--text-faint);
   --bs-tertiary-bg: var(--surface-2);
   --bs-popover-bg: var(--surface-1) !important;
   --bs-popover-border-color: var(--border-strong) !important;

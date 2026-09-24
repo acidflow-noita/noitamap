@@ -12,6 +12,8 @@ import { applySpoilerFree } from "../spoiler-free";
 import { isSkipCreatures } from "../skip-creatures";
 import spells from "../data/spells.json";
 import { PILLAR_PLACES } from "../data/pillars";
+import { getMimicSpriteKey } from './poi-mimics';
+import spritesheetRevision from '../data/spritesheet-revision.json';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -65,7 +67,7 @@ async function loadSpritesheet(): Promise<HTMLImageElement> {
       resolve(img);
     };
     img.onerror = reject;
-    img.src = "./assets/spritesheet.png";
+    img.src = `./assets/spritesheet.png?v=${spritesheetRevision}`;
   }).finally(() => { spritesheetLoading = null; });
 }
 
@@ -168,6 +170,8 @@ function resolveWandSpriteKey(sprite: string, atlas?: Record<string, AtlasEntry>
 }
 
 function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | string[] | null {
+  const mimic = getMimicSpriteKey(poi);
+  if (mimic) return mimic;
   // Spells inside containers have {type: 'item', item: 'spell', spell: 'SPELL_ID'}
   if (poi.type === "item" && poi.item === "spell" && (poi as any).spell) {
     return resolveSpellKey(String((poi as any).spell));
@@ -206,8 +210,6 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     if (item === "gold" || item === "goldnugget") return "item:goldnugget_01";
     if (item === "heart") return "item:heart_extrahp";
     if (item === "heart_bigger" || item === "heart_extra") return "item:heart_extrahp";
-    // Heart mimic ("Pahan muisto") disguises as the extra-HP heart pickup.
-    if (item === "heart_mimic") return "item:heart_extrahp";
     if (item === "full_heal") return "item:heart";
     if (item === "chest") return "item:chest";
     if (item === "great_chest") return "item:chest_random_super";

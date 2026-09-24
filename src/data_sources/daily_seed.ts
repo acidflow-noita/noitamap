@@ -136,3 +136,21 @@ export function getCachedDailySeed(): number | null {
   }
   return null;
 }
+
+/** Label a comparison from the same daily identity used by the seed controls.
+ * The broad map isDaily flag also includes older bakes, so it cannot do this.
+ * A missing previous pointer need not hide the known "yesterday" identity. */
+export function getCachedDailyComparisonTarget(seed: number): { kind: 'today' | 'previous'; seed?: number } | null {
+  const today = getCachedDailySeed(), previous = getCachedPreviousDailySeed();
+  if (today === null || today === previous) return null;
+  if (seed === today) return previous === null ? { kind: 'previous' } : { kind: 'previous', seed: previous };
+  return { kind: 'today', seed: today };
+}
+
+/** The selected seed's identity, shared by the toolbar and report heading. */
+export function getCachedDailySeedIdentity(seed: number): 'today' | 'previous' | null {
+  const today = getCachedDailySeed(), previous = getCachedPreviousDailySeed();
+  if (previous !== null && seed === previous) return 'previous';
+  if (today !== null && seed === today) return 'today';
+  return null;
+}

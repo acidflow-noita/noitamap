@@ -22,7 +22,7 @@ export interface URLState extends Partial<AppState> {
   canvas?: 'map' | 'black' | 'white';
   /** Seed number for dynamic map */
   seed?: number;
-  /** Daily seed flag — if true, seed came from daily fetch */
+  /** Daily generation mode. Without an explicit seed, resolve today's daily. */
   dailySeed?: boolean;
   /** Search query string */
   query?: string;
@@ -361,7 +361,8 @@ export function updateURLWithCanvas(canvas: 'map' | 'black' | 'white') {
 }
 
 /**
- * Update URL with seed params for dynamic map
+ * Pin a dynamic seed and its generation mode. Daily-mode links retain this
+ * exact seed on reload; only a ds-only URL means "load today's daily".
  */
 export function updateURLWithSeed(seed: number, isDailySeed: boolean) {
   const url = new URL(window.location.toString());

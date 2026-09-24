@@ -1,5 +1,20 @@
 import type { PortalPlacement } from './placements';
 export interface CameraMatrix { a:number;b:number;c:number;d:number;e:number;f:number }
+/** Read OSD's rendered world-to-canvas transform. OSD's point conversion
+ * includes rotation but leaves the drawer's horizontal flip to the caller. */
+export function readCameraMatrix(project: (x: number, y: number) => { x: number; y: number }, width: number, flipped = false): CameraMatrix {
+  const origin = project(0, 0), x = project(1, 0), y = project(0, 1);
+  const matrix = { a: x.x - origin.x, b: x.y - origin.y, c: y.x - origin.x, d: y.y - origin.y, e: origin.x, f: origin.y };
+  if (flipped) { matrix.a *= -1; matrix.c *= -1; matrix.e = width - matrix.e; }
+  return matrix;
+}
+/** Convert a screen translation to world units using that same transform. */
+export function cameraPixelDelta(matrix: CameraMatrix, dx: number, dy: number): { x: number; y: number } | null {
+  const { a, b, c, d } = matrix, det = a * d - b * c;
+  if (![a, b, c, d, dx, dy, det].every(Number.isFinite) || Math.abs(det) < 1e-30) return null;
+  const result = { x: (d * dx - c * dy) / det, y: (a * dy - b * dx) / det };
+  return Object.values(result).every(Number.isFinite) ? result : null;
+}
 export const MAX_CANVAS_PIXELS=2_000_000;
 export const MAX_ACTIVE_PORTALS=192;
 export const MAX_GPU_BYTES=256*1024*1024;

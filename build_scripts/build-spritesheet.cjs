@@ -25,6 +25,7 @@ const fs = require("fs");
 const path = require("path");
 const JSZip = require("jszip");
 const { PNG } = require("pngjs");
+const { createHash } = require("node:crypto");
 
 const DATA_ZIP = path.resolve(__dirname, "..", "public", "data.zip");
 const OUT_DIR = path.resolve(__dirname, "..", "public", "assets");
@@ -34,6 +35,7 @@ const OUT_JSON = path.join(OUT_DIR, "atlas.json");
 // while it still fetches the spritesheet from public/assets/spritesheet.png.
 // Write the atlas to BOTH so the bundled atlas never desyncs from the sheet.
 const RUNTIME_JSON = path.resolve(__dirname, "..", "src", "data", "atlas.json");
+const REVISION_JSON = path.resolve(__dirname, "..", "src", "data", "spritesheet-revision.json");
 
 // On Windows the output file can be transiently locked by another process
 // (Defender real-time scan, or a vite dev server serving public/assets/), which
@@ -95,8 +97,12 @@ const INCLUDE_EXTRA_PNGS = [
   // is present). Scene-backed map POIs are click-only to avoid a second cube
   // sprite at the teleporter anchor.
   ["data/biome_impl/excavationsite/meditation_cube_visual.png", "item:meditation_cube"],
-  // Potion mimic (Henkevä potu) UI icon — telescope emits {item:'mimic_potion'}.
-  // The items_gfx has no matching sprite; use the dedicated animal icon.
+  // Telescope emits mimics as loot items. Use the game's dedicated animal
+  // icons so chest/leggy/heart/refresh/potion mimics retain distinct artwork.
+  ["data/ui_gfx/animal_icons/chest_mimic.png", "item:mimic"],
+  ["data/ui_gfx/animal_icons/chest_leggy.png", "item:chest_leggy"],
+  ["data/ui_gfx/animal_icons/dark_alchemist.png", "item:heart_mimic"],
+  ["data/ui_gfx/animal_icons/shaman_wind.png", "item:refresh_mimic"],
   ["data/ui_gfx/animal_icons/mimic_potion.png", "item:mimic_potion"],
 ];
 
@@ -904,6 +910,9 @@ async function main() {
 
   writeFileSyncRetry(RUNTIME_JSON, atlasJson);
   console.log(`[build-spritesheet] Wrote ${RUNTIME_JSON} (runtime bundled atlas)`);
+  // The atlas is bundled, but the PNG is served separately. Version its URL
+  // by bytes so a cached older sheet can never be paired with the new atlas.
+  writeFileSyncRetry(REVISION_JSON, JSON.stringify(createHash('sha256').update(pngBuf).digest('hex')) + '\n');
 
   console.log("[build-spritesheet] Done.");
 }

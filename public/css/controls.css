@@ -1,0 +1,110 @@
+/* Shared Bootstrap controls. Feature styles own layout, not another button skin. */
+.btn-sm,
+.btn-group-sm > .btn {
+  --bs-btn-font-size: var(--control-font-size);
+  --bs-btn-line-height: var(--control-line-height);
+  --bs-btn-padding-x: var(--control-padding-x);
+  --bs-btn-padding-y: var(--control-padding-y);
+  --bs-btn-border-radius: var(--control-radius);
+  --bs-btn-focus-box-shadow: var(--control-focus-ring);
+  min-height: var(--control-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--control-gap);
+}
+
+.btn-outline-light,
+.navbar .btn-outline-secondary {
+  --bs-btn-color: var(--control-fg);
+  --bs-btn-bg: var(--control-bg);
+  --bs-btn-border-color: var(--control-border);
+  --bs-btn-hover-color: var(--control-hover-fg);
+  --bs-btn-hover-bg: var(--control-hover-bg);
+  --bs-btn-hover-border-color: var(--control-hover-border);
+  --bs-btn-active-color: var(--control-active-fg);
+  --bs-btn-active-bg: var(--control-active-bg);
+  --bs-btn-active-border-color: var(--control-active-border);
+  --bs-btn-disabled-color: var(--text-faint);
+  --bs-btn-disabled-bg: var(--control-bg);
+  --bs-btn-disabled-border-color: var(--border);
+  --bs-btn-disabled-opacity: .5;
+}
+
+/* Existing button markup uses Bootstrap icon margins; flex gap supplies them. */
+.btn-sm > .me-1,
+.btn-group-sm > .btn > .me-1 { margin-right: 0 !important; }
+
+.icon-button.btn > .bi { font-size: var(--control-icon-size); }
+.icon-button.btn:not(.dropdown-toggle):not(:has(> span)) {
+  width: var(--control-height);
+  min-width: var(--control-height);
+  padding-inline: var(--control-padding-y);
+}
+@media (max-width: 1199.98px) {
+  .icon-button.btn:has(> .d-xl-inline) {
+    width: var(--control-height);
+    min-width: var(--control-height);
+    padding-inline: var(--control-padding-y);
+  }
+}
+
+.form-control-sm,
+.form-select-sm,
+.navbar .form-control {
+  min-height: var(--control-height);
+  font-family: inherit;
+  font-size: var(--control-font-size);
+  line-height: var(--control-line-height);
+  padding-block: var(--control-padding-y);
+  padding-left: var(--control-padding-x);
+  border-radius: var(--control-radius);
+  border-color: var(--control-border);
+  color: var(--text);
+  background-color: var(--surface-2);
+}
+
+.form-control-sm,
+.navbar .form-control { padding-right: var(--control-padding-x); }
+.form-select-sm { padding-right: 2rem; }
+
+.form-control:focus,
+.form-select:focus {
+  color: var(--text);
+  border-color: var(--accent-strong);
+  background-color: var(--surface-2);
+  box-shadow: var(--control-focus-ring);
+}
+
+.form-check-input {
+  border-color: var(--control-border);
+  background-color: var(--surface-2);
+}
+.form-check-input:checked {
+  border-color: var(--accent-strong);
+  background-color: var(--accent-strong);
+}
+.form-check-input:focus:not(:focus-visible) { box-shadow: none; }
+.form-check-input:focus-visible {
+  border-color: var(--accent-strong);
+  box-shadow: var(--control-focus-ring);
+}
+
+.dropdown-menu {
+  --bs-dropdown-font-size: var(--control-font-size);
+  --bs-dropdown-padding-y: var(--control-padding-y);
+  --bs-dropdown-item-padding-x: var(--control-padding-x);
+  --bs-dropdown-item-padding-y: var(--control-padding-y);
+}
+.dropdown-item {
+  min-height: var(--control-height);
+  line-height: var(--control-line-height);
+}
+
+/* Existing Bootstrap utility markup uses the same semantic palette. */
+.text-light { color: var(--text) !important; }
+.text-secondary, .text-muted { color: var(--text-muted) !important; }
+.text-info { color: var(--info-fg) !important; }
+.text-success { color: var(--success-fg) !important; }
+.text-warning { color: var(--warning-fg) !important; }
+.text-danger { color: var(--danger-fg) !important; }

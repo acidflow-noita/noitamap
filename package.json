@@ -47,6 +47,7 @@
     "./data-archive": "./src/data-archive.ts",
     "./data/spells.json": "./src/data/spells.json",
     "./sage/records": "./src/sage/records.ts",
+    "./report-inventory": "./src/report-inventory.ts",
     "./sage/seed-scheme.json": "./src/sage/seed-scheme.json"
   },
   "files": [

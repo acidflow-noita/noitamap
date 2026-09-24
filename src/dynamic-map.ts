@@ -40,6 +40,8 @@ export interface DynamicMapOptions {
   viewer: any;
   /** Called with flat POI list so dynamic search can index it */
   onPOIsReady?: (pois: DynamicPOI[]) => void;
+  /** Invalidate outgoing interactions immediately, before seed resolution awaits network work. */
+  onMapReplacementStart?: () => void;
   /** Called when generation starts / ends (for loading indicator) */
   onLoadingChange?: (isLoading: boolean) => void;
   /** Called with the seed that was used (after resolution) */
@@ -143,7 +145,7 @@ export function ensureSeedCached(seed: number, isDaily: boolean): Promise<boolea
 
 // ─── Daily baked-overlay fast path (pre-warm) ────────────────────────────────
 
-// main.ts calls startDailyFastPath() the instant OSD exists. With no custom
+// main.ts calls startDailyFastPath() the instant OSD exists. With no explicit
 // seed in the URL we KNOW it's today's daily, whose baked DZIs live at fixed
 // worker URLs — so we fire the daily-seed lookup + the manifest probe NOW, in
 // parallel with the rest of page init, instead of waiting for the dynamic
@@ -157,14 +159,20 @@ let dailyFastPath: {
 
 export function startDailyFastPath(): void {
   if (dailyFastPath) return;
+  let requestedSeed: number | undefined;
   try {
     const urlState = parseURL();
     if (urlState.seed !== undefined && !urlState.dailySeed) return; // custom seed — not a daily
+    requestedSeed = urlState.seed;
     if (!shouldUseBakedTerrain(window.location.search)) return; // baked path disabled
   } catch {
     return;
   }
-  const seed = fetchDailySeed().catch(() => null);
+  // A shared daily-mode link may identify yesterday or an older daily. Only
+  // prefetch today's terrain when it is the seed this URL actually requests.
+  const seed = fetchDailySeed()
+    .then(seed => requestedSeed === undefined || requestedSeed === seed ? seed : null)
+    .catch(() => null);
   const probe = seed
     .then((s) => (s == null ? null : probeBakedDZIs("daily", s)))
     .catch(() => null);
@@ -175,19 +183,20 @@ export function startDailyFastPath(): void {
 
 /**
  * Work out which seed to use based on URL params.
- * - ?ds=1 present → fetch daily seed, update ?se=<num>&?ds=1 in URL
- * - ?se=<num> without ?ds → use directly (arbitrary seed)
+ * - ?se=<num> present → use that exact seed; ?ds=1 preserves daily mode
+ * - ?ds=1 without ?se → fetch today's seed and pin it in the URL
  * - Neither present → treat as daily seed (fetch + set both params)
  */
 export async function resolveSeed(): Promise<{ seed: number; isDaily: boolean }> {
   const urlState = parseURL();
 
-  if (urlState.seed !== undefined && !urlState.dailySeed) {
-    // Arbitrary seed — already in URL, no fetch needed
-    return { seed: urlState.seed, isDaily: false };
+  if (urlState.seed !== undefined) {
+    // Shared daily links must keep their explicit seed even after rollover.
+    // ds controls generation mode; it never overrides an explicit identity.
+    return { seed: urlState.seed, isDaily: !!urlState.dailySeed };
   }
 
-  // Daily seed path (explicit ds=1 OR no params at all)
+  // No seed identity: daily-only links and the default map resolve today.
   try {
     const seed = await fetchDailySeed();
     updateURLWithSeed(seed, true);
@@ -219,6 +228,8 @@ export async function runDynamicMap(
   opts: DynamicMapOptions,
 ): Promise<GenerationResult | null> {
   const { viewer, onLoadingChange, onPOIsReady, onSeedResolved } = opts;
+  const myToken = ++generationToken;
+  opts.onMapReplacementStart?.();
 
   // Auto-detect daily seed: if not explicitly daily, compare against today's daily.
   // This handles the mod sending ?se=<seed> without ds=1 when the player is on a daily run.
@@ -226,6 +237,7 @@ export async function runDynamicMap(
   if (!isDaily) {
     try {
       const dailySeed = await fetchDailySeed();
+      if (myToken !== generationToken) return null;
       if (dailySeed === seed) {
         isDaily = true;
         console.log(`[DynamicMap] Seed ${seed} matches today's daily seed, auto-detecting as daily`);
@@ -236,6 +248,7 @@ export async function runDynamicMap(
       // Daily seed fetch failed — continue as non-daily
     }
   }
+  if (myToken !== generationToken) return null;
 
   // Read unlock state from URL (caches to localStorage automatically).
   // The shareable shorthand tokens (`u=all`, `u=none`) override the mod
@@ -273,9 +286,6 @@ export async function runDynamicMap(
   const forceRegenerate = seed === currentSeed && unlockKey !== currentUnlocksKey;
 
   onLoadingChange?.(true);
-
-  // Capture token so we can detect if clearDynamicMap was called mid-pipeline
-  const myToken = ++generationToken;
 
   // Yield so the browser can paint the loading indicator before telescope
   // blocks the main thread during initialization (~700ms first load).

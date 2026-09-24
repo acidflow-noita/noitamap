@@ -45,28 +45,7 @@ html {
   user-select: none;
 }
 
-/* ── UI Facelift: soften aggressive outlines (Tailwind 4 palette) ──────── */
-
-.navbar .btn-outline-light {
-  --bs-btn-color: var(--text-muted);
-  --bs-btn-border-color: var(--border-strong);
-  --bs-btn-hover-color: var(--text);
-  --bs-btn-hover-bg: var(--accent-bg);
-  --bs-btn-hover-border-color: var(--accent-strong);
-  --bs-btn-active-color: var(--accent-fg);
-  --bs-btn-active-bg: var(--accent-bg);
-  --bs-btn-active-border-color: var(--accent-strong);
-}
-
-/* Facelift: checked toggle = calm accent-tinted state (was inverted solid-light block) */
-.navbar .btn-check:checked + .btn-outline-light {
-  --bs-btn-active-color: var(--accent-fg);
-  --bs-btn-active-bg: var(--accent-bg);
-  --bs-btn-active-border-color: var(--accent-strong);
-  color: var(--accent-fg);
-  background-color: var(--accent-bg);
-  border-color: var(--accent-strong);
-}
+/* Compact controls share their base styles in controls.css. */
 
 /* Soften runfast (warning) button */
 .navbar #goToMainWebsiteButton {
@@ -142,8 +121,8 @@ html {
 }
 
 .dropdown-menu {
-  --bs-dropdown-link-active-bg: var(--accent-bg);
-  --bs-dropdown-link-active-color: var(--accent-fg);
+  --bs-dropdown-link-active-bg: var(--control-active-bg);
+  --bs-dropdown-link-active-color: var(--control-active-fg);
   background-color: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: var(--radius-panel);
@@ -157,16 +136,16 @@ html {
 
 .dropdown-item:focus,
 .dropdown-item:hover {
-  background-color: oklch(1 0 0 / 0.06);
-  color: var(--text);
+  background-color: var(--control-hover-bg);
+  color: var(--control-hover-fg);
 }
 
 /* Active state inside dropdowns (maps, language, etc.) */
 .dropdown-menu .nav-link.active,
 .dropdown-menu .nav-link.active:focus,
 .dropdown-menu .nav-link.active:hover {
-  background-color: var(--accent-bg);
-  color: var(--accent-fg);
+  background-color: var(--control-active-bg);
+  color: var(--control-active-fg);
 }
 
 .flex {
@@ -317,13 +296,11 @@ body.toggle-hidden div.osOverlayHighlight {
 .icon-button.btn {
   display: flex;
   flex-direction: row;
-  gap: 4px;
+  gap: var(--control-gap);
   flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  min-height: 31px; /* standard btn-sm height — keeps icon-only buttons (e.g. the
-                       drawing toggle, whose lone SVG is shorter than a glyph)
-                       square/consistent with text buttons in the navbar */
+  min-height: var(--control-height);
 }
 
 /* Bootstrap's .d-none is a single class (0-1-0) and loses to .icon-button.btn
@@ -418,7 +395,7 @@ body.toggle-hidden div.osOverlayHighlight {
   background-color: var(--surface-2);
   border: 1px solid var(--border);
   color: var(--text);
-  font-size: 14px;
+  font-size: var(--control-font-size);
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
@@ -427,14 +404,15 @@ body.toggle-hidden div.osOverlayHighlight {
 #searchInput:focus,
 .search-input:focus {
   border-color: var(--accent-strong);
-  box-shadow: 0 0 0 2px var(--accent-bg);
+  box-shadow: var(--control-focus-ring);
   background-color: var(--surface-2);
 }
 
 #searchInput::placeholder,
 .search-input::placeholder {
-  font-style: italic;
-  font-size: 14px;
+  font-style: normal;
+  color: var(--text-faint);
+  font-size: var(--control-font-size);
 }
 
 #search-form:focus-visible + #searchResults:has(> .search-result),
@@ -575,10 +553,10 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 #overlay-selector .btn {
-  min-height: 31px; /* Match other btn-sm heights */
-  padding: 0.25rem 0; /* Remove horizontal padding since we set fixed width */
-  width: 32px;
-  min-width: 32px;
+  min-height: var(--control-height);
+  padding: var(--control-padding-y) 0;
+  width: var(--control-height);
+  min-width: var(--control-height);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -773,36 +751,41 @@ body.toggle-hidden div.osOverlayHighlight {
    so it matches the seed-input tint and the seed-report links exactly. */
 #dynamicDailySeedButton {
   --bs-btn-color: var(--daily-fg);
-  --bs-btn-border-color: color-mix(in oklch, var(--daily-fg) 45%, transparent);
+  --bs-btn-border-color: color-mix(in oklch, var(--daily-fg) 35%, transparent);
   --bs-btn-hover-color: var(--daily-fg);
   --bs-btn-hover-bg: var(--daily-bg);
-  --bs-btn-hover-border-color: color-mix(in oklch, var(--daily-fg) 70%, transparent);
-  --bs-btn-focus-border-color: color-mix(in oklch, var(--daily-fg) 70%, transparent);
+  --bs-btn-hover-border-color: color-mix(in oklch, var(--daily-fg) 50%, transparent);
+  --bs-btn-focus-border-color: color-mix(in oklch, var(--daily-fg) 50%, transparent);
   --bs-btn-active-color: var(--daily-fg);
   --bs-btn-active-bg: var(--daily-bg);
-  --bs-btn-active-border-color: color-mix(in oklch, var(--daily-fg) 70%, transparent);
+  --bs-btn-active-border-color: color-mix(in oklch, var(--daily-fg) 50%, transparent);
   /* Disabled state fires on every load (setBusy disables the button while
      busy); without these it falls back to btn-outline-info's cyan and the
      button flickers blue mid-load. */
   --bs-btn-disabled-color: var(--daily-fg);
-  --bs-btn-disabled-border-color: color-mix(in oklch, var(--daily-fg) 45%, transparent);
-  /* Keyboard-focus ring is the last btn-outline-info cyan left; pin it to
-     emerald-400 too. */
-  --bs-btn-focus-shadow-rgb: 52, 211, 153;
+  --bs-btn-disabled-border-color: color-mix(in oklch, var(--daily-fg) 35%, transparent);
 }
 
 #dynamicPrevDailySeedButton {
   --bs-btn-color: var(--prev-fg);
-  --bs-btn-border-color: color-mix(in oklch, var(--prev-fg) 45%, transparent);
+  --bs-btn-border-color: color-mix(in oklch, var(--prev-fg) 35%, transparent);
   --bs-btn-hover-color: var(--prev-fg);
   --bs-btn-hover-bg: var(--prev-bg);
-  --bs-btn-hover-border-color: color-mix(in oklch, var(--prev-fg) 70%, transparent);
-  --bs-btn-focus-border-color: color-mix(in oklch, var(--prev-fg) 70%, transparent);
+  --bs-btn-hover-border-color: color-mix(in oklch, var(--prev-fg) 50%, transparent);
+  --bs-btn-focus-border-color: color-mix(in oklch, var(--prev-fg) 50%, transparent);
   --bs-btn-active-color: var(--prev-fg);
   --bs-btn-active-bg: var(--prev-bg);
-  --bs-btn-active-border-color: color-mix(in oklch, var(--prev-fg) 70%, transparent);
+  --bs-btn-active-border-color: color-mix(in oklch, var(--prev-fg) 50%, transparent);
   --bs-btn-disabled-color: var(--prev-fg);
-  --bs-btn-disabled-border-color: color-mix(in oklch, var(--prev-fg) 45%, transparent);
+  --bs-btn-disabled-border-color: color-mix(in oklch, var(--prev-fg) 35%, transparent);
+}
+
+#dynamicDailySeedButton:focus-visible {
+  box-shadow: 0 0 0 .2rem color-mix(in oklch, var(--daily-fg) 25%, transparent);
+}
+
+#dynamicPrevDailySeedButton:focus-visible {
+  box-shadow: 0 0 0 .2rem color-mix(in oklch, var(--prev-fg) 25%, transparent);
 }
 
 /* Seed input -- daily seed colored, custom seed white */

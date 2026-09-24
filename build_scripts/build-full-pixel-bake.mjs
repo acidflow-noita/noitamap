@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url";
 import { deserialize } from "node:v8";
 import { createHash } from "node:crypto";
 import { availableParallelism, totalmem } from "node:os";
+import { createBakedWorldMetadata, readBakedWorldMetadata, writeBakedWorldMetadata, REPORT_INVENTORY_VERSION } from "./baked-world-metadata.mjs";
 import {
   TILE,
   OVERLAP,
@@ -158,6 +159,7 @@ for (const directory of [
   }
 }
 for (const file of [
+  "src/report-inventory.ts",
   "package-lock.json",
   "public/data.zip",
   "public/wang_tiles.zip",
@@ -192,11 +194,15 @@ log(
   `prepared all three vertical planes, ${prepared.width} x ${prepared.height} per world`,
 );
 metrics.preparationMs = Date.now() - preparationStart;
+const data = deserialize(await readFile(snapshot));
+if (data.seed !== seed) throw new Error("Prepared generation seed mismatch");
+// A checkpoint is usable only when its report metadata can be published for
+// every requested world. This also validates --prepare-only output.
+for (const world of ["left", "middle", "right"]) createBakedWorldMetadata(data.metadata, world, seed);
 if (args["prepare-only"]) {
   await atomicWrite(resolve(out, "benchmark.json"), JSON.stringify({ ...metrics, seed, prepareOnly: true, elapsedMs: Date.now()-start }, null, 2));
   process.exit(0);
 }
-const data = deserialize(await readFile(snapshot));
 const renderId = `${seed}-${data.version}-${codeHash}-${backend}`;
 const work = resolve(out, ".work", renderId),
   cores = resolve(work, "cores"),
@@ -223,13 +229,14 @@ if (selected.length === 3) {
         const m = JSON.parse(
           await readFile(resolve(out, world, "manifest.json"), "utf8"),
         );
-        return m.complete && m.renderId === renderId;
+        return m.complete && m.renderId === renderId && m.reportInventoryVersion === REPORT_INVENTORY_VERSION;
       } catch {
         return false;
       }
     }),
   );
   if (ready.every(Boolean)) {
+    for (const [world] of selected) await readBakedWorldMetadata(out, world, seed);
     let verified = 0;
     for (const [world] of selected)
       for (let level = 0; level <= max; level++) {
@@ -481,6 +488,7 @@ try {
       baked: true,
       terrainVersion: data.version,
       renderBackend: backend,
+      reportInventoryVersion: REPORT_INVENTORY_VERSION,
       complete: true,
       tileCount: verified,
       generatedAt: new Date().toISOString(),
@@ -488,28 +496,11 @@ try {
         { pw, dzi: "map.dzi", minX, minY: top, fullW: width, fullH: height },
       ],
     };
-    const metadata = {
-      ...data.metadata,
-      parallelWorlds: [pw],
-      poisByPW: Object.fromEntries(
-        Object.entries(data.metadata.poisByPW).filter(
-          ([key]) => Number(key.split(",")[0]) === pw,
-        ),
-      ),
-      pixelScenesByPW: Object.fromEntries(
-        Object.entries(data.metadata.pixelScenesByPW).filter(
-          ([key]) => Number(key.split(",")[0]) === pw,
-        ),
-      ),
-    };
     await atomicWrite(
       resolve(publish, world, "map.dzi"),
       JSON.stringify(descriptor),
     );
-    await atomicWrite(
-      resolve(publish, world, "generation.json"),
-      JSON.stringify(metadata),
-    );
+    await writeBakedWorldMetadata(publish, world, data.metadata, seed);
     await atomicWrite(
       resolve(publish, world, "manifest.json"),
       JSON.stringify(manifest),

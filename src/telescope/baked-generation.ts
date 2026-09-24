@@ -1,5 +1,8 @@
 import { completeGenerationBossPOIs } from "./boss-pois";
 import { normalizeScenePOIs } from "./scene-pois";
+import { getAllPOIsFlat } from "./poi-inventory";
+import { MIMIC_SPRITES_VERSION } from './poi-mimics';
+import { createReportInventorySnapshot, readReportInventorySnapshot, sliceReportInventorySnapshot, type ReportInventorySnapshot } from "../report-inventory";
 /**
  * baked-generation.ts
  *
@@ -29,8 +32,12 @@ export const BAKED_GENERATION_VERSION = 1;
 
 export interface BakedGenerationFile {
   version: number;
+  /** Absent in legacy bakes whose decoration pixels omitted some mimics. */
+  mimicSpritesVersion?: number;
   /** Optional validated-by-consumer report snapshot; older bakes omit it. */
   sage?: unknown;
+  /** Selected-seed counts, scoped to this file's horizontal worlds. */
+  reportInventory?: ReportInventorySnapshot;
   seed: number;
   ngPlus: number;
   isNGP: boolean;
@@ -67,6 +74,12 @@ function b64ToBuf(b64: string): ArrayBuffer {
 /** Browser-side (bake page): serialize the full generation result. */
 export function serializeGenerationForBake(result: GenerationResult): BakedGenerationFile | null {
   if (!result || !result.biomeData?.pixels) return null;
+  // Serializing old cached POIs is not evidence that their DZI pixels were
+  // rebaked. Only preserve a revision already known for every included world.
+  const knownMimicSprites = (result.parallelWorlds || [-1, 0, 1]).every(pw => {
+    const version = result.bakedMimicSpritesVersionByPW?.[pw];
+    return Number.isSafeInteger(version) && version! >= MIMIC_SPRITES_VERSION;
+  });
   const pixelScenesByPW: Record<string, any[]> = {};
   for (const [pw, scenes] of Object.entries(result.pixelScenesByPW || {})) {
     pixelScenesByPW[pw] = (scenes as any[]).map((s) => ({
@@ -82,6 +95,9 @@ export function serializeGenerationForBake(result: GenerationResult): BakedGener
   }
   return {
     version: BAKED_GENERATION_VERSION,
+    mimicSpritesVersion: knownMimicSprites ? MIMIC_SPRITES_VERSION : undefined,
+    reportInventory: createReportInventorySnapshot(result.seed,
+      getAllPOIsFlat(normalizeScenePOIs(completeGenerationBossPOIs(result))), result.parallelWorlds),
     seed: result.seed,
     ngPlus: result.ngPlus,
     isNGP: result.isNGP,
@@ -102,12 +118,21 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[]): Generation
   const poisByPW: Record<string, any[]> = {};
   const pixelScenesByPW: Record<string, any[]> = {};
   const pws = new Set<number>();
+  const bakedMimicSpritesVersionByPW: Record<number, number> = {};
+  const reportInventory: ReportInventorySnapshot = { version: 3, seed: base.seed, worlds: {} };
+  let inventoryComplete = true;
   for (const f of files) {
     Object.assign(poisByPW, f.poisByPW);
     for (const [k, scenes] of Object.entries(f.pixelScenesByPW || {})) {
       pixelScenesByPW[k] = (scenes as any[]).map((s) => ({ ...s, imgElement: null }));
     }
-    for (const pw of f.parallelWorlds || []) pws.add(pw);
+    for (const pw of f.parallelWorlds || []) {
+      pws.add(pw);
+      bakedMimicSpritesVersionByPW[pw] = Number.isSafeInteger(f.mimicSpritesVersion) ? f.mimicSpritesVersion! : 0;
+    }
+    const inventory = readReportInventorySnapshot(f.reportInventory, base.seed, f.parallelWorlds || []);
+    if (inventory) Object.assign(reportInventory.worlds, sliceReportInventorySnapshot(inventory, f.parallelWorlds || []).worlds);
+    else inventoryComplete = false;
   }
 
   // Same biomeData reconstruction as getCachedGeneration in tile-cache.ts.
@@ -126,6 +151,8 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[]): Generation
   return normalizeScenePOIs(completeGenerationBossPOIs({
     seed: base.seed,
     sage: files.find(file => (file.sage as any)?.seed === base.seed)?.sage,
+    reportInventory: inventoryComplete ? reportInventory : undefined,
+    bakedMimicSpritesVersionByPW,
     ngPlus: base.ngPlus,
     isNGP: base.isNGP,
     worldSize: base.worldSize,

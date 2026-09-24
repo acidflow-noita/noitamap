@@ -2,6 +2,7 @@ import { OptionalCacheDatabase, warnCacheFailure } from "./cache-storage";
 import { normalizeScenePOIs } from "./scene-pois";
 import { serializeTileLayer, restoreTileLayer, type CachedTileLayer } from "./tile-layer-cache";
 import { telescopeCacheKey } from "./cache-identity";
+import { readReportInventorySnapshot, type ReportInventorySnapshot } from "../report-inventory";
 /**
  * tile-cache.ts
  *
@@ -35,6 +36,8 @@ export interface CachedBiomeRender {
 
 interface CachedGeneration {
   sage?: unknown;
+  reportInventory?: ReportInventorySnapshot;
+  bakedMimicSpritesVersionByPW?: Record<number, number>;
   cacheKey: string;
   seed: number;
   timestamp: number;
@@ -155,6 +158,8 @@ export async function cacheGeneration(cacheKey: string, seed: number, result: an
       worldSize: result.worldSize,
       worldCenter: result.worldCenter,
       sage: result.sage,
+      bakedMimicSpritesVersionByPW: result.bakedMimicSpritesVersionByPW,
+      reportInventory: readReportInventorySnapshot(result.reportInventory, seed, result.parallelWorlds || [-1, 0, 1]) ?? undefined,
       parallelWorlds: result.parallelWorlds || [-1, 0, 1],
       tileLayers,
       elevatorShafts: result.elevatorShafts?.map(serializeTileLayer),
@@ -243,6 +248,8 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
       worldSize: entry.worldSize,
       worldCenter: entry.worldCenter,
       sage: entry.sage,
+      bakedMimicSpritesVersionByPW: entry.bakedMimicSpritesVersionByPW,
+      reportInventory: readReportInventorySnapshot(entry.reportInventory, entry.seed, entry.parallelWorlds || [-1, 0, 1]) ?? undefined,
       parallelWorlds: entry.parallelWorlds,
       biomeData,
       tileLayers,

@@ -231,6 +231,16 @@ export interface BakedSageSnapshot {
   schema?: typeof scheme;
   record?: SageRecord;
   reason?: string;
+  /** The previous daily's immutable census, shipped with the current daily. */
+  comparison?: BakedSageComparison;
+}
+export interface BakedSageComparison {
+  kind: 'previous-daily';
+  currentSeed: number;
+  previousSeed: number;
+  /** When the baker verified this pair against the published daily pointers. */
+  observedAt: string;
+  snapshot: BakedSageSnapshot;
 }
 export function createBakedSageSnapshot(seed: number, record: SageRecord | null, reason?: string): BakedSageSnapshot {
   return { format: 'noitamap-sage-seed', version: 1, seed, status: record ? 'ready' : 'unavailable',
@@ -243,6 +253,7 @@ export function readBakedSageSnapshot(value: unknown, seed: number): SageRecord 
   const snapshot = value as BakedSageSnapshot;
   if (snapshot.format !== 'noitamap-sage-seed' || snapshot.version !== 1 || snapshot.seed !== seed ||
       snapshot.status !== 'ready' || snapshot.record?.seed !== seed ||
+      typeof snapshot.capturedAt !== 'string' || !Number.isFinite(Date.parse(snapshot.capturedAt)) ||
       snapshot.source !== 'published-sage-seed-archive' || snapshot.populationRevision !== archiveSource.populationRevision ||
       (snapshot.record.populationRevision ?? null) !== snapshot.populationRevision || JSON.stringify(snapshot.schema) !== JSON.stringify(scheme)) return null;
   for (const field of scheme.recordFields) {
@@ -258,4 +269,24 @@ export function readBakedSageSnapshot(value: unknown, seed: number): SageRecord 
     if (!validate((snapshot.record as any)[field.name], 0)) return null;
   }
   return snapshot.record;
+}
+
+/** Validate stored identities and census data. Consumers decide whether this
+ * pair still describes today's daily; old immutable records remain reusable
+ * once their seed matches a freshly resolved comparison target. */
+export function readBakedSageComparison(value: unknown, seed: number): (BakedSageComparison & { record: SageRecord }) | null {
+  if (!value || typeof value !== 'object') return null;
+  const outer = value as BakedSageSnapshot, comparison = outer.comparison;
+  if (outer.format !== 'noitamap-sage-seed' || outer.version !== 1 || outer.seed !== seed ||
+      outer.source !== 'published-sage-seed-archive' || typeof outer.capturedAt !== 'string' ||
+      !Number.isFinite(Date.parse(outer.capturedAt)) ||
+      (outer.status === 'ready' ? !readBakedSageSnapshot(outer, seed) :
+        outer.status !== 'unavailable' || outer.record !== undefined || outer.populationRevision !== null || typeof outer.reason !== 'string') ||
+      !comparison || comparison.kind !== 'previous-daily' || comparison.currentSeed !== seed ||
+      !Number.isInteger(comparison.previousSeed) || comparison.previousSeed < scheme.firstSeed ||
+      comparison.previousSeed > scheme.lastSeed || comparison.previousSeed === seed ||
+      typeof comparison.observedAt !== 'string' || !Number.isFinite(Date.parse(comparison.observedAt)) ||
+      !comparison.snapshot || comparison.snapshot.comparison !== undefined) return null;
+  const record = readBakedSageSnapshot(comparison.snapshot, comparison.previousSeed);
+  return record ? { ...comparison, record } : null;
 }

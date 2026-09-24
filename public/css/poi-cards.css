@@ -1,0 +1,83 @@
+/* POI cards share the menu/report surface and control scale. */
+.marker-tooltip {
+  position: fixed;
+  z-index: 10000;
+  box-sizing: border-box;
+  width: 28rem;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  pointer-events: auto;
+  padding: var(--panel-padding);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--surface-1);
+  color: var(--text);
+  box-shadow: var(--shadow-panel);
+  font-family: var(--bs-body-font-family);
+  font-size: var(--control-font-size);
+  line-height: 1.5;
+}
+.marker-tooltip *, .marker-tooltip *::before, .marker-tooltip *::after { box-sizing: border-box; }
+.marker-tooltip img { flex-shrink: 0; }
+.poi-card-controls {
+  position: sticky;
+  top: calc(-1 * var(--panel-padding));
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--control-gap);
+  padding-block: var(--control-padding-y);
+  margin-bottom: var(--panel-padding);
+  background: var(--surface-1);
+}
+.poi-card-controls > * { flex-shrink: 0; }
+.poi-card-controls .btn-group { flex-shrink: 1; }
+.poi-card-icon-button { width: var(--control-height); padding-inline: 0; }
+.poi-card-pillar-button { margin-right: auto; }
+.poi-card-stats {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: .125rem var(--control-gap);
+  align-items: baseline;
+  margin-bottom: var(--panel-padding);
+  font-variant-numeric: tabular-nums;
+}
+.poi-card-stat-label { color: var(--text-muted); overflow-wrap: anywhere; }
+.poi-card-stat-value { min-width: 0; color: var(--text); }
+
+/* Keep each label beside its value. Balanced newspaper columns moved rows
+   between columns as asynchronous sections and translated text changed height. */
+.marker-tooltip .extended-info-group--cols { columns: auto; }
+.marker-tooltip .extended-info-row {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: .125rem var(--control-gap);
+  padding-block: .125rem;
+}
+.marker-tooltip .extended-info-label {
+  color: var(--text-muted);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: inherit;
+}
+.marker-tooltip .extended-info-value {
+  word-break: normal;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.marker-tooltip .extended-info-row > * { min-width: 0; }
+.marker-tooltip .extended-info-subhead,
+.marker-tooltip .extended-info-header {
+  font-size: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 500;
+}
+.marker-tooltip .extended-info-group + .extended-info-group,
+.marker-tooltip .extended-info-reactions { border-color: var(--border); }
+.marker-tooltip .extended-info-mat-entry { flex-wrap: wrap; }
+.marker-tooltip .extended-info-link { width: auto; max-width: 100%; }

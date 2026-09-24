@@ -1,0 +1,582 @@
+{
+  "source": "task/noita-sage/src/components/metricImageCatalog.js",
+  "assets": {
+    "Damage_Projectile_dmg-large.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Damage_Projectile_dmg-large.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Damage_Types#Projectile",
+      "sha256": "b09eae4fffc99a1180bfa65fb158bde42b880a24a6e29992b2d11cc17ca341e4",
+      "bytes": 261,
+      "width": 45,
+      "height": 45,
+      "sourcePixelScale": 5
+    },
+    "Damage_Melee_dmg-large.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Damage_Melee_dmg-large.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Damage_Types#Melee",
+      "sha256": "da7857c98ce9551281a9904b087bca3545c6d1dbbafeaa5953f747902a4c4ef1",
+      "bytes": 265,
+      "width": 45,
+      "height": 45,
+      "sourcePixelScale": 5
+    },
+    "Damage_Electricity_dmg-large.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Damage_Electricity_dmg-large.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Damage_Types#Electricity",
+      "sha256": "0f4bff8ef0d8f4370aaee77fc8d71a14c96493ee095bf27cc847f14e14324acf",
+      "bytes": 304,
+      "width": 45,
+      "height": 45,
+      "sourcePixelScale": 5
+    },
+    "Damage_Fire_dmg-large.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Damage_Fire_dmg-large.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Damage_Types#Fire",
+      "sha256": "84e513a17a504d4115488ecdd209b6c51b3d1ce564968cb4f773f62d8378c927",
+      "bytes": 348,
+      "width": 45,
+      "height": 45,
+      "sourcePixelScale": 5
+    },
+    "Damage_Explosion_dmg-large.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Damage_Explosion_dmg-large.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Damage_Types#Explosion",
+      "sha256": "ce39dac497aad77cff83ff7b5f43f6bb51dc6ce24a0fb7c8d45fc71595cf5f4b",
+      "bytes": 365,
+      "width": 45,
+      "height": 45,
+      "sourcePixelScale": 5
+    },
+    "Damage_Ice_dmg-large.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Damage_Ice_dmg-large.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Damage_Types#Ice",
+      "sha256": "ed74432d3bd5fb4511b4dc3abd841aaf32607bb998c837475354693c62c7a872",
+      "bytes": 306,
+      "width": 45,
+      "height": 45,
+      "sourcePixelScale": 5
+    },
+    "Damage_Slice_dmg-large.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Damage_Slice_dmg-large.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Damage_Types#Slice",
+      "sha256": "a4e6eee06f3016866ec5937c0e3309ee8f186e0c1759a2de87c9dc66eaa7bfa9",
+      "bytes": 327,
+      "width": 45,
+      "height": 45,
+      "sourcePixelScale": 5
+    },
+    "Damage_Heal_dmg-large.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Damage_Heal_dmg-large.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Damage_Types#Healing",
+      "sha256": "840cd8d65e40534fea945dd262cfe1d05a4cef1bf80adc26ee5650066429499d",
+      "bytes": 334,
+      "width": 45,
+      "height": 45,
+      "sourcePixelScale": 5
+    },
+    "Damage_Drill_dmg-large.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Damage_Drill_dmg-large.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Damage_Types#Drill",
+      "sha256": "b52cc54e2be3b6e124e8dc9f8699d572a31811f1507ddcc97fb8c27ea144855b",
+      "bytes": 326,
+      "width": 45,
+      "height": 45,
+      "sourcePixelScale": 5
+    },
+    "Damage_Holy_dmg-large.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Damage_Holy_dmg-large.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Damage_Types#Holy",
+      "sha256": "f68f667fcf106500f45862020674d220fb4556f1a9df33af56932d59f9bbdc56",
+      "bytes": 7963,
+      "width": 45,
+      "height": 45,
+      "sourcePixelScale": 5
+    },
+    "Damage_Physics_dmg-large.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Damage_Physics_dmg-large.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Damage_Types#Physics",
+      "sha256": "4dc16f1ad64e5677356b2cd44514d4da1c31a2ae307f2cce94c9dae2ad97e66d",
+      "bytes": 323,
+      "width": 45,
+      "height": 45,
+      "sourcePixelScale": 5
+    },
+    "Damage_Radioactive_dmg-large.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Damage_Radioactive_dmg-large.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Damage_Types#Radioactive",
+      "sha256": "d0ec535faf2a4b9ecadf7c32ed351a7b4178ebac785f24365905932d2ef1b291",
+      "bytes": 330,
+      "width": 45,
+      "height": 45,
+      "sourcePixelScale": 5
+    },
+    "Damage_Poison_dmg-large.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Damage_Poison_dmg-large.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Damage_Types#Poison",
+      "sha256": "100bb1e823062d89d3d07af03d1be495f3df683c01e12269db235fcd0e668b33",
+      "bytes": 334,
+      "width": 45,
+      "height": 45,
+      "sourcePixelScale": 5
+    },
+    "Spell_light_bullet.png": {
+      "url": "https://sage-images.acidflow.stream/images/spells/Spell_light_bullet.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Spells",
+      "sha256": "89e605da0751ee5fefeac09de84c9d72174193b5d8f6530dd81627cad3e53537",
+      "bytes": 181,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Spell_purple_explosion_field.png": {
+      "url": "https://sage-images.acidflow.stream/images/spells/Spell_purple_explosion_field.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Spells",
+      "sha256": "263095db133c070f23d6ea249c89d31aed81cc36dec62a039d8663a6fdf7bc0c",
+      "bytes": 239,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Spell_damage.png": {
+      "url": "https://sage-images.acidflow.stream/images/spells/Spell_damage.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Spells",
+      "sha256": "a574a3c5274b26d06fe1943769b69859c2996cd6a6f80fbe78f3036272518f9d",
+      "bytes": 193,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Spell_burst_2.png": {
+      "url": "https://sage-images.acidflow.stream/images/spells/Spell_burst_2.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Spells",
+      "sha256": "23617a2306acbc94fefa4b6a18c51a9c0b97d671e6d11ea51752ce710481e4fd",
+      "bytes": 193,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Spell_material_water.png": {
+      "url": "https://sage-images.acidflow.stream/images/spells/Spell_material_water.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Spells",
+      "sha256": "b60629222ab7e929a3491c0502d7e7f043767741aba08351a7f8ebc75bc47996",
+      "bytes": 214,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Spell_timer.png": {
+      "url": "https://sage-images.acidflow.stream/images/spells/Spell_timer.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Spells",
+      "sha256": "249e9a98be25b41defd4fc6b2dbc29487dcfdceb0db0122058776b6d6dbdc9c6",
+      "bytes": 298,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Spell_blood_magic.png": {
+      "url": "https://sage-images.acidflow.stream/images/spells/Spell_blood_magic.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Spells",
+      "sha256": "338f09c3f67b1a3e05a44ad729c1a11c055b2da4335013401297165afc942e73",
+      "bytes": 328,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Spell_torch.png": {
+      "url": "https://sage-images.acidflow.stream/images/spells/Spell_torch.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Spells",
+      "sha256": "11deefb466fa8526b92c3d4f64fa1d751b942e1fc5abfb401440a8aa6111b88b",
+      "bytes": 232,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Object_Treasure_Chest.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Object_Treasure_Chest.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Treasure_Chest",
+      "sha256": "79f8af56f5e32d5ed01b4df7a8897425daa097389a50287e68fbe865aeaefb46",
+      "bytes": 257,
+      "width": 90,
+      "height": 65,
+      "sourcePixelScale": 5
+    },
+    "Chest_random_super.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Chest_random_super.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Great_Treasure_Chest",
+      "sha256": "fc28756e8064502400d836c3def003c25c32ecc44c9fe5deb07df6af3338c519",
+      "bytes": 279,
+      "width": 90,
+      "height": 65,
+      "sourcePixelScale": 5
+    },
+    "Wand_0511.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Wand_0511.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Wands",
+      "sha256": "80fcaef58bce552663b01fb125f2654ff483efba68cbbbfa6c61fb088b00977b",
+      "bytes": 338,
+      "width": 112,
+      "height": 56,
+      "sourcePixelScale": 8
+    },
+    "Heart_extrahp_default.gif": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Heart_extrahp_default.gif",
+      "sourcePage": "https://noita.wiki.gg/wiki/Healing#Extra_Max_Health",
+      "sha256": "1f54ceafa4d19806787908853d4d61854ab2cdfe0706ccda89974e32e83c370b",
+      "bytes": 2930,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 4
+    },
+    "Item_Potion.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Item_Potion.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Potions",
+      "sha256": "e03a74d0deb701a0cc0afbbd5b07d46feea66c024914a360aebb0c83fca42066",
+      "bytes": 445,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Item_material_pouch.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Item_material_pouch.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Powder_Pouch",
+      "sha256": "35421c0d54aa87fbd9c1b6eba73921f545164c26175e69b2fa9f9b952b0eb00a",
+      "bytes": 456,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Chest_mimic.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Chest_mimic.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Creatures#Mimics",
+      "sha256": "b737c0a50a66f560065b2e5a88a9b4d7e8d8bb0a17bebfa5187d486bca5bd46a",
+      "bytes": 595,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 3.6363636363636362,
+      "pixelScaleNote": "Wiki preview resized from the native 22×22 chest_mimic sprite."
+    },
+    "high_slot_wand.png": {
+      "url": "https://sage-images.acidflow.stream/images/icons/high_slot_wand.png",
+      "sourcePage": "https://sage-images.acidflow.stream/images/icons/high_slot_wand.png",
+      "sha256": "04572ebc7c42f0ebfc84167c5ae2df8c3176786705cf4815b5ed8c981f929228",
+      "bytes": 202,
+      "width": 27,
+      "height": 15,
+      "sourcePixelScale": 1
+    },
+    "Monster_weakspirit.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_weakspirit.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#ghost",
+      "sha256": "2fc5224e9d1ec00e650ba536bad147c58f1b112f129366861c7b2691d6de72b8",
+      "bytes": 5063,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Giantshooter.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Giantshooter.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#slimes",
+      "sha256": "1a61b12f75dde99fd327a37bd0b88529f0abbede9524cb043220adca93e127c6",
+      "bytes": 894,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_flynest_static.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_flynest_static.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#nest",
+      "sha256": "f8678fd23976e9f44e759db1bda7158fff249b6a15b510ae030619236667be10",
+      "bytes": 899,
+      "width": 84,
+      "height": 84,
+      "sourcePixelScale": 3
+    },
+    "Monster_Fly.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Fly.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#fly",
+      "sha256": "868a5bfc3303bf451894fa4c0c2808282542372556240190c85eee131ceb85e0",
+      "bytes": 386,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_sheep.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_sheep.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Creatures#Helpless_Animals",
+      "sha256": "126927e9f08dd57b32cc0baa8d62b787457d16c76cacf5de65844943ed6abca4",
+      "bytes": 713,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Firemage.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Firemage.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Creatures#Mages",
+      "sha256": "85f8ba40c1c7dc29e90094a5b01be43c2e9c595cf49c5ae9973e05a45bfc58c8",
+      "bytes": 365,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Scavenger_heal.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Scavenger_heal.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Creatures#Healers",
+      "sha256": "ca134156049e0aec3537ef8db95f06ca75f57508dc9b3ec6ace37d606b158bce",
+      "bytes": 395,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Longleg.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Longleg.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#spider",
+      "sha256": "45adfe1bddae05d6958cbccfb371ca40a0d529166ba50f8c5ee10874fea40a26",
+      "bytes": 331,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Shotgunner.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Shotgunner.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Creatures#Hiisi",
+      "sha256": "dbbf6a6e89023abbdcab6113d90655eecf06e4d9aa8170630ce17e56a61de6b6",
+      "bytes": 365,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Missilecrab.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Missilecrab.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Creatures#Robots",
+      "sha256": "aa7b35416275bfc08c73fe847004036c76dbd3807364502cca8bc4114a0dbefe",
+      "bytes": 307,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Worm_big.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Worm_big.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Creatures#Worms",
+      "sha256": "8fa5acc7e5aaa763a3c7c9b7490014c4bb57a5ea556d539afd18879b9c2b515f",
+      "bytes": 416,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Giant.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Giant.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#giant",
+      "sha256": "99ad3925ac3db2d63b433ff0b7e5ab099dc1c6289b61f12d78bb05ec2e91d477",
+      "bytes": 460,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Fungus.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Fungus.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#fungus",
+      "sha256": "32b8abb652117c751df0411939a085dfef4363535f75d8dc50fb818b94746163",
+      "bytes": 311,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Zombie.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Zombie.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Creatures#Monsters",
+      "sha256": "c0b0475888394d9f6a83f29933b69a41c7abfd51bd6a4622ee38df79562611f4",
+      "bytes": 308,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Iceskull.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Iceskull.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#ice",
+      "sha256": "f59382696f689b4e0823cdf7b9d343ce31362795729a8d329bf29706d0ff48c4",
+      "bytes": 314,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_playerghost.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_playerghost.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#apparition",
+      "sha256": "daea3e1e189f80c96812fd50aee11d43f5aeafd0503dc52f8099a7b5d2bc6ea4",
+      "bytes": 909,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Bat.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Bat.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#bat",
+      "sha256": "7f11e1e8b938bd28ea489de53f9286e541206c647ca6583c1a45d7477ae51191",
+      "bytes": 323,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Fireskull.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Fireskull.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#fire",
+      "sha256": "68b317763663f527c3857dfaa4f0f60a0da1306e574cc583ec283ced79b61d42",
+      "bytes": 354,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Ant.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Ant.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#ant",
+      "sha256": "2c7744eee58b0d99200a4454bd68f38207a29e779d80003577f5b831d3c025a3",
+      "bytes": 330,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_eel.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_eel.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#eel",
+      "sha256": "5eaf4a495f3ac9c7ef953db4d53c242f92b1d6d92843a8fa3b924dbded8c5712",
+      "bytes": 735,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Shooterflower.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Shooterflower.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#flower",
+      "sha256": "3866177b4da65667e3ba1a1afa573a3debd92439d3f12075e11d510e6b717c35",
+      "bytes": 402,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_Rat.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Rat.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#rat",
+      "sha256": "4fe7d948b0679962a4be9401a963b1e7901be73a7dd82004090f7135aa127011",
+      "bytes": 240,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_wolf.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_wolf.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#wolf",
+      "sha256": "f136a13598b32b9e0f4c08bacc22bdb9d43c372cf12529ee403baa65e5885d25",
+      "bytes": 692,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "Monster_arrowtrap_left.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_arrowtrap_left.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#trap",
+      "sha256": "104339d20b8759762be1b09805895e6e0616ef1026ffc399fc043ab4d73a8323",
+      "bytes": 150,
+      "width": 10,
+      "height": 10,
+      "sourcePixelScale": 1
+    },
+    "Monster_Wizard_swapper.png": {
+      "url": "https://sage-images.acidflow.stream/images/metrics/wiki/Monster_Wizard_swapper.png",
+      "sourcePage": "https://noita.wiki.gg/wiki/Factions#mage_swapper",
+      "sha256": "aa14577fc2b89c492b28ace25d9f1247b263a34eed22a60072be0a8746223148",
+      "bytes": 3275,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    },
+    "shop.png": {
+      "url": "https://sage-images.acidflow.stream/images/icons/shop.png",
+      "sourcePage": "https://sage-images.acidflow.stream/images/icons/shop.png",
+      "sha256": "1ad556f7e9f04da2ef2071792a6b6318f00114d6a1f31effd2bca6ce4b96b717",
+      "bytes": 276,
+      "width": 20,
+      "height": 20,
+      "sourcePixelScale": 1
+    },
+    "Spell_alpha.png": {
+      "url": "https://sage-images.acidflow.stream/images/spells/Spell_alpha.png",
+      "sourcePage": "https://sage-images.acidflow.stream/images/spells/Spell_alpha.png",
+      "sha256": "058fc56823a9047f45106b724a9672c4e6158103e19c0a248dcb9c43200d2e51",
+      "bytes": 303,
+      "width": 80,
+      "height": 80,
+      "sourcePixelScale": 5
+    }
+  },
+  "metrics": {
+    "spellDamageTypes.projectile": "Damage_Projectile_dmg-large.png",
+    "spellDamageTypes.melee": "Damage_Melee_dmg-large.png",
+    "spellDamageTypes.electric": "Damage_Electricity_dmg-large.png",
+    "spellDamageTypes.fire": "Damage_Fire_dmg-large.png",
+    "spellDamageTypes.explosion": "Damage_Explosion_dmg-large.png",
+    "spellDamageTypes.ice": "Damage_Ice_dmg-large.png",
+    "spellDamageTypes.slice": "Damage_Slice_dmg-large.png",
+    "spellDamageTypes.healing": "Damage_Heal_dmg-large.png",
+    "spellDamageTypes.drill": "Damage_Drill_dmg-large.png",
+    "spellDamageTypes.holy": "Damage_Holy_dmg-large.png",
+    "spellDamageTypes.physicsHit": "Damage_Physics_dmg-large.png",
+    "spellDamageTypes.radioactive": "Damage_Radioactive_dmg-large.png",
+    "spellDamageTypes.poison": "Damage_Poison_dmg-large.png",
+    "spellTypes.projectile": "Spell_light_bullet.png",
+    "spellTypes.staticProjectile": "Spell_purple_explosion_field.png",
+    "spellTypes.modifier": "Spell_damage.png",
+    "spellTypes.multicast": "Spell_burst_2.png",
+    "spellTypes.material": "Spell_material_water.png",
+    "spellTypes.other": "Spell_timer.png",
+    "spellTypes.utility": "Spell_blood_magic.png",
+    "spellTypes.passive": "Spell_torch.png",
+    "axes.chests": "Object_Treasure_Chest.png",
+    "axes.greatChests": "Chest_random_super.png",
+    "axes.wands": "Wand_0511.png",
+    "axes.hearts": "Heart_extrahp_default.gif",
+    "axes.potions": "Item_Potion.png",
+    "axes.pouches": "Item_material_pouch.png",
+    "axes.mimics": "Monster_Chest_mimic.png",
+    "highSlotWands": "high_slot_wand.png",
+    "factionCreatures.ghost": "Monster_weakspirit.png",
+    "factionCreatures.slimes": "Monster_Giantshooter.png",
+    "factionCreatures.nest": "Monster_flynest_static.png",
+    "factionCreatures.fly": "Monster_Fly.png",
+    "factionCreatures.helpless": "Monster_sheep.png",
+    "factionCreatures.mage": "Monster_Firemage.png",
+    "factionCreatures.healer": "Monster_Scavenger_heal.png",
+    "factionCreatures.spider": "Monster_Longleg.png",
+    "factionCreatures.orcs": "Monster_Shotgunner.png",
+    "factionCreatures.robot": "Monster_Missilecrab.png",
+    "factionCreatures.worm": "Monster_Worm_big.png",
+    "factionCreatures.giant": "Monster_Giant.png",
+    "factionCreatures.fungus": "Monster_Fungus.png",
+    "factionCreatures.zombie": "Monster_Zombie.png",
+    "factionCreatures.ice": "Monster_Iceskull.png",
+    "factionCreatures.apparition": "Monster_playerghost.png",
+    "factionCreatures.bat": "Monster_Bat.png",
+    "factionCreatures.fire": "Monster_Fireskull.png",
+    "factionCreatures.ant": "Monster_Ant.png",
+    "factionCreatures.eel": "Monster_eel.png",
+    "factionCreatures.flower": "Monster_Shooterflower.png",
+    "factionCreatures.rat": "Monster_Rat.png",
+    "factionCreatures.wolf": "Monster_wolf.png",
+    "factionCreatures.trap": "Monster_arrowtrap_left.png",
+    "factionCreatures.mage_swapper": "Monster_Wizard_swapper.png",
+    "hordeCreatures.monsters": "Monster_Zombie.png",
+    "hordeCreatures.hiisi": "Monster_Shotgunner.png",
+    "hordeCreatures.robots": "Monster_Missilecrab.png",
+    "hordeCreatures.healers": "Monster_Scavenger_heal.png",
+    "hordeCreatures.mages": "Monster_Firemage.png",
+    "hordeCreatures.worms": "Monster_Worm_big.png",
+    "hordeCreatures.helplessAnimals": "Monster_sheep.png",
+    "hordeCreatures.mimics": "Monster_Chest_mimic.png",
+    "axes.shops": "shop.png",
+    "axes.hvSpells": "Spell_alpha.png",
+    "totalSpells": null,
+    "looseLootSpells": null,
+    "wandSpells": null,
+    "factionTotal": null,
+    "hordeTotal": null
+  },
+  "pixelScaleNote": "Uniform integer pixel grids measured from unmodified source images; display uses two CSS pixels per source game pixel."
+}

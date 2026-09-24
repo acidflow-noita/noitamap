@@ -103,6 +103,65 @@ export const refreshBadgePopovers = (root: HTMLElement): void => {
   });
 };
 
+/** Bootstrap retains registered elements until dispose; removing their DOM
+ * alone leaks both the badge and its event handlers. */
+const disposeBadgePopovers = (root: HTMLElement): void => {
+  root.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => {
+    // @ts-ignore
+    bootstrap.Popover.getInstance(el)?.dispose();
+  });
+};
+
+/** The selector changes with map metadata, translation or the daily date,
+ * never with the viewport's coordinates. Keep existing badges otherwise. */
+export const createMapSelectorRenderer = (root: HTMLElement) => {
+  let previous = '';
+  return (mapName: string) => {
+    const def = getAllMapDefinitions().find(([key]) => key === mapName)?.[1];
+    if (!def) return;
+    const identity = JSON.stringify([def, i18next.language, getMapLabel(def),
+      def.key === 'dynamic-main-branch' ? new Date().toISOString().slice(0, 10) : null]);
+    if (identity === previous) return;
+    previous = identity;
+    disposeBadgePopovers(root);
+    root.removeAttribute('data-i18n');
+    root.replaceChildren();
+    root.classList.add('d-inline-flex', 'align-items-center', 'gap-1');
+    const label = document.createElement('span'); label.className = 'me-2'; label.textContent = getMapLabel(def);
+    root.append(label);
+    renderMapBadges(root, def, true);
+    refreshBadgePopovers(root);
+  };
+};
+
+/** Refresh the synthetic date badge without making camera frames do UI work.
+ * Visibility catches up when the browser suspended the midnight timer. */
+export const refreshMapSelectorDate = (render: () => void): (() => void) => {
+  const utcDay = () => new Date().toISOString().slice(0, 10);
+  let renderedDay = utcDay();
+  let timer: ReturnType<typeof setTimeout>;
+  const schedule = () => {
+    clearTimeout(timer);
+    const now = Date.now();
+    timer = setTimeout(refresh, (Math.floor(now / 86400000) + 1) * 86400000 - now);
+  };
+  const refresh = () => {
+    const day = utcDay();
+    if (day !== renderedDay) {
+      renderedDay = day;
+      render();
+    }
+    schedule();
+  };
+  const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
+  document.addEventListener('visibilitychange', onVisible);
+  schedule();
+  return () => {
+    clearTimeout(timer);
+    document.removeEventListener('visibilitychange', onVisible);
+  };
+};
+
 const buildDropdownLink = (mapName: string, def: MapDefinition): HTMLAnchorElement => {
   const a = document.createElement('a');
   a.classList.add(NAV_LINK_IDENTIFIER, 'text-nowrap', 'dropdown-item', 'd-flex', 'align-items-center', 'gap-1');
@@ -121,6 +180,7 @@ const buildDropdownLink = (mapName: string, def: MapDefinition): HTMLAnchorEleme
 
 export const createMapLinks = (): HTMLUListElement => {
   const navLinksUl = assertElementById('navLinksList', HTMLUListElement);
+  disposeBadgePopovers(navLinksUl);
   navLinksUl.replaceChildren();
 
   for (const [mapName, def] of getAllMapDefinitions()) {
@@ -139,6 +199,7 @@ export const updateMapLinkTranslations = (): void => {
     const link = navLinksUl.querySelector(`[data-map-key="${mapName}"]`) as HTMLAnchorElement | null;
     if (!link) continue;
     const wasActive = link.classList.contains('active');
+    disposeBadgePopovers(link);
     link.replaceChildren();
 
     const labelSpan = document.createElement('span');

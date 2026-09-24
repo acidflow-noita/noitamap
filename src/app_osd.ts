@@ -4,6 +4,7 @@ import { isLightMode } from './light-mode';
 import { isSimplisticBackground } from './simplistic-background';
 
 import { CHUNK_SIZE } from './constants';
+import { cameraPixelDelta, readCameraMatrix } from './portals/geometry';
 
 declare const OpenSeadragon: any;
 
@@ -317,6 +318,8 @@ export class AppOSD {
 
   async setMap(mapName: MapName, pos?: ZoomPos): Promise<void> {
     if (mapName === this.mapName) return;
+    this.cancelNavigation();
+    this.viewer.raiseEvent('map-change-start', { mapName });
     this.mapName = mapName;
     await this.bindCacheBustHandler();
     this.world.removeAll();
@@ -354,10 +357,19 @@ export class AppOSD {
   }
 
   /** Fly to a POI with a single camera clock. False means interrupted. */
-  panToTarget(x: number, y: number, opts?: { offsetXPx?: number }): Promise<boolean> {
+  panToTarget(x: number, y: number, opts?: { offsetXPx?: number; offsetYPx?: number; reportHighlight?: boolean }): Promise<boolean> {
     this.cancelActivePan();
     this.removePanTrail();
     if (!Number.isFinite(x) || !Number.isFinite(y)) return Promise.resolve(false);
+    const id = this.panNavigationId = (this.panNavigationId || 0) + 1;
+    const report = !!opts?.reportHighlight, target = { worldX: x, worldY: y };
+    let finished = false;
+    const finishReport = (completed: boolean) => {
+      if (finished) return;
+      finished = true;
+      if (report) this.viewer.raiseEvent?.('report-navigation-end', { id, target, completed });
+    };
+    if (report) this.viewer.raiseEvent?.('report-navigation-start', { id, target });
     const viewport = this.viewport;
     // Read the rendered position, not the target of an unfinished OSD spring.
     const here = viewport.getCenter(true);
@@ -365,22 +377,33 @@ export class AppOSD {
     const canvas = this.viewer.canvas as HTMLElement;
     const width = canvas?.clientWidth || 1200;
     const height = canvas?.clientHeight || 800;
-    const offset = Math.max(0, Math.min(opts?.offsetXPx ?? 0, (width - 1) / 2));
-    const visibleWidth = width - offset * 2;
-    const endZoom = Math.min(visibleWidth, height) / (CHUNK_SIZE * width);
-    const startVisibleX = here.x - offset / (width * startZoom);
-    const distance = Math.hypot(startVisibleX - x, here.y - y);
-    const curve = createPanCurve(startVisibleX, here.y, x, y);
+    const matrix = this.renderedCameraMatrix();
+    const offset = Math.max(-(width - 1) / 2, Math.min(opts?.offsetXPx ?? 0, (width - 1) / 2));
+    const offsetY = Math.max(-(height - 1) / 2, Math.min(opts?.offsetYPx ?? 0, (height - 1) / 2));
+    const visibleWidth = width - Math.abs(offset) * 2, visibleHeight = height - Math.abs(offsetY) * 2;
+    const endZoom = Math.min(visibleWidth * startZoom / (CHUNK_SIZE * (Math.abs(matrix.a) + Math.abs(matrix.c))),
+      visibleHeight * startZoom / (CHUNK_SIZE * (Math.abs(matrix.b) + Math.abs(matrix.d))));
+    const centerX = matrix.a * here.x + matrix.c * here.y + matrix.e;
+    const centerY = matrix.b * here.x + matrix.d * here.y + matrix.f;
+    const shift = cameraPixelDelta(matrix, offset + centerX - width / 2, offsetY + centerY - height / 2);
+    if (!shift || !Number.isFinite(endZoom) || endZoom <= 0) { finishReport(false); return Promise.resolve(false); }
+    const startVisibleX = here.x - shift.x;
+    const startVisibleY = here.y - shift.y;
+    const distance = Math.hypot(startVisibleX - x, startVisibleY - y);
+    const curve = createPanCurve(startVisibleX, startVisibleY, x, y);
     const startLog = Math.log(startZoom), endLog = Math.log(endZoom);
     const midpointX = (curve.x1 + 2 * curve.cxW + curve.x2) / 4;
     const midpointY = (curve.y1 + 2 * curve.cyW + curve.y2) / 4;
     // At the overview, fit the entire arrow around the camera's actual curved
     // route midpoint, including the part of the canvas covered by a sidebar.
-    const spanX = Math.max(CHUNK_SIZE, 2.3 * Math.max(
-      Math.abs(curve.x1 - midpointX), Math.abs(curve.cxW - midpointX), Math.abs(curve.x2 - midpointX)));
-    const spanY = Math.max(CHUNK_SIZE, 2.3 * Math.max(
-      Math.abs(curve.y1 - midpointY), Math.abs(curve.cyW - midpointY), Math.abs(curve.y2 - midpointY)));
-    const overviewZoom = Math.min(startZoom, endZoom, visibleWidth / (width * spanX), height / (width * spanY));
+    const projected = [[curve.x1, curve.y1], [curve.cxW, curve.cyW], [curve.x2, curve.y2]].map(([px, py]) => ({
+      x: (matrix.a * (px - midpointX) + matrix.c * (py - midpointY)) / startZoom,
+      y: (matrix.b * (px - midpointX) + matrix.d * (py - midpointY)) / startZoom,
+    }));
+    const unitScale = Math.hypot(matrix.a, matrix.b) / startZoom;
+    const spanX = Math.max(CHUNK_SIZE * unitScale, 2.3 * Math.max(...projected.map(point => Math.abs(point.x))));
+    const spanY = Math.max(CHUNK_SIZE * unitScale, 2.3 * Math.max(...projected.map(point => Math.abs(point.y))));
+    const overviewZoom = Math.min(startZoom, endZoom, visibleWidth / spanX, visibleHeight / spanY);
     const overviewLog = Math.log(overviewZoom);
     const hasOverview = distance > CHUNK_SIZE / 2;
     const duration = hasOverview ? Math.max(1400, Math.min(2600, 1100 + distance * .08)) : 650;
@@ -403,24 +426,25 @@ export class AppOSD {
       const v = 1 - u;
       // Follow the arrow, with the visible (sidebar-free) center on the curve.
       viewport.panTo(new OpenSeadragon.Point(
-        v * v * curve.x1 + 2 * v * u * curve.cxW + u * u * curve.x2 + offset / (width * zoom),
-        v * v * curve.y1 + 2 * v * u * curve.cyW + u * u * curve.y2,
+        v * v * curve.x1 + 2 * v * u * curve.cxW + u * u * curve.x2 + shift.x * startZoom / zoom,
+        v * v * curve.y1 + 2 * v * u * curve.cyW + u * u * curve.y2 + shift.y * startZoom / zoom,
       ), true);
     };
     if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       apply(1);
+      finishReport(true);
       return Promise.resolve(true);
     }
-    if (hasOverview) this.addPanTrail(curve);
+    if (hasOverview) this.addPanTrail(curve, !report);
     return new Promise<boolean>(resolve => {
       const start = performance.now();
-      const events = ['canvas-drag', 'canvas-scroll', 'canvas-press', 'canvas-key', 'close'];
+      const events = ['canvas-drag', 'canvas-scroll', 'canvas-press', 'canvas-key', 'close', 'rotate', 'flip'];
       const cleanup = () => {
         for (const event of events) this.viewer.removeHandler(event, interrupt);
         this.activePanCancel = null;
       };
       const interrupt = () => { this.cancelActivePan(); this.removePanTrail(); };
-      this.activePanCancel = () => { cleanup(); resolve(false); };
+      this.activePanCancel = () => { cleanup(); finishReport(false); resolve(false); };
       const tick = (now: number) => {
         const t = Math.min(1, Math.max(0, (now - start) / duration));
         apply(t);
@@ -428,8 +452,9 @@ export class AppOSD {
         else {
           this.activePanRaf = 0;
           cleanup();
-          this.addPulseMarker(x, y);
+          if (!report) this.addPulseMarker(x, y);
           this.panTimer = setTimeout(() => { this.removePanTrail(); this.panTimer = undefined; }, 400);
+          finishReport(true);
           resolve(true);
         }
       };
@@ -441,6 +466,18 @@ export class AppOSD {
   private panTimer: any = undefined;
   private activePanRaf: number = 0;
   private activePanCancel: (() => void) | null = null;
+  private panNavigationId = 0;
+
+  private renderedCameraMatrix() {
+    return readCameraMatrix((x, y) => this.viewport.pixelFromPoint(new OpenSeadragon.Point(x, y), true),
+      this.canvas.clientWidth, this.viewport.getFlip?.());
+  }
+
+  /** Cancel an explicit POI flight without changing the rendered camera position. */
+  cancelNavigation(): void {
+    this.cancelActivePan();
+    this.removePanTrail();
+  }
 
   /** Stop any active fly-to animation immediately. Called by the next pan
    *  before it kicks off so we don't have two rAF loops fighting over the
@@ -461,7 +498,7 @@ export class AppOSD {
   }
 
   /** Add an SVG trail line overlay connecting origin to destination */
-  private addPanTrail(curve: PanCurve) {
+  private addPanTrail(curve: PanCurve, showTarget = true) {
     this.removePanTrail();
     const container = this.viewer.container as HTMLElement;
 
@@ -478,8 +515,8 @@ export class AppOSD {
     const uid = `pt-${Math.random().toString(36).slice(2, 8)}`;
     const gradId = `${uid}-grad`;
     const arrowId = `${uid}-arrow`;
-    const trailColor = 'oklch(72% 0.18 152)';
-    const trailColorBright = 'oklch(82% 0.21 152)';
+    const trailColor = 'var(--report-marker-selected, #6ee7b7)';
+    const trailColorBright = trailColor;
 
     // No SVG filters: long offscreen paths otherwise allocate huge blur surfaces.
     // The gradient runs along the line in user-space coords so the trail
@@ -521,13 +558,13 @@ export class AppOSD {
     ring.setAttribute('stroke', trailColorBright);
     ring.setAttribute('stroke-width', '1.5');
     ring.setAttribute('stroke-opacity', '0.7');
-    svg.appendChild(ring);
+    if (showTarget) svg.appendChild(ring);
 
     const dot = document.createElementNS(SVG_NS, 'circle');
     dot.setAttribute('class', 'pan-trail-dot');
     dot.setAttribute('r', '3.5');
     dot.setAttribute('fill', trailColorBright);
-    svg.appendChild(dot);
+    if (showTarget) svg.appendChild(dot);
 
     // Pick up the gradient element so we can update its endpoints per frame.
     const gradient = svg.querySelector(`#${gradId}`) as SVGLinearGradientElement;
@@ -561,14 +598,14 @@ export class AppOSD {
   private updatePanTrailPositions() {
     if (!this.panTrailData) return;
     const { path, dot, ring, gradient, x1, y1, x2, y2, cxW, cyW } = this.panTrailData;
-    const viewport = this.viewport;
-    const p1 = viewport.viewportToViewerElementCoordinates(new OpenSeadragon.Point(x1, y1));
-    const p2 = viewport.viewportToViewerElementCoordinates(new OpenSeadragon.Point(x2, y2));
+    const matrix = this.renderedCameraMatrix();
+    const project = (x: number, y: number) => ({ x: matrix.a * x + matrix.c * y + matrix.e, y: matrix.b * x + matrix.d * y + matrix.f });
+    const p1 = project(x1, y1), p2 = project(x2, y2);
     // World control point → pixel control point. Because the viewport
     // transform is uniform-scale + translate, this preserves the arc's
     // shape: the curve looks identical relative to the line at every zoom
     // level. No more "warping" or direction flips during the cinematic.
-    const cp = viewport.viewportToViewerElementCoordinates(new OpenSeadragon.Point(cxW, cyW));
+    const cp = project(cxW, cyW);
 
     path.setAttribute('d', `M ${p1.x} ${p1.y} Q ${cp.x} ${cp.y} ${p2.x} ${p2.y}`);
 
@@ -606,7 +643,7 @@ export class AppOSD {
     el.className = 'pan-pulse-marker';
     el.style.cssText = `
       position: absolute; width: 20px; height: 20px;
-      border: 2px solid oklch(62.7% 0.194 149.214); border-radius: 50%;
+      border: 2px solid var(--report-marker-selected, #6ee7b7); border-radius: 50%;
       pointer-events: none; z-index: 9998;
       animation: pan-pulse 1.5s ease-out forwards;
       transform: translate(-50%, -50%);

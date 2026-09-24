@@ -15,6 +15,7 @@ import hiddenMessages from '../data/hidden_messages.json';
 import { clearTargetPoiId } from './url';
 import { drawSpriteToCanvas, getSpriteOffset, loadSpritesheetAndAtlas } from '../telescope/poi-spatial-index';
 import { buildExtendedCreatureSectionByName } from '../extended-info';
+import { describeBiome } from './biome-names';
 
 // Preload the POI atlas, but DEFER it to browser idle. Loading it eagerly at
 // module init pulls a ~1.25 MB spritesheet + atlas decode onto the main thread
@@ -307,27 +308,11 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
     pathEl.addEventListener('mouseenter', () => {
       const tooltip = getBiomeTooltip();
 
-      // Check if we have a biome name and if it's not empty
-      if (biomeName && biomeName.trim() !== '' && biomeName !== '_EMPTY_') {
-        // biomeName is either already "biome_xxx" or just "xxx"
-        // If it doesn't start with "biome_", prepend it
-        const translationKey = biomeName.startsWith('biome_') ? biomeName : `biome_${biomeName}`;
-
-        // Try to get translation from gameContent.biomes using the full key
-        let translatedName = i18next.t(`gameContent.biomes.${translationKey}`, { defaultValue: null });
-
-        // If not found, fall back to just the biome name
-        if (!translatedName) {
-          translatedName = biomeName;
-        }
-
-        // Format: Translated Name\n(filename)
-        tooltip.innerHTML = `${translatedName}<br><span style="font-family: Inter, sans-serif; font-feature-settings: 'tnum', 'zero', 'cv09', 'cv02', 'cv03', 'cv04'; font-weight: 400; opacity: 0.7;">(${text})</span>`;
-      } else {
-        // No in-game name available
-        const noInGameName = i18next.t('noInGameName');
-        tooltip.innerHTML = `${noInGameName}<br><span style="font-family: Inter, sans-serif; font-feature-settings: 'tnum', 'zero', 'cv09', 'cv02', 'cv03', 'cv04'; font-weight: 400; opacity: 0.7;">(${text})</span>`;
-      }
+      const description = describeBiome(text, biomeName ?? '');
+      const filename = document.createElement('span');
+      filename.style.cssText = "font-family: Inter, sans-serif; font-feature-settings: 'tnum', 'zero', 'cv09', 'cv02', 'cv03', 'cv04'; font-weight: 400; opacity: 0.7;";
+      filename.textContent = `(${description.internalName})`;
+      tooltip.replaceChildren(document.createTextNode(description.displayName), document.createElement('br'), filename);
 
       tooltip.style.display = 'block';
     });

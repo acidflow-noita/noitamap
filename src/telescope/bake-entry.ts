@@ -48,6 +48,8 @@ export async function prepareBake(seed: number) {
   const decor = await prepareDecorationExport(generation, false);
   if (!decor?.cells.length)
     throw new Error("Required pixel-scene/POI decoration export is empty");
+  // The revision describes newly exported decoration pixels, not merely POIs.
+  metadata.mimicSpritesVersion = decor.mimicSpritesVersion;
   return {
     seed,
     version: TERRAIN_VERSION,

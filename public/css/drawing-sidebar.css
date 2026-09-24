@@ -1,26 +1,5 @@
 /* Drawing Sidebar Styles */
 
-/* ── UI Facelift: soften aggressive outlines (Tailwind 4 palette) ──────── */
-
-.drawing-sidebar .btn-outline-light,
-.drawing-toolbar .btn-outline-light {
-  --bs-btn-color: var(--text-muted);
-  --bs-btn-border-color: var(--border-strong);
-  --bs-btn-hover-color: var(--text);
-  --bs-btn-hover-bg: var(--accent-bg);
-  --bs-btn-hover-border-color: var(--accent-strong);
-  --bs-btn-active-color: var(--accent-fg);
-  --bs-btn-active-bg: var(--accent-bg);
-  --bs-btn-active-border-color: var(--accent-strong);
-}
-
-.drawing-sidebar .btn-check:checked + .btn-outline-light,
-.drawing-toolbar .btn-check:checked + .btn-outline-light {
-  color: var(--accent-fg);
-  background-color: var(--accent-bg);
-  border-color: var(--accent-strong);
-}
-
 /* Selected drawing tool: tint icon with current brush color (except move) */
 .drawing-toolbar .btn-check:checked + .btn-outline-light[data-tool]:not([data-tool="move"]) {
   color: var(--drawing-color, var(--accent-fg));
@@ -35,12 +14,13 @@
 
 /* Icon-only buttons: force square */
 .drawing-sidebar .btn.btn-sm:not(.flex-fill):not(.w-100):not([data-color]) {
-  min-width: 2rem;
-  min-height: 2rem;
-  padding: 0.2rem 0.35rem;
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  padding: var(--control-padding-y);
 }
 
-/* Buttons with text no longer use CSS gap, they use .me-1 on icons uniformly */
+/* Colour swatches are 24px samples, not full-size toolbar controls. */
+.drawing-sidebar .btn[data-color] { min-height: 24px; min-width: 24px; padding: 0; }
 
 .drawing-sidebar .btn-outline-danger {
   --bs-btn-color: var(--danger-fg);
@@ -59,8 +39,6 @@
 }
 
 /* Disabled buttons: fade border so they look less prominent than active ones */
-.drawing-sidebar .btn-outline-light:disabled,
-.drawing-sidebar .btn-outline-light.disabled,
 .drawing-sidebar .btn-outline-danger:disabled,
 .drawing-sidebar .btn-outline-danger.disabled {
   --bs-btn-disabled-border-color: var(--border);
@@ -70,7 +48,8 @@
 
 /* Soften sidebar header border */
 .drawing-sidebar .sidebar-header {
-  border-color: var(--surface-2) !important;
+  padding: var(--panel-padding) !important;
+  border-color: var(--border-strong) !important;
 }
 
 /* Soften section borders */
@@ -129,17 +108,17 @@
   background: var(--surface-1, #111827);
   border: 1px solid var(--border);
   border-radius: var(--radius-panel);
-  padding: 0.5rem 0.75rem;
+  padding: var(--panel-padding);
   box-shadow: var(--shadow-panel);
   display: flex;
   flex-wrap: wrap;
-  gap: 0;
+  gap: var(--control-gap);
   align-items: center;
 }
 
 .drawing-toolbar > label.btn,
 .drawing-toolbar > button.btn {
-  margin: 0.15rem;
+  margin: 0;
 }
 
 .drawing-toolbar.open {
@@ -152,12 +131,12 @@
 
 .drawing-toolbar .btn {
   border-radius: var(--radius-control) !important;
-  min-width: 2rem;
-  min-height: 2rem;
+  min-width: var(--control-height);
+  min-height: var(--control-height);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.2rem 0.35rem;
+  padding: var(--control-padding-y);
 }
 
 /* Hotkey letter in popover content — monospace, tinted */
@@ -181,19 +160,19 @@
 
 /* Sidebar section structure */
 .drawing-sidebar .sidebar-section {
-  padding: 0.4rem 0.5rem;
+  padding: var(--panel-padding);
 }
 
 /* First section needs no top padding (header already provides it) */
 .drawing-sidebar .sidebar-section:first-child {
-  padding-top: 0.15rem;
+  padding-top: var(--panel-padding);
 }
 
 /* Tool buttons - wrap to grid */
 .drawing-sidebar .btn-group.flex-wrap {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.1rem;
+  gap: var(--control-gap);
 }
 
 .drawing-sidebar .btn-group.flex-wrap > .btn,
@@ -243,7 +222,7 @@
 .drawing-sidebar .drawings-list {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: var(--control-gap);
 }
 
 .drawing-sidebar .sidebar-section:last-child {
@@ -260,7 +239,7 @@
 }
 
 .drawing-sidebar .list-group-item {
-  padding: 0.5rem;
+  padding: var(--panel-padding);
   border-radius: var(--radius-control) !important;
   flex-shrink: 0;
   overflow: hidden;
@@ -273,8 +252,9 @@
 }
 
 .drawing-sidebar .list-group-item.active {
-  background-color: oklch(1 0 0 / 0.1) !important;
-  border-color: oklch(1 0 0 / 0.3) !important;
+  color: var(--control-active-fg);
+  background-color: var(--control-active-bg) !important;
+  border-color: var(--control-active-border) !important;
 }
 
 /* Text Editing UI fixes */
@@ -308,7 +288,7 @@
 
 /* Text tool button - same width as other tool buttons */
 label[data-tool="text"] {
-  min-width: 2rem;
+  min-width: var(--control-height);
 }
 
 /* Example drawings - compact to fit exactly the items present */
@@ -469,3 +449,10 @@ label[data-tool="text"] {
   font-size: 0.9rem;
   opacity: 0.9;
 }
+
+/* Typography and spacing follow the same panel and compact-control scale as the menu/report. */
+.drawing-sidebar, .drawing-toolbar { font-size: var(--control-font-size); }
+.drawing-sidebar .sidebar-header h6 { font-size: var(--panel-heading-size); }
+.drawing-sidebar .sidebar-section > :is(h5, h6) { font-size: var(--section-heading-size); }
+.drawing-sidebar .sidebar-section + .sidebar-section { padding-top: var(--section-gap); }
+.drawing-toolbar .btn > i { font-size: var(--control-icon-size); }

@@ -3,6 +3,8 @@ import {
   clearDailySeedCache,
   fetchDailySeed,
   fetchPreviousDailySeed,
+  getCachedDailyComparisonTarget,
+  getCachedDailySeedIdentity,
 } from "../src/data_sources/daily_seed";
 let today = 1318860803,
   previous = 1993746523;
@@ -52,6 +54,30 @@ it("expires both caches at UTC rollover even within a minute", async () => {
   vi.setSystemTime(new Date("2026-09-17T00:00:01Z"));
   expect(await fetchDailySeed()).toBe(7);
   expect(await fetchPreviousDailySeed()).toBe(6);
+});
+it("labels today's, previous and arbitrary seeds using known pointers without fetching", async () => {
+  expect(getCachedDailyComparisonTarget(today)).toBeNull();
+  expect(fetcher).not.toHaveBeenCalled();
+  await fetchDailySeed();
+  expect(getCachedDailyComparisonTarget(today)).toEqual({ kind: 'previous' });
+  await fetchPreviousDailySeed();
+  fetcher.mockClear();
+  expect(getCachedDailyComparisonTarget(today)).toEqual({ kind: 'previous', seed: previous });
+  expect(getCachedDailySeedIdentity(today)).toBe('today');
+  expect(getCachedDailySeedIdentity(previous)).toBe('previous');
+  expect(getCachedDailySeedIdentity(42)).toBeNull();
+  expect(getCachedDailyComparisonTarget(previous)).toEqual({ kind: 'today', seed: today });
+  expect(getCachedDailyComparisonTarget(42)).toEqual({ kind: 'today', seed: today });
+  expect(fetcher).not.toHaveBeenCalled();
+  vi.setSystemTime(new Date('2026-09-18T00:00:01Z'));
+  expect(getCachedDailyComparisonTarget(today)).toBeNull();
+  expect(getCachedDailySeedIdentity(today)).toBeNull();
+});
+it("does not label an inconsistent daily pointer pair as a valid comparison", async () => {
+  previous = today;
+  await fetchDailySeed();
+  await fetchPreviousDailySeed();
+  expect(getCachedDailyComparisonTarget(today)).toBeNull();
 });
 it.each(["0", "1.5", "42garbage", "4294967296", "", "-1"])(
   "rejects invalid seed metadata %s instead of accepting a prefix",

@@ -120,6 +120,10 @@ export interface PixelScene {
 export interface GenerationResult {
   /** Optional Sage snapshot shipped with a baked daily. */
   sage?: unknown;
+  /** Validated selected-seed counts shipped with a daily bake. */
+  reportInventory?: import("../report-inventory").ReportInventorySnapshot;
+  /** Per-world decoration revision, retained when loading old daily bakes. */
+  bakedMimicSpritesVersionByPW?: Record<number, number>;
   seed: number;
   ngPlus: number;
   isNGP: boolean;

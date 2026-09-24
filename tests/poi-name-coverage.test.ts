@@ -96,6 +96,7 @@ describe("POI name coverage", () => {
       ["zombie_weak", "animal_zombie"],
       ["miner_weak", "animal_miner"],
       ["boss_limbs_physics", "animal_boss_limbs"],
+      ["chest_leggy", "animal_chest_leggy"],
     ];
     for (const [id, expectedKey] of cases) {
       expect(`animal_${canonicalEntityId(id)}`, id).toBe(expectedKey);

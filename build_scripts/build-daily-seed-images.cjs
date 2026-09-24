@@ -770,6 +770,11 @@ async function main() {
         nRendered++;
       }
       await page.evaluate(() => window.noitamap.releaseDecorationExport && window.noitamap.releaseDecorationExport());
+      // Older saved metadata must never be upgraded by serialization alone.
+      // This revision comes from the renderer that produced these new cells.
+      if (nRendered > 0 && Number.isSafeInteger(decorInfo.mimicSpritesVersion)) {
+        generationData.mimicSpritesVersion = decorInfo.mimicSpritesVersion;
+      }
       console.log(`[images] decor: wrote ${nRendered} cells (${nEmpty} empty) in ${fmt(Date.now() - tDecor)}`);
     } else {
       console.warn(`[images] decor: prepareDecorationExport returned nothing (continuing without baked scenes/sprites)`);
