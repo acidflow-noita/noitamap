@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "非常に多い",
       "summaryPercentileRange": "第5～第95パーセンタイルの個数: {{low}}～{{high}}",
       "summaryScope": "{{worlds}} · {{count}} 個のシードとの比較。",
-      "summaryUnavailable": "シードを比較できません。"
+      "summaryUnavailable": "シードを比較できません。",
+      "factionTotal": "生物（すべての勢力）",
+      "hordeTotal": "生物（すべての大群）",
+      "viewBreakdown": "内訳を表示"
     }
   },
   "unlocks": {

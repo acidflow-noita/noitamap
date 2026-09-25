@@ -450,7 +450,10 @@
       "summaryUnusuallyHigh": "Unusually high",
       "summaryPercentileRange": "5th–95th percentile counts: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Compared with {{count}} seeds.",
-      "summaryUnavailable": "Seed comparison unavailable."
+      "summaryUnavailable": "Seed comparison unavailable.",
+      "factionTotal": "Creatures (all factions)",
+      "hordeTotal": "Creatures (all hordes)",
+      "viewBreakdown": "View breakdown"
     }
   },
   "search": {

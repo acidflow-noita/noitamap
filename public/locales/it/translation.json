@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Quantità insolitamente alta",
       "summaryPercentileRange": "Quantità al 5º e 95º percentile: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Confronto con {{count}} semi.",
-      "summaryUnavailable": "Confronto del seme non disponibile."
+      "summaryUnavailable": "Confronto del seme non disponibile.",
+      "factionTotal": "Creature (tutte le fazioni)",
+      "hordeTotal": "Creature (tutte le orde)",
+      "viewBreakdown": "Mostra ripartizione"
     }
   },
   "unlocks": {

@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Ongewoon veel",
       "summaryPercentileRange": "Aantallen op het 5e en 95e percentiel: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Vergeleken met {{count}} seeds.",
-      "summaryUnavailable": "Seedvergelijking niet beschikbaar."
+      "summaryUnavailable": "Seedvergelijking niet beschikbaar.",
+      "factionTotal": "Wezens (alle facties)",
+      "hordeTotal": "Wezens (alle hordes)",
+      "viewBreakdown": "Uitsplitsing bekijken"
     }
   },
   "unlocks": {

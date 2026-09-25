@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Ovanligt många",
       "summaryPercentileRange": "Antal vid 5:e och 95:e percentilen: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Jämförelse med {{count}} frön.",
-      "summaryUnavailable": "Jämförelse av fröet är inte tillgänglig."
+      "summaryUnavailable": "Jämförelse av fröet är inte tillgänglig.",
+      "factionTotal": "Varelser (alla fraktioner)",
+      "hordeTotal": "Varelser (alla horder)",
+      "viewBreakdown": "Visa fördelning"
     }
   },
   "unlocks": {

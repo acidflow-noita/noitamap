@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Необычно много",
       "summaryPercentileRange": "Количество на 5-м и 95-м процентилях: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Сравнение с {{count}} сидами.",
-      "summaryUnavailable": "Сравнение сида недоступно."
+      "summaryUnavailable": "Сравнение сида недоступно.",
+      "factionTotal": "Существа (все фракции)",
+      "hordeTotal": "Существа (все орды)",
+      "viewBreakdown": "Показать разбивку"
     }
   },
   "unlocks": {

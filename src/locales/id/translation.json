@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Jumlah sangat banyak",
       "summaryPercentileRange": "Jumlah pada persentil ke-5 dan ke-95: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Dibandingkan dengan {{count}} seed.",
-      "summaryUnavailable": "Perbandingan seed tidak tersedia."
+      "summaryUnavailable": "Perbandingan seed tidak tersedia.",
+      "factionTotal": "Makhluk (semua faksi)",
+      "hordeTotal": "Makhluk (semua gerombolan)",
+      "viewBreakdown": "Lihat rincian"
     }
   },
   "unlocks": {

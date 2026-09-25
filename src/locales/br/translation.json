@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Quantidade incomumente alta",
       "summaryPercentileRange": "Quantidades nos percentis 5 e 95: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Comparação com {{count}} sementes.",
-      "summaryUnavailable": "Comparação da semente indisponível."
+      "summaryUnavailable": "Comparação da semente indisponível.",
+      "factionTotal": "Criaturas (todas as facções)",
+      "hordeTotal": "Criaturas (todas as hordas)",
+      "viewBreakdown": "Ver detalhamento"
     }
   },
   "unlocks": {

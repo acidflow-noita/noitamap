@@ -1,4 +1,4 @@
-import { isMainPathBiome } from './data_sources/main-path-biomes';
+import { biomeSlug, isMainPathBiome } from './data_sources/main-path-biomes';
 import { readCameraMatrix, reprojectCamera, type CameraMatrix } from './portals/geometry';
 
 declare const OpenSeadragon: any;
@@ -19,8 +19,11 @@ export interface ReportHighlightOptions {
 export interface ReportMapView { x: number; y: number; zoom: number }
 type CameraView = ReportMapView;
 interface Cluster { x: number; y: number; count: number; primary: boolean; mainPath: boolean }
-interface WorldPoint { worldX: number; worldY: number; primary: boolean; mainPath: boolean }
+interface WorldPoint { worldX: number; worldY: number; primary: boolean; mainPath: boolean; area: string | null }
 interface WorldCluster extends WorldPoint { count: number; members: WorldPoint[] }
+// Half a 512-pixel biome-map cell. Zooming out must not turn a local group
+// into a summary of locations hundreds/thousands of game pixels away.
+const MAX_CLUSTER_DISTANCE = 256;
 
 function reportPoints(targets: readonly ReportHighlightTarget[]): WorldPoint[] {
   const locations = new Map<string, WorldPoint>();
@@ -28,9 +31,14 @@ function reportPoints(targets: readonly ReportHighlightTarget[]): WorldPoint[] {
     if (!Number.isFinite(target.worldX) || !Number.isFinite(target.worldY)) continue;
     const location = `${target.worldX}:${target.worldY}`;
     const mainPath = target.mainPath ?? isMainPathBiome(target.biome), primary = mainPath && (target.pw ?? 0) === 0;
+    const area = `${target.pw ?? 0}:${biomeSlug(target.biome)}`;
     const existing = locations.get(location);
-    if (existing) { existing.mainPath ||= mainPath; existing.primary ||= primary; }
-    else locations.set(location, { worldX: target.worldX, worldY: target.worldY, mainPath, primary });
+    if (existing) {
+      existing.mainPath ||= mainPath; existing.primary ||= primary;
+      // One marker still represents a shared location, but conflicting metadata
+      // must not let it bridge otherwise unrelated areas.
+      if (existing.area !== area) existing.area = null;
+    } else locations.set(location, { worldX: target.worldX, worldY: target.worldY, mainPath, primary, area });
   }
   return [...locations.values()];
 }
@@ -51,8 +59,14 @@ function groupReportPoints(points: readonly WorldCluster[], distance: number, pr
     let nearest: WorldCluster | undefined, nearestDistance = distance * distance;
     for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
       for (const group of cells.get(`${x + dx}:${y + dy}`) ?? []) {
+        if (point.area === null || point.area !== group.area) continue;
         const squared = (point.worldX - group.worldX) ** 2 + (point.worldY - group.worldY) ** 2;
-        if (squared < nearestDistance) { nearest = group; nearestDistance = squared; }
+        // A coarsened group's representative can be close while its far edge
+        // is not. Check its members too, so repeated zooms cannot grow a chain.
+        if (squared < nearestDistance && point.members.every(member =>
+          (member.worldX - group.worldX) ** 2 + (member.worldY - group.worldY) ** 2 < distance * distance)) {
+          nearest = group; nearestDistance = squared;
+        }
       }
     }
     if (nearest) {
@@ -71,9 +85,9 @@ function groupReportPoints(points: readonly WorldCluster[], distance: number, pr
 function groupReportHighlights(targets: readonly ReportHighlightTarget[], distance: number): WorldCluster[] {
   return groupReportPoints(pointGroups(reportPoints(targets)), distance);
 }
-function reportClusterDistance(m: CameraMatrix) {
-  const scale = Math.hypot(m.a, m.b), distance = 40 / scale;
-  return Number.isFinite(distance) && distance > 0 ? distance : 0;
+function reportClusterDistance(m: CameraMatrix, zoomRatio = 1) {
+  const scale = Math.hypot(m.a, m.b), distance = 40 / (scale * zoomRatio);
+  return Number.isFinite(distance) && distance > 0 ? Math.min(MAX_CLUSTER_DISTANCE, distance) : 0;
 }
 function projectGroups(groups: readonly WorldCluster[], m: CameraMatrix, width: number, height: number): Cluster[] {
   if (![...Object.values(m), width, height].every(Number.isFinite) || width <= 0 || height <= 0) return [];
@@ -200,7 +214,7 @@ export class ReportMapHighlights {
   }
   setTargets(targets: readonly ReportHighlightTarget[], options: ReportHighlightOptions = {}) {
     const previousCamera = this.options.camera;
-    const key = targets === this.targetSource ? this.targetKey : targets.map(target => `${target.worldX}:${target.worldY}:${target.pw ?? 0}:${target.mainPath ?? isMainPathBiome(target.biome)}`).sort().join('|');
+    const key = targets === this.targetSource ? this.targetKey : targets.map(target => `${target.worldX}:${target.worldY}:${target.pw ?? 0}:${biomeSlug(target.biome)}:${target.mainPath ?? isMainPathBiome(target.biome)}`).sort().join('|');
     const sameGroup = this.targetKey === key;
     const samePreview = targets.length > 0 && sameGroup && (previousCamera ?? 'fit') === 'fit' && (options.camera ?? 'fit') === 'fit'
       && JSON.stringify(this.options.panelBounds) === JSON.stringify(options.panelBounds);
@@ -388,7 +402,7 @@ export class ReportMapHighlights {
   private prepareGroups(next?: CameraView, current = this.view(), matrix = this.matrix()) {
     if (!this.groupsDirty) return;
     const ratio = next && current ? next.zoom / current.zoom : 1;
-    this.groupDistance = reportClusterDistance(matrix) / ratio;
+    this.groupDistance = reportClusterDistance(matrix, ratio);
     this.groups = groupReportPoints(pointGroups(this.points), this.groupDistance);
     this.contextProjectionDirty = true;
     this.groupsDirty = false;
@@ -396,7 +410,8 @@ export class ReportMapHighlights {
   private updateManualGroups(matrix: CameraMatrix) {
     if (!this.manualCamera || this.animatingCamera || this.navigation || !this.groups.length) return;
     const distance = reportClusterDistance(matrix);
-    // Keep at least 32px between anchors throughout the hysteresis interval.
+    // Retain nearby groups through small zoom changes. Different areas and
+    // distant locations remain independent even when their screen rings overlap.
     if (!(distance > 0) || (distance >= this.groupDistance / 1.25 && distance <= this.groupDistance * 1.25)) return;
     this.groups = distance > this.groupDistance
       ? groupReportPoints(this.groups, distance)

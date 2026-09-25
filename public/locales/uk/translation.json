@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Незвично багато",
       "summaryPercentileRange": "Кількість на 5-му й 95-му процентилях: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Порівняння з {{count}} сідами.",
-      "summaryUnavailable": "Порівняння сіда недоступне."
+      "summaryUnavailable": "Порівняння сіда недоступне.",
+      "factionTotal": "Істоти (усі фракції)",
+      "hordeTotal": "Істоти (усі орди)",
+      "viewBreakdown": "Показати розподіл"
     }
   },
   "unlocks": {

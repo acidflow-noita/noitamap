@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Poikkeuksellisen paljon",
       "summaryPercentileRange": "Määrät 5. ja 95. prosenttipisteessä: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Vertailu {{count}} siemeneen.",
-      "summaryUnavailable": "Siemenen vertailu ei saatavilla."
+      "summaryUnavailable": "Siemenen vertailu ei saatavilla.",
+      "factionTotal": "Olennot (kaikki ryhmät)",
+      "hordeTotal": "Olennot (kaikki laumat)",
+      "viewBreakdown": "Näytä erittely"
     }
   },
   "unlocks": {

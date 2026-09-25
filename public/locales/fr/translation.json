@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Nombre inhabituellement élevé",
       "summaryPercentileRange": "Nombres aux 5e et 95e centiles : {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Comparaison avec {{count}} graines.",
-      "summaryUnavailable": "Comparaison de la graine indisponible."
+      "summaryUnavailable": "Comparaison de la graine indisponible.",
+      "factionTotal": "Créatures (toutes les factions)",
+      "hordeTotal": "Créatures (toutes les hordes)",
+      "viewBreakdown": "Voir la répartition"
     }
   },
   "unlocks": {

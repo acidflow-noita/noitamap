@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "数量异常多",
       "summaryPercentileRange": "第 5–95 百分位的数量：{{low}}–{{high}}",
       "summaryScope": "{{worlds}} · 与 {{count}} 个种子比较。",
-      "summaryUnavailable": "种子比较不可用。"
+      "summaryUnavailable": "种子比较不可用。",
+      "factionTotal": "生物（所有阵营）",
+      "hordeTotal": "生物（所有部落）",
+      "viewBreakdown": "查看分类"
     }
   },
   "unlocks": {

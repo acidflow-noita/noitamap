@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Neobvykle mnoho",
       "summaryPercentileRange": "Počty na 5. a 95. percentilu: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Srovnání s {{count}} seedy.",
-      "summaryUnavailable": "Srovnání seedu není k dispozici."
+      "summaryUnavailable": "Srovnání seedu není k dispozici.",
+      "factionTotal": "Tvorové (všechny frakce)",
+      "hordeTotal": "Tvorové (všechny hordy)",
+      "viewBreakdown": "Zobrazit rozdělení"
     }
   },
   "unlocks": {
