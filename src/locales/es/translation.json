@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Cantidad inusualmente alta",
       "summaryPercentileRange": "Cantidades en los percentiles 5 y 95: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Comparación con {{count}} semillas.",
-      "summaryUnavailable": "Comparación de la semilla no disponible."
+      "summaryUnavailable": "Comparación de la semilla no disponible.",
+      "factionTotal": "Criaturas (todas las facciones)",
+      "hordeTotal": "Criaturas (todas las hordas)",
+      "viewBreakdown": "Ver desglose"
     }
   },
   "unlocks": {
@@ -5757,5 +5760,9 @@
       "progress_hut_b": "Varita experimental (Requisitos)",
       "secret_null": "Altar anulador"
     }
+  },
+  "hdRenderer": {
+    "title": "Renderizador HD",
+    "content": "Usa la GPU para mostrar terreno detallado en los mapas generados. Activado por defecto. Recarga el mapa. Las imágenes de los mapas diarios no cambian."
   }
 }

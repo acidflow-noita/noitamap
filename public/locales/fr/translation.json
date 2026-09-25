@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Nombre inhabituellement élevé",
       "summaryPercentileRange": "Nombres aux 5e et 95e centiles : {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Comparaison avec {{count}} graines.",
-      "summaryUnavailable": "Comparaison de la graine indisponible."
+      "summaryUnavailable": "Comparaison de la graine indisponible.",
+      "factionTotal": "Créatures (toutes les factions)",
+      "hordeTotal": "Créatures (toutes les hordes)",
+      "viewBreakdown": "Voir la répartition"
     }
   },
   "unlocks": {
@@ -5757,5 +5760,9 @@
       "progress_hut_b": "Baguette expérimentale (Conditions)",
       "secret_null": "Autel d'annulation"
     }
+  },
+  "hdRenderer": {
+    "title": "Rendu HD",
+    "content": "Utilise le GPU pour afficher un terrain détaillé sur les cartes générées. Activé par défaut. Recharge la carte. Les images des cartes quotidiennes restent inchangées."
   }
 }

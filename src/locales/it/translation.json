@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Quantità insolitamente alta",
       "summaryPercentileRange": "Quantità al 5º e 95º percentile: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Confronto con {{count}} semi.",
-      "summaryUnavailable": "Confronto del seme non disponibile."
+      "summaryUnavailable": "Confronto del seme non disponibile.",
+      "factionTotal": "Creature (tutte le fazioni)",
+      "hordeTotal": "Creature (tutte le orde)",
+      "viewBreakdown": "Mostra ripartizione"
     }
   },
   "unlocks": {
@@ -5757,5 +5760,9 @@
       "progress_hut_b": "Bacchetta sperimentale (Requisiti)",
       "secret_null": "Annullamento Altare"
     }
+  },
+  "hdRenderer": {
+    "title": "Rendering HD",
+    "content": "Usa la GPU per mostrare un terreno dettagliato nelle mappe generate. Attivo per impostazione predefinita. Ricarica la mappa. Le immagini delle mappe giornaliere non cambiano."
   }
 }

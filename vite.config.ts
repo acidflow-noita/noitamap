@@ -1,6 +1,7 @@
 import { terrainShaderBitsPlugin } from "./build_scripts/vite-terrain-shaders.ts";
 import { defineConfig } from "vite";
 import { telescopeBrowserPlugin } from "./build_scripts/vite-telescope-browser.ts";
+import { telescopeScenesPlugin } from "./build_scripts/vite-telescope-scenes.ts";
 import { atlasChunksPlugin } from "./build_scripts/vite-atlas-chunks.ts";
 import { resolveLocalPro } from "./build_scripts/local-pro.ts";
 import { ignoreTaskScratch } from "./build_scripts/vite-watch.ts";
@@ -58,7 +59,7 @@ const shimTelescopePlugin = {
 export default defineConfig({
   worker: {
     format: "es",
-    plugins: () => [shimTelescopePlugin, telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")), atlasChunksPlugin(import.meta.dirname)],
+    plugins: () => [shimTelescopePlugin, telescopeScenesPlugin(import.meta.dirname), telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")), atlasChunksPlugin(import.meta.dirname)],
   },
   server: {
     watch: {
@@ -69,6 +70,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    telescopeScenesPlugin(import.meta.dirname),
     {
       // Native bakers/test harnesses supply their own manualChunks policy.
       // Do not let the client's new grouping override that explicit choice.
@@ -201,6 +203,9 @@ export default defineConfig({
             { name: "vendor-osd", test: /\/node_modules\/openseadragon\//, priority: 190 },
             { name: "vendor-pixi", test: /\/node_modules\/pixi\.js\//, priority: 190 },
             { name: "vendor", test: /\/node_modules\//, priority: 160 },
+            // Viewer scheduling/continuity is shared with lazy terrain layers.
+            // Keep it separate without making controller installation async.
+            { name: "map-rendering", test: /\/src\/osd-(?:pixel-rendering|tile-continuity|terrain-admission)\.ts$/, priority: 150 },
             { name: (id) => "map-data-" + id.split("/").pop()!.replace(/\.json$/, ""), test: /\/src\/data\/[^/]+\.json$/, priority: 40 },
           ],
         },

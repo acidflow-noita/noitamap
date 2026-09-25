@@ -1,5 +1,5 @@
 import { fullPixelDataUrl } from "./full-pixel-data";
-import { isGLTerrainEnabled } from "../renderer_settings";
+import { useRenderPerfGeneration } from "../renderer_settings";
 import { decodePngToRgba, rgbaToPngBlobUrl } from "./png-decode";
 import {
   isPackagedTelescopeAsset,
@@ -12,7 +12,7 @@ export { telescopePathToZipPath } from "./telescope-asset-paths";
 const interceptedFetch = new WeakMap<typeof fetch, { fullPixels: boolean }>();
 
 export function installFetchInterceptor(
-  fullPixels = isGLTerrainEnabled(),
+  fullPixels = useRenderPerfGeneration(),
 ): void {
   const originalFetch = window.fetch;
   const installed = interceptedFetch.get(originalFetch);

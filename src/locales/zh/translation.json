@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "数量异常多",
       "summaryPercentileRange": "第 5–95 百分位的数量：{{low}}–{{high}}",
       "summaryScope": "{{worlds}} · 与 {{count}} 个种子比较。",
-      "summaryUnavailable": "种子比较不可用。"
+      "summaryUnavailable": "种子比较不可用。",
+      "factionTotal": "生物（所有阵营）",
+      "hordeTotal": "生物（所有部落）",
+      "viewBreakdown": "查看分类"
     }
   },
   "unlocks": {
@@ -5757,5 +5760,9 @@
       "progress_hut_b": "实验性魔杖（要求）",
       "secret_null": "无效化祭坛"
     }
+  },
+  "hdRenderer": {
+    "title": "高清渲染器",
+    "content": "使用GPU为生成的地图绘制精细地形。默认开启。更改后会重新加载地图。每日地图的图像不受影响。"
   }
 }

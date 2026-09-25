@@ -21,7 +21,9 @@ export function installNativeTerrainEnvironment({
   fullPixels = true,
 }) {
   const nodeProcess = process;
-  const origin = new URL("http://native-bake.invalid/");
+  // Fixtures select their fork explicitly (or enable the offline bake flag).
+  // Never inherit browser HD defaults when this shim installs window.
+  const origin = new URL("http://native-bake.invalid/?terrain=approx");
   const nativeFetch = globalThis.fetch;
   const eventTarget = new EventTarget();
   const children = new Set();

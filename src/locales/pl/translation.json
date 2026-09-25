@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Nietypowo dużo",
       "summaryPercentileRange": "Liczby w 5. i 95. percentylu: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Porównanie z {{count}} ziarnami.",
-      "summaryUnavailable": "Porównanie ziarna niedostępne."
+      "summaryUnavailable": "Porównanie ziarna niedostępne.",
+      "factionTotal": "Stworzenia (wszystkie frakcje)",
+      "hordeTotal": "Stworzenia (wszystkie hordy)",
+      "viewBreakdown": "Pokaż podział"
     }
   },
   "unlocks": {
@@ -5757,5 +5760,9 @@
       "progress_hut_b": "Eksperymentalna różdżka (Requirements)",
       "secret_null": "Ołtarz unieważniania"
     }
+  },
+  "hdRenderer": {
+    "title": "Renderowanie HD",
+    "content": "Używa GPU do wyświetlania szczegółowego terenu na generowanych mapach. Domyślnie włączone. Ponownie ładuje mapę. Obrazy map dziennych pozostają bez zmian."
   }
 }

@@ -1,10 +1,10 @@
 import { TERRAIN_VERSION } from "./terrain-policy";
-import { isGLTerrainEnabled } from "../renderer_settings";
+import { useRenderPerfGeneration } from "../renderer_settings";
 
 /** Separate raw generations AND fallback biome renders from the legacy fork. */
 export function telescopeCacheKey(
   key: string,
-  fullPixels = isGLTerrainEnabled(),
+  fullPixels = useRenderPerfGeneration(),
 ): string {
   return fullPixels ? `${TERRAIN_VERSION}|${key}` : key;
 }

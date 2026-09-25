@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Neobvykle mnoho",
       "summaryPercentileRange": "Počty na 5. a 95. percentilu: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Srovnání s {{count}} seedy.",
-      "summaryUnavailable": "Srovnání seedu není k dispozici."
+      "summaryUnavailable": "Srovnání seedu není k dispozici.",
+      "factionTotal": "Tvorové (všechny frakce)",
+      "hordeTotal": "Tvorové (všechny hordy)",
+      "viewBreakdown": "Zobrazit rozdělení"
     }
   },
   "unlocks": {
@@ -5757,5 +5760,9 @@
       "progress_hut_b": "Experimentální hůlka (Requirements)",
       "secret_null": "Nullifying Altar"
     }
+  },
+  "hdRenderer": {
+    "title": "HD vykreslování",
+    "content": "Používá GPU pro detailní terén na generovaných mapách. Ve výchozím nastavení zapnuto. Znovu načte mapu. Obrázky denních map se nemění."
   }
 }

@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Ovanligt många",
       "summaryPercentileRange": "Antal vid 5:e och 95:e percentilen: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Jämförelse med {{count}} frön.",
-      "summaryUnavailable": "Jämförelse av fröet är inte tillgänglig."
+      "summaryUnavailable": "Jämförelse av fröet är inte tillgänglig.",
+      "factionTotal": "Varelser (alla fraktioner)",
+      "hordeTotal": "Varelser (alla horder)",
+      "viewBreakdown": "Visa fördelning"
     }
   },
   "unlocks": {
@@ -5757,5 +5760,9 @@
       "progress_hut_b": "Experimentell stav (Krav)",
       "secret_null": "Nullifying Altar"
     }
+  },
+  "hdRenderer": {
+    "title": "HD-rendering",
+    "content": "Använder GPU:n för detaljerad terräng på genererade kartor. Aktiverad som standard. Laddar om kartan. Bilderna för dagliga kartor ändras inte."
   }
 }

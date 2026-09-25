@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Jumlah sangat banyak",
       "summaryPercentileRange": "Jumlah pada persentil ke-5 dan ke-95: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Dibandingkan dengan {{count}} seed.",
-      "summaryUnavailable": "Perbandingan seed tidak tersedia."
+      "summaryUnavailable": "Perbandingan seed tidak tersedia.",
+      "factionTotal": "Makhluk (semua faksi)",
+      "hordeTotal": "Makhluk (semua gerombolan)",
+      "viewBreakdown": "Lihat rincian"
     }
   },
   "unlocks": {
@@ -5757,5 +5760,9 @@
       "progress_hut_b": "Tongkat eksperimental (Persyaratan)",
       "secret_null": "Nullifying Altar"
     }
+  },
+  "hdRenderer": {
+    "title": "Perender HD",
+    "content": "Menggunakan GPU untuk medan yang mendetail pada peta yang dihasilkan. Aktif secara bawaan. Memuat ulang peta. Gambar peta harian tidak berubah."
   }
 }

@@ -5,12 +5,86 @@ import { tmpdir } from "node:os";
 import { build, createLogger } from "vite";
 import { browserTelescopeSource } from "../build_scripts/vite-telescope-browser";
 import { partitionAtlas } from "../build_scripts/vite-atlas-chunks";
+import { createRequire } from "node:module";
+import { encode } from "fast-png";
 
 const root = resolve(import.meta.dirname, "..");
 
 afterEach(() => vi.unstubAllEnvs());
 
 describe("browser build boundaries", () => {
+  it.each(["noita-telescope", "noita-telescope-vm"])(
+    "skips discarded PNG bitmaps while preserving RGBA and bitmap consumers in %s",
+    async (fork) => {
+      const path = resolve(root, `lib/${fork}/js/png_sanitizer.js`);
+      const { code } = await browserTelescopeSource(
+        await readFile(path, "utf8"),
+        path,
+      );
+      const start = code.indexOf("async function loadPNG(");
+      const end = code.indexOf("\nexport {", start);
+      expect(start).toBeGreaterThan(0);
+      expect(end).toBeGreaterThan(start);
+      const rgba = new Uint8Array([0, 0, 66, 255, 255, 0, 0, 0, 4, 5, 6, 128]);
+      const png = encode({ data: rgba, width: 3, height: 1, channels: 4 });
+      const bitmap = { width: 3, height: 1 };
+      const makeBitmap = vi.fn(async () => bitmap);
+      const api = new Function(
+        "loadUpng",
+        "getFromZipFirst",
+        "createImageBitmap",
+        `${code.slice(start, end)}; return { loadPNG, loadPNGBitmap };`,
+      )(
+        async () => createRequire(import.meta.url)("upng-js"),
+        async () => new Blob([png as BlobPart]),
+        makeBitmap,
+      );
+      const raw = await api.loadPNG("fixture.png", { bitmap: false });
+      expect(raw.data).toEqual(rgba);
+      expect([raw.width, raw.height, raw.bitmap]).toEqual([3, 1, null]);
+      expect(makeBitmap).not.toHaveBeenCalled();
+      const normal = await api.loadPNG("fixture.png");
+      expect(normal.data).toEqual(raw.data);
+      expect(normal.bitmap).toBe(bitmap);
+      expect(await api.loadPNGBitmap("fixture.png")).toBe(bitmap);
+      expect(makeBitmap).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it.each(["noita-telescope", "noita-telescope-vm"])(
+    "rejects changed PNG optimization boundaries in %s",
+    async (fork) => {
+      const path = resolve(root, `lib/${fork}/js/png_sanitizer.js`);
+      const original = await readFile(path, "utf8");
+      await expect(
+        browserTelescopeSource(
+          original.replace("loadPNG(url)", "loadPNG(sourceUrl)"),
+          path,
+        ),
+      ).rejects.toThrow("loadPNG declaration");
+      await expect(
+        browserTelescopeSource(
+          original.replace(
+            "const blob = new Blob([sanitizedUint8]",
+            "const blob = new Blob([otherData]",
+          ),
+          path,
+        ),
+      ).rejects.toThrow("optional bitmap decode");
+      const scenePath = resolve(
+        root,
+        `lib/${fork}/js/pixel_scene_generation.js`,
+      );
+      const scene = await readFile(scenePath, "utf8");
+      await expect(
+        browserTelescopeSource(
+          scene.replace("import { loadPNG }", "import { renamedLoadPNG }"),
+          scenePath,
+        ),
+      ).rejects.toThrow("scene PNG import");
+    },
+  );
+
   it("preserves asynchronous atlas initialization instead of adding a static dependency cycle", async () => {
     const path = resolve(
       root,
@@ -36,10 +110,17 @@ describe("browser build boundaries", () => {
       expect(keyFunction).toBeTruthy();
       // Execute only the actual transformed pure key function; no mocked scene
       // image can make a missing cache lookup appear to succeed.
-      const config = await readFile(resolve(root, `lib/${fork}/js/pixel_scene_config.js`), "utf8");
-      const general = config.match(/export const GENERAL_SCENES\s*=\s*({[\s\S]*?})\s*;?\s*export const OVERWORLD_SCENES/)?.[1];
+      const config = await readFile(
+        resolve(root, `lib/${fork}/js/pixel_scene_config.js`),
+        "utf8",
+      );
+      const general = config.match(
+        /export const GENERAL_SCENES\s*=\s*({[\s\S]*?})\s*;?\s*export const OVERWORLD_SCENES/,
+      )?.[1];
       expect(general).toBeTruthy();
-      const names = new Function(`return (${general}).extras.map(scene => scene.name);`)();
+      const names = new Function(
+        `return (${general}).extras.map(scene => scene.name);`,
+      )();
       expect(names).toEqual(expect.arrayContaining(["scale", "scale_old"]));
       const key = new Function(
         "GENERATOR_CONFIG",
@@ -54,7 +135,10 @@ describe("browser build boundaries", () => {
     },
   );
   it("does not fail when an upstream private scene-key helper is renamed", async () => {
-    const result = await browserTelescopeSource("export const value = 1;", "/fork/pixel_scene_generation.js");
+    const result = await browserTelescopeSource(
+      "export const value = 1;",
+      "/fork/pixel_scene_generation.js",
+    );
     expect(result.code).toContain("value");
   });
   it.each(["png_sanitizer.js", "utils.js"])(
@@ -102,13 +186,15 @@ describe("browser build boundaries", () => {
     const result: any = await build({
       configFile: resolve(root, "vite.config.ts"),
       customLogger: logger,
-      plugins: [{
-        name: "assert-production-test-build",
-        configResolved(config) {
-          expect(config.isProduction).toBe(true);
-          expect(config.env.DEV).toBe(false);
+      plugins: [
+        {
+          name: "assert-production-test-build",
+          configResolved(config) {
+            expect(config.isProduction).toBe(true);
+            expect(config.env.DEV).toBe(false);
+          },
         },
-      }],
+      ],
       build: {
         write: false,
         outDir: resolve(tmpdir(), "noitamap-build-policy-dry-run"),
@@ -119,7 +205,10 @@ describe("browser build boundaries", () => {
     // Even when a private checkout exists locally, public production builds
     // must load hosted Pro on demand, never bundle the local private entry.
     for (const file of output.filter((file) => file.type === "chunk")) {
-      expect(Object.keys(file.modules).some((id) => id.includes("/noitamap-pro/")), file.fileName).toBe(false);
+      expect(
+        Object.keys(file.modules).some((id) => id.includes("/noitamap-pro/")),
+        file.fileName,
+      ).toBe(false);
     }
     for (const file of output) {
       if (file.fileName.endsWith(".js")) {

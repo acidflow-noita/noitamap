@@ -5,6 +5,9 @@ import { isSimplisticBackground } from './simplistic-background';
 
 import { CHUNK_SIZE } from './constants';
 import { cameraPixelDelta, readCameraMatrix } from './portals/geometry';
+import { PIXEL_MAP_DRAW_OPTIONS } from './osd-pixel-rendering';
+import { installTileContinuity } from './osd-tile-continuity';
+import { installTerrainAdmission } from './osd-terrain-admission';
 
 declare const OpenSeadragon: any;
 
@@ -64,7 +67,7 @@ export class AppOSD {
         console.log('[OSD] Drawer: canvas (webgl not supported)');
         return 'canvas';
       })(),
-      imageSmoothingEnabled: false,
+      ...PIXEL_MAP_DRAW_OPTIONS,
       debugMode: false,
       // Canvas drawer: round transparent tiles to whole pixels once the
       // viewport is at rest so overlap seams don't show. The baked daily
@@ -82,6 +85,8 @@ export class AppOSD {
       },
       opacity: 1,
     });
+    installTileContinuity(this.viewer);
+    installTerrainAdmission(this.viewer);
 
     this.addHandler('canvas-key', (event: any) => {
       // Case-insensitive so Shift+R (key "R") is caught too — OSD binds r/R to

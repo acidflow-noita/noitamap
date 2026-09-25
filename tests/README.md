@@ -142,22 +142,52 @@ verification requires non-background terrain in **every** shaft chunk (48 per
 world), identical direct/published final pixels and matching DZI overlaps.
 
 
-## Public approximate terrain, removed toggle, and completed daily state
+## HD preference, offline bake isolation, and completed daily state
 
 ```bash
-npm test -- tests/full-pixel-toggle.test.ts tests/full-pixel-mode.test.ts tests/baked-dzi-loader.test.ts tests/native-bake-mode.test.ts
+npm test -- tests/hd-renderer-control.test.ts tests/osd-pixel-rendering.test.ts tests/full-pixel-toggle.test.ts tests/full-pixel-mode.test.ts tests/baked-dzi-loader.test.ts tests/native-bake-mode.test.ts
 ```
 
-The DOM/source regression tests (jsdom, no browser) verify that the live-render
-control and its browser-console hooks are removed, rather than hidden with CSS.
-Mode tests verify that old saved opt-ins cannot enable full-pixel rendering on
-daily, arbitrary, static, restricted-unlock or bake-bypass views, and that the
-approximate fork/cache namespace is selected. Native entrypoints use a separate,
+The DOM/source regression tests (jsdom, no browser) verify that the old offline
+full-pixel control and its browser-console hooks are removed. The separate
+HD renderer defaults on and selects matching render-perf modules/cache keys;
+disabling it selects the approximate fork. Old saved offline opt-ins remain
+ignored on daily, arbitrary, static, restricted-unlock and bake-bypass views.
+Native entrypoints use a separate,
 explicit internal mode; renderer tests opt into it without browser storage.
 The bake-mode tests assert that both native entrypoints select the full fork
 before generation/asset initialization, rather than inheriting the public default.
-Loader tests preserve completed daily/previous-daily baked pixels while leaving
-live rendering disabled, including when a world is missing or has the wrong seed.
+Loader tests preserve completed daily/previous-daily baked pixels without
+enabling the offline pyramid, including when a world is missing or has the wrong seed.
+
+## Zoom continuity and HD coverage
+
+```bash
+npm test -- tests/osd-app-continuity.test.ts tests/osd-terrain-admission.test.ts tests/instant-terrain-hung-worker.test.ts tests/osd-load-budget.test.ts tests/osd-tile-continuity.test.ts tests/osd-zoom-continuity.test.ts tests/instant-terrain-residency.test.ts tests/instant-terrain-coverage.test.ts tests/instant-terrain-cache.test.ts tests/instant-terrain-osd-abort.test.ts tests/pixel-scene-tile-source.test.ts tests/terrain-work-queue.test.ts tests/instant-terrain.test.ts tests/instant-terrain-runtime.test.ts
+```
+
+Native CanvasDrawer tests move the actual OSD camera through repeated zoom-out.
+They reproduce loaded fine tiles disappearing below `minPixelRatio`, then verify
+retained pixels for static DZI and HD layers, transparent holes and replacement
+handoff. Reference-budget tests cover partial replacement, two 135-tile layers,
+offscreen eviction and viewer cleanup. Installed-OSD coverage tests verify three
+base levels across nine regions, preparation for the next zoom-out using real
+world/image transforms, stale-plan replacement and bounded background loading.
+Production GPU-source replay verifies cached pixels survive OSD canvas disposal
+without additional shader draws. These are native tests, not browser automation.
+The actual AppOSD scheduled-frame fixture covers pan-away/revisit with suitable
+replacements still unavailable. Production-source pressure tests keep sharper
+base tiles drawable after 240 detail loads; request-budget replay loads an FHD
+cached view in 3 updates instead of 40. Scene-source tests compare the former
+compositor's RGBA and cover cache ownership, cooperative yielding and removal.
+
+The same AppOSD fixture also replays uncached pan requests with a controlled
+one-second asynchronous renderer: the prior path launches 509 ImageJobs and
+times out 451; admission holds two timed jobs, has no failures and eventually
+fully loads the view with correct pixels. This measures queue correctness,
+not GPU speed. `instant-terrain-hung-worker.test.ts` drives the real OSD loader,
+production source and worker client against a deliberately unresponsive
+transport, verifying one fallback before 30 seconds and safe late transfers.
 
 ## Search and stats inventory: objects versus conditional rewards
 

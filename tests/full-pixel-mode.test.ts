@@ -1,8 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   isGLTerrainEnabled,
+  isInstantTerrainEnabled,
   setFullPixelTerrainForBake,
   shouldUseBakedTerrain,
+  getStoredRenderer,
+  isHDRendererEnabled,
 } from "../src/renderer_settings";
 import { telescopeCacheKey } from "../src/telescope/cache-identity";
 import {
@@ -29,7 +32,25 @@ afterEach(() => {
 });
 
 describe("full-pixel mode", () => {
-  it("defaults off and tolerates unavailable browser storage", () => {
+  it('keeps instant terrain on the canvas drawer despite a saved localhost WebGL override', () => {
+    vi.stubGlobal('window', { location: new URL('http://localhost:5173/?terrain=gpu') });
+    vi.stubGlobal('localStorage', { getItem: () => 'webgl' });
+    expect(getStoredRenderer()).toBe('canvas');
+    window.location.search = '?terrain=approx';
+    expect(getStoredRenderer()).toBe('webgl');
+  });
+  it('selects the complete render-perf fork for GPU display tiles without enabling the offline pyramid', async () => {
+    vi.stubGlobal('window', { location: new URL('https://noitamap.com/?m=dy&se=42&terrain=gpu') });
+    expect(isInstantTerrainEnabled()).toBe(true);
+    expect(isGLTerrainEnabled()).toBe(false);
+    expect((await loadTelescopeModules()).fork).toBe('full');
+    expect(telescopeCacheKey('42-all')).toBe(telescopeCacheKey('42-all', true));
+    setFullPixelTerrainForBake(true);
+    expect(isInstantTerrainEnabled()).toBe(false);
+    expect(isGLTerrainEnabled()).toBe(true);
+  });
+  it("defaults to HD without enabling the offline bake when storage is unavailable", () => {
+    vi.stubGlobal('window', { location: new URL('https://noitamap.com/?m=dy&se=42') });
     vi.stubGlobal("localStorage", {
       getItem() {
         throw new Error("blocked");
@@ -39,6 +60,8 @@ describe("full-pixel mode", () => {
       },
     });
     expect(isGLTerrainEnabled()).toBe(false);
+    expect(isHDRendererEnabled()).toBe(true);
+    expect(isInstantTerrainEnabled()).toBe(true);
   });
   it.each([
     "?m=dy&ds=1",
@@ -50,19 +73,33 @@ describe("full-pixel mode", () => {
     "?m=n",
     "?m=nm",
   ])(
-    "ignores old opt-ins and selects approximate generation for %s",
+    "defaults to matching HD generation independently of old offline opt-ins for %s",
     async (search) => {
-      const getItem = vi.fn(() => "1");
+      const getItem = vi.fn((key: string) => key === 'noitamap-gl-terrain' ? '1' : null);
       vi.stubGlobal("localStorage", { getItem });
       vi.stubGlobal("window", {
         location: new URL(`https://noitamap.com/${search}`),
       });
       expect(isGLTerrainEnabled()).toBe(false);
-      expect((await loadTelescopeModules()).fork).toBe("legacy");
-      expect(telescopeCacheKey("42-all")).toBe("42-all");
-      expect(getItem).not.toHaveBeenCalled();
+      expect((await loadTelescopeModules()).fork).toBe("full");
+      expect(telescopeCacheKey("42-all")).toBe(telescopeCacheKey("42-all", true));
+      expect(getItem).toHaveBeenCalledWith('noitamap-hd-renderer');
+      expect(getItem).not.toHaveBeenCalledWith('noitamap-gl-terrain');
     },
   );
+  it('selects matching approximate generation and cache keys when HD is disabled', async () => {
+    vi.stubGlobal('window', { location: new URL('https://noitamap.com/?m=dy&se=42') });
+    vi.stubGlobal('localStorage', { getItem: (key: string) => key === 'noitamap-hd-renderer' ? 'false' : null });
+    expect(isHDRendererEnabled()).toBe(false);
+    expect(isInstantTerrainEnabled()).toBe(false);
+    expect((await loadTelescopeModules()).fork).toBe('legacy');
+    expect(telescopeCacheKey('42-all')).toBe('42-all');
+  });
+  it('does not opt native code into live rendering without a browser window', async () => {
+    vi.stubGlobal('window', undefined);
+    expect(isInstantTerrainEnabled()).toBe(false);
+    expect((await loadTelescopeModules()).fork).toBe('legacy');
+  });
   it("allows the native baker to select the full fork explicitly, without storage", async () => {
     const getItem = vi.fn(() => {
       throw new Error("No browser storage in bake");

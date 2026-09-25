@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Ongewoon veel",
       "summaryPercentileRange": "Aantallen op het 5e en 95e percentiel: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Vergeleken met {{count}} seeds.",
-      "summaryUnavailable": "Seedvergelijking niet beschikbaar."
+      "summaryUnavailable": "Seedvergelijking niet beschikbaar.",
+      "factionTotal": "Wezens (alle facties)",
+      "hordeTotal": "Wezens (alle hordes)",
+      "viewBreakdown": "Uitsplitsing bekijken"
     }
   },
   "unlocks": {
@@ -5757,5 +5760,9 @@
       "progress_hut_b": "Experimentele toverstok (Requirements)",
       "secret_null": "Nullifying Altar"
     }
+  },
+  "hdRenderer": {
+    "title": "HD-renderer",
+    "content": "Gebruikt de GPU voor gedetailleerd terrein op gegenereerde kaarten. Standaard ingeschakeld. Laadt de kaart opnieuw. Afbeeldingen van dagelijkse kaarten blijven ongewijzigd."
   }
 }

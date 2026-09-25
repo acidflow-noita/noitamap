@@ -172,6 +172,7 @@ import { createMapLinks, createMapSelectorRenderer, refreshMapSelectorDate, NAV_
 import { initMouseTracker } from "./mouse_tracker";
 import { isSpoilerFree, setSpoilerFree, onSpoilerFreeChange, isBakedSeedView } from "./spoiler-free";
 import { isLightMode, setLightMode } from "./light-mode";
+import { initHDRendererToggle } from "./hd-renderer-control";
 import { installPopoverTouchDismiss } from "./popover-util";
 import { isSkipCreatures, setSkipCreatures } from "./skip-creatures";
 import { isSimplisticBackground, setSimplisticBackground } from "./simplistic-background";
@@ -1470,6 +1471,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       setTimeout(() => window.location.reload(), 50);
     });
   }
+
+  initHDRendererToggle(() => updateURL({ map: app.getMap(), pos: app.osd.getZoomPos() }));
 
   // Handle light-mode toggle — full reload so OSD re-opens without the
   // left/right PW static tile sources. Dynamic generation is IDB-cached,

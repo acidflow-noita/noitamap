@@ -43,10 +43,40 @@ describe('temporary report map highlights', () => {
       { worldX: 150, worldY: 150, pw: 0, biome: 'desert' },
       { worldX: -10, worldY: 50 }, { worldX: NaN, worldY: 0 },
     ], m, 800, 600);
-    expect(result).toHaveLength(2);
-    expect(result.at(-1)).toEqual({ x: 51, y: 51, count: 2, primary: true, mainPath: true });
-    expect(result[0].mainPath).toBe(false);
+    expect(result).toHaveLength(3);
+    expect(result.at(-1)).toEqual({ x: 51, y: 51, count: 1, primary: true, mainPath: true });
+    expect(result.find(group => group.x === 50)).toEqual({ x: 50, y: 50, count: 1, primary: false, mainPath: true });
+    expect(result.find(group => group.x === 150)?.mainPath).toBe(false);
     expect(projectReportHighlights([], { ...m, a: NaN }, 800, 600)).toEqual([]);
+  });
+  it('keeps Snowy Depths and Fungal Caverns distinct at an all-zones overview, including near their boundary', () => {
+    const targets = [
+      { worldX: -2048, worldY: 2560, biome: 'fungicave' },
+      { worldX: -1920, worldY: 2560, biome: '$biome_fungicave' },
+      { worldX: -1900, worldY: 2570, biome: 'snowcave' },
+      { worldX: 1024, worldY: 3072, biome: 'snowcave' },
+    ];
+    const overview = { ...m, a: 0.005, d: 0.005, e: 100, f: 100 };
+    const groups = projectReportHighlights(targets, overview, 800, 600);
+    expect(groups.map(group => group.count).sort()).toEqual([1, 1, 2]);
+    expect(groups.find(group => group.count === 2)).toMatchObject({ x: 89.76, y: 112.8 });
+    expect(projectReportHighlights([...targets].reverse(), overview, 800, 600)).toEqual(groups);
+  });
+  it.each(['snowcave', undefined])('limits merging to nearby game coordinates even with biome=%s', biome => {
+    const groups = projectReportHighlights([
+      { worldX: 0, worldY: 0, biome }, { worldX: 128, worldY: 0, biome },
+      { worldX: 300, worldY: 0, biome },
+    ], { ...m, a: 0.001, d: 0.001 }, 800, 600);
+    expect(groups.map(group => group.count)).toEqual([2, 1]);
+    expect(groups.map(group => group.x)).toEqual([0, 0.3]);
+  });
+  it('does not use missing biome metadata to bridge different known biomes', () => {
+    const groups = projectReportHighlights([
+      { worldX: 50, worldY: 50, biome: 'fungicave' },
+      { worldX: 51, worldY: 50 },
+      { worldX: 52, worldY: 50, biome: 'snowcave' },
+    ], m, 800, 600);
+    expect(groups.map(group => group.count)).toEqual([1, 1, 1]);
   });
   it('uses canonical main-path classification when supplied, including an explicit false override', () => {
     const result = projectReportHighlights([
@@ -125,6 +155,28 @@ describe('stable report marker movement and navigation fades', () => {
       expect(context().querySelector('text')?.textContent).toBe('2');
     }
     expect(vi.getTimerCount()).toBe(0);
+  });
+  it('keeps the far edge of a local cluster within the geographic limit during repeated zoom-outs', () => {
+    const fixture = cameraFixture();
+    fixture.viewport.zoomTo(40 / 128 / 800, null, true);
+    overlay!.setTargets([0, 200, 300].map(worldX => ({ worldX, worldY: 0, biome: 'snowcave' })), { camera: 'keep' }); flush();
+    const anchors = () => [...context().children].map(node => node.getAttribute('data-location'));
+    expect(anchors()).toEqual(['0:0', '200:0']);
+    for (const zoom of [40 / 256 / 800, 0.0001, 0.00001]) {
+      fixture.viewport.zoomTo(zoom, null, true); fixture.emit('update-viewport');
+      expect(anchors()).toEqual(['0:0', '200:0']);
+      expect([...context().children].map(node => node.querySelector('text')?.textContent ?? '1')).toEqual(['1', '2']);
+    }
+  });
+  it('applies the geographic cap to the fitted overview and regroups when biome metadata changes', () => {
+    const fixture = cameraFixture();
+    overlay!.setTargets([0, 300, 10000].map(worldX => ({ worldX, worldY: 0, biome: 'snowcave' })), { camera: 'overview' }); flush();
+    expect(context().children).toHaveLength(3);
+    const targets = [{ worldX: 0, worldY: 0, biome: 'fungicave' }, { worldX: 20, worldY: 0, biome: 'fungicave' }];
+    overlay!.setTargets(targets, { camera: 'keep' }); flush();
+    expect(context().children).toHaveLength(1);
+    overlay!.setTargets([targets[0], { ...targets[1], biome: 'snowcave' }], { camera: 'keep' }); flush();
+    expect(context().children).toHaveLength(2);
   });
 
   it('does no marker DOM work or queued redraw for tile-only update events', () => {
@@ -638,16 +690,19 @@ describe('expanded report context and active locations', () => {
     overlay!.setTargets(targets, { camera: 'keep', dimContext: true, activeTargets: selected }); flush();
     const svg = fixture.viewer.container.querySelector('svg')!;
     const context = [...svg.querySelectorAll('[data-layer="context"]')];
-    expect(context).toHaveLength(3);
+    expect(context).toHaveLength(4);
     expect(context.every(group => !group.hasAttribute('opacity'))).toBe(true);
-    for (const group of context) {
+    for (const group of context.filter(group => group.querySelector('circle'))) {
       expect(group.querySelector('circle[stroke-opacity]')?.getAttribute('stroke-opacity')).toBe('0.85');
       expect(group.querySelector('circle[stroke-width="5"]')?.hasAttribute('stroke-opacity')).toBe(false);
     }
     const primary = svg.querySelector('[data-primary="true"]')!;
     expect(primary.getAttribute('transform')).toBe('translate(400,300)');
-    expect(primary.querySelector('text')?.textContent).toBe('3');
-    expect(primary.querySelector('text')?.hasAttribute('opacity')).toBe(false);
+    expect(primary.querySelector('text')).toBeNull();
+    const selectedContext = svg.querySelector('[data-layer="context"][data-location="-0.5:0.5"]')!;
+    expect(selectedContext.querySelector('circle')).toBeNull();
+    expect(selectedContext.querySelector('text')?.textContent).toBe('2');
+    expect(selectedContext.querySelector('text')?.hasAttribute('opacity')).toBe(false);
     expect(primary.querySelector('circle[stroke-opacity]')?.getAttribute('r')).toBe('12');
     expect(primary.querySelector('circle[stroke-opacity]')?.getAttribute('stroke-width')).toBe('3');
     expect(svg.querySelector('[data-main-path="true"][data-primary="false"] circle[stroke-opacity]')?.getAttribute('r')).toBe('10');

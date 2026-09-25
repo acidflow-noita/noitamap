@@ -9,7 +9,7 @@ vi.mock("../src/data-archive", () => ({
   getZip: async (name: string) => archives.get(name),
   getDataZip: async () => archives.get("main"),
 }));
-vi.mock("../src/renderer_settings", () => ({ isGLTerrainEnabled: () => true }));
+vi.mock("../src/renderer_settings", () => ({ useRenderPerfGeneration: () => true }));
 import { getFromZipFirst } from "../src/telescope/zip-extraction-shim";
 import { installFetchInterceptor } from "../src/telescope/telescope-data-bridge";
 

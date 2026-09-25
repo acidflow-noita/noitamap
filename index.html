@@ -418,6 +418,33 @@
                 </button>
                 <ul class="dropdown-menu" aria-labelledby="perfModeButton">
                   <li
+                    id="hdRendererPopover"
+                    data-bs-toggle="popover"
+                    data-bs-placement="bottom"
+                    data-bs-trigger="hover"
+                    data-i18n-title="hdRenderer.title"
+                    data-bs-title="HD renderer"
+                    data-i18n-content="hdRenderer.content"
+                    data-bs-content="Use the GPU for detailed terrain on generated maps. Enabled by default. Reloads the map. Daily map images are unchanged."
+                  >
+                    <div class="dropdown-item form-check form-switch d-flex align-items-center gap-2 mb-0">
+                      <input
+                        class="form-check-input m-0"
+                        type="checkbox"
+                        role="switch"
+                        id="hdRendererToggle"
+                        autocomplete="off"
+                      />
+                      <label
+                        class="form-check-label flex-grow-1"
+                        for="hdRendererToggle"
+                        style="cursor: pointer"
+                        data-i18n="hdRenderer.title"
+                        >HD renderer</label
+                      >
+                    </div>
+                  </li>
+                  <li
                     data-bs-toggle="popover"
                     data-bs-placement="bottom"
                     data-bs-trigger="hover"

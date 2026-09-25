@@ -23,7 +23,9 @@ const root = workerData.root;
 const output = workerData.output ?? resolve(root, "dist");
 const NativeResponse = Response;
 const NativeBlob = Blob;
-const workerURL = new URL("http://noitamap.test/assets/pw-worker.js");
+// Native fixtures select their fork explicitly; the browser's default HD
+// preference must not silently turn an approximate fixture into the full fork.
+const workerURL = new URL("http://noitamap.test/assets/pw-worker.js?terrain=approx");
 const events = new EventTarget();
 const requests = [];
 const missing = [];

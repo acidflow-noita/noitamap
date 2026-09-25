@@ -450,7 +450,10 @@
       "summaryUnusuallyHigh": "Unusually high",
       "summaryPercentileRange": "5th–95th percentile counts: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Compared with {{count}} seeds.",
-      "summaryUnavailable": "Seed comparison unavailable."
+      "summaryUnavailable": "Seed comparison unavailable.",
+      "factionTotal": "Creatures (all factions)",
+      "hordeTotal": "Creatures (all hordes)",
+      "viewBreakdown": "View breakdown"
     }
   },
   "search": {
@@ -5702,5 +5705,9 @@
       "progress_hut_b": "Experimental Wand (Requirements)",
       "secret_null": "Nullifying Altar"
     }
+  },
+  "hdRenderer": {
+    "title": "HD renderer",
+    "content": "Use the GPU for detailed terrain on generated maps. Enabled by default. Reloads the map. Daily map images are unchanged."
   }
 }

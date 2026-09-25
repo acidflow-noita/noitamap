@@ -3,11 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { ScriptTarget, transpileModule } from 'typescript';
 
-vi.mock('../src/renderer_settings', () => ({ shouldUseBakedTerrain: vi.fn(() => true) }));
+vi.mock('../src/renderer_settings', () => ({ shouldUseBakedTerrain: vi.fn(() => true), isInstantTerrainEnabled: vi.fn(() => false) }));
 vi.mock('../src/data_sources/daily_seed', () => ({ fetchDailySeed: vi.fn(), fetchPreviousDailySeed: vi.fn() }));
 vi.mock('../src/data_sources/overlays', () => ({ isValidOverlayKey: () => false }));
 vi.mock('../src/telescope/tile-cache', () => ({ getCachedGeneration: vi.fn(), cacheGeneration: vi.fn() }));
-vi.mock('../src/telescope/telescope-adapter', () => ({ generateDynamicMap: vi.fn(), initTelescope: vi.fn() }));
+vi.mock('../src/telescope/telescope-cache-version', () => ({ ensureTelescopeCacheVersion: vi.fn(async () => {}) }));
+vi.mock('../src/telescope/instant-terrain-backend', () => ({ prewarmInstantTerrain: vi.fn(), releaseInstantTerrainBackend: vi.fn() }));
+vi.mock('../src/telescope/telescope-adapter', () => ({ generateDynamicMap: vi.fn(), initTelescope: vi.fn(), prewarmParallelWorlds: vi.fn(), releaseParallelWorlds: vi.fn() }));
 vi.mock('../src/unlocks', () => ({ getUnlocksFromURL: () => null, unlocksChanged: vi.fn(), UNLOCK_KEYS: [], getUrlUnlockKind: vi.fn() }));
 vi.mock('../src/pillars-unlocks', () => ({ getPillarFlagsFromURL: vi.fn() }));
 vi.mock('../src/unlocks-toggle', () => ({ prewarmAlt: vi.fn(), resetAltCache: vi.fn() }));
@@ -15,7 +17,7 @@ vi.mock('../src/light-mode', () => ({ isLightMode: () => false }));
 vi.mock('../src/telescope/telescope-osd-bridge', () => ({
   renderGenerationResult: vi.fn(), clearDynamicOverlays: vi.fn(), getAllPOIsFlat: vi.fn(),
   hasDynamicOverlays: vi.fn(), ensurePersistentBiomeBackgrounds: vi.fn(),
-  resetPersistentBiomeBackgrounds: vi.fn(), prefetchAllSceneBitmaps: vi.fn(),
+  resetPersistentBiomeBackgrounds: vi.fn(), prefetchAllSceneBitmaps: vi.fn(), prepareInstantTerrainResources: vi.fn(), prewarmMapPresentation: vi.fn(),
 }));
 vi.mock('../src/telescope/baked-dzi-loader', () => ({ addBakedDZIsToOSD: vi.fn(), probeBakedDZIs: vi.fn(), isLocalBakeView: () => false }));
 vi.mock('../src/telescope/perk-i18n', () => ({ perkNameKey: vi.fn() }));

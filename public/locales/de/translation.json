@@ -5594,7 +5594,10 @@
       "summaryUnusuallyHigh": "Ungewöhnlich viele",
       "summaryPercentileRange": "Anzahlen am 5. und 95. Perzentil: {{low}}–{{high}}",
       "summaryScope": "{{worlds}} · Vergleich mit {{count}} Seeds.",
-      "summaryUnavailable": "Seed-Vergleich nicht verfügbar."
+      "summaryUnavailable": "Seed-Vergleich nicht verfügbar.",
+      "factionTotal": "Kreaturen (alle Fraktionen)",
+      "hordeTotal": "Kreaturen (alle Horden)",
+      "viewBreakdown": "Aufschlüsselung anzeigen"
     }
   },
   "unlocks": {
@@ -5757,5 +5760,9 @@
       "progress_hut_b": "Experimenteller Zauberstab (Voraussetzungen)",
       "secret_null": "Altar der Aufhebung"
     }
+  },
+  "hdRenderer": {
+    "title": "HD-Renderer",
+    "content": "Nutzt die GPU für detailliertes Gelände auf generierten Karten. Standardmäßig aktiviert. Lädt die Karte neu. Bilder der täglichen Karten bleiben unverändert."
   }
 }
