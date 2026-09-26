@@ -14,7 +14,8 @@
     "popoverContent": "Cari mantra, item, tongkat sihir, bos, makhluk, ramuan, struktur, dan banyak lagi. Gunakan tombol filter di bawah untuk mempersempit hasil berdasarkan kategori.",
     "chunksAway": "~{{count}} chunk jauhnya",
     "openTelescope": "Buka di Telescope",
-    "noResults": "Tidak ada hasil"
+    "noResults": "Tidak ada hasil",
+    "shortcutHint": "Fokus pencarian: /, Ctrl+/ atau ⌘+/"
   },
   "spell_prefix": "Mantra",
   "tiers_prefix": "Tingkat",
@@ -5074,7 +5075,15 @@
     "ingestionEffects": "Efek konsumsi",
     "reactionsHeader": "Reaksi material terhadap Bartender",
     "asReagent": "Lihat sebagai reagen",
-    "asProduct": "Lihat sebagai produk"
+    "asProduct": "Lihat sebagai produk",
+    "openInBartender": "Buka di Bartender",
+    "bartenderReagentHint": "Lihat reaksi yang menggunakan material ini di Bartender.",
+    "bartenderProductHint": "Lihat reaksi yang menghasilkan material ini di Bartender.",
+    "showSpawnBiomes": "Tampilkan bioma kemunculan di peta",
+    "spawnMapMissing": "Tidak ditampilkan di peta ini: {{locations}}",
+    "openInWiki": "Buka di Noita Wiki",
+    "spawnBiomesPro": "Penyorotan bioma kemunculan adalah fitur Pro.",
+    "spawnBiomesUnavailable": "Bioma kemunculan makhluk ini tidak tersedia di peta ini."
   },
   "wand": {
     "shuffle": "Acak",
@@ -5526,6 +5535,7 @@
     },
     "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
     "v3": {
+      "backToReport": "Kembali ke laporan",
       "back": "Kembali",
       "viewAll": "Lihat semua",
       "showMore": "Tampilkan lebih banyak",

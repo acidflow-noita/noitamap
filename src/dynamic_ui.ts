@@ -315,8 +315,8 @@ export function updateDynamicUIVisibility(currentMap: string): void {
     roundVisibleOverlayGroupEdges();
   }
 
-  // Relocate secondary controls into the "..." menu on the dynamic map;
-  // restore them to the navbar on static maps.
+  // Relocate secondary controls on dynamic maps and narrow desktop layouts;
+  // the overflow menu keeps its breakpoint listener in sync with this map.
   updateOverflowMenu(currentMap);
 
   if (isDynamic) {

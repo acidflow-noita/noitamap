@@ -14,7 +14,8 @@
     "popoverContent": "搜索咒语、物品、魔杖、Boss、生物、药剂、结构等等。使用下面的过滤按钮按类别缩小结果范围。",
     "chunksAway": "~{{count}} 个区块之外",
     "openTelescope": "在 Telescope 中打开",
-    "noResults": "未找到结果"
+    "noResults": "未找到结果",
+    "shortcutHint": "聚焦搜索：/、Ctrl+/ 或 ⌘+/"
   },
   "spell_prefix": "法术",
   "tiers_prefix": "等级",
@@ -5074,7 +5075,15 @@
     "ingestionEffects": "摄入影响",
     "reactionsHeader": "调酒师上的物质反应",
     "asReagent": "查看试剂",
-    "asProduct": "查看产品"
+    "asProduct": "查看产品",
+    "openInBartender": "在 Bartender 中打开",
+    "bartenderReagentHint": "在 Bartender 中查看使用此材料的反应。",
+    "bartenderProductHint": "在 Bartender 中查看生成此材料的反应。",
+    "showSpawnBiomes": "在地图上显示生成生物群系",
+    "spawnMapMissing": "此地图未显示：{{locations}}",
+    "openInWiki": "在 Noita Wiki 中打开",
+    "spawnBiomesPro": "生成生物群系高亮显示是 Pro 功能。",
+    "spawnBiomesUnavailable": "此地图上无法显示该生物的生成生物群系。"
   },
   "wand": {
     "shuffle": "乱序",
@@ -5526,6 +5535,7 @@
     },
     "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
     "v3": {
+      "backToReport": "返回报告",
       "back": "返回",
       "viewAll": "查看全部",
       "showMore": "显示更多",

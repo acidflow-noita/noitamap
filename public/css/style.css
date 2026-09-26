@@ -39,6 +39,15 @@ html {
   border-bottom: 1px solid var(--border-strong);
 }
 
+/* Let inputs and translated labels shrink within the available toolbar width. */
+.mapNavbar,
+.mapNavbar > .container-fluid,
+.mapNavbar .navbar-collapse,
+.mapNavbar .navbar-collapse > .d-flex {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
 /* Logo is a brand link, not selectable content — a drag-select starting on the
    map shouldn't sweep it into the highlight. */
 #navbar-brand {
@@ -163,6 +172,8 @@ html {
 }
 
 #osContainer {
+  flex: 1 1 0;
+  min-block-size: 0;
   height: 100%;
   width: 100%;
 }
@@ -541,7 +552,8 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 #map-selector .dropdown-toggle {
-  min-width: 180px;
+  inline-size: 100%;
+  min-inline-size: 0;
   text-align: left;
   display: flex;
   justify-content: space-between;
@@ -569,14 +581,60 @@ body.toggle-hidden div.osOverlayHighlight {
   margin-left: 0 !important;
 }
 
-/* Fix inconsistent gaps between menu elements */
-.navbar .d-flex > * {
-  margin: 0.25rem !important;
+/* One gap between controls; do not add margins to nested dropdown content. */
+#map-menu-controls {
+  flex: 1 1 auto;
+  inline-size: 100%;
+  gap: var(--control-gap);
 }
 
-/* Make search form wider to prevent placeholder clipping */
-#search-form {
-  min-width: 280px;
+#map-menu-controls > * {
+  flex-shrink: 0;
+  margin: 0 !important;
+}
+
+#map-menu-controls > #map-selector {
+  flex: 0 1 auto;
+  min-inline-size: 9rem;
+  max-inline-size: 16rem;
+}
+
+#mapSelectorButton > span:first-child:not(.badge),
+#authButton > .auth-text {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#mapSelectorButton > .badge,
+#mapSelectorButton::after,
+#authButton::after {
+  flex-shrink: 0;
+}
+
+#authButton {
+  max-inline-size: 10rem;
+}
+
+/* Search takes spare room, but must give it back before the toolbar overflows. */
+#map-menu-controls > #search-form {
+  flex: 1 1 17.5rem;
+  min-inline-size: min(8rem, 100%);
+  max-inline-size: min(28rem, 100%);
+}
+
+@media (min-width: 992px) {
+  #map-menu-controls {
+    flex-wrap: nowrap !important;
+  }
+}
+
+@media (max-width: 991.98px) {
+  #map-menu-controls > #search-form {
+    flex-basis: 100%;
+    max-inline-size: 100%;
+  }
 }
 
 /* Fix renderer info button to show popover */
@@ -790,7 +848,8 @@ body.toggle-hidden div.osOverlayHighlight {
 
 /* Seed input -- daily seed colored, custom seed white */
 #dynamicSeedInput {
-  width: auto !important;
+  /* Preserve all ten digits without an oversized intrinsic input width. */
+  width: calc(10ch + 2 * var(--control-padding-x) + .75rem) !important;
   font-feature-settings:
     "tnum" 1,
     "zero" 1,

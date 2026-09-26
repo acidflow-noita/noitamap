@@ -14,7 +14,8 @@
     "popoverContent": "Ищите заклинания, предметы, жезлы, боссов, существ, зелья, постройки и многое другое. Используйте кнопки фильтра ниже, чтобы сузить результаты по категориям.",
     "chunksAway": "~{{count}} чанков",
     "openTelescope": "Открыть в Telescope",
-    "noResults": "Ничего не найдено"
+    "noResults": "Ничего не найдено",
+    "shortcutHint": "Перейти к поиску: /, Ctrl+/ или ⌘+/"
   },
   "spell_prefix": "Заклинание",
   "tiers_prefix": "Уровни",
@@ -5074,7 +5075,15 @@
     "ingestionEffects": "Эффекты проглатывания",
     "reactionsHeader": "Реакция материалов на Бармена",
     "asReagent": "Посмотреть как реагент",
-    "asProduct": "Посмотреть как продукт"
+    "asProduct": "Посмотреть как продукт",
+    "openInBartender": "Открыть в Bartender",
+    "bartenderReagentHint": "Посмотреть в Bartender реакции, в которых используется этот материал.",
+    "bartenderProductHint": "Посмотреть в Bartender реакции, в результате которых получается этот материал.",
+    "showSpawnBiomes": "Показать биомы появления на карте",
+    "spawnMapMissing": "Не показано на этой карте: {{locations}}",
+    "openInWiki": "Открыть в Noita Wiki",
+    "spawnBiomesPro": "Подсветка биомов появления доступна с Pro.",
+    "spawnBiomesUnavailable": "Биомы появления этого существа недоступны на этой карте."
   },
   "wand": {
     "shuffle": "Случайно",
@@ -5526,6 +5535,7 @@
     },
     "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
     "v3": {
+      "backToReport": "Назад к отчёту",
       "back": "Назад",
       "viewAll": "Показать все",
       "showMore": "Показать ещё",

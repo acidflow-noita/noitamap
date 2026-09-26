@@ -14,7 +14,8 @@
     "popoverContent": "Suchen Sie nach Zaubersprüchen, Gegenständen, Zauberstäben, Bossen, Kreaturen, Tränken, Strukturen und mehr. Verwenden Sie die Filterschaltflächen unten, um die Ergebnisse nach Kategorie einzugrenzen.",
     "chunksAway": "~{{count}} Chunks entfernt",
     "openTelescope": "In Telescope öffnen",
-    "noResults": "Nichts gefunden"
+    "noResults": "Nichts gefunden",
+    "shortcutHint": "Suche fokussieren: /, Strg+/ oder ⌘+/"
   },
   "spell_prefix": "Zauber",
   "tiers_prefix": "Stufen",
@@ -5074,7 +5075,15 @@
     "ingestionEffects": "Auswirkungen durch Verschlucken",
     "reactionsHeader": "Wesentliche Reaktionen auf Barkeeper",
     "asReagent": "Als Reagenz anzeigen",
-    "asProduct": "Als Produkt ansehen"
+    "asProduct": "Als Produkt ansehen",
+    "openInBartender": "In Bartender öffnen",
+    "bartenderReagentHint": "Reaktionen mit diesem Material in Bartender ansehen.",
+    "bartenderProductHint": "Reaktionen, die dieses Material erzeugen, in Bartender ansehen.",
+    "showSpawnBiomes": "Spawn-Biome auf der Karte anzeigen",
+    "spawnMapMissing": "Auf dieser Karte nicht angezeigt: {{locations}}",
+    "openInWiki": "Im Noita Wiki öffnen",
+    "spawnBiomesPro": "Das Hervorheben von Spawn-Biomen ist eine Pro-Funktion.",
+    "spawnBiomesUnavailable": "Für diese Kreatur sind auf dieser Karte keine Spawn-Biome verfügbar."
   },
   "wand": {
     "shuffle": "Mischen",
@@ -5526,6 +5535,7 @@
     },
     "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
     "v3": {
+      "backToReport": "Zurück zum Bericht",
       "back": "Zurück",
       "viewAll": "Alle anzeigen",
       "showMore": "Mehr anzeigen",

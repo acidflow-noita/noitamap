@@ -14,7 +14,8 @@
     "popoverContent": "Sök efter trollformler, föremål, trollstavar, bossar, varelser, drycker, strukturer och mer. Använd filterknapparna nedan för att begränsa resultaten efter kategori.",
     "chunksAway": "~{{count}} chunks bort",
     "openTelescope": "Öppna i Telescope",
-    "noResults": "Inget hittades"
+    "noResults": "Inget hittades",
+    "shortcutHint": "Fokusera sökfältet: /, Ctrl+/ eller ⌘+/"
   },
   "spell_prefix": "Trollformel",
   "tiers_prefix": "Nivåer",
@@ -5074,7 +5075,15 @@
     "ingestionEffects": "Förtäringseffekter",
     "reactionsHeader": "Materialreaktioner på Bartender",
     "asReagent": "Visa som reagens",
-    "asProduct": "Visa som produkt"
+    "asProduct": "Visa som produkt",
+    "openInBartender": "Öppna i Bartender",
+    "bartenderReagentHint": "Visa reaktioner som använder detta material i Bartender.",
+    "bartenderProductHint": "Visa reaktioner som producerar detta material i Bartender.",
+    "showSpawnBiomes": "Visa biomer där varelsen förekommer på kartan",
+    "spawnMapMissing": "Visas inte på denna karta: {{locations}}",
+    "openInWiki": "Öppna i Noita Wiki",
+    "spawnBiomesPro": "Markering av förekomstbiomer är en Pro-funktion.",
+    "spawnBiomesUnavailable": "Biomer där denna varelse förekommer är inte tillgängliga på denna karta."
   },
   "wand": {
     "shuffle": "Blanda",
@@ -5526,6 +5535,7 @@
     },
     "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
     "v3": {
+      "backToReport": "Tillbaka till rapporten",
       "back": "Tillbaka",
       "viewAll": "Visa alla",
       "showMore": "Visa fler",

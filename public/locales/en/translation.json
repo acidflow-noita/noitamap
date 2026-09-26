@@ -382,6 +382,7 @@
     },
     "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
     "v3": {
+      "backToReport": "Back to report",
       "back": "Back",
       "viewAll": "View all",
       "showMore": "Show more",
@@ -464,7 +465,8 @@
     "popoverContent": "Search for spells, items, wands, bosses, creatures, potions, structures, and more. Use the filter buttons below to narrow results by category.",
     "chunksAway": "~{{count}} chunks away",
     "openTelescope": "Open in Telescope",
-    "noResults": "Nothing found"
+    "noResults": "Nothing found",
+    "shortcutHint": "Focus search: /, Ctrl+/ or ⌘+/"
   },
   "alchemy": {
     "ap": {
@@ -5534,7 +5536,15 @@
     "ingestionEffects": "Ingestion effects",
     "reactionsHeader": "Material reactions on Bartender",
     "asReagent": "View as reagent",
-    "asProduct": "View as product"
+    "asProduct": "View as product",
+    "openInBartender": "Open in Bartender",
+    "bartenderReagentHint": "View reactions that use this material in Bartender.",
+    "bartenderProductHint": "View reactions that produce this material in Bartender.",
+    "showSpawnBiomes": "Show spawn biomes on map",
+    "spawnMapMissing": "Not shown on this map: {{locations}}",
+    "openInWiki": "Open in Noita Wiki",
+    "spawnBiomesPro": "Spawn biome highlighting is a Pro feature.",
+    "spawnBiomesUnavailable": "Spawn biomes are unavailable for this creature on this map."
   },
   "wand": {
     "shuffle": "Shuffle",

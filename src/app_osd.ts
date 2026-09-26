@@ -5,6 +5,7 @@ import { isSimplisticBackground } from './simplistic-background';
 
 import { CHUNK_SIZE } from './constants';
 import { cameraPixelDelta, readCameraMatrix } from './portals/geometry';
+import { dismissPopovers } from './popover-util';
 
 declare const OpenSeadragon: any;
 
@@ -162,13 +163,25 @@ export class AppOSD {
     this.viewer.addOverlay(options);
   }
   clearOverlays() {
+    this.disposeOverlayPopovers();
     this.viewer.clearOverlays();
   }
   removeOverlay(el: HTMLElement) {
+    el.querySelectorAll<HTMLElement>('.osOverlayPopup').forEach(dismissPopovers);
     this.viewer.removeOverlay(el);
   }
 
+  private disposeOverlayPopovers() {
+    // Static POI cards are rebuilt per map. Cached biome overlays have no
+    // .osOverlayPopup and retain their reusable DOM and event handlers.
+    for (const overlay of this.viewer.currentOverlays ?? []) {
+      overlay.element.querySelectorAll('.osOverlayPopup').forEach(dismissPopovers);
+    }
+  }
+
   open(sources: any) {
+    // OSD open() clears old overlays internally, before clearOverlays() runs.
+    this.disposeOverlayPopovers();
     this.viewer.open(sources);
   }
   isOpen() {

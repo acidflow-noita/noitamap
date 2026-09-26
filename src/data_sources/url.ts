@@ -29,13 +29,22 @@ export interface URLState extends Partial<AppState> {
   filters?: string[];
   /** Target POI ID to automatically open popup for */
   targetPoiId?: string;
+  /** Creature whose spawn biomes should be highlighted after access is checked. */
+  spawnCreatureId?: string;
 }
 
 /**
- * Desired URL param order: x, y, z (zoom), m (map), se (seed), ds (daily seed), o (overlays), s (sidebar), c (canvas), poi (targetPoiId), q (search), f (filters), sr (seed report), u (unlocks descriptor / mod payload)
+ * Desired URL param order: x, y, z (zoom), m (map), se (seed), ds (daily seed), o (overlays), s (sidebar), c (canvas), poi (targetPoiId), spawn (creature spawn biomes), q (search), f (filters), sr (seed report), u (unlocks descriptor / mod payload)
  * Short params used for encoding, decoder accepts both short and long names
  */
-const PARAM_ORDER = ['x', 'y', 'z', 'm', 'se', 'ds', 'o', 's', 'c', 'poi', 'q', 'f', 'sr', 'u'];
+const PARAM_ORDER = ['x', 'y', 'z', 'm', 'se', 'ds', 'o', 's', 'c', 'poi', 'spawn', 'q', 'f', 'sr', 'u'];
+
+/** Only local creature IDs belong in this parameter, never paths or URLs. */
+export function normalizeSpawnCreatureId(value: string | null | undefined): string | undefined {
+  return value && /^[A-Za-z0-9_.-]{1,256}$/.test(value) && value !== '.' && value !== '..'
+    ? value
+    : undefined;
+}
 
 /**
  * Reorder URL search params to maintain consistent order
@@ -181,12 +190,26 @@ export function parseURL(): URLState {
   // Get targeted POI ID
   const poiParam = getParam(url, 'poi', 'targetPoiId') || getParam(url, 'pid', 'targetPoiId');
   const targetPoiId = poiParam || undefined;
+  const spawnCreatureId = normalizeSpawnCreatureId(url.searchParams.get('spawn'));
 
   // Seed report open state — accept `sr` (short) or `seedReport` (long).
   const seedReportParam = getParam(url, 'sr', 'seedReport');
   const seedReportOpen = seedReportParam === '1' || seedReportParam === 'true';
 
-  return { pos, map, overlays, sidebarOpen, canvas, seed, dailySeed, query, filters, targetPoiId, seedReportOpen };
+  return { pos, map, overlays, sidebarOpen, canvas, seed, dailySeed, query, filters, targetPoiId, spawnCreatureId, seedReportOpen };
+}
+
+/** Set or clear a requested creature spawn overlay without changing other state. */
+export function updateURLWithCreatureSpawn(id?: string): void {
+  const url = new URL(window.location.toString());
+  const creatureId = normalizeSpawnCreatureId(id);
+  if (creatureId) {
+    url.searchParams.set('spawn', creatureId);
+  } else {
+    url.searchParams.delete('spawn');
+  }
+  reorderParams(url);
+  window.history.replaceState(null, '', url.toString());
 }
 
 /**

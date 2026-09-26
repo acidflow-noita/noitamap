@@ -14,7 +14,8 @@
     "popoverContent": "Zoek naar spreuken, items, toverstokken, bazen, wezens, drankjes, structuren en meer. Gebruik de onderstaande filterknoppen om de resultaten per categorie te verfijnen.",
     "chunksAway": "~{{count}} chunks verwijderd",
     "openTelescope": "Openen in Telescope",
-    "noResults": "Niets gevonden"
+    "noResults": "Niets gevonden",
+    "shortcutHint": "Zoeken activeren: /, Ctrl+/ of ⌘+/"
   },
   "spell_prefix": "Spreuk",
   "tiers_prefix": "Niveaus",
@@ -5074,7 +5075,15 @@
     "ingestionEffects": "Inslikkingseffecten",
     "reactionsHeader": "Materiële reacties op Barman",
     "asReagent": "Bekijk als reagens",
-    "asProduct": "Bekijk als product"
+    "asProduct": "Bekijk als product",
+    "openInBartender": "Openen in Bartender",
+    "bartenderReagentHint": "Bekijk in Bartender de reacties die dit materiaal gebruiken.",
+    "bartenderProductHint": "Bekijk in Bartender de reacties die dit materiaal produceren.",
+    "showSpawnBiomes": "Toon biomen waar dit wezen voorkomt op de kaart",
+    "spawnMapMissing": "Niet weergegeven op deze kaart: {{locations}}",
+    "openInWiki": "Openen in Noita Wiki",
+    "spawnBiomesPro": "Het markeren van biomen waar wezens voorkomen is een Pro-functie.",
+    "spawnBiomesUnavailable": "De biomen waar dit wezen voorkomt zijn niet beschikbaar op deze kaart."
   },
   "wand": {
     "shuffle": "Schudden",
@@ -5526,6 +5535,7 @@
     },
     "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
     "v3": {
+      "backToReport": "Terug naar het rapport",
       "back": "Terug",
       "viewAll": "Alles bekijken",
       "showMore": "Meer tonen",

@@ -21,6 +21,7 @@ import { canonicalEntityId } from "../telescope/entity-canonical";
 import { getMimicEntityId } from '../telescope/poi-mimics';
 import { isAchievementPillarSegment, pillarSegmentTitle, pillarReqSpec, resolvePillarLinkLabel, resolvePillarItemName, ITEM_SEARCH_NAME_KEYS, ITEM_LOCALE_NAME_KEYS, PILLAR_PLACES } from "../data/pillars";
 import orbsData from "../data/orbs.json";
+import { installSearchShortcut } from "./search-shortcut";
 
 /**
  * The 11 Orbs of True Knowledge as synthetic search POIs. On NG the generator
@@ -1877,6 +1878,10 @@ export class UnifiedSearch extends EventEmitter2 {
       searchResults.resetScroll();
     });
 
+    searchInput.closest('.navbar-collapse')?.addEventListener('shown.bs.collapse', () => {
+      if (isOverlayVisible) positionOverlay();
+    });
+
     searchInput.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         overlayDiv.style.display = "none";
@@ -1982,6 +1987,15 @@ export class UnifiedSearch extends EventEmitter2 {
       searchResults,
       initialFilters,
     });
+
+    const shortcutLabel = () => String(i18next.t('search.shortcutHint', 'Focus search: /, Ctrl+/ or ⌘+/'));
+    const shortcut = installSearchShortcut(searchInput, shortcutLabel());
+    const refreshShortcut = () => {
+      shortcut.updateHint(shortcutLabel());
+      searchInput.setAttribute('aria-label', String(i18next.t('search.popoverTitle', 'Search')));
+    };
+    refreshShortcut();
+    i18next.on('languageChanged', refreshShortcut);
 
     // allow programmatically opening the overlay without focusing
     (instance as any).showOverlay = () => {

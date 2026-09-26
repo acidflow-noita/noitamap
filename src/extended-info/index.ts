@@ -11,6 +11,10 @@
 import i18next from "../i18n";
 import { authService } from "../auth/auth-service";
 import { AuthUI } from "../auth/auth-ui";
+import { gameTranslator } from "../game-translations/translator";
+import { CREATURE_DATA } from "../data/creature-data";
+import { attachHoverPopover, attachWikiLinkPopover, dismissPopovers, hidePopovers } from "../popover-util";
+import { navigateCreatureSpawns, onCreatureSpawnNavigationChanged, resolveCreatureSpawns, type CreatureSpawnMode } from "../creature-spawn-navigation";
 
 const BARTENDER_BASE = "https://bartender.runfast.stream";
 
@@ -455,19 +459,70 @@ function translateBiomeList(s: string | null | undefined): string {
     .join(", ");
 }
 
+/** One destination action for the whole spawn list, using the report's map glyph. */
+function creatureSpawnRow(label: string, rawSpawn: string, creatureId: string, mode: CreatureSpawnMode = 'normal'): HTMLElement | null {
+  const locations = translateBiomeList(rawSpawn);
+  const result = row(label, locations, "prose");
+  if (!result) return null;
+  const available = resolveCreatureSpawns(rawSpawn, mode);
+
+  const value = result.querySelector<HTMLElement>(".extended-info-value")!;
+  value.classList.add("extended-info-spawn-value");
+  if (available.canNavigate) {
+    const link = document.createElement("button");
+    link.type = "button";
+    link.className = "creature-spawn-link";
+    link.textContent = locations;
+    const action = i18next.t("extended.showSpawnBiomes", "Show spawn biomes on map");
+    link.title = action;
+    link.setAttribute("aria-label", `${action}: ${locations}`);
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    icon.setAttribute("viewBox", "0 0 24 24");
+    icon.setAttribute("fill", "currentColor");
+    icon.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", "M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z");
+    icon.append(path);
+    link.append(icon);
+    link.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      // A card can survive until the next auth render; recheck access at action time.
+      if (isProUser()) navigateCreatureSpawns(rawSpawn, link, mode, creatureId);
+    });
+    value.replaceChildren(link);
+  }
+  if (available.missing.length) {
+    const missing = document.createElement("span");
+    missing.className = "creature-spawn-missing";
+    missing.textContent = i18next.t("extended.spawnMapMissing", {
+      defaultValue: "Not shown on this map: {{locations}}",
+      locations: available.missing.map(name => translateBiomeList(name)).join(", "),
+    });
+    value.append(missing);
+  }
+  return result;
+}
+
 /**
  * Walk up from `el` to find an enclosing popup (static OSD overlay popup or
  * telescope marker tooltip) and dismiss it. Used by the CTA click handler so
  * the auth modal isn't visually buried under the popup.
  */
-function dismissEnclosingPopup(el: HTMLElement): void {
+export function dismissEnclosingPopup(el: HTMLElement): void {
   const tooltip = el.closest(".marker-tooltip") as HTMLElement | null;
   if (tooltip) {
-    tooltip.remove();
+    const close = (tooltip as HTMLElement & { __close?: () => void }).__close;
+    if (close) close();
+    else {
+      dismissPopovers(tooltip);
+      tooltip.remove();
+    }
     return;
   }
   const popup = el.closest(".osOverlayPopup") as HTMLElement | null;
   if (popup) {
+    hidePopovers(popup);
     popup.style.display = "none";
     const parent = popup.parentElement;
     if (parent) {
@@ -507,6 +562,17 @@ function isSectionVisible(sec: HTMLElement): boolean {
 function ensureLangListener(): void {
   if (langListenerInstalled) return;
   langListenerInstalled = true;
+  // Static creature cards can be constructed before the map registers its
+  // navigation callback. Refresh visible cards, reusing the lazy refresh for
+  // hidden cards instead of fetching every creature as soon as the map starts.
+  onCreatureSpawnNavigationChanged(() => {
+    document.querySelectorAll<HTMLElement>(".extended-info-section[data-extended-kind='creature']").forEach(wrap => {
+      const render = (wrap as HTMLElement & { __rerender?: () => void }).__rerender;
+      if (!render) return;
+      if (isSectionVisible(wrap)) render();
+      else wrap.dataset.langStale = "1";
+    });
+  });
   i18next.on("languageChanged", () => {
     document.querySelectorAll<HTMLElement>(".extended-info-section").forEach((wrap) => {
       const fn = (wrap as any).__rerender as (() => void) | undefined;
@@ -558,7 +624,10 @@ export function buildExtendedSection(kind: ExtendedKind, id: string): HTMLElemen
   body.className = "extended-info-body";
   wrap.appendChild(body);
 
+  let renderVersion = 0;
   const render = () => {
+    const version = ++renderVersion;
+    dismissPopovers(body);
     body.replaceChildren();
     if (!isProUser()) {
       wrap.style.display = "";
@@ -566,7 +635,7 @@ export function buildExtendedSection(kind: ExtendedKind, id: string): HTMLElemen
       body.appendChild(renderProPlaceholder(kind));
       return;
     }
-    renderProBody(wrap, header, body, kind, id);
+    renderProBody(wrap, body, kind, id, () => version === renderVersion && isProUser() && wrap.isConnected);
   };
 
   (wrap as any).__rerender = render;
@@ -601,7 +670,10 @@ export function buildExtendedCreatureSectionByName(name: string, aliases?: strin
 
   const tryNames = [name, ...(aliases ?? [])];
 
+  let renderVersion = 0;
   const render = () => {
+    const version = ++renderVersion;
+    dismissPopovers(body);
     body.replaceChildren();
     if (!isProUser()) {
       wrap.style.display = "";
@@ -613,12 +685,14 @@ export function buildExtendedCreatureSectionByName(name: string, aliases?: strin
     loading.textContent = i18next.t("extended.loading", "Loading...");
     body.appendChild(loading);
     loadExtendedCreatures().then(() => {
+      if (version !== renderVersion || !isProUser() || !wrap.isConnected) return;
       let id: string | null = null;
       for (const n of tryNames) {
         if (!n) continue;
         id = getCreatureIdByName(n);
         if (id) break;
       }
+      dismissPopovers(body);
       body.replaceChildren();
       const node = id ? renderCreature(id) : null;
       if (node) {
@@ -739,10 +813,10 @@ function renderProPlaceholder(kind: ExtendedKind): HTMLElement {
 
 function renderProBody(
   wrap: HTMLElement,
-  header: HTMLElement,
   body: HTMLElement,
   kind: ExtendedKind,
   id: string,
+  isCurrent: () => boolean,
 ): void {
   const loading = document.createElement("div");
   loading.className = "extended-info-loading";
@@ -750,7 +824,11 @@ function renderProBody(
   body.appendChild(loading);
 
   const fill = (cb: () => HTMLElement | null) => {
+    // Language/auth changes or closing the card can outlive a lazy fetch.
+    // Only the current attached card may create body-mounted popovers.
+    if (!isCurrent()) return;
     const node = cb();
+    dismissPopovers(body);
     body.replaceChildren();
     if (node) {
       wrap.style.display = "";
@@ -774,10 +852,18 @@ function renderProBody(
 
 // ─── Renderers (pro-only) ────────────────────────────────────────────────────
 
-function row(label: string, value: string | number | null | undefined): HTMLElement | null {
+type RowLayout = "numeric" | "text" | "prose";
+type StatRow = [string, string | number | null | undefined, RowLayout?];
+
+function row(label: string, value: string | number | null | undefined, layout: RowLayout = "text"): HTMLElement | null {
   if (value == null || value === "") return null;
+  // Only fields explicitly designated as stats can be numeric. Some health
+  // entries contain location-dependent values and explanations instead of a
+  // scalar; let those read across the card rather than squeezing them right.
+  const numericText = String(value).replace(/(?:frames?|seconds?|milliseconds?|pixels?|ms|px|hp|s)\b/gi, "");
+  if (layout === "numeric" && !/^[\d\s.,+\-−–—×x/%°∞<>≤≥=():eE]+$/u.test(numericText)) layout = "prose";
   const r = document.createElement("div");
-  r.className = "extended-info-row";
+  r.className = `extended-info-row extended-info-row--${layout}`;
   const l = document.createElement("span");
   l.className = "extended-info-label";
   l.textContent = `${label}:`;
@@ -791,20 +877,25 @@ function row(label: string, value: string | number | null | undefined): HTMLElem
 
 function rowWithNode(label: string, valueNode: HTMLElement): HTMLElement {
   const r = document.createElement("div");
-  r.className = "extended-info-row";
+  r.className = "extended-info-row extended-info-row--text";
   const l = document.createElement("span");
   l.className = "extended-info-label";
   l.textContent = `${label}:`;
+  // The value occupies the grid cell; an actionable child keeps only its
+  // visible content as its hit area, rather than stretching across the row.
+  const value = document.createElement("span");
+  value.className = "extended-info-value";
+  value.appendChild(valueNode);
   r.appendChild(l);
-  r.appendChild(valueNode);
+  r.appendChild(value);
   return r;
 }
 
 /** Append key-value pairs as rows into the parent. Returns count of rows added. */
-function appendKVRows(parent: HTMLElement, pairs: [string, string | number | null | undefined][]): number {
+function appendKVRows(parent: HTMLElement, pairs: StatRow[]): number {
   const present = pairs.filter(([, v]) => v != null && v !== "" && v !== 0);
-  for (const [k, v] of present) {
-    const r = row(k, String(v));
+  for (const [k, v, layout = "numeric"] of present) {
+    const r = row(k, String(v), layout);
     if (r) parent.appendChild(r);
   }
   return present.length;
@@ -817,7 +908,7 @@ const DMG_COLOR_VULNERABLE = "oklch(72.3% 0.219 149.579)"; // > 1.0 → weaker (
 function appendDmgMultRows(parent: HTMLElement, pairs: [string, string | number | null | undefined][]): number {
   const present = pairs.filter(([, v]) => v != null && v !== "" && v !== 0);
   for (const [k, v] of present) {
-    const r = row(k, String(v));
+    const r = row(k, String(v), "numeric");
     if (!r) continue;
     const numStr = String(v).replace(/^[^\d.-]*/, "");
     const numVal = parseFloat(numStr);
@@ -885,15 +976,15 @@ function renderCreature(id: string): HTMLElement | null {
     if (r) topRows.push(r);
   }
   if (c.health) {
-    const r = row(i18next.t("extended.row.hp", "HP"), stripWiki(c.health));
+    const r = row(i18next.t("extended.row.hp", "HP"), stripWiki(c.health), "numeric");
     if (r) topRows.push(r);
   }
   if (c.attackType) {
-    const r = row(i18next.t("extended.row.attacks", "Attacks"), parseAttacks(c.attackType));
+    const r = row(i18next.t("extended.row.attacks", "Attacks"), parseAttacks(c.attackType), "prose");
     if (r) topRows.push(r);
   }
   if (c.immunities) {
-    const r = row(i18next.t("extended.row.immunities", "Immunities"), translateImmunities(c.immunities));
+    const r = row(i18next.t("extended.row.immunities", "Immunities"), translateImmunities(c.immunities), "prose");
     if (r) topRows.push(r);
   }
 
@@ -922,7 +1013,10 @@ function renderCreature(id: string): HTMLElement | null {
   ]);
   const multsPresent = mults.filter(([, v]) => v != null && v !== "");
   if (multsPresent.length > 0) {
-    const g = group(i18next.t("extended.dmgMults", "Damage multipliers"), multsPresent.length);
+    // A row-major grid keeps every label/value together without balancing
+    // columns again when lazy content or translated labels change height.
+    const g = group(i18next.t("extended.dmgMults", "Damage multipliers"), 0);
+    g.classList.add("extended-info-group--stats-grid");
     appendDmgMultRows(g, mults);
     root.appendChild(g);
   }
@@ -931,21 +1025,21 @@ function renderCreature(id: string): HTMLElement | null {
   const bottomRows: HTMLElement[] = [];
 
   if (c.spawnLocation) {
-    const r = row(i18next.t("extended.row.spawn", "Spawn"), translateBiomeList(c.spawnLocation));
+    const r = creatureSpawnRow(i18next.t("extended.row.spawn", "Spawn"), c.spawnLocation, id);
     if (r) bottomRows.push(r);
   }
   if (c.ngplusSpawnLocation) {
-    const r = row(i18next.t("extended.row.spawnNgplus", "Spawn (NG+)"), translateBiomeList(c.ngplusSpawnLocation));
+    const r = creatureSpawnRow(i18next.t("extended.row.spawnNgplus", "Spawn (NG+)"), c.ngplusSpawnLocation, id, 'ng-plus');
     if (r) bottomRows.push(r);
   }
 
   // Blood / Corpse — individual rows, each with a bartender link
   if (c.blood) {
-    const node = creatureMaterialNode(stripWiki(c.blood), c.blood_material_id);
+    const node = creatureMaterialNode(c.blood, c.blood_material_id || CREATURE_DATA[id]?.bloodMaterialId, CREATURE_DATA[id]?.bloodMaterialIds);
     bottomRows.push(rowWithNode(i18next.t("extended.row.blood", "Blood"), node));
   }
   if (c.corpse) {
-    const node = creatureMaterialNode(stripWiki(c.corpse), c.corpse_material_id);
+    const node = creatureMaterialNode(c.corpse, c.corpse_material_id || CREATURE_DATA[id]?.corpseMaterialId, CREATURE_DATA[id]?.corpseMaterialIds);
     bottomRows.push(rowWithNode(i18next.t("extended.row.corpse", "Corpse"), node));
   }
 
@@ -958,7 +1052,7 @@ function renderCreature(id: string): HTMLElement | null {
     if (r) bottomRows.push(r);
   }
   if (c.dmgMultNotes && c.dmgMultNotes !== "1x") {
-    const r = row(i18next.t("extended.row.notes", "Notes"), c.dmgMultNotes);
+    const r = row(i18next.t("extended.row.notes", "Notes"), c.dmgMultNotes, "prose");
     if (r) bottomRows.push(r);
   }
 
@@ -986,8 +1080,8 @@ function renderSpell(id: string): HTMLElement | null {
   }
 
   // ── Top-level spell stats — many rows, use column layout ──
-  const statsRows: [string, string | number | null | undefined][] = [
-    [i18next.t("extended.row.type", "Type"), s.type],
+  const statsRows: StatRow[] = [
+    [i18next.t("extended.row.type", "Type"), s.type, "text"],
     [i18next.t("extended.row.mana", "Mana"), s.manaDrain != null ? String(s.manaDrain) : null],
     [i18next.t("extended.row.uses", "Uses"), s.uses ? String(s.uses) : null],
     [i18next.t("extended.row.castDelay", "Cast delay"), s.castDelay],
@@ -999,7 +1093,7 @@ function renderSpell(id: string): HTMLElement | null {
     [i18next.t("extended.row.bounces", "Bounces"), s.bounces],
     [i18next.t("extended.row.crit", "Crit"), s.criticalChance],
     [i18next.t("extended.row.price", "Price"), s.price != null ? String(s.price) : null],
-    [i18next.t("extended.row.unlock", "Unlock"), s.unlockCondition ?? null],
+    [i18next.t("extended.row.unlock", "Unlock"), s.unlockCondition ?? null, "prose"],
   ];
   const statsPresent = statsRows.filter(([, v]) => v != null && v !== "");
   if (statsPresent.length > 0) {
@@ -1062,23 +1156,23 @@ function renderMaterial(id: string): HTMLElement | null {
   typeSpan.textContent = materialTypeLabel(slug);
   pushRow(rowWithNode(i18next.t("extended.row.type", "Type"), typeSpan));
 
-  if (m.density != null) pushRow(row(i18next.t("extended.row.density", "Density"), String(m.density)));
+  if (m.density != null) pushRow(row(i18next.t("extended.row.density", "Density"), String(m.density), "numeric"));
 
   // Solid / powder mining stats
   if (slug === "solid" || slug === "powder") {
-    if (m.hardness != null) pushRow(row(i18next.t("extended.row.hardness", "Hardness"), String(m.hardness)));
+    if (m.hardness != null) pushRow(row(i18next.t("extended.row.hardness", "Hardness"), String(m.hardness), "numeric"));
     if (m.durability != null && m.durability !== 0)
-      pushRow(row(i18next.t("extended.row.durability", "Durability"), String(m.durability)));
+      pushRow(row(i18next.t("extended.row.durability", "Durability"), String(m.durability), "numeric"));
     if (m.crackability != null && m.crackability !== 0)
-      pushRow(row(i18next.t("extended.row.crackability", "Crackability"), String(m.crackability)));
+      pushRow(row(i18next.t("extended.row.crackability", "Crackability"), String(m.crackability), "numeric"));
   }
 
   // Liquid-specific
   if (slug === "liquid") {
     if (m.liquid_viscosity != null)
-      pushRow(row(i18next.t("extended.row.viscosity", "Viscosity"), String(m.liquid_viscosity)));
+      pushRow(row(i18next.t("extended.row.viscosity", "Viscosity"), String(m.liquid_viscosity), "numeric"));
     if (m.liquid_gravity != null)
-      pushRow(row(i18next.t("extended.row.liquidGravity", "Liquid gravity"), String(m.liquid_gravity)));
+      pushRow(row(i18next.t("extended.row.liquidGravity", "Liquid gravity"), String(m.liquid_gravity), "numeric"));
   }
 
   const yes = i18next.t("extended.yes", "yes");
@@ -1088,7 +1182,7 @@ function renderMaterial(id: string): HTMLElement | null {
   if (m.burnable) pushRow(row(i18next.t("extended.row.burnable", "Burnable"), yes));
   if (m.on_fire) pushRow(row(i18next.t("extended.row.alwaysBurning", "Always burning"), yes));
   if (m.autoignition_temperature != null && m.autoignition_temperature !== 100) {
-    pushRow(row(i18next.t("extended.row.autoignition", "Autoignition"), String(m.autoignition_temperature)));
+    pushRow(row(i18next.t("extended.row.autoignition", "Autoignition"), String(m.autoignition_temperature), "numeric"));
   }
   if (m.cold_freezes_to_material_name)
     pushRow(row(i18next.t("extended.row.freezesTo", "Freezes to"), m.cold_freezes_to_material_name));
@@ -1114,7 +1208,7 @@ function renderMaterial(id: string): HTMLElement | null {
     for (const se of m.stain_effects) {
       const eff = getStatusEffect(se.id);
       if (!eff?.name) continue;
-      const r = row(eff.name, eff.description || "");
+      const r = row(eff.name, eff.description || "", "prose");
       if (r) items.push(r);
     }
     if (items.length) {
@@ -1130,7 +1224,7 @@ function renderMaterial(id: string): HTMLElement | null {
     for (const ie of m.ingestion_effects) {
       const eff = getStatusEffect(ie.id);
       if (!eff?.name) continue;
-      const r = row(eff.name, eff.description || "");
+      const r = row(eff.name, eff.description || "", "prose");
       if (r) items.push(r);
     }
     if (items.length) {
@@ -1152,6 +1246,7 @@ function renderMaterial(id: string): HTMLElement | null {
       a.rel = "noopener";
       a.textContent = tag;
       a.className = "extended-info-tag-link";
+      attachWikiLinkPopover(a);
       tagsNode.appendChild(a);
       if (i < m.tags!.length - 1) {
         tagsNode.appendChild(document.createTextNode(", "));
@@ -1173,7 +1268,7 @@ function renderMaterial(id: string): HTMLElement | null {
       linksWrap.appendChild(externalLink(bartenderReagentLink(id), i18next.t("extended.asReagent", "View as reagent")));
     }
     if (roles.asResult) {
-      linksWrap.appendChild(externalLink(bartenderProductLink(id), i18next.t("extended.asProduct", "View as product")));
+      linksWrap.appendChild(externalLink(bartenderProductLink(id), i18next.t("extended.asProduct", "View as product"), "product"));
     }
     root.appendChild(linksWrap);
   }
@@ -1186,18 +1281,40 @@ function renderMaterial(id: string): HTMLElement | null {
  * icon wrapped in a single <a> so the click target is exactly the visible
  * content, not the whole row.
  */
-function externalLink(href: string, label: string): HTMLElement {
+function externalLink(href: string, label: string, role: "reagent" | "product" = "reagent"): HTMLElement {
   const a = document.createElement("a");
   a.href = href;
   a.target = "_blank";
-  a.rel = "noopener";
-  a.className = "extended-info-link";
+  a.rel = "noopener noreferrer";
+  a.className = "extended-info-link bartender-link";
+  const destination = i18next.t("extended.openInBartender", "Open in Bartender");
+  a.title = destination;
+  a.setAttribute("aria-label", `${label} · ${destination}`);
   const text = document.createElement("span");
   text.textContent = label;
   a.appendChild(text);
   const icon = document.createElement("i");
   icon.className = "bi bi-box-arrow-up-right";
+  icon.setAttribute("aria-hidden", "true");
   a.appendChild(icon);
+
+  const title = document.createElement("span");
+  title.className = "bartender-link-title";
+  const logo = document.createElement("img");
+  logo.className = "bartender-link-logo";
+  logo.src = "./assets/Bartender_logo.svg";
+  logo.alt = "Bartender";
+  const brand = /Bartender/i.exec(destination);
+  if (brand) {
+    title.append(document.createTextNode(destination.slice(0, brand.index)), logo,
+      document.createTextNode(destination.slice(brand.index + brand[0].length)));
+  } else {
+    title.append(document.createTextNode(destination), logo);
+  }
+  const hint = role === "product"
+    ? i18next.t("extended.bartenderProductHint", "View reactions that produce this material in Bartender.")
+    : i18next.t("extended.bartenderReagentHint", "View reactions that use this material in Bartender.");
+  attachHoverPopover(a, hint, "top", { title, owner: "bartender-link", focus: true });
   return a;
 }
 
@@ -1206,9 +1323,28 @@ function externalLink(href: string, label: string): HTMLElement {
  * Used for Blood / Corpse rows. When we have the bartender material id we
  * link to bartender's reactions page; otherwise plain text.
  */
-function creatureMaterialNode(displayName: string, materialId: string | null | undefined): HTMLElement {
-  if (materialId) {
-    return externalLink(bartenderReagentLink(materialId), displayName);
+function creatureMaterialNode(rawName: string, materialId: string | null | undefined, materialIds?: string[]): HTMLElement {
+  const displayName = stripWiki(rawName);
+  const linkIds = materialIds?.length ? materialIds : materialId && materialId !== 'none' ? [materialId] : [];
+  if (linkIds.length) {
+    const references = [...rawName.matchAll(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g)];
+    if (references.length === linkIds.length) {
+      const value = document.createElement('span');
+      const separator = (text: string) => `${/^\s/.test(text) ? ' ' : ''}${stripWiki(text)}${/\s$/.test(text) ? ' ' : ''}`;
+      let from = 0;
+      references.forEach((reference, index) => {
+        value.append(document.createTextNode(separator(rawName.slice(from, reference.index))));
+        value.append(creatureMaterialNode(stripWiki(reference[0]), linkIds[index]));
+        from = reference.index! + reference[0].length;
+      });
+      value.append(document.createTextNode(separator(rawName.slice(from))));
+      return value;
+    }
+  }
+  if (materialId && materialId !== 'none') {
+    const translated = gameTranslator.translateMaterial(materialId);
+    const normalizedId = materialId.replace(/^mat_/, "");
+    return externalLink(bartenderReagentLink(materialId), translated === normalizedId ? displayName : translated);
   }
   const t = document.createElement("span");
   t.className = "extended-info-value";
@@ -1227,6 +1363,8 @@ function stripWiki(s: string | null | undefined): string {
     .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
     .replace(/&#039;/g, "'");
+  // Wiki Cargo can include unresolved citation markers in creature fields.
+  t = t.replace(/\x7f?['"`]*UNIQ--ref-[\da-f]+-QINU['"`]*\x7f?/gi, '');
   t = t.replace(/<[^>]+>/g, " ");
   t = t.replace(/\[\[File:[^\]]*\]\]/g, "");
   t = t.replace(/\[\[([^\]|]*\|)?([^\]]*)\]\]/g, "$2");

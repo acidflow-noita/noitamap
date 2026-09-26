@@ -2,6 +2,21 @@ import i18next from "./i18n";
 
 const bs = () => (window as any).bootstrap;
 
+const nativeLinks = new WeakSet<HTMLElement>();
+
+/** Keep OSD's map gesture tracker from capturing or cancelling card links. */
+function preserveNativeLinkNavigation(el: HTMLElement): void {
+  if (!el.matches('a[href]') || nativeLinks.has(el)) return;
+  nativeLinks.add(el);
+  // Stop at the anchor, including clicks on its text/icon children. Never
+  // cancel the default: the browser owns navigation, modifiers, middle click,
+  // and keyboard activation. Down events must stay out of OSD too, otherwise
+  // it captures the pointer before the eventual click can reach the link.
+  for (const type of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'click', 'dblclick']) {
+    el.addEventListener(type, event => event.stopPropagation());
+  }
+}
+
 /**
  * Attach a hover Bootstrap popover to `el`. The host element is tagged with
  * `__disposePopover` so dismissPopovers() can tear it down when its container
@@ -12,15 +27,31 @@ export function attachHoverPopover(
   el: HTMLElement,
   content: string,
   placement: "top" | "bottom" | "left" | "right" = "top",
+  options: { title?: HTMLElement; owner?: string; focus?: boolean } = {},
 ): void {
+  preserveNativeLinkNavigation(el);
   const lib = bs();
   if (!lib?.Popover) return;
   const existing = lib.Popover.getInstance(el);
   if (existing) existing.dispose();
-  el.setAttribute('data-popover-owner', 'hover-help');
+  el.setAttribute('data-popover-owner', options.owner ?? 'hover-help');
+  const trigger = options.focus ? 'hover focus' : 'hover';
+  if (options.focus) {
+    el.dataset.bsToggle = 'popover';
+    el.dataset.bsTrigger = trigger;
+  }
+  // A DOM title lets branded links include their logo without interpolating
+  // HTML. Keep their translated help as text even with Bootstrap html enabled.
+  let textContent: string | HTMLElement = content;
+  if (options.title) {
+    textContent = document.createElement('span');
+    textContent.textContent = content;
+    el.removeAttribute('title');
+  }
   new lib.Popover(el, {
-    content,
-    trigger: "hover",
+    content: textContent,
+    ...(options.title ? { title: options.title, html: true } : {}),
+    trigger,
     placement,
     container: "body",
     delay: { show: 80, hide: 120 },
@@ -35,6 +66,14 @@ export function attachHoverPopover(
 export function attachAlwaysCastPopover(el: HTMLElement): void {
   el.style.cursor = "help";
   attachHoverPopover(el, i18next.t("gameContent.ui.inventory_alwayscasts", { defaultValue: "Always casts" }));
+}
+
+/** Wiki help belongs to the link itself; card/row containers stay inert. */
+export function attachWikiLinkPopover(link: HTMLAnchorElement): void {
+  const destination = i18next.t('extended.openInWiki', { defaultValue: 'Open in Noita Wiki' });
+  link.classList.add('wiki-link');
+  link.setAttribute('aria-description', destination);
+  attachHoverPopover(link, destination, 'top', { owner: 'wiki-link', focus: true });
 }
 
 /**
@@ -61,6 +100,17 @@ export function dismissPopovers(root: HTMLElement): void {
     visit(root);
     root.querySelectorAll("*").forEach(visit);
   } catch { /* noop */ }
+}
+
+/** Hide panels on a temporarily hidden card without destroying its triggers. */
+export function hidePopovers(root: HTMLElement): void {
+  const lib = bs();
+  if (!lib?.Popover) return;
+  const hide = (element: Element) => {
+    try { lib.Popover.getInstance(element)?.hide(); } catch { /* already removed */ }
+  };
+  hide(root);
+  root.querySelectorAll('[data-bs-toggle="popover"], [data-popover-owner]').forEach(hide);
 }
 
 /** Hide every currently-open Bootstrap popover in the document. */

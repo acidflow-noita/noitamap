@@ -69,6 +69,7 @@
   --control-radius: var(--radius-control);
   --control-gap: .375rem;
   --control-icon-size: 1rem;
+  --brand-logo-height: 1.25em;
   --control-fg: var(--text-muted);
   --control-bg: transparent;
   --control-border: var(--border-strong);

@@ -1,0 +1,20 @@
+{
+  "search.shortcutHint": {
+    "en": "Focus search: /, Ctrl+/ or ⌘+/",
+    "ru": "Перейти к поиску: /, Ctrl+/ или ⌘+/",
+    "uk": "Перейти до пошуку: /, Ctrl+/ або ⌘+/",
+    "zh": "聚焦搜索：/、Ctrl+/ 或 ⌘+/",
+    "ja": "検索にフォーカス：/、Ctrl+/ または ⌘+/",
+    "de": "Suche fokussieren: /, Strg+/ oder ⌘+/",
+    "fr": "Activer la recherche : /, Ctrl+/ ou ⌘+/",
+    "es": "Enfocar la búsqueda: /, Ctrl+/ o ⌘+/",
+    "br": "Focar a busca: /, Ctrl+/ ou ⌘+/",
+    "it": "Attiva la ricerca: /, Ctrl+/ o ⌘+/",
+    "pl": "Przejdź do wyszukiwania: /, Ctrl+/ lub ⌘+/",
+    "cs": "Přejít na vyhledávání: /, Ctrl+/ nebo ⌘+/",
+    "fi": "Siirry hakuun: /, Ctrl+/ tai ⌘+/",
+    "nl": "Zoeken activeren: /, Ctrl+/ of ⌘+/",
+    "sv": "Fokusera sökfältet: /, Ctrl+/ eller ⌘+/",
+    "id": "Fokus pencarian: /, Ctrl+/ atau ⌘+/"
+  }
+}

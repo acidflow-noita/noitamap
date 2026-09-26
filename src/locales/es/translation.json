@@ -14,7 +14,8 @@
     "popoverContent": "Busque hechizos, objetos, varitas, jefes, criaturas, pociones, estructuras y más. Utilice los botones de filtro a continuación para limitar los resultados por categoría.",
     "chunksAway": "~{{count}} chunks de distancia",
     "openTelescope": "Abrir en Telescope",
-    "noResults": "No se encontró nada"
+    "noResults": "No se encontró nada",
+    "shortcutHint": "Enfocar la búsqueda: /, Ctrl+/ o ⌘+/"
   },
   "spell_prefix": "Hechizo",
   "tiers_prefix": "Niveles",
@@ -5074,7 +5075,15 @@
     "ingestionEffects": "Efectos de la ingestión",
     "reactionsHeader": "Reacciones materiales sobre Bartender",
     "asReagent": "Ver como reactivo",
-    "asProduct": "Ver como producto"
+    "asProduct": "Ver como producto",
+    "openInBartender": "Abrir en Bartender",
+    "bartenderReagentHint": "Ver en Bartender las reacciones que utilizan este material.",
+    "bartenderProductHint": "Ver en Bartender las reacciones que producen este material.",
+    "showSpawnBiomes": "Mostrar los biomas de aparición en el mapa",
+    "spawnMapMissing": "No se muestra en este mapa: {{locations}}",
+    "openInWiki": "Abrir en Noita Wiki",
+    "spawnBiomesPro": "Resaltar los biomas de aparición es una función Pro.",
+    "spawnBiomesUnavailable": "Los biomas de aparición de esta criatura no están disponibles en este mapa."
   },
   "wand": {
     "shuffle": "Aleatorio",
@@ -5526,6 +5535,7 @@
     },
     "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
     "v3": {
+      "backToReport": "Volver al informe",
       "back": "Volver",
       "viewAll": "Ver todos",
       "showMore": "Mostrar más",

@@ -1,10 +1,9 @@
 /**
  * overflow-menu.ts
  *
- * De-bloats the navbar on the dynamic map by relocating secondary controls
- * into the "..." (more) dropdown, and restoring them to the navbar on static
- * maps where those controls (the overlay group in particular) are the primary
- * feature.
+ * Relocates secondary controls into the "..." (more) dropdown on dynamic maps
+ * and on static maps at narrow desktop widths. Wider static layouts and the
+ * expanded mobile menu retain their overlay controls in the navbar.
  *
  * The controls are MOVED, not recreated: reparenting a live DOM node preserves
  * its event listeners and Bootstrap instances, so the delegated overlay handler
@@ -16,6 +15,7 @@
  */
 
 const DYNAMIC_MAP_NAME = "dynamic-main-branch";
+const NARROW_DESKTOP_QUERY = "(min-width: 992px) and (max-width: 1199.98px)";
 
 // Navbar element ids to tuck into the more-menu on the dynamic map, in the
 // order they should appear inside the menu. The overlay group is the bulky
@@ -35,6 +35,8 @@ interface Relocated {
 
 let relocated: Relocated[] = [];
 let inMenu = false;
+let activeMap = "";
+let narrowDesktop: MediaQueryList | undefined;
 
 /** The spoiler-free control is a btn-check <input> + a <label for=...> pair.
  *  Return both so they move together (the input carries the state/listeners,
@@ -92,9 +94,30 @@ function toggleDivider(show: boolean): void {
  * Sync the overflow menu to the active map. Call from the same choke point that
  * toggles dynamic-map UI visibility (updateDynamicUIVisibility).
  */
-export function updateOverflowMenu(currentMap: string): void {
-  if (currentMap === DYNAMIC_MAP_NAME) moveIntoMenu();
+function syncOverflowMenu(): void {
+  if (activeMap === DYNAMIC_MAP_NAME || narrowDesktop?.matches) moveIntoMenu();
   else restoreToNavbar();
+}
+
+export function updateOverflowMenu(currentMap: string): void {
+  activeMap = currentMap;
+  if (!narrowDesktop && typeof window.matchMedia === "function") {
+    narrowDesktop = window.matchMedia(NARROW_DESKTOP_QUERY);
+    narrowDesktop.addEventListener("change", syncOverflowMenu);
+  }
+  syncOverflowMenu();
+}
+
+/** Keep the existing boundaries toggle between Generate and Report. These
+ * primary controls stay in the navbar when secondary overlays move to More. */
+export function placeBiomeBoundariesButton(): void {
+  const boundaries = document.getElementById("biome-boundaries-ui-wrapper");
+  if (!boundaries) return;
+  const generate = document.getElementById("dynamicGenerateWrapper");
+  const report = document.getElementById("seed-report-ui-wrapper");
+  if (generate?.parentElement) generate.after(boundaries);
+  else if (report?.parentElement) report.before(boundaries);
+  if (report && boundaries.parentElement) boundaries.after(report);
 }
 
 /**

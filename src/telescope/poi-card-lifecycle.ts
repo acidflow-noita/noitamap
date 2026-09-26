@@ -8,7 +8,7 @@ export interface POICardRequest {
 /** One visible or pending card, tied to its seed and the interaction that opened it. */
 export class POICardLifecycle {
   private revision = 0;
-  private active: { owner: POICardOwner; cancel?: () => void; timer?: ReturnType<typeof setTimeout> } | null = null;
+  private active: { owner: POICardOwner; onClose?: () => void; cancel?: () => void; timer?: ReturnType<typeof setTimeout> } | null = null;
 
   constructor(private seed: () => number | null, private removeCard: () => void) {}
 
@@ -39,9 +39,13 @@ export class POICardLifecycle {
     return () => revision === this.revision && seed === this.seed();
   }
 
-  begin(owner: POICardOwner = 'map'): POICardRequest {
+  begin(owner: POICardOwner = 'map', onClose?: () => void): POICardRequest {
+    // Replacing a card keeps a suspended report suspended until the last card
+    // closes. Translation/variant rebuilds reuse their existing request.
+    const inheritedClose = this.active?.onClose;
+    if (this.active) this.active.onClose = undefined;
     this.close();
-    const active = { owner } as NonNullable<POICardLifecycle['active']>;
+    const active = { owner, onClose: onClose ?? inheritedClose } as NonNullable<POICardLifecycle['active']>;
     this.active = active;
     const validContext = this.guard();
     const isCurrent = () => this.active === active && validContext();
@@ -55,7 +59,13 @@ export class POICardLifecycle {
           active.cancel = undefined;
           active.timer = undefined;
           if (completed === false) this.close();
-          else show();
+          else {
+            try { show(); }
+            catch (error) {
+              this.close();
+              console.error('[POI card] Unable to open card', error);
+            }
+          }
         };
         if (arrival) void arrival.then(arrived, () => arrived(false));
         else active.timer = setTimeout(() => arrived(true), 250);
@@ -64,13 +74,14 @@ export class POICardLifecycle {
   }
 
   close(options?: { reportOnly?: boolean }): boolean {
-    if (options?.reportOnly && this.active?.owner !== 'report') return false;
+    if (options?.reportOnly && this.active?.owner !== 'report' && !this.active?.onClose) return false;
     const active = this.active;
     this.active = null;
     this.revision++;
     if (active?.timer !== undefined) clearTimeout(active.timer);
     active?.cancel?.();
     this.removeCard();
+    active?.onClose?.();
     return true;
   }
 }

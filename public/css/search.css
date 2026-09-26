@@ -3,6 +3,36 @@
   height: 32px;
 }
 
+#search-form { position: relative; }
+
+.search-shortcut-hint {
+  position: absolute;
+  inset-inline-end: .65em;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: text;
+}
+.search-shortcut-hint kbd {
+  display: block;
+  min-width: 1.5em;
+  padding: .1em .35em;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-1);
+  color: inherit;
+  font-size: .8em;
+  text-align: center;
+}
+.search-shortcut-hint:focus-visible { outline: var(--accent-strong) solid .125em; }
+.search-input:placeholder-shown:not(:focus) { padding-inline-end: 2.5em; }
+.search-input:focus + .search-shortcut-hint,
+.search-input:not(:placeholder-shown) + .search-shortcut-hint { display: none; }
+
 .search-input::-webkit-search-cancel-button {
   -webkit-appearance: none;
   height: 1em;

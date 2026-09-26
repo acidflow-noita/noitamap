@@ -28,6 +28,12 @@ export interface CreatureInfo {
   blood: string | null;
   /** Corpse material */
   corpse: string | null;
+  /** Actual material IDs, including inherited/default game components. */
+  bloodMaterialId: string | null;
+  corpseMaterialId: string | null;
+  /** Multiple explicitly described materials, in source Wiki-link order. */
+  bloodMaterialIds?: string[];
+  corpseMaterialIds?: string[];
   /** Category (e.g., "Ghosts", "Slimes", "Monsters") */
   category: string | null;
   /** Faction (e.g., "ghost", "slimes", "helpless") */
@@ -62,7 +68,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "fire": "0",
       "holy": "1.2"
     },
-    "wikipage": "Aave"
+    "wikipage": "Aave",
+    "bloodMaterialId": "plasma_fading",
+    "corpseMaterialId": null
   },
   "confusespirit": {
     "alias": "Fog Spirit",
@@ -83,7 +91,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "fire": "0",
       "holy": "1.2"
     },
-    "wikipage": "Aave"
+    "wikipage": "Aave",
+    "bloodMaterialId": "plasma_fading",
+    "corpseMaterialId": null
   },
   "slimespirit": {
     "alias": "Bog Spirit",
@@ -104,7 +114,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "fire": "0",
       "holy": "1.2"
     },
-    "wikipage": "Aave"
+    "wikipage": "Aave",
+    "bloodMaterialId": "plasma_fading",
+    "corpseMaterialId": null
   },
   "weakspirit": {
     "alias": "Depression Spirit",
@@ -125,7 +137,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "fire": "0",
       "holy": "1.2"
     },
-    "wikipage": "Aave"
+    "wikipage": "Aave",
+    "bloodMaterialId": "plasma_fading",
+    "corpseMaterialId": null
   },
   "giantshooter": {
     "alias": "Mother Slime",
@@ -151,7 +165,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Äitinuljaska"
+    "wikipage": "Äitinuljaska",
+    "bloodMaterialId": "acid",
+    "corpseMaterialId": "meat_slime_green"
   },
   "giantshooter_weak": {
     "alias": "Weak Mother Slime",
@@ -177,7 +193,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Äitinuljaska"
+    "wikipage": "Äitinuljaska",
+    "bloodMaterialId": "acid",
+    "corpseMaterialId": "meat_slime_green"
   },
   "_amppari_hive": {
     "alias": "Amppari Hive",
@@ -203,7 +221,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Amppari"
+    "wikipage": "Amppari",
+    "bloodMaterialId": null,
+    "corpseMaterialId": "nest_box2d"
   },
   "fly": {
     "alias": "Wasp",
@@ -229,7 +249,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Amppari"
+    "wikipage": "Amppari",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat"
   },
   "duck": {
     "alias": "Duck",
@@ -255,7 +277,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Ankka"
+    "wikipage": "Ankka",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_helpless"
   },
   "firemage": {
     "alias": "Hellfire Mage",
@@ -281,7 +305,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Eldari"
+    "wikipage": "Eldari",
+    "bloodMaterialId": "lava",
+    "corpseMaterialId": "lavarock_static"
   },
   "hpcrystal": {
     "alias": "Recovery Crystal",
@@ -307,7 +333,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Elvytyskristalli"
+    "wikipage": "Elvytyskristalli",
+    "bloodMaterialId": "sand_blue",
+    "corpseMaterialId": "ice_b2"
   },
   "_death_orb": {
     "alias": "Death Orb",
@@ -333,7 +361,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Epäalkemisti"
+    "wikipage": "Epäalkemisti",
+    "bloodMaterialId": "spark_purple_bright",
+    "corpseMaterialId": "crystal_purple"
   },
   "failed_alchemist_b": {
     "alias": "Non-alchemist",
@@ -359,7 +389,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Epäalkemisti"
+    "wikipage": "Epäalkemisti",
+    "bloodMaterialId": "slime",
+    "corpseMaterialId": "rock_static_glow"
   },
   "fish": {
     "alias": "Fish",
@@ -385,7 +417,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Eväkäs"
+    "wikipage": "Eväkäs",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_helpless"
   },
   "gate_monster_a": {
     "alias": "Goalkeeper",
@@ -411,7 +445,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Gate Guardian"
+    "wikipage": "Gate Guardian",
+    "bloodMaterialId": "spark_red",
+    "corpseMaterialId": "rock_box2d_nohit_hard"
   },
   "gate_monster_b": {
     "alias": "Goalkeeper",
@@ -437,7 +473,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Gate Guardian"
+    "wikipage": "Gate Guardian",
+    "bloodMaterialId": "spark_red",
+    "corpseMaterialId": "rock_box2d_nohit_hard"
   },
   "gate_monster_c": {
     "alias": "Goalkeeper",
@@ -463,7 +501,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Gate Guardian"
+    "wikipage": "Gate Guardian",
+    "bloodMaterialId": "spark_red",
+    "corpseMaterialId": "rock_box2d_nohit_hard"
   },
   "gate_monster_d": {
     "alias": "Sieve",
@@ -489,7 +529,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Gate Guardian"
+    "wikipage": "Gate Guardian",
+    "bloodMaterialId": "spark_red",
+    "corpseMaterialId": "rock_box2d_nohit_hard"
   },
   "darkghost": {
     "alias": "Wraith",
@@ -515,7 +557,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0.0"
     },
-    "wikipage": "Haamu"
+    "wikipage": "Haamu",
+    "bloodMaterialId": "blood_worm",
+    "corpseMaterialId": "meat_worm"
   },
   "snowcrystal": {
     "alias": "Ghost Crystal",
@@ -541,7 +585,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Haamukivi"
+    "wikipage": "Haamukivi",
+    "bloodMaterialId": "sand_blue",
+    "corpseMaterialId": "ice_b2"
   },
   "wizard_hearty": {
     "alias": "Master of Wounding",
@@ -567,7 +613,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Haavoittajamestari"
+    "wikipage": "Haavoittajamestari",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_confusion"
   },
   "necromancer": {
     "alias": "Shapechanger",
@@ -593,7 +641,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Hahmonvaihtaja"
+    "wikipage": "Hahmonvaihtaja",
+    "bloodMaterialId": "bone",
+    "corpseMaterialId": "meat_cursed_dry"
   },
   "scavenger_invis": {
     "alias": "Stealth Hiisi",
@@ -619,7 +669,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Häivehiisi"
+    "wikipage": "Häivehiisi",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "lukki_tiny": {
     "alias": "Small Spider",
@@ -645,7 +697,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Hämähäkki"
+    "wikipage": "Hämähäkki",
+    "bloodMaterialId": "slime_green",
+    "corpseMaterialId": "meat_slime_green"
   },
   "lukki_longleg": {
     "alias": "Daddy Longlegs",
@@ -671,7 +725,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Hämähäkki"
+    "wikipage": "Hämähäkki",
+    "bloodMaterialId": "slime_green",
+    "corpseMaterialId": "meat_slime_green"
   },
   "lukki": {
     "alias": "Spider",
@@ -697,7 +753,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Hämähäkki"
+    "wikipage": "Hämähäkki",
+    "bloodMaterialId": "slime_green",
+    "corpseMaterialId": "meat_slime_green"
   },
   "_hamis_nest": {
     "alias": "Hämis Nest",
@@ -723,7 +781,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Hämis"
+    "wikipage": "Hämis",
+    "bloodMaterialId": null,
+    "corpseMaterialId": "nest_box2d"
   },
   "longleg": {
     "alias": "Spidey",
@@ -749,7 +809,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Hämis"
+    "wikipage": "Hämis",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "acidshooter_weak": {
     "alias": "Weak Acid Slime",
@@ -775,7 +837,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0",
       "holy": "1x"
     },
-    "wikipage": "Happonuljaska"
+    "wikipage": "Happonuljaska",
+    "bloodMaterialId": "slime_green",
+    "corpseMaterialId": "meat_slime_green"
   },
   "acidshooter": {
     "alias": "Acid Slime",
@@ -801,7 +865,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Happonuljaska"
+    "wikipage": "Happonuljaska",
+    "bloodMaterialId": "acid",
+    "corpseMaterialId": "meat_slime_green"
   },
   "shotgunner_hell": {
     "alias": "Hell Shotgun Hiisi",
@@ -827,7 +893,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "2.0"
     },
-    "wikipage": "Haulikkohiisi"
+    "wikipage": "Haulikkohiisi",
+    "bloodMaterialId": "liquid_fire",
+    "corpseMaterialId": "none"
   },
   "shotgunner": {
     "alias": "Shotgun Hiisi",
@@ -853,7 +921,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Haulikkohiisi"
+    "wikipage": "Haulikkohiisi",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "shotgunner_weak": {
     "alias": "Weak Shotgun Hiisi",
@@ -879,7 +949,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Haulikkohiisi"
+    "wikipage": "Haulikkohiisi",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat"
   },
   "missilecrab": {
     "alias": "Cricket",
@@ -905,7 +977,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Heinäsirkka"
+    "wikipage": "Heinäsirkka",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "spitmonster": {
     "alias": "Hell Spitter",
@@ -931,7 +1005,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Helvetin sylkijä"
+    "wikipage": "Helvetin sylkijä",
+    "bloodMaterialId": "endslime_blood",
+    "corpseMaterialId": "meat_slime_cursed"
   },
   "gazer": {
     "alias": "Hell Gazer",
@@ -957,7 +1033,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.5"
     },
-    "wikipage": "Helvetinkatse"
+    "wikipage": "Helvetinkatse",
+    "bloodMaterialId": "lava",
+    "corpseMaterialId": "meat_slime_cursed"
   },
   "worm_end": {
     "alias": "Hell Worm",
@@ -983,7 +1061,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Helvetinmato"
+    "wikipage": "Helvetinmato",
+    "bloodMaterialId": "lava",
+    "corpseMaterialId": "lava"
   },
   "mimic_potion": {
     "alias": "Potion Mimic",
@@ -1000,7 +1080,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     "dmgMults": {
       "fire": "0.2"
     },
-    "wikipage": "Henkevä potu"
+    "wikipage": "Henkevä potu",
+    "bloodMaterialId": null,
+    "corpseMaterialId": null
   },
   "giant": {
     "alias": "Rock Giant",
@@ -1026,7 +1108,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Hiidenkivi"
+    "wikipage": "Hiidenkivi",
+    "bloodMaterialId": "blood_cold",
+    "corpseMaterialId": "lavarock_static"
   },
   "wraith_glowing": {
     "alias": "Glowing Creep",
@@ -1052,7 +1136,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0.1"
     },
-    "wikipage": "Hohtava hyypiö"
+    "wikipage": "Hohtava hyypiö",
+    "bloodMaterialId": "plasma_fading",
+    "corpseMaterialId": null
   },
   "statue_physics": {
     "alias": "Glowing Mask",
@@ -1078,7 +1164,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Hohtonaamio"
+    "wikipage": "Hohtonaamio",
+    "bloodMaterialId": "plasma_fading_green",
+    "corpseMaterialId": "rock_box2d_nohit"
   },
   "ghost": {
     "alias": "Delirium",
@@ -1104,7 +1192,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0"
     },
-    "wikipage": "Houre"
+    "wikipage": "Houre",
+    "bloodMaterialId": "blood_worm",
+    "corpseMaterialId": "meat_worm"
   },
   "_houre_crystal": {
     "alias": "Houre Crystal",
@@ -1130,7 +1220,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Houre"
+    "wikipage": "Houre",
+    "bloodMaterialId": "sand_blue",
+    "corpseMaterialId": "ice_b2"
   },
   "fungus_giga": {
     "alias": "Pollen Morel",
@@ -1156,7 +1248,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Huhtasieni"
+    "wikipage": "Huhtasieni",
+    "bloodMaterialId": "blood_fungi",
+    "corpseMaterialId": "fungus_loose_trippy"
   },
   "zombie": {
     "alias": "Hound",
@@ -1182,7 +1276,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Hurtta"
+    "wikipage": "Hurtta",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "meat"
   },
   "zombie_weak": {
     "alias": "Weak Hound",
@@ -1208,7 +1304,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Hurtta"
+    "wikipage": "Hurtta",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat"
   },
   "wraith": {
     "alias": "Creep",
@@ -1234,7 +1332,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Hyypiö"
+    "wikipage": "Hyypiö",
+    "bloodMaterialId": "plasma_fading_pink",
+    "corpseMaterialId": "rock_static_glow"
   },
   "scavenger_clusterbomb": {
     "alias": "Hiisi Bomber",
@@ -1260,7 +1360,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Isohiisi"
+    "wikipage": "Isohiisi",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "tank_rocket": {
     "alias": "Rocket Tank",
@@ -1286,7 +1388,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "IT-Tankki"
+    "wikipage": "IT-Tankki",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "icer": {
     "alias": "Icer",
@@ -1312,7 +1416,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Jäähdytyslaite"
+    "wikipage": "Jäähdytyslaite",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "iceskull": {
     "alias": "Ice Spirit",
@@ -1338,7 +1444,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Jäätiö"
+    "wikipage": "Jäätiö",
+    "bloodMaterialId": "blood_cold",
+    "corpseMaterialId": "ice_b2"
   },
   "frog_big": {
     "alias": "Big Toad",
@@ -1364,7 +1472,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Jättikonna"
+    "wikipage": "Jättikonna",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_frog"
   },
   "drone_lasership": {
     "alias": "Giant Laser-Drone",
@@ -1390,7 +1500,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Jättilaser-lennokki"
+    "wikipage": "Jättilaser-lennokki",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "worm_big": {
     "alias": "Giant Worm",
@@ -1416,7 +1528,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Jättimato"
+    "wikipage": "Jättimato",
+    "bloodMaterialId": "blood_worm",
+    "corpseMaterialId": "meat_worm"
   },
   "miner_santa": {
     "alias": "Christmas Hiisi",
@@ -1442,7 +1556,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Jouluhiisi"
+    "wikipage": "Jouluhiisi",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat"
   },
   "failed_alchemist": {
     "alias": "Damned Alchemist",
@@ -1468,7 +1584,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Kadotettu alkemisti"
+    "wikipage": "Kadotettu alkemisti",
+    "bloodMaterialId": "bone",
+    "corpseMaterialId": "bone_box2d"
   },
   "skullfly": {
     "alias": "Skull Fly",
@@ -1494,7 +1612,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Kallokärpänen"
+    "wikipage": "Kallokärpänen",
+    "bloodMaterialId": "slime",
+    "corpseMaterialId": "meat_slime_cursed"
   },
   "skullrat": {
     "alias": "Skull Rat",
@@ -1520,7 +1640,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Kallorotta"
+    "wikipage": "Kallorotta",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "meat_cursed"
   },
   "worm_skull": {
     "alias": "Death Worm",
@@ -1546,7 +1668,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Kalmamato"
+    "wikipage": "Kalmamato",
+    "bloodMaterialId": "plasma_fading",
+    "corpseMaterialId": "plasma_fading"
   },
   "lukki_dark": {
     "alias": "Toothy spider",
@@ -1572,7 +1696,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Kammolukki"
+    "wikipage": "Kammolukki",
+    "bloodMaterialId": "slime",
+    "corpseMaterialId": "meat_slime"
   },
   "lukki_creepy_long": {
     "alias": "Faceless spider",
@@ -1598,7 +1724,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Kasvoton Lukki"
+    "wikipage": "Kasvoton Lukki",
+    "bloodMaterialId": "blood_worm",
+    "corpseMaterialId": "meat_worm"
   },
   "ultimate_killer": {
     "alias": "Horror Monster",
@@ -1624,7 +1752,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0"
     },
-    "wikipage": "Kauhuhirviö"
+    "wikipage": "Kauhuhirviö",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "meat_helpless"
   },
   "scavenger_shield": {
     "alias": "Shield Hiisi",
@@ -1650,7 +1780,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Kilpihiisi"
+    "wikipage": "Kilpihiisi",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "crystal_physics": {
     "alias": "Cursed Crystal",
@@ -1676,7 +1808,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Kirottu kristalli"
+    "wikipage": "Kirottu kristalli",
+    "bloodMaterialId": "plasma_fading_pink",
+    "corpseMaterialId": "crystal_purple"
   },
   "phantom_b": {
     "alias": "Angry Phantom",
@@ -1702,7 +1836,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Kiukkukalma"
+    "wikipage": "Kiukkukalma",
+    "bloodMaterialId": "plasma_fading",
+    "corpseMaterialId": "rock_static_glow"
   },
   "blob": {
     "alias": "Angry Blob",
@@ -1728,7 +1864,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Kiukkumöykky"
+    "wikipage": "Kiukkumöykky",
+    "bloodMaterialId": null,
+    "corpseMaterialId": "meat"
   },
   "boss_sky": {
     "alias": "Stone",
@@ -1746,7 +1884,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "fire": "0.2",
       "drill": "0.5"
     },
-    "wikipage": "Kivi"
+    "wikipage": "Kivi",
+    "bloodMaterialId": null,
+    "corpseMaterialId": "rock_box2d_nohit_heavy"
   },
   "tank": {
     "alias": "Tank",
@@ -1772,7 +1912,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "KK-Tankki"
+    "wikipage": "KK-Tankki",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "wizard_homing": {
     "alias": "Master of Homing",
@@ -1798,7 +1940,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Kohdennusmestari"
+    "wikipage": "Kohdennusmestari",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_slime"
   },
   "boss_centipede_minion": {
     "alias": "Three-Eye's Helper",
@@ -1824,7 +1968,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Kolmisilmä"
+    "wikipage": "Kolmisilmä",
+    "bloodMaterialId": "blood_fungi",
+    "corpseMaterialId": "meat_slime"
   },
   "boss_centipede": {
     "alias": "Three-Eye",
@@ -1850,7 +1996,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0.2"
     },
-    "wikipage": "Kolmisilmä"
+    "wikipage": "Kolmisilmä",
+    "bloodMaterialId": "slime_green",
+    "corpseMaterialId": "meat_slime_green"
   },
   "boss_limbs": {
     "alias": "Three-Eye's Legs",
@@ -1876,7 +2024,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Kolmisilmän koipi"
+    "wikipage": "Kolmisilmän koipi",
+    "bloodMaterialId": "slime_green",
+    "corpseMaterialId": "meat_slime_green"
   },
   "slimeshooter_boss_limbs": {
     "alias": "Guardian Slime",
@@ -1902,7 +2052,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Kolmisilmän koipi"
+    "wikipage": "Kolmisilmän koipi",
+    "bloodMaterialId": "radioactive_liquid_fading",
+    "corpseMaterialId": "meat_slime_green"
   },
   "boss_robot": {
     "alias": "Three-Eye's Eye",
@@ -1928,7 +2080,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Kolmisilmän silmä"
+    "wikipage": "Kolmisilmän silmä",
+    "bloodMaterialId": "liquid_fire",
+    "corpseMaterialId": "steel"
   },
   "boss_meat": {
     "alias": "Three-Eye's Heart",
@@ -1951,7 +2105,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "fire": "1.2",
       "drill": "0.9"
     },
-    "wikipage": "Kolmisilmän sydän"
+    "wikipage": "Kolmisilmän sydän",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat"
   },
   "frog": {
     "alias": "Toad",
@@ -1977,7 +2133,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Konna"
+    "wikipage": "Konna",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_frog"
   },
   "healerdrone_physics": {
     "alias": "Repair Drone",
@@ -2003,7 +2161,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Korjauslennokki"
+    "wikipage": "Korjauslennokki",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": null
   },
   "scavenger_grenade": {
     "alias": "Hiisi Grenadier",
@@ -2029,7 +2189,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Kranuhiisi"
+    "wikipage": "Kranuhiisi",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "playerghost": {
     "alias": "Ghost",
@@ -2055,7 +2217,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Kummitus"
+    "wikipage": "Kummitus",
+    "bloodMaterialId": null,
+    "corpseMaterialId": null
   },
   "piranha": {
     "alias": "Hunchback",
@@ -2081,7 +2245,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Kyrmyniska"
+    "wikipage": "Kyrmyniska",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "fungus": {
     "alias": "Shuffling Fungus",
@@ -2107,7 +2273,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Laahustussieni"
+    "wikipage": "Laahustussieni",
+    "bloodMaterialId": "blood_fungi",
+    "corpseMaterialId": "fungus_loose_trippy"
   },
   "sheep_bat": {
     "alias": "Flying Sheep",
@@ -2133,7 +2301,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Lammas"
+    "wikipage": "Lammas",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_helpless"
   },
   "sheep_fly": {
     "alias": "Buzzing Sheep",
@@ -2159,7 +2329,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Lammas"
+    "wikipage": "Lammas",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_helpless"
   },
   "sheep": {
     "alias": "Sheep",
@@ -2185,7 +2357,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Lammas"
+    "wikipage": "Lammas",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_helpless"
   },
   "tank_super": {
     "alias": "Laser Tank",
@@ -2211,7 +2385,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Laser-Tankki"
+    "wikipage": "Laser-Tankki",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "drone_physics": {
     "alias": "Drone",
@@ -2237,7 +2413,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Lennokki"
+    "wikipage": "Lennokki",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": null
   },
   "bat": {
     "alias": "Bat",
@@ -2263,7 +2441,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Lepakko"
+    "wikipage": "Lepakko",
+    "bloodMaterialId": "slime",
+    "corpseMaterialId": "meat_slime"
   },
   "flamer": {
     "alias": "Flamer",
@@ -2289,7 +2469,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Liekkari"
+    "wikipage": "Liekkari",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "fireskull": {
     "alias": "Fire Spirit",
@@ -2315,7 +2497,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Liekkiö"
+    "wikipage": "Liekkiö",
+    "bloodMaterialId": "gunpowder_unstable",
+    "corpseMaterialId": "bone_box2d"
   },
   "scavenger_glue": {
     "alias": "Glue Hiisi",
@@ -2341,7 +2525,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Liimahiisi"
+    "wikipage": "Liimahiisi",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "slimeshooter": {
     "alias": "Toxic Slime",
@@ -2367,7 +2553,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Limanuljaska"
+    "wikipage": "Limanuljaska",
+    "bloodMaterialId": "radioactive_liquid",
+    "corpseMaterialId": "meat_slime_green"
   },
   "slimeshooter_weak": {
     "alias": "Weak Toxic Slime",
@@ -2393,7 +2581,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Limanuljaska"
+    "wikipage": "Limanuljaska",
+    "bloodMaterialId": "radioactive_liquid",
+    "corpseMaterialId": "meat_slime_green"
   },
   "maggot_tiny": {
     "alias": "Slime Maggot",
@@ -2419,7 +2609,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Limatoukka"
+    "wikipage": "Limatoukka",
+    "bloodMaterialId": "material_darkness",
+    "corpseMaterialId": "none"
   },
   "pebble": {
     "alias": "Rock Spirit",
@@ -2445,7 +2637,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Lohkare"
+    "wikipage": "Lohkare",
+    "bloodMaterialId": "blood_cold",
+    "corpseMaterialId": "rock_box2d_nohit"
   },
   "wizard_neutral": {
     "alias": "Master of Grounding",
@@ -2471,7 +2665,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Maadoittajamestari"
+    "wikipage": "Maadoittajamestari",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_confusion"
   },
   "shaman": {
     "alias": "Swampling",
@@ -2497,7 +2693,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Märkiäinen"
+    "wikipage": "Märkiäinen",
+    "bloodMaterialId": "water_swamp",
+    "corpseMaterialId": "meat"
   },
   "minipit": {
     "alias": "Tiny Minion",
@@ -2523,7 +2721,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Marraskone"
+    "wikipage": "Marraskone",
+    "bloodMaterialId": "blood_fungi",
+    "corpseMaterialId": "meat_slime"
   },
   "necrobot_super": {
     "alias": "Super Necrobot",
@@ -2549,7 +2749,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1.2"
     },
-    "wikipage": "Marraskone"
+    "wikipage": "Marraskone",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "bigzombiehead": {
     "alias": "Rotting Head",
@@ -2575,7 +2777,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Mätänevä ruumis"
+    "wikipage": "Mätänevä ruumis",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_cursed"
   },
   "bigzombie": {
     "alias": "Rotting Corpse",
@@ -2601,7 +2805,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Mätänevä ruumis"
+    "wikipage": "Mätänevä ruumis",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_cursed"
   },
   "bigzombietorso": {
     "alias": "Rotting Body",
@@ -2627,7 +2833,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Mätänevä ruumis"
+    "wikipage": "Mätänevä ruumis",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_cursed"
   },
   "meatmaggot": {
     "alias": "Putrid Crawler",
@@ -2646,7 +2854,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "slice": "1.2",
       "drill": "0.5"
     },
-    "wikipage": "Mätäryömijä"
+    "wikipage": "Mätäryömijä",
+    "bloodMaterialId": "blood_worm",
+    "corpseMaterialId": "meat_worm"
   },
   "chest_mimic": {
     "alias": "Mimic",
@@ -2672,7 +2882,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Matkija"
+    "wikipage": "Matkija",
+    "bloodMaterialId": null,
+    "corpseMaterialId": "wood_prop"
   },
   "chest_leggy": {
     "alias": "Leggy Mimic",
@@ -2698,7 +2910,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "2.0"
     },
-    "wikipage": "Matkija"
+    "wikipage": "Matkija",
+    "bloodMaterialId": null,
+    "corpseMaterialId": "wood_prop"
   },
   "worm": {
     "alias": "Worm",
@@ -2724,7 +2938,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Mato"
+    "wikipage": "Mato",
+    "bloodMaterialId": "blood_worm",
+    "corpseMaterialId": "meat_worm"
   },
   "_blood_orb": {
     "alias": "Blood Orb",
@@ -2750,7 +2966,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Mestarien mestari"
+    "wikipage": "Mestarien mestari",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "blood"
   },
   "_death_orb__mestarien_mestari": {
     "alias": "Death Orb",
@@ -2776,7 +2994,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Mestarien mestari"
+    "wikipage": "Mestarien mestari",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "slime"
   },
   "boss_wizard": {
     "alias": "Master of Masters",
@@ -2802,7 +3022,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Mestarien mestari"
+    "wikipage": "Mestarien mestari",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "blood"
   },
   "scavenger_mine": {
     "alias": "Hiisi Mine Thrower",
@@ -2828,7 +3050,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Miinankylväjä"
+    "wikipage": "Miinankylväjä",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "player": {
     "alias": "Me",
@@ -2854,7 +3078,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.5"
     },
-    "wikipage": "Minä"
+    "wikipage": "Minä",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat"
   },
   "miniblob": {
     "alias": "Blob",
@@ -2880,7 +3106,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Möykky"
+    "wikipage": "Möykky",
+    "bloodMaterialId": null,
+    "corpseMaterialId": "meat"
   },
   "lasershooter": {
     "alias": "Gazer",
@@ -2906,7 +3134,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Mulkkio"
+    "wikipage": "Mulkkio",
+    "bloodMaterialId": "slime_green",
+    "corpseMaterialId": "meat_slime_green"
   },
   "monk": {
     "alias": "Monk",
@@ -2932,7 +3162,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Munkki"
+    "wikipage": "Munkki",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "wizard_poly": {
     "alias": "Master of Polymorphing",
@@ -2958,7 +3190,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Muodonmuutosmestari"
+    "wikipage": "Muodonmuutosmestari",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_polymorph_protection"
   },
   "ant": {
     "alias": "Ant",
@@ -2984,7 +3218,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Murkku"
+    "wikipage": "Murkku",
+    "bloodMaterialId": "slime",
+    "corpseMaterialId": "meat_slime"
   },
   "scavenger_poison": {
     "alias": "Hiisi Poisoner",
@@ -3010,7 +3246,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Myrkkyhiisi"
+    "wikipage": "Myrkkyhiisi",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "fungus_tiny": {
     "alias": "Funeral Bell",
@@ -3036,7 +3274,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Myrkkynääpikkä"
+    "wikipage": "Myrkkynääpikkä",
+    "bloodMaterialId": "blood_fungi",
+    "corpseMaterialId": "fungus_loose_trippy"
   },
   "eel": {
     "alias": "Lamprey",
@@ -3062,7 +3302,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Nahkiainen"
+    "wikipage": "Nahkiainen",
+    "bloodMaterialId": "blood_worm",
+    "corpseMaterialId": "meat_worm"
   },
   "deer": {
     "alias": "Deer",
@@ -3088,7 +3330,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Nelikoipi"
+    "wikipage": "Nelikoipi",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_helpless"
   },
   "fungus_big": {
     "alias": "Club-foot",
@@ -3114,7 +3358,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Nuijamalikka"
+    "wikipage": "Nuijamalikka",
+    "bloodMaterialId": "blood_fungi",
+    "corpseMaterialId": "fungus_loose_trippy"
   },
   "ethereal_being": {
     "alias": "Non-existent",
@@ -3140,7 +3386,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Olematon"
+    "wikipage": "Olematon",
+    "bloodMaterialId": "plasma_fading",
+    "corpseMaterialId": "rock_static_glow"
   },
   "dark_alchemist": {
     "alias": "Memory of Evil",
@@ -3166,7 +3414,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Pahan muisto"
+    "wikipage": "Pahan muisto",
+    "bloodMaterialId": null,
+    "corpseMaterialId": "wood_prop"
   },
   "icemage": {
     "alias": "Old Man Winter",
@@ -3192,7 +3442,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Pakkasukko"
+    "wikipage": "Pakkasukko",
+    "bloodMaterialId": "snow",
+    "corpseMaterialId": "ice"
   },
   "wizard_returner": {
     "alias": "Master of Returning",
@@ -3218,7 +3470,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Palauttajamestari"
+    "wikipage": "Palauttajamestari",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_teleport"
   },
   "scavenger_heal": {
     "alias": "Hiisi Healer",
@@ -3244,7 +3498,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Parantajahiisi"
+    "wikipage": "Parantajahiisi",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "statue": {
     "alias": "Statue",
@@ -3270,7 +3526,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Patsas"
+    "wikipage": "Patsas",
+    "bloodMaterialId": null,
+    "corpseMaterialId": "rock_static_glow"
   },
   "spearbot": {
     "alias": "Lance Sentry",
@@ -3296,7 +3554,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "0.5"
     },
-    "wikipage": "Peitsivartija"
+    "wikipage": "Peitsivartija",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "wand_ghost_charmed": {
     "alias": "Charmed Magic Wand",
@@ -3322,7 +3582,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Pheromone"
+    "wikipage": "Pheromone",
+    "bloodMaterialId": "plasma_fading",
+    "corpseMaterialId": "crystal"
   },
   "worm_tiny": {
     "alias": "Small Worm",
@@ -3348,7 +3610,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Pikkumato"
+    "wikipage": "Pikkumato",
+    "bloodMaterialId": "blood_worm",
+    "corpseMaterialId": "meat_worm"
   },
   "tentacler_small": {
     "alias": "Small Tentacler",
@@ -3374,7 +3638,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Pikkuturso"
+    "wikipage": "Pikkuturso",
+    "bloodMaterialId": "blood_fungi",
+    "corpseMaterialId": "meat_slime"
   },
   "shooterflower": {
     "alias": "Plasma Flower",
@@ -3400,7 +3666,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Plasmakukka"
+    "wikipage": "Plasmakukka",
+    "bloodMaterialId": "slime_green",
+    "corpseMaterialId": "meat_slime_green"
   },
   "elk": {
     "alias": "Reindeer",
@@ -3426,7 +3694,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Poro"
+    "wikipage": "Poro",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_helpless"
   },
   "alchemist": {
     "alias": "Hiisi Alchemist",
@@ -3452,7 +3722,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Puistokemisti"
+    "wikipage": "Puistokemisti",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "bloom": {
     "alias": "Bloom",
@@ -3478,7 +3750,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Puska"
+    "wikipage": "Puska",
+    "bloodMaterialId": "slime",
+    "corpseMaterialId": "meat_slime_green"
   },
   "neutralizer": {
     "alias": "Stopper",
@@ -3504,7 +3778,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Pysäyttäjä"
+    "wikipage": "Pysäyttäjä",
+    "bloodMaterialId": null,
+    "corpseMaterialId": "steel"
   },
   "coward": {
     "alias": "Coward",
@@ -3530,7 +3806,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Raukka"
+    "wikipage": "Raukka",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "roboguard": {
     "alias": "Robo-Cop",
@@ -3556,7 +3834,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Robottikyttä"
+    "wikipage": "Robottikyttä",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "rat": {
     "alias": "Rat",
@@ -3582,7 +3862,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Rotta"
+    "wikipage": "Rotta",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat"
   },
   "plague_rats_rat": {
     "alias": "Plague Rat",
@@ -3608,7 +3890,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Ruttorotta"
+    "wikipage": "Ruttorotta",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat"
   },
   "scavenger_smg": {
     "alias": "Hiisi Gunner",
@@ -3634,7 +3918,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Rynkkyhiisi"
+    "wikipage": "Rynkkyhiisi",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "goblin_bomb": {
     "alias": "Firecracker Goblin",
@@ -3660,7 +3946,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Sähikäismenninkäinen"
+    "wikipage": "Sähikäismenninkäinen",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "thunderskull": {
     "alias": "Thunder Spirit",
@@ -3686,7 +3974,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0.7"
     },
-    "wikipage": "Sähkiö"
+    "wikipage": "Sähkiö",
+    "bloodMaterialId": "blood_cold",
+    "corpseMaterialId": "ice_b2"
   },
   "assassin": {
     "alias": "Assassin Robot",
@@ -3712,7 +4002,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Salamurhaajarobotti"
+    "wikipage": "Salamurhaajarobotti",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "wizard_twitchy": {
     "alias": "Master of Twitching",
@@ -3738,7 +4030,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Sätkymestari"
+    "wikipage": "Sätkymestari",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_fast"
   },
   "parallel_tentacles": {
     "alias": "Three-eye's Minion",
@@ -3764,7 +4058,13 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Sauvojen tuntija"
+    "wikipage": "Sauvojen tuntija",
+    "bloodMaterialId": "slime_green",
+    "corpseMaterialId": null,
+    "corpseMaterialIds": [
+      "meat_slime_green",
+      "rock_static_glow"
+    ]
   },
   "boss_pit": {
     "alias": "Connoisseur of Wands",
@@ -3790,7 +4090,13 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0.4"
     },
-    "wikipage": "Sauvojen tuntija"
+    "wikipage": "Sauvojen tuntija",
+    "bloodMaterialId": "slime_green",
+    "corpseMaterialId": null,
+    "corpseMaterialIds": [
+      "meat_slime_green",
+      "rock_static_glow"
+    ]
   },
   "wizard_tele": {
     "alias": "Master of Teleportation",
@@ -3816,7 +4122,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Siirtäjämestari"
+    "wikipage": "Siirtäjämestari",
+    "bloodMaterialId": "magic_liquid_teleportation",
+    "corpseMaterialId": "meat_teleport"
   },
   "scorpion": {
     "alias": "Scorpion",
@@ -3842,7 +4150,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Skorpioni"
+    "wikipage": "Skorpioni",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_helpless"
   },
   "necromancer_super": {
     "alias": "Cop",
@@ -3868,7 +4178,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0"
     },
-    "wikipage": "Skoude"
+    "wikipage": "Skoude",
+    "bloodMaterialId": "bone",
+    "corpseMaterialId": "meat_cursed_dry"
   },
   "sniper_hell": {
     "alias": "Hiisi Hell Sniper",
@@ -3894,7 +4206,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "2.0"
     },
-    "wikipage": "Snipuhiisi"
+    "wikipage": "Snipuhiisi",
+    "bloodMaterialId": "liquid_fire",
+    "corpseMaterialId": "none"
   },
   "sniper": {
     "alias": "Hiisi Sniper",
@@ -3920,7 +4234,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Snipuhiisi"
+    "wikipage": "Snipuhiisi",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat"
   },
   "wizard_dark": {
     "alias": "Master of Blinding",
@@ -3946,7 +4262,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Sokaisunmestari"
+    "wikipage": "Sokaisunmestari",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_confusion"
   },
   "phantom_a": {
     "alias": "Spiral Phantom",
@@ -3972,7 +4290,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Spiraalikalma"
+    "wikipage": "Spiraalikalma",
+    "bloodMaterialId": "plasma_fading",
+    "corpseMaterialId": "rock_static_glow"
   },
   "firemage_weak": {
     "alias": "Fire Mage",
@@ -3998,7 +4318,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Stendari"
+    "wikipage": "Stendari",
+    "bloodMaterialId": "lava",
+    "corpseMaterialId": "lavarock_static"
   },
   "necromancer_shop": {
     "alias": "Guard",
@@ -4024,7 +4346,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0.3"
     },
-    "wikipage": "Stevari"
+    "wikipage": "Stevari",
+    "bloodMaterialId": "bone",
+    "corpseMaterialId": "meat_cursed_dry"
   },
   "boss_dragon": {
     "alias": "Dragon",
@@ -4050,7 +4374,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Suomuhauki"
+    "wikipage": "Suomuhauki",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat"
   },
   "wolf": {
     "alias": "Wolf",
@@ -4076,7 +4402,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Susi"
+    "wikipage": "Susi",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat"
   },
   "thundermage_big": {
     "alias": "Great Thunder Mage",
@@ -4102,7 +4430,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0.5"
     },
-    "wikipage": "Suur-Ukko"
+    "wikipage": "Suur-Ukko",
+    "bloodMaterialId": "diamond",
+    "corpseMaterialId": "diamond"
   },
   "fish_large": {
     "alias": "Large Fish",
@@ -4128,7 +4458,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Suureväkäs"
+    "wikipage": "Suureväkäs",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat"
   },
   "bigbat": {
     "alias": "Large Bat",
@@ -4154,7 +4486,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Suurlepakko"
+    "wikipage": "Suurlepakko",
+    "bloodMaterialId": "slime",
+    "corpseMaterialId": "meat_slime"
   },
   "ghoul": {
     "alias": "Spitter",
@@ -4180,7 +4514,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Sylkyri"
+    "wikipage": "Sylkyri",
+    "bloodMaterialId": "slime",
+    "corpseMaterialId": "meat"
   },
   "fish_giga": {
     "alias": "Creature of the Deep",
@@ -4206,7 +4542,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Syväolento"
+    "wikipage": "Syväolento",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": null
   },
   "wand_ghost": {
     "alias": "Magic Wand",
@@ -4232,7 +4570,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Taikasauva"
+    "wikipage": "Taikasauva",
+    "bloodMaterialId": "plasma_fading",
+    "corpseMaterialId": "crystal"
   },
   "skygazer": {
     "alias": "Sky Gazer",
@@ -4258,7 +4598,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0.5"
     },
-    "wikipage": "Taivaankatse"
+    "wikipage": "Taivaankatse",
+    "bloodMaterialId": "magic_liquid_random_polymorph",
+    "corpseMaterialId": "meat_slime"
   },
   "skycrystal_physics": {
     "alias": "Celestial Crystal",
@@ -4284,7 +4626,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0.5"
     },
-    "wikipage": "Taivaskristalli"
+    "wikipage": "Taivaskristalli",
+    "bloodMaterialId": "plasma_fading",
+    "corpseMaterialId": "gem_box2d"
   },
   "islandspirit": {
     "alias": "Tapio's Vassal",
@@ -4305,7 +4649,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "fire": "0.4",
       "holy": "0"
     },
-    "wikipage": "Tapion vasalli"
+    "wikipage": "Tapion vasalli",
+    "bloodMaterialId": "spark_blue",
+    "corpseMaterialId": "spark_blue"
   },
   "cook": {
     "alias": "Hiisi Chef",
@@ -4331,7 +4677,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Tappurahiisi"
+    "wikipage": "Tappurahiisi",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat"
   },
   "miner_hell": {
     "alias": "Hell Miner Hiisi",
@@ -4357,7 +4705,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "2.0"
     },
-    "wikipage": "Tappurahiisi"
+    "wikipage": "Tappurahiisi",
+    "bloodMaterialId": "liquid_fire",
+    "corpseMaterialId": "none"
   },
   "miner": {
     "alias": "Miner Hiisi",
@@ -4383,7 +4733,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Tappurahiisi"
+    "wikipage": "Tappurahiisi",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "miner_weak": {
     "alias": "Weak Hiisi Miner",
@@ -4409,7 +4761,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Tappurahiisi"
+    "wikipage": "Tappurahiisi",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat"
   },
   "sentry": {
     "alias": "Observer",
@@ -4435,7 +4789,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Tarkkailija"
+    "wikipage": "Tarkkailija",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "soldier": {
     "alias": "Executioner",
@@ -4461,7 +4817,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Teloittaja"
+    "wikipage": "Teloittaja",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "scavenger_leader": {
     "alias": "Hiisi Leader",
@@ -4487,7 +4845,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Toimari"
+    "wikipage": "Toimari",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "turret": {
     "alias": "Turret",
@@ -4513,7 +4873,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Torjuntalaite"
+    "wikipage": "Torjuntalaite",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "maggot": {
     "alias": "Maggot",
@@ -4539,7 +4901,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Toukka"
+    "wikipage": "Toukka",
+    "bloodMaterialId": "slime_green",
+    "corpseMaterialId": "meat_slime_green"
   },
   "friend": {
     "alias": "Friend",
@@ -4565,7 +4929,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Toveri"
+    "wikipage": "Toveri",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "meat_helpless"
   },
   "_arrow_trap": {
     "alias": "Arrow Trap",
@@ -4591,7 +4957,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Traps"
+    "wikipage": "Traps",
+    "bloodMaterialId": "sand",
+    "corpseMaterialId": "plastic"
   },
   "_fire_trap": {
     "alias": "Fire Trap",
@@ -4617,7 +4985,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Traps"
+    "wikipage": "Traps",
+    "bloodMaterialId": "sand",
+    "corpseMaterialId": "plastic"
   },
   "_acid_trap": {
     "alias": "Acid Trap",
@@ -4643,7 +5013,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Traps"
+    "wikipage": "Traps",
+    "bloodMaterialId": "sand",
+    "corpseMaterialId": "plastic"
   },
   "_thunder_trap": {
     "alias": "Thunder Trap",
@@ -4669,7 +5041,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Traps"
+    "wikipage": "Traps",
+    "bloodMaterialId": "sand",
+    "corpseMaterialId": "plastic"
   },
   "miner_fire": {
     "alias": "Fire Hiisi",
@@ -4695,7 +5069,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Tulihiisi"
+    "wikipage": "Tulihiisi",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "none"
   },
   "bigfirebug": {
     "alias": "Greater firefly",
@@ -4721,7 +5097,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Tulikärpänen"
+    "wikipage": "Tulikärpänen",
+    "bloodMaterialId": "lava",
+    "corpseMaterialId": "lavarock_static"
   },
   "firebug": {
     "alias": "Lesser firefly",
@@ -4747,7 +5125,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Tulikärpänen"
+    "wikipage": "Tulikärpänen",
+    "bloodMaterialId": "lava",
+    "corpseMaterialId": "lavarock_static"
   },
   "_firefly_hive": {
     "alias": "Firefly Hive",
@@ -4773,7 +5153,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Tulikärpänen"
+    "wikipage": "Tulikärpänen",
+    "bloodMaterialId": "lava",
+    "corpseMaterialId": "nest_firebug_box2d"
   },
   "necrobot": {
     "alias": "Necrobot",
@@ -4799,7 +5181,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1.2"
     },
-    "wikipage": "Tuonelankone"
+    "wikipage": "Tuonelankone",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "tentacler": {
     "alias": "Tentacler",
@@ -4825,7 +5209,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Turso"
+    "wikipage": "Turso",
+    "bloodMaterialId": "blood_fungi",
+    "corpseMaterialId": "meat_slime"
   },
   "drone_shield": {
     "alias": "Safety Drone",
@@ -4851,7 +5237,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Turvalennokki"
+    "wikipage": "Turvalennokki",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "wizard_weaken": {
     "alias": "Master of Vulnerability",
@@ -4877,7 +5265,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Turvattomuusmestari"
+    "wikipage": "Turvattomuusmestari",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_slime"
   },
   "barfer": {
     "alias": "Bloated Wizard",
@@ -4903,7 +5293,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Turvonnu velho"
+    "wikipage": "Turvonnu velho",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_confusion"
   },
   "thundermage": {
     "alias": "Thunder Mage",
@@ -4929,7 +5321,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0.5"
     },
-    "wikipage": "Ukko"
+    "wikipage": "Ukko",
+    "bloodMaterialId": "diamond",
+    "corpseMaterialId": "diamond"
   },
   "wraith_storm": {
     "alias": "Thunder Creep",
@@ -4955,7 +5349,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0.3"
     },
-    "wikipage": "Ukkoshyypiö"
+    "wikipage": "Ukkoshyypiö",
+    "bloodMaterialId": "plasma_fading",
+    "corpseMaterialId": "rock_static_glow"
   },
   "boss_ghost": {
     "alias": "Forgotten",
@@ -4981,7 +5377,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0.5"
     },
-    "wikipage": "Unohdettu"
+    "wikipage": "Unohdettu",
+    "bloodMaterialId": "plasma_fading",
+    "corpseMaterialId": "rock_static_glow"
   },
   "boss_ghost_polyp": {
     "alias": "Fade",
@@ -5007,7 +5405,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Unohdettu"
+    "wikipage": "Unohdettu",
+    "bloodMaterialId": "acid",
+    "corpseMaterialId": null
   },
   "wizard_swapper": {
     "alias": "Master of Exchange",
@@ -5033,7 +5433,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Vaihdosmestari"
+    "wikipage": "Vaihdosmestari",
+    "bloodMaterialId": "blood_fading",
+    "corpseMaterialId": "meat_confusion"
   },
   "hidden": {
     "alias": "Spy",
@@ -5059,7 +5461,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Vakoilija"
+    "wikipage": "Vakoilija",
+    "bloodMaterialId": "oil",
+    "corpseMaterialId": "steel"
   },
   "enlightened_alchemist": {
     "alias": "Enlightened Alchemist",
@@ -5085,7 +5489,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0.2"
     },
-    "wikipage": "Valaistunut alkemisti"
+    "wikipage": "Valaistunut alkemisti",
+    "bloodMaterialId": "slime",
+    "corpseMaterialId": "meat_confusion"
   },
   "shaman_wind": {
     "alias": "Lie",
@@ -5111,7 +5517,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Valhe"
+    "wikipage": "Valhe",
+    "bloodMaterialId": null,
+    "corpseMaterialId": "wood_prop"
   },
   "lurker": {
     "alias": "Shadow Bubble",
@@ -5137,7 +5545,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "0.0",
       "holy": "1x"
     },
-    "wikipage": "Varjokupla"
+    "wikipage": "Varjokupla",
+    "bloodMaterialId": "material_darkness",
+    "corpseMaterialId": "material_darkness"
   },
   "bloodcrystal_physics": {
     "alias": "Blood Crystal",
@@ -5163,7 +5573,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1.2"
     },
-    "wikipage": "Verikristalli"
+    "wikipage": "Verikristalli",
+    "bloodMaterialId": "plasma_fading_pink",
+    "corpseMaterialId": "crystal_purple"
   },
   "boss_alchemist": {
     "alias": "High Alchemist",
@@ -5189,7 +5601,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "0.5"
     },
-    "wikipage": "Ylialkemisti"
+    "wikipage": "Ylialkemisti",
+    "bloodMaterialId": "slime",
+    "corpseMaterialId": "rock_static_glow"
   },
   "parallel_alchemist": {
     "alias": "Alchemist's Shadow",
@@ -5215,7 +5629,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Ylialkemisti"
+    "wikipage": "Ylialkemisti",
+    "bloodMaterialId": "slime",
+    "corpseMaterialId": "rock_static_glow"
   },
   "flynest": {
     "alias": "Amppari Hive",
@@ -5241,9 +5657,11 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Amppari"
+    "wikipage": "Amppari",
+    "bloodMaterialId": null,
+    "corpseMaterialId": "nest_box2d"
   },
-  "orb_death": {
+  "failed_alchemist_orb": {
     "alias": "Death Orb",
     "name": "Death Orb",
     "health": "62.5",
@@ -5267,7 +5685,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Epäalkemisti"
+    "wikipage": "Epäalkemisti",
+    "bloodMaterialId": "spark_purple_bright",
+    "corpseMaterialId": "crystal_purple"
   },
   "spidernest": {
     "alias": "Hämis Nest",
@@ -5293,7 +5713,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Hämis"
+    "wikipage": "Hämis",
+    "bloodMaterialId": null,
+    "corpseMaterialId": "nest_box2d"
   },
   "ghost_crystal": {
     "alias": "Houre Crystal",
@@ -5319,7 +5741,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Houre"
+    "wikipage": "Houre",
+    "bloodMaterialId": "sand_blue",
+    "corpseMaterialId": "ice_b2"
   },
   "orb_blood": {
     "alias": "Blood Orb",
@@ -5345,7 +5769,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Mestarien mestari"
+    "wikipage": "Mestarien mestari",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "blood"
   },
   "wizard_orb_blood": {
     "alias": "Blood Orb",
@@ -5371,7 +5797,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Mestarien mestari"
+    "wikipage": "Mestarien mestari",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "blood"
   },
   "boss_wizard_orb_blood": {
     "alias": "Blood Orb",
@@ -5397,7 +5825,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Mestarien mestari"
+    "wikipage": "Mestarien mestari",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "blood"
   },
   "wizard_orb_death": {
     "alias": "Death Orb",
@@ -5423,7 +5853,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Mestarien mestari"
+    "wikipage": "Mestarien mestari",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "slime"
   },
   "boss_wizard_orb_death": {
     "alias": "Death Orb",
@@ -5449,7 +5881,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Mestarien mestari"
+    "wikipage": "Mestarien mestari",
+    "bloodMaterialId": "blood",
+    "corpseMaterialId": "slime"
   },
   "arrowtrap_left": {
     "alias": "Arrow Trap",
@@ -5475,7 +5909,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Traps"
+    "wikipage": "Traps",
+    "bloodMaterialId": "sand",
+    "corpseMaterialId": "plastic"
   },
   "arrowtrap_right": {
     "alias": "Arrow Trap",
@@ -5501,7 +5937,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Traps"
+    "wikipage": "Traps",
+    "bloodMaterialId": "sand",
+    "corpseMaterialId": "plastic"
   },
   "firetrap_left": {
     "alias": "Fire Trap",
@@ -5527,7 +5965,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Traps"
+    "wikipage": "Traps",
+    "bloodMaterialId": "sand",
+    "corpseMaterialId": "plastic"
   },
   "firetrap_right": {
     "alias": "Fire Trap",
@@ -5553,7 +5993,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Traps"
+    "wikipage": "Traps",
+    "bloodMaterialId": "sand",
+    "corpseMaterialId": "plastic"
   },
   "spittrap_left": {
     "alias": "Acid Trap",
@@ -5579,7 +6021,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Traps"
+    "wikipage": "Traps",
+    "bloodMaterialId": "sand",
+    "corpseMaterialId": "plastic"
   },
   "spittrap_right": {
     "alias": "Acid Trap",
@@ -5605,7 +6049,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Traps"
+    "wikipage": "Traps",
+    "bloodMaterialId": "sand",
+    "corpseMaterialId": "plastic"
   },
   "thundertrap_left": {
     "alias": "Thunder Trap",
@@ -5631,7 +6077,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Traps"
+    "wikipage": "Traps",
+    "bloodMaterialId": "sand",
+    "corpseMaterialId": "plastic"
   },
   "thundertrap_right": {
     "alias": "Thunder Trap",
@@ -5657,7 +6105,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Traps"
+    "wikipage": "Traps",
+    "bloodMaterialId": "sand",
+    "corpseMaterialId": "plastic"
   },
   "firebugnest": {
     "alias": "Firefly Hive",
@@ -5683,7 +6133,9 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
       "radioactive": "1x",
       "holy": "1x"
     },
-    "wikipage": "Tulikärpänen"
+    "wikipage": "Tulikärpänen",
+    "bloodMaterialId": "lava",
+    "corpseMaterialId": "nest_firebug_box2d"
   },
   "boss_gate": {
     "alias": "Gate Guardian",
@@ -5695,6 +6147,8 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     "immunities": "necro, glue, suffocation, fire, physics, electricity",
     "blood": "Spark (Red)",
     "corpse": "Dense Rock",
+    "bloodMaterialId": "spark_red",
+    "corpseMaterialId": "rock_box2d_nohit_hard",
     "category": "Bosses",
     "faction": "ghost",
     "dmgMults": {
@@ -5920,7 +6374,7 @@ export const CREATURE_ALIASES: Record<string, string> = {
   "boss_alchemist": "High Alchemist",
   "parallel_alchemist": "Alchemist's Shadow",
   "flynest": "Amppari Hive",
-  "orb_death": "Death Orb",
+  "failed_alchemist_orb": "Death Orb",
   "spidernest": "Hämis Nest",
   "ghost_crystal": "Houre Crystal",
   "orb_blood": "Blood Orb",

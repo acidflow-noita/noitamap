@@ -16,6 +16,9 @@ import { clearTargetPoiId } from './url';
 import { drawSpriteToCanvas, getSpriteOffset, loadSpritesheetAndAtlas } from '../telescope/poi-spatial-index';
 import { buildExtendedCreatureSectionByName } from '../extended-info';
 import { describeBiome } from './biome-names';
+import { attachWikiLinkPopover, hidePopovers } from '../popover-util';
+import { biomePathBounds } from './biome-path-bounds';
+import { clearCreatureSpawnBiomeFocus } from './creature-spawn-biomes';
 
 // Preload the POI atlas, but DEFER it to browser idle. Loading it eagerly at
 // module init pulls a ~1.25 MB spritesheet + atlas decode onto the main thread
@@ -238,29 +241,9 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
     }
   }
 
-  // Calculate bounding box from all coordinates
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-
-  const allCoords = path.split(/[MLZ]/).filter(p => p.trim() !== '');
-  for (const point of allCoords) {
-    const coords = point.trim().split(' ').map(Number).filter(n => !isNaN(n));
-    for (let i = 0; i < coords.length; i += 2) {
-      if (i + 1 < coords.length) {
-        const x = coords[i];
-        const y = coords[i + 1];
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x);
-        maxY = Math.max(maxY, y);
-      }
-    }
-  }
-
-  const width = maxX - minX;
-  const height = maxY - minY;
+  const bounds = biomePathBounds(path);
+  if (!bounds) throw new Error(`Invalid biome boundary path: ${text}`);
+  const { x: minX, y: minY, width, height } = bounds;
 
   // Create container element
   const el = document.createElement('div');
@@ -517,6 +500,7 @@ function createOverlayPopup({ name, aliases, text, wiki, fileName, x, y }: Point
       wikiLink.classList.add('wikiLink');
       wikiLink.style.display = 'inline-block';
       wikiLink.style.marginTop = '8px';
+      attachWikiLinkPopover(wikiLink);
       textContainer.appendChild(wikiLink);
     }
 
@@ -562,6 +546,7 @@ function createOverlayPopup({ name, aliases, text, wiki, fileName, x, y }: Point
     wikiLink.target = '_blank';
     wikiLink.textContent = 'Wiki';
     wikiLink.classList.add('wikiLink');
+    attachWikiLinkPopover(wikiLink);
     popup.appendChild(wikiLink);
   }
 
@@ -632,6 +617,7 @@ function createPOI(poi: PointOfInterest, overlayType?: OverlayKey): OSDOverlay {
   
   // Clean up URL parameter and reset popup position when popup closes
   el.addEventListener('mouseleave', () => {
+    hidePopovers(popup);
     (window as any).clearTargetPoiId?.() || clearTargetPoiId();
     resetPopupPosition(popup);
   });
@@ -665,6 +651,7 @@ const biomeOverlays = biomes.flatMap(biomeToAOI).map(aoi => {
 });
 
 export const createOverlays = (mapName: string): OSDOverlay[] => {
+  clearCreatureSpawnBiomeFocus();
   const overlays: OSDOverlay[] = [];
 
   // Define z-index priority for overlay types (lower = behind, higher = in front)
@@ -722,7 +709,9 @@ export const showOverlay = (overlayKey: OverlayKey, show: boolean) => {
     if (show) {
       osdRootElement.classList.add(`show-${overlayKey}`);
     } else {
+      if (overlayKey === 'biomeBoundaries') clearCreatureSpawnBiomeFocus(osdRootElement);
       osdRootElement.classList.remove(`show-${overlayKey}`);
+      osdRootElement.querySelectorAll<HTMLElement>(`.overlay.${overlayKey}`).forEach(hidePopovers);
     }
   } catch (e) {
     console.error(e);
@@ -750,6 +739,9 @@ export const refreshOverlayTranslations = () => {
   const overlayPopups = document.querySelectorAll('.osOverlayPopup');
   overlayPopups.forEach(popup => {
     const popupElement = popup as HTMLElement;
+
+    popupElement.querySelectorAll<HTMLAnchorElement>('a[data-popover-owner="wiki-link"]')
+      .forEach(attachWikiLinkPopover);
 
     // Get the stored original data
     const originalName = popupElement.dataset.originalName;

@@ -22,41 +22,68 @@
 }
 .marker-tooltip *, .marker-tooltip *::before, .marker-tooltip *::after { box-sizing: border-box; }
 .marker-tooltip img { flex-shrink: 0; }
-.poi-card-controls {
+.poi-card-header {
   position: sticky;
   top: calc(-1 * var(--panel-padding));
   z-index: 3;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
   gap: var(--control-gap);
   padding-block: var(--control-padding-y);
   margin-bottom: var(--panel-padding);
   background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+}
+.poi-card-heading {
+  flex: 1 1 10rem;
+  min-width: 0;
+  margin-bottom: 0 !important;
+  overflow-wrap: anywhere;
+}
+.poi-card-heading > div { min-width: 0; }
+.poi-card-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--control-gap);
+  margin-left: auto;
+  max-width: 100%;
 }
 .poi-card-controls > * { flex-shrink: 0; }
 .poi-card-controls .btn-group { flex-shrink: 1; }
 .poi-card-icon-button { width: var(--control-height); padding-inline: 0; }
 .poi-card-pillar-button { margin-right: auto; }
+.poi-card-back { white-space: normal; }
+.marker-tooltip.poi-card-sheet { border-radius: var(--radius-panel) var(--radius-panel) 0 0; }
 .poi-card-stats {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: .125rem var(--control-gap);
   align-items: baseline;
   margin-bottom: var(--panel-padding);
   font-variant-numeric: tabular-nums;
 }
 .poi-card-stat-label { color: var(--text-muted); overflow-wrap: anywhere; }
-.poi-card-stat-value { min-width: 0; color: var(--text); }
+.poi-card-stat-value { min-width: 0; color: var(--text); text-align: right; }
 
 /* Keep each label beside its value. Balanced newspaper columns moved rows
    between columns as asynchronous sections and translated text changed height. */
 .marker-tooltip .extended-info-group--cols { columns: auto; }
+.marker-tooltip .extended-info-section {
+  margin-top: .5em;
+  padding-top: .5em;
+}
+.marker-tooltip .poi-card-header + .extended-info-section {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
 .marker-tooltip .extended-info-row {
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-columns: auto minmax(0, 1fr);
   gap: .125rem var(--control-gap);
-  padding-block: .125rem;
+  padding-block: .15em;
 }
 .marker-tooltip .extended-info-label {
   color: var(--text-muted);
@@ -80,4 +107,74 @@
 .marker-tooltip .extended-info-group + .extended-info-group,
 .marker-tooltip .extended-info-reactions { border-color: var(--border); }
 .marker-tooltip .extended-info-mat-entry { flex-wrap: wrap; }
-.marker-tooltip .extended-info-link { width: auto; max-width: 100%; }
+.extended-info-link,
+.marker-tooltip .extended-info-link {
+  width: max-content;
+  max-width: 100%;
+  justify-self: start;
+  align-self: start;
+}
+.extended-info-link > span { min-width: 0; }
+.wiki-link {
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  justify-self: start;
+  align-self: flex-start;
+}
+/* Some compact card headers use the link itself as their flex heading. */
+.poi-card-heading.wiki-link { flex: 0 1 auto; }
+
+/* The explicit row kind keeps numeric values at the edge without treating
+   material links, internal IDs or descriptions as numbers. */
+.extended-info-row.extended-info-row--numeric { grid-template-columns: minmax(0, 1fr) auto; }
+.extended-info-row--numeric .extended-info-value { text-align: right; font-variant-numeric: tabular-nums; }
+.extended-info-row.extended-info-row--prose { grid-template-columns: minmax(0, 1fr); }
+.extended-info-row--prose .extended-info-label { white-space: normal; }
+
+/* Creature descriptions flow as paragraphs: short values share their label's
+   line, and long text uses the whole card instead of a narrow value column. */
+.extended-info-creature { line-height: 1.55; }
+.extended-info-creature .extended-info-row--prose { display: block; }
+.extended-info-creature .extended-info-row--prose .extended-info-label { margin-inline-end: .6em; }
+.extended-info-creature .extended-info-group + .extended-info-group {
+  margin-top: .45em;
+  padding-top: .35em;
+}
+.extended-info-group--stats-grid {
+  display: grid;
+  columns: auto;
+  /* The half-width minimum caps this at two columns; 12em per column lets
+     translated labels wrap legibly, with one column in narrower cards. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, max(12em, calc((100% - 1.2em) / 2))), 1fr));
+  column-gap: 1.2em;
+  row-gap: .2em;
+}
+.extended-info-group--stats-grid > .extended-info-subhead,
+.extended-info-group--stats-grid > .extended-info-row--prose { grid-column: 1 / -1; }
+.extended-info-group--stats-grid .extended-info-label { white-space: normal; overflow-wrap: anywhere; }
+.extended-info-group--stats-grid .extended-info-row { min-width: 0; }
+
+.bartender-link-title { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .2em; max-width: 100%; }
+.bartender-link-logo { height: var(--brand-logo-height, 1.25em); width: auto; max-width: 100%; object-fit: contain; }
+
+.creature-spawn-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-fg);
+  font: inherit;
+  text-align: left;
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: .2em;
+  cursor: pointer;
+}
+.creature-spawn-link:hover { color: var(--accent-strong); }
+.creature-spawn-link svg {
+  width: 1em;
+  height: 1em;
+  margin-left: .25em;
+  vertical-align: -.125em;
+}
+.creature-spawn-missing { display: block; color: var(--text-muted); font-size: inherit; }

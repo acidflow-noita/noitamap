@@ -14,7 +14,8 @@
     "popoverContent": "呪文、アイテム、杖、ボス、クリーチャー、ポーション、建造物などを検索します。下のフィルタ ボタンを使用して、結果をカテゴリ別に絞り込みます。",
     "chunksAway": "~{{count}} チャンク先",
     "openTelescope": "Telescopeで開く",
-    "noResults": "見つかりませんでした"
+    "noResults": "見つかりませんでした",
+    "shortcutHint": "検索にフォーカス：/、Ctrl+/ または ⌘+/"
   },
   "spell_prefix": "呪文",
   "tiers_prefix": "ティア",
@@ -5074,7 +5075,15 @@
     "ingestionEffects": "摂取による影響",
     "reactionsHeader": "Bartender での物質的な反応",
     "asReagent": "試薬として表示",
-    "asProduct": "製品として見る"
+    "asProduct": "製品として見る",
+    "openInBartender": "Bartenderで開く",
+    "bartenderReagentHint": "この素材を使う反応をBartenderで確認します。",
+    "bartenderProductHint": "この素材を生成する反応をBartenderで確認します。",
+    "showSpawnBiomes": "出現バイオームをマップに表示",
+    "spawnMapMissing": "このマップには表示されません：{{locations}}",
+    "openInWiki": "Noita Wikiで開く",
+    "spawnBiomesPro": "出現バイオームの強調表示はPro機能です。",
+    "spawnBiomesUnavailable": "このマップでは、この生物の出現バイオームを表示できません。"
   },
   "wand": {
     "shuffle": "シャッフル",
@@ -5526,6 +5535,7 @@
     },
     "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
     "v3": {
+      "backToReport": "レポートに戻る",
       "back": "戻る",
       "viewAll": "すべて表示",
       "showMore": "さらに表示",

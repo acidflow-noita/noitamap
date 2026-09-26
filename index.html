@@ -318,6 +318,8 @@
     <div class="full-viewport-wrapper flex flex-col-reverse">
       <!-- osContainer comes first so that it's "beneath" menu drop-downs -->
       <div id="osContainer"></div>
+      <!-- Temporary map controls stay below the navbar, outside both menus. -->
+      <div id="map-view-controls"></div>
       <nav class="navbar mapNavbar nav bg-body-tertiary nav-wrapper navbar-dark bg-dark navbar-expand-lg">
         <div class="container-fluid">
           <a id="navbar-brand" class="navbar-brand" href="#">
@@ -342,7 +344,7 @@
 
           <div class="collapse navbar-collapse" id="collapsibleMapMenu">
             <!-- Dropdown and buttons container -->
-            <div class="d-flex flex-wrap align-items-center justify-content-start me-auto" style="gap: 0.2rem">
+            <div id="map-menu-controls" class="d-flex flex-wrap align-items-center justify-content-start me-auto">
               <!-- <a id="donateButton" href="https://runfast.stream/donate" target="_blank" class="icon-button btn btn-sm btn-outline-info btn-custom text-nowrap m-2" target="_blank" role="button">
                 <i class="bi bi-suit-heart-fill"></i><span>Donate</span>
               </a> -->
@@ -566,6 +568,33 @@
                 <i class="bi bi-share"></i>
               </a>
 
+              <div id="biome-boundaries-ui-wrapper" class="btn-group me-2" role="group">
+                <input
+                  id="biomeBoundariesToggler"
+                  type="checkbox"
+                  class="btn-check overlayToggler"
+                  autocomplete="off"
+                  data-overlay-key="biomeBoundaries"
+                />
+                <label
+                  class="icon-button btn btn-sm btn-outline-light text-nowrap"
+                  for="biomeBoundariesToggler"
+                  data-bs-toggle="popover"
+                  data-bs-placement="bottom"
+                  data-bs-trigger="hover focus"
+                  data-i18n-title="biomeBoundaries.title"
+                  data-bs-title="Biome Boundaries"
+                  data-i18n-content="biomeBoundaries.content"
+                  data-bs-content="Toggle biome boundaries overlay"
+                  ><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="1" width="6" height="6" rx="1" fill="rgb(0, 128, 168)" />
+                    <rect x="9" y="1" width="6" height="6" rx="1" fill="rgb(255, 106, 2)" />
+                    <rect x="1" y="9" width="6" height="6" rx="1" fill="rgb(214, 216, 227)" />
+                    <rect x="9" y="9" width="6" height="6" rx="1" fill="rgb(255, 209, 5)" />
+                  </svg>
+                </label>
+              </div>
+
               <div id="overlay-selector" class="btn-group" role="group">
                 <input
                   id="structuresToggler"
@@ -681,30 +710,6 @@
                   data-bs-content="Toggle hidden messages overlay"
                   ><i class="icon-hiddenMessages pixelated-image"></i
                 ></label>
-                <input
-                  id="biomeBoundariesToggler"
-                  type="checkbox"
-                  class="btn-check overlayToggler"
-                  autocomplete="off"
-                  data-overlay-key="biomeBoundaries"
-                />
-                <label
-                  class="icon-button btn btn-sm btn-outline-light text-nowrap"
-                  for="biomeBoundariesToggler"
-                  data-bs-toggle="popover"
-                  data-bs-placement="bottom"
-                  data-bs-trigger="hover focus"
-                  data-i18n-title="biomeBoundaries.title"
-                  data-bs-title="Biome Boundaries"
-                  data-i18n-content="biomeBoundaries.content"
-                  data-bs-content="Toggle biome boundaries overlay"
-                  ><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="1" y="1" width="6" height="6" rx="1" fill="rgb(0, 128, 168)" />
-                    <rect x="9" y="1" width="6" height="6" rx="1" fill="rgb(255, 106, 2)" />
-                    <rect x="1" y="9" width="6" height="6" rx="1" fill="rgb(214, 216, 227)" />
-                    <rect x="9" y="9" width="6" height="6" rx="1" fill="rgb(255, 209, 5)" />
-                  </svg>
-                </label>
                 <input id="chunkGridToggler" type="checkbox" class="btn-check" autocomplete="off" />
                 <label
                   class="icon-button btn btn-sm btn-outline-light text-nowrap"

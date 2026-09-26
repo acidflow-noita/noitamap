@@ -2,6 +2,11 @@ import { ReportMapHighlights } from './report-map-highlights';
 import { getCachedDailyComparisonTarget, getCachedDailySeedIdentity } from './data_sources/daily_seed';
 import { getPOIDisplayName } from "./telescope/poi-display-name";
 import { getPOIBiomeDescription } from "./data_sources/biome-names";
+import { clearCreatureSpawnBiomeFocus, focusCreatureSpawnBiomes, frameCreatureSpawnBiomes, resolveCreatureSpawnBiomes } from "./data_sources/creature-spawn-biomes";
+import { setCreatureSpawnNavigation } from "./creature-spawn-navigation";
+import { mountCreatureSpawnNotice } from "./creature-spawn-notice";
+import { createCreatureSpawnSharing } from "./creature-spawn-sharing";
+import { dismissEnclosingPopup, getExtendedCreature, isProUser, loadExtendedCreatures } from "./extended-info";
 import { loadSpritesheetAndAtlas } from "./telescope/poi-spatial-index";
 import { getCachedGeneration } from "./telescope/tile-cache";
 import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
@@ -161,6 +166,8 @@ import {
   updateURLWithSearch,
   reorderParams,
   clearTargetPoiId,
+  normalizeSpawnCreatureId,
+  updateURLWithCreatureSpawn,
 } from "./data_sources/url";
 import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from "./data_sources/overlays";
 import { isMainPathBiome } from "./data_sources/main-path-biomes";
@@ -183,7 +190,7 @@ import { AuthUI } from "./auth/auth-ui";
 import { authService } from "./auth/auth-service";
 import { DrawingUI } from "./drawing/drawing-ui";
 import { createSeedReportButton } from "./seed-report-button";
-import { placeMoreMenuLast } from "./overflow-menu";
+import { placeBiomeBoundariesButton, placeMoreMenuLast } from "./overflow-menu";
 import { initChunkGrid, showChunkGrid, isChunkGridVisible } from "./drawing/chunk-grid";
 import { initSideworld, toggleSideworld, mapHasSideworld, resetSideworld } from "./sideworld";
 import { roundVisibleOverlayGroupEdges } from "./dynamic_ui";
@@ -599,10 +606,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   let reportMapLoading = false;
   let poiContextReady = false;
   let initialTargetSeedStarted = false;
+  let spawnSharing: ReturnType<typeof createCreatureSpawnSharing> | undefined;
   app.osd.addHandler('map-change-start', () => {
     initialTargetPoiId = undefined;
     poiContextReady = false;
     reportHighlights?.clear(false);
+    spawnSharing?.dismiss();
+    spawnSharing?.setMapReady(false);
+    clearCreatureSpawnBiomeFocus(osdRootElement);
     resetPOICardContext(app.osd);
   });
   const dynamicOpts = {
@@ -610,16 +621,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     onMapReplacementStart: () => {
       poiContextReady = false;
       // The original URL target belongs to the first requested generation only.
-      if (initialTargetSeedStarted) initialTargetPoiId = undefined;
+      if (initialTargetSeedStarted) {
+        initialTargetPoiId = undefined;
+        spawnSharing?.dismiss();
+      }
+      spawnSharing?.setMapReady(false);
       initialTargetSeedStarted = true;
       reportHighlights?.clear(false);
+      clearCreatureSpawnBiomeFocus(osdRootElement);
       resetPOICardContext(app.osd);
     },
     onLoadingChange: (isLoading: boolean) => {
       reportMapLoading = isLoading;
       if (isLoading) {
         poiContextReady = false;
+        spawnSharing?.setMapReady(false);
         reportHighlights?.clear(false);
+        clearCreatureSpawnBiomeFocus(osdRootElement);
         resetPOICardContext(app.osd);
       }
       loadingIndicator.style.display = isLoading ? "block" : "none";
@@ -639,6 +657,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     onPOIsReady: (pois: DynamicPOI[]) => {
       restorePOICardContext(app.osd);
       poiContextReady = true;
+      spawnSharing?.setMapReady(true);
       // Keep the full unfiltered list for stats (Seed Report counts creatures
       // regardless of the perf-mode "skip creatures" toggle).
       _allDynamicPOIs = pois;
@@ -941,6 +960,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (opts?.owner === 'report') reportHighlights ??= new ReportMapHighlights(app.osd.viewer);
       openTooltipForPOI(poiId, app.osd, { ...opts, owner: opts?.owner ?? 'map' });
     },
+    openReportPOICard: (poiId, opts) => {
+      if (!poiContextReady || app.getMap() !== 'dynamic-main-branch') { opts.onClose(); return; }
+      if (!opts.preserveReportHighlights) reportHighlights?.clear(false);
+      reportHighlights ??= new ReportMapHighlights(app.osd.viewer);
+      const { returnLabel, onClose, ...navigation } = opts;
+      openTooltipForPOI(poiId, app.osd, { ...navigation, owner: 'report', reportReturn: { label: returnLabel, onClose } });
+    },
     showGetProModal: () => {
       AuthUI.showGetProModal();
     },
@@ -991,6 +1017,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Now that all runtime-injected navbar buttons exist (auth/Get Pro, drawing,
   // seed report), park the "..." overflow button at the very end of the row.
+  placeBiomeBoundariesButton();
   placeMoreMenuLast();
 
   // Initialize Drop Overlay
@@ -1178,6 +1205,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   addEventListenerForId("overlay-selector", "click", handleOverlayToggle);
+  addEventListenerForId("biome-boundaries-ui-wrapper", "click", handleOverlayToggle);
 
   // Dismiss any lingering popovers left over from a pre-reload state
   document.querySelectorAll('.popover').forEach((el: Element) => el.remove());
@@ -1339,6 +1367,94 @@ document.addEventListener("DOMContentLoaded", async () => {
   app.osd.addHandler('open', () => {
     if (mainPathBoundariesOn) setTimeout(applyMainPathBoundaries, 0);
   });
+
+  const resolveSpawnRegions = (raw: string, mode: 'normal' | 'ng-plus' = 'normal') => {
+    const dynamic = app.getMap() === 'dynamic-main-branch';
+    const generation = dynamic ? getLastGenerationResult() : null;
+    // The existing boundary overlay describes the normal world layout.
+    // Never use it to claim an NG+ location or navigate during replacement.
+    const map = dynamic && !poiContextReady ? '' : app.getMap();
+    return resolveCreatureSpawnBiomes(raw, map, mode === 'ng-plus' || generation?.isNGP ? 1 : generation?.ngPlus ?? 0);
+  };
+  const applySpawnRegions = (raw: string, frame: boolean, source?: HTMLElement): boolean => {
+    // Check again at the actual application point, including asynchronous
+    // shared-link restoration and stale card actions after signing out.
+    if (!isProUser()) return false;
+    const result = resolveSpawnRegions(raw);
+    if (!result.supported || !result.bounds) return false;
+    if (frame && (app.osd.canvas.clientWidth <= 96 || app.osd.canvas.clientHeight <= 96)) return false;
+    if (!focusCreatureSpawnBiomes(result, osdRootElement)) return false;
+    // Closing first restores a suspended report before measuring free map
+    // space. Its focus/highlight restoration must precede this new view.
+    if (source) dismissEnclosingPopup(source);
+    if (frame) app.osd.cancelNavigation();
+    reportHighlights?.clear(false);
+    if (mainPathBoundariesOn) {
+      mainPathBoundariesOn = false;
+      applyMainPathBoundaries();
+    }
+    const toggler = document.querySelector<HTMLInputElement>('input.overlayToggler[data-overlay-key="biomeBoundaries"]');
+    if (toggler) toggler.checked = true;
+    showOverlay('biomeBoundaries', true);
+    updateURLWithOverlays(getEnabledOverlays());
+    const framed = !frame || frameCreatureSpawnBiomes(app.osd, result.bounds);
+    if (!framed) clearCreatureSpawnBiomeFocus(osdRootElement);
+    return framed;
+  };
+
+  const viewControls = assertElementById('map-view-controls', HTMLElement);
+  const dismissSpawnView = () => {
+    spawnSharing?.dismiss();
+    const toggler = document.querySelector<HTMLInputElement>('input.overlayToggler[data-overlay-key="biomeBoundaries"]');
+    if (toggler) toggler.checked = false;
+    showOverlay('biomeBoundaries', false);
+    updateURLWithOverlays(getEnabledOverlays());
+  };
+  const spawnNotice = mountCreatureSpawnNotice(viewControls,
+    () => AuthUI.showGetProModal(), dismissSpawnView);
+  spawnSharing = createCreatureSpawnSharing({
+    loadSpawn: async id => {
+      if (!isProUser()) return null;
+      await loadExtendedCreatures();
+      return isProUser() ? getExtendedCreature(id)?.spawnLocation ?? null : null;
+    },
+    apply: applySpawnRegions,
+    clearFocus: () => clearCreatureSpawnBiomeFocus(osdRootElement),
+    writeRequest: updateURLWithCreatureSpawn,
+    notice: status => spawnNotice.update(status),
+  }, urlState.spawnCreatureId, !urlState.pos && !urlState.targetPoiId);
+  spawnSharing.setMapReady(app.getMap() !== 'dynamic-main-branch' || poiContextReady);
+  // subscribe() does not replay the initial state. Wait for startup auth so a
+  // returning subscriber never briefly gets the free-view notice or a fetch.
+  let spawnAuthReady = false;
+  const syncSpawnAccess = () => spawnSharing?.setEntitled(isProUser());
+  authService.subscribe(() => { if (spawnAuthReady) syncSpawnAccess(); });
+  void authService.ready.then(() => { spawnAuthReady = true; syncSpawnAccess(); });
+
+  setCreatureSpawnNavigation({
+    resolve: (raw, mode) => {
+      const result = resolveSpawnRegions(raw, mode);
+      return { canNavigate: isProUser() && result.supported && !!result.bounds, missing: result.supported ? result.missing : [] };
+    },
+    navigate: (raw, source, mode, creatureId) => {
+      const id = normalizeSpawnCreatureId(creatureId);
+      if (!id || mode !== 'normal' || !isProUser()) return false;
+      if (!applySpawnRegions(raw, true, source)) return false;
+      spawnSharing!.setMapReady(true);
+      if (spawnSharing!.rememberApplied(id)) return true;
+      clearCreatureSpawnBiomeFocus(osdRootElement);
+      return false;
+    },
+  });
+
+  // Covers the original toggle and programmatic overlay changes too. Auth loss
+  // only clears the filter, so it keeps the pending URL request for later login.
+  let boundariesEnabled = osdRootElement.classList.contains('show-biomeBoundaries');
+  new MutationObserver(() => {
+    const enabled = osdRootElement.classList.contains('show-biomeBoundaries');
+    if (boundariesEnabled && !enabled) spawnSharing?.dismiss();
+    boundariesEnabled = enabled;
+  }).observe(osdRootElement, { attributes: true, attributeFilter: ['class'] });
 
   const shareEl = assertElementById("shareButton", HTMLElement);
   shareEl.addEventListener("click", async (ev) => {

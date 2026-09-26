@@ -163,6 +163,9 @@ declare global {
     handleSeedReportToggle?: (open: boolean) => void;
     /** Open the telescope tooltip ("POI card") for a dynamic POI by id. */
     openPOIById?: (poiId: string, opts?: { sidebarRightPx?: number; preserveReportHighlights?: boolean; fallbackX?: number; fallbackY?: number; fallbackPoi?: any; owner?: 'report' }) => void;
+    /** Mobile report handoff: the host keeps a return action through card replacement
+     * and calls onClose once when the card/flight ends, including failed opening. */
+    openReportPOICard?: (poiId: string, opts: { sidebarRightPx?: number; preserveReportHighlights?: boolean; fallbackX?: number; fallbackY?: number; fallbackPoi?: any; returnLabel: string; onClose(): void }) => void;
     /** Close an open POI card; reportOnly preserves cards opened by other map actions. */
     closePOICard?: (options?: { reportOnly?: boolean }) => void;
     /** Show the "Get Pro" auth modal (lives in main bundle, exposed for pro bundle). */
