@@ -55,6 +55,7 @@ describe('baked creature material references', () => {
 
   it('ships references for every actual material row in the current creature catalog', () => {
     const creatures = JSON.parse(readFileSync('public/assets/full_creatures.json', 'utf8')) as Array<Record<string, any>>;
+    const materialIds = new Set(JSON.parse(readFileSync('public/assets/full_materials.json', 'utf8')).map((material: { id: string }) => material.id));
     const missing: string[] = [];
     for (const creature of creatures) {
       const baked = creature.id ? CREATURE_DATA[creature.id] : Object.values(CREATURE_DATA)
@@ -63,14 +64,18 @@ describe('baked creature material references', () => {
       if (!baked) throw new Error(`Missing baked creature: ${creature.id ?? creature.alias}`);
       for (const field of ['blood', 'corpse'] as const) {
         if (!creature[field] || /^none$/i.test(creature[field].trim())) continue;
-        if (!baked[`${field}MaterialId`] && !baked[`${field}MaterialIds`]?.length) missing.push(`${creature.id ?? creature.alias}.${field}`);
-        if (creature[`${field}_material_id`]) expect(baked[`${field}MaterialId`]).toBe(creature[`${field}_material_id`]);
+        const ids = baked[`${field}MaterialIds`] ?? [baked[`${field}MaterialId`]];
+        if (!ids.length || ids.some(id => !id || !materialIds.has(id))) missing.push(`${creature.id ?? creature.alias}.${field}`);
+        if (materialIds.has(creature[`${field}_material_id`])) expect(baked[`${field}MaterialId`]).toBe(creature[`${field}_material_id`]);
       }
     }
     expect(missing).toEqual([]);
     expect(CREATURE_DATA.fly).toMatchObject({ bloodMaterialId: 'blood_fading', corpseMaterialId: 'meat' });
     expect(CREATURE_DATA.duck).toMatchObject({ bloodMaterialId: 'blood_fading', corpseMaterialId: 'meat_helpless' });
     expect(CREATURE_DATA.tank).toMatchObject({ bloodMaterialId: 'oil', corpseMaterialId: 'steel' });
+    expect(CREATURE_DATA.scavenger_smg.corpseMaterialId).toBe('meat');
+    expect(CREATURE_DATA.shotgunner.corpseMaterialId).toBe('meat');
+    expect(CREATURE_DATA.maggot_tiny.corpseMaterialId).toBe('material_darkness');
     for (const id of ['boss_pit', 'parallel_tentacles']) {
       expect(CREATURE_DATA[id].corpseMaterialId).toBeNull();
       expect(CREATURE_DATA[id].corpseMaterialIds).toEqual(['meat_slime_green', 'rock_static_glow']);

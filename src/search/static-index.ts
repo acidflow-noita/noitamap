@@ -1,56 +1,43 @@
-import { getAllOverlays, type TargetOfInterest } from './data_sources/overlays';
-import { type MapName } from './data_sources/tile_data';
-import { gameTranslator } from './game-translations/translator';
+import { Document as SearchDocument, type Id as FlexSearchId } from 'flexsearch';
+import { getAllOverlays, type TargetOfInterest } from '../data_sources/overlays';
+import { type MapName } from '../data_sources/tile_data';
+import { gameTranslator } from '../game-translations/translator';
 
-import type FFlexSearch from 'flexsearch';
-import type { Id as FlexSearchId } from 'flexsearch';
+const SEARCH_FIELDS = ['text', 'name', 'aliases'];
+let index: SearchDocument | undefined;
 
-// on load, we'll instantiate flexsearch just once, but we'll tell it
-// about the different maps and require that when a user queries the
-// list, they supply the map they're searching. we can use the "tags"
-// feature to only return items that are present in the map being searched
-
-// FlexSearch's types are _fucked_, so we have to do a bunch of hacky nonsense
-// to get types that agree with the actual interfaces present in the window
-type DocumentFactory = (
-  options: any
-) => any;
-
-const index = (FlexSearch.Document as DocumentFactory)({
-  document: {
-    id: 'id',
-    index: ['text', 'name', 'aliases'],
-    tag: 'maps',
-  },
-  tokenize: 'forward',
-});
-
-// FlexSearch's ability to return the document we gave it sucks. Instead,
-// we'll just use its core behavior of returning an ID and dereference
-// that from the list of all overlays.
+// Keep the overlay objects separately; search results contain document IDs.
 const overlays: Map<FlexSearchId, TargetOfInterest> = new Map();
 
-for (const [type, overlayDatas] of getAllOverlays()) {
-  for (const [idx, data] of overlayDatas.entries()) {
-    // Skip path overlays - they shouldn't appear in search results
-    if (data.overlayType === 'path') continue;
+// Dynamic maps have their own index. Build this one only when a static map is
+// searched, then reuse it across maps with tags restricting the visible entries.
+function getStaticIndex(): SearchDocument {
+  if (index) return index;
+  index = new SearchDocument({
+    document: { id: 'id', index: SEARCH_FIELDS, tag: 'maps' },
+    tokenize: 'forward',
+  });
 
-    // Since we want to be able to search all kinds of things, we need to namespace
-    // the array index (id) by its overlay type to keep everything unique
-    const id = `${type}:${idx}`;
-    overlays.set(id, data);
+  for (const [type, overlayDatas] of getAllOverlays()) {
+    for (const [idx, data] of overlayDatas.entries()) {
+      if (data.overlayType === 'path') continue;
+      const id = `${type}:${idx}`;
+      overlays.set(id, data);
 
-    // Index the original data - translations will be applied at search time
-    index.add({
-      id,
-      ...data,
-    });
+      // Index original names; translations are applied at search time.
+      index.add({ id, ...data });
+    }
   }
+  return index;
 }
 
 export const searchOverlays = (mapName: MapName, query: string, filters: Set<string>): TargetOfInterest[] => {
-  // do the search
-  const found = index.search(query, { tag: { maps: mapName } }).flatMap((v: any) => v.result);
+  const index = getStaticIndex();
+  // Query fields independently: FlexSearch 0.8's tagged multi-field search can
+  // discard prior matches when a later field only matches another map.
+  const found = SEARCH_FIELDS.flatMap(field =>
+    index.search(query, { index: [field], tag: { maps: mapName } }).flatMap(result => result.result),
+  );
   // deduplicate the ids we get back
   const ids = new Set<FlexSearchId>(found);
   // turn the ids back into TargetOfInterest objects, but with translated display names

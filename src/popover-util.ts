@@ -12,7 +12,7 @@ function preserveNativeLinkNavigation(el: HTMLElement): void {
   // cancel the default: the browser owns navigation, modifiers, middle click,
   // and keyboard activation. Down events must stay out of OSD too, otherwise
   // it captures the pointer before the eventual click can reach the link.
-  for (const type of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'click', 'dblclick']) {
+  for (const type of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'click', 'auxclick', 'dblclick']) {
     el.addEventListener(type, event => event.stopPropagation());
   }
 }
@@ -32,8 +32,9 @@ export function attachHoverPopover(
   preserveNativeLinkNavigation(el);
   const lib = bs();
   if (!lib?.Popover) return;
-  const existing = lib.Popover.getInstance(el);
-  if (existing) existing.dispose();
+  const disposePrevious = (el as any).__disposePopover;
+  if (typeof disposePrevious === 'function') disposePrevious();
+  else lib.Popover.getInstance(el)?.dispose();
   el.setAttribute('data-popover-owner', options.owner ?? 'hover-help');
   const trigger = options.focus ? 'hover focus' : 'hover';
   if (options.focus) {
@@ -48,16 +49,54 @@ export function attachHoverPopover(
     textContent.textContent = content;
     el.removeAttribute('title');
   }
-  new lib.Popover(el, {
+  const isLink = el.matches('a[href]');
+  const config = {
     content: textContent,
     ...(options.title ? { title: options.title, html: true } : {}),
     trigger,
     placement,
     container: "body",
     delay: { show: 80, hide: 120 },
-  });
+    // Links dismiss immediately on activation. Avoid transition callbacks
+    // outliving the instance when a click resets a shown or pending popover.
+    ...(isLink ? { animation: false } : {}),
+  };
+  const create = () => new lib.Popover(el, config);
+  create();
+  let dismissedByActivation = false;
+  const activate = (event: MouseEvent) => {
+    if (event.type === 'auxclick' && event.button !== 1) return;
+    // hide() alone does not cancel Bootstrap's pending show timer or reset
+    // its hover/focus state before first show. Dispose through public APIs;
+    // retain DOM focus and leave native navigation/modifiers untouched.
+    const instance = lib.Popover.getInstance(el);
+    instance?.hide(); // Synchronous for links; also removes aria-describedby.
+    instance?.dispose();
+    dismissedByActivation = true;
+  };
+  const rearm = (event: MouseEvent | FocusEvent) => {
+    if (!dismissedByActivation) return;
+    // Opening/returning from target=_blank can restore focus and hover to the
+    // same link, with no related element. Recreating immediately lets that
+    // restoration reopen the dismissed panel. Wait for a real new visit from
+    // another element; movement between the link's own text/icon is not one.
+    if (!(event.relatedTarget instanceof Node) || el.contains(event.relatedTarget)) return;
+    dismissedByActivation = false;
+    create();
+  };
+  if (isLink) {
+    el.addEventListener('click', activate);
+    el.addEventListener('auxclick', activate);
+    // Capture runs before Bootstrap's hover/focus handlers for this new visit.
+    el.addEventListener('mouseover', rearm, true);
+    el.addEventListener('focusin', rearm, true);
+  }
   (el as any).__disposePopover = () => {
     delete (el as any).__disposePopover;
+    el.removeEventListener('click', activate);
+    el.removeEventListener('auxclick', activate);
+    el.removeEventListener('mouseover', rearm, true);
+    el.removeEventListener('focusin', rearm, true);
     try { lib.Popover.getInstance(el)?.dispose(); } catch { /* noop */ }
   };
 }

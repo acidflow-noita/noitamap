@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import JSZip from "jszip";
+import { encode } from "fast-png";
 import { readFile } from "node:fs/promises";
 import { decodePngToRgba } from "../src/telescope/png-decode";
 import { clearTelescopeAssetCache } from "../src/telescope/telescope-assets";
@@ -11,7 +12,7 @@ vi.mock("../src/data-archive", () => ({
 }));
 vi.mock("../src/renderer_settings", () => ({ isGLTerrainEnabled: () => true }));
 import { getFromZipFirst } from "../src/telescope/zip-extraction-shim";
-import { installFetchInterceptor } from "../src/telescope/telescope-data-bridge";
+import { installFetchInterceptor, installImageSrcInterceptor } from "../src/telescope/telescope-data-bridge";
 
 afterEach(() => {
   archives.clear();
@@ -136,6 +137,44 @@ describe("repaired asset paths use real authored pixels", () => {
 });
 
 describe("asset extraction and failure handling", () => {
+  it("decodes an intercepted archive image before publishing its blob URL", async () => {
+    const png = encode({ width: 1, height: 1, data: new Uint8Array([20, 40, 60, 255]), channels: 4 });
+    archives.set("main", new JSZip().file("data/test.png", png));
+    class ArchiveImage extends EventTarget {
+      private value = "";
+      get src() { return this.value; }
+      set src(value: string) { this.value = value; }
+    }
+    vi.stubGlobal("HTMLImageElement", ArchiveImage);
+    const createURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:test-image");
+    installImageSrcInterceptor();
+    const image = new ArchiveImage();
+    image.src = "./data/test.png";
+    await vi.waitFor(() => expect(image.src).toBe("blob:test-image"));
+    const bytes = await (createURL.mock.calls[0][0] as Blob).arrayBuffer();
+    expect([...decodePngToRgba(bytes).data]).toEqual([20, 40, 60, 255]);
+  });
+
+  it("does not overwrite a replacement image source while archive decoding is pending", async () => {
+    const png = encode({ width: 1, height: 1, data: new Uint8Array([20, 40, 60, 255]), channels: 4 });
+    archives.set("main", new JSZip().file("data/test.png", png));
+    class ArchiveImage extends EventTarget {
+      private value = "";
+      get src() { return this.value; }
+      set src(value: string) { this.value = value; }
+    }
+    vi.stubGlobal("HTMLImageElement", ArchiveImage);
+    const createURL = vi.spyOn(URL, "createObjectURL");
+    installImageSrcInterceptor();
+    const image = new ArchiveImage();
+    image.src = "./data/test.png";
+    image.src = "https://example.test/replacement.png";
+    await getFromZipFirst("./data/test.png");
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(image.src).toBe("https://example.test/replacement.png");
+    expect(createURL).not.toHaveBeenCalled();
+  });
+
   it("coalesces simultaneous reads and keeps only one successful extraction", async () => {
     const zip = new JSZip().file("data/test.png", new Uint8Array([1, 2, 3]));
     archives.set("main", zip);

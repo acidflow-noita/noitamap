@@ -1,6 +1,6 @@
 // for testing pieces from CLI. makes a lot of DOM stuff exist in Node
-// use: npx tsx -r src/jsdom.cjs src/<file>ts
-// may need to also import OpenSeadragon, FlexSearch, etc. and set into global
+// use: npx tsx -r src/dom.cjs src/<file>.ts
+// Browser-only helpers may also require an OpenSeadragon global.
 
 const { JSDOM } = require('jsdom');
 

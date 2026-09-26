@@ -116,6 +116,16 @@ describe("browser build boundaries", () => {
     });
     expect(warnings).toEqual([]);
     const output = result.output as any[];
+    const html = String(output.find(file => file.fileName === 'index.html')?.source);
+    // The entry accesses OSD while evaluating imports. Its deferred global
+    // must stay earlier in the document's deferred execution order.
+    expect(html.indexOf('openseadragon.min.js')).toBeGreaterThan(-1);
+    expect(html.indexOf('openseadragon.min.js')).toBeLessThan(html.indexOf('type="module"'));
+    expect(html).toMatch(/<script\s+defer\s+src="[^\"]*openseadragon/);
+    const localStyles = [...html.matchAll(/<link\b[^>]*>/g)]
+      .map(match => match[0]).filter(tag => tag.includes('rel="stylesheet"') && tag.includes('href="/build/'));
+    expect(localStyles).toHaveLength(1);
+    expect(html).not.toMatch(/href="(?:\/?css\/|\/src\/styles\/)/);
     // Even when a private checkout exists locally, public production builds
     // must load hosted Pro on demand, never bundle the local private entry.
     for (const file of output.filter((file) => file.type === "chunk")) {
@@ -157,7 +167,16 @@ describe("browser build boundaries", () => {
         modules.some((id) => id.includes("noitamap-sprite-atlas")),
         name,
       ).toBe(false);
+      expect(
+        modules.some(id => /\/node_modules\/(?:fast-png|jszip|pako)\//.test(id)
+          || /\/src\/(?:dev\/console|telescope\/(?:png-decode|bake-export|gl-terrain-tile-source))\.ts$/.test(id)),
+        name,
+      ).toBe(false);
     }
+    const preloads = [...html.matchAll(/<link\b[^>]*rel="modulepreload"[^>]*href="\/([^\"]+)"[^>]*>/g)]
+      .map(match => match[1]);
+    expect(preloads.length).toBeGreaterThan(0);
+    for (const name of preloads) expect(eager.has(name), name).toBe(true);
     expect(
       output.filter((file) => file.fileName.includes("sprite-atlas-part-"))
         .length,

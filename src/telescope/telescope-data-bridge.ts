@@ -1,6 +1,5 @@
 import { fullPixelDataUrl } from "./full-pixel-data";
 import { isGLTerrainEnabled } from "../renderer_settings";
-import { decodePngToRgba, rgbaToPngBlobUrl } from "./png-decode";
 import {
   isPackagedTelescopeAsset,
   readTelescopeAsset,
@@ -87,6 +86,8 @@ export function installImageSrcInterceptor(): void {
           originalSet.call(self, value);
           return;
         }
+        const { decodePngToRgba, rgbaToPngBlobUrl } = await import("./png-decode");
+        if (requests.get(self) !== request) return;
         const { data, width, height } = decodePngToRgba(
           await blob.arrayBuffer(),
         );

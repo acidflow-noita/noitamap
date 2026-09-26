@@ -1,6 +1,7 @@
 import { getPoiPreviewItems } from "../telescope/poi-inventory";
 import { loadSpritesheetAndAtlas, FIRST_FRAME_SIZE } from "../telescope/poi-spatial-index";
-import { searchOverlays } from "../flexsearch";
+import { Document as SearchDocument } from "flexsearch";
+import { searchOverlays } from "./static-index";
 import { resetBiomeOverlays } from "../data_sources/overlays";
 import { MapName } from "../data_sources/tile_data";
 import { debounce } from "../util";
@@ -578,9 +579,6 @@ export interface UnifiedSearch {
   on(event: "selected", listener: (target: TargetOfInterest | { type: "spell"; spell: any }) => void): this;
 }
 
-// FlexSearch Document factory — FlexSearch is loaded as a global via script tag
-type DocumentFactory = (options: any) => any;
-
 export class UnifiedSearch extends EventEmitter2 {
   private lastSearchText: string = "";
   private lastSearchFilters: string = "";
@@ -1084,7 +1082,7 @@ export class UnifiedSearch extends EventEmitter2 {
     // Build a compound searchable text field for each POI
     this.dynamicPOIMap = new Map();
 
-    this.dynamicIndex = (FlexSearch.Document as DocumentFactory)({
+    this.dynamicIndex = new SearchDocument({
       document: {
         id: "id",
         index: ["searchText"],

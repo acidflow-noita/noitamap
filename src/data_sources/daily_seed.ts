@@ -15,12 +15,18 @@ const PREVIOUS_SEED_URL =
   "https://daily-seed.acidflow.stream/previous_seed.txt";
 
 const CACHE_MS = 60_000;
-let cachedAt = 0;
-let cachedPrevAt = 0;
-let cachedSeed: number | null = null;
-let cachedUTCDate: string | null = null;
-let cachedPrevSeed: number | null = null;
-let cachedPrevUTCDate: string | null = null;
+interface SeedRequest {
+  utcDate: string;
+  promise: Promise<number>;
+}
+interface SeedCache {
+  at: number;
+  seed: number | null;
+  utcDate: string | null;
+  pending: SeedRequest | null;
+}
+const daily: SeedCache = { at: 0, seed: null, utcDate: null, pending: null };
+const previous: SeedCache = { at: 0, seed: null, utcDate: null, pending: null };
 
 /** Current UTC date as "YYYY-MM-DD" */
 function currentUTCDate(): string {
@@ -32,17 +38,40 @@ function currentUTCDate(): string {
  * may update after midnight, so a calendar-day cache can pin yesterday all day.
  * Explicit daily buttons force a fresh read.
  */
-export async function fetchDailySeed(force = false): Promise<number> {
+function fetchSeed(cache: SeedCache, url: string, force: boolean): Promise<number> {
   const today = currentUTCDate();
+  // The toolbar, URL resolver and early baked-map probe share one cold read.
+  // A manual refresh starts a new read; subsequent normal callers join it.
+  if (!force && cache.pending?.utcDate === today) return cache.pending.promise;
   if (
     !force &&
-    cachedSeed !== null &&
-    cachedUTCDate === today &&
-    Date.now() - cachedAt < CACHE_MS
+    cache.seed !== null &&
+    cache.utcDate === today &&
+    Date.now() - cache.at < CACHE_MS
   )
-    return cachedSeed;
+    return Promise.resolve(cache.seed);
 
-  const resp = await fetch(DAILY_SEED_URL, {
+  const request: SeedRequest = {
+    utcDate: today,
+    promise: readSeed(url).then((seed) => {
+      // Superseded requests still resolve for their original callers, but may
+      // not repopulate a cleared cache or overwrite a newer manual refresh.
+      if (cache.pending === request && currentUTCDate() === today) {
+        cache.at = Date.now();
+        cache.seed = seed;
+        cache.utcDate = today;
+      }
+      return seed;
+    }).finally(() => {
+      if (cache.pending === request) cache.pending = null;
+    }),
+  };
+  cache.pending = request;
+  return request.promise;
+}
+
+async function readSeed(url: string): Promise<number> {
+  const resp = await fetch(url, {
     cache: "no-store",
     signal: AbortSignal.timeout(15000),
   });
@@ -59,10 +88,11 @@ export async function fetchDailySeed(force = false): Promise<number> {
     throw new Error(`Could not parse daily seed from response: ${text}`);
   }
 
-  cachedAt = Date.now();
-  cachedSeed = seed;
-  cachedUTCDate = today;
   return seed;
+}
+
+export function fetchDailySeed(force = false): Promise<number> {
+  return fetchSeed(daily, DAILY_SEED_URL, force);
 }
 
 /**
@@ -74,34 +104,8 @@ export async function fetchDailySeed(force = false): Promise<number> {
 export async function fetchPreviousDailySeed(
   force = false,
 ): Promise<number | null> {
-  const today = currentUTCDate();
-  if (
-    !force &&
-    cachedPrevSeed !== null &&
-    cachedPrevUTCDate === today &&
-    Date.now() - cachedPrevAt < CACHE_MS
-  )
-    return cachedPrevSeed;
-
   try {
-    const resp = await fetch(PREVIOUS_SEED_URL, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!resp.ok) return null;
-    const text = (await resp.text()).trim();
-    const seed = Number(text);
-    if (
-      !/^\d+$/.test(text) ||
-      !Number.isSafeInteger(seed) ||
-      seed <= 0 ||
-      seed > 0xffffffff
-    )
-      return null;
-    cachedPrevAt = Date.now();
-    cachedPrevSeed = seed;
-    cachedPrevUTCDate = today;
-    return seed;
+    return await fetchSeed(previous, PREVIOUS_SEED_URL, force);
   } catch {
     return null;
   }
@@ -111,10 +115,12 @@ export async function fetchPreviousDailySeed(
  * Clear the cached seeds (useful if you want to force re-fetch).
  */
 export function clearDailySeedCache(): void {
-  cachedSeed = null;
-  cachedUTCDate = null;
-  cachedPrevSeed = null;
-  cachedPrevUTCDate = null;
+  for (const cache of [daily, previous]) {
+    cache.at = 0;
+    cache.seed = null;
+    cache.utcDate = null;
+    cache.pending = null;
+  }
 }
 
 /** Synchronous accessor for the cached previous-daily seed (today's UTC day
@@ -122,8 +128,8 @@ export function clearDailySeedCache(): void {
  *  yet. UI code uses this to recolour the seed input without awaiting another
  *  network round trip. */
 export function getCachedPreviousDailySeed(): number | null {
-  if (cachedPrevSeed !== null && cachedPrevUTCDate === currentUTCDate()) {
-    return cachedPrevSeed;
+  if (previous.seed !== null && previous.utcDate === currentUTCDate()) {
+    return previous.seed;
   }
   return null;
 }
@@ -131,8 +137,8 @@ export function getCachedPreviousDailySeed(): number | null {
 /** Synchronous accessor for the cached current-daily seed. Same caveats as
  *  getCachedPreviousDailySeed. */
 export function getCachedDailySeed(): number | null {
-  if (cachedSeed !== null && cachedUTCDate === currentUTCDate()) {
-    return cachedSeed;
+  if (daily.seed !== null && daily.utcDate === currentUTCDate()) {
+    return daily.seed;
   }
   return null;
 }

@@ -15,6 +15,7 @@ import { gameTranslator } from "../game-translations/translator";
 import { CREATURE_DATA } from "../data/creature-data";
 import { attachHoverPopover, attachWikiLinkPopover, dismissPopovers, hidePopovers } from "../popover-util";
 import { navigateCreatureSpawns, onCreatureSpawnNavigationChanged, resolveCreatureSpawns, type CreatureSpawnMode } from "../creature-spawn-navigation";
+import { getCatalogMaterial, loadMaterialCatalog } from '../data_sources/material-catalog';
 
 const BARTENDER_BASE = "https://bartender.runfast.stream";
 
@@ -135,9 +136,6 @@ let creatureNameToId: Map<string, string> | null = null;
 let spellsById: Map<string, ExtendedSpell> | null = null;
 let spellsLoading: Promise<void> | null = null;
 
-let materialsById: Map<string, ExtendedMaterial> | null = null;
-let materialsLoading: Promise<void> | null = null;
-
 let reactionRoles: ReactionRoles | null = null;
 let reactionRolesLoading: Promise<void> | null = null;
 
@@ -255,30 +253,10 @@ export function getExtendedSpell(id: string): ExtendedSpell | null {
   return spellsById?.get(id) ?? null;
 }
 
-export async function loadExtendedMaterials(): Promise<void> {
-  if (materialsById) return;
-  if (materialsLoading) return materialsLoading;
-  materialsLoading = (async () => {
-    try {
-      const list = await fetchJson<ExtendedMaterial[]>("assets/full_materials.json");
-      const m = new Map<string, ExtendedMaterial>();
-      for (const mat of list) {
-        if (!mat?.id) continue;
-        if (!m.has(mat.id)) m.set(mat.id, mat);
-      }
-      materialsById = m;
-    } catch (err) {
-      console.warn("[extended-info] full_materials.json load failed:", err);
-      materialsById = new Map();
-    } finally {
-      materialsLoading = null;
-    }
-  })();
-  return materialsLoading;
-}
+export const loadExtendedMaterials = loadMaterialCatalog;
 
 export function getExtendedMaterial(id: string): ExtendedMaterial | null {
-  return materialsById?.get(id) ?? null;
+  return getCatalogMaterial(id);
 }
 
 export async function loadReactionRoles(): Promise<void> {
@@ -1034,12 +1012,13 @@ function renderCreature(id: string): HTMLElement | null {
   }
 
   // Blood / Corpse — individual rows, each with a bartender link
+  // Prefer validated baked references over missing/"none" IDs in the raw JSON.
   if (c.blood) {
-    const node = creatureMaterialNode(c.blood, c.blood_material_id || CREATURE_DATA[id]?.bloodMaterialId, CREATURE_DATA[id]?.bloodMaterialIds);
+    const node = creatureMaterialNode(c.blood, CREATURE_DATA[id]?.bloodMaterialId || c.blood_material_id, CREATURE_DATA[id]?.bloodMaterialIds);
     bottomRows.push(rowWithNode(i18next.t("extended.row.blood", "Blood"), node));
   }
   if (c.corpse) {
-    const node = creatureMaterialNode(c.corpse, c.corpse_material_id || CREATURE_DATA[id]?.corpseMaterialId, CREATURE_DATA[id]?.corpseMaterialIds);
+    const node = creatureMaterialNode(c.corpse, CREATURE_DATA[id]?.corpseMaterialId || c.corpse_material_id, CREATURE_DATA[id]?.corpseMaterialIds);
     bottomRows.push(rowWithNode(i18next.t("extended.row.corpse", "Corpse"), node));
   }
 

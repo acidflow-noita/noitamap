@@ -4,6 +4,8 @@ import { telescopeBrowserPlugin } from "./build_scripts/vite-telescope-browser.t
 import { atlasChunksPlugin } from "./build_scripts/vite-atlas-chunks.ts";
 import { resolveLocalPro } from "./build_scripts/local-pro.ts";
 import { ignoreTaskScratch } from "./build_scripts/vite-watch.ts";
+import { deliveryPlugin } from "./build_scripts/vite-delivery.ts";
+import { localeAssetsPlugin } from "./build_scripts/vite-locales.ts";
 import { resolve } from "node:path";
 
 import fs from "node:fs";
@@ -69,6 +71,8 @@ export default defineConfig({
     },
   },
   plugins: [
+    deliveryPlugin(),
+    localeAssetsPlugin(import.meta.dirname),
     {
       // Native bakers/test harnesses supply their own manualChunks policy.
       // Do not let the client's new grouping override that explicit choice.
@@ -173,14 +177,19 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
+    // Keep the same URL depth as /assets: telescope resolves ../data at runtime.
+    assetsDir: "build",
     emptyOutDir: true, // Always start clean — no stale hashed files
-    sourcemap: true,
+    sourcemap: process.env.NOITAMAP_SOURCEMAPS === "1",
     minify: "esbuild",
-    // IMPORTANT: Disable modulepreload injection. Vite injects <link rel="modulepreload">
-    // for dynamically-imported chunks, which causes the browser to eagerly evaluate them.
-    // The telescope-lib chunk has top-level await (image_processing.js) that MUST only run
-    // after interceptors are installed — eager evaluation crashes the app silently.
-    modulePreload: false,
+    // Fetch entry dependencies in parallel instead of discovering them one
+    // import at a time. Preloading does not execute modules. Keep lazy JS out
+    // of speculative loading; Telescope still imports after its shims install.
+    modulePreload: {
+      polyfill: false,
+      resolveDependencies: (_filename, dependencies, context) =>
+        context.hostType === "html" ? dependencies : dependencies.filter(file => file.endsWith(".css")),
+    },
 
     rollupOptions: {
       input: {
@@ -194,10 +203,12 @@ export default defineConfig({
           groups: [
             { name: "terrain-assets", test: /\/lib\/noita-telescope-vm\/data\/.*\?url/, priority: 200 },
             { name: "telescope-data-tables", test: /\/lib\/noita-telescope-vm\/js\/.*(?:enemy_config|engine_data)\.js$/, priority: 140 },
-            { name: "telescope-runtime", test: /\/src\/(?:data-archive|renderer_settings|telescope\/(?:telescope-(?:data-bridge|dom-shim|app-shim|assets|asset-paths)|zip-extraction-shim|png-decode|full-pixel-data))\.[jt]s$/, priority: 150 },
+            { name: "telescope-runtime", test: /\/src\/(?:data-archive|renderer_settings|telescope\/(?:telescope-(?:data-bridge|dom-shim|app-shim|assets|asset-paths)|zip-extraction-shim|full-pixel-data))\.[jt]s$/, priority: 150 },
+            { name: "png-codec", test: /\/src\/telescope\/png-decode\.ts$/, priority: 150 },
             { name: "telescope-full-pixels", test: /\/lib\/noita-telescope-vm\/js\/|\/src\/telescope\/full-pixel-telescope-exports\.ts$/, priority: 80 },
             { name: "telescope-lib", test: (id) => id.startsWith(TELESCOPE_JS + "/") || id.endsWith("/src/telescope/telescope-exports.ts"), priority: 70 },
             { name: "vendor-png", test: /\/node_modules\/(?:fast-png|fflate|iobuffer|pngjs|upng-js|pako)\//, priority: 190 },
+            { name: "vendor-archive", test: /\/node_modules\/jszip\//, priority: 190 },
             { name: "vendor-osd", test: /\/node_modules\/openseadragon\//, priority: 190 },
             { name: "vendor-pixi", test: /\/node_modules\/pixi\.js\//, priority: 190 },
             { name: "vendor", test: /\/node_modules\//, priority: 160 },

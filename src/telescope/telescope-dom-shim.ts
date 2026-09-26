@@ -10,8 +10,6 @@
  * and sets their .checked / .value to the defaults we want for noitamap.
  */
 
-import { decodePngToRgba } from "./png-decode";
-
 let installed = false;
 
 export interface TelescopeShimOptions {
@@ -292,6 +290,7 @@ function installCanvasFingerprintBypass() {
     if (image instanceof Blob) {
       try {
         const buf = await image.arrayBuffer();
+        const { decodePngToRgba } = await import("./png-decode");
         const raw = decodePngToRgba(buf);
         rawDataStore.set(bitmap, raw);
       } catch (e) {

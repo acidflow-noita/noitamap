@@ -26,7 +26,8 @@
     "sync-translations": "node build_scripts/sync-translations.cjs",
     "watch": "vite build --watch",
     "dev": "vite",
-    "generate": "node ./src/data/data_generators/map_definitions_maker.cjs",
+    "generate": "node build_scripts/map-definitions/generate-tilesources.cjs",
+    "audit:build": "node scripts/audit-build.mjs --max-initial-gzip=280000",
     "test-telescope": "vitest run tests/telescope-integration.test.ts tests/telescope-wang-tiles.test.ts",
     "update-and-build": "node scripts/update-telescope.cjs"
   },
@@ -87,6 +88,7 @@
     "@types/jsdom": "^28.0.3",
     "@types/lz-string": "^1.3.34",
     "@types/node": "^25.9.2",
+    "bootstrap": "5.3.8",
     "concurrently": "^9.2.1",
     "eventemitter2": "6.4.9",
     "flexsearch": "0.8.212",

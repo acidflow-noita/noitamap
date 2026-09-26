@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 import { beforeAll, afterEach, describe, expect, it, vi } from "vitest";
-import { Document as SearchDocument } from "flexsearch";
 import i18next from "../src/i18n";
 import {
   getAllPOIsFlat,
@@ -14,7 +13,7 @@ import { CHEST_ONLY_TYPES } from "../src/telescope/poi-containers";
 
 // Only UI/network infrastructure is mocked. The search class, FlexSearch,
 // indexing, filtering, translations and inventory projection are real.
-vi.mock("../src/flexsearch", () => ({ searchOverlays: () => [] }));
+vi.mock("../src/search/static-index", () => ({ searchOverlays: () => [] }));
 vi.mock("../src/data_sources/overlays", () => ({
   resetBiomeOverlays: () => {},
 }));
@@ -80,14 +79,10 @@ beforeAll(async () => {
 });
 afterEach(async () => {
   document.body.replaceChildren();
-  vi.unstubAllGlobals();
   await i18next.changeLanguage("en");
 });
 
 function searchInventory(poisByPW: Record<string, any[]>) {
-  vi.stubGlobal("FlexSearch", {
-    Document: (options: any) => new SearchDocument(options),
-  });
   const input = document.createElement("input");
   const form = document.createElement("form");
   form.append(input);

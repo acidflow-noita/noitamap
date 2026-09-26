@@ -297,6 +297,7 @@ async function main() {
   // archive fetch, name heuristics, or new runtime material lookup.
   const materials = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/assets/full_materials.json'), 'utf8'));
   const materialIds = new Set(materials.map(material => material.id));
+  const normalizeMaterialName = name => String(name ?? '').replace(/_/g, ' ').trim().toLowerCase();
   const resolveMaterials = await createCreatureMaterialResolver(
     fs.readFileSync(path.resolve(__dirname, '../public/data.zip')), materialIds);
   const unresolved = [];
@@ -306,20 +307,28 @@ async function main() {
     const resolved = resolveMaterials([id, ...aliases]);
     for (const field of ['blood', 'corpse']) {
       const key = `${field}MaterialId`;
-      const rawId = source[`${field}_material_id`];
+      // The source uses the truthy string "none" for missing references too.
+      // Only a real catalog ID may suppress the component fallback.
+      const sourceId = source[`${field}_material_id`];
+      const rawId = materialIds.has(sourceId) ? sourceId : null;
       const hasMaterial = !!source[field] && !/^none$/i.test(source[field].trim());
+      const references = [...(source[field] ?? '').matchAll(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g)];
+      // A unique explicit Wiki material reference can describe a death effect
+      // instead of the default ragdoll (e.g. Tiny's disintegrated Ominous Liquid).
+      // Ambiguous pages such as Meat still require the actual game component.
+      const namedMaterials = references.length === 1 ? materials.filter(material =>
+        [material.name, material.wikipage].some(name => normalizeMaterialName(name) === normalizeMaterialName(references[0][1]))) : [];
+      const referenceId = namedMaterials.length === 1 ? namedMaterials[0].id : null;
       // Multi-material descriptions need separate destinations; a creature's
       // one ragdoll material cannot replace a list of death/spawn effects.
       const multipleMaterials = /\]\][\s\S]*\[\[/.test(source[field] ?? '');
-      data[id][key] = hasMaterial ? (rawId || (!multipleMaterials && resolved[key]) || null) : null;
+      data[id][key] = hasMaterial ? (rawId || (!multipleMaterials && (referenceId || resolved[key])) || null) : null;
       if (multipleMaterials) {
         // Exact catalog names disambiguate the multiple game component IDs;
         // a name match alone is insufficient to invent a destination.
-        const normalize = name => String(name ?? '').replace(/_/g, ' ').trim().toLowerCase();
-        const references = [...source[field].matchAll(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g)];
         const ids = references.map(reference => {
           const matches = materials.filter(material => resolved[`${field}MaterialCandidates`].includes(material.id)
-            && [material.name, material.wikipage].some(name => normalize(name) === normalize(reference[2] || reference[1])));
+            && [material.name, material.wikipage].some(name => normalizeMaterialName(name) === normalizeMaterialName(reference[1])));
           return matches.length === 1 ? matches[0].id : null;
         });
         if (ids.every(Boolean)) data[id][`${field}MaterialIds`] = ids;
@@ -329,7 +338,7 @@ async function main() {
       if (hasMaterial && !data[id][key] && !data[id][`${field}MaterialIds`]) unresolved.push(`${id}.${field}`);
     }
   }
-  console.log(`[generate-creature-data] Resolved ${enriched} missing blood/corpse IDs from game components`);
+  console.log(`[generate-creature-data] Resolved ${enriched} missing blood/corpse IDs from game data and material references`);
   if (unresolved.length) console.warn(`[generate-creature-data] Unresolved material references: ${unresolved.join(', ')}`);
 
   // Hand-injected composite bosses that have no single source entity. The

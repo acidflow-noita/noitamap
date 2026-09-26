@@ -145,7 +145,7 @@ export function ensureSeedCached(seed: number, isDaily: boolean): Promise<boolea
 
 // ─── Daily baked-overlay fast path (pre-warm) ────────────────────────────────
 
-// main.ts calls startDailyFastPath() the instant OSD exists. With no explicit
+// main.ts calls startDailyFastPath() before map and translation initialization. With no explicit
 // seed in the URL we KNOW it's today's daily, whose baked DZIs live at fixed
 // worker URLs — so we fire the daily-seed lookup + the manifest probe NOW, in
 // parallel with the rest of page init, instead of waiting for the dynamic

@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+
+const actualCreatures = JSON.parse(readFileSync('public/assets/full_creatures.json', 'utf8')) as Array<Record<string, any>>;
 
 const state = vi.hoisted(() => ({
   pro: true,
@@ -133,6 +136,27 @@ describe('Bartender links in POI cards', () => {
       'https://bartender.runfast.stream/reactions?reagents=meat',
     ]);
   });
+
+  // Real source rows, including the reported seed's scavenger_mine/miner and
+  // its working sniper control. "none" is a missing ID, not a material.
+  it.each(actualCreatures.filter(c => c.corpse_material_id === 'none' || c.id === 'sniper'))(
+    'renders the actual $id corpse row as a material link despite source ID $corpse_material_id', async source => {
+      vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [source] } as Response);
+      const { buildExtendedSection } = await import('../src/extended-info');
+      const section = buildExtendedSection('creature', source.id);
+      document.body.append(section);
+      const corpseRow = () => [...section.querySelectorAll('.extended-info-row')]
+        .find(row => row.querySelector('.extended-info-label')?.textContent === 'Corpse:');
+      await vi.waitFor(() => expect(corpseRow()).toBeDefined());
+      const link = corpseRow()!.querySelector<HTMLAnchorElement>('a.bartender-link');
+      expect(link).not.toBeNull();
+      const expected = source.id === 'maggot_tiny' ? 'material_darkness' : 'meat';
+      expect(link!.href).toBe(`https://bartender.runfast.stream/reactions?reagents=${expected}`);
+      expect(Popover.getInstance(link!)).not.toBeNull();
+      expect(corpseRow()!.querySelector('[href*="reagents=none"]')).toBeNull();
+      if (source.id === 'maggot_tiny') expect(corpseRow()!.textContent).toContain('(Disintegrated)');
+    },
+  );
 
   it('renders each compound corpse material as its own link and preserves the description', async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [{

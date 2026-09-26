@@ -3,6 +3,8 @@ import {
   clearDailySeedCache,
   fetchDailySeed,
   fetchPreviousDailySeed,
+  getCachedDailySeed,
+  getCachedPreviousDailySeed,
   getCachedDailyComparisonTarget,
   getCachedDailySeedIdentity,
 } from "../src/data_sources/daily_seed";
@@ -87,3 +89,88 @@ it.each(["0", "1.5", "42garbage", "4294967296", "", "-1"])(
     expect(await fetchPreviousDailySeed()).toBeNull();
   },
 );
+
+function pendingResponse() {
+  let resolve!: (response: Response) => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<Response>((yes, no) => { resolve = yes; reject = no; });
+  return { promise, resolve, reject };
+}
+
+for (const { name, load, cached } of [
+  { name: "current", load: fetchDailySeed, cached: getCachedDailySeed },
+  { name: "previous", load: fetchPreviousDailySeed, cached: getCachedPreviousDailySeed },
+]) {
+  it(`shares concurrent cold ${name} seed reads`, async () => {
+    const response = pendingResponse();
+    fetcher.mockReturnValue(response.promise);
+    const readers = [load(), load(), load()];
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    response.resolve(new Response("42"));
+    expect(await Promise.all(readers)).toEqual([42, 42, 42]);
+  });
+
+  it(`forces a fresh ${name} read and ignores the older request's late completion`, async () => {
+    const older = pendingResponse(), newer = pendingResponse();
+    fetcher.mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise);
+    const original = load();
+    const refreshed = load(true);
+    const follower = load();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    newer.resolve(new Response("42"));
+    expect(await refreshed).toBe(42);
+    expect(await follower).toBe(42);
+    older.resolve(new Response("41"));
+    expect(await original).toBe(41);
+    expect(cached()).toBe(42);
+    expect(await load()).toBe(42);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it(`clearing ${name} cache invalidates a pending read without disturbing its replacement`, async () => {
+    const older = pendingResponse(), newer = pendingResponse();
+    fetcher.mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise);
+    const original = load();
+    clearDailySeedCache();
+    const replacement = load();
+    older.resolve(new Response("41"));
+    expect(await original).toBe(41);
+    expect(cached()).toBeNull();
+    const follower = load();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    newer.resolve(new Response("42"));
+    expect(await replacement).toBe(42);
+    expect(await follower).toBe(42);
+    expect(cached()).toBe(42);
+  });
+
+  it(`does not reuse an in-flight ${name} request across UTC midnight`, async () => {
+    vi.setSystemTime(new Date("2026-09-16T23:59:59Z"));
+    const older = pendingResponse(), newer = pendingResponse();
+    fetcher.mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise);
+    const original = load();
+    vi.setSystemTime(new Date("2026-09-17T00:00:01Z"));
+    const replacement = load();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    older.resolve(new Response("41"));
+    expect(await original).toBe(41);
+    expect(cached()).toBeNull();
+    newer.resolve(new Response("42"));
+    expect(await replacement).toBe(42);
+    expect(cached()).toBe(42);
+  });
+
+  it(`retries a failed ${name} request instead of retaining its rejected promise`, async () => {
+    const response = pendingResponse();
+    fetcher.mockReturnValueOnce(response.promise).mockResolvedValueOnce(new Response("42"));
+    const outcomes = Promise.allSettled([load(), load()]);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    response.reject(new Error("network unavailable"));
+    const results = await outcomes;
+    if (name === "current") expect(results.every((result) => result.status === "rejected")).toBe(true);
+    else expect(results).toEqual([{ status: "fulfilled", value: null }, { status: "fulfilled", value: null }]);
+    expect(cached()).toBeNull();
+    expect(await load()).toBe(42);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+}

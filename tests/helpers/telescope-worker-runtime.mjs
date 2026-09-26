@@ -23,7 +23,7 @@ const root = workerData.root;
 const output = workerData.output ?? resolve(root, "dist");
 const NativeResponse = Response;
 const NativeBlob = Blob;
-const workerURL = new URL("http://noitamap.test/assets/pw-worker.js");
+const workerURL = new URL("http://noitamap.test/build/pw-worker.js");
 const events = new EventTarget();
 const requests = [];
 const missing = [];
@@ -39,7 +39,7 @@ async function localFetch(input, init) {
     workerURL,
   );
   // import.meta.url in the executed bundle is file://; in the browser it is
-  // /assets/<chunk>.js. Resolve its data URLs against the served output root.
+  // /build/<chunk>.js. Resolve its data URLs against the served output root.
   if (url.protocol === "file:")
     url = new URL(
       "/" + relative(output, fileURLToPath(url)).split(sep).join("/"),

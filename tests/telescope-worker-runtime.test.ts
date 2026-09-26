@@ -77,8 +77,8 @@ beforeAll(async () => {
   });
   workerEntry = resolve(
     output,
-    "assets",
-    (await readdir(resolve(output, "assets"))).find((f) =>
+    "build",
+    (await readdir(resolve(output, "build"))).find((f) =>
       /^pw-worker-.*\.js$/.test(f),
     )!,
   );

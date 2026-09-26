@@ -1,15 +1,18 @@
-import OpenSeadragon from 'openseadragon';
+import type OSD from 'openseadragon';
 import { canvasResolution, MAX_ACTIVE_PORTALS, readCameraMatrix, reprojectCamera, type CameraMatrix } from './geometry';
 import { FRAME_MS, PORTAL_RENDERER_REVISION, type PortalCamera, type PortalGPUStats,
   type PortalWorker, type PortalWorkerResponse, type PortalWorkerOptions } from './protocol';
 import type { PortalPlacement } from './placements';
 export type { PortalGPUStats } from './protocol';
 
+// Use the viewer's existing OpenSeadragon runtime, also supplied by bake-entry.
+declare const OpenSeadragon: typeof OSD;
+
 const events = ['update-viewport', 'resize', 'rotate', 'flip'];
 const OVERSCAN = 64;
 interface Viewer {
   canvas: HTMLElement;
-  viewport: { pixelFromPoint(point: OpenSeadragon.Point, current?: boolean): { x: number; y: number }; getFlip?(): boolean };
+  viewport: { pixelFromPoint(point: OSD.Point, current?: boolean): { x: number; y: number }; getFlip?(): boolean };
   addHandler(name: string, callback: () => void): void;
   removeHandler(name: string, callback: () => void): void;
 }

@@ -31,8 +31,8 @@
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
     <!-- Preconnect to the daily-bake CF Static Assets workers so the TLS
          handshake is done before main.ts asks for manifests/tiles. Saves
-         ~100-300ms on cold loads. The seed-source worker is hit even earlier
-         (by the inline speculative-fetch script just below). -->
+         connection setup on cold loads. The startup pipeline requests only
+         the daily manifests needed by the selected map. -->
     <link rel="preconnect" href="https://daily-seed.acidflow.stream" crossorigin />
     <link rel="preconnect" href="https://daily-left.acidflow.stream" crossorigin />
     <link rel="preconnect" href="https://daily-middle.acidflow.stream" crossorigin />
@@ -40,46 +40,7 @@
     <link rel="preconnect" href="https://previous-daily-left.acidflow.stream" crossorigin />
     <link rel="preconnect" href="https://previous-daily-middle.acidflow.stream" crossorigin />
     <link rel="preconnect" href="https://previous-daily-right.acidflow.stream" crossorigin />
-    <!-- Speculative manifest prefetch. Fires the moment the parser hits this
-         tag, well before the main bundle parses. By the time dynamic-map.ts
-         calls fetch() against these URLs the responses are already in the
-         browser's HTTP cache (memory cache or disk), so the second fetch is
-         instant. The bundle's flow is unchanged; this is just a warm cache.
-
-         We don't know yet whether the page is showing a daily / previous-daily /
-         arbitrary seed — so we kick off all six. The cost on a non-daily page
-         is six tiny manifest.json fetches that go unused; manifests are <1 KB
-         each on the wire, so the bandwidth hit is negligible. -->
-    <script>
-      (function () {
-        try {
-          // Skip when ?nb=1 disables the baked fast path (bake page uses this
-          // so a re-bake of an already-deployed seed runs a real local
-          // generation instead of pulling its own old artifacts).
-          var qs = window.location.search || "";
-          if (qs.indexOf("nb=1") !== -1) return;
-          var origins = [
-            "https://daily-left.acidflow.stream",
-            "https://daily-middle.acidflow.stream",
-            "https://daily-right.acidflow.stream",
-            "https://previous-daily-left.acidflow.stream",
-            "https://previous-daily-middle.acidflow.stream",
-            "https://previous-daily-right.acidflow.stream",
-          ];
-          for (var i = 0; i < origins.length; i++) {
-            // no-store would defeat the warm-cache purpose; default is fine.
-            // Failures are non-fatal: the app's own probe handles the real
-            // resolution.
-            fetch(origins[i] + "/manifest.json").catch(function () {});
-          }
-          // The seed-source worker is the gating call before the manifest
-          // probes can resolve a prefix; warm it too.
-          fetch("https://daily-seed.acidflow.stream/current_seed.txt").catch(function () {});
-          fetch("https://daily-seed.acidflow.stream/previous_seed.txt").catch(function () {});
-        } catch (e) {}
-      })();
-    </script>
-    <script
+    <script defer
       src="https://cdn.jsdelivr.net/npm/openseadragon@6.1.0/build/openseadragon/openseadragon.min.js"
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
@@ -92,18 +53,7 @@
     />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
     <!-- Custom CSS loaded AFTER Bootstrap so overrides take effect -->
-    <link rel="stylesheet" href="/css/theme.css" />
-    <link rel="stylesheet" href="/css/controls.css" />
-    <link rel="stylesheet" href="/css/overlay-styles.css" />
-    <link rel="stylesheet" href="/css/poi-cards.css" />
-    <link rel="stylesheet" href="/css/style.css" />
-    <link rel="stylesheet" href="/css/pro-accent.css" />
-    <link rel="stylesheet" href="/css/auth.css" />
-    <link rel="stylesheet" href="/css/search.css" />
-    <link rel="stylesheet" href="/css/drawing-sidebar.css" />
-    <script src="https://unpkg.com/openseadragon-annotations@1.0.5/dist/openseadragon-annotations.js"></script>
-    <!-- Todo add opacity slider plugin -->
-    <script src="https://cdn.jsdelivr.net/npm/openseadragon-opacity-slider/dist/openseadragon-opacity-slider.min.js"></script>
+    <link rel="stylesheet" href="/src/styles/map.css" />
 
     <!-- Facebook Meta Tags -->
     <meta property="og:url" content="https://map.runfast.stream/" />
@@ -877,14 +827,11 @@
     <div id="coordinate" class="coordinate">
       <div class="coordinate-content"></div>
     </div>
-    <div id="opacitySliderWrapper"></div>
-    <script
+    <script defer
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
       crossorigin="anonymous"
     ></script>
-    <script src="https://unpkg.com/flexsearch@0.8.212/dist/flexsearch.bundle.min.js"></script>
-    <script src="https://unpkg.com/eventemitter2@6.4.9/lib/eventemitter2.js"></script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

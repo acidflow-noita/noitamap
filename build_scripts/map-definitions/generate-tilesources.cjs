@@ -1,10 +1,10 @@
 const path = require('node:path');
 const fs = require('node:fs');
 
-const relPath = (...components) => path.resolve(__dirname, ...components);
+const dataPath = (...components) => path.resolve(__dirname, '..', '..', 'src', 'data', ...components);
 
-const mapDefinitions = JSON.parse(fs.readFileSync(relPath('..', 'map_definitions.json'), 'utf-8'));
-const tileSourcesPath = relPath('..', 'tilesources.json');
+const mapDefinitions = JSON.parse(fs.readFileSync(dataPath('map_definitions.json'), 'utf-8'));
+const tileSourcesPath = dataPath('tilesources.json');
 const existing = fs.existsSync(tileSourcesPath) ? JSON.parse(fs.readFileSync(tileSourcesPath, 'utf-8')) : {};
 
 const tileSources = (async function () {

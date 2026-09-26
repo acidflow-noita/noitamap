@@ -3,7 +3,7 @@
  * Fetches data.zip once, caches it, and provides typed accessors for
  * individual entries (text, blob, ImageBitmap, etc.).
  */
-import JSZip from "jszip";
+import type JSZip from "jszip";
 
 function getBaseUrl() {
   if (typeof document !== "undefined") {
@@ -23,6 +23,10 @@ const ZIP_URLS: Record<string, string> = {
 
 const zipPromises: Record<string, Promise<JSZip | null> | null> = {};
 const zips: Record<string, JSZip | null> = {};
+
+function archiveMetadata(headers: Headers): string {
+  return headers.get("ETag") || headers.get("Last-Modified") || headers.get("Content-Length") || "";
+}
 
 /**
  * Lazily fetch and cache a zip archive.
@@ -54,7 +58,7 @@ async function _loadZipWorkerFast(key: string, url: string): Promise<JSZip | nul
       console.warn(`[DataArchive/Worker] ${key}.zip not in cache, cannot load`);
       return null;
     }
-    const buf = await response.arrayBuffer();
+    const [buf, { default: JSZip }] = await Promise.all([response.arrayBuffer(), import("jszip")]);
     const instance = await JSZip.loadAsync(buf);
     zips[key] = instance;
     console.log(`[DataArchive/Worker] ${key}.zip ready in ${(performance.now() - t0).toFixed(0)}ms`);
@@ -65,7 +69,7 @@ async function _loadZipWorkerFast(key: string, url: string): Promise<JSZip | nul
   }
 }
 
-/** Main thread path: HEAD validation, lock, network fetch with progress, cache write. */
+/** Main thread path: lock, validate existing cache, fetch with progress, cache write. */
 async function _loadZipMainThread(key: string, url: string, silent: boolean): Promise<JSZip | null> {
   return new Promise((resolve) => {
     const run = async () => {
@@ -80,24 +84,22 @@ async function _loadZipMainThread(key: string, url: string, silent: boolean): Pr
       const cachesAvailable = typeof caches !== "undefined";
       const cacheName = `noitamap-archive-${key}-v2`;
       const cache = cachesAvailable ? await caches.open(cacheName) : null;
+      const response = cache ? await cache.match(url) : null;
 
-      // HEAD request to validate cache freshness
+      // Only validate an existing usable response. A cold download already
+      // supplies its own freshness headers and needs no serial HEAD round trip.
       let serverMeta = "";
-      try {
-        const headResp = await fetch(url, { method: "HEAD", cache: "no-cache" });
-        if (headResp.ok) {
-          serverMeta =
-            headResp.headers.get("ETag") ||
-            headResp.headers.get("Last-Modified") ||
-            headResp.headers.get("Content-Length") ||
-            "";
+      if (response?.ok) {
+        try {
+          const headResp = await fetch(url, { method: "HEAD", cache: "no-cache" });
+          if (headResp.ok) serverMeta = archiveMetadata(headResp.headers);
+        } catch (e) {
+          console.warn(`[DataArchive] HEAD request failed for ${url}, falling back to cache if available`, e);
         }
-      } catch (e) {
-        console.warn(`[DataArchive] HEAD request failed for ${url}, falling back to cache if available`, e);
       }
 
-      let response = cache ? await cache.match(url) : null;
       let buf: ArrayBuffer | null = null;
+      let decoder: typeof JSZip;
       let shouldUseCache = false;
 
       if (response && response.ok) {
@@ -113,7 +115,7 @@ async function _loadZipMainThread(key: string, url: string, silent: boolean): Pr
 
       if (shouldUseCache && response) {
         console.log(`[DataArchive] Loaded ${url} from Cache API`);
-        buf = await response.arrayBuffer();
+        [buf, { default: decoder }] = await Promise.all([response.arrayBuffer(), import("jszip")]);
 
         if (key === "main" && !silent) {
           if (typeof window !== "undefined" && typeof CustomEvent !== "undefined") {
@@ -124,7 +126,10 @@ async function _loadZipMainThread(key: string, url: string, silent: boolean): Pr
         }
       } else {
         console.log(`[DataArchive] Fetching ${url} from network...`);
-        const fetchResp = await fetch(url);
+        // The decoder stays lazy, but downloads alongside the archive. Await
+        // both together so an import failure never becomes an unhandled rejection.
+        const [fetchResp, { default: Zip }] = await Promise.all([fetch(url), import("jszip")]);
+        decoder = Zip;
 
         if (!fetchResp.ok) {
           console.warn(`${url} fetch failed (${fetchResp.status})`);
@@ -180,6 +185,9 @@ async function _loadZipMainThread(key: string, url: string, silent: boolean): Pr
         buf = combined.buffer;
 
         const headers = new Headers(fetchResp.headers);
+        // GET may observe a newer archive than HEAD; cache the identity of the
+        // actual downloaded bytes rather than the earlier validation response.
+        serverMeta = archiveMetadata(fetchResp.headers) || serverMeta;
         if (serverMeta) {
           headers.set("X-Archive-Meta", serverMeta);
         }
@@ -193,7 +201,7 @@ async function _loadZipMainThread(key: string, url: string, silent: boolean): Pr
 
       if (!buf) throw new Error(`Failed to obtain array buffer for ${url}`);
 
-      const instance = await JSZip.loadAsync(buf);
+      const instance = await decoder.loadAsync(buf);
       zips[key] = instance;
       console.log(`[DataArchive] ${url} loaded and ready`);
       resolve(instance);

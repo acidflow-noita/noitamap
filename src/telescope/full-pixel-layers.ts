@@ -13,6 +13,7 @@ import {
   type GLTerrainGeneration,
   type GLTerrainDeps,
 } from "./gl-terrain-tile-source";
+export { clearGLTerrain };
 
 /** The same three planes and ownership masks as the native daily renderer. */
 export async function addFullPixelLayers(

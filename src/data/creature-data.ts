@@ -671,7 +671,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Häivehiisi",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "lukki_tiny": {
     "alias": "Small Spider",
@@ -811,7 +811,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Hämis",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "acidshooter_weak": {
     "alias": "Weak Acid Slime",
@@ -895,7 +895,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Haulikkohiisi",
     "bloodMaterialId": "liquid_fire",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "shotgunner": {
     "alias": "Shotgun Hiisi",
@@ -923,7 +923,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Haulikkohiisi",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "shotgunner_weak": {
     "alias": "Weak Shotgun Hiisi",
@@ -1362,7 +1362,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Isohiisi",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "tank_rocket": {
     "alias": "Rocket Tank",
@@ -1782,7 +1782,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Kilpihiisi",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "crystal_physics": {
     "alias": "Cursed Crystal",
@@ -2191,7 +2191,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Kranuhiisi",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "playerghost": {
     "alias": "Ghost",
@@ -2527,7 +2527,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Liimahiisi",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "slimeshooter": {
     "alias": "Toxic Slime",
@@ -2611,7 +2611,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Limatoukka",
     "bloodMaterialId": "material_darkness",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "material_darkness"
   },
   "pebble": {
     "alias": "Rock Spirit",
@@ -3052,7 +3052,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Miinankylväjä",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "player": {
     "alias": "Me",
@@ -3248,7 +3248,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Myrkkyhiisi",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "fungus_tiny": {
     "alias": "Funeral Bell",
@@ -3500,7 +3500,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Parantajahiisi",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "statue": {
     "alias": "Statue",
@@ -3724,7 +3724,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Puistokemisti",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "bloom": {
     "alias": "Bloom",
@@ -3808,7 +3808,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Raukka",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "roboguard": {
     "alias": "Robo-Cop",
@@ -3920,7 +3920,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Rynkkyhiisi",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "goblin_bomb": {
     "alias": "Firecracker Goblin",
@@ -3948,7 +3948,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Sähikäismenninkäinen",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "thunderskull": {
     "alias": "Thunder Spirit",
@@ -4208,7 +4208,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Snipuhiisi",
     "bloodMaterialId": "liquid_fire",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "sniper": {
     "alias": "Hiisi Sniper",
@@ -4707,7 +4707,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Tappurahiisi",
     "bloodMaterialId": "liquid_fire",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "miner": {
     "alias": "Miner Hiisi",
@@ -4735,7 +4735,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Tappurahiisi",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "miner_weak": {
     "alias": "Weak Hiisi Miner",
@@ -4847,7 +4847,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Toimari",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "turret": {
     "alias": "Turret",
@@ -5071,7 +5071,7 @@ export const CREATURE_DATA: Record<string, CreatureInfo> = {
     },
     "wikipage": "Tulihiisi",
     "bloodMaterialId": "blood",
-    "corpseMaterialId": "none"
+    "corpseMaterialId": "meat"
   },
   "bigfirebug": {
     "alias": "Greater firefly",

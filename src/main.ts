@@ -7,9 +7,10 @@ import { setCreatureSpawnNavigation } from "./creature-spawn-navigation";
 import { mountCreatureSpawnNotice } from "./creature-spawn-notice";
 import { createCreatureSpawnSharing } from "./creature-spawn-sharing";
 import { dismissEnclosingPopup, getExtendedCreature, isProUser, loadExtendedCreatures } from "./extended-info";
-import { loadSpritesheetAndAtlas } from "./telescope/poi-spatial-index";
 import { getCachedGeneration } from "./telescope/tile-cache";
-import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
+import i18next from "./i18n";
+import { initializeApplication } from "./app/startup";
+import { installLoadingProgress } from "./app/loading-progress";
 import { setupDropOverlay } from "./drop-overlay";
 import { createProLoader } from "./pro-loader";
 import { negotiateTabHandoff } from "./tab-coordinator";
@@ -36,123 +37,11 @@ import {
   isVariantReady,
   UnlockDescriptor,
 } from "./unlocks-toggle";
-import { rebuildAltLayers, getAllPOIsFlat, exportBiomeRegionImages, prepareDecorationExport, exportDecorationCell, releaseDecorationExport, openTooltipForPOI, closePOICard, guardPOICardContext, resetPOICardContext, restorePOICardContext, getPOISpriteFirstFrame, applyHighValueOverlays } from "./telescope/telescope-osd-bridge";
+import { rebuildAltLayers, getAllPOIsFlat, openTooltipForPOI, closePOICard, guardPOICardContext, resetPOICardContext, restorePOICardContext, getPOISpriteFirstFrame, applyHighValueOverlays } from "./telescope/telescope-osd-bridge";
 import { getUnlocksFromURL } from "./unlocks";
 import type { GenerationResult } from "./telescope/telescope-adapter";
-import { isRenderer, getStoredRenderer, setStoredRenderer, clearStoredRenderer } from "./renderer_settings";
+import { isRenderer, getStoredRenderer, setStoredRenderer } from "./renderer_settings";
 
-// --- Dev Console Commands (Early Initialization) ---
-const isDev =
-  /dev\.noitamap\.com|localhost|127\.0\.0\.1/.test(window.location.hostname) || window.location.protocol === "file:";
-
-if (isDev) {
-  (window as any).noitamap = {
-    enableDrawing: () => {
-      localStorage.setItem("noitamap-dev-drawing", "1");
-      console.log("Drawing dev mode enabled. Refresh and open the sidebar.");
-    },
-    disableDrawing: () => {
-      localStorage.removeItem("noitamap-dev-drawing");
-      console.log("Drawing dev mode disabled. Refresh to hide the sidebar.");
-    },
-    exportData: () => {
-      const result = getLastGenerationResult();
-      if (!result) {
-        console.warn("No dynamic generation data available to export.");
-        return;
-      }
-      // Prepare serializable copy
-      const exportable = {
-        seed: result.seed,
-        ngPlus: result.ngPlus,
-        isNGP: result.isNGP,
-        worldSize: result.worldSize,
-        worldCenter: result.worldCenter,
-        poisByPW: Object.entries(result.poisByPW).reduce((acc, [pw, pois]) => {
-          acc[pw] = pois.map((p) => {
-            const { x, y, type, ...rest } = p;
-            return { x, y, type, data: rest };
-          });
-          return acc;
-        }, {} as any),
-        pixelScenesByPW: Object.entries(result.pixelScenesByPW).reduce((acc, [pw, scenes]) => {
-          acc[pw] = scenes.map((s) => ({ x: s.x, y: s.y, name: s.name, key: s.key }));
-          return acc;
-        }, {} as any),
-        eyes: result.eyes,
-        parallelWorlds: result.parallelWorlds,
-        biomes: result.tileLayers.map((l) => ({ name: l.biomeName, x: l.correctedX, y: l.correctedY, w: l.w, h: l.h })),
-      };
-      const blob = new Blob([JSON.stringify(exportable, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `noitamap-seed-${result.seed}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      console.log(`Exported data for seed ${result.seed}`);
-    },
-    // Biomes are ready once a full render has completed (lastResult is set
-    // after renderGenerationResult, which awaits the biome pass). Used by
-    // build-daily-seed-images.cjs to wait for biomes, not POIs.
-    biomesReady: () => {
-      const r = getLastGenerationResult();
-      return !!(r && r.tileLayers && r.tileLayers.length);
-    },
-    /** Raw generation result, for console inspection and debug harnesses. */
-    getGeneration: () => getLastGenerationResult(),
-    exportBiomeRegions: async () => {
-      const result = getLastGenerationResult();
-      if (!result) return null;
-      return exportBiomeRegionImages(result);
-    },
-    // Serialized generation result (POIs, pixel scenes, biome map) for the
-    // bake pipeline. build-daily-seed-images.cjs writes this as
-    // generation.json; stitch-dzis.cjs splits it per world; the live map
-    // loads it from the static workers and skips telescope entirely.
-    exportGenerationData: async () => {
-      const result = getLastGenerationResult();
-      if (!result) return null;
-      const { serializeGenerationForBake } = await import("./telescope/baked-generation");
-      return serializeGenerationForBake(result);
-    },
-    // Decoration bake (pixel scenes + POI marker sprites) at native scale.
-    // build-daily-seed-images.cjs calls prepareDecorationExport() once, then
-    // exportDecorationCell(cx, cy) per non-empty 2048px world-grid cell; the
-    // upscale step composites those cells onto the region fulls before stitch,
-    // so the deployed pyramids carry scenes + creatures in their pixels.
-    prepareDecorationExport: async () => {
-      const result = getLastGenerationResult();
-      if (!result) return null;
-      return prepareDecorationExport(result);
-    },
-    exportDecorationCell: (cx: number, cy: number) => exportDecorationCell(cx, cy),
-    releaseDecorationExport: () => releaseDecorationExport(),
-    // Dev-only OSD drawer override. Default everywhere is "canvas" (the prod
-    // setting in renderer_settings.ts). On localhost/dev.noitamap.com this
-    // hook flips it via localStorage so we can A/B test perf and baked-DZI
-    // edge fringing at zoom without shipping webgl to users.
-    //   noitamap.setRenderer("webgl")  -> opt in, reload page
-    //   noitamap.setRenderer("canvas") -> opt back to default, reload
-    //   noitamap.getRenderer()         -> see what the next reload will use
-    //   noitamap.clearRenderer()       -> wipe override, fall back to default
-    setRenderer: (r: "canvas" | "webgl") => {
-      if (r !== "canvas" && r !== "webgl") {
-        console.warn('Use "canvas" or "webgl"'); return;
-      }
-      setStoredRenderer(r);
-      console.log(`[Noitamap] Renderer set to "${r}". Reload the page to apply.`);
-    },
-    getRenderer: () => getStoredRenderer(),
-    clearRenderer: () => {
-      clearStoredRenderer();
-      console.log("[Noitamap] Renderer override cleared. Reload to use the default.");
-    },
-  };
-  console.log('[Noitamap] Dev mode detected, "noitamap" commands available.');
-}
-
-// temporary comment to force deploy to CF
 import { App } from "./app";
 import {
   parseURL,
@@ -191,10 +80,18 @@ import { authService } from "./auth/auth-service";
 import { DrawingUI } from "./drawing/drawing-ui";
 import { createSeedReportButton } from "./seed-report-button";
 import { placeBiomeBoundariesButton, placeMoreMenuLast } from "./overflow-menu";
+import { cueBiomeBoundariesButton } from "./biome-boundaries-button";
 import { initChunkGrid, showChunkGrid, isChunkGridVisible } from "./drawing/chunk-grid";
 import { initSideworld, toggleSideworld, mapHasSideworld, resetSideworld } from "./sideworld";
 import { roundVisibleOverlayGroupEdges } from "./dynamic_ui";
 import { getMaterialInfo, primeMaterialInfo } from "./material-info";
+
+const isDev = /dev\.noitamap\.com|localhost|127\.0\.0\.1/.test(window.location.hostname)
+  || window.location.protocol === "file:";
+if (isDev) {
+  import("./dev/console").then(module => module.installDevCommands())
+    .catch(error => console.warn("[Noitamap] Dev commands unavailable:", error));
+}
 
 // Global reference to unified search for translation updates
 let globalUnifiedSearch: UnifiedSearch | null = null;
@@ -229,192 +126,6 @@ const _tabHandoff = negotiateTabHandoff();
 
 document.addEventListener("DOMContentLoaded", async () => {
   if (!(await _tabHandoff)) return;
-  // Start preloading the atlas for search results immediately
-  loadSpritesheetAndAtlas()
-    .catch((e) => console.warn("[Noitamap] Atlas preload failed:", e));
-
-  try {
-    await i18next.init({
-      fallbackLng: "en",
-      debug: false,
-      showSupportNotice: false,
-      detection: {
-        order: ["querystring", "cookie", "localStorage", "sessionStorage", "navigator", "htmlTag"],
-        lookupQuerystring: "lng",
-        lookupCookie: "i18next",
-        lookupLocalStorage: "i18nextLng",
-        lookupSessionStorage: "i18nextLng",
-        caches: ["localStorage", "cookie"],
-      },
-      backend: {
-        loadPath: "./locales/{{lng}}/translation.json",
-        requestOptions: {
-          cache: "no-store",
-        },
-      },
-      interpolation: {
-        escapeValue: false,
-      },
-      supportedLngs: Object.keys(SUPPORTED_LANGUAGES),
-      load: "languageOnly",
-      cleanCode: true,
-      nonExplicitSupportedLngs: true,
-    });
-
-    createLanguageSelector();
-    updateTranslations();
-  } catch (error) {
-    console.error("i18next initialization failed:", error);
-  }
-
-  // Handle map loading progress UI (non-blocking strip)
-  const _getDownloadBar = () => document.getElementById("loading-bar-download") as HTMLElement | null;
-  const _getGenerationBar = () => document.getElementById("loading-bar-generation") as HTMLElement | null;
-  const _getItemsBar = () => document.getElementById("loading-bar-items") as HTMLElement | null;
-  const _getStatusText = () => document.getElementById("map-loading-status");
-  const _getTitle = () => document.getElementById("map-loading-title");
-  // Whether the current dynamic view is served from baked DZIs. Kept in sync
-  // by the bakedSeedChange listener below. The loading strip narrates the
-  // download -> generate -> items pipeline, and on a baked view that pipeline
-  // never runs -- so strip events triggered by background work must not show it
-  // (see the dataZipProgress handler).
-  let bakedViewActive = false;
-
-  // Pin the phase label column to the widest of the three phase translations
-  // in the current language, so the percent column never shifts when the
-  // phase text changes. Re-measure on language change.
-  const _phaseKeys = [
-    "loading.mapData.downloading",
-    "loading.mapData.generating",
-    "loading.mapData.addingItems",
-  ];
-  const _recomputePhaseMinWidth = () => {
-    const phaseEl = _getTitle();
-    if (!phaseEl) return;
-    const probe = document.createElement("span");
-    const cs = getComputedStyle(phaseEl);
-    probe.style.position = "absolute";
-    probe.style.visibility = "hidden";
-    probe.style.whiteSpace = "nowrap";
-    probe.style.fontFamily = cs.fontFamily;
-    probe.style.fontSize = cs.fontSize;
-    probe.style.fontWeight = cs.fontWeight;
-    probe.style.fontStyle = cs.fontStyle;
-    probe.style.letterSpacing = cs.letterSpacing;
-    probe.style.fontFeatureSettings = cs.fontFeatureSettings;
-    document.body.appendChild(probe);
-    let maxW = 0;
-    for (const k of _phaseKeys) {
-      probe.textContent = i18next.isInitialized ? i18next.t(k) : k;
-      if (probe.offsetWidth > maxW) maxW = probe.offsetWidth;
-    }
-    probe.remove();
-    const fontSizePx = parseFloat(cs.fontSize) || 16;
-    phaseEl.style.minWidth = `${(maxW / fontSizePx).toFixed(3)}em`;
-  };
-  if (i18next.isInitialized) _recomputePhaseMinWidth();
-  else i18next.on("initialized", _recomputePhaseMinWidth);
-  i18next.on("languageChanged", _recomputePhaseMinWidth);
-
-  window.addEventListener("dataZipProgress", ((e: CustomEvent) => {
-    const bar = _getDownloadBar();
-    const status = _getStatusText();
-    const title = _getTitle();
-    if (!bar) return;
-
-    // data.zip is shared world data fetched for every map, but the phases this
-    // strip reports — biome generation, then item placement — only ever run on
-    // the dynamic map, and only itemsGenerationProgress(100) hides the strip
-    // again. On a static map nothing fires that event, so showing the strip here
-    // left it pinned open forever under an indeterminate spinner, advertising
-    // biome generation that never starts. Static maps get no strip at all; the
-    // ordinary spinner already covers their tile loading.
-    if (app.getMap() !== "dynamic-main-branch") return;
-    // Baked views never generate: data.zip is only being fetched here for
-    // background consumers (pixel-scene prefetch, POI tooling, the alt-unlocks
-    // pre-warm). On 100% this handler flips the strip into its indeterminate
-    // "Generating Biomes / 33%" state -- and on a baked map nothing ever fires
-    // biomeGenerationProgress or itemsGenerationProgress, so that stuck 33%
-    // strip sat there until a refresh. This was THE "stuck at 33%" regression:
-    // it reappeared whenever any code path (re)fetched data.zip after a baked
-    // fast-path load.
-    if (bakedViewActive) return;
-
-    showLoadingStrip();
-
-    if (e.detail.percentage < 100) {
-      bar.style.width = `${e.detail.percentage}%`;
-      if (title) title.textContent = i18next.isInitialized ? i18next.t("loading.mapData.downloading") : "Downloading World Data";
-      if (status) status.textContent = `${Math.round(e.detail.percentage / 3)}%`;
-    } else {
-      bar.style.width = "100%";
-      if (title) title.textContent = i18next.isInitialized ? i18next.t("loading.mapData.generating") : "Generating Biomes";
-      if (status) status.textContent = "33%";
-      // Add indeterminate animation to the track so the loading bar doesn't appear frozen
-      const track = document.querySelector(".loading-strip-bar-track");
-      if (track) track.classList.add("indeterminate");
-    }
-  }) as EventListener);
-
-  window.addEventListener("biomeGenerationProgress", ((e: CustomEvent) => {
-    const bar = _getGenerationBar();
-    const status = _getStatusText();
-    if (!bar) return;
-
-    // Stop indeterminate animation once real progress arrives
-    const track = document.querySelector(".loading-strip-bar-track");
-    if (track) track.classList.remove("indeterminate");
-    showLoadingStrip();
-    bar.style.width = `${e.detail.percentage}%`;
-    if (status) status.textContent = `${Math.round(33 + e.detail.percentage / 3)}%`;
-
-    if (e.detail.percentage >= 100) {
-      const title = _getTitle();
-      if (title) title.textContent = i18next.isInitialized ? i18next.t("loading.mapData.addingItems") : "Adding items and wands";
-      bar.style.width = "100%";
-      if (status) status.textContent = "66%";
-    }
-  }) as EventListener);
-
-  window.addEventListener("itemsGenerationProgress", ((e: CustomEvent) => {
-    const bar = _getItemsBar();
-    const status = _getStatusText();
-    if (!bar) return;
-
-    showLoadingStrip();
-    // Baked fast path: download/generation phases never ran (their bars are
-    // untouched), so the items phase is the WHOLE strip — title it correctly
-    // and show a true 0-100% instead of the 3-phase 66-100% tail.
-    const itemsOnly =
-      !parseFloat(_getDownloadBar()?.style.width || "0") && !parseFloat(_getGenerationBar()?.style.width || "0");
-    const title = _getTitle();
-    if (title) title.textContent = i18next.isInitialized ? i18next.t("loading.mapData.addingItems") : "Adding items and wands";
-    bar.style.width = `${e.detail.percentage}%`;
-    if (status) {
-      status.textContent = itemsOnly
-        ? `${Math.round(e.detail.percentage)}%`
-        : `${Math.round(66 + e.detail.percentage / 3)}%`;
-    }
-
-    if (e.detail.percentage >= 100) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          hideLoadingStrip();
-          // Reset all bars for the next generation
-          const dl = _getDownloadBar();
-          const gen = _getGenerationBar();
-          const it = _getItemsBar();
-          if (dl) dl.style.width = "0%";
-          if (gen) gen.style.width = "0%";
-          if (it) it.style.width = "0%";
-        });
-      });
-    }
-  }) as EventListener);
-
-  // TODO: probably most of this should be part of the "App" class, or the "App" class should be removed.
-  // i'm not sure i'm happy with the abstraction
-
   const navbarBrandElement = assertElementById("navbar-brand", HTMLElement);
   const osdRootElement = assertElementById("osContainer", HTMLElement);
   const searchForm = assertElementById("search-form", HTMLFormElement);
@@ -423,40 +134,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   const tooltipElement = assertElementById("coordinate", HTMLElement);
   const coordinatesText = tooltipElement.innerText;
   const rendererForm = assertElementById("renderer-form", HTMLFormElement);
-
-  // Initialize renderer from storage
   const storedRenderer = getStoredRenderer();
   (rendererForm.elements as any)["renderer"].value = storedRenderer;
-
-  // Parse URL state including overlays and drawing
   const urlState = parseURL();
+  const loadingProgress = installLoadingProgress(() => globalApp?.getMap() ?? urlState.map ?? "dynamic-main-branch");
 
-  const app = await App.create({
+  // Seed/manifests and base-map tiles can load while the selected language loads.
+  if (!urlState.map || urlState.map === "dynamic-main-branch") startDailyFastPath();
+  const app = await initializeApplication({
     mountTo: osdRootElement,
     overlayButtons: overlayButtonsElement,
     initialState: urlState,
     useWebGL: storedRenderer === "webgl",
-  }).catch(async (e) => {
-    // The default or URL-specified map failed to open (e.g. CORS block on a new domain).
-    // Fall back to a known-good map so the rest of the app still initializes.
-    console.warn("[Noitamap] Map failed to open, falling back to regular-main-branch:", e);
-    return App.create({
-      mountTo: osdRootElement,
-      overlayButtons: overlayButtonsElement,
-      initialState: { ...urlState, map: "regular-main-branch" as MapName },
-      useWebGL: storedRenderer === "webgl",
-    });
   });
   globalApp = app;
+  createLanguageSelector();
+  updateTranslations();
   console.log(`[Noitamap] Active OSD drawer: ${(app.osd as any).drawer?.getType?.() ?? storedRenderer}`);
-
-  // Kick the daily baked-overlay fast path off NOW, in parallel with all the UI
-  // wiring below. With no custom seed in the URL we know it's today's daily, so
-  // its seed + baked-manifest round-trips run during init and are already
-  // resolved by the time the dynamic pipeline (line ~681) reaches its probe —
-  // letting the daily biome DZIs queue onto OSD nearly as early as the static
-  // background instead of after all the setup + serial fetches.
-  startDailyFastPath();
 
   // Helper to update the map selector button: shows the current map's full
   // label plus icon-only versions of its badges. Hover popovers on the badges
@@ -1441,7 +1135,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!id || mode !== 'normal' || !isProUser()) return false;
       if (!applySpawnRegions(raw, true, source)) return false;
       spawnSharing!.setMapReady(true);
-      if (spawnSharing!.rememberApplied(id)) return true;
+      if (spawnSharing!.rememberApplied(id)) {
+        cueBiomeBoundariesButton();
+        return true;
+      }
       clearCreatureSpawnBiomeFocus(osdRootElement);
       return false;
     },
@@ -1525,21 +1222,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // the current view changes.
   window.addEventListener("bakedSeedChange", ((e: CustomEvent) => {
     const baked = !!e.detail?.baked;
-    bakedViewActive = baked;
-    // The probe can resolve AFTER a dataZipProgress(100) already flipped the
-    // strip into its indeterminate "Generating Biomes / 33%" state (the fetch
-    // races the probe). Dismiss it: on a baked view no generation follows, so
-    // nothing else will ever hide that strip.
-    if (baked) {
-      const gen = _getGenerationBar();
-      const dl = _getDownloadBar();
-      const items = _getItemsBar();
-      if (dl) dl.style.width = "0%";
-      if (gen) gen.style.width = "0%";
-      if (items) items.style.width = "0%";
-      document.querySelector(".loading-strip-bar-track")?.classList.remove("indeterminate");
-      hideLoadingStrip();
-    }
+    loadingProgress.setBaked(baked);
 
     updateSpoilerControlVisibility(baked);
 
@@ -1639,26 +1322,4 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   initKonamiCode();
-
-  // After the page is up, preload every supported language's translation
-  // bundle in the background so language switches are instant. The user's
-  // active language is already loaded by the i18next init above; we kick off
-  // the rest from an idle callback so it doesn't compete with map rendering.
-  const preloadAllLocales = () => {
-    const all = Object.keys(SUPPORTED_LANGUAGES);
-    const loaded = (i18next.languages as string[] | undefined) ?? [i18next.language];
-    const toLoad = all.filter((lng) => !loaded.includes(lng));
-    if (toLoad.length === 0) return;
-    i18next
-      .loadLanguages(toLoad)
-      .catch((err) => console.warn("[Noitamap] Preload of locales failed:", err));
-  };
-  const idle = (window as any).requestIdleCallback as
-    | ((cb: () => void, opts?: { timeout: number }) => number)
-    | undefined;
-  if (typeof idle === "function") {
-    idle(preloadAllLocales, { timeout: 5000 });
-  } else {
-    setTimeout(preloadAllLocales, 2000);
-  }
 });
