@@ -51,8 +51,8 @@ describe("browser build boundaries", () => {
     },
   );
 
-  it.each(["noita-telescope", "noita-telescope-vm"])(
-    "rejects changed PNG optimization boundaries in %s",
+  it.each(["noita-telescope"])(
+    "rejects changed legacy PNG optimization boundaries in %s",
     async (fork) => {
       const path = resolve(root, `lib/${fork}/js/png_sanitizer.js`);
       const original = await readFile(path, "utf8");
@@ -141,7 +141,7 @@ describe("browser build boundaries", () => {
     );
     expect(result.code).toContain("value");
   });
-  it.each(["png_sanitizer.js", "utils.js"])(
+  it.each(["png_sanitizer.js", "utils.js", "pixel_scene_generation.js"])(
     "removes Node-only imports from %s without suppressing warnings",
     async (file) => {
       const path = resolve(root, "lib/noita-telescope-vm/js", file);
@@ -150,11 +150,22 @@ describe("browser build boundaries", () => {
       const result = await browserTelescopeSource(original, path);
       expect(result.code).not.toMatch(/node:(fs|url)|readPngBufferNode/);
       expect(result.code).toContain(
-        file === "utils.js" ? "fetch(" : "createImageBitmap(",
+        file === "png_sanitizer.js" ? "createImageBitmap(" : "fetch(",
       );
       expect(await readFile(path, "utf8")).toBe(original);
     },
   );
+
+  it("bundles upstream icon sheets as literal asset imports", async () => {
+    const path = resolve(root, "lib/noita-telescope-vm/js/icon_sheets.js");
+    const { code } = await browserTelescopeSource(await readFile(path, "utf8"), path);
+    for (const name of ["perk", "spell"]) {
+      const asset = resolve(root, `lib/noita-telescope-vm/data/${name}_sprites.sheet.png`);
+      expect(code).toContain(`${asset}?url`);
+      expect((await readFile(asset)).byteLength).toBeGreaterThan(1000);
+    }
+    expect(code).not.toContain("new URL");
+  });
 
   it("preserves every atlas entry and animation field in bounded lazy chunks", async () => {
     const atlas = JSON.parse(

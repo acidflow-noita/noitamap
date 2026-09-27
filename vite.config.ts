@@ -1,11 +1,12 @@
 import { terrainShaderBitsPlugin } from "./build_scripts/vite-terrain-shaders.ts";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import { telescopeBrowserPlugin } from "./build_scripts/vite-telescope-browser.ts";
 import { telescopeScenesPlugin } from "./build_scripts/vite-telescope-scenes.ts";
 import { atlasChunksPlugin } from "./build_scripts/vite-atlas-chunks.ts";
 import { resolveLocalPro } from "./build_scripts/local-pro.ts";
 import { ignoreTaskScratch } from "./build_scripts/vite-watch.ts";
-import { resolve } from "node:path";
+import { relative, resolve } from "node:path";
+import { createHash } from "node:crypto";
 
 import fs from "node:fs";
 
@@ -56,10 +57,34 @@ const shimTelescopePlugin = {
   },
 };
 
+function workerOutputNames(): Plugin {
+  let workerId = "";
+  return {
+    name: "worker-output-names",
+    options(options) {
+      const input = options.input;
+      const entries = typeof input === "string" ? [input]
+        : Array.isArray(input) ? input : Object.values(input ?? {});
+      workerId = createHash("sha256").update(entries.map(entry =>
+        relative(import.meta.dirname, entry).replace(/\\/g, "/"),
+      ).sort().join("|")).digest("hex").slice(0, 8);
+    },
+    outputOptions(options) {
+      // Independently built workers can emit identical dependency chunk hashes
+      // with different sourceMappingURLs. Give each worker's chunks/maps their
+      // own namespace so neither output can silently overwrite the other.
+      return { ...options,
+        chunkFileNames: `assets/worker-${workerId}-[name]-[hash].js`,
+        sourcemapFileNames: `assets/worker-${workerId}-[name]-[hash].js.map`,
+      };
+    },
+  };
+}
+
 export default defineConfig({
   worker: {
     format: "es",
-    plugins: () => [shimTelescopePlugin, telescopeScenesPlugin(import.meta.dirname), telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")), atlasChunksPlugin(import.meta.dirname)],
+    plugins: () => [workerOutputNames(), shimTelescopePlugin, telescopeScenesPlugin(import.meta.dirname), telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")), atlasChunksPlugin(import.meta.dirname)],
   },
   server: {
     watch: {
@@ -206,7 +231,7 @@ export default defineConfig({
             // Viewer scheduling/continuity is shared with lazy terrain layers.
             // Keep it separate without making controller installation async.
             { name: "map-rendering", test: /\/src\/osd-(?:pixel-rendering|tile-continuity|terrain-admission)\.ts$/, priority: 150 },
-            { name: (id) => "map-data-" + id.split("/").pop()!.replace(/\.json$/, ""), test: /\/src\/data\/[^/]+\.json$/, priority: 40 },
+            { debugName: "map-data", name: (id) => "map-data-" + id.split("/").pop()!.replace(/\.json$/, ""), test: /\/src\/data\/[^/]+\.json$/, priority: 40 },
           ],
         },
       },

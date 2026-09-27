@@ -153,11 +153,19 @@ export async function benchmarkInstantTerrain(native: NativeHarness) {
       throw new Error("Viewport is not one draw per frame");
     const sourceWidth = sample.width / sample.zoom,
       sourceHeight = sample.height / sample.zoom;
-    // Power-of-two LOD camera validation: independently draw chosen world
-    // pixels at 1:1 and compare them with the corresponding overview texels.
-    // This catches camera scale/origin mistakes without claiming game parity.
+    // Validate camera coordinates with flat material colors. Upstream now
+    // filters textures over a coarse pixel's footprint, so its textured color
+    // intentionally differs from one native texel. These unmeasured draws keep
+    // the coordinate check independent of that filter and of the timed output.
     let coordinateProbes = 0;
     if (sample.name.startsWith("lod-")) {
+      renderer.render({
+        ...view,
+        camX: view.camX + (native.iterations - 1) * 7,
+        materialTextures: false,
+      });
+      native.finish();
+      const coordinatePixels = native.read(sample.width, sample.height);
       for (const [px, py] of [
         [0, 0],
         [127, 191],
@@ -173,6 +181,7 @@ export async function benchmarkInstantTerrain(native: NativeHarness) {
         const worldY = sample.y - sourceHeight / 2 + (py + 0.5) / sample.zoom;
         renderer.render({
           ...view,
+          materialTextures: false,
           width: 1,
           height: 1,
           camX: worldX + center,
@@ -182,7 +191,7 @@ export async function benchmarkInstantTerrain(native: NativeHarness) {
         native.finish();
         const probe = native.read(1, 1);
         const index = ((sample.height - 1 - py) * sample.width + px) * 4;
-        if (probe.some((value, channel) => value !== pixels[index + channel]))
+        if (probe.some((value, channel) => value !== coordinatePixels[index + channel]))
           throw new Error(
             `LOD coordinate mismatch at ${sample.name} pixel ${px},${py}`,
           );

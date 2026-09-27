@@ -50,7 +50,7 @@ function mainPaths(path: string): string[] {
         "data/pixel_scenes/general/cauldron",
         "data/biome_impl/cauldron",
       ),
-      path.replace("data/pixel_scenes/spliced/", "data/biome_impl/"),
+      path.replace("data/pixel_scenes/spliced/", "data/biome_impl/spliced/"),
       ...(path.endsWith("_visual.png")
         ? [path.replace("data/pixel_scenes/", "data/biome_impl/")]
         : []),
@@ -64,20 +64,26 @@ export function telescopeAssetCandidates(
 ): TelescopeAssetCandidate[] {
   if (!normalizeTelescopePath(url)) return [];
   const path = telescopePathToZipPath(url);
-  const candidates: TelescopeAssetCandidate[] = mainPaths(path).map((path) => ({
-    archive: "main",
-    path,
-  }));
-  for (const archive of ["pixel_scenes", "wang_tiles"] as const) {
-    const prefix = `data/${archive}/`;
-    if (path.startsWith(prefix))
-      candidates.push({ archive, path: path.slice(prefix.length) });
-  }
+  const candidates: TelescopeAssetCandidate[] = [];
   const scene = path.replace(/^data\/pixel_scenes\//, "");
   const alias = SCENE_ALIASES[scene];
+  if (path.startsWith("data/pixel_scenes/"))
+    candidates.push({ archive: "pixel_scenes", path: scene });
   if (alias) {
-    // Prepared material masks win over the original, unprocessed game copy.
     candidates.push({ archive: "pixel_scenes", path: alias });
+  }
+  // Prepared material masks and spliced scenes must win over raw game PNGs.
+  // In particular, spliced/watercave is 512×1139, while the raw watercave
+  // fallback is a different 512×512 image with the same basename.
+  candidates.push(
+    ...mainPaths(path).map((path) => ({ archive: "main" as const, path })),
+  );
+  if (path.startsWith("data/wang_tiles/"))
+    candidates.push({
+      archive: "wang_tiles",
+      path: path.slice("data/wang_tiles/".length),
+    });
+  if (alias) {
     candidates.push(
       ...mainPaths(`data/pixel_scenes/${alias}`).map((path) => ({
         archive: "main" as const,

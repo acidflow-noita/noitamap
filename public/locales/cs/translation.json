@@ -5526,6 +5526,7 @@
     },
     "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
     "v3": {
+      "backToReport": "Zpět k přehledu",
       "back": "Zpět",
       "viewAll": "Zobrazit vše",
       "showMore": "Zobrazit další",

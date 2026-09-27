@@ -33,6 +33,7 @@ let scanSpawnFunctions: any;
 let getSpecialPoIs: any;
 let prescanSpawnFunctions: any;
 let PIXEL_SCENE_DATA: any;
+let ensureScenePixels: any;
 /**
  * Get the raw pixel scene image data from telescope's internal cache.
  * Telescope's refactored loadPixelScene/loadRandomPixelScene no longer set
@@ -48,6 +49,16 @@ export function getPixelSceneImgElement(key: string): Uint8Array | null {
 export function getPixelSceneData(key: string): any | null {
   if (!PIXEL_SCENE_DATA || !PIXEL_SCENE_DATA[key]) return null;
   return PIXEL_SCENE_DATA[key];
+}
+
+/** Decode only scenes used by the host; the legacy fork already holds pixels. */
+export async function ensurePixelSceneData(
+  key: string,
+  options: { art?: boolean } = {},
+): Promise<any | null> {
+  const data = getPixelSceneData(key);
+  if (data && ensureScenePixels) await ensureScenePixels(data, options);
+  return data;
 }
 
 /** Returns every pixel scene key telescope has loaded (after initTelescope). */
@@ -283,6 +294,7 @@ async function _doInitTelescope(): Promise<void> {
   getSpecialPoIs = poiScannerMod.getSpecialPoIs;
   prescanSpawnFunctions = poiScannerMod.prescanSpawnFunctions;
   PIXEL_SCENE_DATA = pixelSceneMod.PIXEL_SCENE_DATA;
+  ensureScenePixels = pixelSceneMod.ensureScenePixels;
   loadPixelSceneData = pixelSceneMod.loadPixelSceneData;
   recolorPixelSceneForBiome = pixelSceneMod.recolorPixelSceneForBiome;
   recolorPixelScene = pixelSceneMod.recolorPixelScene;

@@ -5,13 +5,28 @@ import { POICardLifecycle, type POICardOwner, type POICardRequest } from './poi-
 import Flatbush from "flatbush";
 import { CONTAINER_TYPES } from "./poi-containers";
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
+import { loadInstantSceneMasks } from "./instant-scene-masks";
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
 import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP } from "./terrain-policy";
 import { loadTelescopeModules } from "./load-telescope";
 import { isGLTerrainEnabled, isInstantTerrainEnabled, useRenderPerfGeneration } from "../renderer_settings";
-import { addInstantTerrain, clearInstantTerrain } from './instant-terrain';
 import { prepareInstantTerrain } from './instant-terrain-backend';
 import { clearTerrainPngEncoders } from './terrain-png-encoder';
+
+let instantTerrainModule: typeof import('./instant-terrain') | undefined;
+let instantTerrainLoading: Promise<typeof import('./instant-terrain')> | undefined;
+function loadInstantTerrain() {
+  return instantTerrainLoading ??= import('./instant-terrain').then(module => {
+    instantTerrainModule = module;
+    return module;
+  }).catch(error => {
+    instantTerrainLoading = undefined;
+    throw error;
+  });
+}
+function clearInstantTerrain() {
+  instantTerrainModule?.clearInstantTerrain();
+}
 /**
  * telescope-osd-bridge.ts
  *
@@ -23,6 +38,7 @@ import type { GenerationResult, POI, PixelScene, TileLayer } from './telescope-a
 import {
   getPixelSceneImgElement,
   getPixelSceneData,
+  ensurePixelSceneData,
   getAllPixelSceneKeys,
   recolorPixelSceneForBiome,
   recolorPixelScene,
@@ -408,7 +424,8 @@ export async function prepareInstantTerrainResources(
 
 /** Start independent presentation downloads alongside generation. */
 export function prewarmMapPresentation(): void {
-  void Promise.allSettled([loadSpritesheetAndAtlas(), getScenePngIndex()]);
+  void Promise.allSettled([loadSpritesheetAndAtlas(), getScenePngIndex(),
+    ...(isInstantTerrainEnabled() ? [loadInstantTerrain()] : [])]);
 }
 
 /**
@@ -2543,6 +2560,7 @@ async function compositeSceneBitmap(
 
   let midBitmap: ImageBitmap | null = null;
   if (wantMid) {
+    await ensurePixelSceneData(scene.key, { art: false });
     const arr =
       scene.imgElement instanceof Uint8Array || scene.imgElement instanceof Uint8ClampedArray ? scene.imgElement : null;
     const baseImg = arr || getPixelSceneImgElement(scene.key);
@@ -2754,7 +2772,7 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
   const zip = await getDataZip();
   for (const scene of scenes) {
     if (sources[scene.key]) continue;
-    const raw = getPixelSceneData(scene.key);
+    const raw = await ensurePixelSceneData(scene.key);
     if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement))
       throw new Error(`Missing full-resolution scene material data: ${scene.key}`);
     const override = pixelSceneConfig.layerOverrides[scene.name] || pixelSceneConfig.layerOverrides[scene.key];
@@ -2781,7 +2799,7 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
     // The static scene skip/no-op list still owns the same pixels. Skipping the
     // scene's draw alone is insufficient: final terrain must not cover its art.
     if (!(pixelSceneConfig.skipNames.has(scene.name) || pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]))) continue;
-    const raw = getPixelSceneData(scene.key);
+    const raw = await ensurePixelSceneData(scene.key, { art: false });
     if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement) || raw.width < 2 || raw.height < 2) continue;
     const placement = `${scene.key}/${scene.x}/${scene.y}`;
     if (placed.has(placement)) continue;
@@ -2795,23 +2813,12 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
 
 /** Reuse raw scene pixels already loaded by the generator. Only the mask is
  * needed by the display-resolution GPU path; existing scene layers paint art. */
-function instantSceneMasks(result: GenerationResult): StaticTerrainMask[] {
+async function instantSceneMasks(result: GenerationResult): Promise<StaticTerrainMask[]> {
   const rendered = new Set(renderableScenes(result));
-  const byKey = new Map<string, { bits: Uint8Array; airBits: Uint8Array }>();
-  const masks: StaticTerrainMask[] = [];
-  for (const scene of Object.values(result.pixelScenesByPW).flat()) {
-    if (!rendered.has(scene) && !pixelSceneConfig.skipNames.has(scene.name) &&
-      !pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0])) continue;
-    const raw = getPixelSceneData(scene.key);
-    if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement) || raw.width < 2 || raw.height < 2) continue;
-    let bits = byKey.get(scene.key);
-    if (!bits) {
-      bits = { bits: staticSceneBits(raw.imgElement), airBits: staticSceneBits(raw.imgElement, true) };
-      byKey.set(scene.key, bits);
-    }
-    masks.push({ x: scene.x, y: scene.y, width: raw.width, height: raw.height, ...bits });
-  }
-  return masks;
+  const scenes = Object.values(result.pixelScenesByPW).flat().filter(scene =>
+    rendered.has(scene) || pixelSceneConfig.skipNames.has(scene.name) ||
+    pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]));
+  return loadInstantSceneMasks(scenes, key => ensurePixelSceneData(key, { art: false }));
 }
 
 async function buildSceneBitmaps(
@@ -5582,8 +5589,12 @@ export async function renderGenerationResult(
     if (isInstantTerrainEnabled() && !forceApproximateTerrain && !result.isNGP && result.worldSize === 70) {
       await ensureTelescopeModules();
       if (currentGenerationId !== generationId) return;
+      const [{ addInstantTerrain }, masks] = await Promise.all([
+        loadInstantTerrain(), instantSceneMasks(result),
+      ]);
+      if (currentGenerationId !== generationId) return;
       if (glTerrainDeps) instant = await addInstantTerrain(viewer, result, glTerrainDeps,
-        instantSceneMasks(result), () => currentGenerationId === generationId,
+        masks, () => currentGenerationId === generationId,
         item => dynamicTiledImages.add(item), wrappedOnFirstPaint,
         error => {
           if (currentGenerationId !== generationId) return;

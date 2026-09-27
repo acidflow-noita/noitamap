@@ -15,7 +15,7 @@ describe.skipIf(process.platform !== 'linux')('production instant-terrain tile s
         preserveEntrySignatures: 'strict', output: { entryFileNames: 'fixture.js', manualChunks: () => undefined } } } });
   }, 120000);
   afterAll(async () => { if (bundle) await rm(bundle, { recursive: true, force: true }); });
-  it('matches direct shader pixels at overview/detail across three worlds, with ownership, sparse scenes and cancellation', async () => {
+  it('matches shader pixels and retained native reductions across three worlds, with ownership, sparse scenes and cancellation', async () => {
     const result: any = await new Promise((resolveResult, reject) => {
       const worker = new Worker(resolve(root, 'tests/helpers/instant-terrain-runtime-worker.mjs'), {
         workerData: { root, bundle }, stdout: true, stderr: true,
@@ -34,8 +34,10 @@ describe.skipIf(process.platform !== 'linux')('production instant-terrain tile s
     });
     expect(result.diagnostics).toEqual([]);
     expect(result.samples).toHaveLength(6);
-    expect(result.rendererUploads).toBe(2); // One shared upload per lifecycle, including masked rerender.
+    expect(result.initialTextureUploads).toBeGreaterThan(0);
+    expect(result.textureUploads).toBe(result.initialTextureUploads * 2); // One shared texture set per lifecycle, including masked rerender.
     expect(result.samples.every((sample: any) => sample.draws === 1 && sample.visible > 25)).toBe(true);
+    expect(result.samples.some((sample: any) => sample.kind === 'overview' && sample.retainedChangedPixels > 0)).toBe(true);
     expect(result.comparedPixels).toBeGreaterThan(200_000);
     expect(result.reuse).toMatchObject({ requests: 12, shaderDraws: 0 });
     expect(result.reuse.comparedPixels).toBeGreaterThan(200_000);

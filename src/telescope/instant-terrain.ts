@@ -17,6 +17,7 @@ import { prepareInstantTerrain } from "./instant-terrain-backend";
 import { smoothInstantTile } from "../osd-pixel-rendering";
 import { InstantTerrainCache, copyTerrainContext } from "./instant-terrain-cache";
 import { createInstantCoverage, INSTANT_COVERAGE_EXTRA_LEVELS } from "./instant-terrain-coverage";
+import { RetainedTerrain, retainedTerrainIdentity, type RetainedTerrainRegion, type RetainedTile } from './retained-terrain';
 export { smoothInstantTile } from "../osd-pixel-rendering";
 
 declare const OpenSeadragon: any;
@@ -237,17 +238,26 @@ export function createInstantTileSource(options: {
   focus?: () => { x: number; y: number };
   priority?: (view: NonNullable<ReturnType<typeof instantTileView>>) => number;
   cache?: InstantTerrainCache;
+  retention?: RetainedTerrainRegion;
+  onRetainedTiles?: (tiles: RetainedTile[]) => void;
   onTile?: (pixels: number, milliseconds: number) => void;
 }) {
   const { region, signal } = options;
+  const id = ++nextId;
+  // Standalone callers have no scene-mask identity. Keep their retention local
+  // rather than persisting a session counter that collides after a page reload.
+  const ownedRetention = options.retention ? undefined : new RetainedTerrain({
+    read: async () => undefined,
+    write: async () => { throw new Error('Session-only terrain retention'); },
+  });
+  const retention = options.retention ?? ownedRetention!.region(`session-${id}`, region.width, region.height);
   const source = new OpenSeadragon.TileSource({
     width: region.width,
     height: region.height,
     tileSize: INSTANT_TILE_SIZE,
-    minLevel: 0,
+    minLevel: retention.minLevel,
     maxLevel: Math.ceil(Math.log2(Math.max(region.width, region.height))),
   });
-  const id = ++nextId;
   const cache = options.cache ?? new InstantTerrainCache();
   const overviewLevel = typeof source.getClosestLevel === 'function'
     ? source.getClosestLevel() : Math.min(source.maxLevel, Math.log2(INSTANT_TILE_SIZE));
@@ -259,18 +269,24 @@ export function createInstantTileSource(options: {
     promise: Promise<CanvasRenderingContext2D>;
   };
   const pending = new Map<string, TileWork>();
+  const unsubscribe = retention.subscribe(tiles => options.onRetainedTiles?.(tiles));
   signal.addEventListener('abort', () => {
     for (const work of pending.values()) work.controller.abort();
     pending.clear();
     if (!options.cache) cache.clear();
+    unsubscribe();
+    ownedRetention?.dispose();
   }, { once: true });
   source.__instantTerrain = true;
   source.instantRegion = region;
+  source.applyRetainedTerrain = (tile: InstantTile, context: CanvasRenderingContext2D) => retention.apply(tile, context);
+  Object.defineProperty(source, 'retainedRevision', { get: () => retention.revision });
+  Object.defineProperty(source, 'retainedTerrainStats', { get: () => retention.owner.stats });
   Object.defineProperty(source, 'instantCacheStats', { get: () => cache.stats });
   source.getTileUrl = (level: number, x: number, y: number) =>
     `instant-terrain://${id}/${level}/${x}/${y}`;
   source.hasCachedTile = (tile: InstantTile) =>
-    cache.has(source.getTileUrl(tile.level, tile.x, tile.y));
+    cache.has(source.getTileUrl(tile.level, tile.x, tile.y)) || retention.hasComplete(tile);
   source.hasTransparency = () => true;
   const render = (tile: InstantTile, view: NonNullable<ReturnType<typeof instantTileView>>, key: string) => {
     const controller = new AbortController();
@@ -285,34 +301,59 @@ export function createInstantTileSource(options: {
       ) : 0;
     };
     work.promise = Promise.resolve()
-      .then(() => {
+      .then(async () => {
         controller.signal.throwIfAborted();
-        return options.getRenderer?.() ?? options.renderer;
+        const retained = await retention.complete(tile);
+        controller.signal.throwIfAborted();
+        if (retained) return { retained };
+        return { renderer: await (options.getRenderer?.() ?? options.renderer) };
       })
-      .then((renderer) => scheduleTerrainWork(() => {
+      .then(async ({ renderer, retained }) => {
+        if (retained) {
+          cache.set(key, retained, tile.level >= overviewLevel && tile.level <= coverageMaxLevel);
+          return retained;
+        }
+        // Persistence pressure applies only to new native samples. An overview
+        // needs no retained allocation and must remain drawable while those
+        // samples are being saved. Storage waits never occupy a GPU queue slot.
+        if (sampled.scale === 1) await retention.owner.capacity();
+        controller.signal.throwIfAborted();
         const started = performance.now();
-        if (options.plane !== undefined) setTerrainPlane(renderer, options.plane);
-        const finish = (rendered: any) => {
-          try {
-            controller.signal.throwIfAborted();
-            if (!rendered) throw new Error(renderer.failed || "GPU terrain context lost");
-            const error = renderer.gl?.getError?.();
-            if (error) throw new Error(`GPU terrain draw failed: 0x${error.toString(16)}`);
-            const canvas = document.createElement("canvas");
-            canvas.width = sampled.width; canvas.height = sampled.height;
-            const ctx = canvas.getContext("2d");
-            if (!ctx) throw new Error("Terrain tile canvas unavailable");
-            options.clip.draw(ctx, rendered, sampled);
-            const result = reduceInstantTile(canvas, view.width, view.height);
-            // The cache owns a separate copy: OSD destroys its canvas on eviction.
-            cache.set(key, result, tile.level >= overviewLevel && tile.level <= coverageMaxLevel);
-            options.onTile?.(sampled.width * sampled.height, performance.now() - started);
-            return result;
-          } finally { rendered?.close?.(); }
-        };
-        const rendered = renderer.render(sampled, controller.signal);
-        return typeof rendered?.then === 'function' ? rendered.then(finish) : finish(rendered);
-      }, controller.signal, priority))
+        const captured = await scheduleTerrainWork(() => {
+          if (options.plane !== undefined) setTerrainPlane(renderer, options.plane);
+          const capture = (rendered: any) => {
+            try {
+              controller.signal.throwIfAborted();
+              if (!rendered) throw new Error(renderer.failed || "GPU terrain context lost");
+              const error = renderer.gl?.getError?.();
+              if (error) throw new Error(`GPU terrain draw failed: 0x${error.toString(16)}`);
+              const canvas = document.createElement("canvas");
+              canvas.width = sampled.width; canvas.height = sampled.height;
+              const ctx = canvas.getContext("2d");
+              if (!ctx) throw new Error("Terrain tile canvas unavailable");
+              // Copy the main-context canvas before another draw can resize it.
+              // Worker bitmaps can be released as soon as this copy is owned.
+              options.clip.draw(ctx, rendered, sampled);
+              return ctx;
+            } finally { rendered?.close?.(); }
+          };
+          const rendered = renderer.render(sampled, controller.signal);
+          return typeof rendered?.then === 'function' ? rendered.then(capture) : capture(rendered);
+        }, controller.signal, priority);
+        try {
+          if (sampled.scale === 1)
+            await retention.capture(sampled.x - region.x, sampled.y - region.y, captured);
+          controller.signal.throwIfAborted();
+          const result = reduceInstantTile(captured.canvas, view.width, view.height);
+          // The cache owns a separate copy: OSD destroys its canvas on eviction.
+          cache.set(key, result, tile.level >= overviewLevel && tile.level <= coverageMaxLevel);
+          options.onTile?.(sampled.width * sampled.height, performance.now() - started);
+          return result;
+        } catch (error) {
+          captured.canvas.width = captured.canvas.height = 0;
+          throw error;
+        }
+      })
       .finally(() => {
         work.completed = true;
         if (pending.get(key) === work) pending.delete(key);
@@ -396,8 +437,11 @@ export function createInstantTileSource(options: {
       result = work.promise.then(ctx => settled ? ctx : copyTerrainContext(ctx));
     }
     void result
-      .then((ctx) => {
+      .then(async (ctx) => {
         if (settled) return;
+        const revision = await retention.apply(context.tile, ctx);
+        if (settled) return;
+        context.tile.__retainedInitialRevision = revision;
         settled = true;
         context.finish(ctx, null, "context2d");
       })
@@ -424,6 +468,33 @@ let active: (() => void) | null = null;
 export function clearInstantTerrain() {
   active?.();
   active = null;
+}
+
+/** OSD copies and atomically swaps the working cache for this awaited event.
+ * Never mutate a drawer-owned context or make a pixel-generation request here. */
+export async function applyRetainedTerrainEvent(event: any): Promise<void> {
+  const source = event.tiledImage?.source;
+  if (!source?.__instantTerrain || !source.applyRetainedTerrain || event.outdated?.()) return;
+  const initial = event.tile.__retainedInitialRevision;
+  delete event.tile.__retainedInitialRevision;
+  if (initial !== undefined && initial === source.retainedRevision) return;
+  const context = await event.getData('context2d');
+  if (event.outdated?.()) return;
+  await source.applyRetainedTerrain(event.tile, context);
+}
+
+let retainedInvalidationStamp = 0;
+export function refreshRetainedTerrain(viewer: any, item: any, changed: RetainedTile[]) {
+  // A queued tile can become a RAM hit after a sibling capture or disk merge.
+  // Wake admission even at rest, without waiting for another camera event or
+  // a blocked cold load to finish.
+  viewer.raiseEvent?.('terrain-cache-ready');
+  const keys = new Set(changed.map(t => `${t.level}/${t.x}/${t.y}`));
+  const tiles = (viewer.tileCache?.getLoadedTilesFor(item) ?? []).filter((t: any) =>
+    t.loaded && keys.has(`${t.level}/${t.x}/${t.y}`));
+  retainedInvalidationStamp = Math.max(Date.now(), retainedInvalidationStamp + 1);
+  if (tiles.length) void viewer.world.requestTileInvalidateEvent(tiles, retainedInvalidationStamp, false)
+    .then(() => viewer.forceRedraw?.()).catch((error: unknown) => console.warn('[Terrain] Retained tile refresh failed', error));
 }
 
 /** Rank work against the latest camera destination each time a queue slot
@@ -465,6 +536,8 @@ export async function addInstantTerrain(
   clearInstantTerrain();
   const lifetime = new AbortController();
   const cache = new InstantTerrainCache();
+  const retained = new RetainedTerrain();
+  const retentionIdentity = retainedTerrainIdentity(gen, masks);
   const items: any[] = [];
   const sources = new Set<any>();
   let clip: ReturnType<typeof createInstantClip> | null = null;
@@ -501,9 +574,11 @@ export async function addInstantTerrain(
     if (lifetime.signal.aborted) return;
     lifetime.abort();
     cache.clear();
+    retained.dispose();
     clip?.dispose();
     osd.removeHandler("tile-drawn", onDraw);
     osd.removeHandler("tile-drawing", smoothInstantTile);
+    osd.removeHandler('tile-invalidated', applyRetainedTerrainEvent);
     for (const renderer of ownedRenderers) renderer.invalidate();
   };
   active = dispose;
@@ -561,6 +636,7 @@ export async function addInstantTerrain(
     clip = createInstantClip(owners, masks);
     osd.addHandler("tile-drawn", onDraw);
     osd.addHandler("tile-drawing", smoothInstantTile);
+    osd.addHandler('tile-invalidated', applyRetainedTerrainEvent);
     for (const plane of [0, -1, 1] as VerticalPlane[])
       for (const pw of [...(gen.parallelWorlds ?? [0, -1, 1])].sort(
         (a, b) => Math.abs(a) - Math.abs(b),
@@ -572,6 +648,9 @@ export async function addInstantTerrain(
           height: WORLD_HEIGHT,
           pw,
         };
+        let regionItem: any;
+        const retention = retained.region(`${retentionIdentity}/${plane}/${pw}/${region.x},${region.y},${region.width},${region.height}`,
+          region.width, region.height);
         const source = createInstantTileSource({
           region,
           deps,
@@ -580,6 +659,10 @@ export async function addInstantTerrain(
           plane,
           clip,
           cache,
+          retention,
+          onRetainedTiles: tiles => {
+            if (regionItem && !lifetime.signal.aborted) refreshRetainedTerrain(osd, regionItem, tiles);
+          },
           signal: lifetime.signal,
           onFailure: fail,
           focus: () => osd.viewport.getCenter(true),
@@ -603,6 +686,7 @@ export async function addInstantTerrain(
               osd.world.removeItem(item);
               return;
             }
+            regionItem = item;
             items.push(item);
             coverage.add(item);
             onItem(item);

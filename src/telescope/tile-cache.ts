@@ -14,7 +14,7 @@ import { readReportInventorySnapshot, type ReportInventorySnapshot } from "../re
  */
 
 const DB_NAME = "noitamap-telescope";
-const DB_VERSION = 13; // invalidate main-only boss POIs and their cached renders
+const DB_VERSION = 14; // invalidate scene pixels/geometry derived from raw asset fallbacks
 const STORE_NAME = "generations";
 const RENDER_STORE_NAME = "biome_renders";
 const SCENE_BITMAP_STORE_NAME = "pixel_scene_bitmaps";
@@ -101,10 +101,12 @@ const storage = new OptionalCacheDatabase(DB_NAME, DB_VERSION, (db, transaction,
     db.deleteObjectStore(STORE_NAME);
     db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
   }
-  // v12 replaces missing scene inputs (previously transparent 1x1 PNGs)
-  // with real assets. Clear all derived stores, even on the cache-only path
-  // that can run before telescope initialization/version checks.
-  if (oldVersion > 0 && oldVersion < 12) {
+  // v12 replaces missing scene inputs (previously transparent 1x1 PNGs).
+  // v13 corrects main-only boss POIs. v14 prioritizes prepared scene assets:
+  // the raw watercave image had the wrong height, so both composed bitmaps and
+  // cached generation geometry can be stale. Clear all derived stores even on
+  // cache-only paths before telescope initialization/library-version checks.
+  if (oldVersion > 0 && oldVersion < 14) {
     for (const name of [STORE_NAME, RENDER_STORE_NAME, SCENE_BITMAP_STORE_NAME]) {
       transaction.objectStore(name).clear();
     }

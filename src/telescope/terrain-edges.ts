@@ -81,6 +81,7 @@ export async function createTerrainEdges(
         scenes: sceneGrids,
         biomeData: gen.biomeData,
         mapWidth: width,
+        inset: pad,
       });
       stats.tiles++;
       for (let py = 0; py < h; py++)

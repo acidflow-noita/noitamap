@@ -307,8 +307,8 @@ The plan coarsens if needed to stay within 48 adaptive tiles and the shared
 resident pixel budget. Camera changes
 discard undispatched adaptive requests; one already active background request
 can finish normally. Only one coverage request is dispatched at a time, leaving
-queue capacity for normal visible demand. First-time vertical planes still
-require resource initialization.
+queue capacity for normal visible demand. Initial resource preparation now
+includes all three vertical planes; switching planes binds existing textures.
 
 Completed, clipped terrain tiles share a separate **32 MiB decoded-pixel cache**
 for the active map. The three base levels are protected ahead of ordinary least-recently
@@ -409,6 +409,107 @@ Native tests compare output against the previous compositor's placement and
 overlap rules. This avoids repeated room compositing without changing artwork.
 
 ## Accuracy and remaining work
+
+### Shared resources across nine regions (September 27 update)
+
+All nine regions now use one persistent terrain worker/context, shader program,
+and common texture set. Five small lookup textures vary by vertical plane and
+are prepared together. Each render request selects its own plane and absolute
+world coordinates; the existing vertical noise corrections, masks, scene/POI
+composition and retained-pixel identities remain in place. OSD positions distinct
+TileSources rather than repeating one image through its wrapping option.
+Navigation remains the current nine regions. Explicit world coordinates leave
+room for farther generated worlds without adding them to this change.
+
+The native GLES comparison against the previous three-renderer layout matched
+95,232 pixels in 39 windows across all nine regions, plus 10 material probes
+and all 10,080 plane lookup cells. Synthetic lookup checks also match upstream
+for 175 biome/fill/unknown colors with both covered and uncovered cells.
+Large texture uploads fell from 18 to 6 and lattice builds from three to one.
+Observed `texImage2D` payloads fell from 205,728,672 to 68,677,024 bytes (66.62%);
+these are upload bytes, not measured driver memory. Each plane's small tables
+total 50,400 bytes for NG0. Switching prepared planes triggers no uploads,
+lattice builds or shader compilation. Reseeding retains the compiled program;
+invalidation releases each owned texture once.
+
+These checks use Mesa llvmpipe, not a browser or hardware GPU. They establish
+resource reuse and sampled pixel parity, not measured panning latency or complete
+game-pixel accuracy. Startup still waits for the requested scene/POI results;
+uncached tiles still require rendering and presentation.
+
+```sh
+npx vitest run tests/shared-terrain-resources-runtime.test.ts tests/instant-terrain-backend.test.ts tests/terrain-shader-prewarm.test.ts
+```
+
+### Retained native pixels (September 27 update)
+
+The first retention implementation put optional disk reads and ancestor merges
+in the visible tile path. Native captures could wait for up to nine serial reads
+per leaf, while unrelated cached tiles waited for the region's entire merge
+queue. This caused avoidable delays despite correct final pixels in native tests.
+
+Native leaves and their reduced ancestor coverage now publish in RAM together.
+Missing ancestor pages load concurrently and merge only previously unknown cells;
+new exact pixels, including transparent holes, remain authoritative. Delayed
+storage tests hold eight ancestor reads while two native tiles finish and their
+exact pixels remain visible in an immediate zoom-out. Captures, missing-page
+lookups and pending writes remain bounded. Storage pressure applies to new native
+captures outside the GPU work queue, so overview rendering can continue.
+
+Fractional CanvasDrawer placement also caused seams at a 6.5% zoom-out with all
+needed tiles already loaded. Generated terrain now shares rounded physical-pixel
+edges instead of clearing OSD's artificial overlap at fractional coordinates.
+Real AppOSD/native-canvas tests preserve solid coverage and actual transparent
+holes at pixel densities one and two. These regressions verify the repaired
+cases; they are not a browser-frame-time or full-map speed claim.
+
+Queued requests also recheck RAM coverage when a capture or disk merge completes,
+including while the camera is idle. Already-complete pixels bypass the two-job
+cold limit. Scene-mask preparation decodes each unique material image once with
+eight concurrent loads instead of awaiting every placement serially. Prepared
+spliced scenes take precedence over same-name raw images; Water Cave's correct
+512 × 1139 material image now matches the upstream scene metadata.
+
+Completed native samples now survive display-cache eviction through a separate
+retention tier. This includes all four 256px leaves produced when a scale 2 view
+is shaded at 512px: they are captured before display reduction destroys that
+canvas. A completed leaf or fully covered parent returns from retention without
+another shader draw. Identity includes renderer revision, actual generated
+geometry, NG+ count, scene masks, plane, world and region bounds.
+
+Every captured leaf also updates sparse ancestor pages by repeated 2:1 filtered
+reduction. Explicit coverage bits distinguish unknown pixels from completed
+transparent holes. Cached/fresh coarse views clear covered rectangles before
+applying these exact-derived pixels. Existing OSD coarse tiles refresh through
+the awaited `tile-invalidated` event. Unknown regions retain the bounded sampled
+preview; requesting an overview does not generate its native descendants.
+
+The lowest generated level makes one native leaf occupy at least one display
+pixel. For a normal region this is still a 140 × 96 overview; OSD can reduce it
+further. This avoids treating a partially computed subpixel as complete coverage.
+
+The shared retention budget is 24 MiB decoded pixels/coverage, in addition to the
+existing 32 MiB display-source cache. Dirty pages stay owned until persistence
+settles; new shader work pauses under pressure. One write snapshot batch is at
+most approximately 4 MiB, plus at most two active 512px render jobs and their
+temporary reductions. IndexedDB stores lossless raw RGBA pages, avoiding PNG
+encoding on foreground completion. Coarse restoration reads one ancestor page,
+not all its leaves. Completed display output does not wait for the disk write.
+
+Storage opens/transactions have bounded deadlines. Denial, quota exhaustion or
+failure leaves the bounded memory working set usable; persistence cannot promise
+unlimited retention without available disk space. Pending writes may be lost if
+the page/process closes before they complete. Raw disk storage trades space for
+encoding cost; it is not a full-map export format or a sub-second full-map result.
+
+`tests/retained-terrain.test.ts` runs the production TileSource with native
+canvas pixels and an event-driven IndexedDB fixture. It covers transparent
+holes, independently expected premultiplied area reductions, scale 2 capture,
+concurrent leaves, cache eviction, persisted reload, disk-only navigation,
+write pressure/failure and existing coarse invalidation. The retention,
+instant-terrain and source-cache suites together passed 47 tests without browser
+automation. This verifies reuse and pixel continuity, not hardware/browser speed
+or new parity with the game's complete native finishing pipeline.
 
 Display-resolution shading now integrates multiple samples per coarse pixel.
 Its overview remains a bounded approximation to a reduction of all finished

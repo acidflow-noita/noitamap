@@ -132,6 +132,34 @@ describe("generated tile admission before timed ImageJobs", () => {
     }
   });
 
+  it("restores queued tiles that become cached without consuming occupied cold slots", async () => {
+    const f = fixture();
+    try {
+      const tiles = [0.1, 0.3, 0.5, 0.7].map(x => f.tile(x));
+      for (const tile of tiles) f.item._loadTile(tile);
+      await vi.advanceTimersByTimeAsync(1);
+      const cold = [...f.started];
+      const restored = tiles.find(tile => !cold.includes(tile))!;
+      restored.cached = true;
+      // Storage hydration/capture can finish while the camera is idle and
+      // both unrelated cold jobs remain occupied.
+      f.viewer.raiseEvent("terrain-cache-ready");
+      await vi.advanceTimersByTimeAsync(1);
+      expect(f.started).toHaveLength(3);
+      expect(f.started.at(-1)).toBe(restored);
+      expect(f.viewer.terrainAdmissionStats).toMatchObject({ active: 2, queued: 1, cached: 1 });
+      await f.finish(restored);
+      expect(f.viewer.terrainAdmissionStats).toMatchObject({ active: 2, queued: 1 });
+      expect(f.started).toHaveLength(3);
+      await f.finish(cold[0]);
+      expect(f.started).toHaveLength(4);
+      expect(f.viewer.terrainAdmissionStats).toMatchObject({ active: 2, queued: 0 });
+    } finally {
+      f.dispose();
+      expect(f.viewer.handlers.get("terrain-cache-ready")?.size).toBe(0);
+    }
+  });
+
   it("keeps explicitly retained offscreen coverage queued and releases it when the plan expires", async () => {
     const f = fixture();
     try {

@@ -146,6 +146,7 @@ describe("full-pixel mode", () => {
       "material_atlas.json",
       "biome_flags.json",
       "material_data.json",
+      "pixel_scene_meta.json",
     ]) {
       expect(fullPixelDataUrl(`../data/${file}`)).toBeTruthy();
       expect(fullPixelDataUrl(`https://example.com/data/${file}?v=1`)).toBe(

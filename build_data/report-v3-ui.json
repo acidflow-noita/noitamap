@@ -1,4 +1,22 @@
 {
+  "backToReport": {
+    "en": "Back to report",
+    "ru": "Назад к отчёту",
+    "uk": "Назад до звіту",
+    "zh": "返回报告",
+    "ja": "レポートに戻る",
+    "de": "Zurück zum Bericht",
+    "fr": "Retour au rapport",
+    "es": "Volver al informe",
+    "br": "Voltar ao relatório",
+    "it": "Torna al rapporto",
+    "pl": "Wróć do raportu",
+    "cs": "Zpět k přehledu",
+    "fi": "Takaisin raporttiin",
+    "nl": "Terug naar het rapport",
+    "sv": "Tillbaka till rapporten",
+    "id": "Kembali ke laporan"
+  },
   "back": {
     "en": "Back",
     "ru": "Назад",

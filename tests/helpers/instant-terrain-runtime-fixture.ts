@@ -18,13 +18,27 @@ export async function verifyInstantTerrainRuntime(native: { draws(): number }) {
     import('noita-telescope-full-pixels/generator_config.js'),
     import('noita-telescope-full-pixels/utils.js'),
   ]);
-  let uploads = 0, invalidations = 0;
+  let textureUploads = 0, deletedTextures = 0;
+  const instrumentedContexts = new WeakSet<object>();
   const renders: { renderer: any; view: any }[] = [];
   const deps = {
     GLTerrainRenderer: class extends GLTerrainRenderer {
-      ensureResources(...args: any[]) { uploads++; return super.ensureResources(...args); }
+      initContext() {
+        const ready = super.initContext();
+        const gl = this.gl;
+        if (!gl || instrumentedContexts.has(gl)) return ready;
+        instrumentedContexts.add(gl);
+        // Observe actual GPU resource operations. The shared owner deliberately
+        // bypasses the upstream renderer's resource-building entry point.
+        for (const name of ['texImage2D', 'texSubImage2D']) {
+          const original = gl[name].bind(gl);
+          gl[name] = (...parameters: any[]) => { textureUploads++; return original(...parameters); };
+        }
+        const deleteTexture = gl.deleteTexture.bind(gl);
+        gl.deleteTexture = (texture: unknown) => { if (texture) deletedTextures++; return deleteTexture(texture); };
+        return ready;
+      }
       render(view: any) { renders.push({ renderer: this, view }); return super.render(view); }
-      invalidate() { invalidations++; return super.invalidate(); }
     },
     initMaterialAtlas, GENERATOR_CONFIG, getWorldSize, getWorldCenter,
   };
@@ -113,8 +127,49 @@ export async function verifyInstantTerrainRuntime(native: { draws(): number }) {
     }
     return error / actual.length;
   }
+  /** Independently reconstruct the overview contribution from an already
+   * shader-verified native leaf. Replace the whole rectangle, including air;
+   * source-over alone would leave sampled terrain in transparent pixels. */
+  function retainNativeReference(
+    expected: Uint8ClampedArray,
+    view: ReturnType<typeof viewFor>,
+    detail: { view: ReturnType<typeof viewFor>; actual: Uint8ClampedArray },
+  ) {
+    assert(detail.view.scale === 1, 'Retention reference must contain native pixels');
+    let reduced = document.createElement('canvas');
+    reduced.width = detail.view.width; reduced.height = detail.view.height;
+    const nativeContext = reduced.getContext('2d')!;
+    const nativePixels = nativeContext.createImageData(reduced.width, reduced.height);
+    nativePixels.data.set(detail.actual); nativeContext.putImageData(nativePixels, 0, 0);
+    for (let scale = 1; scale < view.scale; scale *= 2) {
+      const next = document.createElement('canvas');
+      next.width = reduced.width / 2; next.height = reduced.height / 2;
+      const context = next.getContext('2d')!;
+      context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'low';
+      context.drawImage(reduced, 0, 0, next.width, next.height);
+      reduced.width = reduced.height = 0; reduced = next;
+    }
+    const x = (detail.view.x - view.x) / view.scale;
+    const y = (detail.view.y - view.y) / view.scale;
+    assert(Number.isInteger(x) && Number.isInteger(y), 'Native reference is not aligned to the overview');
+    assert(x >= 0 && y >= 0 && x + reduced.width <= view.width && y + reduced.height <= view.height,
+      'Native reference lies outside the overview');
+    const output = document.createElement('canvas'); output.width = view.width; output.height = view.height;
+    const context = output.getContext('2d')!;
+    const pixels = context.createImageData(view.width, view.height); pixels.data.set(expected);
+    context.putImageData(pixels, 0, 0);
+    context.clearRect(x, y, reduced.width, reduced.height);
+    context.drawImage(reduced, x, y);
+    const result = context.getImageData(0, 0, view.width, view.height).data;
+    let changedPixels = 0;
+    for (let i = 0; i < result.length; i += 4)
+      if (result.subarray(i, i + 4).some((value, channel) => value !== expected[i + channel])) changedPixels++;
+    reduced.width = reduced.height = output.width = output.height = 0;
+    return { pixels: result, changedPixels };
+  }
   let comparedPixels = 0;
-  async function compare(item: any, tile: { level: number; x: number; y: number }, masks: StaticTerrainMask[] = []) {
+  async function compare(item: any, tile: { level: number; x: number; y: number }, masks: StaticTerrainMask[] = [],
+    retainedDetail?: { view: ReturnType<typeof viewFor>; actual: Uint8ClampedArray }) {
     const before = native.draws();
     const rendered = await request(item, tile).result;
     assert(!rendered.error && rendered.type === 'context2d', `Actual tile failed: ${rendered.error}`);
@@ -123,7 +178,12 @@ export async function verifyInstantTerrainRuntime(native: { draws(): number }) {
     const actual = rendered.context.getImageData(0, 0, view.width, view.height).data;
     const renderer = renders.at(-1)!.renderer;
     const factor = Math.min(view.scale, 4, 2 ** Math.floor(Math.log2(512 / Math.max(view.width, view.height))));
-    const expected = referenceRaster(renderer, view, factor, masks);
+    let expected = referenceRaster(renderer, view, factor, masks);
+    let retainedChangedPixels = 0;
+    if (retainedDetail) {
+      const retained = retainNativeReference(expected, view, retainedDetail);
+      expected = retained.pixels; retainedChangedPixels = retained.changedPixels;
+    }
     let visible = 0, checked = 0;
     for (let i = 0; i < actual.length; i++) {
       assert(actual[i] === expected[i],
@@ -132,11 +192,13 @@ export async function verifyInstantTerrainRuntime(native: { draws(): number }) {
     }
     assert(visible > 25, 'Terrain integration produced blank output');
     comparedPixels += checked;
-    return { view, actual, checked, visible, width: view.width, height: view.height, draws: 1 };
+    return { view, actual, checked, visible, width: view.width, height: view.height, draws: 1, retainedChangedPixels };
   }
   const samples = [];
   try {
     assert(await addInstantTerrain(viewer, gen, deps, [], () => true, () => {}, () => paints++, () => failures++), 'Actual GPU setup failed');
+    const initialTextureUploads = textureUploads;
+    assert(initialTextureUploads > 0, 'Terrain setup uploaded no GPU resources');
     assert(paints === 0, 'Setup reported paint before a tile draw event');
     let maskProbe: { x: number; y: number } | undefined;
     for (const pw of [0, -1, 1]) {
@@ -152,8 +214,9 @@ export async function verifyInstantTerrainRuntime(native: { draws(): number }) {
           }
         }
       }
-      const overview = await compare(item, { level: item.source.maxLevel - 8, x: 0, y: 0 });
-      samples.push({ pw, kind: 'overview', width: overview.width, height: overview.height, visible: overview.visible, checked: overview.checked, draws: overview.draws });
+      const overview = await compare(item, { level: item.source.maxLevel - 8, x: 0, y: 0 }, [], detail);
+      samples.push({ pw, kind: 'overview', width: overview.width, height: overview.height, visible: overview.visible,
+        checked: overview.checked, draws: overview.draws, retainedChangedPixels: overview.retainedChangedPixels });
     }
     const quality = [];
     for (const scale of [2, 4, 8]) {
@@ -199,7 +262,8 @@ export async function verifyInstantTerrainRuntime(native: { draws(): number }) {
     for (const handler of [...(handlers.get('tile-drawn') ?? [])]) handler({ tiledImage: mainItem(0) });
     assert(Number(paints) === 1, 'First paint was not tied to the actual terrain tile event');
     assert(failures === 0, 'Unexpected GPU fallback');
-    assert(uploads === 1, 'Main-plane worlds did not share one resource upload');
+    assert(textureUploads === initialTextureUploads, 'Main-plane navigation uploaded GPU resources after initialization');
+    const deletedBeforeClear = deletedTextures;
     const beforeCancel = native.draws();
     const pending = request(mainItem(0), detailTile(mainItem(0)));
     clearInstantTerrain();
@@ -207,13 +271,14 @@ export async function verifyInstantTerrainRuntime(native: { draws(): number }) {
     await new Promise(resolve => setTimeout(resolve, 5));
     assert(native.draws() === beforeCancel, 'Cancelled tile still reached the GPU');
     assert((handlers.get('tile-drawn')?.size ?? 0) === 0, 'Tile draw listener leaked');
-    assert(invalidations >= 1, 'Clearing terrain did not release GPU resources');
+    assert(deletedTextures > deletedBeforeClear, 'Clearing terrain did not release GPU textures');
     assert(maskProbe, 'No opaque terrain available for sparse scene mask check');
     items.length = 0;
     const masks: StaticTerrainMask[] = [{ ...maskProbe, width: 8, height: 1, bits: new Uint8Array([1]), airBits: new Uint8Array([16]) }];
     assert(await addInstantTerrain(viewer, gen, deps, masks, () => true, () => {}, () => paints++, () => failures++), 'Second GPU setup failed');
     const masked = await compare(mainItem(0), detailTile(mainItem(0)), masks);
-    return { seed: 42, rendererUploads: uploads, comparedPixels, samples, quality, reuse,
+    assert(textureUploads === initialTextureUploads * 2, 'Second terrain lifecycle did not upload exactly one resource set');
+    return { seed: 42, textureUploads, initialTextureUploads, comparedPixels, samples, quality, reuse,
       maskCheckedPixels: masked.checked, sparseMaskPreserved: true, cancellationPreserved: true, firstPaintEvents: paints, failures };
   } finally { clearInstantTerrain(); }
 }

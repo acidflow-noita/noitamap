@@ -3,6 +3,63 @@ import { TERRAIN_FS, TERRAIN_VS } from "virtual:instant-terrain-shaders";
 const pending = new WeakMap<object, Promise<void>>();
 const pause = () => new Promise<void>((resolve) => setTimeout(resolve, 4));
 
+/** A discrete adapter preference is a hint, not a terrain requirement. Let
+ * the browser choose its default adapter if the preferred one is unavailable. */
+export function createTerrainWebGL2Context(
+  canvas: HTMLCanvasElement | OffscreenCanvas,
+  preference: WebGLPowerPreference = "high-performance",
+): WebGL2RenderingContext | null {
+  const attributes: WebGLContextAttributes = {
+    alpha: true,
+    antialias: false,
+    depth: false,
+    stencil: false,
+    premultipliedAlpha: true,
+    preserveDrawingBuffer: false,
+    powerPreference: preference,
+  };
+  const gl = canvas.getContext(
+    "webgl2",
+    attributes,
+  ) as WebGL2RenderingContext | null;
+  return (
+    gl ||
+    (preference === "high-performance"
+      ? (canvas.getContext("webgl2", {
+          ...attributes,
+          powerPreference: "default",
+        }) as WebGL2RenderingContext | null)
+      : null)
+  );
+}
+
+function initializeTerrainContext(renderer: any): boolean {
+  if (renderer.initContext()) return true;
+  if (renderer.gl || typeof document === "undefined") return false;
+  // The upstream renderer already tried high-performance and retains a failed
+  // flag. Recover with a default-adapter context on its ordinary canvas path.
+  const canvas = document.createElement("canvas");
+  const gl = createTerrainWebGL2Context(canvas, "default");
+  if (!gl) return false;
+  canvas.addEventListener("webglcontextlost", (event) => {
+    event.preventDefault();
+    renderer.contextLost = true;
+    renderer.textures = null;
+    renderer.program = null;
+  });
+  canvas.addEventListener("webglcontextrestored", () => {
+    renderer.contextLost = false;
+    renderer.sourceKey = null;
+  });
+  renderer.canvas = canvas;
+  renderer.gl = gl;
+  renderer.contextLost = false;
+  renderer.failed = null;
+  gl.disable(gl.BLEND);
+  gl.disable(gl.DEPTH_TEST);
+  return true;
+}
+
 /** Compile/link the real program before seed work starts. KHR completion is
  * polled without blocking; the worker also isolates drivers without KHR.
  * First-use driver specialization remains on the first real draw: dummy draws
@@ -10,16 +67,17 @@ const pause = () => new Promise<void>((resolve) => setTimeout(resolve, 4));
 export function prewarmTerrainShader(renderer: any): Promise<void> {
   const existing = pending.get(renderer);
   if (existing) return existing;
-  const warm = warmShader(renderer).catch((error) => {
-    pending.delete(renderer);
-    throw error;
+  const warm = warmShader(renderer).finally(() => {
+    // Keep only in-flight compilation. A restored context has no program and
+    // must not reuse a resolved promise from the context it replaced.
+    if (pending.get(renderer) === warm) pending.delete(renderer);
   });
   pending.set(renderer, warm);
   return warm;
 }
 
 async function warmShader(renderer: any) {
-  if (!renderer.initContext())
+  if (!initializeTerrainContext(renderer))
     throw new Error(renderer.failed || "WebGL2 unavailable");
   const gl = renderer.gl;
   if (renderer.program) return;

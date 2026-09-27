@@ -1,0 +1,482 @@
+{
+  "date": "2026-09-27",
+  "protocol": 4,
+  "site": "https://noita-telescope.obsoleet.org/",
+  "revision": "fa9cd25d902f04b234896716eca3ba52b2d11856",
+  "conditions": {
+    "processCold": true,
+    "freshContext": true,
+    "renderEverything": true,
+    "viewport": {
+      "width": 1280,
+      "height": 900,
+      "deviceScaleFactor": 1
+    },
+    "cpu": "AMD Ryzen 9 7950X exposed to Linux VM, 16 logical CPUs",
+    "memoryGiB": 31.3138,
+    "network": "Aggregate 100 Mbps encrypted CONNECT tunnel, 256 KiB burst, added 15 ms each direction; public internet latency additional",
+    "calibration": [
+      {
+        "parallelConnections": 1,
+        "bytes": 16777216,
+        "elapsedMs": 1356.8506320000001,
+        "aggregateMbps": 98.9185727850993
+      },
+      {
+        "parallelConnections": 2,
+        "bytes": 33554432,
+        "elapsedMs": 2697.8620469999996,
+        "aggregateMbps": 99.4993262529854
+      }
+    ]
+  },
+  "limitations": [
+    "SwiftShader software GPU; no consumer GPU estimate",
+    "Application status and draw submission are not final native-pixel map completion",
+    "Pending-zero quiet samples later admitted additional scene requests; no final viewport completion established",
+    "Decoded HTTP body count is partial: binary CDP data events and worker ResourceTiming are incomplete",
+    "Return probe elapsed includes polling, scheduling, canvas readback and hash; GPU presentation not separately timed"
+  ],
+  "runs": [
+    {
+      "artifact": "../task/instant-map/deployed/everything-786433191-1790542500199.json",
+      "url": "https://noita-telescope.obsoleet.org/?seed=786433191&ng=0",
+      "seed": 786433191,
+      "utc": "2026-09-27T20:55:00.317Z",
+      "browser": "148.0.7778.96",
+      "gl": {
+        "vendor": "Google Inc. (Google)",
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "maxTextureSize": 8192
+      },
+      "verifiedToggle": true,
+      "settings": {
+        "renderEverything": true,
+        "engineTerrain": true,
+        "edgeDecals": true,
+        "enableEdgeNoise": false,
+        "renderLayers": {
+          "biomeBackground": true,
+          "customArt": false,
+          "atmosphere": false,
+          "alphaMask": false,
+          "tileOverlays": true,
+          "pixelScenes": true,
+          "debugBoxes": true,
+          "secrets": true,
+          "misc": true,
+          "pois": true
+        }
+      },
+      "sourceHashes": [
+        {
+          "path": "/js/app.js",
+          "sha256": "262221ce139fc2a8583bee2ff0e5f79bbec47861ed4ef7331d2f9e2af12ae83a",
+          "matchesFa9cd25": true
+        },
+        {
+          "path": "/js/gl/scene_renderer.js",
+          "sha256": "24a5b8a920f62db405662acf757936d78d88b3c6ef82ea0684c9f628eb92572a",
+          "matchesFa9cd25": true
+        },
+        {
+          "path": "/js/pixel_scene_generation.js",
+          "sha256": "2d27aa10fef2c42b440fea5909eeb8d56856ba3f8d0fb107328cf8a407747a37",
+          "matchesFa9cd25": true
+        },
+        {
+          "path": "/js/gl/shaders.js",
+          "sha256": "56811be069ee6714f53d3b41b6707c362c7d57ce940b5a5cb8f6c67219e1e438",
+          "matchesFa9cd25": true
+        }
+      ],
+      "startup": {
+        "doneMutationMs": 3764.2000000001863,
+        "generationConsole": {
+          "type": "generation-console",
+          "t": 3763.899999999907,
+          "phase": "cold",
+          "message": "Generation completed in 0.6645 seconds."
+        },
+        "firstTerrainSubmissionMs": 4184.399999999907,
+        "firstDrawNowReturnMs": 5042.600000000093,
+        "firstDrawNowPending": 80,
+        "screenshotObservationMs": 7794.100000000093,
+        "initialTerrainView": {
+          "start": 4182,
+          "phase": "cold",
+          "width": 939,
+          "height": 900,
+          "camX": 17920,
+          "camY": 12288,
+          "camZ": 0.0625,
+          "pw": 0,
+          "pwVertical": 0,
+          "edgeNoise": false,
+          "materialTextures": true,
+          "engineTerrain": true,
+          "end": 5016.5
+        },
+        "poiCounts": {
+          "0,0": 724
+        },
+        "sceneCounts": {
+          "0,0": 3468
+        },
+        "pendingQuietReadbackMs": 33954.10000000009,
+        "sceneRequestsAtQuiet": 573,
+        "extraSceneRequestsBeforeDetail": 192,
+        "allNineCompleteMs": null
+      },
+      "return": {
+        "camera": {
+          "x": 17920,
+          "y": 8192,
+          "z": 1
+        },
+        "firstFrameStartAfterRequestMs": 773.5,
+        "firstFrameReturnAfterRequestMs": 774.5999999996275,
+        "drawNowWallMs": 1.099999999627471,
+        "terrainRenderCalls": 1,
+        "probeElapsedMs": 10119.19999999972,
+        "requestsBefore": 1177,
+        "requestsAfter": 1177,
+        "evictionsAfter": 0,
+        "refetchesAfter": 0,
+        "lateOverviewRequestsBeforeReturn": 224,
+        "sceneCacheBytes": 470362932,
+        "canvasHash": "440988c7d0218aaf932a0ecd3e1721399b461f707f64676b4cf1de02ee7bd1c8",
+        "previousDetailHash": "440988c7d0218aaf932a0ecd3e1721399b461f707f64676b4cf1de02ee7bd1c8"
+      },
+      "network": {
+        "cdpEncodedResponseBytes": 18893326,
+        "tunnelDownstreamTLSBytes": 18955555,
+        "cdpDecodedDataBytesPartial": 18000671,
+        "pageResourceDecodedBodyBytesPartial": 18359867,
+        "encodedResponsesCompletedByDoneBytes": 13376391,
+        "assets": [
+          {
+            "path": "/js/app.js",
+            "requests": 1,
+            "encodedBytes": 61096,
+            "startMs": 130.27999999985695,
+            "endMs": 174.14499999995314
+          },
+          {
+            "path": "/npm/upng-js@2.1.0/+esm",
+            "requests": 4,
+            "encodedBytes": 7628,
+            "startMs": 417.42699999986144,
+            "endMs": 2341.475000000173
+          },
+          {
+            "path": "/npm/pako@1.0.6/+esm",
+            "requests": 4,
+            "encodedBytes": 15779,
+            "startMs": 991.9140000001789,
+            "endMs": 2343.232000000171
+          },
+          {
+            "path": "/npm/@zip.js/zip.js@2.8/index.min.js",
+            "requests": 4,
+            "encodedBytes": 76018,
+            "startMs": 1157.9839999999422,
+            "endMs": 2346.5030000002116
+          },
+          {
+            "path": "/data/wang_tiles.zip",
+            "requests": 1,
+            "encodedBytes": 859823,
+            "startMs": 1346.9519999998738,
+            "endMs": 1515.581000000111
+          },
+          {
+            "path": "/data/biome_maps.zip",
+            "requests": 4,
+            "encodedBytes": 3150957,
+            "startMs": 1347.0440000000963,
+            "endMs": 2352.965999999924
+          },
+          {
+            "path": "/data/rng/sampo_seeds.json",
+            "requests": 1,
+            "encodedBytes": 101330,
+            "startMs": 1705.587999999807,
+            "endMs": 1838.5739999998805
+          },
+          {
+            "path": "/data/translations.csv",
+            "requests": 1,
+            "encodedBytes": 1536941,
+            "startMs": 1846.356999999898,
+            "endMs": 2054.8319999998057
+          },
+          {
+            "path": "/data/weather_gfx.zip",
+            "requests": 1,
+            "encodedBytes": 1268435,
+            "startMs": 1852.534999999989,
+            "endMs": 2139.1990000001897
+          },
+          {
+            "path": "/data/backgrounds.zip",
+            "requests": 1,
+            "encodedBytes": 1253168,
+            "startMs": 1853.2900000000154,
+            "endMs": 2207.785999999942
+          },
+          {
+            "path": "/data/pixel_scene_meta.json",
+            "requests": 1,
+            "encodedBytes": 77119,
+            "startMs": 2087.1139999999286,
+            "endMs": 2214.325999999801
+          },
+          {
+            "path": "/data/material_atlas.bin",
+            "requests": 2,
+            "encodedBytes": 4396218,
+            "startMs": 2506.011999999828,
+            "endMs": 6104.779000000235
+          },
+          {
+            "path": "/data/pixel_scenes.zip",
+            "requests": 1,
+            "encodedBytes": 5101107,
+            "startMs": 3759.8299999999654,
+            "endMs": 4231.201999999939
+          },
+          {
+            "path": "/data/edge_atlas.bin",
+            "requests": 1,
+            "encodedBytes": 415551,
+            "startMs": 46507.660000000214,
+            "endMs": 46603.2879999998
+          }
+        ]
+      },
+      "errors": []
+    },
+    {
+      "artifact": "../task/instant-map/deployed/everything-daily-1790542587642.json",
+      "url": "https://noita-telescope.obsoleet.org/?seed=daily&ng=0",
+      "seed": 191452512,
+      "utc": "2026-09-27T20:56:27.715Z",
+      "browser": "148.0.7778.96",
+      "gl": {
+        "vendor": "Google Inc. (Google)",
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "maxTextureSize": 8192
+      },
+      "verifiedToggle": true,
+      "settings": {
+        "renderEverything": true,
+        "engineTerrain": true,
+        "edgeDecals": true,
+        "enableEdgeNoise": false,
+        "renderLayers": {
+          "biomeBackground": true,
+          "customArt": false,
+          "atmosphere": false,
+          "alphaMask": false,
+          "tileOverlays": true,
+          "pixelScenes": true,
+          "debugBoxes": true,
+          "secrets": true,
+          "misc": true,
+          "pois": true
+        }
+      },
+      "sourceHashes": [
+        {
+          "path": "/js/app.js",
+          "sha256": "262221ce139fc2a8583bee2ff0e5f79bbec47861ed4ef7331d2f9e2af12ae83a",
+          "matchesFa9cd25": true
+        },
+        {
+          "path": "/js/gl/scene_renderer.js",
+          "sha256": "24a5b8a920f62db405662acf757936d78d88b3c6ef82ea0684c9f628eb92572a",
+          "matchesFa9cd25": true
+        },
+        {
+          "path": "/js/pixel_scene_generation.js",
+          "sha256": "2d27aa10fef2c42b440fea5909eeb8d56856ba3f8d0fb107328cf8a407747a37",
+          "matchesFa9cd25": true
+        },
+        {
+          "path": "/js/gl/shaders.js",
+          "sha256": "56811be069ee6714f53d3b41b6707c362c7d57ce940b5a5cb8f6c67219e1e438",
+          "matchesFa9cd25": true
+        }
+      ],
+      "startup": {
+        "doneMutationMs": 4280.800000000279,
+        "generationConsole": {
+          "type": "generation-console",
+          "t": 4280.5,
+          "phase": "cold",
+          "message": "Generation completed in 0.6735999999996275 seconds."
+        },
+        "firstTerrainSubmissionMs": 4747.200000000186,
+        "firstDrawNowReturnMs": 5768.300000000279,
+        "firstDrawNowPending": 80,
+        "screenshotObservationMs": 8651.100000000093,
+        "initialTerrainView": {
+          "start": 4745.100000000093,
+          "phase": "cold",
+          "width": 939,
+          "height": 900,
+          "camX": 17920,
+          "camY": 12288,
+          "camZ": 0.0625,
+          "pw": 0,
+          "pwVertical": 0,
+          "edgeNoise": false,
+          "materialTextures": true,
+          "engineTerrain": true,
+          "end": 5741.5
+        },
+        "poiCounts": {
+          "0,0": 776
+        },
+        "sceneCounts": {
+          "0,0": 3635
+        },
+        "pendingQuietReadbackMs": 31732.200000000186,
+        "sceneRequestsAtQuiet": 466,
+        "extraSceneRequestsBeforeDetail": 204,
+        "allNineCompleteMs": null
+      },
+      "return": {
+        "camera": {
+          "x": 17920,
+          "y": 8192,
+          "z": 1
+        },
+        "firstFrameStartAfterRequestMs": 748.1000000000931,
+        "firstFrameReturnAfterRequestMs": 749.5,
+        "drawNowWallMs": 1.3999999999068677,
+        "terrainRenderCalls": 1,
+        "probeElapsedMs": 10227.100000000093,
+        "requestsBefore": 1029,
+        "requestsAfter": 1029,
+        "evictionsAfter": 0,
+        "refetchesAfter": 0,
+        "lateOverviewRequestsBeforeReturn": 256,
+        "sceneCacheBytes": 455402988,
+        "canvasHash": "adc7edebc299b689b0d8dc4628e447a2b49f0b5ab93deb54e3703e402171413a",
+        "previousDetailHash": "adc7edebc299b689b0d8dc4628e447a2b49f0b5ab93deb54e3703e402171413a"
+      },
+      "network": {
+        "cdpEncodedResponseBytes": 18893963,
+        "tunnelDownstreamTLSBytes": 18960844,
+        "cdpDecodedDataBytesPartial": 18000680,
+        "pageResourceDecodedBodyBytesPartial": 18359867,
+        "encodedResponsesCompletedByDoneBytes": 13377047,
+        "assets": [
+          {
+            "path": "/js/app.js",
+            "requests": 1,
+            "encodedBytes": 61096,
+            "startMs": 128.7849999998798,
+            "endMs": 217.97399999968547
+          },
+          {
+            "path": "/npm/upng-js@2.1.0/+esm",
+            "requests": 4,
+            "encodedBytes": 7628,
+            "startMs": 466.09499999976833,
+            "endMs": 2350.0159999998687
+          },
+          {
+            "path": "/npm/pako@1.0.6/+esm",
+            "requests": 4,
+            "encodedBytes": 15779,
+            "startMs": 958.2109999996646,
+            "endMs": 2352.0269999999073
+          },
+          {
+            "path": "/npm/@zip.js/zip.js@2.8/index.min.js",
+            "requests": 4,
+            "encodedBytes": 76027,
+            "startMs": 1123.8699999998971,
+            "endMs": 2356.018999999833
+          },
+          {
+            "path": "/data/wang_tiles.zip",
+            "requests": 1,
+            "encodedBytes": 859823,
+            "startMs": 1315.466000000015,
+            "endMs": 1470.593000000008
+          },
+          {
+            "path": "/data/biome_maps.zip",
+            "requests": 4,
+            "encodedBytes": 3150980,
+            "startMs": 1315.5579999997826,
+            "endMs": 2395.1019999999517
+          },
+          {
+            "path": "/data/rng/sampo_seeds.json",
+            "requests": 1,
+            "encodedBytes": 101450,
+            "startMs": 1676.5499999996791,
+            "endMs": 1813.713000000007
+          },
+          {
+            "path": "/data/translations.csv",
+            "requests": 1,
+            "encodedBytes": 1536937,
+            "startMs": 1821.4739999998528,
+            "endMs": 1973.1830000000627
+          },
+          {
+            "path": "/data/weather_gfx.zip",
+            "requests": 1,
+            "encodedBytes": 1268424,
+            "startMs": 1829.4779999996535,
+            "endMs": 2179.9769999997807
+          },
+          {
+            "path": "/data/backgrounds.zip",
+            "requests": 1,
+            "encodedBytes": 1253137,
+            "startMs": 1830.065999999988,
+            "endMs": 2108.5229999998774
+          },
+          {
+            "path": "/data/pixel_scene_meta.json",
+            "requests": 1,
+            "encodedBytes": 77069,
+            "startMs": 2011.3209999999526,
+            "endMs": 2187.568999999712
+          },
+          {
+            "path": "/data/material_atlas.bin",
+            "requests": 2,
+            "encodedBytes": 4396202,
+            "startMs": 2456.0139999998682,
+            "endMs": 6714.649999999892
+          },
+          {
+            "path": "/data/pixel_scenes.zip",
+            "requests": 1,
+            "encodedBytes": 5101125,
+            "startMs": 4276.335999999901,
+            "endMs": 4748.888000000079
+          },
+          {
+            "path": "/data/edge_atlas.bin",
+            "requests": 1,
+            "encodedBytes": 415519,
+            "startMs": 45389.523999999714,
+            "endMs": 45448.68999999971
+          }
+        ]
+      },
+      "errors": []
+    }
+  ]
+}

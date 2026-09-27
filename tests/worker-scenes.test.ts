@@ -26,3 +26,14 @@ it('refuses uninitialized, incomplete or mismatched-fork inputs', () => {
   delete packet.spawns.key;
   expect(() => installWorkerScenes({}, packet, false)).toThrow(/Incomplete/);
 });
+
+it('sends metadata and spawns without warm render-perf pixels or art', () => {
+  const scene = { imgElement: new Uint8Array(4), visualArt: { data: new Uint8Array(4) }, loadGen: 0, variants: {} };
+  const source = { ensureScenePixels: () => {}, PIXEL_SCENE_DATA: { key: scene }, PIXEL_SCENE_SPAWN_DATA: { key: [] } };
+  const snapshot = snapshotWorkerScenes(source, true);
+  expect(snapshot.data.key.imgElement).toBeNull();
+  expect(snapshot.data.key.visualArt).toBeNull();
+  expect(snapshot.data.key.loadGen).toBe(0);
+  expect(scene.imgElement).toBeInstanceOf(Uint8Array);
+  expect(scene.visualArt.data).toBeInstanceOf(Uint8Array);
+});

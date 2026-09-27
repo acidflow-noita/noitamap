@@ -13,6 +13,28 @@ export const PIXEL_MAP_DRAW_OPTIONS = {
   maxTilesPerFrame: 16,
 };
 
+/** Generated terrain has exact, non-overlapping transparent tile footprints.
+ * CanvasDrawer's synthetic one-pixel overlap clears pixels from its neighbor;
+ * fractional clear/draw rectangles then leave seams even with every tile ready.
+ * Round shared physical-pixel edges, not each tile's width independently. The
+ * WebGL drawer uses positionedBounds directly and needs no canvas adjustment. */
+export function alignTerrainTileEdges(item: any, tile: any): void {
+  if (!item.source?.__instantTerrain || item.source.tileOverlap
+    || item.getDrawer?.()?.getType?.() !== 'canvas'
+    || item.getRotation(true) % 360 || item.viewport.getRotation(true) % 360) return;
+  const density = (typeof OpenSeadragon !== 'undefined' && OpenSeadragon.pixelDensityRatio)
+    || globalThis.devicePixelRatio || 1;
+  const bounds = tile.positionedBounds;
+  const start = item.viewport.pixelFromPointNoRotate(bounds.getTopLeft(), true);
+  const end = item.viewport.pixelFromPointNoRotate(bounds.getBottomRight(), true);
+  const left = Math.round(start.x * density), top = Math.round(start.y * density);
+  const right = Math.round(end.x * density), bottom = Math.round(end.y * density);
+  tile.position.x = left / density;
+  tile.position.y = top / density;
+  tile.size.x = (right - left) / density;
+  tile.size.y = (bottom - top) / density;
+}
+
 /** Filter only reductions of the already area-sampled terrain tiles. Enlarging
  * a cached tile must retain sharp pixels while its finer replacement loads.
  * OSD saves/restores this state around each tile in either drawing context. */

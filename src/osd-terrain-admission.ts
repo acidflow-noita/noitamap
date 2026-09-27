@@ -15,6 +15,7 @@ interface Entry {
   ticket: TerrainTileAdmission;
   interests: Set<() => boolean>;
   phase: "queued" | "active" | "finished";
+  cold: boolean;
   start: () => void;
   finish: () => void;
   rejectStart: (reason: unknown) => void;
@@ -125,7 +126,7 @@ export function installTerrainAdmission(viewer: any): () => void {
   };
   Object.defineProperties(stats, {
     active: { enumerable: true, get: () => active },
-    queued: { enumerable: true, get: () => entries.size - active },
+    queued: { enumerable: true, get: () => [...entries.values()].filter(entry => entry.phase === "queued").length },
   });
   viewer.terrainAdmissionStats = stats;
   const aborted = () =>
@@ -136,7 +137,7 @@ export function installTerrainAdmission(viewer: any): () => void {
     if (queued) {
       entry.tile.loading = false;
       stats.discarded++;
-    } else active--;
+    } else if (entry.cold) active--;
     entry.phase = "finished";
     entries.delete(entry.tile);
     tickets.delete(entry.tile);
@@ -174,11 +175,15 @@ export function installTerrainAdmission(viewer: any): () => void {
     }
     candidates.sort((a, b) => a.priority - b.priority);
     for (const { entry } of candidates) {
-      if (active >= MAX_COLD_LOADS) break;
       if (entry.phase !== "queued") continue;
+      // A sibling's native capture can complete this tile after it was queued.
+      // Restore those now-cached pixels without waiting for another cold slot.
+      const cached = !!entry.item.source.hasCachedTile?.(entry.tile);
+      if (!cached && active >= MAX_COLD_LOADS) continue;
       entry.phase = "active";
-      active++;
-      stats.started++;
+      entry.cold = !cached;
+      if (cached) stats.cached++;
+      else { active++; stats.started++; }
       entry.start();
       try {
         entry.original.call(entry.item, entry.tile, entry.time);
@@ -260,6 +265,7 @@ export function installTerrainAdmission(viewer: any): () => void {
         ticket,
         interests,
         phase: "queued",
+        cold: true,
         start,
         finish,
         rejectStart,
@@ -303,6 +309,7 @@ export function installTerrainAdmission(viewer: any): () => void {
       "resize",
       "animation",
       "animation-finish",
+      "terrain-cache-ready",
     ])
       viewer.removeHandler(name, schedule);
     viewer.removeHandler("before-destroy", dispose);
@@ -312,7 +319,7 @@ export function installTerrainAdmission(viewer: any): () => void {
   viewer.world.addHandler("remove-item", remove);
   viewer.addHandler("tile-loaded", loaded);
   viewer.addHandler("tile-load-failed", failed);
-  for (const name of ["pan", "zoom", "resize", "animation", "animation-finish"])
+  for (const name of ["pan", "zoom", "resize", "animation", "animation-finish", "terrain-cache-ready"])
     viewer.addHandler(name, schedule);
   viewer.addHandler("before-destroy", dispose);
   installed.set(viewer, dispose);

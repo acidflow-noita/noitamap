@@ -20,10 +20,24 @@ import {
 } from "../src/telescope/terrain-policy";
 import { prepareInstantTerrain, releaseInstantTerrainBackend } from "../src/telescope/instant-terrain-backend";
 vi.mock("../src/telescope/instant-terrain-plane", () => ({
-  setTerrainPlane: vi.fn(),
+  setTerrainPlane: vi.fn((renderer: any, plane: number) => renderer.setPlane?.(plane)),
 }));
 vi.mock("../src/telescope/terrain-shader-prewarm", () => ({
   prewarmTerrainShader: async () => {},
+}));
+const sharedResources = vi.hoisted(() => ({ owners: [] as any[], draws: [] as any[] }));
+vi.mock("../src/telescope/shared-instant-terrain", () => ({
+  SharedInstantTerrainResources: class {
+    private plane = 0;
+    constructor(readonly renderer: any) { sharedResources.owners.push(this); }
+    async ensureResources(...args: any[]) { return this.renderer.ensureResources(...args); }
+    setPlane(plane: number) { this.plane = plane; }
+    render(view: any) {
+      sharedResources.draws.push({ plane: this.plane, view });
+      return this.renderer.render(view);
+    }
+    invalidate() { this.renderer.invalidate(); }
+  },
 }));
 
 const region = {
@@ -78,6 +92,8 @@ beforeEach(() => {
     },
   });
   vi.clearAllMocks();
+  sharedResources.owners.length = 0;
+  sharedResources.draws.length = 0;
 });
 afterEach(() => {
   clearInstantTerrain();
@@ -245,6 +261,77 @@ describe("display-resolution GPU terrain (native canvas, no browser)", () => {
     expect(value.canvas.width).toBe(256);
     expect(image.close).toHaveBeenCalledOnce();
   });
+  it('keeps overview rendering available while native retention is under storage pressure', async () => {
+    let release!: () => void;
+    const blocked = new Promise<void>(resolve => { release = resolve; });
+    const capacity = vi.fn(() => blocked);
+    const retention: any = {
+      minLevel: 8,
+      owner: { capacity, stats: {} },
+      subscribe: () => () => {},
+      complete: async () => undefined,
+      hasComplete: () => false,
+      capture: async () => {},
+      apply: async () => 0,
+      revision: 0,
+    };
+    const src = createInstantTileSource({
+      region, gen, deps, retention,
+      renderer: new Renderer(),
+      clip: createInstantClip([owner(true), owner(true), owner(true)], []),
+      signal: new AbortController().signal,
+      onFailure: vi.fn(),
+    });
+    const first = request(src), second = request(src, src.maxLevel, 1);
+    try {
+      await vi.waitFor(() => expect(capacity).toHaveBeenCalledTimes(2));
+      const overview = request(src, 8);
+      await vi.waitFor(() => expect(overview.context.finish).toHaveBeenCalledOnce());
+      expect(draw).toHaveBeenCalledOnce();
+      expect(first.context.finish).not.toHaveBeenCalled();
+      expect(second.context.finish).not.toHaveBeenCalled();
+      expect(capacity).toHaveBeenCalledTimes(2);
+    } finally {
+      release();
+      await Promise.all([first.result, second.result]);
+    }
+  });
+  it('copies a shared renderer canvas before yielding to native capture work', async () => {
+    const shared = createCanvas(256, 256);
+    const captureWaits: (() => void)[] = [];
+    const captures: number[][] = [];
+    const retention: any = {
+      minLevel: 8,
+      owner: { capacity: async () => {}, stats: {} },
+      subscribe: () => () => {},
+      complete: async () => undefined,
+      hasComplete: () => false,
+      capture: async (_x: number, _y: number, ctx: CanvasRenderingContext2D) => {
+        await new Promise<void>(resolve => captureWaits.push(resolve));
+        captures.push([...ctx.getImageData(0, 0, 1, 1).data]);
+      },
+      apply: async () => 0,
+      revision: 0,
+    };
+    let calls = 0;
+    const src = createInstantTileSource({
+      region, gen, deps, retention,
+      renderer: { render: () => {
+        const ctx = shared.getContext('2d');
+        ctx.fillStyle = ++calls === 1 ? '#ff0000' : '#00ff00';
+        ctx.fillRect(0, 0, 256, 256);
+        return shared;
+      } },
+      clip: createInstantClip([owner(true), owner(true), owner(true)], []),
+      signal: new AbortController().signal,
+      onFailure: vi.fn(),
+    });
+    const first = request(src), second = request(src, src.maxLevel, 1);
+    await vi.waitFor(() => expect(captureWaits).toHaveLength(2));
+    captureWaits.forEach(resolve => resolve());
+    await Promise.all([first.result, second.result]);
+    expect(captures).toEqual([[255, 0, 0, 255], [0, 255, 0, 255]]);
+  });
   it('closes a late worker bitmap after cancellation without publishing a tile', async () => {
     const image = createCanvas(256, 256) as any;
     image.close = vi.fn();
@@ -327,7 +414,8 @@ describe("display-resolution GPU terrain (native canvas, no browser)", () => {
     await request(second).result;
     expect(draw).toHaveBeenCalledTimes(2);
     await request(first).result;
-    expect(draw).toHaveBeenCalledTimes(3);
+    // The display-cache eviction must not discard separately retained native pixels.
+    expect(draw).toHaveBeenCalledTimes(2);
     expect(cache.stats.bytes).toBeLessThanOrEqual(cache.maxBytes);
     cache.clear();
   });
@@ -433,7 +521,7 @@ describe("display-resolution GPU terrain (native canvas, no browser)", () => {
     ]);
     clip.dispose();
   });
-  it("shares one resource upload across three worlds, and reports paint only after a terrain tile is drawn", async () => {
+  it("shares one resource upload across nine regions, and reports paint only after a terrain tile is drawn", async () => {
     const v = viewer(),
       painted = vi.fn();
     expect(
@@ -459,7 +547,7 @@ describe("display-resolution GPU terrain (native canvas, no browser)", () => {
     clearInstantTerrain();
     expect(v.handlers.get("tile-drawn").size).toBe(0);
   });
-  it("builds heaven resources only when its terrain is requested and shares that build across horizontal worlds", async () => {
+  it("prepares all planes once and binds the correct plane and horizontal world for every region", async () => {
     const v = viewer();
     await addInstantTerrain(
       v,
@@ -472,40 +560,42 @@ describe("display-resolution GPU terrain (native canvas, no browser)", () => {
       vi.fn(),
     );
     expect(build).toHaveBeenCalledOnce();
-    const sources = v.items.filter(
-      (item: any) => item.source.instantRegion.y === WORLD_TOP - WORLD_HEIGHT,
-    );
+    expect(sharedResources.owners).toHaveLength(1);
     await Promise.all(
-      sources.map((item: any) => request(item.source, 8).result),
+      v.items.map((item: any) => request(item.source, 8).result),
     );
-    expect(build).toHaveBeenCalledTimes(2);
-    expect(draw).toHaveBeenCalledTimes(3);
-  });
-  it("handles lazy plane initialization failure even after every dependent tile was cancelled", async () => {
-    const v = viewer(), fallback = vi.fn();
-    let rejectAtlas!: (error: Error) => void;
-    const initMaterialAtlas = vi.fn()
-      .mockResolvedValueOnce(undefined)
-      .mockImplementation(() => new Promise<void>((_resolve, reject) => { rejectAtlas = reject; }));
-    await addInstantTerrain(v, gen, { ...deps, initMaterialAtlas }, [],
-      () => true, vi.fn(), vi.fn(), fallback);
-    const jobs = v.items.filter((item: any) => item.source.instantRegion.y === WORLD_TOP - WORLD_HEIGHT)
-      .map((item: any) => request(item.source, 8));
-    await vi.waitFor(() => expect(rejectAtlas).toBeTypeOf("function"));
-    expect(initMaterialAtlas).toHaveBeenCalledTimes(2);
-    // The OSD timeout wrapper takes the same cleanup path. All three tile
-    // subscribers are settled before their shared initialization fails.
-    for (const job of jobs) job.context.abort();
-    await Promise.all(jobs.map((job: any) => job.result));
-    expect(fallback).not.toHaveBeenCalled();
-    rejectAtlas(new Error("Heaven resource initialization failed"));
-    await vi.waitFor(() => expect(fallback).toHaveBeenCalledOnce());
-    expect(String(fallback.mock.calls[0][0])).toContain("Heaven resource initialization failed");
-    expect(v.items).toHaveLength(0);
-    for (const job of jobs) {
-      expect(job.context.fail).toHaveBeenCalledOnce();
-      expect(job.context.finish).not.toHaveBeenCalled();
+    expect(build).toHaveBeenCalledOnce();
+    expect(sharedResources.owners).toHaveLength(1);
+    expect(draw).toHaveBeenCalledTimes(9);
+    expect(sharedResources.draws.map(({ plane, view }) => `${plane}/${view.pw}`).sort())
+      .toEqual([-1, 0, 1].flatMap(plane => [-1, 0, 1].map(pw => `${plane}/${pw}`)).sort());
+    for (const { plane, view } of sharedResources.draws) {
+      // Plane selection changes resources. Camera coordinates already include
+      // the vertical offset and must not apply it a second time.
+      expect(view.pwVertical).toBe(0);
+      expect(view.camY - view.height / (2 * view.camZ) - 14 * 512)
+        .toBe(WORLD_TOP + plane * WORLD_HEIGHT);
+      expect(view.camX - view.width / (2 * view.camZ) - 35 * 512 + view.pw * 70 * 512)
+        .toBe(-17920 + view.pw * 35840);
     }
+  });
+  it("attaches no regions after shared resource initialization fails and can prepare the next seed", async () => {
+    const v = viewer(), fallback = vi.fn();
+    build.mockImplementationOnce(() => { throw new Error("Shared terrain initialization failed"); });
+    expect(await addInstantTerrain(v, gen, deps, [],
+      () => true, vi.fn(), vi.fn(), fallback)).toBe(false);
+    expect(build).toHaveBeenCalledOnce();
+    expect(v.items).toHaveLength(0);
+    expect(draw).not.toHaveBeenCalled();
+    // Initial failure returns false to the bridge; it must not also invoke the
+    // post-installation failure callback and install approximate terrain twice.
+    expect(fallback).not.toHaveBeenCalled();
+    expect(await addInstantTerrain(v, { ...gen, seed: 43, tileLayers: [] }, deps, [],
+      () => true, vi.fn(), vi.fn(), fallback)).toBe(true);
+    expect(build).toHaveBeenCalledTimes(2);
+    expect(sharedResources.owners).toHaveLength(1);
+    expect(v.items).toHaveLength(9);
+    expect((await request(v.items[0].source, 8).result).type).toBe("context2d");
   });
   it("cannot upload or attach an obsolete seed after awaiting the atlas", async () => {
     const v = viewer();

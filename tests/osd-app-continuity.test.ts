@@ -200,3 +200,77 @@ it('reuses previously viewed fine pixels after navigating away through the actua
     viewer.destroy(); mount.remove(); frames.clear();
   }
 });
+
+it.each([1, 2])('keeps completed adjacent terrain tiles solid through slight fractional zoom-outs and pans at density %i', async density => {
+  OSD.pixelDensityRatio = density;
+  const mount = document.createElement('div'); document.body.appendChild(mount);
+  const app = new AppOSD(mount, false), viewer = app.viewer;
+  let hold = false;
+  const source = new OSD.TileSource({ width: 4096, height: 4096, tileSize: 256,
+    tileOverlap: 0, minLevel: 4, maxLevel: 12 });
+  source.__instantTerrain = true;
+  source.getTileUrl = (level: number, x: number, y: number) => `fractional:///${level}/${x}/${y}`;
+  source.hasTransparency = () => true;
+  source.downloadTileStart = (job: any) => {
+    if (hold) return;
+    const bounds = source.getTileBounds(job.tile.level, job.tile.x, job.tile.y, true);
+    const canvas = createCanvas(bounds.width, bounds.height), context = canvas.getContext('2d');
+    context.fillStyle = job.tile.level === 12 ? '#f08020' : '#2060a0';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    const scale = source.getLevelScale(job.tile.level);
+    context.clearRect((64 - job.tile.x * 256 / scale) * scale,
+      (64 - job.tile.y * 256 / scale) * scale, 64 * scale, 64 * scale);
+    queueMicrotask(() => job.finish(context, null, 'context2d'));
+  };
+  source.downloadTileAbort = () => {};
+  try {
+    const item = await new Promise<any>((resolve, reject) => viewer.addTiledImage({
+      tileSource: source, width: 4096, success: (event: any) => resolve(event.item), error: reject,
+    }));
+    async function load(level: number, x = 0, y = 0) {
+      const tile = item._getTile(x, y, level, OSD.now(), source.getNumTiles(level));
+      item._loadTile(tile, OSD.now());
+      await vi.waitFor(() => expect(tile.loaded).toBe(true));
+    }
+    viewer.viewport.fitBounds(new OSD.Rect(0, 0, 4096, 4096), true);
+    await load(8);
+    for (let y = 0; y < 3; y++) for (let x = 0; x < 3; x++) {
+      viewer.viewport.fitBounds(new OSD.Rect(x * 256, y * 256, 256, 256), true);
+      await load(12, x, y);
+    }
+    hold = true;
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date', 'performance'] });
+    function verifyFrame() {
+      const { x, y, width } = viewer.viewport.getBounds(true);
+      const size = 256 * density;
+      const pixels = viewer.drawer.context.getImageData(0, 0, size, size).data;
+      const wrong: string[] = [];
+      for (let py = 2; py < size - 2; py++) for (let px = 2; px < size - 2; px++) {
+        const wx = x + (px + .5) * width / size, wy = y + (py + .5) * width / size;
+        if (wx > 60 && wx < 132 && wy > 60 && wy < 132) continue;
+        const index = (py * size + px) * 4;
+        if (pixels[index] !== 240 || pixels[index + 1] !== 128 || pixels[index + 2] !== 32 || pixels[index + 3] !== 255)
+          if (wrong.length < 20) wrong.push(`${px},${py}: ${Array.from(pixels.slice(index, index + 4))}`);
+      }
+      expect(wrong, `camera ${x},${y},${width}; levels ${item._lastDrawn.map((info: any) => info.level)}`).toEqual([]);
+      const holeX = Math.round((96 - x) * size / width), holeY = Math.round((96 - y) * size / width);
+      expect(pixels[(holeY * size + holeX) * 4 + 3]).toBe(0);
+    }
+    viewer.viewport.fitBounds(new OSD.Rect(0, 0, 512, 512), true);
+    viewer.forceRedraw(); runFrame(); verifyFrame();
+    for (const [x, y, width] of [[0, 0, 545.2], [13.4, 25.2, 597.3], [7.1, 3.2, 551.7]]) {
+      const target = new OSD.Rect(x, y, width, width);
+      viewer.viewport.fitBounds(target, false);
+      for (let frame = 0; frame < 5; frame++) {
+        await vi.advanceTimersByTimeAsync(16);
+        viewer.forceRedraw(); runFrame(); verifyFrame();
+      }
+      viewer.viewport.fitBounds(target, true);
+      viewer.forceRedraw(); runFrame(); verifyFrame();
+    }
+  } finally {
+    viewer.destroy(); mount.remove(); frames.clear();
+    vi.useRealTimers();
+    OSD.pixelDensityRatio = 1;
+  }
+});

@@ -9,7 +9,9 @@ vi.mock("../src/data-archive", () => ({
   getZip: async (name: string) => archives.get(name),
   getDataZip: async () => archives.get("main"),
 }));
-vi.mock("../src/renderer_settings", () => ({ useRenderPerfGeneration: () => true }));
+vi.mock("../src/renderer_settings", () => ({
+  useRenderPerfGeneration: () => true,
+}));
 import { getFromZipFirst } from "../src/telescope/zip-extraction-shim";
 import { installFetchInterceptor } from "../src/telescope/telescope-data-bridge";
 
@@ -48,6 +50,7 @@ const repairedPaths = [
   ],
   ["general/scale.png", "pixel_scenes", "overworld/scale.png"],
   ["general/scale_old.png", "pixel_scenes", "overworld/scale_old.png"],
+  ["spliced/watercave.png", "pixel_scenes", "spliced/watercave.png"],
 ] as const;
 let realArchives: Promise<Map<string, JSZip>> | undefined;
 const loadRealArchives = () =>
@@ -69,6 +72,64 @@ const loadRealArchives = () =>
   ).then((entries) => new Map(entries)));
 
 describe("repaired asset paths use real authored pixels", () => {
+  it("preserves the spliced directory when falling back to the main archive", async () => {
+    const main = (await loadRealArchives()).get("main")!;
+    archives.set("main", main);
+    const bytes = await (
+      await getFromZipFirst("../data/pixel_scenes/spliced/watercave.png")
+    ).arrayBuffer();
+    expect(new Uint8Array(bytes)).toEqual(
+      await main
+        .file("data/biome_impl/spliced/watercave.png")!
+        .async("uint8array"),
+    );
+    const image = decodePngToRgba(bytes);
+    expect([image.width, image.height]).toEqual([512, 1139]);
+  });
+
+  it("does not substitute an unrelated basename if a spliced scene is unavailable", async () => {
+    archives.set(
+      "main",
+      new JSZip().file("data/biome_impl/watercave.png", new Uint8Array([1])),
+    );
+    await expect(
+      getFromZipFirst("../data/pixel_scenes/spliced/watercave.png"),
+    ).rejects.toThrow("Missing telescope PNG");
+  });
+
+  it("loads every configured spliced scene from prepared pixels, including the complete watercave", async () => {
+    for (const [key, zip] of await loadRealArchives()) archives.set(key, zip);
+    const { SPLICED_SCENES } =
+      await import("../lib/noita-telescope-vm/js/pixel_scene_config.js");
+    const metadata = JSON.parse(
+      await readFile(
+        new URL(
+          "../lib/noita-telescope-vm/data/pixel_scene_meta.json",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    ).scenes;
+    for (const { name } of SPLICED_SCENES.extras) {
+      const path = `spliced/${name}.png`;
+      const expected = await archives
+        .get("pixel_scenes")
+        .file(path)
+        .async("uint8array");
+      const bytes = await (
+        await getFromZipFirst(`../data/pixel_scenes/${path}`)
+      ).arrayBuffer();
+      expect(new Uint8Array(bytes), path).toEqual(expected);
+      const image = decodePngToRgba(bytes),
+        record = metadata[`general/${name}`];
+      expect([image.width, image.height], path).toEqual([
+        record.width,
+        record.height,
+      ]);
+      if (name === "watercave")
+        expect([image.width, image.height]).toEqual([512, 1139]);
+    }
+  });
   it.each(repairedPaths)(
     "resolves %s to its canonical archive entry",
     async (path, archive, canonical) => {
@@ -90,6 +151,7 @@ describe("repaired asset paths use real authored pixels", () => {
   it.each([
     "biome_maps/biome_map_nightmare.png",
     "pixel_scenes/general/cauldron.png",
+    "pixel_scenes/general/cauldron_fg.png",
   ])(
     "loads the bundled %s without recursive interception or blank fallback",
     async (path) => {
@@ -249,19 +311,27 @@ describe("engine artwork archive paths", () => {
       expect(fetchOriginal).not.toHaveBeenCalled();
     });
   }
-  it("does not replace the generator's specialized base material PNG with a differently prepared main-archive copy", async () => {
-    const main = new JSZip(),
-      scenes = new JSZip();
-    main.file("data/biome_impl/coalmine/coalpit01.png", new Uint8Array([1]));
-    scenes.file("coalmine/coalpit01.png", new Uint8Array([2]));
-    archives.set("main", main);
-    archives.set("pixel_scenes", scenes);
-    expect(
-      new Uint8Array(
-        await (
-          await getFromZipFirst("../data/pixel_scenes/coalmine/coalpit01.png")
-        ).arrayBuffer(),
-      ),
-    ).toEqual(new Uint8Array([2]));
-  });
+  it.each(["coalmine/coalpit01", "general/wand_altar", "spliced/watercave"])(
+    "keeps prepared %s material pixels ahead of differently prepared main-archive copies",
+    async (path) => {
+      const main = new JSZip(),
+        scenes = new JSZip();
+      main.file(`data/biome_impl/${path}.png`, new Uint8Array([1]));
+      main.file(
+        `data/biome_impl/${path.split("/").at(-1)}.png`,
+        new Uint8Array([1]),
+      );
+      main.file(`data/pixel_scenes/${path}.png`, new Uint8Array([1]));
+      scenes.file(`${path}.png`, new Uint8Array([2]));
+      archives.set("main", main);
+      archives.set("pixel_scenes", scenes);
+      expect(
+        new Uint8Array(
+          await (
+            await getFromZipFirst(`../data/pixel_scenes/${path}.png`)
+          ).arrayBuffer(),
+        ),
+      ).toEqual(new Uint8Array([2]));
+    },
+  );
 });

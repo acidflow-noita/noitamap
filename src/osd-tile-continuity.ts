@@ -2,6 +2,8 @@
  * Reuse their real pixels, including revisited cached areas, until useful
  * replacements arrive. Loading and coverage selection still belong to OSD. */
 
+import { alignTerrainTileEdges } from './osd-pixel-rendering';
+
 type Bounds = { x: number; y: number; width: number; height: number };
 type State = { remembered: Set<any>; extras: Set<any> };
 
@@ -106,6 +108,7 @@ function protect(item: any, budget: ReferenceBudget): () => void {
     // Let normal OSD loading run without the retained tiles affecting coverage
     // or blocking the requests that will replace them.
     const drawn: any[] = original.call(this);
+    for (const { tile } of drawn) alignTerrainTileEdges(this, tile);
     const drawArea = this.getDrawArea();
     if (!drawArea || this.opacity === 0) { budget.forget(state); return drawn; }
     const area = drawArea.getBoundingBox();
@@ -132,6 +135,7 @@ function protect(item: any, budget: ReferenceBudget): () => void {
       if (!visible || covered(visible, replacements)) continue;
       center ??= this.viewport.pixelFromPoint(this.viewport.getCenter());
       this._positionTile(tile, this.source.tileOverlap, this.viewport, center, tile.visibility);
+      alignTerrainTileEdges(this, tile);
       retained.push({ tile, level: tile.level, levelOpacity: 1, currentTime: Date.now() });
     }
     // Select references before drawing so rediscovery cannot append an

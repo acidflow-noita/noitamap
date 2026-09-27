@@ -5526,6 +5526,7 @@
     },
     "populationUnavailable": "{{metrics}}: $t(seedReport.v2.invalidPopulationReference)",
     "v3": {
+      "backToReport": "Voltar ao relatório",
       "back": "Voltar",
       "viewAll": "Ver todos",
       "showMore": "Mostrar mais",

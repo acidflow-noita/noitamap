@@ -281,6 +281,24 @@ the engine table. Missing flags and commented-out definitions cannot turn an
 unknown material into a fluid. This classification check does not resolve the
 separately documented ore-density placement mismatch.
 
+## Local builds on Windows and Linux
+
+Use Node.js 22.12 or newer, with `node` and `npm` available in your shell.
+After moving a checkout between operating systems, run `npm ci` to reinstall
+platform-specific dependencies, then `npm run build`. The install step also
+initializes submodules at the revisions recorded by this repository.
+
+`.gitattributes` keeps text files LF on both systems, independently of your
+global `core.autocrlf` setting; Windows batch scripts use CRLF. Existing files
+committed with CRLF need a one-time normalization commit. Review with
+`git diff --ignore-space-at-eol` to distinguish line-ending changes from code
+changes. No global Git setting needs to change.
+
+Keep the public and private Pro checkouts on compatible revisions. Pro imports
+shared report/Sage sources from the public checkout, so a newer Pro revision
+can fail to build against an older public revision even when dependencies are
+installed correctly.
+
 ## Local Pro development
 
 The private Pro repository can live inside this workspace:

@@ -3,6 +3,7 @@ import atlas from "../../lib/noita-telescope-vm/data/material_atlas.bin?url";
 import layout from "../../lib/noita-telescope-vm/data/material_atlas.json?url";
 import flags from "../../lib/noita-telescope-vm/data/biome_flags.json?url";
 import materials from "../../lib/noita-telescope-vm/data/material_data.json?url";
+import sceneMetadata from "../../lib/noita-telescope-vm/data/pixel_scene_meta.json?url";
 
 const assets: Record<string, string> = {
   "material_atlas.bin": atlas,
@@ -10,6 +11,7 @@ const assets: Record<string, string> = {
   "material_atlas.json": layout,
   "biome_flags.json": flags,
   "material_data.json": materials,
+  "pixel_scene_meta.json": sceneMetadata,
 };
 
 export function fullPixelDataUrl(url: string): string | undefined {

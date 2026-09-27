@@ -1,7 +1,6 @@
 import { installTelescopeShim } from "./telescope-dom-shim";
 import { installFetchInterceptor } from "./telescope-data-bridge";
 import { restoreTileLayer } from "./tile-layer-cache";
-import { setTerrainPlane } from "./instant-terrain-plane";
 
 if (typeof window === "undefined") (globalThis as any).window = self;
 if (typeof document === "undefined")
@@ -22,6 +21,7 @@ installTelescopeShim();
 installFetchInterceptor(true);
 
 let renderer: any;
+let resources: any;
 let config: any;
 let warm: Promise<void> | undefined;
 let resourcesLoaded: Promise<void> | undefined;
@@ -33,17 +33,10 @@ const outstanding = new Set<number>();
 
 function prewarm() {
   return (warm ??= (async () => {
-    const { prewarmTerrainShader } = await import("./terrain-shader-prewarm");
+    const { prewarmTerrainShader, createTerrainWebGL2Context } =
+      await import("./terrain-shader-prewarm");
     const canvas = new OffscreenCanvas(1, 1);
-    const gl = canvas.getContext("webgl2", {
-      alpha: true,
-      antialias: false,
-      depth: false,
-      stencil: false,
-      premultipliedAlpha: true,
-      preserveDrawingBuffer: false,
-      powerPreference: "high-performance",
-    });
+    const gl = createTerrainWebGL2Context(canvas);
     if (!gl) throw new Error("OffscreenCanvas WebGL2 unavailable");
     renderer = { canvas, gl, initContext: () => true };
     canvas.addEventListener("webglcontextlost", (event) => {
@@ -67,12 +60,17 @@ function loadResources() {
     // init arrives only after the main archive and generated layers are ready.
     // Shader-only prewarm must not evaluate the generator's archive-dependent
     // top-level imports while a cold data.zip download is still in flight.
-    const [{ GLTerrainRenderer }, { initMaterialAtlas }, { GENERATOR_CONFIG }] =
-      await Promise.all([
-        import("noita-telescope-full-pixels/gl/terrain_renderer.js"),
-        import("noita-telescope-full-pixels/gl/material_atlas.js"),
-        import("noita-telescope-full-pixels/generator_config.js"),
-      ]);
+    const [
+      { GLTerrainRenderer },
+      { initMaterialAtlas },
+      { GENERATOR_CONFIG },
+      { SharedInstantTerrainResources },
+    ] = await Promise.all([
+      import("noita-telescope-full-pixels/gl/terrain_renderer.js"),
+      import("noita-telescope-full-pixels/gl/material_atlas.js"),
+      import("noita-telescope-full-pixels/generator_config.js"),
+      import("./shared-instant-terrain"),
+    ]);
     await Promise.all([prewarm(), initMaterialAtlas()]);
     config = GENERATOR_CONFIG;
     const warmed = renderer;
@@ -84,6 +82,7 @@ function loadResources() {
       shaderWarmupMs: warmed.shaderWarmupMs,
       contextLost: warmed.contextLost ?? false,
     });
+    resources = new SharedInstantTerrainResources(renderer);
   })());
 }
 
@@ -109,8 +108,7 @@ self.onmessage = ({ data }) => {
           throw new DOMException("Obsolete terrain generation", "AbortError");
         const started = performance.now();
         const gen = data.generation;
-        renderer.invalidate();
-        const ready = renderer.ensureResources(
+        const ready = await resources.ensureResources(
           gen.tileLayers.map(restoreTileLayer),
           gen.biomeData,
           {
@@ -122,6 +120,8 @@ self.onmessage = ({ data }) => {
             generatorConfig: config,
           },
         );
+        if (token !== latestToken)
+          throw new DOMException("Obsolete terrain generation", "AbortError");
         if (!ready || !renderer.engineReady || renderer.gl.getError())
           throw new Error(
             renderer.failed || "Worker WebGL2 terrain resources unavailable",
@@ -135,15 +135,15 @@ self.onmessage = ({ data }) => {
       } else if (type === "render") {
         if (token !== activeToken || token !== latestToken)
           throw new DOMException("Obsolete terrain generation", "AbortError");
-        setTerrainPlane(renderer, data.plane);
-        const canvas = renderer.render(data.view);
+        resources.setPlane(data.plane);
+        const canvas = resources.render(data.view);
         if (!canvas || renderer.gl.getError())
           throw new Error(renderer.failed || "Worker terrain draw failed");
         const bitmap = canvas.transferToImageBitmap();
         self.postMessage({ id, bitmap }, [bitmap]);
       } else if (type === "invalidate") {
         if (token === activeToken) {
-          renderer.invalidate();
+          resources.invalidate();
           activeToken = 0;
         }
         self.postMessage({ id });

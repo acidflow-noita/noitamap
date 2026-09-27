@@ -185,3 +185,103 @@ describe("optional generation cache storage", () => {
     expect(console.warn).toHaveBeenCalledTimes(1);
   });
 });
+
+/** Exercise the real tile-cache upgrade through its public read/write API.
+ * Reads cannot observe stale pixels before a library-version check runs. */
+describe("derived terrain cache schema migration", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  function legacyDatabase(oldVersion: number) {
+    const sceneKey = "general/watercave";
+    const stale = {
+      key: sceneKey, width: 512, height: 512,
+      blob: new Blob(["old raw scene"]), timestamp: Date.now(),
+    };
+    const records = new Map<string, Map<string, any>>([
+      ["generations", new Map([["seed", { pixelScenesByPW: { "0,0": [{ height: 512 }] } }]])],
+      ["unrelated", new Map([["keep", "unrelated data"]])],
+    ]);
+    if (oldVersion >= 5) {
+      records.set("biome_renders", new Map([["seed|0,0", { blob: new Blob(["old map render"]) }]]));
+      records.set("pixel_scene_bitmaps", new Map([[sceneKey, stale]]));
+    }
+    let version = oldVersion;
+    const read = (value: unknown) => {
+      const req: any = { result: value };
+      queueMicrotask(() => req.onsuccess?.());
+      return req;
+    };
+    const store = (name: string, tx?: any) => {
+      const entries = records.get(name);
+      if (!entries) throw new Error(`Missing object store ${name}`);
+      return {
+        clear: () => entries.clear(),
+        createIndex: vi.fn(),
+        get: (key: string) => read(entries.get(key)),
+        put: (entry: any) => {
+          entries.set(entry.key, entry);
+          queueMicrotask(() => tx?.oncomplete?.());
+        },
+      };
+    };
+    const db: any = {
+      close: vi.fn(),
+      objectStoreNames: { contains: (name: string) => records.has(name) },
+      deleteObjectStore: (name: string) => records.delete(name),
+      createObjectStore(name: string) {
+        if (records.has(name)) throw new Error(`Duplicate object store ${name}`);
+        records.set(name, new Map());
+        return store(name);
+      },
+      transaction(name: string) {
+        const tx: any = { objectStore: () => store(name, tx) };
+        return tx;
+      },
+    };
+    const open = vi.fn((_name: string, requested: number) => {
+      const req: any = { result: db, transaction: { objectStore: (name: string) => store(name) } };
+      queueMicrotask(() => {
+        if (requested > version) {
+          req.onupgradeneeded?.({ oldVersion: version });
+          version = requested;
+        }
+        req.onsuccess?.();
+      });
+      return req;
+    });
+    vi.stubGlobal("indexedDB", { open });
+    return { records, open, stale, sceneKey };
+  }
+
+  it.each([4, 8, 11, 12, 13])("removes all stale derived entries when upgrading v%s, then retains corrected scene pixels", async oldVersion => {
+    vi.resetModules();
+    const fixture = legacyDatabase(oldVersion);
+    const { getCachedSceneBitmap, cacheSceneBitmap } = await import("../src/telescope/tile-cache");
+    expect(await getCachedSceneBitmap(fixture.sceneKey)).toBeNull();
+    expect(fixture.open).toHaveBeenCalledExactlyOnceWith("noitamap-telescope", 14);
+    for (const name of ["generations", "biome_renders", "pixel_scene_bitmaps"])
+      expect(fixture.records.get(name)?.size, name).toBe(0);
+    expect(fixture.records.get("unrelated")?.get("keep")).toBe("unrelated data");
+
+    const pixels = new Blob(["complete spliced scene"]);
+    await cacheSceneBitmap(fixture.sceneKey, pixels, 512, 1139);
+    expect(await getCachedSceneBitmap(fixture.sceneKey)).toMatchObject({
+      blob: pixels, width: 512, height: 1139,
+    });
+    expect(fixture.open).toHaveBeenCalledOnce();
+  });
+
+  it("keeps valid data when opening an already current database", async () => {
+    vi.resetModules();
+    const fixture = legacyDatabase(14);
+    fixture.stale.height = 1139;
+    const { getCachedSceneBitmap } = await import("../src/telescope/tile-cache");
+    expect(await getCachedSceneBitmap(fixture.sceneKey)).toBe(fixture.stale);
+    expect(fixture.records.get("generations")?.size).toBe(1);
+    expect(fixture.records.get("biome_renders")?.size).toBe(1);
+    expect(fixture.open).toHaveBeenCalledExactlyOnceWith("noitamap-telescope", 14);
+  });
+});
