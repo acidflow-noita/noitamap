@@ -20,6 +20,8 @@
  * of the three is the recurring "added a POI, forgot a wiring" bug class.
  */
 import { describe, it, expect, beforeAll } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import atlas from "../src/data/atlas.json";
 import spells from "../src/data/spells.json";
 import { buildPillarSegments } from "../src/data/pillars";
@@ -105,6 +107,19 @@ const POI_TYPES = [
 ];
 
 describe("POI sprite coverage", () => {
+  it.each(['noita-telescope', 'noita-telescope-vm'])("every %s perk resolves to its own local icon", fork => {
+    const source = readFileSync(resolve(process.cwd(), 'lib', fork, 'js/perks.js'), 'utf8');
+    const list = source.match(/export const PERKS = (\[[\s\S]*?\n\]);/);
+    expect(list).not.toBeNull();
+    const perks = [...list![1].matchAll(/"id"\s*:\s*"([^"]+)"/g)].map(([, id]) => id);
+    expect(perks.length).toBeGreaterThan(100);
+    for (const id of perks) {
+      const { key, ok } = resolvesInAtlas({ type: 'item', item: 'perk', perk: id });
+      expect(key, id).not.toBe('item:perk');
+      expect(ok, `${id}: ${key}`).toBe(true);
+    }
+  });
+
   it("every special wand sprite resolves to a present atlas key", () => {
     const missing: Array<{ sprite: string; key: string | string[] | null }> = [];
     for (const sprite of SPECIAL_WAND_SPRITES) {

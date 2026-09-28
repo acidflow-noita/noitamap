@@ -12,6 +12,7 @@ import { loadTelescopeModules } from "./load-telescope";
 import { isGLTerrainEnabled, isInstantTerrainEnabled, useRenderPerfGeneration } from "../renderer_settings";
 import { prepareInstantTerrain } from './instant-terrain-backend';
 import { clearTerrainPngEncoders } from './terrain-png-encoder';
+import { createScenePrefetch } from "./scene-prefetch";
 
 let instantTerrainModule: typeof import('./instant-terrain') | undefined;
 let instantTerrainLoading: Promise<typeof import('./instant-terrain')> | undefined;
@@ -86,7 +87,6 @@ import {
   FIRST_FRAME_SIZE,
   drawSpriteToCanvas,
   getSpriteNativeSize,
-  perkAtlasKey,
 } from './poi-spatial-index';
 import type { MarkerData, MarkerItem } from './poi-spatial-index';
 import {
@@ -120,17 +120,9 @@ import { SPECIAL_WAND_ALIAS } from '../data/special-wands';
 import { buildExtendedSection } from '../extended-info';
 import perkWiki from '../data/perk-wiki.json';
 
-// id -> { wikipage, image } from the noita.wiki.gg Perks cargo table
+// Perk page links from the noita.wiki.gg Perks cargo table.
 // (baked by build_scripts/generate-perk-wiki.cjs).
-const PERK_WIKI: Record<string, { wikipage?: string; image?: string }> = perkWiki as any;
-
-/** Wiki image URL for a perk whose icon is missing from the local atlas. */
-function perkWikiImageUrl(perkId?: string): string | null {
-  if (!perkId) return null;
-  const e = PERK_WIKI[String(perkId).toUpperCase()];
-  if (e?.image) return `https://noita.wiki.gg/wiki/Special:FilePath/${encodeURIComponent(e.image)}`;
-  return null;
-}
+const PERK_WIKI: Record<string, { wikipage?: string }> = perkWiki;
 
 declare const OpenSeadragon: any;
 
@@ -423,8 +415,8 @@ export async function prepareInstantTerrainResources(
 }
 
 /** Start independent presentation downloads alongside generation. */
-export function prewarmMapPresentation(): void {
-  void Promise.allSettled([loadSpritesheetAndAtlas(), getScenePngIndex(),
+export function prewarmMapPresentation(): Promise<PromiseSettledResult<unknown>[]> {
+  return Promise.allSettled([loadSpritesheetAndAtlas(), getScenePngIndex(),
     ...(isInstantTerrainEnabled() ? [loadInstantTerrain()] : [])]);
 }
 
@@ -2658,17 +2650,13 @@ async function compositeSceneBitmap(
   return { bitmap, blob, width: cw, height: ch, kind };
 }
 
-let _scenePrefetchInflight: Promise<void> | null = null;
-
 /**
  * Composite and persist every pixel scene key telescope knows about,
  * skipping ones already in the IDB cache. Fires once per session in the
  * background after the first render so future seed switches have zero
  * pixel-scene compositing work.
  */
-export function prefetchAllSceneBitmaps(): Promise<void> {
-  if (_scenePrefetchInflight) return _scenePrefetchInflight;
-  _scenePrefetchInflight = (async () => {
+export const prefetchAllSceneBitmaps = createScenePrefetch(async (isCurrent) => {
     try {
       const allKeys = getAllPixelSceneKeys();
       if (allKeys.length === 0) return;
@@ -2687,6 +2675,7 @@ export function prefetchAllSceneBitmaps(): Promise<void> {
       const t0 = performance.now();
       // Process serially to keep main-thread pressure low.
       for (const key of missing) {
+        if (!isCurrent()) break;
         const data = getPixelSceneData(key);
         if (!data) {
           skipped++;
@@ -2724,12 +2713,8 @@ export function prefetchAllSceneBitmaps(): Promise<void> {
       );
     } catch (e) {
       console.warn('[OSD Bridge] Pixel-scene prefetch failed:', e);
-    } finally {
-      _scenePrefetchInflight = null;
     }
-  })();
-  return _scenePrefetchInflight;
-}
+});
 
 /**
  * Add pixel scenes for all parallel worlds to the viewer.
@@ -5789,16 +5774,6 @@ export async function getPOISpriteFirstFrame(poi: {
     const loaded = await loadSpritesheetAndAtlas();
     atlas = loaded.atlas;
     spritesheet = loaded.spritesheet;
-  }
-
-  // Perk whose specific icon isn't baked into the local atlas (e.g. Stainless
-  // Armour) — fall back to the wiki image instead of the generic perk square.
-  if (poi.type === 'item' && (poi as any).item === 'perk' && (poi as any).perk) {
-    const specific = perkAtlasKey(String((poi as any).perk));
-    if (atlas && !atlas[specific]) {
-      const wikiUrl = perkWikiImageUrl(String((poi as any).perk));
-      if (wikiUrl) return wikiUrl;
-    }
   }
 
   const rawKey = getSpriteKey(poi as POI, atlas);

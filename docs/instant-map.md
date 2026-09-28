@@ -28,7 +28,7 @@ if those files are missing or stale. This preparation does not require a Sage
 or daily biome bake.
 
 The browser persists the shared ZIP archives, compressed prepared scene packs,
-material atlas and other fixed HD data in CacheStorage. Later seeds and visits
+material atlas, marker spritesheet and other fixed HD data in CacheStorage. Later seeds and visits
 reuse those bytes. ZIP revisions are compiled from their contents, so an
 unchanged cached archive needs no network freshness check. Scene/atlas entries
 must match the compiled source fingerprint; changed revisions replace the same
@@ -41,6 +41,25 @@ is optional and browser-managed: eviction or clearing site data requires another
 download. Denied/full/stalled storage leaves downloaded assets usable, and the
 additional shared-response RAM cache is bounded to 8 MiB. Generated terrain
 remains a separate seed-specific IndexedDB cache.
+
+The baked daily map also warms these reusable inputs after its first drawn DZI
+tile. Optional stages yield to the viewer and reuse the normal ZIP, scene, Wang
+template and atlas caches. A live-map request promotes shared initialization
+instead of waiting for idle callbacks. Navigation cancels later warmup stages;
+it does not cancel downloads another request needs. This prepares shared inputs,
+not the native pixels of a future seed, and adds no UI. The console logs
+`[Dynamic assets] Daily warmup started` after the first baked tile draws and
+`[Dynamic assets] Daily warmup finished in X.XX seconds` after the stages settle.
+Elapsed time includes idle waits; cancellations and terminal failures have their
+own end messages. Details include failed-stage counts and navigation timing.
+This is a preparation timer; optional cache writes may still be pending or
+unavailable. Estimated site storage follows separately. Scene prefetch can restart
+after an empty early pass or a cancelled prior view.
+
+POI artwork always comes from local assets. The atlas includes both authored
+Stainless Armour sprites; the stain-texture exclusion matches complete tokens,
+not the `stainless_armour` filename. Missing perk artwork never triggers a wiki
+image download. Wiki page links remain ordinary navigation links.
 
 Ordinary generated-map links use HD unless the user has disabled it. Validated
 daily images retain their baked path. The preference uses `noitamap-hd-renderer`
@@ -519,6 +538,13 @@ the page/process closes before they complete. Native replay repairs missing
 overview ancestors after an interrupted save; a persisted parent alone does not
 prove its native children survived. This is not a sub-second full-map result.
 
+Write transactions have a separate progress-aware deadline: 10 seconds without
+request progress and 30 seconds total, rather than the short read/open timeout.
+Reads queued behind monitored writes share bounded write grace, including a
+prior seed's final write. Quota errors and aborts still fail immediately. Cache
+warnings identify the database and operation so a later manual report can
+distinguish slow writes from unavailable storage.
+
 `tests/retained-terrain.test.ts` runs the production TileSource with native
 canvas pixels and an event-driven IndexedDB fixture. It covers transparent
 holes, independently expected premultiplied area reductions, scale 2 capture,
@@ -548,10 +574,14 @@ tabs, cancels on reseed, and stops if persistence fails rather than continually
 evicting completed work. `source.instantStats.cooking` exposes queued total,
 completed blocks and state; `complete` waits for the final storage flush.
 
-Completion also logs `[Instant terrain] Full map terrain finished in X.XX seconds`
+The first eligible native sweep job logs
+`[Instant terrain] Native terrain cooking started` with seed, region/block counts
+and elapsed time since the seed request. Hidden/storage-paused jobs do not log a
+premature start. Completion logs `[Instant terrain] Full map terrain finished in X.XX seconds`
 in the console. The timer starts at the seed request, before asset initialization
 and generation, and includes the final persistence flush. Log metadata includes
-the seed, region/block counts, elapsed milliseconds and `sinceNavigationMs` for
+the seed, region/block counts, elapsed milliseconds, `cookingElapsedMs` from the
+first sweep job (including pauses/persistence), and `sinceNavigationMs` for
 the separate page-navigation clock. This measures native terrain and its retained
 reductions; final OSD refresh and scene/POI tile completion are separate.
 

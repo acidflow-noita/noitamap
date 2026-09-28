@@ -14,6 +14,7 @@ import spells from "../data/spells.json";
 import { PILLAR_PLACES } from "../data/pillars";
 import { getMimicSpriteKey } from './poi-mimics';
 import spritesheetRevision from '../data/spritesheet-revision.json';
+import { immutableTelescopeAssets } from './immutable-assets';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -60,15 +61,29 @@ let atlasLoading: Promise<Record<string, AtlasEntry>> | null = null;
 
 async function loadSpritesheet(): Promise<HTMLImageElement> {
   if (cachedSpritesheet) return cachedSpritesheet;
-  return spritesheetLoading ??= new Promise<HTMLImageElement>((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      cachedSpritesheet = img;
-      resolve(img);
-    };
-    img.onerror = reject;
-    img.src = `./assets/spritesheet.png?v=${spritesheetRevision}`;
-  }).finally(() => { spritesheetLoading = null; });
+  return spritesheetLoading ??= (async () => {
+    const source = `./assets/spritesheet.png?v=${spritesheetRevision}`;
+    let local: string | undefined;
+    try {
+      const response = await immutableTelescopeAssets.fetch('marker-spritesheet', spritesheetRevision,
+        () => fetch(source, { cache: 'force-cache', signal: AbortSignal.timeout(30000) }));
+      if (response.ok) local = URL.createObjectURL(await response.blob());
+    } catch { /* Sites restricting fetch can still permit same-origin images. */ }
+    const image = (url: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+    try {
+      cachedSpritesheet = local
+        ? await image(local).catch(() => image(source))
+        : await image(source);
+      return cachedSpritesheet;
+    } finally {
+      if (local) URL.revokeObjectURL(local);
+    }
+  })().finally(() => { spritesheetLoading = null; });
 }
 
 async function loadAtlas(): Promise<Record<string, AtlasEntry>> {
@@ -254,8 +269,7 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
       // item:perks/critical_hit). Falls back to the generic perk icon.
       const perkId = (poi as any).perk;
       if (perkId) {
-        const id = String(perkId).toLowerCase();
-        const key = `item:perks/${PERK_ICON_REMAP[id] || id}`;
+        const key = perkAtlasKey(String(perkId));
         if (!atlas || atlas[key]) return key;
       }
       return "item:perk";

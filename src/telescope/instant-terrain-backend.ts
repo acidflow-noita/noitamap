@@ -198,10 +198,11 @@ async function warmSlot(slot: Slot, deps?: GLTerrainDeps): Promise<void> {
 }
 
 /** Called as soon as instant generation is selected, before seed assets load. */
-export function prewarmInstantTerrain(): void {
-  void warmSlot(getSlot()).catch((error) => {
+export function prewarmInstantTerrain(): Promise<boolean> {
+  return warmSlot(getSlot()).then(() => true).catch((error) => {
     if (error?.name !== "AbortError")
       console.warn("[Instant terrain] Prewarm unavailable:", error);
+    return false;
   });
 }
 

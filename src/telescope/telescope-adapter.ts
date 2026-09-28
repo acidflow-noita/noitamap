@@ -23,6 +23,7 @@ import {
 } from "../data/pillars";
 import PwWorker from "./pw-worker?worker";
 import { ParallelWorldWorkerPool } from "./pw-worker-pool";
+import { prepareAssetJobs } from "./background-idle";
 let parallelWorldWorkerPool = new ParallelWorldWorkerPool(() => new PwWorker());
 
 // Telescope modules
@@ -194,6 +195,7 @@ function retowerWands(pois: POI[]): void {
 
 let initialized = false;
 let initPromise: Promise<void> | null = null;
+let backgroundInitialization: AbortController | null = null;
 let biomeAssets: { ng0: Uint32Array | null; ngp: Uint32Array | null; nightmare: Uint32Array | null } = {
   ng0: null,
   ngp: null,
@@ -206,18 +208,22 @@ let biomeAssets: { ng0: Uint32Array | null; ngp: Uint32Array | null; nightmare: 
  * One-time setup: install DOM shim, fetch interceptor, load base assets.
  * Safe to call multiple times (no-ops after first).
  */
-export async function initTelescope(): Promise<void> {
+export async function initTelescope(options: { background?: boolean } = {}): Promise<void> {
+  // A live-map caller promotes existing work immediately, including any
+  // queued idle callback. It joins the same module/asset promise.
+  if (!options.background) backgroundInitialization?.abort();
   if (initialized) return;
   if (initPromise) return initPromise;
-
-  initPromise = _doInitTelescope().catch(error => {
+  const idle = options.background ? new AbortController() : null;
+  backgroundInitialization = idle;
+  initPromise = _doInitTelescope(idle?.signal).catch(error => {
     initPromise = null;
     throw error;
-  });
+  }).finally(() => { if (backgroundInitialization === idle) backgroundInitialization = null; });
   await initPromise;
 }
 
-async function _doInitTelescope(): Promise<void> {
+async function _doInitTelescope(background?: AbortSignal): Promise<void> {
   console.log("[Telescope] Initializing...");
   const started = performance.now();
   // Immutable prepared scenes can download/decompress while data.zip and the
@@ -355,18 +361,14 @@ async function _doInitTelescope(): Promise<void> {
     // copies RGBA into its own RGB array before generating terrain. Decode
     // each unique template once, without allocating unused GPU bitmaps.
     const jobs = [...templates];
-    let next = 0;
-    await Promise.all(Array.from({ length: Math.min(8, jobs.length) }, async () => {
-      while (next < jobs.length) {
-        const [file, configs] = jobs[next++];
-        try {
-          const image = await pngSanitizerMod.loadPNG(file, { bitmap: false });
-          for (const cfg of configs) cfg.wangData = image;
-        } catch {
-          failed.add(file);
-        }
+    await prepareAssetJobs(jobs, async ([file, configs]) => {
+      try {
+        const image = await pngSanitizerMod.loadPNG(file, { bitmap: false });
+        for (const cfg of configs) cfg.wangData = image;
+      } catch {
+        failed.add(file);
       }
-    }));
+    }, background);
     const failures = Object.keys(GENERATOR_CONFIG)
       .filter(key => failed.has(GENERATOR_CONFIG[key].wangFile))
       .map(key => `FAIL: ${key} (${GENERATOR_CONFIG[key].wangFile})`);

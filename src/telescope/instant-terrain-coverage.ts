@@ -208,7 +208,9 @@ function desiredLevel(item: any): number {
 
 function tileRange(item: any, level: number, area?: Area) {
   const source = item.source,
-    height = source.dimensions.y / source.dimensions.x;
+    // Use OSD's exact normalized limit. height/width can round one ULP above
+    // 1/aspectRatio for sparse scene bounds and violate getTileAtPoint's check.
+    height = 1 / source.aspectRatio;
   const x0 = Math.max(0, area?.x ?? 0),
     y0 = Math.max(0, area?.y ?? 0);
   const x1 = Math.min(1, area ? area.x + area.width : 1);

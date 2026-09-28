@@ -131,9 +131,10 @@ const SKIP_SUFFIXES = [
 // Substrings anywhere in the PNG path that cause it to be skipped
 const SKIP_SUBSTRINGS = [
   "/image_emitters/",
-  "/stain",
-  "_stain",
 ];
+
+// Match the stain texture token, not perk names such as stainless_armour.
+const STAIN_TEXTURE = /(?:^|[/_])stain(?:[._/]|$)/;
 
 // Directories whose PNGs should be rotated 90° CCW (wand sprites)
 const WAND_DIRS = [
@@ -418,6 +419,7 @@ async function main() {
     for (const sub of SKIP_SUBSTRINGS) {
       if (relPath.includes(sub)) return;
     }
+    if (STAIN_TEXTURE.test(relPath)) return;
     // Skip filename patterns (_hotspot, _hotspots, _uv_src, _normals)
     const baseName = path.basename(relPath, ".png");
     for (const suffix of SKIP_SUFFIXES) {

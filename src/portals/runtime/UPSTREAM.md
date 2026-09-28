@@ -7,7 +7,8 @@ Copied from the isolated checkout `task/noita-particle-animations`, not linked t
 or edited inside the actively developed sibling repository.
 
 Only `gpu-grid-renderer.mjs` is adapted: its constructor optionally accepts an
-existing canvas. The experimental GPU particle physics/shaders are unchanged.
+existing canvas, and renderer diagnostics use the standard `RENDERER` query.
+The experimental GPU particle physics/shaders are unchanged.
 The map worker always calls `configureParticles(entries, true)`; it never selects the
 CPU/software or GPU-drawing/CPU-physics backends. The software renderer module is
 upstream's shared geometry helper, not a runtime raster fallback.

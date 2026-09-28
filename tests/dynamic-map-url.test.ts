@@ -20,6 +20,8 @@ vi.mock('../src/telescope/telescope-osd-bridge', () => ({
   resetPersistentBiomeBackgrounds: vi.fn(), prefetchAllSceneBitmaps: vi.fn(), prepareInstantTerrainResources: vi.fn(), prewarmMapPresentation: vi.fn(),
 }));
 vi.mock('../src/telescope/baked-dzi-loader', () => ({ addBakedDZIsToOSD: vi.fn(), probeBakedDZIs: vi.fn(), isLocalBakeView: () => false }));
+vi.mock('../src/telescope/baked-generation', () => ({ fetchBakedGeneration: vi.fn() }));
+vi.mock('../src/telescope/daily-asset-prewarm', () => ({ scheduleDailyAssetWarmup: vi.fn() }));
 vi.mock('../src/telescope/perk-i18n', () => ({ perkNameKey: vi.fn() }));
 vi.mock('../src/game-translations/translator', () => ({ gameTranslator: {} }));
 
@@ -28,6 +30,11 @@ import { parseURL, reorderParams, updateURLWithSeed } from '../src/data_sources/
 import { shouldUseBakedTerrain } from '../src/renderer_settings';
 import { initTelescope } from '../src/telescope/telescope-adapter';
 import { probeBakedDZIs } from '../src/telescope/baked-dzi-loader';
+import { addBakedDZIsToOSD } from '../src/telescope/baked-dzi-loader';
+import { fetchBakedGeneration } from '../src/telescope/baked-generation';
+import { scheduleDailyAssetWarmup } from '../src/telescope/daily-asset-prewarm';
+import { cacheGeneration } from '../src/telescope/tile-cache';
+import { renderGenerationResult, prefetchAllSceneBitmaps, hasDynamicOverlays } from '../src/telescope/telescope-osd-bridge';
 
 const today = 1216316599, previous = 1344443116;
 beforeEach(() => {
@@ -49,6 +56,40 @@ function mainFunction(start: string, end: string, dependencies: Record<string, u
 }
 
 describe('dynamic seed URL identity', () => {
+  it.each([false, true])('arms baked daily assets and retains their intent across redundant selection: %s', async (reselect) => {
+    history.replaceState(null, '', '/');
+    const order: string[] = [], cancel = vi.fn(), viewer = {};
+    const generated = { seed: today, ngPlus: 0, isNGP: false, tileLayers: [], biomeData: {}, poisByPW: {}, pixelScenesByPW: {}, parallelWorlds: [0] } as any;
+    vi.mocked(fetchBakedGeneration).mockResolvedValue(generated);
+    vi.mocked(probeBakedDZIs).mockResolvedValue({ baked: true, prefix: 'daily', placements: [{ pw: 0, x: 0, y: 0, width: 100, bust: '1', dziUrl: '/daily.dzi' }], decorationsBaked: true, fullPixelsBaked: true });
+    vi.mocked(scheduleDailyAssetWarmup).mockImplementation(() => { order.push('warmup'); return cancel; });
+    vi.mocked(addBakedDZIsToOSD).mockImplementation(() => { order.push('baked'); });
+    vi.mocked(cacheGeneration).mockResolvedValue();
+    vi.mocked(renderGenerationResult).mockResolvedValue();
+    vi.mocked(prefetchAllSceneBitmaps).mockResolvedValue();
+    const frame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
+    try {
+      const pipeline = await import('../src/dynamic-map');
+      expect(await pipeline.runDynamicMapFromURL({ viewer })).toBe(generated);
+      expect(order).toEqual(['warmup', 'baked']);
+      expect(initTelescope).not.toHaveBeenCalled();
+      const intent = vi.mocked(scheduleDailyAssetWarmup).mock.calls[0][0];
+      expect(intent.viewer).toBe(viewer);
+      expect(intent.isCurrent()).toBe(true);
+      if (reselect) {
+        vi.mocked(hasDynamicOverlays).mockReturnValue(true);
+        expect(await pipeline.runDynamicMapFromURL({ viewer })).toBe(generated);
+        expect(cancel).not.toHaveBeenCalled();
+        expect(intent.isCurrent()).toBe(true);
+        expect(scheduleDailyAssetWarmup).toHaveBeenCalledOnce();
+        expect(renderGenerationResult).toHaveBeenCalledOnce();
+      }
+      pipeline.clearDynamicMap(viewer);
+      expect(cancel).toHaveBeenCalledOnce();
+      expect(intent.isCurrent()).toBe(false);
+    } finally { frame.mockRestore(); }
+  });
+
   it.each(['1', 'true', undefined])('honours an explicit seed with daily flag %s without consulting today', async daily => {
     history.replaceState(null, '', `/?m=dy&se=${previous}${daily ? `&ds=${daily}` : ''}&poi=previous-wand&sr=1`);
     const url = location.href;

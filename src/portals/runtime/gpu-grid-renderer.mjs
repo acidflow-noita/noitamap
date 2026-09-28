@@ -43,8 +43,7 @@ export class GpuGridRenderer {
     if (!gl) throw new Error("WebGL 2 is unavailable; enable browser hardware acceleration");
     this.lost = false;
     this.particleMode = false;
-    const info = gl.getExtension("WEBGL_debug_renderer_info");
-    this.deviceInfo = gl.getParameter(info?.UNMASKED_RENDERER_WEBGL ?? gl.RENDERER);
+    this.deviceInfo = gl.getParameter(gl.RENDERER);
     this.canvas.addEventListener("webglcontextlost", event => { event.preventDefault(); this.lost = true; });
     this.sceneBuilder = new GpuScene(resources, catalog);
     this.histories = new Map(); this.textures = new Map();

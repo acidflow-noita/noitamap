@@ -26,6 +26,7 @@ export function createInstantTerrainCooker(options: {
   let started = false, running = false, scheduled = false, rankedFor: string | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let channel: MessageChannel | undefined;
+  let cookingStartedAt: number | undefined;
   const hidden = () => typeof document !== 'undefined' && document.hidden;
   const closeChannel = () => {
     if (!channel) return;
@@ -98,6 +99,16 @@ export function createInstantTerrainCooker(options: {
       }
       const job = jobs.pop();
       if (job) {
+        if (cookingStartedAt === undefined) {
+          cookingStartedAt = performance.now();
+          console.info('[Instant terrain] Native terrain cooking started', {
+            seed: options.seed,
+            regions: sources.size,
+            blocks: stats.total,
+            sinceSeedRequestMs: cookingStartedAt - startedAt,
+            sinceNavigationMs: cookingStartedAt,
+          });
+        }
         stats.active = 1;
         await job.source.prepareNativeTile(job.x, job.y);
         if (!options.signal.aborted) stats.completed++;
@@ -112,6 +123,8 @@ export function createInstantTerrainCooker(options: {
             seed: options.seed,
             regions: sources.size,
             elapsedMs: finishedAt - startedAt,
+            // Wall time from the first sweep task, including pauses and writes.
+            cookingElapsedMs: cookingStartedAt === undefined ? 0 : finishedAt - cookingStartedAt,
             sinceNavigationMs: finishedAt,
             scope: 'Native terrain and retained reductions, including persistence; scene and POI tile completion is separate',
           });

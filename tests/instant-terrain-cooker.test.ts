@@ -5,6 +5,8 @@ let controller: AbortController;
 let page: EventTarget & { hidden: boolean };
 const completionLogs = () => vi.mocked(console.info).mock.calls.filter(([message]) =>
   String(message).startsWith('[Instant terrain] Full map terrain finished'));
+const startLogs = () => vi.mocked(console.info).mock.calls.filter(([message]) =>
+  message === '[Instant terrain] Native terrain cooking started');
 beforeEach(() => {
   vi.useFakeTimers();
   controller = new AbortController();
@@ -73,20 +75,27 @@ describe('continuous native terrain cooking', () => {
     f.flush.mockImplementation(() => new Promise<void>(resolve => { finishWrite = resolve; }));
     f.cooker.add(f.source(0, 512, 512));
     f.cooker.start();
+    f.cooker.start();
+    expect(startLogs()).toHaveLength(0);
     await vi.runAllTimersAsync();
     expect(f.cooker.stats.completed).toBe(1);
-    expect(console.info).not.toHaveBeenCalled();
+    expect(startLogs()).toEqual([[
+      '[Instant terrain] Native terrain cooking started',
+      { seed: 42, regions: 1, blocks: 1, sinceSeedRequestMs: 2000, sinceNavigationMs: 3000 },
+    ]]);
+    expect(completionLogs()).toHaveLength(0);
     now = 12450;
     finishWrite();
     await vi.runAllTimersAsync();
     expect(completionLogs()).toEqual([[
       '[Instant terrain] Full map terrain finished in 11.45 seconds',
       expect.objectContaining({ seed: 42, regions: 1, completed: 1, total: 1,
-        elapsedMs: 11450, sinceNavigationMs: 12450 }),
+        elapsedMs: 11450, cookingElapsedMs: 9450, sinceNavigationMs: 12450 }),
     ]]);
     f.cooker.start();
     await vi.runAllTimersAsync();
     expect(completionLogs()).toHaveLength(1);
+    expect(startLogs()).toHaveLength(1);
   });
   it('finishes all nine regions without any zoom or tile-download request, then flushes', async () => {
     const f = fixture();
@@ -97,6 +106,10 @@ describe('continuous native terrain cooking', () => {
     await vi.runAllTimersAsync();
     expect(new Set(f.visited).size).toBe(36);
     expect(f.cooker.stats).toEqual({ state: 'complete', total: 36, completed: 36, active: 0 });
+    expect(startLogs()).toEqual([[
+      '[Instant terrain] Native terrain cooking started',
+      expect.objectContaining({ regions: 9, blocks: 36 }),
+    ]]);
     expect(f.flush).toHaveBeenCalledOnce();
     expect(f.failure).not.toHaveBeenCalled();
   });
@@ -122,10 +135,22 @@ describe('continuous native terrain cooking', () => {
     await vi.runAllTimersAsync();
     expect(f.cooker.stats.state).toBe('paused-hidden');
     expect(f.visited).toHaveLength(0);
+    expect(startLogs()).toHaveLength(0);
     page.hidden = false; page.dispatchEvent(new Event('visibilitychange'));
     await vi.runAllTimersAsync();
     expect(f.cooker.stats.state).toBe('complete');
     expect(f.visited).toHaveLength(2);
+    expect(startLogs()).toHaveLength(1);
+  });
+
+  it('does not announce native cooking when storage is unavailable before the first task', async () => {
+    const f = fixture(); f.cooker.add(f.source(0));
+    f.cooker.start(); f.loseStorage();
+    await vi.runAllTimersAsync();
+    expect(f.cooker.stats.state).toBe('paused-storage');
+    expect(f.visited).toHaveLength(0);
+    expect(startLogs()).toHaveLength(0);
+    expect(completionLogs()).toHaveLength(0);
   });
 
   it('stops on storage failure instead of churning away finished pixels or claiming completion', async () => {
@@ -159,7 +184,8 @@ describe('continuous native terrain cooking', () => {
     expect(f.cooker.stats.state).toBe('cancelled');
     expect(f.cooker.stats.completed).toBe(0);
     expect(f.failure).not.toHaveBeenCalled();
-    expect(console.info).not.toHaveBeenCalled();
+    expect(startLogs()).toHaveLength(1);
+    expect(completionLogs()).toHaveLength(0);
   });
 
   it('yields through one reusable message channel between fast leaves without nested timers', async () => {

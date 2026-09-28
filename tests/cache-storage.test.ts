@@ -11,7 +11,18 @@ function request(result: unknown = undefined) {
   return {result, error: null, transaction: {abort: vi.fn()}, onsuccess: null, onerror: null, onblocked: null, onupgradeneeded: null} as any;
 }
 function transaction() {
-  return {abort: vi.fn(), error: null, oncomplete: null, onerror: null, onabort: null} as any;
+  const progress = new Set<() => void>();
+  return {
+    abort: vi.fn(), error: null, oncomplete: null, onerror: null, onabort: null,
+    addEventListener: vi.fn((type: string, listener: () => void, capture: boolean) => {
+      if (type === "success" && capture) progress.add(listener);
+    }),
+    removeEventListener: vi.fn((type: string, listener: () => void, capture: boolean) => {
+      if (type === "success" && capture) progress.delete(listener);
+    }),
+    succeedRequest() { for (const listener of progress) listener(); },
+    progressListeners: progress,
+  } as any;
 }
 
 describe("optional generation cache storage", () => {
@@ -29,7 +40,7 @@ describe("optional generation cache storage", () => {
     open = vi.fn(() => opening);
     upgrade = vi.fn();
     vi.stubGlobal("indexedDB", {open});
-    storage = new OptionalCacheDatabase("noitamap-test-cache", 12, upgrade, 50);
+    storage = new OptionalCacheDatabase("noitamap-test-cache", 12, upgrade, 50, { idleMs: 50, maxMs: 200 });
   });
   afterEach(() => {vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks();});
 
@@ -186,6 +197,141 @@ describe("optional generation cache storage", () => {
     await promise;
     expect(done).toHaveBeenCalledOnce();
     expect(vi.getTimerCount()).toBe(0);
+    expect(tx.progressListeners.size).toBe(0);
+  });
+
+  it("allows a retained-page batch to commit after the old 1.5-second lookup deadline", async () => {
+    const retained = new OptionalCacheDatabase("noitamap-retained-hd", 1, upgrade, 1500);
+    const openingPromise = retained.open(); opening.onsuccess(); await openingPromise;
+    const tx = transaction(), done = vi.fn();
+    const result = retained.complete(tx).then(done);
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(done).not.toHaveBeenCalled();
+    expect(tx.abort).not.toHaveBeenCalled();
+    tx.oncomplete(); await result;
+    expect(done).toHaveBeenCalledOnce();
+    expect(await retained.open()).toBe(db);
+    expect(console.warn).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("renews the idle deadline on request progress and still waits for commit", async () => {
+    await ready();
+    const tx = transaction(), done = vi.fn();
+    const result = storage.complete(tx).then(done);
+    for (let i = 0; i < 4; i++) {
+      await vi.advanceTimersByTimeAsync(40);
+      tx.succeedRequest();
+    }
+    expect(tx.addEventListener).toHaveBeenCalledWith("success", expect.any(Function), true);
+    expect(tx.abort).not.toHaveBeenCalled();
+    expect(done).not.toHaveBeenCalled();
+    tx.oncomplete(); await result;
+    expect(done).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("aborts a transaction that stalls after its last successful request", async () => {
+    const tx = transaction();
+    const rejected = expect(storage.complete(tx)).rejects.toMatchObject({ reason: "timeout", message: "Cache transaction stopped making progress" });
+    await vi.advanceTimersByTimeAsync(40);
+    tx.succeedRequest();
+    await vi.advanceTimersByTimeAsync(49);
+    expect(tx.abort).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1); await rejected;
+    expect(tx.abort).toHaveBeenCalledOnce();
+    expect(tx.progressListeners.size).toBe(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("does not let continuing request progress extend the absolute write bound", async () => {
+    const tx = transaction();
+    const rejected = expect(storage.complete(tx)).rejects.toMatchObject({ reason: "timeout", message: "Cache transaction exceeded its write deadline" });
+    for (let i = 0; i < 4; i++) {
+      await vi.advanceTimersByTimeAsync(40);
+      tx.succeedRequest();
+    }
+    await vi.advanceTimersByTimeAsync(40); await rejected;
+    expect(tx.abort).toHaveBeenCalledOnce();
+    expect(tx.progressListeners.size).toBe(0);
+    tx.oncomplete(); tx.succeedRequest();
+    expect(vi.getTimerCount()).toBe(0);
+    expect(console.warn).toHaveBeenCalledOnce();
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("noitamap-test-cache"), expect.anything());
+  });
+
+  it("gives a read queued behind this owner's healthy write time to run", async () => {
+    await ready();
+    const tx = transaction(), req = request("saved pixels");
+    const write = storage.complete(tx), read = storage.read(req);
+    for (let i = 0; i < 3; i++) {
+      await vi.advanceTimersByTimeAsync(40);
+      tx.succeedRequest();
+    }
+    expect(db.close).not.toHaveBeenCalled();
+    expect(req.transaction.abort).not.toHaveBeenCalled();
+    tx.oncomplete(); await write;
+    req.onsuccess(); expect(await read).toBe("saved pixels");
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("keeps read waits bounded even if new writes continue arriving", async () => {
+    const req = request();
+    const read = expect(storage.read(req)).rejects.toMatchObject({ reason: "timeout" });
+    for (let i = 0; i < 5; i++) {
+      const tx = transaction();
+      const done = storage.complete(tx);
+      await vi.advanceTimersByTimeAsync(40); tx.oncomplete(); await done;
+    }
+    await read;
+    expect(req.transaction.abort).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("lets a new seed's read wait for the previous owner's final write", async () => {
+    await ready();
+    const tx = transaction();
+    const write = storage.complete(tx);
+    storage.close();
+    const next = new OptionalCacheDatabase("noitamap-test-cache", 12, upgrade, 50, { idleMs: 50, maxMs: 200 });
+    const req = request("reusable native pixels"), read = next.read(req);
+    for (let i = 0; i < 3; i++) {
+      await vi.advanceTimersByTimeAsync(40);
+      tx.succeedRequest();
+    }
+    expect(req.transaction.abort).not.toHaveBeenCalled();
+    expect(console.warn).not.toHaveBeenCalled();
+    tx.oncomplete(); await write;
+    req.onsuccess(); expect(await read).toBe("reusable native pixels");
+    // Removing the settled write restores the ordinary short read deadline.
+    const stalled = request();
+    const rejected = expect(next.read(stalled)).rejects.toMatchObject({ reason: "timeout" });
+    await vi.advanceTimersByTimeAsync(50); await rejected;
+    expect(stalled.transaction.abort).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("does not extend an unrelated database's read deadline", async () => {
+    const tx = transaction(), write = storage.complete(tx);
+    const unrelated = new OptionalCacheDatabase("other-cache", 12, upgrade, 50, { idleMs: 50, maxMs: 200 });
+    const req = request();
+    const rejected = expect(unrelated.read(req)).rejects.toMatchObject({ reason: "timeout" });
+    await vi.advanceTimersByTimeAsync(40); tx.succeedRequest();
+    await vi.advanceTimersByTimeAsync(10); await rejected;
+    tx.oncomplete(); await write;
+    expect(req.transaction.abort).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("rejects quota failures immediately and removes every progress timer", async () => {
+    const tx = transaction();
+    const rejected = expect(storage.complete(tx)).rejects.toMatchObject({ reason: "unavailable", cause: { name: "QuotaExceededError" } });
+    tx.error = new DOMException("Disk quota exceeded", "QuotaExceededError");
+    tx.onerror(); await rejected;
+    tx.onabort(); tx.succeedRequest();
+    expect(vi.getTimerCount()).toBe(0);
+    expect(tx.progressListeners.size).toBe(0);
+    expect(console.warn).toHaveBeenCalledOnce();
   });
 
   it("rejects transaction aborts even when no request error fired", async () => {

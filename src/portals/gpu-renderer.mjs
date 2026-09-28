@@ -23,8 +23,7 @@ export class MapGpuRenderer extends GpuGridRenderer {
       this.mapComposite=this.program(MAP_COMPOSITE_VERTEX,GPU_SHADERS.composite,['top','bottom','screen','source','previous','enableGlow']);
       this.timerExtension=this.gl.getExtension('EXT_disjoint_timer_query_webgl2');
       this.queries=[];this.gpuMS=null;
-      const debug=this.gl.getExtension('WEBGL_debug_renderer_info');
-      this.device=String(this.gl.getParameter(debug?debug.UNMASKED_RENDERER_WEBGL:this.gl.RENDERER));
+      this.device=String(this.deviceInfo);
       this.assetBytes=Object.values(resources.assets).reduce((sum,a)=>sum+a.rgba.byteLength,0);
       const field=resources.eyeCollision;
       if(field){
