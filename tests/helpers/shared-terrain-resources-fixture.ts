@@ -15,6 +15,7 @@ import { createPlaneMaterialField } from "../../src/telescope/plane-material-fie
 import { createMaterialField } from "noita-telescope-full-pixels/engine_resolve/material_field.js";
 import { encodeTerrainPages, decodeTerrainPage } from "../../src/telescope/retained-terrain-codec-core";
 import { createPlaneOwnership } from "../../src/telescope/terrain-policy";
+import { verifyTempleZoomRetention } from './temple-zoom-retention';
 
 type Plane = -1 | 0 | 1;
 type Sample = { name: string; plane: Plane; pw: number; x: number; y: number; width: number; height: number };
@@ -230,6 +231,9 @@ export async function verifySharedTerrainResources() {
   await owner.ensureResources(generation.tileLayers, generation.biomeData, options);
   const sameGenerationUploads = uploads("same-generation").length;
 
+  phase("island-zoom-retention");
+  const templeZoomSamples = await verifyTempleZoomRetention(generation, owner, GENERATOR_CONFIG);
+
   phase("invalidate");
   owner.invalidate();
   const firstDeletes = trace.deletes.filter((entry: any) => entry.phase === "invalidate").map((entry: any) => entry.texture);
@@ -385,7 +389,7 @@ export async function verifySharedTerrainResources() {
   const elevatorTexturesReleased = elevatorCreates.length === elevatorDeletes.length &&
     elevatorCreates.every((texture: any) => elevatorDeletes.includes(texture));
   if (shaftRenderer.program) shaftRenderer.gl.deleteProgram(shaftRenderer.program);
-  return { samples: compared, comparedPixels, mixedSamples, materialSamples, retentionCompression,
+  return { samples: compared, comparedPixels, mixedSamples, materialSamples, retentionCompression, templeZoomSamples,
     elevatorSamples, elevatorLatticeBytes, packedWorldPixelsMatch,
     elevatorSwitchUploads, elevatorSwitchCompiles, elevatorTexturesReleased,
     elevatorUninitializedUploads, elevatorPartialUploads,

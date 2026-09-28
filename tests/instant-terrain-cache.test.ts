@@ -28,6 +28,20 @@ beforeEach(() =>
 afterEach(() => vi.unstubAllGlobals());
 
 describe("completed terrain cache (native canvas, no browser)", () => {
+  it('releases an evicted viewport before allocating its replacement', () => {
+    const cache = new InstantTerrainCache(tileBytes), source = tile();
+    cache.set('old', source);
+    const allocation = vi.spyOn(document, 'createElement').mockImplementation(() => {
+      expect(cache.stats.bytes).toBe(0);
+      expect(cache.has('old')).toBe(false);
+      return createCanvas(1, 1) as any;
+    });
+    expect(cache.set('new', source)).toBe(true);
+    expect(allocation).toHaveBeenCalledOnce();
+    allocation.mockRestore();
+    cache.clear();
+  });
+
   it("copies exact pixels independently of source state and caller mutation", () => {
     const source = tile("#4080c080");
     source.fillStyle = "red";

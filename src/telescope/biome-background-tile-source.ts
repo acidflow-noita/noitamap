@@ -1,4 +1,5 @@
 import { copyTerrainContext, InstantTerrainCache } from "./instant-terrain-cache";
+import { getMapMemoryBudget } from '../map-memory-budget';
 import { drawViewportArt } from './viewport-art';
 
 declare const OpenSeadragon: any;
@@ -40,7 +41,7 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
     return { ...region, minX, minY, maxX, maxY };
   });
   const maxLevel = Math.max(0, Math.ceil(Math.log2(Math.max(width, height))));
-  const cache = new InstantTerrainCache(options.maxCacheBytes ?? 16 * 1024 * 1024);
+  const cache = new InstantTerrainCache(options.maxCacheBytes ?? getMapMemoryBudget().biomeBackgroundCacheBytes);
   const pack = ++nextPack;
   const sources = new Set<any>();
   let destroyed = false, rendered = 0, renderMs = 0;

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createCanvas } from '@napi-rs/canvas';
+import { mapMemoryBudgetFor } from '../src/map-memory-budget';
 import {
   createInstantTerrainViewport, installViewportLayerDrawing, planInstantTerrainViewport,
   type InstantTerrainViewportPlan,
@@ -92,6 +93,28 @@ function fixture(bounds = { x: -1000, y: -1000, width: 2000, height: 2000 }, max
 }
 
 describe('direct viewport terrain with installed OSD and native canvas', () => {
+  it.each([
+    { width: 390, height: 844, density: 3, rotation: 0 },
+    { width: 430, height: 932, density: 4, rotation: 45 },
+    { width: 1366, height: 1024, density: 3, rotation: 90 },
+    { width: 8192, height: 2048, density: 4, rotation: 45 },
+  ])('bounds high-DPI viewport allocation without losing world coverage: $width×$height @$density', ({ width, height, density, rotation }) => {
+    OSD.pixelDensityRatio = density;
+    const budget = mapMemoryBudgetFor({ coarsePointer: true });
+    const area = new OSD.Rect(0, 0, width, height).rotate(rotation);
+    const viewport = { getBounds: () => area, deltaPixelsFromPointsNoRotate: (point: any) => point };
+    const visible = area.getBoundingBox();
+    const bounds = { x: -20000, y: -20000, width: 40000, height: 40000 };
+    const plan = planInstantTerrainViewport(viewport, bounds, budget)!;
+    expect(plan.pixelWidth * plan.pixelHeight).toBeLessThanOrEqual(budget.viewportMaxPixels);
+    expect(Math.max(plan.pixelWidth, plan.pixelHeight)).toBeLessThanOrEqual(budget.viewportMaxDimension);
+    expect(plan.x).toBe(visible.x);
+    expect(plan.y).toBe(visible.y);
+    expect(plan.x + plan.width).toBeGreaterThanOrEqual(visible.x + visible.width - 1e-8);
+    expect(plan.y + plan.height).toBeGreaterThanOrEqual(visible.y + visible.height - 1e-8);
+    expect(plan.width / plan.pixelWidth).toBeCloseTo(plan.height / plan.pixelHeight, 10);
+  });
+
   it('samples physical display pixels, including a rotated viewport, and limits the plan to map bounds', async () => {
     const f = fixture();
     await drain();

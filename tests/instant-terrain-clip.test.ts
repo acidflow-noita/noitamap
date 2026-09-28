@@ -55,6 +55,19 @@ function draw(clip: ReturnType<typeof createInstantClip>, view: InstantClipView)
 }
 
 describe('bounded native terrain mask pages', () => {
+  it('does not expand an 8192-square scene while zooming and reuses one bounded mask buffer', () => {
+    const width = 8192, height = 8192;
+    const masks = [{ x: 0, y: 0, width, height, bits: new Uint8Array(width * height / 8).fill(255) }];
+    const clip = createInstantClip(owners, masks, { maxBytes: 1024 * 1024 });
+    for (const scale of [16, 8, 2, .5, 4, 16]) {
+      const actual = draw(clip, { x: 0, y: 0, width: 512, height: 512, scale });
+      expect(actual.every(value => value === 0)).toBe(true);
+    }
+    expect(allocated).toHaveLength(1);
+    expect(allocated[0].width * allocated[0].height * 4).toBe(256 * 256 * 4);
+    clip.dispose();
+  });
+
   it.each([
     { x: 0, y: 0, maskX: 0, maskY: 0 },
     { x: 250, y: 250, maskX: 0, maskY: 0 },
@@ -135,17 +148,25 @@ describe('bounded native terrain mask pages', () => {
     ];
     const view = { x: 0, y: 0, width: 512, height: 256, scale: 1 };
     const clip = createInstantClip(owners, masks);
-    expect(Buffer.from(draw(clip, view)).equals(Buffer.from(reference(masks, view)))).toBe(true);
+    const actual = draw(clip, view), expected = reference(masks, view);
+    const mismatch = [];
+    for (let i = 0; i < actual.length && mismatch.length < 20; i += 4)
+      if (actual[i+3] !== expected[i+3]) mismatch.push([i/4%view.width, Math.floor(i/4/view.width), actual[i+3], expected[i+3]]);
+    expect(Buffer.from(actual).equals(Buffer.from(expected)), JSON.stringify(mismatch)).toBe(true);
     clip.dispose();
   });
 
-  it('preserves whole-mask overview sampling', () => {
+  it.each([0.25, 0.5, 0.8, 1.01, 2, 4, 8, 32])('preserves whole-mask viewport sampling at scale %s with bounded buffers', scale => {
     const masks = [patternedMask(1025, 1139, -10.25, 19.5)];
-    const view = { x: 0.25, y: 0.5, width: 512, height: 512, scale: 4 };
+    const view = { x: 0.25, y: 0.5, width: 512, height: 512, scale };
     const clip = createInstantClip(owners, masks);
-    expect(Buffer.from(draw(clip, view)).equals(Buffer.from(reference(masks, view)))).toBe(true);
+    const actual = draw(clip, view), expected = reference(masks, view);
+    const mismatch = [];
+    for (let i = 0; i < actual.length && mismatch.length < 20; i += 4)
+      if (actual[i+3] !== expected[i+3]) mismatch.push([i/4%view.width, Math.floor(i/4/view.width), actual[i+3], expected[i+3]]);
+    expect(Buffer.from(actual).equals(Buffer.from(expected)), JSON.stringify(mismatch)).toBe(true);
     expect(allocated).toHaveLength(1);
-    expect(allocated[0].width).toBe(1025);
+    expect(allocated[0].width).toBe(256);
     clip.dispose();
   });
 });

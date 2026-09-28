@@ -328,6 +328,44 @@ describe("retained native pixels with atomic viewport presentation", () => {
       .toBe(true);
   });
 
+  it.each([1, 0.5])("never enlarges a cooked overview over a new camera at scale %s", async (scale) => {
+    const f = fixture({ width: 1024, height: 512, budget: 1024 * 1024 });
+    const reference = (p: TerrainViewportPlan) => {
+      const ctx = context(p.pixelWidth, p.pixelHeight);
+      const image = ctx.createImageData(p.pixelWidth, p.pixelHeight);
+      for (let y = 0; y < p.pixelHeight; y++) for (let x = 0; x < p.pixelWidth; x++) {
+        const wx = Math.floor(p.x + (x + 0.5) * p.scale);
+        const wy = Math.floor(p.y + (y + 0.5) * p.scale);
+        const offset = (y * p.pixelWidth + x) * 4;
+        // One-pixel texture and air cuts crossing the cooked 512px boundary.
+        if (wy >= 64 && wy < 97 && wx >= 479 && wx < 530) continue;
+        image.data[offset] = (wx + wy) % 2 ? 255 : 0;
+        image.data[offset + 1] = (wx + wy) % 2 ? 0 : 255;
+        image.data[offset + 3] = 255;
+      }
+      ctx.putImageData(image, 0, 0);
+      return ctx;
+    };
+    f.renderer.renderViewport.mockImplementation(async p => reference(p).canvas);
+    await f.retention.record(0, 0, reference(plan(0, 0, 512, 512)));
+    const coarse = await f.request(plan(0, 0, 1024, 512, 4));
+    expect(pixel(coarse, 20, 20)).toEqual([128, 128, 0, 255]);
+    await f.owner.flush();
+    const pressure = f.owner.install("pressure", context(512, 513), new Uint8Array([1]), 1, 1, false);
+    f.owner.release(pressure);
+    expect(f.owner.stats.pages).toBe(0);
+    // Storage may be slow or unavailable on a phone; sharp foreground output
+    // must not wait for it, and this camera has no previously cached fine view.
+    f.store.read.mockReturnValue(deferred<StoredTerrain | undefined>().promise);
+    const closer = plan(16, 0, 512, 128, scale);
+    const output = await f.request(closer);
+    expect(Buffer.from(bytes(output)).equals(Buffer.from(bytes(reference(closer).canvas))))
+      .toBe(true);
+    const revisited = await f.request(closer);
+    expect(Buffer.from(bytes(revisited)).equals(Buffer.from(bytes(reference(closer).canvas))))
+      .toBe(true);
+  });
+
   it("isolates renderer identities when a cache is shared between map lifetimes", async () => {
     const cache = new InstantTerrainCache();
     const first = fixture({ cache }),

@@ -16,6 +16,8 @@ export interface TerrainViewportInputs {
   owners: Pick<TerrainOwnership, 'width' | 'owners'>[];
   masks: StaticTerrainMask[];
   center: number;
+  /** Supplied by the UI because workers may lack device-memory/touch hints. */
+  maskCacheBytes?: number;
 }
 
 /** Horizontal wrapping and absolute-world noise already belong to the shader.
@@ -44,7 +46,7 @@ export function terrainViewportStrips(plan: TerrainViewportPlan, center: number)
 /** Runs in the GPU worker. Mask expansion, clipping and all-plane composition
  * finish there before a single transferable frame reaches the UI thread. */
 export function createTerrainViewportCompositor(inputs: TerrainViewportInputs) {
-  const clip = createInstantClip(inputs.owners, inputs.masks);
+  const clip = createInstantClip(inputs.owners, inputs.masks, { maxBytes: inputs.maskCacheBytes });
   const surface = document.createElement('canvas');
   const scratch = document.createElement('canvas');
   const output = surface.getContext('2d')!;

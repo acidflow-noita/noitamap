@@ -198,3 +198,33 @@ it('drops pending overview work on map removal and ignores the old in-flight res
     expect(viewer.staticBackgroundResidency.readyTiles).toBe(0);
   } finally { warning.mockRestore(); f.complete(); f.close(); }
 });
+
+it('keeps all three static worlds covered under the phone memory and download limits', async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(window, 'matchMedia');
+  Object.defineProperty(window, 'matchMedia', { configurable: true,
+    value: (query: string) => ({ matches: query === '(pointer: coarse)' }) });
+  const f = await appFixture(), { viewer } = f;
+  try {
+    expect(viewer.tileCache._maxCacheItemCount).toBe(64);
+    expect(viewer.imageLoader.jobLimit).toBe(4);
+    await vi.waitFor(() => expect(viewer.staticBackgroundResidency.pending).toBe(0));
+    expect(viewer.staticBackgroundResidency.reservedBytes).toBeLessThanOrEqual(8 * 1024 * 1024);
+    for (let i = 0; i < viewer.world.getItemCount(); i++) {
+      const item = viewer.world.getItemAt(i), level = item.source.getClosestLevel();
+      const tiles = viewer.tileCache.getLoadedTilesFor(item);
+      expect(tiles.some((tile: any) => tile.level === level)).toBe(true);
+      item._loadTile = vi.fn();
+    }
+    // Detail cannot load while zooming out, so these samples prove that the
+    // reduced resident budget still covers every PW without black gaps.
+    for (const x of [-50000, -12000, 24000]) {
+      viewer.viewport.fitBounds(new OSD.Rect(x, -18000, 24000, 24000), true);
+      draw(viewer);
+      expect([...viewer.drawer.context.getImageData(256, 256, 1, 1).data]).toEqual(color);
+    }
+  } finally {
+    f.close();
+    if (descriptor) Object.defineProperty(window, 'matchMedia', descriptor);
+    else delete (window as any).matchMedia;
+  }
+});

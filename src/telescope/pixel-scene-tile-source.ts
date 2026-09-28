@@ -1,5 +1,6 @@
 import Flatbush from "flatbush";
 import { copyTerrainContext, InstantTerrainCache } from "./instant-terrain-cache";
+import { getMapMemoryBudget } from '../map-memory-budget';
 import { drawViewportArt } from './viewport-art';
 
 declare const OpenSeadragon: any;
@@ -43,7 +44,7 @@ export function createPixelSceneTileSource(options: {
   const tileSize = 512;
   const maxLevel = Math.max(0, Math.ceil(Math.log2(Math.max(width, height))));
   const source = new OpenSeadragon.TileSource({ width, height, tileSize, minLevel: 0, maxLevel });
-  const cache = new InstantTerrainCache(options.maxCacheBytes ?? 16 * 1024 * 1024);
+  const cache = new InstantTerrainCache(options.maxCacheBytes ?? getMapMemoryBudget().sceneCacheBytes);
   const cutoff = source.getClosestLevel();
   const baseEnd = Math.min(maxLevel, cutoff + 1);
   let destroyed = false, rendered = 0, renderMs = 0, chunks = 0, maxChunkMs = 0;

@@ -2,6 +2,7 @@ import { createInstantClip } from "./instant-terrain-clip";
 import { createInstantTerrainViewport } from "./instant-terrain-viewport";
 import { afterMapHandoff } from './map-handoff';
 import { createRetainedViewportRenderer } from "./retained-viewport-renderer";
+import { getMapMemoryBudget } from '../map-memory-budget';
 export { createInstantClip } from "./instant-terrain-clip";
 import type {
   GLTerrainDeps,
@@ -136,13 +137,14 @@ export function createInstantTileSource(options: {
   onTile?: (pixels: number, milliseconds: number) => void;
 }) {
   const { region, signal } = options;
+  const memory = getMapMemoryBudget();
   const id = ++nextId;
   // Standalone callers have no scene-mask identity. Keep their retention local
   // rather than persisting a session counter that collides after a page reload.
   const ownedRetention = options.retention ? undefined : new RetainedTerrain({
     read: async () => undefined,
     write: async () => { throw new Error('Session-only terrain retention'); },
-  });
+  }, memory.retainedTerrainBytes);
   const retention = options.retention ?? ownedRetention!.region(`session-${id}`, region.width, region.height);
   const source = new OpenSeadragon.TileSource({
     width: region.width,
@@ -151,7 +153,7 @@ export function createInstantTileSource(options: {
     minLevel: retention.minLevel,
     maxLevel: Math.ceil(Math.log2(Math.max(region.width, region.height))),
   });
-  const cache = options.cache ?? new InstantTerrainCache();
+  const cache = options.cache ?? new InstantTerrainCache(memory.terrainCacheBytes);
   const overviewLevel = typeof source.getClosestLevel === 'function'
     ? source.getClosestLevel() : Math.min(source.maxLevel, Math.log2(INSTANT_TILE_SIZE));
   const coverageMaxLevel = Math.min(source.maxLevel, overviewLevel + INSTANT_COVERAGE_EXTRA_LEVELS);
@@ -558,8 +560,9 @@ export async function addInstantTerrain(
 ): Promise<boolean> {
   clearInstantTerrain();
   const lifetime = new AbortController();
-  const cache = new InstantTerrainCache();
-  const retained = new RetainedTerrain();
+  const memory = getMapMemoryBudget();
+  const cache = new InstantTerrainCache(memory.terrainCacheBytes);
+  const retained = new RetainedTerrain(undefined, memory.retainedTerrainBytes);
   const retentionIdentity = retainedTerrainIdentity(gen, masks);
   const items: any[] = [];
   const sources = new Set<any>();
@@ -579,6 +582,8 @@ export async function addInstantTerrain(
     painted = false;
   const stats = {
     backend: "pending",
+    memoryProfile: memory.profile,
+    viewportPixelLimit: memory.viewportMaxPixels,
     shaderWarmupMs: 0,
     resourceMs: 0,
     planes: 0,
@@ -696,7 +701,7 @@ export async function addInstantTerrain(
     clip = createInstantClip(owners, masks);
     const direct = osd.drawer?.getType?.() === 'canvas'
       && typeof osd.drawer._drawTiles === 'function' && typeof mainRenderer.configureViewport === 'function';
-    if (direct) await mainRenderer.configureViewport({ owners, masks,
+    if (direct) await mainRenderer.configureViewport({ owners, masks, maskCacheBytes: memory.maskCacheBytes,
       center: deps.getWorldCenter(gen.isNGP, gen.gameMode) });
     if (!isCurrent() || lifetime.signal.aborted)
       throw new DOMException('Obsolete terrain generation', 'AbortError');
@@ -783,6 +788,7 @@ export async function addInstantTerrain(
       });
       viewport = createInstantTerrainViewport({
         viewer: osd, bounds, signal: lifetime.signal, revision: () => viewportRevision,
+        maxRetainedPixels: memory.retainedFramePixels,
         async renderFrame(plan, signal) {
           await new Promise<void>((resolve, reject) => {
             const abort = () => reject(signal.reason);

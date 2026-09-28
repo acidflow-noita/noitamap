@@ -50,6 +50,7 @@ export const BIOME_BACKGROUND_MAP: Record<string, string> = {
   vault_frozen: "data/weather_gfx/background_vault_frozen.png",
   crypt: "data/weather_gfx/background_crypt.png",
   wandcave: "data/weather_gfx/background_wandcave.png",
+  watercave: "data/weather_gfx/background_cave_04_alt.png",
   wizardcave: "data/weather_gfx/background_wizardcave.png",
   robobase: "data/weather_gfx/background_robobase.png",
   the_end: "data/weather_gfx/background_the_end.png",

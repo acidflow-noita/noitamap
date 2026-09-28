@@ -3,13 +3,10 @@
  * replacements arrive. Loading and coverage selection still belong to OSD. */
 
 import { alignTerrainTileEdges } from './osd-pixel-rendering';
+import { getMapMemoryBudget } from './map-memory-budget';
 
 type Bounds = { x: number; y: number; width: number; height: number };
 type State = { remembered: Set<any>; extras: Set<any> };
-
-// At minPixelRatio=.5, a 256px tile can occupy only 128 screen pixels. Two
-// overlapping FHD layers can already need ~270 tiles in the preceding frame.
-const DEFAULT_REFERENCE_LIMIT = 512;
 
 class ReferenceBudget {
   private entries = new Map<any, State>();
@@ -165,13 +162,13 @@ function protect(item: any, budget: ReferenceBudget): () => void {
 
 /** Standalone entry point for an image or a native OSD integration fixture. */
 export function protectTileContinuity(item: any, options: { maxTiles?: number } = {}): () => void {
-  return protect(item, new ReferenceBudget(Math.max(0, options.maxTiles ?? DEFAULT_REFERENCE_LIMIT)));
+  return protect(item, new ReferenceBudget(Math.max(0, options.maxTiles ?? getMapMemoryBudget().continuityTiles)));
 }
 
 /** Share a bounded reference budget across static DZI and generated map layers.
  * OSD owns every tile/cache canvas; removing images releases all extra refs. */
 export function installTileContinuity(viewer: any, options: { maxTiles?: number } = {}): () => void {
-  const budget = new ReferenceBudget(Math.max(0, options.maxTiles ?? DEFAULT_REFERENCE_LIMIT));
+  const budget = new ReferenceBudget(Math.max(0, options.maxTiles ?? getMapMemoryBudget().continuityTiles));
   const images = new Map<any, () => void>();
   const add = ({ item }: any) => {
     if (!images.has(item)) images.set(item, protect(item, budget));

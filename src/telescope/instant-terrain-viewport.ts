@@ -1,3 +1,4 @@
+import { getMapMemoryBudget, type MapMemoryBudget } from '../map-memory-budget';
 declare const OpenSeadragon: any;
 
 export interface ViewportTerrainBounds {
@@ -140,7 +141,8 @@ function density(): number {
   return OpenSeadragon.pixelDensityRatio || globalThis.devicePixelRatio || 1;
 }
 
-export function planInstantTerrainViewport(viewport: any, bounds: ViewportTerrainBounds): InstantTerrainViewportPlan | null {
+export function planInstantTerrainViewport(viewport: any, bounds: ViewportTerrainBounds,
+  budget: Pick<MapMemoryBudget, 'viewportMaxPixels' | 'viewportMaxDimension'> = getMapMemoryBudget()): InstantTerrainViewportPlan | null {
   const current = viewport.getBounds(true);
   const visible = current.getBoundingBox?.() ?? current;
   const pixelsPerWorld = Math.abs(viewport.deltaPixelsFromPointsNoRotate(new OpenSeadragon.Point(1, 0), true).x) * density();
@@ -148,9 +150,21 @@ export function planInstantTerrainViewport(viewport: any, bounds: ViewportTerrai
   const right = Math.min(bounds.x + bounds.width, visible.x + visible.width);
   const bottom = Math.min(bounds.y + bounds.height, visible.y + visible.height);
   if (![x, y, right, bottom, pixelsPerWorld].every(Number.isFinite) || right <= x || bottom <= y || pixelsPerWorld <= 0) return null;
-  const scale = 1 / pixelsPerWorld;
-  const pixelWidth = Math.max(1, Math.ceil((right - x) * pixelsPerWorld));
-  const pixelHeight = Math.max(1, Math.ceil((bottom - y) * pixelsPerWorld));
+  // This bounds temporary presentation buffers, not canonical native terrain.
+  // High-DPI phones and rotated views must not allocate a device-sized bitmap
+  // in every compositor/cache stage without a pixel and dimension ceiling.
+  const maxWidth = right - x, maxHeight = bottom - y;
+  let sampleDensity = Math.min(pixelsPerWorld,
+    Math.sqrt(budget.viewportMaxPixels / (maxWidth * maxHeight)),
+    budget.viewportMaxDimension / maxWidth, budget.viewportMaxDimension / maxHeight);
+  // Ceil-to-cover may exceed the area limit by one row/column. Tighten the
+  // uniform grid until even its outward-rounded allocation fits the budget.
+  while (Math.ceil(maxWidth * sampleDensity) * Math.ceil(maxHeight * sampleDensity) > budget.viewportMaxPixels)
+    sampleDensity *= Math.sqrt(budget.viewportMaxPixels /
+      (Math.ceil(maxWidth * sampleDensity) * Math.ceil(maxHeight * sampleDensity))) * (1 - 1e-9);
+  const scale = 1 / sampleDensity;
+  const pixelWidth = Math.max(1, Math.ceil(maxWidth * sampleDensity));
+  const pixelHeight = Math.max(1, Math.ceil(maxHeight * sampleDensity));
   // Round outward by less than one physical pixel. Drawing clips this small
   // overscan to the map bounds, preserving uniform sampling and full coverage.
   return { x, y, width: pixelWidth * scale, height: pixelHeight * scale, scale, pixelWidth, pixelHeight };
@@ -198,6 +212,7 @@ export function createInstantTerrainViewport(options: {
   maxRetainedPixels?: number;
 }) {
   const { bounds, signal } = options;
+  const memory = getMapMemoryBudget();
   const osd = options.viewer.viewer || options.viewer;
   if (![bounds.x, bounds.y, bounds.width, bounds.height].every(Number.isFinite) || bounds.width <= 0 || bounds.height <= 0)
     throw new RangeError('Invalid viewport terrain bounds');
@@ -215,7 +230,7 @@ export function createInstantTerrainViewport(options: {
   type Frame = Request & { image: CanvasImageSource };
   let frame: Frame | undefined;
   let retained: Frame[] = [];
-  const maxRetainedPixels = Math.max(0, options.maxRetainedPixels ?? 8 * 1024 * 1024);
+  const maxRetainedPixels = Math.max(0, options.maxRetainedPixels ?? memory.retainedFramePixels);
   Object.defineProperties(stats, {
     retainedFrames: { enumerable: true, get: () => retained.length },
     retainedBytes: { enumerable: true, get: () => retained.reduce((sum, entry) => sum + entry.plan.pixelWidth * entry.plan.pixelHeight * 4, 0) },
@@ -306,7 +321,7 @@ export function createInstantTerrainViewport(options: {
   function refresh(): void {
     if (destroyed || failed || signal.aborted) return;
     try {
-      const plan = planInstantTerrainViewport(osd.viewport, bounds);
+      const plan = planInstantTerrainViewport(osd.viewport, bounds, memory);
       if (!plan) { pending = undefined; desiredKey = undefined; return; }
       const version = revision();
       const key = [plan.x, plan.y, plan.pixelWidth, plan.pixelHeight, plan.scale, version].join('/');

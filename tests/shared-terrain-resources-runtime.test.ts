@@ -72,6 +72,11 @@ describe.skipIf(process.platform !== "linux")("shared terrain resources with nat
       expect(sample.mainOwnedPixels, JSON.stringify(sample)).toBe(0);
       expect(sample.nativePixelChanges, JSON.stringify(sample)).toBeGreaterThan(100);
     }
+    expect(result.templeZoomSamples).toHaveLength(4);
+    for (const sample of result.templeZoomSamples) {
+      expect(sample.comparedPixels).toBe(512 * 512);
+      expect(sample.mismatchedBytes, JSON.stringify(sample)).toBe(0);
+    }
     expect(result.materialSamples).toEqual([426, 140, 140, 426, 5, 5, 32, 279, 140, 140]);
     expect(result.referenceLatticeBuilds).toBe(3);
     expect(result.sharedLatticeBuilds).toBe(1);

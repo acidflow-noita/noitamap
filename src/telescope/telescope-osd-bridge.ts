@@ -7,6 +7,7 @@ import { CONTAINER_TYPES } from "./poi-containers";
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
 import { loadInstantSceneMasks } from "./instant-scene-masks";
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
+import { nativeSceneBitmapKey, usesNativeSceneBitmap } from "./native-scene-bitmap";
 import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate } from "./terrain-policy";
 import { loadTelescopeModules } from "./load-telescope";
 import { isGLTerrainEnabled, isInstantTerrainEnabled, useRenderPerfGeneration } from "../renderer_settings";
@@ -16,6 +17,7 @@ import { createScenePrefetch } from "./scene-prefetch";
 import { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer } from "./biome-background-layer";
 import { failMapHandoff, holdMapHandoff, isMapHandoffPending } from './map-handoff';
 import { retireMapItems } from './retire-map-items';
+import { getMapMemoryBudget } from '../map-memory-budget';
 
 let instantTerrainModule: typeof import('./instant-terrain') | undefined;
 let instantTerrainLoading: Promise<typeof import('./instant-terrain')> | undefined;
@@ -1458,8 +1460,6 @@ export const pixelSceneConfig = {
     // Pyramid scenes - prebaked in map art
     'left',
     'right',
-    // Hidden cavern - prebaked in OSD
-    'solid_wall_hidden_cavern',
   ]),
   /** Skip lists by biome prefix in scene key */
   skipBiomes: new Set([
@@ -2189,8 +2189,49 @@ async function compositeSceneBitmap(
   if (bgBmp) bgBmp.close();
   if (midBitmap) midBitmap.close();
   if (visBmp) visBmp.close();
+  canvas.width = canvas.height = 0;
 
   return { bitmap, blob, width: cw, height: ch, kind };
+}
+
+/** Fixed-size authored rooms use the same material shader as native terrain.
+ * In particular, watercave_layout PNGs contain Wang codes, not visual artwork;
+ * compositing their raw PNG above a recolored bitmap hides every detail. */
+async function compositeNativeSceneBitmap(scene: PixelScene, worldSize: number) {
+  const raw = await ensurePixelSceneData(scene.key);
+  if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement))
+    throw new Error(`Missing native scene material data: ${scene.key}`);
+  const [{ createTerrainScenePainter }, { renderNativeSceneBitmap }, { loadTerrainBackgrounds }, { sceneBiomeNames }] = await Promise.all([
+    import('./terrain-scenes'), import('./native-scene-bitmap'),
+    import('./terrain-backgrounds'), import('./terrain-policy'),
+  ]);
+  const override = pixelSceneConfig.layerOverrides[scene.name] || pixelSceneConfig.layerOverrides[scene.key];
+  const names = sceneBiomeNames(scene);
+  const [paint, backgrounds] = await Promise.all([
+    createTerrainScenePainter(),
+    (override?.background ?? pixelSceneConfig.layers.background)
+      ? loadTerrainBackgrounds(names) : Promise.resolve(new Map()),
+  ]);
+  const source: TerrainSceneSource = {
+    data: (override?.mid ?? pixelSceneConfig.layers.mid) ? raw.imgElement : new Uint8Array(raw.imgElement.length),
+    width: raw.width, height: raw.height,
+    visualArt: (override?.visual ?? pixelSceneConfig.layers.visual) ? raw.visualArt : null,
+  };
+  const backdrop = names.map(name => backgrounds.get(name)).find(Boolean);
+  const pixels = renderNativeSceneBitmap(scene, source, paint, worldSize, backdrop);
+  const bitmap = await createImageBitmap(new ImageData(pixels, source.width, source.height));
+  try {
+    const blob = await rgbaToPngBlob(pixels, source.width, source.height);
+    return { bitmap, blob, width: source.width, height: source.height, kind: 'composite' as const };
+  } catch (error) {
+    bitmap.close();
+    throw error;
+  }
+}
+
+function sceneBitmapRenderKey(scene: PixelScene, nativeMaterials: boolean, worldSize: number): string {
+  return nativeMaterials && usesNativeSceneBitmap(scene)
+    ? nativeSceneBitmapKey(scene, worldSize) : sceneRenderKey(scene);
 }
 
 /**
@@ -2351,7 +2392,8 @@ async function instantSceneMasks(result: GenerationResult): Promise<StaticTerrai
 
 async function buildSceneBitmaps(
   result: GenerationResult,
-  generationId: number | null
+  generationId: number | null,
+  nativeMaterials = false,
 ): Promise<{ validScenes: PixelScene[]; bitmapByKey: Map<string, ImageBitmap> } | null> {
   const validScenes = renderableScenes(result);
   const bitmapByKey = new Map<string, ImageBitmap>();
@@ -2359,14 +2401,14 @@ async function buildSceneBitmaps(
 
   const uniqueKeys = new Map<string, PixelScene>();
   for (const scene of validScenes) {
-    const rk = sceneRenderKey(scene);
+    const rk = sceneBitmapRenderKey(scene, nativeMaterials, result.worldSize);
     if (!uniqueKeys.has(rk)) uniqueKeys.set(rk, scene);
   }
 
   // Per-key bitmaps are seed-independent — cache them in IDB so future seeds
   // reuse the work. Bulk-fetch every cached bitmap in one IDB transaction
   // (~138 separate read transactions add 1-3s on Brave/FF).
-  const BATCH = 50;
+  const BATCH = getMapMemoryBudget().profile === 'compact' ? 2 : 8;
   const keyArr = Array.from(uniqueKeys.entries()); // [renderKey, scene]
   let compositeCount = 0;
   let cacheHitCount = 0;
@@ -2382,7 +2424,7 @@ async function buildSceneBitmaps(
       return null;
     }
     const batch = keyArr.slice(i, i + BATCH);
-    await Promise.all(
+    const outcomes = await Promise.allSettled(
       batch.map(async ([rk, scene]) => {
         // ── Cache fast path ────────────────────────────────────────────────
         const cached = bulkSceneCache.get(rk);
@@ -2397,7 +2439,9 @@ async function buildSceneBitmaps(
           }
         }
 
-        const composited = await compositeSceneBitmap(scene.key, scene, idx);
+        const composited = nativeMaterials && usesNativeSceneBitmap(scene)
+          ? await compositeNativeSceneBitmap(scene, result.worldSize)
+          : await compositeSceneBitmap(scene.key, scene, idx);
         if (!composited) {
           missingCount++;
           return;
@@ -2412,6 +2456,14 @@ async function buildSceneBitmaps(
         }
       })
     );
+    const failure = outcomes.find((outcome): outcome is PromiseRejectedResult => outcome.status === 'rejected');
+    if (failure) {
+      // Wait for the complete bounded batch before closing shared output; a
+      // sibling must not install a late bitmap after error cleanup has run.
+      for (const bitmap of bitmapByKey.values()) bitmap.close();
+      bitmapByKey.clear();
+      throw failure.reason;
+    }
   }
 
   console.log(
@@ -2421,7 +2473,7 @@ async function buildSceneBitmaps(
   return { validScenes, bitmapByKey };
 }
 
-export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult, generationId: number): Promise<void> {
+export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult, generationId: number, nativeMaterials = false): Promise<void> {
   if (!pixelSceneConfig.enabled) return;
 
   const { pixelScenesByPW } = result;
@@ -2443,7 +2495,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   }
 
   const [built, { createPixelSceneTileSource }] = await Promise.all([
-    buildSceneBitmaps(result, generationId),
+    buildSceneBitmaps(result, generationId, nativeMaterials),
     import('./pixel-scene-tile-source'),
   ]);
   if (!built) return; // cancelled
@@ -2468,7 +2520,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
 
   const items: SceneTileItem[] = [];
   for (const scene of validScenes) {
-    const rk = sceneRenderKey(scene);
+    const rk = sceneBitmapRenderKey(scene, nativeMaterials, result.worldSize);
     if (!bitmapByKey.has(rk)) continue;
     items.push({ osdX: scene.x, osdY: scene.y, w: scene.width, h: scene.height, sceneKey: rk });
   }
@@ -5155,7 +5207,7 @@ export async function renderGenerationResult(
           [key, scenes.filter(scene => !isRepeatedTempleTemplate(scene)
             && (!isGLTerrainEnabled() || scene.key.startsWith('static_tile/')))])),
       } : result;
-      await addPixelScenes(viewer, sceneResult, generationId);
+      await addPixelScenes(viewer, sceneResult, generationId, awaitingTerrainDraw);
       if (currentGenerationId !== generationId) return;
     }
 

@@ -9,6 +9,7 @@ import { PIXEL_MAP_DRAW_OPTIONS } from './osd-pixel-rendering';
 import { installTileContinuity } from './osd-tile-continuity';
 import { installTerrainAdmission } from './osd-terrain-admission';
 import { installStaticBackgroundResidency } from './osd-static-background';
+import { getMapMemoryBudget } from './map-memory-budget';
 
 declare const OpenSeadragon: any;
 
@@ -42,6 +43,7 @@ export class AppOSD {
   private failedItems: Set<any> = new Set();
 
   constructor(mountTo: HTMLElement, useWebGL: boolean) {
+    const memory = getMapMemoryBudget();
     this.viewer = new OpenSeadragon.Viewer({
       element: mountTo,
       maxZoomPixelRatio: 70,
@@ -69,6 +71,8 @@ export class AppOSD {
         return 'canvas';
       })(),
       ...PIXEL_MAP_DRAW_OPTIONS,
+      maxImageCacheCount: memory.osdCacheTiles,
+      imageLoaderLimit: memory.imageLoaderLimit,
       debugMode: false,
       // Canvas drawer: round transparent tiles to whole pixels once the
       // viewport is at rest so overlap seams don't show. The baked daily
