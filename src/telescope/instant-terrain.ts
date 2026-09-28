@@ -121,6 +121,8 @@ export function createInstantTileSource(options: {
   gen: GLTerrainGeneration;
   renderer?: any;
   getRenderer?: () => Promise<any>;
+  /** The direct viewport has already installed ownership/scene masks in the worker. */
+  workerClipping?: boolean;
   plane?: VerticalPlane;
   clip: Omit<ReturnType<typeof createInstantClip>, 'hasTerrain'> & Partial<Pick<ReturnType<typeof createInstantClip>, 'hasTerrain'>>;
   signal: AbortSignal;
@@ -255,6 +257,8 @@ export function createInstantTileSource(options: {
             return context;
           }
           if (options.plane !== undefined) setTerrainPlane(renderer, options.plane);
+          const workerClipping = options.workerClipping && renderer.backend === 'worker'
+            && typeof renderer.renderViewport === 'function';
           const capture = (rendered: any) => {
             try {
               controller.signal.throwIfAborted();
@@ -267,11 +271,19 @@ export function createInstantTileSource(options: {
               if (!ctx) throw new Error("Terrain tile canvas unavailable");
               // Copy the main-context canvas before another draw can resize it.
               // Worker bitmaps can be released as soon as this copy is owned.
-              options.clip.draw(ctx, rendered, sampled);
+              if (workerClipping) ctx.drawImage(rendered, 0, 0);
+              else options.clip.draw(ctx, rendered, sampled);
               return ctx;
             } finally { rendered?.close?.(); }
           };
-          const rendered = renderer.render(sampled, controller.signal);
+          // Native cooking uses the same worker-owned masks as the foreground.
+          // Expanding an entire scene mask again on the UI thread can turn a
+          // small background tile into a long, blocking CPU task.
+          const rendered = workerClipping
+            ? renderer.renderViewport({ x: sampled.x, y: sampled.y,
+                width: sampled.width * sampled.scale, height: sampled.height * sampled.scale,
+                scale: sampled.scale, pixelWidth: sampled.width, pixelHeight: sampled.height }, controller.signal)
+            : renderer.render(sampled, controller.signal);
           return typeof rendered?.then === 'function' ? rendered.then(capture) : capture(rendered);
         }, controller.signal, priority, { background: isBackground });
         try {
@@ -711,6 +723,7 @@ export async function addInstantTerrain(
           deps,
           gen,
           getRenderer: () => getRenderer(plane),
+          workerClipping: direct,
           plane,
           clip,
           cache,

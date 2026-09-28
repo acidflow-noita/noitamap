@@ -166,7 +166,7 @@ function viewer() {
 }
 
 describe("display-resolution GPU terrain (native canvas, no browser)", () => {
-  function cookingSource(renderer: any = new Renderer(), records = new Map<string, StoredTerrain>(), ownsTerrain = true) {
+  function cookingSource(renderer: any = new Renderer(), records = new Map<string, StoredTerrain>(), ownsTerrain = true, workerClipping = false) {
     const retained = new RetainedTerrain({
       read: async key => records.get(key),
       write: async entries => { for (const entry of entries) records.set(entry.key, entry.value); },
@@ -174,14 +174,53 @@ describe("display-resolution GPU terrain (native canvas, no browser)", () => {
     const controller = new AbortController();
     const area = { ...region, y: WORLD_TOP, width: 1024, height: 1024 };
     const cache = new InstantTerrainCache();
+    const clip = createInstantClip([owner(false), owner(ownsTerrain), owner(false)], []);
     const src = createInstantTileSource({
-      region: area, gen, deps, renderer, cache,
+      region: area, gen, deps, renderer, cache, workerClipping,
       retention: retained.region('cooking', area.width, area.height),
-      clip: createInstantClip([owner(false), owner(ownsTerrain), owner(false)], []),
+      clip,
       signal: controller.signal, onFailure: vi.fn(),
     });
-    return { src, cache, retained, controller, records };
+    return { src, cache, retained, controller, records, clip };
   }
+  it('cooks and persists worker-clipped native pixels without expanding scene masks on the UI thread', async () => {
+    const renderer = {
+      backend: 'worker', render: vi.fn(),
+      renderViewport: vi.fn(async (plan: any) => {
+        const image = createCanvas(plan.pixelWidth, plan.pixelHeight), context = image.getContext('2d');
+        context.fillStyle = '#fc8000'; context.fillRect(0, 0, image.width, image.height);
+        // A worker-composited material/force-air hole must remain authoritative.
+        context.clearRect(13, 17, 3, 5);
+        return image;
+      }),
+    };
+    const { src, retained, controller, clip, records } = cookingSource(renderer, new Map(), true, true);
+    const clipDraw = vi.spyOn(clip, 'draw');
+    try {
+      await src.prepareNativeTile(0, 0);
+      expect(renderer.renderViewport).toHaveBeenCalledOnce();
+      expect(renderer.renderViewport.mock.calls[0][0]).toEqual({
+        x: -17920, y: WORLD_TOP, width: 512, height: 512, scale: 1, pixelWidth: 512, pixelHeight: 512,
+      });
+      expect(renderer.render).not.toHaveBeenCalled();
+      expect(clipDraw).not.toHaveBeenCalled();
+      const tile = await request(src, src.maxLevel, 0, 0).result;
+      expect([...tile.value.getImageData(0, 0, 1, 1).data]).toEqual([252, 128, 0, 255]);
+      expect([...tile.value.getImageData(13, 17, 1, 1).data]).toEqual([0, 0, 0, 0]);
+      await retained.flush();
+      const native = records.get('cooking/10/0/0')!;
+      expect([...native.pixels.slice((17 * 256 + 13) * 4, (17 * 256 + 13) * 4 + 4)]).toEqual([0, 0, 0, 0]);
+    } finally { controller.abort(); await retained.flush(); retained.dispose(); }
+  });
+  it('keeps ownership clipping when native rendering falls back to the main context', async () => {
+    const { src, retained, controller, clip } = cookingSource(new Renderer(), new Map(), true, true);
+    const clipDraw = vi.spyOn(clip, 'draw');
+    try {
+      await src.prepareNativeTile(0, 0);
+      expect(draw).toHaveBeenCalledOnce();
+      expect(clipDraw).toHaveBeenCalledOnce();
+    } finally { controller.abort(); await retained.flush(); retained.dispose(); }
+  });
   it('cooks native pixels without a display request and reuses them at native and overview levels', async () => {
     const { src, cache, retained, controller } = cookingSource();
     try {

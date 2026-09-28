@@ -162,8 +162,10 @@ async function verifyViewportRPC(renderer: any, width: number, center: number) {
       pw, pwVertical: 0, engineTerrain: true, edgeNoise: true, materialTextures: true });
   };
   for (const plane of [-1, 0, 1] as const) for (const pw of [-1, 0, 1]) {
-    const plan = { x: -4032 + pw * worldWidth, y: 64 + plane * WORLD_HEIGHT,
-      width: 128, height: 128, scale: 1, pixelWidth: 128, pixelHeight: 128 };
+    // Native cooking now uses this compositor RPC too. Verify whole 512px
+    // chunk samples in every plane/PW against the explicit-plane shader path.
+    const plan = { x: -4096 + pw * worldWidth, y: plane * WORLD_HEIGHT,
+      width: 512, height: 512, scale: 1, pixelWidth: 512, pixelHeight: 512 };
     const actual = await renderer.renderViewport(plan), expected = await tile(plan, pw, plane);
     compare(pixels(actual), pixels(expected));
     actual.close(); expected.close();
@@ -224,7 +226,7 @@ async function verifyViewportRPC(renderer: any, width: number, center: number) {
     tilesMs.push(performance.now() - started);
   }
   const after = count();
-  return { comparedBytes, mismatches, visible, regions: 9, fullWorldFrames: 1,
+  return { comparedBytes, mismatches, visible, regions: 9, nativeBlockPixels: 9 * 512 * 512, fullWorldFrames: 1,
     forceAirMaskVerified: true, forceAirOpaquePixelsCleared, measuredFrameRequests: after.frame - before.frame,
     measuredTileRequests: after.render - before.render, warm1080pFrameTransferMs: frameMs,
     warm1080pTwelveTileTransfersMs: tilesMs,

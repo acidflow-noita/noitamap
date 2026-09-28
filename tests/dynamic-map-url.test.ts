@@ -15,7 +15,7 @@ vi.mock('../src/pillars-unlocks', () => ({ getPillarFlagsFromURL: vi.fn() }));
 vi.mock('../src/unlocks-toggle', () => ({ prewarmAlt: vi.fn(), resetAltCache: vi.fn() }));
 vi.mock('../src/light-mode', () => ({ isLightMode: () => false }));
 vi.mock('../src/telescope/telescope-osd-bridge', () => ({
-  renderGenerationResult: vi.fn(), clearDynamicOverlays: vi.fn(), getAllPOIsFlat: vi.fn(),
+  renderGenerationResult: vi.fn(), clearDynamicOverlays: vi.fn(), cancelPendingDynamicTerrain: vi.fn(), getAllPOIsFlat: vi.fn(),
   hasDynamicOverlays: vi.fn(), ensurePersistentBiomeBackgrounds: vi.fn(),
   resetPersistentBiomeBackgrounds: vi.fn(), prefetchAllSceneBitmaps: vi.fn(), prepareInstantTerrainResources: vi.fn(), prewarmMapPresentation: vi.fn(),
 }));

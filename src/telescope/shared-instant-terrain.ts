@@ -52,7 +52,7 @@ import type { VerticalPlane } from "./terrain-policy";
 import {
   packElevatorLattices,
   createElevatorChunkTexture,
-  createPackedLatticeTexture,
+  createPackedLatticeTextures,
 } from "./instant-elevator-lattice";
 
 const slotsByColor = new Map<number, number>(
@@ -205,6 +205,9 @@ export class SharedInstantTerrainResources {
         this.textures.add(texture);
         return texture;
       };
+      const lattices = createPackedLatticeTextures(gl, elevators);
+      own(lattices.cov);
+      own(lattices.mat);
       this.common = {
         atlas: own(createRegionAtlasTexture(gl, resources.atlas)),
         regionMeta: own(createRegionMetaTexture(gl, resources.regions)),
@@ -220,8 +223,8 @@ export class SharedInstantTerrainResources {
             buildPaletteMaterialTable(atlas, resources.palette),
           ),
         ),
-        cov: own(createPackedLatticeTexture(gl, elevators, "cov")),
-        latMat: own(createPackedLatticeTexture(gl, elevators, "mat")),
+        cov: lattices.cov,
+        latMat: lattices.mat,
         engTable: own(
           createFloatTableTexture(gl, buildEngineTable(opts.seed ?? 0)),
         ),

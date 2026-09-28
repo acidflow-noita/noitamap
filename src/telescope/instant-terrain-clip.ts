@@ -10,6 +10,9 @@ export interface InstantClipView {
   height: number;
 }
 
+const MASK_PAGE_SIZE = 256;
+const MASK_CACHE_BYTES = 32 * 1024 * 1024;
+
 /** Preserve the existing static-map ownership and the exact authored scene
  * material/force-air masks. Empty PNG pixels do not erase a rectangular room. */
 export function createInstantClip(
@@ -20,30 +23,40 @@ export function createInstantClip(
   for (const mask of masks)
     index!.add(mask.x, mask.y, mask.x + mask.width, mask.y + mask.height);
   index?.finish();
-  const bitmaps = new Map<Uint8Array, HTMLCanvasElement>();
+  const bitmaps = new Map<string, HTMLCanvasElement>();
+  const identities = new WeakMap<Uint8Array, number>();
+  let nextIdentity = 0;
+  const identity = (bits: Uint8Array | undefined) => {
+    if (!bits) return 0;
+    let id = identities.get(bits);
+    if (id === undefined) identities.set(bits, id = ++nextIdentity);
+    return id;
+  };
   let bytes = 0;
-  const bitmap = (mask: StaticTerrainMask) => {
-    let canvas = bitmaps.get(mask.bits);
+  const bitmap = (mask: StaticTerrainMask, x = 0, y = 0,
+    width = mask.width, height = mask.height) => {
+    const key = `${identity(mask.bits)}/${identity(mask.airBits)}/${mask.width}/${mask.height}/${x}/${y}/${width}/${height}`;
+    let canvas = bitmaps.get(key);
     if (canvas) {
-      bitmaps.delete(mask.bits);
-      bitmaps.set(mask.bits, canvas);
+      bitmaps.delete(key);
+      bitmaps.set(key, canvas);
       return canvas;
     }
     canvas = document.createElement("canvas");
-    canvas.width = mask.width;
-    canvas.height = mask.height;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext("2d")!;
-    const image = ctx.createImageData(mask.width, mask.height);
-    for (let p = 0; p < mask.width * mask.height; p++)
-      if (
-        ((mask.bits[p >> 3] ?? 0) | (mask.airBits?.[p >> 3] ?? 0)) &
-        (1 << (p & 7))
-      )
-        image.data[p * 4 + 3] = 255;
+    const image = ctx.createImageData(width, height);
+    for (let row = 0; row < height; row++)
+      for (let column = 0; column < width; column++) {
+        const source = (y + row) * mask.width + x + column;
+        if (((mask.bits[source >> 3] ?? 0) | (mask.airBits?.[source >> 3] ?? 0)) & (1 << (source & 7)))
+          image.data[(row * width + column) * 4 + 3] = 255;
+      }
     ctx.putImageData(image, 0, 0);
-    bitmaps.set(mask.bits, canvas);
-    bytes += mask.width * mask.height * 4;
-    while (bytes > 32 * 1024 * 1024 && bitmaps.size > 1) {
+    bitmaps.set(key, canvas);
+    bytes += width * height * 4;
+    while (bytes > MASK_CACHE_BYTES && bitmaps.size > 1) {
       const [key, old] = bitmaps.entries().next().value!;
       bytes -= old.width * old.height * 4;
       bitmaps.delete(key);
@@ -117,6 +130,33 @@ export function createInstantClip(
         y + height * scale,
       ) ?? []) {
         const mask = masks[id];
+        // Native cooking touches at most 512px at a time. Expanding a complete
+        // scene here used to allocate tens of MiB and scan millions of pixels
+        // for a single leaf, repeatedly evicting the other large scene masks.
+        // Fixed pages share work between neighbouring leaves and placements.
+        if (scale === 1 && width <= 512 && height <= 512) {
+          const left = Math.max(0, x - mask.x), top = Math.max(0, y - mask.y);
+          const right = Math.min(mask.width, x + width - mask.x);
+          const bottom = Math.min(mask.height, y + height - mask.y);
+          const dx = mask.x - x, dy = mask.y - y;
+          if (right <= left || bottom <= top) continue;
+          if (!Number.isInteger(dx) || !Number.isInteger(dy)) {
+            // Fractional destination-out draws blend their outer edges. One
+            // tight crop preserves that coverage without introducing internal
+            // page seams. A native request needs at most 513x513 source pixels.
+            const cropX = Math.floor(left), cropY = Math.floor(top);
+            ctx.drawImage(bitmap(mask, cropX, cropY, Math.ceil(right) - cropX, Math.ceil(bottom) - cropY),
+              dx + cropX, dy + cropY);
+            continue;
+          }
+          for (let py = Math.floor(top / MASK_PAGE_SIZE) * MASK_PAGE_SIZE; py < bottom; py += MASK_PAGE_SIZE)
+            for (let px = Math.floor(left / MASK_PAGE_SIZE) * MASK_PAGE_SIZE; px < right; px += MASK_PAGE_SIZE) {
+              const page = bitmap(mask, px, py,
+                Math.min(MASK_PAGE_SIZE, mask.width - px), Math.min(MASK_PAGE_SIZE, mask.height - py));
+              ctx.drawImage(page, dx + px, dy + py);
+            }
+          continue;
+        }
         ctx.drawImage(
           bitmap(mask),
           (mask.x - x) / scale,

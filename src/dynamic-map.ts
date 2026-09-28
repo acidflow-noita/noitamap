@@ -25,6 +25,7 @@ import { isLightMode } from "./light-mode";
 import {
   renderGenerationResult,
   clearDynamicOverlays,
+  cancelPendingDynamicTerrain,
   getAllPOIsFlat,
   hasDynamicOverlays,
   ensurePersistentBiomeBackgrounds,
@@ -310,6 +311,10 @@ export async function runDynamicMap(
   // Only a real replacement owns cancellation, after seed identity resolves.
   cancelDailyAssetWarmup?.();
   cancelDailyAssetWarmup = undefined;
+  // Early GPU preparation replaces the shared renderer before the new map
+  // reaches presentation. Retire the old cooker and lazy plane requests first;
+  // its displayed frames remain attached until the replacement first paints.
+  cancelPendingDynamicTerrain();
 
   // If unlocks changed for the same seed, we must regenerate (skip cache)
   const forceRegenerate = seed === currentSeed && unlockKey !== currentUnlocksKey;

@@ -95,6 +95,10 @@ describe.skipIf(process.platform !== "linux")("shared terrain resources with nat
     }
     // One common lattice with one narrow 49-row shaft, not a second world.
     expect(result.elevatorLatticeBytes).toBeLessThan(56 * 1024 ** 2);
+    // Firefox must not security-clear a large null-allocated texture on the
+    // first partial upload. Observe the real resource creation calls.
+    expect(result.elevatorUninitializedUploads).toBe(0);
+    expect(result.elevatorPartialUploads).toBe(0);
     expect(result.packedWorldPixelsMatch).toBe(true);
     expect(result.elevatorSwitchUploads).toBe(0);
     expect(result.elevatorSwitchCompiles).toBe(0);

@@ -12,7 +12,7 @@ vi.mock('../src/pillars-unlocks', () => ({ getPillarFlagsFromURL: vi.fn() }));
 vi.mock('../src/unlocks-toggle', () => ({ prewarmAlt: vi.fn(), resetAltCache: vi.fn() }));
 vi.mock('../src/light-mode', () => ({ isLightMode: () => false }));
 vi.mock('../src/telescope/telescope-osd-bridge', () => ({
-  renderGenerationResult: vi.fn(), clearDynamicOverlays: vi.fn(), getAllPOIsFlat: vi.fn(),
+  renderGenerationResult: vi.fn(), clearDynamicOverlays: vi.fn(), cancelPendingDynamicTerrain: vi.fn(), getAllPOIsFlat: vi.fn(),
   hasDynamicOverlays: vi.fn(), ensurePersistentBiomeBackgrounds: vi.fn(),
   resetPersistentBiomeBackgrounds: vi.fn(), prefetchAllSceneBitmaps: vi.fn(), prepareInstantTerrainResources: vi.fn(), prewarmMapPresentation: vi.fn(),
 }));
@@ -27,7 +27,7 @@ import { isInstantTerrainEnabled } from '../src/renderer_settings';
 import { ensureTelescopeCacheVersion } from '../src/telescope/telescope-cache-version';
 import { prewarmInstantTerrain } from '../src/telescope/instant-terrain-backend';
 import { cacheGeneration, getCachedGeneration } from '../src/telescope/tile-cache';
-import { ensurePersistentBiomeBackgrounds, prefetchAllSceneBitmaps, prepareInstantTerrainResources, renderGenerationResult } from '../src/telescope/telescope-osd-bridge';
+import { cancelPendingDynamicTerrain, clearDynamicOverlays, hasDynamicOverlays, ensurePersistentBiomeBackgrounds, prefetchAllSceneBitmaps, prepareInstantTerrainResources, renderGenerationResult } from '../src/telescope/telescope-osd-bridge';
 
 function pendingSeed() {
   let resolve!: (seed: number) => void;
@@ -173,5 +173,34 @@ describe('independent live-map startup work', () => {
     background.resolve();
     expect(await first).toBeNull();
     expect(loading.mock.calls).toEqual([[true], [true], [false]]);
+  });
+
+  it('stops outgoing terrain work before replacement preparation while leaving its displayed overlays attached', async () => {
+    vi.mocked(isInstantTerrainEnabled).mockReturnValue(true);
+    vi.mocked(getCachedGeneration).mockResolvedValue(generated);
+    vi.mocked(hasDynamicOverlays).mockReturnValue(true);
+    expect(await runDynamicMap(42, true, { viewer: {} })).toBe(generated);
+    vi.mocked(cancelPendingDynamicTerrain).mockClear();
+    vi.mocked(clearDynamicOverlays).mockClear();
+    vi.mocked(prepareInstantTerrainResources).mockClear();
+    vi.mocked(renderGenerationResult).mockClear();
+
+    // Re-selecting the actual current map must leave its cooker alive.
+    expect(await runDynamicMap(42, true, { viewer: {} })).toBe(generated);
+    expect(cancelPendingDynamicTerrain).not.toHaveBeenCalled();
+    const assets = barrier(), replacement = { ...generated, seed: 43 };
+    vi.mocked(initTelescope).mockReturnValue(assets.promise);
+    vi.mocked(getCachedGeneration).mockResolvedValue(replacement);
+    const next = runDynamicMap(43, true, { viewer: {} });
+    expect(cancelPendingDynamicTerrain).toHaveBeenCalledOnce();
+    expect(clearDynamicOverlays).not.toHaveBeenCalled();
+    expect(prepareInstantTerrainResources).not.toHaveBeenCalled();
+    expect(renderGenerationResult).not.toHaveBeenCalled();
+    assets.resolve();
+    expect(await next).toBe(replacement);
+    expect(cancelPendingDynamicTerrain).toHaveBeenCalledOnce();
+    expect(prepareInstantTerrainResources).toHaveBeenCalledWith(replacement, expect.any(Function));
+    expect(vi.mocked(cancelPendingDynamicTerrain).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(prepareInstantTerrainResources).mock.invocationCallOrder[0]);
   });
 });

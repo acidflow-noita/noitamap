@@ -458,6 +458,14 @@ let dynamicBlobUrls: string[] = [];
  */
 let currentGenerationId = 0;
 
+/** Retire terrain work while keeping the outgoing map visible until first paint. */
+export function cancelPendingDynamicTerrain(): void {
+  // A retired presentation may still be waiting for modules or scene masks,
+  // before addInstantTerrain creates the lifetime that clear can abort.
+  currentGenerationId++;
+  clearInstantTerrain();
+}
+
 /**
  * Remove all dynamic map overlays from the viewer.
  */

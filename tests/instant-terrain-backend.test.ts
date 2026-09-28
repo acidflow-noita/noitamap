@@ -229,6 +229,43 @@ it("retires every old plane on reseed and closes a tile returned by the old gene
   expect(await drawing).toBe(currentBitmap);
 });
 
+it("cannot let a cancelled outgoing cooker reacquire a lazy plane after the replacement is prepared", async () => {
+  const { prepareInstantTerrain, releaseInstantTerrainBackend } =
+    await import("../src/telescope/instant-terrain-backend");
+  const oldGeneration = generation(), nextGeneration = generation(2), d = deps();
+  const outgoing = new AbortController(), incoming = new AbortController();
+  const old = await prepareInstantTerrain(oldGeneration, d, 0, outgoing.signal);
+  const worker = TestWorker.instances[0];
+  const draw = old.render({ width: 512 }, outgoing.signal);
+  const rejected = expect(draw).rejects.toMatchObject({ name: "AbortError" });
+  const oldDraw = worker.sent.at(-1);
+
+  // runDynamicMap now stops seed-owned work before its early GPU preparation.
+  outgoing.abort();
+  old.invalidate();
+  await rejected;
+  const [early, current] = await Promise.all([
+    prepareInstantTerrain(nextGeneration, d),
+    prepareInstantTerrain({ ...nextGeneration }, d, 0, incoming.signal),
+  ]);
+  expect(current).toBe(early);
+  const currentToken = worker.sent.filter(message => message.type === "init").at(-1).token;
+  await expect(prepareInstantTerrain(oldGeneration, d, -1, outgoing.signal))
+    .rejects.toMatchObject({ name: "AbortError" });
+  expect(worker.sent.filter(message => message.type === "init")).toHaveLength(2);
+  const late = { close: vi.fn() };
+  worker.reply({ id: oldDraw.id, bitmap: late });
+  expect(late.close).toHaveBeenCalledOnce();
+  const next = current.render({ width: 512 }, incoming.signal);
+  expect(worker.sent.at(-1)).toMatchObject({ type: "render", token: currentToken });
+  const bitmap = { close: vi.fn() };
+  worker.reply({ id: worker.sent.at(-1).id, bitmap });
+  expect(await next).toBe(bitmap);
+  expect(bitmap.close).not.toHaveBeenCalled();
+  expect(worker.terminate).not.toHaveBeenCalled();
+  releaseInstantTerrainBackend();
+});
+
 it("does not resurrect a released backend when shared initialization is pending", async () => {
   const { prepareInstantTerrain, releaseInstantTerrainBackend } =
     await import("../src/telescope/instant-terrain-backend");

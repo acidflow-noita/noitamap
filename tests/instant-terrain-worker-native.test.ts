@@ -77,6 +77,7 @@ it.skipIf(process.platform !== "linux")(
       expect(result.mismatches).toBe(0);
       expect(result.visible).toBeGreaterThan(100);
       expect(result.viewport.regions).toBe(9);
+      expect(result.viewport.nativeBlockPixels).toBe(9 * 512 * 512);
       expect(result.viewport.fullWorldFrames).toBe(1);
       expect(result.viewport.forceAirMaskVerified).toBe(true);
       expect(result.viewport.forceAirOpaquePixelsCleared).toBeGreaterThan(0);

@@ -232,6 +232,7 @@ export class RetainedTerrain {
   private captureBytes = 0;
   private captures = 0;
   private captureWaiters = new Set<() => void>();
+  private reductionCanvases: CanvasRenderingContext2D[] = [];
   readonly maxCaptureBytes = 4 * 1024 * 1024;
   constructor(
     readonly store: TerrainRetentionStore = new IndexedTerrainRetentionStore(),
@@ -252,7 +253,38 @@ export class RetainedTerrain {
       captures: this.captures,
       maxCaptureBytes: this.maxCaptureBytes,
       missingPages: this.missing.size,
+      reductionBytes: this.reductionCanvases.reduce((bytes, context) =>
+        bytes + context.canvas.width * context.canvas.height * 4, 0),
     };
+  }
+  /** Captures only use these canvases inside their synchronous reduction pass.
+   * Sharing across nine regions avoids 36 canvas allocations per 512px sample;
+   * nine levels occupy at most 349,524 bytes, independent of map extent. */
+  reduceNative(work: (scratch: (depth: number, width: number, height: number) => CanvasRenderingContext2D) => void) {
+    try {
+      work((depth, width, height) => {
+        let context = this.reductionCanvases[depth];
+        if (!context) context = this.reductionCanvases[depth] = canvas(width, height);
+        else {
+          // Preserve actual image edges during the 2:1 filter. A fixed-size
+          // backing canvas could blend its padding into an odd-sized edge.
+          if (context.canvas.width !== width) context.canvas.width = width;
+          if (context.canvas.height !== height) context.canvas.height = height;
+          context.clearRect(0, 0, width, height);
+          context.imageSmoothingEnabled = false;
+        }
+        return context;
+      });
+    } finally {
+      // Admission can finish after disposal. Such a late capture must not
+      // recreate a scratch pool that the earlier dispose() cannot release.
+      if (this.disposed) this.clearReductionCanvases();
+    }
+  }
+  private clearReductionCanvases() {
+    for (const context of this.reductionCanvases)
+      context.canvas.width = context.canvas.height = 0;
+    this.reductionCanvases = [];
   }
   private touch(key: string, page: Page) {
     this.pages.delete(key);
@@ -606,6 +638,7 @@ export class RetainedTerrain {
   }
   dispose() {
     this.disposed = true;
+    this.clearReductionCanvases();
     void this.flush().finally(() => this.store.dispose?.());
   }
 }
@@ -966,62 +999,64 @@ export class RetainedTerrainRegion {
         page.pins++;
         pinned.add(page);
       }
-      for (let sy = 0; sy < source.canvas.height; sy += SIZE)
-        for (let sx = 0; sx < source.canvas.width; sx += SIZE) {
-          const leafX = (x + sx) / SIZE,
-            leafY = (y + sy) / SIZE;
-          let reduced = canvas(
-            Math.min(SIZE, source.canvas.width - sx),
-            Math.min(SIZE, source.canvas.height - sy),
-          );
-          reduced.drawImage(
-            source.canvas,
-            sx,
-            sy,
-            reduced.canvas.width,
-            reduced.canvas.height,
-            0,
-            0,
-            reduced.canvas.width,
-            reduced.canvas.height,
-          );
-          for (let level = this.maxLevel; level >= this.minLevel; level--) {
-            const scale = 2 ** (this.maxLevel - level);
-            const tile = {
-              level,
-              x: Math.floor(leafX / scale),
-              y: Math.floor(leafY / scale),
-            };
-            const key = this.key(tile),
-              page = this.owner.resident(key)!;
-            const cx = leafX % scale,
-              cy = leafY % scale,
-              cell = SIZE / scale;
-            page.context.clearRect(cx * cell, cy * cell, cell, cell);
-            page.context.drawImage(reduced.canvas, cx * cell, cy * cell);
-            const bit = cy * page.columns + cx;
-            page.coverage[bit >> 3] |= 1 << (bit & 7);
-            this.owner.changed(key, page);
-            if (level > this.minLevel) {
-              const next = canvas(
-                Math.ceil(reduced.canvas.width / 2),
-                Math.ceil(reduced.canvas.height / 2),
-              );
-              next.imageSmoothingEnabled = true;
-              next.imageSmoothingQuality = "low";
-              next.drawImage(
-                reduced.canvas,
-                0,
-                0,
-                reduced.canvas.width / 2,
-                reduced.canvas.height / 2,
-              );
-              reduced.canvas.width = 0;
-              reduced = next;
+      this.owner.reduceNative((scratch) => {
+        for (let sy = 0; sy < source.canvas.height; sy += SIZE)
+          for (let sx = 0; sx < source.canvas.width; sx += SIZE) {
+            const leafX = (x + sx) / SIZE,
+              leafY = (y + sy) / SIZE;
+            let reduced = scratch(
+              0,
+              Math.min(SIZE, source.canvas.width - sx),
+              Math.min(SIZE, source.canvas.height - sy),
+            );
+            reduced.drawImage(
+              source.canvas,
+              sx,
+              sy,
+              reduced.canvas.width,
+              reduced.canvas.height,
+              0,
+              0,
+              reduced.canvas.width,
+              reduced.canvas.height,
+            );
+            for (let level = this.maxLevel; level >= this.minLevel; level--) {
+              const scale = 2 ** (this.maxLevel - level);
+              const tile = {
+                level,
+                x: Math.floor(leafX / scale),
+                y: Math.floor(leafY / scale),
+              };
+              const key = this.key(tile),
+                page = this.owner.resident(key)!;
+              const cx = leafX % scale,
+                cy = leafY % scale,
+                cell = SIZE / scale;
+              page.context.clearRect(cx * cell, cy * cell, cell, cell);
+              page.context.drawImage(reduced.canvas, cx * cell, cy * cell);
+              const bit = cy * page.columns + cx;
+              page.coverage[bit >> 3] |= 1 << (bit & 7);
+              this.owner.changed(key, page);
+              if (level > this.minLevel) {
+                const next = scratch(
+                  this.maxLevel - level + 1,
+                  Math.ceil(reduced.canvas.width / 2),
+                  Math.ceil(reduced.canvas.height / 2),
+                );
+                next.imageSmoothingEnabled = true;
+                next.imageSmoothingQuality = "low";
+                next.drawImage(
+                  reduced.canvas,
+                  0,
+                  0,
+                  reduced.canvas.width / 2,
+                  reduced.canvas.height / 2,
+                );
+                reduced = next;
+              }
             }
           }
-          reduced.canvas.width = 0;
-        }
+      });
       this.revision++;
       const changed = [...touched.values()].map((entry) => entry.tile);
       for (const listener of this.listeners) listener(changed);

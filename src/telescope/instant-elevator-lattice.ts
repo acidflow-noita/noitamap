@@ -40,37 +40,50 @@ export function packElevatorLattices(
   }
   if (GW > limit || GH > limit || GW > 65535 || GH > 65535)
     throw new Error("Instant elevator lattice exceeds texture capacity");
-  // Allocate only the final GPU storage. Upload the existing buffers into its
-  // rectangles below, avoiding a second 50+ MiB staging copy on mobile.
+  // Keep the generated buffers separate until upload; their rectangles share
+  // one texture so the shader stays inside WebGL2's minimum sampler count.
   return { lattice: { GW, GH, cov: null, mat: null }, base, regions };
 }
 
-export function createPackedLatticeTexture(
+export function createPackedLatticeTextures(
   gl: any,
   packed: ReturnType<typeof packElevatorLattices>,
-  kind: "cov" | "mat",
 ) {
-  const texture =
-    kind === "cov"
-      ? createCoverageLatticeTexture(gl, packed.lattice)
-      : createMaterialLatticeTexture(gl, packed.lattice);
-  if (packed.regions.length)
-    for (const { x, lattice } of [
-      { x: 0, lattice: packed.base },
-      ...packed.regions,
-    ])
-      gl.texSubImage2D(
-        gl.TEXTURE_2D,
-        0,
-        x,
-        0,
-        lattice.GW,
-        lattice.GH,
-        kind === "cov" ? gl.RED : gl.RED_INTEGER,
-        kind === "cov" ? gl.FLOAT : gl.UNSIGNED_SHORT,
-        lattice[kind],
-      );
-  return texture;
+  const { GW, GH } = packed.lattice;
+  // A null allocation followed by partial texSubImage2D uploads makes Firefox
+  // security-clear the entire large texture first. Supply every texel in its
+  // first upload, including padding. Reuse one temporary buffer for coverage
+  // and material uploads instead of retaining two packed CPU lattices.
+  const scratch = packed.regions.length ? new ArrayBuffer(GW * GH * 4) : undefined;
+  const upload = (kind: "cov" | "mat") => {
+    let lattice = packed.lattice;
+    if (scratch) {
+      const data = kind === "cov"
+        ? new Float32Array(scratch)
+        : new Uint16Array(scratch, 0, GW * GH);
+      if (kind === "mat") data.fill(0);
+      for (const { x, lattice: source } of [
+        { x: 0, lattice: packed.base },
+        ...packed.regions,
+      ]) {
+        for (let y = 0; y < source.GH; y++)
+          data.set(source[kind].subarray(y * source.GW, (y + 1) * source.GW), y * GW + x);
+      }
+      lattice = { ...packed.lattice, [kind]: data };
+    }
+    const texture = kind === "cov"
+      ? createCoverageLatticeTexture(gl, lattice)
+      : createMaterialLatticeTexture(gl, lattice);
+    if (!texture) throw new Error("Instant lattice texture allocation failed");
+    return texture;
+  };
+  const cov = upload("cov");
+  try {
+    return { cov, mat: upload("mat") };
+  } catch (error) {
+    gl.deleteTexture(cov);
+    throw error;
+  }
 }
 
 /** Reuse the existing engine-table sampler: R is its unchanged biome flags;

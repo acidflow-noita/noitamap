@@ -263,6 +263,10 @@ export async function verifySharedTerrainResources() {
   await shaftOwner.ensureResources(generation.tileLayers, generation.biomeData,
     { ...options, elevatorShafts: lower.elevatorShafts });
   const elevatorUploadCount = uploads("elevator").length;
+  const elevatorUninitializedUploads = uploads("elevator").filter((upload: any) =>
+    upload.method === "texImage2D" && upload.bytes === 0).length;
+  const elevatorPartialUploads = uploads("elevator").filter((upload: any) =>
+    upload.method === "texSubImage2D").length;
   const elevatorCompileCount = count(trace.compiles, "elevator");
   let packedWorldPixelsMatch = true;
   for (const sample of samples) {
@@ -307,6 +311,7 @@ export async function verifySharedTerrainResources() {
   return { samples: compared, comparedPixels, mixedSamples, materialSamples, retentionCompression,
     elevatorSamples, elevatorLatticeBytes, packedWorldPixelsMatch,
     elevatorSwitchUploads, elevatorSwitchCompiles, elevatorTexturesReleased,
+    elevatorUninitializedUploads, elevatorPartialUploads,
     tableCellsCompared, tableMismatches, selectedPlaneTableMismatches,
     allBiomeTableMismatches, allBiomeColorsCompared, allBiomeCoveredCases,
     referenceLatticeBuilds, sharedLatticeBuilds, referenceLargeUploads, sharedLargeUploads,
