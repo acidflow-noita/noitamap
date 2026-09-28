@@ -12,6 +12,8 @@ import {
   refreshRetainedTerrain,
 } from "../src/telescope/instant-terrain";
 import { InstantTerrainCache } from "../src/telescope/instant-terrain-cache";
+import { encodeTerrainPages, decodeTerrainPage } from "../src/telescope/retained-terrain-codec-core";
+import type { EncodedTerrain } from "../src/telescope/retained-terrain-codec";
 
 vi.mock("../src/telescope/instant-terrain-backend", () => ({
   prepareInstantTerrain: vi.fn(),
@@ -21,7 +23,7 @@ vi.mock("../src/telescope/instant-terrain-plane", () => ({
 }));
 
 function indexedDBFixture() {
-  const records = new Map<string, StoredTerrain>();
+  const records = new Map<string, StoredTerrain | EncodedTerrain>();
   const reads: string[] = [];
   let hold = false,
     fail = false,
@@ -34,7 +36,7 @@ function indexedDBFixture() {
     close: vi.fn(),
     createObjectStore: vi.fn(),
     transaction(_name: string, mode: string) {
-      const writes: [string, StoredTerrain][] = [];
+      const writes: [string, StoredTerrain | EncodedTerrain][] = [];
       let completed = false;
       const tx: any = {
         abort() {
@@ -62,7 +64,7 @@ function indexedDBFixture() {
               });
               return request;
             },
-            put(value: StoredTerrain, key: string) {
+            put(value: StoredTerrain | EncodedTerrain, key: string) {
               writes.push([key, structuredClone(value)]);
             },
           };
@@ -96,6 +98,10 @@ function indexedDBFixture() {
   vi.stubGlobal("indexedDB", { open });
   return {
     records,
+    decoded(key: string): StoredTerrain {
+      const value = records.get(key)!;
+      return "encoding" in value ? decodeTerrainPage(value) : value;
+    },
     reads,
     holdReads(predicate: (key: string) => boolean) {
       heldRead = predicate;
@@ -146,7 +152,10 @@ function rgba(
 const owners: RetainedTerrain[] = [];
 function retention(budget = 1024 * 1024) {
   const owner = new RetainedTerrain(
-    new IndexedTerrainRetentionStore(100),
+    new IndexedTerrainRetentionStore(100, {
+      encode: async pages => encodeTerrainPages(pages),
+      decode: async page => decodeTerrainPage(page),
+    }),
     budget,
   );
   owners.push(owner);
@@ -330,7 +339,7 @@ describe("retained final terrain (real production TileSource and native canvas)"
       await new Promise((resolve) => setTimeout(resolve, 0));
       // A partial RAM delta must never overwrite disk-only sibling coverage.
       expect([
-        ...db.records.get("delayed/8/0/0")!.pixels.subarray(0, 4),
+        ...db.decoded("delayed/8/0/0").pixels.subarray(0, 4),
       ]).toEqual([0, 255, 0, 255]);
       db.releaseReads();
       await writing;
@@ -559,20 +568,45 @@ describe("retained final terrain (real production TileSource and native canvas)"
     });
     expect(rgba(ctx, 16, 16, 16, 16)).toEqual(new Array(16 * 16 * 4).fill(0));
     expect(rgba(ctx, 0, 0, 1, 1)).toEqual([255, 0, 0, 255]);
+    let release!: () => void;
     const invalidate = vi.fn(
-      async (_tiles: any[], _stamp: number, _restore: boolean) => {},
+      (_tiles: any[], _stamp: number, _restore: boolean) =>
+        new Promise<void>(resolve => { release = resolve; }),
     );
     const viewer = {
       tileCache: { getLoadedTilesFor: () => [tile] },
       world: { requestTileInvalidateEvent: invalidate },
       forceRedraw: vi.fn(),
+      raiseEvent: vi.fn(),
     };
-    vi.spyOn(Date, "now").mockReturnValue(10);
-    refreshRetainedTerrain(viewer, item, [tile]);
-    refreshRetainedTerrain(viewer, item, [tile]);
-    expect(invalidate.mock.calls[1][1]).toBeGreaterThan(
-      invalidate.mock.calls[0][1],
-    );
+    vi.useFakeTimers();
+    try {
+      vi.spyOn(Date, "now").mockReturnValue(10);
+      refreshRetainedTerrain(viewer, item, [tile]);
+      refreshRetainedTerrain(viewer, item, [tile]);
+      expect(invalidate).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(16);
+      expect(invalidate).toHaveBeenCalledOnce();
+      expect(invalidate.mock.calls[0][0]).toEqual([tile]);
+      expect(invalidate.mock.calls[0][2]).toBe(false);
+      expect(viewer.raiseEvent).toHaveBeenCalledWith('terrain-cache-ready');
+      // An update to the same overview while its cache is being copied must
+      // survive, without starting a competing OSD invalidation.
+      refreshRetainedTerrain(viewer, item, [tile]);
+      await vi.advanceTimersByTimeAsync(100);
+      expect(invalidate).toHaveBeenCalledOnce();
+      release();
+      await vi.advanceTimersByTimeAsync(16);
+      expect(invalidate).toHaveBeenCalledTimes(2);
+      expect(invalidate.mock.calls[1][1]).toBeGreaterThan(invalidate.mock.calls[0][1]);
+      release();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(viewer.forceRedraw).toHaveBeenCalledTimes(2);
+      refreshRetainedTerrain(viewer, item, [tile]);
+      item.source = { isDisposed: true };
+      await vi.advanceTimersByTimeAsync(16);
+      expect(invalidate).toHaveBeenCalledTimes(2);
+    } finally { vi.useRealTimers(); }
     expect(f.shader).toHaveBeenCalledTimes(2);
   });
 

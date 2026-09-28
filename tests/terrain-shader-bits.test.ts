@@ -10,7 +10,7 @@ it('makes prewarm shader sources independent of archive and generator imports', 
  const source=standaloneTerrainShaders(resolve(root,'lib/noita-telescope-vm/js'));
  expect(source).not.toMatch(/^import\s/m);
  expect(source).not.toMatch(/\b(?:fetch|await)\s*\(/);
- const result=new Function(source.replace(/export const /g,'const ')+'\nreturn { TERRAIN_FS, TERRAIN_VS };')();
+ const result=new Function(source.replace(/export (?=const |function )/g,'')+'\nreturn { TERRAIN_FS, TERRAIN_VS };')();
  expect(result.TERRAIN_FS).toContain('const int VIS_X = -5;');
  expect(result.TERRAIN_FS).toContain('uniform int u_verticalPlane;');
  expect(result.TERRAIN_FS).not.toContain('${');

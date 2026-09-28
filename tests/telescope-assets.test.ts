@@ -12,6 +12,7 @@ vi.mock("../src/data-archive", () => ({
 vi.mock("../src/renderer_settings", () => ({
   useRenderPerfGeneration: () => true,
 }));
+vi.mock("virtual:noitamap-telescope-asset-identity", () => ({ provenance: "test-assets-v1" }));
 import { getFromZipFirst } from "../src/telescope/zip-extraction-shim";
 import { installFetchInterceptor } from "../src/telescope/telescope-data-bridge";
 
@@ -269,6 +270,18 @@ describe("asset extraction and failure handling", () => {
       window.fetch("./data/test.png", { signal: AbortSignal.abort() }),
     ).rejects.toThrow();
     expect(original).not.toHaveBeenCalled();
+  });
+
+  it("reuses full-pixel atlas inputs and versions the underlying HTTP request", async () => {
+    const original = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(new Uint8Array([4, 0, 255])));
+    vi.stubGlobal("window", { fetch: original });
+    installFetchInterceptor(true);
+    const one = await window.fetch("../data/material_atlas.bin");
+    const two = await window.fetch("../data/material_atlas.bin");
+    expect(new Uint8Array(await one.arrayBuffer())).toEqual(new Uint8Array([4, 0, 255]));
+    expect(new Uint8Array(await two.arrayBuffer())).toEqual(new Uint8Array([4, 0, 255]));
+    expect(original).toHaveBeenCalledOnce();
+    expect(original.mock.calls[0][0]).toContain("noitamap_revision=test-assets-v1");
   });
 });
 describe("engine artwork archive paths", () => {

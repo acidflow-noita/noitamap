@@ -40,7 +40,7 @@ For NG0, one region is 70 × 48 chunks of 512² pixels. The nine-region bounding
 
 The source currently defines **466 materials**; a global 8-bit material ID is insufficient. A local palette needs a wider fallback when its cardinality exceeds 256. Material IDs also omit visual-art colors, alpha, edge stamp results and backgrounds, so they are an intermediate, not the complete final image. A coverage bit cannot encode the other 465 materials or the artwork.
 
-There are 30,240 native 512² tiles, or 120,960 native 256² tiles. Allocating and submitting each through the existing OSD/worker/PNG pipeline cannot be the core bulk generation interface. Generate batches independently of viewport requests; publish completed tiles to OSD afterwards.
+There are 30,240 native 512² tiles, or 120,960 native 256² tiles. A bounded background sweep now generates them independently of viewport requests and publishes retained reductions to OSD. This removes zoom as the generation trigger, but its individual draws, CPU reductions and optional compressed persistence do not meet the one-second target. A bulk GPU interface is still needed for that target.
 
 Writing dense native RGBA alone requires 31.71GB of output in the one-second budget. A simple pipeline that writes R16 material IDs, reads them while writing RGBA, then reads child pixels and writes all mip levels moves approximately **116GB**, before noise/lattice reads, masks, scene overdraw and decals. This is traffic accounting, not a prediction of hardware runtime. At 100GB/s effective throughput that traffic alone takes about 1.16s; at 500GB/s about 0.23s, before all remaining work. Both effective throughput and memory capacity need measurement on the target device.
 

@@ -9,6 +9,11 @@ import { initMaterialAtlas } from "noita-telescope-full-pixels/gl/material_atlas
 import { GENERATOR_CONFIG, BIOME_COLOR_TO_NAME, FILL_LAYER_COLORS } from "noita-telescope-full-pixels/generator_config.js";
 import { BIOME_ENGINE } from "noita-telescope-full-pixels/engine_resolve/engine_data.js";
 import { buildEngineResources } from "noita-telescope-full-pixels/gl/engine_resources.js";
+import { buildEngineLattice } from "noita-telescope-full-pixels/engine_resolve/lattice_builder.js";
+import { setTopo2WorldOffX } from "noita-telescope-full-pixels/engine_resolve/topo2_resolve.js";
+import { createPlaneMaterialField } from "../../src/telescope/plane-material-field";
+import { createMaterialField } from "noita-telescope-full-pixels/engine_resolve/material_field.js";
+import { encodeTerrainPages, decodeTerrainPage } from "../../src/telescope/retained-terrain-codec-core";
 
 type Plane = -1 | 0 | 1;
 type Sample = { name: string; plane: Plane; pw: number; x: number; y: number; width: number; height: number };
@@ -100,6 +105,22 @@ export async function verifySharedTerrainResources() {
   }
   const referenceLatticeBuilds = count(trace.latticeBuilds, "reference");
   const referenceLargeUploads = largeUploads("reference");
+  // These are actual textured native GL outputs, not screenshots or synthetic
+  // uniform pages. Ratios describe only the sampled windows, not the full map.
+  const compressionSamples = samples.map(sample => {
+    const original = expected.get(sample)!;
+    const encoded = encodeTerrainPages([{ width: sample.width, height: sample.height,
+      pixels: original, columns: 1, rows: 1, coverage: new Uint8Array([1]) }])[0];
+    const decoded = decodeTerrainPage(encoded);
+    if (difference(original, decoded.pixels)) throw new Error("Native retained codec changed output bytes");
+    return { name: sample.name, plane: sample.plane, pw: sample.pw,
+      rawBytes: original.byteLength, encodedBytes: encoded.data.byteLength, encoding: encoded.encoding };
+  });
+  const retentionCompression = {
+    rawBytes: compressionSamples.reduce((sum, sample) => sum + sample.rawBytes, 0),
+    encodedBytes: compressionSamples.reduce((sum, sample) => sum + sample.encodedBytes, 0),
+    samples: compressionSamples,
+  };
 
   // Exercise every committed biome and every fill fallback, including biomes
   // absent from this seed. Each color occurs in both a covered and uncovered
@@ -222,7 +243,70 @@ export async function verifySharedTerrainResources() {
   for (const entry of trace.deletes) if (["invalidate", "replace-seed", "dispose"].includes(entry.phase))
     owned.set(entry.texture, (owned.get(entry.texture) ?? 0) - 1);
   const allOwnedTexturesReleased = [...owned.values()].every(count => count === 0);
-  return { samples: compared, comparedPixels, mixedSamples, materialSamples,
+  // The old three-renderer reference never consumed generated elevator shafts.
+  // Verify this exception against the independent CPU material resolver using
+  // the actual continuous Wang buffer, including all three parallel worlds.
+  phase("elevator");
+  const lower = await prepareTerrainPlane(generation, 1);
+  if (lower.elevatorShafts?.length !== 1) throw new Error("Missing fixture elevator shaft");
+  const shaft = lower.elevatorShafts[0];
+  const local = { ...shaft, minX: 0, minY: 0, chunkBasePos: { x: 0, y: 0 }, validChunks: undefined };
+  const lattice = buildEngineLattice([local], GENERATOR_CONFIG, Math.ceil(shaft.w / 512), Math.ceil(shaft.h / 512));
+  setTopo2WorldOffX(17920);
+  const materialAt = createPlaneMaterialField(lattice, lower.biomeData.pixels, 70,
+    Math.trunc(shaft.minY * 512 / 10) * 10, Math.trunc(shaft.minX * 512 / 10));
+  // The shaft's edge wobble can select the neighboring solid-rock biome.
+  // That topology-0 material uses the ordinary resolver, not shaft coverage.
+  const neighboringMaterials = createMaterialField(generation.tileLayers, lower.biomeData,
+    GENERATOR_CONFIG, 70, generation.seed, { lattice: oracle.lattice });
+  const shaftRenderer = new GLTerrainRenderer(), shaftOwner = new SharedInstantTerrainResources(shaftRenderer);
+  await shaftOwner.ensureResources(generation.tileLayers, generation.biomeData,
+    { ...options, elevatorShafts: lower.elevatorShafts });
+  const elevatorUploadCount = uploads("elevator").length;
+  const elevatorCompileCount = count(trace.compiles, "elevator");
+  let packedWorldPixelsMatch = true;
+  for (const sample of samples) {
+    shaftOwner.setPlane(sample.plane);
+    if (difference(expected.get(sample)!, pixels(shaftRenderer, () => shaftOwner.render(view(sample)))))
+      packedWorldPixelsMatch = false;
+  }
+  shaftOwner.setPlane(1);
+  const elevatorSamples = [];
+  for (const row of [0, 23, 47]) for (const pw of [-1, 0, 1]) {
+    const sample: Sample = { name: "elevator", plane: 1, pw,
+      x: shaft.minX * 512 - 17920 + pw * 35840,
+      y: 17408 + row * 512 + 128, width: 512, height: 64 };
+    const actual = pixels(shaftRenderer, () => shaftOwner.render(view(sample)), true);
+    let mismatches = 0, solid = 0, air = 0, expectedSolid = 0;
+    const mismatchKinds: Record<string, number> = {};
+    for (let y = 0; y < sample.height; y++) for (let x = 0; x < sample.width; x++) {
+      const i = (y * sample.width + x) * 4;
+      const material = actual[i] + (actual[i + 1] << 8) - 1;
+      const shaftMaterial = materialAt(sample.x + x, sample.y + y);
+      const expectedMaterial = shaftMaterial < 0
+        ? neighboringMaterials.materialAt(sample.x + x, sample.y + y) : shaftMaterial;
+      if (material !== expectedMaterial) {
+        mismatches++;
+        const key = `${expectedMaterial}:${material}`;
+        mismatchKinds[key] = (mismatchKinds[key] ?? 0) + 1;
+      }
+      if (material > 0) solid++; else if (material === 0) air++;
+      if (expectedMaterial > 0) expectedSolid++;
+    }
+    elevatorSamples.push({ row, pw, solid, air, expectedSolid, mismatches, mismatchKinds, pixels: sample.width * sample.height });
+  }
+  const elevatorLatticeBytes = shaftOwner.stats.latticeBytes;
+  const elevatorSwitchUploads = uploads("elevator").length - elevatorUploadCount;
+  const elevatorSwitchCompiles = count(trace.compiles, "elevator") - elevatorCompileCount;
+  shaftOwner.invalidate();
+  const elevatorCreates = trace.creates.filter((entry: any) => entry.phase === "elevator").map((entry: any) => entry.texture);
+  const elevatorDeletes = trace.deletes.filter((entry: any) => entry.phase === "elevator").map((entry: any) => entry.texture);
+  const elevatorTexturesReleased = elevatorCreates.length === elevatorDeletes.length &&
+    elevatorCreates.every((texture: any) => elevatorDeletes.includes(texture));
+  if (shaftRenderer.program) shaftRenderer.gl.deleteProgram(shaftRenderer.program);
+  return { samples: compared, comparedPixels, mixedSamples, materialSamples, retentionCompression,
+    elevatorSamples, elevatorLatticeBytes, packedWorldPixelsMatch,
+    elevatorSwitchUploads, elevatorSwitchCompiles, elevatorTexturesReleased,
     tableCellsCompared, tableMismatches, selectedPlaneTableMismatches,
     allBiomeTableMismatches, allBiomeColorsCompared, allBiomeCoveredCases,
     referenceLatticeBuilds, sharedLatticeBuilds, referenceLargeUploads, sharedLargeUploads,

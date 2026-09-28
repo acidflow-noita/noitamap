@@ -86,5 +86,18 @@ describe.skipIf(process.platform !== "linux")("shared terrain resources with nat
     expect(result.replacedSeedPhaseMatches).toBe(true);
     expect(result.replacedSeedCompiles).toBe(0);
     expect(result.allOwnedTexturesReleased).toBe(true);
+    expect(result.elevatorSamples).toHaveLength(9);
+    for (const sample of result.elevatorSamples) {
+      expect(sample.solid, JSON.stringify(sample)).toBeGreaterThan(1024);
+      expect(sample.air, JSON.stringify(sample)).toBeGreaterThan(1024);
+      // CPU double and GPU float noise have rare contour threshold differences.
+      expect(sample.mismatches / sample.pixels, JSON.stringify(sample)).toBeLessThan(0.0005);
+    }
+    // One common lattice with one narrow 49-row shaft, not a second world.
+    expect(result.elevatorLatticeBytes).toBeLessThan(56 * 1024 ** 2);
+    expect(result.packedWorldPixelsMatch).toBe(true);
+    expect(result.elevatorSwitchUploads).toBe(0);
+    expect(result.elevatorSwitchCompiles).toBe(0);
+    expect(result.elevatorTexturesReleased).toBe(true);
   }, 150000);
 });

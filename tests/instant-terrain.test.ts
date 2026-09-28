@@ -13,6 +13,7 @@ import {
   INSTANT_TILE_SIZE,
 } from "../src/telescope/instant-terrain";
 import { InstantTerrainCache } from '../src/telescope/instant-terrain-cache';
+import { RetainedTerrain, type StoredTerrain } from '../src/telescope/retained-terrain';
 import {
   WORLD_TOP,
   WORLD_HEIGHT,
@@ -165,6 +166,119 @@ function viewer() {
 }
 
 describe("display-resolution GPU terrain (native canvas, no browser)", () => {
+  function cookingSource(renderer: any = new Renderer(), records = new Map<string, StoredTerrain>(), ownsTerrain = true) {
+    const retained = new RetainedTerrain({
+      read: async key => records.get(key),
+      write: async entries => { for (const entry of entries) records.set(entry.key, entry.value); },
+    });
+    const controller = new AbortController();
+    const area = { ...region, y: WORLD_TOP, width: 1024, height: 1024 };
+    const cache = new InstantTerrainCache();
+    const src = createInstantTileSource({
+      region: area, gen, deps, renderer, cache,
+      retention: retained.region('cooking', area.width, area.height),
+      clip: createInstantClip([owner(false), owner(ownsTerrain), owner(false)], []),
+      signal: controller.signal, onFailure: vi.fn(),
+    });
+    return { src, cache, retained, controller, records };
+  }
+  it('cooks native pixels without a display request and reuses them at native and overview levels', async () => {
+    const { src, cache, retained, controller } = cookingSource();
+    try {
+      await src.prepareNativeTile(0, 0);
+      expect(draw).toHaveBeenCalledOnce();
+      expect(draw.mock.calls[0][0]).toMatchObject({ width: 512, height: 512, scale: 1, camZ: 1 });
+      expect(cache.stats.entries).toBe(0); // offscreen work cannot evict visible tiles
+      await src.prepareNativeTile(0, 0);
+      const native = await request(src, src.maxLevel, 1, 1).result;
+      const reduced = await request(src, src.maxLevel - 1, 0, 0).result;
+      expect(draw).toHaveBeenCalledOnce();
+      for (const result of [native, reduced]) {
+        expect(result.type).toBe('context2d');
+        expect(result.value.canvas.width).toBe(256);
+        expect([...result.value.getImageData(0, 0, 1, 1).data]).toEqual([252, 128, 0, 255]);
+      }
+    } finally { controller.abort(); await retained.flush(); retained.dispose(); }
+  });
+  it('retains exact empty coverage for static-owned chunks without a shader draw', async () => {
+    const { src, retained, controller } = cookingSource(new Renderer(), new Map(), false);
+    try {
+      await src.prepareNativeTile(0, 0);
+      const result = await request(src, src.maxLevel, 1, 1).result;
+      expect(draw).not.toHaveBeenCalled();
+      expect(result.value.getImageData(0, 0, 256, 256).data.every((value: number) => value === 0)).toBe(true);
+    } finally { controller.abort(); await retained.flush(); retained.dispose(); }
+  });
+  it('shares an active background draw with a visible request and preserves each subscriber canvas', async () => {
+    let finish!: (canvas: any) => void;
+    const renderer = { render: vi.fn(() => new Promise(resolve => { finish = resolve; })) };
+    const { src, retained, controller } = cookingSource(renderer);
+    try {
+      const background = src.prepareNativeTile(0, 0);
+      await vi.waitFor(() => expect(renderer.render).toHaveBeenCalledOnce());
+      const foreground = request(src, src.maxLevel - 1);
+      const pixels = createCanvas(512, 512);
+      const context = pixels.getContext('2d');
+      context.fillStyle = '#80ff00'; context.fillRect(0, 0, 512, 512);
+      finish(pixels);
+      await background;
+      const result = await foreground.result;
+      expect(renderer.render).toHaveBeenCalledOnce();
+      expect(result.value.canvas.width).toBe(256);
+      expect([...result.value.getImageData(0, 0, 1, 1).data]).toEqual([128, 255, 0, 255]);
+    } finally { controller.abort(); await retained.flush(); retained.dispose(); }
+  });
+  it('continues a background draw when its foreground subscriber cancels', async () => {
+    let finish!: (canvas: any) => void;
+    const renderer = { render: vi.fn(() => new Promise(resolve => { finish = resolve; })) };
+    const { src, retained, controller } = cookingSource(renderer);
+    try {
+      const background = src.prepareNativeTile(0, 0);
+      await vi.waitFor(() => expect(renderer.render).toHaveBeenCalledOnce());
+      const foreground = request(src, src.maxLevel - 1);
+      foreground.context.abort();
+      finish(createCanvas(512, 512));
+      await background;
+      expect((await foreground.result).error).toContain('cancelled');
+      expect(renderer.render).toHaveBeenCalledOnce();
+      expect(src.hasCachedTile({ level: src.maxLevel, x: 0, y: 0 })).toBe(true);
+    } finally { controller.abort(); await retained.flush(); retained.dispose(); }
+  });
+  it('recovers native leaves when a previous disk write left only their complete parent', async () => {
+    const initial = cookingSource();
+    await initial.src.prepareNativeTile(0, 0);
+    await initial.retained.flush(); initial.controller.abort(); initial.retained.dispose();
+    initial.records.delete('cooking/10/1/1');
+    const next = cookingSource(new Renderer(), initial.records);
+    try {
+      draw.mockClear();
+      await next.src.prepareNativeTile(0, 0);
+      expect(draw).toHaveBeenCalledOnce();
+      const native = await request(next.src, 10, 1, 1).result;
+      expect([...native.value.getImageData(0, 0, 1, 1).data]).toEqual([252, 128, 0, 255]);
+    } finally { next.controller.abort(); await next.retained.flush(); next.retained.dispose(); }
+  });
+  it('repairs missing overview pages from saved native pixels even after foreground reads made the leaves resident', async () => {
+    const initial = cookingSource();
+    await initial.src.prepareNativeTile(0, 0);
+    await initial.retained.flush(); initial.controller.abort(); initial.retained.dispose();
+    for (const key of initial.records.keys())
+      if (Number(key.split('/')[1]) < 9) initial.records.delete(key);
+    const next = cookingSource(new Renderer(), initial.records);
+    try {
+      draw.mockClear();
+      await request(next.src, 9, 0, 0).result;
+      for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++)
+        await request(next.src, 10, x, y).result;
+      expect(draw).not.toHaveBeenCalled();
+      await next.src.prepareNativeTile(0, 0);
+      expect(draw).not.toHaveBeenCalled();
+      await next.retained.flush();
+      const ancestor = initial.records.get('cooking/8/0/0')!;
+      expect(ancestor).toBeDefined();
+      expect([...ancestor.pixels.slice(0, 4)]).toEqual([252, 128, 0, 255]);
+    } finally { next.controller.abort(); await next.retained.flush(); next.retained.dispose(); }
+  });
   it.each([-1, 0, 1])(
     "uses absolute game coordinates in world %i at every LOD",
     (pw) => {

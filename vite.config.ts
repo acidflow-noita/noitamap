@@ -2,6 +2,7 @@ import { terrainShaderBitsPlugin } from "./build_scripts/vite-terrain-shaders.ts
 import { defineConfig, type Plugin } from "vite";
 import { telescopeBrowserPlugin } from "./build_scripts/vite-telescope-browser.ts";
 import { telescopeScenesPlugin } from "./build_scripts/vite-telescope-scenes.ts";
+import { dataArchivesPlugin } from "./build_scripts/vite-data-archives.ts";
 import { atlasChunksPlugin } from "./build_scripts/vite-atlas-chunks.ts";
 import { resolveLocalPro } from "./build_scripts/local-pro.ts";
 import { ignoreTaskScratch } from "./build_scripts/vite-watch.ts";
@@ -84,7 +85,7 @@ function workerOutputNames(): Plugin {
 export default defineConfig({
   worker: {
     format: "es",
-    plugins: () => [workerOutputNames(), shimTelescopePlugin, telescopeScenesPlugin(import.meta.dirname), telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")), atlasChunksPlugin(import.meta.dirname)],
+    plugins: () => [workerOutputNames(), shimTelescopePlugin, dataArchivesPlugin(import.meta.dirname), telescopeScenesPlugin(import.meta.dirname), telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")), atlasChunksPlugin(import.meta.dirname)],
   },
   server: {
     watch: {
@@ -95,6 +96,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    dataArchivesPlugin(import.meta.dirname),
     telescopeScenesPlugin(import.meta.dirname),
     {
       // Native bakers/test harnesses supply their own manualChunks policy.

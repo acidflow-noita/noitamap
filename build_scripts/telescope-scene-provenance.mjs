@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readdir, readFile, access } from "node:fs/promises";
 import { resolve, relative } from "node:path";
 
-export async function sceneInputFingerprint(root) {
+export async function sceneInputFingerprint(root, watchFile = (_file) => {}) {
   let approximateFork = process.env.NOITAMAP_TELESCOPE || "lib/noita-telescope";
   try {
     await access(resolve(root, approximateFork, "js"));
@@ -37,6 +37,7 @@ export async function sceneInputFingerprint(root) {
   const hash = createHash("sha256");
   hash.update(`approximate-fork:${approximateFork}\0`);
   for (const path of files.sort()) {
+    watchFile(resolve(root, path));
     const data = await readFile(resolve(root, path));
     hash
       .update(relative(root, resolve(root, path)))

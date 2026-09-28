@@ -27,6 +27,21 @@ Vite or native benchmark commands, run `npm run prepare-telescope-scenes` first
 if those files are missing or stale. This preparation does not require a Sage
 or daily biome bake.
 
+The browser persists the shared ZIP archives, compressed prepared scene packs,
+material atlas and other fixed HD data in CacheStorage. Later seeds and visits
+reuse those bytes. ZIP revisions are compiled from their contents, so an
+unchanged cached archive needs no network freshness check. Scene/atlas entries
+must match the compiled source fingerprint; changed revisions replace the same
+logical cache slots. Revisioned download URLs also prevent stale HTTP-cache
+responses during development.
+
+Decoded scenes and atlas data already stay warm across seed changes in one tab.
+A reload still needs decoding, GPU uploads and shader initialization. CacheStorage
+is optional and browser-managed: eviction or clearing site data requires another
+download. Denied/full/stalled storage leaves downloaded assets usable, and the
+additional shared-response RAM cache is bounded to 8 MiB. Generated terrain
+remains a separate seed-specific IndexedDB cache.
+
 Ordinary generated-map links use HD unless the user has disabled it. Validated
 daily images retain their baked path. The preference uses `noitamap-hd-renderer`
 and does not revive the old offline `noitamap-gl-terrain` setting. Diagnostic
@@ -491,16 +506,18 @@ further. This avoids treating a partially computed subpixel as complete coverage
 The shared retention budget is 24 MiB decoded pixels/coverage, in addition to the
 existing 32 MiB display-source cache. Dirty pages stay owned until persistence
 settles; new shader work pauses under pressure. One write snapshot batch is at
-most approximately 4 MiB, plus at most two active 512px render jobs and their
-temporary reductions. IndexedDB stores lossless raw RGBA pages, avoiding PNG
-encoding on foreground completion. Coarse restoration reads one ancestor page,
+most 4 MiB, plus at most two active 512px render jobs and their
+temporary reductions. A dedicated worker losslessly encodes persistence snapshots
+as PNG, with compact exact RGBA records for constant pages. Encoding never gates
+foreground delivery. Existing raw records remain readable. Coarse restoration reads one ancestor page,
 not all its leaves. Completed display output does not wait for the disk write.
 
 Storage opens/transactions have bounded deadlines. Denial, quota exhaustion or
 failure leaves the bounded memory working set usable; persistence cannot promise
 unlimited retention without available disk space. Pending writes may be lost if
-the page/process closes before they complete. Raw disk storage trades space for
-encoding cost; it is not a full-map export format or a sub-second full-map result.
+the page/process closes before they complete. Native replay repairs missing
+overview ancestors after an interrupted save; a persisted parent alone does not
+prove its native children survived. This is not a sub-second full-map result.
 
 `tests/retained-terrain.test.ts` runs the production TileSource with native
 canvas pixels and an event-driven IndexedDB fixture. It covers transparent
@@ -511,12 +528,60 @@ instant-terrain and source-cache suites together passed 47 tests without browser
 automation. This verifies reuse and pixel continuity, not hardware/browser speed
 or new parity with the game's complete native finishing pipeline.
 
-Display-resolution shading now integrates multiple samples per coarse pixel.
+### Continuous native terrain preparation
+
+After the first terrain paint, a separate sweep processes every 512px native
+block in all nine regions without waiting for zoom requests. It visits the
+current viewport first and reorders remaining coordinates after navigation.
+Only one background draw runs at once, and queued visible requests take priority.
+Message-task handoffs yield between blocks without accumulating nested-timer delays.
+Foreground subscribers promote shared jobs; cancellation demotes work that only
+the background pass still needs. Known static-owned blocks publish exact empty
+terrain coverage without running the shader.
+
+The sweep uses the same retained native pixels and reduced ancestors as ordinary
+tile requests. It leaves the visible tile cache intact and coalesces OSD refreshes
+into 16ms batches, with only one refresh per item in flight. Thus an existing
+overview gains exact native reductions while the camera stays still. Stored native
+pixels can rebuild ancestors without another shader draw. The pass pauses in hidden
+tabs, cancels on reseed, and stops if persistence fails rather than continually
+evicting completed work. `source.instantStats.cooking` exposes queued total,
+completed blocks and state; `complete` waits for the final storage flush.
+
+Completion also logs `[Instant terrain] Full map terrain finished in X.XX seconds`
+in the console. The timer starts at the seed request, before asset initialization
+and generation, and includes the final persistence flush. Log metadata includes
+the seed, region/block counts, elapsed milliseconds and `sinceNavigationMs` for
+the separate page-navigation clock. This measures native terrain and its retained
+reductions; final OSD refresh and scene/POI tile completion are separate.
+
+A separate console line reports estimated site storage used and browser quota
+in MiB/GiB, with raw byte counts in its detail object. It runs after completion
+or a storage-related pause, outside the generation timer. This browser estimate
+includes all of the site's cached assets, terrain, older seeds and other databases;
+it is not a per-map total and does not count GPU/RAM usage. Missing/denied estimates
+are reported as unavailable rather than zero.
+
+The stationary real AppOSD regression compares all 16,384 overview pixels after
+four native draws, including exact transparent holes, without pan/zoom or a test
+redraw trigger. Scheduler tests complete nine regions without requesting display
+tiles. The production codec worker preserves all RGBA bytes, including RGB under
+alpha zero. In 39 small generated terrain windows, 380,928 raw bytes became 28,604
+encoded bytes; this is a sample measurement, not a whole-map compression estimate.
+
+The lower Power Plant elevator now reaches the live renderer: its local Wang
+lattice is packed beside the shared world lattice, lower-plane metadata selects
+the correct column, and clipping includes its continuation. This adds no GPU
+samplers, contexts or draw passes. Top/middle/bottom probes in all three horizontal
+worlds cover 294,912 material pixels, with seven CPU/GL float contour differences;
+the existing 39 ordinary-map RGBA probes remain unchanged. Renderer cache version
+`full-pixel-v11` invalidates the earlier missing-shaft pixels.
+
+Display-resolution shading integrates multiple samples per coarse pixel.
 Its overview remains a bounded approximation to a reduction of all finished
 native-resolution pixels; sufficiently small features can still alias. Existing scene artwork is composed separately; the native
 baker's complete liquid/edge finishing pass is not run for every display tile.
-The continuous lower Power Plant shaft uses a separate CPU material field in the
-baker and is not newly certified by this GPU path.
+The baker continues to use its independent CPU shaft material field.
 
 Corrected material probes and camera tests establish only their tested regions.
 Floating-point thresholds can still differ between the CPU and GLSL. The

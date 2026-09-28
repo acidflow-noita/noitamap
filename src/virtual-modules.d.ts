@@ -13,7 +13,13 @@ declare module "virtual:noitamap-scene-assets" {
   export const provenance: string;
   export const packs: Record<"full" | "approx", { url: string; scenes: number; bytes: number }>;
 }
+declare module "virtual:noitamap-telescope-asset-identity" {
+  export const provenance: string;
+}
 declare module 'virtual:instant-terrain-shaders' {
   export const TERRAIN_FS: string;
   export const TERRAIN_VS: string;
+}
+declare module "virtual:noitamap-data-archives" {
+  export const archiveRevisions: Record<string, string>;
 }

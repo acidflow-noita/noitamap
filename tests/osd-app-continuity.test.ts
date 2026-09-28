@@ -1,11 +1,17 @@
 // @vitest-environment jsdom
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { createCanvas, type Canvas } from '@napi-rs/canvas';
-import { createInstantTileSource } from '../src/telescope/instant-terrain';
+import { applyRetainedTerrainEvent, createInstantTileSource, refreshRetainedTerrain } from '../src/telescope/instant-terrain';
+import { createInstantTerrainCooker } from '../src/telescope/instant-terrain-cooker';
+import { RetainedTerrain, type StoredTerrain } from '../src/telescope/retained-terrain';
 import { installTerrainAdmission } from '../src/osd-terrain-admission';
 vi.mock('../src/data_sources/overlays', () => ({ createOverlays: () => [] }));
 vi.mock('../src/telescope/instant-terrain-backend', () => ({ prepareInstantTerrain: vi.fn() }));
 vi.mock('../src/telescope/instant-terrain-plane', () => ({ setTerrainPlane: vi.fn() }));
+vi.mock('../src/telescope/terrain-elevator', () => ({
+  includeElevatorOwnership: (owner: unknown) => owner,
+  prepareElevatorShafts: async () => [],
+}));
 
 let OSD: any;
 let AppOSD: any;
@@ -78,7 +84,7 @@ it.each([false, true])('runs real cold AppOSD frames through a slow renderer (ad
       getWorldSize: () => 70, getWorldCenter: () => 35, GENERATOR_CONFIG: {} },
     gen: { seed: 42, isNGP: false, tileLayers: [], biomeData: { pixels: new Uint32Array(70 * 48) } },
     renderer, signal: lifetime.signal, onFailure: () => {},
-    clip: { draw: (context, rendered) => context.drawImage(rendered, 0, 0), dispose() {} },
+    clip: { draw: (context, rendered) => context.drawImage(rendered, 0, 0), hasTerrain: () => true, dispose() {} },
   });
   viewer.addHandler('tile-load-failed', (event: any) => failed.push(event));
   try {
@@ -146,6 +152,95 @@ function runFrame() {
   const callbacks = [...frames.values()]; frames.clear();
   for (const callback of callbacks) callback(performance.now());
 }
+
+it('sharpens a stationary real AppOSD overview as native background cooking completes, preserving transparent holes', async () => {
+  const mount = document.createElement('div'); document.body.appendChild(mount);
+  const app = new AppOSD(mount, false), viewer = app.viewer;
+  const lifetime = new AbortController();
+  const stored = new Map<string, StoredTerrain>();
+  const retention = new RetainedTerrain({
+    read: async key => stored.get(key),
+    write: async entries => { for (const entry of entries) stored.set(entry.key, entry.value); },
+  });
+  const failure = vi.fn();
+  let item: any;
+  const render = vi.fn((view: any) => {
+    const canvas = createCanvas(view.width, view.height), context = canvas.getContext('2d');
+    context.fillStyle = view.scale === 1 ? '#f08020' : '#2060a0';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    if (view.scale === 1) {
+      context.fillStyle = '#804020';
+      for (let y = 8; y < canvas.height; y += 16) context.fillRect(0, y, canvas.width, 8);
+      context.clearRect(64 - view.x, 64 - view.y, 64, 64);
+    }
+    return canvas;
+  });
+  const source = createInstantTileSource({
+    region: { x: 0, y: 0, width: 1024, height: 1024, pw: 0 },
+    deps: { GLTerrainRenderer: class {} as any, initMaterialAtlas: async () => {},
+      getWorldSize: () => 2, getWorldCenter: () => 0, GENERATOR_CONFIG: {} },
+    gen: { seed: 42, isNGP: false, tileLayers: [], biomeData: { pixels: new Uint32Array(4) } },
+    renderer: { render }, signal: lifetime.signal, onFailure: failure,
+    retention: retention.region('stationary-cooker', 1024, 1024),
+    onRetainedTiles: tiles => { if (item) refreshRetainedTerrain(viewer, item, tiles); },
+    clip: { draw: (context, rendered) => context.drawImage(rendered, 0, 0), hasTerrain: () => true, dispose() {} },
+  });
+  const cooker = createInstantTerrainCooker({
+    signal: lifetime.signal, priority: (_source, x, y) => x + y * 2,
+    viewKey: () => 'stationary', persistent: () => retention.stats.persistent,
+    flush: () => retention.flush(), onFailure: failure,
+  });
+  viewer.addHandler('tile-invalidated', applyRetainedTerrainEvent);
+  try {
+    item = await new Promise<any>((resolve, reject) => viewer.addTiledImage({
+      tileSource: source, width: 1024, success: (event: any) => resolve(event.item), error: reject,
+    }));
+    // The native leaf level is outside OSD's eligible LODs at this zoom. Only
+    // the background cooker can request the native samples in this replay.
+    viewer.viewport.fitBounds(new OSD.Rect(0, 0, 2048, 2048), true);
+    const camera = viewer.viewport.getBounds(true).clone();
+    const overview = item._getTile(0, 0, 8, OSD.now(), source.getNumTiles(8));
+    item._loadTile(overview, OSD.now());
+    await vi.waitFor(() => expect(overview.loaded).toBe(true));
+    viewer.forceRedraw(); runFrame();
+    const pixel = (x: number, y: number) => [...viewer.drawer.context.getImageData(x, y, 1, 1).data];
+    expect(pixel(40, 40)).toEqual([32, 96, 160, 255]);
+    expect(render.mock.calls.filter(([view]) => view.scale === 1)).toHaveLength(0);
+    const invalidated = vi.fn();
+    viewer.addHandler('tile-invalidated', invalidated);
+    const movement = vi.fn();
+    viewer.addHandler('pan', movement); viewer.addHandler('zoom', movement);
+    cooker.add(source); cooker.start();
+    await vi.waitFor(() => {
+      runFrame(); // Run only already-scheduled AppOSD frames; do not force redraw.
+      expect(failure.mock.calls).toEqual([]);
+      expect(cooker.stats.state).toBe('complete');
+      expect(pixel(40, 40)).toEqual([240, 128, 32, 255]);
+      expect(pixel(100, 100)).toEqual([240, 128, 32, 255]);
+      expect(pixel(12, 12)).toEqual([0, 0, 0, 0]);
+    }, { timeout: 3000 });
+    expect(invalidated).toHaveBeenCalled();
+    expect(render.mock.calls.filter(([view]) => view.scale === 1)).toHaveLength(4);
+    expect(cooker.stats.completed).toBe(4);
+    expect(viewer.viewport.getBounds(true)).toEqual(camera);
+    expect(movement).not.toHaveBeenCalled();
+    // Independently check all 16,384 visible pixels: each native eight-row
+    // stripe becomes one screen row. Known empty native pixels replace blue
+    // coarse pixels with alpha zero, including inside a still-loaded overview.
+    const pixels = viewer.drawer.context.getImageData(0, 0, 128, 128).data;
+    const expected = new Uint8ClampedArray(pixels.length);
+    for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
+      if (x >= 8 && x < 16 && y >= 8 && y < 16) continue;
+      expected.set(y % 2 ? [128, 64, 32, 255] : [240, 128, 32, 255], (y * 128 + x) * 4);
+    }
+    expect(Array.from(pixels)).toEqual(Array.from(expected));
+    expect(overview.loaded).toBe(true);
+    expect(failure).not.toHaveBeenCalled();
+  } finally {
+    lifetime.abort(); retention.dispose();
+    viewer.destroy(); mount.remove(); frames.clear();
+  }
+});
 
 it('reuses previously viewed fine pixels after navigating away through the actual AppOSD frame lifecycle', async () => {
   const mount = document.createElement('div'); document.body.appendChild(mount);

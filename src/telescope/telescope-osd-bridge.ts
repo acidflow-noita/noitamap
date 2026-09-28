@@ -5447,6 +5447,7 @@ export async function renderGenerationResult(
   // the prebaked generation.json (installClickHandler below).
   bakedDecorations?: boolean,
   forceApproximateTerrain = false,
+  generationStartedAt = performance.now(),
 ): Promise<void> {
   const generationId = ++currentGenerationId;
   clearPortalAnimations();
@@ -5600,8 +5601,8 @@ export async function renderGenerationResult(
           if (currentGenerationId !== generationId) return;
           console.warn('[OSD Bridge] GPU terrain failed; rebuilding approximate layers:', error);
           void renderGenerationResult(viewer, result, unlocks, isDaily, onFirstPaint, cacheKey,
-            null, false, false, true).catch(error => console.error('[OSD Bridge] Terrain fallback failed:', error));
-        });
+            null, false, false, true, generationStartedAt).catch(error => console.error('[OSD Bridge] Terrain fallback failed:', error));
+        }, generationStartedAt);
     }
     if (currentGenerationId !== generationId) return;
     awaitingTerrainDraw = instant;

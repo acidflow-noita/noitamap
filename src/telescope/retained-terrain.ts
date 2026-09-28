@@ -2,6 +2,11 @@ import { OptionalCacheDatabase } from "./cache-storage";
 import { TERRAIN_VERSION } from "./terrain-policy";
 import type { GLTerrainGeneration } from "./gl-terrain-tile-source";
 import type { StaticTerrainMask } from "./static-terrain-mask";
+import {
+  WorkerRetentionCodec,
+  type EncodedTerrain,
+  type RetentionCodec,
+} from "./retained-terrain-codec";
 
 const SIZE = 256;
 const REVISION = `${TERRAIN_VERSION}/retained-hd-v1-fa9cd25`;
@@ -21,13 +26,39 @@ export interface StoredTerrain {
 export interface TerrainRetentionStore {
   read(key: string): Promise<StoredTerrain | undefined>;
   write(entries: { key: string; value: StoredTerrain }[]): Promise<void>;
+  readCoverage?(
+    key: string,
+  ): Promise<Pick<StoredTerrain, "columns" | "rows" | "coverage"> | undefined>;
+  dispose?(): void;
 }
 
-/** Raw RGBA avoids foreground PNG encoding and preserves transparent pixels.
- * Reads are one page, never a scan/decode of every retained native leaf. */
+function completeCoverage(
+  page: Pick<StoredTerrain, "columns" | "rows" | "coverage">,
+): boolean {
+  if (
+    !Number.isInteger(page.columns) ||
+    page.columns < 1 ||
+    page.columns > SIZE ||
+    !Number.isInteger(page.rows) ||
+    page.rows < 1 ||
+    page.rows > SIZE ||
+    page.coverage?.length !== Math.ceil((page.columns * page.rows) / 8)
+  )
+    return false;
+  for (let i = 0; i < page.columns * page.rows; i++)
+    if (!(page.coverage[i >> 3] & (1 << (i & 7)))) return false;
+  return true;
+}
+
+/** Lossless encoding belongs to optional persistence, never tile delivery.
+ * Coverage metadata can be inspected without decoding/copying RGBA canvases.
+ * Existing raw v1 records remain readable under the same database schema. */
 export class IndexedTerrainRetentionStore implements TerrainRetentionStore {
   private db: OptionalCacheDatabase;
-  constructor(waitMs = 1500) {
+  constructor(
+    waitMs = 1500,
+    private readonly codec: RetentionCodec = new WorkerRetentionCodec(),
+  ) {
     this.db = new OptionalCacheDatabase(
       "noitamap-retained-hd",
       1,
@@ -35,22 +66,41 @@ export class IndexedTerrainRetentionStore implements TerrainRetentionStore {
       waitMs,
     );
   }
-  async read(key: string) {
+  private async stored(
+    key: string,
+  ): Promise<StoredTerrain | EncodedTerrain | undefined> {
     if (typeof indexedDB === "undefined") return undefined;
     const db = await this.db.open();
-    return this.db.read<StoredTerrain | undefined>(
+    return this.db.read<StoredTerrain | EncodedTerrain | undefined>(
       db.transaction("tiles").objectStore("tiles").get(key),
+    );
+  }
+  async read(key: string) {
+    const value = await this.stored(key);
+    return value && ("encoding" in value ? this.codec.decode(value) : value);
+  }
+  async readCoverage(key: string) {
+    const value = await this.stored(key);
+    return (
+      value && {
+        columns: value.columns,
+        rows: value.rows,
+        coverage: value.coverage,
+      }
     );
   }
   async write(entries: { key: string; value: StoredTerrain }[]) {
     if (typeof indexedDB === "undefined")
       throw new Error("Persistent terrain storage unavailable");
     const db = await this.db.open();
+    const encoded = await this.codec.encode(
+      entries.map((entry) => entry.value),
+    );
     const tx = db.transaction("tiles", "readwrite");
     const done = this.db.complete(tx);
     try {
-      for (const { key, value } of entries)
-        tx.objectStore("tiles").put(value, key);
+      for (let i = 0; i < entries.length; i++)
+        tx.objectStore("tiles").put(encoded[i], entries[i].key);
       await done;
     } catch (error) {
       // A synchronous put() failure must also consume the transaction promise.
@@ -62,6 +112,10 @@ export class IndexedTerrainRetentionStore implements TerrainRetentionStore {
       }
       throw error;
     }
+  }
+  dispose() {
+    this.codec.dispose?.();
+    this.db.close();
   }
 }
 
@@ -156,6 +210,7 @@ export class RetainedTerrain {
   private disposed = false;
   private snapshotBytes = 0;
   private missing = new Set<string>();
+  private coverageReads = new Map<string, Promise<boolean>>();
   private captureBytes = 0;
   private captures = 0;
   private captureWaiters = new Set<() => void>();
@@ -204,6 +259,51 @@ export class RetainedTerrain {
     this.missing.add(key);
     if (this.missing.size > 2048)
       this.missing.delete(this.missing.values().next().value!);
+  }
+  private disableStorage() {
+    this.readable = false;
+    this.writable = false;
+    for (const page of this.pages.values()) page.saved = page.version;
+  }
+  /** Background skip checks inspect coverage only. A cold compressed record
+   * stays compressed, and no display canvas is created or added to the LRU. */
+  async contains(key: string): Promise<boolean> {
+    const resident = this.pages.get(key);
+    if (resident && completeCoverage(resident)) return true;
+    const loading = this.loads.get(key);
+    if (loading) {
+      loading.waiters++;
+      const page = await loading.promise;
+      if (!page) return false;
+      try {
+        return completeCoverage(page);
+      } finally {
+        this.release(page);
+      }
+    }
+    if (resident) return false;
+    if (!this.readable || this.missing.has(key)) return false;
+    const existing = this.coverageReads.get(key);
+    if (existing) return existing;
+    const read = (async () => {
+      try {
+        const value = this.store.readCoverage
+          ? await this.store.readCoverage(key)
+          : await this.store.read(key);
+        const current = this.pages.get(key);
+        if (current && completeCoverage(current)) return true;
+        if (!value) {
+          if (!current) this.rememberMissing(key);
+          return false;
+        }
+        return completeCoverage(value);
+      } catch {
+        this.disableStorage();
+        return false;
+      }
+    })().finally(() => this.coverageReads.delete(key));
+    this.coverageReads.set(key, read);
+    return read;
   }
   /** Import disk-only cells behind freshly captured exact pixels. Coverage is
    * authoritative even when the newer pixel is transparent. */
@@ -322,12 +422,10 @@ export class RetainedTerrain {
           page.pins += shared.waiters;
           return page;
         } catch {
-          this.readable = false;
           // Without the old coverage we cannot safely replace an ancestor on
           // disk. Keep prior persisted pixels intact and use the bounded RAM
           // fallback until this owner is replaced.
-          this.writable = false;
-          for (const page of this.pages.values()) page.saved = page.version;
+          this.disableStorage();
           const current = this.pages.get(key);
           if (current) current.pins += shared.waiters;
           return current;
@@ -439,6 +537,8 @@ export class RetainedTerrain {
     }[] = [];
     for (const [key, page] of this.pages) {
       if (page.saved === page.version || page.hydrating) continue;
+      if (records.length && this.snapshotBytes + page.bytes > 4 * 1024 * 1024)
+        break;
       const c = page.context.canvas;
       records.push({
         key,
@@ -484,7 +584,7 @@ export class RetainedTerrain {
   }
   dispose() {
     this.disposed = true;
-    void this.flush();
+    void this.flush().finally(() => this.store.dispose?.());
   }
 }
 
@@ -523,18 +623,19 @@ export class RetainedTerrainRegion {
    * lookup, allocation, or a wait for unrelated ancestor hydration. */
   hasComplete(tile: RetainedTile): boolean {
     const page = this.owner.resident(this.key(tile));
-    if (!page) return false;
-    for (let i = 0; i < page.columns * page.rows; i++)
-      if (!(page.coverage[i >> 3] & (1 << (i & 7)))) return false;
-    return true;
+    return !!page && completeCoverage(page);
+  }
+  contains(tile: RetainedTile): Promise<boolean> {
+    if (tile.level < this.minLevel || tile.level > this.maxLevel)
+      return Promise.resolve(false);
+    return this.owner.contains(this.key(tile));
   }
   async complete(tile: RetainedTile) {
     if (tile.level < this.minLevel) return undefined;
     const page = await this.owner.get(this.key(tile));
     if (!page) return undefined;
     try {
-      for (let i = 0; i < page.columns * page.rows; i++)
-        if (!(page.coverage[i >> 3] & (1 << (i & 7)))) return undefined;
+      if (!completeCoverage(page)) return undefined;
       const out = canvas(page.context.canvas.width, page.context.canvas.height);
       out.drawImage(page.context.canvas, 0, 0);
       return out;

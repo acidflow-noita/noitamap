@@ -549,7 +549,7 @@ export async function runDynamicMap(
     }
     await backgroundReady;
     if (myToken !== generationToken) return null;
-    await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint, cacheKey, bakedDZIs, bakedAlreadyPainted, bakedDecorations);
+    await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint, cacheKey, bakedDZIs, bakedAlreadyPainted, bakedDecorations, false, runStarted);
     if (myToken !== generationToken) return null;
     console.log(`[DynamicMap] Render: ${((performance.now() - t) / 1000).toFixed(2)}s`);
     lastResult = result;

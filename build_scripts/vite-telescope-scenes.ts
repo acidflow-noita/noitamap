@@ -8,7 +8,8 @@ import { sceneInputFingerprint } from "./telescope-scene-provenance.mjs";
  * fork/archive cannot accidentally consume an older seed-independent cache. */
 export function telescopeScenesPlugin(root: string): Plugin {
   const name = "virtual:noitamap-scene-assets",
-    internal = "\0" + name;
+    internal = "\0" + name,
+    identity = "virtual:noitamap-telescope-asset-identity";
   let command = "build";
   return {
     name: "noitamap-prepared-scenes",
@@ -17,8 +18,13 @@ export function telescopeScenesPlugin(root: string): Plugin {
     },
     resolveId(id) {
       if (id === name) return internal;
+      if (id === identity) return "\0" + identity;
     },
     async load(id) {
+      // Scene preparation itself imports the data bridge. This identity must
+      // be available before the prepared pack/manifest exists.
+      if (id === "\0" + identity)
+        return `export const provenance = ${JSON.stringify(await sceneInputFingerprint(root, (file: string) => this.addWatchFile(file)))};`;
       if (id !== internal) return;
       const dir = resolve(root, "build_data/telescope-scenes");
       let manifest: any;

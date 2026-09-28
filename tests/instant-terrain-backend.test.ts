@@ -169,6 +169,27 @@ it("shares one initialization while keeping each plane's queued render independe
   for (const handle of handles) await expect(handle.render({})).rejects.toThrow("Obsolete");
 });
 
+it("preserves continuous elevator buffers in shared worker initialization and fallback", async () => {
+  const { prepareInstantTerrain, releaseInstantTerrainBackend } =
+    await import("../src/telescope/instant-terrain-backend");
+  const shaft = { biomeName: "robobase", minX: 54, minY: 47, width: 51,
+    mapH: 2509, w: 510, h: 25090, buffer: new Uint8Array([12, 34, 56]),
+    validChunks: new Set(["54,47", "54,95"]) };
+  const gen = { ...generation(), elevatorShafts: [shaft] }, d = deps();
+  await prepareInstantTerrain(gen, d, 1);
+  const serialized = TestWorker.instances[0].sent.find(message => message.type === "init").generation.elevatorShafts;
+  expect(serialized).toHaveLength(1);
+  expect(serialized[0]).toMatchObject({ minY: 47, mapH: 2509, validChunks: ["54,47", "54,95"] });
+  expect(serialized[0].buffer).not.toBe(shaft.buffer.buffer);
+  expect(new Uint8Array(serialized[0].buffer)).toEqual(shaft.buffer);
+  releaseInstantTerrainBackend();
+  TestWorker.initError = true;
+  await prepareInstantTerrain({ ...gen, seed: 2 }, d, 1);
+  expect(d.build).toHaveBeenCalledWith(gen.tileLayers, gen.biomeData,
+    expect.objectContaining({ elevatorShafts: [shaft] }));
+  releaseInstantTerrainBackend();
+});
+
 it("retires every old plane on reseed and closes a tile returned by the old generation", async () => {
   const { prepareInstantTerrain } =
     await import("../src/telescope/instant-terrain-backend");

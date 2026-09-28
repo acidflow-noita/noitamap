@@ -4,6 +4,7 @@ import type {
 } from "./gl-terrain-tile-source";
 import type { VerticalPlane } from "./terrain-policy";
 import { prepareTerrainPlane } from "./terrain-planes";
+import { prepareElevatorShafts } from "./terrain-elevator";
 import { serializeTileLayer } from "./tile-layer-cache";
 import { scheduleTerrainWork } from "./terrain-work-queue";
 
@@ -260,15 +261,17 @@ export async function prepareInstantTerrain(
         throw new DOMException("Terrain preparation cancelled", "AbortError");
     };
     slot.prepared = (async () => {
-      const [prepared] = await Promise.all([
+      const [prepared, elevatorShafts] = await Promise.all([
         prepareTerrainPlane(gen, 0),
+        prepareElevatorShafts(gen),
         warmSlot(slot, deps),
       ]);
       current();
       if (slot.worker) {
         const worker = slot.worker;
         const layers = prepared.tileLayers.map(serializeTileLayer);
-        const transfer = layers
+        const shafts = elevatorShafts.map(serializeTileLayer);
+        const transfer = [...layers, ...shafts]
           .map((layer) => layer.buffer)
           .filter((buffer): buffer is ArrayBuffer => buffer !== null);
         try {
@@ -281,6 +284,7 @@ export async function prepareInstantTerrain(
                 isNGP: gen.isNGP,
                 gameMode: gen.gameMode,
                 tileLayers: layers,
+                elevatorShafts: shafts,
                 biomeData: prepared.biomeData,
               },
             },
@@ -332,6 +336,7 @@ export async function prepareInstantTerrain(
               lut: { recolorMaterials: true, clearSpawnPixels: true },
               engineTerrain: true,
               generatorConfig: deps.GENERATOR_CONFIG,
+              elevatorShafts,
               checkCurrent: current,
             },
           );

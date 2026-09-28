@@ -83,6 +83,56 @@ vec2 engLookupCoord(float scale, ivec2 w) {
 float sstep2(float t)`,
     );
   }
+  if (!source.includes("ivec3 engElevatorRect;")) {
+    const replaceOnce = (before: string, after: string) => {
+      if (source.split(before).length !== 2)
+        throw new Error(
+          "Review updated Telescope terrain shader: elevator integration changed",
+        );
+      source = source.replace(before, after);
+    };
+    replaceOnce(
+      "float covAt(int x, int y) {",
+      `// A shaft has its own toroidal lattice, packed beside the world lattice.
+// Metadata reuses the engine-table texture, keeping the WebGL2 16-sampler limit.
+ivec3 engElevatorRect;
+int engElevatorColumn;
+ivec2 engLatticeAddress(int x, int y) {
+    if (engElevatorRect.y > 0)
+        return ivec2(engElevatorRect.x + pmod(x, engElevatorRect.y), pmod(y, engElevatorRect.z));
+    return ivec2(pmod(x, u_mapWidth * 512 / 10), pmod(y, 48 * 512 / 10));
+}
+float covAt(int x, int y) {`,
+    );
+    replaceOnce(
+      "ivec2 s = textureSize(u_covTex, 0);\n    return texelFetch(u_covTex, ivec2(pmod(x, s.x), pmod(y, s.y)), 0).r;",
+      "return texelFetch(u_covTex, engLatticeAddress(x, y), 0).r;",
+    );
+    replaceOnce(
+      "ivec2 s = textureSize(u_latMatTex, 0);\n    return int(texelFetch(u_latMatTex, ivec2(pmod(x, s.x), pmod(y, s.y)), 0).r);",
+      "return int(texelFetch(u_latMatTex, engLatticeAddress(x, y), 0).r);",
+    );
+    replaceOnce(
+      "vec2 c = engLookupCoordAbsolute(scale, w);",
+      `vec2 c = engLookupCoordAbsolute(scale, w);
+    if (engElevatorRect.y > 0) {
+        int pw = fdiv(w.x + u_centerPx, u_worldWidth);
+        c.x -= float(engElevatorColumn * 512 / 10) + float(pw * u_worldWidth) / 10.0;
+        c.y -= float(47 * 512 / 10);
+        return c;
+    }`,
+    );
+    replaceOnce(
+      "if (u_engineTerrain) {\n        ivec2 cell = engResolveCell(w);",
+      `if (u_engineTerrain) {
+        engElevatorRect = ivec3(0);
+        if (u_verticalPlane == 1) {
+            engElevatorColumn = pmod(fdiv(w.x + u_centerPx, CHUNK), u_mapWidth);
+            engElevatorRect = ivec3(texelFetch(u_engChunkTex, ivec2(engElevatorColumn, 0), 0).gba);
+        }
+        ivec2 cell = engResolveCell(w);`,
+    );
+  }
   return source;
 }
 

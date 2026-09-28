@@ -27,14 +27,12 @@ import {
 } from "noita-telescope-full-pixels/gl/material_atlas.js";
 import {
   createChunkTexture,
-  createCoverageLatticeTexture,
   createEngineChunkTexture,
   createFillMaterialTexture,
   createFloatTableTexture,
   createForegroundTexture,
   createIndirectionTexture,
   createMaterialAtlasTexture,
-  createMaterialLatticeTexture,
   createMaterialMetaTexture,
   createNoiseTexture,
   createPaletteMaterialTexture,
@@ -51,6 +49,11 @@ import {
 import { prewarmTerrainShader } from "./terrain-shader-prewarm";
 import { setTerrainPlane } from "./instant-terrain-plane";
 import type { VerticalPlane } from "./terrain-policy";
+import {
+  packElevatorLattices,
+  createElevatorChunkTexture,
+  createPackedLatticeTexture,
+} from "./instant-elevator-lattice";
 
 const slotsByColor = new Map<number, number>(
   BIOME_ENGINE.map((biome: any, i: number) => [biome.color, i]),
@@ -103,6 +106,7 @@ export class SharedInstantTerrainResources {
   private biomes?: any;
   private key?: string;
   private generatorConfig?: object;
+  private shafts?: any[];
   private epoch = 0;
   private pending?: Promise<boolean>;
   private builds = 0;
@@ -142,6 +146,7 @@ export class SharedInstantTerrainResources {
       this.biomes === biomeData &&
       this.key === key &&
       this.generatorConfig === opts.generatorConfig &&
+      this.shafts === opts.elevatorShafts &&
       this.pending &&
       !this.renderer.contextLost &&
       (this.planes.size === 0 || this.renderer.engineReady)
@@ -152,6 +157,7 @@ export class SharedInstantTerrainResources {
     this.biomes = biomeData;
     this.key = key;
     this.generatorConfig = opts.generatorConfig;
+    this.shafts = opts.elevatorShafts;
     const epoch = this.epoch;
     const current = () => {
       opts.checkCurrent?.();
@@ -185,6 +191,12 @@ export class SharedInstantTerrainResources {
         opts.generatorConfig ?? {},
         width,
       );
+      const elevators = packElevatorLattices(
+        engine.lattice,
+        opts.elevatorShafts ?? [],
+        opts.generatorConfig ?? {},
+        maxTextureSize(gl),
+      );
       const atlas = getMaterialAtlas();
       if (!atlas) throw new Error("Shared terrain material atlas unavailable");
       const own = (texture: any) => {
@@ -208,8 +220,8 @@ export class SharedInstantTerrainResources {
             buildPaletteMaterialTable(atlas, resources.palette),
           ),
         ),
-        cov: own(createCoverageLatticeTexture(gl, engine.lattice)),
-        latMat: own(createMaterialLatticeTexture(gl, engine.lattice)),
+        cov: own(createPackedLatticeTexture(gl, elevators, "cov")),
+        latMat: own(createPackedLatticeTexture(gl, elevators, "mat")),
         engTable: own(
           createFloatTableTexture(gl, buildEngineTable(opts.seed ?? 0)),
         ),
@@ -218,8 +230,7 @@ export class SharedInstantTerrainResources {
         ),
       };
       this.commonUploads += Object.keys(this.common).length;
-      this.latticeBytes =
-        engine.lattice.cov.byteLength + engine.lattice.mat.byteLength;
+      this.latticeBytes = elevators.lattice.GW * elevators.lattice.GH * 6;
       for (const plane of [0, -1, 1] as VerticalPlane[]) {
         let map = biomeData;
         if (plane !== 0) {
@@ -232,10 +243,15 @@ export class SharedInstantTerrainResources {
             );
           map = { pixels };
         }
+        const covered = engine.lattice.chunkCovered.slice();
+        if (plane === 1)
+          for (const region of elevators.regions)
+            for (let y = 0; y < BIOME_MAP_HEIGHT; y++)
+              covered[y * width + region.column] = 1;
         const chunks =
           plane === 0
             ? engine.chunk
-            : buildPlaneEngineChunks(map.pixels, engine.lattice.chunkCovered);
+            : buildPlaneEngineChunks(map.pixels, covered);
         const legacy = buildChunkTextures(map, width);
         const indirection =
           plane === 0
@@ -256,11 +272,13 @@ export class SharedInstantTerrainResources {
             ),
           ),
           engChunk: own(
-            createEngineChunkTexture(gl, {
-              chunk: chunks,
-              width,
-              height: BIOME_MAP_HEIGHT,
-            }),
+            plane === 1 && elevators.regions.length
+              ? createElevatorChunkTexture(gl, chunks, width, elevators.regions)
+              : createEngineChunkTexture(gl, {
+                  chunk: chunks,
+                  width,
+                  height: BIOME_MAP_HEIGHT,
+                }),
           ),
         };
         this.planeUploads += Object.keys(textures).length;
@@ -320,6 +338,7 @@ export class SharedInstantTerrainResources {
     this.planes.clear();
     this.latticeBytes = 0;
     this.generatorConfig = undefined;
+    this.shafts = undefined;
     this.layers = this.biomes = this.key = this.pending = undefined;
     // Upstream owns its framebuffer and remaining state, but must not delete
     // the selected plane/common texture handles a second time.

@@ -6,6 +6,11 @@ import {
   readTelescopeAsset,
 } from "./telescope-assets";
 import { normalizeTelescopePath } from "./telescope-asset-paths";
+import { provenance } from "virtual:noitamap-telescope-asset-identity";
+import {
+  immutableTelescopeAssets,
+  revisionedAssetUrl,
+} from "./immutable-assets";
 export { telescopePathToZipPath } from "./telescope-asset-paths";
 
 // Install once per fetch function; rebuilding a view must not stack wrappers.
@@ -37,7 +42,19 @@ export function installFetchInterceptor(
       return originalFetch.call(window, input, init);
     signal?.throwIfAborted();
     const asset = mode.fullPixels && fullPixelDataUrl(url);
-    if (asset) return originalFetch.call(window, asset, init);
+    if (asset) {
+      if (method === "HEAD") return originalFetch.call(window, asset, init);
+      return immutableTelescopeAssets.fetch(
+        `full-pixel/${url.match(/(?:^|\/)data\/([^/?#]+)/)![1]}`,
+        provenance,
+        () =>
+          originalFetch.call(window, revisionedAssetUrl(asset, provenance), {
+            ...init,
+            signal: AbortSignal.timeout(30000),
+          }),
+        signal,
+      );
+    }
     if (!isPackagedTelescopeAsset(url) && normalizeTelescopePath(url)) {
       const blob = await readTelescopeAsset(url);
       signal?.throwIfAborted();

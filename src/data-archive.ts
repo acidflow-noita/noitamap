@@ -4,6 +4,7 @@
  * individual entries (text, blob, ImageBitmap, etc.).
  */
 import JSZip from "jszip";
+import { archiveRevisions } from "virtual:noitamap-data-archives";
 
 function getBaseUrl() {
   if (typeof document !== "undefined") {
@@ -24,196 +25,242 @@ const ZIP_URLS: Record<string, string> = {
 const zipPromises: Record<string, Promise<JSZip | null> | null> = {};
 const zips: Record<string, JSZip | null> = {};
 
-/**
- * Lazily fetch and cache a zip archive.
- */
+/** Archive I/O is optional. A denied/full cache must not discard a usable ZIP. */
 const isWorker = typeof document === "undefined";
+const REVISION_HEADER = "X-Archive-Revision";
+const CACHE_WAIT_MS = 1500;
 
-export async function getZip(key: string = "main", silent: boolean = false): Promise<JSZip | null> {
-  if (zips[key]) return zips[key];
-  if (zipPromises[key]) return zipPromises[key];
-
-  const url = ZIP_URLS[key];
-  if (!url) {
-    console.error(`[DataArchive] Unknown zip key: ${key}`);
-    return null;
-  }
-
-  zipPromises[key] = isWorker ? _loadZipWorkerFast(key, url) : _loadZipMainThread(key, url, silent);
-
-  return zipPromises[key];
-}
-
-/** Worker fast path: read from Cache API, parse, done. No locks, no HEAD, no network. */
-async function _loadZipWorkerFast(key: string, url: string): Promise<JSZip | null> {
+async function optionalCache<T>(run: () => Promise<T>): Promise<T | undefined> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
-    const t0 = performance.now();
-    const cache = await caches.open(`noitamap-archive-${key}-v2`);
+    return await Promise.race([
+      run(),
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error("Archive cache timed out")),
+          CACHE_WAIT_MS,
+        );
+      }),
+    ]);
+  } catch (error) {
+    console.warn("[DataArchive] Optional archive cache unavailable:", error);
+    return undefined;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function openCache(key: string): Promise<Cache | undefined> {
+  if (typeof caches === "undefined") return undefined;
+  return optionalCache(() => caches.open(`noitamap-archive-${key}-v2`));
+}
+
+async function digest(bytes: ArrayBuffer): Promise<string | undefined> {
+  if (!globalThis.crypto?.subtle) return undefined;
+  return Array.from(
+    new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
+    (value) => value.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
+async function cachedBytes(
+  cache: Cache | undefined,
+  url: string,
+  revision: string,
+) {
+  if (!cache) return undefined;
+  return optionalCache(async () => {
     const response = await cache.match(url);
-    if (!response || !response.ok) {
-      console.warn(`[DataArchive/Worker] ${key}.zip not in cache, cannot load`);
-      return null;
-    }
-    const buf = await response.arrayBuffer();
-    const instance = await JSZip.loadAsync(buf);
-    zips[key] = instance;
-    console.log(`[DataArchive/Worker] ${key}.zip ready in ${(performance.now() - t0).toFixed(0)}ms`);
-    return instance;
-  } catch (e) {
-    console.error(`[DataArchive/Worker] Failed to load ${key}.zip:`, e);
+    if (!response?.ok) return undefined;
+    const storedRevision = response.headers.get(REVISION_HEADER);
+    if (storedRevision && storedRevision !== revision) return undefined;
+    const bytes = await response.arrayBuffer();
+    // Accept old v2 entries only after verifying their actual content once.
+    // This preserves existing downloads and the worker's cache-only path.
+    if (storedRevision === revision || (await digest(bytes)) === revision)
+      return { bytes, legacy: !storedRevision };
+    return undefined;
+  });
+}
+
+async function saveArchive(
+  cache: Cache | undefined,
+  url: string,
+  bytes: ArrayBuffer,
+  revision: string,
+) {
+  if (!cache) return;
+  await optionalCache(() =>
+    cache.put(
+      url,
+      new Response(bytes, {
+        headers: {
+          "Content-Type": "application/zip",
+          "Content-Length": String(bytes.byteLength),
+          [REVISION_HEADER]: revision,
+        },
+      }),
+    ),
+  );
+}
+
+export function getZip(
+  key: string = "main",
+  silent: boolean = false,
+): Promise<JSZip | null> {
+  if (zips[key]) return Promise.resolve(zips[key]);
+  if (zipPromises[key]) return zipPromises[key];
+  const url = ZIP_URLS[key],
+    revision = archiveRevisions[key];
+  if (!url || !revision) {
+    console.error(`[DataArchive] Unknown zip key: ${key}`);
+    return Promise.resolve(null);
+  }
+  const pending = (
+    isWorker
+      ? loadZipWorker(key, url, revision)
+      : loadZipMain(key, url, revision, silent)
+  ).then((zip) => {
+    if (zip) zips[key] = zip;
+    else if (zipPromises[key] === pending) zipPromises[key] = null;
+    return zip;
+  });
+  zipPromises[key] = pending;
+  return pending;
+}
+
+/** Worker startup uses the current archive that main-thread readiness saved. */
+async function loadZipWorker(
+  key: string,
+  url: string,
+  revision: string,
+): Promise<JSZip | null> {
+  try {
+    const cached = await cachedBytes(await openCache(key), url, revision);
+    if (!cached) throw new Error(`${key}.zip current revision is not cached`);
+    return await JSZip.loadAsync(cached.bytes);
+  } catch (error) {
+    console.warn(`[DataArchive/Worker] Cannot load ${key}.zip:`, error);
     return null;
   }
 }
 
-/** Main thread path: HEAD validation, lock, network fetch with progress, cache write. */
-async function _loadZipMainThread(key: string, url: string, silent: boolean): Promise<JSZip | null> {
-  return new Promise((resolve) => {
-    const run = async () => {
-      try {
-        // Re-check after acquiring lock (another tab may have loaded it)
-        if (zips[key]) { resolve(zips[key]); return; }
-
-        console.log(`[DataArchive] Loading ${url}...`);
-
-      // Cache Storage API requires secure context (HTTPS). iOS Safari on
-      // plain HTTP has no `caches` — fall through to network-only.
-      const cachesAvailable = typeof caches !== "undefined";
-      const cacheName = `noitamap-archive-${key}-v2`;
-      const cache = cachesAvailable ? await caches.open(cacheName) : null;
-
-      // HEAD request to validate cache freshness
-      let serverMeta = "";
-      try {
-        const headResp = await fetch(url, { method: "HEAD", cache: "no-cache" });
-        if (headResp.ok) {
-          serverMeta =
-            headResp.headers.get("ETag") ||
-            headResp.headers.get("Last-Modified") ||
-            headResp.headers.get("Content-Length") ||
-            "";
-        }
-      } catch (e) {
-        console.warn(`[DataArchive] HEAD request failed for ${url}, falling back to cache if available`, e);
-      }
-
-      let response = cache ? await cache.match(url) : null;
-      let buf: ArrayBuffer | null = null;
-      let shouldUseCache = false;
-
-      if (response && response.ok) {
-        const cachedMeta = response.headers.get("X-Archive-Meta");
-        if (serverMeta && cachedMeta === serverMeta) {
-          shouldUseCache = true;
-        } else if (!serverMeta) {
-          shouldUseCache = true;
-        } else {
-          console.log(`[DataArchive] Cache invalidated for ${url}! Server: ${serverMeta}, Cached: ${cachedMeta}`);
+async function loadZipMain(
+  key: string,
+  url: string,
+  revision: string,
+  silent: boolean,
+): Promise<JSZip | null> {
+  const progress = (loaded: number, total: number) => {
+    if (
+      key === "main" &&
+      !silent &&
+      typeof window !== "undefined" &&
+      typeof CustomEvent !== "undefined"
+    )
+      window.dispatchEvent(
+        new CustomEvent("dataZipProgress", {
+          detail: {
+            loaded,
+            total,
+            percentage: Math.min(100, Math.round((loaded / total) * 100)),
+          },
+        }),
+      );
+  };
+  const run = async (): Promise<JSZip | null> => {
+    try {
+      const cache = await openCache(key);
+      const cached = await cachedBytes(cache, url, revision);
+      if (cached) {
+        try {
+          const zip = await JSZip.loadAsync(cached.bytes);
+          // Add the content revision to legacy entries for later zero-hash hits.
+          if (cached.legacy)
+            await saveArchive(cache, url, cached.bytes, revision);
+          progress(100, 100);
+          return zip;
+        } catch (error) {
+          console.warn(
+            `[DataArchive] Cached ${key}.zip is damaged; downloading again:`,
+            error,
+          );
+          if (cache) await optionalCache(() => cache.delete(url));
         }
       }
-
-      if (shouldUseCache && response) {
-        console.log(`[DataArchive] Loaded ${url} from Cache API`);
-        buf = await response.arrayBuffer();
-
-        if (key === "main" && !silent) {
-          if (typeof window !== "undefined" && typeof CustomEvent !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("dataZipProgress", { detail: { loaded: 100, total: 100, percentage: 100 } }),
-            );
-          }
-        }
-      } else {
-        console.log(`[DataArchive] Fetching ${url} from network...`);
-        const fetchResp = await fetch(url);
-
-        if (!fetchResp.ok) {
-          console.warn(`${url} fetch failed (${fetchResp.status})`);
-          resolve(null);
-          return;
-        }
-
-        const contentType = fetchResp.headers.get("content-type");
-        if (contentType && contentType.includes("text/html")) {
-          console.warn(`[DataArchive] ${url} returned HTML fallback, skipping and resolving null`);
-          resolve(null);
-          return;
-        }
-
-        const contentLength = fetchResp.headers.get("content-length");
-        const totalBytes = contentLength ? parseInt(contentLength, 10) : 25000000;
-
-        let loadedBytes = 0;
-        const reader = fetchResp.body!.getReader();
-        const chunks: Uint8Array[] = [];
-
+      const versioned = new URL(url);
+      versioned.searchParams.set("v", revision);
+      const response = await fetch(versioned.href);
+      if (
+        !response.ok ||
+        response.headers.get("content-type")?.includes("text/html")
+      )
+        throw new Error(`${key}.zip download failed (HTTP ${response.status})`);
+      const length = Number(response.headers.get("content-length"));
+      const total = Number.isFinite(length) && length > 0 ? length : 0;
+      const chunks: Uint8Array[] = [];
+      let loaded = 0;
+      if (response.body) {
+        const reader = response.body.getReader();
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-
-          if (value) {
-            chunks.push(value);
-            loadedBytes += value.length;
-
-            if (key === "main" && !silent) {
-              const percentage = Math.min(100, Math.round((loadedBytes / totalBytes) * 100));
-              if (typeof window !== "undefined" && typeof CustomEvent !== "undefined") {
-                window.dispatchEvent(
-                  new CustomEvent("dataZipProgress", {
-                    detail: { loaded: loadedBytes, total: totalBytes, percentage },
-                  }),
-                );
-              }
-            }
-          }
+          chunks.push(value);
+          loaded += value.length;
+          progress(loaded, total || Math.max(loaded, 25000000));
         }
-        
-        if (totalBytes > 0 && loadedBytes < totalBytes) {
-          throw new Error(`Download truncated: expected ${totalBytes} bytes, stream ended at ${loadedBytes}`);
-        }
-
-        const combined = new Uint8Array(loadedBytes);
-        let offset = 0;
-        for (const chunk of chunks) {
-          combined.set(chunk, offset);
-          offset += chunk.length;
-        }
-        buf = combined.buffer;
-
-        const headers = new Headers(fetchResp.headers);
-        if (serverMeta) {
-          headers.set("X-Archive-Meta", serverMeta);
-        }
-        const cacheResponse = new Response(buf, {
-          status: fetchResp.status,
-          statusText: fetchResp.statusText,
-          headers: headers,
-        });
-        if (cache) await cache.put(url, cacheResponse);
+      } else {
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        chunks.push(bytes);
+        loaded = bytes.length;
       }
-
-      if (!buf) throw new Error(`Failed to obtain array buffer for ${url}`);
-
-      const instance = await JSZip.loadAsync(buf);
-      zips[key] = instance;
-      console.log(`[DataArchive] ${url} loaded and ready`);
-      resolve(instance);
-    } catch (e) {
-      console.error(`[DataArchive] Failed to load ${url}:`, e);
-      try {
-        if (typeof caches !== "undefined") await caches.delete(`noitamap-archive-${key}-v2`);
-      } catch (err) {}
-      resolve(null);
+      if (total && loaded < total)
+        throw new Error(
+          `Download truncated: expected ${total} bytes, received ${loaded}`,
+        );
+      const bytes = new Uint8Array(loaded);
+      let offset = 0;
+      for (const chunk of chunks) {
+        bytes.set(chunk, offset);
+        offset += chunk.length;
+      }
+      const actualRevision = await digest(bytes.buffer);
+      if (actualRevision && actualRevision !== revision)
+        throw new Error(
+          `${key}.zip does not match this build's archive revision`,
+        );
+      const zip = await JSZip.loadAsync(bytes.buffer);
+      // Only verified bytes enter the persistent cache; insecure contexts may
+      // lack both WebCrypto and CacheStorage but can still use the downloaded ZIP.
+      if (actualRevision) await saveArchive(cache, url, bytes.buffer, revision);
+      progress(100, 100);
+      return zip;
+    } catch (error) {
+      console.error(`[DataArchive] Cannot load ${key}.zip:`, error);
+      return null;
     }
-    }; // end run()
-    // Web Locks API requires a secure context (HTTPS). In HTTP dev or
-    // restricted contexts (some private tabs), navigator.locks is undefined.
-    // Fall back to running without a cross-tab lock.
-    if (typeof navigator !== "undefined" && navigator.locks?.request) {
-      navigator.locks.request(`zip-fetch-${key}`, run);
-    } else {
-      run();
+  };
+  if (typeof navigator !== "undefined" && navigator.locks?.request) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), CACHE_WAIT_MS);
+    try {
+      return await navigator.locks.request(
+        `zip-fetch-${key}`,
+        { signal: controller.signal },
+        () => {
+          // Bound acquisition only. The archive download may legitimately take
+          // longer, and the lock must remain held until its cache write finishes.
+          clearTimeout(timer);
+          return run();
+        },
+      );
+    } catch (error) {
+      console.warn("[DataArchive] Archive lock unavailable:", error);
+    } finally {
+      clearTimeout(timer);
     }
-  }); // end new Promise
+  }
+  return run();
 }
 
 /** Legacy alias */

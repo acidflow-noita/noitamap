@@ -118,6 +118,7 @@ self.onmessage = ({ data }) => {
             lut: { recolorMaterials: true, clearSpawnPixels: true },
             engineTerrain: true,
             generatorConfig: config,
+            elevatorShafts: (gen.elevatorShafts ?? []).map(restoreTileLayer),
           },
         );
         if (token !== latestToken)

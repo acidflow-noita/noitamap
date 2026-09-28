@@ -3,6 +3,10 @@ import { installWorkerScenes, type WorkerScenes } from "./worker-scenes";
 import SceneWorker from "./prepared-scenes-worker?worker";
 import { unpackSceneInputs } from "./unpack-scene-inputs";
 import { loadSceneInputsOffThread } from "./scene-input-loader";
+import {
+  immutableTelescopeAssets,
+  revisionedAssetUrl,
+} from "./immutable-assets";
 
 const pending = new Map<boolean, Promise<WorkerScenes>>();
 
@@ -16,10 +20,15 @@ export function prepareSceneInputs(
   if (prior) return prior;
   const promise = (async () => {
     const pack = packs[fullPixels ? "full" : "approx"];
-    const response = await fetch(pack.url, {
-      signal: AbortSignal.timeout(30000),
-      cache: "force-cache",
-    });
+    const response = await immutableTelescopeAssets.fetch(
+      `prepared-scenes/${fullPixels ? "full" : "approx"}`,
+      provenance,
+      () =>
+        fetch(revisionedAssetUrl(pack.url, provenance), {
+          signal: AbortSignal.timeout(30000),
+          cache: "force-cache",
+        }),
+    );
     if (!response.ok)
       throw new Error(
         `Prepared scene download failed: HTTP ${response.status}`,

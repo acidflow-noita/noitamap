@@ -51,6 +51,32 @@ describe("optional generation cache storage", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it("closes an owner's connection once and rejects future opens without warnings", async () => {
+    await ready();
+    storage.close();
+    storage.close();
+    expect(db.close).toHaveBeenCalledOnce();
+    await expect(storage.open()).rejects.toMatchObject({message: "Cache owner was disposed"});
+    expect(open).toHaveBeenCalledOnce();
+    expect(console.warn).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("rejects a disposed pending open and closes its late connection without reopening", async () => {
+    const rejection = expect(storage.open()).rejects.toMatchObject({message: "Cache owner was disposed"});
+    storage.close();
+    await rejection;
+    expect(vi.getTimerCount()).toBe(0);
+    opening.onupgradeneeded({oldVersion: 11});
+    expect(opening.transaction.abort).toHaveBeenCalledOnce();
+    expect(upgrade).not.toHaveBeenCalled();
+    opening.onsuccess();
+    expect(db.close).toHaveBeenCalledOnce();
+    await expect(storage.open()).rejects.toMatchObject({message: "Cache owner was disposed"});
+    expect(open).toHaveBeenCalledOnce();
+    expect(console.warn).not.toHaveBeenCalled();
+  });
+
   it("immediately rejects a blocked upgrade instead of waiting for the old tab", async () => {
     const promise = storage.open();
     const rejection = expect(promise).rejects.toMatchObject({reason: "blocked"});
