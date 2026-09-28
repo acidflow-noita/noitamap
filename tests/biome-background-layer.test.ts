@@ -69,7 +69,7 @@ it('closes partial artwork after a download failure and permits a clean retry', 
 it('places independently phased PW sources below subsequent terrain layers', async () => {
   const { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer } = await import('../src/telescope/biome-background-layer');
   const layer = await prepareBiomeBackgroundLayer();
-  const viewer = { world: { getItemCount: () => 5, removeItem: vi.fn() }, addTiledImage: vi.fn() };
+  const viewer = { world: { getItemCount: () => 5, getItemAt: () => ({ source: {} }), removeItem: vi.fn() }, addTiledImage: vi.fn() };
   const attached = vi.fn();
   attachBiomeBackgroundLayer(viewer, layer, [-35840, 0, 35840], () => true, attached);
   expect(vi.mocked(layer.tiles.createSource).mock.calls).toEqual([[-35840], [0], [35840]]);
@@ -97,4 +97,24 @@ it('removes late attachments after reseeding and disposes failed attachments', a
   expect(options.tileSource.destroy).toHaveBeenCalledOnce();
   attachBiomeBackgroundLayer(viewer, layer, [0], () => current, attached);
   expect(viewer.addTiledImage).toHaveBeenCalledOnce();
+});
+
+it('reuses resident and in-flight backgrounds across seed changes without stacking over terrain', async () => {
+  const { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer } = await import('../src/telescope/biome-background-layer');
+  const layer = await prepareBiomeBackgroundLayer();
+  const items = [{ source: { tilesUrl: 'static-base' } }, { source: { __biomeBg: true, __biomeBgOffset: 0 } }, { source: {} }];
+  const viewer = { world: { getItemCount: () => items.length, getItemAt: (i: number) => items[i], removeItem: vi.fn() }, addTiledImage: vi.fn() };
+  let current = true;
+  const first = vi.fn(), second = vi.fn();
+  attachBiomeBackgroundLayer(viewer, layer, [0, 35840], () => current, first);
+  current = false;
+  attachBiomeBackgroundLayer(viewer, layer, [0, 35840], () => true, second);
+  expect(viewer.addTiledImage).toHaveBeenCalledOnce();
+  const options = viewer.addTiledImage.mock.calls[0][0];
+  expect(options.index).toBe(1);
+  const item = { source: options.tileSource };
+  options.success({ item });
+  expect(viewer.world.removeItem).not.toHaveBeenCalled();
+  expect(first).not.toHaveBeenCalled();
+  expect(second).toHaveBeenCalledWith(item);
 });

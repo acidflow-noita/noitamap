@@ -93,12 +93,25 @@ export function buildPlaneEngineChunks(
 }
 
 type PlaneResources = { textures: Record<string, any>; chunks: Uint16Array };
+type ImmutableResources = {
+  gl: any;
+  atlas: any;
+  textures: Record<string, any>;
+};
 
-/** One context/program and one immutable source upload for all nine regions.
- * Only five map-sized textures vary by vertical plane. The shader still uses
- * absolute noise coordinates and the host's translated lattice address. */
+/** One context/program and one source upload for all nine regions. Fixed
+ * material/noise textures also survive seed changes. Only five map-sized
+ * textures vary by vertical plane; shader noise still uses absolute coords. */
 export class SharedInstantTerrainResources {
   private textures = new Set<any>();
+  private textureGL: any;
+  private immutable?: ImmutableResources;
+  private contextCanvas?: EventTarget;
+  private disposed = false;
+  private readonly contextLost = () => {
+    this.invalidate();
+    this.releaseImmutableTextures();
+  };
   private planes = new Map<VerticalPlane, PlaneResources>();
   private common: Record<string, any> | undefined;
   private plane: VerticalPlane = 0;
@@ -118,6 +131,7 @@ export class SharedInstantTerrainResources {
     // source textures too; shader-only prewarming normally leaves this empty.
     for (const texture of Object.values(renderer.textures ?? {}))
       if (texture) this.textures.add(texture);
+    this.textureGL = renderer.gl;
   }
 
   get stats() {
@@ -135,6 +149,10 @@ export class SharedInstantTerrainResources {
     biomeData: any,
     opts: any = {},
   ): Promise<boolean> {
+    if (this.disposed)
+      return Promise.reject(
+        new DOMException("Terrain resources disposed", "AbortError"),
+      );
     const key = JSON.stringify([
       opts.isNGP ?? false,
       opts.gameMode ?? "normal",
@@ -176,6 +194,8 @@ export class SharedInstantTerrainResources {
       const started = performance.now();
       const renderer = this.renderer,
         gl = renderer.gl;
+      this.watchContext();
+      this.textureGL = gl;
       const isNGP = opts.isNGP ?? false,
         gameMode = opts.gameMode ?? "normal";
       const width = getWorldSize(isNGP, gameMode);
@@ -199,6 +219,7 @@ export class SharedInstantTerrainResources {
       );
       const atlas = getMaterialAtlas();
       if (!atlas) throw new Error("Shared terrain material atlas unavailable");
+      const immutable = this.prepareImmutableTextures(gl, atlas);
       const own = (texture: any) => {
         if (!texture)
           throw new Error("Shared terrain texture allocation failed");
@@ -212,11 +233,7 @@ export class SharedInstantTerrainResources {
         atlas: own(createRegionAtlasTexture(gl, resources.atlas)),
         regionMeta: own(createRegionMetaTexture(gl, resources.regions)),
         palette: own(createPaletteTexture(gl, resources.paletteLUT)),
-        noise: own(createNoiseTexture(gl, buildNoiseTable512())),
-        matAtlas: own(createMaterialAtlasTexture(gl, atlas)),
-        matMeta: own(
-          createMaterialMetaTexture(gl, atlas, buildMatColorTable(atlas)),
-        ),
+        ...immutable,
         palMat: own(
           createPaletteMaterialTexture(
             gl,
@@ -232,7 +249,8 @@ export class SharedInstantTerrainResources {
           createR32FTexture(gl, buildSinHashAndGrids(opts.seed ?? 0)),
         ),
       };
-      this.commonUploads += Object.keys(this.common).length;
+      this.commonUploads +=
+        Object.keys(this.common).length - Object.keys(immutable).length;
       this.latticeBytes = elevators.lattice.GW * elevators.lattice.GH * 6;
       for (const plane of [0, -1, 1] as VerticalPlane[]) {
         let map = biomeData;
@@ -305,7 +323,12 @@ export class SharedInstantTerrainResources {
       this.builds++;
       return true;
     })().catch((error) => {
-      if (epoch === this.epoch) this.invalidate();
+      if (epoch === this.epoch) {
+        this.invalidate();
+        // A failed allocation/upload must never leave a partially initialized
+        // immutable texture cached for the next generation.
+        this.releaseImmutableTextures();
+      }
       throw error;
     });
     this.pending = ready;
@@ -332,11 +355,53 @@ export class SharedInstantTerrainResources {
     return this.renderer.render(view);
   }
 
+  private watchContext(): void {
+    const canvas = this.renderer.canvas;
+    if (canvas === this.contextCanvas) return;
+    this.contextCanvas?.removeEventListener("webglcontextlost", this.contextLost);
+    this.contextCanvas = canvas;
+    this.contextCanvas?.addEventListener("webglcontextlost", this.contextLost);
+  }
+
+  private prepareImmutableTextures(gl: any, atlas: any): Record<string, any> {
+    if (
+      this.immutable &&
+      this.immutable.gl === gl &&
+      this.immutable.atlas === atlas
+    )
+      return this.immutable.textures;
+    this.releaseImmutableTextures();
+    const textures: Record<string, any> = {};
+    // The material art/metadata and fixed edge-noise permutations are shared
+    // across seeds. Region atlases, palettes, lattices and seed noise are not.
+    // Record each handle immediately so a later failed upload can release it.
+    this.immutable = { gl, atlas, textures };
+    const own = (name: string, texture: any) => {
+      if (!texture) throw new Error("Shared terrain texture allocation failed");
+      textures[name] = texture;
+      this.commonUploads++;
+    };
+    own("noise", createNoiseTexture(gl, buildNoiseTable512()));
+    own("matAtlas", createMaterialAtlasTexture(gl, atlas));
+    own("matMeta", createMaterialMetaTexture(gl, atlas, buildMatColorTable(atlas)));
+    return textures;
+  }
+
+  private releaseImmutableTextures(): void {
+    if (!this.immutable) return;
+    for (const texture of Object.values(this.immutable.textures))
+      this.immutable.gl.deleteTexture(texture);
+    this.immutable = undefined;
+  }
+
+  /** Release generation-specific resources, retaining three fixed textures for
+   * the next seed on this context. dispose() releases the complete owner. */
   invalidate(): void {
     this.epoch++;
     for (const texture of this.textures)
-      this.renderer.gl?.deleteTexture(texture);
+      this.textureGL?.deleteTexture(texture);
     this.textures.clear();
+    this.textureGL = undefined;
     this.common = undefined;
     this.planes.clear();
     this.latticeBytes = 0;
@@ -347,5 +412,14 @@ export class SharedInstantTerrainResources {
     // the selected plane/common texture handles a second time.
     this.renderer.textures = null;
     this.renderer.invalidate();
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.invalidate();
+    this.releaseImmutableTextures();
+    this.contextCanvas?.removeEventListener("webglcontextlost", this.contextLost);
+    this.contextCanvas = undefined;
   }
 }

@@ -38,6 +38,8 @@ import { addBakedDZIsToOSD, probeBakedDZIs, isLocalBakeView, type BakedDziProbeR
 import { perkNameKey } from "./telescope/perk-i18n";
 import { gameTranslator } from "./game-translations/translator";
 import { scheduleDailyAssetWarmup } from "./telescope/daily-asset-prewarm";
+import { beginMapHandoff, clearMapHandoff, isMapHandoffPending } from './telescope/map-handoff';
+import { installMapItemRetirement } from './telescope/retire-map-items';
 
 // ─── Types & state ───────────────────────────────────────────────────────────
 
@@ -236,6 +238,7 @@ export async function runDynamicMap(
   opts: DynamicMapOptions,
 ): Promise<GenerationResult | null> {
   const { viewer, onLoadingChange, onPOIsReady, onSeedResolved } = opts;
+  installMapItemRetirement(viewer);
   const runStarted = performance.now();
   const myToken = ++generationToken;
   opts.onMapReplacementStart?.();
@@ -291,7 +294,7 @@ export async function runDynamicMap(
   // Its baked/live route is part of presentation identity, not the geometry
   // cache key: the existing pixels must not suppress the baked-map probe.
   if (seed === currentSeed && unlockKey === currentUnlocksKey && isDaily === currentIsDaily
-    && currentAllowsBaked === !noBaked && dynamicRendered && hasDynamicOverlays()) {
+    && currentAllowsBaked === !noBaked && dynamicRendered && hasDynamicOverlays(viewer) && !isMapHandoffPending(viewer)) {
     console.log(`[DynamicMap] Seed ${seed} is already active with same unlocks, skipping redundant render.`);
     // Still re-emit POIs so search is populated (it may have been cleared)
     if (onPOIsReady && lastResult) {
@@ -311,10 +314,16 @@ export async function runDynamicMap(
   // Only a real replacement owns cancellation, after seed identity resolves.
   cancelDailyAssetWarmup?.();
   cancelDailyAssetWarmup = undefined;
-  // Early GPU preparation replaces the shared renderer before the new map
-  // reaches presentation. Retire the old cooker and lazy plane requests first;
-  // its displayed frames remain attached until the replacement first paints.
+  // Preserve only the outgoing composed viewport. Removing its live layers
+  // immediately stops obsolete tile loading and prevents transparency from
+  // showing the previous seed through holes in the replacement.
+  const handoff = beginMapHandoff(viewer, hasDynamicOverlays(viewer), error => {
+    if (myToken !== generationToken) return;
+    console.warn('[DynamicMap] Replacement layer unavailable:', error);
+    onLoadingChange?.(false);
+  });
   cancelPendingDynamicTerrain();
+  clearDynamicOverlays(viewer, true);
 
   // If unlocks changed for the same seed, we must regenerate (skip cache)
   const forceRegenerate = seed === currentSeed && unlockKey !== currentUnlocksKey;
@@ -379,7 +388,6 @@ export async function runDynamicMap(
       if (!probe.baked) return { probe, generation: null };
       if (myToken === generationToken && !bakedAlreadyPainted) {
         console.log(`[DynamicMap] Baked ${probe.prefix}-* hit, painting biomes immediately`);
-        clearDynamicOverlays(viewer as any);
         let assetsCurrent = true;
         // Light mode: only paint the middle world (pw=0). The other two worlds'
         // DZIs are still on CF — we just don't ask OSD to load them.
@@ -406,7 +414,6 @@ export async function runDynamicMap(
         window.dispatchEvent(new CustomEvent("bakedSeedChange", { detail: {
           baked: true, fullPixelsBaked: probe.fullPixelsBaked,
         } }));
-        onLoadingChange?.(false);
       }
       const generation = await generationPromise;
       if (!generation && unlocks === null) console.log("[DynamicMap] No baked generation.json; falling back to telescope for POIs");
@@ -575,7 +582,7 @@ export async function runDynamicMap(
     }
     await backgroundReady;
     if (myToken !== generationToken) return null;
-    await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint, cacheKey, bakedDZIs, bakedAlreadyPainted, bakedDecorations, false, runStarted);
+    await renderGenerationResult(viewer as any, result, unlocks, isDaily, handoff.check, cacheKey, bakedDZIs, bakedAlreadyPainted, bakedDecorations, false, runStarted);
     if (myToken !== generationToken) return null;
     console.log(`[DynamicMap] Render: ${((performance.now() - t) / 1000).toFixed(2)}s`);
     lastResult = result;
@@ -604,31 +611,33 @@ export async function runDynamicMap(
       onPOIsReady(dynamicPOIs);
     }
     console.log(`[DynamicMap] POI export + index: ${((performance.now() - t) / 1000).toFixed(2)}s`);
-    markDailyMapReady();
-
-    // Alternate unlock data is background work. Never compete with the first
-    // map paint/compositing. Yield a frame and a task before starting it, and
-    // discard this intent if the user has already changed seeds.
-    requestAnimationFrame(() => setTimeout(() => {
+    // Setup/attachment is not a painted viewport. Release the outgoing cover
+    // only when terrain, scene/marker tiles and overlay images are ready for
+    // the current camera. Daily warmup starts after this same handoff event.
+    handoff.finish(() => {
       if (myToken !== generationToken) return;
-      void prewarmAlt(seed, isDaily, !bakedData?.generation).catch((e) =>
-        console.warn("[DynamicMap] alt-unlocks pre-warm failed:", e),
-      );
-    }, 0));
+      onFirstPaint();
+      markDailyMapReady();
 
-    // Background prefetch: composite & cache every pixel-scene bitmap telescope
-    // knows about. Fires once per session after the first successful render so
-    // future seed switches don't pay any compositing cost.
-    void prefetchAllSceneBitmaps(() => myToken === generationToken).catch(() => {});
+      // Optional preparation begins after the full visible composition, never
+      // while scene/marker tiles still hold up its reveal.
+      requestAnimationFrame(() => setTimeout(() => {
+        if (myToken !== generationToken) return;
+        void prewarmAlt(seed, isDaily, !bakedData?.generation).catch((e) =>
+          console.warn("[DynamicMap] alt-unlocks pre-warm failed:", e),
+        );
+        void prefetchAllSceneBitmaps(() => myToken === generationToken).catch(() => {});
+      }, 0));
+    });
 
     return result;
   } catch (err) {
-    if (myToken === generationToken && (err as Error)?.name !== "AbortError")
-      console.error("[DynamicMap] Pipeline failed:", err);
+    if (myToken === generationToken) {
+      handoff.fail();
+      onLoadingChange?.(false);
+      if ((err as Error)?.name !== "AbortError") console.error("[DynamicMap] Pipeline failed:", err);
+    }
     return null;
-  } finally {
-    // A superseded request does not own the replacement map's loading state.
-    if (myToken === generationToken) onLoadingChange?.(false);
   }
 }
 
@@ -644,6 +653,7 @@ export async function runDynamicMapFromURL(opts: DynamicMapOptions): Promise<Gen
  * Clear all dynamic overlays from the viewer.
  */
 export function clearDynamicMap(viewer: any): void {
+  clearMapHandoff(viewer);
   cancelDailyAssetWarmup?.();
   cancelDailyAssetWarmup = undefined;
   releaseParallelWorlds();

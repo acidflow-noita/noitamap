@@ -12,6 +12,7 @@
  * - Wand sprites are rotated 90° CCW.
  * - Animated sprites are cropped to first frame using XML data or heuristic.
  * - Custom flask/pouch material icons from src/material-icons are included.
+ * - Spell cards include their native action-type backgrounds from data.zip.
  *
  * Output:
  *   public/assets/spritesheet.png
@@ -26,6 +27,7 @@ const path = require("path");
 const JSZip = require("jszip");
 const { PNG } = require("pngjs");
 const { createHash } = require("node:crypto");
+const { buildSpellCards } = require("./spell-card-sprites.cjs");
 
 const DATA_ZIP = path.resolve(__dirname, "..", "public", "data.zip");
 const OUT_DIR = path.resolve(__dirname, "..", "public", "assets");
@@ -736,6 +738,15 @@ async function main() {
     }
     console.log(`[build-spritesheet] Added ${materialIconCount} custom material icons`);
   }
+
+  // Real spell items include their action-type background. Keep the original
+  // glyphs too: a bomb entity/decorative icon is not a spell card.
+  const spellCards = await buildSpellCards(zip);
+  for (const card of spellCards) {
+    sprites.push(card);
+    seenKeys.add(card.key);
+  }
+  console.log(`[build-spritesheet] Added ${spellCards.length} native spell cards`);
 
   console.log(`[build-spritesheet] Total sprites: ${sprites.length}`);
 

@@ -33,12 +33,13 @@ import { join } from "path";
 import atlas from "../src/data/atlas.json";
 import cubeFixture from "./fixtures/search/786433191-meditation-cube.json";
 import { normalizeScenePOIs } from "../src/telescope/scene-pois";
+import type { MarkerData } from "../src/telescope/poi-spatial-index";
 
 const atlasMap = atlas as Record<string, unknown>;
 const LIB_JS = join(__dirname, "..", "lib", "noita-telescope", "js");
 
 type GetSpriteKey = (poi: any, atlas?: any) => string | string[] | null;
-type BuildMarkerData = (result: any) => Promise<{ items: Array<{ poi: any; spriteKey: string | string[]; osdX: number; osdY: number; w: number; h: number }> }>;
+type BuildMarkerData = (result: any) => Promise<MarkerData>;
 
 let getSpriteKey: GetSpriteKey;
 let buildMarkerData: BuildMarkerData;
@@ -160,6 +161,17 @@ const FIXTURES: Fixture[] = [
 ];
 
 describe("POI render coverage (real buildMarkerData)", () => {
+  it('indexes the full spell card above its entity anchor at native size', async () => {
+    const poi = { type: 'spell', item: 'BOMB', x: 100, y: 100 };
+    const data = await buildMarkerData({ worldCenter: 0, poisByPW: { '0,0': [poi] } });
+    const i = data.items.findIndex(item => item.poi === poi);
+    expect(data.items[i]).toMatchObject({ spriteKey: 'spell:card/bomb', osdX: 100, osdY: 100, w: 20, h: 20 });
+    const hit = (x: number, y: number) => data.index.search(x - data.originX, y - data.originY, x - data.originX, y - data.originY);
+    expect(hit(91, 82)).toContain(i);
+    expect(hit(109, 100)).toContain(i);
+    expect(hit(100, 102)).not.toContain(i);
+    expect(hit(100, 80)).not.toContain(i);
+  });
   it('draws the exact chest mimic from daily seed 1344443116 at 7435,6847', async () => {
     const { appSettings } = await import('../lib/noita-telescope-vm/js/settings.js');
     const { spawnHeart } = await import('../lib/noita-telescope-vm/js/heart_generation.js');

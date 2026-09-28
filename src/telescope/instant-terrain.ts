@@ -1,5 +1,6 @@
 import { createInstantClip } from "./instant-terrain-clip";
 import { createInstantTerrainViewport } from "./instant-terrain-viewport";
+import { afterMapHandoff } from './map-handoff';
 import { createRetainedViewportRenderer } from "./retained-viewport-renderer";
 export { createInstantClip } from "./instant-terrain-clip";
 import type {
@@ -622,8 +623,7 @@ export async function addInstantTerrain(
     stats.firstDrawMs = performance.now() - start;
     osd.removeHandler("tile-drawn", onDraw);
     firstPaint();
-    coverage.start();
-    cooker.start();
+    afterMapHandoff(osd, lifetime.signal, () => { coverage.start(); cooker.start(); });
     console.info("[Instant terrain] First tile drawn", stats);
   };
   const dispose = () => {
@@ -798,7 +798,7 @@ export async function addInstantTerrain(
           painted = true;
           stats.firstDrawMs = performance.now() - start;
           firstPaint();
-          cooker.start();
+          afterMapHandoff(osd, lifetime.signal, () => cooker.start());
           console.info('[Instant terrain] First complete viewport drawn', stats);
         },
         onFailure: fail,

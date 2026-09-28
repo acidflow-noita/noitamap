@@ -3,6 +3,7 @@ import {
   createTerrainOwnership,
   createPlaneOwnership,
   createBackgroundOwnership,
+  isRepeatedTempleTemplate,
 } from "../src/telescope/terrain-policy";
 import {
   planeAtWorldY,
@@ -140,6 +141,31 @@ it("vertical material bands cannot fill main-world gaps, static rock or holy mou
   expect(ownership.at(512, 512)).toBe(-1);
   expect(ownership.at(0, 1024)).toBe(-1);
   expect(ownership.at(0, 1536)).toBe(-1);
+});
+
+it("shades repeated temple islands without repainting the main-world static temples", () => {
+  const source = new Uint32Array(70 * 48).fill(9);
+  const layers = ["biome_potion_mimics", "biome_darkness", "temple_altar", "dragoncave"].map((biomeName, i) => {
+    source[70 * 5 + 30 + i] = i + 1;
+    return { biomeName, buffer: new Uint8Array(3), validChunks: new Set([`${30 + i},5`, `${30 + i},6`]) };
+  });
+  const config = Object.fromEntries(layers.map((layer, i) => [layer.biomeName, { color: i + 1, wangFile: "template" }]));
+  config.the_sky = { color: 7, wangFile: "sky" };
+  config.the_end = { color: 8, wangFile: "hell" };
+  const main = createPlaneOwnership(layers, source, source, config, 70);
+  for (let i = 0; i < 4; i++) expect(main.owners[70 * 5 + 30 + i]).toBe(-1);
+  for (const color of [7, 8]) {
+    const vertical = createPlaneOwnership(layers, source, new Uint32Array(source.length).fill(color), config, 70);
+    for (let i = 0; i < 2; i++) {
+      expect(vertical.names[vertical.owners[70 * 5 + 30 + i]]).toBe(color === 7 ? "the_sky" : "the_end");
+      // A template bounding box must not steal cells of a different source biome.
+      expect(vertical.owners[70 * 6 + 30 + i]).toBe(-1);
+    }
+    for (let i = 2; i < 4; i++) expect(vertical.owners[70 * 5 + 30 + i]).toBe(-1);
+  }
+  expect(isRepeatedTempleTemplate({ key: "static_tile/temples-assets/potion_mimics" })).toBe(true);
+  expect(isRepeatedTempleTemplate({ key: "static_tile/temples-assets/darkness" })).toBe(true);
+  expect(isRepeatedTempleTemplate({ key: "temple/altar" })).toBe(false);
 });
 
 it("hell's native background continues through gaps without adding terrain", () => {

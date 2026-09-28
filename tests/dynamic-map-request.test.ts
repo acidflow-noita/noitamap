@@ -175,7 +175,7 @@ describe('independent live-map startup work', () => {
     expect(loading.mock.calls).toEqual([[true], [true], [false]]);
   });
 
-  it('stops outgoing terrain work before replacement preparation while leaving its displayed overlays attached', async () => {
+  it('retires outgoing terrain before replacement preparation while preserving shared backgrounds', async () => {
     vi.mocked(isInstantTerrainEnabled).mockReturnValue(true);
     vi.mocked(getCachedGeneration).mockResolvedValue(generated);
     vi.mocked(hasDynamicOverlays).mockReturnValue(true);
@@ -193,7 +193,7 @@ describe('independent live-map startup work', () => {
     vi.mocked(getCachedGeneration).mockResolvedValue(replacement);
     const next = runDynamicMap(43, true, { viewer: {} });
     expect(cancelPendingDynamicTerrain).toHaveBeenCalledOnce();
-    expect(clearDynamicOverlays).not.toHaveBeenCalled();
+    expect(clearDynamicOverlays).toHaveBeenCalledWith({}, true);
     expect(prepareInstantTerrainResources).not.toHaveBeenCalled();
     expect(renderGenerationResult).not.toHaveBeenCalled();
     assets.resolve();

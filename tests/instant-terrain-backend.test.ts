@@ -13,6 +13,7 @@ vi.mock("../src/telescope/shared-instant-terrain", () => ({
     setPlane(plane: number) { this.renderer.setPlane(plane); }
     render(view: any) { return this.renderer.render(view); }
     invalidate() { this.renderer.invalidate(); }
+    dispose() { this.renderer.invalidate(); }
   },
 }));
 

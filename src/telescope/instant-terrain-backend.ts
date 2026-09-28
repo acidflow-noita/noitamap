@@ -221,7 +221,7 @@ export function releaseInstantTerrainBackend(): void {
     slot.worker?.dispose(
       new DOMException("Terrain backend released", "AbortError"),
     );
-    if (slot.resources) slot.resources.invalidate();
+    if (slot.resources) slot.resources.dispose();
     else slot.main?.invalidate();
     if (slot.main?.program) slot.main.gl.deleteProgram(slot.main.program);
     slot.main?.gl?.getExtension?.("WEBGL_lose_context")?.loseContext();

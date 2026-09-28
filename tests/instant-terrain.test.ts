@@ -38,6 +38,7 @@ vi.mock("../src/telescope/shared-instant-terrain", () => ({
       return this.renderer.render(view);
     }
     invalidate() { this.renderer.invalidate(); }
+    dispose() { this.renderer.invalidate(); }
   },
 }));
 

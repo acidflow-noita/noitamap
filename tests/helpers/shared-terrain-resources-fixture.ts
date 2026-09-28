@@ -14,6 +14,7 @@ import { setTopo2WorldOffX } from "noita-telescope-full-pixels/engine_resolve/to
 import { createPlaneMaterialField } from "../../src/telescope/plane-material-field";
 import { createMaterialField } from "noita-telescope-full-pixels/engine_resolve/material_field.js";
 import { encodeTerrainPages, decodeTerrainPage } from "../../src/telescope/retained-terrain-codec-core";
+import { createPlaneOwnership } from "../../src/telescope/terrain-policy";
 
 type Plane = -1 | 0 | 1;
 type Sample = { name: string; plane: Plane; pw: number; x: number; y: number; width: number; height: number };
@@ -39,6 +40,23 @@ export async function verifySharedTerrainResources() {
       ["world-and-plane-top-seam", -17936, -7184, 32, 32],
       ["plane-bottom-seam", -4032, 17392, 32, 32],
     ] as const) samples.push({ name, plane, pw, x: x + pw * 35840, y: y + plane * 24576, width, height });
+  }
+  const islandOwnership = new Map<Plane, ReturnType<typeof createPlaneOwnership>>();
+  for (const plane of [-1, 0, 1] as const) {
+    const data = await prepareTerrainPlane(generation, plane);
+    islandOwnership.set(plane, createPlaneOwnership(data.tileLayers,
+      generation.biomeData.pixels, data.biomeData.pixels, GENERATOR_CONFIG, 70));
+  }
+  for (const biomeName of ["biome_potion_mimics", "biome_darkness"]) {
+    const layer = generation.tileLayers.find(layer => layer.biomeName === biomeName) as
+      (typeof generation.tileLayers[number] & { minX: number; minY: number }) | undefined;
+    if (!layer?.buffer) throw new Error(`Missing real temple Wang layer: ${biomeName}`);
+    for (const plane of [-1, 1] as const) for (const pw of [-1, 0, 1]) {
+      samples.push({ name: `island-${biomeName}`, plane, pw,
+        x: layer.minX * 512 - 17920 + 64 + pw * 35840,
+        y: layer.minY * 512 - 7168 + 300 + plane * 24576,
+        width: 256, height: 256 });
+    }
   }
   // A real stand-in fill exercises the legacy fallback alongside the engine
   // resolver. Its location is read from this seed's biome map, not fabricated.
@@ -151,6 +169,12 @@ export async function verifySharedTerrainResources() {
   phase("shared-init");
   const renderer = new GLTerrainRenderer(), owner = new SharedInstantTerrainResources(renderer);
   await owner.ensureResources(generation.tileLayers, generation.biomeData, options);
+  const immutableNames = ["noise", "matAtlas", "matMeta"];
+  const immutableHandles = immutableNames.map(name => renderer.textures[name]);
+  const sharedInitialUploads = uploads("shared-init").length;
+  const immutableUploadedBytes = uploads("shared-init")
+    .filter((upload: any) => immutableHandles.includes(upload.texture))
+    .reduce((sum: number, upload: any) => sum + upload.bytes, 0);
   const sharedLatticeBuilds = count(trace.latticeBuilds, "shared-init");
   const sharedLargeUploads = largeUploads("shared-init");
   const payloadBytes = (selected: string) => uploads(selected)
@@ -170,11 +194,24 @@ export async function verifySharedTerrainResources() {
     const table = expectedTables.get(sample.plane)!;
     for (let i = 0; i < table.length; i++) if (renderer.engineChunkModes[i] !== table[i]) selectedPlaneTableMismatches++;
     const actual = pixels(renderer, () => owner.render(view(sample))), baseline = expected.get(sample)!;
-    let nonAir = 0;
+    let nonAir = 0, ownedPixels = 0, mainOwnedPixels = 0, nativePixelChanges = 0;
     for (let i = 3; i < baseline.length; i += 4) if (baseline[i]) nonAir++;
+    if (sample.name.startsWith("island-")) {
+      for (let y = 0; y < sample.height; y++) for (let x = 0; x < sample.width; x++) {
+        const worldX = sample.x + x, localY = sample.y + y - sample.plane * 24576;
+        if (islandOwnership.get(sample.plane)!.at(worldX, localY) >= 0) ownedPixels++;
+        if (islandOwnership.get(0)!.at(worldX, localY) >= 0) mainOwnedPixels++;
+        const i = (y * sample.width + x) * 4;
+        // Adjacent final pixels vary inside the same 10px template cell.
+        if (x && Math.floor(worldX / 10) === Math.floor((worldX - 1) / 10) &&
+          baseline[i + 3] && baseline[i - 1] &&
+          baseline.subarray(i, i + 3).some((value, c) => value !== baseline[i - 4 + c])) nativePixelChanges++;
+      }
+    }
     if (nonAir > 0 && nonAir < baseline.length / 4) mixedSamples++;
     comparedPixels += baseline.length / 4;
-    compared.push({ ...sample, nonAir, mismatchedBytes: difference(baseline, actual) });
+    compared.push({ ...sample, nonAir, ownedPixels, mainOwnedPixels, nativePixelChanges,
+      mismatchedBytes: difference(baseline, actual) });
   }
   // These known reference material IDs also prevent a shared regression in
   // the shader wrapper from making two equally incorrect renderers pass.
@@ -213,6 +250,10 @@ export async function verifySharedTerrainResources() {
   }
   const reinitializedLatticeBuilds = count(trace.latticeBuilds, "reinitialize");
   const reinitializedCompiles = count(trace.compiles, "reinitialize");
+  const reinitializedUploads = uploads("reinitialize").length;
+  const reinitializedBytes = payloadBytes("reinitialize");
+  const reinitializedImmutableReused = immutableNames.every((name, i) =>
+    renderer.textures[name] === immutableHandles[i]);
 
   // Replace seed-dependent resources while holding geometry constant. This
   // deliberately isolates the seed key from the more usual new-layer identity.
@@ -234,13 +275,49 @@ export async function verifySharedTerrainResources() {
     difference(changedExpected[index], pixels(renderer, () => owner.render(view(sample)))) === 0);
   const replacedSeedPhaseMatches = renderer.surfacePhase === changedSurfacePhase;
   const replacedSeedCompiles = count(trace.compiles, "replace-seed");
+  const replacedSeedUploads = uploads("replace-seed").length;
+  const replacedSeedBytes = payloadBytes("replace-seed");
+  const replacedSeedImmutableReused = immutableNames.every((name, i) =>
+    renderer.textures[name] === immutableHandles[i]) &&
+    !trace.deletes.some((entry: any) => ["invalidate", "replace-seed"].includes(entry.phase) &&
+      immutableHandles.includes(entry.texture));
+  const seedTextureNames = ["atlas", "regionMeta", "palette", "palMat", "cov", "latMat", "engTable", "sinHash"];
+  const replacedSeedTexturesUploaded = seedTextureNames.every(name =>
+    uploads("replace-seed").some((upload: any) => upload.texture === renderer.textures[name]));
+
+  phase("context-lost");
+  // A synthetic loss event tests both upstream and shared-owner listeners.
+  // Native GLES retains the context, so free the otherwise orphaned program.
+  renderer.gl.deleteProgram(renderer.program);
+  renderer.canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
+  const lostContextImmutableReleased = immutableHandles.every(texture =>
+    trace.deletes.some((entry: any) => entry.phase === "context-lost" && entry.texture === texture));
+  let lostContextRejected = false;
+  try {
+    await owner.ensureResources(generation.tileLayers, generation.biomeData, changedOptions);
+  } catch { lostContextRejected = true; }
+  phase("context-restored");
+  renderer.canvas.dispatchEvent(new Event("webglcontextrestored"));
+  await owner.ensureResources(generation.tileLayers, generation.biomeData, changedOptions);
+  owner.setPlane(0);
+  const restoredPixelsMatch = seedSamples.every((sample, index) =>
+    difference(changedExpected[index], pixels(renderer, () => owner.render(view(sample)))) === 0);
+  const restoredUploads = uploads("context-restored").length;
+  const restoredCompiles = count(trace.compiles, "context-restored");
   phase("dispose");
-  owner.invalidate();
+  owner.dispose();
+  const disposedDeletes = trace.deletes.length;
+  owner.dispose();
+  const idempotentDisposal = disposedDeletes === trace.deletes.length;
+  let disposedOwnerRejected = false;
+  try {
+    await owner.ensureResources(generation.tileLayers, generation.biomeData, options);
+  } catch { disposedOwnerRejected = true; }
   if (renderer.program) renderer.gl.deleteProgram(renderer.program);
   const owned = new Map<number, number>();
-  for (const entry of trace.creates) if (["shared-init", "reinitialize", "replace-seed"].includes(entry.phase))
+  for (const entry of trace.creates) if (["shared-init", "reinitialize", "replace-seed", "context-restored"].includes(entry.phase))
     owned.set(entry.texture, (owned.get(entry.texture) ?? 0) + 1);
-  for (const entry of trace.deletes) if (["invalidate", "replace-seed", "dispose"].includes(entry.phase))
+  for (const entry of trace.deletes) if (["invalidate", "replace-seed", "context-lost", "dispose"].includes(entry.phase))
     owned.set(entry.texture, (owned.get(entry.texture) ?? 0) - 1);
   const allOwnedTexturesReleased = [...owned.values()].every(count => count === 0);
   // The old three-renderer reference never consumed generated elevator shafts.
@@ -302,7 +379,7 @@ export async function verifySharedTerrainResources() {
   const elevatorLatticeBytes = shaftOwner.stats.latticeBytes;
   const elevatorSwitchUploads = uploads("elevator").length - elevatorUploadCount;
   const elevatorSwitchCompiles = count(trace.compiles, "elevator") - elevatorCompileCount;
-  shaftOwner.invalidate();
+  shaftOwner.dispose();
   const elevatorCreates = trace.creates.filter((entry: any) => entry.phase === "elevator").map((entry: any) => entry.texture);
   const elevatorDeletes = trace.deletes.filter((entry: any) => entry.phase === "elevator").map((entry: any) => entry.texture);
   const elevatorTexturesReleased = elevatorCreates.length === elevatorDeletes.length &&
@@ -318,6 +395,11 @@ export async function verifySharedTerrainResources() {
     referenceUploadedBytes, sharedUploadedBytes, allPlaneUploadedBytes, smallBytesPerPlane,
     switchUploads, switchCompiles, switchLatticeBuilds, sameGenerationUploads,
     idempotentInvalidation, deletedTextureTwice, liveTexturesAfterInvalidation,
+    sharedInitialUploads, immutableUploadedBytes,
+    reinitializedUploads, reinitializedBytes, reinitializedImmutableReused,
+    replacedSeedUploads, replacedSeedBytes, replacedSeedImmutableReused, replacedSeedTexturesUploaded,
+    lostContextImmutableReleased, lostContextRejected, restoredPixelsMatch, restoredUploads, restoredCompiles,
+    idempotentDisposal, disposedOwnerRejected,
     reinitializedPixelsMatch, reinitializedLatticeBuilds, reinitializedCompiles,
     replacedSeedPixelsMatch, replacedSeedPhaseMatches, replacedSeedCompiles, allOwnedTexturesReleased };
 }

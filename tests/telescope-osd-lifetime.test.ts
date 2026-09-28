@@ -40,6 +40,7 @@ describe('terrain presentation lifetime', () => {
       isDynamicSeedItem: () => true, isGLTerrainEnabled: () => true, isInstantTerrainEnabled: () => true,
       buildMarkerData: async () => ({}), ensureTelescopeModules, instantSceneMasks,
       loadInstantTerrain: async () => ({ addInstantTerrain }), glTerrainDeps: {},
+      holdMapHandoff: () => () => {},
     });
     const outgoing = bridge.renderGenerationResult(viewer, { worldSize: 70, isNGP: false });
     if (stage === 'masks') await vi.waitFor(() => expect(instantSceneMasks).toHaveBeenCalledOnce());

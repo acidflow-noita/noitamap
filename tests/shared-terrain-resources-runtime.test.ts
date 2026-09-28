@@ -64,6 +64,14 @@ describe.skipIf(process.platform !== "linux")("shared terrain resources with nat
     expect(result.allBiomeColorsCompared).toBeGreaterThan(50);
     expect(result.allBiomeCoveredCases).toBe(result.allBiomeColorsCompared * 2);
     expect(result.samples.filter((sample: any) => sample.name === "temple-fallback").every((sample: any) => sample.nonAir > 0)).toBe(true);
+    const islands = result.samples.filter((sample: any) => sample.name.startsWith("island-"));
+    expect(islands).toHaveLength(12);
+    for (const sample of islands) {
+      expect(sample.nonAir, JSON.stringify(sample)).toBeGreaterThan(100);
+      expect(sample.ownedPixels, JSON.stringify(sample)).toBe(sample.width * sample.height);
+      expect(sample.mainOwnedPixels, JSON.stringify(sample)).toBe(0);
+      expect(sample.nativePixelChanges, JSON.stringify(sample)).toBeGreaterThan(100);
+    }
     expect(result.materialSamples).toEqual([426, 140, 140, 426, 5, 5, 32, 279, 140, 140]);
     expect(result.referenceLatticeBuilds).toBe(3);
     expect(result.sharedLatticeBuilds).toBe(1);
@@ -78,13 +86,28 @@ describe.skipIf(process.platform !== "linux")("shared terrain resources with nat
     expect(result.sameGenerationUploads).toBe(0);
     expect(result.idempotentInvalidation).toBe(true);
     expect(result.deletedTextureTwice).toBe(false);
-    expect(result.liveTexturesAfterInvalidation).toBe(0);
+    expect(result.liveTexturesAfterInvalidation).toBe(3);
     expect(result.reinitializedPixelsMatch).toBe(true);
     expect(result.reinitializedLatticeBuilds).toBe(1);
     expect(result.reinitializedCompiles).toBe(0);
     expect(result.replacedSeedPixelsMatch).toBe(true);
     expect(result.replacedSeedPhaseMatches).toBe(true);
     expect(result.replacedSeedCompiles).toBe(0);
+    expect(result.immutableUploadedBytes).toBeGreaterThan(0);
+    expect(result.reinitializedImmutableReused).toBe(true);
+    expect(result.replacedSeedImmutableReused).toBe(true);
+    expect(result.replacedSeedTexturesUploaded).toBe(true);
+    expect(result.reinitializedUploads).toBe(result.sharedInitialUploads - 3);
+    expect(result.replacedSeedUploads).toBe(result.sharedInitialUploads - 3);
+    expect(result.reinitializedBytes).toBe(result.sharedUploadedBytes - result.immutableUploadedBytes);
+    expect(result.replacedSeedBytes).toBe(result.sharedUploadedBytes - result.immutableUploadedBytes);
+    expect(result.lostContextImmutableReleased).toBe(true);
+    expect(result.lostContextRejected).toBe(true);
+    expect(result.restoredPixelsMatch).toBe(true);
+    expect(result.restoredUploads).toBe(result.sharedInitialUploads);
+    expect(result.restoredCompiles).toBe(2);
+    expect(result.idempotentDisposal).toBe(true);
+    expect(result.disposedOwnerRejected).toBe(true);
     expect(result.allOwnedTexturesReleased).toBe(true);
     expect(result.elevatorSamples).toHaveLength(9);
     for (const sample of result.elevatorSamples) {

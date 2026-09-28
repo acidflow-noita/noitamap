@@ -7,13 +7,15 @@ import { CONTAINER_TYPES } from "./poi-containers";
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
 import { loadInstantSceneMasks } from "./instant-scene-masks";
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
-import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP } from "./terrain-policy";
+import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate } from "./terrain-policy";
 import { loadTelescopeModules } from "./load-telescope";
 import { isGLTerrainEnabled, isInstantTerrainEnabled, useRenderPerfGeneration } from "../renderer_settings";
 import { prepareInstantTerrain } from './instant-terrain-backend';
 import { clearTerrainPngEncoders } from './terrain-png-encoder';
 import { createScenePrefetch } from "./scene-prefetch";
 import { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer } from "./biome-background-layer";
+import { failMapHandoff, holdMapHandoff, isMapHandoffPending } from './map-handoff';
+import { retireMapItems } from './retire-map-items';
 
 let instantTerrainModule: typeof import('./instant-terrain') | undefined;
 let instantTerrainLoading: Promise<typeof import('./instant-terrain')> | undefined;
@@ -435,7 +437,7 @@ export function prewarmMapPresentation(): Promise<PromiseSettledResult<unknown>[
 function isDynamicSeedItem(item: any): boolean {
   const src = item?.source as any;
   if (!src) return false;
-  if (src.__simplisticBase) return false;
+  if (src.__simplisticBase || src.__biomeBg) return false;
   if (src.__bakedDzi) return true;
   const url: unknown = src.tilesUrl;
   if (typeof url !== 'string') {
@@ -469,7 +471,7 @@ export function cancelPendingDynamicTerrain(): void {
 /**
  * Remove all dynamic map overlays from the viewer.
  */
-export function clearDynamicOverlays(viewer: any): void {
+export function clearDynamicOverlays(viewer: any, preserveBackgrounds = false): void {
   resetPOICardContext(viewer);
   suspendedMarkerContext = null;
   clearPortalAnimations();
@@ -484,6 +486,10 @@ export function clearDynamicOverlays(viewer: any): void {
 
   markerTiledImage = null;
 
+  retireMapItems(viewer, source => isDynamicSeedItem({
+    source: typeof source === 'string' ? { tilesUrl: source } : source,
+  }));
+
   // Remove ALL world items that aren't base static DZI tiles.
   // This is more robust than tracking individual items, because addTiledImage
   // success callbacks are async and can slip past Set-based tracking.
@@ -495,7 +501,7 @@ export function clearDynamicOverlays(viewer: any): void {
       // simplistic flat-PNG background. isDynamicSeedItem also matches baked
       // DZIs by worker hostname, so in-flight items whose success callback
       // hasn't yet set __bakedDzi still get cleaned up.
-      if (item && isDynamicSeedItem(item)) {
+      if (item && (isDynamicSeedItem(item) || (!preserveBackgrounds && item.source?.__biomeBg))) {
         world.removeItem(item);
       }
     }
@@ -529,8 +535,13 @@ export function clearDynamicOverlays(viewer: any): void {
 /**
  * Check if dynamic overlays are still present in the OSD viewer.
  */
-export function hasDynamicOverlays(): boolean {
-  return dynamicTiledImages.size > 0;
+export function hasDynamicOverlays(viewer?: any): boolean {
+  if (dynamicTiledImages.size > 0) return true;
+  const world = (viewer?.viewer ?? viewer)?.world;
+  // Daily source discovery may finish after the bridge's tracking snapshot.
+  for (let i = 0; i < (world?.getItemCount() ?? 0); i++)
+    if (isDynamicSeedItem(world.getItemAt(i))) return true;
+  return false;
 }
 
 // ─── Biome background layer ─────────────────────────────────────────────────
@@ -562,7 +573,7 @@ export function addBiomeBgToOSD(viewer: any, isCurrent = () => true): void {
   attachBiomeBackgroundLayer(viewer, _bgLayer,
     (isLightMode() ? [0] : [-1, 0, 1]).map(pw => pw * 70 * 512),
     () => epoch === _bgEpoch && generation === currentGenerationId && isCurrent(),
-    item => dynamicTiledImages.add(item));
+    () => {});
 }
 
 /**
@@ -1000,7 +1011,7 @@ export async function prepareDecorationExport(
   const decorationResult = includeScenes ? result : {
     ...result,
     pixelScenesByPW: Object.fromEntries(Object.entries(result.pixelScenesByPW).map(([key, scenes]) =>
-      [key, scenes.filter(scene => scene.key.startsWith('static_tile/'))])),
+      [key, scenes.filter(scene => scene.key.startsWith('static_tile/') && !isRepeatedTempleTemplate(scene))])),
   };
   const built = await buildSceneBitmaps(decorationResult, null);
   if (!built) return null;
@@ -3338,7 +3349,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
       spellsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;margin-top:0.3em';
       for (const slot of displaySlots) {
         const container = document.createElement('div');
-        container.style.cssText = `position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:var(--surface-2);border-radius:0.2em;border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border-strong)'}`;
+        container.style.cssText = `position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;background:var(--surface-2);border-radius:0.2em;border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border-strong)'}`;
         if (slot.id) {
           container.title = gameTranslator.translateSpell(getSpellName(slot.id));
         }
@@ -3352,7 +3363,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
         }
         if (slot.id) {
           const img = document.createElement('img');
-          img.style.cssText = 'width:32px;height:32px;image-rendering:pixelated;display:block;margin:auto';
+          img.style.cssText = 'width:40px;height:40px;image-rendering:pixelated;display:block;margin:auto';
           getPOISpriteFirstFrame({ type: 'spell', item: String(slot.id) }).then(url => {
             if (url) {
               img.src = url;
@@ -3365,7 +3376,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
           });
           container.appendChild(img);
         }
-        // Empty slot: container is already styled as a 22x22 dark square
+        // Empty slots keep the same dimensions as the native 20px cards at 2×.
         spellsRow.appendChild(container);
       }
       tooltipEl.appendChild(spellsRow);
@@ -4196,7 +4207,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
     contRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center';
     // Render a content sprite at an integer multiple of its native size so
     // nearest-neighbour scaling stays perfectly sharp (sprites have varied
-    // native sizes; spells are 16px, items/wands differ).
+    // native sizes; spell cards are 20px, items/wands differ).
     const scaledSprite = (key: string | string[], mult = 2): HTMLCanvasElement | null => {
       const n = getSpriteNativeSize(key);
       if (!n) return null;
@@ -4275,7 +4286,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
         slotsGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center;flex:1 1 0;min-width:0';
         for (const slot of slots) {
           const cell = document.createElement('div');
-          cell.style.cssText = `width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--surface-1);border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border)'};border-radius:0.15em;box-sizing:border-box`;
+          cell.style.cssText = `width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--surface-1);border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border)'};border-radius:0.15em;box-sizing:border-box`;
           if (slot.id) {
             const spellCanvas = scaledSprite(resolveSpellKey(String(slot.id)));
             if (spellCanvas) {
@@ -4564,6 +4575,7 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
   }
 
   canvasClickHandler = (event: any) => {
+    if (isMapHandoffPending(viewer)) return;
     // Leave the event untouched so the drawing tool (or temporary pan) handles it.
     if (!canOpenPOIFromCanvas(event)) return;
     const item = findNearestMarker(event);
@@ -4604,7 +4616,7 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
   // Native mousemove on OSD canvas for pointer cursor (OSD has no 'canvas-move' event)
   const osdCanvas = viewer.canvas as HTMLElement;
   const onMouseMove = (e: MouseEvent) => {
-    if (drawingOwnsMapPointer()) {
+    if (isMapHandoffPending(viewer) || drawingOwnsMapPointer()) {
       osdCanvas.classList.remove('poi-hover');
       hideMarkerTooltip();
       return;
@@ -4964,8 +4976,10 @@ export async function renderGenerationResult(
   generationStartedAt = performance.now(),
 ): Promise<void> {
   const generationId = ++currentGenerationId;
+  const releaseSetup = holdMapHandoff(viewer);
   let completePresentation = () => {};
   const presentationReady = new Promise<void>(resolve => { completePresentation = resolve; });
+  void presentationReady.then(releaseSetup);
   clearPortalAnimations();
   clearInstantTerrain();
   clearTerrainPngEncoders();
@@ -5117,7 +5131,10 @@ export async function renderGenerationResult(
           if (currentGenerationId !== generationId) return;
           console.warn('[OSD Bridge] GPU terrain failed; rebuilding approximate layers:', error);
           void renderGenerationResult(viewer, result, unlocks, isDaily, onFirstPaint, cacheKey,
-            null, false, false, true, generationStartedAt).catch(error => console.error('[OSD Bridge] Terrain fallback failed:', error));
+            null, false, false, true, generationStartedAt).catch(error => {
+              failMapHandoff(viewer, error);
+              console.error('[OSD Bridge] Terrain fallback failed:', error);
+            });
         }, generationStartedAt, presentationReady);
     }
     if (currentGenerationId !== generationId) return;
@@ -5130,13 +5147,13 @@ export async function renderGenerationResult(
     // Pixel scenes render on top of biome overlays, below POI markers. When the
     // baked DZIs already carry scenes in their pixels, skip the live layer.
     if (!bakedDecorations) {
-      // Wang-template temple foregrounds are a separate existing static-art layer,
-      // not pixel-scene material PNGs. Keep them; all actual dynamic scenes now
-      // paint into terrain tiles so their air masks can erase the terrain.
-      const sceneResult = isGLTerrainEnabled() ? {
+      // Repeated temples now receive native terrain. Their coarse fallback
+      // templates must not cover it; main-world static artwork stays intact.
+      const sceneResult = isGLTerrainEnabled() || awaitingTerrainDraw ? {
         ...result,
         pixelScenesByPW: Object.fromEntries(Object.entries(result.pixelScenesByPW).map(([key, scenes]) =>
-          [key, scenes.filter(scene => scene.key.startsWith('static_tile/'))])),
+          [key, scenes.filter(scene => !isRepeatedTempleTemplate(scene)
+            && (!isGLTerrainEnabled() || scene.key.startsWith('static_tile/')))])),
       } : result;
       await addPixelScenes(viewer, sceneResult, generationId);
       if (currentGenerationId !== generationId) return;
@@ -5223,7 +5240,10 @@ export async function renderGenerationResult(
   } catch (error) {
     // A failed artwork/marker setup must not leave a live frame waiting for
     // presentationReady forever. Keep the previous map until retry/reseed.
-    if (currentGenerationId === generationId) clearInstantTerrain();
+    if (currentGenerationId === generationId) {
+      failMapHandoff(viewer, error);
+      clearInstantTerrain();
+    }
     throw error;
   }
 }

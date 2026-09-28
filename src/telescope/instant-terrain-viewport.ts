@@ -316,6 +316,13 @@ export function createInstantTerrainViewport(options: {
       pump();
     } catch (error) { fail(error); }
   }
+  // OSD's getFullyLoaded only understands tiled images. Replacement readiness
+  // additionally requires this direct layer to have painted the latest camera.
+  let drawnKey: string | undefined;
+  source.__viewportReady = () => {
+    refresh();
+    return !destroyed && !failed && !signal.aborted && (!desiredKey || drawnKey === desiredKey);
+  };
   source.__drawViewport = (context: CanvasRenderingContext2D, item: any, viewport: any): boolean => {
     if (destroyed) return true;
     refresh();
@@ -349,6 +356,7 @@ export function createInstantTerrainViewport(options: {
         context.drawImage(image, 0, 0);
       } finally { context.restore(); }
     }
+    drawnKey = frame.key;
     if (!painted && !signal.aborted && frame.key === desiredKey) {
       painted = true;
       stats.firstDrawMs = performance.now() - started;

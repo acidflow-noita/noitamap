@@ -1,5 +1,6 @@
 import { OptionalCacheDatabase } from "./cache-storage";
 import { TERRAIN_VERSION } from "./terrain-policy";
+import { retireTerrain } from "./terrain-retirement";
 import type { GLTerrainGeneration } from "./gl-terrain-tile-source";
 import type { StaticTerrainMask } from "./static-terrain-mask";
 import {
@@ -226,6 +227,7 @@ export class RetainedTerrain {
   private writable = true;
   private readable = true;
   private disposed = false;
+  private retirement?: Promise<void>;
   private snapshotBytes = 0;
   private missing = new Set<string>();
   private coverageReads = new Map<string, Promise<boolean>>();
@@ -530,7 +532,7 @@ export class RetainedTerrain {
     page.version++;
     if (!this.writable) page.saved = page.version;
     this.touch(key, page);
-    if (this.writable && !this.timer && !this.writing)
+    if (this.writable && !this.disposed && !this.timer && !this.writing)
       this.timer = setTimeout(() => {
         this.timer = undefined;
         void this.flush();
@@ -578,10 +580,17 @@ export class RetainedTerrain {
       clearTimeout(this.timer);
       this.timer = undefined;
     }
-    if (this.writing) return this.writing.then(() => this.flush());
+    if (this.disposed) return this.retirement ?? Promise.resolve();
+    return this.flushBatch().then(done => done ? undefined : this.flush());
+  }
+  private async flushBatch(): Promise<boolean> {
+    if (this.writing) {
+      await this.writing;
+      return false;
+    }
     if (!this.writable) {
       this.trim();
-      return Promise.resolve();
+      return true;
     }
     const records: {
       key: string;
@@ -612,11 +621,13 @@ export class RetainedTerrain {
     }
     if (!records.length) {
       this.trim();
-      if (this.captures)
-        return new Promise<void>((resolve) =>
+      if (this.captures) {
+        await new Promise<void>((resolve) =>
           this.captureWaiters.add(resolve),
-        ).then(() => this.flush());
-      return Promise.resolve();
+        );
+        return false;
+      }
+      return true;
     }
     this.writing = this.store
       .write(records)
@@ -634,12 +645,33 @@ export class RetainedTerrain {
         this.writing = undefined;
         this.trim();
       });
-    return this.writing.then(() => this.flush());
+    await this.writing;
+    return !this.captures &&
+      [...this.pages.values()].every(page => page.saved === page.version);
   }
   dispose() {
+    if (this.disposed) return;
     this.disposed = true;
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = undefined;
+    }
     this.clearReductionCanvases();
-    void this.flush().finally(() => this.store.dispose?.());
+    this.retirement = retireTerrain({
+      step: () => this.flushBatch(),
+      discard: () => {
+        this.disableStorage();
+        this.trim();
+        this.wakeCaptures();
+      },
+    }).then(async () => {
+      // A rapid switch may discard pages while an earlier write is already in
+      // flight. Let that write settle before terminating its codec/database.
+      await this.writing;
+      this.disableStorage();
+      this.trim();
+      this.store.dispose?.();
+    });
   }
 }
 
