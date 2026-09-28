@@ -21,7 +21,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
-function fixture(timing: { startedAt?: number; seed?: number } = {}) {
+function fixture(timing: { startedAt?: number; seed?: number; foregroundBusy?: () => boolean } = {}) {
   let persistent = true, view = 0;
   const visited: string[] = [];
   const flush = vi.fn(async () => {}), failure = vi.fn();
@@ -67,6 +67,57 @@ function messageTaskFixture() {
 }
 
 describe('continuous native terrain cooking', () => {
+  it('pauses background work while a viewport frame is pending and resumes after it finishes', async () => {
+    let busy = true;
+    const f = fixture({ foregroundBusy: () => busy });
+    f.cooker.add(f.source(0)); f.cooker.start();
+    await vi.advanceTimersByTimeAsync(249);
+    expect(f.visited).toEqual([]);
+    expect(f.cooker.stats.state).toBe('paused-viewport');
+    expect(vi.getTimerCount()).toBe(1);
+    expect(startLogs()).toHaveLength(0);
+    busy = false;
+    await vi.runAllTimersAsync();
+    expect(f.visited).toEqual(['0/0/0', '0/1/0']);
+    expect(f.cooker.stats.state).toBe('complete');
+    expect(startLogs()).toHaveLength(1);
+  });
+
+  it('checks foreground demand again when an already dispatched message arrives', async () => {
+    const messages = messageTaskFixture();
+    let busy = false;
+    const f = fixture({ foregroundBusy: () => busy });
+    f.cooker.add(f.source(0)); f.cooker.start();
+    busy = true;
+    await messages.deliver();
+    expect(f.visited).toEqual([]);
+    expect(messages.tasks).toHaveLength(0);
+    expect(f.cooker.stats.state).toBe('paused-viewport');
+    expect(vi.getTimerCount()).toBe(1);
+    controller.abort();
+    await vi.runAllTimersAsync();
+    expect(f.cooker.stats.state).toBe('cancelled');
+    expect(f.visited).toEqual([]);
+    expect(messages.channels[0].port1.close).toHaveBeenCalledOnce();
+    expect(messages.channels[0].port2.close).toHaveBeenCalledOnce();
+  });
+
+  it('finishes an already active native leaf but postpones the next one during foreground rendering', async () => {
+    let busy = false, finish!: () => void;
+    const f = fixture({ foregroundBusy: () => busy }), source = f.source(0);
+    vi.mocked(source.prepareNativeTile).mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
+    f.cooker.add(source); f.cooker.start();
+    await vi.advanceTimersByTimeAsync(1);
+    busy = true; finish();
+    await vi.advanceTimersByTimeAsync(200);
+    expect(source.prepareNativeTile).toHaveBeenCalledOnce();
+    expect(f.cooker.stats).toEqual({ state: 'paused-viewport', total: 2, completed: 1, active: 0 });
+    busy = false;
+    await vi.runAllTimersAsync();
+    expect(source.prepareNativeTile).toHaveBeenCalledTimes(2);
+    expect(f.cooker.stats.state).toBe('complete');
+  });
+
   it('logs elapsed time from the seed request once, only after the final write finishes', async () => {
     let now = 3000;
     vi.spyOn(performance, 'now').mockImplementation(() => now);

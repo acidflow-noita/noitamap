@@ -6,7 +6,7 @@
  */
 
 import i18next from "i18next";
-import { fetchDailySeed, fetchPreviousDailySeed, getCachedDailySeedIdentity } from "./data_sources/daily_seed";
+import { fetchDailySeed, fetchPreviousDailySeed, getCachedDailySeedIdentity, subscribeDailySeedIdentity } from "./data_sources/daily_seed";
 import { updateURLWithSeed } from "./data_sources/url";
 import { getCurrentDynamicSeed, runDynamicMap } from "./dynamic-map";
 import type { DynamicMapOptions } from "./dynamic-map";
@@ -36,6 +36,8 @@ let prevDailySeedBtn: HTMLButtonElement | null = null;
 let dynamicOpts: DynamicMapOptions | null = null;
 let isBusy = false;
 let generatePopoverInstance: any = null;
+let resolvedInputSeed: number | null = null;
+let unsubscribeDailyIdentity: (() => void) | undefined;
 
 // ─── Build ───────────────────────────────────────────────────────────────────
 
@@ -116,6 +118,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
     if (ev.key === "Enter") onGenerateClick();
   });
   seedInput.addEventListener("input", () => {
+    resolvedInputSeed = null;
     if (seedInput) {
       let digits = seedInput.value.replace(/\D/g, "");
       // Clamp to the valid Noita seed range (1 .. 2147483647).
@@ -188,6 +191,9 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
 
   // Initial state for buttons
   updateGenerateButtonState();
+  resolvedInputSeed = null;
+  unsubscribeDailyIdentity?.();
+  unsubscribeDailyIdentity = subscribeDailySeedIdentity(refreshSeedIdentity);
 
   // Re-translate the entire toolbar whenever the language changes
   i18next.on("languageChanged", refreshDynamicUITranslations);
@@ -335,6 +341,16 @@ export function updateDynamicUIVisibility(currentMap: string): void {
 
 // ─── Handlers ────────────────────────────────────────────────────────────────
 
+/** Daily navigation leaves an explicitly forced live preview. Renderer and
+ * camera preferences remain unchanged; only the baked-map bypass is reset. */
+function restoreBakedDailyRoute(): boolean {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has('nb')) return false;
+  url.searchParams.delete('nb');
+  window.history.replaceState(window.history.state, '', url);
+  return true;
+}
+
 async function onDailySeedClick(): Promise<void> {
   if (isBusy || !dynamicOpts) return;
   setBusy(true);
@@ -342,6 +358,7 @@ async function onDailySeedClick(): Promise<void> {
     const seed = await fetchDailySeed(true);
     if (seedInput) {
       seedInput.value = String(seed);
+      resolvedInputSeed = seed;
       // Apply the colour immediately. onSeedResolved would do this after
       // runDynamicMap finishes, but that's seconds later — by then the user
       // has already seen the wrong colour.
@@ -350,8 +367,9 @@ async function onDailySeedClick(): Promise<void> {
       updateSeedTooltip("daily");
     }
     const currentSeed = getCurrentDynamicSeed();
+    const routeChanged = restoreBakedDailyRoute();
 
-    if (seed !== currentSeed) {
+    if (seed !== currentSeed || routeChanged) {
       updateURLWithSeed(seed, true);
       showLoadingStrip();
       await runDynamicMap(seed, true, dynamicOpts);
@@ -379,13 +397,15 @@ async function onPrevDailySeedClick(): Promise<void> {
     }
     if (seedInput) {
       seedInput.value = String(seed);
+      resolvedInputSeed = seed;
       seedInput.classList.add("seed-prev-daily");
       seedInput.classList.remove("seed-daily");
       updateSeedTooltip("previousDaily");
     }
     const currentSeed = getCurrentDynamicSeed();
+    const routeChanged = restoreBakedDailyRoute();
 
-    if (seed !== currentSeed) {
+    if (seed !== currentSeed || routeChanged) {
       // Previous daily renders as a daily (all-unlocked, baked DZIs available
       // on the previous-daily-* workers).
       updateURLWithSeed(seed, true);
@@ -512,22 +532,20 @@ export function setDynamicUISeed(seed: number, _isDaily: boolean): void {
   if (seedInput) {
     seedInput.value = "";
     seedInput.value = String(seed);
-    // Daily generation mode also covers historical seeds. Colour only a seed
-    // identified by the current published pointers, regardless of that mode.
-    const identity = getCachedDailySeedIdentity(seed);
-    let kind: SeedKind;
-    if (identity === 'previous') {
-      kind = "previousDaily";
-    } else if (identity === 'today') {
-      kind = "daily";
-    } else {
-      kind = "custom";
-    }
-    seedInput.classList.toggle("seed-daily", kind === "daily");
-    seedInput.classList.toggle("seed-prev-daily", kind === "previousDaily");
-    updateSeedTooltip(kind);
+    resolvedInputSeed = seed;
+    refreshSeedIdentity();
+    updateSeedTooltip("custom");
   }
   updateGenerateButtonState();
+}
+
+/** Refresh colours after a delayed lookup without replacing edited input or
+ * changing generation mode. Historical ds=1 links aren't necessarily today. */
+function refreshSeedIdentity(): void {
+  if (!seedInput || resolvedInputSeed === null || seedInput.value !== String(resolvedInputSeed)) return;
+  const identity = getCachedDailySeedIdentity(resolvedInputSeed);
+  seedInput.classList.toggle("seed-daily", identity === 'today');
+  seedInput.classList.toggle("seed-prev-daily", identity === 'previous');
 }
 
 // ─── Seed Tooltip ────────────────────────────────────────────────────────────

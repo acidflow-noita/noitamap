@@ -21,6 +21,20 @@ let cachedSeed: number | null = null;
 let cachedUTCDate: string | null = null;
 let cachedPrevSeed: number | null = null;
 let cachedPrevUTCDate: string | null = null;
+const identityListeners = new Set<() => void>();
+
+/** Identity lookups may finish after the map toolbar has displayed its seed. */
+export function subscribeDailySeedIdentity(listener: () => void): () => void {
+  identityListeners.add(listener);
+  return () => { identityListeners.delete(listener); };
+}
+
+function notifyDailySeedIdentity(): void {
+  for (const listener of identityListeners) {
+    try { listener(); }
+    catch (error) { console.warn('[Daily seed] Identity listener failed:', error); }
+  }
+}
 
 /** Current UTC date as "YYYY-MM-DD" */
 function currentUTCDate(): string {
@@ -62,6 +76,7 @@ export async function fetchDailySeed(force = false): Promise<number> {
   cachedAt = Date.now();
   cachedSeed = seed;
   cachedUTCDate = today;
+  notifyDailySeedIdentity();
   return seed;
 }
 
@@ -101,6 +116,7 @@ export async function fetchPreviousDailySeed(
     cachedPrevAt = Date.now();
     cachedPrevSeed = seed;
     cachedPrevUTCDate = today;
+    notifyDailySeedIdentity();
     return seed;
   } catch {
     return null;
@@ -115,6 +131,7 @@ export function clearDailySeedCache(): void {
   cachedUTCDate = null;
   cachedPrevSeed = null;
   cachedPrevUTCDate = null;
+  notifyDailySeedIdentity();
 }
 
 /** Synchronous accessor for the cached previous-daily seed (today's UTC day

@@ -8,6 +8,7 @@
 
 import { MarkerData } from "./poi-spatial-index";
 import { applySpoilerFree } from "../spoiler-free";
+import { drawViewportArt } from "./viewport-art";
 
 declare const OpenSeadragon: any;
 
@@ -66,15 +67,103 @@ export function createMarkerTileSource(markerData: MarkerData): any {
   // Use spatial index to check if markers exist in this tile.
   // Prevents OSD from creating empty transparent canvases.
   source.tileExists = function (level: number, x: number, y: number) {
+    if (destroyed) return false;
     const { bx, by, bw, bh } = tileBounds(level, x, y);
     const pad = maxMarkerDim;
     const results = index.search(bx - pad, by - pad, bx + bw + pad, by + bh + pad);
     return results.length > 0;
   };
 
+  function drawMarkers(ctx: CanvasRenderingContext2D, results: number[], bx: number, by: number, drawScale: number, minPixels: number) {
+    for (const idx of results) {
+      const item = items[idx];
+      if (!item) continue;
+
+      const rawKeysRaw = Array.isArray(item.spriteKey) ? item.spriteKey : [item.spriteKey];
+      const rootKey = rawKeysRaw[0];
+      const atlasKeyScrubbed = applySpoilerFree(rootKey, atlas);
+      const drawKeys = (atlasKeyScrubbed !== rootKey) ? [atlasKeyScrubbed] : rawKeysRaw;
+
+      // "Alive" wands (Taikasauva): wand atlas sprites are baked tip-up, so an
+      // extra 90deg CCW rotation makes the in-world sprite point left, marking
+      // it as alive while keeping the real wand graphic.
+      const isTaikasauva = !!(item.poi && (item.poi as any).isTaikasauva);
+
+      let isMain = true;
+      let rootW = 0;
+      let rootH = 0;
+      let rootOX = 0;
+      let rootOY = 0;
+
+      for (const k of drawKeys) {
+        const atlasEntry = atlas[k];
+        if (!atlasEntry) continue;
+
+        const srcW = atlasEntry.w;
+        const srcH = atlasEntry.h;
+
+        if (isMain) {
+          isMain = false;
+          // When spoiler-free swaps the sprite, use the replacement sprite's
+          // own pixel dimensions (item.w/h are pixel dims from the original atlas entry).
+          rootW = atlasKeyScrubbed !== rootKey ? srcW : item.w;
+          rootH = atlasKeyScrubbed !== rootKey ? srcH : item.h;
+          rootOX = atlasEntry.ox ?? rootW / 2;
+          rootOY = atlasEntry.oy ?? rootH / 2;
+        }
+
+        const l_ox = atlasEntry.ox ?? srcW / 2;
+        const l_oy = atlasEntry.oy ?? srcH / 2;
+        const itemLocalX = item.osdX - originX + (l_ox - rootOX);
+        const itemLocalY = item.osdY - originY + (l_oy - rootOY);
+
+        const drawX = (itemLocalX - bx - l_ox) * drawScale;
+        const drawY = (itemLocalY - by - l_oy) * drawScale;
+        const drawW = srcW * drawScale;
+        const drawH = srcH * drawScale;
+
+        // Tiled overviews retain their historical cutoff; viewport art uses exact dimensions.
+        if (drawW < minPixels || drawH < minPixels) continue;
+
+        if (isTaikasauva) {
+          const cx = drawX + drawW / 2;
+          const cy = drawY + drawH / 2;
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(-Math.PI / 2); // tip-up -> tip-left
+          ctx.drawImage(
+            spritesheet,
+            atlasEntry.x, atlasEntry.y, srcW, srcH,
+            -drawW / 2, -drawH / 2, drawW, drawH,
+          );
+          ctx.restore();
+        } else {
+          ctx.drawImage(
+            spritesheet,
+            atlasEntry.x, atlasEntry.y, srcW, srcH,
+            drawX, drawY, drawW, drawH,
+          );
+        }
+      }
+    }
+  }
+
+  let destroyed = false;
+  source.destroy = () => { destroyed = true; };
+  source.__drawViewport = (context: CanvasRenderingContext2D, item: any, viewport: any) => {
+    if (destroyed) return true;
+    return drawViewportArt(context, item, viewport, bboxWidth, bboxHeight, bounds => {
+      // Expand for atlas hotspot offsets, replacements, and rotated wands.
+      const hits = index.search(bounds.left - maxMarkerDim, bounds.top - maxMarkerDim,
+        bounds.right + maxMarkerDim, bounds.bottom + maxMarkerDim).sort((a, b) => a - b);
+      drawMarkers(context, hits, 0, 0, 1, 0);
+    });
+  };
+
   let downloadCount = 0;
 
   source.downloadTileStart = function (context: any) {
+    if (destroyed) { context.fail("Marker layer removed"); return; }
     const tile = context.tile;
     const level = tile.level;
     const x = tile.x;
@@ -100,81 +189,7 @@ export function createMarkerTileSource(markerData: MarkerData): any {
     const ctx = canvas.getContext("2d")!;
     ctx.imageSmoothingEnabled = false;
 
-    if (results.length > 0) {
-      const drawScale = TILE_SIZE / bw;
-
-      for (const idx of results) {
-        const item = items[idx];
-        if (!item) continue;
-
-        const rawKeysRaw = Array.isArray(item.spriteKey) ? item.spriteKey : [item.spriteKey];
-        const rootKey = rawKeysRaw[0];
-        const atlasKeyScrubbed = applySpoilerFree(rootKey, atlas);
-        const drawKeys = (atlasKeyScrubbed !== rootKey) ? [atlasKeyScrubbed] : rawKeysRaw;
-
-        // "Alive" wands (Taikasauva): wand atlas sprites are baked tip-up, so an
-        // extra 90deg CCW rotation makes the in-world sprite point left, marking
-        // it as alive while keeping the real wand graphic.
-        const isTaikasauva = !!(item.poi && (item.poi as any).isTaikasauva);
-
-        let isMain = true;
-        let rootW = 0;
-        let rootH = 0;
-        let rootOX = 0;
-        let rootOY = 0;
-
-        for (const k of drawKeys) {
-          const atlasEntry = atlas[k];
-          if (!atlasEntry) continue;
-
-          const srcW = atlasEntry.w;
-          const srcH = atlasEntry.h;
-
-          if (isMain) {
-            isMain = false;
-            // When spoiler-free swaps the sprite, use the replacement sprite's
-            // own pixel dimensions (item.w/h are pixel dims from the original atlas entry).
-            rootW = atlasKeyScrubbed !== rootKey ? srcW : item.w;
-            rootH = atlasKeyScrubbed !== rootKey ? srcH : item.h;
-            rootOX = atlasEntry.ox ?? rootW / 2;
-            rootOY = atlasEntry.oy ?? rootH / 2;
-          }
-
-          const l_ox = atlasEntry.ox ?? srcW / 2;
-          const l_oy = atlasEntry.oy ?? srcH / 2;
-          const itemLocalX = item.osdX - originX + (l_ox - rootOX);
-          const itemLocalY = item.osdY - originY + (l_oy - rootOY);
-
-          const drawX = (itemLocalX - bx - l_ox) * drawScale;
-          const drawY = (itemLocalY - by - l_oy) * drawScale;
-          const drawW = srcW * drawScale;
-          const drawH = srcH * drawScale;
-
-          // Skip markers smaller than 1px
-          if (drawW < 1 || drawH < 1) continue;
-
-          if (isTaikasauva) {
-            const cx = drawX + drawW / 2;
-            const cy = drawY + drawH / 2;
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.rotate(-Math.PI / 2); // tip-up -> tip-left
-            ctx.drawImage(
-              spritesheet,
-              atlasEntry.x, atlasEntry.y, srcW, srcH,
-              -drawW / 2, -drawH / 2, drawW, drawH,
-            );
-            ctx.restore();
-          } else {
-            ctx.drawImage(
-              spritesheet,
-              atlasEntry.x, atlasEntry.y, srcW, srcH,
-              drawX, drawY, drawW, drawH,
-            );
-          }
-        }
-      }
-    }
+    drawMarkers(ctx, results, bx, by, TILE_SIZE / bw, 1);
 
     // IMPORTANT: Defer context.finish to the next microtask. Calling it
     // synchronously inside downloadTileStart confuses OSD's coverage

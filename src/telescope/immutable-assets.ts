@@ -26,11 +26,18 @@ export class ImmutableTelescopeAssets {
   private disabled = false;
   private memory = new Map<string, Asset>();
   private pending = new Map<string, Promise<Asset>>();
+  private writes = new Set<Promise<void>>();
   private bytes = 0;
   constructor(
     private readonly maxBytes = 8 * 1024 * 1024,
     private readonly waitMs = 1500,
   ) {}
+
+  /** A temporary preparation worker must let its optional cache writes settle
+   * before exiting. Foreground asset reads never need to wait for these writes. */
+  async flushWrites(): Promise<void> {
+    await Promise.all([...this.writes]);
+  }
 
   async fetch(
     key: string,
@@ -143,11 +150,13 @@ export class ImmutableTelescopeAssets {
     if (cache && !this.disabled && response.ok) {
       // Usable downloaded bytes do not wait for optional quota/storage writes.
       try {
-        void this.optional(
+        const write = this.optional(
           cache.put(request, this.response(asset, revision)),
         ).catch(() => {
           this.disabled = true;
         });
+        this.writes.add(write);
+        void write.finally(() => this.writes.delete(write));
       } catch {
         this.disabled = true;
       }

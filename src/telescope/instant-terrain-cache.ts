@@ -60,6 +60,20 @@ export class InstantTerrainCache {
     return result;
   }
 
+  /** Reproject cached pixels without allocating a returned copy or exposing
+   * cache-owned canvases. Clearing the footprint preserves authoritative air.
+   * The caller supplies its world-to-output transform and sampling settings. */
+  paint(key: string, target: CanvasRenderingContext2D,
+    x: number, y: number, width: number, height: number): boolean {
+    const entry = this.entries.get(key);
+    if (!entry) return false;
+    target.clearRect(x, y, width, height);
+    target.drawImage(entry.context.canvas, x, y, width, height);
+    this.entries.delete(key);
+    this.entries.set(key, entry);
+    return true;
+  }
+
   /** Copies the input, leaving its ownership with the caller. Returns false
    * when a tile cannot fit, including when pinned tiles consume the budget. */
   set(key: string, source: CanvasRenderingContext2D, pinned = false): boolean {

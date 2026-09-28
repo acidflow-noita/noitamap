@@ -16,7 +16,7 @@ vi.mock('i18next', () => ({ default: translations }));
 vi.mock('../src/nav', () => ({ updateMapLinkTranslations: vi.fn() }));
 vi.mock('../src/data_sources/overlays', () => ({ refreshOverlayTranslations: vi.fn() }));
 vi.mock('../src/main', () => ({ refreshSearchTranslations: vi.fn() }));
-vi.mock('../src/data_sources/daily_seed', () => ({ getCachedDailySeedIdentity: vi.fn() }));
+vi.mock('../src/data_sources/daily_seed', () => ({ getCachedDailySeedIdentity: vi.fn(), subscribeDailySeedIdentity: () => () => {} }));
 vi.mock('../src/data_sources/url', () => ({}));
 vi.mock('../src/dynamic-map', () => ({ getCurrentDynamicSeed: () => 42 }));
 vi.mock('../src/spoiler-free', () => ({ isSpoilerFree: () => false }));

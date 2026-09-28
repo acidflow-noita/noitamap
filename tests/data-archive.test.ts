@@ -73,6 +73,27 @@ it("reuses the current ZIP on reload without network validation or rewriting its
   expect(cache.match).toHaveBeenCalledOnce();
 });
 
+it('prepares archives in a worker using the same persistent keys as foreground generation', async () => {
+  vi.stubGlobal('document', undefined);
+  vi.stubGlobal('window', undefined);
+  const worker = await import('../src/data-archive');
+  await worker.prepareDataArchive('main', base);
+  expect(fetcher).toHaveBeenCalledWith(base + 'data.zip?v=' + revisions.main);
+  expect(stored.get(base + 'data.zip')?.headers.get('X-Archive-Revision')).toBe(revisions.main);
+  vi.resetModules();
+  vi.stubGlobal('document', { baseURI: base });
+  fetcher.mockClear();
+  const foreground = await import('../src/data-archive');
+  expect(await (await foreground.getZip())!.file('stable.txt')!.async('string')).toBe('current pixels');
+  expect(fetcher).not.toHaveBeenCalled();
+});
+
+it('never lets archive preparation run synchronously on the UI thread', async () => {
+  const api = await import('../src/data-archive');
+  await expect(api.prepareDataArchive('main', base)).rejects.toThrow('requires a worker');
+  expect(fetcher).not.toHaveBeenCalled();
+});
+
 it("upgrades matching legacy CacheStorage bytes locally without redownloading", async () => {
   stored.set(base + "data.zip", response());
   const { getZip } = await import("../src/data-archive");
@@ -180,13 +201,12 @@ it("hashes shipped ZIP content and invalidates the dev manifest when bytes chang
     const module = {},
       invalidateModule = vi.fn(),
       send = vi.fn();
-    (plugin.handleHotUpdate as Function)({
-      file: resolve(root, "public/data.zip"),
-      server: {
+    (plugin.hotUpdate as Function).call({
+      environment: {
         moduleGraph: { getModuleById: () => module, invalidateModule },
-        ws: { send },
+        hot: { send },
       },
-    });
+    }, { file: resolve(root, "public/data.zip"), type: 'update' });
     expect(invalidateModule).toHaveBeenCalledWith(module);
     expect(send).toHaveBeenCalledWith({ type: "full-reload", path: "*" });
   } finally {

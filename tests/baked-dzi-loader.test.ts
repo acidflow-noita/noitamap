@@ -6,6 +6,7 @@ import {
 import { TERRAIN_VERSION } from "../src/telescope/terrain-policy";
 import {
   isGLTerrainEnabled,
+  isInstantTerrainEnabled,
   setFullPixelTerrainForBake,
 } from "../src/renderer_settings";
 afterEach(() => {
@@ -13,6 +14,58 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe("baked DZI rendering", () => {
+  it.each(["daily", "previous-daily"] as const)(
+    "loads published %s bakes independently of the live GPU cache revision",
+    async (prefix) => {
+      vi.stubGlobal("window", {
+        location: { hostname: "localhost", search: "?terrain=gpu" },
+      });
+      // The deployed CPU baker currently publishes v9. A newer live renderer
+      // revision must not turn an available daily bake into local generation.
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (url: string) => {
+          const world = url.match(/-(left|middle|right)\./)![1];
+          const pw = { left: -1, middle: 0, right: 1 }[world]!;
+          return {
+            ok: true,
+            json: async () => ({
+              seed: 239365546,
+              world,
+              terrainVersion: "full-pixel-v9",
+              complete: true,
+              baked: true,
+              generatedAt: "2026-09-28T00:07:46.454Z",
+              regions: [{
+                pw,
+                dzi: "map.dzi",
+                minX: -17920 + pw * 35840,
+                minY: -31744,
+                fullW: 35840,
+                fullH: 73728,
+              }],
+            }),
+          };
+        }),
+      );
+      expect(isInstantTerrainEnabled()).toBe(true);
+      expect(isGLTerrainEnabled()).toBe(false);
+      const result = await probeBakedDZIs(prefix, 239365546);
+      expect(result.baked).toBe(true);
+      if (result.baked) {
+        expect(result.decorationsBaked).toBe(true);
+        expect(result.placements.map(p => p.pw)).toEqual([-1, 0, 1]);
+        expect(result.placements.map(p => p.dziUrl)).toEqual(
+          ["left", "middle", "right"].map(world =>
+            `https://${prefix}-${world}.acidflow.stream/map.dzi`),
+        );
+        // This flag certifies the current renderer's pixels, not whether the
+        // independently published daily map is usable.
+        expect(result.fullPixelsBaked).toBe(false);
+      }
+    },
+  );
+
   it("preserves alpha and all mip levels on the baked overlay", () => {
     const source: Record<string, any> = { minLevel: 0 };
     addBakedDZIsToOSD(
@@ -121,6 +174,7 @@ describe("baked DZI rendering", () => {
     for (const incomplete of [
       {},
       { terrainVersion: TERRAIN_VERSION, complete: false },
+      { terrainVersion: "full-pixel-v9", complete: true },
     ]) {
       vi.stubGlobal(
         "fetch",

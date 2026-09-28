@@ -1599,7 +1599,7 @@ let _lastLoadedScenes: Array<{ name: string; key: string; x: number; y: number; 
 function _layerKind(source: any): string {
   if (!source) return 'other';
   if (source.__glTerrain) return 'glTerrain';
-  if (source.__instantTerrain) return 'instantTerrain';
+  if (source.__instantTerrain || source.__instantViewport) return 'instantTerrain';
   if (source.__pixelScenes) return 'pixelScenes';
   if (source.__bakedDzi) return 'bakedDzi';
   if (source.__biomeBg) return 'biomeBg';
@@ -2458,23 +2458,20 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     items, bitmapByKey, generationId,
   });
 
-  // One artwork layer; its source releases bitmap/cache ownership on removal.
-  viewer.addTiledImage({
+  // Complete attachment before the first atomic terrain/art frame is released.
+  await new Promise<void>((resolve, reject) => viewer.addTiledImage({
     tileSource: source,
     x: originX,
     y: originY,
     width: bboxWidth,
-    error: () => source.destroy(),
+    error: (error: unknown) => { source.destroy(); reject(error); },
     success: (event: any) => {
       if (currentGenerationId !== generationId) {
-        try {
-          viewer.world.removeItem(event.item);
-        } catch {}
-        return;
-      }
-      dynamicTiledImages.add(event.item);
+        try { viewer.world.removeItem(event.item); } catch {}
+      } else dynamicTiledImages.add(event.item);
+      resolve();
     },
-  });
+  }));
 
   console.log(`[OSD Bridge] Added ${items.length} pixel scenes as single tile source`);
 }
@@ -4959,6 +4956,8 @@ export async function renderGenerationResult(
   generationStartedAt = performance.now(),
 ): Promise<void> {
   const generationId = ++currentGenerationId;
+  let completePresentation = () => {};
+  const presentationReady = new Promise<void>(resolve => { completePresentation = resolve; });
   clearPortalAnimations();
   clearInstantTerrain();
   clearTerrainPngEncoders();
@@ -5111,7 +5110,7 @@ export async function renderGenerationResult(
           console.warn('[OSD Bridge] GPU terrain failed; rebuilding approximate layers:', error);
           void renderGenerationResult(viewer, result, unlocks, isDaily, onFirstPaint, cacheKey,
             null, false, false, true, generationStartedAt).catch(error => console.error('[OSD Bridge] Terrain fallback failed:', error));
-        }, generationStartedAt);
+        }, generationStartedAt, presentationReady);
     }
     if (currentGenerationId !== generationId) return;
     awaitingTerrainDraw = instant;
@@ -5119,96 +5118,106 @@ export async function renderGenerationResult(
     if (currentGenerationId !== generationId) return;
   }
 
-  // Pixel scenes render on top of biome overlays, below POI markers. When the
-  // baked DZIs already carry scenes in their pixels, skip the live layer.
-  if (!bakedDecorations) {
-    // Wang-template temple foregrounds are a separate existing static-art layer,
-    // not pixel-scene material PNGs. Keep them; all actual dynamic scenes now
-    // paint into terrain tiles so their air masks can erase the terrain.
-    const sceneResult = isGLTerrainEnabled() ? {
-      ...result,
-      pixelScenesByPW: Object.fromEntries(Object.entries(result.pixelScenesByPW).map(([key, scenes]) =>
-        [key, scenes.filter(scene => scene.key.startsWith('static_tile/'))])),
-    } : result;
-    await addPixelScenes(viewer, sceneResult, generationId);
+  try {
+    // Pixel scenes render on top of biome overlays, below POI markers. When the
+    // baked DZIs already carry scenes in their pixels, skip the live layer.
+    if (!bakedDecorations) {
+      // Wang-template temple foregrounds are a separate existing static-art layer,
+      // not pixel-scene material PNGs. Keep them; all actual dynamic scenes now
+      // paint into terrain tiles so their air masks can erase the terrain.
+      const sceneResult = isGLTerrainEnabled() ? {
+        ...result,
+        pixelScenesByPW: Object.fromEntries(Object.entries(result.pixelScenesByPW).map(([key, scenes]) =>
+          [key, scenes.filter(scene => scene.key.startsWith('static_tile/'))])),
+      } : result;
+      await addPixelScenes(viewer, sceneResult, generationId);
+      if (currentGenerationId !== generationId) return;
+    }
+
+    // Pixel-scene hover debug (__pixelSceneHover) — register unconditionally so it
+    // works on baked/daily seeds where addPixelScenes is skipped.
+    await registerPixelSceneHoverDebug(viewer, result);
     if (currentGenerationId !== generationId) return;
+
+    // Orb icons render as individual overlays using the webp icons.
+    await addOrbOverlays(viewer, result, generationId, unlocks ?? null, isDaily ?? false);
+    if (currentGenerationId !== generationId) return;
+
+    // 1. Build spatial index for POIs (markers). The index drives click hit
+    // testing and is needed even when sprites are baked into the DZI pixels.
+    window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 0 } }));
+    const markerOutcome = await markerDataReady;
+    if ('error' in markerOutcome) throw markerOutcome.error;
+    const markerData = markerOutcome.value;
+    window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 50 } }));
+    if (currentGenerationId !== generationId) return;
+
+    installClickHandler(viewer, markerData);
+    activeMarkerData = markerData;
+    // If the HV filter was active before this generation, re-apply rings to the
+    // new map. No-op when the predicate is null.
+    rebuildHighValueOverlays();
+
+    let itemsProgressDone = false;
+    const emitItemsDone = () => {
+      if (itemsProgressDone) return;
+      itemsProgressDone = true;
+      window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 100 } }));
+    };
+
+    const visibleMarkerData = bakedDecorations
+      ? legacyMimicMarkerData(markerData, result.bakedMimicSpritesVersionByPW) : markerData;
+    if (!visibleMarkerData) {
+      // New bakes include every sprite. Legacy bakes get only their missing
+      // mimic icons above the existing DZI, without regenerating terrain.
+      emitItemsDone();
+      completePresentation();
+    } else {
+      // 2. Add as a custom OSD tiled layer
+      const markerTileSource = createMarkerTileSource(visibleMarkerData);
+      viewer.addTiledImage({
+        tileSource: markerTileSource,
+        x: visibleMarkerData.originX,
+        y: visibleMarkerData.originY,
+        width: visibleMarkerData.bboxWidth,
+        success: (event: any) => {
+          if (currentGenerationId !== generationId) {
+            try {
+              viewer.world.removeItem(event.item);
+            } catch {}
+            return;
+          }
+          event.item._isMarkerLayer = true;
+          dynamicTiledImages.add(event.item);
+          markerTiledImage = event.item;
+
+          completePresentation();
+          emitItemsDone();
+        },
+        error: (err: any) => {
+          console.warn('[OSD Bridge] Failed to add marker tiled image:', err);
+          completePresentation();
+          emitItemsDone();
+        },
+      });
+
+      // Fallback: if OSD callback hasn't fired within 3s, force-complete the bar
+      setTimeout(emitItemsDone, 3000);
+    }
+
+    // A separate, non-interactive animation layer; never baked into terrain or
+    // added to loot counts. Scene metadata also works on existing daily bakes.
+    installPortalAnimations(viewer, result);
+
+    // GPU replacement waits for a complete viewport draw. Other paths retain
+    // the empty-result safety net for old items.
+    if (!awaitingTerrainDraw) cleanupOldItems();
+  } catch (error) {
+    // A failed artwork/marker setup must not leave a live frame waiting for
+    // presentationReady forever. Keep the previous map until retry/reseed.
+    if (currentGenerationId === generationId) clearInstantTerrain();
+    throw error;
   }
-
-  // Pixel-scene hover debug (__pixelSceneHover) — register unconditionally so it
-  // works on baked/daily seeds where addPixelScenes is skipped.
-  await registerPixelSceneHoverDebug(viewer, result);
-  if (currentGenerationId !== generationId) return;
-
-  // Orb icons render as individual overlays using the webp icons.
-  await addOrbOverlays(viewer, result, generationId, unlocks ?? null, isDaily ?? false);
-  if (currentGenerationId !== generationId) return;
-
-  // 1. Build spatial index for POIs (markers). The index drives click hit
-  // testing and is needed even when sprites are baked into the DZI pixels.
-  window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 0 } }));
-  const markerOutcome = await markerDataReady;
-  if ('error' in markerOutcome) throw markerOutcome.error;
-  const markerData = markerOutcome.value;
-  window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 50 } }));
-  if (currentGenerationId !== generationId) return;
-
-  installClickHandler(viewer, markerData);
-  activeMarkerData = markerData;
-  // If the HV filter was active before this generation, re-apply rings to the
-  // new map. No-op when the predicate is null.
-  rebuildHighValueOverlays();
-
-  let itemsProgressDone = false;
-  const emitItemsDone = () => {
-    if (itemsProgressDone) return;
-    itemsProgressDone = true;
-    window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 100 } }));
-  };
-
-  const visibleMarkerData = bakedDecorations
-    ? legacyMimicMarkerData(markerData, result.bakedMimicSpritesVersionByPW) : markerData;
-  if (!visibleMarkerData) {
-    // New bakes include every sprite. Legacy bakes get only their missing
-    // mimic icons above the existing DZI, without regenerating terrain.
-    emitItemsDone();
-  } else {
-    // 2. Add as a custom OSD tiled layer
-    const markerTileSource = createMarkerTileSource(visibleMarkerData);
-    viewer.addTiledImage({
-      tileSource: markerTileSource,
-      x: visibleMarkerData.originX,
-      y: visibleMarkerData.originY,
-      width: visibleMarkerData.bboxWidth,
-      success: (event: any) => {
-        if (currentGenerationId !== generationId) {
-          try {
-            viewer.world.removeItem(event.item);
-          } catch {}
-          return;
-        }
-        event.item._isMarkerLayer = true;
-        dynamicTiledImages.add(event.item);
-        markerTiledImage = event.item;
-
-        emitItemsDone();
-      },
-      error: (err: any) => {
-        console.warn('[OSD Bridge] Failed to add marker tiled image:', err);
-        emitItemsDone();
-      },
-    });
-
-    // Fallback: if OSD callback hasn't fired within 3s, force-complete the bar
-    setTimeout(emitItemsDone, 3000);
-  }
-
-  // A separate, non-interactive animation layer; never baked into terrain or
-  // added to loot counts. Scene metadata also works on existing daily bakes.
-  installPortalAnimations(viewer, result);
-
-  // GPU replacement waits for its first real tile draw. Other paths retain
-  // the empty-result safety net for old items.
-  if (!awaitingTerrainDraw) cleanupOldItems();
 }
 
 export async function rebuildAltLayers(

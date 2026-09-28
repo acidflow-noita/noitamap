@@ -1,4 +1,5 @@
 import { copyTerrainContext, InstantTerrainCache } from "./instant-terrain-cache";
+import { drawViewportArt } from './viewport-art';
 
 declare const OpenSeadragon: any;
 
@@ -132,6 +133,47 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
       return w * h * 4;
     };
     source.hasTransparency = () => true;
+    source.__drawViewport = (context: CanvasRenderingContext2D, item: any, viewport: any) => {
+      if (detached || destroyed) return true;
+      return drawViewportArt(context, item, viewport, width, height, bounds => {
+        const left = bounds.left + originX, top = bounds.top + originY;
+        const right = bounds.right + originX, bottom = bounds.bottom + originY;
+        context.translate(-originX, -originY);
+        for (const region of regions) {
+          if (region.maxX <= left || region.maxY <= top || region.minX >= right || region.minY >= bottom) continue;
+          const texture = textures.get(region.textureKey);
+          if (!texture?.width || !texture.height) continue;
+          context.save();
+          try {
+            context.beginPath();
+            for (const ring of region.rings) {
+              if (ring.length < 3) continue;
+              context.moveTo(ring[0].x, ring[0].y);
+              for (let i = 1; i < ring.length; i++) context.lineTo(ring[i].x, ring[i].y);
+              context.closePath();
+            }
+            context.clip('nonzero');
+            const tx = phaseX - worldOffsetX;
+            if (bounds.scale >= 1) {
+              // Only repeat across the visible intersection. A close-up must
+              // never visit every texture repetition in a world-sized biome.
+              const x0 = Math.max(left, region.minX), y0 = Math.max(top, region.minY);
+              const x1 = Math.min(right, region.maxX), y1 = Math.min(bottom, region.maxY);
+              const startX = Math.floor((x0 - tx) / texture.width) * texture.width + tx;
+              const startY = Math.floor((y0 - phaseY) / texture.height) * texture.height + phaseY;
+              for (let y = startY; y < y1; y += texture.height)
+                for (let x = startX; x < x1; x += texture.width) context.drawImage(texture, x, y);
+            } else {
+              const pattern = context.createPattern(texture, 'repeat');
+              if (!pattern) continue;
+              context.translate(tx, phaseY);
+              context.fillStyle = pattern;
+              context.fillRect(left - tx, top - phaseY, right - left, bottom - top);
+            }
+          } finally { context.restore(); }
+        }
+      });
+    };
     source.getTileUrl = (level: number, x: number, y: number) => `biome-background://${pack}/${keyFor(level, x, y)}`;
     source.hasCachedTile = (tile: { level: number; x: number; y: number }) => cache.has(keyFor(tile.level, tile.x, tile.y));
     const validTile = source.tileExists.bind(source);

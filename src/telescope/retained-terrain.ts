@@ -9,12 +9,21 @@ import {
 } from "./retained-terrain-codec";
 
 const SIZE = 256;
-const REVISION = `${TERRAIN_VERSION}/retained-hd-v1-fa9cd25`;
+const REVISION = `${TERRAIN_VERSION}/retained-hd-v1-9c58775`;
 export interface RetainedTile {
   level: number;
   x: number;
   y: number;
 }
+/** Region-local world bounds; scale is world pixels per physical display pixel. */
+export interface RetainedView {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  scale: number;
+}
+export type RetainedViewCoverage = Omit<RetainedView, 'scale'>;
 export interface StoredTerrain {
   width: number;
   height: number;
@@ -251,6 +260,10 @@ export class RetainedTerrain {
   }
   resident(key: string): Page | undefined {
     return this.pages.get(key);
+  }
+  /** Enumerate the bounded decoded working set, never theoretical map tiles. */
+  *residentEntries(prefix: string): IterableIterator<[string, Page]> {
+    for (const entry of this.pages) if (entry[0].startsWith(prefix)) yield entry;
   }
   loading(key: string): boolean {
     return this.loads.has(key);
@@ -633,6 +646,150 @@ export class RetainedTerrainRegion {
   hasComplete(tile: RetainedTile): boolean {
     const page = this.owner.resident(this.key(tile));
     return !!page && completeCoverage(page);
+  }
+  private viewBounds(view: RetainedView) {
+    if (![view.x, view.y, view.width, view.height, view.scale].every(Number.isFinite) ||
+        view.width < 0 || view.height < 0 || view.scale <= 0) return undefined;
+    const level = Math.max(this.minLevel, Math.min(this.maxLevel,
+      this.maxLevel - Math.floor(Math.log2(Math.max(1, view.scale)))));
+    const scale = 2 ** (this.maxLevel - level), span = SIZE * scale;
+    const left = Math.max(0, view.x), top = Math.max(0, view.y);
+    const right = Math.min(this.width, view.x + view.width);
+    const bottom = Math.min(this.height, view.y + view.height);
+    return { level, scale, span, left, top, right, bottom, displayScale: view.scale };
+  }
+  private *viewTiles(view: NonNullable<ReturnType<RetainedTerrainRegion['viewBounds']>>) {
+    if (view.right <= view.left || view.bottom <= view.top) return;
+    for (let y = Math.floor(view.top / view.span); y < Math.ceil(view.bottom / view.span); y++)
+      for (let x = Math.floor(view.left / view.span); x < Math.ceil(view.right / view.span); x++)
+        yield { level: view.level, x, y };
+  }
+  private residentViewPages(bounds: NonNullable<ReturnType<RetainedTerrainRegion['viewBounds']>>) {
+    const prefix = this.identity + '/';
+    const entries = [];
+    for (const [key, page] of this.owner.residentEntries(prefix)) {
+      const [level, x, y] = key.slice(prefix.length).split('/').map(Number);
+      if (level < bounds.level || level > this.maxLevel) continue;
+      const scale = 2 ** (this.maxLevel - level), span = SIZE * scale;
+      if (x * span >= bounds.right || (x + 1) * span <= bounds.left
+        || y * span >= bounds.bottom || (y + 1) * span <= bounds.top) continue;
+      entries.push({ tile: { level, x, y }, page, bounds: { ...bounds, level, scale, span } });
+    }
+    // Prefer the already-reduced exact mip. Finer resident pages fill cells
+    // missing at that level immediately, without waiting for disk hydration.
+    return entries.sort((a, b) => a.tile.level - b.tile.level);
+  }
+  private *knownViewCells(
+    bounds: NonNullable<ReturnType<RetainedTerrainRegion['viewBounds']>>,
+    tile: RetainedTile, page: Page, seen?: Set<number>,
+  ): IterableIterator<RetainedViewCoverage> {
+    const px = tile.x * bounds.span, py = tile.y * bounds.span;
+    const columns = Math.ceil(this.width / SIZE);
+    const left = Math.max(0, Math.floor((bounds.left - px) / SIZE));
+    const right = Math.min(page.columns, Math.ceil((bounds.right - px) / SIZE));
+    const top = Math.max(0, Math.floor((bounds.top - py) / SIZE));
+    const bottom = Math.min(page.rows, Math.ceil((bounds.bottom - py) / SIZE));
+    for (let y = top; y < bottom; y++) {
+      let start = -1;
+      for (let x = left; x <= right; x++) {
+        const bit = y * page.columns + x;
+        const cell = (py / SIZE + y) * columns + px / SIZE + x;
+        const known = x < right && !!(page.coverage[bit >> 3] & (1 << (bit & 7))) && !seen?.has(cell);
+        if (known) { seen?.add(cell); if (start < 0) start = x; }
+        if (!known && start >= 0) {
+          const rx = Math.max(bounds.left, px + start * SIZE), ry = Math.max(bounds.top, py + y * SIZE);
+          yield { x: rx, y: ry, width: Math.min(bounds.right, px + x * SIZE) - rx,
+            height: Math.min(bounds.bottom, py + (y + 1) * SIZE) - ry };
+          start = -1;
+        }
+      }
+    }
+  }
+  /** Every visible native cell is known at the selected or a finer RAM mip. */
+  hasCompleteView(view: RetainedView): boolean {
+    const bounds = this.viewBounds(view);
+    if (!bounds) return false;
+    if (bounds.right <= bounds.left || bounds.bottom <= bounds.top) return true;
+    const needed = (Math.ceil(bounds.right / SIZE) - Math.floor(bounds.left / SIZE))
+      * (Math.ceil(bounds.bottom / SIZE) - Math.floor(bounds.top / SIZE));
+    const seen = new Set<number>();
+    for (const entry of this.residentViewPages(bounds)) {
+      for (const _ of this.knownViewCells(entry.bounds, entry.tile, entry.page, seen)) { /* collect cell coverage */ }
+      if (seen.size === needed) return true;
+    }
+    return false;
+  }
+  private paintViewPage(
+    target: CanvasRenderingContext2D,
+    bounds: NonNullable<ReturnType<RetainedTerrainRegion['viewBounds']>>,
+    tile: RetainedTile,
+    page: Page,
+    seen?: Set<number>,
+  ) {
+    const px = tile.x * bounds.span, py = tile.y * bounds.span;
+    const coverage = [...this.knownViewCells(bounds, tile, page, seen)];
+    if (!coverage.length) return coverage;
+    target.save();
+    target.beginPath();
+    target.rect(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top);
+    target.clip();
+    // Coverage cells always represent a native 256x256 world block, even
+    // in a reduced page. Clip both erasure and painting to known cells: a
+    // final transparent pixel must replace the provisional GPU pixel too.
+    target.beginPath();
+    for (const rect of coverage) target.rect(rect.x, rect.y, rect.width, rect.height);
+    target.clip();
+    const width = page.context.canvas.width * bounds.scale;
+    const height = page.context.canvas.height * bounds.scale;
+    target.clearRect(px, py, width, height);
+    target.imageSmoothingEnabled = bounds.scale < bounds.displayScale;
+    target.imageSmoothingQuality = 'low';
+    target.globalAlpha = 1;
+    target.globalCompositeOperation = 'source-over';
+    target.drawImage(page.context.canvas, px, py, width, height);
+    target.restore();
+    return coverage;
+  }
+  /** Synchronous display path: no storage access or pixel readbacks. */
+  paintResidentView(target: CanvasRenderingContext2D, view: RetainedView): RetainedViewCoverage[] {
+    const bounds = this.viewBounds(view);
+    if (!bounds) return [];
+    const seen = new Set<number>(), coverage: RetainedViewCoverage[] = [];
+    for (const entry of this.residentViewPages(bounds)) {
+      coverage.push(...this.paintViewPage(target, entry.bounds, entry.tile, entry.page, seen));
+    }
+    return coverage;
+  }
+  /** Optional background hydration. Sequential leases bound decoded RAM and
+   * leave display free to use resident deltas while disk is slow or denied. */
+  async hydrateView(view: RetainedView, signal?: AbortSignal): Promise<void> {
+    const bounds = this.viewBounds(view);
+    if (!bounds) return;
+    for (const tile of this.viewTiles(bounds)) {
+      signal?.throwIfAborted();
+      const page = await this.owner.get(this.key(tile));
+      if (page) this.owner.release(page);
+      signal?.throwIfAborted();
+    }
+  }
+  /** Stream a fully cooked viewport from optional storage without holding all
+   * pages at once. A missing/incomplete page asks the caller for its GPU base. */
+  async paintStoredView(target: CanvasRenderingContext2D, view: RetainedView, signal?: AbortSignal,
+    onCoverage?: (rectangle: RetainedViewCoverage) => void): Promise<boolean> {
+    const bounds = this.viewBounds(view);
+    if (!bounds) return false;
+    let complete = true;
+    for (const tile of this.viewTiles(bounds)) {
+      signal?.throwIfAborted();
+      const page = await this.owner.get(this.key(tile));
+      if (!page) { signal?.throwIfAborted(); complete = false; continue; }
+      try {
+        signal?.throwIfAborted();
+        if (!completeCoverage(page)) complete = false;
+        for (const rectangle of this.paintViewPage(target, bounds, tile, page)) onCoverage?.(rectangle);
+      } finally { this.owner.release(page); }
+    }
+    return complete;
   }
   contains(tile: RetainedTile): Promise<boolean> {
     if (tile.level < this.minLevel || tile.level > this.maxLevel)

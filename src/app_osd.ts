@@ -8,6 +8,7 @@ import { cameraPixelDelta, readCameraMatrix } from './portals/geometry';
 import { PIXEL_MAP_DRAW_OPTIONS } from './osd-pixel-rendering';
 import { installTileContinuity } from './osd-tile-continuity';
 import { installTerrainAdmission } from './osd-terrain-admission';
+import { installStaticBackgroundResidency } from './osd-static-background';
 
 declare const OpenSeadragon: any;
 
@@ -87,6 +88,7 @@ export class AppOSD {
     });
     installTileContinuity(this.viewer);
     installTerrainAdmission(this.viewer);
+    installStaticBackgroundResidency(this.viewer);
 
     this.addHandler('canvas-key', (event: any) => {
       // Case-insensitive so Shift+R (key "R") is caught too — OSD binds r/R to
@@ -314,7 +316,10 @@ export class AppOSD {
           // Only bust origins we have a real version for. Unknown origins
           // (e.g. the daily workers) would otherwise get a constant
           // "?v=undefined" that never changes across bakes -> stale tiles.
-          if (version !== undefined) source.queryParams = `?v=${version}`;
+          if (version !== undefined) {
+            source.queryParams = `?v=${version}`;
+            if (this.mapName === 'dynamic-main-branch') source.__staticBackground = true;
+          }
         } catch (e) {}
       }
     };

@@ -210,6 +210,26 @@ const pixel = (context: any, x: number, y: number) => [
 
 describe("actual detail-to-overview camera transitions", () => {
   it.each(["dzi", "hd"] as const)(
+    "keeps %s detail throughout gradual zoom-out across successive LOD thresholds",
+    async (kind) => {
+      const f = fixture(kind), stop = protectTileContinuity(f.item);
+      try {
+        await f.load(f.background, 0);
+        await f.load(f.item, 8);
+        const fine = await f.load(f.item, 12);
+        f.hold();
+        for (const scale of [1, .95, .8, .7, .65, .6, .51, .5, .49, .4, .3, .25, .24, .2, .125]) {
+          f.zoom(scale);
+          const output = f.draw();
+          expect(pixel(output, Math.floor(32 * scale), Math.floor(32 * scale))).toEqual(FINE);
+          expect(pixel(output, Math.floor(96 * scale), Math.floor(96 * scale))).toEqual(BACKGROUND);
+          expect(fine.loaded).toBe(true);
+        }
+      } finally { stop(); f.close(); }
+    },
+  );
+
+  it.each(["dzi", "hd"] as const)(
     "reproduces cached fine %s pixels disappearing below OSD's downsample threshold",
     async (kind) => {
       const f = fixture(kind);

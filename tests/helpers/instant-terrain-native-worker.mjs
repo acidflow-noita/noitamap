@@ -62,9 +62,16 @@ if (
       parentPort.postMessage({ __ready: true });
     } else {
       const BrowserWorker = globalThis.Worker;
+      globalThis.__terrainWorkerMessages = {};
       globalThis.Worker = class extends BrowserWorker {
         constructor(...args) {
           super(...args);
+          const send = this.postMessage;
+          this.postMessage = (data, ...transfers) => {
+            if (data.type) globalThis.__terrainWorkerMessages[data.type] =
+              (globalThis.__terrainWorkerMessages[data.type] ?? 0) + 1;
+            return send(data, ...transfers);
+          };
           let callback;
           Object.defineProperty(this, "onmessage", {
             get: () => (event) => {

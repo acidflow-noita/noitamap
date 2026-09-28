@@ -67,6 +67,7 @@ export interface DynamicPOI {
 let currentSeed: number | null = null;
 let currentIsDaily: boolean = false;
 let currentUnlocksKey: string | null = null;
+let currentAllowsBaked: boolean | null = null;
 let lastResult: GenerationResult | null = null;
 let dynamicRendered: boolean = false;
 let generationToken: number = 0;
@@ -285,8 +286,11 @@ export async function runDynamicMap(
   const pillarKey = pillarFlags ? "p" + pillarFlags.length + ":" + pillarFlags.slice().sort().join(",") : "p-";
   const unlockKey = (unlocks ? unlocks.sort().join(",") : "all") + (lightMode ? "|lm" : "") + "|" + pillarKey;
 
-  // 0. Skip only if same seed, same unlocks, and overlays still present.
-  if (seed === currentSeed && unlockKey === currentUnlocksKey && dynamicRendered && hasDynamicOverlays()) {
+  // A daily button can leave a forced live preview of the very same seed.
+  // Its baked/live route is part of presentation identity, not the geometry
+  // cache key: the existing pixels must not suppress the baked-map probe.
+  if (seed === currentSeed && unlockKey === currentUnlocksKey && isDaily === currentIsDaily
+    && currentAllowsBaked === !noBaked && dynamicRendered && hasDynamicOverlays()) {
     console.log(`[DynamicMap] Seed ${seed} is already active with same unlocks, skipping redundant render.`);
     // Still re-emit POIs so search is populated (it may have been cleared)
     if (onPOIsReady && lastResult) {
@@ -414,6 +418,7 @@ export async function runDynamicMap(
   currentSeed = seed;
   currentIsDaily = isDaily;
   currentUnlocksKey = unlockKey;
+  currentAllowsBaked = !noBaked;
 
   onSeedResolved?.(seed, isDaily);
 
@@ -636,6 +641,7 @@ export function clearDynamicMap(viewer: any): void {
   currentSeed = null;
   currentIsDaily = false;
   currentUnlocksKey = null;
+  currentAllowsBaked = null;
   dynamicRendered = false;
   generationToken++;
   clearSeedParams();

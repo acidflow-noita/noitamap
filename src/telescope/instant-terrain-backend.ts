@@ -82,7 +82,7 @@ export class InstantTerrainWorkerClient {
       };
       const timeout = setTimeout(
         () => this.dispose(new Error(`Terrain worker ${type} timed out`)),
-        type === "render" ? this.renderTimeoutMs : this.timeoutMs,
+        type === "render" || type === "frame" ? this.renderTimeoutMs : this.timeoutMs,
       );
       const cleanup = () => {
         clearTimeout(timeout);
@@ -117,6 +117,7 @@ interface Slot {
   main?: any;
   resources?: any;
   warm?: Promise<void>;
+  workerWarm?: Promise<boolean>;
   token: number;
   layers?: any[];
   biomes?: object;
@@ -134,28 +135,31 @@ function getSlot(): Slot {
   return (sharedSlot ??= { token: 0, handles: new Map() });
 }
 
+/** This path never imports renderer assets or falls back to a UI-thread GL context. */
+function warmWorker(slot: Slot): Promise<boolean> {
+  if (slot.main || typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined")
+    return Promise.resolve(false);
+  return slot.workerWarm ??= (async () => {
+    slot.worker = new InstantTerrainWorkerClient();
+    await slot.worker.request("prewarm");
+    if (slot.released) throw new DOMException("Terrain backend released", "AbortError");
+    return true;
+  })().catch(error => {
+    slot.worker?.dispose(error);
+    slot.worker = undefined;
+    slot.workerWarm = undefined;
+    throw error;
+  });
+}
+
 async function warmSlot(slot: Slot, deps?: GLTerrainDeps): Promise<void> {
   if (slot.warm) return slot.warm;
   return (slot.warm = (async () => {
-    if (
-      !slot.main &&
-      typeof Worker !== "undefined" &&
-      typeof OffscreenCanvas !== "undefined"
-    ) {
-      try {
-        slot.worker = new InstantTerrainWorkerClient();
-        await slot.worker.request("prewarm");
-        return;
-      } catch (error) {
-        slot.worker?.dispose(error);
-        slot.worker = undefined;
-        if (slot.released)
-          throw new DOMException("Terrain backend released", "AbortError");
-        console.warn(
-          "[Instant terrain] Worker unavailable; using the main WebGL context:",
-          error,
-        );
-      }
+    try {
+      if (await warmWorker(slot)) return;
+    } catch (error) {
+      if (slot.released) throw new DOMException("Terrain backend released", "AbortError");
+      console.warn("[Instant terrain] Worker unavailable; using the main WebGL context:", error);
     }
     if (!deps) {
       const [
@@ -198,7 +202,8 @@ async function warmSlot(slot: Slot, deps?: GLTerrainDeps): Promise<void> {
 }
 
 /** Called as soon as instant generation is selected, before seed assets load. */
-export function prewarmInstantTerrain(): Promise<boolean> {
+export function prewarmInstantTerrain(options: { workerOnly?: boolean } = {}): Promise<boolean> {
+  if (options.workerOnly) return warmWorker(getSlot()).catch(() => false);
   return warmSlot(getSlot()).then(() => true).catch((error) => {
     if (error?.name !== "AbortError")
       console.warn("[Instant terrain] Prewarm unavailable:", error);
@@ -300,6 +305,7 @@ export async function prepareInstantTerrain(
           current();
           worker.dispose(error);
           slot.worker = undefined;
+          slot.workerWarm = undefined;
           slot.warm = undefined;
           const [{ prewarmTerrainShader }] = await Promise.all([
             import("./terrain-shader-prewarm"),
@@ -412,7 +418,34 @@ export async function prepareInstantTerrain(
           base.resources.setPlane(drawPlane);
           return base.resources.render(view);
         },
+        async configureViewport(inputs: import('./terrain-viewport-compositor').TerrainViewportInputs) {
+          current();
+          // TerrainOwnership also exposes an at() helper. Only its compact
+          // typed arrays cross the worker boundary, never executable methods.
+          inputs = { ...inputs, owners: inputs.owners.map(({ width, owners }) => ({ width, owners })) };
+          if (base.worker) {
+            await base.worker.request('presentation', { token, inputs });
+          } else {
+            const { createTerrainViewportCompositor } = await import('./terrain-viewport-compositor');
+            current();
+            base.presentation?.dispose();
+            base.presentation = createTerrainViewportCompositor(inputs);
+          }
+          current();
+        },
+        async renderViewport(plan: import('./terrain-viewport-compositor').TerrainViewportPlan, renderSignal?: AbortSignal) {
+          current();
+          renderSignal?.throwIfAborted();
+          if (base.worker) {
+            const result = await base.worker.request('frame', { token, plan }, renderSignal);
+            if (slot.token !== token || slot.released) { result.bitmap.close(); current(); }
+            return result.bitmap;
+          }
+          if (!base.presentation) throw new Error('Viewport masks are not ready');
+          return base.presentation.render(base.resources, plan);
+        },
         invalidate() {
+          base.presentation?.dispose();
           if (slot.token !== token) return;
           slot.token = ++nextToken;
           slot.prepared = undefined;

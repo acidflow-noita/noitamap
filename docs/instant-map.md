@@ -1,10 +1,20 @@
 # HD terrain renderer (`instant-map`)
 
-The dynamic map can render terrain at the resolution currently requested by
-OpenSeadragon instead of computing full-resolution descendants for every
-overview tile. The implementation uses vitaminmoo's pinned `render-perf`
-renderer, with the verified shader corrections described in
-[terrain-shader-evidence.md](terrain-shader-evidence.md).
+The dynamic map shades a complete viewport at display resolution, in at most
+three worker GPU passes, then presents the finished frame through OpenSeadragon's
+canvas drawer. Backgrounds, scenes and POIs draw from decoded native artwork in
+the same ordered canvas pass. Foreground display no longer waits for individual
+terrain/art tiles or terrain cache writes. A separate sweep still cooks and
+persists native pixels across all nine regions.
+
+The implementation uses vitaminmoo's pinned `render-perf` renderer (`9c58775`), with the
+verified shader corrections described in
+[terrain-shader-evidence.md](terrain-shader-evidence.md). The sub-one-second cold
+full-map target remains unmet; a complete visible frame is not a completed map.
+
+The September 28 update preserves material/scene transparency and synchronizes
+the host's scene-art painting over translucent cells. Derived terrain uses
+`full-pixel-v12`; immutable source downloads keep their content revisions.
 
 ## Local use
 
@@ -42,19 +52,22 @@ download. Denied/full/stalled storage leaves downloaded assets usable, and the
 additional shared-response RAM cache is bounded to 8 MiB. Generated terrain
 remains a separate seed-specific IndexedDB cache.
 
-The baked daily map also warms these reusable inputs after its first drawn DZI
-tile. Optional stages yield to the viewer and reuse the normal ZIP, scene, Wang
-template and atlas caches. A live-map request promotes shared initialization
-instead of waiting for idle callbacks. Navigation cancels later warmup stages;
-it does not cancel downloads another request needs. This prepares shared inputs,
-not the native pixels of a future seed, and adds no UI. The console logs
-`[Dynamic assets] Daily warmup started` after the first baked tile draws and
-`[Dynamic assets] Daily warmup finished in X.XX seconds` after the stages settle.
-Elapsed time includes idle waits; cancellations and terminal failures have their
-own end messages. Details include failed-stage counts and navigation timing.
-This is a preparation timer; optional cache writes may still be pending or
-unavailable. Estimated site storage follows separately. Scene prefetch can restart
-after an empty early pass or a cancelled prior view.
+The baked daily map warms reusable inputs after its first drawn DZI tile.
+A dedicated worker downloads, validates and persists the ZIPs, compressed scene
+pack, material/edge inputs, native backgrounds and marker spritesheet. It does
+not initialize Telescope, expand scene artwork or compile a fallback shader on
+the UI thread. Downloads are serial to limit contention with daily-map tiles.
+An optional shared GPU-worker shader prewarm follows; unsupported worker WebGL
+is skipped without starting main-thread GL. Navigation terminates optional asset
+work; live generation reads the same revisioned persistent entries.
+
+The console logs `[Dynamic assets] Daily warmup started`, per-stage start/finish,
+and `Daily warmup finished in X.XX seconds`. The duration includes idle waits and
+settling optional cache writes; cancelled/failed work has its own end message.
+Decoded generation state is not retained by this download-only worker. Storage
+estimates follow separately. Large daily/live search indexes also build in
+short tasks (at most 128 records or approximately 4 ms), with seed cancellation
+and atomic publication so partial indexes cannot replace complete results.
 
 POI artwork always comes from local assets. The atlas includes both authored
 Stainless Armour sprites; the stain-texture exclusion matches complete tokens,
@@ -74,32 +87,64 @@ Legacy cached generations cannot be mistaken for render-perf generations.
 HD uses OSD's canvas drawer even if localhost has a saved WebGL
 drawer override; terrain shading itself remains on the GPU.
 
-## What changes
+## Current display path
 
-- Each requested tile retains at most 256 × 256 display pixels. Coarse tiles
-  use one bounded draw of at most 512 × 512 samples, then filtered reduction. It never walks a
-  full-resolution pyramid or PNG-encodes terrain. Camera movement, layer order,
-  POI interaction, scene layers, screenshots and tile eviction stay with OSD.
-- Horizontal worlds share GPU resources. After first paint, small overview
-  requests warm heaven and hell in the background. A plane offset preserves the repeated source
-  geometry while evaluating noise at absolute game coordinates.
-- Existing procedural ownership and authored scene masks protect static map
-  artwork and room air holes. The renderer does not clear entire scene rectangles.
-- Obsolete seed and viewport jobs cancel. GPU initialization/drawing failures
-  restore the approximate presentation. The first-draw diagnostic listens for
-  an actual OSD terrain tile draw, rather than merely queuing an image.
-- The legacy approximate path composites/encodes three terrain images instead
-  of nine when horizontal pixels are provably identical. NG+/nightmare and
-  coordinate-dependent fill layers do not use this reuse.
-- Large approximate PNGs encode in a worker. Cancellation terminates it, and
-  the pure RGBA encoder preserves the existing privacy-browser handling.
-- Scene/generation consumers request raw PNG pixels without constructing an
-  unused ImageBitmap. Visual bitmap consumers keep their existing contract.
+- One viewport source occupies the terrain position in OSD's ordered canvas
+  pass. It does not enter the OSD tile loader. A worker request shades the
+  visible plane strips, applies ownership/scene-air masks and returns one
+  transferable frame. Horizontal parallel worlds use the shader's world
+  coordinates; heaven/main/hell use their separate prepared tables.
+- Navigation coalesces to the newest pending camera. An existing frame is
+  reprojected during movement, then replaced as a whole. Up to three earlier
+  surrounding frames stay available within an additional 32 MiB decoded budget,
+  preferring broad coverage through incremental zoom changes. They draw only
+  outside newer frame bounds, preserving authoritative transparent holes. This
+  coverage history is separate from the exact-camera cache described below and
+  is released when its source is destroyed. Seed cancellation
+  closes late frames. Initial handoff waits for artwork, markers and a frame
+  matching the current camera; old layers are removed after the draw pass.
+- Static background DZIs prepare a small whole-image overview independently
+  of the initial camera. These bounded overview tiles stay resident until the
+  base image is removed, including when unrelated layers pressure OSD's cache.
+  Detailed tiles continue to stream above that coverage. This avoids exposing
+  an empty static background simply because zooming out reveals another area.
+  The three current base worlds reserve 21 overview tiles (8,413,568 decoded
+  RGBA bytes), within a shared 24 MiB pixel budget. This is not an accounting
+  of browser/GPU representation copies. The underlying OSD viewer exposes
+  `staticBackgroundResidency`, with separate reserved and loaded byte counts.
+- Native background textures, decoded scene canvases and the local POI atlas
+  draw directly through their OSD layer transforms. They retain clipping,
+  native texture phase, alpha holes, rotation/flip and spoiler handling.
+  Their old tile paths remain available to other drawers and offline consumers.
+- The nine native sources remain private inputs to the full-map cooker.
+  Cooking pauses while a foreground frame or animation is active, resumes
+  independently of zoom and publishes exact native pixels and reductions.
+  Retained transparent pixels erase provisional terrain too. A stationary
+  view reuses its composed frame while retained detail updates. Recent composed
+  views share the existing bounded 32 MiB display cache; zooming out reprojects
+  their finer coverage before applying canonical pixels. Compact coverage
+  metadata keeps completed transparent cells authoritative even after native
+  page eviction, and finer canonical samples win over coarser cached samples.
+  The current composition survives optional display-cache eviction. Fully
+  retained views need no GPU draw. Optional storage reads never gate the first
+  GPU frame: one scratch viewport streams saved pages and publishes atomically,
+  including when the visible pages exceed the native RAM budget.
+- Viewport frames are presentation samples, not canonical native pages: their
+  sampling depends on the fractional camera origin and scale. Only the native
+  sweep publishes canonical retained pages. Uncooked views evicted from the
+  bounded display cache may still need a new viewport draw; cooked pages remain
+  reusable through the independent retention store.
+- OSD still handles camera movement, ordered layers, screenshots and input.
+  The direct layer adapter is tested against the installed OSD 6.1 CanvasDrawer;
+  it intercepts private draw/update methods and must be rechecked on upgrade.
+- GPU initialization/drawing failures retain the existing approximate fallback.
+  NG+/nightmare and explicit approximate mode keep their prior presentation.
 
-Console: `[Instant terrain] First tile drawn` includes resource upload time,
-number of initialized planes, tile count and shaded pixel count. Each terrain
-source also exposes `instantStats`. Tile submission time includes canvas copying
-but is not a GPU timer or a complete browser interaction benchmark.
+`[Instant terrain] First complete viewport drawn` is a visible-frame timing.
+Its source exposes `instantStats`, with viewport/render/cache/cooking counters.
+The separate `[Instant terrain] Full map terrain finished in X.XX seconds`
+includes native terrain, reduced pages and final persistence. Neither log claims
+that a viewport draw completes the entire map or measures cold network delivery.
 
 Independent startup work now overlaps: daily identity lookup with explicit live-GPU
 asset/shader startup, cache reads with asset initialization after a shared cache
@@ -108,6 +153,36 @@ preparation starts after Wang geometry is ready, before POI scanning finishes.
 The completed map still applies its full scene masks before presentation. A
 cancelled request cannot attach late artwork or replace the current map. Explicit
 live requests no longer fetch the previous-daily pointer unnecessarily.
+
+## Viewport rewrite validation (2026-09-28)
+
+Native tests use the emitted production GPU worker, real EGL/GLES and native
+canvas pixels, without a browser. Nine native region samples, an overview
+spanning all nine regions and a force-air mask reconfiguration compare
+1,139,200 RGBA bytes with zero differences against per-region shader renders.
+The mask removes 76 previously opaque pixels. Existing per-tile shader checks
+compare another 196,608 bytes with zero differences.
+
+Two warm 1920×1080 viewport transfers measured 48–59 ms, versus 91–97 ms for
+12 sequential tile transfers, on **software llvmpipe**. This includes native
+readback/transfer; it excludes world generation, browser presentation and cold
+network startup. The first cold tile still took about 4 seconds. These results
+support reducing transfer/queue overhead; they do not establish hardware/browser
+speed or prove that the app beats Telescope end to end.
+
+A separate emitted daily-asset worker prepared 31 real local assets in 215 ms
+with a maximum 11 ms main-thread heartbeat gap. Its harness uses Node workers,
+local-file fetches and in-memory CacheStorage, not a browser/network cache test.
+The old synchronous 40,000-record search build measured 450 ms before batching.
+Dense native-canvas stress cases still cost 43–47 ms for 42,000 POI sprites and
+12–16 ms for 10,000 scenes in an overview; these are not 60 fps guarantees.
+
+Reproduce worker checks with `npx vitest run tests/instant-terrain-worker-native.test.ts`
+and asset preparation with `node --import tsx build_scripts/measure-daily-asset-worker.mjs`.
+Full cold browser and real-device measurements remain outstanding. Earlier
+measurements and tile-path design notes below describe the preceding strategy;
+its source/cooking/fallback tests remain useful, but tiles no longer drive the
+normal foreground display.
 
 ## Reproducible measurements
 

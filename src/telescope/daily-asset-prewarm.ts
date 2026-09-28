@@ -1,13 +1,7 @@
 import { backgroundAssetYield } from "./background-idle";
 import { reportTerrainStorageUsage } from "./terrain-storage-usage";
-import {
-  prewarmMapPresentation,
-  prefetchAllSceneBitmaps,
-} from "./telescope-osd-bridge";
-import {
-  isInstantTerrainEnabled,
-  useRenderPerfGeneration,
-} from "../renderer_settings";
+import { isInstantTerrainEnabled, useRenderPerfGeneration } from "../renderer_settings";
+import { prepareDailyAssetsOffThread } from './daily-asset-worker-client';
 
 export interface DailyAssetWarmupOptions {
   viewer: any;
@@ -18,54 +12,9 @@ export interface DailyAssetWarmupOptions {
   onFailure?: (error: unknown) => void;
 }
 
-function sharedAssetStages(
-  isCurrent: () => boolean,
-): (() => Promise<unknown> | void)[] {
-  return [
-    ...["main", "wang_tiles", "pixel_scenes"].map((key) => async () => {
-      const { getZip } = await import("../data-archive");
-      if (!(await getZip(key, true)))
-        throw new Error(`Cannot prepare ${key} archive`);
-    }),
-    async () => {
-      const { initTelescope } = await import("./telescope-adapter");
-      await initTelescope({ background: true });
-    },
-    async () => {
-      // Tables/decoded Wang inputs are reused by the next seed in this tab.
-      // Their versioned source packs/ZIPs survive reloads in optional storage.
-      const outcomes = await prewarmMapPresentation();
-      const failed = outcomes.find((result) => result.status === "rejected");
-      if (failed?.status === "rejected") throw failed.reason;
-      if (useRenderPerfGeneration()) {
-        const { loadTelescopeModules } = await import("./load-telescope");
-        const modules = await loadTelescopeModules();
-        await modules.materialAtlasMod.initMaterialAtlas();
-        const { initEdgeDecalAtlas } =
-          await import("../../lib/noita-telescope-vm/js/edge_decals.js");
-        await initEdgeDecalAtlas();
-      }
-    },
-    async () => {
-      // Compile only the reusable program. No generated world resources,
-      // native tiles, POI scans, or additional PW scene copies are created.
-      if (isInstantTerrainEnabled()) {
-        const api = await import("./instant-terrain-backend");
-        if (!(await api.prewarmInstantTerrain()))
-          throw new Error(
-            "GPU warmup unavailable; reusable assets remain ready",
-          );
-      }
-    },
-    async () => {
-      await prefetchAllSceneBitmaps(isCurrent);
-    },
-  ];
-}
-
 /** Arm before baked DZIs are added. Their first real drawn tile owns startup
- * priority; immutable preparation starts in a later idle/task opportunity.
- * Cancelling only stops future stages, never another caller's shared fetch. */
+ * priority; immutable preparation runs in a dedicated worker after that paint.
+ * Cancellation terminates only this optional worker, never a foreground load. */
 export function scheduleDailyAssetWarmup(
   options: DailyAssetWarmupOptions,
 ): () => void {
@@ -86,8 +35,8 @@ export function scheduleDailyAssetWarmup(
       elapsedMs,
       sinceNavigationMs: finishedAt,
       failures,
-      scope: 'Reusable asset preparation and prefetch, including idle waits; seed-specific terrain cooking is separate',
-      persistence: 'Optional cache writes may still be pending or unavailable',
+      scope: 'Worker archive validation and immutable asset prefetch, including idle waits; seed-specific terrain cooking is separate',
+      persistence: 'Optional cache writes settled or unavailable; decoded worlds are not retained',
     });
   };
   const cancel = () => {
@@ -98,19 +47,36 @@ export function scheduleDailyAssetWarmup(
   const run = async () => {
     startedAt = performance.now();
     console.info('[Dynamic assets] Daily warmup started', { sinceNavigationMs: startedAt });
-    for (const stage of options.stages ?? sharedAssetStages(current)) {
+    const failure = (error: unknown) => {
+      failures++;
+      if (current()) (options.onFailure ?? ((e) =>
+        console.warn('[Dynamic assets] Optional preparation failed:', e)))(error);
+    };
+    const stages = options.stages ?? [
+      () => prepareDailyAssetsOffThread({
+        baseUrl: new URL('./', document.baseURI || location.href).href,
+        fullPixels: useRenderPerfGeneration(),
+      }, controller.signal, failure),
+      async () => {
+        if (!isInstantTerrainEnabled()) return;
+        const started = performance.now();
+        console.info('[Dynamic assets] Worker shader preparation started');
+        const { prewarmInstantTerrain } = await import('./instant-terrain-backend');
+        if (!current()) return;
+        const ready = await prewarmInstantTerrain({ workerOnly: true });
+        console.info(`[Dynamic assets] Worker shader preparation ${ready ? 'finished' : 'unavailable'} in ${((performance.now() - started) / 1000).toFixed(2)} seconds`, {
+          elapsedMs: performance.now() - started,
+          scope: 'Reusable worker WebGL program; no main-thread compilation or generated terrain',
+        });
+      },
+    ];
+    for (const stage of stages) {
       await yieldTask(controller.signal);
       if (!current()) { finish('cancelled'); return; }
       try {
         await stage();
       } catch (error) {
-        failures++;
-        if (current())
-          (
-            options.onFailure ??
-            ((e) =>
-              console.warn("[Dynamic assets] Optional preparation failed:", e))
-          )(error);
+        if (current()) failure(error);
       }
     }
     finish(current() ? 'finished' : 'cancelled');

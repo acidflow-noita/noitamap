@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { createCanvas, type Canvas } from '@napi-rs/canvas';
-import { applyRetainedTerrainEvent, createInstantTileSource, refreshRetainedTerrain } from '../src/telescope/instant-terrain';
+import { addInstantTerrain, clearInstantTerrain, applyRetainedTerrainEvent, createInstantTileSource, refreshRetainedTerrain } from '../src/telescope/instant-terrain';
+import { prepareInstantTerrain } from '../src/telescope/instant-terrain-backend';
 import { createInstantTerrainCooker } from '../src/telescope/instant-terrain-cooker';
 import { RetainedTerrain, type StoredTerrain } from '../src/telescope/retained-terrain';
 import { installTerrainAdmission } from '../src/osd-terrain-admission';
@@ -152,6 +153,114 @@ function runFrame() {
   const callbacks = [...frames.values()]; frames.clear();
   for (const callback of callbacks) callback(performance.now());
 }
+
+it('presents one complete native viewport through real AppOSD while nine regions cook independently', async () => {
+  const mount = document.createElement('div'); document.body.appendChild(mount);
+  const app = new AppOSD(mount, false), viewer = app.viewer;
+  const originalDraw = viewer.drawer._drawTiles;
+  const firstPaint = vi.fn(), failure = vi.fn(), attached = vi.fn();
+  let release!: () => void;
+  const presentationReady = new Promise<void>(resolve => { release = resolve; });
+  const pending: Array<{ plan: any; resolve: (image: any) => void }> = [];
+  const backend = { backend: 'worker', configureViewport: vi.fn(async () => {}), invalidate: vi.fn(),
+    render: vi.fn(() => { throw new Error('Foreground terrain used an OSD tile'); }),
+    renderViewport: vi.fn((plan: any) => new Promise<any>(resolve => pending.push({ plan, resolve }))),
+  };
+  vi.mocked(prepareInstantTerrain).mockResolvedValue(backend);
+  const gen = { seed: 1245, isNGP: false, tileLayers: [], parallelWorlds: [-1, 0, 1],
+    biomeData: { pixels: new Uint32Array(70 * 48) } };
+  const deps = { GLTerrainRenderer: class {} as any, initMaterialAtlas: async () => {},
+    getWorldSize: () => 70, getWorldCenter: () => 35, GENERATOR_CONFIG: {} };
+  const finish = (request: typeof pending[number]) => {
+    const canvas: any = createCanvas(request.plan.pixelWidth, request.plan.pixelHeight), context = canvas.getContext('2d');
+    context.fillStyle = '#f08020'; context.fillRect(0, 0, canvas.width, canvas.height);
+    canvas.close = vi.fn(); request.resolve(canvas);
+  };
+  try {
+    expect(await addInstantTerrain(app, gen, deps, [], () => true, attached, firstPaint, failure,
+      performance.now(), presentationReady)).toBe(true);
+    await vi.waitFor(() => expect(attached).toHaveBeenCalledOnce());
+    expect(viewer.world.getItemCount()).toBe(1);
+    const item = viewer.world.getItemAt(0), source = item.source;
+    expect(source.__instantViewport).toBe(true);
+    expect(source.instantStats.presentation).toBe('viewport');
+    expect(source.instantStats.cooking.total).toBe(9 * 70 * 48);
+    expect(source.instantStats.cooking.state).toBe('waiting');
+    expect(backend.configureViewport.mock.calls[0]).toBeDefined();
+    for (let i = 0; i < 3; i++) { viewer.forceRedraw(); runFrame(); }
+    expect(backend.renderViewport).not.toHaveBeenCalled();
+    expect(backend.render).not.toHaveBeenCalled();
+    expect(firstPaint).not.toHaveBeenCalled();
+    expect(viewer.imageLoader.jobsInProgress).toBe(0);
+
+    // Attachment/home and navigation may change the camera while artwork is
+    // preparing. That initial stale frame must not retire the previous map.
+    viewer.viewport.fitBounds(new OSD.Rect(-128, 0, 256, 256), true);
+    viewer.forceRedraw(); runFrame();
+    release();
+    await vi.waitFor(() => expect(pending.length).toBe(1));
+    finish(pending[0]);
+    await vi.waitFor(() => expect(source.instantStats.viewport.frames).toBe(1));
+    viewer.forceRedraw(); runFrame();
+    await Promise.resolve();
+    expect(firstPaint).not.toHaveBeenCalled();
+    await vi.waitFor(() => expect(pending.length).toBe(2));
+    expect(pending[1].plan.x).toBeCloseTo(-128);
+    expect(pending[1].plan.pixelWidth).toBe(256);
+    finish(pending[1]);
+    await vi.waitFor(() => expect(source.instantStats.viewport.frames).toBeGreaterThanOrEqual(2));
+    viewer.forceRedraw(); runFrame();
+    expect(firstPaint).not.toHaveBeenCalled();
+    await Promise.resolve();
+    expect(firstPaint).toHaveBeenCalledOnce();
+    expect([...viewer.drawer.context.getImageData(128, 128, 1, 1).data]).toEqual([240, 128, 32, 255]);
+    expect(backend.render).not.toHaveBeenCalled();
+    expect(viewer.imageLoader.jobsInProgress).toBe(0);
+    expect(item.getFullyLoaded()).toBe(true);
+    expect(source.instantStats.coverage.regions).toBe(0);
+    expect(source.instantStats.coverage.prepared).toBe(0);
+    clearInstantTerrain();
+    viewer.world.removeItem(item);
+    expect(viewer.drawer._drawTiles).toBe(originalDraw);
+    expect(failure).not.toHaveBeenCalled();
+  } finally {
+    clearInstantTerrain();
+    viewer.destroy(); mount.remove(); frames.clear();
+    vi.mocked(prepareInstantTerrain).mockReset();
+  }
+});
+
+it('does not attach cancelled terrain or report generation progress after a late viewport configuration', async () => {
+  const mount = document.createElement('div'); document.body.appendChild(mount);
+  const app = new AppOSD(mount, false), viewer = app.viewer;
+  const attached = vi.fn(), firstPaint = vi.fn(), failure = vi.fn(), progress = vi.fn();
+  let current = true, configure!: () => void;
+  const configured = new Promise<void>(resolve => { configure = resolve; });
+  const backend = { configureViewport: vi.fn(() => configured), invalidate: vi.fn(), render: vi.fn(), renderViewport: vi.fn() };
+  vi.mocked(prepareInstantTerrain).mockResolvedValue(backend);
+  window.addEventListener('biomeGenerationProgress', progress);
+  try {
+    const preparation = addInstantTerrain(app,
+      { seed: 7, isNGP: false, tileLayers: [], biomeData: { pixels: new Uint32Array(70 * 48) } },
+      { GLTerrainRenderer: class {} as any, initMaterialAtlas: async () => {},
+        getWorldSize: () => 70, getWorldCenter: () => 35, GENERATOR_CONFIG: {} },
+      [], () => current, attached, firstPaint, failure);
+    const rejected = expect(preparation).rejects.toMatchObject({ name: 'AbortError' });
+    await vi.waitFor(() => expect(backend.configureViewport).toHaveBeenCalledOnce());
+    current = false; clearInstantTerrain(); configure(); await rejected;
+    viewer.forceRedraw(); runFrame();
+    expect(viewer.world.getItemCount()).toBe(0);
+    expect(attached).not.toHaveBeenCalled();
+    expect(firstPaint).not.toHaveBeenCalled();
+    expect(progress).not.toHaveBeenCalled();
+    expect(backend.renderViewport).not.toHaveBeenCalled();
+    expect(failure).not.toHaveBeenCalled();
+  } finally {
+    window.removeEventListener('biomeGenerationProgress', progress);
+    clearInstantTerrain(); viewer.destroy(); mount.remove(); frames.clear();
+    vi.mocked(prepareInstantTerrain).mockReset();
+  }
+});
 
 it('sharpens a stationary real AppOSD overview as native background cooking completes, preserving transparent holes', async () => {
   const mount = document.createElement('div'); document.body.appendChild(mount);

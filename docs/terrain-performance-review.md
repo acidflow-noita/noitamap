@@ -13,6 +13,56 @@ the user separately authorized measurements of the deployed upstream site.
 See the [deployed-site report](deployed-telescope-measurement.md) for verified
 Render Everything runs, software-GPU conditions and completion limitations.
 
+## September 28 upstream update and next work
+
+The pinned `render-perf` submodule advances from `fa9cd25` to `9c58775`:
+
+- `1b26ba0` preserves scene/material transparency when zoomed out. The shared
+  material palette now uses mean texture alpha instead of assuming the XML
+  alpha describes the rendered texture. Scene visual art applies to translucent
+  cells too; opaque artwork makes those painted cells opaque, without filling air.
+- `9c58775` moves standalone controls into an Options modal and enables Lake by
+  default. The host already enables Lake and supplies its own UI.
+
+Neither commit accelerates terrain computation. Shader source is unchanged,
+including the boundary where the host applies vertical/elevator corrections.
+The host scene-art helper needed the same translucent-cell correction; it now
+matches upstream for all 65,536 cell/art alpha combinations and unequal image
+dimensions. Upstream per-mip scene air masks do not change the native scene-pack
+API used here. Scene packs were rebuilt and verified, and derived terrain cache
+revision `full-pixel-v12` prevents reuse of older output. Unchanged source ZIPs
+remain reusable.
+
+Current display uses complete worker viewport frames with native backgrounds,
+scene artwork and POIs drawn directly, rather than foreground tile jobs. The
+zoom-continuity repair keeps up to three earlier coverage frames within an
+additional 32 MiB decoded budget. It prefers a wide surrounding view through
+small zoom steps. Earlier frames are clipped outside newer coverage, so a new
+transparent hole cannot reveal obsolete terrain. Native completed pages remain
+separate and authoritative. Real OSD/native-canvas tests reproduce and repair
+the missing live surroundings; gradual baked-DZI/legacy-HD tests did not
+reproduce a baked-map dropout. Local browser verification remains manual.
+
+The next substantial changes should target these remaining costs:
+
+1. Split the cold runtime payload. `public/data.zip` alone is 24,842,915 bytes:
+   about 1.99 seconds at 100 Mbps before latency, decoding or computation. A
+   smaller runtime subset and compact metadata are necessary for the specified
+   cold one-second target. Persistent reuse helps later visits, not this bound.
+2. Batch contiguous native terrain work and move clipping, ancestor reduction,
+   encoding and persistence into the rendering worker. The sweep currently
+   serializes up to 30,240 candidate 512px blocks through worker rendering,
+   main-thread canvas capture/reduction, codec-worker PNG encoding and bounded
+   IndexedDB writes. Empty/static footprints already skip shading. Batches must
+   yield to navigation and preserve exact alpha, ownership and scene masks.
+
+Compatibility validation passed 25 focused host checks, four upstream Node
+test files, and 42 native/resource/policy checks. The emitted worker matches
+1,139,200 viewport RGBA bytes and 196,608 shader-reference bytes with zero
+differences. These software-llvmpipe checks establish sampled correctness, not
+hardware/browser speed or full-map completion. The sub-one-second all-nine
+region target remains unmet.
+
 ## Measured on this checkout
 
 [Native benchmark output](terrain-benchmark-2026-09-27.json), collected before

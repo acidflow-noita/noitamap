@@ -129,6 +129,20 @@ export function getZip(
   return pending;
 }
 
+/** Download, validate and persist an archive from the asset-preparation worker.
+ * Normal generation workers remain cache-only. Never use this on the UI
+ * thread: ZIP directory parsing and joining download chunks can be expensive. */
+export async function prepareDataArchive(key: string, baseUrl: string): Promise<void> {
+  if (!isWorker) throw new Error("Archive preparation requires a worker");
+  const revision = archiveRevisions[key];
+  const filename = key === "main" ? "data.zip" : `${key}.zip`;
+  if (!ZIP_URLS[key] || !revision) throw new Error(`Unknown archive: ${key}`);
+  const zip = await loadZipMain(key, new URL(filename, baseUrl).href, revision, true);
+  if (!zip) throw new Error(`Cannot prepare ${key} archive`);
+  // Do not retain duplicate parsed archives in this temporary worker. Their
+  // validated compressed bytes are shared through the existing persistent cache.
+}
+
 /** Worker startup uses the current archive that main-thread readiness saved. */
 async function loadZipWorker(
   key: string,

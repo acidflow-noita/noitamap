@@ -1,4 +1,4 @@
-import type { Plugin } from "vite";
+import { normalizePath, type Plugin } from "vite";
 import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
@@ -16,11 +16,17 @@ export function dataArchivesPlugin(root: string): Plugin {
     id = "\0" + name;
   const paths = Object.entries(files).map(([key, file]) => [
     key,
-    resolve(root, "public", file),
+    normalizePath(resolve(root, "public", file)),
   ]);
-  const backgrounds = resolve(root, "public", "biome_bg");
+  const backgrounds = normalizePath(resolve(root, "public", "biome_bg"));
   return {
     name: "noitamap-data-archives",
+    buildStart() {
+      // In dev, Vite treats load()'s watched paths as module dependencies.
+      // A directory is not importable. Register it outside the module load
+      // to retain new/deleted-image watching without creating a bogus import.
+      this.addWatchFile(backgrounds);
+    },
     resolveId(source) {
       if (source === name) return id;
     },
@@ -29,12 +35,11 @@ export function dataArchivesPlugin(root: string): Plugin {
       // Hash these small standalone downloads independently of data.zip. The
       // browser receives only this manifest and never hashes/downloads the ZIP
       // merely to check a background image's freshness.
-      this.addWatchFile(backgrounds);
       const backgroundPaths = (
         await readdir(backgrounds, { withFileTypes: true })
       )
         .filter((entry) => entry.isFile() && /\.png$/i.test(entry.name))
-        .map((entry) => [entry.name, resolve(backgrounds, entry.name)])
+        .map((entry) => [entry.name, normalizePath(resolve(backgrounds, entry.name))])
         .sort(([a], [b]) => a.localeCompare(b));
       const hashEntries = (entries: string[][]) =>
         Promise.all(
@@ -54,15 +59,17 @@ export function dataArchivesPlugin(root: string): Plugin {
       ]);
       return `export const archiveRevisions = ${JSON.stringify(Object.fromEntries(entries))};\nexport const biomeBackgroundRevisions = ${JSON.stringify(Object.fromEntries(backgroundEntries))};`;
     },
-    handleHotUpdate({ file, server }) {
+    hotUpdate({ file }) {
+      file = normalizePath(file);
       if (
         !paths.some(([, path]) => path === file) &&
         !(dirname(file) === backgrounds && /\.png$/i.test(file))
       )
         return;
-      const module = server.moduleGraph.getModuleById(id);
-      if (module) server.moduleGraph.invalidateModule(module);
-      server.ws.send({ type: "full-reload", path: "*" });
+      const { moduleGraph, hot } = this.environment;
+      const module = moduleGraph.getModuleById(id);
+      if (module) moduleGraph.invalidateModule(module);
+      hot.send({ type: "full-reload", path: "*" });
       return [];
     },
   };

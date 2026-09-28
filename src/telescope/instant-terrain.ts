@@ -1,4 +1,7 @@
-import Flatbush from "flatbush";
+import { createInstantClip } from "./instant-terrain-clip";
+import { createInstantTerrainViewport } from "./instant-terrain-viewport";
+import { createRetainedViewportRenderer } from "./retained-viewport-renderer";
+export { createInstantClip } from "./instant-terrain-clip";
 import type {
   GLTerrainDeps,
   GLTerrainGeneration,
@@ -7,7 +10,6 @@ import {
   createPlaneOwnership,
   WORLD_HEIGHT,
   WORLD_TOP,
-  type TerrainOwnership,
   type VerticalPlane,
 } from "./terrain-policy";
 import type { StaticTerrainMask } from "./static-terrain-mask";
@@ -111,133 +113,6 @@ export function reduceInstantTile(image: HTMLCanvasElement, width: number, heigh
     source = reduced;
   }
   return source.getContext('2d')!;
-}
-
-/** Preserve the existing static-map ownership and the exact authored scene
- * material/force-air masks. Empty PNG pixels do not erase a rectangular room. */
-export function createInstantClip(
-  owners: TerrainOwnership[],
-  masks: StaticTerrainMask[],
-) {
-  const index = masks.length ? new Flatbush(masks.length) : null;
-  for (const mask of masks)
-    index!.add(mask.x, mask.y, mask.x + mask.width, mask.y + mask.height);
-  index?.finish();
-  const bitmaps = new Map<Uint8Array, HTMLCanvasElement>();
-  let bytes = 0;
-  const bitmap = (mask: StaticTerrainMask) => {
-    let canvas = bitmaps.get(mask.bits);
-    if (canvas) {
-      bitmaps.delete(mask.bits);
-      bitmaps.set(mask.bits, canvas);
-      return canvas;
-    }
-    canvas = document.createElement("canvas");
-    canvas.width = mask.width;
-    canvas.height = mask.height;
-    const ctx = canvas.getContext("2d")!;
-    const image = ctx.createImageData(mask.width, mask.height);
-    for (let p = 0; p < mask.width * mask.height; p++)
-      if (
-        ((mask.bits[p >> 3] ?? 0) | (mask.airBits?.[p >> 3] ?? 0)) &
-        (1 << (p & 7))
-      )
-        image.data[p * 4 + 3] = 255;
-    ctx.putImageData(image, 0, 0);
-    bitmaps.set(mask.bits, canvas);
-    bytes += mask.width * mask.height * 4;
-    while (bytes > 32 * 1024 * 1024 && bitmaps.size > 1) {
-      const [key, old] = bitmaps.entries().next().value!;
-      bytes -= old.width * old.height * 4;
-      bitmaps.delete(key);
-      old.width = old.height = 0;
-    }
-    return canvas;
-  };
-  return {
-    hasTerrain(view: NonNullable<ReturnType<typeof instantTileView>>) {
-      for (let p = 0; p < owners.length; p++) {
-        const owner = owners[p], planeY = WORLD_TOP + (p - 1) * WORLD_HEIGHT;
-        const cy0 = Math.max(0, Math.floor((view.y - planeY) / 512));
-        const cy1 = Math.min(47, Math.floor((view.y + view.height * view.scale - 1 - planeY) / 512));
-        const cx0 = Math.floor((view.x + owner.width * 256) / 512);
-        const cx1 = Math.floor((view.x + view.width * view.scale - 1 + owner.width * 256) / 512);
-        for (let cy = cy0; cy <= cy1; cy++)
-          for (let cx = cx0; cx <= cx1; cx++)
-            if (owner.owners[cy * owner.width + ((cx % owner.width) + owner.width) % owner.width] >= 0)
-              return true;
-      }
-      return false;
-    },
-    draw(
-      ctx: CanvasRenderingContext2D,
-      image: CanvasImageSource,
-      view: NonNullable<ReturnType<typeof instantTileView>>,
-    ) {
-      const { x, y, scale, width, height } = view;
-      ctx.save();
-      ctx.beginPath();
-      for (let p = 0; p < owners.length; p++) {
-        const owner = owners[p],
-          planeY = WORLD_TOP + (p - 1) * WORLD_HEIGHT;
-        const cy0 = Math.max(0, Math.floor((y - planeY) / 512));
-        const cy1 = Math.min(
-          47,
-          Math.floor((y + height * scale - 1 - planeY) / 512),
-        );
-        const cx0 = Math.floor((x + owner.width * 256) / 512);
-        const cx1 = Math.floor(
-          (x + width * scale - 1 + owner.width * 256) / 512,
-        );
-        for (let cy = cy0; cy <= cy1; cy++) {
-          let start = -Infinity;
-          for (let cx = cx0; cx <= cx1 + 1; cx++) {
-            const localX = ((cx % owner.width) + owner.width) % owner.width;
-            const owns =
-              cx <= cx1 && owner.owners[cy * owner.width + localX] >= 0;
-            if (owns && start === -Infinity) start = cx;
-            if (!owns && start !== -Infinity) {
-              ctx.rect(
-                (start * 512 - owner.width * 256 - x) / scale,
-                (planeY + cy * 512 - y) / scale,
-                ((cx - start) * 512) / scale,
-                512 / scale,
-              );
-              start = -Infinity;
-            }
-          }
-        }
-      }
-      ctx.clip();
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(image, 0, 0);
-      ctx.restore();
-      ctx.save();
-      ctx.globalCompositeOperation = "destination-out";
-      ctx.imageSmoothingEnabled = false;
-      for (const id of index?.search(
-        x,
-        y,
-        x + width * scale,
-        y + height * scale,
-      ) ?? []) {
-        const mask = masks[id];
-        ctx.drawImage(
-          bitmap(mask),
-          (mask.x - x) / scale,
-          (mask.y - y) / scale,
-          mask.width / scale,
-          mask.height / scale,
-        );
-      }
-      ctx.restore();
-    },
-    dispose() {
-      for (const canvas of bitmaps.values()) canvas.width = canvas.height = 0;
-      bitmaps.clear();
-      bytes = 0;
-    },
-  };
 }
 
 export function createInstantTileSource(options: {
@@ -666,6 +541,7 @@ export async function addInstantTerrain(
   firstPaint: () => void,
   fallback: (error: unknown) => void,
   generationStartedAt = performance.now(),
+  presentationReady: Promise<void> = Promise.resolve(),
 ): Promise<boolean> {
   clearInstantTerrain();
   const lifetime = new AbortController();
@@ -674,6 +550,17 @@ export async function addInstantTerrain(
   const retentionIdentity = retainedTerrainIdentity(gen, masks);
   const items: any[] = [];
   const sources = new Set<any>();
+  const retainedRegions: { region: InstantRegion; retention: RetainedTerrainRegion }[] = [];
+  let viewport: ReturnType<typeof createInstantTerrainViewport> | undefined;
+  let viewportRevision = 0;
+  let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+  const refreshViewport = () => {
+    if (!viewport || lifetime.signal.aborted || refreshTimer !== undefined) return;
+    refreshTimer = setTimeout(() => {
+      refreshTimer = undefined;
+      if (!lifetime.signal.aborted) { viewportRevision++; viewport?.refresh(); }
+    }, 100);
+  };
   let clip: ReturnType<typeof createInstantClip> | null = null;
   let failed = false,
     painted = false;
@@ -698,6 +585,7 @@ export async function addInstantTerrain(
     signal: lifetime.signal,
     persistent: () => retained.stats.persistent,
     flush: () => retained.flush(),
+    foregroundBusy: () => !!viewport && (viewport.isBusy() || !!osd.isAnimating?.()),
     viewKey: () => {
       const b = osd.viewport.getBounds?.(false);
       const c = osd.viewport.getCenter(false);
@@ -729,6 +617,7 @@ export async function addInstantTerrain(
   const dispose = () => {
     if (lifetime.signal.aborted) return;
     lifetime.abort();
+    clearTimeout(refreshTimer);
     cache.clear();
     retained.dispose();
     clip?.dispose();
@@ -772,7 +661,7 @@ export async function addInstantTerrain(
     return pending;
   };
   try {
-    await getRenderer(0);
+    const mainRenderer = await getRenderer(0);
     if (!isCurrent() || lifetime.signal.aborted)
       throw new DOMException("Obsolete terrain generation", "AbortError");
     const { includeElevatorOwnership, prepareElevatorShafts } = await import('./terrain-elevator');
@@ -793,6 +682,12 @@ export async function addInstantTerrain(
       ), elevatorShafts, plane as VerticalPlane),
     );
     clip = createInstantClip(owners, masks);
+    const direct = osd.drawer?.getType?.() === 'canvas'
+      && typeof osd.drawer._drawTiles === 'function' && typeof mainRenderer.configureViewport === 'function';
+    if (direct) await mainRenderer.configureViewport({ owners, masks,
+      center: deps.getWorldCenter(gen.isNGP, gen.gameMode) });
+    if (!isCurrent() || lifetime.signal.aborted)
+      throw new DOMException('Obsolete terrain generation', 'AbortError');
     osd.addHandler("tile-drawn", onDraw);
     osd.addHandler("tile-drawing", smoothInstantTile);
     osd.addHandler('tile-invalidated', applyRetainedTerrainEvent);
@@ -810,6 +705,7 @@ export async function addInstantTerrain(
         let regionItem: any;
         const retention = retained.region(`${retentionIdentity}/${plane}/${pw}/${region.x},${region.y},${region.width},${region.height}`,
           region.width, region.height);
+        retainedRegions.push({ region, retention });
         const source = createInstantTileSource({
           region,
           deps,
@@ -821,6 +717,14 @@ export async function addInstantTerrain(
           retention,
           onRetainedTiles: tiles => {
             if (regionItem && !lifetime.signal.aborted) refreshRetainedTerrain(osd, regionItem, tiles);
+            if (viewport && !lifetime.signal.aborted) {
+              const bounds = osd.viewport.getBounds(true).getBoundingBox();
+              if (tiles.some(tile => tile.level === retention.maxLevel
+                && region.x + tile.x * 256 < bounds.x + bounds.width
+                && region.x + (tile.x + 1) * 256 > bounds.x
+                && region.y + tile.y * 256 < bounds.y + bounds.height
+                && region.y + (tile.y + 1) * 256 > bounds.y)) refreshViewport();
+            }
           },
           signal: lifetime.signal,
           onFailure: fail,
@@ -835,6 +739,7 @@ export async function addInstantTerrain(
         source.instantStats = stats;
         sources.add(source);
         cooker.add(source);
+        if (direct) continue; // Native cooking stays independent of foreground presentation.
         viewer.addTiledImage({
           tileSource: source,
           x: region.x,
@@ -854,6 +759,49 @@ export async function addInstantTerrain(
           error: fail,
         });
       }
+    if (direct) {
+      const minX = Math.min(...retainedRegions.map(({ region }) => region.x));
+      const maxX = Math.max(...retainedRegions.map(({ region }) => region.x + region.width));
+      const bounds = { x: minX, y: WORLD_TOP - WORLD_HEIGHT, width: maxX - minX, height: 3 * WORLD_HEIGHT };
+      const display = createRetainedViewportRenderer({
+        cache,
+        regions: retainedRegions, renderer: mainRenderer, signal: lifetime.signal,
+        complete: () => cooker.stats.state === 'complete', refresh: refreshViewport,
+      });
+      viewport = createInstantTerrainViewport({
+        viewer: osd, bounds, signal: lifetime.signal, revision: () => viewportRevision,
+        async renderFrame(plan, signal) {
+          await new Promise<void>((resolve, reject) => {
+            const abort = () => reject(signal.reason);
+            if (signal.aborted) { abort(); return; }
+            signal.addEventListener('abort', abort, { once: true });
+            presentationReady.then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
+          });
+          signal.throwIfAborted();
+          return display.render(plan, signal);
+        },
+        firstPaint() {
+          if (painted || !isCurrent() || lifetime.signal.aborted) return;
+          painted = true;
+          stats.firstDrawMs = performance.now() - start;
+          firstPaint();
+          cooker.start();
+          console.info('[Instant terrain] First complete viewport drawn', stats);
+        },
+        onFailure: fail,
+      });
+      Object.assign(stats, { presentation: 'viewport', viewport: viewport.stats, display: display.stats });
+      viewport.source.instantStats = stats;
+      const source = viewport.source;
+      viewer.addTiledImage({
+        tileSource: source, x: bounds.x, y: bounds.y, width: bounds.width, blendTime: 0,
+        success({ item }: any) {
+          if (!isCurrent() || lifetime.signal.aborted) { osd.world.removeItem(item); return; }
+          items.push(item); onItem(item); viewport?.refresh();
+        },
+        error(error: unknown) { source.destroy(); fail(error); },
+      });
+    }
     window.dispatchEvent(
       new CustomEvent("biomeGenerationProgress", {
         detail: { percentage: 100 },

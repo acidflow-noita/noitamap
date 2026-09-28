@@ -18,6 +18,7 @@ export function createInstantTerrainCooker(options: {
   /** Start of the seed request, before asset loading and generation. */
   startedAt?: number;
   seed?: number;
+  foregroundBusy?: () => boolean;
 }) {
   const startedAt = options.startedAt ?? performance.now();
   const sources = new Set<CookSource>();
@@ -63,6 +64,12 @@ export function createInstantTerrainCooker(options: {
       return;
     }
     if (hidden()) { stats.state = 'paused-hidden'; return; }
+    if (options.foregroundBusy?.()) {
+      stats.state = 'paused-viewport';
+      scheduled = true;
+      timer = setTimeout(runScheduled, 50);
+      return;
+    }
     stats.state = 'running';
     scheduled = true;
     // Empty and RAM-ready leaves can finish without any I/O task. Chaining
@@ -84,7 +91,7 @@ export function createInstantTerrainCooker(options: {
   }
   async function step() {
     if (options.signal.aborted) return;
-    if (!options.persistent() || hidden()) { schedule(); return; }
+    if (!options.persistent() || hidden() || options.foregroundBusy?.()) { schedule(); return; }
     running = true;
     try {
       // Re-rank remaining coordinates after navigation, never enqueue all
@@ -126,7 +133,7 @@ export function createInstantTerrainCooker(options: {
             // Wall time from the first sweep task, including pauses and writes.
             cookingElapsedMs: cookingStartedAt === undefined ? 0 : finishedAt - cookingStartedAt,
             sinceNavigationMs: finishedAt,
-            scope: 'Native terrain and retained reductions, including persistence; scene and POI tile completion is separate',
+            scope: 'Native terrain and retained reductions, including persistence; artwork preparation and viewport presentation have separate timings',
           });
           void reportTerrainStorageUsage(options.signal, options.seed);
         }

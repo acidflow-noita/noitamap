@@ -33,6 +33,9 @@ it("versions standalone background bytes independently and watches changes/new i
     await mkdir(resolve(directory, "not-a-file.png"));
     const plugin = dataArchivesPlugin(root),
       context = { addWatchFile: vi.fn() };
+    (plugin.buildStart as Function).call(context);
+    expect(context.addWatchFile).toHaveBeenCalledWith(directory);
+    context.addWatchFile.mockClear();
     const load = plugin.load as Function;
     const id = "\0virtual:noitamap-data-archives";
     const first = exportsOf(await load.call(context, id));
@@ -45,7 +48,7 @@ it("versions standalone background bytes independently and watches changes/new i
       "background_coalmine.png": digest(otherPixels),
       "background_wandcave.png": digest(firstPixels),
     });
-    expect(context.addWatchFile).toHaveBeenCalledWith(directory);
+    expect(context.addWatchFile).not.toHaveBeenCalledWith(directory);
     expect(context.addWatchFile).toHaveBeenCalledWith(image);
 
     const updatedPixels = new Uint8Array([8, 7, 5]);
@@ -60,28 +63,32 @@ it("versions standalone background bytes independently and watches changes/new i
     const module = {},
       invalidateModule = vi.fn(),
       send = vi.fn();
-    const update = plugin.handleHotUpdate as Function;
-    const server = {
+    const update = plugin.hotUpdate as Function;
+    const environment = {
       moduleGraph: { getModuleById: () => module, invalidateModule },
-      ws: { send },
+      hot: { send },
     };
-    expect(update({ file: image, server })).toEqual([]);
+    const changed = (file: string, type = 'update') => update.call({ environment }, { file, type });
+    expect(changed(image)).toEqual([]);
     expect(invalidateModule).toHaveBeenCalledWith(module);
     expect(send).toHaveBeenCalledWith({ type: "full-reload", path: "*" });
 
     const added = resolve(directory, "background_new.png");
     await writeFile(added, otherPixels);
-    expect(update({ file: added, server })).toEqual([]);
+    expect(changed(added, 'create')).toEqual([]);
     expect(
       exportsOf(await load.call(context, id)).biomeBackgroundRevisions[
         "background_new.png"
       ],
     ).toBe(digest(otherPixels));
+    await rm(added);
+    expect(changed(added, 'delete')).toEqual([]);
+    expect(exportsOf(await load.call(context, id)).biomeBackgroundRevisions).not.toHaveProperty('background_new.png');
     expect(
-      update({ file: resolve(directory, "README.txt"), server }),
+      changed(resolve(directory, "README.txt")),
     ).toBeUndefined();
     expect(
-      update({ file: resolve(root, "other.png"), server }),
+      changed(resolve(root, "other.png")),
     ).toBeUndefined();
   } finally {
     await rm(root, { recursive: true, force: true });

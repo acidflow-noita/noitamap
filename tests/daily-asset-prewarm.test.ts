@@ -1,10 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
-vi.mock("../src/telescope/telescope-osd-bridge", () => ({
-  prewarmMapPresentation: vi.fn(),
-  prefetchAllSceneBitmaps: vi.fn(),
-}));
+vi.mock('../src/telescope/daily-asset-worker-client', () => ({ prepareDailyAssetsOffThread: vi.fn(async () => ({ type: 'done', prepared: 1, failures: 0, elapsedMs: 1 })) }));
+vi.mock('../src/telescope/instant-terrain-backend', () => ({ prewarmInstantTerrain: vi.fn(async () => true) }));
 import { scheduleDailyAssetWarmup } from "../src/telescope/daily-asset-prewarm";
+import { prepareDailyAssetsOffThread } from '../src/telescope/daily-asset-worker-client';
 import {
   backgroundAssetYield,
   prepareAssetJobs,
@@ -38,6 +37,18 @@ function barrier() {
   });
   return { promise, resolve };
 }
+
+it('uses only the asset worker by default and aborts it when the daily map is replaced', async () => {
+  const map = viewer();
+  const cancel = scheduleDailyAssetWarmup({ viewer: map, isCurrent: () => true, yieldTask: async () => {} });
+  map.draw();
+  await vi.waitFor(() => expect(prepareDailyAssetsOffThread).toHaveBeenCalled());
+  const [request, signal] = vi.mocked(prepareDailyAssetsOffThread).mock.calls.at(-1)!;
+  expect(request.baseUrl).toBe(new URL('./', document.baseURI).href);
+  expect(signal.aborted).toBe(false);
+  cancel();
+  expect(signal.aborted).toBe(true);
+});
 
 it("waits for an actual baked tile and a later task, then warms stages serially", async () => {
   const map = viewer(),

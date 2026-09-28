@@ -76,6 +76,16 @@ it.skipIf(process.platform !== "linux")(
       expect(result.comparedBytes).toBe(3 * 128 * 128 * 4);
       expect(result.mismatches).toBe(0);
       expect(result.visible).toBeGreaterThan(100);
+      expect(result.viewport.regions).toBe(9);
+      expect(result.viewport.fullWorldFrames).toBe(1);
+      expect(result.viewport.forceAirMaskVerified).toBe(true);
+      expect(result.viewport.forceAirOpaquePixelsCleared).toBeGreaterThan(0);
+      expect(result.viewport.comparedBytes).toBeGreaterThan(1_000_000);
+      expect(result.viewport.mismatches).toBe(0);
+      expect(result.viewport.visible).toBeGreaterThan(1000);
+      expect(result.viewport.measuredFrameRequests).toBe(2);
+      expect(result.viewport.measuredTileRequests).toBe(24);
+      expect(result.viewport.warm1080pFrameTransferMs).toHaveLength(2);
       console.log(
         "[Native GPU worker, shader cache disabled]",
         JSON.stringify(result),

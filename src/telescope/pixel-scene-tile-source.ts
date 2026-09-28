@@ -1,5 +1,6 @@
 import Flatbush from "flatbush";
 import { copyTerrainContext, InstantTerrainCache } from "./instant-terrain-cache";
+import { drawViewportArt } from './viewport-art';
 
 declare const OpenSeadragon: any;
 
@@ -61,6 +62,19 @@ export function createPixelSceneTileSource(options: {
   source.hasCachedTile = (tile: { level: number; x: number; y: number }) =>
     cache.has(source.getTileUrl(tile.level, tile.x, tile.y));
   source.hasTransparency = () => true;
+  source.__drawViewport = (context: CanvasRenderingContext2D, item: any, viewport: any) => {
+    if (destroyed) return true;
+    return drawViewportArt(context, item, viewport, width, height, bounds => {
+      // Query full scene rectangles; no padding or coarse tile rounding is
+      // needed when original artwork is drawn at its exact world placement.
+      const hits = index.search(bounds.left, bounds.top, bounds.right, bounds.bottom).sort((a, b) => a - b);
+      for (const id of hits) {
+        const scene = items[id], bitmap = bitmapByKey.get(scene.sceneKey);
+        if (bitmap) context.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height,
+          scene.osdX - originX, scene.osdY - originY, scene.w, scene.h);
+      }
+    });
+  };
 
   function query(level: number, x: number, y: number) {
     const span = tileSize * 2 ** (maxLevel - level);

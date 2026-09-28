@@ -1,6 +1,7 @@
 import { installTelescopeShim } from "./telescope-dom-shim";
 import { installFetchInterceptor } from "./telescope-data-bridge";
 import { restoreTileLayer } from "./tile-layer-cache";
+import { createTerrainViewportCompositor } from './terrain-viewport-compositor';
 
 if (typeof window === "undefined") (globalThis as any).window = self;
 if (typeof document === "undefined")
@@ -25,6 +26,7 @@ let resources: any;
 let config: any;
 let warm: Promise<void> | undefined;
 let resourcesLoaded: Promise<void> | undefined;
+let presentation: ReturnType<typeof createTerrainViewportCompositor> | undefined;
 let activeToken = 0;
 let latestToken = 0;
 let queue: Promise<void> = Promise.resolve();
@@ -128,11 +130,28 @@ self.onmessage = ({ data }) => {
             renderer.failed || "Worker WebGL2 terrain resources unavailable",
           );
         activeToken = token;
+        presentation?.dispose();
+        presentation = undefined;
         self.postMessage({
           id,
           resourceMs: performance.now() - started,
           shaderWarmupMs: renderer.shaderWarmupMs,
         });
+      } else if (type === 'presentation') {
+        if (token !== activeToken || token !== latestToken)
+          throw new DOMException('Obsolete terrain generation', 'AbortError');
+        presentation?.dispose();
+        presentation = createTerrainViewportCompositor(data.inputs);
+        self.postMessage({ id });
+      } else if (type === 'frame') {
+        if (token !== activeToken || token !== latestToken)
+          throw new DOMException('Obsolete terrain generation', 'AbortError');
+        if (!presentation) throw new Error('Viewport masks are not ready');
+        const started = performance.now();
+        const canvas = presentation.render(resources, data.plan);
+        if (renderer.gl.getError()) throw new Error('GPU viewport draw failed');
+        const bitmap = (canvas as unknown as OffscreenCanvas).transferToImageBitmap();
+        self.postMessage({ id, bitmap, renderMs: performance.now() - started }, [bitmap]);
       } else if (type === "render") {
         if (token !== activeToken || token !== latestToken)
           throw new DOMException("Obsolete terrain generation", "AbortError");
@@ -144,6 +163,8 @@ self.onmessage = ({ data }) => {
         self.postMessage({ id, bitmap }, [bitmap]);
       } else if (type === "invalidate") {
         if (token === activeToken) {
+          presentation?.dispose();
+          presentation = undefined;
           resources.invalidate();
           activeToken = 0;
         }

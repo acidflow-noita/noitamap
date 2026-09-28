@@ -1,7 +1,7 @@
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 
 vi.mock("../src/telescope/terrain-shader-prewarm", () => ({
-  prewarmTerrainShader: async () => {},
+  prewarmTerrainShader: vi.fn(async () => {}),
 }));
 // The native resource suite verifies real GL texture ownership and pixels.
 // This fake keeps backend lifecycle tests independent of game assets and GL.
@@ -20,6 +20,9 @@ class TestWorker {
   static instances: TestWorker[] = [];
   static initError = false;
   static holdInit = false;
+  static holdPrewarm = false;
+  static prewarmError = false;
+  static strictClone = false;
   onmessage: ((event: any) => void) | null = null;
   onerror: ((event: any) => void) | null = null;
   onmessageerror: (() => void) | null = null;
@@ -29,11 +32,14 @@ class TestWorker {
     TestWorker.instances.push(this);
   }
   postMessage(data: any) {
+    if (TestWorker.strictClone) structuredClone(data);
     this.sent.push(data);
     if (data.type === "init" && TestWorker.holdInit) return;
+    if (data.type === "prewarm" && TestWorker.holdPrewarm) return;
     if (
       data.type === "prewarm" ||
       data.type === "init" ||
+      data.type === "presentation" ||
       data.type === "invalidate"
     )
       queueMicrotask(() =>
@@ -42,6 +48,9 @@ class TestWorker {
           resourceMs: 10,
           ...(data.type === "init" && TestWorker.initError
             ? { error: "WebGL2 unavailable in worker" }
+            : {}),
+          ...(data.type === "prewarm" && TestWorker.prewarmError
+            ? { error: "OffscreenCanvas WebGL2 unavailable" }
             : {}),
         }),
       );
@@ -55,6 +64,9 @@ beforeEach(() => {
   TestWorker.instances = [];
   TestWorker.initError = false;
   TestWorker.holdInit = false;
+  TestWorker.holdPrewarm = false;
+  TestWorker.prewarmError = false;
+  TestWorker.strictClone = false;
   vi.stubGlobal("Worker", TestWorker);
   vi.stubGlobal("OffscreenCanvas", class {});
 });
@@ -543,4 +555,122 @@ it("does not retry a failed fallback independently for sibling planes", async ()
   expect(next.backend).toBe("main");
   expect(d.renderers).toHaveLength(1);
   expect(d.build).toHaveBeenCalledTimes(2);
+});
+
+const viewportPlan = { x: -53760, y: -31744, width: 107520, height: 73728,
+  scale: 512, pixelWidth: 210, pixelHeight: 144 };
+function viewportInputs() {
+  return { center: 35,
+    owners: [0, 1, 2].map(() => ({ width: 70, owners: new Int16Array(70 * 48), names: ['mine'], at: () => 0 })),
+    masks: [{ x: 1, y: 2, width: 2, height: 1, bits: new Uint8Array([1]), airBits: new Uint8Array([2]) }] };
+}
+
+it("configures cloneable viewport masks once and returns an atomic frame with one RPC", async () => {
+  const { prepareInstantTerrain, releaseInstantTerrainBackend } = await import('../src/telescope/instant-terrain-backend');
+  TestWorker.strictClone = true;
+  const handle = await prepareInstantTerrain(generation(), deps()), inputs = viewportInputs();
+  await handle.configureViewport(inputs);
+  const worker = TestWorker.instances[0], configure = worker.sent.find(message => message.type === 'presentation');
+  expect(configure.inputs).toMatchObject({ center: 35, masks: inputs.masks });
+  expect(configure.inputs.owners.map((value: any) => value.width)).toEqual([70, 70, 70]);
+  expect(configure.inputs.owners[0].owners).toEqual(inputs.owners[0].owners);
+  expect(configure.inputs.owners.some((value: any) => typeof value.at === 'function')).toBe(false);
+  const drawing = handle.renderViewport(viewportPlan);
+  const request = worker.sent.at(-1);
+  expect(request).toMatchObject({ type: 'frame', token: configure.token, plan: viewportPlan });
+  expect(worker.sent.filter(message => message.type === 'frame')).toHaveLength(1);
+  expect(worker.sent.filter(message => message.type === 'render')).toHaveLength(0);
+  const bitmap = { close: vi.fn() };
+  worker.reply({ id: request.id, bitmap });
+  expect(await drawing).toBe(bitmap);
+  expect(bitmap.close).not.toHaveBeenCalled();
+  releaseInstantTerrainBackend();
+});
+
+it("cancels an entire viewport frame and closes the late transfer without cancelling its sibling cooker tile", async () => {
+  const { prepareInstantTerrain, releaseInstantTerrainBackend } = await import('../src/telescope/instant-terrain-backend');
+  const handle = await prepareInstantTerrain(generation(), deps());
+  await handle.configureViewport(viewportInputs());
+  const worker = TestWorker.instances[0], abort = new AbortController();
+  const frame = handle.renderViewport(viewportPlan, abort.signal), frameRequest = worker.sent.at(-1);
+  const rejected = expect(frame).rejects.toMatchObject({ name: 'AbortError' });
+  const tile = handle.render({ width: 512, height: 512 }), tileRequest = worker.sent.at(-1);
+  abort.abort(); await rejected;
+  expect(worker.sent.at(-1)).toEqual({ type: 'cancel', id: frameRequest.id });
+  const late = { close: vi.fn() }, native = { close: vi.fn() };
+  worker.reply({ id: frameRequest.id, bitmap: late });
+  worker.reply({ id: tileRequest.id, bitmap: native });
+  expect(late.close).toHaveBeenCalledOnce();
+  expect(await tile).toBe(native);
+  expect(native.close).not.toHaveBeenCalled();
+  expect(worker.terminate).not.toHaveBeenCalled();
+  releaseInstantTerrainBackend();
+});
+
+it("rejects a previous seed's viewport frame and closes it when reseeding finishes first", async () => {
+  const { prepareInstantTerrain, releaseInstantTerrainBackend } = await import('../src/telescope/instant-terrain-backend');
+  const handle = await prepareInstantTerrain(generation(), deps());
+  await handle.configureViewport(viewportInputs());
+  const worker = TestWorker.instances[0];
+  const drawing = handle.renderViewport(viewportPlan), request = worker.sent.at(-1);
+  const rejected = expect(drawing).rejects.toMatchObject({ name: 'AbortError' });
+  await prepareInstantTerrain(generation(2), deps());
+  const late = { close: vi.fn() };
+  worker.reply({ id: request.id, bitmap: late });
+  await rejected;
+  expect(late.close).toHaveBeenCalledOnce();
+  await expect(handle.configureViewport(viewportInputs())).rejects.toMatchObject({ name: 'AbortError' });
+  releaseInstantTerrainBackend();
+});
+
+it("does not turn failed daily worker-only prewarming into archive loading or main-thread shader work", async () => {
+  const { prewarmInstantTerrain, releaseInstantTerrainBackend, prepareInstantTerrain } = await import('../src/telescope/instant-terrain-backend');
+  const { prewarmTerrainShader } = await import('../src/telescope/terrain-shader-prewarm');
+  vi.mocked(prewarmTerrainShader).mockClear();
+  const fetch = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Unexpected UI-thread asset load'));
+  try {
+    TestWorker.prewarmError = true;
+    expect(await prewarmInstantTerrain({ workerOnly: true })).toBe(false);
+    expect(TestWorker.instances).toHaveLength(1);
+    expect(TestWorker.instances[0].terminate).toHaveBeenCalledOnce();
+    expect(fetch).not.toHaveBeenCalled();
+    expect(prewarmTerrainShader).not.toHaveBeenCalled();
+    TestWorker.prewarmError = false;
+    const d = deps(), handle = await prepareInstantTerrain(generation(), d);
+    expect(handle.backend).toBe('worker');
+    expect(d.renderers).toHaveLength(0);
+    expect(TestWorker.instances).toHaveLength(2);
+    releaseInstantTerrainBackend();
+  } finally { fetch.mockRestore(); }
+});
+
+it("shares one pending daily shader warmup with foreground generation and handles release without resurrection", async () => {
+  const { prewarmInstantTerrain, prepareInstantTerrain, releaseInstantTerrainBackend } = await import('../src/telescope/instant-terrain-backend');
+  TestWorker.holdPrewarm = true;
+  const daily = prewarmInstantTerrain({ workerOnly: true }), d = deps();
+  const preparation = prepareInstantTerrain(generation(), d);
+  const rejected = expect(preparation).rejects.toMatchObject({ name: 'AbortError' });
+  await vi.waitFor(() => expect(TestWorker.instances[0]?.sent).toHaveLength(1));
+  expect(TestWorker.instances).toHaveLength(1);
+  releaseInstantTerrainBackend();
+  await rejected;
+  expect(await daily).toBe(false);
+  expect(d.renderers).toHaveLength(0);
+  TestWorker.holdPrewarm = false;
+  const next = await prepareInstantTerrain(generation(2), d);
+  expect(next.backend).toBe('worker');
+  expect(TestWorker.instances).toHaveLength(2);
+  releaseInstantTerrainBackend();
+});
+
+it("applies the render watchdog to whole viewport frames", async () => {
+  vi.useFakeTimers();
+  try {
+    const { InstantTerrainWorkerClient } = await import('../src/telescope/instant-terrain-backend');
+    const worker = new TestWorker(), client = new InstantTerrainWorkerClient(worker as any);
+    const frame = expect(client.request('frame', { plan: viewportPlan })).rejects.toThrow('frame timed out');
+    await vi.advanceTimersByTimeAsync(10_000);
+    await frame;
+    expect(worker.terminate).toHaveBeenCalledOnce();
+  } finally { vi.useRealTimers(); }
 });

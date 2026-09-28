@@ -27,14 +27,14 @@ vi.mock('../src/game-translations/translator', () => ({ gameTranslator: {} }));
 
 import { fetchDailySeed, fetchPreviousDailySeed } from '../src/data_sources/daily_seed';
 import { parseURL, reorderParams, updateURLWithSeed } from '../src/data_sources/url';
-import { shouldUseBakedTerrain } from '../src/renderer_settings';
-import { initTelescope } from '../src/telescope/telescope-adapter';
+import { shouldUseBakedTerrain, isInstantTerrainEnabled } from '../src/renderer_settings';
+import { initTelescope, generateDynamicMap } from '../src/telescope/telescope-adapter';
 import { probeBakedDZIs } from '../src/telescope/baked-dzi-loader';
 import { addBakedDZIsToOSD } from '../src/telescope/baked-dzi-loader';
 import { fetchBakedGeneration } from '../src/telescope/baked-generation';
 import { scheduleDailyAssetWarmup } from '../src/telescope/daily-asset-prewarm';
-import { cacheGeneration } from '../src/telescope/tile-cache';
-import { renderGenerationResult, prefetchAllSceneBitmaps, hasDynamicOverlays } from '../src/telescope/telescope-osd-bridge';
+import { cacheGeneration, getCachedGeneration } from '../src/telescope/tile-cache';
+import { renderGenerationResult, prefetchAllSceneBitmaps, hasDynamicOverlays, prepareInstantTerrainResources } from '../src/telescope/telescope-osd-bridge';
 
 const today = 1216316599, previous = 1344443116;
 beforeEach(() => {
@@ -43,6 +43,7 @@ beforeEach(() => {
   vi.mocked(fetchDailySeed).mockResolvedValue(today);
   vi.mocked(fetchPreviousDailySeed).mockResolvedValue(previous);
   vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
+  vi.mocked(isInstantTerrainEnabled).mockReturnValue(false);
 });
 afterEach(() => { history.replaceState(null, '', '/'); });
 
@@ -56,6 +57,59 @@ function mainFunction(start: string, end: string, dependencies: Record<string, u
 }
 
 describe('dynamic seed URL identity', () => {
+  it.each([['daily', today], ['previous-daily', previous]] as const)(
+    'switches the same seed from forced live GPU to baked %s without generating again', async (prefix, seed) => {
+      history.replaceState(null, '', `/?m=dy&se=${seed}&ds=1&terrain=gpu&nb=1`);
+      vi.mocked(shouldUseBakedTerrain).mockImplementation(search => !new URLSearchParams(search).has('nb'));
+      vi.mocked(isInstantTerrainEnabled).mockReturnValue(true);
+      const live = { seed, ngPlus: 0, isNGP: false, worldSize: 70, worldCenter: 35,
+        tileLayers: [{}], biomeData: {}, poisByPW: {}, pixelScenesByPW: {}, parallelWorlds: [0] } as any;
+      const baked = { ...live, tileLayers: [] };
+      vi.mocked(initTelescope).mockResolvedValue();
+      vi.mocked(generateDynamicMap).mockResolvedValue(live);
+      vi.mocked(getCachedGeneration).mockResolvedValue(null);
+      vi.mocked(cacheGeneration).mockResolvedValue();
+      vi.mocked(renderGenerationResult).mockResolvedValue();
+      vi.mocked(prefetchAllSceneBitmaps).mockResolvedValue();
+      vi.mocked(prepareInstantTerrainResources).mockResolvedValue();
+      vi.mocked(hasDynamicOverlays).mockReturnValue(true);
+      vi.mocked(fetchBakedGeneration).mockResolvedValue(baked);
+      const placements = [{ pw: 0, x: 0, y: 0, width: 100, bust: 'published', dziUrl: `/${prefix}.dzi` }];
+      vi.mocked(probeBakedDZIs).mockResolvedValue({ baked: true, prefix, placements,
+        decorationsBaked: true, fullPixelsBaked: false });
+      vi.mocked(scheduleDailyAssetWarmup).mockReturnValue(vi.fn());
+      const frame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
+      const pipeline = await import('../src/dynamic-map');
+      try {
+        expect(await pipeline.runDynamicMapFromURL({ viewer: {} })).toBe(live);
+        expect(generateDynamicMap).toHaveBeenCalledOnce();
+        expect(probeBakedDZIs).not.toHaveBeenCalled();
+        vi.mocked(initTelescope).mockClear();
+        vi.mocked(generateDynamicMap).mockClear();
+        vi.mocked(prepareInstantTerrainResources).mockClear();
+        vi.mocked(renderGenerationResult).mockClear();
+
+        // The real Daily/Previous button removes this override before calling
+        // the same pipeline. Same-seed deduplication must include that change.
+        const url = new URL(location.href); url.searchParams.delete('nb');
+        history.replaceState(null, '', url);
+        expect(await pipeline.runDynamicMapFromURL({ viewer: {} })).toBe(baked);
+        expect(probeBakedDZIs).toHaveBeenCalledExactlyOnceWith(prefix, seed);
+        expect(addBakedDZIsToOSD).toHaveBeenCalledOnce();
+        expect(fetchBakedGeneration).toHaveBeenCalledWith(prefix, ['left', 'middle', 'right'], seed);
+        expect(initTelescope).not.toHaveBeenCalled();
+        expect(generateDynamicMap).not.toHaveBeenCalled();
+        expect(prepareInstantTerrainResources).not.toHaveBeenCalled();
+        expect(vi.mocked(renderGenerationResult).mock.calls[0].slice(6, 9)).toEqual([placements, true, true]);
+        expect(location.search).toContain('terrain=gpu');
+        // With the baked route already active, repeated selection is harmless.
+        expect(await pipeline.runDynamicMapFromURL({ viewer: {} })).toBe(baked);
+        expect(probeBakedDZIs).toHaveBeenCalledOnce();
+        expect(renderGenerationResult).toHaveBeenCalledOnce();
+      } finally { pipeline.clearDynamicMap({}); frame.mockRestore(); }
+    },
+  );
+
   it.each([false, true])('arms baked daily assets and retains their intent across redundant selection: %s', async (reselect) => {
     history.replaceState(null, '', '/');
     const order: string[] = [], cancel = vi.fn(), viewer = {};

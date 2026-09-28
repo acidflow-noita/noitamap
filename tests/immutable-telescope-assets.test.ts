@@ -70,6 +70,22 @@ it("reuses exact immutable bytes across callers, seeds, and fresh module owners"
   expect(records.size).toBe(1);
 });
 
+it('allows a temporary worker to await writes without delaying foreground asset delivery', async () => {
+  const { cache } = disk();
+  let finish!: () => void;
+  cache.put.mockImplementation(() => new Promise<void>(resolve => { finish = resolve; }));
+  const assets = new ImmutableTelescopeAssets();
+  const response = await assets.fetch('atlas', 'revision', async () => new Response('usable'));
+  expect(await response.text()).toBe('usable');
+  const flushed = vi.fn();
+  const pending = assets.flushWrites().then(flushed);
+  await Promise.resolve();
+  expect(flushed).not.toHaveBeenCalled();
+  finish();
+  await pending;
+  expect(flushed).toHaveBeenCalledOnce();
+});
+
 it("invalidates changed content and replaces the same persistent slot across deployments", async () => {
   const { records } = disk();
   const old = vi.fn(async () => new Response("old"));
