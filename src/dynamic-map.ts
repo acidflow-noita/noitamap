@@ -333,6 +333,8 @@ export async function runDynamicMap(
   // + (in worst case) full generation.
   // Lives at function scope so the later render() call can reference it.
   let bakedAlreadyPainted = false;
+  let markDailyMapReady!: () => void;
+  const dailyMapReady = new Promise<void>(resolve => { markDailyMapReady = resolve; });
   // ?nb=1 disables the baked fast path entirely. The bake page uses it so a
   // re-bake of an already-deployed seed still runs a real local generation
   // (the export hooks need live tileLayers, which the baked path never has).
@@ -379,13 +381,17 @@ export async function runDynamicMap(
         console.log(`[DynamicMap] Baked ${probe.prefix}-* hit, painting biomes immediately`);
         clearDynamicOverlays(viewer as any);
         let assetsCurrent = true;
-        const stopAssets = scheduleDailyAssetWarmup({ viewer, isCurrent: () => assetsCurrent });
-        cancelDailyAssetWarmup = () => { assetsCurrent = false; stopAssets(); };
         // Light mode: only paint the middle world (pw=0). The other two worlds'
         // DZIs are still on CF — we just don't ask OSD to load them.
         const placements = isLightMode()
           ? probe.placements.filter((p) => p.pw === 0)
           : probe.placements;
+        const stopAssets = scheduleDailyAssetWarmup({ viewer,
+          isCurrent: () => assetsCurrent,
+          metadataReady: dailyMapReady,
+          expectedBakedImages: placements.length,
+        });
+        cancelDailyAssetWarmup = () => { assetsCurrent = false; stopAssets(); };
         // addTiledImage is async: if the user switches seed while these are
         // in flight, they'd land AFTER the next clearDynamicOverlays pass and
         // linger as stale tiles. Remove on arrival when outdated.
@@ -598,6 +604,7 @@ export async function runDynamicMap(
       onPOIsReady(dynamicPOIs);
     }
     console.log(`[DynamicMap] POI export + index: ${((performance.now() - t) / 1000).toFixed(2)}s`);
+    markDailyMapReady();
 
     // Alternate unlock data is background work. Never compete with the first
     // map paint/compositing. Yield a frame and a task before starting it, and

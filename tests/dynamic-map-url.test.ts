@@ -119,7 +119,12 @@ describe('dynamic seed URL identity', () => {
     vi.mocked(scheduleDailyAssetWarmup).mockImplementation(() => { order.push('warmup'); return cancel; });
     vi.mocked(addBakedDZIsToOSD).mockImplementation(() => { order.push('baked'); });
     vi.mocked(cacheGeneration).mockResolvedValue();
-    vi.mocked(renderGenerationResult).mockResolvedValue();
+    vi.mocked(renderGenerationResult).mockImplementation(async () => {
+      let ready = false;
+      vi.mocked(scheduleDailyAssetWarmup).mock.calls[0][0].metadataReady?.then(() => { ready = true; });
+      await Promise.resolve();
+      expect(ready).toBe(false);
+    });
     vi.mocked(prefetchAllSceneBitmaps).mockResolvedValue();
     const frame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
     try {
@@ -130,6 +135,8 @@ describe('dynamic seed URL identity', () => {
       const intent = vi.mocked(scheduleDailyAssetWarmup).mock.calls[0][0];
       expect(intent.viewer).toBe(viewer);
       expect(intent.isCurrent()).toBe(true);
+      expect(intent.expectedBakedImages).toBe(1);
+      await expect(intent.metadataReady).resolves.toBeUndefined();
       if (reselect) {
         vi.mocked(hasDynamicOverlays).mockReturnValue(true);
         expect(await pipeline.runDynamicMapFromURL({ viewer })).toBe(generated);

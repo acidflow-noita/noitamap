@@ -1,31 +1,46 @@
 // @vitest-environment jsdom
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 vi.mock('../src/telescope/daily-asset-worker-client', () => ({ prepareDailyAssetsOffThread: vi.fn(async () => ({ type: 'done', prepared: 1, failures: 0, elapsedMs: 1 })) }));
 vi.mock('../src/telescope/instant-terrain-backend', () => ({ prewarmInstantTerrain: vi.fn(async () => true) }));
+vi.mock('../src/renderer_settings', () => ({ useRenderPerfGeneration: () => true, isInstantTerrainEnabled: () => true }));
 import { scheduleDailyAssetWarmup } from "../src/telescope/daily-asset-prewarm";
+import { prewarmInstantTerrain } from '../src/telescope/instant-terrain-backend';
 import { prepareDailyAssetsOffThread } from '../src/telescope/daily-asset-worker-client';
 import {
   backgroundAssetYield,
   prepareAssetJobs,
 } from "../src/telescope/background-idle";
 
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+});
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
 function viewer() {
   const handlers = new Set<(event: any) => void>();
+  const events = new Map<string, Set<(event: any) => void>>();
+  const item = { source: { __bakedDzi: true }, getDrawArea: () => ({}), getFullyLoaded: () => true };
   return {
-    addHandler: vi.fn((_name: string, handler: (event: any) => void) =>
-      handlers.add(handler),
-    ),
-    removeHandler: vi.fn((_name: string, handler: (event: any) => void) =>
-      handlers.delete(handler),
-    ),
+    item,
+    world: { getItemCount: () => 1, getItemAt: () => item },
+    addHandler: vi.fn((name: string, handler: (event: any) => void) => {
+      if (!events.has(name)) events.set(name, new Set());
+      events.get(name)!.add(handler); handlers.add(handler);
+    }),
+    removeHandler: vi.fn((name: string, handler: (event: any) => void) => {
+      events.get(name)?.delete(handler); handlers.delete(handler);
+    }),
     draw(baked = true) {
-      for (const handler of [...handlers])
+      for (const handler of [...(events.get('tile-drawn') ?? [])])
         handler({ tiledImage: { source: { __bakedDzi: baked } } });
+    },
+    emit(name: string) {
+      for (const handler of [...(events.get(name) ?? [])]) handler({});
     },
     handlers,
   };
@@ -40,14 +55,61 @@ function barrier() {
 
 it('uses only the asset worker by default and aborts it when the daily map is replaced', async () => {
   const map = viewer();
+  const info = vi.spyOn(console, 'info').mockImplementation(() => {});
   const cancel = scheduleDailyAssetWarmup({ viewer: map, isCurrent: () => true, yieldTask: async () => {} });
   map.draw();
   await vi.waitFor(() => expect(prepareDailyAssetsOffThread).toHaveBeenCalled());
   const [request, signal] = vi.mocked(prepareDailyAssetsOffThread).mock.calls.at(-1)!;
   expect(request.baseUrl).toBe(new URL('./', document.baseURI).href);
   expect(signal.aborted).toBe(false);
+  await vi.waitFor(() => expect(info.mock.calls.some(([message]) => String(message).startsWith('[Dynamic assets] Daily warmup finished'))).toBe(true));
+  expect(prewarmInstantTerrain).not.toHaveBeenCalled();
   cancel();
   expect(signal.aborted).toBe(true);
+});
+
+it('rechecks navigation before startup and resumes only on a readiness event, never elapsed time', async () => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
+  const map = viewer(), idle = barrier(), stage = vi.fn(async () => {});
+  const loaded = vi.spyOn(map.item, 'getFullyLoaded').mockReturnValue(true);
+  const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+  const yieldTask = vi.fn(() => idle.promise);
+  const cancel = scheduleDailyAssetWarmup({ viewer: map, isCurrent: () => true,
+    yieldTask, stages: [stage] });
+  map.draw();
+  await Promise.resolve();
+  expect(yieldTask).toHaveBeenCalledOnce();
+  loaded.mockReturnValue(false);
+  map.emit('viewport-change');
+  idle.resolve();
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(stage).not.toHaveBeenCalled();
+  expect(info).not.toHaveBeenCalled();
+  loaded.mockReturnValue(true);
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(stage).not.toHaveBeenCalled();
+  expect(vi.getTimerCount()).toBe(0);
+  map.emit('update-viewport');
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(stage).toHaveBeenCalledOnce();
+  expect(yieldTask).toHaveBeenCalledTimes(2);
+  expect(map.handlers.size).toBe(0);
+  cancel();
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+it('cancels a daily map that is still loading without starting asset or shader work', async () => {
+  vi.useFakeTimers();
+  const map = viewer(), stage = vi.fn(async () => {});
+  vi.spyOn(map.item, 'getFullyLoaded').mockReturnValue(false);
+  const cancel = scheduleDailyAssetWarmup({ viewer: map, isCurrent: () => true, stages: [stage] });
+  map.draw();
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(stage).not.toHaveBeenCalled();
+  cancel();
+  expect(map.handlers.size).toBe(0);
+  expect(vi.getTimerCount()).toBe(0);
 });
 
 it("waits for an actual baked tile and a later task, then warms stages serially", async () => {
@@ -69,6 +131,7 @@ it("waits for an actual baked tile and a later task, then warms stages serially"
   expect(yieldTask).not.toHaveBeenCalled();
   map.draw();
   map.draw();
+  await Promise.resolve();
   expect(yieldTask).toHaveBeenCalledOnce();
   expect(one).not.toHaveBeenCalled();
   idle.resolve();
@@ -97,7 +160,7 @@ it("cancels before paint without starting downloads or leaving a draw listener",
   expect(info).not.toHaveBeenCalled();
 });
 
-it('logs one start and timed finish including idle waits and the final preparation stage', async () => {
+it('logs actual worker start and finish after readiness and the initial idle wait', async () => {
   let now = 100;
   vi.spyOn(performance, 'now').mockImplementation(() => now);
   const info = vi.spyOn(console, 'info').mockImplementation(() => {});
@@ -110,16 +173,16 @@ it('logs one start and timed finish including idle waits and the final preparati
   map.draw(false);
   expect(info).not.toHaveBeenCalled();
   map.draw(); map.draw();
-  expect(info).toHaveBeenCalledExactlyOnceWith('[Dynamic assets] Daily warmup started', { sinceNavigationMs: 100 });
+  expect(info).not.toHaveBeenCalled();
   now = 900;
   idle.resolve();
   await vi.waitFor(() => expect(stage).toHaveBeenCalledOnce());
-  expect(info).toHaveBeenCalledOnce();
+  expect(info).toHaveBeenCalledExactlyOnceWith('[Dynamic assets] Daily warmup started', { sinceNavigationMs: 900 });
   now = 2600;
   work.resolve();
   await vi.waitFor(() => expect(info).toHaveBeenCalledWith(
-    '[Dynamic assets] Daily warmup finished in 2.50 seconds',
-    expect.objectContaining({ elapsedMs: 2500, sinceNavigationMs: 2600, failures: 0 }),
+    '[Dynamic assets] Daily warmup finished in 1.70 seconds',
+    expect.objectContaining({ elapsedMs: 1700, sinceNavigationMs: 2600, failures: 0 }),
   ));
   cancel();
   expect(info.mock.calls.filter(([message]) => String(message).startsWith('[Dynamic assets]'))).toHaveLength(2);
