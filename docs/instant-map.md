@@ -622,3 +622,34 @@ with scene decoding moved into prepared assets. This work does not make a comple
 multi-billion-pixel daily export instantaneous. Manual review should cover main,
 west/east, heaven/hell, room air holes, rapid reseeding, context loss, light mode,
 POI/drawing interactions and overview/detail transitions.
+
+
+## Native biome background artwork
+
+The live background layer now uses the original local PNGs at one authored
+pixel per world pixel. The former 0.1-scale flattened PNG permanently lost
+90% of the resolution on each axis and rounded repeat periods (for example,
+a 512px texture repeated every 510 world pixels). It is no longer read or
+created. A 256px OSD tile source fills clipped biome polygons with repeating
+native textures instead of allocating a full-world canvas. Native tiles use
+bounded direct image draws to preserve original PNG bytes; coarse tiles use
+patterns so rendering never loops over a whole world's repetitions. Compound polygon
+holes and static-biome exclusions are retained. Sampling follows the native
+baker's map-frame phase, including actual parallel-world X offsets; the
+96×96 Wandcave texture provides a regression for non-512 repeat periods.
+This changes background resolution, not the existing static biome boundaries
+or Telescope's separate transition/scene-background art model.
+
+Original images share one decoded set across seeds, with a bounded 16 MiB
+rendered tile cache and independently owned OSD canvases. The small PNGs are
+persisted under individual SHA256 revisions and are prepared by daily-map
+warmup. Console output reports native background preparation time and decoded
+texture bytes. The former low-resolution CacheStorage entry is ignored.
+Background sources participate in tile coverage/continuity and align shared
+physical-pixel edges to avoid fractional-zoom seams.
+
+Terrain persistence pages now request `willReadFrequently` on their initial
+2D context creation, including restored pages. Repeated persistence snapshots
+therefore use a readback-oriented context; drawing/reduction canvases keep
+their existing defaults. The canvas privacy probe and export readback masks
+also declare their readback usage.

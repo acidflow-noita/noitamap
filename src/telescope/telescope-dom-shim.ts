@@ -378,7 +378,7 @@ export function isCanvasTainted(): boolean {
   try {
     const SIZE = 16;
     const c = new OffscreenCanvas(SIZE, SIZE);
-    const ctx = c.getContext("2d")!;
+    const ctx = c.getContext("2d", { willReadFrequently: true })!;
 
     const expected: number[] = [];
     for (let y = 0; y < SIZE; y++) {

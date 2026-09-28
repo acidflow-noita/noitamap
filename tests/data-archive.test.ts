@@ -164,7 +164,7 @@ it("refetches a corrupt cached ZIP and does not permanently cache a failed deplo
 it("hashes shipped ZIP content and invalidates the dev manifest when bytes change", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "noitamap-archive-manifest-"));
   try {
-    await mkdir(resolve(root, "public"));
+    await mkdir(resolve(root, "public/biome_bg"), { recursive: true });
     for (const file of ["data.zip", "pixel_scenes.zip", "wang_tiles.zip"])
       await writeFile(resolve(root, "public", file), bytes);
     const plugin = dataArchivesPlugin(root),

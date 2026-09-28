@@ -171,11 +171,20 @@ export function retainedTerrainIdentity(
   return `${REVISION}/${gen.seed}/${(a >>> 0).toString(16)}-${(b >>> 0).toString(16)}`;
 }
 
-function canvas(width: number, height: number): CanvasRenderingContext2D {
+function canvas(
+  width: number,
+  height: number,
+  readback = false,
+): CanvasRenderingContext2D {
   const c = document.createElement("canvas");
   c.width = width;
   c.height = height;
-  const ctx = c.getContext("2d");
+  // Retained pages are repeatedly read for persistence as native cells arrive.
+  // This hint must be present on the first context request; reduction and
+  // display canvases remain draw-oriented.
+  const ctx = readback
+    ? c.getContext("2d", { willReadFrequently: true })
+    : c.getContext("2d");
   if (!ctx) throw new Error("Retained terrain canvas unavailable");
   ctx.imageSmoothingEnabled = false;
   return ctx;
@@ -406,7 +415,7 @@ export class RetainedTerrain {
             if (!value) this.rememberMissing(key);
             return undefined;
           }
-          const context = canvas(value.width, value.height);
+          const context = canvas(value.width, value.height, true);
           const image = context.createImageData(value.width, value.height);
           image.data.set(value.pixels);
           context.putImageData(image, 0, 0);
@@ -785,7 +794,7 @@ export class RetainedTerrainRegion {
             rows = Math.ceil((shape.height * shape.scale) / SIZE);
           page = this.owner.install(
             key,
-            canvas(shape.width, shape.height),
+            canvas(shape.width, shape.height, true),
             new Uint8Array(Math.ceil((columns * rows) / 8)),
             columns,
             rows,

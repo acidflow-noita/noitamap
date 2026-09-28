@@ -244,6 +244,58 @@ function request(
 }
 
 describe("retained final terrain (real production TileSource and native canvas)", () => {
+  it("opts snapshot pages into readback on their first context request, leaving display canvases draw-oriented", async () => {
+    const db = indexedDBFixture();
+    const attributes = new Map<object, CanvasRenderingContext2DSettings | undefined>();
+    const reads = new Map<object, number>();
+    vi.stubGlobal("document", {
+      createElement() {
+        const c = createCanvas(1, 1);
+        const getContext = c.getContext.bind(c);
+        vi.spyOn(c, "getContext").mockImplementation((type, settings) => {
+          const ctx = getContext(type, settings);
+          if (!attributes.has(ctx)) {
+            attributes.set(ctx, settings);
+            const getImageData = ctx.getImageData.bind(ctx);
+            vi.spyOn(ctx, "getImageData").mockImplementation((...args) => {
+              reads.set(ctx, (reads.get(ctx) ?? 0) + 1);
+              return getImageData(...args);
+            });
+          }
+          return ctx;
+        });
+        return c;
+      },
+    });
+    const owner = retention(8 * 1024 * 1024);
+    const region = owner.region("readback", 1024, 1024);
+    const input = context(256, 256, "#ff0000");
+    input.clearRect(64, 64, 64, 64);
+    await region.record(0, 0, input);
+    await owner.flush();
+    await region.record(256, 0, context(256, 256, "#00ff00"));
+    await owner.flush();
+
+    expect([...reads.values()].some((count) => count > 1)).toBe(true);
+    for (const ctx of reads.keys()) {
+      expect(attributes.get(ctx)).toEqual({ willReadFrequently: true });
+    }
+    const persisted = db.decoded("readback/10/0/0");
+    expect([...persisted.pixels.subarray(0, 4)]).toEqual([255, 0, 0, 255]);
+    const hole = (64 * 256 + 64) * 4;
+    expect([...persisted.pixels.subarray(hole, hole + 4)]).toEqual([0, 0, 0, 0]);
+
+    // Disk-restored pages must retain the hint when later captures update them.
+    const restoredOwner = retention(8 * 1024 * 1024);
+    const restored = restoredOwner.region("readback", 1024, 1024);
+    const display = await restored.complete({ level: 10, x: 0, y: 0 });
+    const page = restoredOwner.resident("readback/10/0/0")!;
+    expect(attributes.get(page.context)).toEqual({ willReadFrequently: true });
+    expect(attributes.has(display!)).toBe(true);
+    expect(attributes.get(display!)).toBeUndefined();
+    expect(rgba(display!)).toEqual([...persisted.pixels]);
+  });
+
   it("keeps transparent exact areas over a sampled overview, including old coarse cache hits", async () => {
     indexedDBFixture();
     const owner = retention(),

@@ -296,14 +296,14 @@ it('reuses previously viewed fine pixels after navigating away through the actua
   }
 });
 
-it.each([1, 2])('keeps completed adjacent terrain tiles solid through slight fractional zoom-outs and pans at density %i', async density => {
+it.each([[1, '__instantTerrain'], [2, '__instantTerrain'], [1, '__biomeBg'], [2, '__biomeBg']] as const)('keeps completed adjacent tiles solid through fractional zoom-outs and pans at density %i (%s)', async (density, tag) => {
   OSD.pixelDensityRatio = density;
   const mount = document.createElement('div'); document.body.appendChild(mount);
   const app = new AppOSD(mount, false), viewer = app.viewer;
   let hold = false;
   const source = new OSD.TileSource({ width: 4096, height: 4096, tileSize: 256,
     tileOverlap: 0, minLevel: 4, maxLevel: 12 });
-  source.__instantTerrain = true;
+  source[tag] = true;
   source.getTileUrl = (level: number, x: number, y: number) => `fractional:///${level}/${x}/${y}`;
   source.hasTransparency = () => true;
   source.downloadTileStart = (job: any) => {

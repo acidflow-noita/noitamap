@@ -19,7 +19,7 @@ export const PIXEL_MAP_DRAW_OPTIONS = {
  * Round shared physical-pixel edges, not each tile's width independently. The
  * WebGL drawer uses positionedBounds directly and needs no canvas adjustment. */
 export function alignTerrainTileEdges(item: any, tile: any): void {
-  if (!item.source?.__instantTerrain || item.source.tileOverlap
+  if (!(item.source?.__instantTerrain || item.source?.__biomeBg) || item.source.tileOverlap
     || item.getDrawer?.()?.getType?.() !== 'canvas'
     || item.getRotation(true) % 360 || item.viewport.getRotation(true) % 360) return;
   const density = (typeof OpenSeadragon !== 'undefined' && OpenSeadragon.pixelDensityRatio)
