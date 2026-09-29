@@ -113,7 +113,6 @@ export function beginMapHandoff(input: any, preserveView: boolean, onFailure?: (
     catch (error) { console.warn('[Map handoff] Cannot preserve outgoing view:', error); }
   }
   let sealed = false, queued = false, disposed = false;
-  let failed = false;
   let setupHolds = 0;
   let onPaint = () => {};
   const watched = new Set<any>();
@@ -129,7 +128,7 @@ export function beginMapHandoff(input: any, preserveView: boolean, onFailure?: (
   const overlayVisibility = viewer.overlaysContainer?.style.visibility ?? '';
   if (cover && viewer.overlaysContainer) viewer.overlaysContainer.style.visibility = 'hidden';
   const ready = () => {
-    if (!sealed || failed || setupHolds || viewer._loadQueue?.some((entry: any) => !outgoingAdditions.has(entry.options))) return false;
+    if (!sealed || setupHolds || viewer._loadQueue?.some((entry: any) => !outgoingAdditions.has(entry.options))) return false;
     const world = viewer.world;
     for (let i = 0; i < (world?.getItemCount() ?? 0); i++) {
       const item = world.getItemAt(i);
@@ -192,12 +191,19 @@ export function beginMapHandoff(input: any, preserveView: boolean, onFailure?: (
       return () => { if (!released) { released = true; setupHolds--; check(); } };
     },
     finish(callback) { sealed = true; onPaint = callback; check(); },
-    // Keep the complete outgoing view on failure, available to the next retry.
     fail(error) {
-      const firstFailure = !failed;
-      sealed = false; failed = true; releaseRetirement();
-      if (firstFailure && error !== undefined)
-        (onFailure ?? (value => console.warn('[Map handoff] Replacement unavailable:', value)))(error);
+      if (disposed) return;
+      // A failed layer must not pin the outgoing screenshot above valid new
+      // terrain forever. End the cover and its background-work barrier, while
+      // reporting failure without invoking the successful first-paint callback.
+      transaction.dispose();
+      viewer.forceRedraw?.();
+      try {
+        if (error !== undefined)
+          (onFailure ?? (value => console.warn('[Map handoff] Replacement unavailable:', value)))(error);
+      } finally {
+        viewer.raiseEvent?.('map-handoff-complete', { failed: true });
+      }
     },
     dispose(keepCover = false) {
       if (disposed) return;

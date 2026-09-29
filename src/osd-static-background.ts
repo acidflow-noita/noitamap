@@ -26,7 +26,7 @@ export function installStaticBackgroundResidency(viewer: any, options: { maxByte
 
   function pump(): void {
     scheduled = false;
-    if (disposed) return;
+    if (disposed || viewer.isAnimating?.()) return;
     while (active.size < 2 && queue.length) {
       const entry = queue.shift()!, { item, tile } = entry;
       if (!images.has(item) || tile.loaded || tile.loading || !tile.exists) continue;

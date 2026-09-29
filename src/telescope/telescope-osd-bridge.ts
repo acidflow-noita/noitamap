@@ -15,7 +15,7 @@ import { createScenePreparation } from "./scene-preparation";
 import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate } from "./terrain-policy";
 import { loadTelescopeModules } from "./load-telescope";
 import { isGLTerrainEnabled, isInstantTerrainEnabled, useRenderPerfGeneration } from "../renderer_settings";
-import { prepareInstantTerrain } from './instant-terrain-backend';
+import { prepareInstantTerrain, retryInstantTerrainOnMainThread } from './instant-terrain-backend';
 import { clearTerrainPngEncoders } from './terrain-png-encoder';
 import { createScenePrefetch } from "./scene-prefetch";
 import { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer } from "./biome-background-layer";
@@ -5203,9 +5203,12 @@ export async function renderGenerationResult(
           item => dynamicTiledImages.add(item), wrappedOnFirstPaint,
           error => {
             if (currentGenerationId !== generationId) return;
-            console.warn('[OSD Bridge] GPU terrain failed; rebuilding approximate layers:', error);
+            const retryHD = retryInstantTerrainOnMainThread();
+            console.warn(retryHD
+              ? '[OSD Bridge] Terrain worker failed; retrying HD on the main WebGL context:'
+              : '[OSD Bridge] GPU terrain unavailable; rebuilding approximate layers:', error);
             void renderGenerationResult(viewer, result, unlocks, isDaily, onFirstPaint, cacheKey,
-              null, false, false, true, generationStartedAt).catch(error => {
+              null, false, false, !retryHD, generationStartedAt).catch(error => {
                 failMapHandoff(viewer, error);
                 console.error('[OSD Bridge] Terrain fallback failed:', error);
               });
@@ -5312,8 +5315,8 @@ export async function renderGenerationResult(
     if (!awaitingTerrainDraw) cleanupOldItems();
   } catch (error) {
     releaseSetup();
-    // A failed artwork/marker setup must not leave a live frame waiting for
-    // presentationReady forever. Keep the previous map until retry/reseed.
+    // Release the outgoing cover when setup fails so it cannot hide later
+    // replacement frames indefinitely.
     if (currentGenerationId === generationId) {
       failMapHandoff(viewer, error);
       clearInstantTerrain();

@@ -37,6 +37,7 @@ export function scheduleDailyAssetWarmup(
   const finish = (state: 'finished' | 'cancelled' | 'failed') => {
     if (startedAt === undefined || ended) return;
     ended = true;
+    detach();
     const finishedAt = performance.now();
     const elapsedMs = finishedAt - startedAt;
     console.info(`[Dynamic assets] Daily warmup ${state} in ${(elapsedMs / 1000).toFixed(2)} seconds`, {
@@ -50,6 +51,7 @@ export function scheduleDailyAssetWarmup(
   const detach = () => {
     viewer.removeHandler?.("tile-drawn", drawn);
     for (const name of viewerEvents) viewer.removeHandler?.(name, changed);
+    viewer.removeHandler?.('viewport-change', cancel);
     viewer.removeHandler?.('before-destroy', cancel);
     viewer.world?.removeHandler?.('add-item', added);
     viewer.world?.removeHandler?.('remove-item', removed);
@@ -70,6 +72,10 @@ export function scheduleDailyAssetWarmup(
       return;
     }
     detach();
+    // Navigation makes DZI refinement foreground work again. Terminating
+    // this optional worker also stops its archive downloads and validation.
+    viewer.addHandler?.('viewport-change', cancel);
+    viewer.addHandler?.('before-destroy', cancel);
     startedAt = performance.now();
     console.info('[Dynamic assets] Daily warmup started', { sinceNavigationMs: startedAt });
     const failure = (error: unknown) => {

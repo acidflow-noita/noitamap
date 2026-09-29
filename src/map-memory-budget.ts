@@ -30,7 +30,9 @@ const desktop: MapMemoryBudget = Object.freeze({
   biomeBackgroundCacheBytes: 16 * MiB,
   staticBackgroundBytes: 24 * MiB,
   osdCacheTiles: 200,
-  imageLoaderLimit: 0,
+  // OSD drops obsolete queued requests on each camera update, but cannot
+  // cancel started downloads. Keep rapid zooms from flooding the network.
+  imageLoaderLimit: 12,
   continuityTiles: 512,
 });
 

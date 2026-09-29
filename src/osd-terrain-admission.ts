@@ -180,6 +180,10 @@ export function installTerrainAdmission(viewer: any): () => void {
       // Restore those now-cached pixels without waiting for another cold slot.
       const cached = !!entry.item.source.hasCachedTile?.(entry.tile);
       if (!cached && active >= MAX_COLD_LOADS) continue;
+      // OSD discards its unstarted jobs without a completion event. Keep
+      // tickets here until a loader slot is available so they cannot strand
+      // the admission gate's active slots when the camera moves.
+      if (entry.item._imageLoader.canAcceptNewJob?.() === false) continue;
       entry.phase = "active";
       entry.cold = !cached;
       if (cached) stats.cached++;
@@ -193,6 +197,7 @@ export function installTerrainAdmission(viewer: any): () => void {
     }
   }
   const loaded = (event: any) => {
+    schedule();
     const entry = entries.get(event.tile);
     if (!entry || entry.phase !== "active") return;
     // OSD awaits handlers before resolving event.promise: do not return it.
@@ -202,6 +207,7 @@ export function installTerrainAdmission(viewer: any): () => void {
     );
   };
   const failed = (event: any) => {
+    schedule();
     const entry = entries.get(event.tile);
     if (entry)
       settle(entry, new Error(event.message || "Generated tile load failed"));
