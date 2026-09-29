@@ -52,15 +52,6 @@ const compact: MapMemoryBudget = Object.freeze({
   continuityTiles: 64,
 });
 
-export function mapMemoryBudgetFor(device: {
-  deviceMemory?: number;
-  coarsePointer?: boolean;
-}): MapMemoryBudget {
-  const memory = device.deviceMemory;
-  return device.coarsePointer || (typeof memory === 'number'
-    && Number.isFinite(memory) && memory > 0 && memory <= 4) ? compact : desktop;
-}
-
 /** Safari does not expose deviceMemory; its primary touch pointer still
  * selects the bounded mobile working set. A touch-capable mouse-driven
  * desktop does not become mobile merely because it has a touch screen. */
@@ -70,5 +61,6 @@ export function getMapMemoryBudget(): MapMemoryBudget {
   catch { /* Browser policy may withhold this optional device hint. */ }
   const deviceMemory = typeof navigator !== 'undefined'
     ? (navigator as Navigator & { deviceMemory?: number }).deviceMemory : undefined;
-  return mapMemoryBudgetFor({ deviceMemory, coarsePointer });
+  return coarsePointer || (typeof deviceMemory === 'number'
+    && Number.isFinite(deviceMemory) && deviceMemory > 0 && deviceMemory <= 4) ? compact : desktop;
 }

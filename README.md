@@ -85,25 +85,6 @@ and reloads the current map and camera position. Turning it off uses approximate
 terrain. GPU failures also fall back to approximate terrain. `?nb=1` explicitly
 bypasses baked output; it does not enable the offline full-resolution pyramid.
 
-The `instant-map` branch implements this display-resolution GPU path without
-walking the full-resolution pyramid. Diagnostic links can force `?terrain=gpu`
-or `?terrain=approx`; changing the menu preference clears that override.
-See [HD terrain renderer](docs/instant-map.md) for
-local testing, measured results, fallback behavior and accuracy limits.
-
-This is not fixed by simply switching on GPU rendering: the retained renderer
-already uses WebGL2 for the main plane, then CPU workers for scene/liquid/edge
-composition and the vertical planes. Exact low-zoom tiles reduce all underlying
-full-resolution children, so an overview can require thousands of leaf jobs.
-More GPU composition or a different level-of-detail design could improve it, but
-the current pipeline cannot promise fast completion across low-end phones.
-Serving precomputed tiles avoids putting that full-resolution work on the device.
-
-The native baker and renderer test harnesses explicitly select full-pixel mode
-with `setFullPixelTerrainForBake`; they do not depend on browser storage. The
-pinned `render-perf` model, native backgrounds, full-resolution rendering and
-complete pyramids remain available for baking and offline performance work.
-
 ### Native daily bake (no GPU/browser)
 
 ```bash
@@ -123,163 +104,13 @@ The CI changes live in `task/biome-baker`. The configured GitLab runner is
 It uses 30 CPU workers; the native image no longer includes Chromium or the Go
 stitcher. Native dependencies must be installed separately on Windows with `npm ci` (an npm
 built-in command, not a project script). Do not copy Linux `node_modules` to
-Windows. Windows end-to-end baking has not been verified by these Linux tests.
+Windows.
 
 ### Inspect a local completed bake
 
 Start Vite with `NOITAMAP_LOCAL_BAKE=/path/to/out`, then open
 `/?m=dy&se=381773&bake=local`. The seed must match the output manifest. This
 explicit development-only route exercises the same baked loader as production.
-
-Verification covers real CPU workers, real native GL shader execution where
-Linux EGL is installed, ownership exclusions, native textures, alpha-aware mip
-reduction, matching overlaps and cache reuse. These checks do not replace manual
-browser inspection or constitute complete simulation of Noita's runtime.
-
-### Compare against the captured engine map
-
-The Regular capture at seed **786433191** is the geometry ground truth. The
-historical `78633191` in its asset filenames is a typo; comparison uses the seed
-in the capture instructions, not that filename. Never resize the generated map
-to match the capture's extra overlap column.
-
-```bash
-node build_scripts/build-full-pixel-bake.mjs --seed=786433191 --out=/path/to/reference-bake --concurrency=8
-node build_scripts/compare-engine-terrain.mjs --bake=/path/to/reference-bake --published
-```
-
-The comparison fetches coordinate-matched samples from the production Regular
-capture and Dynamic static underlay. Each output panel is **engine | generated +
-static underlay | absolute RGB difference**. `report.json` records every RGB
-mismatch. Omit `--published` to sample a `--prepare-only` native renderer instead
-of the finished DZI files. This command does not use a browser and does not
-pretend that successful rendering or CPU/GPU agreement proves engine accuracy.
-
-Heaven/hell now reuse the main world's Wang geometry and source exclusions;
-broadcasting a material row must not regenerate a continuous strip of terrain.
-Hell's background is a separate footprint and continues through the empty gaps.
-Dynamic scenes use world-positioned material textures, real force-air erasure,
-and original color/background artwork rather than flat biome-color rectangles.
-The existing static-room/holy-mountain skip policy remains shared with the
-approximate renderer. Static temple foreground templates remain a separate
-existing art layer, not new procedural fill targets.
-
-**Accuracy is not yet complete:** the reference comparison still shows cloud
-color/material differences, scene differences, and terrain-edge detail
-mismatches. These remain investigation targets, not accepted capture errors.
-See `tests/fixtures/terrain/README.md` for provenance and reproducible checks.
-
-
-### PNG background transparency regression
-
-`full-pixel-v6` honors the original PNG `tRNS` color keys. The missing RGB-key
-handling had turned authored transparent areas into purple/red/orange rectangles
-(e.g. `rainforest/plantlife_background.png`, key `#6b0080`). This is PNG metadata,
-not a rule to remove arbitrary bright colors or guess from the corner pixel.
-Completed v5 terrain tiles are invalidated and must be regenerated.
-
-```bash
-npm test -- tests/png-decode.test.ts
-node tests/helpers/verify-native-daily-bake.mjs /path/to/completed-bake
-```
-
-The decoder tests compare all engine-listed scene backgrounds with native PNG
-sample decoding. Daily artifact verification checks real published tiles,
-alpha-preserving mip reduction and overlaps. For the exact daily entrypoint test
-without resetting a local checkout, see `task/biome-baker/README.md`.
-
-
-### Bottom-row elevator continuation
-
-`full-pixel-v7` treats the isolated bottom-row `robobase` (Power Plant) stub as a
-narrow continuous shaft below the main world, not two endpoint copies of the
-same chunk. It generates only that column with the existing Wang generator and
-world seed, resolves its native material pixels at absolute coordinates, and
-scans the continued strip for its own scenes/POIs. The false lower endpoint's
-spawn copy is removed. Original main-world buffers, ordinary Power Plant regions,
-static exclusions and the other heaven/hell columns are not regenerated.
-
-The continuation covers the displayed lower plane (48 chunks, y=17,408 through
-41,983 in NG0). This does not extend the map's displayed bounds infinitely.
-The native baker and live full-pixel CPU tile worker share the same continuation;
-old v6 completed tiles need rebaking. `tests/terrain-elevator.test.ts` checks the
-exception's footprint and serialization. The native terrain runtime suites
-exercise its top/middle/bottom through real OSD jobs, and the bake-artifact
-verifier checks all 144 lower shaft chunks across the three horizontal worlds.
-
-
-### Final-pixel refinement v8
-
-- EdgeGraphics stamps now run on full-resolution terrain **and scene material
-  identities** before pyramid reduction; they are not disabled at lower zoom.
-  Scene force-air and colors-file/skip-edge rules remain separate paint passes.
-- Static-scene masks protect the part of Holy Mountain altars that reaches above
-  the biome chunk. Authored air erases terrain while retaining the backdrop;
-  protected material reveals existing static art rather than painting it again.
-- Authored horizontal liquid surfaces no longer inherit terrain-edge warp. The
-  material classification reads `liquid_sand` (including inheritance) from the
-  game XML, so water-like liquids and powdered metals are not conflated. Walls,
-  bottoms, powders and other liquids are not flattened. This is not a complete
-  fluid/reaction simulation.
-- The retained full-pixel renderer skips known-empty pyramid subtrees, coalesces overlapping tile
-  requests, and yields CPU work by elapsed time rather than imposing a timer
-  after every 16 rows. GPU cell rendering is retained, but per-pixel scene,
-  liquid and edge composition runs in the shared worker pool instead of blocking the UI.
-  A bounded material cache shares resolver results with the edge-neighbor pass.
-
-```bash
-npx tsx tests/helpers/measure-terrain-footprint.ts /path/to/prepared-bake
-```
-
-For seed 786433191, a complete nine-plane overview skips **21,059 of 30,240**
-full-resolution leaf jobs (69.6%). This is a work-count measurement, not a claim
-of 69.6% higher browser FPS or instantaneous generation. All nonempty leaves
-still render final pixels, and lower levels still reduce all their children.
-
-The capture comparison still exposes the upstream ore/density mismatch and
-neighboring biome-edge wobble. Those are **not** claimed fixed. The attempted
-room-boundary clipping was rejected because it worsened the engine-reference
-comparison. Edge stamping uses the pinned fork's deterministic decoration pass;
-the result is not claimed pixel-identical to every captured stamp.
-
-
-### Offline renderer diagnostics: worker pool and liquid/powder classification
-
-The retained tile renderer uses one **shared 1–6 worker pool** for all vertical
-planes and GPU finishing; public maps no longer enter this path. The budget
-leaves at least one reported CPU available and respects
-`navigator.deviceMemory` where provided (1 worker at ≤2 GiB, 2 at ≤4 GiB, up to 6
-above that; up to 4 when memory is unreported). Workers initialize additional
-planes only when needed, reuse their resources, and are terminated when their
-renderers are released. This does not alter GitLab's `TERRAIN_CONCURRENCY` setting.
-Final sibling leaves are dispatched in bounded parallel batches; upper pyramid
-levels stay depth-first so the whole map is not queued at once.
-
-Native A/B measurement (same twelve full-resolution tiles, seed 786433191):
-
-| Workers | First batch, including additional worker setup | Warm batch |
-|---|---:|---:|
-| 1 | 1984 ms | 1752 ms |
-| 4 | 1232 ms | 576 ms |
-
-All rendered pixel hashes agreed. These are local native-worker timings, not a
-browser FPS guarantee or a GitLab benchmark. Reproduce with
-`npm test -- tests/terrain-worker-pool-runtime.test.ts`.
-
-`liquid_sand` is an internal Noita physics flag, not a UI material name:
-
-- `sand_static` (walkable ground): `cell_type="liquid"`, `liquid_sand="1"`,
-  `liquid_static="1"`.
-- Loose `sand`, `gunpowder`, `gold`, `copper`: `cell_type="liquid"`,
-  `liquid_sand="1"`; not static ground.
-- `water`, `blood`, `oil`, `acid`, `lava`: `liquid_sand="0"`.
-
-The level-surface correction explicitly excludes **both** static ground sand and
-loose powders/metals. Tests read the actual `public/data.zip` material XML, follow
-inheritance, and cross-check every shader material classified as sand/powder in
-the engine table. Missing flags and commented-out definitions cannot turn an
-unknown material into a fluid. This classification check does not resolve the
-separately documented ore-density placement mismatch.
 
 ## Local builds on Windows and Linux
 

@@ -337,7 +337,7 @@ is no promised universal fallback or guaranteed frame rate. Eye-room collision
 is not a general simulation of every terrain change or every portal.
 
 **Evidence:** `src/portals/`, `src/portal-animations.ts`,
-`docs/experimental-gpu-portals.md`, `docs/portal-collision-audit.md`.
+`docs/experimental-gpu-portals.md`.
 
 ## 12. Performance and loading improvements
 

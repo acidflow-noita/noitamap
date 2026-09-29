@@ -36,7 +36,7 @@ export function createPixelSceneTileSource(options: {
   const { items, bitmapByKey, generationId } = options;
   const blobByKey = options.blobByKey ?? new Map<string, CompressedSceneBitmap>();
   const bitmaps = blobByKey.size || options.loadBitmap ? createSceneBitmapProvider(blobByKey,
-    options.maxBitmapBytes ?? getMapMemoryBudget().sceneCacheBytes, undefined, options.loadBitmap) : undefined;
+    options.maxBitmapBytes ?? getMapMemoryBudget().sceneCacheBytes, options.loadBitmap) : undefined;
   if (!items.length) throw new Error("Cannot tile an empty scene layer");
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const item of items) {

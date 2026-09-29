@@ -16,13 +16,12 @@ const pixelBytes = (record: SceneRecord) =>
  * without accumulating every scene's raw RGBA arrays in generator metadata. */
 export function createScenePixelCache(maxBytes: number) {
   const entries = new Map<string, Entry>();
-  let bytes = 0, decodes = 0, queue = Promise.resolve();
+  let bytes = 0, queue = Promise.resolve();
   const remove = (key: string) => {
     const entry = entries.get(key);
     if (entry) { bytes -= entry.bytes; entries.delete(key); }
   };
   return {
-    get stats() { return { bytes, entries: entries.size, maxBytes, decodes }; },
     peek(key: string, original: SceneRecord) {
       const entry = entries.get(key);
       return entry?.original === original ? entry.decoded : undefined;
@@ -38,7 +37,6 @@ export function createScenePixelCache(maxBytes: number) {
         const estimate = Math.max(pixelBytes(decoded), original.width * original.height * (art ? 8 : 4));
         while (entries.size && bytes + estimate > maxBytes) remove(entries.keys().next().value!);
         await decode(decoded, { art });
-        decodes++;
         const size = pixelBytes(decoded);
         while (entries.size && bytes + size > maxBytes) remove(entries.keys().next().value!);
         // Large single scenes may be needed transiently, but are never retained
@@ -49,6 +47,5 @@ export function createScenePixelCache(maxBytes: number) {
       queue = job.then(() => {}, () => {});
       return job;
     },
-    clear() { entries.clear(); bytes = 0; },
   };
 }

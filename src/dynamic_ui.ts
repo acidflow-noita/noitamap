@@ -38,6 +38,8 @@ let isBusy = false;
 let generatePopoverInstance: any = null;
 let resolvedInputSeed: number | null = null;
 let unsubscribeDailyIdentity: (() => void) | undefined;
+let loadingStripHideTimer: number | undefined;
+let mapIsDynamic = false;
 
 // ─── Build ───────────────────────────────────────────────────────────────────
 
@@ -282,8 +284,9 @@ export function roundVisibleOverlayGroupEdges(): void {
 }
 
 export function updateDynamicUIVisibility(currentMap: string): void {
-  if (!toolbarItems.length) return;
   const isDynamic = currentMap === DYNAMIC_MAP_NAME;
+  mapIsDynamic = isDynamic;
+  if (!isDynamic) hideLoadingStrip(true);
   toolbarItems.forEach(el => { el.style.display = isDynamic ? "" : "none"; });
 
   // Toggle any dynamic-map-only controls outside the toolbar (e.g. light-mode switch in navbar)
@@ -356,6 +359,7 @@ async function onDailySeedClick(): Promise<void> {
   setBusy(true);
   try {
     const seed = await fetchDailySeed(true);
+    if (!mapIsDynamic) return;
     if (seedInput) {
       seedInput.value = String(seed);
       resolvedInputSeed = seed;
@@ -371,7 +375,6 @@ async function onDailySeedClick(): Promise<void> {
 
     if (seed !== currentSeed || routeChanged) {
       updateURLWithSeed(seed, true);
-      showLoadingStrip();
       await runDynamicMap(seed, true, dynamicOpts);
     } else {
       console.log("[DynamicUI] Daily seed matches current seed, skipping.");
@@ -391,6 +394,7 @@ async function onPrevDailySeedClick(): Promise<void> {
   setBusy(true);
   try {
     const seed = await fetchPreviousDailySeed(true);
+    if (!mapIsDynamic) return;
     if (seed === null) {
       console.warn("[DynamicUI] Previous daily seed unavailable.");
       return;
@@ -409,7 +413,6 @@ async function onPrevDailySeedClick(): Promise<void> {
       // Previous daily renders as a daily (all-unlocked, baked DZIs available
       // on the previous-daily-* workers).
       updateURLWithSeed(seed, true);
-      showLoadingStrip();
       await runDynamicMap(seed, true, dynamicOpts);
     } else {
       console.log("[DynamicUI] Previous daily seed matches current seed, skipping.");
@@ -444,7 +447,6 @@ async function onGenerateClick(): Promise<void> {
   setBusy(true);
   try {
     updateURLWithSeed(seed, false);
-    showLoadingStrip();
     await runDynamicMap(seed, false, dynamicOpts);
   } catch (e) {
     console.error("[DynamicUI] Generate failed:", e);
@@ -499,10 +501,15 @@ function updateGenerateButtonState(): void {
 
 /** Show the non-blocking loading strip with download already complete. */
 export function showLoadingStrip(): void {
+  if (!mapIsDynamic) return;
+  window.clearTimeout(loadingStripHideTimer);
+  loadingStripHideTimer = undefined;
   const strip = document.getElementById("map-loading-strip");
   if (!strip) return;
+  const alreadyVisible = strip.classList.contains("visible") && !strip.classList.contains("fade-out");
   strip.classList.remove("fade-out");
   strip.classList.add("visible");
+  if (alreadyVisible) return;
   // Skip download phase (data.zip already loaded)
   const dl = document.getElementById("loading-bar-download") as HTMLElement | null;
   if (dl) dl.style.width = "100%";
@@ -517,13 +524,20 @@ export function showLoadingStrip(): void {
   if (status) status.textContent = "33%";
 }
 
-/** Hide the loading strip with a fade-out. */
-export function hideLoadingStrip(): void {
+/** Static-map transitions clear immediately; completed generation fades out. */
+export function hideLoadingStrip(immediate = false): void {
+  window.clearTimeout(loadingStripHideTimer);
+  loadingStripHideTimer = undefined;
   const strip = document.getElementById("map-loading-strip");
   if (!strip) return;
+  if (immediate) {
+    strip.classList.remove("visible", "fade-out");
+    return;
+  }
   strip.classList.add("fade-out");
   // After the CSS transition completes, fully hide
-  setTimeout(() => {
+  loadingStripHideTimer = window.setTimeout(() => {
+    loadingStripHideTimer = undefined;
     strip.classList.remove("visible", "fade-out");
   }, 400);
 }

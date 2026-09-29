@@ -195,10 +195,9 @@ export function startDailyFastPath(): void {
 /**
  * Work out which seed to use based on URL params.
  * - ?se=<num> present → use that exact seed; ?ds=1 preserves daily mode
- * - ?ds=1 without ?se → fetch today's seed and pin it in the URL
- * - Neither present → treat as daily seed (fetch + set both params)
+ * - Without ?se → fetch today's daily seed
  */
-export async function resolveSeed(): Promise<{ seed: number; isDaily: boolean }> {
+async function resolveSeed(): Promise<{ seed: number; isDaily: boolean }> {
   const urlState = parseURL();
 
   if (urlState.seed !== undefined) {
@@ -210,7 +209,6 @@ export async function resolveSeed(): Promise<{ seed: number; isDaily: boolean }>
   // No seed identity: daily-only links and the default map resolve today.
   try {
     const seed = await fetchDailySeed();
-    updateURLWithSeed(seed, true);
     return { seed, isDaily: true };
   } catch (err) {
     console.warn("[DynamicMap] Daily seed fetch failed, using fallback:", err);
@@ -222,7 +220,6 @@ export async function resolveSeed(): Promise<{ seed: number; isDaily: boolean }>
       hash = (hash * 31 + dateStr.charCodeAt(i)) | 0;
     }
     const fallbackSeed = Math.abs(hash) % 2147483647 || 1;
-    updateURLWithSeed(fallbackSeed, true);
     return { seed: fallbackSeed, isDaily: true };
   }
 }
@@ -654,7 +651,10 @@ export async function runDynamicMap(
  * Convenience wrapper: resolve seed from URL then run the full pipeline.
  */
 export async function runDynamicMapFromURL(opts: DynamicMapOptions): Promise<GenerationResult | null> {
+  const request = ++generationToken;
   const { seed, isDaily } = await resolveSeed();
+  if (request !== generationToken) return null;
+  updateURLWithSeed(seed, isDaily);
   return runDynamicMap(seed, isDaily, opts);
 }
 

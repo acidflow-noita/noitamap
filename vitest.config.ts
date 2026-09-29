@@ -1,11 +1,8 @@
 import { configDefaults, defineConfig } from "vitest/config";
 import { resolveLocalPro } from "./build_scripts/local-pro";
-import { resolve } from 'node:path';
 
 export default defineConfig({
-  resolve: { alias: { ...resolveLocalPro(import.meta.dirname).aliases,
-    'noita-telescope-full-pixels/spawn_function_config.js': resolve(import.meta.dirname, 'lib/noita-telescope-vm/js/spawn_function_config.js'),
-  } },
+  resolve: { alias: resolveLocalPro(import.meta.dirname).aliases },
   server: {
     fs: { allow: [".."] },
   },

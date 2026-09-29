@@ -72,7 +72,7 @@ export function writeRGBA(
 
 /** Cell-color art overrides painted cells, including translucent materials.
  * An opaque art pixel supplies the cell's opacity; air still receives no art. */
-export function applySceneVisualArt(
+function applySceneVisualArt(
   pixels: Uint8Array | Uint8ClampedArray,
   source: TerrainSceneSource,
 ): void {
@@ -94,7 +94,7 @@ export function applySceneVisualArt(
 /** Scene backgrounds, force-air and material cells are different paint passes.
  * Flattening them into one source-over bitmap leaves terrain inside air holes,
  * paints background art over rock, and creates opaque biome-color rectangles. */
-export function createSceneTileCompositor(
+function createSceneTileCompositor(
   data: TerrainSceneData,
   paint: ScenePainter,
   budget = 64 * 1024 * 1024,
@@ -228,7 +228,7 @@ export function createSceneTileCompositor(
 /** #000042 is the game's FORCE AIR instruction, including scenes for which
  * Telescope's old overlay paints an opaque placeholder (shops/capsules/rooms).
  * Those display exceptions are not material instructions. */
-export function applySceneForceAir(
+function applySceneForceAir(
   raw: Uint8Array | Uint8ClampedArray,
   painted: PaintedScene,
 ): void {
@@ -248,7 +248,7 @@ const compositors = new WeakMap<
 
 /** The native scene painter is shared by terrain tiles and small authored
  * rooms drawn as artwork by the direct viewport renderer. */
-export function paintTerrainScene(
+function paintTerrainScene(
   scene: TerrainScene,
   source: TerrainSceneSource,
   sceneModule: any,

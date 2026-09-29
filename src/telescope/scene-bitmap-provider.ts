@@ -5,7 +5,6 @@ export interface CompressedSceneBitmap {
 }
 
 type Entry = { bitmap: ImageBitmap; bytes: number };
-type Decode = (blob: Blob, x: number, y: number, width: number, height: number, options: ImageBitmapOptions) => Promise<ImageBitmap>;
 export type SceneBitmapLoader = (key: string) => Promise<CompressedSceneBitmap | undefined>;
 
 /** Compressed scene artwork is cheap to retain; decoded full-world artwork is
@@ -16,7 +15,6 @@ export type SceneBitmapLoader = (key: string) => Promise<CompressedSceneBitmap |
 export function createSceneBitmapProvider(
   scenes: Map<string, CompressedSceneBitmap>,
   maxBytes: number,
-  decode: Decode = (...args) => createImageBitmap(...args),
   loadBitmap?: SceneBitmapLoader,
 ) {
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 4)
@@ -79,7 +77,9 @@ export function createSceneBitmapProvider(
             if (width >= height) width--; else height--;
           }
         }
-        const quality = context.imageSmoothingEnabled ? 'high' : 'pixelated';
+        // Unscaled source pixels are identical regardless of how their next
+        // draw is filtered. Share that decoded crop across zoom changes.
+        const quality = width === sw && height === sh || !context.imageSmoothingEnabled ? 'pixelated' : 'high';
         const requestKey = JSON.stringify([key, sx, sy, sw, sh, width, height, quality]);
         let entry = cache.get(requestKey);
         if (entry) {
@@ -92,7 +92,7 @@ export function createSceneBitmapProvider(
           while (bytes + expectedBytes > maxBytes) {
             remove(cache.keys().next().value!); evictions++;
           }
-          const bitmap = await decode(scene.blob, sx, sy, sw, sh,
+          const bitmap = await createImageBitmap(scene.blob, sx, sy, sw, sh,
             { resizeWidth: width, resizeHeight: height, resizeQuality: quality });
           decodes++;
           try {

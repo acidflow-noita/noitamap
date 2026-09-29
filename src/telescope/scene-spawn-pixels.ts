@@ -2,9 +2,8 @@ import { BIOME_SPAWN_FUNCTION_MAP } from 'noita-telescope-full-pixels/spawn_func
 import { sceneBiomeNames } from './terrain-policy';
 
 // The fork omits these six biome scripts from its spawn table. These are the
-// RegisterSpawnFunction colors shared by data/scripts/biomes/friend_[1-6].lua;
-// the source-asset test checks them against every bundled script.
-export const FRIEND_SCENE_SPAWN_COLORS = [0xffeedd, 0x31d0b0, 0x9dd0b0, 0x9dd0c0, 0x9dd0d0, 0x80ff5a] as const;
+// RegisterSpawnFunction colors shared by data/scripts/biomes/friend_[1-6].lua.
+const FRIEND_SCENE_SPAWN_COLORS = [0xffeedd, 0x31d0b0, 0x9dd0b0, 0x9dd0c0, 0x9dd0d0, 0x80ff5a] as const;
 const byBiomes = new Map<string, Set<number>>();
 
 /** A shared general/ scene can carry spawn instructions registered only by

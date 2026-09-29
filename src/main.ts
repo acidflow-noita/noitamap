@@ -311,28 +311,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   i18next.on("languageChanged", _recomputePhaseMinWidth);
 
   window.addEventListener("dataZipProgress", ((e: CustomEvent) => {
+    if (app.getMap() !== "dynamic-main-branch" || bakedViewActive) return;
     const bar = _getDownloadBar();
     const status = _getStatusText();
     const title = _getTitle();
     if (!bar) return;
-
-    // data.zip is shared world data fetched for every map, but the phases this
-    // strip reports — biome generation, then item placement — only ever run on
-    // the dynamic map, and only itemsGenerationProgress(100) hides the strip
-    // again. On a static map nothing fires that event, so showing the strip here
-    // left it pinned open forever under an indeterminate spinner, advertising
-    // biome generation that never starts. Static maps get no strip at all; the
-    // ordinary spinner already covers their tile loading.
-    if (app.getMap() !== "dynamic-main-branch") return;
-    // Baked views never generate: data.zip is only being fetched here for
-    // background consumers (pixel-scene prefetch, POI tooling, the alt-unlocks
-    // pre-warm). On 100% this handler flips the strip into its indeterminate
-    // "Generating Biomes / 33%" state -- and on a baked map nothing ever fires
-    // biomeGenerationProgress or itemsGenerationProgress, so that stuck 33%
-    // strip sat there until a refresh. This was THE "stuck at 33%" regression:
-    // it reappeared whenever any code path (re)fetched data.zip after a baked
-    // fast-path load.
-    if (bakedViewActive) return;
 
     showLoadingStrip();
 
@@ -378,18 +361,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!bar) return;
 
     showLoadingStrip();
-    // Baked fast path: download/generation phases never ran (their bars are
-    // untouched), so the items phase is the WHOLE strip — title it correctly
-    // and show a true 0-100% instead of the 3-phase 66-100% tail.
-    const itemsOnly =
-      !parseFloat(_getDownloadBar()?.style.width || "0") && !parseFloat(_getGenerationBar()?.style.width || "0");
     const title = _getTitle();
     if (title) title.textContent = i18next.isInitialized ? i18next.t("loading.mapData.addingItems") : "Adding items and wands";
     bar.style.width = `${e.detail.percentage}%`;
     if (status) {
-      status.textContent = itemsOnly
-        ? `${Math.round(e.detail.percentage)}%`
-        : `${Math.round(66 + e.detail.percentage / 3)}%`;
+      status.textContent = `${Math.round(66 + e.detail.percentage / 3)}%`;
     }
 
     if (e.detail.percentage >= 100) {
@@ -602,7 +578,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   let reportMapLoading = false;
   let poiContextReady = false;
   let initialTargetSeedStarted = false;
-  app.osd.addHandler('map-change-start', () => {
+  app.osd.addHandler('map-change-start', ({ mapName }: { mapName: string }) => {
+    updateDynamicUIVisibility(mapName);
+    if (mapName !== "dynamic-main-branch" && app.getMap() === "dynamic-main-branch") clearDynamicMap(app.osd);
     initialTargetPoiId = undefined;
     poiContextReady = false;
     reportHighlights?.clear(false);
@@ -626,14 +604,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         resetPOICardContext(app.osd);
       }
       loadingIndicator.style.display = isLoading ? "block" : "none";
+      hideLoadingStrip();
       if (isLoading) {
-        // Selecting a map does not imply generation. Baked daily tiles use
-        // the ordinary loading indicator; real generator progress events own
-        // the generation strip, including world-data downloads.
-        hideLoadingStrip();
         unifiedSearch.setIndexingState('indexing');
-      } else {
-        hideLoadingStrip();
       }
     },
     onSeedResolved: (seed: number, isDaily: boolean) => {
@@ -1083,7 +1056,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Clean up dynamic map state whenever we leave the dynamic map, regardless
     // of the trigger (nav click, pro-bundle import, setMap hook, etc.)
     if (lastKnownMap === "dynamic-main-branch" && state.map !== "dynamic-main-branch") {
-      clearDynamicMap(app.osd);
       unifiedSearch.setDynamicPOIs([]);
       unifiedSearch.setIndexingState('idle');
     } else if (lastKnownMap !== "dynamic-main-branch" && state.map === "dynamic-main-branch") {

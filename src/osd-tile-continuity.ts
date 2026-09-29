@@ -160,11 +160,6 @@ function protect(item: any, budget: ReferenceBudget): () => void {
   };
 }
 
-/** Standalone entry point for an image or a native OSD integration fixture. */
-export function protectTileContinuity(item: any, options: { maxTiles?: number } = {}): () => void {
-  return protect(item, new ReferenceBudget(Math.max(0, options.maxTiles ?? getMapMemoryBudget().continuityTiles)));
-}
-
 /** Share a bounded reference budget across static DZI and generated map layers.
  * OSD owns every tile/cache canvas; removing images releases all extra refs. */
 export function installTileContinuity(viewer: any, options: { maxTiles?: number } = {}): () => void {

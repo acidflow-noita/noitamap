@@ -144,14 +144,6 @@ function density(): number {
 
 type SamplingBudget = Pick<MapMemoryBudget, 'viewportMaxPixels' | 'viewportMaxDimension'>;
 
-export function planInstantTerrainViewport(viewport: any, bounds: ViewportTerrainBounds,
-  budget: SamplingBudget = getMapMemoryBudget()): InstantTerrainViewportPlan | null {
-  const current = viewport.getBounds(true);
-  const visible = current.getBoundingBox?.() ?? current;
-  const pixelsPerWorld = Math.abs(viewport.deltaPixelsFromPointsNoRotate(new OpenSeadragon.Point(1, 0), true).x) * density();
-  return sampleViewport(visible, pixelsPerWorld, bounds, budget);
-}
-
 function sampleViewport(visible: ViewportTerrainBounds, pixelsPerWorld: number,
   bounds: ViewportTerrainBounds, budget: SamplingBudget, margin = 0): InstantTerrainViewportPlan | null {
   const x = Math.max(bounds.x, visible.x), y = Math.max(bounds.y, visible.y);

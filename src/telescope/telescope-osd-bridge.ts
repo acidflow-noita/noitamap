@@ -2392,64 +2392,59 @@ async function buildSceneBitmaps(
     getScenePngIndex(), getCachedSceneBitmapsBulk(keyArr.map(([k]) => k)),
   ]);
 
-  const nativeRenderer = nativeMaterials ? new NativeSceneRenderer() : undefined;
-  try {
-    for (let i = 0; i < keyArr.length; i += BATCH) {
-      if (generationId !== null && currentGenerationId !== generationId) {
-        for (const bitmap of bitmapByKey.values()) bitmap.close();
-        return null;
-      }
-      const batch = keyArr.slice(i, i + BATCH);
-      const outcomes = await Promise.allSettled(
-        batch.map(async ([rk, scene]) => {
-          // ── Cache fast path ────────────────────────────────────────────────
-          const cached = bulkSceneCache.get(rk);
-          if (cached) {
-            if (blobByKey) {
-              blobByKey.set(rk, cached);
-              cacheHitCount++;
-              return;
-            }
-            try {
-              const bmp = await createImageBitmap(cached.blob);
-              bitmapByKey.set(rk, bmp);
-              cacheHitCount++;
-              return;
-            } catch {
-              // fall through to recompute
-            }
-          }
-
-          const composited = nativeMaterials && usesNativeSceneBitmap(scene)
-            ? await compositeNativeSceneBitmap(scene, result.worldSize, nativeRenderer!, !compact)
-            : await compositeSceneBitmap(scene.key, scene, idx, !compact);
-          if (!composited) {
-            missingCount++;
+  for (let i = 0; i < keyArr.length; i += BATCH) {
+    if (generationId !== null && currentGenerationId !== generationId) {
+      for (const bitmap of bitmapByKey.values()) bitmap.close();
+      return null;
+    }
+    const batch = keyArr.slice(i, i + BATCH);
+    const outcomes = await Promise.allSettled(
+      batch.map(async ([rk, scene]) => {
+        // ── Cache fast path ────────────────────────────────────────────────
+        const cached = bulkSceneCache.get(rk);
+        if (cached) {
+          if (blobByKey) {
+            blobByKey.set(rk, cached);
+            cacheHitCount++;
             return;
           }
-          if (blobByKey && composited.blob)
-            blobByKey.set(rk, { blob: composited.blob, width: composited.width, height: composited.height });
-          if (composited.bitmap) bitmapByKey.set(rk, composited.bitmap);
-          if (composited.kind === 'fallback') fallbackCount++;
-          else compositeCount++;
-          if (composited.blob) {
-            cacheSceneBitmap(rk, composited.blob, composited.width, composited.height).catch(e =>
-              console.warn('[OSD Bridge] cacheSceneBitmap failed:', rk, e)
-            );
+          try {
+            const bmp = await createImageBitmap(cached.blob);
+            bitmapByKey.set(rk, bmp);
+            cacheHitCount++;
+            return;
+          } catch {
+            // fall through to recompute
           }
-        })
-      );
-      const failure = outcomes.find((outcome): outcome is PromiseRejectedResult => outcome.status === 'rejected');
-      if (failure) {
-        // Wait for the complete bounded batch before closing shared output; a
-        // sibling must not install a late bitmap after error cleanup has run.
-        for (const bitmap of bitmapByKey.values()) bitmap.close();
-        bitmapByKey.clear();
-        throw failure.reason;
-      }
-    }
+        }
 
-  } finally { nativeRenderer?.dispose(); }
+        const composited = await compositeSceneBitmap(scene.key, scene, idx, !compact);
+        if (!composited) {
+          missingCount++;
+          return;
+        }
+        if (blobByKey && composited.blob)
+          blobByKey.set(rk, { blob: composited.blob, width: composited.width, height: composited.height });
+        if (composited.bitmap) bitmapByKey.set(rk, composited.bitmap);
+        if (composited.kind === 'fallback') fallbackCount++;
+        else compositeCount++;
+        if (composited.blob) {
+          cacheSceneBitmap(rk, composited.blob, composited.width, composited.height).catch(e =>
+            console.warn('[OSD Bridge] cacheSceneBitmap failed:', rk, e)
+          );
+        }
+      })
+    );
+    const failure = outcomes.find((outcome): outcome is PromiseRejectedResult => outcome.status === 'rejected');
+    if (failure) {
+      // Wait for the complete bounded batch before closing shared output; a
+      // sibling must not install a late bitmap after error cleanup has run.
+      for (const bitmap of bitmapByKey.values()) bitmap.close();
+      bitmapByKey.clear();
+      throw failure.reason;
+    }
+  }
+
   console.log(
     `[OSD Bridge] Pixel scene artwork: ${bitmapByKey.size + (blobByKey?.size ?? 0)}/${uniqueKeys.size} ` +
       `(${cacheHitCount} cache, ${compositeCount} composite, ${fallbackCount} fallback, ${missingCount} missing) ` +
@@ -5058,170 +5053,170 @@ export async function renderGenerationResult(
   let completePresentation = () => {};
   const presentationReady = new Promise<void>(resolve => { completePresentation = resolve; });
   void presentationReady.then(releaseSetup);
-  clearPortalAnimations();
-  clearInstantTerrain();
-  clearTerrainPngEncoders();
-  (window as any).__osdViewer = viewer;
-
-  // Snapshot old dynamic items (tiled images + HTML overlays) BEFORE adding
-  // new content. We'll remove them AFTER new content is fully in place,
-  // so there's never a visible gap where biome backgrounds disappear.
-  const oldWorldItems: any[] = [];
   try {
-    const world = viewer.world;
-    for (let i = 0; i < world.getItemCount(); i++) {
-      const item = world.getItemAt(i);
-      // Same base-layer test as clearDynamicOverlays. Routed through
-      // isDynamicSeedItem so in-flight baked DZIs whose async success callback
-      // hasn't yet tagged source.__bakedDzi are still captured for cleanup.
-      if (item && isDynamicSeedItem(item)) {
-        oldWorldItems.push(item);
-      }
-    }
-  } catch {}
-  const oldOverlayEls = [...dynamicOverlayElements];
-  dynamicOverlayElements = [];
-  const oldBlobUrls = [...dynamicBlobUrls];
-  dynamicBlobUrls = [];
-  dynamicTiledImages.clear();
-  activeOrbTargets = [];
+    clearPortalAnimations();
+    clearInstantTerrain();
+    clearTerrainPngEncoders();
+    (window as any).__osdViewer = viewer;
 
-  // Add biome backgrounds as the bottom-most new layer.
-  // Skipped when baked DZIs will replace them — the baked tiles already
-  // include the biome bgs and the placeholder would otherwise flash visibly
-  // under them on every refresh.
-  if ((!bakedDZIs || bakedDZIs.length === 0) && !isGLTerrainEnabled()) {
-    addBiomeBgToOSD(viewer);
-  }
-  if (currentGenerationId !== generationId) return;
-
-  // Wrap onFirstPaint so the moment PW 0,0 of the new seed is in place we
-  // ALSO purge the previous render's items. This avoids holding two full
-  // generations in memory through the rest of the pipeline (~5-6s on FF
-  // and Brave) and prevents the visible "old + new stacked" flicker the
-  // user saw on heaven/hell.
-  let oldItemsCleanedUp = false;
-  const cleanupOldItems = () => {
-    if (oldItemsCleanedUp) return;
-    oldItemsCleanedUp = true;
+    // Snapshot old dynamic items (tiled images + HTML overlays) BEFORE adding
+    // new content. We'll remove them AFTER new content is fully in place,
+    // so there's never a visible gap where biome backgrounds disappear.
+    const oldWorldItems: any[] = [];
     try {
       const world = viewer.world;
-      for (const item of oldWorldItems) {
-        try {
-          world.removeItem(item);
-        } catch {}
+      for (let i = 0; i < world.getItemCount(); i++) {
+        const item = world.getItemAt(i);
+        // Same base-layer test as clearDynamicOverlays. Routed through
+        // isDynamicSeedItem so in-flight baked DZIs whose async success callback
+        // hasn't yet tagged source.__bakedDzi are still captured for cleanup.
+        if (item && isDynamicSeedItem(item)) {
+          oldWorldItems.push(item);
+        }
       }
     } catch {}
-    for (const el of oldOverlayEls) {
-      try {
-        viewer.removeOverlay(el);
-        el.remove();
-      } catch {}
-    }
-    // Defer URL revoke a bit so any in-flight OSD tile request that already
-    // grabbed the URL can still resolve.
-    setTimeout(() => {
-      for (const url of oldBlobUrls) {
-        URL.revokeObjectURL(url);
-      }
-    }, 500);
-  };
-  const wrappedOnFirstPaint = () => {
-    cleanupOldItems();
-    try {
-      onFirstPaint?.();
-    } catch (e) {
-      console.warn('[OSD Bridge] onFirstPaint threw:', e);
-    }
-  };
+    const oldOverlayEls = [...dynamicOverlayElements];
+    dynamicOverlayElements = [];
+    const oldBlobUrls = [...dynamicBlobUrls];
+    dynamicBlobUrls = [];
+    dynamicTiledImages.clear();
+    activeOrbTargets = [];
 
-  // Atlas/sprite downloads and the POI index do not depend on terrain or scene
-  // composition. Retain errors as data until joined so cancellation is safe.
-  const markerDataReady = buildMarkerData(result).then(
-    value => ({ value }), error => ({ error }),
-  );
+    // Add biome backgrounds as the bottom-most new layer.
+    // Skipped when baked DZIs will replace them — the baked tiles already
+    // include the biome bgs and the placeholder would otherwise flash visibly
+    // under them on every refresh.
+    if ((!bakedDZIs || bakedDZIs.length === 0) && !isGLTerrainEnabled()) {
+      addBiomeBgToOSD(viewer);
+    }
+    if (currentGenerationId !== generationId) return;
 
-  // Biome layer: prefer baked DZIs from CF Static Assets workers when the
-  // probe in dynamic-map.ts already validated them for this seed. Falls back
-  // to the live dynamic composite when no baked set is available (any non-
-  // daily seed or a deploy that hasn't caught up yet).
-  let awaitingTerrainDraw = false;
-  if (bakedDZIs && bakedDZIs.length > 0) {
-    if (bakedDZIsAlreadyOnScreen) {
-      // dynamic-map painted these the moment the probe resolved. Just hook
-      // them into our cleanup tracking so removeItem() works on next reseed.
+    // Wrap onFirstPaint so the moment PW 0,0 of the new seed is in place we
+    // ALSO purge the previous render's items. This avoids holding two full
+    // generations in memory through the rest of the pipeline (~5-6s on FF
+    // and Brave) and prevents the visible "old + new stacked" flicker the
+    // user saw on heaven/hell.
+    let oldItemsCleanedUp = false;
+    const cleanupOldItems = () => {
+      if (oldItemsCleanedUp) return;
+      oldItemsCleanedUp = true;
       try {
-        const w = viewer.world;
-        for (let i = 0; i < w.getItemCount(); i++) {
-          const item = w.getItemAt(i);
-          const url = item?.source?.tilesUrl;
-          // DziTileSource rewrites ".../foo.dzi" into tilesUrl ".../foo_files/",
-          // so match against that form, not the raw .dzi URL.
-          if (typeof url === 'string' && bakedDZIs.some(p => url.startsWith(p.dziUrl.replace(/\.dzi$/, '_files/')))) {
-            dynamicTiledImages.add(item);
-            // Drop from oldWorldItems snapshot so cleanupOldItems doesn't
-            // remove the DZIs we just painted.
-            const idx = oldWorldItems.indexOf(item);
-            if (idx >= 0) oldWorldItems.splice(idx, 1);
-          }
-        }
-      } catch {}
-      // First-paint already fired in dynamic-map (loading bar hid then).
-      // Still call wrappedOnFirstPaint to trigger oldItems cleanup for any
-      // PRE-baked-paint state (probably nothing in our flow, but defensive).
-      try {
-        wrappedOnFirstPaint();
-      } catch {}
-    } else {
-      let firstPaintFired = false;
-      addBakedDZIsToOSD(viewer, bakedDZIs, (item, _placement) => {
-        if (currentGenerationId !== generationId) {
+        const world = viewer.world;
+        for (const item of oldWorldItems) {
           try {
-            viewer.world.removeItem(item);
+            world.removeItem(item);
           } catch {}
-          return;
         }
-        dynamicTiledImages.add(item);
-        if (!firstPaintFired) {
-          firstPaintFired = true;
-          try {
-            wrappedOnFirstPaint();
-          } catch (e) {
-            console.warn('[OSD Bridge] baked onFirstPaint threw:', e);
-          }
+      } catch {}
+      for (const el of oldOverlayEls) {
+        try {
+          viewer.removeOverlay(el);
+          el.remove();
+        } catch {}
+      }
+      // Defer URL revoke a bit so any in-flight OSD tile request that already
+      // grabbed the URL can still resolve.
+      setTimeout(() => {
+        for (const url of oldBlobUrls) {
+          URL.revokeObjectURL(url);
         }
-      });
-    }
-  } else {
-    // Adding biomes initializes the OSD viewport bounds.
-    let instant = false;
-    if (isInstantTerrainEnabled() && !forceApproximateTerrain && !result.isNGP && result.worldSize === 70) {
-      await ensureTelescopeModules();
-      if (currentGenerationId !== generationId) return;
-      const [{ addInstantTerrain }, masks] = await Promise.all([
-        loadInstantTerrain(), instantSceneMasks(result),
-      ]);
-      if (currentGenerationId !== generationId) return;
-      if (glTerrainDeps) instant = await addInstantTerrain(viewer, result, glTerrainDeps,
-        masks, () => currentGenerationId === generationId,
-        item => dynamicTiledImages.add(item), wrappedOnFirstPaint,
-        error => {
-          if (currentGenerationId !== generationId) return;
-          console.warn('[OSD Bridge] GPU terrain failed; rebuilding approximate layers:', error);
-          void renderGenerationResult(viewer, result, unlocks, isDaily, onFirstPaint, cacheKey,
-            null, false, false, true, generationStartedAt).catch(error => {
-              failMapHandoff(viewer, error);
-              console.error('[OSD Bridge] Terrain fallback failed:', error);
-            });
-        }, generationStartedAt, presentationReady, scenePreparationReady);
-    }
-    if (currentGenerationId !== generationId) return;
-    awaitingTerrainDraw = instant;
-    if (!instant) await addBiomeLayersProgressively(viewer, result, generationId, wrappedOnFirstPaint, cacheKey);
-    if (currentGenerationId !== generationId) return;
-  }
+      }, 500);
+    };
+    const wrappedOnFirstPaint = () => {
+      cleanupOldItems();
+      try {
+        onFirstPaint?.();
+      } catch (e) {
+        console.warn('[OSD Bridge] onFirstPaint threw:', e);
+      }
+    };
 
-  try {
+    // Atlas/sprite downloads and the POI index do not depend on terrain or scene
+    // composition. Retain errors as data until joined so cancellation is safe.
+    const markerDataReady = buildMarkerData(result).then(
+      value => ({ value }), error => ({ error }),
+    );
+
+    // Biome layer: prefer baked DZIs from CF Static Assets workers when the
+    // probe in dynamic-map.ts already validated them for this seed. Falls back
+    // to the live dynamic composite when no baked set is available (any non-
+    // daily seed or a deploy that hasn't caught up yet).
+    let awaitingTerrainDraw = false;
+    if (bakedDZIs && bakedDZIs.length > 0) {
+      if (bakedDZIsAlreadyOnScreen) {
+        // dynamic-map painted these the moment the probe resolved. Just hook
+        // them into our cleanup tracking so removeItem() works on next reseed.
+        try {
+          const w = viewer.world;
+          for (let i = 0; i < w.getItemCount(); i++) {
+            const item = w.getItemAt(i);
+            const url = item?.source?.tilesUrl;
+            // DziTileSource rewrites ".../foo.dzi" into tilesUrl ".../foo_files/",
+            // so match against that form, not the raw .dzi URL.
+            if (typeof url === 'string' && bakedDZIs.some(p => url.startsWith(p.dziUrl.replace(/\.dzi$/, '_files/')))) {
+              dynamicTiledImages.add(item);
+              // Drop from oldWorldItems snapshot so cleanupOldItems doesn't
+              // remove the DZIs we just painted.
+              const idx = oldWorldItems.indexOf(item);
+              if (idx >= 0) oldWorldItems.splice(idx, 1);
+            }
+          }
+        } catch {}
+        // First-paint already fired in dynamic-map (loading bar hid then).
+        // Still call wrappedOnFirstPaint to trigger oldItems cleanup for any
+        // PRE-baked-paint state (probably nothing in our flow, but defensive).
+        try {
+          wrappedOnFirstPaint();
+        } catch {}
+      } else {
+        let firstPaintFired = false;
+        addBakedDZIsToOSD(viewer, bakedDZIs, (item, _placement) => {
+          if (currentGenerationId !== generationId) {
+            try {
+              viewer.world.removeItem(item);
+            } catch {}
+            return;
+          }
+          dynamicTiledImages.add(item);
+          if (!firstPaintFired) {
+            firstPaintFired = true;
+            try {
+              wrappedOnFirstPaint();
+            } catch (e) {
+              console.warn('[OSD Bridge] baked onFirstPaint threw:', e);
+            }
+          }
+        });
+      }
+    } else {
+      // Adding biomes initializes the OSD viewport bounds.
+      let instant = false;
+      if (isInstantTerrainEnabled() && !forceApproximateTerrain && !result.isNGP && result.worldSize === 70) {
+        await ensureTelescopeModules();
+        if (currentGenerationId !== generationId) return;
+        const [{ addInstantTerrain }, masks] = await Promise.all([
+          loadInstantTerrain(), instantSceneMasks(result),
+        ]);
+        if (currentGenerationId !== generationId) return;
+        if (glTerrainDeps) instant = await addInstantTerrain(viewer, result, glTerrainDeps,
+          masks, () => currentGenerationId === generationId,
+          item => dynamicTiledImages.add(item), wrappedOnFirstPaint,
+          error => {
+            if (currentGenerationId !== generationId) return;
+            console.warn('[OSD Bridge] GPU terrain failed; rebuilding approximate layers:', error);
+            void renderGenerationResult(viewer, result, unlocks, isDaily, onFirstPaint, cacheKey,
+              null, false, false, true, generationStartedAt).catch(error => {
+                failMapHandoff(viewer, error);
+                console.error('[OSD Bridge] Terrain fallback failed:', error);
+              });
+          }, generationStartedAt, presentationReady, scenePreparationReady);
+      }
+      if (currentGenerationId !== generationId) return;
+      awaitingTerrainDraw = instant;
+      if (!instant) await addBiomeLayersProgressively(viewer, result, generationId, wrappedOnFirstPaint, cacheKey);
+      if (currentGenerationId !== generationId) return;
+    }
+
     // Pixel scenes render on top of biome overlays, below POI markers. When the
     // baked DZIs already carry scenes in their pixels, skip the live layer.
     if (!bakedDecorations) {
@@ -5284,6 +5279,7 @@ export async function renderGenerationResult(
         y: visibleMarkerData.originY,
         width: visibleMarkerData.bboxWidth,
         success: (event: any) => {
+          completePresentation();
           if (currentGenerationId !== generationId) {
             try {
               viewer.world.removeItem(event.item);
@@ -5294,7 +5290,6 @@ export async function renderGenerationResult(
           dynamicTiledImages.add(event.item);
           markerTiledImage = event.item;
 
-          completePresentation();
           emitItemsDone();
         },
         error: (err: any) => {
@@ -5316,6 +5311,7 @@ export async function renderGenerationResult(
     // the empty-result safety net for old items.
     if (!awaitingTerrainDraw) cleanupOldItems();
   } catch (error) {
+    releaseSetup();
     // A failed artwork/marker setup must not leave a live frame waiting for
     // presentationReady forever. Keep the previous map until retry/reseed.
     if (currentGenerationId === generationId) {
@@ -5323,6 +5319,10 @@ export async function renderGenerationResult(
       clearInstantTerrain();
     }
     throw error;
+  } finally {
+    // Fallback rendering shares this handoff with its replacement. Its old
+    // setup must release the hold even if cancellation bypasses marker setup.
+    if (currentGenerationId !== generationId) releaseSetup();
   }
 }
 
