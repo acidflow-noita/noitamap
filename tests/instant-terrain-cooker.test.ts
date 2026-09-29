@@ -21,7 +21,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
-function fixture(timing: { startedAt?: number; seed?: number; foregroundBusy?: () => boolean } = {}) {
+function fixture(timing: { startedAt?: number; seed?: number; foregroundBusy?: () => boolean; scenePreparationReady?: Promise<void> } = {}) {
   let persistent = true, view = 0;
   const visited: string[] = [];
   const flush = vi.fn(async () => {}), failure = vi.fn();
@@ -148,6 +148,38 @@ describe('continuous native terrain cooking', () => {
     expect(completionLogs()).toHaveLength(1);
     expect(startLogs()).toHaveLength(1);
   });
+  it('waits for native artwork and its writes without announcing terrain-only completion', async () => {
+    let finishScenes!: () => void;
+    const scenePreparationReady = new Promise<void>(resolve => { finishScenes = resolve; });
+    const f = fixture({ scenePreparationReady });
+    f.cooker.add(f.source(0, 512, 512)); f.cooker.start();
+    await vi.runAllTimersAsync();
+    expect(f.flush).toHaveBeenCalledOnce();
+    expect(f.cooker.stats.state).toBe('waiting-artwork');
+    expect(completionLogs()).toHaveLength(0);
+    finishScenes(); await vi.runAllTimersAsync();
+    expect(f.cooker.stats.state).toBe('complete');
+    expect(completionLogs()).toEqual([[expect.any(String), expect.objectContaining({
+      scope: expect.stringContaining('native scene artwork, including persistence'),
+    })]]);
+  });
+
+  it.each(['abort', 'obsolete', 'failure'])('does not announce completed artwork after %s', async reason => {
+    let finishScenes!: () => void, failScenes!: (error: unknown) => void;
+    const scenePreparationReady = new Promise<void>((resolve, reject) => { finishScenes = resolve; failScenes = reject; });
+    const f = fixture({ scenePreparationReady });
+    f.cooker.add(f.source(0, 512, 512));
+    // Observe an early reject even before the background sweep starts.
+    if (reason === 'failure') failScenes(new Error('Scene persistence failed'));
+    await Promise.resolve(); f.cooker.start(); await vi.runAllTimersAsync();
+    if (reason === 'abort') { controller.abort(); finishScenes(); }
+    if (reason === 'obsolete') failScenes(new DOMException('Obsolete scene generation', 'AbortError'));
+    await vi.runAllTimersAsync();
+    expect(completionLogs()).toHaveLength(0);
+    expect(f.cooker.stats.state).toBe(reason === 'failure' ? 'failed' : 'cancelled');
+    expect(f.failure).toHaveBeenCalledTimes(reason === 'failure' ? 1 : 0);
+  });
+
   it('finishes all nine regions without any zoom or tile-download request, then flushes', async () => {
     const f = fixture();
     for (let i = 0; i < 9; i++) f.cooker.add(f.source(i, 768, 513));

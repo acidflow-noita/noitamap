@@ -20,13 +20,14 @@ afterEach(() => { for (const cleanup of cleanups.splice(0)) cleanup(); OSD.pixel
 afterAll(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 const drain = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
 
-function fixture(bounds = { x: -1000, y: -1000, width: 2000, height: 2000 }, maxRetainedPixels?: number) {
+function fixture(bounds = { x: -1000, y: -1000, width: 2000, height: 2000 }, maxRetainedPixels?: number, overviewMaxPixels?: number, frameMarginPixels?: number) {
   OSD.pixelDensityRatio = 1;
   const viewer: any = new OSD.EventSource(), world: any = new OSD.EventSource();
   const items: any[] = [], canvas = createCanvas(32, 24), lifetime = new AbortController();
   let area = new OSD.Rect(0, 0, 32, 24), angle = 0, flip = false, version = 0;
+  let destination = area;
   const viewport = {
-    getBounds: () => area.rotate(-angle),
+    getBounds: (current = false) => (current ? area : destination).rotate(-angle),
     getBoundsWithMargins: () => area.rotate(-angle),
     getBoundsNoRotate: () => area,
     getCenter: () => area.getCenter(),
@@ -34,7 +35,7 @@ function fixture(bounds = { x: -1000, y: -1000, width: 2000, height: 2000 }, max
     getFlip: () => flip,
     getZoom: () => 1 / area.width,
     getContainerSize: () => new OSD.Point(32, 24),
-    deltaPixelsFromPointsNoRotate: (point: any) => point.times(32 / area.width),
+    deltaPixelsFromPointsNoRotate: (point: any, current = false) => point.times(32 / (current ? area : destination).width),
     pixelFromPoint: (point: any) => point.rotate(angle, area.getCenter()).minus(area.getTopLeft()).times(32 / area.width),
     pixelFromPointNoRotate: (point: any) => point.minus(area.getTopLeft()).times(32 / area.width),
     viewportToViewerElementRectangle: (rect: any) => new OSD.Rect((rect.x - area.x) * 32 / area.width,
@@ -56,7 +57,7 @@ function fixture(bounds = { x: -1000, y: -1000, width: 2000, height: 2000 }, max
   const renderFrame = vi.fn((plan: InstantTerrainViewportPlan, signal: AbortSignal) =>
     new Promise<any>((resolve, reject) => renders.push({ plan, signal, resolve, reject })));
   const layer = createInstantTerrainViewport({ viewer, bounds, signal: lifetime.signal,
-    renderFrame, firstPaint, onFailure: failure, revision: () => version, maxRetainedPixels });
+    renderFrame, firstPaint, onFailure: failure, revision: () => version, maxRetainedPixels, overviewMaxPixels, frameMarginPixels });
   function attach(source: any = layer.source) {
     const item = new OSD.TiledImage({ source, viewer, viewport, drawer, tileCache: viewer.tileCache,
       imageLoader: new OSD.ImageLoader({ jobLimit: 2 }), width: source.width, x: bounds.x, y: bounds.y,
@@ -78,12 +79,21 @@ function fixture(bounds = { x: -1000, y: -1000, width: 2000, height: 2000 }, max
   }
   function navigate(x: number, width = area.width, rotation = angle) {
     area = new OSD.Rect(x, area.y, width, width * 24 / 32);
+    destination = area;
     angle = rotation;
     viewer.raiseEvent('viewport-change', {});
   }
   cleanups.push(() => { lifetime.abort(); for (const tracked of [...items]) tracked.source.destroy(); viewer.raiseEvent('before-destroy', {}); });
   return { viewer, world, canvas, viewport, drawer, originalDraw, lifetime, layer, item, items, attach,
     renders, renderFrame, firstPaint, failure, image, navigate,
+    startZoomOut: (width: number) => {
+      destination = new OSD.Rect(area.x, area.y, width, width * 24 / 32);
+      viewer.raiseEvent('zoom', {});
+    },
+    animateWidth: (width: number) => {
+      area = new OSD.Rect(area.x, area.y, width, width * 24 / 32);
+      viewer.raiseEvent('animation', {});
+    },
     revise: () => { version++; layer.refresh(); },
     setFlip: (value: boolean) => { flip = value; viewer.raiseEvent('flip', {}); },
     remove: (removed: any) => { removed.destroy(); items.splice(items.indexOf(removed), 1); world.raiseEvent('remove-item', { item: removed }); },
@@ -187,6 +197,96 @@ describe('direct viewport terrain with installed OSD and native canvas', () => {
     expect(overview.close).toHaveBeenCalledOnce();
     expect(detail.close).toHaveBeenCalledOnce();
     expect(f.pixel(24, 12)).toEqual([32, 192, 96, 255]);
+  });
+
+  it('renders the zoom-out destination once instead of chasing narrower spring positions', async () => {
+    const f = fixture(); await drain();
+    f.image(); await drain();
+    f.startZoomOut(128); await drain();
+    expect(f.renders[1].plan).toMatchObject({ width: 128, height: 96, scale: 4 });
+    f.image(1, '#2060f0'); await drain();
+    for (const width of [36, 48, 64, 80, 112, 128]) {
+      f.animateWidth(width); await drain(); f.draw();
+      expect(f.renders).toHaveLength(2);
+      expect(f.pixel(31, 12)).toEqual([32, 96, 240, 255]);
+    }
+    expect(f.layer.isBusy()).toBe(false);
+  });
+
+  it('keeps never-visited biomes covered throughout continuous zoom while worker frames are delayed', async () => {
+    const pixels = 32 * 24;
+    const f = fixture({ x: 0, y: 0, width: 256, height: 192 }, pixels * 2, pixels);
+    await drain();
+    const detail = f.image(0, '#e04020');
+    detail.getContext('2d').clearRect(4, 4, 4, 4);
+    await drain(); f.draw(); await drain();
+    expect(f.firstPaint).not.toHaveBeenCalled();
+    expect(f.layer.source.__viewportReady()).toBe(false);
+    expect(f.renders[1].plan).toMatchObject({ x: 0, y: 0, width: 256, height: 192, pixelWidth: 32, pixelHeight: 24 });
+    const overview = f.image(1, '#20c060'); await drain(); f.draw(); await drain();
+    expect(f.firstPaint).toHaveBeenCalledOnce();
+    expect(f.layer.source.__viewportReady()).toBe(true);
+    // A broad backing frame must not fill an authoritative transparent cave.
+    expect(f.pixel(5, 5)).toEqual([0, 0, 0, 0]);
+    expect((f.layer.stats as any).retainedBytes).toBe(pixels * 4);
+    f.startZoomOut(256); await drain();
+    for (const width of [48, 64, 96, 128, 192, 256]) {
+      f.animateWidth(width); await drain(); f.draw();
+      // The newest worker request is intentionally never resolved here.
+      // CanvasDrawer clears every animation frame, so coverage must be redrawn.
+      expect(f.renders).toHaveLength(3);
+      expect(f.pixel(31, 12)).toEqual([32, 192, 96, 255]);
+      expect(f.pixel(20, 22)[3]).toBe(255);
+      expect((f.layer.stats as any).retainedBytes).toBeLessThanOrEqual(pixels * 2 * 4);
+    }
+    f.image(2, '#2060f0'); await drain(); f.draw();
+    expect(f.pixel(31, 12)).toEqual([32, 96, 240, 255]);
+    expect(overview.close).not.toHaveBeenCalled();
+    f.remove(f.item);
+    expect(overview.close).toHaveBeenCalledOnce();
+    expect((f.layer.stats as any).retainedBytes).toBe(0);
+  });
+
+  it.each([[0, 1], [17, .4], [45, 1], [90, .7], [-32, 1]])('does not expose seams between complete frames at fractional animated zoom positions (rotation %s, opacity %s)', async (angle, opacity) => {
+    const f = fixture(undefined, 32 * 24 * 3, 32 * 24, 1);
+    f.item.opacity = opacity;
+    await drain(); f.image(0); await drain(); f.image(1); await drain();
+    f.navigate(3.17, 17.43, angle); await drain(); f.image(2); await drain();
+    f.startZoomOut(128); await drain();
+    for (const width of [21.3, 29.7, 54.31, 83.17, 128]) {
+      f.animateWidth(width); await drain(); f.draw();
+      const pixels = f.canvas.getContext('2d').getImageData(0, 0, 32, 24).data;
+      let partial = 0;
+      for (let i = 3; i < pixels.length; i += 4) if (pixels[i] !== Math.round(255 * opacity)) partial++;
+      expect(partial, `width=${width}`).toBe(0);
+      expect((f.layer.stats as any).overviewBytes).toBeLessThanOrEqual(32 * 24 * 4);
+      expect((f.layer.stats as any).retainedBytes).toBeLessThanOrEqual(32 * 24 * 3 * 4);
+    }
+  });
+
+  it('keeps guarded native pixels sharp and flips them without blending or shifting the image', async () => {
+    const f = fixture(undefined, undefined, undefined, 1);
+    await drain();
+    expect(f.renders[0].plan).toMatchObject({ x: -1, y: -1, pixelWidth: 34, pixelHeight: 26 });
+    const image = f.image(), ctx = image.getContext('2d');
+    for (let x = 0; x < image.width; x++) {
+      ctx.fillStyle = (x - 1) % 2 ? '#0000ff' : '#ff0000'; ctx.fillRect(x, 0, 1, image.height);
+    }
+    await drain(); f.draw();
+    for (let x = 0; x < 32; x++) expect(f.pixel(x, 10)).toEqual(x % 2 ? [0, 0, 255, 255] : [255, 0, 0, 255]);
+    f.setFlip(true); f.draw();
+    for (let x = 0; x < 32; x++) expect(f.pixel(x, 10)).toEqual(x % 2 ? [255, 0, 0, 255] : [0, 0, 255, 255]);
+  });
+
+  it('keeps authoritative air transparent when guarded detail is projected above a broader frame', async () => {
+    const f = fixture(undefined, undefined, undefined, 1);
+    await drain(); f.image(); await drain();
+    f.navigate(0, 16); await drain();
+    const detail = f.image(); detail.getContext('2d').clearRect(9, 9, 8, 8);
+    await drain(); f.navigate(0, 32); await drain(); f.draw();
+    expect(f.pixel(5, 5)).toEqual([0, 0, 0, 0]);
+    expect(f.pixel(9, 5)[3]).toBe(255);
+    expect(f.pixel(24, 5)[3]).toBe(255);
   });
 
   it('keeps the broad view through small zoom steps within a strict pixel budget', async () => {

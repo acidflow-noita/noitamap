@@ -25,6 +25,15 @@ const REPEATED_TEMPLE_BIOMES = new Set([
   "biome_darkness",
 ]);
 
+// These authored rooms carve a small scene into an otherwise solid EDR chunk.
+// The base map leaves their biome cells empty for dynamic room placement, so
+// their bufferless fill layers must survive just like generated Wang layers.
+// Other fill biomes still belong to the static map.
+const AUTHORED_ROOM_FILL_BIOMES = new Set([
+  "solid_wall_hidden_cavern",
+  "friend_1", "friend_2", "friend_3", "friend_4", "friend_5", "friend_6",
+]);
+
 /** Legacy 10x Wang-template overlays are useful only without native terrain. */
 export function isRepeatedTempleTemplate(scene: { key: string }): boolean {
   return scene.key === "static_tile/temples-assets/potion_mimics" ||
@@ -74,8 +83,7 @@ export const BIOME_BACKGROUND_MAP: Record<string, string> = {
   solid_wall_tower_2: "data/weather_gfx/background_excavationsite.png",
   solid_wall_tower_1: "data/weather_gfx/background_coalmine.png",
   solid_wall_tower_10: "data/weather_gfx/background_crypt.png",
-  // Fill biomes that only exist as carved pixel scenes. They own no terrain
-  // layer, so this backdrop is painted only under their scenes' force-air.
+  // The carved air in these solid fill biomes reveals its own cave backdrop.
   friend_1: "data/weather_gfx/background_cave_02.png",
   friend_2: "data/weather_gfx/background_cave_02.png",
   friend_3: "data/weather_gfx/background_cave_02.png",
@@ -96,7 +104,7 @@ export function sceneBiomeNames(scene: { key: string; variantKey?: string }): st
   return names;
 }
 
-export const TERRAIN_VERSION = "full-pixel-v13";
+export const TERRAIN_VERSION = "full-pixel-v15";
 export const WORLD_HEIGHT = 48 * 512;
 export const WORLD_TOP = -14 * 512;
 export type VerticalPlane = -1 | 0 | 1;
@@ -122,11 +130,13 @@ export function createTerrainOwnership(
   const ids = new Map<string, number>();
   for (const layer of layers) {
     const name = layer.biomeName;
-    if (!layer.buffer || layer.isFill || (STATIC_TERRAIN_BIOMES.has(name) &&
+    const conf = config[name];
+    const roomFill = AUTHORED_ROOM_FILL_BIOMES.has(name) && layer.isFill &&
+      !!conf?.fillMaterial && !conf.sceneOnly && !includeRepeatedTemples;
+    if ((!roomFill && (!layer.buffer || layer.isFill || !conf?.wangFile)) ||
+      (STATIC_TERRAIN_BIOMES.has(name) &&
       !(includeRepeatedTemples && REPEATED_TEMPLE_BIOMES.has(name))))
       continue;
-    const conf = config[name];
-    if (!conf?.wangFile) continue;
     let id = ids.get(name);
     if (id === undefined) {
       id = names.length;

@@ -14,6 +14,38 @@ import {
   textureColor,
 } from "../src/telescope/terrain-backgrounds";
 import { terrainTileKey } from "../src/telescope/terrain-tile-store";
+import { GENERATOR_CONFIG } from "../lib/noita-telescope-vm/js/generator_config.js";
+import { BIOME_ENGINE } from "../lib/noita-telescope-vm/js/engine_resolve/engine_data.js";
+
+it("keeps the game's EDR fill under carved rooms, bounded by real biome cells", () => {
+  const pixels = new Uint32Array(70 * 48).fill(GENERATOR_CONFIG.solid_wall.color);
+  const names = ["solid_wall_hidden_cavern", "friend_1", "friend_2", "friend_3", "friend_4", "friend_5", "friend_6"] as const;
+  const layers = names.map((biomeName, i) => {
+    const conf = GENERATOR_CONFIG[biomeName];
+    expect(conf.fillMaterial).toBe("rock_hard_border");
+    expect(conf).not.toHaveProperty('sceneOnly', true);
+    const engine = BIOME_ENGINE.find((biome: any) => biome.color === (conf.color & 0xffffff));
+    expect(engine?.paintsNothing).toBe(false);
+    expect(engine?.bands.length).toBeGreaterThan(0);
+    pixels[14 * 70 + 29 + i] = conf.color;
+    return { biomeName, isFill: true, buffer: null, validChunks: new Set([`${29 + i},14`, `${29 + i},15`]) };
+  });
+  const main = createPlaneOwnership(layers, pixels, pixels, GENERATOR_CONFIG, 70);
+  names.forEach((name, i) => {
+    for (const pw of [-1, 0, 1]) {
+      const x = -3072 + i * 512 + pw * 35840;
+      expect(main.names[main.at(x, 0)]).toBe(name);
+      expect(main.at(x, 512)).toBe(-1);
+    }
+  });
+  // These cells contain authored rooms only in the main vertical region; a
+  // sky/hell material broadcast must not turn their source fills into islands.
+  for (const name of ["the_sky", "the_end"] as const) {
+    const paint = new Uint32Array(pixels.length).fill(GENERATOR_CONFIG[name].color);
+    const vertical = createPlaneOwnership(layers, pixels, paint, GENERATOR_CONFIG, 70);
+    names.forEach((_, i) => expect(vertical.at(-3072 + i * 512, 0)).toBe(-1));
+  }
+});
 it("does not paint winter cave bounding boxes or fill biomes over static brown rock", () => {
   const pixels = new Uint32Array(70 * 48).fill(2);
   pixels[70 * 20 + 15] = 1;

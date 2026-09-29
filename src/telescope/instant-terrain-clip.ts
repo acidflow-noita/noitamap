@@ -150,12 +150,15 @@ export function createInstantClip(
               cx <= cx1 && owner.owners[cy * owner.width + localX] >= 0;
             if (owns && start === -Infinity) start = cx;
             if (!owns && start !== -Infinity) {
-              ctx.rect(
-                (start * 512 - owner.width * 256 - x) / scale,
-                (planeY + cy * 512 - y) / scale,
-                ((cx - start) * 512) / scale,
-                512 / scale,
-              );
+              // The shader selects the biome containing the display pixel's
+              // center. Fractional Canvas clips instead antialias each chunk
+              // edge, leaving a translucent square around isolated authored
+              // rooms/islands that changes on every animated zoom frame.
+              const left = Math.max(0, Math.ceil((start * 512 - owner.width * 256 - x) / scale - .5));
+              const right = Math.min(width, Math.ceil((cx * 512 - owner.width * 256 - x) / scale - .5));
+              const top = Math.max(0, Math.ceil((planeY + cy * 512 - y) / scale - .5));
+              const bottom = Math.min(height, Math.ceil((planeY + (cy + 1) * 512 - y) / scale - .5));
+              if (right > left && bottom > top) ctx.rect(left, top, right - left, bottom - top);
               start = -Infinity;
             }
           }

@@ -167,3 +167,108 @@ it('streams stored completed pages sequentially under a one-page RAM budget and 
   records.delete(`seed/${region.maxLevel}/0/0`);
   expect(await region.paintStoredView(target, view)).toBe(false);
 });
+
+it.each([.65, 1, 1.23, 1.75, 2.46, 9.7])('matches one unbroken native texture across page boundaries at fractional camera scale %s', scale => {
+  const { owner } = fixture(), region = owner.region('seams', 512, 512);
+  const source = context(512, 512);
+  const image = source.createImageData(512, 512);
+  for (let y = 0; y < 512; y++) for (let x = 0; x < 512; x++) {
+    const at = (y * 512 + x) * 4;
+    image.data[at] = x % 256;
+    image.data[at + 1] = y % 256;
+    image.data[at + 2] = (Math.floor(x / 8) + Math.floor(y / 8)) % 2 ? 16 : 200;
+    image.data[at + 3] = x >= 240 && x < 280 && y >= 110 && y < 290 ? 0
+      : x >= 200 && x < 312 && y >= 320 && y < 380 ? 128 : 255;
+  }
+  source.putImageData(image, 0, 0);
+  // Deliberately omit every ancestor: extreme overview ratios must use a
+  // bounded reduction of the available native pages without storage reads.
+  for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) {
+    const page = context(256, 256);
+    page.drawImage(source.canvas, x * 256, y * 256, 256, 256, 0, 0, 256, 256);
+    owner.install(`seams/${region.maxLevel}/${x}/${y}`, page, new Uint8Array([1]), 1, 1, false);
+  }
+  let reference = source, pixelScale = 1;
+  while (scale >= pixelScale * 2) {
+    const next = context(reference.canvas.width / 2, reference.canvas.height / 2);
+    next.imageSmoothingEnabled = true; next.imageSmoothingQuality = 'low';
+    next.drawImage(reference.canvas, 0, 0, next.canvas.width, next.canvas.height);
+    reference = next; pixelScale *= 2;
+  }
+  const output = context(640, 640, '#205070'), expected = context(640, 640, '#205070');
+  const tx = 20.25, ty = 30.7;
+  output.setTransform(1 / scale, 0, 0, 1 / scale, tx, ty);
+  expected.setTransform(1 / scale, 0, 0, 1 / scale, tx, ty);
+  expected.imageSmoothingEnabled = false;
+  expected.globalCompositeOperation = 'copy';
+  expected.drawImage(reference.canvas, 0, 0, 512, 512);
+  region.paintResidentView(output, { x: -tx * scale, y: -ty * scale,
+    width: 640 * scale, height: 640 * scale, scale });
+  // Exclude only the full texture's outer rasterized edge. All internal page
+  // joins, material pixels, transparent holes and translucent pixels are exact.
+  const left = Math.ceil(tx + 2), top = Math.ceil(ty + 2);
+  const width = Math.min(638, Math.floor(tx + 512 / scale - 2)) - left;
+  const height = Math.min(638, Math.floor(ty + 512 / scale - 2)) - top;
+  expect(output.getImageData(left, top, width, height).data)
+    .toEqual(expected.getImageData(left, top, width, height).data);
+  expect(owner.stats.viewScratchBytes).toBe(260 * 260 * 4);
+  expect(owner.stats.reductionBytes).toBeLessThanOrEqual(349524);
+});
+
+it.each([.65, 1.23, 2.46, 9.7, 1024])('does not punch alpha seams into opaque coverage at scale %s', scale => {
+  const { owner } = fixture(), region = owner.region('solid', 512, 512);
+  owner.install(`solid/${region.maxLevel}/0/0`, context(256, 256, '#ff4000'), new Uint8Array([1]), 1, 1, false);
+  const output = context(440, 440, '#205070');
+  output.setTransform(1 / scale, 0, 0, 1 / scale, 20.25, 30.7);
+  region.paintResidentView(output, { x: -20.25 * scale, y: -30.7 * scale,
+    width: 440 * scale, height: 440 * scale, scale });
+  const actual = bytes(output);
+  let translucent = 0;
+  for (let i = 3; i < actual.length; i += 4) if (actual[i] !== 255) translucent++;
+  expect(translucent).toBe(0);
+  expect(owner.stats.viewScratchBytes).toBeLessThanOrEqual(260 * 260 * 4);
+  expect(owner.stats.reductionBytes).toBeLessThanOrEqual(350000);
+  owner.dispose();
+  expect(owner.stats.viewScratchBytes).toBe(0);
+  expect(owner.stats.reductionBytes).toBe(0);
+});
+
+it('erases fully transparent known cells at fractional boundaries in an otherwise partly unknown mip', () => {
+  const { owner } = fixture(), region = owner.region('air', 512, 512);
+  const page = context(256, 256, '#ff0000');
+  page.clearRect(0, 0, 128, 128);
+  owner.install(`air/${region.maxLevel - 1}/0/0`, page, new Uint8Array([1]), 2, 2, false);
+  const output = context(240, 240, '#205070'), scale = 2.46, tx = 20.25, ty = 30.7;
+  output.setTransform(1 / scale, 0, 0, 1 / scale, tx, ty);
+  region.paintResidentView(output, { x: -tx * scale, y: -ty * scale,
+    width: 240 * scale, height: 240 * scale, scale });
+  for (let y = 0; y < 240; y++) for (let x = 0; x < 240; x++) {
+    const known = x + .5 >= tx && x + .5 < tx + 256 / scale && y + .5 >= ty && y + .5 < ty + 256 / scale;
+    expect(pixel(output, x, y)[3]).toBe(known ? 0 : 255);
+  }
+});
+
+
+it('projects a complete coarse page once, rather than once per native coverage row', () => {
+  const { owner } = fixture(), region = owner.region('coarse', 65536, 65536);
+  const page = context(256, 256, '#20c050');
+  owner.install(`coarse/${region.minLevel}/0/0`, page, new Uint8Array(8192).fill(255), 256, 256, false);
+  const draw = vi.spyOn(owner, 'paintViewSample');
+  const output = context(256, 256); output.scale(1 / 256, 1 / 256);
+  const coverage = region.paintResidentView(output, { x: 0, y: 0, width: 65536, height: 65536, scale: 256 });
+  expect(coverage).toHaveLength(256);
+  expect(draw).toHaveBeenCalledOnce();
+  expect(bytes(output)).toEqual(bytes(page));
+});
+
+it('keeps an extremely reduced native fallback opaque when its coverage contains one display pixel', () => {
+  const { owner } = fixture(), region = owner.region('far', 512, 512);
+  owner.install(`far/${region.maxLevel}/0/0`, context(256, 256, '#ff4000'), new Uint8Array([1]), 1, 1, false);
+  const output = context(32, 48, '#205070'), scale = 1024, tx = 20.4, ty = 30.4;
+  output.setTransform(1 / scale, 0, 0, 1 / scale, tx, ty);
+  region.paintResidentView(output, { x: -tx * scale, y: -ty * scale,
+    width: 32 * scale, height: 48 * scale, scale });
+  expect(pixel(output, 20, 30)).toEqual([255, 64, 0, 255]);
+  expect(pixel(output, 21, 30)).toEqual([32, 80, 112, 255]);
+  expect(owner.stats.viewScratchBytes).toBe(260 * 260 * 4);
+});

@@ -433,7 +433,7 @@ describe("derived terrain cache schema migration", () => {
     const fixture = legacyDatabase(oldVersion);
     const { getCachedSceneBitmap, cacheSceneBitmap } = await import("../src/telescope/tile-cache");
     expect(await getCachedSceneBitmap(fixture.sceneKey)).toBeNull();
-    expect(fixture.open).toHaveBeenCalledExactlyOnceWith("noitamap-telescope", 14);
+    expect(fixture.open).toHaveBeenCalledExactlyOnceWith("noitamap-telescope", 15);
     for (const name of ["generations", "biome_renders", "pixel_scene_bitmaps"])
       expect(fixture.records.get(name)?.size, name).toBe(0);
     expect(fixture.records.get("unrelated")?.get("keep")).toBe("unrelated data");
@@ -446,14 +446,24 @@ describe("derived terrain cache schema migration", () => {
     expect(fixture.open).toHaveBeenCalledOnce();
   });
 
-  it("keeps valid data when opening an already current database", async () => {
+  it("invalidates raw artwork composites from v14 without discarding generated geometry", async () => {
     vi.resetModules();
     const fixture = legacyDatabase(14);
+    const { getCachedSceneBitmap } = await import("../src/telescope/tile-cache");
+    expect(await getCachedSceneBitmap(fixture.sceneKey)).toBeNull();
+    expect(fixture.records.get("generations")?.size).toBe(1);
+    expect(fixture.records.get("biome_renders")?.size).toBe(1);
+    expect(fixture.records.get("unrelated")?.get("keep")).toBe("unrelated data");
+  });
+
+  it("keeps valid data when opening an already current database", async () => {
+    vi.resetModules();
+    const fixture = legacyDatabase(15);
     fixture.stale.height = 1139;
     const { getCachedSceneBitmap } = await import("../src/telescope/tile-cache");
     expect(await getCachedSceneBitmap(fixture.sceneKey)).toBe(fixture.stale);
     expect(fixture.records.get("generations")?.size).toBe(1);
     expect(fixture.records.get("biome_renders")?.size).toBe(1);
-    expect(fixture.open).toHaveBeenCalledExactlyOnceWith("noitamap-telescope", 14);
+    expect(fixture.open).toHaveBeenCalledExactlyOnceWith("noitamap-telescope", 15);
   });
 });

@@ -9,6 +9,8 @@ import { BIOME_BACKGROUND_MAP, STATIC_TERRAIN_BIOMES } from "../src/telescope/te
 import boundaries from "../src/data/biome_boundries_py.json";
 
 let OSD: any, texture: any, original: Uint8ClampedArray;
+const allocatedCanvases: any[] = [];
+const canvasWidthSetters = new WeakMap<object, ReturnType<typeof vi.spyOn>>();
 beforeAll(async () => {
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(function (this: HTMLCanvasElement) {
     return createCanvas(this.width || 1, this.height || 1).getContext("2d") as any;
@@ -18,7 +20,7 @@ beforeAll(async () => {
   OSD.pixelDensityRatio = 1;
   const createElement = document.createElement.bind(document);
   vi.spyOn(document, "createElement").mockImplementation(((name: string, options?: ElementCreationOptions) =>
-    name === "canvas" ? createCanvas(1, 1) : createElement(name, options)) as any);
+    name === "canvas" ? (() => { const canvas = createCanvas(1, 1); allocatedCanvases.push(canvas); canvasWidthSetters.set(canvas, vi.spyOn(canvas, "width", "set")); return canvas; })() : createElement(name, options)) as any);
   const bytes = readFileSync("public/biome_bg/background_wandcave.png");
   const decoded = decode(bytes);
   expect(decoded.channels).toBe(1);
@@ -86,6 +88,23 @@ function pixelCheck(ctx: any, left: number, top: number, offset = 0, owns = (_x:
 }
 
 describe("native biome backgrounds through installed OSD and native canvas", () => {
+  it("releases the temporary compositor after both consumers copy it", async () => {
+    const f = fixture(), s = f.source(), start = allocatedCanvases.length;
+    try {
+      const a = s.request(s.source.maxLevel), b = s.request(s.source.maxLevel);
+      await Promise.all([a.done, b.done]);
+      const [temporary, cached, first, second] = allocatedCanvases.slice(start);
+      expect(allocatedCanvases.length - start).toBe(4);
+      expect(canvasWidthSetters.get(temporary)).toHaveBeenLastCalledWith(0);
+      expect([cached.width, first.width, second.width]).toEqual([256, 256, 256]);
+      pixelCheck(first.getContext('2d'), 0, 0);
+      pixelCheck(second.getContext('2d'), 0, 0);
+      f.pack.destroy();
+      expect(canvasWidthSetters.get(cached)).toHaveBeenLastCalledWith(0);
+      expect([first.width, second.width]).toEqual([256, 256]);
+    } finally { f.pack.destroy(); }
+  });
+
   it("ships a decodable original PNG for every non-static mapped biome boundary", async () => {
     const paths = new Set(boundaries.biomes
       .filter(b => !STATIC_TERRAIN_BIOMES.has(b.filename))

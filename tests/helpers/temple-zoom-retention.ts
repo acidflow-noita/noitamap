@@ -61,7 +61,29 @@ export async function verifyTempleZoomRetention(generation: any, resources: any,
           const reference = compositor.render(resources, close).getContext('2d')!.getImageData(0, 0, 512, 512).data;
           let mismatchedBytes = 0;
           for (let i = 0; i < reference.length; i++) if (actual[i] !== reference[i]) mismatchedBytes++;
-          samples.push({ biome, plane, comparedPixels: 512 * 512, mismatchedBytes });
+          let edgeMismatchedBytes = 0, edgeComparedPixels = 0;
+          for (const [frame, scale] of [.61, 1.37, 3.19, 4.71].entries()) {
+            const edge = { x: x - 29.19 + frame * .17, y: y - 31.37 + frame * .23,
+              width: 128 * scale, height: 128 * scale, scale, pixelWidth: 128, pixelHeight: 128 };
+            resources.setPlane(plane);
+            const image = resources.render({ ...edge, width: 128, height: 128,
+              camX: edge.x + 64 * scale + 17920, camY: edge.y + 64 * scale + 7168,
+              camZ: 1 / scale, pw: 0, pwVertical: 0,
+              edgeNoise: true, materialTextures: true, engineTerrain: true });
+            const expected = new Uint8ClampedArray(image.__nativeGlesPixels);
+            for (let py = 0; py < 128; py++) for (let px = 0; px < 128; px++) {
+              const wx = edge.x + (px + .5) * scale;
+              const wy = edge.y + (py + .5) * scale - plane * 24576;
+              if (owners[plane + 1].at(wx, wy) >= 0) continue;
+              expected.fill(0, (py * 128 + px) * 4, (py * 128 + px + 1) * 4);
+            }
+            const output = compositor.render(resources, edge).getContext('2d')!
+              .getImageData(0, 0, 128, 128).data;
+            for (let i = 0; i < expected.length; i++) if (output[i] !== expected[i]) edgeMismatchedBytes++;
+            edgeComparedPixels += 128 * 128;
+          }
+          samples.push({ biome, plane, comparedPixels: 512 * 512, mismatchedBytes,
+            edgeComparedPixels, edgeMismatchedBytes });
           canvas.width = canvas.height = 0;
         } finally {
           lifetime.abort();

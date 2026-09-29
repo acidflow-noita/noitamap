@@ -557,6 +557,7 @@ export async function addInstantTerrain(
   fallback: (error: unknown) => void,
   generationStartedAt = performance.now(),
   presentationReady: Promise<void> = Promise.resolve(),
+  scenePreparationReady?: Promise<void>,
 ): Promise<boolean> {
   clearInstantTerrain();
   const lifetime = new AbortController();
@@ -599,6 +600,7 @@ export async function addInstantTerrain(
   const coverage = createInstantCoverage(osd, lifetime.signal);
   const cooker = createInstantTerrainCooker({
     startedAt: generationStartedAt,
+    scenePreparationReady,
     seed: gen.seed,
     signal: lifetime.signal,
     persistent: () => retained.stats.persistent,
@@ -787,8 +789,11 @@ export async function addInstantTerrain(
         complete: () => cooker.stats.state === 'complete', refresh: refreshViewport,
       });
       viewport = createInstantTerrainViewport({
+        frameMarginPixels: 1,
         viewer: osd, bounds, signal: lifetime.signal, revision: () => viewportRevision,
         maxRetainedPixels: memory.retainedFramePixels,
+        overviewMaxPixels: Math.min(memory.retainedFramePixels / 4,
+          memory.profile === 'compact' ? 512 ** 2 : 1024 ** 2),
         async renderFrame(plan, signal) {
           await new Promise<void>((resolve, reject) => {
             const abort = () => reject(signal.reason);

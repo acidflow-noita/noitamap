@@ -2,6 +2,7 @@ import Flatbush from "flatbush";
 import { copyTerrainContext, InstantTerrainCache } from "./instant-terrain-cache";
 import { getMapMemoryBudget } from '../map-memory-budget';
 import { drawViewportArt } from './viewport-art';
+import { createSceneBitmapProvider, type CompressedSceneBitmap, type SceneBitmapLoader } from './scene-bitmap-provider';
 
 declare const OpenSeadragon: any;
 
@@ -19,19 +20,26 @@ export interface SceneTileItem {
 export function createPixelSceneTileSource(options: {
   items: SceneTileItem[];
   bitmapByKey: Map<string, ImageBitmap>;
+  blobByKey?: Map<string, CompressedSceneBitmap>;
+  /** Produce exact artwork lazily, under the provider's bounded work queue. */
+  loadBitmap?: SceneBitmapLoader;
+  /** Retire the loader/worker before releasing this layer's bitmap ownership. */
+  disposeBitmaps?: () => void;
+  maxBitmapBytes?: number;
   generationId: number;
   maxCacheBytes?: number;
 }) {
   const { items, bitmapByKey, generationId } = options;
+  const blobByKey = options.blobByKey ?? new Map<string, CompressedSceneBitmap>();
+  const bitmaps = blobByKey.size || options.loadBitmap ? createSceneBitmapProvider(blobByKey,
+    options.maxBitmapBytes ?? getMapMemoryBudget().sceneCacheBytes, undefined, options.loadBitmap) : undefined;
   if (!items.length) throw new Error("Cannot tile an empty scene layer");
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  let maxSceneDim = 0;
   for (const item of items) {
     minX = Math.min(minX, item.osdX);
     minY = Math.min(minY, item.osdY);
     maxX = Math.max(maxX, item.osdX + item.w);
     maxY = Math.max(maxY, item.osdY + item.h);
-    maxSceneDim = Math.max(maxSceneDim, item.w, item.h);
   }
   const originX = minX - 50, originY = minY - 50;
   const width = maxX - minX + 100, height = maxY - minY + 100;
@@ -48,7 +56,7 @@ export function createPixelSceneTileSource(options: {
   const cutoff = source.getClosestLevel();
   const baseEnd = Math.min(maxLevel, cutoff + 1);
   let destroyed = false, rendered = 0, renderMs = 0, chunks = 0, maxChunkMs = 0;
-  type Work = { aborted: boolean; subscribers: number; promise: Promise<CanvasRenderingContext2D> };
+  type Work = { aborted: boolean; subscribers: number; promise: Promise<CanvasRenderingContext2D>; context?: CanvasRenderingContext2D };
   const inflight = new Map<string, Work>();
   const pending = new Set<(fail?: boolean) => void>();
   // Explicit opt-in to the existing HD coverage scheduler, without pretending
@@ -57,13 +65,16 @@ export function createPixelSceneTileSource(options: {
   source.instantCoverageExtraLevels = 1;
   source.instantCoverageTileBytes = () => tileSize * tileSize * 4;
   source.__pixelScenes = true;
-  Object.defineProperty(source, "sceneTileStats", { get: () => ({ ...cache.stats, rendered, renderMs, chunks, maxChunkMs }) });
+  Object.defineProperty(source, "sceneTileStats", { get: () => ({ ...cache.stats, rendered, renderMs, chunks, maxChunkMs, bitmapCache: bitmaps?.stats }) });
   source.getTileUrl = (level: number, x: number, y: number) =>
     `pixel-scene-tile://${generationId}/${level}/${x}/${y}`;
   source.hasCachedTile = (tile: { level: number; x: number; y: number }) =>
     cache.has(source.getTileUrl(tile.level, tile.x, tile.y));
   source.hasTransparency = () => true;
-  source.__drawViewport = (context: CanvasRenderingContext2D, item: any, viewport: any) => {
+  // Compressed mobile artwork follows OSD's asynchronous tile loading and
+  // existing pinned overview coverage. It cannot pretend a missing decode has
+  // already been drawn by the synchronous direct-art hook.
+  if (!bitmaps) source.__drawViewport = (context: CanvasRenderingContext2D, item: any, viewport: any) => {
     if (destroyed) return true;
     return drawViewportArt(context, item, viewport, width, height, bounds => {
       // Query full scene rectangles; no padding or coarse tile rounding is
@@ -80,11 +91,11 @@ export function createPixelSceneTileSource(options: {
   function query(level: number, x: number, y: number) {
     const span = tileSize * 2 ** (maxLevel - level);
     const bx = x * span, by = y * span;
-    // Retain the existing compositor's padded query and integer overlap. This
-    // changes tile lifetime, not scene placement, ordering or output pixels.
+    // The index contains complete scene rectangles, so intersecting the tile
+    // already finds scenes crossing its boundary. Preserve authored paint
+    // order; Flatbush's spatial query order changes with the requested area.
     return { bx, by, span,
-      hits: index.search(bx - maxSceneDim, by - maxSceneDim,
-        bx + span + maxSceneDim, by + span + maxSceneDim) };
+      hits: index.search(bx, by, bx + span, by + span).sort((a, b) => a - b) };
   }
   const validTile = source.tileExists.bind(source);
   source.tileExists = (level: number, x: number, y: number) =>
@@ -120,13 +131,19 @@ export function createPixelSceneTileSource(options: {
       try {
         for (let n = 0; n < hits.length; n++) {
           const item = items[hits[n]], bitmap = bitmapByKey.get(item.sceneKey);
-          if (bitmap) {
-            const dx = Math.floor((item.osdX - originX - bx) * scale);
-            const dy = Math.floor((item.osdY - originY - by) * scale);
-            const dw = Math.ceil(item.w * scale) + 1;
-            const dh = Math.ceil(item.h * scale) + 1;
-            if (dw >= 1 && dh >= 1)
-              context.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, dx, dy, dw, dh);
+          if (bitmap || blobByKey.has(item.sceneKey) || options.loadBitmap) {
+            // Artwork and the terrain erasure mask must use the same world
+            // rectangle. Rounding the origin and adding a display pixel to
+            // the extent stretches scenes differently at every OSD LOD.
+            const dx = (item.osdX - originX - bx) * scale;
+            const dy = (item.osdY - originY - by) * scale;
+            const dw = item.w * scale;
+            const dh = item.h * scale;
+            if (dw > 0 && dh > 0) {
+              if (bitmap) context.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, dx, dy, dw, dh);
+              else await bitmaps!.draw(item.sceneKey, context, dx, dy, dw, dh, () => work.aborted || destroyed);
+              cancelled();
+            }
           }
           // A whole-map tile can touch ten thousand scenes. Yield actual tasks,
           // rather than microtasks, so pointer/zoom/paint work can run between
@@ -145,6 +162,7 @@ export function createPixelSceneTileSource(options: {
         cancelled();
         cache.set(key, context, level >= cutoff && level <= baseEnd);
         rendered++;
+        work.context = context;
         return context;
       } catch (error) {
         canvas.width = canvas.height = 0;
@@ -198,9 +216,13 @@ export function createPixelSceneTileSource(options: {
         release = () => {
           if (released) return;
           released = true;
-          if (--work.subscribers === 0 && inflight.get(key) === work) {
+          if (--work.subscribers === 0) {
             work.aborted = true;
-            inflight.delete(key);
+            if (inflight.get(key) === work) inflight.delete(key);
+            // Cache and consumers own independent copies. Release the shared
+            // compositor buffer immediately, including after successful jobs.
+            if (work.context) work.context.canvas.width = work.context.canvas.height = 0;
+            work.context = undefined;
           }
         };
         result = work.promise.then(ctx => settled ? undefined : copyTerrainContext(ctx));
@@ -232,6 +254,8 @@ export function createPixelSceneTileSource(options: {
     for (const work of inflight.values()) work.aborted = true;
     inflight.clear();
     cache.clear();
+    options.disposeBitmaps?.();
+    bitmaps?.dispose();
     for (const bitmap of new Set(bitmapByKey.values())) bitmap.close?.();
     bitmapByKey.clear();
   };

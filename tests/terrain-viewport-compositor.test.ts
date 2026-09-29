@@ -107,6 +107,36 @@ describe('atomic terrain viewport compositor', () => {
     compositor.dispose();
   });
 
+  it('keeps isolated room and island ownership edges opaque through fractional moving zoom frames', () => {
+    const owners = [owner(false), owner(false), owner(false)];
+    for (const layer of owners) {
+      layer.owners[14 * 70 + 35] = 0;
+      layer.owners[15 * 70 + 35] = 0;
+      layer.owners[15 * 70 + 36] = 0;
+    }
+    const compositor = createTerrainViewportCompositor({ owners, masks: [], center: 35 });
+    const renderer = resources();
+    try {
+      for (const plane of [-1, 0, 1]) {
+        for (const [frame, scale] of [.61, .83, 1.03, 1.37, 2.19, 3.2, 2.71, 1.63, .97].entries()) {
+          const view = plan(-33.19 + frame * .17, plane * WORLD_HEIGHT - 29.37 + frame * .23,
+            384, 384, scale);
+          const actual = compositor.render(renderer, view).getContext('2d')!
+            .getImageData(0, 0, view.pixelWidth, view.pixelHeight).data;
+          let mismatches = 0;
+          for (let py = 0; py < view.pixelHeight; py++) for (let px = 0; px < view.pixelWidth; px++) {
+            const wx = view.x + (px + .5) * scale;
+            const wy = view.y + (py + .5) * scale - plane * WORLD_HEIGHT;
+            const cx = Math.floor((wx + 17920) / 512), cy = Math.floor((wy + 7168) / 512);
+            const expectedAlpha = owners[plane + 1].owners[cy * 70 + cx] >= 0 ? 255 : 0;
+            if (actual[(py * view.pixelWidth + px) * 4 + 3] !== expectedAlpha) mismatches++;
+          }
+          expect(mismatches, `plane=${plane}, frame=${frame}, scale=${scale}`).toBe(0);
+        }
+      }
+    } finally { compositor.dispose(); }
+  });
+
   it('never exposes a partially finished plane batch when a later GPU draw fails', () => {
     const compositor = createTerrainViewportCompositor({ owners: [owner(), owner(), owner()], masks: [], center: 35 });
     const renderer = resources();

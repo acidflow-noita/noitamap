@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { createCanvas } from "@napi-rs/canvas";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { Blob as NativeBlob } from "node:buffer";
 import { createHash } from "node:crypto";
-import Flatbush from "flatbush";
 import { createPixelSceneTileSource, type SceneTileItem } from "../src/telescope/pixel-scene-tile-source";
 
 let OSD: any;
+const allocatedCanvases: any[] = [];
+const canvasWidthSetters = new WeakMap<object, ReturnType<typeof vi.spyOn>>();
 beforeAll(async () => {
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(function (this: HTMLCanvasElement) {
     return createCanvas(this.width || 1, this.height || 1).getContext("2d") as any;
@@ -14,14 +16,14 @@ beforeAll(async () => {
   vi.stubGlobal("OpenSeadragon", OSD);
   const createElement = document.createElement.bind(document);
   vi.spyOn(document, "createElement").mockImplementation(((name: string, options?: ElementCreationOptions) =>
-    name === "canvas" ? createCanvas(1, 1) : createElement(name, options)) as any);
+    name === "canvas" ? (() => { const canvas = createCanvas(1, 1); allocatedCanvases.push(canvas); canvasWidthSetters.set(canvas, vi.spyOn(canvas, "width", "set")); return canvas; })() : createElement(name, options)) as any);
 });
 afterAll(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 const hash = (ctx: any) => createHash("sha256")
   .update(ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height).data).digest("hex");
 
-function fixture(maxCacheBytes?: number, dense = false, timeout = 3000) {
+function fixture(maxCacheBytes?: number, dense = false, timeout = 3000, compressed = false, lazy = false) {
   const bitmapByKey = new Map<string, ImageBitmap>();
   for (const [key, color] of [["a", "#da701b"], ["b", "#248ac780"]]) {
     const image = createCanvas(36, 20) as any, ctx = image.getContext("2d");
@@ -39,9 +41,17 @@ function fixture(maxCacheBytes?: number, dense = false, timeout = 3000) {
   ];
   if (dense) {
     for (let n = 0; n < 2000; n++)
-      items.push({ osdX: -800 + n % 20, osdY: -350 + n % 40, w: 36, h: 20, sceneKey: "a" });
+      items.push({ osdX: -800 + n % 20, osdY: -350 + n % 40, w: 36, h: 20, sceneKey: n % 2 ? "b" : "a" });
   }
-  const tiling = createPixelSceneTileSource({ items, bitmapByKey, generationId: 42, maxCacheBytes });
+  const blobByKey = compressed || lazy ? new Map([...bitmapByKey].map(([key, bitmap]) => [key, {
+    blob: new NativeBlob([new Uint8Array((bitmap as any).toBuffer('image/png'))]) as Blob,
+    width: bitmap.width, height: bitmap.height,
+  }])) : undefined;
+  const loadBitmap = lazy ? vi.fn(async (key: string) => blobByKey?.get(key)) : undefined;
+  const disposeBitmaps = lazy ? vi.fn() : undefined;
+  const tiling = createPixelSceneTileSource({ items, bitmapByKey: compressed || lazy ? new Map() : bitmapByKey,
+    blobByKey: lazy ? new Map() : blobByKey, loadBitmap, disposeBitmaps,
+    generationId: 42, maxCacheBytes, maxBitmapBytes: 8192 });
   const { source } = tiling;
   const loader = new OSD.ImageLoader({ jobLimit: 8, timeout });
   let lastJob: any;
@@ -61,42 +71,103 @@ function fixture(maxCacheBytes?: number, dense = false, timeout = 3000) {
     expect(req.callback.mock.calls[0][1]).toBeNull();
     return req.callback.mock.calls[0][0];
   }
-  return { ...tiling, items, bitmapByKey, loader, request, read };
+  return { ...tiling, items, bitmapByKey, loader, request, read, loadBitmap, disposeBitmaps };
 }
 
-/** Snapshot of the former bridge compositor. Compare actual RGBA output at
- * overview/detail levels, overlapping scenes, alpha holes and translated PW
- * coordinates; no browser or mocked canvas drawing is involved. */
-function legacyTile(f: ReturnType<typeof fixture>, level: number, x: number, y: number) {
-  const index = new Flatbush(f.items.length);
-  let padding = 0;
-  for (const i of f.items) {
-    index.add(i.osdX - f.originX, i.osdY - f.originY,
-      i.osdX + i.w - f.originX, i.osdY + i.h - f.originY);
-    padding = Math.max(padding, i.w, i.h);
-  }
-  index.finish();
+/** Render the original scene artwork at its world transform, independently
+ * of tile rectangle rounding/cropping. Every LOD must retain this registration
+ * with terrain masks and preserve the original scene paint order. */
+function referenceTile(f: ReturnType<typeof fixture>, level: number, x: number, y: number) {
   const span = 512 * Math.pow(2, f.source.maxLevel - level), bx = x * span, by = y * span;
-  const results = index.search(bx - padding, by - padding, bx + span + padding, by + span + padding);
   const canvas = createCanvas(512, 512), ctx = canvas.getContext("2d");
+  const scale = 512 / span;
   ctx.imageSmoothingEnabled = false;
-  for (const idx of results) {
-    const i = f.items[idx], bitmap = f.bitmapByKey.get(i.sceneKey)!;
-    const dx = Math.floor((i.osdX - f.originX - bx) * (512 / span));
-    const dy = Math.floor((i.osdY - f.originY - by) * (512 / span));
-    const dw = Math.ceil(i.w * (512 / span)) + 1, dh = Math.ceil(i.h * (512 / span)) + 1;
-    ctx.drawImage(bitmap as any, 0, 0, bitmap.width, bitmap.height, dx, dy, dw, dh);
+  ctx.setTransform(scale, 0, 0, scale, -bx * scale, -by * scale);
+  for (const item of f.items) {
+    const bitmap = f.bitmapByKey.get(item.sceneKey)!;
+    ctx.drawImage(bitmap as any, 0, 0, bitmap.width, bitmap.height,
+      item.osdX - f.originX, item.osdY - f.originY, item.w, item.h);
   }
   return ctx;
 }
 
 describe("scene artwork tiles through native canvas and installed OSD loader", () => {
-  it("preserves the former compositor's exact pixels across zoom levels and translated scenes", async () => {
+  it('indexes every placement before native artwork loads, then paints exact asynchronous tiles', async () => {
+    vi.stubGlobal('createImageBitmap', async (blob: Blob, sx: number, sy: number, sw: number, sh: number, options: ImageBitmapOptions) => {
+      const image = await loadImage(Buffer.from(await blob.arrayBuffer()));
+      const bitmap = createCanvas(options.resizeWidth!, options.resizeHeight!) as any;
+      const context = bitmap.getContext('2d'); context.imageSmoothingEnabled = false;
+      context.drawImage(image, sx, sy, sw, sh, 0, 0, bitmap.width, bitmap.height);
+      bitmap.close = vi.fn(); return bitmap;
+    });
+    const f = fixture(undefined, false, 3000, false, true);
+    try {
+      expect(f.loadBitmap).not.toHaveBeenCalled();
+      expect(f.source.__drawViewport).toBeUndefined();
+      expect(f.source.tileExists(13, 0, 0)).toBe(true);
+      expect(f.source.sceneTileStats.bitmapCache.loadedScenes).toBe(0);
+      for (const [level, x, y] of [[13, 0, 0], [13, 10, 3], [11, 2, 0], [13, 0, 0]])
+        expect(hash(await f.read(level, x, y))).toBe(hash(referenceTile(f, level, x, y)));
+      expect(f.loadBitmap).toHaveBeenCalledTimes(2);
+      expect(f.source.sceneTileStats.bitmapCache).toMatchObject({ loadedScenes: 2, loads: 2, loading: 0 });
+      f.disposeBitmaps!.mockImplementation(() => {
+        // The owning renderer retires before provider cleanup clears its PNGs.
+        expect(f.source.sceneTileStats.bitmapCache.loadedScenes).toBe(2);
+      });
+    } finally { f.source.destroy(); }
+    f.source.destroy();
+    expect(f.disposeBitmaps).toHaveBeenCalledOnce();
+    expect(f.source.sceneTileStats.bitmapCache.loadedScenes).toBe(0);
+  });
+  it("keeps complete coarse coverage while compact compressed detail is evicted and decoded again", async () => {
+    vi.stubGlobal('createImageBitmap', async (blob: Blob, sx: number, sy: number, sw: number, sh: number, options: ImageBitmapOptions) => {
+      const image = await loadImage(Buffer.from(await blob.arrayBuffer()));
+      const bitmap = createCanvas(options.resizeWidth!, options.resizeHeight!) as any;
+      const context = bitmap.getContext('2d'); context.imageSmoothingEnabled = false;
+      context.drawImage(image, sx, sy, sw, sh, 0, 0, bitmap.width, bitmap.height);
+      bitmap.close = vi.fn(); return bitmap;
+    });
+    const f = fixture(3 * 512 * 512 * 4, false, 3000, true);
+    try {
+      expect(f.source.__drawViewport).toBeUndefined();
+      const cutoff = f.source.getClosestLevel();
+      const first = hash(await f.read(cutoff)), second = hash(await f.read(cutoff + 1));
+      for (const [level, x, y] of [[13, 0, 0], [13, 1, 0], [13, 10, 3], [11, 2, 0], [12, 1, 0], [13, 0, 0]]) {
+        expect(hash(await f.read(level, x, y))).toBe(hash(referenceTile(f, level, x, y)));
+        expect(f.source.sceneTileStats.bitmapCache.bytes).toBeLessThanOrEqual(8192);
+      }
+      const rendered = f.source.sceneTileStats.rendered;
+      expect(hash(await f.read(cutoff))).toBe(first);
+      expect(hash(await f.read(cutoff + 1))).toBe(second);
+      expect(f.source.sceneTileStats.rendered).toBe(rendered);
+      expect(f.source.sceneTileStats.pinned).toBe(2);
+    } finally { f.source.destroy(); }
+    expect(f.source.sceneTileStats.bitmapCache.bytes).toBe(0);
+  });
+
+  it("releases each temporary compositor after duplicate subscribers have copied it", async () => {
+    const f = fixture(), start = allocatedCanvases.length;
+    try {
+      const a = f.request(13), b = f.request(13);
+      await Promise.all([a.done, b.done]);
+      const [temporary, cached, first, second] = allocatedCanvases.slice(start);
+      expect(allocatedCanvases.length - start).toBe(4);
+      expect(canvasWidthSetters.get(temporary)).toHaveBeenLastCalledWith(0);
+      expect([cached.width, first.width, second.width]).toEqual([512, 512, 512]);
+      expect(hash(first.getContext('2d'))).toBe(hash(second.getContext('2d')));
+      expect(hash(first.getContext('2d'))).toBe(hash(referenceTile(f, 13, 0, 0)));
+      f.source.destroy();
+      expect(canvasWidthSetters.get(cached)).toHaveBeenLastCalledWith(0);
+      expect([first.width, second.width]).toEqual([512, 512]);
+    } finally { f.source.destroy(); }
+  });
+
+  it("keeps authored artwork aligned to terrain through zoom levels and translated scenes", async () => {
     const f = fixture();
     try {
       for (const [level, x, y] of [[9, 0, 0], [10, 0, 0], [10, 1, 0],
         [11, 2, 0], [12, 0, 0], [12, 1, 0], [13, 0, 0], [13, 1, 0], [13, 10, 3]]) {
-        expect(hash(await f.read(level, x, y))).toBe(hash(legacyTile(f, level, x, y)));
+        expect(hash(await f.read(level, x, y))).toBe(hash(referenceTile(f, level, x, y)));
       }
       expect(f.loader.jobsInProgress).toBe(0);
       expect(f.source.__instantTerrain).toBeUndefined();
@@ -147,7 +218,7 @@ describe("scene artwork tiles through native canvas and installed OSD loader", (
       expect(first.callback.mock.calls[0][1]).toContain("aborted");
       expect(second.callback).toHaveBeenCalledOnce();
       expect(second.callback.mock.calls[0][1]).toBeNull();
-      expect(hash(second.callback.mock.calls[0][0])).toBe(hash(legacyTile(f, 13, 0, 0)));
+      expect(hash(second.callback.mock.calls[0][0])).toBe(hash(referenceTile(f, 13, 0, 0)));
       expect(f.loader.jobsInProgress).toBe(0);
       expect(f.source.sceneTileStats).toMatchObject({ rendered: 1, hits: 0 });
     } finally { f.source.destroy(); }
@@ -178,7 +249,7 @@ describe("scene artwork tiles through native canvas and installed OSD loader", (
       expect(f.source.sceneTileStats.rendered).toBe(0);
       expect(pending.callback).not.toHaveBeenCalled();
       await pending.done;
-      expect(hash(pending.callback.mock.calls[0][0])).toBe(hash(legacyTile(f, 9, 0, 0)));
+      expect(hash(pending.callback.mock.calls[0][0])).toBe(hash(referenceTile(f, 9, 0, 0)));
       expect(f.source.sceneTileStats.chunks).toBeGreaterThanOrEqual(16);
       expect(f.source.sceneTileStats.rendered).toBe(1);
     } finally { f.source.destroy(); }

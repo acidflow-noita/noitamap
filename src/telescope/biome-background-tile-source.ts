@@ -45,7 +45,7 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
   const pack = ++nextPack;
   const sources = new Set<any>();
   let destroyed = false, rendered = 0, renderMs = 0;
-  type Work = { aborted: boolean; subscribers: number; promise: Promise<CanvasRenderingContext2D> };
+  type Work = { aborted: boolean; subscribers: number; promise: Promise<CanvasRenderingContext2D>; context?: CanvasRenderingContext2D };
   const inflight = new Map<string, Work>();
 
   function bounds(level: number, x: number, y: number) {
@@ -106,6 +106,7 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
         cache.set(key, ctx, pinned);
         rendered++;
         renderMs += performance.now() - start;
+        work.context = ctx;
         return ctx;
       } catch (error) {
         canvas.width = canvas.height = 0;
@@ -216,9 +217,13 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
           release = () => {
             if (released) return;
             released = true;
-            if (--work.subscribers === 0 && inflight.get(key) === work) {
+            if (--work.subscribers === 0) {
               work.aborted = true;
-              inflight.delete(key);
+              if (inflight.get(key) === work) inflight.delete(key);
+              // Cache and consumers own independent copies. Release the shared
+              // compositor buffer immediately, including after successful jobs.
+              if (work.context) work.context.canvas.width = work.context.canvas.height = 0;
+              work.context = undefined;
             }
           };
           result = work.promise.then(ctx => settled ? undefined : copyTerrainContext(ctx));

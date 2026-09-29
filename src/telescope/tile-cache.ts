@@ -14,7 +14,7 @@ import { readReportInventorySnapshot, type ReportInventorySnapshot } from "../re
  */
 
 const DB_NAME = "noitamap-telescope";
-const DB_VERSION = 14; // invalidate scene pixels/geometry derived from raw asset fallbacks
+const DB_VERSION = 15; // scene composites must not contain raw material/spawn PNGs
 const STORE_NAME = "generations";
 const RENDER_STORE_NAME = "biome_renders";
 const SCENE_BITMAP_STORE_NAME = "pixel_scene_bitmaps";
@@ -62,6 +62,7 @@ interface CachedGeneration {
       name: string;
       key: string;
       variantKey: string;
+      backgroundArt?: string | null;
       imgData: ArrayBuffer | null;
     }>
   >;
@@ -110,6 +111,11 @@ const storage = new OptionalCacheDatabase(DB_NAME, DB_VERSION, (db, transaction,
     for (const name of [STORE_NAME, RENDER_STORE_NAME, SCENE_BITMAP_STORE_NAME]) {
       transaction.objectStore(name).clear();
     }
+  } else if (oldVersion === 14) {
+    // v15 stops drawing material instruction PNGs as finished scene artwork.
+    // Keep generated geometry and downloaded inputs; only these composites
+    // depend on that incorrect fallback.
+    transaction.objectStore(SCENE_BITMAP_STORE_NAME).clear();
   }
 });
 
@@ -146,6 +152,7 @@ export async function cacheGeneration(cacheKey: string, seed: number, result: an
           name: scene.name,
           key: scene.key,
           variantKey: scene.variantKey || "",
+          backgroundArt: scene.backgroundArt,
           imgData: null,
         };
       });
@@ -238,6 +245,7 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
         name: scene.name,
         key: scene.key,
         variantKey: scene.variantKey || "",
+        backgroundArt: scene.backgroundArt,
       }));
     }
 

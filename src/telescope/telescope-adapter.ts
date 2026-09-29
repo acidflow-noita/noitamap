@@ -24,6 +24,9 @@ import {
 import PwWorker from "./pw-worker?worker";
 import { ParallelWorldWorkerPool } from "./pw-worker-pool";
 import { prepareAssetJobs } from "./background-idle";
+import { getMapMemoryBudget } from "../map-memory-budget";
+import { createScenePixelCache } from "./scene-pixel-cache";
+let compactScenePixels: ReturnType<typeof createScenePixelCache> | undefined;
 let parallelWorldWorkerPool = new ParallelWorldWorkerPool(() => new PwWorker());
 
 // Telescope modules
@@ -43,7 +46,9 @@ let ensureScenePixels: any;
  */
 export function getPixelSceneImgElement(key: string): Uint8Array | null {
   if (!PIXEL_SCENE_DATA || !PIXEL_SCENE_DATA[key]) return null;
-  return PIXEL_SCENE_DATA[key].imgElement || null;
+  const data = PIXEL_SCENE_DATA[key];
+  return compactScenePixels?.peek(key, data)?.imgElement as Uint8Array
+    || data.imgElement || null;
 }
 
 /** Returns the full pixel-scene record (imgElement, width, height, name, etc). */
@@ -58,7 +63,14 @@ export async function ensurePixelSceneData(
   options: { art?: boolean } = {},
 ): Promise<any | null> {
   const data = getPixelSceneData(key);
-  if (data && ensureScenePixels) await ensureScenePixels(data, options);
+  if (data && ensureScenePixels) {
+    const memory = getMapMemoryBudget();
+    if (memory.profile === 'compact') {
+      compactScenePixels ??= createScenePixelCache(memory.sceneCacheBytes);
+      return compactScenePixels.load(key, data, options.art !== false, ensureScenePixels);
+    }
+    await ensureScenePixels(data, options);
+  }
   return data;
 }
 
@@ -127,6 +139,7 @@ export interface PixelScene {
   name: string;
   key: string;
   variantKey?: string;
+  backgroundArt?: string | null;
   spawnPoints?: any[];
 }
 

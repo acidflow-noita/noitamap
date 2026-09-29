@@ -1,6 +1,7 @@
 import type { StaticTerrainMask } from "./static-terrain-mask";
 import Flatbush from "flatbush";
 import { compositeTerrain } from "./terrain-backgrounds";
+import { clearSceneSpawnPixels } from './scene-spawn-pixels';
 
 export interface ScenePixels {
   data: Uint8Array | Uint8ClampedArray;
@@ -17,6 +18,8 @@ export interface TerrainScene {
   height: number;
 }
 export interface TerrainSceneSource extends ScenePixels {
+  /** Original script biome for aliased/shared scene records. */
+  biome?: string;
   skipEdgeTextures?: boolean;
   visualArt?: ScenePixels | null;
   backgroundArt?: ScenePixels | null;
@@ -250,7 +253,7 @@ export function paintTerrainScene(
   source: TerrainSceneSource,
   sceneModule: any,
 ): PaintedScene {
-  let raw: Uint8Array | Uint8ClampedArray = source.data;
+  let raw: Uint8Array | Uint8ClampedArray = clearSceneSpawnPixels(scene, source);
   let biome = scene.key.split("/")[0];
   for (const part of (scene.variantKey ?? "").split("&")) {
     const eq = part.indexOf("=");

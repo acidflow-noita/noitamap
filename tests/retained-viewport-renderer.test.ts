@@ -138,6 +138,20 @@ afterEach(async () => {
 });
 
 describe("retained native pixels with atomic viewport presentation", () => {
+  it.each(['#123456', '#12345680'])('does not create frame-rectangle seams during fractional zoom: %s', async color => {
+    const f = fixture({ width: 4096, height: 4096 });
+    f.store.read.mockReturnValue(deferred<StoredTerrain | undefined>().promise);
+    f.renderer.renderViewport.mockImplementation(async p => context(p.pixelWidth, p.pixelHeight, color).canvas);
+    const expected = pixel(context(1, 1, color).canvas, 0, 0);
+    for (const [x, y, scale] of [[137.3, 159.1, 1], [53.7, 64.25, 1.23], [20.25, 30.7, 1.71], [.125, .35, 2.31]]) {
+      const output = await f.request(plan(x, y, 256 * scale, 256 * scale, scale));
+      const data = bytes(output);
+      let differences = 0;
+      for (let i = 0; i < data.length; i++) if (data[i] !== expected[i % 4]) differences++;
+      expect(differences, `camera ${x},${y} scale ${scale}`).toBe(0);
+    }
+  });
+
   it("delivers the GPU frame while storage and retention capacity are unresolved", async () => {
     const f = fixture(),
       held = deferred<StoredTerrain | undefined>();

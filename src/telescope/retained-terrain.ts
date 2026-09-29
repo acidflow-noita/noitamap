@@ -1,6 +1,7 @@
 import { OptionalCacheDatabase } from "./cache-storage";
 import { TERRAIN_VERSION } from "./terrain-policy";
 import { retireTerrain } from "./terrain-retirement";
+import { clipTerrainPixels } from "./terrain-pixel-clip";
 import type { GLTerrainGeneration } from "./gl-terrain-tile-source";
 import type { StaticTerrainMask } from "./static-terrain-mask";
 import {
@@ -235,6 +236,7 @@ export class RetainedTerrain {
   private captures = 0;
   private captureWaiters = new Set<() => void>();
   private reductionCanvases: CanvasRenderingContext2D[] = [];
+  private viewScratch?: CanvasRenderingContext2D;
   readonly maxCaptureBytes = 4 * 1024 * 1024;
   constructor(
     readonly store: TerrainRetentionStore = new IndexedTerrainRetentionStore(),
@@ -255,6 +257,7 @@ export class RetainedTerrain {
       captures: this.captures,
       maxCaptureBytes: this.maxCaptureBytes,
       missingPages: this.missing.size,
+      viewScratchBytes: this.viewScratch ? this.viewScratch.canvas.width * this.viewScratch.canvas.height * 4 : 0,
       reductionBytes: this.reductionCanvases.reduce((bytes, context) =>
         bytes + context.canvas.width * context.canvas.height * 4, 0),
     };
@@ -283,7 +286,46 @@ export class RetainedTerrain {
       if (this.disposed) this.clearReductionCanvases();
     }
   }
+  /** A fixed gutter keeps fractional camera sampling away from a page's
+   * transparent canvas boundary. Reduce fine fallback pages first, so zooming
+   * far out never requests a gutter proportional to the world/display ratio. */
+  paintViewSample(source: HTMLCanvasElement, crop: { x: number; y: number; width: number; height: number },
+    scale: number, displayScale: number,
+    draw: (image: HTMLCanvasElement, width: number, height: number, scale: number) => void) {
+    this.reduceNative(scratch => {
+      let image = source, sx = crop.x, sy = crop.y, width = crop.width, height = crop.height;
+      if (displayScale >= scale * 2) {
+        let reduced = scratch(0, width, height);
+        reduced.drawImage(source, sx, sy, width, height, 0, 0, width, height);
+        let depth = 1;
+        while (displayScale >= scale * 2) {
+          const next = scratch(depth++, Math.ceil(width / 2), Math.ceil(height / 2));
+          next.imageSmoothingEnabled = true;
+          next.imageSmoothingQuality = 'low';
+          next.drawImage(reduced.canvas, 0, 0, next.canvas.width, next.canvas.height);
+          reduced = next; width = next.canvas.width; height = next.canvas.height; scale *= 2;
+        }
+        image = reduced.canvas; sx = sy = 0;
+      }
+      const padded = this.viewScratch ??= canvas(SIZE + 4, SIZE + 4);
+      padded.clearRect(0, 0, SIZE + 4, SIZE + 4);
+      padded.imageSmoothingEnabled = false;
+      padded.drawImage(image, sx, sy, width, height, 2, 2, width, height);
+      // Copy edge pixels rather than blending into zero-alpha neighbours. The
+      // crop follows known native cells, which may occupy only part of a mip.
+      for (const [fromX, toX] of [[sx, 0], [sx + width - 1, width + 2]]) {
+        padded.drawImage(image, fromX, sy, 1, height, toX, 2, 2, height);
+        padded.drawImage(image, fromX, sy, 1, 1, toX, 0, 2, 2);
+        padded.drawImage(image, fromX, sy + height - 1, 1, 1, toX, height + 2, 2, 2);
+      }
+      padded.drawImage(image, sx, sy, width, 1, 2, 0, width, 2);
+      padded.drawImage(image, sx, sy + height - 1, width, 1, 2, height + 2, width, 2);
+      draw(padded.canvas, width + 4, height + 4, scale);
+    });
+  }
   private clearReductionCanvases() {
+    if (this.viewScratch) this.viewScratch.canvas.width = this.viewScratch.canvas.height = 0;
+    this.viewScratch = undefined;
     for (const context of this.reductionCanvases)
       context.canvas.width = context.canvas.height = 0;
     this.reductionCanvases = [];
@@ -794,25 +836,42 @@ export class RetainedTerrainRegion {
     const px = tile.x * bounds.span, py = tile.y * bounds.span;
     const coverage = [...this.knownViewCells(bounds, tile, page, seen)];
     if (!coverage.length) return coverage;
-    target.save();
-    target.beginPath();
-    target.rect(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top);
-    target.clip();
-    // Coverage cells always represent a native 256x256 world block, even
-    // in a reduced page. Clip both erasure and painting to known cells: a
-    // final transparent pixel must replace the provisional GPU pixel too.
-    target.beginPath();
-    for (const rect of coverage) target.rect(rect.x, rect.y, rect.width, rect.height);
-    target.clip();
-    const width = page.context.canvas.width * bounds.scale;
-    const height = page.context.canvas.height * bounds.scale;
-    target.clearRect(px, py, width, height);
-    target.imageSmoothingEnabled = bounds.scale < bounds.displayScale;
-    target.imageSmoothingQuality = 'low';
-    target.globalAlpha = 1;
-    target.globalCompositeOperation = 'source-over';
-    target.drawImage(page.context.canvas, px, py, width, height);
-    target.restore();
+    // Coverage is reported as native-cell row spans. Merge identical adjacent
+    // spans for presentation: a finished coarse page needs one draw, rather
+    // than up to 256 padded draws when the whole map is visible.
+    const rectangles: RetainedViewCoverage[] = [], columns = new Map<string, RetainedViewCoverage>();
+    for (const rect of coverage) {
+      const key = `${rect.x}/${rect.width}`, previous = columns.get(key);
+      if (previous && previous.y + previous.height === rect.y) previous.height += rect.height;
+      else { const merged = { ...rect }; rectangles.push(merged); columns.set(key, merged); }
+    }
+    for (const rect of rectangles) {
+      // Recover whole known cells before clipping to the view. Clamping a
+      // viewport crop would alter sample phase as the camera moves.
+      const left = Math.max(0, Math.floor((rect.x - px) / SIZE) * SIZE / bounds.scale);
+      const top = Math.max(0, Math.floor((rect.y - py) / SIZE) * SIZE / bounds.scale);
+      const right = Math.min(page.context.canvas.width,
+        Math.ceil((rect.x + rect.width - px) / SIZE) * SIZE / bounds.scale);
+      const bottom = Math.min(page.context.canvas.height,
+        Math.ceil((rect.y + rect.height - py) / SIZE) * SIZE / bounds.scale);
+      target.save();
+      try {
+        clipTerrainPixels(target, [rect]);
+        // The mip already contains area-reduced native pixels. Nearest display
+        // sampling preserves them and cannot blend an unavailable neighbouring
+        // page into a square border at a fractional camera scale.
+        target.imageSmoothingEnabled = false;
+        target.imageSmoothingQuality = 'low';
+        target.globalAlpha = 1;
+        target.globalCompositeOperation = 'copy';
+        this.owner.paintViewSample(page.context.canvas, { x: left, y: top, width: right - left, height: bottom - top },
+          bounds.scale, bounds.displayScale, (image, width, height, scale) => {
+            target.drawImage(image, 0, 0, width, height,
+              px + left * bounds.scale - 2 * scale, py + top * bounds.scale - 2 * scale,
+              width * scale, height * scale);
+          });
+      } finally { target.restore(); }
+    }
     return coverage;
   }
   /** Synchronous display path: no storage access or pixel readbacks. */
