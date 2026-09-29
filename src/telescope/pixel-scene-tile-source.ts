@@ -1,6 +1,6 @@
 import Flatbush from "flatbush";
 import { copyTerrainContext, InstantTerrainCache } from "./instant-terrain-cache";
-import { getMapMemoryBudget } from '../map-memory-budget';
+import { getMapMemoryBudget, getSceneConcurrency } from '../map-memory-budget';
 import { drawViewportArt } from './viewport-art';
 import { createSceneBitmapProvider, type CompressedSceneBitmap, type SceneBitmapLoader } from './scene-bitmap-provider';
 import { createSceneViewportPages } from './scene-viewport-pages';
@@ -88,14 +88,38 @@ export function createPixelSceneTileSource(options: {
       const left = page.x - page.gutter * page.scale, top = page.y - page.gutter * page.scale;
       const extent = canvas.width * page.scale;
       const hits = index.search(left, top, left + extent, top + extent).sort((a, b) => a - b);
+      // Prepare a short lookahead in parallel, but composite in authored order.
+      // Count full native intermediates, not tiny output-page dimensions.
+      const concurrency = getSceneConcurrency();
+      const prepareBudget = getMapMemoryBudget().sceneCacheBytes * 2;
+      let next = 0, reserved = 0, yieldedAt = performance.now();
+      const preparing = new Map<number, number>();
+      const prefetch = () => {
+        if (!options.loadBitmap || cancelled()) return;
+        while (next < hits.length && preparing.size < concurrency) {
+          const scene = items[hits[next]];
+          const cost = scene.w * scene.h * 16;
+          if (preparing.size && reserved + cost > prepareBudget) break;
+          preparing.set(next++, cost); reserved += cost;
+          // Preparation deduplicates keys; the ordered draw observes errors.
+          void options.loadBitmap(scene.sceneKey).catch(() => {});
+        }
+      };
       try {
-        for (const id of hits) {
+        for (let position = 0; position < hits.length; position++) {
+          if (performance.now() - yieldedAt >= 6) {
+            await new Promise<void>(resolve => setTimeout(resolve, 0));
+            yieldedAt = performance.now();
+          }
           if (cancelled()) throw new DOMException('Scene viewport retired', 'AbortError');
-          const scene = items[id], bitmap = bitmapByKey.get(scene.sceneKey);
+          prefetch();
+          const scene = items[hits[position]], bitmap = bitmapByKey.get(scene.sceneKey);
           const x = (scene.osdX - originX - left) / page.scale;
           const y = (scene.osdY - originY - top) / page.scale;
           if (bitmap) context.drawImage(bitmap, x, y, scene.w / page.scale, scene.h / page.scale);
           else await bitmaps!.draw(scene.sceneKey, context, x, y, scene.w / page.scale, scene.h / page.scale, cancelled);
+          reserved -= preparing.get(position) ?? 0;
+          preparing.delete(position);
         }
         return context;
       } catch (error) { canvas.width = canvas.height = 0; throw error; }

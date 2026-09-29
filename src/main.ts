@@ -743,7 +743,7 @@ async function initializeApp(): Promise<void> {
   });
 
   onAltReady(() => {
-    refreshActiveVariant();
+    if (getActiveDescriptor() !== primaryDescriptor()) refreshActiveVariant();
   }, true); // register as persistent listener
 
   // Auto-start generation if landing on dynamic map

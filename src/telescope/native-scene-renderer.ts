@@ -9,6 +9,7 @@ type Job = {
   reject: (error: unknown) => void;
 };
 const activeRenderers = new Set<NativeSceneRenderer>();
+let mainSceneQueue: Promise<void> = Promise.resolve();
 export function clearNativeSceneRenderers(): void {
   for (const renderer of activeRenderers) renderer.dispose();
 }
@@ -47,16 +48,20 @@ export class NativeSceneRenderer {
     else job.resolve({ blob: new Blob([result.png as unknown as BlobPart], { type: 'image/png' }), width: result.width, height: result.height });
     this.pump();
   }
-  private async onMain(job: Job) {
-    try {
-      // Yield an actual task between scenes when workers are denied. Correct
-      // material pixels still render; raw material-code PNGs are never a fallback.
-      await new Promise<void>(resolve => setTimeout(resolve, 0));
-      if (this.active !== job) return;
-      this.cpu ??= (await import('./native-scene-worker-core')).createNativeSceneWorkerRenderer();
-      if (this.active !== job) return;
-      this.finish(job, await this.cpu(job.input));
-    } catch (error) { this.finish(job, undefined, error); }
+  private onMain(job: Job): Promise<void> {
+    // Worker fallback is shared across the pool: only one main-thread scene
+    // runs at a time, with a task boundary before each CPU composition.
+    const work = mainSceneQueue.then(async () => {
+      try {
+        await new Promise<void>(resolve => setTimeout(resolve, 0));
+        if (this.active !== job) return;
+        this.cpu ??= (await import('./native-scene-worker-core')).createNativeSceneWorkerRenderer();
+        if (this.active !== job) return;
+        this.finish(job, await this.cpu(job.input));
+      } catch (error) { this.finish(job, undefined, error); }
+    });
+    mainSceneQueue = work.catch(() => {});
+    return work;
   }
   private workerFailed(job: Job, error: unknown) {
     if (this.active !== job) return;

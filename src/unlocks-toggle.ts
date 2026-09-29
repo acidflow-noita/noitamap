@@ -45,6 +45,7 @@ const persistentReadyListeners: Array<() => void> = [];
 let viewListeners: Array<(v: UnlockDescriptor) => void> = [];
 
 let lastSeedSeen: number | null = null;
+let variantEpoch = 0;
 
 /** True if the page was opened with a `?u=<base64>` URL parameter — i.e. the
  *  noitamap in-game mod supplied a fresh unlock list from save00. The
@@ -199,6 +200,7 @@ function indexPois(result: GenerationResult): Map<string, any> {
  *  for the same key, etc.). Resolves after the variant is in cache (or
  *  failed). */
 async function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescriptor): Promise<void> {
+  const epoch = variantEpoch;
   const cacheKey = `${seed}|${desc}`;
   if (altCache.has(cacheKey) || pendingDescriptors.has(cacheKey)) return;
   if (desc === primaryDescriptor()) return; // primary is always live, not cached here
@@ -206,6 +208,7 @@ async function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescrip
   try {
     const result = await generateDynamicMap({
       seed,
+      isCurrent: () => epoch === variantEpoch && seed === lastSeedSeen,
       ngPlus: 0,
       dailySeed: isDaily,
       unlocks: descriptorToUnlocks(desc),
@@ -213,6 +216,7 @@ async function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescrip
       pillarFlags: getPillarFlagsFromURL(),
       parallelWorlds: isLightMode() ? [0] : undefined,
     });
+    if (epoch !== variantEpoch || seed !== lastSeedSeen) return;
     // Assign stable IDs based on coordinates and PW key
     const assignIds = (poiArr: any[], prefix: string) => {
       if (!Array.isArray(poiArr)) return;
@@ -238,25 +242,22 @@ async function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescrip
       try { cb(); } catch { /* swallow */ }
     }
   } catch (e) {
-    console.warn(`[unlocks-toggle] variant ${desc} pre-warm failed:`, e);
+    if (epoch === variantEpoch && (e as Error)?.name !== 'AbortError')
+      console.warn(`[unlocks-toggle] variant ${desc} pre-warm failed:`, e);
   } finally {
-    pendingDescriptors.delete(cacheKey);
+    if (epoch === variantEpoch) pendingDescriptors.delete(cacheKey);
   }
 }
 
-/** Background pre-warm of every non-primary variant. Called after the
- *  primary render completes; fires the generations sequentially so we
- *  don't thrash telescope's PRNG / cache. */
+/** Register the seed and restore its selected unlock view after first paint.
+ * Unselected variants are generated only when explicitly requested. */
 export async function prewarmAlt(seed: number, isDaily: boolean, generate = true): Promise<void> {
   lastSeedSeen = seed;
   if (!generate) return; // Baked maps generate an alternate only when explicitly requested.
   const primary = primaryDescriptor();
-  for (const desc of availableDescriptors()) {
-    if (desc === primary) continue;
-    // Sequential — telescope generation isn't cheap and we don't want to
-    // contend with the user's next interaction.
-    await ensureVariant(seed, isDaily, desc);
-  }
+  // Restore the selected variant; unused variants load when requested.
+  const selected = getActiveDescriptor();
+  if (selected !== primary) await ensureVariant(seed, isDaily, selected);
 }
 
 /** Request a specific variant on demand (e.g. user clicks the lock toggle
@@ -274,6 +275,7 @@ export async function requestVariant(desc: UnlockDescriptor): Promise<void> {
 
 /** Reset cache when seed changes. */
 export function resetAltCache(): void {
+  variantEpoch++;
   altCache.clear();
   altIndexes.clear();
   pendingDescriptors.clear();

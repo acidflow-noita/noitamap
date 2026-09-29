@@ -325,6 +325,7 @@ export async function runDynamicMap(
     onLoadingChange?.(false);
   });
   cancelPendingDynamicTerrain();
+  resetAltCache();
   clearDynamicOverlays(viewer, true);
 
   // If unlocks changed for the same seed, we must regenerate (skip cache)
@@ -498,6 +499,7 @@ export async function runDynamicMap(
       t = performance.now();
       console.log(`[DynamicMap] Generating seed ${seed} (unlocks: ${unlocks ? unlocks.length + "/" + UNLOCK_KEYS.length : "all"})...`);
       result = await generateDynamicMap({ seed, ngPlus: 0, dailySeed: isDaily, unlocks, pillarFlags, parallelWorlds: lightMode ? [0] : undefined,
+        isCurrent: () => myToken === generationToken,
         onTerrainReady: isInstantTerrainEnabled() && !bakedData?.probe.baked ? terrain => {
           if (myToken !== generationToken) return;
           void prepareInstantTerrainResources(terrain, () => myToken === generationToken).catch(error =>

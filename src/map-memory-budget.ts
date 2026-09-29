@@ -1,5 +1,15 @@
 const MiB = 1024 * 1024;
 
+/** Leave CPU capacity for terrain generation, decoding and the UI. */
+export function getSceneConcurrency(): number {
+  if (typeof Worker === 'undefined') return 1;
+  const cores = typeof navigator === 'undefined' ? 4 : navigator.hardwareConcurrency || 4;
+  const memory = typeof navigator === 'undefined' ? undefined
+    : (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+  const cap = memory && memory <= 2 ? 1 : getMapMemoryBudget().profile === 'compact' ? 2 : 4;
+  return Math.max(1, Math.min(cap, Math.floor(cores / 2)));
+}
+
 /** These are decoded working-set limits, not persistent storage limits. Native
  * terrain cooking remains one game pixel per pixel on every device. */
 export interface MapMemoryBudget {

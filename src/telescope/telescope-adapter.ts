@@ -168,6 +168,8 @@ export interface GenerationResult {
 
 export interface GenerateOptions {
   seed: number;
+  /** Skip obsolete requests before touching shared generator state. */
+  isCurrent?: () => boolean;
   ngPlus?: number;
   dailySeed?: boolean;
   /** Which horizontal parallel worlds to generate for */
@@ -443,7 +445,20 @@ export function prewarmParallelWorlds(worlds: number[] = [-1, 0, 1]): void {
  * @param opts.dailySeed — If true, force all unlocks ON
  * @param opts.parallelWorlds — Horizontal PW indices to scan (default [-1, 0, 1])
  */
-export async function generateDynamicMap(opts: GenerateOptions): Promise<GenerationResult> {
+let generationQueue: Promise<unknown> = Promise.resolve();
+
+export function generateDynamicMap(opts: GenerateOptions): Promise<GenerationResult> {
+  // Different seeds/unlock variants share PRNG/settings and must not overlap.
+  // The generation's own parallel-world workers remain concurrent.
+  const result = generationQueue.then(() => {
+    if (opts.isCurrent?.() === false) throw new DOMException('Obsolete generation', 'AbortError');
+    return generateDynamicMapExclusive(opts);
+  });
+  generationQueue = result.catch(() => {});
+  return result;
+}
+
+async function generateDynamicMapExclusive(opts: GenerateOptions): Promise<GenerationResult> {
   // A generation may resume after navigation while its assets/tiles awaited.
   // Keep its original pool so disposal rejects late dispatch rather than
   // starting workers in the new pool after the dynamic map has closed.
@@ -451,6 +466,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   prewarmParallelWorlds(opts.parallelWorlds);
   await initTelescope();
 
+  if (opts.isCurrent?.() === false) throw new DOMException('Obsolete generation', 'AbortError');
   const seed = opts.seed;
   const ngPlus = opts.ngPlus ?? 0;
   const dailySeed = opts.dailySeed ?? false;

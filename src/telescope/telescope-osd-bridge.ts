@@ -21,7 +21,7 @@ import { createScenePrefetch } from "./scene-prefetch";
 import { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer } from "./biome-background-layer";
 import { afterMapHandoff, failMapHandoff, holdMapHandoff, isMapHandoffPending } from './map-handoff';
 import { retireMapItems } from './retire-map-items';
-import { getMapMemoryBudget } from '../map-memory-budget';
+import { getMapMemoryBudget, getSceneConcurrency } from '../map-memory-budget';
 
 let instantTerrainModule: typeof import('./instant-terrain') | undefined;
 let instantTerrainLoading: Promise<typeof import('./instant-terrain')> | undefined;
@@ -63,6 +63,7 @@ import {
   cacheBiomeRender,
   getCachedSceneBitmap,
   cacheSceneBitmap,
+  createSceneBitmapWriteQueue,
   getCachedSceneBitmapKeys,
   getCachedSceneBitmapsBulk,
   getCachedBiomeRendersForKey,
@@ -2358,27 +2359,39 @@ async function buildSceneBitmaps(
   const started = performance.now();
   if (nativeMaterials) console.info(`[Native scenes] Preparing ${keyArr.length} native scene images`);
   if (nativeMaterials && generationId !== null) {
-    const renderer = new NativeSceneRenderer();
+    const concurrency = getSceneConcurrency();
+    const renderers = Array.from({ length: concurrency }, () => ({ renderer: new NativeSceneRenderer(), active: 0 }));
+    const writes = createSceneBitmapWriteQueue(getMapMemoryBudget().sceneCacheBytes);
+    const cachedKeys = getCachedSceneBitmapKeys();
     let cachedCount = 0, renderedCount = 0;
     const preparation = createScenePreparation(keyArr.map(([key]) => key), async key => {
       const check = () => {
         if (currentGenerationId !== generationId) throw new DOMException('Obsolete scene generation', 'AbortError');
       };
       check();
-      const cached = await getCachedSceneBitmap(key);
+      const cached = (await cachedKeys).has(key) ? await getCachedSceneBitmap(key) : null;
       check();
       if (cached) { cachedCount++; return cached; }
       const scene = uniqueKeys.get(key)!;
-      const image = usesNativeSceneBitmap(scene)
-        ? await compositeNativeSceneBitmap(scene, result.worldSize, renderer, false)
-        : await compositeSceneBitmap(scene.key, scene, await getScenePngIndex(), false);
+      const slot = renderers.reduce((best, candidate) => candidate.active < best.active ? candidate : best);
+      slot.active++;
+      const image = await (async () => {
+        try {
+          return usesNativeSceneBitmap(scene)
+            ? await compositeNativeSceneBitmap(scene, result.worldSize, slot.renderer, false)
+            : await compositeSceneBitmap(scene.key, scene, await getScenePngIndex(), false);
+        } finally { slot.active--; }
+      })();
       check();
       if (!image?.blob) return undefined;
-      await cacheSceneBitmap(key, image.blob, image.width, image.height);
-      check();
+      writes.put(key, image.blob, image.width, image.height);
       renderedCount++;
       return { blob: image.blob, width: image.width, height: image.height };
-    }, () => renderer.dispose());
+    }, () => { for (const slot of renderers) slot.renderer.dispose(); }, { concurrency, maxBytes: getMapMemoryBudget().sceneCacheBytes * 2,
+      bytesForKey: key => { const scene = uniqueKeys.get(key)!; return scene.width * scene.height * 16; },
+    });
+    preparation.signal.addEventListener('abort', () => writes.dispose(), { once: true });
+    preparation.complete = preparation.complete.then(() => writes.flush());
     void preparation.complete.then(() => console.info(
       `[Native scenes] Finished ${keyArr.length} scene images in ${((performance.now() - started) / 1000).toFixed(2)}s`,
       { cached: cachedCount, rendered: renderedCount }), () => {});

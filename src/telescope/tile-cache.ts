@@ -478,3 +478,45 @@ export async function cacheSceneBitmap(key: string, blob: Blob, width: number, h
     warnCacheFailure("[TileCache] Failed to cache scene bitmap:", e);
   }
 }
+
+/** Bound optional scene writes; drawing never waits for a disk transaction. */
+export function createSceneBitmapWriteQueue(maxBytes = 16 * 1024 * 1024) {
+  const pending = new Map<string, CachedSceneBitmap>();
+  let bytes = 0, disposed = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let active: Promise<void> | undefined;
+  function schedule() {
+    if (!disposed && !active && !timer && pending.size)
+      timer = setTimeout(() => { timer = undefined; void flush(); }, 0);
+  }
+  async function flush(): Promise<void> {
+    if (active) { await active; return flush(); }
+    if (disposed || !pending.size) return;
+    clearTimeout(timer); timer = undefined;
+    const batch = [...pending.values()].slice(0, 64);
+    for (const entry of batch) { pending.delete(entry.key); bytes -= entry.blob.size; }
+    active = (async () => {
+      if (typeof indexedDB === 'undefined') return;
+      try {
+        const db = await openDB();
+        if (disposed) return;
+        const tx = db.transaction(SCENE_BITMAP_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(SCENE_BITMAP_STORE_NAME);
+        for (const entry of batch) store.put(entry);
+        await storage.complete(tx);
+      } catch (error) { warnCacheFailure('[TileCache] Failed to cache scene batch:', error); }
+    })();
+    try { await active; } finally { active = undefined; }
+    if (pending.size) await flush();
+  }
+  return {
+    put(key: string, blob: Blob, width: number, height: number) {
+      if (disposed || pending.has(key) || pending.size >= 256
+        || bytes + blob.size > maxBytes) return;
+      pending.set(key, { key, blob, width, height, timestamp: Date.now() });
+      bytes += blob.size; schedule();
+    },
+    flush,
+    dispose() { disposed = true; clearTimeout(timer); pending.clear(); bytes = 0; },
+  };
+}
