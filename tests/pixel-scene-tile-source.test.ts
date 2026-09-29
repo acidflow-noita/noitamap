@@ -51,7 +51,7 @@ function fixture(maxCacheBytes?: number, dense = false, timeout = 3000, compress
   const disposeBitmaps = lazy ? vi.fn() : undefined;
   const tiling = createPixelSceneTileSource({ items, bitmapByKey: compressed || lazy ? new Map() : bitmapByKey,
     blobByKey: lazy ? new Map() : blobByKey, loadBitmap, disposeBitmaps,
-    generationId: 42, maxCacheBytes, maxBitmapBytes: 8192 });
+    generationId: 42, maxCacheBytes, maxBitmapBytes: 8192, directViewport: false });
   const { source } = tiling;
   const loader = new OSD.ImageLoader({ jobLimit: 8, timeout });
   let lastJob: any;
@@ -103,7 +103,7 @@ describe("scene artwork tiles through native canvas and installed OSD loader", (
     const f = fixture(undefined, false, 3000, false, true);
     try {
       expect(f.loadBitmap).not.toHaveBeenCalled();
-      expect(f.source.__drawViewport).toBeUndefined();
+      expect(f.source.__viewportReady).toBeUndefined();
       expect(f.source.tileExists(13, 0, 0)).toBe(true);
       expect(f.source.sceneTileStats.bitmapCache.loadedScenes).toBe(0);
       for (const [level, x, y] of [[13, 0, 0], [13, 10, 3], [11, 2, 0], [13, 0, 0]])
@@ -129,7 +129,7 @@ describe("scene artwork tiles through native canvas and installed OSD loader", (
     });
     const f = fixture(3 * 512 * 512 * 4, false, 3000, true);
     try {
-      expect(f.source.__drawViewport).toBeUndefined();
+      expect(f.source.__viewportReady).toBeUndefined();
       const cutoff = f.source.getClosestLevel();
       const first = hash(await f.read(cutoff)), second = hash(await f.read(cutoff + 1));
       for (const [level, x, y] of [[13, 0, 0], [13, 1, 0], [13, 10, 3], [11, 2, 0], [12, 1, 0], [13, 0, 0]]) {

@@ -10,7 +10,7 @@ vi.mock('../src/telescope/tile-cache', () => ({ getCachedGeneration: vi.fn(), ca
 vi.mock('../src/telescope/telescope-cache-version', () => ({ ensureTelescopeCacheVersion: vi.fn(async () => {}) }));
 vi.mock('../src/telescope/instant-terrain-backend', () => ({ prewarmInstantTerrain: vi.fn(), releaseInstantTerrainBackend: vi.fn() }));
 vi.mock('../src/telescope/telescope-adapter', () => ({ generateDynamicMap: vi.fn(), initTelescope: vi.fn(), prewarmParallelWorlds: vi.fn(), releaseParallelWorlds: vi.fn() }));
-vi.mock('../src/unlocks', () => ({ getUnlocksFromURL: () => null, unlocksChanged: vi.fn(), UNLOCK_KEYS: [], getUrlUnlockKind: vi.fn() }));
+vi.mock('../src/unlocks', () => ({ getUnlocksFromURL: vi.fn(() => null), unlocksChanged: vi.fn(), UNLOCK_KEYS: [], getUrlUnlockKind: vi.fn() }));
 vi.mock('../src/pillars-unlocks', () => ({ getPillarFlagsFromURL: vi.fn() }));
 vi.mock('../src/unlocks-toggle', () => ({ prewarmAlt: vi.fn(), resetAltCache: vi.fn() }));
 vi.mock('../src/light-mode', () => ({ isLightMode: () => false }));
@@ -29,6 +29,7 @@ import { fetchDailySeed, fetchPreviousDailySeed } from '../src/data_sources/dail
 import { parseURL, reorderParams, updateURLWithSeed } from '../src/data_sources/url';
 import { shouldUseBakedTerrain, isInstantTerrainEnabled } from '../src/renderer_settings';
 import { initTelescope, generateDynamicMap } from '../src/telescope/telescope-adapter';
+import { getUnlocksFromURL } from '../src/unlocks';
 import { probeBakedDZIs } from '../src/telescope/baked-dzi-loader';
 import { addBakedDZIsToOSD } from '../src/telescope/baked-dzi-loader';
 import { fetchBakedGeneration } from '../src/telescope/baked-generation';
@@ -44,6 +45,7 @@ beforeEach(() => {
   vi.mocked(fetchPreviousDailySeed).mockResolvedValue(previous);
   vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
   vi.mocked(isInstantTerrainEnabled).mockReturnValue(false);
+  vi.mocked(getUnlocksFromURL).mockReturnValue(null);
 });
 afterEach(() => { history.replaceState(null, '', '/'); });
 
@@ -57,6 +59,107 @@ function mainFunction(start: string, end: string, dependencies: Record<string, u
 }
 
 describe('dynamic seed URL identity', () => {
+  it('does not describe an ordinary map download as biome generation', () => {
+    const source = readFileSync('src/main.ts', 'utf8');
+    const start = source.indexOf('    onLoadingChange:');
+    const end = source.indexOf('    onSeedResolved:', start);
+    expect(start).toBeGreaterThan(0); expect(end).toBeGreaterThan(start);
+    const js = transpileModule(`const options = {${source.slice(start, end)}};`,
+      { compilerOptions: { target: ScriptTarget.ES2022 } }).outputText;
+    const show = vi.fn(), hide = vi.fn(), loadingIndicator = document.createElement('div');
+    const dependencies = { reportMapLoading: false, poiContextReady: true, reportHighlights: null,
+      app: { osd: {} }, resetPOICardContext: vi.fn(), loadingIndicator,
+      showLoadingStrip: show, hideLoadingStrip: hide, unifiedSearch: { setIndexingState: vi.fn() } };
+    const update = new Function(...Object.keys(dependencies), `${js}\nreturn options.onLoadingChange;`)(...Object.values(dependencies));
+    update(true);
+    expect(loadingIndicator.style.display).toBe('block');
+    expect(show).not.toHaveBeenCalled();
+    update(false);
+    expect(loadingIndicator.style.display).toBe('none');
+    expect(hide).toHaveBeenCalled();
+  });
+
+  it('opens the parameterless baked daily without generating for a saved mod unlock list', async () => {
+    history.replaceState(null, '', '/');
+    const actualUnlocks = await vi.importActual<typeof import('../src/unlocks')>('../src/unlocks');
+    const stored = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (key: string) => stored.get(key) ?? null,
+      setItem: (key: string, value: string) => stored.set(key, value) });
+    localStorage.setItem('noitamap-unlocks', actualUnlocks.encodeUnlocks(['nuke']));
+    vi.mocked(getUnlocksFromURL).mockImplementationOnce(actualUnlocks.getUnlocksFromURL);
+    vi.mocked(isInstantTerrainEnabled).mockReturnValue(true);
+    const generated = { seed: today, ngPlus: 0, isNGP: false, worldSize: 70, worldCenter: 35,
+      tileLayers: [], biomeData: {}, poisByPW: {}, pixelScenesByPW: {}, parallelWorlds: [0] } as any;
+    vi.mocked(fetchBakedGeneration).mockResolvedValue(generated);
+    vi.mocked(cacheGeneration).mockResolvedValue();
+    vi.mocked(renderGenerationResult).mockResolvedValue();
+    vi.mocked(scheduleDailyAssetWarmup).mockReturnValue(vi.fn());
+    vi.mocked(probeBakedDZIs).mockResolvedValue({ baked: true, prefix: 'daily',
+      placements: [{ pw: 0, x: 0, y: 0, width: 100, bust: 'today', dziUrl: '/daily.dzi' }],
+      decorationsBaked: true, fullPixelsBaked: true });
+    const frame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
+    try {
+      const pipeline = await import('../src/dynamic-map');
+      expect(await pipeline.runDynamicMapFromURL({ viewer: {} })).toBe(generated);
+      expect(fetchBakedGeneration).toHaveBeenCalledWith('daily', ['left', 'middle', 'right'], today);
+      expect(initTelescope).not.toHaveBeenCalled();
+      expect(generateDynamicMap).not.toHaveBeenCalled();
+      expect(prepareInstantTerrainResources).not.toHaveBeenCalled();
+      expect(vi.mocked(renderGenerationResult).mock.calls[0][2]).toBeNull();
+      expect(parseURL()).toMatchObject({ seed: today, dailySeed: true });
+      expect(localStorage.getItem('noitamap-unlocks')).toBe(actualUnlocks.encodeUnlocks(['nuke']));
+      pipeline.clearDynamicMap({});
+    } finally {
+      vi.unstubAllGlobals();
+      frame.mockRestore();
+    }
+  });
+
+  it('reveals painted decorated daily tiles while metadata is still downloading, keeping warmup gated', async () => {
+    history.replaceState(null, '', '/');
+    let metadata!: (result: any) => void;
+    vi.mocked(fetchBakedGeneration).mockReturnValue(new Promise(resolve => { metadata = resolve; }));
+    vi.mocked(cacheGeneration).mockResolvedValue();
+    vi.mocked(renderGenerationResult).mockResolvedValue();
+    vi.mocked(scheduleDailyAssetWarmup).mockReturnValue(vi.fn());
+    vi.mocked(probeBakedDZIs).mockResolvedValue({ baked: true, prefix: 'daily',
+      placements: [{ pw: 0, x: 0, y: 0, width: 100, bust: 'today', dziUrl: '/daily.dzi' }],
+      decorationsBaked: true, fullPixelsBaked: true });
+    const handlers = new Map<string, Set<() => void>>();
+    let painted = false, attached = false;
+    vi.mocked(addBakedDZIsToOSD).mockImplementationOnce(() => { attached = true; });
+    const item = { source: { __bakedDzi: true }, getOpacity: () => 1,
+      getDrawArea: () => ({}), getFullyLoaded: () => painted, needsDraw: () => !painted,
+      addHandler() {}, removeHandler() {} };
+    const viewer = { addHandler(name: string, callback: () => void) {
+      if (!handlers.has(name)) handlers.set(name, new Set());
+      handlers.get(name)!.add(callback);
+    }, removeHandler(name: string, callback: () => void) { handlers.get(name)?.delete(callback); },
+    world: { getItemCount: () => attached ? 1 : 0, getItemAt: () => item, addHandler() {}, removeHandler() {} } };
+    const loading = vi.fn();
+    const pipeline = await import('../src/dynamic-map');
+    const pending = pipeline.runDynamicMapFromURL({ viewer, onLoadingChange: loading });
+    await vi.waitFor(() => expect(addBakedDZIsToOSD).toHaveBeenCalledOnce());
+    expect(loading.mock.calls).toEqual([[true]]);
+    painted = true;
+    for (const callback of handlers.get('update-viewport') ?? []) callback();
+    await vi.waitFor(() => expect(loading.mock.calls).toEqual([[true], [false]]));
+    expect(renderGenerationResult).not.toHaveBeenCalled();
+    expect(initTelescope).not.toHaveBeenCalled();
+    let warmed = false;
+    void vi.mocked(scheduleDailyAssetWarmup).mock.calls[0][0].metadataReady!.then(() => { warmed = true; });
+    await Promise.resolve();
+    expect(warmed).toBe(false);
+    const generated = { seed: today, ngPlus: 0, isNGP: false, worldSize: 70, worldCenter: 35,
+      tileLayers: [], biomeData: {}, poisByPW: {}, pixelScenesByPW: {}, parallelWorlds: [0] } as any;
+    metadata(generated);
+    expect(await pending).toBe(generated);
+    expect(warmed).toBe(true);
+    expect(loading.mock.calls).toEqual([[true], [false]]);
+    expect(prefetchAllSceneBitmaps).not.toHaveBeenCalled();
+    pipeline.clearDynamicMap(viewer);
+  });
+
   it.each([['daily', today], ['previous-daily', previous]] as const)(
     'switches the same seed from forced live GPU to baked %s without generating again', async (prefix, seed) => {
       history.replaceState(null, '', `/?m=dy&se=${seed}&ds=1&terrain=gpu&nb=1`);

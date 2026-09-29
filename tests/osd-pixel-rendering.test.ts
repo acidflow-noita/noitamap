@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createCanvas } from '@napi-rs/canvas';
-import { PIXEL_MAP_DRAW_OPTIONS, smoothInstantTile } from '../src/osd-pixel-rendering';
+import { PIXEL_MAP_DRAW_OPTIONS, smoothDziPreview, smoothInstantTile } from '../src/osd-pixel-rendering';
 
 let OSD: any;
 beforeAll(async () => {
@@ -125,6 +125,48 @@ describe('pixel map rendering through the installed OpenSeadragon', () => {
     fixed.drawer.draw([fixed.image([fixed.tile(24.25)], true)]);
     expect(mixedPixels(old.canvas, 25, 14)).toBeGreaterThan(80);
     expect(mixedPixels(fixed.canvas, 25, 14)).toBe(0);
+  });
+
+  it.each([
+    ['__bakedDzi', true], ['__bakedDzi', false],
+    ['__staticBackground', true], ['__staticBackground', false],
+  ] as const)('filters enlarged %s previews while preserving native, unrelated static and live pixels (animating=%s)', (tag, animate) => {
+    const { drawer, canvas, states, tile, image } = drawingFixture(smoothDziPreview, animate);
+    const baked = (tiles: any[], bottom = false) => {
+      const item = image(tiles, false, bottom);
+      Object.assign(item.source, { [tag]: true, maxLevel: 17 });
+      return item;
+    };
+    drawer.draw([
+      baked([tile(.25, 16, 11)], true),
+      baked([tile(24.25, 16, 17)]),
+      image([tile(48.25, 16, 11)], false),
+      image([tile(72.25, 16, 11)], true),
+    ]);
+    expect(states).toEqual([true, false, false, false]);
+    expect(mixedPixels(canvas, 1, 14)).toBeGreaterThan(80);
+    for (const x of [25, 49, 73]) expect(mixedPixels(canvas, x, 14)).toBe(0);
+    expect(drawer.context.imageSmoothingEnabled).toBe(false);
+    expect(drawer.sketchContext.imageSmoothingEnabled).toBe(false);
+  });
+
+  it('does not filter baked mips that already fit the display pixel density', () => {
+    const { drawer, states, tile, image } = drawingFixture(smoothDziPreview);
+    const item = image([tile(0, 2, 11), tile(24, 4, 11)], false);
+    Object.assign(item.source, { __bakedDzi: true, maxLevel: 17 });
+    drawer.draw([item]);
+    expect(states).toEqual([false, false]);
+  });
+
+  it('evaluates baked preview magnification in physical screen pixels', () => {
+    const { drawer, states, tile, image } = drawingFixture(smoothDziPreview);
+    const item = image([tile(0, 3, 11), tile(24, 3, 17)], false);
+    Object.assign(item.source, { __bakedDzi: true, maxLevel: 17 });
+    OSD.pixelDensityRatio = 2;
+    try {
+      drawer.draw([item]);
+      expect(states).toEqual([true, false]);
+    } finally { OSD.pixelDensityRatio = 1; }
   });
 
   it('still filters GPU reductions and restores both contexts before following static tiles', () => {

@@ -2516,6 +2516,11 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   const { source, originX, originY, width: bboxWidth } = createPixelSceneTileSource({
     items, bitmapByKey, blobByKey, generationId,
     loadBitmap: preparation?.loadBitmap, disposeBitmaps: preparation?.dispose,
+    redraw: () => (viewer.viewer ?? viewer).forceRedraw(),
+    directViewport: (viewer.viewer ?? viewer).drawer?.getType?.() === 'canvas',
+  });
+  source.addHandler('scene-viewport-error', ({ error }: { error: unknown }) => {
+    if (currentGenerationId === generationId) failMapHandoff(viewer, error);
   });
 
   // Complete attachment before the first atomic terrain/art frame is released.
@@ -2532,7 +2537,8 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
         dynamicTiledImages.add(event.item);
         if (preparation) {
           const startCooking = () => {
-            if (preparation.signal.aborted || (!event.item.getFullyLoaded() && event.item.getDrawArea())) return;
+            const ready = source.sceneViewportReady ?? event.item.getFullyLoaded();
+            if (preparation.signal.aborted || (!ready && event.item.getDrawArea())) return;
             stopWaiting();
             preparation.signal.removeEventListener('abort', stopWaiting);
             afterMapHandoff(viewer, preparation.signal, () => {
@@ -2544,10 +2550,12 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
           };
           const stopWaiting = () => {
             event.item.removeHandler('fully-loaded-change', startCooking);
+            source.removeHandler('scene-viewport-ready', startCooking);
             viewer.removeHandler('viewport-change', startCooking);
           };
           preparation.signal.addEventListener('abort', stopWaiting, { once: true });
           event.item.addHandler('fully-loaded-change', startCooking);
+          source.addHandler('scene-viewport-ready', startCooking);
           viewer.addHandler('viewport-change', startCooking);
           startCooking();
         }

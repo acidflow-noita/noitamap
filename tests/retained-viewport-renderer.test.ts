@@ -435,6 +435,24 @@ describe("retained native pixels with atomic viewport presentation", () => {
     expect(f.renderer.renderViewport).toHaveBeenCalledOnce();
   });
 
+  it("keeps hydrated cooked pixels when the camera pans before their disk read finishes", async () => {
+    const f = fixture({ width: 768, budget: 256 * 256 * 4 + 1 });
+    f.saved(0, '#ff0000'); f.saved(1, '#00ff00'); f.saved(2, '#ffff00');
+    const held = deferred<StoredTerrain | undefined>();
+    f.store.read.mockImplementationOnce(() => held.promise);
+    await f.request(plan(0, 0, 512, 256));
+    await vi.waitFor(() => expect(f.store.read).toHaveBeenCalledOnce());
+    const moved = plan(128, 0, 512, 256);
+    await f.request(moved);
+    held.resolve(f.records.get(`viewport-seed/${f.retention.maxLevel}/0/0`));
+    await vi.waitFor(() => expect(f.refresh).toHaveBeenCalled());
+    // The decoded first page has been evicted. Only the saved composition of
+    // the earlier camera can preserve its overlapping pixels now.
+    const result = await f.request(moved);
+    expect(pixel(result, 0, 40)).toEqual([255, 0, 0, 255]);
+    expect(pixel(result, 200, 40)).toEqual([0, 255, 0, 255]);
+  });
+
   it.each(["frame", "lifetime"])(
     "closes a late GPU bitmap after %s cancellation without publishing it",
     async (kind) => {

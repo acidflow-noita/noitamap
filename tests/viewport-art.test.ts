@@ -55,6 +55,18 @@ function art(width: number, height: number, color: string) {
 }
 
 describe("direct viewport artwork with native canvas", () => {
+  it('averages native artwork when zooming out, without changing its source pixels', () => {
+    const source = art(64, 64, '#ff0000'), ctx = source.getContext('2d');
+    ctx.fillStyle = '#0000ff';
+    for (let x = 1; x < 64; x += 2) ctx.fillRect(x, 0, 1, 64);
+    const output = createCanvas(32, 32), target = output.getContext('2d');
+    drawViewportArt(target as any, itemAt(0, 0, .5), viewport, 64, 64, () => target.drawImage(source, 0, 0));
+    const reduced = target.getImageData(10, 10, 1, 1).data;
+    expect(reduced[0]).toBeGreaterThan(100);
+    expect(reduced[2]).toBeGreaterThan(100);
+    expect([...ctx.getImageData(10, 10, 1, 1).data]).toEqual([255, 0, 0, 255]);
+  });
+
   it("composes density, rotation and drawer flip while restoring context and preserving lower layers", () => {
     OSD.pixelDensityRatio = 2;
     const output = createCanvas(128, 96),

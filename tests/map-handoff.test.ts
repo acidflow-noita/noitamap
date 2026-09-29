@@ -57,6 +57,7 @@ function fixture() {
     immediateRender: false, maxTilesPerFrame: 10,
   });
   const held = new Set<() => void>();
+  const heldSources = new WeakMap<() => void, any>();
   function addWorld(pw: number, tagOnSuccess = false, color = '#008000') {
     const source = new OSD.DziTileSource({ width: 1024, height: 1024,
       tileSize: 256, tileOverlap: 0, minLevel: 0, maxLevel: 10,
@@ -72,6 +73,7 @@ function fixture() {
         context.fillRect(0, 0, canvas.width, canvas.height);
         job.finish(context, null, 'context2d');
       };
+      heldSources.set(finish, source);
       if (job.tile.level > 8) held.add(finish);
       else queueMicrotask(finish);
     };
@@ -86,7 +88,7 @@ function fixture() {
     for (const callback of callbacks) callback(performance.now());
     await vi.advanceTimersByTimeAsync(elapsed);
   }
-  return { viewer, held, addWorld, frame, dispose() {
+  return { viewer, held, heldSources, addWorld, frame, dispose() {
     clearMapHandoff(viewer); viewer.destroy(); mount.remove(); frames.clear(); held.clear();
   } };
 }
@@ -131,6 +133,42 @@ it('holds a composed outgoing daily until incoming daily detail and POIs have pa
     expect(document.querySelector('.map-handoff')).toBeNull();
     expect(isMapHandoffPending(f.viewer)).toBe(false);
     expect(f.viewer.getFullyLoaded()).toBe(false); // offscreen world never loads
+    expect([...f.viewer.drawer.context.getImageData(128, 128, 1, 1).data]).toEqual([0, 0, 255, 255]);
+  } finally { f.dispose(); vi.useRealTimers(); }
+});
+
+it.each(['__staticBackground', '__biomeBg'])('does not leave the old picture over a finished daily because an unchanged %s is loading or fails', async flag => {
+  const f = fixture(), commit = vi.fn(), failed = vi.fn();
+  try {
+    const old = await f.addWorld(0, false, '#ff0000');
+    f.viewer.viewport.fitBounds(new OSD.Rect(0, 0, 256, 256), true);
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date', 'performance'] });
+    await settle(f);
+    const pendingBackground = f.addWorld(0, false, '#ffff00');
+    await vi.advanceTimersByTimeAsync(0);
+    const background = await pendingBackground;
+    background.source[flag] = true;
+    // Do not share tile cache keys with the outgoing or replacement fixture.
+    background.source.getTileUrl = (level: number, x: number, y: number) => `shared-bg://${flag}/${level}/${x}/${y}`;
+    f.viewer.world.setItemIndex(background, 0);
+    await f.frame();
+    expect(background.getFullyLoaded()).toBe(false);
+    const handoff = beginMapHandoff(f.viewer, true, failed);
+    f.viewer.world.removeItem(old);
+    const pendingDaily = f.addWorld(0, false, '#0000ff');
+    await vi.advanceTimersByTimeAsync(0);
+    const daily = await pendingDaily;
+    handoff.finish(commit);
+    f.viewer.raiseEvent('tile-load-failed', { tiledImage: background, maxReached: true });
+    for (let attempt = 0; attempt < 40 && !commit.mock.calls.length; attempt++) {
+      for (const finish of [...f.held]) if (f.heldSources.get(finish) !== background.source) finish();
+      await f.frame();
+    }
+    expect(background.getFullyLoaded()).toBe(false);
+    expect(daily.getFullyLoaded()).toBe(true);
+    expect(failed).not.toHaveBeenCalled();
+    expect(commit).toHaveBeenCalledOnce();
+    expect(document.querySelector('.map-handoff')).toBeNull();
     expect([...f.viewer.drawer.context.getImageData(128, 128, 1, 1).data]).toEqual([0, 0, 255, 255]);
   } finally { f.dispose(); vi.useRealTimers(); }
 });
@@ -202,6 +240,60 @@ it('reuses one original cover during rapid reseeding and ignores superseded comp
     expect(secondCommit).toHaveBeenCalledOnce();
     expect(f.viewer.overlaysContainer.style.visibility).toBe('');
   } finally { f.dispose(); vi.useRealTimers(); }
+});
+
+it('releases one outgoing snapshot across rapid live → daily → live switches and resumes sharp rendering', async () => {
+  const f = fixture(), firstCommit = vi.fn(), secondCommit = vi.fn();
+  const lifetimes: AbortController[] = [];
+  try {
+    const background = await f.addWorld(0);
+    background.source.__staticBackground = true;
+    f.viewer.viewport.fitBounds(new OSD.Rect(0, 0, 256, 256), true);
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date', 'performance'] });
+    await settle(f);
+    async function live(color: string) {
+      const lifetime = new AbortController(); lifetimes.push(lifetime);
+      const layer = createInstantTerrainViewport({ viewer: f.viewer,
+        bounds: { x: 0, y: 0, width: 1024, height: 1024 }, signal: lifetime.signal,
+        renderFrame: async plan => {
+          const image = createCanvas(plan.pixelWidth, plan.pixelHeight), context = image.getContext('2d');
+          context.fillStyle = color; context.fillRect(0, 0, image.width, image.height);
+          return image as unknown as CanvasImageSource;
+        }, firstPaint() {}, onFailure: error => { throw error; },
+      });
+      const added = new Promise<any>(resolve => f.viewer.addTiledImage({ tileSource: layer.source,
+        width: 1024, x: 0, y: 0, success: ({ item }: any) => resolve(item) }));
+      await vi.advanceTimersByTimeAsync(0);
+      return added;
+    }
+    const original = await live('#ff0000');
+    for (let i = 0; i < 4; i++) await f.frame();
+    expect([...f.viewer.drawer.context.getImageData(128, 128, 1, 1).data]).toEqual([255, 0, 0, 255]);
+    const dailyHandoff = beginMapHandoff(f.viewer, true);
+    const cover = document.querySelector('.map-handoff canvas');
+    f.viewer.world.removeItem(original);
+    const pendingDaily = f.addWorld(0, false, '#0000ff');
+    await vi.advanceTimersByTimeAsync(0);
+    const daily = await pendingDaily;
+    dailyHandoff.finish(firstCommit);
+    await f.frame();
+    expect(firstCommit).not.toHaveBeenCalled();
+    const liveHandoff = beginMapHandoff(f.viewer, true);
+    f.viewer.world.removeItem(daily);
+    expect(document.querySelectorAll('.map-handoff')).toHaveLength(1);
+    expect(document.querySelector('.map-handoff canvas')).toBe(cover);
+    await live('#00ff00');
+    liveHandoff.finish(secondCommit);
+    for (let attempt = 0; attempt < 10 && !secondCommit.mock.calls.length; attempt++) await f.frame();
+    expect(firstCommit).not.toHaveBeenCalled();
+    expect(secondCommit).toHaveBeenCalledOnce();
+    expect(document.querySelector('.map-handoff')).toBeNull();
+    expect(isMapHandoffPending(f.viewer)).toBe(false);
+    expect([...f.viewer.drawer.context.getImageData(128, 128, 1, 1).data]).toEqual([0, 255, 0, 255]);
+    f.viewer.viewport.fitBounds(new OSD.Rect(64, 64, 128, 128), true);
+    for (let i = 0; i < 4; i++) await f.frame();
+    expect([...f.viewer.drawer.context.getImageData(128, 128, 1, 1).data]).toEqual([0, 255, 0, 255]);
+  } finally { for (const lifetime of lifetimes) lifetime.abort(); f.dispose(); vi.useRealTimers(); }
 });
 
 it('finishes over empty sparse scene coverage and starts cooking only after the composition handoff', async () => {

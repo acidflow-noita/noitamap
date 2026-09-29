@@ -117,16 +117,23 @@ export function beginMapHandoff(input: any, preserveView: boolean, onFailure?: (
   let setupHolds = 0;
   let onPaint = () => {};
   const watched = new Set<any>();
+  // Shared backgrounds keep their own loading lifecycle across seed changes.
+  // The outgoing picture already included them; their unrelated tile work
+  // must not keep that picture over a completed incoming map indefinitely.
+  const unchanged = new WeakSet<object>();
+  for (let i = 0; i < (viewer.world?.getItemCount() ?? 0); i++)
+    unchanged.add(viewer.world.getItemAt(i));
   const outgoingAdditions = new Set((viewer._loadQueue ?? []).map((entry: any) => entry.options));
   const events = ['update-viewport', 'viewport-change', 'animation-finish', 'resize', 'rotate', 'flip', 'tile-drawn'];
   const imageEvents = ['load', 'error'];
   const overlayVisibility = viewer.overlaysContainer?.style.visibility ?? '';
   if (cover && viewer.overlaysContainer) viewer.overlaysContainer.style.visibility = 'hidden';
   const ready = () => {
-    if (!sealed || failed || setupHolds || viewer._loadQueue?.length) return false;
+    if (!sealed || failed || setupHolds || viewer._loadQueue?.some((entry: any) => !outgoingAdditions.has(entry.options))) return false;
     const world = viewer.world;
     for (let i = 0; i < (world?.getItemCount() ?? 0); i++) {
       const item = world.getItemAt(i);
+      if (unchanged.has(item)) continue;
       if (item.getOpacity?.() === 0 || !item.getDrawArea?.()) continue;
       // Direct GPU terrain has no OSD tiles; its own current-camera frame is
       // the readiness signal. A frame from the previous camera cannot qualify.
@@ -174,7 +181,7 @@ export function beginMapHandoff(input: any, preserveView: boolean, onFailure?: (
     transaction.fail(event);
   };
   const tileFailed = (event: any) => {
-    if (!event.maxReached || !watched.has(event.tiledImage)) return;
+    if (!event.maxReached || !watched.has(event.tiledImage) || unchanged.has(event.tiledImage)) return;
     transaction.fail(event);
   };
   const transaction: Active = {

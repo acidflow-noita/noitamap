@@ -290,7 +290,7 @@ export function createInstantTerrainViewport(options: {
     const useful = candidates.filter(entry => {
       // Only current coverage is guaranteed to survive the budget selection.
       // Older frames may cover each other but either could be evicted below.
-      if (outside(entry.plan, [frame!.plan]).length) return true;
+      if (entry.plan.scale < frame!.plan.scale || outside(entry.plan, [frame!.plan]).length) return true;
       releaseImage(entry.image);
       return false;
     });
@@ -300,7 +300,9 @@ export function createInstantTerrainViewport(options: {
       const overlaps = (plan: ViewportTerrainBounds) => plan.x < frame!.plan.x + frame!.plan.width
         && plan.x + plan.width > frame!.plan.x && plan.y < frame!.plan.y + frame!.plan.height
         && plan.y + plan.height > frame!.plan.y;
-      return Number(overlaps(b.plan)) - Number(overlaps(a.plan))
+      const detail = (entry: Frame) => overlaps(entry.plan) && entry.plan.scale < frame!.plan.scale;
+      return Number(detail(b)) - Number(detail(a))
+        || Number(overlaps(b.plan)) - Number(overlaps(a.plan))
         || b.plan.width * b.plan.height - a.plan.width * a.plan.height;
     });
     const kept = new Set<Frame>();
@@ -344,8 +346,12 @@ export function createInstantTerrainViewport(options: {
         width: p.width + 2 * margin * p.scale, height: p.height + 2 * margin * p.scale,
         pixelWidth: p.pixelWidth + 2 * margin, pixelHeight: p.pixelHeight + 2 * margin } : p, drawController.signal);
     }).then(image => {
+      // A retention revision adds exact pixels within this same generation.
+      // It does not invalidate a finished camera frame. Discarding every draw
+      // overtaken by background cooking can leave a zoomed-in camera showing
+      // its old overview indefinitely. Publish, then refresh to the new revision.
       if (destroyed || signal.aborted || drawController.signal.aborted || (!request.overview && (
-        request.revision !== revision() || (frame?.key === desiredKey && request.key !== desiredKey)))) {
+        frame?.key === desiredKey && request.key !== desiredKey))) {
         releaseImage(image);
         stats.discarded++;
         return;
@@ -396,7 +402,6 @@ export function createInstantTerrainViewport(options: {
     if (destroyed) return true;
     refresh();
     if (!frame) return true;
-    const frames = [...(overview ? [overview] : []), ...retained, frame];
     const ratio = density();
     const point = (x: number, y: number) => viewport.pixelFromPoint(new OpenSeadragon.Point(x, y), true);
     const origin = point(0, 0), unitX = point(1, 0), unitY = point(0, 1), m = context.getTransform();
@@ -406,6 +411,12 @@ export function createInstantTerrainViewport(options: {
     const c = m.a * bx + m.c * by, d = m.b * bx + m.d * by;
     const determinant = Math.abs(a * d - b * c);
     if (![a, b, c, d, determinant].every(Number.isFinite) || !determinant) return true;
+    const displayScale = 1 / Math.max(Math.hypot(a, b), Math.hypot(c, d));
+    // A zoom-out destination can finish before the camera gets there. Keep
+    // sharper frames above it while its samples would still be magnified.
+    // Once both frames supply display resolution, prefer the newer one.
+    const frames = [...(overview ? [overview] : []), ...retained, frame].sort((left, right) =>
+      Math.max(right.plan.scale, displayScale) - Math.max(left.plan.scale, displayScale));
     const radiusX = (Math.abs(d) + Math.abs(c)) / (2 * determinant);
     const radiusY = (Math.abs(b) + Math.abs(a)) / (2 * determinant);
     // A previously close frame can shrink by much more than its one-sample
@@ -436,7 +447,8 @@ export function createInstantTerrainViewport(options: {
           y: (part.y - plan.y) / plan.scale, width: part.width / plan.scale, height: part.height / plan.scale })));
         context.globalAlpha *= item.opacity ?? 1;
         context.globalCompositeOperation = item.compositeOperation || 'source-over';
-        context.imageSmoothingEnabled = false;
+        context.imageSmoothingEnabled = plan.scale < displayScale * (1 - 1e-9);
+        context.imageSmoothingQuality = 'high';
         context.drawImage(image, -margin, -margin);
       } finally { context.restore(); }
     }

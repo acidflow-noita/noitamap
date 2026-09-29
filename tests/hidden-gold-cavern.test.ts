@@ -63,7 +63,7 @@ afterAll(() => restore());
 it.each([
   [2391, -3102, 0],
   [239365546, -3102, 0],
-  [1, -3102, 0], // Ancient Laboratory, previously suppressed as static art.
+  [1, -3102, 0], // Hidden gold room, previously suppressed as static art.
   [4, -3102, 8192],
   [7, 2530, 8704],
   [3, -4126, 11264],
@@ -79,7 +79,7 @@ it.each([
 });
 
 
-it.each([false, true])('decodes the packed Ancient Laboratory stash and paints all gold through the live scene source (compressed=%s)', async compressed => {
+it.each([false, true])('decodes the packed hidden gold room and paints all gold through the live scene source (compressed=%s)', async compressed => {
   const { pixelScenes } = addStaticPixelScenes(2391, 0, 0, 0, biomeData, false, {}, false, 'normal');
   const selected = renderableScenes({ pixelScenesByPW: { '0,0': pixelScenes } });
   const scene = selected.find((scene: any) => scene.key === 'general/solid_wall_hidden_cavern');
@@ -126,7 +126,7 @@ it.each([false, true])('decodes the packed Ancient Laboratory stash and paints a
   try {
     const target = createCanvas(512, 512).getContext('2d');
     if (compressed) {
-      expect(layer.source.__drawViewport).toBeUndefined();
+      expect(layer.source.__drawViewport).toBeTypeOf('function');
       for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) {
         expect(layer.source.tileExists(layer.source.maxLevel, x, y)).toBe(true);
         const tile = await new Promise<any>((resolve, reject) => layer.source.downloadTileStart({

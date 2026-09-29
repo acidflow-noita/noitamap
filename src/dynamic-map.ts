@@ -50,7 +50,8 @@ export interface DynamicMapOptions {
   onPOIsReady?: (pois: DynamicPOI[]) => void;
   /** Invalidate outgoing interactions immediately, before seed resolution awaits network work. */
   onMapReplacementStart?: () => void;
-  /** Called when generation starts / ends (for loading indicator) */
+  /** Called while the selected map's visible pixels are loading. Generation
+   * progress is separate: baked maps only download their finished tiles. */
   onLoadingChange?: (isLoading: boolean) => void;
   /** Called with the seed that was used (after resolution) */
   onSeedResolved?: (seed: number, isDaily: boolean) => void;
@@ -281,6 +282,10 @@ export async function runDynamicMap(
   let unlocks = getUnlocksFromURL();
   const urlKind = getUrlUnlockKind();
   if (urlKind === "none") unlocks = [];
+  // Daily generation already forces every unlock on. A previously saved mod
+  // list must not bypass generation.json and regenerate the daily on an empty
+  // URL; it is not the effective unlock state for this map.
+  if (isDaily) unlocks = null;
   // (urlKind === "all" → unlocks stays null → telescope's default = all)
   const lightMode = isLightMode();
   // Dedicated pillar achievement channel (`&p=`). Independent of `&u=`: it only
@@ -344,6 +349,14 @@ export async function runDynamicMap(
   let bakedAlreadyPainted = false;
   let markDailyMapReady!: () => void;
   const dailyMapReady = new Promise<void>(resolve => { markDailyMapReady = resolve; });
+  let firstPaintFired = false, metadataReady = false;
+  const onFirstPaint = () => {
+    if (firstPaintFired || myToken !== generationToken) return;
+    firstPaintFired = true;
+    console.log(`[DynamicMap] First paint, seed ${seed}: ${((performance.now() - runStarted) / 1000).toFixed(2)}s total`);
+    onLoadingChange?.(false);
+    if (metadataReady) markDailyMapReady();
+  };
   // ?nb=1 disables the baked fast path entirely. The bake page uses it so a
   // re-bake of an already-deployed seed still runs a real local generation
   // (the export hooks need live tileLayers, which the baked path never has).
@@ -367,9 +380,8 @@ export async function runDynamicMap(
       // workers as the DZIs. Fetch it in PARALLEL with the probe: once the
       // probe paints, OSD floods these same origins with hundreds of tile
       // requests and a late generation.json queues behind all of them (the
-      // "POIs take forever" symptom). Baked with u=all, so only valid for
-      // the default all-unlocked state; restricted-unlock views keep the
-      // baked DZIs but run telescope for their own POI pools.
+      // "POIs take forever" symptom). Daily mode always uses the baked
+      // all-unlocked state, including when the browser remembers mod unlocks.
       const generationPromise: Promise<GenerationResult | null> =
         unlocks === null
           ? (async () => {
@@ -414,6 +426,11 @@ export async function runDynamicMap(
         window.dispatchEvent(new CustomEvent("bakedSeedChange", { detail: {
           baked: true, fullPixelsBaked: probe.fullPixelsBaked,
         } }));
+        // These pixels already include artwork and POIs. Their actual visible
+        // tile readiness can reveal the map independently of generation.json
+        // and the later search/click index. Legacy undecorated bakes still need
+        // the normal complete-presentation barrier below.
+        if (probe.decorationsBaked) handoff.finish(onFirstPaint);
       }
       const generation = await generationPromise;
       if (!generation && unlocks === null) console.log("[DynamicMap] No baked generation.json; falling back to telescope for POIs");
@@ -484,7 +501,7 @@ export async function runDynamicMap(
       t = performance.now();
       console.log(`[DynamicMap] Generating seed ${seed} (unlocks: ${unlocks ? unlocks.length + "/" + UNLOCK_KEYS.length : "all"})...`);
       result = await generateDynamicMap({ seed, ngPlus: 0, dailySeed: isDaily, unlocks, pillarFlags, parallelWorlds: lightMode ? [0] : undefined,
-        onTerrainReady: isInstantTerrainEnabled() ? terrain => {
+        onTerrainReady: isInstantTerrainEnabled() && !bakedData?.probe.baked ? terrain => {
           if (myToken !== generationToken) return;
           void prepareInstantTerrainResources(terrain, () => myToken === generationToken).catch(error =>
             console.warn("[DynamicMap] Early terrain preparation unavailable:", error));
@@ -555,16 +572,6 @@ export async function runDynamicMap(
     console.log(
       `[DynamicMap] Rendering seed ${seed} with ${result.parallelWorlds?.length || 3} worlds, worldCenter=${result.worldCenter}`,
     );
-    // Hide loading indicator as soon as the main world's biome layer paints,
-    // not after the full multi-PW render finishes. The remaining PWs / pixel
-    // scenes / POIs continue rendering in the background.
-    let firstPaintFired = false;
-    const onFirstPaint = () => {
-      if (firstPaintFired || myToken !== generationToken) return;
-      firstPaintFired = true;
-      console.log(`[DynamicMap] First paint, seed ${seed}: ${((performance.now() - runStarted) / 1000).toFixed(2)}s total, ${((performance.now() - t) / 1000).toFixed(2)}s presentation`);
-      onLoadingChange?.(false);
-    };
     // Probe result was already awaited at step 0b.
     const bakedProbe = bakedData?.probe ?? null;
     // Light mode: only the middle world's baked DZI is loaded (matches
@@ -614,13 +621,15 @@ export async function runDynamicMap(
     // Setup/attachment is not a painted viewport. Release the outgoing cover
     // only when terrain, scene/marker tiles and overlay images are ready for
     // the current camera. Daily warmup starts after this same handoff event.
-    handoff.finish(() => {
-      if (myToken !== generationToken) return;
-      onFirstPaint();
-      markDailyMapReady();
-
+    metadataReady = true;
+    if (firstPaintFired) markDailyMapReady();
+    handoff.finish(onFirstPaint);
+    void dailyMapReady.then(() => {
+      if (myToken !== generationToken || bakedData?.probe.baked) return;
       // Optional preparation begins after the full visible composition, never
-      // while scene/marker tiles still hold up its reveal.
+      // while scene/marker tiles still hold up its reveal. Baked views use the
+      // dedicated byte-cache worker, without main-thread scene composition or
+      // alternate generation competing with tile interaction.
       requestAnimationFrame(() => setTimeout(() => {
         if (myToken !== generationToken) return;
         void prewarmAlt(seed, isDaily, !bakedData?.generation).catch((e) =>

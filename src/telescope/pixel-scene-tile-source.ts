@@ -3,6 +3,7 @@ import { copyTerrainContext, InstantTerrainCache } from "./instant-terrain-cache
 import { getMapMemoryBudget } from '../map-memory-budget';
 import { drawViewportArt } from './viewport-art';
 import { createSceneBitmapProvider, type CompressedSceneBitmap, type SceneBitmapLoader } from './scene-bitmap-provider';
+import { createSceneViewportPages } from './scene-viewport-pages';
 
 declare const OpenSeadragon: any;
 
@@ -25,6 +26,9 @@ export function createPixelSceneTileSource(options: {
   loadBitmap?: SceneBitmapLoader;
   /** Retire the loader/worker before releasing this layer's bitmap ownership. */
   disposeBitmaps?: () => void;
+  redraw?: () => void;
+  /** Non-canvas drawers retain the ordinary asynchronous OSD tile path. */
+  directViewport?: boolean;
   maxBitmapBytes?: number;
   generationId: number;
   maxCacheBytes?: number;
@@ -59,24 +63,65 @@ export function createPixelSceneTileSource(options: {
   type Work = { aborted: boolean; subscribers: number; promise: Promise<CanvasRenderingContext2D>; context?: CanvasRenderingContext2D };
   const inflight = new Map<string, Work>();
   const pending = new Set<(fail?: boolean) => void>();
+  let paintedCamera: string | undefined, currentCamera: (() => string) | undefined;
+  const pages = bitmaps && options.directViewport !== false ? createSceneViewportPages({
+    maxBytes: options.maxCacheBytes ?? getMapMemoryBudget().sceneCacheBytes,
+    contains: rect => index.search(rect.x, rect.y, rect.x + rect.width, rect.y + rect.height).length > 0,
+    changed: () => options.redraw?.(),
+    failure: error => source.raiseEvent('scene-viewport-error', { error }),
+    ready: ready => {
+      if (source.sceneViewportReady === ready) return;
+      source.sceneViewportReady = ready;
+      if (ready) source.raiseEvent('scene-viewport-ready', {});
+    },
+    render: async (page, cancelled) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = page.size + 2 * page.gutter;
+      const context = canvas.getContext('2d')!;
+      context.imageSmoothingEnabled = page.scale > 1;
+      context.imageSmoothingQuality = 'high';
+      const left = page.x - page.gutter * page.scale, top = page.y - page.gutter * page.scale;
+      const extent = canvas.width * page.scale;
+      const hits = index.search(left, top, left + extent, top + extent).sort((a, b) => a - b);
+      try {
+        for (const id of hits) {
+          if (cancelled()) throw new DOMException('Scene viewport retired', 'AbortError');
+          const scene = items[id], bitmap = bitmapByKey.get(scene.sceneKey);
+          const x = (scene.osdX - originX - left) / page.scale;
+          const y = (scene.osdY - originY - top) / page.scale;
+          if (bitmap) context.drawImage(bitmap, x, y, scene.w / page.scale, scene.h / page.scale);
+          else await bitmaps!.draw(scene.sceneKey, context, x, y, scene.w / page.scale, scene.h / page.scale, cancelled);
+        }
+        return context;
+      } catch (error) { canvas.width = canvas.height = 0; throw error; }
+    },
+  }) : undefined;
+  if (pages) {
+    source.sceneViewportReady = false;
+    source.__viewportReady = () => source.sceneViewportReady && currentCamera?.() === paintedCamera;
+  }
   // Explicit opt-in to the existing HD coverage scheduler, without pretending
   // this transparent artwork layer is GPU terrain (or applying its smoothing).
-  source.__instantCoverage = true;
+  source.__instantCoverage = !pages;
   source.instantCoverageExtraLevels = 1;
   source.instantCoverageTileBytes = () => tileSize * tileSize * 4;
   source.__pixelScenes = true;
-  Object.defineProperty(source, "sceneTileStats", { get: () => ({ ...cache.stats, rendered, renderMs, chunks, maxChunkMs, bitmapCache: bitmaps?.stats }) });
+  Object.defineProperty(source, "sceneTileStats", { get: () => ({ ...cache.stats, rendered, renderMs, chunks, maxChunkMs, bitmapCache: bitmaps?.stats, viewport: pages?.stats }) });
   source.getTileUrl = (level: number, x: number, y: number) =>
     `pixel-scene-tile://${generationId}/${level}/${x}/${y}`;
   source.hasCachedTile = (tile: { level: number; x: number; y: number }) =>
     cache.has(source.getTileUrl(tile.level, tile.x, tile.y));
   source.hasTransparency = () => true;
-  // Compressed mobile artwork follows OSD's asynchronous tile loading and
-  // existing pinned overview coverage. It cannot pretend a missing decode has
-  // already been drawn by the synchronous direct-art hook.
-  if (!bitmaps) source.__drawViewport = (context: CanvasRenderingContext2D, item: any, viewport: any) => {
+  if (!bitmaps || pages) source.__drawViewport = (context: CanvasRenderingContext2D, item: any, viewport: any) => {
     if (destroyed) return true;
-    return drawViewportArt(context, item, viewport, width, height, bounds => {
+    if (pages && item.imageToViewportCoordinates && viewport.pixelFromPoint) currentCamera = () => JSON.stringify([
+      ...[[0, 0], [1, 0], [0, 1]].flatMap(([x, y]) => {
+        const point = viewport.pixelFromPoint(item.imageToViewportCoordinates(x, y, true), true);
+        return [point.x, point.y];
+      }), item.getFlip?.(), viewport.getFlip?.(), item.opacity, context.canvas.width, context.canvas.height,
+    ]);
+    const painted = drawViewportArt(context, item, viewport, width, height, bounds => {
+      if (pages) { pages.draw(context, bounds); return; }
       // Query full scene rectangles; no padding or coarse tile rounding is
       // needed when original artwork is drawn at its exact world placement.
       const hits = index.search(bounds.left, bounds.top, bounds.right, bounds.bottom).sort((a, b) => a - b);
@@ -86,6 +131,8 @@ export function createPixelSceneTileSource(options: {
           scene.osdX - originX, scene.osdY - originY, scene.w, scene.h);
       }
     });
+    if (painted) paintedCamera = currentCamera?.();
+    return painted;
   };
 
   function query(level: number, x: number, y: number) {
@@ -254,6 +301,7 @@ export function createPixelSceneTileSource(options: {
     for (const work of inflight.values()) work.aborted = true;
     inflight.clear();
     cache.clear();
+    pages?.dispose();
     options.disposeBitmaps?.();
     bitmaps?.dispose();
     for (const bitmap of new Set(bitmapByKey.values())) bitmap.close?.();

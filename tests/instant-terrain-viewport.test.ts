@@ -195,7 +195,7 @@ describe('direct viewport terrain with installed OSD and native canvas', () => {
     expect(f.pixel(5, 5)).toEqual([0, 0, 0, 0]);
     f.image(2, '#20c060'); await drain(); f.draw();
     expect(overview.close).toHaveBeenCalledOnce();
-    expect(detail.close).toHaveBeenCalledOnce();
+    expect(detail.close).not.toHaveBeenCalled();
     expect(f.pixel(24, 12)).toEqual([32, 192, 96, 255]);
   });
 
@@ -211,6 +211,34 @@ describe('direct viewport terrain with installed OSD and native canvas', () => {
       expect(f.pixel(31, 12)).toEqual([32, 96, 240, 255]);
     }
     expect(f.layer.isBusy()).toBe(false);
+  });
+
+  it('does not magnify an early zoom-out destination over existing native detail', async () => {
+    const f = fixture(); await drain();
+    const detail = f.image(), ctx = detail.getContext('2d');
+    for (let x = 0; x < 32; x++) {
+      ctx.fillStyle = x % 2 ? '#0000ff' : '#ff0000'; ctx.fillRect(x, 0, 1, 24);
+    }
+    await drain(); f.draw();
+    f.startZoomOut(128); await drain();
+    f.image(1, '#00ff00'); await drain(); f.draw();
+    for (let x = 0; x < 32; x++) expect(f.pixel(x, 10)).toEqual(x % 2 ? [0, 0, 255, 255] : [255, 0, 0, 255]);
+    expect(detail.close).not.toHaveBeenCalled();
+    f.animateWidth(128); await drain(); f.draw();
+    expect(f.pixel(4, 4)).toEqual([0, 255, 0, 255]);
+  });
+
+  it('filters native detail when shrinking it during an unresolved zoom-out', async () => {
+    const f = fixture(); await drain();
+    const detail = f.image(), ctx = detail.getContext('2d');
+    for (let x = 0; x < 32; x++) {
+      ctx.fillStyle = x % 2 ? '#0000ff' : '#ff0000'; ctx.fillRect(x, 0, 1, 24);
+    }
+    await drain(); f.navigate(0, 64); await drain(); f.draw();
+    const sample = f.pixel(5, 5);
+    expect(sample[0]).toBeGreaterThan(100);
+    expect(sample[2]).toBeGreaterThan(100);
+    expect(sample[3]).toBe(255);
   });
 
   it('keeps never-visited biomes covered throughout continuous zoom while worker frames are delayed', async () => {
@@ -309,14 +337,15 @@ describe('direct viewport terrain with installed OSD and native canvas', () => {
     expect((f.layer.stats as any).retainedBytes).toBe(0);
   });
 
-  it('discards obsolete revisions and aborts requests while preserving the handoff frame until destroy', async () => {
+  it('publishes same-generation frames during cooking revisions and aborts retired requests', async () => {
     const f = fixture();
     await drain();
     f.revise();
     const obsolete = f.image(); await drain();
-    expect(obsolete.close).toHaveBeenCalledOnce();
-    expect(f.layer.stats.discarded).toBe(1);
+    expect(obsolete.close).not.toHaveBeenCalled();
+    expect(f.layer.stats.discarded).toBe(0);
     const retained = f.image(); await drain(); f.draw();
+    expect(obsolete.close).toHaveBeenCalledOnce();
     f.navigate(1); await drain();
     const lastRequest = f.renders.at(-1)!;
     f.lifetime.abort();
@@ -331,6 +360,18 @@ describe('direct viewport terrain with installed OSD and native canvas', () => {
     expect(retained.close).toHaveBeenCalledOnce();
     expect(f.drawer._drawTiles).toBe(f.originalDraw);
     expect(f.failure).not.toHaveBeenCalled();
+  });
+
+  it('upgrades a zoomed-in view even when background cooking advances during every foreground draw', async () => {
+    const f = fixture(); await drain();
+    f.image(0, '#00ff00'); await drain(); f.draw();
+    f.navigate(0, 8); await drain();
+    for (let i = 1; i <= 5; i++) {
+      f.revise();
+      f.image(i, '#ff0000'); await drain(); f.draw();
+      expect(f.pixel(10, 10)).toEqual([255, 0, 0, 255]);
+      expect(f.layer.stats.discarded).toBe(0);
+    }
   });
 
   it('draws whole frames in layer order and retains transparent holes for the background', async () => {

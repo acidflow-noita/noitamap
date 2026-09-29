@@ -5,7 +5,7 @@ import { isSimplisticBackground } from './simplistic-background';
 
 import { CHUNK_SIZE } from './constants';
 import { cameraPixelDelta, readCameraMatrix } from './portals/geometry';
-import { PIXEL_MAP_DRAW_OPTIONS } from './osd-pixel-rendering';
+import { PIXEL_MAP_DRAW_OPTIONS, smoothDziPreview } from './osd-pixel-rendering';
 import { installTileContinuity } from './osd-tile-continuity';
 import { installTerrainAdmission } from './osd-terrain-admission';
 import { installStaticBackgroundResidency } from './osd-static-background';
@@ -93,6 +93,7 @@ export class AppOSD {
     installTileContinuity(this.viewer);
     installTerrainAdmission(this.viewer);
     installStaticBackgroundResidency(this.viewer);
+    this.viewer.addHandler('tile-drawing', smoothDziPreview);
 
     this.addHandler('canvas-key', (event: any) => {
       // Case-insensitive so Shift+R (key "R") is caught too — OSD binds r/R to

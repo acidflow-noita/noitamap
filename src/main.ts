@@ -351,6 +351,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }) as EventListener);
 
   window.addEventListener("biomeGenerationProgress", ((e: CustomEvent) => {
+    if (app.getMap() !== "dynamic-main-branch" || bakedViewActive) return;
     const bar = _getGenerationBar();
     const status = _getStatusText();
     if (!bar) return;
@@ -371,6 +372,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }) as EventListener);
 
   window.addEventListener("itemsGenerationProgress", ((e: CustomEvent) => {
+    if (app.getMap() !== "dynamic-main-branch" || bakedViewActive) return;
     const bar = _getItemsBar();
     const status = _getStatusText();
     if (!bar) return;
@@ -625,7 +627,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       loadingIndicator.style.display = isLoading ? "block" : "none";
       if (isLoading) {
-        showLoadingStrip();
+        // Selecting a map does not imply generation. Baked daily tiles use
+        // the ordinary loading indicator; real generator progress events own
+        // the generation strip, including world-data downloads.
+        hideLoadingStrip();
         unifiedSearch.setIndexingState('indexing');
       } else {
         hideLoadingStrip();

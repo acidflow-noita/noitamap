@@ -79,7 +79,8 @@ export function createSceneBitmapProvider(
             if (width >= height) width--; else height--;
           }
         }
-        const requestKey = JSON.stringify([key, sx, sy, sw, sh, width, height]);
+        const quality = context.imageSmoothingEnabled ? 'high' : 'pixelated';
+        const requestKey = JSON.stringify([key, sx, sy, sw, sh, width, height, quality]);
         let entry = cache.get(requestKey);
         if (entry) {
           hits++;
@@ -92,7 +93,7 @@ export function createSceneBitmapProvider(
             remove(cache.keys().next().value!); evictions++;
           }
           const bitmap = await decode(scene.blob, sx, sy, sw, sh,
-            { resizeWidth: width, resizeHeight: height, resizeQuality: 'pixelated' });
+            { resizeWidth: width, resizeHeight: height, resizeQuality: quality });
           decodes++;
           try {
             check(cancelled);
