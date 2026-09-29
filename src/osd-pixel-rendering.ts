@@ -51,23 +51,3 @@ export function smoothInstantTile(event: any): void {
     && Number.isFinite(displayWidth) && displayWidth < sourceWidth;
   event.context.imageSmoothingQuality = 'low';
 }
-
-/** A cold baked zoom can temporarily stretch a whole-world mip by 64x while
- * its requested native tiles download. Filter that preview so it does not
- * become a screen-sized mosaic. Include the static background visible through
- * the bake's alpha; native game pixels always stay crisp in both layers. */
-export function smoothDziPreview(event: any): void {
-  const source = event.tiledImage?.source;
-  if (!(source?.__bakedDzi || source?.__staticBackground) || !event.context) return;
-  const renderedWidth = event.rendered?.canvas?.width;
-  const sourceWidth = event.tile.sourceBounds
-    ? Math.min(event.tile.sourceBounds.width, renderedWidth ?? Infinity)
-    : renderedWidth;
-  const density = (typeof OpenSeadragon !== 'undefined' && OpenSeadragon.pixelDensityRatio)
-    || globalThis.devicePixelRatio || 1;
-  const displayWidth = event.tile.size?.x * density;
-  event.context.imageSmoothingEnabled = event.tile.level < source.maxLevel
-    && Number.isFinite(sourceWidth) && Number.isFinite(displayWidth)
-    && displayWidth > sourceWidth;
-  event.context.imageSmoothingQuality = 'low';
-}

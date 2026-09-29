@@ -4,6 +4,7 @@ import { getMapMemoryBudget } from '../map-memory-budget';
 import { drawViewportArt } from './viewport-art';
 import { createSceneBitmapProvider, type CompressedSceneBitmap, type SceneBitmapLoader } from './scene-bitmap-provider';
 import { createSceneViewportPages } from './scene-viewport-pages';
+import { installViewportLayerDrawing } from './instant-terrain-viewport';
 
 declare const OpenSeadragon: any;
 
@@ -29,6 +30,8 @@ export function createPixelSceneTileSource(options: {
   redraw?: () => void;
   /** Non-canvas drawers retain the ordinary asynchronous OSD tile path. */
   directViewport?: boolean;
+  /** Own the drawing hook even when live GPU terrain is unavailable. */
+  viewer?: any;
   maxBitmapBytes?: number;
   generationId: number;
   maxCacheBytes?: number;
@@ -64,7 +67,9 @@ export function createPixelSceneTileSource(options: {
   const inflight = new Map<string, Work>();
   const pending = new Set<(fail?: boolean) => void>();
   let paintedCamera: string | undefined, currentCamera: (() => string) | undefined;
-  const pages = bitmaps && options.directViewport !== false ? createSceneViewportPages({
+  const directViewport = options.directViewport !== false
+    && (!options.viewer || installViewportLayerDrawing(options.viewer));
+  const pages = bitmaps && directViewport ? createSceneViewportPages({
     maxBytes: options.maxCacheBytes ?? getMapMemoryBudget().sceneCacheBytes,
     contains: rect => index.search(rect.x, rect.y, rect.x + rect.width, rect.y + rect.height).length > 0,
     changed: () => options.redraw?.(),
@@ -112,7 +117,7 @@ export function createPixelSceneTileSource(options: {
   source.hasCachedTile = (tile: { level: number; x: number; y: number }) =>
     cache.has(source.getTileUrl(tile.level, tile.x, tile.y));
   source.hasTransparency = () => true;
-  if (!bitmaps || pages) source.__drawViewport = (context: CanvasRenderingContext2D, item: any, viewport: any) => {
+  if (directViewport && (!bitmaps || pages)) source.__drawViewport = (context: CanvasRenderingContext2D, item: any, viewport: any) => {
     if (destroyed) return true;
     if (pages && item.imageToViewportCoordinates && viewport.pixelFromPoint) currentCamera = () => JSON.stringify([
       ...[[0, 0], [1, 0], [0, 1]].flatMap(([x, y]) => {
@@ -307,5 +312,6 @@ export function createPixelSceneTileSource(options: {
     for (const bitmap of new Set(bitmapByKey.values())) bitmap.close?.();
     bitmapByKey.clear();
   };
+  if (source.__drawViewport && options.viewer) installViewportLayerDrawing(options.viewer, source);
   return { source, originX, originY, width, height };
 }

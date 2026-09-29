@@ -2512,6 +2512,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     items, bitmapByKey, blobByKey, generationId,
     loadBitmap: preparation?.loadBitmap, disposeBitmaps: preparation?.dispose,
     redraw: () => (viewer.viewer ?? viewer).forceRedraw(),
+    viewer,
     directViewport: (viewer.viewer ?? viewer).drawer?.getType?.() === 'canvas',
   });
   source.addHandler('scene-viewport-error', ({ error }: { error: unknown }) => {

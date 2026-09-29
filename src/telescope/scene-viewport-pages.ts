@@ -64,8 +64,12 @@ export function createSceneViewportPages(options: {
     const page = wanted.find(page => !entries.has(page.key));
     if (!page) return;
     active = page;
-    void options.render(page, () => destroyed).then(context => {
-      if (destroyed) { context.canvas.width = context.canvas.height = 0; return; }
+    // An initial overview can contain thousands of scenes. Navigation must
+    // release its serial scene queue after the current image, rather than
+    // finishing that obsolete page before any close-up room can appear.
+    const cancelled = () => destroyed || !wanted.some(candidate => candidate.key === page.key);
+    void options.render(page, cancelled).then(context => {
+      if (cancelled()) { context.canvas.width = context.canvas.height = 0; return; }
       const entry = { ...page, context, bytes: context.canvas.width * context.canvas.height * 4 };
       // A ready parent replaces its children atomically. Until it is ready the
       // original pages remain visible; new work never clears displayed artwork.
@@ -76,7 +80,7 @@ export function createSceneViewportPages(options: {
       entries.set(entry.key, entry); bytes += entry.bytes; rendered++;
       options.changed();
     }).catch(error => {
-      if (!destroyed && error?.name !== 'AbortError') { failed = error; options.ready(false); options.failure(error); }
+      if (!cancelled() && error?.name !== 'AbortError') { failed = error; options.ready(false); options.failure(error); }
     }).finally(() => { active = undefined; pump(); });
   };
   return {
