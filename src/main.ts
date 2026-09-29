@@ -221,7 +221,7 @@ export const refreshSearchTranslations = () => {
 // we want it to take over so this duplicate tab can self-close).
 const _tabHandoff = negotiateTabHandoff();
 
-document.addEventListener("DOMContentLoaded", async () => {
+async function initializeApp(): Promise<void> {
   if (!(await _tabHandoff)) return;
   // Start preloading the atlas for search results immediately
   loadSpritesheetAndAtlas()
@@ -1525,4 +1525,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   } else {
     setTimeout(preloadAllLocales, 2000);
   }
-});
+}
+
+const startApp = () => {
+  void initializeApp().catch(error => console.error('[Noitamap] Startup failed:', error));
+};
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startApp, { once: true });
+} else {
+  startApp();
+}

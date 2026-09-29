@@ -222,7 +222,7 @@ export default defineConfig({
           includeDependenciesRecursively: true,
           groups: [
             { name: "terrain-assets", test: /\/lib\/noita-telescope-vm\/data\/.*\?url/, priority: 200 },
-            { name: "telescope-data-tables", test: /\/lib\/noita-telescope-vm\/js\/.*(?:enemy_config|engine_data)\.js$/, priority: 140 },
+            { name: "telescope-data-tables", test: /\/lib\/noita-telescope-vm\/js\/.*(?:enemy_config|engine_data|spawn_function_config)\.js$/, priority: 140 },
             { name: "telescope-runtime", test: /\/src\/(?:data-archive|renderer_settings|telescope\/(?:telescope-(?:data-bridge|dom-shim|app-shim|assets|asset-paths)|zip-extraction-shim|png-decode|full-pixel-data))\.[jt]s$/, priority: 150 },
             { name: "telescope-full-pixels", test: /\/lib\/noita-telescope-vm\/js\/|\/src\/telescope\/full-pixel-telescope-exports\.ts$/, priority: 80 },
             { name: "telescope-lib", test: (id) => id.startsWith(TELESCOPE_JS + "/") || id.endsWith("/src/telescope/telescope-exports.ts"), priority: 70 },
