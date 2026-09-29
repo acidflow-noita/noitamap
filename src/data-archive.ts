@@ -1,289 +1,105 @@
-/**
- * Runtime data.zip archive loader.
- * Fetches data.zip once, caches it, and provides typed accessors for
- * individual entries (text, blob, ImageBitmap, etc.).
- */
-import JSZip from "jszip";
-import { archiveRevisions } from "virtual:noitamap-data-archives";
+/** Versioned, read-only game assets. ZIPs are extracted only during the build.
+ * The compatibility entry API keeps existing consumers on the same shared
+ * page cache; no ZIP parser or decompressor runs in the browser or workers. */
+import { assetManifests } from 'virtual:noitamap-data-archives';
+import { immutableTelescopeAssets } from './telescope/immutable-assets';
 
-function getBaseUrl() {
-  if (typeof document !== "undefined") {
-    // Main thread: resolve relative to current page
-    return new URL("./", document.baseURI || location.href).href;
-  }
-  // Worker: Resolve to the root origin to avoid fetching from /assets/
-  return new URL("/", self.location.href).href;
+export interface AssetPage { file: string; revision: string; bytes: number }
+interface AssetIndex {
+  version: number;
+  pages: AssetPage[];
+  entries: Record<string, [number, number, number]>;
 }
+interface EntryOutputs { string: string; arraybuffer: ArrayBuffer; blob: Blob }
+const baseUrl = () => typeof document !== 'undefined'
+  ? new URL('./', document.baseURI || location.href).href
+  : new URL('/', self.location.href).href;
+const catalogs = new Map<string, Promise<AssetCatalog>>();
 
-const BASE_URL = getBaseUrl();
-const ZIP_URLS: Record<string, string> = {
-  main: BASE_URL + "data.zip",
-  pixel_scenes: BASE_URL + "pixel_scenes.zip",
-  wang_tiles: BASE_URL + "wang_tiles.zip",
-};
-
-const zipPromises: Record<string, Promise<JSZip | null> | null> = {};
-const zips: Record<string, JSZip | null> = {};
-
-/** Archive I/O is optional. A denied/full cache must not discard a usable ZIP. */
-const isWorker = typeof document === "undefined";
-const REVISION_HEADER = "X-Archive-Revision";
-const CACHE_WAIT_MS = 1500;
-
-async function optionalCache<T>(run: () => Promise<T>): Promise<T | undefined> {
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      run(),
-      new Promise<never>((_, reject) => {
-        timeout = setTimeout(
-          () => reject(new Error("Archive cache timed out")),
-          CACHE_WAIT_MS,
-        );
-      }),
-    ]);
-  } catch (error) {
-    console.warn("[DataArchive] Optional archive cache unavailable:", error);
-    return undefined;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-async function openCache(key: string): Promise<Cache | undefined> {
-  if (typeof caches === "undefined") return undefined;
-  return optionalCache(() => caches.open(`noitamap-archive-${key}-v2`));
-}
-
-async function digest(bytes: ArrayBuffer): Promise<string | undefined> {
-  if (!globalThis.crypto?.subtle) return undefined;
-  return Array.from(
-    new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
-    (value) => value.toString(16).padStart(2, "0"),
-  ).join("");
-}
-
-async function cachedBytes(
-  cache: Cache | undefined,
-  url: string,
-  revision: string,
-) {
-  if (!cache) return undefined;
-  return optionalCache(async () => {
-    const response = await cache.match(url);
-    if (!response?.ok) return undefined;
-    const storedRevision = response.headers.get(REVISION_HEADER);
-    if (storedRevision && storedRevision !== revision) return undefined;
-    const bytes = await response.arrayBuffer();
-    // Accept old v2 entries only after verifying their actual content once.
-    // This preserves existing downloads and the worker's cache-only path.
-    if (storedRevision === revision || (await digest(bytes)) === revision)
-      return { bytes, legacy: !storedRevision };
-    return undefined;
+export async function readAssetPage(page: AssetPage, base = baseUrl()): Promise<Blob> {
+  const url = new URL(page.file, base).href;
+  const response = await immutableTelescopeAssets.fetch(`game-assets/${page.revision}`, page.revision, async () => {
+    const result = await fetch(url, { cache: 'force-cache', signal: AbortSignal.timeout(30_000) });
+    if (!result.ok) throw new Error(`Game asset unavailable: ${page.file} (HTTP ${result.status})`);
+    const bytes = await result.arrayBuffer();
+    if (bytes.byteLength !== page.bytes) throw new Error(`Truncated game asset: ${page.file}`);
+    if (globalThis.crypto?.subtle) {
+      const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)),
+        value => value.toString(16).padStart(2, '0')).join('');
+      if (digest !== page.revision) throw new Error(`Game asset content mismatch: ${page.file}`);
+    }
+    return new Response(bytes, { headers: { 'Content-Type': page.file.endsWith('.json') ? 'application/json' : 'application/octet-stream' } });
   });
+  if (!response.ok) throw new Error(`Game asset unavailable: ${page.file}`);
+  const blob = await response.blob();
+  if (blob.size !== page.bytes) throw new Error(`Invalid cached game asset: ${page.file}`);
+  return blob;
 }
 
-async function saveArchive(
-  cache: Cache | undefined,
-  url: string,
-  bytes: ArrayBuffer,
-  revision: string,
-) {
-  if (!cache) return;
-  await optionalCache(() =>
-    cache.put(
-      url,
-      new Response(bytes, {
-        headers: {
-          "Content-Type": "application/zip",
-          "Content-Length": String(bytes.byteLength),
-          [REVISION_HEADER]: revision,
-        },
-      }),
-    ),
-  );
-}
-
-export function getZip(
-  key: string = "main",
-  silent: boolean = false,
-): Promise<JSZip | null> {
-  if (zips[key]) return Promise.resolve(zips[key]);
-  if (zipPromises[key]) return zipPromises[key];
-  const url = ZIP_URLS[key],
-    revision = archiveRevisions[key];
-  if (!url || !revision) {
-    console.error(`[DataArchive] Unknown zip key: ${key}`);
-    return Promise.resolve(null);
+class AssetEntry {
+  readonly dir = false;
+  constructor(readonly name: string, private page: AssetPage, private offset: number,
+    private length: number, private base: string) {}
+  async async<T extends keyof EntryOutputs>(type: T): Promise<EntryOutputs[T]> {
+    const page = await readAssetPage(this.page, this.base);
+    const mime = this.name.endsWith('.png') ? 'image/png' : this.name.endsWith('.json') ? 'application/json' : 'application/octet-stream';
+    const blob = page.slice(this.offset, this.offset + this.length, mime);
+    return (type === 'blob' ? blob : type === 'string' ? await blob.text() : await blob.arrayBuffer()) as EntryOutputs[T];
   }
-  const pending = (
-    isWorker
-      ? loadZipWorker(key, url, revision)
-      : loadZipMain(key, url, revision, silent)
-  ).then((zip) => {
-    if (zip) zips[key] = zip;
-    else if (zipPromises[key] === pending) zipPromises[key] = null;
-    return zip;
-  });
-  zipPromises[key] = pending;
+}
+export class AssetCatalog {
+  readonly files: Record<string, AssetEntry> = Object.create(null);
+  constructor(private index: AssetIndex, private base: string) {
+    if (index.version !== 1 || !Array.isArray(index.pages) || !index.entries)
+      throw new Error('Unsupported game asset index');
+    for (const [path, [pageId, offset, length]] of Object.entries(index.entries)) {
+      const page = index.pages[pageId];
+      if (!page || !Number.isSafeInteger(offset) || !Number.isSafeInteger(length)
+        || offset < 0 || length < 0 || offset + length > page.bytes)
+        throw new Error(`Invalid game asset range: ${path}`);
+      this.files[path] = new AssetEntry(path, page, offset, length, base);
+    }
+  }
+  file(path: string): AssetEntry | null { return this.files[path] ?? null; }
+  forEach(callback: (path: string, entry: AssetEntry) => void): void {
+    for (const [path, entry] of Object.entries(this.files)) callback(path, entry);
+  }
+}
+
+/** Compatibility name; returns an index of immutable pages, never a ZIP. */
+export function getZip(key = 'main', silent = false): Promise<AssetCatalog> {
+  const base = baseUrl(), identity = `${base}/${key}`;
+  let pending = catalogs.get(identity);
+  if (!pending) {
+    pending = loadCatalog(key, base).then(catalog => {
+      if (key === 'main' && !silent && typeof window !== 'undefined' && typeof CustomEvent !== 'undefined')
+        window.dispatchEvent(new CustomEvent('dataZipProgress', { detail: { loaded: 1, total: 1, percentage: 100 } }));
+      return catalog;
+    }).catch(error => { catalogs.delete(identity); throw error; });
+    catalogs.set(identity, pending);
+  }
   return pending;
 }
-
-/** Download, validate and persist an archive from the asset-preparation worker.
- * Normal generation workers remain cache-only. Never use this on the UI
- * thread: ZIP directory parsing and joining download chunks can be expensive. */
-export async function prepareDataArchive(key: string, baseUrl: string): Promise<void> {
-  if (!isWorker) throw new Error("Archive preparation requires a worker");
-  const revision = archiveRevisions[key];
-  const filename = key === "main" ? "data.zip" : `${key}.zip`;
-  if (!ZIP_URLS[key] || !revision) throw new Error(`Unknown archive: ${key}`);
-  const zip = await loadZipMain(key, new URL(filename, baseUrl).href, revision, true);
-  if (!zip) throw new Error(`Cannot prepare ${key} archive`);
-  // Do not retain duplicate parsed archives in this temporary worker. Their
-  // validated compressed bytes are shared through the existing persistent cache.
+async function loadCatalog(key: string, base: string): Promise<AssetCatalog> {
+  const manifest = assetManifests[key];
+  if (!manifest) throw new Error(`Unknown game asset group: ${key}`);
+  const blob = await readAssetPage(manifest, base);
+  return new AssetCatalog(JSON.parse(await blob.text()), base);
 }
-
-/** Worker startup uses the current archive that main-thread readiness saved. */
-async function loadZipWorker(
-  key: string,
-  url: string,
-  revision: string,
-): Promise<JSZip | null> {
-  try {
-    const cached = await cachedBytes(await openCache(key), url, revision);
-    if (!cached) throw new Error(`${key}.zip current revision is not cached`);
-    return await JSZip.loadAsync(cached.bytes);
-  } catch (error) {
-    console.warn(`[DataArchive/Worker] Cannot load ${key}.zip:`, error);
-    return null;
-  }
-}
-
-async function loadZipMain(
-  key: string,
-  url: string,
-  revision: string,
-  silent: boolean,
-): Promise<JSZip | null> {
-  const progress = (loaded: number, total: number) => {
-    if (
-      key === "main" &&
-      !silent &&
-      typeof window !== "undefined" &&
-      typeof CustomEvent !== "undefined"
-    )
-      window.dispatchEvent(
-        new CustomEvent("dataZipProgress", {
-          detail: {
-            loaded,
-            total,
-            percentage: Math.min(100, Math.round((loaded / total) * 100)),
-          },
-        }),
-      );
-  };
-  const run = async (): Promise<JSZip | null> => {
-    try {
-      const cache = await openCache(key);
-      const cached = await cachedBytes(cache, url, revision);
-      if (cached) {
-        try {
-          const zip = await JSZip.loadAsync(cached.bytes);
-          // Add the content revision to legacy entries for later zero-hash hits.
-          if (cached.legacy)
-            await saveArchive(cache, url, cached.bytes, revision);
-          progress(100, 100);
-          return zip;
-        } catch (error) {
-          console.warn(
-            `[DataArchive] Cached ${key}.zip is damaged; downloading again:`,
-            error,
-          );
-          if (cache) await optionalCache(() => cache.delete(url));
-        }
-      }
-      const versioned = new URL(url);
-      versioned.searchParams.set("v", revision);
-      const response = await fetch(versioned.href);
-      if (
-        !response.ok ||
-        response.headers.get("content-type")?.includes("text/html")
-      )
-        throw new Error(`${key}.zip download failed (HTTP ${response.status})`);
-      const length = Number(response.headers.get("content-length"));
-      const total = Number.isFinite(length) && length > 0 ? length : 0;
-      const chunks: Uint8Array[] = [];
-      let loaded = 0;
-      if (response.body) {
-        const reader = response.body.getReader();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value);
-          loaded += value.length;
-          progress(loaded, total || Math.max(loaded, 25000000));
-        }
-      } else {
-        const bytes = new Uint8Array(await response.arrayBuffer());
-        chunks.push(bytes);
-        loaded = bytes.length;
-      }
-      if (total && loaded < total)
-        throw new Error(
-          `Download truncated: expected ${total} bytes, received ${loaded}`,
-        );
-      const bytes = new Uint8Array(loaded);
-      let offset = 0;
-      for (const chunk of chunks) {
-        bytes.set(chunk, offset);
-        offset += chunk.length;
-      }
-      const actualRevision = await digest(bytes.buffer);
-      if (actualRevision && actualRevision !== revision)
-        throw new Error(
-          `${key}.zip does not match this build's archive revision`,
-        );
-      const zip = await JSZip.loadAsync(bytes.buffer);
-      // Only verified bytes enter the persistent cache; insecure contexts may
-      // lack both WebCrypto and CacheStorage but can still use the downloaded ZIP.
-      if (actualRevision) await saveArchive(cache, url, bytes.buffer, revision);
-      progress(100, 100);
-      return zip;
-    } catch (error) {
-      console.error(`[DataArchive] Cannot load ${key}.zip:`, error);
-      return null;
-    }
-  };
-  if (typeof navigator !== "undefined" && navigator.locks?.request) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), CACHE_WAIT_MS);
-    try {
-      return await navigator.locks.request(
-        `zip-fetch-${key}`,
-        { signal: controller.signal },
-        () => {
-          // Bound acquisition only. The archive download may legitimately take
-          // longer, and the lock must remain held until its cache write finishes.
-          clearTimeout(timer);
-          return run();
-        },
-      );
-    } catch (error) {
-      console.warn("[DataArchive] Archive lock unavailable:", error);
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-  return run();
+/** Prepare shared immutable pages without parsing ZIPs or decoding images. */
+export async function prepareDataArchive(key: string, base: string): Promise<void> {
+  // Images are warmed through their shared source atlas. Read the catalog
+  // here; text/binary pages are fetched only when a consumer needs them.
+  await loadCatalog(key, base);
 }
 
 /** Legacy alias */
-export async function getDataZip(): Promise<JSZip | null> {
+export async function getDataZip(): Promise<AssetCatalog> {
   return getZip("main", false);
 }
 
 /**
- * Read a text file from one of the zip archives.
+ * Read a text file from the versioned asset pages.
  */
 export async function readText(path: string, zipKey: string = "main", silent: boolean = false): Promise<string | null> {
   const z = await getZip(zipKey, silent);
@@ -302,7 +118,7 @@ export async function readText(path: string, zipKey: string = "main", silent: bo
 }
 
 /**
- * Read a binary file from one of the zip archives as a Blob.
+ * Read a binary file from the versioned asset pages as a Blob.
  */
 export async function readBlob(
   path: string,
@@ -327,7 +143,7 @@ export async function readBlob(
 }
 
 /**
- * Read an image from one of the zip archives as an ImageBitmap.
+ * Read an image from the versioned asset pages as an ImageBitmap.
  */
 export async function readImage(
   path: string,
@@ -340,7 +156,7 @@ export async function readImage(
 }
 
 /**
- * Read a PNG from one of the zip archives and return it as ImageData.
+ * Read a PNG from the versioned asset pages and return it as ImageData.
  */
 export async function readImageData(path: string, zipKey: string = "main"): Promise<ImageData | null> {
   const blob = await readBlob(path, "image/png", zipKey);
@@ -361,7 +177,7 @@ export async function readImageData(path: string, zipKey: string = "main"): Prom
 }
 
 /**
- * Read a PNG from one of the zip archives and return it as an OffscreenCanvas (worker safe) or HTMLCanvasElement.
+ * Read a PNG from the versioned asset pages and return it as an OffscreenCanvas (worker safe) or HTMLCanvasElement.
  */
 export async function readCanvas(path: string, zipKey: string = "main"): Promise<HTMLCanvasElement | OffscreenCanvas | null> {
   const blob = await readBlob(path, "image/png", zipKey);
@@ -384,7 +200,7 @@ export async function readCanvas(path: string, zipKey: string = "main"): Promise
 }
 
 /**
- * List all entries in a zip archive matching a prefix.
+ * List all entries in the asset index matching a prefix.
  */
 export async function listEntries(prefix: string, zipKey: string = "main"): Promise<string[]> {
   const z = await getZip(zipKey);

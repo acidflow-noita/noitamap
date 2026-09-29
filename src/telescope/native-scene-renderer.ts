@@ -1,7 +1,8 @@
+import { getMapMemoryBudget } from '../map-memory-budget';
 import type { NativeSceneEncoded, NativeSceneRenderInput } from './native-scene-worker-core';
 import type { ScenePixels } from './terrain-scenes';
 
-interface NativeSceneBitmap { blob: Blob; width: number; height: number }
+interface NativeSceneBitmap { blob?: Blob; pixels?: Uint8ClampedArray<ArrayBuffer>; width: number; height: number }
 type Job = {
   id: number;
   input: NativeSceneRenderInput;
@@ -19,6 +20,8 @@ export function clearNativeSceneRenderers(): void {
  * Retiring a generation stops its synchronous CPU work by terminating the worker. */
 export class NativeSceneRenderer {
   private worker?: Worker;
+  private workerSource?: NativeSceneRenderInput['source'];
+  private workerBackdrop?: NativeSceneRenderInput['backdrop'];
   private unavailable = false;
   private disposed = false;
   private nextId = 0;
@@ -37,15 +40,19 @@ export class NativeSceneRenderer {
     });
   }
   private stopWorker() {
+    this.workerSource = undefined; this.workerBackdrop = undefined;
     if (this.worker) { this.worker.onmessage = this.worker.onerror = null; this.worker.onmessageerror = null; this.worker.terminate(); this.worker = undefined; }
   }
   private finish(job: Job, result?: NativeSceneEncoded, error?: unknown) {
     if (this.active !== job) return;
     this.active = undefined;
     if (error !== undefined) job.reject(error);
-    else if (!result || !(result.png instanceof Uint8Array) || result.width !== job.input.scene.width || result.height !== job.input.scene.height)
+    else if (!result || (job.input.output === 'pixels'
+      ? !(result.pixels instanceof Uint8ClampedArray) || result.pixels.byteLength !== result.width * result.height * 4
+      : !(result.png instanceof Uint8Array)) || result.width !== job.input.scene.width || result.height !== job.input.scene.height)
       job.reject(new Error('Invalid native scene worker response'));
-    else job.resolve({ blob: new Blob([result.png as unknown as BlobPart], { type: 'image/png' }), width: result.width, height: result.height });
+    else job.resolve({ blob: result.png ? new Blob([result.png as unknown as BlobPart], { type: 'image/png' }) : undefined,
+      pixels: result.pixels, width: result.width, height: result.height });
     this.pump();
   }
   private onMain(job: Job): Promise<void> {
@@ -101,10 +108,27 @@ export class NativeSceneRenderer {
         return { ...image, data };
       };
       const { source, backdrop } = job.input;
-      this.worker.postMessage({ id: job.id, input: { ...job.input, source: {
-        ...copy(source), visualArt: source.visualArt ? copy(source.visualArt) : source.visualArt,
-        backgroundArt: source.backgroundArt ? copy(source.backgroundArt) : source.backgroundArt,
-      }, backdrop: backdrop ? copy(backdrop) : undefined } }, transfer);
+      const previous = this.workerSource;
+      const reuseSource = !!previous && previous.data === source.data
+        && previous.width === source.width && previous.height === source.height
+        && previous.biome === source.biome && previous.skipEdgeTextures === source.skipEdgeTextures
+        && previous.visualArt === source.visualArt && previous.backgroundArt === source.backgroundArt;
+      const reuseBackdrop = !!backdrop && this.workerBackdrop === backdrop;
+      const limit = getMapMemoryBudget().sceneCacheBytes;
+      const retainSource = source.data.byteLength + (source.visualArt?.data.byteLength ?? 0)
+        + (source.backgroundArt?.data.byteLength ?? 0) <= limit;
+      const retainBackdrop = !!backdrop && backdrop.data.byteLength <= limit;
+      const pixels = job.input.pixels ? new Uint8ClampedArray(job.input.pixels) : undefined;
+      if (pixels) transfer.push(pixels.buffer);
+      this.worker.postMessage({ id: job.id, reuseSource, reuseBackdrop, retainSource, retainBackdrop,
+        input: { ...job.input, pixels, source: reuseSource ? undefined : {
+          ...copy(source), visualArt: source.visualArt ? copy(source.visualArt) : source.visualArt,
+          backgroundArt: source.backgroundArt ? copy(source.backgroundArt) : source.backgroundArt,
+        }, backdrop: reuseBackdrop ? undefined : backdrop ? copy(backdrop) : undefined } }, transfer);
+      // Only immutable pixels are shared. Scene placement and world size are
+      // sent on every request, preserving material phase and biome variants.
+      this.workerSource = retainSource ? source : undefined;
+      this.workerBackdrop = retainBackdrop ? backdrop : undefined;
     } catch (error) { this.workerFailed(job, error); }
   }
   dispose(reason: unknown = new DOMException('Scene renderer disposed', 'AbortError')): void {

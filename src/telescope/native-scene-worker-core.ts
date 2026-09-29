@@ -8,15 +8,19 @@ export interface NativeSceneRenderInput {
   source: TerrainSceneSource;
   worldSize: number;
   backdrop?: TerrainTexture;
+  output?: 'pixels';
+  /** Already composed live pixels, supplied only for deferred persistence. */
+  pixels?: Uint8ClampedArray<ArrayBuffer>;
 }
 export interface NativeSceneEncoded {
-  png: Uint8Array<ArrayBuffer>;
+  png?: Uint8Array<ArrayBuffer>;
+  pixels?: Uint8ClampedArray<ArrayBuffer>;
   width: number;
   height: number;
 }
 
-/** Pure material composition and PNG encoding. The worker owns every large
- * intermediate; no canvas, GPU context or browser image decoder is needed. */
+/** Live composition returns pixels directly. PNG encoding is reserved for
+ * persistence, after the visible scene pages have finished. */
 export function createNativeSceneWorkerRenderer(getPainter: () => Promise<ScenePainter> = createTerrainScenePainter) {
   let painter: Promise<ScenePainter> | undefined;
   return async (input: NativeSceneRenderInput): Promise<NativeSceneEncoded> => {
@@ -30,8 +34,11 @@ export function createNativeSceneWorkerRenderer(getPainter: () => Promise<SceneP
       !Number.isSafeInteger(image.width) || !Number.isSafeInteger(image.height)
       || image.width < 1 || image.height < 1 || image.data.byteLength !== image.width * image.height * 4
     )) throw new Error('Invalid native scene artwork');
-    const paint = await (painter ??= getPainter().catch(error => { painter = undefined; throw error; }));
-    const pixels = renderNativeSceneBitmap(scene, source, paint, worldSize, backdrop);
+    if (input.pixels && input.pixels.byteLength !== scene.width * scene.height * 4)
+      throw new Error('Invalid composed scene pixels');
+    const pixels = input.pixels ?? renderNativeSceneBitmap(scene, source,
+      await (painter ??= getPainter().catch(error => { painter = undefined; throw error; })), worldSize, backdrop);
+    if (input.output === 'pixels') return { pixels, width: scene.width, height: scene.height };
     const png = encode({ data: pixels, width: scene.width, height: scene.height, channels: 4 }) as Uint8Array<ArrayBuffer>;
     return { png, width: scene.width, height: scene.height };
   };

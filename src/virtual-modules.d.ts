@@ -21,6 +21,7 @@ declare module 'virtual:instant-terrain-shaders' {
   export const TERRAIN_VS: string;
 }
 declare module "virtual:noitamap-data-archives" {
-  export const archiveRevisions: Record<string, string>;
+  export const assetManifests: Record<string, { file: string; revision: string; bytes: number }>;
+  export const sceneAtlas: { file: string; revision: string; bytes: number };
   export const biomeBackgroundRevisions: Record<string, string>;
 }

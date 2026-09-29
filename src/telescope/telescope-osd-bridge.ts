@@ -12,6 +12,7 @@ import { indexScenePngs, type ScenePngIndex } from "./scene-png-index";
 import { sceneRenderKey } from "./scene-render-key";
 import { NativeSceneRenderer, clearNativeSceneRenderers } from "./native-scene-renderer";
 import { createScenePreparation } from "./scene-preparation";
+import { readSceneAtlasPixels } from './scene-source-atlas';
 import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate } from "./terrain-policy";
 import { loadTelescopeModules } from "./load-telescope";
 import { isGLTerrainEnabled, isInstantTerrainEnabled, useRenderPerfGeneration } from "../renderer_settings";
@@ -61,7 +62,7 @@ import { decodePngToRgba, rgbaToPngBlobUrl, rgbaToPngBlob } from './png-decode';
 import {
   getCachedBiomeRender,
   cacheBiomeRender,
-  getCachedSceneBitmap,
+  createSceneBitmapReader,
   cacheSceneBitmap,
   createSceneBitmapWriteQueue,
   getCachedSceneBitmapKeys,
@@ -2119,7 +2120,7 @@ async function compositeSceneBitmap(
  * and background files declared by Telescope are artwork; a same-named raw
  * PNG must never overwrite the material atlas result. */
 async function compositeNativeSceneBitmap(scene: PixelScene, worldSize: number,
-  renderer: NativeSceneRenderer, retainBitmap = true) {
+  renderer: NativeSceneRenderer, retainBitmap = true, live = false, pixels?: Uint8ClampedArray<ArrayBuffer>) {
   const raw = await ensurePixelSceneData(scene.key);
   if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement))
     throw new Error(`Missing native scene material data: ${scene.key}`);
@@ -2136,7 +2137,7 @@ async function compositeNativeSceneBitmap(scene: PixelScene, worldSize: number,
     const path = backgroundPath.replace(/^data\/backgrounds\//, 'data/');
     const zip = await getDataZip(), file = zip?.file(path);
     if (!file) throw new Error(`Missing native scene background: ${path}`);
-    backgroundArt = decodePngToRgba(await file.async('arraybuffer'));
+    backgroundArt = await readSceneAtlasPixels('main', path) ?? decodePngToRgba(await file.async('arraybuffer'));
   }
   const source: TerrainSceneSource = {
     data: (override?.mid ?? pixelSceneConfig.layers.mid) ? raw.imgElement : new Uint8Array(raw.imgElement.length),
@@ -2146,8 +2147,8 @@ async function compositeNativeSceneBitmap(scene: PixelScene, worldSize: number,
     backgroundArt,
   };
   const backdrop = names.map(name => backgrounds.get(name)).find(Boolean);
-  const composed = await renderer.render({ scene, source, worldSize, backdrop });
-  const bitmap = retainBitmap ? await createImageBitmap(composed.blob) : null;
+  const composed = await renderer.render({ scene, source, worldSize, backdrop, output: live ? 'pixels' : undefined, pixels });
+  const bitmap = retainBitmap ? await createImageBitmap(composed.blob!) : null;
   return { ...composed, bitmap, kind: 'composite' as const };
 }
 
@@ -2274,7 +2275,7 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
       const path = raw.backgroundArt.replace(/^data\/backgrounds\//, 'data/');
       const file = zip?.file(path);
       if (!file) throw new Error(`Missing scene background: ${path}`);
-      backgroundArt = await decodePngToRgba(await file.async('arraybuffer'));
+      backgroundArt = await readSceneAtlasPixels('main', path) ?? decodePngToRgba(await file.async('arraybuffer'));
     }
     sources[scene.key] = {
       biome: raw.biome,
@@ -2332,7 +2333,7 @@ async function buildSceneBitmaps(
 ): Promise<{
   validScenes: PixelScene[];
   bitmapByKey: Map<string, ImageBitmap>;
-  blobByKey?: Map<string, { blob: Blob; width: number; height: number }>;
+  blobByKey?: Map<string, import('./scene-bitmap-provider').SceneBitmapData>;
   preparation?: ReturnType<typeof createScenePreparation>;
 } | null> {
   const validScenes = renderableScenes(result);
@@ -2362,14 +2363,15 @@ async function buildSceneBitmaps(
     const concurrency = getSceneConcurrency();
     const renderers = Array.from({ length: concurrency }, () => ({ renderer: new NativeSceneRenderer(), active: 0 }));
     const writes = createSceneBitmapWriteQueue(getMapMemoryBudget().sceneCacheBytes);
-    const cachedKeys = getCachedSceneBitmapKeys();
+    const cachedScenes = createSceneBitmapReader(keyArr.map(([key, scene]) =>
+      ({ key, bytes: scene.width * scene.height * 4 })), getMapMemoryBudget().sceneCacheBytes);
     let cachedCount = 0, renderedCount = 0;
-    const preparation = createScenePreparation(keyArr.map(([key]) => key), async key => {
+    const preparation = createScenePreparation(keyArr.map(([key]) => key), async (key, persist, existing) => {
       const check = () => {
         if (currentGenerationId !== generationId) throw new DOMException('Obsolete scene generation', 'AbortError');
       };
       check();
-      const cached = (await cachedKeys).has(key) ? await getCachedSceneBitmap(key) : null;
+      const cached = existing?.pixels ? null : await cachedScenes.get(key);
       check();
       if (cached) { cachedCount++; return cached; }
       const scene = uniqueKeys.get(key)!;
@@ -2378,19 +2380,20 @@ async function buildSceneBitmaps(
       const image = await (async () => {
         try {
           return usesNativeSceneBitmap(scene)
-            ? await compositeNativeSceneBitmap(scene, result.worldSize, slot.renderer, false)
+            ? await compositeNativeSceneBitmap(scene, result.worldSize, slot.renderer, false, !persist, existing?.pixels)
             : await compositeSceneBitmap(scene.key, scene, await getScenePngIndex(), false);
         } finally { slot.active--; }
       })();
       check();
-      if (!image?.blob) return undefined;
-      writes.put(key, image.blob, image.width, image.height);
+      if (!image) return undefined;
+      if (image.blob) writes.put(key, image.blob, image.width, image.height);
       renderedCount++;
-      return { blob: image.blob, width: image.width, height: image.height };
+      return { blob: image.blob ?? undefined, pixels: 'pixels' in image ? image.pixels : undefined, width: image.width, height: image.height };
     }, () => { for (const slot of renderers) slot.renderer.dispose(); }, { concurrency, maxBytes: getMapMemoryBudget().sceneCacheBytes * 2,
+      deferredPersistence: true, maxRetainedBytes: getMapMemoryBudget().sceneCacheBytes,
       bytesForKey: key => { const scene = uniqueKeys.get(key)!; return scene.width * scene.height * 16; },
     });
-    preparation.signal.addEventListener('abort', () => writes.dispose(), { once: true });
+    preparation.signal.addEventListener('abort', () => { writes.dispose(); cachedScenes.dispose(); }, { once: true });
     preparation.complete = preparation.complete.then(() => writes.flush());
     void preparation.complete.then(() => console.info(
       `[Native scenes] Finished ${keyArr.length} scene images in ${((performance.now() - started) / 1000).toFixed(2)}s`,
@@ -2525,6 +2528,10 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     items, bitmapByKey, blobByKey, generationId,
     loadBitmap: preparation?.loadBitmap, disposeBitmaps: preparation?.dispose,
     redraw: () => (viewer.viewer ?? viewer).forceRedraw(),
+    onProgress: (completed, total) => {
+      if (currentGenerationId === generationId)
+        window.dispatchEvent(new CustomEvent('sceneRenderingProgress', { detail: { completed, total } }));
+    },
     viewer,
     directViewport: (viewer.viewer ?? viewer).drawer?.getType?.() === 'canvas',
   });

@@ -5,6 +5,7 @@ import { provenance as terrainRevision } from 'virtual:noitamap-telescope-asset-
 import spritesheetRevision from '../data/spritesheet-revision.json';
 import { fullPixelDataAssets } from './full-pixel-data';
 import { immutableTelescopeAssets, revisionedAssetUrl } from './immutable-assets';
+import { prepareSceneAtlas } from './scene-source-atlas';
 import type { DailyAssetReply, DailyAssetRequest } from './daily-asset-worker-protocol';
 
 /** Deliberately no Telescope/DOM/OSD/GPU imports. Optional daily preparation
@@ -38,10 +39,11 @@ export async function prepareDailyAssets(
     report({ type: 'stage', stage: name, state: 'finished', elapsedMs: performance.now() - from, failures: failures - initialFailures });
   };
 
-  // Serial downloads bound memory and network contention with visible DZI
-  // tiles. ZIP assembly/hash/validation all execute on this worker.
+  // Page downloads are bounded and shared with generation workers. Static
+  // files retain the same content URLs across seeds and unchanged builds.
   for (const key of ['main', 'wang_tiles', 'pixel_scenes'])
-    await stage(`${key} archive`, () => prepare(key, () => prepareDataArchive(key, request.baseUrl)));
+    await stage(`${key} asset pages`, () => prepare(key, () => prepareDataArchive(key, request.baseUrl)));
+  await stage('scene source atlas', () => prepare('scene source atlas', prepareSceneAtlas));
 
   const fork = request.fullPixels ? 'full' : 'approx';
   await stage('compressed scene inputs', () => prepare(`prepared-scenes/${fork}`, () =>

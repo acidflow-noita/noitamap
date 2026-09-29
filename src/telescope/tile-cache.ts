@@ -427,6 +427,54 @@ export async function getCachedSceneBitmapsBulk(keys: string[]): Promise<Map<str
   return result;
 }
 
+/** Native placements must not turn a warm seed into thousands of separate
+ * disk transactions. Read nearby source keys together, with bounded retained
+ * blobs and a conservative uncompressed byte limit on each batch. */
+export function createSceneBitmapReader(
+  entries: readonly { key: string; bytes: number }[], maxBytes: number,
+  read = getCachedSceneBitmapsBulk,
+) {
+  const batches: string[][] = [], batchFor = new Map<string, number>();
+  let batch: string[] = [], estimated = 0;
+  for (const entry of entries) {
+    if (batch.length && (batch.length >= 64 || estimated + entry.bytes > maxBytes)) {
+      batches.push(batch); batch = []; estimated = 0;
+    }
+    batchFor.set(entry.key, batches.length); batch.push(entry.key); estimated += entry.bytes;
+  }
+  if (batch.length) batches.push(batch);
+  const retained = new Map<number, { images: Map<string, CachedSceneBitmap>; bytes: number }>();
+  const pending = new Map<number, Promise<Map<string, CachedSceneBitmap>>>();
+  let bytes = 0, disposed = false;
+  return {
+    async get(key: string): Promise<CachedSceneBitmap | null> {
+      if (disposed) return null;
+      const id = batchFor.get(key);
+      if (id === undefined) return null;
+      const hit = retained.get(id);
+      if (hit) { retained.delete(id); retained.set(id, hit); return hit.images.get(key) ?? null; }
+      let loading = pending.get(id);
+      if (!loading) {
+        loading = read(batches[id]).then(images => {
+          const size = [...images.values()].reduce((sum, image) => sum + image.blob.size, 0);
+          if (!disposed && size <= maxBytes) {
+            while (retained.size && (bytes + size > maxBytes || retained.size >= 16)) {
+              const oldest = retained.keys().next().value!;
+              bytes -= retained.get(oldest)!.bytes; retained.delete(oldest);
+            }
+            retained.set(id, { images, bytes: size }); bytes += size;
+          }
+          return images;
+        }).finally(() => pending.delete(id));
+        pending.set(id, loading);
+      }
+      const images = await loading;
+      return disposed ? null : images.get(key) ?? null;
+    },
+    dispose() { disposed = true; retained.clear(); bytes = 0; },
+  };
+}
+
 /**
  * Bulk fetch every cached biome render for a generation cacheKey in one IDB
  * transaction. Returns a map keyed by "pw,pvt".

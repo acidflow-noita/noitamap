@@ -1,19 +1,20 @@
-export interface CompressedSceneBitmap {
-  blob: Blob;
+export interface SceneBitmapData {
+  blob?: Blob;
+  pixels?: Uint8ClampedArray<ArrayBuffer>;
   width: number;
   height: number;
 }
 
 type Entry = { bitmap: ImageBitmap; bytes: number };
-export type SceneBitmapLoader = (key: string) => Promise<CompressedSceneBitmap | undefined>;
+export type SceneBitmapLoader = (key: string) => Promise<SceneBitmapData | undefined>;
 
-/** Compressed scene artwork is cheap to retain; decoded full-world artwork is
- * not. Tile draws lease a cropped bitmap at the tile's required density. A
+/** Scenes arrive as live pixels or previously persisted PNGs. Tile draws lease
+ * a bitmap at the tile's required density without encoding live pixels. A
  * serial decode/draw queue bounds both decode peaks and ownership, even when
  * OSD requests several coarse tiles simultaneously. Native detail is never
  * downsampled: close views decode only their intersecting original pixels. */
 export function createSceneBitmapProvider(
-  scenes: Map<string, CompressedSceneBitmap>,
+  scenes: Map<string, SceneBitmapData>,
   maxBytes: number,
   loadBitmap?: SceneBitmapLoader,
 ) {
@@ -51,7 +52,7 @@ export function createSceneBitmapProvider(
           loads++; loading++;
           try { scene = await loadBitmap(key); } finally { loading--; }
           check(() => false);
-          if (scene) scenes.set(key, scene);
+          // The loader owns retention and its raw-pixel budget.
           check(cancelled);
         }
         if (!scene) return;
@@ -64,9 +65,14 @@ export function createSceneBitmapProvider(
         if (sw <= 0 || sh <= 0) return;
         // Keep original pixels whenever the crop fits. Besides reuse across
         // zoom levels, this avoids double nearest-neighbour sampling of artwork.
-        const needsReducedBitmap = sw * sh * 4 > maxBytes;
-        let width = needsReducedBitmap ? Math.max(1, Math.ceil(sw * Math.min(1, rx))) : sw;
-        let height = needsReducedBitmap ? Math.max(1, Math.ceil(sh * Math.min(1, ry))) : sh;
+        // Adjacent pages often intersect the same room/pipe. Decode modest
+        // images once rather than decompressing the entire PNG for every crop.
+        const whole = scene.width * scene.height * 4 <= maxBytes / 4;
+        const decodeX = whole ? 0 : sx, decodeY = whole ? 0 : sy;
+        const decodeWidth = whole ? scene.width : sw, decodeHeight = whole ? scene.height : sh;
+        const needsReducedBitmap = decodeWidth * decodeHeight * 4 > maxBytes;
+        let width = needsReducedBitmap ? Math.max(1, Math.ceil(decodeWidth * Math.min(1, rx))) : decodeWidth;
+        let height = needsReducedBitmap ? Math.max(1, Math.ceil(decodeHeight * Math.min(1, ry))) : decodeHeight;
         // Normally at most a tile plus rounding. Keep custom small budgets safe
         // as well; this limits presentation density, never persistent native data.
         if (width * height * 4 > maxBytes) {
@@ -79,8 +85,8 @@ export function createSceneBitmapProvider(
         }
         // Unscaled source pixels are identical regardless of how their next
         // draw is filtered. Share that decoded crop across zoom changes.
-        const quality = width === sw && height === sh || !context.imageSmoothingEnabled ? 'pixelated' : 'high';
-        const requestKey = JSON.stringify([key, sx, sy, sw, sh, width, height, quality]);
+        const quality = width === decodeWidth && height === decodeHeight || !context.imageSmoothingEnabled ? 'pixelated' : 'high';
+        const requestKey = JSON.stringify([key, decodeX, decodeY, decodeWidth, decodeHeight, width, height, quality]);
         let entry = cache.get(requestKey);
         if (entry) {
           hits++;
@@ -92,7 +98,9 @@ export function createSceneBitmapProvider(
           while (bytes + expectedBytes > maxBytes) {
             remove(cache.keys().next().value!); evictions++;
           }
-          const bitmap = await createImageBitmap(scene.blob, sx, sy, sw, sh,
+          const input = scene.pixels ? new ImageData(scene.pixels, scene.width, scene.height) : scene.blob;
+          if (!input) throw new Error('Missing scene pixels');
+          const bitmap = await createImageBitmap(input, decodeX, decodeY, decodeWidth, decodeHeight,
             { resizeWidth: width, resizeHeight: height, resizeQuality: quality });
           decodes++;
           try {
@@ -104,7 +112,7 @@ export function createSceneBitmapProvider(
             peakBytes = Math.max(peakBytes, bytes);
           } catch (error) { bitmap.close(); throw error; }
         }
-        context.drawImage(entry.bitmap, 0, 0, width, height,
+        context.drawImage(entry.bitmap, whole ? sx : 0, whole ? sy : 0, whole ? sw : width, whole ? sh : height,
           dx + sx * rx, dy + sy * ry, sw * rx, sh * ry);
       }).finally(() => { pendingDraws--; });
       queue = job.catch(() => {});

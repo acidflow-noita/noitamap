@@ -1,5 +1,6 @@
 import { decodePngToRgba } from "./png-decode";
 import { BIOME_BACKGROUND_MAP } from "./terrain-policy";
+import { readSceneAtlasPixels } from './scene-source-atlas';
 export interface TerrainTexture {
   data: Uint8ClampedArray;
   width: number;
@@ -24,6 +25,8 @@ export async function loadTerrainBackgrounds(
     let texture = textures.get(path);
     if (!texture) {
       texture = (async () => {
+        const atlas = await readSceneAtlasPixels('main', path);
+        if (atlas) return atlas;
         const file = archive.file(path);
         if (!file) throw new Error(`Missing biome background: ${path}`);
         return decodePngToRgba(await file.async("arraybuffer"));

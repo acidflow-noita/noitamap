@@ -20,11 +20,23 @@ const render = createNativeSceneWorkerRenderer(async () => {
   return createTerrainScenePainter();
 });
 let queue = Promise.resolve();
-self.onmessage = ({ data }: MessageEvent<{ id: number; input: NativeSceneRenderInput }>) => {
+let cachedSource: NativeSceneRenderInput['source'] | undefined;
+let cachedBackdrop: NativeSceneRenderInput['backdrop'];
+self.onmessage = ({ data }: MessageEvent<{
+  id: number;
+  input: Omit<NativeSceneRenderInput, 'source'> & { source?: NativeSceneRenderInput['source'] };
+  reuseSource?: boolean; reuseBackdrop?: boolean;
+  retainSource?: boolean; retainBackdrop?: boolean;
+}>) => {
   const work = queue.then(async () => {
     try {
-      const result = await render(data.input);
-      self.postMessage({ id: data.id, ...result }, { transfer: [result.png.buffer] });
+      const source = data.reuseSource ? cachedSource : data.input.source;
+      const backdrop = data.reuseBackdrop ? cachedBackdrop : data.input.backdrop;
+      if (!source || (data.reuseBackdrop && !backdrop)) throw new Error('Missing retained native scene input');
+      cachedSource = data.retainSource ? source : undefined;
+      cachedBackdrop = data.retainBackdrop ? backdrop : undefined;
+      const result = await render({ ...data.input, source, backdrop });
+      self.postMessage({ id: data.id, ...result }, { transfer: [(result.pixels ?? result.png)!.buffer] });
     } catch (error) {
       self.postMessage({ id: data.id, error: error instanceof Error ? error.message : String(error) });
     }

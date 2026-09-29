@@ -38,6 +38,7 @@ export function createSceneViewportPages(options: {
   changed: () => void;
   ready: (ready: boolean) => void;
   failure: (error: unknown) => void;
+  progress?: (completed: number, total: number) => void;
 }) {
   const gutter = 4;
   if (!Number.isSafeInteger(options.maxBytes) || options.maxBytes < 1944)
@@ -58,7 +59,16 @@ export function createSceneViewportPages(options: {
     entries.delete(entry.key); bytes -= entry.bytes;
     entry.context.canvas.width = entry.context.canvas.height = 0;
   };
-  const updateReady = () => options.ready(wanted.every(page => entries.has(page.key)));
+  let lastProgress = '';
+  const updateReady = () => {
+    const completed = wanted.filter(page => entries.has(page.key)).length;
+    const progress = `${completed}/${wanted.length}`;
+    if (progress !== lastProgress) {
+      lastProgress = progress;
+      options.progress?.(completed, wanted.length);
+    }
+    options.ready(completed === wanted.length);
+  };
   const pump = () => {
     if (destroyed || active || failed) return;
     const page = wanted.find(page => !entries.has(page.key));

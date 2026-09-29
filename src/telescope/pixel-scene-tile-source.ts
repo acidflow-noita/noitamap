@@ -2,7 +2,7 @@ import Flatbush from "flatbush";
 import { copyTerrainContext, InstantTerrainCache } from "./instant-terrain-cache";
 import { getMapMemoryBudget, getSceneConcurrency } from '../map-memory-budget';
 import { drawViewportArt } from './viewport-art';
-import { createSceneBitmapProvider, type CompressedSceneBitmap, type SceneBitmapLoader } from './scene-bitmap-provider';
+import { createSceneBitmapProvider, type SceneBitmapData, type SceneBitmapLoader } from './scene-bitmap-provider';
 import { createSceneViewportPages } from './scene-viewport-pages';
 import { installViewportLayerDrawing } from './instant-terrain-viewport';
 
@@ -22,12 +22,13 @@ export interface SceneTileItem {
 export function createPixelSceneTileSource(options: {
   items: SceneTileItem[];
   bitmapByKey: Map<string, ImageBitmap>;
-  blobByKey?: Map<string, CompressedSceneBitmap>;
+  blobByKey?: Map<string, SceneBitmapData>;
   /** Produce exact artwork lazily, under the provider's bounded work queue. */
   loadBitmap?: SceneBitmapLoader;
   /** Retire the loader/worker before releasing this layer's bitmap ownership. */
   disposeBitmaps?: () => void;
   redraw?: () => void;
+  onProgress?: (completed: number, total: number) => void;
   /** Non-canvas drawers retain the ordinary asynchronous OSD tile path. */
   directViewport?: boolean;
   /** Own the drawing hook even when live GPU terrain is unavailable. */
@@ -37,7 +38,7 @@ export function createPixelSceneTileSource(options: {
   maxCacheBytes?: number;
 }) {
   const { items, bitmapByKey, generationId } = options;
-  const blobByKey = options.blobByKey ?? new Map<string, CompressedSceneBitmap>();
+  const blobByKey = options.blobByKey ?? new Map<string, SceneBitmapData>();
   const bitmaps = blobByKey.size || options.loadBitmap ? createSceneBitmapProvider(blobByKey,
     options.maxBitmapBytes ?? getMapMemoryBudget().sceneCacheBytes, options.loadBitmap) : undefined;
   if (!items.length) throw new Error("Cannot tile an empty scene layer");
@@ -73,6 +74,7 @@ export function createPixelSceneTileSource(options: {
     maxBytes: options.maxCacheBytes ?? getMapMemoryBudget().sceneCacheBytes,
     contains: rect => index.search(rect.x, rect.y, rect.x + rect.width, rect.y + rect.height).length > 0,
     changed: () => options.redraw?.(),
+    progress: options.onProgress,
     failure: error => source.raiseEvent('scene-viewport-error', { error }),
     ready: ready => {
       if (source.sceneViewportReady === ready) return;

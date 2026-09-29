@@ -1,18 +1,38 @@
-import type { CompressedSceneBitmap } from './scene-bitmap-provider';
+import type { SceneBitmapData } from './scene-bitmap-provider';
 
 /** Visible requests and background cooking share one bounded preparation
  * queue. The background loop admits only one scene at a time, so navigation
  * can take the next slot instead of waiting behind the entire map. */
 export function createScenePreparation(
   keys: readonly string[],
-  prepare: (key: string) => Promise<CompressedSceneBitmap | undefined>,
+  prepare: (key: string, persist: boolean, existing?: SceneBitmapData) => Promise<SceneBitmapData | undefined>,
   release: () => void,
-  options: { concurrency?: number; maxBytes?: number; bytesForKey?: (key: string) => number } = {},
+  options: { concurrency?: number; maxBytes?: number; bytesForKey?: (key: string) => number;
+    deferredPersistence?: boolean; maxRetainedBytes?: number } = {},
 ) {
-  const images = new Map<string, CompressedSceneBitmap>();
-  const remaining = new Set(keys), inflight = new Map<string, Promise<CompressedSceneBitmap | undefined>>();
+  const images = new Map<string, SceneBitmapData>();
+  const remaining = new Set(keys), inflight = new Map<string, Promise<SceneBitmapData | undefined>>();
   const lifetime = new AbortController();
   let warming: Promise<void> | undefined;
+  const rawKeys = new Map<string, number>();
+  let rawBytes = 0;
+  const retain = (key: string, image: SceneBitmapData) => {
+    rawBytes -= rawKeys.get(key) ?? 0;
+    rawKeys.delete(key);
+    if (image.pixels) {
+      const size = image.pixels.byteLength;
+      const budget = options.maxRetainedBytes ?? options.maxBytes ?? 0;
+      while (rawBytes + size > budget && rawKeys.size) {
+        const oldest = rawKeys.keys().next().value!;
+        rawBytes -= rawKeys.get(oldest)!;
+        rawKeys.delete(oldest); images.delete(oldest);
+      }
+      // Oversized scenes may be drawn by their requester, but never retained.
+      if (size > budget) { images.delete(key); return; }
+      rawKeys.set(key, size); rawBytes += size;
+    }
+    images.set(key, image);
+  };
   let active = 0, activeBytes = 0;
   const queue: Array<{ bytes: number; run: () => void }> = [];
   const limit = Math.max(1, Math.min(4, Math.floor(options.concurrency ?? 1) || 1));
@@ -28,21 +48,22 @@ export function createScenePreparation(
   const complete = new Promise<void>((yes, no) => { finishAll = yes; failAll = no; });
   void complete.catch(() => {});
   if (!remaining.size) finishAll();
-  const loadBitmap = (key: string): Promise<CompressedSceneBitmap | undefined> => {
+  const loadBitmap = (key: string, persist = false): Promise<SceneBitmapData | undefined> => {
     if (lifetime.signal.aborted) return Promise.reject(lifetime.signal.reason);
-    if (!remaining.has(key)) return Promise.resolve(images.get(key));
+    const existing = images.get(key);
+    if (existing && (!persist || existing.blob)) return Promise.resolve(existing);
     const pending = inflight.get(key);
-    if (pending) return pending;
+    if (pending) return persist ? pending.then(() => loadBitmap(key, true)) : pending;
     const bytes = Math.max(0, options.bytesForKey?.(key) ?? 0);
-    const job = new Promise<CompressedSceneBitmap | undefined>((resolve, reject) => {
+    const job = new Promise<SceneBitmapData | undefined>((resolve, reject) => {
       queue.push({ bytes, run: () => {
         active++; activeBytes += bytes;
         void (async () => {
           lifetime.signal.throwIfAborted();
-          const image = await prepare(key);
+          const image = await prepare(key, persist, existing);
           lifetime.signal.throwIfAborted();
-          if (image) images.set(key, image);
-          remaining.delete(key);
+          if (image) retain(key, image);
+          if (!options.deferredPersistence || persist || image?.blob) remaining.delete(key);
           if (!remaining.size) { releaseOnce(); finishAll(); }
           return image;
         })().then(resolve, reject).finally(() => { active--; activeBytes -= bytes; pump(); });
@@ -60,13 +81,15 @@ export function createScenePreparation(
     warmAll(): Promise<void> {
       return warming ??= (async () => {
         let yieldedAt = performance.now();
-        for (const key of keys) {
+        // Persist still-retained live pixels first, before background work can
+        // replace their bounded cache entries and force another composition.
+        for (const key of new Set([...images.keys(), ...keys])) {
           lifetime.signal.throwIfAborted();
           if (performance.now() - yieldedAt >= 6) {
             await new Promise<void>(resolve => setTimeout(resolve, 0));
             yieldedAt = performance.now();
           }
-          await loadBitmap(key);
+          await loadBitmap(key, !!options.deferredPersistence);
         }
         await complete;
       })();
@@ -74,7 +97,7 @@ export function createScenePreparation(
     dispose() {
       if (lifetime.signal.aborted) return;
       lifetime.abort(new DOMException('Scene preparation cancelled', 'AbortError'));
-      failAll(lifetime.signal.reason); releaseOnce(); images.clear();
+      failAll(lifetime.signal.reason); releaseOnce(); images.clear(); rawKeys.clear(); rawBytes = 0;
       pump();
     },
   };

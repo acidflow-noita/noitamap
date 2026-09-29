@@ -917,7 +917,7 @@ async function main() {
   writeFileSyncRetry(OUT_PNG, pngBuf);
   console.log(`[build-spritesheet] Wrote ${OUT_PNG} (${(pngBuf.length / 1024).toFixed(1)} KB)`);
 
-  const atlasJson = JSON.stringify(atlas, null, 2);
+  const atlasJson = JSON.stringify(atlas);
   writeFileSyncRetry(OUT_JSON, atlasJson);
   console.log(`[build-spritesheet] Wrote ${OUT_JSON} (${Object.keys(atlas).length} entries)`);
 

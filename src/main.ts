@@ -273,6 +273,35 @@ async function initializeApp(): Promise<void> {
   // never runs -- so strip events triggered by background work must not show it
   // (see the dataZipProgress handler).
   let bakedViewActive = false;
+  let presentationLoading = false;
+  let scenesLoading = false;
+  let sceneProgress = { completed: 0, total: 0 };
+  const showSceneLoading = (
+    completed: number | undefined = scenesLoading ? sceneProgress.completed : undefined,
+    total: number | undefined = scenesLoading ? sceneProgress.total : undefined,
+  ) => {
+    showLoadingStrip();
+    const title = _getTitle(), status = _getStatusText();
+    if (title) title.textContent = i18next.t('loading.maps', { defaultValue: 'Loading maps...' });
+    const determinate = total !== undefined && total > 0 && completed !== undefined;
+    document.querySelector('.loading-strip-bar-track')?.classList.toggle('indeterminate', !determinate);
+    if (determinate) {
+      const dl = _getDownloadBar(), gen = _getGenerationBar(), items = _getItemsBar();
+      if (dl) dl.style.width = '100%';
+      if (gen) gen.style.width = '100%';
+      if (items) items.style.width = `${completed! / total! * 100}%`;
+    }
+    if (status) status.textContent = determinate ? `${Math.floor(66 + completed! / total! * 33)}%` : '…';
+  };
+  window.addEventListener('sceneRenderingProgress', ((event: CustomEvent) => {
+    if (app.getMap() !== 'dynamic-main-branch' || bakedViewActive) return;
+    const { completed, total } = event.detail;
+    sceneProgress = { completed, total };
+    scenesLoading = completed < total;
+    if (scenesLoading) showSceneLoading(completed, total);
+    else if (presentationLoading) showSceneLoading();
+    else hideLoadingStrip();
+  }) as EventListener);
 
   // Pin the phase label column to the widest of the three phase translations
   // in the current language, so the percent column never shifts when the
@@ -371,6 +400,8 @@ async function initializeApp(): Promise<void> {
     if (e.detail.percentage >= 100) {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
+          // Marker setup is not the end of visible scene rendering.
+          if (presentationLoading || scenesLoading) { showSceneLoading(); return; }
           hideLoadingStrip();
           // Reset all bars for the next generation
           const dl = _getDownloadBar();
@@ -603,8 +634,11 @@ async function initializeApp(): Promise<void> {
         reportHighlights?.clear(false);
         resetPOICardContext(app.osd);
       }
+      presentationLoading = isLoading;
+      scenesLoading = false;
       loadingIndicator.style.display = isLoading ? "block" : "none";
-      hideLoadingStrip();
+      if (isLoading) showSceneLoading();
+      else hideLoadingStrip();
       if (isLoading) {
         unifiedSearch.setIndexingState('indexing');
       }
