@@ -227,39 +227,39 @@ async function initializeApp(): Promise<void> {
   loadSpritesheetAndAtlas()
     .catch((e) => console.warn("[Noitamap] Atlas preload failed:", e));
 
-  try {
-    await i18next.init({
-      fallbackLng: "en",
-      debug: false,
-      showSupportNotice: false,
-      detection: {
-        order: ["querystring", "cookie", "localStorage", "sessionStorage", "navigator", "htmlTag"],
-        lookupQuerystring: "lng",
-        lookupCookie: "i18next",
-        lookupLocalStorage: "i18nextLng",
-        lookupSessionStorage: "i18nextLng",
-        caches: ["localStorage", "cookie"],
+  // Translation downloads must not hold up the viewer or the selected map's
+  // toolbar. Existing data-i18n elements refresh when the language is ready.
+  void i18next.init({
+    fallbackLng: "en",
+    debug: false,
+    showSupportNotice: false,
+    detection: {
+      order: ["querystring", "cookie", "localStorage", "sessionStorage", "navigator", "htmlTag"],
+      lookupQuerystring: "lng",
+      lookupCookie: "i18next",
+      lookupLocalStorage: "i18nextLng",
+      lookupSessionStorage: "i18nextLng",
+      caches: ["localStorage", "cookie"],
+    },
+    backend: {
+      loadPath: "./locales/{{lng}}/translation.json",
+      requestOptions: {
+        cache: "no-store",
       },
-      backend: {
-        loadPath: "./locales/{{lng}}/translation.json",
-        requestOptions: {
-          cache: "no-store",
-        },
-      },
-      interpolation: {
-        escapeValue: false,
-      },
-      supportedLngs: Object.keys(SUPPORTED_LANGUAGES),
-      load: "languageOnly",
-      cleanCode: true,
-      nonExplicitSupportedLngs: true,
-    });
-
+    },
+    interpolation: {
+      escapeValue: false,
+    },
+    supportedLngs: Object.keys(SUPPORTED_LANGUAGES),
+    load: "languageOnly",
+    cleanCode: true,
+    nonExplicitSupportedLngs: true,
+  }).then(() => {
     createLanguageSelector();
     updateTranslations();
-  } catch (error) {
+  }).catch(error => {
     console.error("i18next initialization failed:", error);
-  }
+  });
 
   // Handle map loading progress UI (non-blocking strip)
   const _getDownloadBar = () => document.getElementById("loading-bar-download") as HTMLElement | null;
@@ -282,7 +282,7 @@ async function initializeApp(): Promise<void> {
   ) => {
     showLoadingStrip();
     const title = _getTitle(), status = _getStatusText();
-    if (title) title.textContent = i18next.t('loading.maps', { defaultValue: 'Loading maps...' });
+    if (title) title.textContent = i18next.t('loading.mapData.addingItems', { defaultValue: 'Adding items and wands' });
     const determinate = total !== undefined && total > 0 && completed !== undefined;
     document.querySelector('.loading-strip-bar-track')?.classList.toggle('indeterminate', !determinate);
     if (determinate) {
@@ -294,13 +294,12 @@ async function initializeApp(): Promise<void> {
     if (status) status.textContent = determinate ? `${Math.floor(66 + completed! / total! * 33)}%` : '…';
   };
   window.addEventListener('sceneRenderingProgress', ((event: CustomEvent) => {
-    if (app.getMap() !== 'dynamic-main-branch' || bakedViewActive) return;
+    if (!presentationLoading || app.getMap() !== 'dynamic-main-branch' || bakedViewActive) return;
     const { completed, total } = event.detail;
     sceneProgress = { completed, total };
     scenesLoading = completed < total;
     if (scenesLoading) showSceneLoading(completed, total);
-    else if (presentationLoading) showSceneLoading();
-    else hideLoadingStrip();
+    else showSceneLoading();
   }) as EventListener);
 
   // Pin the phase label column to the widest of the three phase translations
@@ -340,7 +339,7 @@ async function initializeApp(): Promise<void> {
   i18next.on("languageChanged", _recomputePhaseMinWidth);
 
   window.addEventListener("dataZipProgress", ((e: CustomEvent) => {
-    if (app.getMap() !== "dynamic-main-branch" || bakedViewActive) return;
+    if (!presentationLoading || app.getMap() !== "dynamic-main-branch" || bakedViewActive) return;
     const bar = _getDownloadBar();
     const status = _getStatusText();
     const title = _getTitle();
@@ -363,7 +362,7 @@ async function initializeApp(): Promise<void> {
   }) as EventListener);
 
   window.addEventListener("biomeGenerationProgress", ((e: CustomEvent) => {
-    if (app.getMap() !== "dynamic-main-branch" || bakedViewActive) return;
+    if (!presentationLoading || app.getMap() !== "dynamic-main-branch" || bakedViewActive) return;
     const bar = _getGenerationBar();
     const status = _getStatusText();
     if (!bar) return;
@@ -384,7 +383,7 @@ async function initializeApp(): Promise<void> {
   }) as EventListener);
 
   window.addEventListener("itemsGenerationProgress", ((e: CustomEvent) => {
-    if (app.getMap() !== "dynamic-main-branch" || bakedViewActive) return;
+    if (!presentationLoading || app.getMap() !== "dynamic-main-branch" || bakedViewActive) return;
     const bar = _getItemsBar();
     const status = _getStatusText();
     if (!bar) return;
@@ -397,22 +396,9 @@ async function initializeApp(): Promise<void> {
       status.textContent = `${Math.round(66 + e.detail.percentage / 3)}%`;
     }
 
-    if (e.detail.percentage >= 100) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          // Marker setup is not the end of visible scene rendering.
-          if (presentationLoading || scenesLoading) { showSceneLoading(); return; }
-          hideLoadingStrip();
-          // Reset all bars for the next generation
-          const dl = _getDownloadBar();
-          const gen = _getGenerationBar();
-          const it = _getItemsBar();
-          if (dl) dl.style.width = "0%";
-          if (gen) gen.style.width = "0%";
-          if (it) it.style.width = "0%";
-        });
-      });
-    }
+    // Only the selected map's first complete viewport ends this strip.
+    // Later marker rebuilds and zoom refinements cannot reopen it.
+    if (e.detail.percentage >= 100) showSceneLoading();
   }) as EventListener);
 
   // TODO: probably most of this should be part of the "App" class, or the "App" class should be removed.
@@ -426,6 +412,7 @@ async function initializeApp(): Promise<void> {
   const tooltipElement = assertElementById("coordinate", HTMLElement);
   const coordinatesText = tooltipElement.innerText;
   const rendererForm = assertElementById("renderer-form", HTMLFormElement);
+  const loadingIndicator = assertElementById("loadingIndicator", HTMLElement);
 
   // Initialize renderer from storage
   const storedRenderer = getStoredRenderer();
@@ -451,6 +438,13 @@ async function initializeApp(): Promise<void> {
     });
   });
   globalApp = app;
+  // The corner spinner covers visible tile/refinement work on every map.
+  // The larger strip below remains limited to initial dynamic generation.
+  const updateLoadingIndicator = () => {
+    loadingIndicator.style.display = presentationLoading || app.osd.isLoading() ? "block" : "none";
+  };
+  app.on("loading-change", updateLoadingIndicator);
+  updateLoadingIndicator();
   console.log(`[Noitamap] Active OSD drawer: ${(app.osd as any).drawer?.getType?.() ?? storedRenderer}`);
 
   // Kick the daily baked-overlay fast path off NOW, in parallel with all the UI
@@ -611,6 +605,7 @@ async function initializeApp(): Promise<void> {
   let initialTargetSeedStarted = false;
   app.osd.addHandler('map-change-start', ({ mapName }: { mapName: string }) => {
     updateDynamicUIVisibility(mapName);
+    if (mapName !== "dynamic-main-branch") presentationLoading = scenesLoading = false;
     if (mapName !== "dynamic-main-branch" && app.getMap() === "dynamic-main-branch") clearDynamicMap(app.osd);
     initialTargetPoiId = undefined;
     poiContextReady = false;
@@ -636,9 +631,15 @@ async function initializeApp(): Promise<void> {
       }
       presentationLoading = isLoading;
       scenesLoading = false;
-      loadingIndicator.style.display = isLoading ? "block" : "none";
-      if (isLoading) showSceneLoading();
-      else hideLoadingStrip();
+      updateLoadingIndicator();
+      if (isLoading) {
+        sceneProgress = { completed: 0, total: 0 };
+        hideLoadingStrip(true);
+        showLoadingStrip();
+        const title = _getTitle();
+        if (title) title.textContent = i18next.t('loading.mapData.generating', { defaultValue: 'Generating Biomes' });
+        document.querySelector('.loading-strip-bar-track')?.classList.add('indeterminate');
+      } else hideLoadingStrip();
       if (isLoading) {
         unifiedSearch.setIndexingState('indexing');
       }
@@ -1089,10 +1090,14 @@ async function initializeApp(): Promise<void> {
 
     // Clean up dynamic map state whenever we leave the dynamic map, regardless
     // of the trigger (nav click, pro-bundle import, setMap hook, etc.)
-    if (lastKnownMap === "dynamic-main-branch" && state.map !== "dynamic-main-branch") {
+    const previousMap = lastKnownMap;
+    // Mark the transition before callbacks can synchronously move the camera
+    // and emit another state-change event for this same map.
+    lastKnownMap = state.map;
+    if (previousMap === "dynamic-main-branch" && state.map !== "dynamic-main-branch") {
       unifiedSearch.setDynamicPOIs([]);
       unifiedSearch.setIndexingState('idle');
-    } else if (lastKnownMap !== "dynamic-main-branch" && state.map === "dynamic-main-branch") {
+    } else if (previousMap !== "dynamic-main-branch" && state.map === "dynamic-main-branch") {
       // Moving TO dynamic map — if we have a pending seed from drawing import, use it directly
       if (pendingDynamicSeed !== null) {
         const seedToRun = pendingDynamicSeed;
@@ -1103,7 +1108,6 @@ async function initializeApp(): Promise<void> {
         runDynamicMapWithPriority().catch((e) => console.error("[Noitamap] Dynamic map switch failed:", e));
       }
     }
-    lastKnownMap = state.map;
 
     // Camera frames still update URL/search above. Toolbar DOM and Bootstrap
     // instances only need work when the selected map actually changes.
@@ -1125,15 +1129,6 @@ async function initializeApp(): Promise<void> {
 
     // Update button text to show current map name
     updateMapSelectorText(state.map);
-  });
-
-  const loadingIndicator = assertElementById("loadingIndicator", HTMLElement);
-  // show/hide loading indicator — BUT suppress while on the dynamic map
-  // because OSD keeps emitting loading-change(true) as it lazily loads the
-  // many biome tile images, which would keep the spinner stuck.
-  app.on("loading-change", (isLoading) => {
-    if (app.getMap() === "dynamic-main-branch") return;
-    loadingIndicator.style.display = isLoading ? "block" : "none";
   });
 
   // respond to changes of map

@@ -24,6 +24,20 @@ export const asMapName = (name: string | undefined): MapName | undefined => (isV
 
 export const getTileData = (name: MapName): TileData[] => tileSources[name];
 
+const versions = new Map<string, string>();
+const versionRequests = new Map<string, Promise<string | undefined>>();
+export function getKnownMapVersions(mapName: MapName): Record<string, string> {
+  return Object.fromEntries(tileSources[mapName].flatMap(({ url }) => {
+    const origin = new URL(url).origin;
+    let version = versions.get(origin);
+    if (!version) {
+      try { version = localStorage.getItem(`noitamap-map-version:${origin}`) ?? undefined; } catch {}
+      if (version) versions.set(origin, version);
+    }
+    return version ? [[origin, version]] : [];
+  }));
+}
+
 /**
  * Fetches map versions for a given map name.
  *
@@ -36,28 +50,32 @@ export const getTileData = (name: MapName): TileData[] => tileSources[name];
  * ]
  */
 export async function fetchMapVersions(mapName: MapName): Promise<Record<string, string>> {
-  const promises = tileSources[mapName].map(async ({ url }): Promise<[string, string]> => {
+  const promises = tileSources[mapName].map(async ({ url }): Promise<[string, string] | null> => {
     const versionFile = new URL('/currentVersion.txt', url);
-
-    // We don't want to fetch a cached version of the manifest!
-    const cacheBustString = await fetch(versionFile, {
-      // Commented out because it's causing CORS issues
-      // headers: { 'cache-control': 'no-cache' }
-    })
+    const origin = versionFile.origin;
+    let request = versionRequests.get(origin);
+    if (!request) {
+      request = fetch(versionFile, { signal: AbortSignal.timeout(5000) })
       .then(async res => {
         if (res.status !== 200) throw new Error(`Fetch failed: ${res.status} ${res.statusText}`);
-        return (await res.text()).trim();
+        const version = (await res.text()).trim();
+        if (!version) throw new Error('Empty map version');
+        versions.set(origin, version);
+        try { localStorage.setItem(`noitamap-map-version:${origin}`, version); } catch {}
+        return version;
       })
       .catch(err => {
-        console.error(err);
-        return Math.random().toString(36).slice(2);
-      });
-
-    return [versionFile.origin, cacheBustString];
+        console.warn('[Map] Version check unavailable:', origin, err);
+        return versions.get(origin);
+      }).finally(() => versionRequests.delete(origin));
+      versionRequests.set(origin, request);
+    }
+    const version = await request;
+    return version ? [origin, version] : null;
   });
 
   // Wait for all requests to have set their key, then return the object
   const entries = await Promise.all(promises);
 
-  return Object.fromEntries(entries);
+  return Object.fromEntries(entries.filter((entry): entry is [string, string] => entry !== null));
 }

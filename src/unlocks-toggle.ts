@@ -10,13 +10,12 @@
  * Without `?u=`: the active toggle has TWO states — "all" ↔ "none".
  * With    `?u=`: THREE states — "mod" → "all" → "none" → "mod" → ...
  *
- * The PRIMARY variant is the one used to generate the visible map:
- *   - no `?u=`  → "all"
- *   - with `?u=`→ "mod"
+ * The PRIMARY variant is selected before generating each visible map:
+ * explicit URL state, then the saved view, then "mod" or "all" by default.
+ * Daily maps always use "all".
  *
- * Non-primary variants are generated in the background after the primary
- * render finishes (biome layout is identical between variants, so the cost
- * is just POI/wand/chest rolls). POI tooltip cards swap their contents
+ * Non-primary variants are generated when requested (biome layout is identical
+ * between variants, so the cost is just POI/wand/chest rolls). POI tooltip cards swap their contents
  * instantly once the requested variant is ready; until then they show an
  * "indexing" placeholder on the lock button.
  *
@@ -64,10 +63,8 @@ export function availableDescriptors(): UnlockDescriptor[] {
   return isModSourced() ? ["mod", "all", "none"] : ["all", "none"];
 }
 
-// The primary descriptor is *locked* to whatever URL state was present on
-// first call (i.e. the descriptor used to GENERATE the initial map). User
-// toggles never change this — they only flip the *active* view, which may
-// pull alt-cached variants. Recomputed only on page reload.
+// The primary descriptor is fixed for each generated seed. Restore a selected
+// variant before generation so it doesn't require generating the seed twice.
 let _primary: UnlockDescriptor | null = null;
 
 /** Which variant is used to *generate* the visible map / primary POI list. */
@@ -78,6 +75,21 @@ export function primaryDescriptor(): UnlockDescriptor {
   else if (kind === "none") _primary = "none";
   else _primary = "all";
   return _primary;
+}
+
+export function selectGenerationUnlocks(isDaily: boolean): string[] | null {
+  const modUnlocks = getUnlocksFromURL();
+  const kind = getUrlUnlockKind();
+  resetViewIfModChanged();
+  let selected: string | null = null;
+  try { selected = localStorage.getItem(VIEW_STORAGE); } catch {}
+  const allowed = kind === 'mod' ? ['mod', 'all', 'none'] : ['all', 'none'];
+  _primary = isDaily ? 'all' : kind === 'none' ? 'none' : kind === 'all' ? 'all'
+    : selected && allowed.includes(selected) ? selected as UnlockDescriptor
+    : kind === 'mod' ? 'mod' : 'all';
+  // Explicit URL state wins over a saved view; keep tooltip selection in sync.
+  try { if (!isDaily) localStorage.setItem(VIEW_STORAGE, _primary); } catch {}
+  return _primary === 'none' ? [] : _primary === 'mod' ? modUnlocks : null;
 }
 
 /** Reset persisted view only when the URL just took on a fresh mod payload

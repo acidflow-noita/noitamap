@@ -1,4 +1,4 @@
-import { isInstantTerrainEnabled, shouldUseBakedTerrain } from "./renderer_settings";
+import { isInstantTerrainEnabled, shouldUseBakedTerrain, useRenderPerfGeneration } from "./renderer_settings";
 /**
  * dynamic-map.ts
  *
@@ -18,9 +18,9 @@ import { getCachedGeneration, cacheGeneration } from "./telescope/tile-cache";
 import { generateDynamicMap, initTelescope, prewarmParallelWorlds, releaseParallelWorlds, type GenerationResult } from "./telescope/telescope-adapter";
 import { ensureTelescopeCacheVersion } from "./telescope/telescope-cache-version";
 import { prewarmInstantTerrain, releaseInstantTerrainBackend } from "./telescope/instant-terrain-backend";
-import { getUnlocksFromURL, unlocksChanged, UNLOCK_KEYS, getUrlUnlockKind } from "./unlocks";
+import { UNLOCK_KEYS } from "./unlocks";
 import { getPillarFlagsFromURL } from "./pillars-unlocks";
-import { prewarmAlt, resetAltCache } from "./unlocks-toggle";
+import { prewarmAlt, resetAltCache, selectGenerationUnlocks } from "./unlocks-toggle";
 import { isLightMode } from "./light-mode";
 import {
   renderGenerationResult,
@@ -240,6 +240,7 @@ export async function runDynamicMap(
   const runStarted = performance.now();
   const myToken = ++generationToken;
   opts.onMapReplacementStart?.();
+  onLoadingChange?.(true);
 
   const noBaked = !shouldUseBakedTerrain(window.location.search);
   if (noBaked && isInstantTerrainEnabled()) {
@@ -273,17 +274,9 @@ export async function runDynamicMap(
   }
   if (myToken !== generationToken) return null;
 
-  // Read unlock state from URL (caches to localStorage automatically).
-  // The shareable shorthand tokens (`u=all`, `u=none`) override the mod
-  // list — `none` means "render with nothing unlocked", `all` means default.
-  let unlocks = getUnlocksFromURL();
-  const urlKind = getUrlUnlockKind();
-  if (urlKind === "none") unlocks = [];
-  // Daily generation already forces every unlock on. A previously saved mod
-  // list must not bypass generation.json and regenerate the daily on an empty
-  // URL; it is not the effective unlock state for this map.
-  if (isDaily) unlocks = null;
-  // (urlKind === "all" → unlocks stays null → telescope's default = all)
+  // Generate the selected unlock view once. Restoring it after first paint
+  // used to run a second full generation and replace the POIs underneath it.
+  const unlocks = selectGenerationUnlocks(isDaily);
   const lightMode = isLightMode();
   // Dedicated pillar achievement channel (`&p=`). Independent of `&u=`: it only
   // affects pillar segment lock state, but a change must still re-render, so it
@@ -330,8 +323,6 @@ export async function runDynamicMap(
 
   // If unlocks changed for the same seed, we must regenerate (skip cache)
   const forceRegenerate = seed === currentSeed && unlockKey !== currentUnlocksKey;
-
-  onLoadingChange?.(true);
 
   // Yield so the browser can paint the loading indicator before telescope
   // blocks the main thread during initialization (~700ms first load).
@@ -481,6 +472,12 @@ export async function runDynamicMap(
       // "previous daily" lookups work offline (fire-and-forget).
       cacheGeneration(cacheKey, seed, result).catch(() => {});
     } else {
+    if (isInstantTerrainEnabled() && !bakedData?.probe.baked) {
+      // The route is now known to be live. Compile in the terrain worker while
+      // generator inputs load, rather than adding it after generation finishes.
+      prewarmInstantTerrain();
+      prewarmMapPresentation();
+    }
     prewarmParallelWorlds(lightMode ? [0] : undefined);
     // Version validation is a small shared barrier. Reading cached geometry can
     // then overlap asset initialization instead of waiting for every scene.
@@ -634,7 +631,10 @@ export async function runDynamicMap(
         void prewarmAlt(seed, isDaily, !bakedData?.generation).catch((e) =>
           console.warn("[DynamicMap] alt-unlocks pre-warm failed:", e),
         );
-        void prefetchAllSceneBitmaps(() => myToken === generationToken).catch(() => {});
+        // Native scenes already have their own bounded preparation queue.
+        // Preparing the old flat artwork as well duplicates every scene.
+        if (!useRenderPerfGeneration())
+          void prefetchAllSceneBitmaps(() => myToken === generationToken).catch(() => {});
       }, 0));
     });
 

@@ -1,4 +1,4 @@
-import { fetchMapVersions, getTileData, MapName } from './data_sources/tile_data';
+import { fetchMapVersions, getKnownMapVersions, getTileData, MapName } from './data_sources/tile_data';
 import { createOverlays } from './data_sources/overlays';
 import { isLightMode } from './light-mode';
 import { isSimplisticBackground } from './simplistic-background';
@@ -39,6 +39,7 @@ export class AppOSD {
   public viewer: any; // OpenSeadragon.Viewer
   private mapName: MapName | null = null;
   private listeners: ((isLoading: boolean) => void)[] = [];
+  private loadingStatus?: boolean;
 
   private failedItems: Set<any> = new Set();
 
@@ -130,6 +131,11 @@ export class AppOSD {
       }
       this.notifyLoadingStatus();
     });
+
+    // Direct terrain and scene layers refine the viewport without OSD tile
+    // downloads. Check them after drawing as well as when the camera moves.
+    this.addHandler('update-viewport', () => this.notifyLoadingStatus());
+    this.addHandler('viewport-change', () => this.notifyLoadingStatus());
   }
 
   // Proxy common OSD properties and methods
@@ -186,13 +192,25 @@ export class AppOSD {
     return this.viewer.isOpen();
   }
 
-  private static getTileSources(mapName: MapName): string[] {
-    let sources = getTileData(mapName).map(tileData => tileData.url);
+  private static getTileSources(mapName: MapName): any[] {
+    let sources = getTileData(mapName);
     // Light mode on the dynamic map: skip left/right PW backgrounds, keep only middle.
     if (mapName === 'dynamic-main-branch' && isLightMode()) {
-      sources = sources.filter(url => !/-left\.|-right\./.test(url));
+      sources = sources.filter(({ url }) => !/-left\.|-right\./.test(url));
     }
-    return sources;
+    return sources.map(({ url, dziContent }) => {
+      const { Image } = JSON.parse(dziContent);
+      const source = new OpenSeadragon.DziTileSource({
+        width: Number(Image.Size.Width), height: Number(Image.Size.Height),
+        tileSize: Number(Image.TileSize), tileOverlap: Number(Image.Overlap),
+        fileFormat: Image.Format, tilesUrl: url.replace(/\.dzi$/, '_files/'),
+      });
+      // The source metadata is already bundled; don't wait for three DZI
+      // round-trips before requesting the first background pixels.
+      source.Image = Image;
+      source.__staticBackground = mapName === 'dynamic-main-branch';
+      return { tileSource: source, x: Number(Image.TopLeft.X), y: Number(Image.TopLeft.Y), width: Number(Image.Size.Width) };
+    });
   }
 
   // Cached natural size of the simplistic-background PNG, loaded once.
@@ -241,12 +259,17 @@ export class AppOSD {
     return items;
   }
 
+  isLoading(): boolean {
+    return this.getAllItems().some(item => {
+      if (this.failedItems.has(item) || item.getOpacity?.() === 0 || !item.getDrawArea()) return false;
+      return item.source.__viewportReady ? !item.source.__viewportReady() : !item.getFullyLoaded();
+    });
+  }
+
   private notifyLoadingStatus() {
-    const isFullyLoaded = this.getAllItems().reduce((isReady, item) => {
-      if (this.failedItems.has(item)) return isReady;
-      return (item as any).getDrawArea() !== null ? isReady && item.getFullyLoaded() : isReady;
-    }, true);
-    const isLoading = !isFullyLoaded;
+    const isLoading = this.isLoading();
+    if (isLoading === this.loadingStatus) return;
+    this.loadingStatus = isLoading;
     this.listeners.forEach(fn => fn(isLoading));
   }
 
@@ -305,10 +328,18 @@ export class AppOSD {
   }
 
   private cacheBustHandler?: any;
-  private async bindCacheBustHandler(): Promise<void> {
+  private bindCacheBustHandler(): void {
     if (this.mapName === null) throw new Error('this.mapName should not be null');
     if (this.cacheBustHandler) this.world.removeHandler('add-item', this.cacheBustHandler);
-    const versions = await fetchMapVersions(this.mapName);
+    const mapName = this.mapName;
+    const versions = getKnownMapVersions(mapName);
+    // Revalidate alongside tile loading. New responses apply to future
+    // requests; the current overview is never cleared while it is painting.
+    void fetchMapVersions(mapName).then(fresh => {
+      if (this.mapName !== mapName) return;
+      Object.assign(versions, fresh);
+      for (const item of this.getAllItems()) this.cacheBustHandler?.({ item });
+    });
     this.cacheBustHandler = (event: any) => {
       const source = event.item.source as any;
       // Baked daily DZIs carry their own per-bake cache-bust (set in
@@ -335,7 +366,7 @@ export class AppOSD {
     this.cancelNavigation();
     this.viewer.raiseEvent('map-change-start', { mapName });
     this.mapName = mapName;
-    await this.bindCacheBustHandler();
+    this.bindCacheBustHandler();
     this.world.removeAll();
     let sources: any = AppOSD.getTileSources(mapName);
     // Simplistic background only applies to the dynamic map (its PNG is sized
