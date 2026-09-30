@@ -1957,7 +1957,7 @@ async function buildSceneBitmaps(
 export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult, generationId: number): Promise<void> {
   if (!pixelSceneConfig.enabled) return;
 
-  const { pixelScenesByPW, worldCenter } = result;
+  const { pixelScenesByPW } = result;
 
   const allScenes = Object.values(pixelScenesByPW).flat();
 
@@ -2044,12 +2044,6 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   const maxDim = Math.max(bboxWidth, bboxHeight);
   const maxLevel = Math.max(0, Math.ceil(Math.log2(maxDim)));
 
-  let maxSceneDim = 0;
-  for (const item of items) {
-    if (item.w > maxSceneDim) maxSceneDim = item.w;
-    if (item.h > maxSceneDim) maxSceneDim = item.h;
-  }
-
   function tileBounds(level: number, tx: number, ty: number) {
     const scale = Math.pow(2, maxLevel - level);
     return {
@@ -2075,18 +2069,20 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     return true;
   };
 
+  const tileExists = source.tileExists.bind(source);
   source.tileExists = function (level: number, x: number, y: number) {
+    if (!tileExists(level, x, y)) return false;
     const { bx, by, bw, bh } = tileBounds(level, x, y);
-    const p = maxSceneDim;
-    return index.search(bx - p, by - p, bx + bw + p, by + bh + p).length > 0;
+    return index.search(bx, by, bx + bw, by + bh).length > 0;
   };
 
   let logCount = 0;
   source.downloadTileStart = function (context: any) {
     const tile = context.tile;
     const { bx, by, bw, bh } = tileBounds(tile.level, tile.x, tile.y);
-    const p = maxSceneDim;
-    const results = index.search(bx - p, by - p, bx + bw + p, by + bh + p);
+    // Flatbush returns spatial order; overlapping scenes must retain the
+    // generator's paint order, as they do in the decoration bake.
+    const results = index.search(bx, by, bx + bw, by + bh).sort((a, b) => a - b);
 
     if (logCount < 3) {
       console.log(`[PixelSceneTile] level=${tile.level} (${tile.x},${tile.y}), hits=${results.length}`);
@@ -2094,25 +2090,23 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     }
 
     const canvas = document.createElement('canvas');
-    canvas.width = TILE_SIZE;
-    canvas.height = TILE_SIZE;
+    const drawScale = TILE_SIZE / bw;
+    canvas.width = Math.ceil(Math.min(TILE_SIZE, (bboxWidth - bx) * drawScale));
+    canvas.height = Math.ceil(Math.min(TILE_SIZE, (bboxHeight - by) * drawScale));
     const ctx = canvas.getContext('2d')!;
     ctx.imageSmoothingEnabled = false;
+    ctx.setTransform(drawScale, 0, 0, drawScale, -bx * drawScale, -by * drawScale);
 
     if (results.length > 0) {
-      const drawScale = TILE_SIZE / bw;
       for (const idx of results) {
         const item = items[idx];
         if (!item) continue;
         const bitmap = bitmapByKey.get(item.sceneKey);
         if (!bitmap) continue;
-        // Round to integers and add 0.5px overlap to prevent Chrome subpixel seams
-        const drawX = Math.floor((item.osdX - originX - bx) * drawScale);
-        const drawY = Math.floor((item.osdY - originY - by) * drawScale);
-        const drawW = Math.ceil(item.w * drawScale) + 1;
-        const drawH = Math.ceil(item.h * drawScale) + 1;
-        if (drawW < 1 || drawH < 1) continue;
-        ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, drawX, drawY, drawW, drawH);
+        // Keep exact world dimensions. Inflating each draw by a pixel stretches
+        // scene artwork and shifts the cave/background boundary inside tiles.
+        ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height,
+          item.osdX - originX, item.osdY - originY, item.w, item.h);
       }
     }
 

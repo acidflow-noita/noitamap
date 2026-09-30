@@ -21,7 +21,7 @@ const REPEATED_TEMPLE_BIOMES = new Set(["biome_potion_mimics", "biome_darkness"]
 
 // The scene carves only part of these solid rock chunks. Keep the surrounding
 // fill, which the static base leaves empty for seed-dependent room placement.
-const AUTHORED_ROOM_FILL_BIOMES = new Set([
+export const AUTHORED_ROOM_FILL_BIOMES = new Set([
   "solid_wall_hidden_cavern",
   "friend_1", "friend_2", "friend_3", "friend_4", "friend_5", "friend_6",
 ]);

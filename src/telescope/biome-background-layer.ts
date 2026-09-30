@@ -1,4 +1,4 @@
-import { BIOME_BACKGROUND_MAP, STATIC_TERRAIN_BIOMES } from './terrain-policy';
+import { AUTHORED_ROOM_FILL_BIOMES, BIOME_BACKGROUND_MAP, STATIC_TERRAIN_BIOMES } from './terrain-policy';
 import { createBiomeBackgroundTiles, type BiomeBackgroundRegion } from './biome-background-tile-source';
 
 const phaseX = -17920, phaseY = -7168;
@@ -8,7 +8,9 @@ export function biomeBackgroundGeometry(biomes: { filename: string; svg_map_path
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const biome of biomes) {
     const textureKey = BIOME_BACKGROUND_MAP[biome.filename];
-    if (!textureKey || STATIC_TERRAIN_BIOMES.has(biome.filename)) continue;
+    // Carved room scenes supply their own air backdrop. Painting it across
+    // their entire biome chunk would cover the surrounding solid rock.
+    if (!textureKey || STATIC_TERRAIN_BIOMES.has(biome.filename) || AUTHORED_ROOM_FILL_BIOMES.has(biome.filename)) continue;
     const rings: BiomeBackgroundRegion['rings'] = [];
     let ring: BiomeBackgroundRegion['rings'][number] = [];
     const tokens = biome.svg_map_path.trim().split(/\s+/);
