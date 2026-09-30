@@ -264,6 +264,7 @@ export function createInstantTerrainViewport(options: {
     viewportMaxPixels: overviewPixels, viewportMaxDimension: memory.viewportMaxDimension,
   }, margin) : null;
   const overviewSize = overviewPlan ? framePixels(overviewPlan) : 0;
+  let keepOverview = !!overviewPlan;
   Object.defineProperties(stats, {
     overviewBytes: { enumerable: true, get: () => overview ? overviewSize * 4 : 0 },
     retainedFrames: { enumerable: true, get: () => retained.length },
@@ -271,11 +272,20 @@ export function createInstantTerrainViewport(options: {
   });
   let pending: Request | undefined;
   let active: Request | undefined;
-  let desiredKey: string | undefined;
+  let desired: Request | undefined;
   let controller: AbortController | undefined;
   let destroyed = false, failed = false, painted = false;
   const revision = () => options.revision?.() ?? 0;
   const events = ['zoom', 'pan', 'viewport-change', 'animation', 'animation-finish', 'resize', 'rotate', 'flip'];
+
+  function satisfies(entry: Frame | undefined, request: Request | undefined): boolean {
+    if (!entry || !request || entry.revision !== request.revision) return false;
+    const a = entry.plan, b = request.plan;
+    return a.scale <= b.scale * (1 + 1e-10)
+      && a.x <= b.x + 1e-9 && a.y <= b.y + 1e-9
+      && a.x + a.width >= b.x + b.width - 1e-9
+      && a.y + a.height >= b.y + b.height - 1e-9;
+  }
 
   function remember(previous: Frame): void {
     const candidates = [...retained, previous];
@@ -299,9 +309,18 @@ export function createInstantTerrainViewport(options: {
     });
     const kept = new Set<Frame>();
     let pixels = 0;
+    // The full-resolution previous view can occupy the entire history budget.
+    // Give it priority over the optional overview instead of evicting it on
+    // every pan/zoom on a high-DPI display. Never exceed that same pixel limit.
+    const bestSize = ranked[0] ? framePixels(ranked[0].plan) : 0;
+    if (keepOverview && bestSize > maxRetainedPixels - overviewSize && bestSize <= maxRetainedPixels) {
+      if (overview) releaseImage(overview.image);
+      overview = undefined;
+      keepOverview = false;
+    }
     for (const entry of ranked) {
       const size = framePixels(entry.plan);
-      if (kept.size < 3 && pixels + size <= maxRetainedPixels - overviewSize) { kept.add(entry); pixels += size; }
+      if (kept.size < 3 && pixels + size <= maxRetainedPixels - (keepOverview ? overviewSize : 0)) { kept.add(entry); pixels += size; }
       else releaseImage(entry.image);
     }
     retained = useful.filter(entry => kept.has(entry));
@@ -323,7 +342,7 @@ export function createInstantTerrainViewport(options: {
     if (active || destroyed || failed || signal.aborted) return;
     // The first visible camera wins the initial job. Complete bounded global
     // coverage next, before exposing this generation or starting its cooker.
-    const request: Request | undefined = frame && overviewPlan && !overview
+    const request: Request | undefined = frame && keepOverview && overviewPlan && !overview
       ? { plan: overviewPlan, key: 'overview', revision: revision(), overview: true }
       : pending;
     if (!request) return;
@@ -343,7 +362,7 @@ export function createInstantTerrainViewport(options: {
       // overtaken by background cooking can leave a zoomed-in camera showing
       // its old overview indefinitely. Publish, then refresh to the new revision.
       if (destroyed || signal.aborted || drawController.signal.aborted || (!request.overview && (
-        frame?.key === desiredKey && request.key !== desiredKey))) {
+        satisfies(frame, desired) && request.key !== desired?.key))) {
         releaseImage(image);
         stats.discarded++;
         return;
@@ -373,12 +392,26 @@ export function createInstantTerrainViewport(options: {
     if (destroyed || failed || signal.aborted) return;
     try {
       const plan = navigationPlan(osd.viewport, bounds, memory, margin);
-      if (!plan) { pending = undefined; desiredKey = undefined; return; }
+      if (!plan) { pending = undefined; desired = undefined; return; }
       const version = revision();
       const key = [plan.x, plan.y, plan.pixelWidth, plan.pixelHeight, plan.scale, version].join('/');
-      desiredKey = key;
-      if (key === active?.key || key === frame?.key) { pending = undefined; pump(); return; }
-      pending = { plan, key, revision: version };
+      const changed = key !== desired?.key;
+      desired = { plan, key, revision: version };
+      const reusable = [frame, ...[...retained].reverse()].find(entry => satisfies(entry, desired));
+      if (reusable) {
+        if (reusable !== frame) {
+          retained = retained.filter(entry => entry !== reusable);
+          const previous = frame;
+          frame = reusable;
+          if (previous) remember(previous);
+        }
+        pending = undefined;
+        if (changed) osd.forceRedraw?.();
+        pump();
+        return;
+      }
+      if (key === active?.key) { pending = undefined; return; }
+      pending = desired;
       pump();
     } catch (error) { fail(error); }
   }
@@ -388,7 +421,7 @@ export function createInstantTerrainViewport(options: {
   let overviewDrawn = false;
   source.__viewportReady = () => {
     refresh();
-    return !destroyed && !failed && !signal.aborted && (!overviewPlan || overviewDrawn) && (!desiredKey || drawnKey === desiredKey);
+    return !destroyed && !failed && !signal.aborted && (!keepOverview || overviewDrawn) && (!desired || drawnKey === desired.key);
   };
   source.__drawViewport = (context: CanvasRenderingContext2D, item: any, viewport: any): boolean => {
     if (destroyed) return true;
@@ -406,9 +439,10 @@ export function createInstantTerrainViewport(options: {
     const displayScale = 1 / Math.max(Math.hypot(a, b), Math.hypot(c, d));
     // A zoom-out destination can finish before the camera gets there. Keep
     // sharper frames above it while its samples would still be magnified.
-    // Once both frames supply display resolution, prefer the newer one.
+    // Finer completed pixels remain authoritative even after zoom-out. A
+    // coarse frame fills uncovered areas; it must not paint over known detail.
     const frames = [...(overview ? [overview] : []), ...retained, frame].sort((left, right) =>
-      Math.max(right.plan.scale, displayScale) - Math.max(left.plan.scale, displayScale));
+      right.plan.scale - left.plan.scale);
     const radiusX = (Math.abs(d) + Math.abs(c)) / (2 * determinant);
     const radiusY = (Math.abs(b) + Math.abs(a)) / (2 * determinant);
     // A previously close frame can shrink by much more than its one-sample
@@ -444,9 +478,9 @@ export function createInstantTerrainViewport(options: {
         context.drawImage(image, -margin, -margin);
       } finally { context.restore(); }
     }
-    drawnKey = frame.key;
+    drawnKey = satisfies(frame, desired) ? desired?.key : undefined;
     overviewDrawn = !!overview;
-    if (!painted && !signal.aborted && (!overviewPlan || overview) && frame.key === desiredKey) {
+    if (!painted && !signal.aborted && (!keepOverview || overview) && satisfies(frame, desired)) {
       painted = true;
       stats.firstDrawMs = performance.now() - started;
       // The bridge removes old world items here. Wait until CanvasDrawer has

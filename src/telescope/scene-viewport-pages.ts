@@ -13,8 +13,6 @@ export interface SceneViewportPage extends TerrainPixelRect {
 type Entry = SceneViewportPage & { context: CanvasRenderingContext2D; bytes: number };
 const intersects = (a: TerrainPixelRect, b: TerrainPixelRect) =>
   a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
-const contains = (a: TerrainPixelRect, b: TerrainPixelRect) =>
-  a.x <= b.x && a.y <= b.y && a.x + a.width >= b.x + b.width && a.y + a.height >= b.y + b.height;
 function subtract(a: TerrainPixelRect, b: TerrainPixelRect): TerrainPixelRect[] {
   if (!intersects(a, b)) return [a];
   const left = Math.max(a.x, b.x), top = Math.max(a.y, b.y);
@@ -48,20 +46,34 @@ export function createSceneViewportPages(options: {
   // Include the one in-flight page in this limit; insertion owns its canvas.
   const budget = options.maxBytes;
   const nativeBudget = Math.max(allocation, Math.min(budget - 5 * allocation, Math.floor((budget - allocation) * .8)));
-  const previewBudget = budget - allocation - nativeBudget;
   const entries = new Map<string, Entry>();
   let view: TerrainPixelRect = { x: 0, y: 0, width: 0, height: 0 };
   let wanted: SceneViewportPage[] = [], active: SceneViewportPage | undefined;
   let destroyed = false, bytes = 0, rendered = 0, failed: unknown, currentLevel = 0;
-  const limits = (level: number) => level === 0 ? nativeBudget : previewBudget;
   const cacheBytes = (level: number) => [...entries.values()].reduce((sum, e) => sum + ((e.level === 0) === (level === 0) ? e.bytes : 0), 0);
+  // Unused native capacity can hold detailed previews. Reserving it even when
+  // empty forced scene artwork several levels below the visible resolution.
+  const limits = (level: number) => level === 0 ? nativeBudget : budget - allocation - cacheBytes(0);
   const remove = (entry: Entry) => {
     entries.delete(entry.key); bytes -= entry.bytes;
     entry.context.canvas.width = entry.context.canvas.height = 0;
   };
+  const pageReady = (page: SceneViewportPage) => {
+    if (entries.has(page.key)) return true;
+    const x = Math.max(page.x, view.x), y = Math.max(page.y, view.y);
+    let remaining: TerrainPixelRect[] = [{ x, y,
+      width: Math.min(page.x + page.width, view.x + view.width) - x,
+      height: Math.min(page.y + page.height, view.y + view.height) - y }];
+    for (const entry of entries.values()) {
+      if (entry.level > page.level || !intersects(entry, page)) continue;
+      remaining = remaining.flatMap(rect => subtract(rect, entry));
+      if (!remaining.length) return true;
+    }
+    return false;
+  };
   let lastProgress = '';
   const updateReady = () => {
-    const completed = wanted.filter(page => entries.has(page.key)).length;
+    const completed = wanted.filter(pageReady).length;
     const progress = `${completed}/${wanted.length}`;
     if (progress !== lastProgress) {
       lastProgress = progress;
@@ -71,7 +83,7 @@ export function createSceneViewportPages(options: {
   };
   const pump = () => {
     if (destroyed || active || failed) return;
-    const page = wanted.find(page => !entries.has(page.key));
+    const page = wanted.find(page => !pageReady(page));
     if (!page) return;
     active = page;
     // An initial overview can contain thousands of scenes. Navigation must
@@ -81,12 +93,21 @@ export function createSceneViewportPages(options: {
     void options.render(page, cancelled).then(context => {
       if (cancelled()) { context.canvas.width = context.canvas.height = 0; return; }
       const entry = { ...page, context, bytes: context.canvas.width * context.canvas.height * 4 };
-      // A ready parent replaces its children atomically. Until it is ready the
-      // original pages remain visible; new work never clears displayed artwork.
-      const candidates = [...entries.values()].filter(e => (e.level === 0) === (page.level === 0))
+      // Prefer evicting offscreen and coarser artwork. A parent arriving is
+      // not a reason to discard its already-completed, sharper children.
+      // Native pages can reclaim capacity borrowed by previews.
+      const wantedKeys = new Set(wanted.map(candidate => candidate.key));
+      const candidates = [...entries.values()].filter(e => page.level === 0 || e.level !== 0)
         .sort((a, b) => Number(intersects(a, view)) - Number(intersects(b, view))
-          || Number(contains(page, b)) - Number(contains(page, a)));
-      while (cacheBytes(page.level) + entry.bytes > limits(page.level) && candidates.length) remove(candidates.shift()!);
+          || Number(wantedKeys.has(a.key)) - Number(wantedKeys.has(b.key))
+          || b.level - a.level);
+      while ((bytes + entry.bytes > budget - allocation
+        || (page.level === 0 && cacheBytes(0) + entry.bytes > nativeBudget)) && candidates.length) {
+        const index = page.level === 0 && cacheBytes(0) + entry.bytes > nativeBudget
+          ? candidates.findIndex(candidate => candidate.level === 0) : 0;
+        if (index < 0) break;
+        remove(candidates.splice(index, 1)[0]);
+      }
       entries.set(entry.key, entry); bytes += entry.bytes; rendered++;
       options.changed();
     }).catch(error => {
@@ -136,7 +157,7 @@ export function createSceneViewportPages(options: {
     },
     get stats() { return { bytes, maxBytes: budget, workingBytes: active ? allocation : 0,
       nativeBytes: cacheBytes(0), previewBytes: cacheBytes(1), rendered, entries: entries.size,
-      pending: wanted.filter(page => !entries.has(page.key)).length, failed: !!failed, level: currentLevel }; },
+      pending: wanted.filter(page => !pageReady(page)).length, failed: !!failed, level: currentLevel }; },
     dispose() { destroyed = true; wanted = []; for (const entry of [...entries.values()]) remove(entry); },
   };
 }

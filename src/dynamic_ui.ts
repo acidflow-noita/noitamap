@@ -117,7 +117,10 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   seedInput.setAttribute("data-bs-title", i18next.t("dynamicMap.placeholder", { defaultValue: "Game seed" }));
   seedInput.setAttribute("data-bs-content", i18next.t("dynamicMap.seedTooltipCustom"));
   seedInput.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter") onGenerateClick();
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      void onGenerateClick();
+    }
   });
   seedInput.addEventListener("input", () => {
     resolvedInputSeed = null;
@@ -460,6 +463,11 @@ async function onGenerateClick(): Promise<void> {
 
 function setBusy(busy: boolean): void {
   isBusy = busy;
+  // Enter submits the seed and ends text entry. Return focus before the
+  // asynchronous replacement so the input does not keep owning interaction.
+  if (busy && seedInput && document.activeElement === seedInput) {
+    dynamicOpts?.viewer.canvas?.focus({ preventScroll: true });
+  }
   if (generateBtn) {
     generateBtn.disabled = busy;
     generateBtn.innerHTML = busy

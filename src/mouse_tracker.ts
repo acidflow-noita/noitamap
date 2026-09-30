@@ -24,41 +24,62 @@ export const initMouseTracker = ({ osd, tooltipElement, osdElement }: MouseTrack
   primeMaterialHover();
   let lastPixelX: number | null = null;
   let lastPixelY: number | null = null;
-  let lastMaterialHtml = '';
-  new OpenSeadragon.MouseTracker({
-    element: osdElement,
-    moveHandler: (event: any) => {
-      if (event.pointerType != 'mouse') return;
-
-      const webPoint = event.position;
-      const viewportPoint = osd.viewport.pointFromPixel(webPoint);
-      const px = Math.floor(viewportPoint.x);
-      const py = Math.floor(viewportPoint.y);
-      const pixelX = px.toString();
-      const pixelY = py.toString();
-      const chunkX = Math.floor(viewportPoint.x / CHUNK_SIZE).toString();
-      const chunkY = Math.floor(viewportPoint.y / CHUNK_SIZE).toString();
-      // Material lookup is dynamic-map only (baked maps ship no per-pixel
-      // material buffers). Recompute only when the integer coord changes.
-      if (px !== lastPixelX || py !== lastPixelY) {
-        lastPixelX = px;
-        lastPixelY = py;
-        const mat = materialAtWorld(px, py);
-        lastMaterialHtml = mat ? `<br>material: ${mat}` : '';
-      }
-      tooltipElement.children[0].innerHTML = `(${pixelX}, ${pixelY})<br>chunk: (${chunkX}, ${chunkY})${lastMaterialHtml}`;
-      tooltipElement.style.left = `${event.originalEvent.pageX}px`;
-      tooltipElement.style.top = `${event.originalEvent.pageY}px`;
-    },
-    enterHandler: (event: any) => {
-      if (event.pointerType !== 'mouse') return;
-      tooltipElement.style.visibility = 'visible';
-    },
-    leaveHandler: (event: any) => {
-      if (event.pointerType !== 'mouse') return;
-      tooltipElement.style.visibility = 'hidden';
-    },
-  }).setTracking(true);
+  let pointer: Pick<PointerEvent, 'clientX' | 'clientY' | 'pageX' | 'pageY'> | undefined;
+  const hide = () => {
+    pointer = undefined;
+    tooltipElement.style.visibility = 'hidden';
+  };
+  const update = () => {
+    if (!pointer || !osd.viewport) return;
+    const bounds = osdElement.getBoundingClientRect();
+    const x = pointer.clientX - bounds.left, y = pointer.clientY - bounds.top;
+    // A captured drag can continue delivering movement outside the map.
+    if (x < 0 || y < 0 || x >= bounds.width || y >= bounds.height) { hide(); return; }
+    const viewportPoint = osd.viewport.pointFromPixel(new OpenSeadragon.Point(x, y), true);
+    const px = Math.floor(viewportPoint.x), py = Math.floor(viewportPoint.y);
+    if (px !== lastPixelX || py !== lastPixelY) {
+      lastPixelX = px;
+      lastPixelY = py;
+      const mat = materialAtWorld(px, py);
+      const materialHtml = mat ? `<br>material: ${mat}` : '';
+      tooltipElement.children[0].innerHTML = `(${px}, ${py})<br>chunk: (${Math.floor(px / CHUNK_SIZE)}, ${Math.floor(py / CHUNK_SIZE)})${materialHtml}`;
+    }
+    tooltipElement.style.left = `${pointer.pageX}px`;
+    tooltipElement.style.top = `${pointer.pageY}px`;
+    tooltipElement.style.visibility = 'visible';
+  };
+  // A second OSD MouseTracker ignores movement after losing its tracked
+  // pointer until another enter arrives. This readout needs only native
+  // movement on the stable container, independent of map/overlay replacement.
+  const move = (event: PointerEvent) => {
+    if (event.pointerType !== 'mouse') return;
+    pointer = { clientX: event.clientX, clientY: event.clientY, pageX: event.pageX, pageY: event.pageY };
+    update();
+  };
+  const leave = (event: PointerEvent) => { if (event.pointerType === 'mouse') hide(); };
+  const seedChanged = () => {
+    lastPixelX = lastPixelY = null;
+    update();
+  };
+  osdElement.addEventListener('pointermove', move, { passive: true, capture: true });
+  osdElement.addEventListener('pointerenter', move, { passive: true });
+  osdElement.addEventListener('pointerleave', leave);
+  osdElement.addEventListener('pointercancel', leave);
+  window.addEventListener('blur', hide);
+  osd.addHandler('viewport-change', update);
+  osd.addHandler('map-handoff-complete', seedChanged);
+  const dispose = () => {
+    osdElement.removeEventListener('pointermove', move, true);
+    osdElement.removeEventListener('pointerenter', move);
+    osdElement.removeEventListener('pointerleave', leave);
+    osdElement.removeEventListener('pointercancel', leave);
+    window.removeEventListener('blur', hide);
+    osd.removeHandler('viewport-change', update);
+    osd.removeHandler('map-handoff-complete', seedChanged);
+    osd.removeHandler('before-destroy', dispose);
+    hide();
+  };
+  osd.addHandler('before-destroy', dispose);
 
   const copyCoordinates = async (event: KeyboardEvent) => {
     if (event.target instanceof HTMLInputElement) return;
