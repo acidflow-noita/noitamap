@@ -17,6 +17,14 @@ export const STATIC_TERRAIN_BIOMES = new Set([
   "lake_deep",
 ]);
 
+const REPEATED_TEMPLE_BIOMES = new Set(["biome_potion_mimics", "biome_darkness"]);
+
+/** Approximate temple templates must not cover their repeated final-pixel terrain. */
+export function isRepeatedTempleTemplate(scene: { key: string }): boolean {
+  return scene.key === "static_tile/temples-assets/potion_mimics" ||
+    scene.key === "static_tile/temples-assets/darkness";
+}
+
 export const BIOME_BACKGROUND_MAP: Record<string, string> = {
   coalmine: "data/weather_gfx/background_coalmine.png",
   coalmine_alt: "data/weather_gfx/background_coalmine.png",
@@ -42,6 +50,7 @@ export const BIOME_BACKGROUND_MAP: Record<string, string> = {
   meat: "data/weather_gfx/background_the_end.png",
   pyramid: "data/weather_gfx/background_pyramid.png",
   liquidcave: "data/weather_gfx/background_cave_04_alt.png",
+  watercave: "data/weather_gfx/background_cave_04_alt.png",
   sandcave: "data/weather_gfx/background_cave_09.png",
   dragoncave: "data/weather_gfx/background_cave_02.png",
   lavalake: "data/weather_gfx/background_cave_04_alt.png",
@@ -81,7 +90,7 @@ export function sceneBiomeNames(scene: { key: string; variantKey?: string }): st
   return names;
 }
 
-export const TERRAIN_VERSION = "full-pixel-v9";
+export const TERRAIN_VERSION = "full-pixel-v16";
 export const WORLD_HEIGHT = 48 * 512;
 export const WORLD_TOP = -14 * 512;
 export type VerticalPlane = -1 | 0 | 1;
@@ -100,13 +109,16 @@ export function createTerrainOwnership(
   pixels: Uint32Array,
   config: Record<string, any>,
   width: number,
+  includeRepeatedTemples = false,
 ): TerrainOwnership {
   const owners = new Int16Array(width * 48).fill(-1);
   const names: string[] = [];
   const ids = new Map<string, number>();
   for (const layer of layers) {
     const name = layer.biomeName;
-    if (!layer.buffer || layer.isFill || STATIC_TERRAIN_BIOMES.has(name))
+    if (!layer.buffer || layer.isFill ||
+      (STATIC_TERRAIN_BIOMES.has(name) &&
+        !(includeRepeatedTemples && REPEATED_TEMPLE_BIOMES.has(name))))
       continue;
     const conf = config[name];
     if (!conf?.wangFile) continue;
@@ -160,7 +172,7 @@ export function createPlaneOwnership(
   config: Record<string, any>,
   width: number,
 ): TerrainOwnership {
-  const source = createTerrainOwnership(layers, sourcePixels, config, width);
+  const source = createTerrainOwnership(layers, sourcePixels, config, width, sourcePixels !== paintPixels);
   if (sourcePixels === paintPixels) return source;
   const nameByColor = new Map<number, string>();
   for (const [name, cfg] of Object.entries(config))

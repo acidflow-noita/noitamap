@@ -52,7 +52,7 @@ describe("full-pixel scene paint order", () => {
     scene.paint(terrain, background, 0, 0, 3, 1);
     expect(terrain).toEqual(rgba(rock, water, rock));
   });
-  it("does not let visual art put solid cells into air or transparent material", () => {
+  it("applies opaque visual art to translucent material while preserving empty air", () => {
     const source = {
       data: rgba(clear, clear, clear),
       width: 3,
@@ -61,7 +61,7 @@ describe("full-pixel scene paint order", () => {
     };
     const pixels = rgba(clear, [20, 30, 40, 128], [1, 2, 3, 255]);
     applySceneVisualArt(pixels, source);
-    expect(pixels).toEqual(rgba(clear, [20, 30, 40, 128], rock));
+    expect(pixels).toEqual(rgba(clear, rock, rock));
   });
   it("caches by placed instance, not shared variant, and preserves game paint order", () => {
     const data = fixture();

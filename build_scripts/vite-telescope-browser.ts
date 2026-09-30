@@ -24,6 +24,7 @@ export async function browserTelescopeSource(code: string, id: string) {
       .replace(/\bIS_NODE\b/g, "false");
   }
   if (id.endsWith("/pixel_scene_generation.js")) {
+    source = source.replace("PIXEL_SCENE_META_URL.protocol === 'file:'", "false");
     const atlasImport = /import\(['"]\.\/gl\/material_atlas\.js['"]\)/g;
     if (atlasImport.test(source)) {
       // This import MUST stay dynamic. utils -> pixel_scene_generation ->
@@ -34,6 +35,16 @@ export async function browserTelescopeSource(code: string, id: string) {
       const entry = resolve(import.meta.dirname, "../src/telescope/material-atlas-entry.ts");
       source = source.replace(atlasImport, `import(${JSON.stringify(entry)})`);
     }
+  }
+  if (id.endsWith("/icon_sheets.js")) {
+    // Explicit assets keep Vite from expanding the upstream dynamic URL into
+    // a glob over the entire Telescope checkout.
+    const perk = resolve(dirname(id), "../data/perk_sprites.sheet.png");
+    const spell = resolve(dirname(id), "../data/spell_sprites.sheet.png");
+    source = `import __perkSheet from ${JSON.stringify(perk + "?url")};\n` +
+      `import __spellSheet from ${JSON.stringify(spell + "?url")};\n` +
+      source.replace('new URL(`../${sheet.url}`, import.meta.url).href',
+        '({ perk_sprites: __perkSheet, spell_sprites: __spellSheet })[folder]');
   }
   const result = await transform(source, {
     sourcefile: id,
@@ -55,7 +66,7 @@ export function telescopeBrowserPlugin(directories: string[]): Plugin {
   let production = false;
   const files = new Set(
     directories.flatMap((dir) =>
-      ["png_sanitizer.js", "utils.js", "pixel_scene_generation.js", "translations.js"].map(
+      ["png_sanitizer.js", "utils.js", "pixel_scene_generation.js", "translations.js", "icon_sheets.js"].map(
         (name) => resolve(dir, name).replace(/\\/g, "/"),
       ),
     ),

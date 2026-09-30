@@ -2,7 +2,7 @@
 import type { GenerationResult, PixelScene, TileLayer } from './telescope-adapter';
 import { buildMarkerData } from './poi-spatial-index';
 import { MIMIC_SPRITES_VERSION } from './poi-mimics';
-import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP } from './terrain-policy';
+import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate } from './terrain-policy';
 import { rgbaToPngBlob } from './png-decode';
 
 export interface DecorationExportDependencies {
@@ -104,7 +104,7 @@ export async function prepareDecorationExport(
   const decorationResult = includeScenes ? result : {
     ...result,
     pixelScenesByPW: Object.fromEntries(Object.entries(result.pixelScenesByPW).map(([key, scenes]) =>
-      [key, scenes.filter(scene => scene.key.startsWith('static_tile/'))])),
+      [key, scenes.filter(scene => scene.key.startsWith('static_tile/') && !isRepeatedTempleTemplate(scene))])),
   };
   const built = await dependencies.buildSceneBitmaps(decorationResult);
   if (!built) return null;

@@ -16,6 +16,10 @@ const PACKAGED_PNGS: Record<string, string> = {
     "../../lib/noita-telescope/data/pixel_scenes/general/cauldron.png",
     import.meta.url,
   ).href,
+  "data/pixel_scenes/general/cauldron_fg.png": new URL(
+    "../../lib/noita-telescope/data/pixel_scenes/general/cauldron_fg.png",
+    import.meta.url,
+  ).href,
 };
 
 /** Avoid re-intercepting the dev-server /lib/.../data/ URL of a packaged PNG. */

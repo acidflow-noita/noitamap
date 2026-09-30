@@ -26,6 +26,7 @@ const path = require("path");
 const JSZip = require("jszip");
 const { PNG } = require("pngjs");
 const { createHash } = require("node:crypto");
+const { buildSpellCards } = require("./spell-card-sprites.cjs");
 
 const DATA_ZIP = path.resolve(__dirname, "..", "public", "data.zip");
 const OUT_DIR = path.resolve(__dirname, "..", "public", "assets");
@@ -131,9 +132,9 @@ const SKIP_SUFFIXES = [
 // Substrings anywhere in the PNG path that cause it to be skipped
 const SKIP_SUBSTRINGS = [
   "/image_emitters/",
-  "/stain",
-  "_stain",
 ];
+// Skip stain sprites, not unrelated names such as stainless_armour.
+const STAIN_PATH = /(?:^|[/_])stain(?:[._/]|$)/;
 
 // Directories whose PNGs should be rotated 90° CCW (wand sprites)
 const WAND_DIRS = [
@@ -418,6 +419,7 @@ async function main() {
     for (const sub of SKIP_SUBSTRINGS) {
       if (relPath.includes(sub)) return;
     }
+    if (STAIN_PATH.test(relPath)) return;
     // Skip filename patterns (_hotspot, _hotspots, _uv_src, _normals)
     const baseName = path.basename(relPath, ".png");
     for (const suffix of SKIP_SUFFIXES) {
@@ -735,6 +737,12 @@ async function main() {
     console.log(`[build-spritesheet] Added ${materialIconCount} custom material icons`);
   }
 
+  const spellCards = await buildSpellCards(zip);
+  for (const card of spellCards) {
+    sprites.push(card);
+    seenKeys.add(card.key);
+  }
+  console.log(`[build-spritesheet] Spell cards: ${spellCards.length}`);
   console.log(`[build-spritesheet] Total sprites: ${sprites.length}`);
 
   // ─── Grayscale variants for pillar segments ────────────────────────────────
@@ -904,7 +912,7 @@ async function main() {
   writeFileSyncRetry(OUT_PNG, pngBuf);
   console.log(`[build-spritesheet] Wrote ${OUT_PNG} (${(pngBuf.length / 1024).toFixed(1)} KB)`);
 
-  const atlasJson = JSON.stringify(atlas, null, 2);
+  const atlasJson = JSON.stringify(atlas);
   writeFileSyncRetry(OUT_JSON, atlasJson);
   console.log(`[build-spritesheet] Wrote ${OUT_JSON} (${Object.keys(atlas).length} entries)`);
 

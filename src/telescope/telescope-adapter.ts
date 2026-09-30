@@ -32,6 +32,7 @@ let scanSpawnFunctions: any;
 let getSpecialPoIs: any;
 let prescanSpawnFunctions: any;
 let PIXEL_SCENE_DATA: any;
+let ensureScenePixels: any;
 /**
  * Get the raw pixel scene image data from telescope's internal cache.
  * Telescope's refactored loadPixelScene/loadRandomPixelScene no longer set
@@ -47,6 +48,13 @@ export function getPixelSceneImgElement(key: string): Uint8Array | null {
 export function getPixelSceneData(key: string): any | null {
   if (!PIXEL_SCENE_DATA || !PIXEL_SCENE_DATA[key]) return null;
   return PIXEL_SCENE_DATA[key];
+}
+
+/** Newer Telescope records contain metadata until their pixels are requested. */
+export async function ensurePixelSceneData(key: string, options: { art?: boolean } = {}): Promise<any | null> {
+  const data = getPixelSceneData(key);
+  if (data && ensureScenePixels) await ensureScenePixels(data, options);
+  return data;
 }
 
 /** Returns every pixel scene key telescope has loaded (after initTelescope). */
@@ -260,6 +268,7 @@ async function _doInitTelescope(): Promise<void> {
   getSpecialPoIs = poiScannerMod.getSpecialPoIs;
   prescanSpawnFunctions = poiScannerMod.prescanSpawnFunctions;
   PIXEL_SCENE_DATA = pixelSceneMod.PIXEL_SCENE_DATA;
+  ensureScenePixels = pixelSceneMod.ensureScenePixels;
   loadPixelSceneData = pixelSceneMod.loadPixelSceneData;
   recolorPixelSceneForBiome = pixelSceneMod.recolorPixelSceneForBiome;
   recolorPixelScene = pixelSceneMod.recolorPixelScene;
@@ -337,13 +346,13 @@ async function _doInitTelescope(): Promise<void> {
     console.log("[Telescope] All wang tiles loaded successfully");
   }
 
-  // 9. Load pixel scene data (uses fetch interceptor internally).
-  // The new telescope fully awaits image loading, so no polling needed.
+  // 9. Load pixel scene metadata (or eager pixels in the legacy fork).
+  // Renderers explicitly ensure pixels before consuming lazy scene records.
   await loadPixelSceneData();
 
   // 10. Cache bust check: If we just updated the library, clear the generation cache
   // to ensure fixed logic actually runs instead of showing old empty results.
-  const LIB_VERSION = "2026-09-12-telescope-7fce46b-render-perf-386ee75";
+  const LIB_VERSION = "2026-09-30-telescope-7fce46b-render-perf-9c58775-scenes-v2";
   if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
     console.log("[Telescope] Library version updated, clearing generation cache...");
     // A blocked/failed optional cache must not prevent generation, but must
@@ -1293,7 +1302,8 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     }
   }
 
-  // Inject temple foreground pixel scenes for heaven/hell across ALL parallel worlds.
+  // Inject approximate temple templates for heaven/hell across ALL parallel worlds.
+  // Final-pixel live rendering and baking omit these in favor of native terrain.
   // addStaticPixelScenes skips chunk-based scenes when pwIndexVertical !== 0,
   // so Spirited (potion_mimics) and Ominous (darkness) temple foregrounds
   // never get generated. We scan biomeData.pixels directly and create pixel

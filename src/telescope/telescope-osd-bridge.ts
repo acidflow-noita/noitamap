@@ -7,7 +7,7 @@ import Flatbush from "flatbush";
 import { CONTAINER_TYPES } from "./poi-containers";
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
-import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP } from "./terrain-policy";
+import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate } from "./terrain-policy";
 import { loadTelescopeModules } from "./load-telescope";
 import { isGLTerrainEnabled } from "../renderer_settings";
 /**
@@ -19,7 +19,7 @@ import { isGLTerrainEnabled } from "../renderer_settings";
 
 import type { GenerationResult, POI, PixelScene, TileLayer } from './telescope-adapter';
 import {
-  getPixelSceneImgElement,
+  ensurePixelSceneData,
   getPixelSceneData,
   getAllPixelSceneKeys,
   recolorPixelSceneForBiome,
@@ -2073,7 +2073,7 @@ async function compositeSceneBitmap(
   if (wantMid) {
     const arr =
       scene.imgElement instanceof Uint8Array || scene.imgElement instanceof Uint8ClampedArray ? scene.imgElement : null;
-    const baseImg = arr || getPixelSceneImgElement(scene.key);
+    const baseImg = arr || (await ensurePixelSceneData(scene.key, { art: false }))?.imgElement;
     if (baseImg) {
       let recolored: any = baseImg;
       try {
@@ -2282,7 +2282,7 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
   const zip = await getDataZip();
   for (const scene of scenes) {
     if (sources[scene.key]) continue;
-    const raw = getPixelSceneData(scene.key);
+    const raw = await ensurePixelSceneData(scene.key);
     if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement))
       throw new Error(`Missing full-resolution scene material data: ${scene.key}`);
     const override = pixelSceneConfig.layerOverrides[scene.name] || pixelSceneConfig.layerOverrides[scene.key];
@@ -2310,7 +2310,7 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
     // The static scene skip/no-op list still owns the same pixels. Skipping the
     // scene's draw alone is insufficient: final terrain must not cover its art.
     if (!(pixelSceneConfig.skipNames.has(scene.name) || pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]))) continue;
-    const raw = getPixelSceneData(scene.key);
+    const raw = await ensurePixelSceneData(scene.key, { art: false });
     if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement) || raw.width < 2 || raw.height < 2) continue;
     const placement = `${scene.key}/${scene.x}/${scene.y}`;
     if (placed.has(placement)) continue;
@@ -3394,7 +3394,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       spellsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;margin-top:0.3em';
       for (const slot of displaySlots) {
         const container = document.createElement('div');
-        container.style.cssText = `position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:var(--surface-2);border-radius:0.2em;border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border-strong)'}`;
+        container.style.cssText = `position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;background:var(--surface-2);border-radius:0.2em;border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border-strong)'}`;
         if (slot.id) {
           container.title = gameTranslator.translateSpell(getSpellName(slot.id));
         }
@@ -3408,7 +3408,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
         }
         if (slot.id) {
           const img = document.createElement('img');
-          img.style.cssText = 'width:32px;height:32px;image-rendering:pixelated;display:block;margin:auto';
+          img.style.cssText = 'width:40px;height:40px;image-rendering:pixelated;display:block;margin:auto';
           getPOISpriteFirstFrame({ type: 'spell', item: String(slot.id) }).then(url => {
             if (url) {
               img.src = url;
@@ -3421,7 +3421,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
           });
           container.appendChild(img);
         }
-        // Empty slot: container is already styled as a 22x22 dark square
+        // Empty slots retain the same dimensions as occupied card slots.
         spellsRow.appendChild(container);
       }
       tooltipEl.appendChild(spellsRow);
@@ -4332,7 +4332,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
         slotsGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center;flex:1 1 0;min-width:0';
         for (const slot of slots) {
           const cell = document.createElement('div');
-          cell.style.cssText = `width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--surface-1);border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border)'};border-radius:0.15em;box-sizing:border-box`;
+          cell.style.cssText = `width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--surface-1);border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border)'};border-radius:0.15em;box-sizing:border-box`;
           if (slot.id) {
             const spellCanvas = scaledSprite(resolveSpellKey(String(slot.id)));
             if (spellCanvas) {
@@ -5096,7 +5096,7 @@ export async function renderGenerationResult(
     const sceneResult = isGLTerrainEnabled() ? {
       ...result,
       pixelScenesByPW: Object.fromEntries(Object.entries(result.pixelScenesByPW).map(([key, scenes]) =>
-        [key, scenes.filter(scene => scene.key.startsWith('static_tile/'))])),
+        [key, scenes.filter(scene => scene.key.startsWith('static_tile/') && !isRepeatedTempleTemplate(scene))])),
     } : result;
     await addPixelScenes(viewer, sceneResult, generationId);
     if (currentGenerationId !== generationId) return;
