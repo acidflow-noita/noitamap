@@ -7,7 +7,7 @@ import Flatbush from "flatbush";
 import { CONTAINER_TYPES } from "./poi-containers";
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
-import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate } from "./terrain-policy";
+import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, isRepeatedTempleTemplate } from "./terrain-policy";
 import { loadTelescopeModules } from "./load-telescope";
 import { isGLTerrainEnabled } from "../renderer_settings";
 /**
@@ -27,7 +27,8 @@ import {
   MATERIAL_COLOR_CONVERSION,
   TILE_OVERLAY_COLORS,
 } from './telescope-adapter';
-import { getDataZip, readImage } from '../data-archive';
+import { getDataZip } from '../data-archive';
+import { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer } from './biome-background-layer';
 import { installTelescopeShim, isCanvasTainted } from './telescope-dom-shim';
 import { installFetchInterceptor, installImageSrcInterceptor } from './telescope-data-bridge';
 import {
@@ -494,281 +495,38 @@ export function hasDynamicOverlays(): boolean {
 
 // ─── Biome background layer ─────────────────────────────────────────────────
 
-const BIOME_BG_CACHE_NAME = 'noitamap-biome-bg-v1';
-const BIOME_BG_CACHE_KEY = '/biome_bg_composite.png';
-
-/** In-memory cache of the composite blob + positioning metadata */
-let _bgCompositeBlob: Blob | null = null;
-let _bgGeometry: { gx: number; gy: number; w: number; h: number } | null = null;
+let _bgLayer: Awaited<ReturnType<typeof prepareBiomeBackgroundLayer>> | null = null;
 let _bgInitPromise: Promise<void> | null = null;
+let _bgEpoch = 0;
 
-/**
- * Initialize the biome background system: render or load the composite,
- * cache in memory, and add to OSD as a preview. Safe to call multiple times.
- */
+/** Load native background textures once, then let OSD cache small visible tiles. */
 export function ensurePersistentBiomeBackgrounds(viewer: any): Promise<void> {
   if (isGLTerrainEnabled()) return Promise.resolve();
   if (!_bgInitPromise) {
-    _bgInitPromise = _initBiomeBg(viewer);
+    const epoch = _bgEpoch;
+    _bgInitPromise = prepareBiomeBackgroundLayer().then(layer => {
+      if (epoch !== _bgEpoch) return;
+      _bgLayer = layer;
+      addBiomeBgToOSD(viewer);
+    }).catch(error => {
+      if (epoch === _bgEpoch) _bgInitPromise = null;
+      console.warn('[OSD Bridge] Biome backgrounds failed to load:', error);
+    });
   }
   return _bgInitPromise;
 }
 
-/**
- * Reset so biome backgrounds will be re-initialized on next call.
- * Called when switching away from the dynamic map (setMap → world.removeAll).
- * Keeps the in-memory blob cache so re-init is instant.
- */
+/** Invalidate pending attachments on map switches, retaining decoded textures. */
 export function resetPersistentBiomeBackgrounds(): void {
+  _bgEpoch++;
   _bgInitPromise = null;
 }
 
-/**
- * Add biome background layers to OSD from the in-memory cached blob.
- * This is FAST (no rendering, no network) — just creates blob URLs
- * and calls addTiledImage. Used after clearDynamicOverlays to immediately
- * restore the biome background layer.
- *
- * Returns immediately if the blob hasn't been loaded yet (preview not ready).
- */
 export function addBiomeBgToOSD(viewer: any): void {
-  if (!_bgCompositeBlob || !_bgGeometry) return;
-  const { gx, gy, w } = _bgGeometry;
-  const pwOffsetPixels = 70 * 512;
-  const pws = isLightMode() ? [0] : [-1, 0, 1];
-  for (const pw of pws) {
-    const url = URL.createObjectURL(_bgCompositeBlob);
-    viewer.addTiledImage({
-      tileSource: { type: 'image', url, buildPyramid: false },
-      x: gx + pw * pwOffsetPixels,
-      y: gy,
-      width: w,
-      success: (event: any) => {
-        try {
-          event.item.source.__biomeBg = true;
-        } catch {}
-      },
-    });
-  }
-}
-
-async function _initBiomeBg(viewer: any): Promise<void> {
-  // Compute geometry (only once)
-  if (!_bgGeometry) {
-    const boundaryData = (await import('../data/biome_boundries_py.json')).default;
-    if (!boundaryData?.biomes) return;
-
-    const biomesWithBg = boundaryData.biomes.filter(
-      (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename)
-    );
-    if (biomesWithBg.length === 0) return;
-
-    const CHUNK_SIZE = 512;
-    const BIOME_IMAGE_TOP_Y = -14 * CHUNK_SIZE;
-    const MAP_TOP_LEFT_X = -17920;
-
-    let globalMinGX = Infinity,
-      globalMinGY = Infinity,
-      globalMaxGX = -Infinity,
-      globalMaxGY = -Infinity;
-    for (const biome of biomesWithBg) {
-      const rawParts = biome.svg_map_path.split(' ');
-      let isX = true;
-      for (const part of rawParts) {
-        if (part === 'M' || part === 'L' || part === 'Z') {
-          isX = true;
-          continue;
-        }
-        const v = Number(part);
-        if (isX) {
-          const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
-          globalMinGX = Math.min(globalMinGX, gx);
-          globalMaxGX = Math.max(globalMaxGX, gx);
-          isX = false;
-        } else {
-          const gy = v * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
-          globalMinGY = Math.min(globalMinGY, gy);
-          globalMaxGY = Math.max(globalMaxGY, gy);
-          isX = true;
-        }
-      }
-    }
-    if (!isFinite(globalMinGX)) return;
-
-    const regionW = globalMaxGX - globalMinGX;
-    const regionH = globalMaxGY - globalMinGY;
-    if (regionW <= 0 || regionH <= 0) return;
-
-    _bgGeometry = { gx: globalMinGX, gy: globalMinGY, w: regionW, h: regionH };
-  }
-
-  // Load or render the composite blob (only once)
-  if (!_bgCompositeBlob) {
-    // Try Cache API first
-    try {
-      const cache = await caches.open(BIOME_BG_CACHE_NAME);
-      const cached = await cache.match(BIOME_BG_CACHE_KEY);
-      if (cached) {
-        _bgCompositeBlob = await cached.blob();
-        console.log(`[OSD Bridge] Biome bg composite loaded from cache (${_bgCompositeBlob.size} bytes)`);
-      }
-    } catch (e) {
-      console.warn('[OSD Bridge] Cache API read failed:', e);
-    }
-
-    // Render if not cached
-    if (!_bgCompositeBlob) {
-      const boundaryData = (await import('../data/biome_boundries_py.json')).default;
-      const biomesWithBg = boundaryData.biomes.filter(
-        (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename)
-      );
-      console.log('[OSD Bridge] Rendering biome bg composite...');
-      _bgCompositeBlob = await _renderBiomeComposite(
-        biomesWithBg,
-        _bgGeometry.gx,
-        _bgGeometry.gy,
-        _bgGeometry.w,
-        _bgGeometry.h
-      );
-      if (!_bgCompositeBlob) return;
-
-      // Cache for next page load
-      try {
-        const cache = await caches.open(BIOME_BG_CACHE_NAME);
-        await cache.put(
-          BIOME_BG_CACHE_KEY,
-          new Response(_bgCompositeBlob, {
-            headers: { 'Content-Type': 'image/png' },
-          })
-        );
-        console.log(`[OSD Bridge] Biome bg composite cached (${_bgCompositeBlob.size} bytes)`);
-      } catch (e) {
-        console.warn('[OSD Bridge] Cache API write failed:', e);
-      }
-    }
-  }
-
-  // Add initial preview to OSD
-  addBiomeBgToOSD(viewer);
-  console.log('[OSD Bridge] Biome bg preview added to OSD (3 PWs)');
-}
-
-/** Render the biome background composite on an OffscreenCanvas. */
-async function _renderBiomeComposite(
-  biomesWithBg: any[],
-  globalMinGX: number,
-  globalMinGY: number,
-  regionW: number,
-  regionH: number
-): Promise<Blob | null> {
-  const CHUNK_SIZE = 512;
-  const BIOME_IMAGE_TOP_Y = -14 * CHUNK_SIZE;
-  const MAP_TOP_LEFT_X = -17920;
-
-  // Load textures from static URLs
-  const neededPaths = new Set<string>();
-  for (const b of biomesWithBg) {
-    neededPaths.add(BIOME_BACKGROUND_MAP[b.filename]);
-  }
-
-  const bgCache = new Map<string, ImageBitmap>();
-  await Promise.all(
-    [...neededPaths].map(async zipPath => {
-      try {
-        const filename = zipPath.split('/').pop()!;
-        const resp = await fetch(`./biome_bg/${filename}`);
-        if (!resp.ok) return;
-        const blob = await resp.blob();
-        const bmp = await createImageBitmap(blob);
-        bgCache.set(zipPath, bmp);
-      } catch {}
-    })
-  );
-
-  const scale = 0.1;
-  const cw = Math.ceil(regionW * scale);
-  const ch = Math.ceil(regionH * scale);
-  if (cw <= 0 || ch <= 0) return null;
-
-  const canvas = new OffscreenCanvas(cw, ch);
-  const ctx = canvas.getContext('2d')!;
-  ctx.imageSmoothingEnabled = false;
-
-  for (const biome of biomesWithBg) {
-    const bgPath = BIOME_BACKGROUND_MAP[biome.filename];
-    const bgBitmap = bgCache.get(bgPath);
-    if (!bgBitmap) continue;
-
-    const rawParts = biome.svg_map_path.split(' ');
-    let minGX = Infinity,
-      minGY = Infinity,
-      maxGX = -Infinity,
-      maxGY = -Infinity;
-    let isX = true;
-    for (const part of rawParts) {
-      if (part === 'M' || part === 'L' || part === 'Z') {
-        isX = true;
-        continue;
-      }
-      const v = Number(part);
-      if (isX) {
-        const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
-        minGX = Math.min(minGX, gx);
-        maxGX = Math.max(maxGX, gx);
-        isX = false;
-      } else {
-        const gy = v * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
-        minGY = Math.min(minGY, gy);
-        maxGY = Math.max(maxGY, gy);
-        isX = true;
-      }
-    }
-    if (!isFinite(minGX)) continue;
-
-    ctx.save();
-    ctx.beginPath();
-    let isXp = true;
-    for (let j = 0; j < rawParts.length; j++) {
-      const part = rawParts[j];
-      if (part === 'M' || part === 'L' || part === 'Z') {
-        if (part === 'Z') ctx.closePath();
-        isXp = true;
-        continue;
-      }
-      const v = Number(part);
-      if (isXp) {
-        const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
-        const nextPart = rawParts[j + 1];
-        if (nextPart !== undefined) {
-          const gy = Number(nextPart) * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
-          const cx = (gx - globalMinGX) * scale;
-          const cy = (gy - globalMinGY) * scale;
-          const prevCmd = rawParts[j - 1];
-          if (prevCmd === 'M') ctx.moveTo(cx, cy);
-          else ctx.lineTo(cx, cy);
-        }
-        isXp = false;
-      } else {
-        isXp = true;
-      }
-    }
-    ctx.clip();
-
-    const tw = Math.max(1, Math.round(bgBitmap.width * scale));
-    const th = Math.max(1, Math.round(bgBitmap.height * scale));
-    const tileMinX = Math.floor(((minGX - globalMinGX) * scale) / tw) * tw;
-    const tileMinY = Math.floor(((minGY - globalMinGY) * scale) / th) * th;
-    const tileMaxX = Math.ceil((maxGX - globalMinGX) * scale);
-    const tileMaxY = Math.ceil((maxGY - globalMinGY) * scale);
-    for (let ty = tileMinY; ty < tileMaxY; ty += th) {
-      for (let tx = tileMinX; tx < tileMaxX; tx += tw) {
-        ctx.drawImage(bgBitmap, 0, 0, bgBitmap.width, bgBitmap.height, tx, ty, tw, th);
-      }
-    }
-    ctx.restore();
-  }
-
-  return canvas.convertToBlob({ type: 'image/png' });
+  if (!_bgLayer) return;
+  const epoch = _bgEpoch, generationId = currentGenerationId;
+  attachBiomeBackgroundLayer(viewer, _bgLayer, isLightMode() ? [0] : [-35840, 0, 35840],
+    () => epoch === _bgEpoch && generationId === currentGenerationId);
 }
 
 /**
@@ -822,231 +580,6 @@ async function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
   const url = URL.createObjectURL(blob);
   dynamicBlobUrls.push(url);
   return url;
-}
-
-// ─── Biome Background Tiling ────────────────────────────────────────────────
-
-/**
- * Authoritative biome → tileable background PNG mapping,
- * extracted from Noita's biome XML files in data.zip.
- */
-
-
-/** Cache of loaded background ImageBitmaps, keyed by zip path */
-const _bgBitmapCache = new Map<string, ImageBitmap>();
-
-/** Load a tileable background image from data.zip, caching the result. */
-async function loadBiomeBackground(zipPath: string): Promise<ImageBitmap | null> {
-  const cached = _bgBitmapCache.get(zipPath);
-  if (cached) return cached;
-  const bmp = await readImage(zipPath).catch(() => null);
-  if (bmp) _bgBitmapCache.set(zipPath, bmp);
-  return bmp;
-}
-
-/**
- * Parse an SVG path string (M x y L x y ... Z) into a Path2D.
- * Coordinates are game-world coordinates (pixels).
- */
-function svgPathToPath2D(svgPath: string): Path2D {
-  const p = new Path2D();
-  const parts = svgPath.split(' ');
-  let i = 0;
-  while (i < parts.length) {
-    const cmd = parts[i];
-    if (cmd === 'M' || cmd === 'L') {
-      const x = Number(parts[i + 1]);
-      const y = Number(parts[i + 2]);
-      if (cmd === 'M') p.moveTo(x, y);
-      else p.lineTo(x, y);
-      i += 3;
-    } else if (cmd === 'Z') {
-      p.closePath();
-      i++;
-    } else {
-      i++;
-    }
-  }
-  return p;
-}
-
-/**
- * Add pre-baked biome background layers using biome boundary shapes.
- * Each biome's exact shape (from biome_boundries_py.json) is used as a clip
- * mask. The bg texture is tiled at native resolution within the clip, then
- * the canvas is added as a static OSD layer below biome overlays.
- */
-async function addBiomeBackgrounds(viewer: OSDViewer, generationId: number): Promise<void> {
-  const boundaryData = (await import('../data/biome_boundries_py.json')).default;
-  if (!boundaryData?.biomes) return;
-
-  // Determine which biomes need backgrounds
-  const biomesWithBg = boundaryData.biomes.filter(
-    (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename)
-  );
-  if (biomesWithBg.length === 0) return;
-
-  // Pre-load all needed background textures
-  const neededPaths = new Set<string>();
-  for (const b of biomesWithBg) {
-    neededPaths.add(BIOME_BACKGROUND_MAP[b.filename]);
-  }
-  await Promise.all([...neededPaths].map(p => loadBiomeBackground(p)));
-  console.log(`[OSD Bridge] Pre-loaded ${neededPaths.size} biome background textures`);
-
-  const CHUNK_SIZE = 512;
-  const BIOME_IMAGE_TOP_Y = -14 * CHUNK_SIZE; // -7168
-
-  // Build the single bg canvas once (PW 0), then replicate for each PW via offset
-  const MAP_TOP_LEFT_X = -17920; // PW 0 origin
-
-  // Compute global bounding box across ALL biomes
-  let globalMinGX = Infinity,
-    globalMinGY = Infinity,
-    globalMaxGX = -Infinity,
-    globalMaxGY = -Infinity;
-  for (const biome of biomesWithBg) {
-    const rawParts = biome.svg_map_path.split(' ');
-    let isX = true;
-    for (const part of rawParts) {
-      if (part === 'M' || part === 'L' || part === 'Z') {
-        isX = true;
-        continue;
-      }
-      const v = Number(part);
-      if (isX) {
-        const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
-        globalMinGX = Math.min(globalMinGX, gx);
-        globalMaxGX = Math.max(globalMaxGX, gx);
-        isX = false;
-      } else {
-        const gy = v * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
-        globalMinGY = Math.min(globalMinGY, gy);
-        globalMaxGY = Math.max(globalMaxGY, gy);
-        isX = true;
-      }
-    }
-  }
-  if (!isFinite(globalMinGX)) return;
-
-  const regionW = globalMaxGX - globalMinGX;
-  const regionH = globalMaxGY - globalMinGY;
-  if (regionW <= 0 || regionH <= 0) return;
-
-  const scale = 0.1;
-  const cw = Math.ceil(regionW * scale);
-  const ch = Math.ceil(regionH * scale);
-  if (cw <= 0 || ch <= 0) return;
-
-  const canvas = new OffscreenCanvas(cw, ch);
-  const ctx = canvas.getContext('2d')!;
-  ctx.imageSmoothingEnabled = false;
-
-  for (const biome of biomesWithBg) {
-    if (currentGenerationId !== generationId) return;
-    const bgPath = BIOME_BACKGROUND_MAP[biome.filename];
-    const bgBitmap = _bgBitmapCache.get(bgPath);
-    if (!bgBitmap) continue;
-
-    const rawParts = biome.svg_map_path.split(' ');
-    let minGX = Infinity,
-      minGY = Infinity,
-      maxGX = -Infinity,
-      maxGY = -Infinity;
-    let isX = true;
-    for (const part of rawParts) {
-      if (part === 'M' || part === 'L' || part === 'Z') {
-        isX = true;
-        continue;
-      }
-      const v = Number(part);
-      if (isX) {
-        const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
-        minGX = Math.min(minGX, gx);
-        maxGX = Math.max(maxGX, gx);
-        isX = false;
-      } else {
-        const gy = v * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
-        minGY = Math.min(minGY, gy);
-        maxGY = Math.max(maxGY, gy);
-        isX = true;
-      }
-    }
-    if (!isFinite(minGX)) continue;
-
-    ctx.save();
-    ctx.beginPath();
-    let isXp = true;
-    for (let j = 0; j < rawParts.length; j++) {
-      const part = rawParts[j];
-      if (part === 'M' || part === 'L' || part === 'Z') {
-        if (part === 'Z') ctx.closePath();
-        isXp = true;
-        continue;
-      }
-      const v = Number(part);
-      if (isXp) {
-        const gx = v * CHUNK_SIZE + MAP_TOP_LEFT_X;
-        const nextPart = rawParts[j + 1];
-        if (nextPart !== undefined) {
-          const gy = Number(nextPart) * CHUNK_SIZE + BIOME_IMAGE_TOP_Y;
-          const cx = (gx - globalMinGX) * scale;
-          const cy = (gy - globalMinGY) * scale;
-          const prevCmd = rawParts[j - 1];
-          if (prevCmd === 'M') ctx.moveTo(cx, cy);
-          else ctx.lineTo(cx, cy);
-        }
-        isXp = false;
-      } else {
-        isXp = true;
-      }
-    }
-    ctx.clip();
-
-    const tw = Math.max(1, Math.round(bgBitmap.width * scale));
-    const th = Math.max(1, Math.round(bgBitmap.height * scale));
-    const tileMinX = Math.floor(((minGX - globalMinGX) * scale) / tw) * tw;
-    const tileMinY = Math.floor(((minGY - globalMinGY) * scale) / th) * th;
-    const tileMaxX = Math.ceil((maxGX - globalMinGX) * scale);
-    const tileMaxY = Math.ceil((maxGY - globalMinGY) * scale);
-    for (let ty = tileMinY; ty < tileMaxY; ty += th) {
-      for (let tx = tileMinX; tx < tileMaxX; tx += tw) {
-        ctx.drawImage(bgBitmap, 0, 0, bgBitmap.width, bgBitmap.height, tx, ty, tw, th);
-      }
-    }
-    ctx.restore();
-  }
-
-  // Create blob URL once, reuse for all PWs
-  const url = await offscreenCanvasToBlobUrl(canvas);
-  if (currentGenerationId !== generationId) return;
-
-  // Add the bg canvas for PW 0, -1, and +1 (skip side PWs in light mode)
-  const pwOffsetPixels = 70 * 512; // TODO: use isNGP for 72
-  const bgPws = isLightMode() ? [0] : [-1, 0, 1];
-  for (const pw of bgPws) {
-    const pwX = globalMinGX + pw * pwOffsetPixels;
-    viewer.addTiledImage({
-      tileSource: { type: 'image', url, buildPyramid: false },
-      x: pwX,
-      y: globalMinGY,
-      width: regionW,
-      success: (event: any) => {
-        if (currentGenerationId !== generationId) {
-          try {
-            viewer.world.removeItem(event.item);
-          } catch {}
-          return;
-        }
-        try {
-          event.item.source.__biomeBg = true;
-        } catch {}
-        dynamicTiledImages.add(event.item);
-      },
-    });
-  }
-
-  console.log(`[OSD Bridge] Gen ${generationId}: Added biome backgrounds for 3 PWs`);
 }
 
 // ─── Progressive Biome Rendering ────────────────────────────────────────────
@@ -1436,8 +969,6 @@ export const pixelSceneConfig = {
     // Pyramid scenes - prebaked in map art
     'left',
     'right',
-    // Hidden cavern - prebaked in OSD
-    'solid_wall_hidden_cavern',
   ]),
   /** Skip lists by biome prefix in scene key */
   skipBiomes: new Set([
@@ -1971,19 +1502,23 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
   return null;
 }
 
-/**
- * Per-instance render key. Pixel-scene fills (oiltank, vault liquids, etc.)
- * pick a material via PRNG and encode it in variantKey as `f0bbee=<wang>`. Two
- * instances of the same scene.key with different liquids must NOT share a
- * cached bitmap, so fold the material part of the variant into the key. The
- * biome part is omitted (it's already implied by scene.key), so non-fill scenes
- * keep their plain key and stay prefetch/cache compatible.
- */
-function sceneRenderKey(scene: { key: string; variantKey?: string }): string {
+// The legacy fork aliases these rooms to "general", losing their cave backdrop.
+// All Friend rooms use the same rock/background pair, regardless of which one
+// contains the boss. Their air must erase the rock under the scene.
+const CARVED_ROOM_BIOMES: Record<string, string> = {
+  'general/friendroom': 'friend_1',
+  'general/cavern': 'friend_1',
+  'general/solid_wall_hidden_cavern': 'solid_wall_hidden_cavern',
+};
+
+/** Preserve random liquid variants; carved rooms also need their texture phase. */
+function sceneRenderKey(scene: { key: string; variantKey?: string; x?: number; y?: number }): string {
   const vk = scene.variantKey || '';
-  if (!vk) return scene.key;
   const mat = vk.split('&').filter(p => p && !p.startsWith('biome='));
-  return mat.length ? `${scene.key}|${mat.join('&')}` : scene.key;
+  const key = mat.length ? `${scene.key}|${mat.join('&')}` : scene.key;
+  // Background textures repeat in world coordinates; different placements
+  // cannot share a flattened bitmap. This also bypasses old black room caches.
+  return CARVED_ROOM_BIOMES[scene.key] ? `${key}|cave-bg-v1|${scene.x ?? 0},${scene.y ?? 0}` : key;
 }
 
 /**
@@ -2029,7 +1564,7 @@ function recolorSceneVariant(
  */
 async function compositeSceneBitmap(
   key: string,
-  scene: { imgElement: any; width: number; height: number; name: string; key: string; variantKey?: string },
+  scene: { imgElement: any; width: number; height: number; name: string; key: string; variantKey?: string; x?: number; y?: number },
   idx: {
     visualByPath: Map<string, string>;
     visualByName: Map<string, string>;
@@ -2047,7 +1582,8 @@ async function compositeSceneBitmap(
   const biome = slashIdx >= 0 ? key.substring(0, slashIdx) : '';
   const name = slashIdx >= 0 ? key.substring(slashIdx + 1) : key;
 
-  const skipBg = biome === 'temple' || biome === 'general';
+  const caveBiome = CARVED_ROOM_BIOMES[key];
+  const skipBg = biome === 'temple' || (biome === 'general' && !caveBiome);
 
   const override = pixelSceneConfig.layerOverrides[name] || pixelSceneConfig.layerOverrides[key];
   const wantBg = override?.background ?? pixelSceneConfig.layers.background;
@@ -2062,7 +1598,15 @@ async function compositeSceneBitmap(
   let visualData: ImageData | null = null;
 
   if (zip && bgPath) {
-    bgData = await decodeScenePng(zip, bgPath).catch(() => null);
+    if (caveBiome) {
+      const { decodePngToRgba } = await import('./png-decode');
+      const file = zip.file(bgPath);
+      if (file) {
+        const decoded = decodePngToRgba(await file.async('arraybuffer'));
+        bgData = new ImageData(decoded.width, decoded.height);
+        bgData.data.set(decoded.data);
+      }
+    } else bgData = await decodeScenePng(zip, bgPath).catch(() => null);
     if (bgData && scene.width > 0 && bgData.width < scene.width / 2) bgData = null;
   }
   if (zip && visualPath) {
@@ -2077,7 +1621,26 @@ async function compositeSceneBitmap(
     if (baseImg) {
       let recolored: any = baseImg;
       try {
-        recolored = recolorSceneVariant(baseImg, scene, biome);
+        recolored = recolorSceneVariant(baseImg, caveBiome ? {
+          ...scene, variantKey: (scene.variantKey || 'biome=general').replace(/biome=[^&]+/, `biome=${caveBiome}`),
+        } : scene, caveBiome || biome);
+        if (caveBiome && wantBg) {
+          const { loadTerrainBackgrounds, textureColor, compositeTerrain } = await import('./terrain-backgrounds');
+          const background = (await loadTerrainBackgrounds([caveBiome])).get(caveBiome)!;
+          for (let i = 0; i < baseImg.length; i += 4) {
+            if (!baseImg[i + 3] || baseImg[i] !== 0 || baseImg[i + 1] !== 0 || baseImg[i + 2] !== 66) continue;
+            const x = (i / 4) % scene.width, y = Math.floor(i / 4 / scene.width);
+            let color = textureColor(background, (scene.x ?? 0) + x + 17920, (scene.y ?? 0) + y + 7168);
+            if (bgData && x < bgData.width && y < bgData.height) {
+              const p = (y * bgData.width + x) * 4, d = bgData.data;
+              color = compositeTerrain(((d[p + 3] << 24) | (d[p] << 16) | (d[p + 1] << 8) | d[p + 2]) >>> 0, color);
+            }
+            recolored[i] = (color >>> 16) & 255;
+            recolored[i + 1] = (color >>> 8) & 255;
+            recolored[i + 2] = color & 255;
+            recolored[i + 3] = color >>> 24;
+          }
+        }
         for (let i = 0; i < recolored.length; i += 4) {
           const pr = recolored[i],
             pg = recolored[i + 1],
@@ -2180,7 +1743,8 @@ export function prefetchAllSceneBitmaps(): Promise<void> {
   if (_scenePrefetchInflight) return _scenePrefetchInflight;
   _scenePrefetchInflight = (async () => {
     try {
-      const allKeys = getAllPixelSceneKeys();
+      // Carved rooms need placement coordinates to sample their background.
+      const allKeys = getAllPixelSceneKeys().filter(key => !CARVED_ROOM_BIOMES[key]);
       if (allKeys.length === 0) return;
       const cached = await getCachedSceneBitmapKeys();
       const missing = allKeys.filter(k => !cached.has(k));
