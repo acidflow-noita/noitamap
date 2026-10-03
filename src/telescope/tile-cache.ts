@@ -1,5 +1,6 @@
 import { OptionalCacheDatabase, warnCacheFailure } from "./cache-storage";
 import { normalizeScenePOIs } from "./scene-pois";
+import { completeGenerationBossPOIs } from "./boss-pois";
 import { serializeTileLayer, restoreTileLayer, type CachedTileLayer } from "./tile-layer-cache";
 import { telescopeCacheKey } from "./cache-identity";
 import { readReportInventorySnapshot, type ReportInventorySnapshot } from "../report-inventory";
@@ -242,7 +243,7 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
     }
 
     console.log(`[TileCache] Cache hit for key ${cacheKey}`);
-    return normalizeScenePOIs({
+    return normalizeScenePOIs(completeGenerationBossPOIs({
       cacheKey: entry.cacheKey,
       seed: entry.seed,
       ngPlus: entry.ngPlus,
@@ -258,7 +259,7 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
       elevatorShafts: entry.elevatorShafts?.map(restoreTileLayer),
       poisByPW: entry.poisByPW,
       pixelScenesByPW,
-    });
+    }));
   } catch (e) {
     warnCacheFailure("[TileCache] Failed to read cache:", e);
     return null;

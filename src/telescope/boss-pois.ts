@@ -155,7 +155,7 @@ export function completeBossPOIs(pois: POI[], world: World): POI[] {
     for (let i = 0; i < result.length; i++) {
       const poi = result[i];
       if (poi.type === "item" && poi.item === "gourd" && poi.biome === biome) {
-        result[i] = { ...poi, y: scene.y + 430 };
+        result[i] = { ...poi, y: scene.y + 345 };
       }
     }
   }
