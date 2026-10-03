@@ -7,11 +7,13 @@ import { tmpdir } from 'node:os';
 import { appendFileSync } from 'node:fs';
 
 it.skipIf(process.platform !== 'linux').each([
+  { wide: true, seed: 92859, parallelWorlds: [-1, 0, 1], x: 0, y: 0, cachedLayers: false },
   { seed: 9281, parallelWorlds: [-1, 0, 1], x: -3060, y: 3548, cachedLayers: false },
   { cpu: true, seed: 92, parallelWorlds: [-1, 0, 1], x: -3060, y: 3548, cachedLayers: true },
   { seed: 16981, parallelWorlds: [0], x: -800, y: 6980, cachedLayers: false },
+  { worker: true, seed: 16981, parallelWorlds: [0], x: -800, y: 6980, cachedLayers: false },
   { seed: 92, parallelWorlds: [-1, 0, 1], x: -3060, y: 3548, cachedLayers: true },
-])('renders seed $seed cpu=$cpu using actual TerrainView at full detail, zoomed out and revisited', async scenario => {
+])('renders seed $seed cpu=$cpu worker=$worker with the production terrain pipeline', async scenario => {
   const root = resolve(import.meta.dirname, '..');
   const bundle = await mkdtemp(resolve(tmpdir(), 'noitamap-live-view-'));
   try {
@@ -32,15 +34,25 @@ it.skipIf(process.platform !== 'linux').each([
       worker.on('error', reject);
       worker.on('exit', code => { clearTimeout(timer); message && !message.error && code === 0 ? done(message) : reject(new Error((message?.error ?? `Exit ${code}`) + '\n' + logs.slice(-8000))); });
     });
-    if (result.cpu) expect(result.refusedContexts).toBe(4);
-    if (!result.cpu) {
+    if (result.cpu) expect(result.refusedContexts).toBe(2);
+    if (result.wide) {
+      expect(result.frames).toHaveLength(2);
+      expect(result.maxUiGap).toBeLessThan(1000);
+      for (const frame of result.frames) {
+        expect(frame.colors).toBeGreaterThan(100);
+        expect(frame.visible).toBeGreaterThan(1000);
+      }
+      expect(result.frames[1].hash).not.toBe(result.frames[0].hash);
+    } else if (!result.cpu) {
     expect(result.frames).toHaveLength(3);
     for (const frame of result.frames) { expect(frame.colors).toBeGreaterThan(5); expect(frame.visible).toBeGreaterThan(100); }
     expect(result.frames[0].hash).toBe(result.frames[2].hash);
+    expect(result.frames[2].draws).toBe(0);
+    if (scenario.worker) expect(result.frames[0].hash).toBe('b3317032edc9d4dd05daa4eb63643536d087d36266827b941ab78abdddf15492');
     }
     if (scenario.seed === 92) {
-      expect(result.overview.colors).toBeGreaterThan(100);
-      expect(result.overview.visible).toBeGreaterThan(10000);
+      expect(result.overview.colors).toBeGreaterThan(result.cpu ? 5 : 100);
+      expect(result.overview.visible).toBeGreaterThan(result.cpu ? 100 : 10000);
     }
     console.log('[TerrainView native]', JSON.stringify(result));
   } finally { await rm(bundle, { recursive: true, force: true }); }

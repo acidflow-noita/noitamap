@@ -1,5 +1,6 @@
 import { mountTerrainViewport, renderTerrainFrame, type TerrainRegion } from "./terrain-viewport";
 import { LiveTerrainView, LiveTerrainUnavailable } from './live-terrain-view';
+import { LiveTerrainClient } from './live-terrain-client';
 import { prepareTerrainPlane } from "./terrain-planes";
 import {
   WORLD_HEIGHT,
@@ -77,42 +78,34 @@ export async function addFullPixelLayers(
       });
     }
   }
-  let live: LiveTerrainView | undefined;
+  let live: LiveTerrainView | LiveTerrainClient | undefined;
   let useFallback = false;
   const reset = () => { live?.dispose(); window.removeEventListener('fullPixelTerrainReset', reset); };
   if (isCurrent()) {
     window.addEventListener('fullPixelTerrainReset', reset);
-    mountTerrainViewport(viewer, async (bounds, scale, signal) => {
-      const frame = document.createElement('canvas');
-      frame.width = Math.max(1, Math.ceil(bounds.width * scale));
-      frame.height = Math.max(1, Math.ceil(bounds.height * scale));
-      const context = frame.getContext('2d')!;
-      const top = Math.max(0, Math.floor((WORLD_TOP - bounds.y) * scale));
-      const bottom = Math.min(frame.height, Math.ceil((WORLD_TOP + h - bounds.y) * scale));
-      if (bottom > top) {
-        const mainBounds = { ...bounds, y: bounds.y + top / scale, height: (bottom - top) / scale };
-        let main: HTMLCanvasElement;
-        try {
-          if (useFallback) throw new LiveTerrainUnavailable();
-          live ??= new LiveTerrainView(generation, deps);
-          main = await live.render(mainBounds, scale, signal);
-        } catch (error) {
-          if (!(error instanceof LiveTerrainUnavailable)) throw error;
-          if (!useFallback) console.warn('[TerrainView] WebGL2 unavailable; using the CPU worker renderer', error.message);
-          useFallback = true; live?.dispose(); live = undefined;
-          main = await renderTerrainFrame(fallbackRegions, mainBounds, scale, signal);
-        }
-        signal.throwIfAborted();
-        context.save(); context.beginPath();
-        for (const pw of pws) context.rect((-width * 256 + pw * w - bounds.x) * scale,
-          (WORLD_TOP - bounds.y) * scale, w * scale, h * scale);
-        context.clip(); context.drawImage(main, 0, top); context.restore();
+    let painted = false;
+    const visiblePaint = () => { if (!painted) { painted = true; firstPaint?.(); } };
+    const extent = (plane: number) => ({ x: -width * 256 + Math.min(...pws) * w,
+      y: WORLD_TOP + plane * h, width: (Math.max(...pws) - Math.min(...pws) + 1) * w, height: h });
+    // Main-world GPU pixels can be displayed as soon as ready. Each vertical
+    // plane has its own cancellable work; neither can hold the main frame.
+    mountTerrainViewport(viewer, async (bounds, scale, signal, publish) => {
+      try {
+        if (useFallback) throw new LiveTerrainUnavailable();
+        live ??= typeof OffscreenCanvas !== 'undefined' && typeof Worker !== 'undefined'
+          ? new LiveTerrainClient(generation) : new LiveTerrainView(generation, deps);
+        return await live.render(bounds, scale, signal, publish);
+      } catch (error) {
+        if (!(error instanceof LiveTerrainUnavailable)) throw error;
+        if (!useFallback) console.warn('[TerrainView] WebGL2 unavailable; using the CPU worker renderer', error.message);
+        useFallback = true; live?.dispose(); live = undefined;
+        return renderTerrainFrame(fallbackRegions, bounds, scale, signal, publish);
       }
-      if (bounds.y < WORLD_TOP || bounds.y + bounds.height > WORLD_TOP + h) {
-        const vertical = await renderTerrainFrame(regions, bounds, scale, signal);
-        signal.throwIfAborted(); context.drawImage(vertical, 0, 0);
-      }
-      return frame;
-    }, isCurrent, onItem, firstPaint);
+    }, isCurrent, onItem, visiblePaint, extent(0));
+    for (const plane of [-1, 1]) {
+      const region = regions.filter(r => r.y === WORLD_TOP + plane * h);
+      mountTerrainViewport(viewer, (bounds, scale, signal, publish) => renderTerrainFrame(region, bounds, scale, signal, publish),
+        isCurrent, onItem, visiblePaint, extent(plane));
+    }
   }
 }

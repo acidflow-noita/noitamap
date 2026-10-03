@@ -87,12 +87,15 @@ packs and material data. Legacy approximate generation is an explicit performanc
 Main-world live rendering now uses the fork's **`TerrainView` API**. Terrain
 and pixel scenes are shaded for the viewport from retained world data; it no
 longer builds native terrain tiles or pyramid ancestors to draw an overview.
-Renderer resources are prepared in a worker. Host ownership and liquid levelling
+The live renderer runs in a worker with OffscreenCanvas, so shader compilation,
+uploads and composition cannot block the viewer's input thread. Host ownership and liquid levelling
 run in the terrain shader, including the material-ID pass used by decals.
 Backgrounds and static-area masks remain host-owned.
 
-OSD receives one completed viewport image, without an approximate preview or
-independent tile refinement. `detailZoom: Infinity` keeps material textures and
+OSD receives screen-sized images as terrain and then decorations become ready.
+Main, heaven and hell finish independently. Camera changes cancel stale work;
+decoration work waits briefly for the camera to settle. Completed camera images
+are retained in a bounded 32 MiB cache for revisits. `detailZoom: Infinity` keeps material textures and
 scene detail enabled at every zoom; the decal gate also honors that setting.
 Completed decal tiles accumulate in screen space, so a view larger than the
 upstream 768-tile GPU cache can finish without endlessly evicting its own work.
@@ -101,7 +104,7 @@ reductions of all native world pixels.
 
 Heaven and hell still use the existing native renderer to preserve repeated
 geometry and the Power Plant shaft. The no-WebGL fallback also retains that
-renderer. Their cold overviews remain expensive. Main-world edge decals still
+renderer, publishing ready pixels while remaining tiles finish. Their cold overviews remain expensive. Main-world edge decals still
 require upstream worker stamping of native tiles, so enabling them at every
 zoom does **not** make a cold full-map view instant. Baked daily maps continue to
 use their existing DZI path independently of this live renderer.

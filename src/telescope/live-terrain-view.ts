@@ -1,3 +1,4 @@
+import Flatbush from 'flatbush';
 // @ts-ignore upstream's supported embedding API
 import { TerrainView, applyTerrainSettings, drawSpace } from 'noita-telescope-full-pixels/terrain_view.js';
 // @ts-ignore upstream JavaScript
@@ -13,12 +14,22 @@ import { createTerrainRenderer } from './terrain-context';
 import { createPlaneOwnership } from './terrain-policy';
 import type { GLTerrainGeneration, GLTerrainDeps } from './gl-terrain-tile-source';
 import type { TerrainRect } from './terrain-viewport';
+import { LiveTerrainUnavailable } from './live-terrain-error';
+export { LiveTerrainUnavailable };
 
 const canvas = (width: number, height: number) => {
   const value = document.createElement('canvas'); value.width = width; value.height = height; return value;
 };
 const tick = () => new Promise<void>(resolve => setTimeout(resolve, 16));
-export class LiveTerrainUnavailable extends Error {}
+const cameraIdle = (signal: AbortSignal) => new Promise<void>((resolve, reject) => {
+  const abort = () => { clearTimeout(timer); reject(signal.reason); };
+  const timer = setTimeout(() => { signal.removeEventListener('abort', abort); resolve(); }, 200);
+  signal.addEventListener('abort', abort, { once: true });
+  if (signal.aborted) abort();
+});
+const measure = (name: string, start: number) => {
+  performance.clearMeasures(name); performance.measure(name, { start });
+};
 
 /** One retained GPU world, shaded directly at the camera's screen resolution.
  * There are no native terrain leaves or pyramid ancestors on this path. */
@@ -31,6 +42,9 @@ export class LiveTerrainView {
   private queue: Promise<unknown> = Promise.resolve();
   private pws: number[];
   private width: number;
+  private sceneIndex?: Flatbush;
+  private frames = new Map<string, HTMLCanvasElement>();
+  private frameBytes = 0;
   private ownership: ReturnType<typeof createPlaneOwnership>;
   constructor(private gen: GLTerrainGeneration & { parallelWorlds?: number[] }, private deps: GLTerrainDeps) {
     applyTerrainSettings({ engineTerrain: true, materialTextures: true, recolorMaterials: true, clearSpawnPixels: true, edgeDecals: true });
@@ -40,21 +54,33 @@ export class LiveTerrainView {
     this.width = deps.getWorldSize(gen.isNGP, gen.gameMode);
     this.pws = gen.parallelWorlds ?? [0, -1, 1];
     this.ownership = createPlaneOwnership(gen.tileLayers, gen.biomeData.pixels, gen.biomeData.pixels, deps.GENERATOR_CONFIG, this.width);
+    const scenes = gen.sceneData?.scenes ?? [];
+    if (scenes.length) {
+      this.sceneIndex = new Flatbush(scenes.length);
+      for (const scene of scenes) this.sceneIndex.add(scene.x, scene.y, scene.x + scene.width, scene.y + scene.height);
+      this.sceneIndex.finish();
+    }
     this.ready = this.prepare();
     // Requests observe errors; preparing before the first camera is safe too.
     void this.ready.catch(() => {});
   }
   private async prepare() {
+    const start = performance.now();
     const options = this.view.buildOptions({ engineTerrain: true });
     if (!options) throw new LiveTerrainUnavailable(this.view.failed || 'WebGL2 unavailable');
     const signal = this.lifetime.signal;
     const liquidIds = [...await loadLiquidMaterialIds()]; signal.throwIfAborted();
+    measure('terrain:liquid-data', start);
     const worker = this.worker = new Worker(new URL('./live-terrain-worker.ts', import.meta.url), { type: 'module' });
     const build = buildTerrainInWorker(worker, {
       generation: { tileLayers: this.gen.tileLayers, biomeData: this.gen.biomeData,
         seed: this.gen.seed, isNGP: this.gen.isNGP, gameMode: this.gen.gameMode }, options, liquidIds,
     }, signal).finally(() => { if (this.worker === worker) this.worker = undefined; });
-    const [resource, compose] = await Promise.all([build, createLiveBackground(this.gen, this.deps)]);
+    const timed = async <T>(label: string, work: Promise<T>) => {
+      const start = performance.now(); const value = await work;
+      measure(label, start); return value;
+    };
+    const [resource, compose] = await Promise.all([timed('terrain:resources', build), timed('terrain:background', createLiveBackground(this.gen, this.deps))]);
     signal.throwIfAborted(); this.compose = compose;
     const scenes: Record<string, any[]> = {};
     // Empty neighbours let decal halos at the supported world's outer edge finish.
@@ -74,35 +100,76 @@ export class LiveTerrainView {
     const uniform = gl.getUniformLocation(terrain.program, 'u_hostTable');
     if (uniform === null) throw new Error('Host terrain policy shader was not installed');
     gl.useProgram(terrain.program); gl.uniform1i(uniform, resource.hostTable);
+    measure('terrain:prepare', start);
     // Retain the packed resources for context restoration as well as reseeding.
   }
-  render(bounds: TerrainRect, scale: number, signal: AbortSignal) {
+  render(bounds: TerrainRect, scale: number, signal: AbortSignal, publish?: (frame: HTMLCanvasElement) => void) {
     const combined = AbortSignal.any([signal, this.lifetime.signal]);
     // TerrainView owns mutable GPU state. A superseded camera exits before the
     // next one can use it; aborted work never disposes the retained world.
     const result = this.queue.then(async () => {
       await this.ready; combined.throwIfAborted();
-      return this.frame(bounds, scale, combined);
+      const key = [bounds.x, bounds.y, bounds.width, bounds.height, scale].join('/');
+      const cached = this.frames.get(key);
+      if (cached) { this.frames.delete(key); this.frames.set(key, cached); return cached; }
+      const frame = await this.frame(bounds, scale, combined, publish);
+      const bytes = frame.width * frame.height * 4, budget = 32 * 1024 * 1024;
+      if (bytes <= budget) {
+        this.frames.set(key, frame); this.frameBytes += bytes;
+        while (this.frameBytes > budget || this.frames.size > 8) {
+          const oldest = this.frames.keys().next().value!, image = this.frames.get(oldest)!;
+          this.frameBytes -= image.width * image.height * 4; this.frames.delete(oldest);
+        }
+      }
+      return frame;
     });
     this.queue = result.catch(() => {});
     return result;
   }
-  private async frame(bounds: TerrainRect, scale: number, signal: AbortSignal) {
+  private async frame(bounds: TerrainRect, scale: number, signal: AbortSignal, publish?: (frame: HTMLCanvasElement) => void) {
     const width = Math.max(1, Math.ceil(bounds.width * scale)), height = Math.max(1, Math.ceil(bounds.height * scale));
     const offset = drawSpace(this.gen.isNGP, this.gen.gameMode);
     const camera = { width, height, camX: bounds.x + width / scale / 2 + offset.x,
       camY: bounds.y + height / scale / 2 + offset.y, camZ: scale,
       worlds: this.pws.map(pw => `${pw},0`), detailZoom: Infinity,
       materialTextures: true, engineTerrain: true, offscreen: true, edgeDecals: false };
-    const started = performance.now();
-    const check = () => {
+    let progressedAt = performance.now(), lastProgress = '';
+    const check = (progress?: string) => {
       signal.throwIfAborted();
-      if (performance.now() - started > 120_000) throw new Error('Full-detail viewport timed out while waiting for scene/decal data');
+      if (progress !== undefined && progress !== lastProgress) { lastProgress = progress; progressedAt = performance.now(); }
+      if (performance.now() - progressedAt > 120_000) throw new Error('Terrain detail stopped progressing while waiting for scene/decal data');
     };
+    let lastPublished = -Infinity;
+    const snapshot = (source: HTMLCanvasElement, decals?: HTMLCanvasElement) => {
+      const start = performance.now();
+      const image = canvas(width, height), context = image.getContext('2d')!;
+      context.drawImage(source, 0, 0);
+      if (decals) context.drawImage(decals, 0, 0);
+      const value = this.compose(image, bounds, scale);
+      measure('terrain:compose', start); return value;
+    };
+    const show = (source: HTMLCanvasElement, decals?: HTMLCanvasElement) => {
+      if (!publish || performance.now() - lastPublished < 150) return;
+      signal.throwIfAborted();
+      publish(snapshot(source, decals));
+      lastPublished = performance.now();
+    };
+    // Terrain shading is already final-resolution here. Scene/decal workers
+    // refine it independently; do not hide terrain until every worker finishes.
+    if (publish) {
+      const start = performance.now();
+      const base = this.view.render({ ...camera, scenes: false });
+      measure('terrain:base', start);
+      if (!base) throw new Error(this.view.failed || 'TerrainView render failed');
+      show(base.canvas);
+      await cameraIdle(signal);
+    }
     let result: any;
     do {
       check(); result = this.view.render(camera);
       if (!result) throw new Error(this.view.failed || 'TerrainView render failed');
+      check(`scenes/${result.detail.sceneStandIns}/${result.detail.scenesMissing}/${this.view.scenes.bytes}`);
+      show(result.canvas);
       if (!result.detail.sceneStandIns && !result.detail.scenesMissing && !this.view.sceneUploadsPending) break;
       await tick();
     } while (true);
@@ -119,7 +186,7 @@ export class LiveTerrainView {
       if (y + 256 <= -7168 || y >= 17408) return false;
       if (!this.pws.includes(Math.floor((x + this.width * 256) / (this.width * 512)))) return false;
       if (this.ownership.at(x, y) >= 0 || this.ownership.at(x + 255, y + 255) >= 0) return true;
-      return (this.gen.sceneData?.scenes ?? []).some(s => s.x < x + 256 && s.x + s.width > x && s.y < y + 256 && s.y + s.height > y);
+      return !!this.sceneIndex?.search(x, y, x + 256, y + 256).length;
     };
     const skipped = new Set<string>();
     decals.has = (key: string) => {
@@ -140,6 +207,8 @@ export class LiveTerrainView {
         this.view.render({ ...camera, terrain: false, scenes: false });
         drawEdgeDecals(this.view.terrain, decals, this.view.world, camera, ++this.view.frame);
         if (decals.failed) throw new Error(decals.failed);
+        check(`decals/${seen.size}/${decals.missingInView}`);
+        show(foreground, accumulated);
         if (!decals.missingInView) break;
         await tick();
       } while (true);
@@ -149,6 +218,7 @@ export class LiveTerrainView {
   }
   dispose() {
     this.lifetime.abort(); this.worker?.terminate();
+    this.frames.clear(); this.frameBytes = 0;
     // Let a running draw unwind before disposing its context.
     void Promise.allSettled([this.ready, this.queue]).then(() => this.view.dispose());
   }

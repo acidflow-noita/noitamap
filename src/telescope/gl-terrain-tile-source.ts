@@ -411,6 +411,7 @@ export function createGLTerrainTileSource(opts: GLTerrainSourceOpts): any {
       const canvas = document.createElement("canvas");
       canvas.width = tile.width;
       canvas.height = tile.height;
+      (canvas as any).__terrainEmpty = true;
       return canvas;
     },
     isEmpty: (tile) => {

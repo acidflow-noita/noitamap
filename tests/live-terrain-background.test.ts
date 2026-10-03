@@ -25,3 +25,25 @@ it('keeps static material in the base map while authored air reveals the biome b
   const frame = compose(foreground as any, { x: 0, y: 0, width: 2, height: 1 }, 1);
   expect([...frame.getContext('2d')!.getImageData(0, 0, 2, 1).data]).toEqual([0,0,0,0, 36,104,172,255]);
 });
+it('retains carved-room backgrounds in unowned chunks and reuses them between detail updates', async () => {
+  vi.stubGlobal('document', { createElement: () => createCanvas(1, 1) });
+  vi.stubGlobal('DOMMatrix', DOMMatrix);
+  const compose = await createLiveBackground({ seed: 1, isNGP: false, tileLayers: [],
+    biomeData: { pixels: new Uint32Array(96) }, sceneData: {
+      scenes: [{ key: 'friend_1/cave', name: 'cave', x: 0, y: 0, width: 2, height: 1 }],
+      sources: { 'friend_1/cave': { width: 2, height: 1, data: new Uint8Array([0,0,66,255, 0,0,0,0]) } },
+    },
+  }, { GLTerrainRenderer: null, initMaterialAtlas: async () => {}, getWorldSize: () => 2,
+    getWorldCenter: () => 1, GENERATOR_CONFIG: {} });
+  const prototype = Object.getPrototypeOf(createCanvas(1, 1).getContext('2d'));
+  const patterns = vi.spyOn(prototype, 'createPattern');
+  try {
+    const foreground = createCanvas(2, 1), bounds = { x: 0, y: 0, width: 2, height: 1 };
+    const initial = compose(foreground as any, bounds, 1), count = patterns.mock.calls.length;
+    expect([...initial.getContext('2d')!.getImageData(0, 0, 2, 1).data]).toEqual([36,104,172,255, 0,0,0,0]);
+    foreground.getContext('2d').fillStyle = 'red'; foreground.getContext('2d').fillRect(1, 0, 1, 1);
+    const detailed = compose(foreground as any, bounds, 1);
+    expect(patterns).toHaveBeenCalledTimes(count);
+    expect([...detailed.getContext('2d')!.getImageData(0, 0, 2, 1).data]).toEqual([36,104,172,255, 255,0,0,255]);
+  } finally { patterns.mockRestore(); }
+});

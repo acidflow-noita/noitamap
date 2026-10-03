@@ -66,4 +66,17 @@ describe("completed terrain viewport frames", () => {
     renderer.dispose(); pending.resolve("old seed"); await last;
     expect(publish).not.toHaveBeenCalled();
   });
+  it('publishes ready terrain while detail is pending, and rejects late progress after cancellation', async () => {
+    const pending = deferred<string>(), publish = vi.fn(), error = vi.fn();
+    let progress!: (frame: string) => void;
+    const renderer = new TerrainFrameController<number, string>((_, signal, show) => {
+      progress = show; show('terrain'); return pending.promise;
+    }, publish, error);
+    const request = renderer.request(1);
+    expect(publish.mock.calls).toEqual([['terrain', 1]]);
+    renderer.cancel();
+    progress('late detail'); pending.resolve('late final'); await request;
+    expect(publish.mock.calls).toEqual([['terrain', 1]]);
+    expect(error).not.toHaveBeenCalled();
+  });
 });

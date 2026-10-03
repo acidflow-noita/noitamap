@@ -1,4 +1,4 @@
-import { shouldUseBakedTerrain } from "./renderer_settings";
+import { isGLTerrainEnabled, shouldUseBakedTerrain } from "./renderer_settings";
 /**
  * dynamic-map.ts
  *
@@ -583,7 +583,9 @@ export async function runDynamicMap(
         void prewarmAlt(seed, isDaily, !bakedData?.generation).catch((e) =>
           console.warn("[DynamicMap] alt-unlocks pre-warm failed:", e),
         );
-        void prefetchAllSceneBitmaps().catch(() => {});
+        // These composites belong to the approximate renderer. Full pixels
+        // build their own scene material maps; warming both competes for CPU.
+        if (!isGLTerrainEnabled()) void prefetchAllSceneBitmaps().catch(() => {});
       }, 0));
     });
 

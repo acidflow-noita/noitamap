@@ -1,4 +1,5 @@
 export { LiveTerrainView } from '../../src/telescope/live-terrain-view';
+export { LiveTerrainClient } from '../../src/telescope/live-terrain-client';
 export { generateDynamicMap } from '../../src/telescope/telescope-adapter';
 export { prepareTerrainSceneData } from '../../src/telescope/telescope-osd-bridge';
 export { setGLTerrain } from '../../src/renderer_settings';

@@ -37,6 +37,28 @@ it("assembles a complete clipped frame without publishing partial tile pixels", 
   expect([...ctx.getImageData(23, 15, 1, 1).data]).toEqual([0, 0, 255, 255]);
 });
 
+it('shows completed native pixels before the remaining tiles finish, without mutating an already published image', async () => {
+  vi.stubGlobal('document', { createElement: () => createCanvas(1, 1) });
+  let release!: () => void;
+  const blocked = new Promise<void>(resolve => { release = resolve; });
+  const show = vi.fn();
+  const region: TerrainRegion = { x: 0, y: 0, width: 1024, height: 512, nativeOnly: true,
+    source: { maxLevel: 10, async getFinalTile(_level, x) {
+      if (x === 1) await blocked;
+      const tile = createCanvas(512, 512), ctx = tile.getContext('2d');
+      ctx.fillStyle = x ? 'blue' : 'red'; ctx.fillRect(0, 0, 512, 512); return tile as any;
+    } } };
+  const pending = renderTerrainFrame([region], { x: 500, y: 0, width: 24, height: 16 }, 1, new AbortController().signal, show);
+  await Promise.resolve(); await Promise.resolve();
+  expect(show).toHaveBeenCalledOnce();
+  const early = show.mock.calls[0][0].getContext('2d');
+  expect([...early.getImageData(0, 0, 1, 1).data]).toEqual([255, 0, 0, 255]);
+  expect([...early.getImageData(23, 0, 1, 1).data]).toEqual([0, 0, 0, 0]);
+  release(); const final = await pending;
+  expect([...final.getContext('2d')!.getImageData(23, 0, 1, 1).data]).toEqual([0, 0, 255, 255]);
+  expect([...early.getImageData(23, 0, 1, 1).data]).toEqual([0, 0, 0, 0]);
+});
+
 it("replaces frames below markers only after load, and removes tracking on disposal", async () => {
   vi.useFakeTimers();
   vi.stubGlobal("document", { createElement: () => createCanvas(1, 1) });

@@ -7,15 +7,16 @@ import { deserialize, serialize } from "node:v8";
 import sharp from "sharp";
 import { createNativeGLES } from "./native-gles.mjs";
 import { installNativeTerrainEnvironment } from "./native-terrain-environment.mjs";
-const gpu = workerData.role === "render" && workerData.backend === "gpu"
-  ? createNativeGLES({ requireHardware: workerData.allowSoftwareGpu !== true }) : null;
+const liveViewport = workerData.role === "web-worker" && /live-terrain-render-worker/.test(workerData.entry);
+const gpu = (workerData.role === "render" && workerData.backend === "gpu") || (liveViewport && !workerData.cpu)
+  ? createNativeGLES({ requireHardware: workerData.allowSoftwareGpu !== true && !liveViewport }) : null;
 const env = installNativeTerrainEnvironment({
   ...workerData,
   workerScript: new URL(import.meta.url),
   fullPixels: true,
 });
 try {
-  if (workerData.role === "render" && workerData.backend === "gpu") {
+  if (gpu) {
     const nativeCreate = document.createElement.bind(document);
     document.createElement = (tag) => tag.toLowerCase() === "canvas" ? gpu.createCanvas() : nativeCreate(tag);
   }

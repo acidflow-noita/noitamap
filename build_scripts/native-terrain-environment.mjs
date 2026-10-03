@@ -20,6 +20,7 @@ export function installNativeTerrainEnvironment({
   workerScript,
   fullPixels = true,
   eagerTerrainResourceWorker = false,
+  cpu = false,
 }) {
   const nodeProcess = process;
   const origin = new URL("http://native-bake.invalid/");
@@ -91,7 +92,12 @@ export function installNativeTerrainEnvironment({
     }
   }
   function element(tag) {
-    if (tag === "canvas") return createCanvas(1, 1);
+    if (tag === "canvas") {
+      const canvas = createCanvas(1, 1), events = new EventTarget();
+      canvas.addEventListener = events.addEventListener.bind(events);
+      canvas.removeEventListener = events.removeEventListener.bind(events);
+      return canvas;
+    }
     if (tag === "img") return new BrowserImage();
     const el = {
       style: {},
@@ -129,7 +135,7 @@ export function installNativeTerrainEnvironment({
           : resolve(bundle, target.pathname.replace(/^\/+/, ""));
       this.worker = new NodeWorker(workerScript, {
         workerData: {
-          role: "web-worker",
+          role: "web-worker", cpu,
           root,
           bundle,
           entry: path,

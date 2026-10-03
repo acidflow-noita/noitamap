@@ -34,10 +34,21 @@ it('routes main-world cameras directly through a retained TerrainView, with no n
   expect(calls.dispose).toHaveBeenCalledOnce();
 });
 it('preserves the vertical-world renderer without initializing main-world GPU data', async () => {
-  const render = await mount();
+  await mount();
+  const render = calls.mount.mock.calls[1][1];
   await render({ x: 0, y: -7200, width: 16, height: 16 }, 1, new AbortController().signal);
   expect(calls.created).not.toHaveBeenCalled(); expect(calls.native).toHaveBeenCalledOnce();
   expect(calls.native.mock.calls[0][0].every((r: any) => r.y !== -7168)).toBe(true);
+});
+it('does not make the main world wait for an unfinished vertical world', async () => {
+  await mount();
+  expect(calls.mount).toHaveBeenCalledTimes(3);
+  calls.native.mockReturnValue(new Promise(() => {}));
+  const signal = new AbortController().signal;
+  void calls.mount.mock.calls[1][1]({ x: 0, y: -7200, width: 16, height: 16 }, 1, signal);
+  await calls.mount.mock.calls[0][1]({ x: 0, y: 0, width: 16, height: 16 }, 1, signal);
+  expect(calls.gpu).toHaveBeenCalledOnce();
+  expect(calls.mount.mock.calls.map(call => call[5].y)).toEqual([-7168, -31744, 17408]);
 });
 it('uses native full pixels when WebGL2 is unavailable and does not retry a rejected context every camera', async () => {
   calls.gpu.mockRejectedValue(new LiveTerrainUnavailable('No GPU'));
