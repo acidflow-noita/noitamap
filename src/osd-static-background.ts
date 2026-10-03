@@ -2,7 +2,7 @@ declare const OpenSeadragon: any;
 
 type Entry = { item: any; tile: any; bytes: number };
 
-/** Keep a small, complete image behind the camera-dependent DZI detail. OSD's
+/** Keep a small, complete image behind static and baked DZI detail. OSD's
  * immediateRender can finish a close view without ever loading its overview,
  * and its cache eviction uses the incoming image's cutoff, not the old one's. */
 export function installStaticBackgroundResidency(viewer: any, options: { maxBytes?: number } = {}): () => void {
@@ -53,10 +53,11 @@ export function installStaticBackgroundResidency(viewer: any, options: { maxByte
     if (queue.length) schedule();
   }
   function add({ item }: any): void {
-    // AppOSD's later add-item handler applies the current asset version and
-    // identifies static base sources before any tile URL is materialized.
+    // AppOSD's later add-item handler identifies static base sources; the baked
+    // loader tags daily/previous-daily sources in its success callback. Wait for
+    // both to apply asset versions before materializing any tile URL.
     queueMicrotask(() => {
-      if (disposed || !item.source?.__staticBackground || images.has(item)
+      if (disposed || !(item.source?.__staticBackground || item.source?.__bakedDzi) || images.has(item)
         || viewer.world.getIndexOfItem(item) < 0) return;
       const source = item.source, entries: Entry[] = [];
       images.set(item, entries);
