@@ -6,6 +6,7 @@ import { drawEdgeDecals } from 'noita-telescope-full-pixels/edge_decal_layer.js'
 import { reviveTerrainCpuResources } from 'noita-telescope-full-pixels/gl/terrain_cpu_resources.js';
 // @ts-ignore upstream JavaScript
 import { syncOverlayPoolMetadata, syncOverlayPoolWorld } from 'noita-telescope-full-pixels/overlay_worker_pool.js';
+import { buildTerrainInWorker } from './terrain-resource-client';
 import { createLiveBackground } from './live-terrain-background';
 import { loadLiquidMaterialIds } from './liquid-surfaces';
 import { createTerrainRenderer } from './terrain-context';
@@ -49,16 +50,10 @@ export class LiveTerrainView {
     const signal = this.lifetime.signal;
     const liquidIds = [...await loadLiquidMaterialIds()]; signal.throwIfAborted();
     const worker = this.worker = new Worker(new URL('./live-terrain-worker.ts', import.meta.url), { type: 'module' });
-    const build = new Promise<any>((resolve, reject) => {
-      const timer = setTimeout(() => { worker.terminate(); reject(new Error('Terrain resource worker timed out')); }, 60_000);
-      const abort = () => { clearTimeout(timer); worker.terminate(); reject(signal.reason); };
-      signal.addEventListener('abort', abort, { once: true });
-      const finish = () => { clearTimeout(timer); signal.removeEventListener('abort', abort); worker.terminate(); this.worker = undefined; };
-      worker.onmessage = ({ data }) => { finish(); data.error ? reject(new Error(data.error)) : resolve(data); };
-      worker.onerror = event => { finish(); reject(new Error(event.message)); };
-      worker.postMessage({ generation: { tileLayers: this.gen.tileLayers, biomeData: this.gen.biomeData,
-        seed: this.gen.seed, isNGP: this.gen.isNGP, gameMode: this.gen.gameMode }, options, liquidIds });
-    });
+    const build = buildTerrainInWorker(worker, {
+      generation: { tileLayers: this.gen.tileLayers, biomeData: this.gen.biomeData,
+        seed: this.gen.seed, isNGP: this.gen.isNGP, gameMode: this.gen.gameMode }, options, liquidIds,
+    }, signal).finally(() => { if (this.worker === worker) this.worker = undefined; });
     const [resource, compose] = await Promise.all([build, createLiveBackground(this.gen, this.deps)]);
     signal.throwIfAborted(); this.compose = compose;
     const scenes: Record<string, any[]> = {};

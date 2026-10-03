@@ -22,8 +22,17 @@ try {
   if (workerData.role === "web-worker") {
     globalThis.postMessage = (data, transfers = []) =>
       parentPort.postMessage(data, transfers);
+    if (workerData.eagerMessages) {
+      parentPort.on("message", data => {
+        if (globalThis.onmessage) globalThis.onmessage({ data });
+        else parentPort.postMessage({ __droppedBeforeHandler: true });
+      });
+      // Expose the top-level-await startup window deterministically. Messages
+      // have a live event loop but no application listener during this wait.
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
     await import(pathToFileURL(workerData.entry).href);
-    parentPort.on("message", (data) => globalThis.onmessage({ data }));
+    if (!workerData.eagerMessages) parentPort.on("message", (data) => globalThis.onmessage({ data }));
     parentPort.postMessage({ __ready: true });
   } else {
     const api = await import(pathToFileURL(workerData.entry).href);

@@ -19,6 +19,7 @@ export function installNativeTerrainEnvironment({
   bundle,
   workerScript,
   fullPixels = true,
+  eagerTerrainResourceWorker = false,
 }) {
   const nodeProcess = process;
   const origin = new URL("http://native-bake.invalid/");
@@ -132,18 +133,21 @@ export function installNativeTerrainEnvironment({
           root,
           bundle,
           entry: path,
+          eagerMessages: eagerTerrainResourceWorker && /live-terrain-worker/.test(path),
           fullPixels,
         },
       });
       children.add(this);
       const queue = [];
-      let ready = false;
+      let ready = eagerTerrainResourceWorker && /live-terrain-worker/.test(path);
       this.postMessage = (data, transfers = []) => {
         if (ready) this.worker.postMessage(data, transfers);
         else queue.push([data, transfers]);
       };
       this.worker.on("message", (message) => {
-        if (message.__ready) {
+        if (message.__droppedBeforeHandler) {
+          this.onerror?.({ message: 'Worker request was dispatched before its message handler existed' });
+        } else if (message.__ready) {
           ready = true;
           for (const [data, transfers] of queue.splice(0))
             this.worker.postMessage(data, transfers);

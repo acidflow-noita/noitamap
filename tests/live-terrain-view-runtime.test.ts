@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { appendFileSync } from 'node:fs';
 
 it.skipIf(process.platform !== 'linux').each([
+  { seed: 9281, parallelWorlds: [-1, 0, 1], x: -3060, y: 3548, cachedLayers: false },
   { cpu: true, seed: 92, parallelWorlds: [-1, 0, 1], x: -3060, y: 3548, cachedLayers: true },
   { seed: 16981, parallelWorlds: [0], x: -800, y: 6980, cachedLayers: false },
   { seed: 92, parallelWorlds: [-1, 0, 1], x: -3060, y: 3548, cachedLayers: true },

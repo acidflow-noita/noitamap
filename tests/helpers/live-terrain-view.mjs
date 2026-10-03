@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { installNativeTerrainEnvironment } from '../../build_scripts/native-terrain-environment.mjs';
 import { createNativeGLES } from '../../build_scripts/native-gles.mjs';
 const gpu = workerData.cpu ? null : createNativeGLES({ softwareOnly: true });
-const env = installNativeTerrainEnvironment({ ...workerData,
+const env = installNativeTerrainEnvironment({ ...workerData, eagerTerrainResourceWorker: true,
   workerScript: new URL('../../build_scripts/native-terrain-worker.mjs', import.meta.url) });
 const nativeCreate = document.createElement.bind(document);
 let refusedContexts = 0;

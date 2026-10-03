@@ -22,3 +22,8 @@ self.onmessage = ({ data: { generation, options, liquidIds } }) => {
     self.postMessage({ error: String(error) });
   }
 };
+
+// Imports above perform asynchronous asset loads. The page must not send the
+// generation until this handler exists: messages during module evaluation can
+// otherwise be dispatched with no listener and silently lost.
+self.postMessage({ type: 'ready' });
