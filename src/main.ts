@@ -764,8 +764,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     refreshActiveVariant();
   });
 
-  onAltReady(() => {
-    refreshActiveVariant();
+  onAltReady((descriptor, seed) => {
+    // Unused variants must not remove/re-add the already visible POI layer.
+    if (seed === getCurrentDynamicSeed() && descriptor === getActiveDescriptor()) {
+      refreshActiveVariant();
+    }
   }, true); // register as persistent listener
 
   // Auto-start generation if landing on dynamic map

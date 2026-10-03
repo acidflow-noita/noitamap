@@ -32,6 +32,7 @@ import { isLightMode } from "./light-mode";
 import { getCurrentIsDaily } from "./dynamic-map";
 
 export type UnlockDescriptor = "all" | "none" | "mod";
+type AltReadyListener = (descriptor: UnlockDescriptor, seed: number) => void;
 
 const VIEW_STORAGE = "noitamap-unlocks-view";
 const URL_KEY_STORAGE = "noitamap-unlocks-url-key";
@@ -40,8 +41,8 @@ const URL_KEY_STORAGE = "noitamap-unlocks-url-key";
 const altCache = new Map<string, GenerationResult>();
 const altIndexes = new Map<string, Map<string, any>>();
 const pendingDescriptors = new Set<string>();
-let readyListeners: Array<() => void> = [];
-const persistentReadyListeners: Array<() => void> = [];
+let readyListeners: AltReadyListener[] = [];
+const persistentReadyListeners: AltReadyListener[] = [];
 let viewListeners: Array<(v: UnlockDescriptor) => void> = [];
 
 let lastSeedSeen: number | null = null;
@@ -168,7 +169,7 @@ export function getAltResult(desc: UnlockDescriptor, seed?: number): GenerationR
   return altCache.get(`${s}|${desc}`) ?? null;
 }
 
-export function onAltReady(cb: () => void, persistent = false): () => void {
+export function onAltReady(cb: AltReadyListener, persistent = false): () => void {
   if (persistent) {
     persistentReadyListeners.push(cb);
     return () => {
@@ -235,7 +236,7 @@ async function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescrip
     altIndexes.set(cacheKey, indexPois(result));
     const listeners = [...readyListeners, ...persistentReadyListeners];
     for (const cb of listeners) {
-      try { cb(); } catch { /* swallow */ }
+      try { cb(desc, seed); } catch { /* swallow */ }
     }
   } catch (e) {
     console.warn(`[unlocks-toggle] variant ${desc} pre-warm failed:`, e);
