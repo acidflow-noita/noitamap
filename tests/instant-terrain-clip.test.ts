@@ -55,8 +55,8 @@ function draw(clip: ReturnType<typeof createInstantClip>, view: InstantClipView)
   return context.getImageData(0, 0, view.width, view.height).data;
 }
 
-describe('isolated temple ownership during zoom', () => {
-  const cases = [-1, 1].flatMap(plane => [-1, 0, 1].flatMap(pw =>
+describe('isolated temple and Friend cave ownership during zoom', () => {
+  const cases = [-1, 0, 1].flatMap(plane => [-1, 0, 1].flatMap(pw =>
     [0.75, 1, 3.25, 12.5].map(scale => ({ plane, pw, scale }))));
 
   it.each(cases)('keeps solid edges and row joins in plane $plane, world $pw at scale $scale', ({ plane, pw, scale }) => {

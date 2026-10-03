@@ -30,6 +30,7 @@ it('retains native world coordinates, compound holes, and static-biome exclusion
   const { default: boundaries } = await import('../src/data/biome_boundries_py.json');
   const result = biomeBackgroundGeometry([...boundaries.biomes,
     { filename: 'temple_altar', svg_map_path: 'M -100 -100 L 100 -100 L 100 100 Z' },
+    ...Array.from({ length: 6 }, (_, i) => ({ filename: `friend_${i + 1}`, svg_map_path: 'M -100 -100 L 100 -100 L 100 100 Z' })),
     { filename: 'unknown', svg_map_path: 'M -100 -100 L 100 -100 L 100 100 Z' }]);
   expect(result).toMatchObject({ originX: -17920, originY: -7168, width: 2048, height: 1024, phaseX: -17920, phaseY: -7168 });
   expect(result.regions).toHaveLength(2);

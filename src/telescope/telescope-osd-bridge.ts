@@ -7,7 +7,7 @@ import { CONTAINER_TYPES } from "./poi-containers";
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
 import { loadInstantSceneMasks } from "./instant-scene-masks";
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
-import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate } from "./terrain-policy";
+import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate, friendRoomBiome } from "./terrain-policy";
 import { loadTelescopeModules } from "./load-telescope";
 import { isGLTerrainEnabled, isInstantTerrainEnabled, useRenderPerfGeneration } from "../renderer_settings";
 import { prepareInstantTerrain } from './instant-terrain-backend';
@@ -1825,6 +1825,8 @@ async function getScenePngIndex(): Promise<ScenePngIndex> {
       }
     });
     for (const { key, path } of plainPngCandidates) {
+      // These are material/force-air maps, not visual artwork.
+      if (friendRoomBiome(`general/${key}`)) continue;
       if (visualByPath.has(key) || bgByPath.has(key)) continue; // colormap with dedicated layers
       if (!visualByName.has(key)) visualByName.set(key, path);
     }
@@ -1992,11 +1994,12 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
  * biome part is omitted (it's already implied by scene.key), so non-fill scenes
  * keep their plain key and stay prefetch/cache compatible.
  */
-function sceneRenderKey(scene: { key: string; variantKey?: string }): string {
+function sceneRenderKey(scene: { key: string; variantKey?: string; x?: number; y?: number }): string {
   const vk = scene.variantKey || '';
-  if (!vk) return scene.key;
   const mat = vk.split('&').filter(p => p && !p.startsWith('biome='));
-  return mat.length ? `${scene.key}|${mat.join('&')}` : scene.key;
+  const key = mat.length ? `${scene.key}|${mat.join('&')}` : scene.key;
+  // Cave textures are phased in world space. Bypass old black room bitmaps.
+  return friendRoomBiome(scene.key) ? `${key}|friend-bg-v1|${scene.x ?? 0},${scene.y ?? 0}` : key;
 }
 
 /**
@@ -2042,7 +2045,7 @@ function recolorSceneVariant(
  */
 async function compositeSceneBitmap(
   key: string,
-  scene: { imgElement: any; width: number; height: number; name: string; key: string; variantKey?: string },
+  scene: { imgElement: any; width: number; height: number; name: string; key: string; variantKey?: string; x?: number; y?: number },
   idx: {
     visualByPath: Map<string, string>;
     visualByName: Map<string, string>;
@@ -2060,7 +2063,8 @@ async function compositeSceneBitmap(
   const biome = slashIdx >= 0 ? key.substring(0, slashIdx) : '';
   const name = slashIdx >= 0 ? key.substring(slashIdx + 1) : key;
 
-  const skipBg = biome === 'temple' || biome === 'general';
+  const caveBiome = friendRoomBiome(key);
+  const skipBg = biome === 'temple' || (biome === 'general' && !caveBiome);
 
   const override = pixelSceneConfig.layerOverrides[name] || pixelSceneConfig.layerOverrides[key];
   const wantBg = override?.background ?? pixelSceneConfig.layers.background;
@@ -2075,7 +2079,15 @@ async function compositeSceneBitmap(
   let visualData: ImageData | null = null;
 
   if (zip && bgPath) {
-    bgData = await decodeScenePng(zip, bgPath).catch(() => null);
+    if (caveBiome) {
+      // Preserve the authored PNG alpha; its top-left colour is not a key.
+      const file = zip.file(bgPath);
+      if (file) {
+        const decoded = decodePngToRgba(await file.async('arraybuffer'));
+        bgData = new ImageData(decoded.width, decoded.height);
+        bgData.data.set(decoded.data);
+      }
+    } else bgData = await decodeScenePng(zip, bgPath).catch(() => null);
     if (bgData && scene.width > 0 && bgData.width < scene.width / 2) bgData = null;
   }
   if (zip && visualPath) {
@@ -2091,7 +2103,26 @@ async function compositeSceneBitmap(
     if (baseImg) {
       let recolored: any = baseImg;
       try {
-        recolored = recolorSceneVariant(baseImg, scene, biome);
+        recolored = recolorSceneVariant(baseImg, caveBiome ? {
+          ...scene, variantKey: (scene.variantKey || 'biome=general').replace(/biome=[^&]+/, `biome=${caveBiome}`),
+        } : scene, caveBiome || biome);
+        if (caveBiome && wantBg) {
+          const { loadTerrainBackgrounds, textureColor, compositeTerrain } = await import('./terrain-backgrounds');
+          const background = (await loadTerrainBackgrounds([caveBiome])).get(caveBiome)!;
+          for (let i = 0; i < baseImg.length; i += 4) {
+            if (!baseImg[i + 3] || baseImg[i] !== 0 || baseImg[i + 1] !== 0 || baseImg[i + 2] !== 66) continue;
+            const x = (i / 4) % scene.width, y = Math.floor(i / 4 / scene.width);
+            let color = textureColor(background, (scene.x ?? 0) + x + 17920, (scene.y ?? 0) + y + 7168);
+            if (bgData && x < bgData.width && y < bgData.height) {
+              const p = (y * bgData.width + x) * 4, d = bgData.data;
+              color = compositeTerrain(((d[p + 3] << 24) | (d[p] << 16) | (d[p + 1] << 8) | d[p + 2]) >>> 0, color);
+            }
+            recolored[i] = (color >>> 16) & 255;
+            recolored[i + 1] = (color >>> 8) & 255;
+            recolored[i + 2] = color & 255;
+            recolored[i + 3] = color >>> 24;
+          }
+        }
         for (let i = 0; i < recolored.length; i += 4) {
           const pr = recolored[i],
             pg = recolored[i + 1],
@@ -2190,7 +2221,8 @@ async function compositeSceneBitmap(
  */
 export const prefetchAllSceneBitmaps = createScenePrefetch(async (isCurrent) => {
     try {
-      const allKeys = getAllPixelSceneKeys();
+      // Friend rooms need actual placement coordinates for their backdrop.
+      const allKeys = getAllPixelSceneKeys().filter(key => !friendRoomBiome(key));
       if (allKeys.length === 0) return;
       const cached = await getCachedSceneBitmapKeys();
       const missing = allKeys.filter(k => !cached.has(k));

@@ -1,5 +1,5 @@
 import { biomeBackgroundRevisions } from 'virtual:noitamap-data-archives';
-import { BIOME_BACKGROUND_MAP, STATIC_TERRAIN_BIOMES } from './terrain-policy';
+import { BIOME_BACKGROUND_MAP, STATIC_TERRAIN_BIOMES, FRIEND_ROOM_BIOMES } from './terrain-policy';
 import { immutableTelescopeAssets, revisionedAssetUrl } from './immutable-assets';
 import { createBiomeBackgroundTiles, type BiomeBackgroundRegion } from './biome-background-tile-source';
 
@@ -11,7 +11,8 @@ export function biomeBackgroundGeometry(biomes: { filename: string; svg_map_path
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const biome of biomes) {
     const textureKey = BIOME_BACKGROUND_MAP[biome.filename];
-    if (!textureKey || STATIC_TERRAIN_BIOMES.has(biome.filename)) continue;
+    // Friend scenes supply the backdrop only inside their carved air.
+    if (!textureKey || STATIC_TERRAIN_BIOMES.has(biome.filename) || FRIEND_ROOM_BIOMES.has(biome.filename)) continue;
     const rings: BiomeBackgroundRegion['rings'] = [];
     let ring: BiomeBackgroundRegion['rings'][number] = [];
     const tokens = biome.svg_map_path.trim().split(/\s+/);

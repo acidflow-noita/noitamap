@@ -72,6 +72,13 @@ describe.skipIf(process.platform !== "linux")("shared terrain resources with nat
       expect(sample.mainOwnedPixels, JSON.stringify(sample)).toBe(0);
       expect(sample.nativePixelChanges, JSON.stringify(sample)).toBeGreaterThan(100);
     }
+    const friends = result.samples.filter((sample: any) => sample.name.startsWith('friend-fill-'));
+    expect(friends).toHaveLength(18);
+    for (const sample of friends) {
+      expect(sample.nonAir, JSON.stringify(sample)).toBe(sample.width * sample.height);
+      expect(sample.ownedPixels, JSON.stringify(sample)).toBe(sample.width * sample.height);
+      expect(sample.verticalOwnedPixels, JSON.stringify(sample)).toBe(0);
+    }
     expect(result.materialSamples).toEqual([426, 140, 140, 426, 5, 5, 32, 279, 140, 140]);
     expect(result.referenceLatticeBuilds).toBe(3);
     expect(result.sharedLatticeBuilds).toBe(1);

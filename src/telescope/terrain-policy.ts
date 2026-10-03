@@ -24,6 +24,17 @@ const REPEATED_TEMPLE_BIOMES = new Set([
   "biome_darkness",
 ]);
 
+// These seed-dependent rooms carve air into rock; their surrounding fill is
+// absent from the static map. Other fill biomes keep static-map ownership.
+export const FRIEND_ROOM_BIOMES = new Set([
+  "friend_1", "friend_2", "friend_3", "friend_4", "friend_5", "friend_6",
+]);
+
+/** Telescope aliases both Friend room layouts to general, losing their biome. */
+export function friendRoomBiome(key: string): string | undefined {
+  return key === "general/friendroom" || key === "general/cavern" ? "friend_1" : undefined;
+}
+
 /** Coarse temple templates are only needed by the approximate renderer. */
 export function isRepeatedTempleTemplate(scene: { key: string }): boolean {
   return scene.key === "static_tile/temples-assets/potion_mimics" ||
@@ -72,8 +83,7 @@ export const BIOME_BACKGROUND_MAP: Record<string, string> = {
   solid_wall_tower_2: "data/weather_gfx/background_excavationsite.png",
   solid_wall_tower_1: "data/weather_gfx/background_coalmine.png",
   solid_wall_tower_10: "data/weather_gfx/background_crypt.png",
-  // Fill biomes that only exist as carved pixel scenes. They own no terrain
-  // layer, so this backdrop is painted only under their scenes' force-air.
+  // Carved room interiors reveal this backdrop through their force-air pixels.
   friend_1: "data/weather_gfx/background_cave_02.png",
   friend_2: "data/weather_gfx/background_cave_02.png",
   friend_3: "data/weather_gfx/background_cave_02.png",
@@ -88,13 +98,15 @@ export const BIOME_BACKGROUND_MAP: Record<string, string> = {
  * supply the backdrop the game shows inside the carved room. */
 export function sceneBiomeNames(scene: { key: string; variantKey?: string }): string[] {
   const names: string[] = [];
+  const friend = friendRoomBiome(scene.key);
+  if (friend) names.push(friend);
   for (const part of (scene.variantKey ?? "").split("&"))
     if (part.startsWith("biome=")) names.push(...part.slice(6).split("@"));
   names.push(scene.key.split("/")[0]);
   return names;
 }
 
-export const TERRAIN_VERSION = "full-pixel-v19-instant-temples";
+export const TERRAIN_VERSION = "full-pixel-v20-instant-friends";
 export const WORLD_HEIGHT = 48 * 512;
 export const WORLD_TOP = -14 * 512;
 export type VerticalPlane = -1 | 0 | 1;
@@ -120,11 +132,12 @@ export function createTerrainOwnership(
   const ids = new Map<string, number>();
   for (const layer of layers) {
     const name = layer.biomeName;
-    if (!layer.buffer || layer.isFill || (STATIC_TERRAIN_BIOMES.has(name) &&
+    const conf = config[name];
+    const roomFill = FRIEND_ROOM_BIOMES.has(name) && layer.isFill &&
+      !!conf?.fillMaterial && !conf.sceneOnly && !includeRepeatedTemples;
+    if ((!roomFill && (!layer.buffer || layer.isFill || !conf?.wangFile)) || (STATIC_TERRAIN_BIOMES.has(name) &&
       !(includeRepeatedTemples && REPEATED_TEMPLE_BIOMES.has(name))))
       continue;
-    const conf = config[name];
-    if (!conf?.wangFile) continue;
     let id = ids.get(name);
     if (id === undefined) {
       id = names.length;

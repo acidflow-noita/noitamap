@@ -4,6 +4,7 @@ import {
   createPlaneOwnership,
   createBackgroundOwnership,
   isRepeatedTempleTemplate,
+  sceneBiomeNames,
 } from "../src/telescope/terrain-policy";
 import {
   planeAtWorldY,
@@ -180,4 +181,29 @@ it("hell's native background continues through gaps without adding terrain", () 
   expect(terrain.at(0, 1024)).toBe(-1);
   expect(background.names[background.at(0, 1024)]).toBe("the_end");
   expect(createBackgroundOwnership(terrain, pixels, {}, 0)).toBe(terrain);
+});
+
+it("keeps the six Friend cave rock fills in their own main-world cells only", () => {
+  const pixels = new Uint32Array(70 * 48).fill(99);
+  const names = ["friend_1", "friend_2", "friend_3", "friend_4", "friend_5", "friend_6", "winter", "solid_wall_hidden_cavern"];
+  const config = Object.fromEntries(names.map((name, i) => [name, { color: i + 1, fillMaterial: 'rock_hard_border' }]));
+  const layers = names.map((biomeName, i) => {
+    pixels[70 * 20 + i] = i + 1;
+    return { biomeName, isFill: true, buffer: null, validChunks: new Set([`${i},20`, `${i},21`]) };
+  });
+  const main = createPlaneOwnership(layers, pixels, pixels, config, 70);
+  for (let i = 0; i < 6; i++) {
+    expect(main.names[main.owners[70 * 20 + i]]).toBe(names[i]);
+    expect(main.owners[70 * 21 + i]).toBe(-1);
+  }
+  expect(main.owners[70 * 20 + 6]).toBe(-1);
+  expect(main.owners[70 * 20 + 7]).toBe(-1);
+  const vertical = createPlaneOwnership(layers, pixels, pixels.slice(), config, 70);
+  expect([...vertical.owners].every(id => id === -1)).toBe(true);
+});
+
+it("resolves the Friend room aliases to the same cave backdrop in native composition", () => {
+  for (const key of ["general/friendroom", "general/cavern"])
+    expect(sceneBiomeNames({ key, variantKey: 'biome=general' })[0]).toBe('friend_1');
+  expect(sceneBiomeNames({ key: 'snowcastle/cavern', variantKey: 'biome=snowcastle' })[0]).toBe('snowcastle');
 });

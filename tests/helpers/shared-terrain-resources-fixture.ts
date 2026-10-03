@@ -59,6 +59,14 @@ export async function verifySharedTerrainResources() {
         width: 256, height: 256 });
     }
   }
+  for (let i = 1; i <= 6; i++) {
+    const name = `friend_${i}`;
+    const layer = generation.tileLayers.find(layer => layer.biomeName === name) as any;
+    if (!layer?.isFill || layer.buffer) throw new Error(`Missing real Friend fill layer: ${name}`);
+    for (const pw of [-1, 0, 1]) samples.push({ name: `friend-fill-${name}`, plane: 0, pw,
+      x: layer.chunkBasePos.x * 512 - 17920 + 64 + pw * 35840,
+      y: layer.chunkBasePos.y * 512 - 7168 + 64, width: 64, height: 64 });
+  }
   // A real stand-in fill exercises the legacy fallback alongside the engine
   // resolver. Its location is read from this seed's biome map, not fabricated.
   const temple = Array.from(generation.biomeData.pixels as Uint32Array)
@@ -189,13 +197,14 @@ export async function verifySharedTerrainResources() {
     const table = expectedTables.get(sample.plane)!;
     for (let i = 0; i < table.length; i++) if (renderer.engineChunkModes[i] !== table[i]) selectedPlaneTableMismatches++;
     const actual = pixels(renderer, () => owner.render(view(sample))), baseline = expected.get(sample)!;
-    let nonAir = 0, ownedPixels = 0, mainOwnedPixels = 0, nativePixelChanges = 0;
+    let nonAir = 0, ownedPixels = 0, mainOwnedPixels = 0, verticalOwnedPixels = 0, nativePixelChanges = 0;
     for (let i = 3; i < baseline.length; i += 4) if (baseline[i]) nonAir++;
-    if (sample.name.startsWith("island-")) {
+    if (sample.name.startsWith("island-") || sample.name.startsWith("friend-fill-")) {
       for (let y = 0; y < sample.height; y++) for (let x = 0; x < sample.width; x++) {
         const worldX = sample.x + x, localY = sample.y + y - sample.plane * 24576;
         if (islandOwnership.get(sample.plane)!.at(worldX, localY) >= 0) ownedPixels++;
         if (islandOwnership.get(0)!.at(worldX, localY) >= 0) mainOwnedPixels++;
+        if (islandOwnership.get(-1)!.at(worldX, localY) >= 0 || islandOwnership.get(1)!.at(worldX, localY) >= 0) verticalOwnedPixels++;
         const i = (y * sample.width + x) * 4;
         // Adjacent final pixels vary inside the same 10px template cell.
         if (x && Math.floor(worldX / 10) === Math.floor((worldX - 1) / 10) &&
@@ -205,7 +214,7 @@ export async function verifySharedTerrainResources() {
     }
     if (nonAir > 0 && nonAir < baseline.length / 4) mixedSamples++;
     comparedPixels += baseline.length / 4;
-    compared.push({ ...sample, nonAir, ownedPixels, mainOwnedPixels, nativePixelChanges,
+    compared.push({ ...sample, nonAir, ownedPixels, mainOwnedPixels, verticalOwnedPixels, nativePixelChanges,
       mismatchedBytes: difference(baseline, actual) });
   }
   // These known reference material IDs also prevent a shared regression in
