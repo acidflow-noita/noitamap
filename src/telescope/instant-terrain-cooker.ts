@@ -19,15 +19,8 @@ export function createInstantTerrainCooker(options: {
   startedAt?: number;
   seed?: number;
   foregroundBusy?: () => boolean;
-  /** Native artwork cooking and its persistent writes belong to full-map completion. */
-  scenePreparationReady?: Promise<void>;
 }) {
   const startedAt = options.startedAt ?? performance.now();
-  // Attach both handlers immediately: preparation can fail before the terrain
-  // sweep reaches its completion barrier, without an unhandled rejection.
-  const scenePreparation = options.scenePreparationReady?.then(
-    () => ({ ok: true as const }), error => ({ ok: false as const, error }),
-  );
   const sources = new Set<CookSource>();
   const jobs: Job[] = [];
   const stats = { state: 'waiting', total: 0, completed: 0, active: 0 };
@@ -35,7 +28,6 @@ export function createInstantTerrainCooker(options: {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let channel: MessageChannel | undefined;
   let cookingStartedAt: number | undefined;
-  let cancelSceneWait: (() => void) | undefined;
   const hidden = () => typeof document !== 'undefined' && document.hidden;
   const closeChannel = () => {
     if (!channel) return;
@@ -45,7 +37,6 @@ export function createInstantTerrainCooker(options: {
     channel = undefined;
   };
   const stop = () => {
-    started = false;
     clearTimeout(timer);
     timer = undefined;
     scheduled = false;
@@ -53,8 +44,6 @@ export function createInstantTerrainCooker(options: {
     jobs.length = 0;
     sources.clear();
     stats.state = 'cancelled';
-    cancelSceneWait?.();
-    cancelSceneWait = undefined;
     document.removeEventListener?.('visibilitychange', schedule);
   };
   function runScheduled() {
@@ -133,15 +122,6 @@ export function createInstantTerrainCooker(options: {
       } else {
         // Completion includes persistence, not merely submitted GPU draws.
         await options.flush();
-        if (scenePreparation && !options.signal.aborted) {
-          stats.state = 'waiting-artwork';
-          const result = await new Promise<Awaited<typeof scenePreparation>>(resolve => {
-            cancelSceneWait = () => resolve({ ok: false, error: new DOMException('Obsolete scene preparation', 'AbortError') });
-            void scenePreparation.then(resolve);
-          });
-          cancelSceneWait = undefined;
-          if (!result.ok) throw result.error;
-        }
         if (!options.signal.aborted && options.persistent() && !jobs.length) {
           stats.state = 'complete';
           const finishedAt = performance.now();
@@ -153,16 +133,13 @@ export function createInstantTerrainCooker(options: {
             // Wall time from the first sweep task, including pauses and writes.
             cookingElapsedMs: cookingStartedAt === undefined ? 0 : finishedAt - cookingStartedAt,
             sinceNavigationMs: finishedAt,
-            scope: options.scenePreparationReady
-              ? 'Native terrain, retained reductions and native scene artwork, including persistence; viewport presentation has separate timings'
-              : 'Native terrain and retained reductions, including persistence; artwork preparation and viewport presentation have separate timings',
+            scope: 'Native terrain and retained reductions, including persistence; artwork preparation and viewport presentation have separate timings',
           });
           void reportTerrainStorageUsage(options.signal, options.seed);
         }
       }
     } catch (error) {
-      if ((error as { name?: string })?.name === 'AbortError') stop();
-      else if (!options.signal.aborted) {
+      if (!options.signal.aborted) {
         stats.state = 'failed';
         options.onFailure(error);
       }
@@ -190,6 +167,6 @@ export function createInstantTerrainCooker(options: {
       if (stats.state === 'complete') stats.state = 'waiting';
       schedule();
     },
-    start() { if (stats.state !== 'cancelled') { started = true; schedule(); } },
+    start() { started = true; schedule(); },
   };
 }

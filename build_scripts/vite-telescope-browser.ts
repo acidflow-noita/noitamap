@@ -50,14 +50,6 @@ export async function browserTelescopeSource(code: string, id: string) {
     source = source
       .replace(/^const IS_NODE = [^\n]+;\r?$/m, "")
       .replace(/\bIS_NODE\b/g, "false");
-    const atlas = resolve(import.meta.dirname, '../src/telescope/scene-source-atlas.ts');
-    const wantBitmap = source.includes('bitmap: wantBitmap') ? 'wantBitmap' : 'options.bitmap !== false';
-    replaceExpected(
-      /export async function loadPNG\(url,[^\n]+\) \{/,
-      `$&\n    const atlas = await readTelescopeAtlasPNG(url, ${wantBitmap});\n    if (atlas) return atlas;`,
-      'source scene atlas loader',
-    );
-    source = `import { readTelescopeAtlasPNG } from ${JSON.stringify(atlas)};\n` + source;
   }
   if (id.endsWith("/pixel_scene_generation.js")) {
     source = source.replace(

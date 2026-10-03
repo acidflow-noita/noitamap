@@ -1,5 +1,4 @@
 import { copyTerrainContext, InstantTerrainCache } from "./instant-terrain-cache";
-import { getMapMemoryBudget } from '../map-memory-budget';
 import { drawViewportArt } from './viewport-art';
 
 declare const OpenSeadragon: any;
@@ -41,11 +40,11 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
     return { ...region, minX, minY, maxX, maxY };
   });
   const maxLevel = Math.max(0, Math.ceil(Math.log2(Math.max(width, height))));
-  const cache = new InstantTerrainCache(options.maxCacheBytes ?? getMapMemoryBudget().biomeBackgroundCacheBytes);
+  const cache = new InstantTerrainCache(options.maxCacheBytes ?? 16 * 1024 * 1024);
   const pack = ++nextPack;
   const sources = new Set<any>();
   let destroyed = false, rendered = 0, renderMs = 0;
-  type Work = { aborted: boolean; subscribers: number; promise: Promise<CanvasRenderingContext2D>; context?: CanvasRenderingContext2D };
+  type Work = { aborted: boolean; subscribers: number; promise: Promise<CanvasRenderingContext2D> };
   const inflight = new Map<string, Work>();
 
   function bounds(level: number, x: number, y: number) {
@@ -106,7 +105,6 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
         cache.set(key, ctx, pinned);
         rendered++;
         renderMs += performance.now() - start;
-        work.context = ctx;
         return ctx;
       } catch (error) {
         canvas.width = canvas.height = 0;
@@ -217,13 +215,9 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
           release = () => {
             if (released) return;
             released = true;
-            if (--work.subscribers === 0) {
+            if (--work.subscribers === 0 && inflight.get(key) === work) {
               work.aborted = true;
-              if (inflight.get(key) === work) inflight.delete(key);
-              // Cache and consumers own independent copies. Release the shared
-              // compositor buffer immediately, including after successful jobs.
-              if (work.context) work.context.canvas.width = work.context.canvas.height = 0;
-              work.context = undefined;
+              inflight.delete(key);
             }
           };
           result = work.promise.then(ctx => settled ? undefined : copyTerrainContext(ctx));

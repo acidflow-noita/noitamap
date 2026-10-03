@@ -1,5 +1,3 @@
-import { getMapMemoryBudget } from './map-memory-budget';
-
 declare const OpenSeadragon: any;
 
 type Entry = { item: any; tile: any; bytes: number };
@@ -10,7 +8,7 @@ type Entry = { item: any; tile: any; bytes: number };
 export function installStaticBackgroundResidency(viewer: any, options: { maxBytes?: number } = {}): () => void {
   const cache = viewer.tileCache;
   if (!cache || typeof cache._freeOldRecordRoutine !== 'function') return () => {};
-  const maxBytes = Math.max(0, options.maxBytes ?? getMapMemoryBudget().staticBackgroundBytes);
+  const maxBytes = Math.max(0, options.maxBytes ?? 24 * 1024 * 1024);
   const images = new Map<any, Entry[]>(), pinned = new Set<any>(), active = new Set<any>();
   let queue: Entry[] = [], bytes = 0, disposed = false, scheduled = false;
   const originalFree = cache._freeOldRecordRoutine;
@@ -26,7 +24,7 @@ export function installStaticBackgroundResidency(viewer: any, options: { maxByte
 
   function pump(): void {
     scheduled = false;
-    if (disposed || viewer.isAnimating?.()) return;
+    if (disposed) return;
     while (active.size < 2 && queue.length) {
       const entry = queue.shift()!, { item, tile } = entry;
       if (!images.has(item) || tile.loaded || tile.loading || !tile.exists) continue;

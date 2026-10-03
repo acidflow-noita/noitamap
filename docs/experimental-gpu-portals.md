@@ -20,7 +20,8 @@ The earlier atlas experiment is parked under `task/portal-atlas-prototype`.
 Map-local changes now implement native-backed cosmetic collision against the
 reviewed eye-room material program. The nine child trails collide; the two
 parent emitters do not. Other portals and unknown terrain remain unchanged.
-Collision-mode particle counters
+See `docs/portal-collision-audit.md` for native fixtures, lifetime-reset handling,
+static-scene limitations and manual checks. Collision-mode particle counters
 are conservative upper bounds, identified by `particleCountsAreUpperBounds`.
 
 ## What to check manually

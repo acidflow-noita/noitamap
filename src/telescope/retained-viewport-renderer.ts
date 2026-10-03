@@ -2,7 +2,6 @@ import { scheduleTerrainWork } from './terrain-work-queue';
 import type { TerrainViewportPlan } from './terrain-viewport-compositor';
 import type { RetainedTerrainRegion, RetainedView, RetainedViewCoverage } from './retained-terrain';
 import { InstantTerrainCache } from './instant-terrain-cache';
-import { clipTerrainPixels } from './terrain-pixel-clip';
 
 type Region = { region: { x: number; y: number; width: number; height: number }; retention: RetainedTerrainRegion };
 let nextRendererId = 0;
@@ -67,7 +66,6 @@ export function createRetainedViewportRenderer(options: {
   const prefix = `viewport/${nextRendererId++}/`;
   let hydratedKey: string | undefined;
   let hydrating = false;
-  let hydratedRevision = 0, inheritedHydration = 0;
   const releaseBase = () => { if (base) base.canvas.width = base.canvas.height = 0; base = undefined; };
   const dispose = () => {
     releaseBase();
@@ -115,8 +113,6 @@ export function createRetainedViewportRenderer(options: {
     context.save();
     context.setTransform(1 / plan.scale, 0, 0, 1 / plan.scale, -plan.x / plan.scale, -plan.y / plan.scale);
     const paint = (saved: typeof history[number]) => {
-      context.save();
-      clipTerrainPixels(context, [saved.plan], 'inside');
       context.imageSmoothingEnabled = saved.plan.scale < plan.scale;
       context.imageSmoothingQuality = 'low';
       const { x, y, width, height } = saved.plan;
@@ -124,22 +120,16 @@ export function createRetainedViewportRenderer(options: {
         context.clearRect(x, y, width, height);
         context.drawImage(saved.canvas, x, y, width, height);
       } else cache.paint(saved.key, context, x, y, width, height);
-      context.restore();
     };
     // Newer compositions already contain older detail. Replaying a finer but
     // older provisional frame over one would resurrect corrected terrain.
     for (const saved of history) if (saved.plan.scale <= plan.scale) paint(saved);
-    // Coverage says where native pixels contributed, not how many of those
-    // pixels this screen-sized image retained. A downsampled frame cannot
-    // overwrite a closer view: doing so permanently caches blurred 256px
-    // blocks (and their coarse alpha edges) over the fresh shader result.
-    // Native-density frames remain exact when magnified beyond 1:1.
-    for (const saved of [...history].sort((a, b) => b.plan.scale - a.plan.scale)) if (
-      saved.canonical.length && saved.plan.scale <= Math.max(1, plan.scale)
-    ) {
-      context.save();
-      clipTerrainPixels(context, saved.canonical);
-      paint(saved); context.restore();
+    // Canonical native coverage survives both mip eviction and zoom-in to an
+    // older fine preview. Alpha-zero cells must erase that preview as well.
+    for (const saved of [...history].sort((a, b) => b.plan.scale - a.plan.scale)) if (saved.canonical.length) {
+      context.save(); context.beginPath();
+      for (const rect of saved.canonical) context.rect(rect.x, rect.y, rect.width, rect.height);
+      context.clip(); paint(saved); context.restore();
       canonical.push(...saved.canonical);
     }
     context.restore();
@@ -198,10 +188,7 @@ export function createRetainedViewportRenderer(options: {
             }
           } else stats.reusedFrames++;
           context.drawImage(base!.canvas, 0, 0);
-          if (!sameCamera || inheritedHydration !== hydratedRevision) {
-            canonical = preserveDetail(context, plan, key, previous ?? base);
-            inheritedHydration = hydratedRevision;
-          }
+          if (!sameCamera) canonical = preserveDetail(context, plan, key, previous);
         } else stats.retainedFrames++;
         for (const { entry, view } of views) {
           position(context, plan, entry);
@@ -229,35 +216,20 @@ export function createRetainedViewportRenderer(options: {
           const replay = canvas(plan), replayCoverage = [...base.canonical];
           replay.drawImage(context.canvas, 0, 0);
           let published = false;
-          let readNativePixels = false;
           void Promise.resolve().then(async () => {
             for (const { entry, view } of views) {
               if (options.signal.aborted) return;
               position(replay, plan, entry);
-              await entry.retention.paintStoredView(replay, view, options.signal, rect => {
-                readNativePixels = true;
-                replayCoverage.push({ ...rect, x: rect.x + entry.region.x, y: rect.y + entry.region.y });
-              });
+              await entry.retention.paintStoredView(replay, view, options.signal, rect => replayCoverage.push({ ...rect,
+                x: rect.x + entry.region.x, y: rect.y + entry.region.y }));
             }
-            if (options.signal.aborted) return;
-            if (base?.key !== key) {
-              // Panning does not invalidate these world pixels. Save the
-              // finished read so the next camera can inherit its overlap;
-              // otherwise continuous motion discards every disk hydration.
-              if (readNativePixels && cache.set(key, replay)) {
-                cameras.delete(key);
-                cameras.set(key, { plan, canonical: mergeCoverage(replayCoverage, plan) });
-                for (const candidate of cameras.keys()) if (!cache.has(candidate)) cameras.delete(candidate);
-                hydratedRevision++;
-              }
-              return;
-            }
+            if (options.signal.aborted || base?.key !== key) return;
             // New native captures may have arrived during the reads. Keep the
             // current composition's canonical cells, then apply fresh RAM data.
             replay.setTransform(1 / plan.scale, 0, 0, 1 / plan.scale, -plan.x / plan.scale, -plan.y / plan.scale);
-            replay.save();
-            clipTerrainPixels(replay, base.canonical);
-            replay.clearRect(plan.x, plan.y, plan.width, plan.height);
+            replay.save(); replay.beginPath();
+            for (const rect of base.canonical) replay.rect(rect.x, rect.y, rect.width, rect.height);
+            replay.clip(); replay.clearRect(plan.x, plan.y, plan.width, plan.height);
             replay.drawImage(base.canvas, plan.x, plan.y, plan.width, plan.height); replay.restore();
             replayCoverage.push(...base.canonical);
             for (const { entry, view } of views) {

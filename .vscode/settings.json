@@ -13,7 +13,6 @@
   },
   "editor.formatOnSave": true,
   "git.ignoreLimitWarning": true,
-  "vitest.configSearchPatternExclude": "{**/node_modules/**,**/vendor/**,**/.*/**,**/*.d.ts,**/task/**,**/lib/**}",
   "search.exclude": {
     "**/task/**": true
   },

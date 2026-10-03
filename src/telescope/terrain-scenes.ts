@@ -1,7 +1,6 @@
 import type { StaticTerrainMask } from "./static-terrain-mask";
 import Flatbush from "flatbush";
 import { compositeTerrain } from "./terrain-backgrounds";
-import { clearSceneSpawnPixels } from './scene-spawn-pixels';
 
 export interface ScenePixels {
   data: Uint8Array | Uint8ClampedArray;
@@ -18,8 +17,6 @@ export interface TerrainScene {
   height: number;
 }
 export interface TerrainSceneSource extends ScenePixels {
-  /** Original script biome for aliased/shared scene records. */
-  biome?: string;
   skipEdgeTextures?: boolean;
   visualArt?: ScenePixels | null;
   backgroundArt?: ScenePixels | null;
@@ -72,7 +69,7 @@ export function writeRGBA(
 
 /** Cell-color art overrides painted cells, including translucent materials.
  * An opaque art pixel supplies the cell's opacity; air still receives no art. */
-function applySceneVisualArt(
+export function applySceneVisualArt(
   pixels: Uint8Array | Uint8ClampedArray,
   source: TerrainSceneSource,
 ): void {
@@ -94,7 +91,7 @@ function applySceneVisualArt(
 /** Scene backgrounds, force-air and material cells are different paint passes.
  * Flattening them into one source-over bitmap leaves terrain inside air holes,
  * paints background art over rock, and creates opaque biome-color rectangles. */
-function createSceneTileCompositor(
+export function createSceneTileCompositor(
   data: TerrainSceneData,
   paint: ScenePainter,
   budget = 64 * 1024 * 1024,
@@ -228,7 +225,7 @@ function createSceneTileCompositor(
 /** #000042 is the game's FORCE AIR instruction, including scenes for which
  * Telescope's old overlay paints an opaque placeholder (shops/capsules/rooms).
  * Those display exceptions are not material instructions. */
-function applySceneForceAir(
+export function applySceneForceAir(
   raw: Uint8Array | Uint8ClampedArray,
   painted: PaintedScene,
 ): void {
@@ -245,48 +242,6 @@ const compositors = new WeakMap<
   TerrainSceneData,
   Promise<ReturnType<typeof createSceneTileCompositor>>
 >();
-
-/** The native scene painter is shared by terrain tiles and small authored
- * rooms drawn as artwork by the direct viewport renderer. */
-function paintTerrainScene(
-  scene: TerrainScene,
-  source: TerrainSceneSource,
-  sceneModule: any,
-): PaintedScene {
-  let raw: Uint8Array | Uint8ClampedArray = clearSceneSpawnPixels(scene, source);
-  let biome = scene.key.split("/")[0];
-  for (const part of (scene.variantKey ?? "").split("&")) {
-    const eq = part.indexOf("=");
-    if (eq < 0) continue;
-    if (part.slice(0, eq) === "biome") biome = part.slice(eq + 1);
-    else
-      raw = sceneModule.recolorPixelScene(
-        raw,
-        parseInt(part.slice(0, eq), 16),
-        parseInt(part.slice(eq + 1), 16),
-      );
-  }
-  const p = sceneModule.texturePixelSceneForBiome(
-    scene.name, raw, source.width, source.height, biome, scene.x, scene.y,
-  );
-  applySceneForceAir(raw, p);
-  applySceneVisualArt(p.pixels, source);
-  return p;
-}
-
-let nativePainter: Promise<ScenePainter> | undefined;
-export function createTerrainScenePainter(): Promise<ScenePainter> {
-  return nativePainter ??= (async () => {
-    const sceneModule = await import("noita-telescope-full-pixels/pixel_scene_generation.js");
-    if (!(await sceneModule.initPixelSceneTextures()))
-      throw new Error("Full-resolution scene material textures could not be loaded");
-    return (scene: TerrainScene, source: TerrainSceneSource) => paintTerrainScene(scene, source, sceneModule);
-  })().catch(error => {
-    nativePainter = undefined;
-    throw error;
-  });
-}
-
 export function createTerrainScenes(
   data: TerrainSceneData,
   airBackground: SceneAirBackground | null = null,
@@ -294,8 +249,39 @@ export function createTerrainScenes(
   let pending = compositors.get(data);
   if (!pending) {
     pending = (async () => {
-      return createSceneTileCompositor(data, await createTerrainScenePainter(),
-        64 * 1024 * 1024, airBackground);
+      const sceneModule =
+        await import("noita-telescope-full-pixels/pixel_scene_generation.js");
+      if (!(await sceneModule.initPixelSceneTextures()))
+        throw new Error(
+          "Full-resolution scene material textures could not be loaded",
+        );
+      return createSceneTileCompositor(data, (scene, source) => {
+        let raw: Uint8Array | Uint8ClampedArray = source.data;
+        let biome = scene.key.split("/")[0];
+        for (const part of (scene.variantKey ?? "").split("&")) {
+          const eq = part.indexOf("=");
+          if (eq < 0) continue;
+          if (part.slice(0, eq) === "biome") biome = part.slice(eq + 1);
+          else
+            raw = sceneModule.recolorPixelScene(
+              raw,
+              parseInt(part.slice(0, eq), 16),
+              parseInt(part.slice(eq + 1), 16),
+            );
+        }
+        const p = sceneModule.texturePixelSceneForBiome(
+          scene.name,
+          raw,
+          source.width,
+          source.height,
+          biome,
+          scene.x,
+          scene.y,
+        );
+        applySceneForceAir(raw, p);
+        applySceneVisualArt(p.pixels, source);
+        return p;
+      }, 64 * 1024 * 1024, airBackground);
     })();
     compositors.set(data, pending);
   }

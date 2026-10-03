@@ -73,12 +73,8 @@ export function drawViewportArt(
     context.clip();
     context.globalCompositeOperation = "source-over";
     context.globalAlpha *= item.opacity ?? 1;
-    const scale = Math.max(Math.hypot(m.a, m.b), Math.hypot(m.c, m.d));
-    // Preserve source pixels at 1:1 and when magnified; average their colour
-    // when shrinking, as the baked map's reduced levels do.
-    context.imageSmoothingEnabled = scale < 1 - 1e-9;
-    context.imageSmoothingQuality = 'high';
-    draw({ left, top, right, bottom, scale });
+    context.imageSmoothingEnabled = false;
+    draw({ left, top, right, bottom, scale: Math.hypot(a, b) });
     return true;
   } finally {
     context.restore();

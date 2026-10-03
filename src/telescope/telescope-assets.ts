@@ -27,8 +27,8 @@ export function isPackagedTelescopeAsset(url: string): boolean {
   return Object.values(PACKAGED_PNGS).includes(url);
 }
 
-// Cache source PNG blobs, not decoded world pixels. Shared immutable pages
-// already own the persistent bytes; this bounds per-image working memory.
+// Cache successful compressed PNG blobs, not decoded world pixels. Bound both
+// bytes and entries for phones; coalesce concurrent extraction across callers.
 const MAX_BYTES = 4 * 1024 * 1024;
 const MAX_ENTRIES = 64;
 const cached = new Map<object | string, Blob>();
@@ -94,8 +94,13 @@ export async function readTelescopeAsset(url: string): Promise<Blob | null> {
               : "application/octet-stream";
         return new Blob([bytes], { type });
       } catch (cause) {
+        // A damaged archive is a real error, not a reason to cache a blank PNG.
+        if (typeof caches !== "undefined")
+          await caches
+            .delete(`noitamap-archive-${candidate.archive}-v2`)
+            .catch(() => {});
         throw new Error(
-          `Cannot read game asset ${candidate.path} from ${candidate.archive}.`,
+          `Cannot extract ${candidate.path} from ${candidate.archive}.zip; archive cache cleared. Please reload.`,
           { cause },
         );
       }

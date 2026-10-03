@@ -14,7 +14,7 @@ import { readReportInventorySnapshot, type ReportInventorySnapshot } from "../re
  */
 
 const DB_NAME = "noitamap-telescope";
-const DB_VERSION = 15; // scene composites must not contain raw material/spawn PNGs
+const DB_VERSION = 14; // invalidate scene pixels/geometry derived from raw asset fallbacks
 const STORE_NAME = "generations";
 const RENDER_STORE_NAME = "biome_renders";
 const SCENE_BITMAP_STORE_NAME = "pixel_scene_bitmaps";
@@ -62,7 +62,6 @@ interface CachedGeneration {
       name: string;
       key: string;
       variantKey: string;
-      backgroundArt?: string | null;
       imgData: ArrayBuffer | null;
     }>
   >;
@@ -111,11 +110,6 @@ const storage = new OptionalCacheDatabase(DB_NAME, DB_VERSION, (db, transaction,
     for (const name of [STORE_NAME, RENDER_STORE_NAME, SCENE_BITMAP_STORE_NAME]) {
       transaction.objectStore(name).clear();
     }
-  } else if (oldVersion === 14) {
-    // v15 stops drawing material instruction PNGs as finished scene artwork.
-    // Keep generated geometry and downloaded inputs; only these composites
-    // depend on that incorrect fallback.
-    transaction.objectStore(SCENE_BITMAP_STORE_NAME).clear();
   }
 });
 
@@ -152,7 +146,6 @@ export async function cacheGeneration(cacheKey: string, seed: number, result: an
           name: scene.name,
           key: scene.key,
           variantKey: scene.variantKey || "",
-          backgroundArt: scene.backgroundArt,
           imgData: null,
         };
       });
@@ -245,7 +238,6 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
         name: scene.name,
         key: scene.key,
         variantKey: scene.variantKey || "",
-        backgroundArt: scene.backgroundArt,
       }));
     }
 
@@ -427,54 +419,6 @@ export async function getCachedSceneBitmapsBulk(keys: string[]): Promise<Map<str
   return result;
 }
 
-/** Native placements must not turn a warm seed into thousands of separate
- * disk transactions. Read nearby source keys together, with bounded retained
- * blobs and a conservative uncompressed byte limit on each batch. */
-export function createSceneBitmapReader(
-  entries: readonly { key: string; bytes: number }[], maxBytes: number,
-  read = getCachedSceneBitmapsBulk,
-) {
-  const batches: string[][] = [], batchFor = new Map<string, number>();
-  let batch: string[] = [], estimated = 0;
-  for (const entry of entries) {
-    if (batch.length && (batch.length >= 64 || estimated + entry.bytes > maxBytes)) {
-      batches.push(batch); batch = []; estimated = 0;
-    }
-    batchFor.set(entry.key, batches.length); batch.push(entry.key); estimated += entry.bytes;
-  }
-  if (batch.length) batches.push(batch);
-  const retained = new Map<number, { images: Map<string, CachedSceneBitmap>; bytes: number }>();
-  const pending = new Map<number, Promise<Map<string, CachedSceneBitmap>>>();
-  let bytes = 0, disposed = false;
-  return {
-    async get(key: string): Promise<CachedSceneBitmap | null> {
-      if (disposed) return null;
-      const id = batchFor.get(key);
-      if (id === undefined) return null;
-      const hit = retained.get(id);
-      if (hit) { retained.delete(id); retained.set(id, hit); return hit.images.get(key) ?? null; }
-      let loading = pending.get(id);
-      if (!loading) {
-        loading = read(batches[id]).then(images => {
-          const size = [...images.values()].reduce((sum, image) => sum + image.blob.size, 0);
-          if (!disposed && size <= maxBytes) {
-            while (retained.size && (bytes + size > maxBytes || retained.size >= 16)) {
-              const oldest = retained.keys().next().value!;
-              bytes -= retained.get(oldest)!.bytes; retained.delete(oldest);
-            }
-            retained.set(id, { images, bytes: size }); bytes += size;
-          }
-          return images;
-        }).finally(() => pending.delete(id));
-        pending.set(id, loading);
-      }
-      const images = await loading;
-      return disposed ? null : images.get(key) ?? null;
-    },
-    dispose() { disposed = true; retained.clear(); bytes = 0; },
-  };
-}
-
 /**
  * Bulk fetch every cached biome render for a generation cacheKey in one IDB
  * transaction. Returns a map keyed by "pw,pvt".
@@ -525,46 +469,4 @@ export async function cacheSceneBitmap(key: string, blob: Blob, width: number, h
   } catch (e) {
     warnCacheFailure("[TileCache] Failed to cache scene bitmap:", e);
   }
-}
-
-/** Bound optional scene writes; drawing never waits for a disk transaction. */
-export function createSceneBitmapWriteQueue(maxBytes = 16 * 1024 * 1024) {
-  const pending = new Map<string, CachedSceneBitmap>();
-  let bytes = 0, disposed = false;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let active: Promise<void> | undefined;
-  function schedule() {
-    if (!disposed && !active && !timer && pending.size)
-      timer = setTimeout(() => { timer = undefined; void flush(); }, 0);
-  }
-  async function flush(): Promise<void> {
-    if (active) { await active; return flush(); }
-    if (disposed || !pending.size) return;
-    clearTimeout(timer); timer = undefined;
-    const batch = [...pending.values()].slice(0, 64);
-    for (const entry of batch) { pending.delete(entry.key); bytes -= entry.blob.size; }
-    active = (async () => {
-      if (typeof indexedDB === 'undefined') return;
-      try {
-        const db = await openDB();
-        if (disposed) return;
-        const tx = db.transaction(SCENE_BITMAP_STORE_NAME, 'readwrite');
-        const store = tx.objectStore(SCENE_BITMAP_STORE_NAME);
-        for (const entry of batch) store.put(entry);
-        await storage.complete(tx);
-      } catch (error) { warnCacheFailure('[TileCache] Failed to cache scene batch:', error); }
-    })();
-    try { await active; } finally { active = undefined; }
-    if (pending.size) await flush();
-  }
-  return {
-    put(key: string, blob: Blob, width: number, height: number) {
-      if (disposed || pending.has(key) || pending.size >= 256
-        || bytes + blob.size > maxBytes) return;
-      pending.set(key, { key, blob, width, height, timestamp: Date.now() });
-      bytes += blob.size; schedule();
-    },
-    flush,
-    dispose() { disposed = true; clearTimeout(timer); pending.clear(); bytes = 0; },
-  };
 }

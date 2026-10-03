@@ -38,8 +38,6 @@ let isBusy = false;
 let generatePopoverInstance: any = null;
 let resolvedInputSeed: number | null = null;
 let unsubscribeDailyIdentity: (() => void) | undefined;
-let loadingStripHideTimer: number | undefined;
-let mapIsDynamic = false;
 
 // ─── Build ───────────────────────────────────────────────────────────────────
 
@@ -68,7 +66,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   prevDailySeedBtn.setAttribute("data-bs-placement", "bottom");
   prevDailySeedBtn.setAttribute("data-bs-trigger", "hover focus");
   prevDailySeedBtn.setAttribute("data-i18n-title", "dynamicMap.previousDaily");
-  prevDailySeedBtn.setAttribute("data-bs-title", i18next.t("dynamicMap.previousDaily", { defaultValue: "Previous daily seed" }));
+  prevDailySeedBtn.setAttribute("data-bs-title", i18next.t("dynamicMap.previousDaily"));
   prevDailySeedBtn.setAttribute("data-i18n-content", "dynamicMap.previousDailyDescription");
   prevDailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.previousDailyDescription"));
   prevDailySeedBtn.setAttribute("tabindex", "0");
@@ -85,11 +83,11 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   dailySeedBtn.setAttribute("data-bs-placement", "bottom");
   dailySeedBtn.setAttribute("data-bs-trigger", "hover focus");
   dailySeedBtn.setAttribute("data-i18n-title", "dynamicMap.daily");
-  dailySeedBtn.setAttribute("data-bs-title", i18next.t("dynamicMap.daily", { defaultValue: "Daily" }));
+  dailySeedBtn.setAttribute("data-bs-title", i18next.t("dynamicMap.daily"));
   dailySeedBtn.setAttribute("data-i18n-content", "dynamicMap.dailyDescription");
   dailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.dailyDescription"));
   dailySeedBtn.setAttribute("tabindex", "0");
-  dailySeedBtn.innerHTML = `<i class="bi bi-calendar-heart"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.daily">${i18next.t("dynamicMap.daily", { defaultValue: "Daily" })}</span>`;
+  dailySeedBtn.innerHTML = `<i class="bi bi-calendar-heart"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.daily">${i18next.t("dynamicMap.daily")}</span>`;
   dailySeedBtn.addEventListener("click", () => onDailySeedClick());
   toolbarItems.push(dailySeedBtn);
 
@@ -108,19 +106,16 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
     seedInput.style.webkitTextSecurity = "disc";
   }
   seedInput.setAttribute("data-i18n-placeholder", "dynamicMap.placeholder");
-  seedInput.placeholder = i18next.t("dynamicMap.placeholder", { defaultValue: "Game seed" });
+  seedInput.placeholder = i18next.t("dynamicMap.placeholder");
   // Popover -- title is the section, content is set dynamically by updateSeedTooltip()
   seedInput.setAttribute("data-bs-toggle", "popover");
   seedInput.setAttribute("data-popover-owner", "dynamic-seed");
   seedInput.setAttribute("data-bs-placement", "bottom");
   seedInput.setAttribute("data-bs-trigger", "hover");
-  seedInput.setAttribute("data-bs-title", i18next.t("dynamicMap.placeholder", { defaultValue: "Game seed" }));
+  seedInput.setAttribute("data-bs-title", i18next.t("dynamicMap.placeholder"));
   seedInput.setAttribute("data-bs-content", i18next.t("dynamicMap.seedTooltipCustom"));
   seedInput.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter") {
-      ev.preventDefault();
-      void onGenerateClick();
-    }
+    if (ev.key === "Enter") onGenerateClick();
   });
   seedInput.addEventListener("input", () => {
     resolvedInputSeed = null;
@@ -148,14 +143,14 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   generateWrapper.setAttribute("data-bs-trigger", "hover focus");
   generateWrapper.setAttribute("data-bs-html", "true");
   generateWrapper.setAttribute("data-i18n-title", "dynamicMap.generate.label");
-  generateWrapper.setAttribute("data-bs-title", i18next.t("dynamicMap.generate.label", { defaultValue: "Generate" }));
+  generateWrapper.setAttribute("data-bs-title", i18next.t("dynamicMap.generate.label"));
   generateWrapper.setAttribute("data-bs-content", "");
   generateWrapper.setAttribute("tabindex", "0");
 
   generateBtn = document.createElement("button");
   generateBtn.id = "dynamicGenerateButton";
   generateBtn.className = "icon-button btn btn-sm btn-outline-light text-nowrap";
-  generateBtn.innerHTML = `<i class="bi bi-play-fill"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label", { defaultValue: "Generate" })}</span>`;
+  generateBtn.innerHTML = `<i class="bi bi-play-fill"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
   generateBtn.addEventListener("click", () => onGenerateClick());
 
   generateWrapper.appendChild(generateBtn);
@@ -168,7 +163,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   nerdBtn.href = NERD_MODE_URL;
   nerdBtn.target = "_blank";
   nerdBtn.rel = "noopener noreferrer";
-  nerdBtn.innerHTML = `<i class="bi bi-box-arrow-up-right"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.nerdMode.label">${i18next.t("dynamicMap.nerdMode.label", { defaultValue: "Lymm's Telescope" })}</span>`;
+  nerdBtn.innerHTML = `<i class="bi bi-box-arrow-up-right"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.nerdMode.label">${i18next.t("dynamicMap.nerdMode.label")}</span>`;
   nerdBtn.addEventListener("click", () => {
     const seed = new URLSearchParams(window.location.search).get("se");
     nerdBtn.href = seed ? `${NERD_MODE_URL}?seed=${seed}` : NERD_MODE_URL;
@@ -211,30 +206,30 @@ function refreshDynamicUITranslations(): void {
 
   // Daily seed button
   if (dailySeedBtn) {
-    dailySeedBtn.setAttribute("data-bs-title", i18next.t("dynamicMap.daily", { defaultValue: "Daily" }));
+    dailySeedBtn.setAttribute("data-bs-title", i18next.t("dynamicMap.daily"));
     dailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.dailyDescription"));
     const span = dailySeedBtn.querySelector("span[data-i18n]");
-    if (span) span.textContent = i18next.t("dynamicMap.daily", { defaultValue: "Daily" });
+    if (span) span.textContent = i18next.t("dynamicMap.daily");
   }
 
   // Previous daily seed button (icon-only, no inner span to refresh)
   if (prevDailySeedBtn) {
-    prevDailySeedBtn.setAttribute("data-bs-title", i18next.t("dynamicMap.previousDaily", { defaultValue: "Previous daily seed" }));
+    prevDailySeedBtn.setAttribute("data-bs-title", i18next.t("dynamicMap.previousDaily"));
     prevDailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.previousDailyDescription"));
   }
 
   // Seed input -- popover always describes the valid seed range, regardless
   // of daily/previous/custom flavour (that distinction is conveyed by colour).
   if (seedInput) {
-    seedInput.placeholder = i18next.t("dynamicMap.placeholder", { defaultValue: "Game seed" });
-    seedInput.setAttribute("data-bs-title", i18next.t("dynamicMap.placeholder", { defaultValue: "Game seed" }));
+    seedInput.placeholder = i18next.t("dynamicMap.placeholder");
+    seedInput.setAttribute("data-bs-title", i18next.t("dynamicMap.placeholder"));
     seedInput.setAttribute("data-bs-content", i18next.t("dynamicMap.seedTooltipCustom"));
   }
 
   // Generate button text + wrapper popover
   if (generateBtn && !isBusy) {
     const genSpan = generateBtn.querySelector("span[data-i18n]");
-    if (genSpan) genSpan.textContent = i18next.t("dynamicMap.generate.label", { defaultValue: "Generate" });
+    if (genSpan) genSpan.textContent = i18next.t("dynamicMap.generate.label");
   }
   // Update generate wrapper popover (handles both active and "already generated" states)
   updateGenerateButtonState();
@@ -243,7 +238,7 @@ function refreshDynamicUITranslations(): void {
   const nerdBtn = document.getElementById("dynamicNerdModeButton");
   if (nerdBtn) {
     const nerdSpan = nerdBtn.querySelector("span[data-i18n]");
-    if (nerdSpan) nerdSpan.textContent = i18next.t("dynamicMap.nerdMode.label", { defaultValue: "Lymm's Telescope" });
+    if (nerdSpan) nerdSpan.textContent = i18next.t("dynamicMap.nerdMode.label");
   }
 
   // Dispose and reinitialize ALL popovers in the toolbar items
@@ -287,9 +282,8 @@ export function roundVisibleOverlayGroupEdges(): void {
 }
 
 export function updateDynamicUIVisibility(currentMap: string): void {
+  if (!toolbarItems.length) return;
   const isDynamic = currentMap === DYNAMIC_MAP_NAME;
-  mapIsDynamic = isDynamic;
-  if (!isDynamic) hideLoadingStrip(true);
   toolbarItems.forEach(el => { el.style.display = isDynamic ? "" : "none"; });
 
   // Toggle any dynamic-map-only controls outside the toolbar (e.g. light-mode switch in navbar)
@@ -362,7 +356,6 @@ async function onDailySeedClick(): Promise<void> {
   setBusy(true);
   try {
     const seed = await fetchDailySeed(true);
-    if (!mapIsDynamic) return;
     if (seedInput) {
       seedInput.value = String(seed);
       resolvedInputSeed = seed;
@@ -378,6 +371,7 @@ async function onDailySeedClick(): Promise<void> {
 
     if (seed !== currentSeed || routeChanged) {
       updateURLWithSeed(seed, true);
+      showLoadingStrip();
       await runDynamicMap(seed, true, dynamicOpts);
     } else {
       console.log("[DynamicUI] Daily seed matches current seed, skipping.");
@@ -397,7 +391,6 @@ async function onPrevDailySeedClick(): Promise<void> {
   setBusy(true);
   try {
     const seed = await fetchPreviousDailySeed(true);
-    if (!mapIsDynamic) return;
     if (seed === null) {
       console.warn("[DynamicUI] Previous daily seed unavailable.");
       return;
@@ -416,6 +409,7 @@ async function onPrevDailySeedClick(): Promise<void> {
       // Previous daily renders as a daily (all-unlocked, baked DZIs available
       // on the previous-daily-* workers).
       updateURLWithSeed(seed, true);
+      showLoadingStrip();
       await runDynamicMap(seed, true, dynamicOpts);
     } else {
       console.log("[DynamicUI] Previous daily seed matches current seed, skipping.");
@@ -450,6 +444,7 @@ async function onGenerateClick(): Promise<void> {
   setBusy(true);
   try {
     updateURLWithSeed(seed, false);
+    showLoadingStrip();
     await runDynamicMap(seed, false, dynamicOpts);
   } catch (e) {
     console.error("[DynamicUI] Generate failed:", e);
@@ -463,16 +458,11 @@ async function onGenerateClick(): Promise<void> {
 
 function setBusy(busy: boolean): void {
   isBusy = busy;
-  // Enter submits the seed and ends text entry. Return focus before the
-  // asynchronous replacement so the input does not keep owning interaction.
-  if (busy && seedInput && document.activeElement === seedInput) {
-    dynamicOpts?.viewer.canvas?.focus({ preventScroll: true });
-  }
   if (generateBtn) {
     generateBtn.disabled = busy;
     generateBtn.innerHTML = busy
-      ? `<span class="spinner-border spinner-border-sm" role="status"></span><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label", { defaultValue: "Generate" })}</span>`
-      : `<i class="bi bi-play-fill"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label", { defaultValue: "Generate" })}</span>`;
+      ? `<span class="spinner-border spinner-border-sm" role="status"></span><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`
+      : `<i class="bi bi-play-fill"></i><span class="d-none d-xl-inline" data-i18n="dynamicMap.generate.label">${i18next.t("dynamicMap.generate.label")}</span>`;
   }
   if (dailySeedBtn) dailySeedBtn.disabled = busy;
   if (prevDailySeedBtn) prevDailySeedBtn.disabled = busy;
@@ -494,7 +484,7 @@ function updateGenerateButtonState(): void {
     : "";
   const title = isMatch
     ? i18next.t("dynamicMap.generate.alreadyGeneratedTitle")
-    : i18next.t("dynamicMap.generate.label", { defaultValue: "Generate" });
+    : i18next.t("dynamicMap.generate.label");
   wrapper.setAttribute("data-bs-content", content);
   wrapper.setAttribute("data-bs-title", title);
 
@@ -509,15 +499,10 @@ function updateGenerateButtonState(): void {
 
 /** Show the non-blocking loading strip with download already complete. */
 export function showLoadingStrip(): void {
-  if (!mapIsDynamic) return;
-  window.clearTimeout(loadingStripHideTimer);
-  loadingStripHideTimer = undefined;
   const strip = document.getElementById("map-loading-strip");
   if (!strip) return;
-  const alreadyVisible = strip.classList.contains("visible") && !strip.classList.contains("fade-out");
   strip.classList.remove("fade-out");
   strip.classList.add("visible");
-  if (alreadyVisible) return;
   // Skip download phase (data.zip already loaded)
   const dl = document.getElementById("loading-bar-download") as HTMLElement | null;
   if (dl) dl.style.width = "100%";
@@ -532,20 +517,13 @@ export function showLoadingStrip(): void {
   if (status) status.textContent = "33%";
 }
 
-/** Static-map transitions clear immediately; completed generation fades out. */
-export function hideLoadingStrip(immediate = false): void {
-  window.clearTimeout(loadingStripHideTimer);
-  loadingStripHideTimer = undefined;
+/** Hide the loading strip with a fade-out. */
+export function hideLoadingStrip(): void {
   const strip = document.getElementById("map-loading-strip");
   if (!strip) return;
-  if (immediate) {
-    strip.classList.remove("visible", "fade-out");
-    return;
-  }
   strip.classList.add("fade-out");
   // After the CSS transition completes, fully hide
-  loadingStripHideTimer = window.setTimeout(() => {
-    loadingStripHideTimer = undefined;
+  setTimeout(() => {
     strip.classList.remove("visible", "fade-out");
   }, 400);
 }

@@ -17,29 +17,6 @@ export const STATIC_TERRAIN_BIOMES = new Set([
   "lake_deep",
 ]);
 
-// The static base map owns the main-world temples, but their repeated islands
-// have no native artwork beneath them. Their Wang geometry already lives in
-// the shared engine lattice and must be shaded in the vertical worlds.
-const REPEATED_TEMPLE_BIOMES = new Set([
-  "biome_potion_mimics",
-  "biome_darkness",
-]);
-
-// These authored rooms carve a small scene into an otherwise solid EDR chunk.
-// The base map leaves their biome cells empty for dynamic room placement, so
-// their bufferless fill layers must survive just like generated Wang layers.
-// Other fill biomes still belong to the static map.
-const AUTHORED_ROOM_FILL_BIOMES = new Set([
-  "solid_wall_hidden_cavern",
-  "friend_1", "friend_2", "friend_3", "friend_4", "friend_5", "friend_6",
-]);
-
-/** Legacy 10x Wang-template overlays are useful only without native terrain. */
-export function isRepeatedTempleTemplate(scene: { key: string }): boolean {
-  return scene.key === "static_tile/temples-assets/potion_mimics" ||
-    scene.key === "static_tile/temples-assets/darkness";
-}
-
 export const BIOME_BACKGROUND_MAP: Record<string, string> = {
   coalmine: "data/weather_gfx/background_coalmine.png",
   coalmine_alt: "data/weather_gfx/background_coalmine.png",
@@ -59,7 +36,6 @@ export const BIOME_BACKGROUND_MAP: Record<string, string> = {
   vault_frozen: "data/weather_gfx/background_vault_frozen.png",
   crypt: "data/weather_gfx/background_crypt.png",
   wandcave: "data/weather_gfx/background_wandcave.png",
-  watercave: "data/weather_gfx/background_cave_04_alt.png",
   wizardcave: "data/weather_gfx/background_wizardcave.png",
   robobase: "data/weather_gfx/background_robobase.png",
   the_end: "data/weather_gfx/background_the_end.png",
@@ -83,7 +59,8 @@ export const BIOME_BACKGROUND_MAP: Record<string, string> = {
   solid_wall_tower_2: "data/weather_gfx/background_excavationsite.png",
   solid_wall_tower_1: "data/weather_gfx/background_coalmine.png",
   solid_wall_tower_10: "data/weather_gfx/background_crypt.png",
-  // The carved air in these solid fill biomes reveals its own cave backdrop.
+  // Fill biomes that only exist as carved pixel scenes. They own no terrain
+  // layer, so this backdrop is painted only under their scenes' force-air.
   friend_1: "data/weather_gfx/background_cave_02.png",
   friend_2: "data/weather_gfx/background_cave_02.png",
   friend_3: "data/weather_gfx/background_cave_02.png",
@@ -104,7 +81,7 @@ export function sceneBiomeNames(scene: { key: string; variantKey?: string }): st
   return names;
 }
 
-export const TERRAIN_VERSION = "full-pixel-v15";
+export const TERRAIN_VERSION = "full-pixel-v12";
 export const WORLD_HEIGHT = 48 * 512;
 export const WORLD_TOP = -14 * 512;
 export type VerticalPlane = -1 | 0 | 1;
@@ -123,20 +100,16 @@ export function createTerrainOwnership(
   pixels: Uint32Array,
   config: Record<string, any>,
   width: number,
-  includeRepeatedTemples = false,
 ): TerrainOwnership {
   const owners = new Int16Array(width * 48).fill(-1);
   const names: string[] = [];
   const ids = new Map<string, number>();
   for (const layer of layers) {
     const name = layer.biomeName;
-    const conf = config[name];
-    const roomFill = AUTHORED_ROOM_FILL_BIOMES.has(name) && layer.isFill &&
-      !!conf?.fillMaterial && !conf.sceneOnly && !includeRepeatedTemples;
-    if ((!roomFill && (!layer.buffer || layer.isFill || !conf?.wangFile)) ||
-      (STATIC_TERRAIN_BIOMES.has(name) &&
-      !(includeRepeatedTemples && REPEATED_TEMPLE_BIOMES.has(name))))
+    if (!layer.buffer || layer.isFill || STATIC_TERRAIN_BIOMES.has(name))
       continue;
+    const conf = config[name];
+    if (!conf?.wangFile) continue;
     let id = ids.get(name);
     if (id === undefined) {
       id = names.length;
@@ -179,8 +152,7 @@ export function createTerrainOwnership(
 }
 
 /** Vertical-world paint is restricted to original source claims as well as the
- * sky/hell material band. Only repeated temple Wang layers are exempt from the
- * main world's static-art exclusions; authored pixel scenes stay excluded. */
+ * sky/hell material band. Source exclusions still apply before remapping names. */
 export function createPlaneOwnership(
   layers: any[],
   sourcePixels: Uint32Array,
@@ -188,8 +160,7 @@ export function createPlaneOwnership(
   config: Record<string, any>,
   width: number,
 ): TerrainOwnership {
-  const source = createTerrainOwnership(layers, sourcePixels, config, width,
-    sourcePixels !== paintPixels);
+  const source = createTerrainOwnership(layers, sourcePixels, config, width);
   if (sourcePixels === paintPixels) return source;
   const nameByColor = new Map<number, string>();
   for (const [name, cfg] of Object.entries(config))

@@ -1,7 +1,6 @@
 import Flatbush from "flatbush";
 import { WORLD_TOP, WORLD_HEIGHT, type TerrainOwnership } from "./terrain-policy";
 import type { StaticTerrainMask } from "./static-terrain-mask";
-import { getMapMemoryBudget } from '../map-memory-budget';
 
 export interface InstantClipView {
   x: number;
@@ -12,15 +11,14 @@ export interface InstantClipView {
 }
 
 const MASK_PAGE_SIZE = 256;
+const MASK_CACHE_BYTES = 32 * 1024 * 1024;
 
 /** Preserve the existing static-map ownership and the exact authored scene
  * material/force-air masks. Empty PNG pixels do not erase a rectangular room. */
 export function createInstantClip(
   owners: Pick<TerrainOwnership, 'width' | 'owners'>[],
   masks: StaticTerrainMask[],
-  options: { maxBytes?: number } = {},
 ) {
-  const maxBytes = options.maxBytes ?? getMapMemoryBudget().maskCacheBytes;
   const index = masks.length ? new Flatbush(masks.length) : null;
   for (const mask of masks)
     index!.add(mask.x, mask.y, mask.x + mask.width, mask.y + mask.height);
@@ -35,41 +33,6 @@ export function createInstantClip(
     return id;
   };
   let bytes = 0;
-  let sampled: HTMLCanvasElement | undefined;
-  let sampledPixels: ImageData | undefined;
-  const sampledMask = (ctx: CanvasRenderingContext2D, mask: StaticTerrainMask, view: InstantClipView) => {
-    const left = (mask.x - view.x) / view.scale, top = (mask.y - view.y) / view.scale;
-    const right = left + mask.width / view.scale, bottom = top + mask.height / view.scale;
-    const x0 = Math.max(0, Math.floor(left)), y0 = Math.max(0, Math.floor(top));
-    const x1 = Math.min(view.width, Math.ceil(right)), y1 = Math.min(view.height, Math.ceil(bottom));
-    if (x1 <= x0 || y1 <= y0) return;
-    if (!sampled) {
-      sampled = document.createElement('canvas');
-      sampled.width = sampled.height = MASK_PAGE_SIZE;
-    }
-    const target = sampled.getContext('2d')!;
-    const pixels = sampledPixels ??= target.createImageData(MASK_PAGE_SIZE, MASK_PAGE_SIZE);
-    for (let y = y0; y < y1; y += MASK_PAGE_SIZE) for (let x = x0; x < x1; x += MASK_PAGE_SIZE) {
-      const w = Math.min(MASK_PAGE_SIZE, x1 - x), h = Math.min(MASK_PAGE_SIZE, y1 - y);
-      for (let row = 0; row < h; row++) {
-        pixels.data.fill(0, row * MASK_PAGE_SIZE * 4, (row * MASK_PAGE_SIZE + w) * 4);
-        if (y + row + .5 <= top || y + row + .5 > bottom) continue;
-        const sy = Math.min(mask.height - 1, Math.max(0, Math.ceil((y + row + .5 - top) * view.scale) - 1));
-        const coverageY = Math.min(y + row + 1, bottom) - Math.max(y + row, top);
-        for (let column = 0; column < w; column++) {
-          if (x + column + .5 <= left || x + column + .5 > right) continue;
-          const sx = Math.min(mask.width - 1, Math.max(0, Math.ceil((x + column + .5 - left) * view.scale) - 1));
-          const source = sy * mask.width + sx;
-          if (((mask.bits[source >> 3] ?? 0) | (mask.airBits?.[source >> 3] ?? 0)) & (1 << (source & 7))) {
-            const coverageX = Math.min(x + column + 1, right) - Math.max(x + column, left);
-            pixels.data[(row * MASK_PAGE_SIZE + column) * 4 + 3] = Math.min(255, Math.floor(256 * coverageX * coverageY));
-          }
-        }
-      }
-      target.putImageData(pixels, 0, 0, 0, 0, w, h);
-      ctx.drawImage(sampled, 0, 0, w, h, x, y, w, h);
-    }
-  };
   const bitmap = (mask: StaticTerrainMask, x = 0, y = 0,
     width = mask.width, height = mask.height) => {
     const key = `${identity(mask.bits)}/${identity(mask.airBits)}/${mask.width}/${mask.height}/${x}/${y}/${width}/${height}`;
@@ -78,14 +41,6 @@ export function createInstantClip(
       bitmaps.delete(key);
       bitmaps.set(key, canvas);
       return canvas;
-    }
-    const size = width * height * 4;
-    // Evict before allocating the bitmap and its upload ImageData.
-    while (bytes + size > maxBytes && bitmaps.size) {
-      const [oldKey, old] = bitmaps.entries().next().value!;
-      bytes -= old.width * old.height * 4;
-      bitmaps.delete(oldKey);
-      old.width = old.height = 0;
     }
     canvas = document.createElement("canvas");
     canvas.width = width;
@@ -101,7 +56,7 @@ export function createInstantClip(
     ctx.putImageData(image, 0, 0);
     bitmaps.set(key, canvas);
     bytes += width * height * 4;
-    while (bytes > maxBytes && bitmaps.size > 1) {
+    while (bytes > MASK_CACHE_BYTES && bitmaps.size > 1) {
       const [key, old] = bitmaps.entries().next().value!;
       bytes -= old.width * old.height * 4;
       bitmaps.delete(key);
@@ -150,15 +105,12 @@ export function createInstantClip(
               cx <= cx1 && owner.owners[cy * owner.width + localX] >= 0;
             if (owns && start === -Infinity) start = cx;
             if (!owns && start !== -Infinity) {
-              // The shader selects the biome containing the display pixel's
-              // center. Fractional Canvas clips instead antialias each chunk
-              // edge, leaving a translucent square around isolated authored
-              // rooms/islands that changes on every animated zoom frame.
-              const left = Math.max(0, Math.ceil((start * 512 - owner.width * 256 - x) / scale - .5));
-              const right = Math.min(width, Math.ceil((cx * 512 - owner.width * 256 - x) / scale - .5));
-              const top = Math.max(0, Math.ceil((planeY + cy * 512 - y) / scale - .5));
-              const bottom = Math.min(height, Math.ceil((planeY + (cy + 1) * 512 - y) / scale - .5));
-              if (right > left && bottom > top) ctx.rect(left, top, right - left, bottom - top);
+              ctx.rect(
+                (start * 512 - owner.width * 256 - x) / scale,
+                (planeY + cy * 512 - y) / scale,
+                ((cx - start) * 512) / scale,
+                512 / scale,
+              );
               start = -Infinity;
             }
           }
@@ -205,19 +157,19 @@ export function createInstantClip(
             }
           continue;
         }
-        // Zoomed/overview masks are sampled directly into screen-sized pages.
-        // Expanding a multi-million-pixel scene just to erase a few display
-        // pixels was a large allocation on every zoom transition.
-        sampledMask(ctx, mask, view);
+        ctx.drawImage(
+          bitmap(mask),
+          (mask.x - x) / scale,
+          (mask.y - y) / scale,
+          mask.width / scale,
+          mask.height / scale,
+        );
       }
       ctx.restore();
     },
     dispose() {
       for (const canvas of bitmaps.values()) canvas.width = canvas.height = 0;
       bitmaps.clear();
-      if (sampled) sampled.width = sampled.height = 0;
-      sampled = undefined;
-      sampledPixels = undefined;
       bytes = 0;
     },
   };

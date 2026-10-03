@@ -24,9 +24,6 @@ import {
 import PwWorker from "./pw-worker?worker";
 import { ParallelWorldWorkerPool } from "./pw-worker-pool";
 import { prepareAssetJobs } from "./background-idle";
-import { getMapMemoryBudget } from "../map-memory-budget";
-import { createScenePixelCache } from "./scene-pixel-cache";
-let compactScenePixels: ReturnType<typeof createScenePixelCache> | undefined;
 let parallelWorldWorkerPool = new ParallelWorldWorkerPool(() => new PwWorker());
 
 // Telescope modules
@@ -46,9 +43,7 @@ let ensureScenePixels: any;
  */
 export function getPixelSceneImgElement(key: string): Uint8Array | null {
   if (!PIXEL_SCENE_DATA || !PIXEL_SCENE_DATA[key]) return null;
-  const data = PIXEL_SCENE_DATA[key];
-  return compactScenePixels?.peek(key, data)?.imgElement as Uint8Array
-    || data.imgElement || null;
+  return PIXEL_SCENE_DATA[key].imgElement || null;
 }
 
 /** Returns the full pixel-scene record (imgElement, width, height, name, etc). */
@@ -63,14 +58,7 @@ export async function ensurePixelSceneData(
   options: { art?: boolean } = {},
 ): Promise<any | null> {
   const data = getPixelSceneData(key);
-  if (data && ensureScenePixels) {
-    const memory = getMapMemoryBudget();
-    if (memory.profile === 'compact') {
-      compactScenePixels ??= createScenePixelCache(memory.sceneCacheBytes);
-      return compactScenePixels.load(key, data, options.art !== false, ensureScenePixels);
-    }
-    await ensureScenePixels(data, options);
-  }
+  if (data && ensureScenePixels) await ensureScenePixels(data, options);
   return data;
 }
 
@@ -139,7 +127,6 @@ export interface PixelScene {
   name: string;
   key: string;
   variantKey?: string;
-  backgroundArt?: string | null;
   spawnPoints?: any[];
 }
 
@@ -168,8 +155,6 @@ export interface GenerationResult {
 
 export interface GenerateOptions {
   seed: number;
-  /** Skip obsolete requests before touching shared generator state. */
-  isCurrent?: () => boolean;
   ngPlus?: number;
   dailySeed?: boolean;
   /** Which horizontal parallel worlds to generate for */
@@ -445,20 +430,7 @@ export function prewarmParallelWorlds(worlds: number[] = [-1, 0, 1]): void {
  * @param opts.dailySeed — If true, force all unlocks ON
  * @param opts.parallelWorlds — Horizontal PW indices to scan (default [-1, 0, 1])
  */
-let generationQueue: Promise<unknown> = Promise.resolve();
-
-export function generateDynamicMap(opts: GenerateOptions): Promise<GenerationResult> {
-  // Different seeds/unlock variants share PRNG/settings and must not overlap.
-  // The generation's own parallel-world workers remain concurrent.
-  const result = generationQueue.then(() => {
-    if (opts.isCurrent?.() === false) throw new DOMException('Obsolete generation', 'AbortError');
-    return generateDynamicMapExclusive(opts);
-  });
-  generationQueue = result.catch(() => {});
-  return result;
-}
-
-async function generateDynamicMapExclusive(opts: GenerateOptions): Promise<GenerationResult> {
+export async function generateDynamicMap(opts: GenerateOptions): Promise<GenerationResult> {
   // A generation may resume after navigation while its assets/tiles awaited.
   // Keep its original pool so disposal rejects late dispatch rather than
   // starting workers in the new pool after the dynamic map has closed.
@@ -466,7 +438,6 @@ async function generateDynamicMapExclusive(opts: GenerateOptions): Promise<Gener
   prewarmParallelWorlds(opts.parallelWorlds);
   await initTelescope();
 
-  if (opts.isCurrent?.() === false) throw new DOMException('Obsolete generation', 'AbortError');
   const seed = opts.seed;
   const ngPlus = opts.ngPlus ?? 0;
   const dailySeed = opts.dailySeed ?? false;
@@ -1363,9 +1334,7 @@ async function generateDynamicMapExclusive(opts: GenerateOptions): Promise<Gener
     }
   }
 
-  // Approximate-renderer fallback for temple islands in all parallel worlds.
-  // Native terrain uses the original Wang layers instead and omits these 10x
-  // overlays, which would otherwise hide the final pixels beneath them.
+  // Inject temple foreground pixel scenes for heaven/hell across ALL parallel worlds.
   // addStaticPixelScenes skips chunk-based scenes when pwIndexVertical !== 0,
   // so Spirited (potion_mimics) and Ominous (darkness) temple foregrounds
   // never get generated. We scan biomeData.pixels directly and create pixel

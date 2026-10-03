@@ -3,10 +3,13 @@
  * replacements arrive. Loading and coverage selection still belong to OSD. */
 
 import { alignTerrainTileEdges } from './osd-pixel-rendering';
-import { getMapMemoryBudget } from './map-memory-budget';
 
 type Bounds = { x: number; y: number; width: number; height: number };
 type State = { remembered: Set<any>; extras: Set<any> };
+
+// At minPixelRatio=.5, a 256px tile can occupy only 128 screen pixels. Two
+// overlapping FHD layers can already need ~270 tiles in the preceding frame.
+const DEFAULT_REFERENCE_LIMIT = 512;
 
 class ReferenceBudget {
   private entries = new Map<any, State>();
@@ -71,6 +74,28 @@ function covered(bounds: Bounds, replacements: any[]): boolean {
   return false;
 }
 
+function renderRatio(item: any, level: number): number {
+  return item.viewport.deltaPixelsFromPointsNoRotate(item.source.getPixelRatio(level), true).x
+    * item._scaleSpring.current.value;
+}
+
+function usefulLevel(item: any): number {
+  let best = item.source.minLevel || 0, error = Infinity;
+  let lastRatio = item.source.getPixelRatio(item.source.maxLevel).x;
+  for (let level = item.source.maxLevel; level >= (item.source.minLevel || 0); level--) {
+    const sourceRatio = item.source.getPixelRatio(level).x;
+    if (item.discardLevelsBelowDownsampleRatio > 1
+      && sourceRatio / lastRatio < item.discardLevelsBelowDownsampleRatio
+      && level !== item.source.maxLevel) continue;
+    lastRatio = sourceRatio;
+    const ratio = renderRatio(item, level);
+    if (ratio < item.minPixelRatio && level !== item.source.minLevel) continue;
+    const difference = Math.abs(1 - ratio);
+    if (difference < error) { best = level; error = difference; }
+  }
+  return best;
+}
+
 function protect(item: any, budget: ReferenceBudget): () => void {
   if (typeof item.getTilesToDraw !== 'function' || typeof item._positionTile !== 'function')
     return () => {};
@@ -88,7 +113,12 @@ function protect(item: any, budget: ReferenceBudget): () => void {
     if (!drawArea || this.opacity === 0) { budget.forget(state); return drawn; }
     const area = drawArea.getBoundingBox();
     const normal = new Set(drawn.map(info => info.tile));
-    const replacements = drawn.filter(info => info.tile.opacity === 1);
+    const level = usefulLevel(this);
+    const replacements = drawn.filter(info => info.level >= level && info.tile.opacity === 1);
+    if (covered(area, replacements)) {
+      budget.remember(state, drawn);
+      return drawn;
+    }
     // The last drawn view alone loses warm pixels after a pan away and back.
     // Rediscover only OSD-owned, already-loaded tiles for this exact image;
     // never traverse the source's unloaded tile matrix or start a request.
@@ -99,11 +129,10 @@ function protect(item: any, budget: ReferenceBudget): () => void {
     let center: any;
     for (const tile of candidates) {
       if (normal.has(tile) || !tile.loaded || tile.processing
-        || (tile.opacity !== 1 && this.blendTime !== 0)) continue;
+        || (tile.opacity !== 1 && this.blendTime !== 0)
+        || renderRatio(this, tile.level) >= this.minPixelRatio) continue;
       const visible = intersection(tile.bounds, area);
-      // A loaded overview is coverage, but cannot replace finer pixels. This
-      // also reuses warm tiles on a pan back before OSD selects them again.
-      if (!visible || covered(visible, replacements.filter(info => info.level >= tile.level))) continue;
+      if (!visible || covered(visible, replacements)) continue;
       center ??= this.viewport.pixelFromPoint(this.viewport.getCenter());
       this._positionTile(tile, this.source.tileOverlap, this.viewport, center, tile.visibility);
       alignTerrainTileEdges(this, tile);
@@ -134,10 +163,15 @@ function protect(item: any, budget: ReferenceBudget): () => void {
   };
 }
 
+/** Standalone entry point for an image or a native OSD integration fixture. */
+export function protectTileContinuity(item: any, options: { maxTiles?: number } = {}): () => void {
+  return protect(item, new ReferenceBudget(Math.max(0, options.maxTiles ?? DEFAULT_REFERENCE_LIMIT)));
+}
+
 /** Share a bounded reference budget across static DZI and generated map layers.
  * OSD owns every tile/cache canvas; removing images releases all extra refs. */
 export function installTileContinuity(viewer: any, options: { maxTiles?: number } = {}): () => void {
-  const budget = new ReferenceBudget(Math.max(0, options.maxTiles ?? getMapMemoryBudget().continuityTiles));
+  const budget = new ReferenceBudget(Math.max(0, options.maxTiles ?? DEFAULT_REFERENCE_LIMIT));
   const images = new Map<any, () => void>();
   const add = ({ item }: any) => {
     if (!images.has(item)) images.set(item, protect(item, budget));

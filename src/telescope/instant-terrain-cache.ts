@@ -80,14 +80,11 @@ export class InstantTerrainCache {
     const bytes = source.canvas.width * source.canvas.height * 4;
     if (!Number.isSafeInteger(bytes) || bytes <= 0 || bytes > this.maxBytes)
       return false;
-    // Reject before allocating when pinned coverage already fills the cache.
-    // Otherwise evict before copying: a viewport-sized insertion must not
-    // temporarily double the budget on a memory-constrained browser.
-    const pinnedBytes = [...this.entries].reduce((sum, [candidate, entry]) =>
-      sum + (candidate !== key && entry.pinned ? entry.bytes : 0), 0);
-    if (!pinned && pinnedBytes + bytes > this.maxBytes) return false;
+    const context = copyTerrainContext(source);
     this.remove(key);
-    while (this.bytes + bytes > this.maxBytes) {
+    this.entries.set(key, { context, bytes, pinned });
+    this.bytes += bytes;
+    while (this.bytes > this.maxBytes) {
       let oldest: string | undefined;
       for (const [candidate, entry] of this.entries) {
         oldest ??= candidate;
@@ -99,9 +96,6 @@ export class InstantTerrainCache {
       this.remove(oldest!);
       this.evictions++;
     }
-    const context = copyTerrainContext(source);
-    this.entries.set(key, { context, bytes, pinned });
-    this.bytes += bytes;
     return this.entries.has(key);
   }
 

@@ -10,12 +10,13 @@
  * Without `?u=`: the active toggle has TWO states — "all" ↔ "none".
  * With    `?u=`: THREE states — "mod" → "all" → "none" → "mod" → ...
  *
- * The PRIMARY variant is selected before generating each visible map:
- * explicit URL state, then the saved view, then "mod" or "all" by default.
- * Daily maps always use "all".
+ * The PRIMARY variant is the one used to generate the visible map:
+ *   - no `?u=`  → "all"
+ *   - with `?u=`→ "mod"
  *
- * Non-primary variants are generated when requested (biome layout is identical
- * between variants, so the cost is just POI/wand/chest rolls). POI tooltip cards swap their contents
+ * Non-primary variants are generated in the background after the primary
+ * render finishes (biome layout is identical between variants, so the cost
+ * is just POI/wand/chest rolls). POI tooltip cards swap their contents
  * instantly once the requested variant is ready; until then they show an
  * "indexing" placeholder on the lock button.
  *
@@ -44,7 +45,6 @@ const persistentReadyListeners: Array<() => void> = [];
 let viewListeners: Array<(v: UnlockDescriptor) => void> = [];
 
 let lastSeedSeen: number | null = null;
-let variantEpoch = 0;
 
 /** True if the page was opened with a `?u=<base64>` URL parameter — i.e. the
  *  noitamap in-game mod supplied a fresh unlock list from save00. The
@@ -63,8 +63,10 @@ export function availableDescriptors(): UnlockDescriptor[] {
   return isModSourced() ? ["mod", "all", "none"] : ["all", "none"];
 }
 
-// The primary descriptor is fixed for each generated seed. Restore a selected
-// variant before generation so it doesn't require generating the seed twice.
+// The primary descriptor is *locked* to whatever URL state was present on
+// first call (i.e. the descriptor used to GENERATE the initial map). User
+// toggles never change this — they only flip the *active* view, which may
+// pull alt-cached variants. Recomputed only on page reload.
 let _primary: UnlockDescriptor | null = null;
 
 /** Which variant is used to *generate* the visible map / primary POI list. */
@@ -75,21 +77,6 @@ export function primaryDescriptor(): UnlockDescriptor {
   else if (kind === "none") _primary = "none";
   else _primary = "all";
   return _primary;
-}
-
-export function selectGenerationUnlocks(isDaily: boolean): string[] | null {
-  const modUnlocks = getUnlocksFromURL();
-  const kind = getUrlUnlockKind();
-  resetViewIfModChanged();
-  let selected: string | null = null;
-  try { selected = localStorage.getItem(VIEW_STORAGE); } catch {}
-  const allowed = kind === 'mod' ? ['mod', 'all', 'none'] : ['all', 'none'];
-  _primary = isDaily ? 'all' : kind === 'none' ? 'none' : kind === 'all' ? 'all'
-    : selected && allowed.includes(selected) ? selected as UnlockDescriptor
-    : kind === 'mod' ? 'mod' : 'all';
-  // Explicit URL state wins over a saved view; keep tooltip selection in sync.
-  try { if (!isDaily) localStorage.setItem(VIEW_STORAGE, _primary); } catch {}
-  return _primary === 'none' ? [] : _primary === 'mod' ? modUnlocks : null;
 }
 
 /** Reset persisted view only when the URL just took on a fresh mod payload
@@ -212,7 +199,6 @@ function indexPois(result: GenerationResult): Map<string, any> {
  *  for the same key, etc.). Resolves after the variant is in cache (or
  *  failed). */
 async function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescriptor): Promise<void> {
-  const epoch = variantEpoch;
   const cacheKey = `${seed}|${desc}`;
   if (altCache.has(cacheKey) || pendingDescriptors.has(cacheKey)) return;
   if (desc === primaryDescriptor()) return; // primary is always live, not cached here
@@ -220,7 +206,6 @@ async function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescrip
   try {
     const result = await generateDynamicMap({
       seed,
-      isCurrent: () => epoch === variantEpoch && seed === lastSeedSeen,
       ngPlus: 0,
       dailySeed: isDaily,
       unlocks: descriptorToUnlocks(desc),
@@ -228,7 +213,6 @@ async function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescrip
       pillarFlags: getPillarFlagsFromURL(),
       parallelWorlds: isLightMode() ? [0] : undefined,
     });
-    if (epoch !== variantEpoch || seed !== lastSeedSeen) return;
     // Assign stable IDs based on coordinates and PW key
     const assignIds = (poiArr: any[], prefix: string) => {
       if (!Array.isArray(poiArr)) return;
@@ -254,22 +238,25 @@ async function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescrip
       try { cb(); } catch { /* swallow */ }
     }
   } catch (e) {
-    if (epoch === variantEpoch && (e as Error)?.name !== 'AbortError')
-      console.warn(`[unlocks-toggle] variant ${desc} pre-warm failed:`, e);
+    console.warn(`[unlocks-toggle] variant ${desc} pre-warm failed:`, e);
   } finally {
-    if (epoch === variantEpoch) pendingDescriptors.delete(cacheKey);
+    pendingDescriptors.delete(cacheKey);
   }
 }
 
-/** Register the seed and restore its selected unlock view after first paint.
- * Unselected variants are generated only when explicitly requested. */
+/** Background pre-warm of every non-primary variant. Called after the
+ *  primary render completes; fires the generations sequentially so we
+ *  don't thrash telescope's PRNG / cache. */
 export async function prewarmAlt(seed: number, isDaily: boolean, generate = true): Promise<void> {
   lastSeedSeen = seed;
   if (!generate) return; // Baked maps generate an alternate only when explicitly requested.
   const primary = primaryDescriptor();
-  // Restore the selected variant; unused variants load when requested.
-  const selected = getActiveDescriptor();
-  if (selected !== primary) await ensureVariant(seed, isDaily, selected);
+  for (const desc of availableDescriptors()) {
+    if (desc === primary) continue;
+    // Sequential — telescope generation isn't cheap and we don't want to
+    // contend with the user's next interaction.
+    await ensureVariant(seed, isDaily, desc);
+  }
 }
 
 /** Request a specific variant on demand (e.g. user clicks the lock toggle
@@ -287,7 +274,6 @@ export async function requestVariant(desc: UnlockDescriptor): Promise<void> {
 
 /** Reset cache when seed changes. */
 export function resetAltCache(): void {
-  variantEpoch++;
   altCache.clear();
   altIndexes.clear();
   pendingDescriptors.clear();

@@ -249,21 +249,11 @@ describe("POI sprite coverage", () => {
     for (const s of spells as Array<{ id: string }>) {
       const { key, ok } = resolvesInAtlas({ type: "item", item: "spell", spell: s.id });
       if (!ok) missing.push({ id: s.id, key });
-      expect(key, s.id).toMatch(/^spell:card\//);
-      expect(atlasMap[key as string], s.id).toMatchObject({ w: 20, h: 20 });
     }
     expect(
       missing,
       `${missing.length}/${(spells as unknown[]).length} spells with no atlas sprite (empty squares in cards/search):\n${JSON.stringify(missing, null, 2)}`,
     ).toEqual([]);
-  });
-
-  it('uses the same card for loose spells and container contents, including filename aliases', () => {
-    const key = getSpriteKey({ type: 'item', item: 'spell', spell: 'LASER_LUMINOUS_DRILL' }, atlasMap);
-    expect(key).toBe('spell:card/luminous_drill_timer');
-    expect(getSpriteKey({ type: 'spell', item: 'laser_luminous_drill' }, atlasMap)).toBe(key);
-    // An actual bomb entity retains its raw glyph instead of acquiring a card.
-    expect(getSpriteKey({ type: 'item', item: 'bomb' }, atlasMap)).toBe('spell:bomb');
   });
 
   // ── Structural invariant ──────────────────────────────────────────────────

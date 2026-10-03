@@ -7,22 +7,13 @@ import { CONTAINER_TYPES } from "./poi-containers";
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
 import { loadInstantSceneMasks } from "./instant-scene-masks";
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
-import { nativeSceneBitmapKey, nativeSceneBitmapReplacesTerrain, usesNativeSceneBitmap } from "./native-scene-bitmap";
-import { indexScenePngs, type ScenePngIndex } from "./scene-png-index";
-import { sceneRenderKey } from "./scene-render-key";
-import { NativeSceneRenderer, clearNativeSceneRenderers } from "./native-scene-renderer";
-import { createScenePreparation } from "./scene-preparation";
-import { readSceneAtlasPixels } from './scene-source-atlas';
-import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate } from "./terrain-policy";
+import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP } from "./terrain-policy";
 import { loadTelescopeModules } from "./load-telescope";
 import { isGLTerrainEnabled, isInstantTerrainEnabled, useRenderPerfGeneration } from "../renderer_settings";
-import { prepareInstantTerrain, retryInstantTerrainOnMainThread } from './instant-terrain-backend';
+import { prepareInstantTerrain } from './instant-terrain-backend';
 import { clearTerrainPngEncoders } from './terrain-png-encoder';
 import { createScenePrefetch } from "./scene-prefetch";
 import { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer } from "./biome-background-layer";
-import { afterMapHandoff, failMapHandoff, holdMapHandoff, isMapHandoffPending } from './map-handoff';
-import { retireMapItems } from './retire-map-items';
-import { getMapMemoryBudget, getSceneConcurrency } from '../map-memory-budget';
 
 let instantTerrainModule: typeof import('./instant-terrain') | undefined;
 let instantTerrainLoading: Promise<typeof import('./instant-terrain')> | undefined;
@@ -47,6 +38,7 @@ function clearInstantTerrain() {
 
 import type { GenerationResult, POI, PixelScene, TileLayer } from './telescope-adapter';
 import {
+  getPixelSceneImgElement,
   getPixelSceneData,
   ensurePixelSceneData,
   getAllPixelSceneKeys,
@@ -56,15 +48,14 @@ import {
   TILE_OVERLAY_COLORS,
 } from './telescope-adapter';
 import { getDataZip } from '../data-archive';
-import { installTelescopeShim } from './telescope-dom-shim';
+import { installTelescopeShim, isCanvasTainted } from './telescope-dom-shim';
 import { installFetchInterceptor, installImageSrcInterceptor } from './telescope-data-bridge';
 import { decodePngToRgba, rgbaToPngBlobUrl, rgbaToPngBlob } from './png-decode';
 import {
   getCachedBiomeRender,
   cacheBiomeRender,
-  createSceneBitmapReader,
+  getCachedSceneBitmap,
   cacheSceneBitmap,
-  createSceneBitmapWriteQueue,
   getCachedSceneBitmapKeys,
   getCachedSceneBitmapsBulk,
   getCachedBiomeRendersForKey,
@@ -158,6 +149,7 @@ let getWorldSize: any;
 /** Set only when the aliased telescope fork ships js/gl/ (vitaminmoo render-perf). */
 let glTerrainDeps: GLTerrainDeps | null = null;
 let _telescopeModulesLoaded = false;
+let privacyToastShown = false;
 
 // ─── Biome Render Order ─────────────────────────────────────────────────────
 
@@ -443,7 +435,7 @@ export function prewarmMapPresentation(): Promise<PromiseSettledResult<unknown>[
 function isDynamicSeedItem(item: any): boolean {
   const src = item?.source as any;
   if (!src) return false;
-  if (src.__simplisticBase || src.__biomeBg) return false;
+  if (src.__simplisticBase) return false;
   if (src.__bakedDzi) return true;
   const url: unknown = src.tilesUrl;
   if (typeof url !== 'string') {
@@ -471,20 +463,18 @@ export function cancelPendingDynamicTerrain(): void {
   // A retired presentation may still be waiting for modules or scene masks,
   // before addInstantTerrain creates the lifetime that clear can abort.
   currentGenerationId++;
-  clearNativeSceneRenderers();
   clearInstantTerrain();
 }
 
 /**
  * Remove all dynamic map overlays from the viewer.
  */
-export function clearDynamicOverlays(viewer: any, preserveBackgrounds = false): void {
+export function clearDynamicOverlays(viewer: any): void {
   resetPOICardContext(viewer);
   suspendedMarkerContext = null;
   clearPortalAnimations();
   // Invalidate any in-flight async generation so it won't render on top of the new map
   currentGenerationId++;
-  clearNativeSceneRenderers();
 
   // Drop the GL terrain's GPU resources: they are keyed to the outgoing seed's
   // layer buffers, and the atlas alone is several MiB of texture.
@@ -493,10 +483,6 @@ export function clearDynamicOverlays(viewer: any, preserveBackgrounds = false): 
   clearTerrainPngEncoders();
 
   markerTiledImage = null;
-
-  retireMapItems(viewer, source => isDynamicSeedItem({
-    source: typeof source === 'string' ? { tilesUrl: source } : source,
-  }));
 
   // Remove ALL world items that aren't base static DZI tiles.
   // This is more robust than tracking individual items, because addTiledImage
@@ -509,7 +495,7 @@ export function clearDynamicOverlays(viewer: any, preserveBackgrounds = false): 
       // simplistic flat-PNG background. isDynamicSeedItem also matches baked
       // DZIs by worker hostname, so in-flight items whose success callback
       // hasn't yet set __bakedDzi still get cleaned up.
-      if (item && (isDynamicSeedItem(item) || (!preserveBackgrounds && item.source?.__biomeBg))) {
+      if (item && isDynamicSeedItem(item)) {
         world.removeItem(item);
       }
     }
@@ -543,13 +529,8 @@ export function clearDynamicOverlays(viewer: any, preserveBackgrounds = false): 
 /**
  * Check if dynamic overlays are still present in the OSD viewer.
  */
-export function hasDynamicOverlays(viewer?: any): boolean {
-  if (dynamicTiledImages.size > 0) return true;
-  const world = (viewer?.viewer ?? viewer)?.world;
-  // Daily source discovery may finish after the bridge's tracking snapshot.
-  for (let i = 0; i < (world?.getItemCount() ?? 0); i++)
-    if (isDynamicSeedItem(world.getItemAt(i))) return true;
-  return false;
+export function hasDynamicOverlays(): boolean {
+  return dynamicTiledImages.size > 0;
 }
 
 // ─── Biome background layer ─────────────────────────────────────────────────
@@ -581,7 +562,7 @@ export function addBiomeBgToOSD(viewer: any, isCurrent = () => true): void {
   attachBiomeBackgroundLayer(viewer, _bgLayer,
     (isLightMode() ? [0] : [-1, 0, 1]).map(pw => pw * 70 * 512),
     () => epoch === _bgEpoch && generation === currentGenerationId && isCurrent(),
-    () => {});
+    item => dynamicTiledImages.add(item));
 }
 
 /**
@@ -596,8 +577,13 @@ async function offscreenCanvasToBlobUrl(canvas: OffscreenCanvas): Promise<string
 
 /**
  * Convert an OffscreenCanvas to a PNG Blob (used for caching to IndexedDB).
+ * Mirrors offscreenCanvasToBlobUrl's fingerprint-protection-friendly path.
  */
 async function offscreenCanvasToBlob(canvas: OffscreenCanvas): Promise<Blob> {
+  const rawData = (canvas as any).__noitamap_rawImageData as ImageData | undefined;
+  if (rawData) {
+    return await rgbaToPngBlob(rawData.data, rawData.width, rawData.height);
+  }
   try {
     const ctx = canvas.getContext('2d');
     if (ctx && canvas.width > 0 && canvas.height > 0) {
@@ -612,6 +598,13 @@ async function offscreenCanvasToBlob(canvas: OffscreenCanvas): Promise<Blob> {
  * Convert an HTMLCanvasElement to a blob URL.
  */
 async function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
+  const rawData = (canvas as any).__noitamap_rawImageData as ImageData | undefined;
+  if (rawData) {
+    const url = await rgbaToPngBlobUrl(rawData.data, rawData.width, rawData.height);
+    dynamicBlobUrls.push(url);
+    return url;
+  }
+
   const blob = await new Promise<Blob | null>(resolve => {
     canvas.toBlob(b => resolve(b), 'image/png');
   });
@@ -717,8 +710,8 @@ async function addBiomeLayersProgressively(
     if (workerPngAvailable) {
       try {
         pngEncoder ??= new TerrainPngEncoder();
-        const pixels = canvas.getContext('2d', { willReadFrequently: true })!
-          .getImageData(0, 0, canvas.width, canvas.height);
+        const pixels = (canvas as any).__noitamap_rawImageData as ImageData | undefined
+          ?? canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
         return await pngEncoder.encode(pixels.data, pixels.width, pixels.height);
       } catch (error) {
         pngEncoder?.dispose();
@@ -848,7 +841,17 @@ async function addBiomeLayersProgressively(
         const compositeW = Math.ceil((maxX - minX) / 10);
         const compositeH = Math.ceil((maxY - minY) / 10);
         const compositeCanvas = new OffscreenCanvas(compositeW, compositeH);
-        const compositeCtx = compositeCanvas.getContext('2d', { willReadFrequently: true })!;
+        const compositeCtx = compositeCanvas.getContext('2d')!;
+
+        // Show privacy browser warning toast once per session if canvas tainting detected
+        if (isCanvasTainted() && !privacyToastShown) {
+          privacyToastShown = true;
+          const toastEl = document.getElementById('privacyBrowserToast');
+          if (toastEl) {
+            // @ts-ignore — Bootstrap is loaded globally
+            new bootstrap.Toast(toastEl).show();
+          }
+        }
 
         // ── GPU-accelerated compositing (all browsers) ──
         for (const { overlay, x, y } of validOverlays) {
@@ -997,7 +1000,7 @@ export async function prepareDecorationExport(
   const decorationResult = includeScenes ? result : {
     ...result,
     pixelScenesByPW: Object.fromEntries(Object.entries(result.pixelScenesByPW).map(([key, scenes]) =>
-      [key, scenes.filter(scene => scene.key.startsWith('static_tile/') && !isRepeatedTempleTemplate(scene))])),
+      [key, scenes.filter(scene => scene.key.startsWith('static_tile/'))])),
   };
   const built = await buildSceneBitmaps(decorationResult, null);
   if (!built) return null;
@@ -1444,6 +1447,8 @@ export const pixelSceneConfig = {
     // Pyramid scenes - prebaked in map art
     'left',
     'right',
+    // Hidden cavern - prebaked in OSD
+    'solid_wall_hidden_cavern',
   ]),
   /** Skip lists by biome prefix in scene key */
   skipBiomes: new Set([
@@ -1768,13 +1773,64 @@ async function imgElementToBitmap(
 /**
  * Pre-indexed lookup of _visual.png and _background.png files in data.zip.
  */
+interface ScenePngIndex {
+  visualByPath: Map<string, string>;
+  visualByName: Map<string, string>;
+  bgByPath: Map<string, string>;
+  bgByName: Map<string, string>;
+}
 let _pngIndex: ScenePngIndex | null = null;
 
 async function getScenePngIndex(): Promise<ScenePngIndex> {
   if (_pngIndex) return _pngIndex;
   const zip = await getDataZip();
-  _pngIndex = indexScenePngs(Object.keys(zip?.files ?? {}));
-  console.log(`[OSD Bridge] Scene PNG index: ${_pngIndex.visualByPath.size} visual, ${_pngIndex.bgByPath.size} background`);
+  const visualByPath = new Map<string, string>();
+  const visualByName = new Map<string, string>();
+  const bgByPath = new Map<string, string>();
+  const bgByName = new Map<string, string>();
+  // Collect plain .png as fallback visuals (used when no _visual.png exists)
+  // NOTE: plain .png in biome_impl are material color maps, NOT visuals.
+  // Do not use them as visual fallbacks.
+  if (zip) {
+    const plainPngCandidates: Array<{ key: string; path: string }> = [];
+    zip.forEach((relativePath: string) => {
+      if (!relativePath.startsWith('data/biome_impl/') || !relativePath.endsWith('.png')) return;
+      const inner = relativePath.substring('data/biome_impl/'.length);
+      const addTo = (suffix: string, pathMap: Map<string, string>, nameMap: Map<string, string>) => {
+        if (!inner.endsWith(suffix)) return;
+        const key = inner.substring(0, inner.length - suffix.length);
+        pathMap.set(key, relativePath);
+        const slash = key.lastIndexOf('/');
+        const nameOnly = slash >= 0 ? key.substring(slash + 1) : key;
+        if (!nameMap.has(nameOnly)) nameMap.set(nameOnly, relativePath);
+      };
+      addTo('_visual.png', visualByPath, visualByName);
+      addTo('_background.png', bgByPath, bgByName);
+      addTo('_bg.png', bgByPath, bgByName);
+      // Temple foreground scenes use _fg.png instead of _visual.png
+      addTo('_fg.png', visualByPath, visualByName);
+      // Top-level plain .png files (no subdirectory, no _visual/_background suffix) —
+      // these are full pixel scene visuals like watercave_layout_X.png. Defer them
+      // to a second pass: a plain .png that has a sibling _visual/_background (e.g.
+      // essenceroom.png next to essenceroom_visual.png) is a MATERIAL COLORMAP, not
+      // a visual, and must not shadow the real visual in visualByName.
+      if (
+        !inner.includes('/') &&
+        !inner.endsWith('_visual.png') &&
+        !inner.endsWith('_background.png') &&
+        !inner.endsWith('_bg.png')
+      ) {
+        const key = inner.substring(0, inner.length - '.png'.length);
+        plainPngCandidates.push({ key, path: relativePath });
+      }
+    });
+    for (const { key, path } of plainPngCandidates) {
+      if (visualByPath.has(key) || bgByPath.has(key)) continue; // colormap with dedicated layers
+      if (!visualByName.has(key)) visualByName.set(key, path);
+    }
+  }
+  _pngIndex = { visualByPath, visualByName, bgByPath, bgByName };
+  console.log(`[OSD Bridge] Scene PNG index: ${visualByPath.size} visual, ${bgByPath.size} background`);
   return _pngIndex;
 }
 
@@ -1929,6 +1985,21 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
 }
 
 /**
+ * Per-instance render key. Pixel-scene fills (oiltank, vault liquids, etc.)
+ * pick a material via PRNG and encode it in variantKey as `f0bbee=<wang>`. Two
+ * instances of the same scene.key with different liquids must NOT share a
+ * cached bitmap, so fold the material part of the variant into the key. The
+ * biome part is omitted (it's already implied by scene.key), so non-fill scenes
+ * keep their plain key and stay prefetch/cache compatible.
+ */
+function sceneRenderKey(scene: { key: string; variantKey?: string }): string {
+  const vk = scene.variantKey || '';
+  if (!vk) return scene.key;
+  const mat = vk.split('&').filter(p => p && !p.startsWith('biome='));
+  return mat.length ? `${scene.key}|${mat.join('&')}` : scene.key;
+}
+
+/**
  * Recolor a pixel scene's base image the way telescope's overlay worker does
  * (overlay_worker.js): walk variantKey parts in order — `biome=X` runs the
  * biome recolor (grays->terrain, air->bg, wang->material texture); any other
@@ -1977,10 +2048,9 @@ async function compositeSceneBitmap(
     visualByName: Map<string, string>;
     bgByPath: Map<string, string>;
     bgByName: Map<string, string>;
-  },
-  retainBitmap = true,
+  }
 ): Promise<{
-  bitmap: ImageBitmap | null;
+  bitmap: ImageBitmap;
   blob: Blob | null;
   width: number;
   height: number;
@@ -2014,10 +2084,10 @@ async function compositeSceneBitmap(
 
   let midBitmap: ImageBitmap | null = null;
   if (wantMid) {
-    const rawScene = await ensurePixelSceneData(scene.key, { art: false });
+    await ensurePixelSceneData(scene.key, { art: false });
     const arr =
       scene.imgElement instanceof Uint8Array || scene.imgElement instanceof Uint8ClampedArray ? scene.imgElement : null;
-    const baseImg = arr || rawScene?.imgElement;
+    const baseImg = arr || getPixelSceneImgElement(scene.key);
     if (baseImg) {
       let recolored: any = baseImg;
       try {
@@ -2087,74 +2157,29 @@ async function compositeSceneBitmap(
 
   let bgBmp: ImageBitmap | null = null;
   let visBmp: ImageBitmap | null = null;
+  if (bgData) {
+    bgBmp = await createImageBitmap(bgData);
+    ctx.drawImage(bgBmp, 0, 0);
+  }
+  if (midBitmap) ctx.drawImage(midBitmap, 0, 0);
+  if (visualData) {
+    visBmp = await createImageBitmap(visualData);
+    ctx.drawImage(visBmp, 0, 0);
+  }
+
+  const bitmap = await createImageBitmap(canvas);
+  let blob: Blob | null = null;
   try {
-    if (bgData) {
-      bgBmp = await createImageBitmap(bgData);
-      ctx.drawImage(bgBmp, 0, 0);
-    }
-    if (midBitmap) ctx.drawImage(midBitmap, 0, 0);
-    if (visualData) {
-      visBmp = await createImageBitmap(visualData);
-      ctx.drawImage(visBmp, 0, 0);
-    }
-    let blob: Blob;
-    try {
-      blob = await canvas.convertToBlob({ type: 'image/png' });
-    } catch {
-      const pixels = ctx.getImageData(0, 0, cw, ch);
-      blob = await rgbaToPngBlob(pixels.data, cw, ch);
-    }
-    // Compact devices retain compressed artwork and decode bounded tile crops.
-    // Avoid allocating a full output bitmap merely to close it immediately.
-    const bitmap = retainBitmap ? await createImageBitmap(canvas) : null;
-    return { bitmap, blob, width: cw, height: ch, kind };
-  } finally {
-    bgBmp?.close();
-    midBitmap?.close();
-    visBmp?.close();
-    canvas.width = canvas.height = 0;
+    blob = await canvas.convertToBlob({ type: 'image/png' });
+  } catch (e) {
+    console.warn("[OSD Bridge] convertToBlob failed (scene won't be cached):", key, e);
   }
-}
 
-/** Resolve material instructions at each placement. Only the actual colors
- * and background files declared by Telescope are artwork; a same-named raw
- * PNG must never overwrite the material atlas result. */
-async function compositeNativeSceneBitmap(scene: PixelScene, worldSize: number,
-  renderer: NativeSceneRenderer, retainBitmap = true, live = false, pixels?: Uint8ClampedArray<ArrayBuffer>) {
-  const raw = await ensurePixelSceneData(scene.key);
-  if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement))
-    throw new Error(`Missing native scene material data: ${scene.key}`);
-  const [{ loadTerrainBackgrounds }, { sceneBiomeNames }] = await Promise.all([
-    import('./terrain-backgrounds'), import('./terrain-policy'),
-  ]);
-  const override = pixelSceneConfig.layerOverrides[scene.name] || pixelSceneConfig.layerOverrides[scene.key];
-  const names = sceneBiomeNames(scene);
-  const wantBackground = override?.background ?? pixelSceneConfig.layers.background;
-  const backgrounds = wantBackground ? await loadTerrainBackgrounds(names) : new Map();
-  let backgroundArt = null;
-  const backgroundPath = scene.backgroundArt ?? raw.backgroundArt;
-  if (wantBackground && backgroundPath) {
-    const path = backgroundPath.replace(/^data\/backgrounds\//, 'data/');
-    const zip = await getDataZip(), file = zip?.file(path);
-    if (!file) throw new Error(`Missing native scene background: ${path}`);
-    backgroundArt = await readSceneAtlasPixels('main', path) ?? decodePngToRgba(await file.async('arraybuffer'));
-  }
-  const source: TerrainSceneSource = {
-    data: (override?.mid ?? pixelSceneConfig.layers.mid) ? raw.imgElement : new Uint8Array(raw.imgElement.length),
-    biome: raw.biome,
-    width: raw.width, height: raw.height, skipEdgeTextures: !!raw.skipEdgeTextures,
-    visualArt: (override?.visual ?? pixelSceneConfig.layers.visual) ? raw.visualArt : null,
-    backgroundArt,
-  };
-  const backdrop = names.map(name => backgrounds.get(name)).find(Boolean);
-  const composed = await renderer.render({ scene, source, worldSize, backdrop, output: live ? 'pixels' : undefined, pixels });
-  const bitmap = retainBitmap ? await createImageBitmap(composed.blob!) : null;
-  return { ...composed, bitmap, kind: 'composite' as const };
-}
+  if (bgBmp) bgBmp.close();
+  if (midBitmap) midBitmap.close();
+  if (visBmp) visBmp.close();
 
-function sceneBitmapRenderKey(scene: PixelScene, nativeMaterials: boolean, worldSize: number): string {
-  return nativeMaterials && usesNativeSceneBitmap(scene)
-    ? nativeSceneBitmapKey(scene, worldSize) : sceneRenderKey(scene);
+  return { bitmap, blob, width: cw, height: ch, kind };
 }
 
 /**
@@ -2196,12 +2221,12 @@ export const prefetchAllSceneBitmaps = createScenePrefetch(async (isCurrent) => 
           key,
         };
         try {
-          const composited = await compositeSceneBitmap(key, scene, idx, false);
+          const composited = await compositeSceneBitmap(key, scene, idx);
           if (!composited) {
             skipped++;
             continue;
           }
-          composited.bitmap?.close();
+          composited.bitmap.close();
           if (composited.blob) {
             await cacheSceneBitmap(key, composited.blob, composited.width, composited.height);
             warmed++;
@@ -2275,10 +2300,9 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
       const path = raw.backgroundArt.replace(/^data\/backgrounds\//, 'data/');
       const file = zip?.file(path);
       if (!file) throw new Error(`Missing scene background: ${path}`);
-      backgroundArt = await readSceneAtlasPixels('main', path) ?? decodePngToRgba(await file.async('arraybuffer'));
+      backgroundArt = await decodePngToRgba(await file.async('arraybuffer'));
     }
     sources[scene.key] = {
-      biome: raw.biome,
       data: (override?.mid ?? pixelSceneConfig.layers.mid) ? raw.imgElement : new Uint8Array(raw.imgElement.length),
       width: raw.width, height: raw.height,
       skipEdgeTextures: !!raw.skipEdgeTextures,
@@ -2308,98 +2332,31 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
  * needed by the display-resolution GPU path; existing scene layers paint art. */
 async function instantSceneMasks(result: GenerationResult): Promise<StaticTerrainMask[]> {
   const rendered = new Set(renderableScenes(result));
-  const scenes = Object.values(result.pixelScenesByPW).flat().filter(scene => {
-    if (rendered.has(scene)) {
-      const override = pixelSceneConfig.layerOverrides[scene.name] || pixelSceneConfig.layerOverrides[scene.key];
-      // These native room bitmaps already replace every authored material/air
-      // pixel, including the cave backdrop. Cutting a second hole in cached
-      // terrain makes that old hole drift away from the art during camera
-      // reprojection. Keep the terrain intact underneath opaque replacements.
-      if (useRenderPerfGeneration() && nativeSceneBitmapReplacesTerrain(scene, {
-        background: override?.background ?? pixelSceneConfig.layers.background,
-        materials: override?.mid ?? pixelSceneConfig.layers.mid,
-      })) return false;
-      return true;
-    }
-    return pixelSceneConfig.skipNames.has(scene.name) || pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]);
-  });
+  const scenes = Object.values(result.pixelScenesByPW).flat().filter(scene =>
+    rendered.has(scene) || pixelSceneConfig.skipNames.has(scene.name) ||
+    pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]));
   return loadInstantSceneMasks(scenes, key => ensurePixelSceneData(key, { art: false }));
 }
 
 async function buildSceneBitmaps(
   result: GenerationResult,
-  generationId: number | null,
-  nativeMaterials = false,
-): Promise<{
-  validScenes: PixelScene[];
-  bitmapByKey: Map<string, ImageBitmap>;
-  blobByKey?: Map<string, import('./scene-bitmap-provider').SceneBitmapData>;
-  preparation?: ReturnType<typeof createScenePreparation>;
-} | null> {
+  generationId: number | null
+): Promise<{ validScenes: PixelScene[]; bitmapByKey: Map<string, ImageBitmap> } | null> {
   const validScenes = renderableScenes(result);
   const bitmapByKey = new Map<string, ImageBitmap>();
-  // Bake/export consumers draw synchronously from the retained bitmap map.
-  const compact = generationId !== null && (nativeMaterials || getMapMemoryBudget().profile === 'compact');
-  const blobByKey = compact ? new Map<string, { blob: Blob; width: number; height: number }>() : undefined;
-  if (validScenes.length === 0) return { validScenes, bitmapByKey, blobByKey };
+  if (validScenes.length === 0) return { validScenes, bitmapByKey };
 
   const uniqueKeys = new Map<string, PixelScene>();
   for (const scene of validScenes) {
-    const rk = sceneBitmapRenderKey(scene, nativeMaterials, result.worldSize);
+    const rk = sceneRenderKey(scene);
     if (!uniqueKeys.has(rk)) uniqueKeys.set(rk, scene);
   }
 
   // Per-key bitmaps are seed-independent — cache them in IDB so future seeds
   // reuse the work. Bulk-fetch every cached bitmap in one IDB transaction
   // (~138 separate read transactions add 1-3s on Brave/FF).
-  const BATCH = compact ? 1 : 8;
+  const BATCH = 50;
   const keyArr = Array.from(uniqueKeys.entries()); // [renderKey, scene]
-  // Adjacent placements share immutable source pixels/art. Group them so the
-  // compact raw-pixel cache can release a source after all its instances.
-  if (nativeMaterials) keyArr.sort(([, a], [, b]) => a.key.localeCompare(b.key));
-  const started = performance.now();
-  if (nativeMaterials) console.info(`[Native scenes] Preparing ${keyArr.length} native scene images`);
-  if (nativeMaterials && generationId !== null) {
-    const concurrency = getSceneConcurrency();
-    const renderers = Array.from({ length: concurrency }, () => ({ renderer: new NativeSceneRenderer(), active: 0 }));
-    const writes = createSceneBitmapWriteQueue(getMapMemoryBudget().sceneCacheBytes);
-    const cachedScenes = createSceneBitmapReader(keyArr.map(([key, scene]) =>
-      ({ key, bytes: scene.width * scene.height * 4 })), getMapMemoryBudget().sceneCacheBytes);
-    let cachedCount = 0, renderedCount = 0;
-    const preparation = createScenePreparation(keyArr.map(([key]) => key), async (key, persist, existing) => {
-      const check = () => {
-        if (currentGenerationId !== generationId) throw new DOMException('Obsolete scene generation', 'AbortError');
-      };
-      check();
-      const cached = existing?.pixels ? null : await cachedScenes.get(key);
-      check();
-      if (cached) { cachedCount++; return cached; }
-      const scene = uniqueKeys.get(key)!;
-      const slot = renderers.reduce((best, candidate) => candidate.active < best.active ? candidate : best);
-      slot.active++;
-      const image = await (async () => {
-        try {
-          return usesNativeSceneBitmap(scene)
-            ? await compositeNativeSceneBitmap(scene, result.worldSize, slot.renderer, false, !persist, existing?.pixels)
-            : await compositeSceneBitmap(scene.key, scene, await getScenePngIndex(), false);
-        } finally { slot.active--; }
-      })();
-      check();
-      if (!image) return undefined;
-      if (image.blob) writes.put(key, image.blob, image.width, image.height);
-      renderedCount++;
-      return { blob: image.blob ?? undefined, pixels: 'pixels' in image ? image.pixels : undefined, width: image.width, height: image.height };
-    }, () => { for (const slot of renderers) slot.renderer.dispose(); }, { concurrency, maxBytes: getMapMemoryBudget().sceneCacheBytes * 2,
-      deferredPersistence: true, maxRetainedBytes: getMapMemoryBudget().sceneCacheBytes,
-      bytesForKey: key => { const scene = uniqueKeys.get(key)!; return scene.width * scene.height * 16; },
-    });
-    preparation.signal.addEventListener('abort', () => { writes.dispose(); cachedScenes.dispose(); }, { once: true });
-    preparation.complete = preparation.complete.then(() => writes.flush());
-    void preparation.complete.then(() => console.info(
-      `[Native scenes] Finished ${keyArr.length} scene images in ${((performance.now() - started) / 1000).toFixed(2)}s`,
-      { cached: cachedCount, rendered: renderedCount }), () => {});
-    return { validScenes, bitmapByKey, blobByKey: preparation.images, preparation };
-  }
   let compositeCount = 0;
   let cacheHitCount = 0;
   let fallbackCount = 0;
@@ -2414,16 +2371,11 @@ async function buildSceneBitmaps(
       return null;
     }
     const batch = keyArr.slice(i, i + BATCH);
-    const outcomes = await Promise.allSettled(
+    await Promise.all(
       batch.map(async ([rk, scene]) => {
         // ── Cache fast path ────────────────────────────────────────────────
         const cached = bulkSceneCache.get(rk);
         if (cached) {
-          if (blobByKey) {
-            blobByKey.set(rk, cached);
-            cacheHitCount++;
-            return;
-          }
           try {
             const bmp = await createImageBitmap(cached.blob);
             bitmapByKey.set(rk, bmp);
@@ -2434,14 +2386,12 @@ async function buildSceneBitmaps(
           }
         }
 
-        const composited = await compositeSceneBitmap(scene.key, scene, idx, !compact);
+        const composited = await compositeSceneBitmap(scene.key, scene, idx);
         if (!composited) {
           missingCount++;
           return;
         }
-        if (blobByKey && composited.blob)
-          blobByKey.set(rk, { blob: composited.blob, width: composited.width, height: composited.height });
-        if (composited.bitmap) bitmapByKey.set(rk, composited.bitmap);
+        bitmapByKey.set(rk, composited.bitmap);
         if (composited.kind === 'fallback') fallbackCount++;
         else compositeCount++;
         if (composited.blob) {
@@ -2451,27 +2401,17 @@ async function buildSceneBitmaps(
         }
       })
     );
-    const failure = outcomes.find((outcome): outcome is PromiseRejectedResult => outcome.status === 'rejected');
-    if (failure) {
-      // Wait for the complete bounded batch before closing shared output; a
-      // sibling must not install a late bitmap after error cleanup has run.
-      for (const bitmap of bitmapByKey.values()) bitmap.close();
-      bitmapByKey.clear();
-      throw failure.reason;
-    }
   }
 
   console.log(
-    `[OSD Bridge] Pixel scene artwork: ${bitmapByKey.size + (blobByKey?.size ?? 0)}/${uniqueKeys.size} ` +
-      `(${cacheHitCount} cache, ${compositeCount} composite, ${fallbackCount} fallback, ${missingCount} missing) ` +
-      `in ${((performance.now() - started) / 1000).toFixed(2)}s`
+    `[OSD Bridge] Pixel scene bitmaps: ${bitmapByKey.size}/${uniqueKeys.size} ` +
+      `(${cacheHitCount} cache, ${compositeCount} composite, ${fallbackCount} fallback, ${missingCount} missing)`
   );
-  return { validScenes, bitmapByKey, blobByKey };
+  return { validScenes, bitmapByKey };
 }
 
-export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult, generationId: number, nativeMaterials = false,
-  onPreparation?: (ready: Promise<void>) => void): Promise<void> {
-  if (!pixelSceneConfig.enabled) { onPreparation?.(Promise.resolve()); return; }
+export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult, generationId: number): Promise<void> {
+  if (!pixelSceneConfig.enabled) return;
 
   const { pixelScenesByPW } = result;
 
@@ -2492,12 +2432,11 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   }
 
   const [built, { createPixelSceneTileSource }] = await Promise.all([
-    buildSceneBitmaps(result, generationId, nativeMaterials),
+    buildSceneBitmaps(result, generationId),
     import('./pixel-scene-tile-source'),
   ]);
   if (!built) return; // cancelled
-  const { validScenes, bitmapByKey, blobByKey, preparation } = built;
-  onPreparation?.(preparation?.complete ?? Promise.resolve());
+  const { validScenes, bitmapByKey } = built;
   if (validScenes.length === 0) return;
 
   // Populate debug scene list for __pixelSceneList()
@@ -2512,31 +2451,19 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   console.log(`[OSD Bridge] Pixel scenes: ${allScenes.length} total, ${validScenes.length} valid`);
 
   if (currentGenerationId !== generationId) {
-    preparation?.dispose();
     for (const bitmap of bitmapByKey.values()) bitmap.close();
     return;
   }
 
   const items: SceneTileItem[] = [];
   for (const scene of validScenes) {
-    const rk = sceneBitmapRenderKey(scene, nativeMaterials, result.worldSize);
-    if (!preparation && !bitmapByKey.has(rk) && !blobByKey?.has(rk)) continue;
+    const rk = sceneRenderKey(scene);
+    if (!bitmapByKey.has(rk)) continue;
     items.push({ osdX: scene.x, osdY: scene.y, w: scene.width, h: scene.height, sceneKey: rk });
   }
   if (items.length === 0) return;
   const { source, originX, originY, width: bboxWidth } = createPixelSceneTileSource({
-    items, bitmapByKey, blobByKey, generationId,
-    loadBitmap: preparation?.loadBitmap, disposeBitmaps: preparation?.dispose,
-    redraw: () => (viewer.viewer ?? viewer).forceRedraw(),
-    onProgress: (completed, total) => {
-      if (currentGenerationId === generationId)
-        window.dispatchEvent(new CustomEvent('sceneRenderingProgress', { detail: { completed, total } }));
-    },
-    viewer,
-    directViewport: (viewer.viewer ?? viewer).drawer?.getType?.() === 'canvas',
-  });
-  source.addHandler('scene-viewport-error', ({ error }: { error: unknown }) => {
-    if (currentGenerationId === generationId) failMapHandoff(viewer, error);
+    items, bitmapByKey, generationId,
   });
 
   // Complete attachment before the first atomic terrain/art frame is released.
@@ -2549,33 +2476,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     success: (event: any) => {
       if (currentGenerationId !== generationId) {
         try { viewer.world.removeItem(event.item); } catch {}
-      } else {
-        dynamicTiledImages.add(event.item);
-        if (preparation) {
-          const startCooking = () => {
-            const ready = source.sceneViewportReady ?? event.item.getFullyLoaded();
-            if (preparation.signal.aborted || (!ready && event.item.getDrawArea())) return;
-            stopWaiting();
-            preparation.signal.removeEventListener('abort', stopWaiting);
-            afterMapHandoff(viewer, preparation.signal, () => {
-              console.info(`[Native scenes] Background cooking started (${preparation.pending} remaining)`);
-              void preparation.warmAll().catch(error => {
-                if (error?.name !== 'AbortError') console.error('[Native scenes] Background cooking failed:', error);
-              });
-            });
-          };
-          const stopWaiting = () => {
-            event.item.removeHandler('fully-loaded-change', startCooking);
-            source.removeHandler('scene-viewport-ready', startCooking);
-            viewer.removeHandler('viewport-change', startCooking);
-          };
-          preparation.signal.addEventListener('abort', stopWaiting, { once: true });
-          event.item.addHandler('fully-loaded-change', startCooking);
-          source.addHandler('scene-viewport-ready', startCooking);
-          viewer.addHandler('viewport-change', startCooking);
-          startCooking();
-        }
-      }
+      } else dynamicTiledImages.add(event.item);
       resolve();
     },
   }));
@@ -3437,7 +3338,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
       spellsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;margin-top:0.3em';
       for (const slot of displaySlots) {
         const container = document.createElement('div');
-        container.style.cssText = `position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;background:var(--surface-2);border-radius:0.2em;border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border-strong)'}`;
+        container.style.cssText = `position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:var(--surface-2);border-radius:0.2em;border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border-strong)'}`;
         if (slot.id) {
           container.title = gameTranslator.translateSpell(getSpellName(slot.id));
         }
@@ -3451,7 +3352,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
         }
         if (slot.id) {
           const img = document.createElement('img');
-          img.style.cssText = 'width:40px;height:40px;image-rendering:pixelated;display:block;margin:auto';
+          img.style.cssText = 'width:32px;height:32px;image-rendering:pixelated;display:block;margin:auto';
           getPOISpriteFirstFrame({ type: 'spell', item: String(slot.id) }).then(url => {
             if (url) {
               img.src = url;
@@ -3464,7 +3365,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
           });
           container.appendChild(img);
         }
-        // Empty slots keep the same dimensions as the native 20px cards at 2×.
+        // Empty slot: container is already styled as a 22x22 dark square
         spellsRow.appendChild(container);
       }
       tooltipEl.appendChild(spellsRow);
@@ -4295,7 +4196,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
     contRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center';
     // Render a content sprite at an integer multiple of its native size so
     // nearest-neighbour scaling stays perfectly sharp (sprites have varied
-    // native sizes; spell cards are 20px, items/wands differ).
+    // native sizes; spells are 16px, items/wands differ).
     const scaledSprite = (key: string | string[], mult = 2): HTMLCanvasElement | null => {
       const n = getSpriteNativeSize(key);
       if (!n) return null;
@@ -4374,7 +4275,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
         slotsGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center;flex:1 1 0;min-width:0';
         for (const slot of slots) {
           const cell = document.createElement('div');
-          cell.style.cssText = `width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--surface-1);border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border)'};border-radius:0.15em;box-sizing:border-box`;
+          cell.style.cssText = `width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--surface-1);border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border)'};border-radius:0.15em;box-sizing:border-box`;
           if (slot.id) {
             const spellCanvas = scaledSprite(resolveSpellKey(String(slot.id)));
             if (spellCanvas) {
@@ -4663,7 +4564,6 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
   }
 
   canvasClickHandler = (event: any) => {
-    if (isMapHandoffPending(viewer)) return;
     // Leave the event untouched so the drawing tool (or temporary pan) handles it.
     if (!canOpenPOIFromCanvas(event)) return;
     const item = findNearestMarker(event);
@@ -4704,7 +4604,7 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
   // Native mousemove on OSD canvas for pointer cursor (OSD has no 'canvas-move' event)
   const osdCanvas = viewer.canvas as HTMLElement;
   const onMouseMove = (e: MouseEvent) => {
-    if (isMapHandoffPending(viewer) || drawingOwnsMapPointer()) {
+    if (drawingOwnsMapPointer()) {
       osdCanvas.classList.remove('poi-hover');
       hideMarkerTooltip();
       return;
@@ -5064,195 +4964,181 @@ export async function renderGenerationResult(
   generationStartedAt = performance.now(),
 ): Promise<void> {
   const generationId = ++currentGenerationId;
-  let scenesPrepared!: (ready: Promise<void>) => void;
-  const scenePreparationReady = new Promise<void>((resolve, reject) => {
-    scenesPrepared = ready => { void ready.then(resolve, reject); };
-  });
-  void scenePreparationReady.catch(() => {});
-  clearNativeSceneRenderers();
-  const releaseSetup = holdMapHandoff(viewer);
   let completePresentation = () => {};
   const presentationReady = new Promise<void>(resolve => { completePresentation = resolve; });
-  void presentationReady.then(releaseSetup);
-  try {
-    clearPortalAnimations();
-    clearInstantTerrain();
-    clearTerrainPngEncoders();
-    (window as any).__osdViewer = viewer;
+  clearPortalAnimations();
+  clearInstantTerrain();
+  clearTerrainPngEncoders();
+  (window as any).__osdViewer = viewer;
 
-    // Snapshot old dynamic items (tiled images + HTML overlays) BEFORE adding
-    // new content. We'll remove them AFTER new content is fully in place,
-    // so there's never a visible gap where biome backgrounds disappear.
-    const oldWorldItems: any[] = [];
+  // Snapshot old dynamic items (tiled images + HTML overlays) BEFORE adding
+  // new content. We'll remove them AFTER new content is fully in place,
+  // so there's never a visible gap where biome backgrounds disappear.
+  const oldWorldItems: any[] = [];
+  try {
+    const world = viewer.world;
+    for (let i = 0; i < world.getItemCount(); i++) {
+      const item = world.getItemAt(i);
+      // Same base-layer test as clearDynamicOverlays. Routed through
+      // isDynamicSeedItem so in-flight baked DZIs whose async success callback
+      // hasn't yet tagged source.__bakedDzi are still captured for cleanup.
+      if (item && isDynamicSeedItem(item)) {
+        oldWorldItems.push(item);
+      }
+    }
+  } catch {}
+  const oldOverlayEls = [...dynamicOverlayElements];
+  dynamicOverlayElements = [];
+  const oldBlobUrls = [...dynamicBlobUrls];
+  dynamicBlobUrls = [];
+  dynamicTiledImages.clear();
+  activeOrbTargets = [];
+
+  // Add biome backgrounds as the bottom-most new layer.
+  // Skipped when baked DZIs will replace them — the baked tiles already
+  // include the biome bgs and the placeholder would otherwise flash visibly
+  // under them on every refresh.
+  if ((!bakedDZIs || bakedDZIs.length === 0) && !isGLTerrainEnabled()) {
+    addBiomeBgToOSD(viewer);
+  }
+  if (currentGenerationId !== generationId) return;
+
+  // Wrap onFirstPaint so the moment PW 0,0 of the new seed is in place we
+  // ALSO purge the previous render's items. This avoids holding two full
+  // generations in memory through the rest of the pipeline (~5-6s on FF
+  // and Brave) and prevents the visible "old + new stacked" flicker the
+  // user saw on heaven/hell.
+  let oldItemsCleanedUp = false;
+  const cleanupOldItems = () => {
+    if (oldItemsCleanedUp) return;
+    oldItemsCleanedUp = true;
     try {
       const world = viewer.world;
-      for (let i = 0; i < world.getItemCount(); i++) {
-        const item = world.getItemAt(i);
-        // Same base-layer test as clearDynamicOverlays. Routed through
-        // isDynamicSeedItem so in-flight baked DZIs whose async success callback
-        // hasn't yet tagged source.__bakedDzi are still captured for cleanup.
-        if (item && isDynamicSeedItem(item)) {
-          oldWorldItems.push(item);
-        }
+      for (const item of oldWorldItems) {
+        try {
+          world.removeItem(item);
+        } catch {}
       }
     } catch {}
-    const oldOverlayEls = [...dynamicOverlayElements];
-    dynamicOverlayElements = [];
-    const oldBlobUrls = [...dynamicBlobUrls];
-    dynamicBlobUrls = [];
-    dynamicTiledImages.clear();
-    activeOrbTargets = [];
-
-    // Add biome backgrounds as the bottom-most new layer.
-    // Skipped when baked DZIs will replace them — the baked tiles already
-    // include the biome bgs and the placeholder would otherwise flash visibly
-    // under them on every refresh.
-    if ((!bakedDZIs || bakedDZIs.length === 0) && !isGLTerrainEnabled()) {
-      addBiomeBgToOSD(viewer);
-    }
-    if (currentGenerationId !== generationId) return;
-
-    // Wrap onFirstPaint so the moment PW 0,0 of the new seed is in place we
-    // ALSO purge the previous render's items. This avoids holding two full
-    // generations in memory through the rest of the pipeline (~5-6s on FF
-    // and Brave) and prevents the visible "old + new stacked" flicker the
-    // user saw on heaven/hell.
-    let oldItemsCleanedUp = false;
-    const cleanupOldItems = () => {
-      if (oldItemsCleanedUp) return;
-      oldItemsCleanedUp = true;
+    for (const el of oldOverlayEls) {
       try {
-        const world = viewer.world;
-        for (const item of oldWorldItems) {
-          try {
-            world.removeItem(item);
-          } catch {}
+        viewer.removeOverlay(el);
+        el.remove();
+      } catch {}
+    }
+    // Defer URL revoke a bit so any in-flight OSD tile request that already
+    // grabbed the URL can still resolve.
+    setTimeout(() => {
+      for (const url of oldBlobUrls) {
+        URL.revokeObjectURL(url);
+      }
+    }, 500);
+  };
+  const wrappedOnFirstPaint = () => {
+    cleanupOldItems();
+    try {
+      onFirstPaint?.();
+    } catch (e) {
+      console.warn('[OSD Bridge] onFirstPaint threw:', e);
+    }
+  };
+
+  // Atlas/sprite downloads and the POI index do not depend on terrain or scene
+  // composition. Retain errors as data until joined so cancellation is safe.
+  const markerDataReady = buildMarkerData(result).then(
+    value => ({ value }), error => ({ error }),
+  );
+
+  // Biome layer: prefer baked DZIs from CF Static Assets workers when the
+  // probe in dynamic-map.ts already validated them for this seed. Falls back
+  // to the live dynamic composite when no baked set is available (any non-
+  // daily seed or a deploy that hasn't caught up yet).
+  let awaitingTerrainDraw = false;
+  if (bakedDZIs && bakedDZIs.length > 0) {
+    if (bakedDZIsAlreadyOnScreen) {
+      // dynamic-map painted these the moment the probe resolved. Just hook
+      // them into our cleanup tracking so removeItem() works on next reseed.
+      try {
+        const w = viewer.world;
+        for (let i = 0; i < w.getItemCount(); i++) {
+          const item = w.getItemAt(i);
+          const url = item?.source?.tilesUrl;
+          // DziTileSource rewrites ".../foo.dzi" into tilesUrl ".../foo_files/",
+          // so match against that form, not the raw .dzi URL.
+          if (typeof url === 'string' && bakedDZIs.some(p => url.startsWith(p.dziUrl.replace(/\.dzi$/, '_files/')))) {
+            dynamicTiledImages.add(item);
+            // Drop from oldWorldItems snapshot so cleanupOldItems doesn't
+            // remove the DZIs we just painted.
+            const idx = oldWorldItems.indexOf(item);
+            if (idx >= 0) oldWorldItems.splice(idx, 1);
+          }
         }
       } catch {}
-      for (const el of oldOverlayEls) {
-        try {
-          viewer.removeOverlay(el);
-          el.remove();
-        } catch {}
-      }
-      // Defer URL revoke a bit so any in-flight OSD tile request that already
-      // grabbed the URL can still resolve.
-      setTimeout(() => {
-        for (const url of oldBlobUrls) {
-          URL.revokeObjectURL(url);
-        }
-      }, 500);
-    };
-    const wrappedOnFirstPaint = () => {
-      cleanupOldItems();
+      // First-paint already fired in dynamic-map (loading bar hid then).
+      // Still call wrappedOnFirstPaint to trigger oldItems cleanup for any
+      // PRE-baked-paint state (probably nothing in our flow, but defensive).
       try {
-        onFirstPaint?.();
-      } catch (e) {
-        console.warn('[OSD Bridge] onFirstPaint threw:', e);
-      }
-    };
-
-    // Atlas/sprite downloads and the POI index do not depend on terrain or scene
-    // composition. Retain errors as data until joined so cancellation is safe.
-    const markerDataReady = buildMarkerData(result).then(
-      value => ({ value }), error => ({ error }),
-    );
-
-    // Biome layer: prefer baked DZIs from CF Static Assets workers when the
-    // probe in dynamic-map.ts already validated them for this seed. Falls back
-    // to the live dynamic composite when no baked set is available (any non-
-    // daily seed or a deploy that hasn't caught up yet).
-    let awaitingTerrainDraw = false;
-    if (bakedDZIs && bakedDZIs.length > 0) {
-      if (bakedDZIsAlreadyOnScreen) {
-        // dynamic-map painted these the moment the probe resolved. Just hook
-        // them into our cleanup tracking so removeItem() works on next reseed.
-        try {
-          const w = viewer.world;
-          for (let i = 0; i < w.getItemCount(); i++) {
-            const item = w.getItemAt(i);
-            const url = item?.source?.tilesUrl;
-            // DziTileSource rewrites ".../foo.dzi" into tilesUrl ".../foo_files/",
-            // so match against that form, not the raw .dzi URL.
-            if (typeof url === 'string' && bakedDZIs.some(p => url.startsWith(p.dziUrl.replace(/\.dzi$/, '_files/')))) {
-              dynamicTiledImages.add(item);
-              // Drop from oldWorldItems snapshot so cleanupOldItems doesn't
-              // remove the DZIs we just painted.
-              const idx = oldWorldItems.indexOf(item);
-              if (idx >= 0) oldWorldItems.splice(idx, 1);
-            }
-          }
-        } catch {}
-        // First-paint already fired in dynamic-map (loading bar hid then).
-        // Still call wrappedOnFirstPaint to trigger oldItems cleanup for any
-        // PRE-baked-paint state (probably nothing in our flow, but defensive).
-        try {
-          wrappedOnFirstPaint();
-        } catch {}
-      } else {
-        let firstPaintFired = false;
-        addBakedDZIsToOSD(viewer, bakedDZIs, (item, _placement) => {
-          if (currentGenerationId !== generationId) {
-            try {
-              viewer.world.removeItem(item);
-            } catch {}
-            return;
-          }
-          dynamicTiledImages.add(item);
-          if (!firstPaintFired) {
-            firstPaintFired = true;
-            try {
-              wrappedOnFirstPaint();
-            } catch (e) {
-              console.warn('[OSD Bridge] baked onFirstPaint threw:', e);
-            }
-          }
-        });
-      }
+        wrappedOnFirstPaint();
+      } catch {}
     } else {
-      // Adding biomes initializes the OSD viewport bounds.
-      let instant = false;
-      if (isInstantTerrainEnabled() && !forceApproximateTerrain && !result.isNGP && result.worldSize === 70) {
-        await ensureTelescopeModules();
-        if (currentGenerationId !== generationId) return;
-        const [{ addInstantTerrain }, masks] = await Promise.all([
-          loadInstantTerrain(), instantSceneMasks(result),
-        ]);
-        if (currentGenerationId !== generationId) return;
-        if (glTerrainDeps) instant = await addInstantTerrain(viewer, result, glTerrainDeps,
-          masks, () => currentGenerationId === generationId,
-          item => dynamicTiledImages.add(item), wrappedOnFirstPaint,
-          error => {
-            if (currentGenerationId !== generationId) return;
-            const retryHD = retryInstantTerrainOnMainThread();
-            console.warn(retryHD
-              ? '[OSD Bridge] Terrain worker failed; retrying HD on the main WebGL context:'
-              : '[OSD Bridge] GPU terrain unavailable; rebuilding approximate layers:', error);
-            void renderGenerationResult(viewer, result, unlocks, isDaily, onFirstPaint, cacheKey,
-              null, false, false, !retryHD, generationStartedAt).catch(error => {
-                failMapHandoff(viewer, error);
-                console.error('[OSD Bridge] Terrain fallback failed:', error);
-              });
-          }, generationStartedAt, presentationReady, scenePreparationReady);
-      }
-      if (currentGenerationId !== generationId) return;
-      awaitingTerrainDraw = instant;
-      if (!instant) await addBiomeLayersProgressively(viewer, result, generationId, wrappedOnFirstPaint, cacheKey);
-      if (currentGenerationId !== generationId) return;
+      let firstPaintFired = false;
+      addBakedDZIsToOSD(viewer, bakedDZIs, (item, _placement) => {
+        if (currentGenerationId !== generationId) {
+          try {
+            viewer.world.removeItem(item);
+          } catch {}
+          return;
+        }
+        dynamicTiledImages.add(item);
+        if (!firstPaintFired) {
+          firstPaintFired = true;
+          try {
+            wrappedOnFirstPaint();
+          } catch (e) {
+            console.warn('[OSD Bridge] baked onFirstPaint threw:', e);
+          }
+        }
+      });
     }
+  } else {
+    // Adding biomes initializes the OSD viewport bounds.
+    let instant = false;
+    if (isInstantTerrainEnabled() && !forceApproximateTerrain && !result.isNGP && result.worldSize === 70) {
+      await ensureTelescopeModules();
+      if (currentGenerationId !== generationId) return;
+      const [{ addInstantTerrain }, masks] = await Promise.all([
+        loadInstantTerrain(), instantSceneMasks(result),
+      ]);
+      if (currentGenerationId !== generationId) return;
+      if (glTerrainDeps) instant = await addInstantTerrain(viewer, result, glTerrainDeps,
+        masks, () => currentGenerationId === generationId,
+        item => dynamicTiledImages.add(item), wrappedOnFirstPaint,
+        error => {
+          if (currentGenerationId !== generationId) return;
+          console.warn('[OSD Bridge] GPU terrain failed; rebuilding approximate layers:', error);
+          void renderGenerationResult(viewer, result, unlocks, isDaily, onFirstPaint, cacheKey,
+            null, false, false, true, generationStartedAt).catch(error => console.error('[OSD Bridge] Terrain fallback failed:', error));
+        }, generationStartedAt, presentationReady);
+    }
+    if (currentGenerationId !== generationId) return;
+    awaitingTerrainDraw = instant;
+    if (!instant) await addBiomeLayersProgressively(viewer, result, generationId, wrappedOnFirstPaint, cacheKey);
+    if (currentGenerationId !== generationId) return;
+  }
 
+  try {
     // Pixel scenes render on top of biome overlays, below POI markers. When the
     // baked DZIs already carry scenes in their pixels, skip the live layer.
     if (!bakedDecorations) {
-      // Repeated temples now receive native terrain. Their coarse fallback
-      // templates must not cover it; main-world static artwork stays intact.
-      const sceneResult = isGLTerrainEnabled() || awaitingTerrainDraw ? {
+      // Wang-template temple foregrounds are a separate existing static-art layer,
+      // not pixel-scene material PNGs. Keep them; all actual dynamic scenes now
+      // paint into terrain tiles so their air masks can erase the terrain.
+      const sceneResult = isGLTerrainEnabled() ? {
         ...result,
         pixelScenesByPW: Object.fromEntries(Object.entries(result.pixelScenesByPW).map(([key, scenes]) =>
-          [key, scenes.filter(scene => !isRepeatedTempleTemplate(scene)
-            && (!isGLTerrainEnabled() || scene.key.startsWith('static_tile/')))])),
+          [key, scenes.filter(scene => scene.key.startsWith('static_tile/'))])),
       } : result;
-      await addPixelScenes(viewer, sceneResult, generationId, useRenderPerfGeneration(), scenesPrepared);
+      await addPixelScenes(viewer, sceneResult, generationId);
       if (currentGenerationId !== generationId) return;
     }
 
@@ -5303,7 +5189,6 @@ export async function renderGenerationResult(
         y: visibleMarkerData.originY,
         width: visibleMarkerData.bboxWidth,
         success: (event: any) => {
-          completePresentation();
           if (currentGenerationId !== generationId) {
             try {
               viewer.world.removeItem(event.item);
@@ -5314,6 +5199,7 @@ export async function renderGenerationResult(
           dynamicTiledImages.add(event.item);
           markerTiledImage = event.item;
 
+          completePresentation();
           emitItemsDone();
         },
         error: (err: any) => {
@@ -5335,18 +5221,10 @@ export async function renderGenerationResult(
     // the empty-result safety net for old items.
     if (!awaitingTerrainDraw) cleanupOldItems();
   } catch (error) {
-    releaseSetup();
-    // Release the outgoing cover when setup fails so it cannot hide later
-    // replacement frames indefinitely.
-    if (currentGenerationId === generationId) {
-      failMapHandoff(viewer, error);
-      clearInstantTerrain();
-    }
+    // A failed artwork/marker setup must not leave a live frame waiting for
+    // presentationReady forever. Keep the previous map until retry/reseed.
+    if (currentGenerationId === generationId) clearInstantTerrain();
     throw error;
-  } finally {
-    // Fallback rendering shares this handoff with its replacement. Its old
-    // setup must release the hold even if cancellation bypasses marker setup.
-    if (currentGenerationId !== generationId) releaseSetup();
   }
 }
 

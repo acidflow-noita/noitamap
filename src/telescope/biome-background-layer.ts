@@ -67,9 +67,6 @@ export function prepareBiomeBackgroundLayer() {
   return ready ??= loadLayer().catch(error => { ready = undefined; throw error; });
 }
 
-type Attachment = { isCurrent: () => boolean; onAttach: (item: any) => void };
-const pendingAttachments = new WeakMap<object, Map<number, Attachment>>();
-
 export function attachBiomeBackgroundLayer(
   viewer: any,
   layer: Awaited<ReturnType<typeof prepareBiomeBackgroundLayer>>,
@@ -77,33 +74,18 @@ export function attachBiomeBackgroundLayer(
   isCurrent: () => boolean,
   onAttach: (item: any) => void,
 ) {
-  const existing = Array.from({ length: viewer.world.getItemCount() }, (_, i) => viewer.world.getItemAt(i));
-  const firstBackground = existing.findIndex(item => item.source?.__biomeBg);
-  const index = firstBackground < 0 ? existing.length : firstBackground;
-  let pending = pendingAttachments.get(viewer);
-  if (!pending) { pending = new Map(); pendingAttachments.set(viewer, pending); }
+  const index = viewer.world.getItemCount();
   for (const offset of offsets) {
     if (!isCurrent()) return;
-    if (existing.some(item => item.source?.__biomeBgOffset === offset)) continue;
-    const inFlight = pending.get(offset);
-    if (inFlight) { inFlight.isCurrent = isCurrent; inFlight.onAttach = onAttach; continue; }
-    const ticket = { isCurrent, onAttach };
-    pending.set(offset, ticket);
     const source = layer.tiles.createSource(offset);
-    source.__biomeBgOffset = offset;
-    const settled = () => { if (pending!.get(offset) === ticket) pending!.delete(offset); };
     viewer.addTiledImage({
       tileSource: source, index,
       x: layer.originX + offset, y: layer.originY, width: layer.width,
       success: ({ item }: any) => {
-        settled();
-        if (!ticket.isCurrent()) {
-          viewer.world.removeItem(item);
-          return;
-        }
-        ticket.onAttach(item);
+        if (!isCurrent()) { viewer.world.removeItem(item); return; }
+        onAttach(item);
       },
-      error: () => { settled(); source.destroy(); },
+      error: () => source.destroy(),
     });
   }
 }

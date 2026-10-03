@@ -113,7 +113,6 @@ export class InstantTerrainWorkerClient {
 
 interface Slot {
   released?: boolean;
-  workerDisabled?: boolean;
   worker?: InstantTerrainWorkerClient;
   main?: any;
   resources?: any;
@@ -138,7 +137,7 @@ function getSlot(): Slot {
 
 /** This path never imports renderer assets or falls back to a UI-thread GL context. */
 function warmWorker(slot: Slot): Promise<boolean> {
-  if (slot.workerDisabled || slot.main || typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined")
+  if (slot.main || typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined")
     return Promise.resolve(false);
   return slot.workerWarm ??= (async () => {
     slot.worker = new InstantTerrainWorkerClient();
@@ -222,21 +221,12 @@ export function releaseInstantTerrainBackend(): void {
     slot.worker?.dispose(
       new DOMException("Terrain backend released", "AbortError"),
     );
-    if (slot.resources) slot.resources.dispose();
+    if (slot.resources) slot.resources.invalidate();
     else slot.main?.invalidate();
     if (slot.main?.program) slot.main.gl.deleteProgram(slot.main.program);
     slot.main?.gl?.getExtension?.("WEBGL_lose_context")?.loseContext();
   }
   sharedSlot = undefined;
-}
-
-/** Retry a worker failure once per backend lifetime on the main context.
- * Replacing the slot keeps outgoing renderer handles from invalidating it. */
-export function retryInstantTerrainOnMainThread(): boolean {
-  if (!sharedSlot?.worker || sharedSlot.released) return false;
-  releaseInstantTerrainBackend();
-  sharedSlot = { token: 0, handles: new Map(), workerDisabled: true };
-  return true;
 }
 
 /** Early preparation and every plane share one source build. Facades retain

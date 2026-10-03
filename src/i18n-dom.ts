@@ -4,9 +4,6 @@ import { refreshOverlayTranslations } from './data_sources/overlays';
 import { refreshSearchTranslations } from './main';
 
 export function updateTranslations() {
-  // Keep the HTML's readable defaults while translations download alongside
-  // the map. The initialized callback refreshes all mounted controls.
-  if (!i18next.isInitialized) return;
   // Programmatic popovers retain their configuration and translate themselves.
   // Keep their live panels too: removing only the DOM leaves Bootstrap holding
   // a detached tip which it still considers open.
