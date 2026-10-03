@@ -124,9 +124,13 @@ export function createRetainedViewportRenderer(options: {
     // Newer compositions already contain older detail. Replaying a finer but
     // older provisional frame over one would resurrect corrected terrain.
     for (const saved of history) if (saved.plan.scale <= plan.scale) paint(saved);
-    // Canonical native coverage survives both mip eviction and zoom-in to an
-    // older fine preview. Alpha-zero cells must erase that preview as well.
-    for (const saved of [...history].sort((a, b) => b.plan.scale - a.plan.scale)) if (saved.canonical.length) {
+    // Native coverage does not make a downsampled frame native resolution.
+    // Enlarging that frame would overwrite fresh detail with blurred blocks
+    // and cache them again on idle refreshes. Native-density frames remain
+    // exact when magnified beyond 1:1, including their transparent pixels.
+    for (const saved of [...history].sort((a, b) => b.plan.scale - a.plan.scale)) if (
+      saved.canonical.length && saved.plan.scale <= Math.max(1, plan.scale)
+    ) {
       context.save(); context.beginPath();
       for (const rect of saved.canonical) context.rect(rect.x, rect.y, rect.width, rect.height);
       context.clip(); paint(saved); context.restore();
