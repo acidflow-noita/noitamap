@@ -241,10 +241,11 @@ export class PixelPyramid<T> {
       await Promise.all(Array.from({ length: parallel }, runChildren));
     }
     signal.throwIfAborted();
-    await this.opts.writeTile?.(tile, result);
-    signal.throwIfAborted();
     this.remember(key, result);
     onProgress?.(result, true);
+    // The live viewport awaits get(), not its progress callback. Optional
+    // PNG/IDB persistence must not hold completed frames (or parent tiles).
+    void Promise.resolve().then(() => this.opts.writeTile?.(tile, result)).catch(() => {});
     return result;
   }
 

@@ -119,10 +119,10 @@ describe
           }
           if (!cached) {
             const first = result.data[0].firstPaint;
-            expect(first.previewMs).toBeLessThan(1000);
-            expect(first.shaderDraws).toBeLessThan(50);
+            expect(first.shaderDraws).toBe(1);
+            expect(first.warmMs).toBeLessThan(1000);
             console.log(
-              `[World-size verification] preview ${Math.round(first.previewMs)}ms, real GL refinement ${Math.round(first.refinedMs)}ms / ${first.shaderDraws} draws; overview still rendering`,
+              `[Viewport verification] final frame ${Math.round(first.frameMs)}ms / ${first.shaderDraws} draw; retained revisit ${Math.round(first.warmMs)}ms; no overview request`,
             );
           }
           const hashes = result.data.map((sample: any) => sample.hash);

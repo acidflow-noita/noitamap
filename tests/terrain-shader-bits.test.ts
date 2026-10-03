@@ -11,6 +11,7 @@ describe("Noita rare-material shader constants",()=>{
   const cpu=readFileSync(resolve(root,"lib/noita-telescope-vm/js/engine_resolve/band_select.js"),"utf8");
   for(const value of Object.values(POLKA_FLOAT_BITS))expect(cpu).toContain(`0x${value.toString(16)}`);
   expect(float(POLKA_FLOAT_BITS.PK_SCALAR)).toBe(0.00101319863460958);
+  for(const [name,value] of Object.entries(POLKA_FLOAT_BITS))expect(original).toContain(`const float ${name} = uintBitsToFloat(0x${value.toString(16)}u);`);
   const fixed=correctTerrainShaderBits(original);
   for(const [name,value] of Object.entries(POLKA_FLOAT_BITS))expect(fixed).toContain(`const float ${name} = uintBitsToFloat(0x${value.toString(16)}u);`);
   expect(correctTerrainShaderBits(fixed)).toBe(fixed);

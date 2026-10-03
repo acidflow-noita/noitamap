@@ -1,6 +1,6 @@
 import Flatbush from "flatbush";
 import { MATERIAL_NAMES_BY_ID } from "noita-telescope-full-pixels/engine_resolve/engine_data.js";
-import { writeRGBA } from "./terrain-scenes";
+import { writeRGBA } from "./terrain-rgba";
 
 /** Noita uses cell_type="liquid" for powders too. Honor the actual inherited
  * liquid_sand flag rather than flattening ores/sand based on the cell_type.

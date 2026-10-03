@@ -1,4 +1,4 @@
-import { isGLTerrainEnabled } from "../renderer_settings";
+import { isFullPixelBake } from "../renderer_settings";
 import { TERRAIN_VERSION } from "./terrain-policy";
 /**
  * baked-dzi-loader.ts
@@ -139,7 +139,7 @@ export async function probeBakedDZIs(
   for (let i = 0; i < WORLDS.length; i++) {
     const m = manifests[i];
     if (!m) return { baked: false, reason: `manifest missing/invalid for ${prefix}-${WORLDS[i]}` };
-    if (isGLTerrainEnabled() && (m.terrainVersion !== TERRAIN_VERSION || m.complete !== true)) {
+    if (isFullPixelBake() && (m.terrainVersion !== TERRAIN_VERSION || m.complete !== true)) {
       return { baked: false, reason: `${prefix}-${WORLDS[i]} is not a completed ${TERRAIN_VERSION} bake` };
     }
     if (m.seed !== seed) {

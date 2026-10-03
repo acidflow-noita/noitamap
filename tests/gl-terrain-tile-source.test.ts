@@ -100,9 +100,9 @@ function job(source: any, level = source.maxLevel) {
 }
 
 describe("GL terrain tiles (no browser/GPU)", () => {
-  it("does not initialize live rendering for public maps with an old saved opt-in", async () => {
+  it("does not initialize live rendering after an explicit performance opt-out", async () => {
     setFullPixelTerrainForBake(false);
-    vi.stubGlobal("localStorage", { getItem: () => "1" });
+    vi.stubGlobal("localStorage", { getItem: () => "0" });
     expect(await ensureGLTerrain(deps, opts().gen)).toBe(false);
     expect(resourceBuild).not.toHaveBeenCalled();
     expect(render).not.toHaveBeenCalled();

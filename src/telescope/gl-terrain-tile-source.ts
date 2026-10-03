@@ -538,6 +538,10 @@ export function createGLTerrainTileSource(opts: GLTerrainSourceOpts): any {
   source.waitForTile = (level: number, x: number, y: number) =>
     active.get(`${level}/${x}/${y}`)?.promise ??
     pyramid.get(level, x, y, lifetime.signal);
+  // The live viewport owns its request lifetime. It asks for completed pixels
+  // directly; OSD must not request this source's whole-world overview levels.
+  source.getFinalTile = (level: number, x: number, y: number, signal: AbortSignal) =>
+    pyramid.get(level, x, y, AbortSignal.any([signal, lifetime.signal]));
 
   source.downloadTileStart = (context: any) => {
     const tile = context.tile,

@@ -1,4 +1,4 @@
-/** Complete render-perf fork, lazy-loaded only in full-pixel mode. */
+/** Complete gl-and-full-resolution fork, lazy-loaded only in full-pixel mode. */
 // @ts-ignore
 export * as biomeGenMod from "noita-telescope-full-pixels/biome_generator.js";
 // @ts-ignore
@@ -44,7 +44,7 @@ export * as potionConfigMod from "noita-telescope-full-pixels/potion_config.js";
 // @ts-ignore
 export * as perksMod from "noita-telescope-full-pixels/perks.js";
 
-// @ts-ignore — render-perf-only modules
+// @ts-ignore — full-resolution-only modules
 export * as glTerrainMod from "noita-telescope-full-pixels/gl/terrain_renderer.js";
 // @ts-ignore
 export * as materialAtlasMod from "noita-telescope-full-pixels/gl/material_atlas.js";

@@ -4,5 +4,5 @@
 [submodule "lib/noita-telescope-vm"]
 	path = lib/noita-telescope-vm
 	url = https://github.com/vitaminmoo/noita-telescope.git
-	branch = render-perf
+	branch = gl-and-full-resolution
 	shallow = true

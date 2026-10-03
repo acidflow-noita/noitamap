@@ -71,30 +71,46 @@ Huge thanks to [@Dadido3](https://github.com/Dadido3), [@myndzi](https://github.
 
 ## Full-pixel terrain and daily baking
 
-**Public maps use baked pixels when available, approximate terrain otherwise.**
-The **Render every pixel** toggle is removed from every map/view, including
-localhost. The old `noitamap-gl-terrain` saved preference is ignored, and there
-is no browser-console or URL opt-in. Returning users cannot accidentally remain
-on the expensive live-render path just because they enabled it in an older build.
+**Public maps prefer matching baked pixels.** For an unbaked dynamic seed,
+**Performance → Render every pixel** is enabled by default. Switching it off
+selects approximate terrain and reloads the map. The setting uses
+`noitamap-full-pixels-v2`; the obsolete `noitamap-gl-terrain` key is ignored.
+The control is hidden while the bake probe is pending and when a bake is shown.
+`?nb=1` bypasses baked output independently of the live-rendering preference.
 
-Daily and previous-daily maps still load their matching baked DZI pyramids without
-live terrain rendering. If no bake is available (including arbitrary seeds and
-failed/mismatched daily probes), the map uses the existing approximate generator.
-`?nb=1` explicitly bypasses baked output but does **not** enable live final pixels.
-Static maps and other performance controls are unchanged.
+Live full-pixel mode uses Telescope's `gl-and-full-resolution` fork, pinned at
+`b78598b`. Its app-free `TerrainWorkers` pool generates the biome map, Wang
+layers and spawn prescan off the page thread and stays warm across seeds.
+Vite bundles the upstream workers with their imports and hashes the image
+packs and material data. Legacy approximate generation is an explicit performance opt-out.
 
-This is not fixed by simply switching on GPU rendering: the retained renderer
-already uses WebGL2 for the main plane, then CPU workers for scene/liquid/edge
-composition and the vertical planes. Exact low-zoom tiles reduce all underlying
-full-resolution children, so an overview can require thousands of leaf jobs.
-More GPU composition or a different level-of-detail design could improve it, but
-the current pipeline cannot promise fast completion across low-end phones.
-Serving precomputed tiles avoids putting that full-resolution work on the device.
+Main-world live rendering now uses the fork's **`TerrainView` API**. Terrain
+and pixel scenes are shaded for the viewport from retained world data; it no
+longer builds native terrain tiles or pyramid ancestors to draw an overview.
+Renderer resources are prepared in a worker. Host ownership and liquid levelling
+run in the terrain shader, including the material-ID pass used by decals.
+Backgrounds and static-area masks remain host-owned.
+
+OSD receives one completed viewport image, without an approximate preview or
+independent tile refinement. `detailZoom: Infinity` keeps material textures and
+scene detail enabled at every zoom; the decal gate also honors that setting.
+Completed decal tiles accumulate in screen space, so a view larger than the
+upstream 768-tile GPU cache can finish without endlessly evicting its own work.
+Zooming redraws screen samples from retained data; these are not exact averaged
+reductions of all native world pixels.
+
+Heaven and hell still use the existing native renderer to preserve repeated
+geometry and the Power Plant shaft. The no-WebGL fallback also retains that
+renderer. Their cold overviews remain expensive. Main-world edge decals still
+require upstream worker stamping of native tiles, so enabling them at every
+zoom does **not** make a cold full-map view instant. Baked daily maps continue to
+use their existing DZI path independently of this live renderer.
 
 The native baker and renderer test harnesses explicitly select full-pixel mode
-with `setFullPixelTerrainForBake`; they do not depend on browser storage. The
-pinned `render-perf` model, native backgrounds, full-resolution rendering and
-complete pyramids remain available for baking and offline performance work.
+with `setFullPixelTerrainForBake`; they do not depend on browser storage.
+Native timings validate generation and pixel parity, not browser/GPU frame
+latency. Manual checks should cover daily sharpness, default full-pixel arbitrary seeds,
+zoom-out/in retention, vertical worlds, reseeding and Pro drawing.
 
 ### Native daily bake (no GPU/browser)
 
@@ -200,7 +216,7 @@ exercise its top/middle/bottom through real OSD jobs, and the bake-artifact
 verifier checks all 144 lower shaft chunks across the three horizontal worlds.
 
 
-### Final-pixel refinement v8
+### Native/bake final-pixel refinement v8
 
 - EdgeGraphics stamps now run on full-resolution terrain **and scene material
   identities** before pyramid reduction; they are not disabled at lower zoom.

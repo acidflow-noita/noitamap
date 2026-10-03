@@ -18,8 +18,11 @@ vi.mock('../src/telescope/baked-dzi-loader', () => ({ addBakedDZIsToOSD: vi.fn()
 vi.mock('../src/telescope/perk-i18n', () => ({ perkNameKey: vi.fn() }));
 vi.mock('../src/game-translations/translator', () => ({ gameTranslator: {} }));
 import { clearDynamicMap, runDynamicMap } from '../src/dynamic-map';
-import { fetchDailySeed } from '../src/data_sources/daily_seed';
+import { fetchDailySeed, fetchPreviousDailySeed } from '../src/data_sources/daily_seed';
 import { updateURLWithSeed } from '../src/data_sources/url';
+import { getCachedGeneration } from '../src/telescope/tile-cache';
+import { prewarmAlt } from '../src/unlocks-toggle';
+import { renderGenerationResult, prefetchAllSceneBitmaps } from '../src/telescope/telescope-osd-bridge';
 import { initTelescope } from '../src/telescope/telescope-adapter';
 
 function pendingSeed() {
@@ -57,4 +60,32 @@ describe('dynamic map request invalidation before daily lookup', () => {
     secondDaily.resolve(99);
     expect(await second).toBeNull();
   });
+});
+
+
+it.each([false, true])('defers background generation until terrain is presented (replaced=%s)', async replaced => {
+  vi.useFakeTimers();
+  try {
+    clearDynamicMap({}); vi.clearAllMocks();
+    vi.mocked(fetchDailySeed).mockResolvedValue(1);
+    vi.mocked(fetchPreviousDailySeed).mockResolvedValue(2);
+    vi.mocked(getCachedGeneration).mockResolvedValue({ seed: 92, tileLayers: [{}], poisByPW: {}, parallelWorlds: [-1, 0, 1] });
+    vi.mocked(prewarmAlt).mockResolvedValue();
+    vi.mocked(prefetchAllSceneBitmaps).mockResolvedValue();
+    const loading = vi.fn();
+    const pending = runDynamicMap(92, false, { viewer: {}, onLoadingChange: loading });
+    await vi.advanceTimersByTimeAsync(100);
+    expect(await pending).not.toBeNull();
+    expect(renderGenerationResult).toHaveBeenCalledOnce();
+    expect(loading.mock.calls).toEqual([[true]]);
+    expect(prewarmAlt).not.toHaveBeenCalled();
+    expect(prefetchAllSceneBitmaps).not.toHaveBeenCalled();
+    if (replaced) clearDynamicMap({});
+    const paint = vi.mocked(renderGenerationResult).mock.calls[0][4]!;
+    paint(); paint();
+    if (!replaced) expect(loading).toHaveBeenLastCalledWith(false);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(prewarmAlt).toHaveBeenCalledTimes(replaced ? 0 : 1);
+    expect(prefetchAllSceneBitmaps).toHaveBeenCalledTimes(replaced ? 0 : 1);
+  } finally { vi.useRealTimers(); }
 });

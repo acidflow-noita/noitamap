@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   isGLTerrainEnabled,
+  setGLTerrain,
   setFullPixelTerrainForBake,
   shouldUseBakedTerrain,
 } from "../src/renderer_settings";
@@ -29,7 +30,7 @@ afterEach(() => {
 });
 
 describe("full-pixel mode", () => {
-  it("defaults off and tolerates unavailable browser storage", () => {
+  it("defaults on and tolerates unavailable browser storage", () => {
     vi.stubGlobal("localStorage", {
       getItem() {
         throw new Error("blocked");
@@ -38,7 +39,7 @@ describe("full-pixel mode", () => {
         throw new Error("blocked");
       },
     });
-    expect(isGLTerrainEnabled()).toBe(false);
+    expect(isGLTerrainEnabled()).toBe(true);
   });
   it.each([
     "?m=dy&ds=1",
@@ -50,19 +51,28 @@ describe("full-pixel mode", () => {
     "?m=n",
     "?m=nm",
   ])(
-    "ignores old opt-ins and selects approximate generation for %s",
+    "ignores obsolete preferences and defaults to full generation for %s",
     async (search) => {
-      const getItem = vi.fn(() => "1");
+      const getItem = vi.fn((key: string) => key === "noitamap-gl-terrain" ? "0" : null);
       vi.stubGlobal("localStorage", { getItem });
       vi.stubGlobal("window", {
         location: new URL(`https://noitamap.com/${search}`),
       });
-      expect(isGLTerrainEnabled()).toBe(false);
-      expect((await loadTelescopeModules()).fork).toBe("legacy");
-      expect(telescopeCacheKey("42-all")).toBe("42-all");
-      expect(getItem).not.toHaveBeenCalled();
+      expect(isGLTerrainEnabled()).toBe(true);
+      expect((await loadTelescopeModules()).fork).toBe("full");
+      expect(telescopeCacheKey("42-all")).not.toBe("42-all");
+      expect(getItem).not.toHaveBeenCalledWith("noitamap-gl-terrain");
     },
   );
+  it("persists an explicit performance opt-out using the new key", () => {
+    const values = new Map<string, string>();
+    vi.stubGlobal("localStorage", { getItem: (key: string) => values.get(key), setItem: (key: string, value: string) => values.set(key, value) });
+    expect(isGLTerrainEnabled()).toBe(true);
+    setGLTerrain(true);
+    expect(isGLTerrainEnabled()).toBe(true);
+    setGLTerrain(false);
+    expect(isGLTerrainEnabled()).toBe(false);
+  });
   it("allows the native baker to select the full fork explicitly, without storage", async () => {
     const getItem = vi.fn(() => {
       throw new Error("No browser storage in bake");

@@ -1,3 +1,4 @@
+import { renderTerrainFrame } from "../../src/telescope/terrain-viewport";
 import { prepareTerrainPlane } from "../../src/telescope/terrain-planes";
 import { setFullPixelTerrainForBake } from "../../src/renderer_settings";
 import {
@@ -94,128 +95,29 @@ export async function renderTerrainFixture(seed: number, cached = false) {
     throw new Error(`Actual terrain initialization failed: ${error}`);
 
   const result = [];
-  let firstPaint:
-    { previewMs: number; refinedMs: number; shaderDraws: number } | undefined;
+  let firstPaint: { frameMs: number; warmMs: number; shaderDraws: number } | undefined;
   if (!cached) {
-    const overlays = images.createTileOverlaysCheap(
-      gen.biomeData,
-      gen.tileLayers,
-      0,
-      0,
-      false,
-      "normal",
-    );
-    const preview = document.createElement("canvas");
-    preview.width = Math.ceil(35840 / 10);
-    preview.height = Math.ceil(24576 / 10);
-    const previewCtx = preview.getContext("2d")!;
-    for (let i = 0; i < overlays.length; i++)
-      if (overlays[i]) {
-        previewCtx.drawImage(
-          overlays[i],
-          gen.tileLayers[i].correctedX / 10,
-          gen.tileLayers[i].correctedY / 10,
-        );
-      }
-    const layer = gen.tileLayers.find(
-      (l: any) => l.biomeName.startsWith("coalmine") && l.validChunks?.size,
-    );
-    const chunks = [...layer.validChunks] as string[];
-    const [cx, cy] = chunks[Math.floor(chunks.length / 2)]
-      .split(",")
-      .map(Number);
-    const focus = { x: (cx - 35) * 512 + 256, y: (cy - 14) * 512 + 256 };
-    let updates = 0;
     const world = createGLTerrainTileSource({
-      deps,
-      gen,
-      pw: 0,
-      worldX: -17920,
-      worldY: -7168,
-      worldW: 35840,
-      worldH: 24576,
-      preview,
-      getFocus: () => focus,
-      onTileUpdate: () => updates++,
+      deps, gen, pw: 0, worldX: -17920, worldY: -7168,
+      worldW: 35840, worldH: 24576,
     });
-    const request = (level: number, x: number, y: number): Promise<any> =>
-      new Promise((resolve, reject) => {
-        const Job = OpenSeadragon.ImageJob as any;
-        new Job({
-          source: world,
-          tile: { level, x, y },
-          src: world.getTileUrl(level, x, y),
-          callback: (job: any) =>
-            job.errorMsg ? reject(new Error(job.errorMsg)) : resolve(job.data),
-        }).start();
-      });
-    const coarseLevel = world.maxLevel - 6; // realistic overview tile: 32768 x 24576 game pixels
+    const regions = [{ source: world, x: -17920, y: -7168, width: 35840, height: 24576 }];
+    const bounds = { x: probeX, y: probeY, width: 128, height: 128 };
     const start = performance.now();
-    const context = await request(coarseLevel, 0, 0);
-    if (!context.canvas)
-      throw new Error(
-        "OSD must receive live context2d data, not a frozen image conversion",
-      );
-    const hash = () => {
-      const bytes = context.getImageData(
-        0,
-        0,
-        context.canvas.width,
-        context.canvas.height,
-      ).data;
-      let h = 2166136261,
-        visible = 0;
-      for (let i = 0; i < bytes.length; i++) {
-        h = Math.imul(h ^ bytes[i], 16777619) >>> 0;
-        if (i % 4 === 3 && bytes[i]) visible++;
-      }
-      return { hash: h, visible };
-    };
-    const initial = hash();
-    const previewMs = performance.now() - start;
-    if (initial.visible < 1000)
-      throw new Error("Whole-world overview first paint is blank");
-    if (shaderDraws !== 0)
-      throw new Error("Overview first paint waited for GPU world generation");
-    let completedWholeWorld = false;
-    void world.waitForTile(coarseLevel, 0, 0).then(
-      () => {
-        completedWholeWorld = true;
-      },
-      () => {},
-    );
-    const detail = await request(world.maxLevel, cx, cy);
-    await world.waitForTile(world.maxLevel, cx, cy);
-    const detailData = detail.getImageData(
-      0,
-      0,
-      detail.canvas.width,
-      detail.canvas.height,
-    ).data;
-    if (!detailData.some((v: number, i: number) => i % 4 === 3 && v > 0))
-      throw new Error("Close-up was starved behind world generation");
-    await new Promise((resolve) => setTimeout(resolve, 70));
-    if (hash().hash === initial.hash)
-      throw new Error(
-        "Published OSD overview did not receive refined GPU pixels",
-      );
-    if (!updates)
-      throw new Error("Visible OSD tiles were not notified of updated pixels");
-    if (completedWholeWorld || shaderDraws >= 50)
-      throw new Error("First terrain waited for bulk whole-world work");
-    console.log(
-      `[World-sized first paint] seed=${seed}: visible immediately; GPU-refined and close-up ready after ${shaderDraws} draws, ${Math.round(performance.now() - start)}ms`,
-    );
-    firstPaint = {
-      previewMs,
-      refinedMs: performance.now() - start,
-      shaderDraws,
-    };
+    const frame = await renderTerrainFrame(regions, bounds, 1, new AbortController().signal);
+    const frameMs = performance.now() - start;
+    const pixels = frame.getContext("2d")!.getImageData(0, 0, 128, 128).data;
+    if (!pixels.some((v, i) => i % 4 === 3 && v > 0)) throw new Error("Final viewport frame is blank");
+    if (shaderDraws !== 1) throw new Error(`Viewport requested offscreen terrain: ${shaderDraws} draws for one visible leaf`);
+    const warmStart = performance.now();
+    const again = await renderTerrainFrame(regions, bounds, 1, new AbortController().signal);
+    const warmMs = performance.now() - warmStart;
+    const warmPixels = again.getContext("2d")!.getImageData(0, 0, 128, 128).data;
+    if (shaderDraws !== 1 || pixels.some((v, i) => v !== warmPixels[i]))
+      throw new Error("Revisiting a viewport redrew or changed retained final pixels");
+    firstPaint = { frameMs, warmMs, shaderDraws };
     clearGLTerrain();
-    // Let cancellation drain before rebuilding the shared renderer for snapshots.
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    if (!(await ensureGLTerrain(deps, gen)))
-      throw new Error("Could not restart terrain after cancelled overview");
+    if (!(await ensureGLTerrain(deps, gen))) throw new Error("Could not restart terrain after viewport test");
     shaderDraws = 0;
   }
 

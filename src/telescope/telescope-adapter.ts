@@ -3,7 +3,7 @@ import { snapshotWorkerScenes } from "./worker-scenes";
 import { normalizeScenePOIs } from "./scene-pois";
 import { prepareElevatorShafts, withoutElevatorEndpointSpawns } from "./terrain-elevator";
 import { loadTelescopeModules } from "./load-telescope";
-import { isGLTerrainEnabled } from "../renderer_settings";
+import { isGLTerrainEnabled, isFullPixelBake } from "../renderer_settings";
 /**
  * telescope-adapter.ts
  *
@@ -202,7 +202,12 @@ export async function initTelescope(): Promise<void> {
   if (initPromise) return initPromise;
 
   initPromise = _doInitTelescope();
-  await initPromise;
+  try {
+    await initPromise;
+  } catch (error) {
+    initPromise = null;
+    throw error;
+  }
 }
 
 async function _doInitTelescope(): Promise<void> {
@@ -216,9 +221,11 @@ async function _doInitTelescope(): Promise<void> {
     fixHolyMountainEdgeNoise: true,
   });
 
-  // 2. Ensure data.zip is loaded
-  const zip = await getDataZip();
-  if (!zip) throw new Error("[Telescope] data.zip failed to load");
+  // 2. The legacy fork needs the archive; the full fork reads its own packs.
+  if (!isGLTerrainEnabled()) {
+    const zip = await getDataZip();
+    if (!zip) throw new Error("[Telescope] data.zip failed to load");
+  }
 
   // 3. Install fetch interceptor so telescope's fetch('./data/...') goes to zip
   installFetchInterceptor();
@@ -285,38 +292,43 @@ async function _doInitTelescope(): Promise<void> {
   BIOME_COLOR_LOOKUP = imageProcessingMod.BIOME_COLOR_LOOKUP;
   TILE_OVERLAY_COLORS = imageProcessingMod.TILE_OVERLAY_COLORS;
 
-  // 5. Load biome map base assets (telescope's preload step)
-  // Use library's loadPNG which handles sanitization
-  const [ng0Img, ngpImg] = await Promise.all([
-    pngSanitizerMod.loadPNG("./data/biome_maps/biome_map.png"),
-    pngSanitizerMod.loadPNG("./data/biome_maps/biome_map_newgame_plus.png"),
-  ]);
+  const workerGeneration = isGLTerrainEnabled() && !isFullPixelBake();
+  if (workerGeneration) {
+    (await import("./terrain-generation")).warmFullPixelWorld();
+  } else {
+    // 5. Load biome map base assets (telescope's preload step)
+    // Use library's loadPNG which handles sanitization
+    const [ng0Img, ngpImg] = await Promise.all([
+      pngSanitizerMod.loadPNG("../data/biome_maps/biome_map.png"),
+      pngSanitizerMod.loadPNG("../data/biome_maps/biome_map_newgame_plus.png"),
+    ]);
 
-  // Nightmare biome map is optional — only available when data.zip includes it
-  let nightmareImg: any = null;
-  try {
-    nightmareImg = await pngSanitizerMod.loadPNG("./data/biome_maps/biome_map_nightmare.png");
-  } catch (_) {}
+    // Nightmare biome map is optional — only available when data.zip includes it
+    let nightmareImg: any = null;
+    try {
+      nightmareImg = await pngSanitizerMod.loadPNG("../data/biome_maps/biome_map_nightmare.png");
+    } catch (_) {}
 
-  // Apply gamma fix directly to the raw RGBA bytes.
-  // The dev mentioned #000042 becomes #000040. We ensure it's #000042.
-  const applyGammaFix = (img: any) => {
-    const data = img.data;
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i] === 0 && data[i + 1] === 0 && data[i + 2] === 0x40) {
-        data[i + 2] = 0x42;
+    // Apply gamma fix directly to the raw RGBA bytes.
+    // The dev mentioned #000042 becomes #000040. We ensure it's #000042.
+    const applyGammaFix = (img: any) => {
+      const data = img.data;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i] === 0 && data[i + 1] === 0 && data[i + 2] === 0x40) {
+          data[i + 2] = 0x42;
+        }
       }
-    }
-    return data;
-  };
+      return data;
+    };
 
-  biomeAssets = {
-    ng0: applyGammaFix(ng0Img),
-    ngp: applyGammaFix(ngpImg),
-    nightmare: nightmareImg ? applyGammaFix(nightmareImg) : null,
-  };
+    biomeAssets = {
+      ng0: applyGammaFix(ng0Img),
+      ngp: applyGammaFix(ngpImg),
+      nightmare: nightmareImg ? applyGammaFix(nightmareImg) : null,
+    };
 
-  if (!biomeAssets.ng0) throw new Error("[Telescope] Failed to load NG0 biome map");
+    if (!biomeAssets.ng0) throw new Error("[Telescope] Failed to load NG0 biome map");
+  }
 
   // 6. Load translations
   await loadTranslations();
@@ -326,24 +338,26 @@ async function _doInitTelescope(): Promise<void> {
     GENERATOR_CONFIG[key].enabled = true;
   }
 
-  // 8. Pre-load wang tile data for all regions
-  const wangLoadResults: string[] = [];
-  for (const key of Object.keys(GENERATOR_CONFIG)) {
-    const cfg = GENERATOR_CONFIG[key];
-    if (cfg.wangFile && !cfg.wangData) {
-      // Use library's loadPNG for wang tiles too
-      try {
-        const img = await pngSanitizerMod.loadPNG(cfg.wangFile);
-        cfg.wangData = img;
-      } catch (e) {
-        wangLoadResults.push(`FAIL: ${key} (${cfg.wangFile})`);
+  if (!workerGeneration) {
+    // 8. Pre-load wang tile data for all regions
+    const wangLoadResults: string[] = [];
+    for (const key of Object.keys(GENERATOR_CONFIG)) {
+      const cfg = GENERATOR_CONFIG[key];
+      if (cfg.wangFile && !cfg.wangData) {
+        // Use library's loadPNG for wang tiles too
+        try {
+          const img = await pngSanitizerMod.loadPNG(cfg.wangFile);
+          cfg.wangData = img;
+        } catch (e) {
+          wangLoadResults.push(`FAIL: ${key} (${cfg.wangFile})`);
+        }
       }
     }
-  }
-  if (wangLoadResults.length > 0) {
-    console.warn("[Telescope] Wang tile load failures:", wangLoadResults);
-  } else {
-    console.log("[Telescope] All wang tiles loaded successfully");
+    if (wangLoadResults.length > 0) {
+      console.warn("[Telescope] Wang tile load failures:", wangLoadResults);
+    } else {
+      console.log("[Telescope] All wang tiles loaded successfully");
+    }
   }
 
   // 9. Load pixel scene metadata (or eager pixels in the legacy fork).
@@ -352,15 +366,17 @@ async function _doInitTelescope(): Promise<void> {
 
   // 10. Cache bust check: If we just updated the library, clear the generation cache
   // to ensure fixed logic actually runs instead of showing old empty results.
-  const LIB_VERSION = "2026-09-30-telescope-7fce46b-render-perf-9c58775-scenes-v2";
-  if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
-    console.log("[Telescope] Library version updated, clearing generation cache...");
-    // A blocked/failed optional cache must not prevent generation, but must
-    // also not be marked as successfully invalidated for the next page load.
-    if (typeof indexedDB !== "undefined" && await clearCache()) {
-      localStorage.setItem("noitamap-telescope-version", LIB_VERSION);
+  const LIB_VERSION = "2026-10-01-telescope-7fce46b-full-resolution-b78598b-scenes-v3";
+  try {
+    if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
+      console.log("[Telescope] Library version updated, clearing generation cache...");
+      // A blocked/failed optional cache must not prevent generation, but must
+      // also not be marked as successfully invalidated for the next page load.
+      if (typeof indexedDB !== "undefined" && await clearCache()) {
+        localStorage.setItem("noitamap-telescope-version", LIB_VERSION);
+      }
     }
-  }
+  } catch { /* Optional browser storage may be denied. */ }
 
   initialized = true;
   console.log("[Telescope] Initialization complete");
@@ -413,10 +429,14 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   const h = useNGPDimensions ? BIOME_CONFIG.H_NGP : BIOME_CONFIG.H_NG0;
   const base = isNGP ? biomeAssets.ngp : gameMode === "nightmare" ? biomeAssets.nightmare : biomeAssets.ng0;
 
-  if (!base) throw new Error("[Telescope] Biome map assets not loaded");
+  if (!base && !(isGLTerrainEnabled() && !isFullPixelBake())) throw new Error("[Telescope] Biome map assets not loaded");
 
-  // Step 1: Generate biome data
-  const biomeData = generateBiomeData(seed, ngPlus, gameMode, base, w, h);
+  // Live full-pixel generation uses the upstream app-free worker interface.
+  // The native baker keeps its existing worker/process ownership.
+  const generated = isGLTerrainEnabled() && !isFullPixelBake()
+    ? await (await import("./terrain-generation")).generateFullPixelWorld(seed, ngPlus, gameMode)
+    : null;
+  const biomeData = generated?.biomeData ?? generateBiomeData(seed, ngPlus, gameMode, base, w, h);
 
   // Debug: Log all unique colors to see if they match constants
   const uniqueColors = new Set(Array.from(biomeData.pixels));
@@ -533,7 +553,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   }
 
   // Step 2: Generate tiles
-  const tileLayers: TileLayer[] = await generateBiomeTiles(
+  const tileLayers: TileLayer[] = generated?.tileLayers ?? await generateBiomeTiles(
     biomeData.pixels,
     w,
     h,
@@ -557,7 +577,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   const elevatorSpawns = prescanSpawnFunctions(elevatorShafts, isNGP, gameMode).filter((spawn: any) => spawn.y >= 34 * 512 && spawn.y < 82 * 512);
 
   // Step 3: Prescan spawn functions (once per seed, reused across PWs)
-  const tileSpawns = prescanSpawnFunctions(tileLayers, isNGP, gameMode);
+  const tileSpawns = generated?.tileSpawns ?? prescanSpawnFunctions(tileLayers, isNGP, gameMode);
 
   // Step 4: Scan each PW
   const poisByPW: Record<string, POI[]> = {};

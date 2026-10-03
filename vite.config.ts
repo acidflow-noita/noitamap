@@ -1,4 +1,3 @@
-import { terrainShaderBitsPlugin } from "./build_scripts/vite-terrain-shaders.ts";
 import { defineConfig } from "vite";
 import { telescopeBrowserPlugin } from "./build_scripts/vite-telescope-browser.ts";
 import { atlasChunksPlugin } from "./build_scripts/vite-atlas-chunks.ts";
@@ -12,10 +11,9 @@ import fs from "node:fs";
 
 const localPro = resolveLocalPro(import.meta.dirname);
 
-// Public interactive generation uses the approximate fork and existing build
-// override. Only native baking/renderer diagnostics explicitly select the full
-// render-perf fork via load-telescope.ts, with matching workers/material data.
-// There is no public live full-pixel toggle or saved preference.
+// Approximate generation remains the default. The explicit live full-pixel
+// option and native baker load the complete updated fork with matching workers
+// and material data through load-telescope.ts.
 const TELESCOPE_DEFAULT = "lib/noita-telescope";
 const TELESCOPE_REQUESTED = process.env.NOITAMAP_TELESCOPE || TELESCOPE_DEFAULT;
 let TELESCOPE_DIR = TELESCOPE_REQUESTED;
@@ -60,7 +58,15 @@ const shimTelescopePlugin = {
 export default defineConfig({
   worker: {
     format: "es",
-    plugins: () => [shimTelescopePlugin, telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")), atlasChunksPlugin(import.meta.dirname)],
+    rollupOptions: {
+      output: {
+        codeSplitting: { groups: [
+          { name: "terrain-worker-data", test: /\/noita-telescope-vm\/js\/.*(?:engine_data|enemy_config)\.js$/, priority: 140 },
+          { name: "terrain-worker-png", test: /\/noita-telescope-vm\/js\/vendor\//, priority: 190 },
+        ] },
+      },
+    },
+    plugins: () => [shimTelescopePlugin, telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), atlasChunksPlugin(import.meta.dirname)],
   },
   server: {
     watch: {
@@ -86,7 +92,7 @@ export default defineConfig({
         }
       },
     },
-    telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")),
+    telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]),
     atlasChunksPlugin(import.meta.dirname),
     {
       name: "og-meta-rewrite",
@@ -206,7 +212,9 @@ export default defineConfig({
             { name: "telescope-runtime", test: /\/src\/(?:data-archive|renderer_settings|telescope\/(?:telescope-(?:data-bridge|dom-shim|app-shim|assets|asset-paths)|zip-extraction-shim|full-pixel-data))\.[jt]s$/, priority: 150 },
             { name: "png-codec", test: /\/src\/telescope\/png-decode\.ts$/, priority: 150 },
             { name: "telescope-full-pixels", test: /\/lib\/noita-telescope-vm\/js\/|\/src\/telescope\/full-pixel-telescope-exports\.ts$/, priority: 80 },
+            { name: "telescope-gpu", test: /\/lib\/noita-telescope-vm\/js\/(?:gl\/|terrain_view\.js$)/, priority: 100 },
             { name: "telescope-lib", test: (id) => id.startsWith(TELESCOPE_JS + "/") || id.endsWith("/src/telescope/telescope-exports.ts"), priority: 70 },
+            { name: "telescope-png", test: /\/lib\/noita-telescope-vm\/js\/vendor\//, priority: 190 },
             { name: "vendor-png", test: /\/node_modules\/(?:fast-png|fflate|iobuffer|pngjs|upng-js|pako)\//, priority: 190 },
             { name: "vendor-archive", test: /\/node_modules\/jszip\//, priority: 190 },
             { name: "vendor-osd", test: /\/node_modules\/openseadragon\//, priority: 190 },

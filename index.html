@@ -369,6 +369,12 @@
                   <i class="bi bi-speedometer"></i>
                 </button>
                 <ul class="dropdown-menu" aria-labelledby="perfModeButton">
+                  <li id="fullPixelControl" hidden>
+                    <div class="dropdown-item form-check form-switch d-flex align-items-center gap-2 mb-0">
+                      <input class="form-check-input m-0" type="checkbox" role="switch" id="fullPixelToggle" autocomplete="off" checked />
+                      <label class="form-check-label flex-grow-1" for="fullPixelToggle" style="cursor: pointer" data-i18n="fullPixels.title">Render every pixel</label>
+                    </div>
+                  </li>
                   <li
                     data-bs-toggle="popover"
                     data-bs-placement="bottom"

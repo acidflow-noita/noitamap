@@ -6,6 +6,13 @@ import koffi from "koffi";
 import { createCanvas, ImageData } from "@napi-rs/canvas";
 
 const C = {
+  ARRAY_BUFFER: 0x8892, DYNAMIC_DRAW: 0x88e8, STREAM_READ: 0x88e1,
+  PIXEL_PACK_BUFFER: 0x88eb, PIXEL_UNPACK_BUFFER: 0x88ec,
+  FRAMEBUFFER: 0x8d40, COLOR_ATTACHMENT0: 0x8ce0,
+  TEXTURE_2D_ARRAY: 0x8c1a, ZERO: 0, ONE: 1, ONE_MINUS_SRC_ALPHA: 0x0303,
+  SYNC_GPU_COMMANDS_COMPLETE: 0x9117, TIMEOUT_EXPIRED: 0x911b, WAIT_FAILED: 0x911d,
+  NONE: 0, UNPACK_COLORSPACE_CONVERSION_WEBGL: 0x9243,
+  UNPACK_FLIP_Y_WEBGL: 0x9240, UNPACK_PREMULTIPLY_ALPHA_WEBGL: 0x9241,
   BLEND: 0x0be2,
   CLAMP_TO_EDGE: 0x812f,
   COLOR_BUFFER_BIT: 0x4000,
@@ -162,6 +169,22 @@ export function createNativeGLES({ requireHardware = false, softwareOnly = false
   };
 
   const signatures = {
+    bindBuffer: 'void glBindBuffer(uint target, uint buffer)',
+    bindFramebuffer: 'void glBindFramebuffer(uint target, uint framebuffer)',
+    bindVertexArray: 'void glBindVertexArray(uint array)',
+    blendFunc: 'void glBlendFunc(uint sfactor, uint dfactor)',
+    enable: 'void glEnable(uint cap)',
+    enableVertexAttribArray: 'void glEnableVertexAttribArray(uint index)',
+    vertexAttribDivisor: 'void glVertexAttribDivisor(uint index, uint divisor)',
+    texStorage2D: 'void glTexStorage2D(uint target, int levels, uint format, int w, int h)',
+    texStorage3D: 'void glTexStorage3D(uint target, int levels, uint format, int w, int h, int d)',
+    texSubImage3D: 'void glTexSubImage3D(uint target, int level, int x, int y, int z, int w, int h, int d, uint format, uint type, const void *data)',
+    framebufferTexture2D: 'void glFramebufferTexture2D(uint target, uint attachment, uint textarget, uint texture, int level)',
+    fenceSync: 'void *glFenceSync(uint condition, uint flags)',
+    clientWaitSync: 'uint glClientWaitSync(void *sync, uint flags, uint64 timeout)',
+    deleteSync: 'void glDeleteSync(void *sync)',
+    flush: 'void glFlush()',
+    finish: 'void glFinish()',
     activeTexture: "void glActiveTexture(uint texture)",
     attachShader: "void glAttachShader(uint program, uint shader)",
     bindTexture: "void glBindTexture(uint target, uint texture)",
@@ -192,6 +215,16 @@ export function createNativeGLES({ requireHardware = false, softwareOnly = false
   for (const [name, signature] of Object.entries(signatures)) {
     const native = lib.func(signature);
     gl[name] = (...args) => {
+      if (name === 'pixelStorei' && [C.UNPACK_COLORSPACE_CONVERSION_WEBGL, C.UNPACK_FLIP_Y_WEBGL, C.UNPACK_PREMULTIPLY_ALPHA_WEBGL].includes(args[0])) {
+        if (args[1] && args[0] !== C.UNPACK_COLORSPACE_CONVERSION_WEBGL) throw new Error('Native pixel-store conversion is not implemented');
+        return;
+      }
+      if (['bindBuffer', 'bindFramebuffer'].includes(name)) args[1] ??= 0;
+      if (name === 'bindVertexArray') args[0] ??= 0;
+      if (name === 'clientWaitSync') args[2] = BigInt(args[2]);
+      if (name === 'texSubImage2D' && args.length === 10) {
+        args[8] = args[8].subarray(args[9]); args.pop();
+      }
       if (
         name.startsWith("uniform") &&
         args.slice(1).some((v) => !Number.isFinite(v))
@@ -203,6 +236,28 @@ export function createNativeGLES({ requireHardware = false, softwareOnly = false
     };
   }
   gl.getError = getError;
+  gl.getExtension = () => null;
+  for (const [name, plural] of [['Buffer', 'Buffers'], ['Framebuffer', 'Framebuffers'], ['VertexArray', 'VertexArrays']]) {
+    const make = lib.func(`void glGen${plural}(int count, _Out_ uint *objects)`);
+    const drop = lib.func(`void glDelete${plural}(int count, const uint *objects)`);
+    gl['create' + name] = () => { const value = [0]; make(1, value); return value[0]; };
+    gl['delete' + name] = object => drop(1, [object]);
+  }
+  const bufferData = lib.func('void glBufferData(uint target, intptr size, const void *data, uint usage)');
+  gl.bufferData = (target, data, usage) => bufferData(target, typeof data === 'number' ? data : data.byteLength, typeof data === 'number' ? null : data, usage);
+  const attrib = lib.func('void glVertexAttribIPointer(uint index, int size, uint type, int stride, const void *offset)');
+  gl.vertexAttribIPointer = (index, size, type, stride, offset) => attrib(index, size, type, stride, BigInt(offset));
+  const map = lib.func('void *glMapBufferRange(uint target, intptr offset, intptr length, uint access)');
+  const unmap = lib.func('uint glUnmapBuffer(uint target)');
+  gl.getBufferSubData = (target, offset, destination) => {
+    const ptr = map(target, offset, destination.byteLength, 1);
+    if (!ptr) throw new Error('glMapBufferRange failed');
+    destination.set(koffi.decode(ptr, koffi.array('uint8', destination.byteLength))); unmap(target);
+  };
+  gl.readPixels = (...args) => { if (typeof args[6] === 'number') args[6] = BigInt(args[6]); read(...args); check('readPixels'); };
+  let framebuffer = 0;
+  const bindFramebuffer = gl.bindFramebuffer;
+  gl.bindFramebuffer = (target, value) => { bindFramebuffer(target, value); framebuffer = value; };
   gl.getParameter = (name) => {
     const value = [0];
     getInt(name, value);
@@ -235,10 +290,8 @@ export function createNativeGLES({ requireHardware = false, softwareOnly = false
     programLog(program, text.length, null, text);
     return text.toString().split("\0")[0];
   };
-  gl.drawArrays = (...args) => {
-    draw(...args);
-    check("drawArrays");
-    draws++;
+  const publish = () => {
+    if (framebuffer) return;
     const { width, height } = canvas;
     const data = new Uint8Array(width * height * 4);
     read(0, 0, width, height, C.RGBA, C.UNSIGNED_BYTE, data);
@@ -259,6 +312,11 @@ export function createNativeGLES({ requireHardware = false, softwareOnly = false
     canvas.__nativeGlesPixels = pixels;
     nativePut.call(targetContext, new ImageData(pixels, width, height), 0, 0);
   };
+  gl.drawArrays = (...args) => { draw(...args); check('drawArrays'); draws++; publish(); };
+  const instanced = lib.func('void glDrawArraysInstanced(uint mode, int first, int count, int instances)');
+  gl.drawArraysInstanced = (...args) => { instanced(...args); check('drawArraysInstanced'); draws++; publish(); };
+  const clear = gl.clear;
+  gl.clear = mask => { clear(mask); publish(); };
 
   return {
     renderer,

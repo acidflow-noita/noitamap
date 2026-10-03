@@ -1,3 +1,4 @@
+import { createFullPixelToggle } from "./full-pixel-toggle";
 import { ReportMapHighlights } from './report-map-highlights';
 import { getCachedDailyComparisonTarget, getCachedDailySeedIdentity } from './data_sources/daily_seed';
 import { getPOIDisplayName } from "./telescope/poi-display-name";
@@ -136,6 +137,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   const rendererForm = assertElementById("renderer-form", HTMLFormElement);
   const storedRenderer = getStoredRenderer();
   (rendererForm.elements as any)["renderer"].value = storedRenderer;
+  const fullPixelControl = createFullPixelToggle(
+    document.getElementById("fullPixelToggle") as HTMLInputElement,
+    document.getElementById("fullPixelControl")!,
+    key => i18next.t(key),
+    () => window.location.reload(),
+  );
+  i18next.on("languageChanged", fullPixelControl.refresh);
+  window.addEventListener("bakedSeedChange", ((event: CustomEvent) => {
+    fullPixelControl.setBaked(event.detail?.baked === true);
+  }) as EventListener);
   const urlState = parseURL();
   const loadingProgress = installLoadingProgress(() => globalApp?.getMap() ?? urlState.map ?? "dynamic-main-branch");
 

@@ -253,3 +253,26 @@ it("feeds a bounded batch of real leaves concurrently instead of serializing one
   expect(parallel).toEqual(serial);
   expect(parallel.sum).toBe((64 * 65) / 2);
 });
+
+it("publishes and reuses native pixels while optional persistence is still pending", async () => {
+  let release!: () => void;
+  const writing = new Promise<void>(resolve => { release = resolve; });
+  const native = { width: 1, height: 1, pixels: [123] };
+  let draws = 0;
+  const progress: Image[] = [];
+  const pyramid = new PixelPyramid<Image>({
+    width: 1, height: 1, tileSize: 1,
+    create: () => native, renderLeaf: async () => { draws++; return native; },
+    reduceChild() {}, writeTile: () => writing,
+  });
+  let finished = false;
+  const first = pyramid.get(0, 0, 0, signal(), (image, complete) => { if (complete) progress.push(image); }).then(image => { finished = true; return image; });
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(progress).toEqual([native]);
+  expect(await pyramid.get(0, 0, 0, signal())).toBe(native);
+  expect(draws).toBe(1);
+  const completedBeforeDiskWrite = finished;
+  release();
+  await first;
+  expect(completedBeforeDiskWrite).toBe(true);
+});

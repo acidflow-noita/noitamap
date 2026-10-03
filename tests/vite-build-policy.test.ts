@@ -66,7 +66,7 @@ describe("browser build boundaries", () => {
       const result = await browserTelescopeSource(original, path);
       expect(result.code).not.toMatch(/node:(fs|url)|readPngBufferNode/);
       expect(result.code).toContain(
-        file === "utils.js" ? "fetch(" : "createImageBitmap(",
+        file === "utils.js" ? "fetchAsset(" : "createImageBitmap(",
       );
       expect(await readFile(path, "utf8")).toBe(original);
     },

@@ -96,7 +96,7 @@ export function sceneBiomeNames(scene: { key: string; variantKey?: string }): st
   return names;
 }
 
-export const TERRAIN_VERSION = "full-pixel-v17";
+export const TERRAIN_VERSION = "full-pixel-v18";
 export const WORLD_HEIGHT = 48 * 512;
 export const WORLD_TOP = -14 * 512;
 export type VerticalPlane = -1 | 0 | 1;

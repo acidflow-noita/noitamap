@@ -65,6 +65,31 @@ cold and cached custom/daily seed data. It checks visible pixels, reduced tiles,
 and identical cold/cache output, and writes preview PNGs under the OS temporary
 directory. Non-Linux hosts explicitly skip this native EGL test.
 
+## Live viewport presentation in OpenSeadragon
+
+```bash
+npm test -- tests/terrain-viewport-osd.test.ts tests/terrain-viewport-raster.test.ts tests/terrain-viewport.test.ts
+```
+
+The real OSD Viewer, TileSource, image loader and CanvasDrawer run under jsdom
+with native canvas rasterization (no browser). Both normal and high-density
+frames must actually reach the displayed canvas, survive OSD's own layer
+animation events, and update once after a pan. This catches the self-invalidating
+frame bug that renderer-only tests missed.
+
+## Live Telescope TerrainView regression (Linux)
+
+```bash
+npm test -- tests/live-terrain-view-runtime.test.ts tests/live-terrain-resources.test.ts tests/live-terrain-background.test.ts
+```
+
+Runs the actual production chunk layout, resource worker, TerrainView terrain,
+scene-material and decal passes through native Mesa, without a browser. Seed
+16981 is rendered at 1x, 0.25x, then 1x again; the revisit must have identical
+pixels. The test covers a small viewport, not full-map latency. Separate tests
+check the host table ABI and static material versus authored-air composition.
+Heaven/hell still use the existing native renderer tests.
+
 ## Complete native daily bake
 
 ```bash
@@ -142,22 +167,27 @@ verification requires non-background terrain in **every** shaft chunk (48 per
 world), identical direct/published final pixels and matching DZI overlaps.
 
 
-## Public approximate terrain, removed toggle, and completed daily state
+## Live full-pixel mode and completed daily state
 
 ```bash
-npm test -- tests/full-pixel-toggle.test.ts tests/full-pixel-mode.test.ts tests/baked-dzi-loader.test.ts tests/native-bake-mode.test.ts
+npm test -- tests/full-pixel-toggle.test.ts tests/full-pixel-mode.test.ts tests/baked-dzi-loader.test.ts tests/native-bake-mode.test.ts tests/terrain-generation-interface.test.ts tests/terrain-interface-build.test.ts tests/terrain-tile-store.test.ts
 ```
 
-The DOM/source regression tests (jsdom, no browser) verify that the live-render
-control and its browser-console hooks are removed, rather than hidden with CSS.
-Mode tests verify that old saved opt-ins cannot enable full-pixel rendering on
-daily, arbitrary, static, restricted-unlock or bake-bypass views, and that the
-approximate fork/cache namespace is selected. Native entrypoints use a separate,
-explicit internal mode; renderer tests opt into it without browser storage.
-The bake-mode tests assert that both native entrypoints select the full fork
-before generation/asset initialization, rather than inheriting the public default.
-Loader tests preserve completed daily/previous-daily baked pixels while leaving
-live rendering disabled, including when a world is missing or has the wrong seed.
+The jsdom tests verify full pixels by default, the explicit performance opt-out, the preference key, and a
+hidden control while a baked map is selected or its probe is pending. Old saved
+opt-ins remain ignored. Native entrypoints select the full fork independently
+of browser storage. Daily baked output remains usable with live mode enabled.
+
+The interface tests bundle the app-free upstream API and its workers, then
+execute the emitted generation pool in Node workers with native canvas APIs.
+Normal, NG+ and Nightmare biome/layer/spawn results must match direct upstream
+generation. Reseeding must reject superseded work without killing its replacement;
+the host adapter must retain scenes, POIs and the elevator continuation.
+These checks do not launch a browser or establish hardware frame latency.
+
+Storage tests cover blocked opens, stalled reads/codecs and late bitmap cleanup.
+Pyramid tests verify native pixels are published and reused before disk saving
+finishes. The retained CPU/GPU suites exercise actual final pixels and reductions.
 
 ## Search and stats inventory: objects versus conditional rewards
 

@@ -38,9 +38,9 @@ describe("baked DZI rendering", () => {
     expect(source.queryParams).toBe("?v=today");
   });
   it.each(["0", "1"])(
-    "uses completed full-pixel bakes with live rendering disabled, ignoring old preference (%s)",
+    "uses completed full-pixel bakes with live rendering enabled, ignoring old preference (%s)",
     async (preference) => {
-      vi.stubGlobal("localStorage", { getItem: () => preference });
+      vi.stubGlobal("localStorage", { getItem: (key: string) => key === "noitamap-gl-terrain" ? preference : null });
       vi.stubGlobal(
         "fetch",
         vi.fn(async () => ({
@@ -65,7 +65,7 @@ describe("baked DZI rendering", () => {
       );
       const result = await probeBakedDZIs("daily", 123);
       expect(result.baked).toBe(true);
-      expect(isGLTerrainEnabled()).toBe(false);
+      expect(isGLTerrainEnabled()).toBe(true);
       if (result.baked) {
         expect(result.decorationsBaked).toBe(true);
         expect(result.fullPixelsBaked).toBe(true);
@@ -116,6 +116,15 @@ describe("baked DZI rendering", () => {
     const result = await probeBakedDZIs("previous-daily", 123);
     expect(result.baked && result.fullPixelsBaked).toBe(true);
   });
+  it("does not discard an existing daily bake when live full pixels are enabled", async () => {
+    vi.stubGlobal("localStorage", { getItem: () => "1" });
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({
+      seed: 123, complete: true, terrainVersion: "full-pixel-v17", baked: true,
+      regions: [{ pw: 0, dzi: "map.dzi" }],
+    }) })));
+    expect(isGLTerrainEnabled()).toBe(true);
+    expect((await probeBakedDZIs("daily", 123)).baked).toBe(true);
+  });
   it("rejects coarse or incomplete bakes in explicit offline full-pixel mode", async () => {
     setFullPixelTerrainForBake(true);
     for (const incomplete of [
@@ -139,7 +148,7 @@ describe("baked DZI rendering", () => {
   it.each(["missing", "wrong-seed"])(
     "leaves approximate generation selected when a daily world is %s",
     async (failure) => {
-      vi.stubGlobal("localStorage", { getItem: () => "1" });
+      vi.stubGlobal("localStorage", { getItem: (key: string) => key === "noitamap-gl-terrain" ? "1" : null });
       vi.stubGlobal(
         "fetch",
         vi.fn(async (url: string) => ({
@@ -155,7 +164,7 @@ describe("baked DZI rendering", () => {
         })),
       );
       expect((await probeBakedDZIs("daily", 123)).baked).toBe(false);
-      expect(isGLTerrainEnabled()).toBe(false);
+      expect(isGLTerrainEnabled()).toBe(true);
     },
   );
 });

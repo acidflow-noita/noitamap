@@ -614,7 +614,7 @@ async function addBiomeLayersProgressively(
     if (currentGenerationId !== generationId) return;
     await addFullPixelLayers(viewer, { ...result, sceneData }, glTerrainDeps,
       () => currentGenerationId === generationId,
-      item => dynamicTiledImages.add(item), onFirstPwReady);
+      (item, removed) => { if (removed) dynamicTiledImages.delete(item); else dynamicTiledImages.add(item); }, onFirstPwReady);
     return;
   }
 
@@ -1843,7 +1843,8 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
   await ensureTelescopeModules();
   const scenes = renderableScenes(result).filter(scene => !scene.key.startsWith('static_tile/'));
   const sources: Record<string, TerrainSceneSource> = {};
-  const zip = await getDataZip();
+  const { loadSceneBackground } = await import('./scene-background');
+  const backgrounds = new Map<string, Awaited<ReturnType<typeof loadSceneBackground>>>();
   for (const scene of scenes) {
     if (sources[scene.key]) continue;
     const raw = await ensurePixelSceneData(scene.key);
@@ -1852,13 +1853,8 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
     const override = pixelSceneConfig.layerOverrides[scene.name] || pixelSceneConfig.layerOverrides[scene.key];
     let backgroundArt = null;
     if ((override?.background ?? pixelSceneConfig.layers.background) && raw.backgroundArt) {
-      // The fork records engine data paths under data/backgrounds/; the main
-      // game archive keeps them under their original data/ directory instead.
-      const path = raw.backgroundArt.replace(/^data\/backgrounds\//, 'data/');
-      const file = zip?.file(path);
-      if (!file) throw new Error(`Missing scene background: ${path}`);
-      const { decodePngToRgba } = await import('./png-decode');
-      backgroundArt = decodePngToRgba(await file.async('arraybuffer'));
+      backgroundArt = backgrounds.get(raw.backgroundArt) ?? await loadSceneBackground(raw.backgroundArt);
+      backgrounds.set(raw.backgroundArt, backgroundArt);
     }
     sources[scene.key] = {
       data: (override?.mid ?? pixelSceneConfig.layers.mid) ? raw.imgElement : new Uint8Array(raw.imgElement.length),

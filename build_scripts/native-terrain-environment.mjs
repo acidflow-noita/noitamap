@@ -115,10 +115,11 @@ export function installNativeTerrainEnvironment({
     };
     return el;
   }
-  class BrowserWorker {
+  class BrowserWorker extends EventTarget {
     onmessage = null;
     onerror = null;
     constructor(url) {
+      super();
       const target = url instanceof URL ? url : new URL(url, origin);
       const path =
         target.protocol === "file:" &&
@@ -146,11 +147,15 @@ export function installNativeTerrainEnvironment({
           ready = true;
           for (const [data, transfers] of queue.splice(0))
             this.worker.postMessage(data, transfers);
-        } else this.onmessage?.({ data: message });
+        } else {
+          this.onmessage?.({ data: message });
+          this.dispatchEvent(new MessageEvent("message", { data: message }));
+        }
       });
-      this.worker.on("error", (error) =>
-        this.onerror?.({ message: error.message, error }),
-      );
+      this.worker.on("error", (error) => {
+        this.onerror?.({ message: error.message, error });
+        this.dispatchEvent(Object.assign(new Event("error"), { message: error.message, error }));
+      });
     }
     terminate() {
       children.delete(this);

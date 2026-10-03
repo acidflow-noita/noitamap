@@ -25,10 +25,11 @@ afterEach(() => {
 });
 
 describe("native bake explicitly selects final pixels, independently of the public map", () => {
-  it("selects the full fork before seed generation, even without a saved opt-in", async () => {
-    const getItem = vi.fn(() => null);
+  it("selects the full fork before seed generation, even with a saved performance opt-out", async () => {
+    const getItem = vi.fn(() => "0");
     vi.stubGlobal("localStorage", { getItem });
     expect(isGLTerrainEnabled()).toBe(false);
+    getItem.mockClear();
     // Stop at the generation boundary: this checks entrypoint mode selection,
     // not a mocked claim that a whole map rendered successfully.
     const stop = new Error("generation boundary");
@@ -48,6 +49,7 @@ describe("native bake explicitly selects final pixels, independently of the publ
   });
 
   it("selects final pixels before initializing a separate render worker", async () => {
+    vi.stubGlobal("localStorage", { getItem: () => "0" });
     expect(isGLTerrainEnabled()).toBe(false);
     const stop = new Error("asset-loading boundary");
     getDataZip.mockImplementation(() => {

@@ -65,6 +65,7 @@ let currentUnlocksKey: string | null = null;
 let lastResult: GenerationResult | null = null;
 let dynamicRendered: boolean = false;
 let generationToken: number = 0;
+let stopPaintErrorListener: (() => void) | undefined;
 
 /** Get the seed currently displayed on the dynamic map */
 export function getCurrentDynamicSeed(): number | null {
@@ -229,6 +230,8 @@ export async function runDynamicMap(
 ): Promise<GenerationResult | null> {
   const { viewer, onLoadingChange, onPOIsReady, onSeedResolved } = opts;
   const myToken = ++generationToken;
+  stopPaintErrorListener?.();
+  let awaitingPaint = false;
   opts.onMapReplacementStart?.();
 
   // Auto-detect daily seed: if not explicitly daily, compare against today's daily.
@@ -497,14 +500,20 @@ export async function runDynamicMap(
     console.log(
       `[DynamicMap] Rendering seed ${seed} with ${result.parallelWorlds?.length || 3} worlds, worldCenter=${result.worldCenter}`,
     );
+    const renderStarted = t;
     // Hide loading indicator as soon as the main world's biome layer paints,
     // not after the full multi-PW render finishes. The remaining PWs / pixel
     // scenes / POIs continue rendering in the background.
+    let resolveFirstPaint!: () => void;
+    const firstPaint = new Promise<void>(resolve => { resolveFirstPaint = resolve; });
     let firstPaintFired = false;
     const onFirstPaint = () => {
       if (firstPaintFired || myToken !== generationToken) return;
       firstPaintFired = true;
-      console.log(`[DynamicMap] First paint (PW 0,0): ${((performance.now() - t) / 1000).toFixed(2)}s`);
+      awaitingPaint = false;
+      stopPaintErrorListener?.();
+      resolveFirstPaint();
+      console.log(`[DynamicMap] First paint (PW 0,0): ${((performance.now() - renderStarted) / 1000).toFixed(2)}s`);
       onLoadingChange?.(false);
     };
     // Probe result was already awaited at step 0b.
@@ -522,6 +531,18 @@ export async function runDynamicMap(
         console.log(`[DynamicMap] Baked DZIs not used: ${bakedProbe.reason}`);
       }
     }
+    awaitingPaint = true;
+    const paintFailed = () => {
+      if (myToken !== generationToken) return;
+      awaitingPaint = false;
+      stopPaintErrorListener?.();
+      onLoadingChange?.(false);
+    };
+    window.addEventListener('fullPixelTerrainError', paintFailed);
+    stopPaintErrorListener = () => {
+      window.removeEventListener('fullPixelTerrainError', paintFailed);
+      stopPaintErrorListener = undefined;
+    };
     await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint, cacheKey, bakedDZIs, bakedAlreadyPainted, bakedDecorations);
     if (myToken !== generationToken) { onLoadingChange?.(false); return null; }
     console.log(`[DynamicMap] Render: ${((performance.now() - t) / 1000).toFixed(2)}s`);
@@ -552,27 +573,28 @@ export async function runDynamicMap(
     }
     console.log(`[DynamicMap] POI export + index: ${((performance.now() - t) / 1000).toFixed(2)}s`);
 
-    // Alternate unlock data is background work. Never compete with the first
-    // map paint/compositing. Yield a frame and a task before starting it, and
-    // discard this intent if the user has already changed seeds.
-    requestAnimationFrame(() => setTimeout(() => {
-      if (myToken !== generationToken) return;
-      void prewarmAlt(seed, isDaily, !bakedData?.generation).catch((e) =>
-        console.warn("[DynamicMap] alt-unlocks pre-warm failed:", e),
-      );
-    }, 0));
-
-    // Background prefetch: composite & cache every pixel-scene bitmap telescope
-    // knows about. Fires once per session after the first successful render so
-    // future seed switches don't pay any compositing cost.
-    void prefetchAllSceneBitmaps().catch(() => {});
+    // Live rendering returns before its GPU frame is ready. Wait for the
+    // presented frame, not merely another animation frame, before competing
+    // for workers/CPU with alternate unlock generation and scene prefetch.
+    if (bakedAlreadyPainted) resolveFirstPaint();
+    void firstPaint.then(() => {
+      requestAnimationFrame(() => setTimeout(() => {
+        if (myToken !== generationToken) return;
+        void prewarmAlt(seed, isDaily, !bakedData?.generation).catch((e) =>
+          console.warn("[DynamicMap] alt-unlocks pre-warm failed:", e),
+        );
+        void prefetchAllSceneBitmaps().catch(() => {});
+      }, 0));
+    });
 
     return result;
   } catch (err) {
+    awaitingPaint = false;
+    if (myToken === generationToken) stopPaintErrorListener?.();
     console.error("[DynamicMap] Pipeline failed:", err);
     return null;
   } finally {
-    onLoadingChange?.(false);
+    if (!awaitingPaint && myToken === generationToken) onLoadingChange?.(false);
   }
 }
 
@@ -595,6 +617,7 @@ export function clearDynamicMap(viewer: any): void {
   currentUnlocksKey = null;
   dynamicRendered = false;
   generationToken++;
+  stopPaintErrorListener?.();
   clearSeedParams();
   // Drop pre-warmed alt-unlocks POIs — they belong to the seed we just left.
   resetAltCache();
