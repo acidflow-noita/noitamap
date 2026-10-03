@@ -93,6 +93,22 @@ async function visit(file) {
     if (imported) await visit(imported);
     else external.push({ type: "module", url: specifier.text });
   }
+  // start.ts installs the packaged globals, then imports main immediately.
+  // That sequencing boundary is startup code, not an optional lazy feature.
+  if (entries.includes(file)) {
+    const startupImports = [];
+    const scan = node => {
+      if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+          node.arguments.length === 1 && ts.isStringLiteral(node.arguments[0]))
+        startupImports.push(node.arguments[0].text);
+      ts.forEachChild(node, scan);
+    };
+    scan(module);
+    for (const url of startupImports) {
+      const imported = localFile(url, file);
+      if (imported) await visit(imported);
+    }
+  }
 }
 for (const entry of entries) await visit(entry);
 const initialFiles = await Promise.all([...initial].sort().map(measure));
@@ -104,7 +120,7 @@ for (const file of files) {
   (categories[extension] ??= []).push(file);
 }
 const report = {
-  description: "Static module graph and local per-file compression estimates; excludes runtime fetches, dynamically executed imports, external CDN bytes and network timings.",
+  description: "Startup module graph including the boot entry's immediate dynamic import, with local per-file compression estimates; excludes runtime fetches, later dynamic imports, external CDN bytes and network timings.",
   compression: { gzipLevel: 6, brotliQuality: 11 },
   entries,
   initialJavaScript: { ...sum(initialFiles), files: initialFiles },

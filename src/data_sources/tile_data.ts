@@ -41,6 +41,7 @@ export async function fetchMapVersions(mapName: MapName): Promise<Record<string,
 
     // We don't want to fetch a cached version of the manifest!
     const cacheBustString = await fetch(versionFile, {
+      signal: AbortSignal.timeout(5000),
       // Commented out because it's causing CORS issues
       // headers: { 'cache-control': 'no-cache' }
     })
@@ -49,8 +50,8 @@ export async function fetchMapVersions(mapName: MapName): Promise<Record<string,
         return (await res.text()).trim();
       })
       .catch(err => {
-        console.error(err);
-        return Math.random().toString(36).slice(2);
+        console.warn(`[Noitamap] Map version unavailable for ${versionFile.origin}:`, err);
+        return '';
       });
 
     return [versionFile.origin, cacheBustString];
@@ -59,5 +60,5 @@ export async function fetchMapVersions(mapName: MapName): Promise<Record<string,
   // Wait for all requests to have set their key, then return the object
   const entries = await Promise.all(promises);
 
-  return Object.fromEntries(entries);
+  return Object.fromEntries(entries.filter(([, version]) => version !== ''));
 }

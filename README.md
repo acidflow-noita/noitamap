@@ -71,6 +71,21 @@ Huge thanks to [@Dadido3](https://github.com/Dadido3), [@myndzi](https://github.
 
 ## Full-pixel terrain and daily baking
 
+Application startup uses the packaged OSD/Bootstrap scripts and Bootstrap CSS;
+external font styles load without holding up startup. The boot entry installs
+the globals before importing the application, including when DOM ready has
+already fired. Base maps open from bundled DZI descriptors. Version checks run
+in the background with a five-second timeout and refresh existing sources when
+available. Dictionary requests also time out after five seconds without retrying
+before UI setup. **Performance → WebGL drawer (temporary)** selects WebGL when
+on and Canvas when off, saves the preference and reloads. It uses the same switch
+styling as Render every pixel. After construction, `[OSD] Drawer initialized`
+reports both requested and actual drawer types; the switch reflects the actual
+drawer, including Canvas fallback. Remove this comparison control after the
+rendering investigation.
+`npm run audit:build` includes the immediate application import and these formerly
+external scripts in its 400 kB gzip budget (previously 280 kB excluding them).
+
 **Public maps prefer matching baked pixels.** For an unbaked dynamic seed,
 **Performance → Render every pixel** is enabled by default. Switching it off
 selects approximate terrain and reloads the map. The setting uses
@@ -87,8 +102,9 @@ packs and material data. Legacy approximate generation is an explicit performanc
 Main-world live rendering now uses the fork's **`TerrainView` API**. Terrain
 and pixel scenes are shaded for the viewport from retained world data; it no
 longer builds native terrain tiles or pyramid ancestors to draw an overview.
-The live renderer runs in a worker with OffscreenCanvas, so shader compilation,
-uploads and composition cannot block the viewer's input thread. Host ownership and liquid levelling
+The live renderer runs in a worker with OffscreenCanvas, moving shader setup,
+uploads and composition off the page's JavaScript thread. GPU driver stalls can
+still affect the viewer. Host ownership and liquid levelling
 run in the terrain shader, including the material-ID pass used by decals.
 Backgrounds and static-area masks remain host-owned.
 

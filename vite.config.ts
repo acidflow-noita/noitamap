@@ -193,8 +193,9 @@ export default defineConfig({
     // of speculative loading; Telescope still imports after its shims install.
     modulePreload: {
       polyfill: false,
-      resolveDependencies: (_filename, dependencies, context) =>
-        context.hostType === "html" ? dependencies : dependencies.filter(file => file.endsWith(".css")),
+      resolveDependencies: (filename, dependencies, context) =>
+        context.hostType === "html" || /(^|\/)main-[^/]+\.js$/.test(filename)
+          ? dependencies : dependencies.filter(file => file.endsWith(".css")),
     },
 
     rollupOptions: {

@@ -1,4 +1,5 @@
 import { createFullPixelToggle } from "./full-pixel-toggle";
+import { createDrawerToggle } from "./drawer-toggle";
 import { ReportMapHighlights } from './report-map-highlights';
 import { getCachedDailyComparisonTarget, getCachedDailySeedIdentity } from './data_sources/daily_seed';
 import { getPOIDisplayName } from "./telescope/poi-display-name";
@@ -41,7 +42,7 @@ import {
 import { rebuildAltLayers, getAllPOIsFlat, openTooltipForPOI, closePOICard, guardPOICardContext, resetPOICardContext, restorePOICardContext, getPOISpriteFirstFrame, applyHighValueOverlays } from "./telescope/telescope-osd-bridge";
 import { getUnlocksFromURL } from "./unlocks";
 import type { GenerationResult } from "./telescope/telescope-adapter";
-import { isRenderer, getStoredRenderer, setStoredRenderer } from "./renderer_settings";
+import { getStoredRenderer } from "./renderer_settings";
 
 import { App } from "./app";
 import {
@@ -125,7 +126,7 @@ export const refreshSearchTranslations = () => {
 // we want it to take over so this duplicate tab can self-close).
 const _tabHandoff = negotiateTabHandoff();
 
-document.addEventListener("DOMContentLoaded", async () => {
+async function startApplication() {
   if (!(await _tabHandoff)) return;
   const navbarBrandElement = assertElementById("navbar-brand", HTMLElement);
   const osdRootElement = assertElementById("osContainer", HTMLElement);
@@ -134,9 +135,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const mapSelectorButton = assertElementById("mapSelectorButton", HTMLButtonElement);
   const tooltipElement = assertElementById("coordinate", HTMLElement);
   const coordinatesText = tooltipElement.innerText;
-  const rendererForm = assertElementById("renderer-form", HTMLFormElement);
   const storedRenderer = getStoredRenderer();
-  (rendererForm.elements as any)["renderer"].value = storedRenderer;
+  const drawerControl = createDrawerToggle(
+    assertElementById('drawerToggle', HTMLInputElement),
+    assertElementById('drawerControl', HTMLElement),
+    () => window.location.reload(),
+  );
   const fullPixelControl = createFullPixelToggle(
     document.getElementById("fullPixelToggle") as HTMLInputElement,
     document.getElementById("fullPixelControl")!,
@@ -159,9 +163,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     useWebGL: storedRenderer === "webgl",
   });
   globalApp = app;
+  drawerControl.setActive(app.osd.getDrawerType());
   createLanguageSelector();
   updateTranslations();
-  console.log(`[Noitamap] Active OSD drawer: ${(app.osd as any).drawer?.getType?.() ?? storedRenderer}`);
 
   // Helper to update the map selector button: shows the current map's full
   // label plus icon-only versions of its badges. Hover popovers on the badges
@@ -1196,19 +1200,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   document.addEventListener("keydown", copyCoordinates, { capture: false });
 
-  // Handle renderer changes
-  rendererForm.addEventListener("change", (ev) => {
-    if (!ev.target || !(ev.target as HTMLElement).matches('input[type="radio"][name="renderer"]')) return;
-
-    ev.stopPropagation();
-    const newRenderer = (rendererForm.elements as any)["renderer"].value;
-
-    if (isRenderer(newRenderer)) {
-      setStoredRenderer(newRenderer);
-      window.location.reload();
-    }
-  });
-
   // Handle spoiler-free toggle — reload page to re-render all tiles
   // (same approach as renderer toggle, OSD tile cache can't be selectively invalidated)
   const spoilerFreeToggle = document.getElementById("spoilerFreeToggle") as HTMLInputElement | null;
@@ -1333,4 +1324,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   initKonamiCode();
-});
+}
+
+const start = () => { void startApplication().catch(error => console.error('[Noitamap] Startup failed:', error)); };
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
+else start();

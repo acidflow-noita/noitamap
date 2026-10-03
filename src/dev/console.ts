@@ -86,10 +86,9 @@ export function installDevCommands(): void {
     },
     exportDecorationCell: (cx: number, cy: number) => exportDecorationCell(cx, cy),
     releaseDecorationExport: () => releaseDecorationExport(),
-    // Dev-only OSD drawer override. Default everywhere is "canvas" (the prod
-    // setting in renderer_settings.ts). On localhost/dev.noitamap.com this
-    // hook flips it via localStorage so we can A/B test perf and baked-DZI
-    // edge fringing at zoom without shipping webgl to users.
+    // Dev-console access to the same preference as the temporary Performance
+    // switch. Deployed sites also honor this preference. AppOSD logs the
+    // actual constructed drawer after reload, including any Canvas fallback.
     //   noitamap.setRenderer("webgl")  -> opt in, reload page
     //   noitamap.setRenderer("canvas") -> opt back to default, reload
     //   noitamap.getRenderer()         -> see what the next reload will use
@@ -109,4 +108,3 @@ export function installDevCommands(): void {
   };
   console.log('[Noitamap] Dev mode detected, "noitamap" commands available.');
 }
-

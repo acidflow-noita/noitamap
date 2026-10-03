@@ -27,7 +27,7 @@
     "watch": "vite build --watch",
     "dev": "vite",
     "generate": "node build_scripts/map-definitions/generate-tilesources.cjs",
-    "audit:build": "node scripts/audit-build.mjs --max-initial-gzip=280000",
+    "audit:build": "node scripts/audit-build.mjs --max-initial-gzip=400000",
     "test-telescope": "vitest run tests/telescope-integration.test.ts tests/telescope-wang-tiles.test.ts",
     "update-and-build": "node scripts/update-telescope.cjs"
   },

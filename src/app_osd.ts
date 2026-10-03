@@ -45,26 +45,7 @@ export class AppOSD {
       showNavigator: false,
       showNavigationControl: false,
       crossOriginPolicy: 'Anonymous',
-      drawer: (() => {
-        if (!useWebGL) {
-          console.log('[OSD] Drawer: canvas (user preference)');
-          return 'canvas';
-        }
-        try {
-          if (
-            OpenSeadragon.WebGLDrawer &&
-            typeof OpenSeadragon.WebGLDrawer.isSupported === 'function' &&
-            OpenSeadragon.WebGLDrawer.isSupported()
-          ) {
-            console.log('[OSD] Drawer: webgl');
-            return 'webgl';
-          }
-        } catch (e) {
-          console.warn('WebGL check failed', e);
-        }
-        console.log('[OSD] Drawer: canvas (webgl not supported)');
-        return 'canvas';
-      })(),
+      drawer: useWebGL ? ['webgl', 'canvas'] : 'canvas',
       imageSmoothingEnabled: false,
       debugMode: false,
       // Canvas drawer: round transparent tiles to whole pixels once the
@@ -83,6 +64,13 @@ export class AppOSD {
       },
       opacity: 1,
     });
+
+    // Report the constructed OSD drawer, never merely the requested setting.
+    const requested = useWebGL ? 'webgl' : 'canvas';
+    const actual = this.getDrawerType();
+    const message = `[OSD] Drawer initialized: requested=${requested}, active=${actual}`;
+    if (actual === requested) console.log(message);
+    else console.warn(`${message} (fallback; requested drawer was not activated)`);
 
     this.addHandler('canvas-key', (event: any) => {
       // Case-insensitive so Shift+R (key "R") is caught too — OSD binds r/R to
@@ -123,6 +111,10 @@ export class AppOSD {
   }
 
   // Proxy common OSD properties and methods
+  getDrawerType(): string {
+    return this.viewer.drawer?.getType?.() ?? 'unknown';
+  }
+
   get viewport() {
     return this.viewer.viewport;
   }
@@ -188,13 +180,18 @@ export class AppOSD {
     return this.viewer.isOpen();
   }
 
-  private static getTileSources(mapName: MapName): string[] {
-    let sources = getTileData(mapName).map(tileData => tileData.url);
+  private static getTileSources(mapName: MapName): any[] {
+    let sources = getTileData(mapName);
     // Light mode on the dynamic map: skip left/right PW backgrounds, keep only middle.
     if (mapName === 'dynamic-main-branch' && isLightMode()) {
-      sources = sources.filter(url => !/-left\.|-right\./.test(url));
+      sources = sources.filter(({ url }) => !/-left\.|-right\./.test(url));
     }
-    return sources;
+    // Build-time descriptors already contain the complete geometry. Opening
+    // their remote URLs again makes all UI setup depend on three tile servers.
+    return sources.map(({ url, dziContent }) => {
+      const options = OpenSeadragon.DziTileSource.prototype.configure(JSON.parse(dziContent), url);
+      return new OpenSeadragon.DziTileSource(options);
+    });
   }
 
   // Cached natural size of the simplistic-background PNG, loaded once.
@@ -307,26 +304,35 @@ export class AppOSD {
   }
 
   private cacheBustHandler?: any;
-  private async bindCacheBustHandler(): Promise<void> {
+  private bindCacheBustHandler(): void {
     if (this.mapName === null) throw new Error('this.mapName should not be null');
     if (this.cacheBustHandler) this.world.removeHandler('add-item', this.cacheBustHandler);
-    const versions = await fetchMapVersions(this.mapName);
-    this.cacheBustHandler = (event: any) => {
-      const source = event.item.source as any;
-      // Baked daily DZIs carry their own per-bake cache-bust (set in
-      // addBakedDZIsToOSD from the manifest). Don't clobber it.
+    const mapName = this.mapName;
+    let versions: Record<string, string> = {};
+    const apply = (source: any) => {
       if (source.__bakedDzi || source.__bakedBust) return;
-      if (typeof source.tilesUrl === 'string') {
-        try {
-          const version = versions[new URL(source.tilesUrl).origin];
-          // Only bust origins we have a real version for. Unknown origins
-          // (e.g. the daily workers) would otherwise get a constant
-          // "?v=undefined" that never changes across bakes -> stale tiles.
-          if (version !== undefined) source.queryParams = `?v=${version}`;
-        } catch (e) {}
-      }
+      if (typeof source.tilesUrl !== 'string') return;
+      try {
+        const version = versions[new URL(source.tilesUrl).origin];
+        if (version !== undefined) source.queryParams = `?v=${encodeURIComponent(version)}`;
+      } catch { /* Custom tile sources may not have an absolute URL. */ }
     };
-    this.world.addHandler('add-item', this.cacheBustHandler!);
+    this.cacheBustHandler = (event: any) => {
+      apply(event.item.source);
+    };
+    const handler = this.cacheBustHandler;
+    this.world.addHandler('add-item', handler);
+    void fetchMapVersions(mapName).then(result => {
+      if (this.cacheBustHandler !== handler) return;
+      versions = result;
+      // Sources may already be open. Refresh their existing cache only once
+      // a real version arrives, without reopening or resetting the camera.
+      for (const item of this.getAllItems()) {
+        const before = item.source.queryParams;
+        apply(item.source);
+        if (item.source.queryParams !== before) item.reset();
+      }
+    }).catch(error => console.warn('[Noitamap] Map versions unavailable:', error));
   }
 
   async setMap(mapName: MapName, pos?: ZoomPos): Promise<void> {
@@ -334,7 +340,7 @@ export class AppOSD {
     this.cancelNavigation();
     this.viewer.raiseEvent('map-change-start', { mapName });
     this.mapName = mapName;
-    await this.bindCacheBustHandler();
+    this.bindCacheBustHandler();
     this.world.removeAll();
     let sources: any = AppOSD.getTileSources(mapName);
     // Simplistic background only applies to the dynamic map (its PNG is sized

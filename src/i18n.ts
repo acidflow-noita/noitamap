@@ -32,6 +32,9 @@ export function initializeTranslations() {
     fallbackLng: 'en',
     debug: false,
     showSupportNotice: false,
+    // UI wiring waits for this initialization. A stalled dictionary must not
+    // leave the map controls inactive through repeated network timeouts.
+    maxRetries: 0,
     detection: {
       order: ['querystring', 'cookie', 'localStorage', 'sessionStorage', 'navigator', 'htmlTag'],
       lookupQuerystring: 'lng',
@@ -42,11 +45,12 @@ export function initializeTranslations() {
     },
     backend: {
       loadPath: (languages: string[]) => localeUrls[languages[0]] ?? localeUrls.en,
-      requestOptions: {
+      requestOptions: () => ({
         // Production URLs change with their contents, so repeat visits reuse
         // the browser cache while a new dictionary never reuses stale text.
         cache: import.meta.env.PROD ? 'force-cache' : 'no-store',
-      },
+        signal: AbortSignal.timeout(5000),
+      }),
     },
     interpolation: { escapeValue: false },
     supportedLngs: Object.keys(SUPPORTED_LANGUAGES),

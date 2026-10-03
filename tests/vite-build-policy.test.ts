@@ -117,14 +117,15 @@ describe("browser build boundaries", () => {
     expect(warnings).toEqual([]);
     const output = result.output as any[];
     const html = String(output.find(file => file.fileName === 'index.html')?.source);
-    // The entry accesses OSD while evaluating imports. Its deferred global
-    // must stay earlier in the document's deferred execution order.
-    expect(html.indexOf('openseadragon.min.js')).toBeGreaterThan(-1);
-    expect(html.indexOf('openseadragon.min.js')).toBeLessThan(html.indexOf('type="module"'));
-    expect(html).toMatch(/<script\s+defer\s+src="[^\"]*openseadragon/);
+    expect(html).not.toMatch(/<script[^>]*src="https:\/\/cdn\.jsdelivr/);
+    expect(html).not.toContain('node_modules/bootstrap');
+    // Optional font hosts cannot block deferred application startup.
+    for (const tag of html.matchAll(/<link[^>]*rel="stylesheet"[^>]*>/g)) {
+      if (tag[0].includes('href="https://')) expect(tag[0]).toContain('media="print"');
+    }
     const localStyles = [...html.matchAll(/<link\b[^>]*>/g)]
       .map(match => match[0]).filter(tag => tag.includes('rel="stylesheet"') && tag.includes('href="/build/'));
-    expect(localStyles).toHaveLength(1);
+    expect(localStyles).toHaveLength(2); // packaged Bootstrap before our overrides
     expect(html).not.toMatch(/href="(?:\/?css\/|\/src\/styles\/)/);
     // Even when a private checkout exists locally, public production builds
     // must load hosted Pro on demand, never bundle the local private entry.
@@ -157,6 +158,9 @@ describe("browser build boundaries", () => {
         visit(dependency);
     };
     visit(entry.fileName);
+    const application = output.find(file => file.type === 'chunk' && file.facadeModuleId?.endsWith('/src/main.ts'));
+    expect(application).toBeTruthy();
+    visit(application.fileName);
     for (const name of eager) {
       const modules = Object.keys(chunks.get(name)?.modules ?? {});
       expect(

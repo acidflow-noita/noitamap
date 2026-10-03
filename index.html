@@ -28,7 +28,7 @@
     <meta name="theme-color" content="#ffffff" />
     <link rel="icon" href="assets/favicon/favicon.ico" type="image/x-icon" />
     <link rel="preconnect" href="https://rsms.me/" />
-    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" media="print" onload="this.media='all'" />
     <!-- Preconnect to the daily-bake CF Static Assets workers so the TLS
          handshake is done before main.ts asks for manifests/tiles. Saves
          connection setup on cold loads. The startup pipeline requests only
@@ -40,18 +40,11 @@
     <link rel="preconnect" href="https://previous-daily-left.acidflow.stream" crossorigin />
     <link rel="preconnect" href="https://previous-daily-middle.acidflow.stream" crossorigin />
     <link rel="preconnect" href="https://previous-daily-right.acidflow.stream" crossorigin />
-    <script defer
-      src="https://cdn.jsdelivr.net/npm/openseadragon@6.1.0/build/openseadragon/openseadragon.min.js"
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    ></script>
     <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      href="/node_modules/bootstrap/dist/css/bootstrap.min.css"
       rel="stylesheet"
-      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
-      crossorigin="anonymous"
     />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" media="print" onload="this.media='all'" />
     <!-- Custom CSS loaded AFTER Bootstrap so overrides take effect -->
     <link rel="stylesheet" href="/src/styles/map.css" />
 
@@ -375,6 +368,13 @@
                       <label class="form-check-label flex-grow-1" for="fullPixelToggle" style="cursor: pointer" data-i18n="fullPixels.title">Render every pixel</label>
                     </div>
                   </li>
+                  <!-- Temporary OSD drawer comparison; remove after the rendering investigation. -->
+                  <li id="drawerControl">
+                    <div class="dropdown-item form-check form-switch d-flex align-items-center gap-2 mb-0">
+                      <input class="form-check-input m-0" type="checkbox" role="switch" id="drawerToggle" autocomplete="off" disabled />
+                      <label class="form-check-label flex-grow-1" for="drawerToggle" style="cursor: pointer">WebGL drawer (temporary)</label>
+                    </div>
+                  </li>
                   <li
                     data-bs-toggle="popover"
                     data-bs-placement="bottom"
@@ -694,51 +694,6 @@
                 ></label>
               </div>
 
-              <form id="renderer-form" class="input-group-sm d-flex" style="display: none">
-                <div class="btn-group btn-group-sm me-2" role="group" aria-label="Renderer selection">
-                  <input
-                    type="radio"
-                    class="btn-check"
-                    name="renderer"
-                    id="canvas-renderer"
-                    value="canvas"
-                    autocomplete="off"
-                    checked
-                  />
-                  <label
-                    class="btn btn-sm btn-outline-light"
-                    for="canvas-renderer"
-                    data-bs-toggle="popover"
-                    data-bs-placement="bottom"
-                    data-bs-trigger="hover focus"
-                    data-i18n-title="renderer.canvas.title"
-                    data-bs-title="Canvas Rendering"
-                    data-i18n-content="renderer.canvas.content"
-                    data-bs-content="Standard HTML5 Canvas rendering. Works on all browsers but may be slightly less crisp when zooming quickly."
-                    ><i class="bi bi-browser-firefox"></i
-                  ></label>
-                  <input
-                    type="radio"
-                    class="btn-check"
-                    name="renderer"
-                    id="webgl-renderer"
-                    value="webgl"
-                    autocomplete="off"
-                  />
-                  <label
-                    class="btn btn-sm btn-outline-light"
-                    for="webgl-renderer"
-                    data-bs-toggle="popover"
-                    data-bs-placement="bottom"
-                    data-bs-trigger="hover focus"
-                    data-i18n-title="renderer.webgl.title"
-                    data-bs-title="WebGL Rendering"
-                    data-i18n-content="renderer.webgl.content"
-                    data-bs-content="Hardware-accelerated WebGL rendering. If you're using a Chromium-based browser (Chrome, Edge, Brave, etc.) the tiles will be less blurry while zooming in quickly."
-                    ><i class="bi bi-browser-chrome"></i
-                  ></label>
-                </div>
-              </form>
               <!-- Overflow "more" menu: secondary controls + links tucked away to de-bloat the navbar -->
               <div class="dropdown" id="more-menu">
                 <button
@@ -833,11 +788,6 @@
     <div id="coordinate" class="coordinate">
       <div class="coordinate-content"></div>
     </div>
-    <script defer
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
-      crossorigin="anonymous"
-    ></script>
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/start.ts"></script>
   </body>
 </html>

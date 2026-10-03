@@ -12,9 +12,36 @@ afterEach(() => {
   document.cookie = 'i18next=; Max-Age=0; path=/';
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
+  vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 describe('on-demand locale requests', () => {
+  it('finishes initialization after a dictionary stalls, without retrying before UI setup', async () => {
+    vi.resetModules(); vi.useFakeTimers();
+    window.history.replaceState({}, '', '/?lng=en');
+    const timeouts: number[] = [];
+    vi.spyOn(AbortSignal, 'timeout').mockImplementation(ms => {
+      timeouts.push(ms);
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(new DOMException('Timed out', 'TimeoutError')), ms);
+      return controller.signal;
+    });
+    const fetch = vi.fn((_url, options) => new Promise((_resolve, reject) => {
+      options.signal.addEventListener('abort', () => reject(options.signal.reason), { once: true });
+    }));
+    vi.stubGlobal('fetch', fetch);
+    const { initializeTranslations } = await import('../src/i18n');
+    let ready = false;
+    const initialized = initializeTranslations().then(() => { ready = true; });
+    await vi.advanceTimersByTimeAsync(4999);
+    expect(ready).toBe(false);
+    await vi.advanceTimersByTimeAsync(10);
+    expect(ready).toBe(true);
+    await initialized;
+    expect(timeouts).toEqual([5000]);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
   it('loads only the detected language and English, then loads another complete dictionary on selection', async () => {
     vi.resetModules();
     vi.stubEnv('PROD', true);

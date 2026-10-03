@@ -20,6 +20,20 @@ try {
     const nativeCreate = document.createElement.bind(document);
     document.createElement = (tag) => tag.toLowerCase() === "canvas" ? gpu.createCanvas() : nativeCreate(tag);
   }
+  if (liveViewport) {
+    // Start like a browser module worker, not a page with a preinstalled DOM.
+    // The application's worker bootstrap must provide its own canvas adapter.
+    const create = document.createElement.bind(document);
+    globalThis.OffscreenCanvas = class {
+      constructor(width, height) {
+        const canvas = create('canvas'); canvas.width = width; canvas.height = height;
+        return canvas;
+      }
+    };
+    for (const name of ['window', 'document', 'HTMLCanvasElement', 'HTMLImageElement', 'Image', 'localStorage'])
+      delete globalThis[name];
+    globalThis.location = new URL('/build/' + workerData.entry.split('/').pop(), 'http://native-bake.invalid');
+  }
   if (workerData.role === "web-worker") {
     globalThis.postMessage = (data, transfers = []) =>
       parentPort.postMessage(data, transfers);
