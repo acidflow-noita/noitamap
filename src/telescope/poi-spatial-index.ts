@@ -108,14 +108,14 @@ export const FIRST_FRAME_SIZE: Record<string, { w: number; h: number }> = {
 
 // ─── Sprite key resolution ──────────────────────────────────────────────────
 
-// Spell ID → atlas sprite key (handles ID/filename mismatches like
-// LASER_LUMINOUS_DRILL → spell:luminous_drill_timer)
+// Spell ID → complete card, including the native action-type background.
+// Handles ID/filename mismatches such as LASER_LUMINOUS_DRILL.
 let _spellIdToSpriteKey: Map<string, string> | null = null;
 function resolveSpellKey(spellId: string): string {
   if (!_spellIdToSpriteKey) {
     _spellIdToSpriteKey = new Map();
     for (const s of spells) {
-      _spellIdToSpriteKey.set(s.id, `spell:${s.sprite.replace(/\.png$/, "")}`);
+      _spellIdToSpriteKey.set(s.id, `spell:card/${s.sprite.replace(/\.png$/, "")}`);
     }
   }
   // Some spawners emit lowercase ids (e.g. static_spawns' 'rainbow_trail');
@@ -123,7 +123,7 @@ function resolveSpellKey(spellId: string): string {
   return (
     _spellIdToSpriteKey.get(spellId) ??
     _spellIdToSpriteKey.get(spellId.toUpperCase()) ??
-    `spell:${spellId.toLowerCase()}`
+    `spell:card/${spellId.toLowerCase()}`
   );
 }
 
@@ -650,16 +650,22 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
     );
   }
 
+  // Spell cards extend 19px above their entity and only 1px below it; their
+  // click bounds need the card hotspot rather than a centred rectangle.
+  const boundsOf = (item: MarkerItem) => {
+    const key = Array.isArray(item.spriteKey) ? item.spriteKey[0] : item.spriteKey;
+    const sprite = key?.startsWith('spell:card/') ? atlas[key] : undefined;
+    const left = item.osdX - (sprite?.ox ?? item.w / 2);
+    const top = item.osdY - (sprite?.oy ?? item.h / 2);
+    return [left, top, left + item.w, top + item.h];
+  };
   // Compute bounding box
   let minX = Infinity,
     minY = Infinity,
     maxX = -Infinity,
     maxY = -Infinity;
   for (const item of items) {
-    const left = item.osdX - item.w / 2;
-    const top = item.osdY - item.h / 2;
-    const right = item.osdX + item.w / 2;
-    const bottom = item.osdY + item.h / 2;
+    const [left, top, right, bottom] = boundsOf(item);
     if (left < minX) minX = left;
     if (top < minY) minY = top;
     if (right > maxX) maxX = right;
@@ -686,11 +692,12 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
 
   const index = new Flatbush(items.length || 1);
   for (const item of items) {
+    const [left, top, right, bottom] = boundsOf(item);
     index.add(
-      item.osdX - item.w / 2 - originX,
-      item.osdY - item.h / 2 - originY,
-      item.osdX + item.w / 2 - originX,
-      item.osdY + item.h / 2 - originY,
+      left - originX,
+      top - originY,
+      right - originX,
+      bottom - originY,
     );
   }
   index.finish();

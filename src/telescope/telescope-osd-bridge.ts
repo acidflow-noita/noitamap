@@ -3338,7 +3338,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
       spellsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;margin-top:0.3em';
       for (const slot of displaySlots) {
         const container = document.createElement('div');
-        container.style.cssText = `position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:var(--surface-2);border-radius:0.2em;border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border-strong)'}`;
+        container.style.cssText = `position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;background:var(--surface-2);border-radius:0.2em;border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border-strong)'}`;
         if (slot.id) {
           container.title = gameTranslator.translateSpell(getSpellName(slot.id));
         }
@@ -3352,7 +3352,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
         }
         if (slot.id) {
           const img = document.createElement('img');
-          img.style.cssText = 'width:32px;height:32px;image-rendering:pixelated;display:block;margin:auto';
+          img.style.cssText = 'width:40px;height:40px;image-rendering:pixelated;display:block;margin:auto';
           getPOISpriteFirstFrame({ type: 'spell', item: String(slot.id) }).then(url => {
             if (url) {
               img.src = url;
@@ -3365,7 +3365,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
           });
           container.appendChild(img);
         }
-        // Empty slot: container is already styled as a 22x22 dark square
+        // Empty slots keep the same dimensions as the native 20px cards at 2×.
         spellsRow.appendChild(container);
       }
       tooltipEl.appendChild(spellsRow);
@@ -4196,7 +4196,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
     contRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center';
     // Render a content sprite at an integer multiple of its native size so
     // nearest-neighbour scaling stays perfectly sharp (sprites have varied
-    // native sizes; spells are 16px, items/wands differ).
+    // native sizes; spell cards are 20px, items/wands differ).
     const scaledSprite = (key: string | string[], mult = 2): HTMLCanvasElement | null => {
       const n = getSpriteNativeSize(key);
       if (!n) return null;
@@ -4275,7 +4275,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
         slotsGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center;flex:1 1 0;min-width:0';
         for (const slot of slots) {
           const cell = document.createElement('div');
-          cell.style.cssText = `width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--surface-1);border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border)'};border-radius:0.15em;box-sizing:border-box`;
+          cell.style.cssText = `width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--surface-1);border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border)'};border-radius:0.15em;box-sizing:border-box`;
           if (slot.id) {
             const spellCanvas = scaledSprite(resolveSpellKey(String(slot.id)));
             if (spellCanvas) {
