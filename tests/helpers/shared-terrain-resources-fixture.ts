@@ -15,6 +15,8 @@ import { createPlaneMaterialField } from "../../src/telescope/plane-material-fie
 import { createMaterialField } from "noita-telescope-full-pixels/engine_resolve/material_field.js";
 import { encodeTerrainPages, decodeTerrainPage } from "../../src/telescope/retained-terrain-codec-core";
 
+import { createPlaneOwnership } from "../../src/telescope/terrain-policy";
+
 type Plane = -1 | 0 | 1;
 type Sample = { name: string; plane: Plane; pw: number; x: number; y: number; width: number; height: number };
 
@@ -39,6 +41,23 @@ export async function verifySharedTerrainResources() {
       ["world-and-plane-top-seam", -17936, -7184, 32, 32],
       ["plane-bottom-seam", -4032, 17392, 32, 32],
     ] as const) samples.push({ name, plane, pw, x: x + pw * 35840, y: y + plane * 24576, width, height });
+  }
+  const islandOwnership = new Map<Plane, ReturnType<typeof createPlaneOwnership>>();
+  for (const plane of [-1, 0, 1] as const) {
+    const data = await prepareTerrainPlane(generation, plane);
+    islandOwnership.set(plane, createPlaneOwnership(data.tileLayers,
+      generation.biomeData.pixels, data.biomeData.pixels, GENERATOR_CONFIG, 70));
+  }
+  for (const biomeName of ["biome_potion_mimics", "biome_darkness"]) {
+    const layer = generation.tileLayers.find(layer => layer.biomeName === biomeName) as
+      (typeof generation.tileLayers[number] & { minX: number; minY: number }) | undefined;
+    if (!layer?.buffer) throw new Error(`Missing real temple Wang layer: ${biomeName}`);
+    for (const plane of [-1, 1] as const) for (const pw of [-1, 0, 1]) {
+      samples.push({ name: `island-${biomeName}`, plane, pw,
+        x: layer.minX * 512 - 17920 + 64 + pw * 35840,
+        y: layer.minY * 512 - 7168 + 300 + plane * 24576,
+        width: 256, height: 256 });
+    }
   }
   // A real stand-in fill exercises the legacy fallback alongside the engine
   // resolver. Its location is read from this seed's biome map, not fabricated.
@@ -170,11 +189,24 @@ export async function verifySharedTerrainResources() {
     const table = expectedTables.get(sample.plane)!;
     for (let i = 0; i < table.length; i++) if (renderer.engineChunkModes[i] !== table[i]) selectedPlaneTableMismatches++;
     const actual = pixels(renderer, () => owner.render(view(sample))), baseline = expected.get(sample)!;
-    let nonAir = 0;
+    let nonAir = 0, ownedPixels = 0, mainOwnedPixels = 0, nativePixelChanges = 0;
     for (let i = 3; i < baseline.length; i += 4) if (baseline[i]) nonAir++;
+    if (sample.name.startsWith("island-")) {
+      for (let y = 0; y < sample.height; y++) for (let x = 0; x < sample.width; x++) {
+        const worldX = sample.x + x, localY = sample.y + y - sample.plane * 24576;
+        if (islandOwnership.get(sample.plane)!.at(worldX, localY) >= 0) ownedPixels++;
+        if (islandOwnership.get(0)!.at(worldX, localY) >= 0) mainOwnedPixels++;
+        const i = (y * sample.width + x) * 4;
+        // Adjacent final pixels vary inside the same 10px template cell.
+        if (x && Math.floor(worldX / 10) === Math.floor((worldX - 1) / 10) &&
+          baseline[i + 3] && baseline[i - 1] &&
+          baseline.subarray(i, i + 3).some((value, c) => value !== baseline[i - 4 + c])) nativePixelChanges++;
+      }
+    }
     if (nonAir > 0 && nonAir < baseline.length / 4) mixedSamples++;
     comparedPixels += baseline.length / 4;
-    compared.push({ ...sample, nonAir, mismatchedBytes: difference(baseline, actual) });
+    compared.push({ ...sample, nonAir, ownedPixels, mainOwnedPixels, nativePixelChanges,
+      mismatchedBytes: difference(baseline, actual) });
   }
   // These known reference material IDs also prevent a shared regression in
   // the shader wrapper from making two equally incorrect renderers pass.

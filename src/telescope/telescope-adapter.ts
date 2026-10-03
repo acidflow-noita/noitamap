@@ -1334,7 +1334,8 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     }
   }
 
-  // Inject temple foreground pixel scenes for heaven/hell across ALL parallel worlds.
+  // Approximate-renderer fallback for heaven/hell temples in all parallel worlds.
+  // Native terrain uses the Wang layers and omits these coarse overlays.
   // addStaticPixelScenes skips chunk-based scenes when pwIndexVertical !== 0,
   // so Spirited (potion_mimics) and Ominous (darkness) temple foregrounds
   // never get generated. We scan biomeData.pixels directly and create pixel

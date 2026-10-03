@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { createSourceFile, isFunctionDeclaration, ScriptTarget, transpileModule } from 'typescript';
 import { describe, expect, it, vi } from 'vitest';
+import { isRepeatedTempleTemplate } from '../src/telescope/terrain-policy';
 
 function barrier() {
   let resolve!: () => void;
@@ -27,6 +28,35 @@ function bridgeLifecycle(dependencies: Record<string, unknown>) {
 }
 
 describe('terrain presentation lifetime', () => {
+  it.each([
+    ['native', true, false, false, ['coalmine/room', 'static_tile/other']],
+    ['approximate fallback', false, false, true, ['static_tile/temples-assets/potion_mimics', 'static_tile/temples-assets/darkness', 'coalmine/room', 'static_tile/other']],
+    ['bake', false, true, false, ['static_tile/other']],
+  ] as const)('uses the correct temple artwork for %s rendering', async (_mode, instant, offline, forceApproximate, expected) => {
+    const stopAfterScenes = new Error('scene list captured');
+    const addPixelScenes = vi.fn(async () => { throw stopAfterScenes; });
+    const bridge = bridgeLifecycle({
+      instantTerrainModule: { clearInstantTerrain: vi.fn() },
+      clearPortalAnimations: vi.fn(), clearTerrainPngEncoders: vi.fn(), window: {},
+      isDynamicSeedItem: () => true, isGLTerrainEnabled: () => offline,
+      isInstantTerrainEnabled: () => !offline, isRepeatedTempleTemplate,
+      addBiomeBgToOSD: vi.fn(), addBiomeLayersProgressively: vi.fn(),
+      buildMarkerData: async () => ({}), ensureTelescopeModules: async () => {},
+      instantSceneMasks: async () => [], glTerrainDeps: {},
+      loadInstantTerrain: async () => ({ addInstantTerrain: async () => instant }),
+      addPixelScenes,
+    });
+    const viewer = { world: { getItemCount: () => 0 } };
+    const scenes = ['static_tile/temples-assets/potion_mimics', 'static_tile/temples-assets/darkness', 'coalmine/room', 'static_tile/other'].map(key => ({ key }));
+    const result = { worldSize: 70, isNGP: false, pixelScenesByPW: { '0,-1': scenes, '1,1': scenes } };
+    await expect(bridge.renderGenerationResult(viewer, result,
+      undefined, false, undefined, undefined, undefined, false, false, forceApproximate)).rejects.toBe(stopAfterScenes);
+    const rendered = (addPixelScenes.mock.calls[0] as any)[1];
+    for (const selected of Object.values(rendered.pixelScenesByPW) as { key: string }[][])
+      expect(selected.map(scene => scene.key)).toEqual(expected);
+    expect(result.pixelScenesByPW['0,-1']).toHaveLength(4);
+  });
+
   it.each(['modules', 'masks'])('does not restart a retired generation delayed on %s', async stage => {
     const ready = barrier(), clear = vi.fn();
     const addInstantTerrain = vi.fn(async () => { throw new Error('retired terrain restarted'); });

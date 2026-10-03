@@ -64,6 +64,14 @@ describe.skipIf(process.platform !== "linux")("shared terrain resources with nat
     expect(result.allBiomeColorsCompared).toBeGreaterThan(50);
     expect(result.allBiomeCoveredCases).toBe(result.allBiomeColorsCompared * 2);
     expect(result.samples.filter((sample: any) => sample.name === "temple-fallback").every((sample: any) => sample.nonAir > 0)).toBe(true);
+    const islands = result.samples.filter((sample: any) => sample.name.startsWith("island-"));
+    expect(islands).toHaveLength(12);
+    for (const sample of islands) {
+      expect(sample.nonAir, JSON.stringify(sample)).toBeGreaterThan(100);
+      expect(sample.ownedPixels, JSON.stringify(sample)).toBe(sample.width * sample.height);
+      expect(sample.mainOwnedPixels, JSON.stringify(sample)).toBe(0);
+      expect(sample.nativePixelChanges, JSON.stringify(sample)).toBeGreaterThan(100);
+    }
     expect(result.materialSamples).toEqual([426, 140, 140, 426, 5, 5, 32, 279, 140, 140]);
     expect(result.referenceLatticeBuilds).toBe(3);
     expect(result.sharedLatticeBuilds).toBe(1);

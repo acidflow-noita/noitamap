@@ -7,7 +7,7 @@ import { CONTAINER_TYPES } from "./poi-containers";
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
 import { loadInstantSceneMasks } from "./instant-scene-masks";
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
-import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP } from "./terrain-policy";
+import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate } from "./terrain-policy";
 import { loadTelescopeModules } from "./load-telescope";
 import { isGLTerrainEnabled, isInstantTerrainEnabled, useRenderPerfGeneration } from "../renderer_settings";
 import { prepareInstantTerrain } from './instant-terrain-backend';
@@ -1000,7 +1000,7 @@ export async function prepareDecorationExport(
   const decorationResult = includeScenes ? result : {
     ...result,
     pixelScenesByPW: Object.fromEntries(Object.entries(result.pixelScenesByPW).map(([key, scenes]) =>
-      [key, scenes.filter(scene => scene.key.startsWith('static_tile/'))])),
+      [key, scenes.filter(scene => scene.key.startsWith('static_tile/') && !isRepeatedTempleTemplate(scene))])),
   };
   const built = await buildSceneBitmaps(decorationResult, null);
   if (!built) return null;
@@ -5130,13 +5130,13 @@ export async function renderGenerationResult(
     // Pixel scenes render on top of biome overlays, below POI markers. When the
     // baked DZIs already carry scenes in their pixels, skip the live layer.
     if (!bakedDecorations) {
-      // Wang-template temple foregrounds are a separate existing static-art layer,
-      // not pixel-scene material PNGs. Keep them; all actual dynamic scenes now
-      // paint into terrain tiles so their air masks can erase the terrain.
-      const sceneResult = isGLTerrainEnabled() ? {
+      // Native terrain paints repeated temples. Keep their coarse template
+      // overlays only when using the approximate renderer, including fallback.
+      const sceneResult = isGLTerrainEnabled() || awaitingTerrainDraw ? {
         ...result,
         pixelScenesByPW: Object.fromEntries(Object.entries(result.pixelScenesByPW).map(([key, scenes]) =>
-          [key, scenes.filter(scene => scene.key.startsWith('static_tile/'))])),
+          [key, scenes.filter(scene => !isRepeatedTempleTemplate(scene)
+            && (!isGLTerrainEnabled() || scene.key.startsWith('static_tile/')))])),
       } : result;
       await addPixelScenes(viewer, sceneResult, generationId);
       if (currentGenerationId !== generationId) return;

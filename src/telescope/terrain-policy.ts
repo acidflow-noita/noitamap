@@ -17,6 +17,19 @@ export const STATIC_TERRAIN_BIOMES = new Set([
   "lake_deep",
 ]);
 
+// Main-world temples belong to the static map. Their heaven/hell repeats
+// instead need the generated Wang geometry shaded with the vertical material.
+const REPEATED_TEMPLE_BIOMES = new Set([
+  "biome_potion_mimics",
+  "biome_darkness",
+]);
+
+/** Coarse temple templates are only needed by the approximate renderer. */
+export function isRepeatedTempleTemplate(scene: { key: string }): boolean {
+  return scene.key === "static_tile/temples-assets/potion_mimics" ||
+    scene.key === "static_tile/temples-assets/darkness";
+}
+
 export const BIOME_BACKGROUND_MAP: Record<string, string> = {
   coalmine: "data/weather_gfx/background_coalmine.png",
   coalmine_alt: "data/weather_gfx/background_coalmine.png",
@@ -81,7 +94,7 @@ export function sceneBiomeNames(scene: { key: string; variantKey?: string }): st
   return names;
 }
 
-export const TERRAIN_VERSION = "full-pixel-v12";
+export const TERRAIN_VERSION = "full-pixel-v19-instant-temples";
 export const WORLD_HEIGHT = 48 * 512;
 export const WORLD_TOP = -14 * 512;
 export type VerticalPlane = -1 | 0 | 1;
@@ -100,13 +113,15 @@ export function createTerrainOwnership(
   pixels: Uint32Array,
   config: Record<string, any>,
   width: number,
+  includeRepeatedTemples = false,
 ): TerrainOwnership {
   const owners = new Int16Array(width * 48).fill(-1);
   const names: string[] = [];
   const ids = new Map<string, number>();
   for (const layer of layers) {
     const name = layer.biomeName;
-    if (!layer.buffer || layer.isFill || STATIC_TERRAIN_BIOMES.has(name))
+    if (!layer.buffer || layer.isFill || (STATIC_TERRAIN_BIOMES.has(name) &&
+      !(includeRepeatedTemples && REPEATED_TEMPLE_BIOMES.has(name))))
       continue;
     const conf = config[name];
     if (!conf?.wangFile) continue;
@@ -152,7 +167,8 @@ export function createTerrainOwnership(
 }
 
 /** Vertical-world paint is restricted to original source claims as well as the
- * sky/hell material band. Source exclusions still apply before remapping names. */
+ * sky/hell material band. Only repeated temple Wang layers are exempt from
+ * main-world static-art exclusions; other authored rooms stay excluded. */
 export function createPlaneOwnership(
   layers: any[],
   sourcePixels: Uint32Array,
@@ -160,7 +176,8 @@ export function createPlaneOwnership(
   config: Record<string, any>,
   width: number,
 ): TerrainOwnership {
-  const source = createTerrainOwnership(layers, sourcePixels, config, width);
+  const source = createTerrainOwnership(layers, sourcePixels, config, width,
+    sourcePixels !== paintPixels);
   if (sourcePixels === paintPixels) return source;
   const nameByColor = new Map<number, string>();
   for (const [name, cfg] of Object.entries(config))
