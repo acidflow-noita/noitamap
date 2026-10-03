@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createCanvas, type Canvas } from '@napi-rs/canvas';
 import { createInstantClip, type InstantClipView } from '../src/telescope/instant-terrain-clip';
+import { WORLD_HEIGHT, WORLD_TOP } from '../src/telescope/terrain-policy';
 import type { StaticTerrainMask } from '../src/telescope/static-terrain-mask';
 
 const owners = Array.from({ length: 3 }, () => ({ width: 70, owners: new Int16Array(70 * 48) }));
@@ -53,6 +54,50 @@ function draw(clip: ReturnType<typeof createInstantClip>, view: InstantClipView)
   clip.draw(context as unknown as CanvasRenderingContext2D, source as unknown as CanvasImageSource, view);
   return context.getImageData(0, 0, view.width, view.height).data;
 }
+
+describe('isolated temple ownership during zoom', () => {
+  const cases = [-1, 1].flatMap(plane => [-1, 0, 1].flatMap(pw =>
+    [0.75, 1, 3.25, 12.5].map(scale => ({ plane, pw, scale }))));
+
+  it.each(cases)('keeps solid edges and row joins in plane $plane, world $pw at scale $scale', ({ plane, pw, scale }) => {
+    const isolated = owners.map(owner => ({ width: owner.width,
+      owners: new Int16Array(owner.owners.length).fill(-1) }));
+    // A two-by-two-chunk island, surrounded by the static background.
+    for (const row of [4, 5]) for (const column of [34, 35])
+      isolated[plane + 1].owners[row * 70 + column] = 0;
+    const left = -512 + pw * 35840, top = WORLD_TOP + plane * WORLD_HEIGHT + 2048;
+    const clip = createInstantClip(isolated, []);
+    const views = [
+      { x: left - 10.25 * scale, y: top - 10.8 * scale },
+      { x: left + 1024 - 180.8 * scale, y: top + 1024 - 180.25 * scale },
+      { x: left + 512 - 96.2 * scale, y: top + 512 - 96.5 * scale },
+      // Native integer-aligned cooking must retain exactly the same pixels.
+      { x: left - 10, y: top - 10 },
+    ];
+    try {
+      for (const position of views) {
+        const view = { ...position, width: 192, height: 192, scale };
+        const pixels = draw(clip, view);
+        const mismatches = [];
+        for (let row = 0; row < view.height; row++) {
+          for (let column = 0; column < view.width; column++) {
+            // Independent geometric reference: the shader owns a display
+            // pixel iff its world-space center lies inside the temple.
+            const wx = view.x + (column + 0.5) * scale;
+            const wy = view.y + (row + 0.5) * scale;
+            const expected = wx >= left && wx < left + 1024 && wy >= top && wy < top + 1024 ? 255 : 0;
+            const actual = pixels[(row * view.width + column) * 4 + 3];
+            if (actual !== expected && mismatches.length < 5)
+              mismatches.push({ column, row, actual, expected });
+          }
+        }
+        expect(mismatches, JSON.stringify(view)).toEqual([]);
+      }
+    } finally {
+      clip.dispose();
+    }
+  });
+});
 
 describe('bounded native terrain mask pages', () => {
   it.each([
