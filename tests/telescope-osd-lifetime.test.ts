@@ -21,6 +21,7 @@ function bridgeLifecycle(dependencies: Record<string, unknown>) {
   return new Function(...Object.keys(dependencies), `
     let currentGenerationId = 0;
     let dynamicOverlayElements = [], dynamicBlobUrls = [], activeOrbTargets = [];
+    let activeMarkerData, markerTiledImage;
     const dynamicTiledImages = new Set();
     ${js}
     return { renderGenerationResult, cancelPendingDynamicTerrain };
@@ -84,5 +85,127 @@ describe('terrain presentation lifetime', () => {
     expect(clear).toHaveBeenCalledTimes(2);
     expect(removeItem).not.toHaveBeenCalled();
     expect(removeOverlay).not.toHaveBeenCalled();
+  });
+});
+
+function presentationFixture() {
+  const artwork = barrier(), calls: any[][] = [];
+  const oldImage = { source: {} }, terrainImage = { source: {} };
+  const viewer = {
+    world: { getItemCount: () => 1, getItemAt: () => oldImage, removeItem: vi.fn() },
+    removeOverlay: vi.fn(),
+    addTiledImage: vi.fn((options: any) => options.success({ item: { source: options.tileSource } })),
+  };
+  const module = {
+    clearInstantTerrain: vi.fn(() => calls.at(-1)?.[10]?.()),
+    addInstantTerrain: vi.fn(async (...args: any[]) => { calls.push(args); args[5](terrainImage); return true; }),
+  };
+  const deps = {
+    instantTerrainModule: module, loadInstantTerrain: async () => module,
+    clearPortalAnimations: vi.fn(), clearTerrainPngEncoders: vi.fn(), window: { dispatchEvent: vi.fn() },
+    setTimeout: vi.fn((callback: () => void, delay: number) => { if (delay === 0) queueMicrotask(callback); }),
+    isDynamicSeedItem: () => true, isGLTerrainEnabled: () => false, isInstantTerrainEnabled: () => true,
+    isRepeatedTempleTemplate, addBiomeBgToOSD: vi.fn(), ensureTelescopeModules: async () => {},
+    instantSceneMasks: async () => [], glTerrainDeps: {},
+    addBiomeLayersProgressively: vi.fn(async (_viewer: any, _result: any, _id: number, paint: () => void) => paint()),
+    addPixelScenes: vi.fn(() => artwork.promise), registerPixelSceneHoverDebug: vi.fn(),
+    buildMarkerData: vi.fn(async () => ({ originX: 0, originY: 0, bboxWidth: 100 })),
+    addOrbOverlays: vi.fn(), installClickHandler: vi.fn(), rebuildHighValueOverlays: vi.fn(),
+    createMarkerTileSource: vi.fn(() => ({})), installPortalAnimations: vi.fn(),
+    legacyMimicMarkerData: () => null,
+    addBakedDZIsToOSD: vi.fn((_viewer: any, placements: any[], added: (item: any) => void) => {
+      for (const placement of placements) added({ source: { tilesUrl: placement.dziUrl } });
+    }),
+  };
+  const bridge = bridgeLifecycle(deps);
+  const result = { worldSize: 70, isNGP: false, pixelScenesByPW: {} };
+  const firstPaint = vi.fn();
+  const start = () => bridge.renderGenerationResult(viewer, result, null, false, firstPaint);
+  return { ...deps, bridge, viewer, result, artwork, calls, module, firstPaint, start, oldImage };
+}
+
+describe('terrain before live POIs', () => {
+  it('releases terrain after artwork and prepares no POIs until that terrain has actually painted', async () => {
+    const f = presentationFixture(), pending = f.start();
+    await vi.waitFor(() => expect(f.addPixelScenes).toHaveBeenCalledOnce());
+    const terrainMayDraw = vi.fn();
+    f.calls[0][9].then(terrainMayDraw);
+    expect(f.buildMarkerData).not.toHaveBeenCalled();
+    expect(f.addOrbOverlays).not.toHaveBeenCalled();
+    expect(terrainMayDraw).not.toHaveBeenCalled();
+    f.artwork.resolve();
+    await vi.waitFor(() => expect(terrainMayDraw).toHaveBeenCalledOnce());
+    expect(f.buildMarkerData).not.toHaveBeenCalled();
+    expect(f.installClickHandler).not.toHaveBeenCalled();
+    expect(f.viewer.world.removeItem).not.toHaveBeenCalled();
+    f.calls[0][6](); // actual complete-frame notification, not renderer attachment
+    await pending;
+    expect(f.firstPaint).toHaveBeenCalledOnce();
+    expect(f.viewer.world.removeItem).toHaveBeenCalledWith(f.oldImage);
+    expect(f.buildMarkerData).toHaveBeenCalledOnce();
+    expect(f.addOrbOverlays).toHaveBeenCalledOnce();
+    expect(f.installClickHandler).toHaveBeenCalledOnce();
+    expect(f.createMarkerTileSource).toHaveBeenCalledOnce();
+    expect(f.buildMarkerData.mock.invocationCallOrder[0]).toBeGreaterThan(f.firstPaint.mock.invocationCallOrder[0]);
+  });
+
+  it('settles a cancelled frame wait and ignores a late paint without adding obsolete POIs', async () => {
+    const f = presentationFixture(), pending = f.start();
+    await vi.waitFor(() => expect(f.addPixelScenes).toHaveBeenCalledOnce());
+    f.artwork.resolve();
+    await f.calls[0][9];
+    f.bridge.cancelPendingDynamicTerrain();
+    await pending;
+    f.calls[0][6]();
+    expect(f.firstPaint).not.toHaveBeenCalled();
+    expect(f.viewer.world.removeItem).not.toHaveBeenCalled();
+    expect(f.buildMarkerData).not.toHaveBeenCalled();
+    expect(f.addOrbOverlays).not.toHaveBeenCalled();
+  });
+
+  it('joins the approximate fallback after GPU failure instead of leaving the first-frame wait stuck', async () => {
+    const f = presentationFixture(), approximate = barrier(), finished = vi.fn();
+    f.addBiomeLayersProgressively.mockImplementation(async (_viewer, _result, _id, paint) => {
+      await approximate.promise; paint();
+    });
+    const pending = f.start().then(finished);
+    await vi.waitFor(() => expect(f.addPixelScenes).toHaveBeenCalledOnce());
+    f.artwork.resolve();
+    await f.calls[0][9];
+    f.calls[0][10]?.(); // renderer disposal precedes its fallback callback
+    f.calls[0][7](new Error('GPU lost'));
+    await vi.waitFor(() => expect(f.addBiomeLayersProgressively).toHaveBeenCalledOnce());
+    expect(finished).not.toHaveBeenCalled();
+    expect(f.buildMarkerData).not.toHaveBeenCalled();
+    approximate.resolve();
+    await pending;
+    expect(f.firstPaint).toHaveBeenCalledOnce();
+    expect(f.buildMarkerData).toHaveBeenCalledOnce();
+    expect(f.installClickHandler).toHaveBeenCalledOnce();
+  });
+
+  it('keeps visible terrain running if later marker preparation fails', async () => {
+    const f = presentationFixture(), error = new Error('marker atlas unavailable');
+    f.buildMarkerData.mockRejectedValue(error);
+    const pending = expect(f.start()).rejects.toBe(error);
+    await vi.waitFor(() => expect(f.addPixelScenes).toHaveBeenCalledOnce());
+    f.artwork.resolve();
+    await f.calls[0][9];
+    f.calls[0][6]();
+    await pending;
+    expect(f.firstPaint).toHaveBeenCalledOnce();
+    expect(f.module.clearInstantTerrain).toHaveBeenCalledOnce(); // initial setup only
+  });
+
+  it.each(['daily', 'previous-daily'])('keeps baked %s metadata independent of live terrain readiness', async prefix => {
+    const f = presentationFixture();
+    await f.bridge.renderGenerationResult(f.viewer, f.result, null, true, f.firstPaint, 'baked',
+      [{ dziUrl: `https://${prefix}-middle.acidflow.stream/map.dzi` }], false, true);
+    expect(f.addBakedDZIsToOSD).toHaveBeenCalledOnce();
+    expect(f.module.addInstantTerrain).not.toHaveBeenCalled();
+    expect(f.addPixelScenes).not.toHaveBeenCalled();
+    expect(f.buildMarkerData).toHaveBeenCalledOnce();
+    expect(f.installClickHandler).toHaveBeenCalledOnce();
+    expect(f.createMarkerTileSource).not.toHaveBeenCalled();
   });
 });

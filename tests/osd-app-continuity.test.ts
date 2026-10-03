@@ -158,7 +158,7 @@ it('presents one complete native viewport through real AppOSD while nine regions
   const mount = document.createElement('div'); document.body.appendChild(mount);
   const app = new AppOSD(mount, false), viewer = app.viewer;
   const originalDraw = viewer.drawer._drawTiles;
-  const firstPaint = vi.fn(), failure = vi.fn(), attached = vi.fn();
+  const firstPaint = vi.fn(), failure = vi.fn(), attached = vi.fn(), disposed = vi.fn();
   let release!: () => void;
   const presentationReady = new Promise<void>(resolve => { release = resolve; });
   const pending: Array<{ plan: any; resolve: (image: any) => void }> = [];
@@ -178,7 +178,7 @@ it('presents one complete native viewport through real AppOSD while nine regions
   };
   try {
     expect(await addInstantTerrain(app, gen, deps, [], () => true, attached, firstPaint, failure,
-      performance.now(), presentationReady)).toBe(true);
+      performance.now(), presentationReady, disposed)).toBe(true);
     await vi.waitFor(() => expect(attached).toHaveBeenCalledOnce());
     expect(viewer.world.getItemCount()).toBe(1);
     const item = viewer.world.getItemAt(0), source = item.source;
@@ -220,6 +220,7 @@ it('presents one complete native viewport through real AppOSD while nine regions
     expect(source.instantStats.coverage.regions).toBe(0);
     expect(source.instantStats.coverage.prepared).toBe(0);
     clearInstantTerrain();
+    expect(disposed).toHaveBeenCalledOnce();
     viewer.world.removeItem(item);
     expect(viewer.drawer._drawTiles).toBe(originalDraw);
     expect(failure).not.toHaveBeenCalled();
@@ -227,6 +228,56 @@ it('presents one complete native viewport through real AppOSD while nine regions
     clearInstantTerrain();
     viewer.destroy(); mount.remove(); frames.clear();
     vi.mocked(prepareInstantTerrain).mockReset();
+  }
+});
+
+it.each(['cancel', 'destroy', 'outside'])('settles terrain readiness when there is no first frame: %s', async action => {
+  const mount = document.createElement('div'); document.body.appendChild(mount);
+  const app = new AppOSD(mount, false), viewer = app.viewer;
+  const attached = vi.fn(), firstPaint = vi.fn(), disposed = vi.fn(), failure = vi.fn();
+  const backend = { configureViewport: vi.fn(async () => {}), invalidate: vi.fn(),
+    render: vi.fn(), renderViewport: vi.fn(async (plan: any) => {
+      const canvas = createCanvas(plan.pixelWidth, plan.pixelHeight);
+      canvas.getContext('2d').fillRect(0, 0, canvas.width, canvas.height);
+      return canvas;
+    }) };
+  vi.mocked(prepareInstantTerrain).mockResolvedValue(backend);
+  let release!: () => void;
+  const artwork = new Promise<void>(resolve => { release = resolve; });
+  try {
+    await addInstantTerrain(app,
+      { seed: 42, isNGP: false, tileLayers: [], parallelWorlds: [0], biomeData: { pixels: new Uint32Array(70 * 48) } },
+      { GLTerrainRenderer: class {} as any, initMaterialAtlas: async () => {},
+        getWorldSize: () => 70, getWorldCenter: () => 35, GENERATOR_CONFIG: {} },
+      [], () => true, attached, firstPaint, failure, performance.now(), artwork, disposed);
+    await vi.waitFor(() => expect(attached).toHaveBeenCalledOnce());
+    if (action === 'outside') {
+      viewer.viewport.fitBounds(new OSD.Rect(1000000, 0, 512, 512), true);
+      viewer.forceRedraw(); runFrame();
+      expect(firstPaint).not.toHaveBeenCalled(); // scene artwork still blocks readiness
+      release();
+      await vi.waitFor(() => expect(firstPaint).toHaveBeenCalledOnce());
+      expect(disposed).not.toHaveBeenCalled();
+      viewer.viewport.fitBounds(new OSD.Rect(-128, 0, 256, 256), true);
+      await vi.waitFor(() => {
+        viewer.forceRedraw(); runFrame();
+        expect(viewer.world.getItemAt(0).source.instantStats.firstDrawMs).toBeGreaterThan(0);
+      });
+      expect(firstPaint).toHaveBeenCalledOnce();
+    } else {
+      if (action === 'cancel') clearInstantTerrain();
+      else viewer.destroy();
+      expect(disposed).toHaveBeenCalledOnce();
+      release();
+      await Promise.resolve(); await Promise.resolve();
+      expect(firstPaint).not.toHaveBeenCalled();
+      expect(backend.renderViewport).not.toHaveBeenCalled();
+    }
+    expect(failure).not.toHaveBeenCalled();
+  } finally {
+    clearInstantTerrain();
+    if (action !== 'destroy') viewer.destroy();
+    mount.remove(); frames.clear(); vi.mocked(prepareInstantTerrain).mockReset();
   }
 });
 

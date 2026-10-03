@@ -4996,8 +4996,12 @@ export async function renderGenerationResult(
   generationStartedAt = performance.now(),
 ): Promise<void> {
   const generationId = ++currentGenerationId;
-  let completePresentation = () => {};
-  const presentationReady = new Promise<void>(resolve => { completePresentation = resolve; });
+  let completeArtwork = () => {};
+  const artworkReady = new Promise<void>(resolve => { completeArtwork = resolve; });
+  let completeTerrainDraw!: (drawn: boolean) => void;
+  const terrainDrawn = new Promise<boolean>(resolve => { completeTerrainDraw = resolve; });
+  let terrainPainted = false;
+  let fallbackRender: Promise<void> | undefined;
   clearPortalAnimations();
   clearInstantTerrain();
   clearTerrainPngEncoders();
@@ -5067,19 +5071,23 @@ export async function renderGenerationResult(
     }, 500);
   };
   const wrappedOnFirstPaint = () => {
+    if (currentGenerationId !== generationId || terrainPainted) return;
+    terrainPainted = true;
     cleanupOldItems();
     try {
       onFirstPaint?.();
     } catch (e) {
       console.warn('[OSD Bridge] onFirstPaint threw:', e);
     }
+    completeTerrainDraw(true);
   };
 
-  // Atlas/sprite downloads and the POI index do not depend on terrain or scene
-  // composition. Retain errors as data until joined so cancellation is safe.
-  const markerDataReady = buildMarkerData(result).then(
+  // Bakes already contain terrain and sprites. Live POI preparation waits for
+  // the visible terrain, so atlas/index work cannot hold up its first frame.
+  const prepareMarkers = () => buildMarkerData(result).then(
     value => ({ value }), error => ({ error }),
   );
+  const markerDataReady = bakedDZIs?.length ? prepareMarkers() : undefined;
 
   // Biome layer: prefer baked DZIs from CF Static Assets workers when the
   // probe in dynamic-map.ts already validated them for this seed. Falls back
@@ -5148,11 +5156,12 @@ export async function renderGenerationResult(
         error => {
           if (currentGenerationId !== generationId) return;
           console.warn('[OSD Bridge] GPU terrain failed; rebuilding approximate layers:', error);
-          void renderGenerationResult(viewer, result, unlocks, isDaily, onFirstPaint, cacheKey,
-            null, false, false, true, generationStartedAt).catch(error => console.error('[OSD Bridge] Terrain fallback failed:', error));
-        }, generationStartedAt, presentationReady);
+          fallbackRender = renderGenerationResult(viewer, result, unlocks, isDaily, onFirstPaint, cacheKey,
+            null, false, false, true, generationStartedAt);
+          void fallbackRender.catch(error => console.error('[OSD Bridge] Terrain fallback failed:', error));
+        }, generationStartedAt, artworkReady, () => completeTerrainDraw(false));
     }
-    if (currentGenerationId !== generationId) return;
+    if (currentGenerationId !== generationId) return fallbackRender;
     awaitingTerrainDraw = instant;
     if (!instant) await addBiomeLayersProgressively(viewer, result, generationId, wrappedOnFirstPaint, cacheKey);
     if (currentGenerationId !== generationId) return;
@@ -5171,8 +5180,19 @@ export async function renderGenerationResult(
             && (!isGLTerrainEnabled() || scene.key.startsWith('static_tile/')))])),
       } : result;
       await addPixelScenes(viewer, sceneResult, generationId);
-      if (currentGenerationId !== generationId) return;
+      if (currentGenerationId !== generationId) return fallbackRender;
     }
+
+    // Scene artwork is the last prerequisite for terrain. POIs must never own
+    // this gate: they are attached only after the first complete visible frame.
+    completeArtwork();
+    if (awaitingTerrainDraw) {
+      if (!await terrainDrawn) return fallbackRender;
+      // The draw notification runs inside OSD's animation frame. Yield a task
+      // so the browser presents that frame before marker preparation starts.
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+    }
+    if (currentGenerationId !== generationId) return fallbackRender;
 
     // Pixel-scene hover debug (__pixelSceneHover) — register unconditionally so it
     // works on baked/daily seeds where addPixelScenes is skipped.
@@ -5186,7 +5206,7 @@ export async function renderGenerationResult(
     // 1. Build spatial index for POIs (markers). The index drives click hit
     // testing and is needed even when sprites are baked into the DZI pixels.
     window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 0 } }));
-    const markerOutcome = await markerDataReady;
+    const markerOutcome = await (markerDataReady ?? prepareMarkers());
     if ('error' in markerOutcome) throw markerOutcome.error;
     const markerData = markerOutcome.value;
     window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 50 } }));
@@ -5211,7 +5231,6 @@ export async function renderGenerationResult(
       // New bakes include every sprite. Legacy bakes get only their missing
       // mimic icons above the existing DZI, without regenerating terrain.
       emitItemsDone();
-      completePresentation();
     } else {
       // 2. Add as a custom OSD tiled layer
       const markerTileSource = createMarkerTileSource(visibleMarkerData);
@@ -5231,12 +5250,10 @@ export async function renderGenerationResult(
           dynamicTiledImages.add(event.item);
           markerTiledImage = event.item;
 
-          completePresentation();
           emitItemsDone();
         },
         error: (err: any) => {
           console.warn('[OSD Bridge] Failed to add marker tiled image:', err);
-          completePresentation();
           emitItemsDone();
         },
       });
@@ -5253,9 +5270,9 @@ export async function renderGenerationResult(
     // the empty-result safety net for old items.
     if (!awaitingTerrainDraw) cleanupOldItems();
   } catch (error) {
-    // A failed artwork/marker setup must not leave a live frame waiting for
-    // presentationReady forever. Keep the previous map until retry/reseed.
-    if (currentGenerationId === generationId) clearInstantTerrain();
+    // Failed artwork cannot release terrain. A later POI failure must leave
+    // already visible terrain usable and navigable.
+    if (currentGenerationId === generationId && !terrainPainted) clearInstantTerrain();
     throw error;
   }
 }

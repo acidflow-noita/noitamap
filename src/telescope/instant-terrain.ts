@@ -554,6 +554,7 @@ export async function addInstantTerrain(
   fallback: (error: unknown) => void,
   generationStartedAt = performance.now(),
   presentationReady: Promise<void> = Promise.resolve(),
+  onDispose?: () => void,
 ): Promise<boolean> {
   clearInstantTerrain();
   const lifetime = new AbortController();
@@ -629,6 +630,7 @@ export async function addInstantTerrain(
   const dispose = () => {
     if (lifetime.signal.aborted) return;
     lifetime.abort();
+    onDispose?.();
     clearTimeout(refreshTimer);
     cache.clear();
     retained.dispose();
@@ -636,9 +638,11 @@ export async function addInstantTerrain(
     osd.removeHandler("tile-drawn", onDraw);
     osd.removeHandler("tile-drawing", smoothInstantTile);
     osd.removeHandler('tile-invalidated', applyRetainedTerrainEvent);
+    osd.removeHandler('before-destroy', dispose);
     for (const renderer of ownedRenderers) renderer.invalidate();
   };
   active = dispose;
+  osd.addHandler('before-destroy', dispose);
   const fail = (error: unknown) => {
     if (failed || lifetime.signal.aborted || !isCurrent()) return;
     failed = true;
@@ -781,8 +785,21 @@ export async function addInstantTerrain(
         regions: retainedRegions, renderer: mainRenderer, signal: lifetime.signal,
         complete: () => cooker.stats.state === 'complete', refresh: refreshViewport,
       });
+      let emptyViewReported = false, checkingEmptyView = false;
       viewport = createInstantTerrainViewport({
         viewer: osd, bounds, signal: lifetime.signal, revision: () => viewportRevision,
+        emptyView() {
+          if (emptyViewReported || checkingEmptyView) return;
+          checkingEmptyView = true;
+          void presentationReady.then(() => {
+            checkingEmptyView = false;
+            if (emptyViewReported || painted || !isCurrent() || lifetime.signal.aborted || viewport?.hasVisibleTerrain()) return;
+            emptyViewReported = true;
+            // A camera outside all generated worlds needs no terrain frame.
+            // Still wait for artwork before releasing the bridge's POI work.
+            firstPaint();
+          }).catch(fail);
+        },
         async renderFrame(plan, signal) {
           await new Promise<void>((resolve, reject) => {
             const abort = () => reject(signal.reason);
@@ -797,7 +814,7 @@ export async function addInstantTerrain(
           if (painted || !isCurrent() || lifetime.signal.aborted) return;
           painted = true;
           stats.firstDrawMs = performance.now() - start;
-          firstPaint();
+          if (!emptyViewReported) firstPaint();
           cooker.start();
           console.info('[Instant terrain] First complete viewport drawn', stats);
         },

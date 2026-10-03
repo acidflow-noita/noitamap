@@ -192,6 +192,8 @@ export function createInstantTerrainViewport(options: {
   signal: AbortSignal;
   renderFrame: (plan: InstantTerrainViewportPlan, signal: AbortSignal) => Promise<CanvasImageSource>;
   firstPaint: () => void;
+  /** No terrain intersects the camera; readiness must not wait for a tile. */
+  emptyView?: () => void;
   onFailure: (error: unknown) => void;
   revision?: () => number;
   /** Extra decoded pixels, excluding the currently displayed complete frame. */
@@ -307,7 +309,11 @@ export function createInstantTerrainViewport(options: {
     if (destroyed || failed || signal.aborted) return;
     try {
       const plan = planInstantTerrainViewport(osd.viewport, bounds);
-      if (!plan) { pending = undefined; desiredKey = undefined; return; }
+      if (!plan) {
+        pending = undefined; desiredKey = undefined;
+        options.emptyView?.();
+        return;
+      }
       const version = revision();
       const key = [plan.x, plan.y, plan.pixelWidth, plan.pixelHeight, plan.scale, version].join('/');
       desiredKey = key;
@@ -375,5 +381,6 @@ export function createInstantTerrainViewport(options: {
     for (const name of events) osd.addHandler?.(name, refresh);
     refresh();
   }
-  return { source, refresh, isBusy: () => !!active || !!pending, stats };
+  return { source, refresh, isBusy: () => !!active || !!pending,
+    hasVisibleTerrain: () => desiredKey !== undefined, stats };
 }
