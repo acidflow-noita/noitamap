@@ -37,7 +37,6 @@ import {
 import { addBakedDZIsToOSD, probeBakedDZIs, isLocalBakeView, type BakedDziProbeResult } from "./telescope/baked-dzi-loader";
 import { perkNameKey } from "./telescope/perk-i18n";
 import { gameTranslator } from "./game-translations/translator";
-import { scheduleDailyAssetWarmup } from "./telescope/daily-asset-prewarm";
 
 // ─── Types & state ───────────────────────────────────────────────────────────
 
@@ -72,7 +71,6 @@ let currentAllowsBaked: boolean | null = null;
 let lastResult: GenerationResult | null = null;
 let dynamicRendered: boolean = false;
 let generationToken: number = 0;
-let cancelDailyAssetWarmup: (() => void) | undefined;
 
 /** Get the seed currently displayed on the dynamic map */
 export function getCurrentDynamicSeed(): number | null {
@@ -307,10 +305,6 @@ export async function runDynamicMap(
     return lastResult;
   }
 
-  // Re-selecting the current daily keeps its optional shared preparation.
-  // Only a real replacement owns cancellation, after seed identity resolves.
-  cancelDailyAssetWarmup?.();
-  cancelDailyAssetWarmup = undefined;
   // Early GPU preparation replaces the shared renderer before the new map
   // reaches presentation. Retire the old cooker and lazy plane requests first;
   // its displayed frames remain attached until the replacement first paints.
@@ -378,9 +372,6 @@ export async function runDynamicMap(
       if (myToken === generationToken && !bakedAlreadyPainted) {
         console.log(`[DynamicMap] Baked ${probe.prefix}-* hit, painting biomes immediately`);
         clearDynamicOverlays(viewer as any);
-        let assetsCurrent = true;
-        const stopAssets = scheduleDailyAssetWarmup({ viewer, isCurrent: () => assetsCurrent });
-        cancelDailyAssetWarmup = () => { assetsCurrent = false; stopAssets(); };
         // Light mode: only paint the middle world (pw=0). The other two worlds'
         // DZIs are still on CF — we just don't ask OSD to load them.
         const placements = isLightMode()
@@ -430,8 +421,8 @@ export async function runDynamicMap(
   try {
     // 0b. Await the probe. Non-daily seeds resolve ~instantly (seed lookups
     // are cached, prefix misses return null immediately). A generation.json
-    // hit supplies this seed's biome map, POIs and scenes from the bake. Shared
-    // Telescope inputs prepare separately after the first baked tile paints.
+    // hit supplies this seed's biome map, POIs and scenes from the bake.
+    // Baked terrain needs no live renderer or speculative asset preparation.
     const bakedData = await bakedProbePromise;
     if (myToken !== generationToken) return null;
     // UI hooks (spoiler-free toggle) need to know when the view is served
@@ -448,7 +439,7 @@ export async function runDynamicMap(
 
     if (bakedData?.generation) {
       result = bakedData.generation;
-      console.log(`[DynamicMap] Baked generation.json hit — reusing seed metadata; reusable assets prepare in the background`);
+      console.log(`[DynamicMap] Baked generation.json hit — reusing seed metadata`);
       // Seed the IDB cache so seed-report comparisons and tomorrow's
       // "previous daily" lookups work offline (fire-and-forget).
       cacheGeneration(cacheKey, seed, result).catch(() => {});
@@ -471,7 +462,7 @@ export async function runDynamicMap(
       t = performance.now();
       console.log(`[DynamicMap] Generating seed ${seed} (unlocks: ${unlocks ? unlocks.length + "/" + UNLOCK_KEYS.length : "all"})...`);
       result = await generateDynamicMap({ seed, ngPlus: 0, dailySeed: isDaily, unlocks, pillarFlags, parallelWorlds: lightMode ? [0] : undefined,
-        onTerrainReady: isInstantTerrainEnabled() ? terrain => {
+        onTerrainReady: isInstantTerrainEnabled() && !bakedData?.probe.baked ? terrain => {
           if (myToken !== generationToken) return;
           void prepareInstantTerrainResources(terrain, () => myToken === generationToken).catch(error =>
             console.warn("[DynamicMap] Early terrain preparation unavailable:", error));
@@ -604,15 +595,16 @@ export async function runDynamicMap(
     // discard this intent if the user has already changed seeds.
     requestAnimationFrame(() => setTimeout(() => {
       if (myToken !== generationToken) return;
-      void prewarmAlt(seed, isDaily, !bakedData?.generation).catch((e) =>
+      void prewarmAlt(seed, isDaily, !bakedData?.probe.baked).catch((e) =>
         console.warn("[DynamicMap] alt-unlocks pre-warm failed:", e),
       );
     }, 0));
 
-    // Background prefetch: composite & cache every pixel-scene bitmap telescope
-    // knows about. Fires once per session after the first successful render so
-    // future seed switches don't pay any compositing cost.
-    void prefetchAllSceneBitmaps(() => myToken === generationToken).catch(() => {});
+    // Only live maps need scene preparation for future generations. A baked
+    // daily (including yesterday's seed) already contains its rendered pixels.
+    if (!bakedData?.probe.baked) {
+      void prefetchAllSceneBitmaps(() => myToken === generationToken).catch(() => {});
+    }
 
     return result;
   } catch (err) {
@@ -637,8 +629,6 @@ export async function runDynamicMapFromURL(opts: DynamicMapOptions): Promise<Gen
  * Clear all dynamic overlays from the viewer.
  */
 export function clearDynamicMap(viewer: any): void {
-  cancelDailyAssetWarmup?.();
-  cancelDailyAssetWarmup = undefined;
   releaseParallelWorlds();
   releaseInstantTerrainBackend();
   clearDynamicOverlays(viewer);
