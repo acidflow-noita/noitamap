@@ -85,6 +85,9 @@ export function createInstantClip(
       view: InstantClipView,
     ) {
       const { x, y, scale, width, height } = view;
+      // Raster bounds for overlap; world bounds keep source crops stable
+      // across subpixel camera changes and translated parallel worlds.
+      const coverage: Array<[number, number, number, number, number, number, number, number]> = [];
       ctx.save();
       ctx.beginPath();
       for (let p = 0; p < owners.length; p++) {
@@ -112,7 +115,12 @@ export function createInstantClip(
               const right = Math.min(width, Math.ceil((cx * 512 - owner.width * 256 - x) / scale - .5));
               const top = Math.max(0, Math.ceil((planeY + cy * 512 - y) / scale - .5));
               const bottom = Math.min(height, Math.ceil((planeY + (cy + 1) * 512 - y) / scale - .5));
-              if (right > left && bottom > top) ctx.rect(left, top, right - left, bottom - top);
+              if (right > left && bottom > top) {
+                ctx.rect(left, top, right - left, bottom - top);
+                coverage.push([left, top, right, bottom,
+                  start * 512 - owner.width * 256, planeY + cy * 512,
+                  cx * 512 - owner.width * 256, planeY + (cy + 1) * 512]);
+              }
               start = -Infinity;
             }
           }
@@ -132,6 +140,24 @@ export function createInstantClip(
         y + height * scale,
       ) ?? []) {
         const mask = masks[id];
+        // Static scenes often span millions of pixels but have no generated
+        // terrain beneath them. They cannot erase this draw. Test the actual
+        // raster footprint, padded for fractional bitmap edges, so nearby
+        // masks retain exactly the same antialiasing as the original pass.
+        const left = Math.floor((mask.x - x) / scale) - 1;
+        const top = Math.floor((mask.y - y) / scale) - 1;
+        const right = Math.ceil((mask.x + mask.width - x) / scale) + 1;
+        const bottom = Math.ceil((mask.y + mask.height - y) / scale) + 1;
+        const padding = Math.ceil((scale + 1) / MASK_PAGE_SIZE) * MASK_PAGE_SIZE;
+        let cropLeft = mask.width, cropTop = mask.height, cropRight = 0, cropBottom = 0;
+        for (const [l, t, r, b, wl, wt, wr, wb] of coverage) {
+          if (left >= r || right <= l || top >= b || bottom <= t) continue;
+          cropLeft = Math.min(cropLeft, wl - mask.x - padding);
+          cropTop = Math.min(cropTop, wt - mask.y - padding);
+          cropRight = Math.max(cropRight, wr - mask.x + padding);
+          cropBottom = Math.max(cropBottom, wb - mask.y + padding);
+        }
+        if (cropRight <= cropLeft || cropBottom <= cropTop) continue;
         // Native cooking touches at most 512px at a time. Expanding a complete
         // scene here used to allocate tens of MiB and scan millions of pixels
         // for a single leaf, repeatedly evicting the other large scene masks.
@@ -159,8 +185,17 @@ export function createInstantClip(
             }
           continue;
         }
+        // Cache one page-aligned crop of the generated footprint, with enough
+        // halo for a display pixel. Keep the original source/destination
+        // mapping so fractional nearest sampling and outer edges are unchanged.
+        const cropX = Math.max(0, Math.floor(cropLeft / MASK_PAGE_SIZE) * MASK_PAGE_SIZE);
+        const cropY = Math.max(0, Math.floor(cropTop / MASK_PAGE_SIZE) * MASK_PAGE_SIZE);
+        cropRight = Math.min(mask.width, Math.ceil(cropRight / MASK_PAGE_SIZE) * MASK_PAGE_SIZE);
+        cropBottom = Math.min(mask.height, Math.ceil(cropBottom / MASK_PAGE_SIZE) * MASK_PAGE_SIZE);
+        if (cropRight <= cropX || cropBottom <= cropY) continue;
         ctx.drawImage(
-          bitmap(mask),
+          bitmap(mask, cropX, cropY, cropRight - cropX, cropBottom - cropY),
+          -cropX, -cropY, mask.width, mask.height,
           (mask.x - x) / scale,
           (mask.y - y) / scale,
           mask.width / scale,

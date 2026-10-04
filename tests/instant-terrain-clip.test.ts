@@ -29,9 +29,14 @@ function patternedMask(width: number, height: number, x = 0, y = 0): StaticTerra
 }
 
 /** Independent original full-mask composition, without crop pages. */
-function reference(masks: StaticTerrainMask[], view: InstantClipView) {
+function reference(masks: StaticTerrainMask[], view: InstantClipView, base?: Uint8ClampedArray) {
   const context = createCanvas(view.width, view.height).getContext('2d');
-  context.fillStyle = '#457c9a'; context.fillRect(0, 0, view.width, view.height);
+  if (base) {
+    const image = context.createImageData(view.width, view.height);
+    image.data.set(base); context.putImageData(image, 0, 0);
+  } else {
+    context.fillStyle = '#457c9a'; context.fillRect(0, 0, view.width, view.height);
+  }
   context.globalCompositeOperation = 'destination-out';
   context.imageSmoothingEnabled = false;
   for (const mask of masks) {
@@ -100,6 +105,68 @@ describe('isolated temple and Friend cave ownership during zoom', () => {
 });
 
 describe('bounded native terrain mask pages', () => {
+  it('does not expand large static-scene masks with no generated terrain underneath', () => {
+    const isolated = owners.map(owner => ({ width: owner.width,
+      owners: new Int16Array(owner.owners.length).fill(-1) }));
+    isolated[1].owners[14 * 70 + 34] = 0; // (-512,0), the only generated chunk
+    const mask = patternedMask(2560, 2392, 1024, 0);
+    const view = { x: -1024, y: -256, width: 512, height: 512, scale: 16 };
+    const plain = createInstantClip(isolated, []), clip = createInstantClip(isolated, [mask]);
+    try {
+      const base = draw(plain, view), actual = draw(clip, view);
+      expect(Buffer.from(actual).equals(Buffer.from(reference([mask], view, base)))).toBe(true);
+      expect(actual.some((value, i) => i % 4 === 3 && value > 0)).toBe(true);
+      expect(allocated).toHaveLength(0);
+    } finally { plain.dispose(); clip.dispose(); }
+  });
+
+  it.each([0.75, 1, 3.25, 16, 128])('preserves masks that touch a generated chunk edge at scale %s', scale => {
+    const isolated = owners.map(owner => ({ width: owner.width,
+      owners: new Int16Array(owner.owners.length).fill(-1) }));
+    isolated[1].owners[14 * 70 + 34] = 0;
+    // The near-edge mask can affect the same display pixel as the owned
+    // chunk even without a geometric overlap in native world coordinates.
+    const masks = [patternedMask(31, 47, .25, 19.75), patternedMask(73, 67, -70.5, 30.25)];
+    const view = { x: -100.25 * scale, y: -5.5 * scale, width: 192, height: 192, scale };
+    const plain = createInstantClip(isolated, []), clip = createInstantClip(isolated, masks);
+    try {
+      const base = draw(plain, view);
+      expect(Buffer.from(draw(clip, view)).equals(Buffer.from(reference(masks, view, base)))).toBe(true);
+    } finally { plain.dispose(); clip.dispose(); }
+  });
+
+  it.each([0.5, 0.75, 1.5, 3.25, 16, 105, 128])('expands only the generated part of a giant scene at scale %s', scale => {
+    const isolated = owners.map(owner => ({ width: owner.width,
+      owners: new Int16Array(owner.owners.length).fill(-1) }));
+    isolated[1].owners[14 * 70 + 34] = 0;
+    const masks = [patternedMask(2560, 2392, -700.25, -1800.5)];
+    const view = { x: -256 - 128.25 * scale, y: 256 - 128.5 * scale, width: 256, height: 256, scale };
+    const plain = createInstantClip(isolated, []), clip = createInstantClip(isolated, masks);
+    try {
+      const base = draw(plain, view);
+      expect(Buffer.from(draw(clip, view)).equals(Buffer.from(reference(masks, view, base)))).toBe(true);
+      expect(allocated.every(canvas => canvas.width <= 1024 && canvas.height <= 1024)).toBe(true);
+      expect(allocated.reduce((pixels, canvas) => pixels + canvas.width * canvas.height, 0)).toBeLessThan(1024 * 1024);
+    } finally { plain.dispose(); clip.dispose(); }
+  });
+
+  it('reuses the same cropped mask through small pans and translated parallel worlds', () => {
+    const isolated = owners.map(owner => ({ width: owner.width,
+      owners: new Int16Array(owner.owners.length).fill(-1) }));
+    isolated[1].owners[14 * 70 + 34] = 0;
+    const original = patternedMask(2560, 2392, -700.25, -1800.5);
+    const masks = [-35840, 0, 35840].map(offset => ({ ...original, x: original.x + offset }));
+    const plain = createInstantClip(isolated, []), clip = createInstantClip(isolated, masks);
+    try {
+      for (const mask of masks) for (const pan of [0, 5.25]) {
+        const view = { x: mask.x - original.x - 2308 + pan, y: -1800 + pan, width: 256, height: 256, scale: 16 };
+        const base = draw(plain, view);
+        expect(Buffer.from(draw(clip, view)).equals(Buffer.from(reference([mask], view, base)))).toBe(true);
+        expect(allocated).toHaveLength(1);
+      }
+    } finally { plain.dispose(); clip.dispose(); }
+  });
+
   it.each([
     { x: 0, y: 0, maskX: 0, maskY: 0 },
     { x: 250, y: 250, maskX: 0, maskY: 0 },
