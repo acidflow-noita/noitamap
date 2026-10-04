@@ -143,13 +143,36 @@ export function retainedTerrainIdentity(
       data.byteOffset,
       data.byteLength,
     );
-    for (const n of values) {
-      a = Math.imul(a ^ n, 16777619);
-      b = Math.imul(b, 33) ^ n;
+    // DataView also handles unaligned subviews without copying their bytes.
+    const words = new DataView(data.buffer, data.byteOffset, data.byteLength);
+    let fnv = a, djb = b, i = 0;
+    for (; i + 4 <= values.length; i += 4) {
+      const word = words.getUint32(i, true);
+      // Most mask blocks are zero. Four zero bytes are exactly four
+      // multiplications, so combine them without changing either hash.
+      if (word === 0) {
+        fnv = Math.imul(fnv, 1345077009); // 16777619^4 modulo 2^32
+        djb = Math.imul(djb, 1185921); // 33^4
+        continue;
+      }
+      let n = word & 255;
+      fnv = Math.imul(fnv ^ n, 16777619); djb = Math.imul(djb, 33) ^ n;
+      n = (word >>> 8) & 255;
+      fnv = Math.imul(fnv ^ n, 16777619); djb = Math.imul(djb, 33) ^ n;
+      n = (word >>> 16) & 255;
+      fnv = Math.imul(fnv ^ n, 16777619); djb = Math.imul(djb, 33) ^ n;
+      n = word >>> 24;
+      fnv = Math.imul(fnv ^ n, 16777619); djb = Math.imul(djb, 33) ^ n;
     }
+    for (; i < values.length; i++) {
+      const n = values[i];
+      fnv = Math.imul(fnv ^ n, 16777619); djb = Math.imul(djb, 33) ^ n;
+    }
+    a = fnv; b = djb;
   };
+  const encoder = new TextEncoder();
   const metadata = (value: unknown) =>
-    bytes(new TextEncoder().encode(JSON.stringify(value)));
+    bytes(encoder.encode(JSON.stringify(value)));
   metadata([gen.seed, gen.ngPlus ?? 0, gen.isNGP, gen.gameMode ?? "normal"]);
   for (const layer of gen.tileLayers) {
     metadata([
