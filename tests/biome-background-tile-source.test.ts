@@ -4,9 +4,23 @@ import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { readFileSync } from "node:fs";
 import { decode } from "fast-png";
 import { createBiomeBackgroundTiles, type BiomeBackgroundRegion } from "../src/telescope/biome-background-tile-source";
+import { installViewportLayerDrawing } from "../src/telescope/instant-terrain-viewport";
+import { createSourceFile, isFunctionDeclaration, ModuleKind, ScriptTarget, transpileModule } from 'typescript';
 import { alignTerrainTileEdges } from "../src/osd-pixel-rendering";
 import { BIOME_BACKGROUND_MAP, STATIC_TERRAIN_BIOMES } from "../src/telescope/terrain-policy";
 import boundaries from "../src/data/biome_boundries_py.json";
+
+// Load the real attachment function without the asset-manifest virtual module,
+// which belongs to Vite's build rather than this native OSD fixture.
+const layerSource = createSourceFile('biome-background-layer.ts',
+  readFileSync('src/telescope/biome-background-layer.ts', 'utf8'), ScriptTarget.Latest);
+const attachFunction = layerSource.statements.find(statement =>
+  isFunctionDeclaration(statement) && statement.name?.text === 'attachBiomeBackgroundLayer')!;
+const attachCode = transpileModule(attachFunction.getText(layerSource).replace(/^export /, ''), {
+  compilerOptions: { target: ScriptTarget.ES2022, module: ModuleKind.CommonJS },
+}).outputText;
+const attachBiomeBackgroundLayer = new Function('installViewportLayerDrawing',
+  `${attachCode}\nreturn attachBiomeBackgroundLayer;`)(installViewportLayerDrawing);
 
 let OSD: any, texture: any, original: Uint8ClampedArray;
 beforeAll(async () => {
@@ -86,6 +100,68 @@ function pixelCheck(ctx: any, left: number, top: number, offset = 0, owns = (_x:
 }
 
 describe("native biome backgrounds through installed OSD and native canvas", () => {
+  it.each([-35840, 0, 35840])("draws a complete PW %s close-up before terrain setup, without requesting background tiles", offset => {
+    const f = fixture();
+    const canvas = createCanvas(256, 192), items: any[] = [];
+    const viewer = new OSD.EventSource(), world = new OSD.EventSource();
+    let area = new OSD.Rect(originX + offset, originY, 256, 192);
+    const viewport = {
+      getBounds: () => area, getBoundsWithMargins: () => area, getBoundsNoRotate: () => area,
+      getCenter: () => area.getCenter(), getRotation: () => 0, getFlip: () => false,
+      getZoom: () => 256 / area.width, getContainerSize: () => new OSD.Point(256, 192),
+      deltaPixelsFromPointsNoRotate: (p: any) => p.times(256 / area.width),
+      pixelFromPoint: (p: any) => p.minus(area.getTopLeft()).times(256 / area.width),
+      pixelFromPointNoRotate: (p: any) => p.minus(area.getTopLeft()).times(256 / area.width),
+      viewportToViewerElementRectangle: (r: any) => new OSD.Rect((r.x - area.x) * 256 / area.width,
+        (r.y - area.y) * 256 / area.width, r.width * 256 / area.width, r.height * 256 / area.width),
+    };
+    Object.assign(world, {
+      getItemCount: () => items.length, getItemAt: (i: number) => items[i], ensureTilesUpToDate() {},
+    });
+    Object.assign(viewer, { world, viewport, isAnimating: () => false, isDestroyed: () => false,
+      tileCache: new OSD.TileCache({ maxImageCacheCount: 20 }), tileRetryMax: 0, forceRedraw: vi.fn() });
+    const drawer = Object.create(OSD.CanvasDrawer.prototype);
+    Object.assign(drawer, { viewer, viewport, _renderingTarget: canvas, context: canvas.getContext('2d'),
+      sketchCanvas: null, sketchContext: null, _imageSmoothingEnabled: false, options: { usePrivateCache: false } });
+    viewer.drawer = drawer;
+    const originalDraw = drawer._drawTiles, loader = new OSD.ImageLoader({ jobLimit: 2 });
+    const download = vi.spyOn(loader, 'addJob');
+    viewer.addTiledImage = (options: any) => {
+      const item = new OSD.TiledImage({ source: options.tileSource, viewer, viewport, drawer,
+        tileCache: viewer.tileCache, imageLoader: loader, x: options.x, y: options.y, width: options.width,
+        immediateRender: true, maxTilesPerFrame: 1, discardLevelsBelowDownsampleRatio: 1, ajaxHeaders: {} });
+      item.getDrawer = () => drawer;
+      items.push(item); world.raiseEvent('add-item', { item }); options.success({ item });
+    };
+    try {
+      // Intentionally never install a terrain layer. This is the cold-load
+      // interval where backgrounds previously depended on GPU setup completing.
+      attachBiomeBackgroundLayer(viewer, { tiles: f.pack, originX, originY, width: f.width } as any,
+        [offset], () => true, () => {});
+      for (const item of items) item.update(true);
+      drawer.draw(items);
+      expect(download).not.toHaveBeenCalled();
+      pixelCheck(drawer.context, 0, 0, offset);
+      expect(f.pack.stats.rendered).toBe(0);
+      expect(items[0].setDrawn()).toBe(false);
+      // Home and a return to detail reuse the decoded original artwork in
+      // the same draw, even though no overview/detail tiles have ever loaded.
+      area = new OSD.Rect(originX + offset, originY, 1024, 768);
+      items[0].update(true); drawer.draw(items);
+      expect(drawer.context.getImageData(30, 30, 1, 1).data[3]).toBe(255);
+      area = new OSD.Rect(originX + offset + 257, originY + 64, 256, 192);
+      items[0].update(true); drawer.draw(items);
+      pixelCheck(drawer.context, 257, 64, offset);
+      expect(download).not.toHaveBeenCalled();
+    } finally {
+      viewer.raiseEvent('before-destroy', {});
+      for (const item of items) item.destroy();
+      f.pack.destroy();
+      download.mockRestore();
+    }
+    expect(drawer._drawTiles).toBe(originalDraw);
+  });
+
   it("ships a decodable original PNG for every non-static mapped biome boundary", async () => {
     const paths = new Set(boundaries.biomes
       .filter(b => !STATIC_TERRAIN_BIOMES.has(b.filename))

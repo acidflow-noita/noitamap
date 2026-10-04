@@ -2,6 +2,7 @@ import { biomeBackgroundRevisions } from 'virtual:noitamap-data-archives';
 import { BIOME_BACKGROUND_MAP, STATIC_TERRAIN_BIOMES, CARVED_ROOM_BIOMES } from './terrain-policy';
 import { immutableTelescopeAssets, revisionedAssetUrl } from './immutable-assets';
 import { createBiomeBackgroundTiles, type BiomeBackgroundRegion } from './biome-background-tile-source';
+import { installViewportLayerDrawing } from './instant-terrain-viewport';
 
 const phaseX = -17920, phaseY = -7168;
 
@@ -79,6 +80,9 @@ export function attachBiomeBackgroundLayer(
   for (const offset of offsets) {
     if (!isCurrent()) return;
     const source = layer.tiles.createSource(offset);
+    // Background artwork is ready independently of shader compilation. Draw
+    // the whole visible area now instead of loading OSD tiles until terrain starts.
+    installViewportLayerDrawing(viewer, source);
     viewer.addTiledImage({
       tileSource: source, index,
       x: layer.originX + offset, y: layer.originY, width: layer.width,
