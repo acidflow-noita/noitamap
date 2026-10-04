@@ -3,25 +3,38 @@ type SpawnOutcome = readonly [entity: string, count: number, numerator?: number,
 interface SpawnerSpawns {
   outcomes: readonly SpawnOutcome[];
   maxSpawns?: number;
+  spawnCheck?: { frames: number; distance: number; chance: readonly [number, number] };
   illusions?: boolean;
   note?: readonly [key: string, fallback: string];
 }
 
-// Popup descriptions from data/scripts/buildings/*.lua. Chances describe the
+// Popup descriptions from data/scripts/buildings/*.lua; check intervals from
+// the matching data/entities/buildings/*.xml LuaComponents. Chances describe the
 // creature selected after a spawn succeeds, not the chance of spawning per tick.
 // These do not add creatures to the map, generation data, or seed inventory.
 export const SPAWNER_SPAWNS: Readonly<Partial<Record<string, SpawnerSpawns>>> = {
   ghost_crystal: { outcomes: [['ghost', 1]] },
-  flynest: { outcomes: [['fly', 1]], maxSpawns: 15 },
-  spidernest: { outcomes: [['longleg', 1]], maxSpawns: 15 },
+  flynest: {
+    outcomes: [['fly', 1]], maxSpawns: 15,
+    spawnCheck: { frames: 121, distance: 200, chance: [75, 101] },
+  },
+  spidernest: {
+    outcomes: [['longleg', 1]], maxSpawns: 15,
+    spawnCheck: { frames: 101, distance: 200, chance: [75, 101] },
+  },
   firebugnest: {
     outcomes: [['firebug', 1, 4, 5], ['bigfirebug', 1, 1, 5]],
     maxSpawns: 10,
+    spawnCheck: { frames: 121, distance: 200, chance: [75, 101] },
     note: ['poi.spawnChancePerCreature', 'Chances apply to each successful spawn.'],
   },
   physics_cocoon: {
     outcomes: [['worm', 1]],
-    note: ['poi.cocoonSpawns', 'Releases one worm when destroyed; damage can release it early.'],
+    note: ['poi.cocoonSpawns', 'Releases one when destroyed; damage can release it early.'],
+  },
+  lukki_eggs: {
+    outcomes: [['lukki_tiny', 1]],
+    note: ['poi.lukkiEggSpawns', 'Releases one per triggering hit. Repeated hits can release more before the egg is destroyed.'],
   },
   snowcrystal: {
     outcomes: [

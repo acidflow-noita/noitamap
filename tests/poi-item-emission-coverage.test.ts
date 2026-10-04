@@ -161,15 +161,15 @@ const FIXTURES: Fixture[] = [
 ];
 
 describe("POI render coverage (real buildMarkerData)", () => {
-  it('draws one Houre crystal at its spawn instead of also drawing its contained ghosts', async () => {
-    // spawnEntities strips the path and .xml before emitting these siblings.
-    const ghosts = [0, 1, 2].map(() => ({ type: 'entity', entity: 'ghost', x: 100, y: 200 }));
-    const crystal = { type: 'entity', entity: 'ghost_crystal', x: 100, y: 200 };
+  it.each([0, 1, 2, 3])('draws one Houre beside its crystal when Telescope emits %i ghost siblings', async count => {
+    const ghosts = Array.from({ length: count }, () => ({ type: 'entity', entity: 'ghost', x: 100, y: 200 }));
+    const crystal = { type: 'entity', entity: 'ghost_crystal', id: 'crystal', x: 100, y: 200 };
     const spawn = { type: 'enemies', x: 100, y: 200, items: [...ghosts, crystal] };
     const data = await buildMarkerData({ worldCenter: 35, poisByPW: { '0,0': [spawn] } });
     const markers = data.items.filter(item => item.poi.type === 'entity');
-    expect(markers).toHaveLength(1);
+    expect(markers).toHaveLength(2);
     expect(markers[0]).toMatchObject({ spriteKey: 'enemy:ghost_crystal', osdX: 100, osdY: 200 });
+    expect(markers[1]).toMatchObject({ spriteKey: 'enemy:ghost', osdX: 120, osdY: 200, poi: { id: 'crystal_houre' } });
     expect(spawn.items).toEqual([...ghosts, crystal]); // keep the original spawn data
   });
 
@@ -180,7 +180,26 @@ describe("POI render coverage (real buildMarkerData)", () => {
       spawn(['ghost_crystal', 'darkghost']), spawn(['ghost', 'ghost']),
     ] } });
     const entities = data.items.filter(item => item.poi.type === 'entity').map(item => item.poi.entity);
-    expect(entities).toEqual(['ghost_crystal', 'darkghost', 'ghost', 'ghost']);
+    expect(entities).toEqual(['ghost_crystal', 'ghost', 'darkghost', 'ghost', 'ghost']);
+  });
+
+  it('draws one Houre for each crystal, including XML paths and standalone crystal POIs', async () => {
+    const crystal = (x: number) => ({ type: 'entity', entity: 'data/entities/buildings/ghost_crystal.xml', x, y: 200 });
+    const group = { type: 'props', x: 100, y: 200, items: [crystal(100), crystal(300),
+      { type: 'entity', entity: 'data/entities/animals/ghost.xml', x: 100, y: 200 }] };
+    const original = structuredClone(group);
+    const data = await buildMarkerData({ worldCenter: 35, poisByPW: { '0,0': [group, crystal(500)] } });
+    expect(data.items.filter(item => item.spriteKey === 'enemy:ghost').map(item => item.osdX)).toEqual([120, 320, 520]);
+    expect(data.items.filter(item => item.spriteKey === 'enemy:ghost_crystal').map(item => item.osdX)).toEqual([100, 300, 500]);
+    expect(group).toEqual(original);
+  });
+
+  it('does not place future hatchlings on the map before eggs, nests or cocoons activate', async () => {
+    const entities = ['lukki_eggs', 'physics_cocoon', 'flynest', 'spidernest', 'firebugnest', 'snowcrystal'];
+    const data = await buildMarkerData({ worldCenter: 35, poisByPW: { '0,0': entities.map(entity => ({
+      type: 'props', x: 100, y: 200, items: [{ type: 'entity', entity, x: 100, y: 200 }],
+    })) } });
+    expect(data.items.filter(item => item.poi.type === 'entity').map(item => item.poi.entity)).toEqual(entities);
   });
 
   it('indexes the full spell card above its entity anchor at native size', async () => {

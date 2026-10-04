@@ -5,7 +5,7 @@ import { POICardLifecycle, type POICardOwner, type POICardRequest } from './poi-
 import Flatbush from "flatbush";
 import { CONTAINER_TYPES } from "./poi-containers";
 import { EGG_SPAWNS } from './egg-spawns';
-import { SPAWNER_SPAWNS } from './spawner-spawns';
+import { getPOISpawnDetails } from './poi-spawn-details';
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
 import { loadInstantSceneMasks } from "./instant-scene-masks";
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
@@ -4153,7 +4153,8 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
       tooltipEl.appendChild(catDiv);
     }
 
-    tooltipEl.appendChild(buildExtendedSection('creature', entityId));
+    // Spawner cards put their free offspring row before the paid section.
+    if (!getPOISpawnDetails(poi)) tooltipEl.appendChild(buildExtendedSection('creature', entityId));
 
     if (poi.biome) {
       const biomeDiv = document.createElement('div');
@@ -4199,27 +4200,17 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
     }
   }
 
-  const eggSpawns = poi.type === 'item' && Object.hasOwn(EGG_SPAWNS, poi.item || '')
-    ? EGG_SPAWNS[poi.item!] : undefined;
-  const spawnerId = poi.type === 'entity' ? canonicalEntityId(String((poi as any).entity || '')) : '';
-  const spawner = Object.hasOwn(SPAWNER_SPAWNS, spawnerId) ? SPAWNER_SPAWNS[spawnerId] : undefined;
-  const spawnOutcomes = eggSpawns || spawner?.outcomes;
-  if (spawnOutcomes) {
+  const spawnDetails = getPOISpawnDetails(poi);
+  if (spawnDetails) {
     const spawnsDiv = document.createElement('div');
     spawnsDiv.style.cssText = 'margin-top:0.5em;border-top:0.065em solid var(--border-strong);padding-top:0.3em';
     const heading = document.createElement('div');
     heading.style.cssText = 'font-size:1em;color:var(--text-muted);margin-bottom:0.2em';
-    heading.textContent = `${spawner?.illusions
-      ? i18next.t('poi.possibleIllusions', 'Possible illusions')
-      : i18next.t('poi.possibleSpawns', 'Possible spawns')}:`;
+    heading.textContent = `${spawnDetails.heading}:`;
     spawnsDiv.appendChild(heading);
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center';
-    // These fractions terminate within seven percentage decimal places.
-    const percent = new Intl.NumberFormat(i18next.resolvedLanguage || i18next.language, {
-      style: 'percent', maximumFractionDigits: 7,
-    });
-    for (const [entity, count, numerator, denominator] of spawnOutcomes) {
+    for (const [entity, count] of spawnDetails.outcomes) {
       const name = getPOIDisplayName({ type: 'entity', entity });
       const box = document.createElement('div');
       box.style.cssText =
@@ -4235,29 +4226,15 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
       }
       const label = document.createElement('span');
       label.style.cssText = 'font-size:0.8em;color:var(--text-muted)';
-      const chance = numerator != null && denominator != null
-        ? ` · ${numerator}/${denominator} (${percent.format(numerator / denominator)})` : '';
-      label.textContent = `${count}× ${name}${chance}`;
+      label.textContent = `${count}× ${name}`;
       box.appendChild(label);
       row.appendChild(box);
     }
     spawnsDiv.appendChild(row);
-    const notes: string[] = [];
-    if (eggSpawns) notes.push(eggSpawns.length
-      ? i18next.t('poi.eggHatch', 'The outcome depends on the seed and where the egg hatches.')
-      : i18next.t('poi.noEggSpawns', 'No creatures hatch from this egg.'));
-    if (spawner?.maxSpawns) notes.push(i18next.t('poi.nestSpawnLimit', {
-      count: spawner.maxSpawns,
-      defaultValue: 'Spawns one at a time while the player is nearby, up to {{count}} in total.',
-    }));
-    if (spawner?.note) notes.push(i18next.t(spawner.note[0], spawner.note[1]));
-    if (notes.length) {
-      const note = document.createElement('div');
-      note.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin-top:0.3em';
-      note.textContent = notes.join(' ');
-      spawnsDiv.appendChild(note);
-    }
-    tooltipEl.appendChild(spawnsDiv);
+    if (spawnDetails.outcomes.length) tooltipEl.appendChild(spawnsDiv);
+    tooltipEl.appendChild(poi.type === 'entity'
+      ? buildExtendedSection('creature', canonicalEntityId(poi.entity))
+      : buildExtendedSection('spawner', poi.item!));
   }
 
   // Container contents — show items inside chests/shops/bosses

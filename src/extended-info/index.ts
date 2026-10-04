@@ -11,6 +11,7 @@
 import i18next from "../i18n";
 import { authService } from "../auth/auth-service";
 import { AuthUI } from "../auth/auth-ui";
+import { renderExtendedSpawns } from './spawner';
 
 const BARTENDER_BASE = "https://bartender.runfast.stream";
 
@@ -482,7 +483,7 @@ function dismissEnclosingPopup(el: HTMLElement): void {
 
 // ─── Section builder ─────────────────────────────────────────────────────────
 
-export type ExtendedKind = "creature" | "spell" | "material";
+export type ExtendedKind = "creature" | "spell" | "material" | "spawner";
 
 // Single global languageChanged listener that re-renders ONLY currently
 // visible extended-info sections. Hidden popups (visibility:hidden /
@@ -558,7 +559,9 @@ export function buildExtendedSection(kind: ExtendedKind, id: string): HTMLElemen
   body.className = "extended-info-body";
   wrap.appendChild(body);
 
+  let renderRevision = 0;
   const render = () => {
+    const revision = ++renderRevision;
     body.replaceChildren();
     if (!isProUser()) {
       wrap.style.display = "";
@@ -566,7 +569,7 @@ export function buildExtendedSection(kind: ExtendedKind, id: string): HTMLElemen
       body.appendChild(renderProPlaceholder(kind));
       return;
     }
-    renderProBody(wrap, header, body, kind, id);
+    renderProBody(wrap, header, body, kind, id, () => revision === renderRevision && isProUser());
   };
 
   (wrap as any).__rerender = render;
@@ -647,6 +650,10 @@ export function buildExtendedCreatureSectionByName(name: string, aliases?: strin
 // as the lookup into SKELETON_WIDTHS so the skeleton width stays stable
 // regardless of locale.
 const PREVIEW_FIELDS: Record<ExtendedKind, Array<[string, string]>> = {
+  spawner: [
+    ['extended.row.spawn', 'Spawn'],
+    ['extended.row.notes', 'Notes'],
+  ],
   creature: [
     ["extended.row.faction", "Faction"],
     ["extended.row.hp", "HP"],
@@ -743,6 +750,7 @@ function renderProBody(
   body: HTMLElement,
   kind: ExtendedKind,
   id: string,
+  isCurrent: () => boolean,
 ): void {
   const loading = document.createElement("div");
   loading.className = "extended-info-loading";
@@ -750,6 +758,8 @@ function renderProBody(
   body.appendChild(loading);
 
   const fill = (cb: () => HTMLElement | null) => {
+    // A fetch that finishes after logout must not repopulate paid information.
+    if (!isCurrent()) return;
     const node = cb();
     body.replaceChildren();
     if (node) {
@@ -762,7 +772,14 @@ function renderProBody(
   };
 
   if (kind === "creature") {
-    loadExtendedCreatures().then(() => fill(() => renderCreature(id)));
+    loadExtendedCreatures().then(() => fill(() => {
+      const creature = renderCreature(id);
+      const spawns = renderExtendedSpawns({ type: 'entity', entity: id });
+      if (creature && spawns) creature.appendChild(spawns);
+      return creature ?? spawns;
+    }));
+  } else if (kind === 'spawner') {
+    fill(() => renderExtendedSpawns({ type: 'item', item: id }));
   } else if (kind === "spell") {
     loadExtendedSpells().then(() => fill(() => renderSpell(id)));
   } else if (kind === "material") {
