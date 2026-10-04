@@ -750,7 +750,7 @@
       "crystal_key": "Ключ-кристалл",
       "egg": "Яйцо",
       "egg_fire": "Теплое яйцо",
-      "egg_monster": "Покачивающееся яйцо",
+      "egg_monster": "Яйцо",
       "egg_purple": "Холодное яйцо",
       "egg_slime": "Слизистое яйцо",
       "egg_hollow": "Пустое яйцо",
@@ -782,7 +782,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Яйцо",
+      "egg_spiders": "Холодное яйцо"
     },
     "bosses": {
       "Kivi": "Киви",
@@ -5111,7 +5113,15 @@
     "pillarGoto": "Показать на карте",
     "pillarSingular": "Столп достижений",
     "pillarSearch": "Искать на карте",
-    "biomeShop": "Магазин в биоме"
+    "biomeShop": "Магазин в биоме",
+    "possibleSpawns": "Possible spawns",
+    "eggHatch": "The outcome depends on the seed and where the egg hatches.",
+    "noEggSpawns": "No creatures hatch from this egg.",
+    "possibleIllusions": "Possible illusions",
+    "nestSpawnLimit": "Spawns one at a time while the player is nearby, up to {{count}} in total.",
+    "spawnChancePerCreature": "Chances apply to each successful spawn.",
+    "cocoonSpawns": "Releases one worm when destroyed; damage can release it early.",
+    "snowCrystalSpawns": "Creates one illusion at a time while the player is nearby. Chances apply to each successful spawn."
   },
   "skipCreatures": {
     "title": "Не добавлять существ",

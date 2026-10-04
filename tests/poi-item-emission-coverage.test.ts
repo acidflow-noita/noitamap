@@ -161,6 +161,28 @@ const FIXTURES: Fixture[] = [
 ];
 
 describe("POI render coverage (real buildMarkerData)", () => {
+  it('draws one Houre crystal at its spawn instead of also drawing its contained ghosts', async () => {
+    // spawnEntities strips the path and .xml before emitting these siblings.
+    const ghosts = [0, 1, 2].map(() => ({ type: 'entity', entity: 'ghost', x: 100, y: 200 }));
+    const crystal = { type: 'entity', entity: 'ghost_crystal', x: 100, y: 200 };
+    const spawn = { type: 'enemies', x: 100, y: 200, items: [...ghosts, crystal] };
+    const data = await buildMarkerData({ worldCenter: 35, poisByPW: { '0,0': [spawn] } });
+    const markers = data.items.filter(item => item.poi.type === 'entity');
+    expect(markers).toHaveLength(1);
+    expect(markers[0]).toMatchObject({ spriteKey: 'enemy:ghost_crystal', osdX: 100, osdY: 200 });
+    expect(spawn.items).toEqual([...ghosts, crystal]); // keep the original spawn data
+  });
+
+  it('keeps independent Houre spawns and other ghost species beside a crystal', async () => {
+    const spawn = (entities: string[]) => ({ type: 'enemies', x: 100, y: 200,
+      items: entities.map(entity => ({ type: 'entity', entity, x: 100, y: 200 })) });
+    const data = await buildMarkerData({ worldCenter: 35, poisByPW: { '0,0': [
+      spawn(['ghost_crystal', 'darkghost']), spawn(['ghost', 'ghost']),
+    ] } });
+    const entities = data.items.filter(item => item.poi.type === 'entity').map(item => item.poi.entity);
+    expect(entities).toEqual(['ghost_crystal', 'darkghost', 'ghost', 'ghost']);
+  });
+
   it('indexes the full spell card above its entity anchor at native size', async () => {
     const poi = { type: 'spell', item: 'BOMB', x: 100, y: 100 };
     const data = await buildMarkerData({ worldCenter: 0, poisByPW: { '0,0': [poi] } });

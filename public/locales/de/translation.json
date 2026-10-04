@@ -750,7 +750,7 @@
       "crystal_key": "Kristallschlüssel",
       "egg": "Ei",
       "egg_fire": "Geröstetes Ei",
-      "egg_monster": "Wackelndes Ei",
+      "egg_monster": "Ei",
       "egg_purple": "Unterkühltes Ei",
       "egg_slime": "Schleimiges Ei",
       "egg_hollow": "Hohles Ei",
@@ -782,7 +782,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Ei",
+      "egg_spiders": "Unterkühltes Ei"
     },
     "bosses": {
       "Kivi": "Stein",
@@ -5111,7 +5113,15 @@
     "pillarGoto": "Auf der Karte anzeigen",
     "pillarSingular": "Säule der Errungenschaften",
     "pillarSearch": "Auf der Karte suchen",
-    "biomeShop": "Biom-Laden"
+    "biomeShop": "Biom-Laden",
+    "possibleSpawns": "Possible spawns",
+    "eggHatch": "The outcome depends on the seed and where the egg hatches.",
+    "noEggSpawns": "No creatures hatch from this egg.",
+    "possibleIllusions": "Possible illusions",
+    "nestSpawnLimit": "Spawns one at a time while the player is nearby, up to {{count}} in total.",
+    "spawnChancePerCreature": "Chances apply to each successful spawn.",
+    "cocoonSpawns": "Releases one worm when destroyed; damage can release it early.",
+    "snowCrystalSpawns": "Creates one illusion at a time while the player is nearby. Chances apply to each successful spawn."
   },
   "skipCreatures": {
     "title": "Keine Kreaturen hinzufügen",

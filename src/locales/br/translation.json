@@ -750,7 +750,7 @@
       "crystal_key": "Chave de cristal",
       "egg": "Ovo",
       "egg_fire": "Ovo morninho",
-      "egg_monster": "Ovo agitado",
+      "egg_monster": "Ovo",
       "egg_purple": "Ovo frio",
       "egg_slime": "Ovo gosmento",
       "egg_hollow": "Ovo oco",
@@ -782,7 +782,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Ovo",
+      "egg_spiders": "Ovo frio"
     },
     "bosses": {
       "Tapion vasalli": "Vassalo de Tapio",
@@ -5111,7 +5113,15 @@
     "pillarGoto": "Mostrar no mapa",
     "pillarSingular": "Pilar de Conquistas",
     "pillarSearch": "Buscar no mapa",
-    "biomeShop": "Loja de bioma"
+    "biomeShop": "Loja de bioma",
+    "possibleSpawns": "Possible spawns",
+    "eggHatch": "The outcome depends on the seed and where the egg hatches.",
+    "noEggSpawns": "No creatures hatch from this egg.",
+    "possibleIllusions": "Possible illusions",
+    "nestSpawnLimit": "Spawns one at a time while the player is nearby, up to {{count}} in total.",
+    "spawnChancePerCreature": "Chances apply to each successful spawn.",
+    "cocoonSpawns": "Releases one worm when destroyed; damage can release it early.",
+    "snowCrystalSpawns": "Creates one illusion at a time while the player is nearby. Chances apply to each successful spawn."
   },
   "skipCreatures": {
     "title": "Não adicionar criaturas",

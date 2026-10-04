@@ -533,9 +533,9 @@ const ENEMY_SPAWN_TYPES = new Set(["enemies", "props"]);
  * Houre Crystal at the same spot). Skip the contained entity when its
  * container sibling is present.
  *
- * Format: [containerEntityPathRegex, containedEntityPathRegex].
+ * Match Telescope's short entity IDs as well as legacy XML paths.
  */
-const CONTAINED_BY_SIBLING: Array<[RegExp, RegExp]> = [[/\/buildings\/ghost_crystal/, /\/animals\/ghost\.xml$/]];
+const CONTAINED_BY_SIBLING: Array<[RegExp, RegExp]> = [[/(?:^|\/)ghost_crystal(?:\.xml)?$/, /(?:^|\/)ghost(?:\.xml)?$/]];
 
 function shouldSkipDueToContainer(item: any, siblings: any[]): boolean {
   const itemEntity = String(item?.entity || "");
@@ -577,12 +577,12 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
 
       // Unwrap container contents as separate markers (except chest types which just show the chest icon)
       if (CONTAINER_TYPES.has(poi.type) && !CHEST_ONLY_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {
-        const innerItems = poi.items.filter((i: any) => !i.ignore);
+        const siblings = poi.items.filter((i: any) => !i.ignore);
+        const innerItems = siblings.filter((item: any) => !shouldSkipDueToContainer(item, siblings));
         const count = innerItems.length;
         const isBoss = BOSS_DROP_TYPES.has(poi.type);
         for (let ci = 0; ci < count; ci++) {
           const innerItem = innerItems[ci];
-          if (shouldSkipDueToContainer(innerItem, innerItems)) continue;
           if (isBoss) {
             // Boss drops: spread horizontally + push down below the boss sprite.
             // Drops may omit their own x/y (most hardcoded boss drops do), so

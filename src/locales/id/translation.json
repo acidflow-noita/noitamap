@@ -750,7 +750,7 @@
       "crystal_key": "Crystal key",
       "egg": "Egg",
       "egg_fire": "Toasty egg",
-      "egg_monster": "Wiggling egg",
+      "egg_monster": "Egg",
       "egg_purple": "Chilly egg",
       "egg_slime": "Slimy egg",
       "egg_hollow": "Hollow egg",
@@ -782,7 +782,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Egg",
+      "egg_spiders": "Chilly egg"
     },
     "bosses": {
       "Kivi": "Kivi",
@@ -5111,7 +5113,15 @@
     "pillarGoto": "Tampilkan di peta",
     "pillarSingular": "Pilar Pencapaian",
     "pillarSearch": "Cari di peta",
-    "biomeShop": "Toko bioma"
+    "biomeShop": "Toko bioma",
+    "possibleSpawns": "Possible spawns",
+    "eggHatch": "The outcome depends on the seed and where the egg hatches.",
+    "noEggSpawns": "No creatures hatch from this egg.",
+    "possibleIllusions": "Possible illusions",
+    "nestSpawnLimit": "Spawns one at a time while the player is nearby, up to {{count}} in total.",
+    "spawnChancePerCreature": "Chances apply to each successful spawn.",
+    "cocoonSpawns": "Releases one worm when destroyed; damage can release it early.",
+    "snowCrystalSpawns": "Creates one illusion at a time while the player is nearby. Chances apply to each successful spawn."
   },
   "skipCreatures": {
     "title": "Jangan tambahkan makhluk",

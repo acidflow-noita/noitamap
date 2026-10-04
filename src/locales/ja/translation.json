@@ -750,7 +750,7 @@
       "crystal_key": "クリスタルの鍵",
       "egg": "卵",
       "egg_fire": "灼熱の卵",
-      "egg_monster": "蠢く卵",
+      "egg_monster": "卵",
       "egg_purple": "冷たい卵",
       "egg_slime": "ベトベトな卵",
       "egg_hollow": "空の卵",
@@ -782,7 +782,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "卵",
+      "egg_spiders": "冷たい卵"
     },
     "bosses": {
       "Kivi": "キヴィ",
@@ -5111,7 +5113,15 @@
     "pillarGoto": "地図上に表示",
     "pillarSingular": "達成の柱",
     "pillarSearch": "地図で検索",
-    "biomeShop": "バイオーム内のショップ"
+    "biomeShop": "バイオーム内のショップ",
+    "possibleSpawns": "Possible spawns",
+    "eggHatch": "The outcome depends on the seed and where the egg hatches.",
+    "noEggSpawns": "No creatures hatch from this egg.",
+    "possibleIllusions": "Possible illusions",
+    "nestSpawnLimit": "Spawns one at a time while the player is nearby, up to {{count}} in total.",
+    "spawnChancePerCreature": "Chances apply to each successful spawn.",
+    "cocoonSpawns": "Releases one worm when destroyed; damage can release it early.",
+    "snowCrystalSpawns": "Creates one illusion at a time while the player is nearby. Chances apply to each successful spawn."
   },
   "skipCreatures": {
     "title": "クリーチャーを追加しない",

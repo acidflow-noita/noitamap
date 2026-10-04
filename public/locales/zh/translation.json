@@ -750,7 +750,7 @@
       "crystal_key": "晶体钥匙",
       "egg": "蛋",
       "egg_fire": "暖和的蛋",
-      "egg_monster": "摆动的蛋",
+      "egg_monster": "蛋",
       "egg_purple": "冰凉的蛋",
       "egg_slime": "发黏的蛋",
       "egg_hollow": "空的蛋",
@@ -782,7 +782,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "蛋",
+      "egg_spiders": "冰凉的蛋"
     },
     "bosses": {
       "Kivi": "奇威",
@@ -5111,7 +5113,15 @@
     "pillarGoto": "在地图上显示",
     "pillarSingular": "成就之柱",
     "pillarSearch": "在地图上搜索",
-    "biomeShop": "生物群系商店"
+    "biomeShop": "生物群系商店",
+    "possibleSpawns": "Possible spawns",
+    "eggHatch": "The outcome depends on the seed and where the egg hatches.",
+    "noEggSpawns": "No creatures hatch from this egg.",
+    "possibleIllusions": "Possible illusions",
+    "nestSpawnLimit": "Spawns one at a time while the player is nearby, up to {{count}} in total.",
+    "spawnChancePerCreature": "Chances apply to each successful spawn.",
+    "cocoonSpawns": "Releases one worm when destroyed; damage can release it early.",
+    "snowCrystalSpawns": "Creates one illusion at a time while the player is nearby. Chances apply to each successful spawn."
   },
   "skipCreatures": {
     "title": "不添加生物",

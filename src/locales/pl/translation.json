@@ -750,7 +750,7 @@
       "crystal_key": "Kryształowy klucz",
       "egg": "Jajo",
       "egg_fire": "Piekące jajo",
-      "egg_monster": "Poruszające się jajo",
+      "egg_monster": "Jajo",
       "egg_purple": "Zimne jajo",
       "egg_slime": "Śluzowate jajo",
       "egg_hollow": "Puste jajo",
@@ -782,7 +782,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Jajo",
+      "egg_spiders": "Zimne jajo"
     },
     "bosses": {
       "Kivi": "Kivi",
@@ -5111,7 +5113,15 @@
     "pillarGoto": "Pokaż na mapie",
     "pillarSingular": "Filar Osiągnięć",
     "pillarSearch": "Szukaj na mapie",
-    "biomeShop": "Sklep w biomie"
+    "biomeShop": "Sklep w biomie",
+    "possibleSpawns": "Possible spawns",
+    "eggHatch": "The outcome depends on the seed and where the egg hatches.",
+    "noEggSpawns": "No creatures hatch from this egg.",
+    "possibleIllusions": "Possible illusions",
+    "nestSpawnLimit": "Spawns one at a time while the player is nearby, up to {{count}} in total.",
+    "spawnChancePerCreature": "Chances apply to each successful spawn.",
+    "cocoonSpawns": "Releases one worm when destroyed; damage can release it early.",
+    "snowCrystalSpawns": "Creates one illusion at a time while the player is nearby. Chances apply to each successful spawn."
   },
   "skipCreatures": {
     "title": "Nie dodawaj stworzeń",

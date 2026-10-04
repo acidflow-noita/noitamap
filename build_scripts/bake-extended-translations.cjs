@@ -354,8 +354,10 @@ const POI_NAME_TO_CSV_KEY = {
   // Eggs.
   "egg": "item_egg",
   "egg_fire": "item_egg_fire",
-  "egg_monster": "item_egg_worm",
+  "egg_monster": "item_egg",
+  "egg_red": "item_egg",
   "egg_purple": "item_egg_purple",
+  "egg_spiders": "item_egg_purple",
   "egg_slime": "item_egg_slime",
   "egg_hollow": "item_egg_hollow",
   "egg_worm": "item_egg_worm",

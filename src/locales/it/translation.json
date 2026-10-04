@@ -750,7 +750,7 @@
       "crystal_key": "Chiave di cristallo",
       "egg": "Uovo",
       "egg_fire": "Uovo caldo",
-      "egg_monster": "Uovo dimenante",
+      "egg_monster": "Uovo",
       "egg_purple": "Uovo freddo",
       "egg_slime": "Uovo melmoso",
       "egg_hollow": "Uovo vuoto",
@@ -782,7 +782,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Uovo",
+      "egg_spiders": "Uovo freddo"
     },
     "bosses": {
       "Kivi": "Kivi",
@@ -5111,7 +5113,15 @@
     "pillarGoto": "Mostra sulla mappa",
     "pillarSingular": "Pilastro delle Imprese",
     "pillarSearch": "Cerca sulla mappa",
-    "biomeShop": "Negozio del bioma"
+    "biomeShop": "Negozio del bioma",
+    "possibleSpawns": "Possible spawns",
+    "eggHatch": "The outcome depends on the seed and where the egg hatches.",
+    "noEggSpawns": "No creatures hatch from this egg.",
+    "possibleIllusions": "Possible illusions",
+    "nestSpawnLimit": "Spawns one at a time while the player is nearby, up to {{count}} in total.",
+    "spawnChancePerCreature": "Chances apply to each successful spawn.",
+    "cocoonSpawns": "Releases one worm when destroyed; damage can release it early.",
+    "snowCrystalSpawns": "Creates one illusion at a time while the player is nearby. Chances apply to each successful spawn."
   },
   "skipCreatures": {
     "title": "Non aggiungere creature",
