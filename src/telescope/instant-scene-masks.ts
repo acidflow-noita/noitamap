@@ -12,14 +12,20 @@ interface ScenePixels {
   imgElement?: unknown;
 }
 
+type MaskPixels = Omit<StaticTerrainMask, "x" | "y">;
+// Telescope publishes pixels after spawn cleanup and replaces the view on
+// reload. Key by that immutable view, not by a scene name or seed. Weak keys
+// let old masks go when their decoded source pixels are no longer retained.
+const preparedMasks = new WeakMap<ArrayBufferView, { byteLength: number; mask: MaskPixels }>();
+
 /** Decode each selected material image once, with bounded concurrency. Output
- * stays in placement order; repeated rooms share immutable bit masks. */
+ * stays in placement order; rooms and later seeds share immutable bit masks. */
 export async function loadInstantSceneMasks(
   placements: readonly Placement[],
   load: (key: string) => Promise<ScenePixels | null | undefined>,
 ): Promise<StaticTerrainMask[]> {
   const keys = [...new Set(placements.map((scene) => scene.key))];
-  const byKey = new Map<string, Omit<StaticTerrainMask, "x" | "y">>();
+  const byKey = new Map<string, MaskPixels>();
   await prepareAssetJobs(keys, async key => {
     const raw = await load(key);
     if (
@@ -30,12 +36,18 @@ export async function loadInstantSceneMasks(
     )
       return;
     const pixels = raw.imgElement as Uint8Array;
-    byKey.set(key, {
-      width: raw.width,
-      height: raw.height,
-      bits: staticSceneBits(pixels),
-      airBits: staticSceneBits(pixels, true),
-    });
+    const cached = preparedMasks.get(pixels);
+    let mask = cached?.mask;
+    if (!mask || mask.width !== raw.width || mask.height !== raw.height || cached?.byteLength !== pixels.byteLength) {
+      mask = {
+        width: raw.width,
+        height: raw.height,
+        bits: staticSceneBits(pixels),
+        airBits: staticSceneBits(pixels, true),
+      };
+      preparedMasks.set(pixels, { byteLength: pixels.byteLength, mask });
+    }
+    byKey.set(key, mask);
   });
   const masks: StaticTerrainMask[] = [];
   for (const scene of placements) {

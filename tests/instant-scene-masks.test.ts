@@ -89,6 +89,94 @@ it("skips the same unusable material records without removing valid duplicate pl
   expect(load).toHaveBeenCalledTimes(4);
 });
 
+it('reuses immutable material masks across seeds while creating fresh placements', async () => {
+  const image = raw(), load = vi.fn(async () => image);
+  const first = await loadInstantSceneMasks([{ key: 'room', x: 0, y: 1 }], load);
+  const next = await loadInstantSceneMasks([
+    { key: 'room', x: -35840, y: 512 }, { key: 'alias', x: 35840, y: -512 },
+  ], load);
+  expect(next.map(({ x, y }) => ({ x, y }))).toEqual([{ x: -35840, y: 512 }, { x: 35840, y: -512 }]);
+  expect(first[0]).toMatchObject({ x: 0, y: 1 });
+  for (const mask of next) {
+    expect(mask).not.toBe(first[0]);
+    expect(mask.bits).toBe(first[0].bits);
+    expect(mask.airBits).toBe(first[0].airBits);
+    expect([...mask.bits]).toEqual([1]);
+    expect([...mask.airBits!]).toEqual([2]);
+  }
+  const workerCopy = structuredClone(next);
+  workerCopy[0].bits.fill(0);
+  workerCopy[0].airBits!.fill(0);
+  expect([...first[0].bits]).toEqual([1]);
+  expect([...first[0].airBits!]).toEqual([2]);
+  // Loading still validates the current asset; a scene key alone cannot
+  // establish that its decoded pixels survived an asset reload.
+  expect(load).toHaveBeenCalledTimes(3);
+});
+
+it('rebuilds masks when a scene key is reloaded with different pixels', async () => {
+  let image = raw();
+  const load = async () => image, placements = [{ key: 'room', x: 0, y: 0 }];
+  const first = await loadInstantSceneMasks(placements, load);
+  image = raw();
+  image.imgElement.set([0, 0, 66, 255], 0);
+  image.imgElement.set([0, 0, 0, 0], 4);
+  const next = await loadInstantSceneMasks(placements, load);
+  expect(next[0].bits).not.toBe(first[0].bits);
+  expect([...first[0].bits]).toEqual([1]);
+  expect([...first[0].airBits!]).toEqual([2]);
+  expect([...next[0].bits]).toEqual([0]);
+  expect([...next[0].airBits!]).toEqual([1]);
+});
+
+it('does not confuse distinct pixel views into the same buffer', async () => {
+  const source = raw(), bytes = new Uint8Array(32);
+  bytes.set(source.imgElement);
+  bytes.set(source.imgElement, 16);
+  bytes.set([0, 0, 66, 255], 16);
+  const masks = await loadInstantSceneMasks([{ key: 'first', x: 0, y: 0 }, { key: 'second', x: 2, y: 0 }],
+    async key => ({ ...source, imgElement: bytes.subarray(key === 'first' ? 0 : 16, key === 'first' ? 16 : 32) }));
+  expect([...masks[0].bits]).toEqual([1]);
+  expect([...masks[1].bits]).toEqual([0]);
+  expect([...masks[0].airBits!]).toEqual([2]);
+  expect([...masks[1].airBits!]).toEqual([3]);
+});
+
+it('does not reuse old bounds when a pixel view is supplied with a different shape', async () => {
+  const pixels = new Uint8Array(4 * 8).fill(255);
+  let image = { width: 2, height: 4, imgElement: pixels };
+  const load = async () => image, placements = [{ key: 'room', x: 0, y: 0 }];
+  const first = await loadInstantSceneMasks(placements, load);
+  image = { width: 4, height: 2, imgElement: pixels };
+  const next = await loadInstantSceneMasks(placements, load);
+  expect(first[0]).toMatchObject({ width: 2, height: 4 });
+  expect(next[0]).toMatchObject({ width: 4, height: 2 });
+  expect(next[0].bits).not.toBe(first[0].bits);
+  expect([...next[0].bits]).toEqual([255]);
+});
+
+it('does not hide a missing or failed asset behind a previously prepared scene key', async () => {
+  const image = raw(), placements = [{ key: 'room', x: 0, y: 0 }];
+  const load = vi.fn<() => Promise<ReturnType<typeof raw> | undefined>>().mockResolvedValue(image);
+  await loadInstantSceneMasks(placements, load);
+  load.mockResolvedValue(undefined);
+  expect(await loadInstantSceneMasks(placements, load)).toEqual([]);
+  const failure = new Error('Reload failed');
+  load.mockRejectedValue(failure);
+  await expect(loadInstantSceneMasks(placements, load)).rejects.toBe(failure);
+});
+
+it('does not reuse old masks after the source view loses its buffer', async () => {
+  const image = raw(), placements = [{ key: 'room', x: 0, y: 0 }];
+  const first = await loadInstantSceneMasks(placements, async () => image);
+  structuredClone(image.imgElement, { transfer: [image.imgElement.buffer] });
+  const next = await loadInstantSceneMasks(placements, async () => image);
+  expect(next[0].bits.byteLength).toBe(0);
+  expect(next[0].airBits!.byteLength).toBe(0);
+  expect([...first[0].bits]).toEqual([1]);
+  expect([...first[0].airBits!]).toEqual([2]);
+});
+
 it("propagates loader errors and stops admitting more keys after failure", async () => {
   const failure = new Error("Scene decode failed");
   let reject!: (error: Error) => void;
