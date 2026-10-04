@@ -19,7 +19,7 @@ afterEach(() => { for (const cleanup of cleanups.splice(0)) cleanup(); OSD.pixel
 afterAll(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 const drain = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
 
-function fixture(bounds = { x: -1000, y: -1000, width: 2000, height: 2000 }, maxRetainedPixels?: number) {
+function fixture(bounds = { x: -1000, y: -1000, width: 2000, height: 2000 }, maxRetainedPixels?: number, initialOverview = false) {
   OSD.pixelDensityRatio = 1;
   const viewer: any = new OSD.EventSource(), world: any = new OSD.EventSource();
   const items: any[] = [], canvas = createCanvas(32, 24), lifetime = new AbortController();
@@ -52,10 +52,10 @@ function fixture(bounds = { x: -1000, y: -1000, width: 2000, height: 2000 }, max
   const originalDraw = drawer._drawTiles;
   const renders: Array<{ plan: InstantTerrainViewportPlan; signal: AbortSignal; resolve: (image: any) => void; reject: (error: unknown) => void }> = [];
   const failure = vi.fn(), firstPaint = vi.fn();
-  const renderFrame = vi.fn((plan: InstantTerrainViewportPlan, signal: AbortSignal) =>
+  const renderFrame = vi.fn((plan: InstantTerrainViewportPlan, signal: AbortSignal, _preparingOverview?: boolean) =>
     new Promise<any>((resolve, reject) => renders.push({ plan, signal, resolve, reject })));
   const layer = createInstantTerrainViewport({ viewer, bounds, signal: lifetime.signal,
-    renderFrame, firstPaint, onFailure: failure, revision: () => version, maxRetainedPixels });
+    renderFrame, firstPaint, onFailure: failure, revision: () => version, maxRetainedPixels, initialOverview });
   function attach(source: any = layer.source) {
     const item = new OSD.TiledImage({ source, viewer, viewport, drawer, tileCache: viewer.tileCache,
       imageLoader: new OSD.ImageLoader({ jobLimit: 2 }), width: source.width, x: bounds.x, y: bounds.y,
@@ -92,6 +92,123 @@ function fixture(bounds = { x: -1000, y: -1000, width: 2000, height: 2000 }, max
 }
 
 describe('direct viewport terrain with installed OSD and native canvas', () => {
+  it('covers the first zoom-out after a close-up reseed without painting over sharp pixels or their air', async () => {
+    const bounds = { x: -64, y: 0, width: 128, height: 96 };
+    const f = fixture(bounds, undefined, true);
+    await drain();
+    expect(f.renders[0].plan).toMatchObject({ ...bounds, scale: 4, pixelWidth: 32, pixelHeight: 24 });
+    expect(f.renderFrame.mock.calls[0][2]).toBe(true);
+    const overview = f.image(0, '#e04020'); await drain(); f.draw();
+    expect(f.firstPaint).not.toHaveBeenCalled();
+    expect(f.pixel(12, 12)).toEqual([0, 0, 0, 0]);
+    expect(f.renders[1].plan.scale).toBe(1);
+    expect(f.renderFrame.mock.calls[1][2]).toBe(false);
+    const detail = f.image(1, '#2060f0');
+    detail.getContext('2d').clearRect(8, 8, 8, 8);
+    await drain(); f.draw(); await drain();
+    expect(f.firstPaint).toHaveBeenCalledOnce();
+    f.navigate(0, 128); await drain(); f.draw();
+    expect(f.pixel(12, 12)).toEqual([224, 64, 32, 255]);
+    expect(f.pixel(1, 1)).toEqual([32, 96, 240, 255]);
+    expect(f.pixel(2, 2)).toEqual([0, 0, 0, 0]);
+    expect(overview.close).not.toHaveBeenCalled();
+    expect(f.failure).not.toHaveBeenCalled();
+  });
+
+  it('keeps first-visit coverage within the existing memory budget across many camera changes', async () => {
+    const f = fixture({ x: -64, y: 0, width: 128, height: 96 }, 512, true);
+    await drain();
+    const plan = f.renders[0].plan;
+    expect(plan.x).toBe(-64);
+    expect(plan.pixelWidth * plan.pixelHeight).toBeLessThanOrEqual(512);
+    const overview = f.image(); await drain(); f.image(); await drain(); f.draw(); await drain();
+    for (let i = 0; i < 12; i++) {
+      f.navigate(-48 + i * 4); await drain(); f.image(undefined, '#2060f0'); await drain(); f.draw();
+      expect((f.layer.stats as any).retainedBytes).toBeLessThanOrEqual(512 * 4);
+      expect((f.layer.stats as any).retainedFrames).toBeLessThanOrEqual(3);
+    }
+    f.navigate(-64, 128); await drain(); f.draw();
+    expect(f.pixel(30, 12)).toEqual([224, 64, 32, 255]);
+    expect(overview.close).not.toHaveBeenCalled();
+    f.lifetime.abort(); f.draw();
+    expect(overview.close).not.toHaveBeenCalled();
+    f.remove(f.item);
+    expect(overview.close).toHaveBeenCalledOnce();
+  });
+
+  it('does not add a fallback render when the initial view already covers the whole map', async () => {
+    const f = fixture({ x: 0, y: 0, width: 32, height: 24 }, undefined, true);
+    await drain();
+    expect(f.renders[0].plan.scale).toBe(1);
+    f.image(); await drain(); f.draw(); await drain();
+    expect(f.renderFrame).toHaveBeenCalledOnce();
+    expect(f.firstPaint).toHaveBeenCalledOnce();
+  });
+
+  it('prepares only the latest camera after navigation during the overview render', async () => {
+    const f = fixture(undefined, undefined, true);
+    await drain();
+    f.navigate(10); f.navigate(20); f.navigate(100, 256);
+    f.image(); await drain();
+    expect(f.renders).toHaveLength(2);
+    expect(f.renders[1].plan).toMatchObject({ x: 100, scale: 8 });
+    f.image(); await drain(); f.draw(); await drain();
+    expect(f.firstPaint).toHaveBeenCalledOnce();
+    expect(f.renders).toHaveLength(2);
+  });
+
+  it('does not render an overview outside the generated map or with no retention budget', async () => {
+    const outside = fixture({ x: 100, y: 0, width: 100, height: 100 }, undefined, true);
+    await drain();
+    expect(outside.renderFrame).not.toHaveBeenCalled();
+    outside.navigate(120); await drain();
+    expect(outside.renders[0].plan.x).toBe(100);
+    const unretained = fixture(undefined, 0, true);
+    await drain();
+    expect(unretained.renders[0].plan).toMatchObject({ x: 0, scale: 1 });
+    unretained.image(); await drain(); unretained.draw(); await drain();
+    expect(unretained.firstPaint).toHaveBeenCalledOnce();
+    expect((unretained.layer.stats as any).retainedBytes).toBe(0);
+  });
+
+  it('keeps the existing three useful detail frames alongside the bounded overview', async () => {
+    const f = fixture(undefined, undefined, true);
+    await drain(); const overview = f.image(); await drain();
+    const details = [f.image()]; await drain(); f.draw(); await drain();
+    for (const x of [32, 64, 96]) {
+      f.navigate(x); await drain(); details.push(f.image()); await drain(); f.draw();
+    }
+    expect((f.layer.stats as any).retainedFrames).toBe(4);
+    for (const detail of details) expect(detail.close).not.toHaveBeenCalled();
+    expect(overview.close).not.toHaveBeenCalled();
+  });
+
+  it('keeps the overview bounded for a large map and tight memory budgets', async () => {
+    for (const budget of [729, 8 * 1024 * 1024]) {
+      const f = fixture({ x: -53760, y: -31744, width: 107520, height: 73728 }, budget, true);
+      await drain();
+      const p = f.renders[0].plan;
+      expect(p.x).toBe(-53760); expect(p.y).toBe(-31744);
+      expect(p.pixelWidth * p.pixelHeight).toBeLessThanOrEqual(Math.min(budget, 1024 * 1024));
+      expect(p.width + 1e-8).toBeGreaterThanOrEqual(107520);
+      expect(p.height + 1e-8).toBeGreaterThanOrEqual(73728);
+    }
+  });
+
+  it('discards an obsolete overview and cancels an unfinished reseed without publishing its pixels', async () => {
+    const f = fixture({ x: -64, y: 0, width: 128, height: 96 }, undefined, true);
+    await drain(); f.revise();
+    const obsolete = f.image(); await drain();
+    expect(obsolete.close).toHaveBeenCalledOnce();
+    expect(f.renders[1].plan.x).toBe(-64);
+    f.lifetime.abort();
+    const late = f.image(); await drain(); f.draw();
+    expect(late.close).toHaveBeenCalledOnce();
+    expect(f.firstPaint).not.toHaveBeenCalled();
+    expect(f.failure).not.toHaveBeenCalled();
+    expect(f.renderFrame).toHaveBeenCalledTimes(2);
+  });
+
   it('samples physical display pixels, including a rotated viewport, and limits the plan to map bounds', async () => {
     const f = fixture();
     await drain();

@@ -787,7 +787,7 @@ export async function addInstantTerrain(
       });
       let emptyViewReported = false, checkingEmptyView = false;
       viewport = createInstantTerrainViewport({
-        viewer: osd, bounds, signal: lifetime.signal, revision: () => viewportRevision,
+        viewer: osd, bounds, signal: lifetime.signal, revision: () => viewportRevision, initialOverview: true,
         emptyView() {
           if (emptyViewReported || checkingEmptyView) return;
           checkingEmptyView = true;
@@ -800,8 +800,10 @@ export async function addInstantTerrain(
             firstPaint();
           }).catch(fail);
         },
-        async renderFrame(plan, signal) {
-          await new Promise<void>((resolve, reject) => {
+        async renderFrame(plan, signal, preparingOverview) {
+          // The overview is retained privately until the close-up paints.
+          // Prepare it alongside scene artwork; visible terrain still waits.
+          if (!preparingOverview) await new Promise<void>((resolve, reject) => {
             const abort = () => reject(signal.reason);
             if (signal.aborted) { abort(); return; }
             signal.addEventListener('abort', abort, { once: true });

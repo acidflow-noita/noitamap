@@ -184,13 +184,26 @@ function outside(rectangle: ViewportTerrainBounds, covers: ViewportTerrainBounds
   return remaining;
 }
 
+/** One bounded fallback for areas this seed's camera has not visited yet. */
+function initialOverviewPlan(bounds: ViewportTerrainBounds, view: InstantTerrainViewportPlan,
+  maxPixels: number): InstantTerrainViewportPlan | null {
+  if (!outside(bounds, [view]).length) return null;
+  const edge = Math.min(1024, Math.max(view.pixelWidth, view.pixelHeight), Math.floor(Math.sqrt(maxPixels)));
+  if (!(edge >= 1)) return null;
+  const scale = Math.max(bounds.width, bounds.height) / edge;
+  const pixelWidth = Math.min(edge, Math.ceil(bounds.width / scale));
+  const pixelHeight = Math.min(edge, Math.ceil(bounds.height / scale));
+  return { x: bounds.x, y: bounds.y, width: pixelWidth * scale, height: pixelHeight * scale,
+    scale, pixelWidth, pixelHeight };
+}
+
 /** Present complete physical-resolution frames while retaining bounded earlier
  * coverage around them. Navigation coalesces to one pending camera. */
 export function createInstantTerrainViewport(options: {
   viewer: any;
   bounds: ViewportTerrainBounds;
   signal: AbortSignal;
-  renderFrame: (plan: InstantTerrainViewportPlan, signal: AbortSignal) => Promise<CanvasImageSource>;
+  renderFrame: (plan: InstantTerrainViewportPlan, signal: AbortSignal, preparingOverview?: boolean) => Promise<CanvasImageSource>;
   firstPaint: () => void;
   /** No terrain intersects the camera; readiness must not wait for a tile. */
   emptyView?: () => void;
@@ -198,6 +211,8 @@ export function createInstantTerrainViewport(options: {
   revision?: () => number;
   /** Extra decoded pixels, excluding the currently displayed complete frame. */
   maxRetainedPixels?: number;
+  /** Prepare same-seed coverage before revealing a first close-up frame. */
+  initialOverview?: boolean;
 }) {
   const { bounds, signal } = options;
   const osd = options.viewer.viewer || options.viewer;
@@ -211,16 +226,19 @@ export function createInstantTerrainViewport(options: {
   source.tileExists = () => false;
   source.getTileUrl = () => 'instant-viewport://no-tiles';
   source.downloadTileStart = (job: any) => job.fail('Viewport terrain has no image tiles');
-  const stats = { frames: 0, discarded: 0, renderMs: 0, firstDrawMs: 0, shadedPixels: 0 };
+  const stats = { frames: 0, discarded: 0, renderMs: 0, firstDrawMs: 0, shadedPixels: 0, overviewMs: 0 };
   const started = performance.now();
   type Request = { plan: InstantTerrainViewportPlan; key: string; revision: number };
   type Frame = Request & { image: CanvasImageSource };
   let frame: Frame | undefined;
+  let overview: Frame | undefined;
+  let overviewReady = !options.initialOverview;
   let retained: Frame[] = [];
   const maxRetainedPixels = Math.max(0, options.maxRetainedPixels ?? 8 * 1024 * 1024);
+  const overviewPixels = () => overview ? overview.plan.pixelWidth * overview.plan.pixelHeight : 0;
   Object.defineProperties(stats, {
-    retainedFrames: { enumerable: true, get: () => retained.length },
-    retainedBytes: { enumerable: true, get: () => retained.reduce((sum, entry) => sum + entry.plan.pixelWidth * entry.plan.pixelHeight * 4, 0) },
+    retainedFrames: { enumerable: true, get: () => retained.length + Number(!!overview) },
+    retainedBytes: { enumerable: true, get: () => (overviewPixels() + retained.reduce((sum, entry) => sum + entry.plan.pixelWidth * entry.plan.pixelHeight, 0)) * 4 },
   });
   let pending: Request | undefined;
   let active: Request | undefined;
@@ -249,7 +267,7 @@ export function createInstantTerrainViewport(options: {
         || b.plan.width * b.plan.height - a.plan.width * a.plan.height;
     });
     const kept = new Set<Frame>();
-    let pixels = 0;
+    let pixels = overviewPixels();
     for (const entry of ranked) {
       const size = entry.plan.pixelWidth * entry.plan.pixelHeight;
       if (kept.size < 3 && pixels + size <= maxRetainedPixels) { kept.add(entry); pixels += size; }
@@ -272,25 +290,33 @@ export function createInstantTerrainViewport(options: {
   }
   function pump(): void {
     if (active || !pending || destroyed || failed || signal.aborted) return;
-    const request = pending;
-    pending = undefined;
+    const fallbackPlan = overviewReady ? null : initialOverviewPlan(bounds, pending.plan, maxRetainedPixels);
+    const request = fallbackPlan ? { plan: fallbackPlan, key: 'initial-overview', revision: pending.revision } : pending;
+    if (!fallbackPlan) pending = undefined;
     active = request;
     const drawController = controller = new AbortController();
     const began = performance.now();
     void Promise.resolve().then(() => {
       drawController.signal.throwIfAborted();
-      return options.renderFrame(request.plan, drawController.signal);
+      return options.renderFrame(request.plan, drawController.signal, !!fallbackPlan);
     }).then(image => {
       if (destroyed || signal.aborted || drawController.signal.aborted || request.revision !== revision()
-        || (frame?.key === desiredKey && request.key !== desiredKey)) {
+        || (!fallbackPlan && frame?.key === desiredKey && request.key !== desiredKey)) {
         releaseImage(image);
         stats.discarded++;
         return;
       }
       if (!image) throw new Error('Viewport terrain returned no frame');
-      const previous = frame;
-      frame = { ...request, image };
-      if (previous) remember(previous);
+      if (fallbackPlan) {
+        overview = { ...request, image };
+        overviewReady = true;
+        stats.overviewMs += performance.now() - began;
+      } else {
+        const previous = frame;
+        frame = { ...request, image };
+        if (!outside(bounds, [request.plan]).length) overviewReady = true;
+        if (previous) remember(previous);
+      }
       stats.frames++;
       stats.renderMs += performance.now() - began;
       stats.shadedPixels += request.plan.pixelWidth * request.plan.pixelHeight;
@@ -326,7 +352,9 @@ export function createInstantTerrainViewport(options: {
     if (destroyed) return true;
     refresh();
     if (!frame) return true;
-    const frames = [...retained, frame];
+    // Clip fallback coverage out of every newer frame, including transparent
+    // pixels. It cannot overwrite sharp terrain or resurrect erased material.
+    const frames = [...(overview ? [overview] : []), ...retained, frame];
     const ratio = density();
     const point = (x: number, y: number) => viewport.pixelFromPoint(new OpenSeadragon.Point(x, y), true);
     for (let index = 0; index < frames.length; index++) {
@@ -370,6 +398,8 @@ export function createInstantTerrainViewport(options: {
     stop();
     if (frame) releaseImage(frame.image);
     frame = undefined;
+    if (overview) releaseImage(overview.image);
+    overview = undefined;
     for (const entry of retained) releaseImage(entry.image);
     retained = [];
   };
