@@ -800,7 +800,8 @@ function row(label: string, value: string | number | null | undefined): HTMLElem
   l.textContent = `${label}:`;
   const v = document.createElement("span");
   v.className = "extended-info-value";
-  v.textContent = String(value);
+  // Game CSV descriptions encode line breaks as literal backslash-n pairs.
+  v.textContent = String(value).replace(/\\n/g, "\n");
   r.appendChild(l);
   r.appendChild(v);
   return r;
@@ -998,7 +999,7 @@ function renderSpell(id: string): HTMLElement | null {
   if (s.description) {
     const desc = document.createElement("div");
     desc.className = "extended-info-desc";
-    desc.textContent = s.description;
+    desc.textContent = s.description.replace(/\\n/g, "\n");
     root.appendChild(desc);
   }
 
