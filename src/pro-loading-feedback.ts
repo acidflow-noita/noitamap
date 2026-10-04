@@ -1,12 +1,3 @@
-/** Allow the loading shell to paint before cached JS initialization can run. */
-export function paintLoadingFeedback(): Promise<void> {
-  if (document.hidden || typeof requestAnimationFrame !== "function")
-    return Promise.resolve();
-  return new Promise((resolve) =>
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-  );
-}
-
 /** A delayed hover popover must not cover the loading panel after a click. */
 export function dismissLoadingPopover(label: Element | null): void {
   if (!label) return;

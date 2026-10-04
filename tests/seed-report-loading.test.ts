@@ -26,7 +26,10 @@ beforeEach(() => {
   (window as any).__noitamap = {};
   vi.spyOn(document, "hidden", "get").mockReturnValue(false);
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => window.setTimeout(() => callback(performance.now()), 0));
-  load = vi.fn(() => new Promise<boolean>((resolve) => { finish = resolve; }));
+  load = vi.fn(() => {
+    expect(document.getElementById("seed-report-loading")?.getAttribute("aria-busy")).toBe("true");
+    return new Promise<boolean>((resolve) => { finish = resolve; });
+  });
   createSeedReportButton(document.getElementById("drawing-ui-wrapper")!, {loadProBundle: load});
   input = document.getElementById("seedReportToggleBtn") as HTMLInputElement;
 });
@@ -34,19 +37,32 @@ afterEach(() => {
   requestProSidebar("report", false);requestProSidebar("drawing", false);
   document.body.replaceChildren();delete (window as any).__noitamap;
   history.replaceState(null, "", "/");
-  vi.restoreAllMocks();vi.unstubAllGlobals();
+  vi.useRealTimers();vi.restoreAllMocks();vi.unstubAllGlobals();
 });
 
 describe("immediate seed report loading feedback", () => {
   it("shows feedback synchronously, before downloading, and hands off when ready", async () => {
     click(true);
     expect(document.getElementById("seed-report-loading")?.getAttribute("aria-busy")).toBe("true");
-    expect(load).not.toHaveBeenCalled();
-    await vi.waitFor(() => expect(load).toHaveBeenCalledTimes(1));
+    expect(load).toHaveBeenCalledTimes(1);
     const toggle = installReport();finish(true);
     await vi.waitFor(() => expect(toggle).toHaveBeenCalledWith(true));
     expect(document.getElementById("seed-report-loading")).toBeNull();
     expect(input.checked).toBe(true);expect(input.hasAttribute("aria-busy")).toBe(false);
+  });
+  it("loads and hands off without waiting for map frames or timers", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("requestAnimationFrame", vi.fn(() => 1));
+    click(true);
+    expect(load).toHaveBeenCalledOnce();
+    await Promise.resolve();
+    expect(document.getElementById("seed-report-loading")?.getAttribute("aria-busy")).toBe("true");
+    const toggle = installReport();
+    finish(true);
+    await Promise.resolve();
+    expect(toggle).toHaveBeenCalledExactlyOnceWith(true);
+    expect(document.getElementById("seed-report-loading")).toBeNull();
+    expect(input.checked).toBe(true);
   });
   it("close immediately cancels opening without waiting for the download", async () => {
     click(true);await vi.waitFor(() => expect(load).toHaveBeenCalledTimes(1));
