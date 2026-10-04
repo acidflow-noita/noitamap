@@ -24,14 +24,16 @@ const REPEATED_TEMPLE_BIOMES = new Set([
   "biome_darkness",
 ]);
 
-// These seed-dependent rooms carve air into rock; their surrounding fill is
-// absent from the static map. Other fill biomes keep static-map ownership.
-export const FRIEND_ROOM_BIOMES = new Set([
+// These seed-dependent rooms carve air into the existing static-map rock.
+// Their backdrop belongs only inside the scene, never across the whole biome.
+export const CARVED_ROOM_BIOMES = new Set([
   "friend_1", "friend_2", "friend_3", "friend_4", "friend_5", "friend_6",
+  "solid_wall_hidden_cavern",
 ]);
 
-/** Telescope aliases both Friend room layouts to general, losing their biome. */
-export function friendRoomBiome(key: string): string | undefined {
+/** Telescope stores these material maps under general instead of their biome. */
+export function carvedRoomBiome(key: string): string | undefined {
+  if (key === "general/solid_wall_hidden_cavern") return "solid_wall_hidden_cavern";
   return key === "general/friendroom" || key === "general/cavern" ? "friend_1" : undefined;
 }
 
@@ -98,15 +100,15 @@ export const BIOME_BACKGROUND_MAP: Record<string, string> = {
  * supply the backdrop the game shows inside the carved room. */
 export function sceneBiomeNames(scene: { key: string; variantKey?: string }): string[] {
   const names: string[] = [];
-  const friend = friendRoomBiome(scene.key);
-  if (friend) names.push(friend);
+  const room = carvedRoomBiome(scene.key);
+  if (room) names.push(room);
   for (const part of (scene.variantKey ?? "").split("&"))
     if (part.startsWith("biome=")) names.push(...part.slice(6).split("@"));
   names.push(scene.key.split("/")[0]);
   return names;
 }
 
-export const TERRAIN_VERSION = "full-pixel-v20-instant-friends";
+export const TERRAIN_VERSION = "full-pixel-v21-instant-gold-cavern";
 export const WORLD_HEIGHT = 48 * 512;
 export const WORLD_TOP = -14 * 512;
 export type VerticalPlane = -1 | 0 | 1;
@@ -133,9 +135,7 @@ export function createTerrainOwnership(
   for (const layer of layers) {
     const name = layer.biomeName;
     const conf = config[name];
-    const roomFill = FRIEND_ROOM_BIOMES.has(name) && layer.isFill &&
-      !!conf?.fillMaterial && !conf.sceneOnly && !includeRepeatedTemples;
-    if ((!roomFill && (!layer.buffer || layer.isFill || !conf?.wangFile)) || (STATIC_TERRAIN_BIOMES.has(name) &&
+    if (!layer.buffer || layer.isFill || !conf?.wangFile || (STATIC_TERRAIN_BIOMES.has(name) &&
       !(includeRepeatedTemples && REPEATED_TEMPLE_BIOMES.has(name))))
       continue;
     let id = ids.get(name);

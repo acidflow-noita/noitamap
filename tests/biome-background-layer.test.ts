@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { createCanvas, Path2D } from '@napi-rs/canvas';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({
@@ -31,6 +33,7 @@ it('retains native world coordinates, compound holes, and static-biome exclusion
   const result = biomeBackgroundGeometry([...boundaries.biomes,
     { filename: 'temple_altar', svg_map_path: 'M -100 -100 L 100 -100 L 100 100 Z' },
     ...Array.from({ length: 6 }, (_, i) => ({ filename: `friend_${i + 1}`, svg_map_path: 'M -100 -100 L 100 -100 L 100 100 Z' })),
+    { filename: 'solid_wall_hidden_cavern', svg_map_path: 'M -100 -100 L 100 -100 L 100 100 Z' },
     { filename: 'unknown', svg_map_path: 'M -100 -100 L 100 -100 L 100 100 Z' }]);
   expect(result).toMatchObject({ originX: -17920, originY: -7168, width: 2048, height: 1024, phaseX: -17920, phaseY: -7168 });
   expect(result.regions).toHaveLength(2);
@@ -38,6 +41,24 @@ it('retains native world coordinates, compound holes, and static-biome exclusion
     [{ x: -17920, y: -7168 }, { x: -16896, y: -7168 }, { x: -16896, y: -6144 }, { x: -17920, y: -6144 }],
     [{ x: -17664, y: -6912 }, { x: -17664, y: -6656 }, { x: -17408, y: -6656 }, { x: -17408, y: -6912 }],
   ]);
+});
+
+it('leaves the reported EDR chunk at -2842,8492 uncovered by biome backdrops', async () => {
+  const { biomeBackgroundGeometry } = await import('../src/telescope/biome-background-layer');
+  const { biomes } = JSON.parse(readFileSync('src/data/biome_boundries_py.json', 'utf8'));
+  const cavern = biomes.find((biome: { filename: string }) => biome.filename === 'solid_wall_hidden_cavern');
+  const context = createCanvas(1, 1).getContext('2d');
+  const x = -2842, y = 8492;
+  expect(context.isPointInPath(new Path2D(cavern.svg_map_path), (x + 17920) / 512, (y + 7168) / 512)).toBe(true);
+  for (const region of biomeBackgroundGeometry(biomes).regions) {
+    const path = new Path2D();
+    for (const ring of region.rings) {
+      path.moveTo(ring[0].x, ring[0].y);
+      for (const point of ring.slice(1)) path.lineTo(point.x, point.y);
+      path.closePath();
+    }
+    expect(context.isPointInPath(path, x, y), region.textureKey).toBe(false);
+  }
 });
 
 it('shares native artwork preparation and requests only revisioned local PNGs', async () => {

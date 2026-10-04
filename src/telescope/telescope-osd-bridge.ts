@@ -9,8 +9,10 @@ import { getPOISpawnDetails } from './poi-spawn-details';
 import { prepareAssetJobs } from './background-idle';
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
 import { loadInstantSceneMasks } from "./instant-scene-masks";
+import { isSimplisticBackground } from '../simplistic-background';
+import { GOLD_ROOM_KEY, GOLD_ROOM_REPAIR_KEY, isCapturedGoldRoom, capturedGoldRepairs, capturedGoldRepairPixels } from './captured-gold-room';
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
-import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate, friendRoomBiome } from "./terrain-policy";
+import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate, carvedRoomBiome } from "./terrain-policy";
 import { loadTelescopeModules } from "./load-telescope";
 import { isGLTerrainEnabled, isInstantTerrainEnabled, useRenderPerfGeneration } from "../renderer_settings";
 import { prepareInstantTerrain } from './instant-terrain-backend';
@@ -1450,8 +1452,6 @@ export const pixelSceneConfig = {
     // Pyramid scenes - prebaked in map art
     'left',
     'right',
-    // Hidden cavern - prebaked in OSD
-    'solid_wall_hidden_cavern',
   ]),
   /** Skip lists by biome prefix in scene key */
   skipBiomes: new Set([
@@ -1829,7 +1829,7 @@ async function getScenePngIndex(): Promise<ScenePngIndex> {
     });
     for (const { key, path } of plainPngCandidates) {
       // These are material/force-air maps, not visual artwork.
-      if (friendRoomBiome(`general/${key}`)) continue;
+      if (carvedRoomBiome(`general/${key}`)) continue;
       if (visualByPath.has(key) || bgByPath.has(key)) continue; // colormap with dedicated layers
       if (!visualByName.has(key)) visualByName.set(key, path);
     }
@@ -2001,8 +2001,9 @@ function sceneRenderKey(scene: { key: string; variantKey?: string; x?: number; y
   const vk = scene.variantKey || '';
   const mat = vk.split('&').filter(p => p && !p.startsWith('biome='));
   const key = mat.length ? `${scene.key}|${mat.join('&')}` : scene.key;
+  if (scene.key === GOLD_ROOM_REPAIR_KEY) return `${key}|${scene.x ?? 0},${scene.y ?? 0}`;
   // Cave textures are phased in world space. Bypass old black room bitmaps.
-  return friendRoomBiome(scene.key) ? `${key}|friend-bg-v1|${scene.x ?? 0},${scene.y ?? 0}` : key;
+  return carvedRoomBiome(scene.key) ? `${key}|friend-bg-v1|${scene.x ?? 0},${scene.y ?? 0}` : key;
 }
 
 /**
@@ -2062,11 +2063,29 @@ async function compositeSceneBitmap(
   height: number;
   kind: 'composite' | 'fallback';
 } | null> {
+  if (key === GOLD_ROOM_REPAIR_KEY) {
+    const raw = await ensurePixelSceneData(GOLD_ROOM_KEY, { art: false });
+    const file = (await getDataZip())?.file('data/materials_gfx/rock_hard_border.png');
+    if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement) || !file)
+      throw new Error('Missing captured gold room repair data');
+    const texture = decodePngToRgba(await file.async('arraybuffer'));
+    const pixels = capturedGoldRepairPixels(raw, texture, { ...scene, x: scene.x ?? 0, y: scene.y ?? 0 });
+    const canvas = new OffscreenCanvas(scene.width, scene.height);
+    const ctx = canvas.getContext('2d')!;
+    const image = ctx.createImageData(scene.width, scene.height);
+    image.data.set(pixels);
+    ctx.putImageData(image, 0, 0);
+    const bitmap = await createImageBitmap(canvas);
+    let blob: Blob | null = null;
+    try { blob = await canvas.convertToBlob({ type: 'image/png' }); }
+    catch (error) { console.warn("[OSD Bridge] convertToBlob failed (scene won't be cached):", key, error); }
+    return { bitmap, blob, width: scene.width, height: scene.height, kind: 'composite' };
+  }
   const slashIdx = key.indexOf('/');
   const biome = slashIdx >= 0 ? key.substring(0, slashIdx) : '';
   const name = slashIdx >= 0 ? key.substring(slashIdx + 1) : key;
 
-  const caveBiome = friendRoomBiome(key);
+  const caveBiome = carvedRoomBiome(key);
   const skipBg = biome === 'temple' || (biome === 'general' && !caveBiome);
 
   const override = pixelSceneConfig.layerOverrides[name] || pixelSceneConfig.layerOverrides[key];
@@ -2224,8 +2243,8 @@ async function compositeSceneBitmap(
  */
 export const prefetchAllSceneBitmaps = createScenePrefetch(async (isCurrent) => {
     try {
-      // Friend rooms need actual placement coordinates for their backdrop.
-      const allKeys = getAllPixelSceneKeys().filter(key => !friendRoomBiome(key));
+      // Carved rooms need actual placement coordinates for their backdrop.
+      const allKeys = getAllPixelSceneKeys().filter(key => !carvedRoomBiome(key));
       if (allKeys.length === 0) return;
       const cached = await getCachedSceneBitmapKeys();
       const missing = allKeys.filter(k => !cached.has(k));
@@ -2305,6 +2324,7 @@ function renderableScenes(result: GenerationResult): PixelScene[] {
   const allScenes = Object.values(result.pixelScenesByPW).flat();
   return allScenes.filter(s => {
     if (!s || s.width <= 0 || s.height <= 0) return false;
+    if (isCapturedGoldRoom(s, result.worldSize) && !isSimplisticBackground()) return false;
     if (pixelSceneConfig.skipNames.has(s.name)) return false;
     const biome = s.key.split('/')[0];
     if (pixelSceneConfig.skipBiomes.has(biome)) return false;
@@ -2350,7 +2370,7 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
   for (const scene of Object.values(result.pixelScenesByPW).flat()) {
     // The static scene skip/no-op list still owns the same pixels. Skipping the
     // scene's draw alone is insufficient: final terrain must not cover its art.
-    if (!(pixelSceneConfig.skipNames.has(scene.name) || pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]))) continue;
+    if (!((isCapturedGoldRoom(scene, result.worldSize) && !isSimplisticBackground()) || pixelSceneConfig.skipNames.has(scene.name) || pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]))) continue;
     const raw = await ensurePixelSceneData(scene.key, { art: false });
     if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement) || raw.width < 2 || raw.height < 2) continue;
     const placement = `${scene.key}/${scene.x}/${scene.y}`;
@@ -2368,7 +2388,7 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
 async function instantSceneMasks(result: GenerationResult): Promise<StaticTerrainMask[]> {
   const rendered = new Set(renderableScenes(result));
   const scenes = Object.values(result.pixelScenesByPW).flat().filter(scene =>
-    rendered.has(scene) || pixelSceneConfig.skipNames.has(scene.name) ||
+    rendered.has(scene) || (isCapturedGoldRoom(scene, result.worldSize) && !isSimplisticBackground()) || pixelSceneConfig.skipNames.has(scene.name) ||
     pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]));
   return loadInstantSceneMasks(scenes, key => ensurePixelSceneData(key, { art: false }));
 }
@@ -2378,6 +2398,9 @@ async function buildSceneBitmaps(
   generationId: number | null
 ): Promise<{ validScenes: PixelScene[]; bitmapByKey: Map<string, ImageBitmap> } | null> {
   const validScenes = renderableScenes(result);
+  // Correct the captured base only for live/exported scene composition. Baked
+  // daily display skips this entire path and keeps its finished pixels.
+  if (!isSimplisticBackground()) validScenes.unshift(...capturedGoldRepairs(validScenes, result.worldSize));
   const bitmapByKey = new Map<string, ImageBitmap>();
   if (validScenes.length === 0) return { validScenes, bitmapByKey };
 

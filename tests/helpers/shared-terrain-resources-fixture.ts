@@ -59,10 +59,9 @@ export async function verifySharedTerrainResources() {
         width: 256, height: 256 });
     }
   }
-  for (let i = 1; i <= 6; i++) {
-    const name = `friend_${i}`;
+  for (const name of [...Array.from({ length: 6 }, (_, i) => `friend_${i + 1}`), 'solid_wall_hidden_cavern']) {
     const layer = generation.tileLayers.find(layer => layer.biomeName === name) as any;
-    if (!layer?.isFill || layer.buffer) throw new Error(`Missing real Friend fill layer: ${name}`);
+    if (!layer?.isFill || layer.buffer) throw new Error(`Missing real carved-room fill layer: ${name}`);
     for (const pw of [-1, 0, 1]) samples.push({ name: `friend-fill-${name}`, plane: 0, pw,
       x: layer.chunkBasePos.x * 512 - 17920 + 64 + pw * 35840,
       y: layer.chunkBasePos.y * 512 - 7168 + 64, width: 64, height: 64 });
