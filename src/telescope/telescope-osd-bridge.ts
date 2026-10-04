@@ -19,7 +19,7 @@ import { prepareInstantTerrain } from './instant-terrain-backend';
 import { clearTerrainPngEncoders } from './terrain-png-encoder';
 import { createScenePrefetch } from "./scene-prefetch";
 import { SceneBitmapCache } from './scene-bitmap-cache';
-import { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer } from "./biome-background-layer";
+import { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer, clearBiomeBackgroundLayers } from "./biome-background-layer";
 
 const liveSceneBitmaps = new SceneBitmapCache();
 
@@ -484,6 +484,8 @@ export function clearDynamicOverlays(viewer: any): void {
   // Invalidate any in-flight async generation so it won't render on top of the new map
   currentGenerationId++;
   liveSceneBitmaps.clear();
+  resetPersistentBiomeBackgrounds();
+  clearBiomeBackgroundLayers(viewer);
 
   // Drop the GL terrain's GPU resources: they are keyed to the outgoing seed's
   // layer buffers, and the atlas alone is several MiB of texture.
@@ -545,7 +547,6 @@ export function hasDynamicOverlays(): boolean {
 // ─── Biome background layer ─────────────────────────────────────────────────
 
 let _bgLayer: Awaited<ReturnType<typeof prepareBiomeBackgroundLayer>> | undefined;
-let _bgPreviewAdded = false;
 let _bgEpoch = 0;
 
 /** Prepare original artwork once and show native tiled backgrounds immediately. */
@@ -553,25 +554,26 @@ export async function ensurePersistentBiomeBackgrounds(viewer: any, isCurrent = 
   if (isGLTerrainEnabled()) return;
   const epoch = _bgEpoch;
   _bgLayer = await prepareBiomeBackgroundLayer();
-  if (_bgPreviewAdded || epoch !== _bgEpoch || !isCurrent()) return;
-  _bgPreviewAdded = true;
+  if (epoch !== _bgEpoch || !isCurrent()) return;
   addBiomeBgToOSD(viewer, isCurrent);
 }
 
 /** Keep original textures and bounded tiles ready when returning to dynamic. */
 export function resetPersistentBiomeBackgrounds(): void {
-  _bgPreviewAdded = false;
   _bgEpoch++;
 }
 
-/** Reattach shared artwork below the new seed's terrain and scene layers. */
+/** Keep shared artwork below outgoing and incoming seed layers. */
 export function addBiomeBgToOSD(viewer: any, isCurrent = () => true): void {
   if (!_bgLayer) return;
-  const epoch = _bgEpoch, generation = currentGenerationId;
+  const epoch = _bgEpoch;
+  const world = viewer.world;
+  let index = 0;
+  while (index < world.getItemCount() && !isDynamicSeedItem(world.getItemAt(index))) index++;
   attachBiomeBackgroundLayer(viewer, _bgLayer,
     (isLightMode() ? [0] : [-1, 0, 1]).map(pw => pw * 70 * 512),
-    () => epoch === _bgEpoch && generation === currentGenerationId && isCurrent(),
-    item => dynamicTiledImages.add(item));
+    () => epoch === _bgEpoch && isCurrent(),
+    item => dynamicTiledImages.add(item), index);
 }
 
 /**
@@ -5119,6 +5121,7 @@ export async function renderGenerationResult(
   // Snapshot old dynamic items (tiled images + HTML overlays) BEFORE adding
   // new content. We'll remove them AFTER new content is fully in place,
   // so there's never a visible gap where biome backgrounds disappear.
+  const keepBiomeBackgrounds = (!bakedDZIs || bakedDZIs.length === 0) && !isGLTerrainEnabled();
   const oldWorldItems: any[] = [];
   try {
     const world = viewer.world;
@@ -5127,7 +5130,7 @@ export async function renderGenerationResult(
       // Same base-layer test as clearDynamicOverlays. Routed through
       // isDynamicSeedItem so in-flight baked DZIs whose async success callback
       // hasn't yet tagged source.__bakedDzi are still captured for cleanup.
-      if (item && isDynamicSeedItem(item)) {
+      if (item && isDynamicSeedItem(item) && !(keepBiomeBackgrounds && item.source?.__biomeBg)) {
         oldWorldItems.push(item);
       }
     }
@@ -5143,7 +5146,7 @@ export async function renderGenerationResult(
   // Skipped when baked DZIs will replace them — the baked tiles already
   // include the biome bgs and the placeholder would otherwise flash visibly
   // under them on every refresh.
-  if ((!bakedDZIs || bakedDZIs.length === 0) && !isGLTerrainEnabled()) {
+  if (keepBiomeBackgrounds) {
     addBiomeBgToOSD(viewer);
   }
   if (currentGenerationId !== generationId) return;

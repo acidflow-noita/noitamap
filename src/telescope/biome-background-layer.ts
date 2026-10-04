@@ -69,28 +69,80 @@ export function prepareBiomeBackgroundLayer() {
   return ready ??= loadLayer().catch(error => { ready = undefined; throw error; });
 }
 
+type BackgroundAttachment = {
+  layer: Awaited<ReturnType<typeof prepareBiomeBackgroundLayer>>;
+  source: any;
+  item?: any;
+  isCurrent: () => boolean;
+  onAttach: (item: any) => void;
+};
+const attachedLayers = new WeakMap<object, Map<number, BackgroundAttachment>>();
+
+function removeBackground(viewer: any, entry: BackgroundAttachment): void {
+  try { if (entry.item) viewer.world.removeItem(entry.item); }
+  catch { /* A closing viewer can already have detached its world. */ }
+  finally { entry.source.destroy(); }
+}
+
+/** Hard navigation/baked handoff must also cancel attachments not in OSD yet. */
+export function clearBiomeBackgroundLayers(viewer: any): void {
+  const owner = viewer.viewer || viewer;
+  const entries = attachedLayers.get(owner);
+  attachedLayers.delete(owner);
+  for (const entry of [...entries?.values() ?? []]) removeBackground(viewer, entry);
+}
+
+/** Share seed-independent sources, including pending OSD attachments. */
 export function attachBiomeBackgroundLayer(
   viewer: any,
   layer: Awaited<ReturnType<typeof prepareBiomeBackgroundLayer>>,
   offsets: number[],
   isCurrent: () => boolean,
   onAttach: (item: any) => void,
+  index = viewer.world.getItemCount(),
 ) {
-  const index = viewer.world.getItemCount();
+  if (!isCurrent()) return;
+  const owner = viewer.viewer || viewer;
+  let entries = attachedLayers.get(owner);
+  if (!entries) attachedLayers.set(owner, entries = new Map());
+  for (const [offset, entry] of [...entries])
+    if (entry.layer !== layer || !offsets.includes(offset)) removeBackground(viewer, entry);
   for (const offset of offsets) {
     if (!isCurrent()) return;
+    const existing = entries.get(offset);
+    if (existing) {
+      existing.isCurrent = isCurrent;
+      existing.onAttach = onAttach;
+      if (existing.item) onAttach(existing.item);
+      continue;
+    }
     const source = layer.tiles.createSource(offset);
+    const entry: BackgroundAttachment = { layer, source, isCurrent, onAttach };
+    entries.set(offset, entry);
+    const originalDestroy = source.destroy;
+    let destroyed = false;
+    source.destroy = () => {
+      if (destroyed) return;
+      destroyed = true;
+      if (entries.get(offset) === entry) entries.delete(offset);
+      originalDestroy.call(source);
+    };
     // Background artwork is ready independently of shader compilation. Draw
     // the whole visible area now instead of loading OSD tiles until terrain starts.
     installViewportLayerDrawing(viewer, source);
-    viewer.addTiledImage({
-      tileSource: source, index,
-      x: layer.originX + offset, y: layer.originY, width: layer.width,
-      success: ({ item }: any) => {
-        if (!isCurrent()) { viewer.world.removeItem(item); return; }
-        onAttach(item);
-      },
-      error: () => source.destroy(),
-    });
+    try {
+      viewer.addTiledImage({
+        tileSource: source, index,
+        x: layer.originX + offset, y: layer.originY, width: layer.width,
+        success: ({ item }: any) => {
+          entry.item = item;
+          if (destroyed || !entry.isCurrent()) {
+            removeBackground(viewer, entry); return;
+          }
+          entry.onAttach(item);
+        },
+        error: () => source.destroy(),
+      });
+    } catch (error) { source.destroy(); throw error; }
   }
 }

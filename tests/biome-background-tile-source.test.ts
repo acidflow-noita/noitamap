@@ -5,22 +5,50 @@ import { readFileSync } from "node:fs";
 import { decode } from "fast-png";
 import { createBiomeBackgroundTiles, type BiomeBackgroundRegion } from "../src/telescope/biome-background-tile-source";
 import { installViewportLayerDrawing } from "../src/telescope/instant-terrain-viewport";
-import { createSourceFile, isFunctionDeclaration, ModuleKind, ScriptTarget, transpileModule } from 'typescript';
+import { createSourceFile, isFunctionDeclaration, isImportDeclaration, ModuleKind, ScriptTarget, transpileModule } from 'typescript';
 import { alignTerrainTileEdges } from "../src/osd-pixel-rendering";
 import { BIOME_BACKGROUND_MAP, STATIC_TERRAIN_BIOMES } from "../src/telescope/terrain-policy";
 import boundaries from "../src/data/biome_boundries_py.json";
 
-// Load the real attachment function without the asset-manifest virtual module,
-// which belongs to Vite's build rather than this native OSD fixture.
+// Use the production attachment lifecycle with real OSD and decoded textures.
+// The asset loader's Vite-only imports are unused in this native fixture.
 const layerSource = createSourceFile('biome-background-layer.ts',
   readFileSync('src/telescope/biome-background-layer.ts', 'utf8'), ScriptTarget.Latest);
-const attachFunction = layerSource.statements.find(statement =>
-  isFunctionDeclaration(statement) && statement.name?.text === 'attachBiomeBackgroundLayer')!;
-const attachCode = transpileModule(attachFunction.getText(layerSource).replace(/^export /, ''), {
+const layerCode = transpileModule(layerSource.statements.filter(statement => !isImportDeclaration(statement))
+  .map(statement => statement.getText(layerSource)).join('\n'), {
   compilerOptions: { target: ScriptTarget.ES2022, module: ModuleKind.CommonJS },
 }).outputText;
-const attachBiomeBackgroundLayer = new Function('installViewportLayerDrawing',
-  `${attachCode}\nreturn attachBiomeBackgroundLayer;`)(installViewportLayerDrawing);
+const { attachBiomeBackgroundLayer, clearBiomeBackgroundLayers } = new Function('exports', 'installViewportLayerDrawing',
+  `${layerCode}\nreturn exports;`)({}, installViewportLayerDrawing);
+
+// Exercise the real bridge's ordering and old-item cleanup. The terrain
+// renderer is a controlled readiness barrier; native OSD draws the pixels.
+const bridgeSource = createSourceFile('telescope-osd-bridge.ts',
+  readFileSync('src/telescope/telescope-osd-bridge.ts', 'utf8'), ScriptTarget.Latest);
+const bridgeFunctions = new Set(['isDynamicSeedItem', 'addBiomeBgToOSD', 'renderGenerationResult']);
+const bridgeCode = transpileModule(bridgeSource.statements.filter(statement =>
+  isFunctionDeclaration(statement) && bridgeFunctions.has(statement.name?.text ?? ''))
+  .map(statement => statement.getText(bridgeSource)).join('\n'), {
+  compilerOptions: { target: ScriptTarget.ES2022, module: ModuleKind.CommonJS },
+}).outputText;
+const createBridge = new Function('exports', 'attachBiomeBackgroundLayer', '_bgLayer', `
+  let _bgEpoch = 0, currentGenerationId = 0;
+  const dynamicTiledImages = new Set();
+  let dynamicOverlayElements = [], dynamicBlobUrls = [], activeOrbTargets = [];
+  const isGLTerrainEnabled = () => false, isInstantTerrainEnabled = () => false, isLightMode = () => false;
+  const clearPortalAnimations = () => {}, clearInstantTerrain = () => {}, clearTerrainPngEncoders = () => {};
+  let finish;
+  const addBiomeLayersProgressively = (_viewer, _result, _generation, firstPaint) => new Promise(resolve => {
+    finish = () => {
+      firstPaint();
+      // End after the production handoff; unrelated POI preparation is outside this fixture.
+      currentGenerationId++;
+      resolve();
+    };
+  });
+  ${bridgeCode}
+  return { render: renderGenerationResult, finish: () => finish() };
+`);
 
 let OSD: any, texture: any, original: Uint8ClampedArray;
 beforeAll(async () => {
@@ -100,7 +128,7 @@ function pixelCheck(ctx: any, left: number, top: number, offset = 0, owns = (_x:
 }
 
 describe("native biome backgrounds through installed OSD and native canvas", () => {
-  it.each([-35840, 0, 35840])("draws a complete PW %s close-up before terrain setup, without requesting background tiles", offset => {
+  it.each([-35840, 0, 35840])("keeps native PW %s backgrounds through startup and seed handoffs without tile requests", async offset => {
     const f = fixture();
     const canvas = createCanvas(256, 192), items: any[] = [];
     const viewer = new OSD.EventSource(), world = new OSD.EventSource();
@@ -117,6 +145,11 @@ describe("native biome backgrounds through installed OSD and native canvas", () 
     };
     Object.assign(world, {
       getItemCount: () => items.length, getItemAt: (i: number) => items[i], ensureTilesUpToDate() {},
+      removeItem(item: any) {
+        const index = items.indexOf(item);
+        if (index < 0) return;
+        items.splice(index, 1); item.destroy(); world.raiseEvent('remove-item', { item });
+      },
     });
     Object.assign(viewer, { world, viewport, isAnimating: () => false, isDestroyed: () => false,
       tileCache: new OSD.TileCache({ maxImageCacheCount: 20 }), tileRetryMax: 0, forceRedraw: vi.fn() });
@@ -131,13 +164,14 @@ describe("native biome backgrounds through installed OSD and native canvas", () 
         tileCache: viewer.tileCache, imageLoader: loader, x: options.x, y: options.y, width: options.width,
         immediateRender: true, maxTilesPerFrame: 1, discardLevelsBelowDownsampleRatio: 1, ajaxHeaders: {} });
       item.getDrawer = () => drawer;
-      items.push(item); world.raiseEvent('add-item', { item }); options.success({ item });
+      items.splice(options.index ?? items.length, 0, item);
+      world.raiseEvent('add-item', { item }); options.success({ item });
     };
     try {
       // Intentionally never install a terrain layer. This is the cold-load
       // interval where backgrounds previously depended on GPU setup completing.
-      attachBiomeBackgroundLayer(viewer, { tiles: f.pack, originX, originY, width: f.width } as any,
-        [offset], () => true, () => {});
+      const layer = { tiles: f.pack, originX, originY, width: f.width } as any;
+      attachBiomeBackgroundLayer(viewer, layer, [offset], () => true, () => {});
       for (const item of items) item.update(true);
       drawer.draw(items);
       expect(download).not.toHaveBeenCalled();
@@ -153,6 +187,59 @@ describe("native biome backgrounds through installed OSD and native canvas", () 
       items[0].update(true); drawer.draw(items);
       pixelCheck(drawer.context, 257, 64, offset);
       expect(download).not.toHaveBeenCalled();
+
+      // A finished outgoing seed stays visible until its replacement paints.
+      // Reattaching the backdrop used to cover its ground terrain immediately.
+      const outgoing = new OSD.TileSource({ width: f.width, height: f.height, tileSize: 1024 });
+      outgoing.__drawViewport = (context: any) => {
+        context.fillStyle = '#c02040'; context.fillRect(0, 0, 128, 192); return true;
+      };
+      installViewportLayerDrawing(viewer, outgoing);
+      viewer.addTiledImage({ tileSource: outgoing, x: originX + offset, y: originY,
+        width: f.width, success() {} });
+      const background = items[0];
+      for (let seed = 0; seed < 6; seed++) {
+        attachBiomeBackgroundLayer(viewer, layer, [offset], () => true, () => {});
+        for (const item of items) item.update(true);
+        drawer.draw(items);
+        expect([...drawer.context.getImageData(12, 12, 1, 1).data]).toEqual([192, 32, 64, 255]);
+        expect(items.filter(item => item.source.__biomeBg)).toEqual([background]);
+        expect(f.pack.stats.sources).toBe(1);
+      }
+      const old = items.pop(); old.destroy(); world.raiseEvent('remove-item', { item: old });
+      drawer.draw(items);
+      pixelCheck(drawer.context, 257, 64, offset);
+      expect(download).not.toHaveBeenCalled();
+
+      const bridge = createBridge({}, attachBiomeBackgroundLayer, layer);
+      // Ground backgrounds must survive the real bridge's seed cleanup; a
+      // baked outgoing layer must remain above them until that same handoff.
+      for (const baked of [false, true]) {
+        if (baked) clearBiomeBackgroundLayers(viewer);
+        const source = new OSD.TileSource({ width: f.width, height: f.height, tileSize: 1024 });
+        source.__bakedDzi = baked;
+        source.__drawViewport = (context: any) => {
+          context.fillStyle = '#c02040'; context.fillRect(0, 0, 128, 192); return true;
+        };
+        installViewportLayerDrawing(viewer, source);
+        viewer.addTiledImage({ tileSource: source, x: originX + offset, y: originY,
+          width: f.width, success() {} });
+        const replaced = items.at(-1);
+        const paint = vi.fn(), pending = bridge.render(viewer, {}, undefined, false, paint);
+        for (const item of items) item.update(true);
+        drawer.draw(items);
+        expect([...drawer.context.getImageData(12, 12, 1, 1).data]).toEqual([192, 32, 64, 255]);
+        const backgrounds = items.filter(item => item.source.__biomeBg);
+        expect(backgrounds).toHaveLength(3);
+        expect(paint).not.toHaveBeenCalled();
+        bridge.finish(); await pending;
+        expect(paint).toHaveBeenCalledOnce();
+        expect(items).not.toContain(replaced);
+        expect(items.filter(item => item.source.__biomeBg)).toEqual(backgrounds);
+        expect(f.pack.stats.sources).toBe(3);
+        drawer.draw(items);
+        pixelCheck(drawer.context, 257, 64, offset);
+      }
     } finally {
       viewer.raiseEvent('before-destroy', {});
       for (const item of items) item.destroy();

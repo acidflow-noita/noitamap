@@ -107,6 +107,8 @@ it('removes late attachments after reseeding and disposes failed attachments', a
   const { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer } = await import('../src/telescope/biome-background-layer');
   const layer = await prepareBiomeBackgroundLayer();
   const viewer = { world: { getItemCount: () => 0, removeItem: vi.fn() }, addTiledImage: vi.fn() };
+  const destroy = vi.fn();
+  vi.mocked(layer.tiles.createSource).mockReturnValueOnce({ destroy });
   let current = true;
   const attached = vi.fn();
   attachBiomeBackgroundLayer(viewer, layer, [0], () => current, attached);
@@ -116,7 +118,80 @@ it('removes late attachments after reseeding and disposes failed attachments', a
   expect(viewer.world.removeItem).toHaveBeenCalledWith(item);
   expect(attached).not.toHaveBeenCalled();
   options.error();
-  expect(options.tileSource.destroy).toHaveBeenCalledOnce();
+  expect(destroy).toHaveBeenCalledOnce();
   attachBiomeBackgroundLayer(viewer, layer, [0], () => current, attached);
   expect(viewer.addTiledImage).toHaveBeenCalledOnce();
+});
+
+it('shares pending and attached backgrounds across seeds without keeping an obsolete callback', async () => {
+  const { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer } = await import('../src/telescope/biome-background-layer');
+  const layer = await prepareBiomeBackgroundLayer();
+  const viewer = { world: { getItemCount: () => 4, removeItem: vi.fn() }, addTiledImage: vi.fn() };
+  const first = vi.fn(), next = vi.fn();
+  let current = true;
+  attachBiomeBackgroundLayer(viewer, layer, [0], () => current, first);
+  current = false;
+  attachBiomeBackgroundLayer(viewer, layer, [0], () => true, next);
+  const item = {};
+  viewer.addTiledImage.mock.calls[0][0].success({ item });
+  expect(first).not.toHaveBeenCalled();
+  expect(next).toHaveBeenCalledExactlyOnceWith(item);
+  expect(viewer.world.removeItem).not.toHaveBeenCalled();
+  for (let i = 0; i < 5; i++) attachBiomeBackgroundLayer(viewer, layer, [0], () => true, next);
+  expect(layer.tiles.createSource).toHaveBeenCalledOnce();
+  expect(viewer.addTiledImage).toHaveBeenCalledOnce();
+});
+
+it('clears attached and pending backgrounds on baked/static navigation and rejects late callbacks', async () => {
+  const { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer, clearBiomeBackgroundLayers } = await import('../src/telescope/biome-background-layer');
+  const layer = await prepareBiomeBackgroundLayer();
+  const viewer = { world: { getItemCount: () => 0, removeItem: vi.fn() }, addTiledImage: vi.fn() };
+  const attached = vi.fn();
+  const disposals: ReturnType<typeof vi.fn>[] = [];
+  vi.mocked(layer.tiles.createSource).mockImplementation(() => {
+    const destroy = vi.fn(); disposals.push(destroy); return { destroy };
+  });
+  attachBiomeBackgroundLayer(viewer, layer, [-35840, 0, 35840], () => true, attached);
+  const options = viewer.addTiledImage.mock.calls.map(([options]) => options);
+  const first = {}, late = {};
+  options[0].success({ item: first });
+  clearBiomeBackgroundLayers(viewer);
+  clearBiomeBackgroundLayers(viewer);
+  options[1].success({ item: late });
+  expect(viewer.world.removeItem.mock.calls).toEqual([[first], [late]]);
+  expect(attached).toHaveBeenCalledExactlyOnceWith(first);
+  for (const destroy of disposals) expect(destroy).toHaveBeenCalledOnce();
+  attachBiomeBackgroundLayer(viewer, layer, [0], () => true, attached);
+  expect(layer.tiles.createSource).toHaveBeenCalledTimes(4);
+});
+
+it('keeps the middle background when light mode changes and rebuilds removed sources only', async () => {
+  const { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer } = await import('../src/telescope/biome-background-layer');
+  const layer = await prepareBiomeBackgroundLayer();
+  const viewer = { world: { getItemCount: () => 0, removeItem: vi.fn() }, addTiledImage: vi.fn() };
+  const attached = vi.fn();
+  attachBiomeBackgroundLayer(viewer, layer, [-35840, 0, 35840], () => true, attached);
+  const items = viewer.addTiledImage.mock.calls.map(([options]) => {
+    const item = { source: options.tileSource }; options.success({ item }); return item;
+  });
+  attachBiomeBackgroundLayer(viewer, layer, [0], () => true, attached);
+  expect(viewer.world.removeItem.mock.calls).toEqual([[items[0]], [items[2]]]);
+  expect(attached).toHaveBeenLastCalledWith(items[1]);
+  attachBiomeBackgroundLayer(viewer, layer, [-35840, 0, 35840], () => true, attached);
+  expect(layer.tiles.createSource).toHaveBeenCalledTimes(5);
+  items[1].source.destroy();
+  attachBiomeBackgroundLayer(viewer, layer, [-35840, 0, 35840], () => true, attached);
+  expect(layer.tiles.createSource).toHaveBeenCalledTimes(6);
+});
+
+it('allows retry after both asynchronous and synchronous attachment failures', async () => {
+  const { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer } = await import('../src/telescope/biome-background-layer');
+  const layer = await prepareBiomeBackgroundLayer();
+  const viewer = { world: { getItemCount: () => 0, removeItem: vi.fn() }, addTiledImage: vi.fn() };
+  const attach = () => attachBiomeBackgroundLayer(viewer, layer, [0], () => true, () => {});
+  attach(); viewer.addTiledImage.mock.calls[0][0].error();
+  viewer.addTiledImage.mockImplementationOnce(() => { throw new Error('OSD stopped'); });
+  expect(attach).toThrow('OSD stopped');
+  attach();
+  expect(layer.tiles.createSource).toHaveBeenCalledTimes(3);
 });
