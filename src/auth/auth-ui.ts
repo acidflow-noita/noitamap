@@ -163,19 +163,19 @@ export class AuthUI {
       ? ""
       : `<button id="twitchLoginBtn" class="btn-twitch justify-content-center">
           ${TWITCH_SYMBOL_WHITE}
-          ${i18next.t("auth.loginWithTwitch", "Sign in with Twitch")}
+          <span class="pro-provider-label">${i18next.t("auth.loginWithTwitch", "Sign in with Twitch")}</span>
         </button>`;
     const patreonLoginHtml = state.provider === "patreon"
       ? ""
       : `<button id="patreonLoginBtn" class="btn-patreon justify-content-center">
           ${PATREON_SYMBOL_WHITE}
-          ${i18next.t("auth.loginWithPatreon", "Sign in with Patreon")}
+          <span class="pro-provider-label">${i18next.t("auth.loginWithPatreon", "Sign in with Patreon")}</span>
         </button>`;
     const twitchColumnHtml = TWITCH_ENABLED
       ? `<div class="pro-col">
               ${twitchLoginHtml}
               <a href="https://www.twitch.tv/products/wuote" target="_blank" rel="noopener noreferrer" class="btn-patron justify-content-center">
-                <i class="bi bi-box-arrow-up-right"></i>${i18next.t("auth.subscribeTwitch", "Subscribe on Twitch")}
+                <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i><span class="pro-provider-label">${i18next.t("auth.subscribeTwitch", "Subscribe on Twitch")}</span>
               </a>
             </div>
             <div class="pro-or">${i18next.t("auth.or", "or")}</div>`
@@ -194,7 +194,7 @@ export class AuthUI {
               <div class="pro-col">
                 ${patreonLoginHtml}
                 <a href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer" class="btn-patron justify-content-center">
-                  <i class="bi bi-box-arrow-up-right"></i>${i18next.t("auth.becomePatron", "Become a Patron")}
+                  <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i><span class="pro-provider-label">${i18next.t("auth.becomePatron", "Become a Patron")}</span>
                 </a>
               </div>
             </div>
