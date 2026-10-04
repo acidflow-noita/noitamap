@@ -19,6 +19,9 @@ try {
       const gl = getContext(type);
       if (type !== "webgl2" || instrumented.has(gl)) return gl;
       instrumented.add(gl);
+      let boundTexture;
+      const bindTexture = gl.bindTexture;
+      gl.bindTexture = (...args) => { boundTexture = args[1]; return bindTexture(...args); };
       for (const method of ["texImage2D", "texSubImage2D", "compileShader", "createTexture", "deleteTexture"]) {
         const original = gl[method];
         gl[method] = (...args) => {
@@ -26,7 +29,8 @@ try {
           if (method === "compileShader") trace.compiles.push(trace.phase);
           else if (method === "createTexture") trace.creates.push({ phase: trace.phase, texture: value });
           else if (method === "deleteTexture") trace.deletes.push({ phase: trace.phase, texture: args[0] });
-          else trace.uploads.push({ phase: trace.phase, method, width: args[method === "texImage2D" ? 3 : 4],
+          else trace.uploads.push({ phase: trace.phase, method, texture: boundTexture,
+            format: method === "texImage2D" ? args[2] : undefined, width: args[method === "texImage2D" ? 3 : 4],
             height: args[method === "texImage2D" ? 4 : 5], bytes: args[8]?.byteLength ?? 0 });
           return value;
         };

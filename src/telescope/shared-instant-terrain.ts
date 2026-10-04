@@ -27,7 +27,6 @@ import {
 } from "noita-telescope-full-pixels/gl/material_atlas.js";
 import {
   createChunkTexture,
-  createEngineChunkTexture,
   createFillMaterialTexture,
   createFloatTableTexture,
   createForegroundTexture,
@@ -275,13 +274,10 @@ export class SharedInstantTerrainResources {
             ),
           ),
           engChunk: own(
-            plane === 1 && elevators.regions.length
-              ? createElevatorChunkTexture(gl, chunks, width, elevators.regions)
-              : createEngineChunkTexture(gl, {
-                  chunk: chunks,
-                  width,
-                  height: BIOME_MAP_HEIGHT,
-                }),
+            // Keep the sampler format identical across planes. Switching from
+            // R16UI to hell's RGBA16UI can trigger a second cold driver shader
+            // specialization; ordinary chunks still read the same R flags.
+            createElevatorChunkTexture(gl, chunks, width, plane === 1 ? elevators.regions : []),
           ),
         };
         this.planeUploads += Object.keys(textures).length;

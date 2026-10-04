@@ -177,6 +177,13 @@ export async function verifySharedTerrainResources() {
   phase("shared-init");
   const renderer = new GLTerrainRenderer(), owner = new SharedInstantTerrainResources(renderer);
   await owner.ensureResources(generation.tileLayers, generation.biomeData, options);
+  const chunkFormats = (owner: SharedInstantTerrainResources, renderer: any) =>
+    ([0, -1, 1] as const).map(plane => {
+      owner.setPlane(plane);
+      const texture = renderer.textures.engChunk;
+      return trace.uploads.findLast((entry: any) => entry.method === 'texImage2D' && entry.texture === texture)?.format;
+    });
+  const planeChunkFormats = chunkFormats(owner, renderer);
   const sharedLatticeBuilds = count(trace.latticeBuilds, "shared-init");
   const sharedLargeUploads = largeUploads("shared-init");
   const payloadBytes = (selected: string) => uploads(selected)
@@ -302,6 +309,7 @@ export async function verifySharedTerrainResources() {
   const shaftRenderer = new GLTerrainRenderer(), shaftOwner = new SharedInstantTerrainResources(shaftRenderer);
   await shaftOwner.ensureResources(generation.tileLayers, generation.biomeData,
     { ...options, elevatorShafts: lower.elevatorShafts });
+  const elevatorChunkFormats = chunkFormats(shaftOwner, shaftRenderer);
   const elevatorUploadCount = uploads("elevator").length;
   const elevatorUninitializedUploads = uploads("elevator").filter((upload: any) =>
     upload.method === "texImage2D" && upload.bytes === 0).length;
@@ -349,6 +357,7 @@ export async function verifySharedTerrainResources() {
     elevatorCreates.every((texture: any) => elevatorDeletes.includes(texture));
   if (shaftRenderer.program) shaftRenderer.gl.deleteProgram(shaftRenderer.program);
   return { samples: compared, comparedPixels, mixedSamples, materialSamples, retentionCompression,
+    planeChunkFormats, elevatorChunkFormats,
     elevatorSamples, elevatorLatticeBytes, packedWorldPixelsMatch,
     elevatorSwitchUploads, elevatorSwitchCompiles, elevatorTexturesReleased,
     elevatorUninitializedUploads, elevatorPartialUploads,

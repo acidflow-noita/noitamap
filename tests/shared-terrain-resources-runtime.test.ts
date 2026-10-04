@@ -53,6 +53,10 @@ describe.skipIf(process.platform !== "linux")("shared terrain resources with nat
       ...statistics, sampleCount: samples.length, sampleFailures: samples.filter((sample: any) => sample.mismatchedBytes),
     }));
     expect(result.diagnostics).toEqual([]);
+    // A sampler-format change can trigger expensive first-use driver shader
+    // work even when compileShader() is never called. Inspect actual uploads.
+    expect(result.planeChunkFormats).toEqual([0x8d76, 0x8d76, 0x8d76]); // RGBA16UI
+    expect(result.elevatorChunkFormats).toEqual(result.planeChunkFormats);
     expect(result.samples.length).toBeGreaterThanOrEqual(36);
     expect(result.comparedPixels).toBeGreaterThan(80_000);
     for (const sample of result.samples) expect(sample.mismatchedBytes, JSON.stringify(sample)).toBe(0);
