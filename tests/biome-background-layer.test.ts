@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { createCanvas, Path2D } from '@napi-rs/canvas';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { decode } from 'fast-png';
+import { BIOME_BACKGROUND_MAP, createBackgroundOwnership, createTerrainOwnership, WORLD_HEIGHT, WORLD_TOP } from '../src/telescope/terrain-policy';
+import { GENERATOR_CONFIG } from '../lib/noita-telescope-vm/js/generator_config.js';
 
 const state = vi.hoisted(() => ({
   revisions: { 'background_coalmine.png': 'coal-revision', 'background_wandcave.png': 'wand-revision' },
@@ -59,6 +62,64 @@ it('leaves the reported EDR chunk at -2842,8492 uncovered by biome backdrops', a
     }
     expect(context.isPointInPath(path, x, y), region.textureKey).toBe(false);
   }
+});
+
+it('matches the baker background footprint throughout hell, including gaps without generated terrain', async () => {
+  const { biomeBackgroundGeometry } = await import('../src/telescope/biome-background-layer');
+  const { biomes } = JSON.parse(readFileSync('src/data/biome_boundries_py.json', 'utf8'));
+  const map = decode(readFileSync('lib/noita-telescope-vm/data/biome_maps/biome_map.png'));
+  expect([map.width, map.height, map.channels]).toEqual([70, 48, 3]);
+  const pixels = new Uint32Array(map.width * map.height);
+  for (let y = 0; y < map.height; y++) for (let x = 0; x < map.width; x++) {
+    const i = ((map.height - 1) * map.width + x) * 3;
+    pixels[y * map.width + x] = (map.data[i] << 16) | (map.data[i + 1] << 8) | map.data[i + 2];
+  }
+  const terrain = createTerrainOwnership([], pixels, {}, map.width);
+  const baked = createBackgroundOwnership(terrain, pixels, GENERATOR_CONFIG, 1);
+  const geometry = biomeBackgroundGeometry(biomes);
+  const paths = geometry.regions.map(region => {
+    const path = new Path2D();
+    for (const ring of region.rings) {
+      path.moveTo(ring[0].x, ring[0].y);
+      for (const point of ring.slice(1)) path.lineTo(point.x, point.y);
+      path.closePath();
+    }
+    return { path, key: region.textureKey };
+  });
+  const context = createCanvas(1, 1).getContext('2d');
+  for (let y = 0; y < 48; y++) for (let x = 0; x < 70; x++) {
+    const wx = (x - 35) * 512 + 256, localY = WORLD_TOP + y * 512 + 256;
+    const owner = baked.at(wx, localY);
+    const expected = owner < 0 ? [] : [BIOME_BACKGROUND_MAP[baked.names[owner]]];
+    expect(paths.filter(({ path }) => context.isPointInPath(path, wx, localY + WORLD_HEIGHT))
+      .map(({ key }) => key), `hell cell ${x},${y}`).toEqual(expected);
+    expect(terrain.at(wx, localY)).toBe(-1);
+  }
+  expect(geometry.originY + geometry.height).toBe(WORLD_TOP + 2 * WORLD_HEIGHT);
+  for (const { path } of paths) {
+    expect(context.isPointInPath(path, -160, WORLD_TOP + 2 * WORLD_HEIGHT + .5)).toBe(false);
+    expect(context.isPointInPath(path, -160, WORLD_TOP - .5)).toBe(false);
+  }
+});
+
+it('extends only the bottom-row coverage while preserving holes and winding', async () => {
+  const { biomeBackgroundGeometry } = await import('../src/telescope/biome-background-layer');
+  const geometry = biomeBackgroundGeometry([
+    { filename: 'the_end', svg_map_path: 'M 27 46 L 42 46 L 42 48 L 27 48 Z M 30 46 L 30 48 L 32 48 L 32 46 Z M 35 46 L 37 46 L 37 48 L 35 48 Z' },
+    { filename: 'coalmine', svg_map_path: 'M 0 45 L 5 45 L 5 47 L 0 47 Z' },
+  ]);
+  const region = geometry.regions[0], path = new Path2D();
+  for (const ring of region.rings) {
+    path.moveTo(ring[0].x, ring[0].y);
+    for (const point of ring.slice(1)) path.lineTo(point.x, point.y);
+    path.closePath();
+  }
+  const context = createCanvas(1, 1).getContext('2d');
+  for (let x = 26; x < 43; x++) {
+    expect(context.isPointInPath(path, (x - 35) * 512 + 256, 20116))
+      .toBe(x >= 27 && x < 42 && !(x >= 30 && x < 32));
+  }
+  expect(geometry.regions[1].rings).toHaveLength(1);
 });
 
 it('shares native artwork preparation and requests only revisioned local PNGs', async () => {

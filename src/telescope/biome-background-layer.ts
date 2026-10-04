@@ -1,5 +1,5 @@
 import { biomeBackgroundRevisions } from 'virtual:noitamap-data-archives';
-import { BIOME_BACKGROUND_MAP, STATIC_TERRAIN_BIOMES, CARVED_ROOM_BIOMES } from './terrain-policy';
+import { BIOME_BACKGROUND_MAP, STATIC_TERRAIN_BIOMES, CARVED_ROOM_BIOMES, WORLD_HEIGHT } from './terrain-policy';
 import { immutableTelescopeAssets, revisionedAssetUrl } from './immutable-assets';
 import { createBiomeBackgroundTiles, type BiomeBackgroundRegion } from './biome-background-tile-source';
 import { installViewportLayerDrawing } from './instant-terrain-viewport';
@@ -22,7 +22,12 @@ export function biomeBackgroundGeometry(biomes: { filename: string; svg_map_path
       if (command === 'Z') continue;
       if (command !== 'M' && command !== 'L') throw new Error('Invalid biome background boundary');
       const x = Number(tokens[i++]) * 512 + phaseX;
-      const y = Number(tokens[i++]) * 512 + phaseY;
+      const sourceY = Number(tokens[i++]) * 512 + phaseY;
+      // The normal-world bake repeats its last biome-map row through hell.
+      // Continue the orthogonal bottom edge as one contour (including holes),
+      // avoiding a separate rectangle seam. Only the clip grows; artwork tiles
+      // at native size with the same phase in both vertical worlds.
+      const y = sourceY === phaseY + WORLD_HEIGHT ? sourceY + WORLD_HEIGHT : sourceY;
       if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('Invalid biome background coordinate');
       if (command === 'M') { ring = []; rings.push(ring); }
       ring.push({ x, y });

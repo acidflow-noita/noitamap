@@ -7,7 +7,10 @@ import { createBiomeBackgroundTiles, type BiomeBackgroundRegion } from "../src/t
 import { installViewportLayerDrawing } from "../src/telescope/instant-terrain-viewport";
 import { createSourceFile, isFunctionDeclaration, isImportDeclaration, ModuleKind, ScriptTarget, transpileModule } from 'typescript';
 import { alignTerrainTileEdges } from "../src/osd-pixel-rendering";
-import { BIOME_BACKGROUND_MAP, STATIC_TERRAIN_BIOMES } from "../src/telescope/terrain-policy";
+import { BIOME_BACKGROUND_MAP, STATIC_TERRAIN_BIOMES, CARVED_ROOM_BIOMES, WORLD_HEIGHT, WORLD_TOP,
+  createBackgroundOwnership, createTerrainOwnership } from "../src/telescope/terrain-policy";
+import { GENERATOR_CONFIG } from '../lib/noita-telescope-vm/js/generator_config.js';
+import { decodePngToRgba } from '../src/telescope/png-decode';
 import boundaries from "../src/data/biome_boundries_py.json";
 
 // Use the production attachment lifecycle with real OSD and decoded textures.
@@ -18,8 +21,9 @@ const layerCode = transpileModule(layerSource.statements.filter(statement => !is
   .map(statement => statement.getText(layerSource)).join('\n'), {
   compilerOptions: { target: ScriptTarget.ES2022, module: ModuleKind.CommonJS },
 }).outputText;
-const { attachBiomeBackgroundLayer, clearBiomeBackgroundLayers } = new Function('exports', 'installViewportLayerDrawing',
-  `${layerCode}\nreturn exports;`)({}, installViewportLayerDrawing);
+const { attachBiomeBackgroundLayer, clearBiomeBackgroundLayers, biomeBackgroundGeometry } = new Function(
+  'exports', 'installViewportLayerDrawing', 'BIOME_BACKGROUND_MAP', 'STATIC_TERRAIN_BIOMES', 'CARVED_ROOM_BIOMES', 'WORLD_HEIGHT',
+  `${layerCode}\nreturn exports;`)({}, installViewportLayerDrawing, BIOME_BACKGROUND_MAP, STATIC_TERRAIN_BIOMES, CARVED_ROOM_BIOMES, WORLD_HEIGHT);
 
 // Exercise the real bridge's ordering and old-item cleanup. The terrain
 // renderer is a controlled readiness barrier; native OSD draws the pixels.
@@ -260,6 +264,100 @@ describe("native biome backgrounds through installed OSD and native canvas", () 
       const decoded = await loadImage(bytes);
       expect(decoded.width).toBeGreaterThanOrEqual(96);
       expect(decoded.height).toBeGreaterThanOrEqual(96);
+    }
+  });
+
+  it.each([-35840, 0, 35840])('matches baked hell background pixels and transparent borders in PW %s', async offset => {
+    const geometry = biomeBackgroundGeometry(boundaries.biomes);
+    const map = decode(readFileSync('lib/noita-telescope-vm/data/biome_maps/biome_map.png'));
+    const pixels = new Uint32Array(map.width * map.height);
+    for (let y = 0; y < map.height; y++) for (let x = 0; x < map.width; x++) {
+      const i = ((map.height - 1) * map.width + x) * 3;
+      pixels[y * map.width + x] = (map.data[i] << 16) | (map.data[i + 1] << 8) | map.data[i + 2];
+    }
+    const baked = createBackgroundOwnership(createTerrainOwnership([], pixels, {}, map.width), pixels, GENERATOR_CONFIG, 1);
+    const textures = new Map<string, any>(), reference = new Map<string, ReturnType<typeof decodePngToRgba>>();
+    const keys = new Set([...baked.owners].filter(id => id >= 0).map(id => BIOME_BACKGROUND_MAP[baked.names[id]]));
+    for (const key of keys) {
+      const bytes = readFileSync(`public/biome_bg/${key.split('/').pop()}`);
+      const original = decodePngToRgba(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+      // These authored textures repeat exactly after one vertical world, so
+      // the common layer phase also equals the baker's plane-local phase.
+      expect(WORLD_HEIGHT % original.height).toBe(0);
+      // Use the baker's raw decode: the native PNG loader applies gAMA color
+      // conversion to the_end.png, which is unrelated to layer coverage/phase.
+      const canvas = createCanvas(original.width, original.height), context = canvas.getContext('2d');
+      const image = context.createImageData(original.width, original.height);
+      image.data.set(original.data); context.putImageData(image, 0, 0);
+      textures.set(key, canvas); reference.set(key, original);
+    }
+    const pack = createBiomeBackgroundTiles({ ...geometry, textures });
+    const source = pack.createSource(offset);
+    const uninterrupted = createBiomeBackgroundTiles({ ...geometry, textures,
+      regions: [{ textureKey: BIOME_BACKGROUND_MAP.the_end,
+        rings: [rect(-4096, WORLD_TOP, 7680, 2 * WORLD_HEIGHT)] }] });
+    const uninterruptedSource = uninterrupted.createSource(offset);
+    const compare = (context: any, left: number, top: number) => {
+      const rgba = context.getImageData(0, 0, context.canvas.width, context.canvas.height).data;
+      let mismatches = 0;
+      for (let y = 0; y < context.canvas.height; y++) for (let x = 0; x < context.canvas.width; x++) {
+        const wx = left + x, wy = top + y, owner = baked.at(wx, wy - WORLD_HEIGHT);
+        const original = owner < 0 ? undefined : reference.get(BIOME_BACKGROUND_MAP[baked.names[owner]]);
+        const out = (y * context.canvas.width + x) * 4;
+        if (!original) {
+          if (rgba[out + 3] !== 0) mismatches++;
+          continue;
+        }
+        const tx = ((wx + map.width * 256) % original.width + original.width) % original.width;
+        const ty = ((wy - WORLD_HEIGHT - WORLD_TOP) % original.height + original.height) % original.height;
+        const input = (ty * original.width + tx) * 4;
+        for (let c = 0; c < 4; c++) if (rgba[out + c] !== original.data[input + c]) mismatches++;
+      }
+      expect(mismatches, `native hell pixels at ${left},${top}`).toBe(0);
+    };
+    const patches = [
+      [-4103, 17408], [-160, 20116], [3577, 17408], [-16903, 17408], [-16400, 17408],
+      [-160, 41984 - 129], [-160, 24033],
+    ];
+    try {
+      for (const [x, y] of patches) {
+        const left = x + offset, canvas = createCanvas(271, 263), context = canvas.getContext('2d');
+        source.__drawViewport(context, {
+          opacity: 1,
+          imageToViewportCoordinates: (x: number, y: number) => new OSD.Point(geometry.originX + offset + x, geometry.originY + y),
+        }, { pixelFromPoint: (p: any) => new OSD.Point(p.x - left, p.y - y) });
+        compare(context, left, y);
+      }
+      // Compare the join against one uninterrupted rectangle at fractional
+      // zoom. This isolates contour seams from native Canvas image-edge AA.
+      for (const scale of [.625, 1.25]) {
+        const canvas = createCanvas(257, 129), context = canvas.getContext('2d');
+        const item = {
+          opacity: 1,
+          imageToViewportCoordinates: (x: number, y: number) => new OSD.Point(geometry.originX + offset + x, geometry.originY + y),
+        };
+        const viewport = { pixelFromPoint: (p: any) => new OSD.Point((p.x + 160 - offset) * scale, (p.y - 17387.3) * scale) };
+        source.__drawViewport(context, item, viewport);
+        const referenceContext = createCanvas(257, 129).getContext('2d');
+        uninterruptedSource.__drawViewport(referenceContext, item, viewport);
+        expect(Buffer.from(context.getImageData(0, 0, 257, 129).data)
+          .equals(Buffer.from(referenceContext.getImageData(0, 0, 257, 129).data)), `join at scale ${scale}`).toBe(true);
+      }
+      // The non-canvas OSD route uses the same geometry and original bytes.
+      const loader = new OSD.ImageLoader({ jobLimit: 2, timeout: 3000 });
+      for (const x of [-4096, -160, 3584, -16896]) {
+        const tile = { level: source.maxLevel,
+          x: Math.floor((x - geometry.originX) / 256), y: Math.floor((20116 - geometry.originY) / 256) };
+        const context: any = await new Promise((resolve, reject) => loader.addJob({
+          source, tile, src: source.getTileUrl(tile.level, tile.x, tile.y),
+          callback: (result: any, error: unknown) => error ? reject(error) : resolve(result),
+        }));
+        compare(context, geometry.originX + offset + tile.x * 256, geometry.originY + tile.y * 256);
+      }
+      expect(loader.jobsInProgress).toBe(0);
+    } finally {
+      source.destroy(); pack.destroy(); uninterruptedSource.destroy(); uninterrupted.destroy();
+      for (const canvas of textures.values()) canvas.width = canvas.height = 0;
     }
   });
   it.each([-35840, 0, 35840])("matches original 96px texture bytes across adjacent and edge tiles at PW offset %s", async offset => {
