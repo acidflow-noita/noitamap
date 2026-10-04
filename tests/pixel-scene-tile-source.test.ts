@@ -170,6 +170,21 @@ describe("scene artwork tiles through native canvas and installed OSD loader", (
     expect(f.source.tileExists(13, 0, 0)).toBe(false);
   });
 
+  it('releases a shared layer without closing the artwork used by its successor', async () => {
+    const f = fixture(), release = vi.fn(), shared = new Map(f.bitmapByKey);
+    const old = createPixelSceneTileSource({ items: f.items, bitmapByKey: shared,
+      generationId: 41, releaseBitmaps: release }).source;
+    try {
+      old.destroy(); old.destroy();
+      expect(release).toHaveBeenCalledOnce();
+      expect(shared.size).toBe(0);
+      for (const image of f.bitmapByKey.values()) expect(image.close).not.toHaveBeenCalled();
+      const pixels = await f.read(f.source.maxLevel, 0, 0);
+      expect(hash(pixels)).toBe(hash(legacyTile(f, f.source.maxLevel, 0, 0)));
+      expect(pixels.getImageData(0, 0, 512, 512).data.some((value: number, i: number) => i % 4 === 3 && value > 0)).toBe(true);
+    } finally { f.source.destroy(); }
+  });
+
   it("yields between dense scene batches, preserving pixels while letting camera work run", async () => {
     const f = fixture(undefined, true);
     try {

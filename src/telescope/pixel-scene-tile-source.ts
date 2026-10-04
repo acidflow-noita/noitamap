@@ -12,14 +12,16 @@ export interface SceneTileItem {
   sceneKey: string;
 }
 
-/** Scene PNG caching avoids decoding artwork again. This separate, bounded
- * cache avoids compositing every room again when OSD revisits a zoom level.
+/** The caller supplies decoded scene artwork. This separate, bounded cache
+ * avoids compositing every room again when OSD revisits a zoom level.
  * OSD receives its own canvas, since its eviction destroys that canvas. */
 export function createPixelSceneTileSource(options: {
   items: SceneTileItem[];
   bitmapByKey: Map<string, ImageBitmap>;
   generationId: number;
   maxCacheBytes?: number;
+  /** Shared decoded artwork is released by its layer's lease owner. */
+  releaseBitmaps?: () => void;
 }) {
   const { items, bitmapByKey, generationId } = options;
   if (!items.length) throw new Error("Cannot tile an empty scene layer");
@@ -231,7 +233,8 @@ export function createPixelSceneTileSource(options: {
     for (const work of inflight.values()) work.aborted = true;
     inflight.clear();
     cache.clear();
-    for (const bitmap of new Set(bitmapByKey.values())) bitmap.close?.();
+    if (options.releaseBitmaps) options.releaseBitmaps();
+    else for (const bitmap of new Set(bitmapByKey.values())) bitmap.close?.();
     bitmapByKey.clear();
   };
   return { source, originX, originY, width, height };

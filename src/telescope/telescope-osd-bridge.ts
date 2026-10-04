@@ -18,7 +18,10 @@ import { isGLTerrainEnabled, isInstantTerrainEnabled, useRenderPerfGeneration } 
 import { prepareInstantTerrain } from './instant-terrain-backend';
 import { clearTerrainPngEncoders } from './terrain-png-encoder';
 import { createScenePrefetch } from "./scene-prefetch";
+import { SceneBitmapCache } from './scene-bitmap-cache';
 import { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer } from "./biome-background-layer";
+
+const liveSceneBitmaps = new SceneBitmapCache();
 
 let instantTerrainModule: typeof import('./instant-terrain') | undefined;
 let instantTerrainLoading: Promise<typeof import('./instant-terrain')> | undefined;
@@ -480,6 +483,7 @@ export function clearDynamicOverlays(viewer: any): void {
   clearPortalAnimations();
   // Invalidate any in-flight async generation so it won't render on top of the new map
   currentGenerationId++;
+  liveSceneBitmaps.clear();
 
   // Drop the GL terrain's GPU resources: they are keyed to the outgoing seed's
   // layer buffers, and the atlas alone is several MiB of texture.
@@ -2396,73 +2400,109 @@ async function instantSceneMasks(result: GenerationResult): Promise<StaticTerrai
 async function buildSceneBitmaps(
   result: GenerationResult,
   generationId: number | null
-): Promise<{ validScenes: PixelScene[]; bitmapByKey: Map<string, ImageBitmap> } | null> {
+): Promise<{ validScenes: PixelScene[]; bitmapByKey: Map<string, ImageBitmap>; release: () => void } | null> {
   const validScenes = renderableScenes(result);
   // Correct the captured base only for live/exported scene composition. Baked
   // daily display skips this entire path and keeps its finished pixels.
   if (!isSimplisticBackground()) validScenes.unshift(...capturedGoldRepairs(validScenes, result.worldSize));
   const bitmapByKey = new Map<string, ImageBitmap>();
-  if (validScenes.length === 0) return { validScenes, bitmapByKey };
+  const releases: Array<() => void> = [];
+  let released = false;
+  const release = () => {
+    if (released) return;
+    released = true;
+    for (const close of releases) close();
+    releases.length = 0;
+    bitmapByKey.clear();
+  };
+  if (validScenes.length === 0) return { validScenes, bitmapByKey, release };
+  // Offline decoration exports keep their existing, individually owned images.
+  const memory = generationId === null ? undefined : liveSceneBitmaps;
+  const current = () => !released && (generationId === null || currentGenerationId === generationId);
+  const remember = (key: string, bitmap: ImageBitmap) => {
+    if (!current()) { bitmap.close(); return; }
+    const lease = memory?.adopt(key, bitmap);
+    releases.push(lease ? lease.release : () => bitmap.close());
+    bitmapByKey.set(key, lease?.bitmap ?? bitmap);
+  };
 
-  const uniqueKeys = new Map<string, PixelScene>();
-  for (const scene of validScenes) {
-    const rk = sceneRenderKey(scene);
-    if (!uniqueKeys.has(rk)) uniqueKeys.set(rk, scene);
-  }
+  try {
+    const uniqueKeys = new Map<string, PixelScene>();
+    for (const scene of validScenes) {
+      const rk = sceneRenderKey(scene);
+      if (!uniqueKeys.has(rk)) uniqueKeys.set(rk, scene);
+    }
 
-  // Per-key bitmaps are seed-independent — cache them in IDB so future seeds
-  // reuse the work. Bulk-fetch every cached bitmap in one IDB transaction
-  // (~138 separate read transactions add 1-3s on Brave/FF).
-  const keyArr = Array.from(uniqueKeys.entries()); // [renderKey, scene]
-  let compositeCount = 0;
-  let cacheHitCount = 0;
-  let fallbackCount = 0;
-  let missingCount = 0;
-  const [idx, bulkSceneCache] = await Promise.all([
-    getScenePngIndex(), getCachedSceneBitmapsBulk(keyArr.map(([k]) => k)),
-  ]);
+    // Per-key bitmaps are seed-independent — cache them in IDB so future seeds
+    // reuse the work. Bulk-fetch every cached bitmap in one IDB transaction
+    // (~138 separate read transactions add 1-3s on Brave/FF).
+    const keyArr: Array<[string, PixelScene]> = [];
+    let memoryHitCount = 0;
+    // Acquire every existing image before admitting misses that may evict it
+    // from the bounded cache. Both generations can use the same native bitmap.
+    for (const [key, scene] of uniqueKeys) {
+      if (!current()) { release(); return null; }
+      const hit = memory?.acquire(key);
+      if (hit) {
+        bitmapByKey.set(key, hit.bitmap);
+        releases.push(hit.release);
+        memoryHitCount++;
+      } else keyArr.push([key, scene]);
+    }
+    let compositeCount = 0;
+    let cacheHitCount = 0;
+    let fallbackCount = 0;
+    let missingCount = 0;
+    const [idx, bulkSceneCache] = keyArr.length ? await Promise.all([
+      getScenePngIndex(), getCachedSceneBitmapsBulk(keyArr.map(([k]) => k)),
+    ]) : [undefined, new Map()];
 
-  // A burst of fifty cached decodes/recolors could monopolize the UI thread.
-  // Share bounded foreground preparation with real task yields between slices.
-  await prepareAssetJobs(keyArr, async ([rk, scene]) => {
-    if (generationId !== null && currentGenerationId !== generationId) return;
-    // ── Cache fast path ────────────────────────────────────────────────
-    const cached = bulkSceneCache.get(rk);
-    if (cached) {
-      try {
-        const bmp = await createImageBitmap(cached.blob);
-        bitmapByKey.set(rk, bmp);
-        cacheHitCount++;
-        return;
-      } catch {
-        // fall through to recompute
+    // A burst of fifty cached decodes/recolors could monopolize the UI thread.
+    // Share bounded foreground preparation with real task yields between slices.
+    await prepareAssetJobs(keyArr, async ([rk, scene]) => {
+      if (!current()) return;
+      // ── Cache fast path ────────────────────────────────────────────────
+      const cached = bulkSceneCache.get(rk);
+      if (cached) {
+        try {
+          const bmp = await createImageBitmap(cached.blob);
+          remember(rk, bmp);
+          cacheHitCount++;
+          return;
+        } catch {
+          // fall through to recompute
+        }
       }
+
+      if (!current()) return;
+      const composited = await compositeSceneBitmap(scene.key, scene, idx!);
+      if (!composited) {
+        missingCount++;
+        return;
+      }
+      remember(rk, composited.bitmap);
+      if (composited.kind === 'fallback') fallbackCount++;
+      else compositeCount++;
+      if (composited.blob) {
+        cacheSceneBitmap(rk, composited.blob, composited.width, composited.height).catch(e =>
+          console.warn('[OSD Bridge] cacheSceneBitmap failed:', rk, e)
+        );
+      }
+    });
+    if (generationId !== null && currentGenerationId !== generationId) {
+      release();
+      return null;
     }
 
-    const composited = await compositeSceneBitmap(scene.key, scene, idx);
-    if (!composited) {
-      missingCount++;
-      return;
-    }
-    bitmapByKey.set(rk, composited.bitmap);
-    if (composited.kind === 'fallback') fallbackCount++;
-    else compositeCount++;
-    if (composited.blob) {
-      cacheSceneBitmap(rk, composited.blob, composited.width, composited.height).catch(e =>
-        console.warn('[OSD Bridge] cacheSceneBitmap failed:', rk, e)
-      );
-    }
-  });
-  if (generationId !== null && currentGenerationId !== generationId) {
-    for (const bitmap of bitmapByKey.values()) bitmap.close();
-    return null;
+    console.log(
+      `[OSD Bridge] Pixel scene bitmaps: ${bitmapByKey.size}/${uniqueKeys.size} ` +
+        `(${memoryHitCount} memory, ${cacheHitCount} disk, ${compositeCount} composite, ${fallbackCount} fallback, ${missingCount} missing)`
+    );
+    return { validScenes, bitmapByKey, release };
+  } catch (error) {
+    release();
+    throw error;
   }
-
-  console.log(
-    `[OSD Bridge] Pixel scene bitmaps: ${bitmapByKey.size}/${uniqueKeys.size} ` +
-      `(${cacheHitCount} cache, ${compositeCount} composite, ${fallbackCount} fallback, ${missingCount} missing)`
-  );
-  return { validScenes, bitmapByKey };
 }
 
 export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult, generationId: number): Promise<void> {
@@ -2486,13 +2526,16 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     );
   }
 
-  const [built, { createPixelSceneTileSource }] = await Promise.all([
-    buildSceneBitmaps(result, generationId),
-    import('./pixel-scene-tile-source'),
-  ]);
+  const bitmapWork = buildSceneBitmaps(result, generationId);
+  const sourceWork = import('./pixel-scene-tile-source').catch(error => {
+    // A failed module download must also release images still being prepared.
+    void bitmapWork.then(built => built?.release(), () => {});
+    throw error;
+  });
+  const [built, { createPixelSceneTileSource }] = await Promise.all([bitmapWork, sourceWork]);
   if (!built) return; // cancelled
   const { validScenes, bitmapByKey } = built;
-  if (validScenes.length === 0) return;
+  if (validScenes.length === 0) { built.release(); return; }
 
   // Populate debug scene list for __pixelSceneList()
   _lastLoadedScenes = allScenes.map(s => ({
@@ -2506,7 +2549,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   console.log(`[OSD Bridge] Pixel scenes: ${allScenes.length} total, ${validScenes.length} valid`);
 
   if (currentGenerationId !== generationId) {
-    for (const bitmap of bitmapByKey.values()) bitmap.close();
+    built.release();
     return;
   }
 
@@ -2516,27 +2559,32 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     if (!bitmapByKey.has(rk)) continue;
     items.push({ osdX: scene.x, osdY: scene.y, w: scene.width, h: scene.height, sceneKey: rk });
   }
-  if (items.length === 0) return;
-  const { source, originX, originY, width: bboxWidth } = createPixelSceneTileSource({
-    items, bitmapByKey, generationId,
-  });
+  if (items.length === 0) { built.release(); return; }
+  try {
+    const { source, originX, originY, width: bboxWidth } = createPixelSceneTileSource({
+      items, bitmapByKey, generationId, releaseBitmaps: built.release,
+    });
 
-  // Complete attachment before the first atomic terrain/art frame is released.
-  await new Promise<void>((resolve, reject) => viewer.addTiledImage({
-    tileSource: source,
-    x: originX,
-    y: originY,
-    width: bboxWidth,
-    error: (error: unknown) => { source.destroy(); reject(error); },
-    success: (event: any) => {
-      if (currentGenerationId !== generationId) {
-        try { viewer.world.removeItem(event.item); } catch {}
-      } else dynamicTiledImages.add(event.item);
-      resolve();
-    },
-  }));
+    // Complete attachment before the first atomic terrain/art frame is released.
+    await new Promise<void>((resolve, reject) => viewer.addTiledImage({
+      tileSource: source,
+      x: originX,
+      y: originY,
+      width: bboxWidth,
+      error: (error: unknown) => { source.destroy(); reject(error); },
+      success: (event: any) => {
+        if (currentGenerationId !== generationId) {
+          try { viewer.world.removeItem(event.item); } catch {}
+        } else dynamicTiledImages.add(event.item);
+        resolve();
+      },
+    }));
 
-  console.log(`[OSD Bridge] Added ${items.length} pixel scenes as single tile source`);
+    console.log(`[OSD Bridge] Added ${items.length} pixel scenes as single tile source`);
+  } catch (error) {
+    built.release();
+    throw error;
+  }
 }
 
 /**

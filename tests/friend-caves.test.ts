@@ -9,6 +9,7 @@ import * as backgrounds from '../src/telescope/terrain-backgrounds';
 import * as goldRoom from '../src/telescope/captured-gold-room';
 import type { PixelScene } from '../src/telescope/telescope-adapter';
 import { prepareAssetJobs } from '../src/telescope/background-idle';
+import { SceneBitmapCache } from '../src/telescope/scene-bitmap-cache';
 import { MATERIAL_COLOR_CONVERSION, MATERIAL_WANG_COLORS } from '../lib/noita-telescope/js/potion_config.js';
 
 const archive = { zip: null as any };
@@ -241,6 +242,98 @@ it('caches the repair through the real scene builder and omits it with the simpl
     } finally { for (const image of built.bitmapByKey.values()) image.close(); }
   }
   expect(warnings).not.toHaveBeenCalled();
+});
+
+it('reuses native room artwork across live seeds without closing the incoming layer or changing export pixels', async () => {
+  const memory = new SceneBitmapCache(), disk = new Map<string, { blob: Blob; width: number; height: number }>();
+  const composite = vi.fn(bridge.compositeSceneBitmap), decode = vi.fn(bitmap);
+  const read = vi.fn(async (keys: string[]) => new Map(keys.filter(key => disk.has(key)).map(key => [key, disk.get(key)])));
+  vi.stubGlobal('currentGenerationId', 1);
+  const { buildSceneBitmaps } = functions('src/telescope/telescope-osd-bridge.ts', ['buildSceneBitmaps'], {
+    ...goldRoom, isSimplisticBackground: () => false, prepareAssetJobs, liveSceneBitmaps: memory,
+    renderableScenes: (result: any) => Object.values(result.pixelScenesByPW).flat(),
+    sceneRenderKey: bridge.sceneRenderKey, getScenePngIndex: bridge.getScenePngIndex,
+    compositeSceneBitmap: composite, createImageBitmap: decode, getCachedSceneBitmapsBulk: read,
+    cacheSceneBitmap: async (key: string, blob: Blob, width: number, height: number) => { disk.set(key, { blob, width, height }); },
+  });
+  const material = raw.get(goldRoom.GOLD_ROOM_KEY)!;
+  const scenes = [-1, 0, 1].map(pw => ({ key: goldRoom.GOLD_ROOM_KEY, name: 'solid_wall_hidden_cavern',
+    x: -4126 + pw * 35840, y: 11264, width: 512, height: 512, imgElement: material.data }));
+  const generation = { worldSize: 70, pixelScenesByPW: { '0,0': scenes } };
+  let old: any, next: any, exported: any;
+  const pixels = (image: any) => Buffer.from(image.getContext('2d').getImageData(0, 0, image.width, image.height).data);
+  try {
+    old = await buildSceneBitmaps(generation, 1);
+    const images = new Map<string, any>(old.bitmapByKey), expected = new Map([...images].map(([key, image]) => [key, pixels(image)]));
+    const closes = [...images.values()].map(image => vi.spyOn(image, 'close'));
+    vi.stubGlobal('currentGenerationId', 2);
+    next = await buildSceneBitmaps(generation, 2);
+    expect(composite).toHaveBeenCalledTimes(6);
+    expect(read).toHaveBeenCalledOnce();
+    expect(decode).not.toHaveBeenCalled();
+    for (const [key, image] of next.bitmapByKey) expect(image).toBe(images.get(key));
+    old.release(); memory.clear();
+    for (const [key, image] of next.bitmapByKey) expect(pixels(image).equals(expected.get(key)!)).toBe(true);
+    for (const close of closes) expect(close).not.toHaveBeenCalled();
+    next.release();
+    for (const close of closes) expect(close).toHaveBeenCalledOnce();
+
+    // The offline export still decodes its own images from the disk cache.
+    exported = await buildSceneBitmaps(generation, null);
+    expect(decode).toHaveBeenCalledTimes(6);
+    expect(memory.stats.bytes).toBe(0);
+    for (const [key, image] of exported.bitmapByKey) expect(pixels(image).equals(expected.get(key)!)).toBe(true);
+  } finally {
+    old?.release(); next?.release(); exported?.release(); memory.clear(); vi.unstubAllGlobals();
+  }
+});
+
+it.each(['cancelled', 'failed'])('releases a late decoded image after its scene preparation is %s', async outcome => {
+  const memory = new SceneBitmapCache(), blob = new Blob(['cached scene']);
+  const late = await bitmap(new ImageData(4, 4)), close = vi.spyOn(late, 'close');
+  let finish!: (image: any) => void, fail!: (error: Error) => void;
+  const waiting = new Promise<any>(resolve => { finish = resolve; });
+  const broken = new Promise<any>((_resolve, reject) => { fail = reject; });
+  // Only the failed case starts a second concurrent decode that rejects.
+  void broken.catch(() => {});
+  const decode = vi.fn((value: Blob) => value === blob ? waiting : broken);
+  const keys = outcome === 'failed' ? ['late', 'broken'] : ['late'];
+  vi.stubGlobal('currentGenerationId', 1);
+  const { buildSceneBitmaps } = functions('src/telescope/telescope-osd-bridge.ts', ['buildSceneBitmaps'], {
+    isSimplisticBackground: () => true, prepareAssetJobs, liveSceneBitmaps: memory,
+    renderableScenes: () => keys.map(key => ({ key, name: key, width: 4, height: 4, x: 0, y: 0 })),
+    sceneRenderKey: (scene: any) => scene.key, getScenePngIndex: async () => ({}),
+    compositeSceneBitmap: async () => { throw new Error('Scene preparation failed'); },
+    createImageBitmap: decode,
+    getCachedSceneBitmapsBulk: async () => new Map(keys.map(key => [key, { blob: key === 'late' ? blob : new Blob() }])),
+    cacheSceneBitmap: vi.fn(),
+  });
+  try {
+    const pending = buildSceneBitmaps({ worldSize: 70 }, 1);
+    await vi.waitFor(() => expect(decode).toHaveBeenCalledTimes(keys.length));
+    if (outcome === 'failed') {
+      const rejected = expect(pending).rejects.toThrow('Scene preparation failed');
+      fail(new Error('Cannot decode cached PNG')); await rejected;
+    } else {
+      vi.stubGlobal('currentGenerationId', 2); memory.clear();
+    }
+    finish(late);
+    if (outcome === 'cancelled') expect(await pending).toBeNull();
+    await vi.waitFor(() => expect(close).toHaveBeenCalledOnce());
+    expect(memory.stats.bytes).toBe(0);
+  } finally { finish(late); memory.clear(); vi.unstubAllGlobals(); }
+});
+
+it('releases late scene ownership when the layer module fails to load', async () => {
+  let finish!: (value: any) => void;
+  const work = new Promise(resolve => { finish = resolve; }), release = vi.fn();
+  const { addPixelScenes } = functions('src/telescope/telescope-osd-bridge.ts', ['addPixelScenes'], {
+    pixelSceneConfig: { enabled: true }, buildSceneBitmaps: () => work,
+    require: () => { throw new Error('Scene layer module unavailable'); },
+  });
+  await expect(addPixelScenes({}, { pixelScenesByPW: {} }, 1)).rejects.toThrow('Scene layer module unavailable');
+  finish({ release });
+  await vi.waitFor(() => expect(release).toHaveBeenCalledOnce());
 });
 
 it.each([['middle', 0], ['left', -1], ['right', 1]] as const)(
