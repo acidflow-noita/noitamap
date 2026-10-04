@@ -71,6 +71,25 @@ describe('optional asset task yielding', () => {
 });
 
 describe('shared background asset loading', () => {
+  it('lets queued input run before cached foreground work finishes', async () => {
+    let clock = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => clock);
+    const jobs = Array.from({ length: 40 }, (_, n) => n), loaded: number[] = [];
+    const input = vi.fn(() => loaded.length);
+    setTimeout(input, 0);
+    const done = prepareAssetJobs(jobs, async job => {
+      loaded.push(job);
+      clock += 4; // Synchronous work followed by an already-resolved load.
+    });
+    await vi.runAllTimersAsync();
+    await done;
+    expect(input).toHaveBeenCalledOnce();
+    expect(input.mock.results[0].value).toBeGreaterThan(0);
+    expect(input.mock.results[0].value).toBeLessThan(jobs.length);
+    expect(loaded).toEqual(jobs);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('loads only one job per idle opportunity and waits for the final job', async () => {
     const idle = idleFixture(), controller = new AbortController();
     const waits = [deferred(), deferred(), deferred()];

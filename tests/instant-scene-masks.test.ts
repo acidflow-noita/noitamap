@@ -46,13 +46,13 @@ it("bounds delayed unique decodes at eight and preserves all placements and mate
   const result = loadInstantSceneMasks(placements, load);
   expect(load).toHaveBeenCalledTimes(8);
   // Finish batches in reverse order so decode completion cannot accidentally
-  // determine placement order. The next bounded group starts immediately.
+  // determine placement order. Allow preparation's foreground task yields.
   while (load.mock.calls.length < 19 || pending.length) {
     pending
       .splice(0)
       .reverse()
       .forEach((finish) => finish());
-    await Promise.resolve();
+    await new Promise<void>(resolve => setTimeout(resolve, 0));
   }
   const masks = await result;
   expect(peak).toBe(8);

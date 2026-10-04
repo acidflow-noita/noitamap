@@ -6,6 +6,7 @@ import Flatbush from "flatbush";
 import { CONTAINER_TYPES } from "./poi-containers";
 import { EGG_SPAWNS } from './egg-spawns';
 import { getPOISpawnDetails } from './poi-spawn-details';
+import { prepareAssetJobs } from './background-idle';
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
 import { loadInstantSceneMasks } from "./instant-scene-masks";
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
@@ -2389,7 +2390,6 @@ async function buildSceneBitmaps(
   // Per-key bitmaps are seed-independent — cache them in IDB so future seeds
   // reuse the work. Bulk-fetch every cached bitmap in one IDB transaction
   // (~138 separate read transactions add 1-3s on Brave/FF).
-  const BATCH = 50;
   const keyArr = Array.from(uniqueKeys.entries()); // [renderKey, scene]
   let compositeCount = 0;
   let cacheHitCount = 0;
@@ -2399,42 +2399,40 @@ async function buildSceneBitmaps(
     getScenePngIndex(), getCachedSceneBitmapsBulk(keyArr.map(([k]) => k)),
   ]);
 
-  for (let i = 0; i < keyArr.length; i += BATCH) {
-    if (generationId !== null && currentGenerationId !== generationId) {
-      for (const bitmap of bitmapByKey.values()) bitmap.close();
-      return null;
+  // A burst of fifty cached decodes/recolors could monopolize the UI thread.
+  // Share bounded foreground preparation with real task yields between slices.
+  await prepareAssetJobs(keyArr, async ([rk, scene]) => {
+    if (generationId !== null && currentGenerationId !== generationId) return;
+    // ── Cache fast path ────────────────────────────────────────────────
+    const cached = bulkSceneCache.get(rk);
+    if (cached) {
+      try {
+        const bmp = await createImageBitmap(cached.blob);
+        bitmapByKey.set(rk, bmp);
+        cacheHitCount++;
+        return;
+      } catch {
+        // fall through to recompute
+      }
     }
-    const batch = keyArr.slice(i, i + BATCH);
-    await Promise.all(
-      batch.map(async ([rk, scene]) => {
-        // ── Cache fast path ────────────────────────────────────────────────
-        const cached = bulkSceneCache.get(rk);
-        if (cached) {
-          try {
-            const bmp = await createImageBitmap(cached.blob);
-            bitmapByKey.set(rk, bmp);
-            cacheHitCount++;
-            return;
-          } catch {
-            // fall through to recompute
-          }
-        }
 
-        const composited = await compositeSceneBitmap(scene.key, scene, idx);
-        if (!composited) {
-          missingCount++;
-          return;
-        }
-        bitmapByKey.set(rk, composited.bitmap);
-        if (composited.kind === 'fallback') fallbackCount++;
-        else compositeCount++;
-        if (composited.blob) {
-          cacheSceneBitmap(rk, composited.blob, composited.width, composited.height).catch(e =>
-            console.warn('[OSD Bridge] cacheSceneBitmap failed:', rk, e)
-          );
-        }
-      })
-    );
+    const composited = await compositeSceneBitmap(scene.key, scene, idx);
+    if (!composited) {
+      missingCount++;
+      return;
+    }
+    bitmapByKey.set(rk, composited.bitmap);
+    if (composited.kind === 'fallback') fallbackCount++;
+    else compositeCount++;
+    if (composited.blob) {
+      cacheSceneBitmap(rk, composited.blob, composited.width, composited.height).catch(e =>
+        console.warn('[OSD Bridge] cacheSceneBitmap failed:', rk, e)
+      );
+    }
+  });
+  if (generationId !== null && currentGenerationId !== generationId) {
+    for (const bitmap of bitmapByKey.values()) bitmap.close();
+    return null;
   }
 
   console.log(

@@ -1,4 +1,5 @@
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
+import { prepareAssetJobs } from "./background-idle";
 
 interface Placement {
   key: string;
@@ -19,35 +20,23 @@ export async function loadInstantSceneMasks(
 ): Promise<StaticTerrainMask[]> {
   const keys = [...new Set(placements.map((scene) => scene.key))];
   const byKey = new Map<string, Omit<StaticTerrainMask, "x" | "y">>();
-  let next = 0,
-    failed = false;
-  await Promise.all(
-    Array.from({ length: Math.min(8, keys.length) }, async () => {
-      while (!failed && next < keys.length) {
-        const key = keys[next++];
-        try {
-          const raw = await load(key);
-          if (
-            !raw?.imgElement ||
-            !ArrayBuffer.isView(raw.imgElement) ||
-            raw.width < 2 ||
-            raw.height < 2
-          )
-            continue;
-          const pixels = raw.imgElement as Uint8Array;
-          byKey.set(key, {
-            width: raw.width,
-            height: raw.height,
-            bits: staticSceneBits(pixels),
-            airBits: staticSceneBits(pixels, true),
-          });
-        } catch (error) {
-          failed = true;
-          throw error;
-        }
-      }
-    }),
-  );
+  await prepareAssetJobs(keys, async key => {
+    const raw = await load(key);
+    if (
+      !raw?.imgElement ||
+      !ArrayBuffer.isView(raw.imgElement) ||
+      raw.width < 2 ||
+      raw.height < 2
+    )
+      return;
+    const pixels = raw.imgElement as Uint8Array;
+    byKey.set(key, {
+      width: raw.width,
+      height: raw.height,
+      bits: staticSceneBits(pixels),
+      airBits: staticSceneBits(pixels, true),
+    });
+  });
   const masks: StaticTerrainMask[] = [];
   for (const scene of placements) {
     const mask = byKey.get(scene.key);

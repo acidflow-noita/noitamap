@@ -30,6 +30,10 @@ export function prepareAssetJobs<T>(
     let next = 0,
       active = 0,
       settled = false;
+    let sliceStarted = performance.now();
+    let foregroundYield: Promise<void> | undefined;
+    const yieldForeground = () => foregroundYield ??= new Promise<void>(resume => setTimeout(resume, 0))
+      .then(() => { sliceStarted = performance.now(); foregroundYield = undefined; });
     const finish = (error?: unknown, failed = false) => {
       if (settled) return;
       settled = true;
@@ -39,6 +43,10 @@ export function prepareAssetJobs<T>(
     const worker = async () => {
       while (!settled && next < jobs.length) {
         if (background && !background.aborted) await yieldTask(background);
+        // Cached loads can resolve entirely as microtasks. Bound that chain so
+        // input handlers and modal painting run during foreground preparation.
+        else while (!settled && next < jobs.length && performance.now() - sliceStarted >= 8)
+          await yieldForeground();
         if (settled || next >= jobs.length) return;
         await load(jobs[next++]);
       }
