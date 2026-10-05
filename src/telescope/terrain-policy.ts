@@ -43,6 +43,10 @@ export function isRepeatedTempleTemplate(scene: { key: string }): boolean {
     scene.key === "static_tile/temples-assets/darkness";
 }
 
+export function isWaterCaveLayout(key: string): boolean {
+  return /^general\/watercave_layout_[1-5]$/.test(key);
+}
+
 export const BIOME_BACKGROUND_MAP: Record<string, string> = {
   coalmine: "data/weather_gfx/background_coalmine.png",
   coalmine_alt: "data/weather_gfx/background_coalmine.png",

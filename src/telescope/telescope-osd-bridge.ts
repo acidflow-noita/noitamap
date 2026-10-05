@@ -12,7 +12,7 @@ import { loadInstantSceneMasks } from "./instant-scene-masks";
 import { isSimplisticBackground } from '../simplistic-background';
 import { GOLD_ROOM_KEY, GOLD_ROOM_REPAIR_KEY, isCapturedGoldRoom, capturedGoldRepairs, capturedGoldRepairPixels } from './captured-gold-room';
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
-import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate, carvedRoomBiome } from "./terrain-policy";
+import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate, carvedRoomBiome, isWaterCaveLayout } from "./terrain-policy";
 import { loadTelescopeModules } from "./load-telescope";
 import { isGLTerrainEnabled, isInstantTerrainEnabled, useRenderPerfGeneration } from "../renderer_settings";
 import { prepareInstantTerrain } from './instant-terrain-backend';
@@ -1819,7 +1819,7 @@ async function getScenePngIndex(): Promise<ScenePngIndex> {
       // Temple foreground scenes use _fg.png instead of _visual.png
       addTo('_fg.png', visualByPath, visualByName);
       // Top-level plain .png files (no subdirectory, no _visual/_background suffix) —
-      // these are full pixel scene visuals like watercave_layout_X.png. Defer them
+      // keep the legacy artwork fallback except for known material maps. Defer
       // to a second pass: a plain .png that has a sibling _visual/_background (e.g.
       // essenceroom.png next to essenceroom_visual.png) is a MATERIAL COLORMAP, not
       // a visual, and must not shadow the real visual in visualByName.
@@ -1835,7 +1835,7 @@ async function getScenePngIndex(): Promise<ScenePngIndex> {
     });
     for (const { key, path } of plainPngCandidates) {
       // These are material/force-air maps, not visual artwork.
-      if (carvedRoomBiome(`general/${key}`)) continue;
+      if (carvedRoomBiome(`general/${key}`) || isWaterCaveLayout(`general/${key}`)) continue;
       if (visualByPath.has(key) || bgByPath.has(key)) continue; // colormap with dedicated layers
       if (!visualByName.has(key)) visualByName.set(key, path);
     }
@@ -2005,6 +2005,15 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
  */
 function sceneRenderKey(scene: { key: string; variantKey?: string; x?: number; y?: number }): string {
   const vk = scene.variantKey || '';
+  // Native materials/backdrops are phased in world space. Only these five
+  // layouts need new entries; old grey bitmaps and other terrain stay cached.
+  if (isWaterCaveLayout(scene.key)) {
+    const name = scene.key.substring(scene.key.lastIndexOf('/') + 1);
+    const layers = pixelSceneConfig.layerOverrides[name] || pixelSceneConfig.layerOverrides[scene.key];
+    const background = layers?.background ?? pixelSceneConfig.layers.background;
+    const mid = layers?.mid ?? pixelSceneConfig.layers.mid;
+    return `${scene.key}|watercave-textures-v1|${vk || 'biome=watercave'}|${scene.x ?? 0},${scene.y ?? 0}|${+background},${+mid}`;
+  }
   const mat = vk.split('&').filter(p => p && !p.startsWith('biome='));
   const key = mat.length ? `${scene.key}|${mat.join('&')}` : scene.key;
   if (scene.key === GOLD_ROOM_REPAIR_KEY) return `${key}|${scene.x ?? 0},${scene.y ?? 0}`;
@@ -2092,6 +2101,7 @@ async function compositeSceneBitmap(
   const name = slashIdx >= 0 ? key.substring(slashIdx + 1) : key;
 
   const caveBiome = carvedRoomBiome(key);
+  const waterCave = isWaterCaveLayout(key);
   const skipBg = biome === 'temple' || (biome === 'general' && !caveBiome);
 
   const override = pixelSceneConfig.layerOverrides[name] || pixelSceneConfig.layerOverrides[key];
@@ -2099,7 +2109,7 @@ async function compositeSceneBitmap(
   const wantMid = override?.mid ?? pixelSceneConfig.layers.mid;
   const wantVis = override?.visual ?? pixelSceneConfig.layers.visual;
 
-  const visualPath = wantVis ? resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, key) : undefined;
+  const visualPath = wantVis && !waterCave ? resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, key) : undefined;
   const bgPath = skipBg || !wantBg ? undefined : resolveScenePath(idx.bgByPath, idx.bgByName, biome, name, key);
 
   const zip = await getDataZip();
@@ -2123,7 +2133,16 @@ async function compositeSceneBitmap(
   }
 
   let midBitmap: ImageBitmap | null = null;
-  if (wantMid) {
+  if (wantMid && waterCave) {
+    // Always use the raw source, not a legacy scene instance's flat recolor.
+    const raw = await ensurePixelSceneData(scene.key, { art: false });
+    if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement))
+      throw new Error(`Missing Water Cave material pixels: ${scene.key}`);
+    const { paintWaterCaveScene } = await import('./watercave-scene');
+    const pixels = await paintWaterCaveScene({ ...scene, x: scene.x ?? 0, y: scene.y ?? 0 },
+      { data: raw.imgElement, width: raw.width, height: raw.height }, wantBg);
+    midBitmap = await imgElementToBitmap(pixels, raw.width, raw.height);
+  } else if (wantMid) {
     await ensurePixelSceneData(scene.key, { art: false });
     const arr =
       scene.imgElement instanceof Uint8Array || scene.imgElement instanceof Uint8ClampedArray ? scene.imgElement : null;
@@ -2194,7 +2213,7 @@ async function compositeSceneBitmap(
   if (hasMid && !hasBg && !hasVis) {
     cw = midBitmap!.width;
     ch = midBitmap!.height;
-    kind = 'fallback';
+    kind = waterCave ? 'composite' : 'fallback';
   } else if (hasVis && !hasBg && !hasMid) {
     cw = visualData!.width;
     ch = visualData!.height;
@@ -2249,8 +2268,8 @@ async function compositeSceneBitmap(
  */
 export const prefetchAllSceneBitmaps = createScenePrefetch(async (isCurrent) => {
     try {
-      // Carved rooms need actual placement coordinates for their backdrop.
-      const allKeys = getAllPixelSceneKeys().filter(key => !carvedRoomBiome(key));
+      // These scenes need actual placement coordinates for materials/backdrops.
+      const allKeys = getAllPixelSceneKeys().filter(key => !carvedRoomBiome(key) && !isWaterCaveLayout(key));
       if (allKeys.length === 0) return;
       const cached = await getCachedSceneBitmapKeys();
       const missing = allKeys.filter(k => !cached.has(k));
