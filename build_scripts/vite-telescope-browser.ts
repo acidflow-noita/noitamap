@@ -1,5 +1,6 @@
 import { transform } from "esbuild";
 import { dirname, resolve } from "node:path";
+import { createHash } from "node:crypto";
 import type { Plugin } from "vite";
 
 /** Vite builds browser APIs, including the native baker's browser facade. Leave
@@ -18,6 +19,20 @@ export async function browserTelescopeSource(code: string, id: string) {
       );
     source = source.replace(pattern, replacement);
   };
+  if (id.endsWith("/engine_resolve/lattice_builder.js")) {
+    // Keep the submodule intact. Audit again if upstream changes the vote's
+    // semantics; applying an old replacement to a new implementation is unsafe.
+    const pattern = /function neighbourMajority\(cov, mat, w, h\) \{[\s\S]*?\n\}/;
+    const original = source.match(pattern)?.[0];
+    if (!original || createHash('sha256').update(original.replace(/\r\n/g, '\n')).digest('hex') !==
+        'f1b5b558c4c78a4b6860c90fcec946677f2995c9ff5f60c3226959c509555d7a')
+      throw new Error(`Review changed Telescope lattice neighbour vote: ${id}`);
+    replaceExpected(pattern, 'function neighbourMajority(cov, mat, w, h) { applyTerrainLatticeMajority(cov, mat, w, h); }',
+      'lattice neighbour vote');
+    const helper = resolve(import.meta.dirname, '../src/telescope/terrain-lattice-majority.ts');
+    source = `import { applyTerrainLatticeMajority } from ${JSON.stringify(helper)};\n` + source;
+    return { code: source, map: null };
+  }
   if (id.endsWith("/gl/terrain_renderer.js")) {
     // This host replaces Telescope's app and never enables its standalone HUD.
     // Upstream's permanent poller captures each renderer, retaining contexts
@@ -106,7 +121,7 @@ export async function browserTelescopeSource(code: string, id: string) {
 export function telescopeBrowserPlugin(directories: string[]): Plugin {
   const files = new Set(
     directories.flatMap((dir) =>
-      ["png_sanitizer.js", "utils.js", "pixel_scene_generation.js", "icon_sheets.js", "gl/terrain_renderer.js"].map(
+      ["png_sanitizer.js", "utils.js", "pixel_scene_generation.js", "icon_sheets.js", "gl/terrain_renderer.js", "engine_resolve/lattice_builder.js"].map(
         (name) => resolve(dir, name).replace(/\\/g, "/"),
       ),
     ),
