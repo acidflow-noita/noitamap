@@ -1,9 +1,35 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createGenerationCheckpoint, runGenerationTask, yieldGenerationTask } from '../src/telescope/generation-task';
+import { createGenerationCheckpoint, runGenerationTask, waitForGenerationWork, yieldGenerationTask } from '../src/telescope/generation-task';
 
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe('generation task boundaries', () => {
+  it('stops cancelled work before a checkpoint or immediately after an input yield', async () => {
+    let resume!: () => void;
+    vi.stubGlobal('scheduler', { yield: () => new Promise<void>(resolve => { resume = resolve; }) });
+    const controller = new AbortController(), reason = new DOMException('Old seed', 'AbortError');
+    const checkpoint = createGenerationCheckpoint(controller.signal);
+    const waiting = yieldGenerationTask(controller.signal);
+    controller.abort(reason);
+    expect(() => checkpoint()).toThrow(reason);
+    resume();
+    await expect(waiting).rejects.toBe(reason);
+  });
+
+  it('releases the generator on cancellation while observing late worker failure', async () => {
+    const controller = new AbortController(), reason = new DOMException('Old seed', 'AbortError');
+    let rejectWorker!: (reason: Error) => void;
+    const worker = new Promise<void>((_, reject) => { rejectWorker = reject; });
+    const old = runGenerationTask(() => waitForGenerationWork(worker, controller.signal));
+    const next = runGenerationTask(async () => 'new seed');
+    await Promise.resolve();
+    controller.abort(reason);
+    await expect(old).rejects.toBe(reason);
+    await expect(next).resolves.toBe('new seed');
+    rejectWorker(new Error('Late worker failure')); // Must not be unhandled.
+    await Promise.resolve();
+  });
+
   it('only yields after its work budget and restarts the budget after resuming', async () => {
     let now = 0;
     vi.spyOn(performance, 'now').mockImplementation(() => now);

@@ -20,7 +20,7 @@ import { ensureTelescopeCacheVersion } from "./telescope/telescope-cache-version
 import { prewarmInstantTerrain, releaseInstantTerrainBackend } from "./telescope/instant-terrain-backend";
 import { getUnlocksFromURL, unlocksChanged, UNLOCK_KEYS, getUrlUnlockKind } from "./unlocks";
 import { getPillarFlagsFromURL } from "./pillars-unlocks";
-import { prewarmAlt, resetAltCache } from "./unlocks-toggle";
+import { beginAltSeed, prewarmAlt, resetAltCache } from "./unlocks-toggle";
 import { isLightMode } from "./light-mode";
 import {
   renderGenerationResult,
@@ -236,6 +236,7 @@ export async function runDynamicMap(
   const { viewer, onLoadingChange, onPOIsReady, onSeedResolved } = opts;
   const runStarted = performance.now();
   const myToken = ++generationToken;
+  beginAltSeed(seed);
   opts.onMapReplacementStart?.();
 
   const noBaked = !shouldUseBakedTerrain(window.location.search);

@@ -9,7 +9,7 @@ vi.mock('../src/telescope/instant-terrain-backend', () => ({ prewarmInstantTerra
 vi.mock('../src/telescope/telescope-adapter', () => ({ generateDynamicMap: vi.fn(), initTelescope: vi.fn(), prewarmParallelWorlds: vi.fn(), releaseParallelWorlds: vi.fn() }));
 vi.mock('../src/unlocks', () => ({ getUnlocksFromURL: vi.fn(), unlocksChanged: vi.fn(), UNLOCK_KEYS: [], getUrlUnlockKind: vi.fn() }));
 vi.mock('../src/pillars-unlocks', () => ({ getPillarFlagsFromURL: vi.fn() }));
-vi.mock('../src/unlocks-toggle', () => ({ prewarmAlt: vi.fn(), resetAltCache: vi.fn() }));
+vi.mock('../src/unlocks-toggle', () => ({ beginAltSeed: vi.fn(), prewarmAlt: vi.fn(), resetAltCache: vi.fn() }));
 vi.mock('../src/light-mode', () => ({ isLightMode: () => false }));
 vi.mock('../src/telescope/telescope-osd-bridge', () => ({
   renderGenerationResult: vi.fn(), clearDynamicOverlays: vi.fn(), cancelPendingDynamicTerrain: vi.fn(), getAllPOIsFlat: vi.fn(),
@@ -20,6 +20,7 @@ vi.mock('../src/telescope/baked-dzi-loader', () => ({ addBakedDZIsToOSD: vi.fn()
 vi.mock('../src/telescope/perk-i18n', () => ({ perkNameKey: vi.fn() }));
 vi.mock('../src/game-translations/translator', () => ({ gameTranslator: {} }));
 import { clearDynamicMap, runDynamicMap } from '../src/dynamic-map';
+import { beginAltSeed } from '../src/unlocks-toggle';
 import { fetchDailySeed, fetchPreviousDailySeed } from '../src/data_sources/daily_seed';
 import { updateURLWithSeed } from '../src/data_sources/url';
 import { generateDynamicMap, initTelescope } from '../src/telescope/telescope-adapter';
@@ -42,6 +43,9 @@ describe('dynamic map request invalidation before daily lookup', () => {
     const daily = pendingSeed(), onMapReplacementStart = vi.fn(), onLoadingChange = vi.fn();
     vi.mocked(fetchDailySeed).mockReturnValueOnce(daily.promise);
     const pending = runDynamicMap(42, false, { viewer: {}, onMapReplacementStart, onLoadingChange });
+    expect(beginAltSeed).toHaveBeenCalledWith(42);
+    expect(vi.mocked(beginAltSeed).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(fetchDailySeed).mock.invocationCallOrder[0]);
     expect(onMapReplacementStart).toHaveBeenCalledOnce();
     expect(onLoadingChange).not.toHaveBeenCalled();
     clearDynamicMap({});

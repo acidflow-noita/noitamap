@@ -1,11 +1,11 @@
 /** Continue in a browser task so queued input and rendering can run. A resolved
  * promise alone only extends the current microtask chain. */
-export function yieldGenerationTask(): Promise<void> {
+export function yieldGenerationTask(signal?: AbortSignal): Promise<void> {
+  signal?.throwIfAborted();
   const scheduler = (globalThis as typeof globalThis & {
     scheduler?: { yield?: () => Promise<void> };
   }).scheduler;
-  if (scheduler?.yield) return scheduler.yield();
-  return new Promise(resolve => {
+  const task = scheduler?.yield ? scheduler.yield() : new Promise<void>(resolve => {
     if (typeof MessageChannel === 'undefined') {
       setTimeout(resolve, 0);
       return;
@@ -18,16 +18,31 @@ export function yieldGenerationTask(): Promise<void> {
     };
     channel.port2.postMessage(null);
   });
+  return signal ? task.then(() => { signal.throwIfAborted(); }) : task;
 }
 
 /** Check only at complete biome regions/path attempts. The budget bounds a
  * batch of work; it is not a delay added to each region. */
-export function createGenerationCheckpoint(): () => Promise<void> | undefined {
+export function createGenerationCheckpoint(signal?: AbortSignal): () => Promise<void> | undefined {
   let deadline = performance.now() + 8;
   return () => {
+    signal?.throwIfAborted();
     if (performance.now() < deadline) return;
-    return yieldGenerationTask().then(() => { deadline = performance.now() + 8; });
+    return yieldGenerationTask(signal).then(() => { deadline = performance.now() + 8; });
   };
+}
+
+/** Release the main generator when obsolete PW work is already running.
+ * Workers finish their independent scans; late success/failure stays observed. */
+export function waitForGenerationWork<T>(work: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return work;
+  return new Promise((resolve, reject) => {
+    const abort = () => reject(signal.reason);
+    signal.addEventListener('abort', abort, { once: true });
+    const cleanup = () => signal.removeEventListener('abort', abort);
+    work.then(value => { cleanup(); resolve(value); }, error => { cleanup(); reject(error); });
+    if (signal.aborted) { cleanup(); abort(); }
+  });
 }
 
 let tail = Promise.resolve();

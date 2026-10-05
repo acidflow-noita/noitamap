@@ -48,6 +48,21 @@ export async function run(concurrent: boolean) {
       tileSnapshot = (globalThis as any).__generationSnapshot({ seed: 74803,
         tileLayers: layers, poisByPW: {}, pixelScenesByPW: {} });
     } finally { clearTimeout(queuedInput); }
-    return { snapshots, stages, tileSnapshot, inputDuringTiles };
+    let cancelledBeforeTerrain: boolean | undefined, recoverySnapshot: any;
+    if (concurrent) {
+      const controller = new AbortController();
+      let terrainReady = false, aborted = false;
+      const cancellation = setTimeout(() => controller.abort(), 0);
+      try {
+        await generateDynamicMap({ seed: 74899, unlocks: [], parallelWorlds: [0], signal: controller.signal,
+          onTerrainReady() { terrainReady = true; } });
+      } catch (error) { aborted = (error as Error).name === 'AbortError'; }
+      finally { clearTimeout(cancellation); }
+      cancelledBeforeTerrain = aborted && !terrainReady;
+      recoverySnapshot = (globalThis as any).__generationSnapshot(await generateDynamicMap({
+        seed: 74803, unlocks: null, parallelWorlds: [-1, 0, 1],
+      }));
+    }
+    return { snapshots, stages, tileSnapshot, inputDuringTiles, cancelledBeforeTerrain, recoverySnapshot };
   } finally { releaseParallelWorlds(); }
 }

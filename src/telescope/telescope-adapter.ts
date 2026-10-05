@@ -24,7 +24,7 @@ import {
 import PwWorker from "./pw-worker?worker";
 import { ParallelWorldWorkerPool } from "./pw-worker-pool";
 import { prepareAssetJobs } from "./background-idle";
-import { createGenerationCheckpoint, runGenerationTask, yieldGenerationTask } from "./generation-task";
+import { createGenerationCheckpoint, runGenerationTask, waitForGenerationWork, yieldGenerationTask } from "./generation-task";
 let parallelWorldWorkerPool = new ParallelWorldWorkerPool(() => new PwWorker());
 
 // Telescope modules
@@ -156,6 +156,8 @@ export interface GenerationResult {
 
 export interface GenerateOptions {
   seed: number;
+  /** Obsolete background work stops at the existing task/checkpoint boundaries. */
+  signal?: AbortSignal;
   ngPlus?: number;
   dailySeed?: boolean;
   /** Which horizontal parallel worlds to generate for */
@@ -432,6 +434,7 @@ export function prewarmParallelWorlds(worlds: number[] = [-1, 0, 1]): void {
  * @param opts.parallelWorlds — Horizontal PW indices to scan (default [-1, 0, 1])
  */
 export async function generateDynamicMap(opts: GenerateOptions): Promise<GenerationResult> {
+  opts.signal?.throwIfAborted();
   // A generation may resume after navigation while its assets/tiles awaited.
   // Keep its original pool so disposal rejects late dispatch rather than
   // starting workers in the new pool after the dynamic map has closed.
@@ -443,6 +446,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
 }
 
 async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWorldWorkerPool): Promise<GenerationResult> {
+  opts.signal?.throwIfAborted(); // A request can be cancelled while queued.
   const seed = opts.seed;
   const ngPlus = opts.ngPlus ?? 0;
   const dailySeed = opts.dailySeed ?? false;
@@ -606,9 +610,9 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
     ngPlus,
     0 /* extra_rerolls */,
     gameMode,
-    createGenerationCheckpoint(),
+    createGenerationCheckpoint(opts.signal),
   );
-  await yieldGenerationTask();
+  await yieldGenerationTask(opts.signal);
 
   // Initialize pixel scene caches on each layer
   for (const layer of tileLayers) {
@@ -619,6 +623,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   // lower map. Generate its narrow strip once; scan its real placements instead
   // of leaving a fake second endpoint and a gap between the two copies.
   const elevatorShafts = useRenderPerfGeneration() ? await prepareElevatorShafts({ tileLayers, biomeData, seed, ngPlus, isNGP, gameMode }) : [];
+  opts.signal?.throwIfAborted();
   opts.onTerrainReady?.({ seed, ngPlus, isNGP, worldSize, worldCenter,
     tileLayers, elevatorShafts, biomeData, parallelWorlds });
   const elevatorColumns = elevatorShafts.map(layer => layer.minX);
@@ -626,7 +631,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
 
   // Step 3: Prescan spawn functions (once per seed, reused across PWs)
   const tileSpawns = prescanSpawnFunctions(tileLayers, isNGP, gameMode);
-  await yieldGenerationTask();
+  await yieldGenerationTask(opts.signal);
 
   // Step 4: Scan each PW
   const poisByPW: Record<string, POI[]> = {};
@@ -635,6 +640,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
 
   // Pre-load telescope modules needed for wand naming (avoid repeated dynamic imports in loop)
   const telescopeMods = await loadTelescopeModules();
+  opts.signal?.throwIfAborted();
   const { NollaPrng } = telescopeMods.nollaPrngMod;
   const { GUN_NAMES } = telescopeMods.wandConfigMod;
   const { getPitBossDrops } = telescopeMods.miscGenMod;
@@ -682,7 +688,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
     if (staticResults && staticResults.pixelScenes) {
       pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(staticResults.pixelScenes);
     }
-    await yieldGenerationTask();
+    await yieldGenerationTask(opts.signal);
 
     // Also generate for heaven (pwVertical=-1) and hell (pwVertical=+1)
     const verticalPois: POI[] = [];
@@ -716,7 +722,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
       if (vtResults && vtResults.pois && vtResults.pois.length > 0) {
         verticalPois.push(...vtResults.pois);
       }
-      await yieldGenerationTask();
+      await yieldGenerationTask(opts.signal);
     }
 
     // Post-process POIs to fix wand names without modifying library code
@@ -937,7 +943,8 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   // Wait for background worlds to finish
   if (workerPromises.length > 0) {
     console.log(`[Telescope] Waiting for ${workerPromises.length} background parallel worlds...`);
-    const workerResults = await workerResultsReady;
+    const workerResults = await waitForGenerationWork(workerResultsReady, opts.signal);
+    opts.signal?.throwIfAborted();
     for (const res of workerResults) {
       const pwKey = `${res.pw},0`;
       let workerPois = res.pois;

@@ -12,7 +12,7 @@ vi.mock('../src/telescope/instant-terrain-backend', () => ({ prewarmInstantTerra
 vi.mock('../src/telescope/telescope-adapter', () => ({ generateDynamicMap: vi.fn(), initTelescope: vi.fn(), prewarmParallelWorlds: vi.fn(), releaseParallelWorlds: vi.fn() }));
 vi.mock('../src/unlocks', () => ({ getUnlocksFromURL: () => null, unlocksChanged: vi.fn(), UNLOCK_KEYS: [], getUrlUnlockKind: vi.fn() }));
 vi.mock('../src/pillars-unlocks', () => ({ getPillarFlagsFromURL: vi.fn() }));
-vi.mock('../src/unlocks-toggle', () => ({ prewarmAlt: vi.fn(), resetAltCache: vi.fn() }));
+vi.mock('../src/unlocks-toggle', () => ({ beginAltSeed: vi.fn(), prewarmAlt: vi.fn(), resetAltCache: vi.fn() }));
 vi.mock('../src/light-mode', () => ({ isLightMode: () => false }));
 vi.mock('../src/telescope/telescope-osd-bridge', () => ({
   renderGenerationResult: vi.fn(), clearDynamicOverlays: vi.fn(), cancelPendingDynamicTerrain: vi.fn(), getAllPOIsFlat: vi.fn(),
