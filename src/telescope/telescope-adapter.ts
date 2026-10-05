@@ -24,6 +24,7 @@ import {
 import PwWorker from "./pw-worker?worker";
 import { ParallelWorldWorkerPool } from "./pw-worker-pool";
 import { prepareAssetJobs } from "./background-idle";
+import { runGenerationTask, yieldGenerationTask } from "./generation-task";
 let parallelWorldWorkerPool = new ParallelWorldWorkerPool(() => new PwWorker());
 
 // Telescope modules
@@ -438,6 +439,10 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   prewarmParallelWorlds(opts.parallelWorlds);
   await initTelescope();
 
+  return runGenerationTask(() => generatePreparedMap(opts, workerPool));
+}
+
+async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWorldWorkerPool): Promise<GenerationResult> {
   const seed = opts.seed;
   const ngPlus = opts.ngPlus ?? 0;
   const dailySeed = opts.dailySeed ?? false;
@@ -602,6 +607,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     0 /* extra_rerolls */,
     gameMode,
   );
+  await yieldGenerationTask();
 
   // Initialize pixel scene caches on each layer
   for (const layer of tileLayers) {
@@ -619,6 +625,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
 
   // Step 3: Prescan spawn functions (once per seed, reused across PWs)
   const tileSpawns = prescanSpawnFunctions(tileLayers, isNGP, gameMode);
+  await yieldGenerationTask();
 
   // Step 4: Scan each PW
   const poisByPW: Record<string, POI[]> = {};
@@ -644,8 +651,12 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     unlocks: dailySeed || opts.unlocks == null ? null : opts.unlocks,
     dailySeed, fullPixels: useRenderPerfGeneration(), elevatorColumns, elevatorSpawns,
   }));
+  // Observe failures immediately: workers can now finish while the UI runs
+  // between main-world stages. Still propagate the failure at the join below.
+  const workerResultsReady = Promise.all(workerPromises);
+  void workerResultsReady.catch(() => {});
 
-  // Synchronously process main worlds (PW 0) for instant UI response
+  // Keep each deterministic scan intact; return to the browser between planes.
   for (const pw of mainWorlds) {
     const pwKey = `${pw},0`; // vertical PW always 0 for noitamap
 
@@ -670,6 +681,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     if (staticResults && staticResults.pixelScenes) {
       pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(staticResults.pixelScenes);
     }
+    await yieldGenerationTask();
 
     // Also generate for heaven (pwVertical=-1) and hell (pwVertical=+1)
     const verticalPois: POI[] = [];
@@ -703,6 +715,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       if (vtResults && vtResults.pois && vtResults.pois.length > 0) {
         verticalPois.push(...vtResults.pois);
       }
+      await yieldGenerationTask();
     }
 
     // Post-process POIs to fix wand names without modifying library code
@@ -923,7 +936,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   // Wait for background worlds to finish
   if (workerPromises.length > 0) {
     console.log(`[Telescope] Waiting for ${workerPromises.length} background parallel worlds...`);
-    const workerResults = await Promise.all(workerPromises);
+    const workerResults = await workerResultsReady;
     for (const res of workerResults) {
       const pwKey = `${res.pw},0`;
       let workerPois = res.pois;
