@@ -1016,7 +1016,7 @@ export async function prepareDecorationExport(
   const built = await buildSceneBitmaps(decorationResult, null);
   if (!built) return null;
   for (const scene of built.validScenes) {
-    const bmp = built.bitmapByKey.get(sceneRenderKey(scene));
+    const bmp = built.bitmapByKey.get(sceneRenderKey(scene, result.seed));
     if (!bmp) continue;
     draws.push({ img: bmp, x: scene.x, y: scene.y, w: scene.width, h: scene.height });
   }
@@ -2003,16 +2003,16 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
  * biome part is omitted (it's already implied by scene.key), so non-fill scenes
  * keep their plain key and stay prefetch/cache compatible.
  */
-function sceneRenderKey(scene: { key: string; variantKey?: string; x?: number; y?: number }): string {
+function sceneRenderKey(scene: { key: string; variantKey?: string; x?: number; y?: number }, seed: number): string {
   const vk = scene.variantKey || '';
-  // Native materials/backdrops are phased in world space. Only these five
-  // layouts need new entries; old grey bitmaps and other terrain stay cached.
+  // Native materials/backdrops are phased in world space; edge decorations
+  // also depend on the seed. Only these five layouts need revised entries.
   if (isWaterCaveLayout(scene.key)) {
     const name = scene.key.substring(scene.key.lastIndexOf('/') + 1);
     const layers = pixelSceneConfig.layerOverrides[name] || pixelSceneConfig.layerOverrides[scene.key];
     const background = layers?.background ?? pixelSceneConfig.layers.background;
     const mid = layers?.mid ?? pixelSceneConfig.layers.mid;
-    return `${scene.key}|watercave-textures-v1|${vk || 'biome=watercave'}|${scene.x ?? 0},${scene.y ?? 0}|${+background},${+mid}`;
+    return `${scene.key}|watercave-edges-v2|${seed}|${vk || 'biome=watercave'}|${scene.x ?? 0},${scene.y ?? 0}|${+background},${+mid}`;
   }
   const mat = vk.split('&').filter(p => p && !p.startsWith('biome='));
   const key = mat.length ? `${scene.key}|${mat.join('&')}` : scene.key;
@@ -2070,7 +2070,8 @@ async function compositeSceneBitmap(
     visualByName: Map<string, string>;
     bgByPath: Map<string, string>;
     bgByName: Map<string, string>;
-  }
+  },
+  seed: number
 ): Promise<{
   bitmap: ImageBitmap;
   blob: Blob | null;
@@ -2140,7 +2141,7 @@ async function compositeSceneBitmap(
       throw new Error(`Missing Water Cave material pixels: ${scene.key}`);
     const { paintWaterCaveScene } = await import('./watercave-scene');
     const pixels = await paintWaterCaveScene({ ...scene, x: scene.x ?? 0, y: scene.y ?? 0 },
-      { data: raw.imgElement, width: raw.width, height: raw.height }, wantBg);
+      { data: raw.imgElement, width: raw.width, height: raw.height }, wantBg, seed);
     midBitmap = await imgElementToBitmap(pixels, raw.width, raw.height);
   } else if (wantMid) {
     await ensurePixelSceneData(scene.key, { art: false });
@@ -2268,7 +2269,7 @@ async function compositeSceneBitmap(
  */
 export const prefetchAllSceneBitmaps = createScenePrefetch(async (isCurrent) => {
     try {
-      // These scenes need actual placement coordinates for materials/backdrops.
+      // These scenes need actual placement coordinates (and Water Cave's seed).
       const allKeys = getAllPixelSceneKeys().filter(key => !carvedRoomBiome(key) && !isWaterCaveLayout(key));
       if (allKeys.length === 0) return;
       const cached = await getCachedSceneBitmapKeys();
@@ -2300,7 +2301,7 @@ export const prefetchAllSceneBitmaps = createScenePrefetch(async (isCurrent) => 
           key,
         };
         try {
-          const composited = await compositeSceneBitmap(key, scene, idx);
+          const composited = await compositeSceneBitmap(key, scene, idx, 0);
           if (!composited) {
             skipped++;
             continue;
@@ -2450,12 +2451,12 @@ async function buildSceneBitmaps(
   try {
     const uniqueKeys = new Map<string, PixelScene>();
     for (const scene of validScenes) {
-      const rk = sceneRenderKey(scene);
+      const rk = sceneRenderKey(scene, result.seed);
       if (!uniqueKeys.has(rk)) uniqueKeys.set(rk, scene);
     }
 
-    // Per-key bitmaps are seed-independent — cache them in IDB so future seeds
-    // reuse the work. Bulk-fetch every cached bitmap in one IDB transaction
+    // Most scene bitmaps are seed-independent; Water Cave keys include its
+    // seeded edges. Bulk-fetch every cached bitmap in one IDB transaction
     // (~138 separate read transactions add 1-3s on Brave/FF).
     const keyArr: Array<[string, PixelScene]> = [];
     let memoryHitCount = 0;
@@ -2496,7 +2497,7 @@ async function buildSceneBitmaps(
       }
 
       if (!current()) return;
-      const composited = await compositeSceneBitmap(scene.key, scene, idx!);
+      const composited = await compositeSceneBitmap(scene.key, scene, idx!, result.seed);
       if (!composited) {
         missingCount++;
         return;
@@ -2576,7 +2577,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
 
   const items: SceneTileItem[] = [];
   for (const scene of validScenes) {
-    const rk = sceneRenderKey(scene);
+    const rk = sceneRenderKey(scene, result.seed);
     if (!bitmapByKey.has(rk)) continue;
     items.push({ osdX: scene.x, osdY: scene.y, w: scene.width, h: scene.height, sceneKey: rk });
   }

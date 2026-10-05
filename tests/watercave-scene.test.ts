@@ -53,10 +53,13 @@ it.each([true, false])('paints all five real layouts and preserves their cache w
       expect(sample.solid).toBeGreaterThan(100000);
       expect(sample.translucent).toBeGreaterThan(40000);
       expect(sample.colors).toBeGreaterThan(5);
-      expect(sample.renderKey).toContain('|watercave-textures-v1|');
+      expect(sample.edgePixels).toBeGreaterThan(1000);
+      expect(sample.changedStonePixels).toBeGreaterThan(1000);
+      expect(sample.nonStoneChanges).toBe(0);
+      expect(sample.renderKey).toContain('|watercave-edges-v2|12726363|');
     }
     expect(result.cache).toMatchObject({ sameBitmap: true, revisedCached: true, diskMatches: true, survivesRelease: true,
-      addedPrefetchKeys: [],
+      addedPrefetchKeys: [], seedChangesPixels: true, seedKeyIsSeparate: true, oldKeysKept: true,
       shiftedKeyIsSeparate: true, backgroundKeyIsSeparate: true, forceAirOpaque: 0, disabled: true,
       unchangedKeys: { frame: 'general/watercave', friend: 'general/friendroom|friend-bg-v1|3072,5632', ordinary: 'coalmine/shop' } });
     console.log('[Water Cave native validation]', JSON.stringify(result));
