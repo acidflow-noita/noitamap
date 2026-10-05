@@ -1,4 +1,4 @@
-import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
+import { staticSceneMaskBits, type StaticTerrainMask } from "./static-terrain-mask";
 import { prepareAssetJobs } from "./background-idle";
 
 interface Placement {
@@ -42,8 +42,7 @@ export async function loadInstantSceneMasks(
       mask = {
         width: raw.width,
         height: raw.height,
-        bits: staticSceneBits(pixels),
-        airBits: staticSceneBits(pixels, true),
+        ...staticSceneMaskBits(pixels),
       };
       preparedMasks.set(pixels, { byteLength: pixels.byteLength, mask });
     }

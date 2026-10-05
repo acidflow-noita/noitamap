@@ -29,6 +29,31 @@ export function staticSceneBits(
   return bits;
 }
 
+/** Read each RGBA pixel once when both authored-material and force-air masks
+ * are needed. Explicit byte order also handles unaligned source views. */
+export function staticSceneMaskBits(data: Uint8Array | Uint8ClampedArray): {
+  bits: Uint8Array; airBits: Uint8Array;
+} {
+  const size = Math.ceil(data.byteLength / 32);
+  const bits = new Uint8Array(size), airBits = new Uint8Array(size);
+  if (!size) return { bits, airBits };
+  const pixels = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  let offset = 0;
+  for (let byte = 0; byte < size; byte++) {
+    let material = 0, air = 0;
+    for (let flag = 1; flag <= 128 && offset + 4 <= data.byteLength; flag <<= 1, offset += 4) {
+      const rgba = pixels.getUint32(offset, true);
+      if (!(rgba >>> 24)) continue;
+      const rgb = rgba & 0xffffff;
+      if (rgb === 0x420000) air |= flag;
+      else if (rgb) material |= flag;
+    }
+    bits[byte] = material;
+    airBits[byte] = air;
+  }
+  return { bits, airBits };
+}
+
 /** Keep authored static scene pixels in the base map, including the part of
  * altar_top that extends 40px ABOVE its biome-map chunk. No repaint and no
  * rectangular crop of the neighboring dynamic biome. */
