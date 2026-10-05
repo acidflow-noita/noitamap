@@ -20,6 +20,16 @@ export function yieldGenerationTask(): Promise<void> {
   });
 }
 
+/** Check only at complete biome regions/path attempts. The budget bounds a
+ * batch of work; it is not a delay added to each region. */
+export function createGenerationCheckpoint(): () => Promise<void> | undefined {
+  let deadline = performance.now() + 8;
+  return () => {
+    if (performance.now() < deadline) return;
+    return yieldGenerationTask().then(() => { deadline = performance.now() + 8; });
+  };
+}
+
 let tail = Promise.resolve();
 
 /** Telescope's RNG, unlocks and app state are shared. Yielding must let the UI

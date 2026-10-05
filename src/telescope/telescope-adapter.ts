@@ -24,7 +24,7 @@ import {
 import PwWorker from "./pw-worker?worker";
 import { ParallelWorldWorkerPool } from "./pw-worker-pool";
 import { prepareAssetJobs } from "./background-idle";
-import { runGenerationTask, yieldGenerationTask } from "./generation-task";
+import { createGenerationCheckpoint, runGenerationTask, yieldGenerationTask } from "./generation-task";
 let parallelWorldWorkerPool = new ParallelWorldWorkerPool(() => new PwWorker());
 
 // Telescope modules
@@ -606,6 +606,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
     ngPlus,
     0 /* extra_rerolls */,
     gameMode,
+    createGenerationCheckpoint(),
   );
   await yieldGenerationTask();
 

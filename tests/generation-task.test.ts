@@ -1,9 +1,29 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { runGenerationTask, yieldGenerationTask } from '../src/telescope/generation-task';
+import { createGenerationCheckpoint, runGenerationTask, yieldGenerationTask } from '../src/telescope/generation-task';
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe('generation task boundaries', () => {
+  it('only yields after its work budget and restarts the budget after resuming', async () => {
+    let now = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    let resume!: () => void;
+    const yieldTask = vi.fn(() => new Promise<void>(resolve => { resume = resolve; }));
+    vi.stubGlobal('scheduler', { yield: yieldTask });
+    const checkpoint = createGenerationCheckpoint();
+    for (now = 0; now < 8; now++) expect(checkpoint()).toBeUndefined();
+    expect(yieldTask).not.toHaveBeenCalled();
+    const pending = checkpoint();
+    expect(yieldTask).toHaveBeenCalledOnce();
+    now = 100; // Time spent waiting for input/painting is not generator work.
+    resume(); await pending;
+    now = 107; expect(checkpoint()).toBeUndefined();
+    now = 108;
+    const next = checkpoint();
+    expect(yieldTask).toHaveBeenCalledTimes(2);
+    resume(); await next;
+  });
+
   it('uses the browser scheduler without adding a timer delay', async () => {
     const yieldTask = vi.fn(async () => {});
     vi.stubGlobal('scheduler', { yield: yieldTask });

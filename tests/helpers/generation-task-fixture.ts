@@ -1,4 +1,6 @@
 import { initTelescope, generateDynamicMap, prewarmParallelWorlds, releaseParallelWorlds } from '../../src/telescope/telescope-adapter';
+import { loadTelescopeModules } from '../../src/telescope/load-telescope';
+import { createGenerationCheckpoint } from '../../src/telescope/generation-task';
 
 export async function run(concurrent: boolean) {
   window.location.search = '?terrain=gpu';
@@ -11,6 +13,7 @@ export async function run(concurrent: boolean) {
     { seed: 74803, unlocks: null },
   ];
   const snapshots: any[] = [], stages: any[] = [];
+  let firstBiomeData: any;
   try {
     prewarmParallelWorlds();
     await initTelescope();
@@ -29,11 +32,22 @@ export async function run(concurrent: boolean) {
           },
         });
         stages.push({ seed: options.seed, ticks, inputBeforeComplete, elapsedMs: performance.now() - begin });
+        firstBiomeData ??= result.biomeData;
         return (globalThis as any).__generationSnapshot(result);
       } finally { clearInterval(timer); clearTimeout(input); }
     };
     if (concurrent) snapshots.push(...await Promise.all(cases.map(generate)));
     else for (const options of cases) snapshots.push(await generate(options));
-    return { snapshots, stages };
+    const { tileGenMod, genConfigMod } = await loadTelescopeModules();
+    let inputDuringTiles = false;
+    const queuedInput = setTimeout(() => { inputDuringTiles = true; }, 0);
+    let tileSnapshot;
+    try {
+      const layers = await tileGenMod.generateBiomeTiles(firstBiomeData.pixels, 70, 48,
+        genConfigMod.GENERATOR_CONFIG, 74803, 0, 0, 'normal', createGenerationCheckpoint());
+      tileSnapshot = (globalThis as any).__generationSnapshot({ seed: 74803,
+        tileLayers: layers, poisByPW: {}, pixelScenesByPW: {} });
+    } finally { clearTimeout(queuedInput); }
+    return { snapshots, stages, tileSnapshot, inputDuringTiles };
   } finally { releaseParallelWorlds(); }
 }

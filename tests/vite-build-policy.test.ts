@@ -14,6 +14,20 @@ afterEach(() => vi.unstubAllEnvs());
 
 describe("browser build boundaries", () => {
   it.each(["noita-telescope", "noita-telescope-vm"])(
+    'audits the tile-generation algorithm before adding scheduling checkpoints in %s',
+    async fork => {
+      const path = resolve(root, `lib/${fork}/js/tile_generator.js`);
+      const original = await readFile(path, 'utf8');
+      const { code } = await browserTelescopeSource(original, path);
+      expect(code).toContain('yieldControl = null');
+      expect(code.match(/yieldControl\?\.\(\)/g)).toHaveLength(3);
+      await expect(browserTelescopeSource(original.replace('currentRerolls++; attempts++;',
+        'currentRerolls += 2; attempts++;'), path))
+        .rejects.toThrow('Review changed Telescope tile generation scheduling');
+    },
+  );
+
+  it.each(["noita-telescope", "noita-telescope-vm"])(
     "skips discarded PNG bitmaps while preserving RGBA and bitmap consumers in %s",
     async (fork) => {
       const path = resolve(root, `lib/${fork}/js/png_sanitizer.js`);

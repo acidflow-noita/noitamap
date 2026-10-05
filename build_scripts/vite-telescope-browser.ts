@@ -19,6 +19,25 @@ export async function browserTelescopeSource(code: string, id: string) {
       );
     source = source.replace(pattern, replacement);
   };
+  if (id.endsWith('/tile_generator.js')) {
+    // Preserve the pinned algorithms and their ordering. Only the host's
+    // serialized main-thread generator opts into cooperative scheduling.
+    const pattern = /export async function generateBiomeTiles\([\s\S]*?\n\}/;
+    const original = source.match(pattern)?.[0];
+    const audited = new Set([
+      'b1e3f2999d60ab9a7c6f7aeb9e9168db1d05daee67e443380e8ffe0327c67040',
+      'f7e4e9ad9c7727faa0b0de1f4d89cd7c956cece22e8bfacf15abd23fd392b9ef',
+    ]);
+    if (!original || !audited.has(createHash('sha256').update(original.replace(/\r\n/g, '\n')).digest('hex')))
+      throw new Error(`Review changed Telescope tile generation scheduling: ${id}`);
+    const checkpoint = '\n            const resume = yieldControl?.(); if (resume) await resume;';
+    const scheduled = original
+      .replace("gameMode = 'normal') {", "gameMode = 'normal', yieldControl = null) {")
+      .replace('for (let biomeName of Object.keys(biomeConfig)) {', '$&' + checkpoint)
+      .replace('for (let i = 0; i < regions.length; i++) {', '$&' + checkpoint)
+      .replace('while (!valid && attempts < MAX_PATHFINDING_ATTEMPTS) {', '$&' + checkpoint);
+    source = source.replace(original, scheduled);
+  }
   if (id.endsWith("/engine_resolve/lattice_builder.js")) {
     // Keep the submodule intact. Audit again if upstream changes the vote's
     // semantics; applying an old replacement to a new implementation is unsafe.
@@ -129,7 +148,7 @@ export async function browserTelescopeSource(code: string, id: string) {
 export function telescopeBrowserPlugin(directories: string[]): Plugin {
   const files = new Set(
     directories.flatMap((dir) =>
-      ["png_sanitizer.js", "utils.js", "pixel_scene_generation.js", "icon_sheets.js", "gl/terrain_renderer.js", "engine_resolve/lattice_builder.js"].map(
+      ["png_sanitizer.js", "utils.js", "pixel_scene_generation.js", "icon_sheets.js", "tile_generator.js", "gl/terrain_renderer.js", "engine_resolve/lattice_builder.js"].map(
         (name) => resolve(dir, name).replace(/\\/g, "/"),
       ),
     ),

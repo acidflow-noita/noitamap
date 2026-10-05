@@ -37,7 +37,7 @@ it('preserves real generation output while letting tasks run and serializing con
             // Same generation algorithms and settings, with the original
             // uninterrupted execution. The reference runs seeds sequentially.
             if (id === resolve(root, 'src/telescope/generation-task.ts'))
-              return 'export const yieldGenerationTask = () => Promise.resolve(); export const runGenerationTask = work => work();';
+              return 'export const yieldGenerationTask = () => Promise.resolve(); export const createGenerationCheckpoint = () => () => undefined; export const runGenerationTask = work => work();';
           } }],
         build: { outDir: bundle, rollupOptions: {
           input: resolve(root, 'tests/helpers/generation-task-fixture.ts'), preserveEntrySignatures: 'strict',
@@ -53,6 +53,10 @@ it('preserves real generation output while letting tasks run and serializing con
     expect(scheduled.snapshots).toHaveLength(6);
     expect(scheduled.snapshots.every((s: any) => s.pois > 20000 && s.scenes > 100)).toBe(true);
     expect(scheduled.stages.every((s: any) => s.inputBeforeComplete)).toBe(true);
-    console.log('[Native generation task verification]', JSON.stringify({ snapshots: scheduled.snapshots, stages: scheduled.stages }));
+    expect(reference.inputDuringTiles).toBe(false);
+    expect(scheduled.inputDuringTiles).toBe(true);
+    expect(scheduled.tileSnapshot).toEqual(reference.tileSnapshot);
+    console.log('[Native generation task verification]', JSON.stringify({ snapshots: scheduled.snapshots,
+      stages: scheduled.stages, inputDuringTiles: scheduled.inputDuringTiles, tileSnapshot: scheduled.tileSnapshot }));
   } finally { await rm(directory, { recursive: true, force: true }); }
 }, 150000);
