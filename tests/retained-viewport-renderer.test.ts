@@ -54,6 +54,7 @@ function fixture({
   y = 0,
   budget = 4 * 1024 * 1024,
   cache = undefined as InstantTerrainCache | undefined,
+  hasTerrain = undefined as ((plan: TerrainViewportPlan) => boolean) | undefined,
 } = {}) {
   const records = new Map<string, StoredTerrain>();
   const store = {
@@ -88,6 +89,7 @@ function fixture({
     complete: () => complete,
     refresh,
     cache,
+    hasTerrain,
   });
   const request = (
     p = plan(x, y, width, height),
@@ -138,6 +140,96 @@ afterEach(async () => {
 });
 
 describe("retained native pixels with atomic viewport presentation", () => {
+  it('does not request a GPU image for exposed strips with no procedural ownership', async () => {
+    const f=fixture({width:1024,hasTerrain:p=>p.x<768});
+    await f.request(plan(512,0,256,256));
+    const output=await f.request(plan(529,0,256,256));
+    expect(f.renderer.renderViewport).toHaveBeenCalledOnce();
+    expect(pixel(output,12,12)).toEqual([0,0,255,255]);
+    expect(pixel(output,250,12)).toEqual([0,0,0,0]);
+  });
+
+  it('reuses complete overlap when viewport rounding drops one row and column', async () => {
+    const f=fixture({width:1024,height:512});
+    await f.request(plan(0,0,256,256));
+    const output=await f.request(plan(.25,.25,255,255));
+    expect(f.renderer.renderViewport).toHaveBeenCalledOnce();
+    expect(pixel(output,254,254)).toEqual([0,0,255,255]);
+    expect(output).toMatchObject({width:255,height:255});
+  });
+
+  it('keeps native transparent holes and colors in reused pan overlap', async () => {
+    const f=fixture({width:1024,height:512});
+    const native=context(256,256,'#ff0000');native.clearRect(64,64,64,64);
+    await f.retention.record(0,0,native);
+    await f.request(plan(0,0,512,256));
+    const output=await f.request(plan(17,13,512,256));
+    expect(pixel(output,60,60)).toEqual([0,0,0,0]);
+    expect(pixel(output,10,10)).toEqual([255,0,0,255]);
+    expect(pixel(output,510,100)).toEqual([0,0,255,255]);
+  });
+
+  it.each([[17,0],[-17,0],[0,13],[0,-13],[17,13],[-17,-13],[17.25,0],[-.5,0],[.25,13.5]])(
+    'renders only exposed pixels for a pan (%s,%s)', async (dx,dy) => {
+      const f = fixture({width:4096,height:4096});
+      const first = plan(512,512,320,240,1.25);
+      const next = {...first,x:first.x+dx*first.scale,y:first.y+dy*first.scale};
+      const pattern = (p: TerrainViewportPlan) => {
+        const out = context(p.pixelWidth,p.pixelHeight), image = out.createImageData(p.pixelWidth,p.pixelHeight);
+        for(let y=0;y<p.pixelHeight;y++)for(let x=0;x<p.pixelWidth;x++) {
+          const wx=Math.floor(p.x+(x+.5)*p.scale),wy=Math.floor(p.y+(y+.5)*p.scale),i=(y*p.pixelWidth+x)*4;
+          if((wx+wy)%7===0) continue;
+          image.data.set([wx&255,wy&255,(wx^wy)&255,255],i);
+        }
+        out.putImageData(image,0,0); return out.canvas;
+      };
+      f.renderer.renderViewport.mockImplementation(async p => pattern(p));
+      const initial=await f.request(first);
+      const actual=await f.request(next), expected=pattern(next);
+      // Full-frame reference followed by the existing exact-overlap policy.
+      const ctx=expected.getContext('2d')!;
+      ctx.imageSmoothingEnabled=false;
+      ctx.setTransform(1/next.scale,0,0,1/next.scale,-next.x/next.scale,-next.y/next.scale);
+      ctx.clearRect(first.x,first.y,first.width,first.height);
+      ctx.drawImage(initial as any,first.x,first.y,first.width,first.height);
+      expect(Buffer.from(bytes(actual)).equals(Buffer.from(bytes(expected)))).toBe(true);
+      const calls=f.renderer.renderViewport.mock.calls.slice(1).map(([p])=>p);
+      const missing=first.pixelWidth*first.pixelHeight-(first.pixelWidth-Math.abs(dx))*(first.pixelHeight-Math.abs(dy));
+      const requested=calls.reduce((sum,p)=>sum+p.pixelWidth*p.pixelHeight,0);
+      if(Number.isInteger(dx)&&Number.isInteger(dy))expect(requested).toBe(missing);
+      else expect(requested).toBeLessThan(first.pixelWidth*first.pixelHeight/10);
+      expect(calls.length).toBe(dx&&dy?2:1);
+      for(const p of calls) expect((p as any).samplingPlan).toMatchObject({x:next.x,y:next.y,pixelWidth:next.pixelWidth,pixelHeight:next.pixelHeight});
+    },
+  );
+
+  it.each(['zoom','resize','jump'])('keeps full rendering for %s changes', async change => {
+    const f=fixture({width:4096,height:4096}), first=plan(512,512,256,256);
+    await f.request(first);
+    const next=change==='zoom'?plan(512,512,512,512,2)
+      :change==='resize'?plan(512,512,320,256):{...first,x:1024};
+    await f.request(next);
+    const requests=f.renderer.renderViewport.mock.calls.slice(1).map(([p])=>p);
+    expect(requests).toEqual([next]);
+  });
+
+  it('cancels between pan strips without publishing a partial frame or damaging the old one', async () => {
+    const f=fixture({width:4096,height:4096}), first=plan(512,512,256,256);
+    const initial=await f.request(first), request=new AbortController();
+    let bitmap:any;
+    f.renderer.renderViewport.mockImplementationOnce(async p=>{
+      bitmap=context(p.pixelWidth,p.pixelHeight).canvas; bitmap.close=vi.fn();
+      request.abort(); return bitmap;
+    });
+    await expect(f.request({...first,x:529,y:525},request.signal)).rejects.toMatchObject({name:'AbortError'});
+    expect(bitmap.close).toHaveBeenCalledOnce();
+    expect(f.renderer.renderViewport).toHaveBeenCalledTimes(2);
+    expect(pixel(initial,12,12)).toEqual([0,0,255,255]);
+    const replay=await f.request(first);
+    expect(pixel(replay,12,12)).toEqual([0,0,255,255]);
+    expect(f.renderer.renderViewport).toHaveBeenCalledTimes(2);
+  });
+
   it("delivers the GPU frame while storage and retention capacity are unresolved", async () => {
     const f = fixture(),
       held = deferred<StoredTerrain | undefined>();

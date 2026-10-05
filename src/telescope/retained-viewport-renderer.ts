@@ -2,6 +2,7 @@ import { scheduleTerrainWork } from './terrain-work-queue';
 import type { TerrainViewportPlan } from './terrain-viewport-compositor';
 import type { RetainedTerrainRegion, RetainedView, RetainedViewCoverage } from './retained-terrain';
 import { InstantTerrainCache } from './instant-terrain-cache';
+import { terrainPanPatches } from './terrain-pan';
 
 type Region = { region: { x: number; y: number; width: number; height: number }; retention: RetainedTerrainRegion };
 let nextRendererId = 0;
@@ -57,6 +58,8 @@ export function createRetainedViewportRenderer(options: {
   complete(): boolean;
   refresh(): void;
   cache?: InstantTerrainCache;
+  /** False is exact empty procedural ownership, not an approximate cull. */
+  hasTerrain?: (plan: TerrainViewportPlan) => boolean;
 }) {
   type Metadata = { plan: TerrainViewportPlan; canonical: RetainedViewCoverage[] };
   type Frame = Metadata & { key: string; canvas: HTMLCanvasElement };
@@ -178,17 +181,43 @@ export function createRetainedViewportRenderer(options: {
               base = { key, plan, canvas: cached.canvas, canonical: cameras.get(key)?.canonical ?? [] };
               stats.reusedFrames++;
             } else {
-              const captured = await scheduleTerrainWork(
-                () => options.renderer.renderViewport(plan, signal), signal, () => -1e12,
-              );
+              const priorKey = base?.key;
+              const patches = base ? terrainPanPatches(base.plan, plan) : null;
+              let saved: CanvasRenderingContext2D | undefined;
+              let usedGPU = false;
+              const capture = async (part: TerrainViewportPlan, x = 0, y = 0) => {
+                signal.throwIfAborted();
+                if (options.hasTerrain?.(part) === false) { saved ??= canvas(plan); return; }
+                usedGPU = true;
+                const captured = await scheduleTerrainWork(
+                  () => options.renderer.renderViewport(part, signal), signal, () => -1e12,
+                );
+                try {
+                  signal.throwIfAborted(); options.signal.throwIfAborted();
+                  saved ??= canvas(plan);
+                  saved.drawImage(captured, x, y);
+                } finally { (captured as ImageBitmap).close?.(); }
+              };
               try {
-                signal.throwIfAborted(); options.signal.throwIfAborted();
-                const saved = canvas(plan);
-                saved.drawImage(captured, 0, 0);
+                if (patches) {
+                  for (const part of patches) await capture(part.plan, part.x, part.y);
+                  // Async native hydration may replace the same camera's base;
+                  // that's safe. A different camera cannot supply this overlap.
+                  if (base?.key !== priorKey) {
+                    saved!.clearRect(0, 0, plan.pixelWidth, plan.pixelHeight);
+                    await capture(plan);
+                  }
+                } else await capture(plan);
+                saved ??= canvas(plan);
                 previous = base;
                 base = { key, plan, canvas: saved.canvas, canonical: [] };
-                stats.gpuFrames++;
-              } finally { (captured as ImageBitmap).close?.(); }
+                if (usedGPU) stats.gpuFrames++; else stats.reusedFrames++;
+                // preserveDetail below fills the reused overlap, including air,
+                // before this complete frame is published or cached.
+              } catch (error) {
+                if (saved) saved.canvas.width = saved.canvas.height = 0;
+                throw error;
+              }
             }
           } else stats.reusedFrames++;
           context.drawImage(base!.canvas, 0, 0);

@@ -34,6 +34,14 @@ export async function browserTelescopeSource(code: string, id: string) {
     return { code: source, map: null };
   }
   if (id.endsWith("/gl/terrain_renderer.js")) {
+    // Partial viewport draws retain the parent's camera/pixel origin. Merely
+    // moving camX/camY changes float rounding at cell and texture boundaries.
+    replaceExpected(/camX - \(width \/ 2\) \/ camZ/,
+      'camX - ((view.sampleWidth ?? width) / 2) / camZ', 'cropped terrain camera X');
+    replaceExpected(/camY - \(height \/ 2\) \/ camZ/,
+      'camY - ((view.sampleHeight ?? height) / 2) / camZ', 'cropped terrain camera Y');
+    replaceExpected(/gl\.uniform2i\(u\.u_vpOrigin, 0, 0\);\n        gl\.uniform1i\(u\.u_materialIdOut, 0\);/,
+      'gl.uniform2i(u.u_vpOrigin, -(view.sampleOffsetX ?? 0), view.sampleOffsetY ?? 0);\n        gl.uniform1i(u.u_materialIdOut, 0);', 'cropped terrain pixel origin');
     // This host replaces Telescope's app and never enables its standalone HUD.
     // Upstream's permanent poller captures each renderer, retaining contexts
     // and lattices after our seed lifecycle releases them. Keep host metrics

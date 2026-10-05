@@ -246,7 +246,7 @@ export function createInstantTerrainViewport(options: {
   let controller: AbortController | undefined;
   let destroyed = false, failed = false, painted = false;
   const revision = () => options.revision?.() ?? 0;
-  const events = ['viewport-change', 'animation', 'animation-finish', 'resize', 'rotate', 'flip'];
+  const events = ['pan', 'viewport-change', 'animation', 'animation-finish', 'resize', 'rotate', 'flip'];
 
   function remember(previous: Frame): void {
     const candidates = [...retained, previous];

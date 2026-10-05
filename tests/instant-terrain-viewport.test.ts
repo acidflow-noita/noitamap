@@ -75,10 +75,10 @@ function fixture(bounds = { x: -1000, y: -1000, width: 2000, height: 2000 }, max
     request.resolve(pixels);
     return pixels;
   }
-  function navigate(x: number, width = area.width, rotation = angle) {
+  function navigate(x: number, width = area.width, rotation = angle, event = 'viewport-change') {
     area = new OSD.Rect(x, area.y, width, width * 24 / 32);
     angle = rotation;
-    viewer.raiseEvent('viewport-change', {});
+    viewer.raiseEvent(event, {});
   }
   cleanups.push(() => { lifetime.abort(); for (const tracked of [...items]) tracked.source.destroy(); viewer.raiseEvent('before-destroy', {}); });
   return { viewer, world, canvas, viewport, drawer, originalDraw, lifetime, layer, item, items, attach,
@@ -92,6 +92,17 @@ function fixture(bounds = { x: -1000, y: -1000, width: 2000, height: 2000 }, max
 }
 
 describe('direct viewport terrain with installed OSD and native canvas', () => {
+  it('starts preparing a drag on pan input before OSD enters its draw loop', async () => {
+    const f=fixture(); await drain(); f.image(); await drain(); f.draw(); await drain();
+    f.navigate(8,32,0,'pan'); await drain();
+    expect(f.renders).toHaveLength(2);
+    expect(f.renders[1].plan.x).toBe(8);
+    f.image(undefined,'#20c060'); await drain();
+    f.viewer.raiseEvent('viewport-change',{}); f.draw(); await drain();
+    expect(f.renders).toHaveLength(2);
+    expect(f.pixel(31,8)).toEqual([32,192,96,255]);
+  });
+
   it('covers the first zoom-out after a close-up reseed without painting over sharp pixels or their air', async () => {
     const bounds = { x: -64, y: 0, width: 128, height: 96 };
     const f = fixture(bounds, undefined, true);

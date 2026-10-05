@@ -142,6 +142,7 @@ async function verifyViewportRPC(renderer: any, width: number, center: number) {
     masks: [], center,
   };
   await renderer.configureViewport(inputs);
+
   const pixels = (canvas: any) => canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
   let comparedBytes = 0, mismatches = 0, visible = 0;
   const compare = (actual: Uint8ClampedArray, expected: Uint8ClampedArray) => {
@@ -152,6 +153,23 @@ async function verifyViewportRPC(renderer: any, width: number, center: number) {
     }
     for (let p = 3; p < actual.length; p += 4) if (actual[p]) visible++;
   };
+  // Compare actual cropped worker renders to the corresponding full-frame
+  // pixels, including fractional zoom, negative PWs and vertical boundaries.
+  let croppedViews = 0;
+  for (const plane of [-1, 0, 1]) for (const pw of [-1, 0, 1]) for (const scale of [.375, 1.25, 3.073750362576023]) {
+    const full = { x: -4126.37 + pw * worldWidth, y: WORLD_TOP + (plane + 1) * WORLD_HEIGHT - 71.37,
+      width: 256 * scale, height: 192 * scale, scale, pixelWidth: 256, pixelHeight: 192 };
+    const reference = await renderer.renderViewport(full);
+    for (const r of [{x:17,y:19,width:61,height:73},{x:183,y:7,width:73,height:160}]) {
+      const crop = {x:full.x+r.x*scale,y:full.y+r.y*scale,width:r.width*scale,height:r.height*scale,
+        scale,pixelWidth:r.width,pixelHeight:r.height,
+        samplingPlan:{x:full.x,y:full.y,pixelWidth:full.pixelWidth,pixelHeight:full.pixelHeight}};
+      const actual = await renderer.renderViewport(crop);
+      compare(pixels(actual), reference.getContext('2d').getImageData(r.x,r.y,r.width,r.height).data);
+      actual.close(); croppedViews++;
+    }
+    reference.close();
+  }
   const tile = async (plan: TerrainViewportPlan, pw: number, plane: -1 | 0 | 1) => {
     renderer.setPlane(plane);
     // Independent reference uses Telescope's original PW-local camera plus
@@ -228,7 +246,7 @@ async function verifyViewportRPC(renderer: any, width: number, center: number) {
   const after = count();
   return { comparedBytes, mismatches, visible, regions: 9, nativeBlockPixels: 9 * 512 * 512, fullWorldFrames: 1,
     forceAirMaskVerified: true, forceAirOpaquePixelsCleared, measuredFrameRequests: after.frame - before.frame,
-    measuredTileRequests: after.render - before.render, warm1080pFrameTransferMs: frameMs,
+    measuredTileRequests: after.render - before.render, warm1080pFrameTransferMs: frameMs, croppedViews,
     warm1080pTwelveTileTransfersMs: tilesMs,
     timingScope: 'Native llvmpipe software GLES, includes readback/transfer; excludes generation and does not measure browser or physical GPU speed' };
 }

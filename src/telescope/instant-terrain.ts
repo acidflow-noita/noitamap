@@ -784,6 +784,7 @@ export async function addInstantTerrain(
         cache,
         regions: retainedRegions, renderer: mainRenderer, signal: lifetime.signal,
         complete: () => cooker.stats.state === 'complete', refresh: refreshViewport,
+        hasTerrain: plan => clip!.hasTerrain({x:plan.x,y:plan.y,scale:plan.scale,width:plan.pixelWidth,height:plan.pixelHeight}),
       });
       let emptyViewReported = false, checkingEmptyView = false;
       viewport = createInstantTerrainViewport({

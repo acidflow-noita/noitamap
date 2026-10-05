@@ -86,6 +86,7 @@ it.skipIf(process.platform !== "linux")(
       expect(result.viewport.visible).toBeGreaterThan(1000);
       expect(result.viewport.measuredFrameRequests).toBe(2);
       expect(result.viewport.measuredTileRequests).toBe(24);
+      expect(result.viewport.croppedViews).toBe(54);
       expect(result.viewport.warm1080pFrameTransferMs).toHaveLength(2);
       console.log(
         "[Native GPU worker, shader cache disabled]",

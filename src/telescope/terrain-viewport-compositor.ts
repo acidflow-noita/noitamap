@@ -10,6 +10,9 @@ export interface TerrainViewportPlan {
   scale: number;
   pixelWidth: number;
   pixelHeight: number;
+  /** A crop uses its parent's pixel coordinates so floating-point shader
+   * sampling remains identical to rendering the complete parent viewport. */
+  samplingPlan?: { x: number; y: number; pixelWidth: number; pixelHeight: number };
 }
 
 export interface TerrainViewportInputs {
@@ -25,17 +28,25 @@ export function terrainViewportStrips(plan: TerrainViewportPlan, center: number)
   const strips = [];
   for (const plane of [-1, 0, 1] as VerticalPlane[]) {
     const top = WORLD_TOP + plane * WORLD_HEIGHT;
-    const start = Math.max(0, Math.min(plan.pixelHeight, Math.ceil((top - plan.y) / plan.scale - 0.5)));
-    const end = Math.max(0, Math.min(plan.pixelHeight, Math.ceil((top + WORLD_HEIGHT - plan.y) / plan.scale - 0.5)));
+    const sample = plan.samplingPlan, grid = sample ?? plan;
+    const sampleStart = Math.max(0, Math.min(grid.pixelHeight, Math.ceil((top - grid.y) / plan.scale - 0.5)));
+    const sampleEnd = Math.max(0, Math.min(grid.pixelHeight, Math.ceil((top + WORLD_HEIGHT - grid.y) / plan.scale - 0.5)));
+    const offsetY = sample ? Math.round((plan.y - sample.y) / plan.scale) : 0;
+    const start = Math.max(0, Math.min(plan.pixelHeight, sampleStart - offsetY));
+    const end = Math.max(0, Math.min(plan.pixelHeight, sampleEnd - offsetY));
     if (end <= start) continue;
     const y = plan.y + start * plan.scale;
     const height = end - start;
+    const sampleWidth = sample?.pixelWidth ?? plan.pixelWidth, sampleHeight = sampleEnd - sampleStart;
     strips.push({ plane, offsetY: start, view: {
       x: plan.x, y, width: plan.pixelWidth, height, scale: plan.scale,
-      camX: plan.x + plan.pixelWidth * plan.scale / 2 + center * 512,
-      camY: y + height * plan.scale / 2 + 7168,
+      camX: (sample?.x ?? plan.x) + sampleWidth * plan.scale / 2 + center * 512,
+      camY: (sample ? sample.y + sampleStart * plan.scale : y) + sampleHeight * plan.scale / 2 + 7168,
       camZ: 1 / plan.scale, pw: 0, pwVertical: 0,
       edgeNoise: true, materialTextures: true, engineTerrain: true,
+      ...(sample ? { sampleWidth, sampleHeight,
+        sampleOffsetX: Math.round((plan.x - sample.x) / plan.scale),
+        sampleOffsetY: offsetY + start - sampleStart } : {}),
     } });
   }
   return strips;
