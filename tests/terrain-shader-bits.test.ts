@@ -1,11 +1,25 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { correctTerrainShaderBits, POLKA_FLOAT_BITS, TOPOLOGY_WARP_FLOAT_BITS, standaloneTerrainShaders } from "../build_scripts/vite-terrain-shaders";
+import { correctTerrainShaderBits, POLKA_FLOAT_BITS, TOPOLOGY_WARP_FLOAT_BITS, standaloneTerrainShaders, shareTerrainMaterialResolve } from "../build_scripts/vite-terrain-shaders";
 const root=resolve(import.meta.dirname,"..");
 const original=readFileSync(resolve(root,"lib/noita-telescope-vm/js/gl/shaders.js"),"utf8");
 const float=(bits:number)=>new Float32Array(new Uint32Array([bits]).buffer)[0];
 const bits=(value:number)=>new Uint32Array(new Float32Array([value]).buffer)[0];
+it('shares the expensive material resolve while retaining both color and encoded-id outputs', () => {
+ const source=correctTerrainShaderBits(original);
+ const main=source.slice(source.indexOf('void main() {',source.indexOf('export const TERRAIN_FS')));
+ expect(main.match(/mat = engTopo2\(slot, w\);/g)).toHaveLength(1);
+ expect(main.match(/mat = engTopo0\(slot, physSlot, leftSlot, w\);/g)).toHaveLength(1);
+ expect(main).toContain('if (u_materialIdOut)');
+ expect(main).toContain('int code = mat + 1;');
+ expect(main).toContain('if (mat > 0) engMaterialColor(mat, w);');
+ expect(shareTerrainMaterialResolve(source)).toBe(source);
+});
+it('requires review if the pinned upstream material branch changes', () => {
+ expect(()=>shareTerrainMaterialResolve(original.replace('int mat = -1;', 'int mat = -2;')))
+   .toThrow('Review changed Telescope material resolve');
+});
 it('makes prewarm shader sources independent of archive and generator imports', () => {
  const source=standaloneTerrainShaders(resolve(root,'lib/noita-telescope-vm/js'));
  expect(source).not.toMatch(/^import\s/m);

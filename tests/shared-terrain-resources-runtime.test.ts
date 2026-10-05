@@ -4,6 +4,8 @@ import { Worker } from "node:worker_threads";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { standaloneTerrainShaders } from "../build_scripts/vite-terrain-shaders";
 
 describe.skipIf(process.platform !== "linux")("shared terrain resources with native GLES", () => {
   const root = resolve(import.meta.dirname, "..");
@@ -14,6 +16,21 @@ describe.skipIf(process.platform !== "linux")("shared terrain resources with nat
       configFile: resolve(root, "vite.config.ts"), logLevel: "error", publicDir: false,
       plugins: [{
         name: "count-real-lattice-builds", enforce: "pre",
+        resolveId(id) { if (id === 'virtual:terrain-shader-reference') return '\0terrain-shader-reference'; },
+        load(id) {
+          if (id !== '\0terrain-shader-reference') return;
+          const directory = resolve(root, 'lib/noita-telescope-vm/js');
+          const original = readFileSync(resolve(directory, 'gl/shaders.js'), 'utf8');
+          const start = original.indexOf('        // Material-id output (edge-decal tiles, terrain_renderer.js');
+          const end = original.indexOf('    }\n\n    ivec2 pos;', start);
+          const patched = standaloneTerrainShaders(directory);
+          const sharedStart = patched.indexOf('        // Noitamap: resolve once for color and material-id output.');
+          const sharedEnd = patched.indexOf('    }\n\n    ivec2 pos;', sharedStart);
+          if ([start, end, sharedStart, sharedEnd].some(n => n < 0)) throw new Error('Review terrain shader reference boundaries');
+          // Keep accepted geometry/precision corrections, but compile the
+          // untouched upstream material/color branches as the independent oracle.
+          return patched.slice(0, sharedStart) + original.slice(start, end) + patched.slice(sharedEnd);
+        },
         transform(source, id) {
           if (!id.replace(/\\/g, "/").endsWith("/lib/noita-telescope-vm/js/engine_resolve/lattice_builder.js")) return;
           const signature = "export function buildEngineLattice(layers, generatorConfig, mapWidth, mapHeight) {";

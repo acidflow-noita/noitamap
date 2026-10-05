@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
 import { dirname } from "node:path";
+import { createHash } from "node:crypto";
 import type { Plugin } from "vite";
 
 /** Exact float32 values read from Noita's RarePolka hash implementation.
@@ -28,6 +29,47 @@ export const TOPOLOGY_WARP_FLOAT_BITS = {
   ENG_WARP_CY: 0x3e0c764b,
   ENG_F2: 0x3de38e39,
 } as const;
+
+/** Both output modes resolve exactly the same material. Keep one call site
+ * for the large topology/noise tree so drivers need not compile it twice. */
+export function shareTerrainMaterialResolve(source: string): string {
+  const marker = '        // Noitamap: resolve once for color and material-id output.';
+  if (source.includes(marker)) return source;
+  const start = source.indexOf('        // Material-id output (edge-decal tiles, terrain_renderer.js');
+  const end = source.indexOf('    }\n\n    ivec2 pos;', start);
+  if (start < 0 || end < 0) throw new Error('Review changed Telescope material resolve');
+  const original = source.slice(start, end);
+  if (createHash('sha256').update(original.replace(/\r\n/g, '\n')).digest('hex') !==
+      '27d5e2abc50e8ce427644cff925f7371f39cb0ba52b25dfbf2a40e9d63cb33ff')
+    throw new Error('Review changed Telescope material resolve');
+  return source.slice(0, start) + `${marker}
+        int mat = -1;
+        if ((info & 2048u) != 0u) {
+            mat = 0;
+        } else if (mode != 2u) {
+            int slot = int(info & 0xffu);
+            if (mode == 1u) {
+                mat = engTopo2(slot, w);
+            } else {
+                int pcx = fdiv(w.x + u_centerPx, CHUNK);
+                int pcy = fdiv(w.y + u_baseY, CHUNK);
+                int physSlot = int(engInfoAt(pcx, pcy) & 0xffu);
+                int leftSlot = int(engInfoAt(pcx - 1, pcy) & 0xffu);
+                mat = engTopo0(slot, physSlot, leftSlot, w);
+            }
+            if (mat < 0) mat = 0;
+        }
+        if (u_materialIdOut) {
+            int code = mat + 1;
+            outColor = vec4(float(code & 0xff) / 255.0, float((code >> 8) & 0xff) / 255.0, 0.0, 1.0);
+            return;
+        }
+        if (mat >= 0) {
+            if (mat > 0) engMaterialColor(mat, w);
+            return;
+        }
+` + source.slice(end);
+}
 
 export function correctTerrainShaderBits(source: string): string {
   for (const [name, bits] of Object.entries({
@@ -133,7 +175,7 @@ float covAt(int x, int y) {`,
         ivec2 cell = engResolveCell(w);`,
     );
   }
-  return source;
+  return shareTerrainMaterialResolve(source);
 }
 
 export function terrainShaderBitsPlugin(directory: string): Plugin {

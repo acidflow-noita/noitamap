@@ -16,6 +16,16 @@ import { createMaterialField } from "noita-telescope-full-pixels/engine_resolve/
 import { encodeTerrainPages, decodeTerrainPage } from "../../src/telescope/retained-terrain-codec-core";
 
 import { createPlaneOwnership } from "../../src/telescope/terrain-policy";
+import { TERRAIN_FS as REFERENCE_FS } from 'virtual:terrain-shader-reference';
+import { TERRAIN_FS } from 'virtual:instant-terrain-shaders';
+
+async function prewarmReferenceShader(renderer: any) {
+  if (!renderer.initContext()) throw new Error(renderer.failed);
+  const gl = renderer.gl, shaderSource = gl.shaderSource;
+  gl.shaderSource = (shader: any, source: string) => shaderSource.call(gl, shader, source === TERRAIN_FS ? REFERENCE_FS : source);
+  try { await prewarmTerrainShader(renderer); }
+  finally { gl.shaderSource = shaderSource; }
+}
 
 type Plane = -1 | 0 | 1;
 type Sample = { name: string; plane: Plane; pw: number; x: number; y: number; width: number; height: number };
@@ -109,7 +119,7 @@ export async function verifySharedTerrainResources() {
   phase("reference");
   for (const plane of [0, -1, 1] as const) {
     const data = await prepareTerrainPlane(generation, plane), renderer = new GLTerrainRenderer();
-    await prewarmTerrainShader(renderer);
+    await prewarmReferenceShader(renderer);
     if (!renderer.ensureResources(data.tileLayers, data.biomeData, options)) throw new Error(renderer.failed);
     if (!renderer.engineReady) throw new Error("Reference engine resources are incomplete");
     const table = new Uint16Array(renderer.engineChunkModes);
@@ -266,7 +276,7 @@ export async function verifySharedTerrainResources() {
   const changedOptions = { ...options, seed: options.seed + 77 };
   phase("changed-seed-reference");
   const changedReference = new GLTerrainRenderer();
-  await prewarmTerrainShader(changedReference);
+  await prewarmReferenceShader(changedReference);
   if (!changedReference.ensureResources(generation.tileLayers, generation.biomeData, changedOptions))
     throw new Error(changedReference.failed);
   setTerrainPlane(changedReference, 0);
