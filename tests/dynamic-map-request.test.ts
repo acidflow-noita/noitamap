@@ -96,6 +96,20 @@ describe('independent live-map startup work', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
+  it('cancels a waiting scene prefetch before a new seed lookup finishes', async () => {
+    const warming = barrier();
+    vi.mocked(prefetchAllSceneBitmaps).mockReturnValueOnce(warming.promise);
+    await runDynamicMap(42, false, { viewer: {} });
+    const gate = vi.mocked(prefetchAllSceneBitmaps).mock.calls.at(-1)![1]!;
+    const waiting = gate(); // The mocked frame scheduler never grants this.
+    const lookup = pendingSeed();
+    vi.mocked(fetchDailySeed).mockReturnValueOnce(lookup.promise);
+    const replacement = runDynamicMap(99, false, { viewer: {} });
+    await expect(waiting).resolves.toBe(false);
+    clearDynamicMap({}); lookup.resolve(0); warming.resolve();
+    await expect(replacement).resolves.toBeNull();
+  });
+
   it('starts cache reads and generation without waiting for background artwork or previous daily', async () => {
     const assets = barrier(), background = barrier();
     vi.mocked(initTelescope).mockReturnValue(assets.promise);

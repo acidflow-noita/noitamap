@@ -22,6 +22,7 @@ import { getUnlocksFromURL, unlocksChanged, UNLOCK_KEYS, getUrlUnlockKind } from
 import { getPillarFlagsFromURL } from "./pillars-unlocks";
 import { beginAltSeed, prewarmAlt, resetAltCache } from "./unlocks-toggle";
 import { isLightMode } from "./light-mode";
+import { createScenePrefetchGate } from "./telescope/scene-prefetch-gate";
 import {
   renderGenerationResult,
   clearDynamicOverlays,
@@ -71,6 +72,7 @@ let currentAllowsBaked: boolean | null = null;
 let lastResult: GenerationResult | null = null;
 let dynamicRendered: boolean = false;
 let generationToken: number = 0;
+let scenePrefetchLifetime: AbortController | undefined;
 
 /** Get the seed currently displayed on the dynamic map */
 export function getCurrentDynamicSeed(): number | null {
@@ -236,6 +238,8 @@ export async function runDynamicMap(
   const { viewer, onLoadingChange, onPOIsReady, onSeedResolved } = opts;
   const runStarted = performance.now();
   const myToken = ++generationToken;
+  scenePrefetchLifetime?.abort();
+  scenePrefetchLifetime = undefined;
   beginAltSeed(seed);
   opts.onMapReplacementStart?.();
 
@@ -604,7 +608,13 @@ export async function runDynamicMap(
     // Only live maps need scene preparation for future generations. A baked
     // daily (including yesterday's seed) already contains its rendered pixels.
     if (!bakedData?.probe.baked) {
-      void prefetchAllSceneBitmaps(() => myToken === generationToken).catch(() => {});
+      const lifetime = scenePrefetchLifetime = new AbortController();
+      const gate = createScenePrefetchGate(viewer, lifetime.signal);
+      void prefetchAllSceneBitmaps(() => myToken === generationToken, gate.wait)
+        .catch(() => {}).finally(() => {
+          gate.dispose();
+          if (scenePrefetchLifetime === lifetime) scenePrefetchLifetime = undefined;
+        });
     }
 
     return result;
@@ -630,6 +640,8 @@ export async function runDynamicMapFromURL(opts: DynamicMapOptions): Promise<Gen
  * Clear all dynamic overlays from the viewer.
  */
 export function clearDynamicMap(viewer: any): void {
+  scenePrefetchLifetime?.abort();
+  scenePrefetchLifetime = undefined;
   releaseParallelWorlds();
   releaseInstantTerrainBackend();
   clearDynamicOverlays(viewer);

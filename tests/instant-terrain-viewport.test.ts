@@ -93,14 +93,18 @@ function fixture(bounds = { x: -1000, y: -1000, width: 2000, height: 2000 }, max
 
 describe('direct viewport terrain with installed OSD and native canvas', () => {
   it('starts preparing a drag on pan input before OSD enters its draw loop', async () => {
-    const f=fixture(); await drain(); f.image(); await drain(); f.draw(); await drain();
+    const f=fixture(); await drain(); expect(f.layer.source.isInstantTerrainBusy()).toBe(true);
+    f.image(); await drain(); f.draw(); await drain();
+    expect(f.layer.source.isInstantTerrainBusy()).toBe(false);
     f.navigate(8,32,0,'pan'); await drain();
+    expect(f.layer.source.isInstantTerrainBusy()).toBe(true);
     expect(f.renders).toHaveLength(2);
     expect(f.renders[1].plan.x).toBe(8);
     f.image(undefined,'#20c060'); await drain();
     f.viewer.raiseEvent('viewport-change',{}); f.draw(); await drain();
     expect(f.renders).toHaveLength(2);
     expect(f.pixel(31,8)).toEqual([32,192,96,255]);
+    f.lifetime.abort(); expect(f.layer.source.isInstantTerrainBusy()).toBe(false);
   });
 
   it('covers the first zoom-out after a close-up reseed without painting over sharp pixels or their air', async () => {

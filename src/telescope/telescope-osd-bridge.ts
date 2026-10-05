@@ -2267,7 +2267,7 @@ async function compositeSceneBitmap(
  * background after the first render so future seed switches have zero
  * pixel-scene compositing work.
  */
-export const prefetchAllSceneBitmaps = createScenePrefetch(async (isCurrent) => {
+export const prefetchAllSceneBitmaps = createScenePrefetch(async (isCurrent, beforeScene) => {
     try {
       // These scenes need actual placement coordinates (and Water Cave's seed).
       const allKeys = getAllPixelSceneKeys().filter(key => !carvedRoomBiome(key) && !isWaterCaveLayout(key));
@@ -2288,6 +2288,7 @@ export const prefetchAllSceneBitmaps = createScenePrefetch(async (isCurrent) => 
       // Process serially to keep main-thread pressure low.
       for (const key of missing) {
         if (!isCurrent()) break;
+        if (!(await beforeScene()) || !isCurrent()) break;
         const data = getPixelSceneData(key);
         if (!data) {
           skipped++;
@@ -2317,8 +2318,6 @@ export const prefetchAllSceneBitmaps = createScenePrefetch(async (isCurrent) => 
           skipped++;
           console.warn('[OSD Bridge] Prefetch composite failed:', key, e);
         }
-        // Yield between keys so UI stays responsive.
-        await new Promise(r => setTimeout(r, 0));
       }
       console.log(
         `[OSD Bridge] Pixel-scene prefetch: warmed ${warmed}, skipped ${skipped}, took ${((performance.now() - t0) / 1000).toFixed(2)}s`

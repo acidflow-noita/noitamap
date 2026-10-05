@@ -410,6 +410,7 @@ export function createInstantTerrainViewport(options: {
     retained = [];
   };
   Object.defineProperty(source, 'isDisposed', { get: () => destroyed });
+  source.isInstantTerrainBusy = () => !destroyed && !signal.aborted && (!!active || !!pending);
   source.instantViewportStats = stats;
   if (!installViewportLayerDrawing(osd, source)) throw new Error('Viewport terrain requires the OSD canvas drawer');
   if (!signal.aborted) {

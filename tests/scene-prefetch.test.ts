@@ -1,5 +1,43 @@
 import { expect, it, vi } from "vitest";
+import { readFileSync } from 'node:fs';
 import { createScenePrefetch } from "../src/telescope/scene-prefetch";
+
+it('gates the actual bridge prefetch loop before every missing scene and resumes missing work later', async () => {
+  // Exercise the production loop without importing the full map UI/generator.
+  const source = readFileSync('src/telescope/telescope-osd-bridge.ts', 'utf8');
+  const start = source.indexOf('export const prefetchAllSceneBitmaps =');
+  const end = source.indexOf('\n});', start) + 4;
+  expect(start).toBeGreaterThan(0); expect(end).toBeGreaterThan(start);
+  const cached = new Set<string>(), close = vi.fn();
+  const composite = vi.fn(async () => ({ bitmap: { close }, blob: new Blob(['image']), width: 2, height: 2 }));
+  const dependencies = {
+    createScenePrefetch, getAllPixelSceneKeys: () => ['one', 'two', 'three'],
+    carvedRoomBiome: () => null, isWaterCaveLayout: () => false,
+    getCachedSceneBitmapKeys: async () => cached, getScenePngIndex: async () => ({}),
+    getPixelSceneData: () => ({ width: 2, height: 2 }),
+    compositeSceneBitmap: composite,
+    cacheSceneBitmap: async (key: string) => { cached.add(key); },
+    console: { log() {}, warn: vi.fn() },
+  };
+  const prefetch = new Function(...Object.keys(dependencies),
+    source.slice(start, end).replace(/^export /, '') + '; return prefetchAllSceneBitmaps;')(...Object.values(dependencies));
+  let current = true;
+  const grants: Array<(ready: boolean) => void> = [];
+  const first = prefetch(() => current, () => new Promise<boolean>(done => grants.push(done)));
+  await vi.waitFor(() => expect(grants).toHaveLength(1));
+  expect(composite).not.toHaveBeenCalled();
+  grants[0](true);
+  await vi.waitFor(() => expect(grants).toHaveLength(2));
+  expect([...cached]).toEqual(['one']); expect(close).toHaveBeenCalledOnce();
+  const nextGate = vi.fn(async () => true);
+  const second = prefetch(() => true, nextGate);
+  current = false; grants[1](false);
+  await Promise.all([first, second]);
+  expect(composite.mock.calls.map(call => (call as unknown[])[0])).toEqual(['one', 'two', 'three']);
+  expect([...cached]).toEqual(['one', 'two', 'three']);
+  expect(nextGate).toHaveBeenCalledTimes(2);
+  expect(close).toHaveBeenCalledTimes(3);
+});
 
 it("retries after an empty pre-initialization scene table", async () => {
   let keys: string[] = [];
