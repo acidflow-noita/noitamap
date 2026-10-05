@@ -257,15 +257,21 @@ export function createInstantTerrainViewport(options: {
       releaseImage(entry.image);
       return false;
     });
-    // Preserve the broad surrounding view across many small zoom-in steps.
-    // A plain FIFO would evict it just before the user zooms back out.
-    const ranked = [...useful].reverse().sort((a, b) => {
-      const overlaps = (plan: ViewportTerrainBounds) => plan.x < frame!.plan.x + frame!.plan.width
-        && plan.x + plan.width > frame!.plan.x && plan.y < frame!.plan.y + frame!.plan.height
-        && plan.y + plan.height > frame!.plan.y;
-      return Number(overlaps(b.plan)) - Number(overlaps(a.plan))
-        || b.plan.width * b.plan.height - a.plan.width * a.plan.height;
-    });
+    // Keep recent nearby detail for small zoom-outs. Ranking every slot by
+    // area discarded the previous close-up and magnified distant overviews.
+    const overlaps = (plan: ViewportTerrainBounds) => plan.x < frame!.plan.x + frame!.plan.width
+      && plan.x + plan.width > frame!.plan.x && plan.y < frame!.plan.y + frame!.plan.height
+      && plan.y + plan.height > frame!.plan.y;
+    const overlapOrder = (a: Frame, b: Frame) => Number(overlaps(b.plan)) - Number(overlaps(a.plan));
+    const ranked = [...useful].reverse().sort(overlapOrder);
+    // A dedicated full-map overview already protects large jumps. Without
+    // one, reserve just the broadest fallback, even under a one-frame budget.
+    if (!overview && ranked.length) {
+      const broadest = [...ranked].sort((a, b) => overlapOrder(a, b)
+        || b.plan.width * b.plan.height - a.plan.width * a.plan.height)[0];
+      ranked.splice(ranked.indexOf(broadest), 1);
+      ranked.unshift(broadest);
+    }
     const kept = new Set<Frame>();
     let pixels = overviewPixels();
     for (const entry of ranked) {

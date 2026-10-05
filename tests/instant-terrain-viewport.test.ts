@@ -303,6 +303,33 @@ describe('direct viewport terrain with installed OSD and native canvas', () => {
     expect((f.layer.stats as any).retainedBytes).toBe(0);
   });
 
+  it.each([true, false])('keeps nearby detail for one wheel step after repeated zoom-in (initial overview %s)', async initialOverview => {
+    const f = fixture({ x: -64, y: 0, width: 128, height: 96 }, undefined, initialOverview);
+    await drain();
+    if (initialOverview) { f.image(undefined, '#e04020'); await drain(); }
+    const broad = f.image(undefined, '#e04020'); await drain(); f.draw(); await drain();
+    let nearby: any;
+    for (const width of [24, 20, 16, 12, 8]) {
+      f.navigate(0, width); await drain();
+      const frame = f.image(undefined, width === 12 ? '#20c060' : '#2060f0');
+      if (width === 12) nearby = frame;
+      await drain(); f.draw();
+    }
+    // Leave the replacement pending: the newly exposed strip must use the
+    // immediately preceding detailed view, not a magnified broad snapshot.
+    f.navigate(0, 8 * 1.2); await drain(); f.draw();
+    expect(f.pixel(31, 8)).toEqual([32, 192, 96, 255]);
+    expect(nearby.close).not.toHaveBeenCalled();
+    expect(f.pixel(8, 8)).toEqual([32, 96, 240, 255]);
+    expect((f.layer.stats as any).retainedBytes).toBeLessThanOrEqual((initialOverview ? 4 : 3) * 32 * 24 * 4);
+    if (!initialOverview) expect(broad.close).not.toHaveBeenCalled();
+    // The full-map fallback still covers a large jump without fresh pixels.
+    if (initialOverview) {
+      f.navigate(-64, 128); f.draw();
+      expect(f.pixel(1, 8)).toEqual([224, 64, 32, 255]);
+    }
+  });
+
   it('discards obsolete revisions and aborts requests while preserving the handoff frame until destroy', async () => {
     const f = fixture();
     await drain();
