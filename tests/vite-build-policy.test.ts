@@ -108,9 +108,46 @@ describe("browser build boundaries", () => {
       await readFile(path, "utf8"),
       path,
     );
-    expect(code).toMatch(/import\([^)]*material-atlas-entry\.ts/);
+    expect(code).toMatch(/import\([^)]*scene-texture-entry\.ts/);
     expect(code).not.toContain("__noitamapAtlas");
-    expect(code).not.toMatch(/import[^;]*from\s*["'][^"']*material_atlas/);
+    expect(code).not.toMatch(/import[^;]*from\s*["'][^"']*(?:material_atlas|band_select)/);
+    expect(code).not.toMatch(/import\(["'][^"']*(?:material_atlas|band_select)\.js/);
+  });
+  it("keeps scene textures pending until the shared atlas is ready and reuses both modules", async () => {
+    const path = resolve(root, "lib/noita-telescope-vm/js/pixel_scene_generation.js");
+    const { code } = await browserTelescopeSource(await readFile(path, "utf8"), path);
+    const initializer = code.match(/function initPixelSceneTextures\(\) \{[\s\S]*?\n\}/)?.[0];
+    expect(initializer).toBeTruthy();
+    let ready!: () => void;
+    const atlasReady = new Promise<void>(resolve => { ready = resolve; });
+    const atlas = { initMaterialAtlas: vi.fn(() => atlasReady) }, bands = {};
+    const load = vi.fn(async () => ({ atlas, bands }));
+    const init = new Function("load", `let sceneTextureModules = null, sceneTextureLoading = null;
+      ${initializer!.replace(/import\([^)]*scene-texture-entry\.ts"\)/, 'load()')}
+      return initPixelSceneTextures;`)(load);
+    expect(load).not.toHaveBeenCalled();
+    const first = init(), second = init();
+    expect(second).toBe(first);
+    await Promise.resolve();
+    expect(load).toHaveBeenCalledOnce();
+    expect(atlas.initMaterialAtlas).toHaveBeenCalledOnce();
+    let completed = false;
+    void first.then(() => { completed = true; });
+    await Promise.resolve();
+    expect(completed).toBe(false);
+    ready();
+    const result = await first;
+    expect(result.atlas).toBe(atlas);
+    expect(result.bands).toBe(bands);
+    expect(await init()).toBe(result);
+    expect(load).toHaveBeenCalledOnce();
+  });
+  it("rejects a changed upstream scene-texture import boundary", async () => {
+    const path = resolve(root, "lib/noita-telescope-vm/js/pixel_scene_generation.js");
+    const original = await readFile(path, 'utf8');
+    await expect(browserTelescopeSource(original.replace(
+      "import('./engine_resolve/band_select.js')", "import('./engine_resolve/other.js')"), path))
+      .rejects.toThrow('scene texture imports');
   });
   it.each(["noita-telescope", "noita-telescope-vm"])(
     "keeps the upstream general-scene lookup in %s without rewriting its private function",

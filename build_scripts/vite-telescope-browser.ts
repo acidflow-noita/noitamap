@@ -136,18 +136,22 @@ export async function browserTelescopeSource(code: string, id: string) {
         "import { loadPNG as loadPNGWithBitmap } from $1;\nconst loadPNG = url => loadPNGWithBitmap(url, { bitmap: false });",
         "scene PNG import",
       );
-    const atlasImport = /import\(['"]\.\/gl\/material_atlas\.js['"]\)/g;
-    if (atlasImport.test(source)) {
+    if (/import\(['"]\.\/gl\/material_atlas\.js['"]\)/.test(source)) {
       // This import MUST stay dynamic. utils -> pixel_scene_generation ->
       // material_atlas -> potion_config otherwise forms a static cycle, and
       // the atlas iterates MATERIAL_DATA before its top-level await completes.
-      // A separate lazy entry preserves that boundary even when other callers
-      // already import the underlying atlas statically.
+      // Load the atlas and band selector through one feature entry. Their
+      // underlying modules are also static dependencies of terrain rendering;
+      // separate dynamic imports cannot split them into independent chunks.
       const entry = resolve(
         import.meta.dirname,
-        "../src/telescope/material-atlas-entry.ts",
+        "../src/telescope/scene-texture-entry.ts",
       );
-      source = source.replace(atlasImport, `import(${JSON.stringify(entry)})`);
+      replaceExpected(
+        /const \[atlas, bands\] = await Promise\.all\(\[\s*import\(['"]\.\/gl\/material_atlas\.js['"]\),\s*import\(['"]\.\/engine_resolve\/band_select\.js['"]\),?\s*\]\);/,
+        `const { atlas, bands } = await import(${JSON.stringify(entry)});`,
+        "scene texture imports",
+      );
     }
   }
   if (id.endsWith("/icon_sheets.js")) {
