@@ -310,6 +310,10 @@ export async function runDynamicMap(
     return lastResult;
   }
 
+  // The requested identity changes before assets/rendering finish. Until the
+  // replacement completes, lastResult still belongs to the outgoing map.
+  dynamicRendered = false;
+
   // Early GPU preparation replaces the shared renderer before the new map
   // reaches presentation. Retire the old cooker and lazy plane requests first;
   // its displayed frames remain attached until the replacement first paints.

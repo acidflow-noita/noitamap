@@ -31,6 +31,7 @@ import { shouldUseBakedTerrain, isInstantTerrainEnabled } from '../src/renderer_
 import { initTelescope, generateDynamicMap, prewarmParallelWorlds } from '../src/telescope/telescope-adapter';
 import { prewarmInstantTerrain } from '../src/telescope/instant-terrain-backend';
 import { prewarmAlt } from '../src/unlocks-toggle';
+import { getUrlUnlockKind } from '../src/unlocks';
 import { probeBakedDZIs } from '../src/telescope/baked-dzi-loader';
 import { addBakedDZIsToOSD } from '../src/telescope/baked-dzi-loader';
 import { fetchBakedGeneration } from '../src/telescope/baked-generation';
@@ -46,6 +47,7 @@ beforeEach(() => {
   vi.mocked(fetchPreviousDailySeed).mockResolvedValue(previous);
   vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
   vi.mocked(isInstantTerrainEnabled).mockReturnValue(false);
+  vi.mocked(getUrlUnlockKind).mockReturnValue(null);
 });
 
 describe('URL seed request ownership', () => {
@@ -155,6 +157,108 @@ describe('URL seed request ownership', () => {
   });
 });
 afterEach(() => { history.replaceState(null, '', '/'); });
+
+describe('pending map replacement ownership', () => {
+  function barrier() {
+    let resolve!: () => void;
+    return { promise: new Promise<void>(done => { resolve = done; }), resolve: () => resolve() };
+  }
+  function fixture() {
+    const cache = new Map<string, any>();
+    vi.mocked(shouldUseBakedTerrain).mockReturnValue(false);
+    vi.mocked(initTelescope).mockResolvedValue();
+    vi.mocked(getCachedGeneration).mockImplementation(async key => cache.get(key) ?? null);
+    vi.mocked(cacheGeneration).mockImplementation(async (key, _seed, result) => { cache.set(key, result); });
+    vi.mocked(generateDynamicMap).mockImplementation(async ({ seed, unlocks }) => ({ seed, ngPlus: 0,
+      isNGP: false, worldSize: 70, worldCenter: 35, tileLayers: [{}], biomeData: {},
+      poisByPW: { '0,0': [{ type: 'item', item: 'heart', id: `${seed}-${unlocks ? 'restricted' : 'all'}` }] },
+      pixelScenesByPW: {}, parallelWorlds: [0] } as any));
+    vi.mocked(renderGenerationResult).mockResolvedValue();
+    vi.mocked(prefetchAllSceneBitmaps).mockResolvedValue();
+    vi.mocked(getAllPOIsFlat).mockImplementation(result => Object.values(result.poisByPW).flat() as any);
+    vi.mocked(hasDynamicOverlays).mockReturnValue(true);
+    const frame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
+    return { frame, viewer: {} };
+  }
+
+  it.each(['assets', 'generation', 'presentation'])(
+    'does not mistake the incoming seed for the completed outgoing map while waiting for %s', async stage => {
+      const f = fixture(), started = barrier(), resume = barrier();
+      const pipeline = await import('../src/dynamic-map');
+      try {
+        const old = await pipeline.runDynamicMap(71, false, f);
+        expect(old).toMatchObject({ seed: 71 });
+        if (stage === 'assets') vi.mocked(initTelescope).mockImplementationOnce(async () => {
+          started.resolve(); await resume.promise;
+        });
+        else if (stage === 'generation') {
+          const generate = vi.mocked(generateDynamicMap).getMockImplementation()!;
+          vi.mocked(generateDynamicMap).mockImplementationOnce(async options => {
+            started.resolve(); await resume.promise; return generate(options);
+          });
+        } else vi.mocked(renderGenerationResult).mockImplementationOnce(async () => {
+          started.resolve(); await resume.promise;
+        });
+        const obsoletePOIs = vi.fn(), currentPOIs = vi.fn();
+        const outgoing = pipeline.runDynamicMap(72, false, { ...f, onPOIsReady: obsoletePOIs });
+        await started.promise;
+        expect(pipeline.getCurrentDynamicSeed()).toBe(72);
+        expect(pipeline.getLastGenerationResult()).toBe(old);
+        const incoming = await pipeline.runDynamicMap(72, false, { ...f, onPOIsReady: currentPOIs });
+        expect(incoming).toMatchObject({ seed: 72 });
+        expect(currentPOIs).toHaveBeenCalledExactlyOnceWith([expect.objectContaining({ id: '72-all' })]);
+        expect(obsoletePOIs).not.toHaveBeenCalled();
+        resume.resolve();
+        expect(await outgoing).toBeNull();
+        expect(pipeline.getLastGenerationResult()).toBe(incoming);
+
+        // A genuinely completed map still takes the original cheap reuse path.
+        const generated = vi.mocked(generateDynamicMap).mock.calls.length;
+        const rendered = vi.mocked(renderGenerationResult).mock.calls.length;
+        expect(await pipeline.runDynamicMap(72, false, { ...f, onPOIsReady: currentPOIs })).toBe(incoming);
+        expect(generateDynamicMap).toHaveBeenCalledTimes(generated);
+        expect(renderGenerationResult).toHaveBeenCalledTimes(rendered);
+        if (stage === 'presentation') expect(generated).toBe(2); // A and B; the repeat reuses B's cache.
+      } finally { resume.resolve(); pipeline.clearDynamicMap(f.viewer); f.frame.mockRestore(); }
+    },
+  );
+
+  it('publishes the requested unlock variant when that same-seed replacement is requested again', async () => {
+    const f = fixture(), started = barrier(), resume = barrier();
+    const pipeline = await import('../src/dynamic-map');
+    try {
+      const all = await pipeline.runDynamicMap(71, false, f);
+      expect(all!.poisByPW['0,0'][0].id).toBe('71-all');
+      vi.mocked(getUrlUnlockKind).mockReturnValue('none');
+      vi.mocked(renderGenerationResult).mockImplementationOnce(async () => { started.resolve(); await resume.promise; });
+      const obsoletePOIs = vi.fn(), currentPOIs = vi.fn();
+      const pending = pipeline.runDynamicMap(71, false, { ...f, onPOIsReady: obsoletePOIs });
+      await started.promise;
+      const restricted = await pipeline.runDynamicMap(71, false, { ...f, onPOIsReady: currentPOIs });
+      expect(restricted!.poisByPW['0,0'][0].id).toBe('71-restricted');
+      expect(currentPOIs).toHaveBeenCalledExactlyOnceWith([expect.objectContaining({ id: '71-restricted' })]);
+      resume.resolve(); expect(await pending).toBeNull();
+      expect(obsoletePOIs).not.toHaveBeenCalled();
+      expect(pipeline.getLastGenerationResult()).toBe(restricted);
+    } finally { resume.resolve(); pipeline.clearDynamicMap(f.viewer); f.frame.mockRestore(); }
+  });
+
+  it('retries a failed incoming seed instead of returning the previous seed as a successful result', async () => {
+    const f = fixture(), error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const pipeline = await import('../src/dynamic-map');
+    try {
+      const old = await pipeline.runDynamicMap(71, false, f);
+      vi.mocked(generateDynamicMap).mockRejectedValueOnce(new Error('generation failed'));
+      expect(await pipeline.runDynamicMap(72, false, f)).toBeNull();
+      expect(pipeline.getLastGenerationResult()).toBe(old);
+      expect(error).toHaveBeenCalledOnce();
+      const pois = vi.fn();
+      expect(await pipeline.runDynamicMap(72, false, { ...f, onPOIsReady: pois })).toMatchObject({ seed: 72 });
+      expect(pois).toHaveBeenCalledExactlyOnceWith([expect.objectContaining({ id: '72-all' })]);
+      expect(generateDynamicMap).toHaveBeenCalledTimes(3);
+    } finally { pipeline.clearDynamicMap(f.viewer); error.mockRestore(); f.frame.mockRestore(); }
+  });
+});
 
 /** Exercise main's actual wiring with a small host, without booting OSD. */
 function mainFunction(start: string, end: string, dependencies: Record<string, unknown>, name: string) {
