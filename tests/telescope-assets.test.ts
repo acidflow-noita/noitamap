@@ -226,7 +226,7 @@ describe("asset extraction and failure handling", () => {
     expect((await getFromZipFirst("./data/missing.png")).size).toBe(1);
   });
 
-  it("surfaces archive corruption, evicts the broken archive, and permits retry", async () => {
+  it("surfaces failed asset reads and permits retry without caching a blank image", async () => {
     const zip = new JSZip().file("data/test.png", new Uint8Array([1]));
     archives.set("main", zip);
     const extract = vi
@@ -235,9 +235,9 @@ describe("asset extraction and failure handling", () => {
     const remove = vi.fn().mockResolvedValue(true);
     vi.stubGlobal("caches", { delete: remove });
     await expect(getFromZipFirst("./data/test.png")).rejects.toThrow(
-      "archive cache cleared",
+      "Cannot read data/test.png from main assets",
     );
-    expect(remove).toHaveBeenCalledWith("noitamap-archive-main-v2");
+    expect(remove).not.toHaveBeenCalled();
     expect((await getFromZipFirst("./data/test.png")).size).toBe(1);
     expect(extract).toHaveBeenCalledTimes(2);
   });

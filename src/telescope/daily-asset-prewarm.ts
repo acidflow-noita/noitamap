@@ -35,7 +35,7 @@ export function scheduleDailyAssetWarmup(
       elapsedMs,
       sinceNavigationMs: finishedAt,
       failures,
-      scope: 'Worker archive validation and immutable asset prefetch, including idle waits; seed-specific terrain cooking is separate',
+      scope: 'Worker asset-index validation and immutable asset prefetch, including idle waits; seed-specific terrain cooking is separate',
       persistence: 'Optional cache writes settled or unavailable; decoded worlds are not retained',
     });
   };

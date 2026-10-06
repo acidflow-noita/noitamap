@@ -176,7 +176,7 @@ async function warmSlot(slot: Slot, deps?: GLTerrainDeps): Promise<void> {
       installTelescopeShim();
       installFetchInterceptor(true);
       if (!(await getDataZip()))
-        throw new Error("Terrain archive unavailable for main-context prewarm");
+        throw new Error("Terrain assets unavailable for main-context prewarm");
     }
     const [
       { GLTerrainRenderer },

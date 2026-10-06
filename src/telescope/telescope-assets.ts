@@ -94,13 +94,9 @@ export async function readTelescopeAsset(url: string): Promise<Blob | null> {
               : "application/octet-stream";
         return new Blob([bytes], { type });
       } catch (cause) {
-        // A damaged archive is a real error, not a reason to cache a blank PNG.
-        if (typeof caches !== "undefined")
-          await caches
-            .delete(`noitamap-archive-${candidate.archive}-v2`)
-            .catch(() => {});
+        // Failed page reads remain retryable; never substitute a blank image.
         throw new Error(
-          `Cannot extract ${candidate.path} from ${candidate.archive}.zip; archive cache cleared. Please reload.`,
+          `Cannot read ${candidate.path} from ${candidate.archive} assets`,
           { cause },
         );
       }

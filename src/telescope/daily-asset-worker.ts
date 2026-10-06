@@ -38,10 +38,9 @@ export async function prepareDailyAssets(
     report({ type: 'stage', stage: name, state: 'finished', elapsedMs: performance.now() - from, failures: failures - initialFailures });
   };
 
-  // Serial downloads bound memory and network contention with visible DZI
-  // tiles. ZIP assembly/hash/validation all execute on this worker.
+  // Indexes are small; original image/data pages are fetched on demand.
   for (const key of ['main', 'wang_tiles', 'pixel_scenes'])
-    await stage(`${key} archive`, () => prepare(key, () => prepareDataArchive(key, request.baseUrl)));
+    await stage(`${key} asset index`, () => prepare(key, () => prepareDataArchive(key, request.baseUrl)));
 
   const fork = request.fullPixels ? 'full' : 'approx';
   await stage('compressed scene inputs', () => prepare(`prepared-scenes/${fork}`, () =>

@@ -248,9 +248,9 @@ async function _doInitTelescope(background?: AbortSignal): Promise<void> {
     fixHolyMountainEdgeNoise: true,
   });
 
-  // 2. Ensure data.zip is loaded
+  // 2. Ensure the game asset index is available
   const zip = await getDataZip();
-  if (!zip) throw new Error("[Telescope] data.zip failed to load");
+  if (!zip) throw new Error("[Telescope] Game asset index failed to load");
   measure("archive", started);
 
   // 3. Install fetch interceptor so telescope's fetch('./data/...') goes to zip
@@ -412,15 +412,13 @@ export function releaseParallelWorlds(): void {
  * callers (including the baker) do not allocate the extra scene tables. */
 export function prewarmParallelWorlds(worlds: number[] = [-1, 0, 1]): void {
   if (typeof Worker === "undefined" || !worlds.some(pw => pw !== 0)) return;
-  // Worker module evaluation reads data.zip through the cache-only worker
-  // loader. Main-thread archive readiness includes its cache write, so a first
-  // visit must finish that shared download before creating either worker.
-  // Capture this pool: leaving the map while the download is pending must not
-  // wake the replacement pool when the old request eventually resolves.
+  // Start the shared index read before creating workers; they reuse its
+  // persistent bytes when available and can fetch on a cold/denied cache.
+  // Capture this pool so an obsolete index read cannot wake its replacement.
   const pool = parallelWorldWorkerPool;
   const fullPixels = useRenderPerfGeneration();
   void getDataZip().then(archive => {
-    if (!archive) throw new Error("Cannot prewarm side worlds: data.zip is unavailable");
+    if (!archive) throw new Error("Cannot prewarm side worlds: game asset index is unavailable");
     return pool.prewarm(fullPixels);
   }).catch(error => console.warn("[Telescope] Side-world prewarm unavailable:", error));
 }

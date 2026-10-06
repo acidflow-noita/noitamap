@@ -176,7 +176,9 @@ export function installNativeTerrainEnvironment({
     fetch: fetchFile,
     caches: {
       async open() {
-        return { match: (url) => fetchFile(url), async put() {} };
+        // Logical CacheStorage keys are not URLs served by the asset server.
+        // Native fixtures model a cold cache; normal fetch loads emitted bytes.
+        return { async match() { return undefined; }, async put() {} };
       },
     },
     addEventListener: eventTarget.addEventListener.bind(eventTarget),

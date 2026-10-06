@@ -44,6 +44,7 @@ export class ImmutableTelescopeAssets {
     revision: string,
     download: () => Promise<Response>,
     signal?: AbortSignal | null,
+    validate?: (response: Response) => Promise<void>,
   ): Promise<Response> {
     signal?.throwIfAborted();
     if (!revision) throw new Error("Immutable asset revision is required");
@@ -55,7 +56,7 @@ export class ImmutableTelescopeAssets {
     }
     let pending = this.pending.get(identity);
     if (!ready && !pending) {
-      pending = this.load(key, revision, download)
+      pending = this.load(key, revision, download, validate)
         .then((asset) => {
           if (
             asset.status >= 200 &&
@@ -125,6 +126,7 @@ export class ImmutableTelescopeAssets {
     key: string,
     revision: string,
     download: () => Promise<Response>,
+    validate?: (response: Response) => Promise<void>,
   ): Promise<Asset> {
     // This URL is only a CacheStorage key; it is never fetched.
     const base = globalThis.location?.href ?? "http://localhost/";
@@ -137,8 +139,14 @@ export class ImmutableTelescopeAssets {
         this.cache ??= caches.open(CACHE);
         cache = await this.optional(this.cache);
         const stored = await this.optional(cache.match(request));
-        if (stored?.ok && stored.headers.get(REVISION) === revision)
-          return await this.optional(this.asset(stored));
+        if (stored?.ok && stored.headers.get(REVISION) === revision) {
+          // A matching header alone cannot detect damaged cached bytes. The
+          // game-asset loader verifies each page before it enters RAM reuse.
+          let valid = true;
+          try { if (validate) await this.optional(validate(stored.clone())); }
+          catch { valid = false; }
+          if (valid) return await this.optional(this.asset(stored));
+        }
       } catch {
         this.disabled = true;
       }
@@ -146,6 +154,7 @@ export class ImmutableTelescopeAssets {
     const response = await download();
     if (response.headers.get("Content-Type")?.includes("text/html"))
       throw new Error(`Immutable Telescope asset returned HTML: ${key}`);
+    await validate?.(response.clone());
     const asset = await this.asset(response);
     if (cache && !this.disabled && response.ok) {
       // Usable downloaded bytes do not wait for optional quota/storage writes.
