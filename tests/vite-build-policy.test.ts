@@ -289,4 +289,34 @@ describe("browser build boundaries", () => {
         .length,
     ).toBeGreaterThan(1);
   }, 120000);
+
+  it("keeps each production generator independent of the other fork", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("NOITAMAP_TELESCOPE", "lib/noita-telescope");
+    const result: any = await build({
+      configFile: resolve(root, "vite.config.ts"),
+      logLevel: "warn",
+      build: { write: false, outDir: resolve(tmpdir(), "noitamap-generator-boundary-dry-run") },
+    });
+    const chunks = result.output.filter((file: any) => file.type === "chunk");
+    const byName = new Map<string, any>(chunks.map((chunk: any) => [chunk.fileName, chunk]));
+    for (const [entryPath, forbiddenSource] of [
+      ["/src/telescope/telescope-exports.ts", /\/lib\/noita-telescope-vm\/js\//],
+      ["/src/telescope/full-pixel-telescope-exports.ts", /\/lib\/noita-telescope\/js\//],
+      ["/index.html", /\/lib\/noita-telescope[^/]*\/js\//],
+    ] as const) {
+      const entry = chunks.find((chunk: any) => Object.keys(chunk.modules).some(id => id.endsWith(entryPath)));
+      expect(entry, entryPath).toBeTruthy();
+      const visited = new Set<string>();
+      const visit = (name: string) => {
+        if (visited.has(name)) return;
+        visited.add(name);
+        const chunk = byName.get(name);
+        expect(Object.keys(chunk?.modules ?? {}).filter(id => forbiddenSource.test(id)),
+          `${entryPath} eagerly imports ${name}`).toEqual([]);
+        for (const dependency of chunk?.imports ?? []) visit(dependency);
+      };
+      visit(entry.fileName);
+    }
+  }, 120000);
 });
