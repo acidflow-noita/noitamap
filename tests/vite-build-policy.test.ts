@@ -7,12 +7,22 @@ import { browserTelescopeSource } from "../build_scripts/vite-telescope-browser"
 import { partitionAtlas } from "../build_scripts/vite-atlas-chunks";
 import { createRequire } from "node:module";
 import { encode } from "fast-png";
+import { telescopePngRgba } from '../src/telescope/png-rgba';
 
 const root = resolve(import.meta.dirname, "..");
 
 afterEach(() => vi.unstubAllEnvs());
 
 describe("browser build boundaries", () => {
+  it.each(['noita-telescope', 'noita-telescope-vm'])('rejects changed PNG conversion/version boundaries in %s', async fork => {
+    const path = resolve(root, `lib/${fork}/js/png_sanitizer.js`);
+    const original = await readFile(path, 'utf8');
+    await expect(browserTelescopeSource(original.replace('upng-js@2.1.0', 'upng-js@2.2.0'), path))
+      .rejects.toThrow('Review changed Telescope PNG conversion');
+    await expect(browserTelescopeSource(original.replace('UPNG.toRGBA8(img)[0]', 'UPNG.toRGBA8(img)[1]'), path))
+      .rejects.toThrow('Review changed Telescope PNG conversion');
+    expect(await readFile(path, 'utf8')).toBe(original);
+  });
   it.each(["noita-telescope", "noita-telescope-vm"])(
     'audits the tile-generation algorithm before adding scheduling checkpoints in %s',
     async fork => {
@@ -47,11 +57,13 @@ describe("browser build boundaries", () => {
         "loadUpng",
         "getFromZipFirst",
         "createImageBitmap",
+        "telescopePngRgba",
         `${code.slice(start, end)}; return { loadPNG, loadPNGBitmap };`,
       )(
         async () => createRequire(import.meta.url)("upng-js"),
         async () => new Blob([png as BlobPart]),
         makeBitmap,
+        telescopePngRgba,
       );
       const raw = await api.loadPNG("fixture.png", { bitmap: false });
       expect(raw.data).toEqual(rgba);

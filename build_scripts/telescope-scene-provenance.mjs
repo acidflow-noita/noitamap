@@ -22,6 +22,7 @@ export async function sceneInputFingerprint(root, watchFile = (_file) => {}) {
     "src/telescope/zip-extraction-shim.ts",
     "src/telescope/telescope-dom-shim.ts",
     "src/telescope/full-pixel-data.ts",
+    "src/telescope/png-rgba.ts",
   ];
   async function walk(path) {
     for (const entry of await readdir(resolve(root, path), {
