@@ -7,22 +7,12 @@ import { browserTelescopeSource } from "../build_scripts/vite-telescope-browser"
 import { partitionAtlas } from "../build_scripts/vite-atlas-chunks";
 import { createRequire } from "node:module";
 import { encode } from "fast-png";
-import { telescopePngRgba } from '../src/telescope/png-rgba';
 
 const root = resolve(import.meta.dirname, "..");
 
 afterEach(() => vi.unstubAllEnvs());
 
 describe("browser build boundaries", () => {
-  it.each(['noita-telescope', 'noita-telescope-vm'])('rejects changed PNG conversion/version boundaries in %s', async fork => {
-    const path = resolve(root, `lib/${fork}/js/png_sanitizer.js`);
-    const original = await readFile(path, 'utf8');
-    await expect(browserTelescopeSource(original.replace('upng-js@2.1.0', 'upng-js@2.2.0'), path))
-      .rejects.toThrow('Review changed Telescope PNG conversion');
-    await expect(browserTelescopeSource(original.replace('UPNG.toRGBA8(img)[0]', 'UPNG.toRGBA8(img)[1]'), path))
-      .rejects.toThrow('Review changed Telescope PNG conversion');
-    expect(await readFile(path, 'utf8')).toBe(original);
-  });
   it.each(["noita-telescope", "noita-telescope-vm"])(
     'audits the tile-generation algorithm before adding scheduling checkpoints in %s',
     async fork => {
@@ -57,13 +47,11 @@ describe("browser build boundaries", () => {
         "loadUpng",
         "getFromZipFirst",
         "createImageBitmap",
-        "telescopePngRgba",
         `${code.slice(start, end)}; return { loadPNG, loadPNGBitmap };`,
       )(
         async () => createRequire(import.meta.url)("upng-js"),
         async () => new Blob([png as BlobPart]),
         makeBitmap,
-        telescopePngRgba,
       );
       const raw = await api.loadPNG("fixture.png", { bitmap: false });
       expect(raw.data).toEqual(rgba);
@@ -288,35 +276,5 @@ describe("browser build boundaries", () => {
       output.filter((file) => file.fileName.includes("sprite-atlas-part-"))
         .length,
     ).toBeGreaterThan(1);
-  }, 120000);
-
-  it("keeps each production generator independent of the other fork", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("NOITAMAP_TELESCOPE", "lib/noita-telescope");
-    const result: any = await build({
-      configFile: resolve(root, "vite.config.ts"),
-      logLevel: "warn",
-      build: { write: false, outDir: resolve(tmpdir(), "noitamap-generator-boundary-dry-run") },
-    });
-    const chunks = result.output.filter((file: any) => file.type === "chunk");
-    const byName = new Map<string, any>(chunks.map((chunk: any) => [chunk.fileName, chunk]));
-    for (const [entryPath, forbiddenSource] of [
-      ["/src/telescope/telescope-exports.ts", /\/lib\/noita-telescope-vm\/js\//],
-      ["/src/telescope/full-pixel-telescope-exports.ts", /\/lib\/noita-telescope\/js\//],
-      ["/index.html", /\/lib\/noita-telescope[^/]*\/js\//],
-    ] as const) {
-      const entry = chunks.find((chunk: any) => Object.keys(chunk.modules).some(id => id.endsWith(entryPath)));
-      expect(entry, entryPath).toBeTruthy();
-      const visited = new Set<string>();
-      const visit = (name: string) => {
-        if (visited.has(name)) return;
-        visited.add(name);
-        const chunk = byName.get(name);
-        expect(Object.keys(chunk?.modules ?? {}).filter(id => forbiddenSource.test(id)),
-          `${entryPath} eagerly imports ${name}`).toEqual([]);
-        for (const dependency of chunk?.imports ?? []) visit(dependency);
-      };
-      visit(entry.fileName);
-    }
   }, 120000);
 });

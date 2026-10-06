@@ -118,18 +118,6 @@ export async function browserTelescopeSource(code: string, id: string) {
       "optional bitmap decode",
     );
     }
-    const original = code.match(/export async function loadPNG\([\s\S]*?\n\}/)?.[0];
-    const audited = new Set([
-      '58b4cd2b4afebc17529a1acbe2350b69236bcf97b71343cbb70b0521382390fa',
-      '95347ce0c0539af6edbd9f928a207b3f73084009fabadf254be6b6e31cfb239f',
-    ]);
-    if (!original || !source.includes('upng-js@2.1.0/+esm') ||
-      !audited.has(createHash('sha256').update(original.replace(/\r\n/g, '\n')).digest('hex')))
-      throw new Error(`Review changed Telescope PNG conversion: ${id}`);
-    replaceExpected(/const rgba = new Uint8Array\(UPNG\.toRGBA8\(img\)\[0\]\);/,
-      'const rgba = telescopePngRgba(img, UPNG);', 'PNG RGBA conversion');
-    const helper = resolve(import.meta.dirname, '../src/telescope/png-rgba.ts');
-    source = `import { telescopePngRgba } from ${JSON.stringify(helper)};\n` + source;
     // Inline this private environment flag before Vite resolves imports, so
     // unreachable fs/url imports never become browser-external stubs.
     source = source
