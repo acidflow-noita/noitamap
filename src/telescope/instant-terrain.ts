@@ -19,7 +19,7 @@ import { prepareInstantTerrain } from "./instant-terrain-backend";
 import { smoothInstantTile } from "../osd-pixel-rendering";
 import { InstantTerrainCache, copyTerrainContext } from "./instant-terrain-cache";
 import { createInstantCoverage, INSTANT_COVERAGE_EXTRA_LEVELS } from "./instant-terrain-coverage";
-import { RetainedTerrain, retainedTerrainIdentity, type RetainedTerrainRegion, type RetainedTile } from './retained-terrain';
+import { RetainedTerrain, retainedTerrainIdentityAsync, type RetainedTerrainRegion, type RetainedTile } from './retained-terrain';
 import { createInstantTerrainCooker } from './instant-terrain-cooker';
 export { smoothInstantTile } from "../osd-pixel-rendering";
 
@@ -560,7 +560,6 @@ export async function addInstantTerrain(
   const lifetime = new AbortController();
   const cache = new InstantTerrainCache();
   const retained = new RetainedTerrain();
-  const retentionIdentity = retainedTerrainIdentity(gen, masks);
   const items: any[] = [];
   const sources = new Set<any>();
   const retainedRegions: { region: InstantRegion; retention: RetainedTerrainRegion }[] = [];
@@ -677,6 +676,9 @@ export async function addInstantTerrain(
     return pending;
   };
   try {
+    const retentionIdentity = await retainedTerrainIdentityAsync(gen, masks, lifetime.signal);
+    if (!isCurrent() || lifetime.signal.aborted)
+      throw new DOMException("Obsolete terrain generation", "AbortError");
     const mainRenderer = await getRenderer(0);
     if (!isCurrent() || lifetime.signal.aborted)
       throw new DOMException("Obsolete terrain generation", "AbortError");

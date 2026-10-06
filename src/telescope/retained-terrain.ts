@@ -2,6 +2,7 @@ import { OptionalCacheDatabase } from "./cache-storage";
 import { TERRAIN_VERSION } from "./terrain-policy";
 import type { GLTerrainGeneration } from "./gl-terrain-tile-source";
 import type { StaticTerrainMask } from "./static-terrain-mask";
+import { createGenerationCheckpoint } from "./generation-task";
 import {
   WorkerRetentionCodec,
   type EncodedTerrain,
@@ -128,12 +129,7 @@ export class IndexedTerrainRetentionStore implements TerrainRetentionStore {
   }
 }
 
-/** Include actual generated geometry and masks, not just a seed or a boolean
- * NG+ flag. Absolute region/plane coordinates are added by region(). */
-export function retainedTerrainIdentity(
-  gen: GLTerrainGeneration,
-  masks: StaticTerrainMask[],
-): string {
+function createTerrainIdentityHash() {
   let a = 2166136261,
     b = 5381;
   const bytes = (data: ArrayBufferView | undefined) => {
@@ -170,12 +166,20 @@ export function retainedTerrainIdentity(
     }
     a = fnv; b = djb;
   };
+  return {
+    bytes,
+    finish: (seed: number) => `${REVISION}/${seed}/${(a >>> 0).toString(16)}-${(b >>> 0).toString(16)}`,
+  };
+}
+
+/** Preserve the existing byte order, including every repeated mask placement.
+ * Views are borrowed from the completed generation; no pixel buffers are copied. */
+function* terrainIdentityInputs(gen: GLTerrainGeneration, masks: StaticTerrainMask[]) {
   const encoder = new TextEncoder();
-  const metadata = (value: unknown) =>
-    bytes(encoder.encode(JSON.stringify(value)));
-  metadata([gen.seed, gen.ngPlus ?? 0, gen.isNGP, gen.gameMode ?? "normal"]);
+  const metadata = (value: unknown) => encoder.encode(JSON.stringify(value));
+  yield metadata([gen.seed, gen.ngPlus ?? 0, gen.isNGP, gen.gameMode ?? "normal"]);
   for (const layer of gen.tileLayers) {
-    metadata([
+    yield metadata([
       layer.biomeName,
       layer.correctedX,
       layer.correctedY,
@@ -190,17 +194,50 @@ export function retainedTerrainIdentity(
       layer.mapH,
       layer.validChunks ? [...layer.validChunks].sort() : null,
     ]);
-    bytes(layer.buffer);
+    if (layer.buffer) yield layer.buffer;
   }
-  bytes(gen.biomeData.pixels);
-  bytes(gen.biomeData.heavenPixels);
-  bytes(gen.biomeData.hellPixels);
+  yield gen.biomeData.pixels;
+  if (gen.biomeData.heavenPixels) yield gen.biomeData.heavenPixels;
+  if (gen.biomeData.hellPixels) yield gen.biomeData.hellPixels;
   for (const mask of masks) {
-    metadata([mask.x, mask.y, mask.width, mask.height]);
-    bytes(mask.bits);
-    bytes(mask.airBits);
+    yield metadata([mask.x, mask.y, mask.width, mask.height]);
+    yield mask.bits;
+    if (mask.airBits) yield mask.airBits;
   }
-  return `${REVISION}/${gen.seed}/${(a >>> 0).toString(16)}-${(b >>> 0).toString(16)}`;
+}
+
+/** Include actual generated geometry and masks, not just a seed or a boolean
+ * NG+ flag. Absolute region/plane coordinates are added by region(). */
+export function retainedTerrainIdentity(gen: GLTerrainGeneration, masks: StaticTerrainMask[]): string {
+  const hash = createTerrainIdentityHash();
+  for (const data of terrainIdentityInputs(gen, masks)) hash.bytes(data);
+  return hash.finish(gen.seed);
+}
+
+/** Live presentation needs the same persistent key without one uninterrupted
+ * whole-world hash task. The caller owns immutable inputs until completion or
+ * cancellation; the existing task budget yields only when work consumes it. */
+export async function retainedTerrainIdentityAsync(
+  gen: GLTerrainGeneration, masks: StaticTerrainMask[], signal: AbortSignal,
+): Promise<string> {
+  signal.throwIfAborted();
+  const hash = createTerrainIdentityHash(), checkpoint = createGenerationCheckpoint(signal);
+  for (const data of terrainIdentityInputs(gen, masks)) {
+    if (!data) continue;
+    // Keep even a single large layer interruptible. Splits are word-aligned,
+    // retaining the original four-zero-byte shortcut and trailing-byte order.
+    const length = data.byteLength;
+    let offset = 0;
+    do {
+      const size = Math.min(65536, length - offset);
+      hash.bytes(size === length ? data : new Uint8Array(data.buffer, data.byteOffset + offset, size));
+      offset += size;
+      const pause = checkpoint();
+      if (pause) await pause;
+    } while (offset < length);
+  }
+  signal.throwIfAborted();
+  return hash.finish(gen.seed);
 }
 
 function canvas(

@@ -1,8 +1,9 @@
-import { expect, it } from 'vitest';
-import { retainedTerrainIdentity } from '../src/telescope/retained-terrain';
+import { afterEach, expect, it, vi } from 'vitest';
+import { retainedTerrainIdentity, retainedTerrainIdentityAsync } from '../src/telescope/retained-terrain';
 import { TERRAIN_VERSION } from '../src/telescope/terrain-policy';
 
 const prefix = `${TERRAIN_VERSION}/retained-hd-v1-9c58775`;
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 function generation(buffer: ArrayBufferView): any {
   return { seed: 42, isNGP: false, gameMode: 'normal',
     tileLayers: [{ biomeName: 'coalmine', correctedX: -510, correctedY: 510, w: 512, h: 512, buffer }],
@@ -29,12 +30,13 @@ const zeroVectors: Array<[number, string]> = [
   [257, "2fc079fc-97b127da"],
   [4097, "d96f49fc-bccee7da"],
 ];
-it.each(zeroVectors)('preserves the stored key for %i zero bytes at every byte alignment', (length, hash) => {
+it.each(zeroVectors)('preserves the stored key for %i zero bytes at every byte alignment', async (length, hash) => {
   for (let offset = 0; offset < 8; offset++) {
     const storage = new Uint8Array(length + 16).fill(0xa5);
     storage.fill(0, offset, offset + length);
     for (const view of [storage.subarray(offset, offset + length), new DataView(storage.buffer, offset, length)]) {
       expect(retainedTerrainIdentity(generation(view), [])).toBe(`${prefix}/42/${hash}`);
+      expect(await retainedTerrainIdentityAsync(generation(view), [], new AbortController().signal)).toBe(`${prefix}/42/${hash}`);
     }
   }
 });
@@ -66,14 +68,51 @@ function richFixture() {
   return { gen, masks, storage };
 }
 
-it('preserves UTF-8 metadata, typed views, planes, sorted chunk claims and repeated masks', () => {
+it('preserves UTF-8 metadata, typed views, planes, sorted chunk claims and repeated masks', async () => {
   const { gen, masks } = richFixture();
   const expected = `${prefix}/4294967295/6be0b615-800a8155`;
   expect(retainedTerrainIdentity(gen, masks)).toBe(expected);
+  expect(await retainedTerrainIdentityAsync(gen, masks, new AbortController().signal)).toBe(expected);
   gen.tileLayers[0].validChunks = new Set(['0,0', '-2,1', '3,2']);
   expect(retainedTerrainIdentity(gen, masks)).toBe(expected);
   gen.ngPlus++;
   expect(retainedTerrainIdentity(gen, masks)).not.toBe(expected);
+});
+
+it('preserves every byte across cooperative chunk boundaries and non-aligned views', async () => {
+  for (const offset of [0, 1, 3, 7]) for (const length of [65535, 65536, 65537, 196611]) {
+    const storage = Uint8Array.from({ length: length + offset + 7 }, (_, i) => (i * 151 + 73) & 255);
+    storage.fill(0, offset + 65520, Math.min(storage.length, offset + 65544));
+    const gen = generation(new DataView(storage.buffer, offset, length));
+    const expected = retainedTerrainIdentity(gen, []);
+    expect(await retainedTerrainIdentityAsync(gen, [], new AbortController().signal)).toBe(expected);
+  }
+});
+
+it('runs queued input before finishing a large hash, with the original result', async () => {
+  const gen = generation(new Uint8Array(16 * 1024 * 1024).fill(151));
+  const expected = retainedTerrainIdentity(gen, []);
+  let handled = false;
+  const input = setTimeout(() => { handled = true; }, 0);
+  try {
+    expect(await retainedTerrainIdentityAsync(gen, [], new AbortController().signal)).toBe(expected);
+    expect(handled).toBe(true);
+  } finally { clearTimeout(input); }
+});
+
+it('abandons an obsolete hash at a yield without returning a cache key', async () => {
+  let clock = 0, resume!: () => void;
+  vi.spyOn(performance, 'now').mockImplementation(() => clock += 8);
+  const task = vi.fn(() => new Promise<void>(resolve => { resume = resolve; }));
+  vi.stubGlobal('scheduler', { yield: task });
+  const controller = new AbortController(), reason = new DOMException('Seed replaced', 'AbortError');
+  const pending = retainedTerrainIdentityAsync(generation(new Uint8Array(1024)), [], controller.signal);
+  expect(task).toHaveBeenCalledOnce();
+  controller.abort(reason); resume();
+  await expect(pending).rejects.toBe(reason);
+  const read = vi.fn();
+  await expect(retainedTerrainIdentityAsync({ get seed() { read(); return 42; } } as any, [], controller.signal)).rejects.toBe(reason);
+  expect(read).not.toHaveBeenCalled();
 });
 
 it('reads current geometry and force-air bytes while ignoring bytes outside each view', () => {
