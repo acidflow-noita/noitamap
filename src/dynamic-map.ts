@@ -440,6 +440,7 @@ export async function runDynamicMap(
 
     let t = performance.now();
     let result: GenerationResult | null = null;
+    let restoreTerrain = false;
     const cacheKey = `${seed}-${unlockKey}`;
 
     if (bakedData?.generation) {
@@ -460,6 +461,7 @@ export async function runDynamicMap(
     [result] = await Promise.all([cacheReady, assetsReady]);
     if (myToken !== generationToken) return null;
     if (result && !result.tileLayers?.length) result = null; // baked metadata cannot render live terrain
+    restoreTerrain = !!result;
     console.log(`[DynamicMap] Assets + cache: ${((performance.now() - t) / 1000).toFixed(2)}s (${result ? "HIT" : "MISS"})`);
 
     if (!result) {
@@ -565,7 +567,7 @@ export async function runDynamicMap(
     }
     await backgroundReady;
     if (myToken !== generationToken) return null;
-    await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint, cacheKey, bakedDZIs, bakedAlreadyPainted, bakedDecorations, false, runStarted);
+    await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint, cacheKey, bakedDZIs, bakedAlreadyPainted, bakedDecorations, false, runStarted, restoreTerrain);
     if (myToken !== generationToken) return null;
     console.log(`[DynamicMap] Render: ${((performance.now() - t) / 1000).toFixed(2)}s`);
     lastResult = result;

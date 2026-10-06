@@ -125,6 +125,14 @@ function presentationFixture() {
 }
 
 describe('terrain before live POIs', () => {
+  it('passes the persisted-terrain preference to live presentation', async () => {
+    const f = presentationFixture();
+    const pending = f.bridge.renderGenerationResult(f.viewer, f.result, null, false, f.firstPaint,
+      'cached-seed', null, false, false, false, 0, true);
+    await vi.waitFor(() => expect(f.addPixelScenes).toHaveBeenCalledOnce());
+    expect(f.calls[0][11]).toBe(true);
+    f.artwork.resolve(); await f.calls[0][9]; f.calls[0][6](); await pending;
+  });
   it('releases terrain after artwork and prepares no POIs until that terrain has actually painted', async () => {
     const f = presentationFixture(), pending = f.start();
     await vi.waitFor(() => expect(f.addPixelScenes).toHaveBeenCalledOnce());

@@ -96,6 +96,14 @@ describe('independent live-map startup work', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
+  it.each(['miss', 'live hit', 'baked-only hit'] as const)('only prefers persisted terrain for a usable generation cache hit: %s', async kind => {
+    vi.mocked(getCachedGeneration).mockResolvedValue(kind === 'miss' ? null
+      : kind === 'live hit' ? generated : { ...generated, tileLayers: [] });
+    await runDynamicMap(42, true, { viewer: {} });
+    expect(vi.mocked(renderGenerationResult).mock.calls[0][11]).toBe(kind === 'live hit');
+    expect(generateDynamicMap).toHaveBeenCalledTimes(kind === 'live hit' ? 0 : 1);
+  });
+
   it('cancels a waiting scene prefetch before a new seed lookup finishes', async () => {
     const warming = barrier();
     vi.mocked(prefetchAllSceneBitmaps).mockReturnValueOnce(warming.promise);

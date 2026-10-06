@@ -771,6 +771,28 @@ export class RetainedTerrainRegion {
       for (let x = Math.floor(view.left / view.span); x < Math.ceil(view.right / view.span); x++)
         yield { level: view.level, x, y };
   }
+  private viewCells(bounds: NonNullable<ReturnType<RetainedTerrainRegion['viewBounds']>>, tile: RetainedTile): CoverageCells {
+    const px = tile.x * bounds.span, py = tile.y * bounds.span, count = bounds.span / SIZE;
+    const x = Math.max(0, Math.floor((bounds.left - px) / SIZE));
+    const y = Math.max(0, Math.floor((bounds.top - py) / SIZE));
+    return { x, y,
+      width: Math.min(count, Math.ceil((bounds.right - px) / SIZE)) - x,
+      height: Math.min(count, Math.ceil((bounds.bottom - py) / SIZE)) - y,
+    };
+  }
+  /** A cached-generation hint is not proof that this camera was saved. Check
+   * its requested cells without decoding pixels; stop at the first missing page. */
+  async containsView(view: RetainedView, signal?: AbortSignal): Promise<boolean> {
+    const bounds = this.viewBounds(view);
+    if (!bounds) return false;
+    for (const tile of this.viewTiles(bounds)) {
+      signal?.throwIfAborted();
+      const ready = await this.contains(tile, this.viewCells(bounds, tile));
+      signal?.throwIfAborted();
+      if (!ready) return false;
+    }
+    return true;
+  }
   private residentViewPages(bounds: NonNullable<ReturnType<RetainedTerrainRegion['viewBounds']>>) {
     const prefix = this.identity + '/';
     const entries = [];
@@ -892,7 +914,7 @@ export class RetainedTerrainRegion {
       if (!page) { signal?.throwIfAborted(); complete = false; continue; }
       try {
         signal?.throwIfAborted();
-        if (!completeCoverage(page)) complete = false;
+        if (!completeCoverage(page, this.viewCells(bounds, tile))) complete = false;
         for (const rectangle of this.paintViewPage(target, bounds, tile, page)) onCoverage?.(rectangle);
       } finally { this.owner.release(page); }
     }

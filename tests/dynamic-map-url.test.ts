@@ -103,6 +103,7 @@ describe('dynamic seed URL identity', () => {
         expect(generateDynamicMap).not.toHaveBeenCalled();
         expect(prepareInstantTerrainResources).not.toHaveBeenCalled();
         expect(vi.mocked(renderGenerationResult).mock.calls[0].slice(6, 9)).toEqual([placements, true, true]);
+        expect(vi.mocked(renderGenerationResult).mock.calls[0][11]).toBe(false);
         expect(location.search).toContain('terrain=gpu');
         // With the baked route already active, repeated selection is harmless.
         expect(await pipeline.runDynamicMapFromURL({ viewer: {} })).toBe(baked);

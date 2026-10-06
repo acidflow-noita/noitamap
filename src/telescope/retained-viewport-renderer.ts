@@ -7,6 +7,22 @@ import { terrainPanPatches } from './terrain-pan';
 type Region = { region: { x: number; y: number; width: number; height: number }; retention: RetainedTerrainRegion };
 let nextRendererId = 0;
 
+/** An optional read can finish after navigation. Release the frame request on
+ * abort immediately; the read's own signal checks prevent late painting. */
+function waitForCache<T>(read: () => Promise<T>, signal: AbortSignal): Promise<T> {
+  signal.throwIfAborted();
+  return new Promise((resolve, reject) => {
+    const abort = () => reject(signal.reason);
+    const finish = (done: (value: any) => void, value: unknown) => {
+      signal.removeEventListener('abort', abort); done(value);
+    };
+    signal.addEventListener('abort', abort, { once: true });
+    void Promise.resolve().then(() => { signal.throwIfAborted(); return read(); }).then(
+      value => finish(resolve, value), error => finish(reject, error),
+    );
+  });
+}
+
 /** Disjoint row spans bound metadata to visible coverage, rather than keeping
  * the repeated overlapping rectangles accumulated over camera history. */
 function mergeCoverage(rectangles: RetainedViewCoverage[], view: TerrainViewportPlan): RetainedViewCoverage[] {
@@ -56,6 +72,8 @@ export function createRetainedViewportRenderer(options: {
   renderer: { renderViewport(plan: TerrainViewportPlan, signal: AbortSignal): Promise<CanvasImageSource> };
   signal: AbortSignal;
   complete(): boolean;
+  /** Set only for restored generation data, never newly generated seeds. */
+  preferStored?: boolean;
   refresh(): void;
   cache?: InstantTerrainCache;
   /** False is exact empty procedural ownership, not an approximate cull. */
@@ -159,19 +177,32 @@ export function createRetainedViewportRenderer(options: {
         const sameCamera = base?.key === key;
         let canonical: RetainedViewCoverage[] = sameCamera ? base!.canonical : [];
         context = canvas(plan);
-        const resident = views.every(({ entry, view }) => entry.retention.hasCompleteView(view));
-        if (!resident && options.complete()) {
-          // Once the whole map is complete, replay its saved pixels rather
-          // than procedurally regenerating an evicted part on navigation.
-          let complete = true;
-          for (const { entry, view } of views) {
-            signal.throwIfAborted();
-            position(context, plan, entry);
-            if (!await entry.retention.paintStoredView(context, view, signal)) complete = false;
-          }
+        let resident = views.every(({ entry, view }) => entry.retention.hasCompleteView(view));
+        const cooked = options.complete();
+        if (!resident && (cooked || (options.preferStored && !sameCamera && !cache.has(key)))) {
+          const complete = await waitForCache(async () => {
+            // Fresh seeds never enter this lookup. Cached generations can
+            // still have unsaved areas: miss cheaply before decoding pages.
+            if (!cooked) for (const { entry, view } of views)
+              if (!await entry.retention.containsView(view, signal)) return false;
+            let ready = true;
+            for (const { entry, view } of views) {
+              signal.throwIfAborted();
+              position(context!, plan, entry);
+              if (!await entry.retention.paintStoredView(context!, view, signal)) ready = false;
+            }
+            return ready;
+          }, signal);
           signal.throwIfAborted();
-          if (complete) { stats.retainedFrames++; return context.canvas; }
-          context.resetTransform(); context.clearRect(0, 0, plan.pixelWidth, plan.pixelHeight);
+          if (complete) {
+            // Fully cooked maps retain their existing streaming path. The
+            // first-frame path below needs history for uncached neighbours.
+            if (cooked) { stats.retainedFrames++; return context.canvas; }
+            resident = true;
+            hydratedKey = key;
+          } else {
+            context.resetTransform(); context.clearRect(0, 0, plan.pixelWidth, plan.pixelHeight);
+          }
         }
         if (!resident) {
           if (base?.key !== key) {

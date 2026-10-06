@@ -563,6 +563,7 @@ export async function addInstantTerrain(
   generationStartedAt = performance.now(),
   presentationReady: Promise<void> = Promise.resolve(),
   onDispose?: () => void,
+  restoreTerrain = false,
 ): Promise<boolean> {
   clearInstantTerrain();
   const lifetime = new AbortController();
@@ -794,6 +795,7 @@ export async function addInstantTerrain(
         cache,
         regions: retainedRegions, renderer: mainRenderer, signal: lifetime.signal,
         complete: () => cooker.stats.state === 'complete', refresh: refreshViewport,
+        preferStored: restoreTerrain,
         hasTerrain: plan => clip!.hasTerrain({x:plan.x,y:plan.y,scale:plan.scale,width:plan.pixelWidth,height:plan.pixelHeight}),
       });
       let emptyViewReported = false, checkingEmptyView = false;

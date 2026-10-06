@@ -53,12 +53,17 @@ function fixture({
   x = 0,
   y = 0,
   budget = 4 * 1024 * 1024,
+  preferStored = false,
   cache = undefined as InstantTerrainCache | undefined,
   hasTerrain = undefined as ((plan: TerrainViewportPlan) => boolean) | undefined,
 } = {}) {
   const records = new Map<string, StoredTerrain>();
   const store = {
     read: vi.fn(async (key: string) => records.get(key)),
+    readCoverage: vi.fn(async (key: string) => {
+      const page = records.get(key);
+      return page && { columns: page.columns, rows: page.rows, coverage: page.coverage };
+    }),
     write: vi.fn(async (entries: { key: string; value: StoredTerrain }[]) => {
       for (const entry of entries)
         records.set(entry.key, structuredClone(entry.value));
@@ -87,6 +92,7 @@ function fixture({
     renderer,
     signal: lifetime.signal,
     complete: () => complete,
+    preferStored,
     refresh,
     cache,
     hasTerrain,
@@ -243,6 +249,7 @@ describe("retained native pixels with atomic viewport presentation", () => {
     expect(capacity).not.toHaveBeenCalled();
     expect(f.store.write).not.toHaveBeenCalled();
     expect(f.captured[0].close).toHaveBeenCalledOnce();
+    expect(f.store.readCoverage).not.toHaveBeenCalled();
   });
 
   it("reuses one GPU base when native revisions arrive, clearing known air and retaining independent returned frames", async () => {
@@ -483,6 +490,70 @@ describe("retained native pixels with atomic viewport presentation", () => {
     expect(f.renderer.renderViewport).not.toHaveBeenCalled();
     expect(f.store.read).toHaveBeenCalledTimes(3);
     expect(f.owner.stats.bytes).toBeLessThanOrEqual(f.owner.maxBytes);
+  });
+
+  it("restores the first cached-generation frame before cooking, under a one-page budget", async () => {
+    const f = fixture({ width: 768, budget: 256 * 256 * 4 + 1, preferStored: true });
+    f.saved(0, "#ff0000"); f.saved(1, "#00ff00", true); f.saved(2, "#ffff00");
+    const first = await f.request();
+    expect(f.renderer.renderViewport).not.toHaveBeenCalled();
+    expect(pixel(first, 0, 0)).toEqual([255, 0, 0, 255]);
+    expect(pixel(first, 264, 8)).toEqual([0, 0, 0, 0]);
+    expect(pixel(first, 300, 40)).toEqual([0, 255, 0, 255]);
+    expect(pixel(first, 767, 40)).toEqual([255, 255, 0, 255]);
+    expect(f.owner.stats.bytes).toBeLessThanOrEqual(f.owner.maxBytes);
+    expect(f.store.write).not.toHaveBeenCalled();
+  });
+
+  it("uses a saved reduced-page portion and keeps it sharp when panning into an uncached area", async () => {
+    const f = fixture({ width: 1024, height: 1024, budget: 0, preferStored: true });
+    const native = context(256, 256, '#ff0000'); native.clearRect(8, 8, 16, 16);
+    await f.retention.record(0, 0, native); await f.owner.flush();
+    const first = await f.request(plan(0, 0, 256, 256, 4));
+    expect(pixel(first, 20, 20)).toEqual([255, 0, 0, 255]);
+    expect(pixel(first, 3, 3)).toEqual([0, 0, 0, 0]);
+    expect(f.renderer.renderViewport).not.toHaveBeenCalled();
+    const next = await f.request(plan(128, 0, 256, 256, 4));
+    expect(pixel(next, 20, 20)).toEqual([255, 0, 0, 255]);
+    expect(pixel(next, 50, 20)).toEqual([0, 0, 255, 255]);
+    expect(f.renderer.renderViewport).toHaveBeenCalledOnce();
+    expect(f.owner.stats.bytes).toBe(0);
+  });
+
+  it("falls back on incomplete metadata without waiting for PNG hydration", async () => {
+    const f = fixture({ preferStored: true }), held = deferred<StoredTerrain | undefined>();
+    f.saved(0, '#ff0000');
+    f.store.read.mockReturnValue(held.promise);
+    const first = await f.request();
+    expect(pixel(first, 300, 40)).toEqual([0, 0, 255, 255]);
+    expect(f.renderer.renderViewport).toHaveBeenCalledOnce();
+    expect(f.store.readCoverage).toHaveBeenCalledTimes(2);
+    expect(f.renderer.renderViewport.mock.invocationCallOrder[0]).toBeLessThan(f.store.read.mock.invocationCallOrder[0]);
+  });
+
+  it("falls back to the GPU when the cache is unavailable", async () => {
+    const f = fixture({ preferStored: true });
+    f.store.readCoverage.mockRejectedValue(new Error('Storage denied'));
+    const first = await f.request();
+    expect(pixel(first, 40, 40)).toEqual([0, 0, 255, 255]);
+    expect(f.renderer.renderViewport).toHaveBeenCalledOnce();
+    expect(f.store.read).not.toHaveBeenCalled();
+  });
+
+  it.each(['metadata', 'pixels'] as const)("cancels a cached first frame during %s without waiting for storage", async stage => {
+    const f = fixture({ preferStored: true, width: 256 }), held = deferred<any>();
+    f.saved(0, '#ff0000');
+    const read = stage === 'metadata' ? f.store.readCoverage : f.store.read;
+    read.mockReturnValue(held.promise);
+    const request = new AbortController(), result = f.request(undefined, request.signal);
+    const rejected = expect(result).rejects.toMatchObject({ name: 'AbortError' });
+    await vi.waitFor(() => expect(read).toHaveBeenCalledOnce());
+    request.abort(); await rejected;
+    held.resolve([...f.records.values()][0]);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(f.renderer.renderViewport).not.toHaveBeenCalled();
+    expect(f.render.stats.retainedFrames).toBe(0);
+    expect(f.refresh).not.toHaveBeenCalled();
   });
 
   it("keeps every saved page in the completed viewport while background cooking is unfinished and RAM holds only one page", async () => {

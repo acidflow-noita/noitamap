@@ -5124,6 +5124,7 @@ export async function renderGenerationResult(
   bakedDecorations?: boolean,
   forceApproximateTerrain = false,
   generationStartedAt = performance.now(),
+  restoreTerrain = false,
 ): Promise<void> {
   const generationId = ++currentGenerationId;
   let completeArtwork = () => {};
@@ -5290,7 +5291,7 @@ export async function renderGenerationResult(
           fallbackRender = renderGenerationResult(viewer, result, unlocks, isDaily, onFirstPaint, cacheKey,
             null, false, false, true, generationStartedAt);
           void fallbackRender.catch(error => console.error('[OSD Bridge] Terrain fallback failed:', error));
-        }, generationStartedAt, artworkReady, () => completeTerrainDraw(false));
+        }, generationStartedAt, artworkReady, () => completeTerrainDraw(false), restoreTerrain);
     }
     if (currentGenerationId !== generationId) return fallbackRender;
     awaitingTerrainDraw = instant;
