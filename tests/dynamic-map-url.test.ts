@@ -36,7 +36,7 @@ import { addBakedDZIsToOSD } from '../src/telescope/baked-dzi-loader';
 import { fetchBakedGeneration } from '../src/telescope/baked-generation';
 import { scheduleDailyAssetWarmup } from '../src/telescope/daily-asset-prewarm';
 import { cacheGeneration, getCachedGeneration } from '../src/telescope/tile-cache';
-import { renderGenerationResult, prefetchAllSceneBitmaps, hasDynamicOverlays, prepareInstantTerrainResources } from '../src/telescope/telescope-osd-bridge';
+import { renderGenerationResult, prefetchAllSceneBitmaps, hasDynamicOverlays, prepareInstantTerrainResources, getAllPOIsFlat } from '../src/telescope/telescope-osd-bridge';
 
 const today = 1216316599, previous = 1344443116;
 beforeEach(() => {
@@ -46,6 +46,113 @@ beforeEach(() => {
   vi.mocked(fetchPreviousDailySeed).mockResolvedValue(previous);
   vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
   vi.mocked(isInstantTerrainEnabled).mockReturnValue(false);
+});
+
+describe('URL seed request ownership', () => {
+  function deferred<T>() {
+    let resolve!: (value: T) => void, reject!: (error: Error) => void;
+    const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; });
+    return { promise, resolve, reject };
+  }
+  function livePipeline() {
+    vi.mocked(shouldUseBakedTerrain).mockReturnValue(false);
+    vi.mocked(initTelescope).mockResolvedValue();
+    vi.mocked(getCachedGeneration).mockResolvedValue(null);
+    vi.mocked(cacheGeneration).mockResolvedValue();
+    vi.mocked(generateDynamicMap).mockImplementation(async ({ seed }) => ({ seed, ngPlus: 0,
+      isNGP: false, worldSize: 70, worldCenter: 35, tileLayers: [{}], biomeData: {},
+      poisByPW: {}, pixelScenesByPW: {}, parallelWorlds: [0] } as any));
+    vi.mocked(renderGenerationResult).mockResolvedValue();
+    vi.mocked(prefetchAllSceneBitmaps).mockResolvedValue();
+    vi.mocked(getAllPOIsFlat).mockReturnValue([]);
+    vi.mocked(hasDynamicOverlays).mockReturnValue(false);
+    return vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
+  }
+
+  it.each(['success', 'failure'])('discards an obsolete URL seed lookup after leaving for a static map (%s)', async outcome => {
+    const frame = livePipeline(), lookup = deferred<number>();
+    vi.mocked(fetchDailySeed).mockReturnValueOnce(lookup.promise);
+    const pipeline = await import('../src/dynamic-map');
+    const options = { viewer: {}, onLoadingChange: vi.fn(), onSeedResolved: vi.fn(), onPOIsReady: vi.fn() };
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const pending = pipeline.runDynamicMapFromURL(options);
+      expect(fetchDailySeed).toHaveBeenCalledOnce();
+      pipeline.clearDynamicMap(options.viewer);
+      history.replaceState(null, '', '/?x=300&y=400&z=10');
+      const staticURL = location.href;
+      if (outcome === 'success') lookup.resolve(today);
+      else lookup.reject(new Error('offline'));
+      expect(await pending).toBeNull();
+      expect(location.href).toBe(staticURL);
+      expect(pipeline.getCurrentDynamicSeed()).toBeNull();
+      expect(initTelescope).not.toHaveBeenCalled();
+      expect(generateDynamicMap).not.toHaveBeenCalled();
+      expect(renderGenerationResult).not.toHaveBeenCalled();
+      expect(options.onSeedResolved).not.toHaveBeenCalled();
+      expect(options.onPOIsReady).not.toHaveBeenCalled();
+      expect(options.onLoadingChange).not.toHaveBeenCalled();
+      expect(warning).not.toHaveBeenCalled();
+    } finally { pipeline.clearDynamicMap(options.viewer); warning.mockRestore(); frame.mockRestore(); }
+  });
+
+  it.each(['success', 'failure'])('keeps the newer custom seed when an earlier Daily lookup finishes (%s)', async outcome => {
+    const frame = livePipeline(), lookup = deferred<number>();
+    vi.mocked(fetchDailySeed).mockReturnValueOnce(lookup.promise);
+    const pipeline = await import('../src/dynamic-map');
+    const old = { viewer: {}, onSeedResolved: vi.fn(), onPOIsReady: vi.fn() };
+    const current = { viewer: {}, onSeedResolved: vi.fn(), onPOIsReady: vi.fn() };
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const pending = pipeline.runDynamicMapFromURL(old);
+      updateURLWithSeed(77, false);
+      expect(await pipeline.runDynamicMap(77, false, current)).toMatchObject({ seed: 77 });
+      const currentURL = location.href;
+      if (outcome === 'success') lookup.resolve(today);
+      else lookup.reject(new Error('offline'));
+      expect(await pending).toBeNull();
+      expect(location.href).toBe(currentURL);
+      expect(pipeline.getCurrentDynamicSeed()).toBe(77);
+      expect(pipeline.getLastGenerationResult()).toMatchObject({ seed: 77 });
+      expect(generateDynamicMap).toHaveBeenCalledOnce();
+      expect(renderGenerationResult).toHaveBeenCalledOnce();
+      expect(old.onSeedResolved).not.toHaveBeenCalled();
+      expect(old.onPOIsReady).not.toHaveBeenCalled();
+      expect(current.onSeedResolved).toHaveBeenCalledExactlyOnceWith(77, false);
+      expect(warning).not.toHaveBeenCalled();
+    } finally { pipeline.clearDynamicMap(current.viewer); warning.mockRestore(); frame.mockRestore(); }
+  });
+
+  it('lets only the latest URL request start a map when both await the shared Daily lookup', async () => {
+    const frame = livePipeline(), lookup = deferred<number>();
+    vi.mocked(fetchDailySeed).mockReturnValue(lookup.promise);
+    const pipeline = await import('../src/dynamic-map');
+    const first = { viewer: {}, onSeedResolved: vi.fn() }, second = { viewer: {}, onSeedResolved: vi.fn() };
+    try {
+      const a = pipeline.runDynamicMapFromURL(first), b = pipeline.runDynamicMapFromURL(second);
+      lookup.resolve(today);
+      expect(await a).toBeNull();
+      expect(await b).toMatchObject({ seed: today });
+      expect(first.onSeedResolved).not.toHaveBeenCalled();
+      expect(second.onSeedResolved).toHaveBeenCalledExactlyOnceWith(today, true);
+      expect(generateDynamicMap).toHaveBeenCalledOnce();
+      expect(parseURL()).toMatchObject({ seed: today, dailySeed: true });
+    } finally { pipeline.clearDynamicMap(second.viewer); frame.mockRestore(); }
+  });
+
+  it('retains the deterministic fallback when the current Daily lookup fails', async () => {
+    const frame = livePipeline();
+    vi.mocked(fetchDailySeed).mockRejectedValue(new Error('offline'));
+    const pipeline = await import('../src/dynamic-map');
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const result = await pipeline.runDynamicMapFromURL({ viewer: {} });
+      expect(result!.seed).toBeGreaterThan(0);
+      expect(parseURL()).toMatchObject({ seed: result!.seed, dailySeed: true });
+      expect(generateDynamicMap).toHaveBeenCalledOnce();
+      expect(warning).toHaveBeenCalledOnce();
+    } finally { pipeline.clearDynamicMap({}); warning.mockRestore(); frame.mockRestore(); }
+  });
 });
 afterEach(() => { history.replaceState(null, '', '/'); });
 

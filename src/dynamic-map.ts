@@ -195,7 +195,7 @@ export function startDailyFastPath(): void {
  * - ?ds=1 without ?se → fetch today's seed and pin it in the URL
  * - Neither present → treat as daily seed (fetch + set both params)
  */
-export async function resolveSeed(): Promise<{ seed: number; isDaily: boolean }> {
+export async function resolveSeed(isCurrent = () => true): Promise<{ seed: number; isDaily: boolean }> {
   const urlState = parseURL();
 
   if (urlState.seed !== undefined) {
@@ -207,10 +207,10 @@ export async function resolveSeed(): Promise<{ seed: number; isDaily: boolean }>
   // No seed identity: daily-only links and the default map resolve today.
   try {
     const seed = await fetchDailySeed();
-    updateURLWithSeed(seed, true);
+    if (isCurrent()) updateURLWithSeed(seed, true);
     return { seed, isDaily: true };
   } catch (err) {
-    console.warn("[DynamicMap] Daily seed fetch failed, using fallback:", err);
+    if (isCurrent()) console.warn("[DynamicMap] Daily seed fetch failed, using fallback:", err);
     // Fallback: use a deterministic seed based on UTC date so every visitor
     // still sees the same map even when the Nolla endpoint is unreachable.
     const dateStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
@@ -219,7 +219,7 @@ export async function resolveSeed(): Promise<{ seed: number; isDaily: boolean }>
       hash = (hash * 31 + dateStr.charCodeAt(i)) | 0;
     }
     const fallbackSeed = Math.abs(hash) % 2147483647 || 1;
-    updateURLWithSeed(fallbackSeed, true);
+    if (isCurrent()) updateURLWithSeed(fallbackSeed, true);
     return { seed: fallbackSeed, isDaily: true };
   }
 }
@@ -634,7 +634,12 @@ export async function runDynamicMap(
  * Convenience wrapper: resolve seed from URL then run the full pipeline.
  */
 export async function runDynamicMapFromURL(opts: DynamicMapOptions): Promise<GenerationResult | null> {
-  const { seed, isDaily } = await resolveSeed();
+  // Own the request before Daily resolution awaits the network. A newer seed
+  // or clearDynamicMap must invalidate both its URL write and pipeline start.
+  const token = ++generationToken;
+  const isCurrent = () => token === generationToken;
+  const { seed, isDaily } = await resolveSeed(isCurrent);
+  if (!isCurrent()) return null;
   return runDynamicMap(seed, isDaily, opts);
 }
 
