@@ -4,6 +4,7 @@ import { completeGenerationBossPOIs } from "./boss-pois";
 import { serializeTileLayer, restoreTileLayer, type CachedTileLayer } from "./tile-layer-cache";
 import { telescopeCacheKey } from "./cache-identity";
 import { readReportInventorySnapshot, type ReportInventorySnapshot } from "../report-inventory";
+import { readGenerationCache, writeGenerationCache } from './generation-cache-records';
 /**
  * tile-cache.ts
  *
@@ -175,9 +176,7 @@ export async function cacheGeneration(cacheKey: string, seed: number, result: an
       pixelScenesByPW,
     };
 
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    tx.objectStore(STORE_NAME).put(entry);
-    await storage.complete(tx);
+    await writeGenerationCache(storage, db, STORE_NAME, entry);
 
     console.log(`[TileCache] Cached generation for key ${cacheKey}`);
   } catch (e) {
@@ -193,11 +192,7 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
   cacheKey = telescopeCacheKey(cacheKey);
   try {
     const db = await openDB();
-    const tx = db.transaction(STORE_NAME, "readonly");
-    const req = tx.objectStore(STORE_NAME).get(cacheKey);
-
-    const entry: CachedGeneration | undefined = await storage.read(req);
-
+    const entry = await readGenerationCache<CachedGeneration>(storage, db, STORE_NAME, cacheKey);
 
     if (!entry) return null;
     if (Date.now() - entry.timestamp > MAX_AGE_MS) {
