@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { createCanvas } from "@napi-rs/canvas";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { createHash } from "node:crypto";
-import Flatbush from "flatbush";
 import { createPixelSceneTileSource, type SceneTileItem } from "../src/telescope/pixel-scene-tile-source";
 
 let OSD: any;
@@ -41,6 +40,10 @@ function fixture(maxCacheBytes?: number, dense = false, timeout = 3000) {
     for (let n = 0; n < 2000; n++)
       items.push({ osdX: -800 + n % 20, osdY: -350 + n % 40, w: 36, h: 20, sceneKey: "a" });
   }
+  return tileFixture(items, bitmapByKey, maxCacheBytes, timeout);
+}
+
+function tileFixture(items: SceneTileItem[], bitmapByKey: Map<string, ImageBitmap>, maxCacheBytes?: number, timeout = 3000) {
   const tiling = createPixelSceneTileSource({ items, bitmapByKey, generationId: 42, maxCacheBytes });
   const { source } = tiling;
   const loader = new OSD.ImageLoader({ jobLimit: 8, timeout });
@@ -64,48 +67,91 @@ function fixture(maxCacheBytes?: number, dense = false, timeout = 3000) {
   return { ...tiling, items, bitmapByKey, loader, request, read };
 }
 
-/** Snapshot of the former bridge compositor. Compare actual RGBA output at
- * overview/detail levels, overlapping scenes, alpha holes and translated PW
- * coordinates; no browser or mocked canvas drawing is involved. */
-function legacyTile(f: ReturnType<typeof fixture>, level: number, x: number, y: number) {
-  const index = new Flatbush(f.items.length);
-  let padding = 0;
-  for (const i of f.items) {
-    index.add(i.osdX - f.originX, i.osdY - f.originY,
-      i.osdX + i.w - f.originX, i.osdY + i.h - f.originY);
-    padding = Math.max(padding, i.w, i.h);
-  }
-  index.finish();
-  const span = 512 * Math.pow(2, f.source.maxLevel - level), bx = x * span, by = y * span;
-  const results = index.search(bx - padding, by - padding, bx + span + padding, by + span + padding);
-  const canvas = createCanvas(512, 512), ctx = canvas.getContext("2d");
+/** Draw all original artwork in one coordinate system and let the canvas
+ * clip it. No spatial queries or per-scene rounding from the tiled renderer. */
+function referenceTile(f: ReturnType<typeof fixture>, level: number, x: number, y: number) {
+  const bounds = f.source.getTileBounds(level, x, y, true), scale = f.source.getLevelScale(level);
+  const canvas = createCanvas(Math.ceil(bounds.width), Math.ceil(bounds.height)), ctx = canvas.getContext("2d");
   ctx.imageSmoothingEnabled = false;
-  for (const idx of results) {
-    const i = f.items[idx], bitmap = f.bitmapByKey.get(i.sceneKey)!;
-    const dx = Math.floor((i.osdX - f.originX - bx) * (512 / span));
-    const dy = Math.floor((i.osdY - f.originY - by) * (512 / span));
-    const dw = Math.ceil(i.w * (512 / span)) + 1, dh = Math.ceil(i.h * (512 / span)) + 1;
-    ctx.drawImage(bitmap as any, 0, 0, bitmap.width, bitmap.height, dx, dy, dw, dh);
+  ctx.setTransform(scale, 0, 0, scale, -f.originX * scale - x * 512, -f.originY * scale - y * 512);
+  for (const i of f.items) {
+    const bitmap = f.bitmapByKey.get(i.sceneKey)!;
+    ctx.drawImage(bitmap as any, 0, 0, bitmap.width, bitmap.height, i.osdX, i.osdY, i.w, i.h);
   }
   return ctx;
 }
 
 describe("scene artwork tiles through native canvas and installed OSD loader", () => {
-  it("preserves the former compositor's exact pixels across zoom levels and translated scenes", async () => {
+  it("matches uninterrupted artwork at overview/detail levels and clipped right/bottom edges", async () => {
     const f = fixture();
     try {
       for (const [level, x, y] of [[9, 0, 0], [10, 0, 0], [10, 1, 0],
         [11, 2, 0], [12, 0, 0], [12, 1, 0], [13, 0, 0], [13, 1, 0], [13, 10, 3]]) {
-        expect(hash(await f.read(level, x, y))).toBe(hash(legacyTile(f, level, x, y)));
+        const actual = await f.read(level, x, y), expected = referenceTile(f, level, x, y);
+        expect([actual.canvas.width, actual.canvas.height]).toEqual([expected.canvas.width, expected.canvas.height]);
+        expect(hash(actual), `${level}/${x}/${y}`).toBe(hash(expected));
       }
       expect(f.loader.jobsInProgress).toBe(0);
       expect(f.source.__instantTerrain).toBeUndefined();
       expect(f.source.__instantCoverage).toBe(true);
       expect(f.source.instantCoverageExtraLevels).toBe(1);
       expect(f.source.instantCoverageTileBytes(9, 0, 0)).toBe(512 * 512 * 4);
-      expect((await f.read(9)).canvas.width).toBe(512);
+      expect((await f.read(9)).canvas.width).toBe(Math.ceil(f.source.getTileBounds(9, 0, 0, true).width));
     } finally { f.source.destroy(); }
   });
+
+  it.each([-35840, 0, 35840])('matches original room artwork across tile boundaries in world offset %i', async pw => {
+    const art = await loadImage('lib/noita-telescope-vm/data/pixel_scenes/temple/altar_visual.png');
+    const blank = createCanvas(1, 1);
+    const items = [
+      { osdX: pw - 1100.5, osdY: -700.5, w: art.width, h: art.height, sceneKey: 'altar' },
+      { osdX: pw - 400.25, osdY: -270.25, w: art.width, h: art.height, sceneKey: 'altar' },
+      { osdX: pw + 30, osdY: 510, w: 1, h: 1, sceneKey: 'blank' },
+    ];
+    const f = tileFixture(items, new Map<string, ImageBitmap>([['altar', art as any], ['blank', blank as any]]));
+    try {
+      for (const level of [f.source.maxLevel, f.source.maxLevel - 1, f.source.maxLevel - 2]) {
+        const scale = f.source.getLevelScale(level);
+        const stitched = createCanvas(Math.ceil(f.width * scale), Math.ceil(f.height * scale));
+        const expected = createCanvas(stitched.width, stitched.height);
+        const output = stitched.getContext('2d'), reference = expected.getContext('2d');
+        reference.imageSmoothingEnabled = false;
+        reference.setTransform(scale, 0, 0, scale, -f.originX * scale, -f.originY * scale);
+        for (const item of items) reference.drawImage(f.bitmapByKey.get(item.sceneKey) as any,
+          0, 0, item.w, item.h, item.osdX, item.osdY, item.w, item.h);
+        for (let y = 0; y < Math.ceil(stitched.height / 512); y++)
+          for (let x = 0; x < Math.ceil(stitched.width / 512); x++) {
+            if (!f.source.tileExists(level, x, y)) continue;
+            const tile = await f.read(level, x, y);
+            output.drawImage(tile.canvas, x * 512, y * 512);
+            tile.canvas.width = tile.canvas.height = 0;
+          }
+        expect(hash(output), `world ${pw}, level ${level}`).toBe(hash(reference));
+        stitched.width = stitched.height = expected.width = expected.height = 0;
+      }
+    } finally { f.source.destroy(); }
+  });
+
+  it('does not request tiles whose only nearby artwork is outside their bounds', () => {
+    const f = fixture();
+    try {
+      expect(f.source.tileExists(13, 1, 0)).toBe(true); // two pixels of the overlapping scene
+      expect(f.source.tileExists(13, 2, 0)).toBe(false);
+    } finally { f.source.destroy(); }
+  });
+
+  it.each([[14, 0, 0], [13, 11, 0], [13, 0, 4], [13, .5, 0], [13, -1, 0]])(
+    'rejects invalid tile coordinates %i/%s/%s before allocating a canvas', async (level, x, y) => {
+      const f = fixture(), rendered = f.source.sceneTileStats.rendered;
+      try {
+        expect(f.source.tileExists(level, x, y)).toBe(false);
+        const req = f.request(level, x, y); await req.done;
+        expect(req.callback.mock.calls[0][1]).toContain('Invalid scene tile coordinates');
+        expect(f.source.sceneTileStats.rendered).toBe(rendered);
+        expect(f.loader.jobsInProgress).toBe(0);
+      } finally { f.source.destroy(); }
+    },
+  );
 
   it("replays completed zoom tiles without scene redraws after OSD destroys its canvas", async () => {
     const f = fixture();
@@ -128,7 +174,7 @@ describe("scene artwork tiles through native canvas and installed OSD loader", (
       await f.read(cutoff);
       await f.read(cutoff + 1);
       for (let x = 0; x < 11; x++) await f.read(13, x);
-      expect(f.source.sceneTileStats).toMatchObject({ entries: 3, pinned: 2 });
+      expect(f.source.sceneTileStats.pinned).toBe(2);
       expect(f.source.sceneTileStats.bytes).toBeLessThanOrEqual(3 * 512 * 512 * 4);
       const rendered = f.source.sceneTileStats.rendered;
       await f.read(cutoff);
@@ -147,7 +193,7 @@ describe("scene artwork tiles through native canvas and installed OSD loader", (
       expect(first.callback.mock.calls[0][1]).toContain("aborted");
       expect(second.callback).toHaveBeenCalledOnce();
       expect(second.callback.mock.calls[0][1]).toBeNull();
-      expect(hash(second.callback.mock.calls[0][0])).toBe(hash(legacyTile(f, 13, 0, 0)));
+      expect(hash(second.callback.mock.calls[0][0])).toBe(hash(referenceTile(f, 13, 0, 0)));
       expect(f.loader.jobsInProgress).toBe(0);
       expect(f.source.sceneTileStats).toMatchObject({ rendered: 1, hits: 0 });
     } finally { f.source.destroy(); }
@@ -180,7 +226,7 @@ describe("scene artwork tiles through native canvas and installed OSD loader", (
       expect(shared.size).toBe(0);
       for (const image of f.bitmapByKey.values()) expect(image.close).not.toHaveBeenCalled();
       const pixels = await f.read(f.source.maxLevel, 0, 0);
-      expect(hash(pixels)).toBe(hash(legacyTile(f, f.source.maxLevel, 0, 0)));
+      expect(hash(pixels)).toBe(hash(referenceTile(f, f.source.maxLevel, 0, 0)));
       expect(pixels.getImageData(0, 0, 512, 512).data.some((value: number, i: number) => i % 4 === 3 && value > 0)).toBe(true);
     } finally { f.source.destroy(); }
   });
@@ -193,7 +239,7 @@ describe("scene artwork tiles through native canvas and installed OSD loader", (
       expect(f.source.sceneTileStats.rendered).toBe(0);
       expect(pending.callback).not.toHaveBeenCalled();
       await pending.done;
-      expect(hash(pending.callback.mock.calls[0][0])).toBe(hash(legacyTile(f, 9, 0, 0)));
+      expect(hash(pending.callback.mock.calls[0][0])).toBe(hash(referenceTile(f, 9, 0, 0)));
       expect(f.source.sceneTileStats.chunks).toBeGreaterThanOrEqual(16);
       expect(f.source.sceneTileStats.rendered).toBe(1);
     } finally { f.source.destroy(); }

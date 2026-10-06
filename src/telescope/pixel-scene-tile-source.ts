@@ -26,13 +26,11 @@ export function createPixelSceneTileSource(options: {
   const { items, bitmapByKey, generationId } = options;
   if (!items.length) throw new Error("Cannot tile an empty scene layer");
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  let maxSceneDim = 0;
   for (const item of items) {
     minX = Math.min(minX, item.osdX);
     minY = Math.min(minY, item.osdY);
     maxX = Math.max(maxX, item.osdX + item.w);
     maxY = Math.max(maxY, item.osdY + item.h);
-    maxSceneDim = Math.max(maxSceneDim, item.w, item.h);
   }
   const originX = minX - 50, originY = minY - 50;
   const width = maxX - minX + 100, height = maxY - minY + 100;
@@ -81,13 +79,14 @@ export function createPixelSceneTileSource(options: {
   function query(level: number, x: number, y: number) {
     const span = tileSize * 2 ** (maxLevel - level);
     const bx = x * span, by = y * span;
-    // Retain the existing compositor's padded query and integer overlap. This
-    // changes tile lifetime, not scene placement, ordering or output pixels.
+    // Exact scene rectangles are sufficient: artwork is clipped by the tile
+    // canvas, never enlarged to manufacture overlap at the edges.
     return { bx, by, span,
-      hits: index.search(bx - maxSceneDim, by - maxSceneDim,
-        bx + span + maxSceneDim, by + span + maxSceneDim) };
+      hits: index.search(bx, by, Math.min(width, bx + span), Math.min(height, by + span)) };
   }
-  const validTile = source.tileExists.bind(source);
+  const withinBounds = source.tileExists.bind(source);
+  const validTile = (level: number, x: number, y: number) =>
+    [level, x, y].every(Number.isInteger) && withinBounds(level, x, y);
   source.tileExists = (level: number, x: number, y: number) =>
     !destroyed && validTile(level, x, y) && query(level, x, y).hits.length > 0;
 
@@ -98,7 +97,10 @@ export function createPixelSceneTileSource(options: {
     };
     work.promise = Promise.resolve().then(async () => {
       cancelled();
+      if (!validTile(level, x, y)) throw new Error('Invalid scene tile coordinates');
       const { bx, by, span, hits } = query(level, x, y);
+      // Match direct artwork drawing, including overlapping transparent scenes.
+      hits.sort((a, b) => a - b);
       // Several coarse OSD jobs may begin in one frame. Start their long draws
       // in separate tasks too, avoiding a burst of many 4ms microtask batches.
       if (hits.length > 128) {
@@ -106,11 +108,14 @@ export function createPixelSceneTileSource(options: {
         cancelled();
       }
       const canvas = document.createElement("canvas");
-      canvas.width = canvas.height = tileSize;
+      const bounds = source.getTileBounds(level, x, y, true);
+      canvas.width = Math.ceil(bounds.width);
+      canvas.height = Math.ceil(bounds.height);
       const context = canvas.getContext("2d")!;
       if (!context) throw new Error("Cannot composite scene tile");
       context.imageSmoothingEnabled = false;
       const scale = tileSize / span;
+      context.setTransform(scale, 0, 0, scale, -bx * scale, -by * scale);
       let start = performance.now(), count = 0;
       const finishChunk = () => {
         const elapsed = performance.now() - start;
@@ -122,12 +127,8 @@ export function createPixelSceneTileSource(options: {
         for (let n = 0; n < hits.length; n++) {
           const item = items[hits[n]], bitmap = bitmapByKey.get(item.sceneKey);
           if (bitmap) {
-            const dx = Math.floor((item.osdX - originX - bx) * scale);
-            const dy = Math.floor((item.osdY - originY - by) * scale);
-            const dw = Math.ceil(item.w * scale) + 1;
-            const dh = Math.ceil(item.h * scale) + 1;
-            if (dw >= 1 && dh >= 1)
-              context.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, dx, dy, dw, dh);
+            context.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height,
+              item.osdX - originX, item.osdY - originY, item.w, item.h);
           }
           // A whole-map tile can touch ten thousand scenes. Yield actual tasks,
           // rather than microtasks, so pointer/zoom/paint work can run between
