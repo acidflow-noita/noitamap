@@ -11,7 +11,7 @@ it('gates the actual bridge prefetch loop before every missing scene and resumes
   const cached = new Set<string>(), close = vi.fn();
   const composite = vi.fn(async () => ({ bitmap: { close }, blob: new Blob(['image']), width: 2, height: 2 }));
   const dependencies = {
-    createScenePrefetch, getAllPixelSceneKeys: () => ['one', 'two', 'three'],
+    createScenePrefetch, getAllPixelSceneKeys: () => ['one', 'general/the_end_shop', 'two', 'three'],
     carvedRoomBiome: () => null, isWaterCaveLayout: () => false,
     getCachedSceneBitmapKeys: async () => cached, getScenePngIndex: async () => ({}),
     getPixelSceneData: () => ({ width: 2, height: 2 }),

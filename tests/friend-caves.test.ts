@@ -156,6 +156,19 @@ it('keeps the gold cavern scene while still excluding baked rooms', () => {
   expect(renderableScenes({ worldSize: 70, pixelScenesByPW: { '0,0': [captured] } })).toEqual([captured]);
 });
 
+it('keeps sky and hell shop colours separate while sharing each variant across worlds and seeds', () => {
+  const key = 'general/the_end_shop';
+  const sky = { key, variantKey: 'biome=the_sky', x: 0, y: -13954 };
+  const hell = { key, variantKey: 'biome=the_end', x: 0, y: 24576 };
+  const skyKey = bridge.sceneRenderKey(sky, 1), hellKey = bridge.sceneRenderKey(hell, 1);
+  expect(skyKey).not.toBe(hellKey);
+  for (const variant of [sky, hell, { key }]) expect(bridge.sceneRenderKey(variant, 1)).not.toBe(key);
+  expect(bridge.sceneRenderKey({ ...sky, x: -35840 }, 42)).toBe(skyKey);
+  expect(bridge.sceneRenderKey({ ...hell, x: 35840 }, 99)).toBe(hellKey);
+  expect(bridge.sceneRenderKey({ key, variantKey: 'f0bbee=123456&biome=the_sky' }, 1)).not.toBe(skyKey);
+  expect(bridge.sceneRenderKey({ key: 'coalmine/oiltank', variantKey: 'biome=coalmine' }, 1)).toBe('coalmine/oiltank');
+});
+
 it('paints every authored gold pixel and fills only the carved air of the Ancient Laboratory stash', async () => {
   const key = 'general/solid_wall_hidden_cavern', material = raw.get(key)!;
   const scene = { key, name: 'solid_wall_hidden_cavern', variantKey: 'biome=general@solid_wall_hidden_cavern',

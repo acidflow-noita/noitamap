@@ -2000,8 +2000,8 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
  * pick a material via PRNG and encode it in variantKey as `f0bbee=<wang>`. Two
  * instances of the same scene.key with different liquids must NOT share a
  * cached bitmap, so fold the material part of the variant into the key. The
- * biome part is omitted (it's already implied by scene.key), so non-fill scenes
- * keep their plain key and stay prefetch/cache compatible.
+ * biome part is normally implied by scene.key. The shared sky/hell shop needs
+ * its explicit biome, while unrelated scenes retain their existing keys.
  */
 function sceneRenderKey(scene: { key: string; variantKey?: string; x?: number; y?: number }, seed: number): string {
   const vk = scene.variantKey || '';
@@ -2016,6 +2016,12 @@ function sceneRenderKey(scene: { key: string; variantKey?: string; x?: number; y
   }
   const mat = vk.split('&').filter(p => p && !p.startsWith('biome='));
   const key = mat.length ? `${scene.key}|${mat.join('&')}` : scene.key;
+  if (scene.key === 'general/the_end_shop') {
+    // Both vertical worlds use this template, but its fill colours differ.
+    // Version even the default/prefetch variant so old shared PNGs cannot win.
+    const biome = vk.split('&').filter(p => p.startsWith('biome=')).join('&') || 'biome=general';
+    return `${key}|shop-biome-v1|${biome}`;
+  }
   if (scene.key === GOLD_ROOM_REPAIR_KEY) return `${key}|${scene.x ?? 0},${scene.y ?? 0}`;
   // Cave textures are phased in world space. Bypass old black room bitmaps.
   return carvedRoomBiome(scene.key) ? `${key}|friend-bg-v1|${scene.x ?? 0},${scene.y ?? 0}` : key;
@@ -2269,8 +2275,9 @@ async function compositeSceneBitmap(
  */
 export const prefetchAllSceneBitmaps = createScenePrefetch(async (isCurrent, beforeScene) => {
     try {
-      // These scenes need actual placement coordinates (and Water Cave's seed).
-      const allKeys = getAllPixelSceneKeys().filter(key => !carvedRoomBiome(key) && !isWaterCaveLayout(key));
+      // These scenes need actual placement coordinates, seed or biome context.
+      const allKeys = getAllPixelSceneKeys().filter(key => !carvedRoomBiome(key) && !isWaterCaveLayout(key)
+        && key !== 'general/the_end_shop');
       if (allKeys.length === 0) return;
       const cached = await getCachedSceneBitmapKeys();
       const missing = allKeys.filter(k => !cached.has(k));
