@@ -1,6 +1,7 @@
 import { transform } from "esbuild";
 import { dirname, resolve } from "node:path";
 import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import type { Plugin } from "vite";
 
 /** Vite builds browser APIs, including the native baker's browser facade. Leave
@@ -37,6 +38,36 @@ export async function browserTelescopeSource(code: string, id: string) {
       .replace('for (let i = 0; i < regions.length; i++) {', '$&' + checkpoint)
       .replace('while (!valid && attempts < MAX_PATHFINDING_ATTEMPTS) {', '$&' + checkpoint);
     source = source.replace(original, scheduled);
+  }
+  if (id.endsWith('/poi_scanner.js')) {
+    const pattern = /export function prescanSpawnFunctions\([\s\S]*?\n\}/;
+    const original = source.match(pattern)?.[0];
+    const audited = new Set([
+      '568295f063fe77bf4198fc7f323dae561bda5ad4ad62fdec08de601c70d11545',
+      '259cdf984e7e1c1ac53dcc628b32640c231215be24d06e012a7431182b52fbf2',
+    ]);
+    if (!original || !audited.has(createHash('sha256').update(original.replace(/\r\n/g, '\n')).digest('hex')))
+      throw new Error(`Review changed Telescope spawn prescan: ${id}`);
+    // The replacement also depends on the lookup's first-match semantics.
+    // Audit that dependency rather than silently bypassing a future change.
+    const lookupSource = await readFile(resolve(dirname(id), 'spawn_functions.js'), 'utf8');
+    const lookup = lookupSource.match(/export function getSpawnFunctionIndex\([\s\S]*?\n\}/)?.[0];
+    if (!lookup || createHash('sha256').update(lookup.replace(/\r\n/g, '\n')).digest('hex') !==
+      'd7a397fb8046fcfb1c226ea2d35a804c752d01fd5e6d9393cfb2d4420d5a6b7e')
+      throw new Error(`Review changed Telescope spawn-function lookup: ${id}`);
+    // Build once per layer, not once per opaque pixel. No persistent memo:
+    // later seeds/settings must see the current table, including inactive and
+    // duplicate entries (the first occurrence always wins).
+    const indexed = original
+      .replace('if (sourceSpawnFunctions.length === 0) continue;', `$&
+        const indexByColor = new Map();
+        for (let i = 0; i < sourceSpawnFunctions.length; i++) {
+            const color = sourceSpawnFunctions[i].color;
+            if (!indexByColor.has(color)) indexByColor.set(color, i);
+        }`)
+      .replace('const index = getSpawnFunctionIndex(sourceBiome, colorInt);',
+        'const index = indexByColor.get(colorInt) ?? null;');
+    source = source.replace(original, indexed);
   }
   if (id.endsWith("/engine_resolve/lattice_builder.js")) {
     // Keep the submodule intact. Audit again if upstream changes the vote's
@@ -148,7 +179,7 @@ export async function browserTelescopeSource(code: string, id: string) {
 export function telescopeBrowserPlugin(directories: string[]): Plugin {
   const files = new Set(
     directories.flatMap((dir) =>
-      ["png_sanitizer.js", "utils.js", "pixel_scene_generation.js", "icon_sheets.js", "tile_generator.js", "gl/terrain_renderer.js", "engine_resolve/lattice_builder.js"].map(
+      ["png_sanitizer.js", "utils.js", "pixel_scene_generation.js", "icon_sheets.js", "tile_generator.js", "poi_scanner.js", "gl/terrain_renderer.js", "engine_resolve/lattice_builder.js"].map(
         (name) => resolve(dir, name).replace(/\\/g, "/"),
       ),
     ),
