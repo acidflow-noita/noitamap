@@ -24,3 +24,6 @@ declare module "virtual:noitamap-data-archives" {
   export const archiveRevisions: Record<string, string>;
   export const biomeBackgroundRevisions: Record<string, string>;
 }
+declare module "virtual:noitamap-asset-pages" {
+  export const assetManifests: Record<string, { file: string; revision: string; bytes: number }>;
+}
