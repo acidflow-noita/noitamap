@@ -339,6 +339,14 @@ export function createInstantTileSource(options: {
     // replay below also repairs missing ancestors after an interrupted write.
     const key = source.getTileUrl(tile.level, x, y);
     if (preparedNativeTiles.has(key) && resident()) return;
+    const sampled = instantSampleView(view);
+    if (await retention.containsPyramid(sampled.x - region.x, sampled.y - region.y,
+      sampled.width, sampled.height, signal)) {
+      preparedNativeTiles.add(key);
+      return;
+    }
+    signal.throwIfAborted();
+    // A foreground request may have started while the coverage read was pending.
     let existing = pending.get(key);
     while (existing && !existing.background && !existing.controller.signal.aborted) {
       const release = subscribeWork(existing);

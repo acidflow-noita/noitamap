@@ -16,6 +16,7 @@ export interface RetainedTile {
   x: number;
   y: number;
 }
+type CoverageCells = { x: number; y: number; width: number; height: number };
 /** Region-local world bounds; scale is world pixels per physical display pixel. */
 export interface RetainedView {
   x: number;
@@ -44,6 +45,7 @@ export interface TerrainRetentionStore {
 
 function completeCoverage(
   page: Pick<StoredTerrain, "columns" | "rows" | "coverage">,
+  cells?: CoverageCells,
 ): boolean {
   if (
     !Number.isInteger(page.columns) ||
@@ -55,8 +57,19 @@ function completeCoverage(
     page.coverage?.length !== Math.ceil((page.columns * page.rows) / 8)
   )
     return false;
-  for (let i = 0; i < page.columns * page.rows; i++)
+  if (!cells) {
+    for (let i = 0; i < page.columns * page.rows; i++)
+      if (!(page.coverage[i >> 3] & (1 << (i & 7)))) return false;
+    return true;
+  }
+  const left = cells.x, top = cells.y;
+  const right = left + cells.width, bottom = top + cells.height;
+  if (![left, top, right, bottom].every(Number.isInteger) || left < 0 || top < 0
+    || right <= left || bottom <= top || right > page.columns || bottom > page.rows) return false;
+  for (let y = top; y < bottom; y++) for (let x = left; x < right; x++) {
+    const i = y * page.columns + x;
     if (!(page.coverage[i >> 3] & (1 << (i & 7)))) return false;
+  }
   return true;
 }
 
@@ -381,23 +394,24 @@ export class RetainedTerrain {
   }
   /** Background skip checks inspect coverage only. A cold compressed record
    * stays compressed, and no display canvas is created or added to the LRU. */
-  async contains(key: string): Promise<boolean> {
+  async contains(key: string, cells?: CoverageCells): Promise<boolean> {
     const resident = this.pages.get(key);
-    if (resident && completeCoverage(resident)) return true;
+    if (resident && completeCoverage(resident, cells)) return true;
     const loading = this.loads.get(key);
     if (loading) {
       loading.waiters++;
       const page = await loading.promise;
       if (!page) return false;
       try {
-        return completeCoverage(page);
+        return completeCoverage(page, cells);
       } finally {
         this.release(page);
       }
     }
     if (resident) return false;
     if (!this.readable || this.missing.has(key)) return false;
-    const existing = this.coverageReads.get(key);
+    const readKey = JSON.stringify([key, cells?.x, cells?.y, cells?.width, cells?.height]);
+    const existing = this.coverageReads.get(readKey);
     if (existing) return existing;
     const read = (async () => {
       try {
@@ -405,18 +419,18 @@ export class RetainedTerrain {
           ? await this.store.readCoverage(key)
           : await this.store.read(key);
         const current = this.pages.get(key);
-        if (current && completeCoverage(current)) return true;
+        if (current && completeCoverage(current, cells)) return true;
         if (!value) {
           if (!current) this.rememberMissing(key);
           return false;
         }
-        return completeCoverage(value);
+        return completeCoverage(value, cells);
       } catch {
         this.disableStorage();
         return false;
       }
-    })().finally(() => this.coverageReads.delete(key));
-    this.coverageReads.set(key, read);
+    })().finally(() => this.coverageReads.delete(readKey));
+    this.coverageReads.set(readKey, read);
     return read;
   }
   /** Import disk-only cells behind freshly captured exact pixels. Coverage is
@@ -884,10 +898,35 @@ export class RetainedTerrainRegion {
     }
     return complete;
   }
-  contains(tile: RetainedTile): Promise<boolean> {
+  contains(tile: RetainedTile, cells?: CoverageCells): Promise<boolean> {
     if (tile.level < this.minLevel || tile.level > this.maxLevel)
       return Promise.resolve(false);
-    return this.owner.contains(this.key(tile));
+    return this.owner.contains(this.key(tile), cells);
+  }
+  /** Verify a saved native block and all its reductions using coverage only.
+   * Only that block's cells must be present in each ancestor. Native leaves
+   * must also exist: a complete parent can survive an interrupted save. */
+  async containsPyramid(x: number, y: number, width: number, height: number, signal?: AbortSignal): Promise<boolean> {
+    if (![x, y, width, height].every(Number.isInteger) || x < 0 || y < 0 || x % SIZE || y % SIZE
+      || width < 1 || height < 1 || width > 512 || height > 512) return false;
+    const right = Math.min(this.width, x + width), bottom = Math.min(this.height, y + height);
+    if (right <= x || bottom <= y) return false;
+    for (let level = this.maxLevel; level >= this.minLevel; level--) {
+      const scale = 2 ** (this.maxLevel - level), span = SIZE * scale;
+      for (let ty = Math.floor(y / span); ty < Math.ceil(bottom / span); ty++)
+        for (let tx = Math.floor(x / span); tx < Math.ceil(right / span); tx++) {
+          signal?.throwIfAborted();
+          const left = Math.max(0, x / SIZE - tx * scale), top = Math.max(0, y / SIZE - ty * scale);
+          const complete = await this.contains({ level, x: tx, y: ty }, {
+            x: left, y: top,
+            width: Math.min(scale, Math.ceil(right / SIZE) - tx * scale) - left,
+            height: Math.min(scale, Math.ceil(bottom / SIZE) - ty * scale) - top,
+          });
+          signal?.throwIfAborted();
+          if (!complete) return false;
+        }
+    }
+    return true;
   }
   async complete(tile: RetainedTile) {
     if (tile.level < this.minLevel) return undefined;

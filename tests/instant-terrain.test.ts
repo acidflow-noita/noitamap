@@ -166,13 +166,21 @@ function viewer() {
 }
 
 describe("display-resolution GPU terrain (native canvas, no browser)", () => {
-  function cookingSource(renderer: any = new Renderer(), records = new Map<string, StoredTerrain>(), ownsTerrain = true, workerClipping = false) {
-    const retained = new RetainedTerrain({
-      read: async key => records.get(key),
-      write: async entries => { for (const entry of entries) records.set(entry.key, entry.value); },
-    });
+  function cookingSource(renderer: any = new Renderer(), records = new Map<string, StoredTerrain>(), ownsTerrain = true, workerClipping = false,
+    size = { width: 1024, height: 1024 }) {
+    const store = {
+      read: vi.fn(async (key: string) => records.get(key)),
+      readCoverage: vi.fn(async (key: string) => {
+        const page = records.get(key);
+        return page && { columns: page.columns, rows: page.rows, coverage: page.coverage };
+      }),
+      write: vi.fn(async (entries: { key: string; value: StoredTerrain }[]) => {
+        for (const entry of entries) records.set(entry.key, entry.value);
+      }),
+    };
+    const retained = new RetainedTerrain(store);
     const controller = new AbortController();
-    const area = { ...region, y: WORLD_TOP, width: 1024, height: 1024 };
+    const area = { ...region, y: WORLD_TOP, ...size };
     const cache = new InstantTerrainCache();
     const clip = createInstantClip([owner(false), owner(ownsTerrain), owner(false)], []);
     const src = createInstantTileSource({
@@ -181,7 +189,7 @@ describe("display-resolution GPU terrain (native canvas, no browser)", () => {
       clip,
       signal: controller.signal, onFailure: vi.fn(),
     });
-    return { src, cache, retained, controller, records, clip };
+    return { src, cache, retained, controller, records, clip, store };
   }
   it('cooks and persists worker-clipped native pixels without expanding scene masks on the UI thread', async () => {
     const renderer = {
@@ -295,6 +303,95 @@ describe("display-resolution GPU terrain (native canvas, no browser)", () => {
       expect(draw).toHaveBeenCalledOnce();
       const native = await request(next.src, 10, 1, 1).result;
       expect([...native.value.getImageData(0, 0, 1, 1).data]).toEqual([252, 128, 0, 255]);
+    } finally { next.controller.abort(); await next.retained.flush(); next.retained.dispose(); }
+  });
+  it.each([1, 2])('checks a saved %i-by-side block area without decoding, reducing or rewriting it after reload', async blocks => {
+    const initial = cookingSource();
+    for (let y = 0; y < blocks; y++) for (let x = 0; x < blocks; x++)
+      await initial.src.prepareNativeTile(x, y);
+    await initial.retained.flush(); initial.controller.abort(); initial.retained.dispose();
+    const expected = structuredClone(initial.records);
+    const next = cookingSource(new Renderer(), initial.records);
+    const reduce = vi.spyOn(next.retained, 'reduceNative');
+    const create = vi.spyOn(document, 'createElement');
+    try {
+      draw.mockClear();
+      for (let y = 0; y < blocks; y++) for (let x = 0; x < blocks; x++)
+        await next.src.prepareNativeTile(x, y);
+      await next.retained.flush();
+      expect(draw).not.toHaveBeenCalled();
+      expect(reduce).not.toHaveBeenCalled();
+      expect(next.store.read).not.toHaveBeenCalled();
+      expect(next.store.write).not.toHaveBeenCalled();
+      expect(create).not.toHaveBeenCalled();
+      expect(next.retained.stats.pages).toBe(0);
+      expect([...next.records.keys()]).toEqual([...expected.keys()]);
+      for (const [key, value] of expected) {
+        const actual = next.records.get(key)!;
+        expect({ ...actual, pixels: undefined }).toEqual({ ...value, pixels: undefined });
+        expect(Buffer.from(actual.pixels).equals(Buffer.from(value.pixels)), key).toBe(true);
+      }
+      expect((await request(next.src, 10, blocks * 2 - 1, blocks * 2 - 1).result).value.getImageData(0, 0, 1, 1).data)
+        .toEqual(new Uint8ClampedArray([252, 128, 0, 255]));
+      expect(draw).not.toHaveBeenCalled();
+    } finally { next.controller.abort(); await next.retained.flush(); next.retained.dispose(); }
+  });
+  it('does not add coverage reads for a new uncached native block', async () => {
+    const f = cookingSource();
+    try {
+      await f.src.prepareNativeTile(0, 0);
+      expect(f.store.readCoverage.mock.calls).toEqual([['cooking/10/0/0']]);
+      expect(draw).toHaveBeenCalledOnce();
+    } finally { f.controller.abort(); await f.retained.flush(); f.retained.dispose(); }
+  });
+  it('keeps saved odd-sized edge pages intact when the native sample includes padding', async () => {
+    const size = { width: 513, height: 259 };
+    const initial = cookingSource(new Renderer(), new Map(), true, false, size);
+    await initial.src.prepareNativeTile(0, 0);
+    await initial.src.prepareNativeTile(1, 0);
+    await initial.retained.flush(); initial.controller.abort(); initial.retained.dispose();
+    const next = cookingSource(new Renderer(), initial.records, true, false, size);
+    try {
+      draw.mockClear();
+      await next.src.prepareNativeTile(1, 0);
+      await next.retained.flush();
+      expect(draw).not.toHaveBeenCalled();
+      expect(next.store.read).not.toHaveBeenCalled();
+      expect(next.store.write).not.toHaveBeenCalled();
+      expect(next.retained.stats.pages).toBe(0);
+    } finally { next.controller.abort(); await next.retained.flush(); next.retained.dispose(); }
+  });
+  it('cancels a reload check before reading further pages or starting a render', async () => {
+    const f = cookingSource();
+    let finish!: (value: undefined) => void;
+    f.store.readCoverage.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+    const pending = f.src.prepareNativeTile(0, 0);
+    expect(f.store.readCoverage).toHaveBeenCalledOnce();
+    f.controller.abort(); finish(undefined);
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+    expect(f.store.readCoverage).toHaveBeenCalledOnce();
+    expect(f.store.read).not.toHaveBeenCalled();
+    expect(draw).not.toHaveBeenCalled();
+    await f.retained.flush(); f.retained.dispose();
+  });
+  it('repairs a partial ancestor even when all native pages and immediate parents survived', async () => {
+    const initial = cookingSource();
+    for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++)
+      await initial.src.prepareNativeTile(x, y);
+    await initial.retained.flush(); initial.controller.abort(); initial.retained.dispose();
+    const ancestor = initial.records.get('cooking/8/0/0')!;
+    const expected = ancestor.pixels.slice();
+    ancestor.coverage[0] &= ~1;
+    for (let y = 0; y < 64; y++) ancestor.pixels.fill(0, y * 256 * 4, (y * 256 + 64) * 4);
+    const next = cookingSource(new Renderer(), initial.records);
+    try {
+      draw.mockClear();
+      await next.src.prepareNativeTile(0, 0);
+      await next.retained.flush();
+      expect(draw).not.toHaveBeenCalled();
+      const repaired = next.records.get('cooking/8/0/0')!;
+      expect(repaired.coverage).toEqual(new Uint8Array([255, 255]));
+      expect(Buffer.from(repaired.pixels).equals(Buffer.from(expected))).toBe(true);
     } finally { next.controller.abort(); await next.retained.flush(); next.retained.dispose(); }
   });
   it('repairs missing overview pages from saved native pixels even after foreground reads made the leaves resident', async () => {

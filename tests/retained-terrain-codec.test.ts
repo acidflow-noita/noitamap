@@ -210,3 +210,21 @@ it("coalesces coverage checks, distinguishes partial coverage, and stops persist
   expect(store.read).not.toHaveBeenCalled();
   owner.dispose();
 });
+
+it("keeps concurrent checks of different cells in one ancestor independent", async () => {
+  const finish: ((value: any) => void)[] = [];
+  const store = {
+    read: vi.fn(async () => undefined), write: vi.fn(async () => {}),
+    readCoverage: vi.fn(() => new Promise<any>(resolve => { finish.push(resolve); })),
+  };
+  const owner = new RetainedTerrain(store), region = owner.region('seed', 1024, 1024);
+  const tile = { level: 8, x: 0, y: 0 };
+  const left = { x: 0, y: 0, width: 2, height: 2 }, right = { ...left, x: 2 };
+  const checks = [region.contains(tile, left), region.contains(tile, right), region.contains(tile, left)];
+  expect(store.readCoverage).toHaveBeenCalledTimes(2);
+  for (const resolve of finish) resolve({ columns: 4, rows: 4, coverage: new Uint8Array([0x33, 0]) });
+  expect(await Promise.all(checks)).toEqual([true, false, true]);
+  expect(store.read).not.toHaveBeenCalled();
+  expect(owner.stats.pages).toBe(0);
+  owner.dispose();
+});
