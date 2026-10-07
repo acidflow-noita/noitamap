@@ -141,6 +141,20 @@ describe('card placement ownership and updates', () => {
     expect(r.width).toBe(366); expect(r.top).toBeGreaterThanOrEqual(88); expect(r.bottom).toBeLessThanOrEqual(452);
   });
 
+  it('keeps allowed POI cards clear of a late drawing sidebar and its bottom toolbar', async () => {
+    const container = document.createElement('div'); container.id = 'drawing-sidebar-container';
+    document.body.append(container);
+    const f = mount(), sidebar = document.createElement('aside'), toolbar = document.createElement('div');
+    sidebar.className = 'drawing-sidebar open'; toolbar.className = 'drawing-toolbar open';
+    sidebar.getBoundingClientRect = () => new DOMRect(900, 76, 300, 724);
+    toolbar.getBoundingClientRect = () => new DOMRect(0, 680, 1200, 120);
+    container.append(sidebar, toolbar); await tick();
+    const r = bounds(f.card);
+    expect(r.right).toBeLessThanOrEqual(888); expect(r.bottom).toBeLessThanOrEqual(668);
+    sidebar.remove(); toolbar.remove(); await tick();
+    expect(bounds(f.card).bottom).toBeGreaterThan(680);
+  });
+
   it('keeps scroll position and stable geometry through repeated content and resize notifications', async () => {
     const f = mount(); f.card.scrollTop = 137; f.grow(); await tick();
     const initial = bounds(f.card);

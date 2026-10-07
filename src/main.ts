@@ -184,6 +184,7 @@ import { initKonamiCode } from "./konami";
 import { AuthUI } from "./auth/auth-ui";
 import { authService } from "./auth/auth-service";
 import { DrawingUI } from "./drawing/drawing-ui";
+import { setDrawingMapOwnership } from './drawing/poi-interaction';
 import { createSeedReportButton } from "./seed-report-button";
 import { placeMoreMenuLast } from "./overflow-menu";
 import { initChunkGrid, showChunkGrid, isChunkGridVisible } from "./drawing/chunk-grid";
@@ -677,6 +678,7 @@ startWhenReady(async () => {
 
   // Expose hooks for the pro bundle via window.__noitamap
   const proHooks: NoitamapProHooks = {
+    setDrawingMapOwnership,
     i18next,
     authService,
     osd: app.osd as unknown as OpenSeadragon.Viewer,

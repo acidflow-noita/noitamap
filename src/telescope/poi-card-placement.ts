@@ -51,7 +51,7 @@ export function mountPOICardPlacement(card: HTMLElement, options: {
   const { viewer, anchor, isCurrent } = options;
   const osd = viewer.viewer ?? viewer, canvas = viewer.canvas as HTMLElement;
   const visual = window.visualViewport;
-  let disposed = false, frame = 0, reports: HTMLElement[] = [];
+  let disposed = false, frame = 0, panels: HTMLElement[] = [];
   const rectOf = (r: DOMRect): CardRect => ({ left: r.left, top: r.top, right: r.right, bottom: r.bottom });
   const layout = () => {
     frame = 0;
@@ -63,8 +63,12 @@ export function mountPOICardPlacement(card: HTMLElement, options: {
       right: (visual?.offsetLeft ?? 0) + (visual?.width ?? window.innerWidth),
       bottom: (visual?.offsetTop ?? 0) + (visual?.height ?? window.innerHeight),
     };
-    const report = reports.find(el => el.classList.contains('open') && !el.hidden && getComputedStyle(el).display !== 'none');
-    const available = availablePOICardRect(rectOf(c), visible, report ? rectOf(report.getBoundingClientRect()) : undefined);
+    let available = availablePOICardRect(rectOf(c), visible);
+    for (const panel of panels) {
+      if (available && panel.classList.contains('open') && !panel.hidden && getComputedStyle(panel).display !== 'none') {
+        available = availablePOICardRect(available, available, rectOf(panel.getBoundingClientRect()));
+      }
+    }
     const cw = canvas.clientWidth || c.width, ch = canvas.clientHeight || c.height;
     if (!available || cw <= 0 || ch <= 0) { card.style.visibility = 'hidden'; return; }
     const matrix = readCameraMatrix((x, y) => viewer.viewport.pixelFromPoint(new OpenSeadragon.Point(x, y), true), cw, viewer.viewport.getFlip?.() ?? false);
@@ -100,39 +104,41 @@ export function mountPOICardPlacement(card: HTMLElement, options: {
   };
   const schedule = () => { if (!disposed && !frame) frame = requestAnimationFrame(layout); };
   const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(schedule) : null;
-  const reportChanges = new MutationObserver(schedule);
-  const bindReports = () => {
-    const next = [...document.querySelectorAll<HTMLElement>('#seed-report-v3, #seed-report-sidebar')];
-    if (next.length === reports.length && next.every((el, i) => el === reports[i])) return false;
-    for (const report of reports) { resize?.unobserve(report); report.removeEventListener('transitionend', schedule); }
-    reportChanges.disconnect();
-    reports = next;
-    for (const report of reports) {
-      resize?.observe(report);
-      reportChanges.observe(report, { attributes: true, attributeFilter: ['class', 'hidden', 'style'] });
-      report.addEventListener('transitionend', schedule);
+  const panelChanges = new MutationObserver(schedule);
+  const bindPanels = () => {
+    const next = [...document.querySelectorAll<HTMLElement>('#seed-report-v3, #seed-report-sidebar, .drawing-sidebar, .drawing-toolbar')];
+    if (next.length === panels.length && next.every((el, i) => el === panels[i])) return false;
+    for (const panel of panels) { resize?.unobserve(panel); panel.removeEventListener('transitionend', schedule); }
+    panelChanges.disconnect();
+    panels = next;
+    for (const panel of panels) {
+      resize?.observe(panel);
+      panelChanges.observe(panel, { attributes: true, attributeFilter: ['class', 'hidden', 'style'] });
+      panel.addEventListener('transitionend', schedule);
     }
     return true;
   };
   const structure = new MutationObserver(() => {
     if (!card.isConnected) dispose();
-    else if (bindReports()) schedule();
+    else if (bindPanels()) schedule();
   });
   const content = new MutationObserver(schedule);
   const dispose = () => {
     if (disposed) return;
     disposed = true;
     if (frame) cancelAnimationFrame(frame);
-    resize?.disconnect(); reportChanges.disconnect(); structure.disconnect(); content.disconnect();
-    for (const report of reports) report.removeEventListener('transitionend', schedule);
+    resize?.disconnect(); panelChanges.disconnect(); structure.disconnect(); content.disconnect();
+    for (const panel of panels) panel.removeEventListener('transitionend', schedule);
     card.removeEventListener('load', schedule, true);
     window.removeEventListener('resize', schedule);
     visual?.removeEventListener('resize', schedule); visual?.removeEventListener('scroll', schedule);
     osd.removeHandler?.('viewport-change', schedule); osd.removeHandler?.('before-destroy', dispose);
   };
   resize?.observe(card); resize?.observe(canvas);
-  bindReports();
+  bindPanels();
   structure.observe(document.body, { childList: true });
+  const drawingContainer = document.getElementById('drawing-sidebar-container');
+  if (drawingContainer) structure.observe(drawingContainer, { childList: true });
   content.observe(card, { childList: true, subtree: true, characterData: true });
   card.addEventListener('load', schedule, true);
   window.addEventListener('resize', schedule);

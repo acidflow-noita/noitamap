@@ -1,5 +1,5 @@
 import { clearPortalAnimations, installPortalAnimations } from "../portals";
-import { canOpenPOIFromCanvas, drawingOwnsMapPointer } from "../drawing/poi-interaction";
+import { canOpenPOIFromCanvas, drawingOwnsMapPointer, onDrawingMapOwnershipChange } from "../drawing/poi-interaction";
 import { onProSidebarIntent } from "../pro-sidebar-intent";
 import { mountPOICardPlacement, type CardAnchor } from './poi-card-placement';
 import { POICardLifecycle, type POICardOwner, type POICardRequest } from './poi-card-lifecycle';
@@ -4733,16 +4733,20 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
     osdCanvas.classList.toggle('poi-hover', results.length > 0);
   };
   osdCanvas.addEventListener('mousemove', onMouseMove);
-  const removeIntentListener = onProSidebarIntent(sidebar => {
-    if (sidebar === "drawing") {
+  const closeForDrawing = () => {
+    if (drawingOwnsMapPointer()) {
       osdCanvas.classList.remove('poi-hover');
       hideMarkerTooltip();
     }
-  });
+  };
+  const removeOwnershipListener = onDrawingMapOwnershipChange(closeForDrawing);
+  // Compatibility for an older Pro bundle that has no state-reporting hook.
+  const removeIntentListener = onProSidebarIntent(sidebar => { if (sidebar === 'drawing') closeForDrawing(); });
   canvasMoveCleanup = () => {
     osdCanvas.removeEventListener('mousemove', onMouseMove);
     osdCanvas.classList.remove('poi-hover');
     removeIntentListener();
+    removeOwnershipListener();
   };
 
   viewer.addHandler('canvas-click', canvasClickHandler);
