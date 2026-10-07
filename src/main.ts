@@ -531,7 +531,7 @@ startWhenReady(async () => {
       }
     },
     onSeedResolved: (seed: number, isDaily: boolean) => {
-      setDynamicUISeed(seed, isDaily);
+      setDynamicUISeed(seed, isDaily, true);
       updateMapSelectorText(app.getMap());
       lastSessionSeed = seed;
       lastSessionIsDaily = isDaily;
@@ -1268,12 +1268,11 @@ startWhenReady(async () => {
   });
 
   // Mouse tracker for displaying coordinates
-  const { copyCoordinates } = initMouseTracker({
+  initMouseTracker({
     osd: app.osd,
     osdElement: osdRootElement,
     tooltipElement: assertElementById("coordinate", HTMLElement),
   });
-  document.addEventListener("keydown", copyCoordinates, { capture: false });
 
   // Handle renderer changes
   rendererForm.addEventListener("change", (ev) => {

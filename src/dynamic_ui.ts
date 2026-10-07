@@ -38,6 +38,7 @@ let isBusy = false;
 let toolbarRequestId = 0;
 let generatePopoverInstance: any = null;
 let resolvedInputSeed: number | null = null;
+let seedInputEdited = false;
 let unsubscribeDailyIdentity: (() => void) | undefined;
 let loadingStripRevision = 0;
 let loadingStripHideTimer: ReturnType<typeof setTimeout> | undefined;
@@ -119,9 +120,13 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   seedInput.setAttribute("data-bs-title", i18next.t("dynamicMap.placeholder"));
   seedInput.setAttribute("data-bs-content", i18next.t("dynamicMap.seedTooltipCustom"));
   seedInput.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter") onGenerateClick();
+    if (ev.key === "Enter" && !ev.isComposing) {
+      ev.preventDefault();
+      void onGenerateClick();
+    }
   });
   seedInput.addEventListener("input", () => {
+    seedInputEdited = true;
     resolvedInputSeed = null;
     if (seedInput) {
       let digits = seedInput.value.replace(/\D/g, "");
@@ -358,20 +363,12 @@ function restoreBakedDailyRoute(): boolean {
 
 async function onDailySeedClick(): Promise<void> {
   if (isBusy || !dynamicOpts) return;
+  seedInputEdited = false;
   const isCurrent = beginToolbarRequest();
   try {
     const seed = await fetchDailySeed(true);
     if (!isCurrent()) return;
-    if (seedInput) {
-      seedInput.value = String(seed);
-      resolvedInputSeed = seed;
-      // Apply the colour immediately. onSeedResolved would do this after
-      // runDynamicMap finishes, but that's seconds later — by then the user
-      // has already seen the wrong colour.
-      seedInput.classList.add("seed-daily");
-      seedInput.classList.remove("seed-prev-daily");
-      updateSeedTooltip("daily");
-    }
+    setDynamicUISeed(seed, true, true);
     const currentSeed = getCompletedDynamicSeed();
     const routeChanged = restoreBakedDailyRoute();
 
@@ -391,6 +388,7 @@ async function onDailySeedClick(): Promise<void> {
 
 async function onPrevDailySeedClick(): Promise<void> {
   if (isBusy || !dynamicOpts) return;
+  seedInputEdited = false;
   const isCurrent = beginToolbarRequest();
   try {
     const seed = await fetchPreviousDailySeed(true);
@@ -399,13 +397,7 @@ async function onPrevDailySeedClick(): Promise<void> {
       console.warn("[DynamicUI] Previous daily seed unavailable.");
       return;
     }
-    if (seedInput) {
-      seedInput.value = String(seed);
-      resolvedInputSeed = seed;
-      seedInput.classList.add("seed-prev-daily");
-      seedInput.classList.remove("seed-daily");
-      updateSeedTooltip("previousDaily");
-    }
+    setDynamicUISeed(seed, true, true);
     const currentSeed = getCompletedDynamicSeed();
     const routeChanged = restoreBakedDailyRoute();
 
@@ -429,6 +421,7 @@ async function onGenerateClick(): Promise<void> {
   if (isBusy || !dynamicOpts || !seedInput) return;
   const rawVal = seedInput.value.trim();
   if (!rawVal) {
+    finishSeedEntry();
     await onDailySeedClick();
     return;
   }
@@ -439,6 +432,8 @@ async function onGenerateClick(): Promise<void> {
     return;
   }
 
+  setDynamicUISeed(seed, false);
+  finishSeedEntry();
   const currentSeed = getCompletedDynamicSeed();
   if (seed === currentSeed) return;
 
@@ -451,6 +446,12 @@ async function onGenerateClick(): Promise<void> {
     console.error("[DynamicUI] Generate failed:", e);
   } finally {
     if (isCurrent()) setDynamicUIBusy(false);
+  }
+}
+
+function finishSeedEntry(): void {
+  if (seedInput && document.activeElement === seedInput) {
+    dynamicOpts?.viewer.canvas?.focus({ preventScroll: true });
   }
 }
 
@@ -648,10 +649,14 @@ export function finishLoadingStrip(): void {
   });
 }
 
-export function setDynamicUISeed(seed: number, _isDaily: boolean): void {
+/** Resolution callbacks preserve text edited during loading. Explicit seed
+ * selections replace that draft; repeating its value preserves the caret. */
+export function setDynamicUISeed(seed: number, _isDaily: boolean, preserveDraft = false): void {
+  if (preserveDraft && seedInputEdited) return;
   if (seedInput) {
-    seedInput.value = "";
-    seedInput.value = String(seed);
+    const value = String(seed);
+    if (seedInput.value !== value) seedInput.value = value;
+    seedInputEdited = false;
     resolvedInputSeed = seed;
     refreshSeedIdentity();
     updateSeedTooltip("custom");

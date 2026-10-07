@@ -8,64 +8,80 @@ export type MouseTrackerOptions = {
   osdElement: HTMLElement;
 };
 
-// Function to parse coordinates
-function parseCoordinates(text: string) {
-  const match = text.match(/^\((-?\d+),\s*(-?\d+)\)/);
-  if (match) {
-    const x = parseInt(match[1], 10);
-    const y = parseInt(match[2], 10);
-    return JSON.stringify({ x: x, y: y });
-  }
-  return null;
-}
-
 export const initMouseTracker = ({ osd, tooltipElement, osdElement }: MouseTrackerOptions) => {
-  new OpenSeadragon.MouseTracker({
-    element: osdElement,
-    moveHandler: (event: any) => {
-      if (event.pointerType != 'mouse') return;
-
-      const webPoint = event.position;
-      const viewportPoint = osd.viewport.pointFromPixel(webPoint);
-      const px = Math.floor(viewportPoint.x);
-      const py = Math.floor(viewportPoint.y);
-      const pixelX = px.toString();
-      const pixelY = py.toString();
-      const chunkX = Math.floor(viewportPoint.x / CHUNK_SIZE).toString();
-      const chunkY = Math.floor(viewportPoint.y / CHUNK_SIZE).toString();
-      tooltipElement.children[0].innerHTML = `(${pixelX}, ${pixelY})<br>chunk: (${chunkX}, ${chunkY})`;
-      tooltipElement.style.left = `${event.originalEvent.pageX}px`;
-      tooltipElement.style.top = `${event.originalEvent.pageY}px`;
-    },
-    enterHandler: (event: any) => {
-      if (event.pointerType !== 'mouse') return;
-      tooltipElement.style.visibility = 'visible';
-    },
-    leaveHandler: (event: any) => {
-      if (event.pointerType !== 'mouse') return;
+  let pointer: Pick<PointerEvent, 'clientX' | 'clientY' | 'pageX' | 'pageY'> | undefined;
+  let coordinates: { x: number; y: number } | undefined;
+  const hide = () => {
+    pointer = undefined;
+    coordinates = undefined;
+    tooltipElement.style.visibility = 'hidden';
+  };
+  const update = () => {
+    if (!pointer || !osd.viewport) return;
+    const bounds = osdElement.getBoundingClientRect();
+    const x = pointer.clientX - bounds.left, y = pointer.clientY - bounds.top;
+    if (x < 0 || y < 0 || x >= bounds.width || y >= bounds.height) { hide(); return; }
+    const point = osd.viewport.pointFromPixel(new OpenSeadragon.Point(x, y), true);
+    if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+      coordinates = undefined;
       tooltipElement.style.visibility = 'hidden';
-    },
-  }).setTracking(true);
-
-  const copyCoordinates = async (event: KeyboardEvent) => {
-    if (event.target instanceof HTMLInputElement) return;
-    if (tooltipElement.style.visibility === 'hidden') return;
-    if (event.code !== 'KeyC' || (!event.ctrlKey && !event.metaKey)) return;
-
-    const coordinatesText = tooltipElement.innerText;
-    const parsedCoordinates = parseCoordinates(coordinatesText);
-    if (!parsedCoordinates) {
-      console.error('Could not parse coordinates');
       return;
     }
+    const px = Math.floor(point.x), py = Math.floor(point.y);
+    if (coordinates?.x !== px || coordinates?.y !== py) {
+      coordinates = { x: px, y: py };
+      tooltipElement.children[0].innerHTML = `(${px}, ${py})<br>chunk: (${Math.floor(px / CHUNK_SIZE)}, ${Math.floor(py / CHUNK_SIZE)})`;
+    }
+    tooltipElement.style.left = `${pointer.pageX}px`;
+    tooltipElement.style.top = `${pointer.pageY}px`;
+    tooltipElement.style.visibility = 'visible';
+  };
+  const move = (event: PointerEvent) => {
+    if (event.pointerType !== 'mouse') return;
+    pointer = { clientX: event.clientX, clientY: event.clientY, pageX: event.pageX, pageY: event.pageY };
+    update();
+  };
+  const leave = (event: PointerEvent) => { if (event.pointerType === 'mouse') hide(); };
+
+  const copyCoordinates = async (event: KeyboardEvent) => {
+    if (event.code !== 'KeyC' || (!event.ctrlKey && !event.metaKey)) return;
+    if (event.shiftKey || event.altKey || event.repeat) return;
+    const target = event.target instanceof Element ? event.target : document.activeElement;
+    if (target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]')) return;
+    if (window.getSelection()?.toString()) return;
+    if (event.defaultPrevented || !coordinates || tooltipElement.style.visibility === 'hidden') return;
+    const value = JSON.stringify(coordinates);
 
     try {
-      await navigator.clipboard.writeText(parsedCoordinates);
-      console.log('Coordinates copied to clipboard:', parsedCoordinates);
+      await navigator.clipboard.writeText(value);
+      console.log('Coordinates copied to clipboard:', value);
     } catch (err) {
       console.error('Could not copy coordinates:', err);
     }
   };
 
-  return { copyCoordinates };
+  // Listen on the persistent container, independently of OSD's pointer state
+  // and of overlays/canvas children replaced during a map change.
+  osdElement.addEventListener('pointermove', move, { passive: true, capture: true });
+  osdElement.addEventListener('pointerenter', move, { passive: true });
+  osdElement.addEventListener('pointerleave', leave);
+  osdElement.addEventListener('pointercancel', leave);
+  window.addEventListener('blur', hide);
+  osd.addHandler('viewport-change', update);
+  // Window's bubbling phase follows the drawing tools' document handlers.
+  window.addEventListener('keydown', copyCoordinates);
+  const dispose = () => {
+    osdElement.removeEventListener('pointermove', move, true);
+    osdElement.removeEventListener('pointerenter', move);
+    osdElement.removeEventListener('pointerleave', leave);
+    osdElement.removeEventListener('pointercancel', leave);
+    window.removeEventListener('blur', hide);
+    window.removeEventListener('keydown', copyCoordinates);
+    osd.removeHandler('viewport-change', update);
+    osd.removeHandler('before-destroy', dispose);
+    hide();
+  };
+  osd.addHandler('before-destroy', dispose);
+  hide();
+  return { copyCoordinates, dispose };
 };
