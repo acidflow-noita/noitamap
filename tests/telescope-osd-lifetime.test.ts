@@ -12,7 +12,7 @@ function barrier() {
 /** Run the bridge's actual orchestration without booting its browser UI imports. */
 function bridgeLifecycle(dependencies: Record<string, unknown>) {
   const source = createSourceFile('bridge.ts', readFileSync('src/telescope/telescope-osd-bridge.ts', 'utf8'), ScriptTarget.Latest);
-  const names = ['clearInstantTerrain', 'cancelPendingDynamicTerrain', 'renderGenerationResult'];
+  const names = ['clearInstantTerrain', 'cancelPendingDynamicTerrain', 'clearDynamicOverlays', 'renderGenerationResult'];
   const functions = source.statements.filter(statement =>
     isFunctionDeclaration(statement) && names.includes(statement.name?.text ?? ''));
   expect(functions).toHaveLength(names.length);
@@ -21,10 +21,10 @@ function bridgeLifecycle(dependencies: Record<string, unknown>) {
   return new Function(...Object.keys(dependencies), `
     let currentGenerationId = 0;
     let dynamicOverlayElements = [], dynamicBlobUrls = [], activeOrbTargets = [];
-    let activeMarkerData, markerTiledImage;
+    let activeMarkerData, markerTiledImage, suspendedMarkerContext;
     const dynamicTiledImages = new Set();
     ${js}
-    return { renderGenerationResult, cancelPendingDynamicTerrain };
+    return { renderGenerationResult, cancelPendingDynamicTerrain, clearDynamicOverlays };
   `)(...Object.values(dependencies));
 }
 
@@ -112,6 +112,9 @@ function presentationFixture() {
     buildMarkerData: vi.fn(async () => ({ originX: 0, originY: 0, bboxWidth: 100 })),
     addOrbOverlays: vi.fn(), installClickHandler: vi.fn(), rebuildHighValueOverlays: vi.fn(),
     createMarkerTileSource: vi.fn(() => ({})), installPortalAnimations: vi.fn(),
+    resetPOICardContext: vi.fn(), liveSceneBitmaps: { clear: vi.fn() },
+    resetPersistentBiomeBackgrounds: vi.fn(), clearBiomeBackgroundLayers: vi.fn(),
+    clearGLTerrain: vi.fn(), clearHighValueOverlays: vi.fn(),
     legacyMimicMarkerData: () => null,
     addBakedDZIsToOSD: vi.fn((_viewer: any, placements: any[], added: (item: any) => void) => {
       for (const placement of placements) added({ source: { tilesUrl: placement.dziUrl } });
@@ -215,5 +218,92 @@ describe('terrain before live POIs', () => {
     expect(f.buildMarkerData).toHaveBeenCalledOnce();
     expect(f.installClickHandler).toHaveBeenCalledOnce();
     expect(f.createMarkerTileSource).not.toHaveBeenCalled();
+  });
+});
+
+describe('marker progress belongs to its generation', () => {
+  async function paint(f: ReturnType<typeof presentationFixture>, index = 0) {
+    await vi.waitFor(() => expect(f.calls.length).toBeGreaterThan(index));
+    f.artwork.resolve(); await f.calls[index][9]; f.calls[index][6]();
+  }
+  function retire(f: ReturnType<typeof presentationFixture>, target: string) {
+    if (target === 'static') f.bridge.clearDynamicOverlays(f.viewer);
+    else f.bridge.cancelPendingDynamicTerrain();
+  }
+  const progress = (f: ReturnType<typeof presentationFixture>) => f.window.dispatchEvent.mock.calls
+    .map(([event]) => (event as CustomEvent).detail.percentage);
+
+  it.each(['reseed', 'static'].flatMap(target => ['success', 'failure'].map(outcome => ({ target, outcome }))))(
+    'ignores marker preparation $outcome after retirement to $target', async ({ target, outcome }) => {
+      const f = presentationFixture(), ready = barrier(), error = new Error('old sprite load failed');
+      f.buildMarkerData.mockImplementationOnce(async () => {
+        await ready.promise;
+        if (outcome === 'failure') throw error;
+        return { originX: 0, originY: 0, bboxWidth: 100 };
+      });
+      const pending = f.start();
+      await paint(f);
+      await vi.waitFor(() => expect(f.buildMarkerData).toHaveBeenCalledOnce());
+      expect(progress(f)).toEqual([0]);
+      retire(f, target); f.window.dispatchEvent.mockClear();
+      ready.resolve();
+      await expect(pending).resolves.toBeUndefined();
+      expect(f.window.dispatchEvent).not.toHaveBeenCalled();
+      expect(f.installClickHandler).not.toHaveBeenCalled();
+      expect(f.createMarkerTileSource).not.toHaveBeenCalled();
+      expect(f.installPortalAnimations).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['reseed', 'static'].flatMap(target => ['success', 'error', 'timeout'].map(callback => ({ target, callback }))))(
+    'ignores an old marker $callback callback and timeout after retirement to $target', async ({ target, callback }) => {
+      const f = presentationFixture(), attachments: any[] = [];
+      f.viewer.addTiledImage.mockImplementation(options => { attachments.push(options); });
+      const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        const pending = f.start(); await paint(f); await pending;
+        expect(progress(f)).toEqual([0, 50]);
+        const timeout = f.setTimeout.mock.calls.find(([, ms]) => ms === 3000)![0];
+        retire(f, target); f.window.dispatchEvent.mockClear();
+        if (callback === 'success') {
+          const stale = {}; attachments[0].success({ item: stale });
+          expect(f.viewer.world.removeItem).toHaveBeenCalledWith(stale);
+        } else if (callback === 'error') attachments[0].error(new Error('old OSD request failed'));
+        // A rejected late success also leaves the old fallback timer queued.
+        timeout(); timeout();
+        expect(f.window.dispatchEvent).not.toHaveBeenCalled();
+        expect(warning).not.toHaveBeenCalled();
+      } finally { warning.mockRestore(); }
+    },
+  );
+
+  it.each(['success', 'error', 'timeout'])('keeps the active generation\'s %s completion working exactly once', async callback => {
+    const f = presentationFixture(), attachments: any[] = [];
+    f.viewer.addTiledImage.mockImplementation(options => { attachments.push(options); });
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const pending = f.start(); await paint(f); await pending;
+      const timeout = f.setTimeout.mock.calls.find(([, ms]) => ms === 3000)![0];
+      if (callback === 'success') attachments[0].success({ item: {} });
+      else if (callback === 'error') attachments[0].error(new Error('current OSD request failed'));
+      timeout(); timeout();
+      expect(progress(f)).toEqual([0, 50, 100]);
+      expect(warning).toHaveBeenCalledTimes(callback === 'error' ? 1 : 0);
+      expect(f.module.clearInstantTerrain).toHaveBeenCalledOnce(); // initial setup only
+    } finally { warning.mockRestore(); }
+  });
+
+  it('does not let an older timer finish the replacement generation\'s progress', async () => {
+    const f = presentationFixture(), attachments: any[] = [];
+    f.viewer.addTiledImage.mockImplementation(options => { attachments.push(options); });
+    const old = f.start(); await paint(f); await old;
+    const oldTimeout = f.setTimeout.mock.calls.find(([, ms]) => ms === 3000)![0];
+    const current = f.start(); await paint(f, 1); await current;
+    expect(progress(f)).toEqual([0, 50, 0, 50]);
+    f.window.dispatchEvent.mockClear();
+    oldTimeout(); expect(f.window.dispatchEvent).not.toHaveBeenCalled();
+    attachments[1].success({ item: {} });
+    expect(progress(f)).toEqual([100]);
+    oldTimeout(); expect(progress(f)).toEqual([100]);
   });
 });

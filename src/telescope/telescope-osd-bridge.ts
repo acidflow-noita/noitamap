@@ -5346,6 +5346,7 @@ export async function renderGenerationResult(
     // testing and is needed even when sprites are baked into the DZI pixels.
     window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 0 } }));
     const markerOutcome = await (markerDataReady ?? prepareMarkers());
+    if (currentGenerationId !== generationId) return;
     if ('error' in markerOutcome) throw markerOutcome.error;
     const markerData = markerOutcome.value;
     window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 50 } }));
@@ -5359,7 +5360,7 @@ export async function renderGenerationResult(
 
     let itemsProgressDone = false;
     const emitItemsDone = () => {
-      if (itemsProgressDone) return;
+      if (itemsProgressDone || currentGenerationId !== generationId) return;
       itemsProgressDone = true;
       window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 100 } }));
     };
@@ -5392,6 +5393,7 @@ export async function renderGenerationResult(
           emitItemsDone();
         },
         error: (err: any) => {
+          if (currentGenerationId !== generationId) return;
           console.warn('[OSD Bridge] Failed to add marker tiled image:', err);
           emitItemsDone();
         },
