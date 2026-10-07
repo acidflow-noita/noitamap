@@ -4611,7 +4611,9 @@
     "switchProviderConfirm": "Kirjautuminen {{next}}-tilillä kirjaa sinut ulos {{current}}-tililtä.\n\nPro-käyttöoikeus määräytyy sen jälkeen {{next}}-tilauksesi mukaan.\n\nHaluatko vaihtaa {{next}}-tiliin?",
     "loginWithTwitch": "Kirjaudu Twitchilla",
     "subscribeTwitch": "Tilaa Twitchissä",
-    "or": "tai"
+    "or": "tai",
+    "workspaceSaveFailed": "Työtilan tallentaminen epäonnistui. Kirjautuminen peruttiin. Yritä uudelleen.",
+    "workspaceRestoreFailed": "Piirustustilan palauttaminen epäonnistui. Lataa sivu uudelleen ja yritä uudestaan."
   },
   "loading": {
     "maps": "Ladataan karttoja...",

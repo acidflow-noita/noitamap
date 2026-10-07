@@ -4611,7 +4611,9 @@
     "switchProviderConfirm": "En vous connectant avec {{next}}, vous serez déconnecté de {{current}}.\n\nL'accès Pro dépendra alors de votre abonnement {{next}}.\n\nSouhaitez-vous passer à {{next}} ?",
     "loginWithTwitch": "Se connecter avec Twitch",
     "subscribeTwitch": "S’abonner sur Twitch",
-    "or": "ou"
+    "or": "ou",
+    "workspaceSaveFailed": "Impossible d’enregistrer votre espace de travail. La connexion a été annulée. Veuillez réessayer.",
+    "workspaceRestoreFailed": "Impossible de restaurer votre espace de dessin. Rechargez la page pour réessayer."
   },
   "loading": {
     "maps": "Chargement des cartes...",

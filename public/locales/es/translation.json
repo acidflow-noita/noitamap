@@ -4611,7 +4611,9 @@
     "switchProviderConfirm": "Al iniciar sesión con {{next}}, se cerrará tu sesión de {{current}}.\n\nEl acceso Pro dependerá entonces de tu suscripción de {{next}}.\n\n¿Quieres iniciar sesión con {{next}}?",
     "loginWithTwitch": "Iniciar sesion con Twitch",
     "subscribeTwitch": "Suscribirse en Twitch",
-    "or": "o"
+    "or": "o",
+    "workspaceSaveFailed": "No se pudo guardar tu espacio de trabajo. Se canceló el inicio de sesión. Inténtalo de nuevo.",
+    "workspaceRestoreFailed": "No se pudo restaurar tu espacio de dibujo. Recarga la página para intentarlo de nuevo."
   },
   "loading": {
     "maps": "Cargando mapas...",

@@ -4611,7 +4611,9 @@
     "switchProviderConfirm": "{{next}}でログインすると、{{current}}からログアウトされます。\n\nその後、Pro へのアクセスは {{next}} のサブスクリプションによって決まります。\n\n{{next}}に切り替えますか?",
     "loginWithTwitch": "Twitchでログイン",
     "subscribeTwitch": "Twitchでサブスク登録",
-    "or": "または"
+    "or": "または",
+    "workspaceSaveFailed": "作業状態を保存できませんでした。ログインを中止しました。もう一度お試しください。",
+    "workspaceRestoreFailed": "描画の作業状態を復元できませんでした。ページを再読み込みしてお試しください。"
   },
   "loading": {
     "maps": "マップを読み込み中...",

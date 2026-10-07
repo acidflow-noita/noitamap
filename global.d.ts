@@ -50,6 +50,8 @@ declare global {
     isProFeatureReady?: (feature: NoitamapProFeature) => boolean;
     /** Pro owns POI input only while its open menu edits or displays a drawing. */
     setDrawingMapOwnership?: (owned: boolean) => void;
+    /** Installed by drawing after initialization; hydrates a saved login return. */
+    restoreDrawingLoginState?: () => Promise<void>;
     /** Optional asset origin for hosted-module preview/testing. */
     proAssetBaseUrl?: string;
     /** Initialized i18next instance (shared so the pro bundle doesn't need its own) */

@@ -4611,7 +4611,9 @@
     "switchProviderConfirm": "Om du loggar in med {{next}} loggas du ut från {{current}}.\n\nPro-åtkomsten baseras därefter på din {{next}}-prenumeration.\n\nVill du byta till {{next}}?",
     "loginWithTwitch": "Logga in med Twitch",
     "subscribeTwitch": "Prenumerera på Twitch",
-    "or": "eller"
+    "or": "eller",
+    "workspaceSaveFailed": "Arbetsläget kunde inte sparas. Inloggningen avbröts. Försök igen.",
+    "workspaceRestoreFailed": "Ritningsarbetsytan kunde inte återställas. Ladda om sidan och försök igen."
   },
   "loading": {
     "maps": "Laddar kartor...",

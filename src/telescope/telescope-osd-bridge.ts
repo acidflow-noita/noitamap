@@ -1,6 +1,7 @@
 import { clearPortalAnimations, installPortalAnimations } from "../portals";
 import { canOpenPOIFromCanvas, drawingOwnsMapPointer, onDrawingMapOwnershipChange } from "../drawing/poi-interaction";
 import { onProSidebarIntent } from "../pro-sidebar-intent";
+import { isDropOverlayActive } from '../drop-overlay';
 import { mountPOICardPlacement, type CardAnchor } from './poi-card-placement';
 import { POICardLifecycle, type POICardOwner, type POICardRequest } from './poi-card-lifecycle';
 import Flatbush from "flatbush";
@@ -2970,7 +2971,7 @@ function cleanupPopovers(el: HTMLElement): void {
 }
 
 function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.begin()): void {
-  if (!request.isCurrent() || drawingOwnsMapPointer()) return;
+  if (!request.isCurrent() || drawingOwnsMapPointer() || isDropOverlayActive()) return;
   discardMarkerCard();
 
   tooltipEl = document.createElement('div');
@@ -4740,8 +4741,9 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
     }
   };
   const removeOwnershipListener = onDrawingMapOwnershipChange(closeForDrawing);
-  // Compatibility for an older Pro bundle that has no state-reporting hook.
-  const removeIntentListener = onProSidebarIntent(sidebar => { if (sidebar === 'drawing') closeForDrawing(); });
+  // Opening the menu dismisses the current card once so its drop hint is
+  // unobstructed. Empty menus still allow subsequent POI clicks.
+  const removeIntentListener = onProSidebarIntent(sidebar => { if (sidebar === 'drawing') hideMarkerTooltip(); });
   canvasMoveCleanup = () => {
     osdCanvas.removeEventListener('mousemove', onMouseMove);
     osdCanvas.classList.remove('poi-hover');
@@ -4859,7 +4861,7 @@ function showOrbTooltip(
   anchor: { x: number; y: number },
   request: POICardRequest = poiCards.begin()
 ): void {
-  if (!request.isCurrent() || drawingOwnsMapPointer()) return;
+  if (!request.isCurrent() || drawingOwnsMapPointer() || isDropOverlayActive()) return;
   discardMarkerCard();
 
   tooltipEl = document.createElement('div');

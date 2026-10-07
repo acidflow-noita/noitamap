@@ -4,6 +4,7 @@
  */
 
 import i18next from "../i18n";
+import { LoginReturn } from './login-return';
 
 export interface AuthState {
   authenticated: boolean;
@@ -51,6 +52,12 @@ class AuthService {
   };
 
   private listeners: Set<(state: AuthState) => void> = new Set();
+  private loginReturn = new LoginReturn();
+  private loginPending = false;
+
+  registerLoginPreparation = this.loginReturn.register.bind(this.loginReturn);
+  getLoginReturnState = this.loginReturn.get.bind(this.loginReturn);
+  completeLoginReturnState = this.loginReturn.complete.bind(this.loginReturn);
 
   /**
    * Resolves once `init()` has finished (success or failure). Code that needs
@@ -63,6 +70,7 @@ class AuthService {
 
   constructor() {
     this.ready = new Promise<AuthState>((resolve) => { this.resolveReady = resolve; });
+    window.addEventListener('pageshow', event => { if (event.persisted) this.loginReturn.discardUnreturned(); });
   }
 
   /**
@@ -103,6 +111,8 @@ class AuthService {
       }
       shouldUpdateUrl = true;
     }
+
+    if (this.loginReturn.arrive(cleanUrl)) shouldUpdateUrl = true;
 
     if (shouldUpdateUrl) {
       window.history.replaceState({}, "", cleanUrl.toString());
@@ -238,8 +248,7 @@ class AuthService {
    */
   login(): void {
     if (!this.confirmProviderSwitch("patreon")) return;
-    const redirectUrl = encodeURIComponent(window.location.href);
-    window.location.href = `${AUTH_WORKER_URL}/auth/login?redirect=${redirectUrl}`;
+    void this.redirectToLogin('patreon');
   }
 
   /**
@@ -247,8 +256,23 @@ class AuthService {
    */
   loginTwitch(): void {
     if (!this.confirmProviderSwitch("twitch")) return;
-    const redirectUrl = encodeURIComponent(window.location.href);
-    window.location.href = `${AUTH_WORKER_URL}/auth/twitch/login?redirect=${redirectUrl}`;
+    void this.redirectToLogin('twitch');
+  }
+
+  private async redirectToLogin(provider: 'patreon' | 'twitch'): Promise<void> {
+    if (this.loginPending) return;
+    this.loginPending = true;
+    try {
+      if (this.loginReturn.get('drawing')) throw new Error('The previous drawing workspace is still being restored');
+      const returnUrl = await this.loginReturn.prepare();
+      const path = provider === 'twitch' ? '/auth/twitch/login' : '/auth/login';
+      window.location.href = `${AUTH_WORKER_URL}${path}?redirect=${encodeURIComponent(returnUrl)}`;
+    } catch (error) {
+      console.error('[Auth] Could not preserve workspace before sign-in:', error);
+      window.alert(i18next.t('auth.workspaceSaveFailed', 'Could not save your workspace. Sign-in was cancelled. Please try again.'));
+    } finally {
+      this.loginPending = false;
+    }
   }
 
   /**

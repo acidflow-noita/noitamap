@@ -449,6 +449,37 @@ startWhenReady(async () => {
   }
   new AuthUI(authContainer);
 
+  // The URL is intentionally rounded for sharing. Keep the actual camera and
+  // overlay switches when leaving this tab for authentication.
+  authService.registerLoginPreparation('map', () => {
+    const center = app.osd.viewport.getCenter(true);
+    const view = { x: center.x, y: center.y, zoom: app.osd.viewport.getZoom(true) };
+    const overlays = getEnabledOverlays();
+    updateURL({ map: app.getMap(), pos: view });
+    updateURLWithOverlays(overlays);
+    updateURLWithSidebar(!!(document.querySelector('.drawing-sidebar.open')
+      || document.querySelector<HTMLInputElement>('#drawToggleBtn')?.checked));
+    return { version: 1, map: app.getMap(), view, overlays, canvas: parseURL().canvas ?? 'map' };
+  });
+  const returnedMap = authService.getLoginReturnState('map');
+  if (returnedMap) {
+    const saved = returnedMap.data as { version?: number; map?: string; view?: { x: number; y: number; zoom: number }; overlays?: string[]; canvas?: string };
+    if (saved?.version === 1 && saved.map === app.getMap() && saved.view
+      && [saved.view.x, saved.view.y, saved.view.zoom].every(Number.isFinite) && saved.view.zoom > 0) {
+      app.osd.setZoomPos(saved.view);
+      if (Array.isArray(saved.overlays)) {
+        document.querySelectorAll<HTMLInputElement>('input.overlayToggler').forEach(toggler => {
+          const key = toggler.dataset.overlayKey;
+          if (!key || toggler.disabled) return;
+          toggler.checked = saved.overlays!.includes(key);
+          showOverlay(key as any, toggler.checked);
+        });
+      }
+      if (saved.canvas === 'map' || saved.canvas === 'black' || saved.canvas === 'white') app.setBackground(saved.canvas);
+    }
+    authService.completeLoginReturnState('map', returnedMap.id);
+  }
+
   navbarBrandElement.addEventListener("click", (ev) => {
     ev.preventDefault();
     app.home();
@@ -873,6 +904,25 @@ startWhenReady(async () => {
   // Advertise lazy-feature support; cached older Pro bundles remain compatible.
   proHooks.proFeatureAPI = 1;
   const loadProBundle = createProLoader(proHooks);
+  const loadDrawing = async (): Promise<boolean> => {
+    if (!await loadProBundle('drawing')) {
+      if (authService.getLoginReturnState('drawing')) {
+        window.alert(i18next.t('auth.workspaceRestoreFailed', 'Could not restore your drawing workspace. Reload to try again.'));
+      }
+      return false;
+    }
+    if (authService.getLoginReturnState('drawing')) {
+      try {
+        if (!proHooks.restoreDrawingLoginState) throw new Error('Drawing bundle cannot restore the login workspace');
+        await proHooks.restoreDrawingLoginState();
+      } catch (error) {
+        console.error('[Auth] Drawing workspace restoration failed:', error);
+        window.alert(i18next.t('auth.workspaceRestoreFailed', 'Could not restore your drawing workspace. Reload to try again.'));
+        return false;
+      }
+    }
+    return true;
+  };
 
   // Expose a pro-load requester so non-pro search components (AP/LC buttons)
   // can trigger pro loading after an auth check.
@@ -881,7 +931,7 @@ startWhenReady(async () => {
   // Initialize Drawing UI (Brush Button)
   // This handles the "Get Pro" modal for unauthed users and loads the pro bundle for subscribers
   const drawingUI = new DrawingUI(authContainer, {
-    onEnableDrawing: () => loadProBundle("drawing"),
+    onEnableDrawing: loadDrawing,
   });
 
   // Seed Report toggle button — sits next to the drawing toggle.
@@ -902,7 +952,11 @@ startWhenReady(async () => {
   setupDropOverlay(i18next, () => loadProBundle("drawing"));
 
   // Dynamically load the pro bundle when URL requests sidebar (auth check handled inside pro bundle)
-  if (!urlState.seedReportOpen) {
+  const drawingReturn = authService.getLoginReturnState('drawing');
+  if (drawingReturn) {
+    if ((drawingReturn.data as { sidebarOpen?: boolean })?.sidebarOpen) drawingUI.openFromURL();
+    else void loadDrawing();
+  } else if (!urlState.seedReportOpen) {
     if (urlState.sidebarOpen) drawingUI.openFromURL();
     else if (isDev && localStorage.getItem("noitamap-dev-drawing") === "1") loadProBundle("drawing");
   }

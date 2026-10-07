@@ -1,3 +1,9 @@
+/** A real drag/paste operation takes priority over map cards; the introductory
+ * hint alone must not disable ordinary POI clicks. */
+export function isDropOverlayActive(): boolean {
+  return !!document.querySelector('.drop-overlay.visible');
+}
+
 export function setupDropOverlay(i18next: any, loadProCallback: () => Promise<boolean>) {
   const dropOverlay = document.createElement("div");
   dropOverlay.className = "drop-overlay";
@@ -25,6 +31,21 @@ export function setupDropOverlay(i18next: any, loadProCallback: () => Promise<bo
     </div>
   `;
   document.body.appendChild(dropOverlay);
+
+  // Pro also shows this shared overlay during paste/import processing. Watch
+  // the actual overlay state so every entry point gets the same priority.
+  let wasActive = false;
+  const priority = new MutationObserver(() => {
+    const active = dropOverlay.classList.contains('visible');
+    if (active && !wasActive) window.__noitamap?.closePOICard?.();
+    wasActive = active;
+    // Stop the introductory fade animation when an actual file operation
+    // needs the zones to remain visible.
+    if (active && dropOverlay.classList.contains('hint')) {
+      dropOverlay.classList.remove('hint');
+    }
+  });
+  priority.observe(dropOverlay, { attributes: true, attributeFilter: ['class'] });
 
   const importZone = dropOverlay.querySelector(".drop-zone-import") as HTMLElement;
   const vectorizeZone = dropOverlay.querySelector(".drop-zone-vectorize") as HTMLElement;

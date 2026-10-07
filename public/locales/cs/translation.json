@@ -4611,7 +4611,9 @@
     "switchProviderConfirm": "Přihlášením přes {{next}} budete odhlášeni z {{current}}.\n\nPřístup k Pro pak bude záviset na vašem předplatném {{next}}.\n\nChcete se přihlásit přes {{next}}?",
     "loginWithTwitch": "Prihlasit se pres Twitch",
     "subscribeTwitch": "Předplatit na Twitchi",
-    "or": "nebo"
+    "or": "nebo",
+    "workspaceSaveFailed": "Pracovní stav se nepodařilo uložit. Přihlášení bylo zrušeno. Zkuste to znovu.",
+    "workspaceRestoreFailed": "Kresbu a pracovní stav se nepodařilo obnovit. Načtěte stránku znovu."
   },
   "loading": {
     "maps": "Načítání map...",

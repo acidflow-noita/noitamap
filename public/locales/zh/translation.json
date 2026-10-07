@@ -4611,7 +4611,9 @@
     "switchProviderConfirm": "通过 {{next}} 登录后，您将退出 {{current}}。\n\n之后，Pro 权限将取决于您的 {{next}} 订阅。\n\n要切换到 {{next}} 吗？",
     "loginWithTwitch": "通过 Twitch 登录",
     "subscribeTwitch": "在 Twitch 订阅",
-    "or": "或"
+    "or": "或",
+    "workspaceSaveFailed": "无法保存当前工作状态。登录已取消，请重试。",
+    "workspaceRestoreFailed": "无法恢复绘图工作状态。请刷新页面重试。"
   },
   "loading": {
     "maps": "加载地图中...",

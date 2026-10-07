@@ -4611,7 +4611,9 @@
     "switchProviderConfirm": "Accedendo con {{next}} verrai disconnesso da {{current}}.\n\nL'accesso Pro dipenderà quindi dal tuo abbonamento {{next}}.\n\nDesideri passare a {{next}}?",
     "loginWithTwitch": "Accedi con Twitch",
     "subscribeTwitch": "Abbonati su Twitch",
-    "or": "oppure"
+    "or": "oppure",
+    "workspaceSaveFailed": "Impossibile salvare lo stato di lavoro. L’accesso è stato annullato. Riprova.",
+    "workspaceRestoreFailed": "Impossibile ripristinare lo spazio di disegno. Ricarica la pagina per riprovare."
   },
   "loading": {
     "maps": "Caricamento mappe...",

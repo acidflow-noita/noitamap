@@ -4611,7 +4611,9 @@
     "switchProviderConfirm": "Logując się przez {{next}}, wylogujesz się z {{current}}.\n\nDostęp do Pro będzie wtedy zależał od Twojej subskrypcji {{next}}.\n\nCzy chcesz się przełączyć na {{next}}?",
     "loginWithTwitch": "Zaloguj sie przez Twitch",
     "subscribeTwitch": "Subskrybuj na Twitchu",
-    "or": "lub"
+    "or": "lub",
+    "workspaceSaveFailed": "Nie udało się zapisać obszaru roboczego. Logowanie zostało anulowane. Spróbuj ponownie.",
+    "workspaceRestoreFailed": "Nie udało się przywrócić obszaru rysowania. Odśwież stronę, aby spróbować ponownie."
   },
   "loading": {
     "maps": "Ładowanie map...",

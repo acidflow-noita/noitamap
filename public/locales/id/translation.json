@@ -4611,7 +4611,9 @@
     "switchProviderConfirm": "Masuk dengan {{next}} akan mengeluarkan Anda dari {{current}}.\n\nAkses Pro kemudian akan bergantung pada langganan {{next}} Anda.\n\nApakah Anda ingin beralih ke {{next}}?",
     "loginWithTwitch": "Masuk dengan Twitch",
     "subscribeTwitch": "Berlangganan di Twitch",
-    "or": "atau"
+    "or": "atau",
+    "workspaceSaveFailed": "Tidak dapat menyimpan ruang kerja. Proses masuk dibatalkan. Silakan coba lagi.",
+    "workspaceRestoreFailed": "Tidak dapat memulihkan ruang gambar. Muat ulang halaman untuk mencoba lagi."
   },
   "loading": {
     "maps": "Memuat peta...",

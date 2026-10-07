@@ -5164,7 +5164,9 @@
     "switchProviderConfirm": "Signing in with {{next}} will sign you out of {{current}}.\n\nPro access will then be based on your {{next}} subscription.\n\nSwitch to {{next}}?",
     "loginWithTwitch": "Sign in with Twitch",
     "subscribeTwitch": "Subscribe on Twitch",
-    "or": "or"
+    "or": "or",
+    "workspaceSaveFailed": "Could not save your workspace. Sign-in was cancelled. Please try again.",
+    "workspaceRestoreFailed": "Could not restore your drawing workspace. Reload to try again."
   },
   "loading": {
     "maps": "Loading maps...",

@@ -4611,7 +4611,9 @@
     "switchProviderConfirm": "Ao entrar com {{next}}, você será desconectado de {{current}}.\n\nO acesso Pro passará a depender da sua assinatura do {{next}}.\n\nDeseja entrar com {{next}}?",
     "loginWithTwitch": "Entrar com Twitch",
     "subscribeTwitch": "Assinar no Twitch",
-    "or": "ou"
+    "or": "ou",
+    "workspaceSaveFailed": "Não foi possível salvar seu espaço de trabalho. O login foi cancelado. Tente novamente.",
+    "workspaceRestoreFailed": "Não foi possível restaurar seu espaço de desenho. Recarregue a página para tentar novamente."
   },
   "loading": {
     "maps": "Carregando mapas...",

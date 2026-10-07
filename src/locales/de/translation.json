@@ -4611,7 +4611,9 @@
     "switchProviderConfirm": "Wenn Sie sich mit {{next}} anmelden, werden Sie von {{current}} abgemeldet.\n\nDer Pro-Zugriff richtet sich dann nach Ihrem {{next}}-Abonnement.\n\nMöchten Sie zu {{next}} wechseln?",
     "loginWithTwitch": "Mit Twitch anmelden",
     "subscribeTwitch": "Auf Twitch abonnieren",
-    "or": "oder"
+    "or": "oder",
+    "workspaceSaveFailed": "Der aktuelle Arbeitsstand konnte nicht gespeichert werden. Die Anmeldung wurde abgebrochen. Bitte versuche es erneut.",
+    "workspaceRestoreFailed": "Der Zeichnungsbereich konnte nicht wiederhergestellt werden. Lade die Seite neu und versuche es erneut."
   },
   "loading": {
     "maps": "Karten werden geladen...",

@@ -1,3 +1,5 @@
+import { isDropOverlayActive } from '../drop-overlay';
+
 let reportedOwnership: boolean | undefined;
 const listeners = new Set<(owned: boolean) => void>();
 
@@ -34,6 +36,7 @@ export function canOpenPOIFromCanvas(event: {
   return (
     event.quick === true &&
     !event.preventDefaultAction &&
+    !isDropOverlayActive() &&
     !drawingOwnsMapPointer()
   );
 }
