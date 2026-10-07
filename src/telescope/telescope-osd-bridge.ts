@@ -4321,34 +4321,48 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
   const spawnDetails = getPOISpawnDetails(poi);
   if (spawnDetails) {
     const spawnsDiv = document.createElement('div');
-    spawnsDiv.style.cssText = 'margin-top:0.5em;border-top:0.065em solid var(--border-strong);padding-top:0.3em';
+    spawnsDiv.className = 'poi-spawn-section';
     const heading = document.createElement('div');
-    heading.style.cssText = 'font-size:1em;color:var(--text-muted);margin-bottom:0.2em';
+    heading.className = 'poi-spawn-heading';
     heading.textContent = `${spawnDetails.heading}:`;
     spawnsDiv.appendChild(heading);
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center';
-    for (const [entity, count] of spawnDetails.outcomes) {
-      const name = getPOIDisplayName({ type: 'entity', entity });
-      const box = document.createElement('div');
-      box.style.cssText =
-        'display:flex;align-items:center;gap:0.2em;background:var(--surface-2);border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid var(--border-strong)';
+    const entries = spawnDetails.outcomes.map(([entity, count]) => {
       const key = `enemy:${entity}`;
-      const size = getSpriteNativeSize(key);
+      return { key, count, name: getPOIDisplayName({ type: 'entity', entity }), size: getSpriteNativeSize(key) };
+    });
+    // All current offspring fit 48px. A larger future sprite expands every
+    // slot together, preserving native pixels instead of clipping/shrinking it.
+    const iconSize = Math.max(48, ...entries.map(({ size }) => size ? Math.max(size.w, size.h) : 0));
+    const list = document.createElement('ul');
+    list.className = 'poi-spawn-list';
+    list.setAttribute('role', 'list');
+    list.style.setProperty('--poi-spawn-icon-size', `${iconSize}px`);
+    for (const { key, count, name, size } of entries) {
+      const row = document.createElement('li');
+      row.className = 'poi-spawn-row';
+      const icon = document.createElement('span');
+      icon.className = 'poi-spawn-icon';
+      icon.setAttribute('aria-hidden', 'true');
       const canvas = size && drawSpriteToCanvas(key, size.w, size.h);
       if (canvas && size) {
-        canvas.style.width = `${size.w * 2}px`;
-        canvas.style.height = `${size.h * 2}px`;
+        // Keep the canvas at native resolution and let its pixelated CSS
+        // enlarge by a whole number, capped at 3x for tiny creatures.
+        const scale = Math.min(3, Math.floor(iconSize / Math.max(size.w, size.h)));
+        canvas.style.width = `${size.w * scale}px`;
+        canvas.style.height = `${size.h * scale}px`;
         canvas.title = name;
-        box.appendChild(canvas);
+        icon.appendChild(canvas);
       }
+      const amount = document.createElement('span');
+      amount.className = 'poi-spawn-count';
+      amount.textContent = `${count}× `;
       const label = document.createElement('span');
-      label.style.cssText = 'font-size:0.8em;color:var(--text-muted)';
-      label.textContent = `${count}× ${name}`;
-      box.appendChild(label);
-      row.appendChild(box);
+      label.className = 'poi-spawn-name';
+      label.textContent = name;
+      row.append(icon, amount, label);
+      list.appendChild(row);
     }
-    spawnsDiv.appendChild(row);
+    spawnsDiv.appendChild(list);
     if (spawnDetails.outcomes.length) tooltipEl.appendChild(spawnsDiv);
     tooltipEl.appendChild(poi.type === 'entity'
       ? buildExtendedSection('creature', canonicalEntityId(poi.entity))

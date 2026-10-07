@@ -50,6 +50,44 @@
 .poi-card-stat-label { color: var(--text-muted); overflow-wrap: anywhere; }
 .poi-card-stat-value { min-width: 0; color: var(--text); }
 
+.poi-spawn-section {
+  margin-top: .5em;
+  border-top: 1px solid var(--border-strong);
+  padding-top: .3em;
+}
+.poi-spawn-heading { color: var(--text-muted); margin-bottom: .25em; }
+.poi-spawn-list {
+  display: grid;
+  gap: .25em;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.poi-spawn-row {
+  display: grid;
+  grid-template-columns: var(--poi-spawn-icon-size) 3ch minmax(0, 1fr);
+  gap: .5em;
+  align-items: center;
+  padding: .25em .5em;
+  border: 1px solid var(--border-strong);
+  border-radius: .2em;
+  background: var(--surface-2);
+}
+.poi-spawn-icon {
+  display: grid;
+  place-items: center;
+  width: var(--poi-spawn-icon-size);
+  height: var(--poi-spawn-icon-size);
+}
+.poi-spawn-icon canvas { display: block; image-rendering: pixelated; }
+.poi-spawn-count {
+  color: var(--text-muted);
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.poi-spawn-name { min-width: 0; overflow-wrap: anywhere; }
+
 /* Keep each label beside its value. Balanced newspaper columns moved rows
    between columns as asynchronous sections and translated text changed height. */
 .marker-tooltip .extended-info-group--cols { columns: auto; }
