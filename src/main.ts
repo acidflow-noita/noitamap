@@ -8,7 +8,7 @@ import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
 import { setupDropOverlay } from "./drop-overlay";
 import { createProLoader } from "./pro-loader";
 import { negotiateTabHandoff } from "./tab-coordinator";
-import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed, showLoadingStrip, hideLoadingStrip, finishLoadingStrip } from "./dynamic_ui";
+import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed, setDynamicUIBusy, showLoadingStrip, hideLoadingStrip, finishLoadingStrip } from "./dynamic_ui";
 import {
   runDynamicMapFromURL,
   runDynamicMap,
@@ -589,7 +589,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   let reportMapLoading = false;
   let poiContextReady = false;
   let initialTargetSeedStarted = false;
-  app.osd.addHandler('map-change-start', () => {
+  app.osd.addHandler('map-change-start', (event: { mapName?: string }) => {
+    if (event.mapName !== 'dynamic-main-branch') setDynamicUIBusy(false);
     initialTargetPoiId = undefined;
     poiContextReady = false;
     reportHighlights?.clear(false);
@@ -597,6 +598,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   const dynamicOpts = {
     viewer: app.osd,
+    onRequestStateChange: setDynamicUIBusy,
     onMapReplacementStart: () => {
       poiContextReady = false;
       // The original URL target belongs to the first requested generation only.

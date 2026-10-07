@@ -8,7 +8,8 @@ const dynamicMap = vi.hoisted(() => ({
 }));
 vi.mock('i18next', () => ({ default: { t: (key: string) => key, on: vi.fn() } }));
 vi.mock('../src/data_sources/overlays', () => ({ isValidOverlayKey: () => false }));
-vi.mock('../src/dynamic-map', () => ({ getCurrentDynamicSeed: dynamicMap.getCurrentSeed, runDynamicMap: dynamicMap.run }));
+vi.mock('../src/dynamic-map', () => ({ getCurrentDynamicSeed: dynamicMap.getCurrentSeed,
+  getCompletedDynamicSeed: dynamicMap.getCurrentSeed, runDynamicMap: dynamicMap.run }));
 vi.mock('../src/spoiler-free', () => ({ isSpoilerFree: () => false }));
 vi.mock('../src/overflow-menu', () => ({ updateOverflowMenu: vi.fn() }));
 

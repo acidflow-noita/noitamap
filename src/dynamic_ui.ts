@@ -8,7 +8,7 @@
 import i18next from "i18next";
 import { fetchDailySeed, fetchPreviousDailySeed, getCachedDailySeedIdentity, subscribeDailySeedIdentity } from "./data_sources/daily_seed";
 import { updateURLWithSeed } from "./data_sources/url";
-import { getCurrentDynamicSeed, runDynamicMap } from "./dynamic-map";
+import { getCurrentDynamicSeed, getCompletedDynamicSeed, runDynamicMap } from "./dynamic-map";
 import type { DynamicMapOptions } from "./dynamic-map";
 import { isSpoilerFree } from "./spoiler-free";
 import { updateOverflowMenu } from "./overflow-menu";
@@ -35,6 +35,7 @@ let dailySeedBtn: HTMLButtonElement | null = null;
 let prevDailySeedBtn: HTMLButtonElement | null = null;
 let dynamicOpts: DynamicMapOptions | null = null;
 let isBusy = false;
+let toolbarRequestId = 0;
 let generatePopoverInstance: any = null;
 let resolvedInputSeed: number | null = null;
 let unsubscribeDailyIdentity: (() => void) | undefined;
@@ -287,6 +288,7 @@ export function roundVisibleOverlayGroupEdges(): void {
 export function updateDynamicUIVisibility(currentMap: string): void {
   if (!toolbarItems.length) return;
   const isDynamic = currentMap === DYNAMIC_MAP_NAME;
+  if (!isDynamic) setDynamicUIBusy(false);
   toolbarItems.forEach(el => { el.style.display = isDynamic ? "" : "none"; });
 
   // Toggle any dynamic-map-only controls outside the toolbar (e.g. light-mode switch in navbar)
@@ -356,9 +358,10 @@ function restoreBakedDailyRoute(): boolean {
 
 async function onDailySeedClick(): Promise<void> {
   if (isBusy || !dynamicOpts) return;
-  setBusy(true);
+  const isCurrent = beginToolbarRequest();
   try {
     const seed = await fetchDailySeed(true);
+    if (!isCurrent()) return;
     if (seedInput) {
       seedInput.value = String(seed);
       resolvedInputSeed = seed;
@@ -369,7 +372,7 @@ async function onDailySeedClick(): Promise<void> {
       seedInput.classList.remove("seed-prev-daily");
       updateSeedTooltip("daily");
     }
-    const currentSeed = getCurrentDynamicSeed();
+    const currentSeed = getCompletedDynamicSeed();
     const routeChanged = restoreBakedDailyRoute();
 
     if (seed !== currentSeed || routeChanged) {
@@ -382,18 +385,16 @@ async function onDailySeedClick(): Promise<void> {
   } catch (e) {
     console.error("[DynamicUI] Daily seed fetch failed:", e);
   } finally {
-    setTimeout(() => {
-      setBusy(false);
-      updateGenerateButtonState();
-    }, 300);
+    if (isCurrent()) setDynamicUIBusy(false);
   }
 }
 
 async function onPrevDailySeedClick(): Promise<void> {
   if (isBusy || !dynamicOpts) return;
-  setBusy(true);
+  const isCurrent = beginToolbarRequest();
   try {
     const seed = await fetchPreviousDailySeed(true);
+    if (!isCurrent()) return;
     if (seed === null) {
       console.warn("[DynamicUI] Previous daily seed unavailable.");
       return;
@@ -405,7 +406,7 @@ async function onPrevDailySeedClick(): Promise<void> {
       seedInput.classList.remove("seed-daily");
       updateSeedTooltip("previousDaily");
     }
-    const currentSeed = getCurrentDynamicSeed();
+    const currentSeed = getCompletedDynamicSeed();
     const routeChanged = restoreBakedDailyRoute();
 
     if (seed !== currentSeed || routeChanged) {
@@ -420,10 +421,7 @@ async function onPrevDailySeedClick(): Promise<void> {
   } catch (e) {
     console.error("[DynamicUI] Previous daily seed fetch failed:", e);
   } finally {
-    setTimeout(() => {
-      setBusy(false);
-      updateGenerateButtonState();
-    }, 300);
+    if (isCurrent()) setDynamicUIBusy(false);
   }
 }
 
@@ -441,10 +439,10 @@ async function onGenerateClick(): Promise<void> {
     return;
   }
 
-  const currentSeed = getCurrentDynamicSeed();
+  const currentSeed = getCompletedDynamicSeed();
   if (seed === currentSeed) return;
 
-  setBusy(true);
+  const isCurrent = beginToolbarRequest();
   try {
     updateURLWithSeed(seed, false);
     showLoadingStrip();
@@ -452,11 +450,22 @@ async function onGenerateClick(): Promise<void> {
   } catch (e) {
     console.error("[DynamicUI] Generate failed:", e);
   } finally {
-    setTimeout(() => {
-      setBusy(false);
-      updateGenerateButtonState();
-    }, 300);
+    if (isCurrent()) setDynamicUIBusy(false);
   }
+}
+
+/** The current pipeline owns busy state; first paint alone does not finish it. */
+export function setDynamicUIBusy(busy: boolean): void {
+  toolbarRequestId++;
+  setBusy(busy);
+  updateGenerateButtonState();
+}
+
+/** Daily lookup belongs to the toolbar until it hands off to the map pipeline. */
+function beginToolbarRequest(): () => boolean {
+  setDynamicUIBusy(true);
+  const requestId = toolbarRequestId;
+  return () => requestId === toolbarRequestId;
 }
 
 function setBusy(busy: boolean): void {
@@ -473,7 +482,7 @@ function setBusy(busy: boolean): void {
 
 function updateGenerateButtonState(): void {
   if (!generateBtn || !seedInput) return;
-  const currentSeed = getCurrentDynamicSeed();
+  const currentSeed = getCompletedDynamicSeed();
   const inputSeed = parseInt(seedInput.value || "", 10);
   const isMatch = !isNaN(inputSeed) && inputSeed === currentSeed;
 

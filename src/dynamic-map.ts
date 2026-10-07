@@ -48,6 +48,8 @@ export interface DynamicMapOptions {
   onPOIsReady?: (pois: DynamicPOI[]) => void;
   /** Invalidate outgoing interactions immediately, before seed resolution awaits network work. */
   onMapReplacementStart?: () => void;
+  /** Covers the whole current request, including lookup, metadata and failures. */
+  onRequestStateChange?: (pending: boolean) => void;
   /** Called when generation starts / ends (for loading indicator) */
   onLoadingChange?: (isLoading: boolean) => void;
   /** Called with the seed that was used (after resolution) */
@@ -77,6 +79,11 @@ let scenePrefetchLifetime: AbortController | undefined;
 /** Get the seed currently displayed on the dynamic map */
 export function getCurrentDynamicSeed(): number | null {
   return currentSeed;
+}
+
+/** Only a completed presentation can make Generate a no-op. */
+export function getCompletedDynamicSeed(): number | null {
+  return dynamicRendered ? currentSeed : null;
 }
 
 export function getCurrentIsDaily(): boolean {
@@ -235,9 +242,24 @@ export async function runDynamicMap(
   isDailyParam: boolean,
   opts: DynamicMapOptions,
 ): Promise<GenerationResult | null> {
+  const myToken = ++generationToken;
+  try {
+    opts.onRequestStateChange?.(true);
+    if (myToken !== generationToken) return null;
+    return await runDynamicMapRequest(seed, isDailyParam, opts, myToken);
+  } finally {
+    if (myToken === generationToken) opts.onRequestStateChange?.(false);
+  }
+}
+
+async function runDynamicMapRequest(
+  seed: number,
+  isDailyParam: boolean,
+  opts: DynamicMapOptions,
+  myToken: number,
+): Promise<GenerationResult | null> {
   const { viewer, onLoadingChange, onPOIsReady, onSeedResolved } = opts;
   const runStarted = performance.now();
-  const myToken = ++generationToken;
   scenePrefetchLifetime?.abort();
   scenePrefetchLifetime = undefined;
   beginAltSeed(seed);
@@ -650,9 +672,15 @@ export async function runDynamicMapFromURL(opts: DynamicMapOptions): Promise<Gen
   // or clearDynamicMap must invalidate both its URL write and pipeline start.
   const token = ++generationToken;
   const isCurrent = () => token === generationToken;
-  const { seed, isDaily } = await resolveSeed(isCurrent);
-  if (!isCurrent()) return null;
-  return runDynamicMap(seed, isDaily, opts);
+  try {
+    opts.onRequestStateChange?.(true);
+    if (!isCurrent()) return null;
+    const { seed, isDaily } = await resolveSeed(isCurrent);
+    if (!isCurrent()) return null;
+    return await runDynamicMapRequest(seed, isDaily, opts, token);
+  } finally {
+    if (isCurrent()) opts.onRequestStateChange?.(false);
+  }
 }
 
 /**

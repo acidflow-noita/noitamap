@@ -5,7 +5,7 @@ import { ScriptTarget, transpileModule } from 'typescript';
 
 vi.mock('i18next', () => ({ default: { t: (key: string) => key } }));
 vi.mock('../src/data_sources/overlays', () => ({ isValidOverlayKey: () => false }));
-vi.mock('../src/dynamic-map', () => ({ getCurrentDynamicSeed: vi.fn(), runDynamicMap: vi.fn() }));
+vi.mock('../src/dynamic-map', () => ({ getCurrentDynamicSeed: vi.fn(), getCompletedDynamicSeed: vi.fn(), runDynamicMap: vi.fn() }));
 vi.mock('../src/spoiler-free', () => ({ isSpoilerFree: () => false }));
 vi.mock('../src/overflow-menu', () => ({ updateOverflowMenu: vi.fn() }));
 
