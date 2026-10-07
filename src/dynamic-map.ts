@@ -242,8 +242,16 @@ export async function runDynamicMap(
   scenePrefetchLifetime = undefined;
   beginAltSeed(seed);
   opts.onMapReplacementStart?.();
+  if (myToken !== generationToken) return null;
 
   const noBaked = !shouldUseBakedTerrain(window.location.search);
+  // These changes already require replacement, before Daily detection can
+  // await the network. Stop old cooking/late attachments, retain drawn frames.
+  const retiredEarly = seed !== currentSeed || currentAllowsBaked !== !noBaked || !dynamicRendered;
+  if (retiredEarly) {
+    dynamicRendered = false; // returning to this seed must restart its stopped renderer
+    cancelPendingDynamicTerrain();
+  }
   if (noBaked && isInstantTerrainEnabled()) {
     prewarmInstantTerrain();
     prewarmMapPresentation();
@@ -317,7 +325,7 @@ export async function runDynamicMap(
   // Early GPU preparation replaces the shared renderer before the new map
   // reaches presentation. Retire the old cooker and lazy plane requests first;
   // its displayed frames remain attached until the replacement first paints.
-  cancelPendingDynamicTerrain();
+  if (!retiredEarly) cancelPendingDynamicTerrain();
 
   // If unlocks changed for the same seed, we must regenerate (skip cache)
   const forceRegenerate = seed === currentSeed && unlockKey !== currentUnlocksKey;

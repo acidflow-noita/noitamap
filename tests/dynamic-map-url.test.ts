@@ -37,7 +37,7 @@ import { addBakedDZIsToOSD } from '../src/telescope/baked-dzi-loader';
 import { fetchBakedGeneration } from '../src/telescope/baked-generation';
 import { scheduleDailyAssetWarmup } from '../src/telescope/daily-asset-prewarm';
 import { cacheGeneration, getCachedGeneration } from '../src/telescope/tile-cache';
-import { renderGenerationResult, prefetchAllSceneBitmaps, hasDynamicOverlays, prepareInstantTerrainResources, getAllPOIsFlat } from '../src/telescope/telescope-osd-bridge';
+import { renderGenerationResult, prefetchAllSceneBitmaps, hasDynamicOverlays, prepareInstantTerrainResources, getAllPOIsFlat, cancelPendingDynamicTerrain, prewarmMapPresentation } from '../src/telescope/telescope-osd-bridge';
 
 const today = 1216316599, previous = 1344443116;
 beforeEach(() => {
@@ -177,9 +177,124 @@ describe('pending map replacement ownership', () => {
     vi.mocked(prefetchAllSceneBitmaps).mockResolvedValue();
     vi.mocked(getAllPOIsFlat).mockImplementation(result => Object.values(result.poisByPW).flat() as any);
     vi.mocked(hasDynamicOverlays).mockReturnValue(true);
+    vi.mocked(prepareInstantTerrainResources).mockResolvedValue();
     const frame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
     return { frame, viewer: {} };
   }
+
+  it('retires outgoing terrain before Daily lookup and early GPU preparation, exactly once', async () => {
+    const f = fixture(), lookup = barrier();
+    const pipeline = await import('../src/dynamic-map');
+    try {
+      await pipeline.runDynamicMap(71, false, f);
+      vi.mocked(cancelPendingDynamicTerrain).mockClear();
+      vi.mocked(isInstantTerrainEnabled).mockReturnValue(true);
+      vi.mocked(prewarmInstantTerrain).mockClear();
+      vi.mocked(prewarmMapPresentation).mockClear();
+      vi.mocked(fetchDailySeed).mockImplementationOnce(() => lookup.promise.then(() => today));
+      const pending = pipeline.runDynamicMap(72, false, f);
+      expect(cancelPendingDynamicTerrain).toHaveBeenCalledOnce();
+      expect(vi.mocked(cancelPendingDynamicTerrain).mock.invocationCallOrder[0])
+        .toBeLessThan(vi.mocked(prewarmInstantTerrain).mock.invocationCallOrder[0]);
+      expect(vi.mocked(cancelPendingDynamicTerrain).mock.invocationCallOrder[0])
+        .toBeLessThan(vi.mocked(prewarmMapPresentation).mock.invocationCallOrder[0]);
+      lookup.resolve();
+      expect(await pending).toMatchObject({ seed: 72 });
+      expect(cancelPendingDynamicTerrain).toHaveBeenCalledOnce();
+    } finally { lookup.resolve(); pipeline.clearDynamicMap(f.viewer); f.frame.mockRestore(); }
+  });
+
+  it('keeps the completed renderer alive while confirming the same seed is redundant', async () => {
+    const f = fixture(), lookup = barrier();
+    const pipeline = await import('../src/dynamic-map');
+    try {
+      const current = await pipeline.runDynamicMap(71, false, f);
+      vi.mocked(cancelPendingDynamicTerrain).mockClear();
+      vi.mocked(fetchDailySeed).mockImplementationOnce(() => lookup.promise.then(() => today));
+      const pending = pipeline.runDynamicMap(71, false, f);
+      expect(cancelPendingDynamicTerrain).not.toHaveBeenCalled();
+      lookup.resolve();
+      expect(await pending).toBe(current);
+      expect(cancelPendingDynamicTerrain).not.toHaveBeenCalled();
+      expect(generateDynamicMap).toHaveBeenCalledOnce();
+      expect(renderGenerationResult).toHaveBeenCalledOnce();
+    } finally { lookup.resolve(); pipeline.clearDynamicMap(f.viewer); f.frame.mockRestore(); }
+  });
+
+  it.each(['daily', 'previous-daily'] as const)('retires same-seed live terrain before confirming a baked %s replacement', async prefix => {
+    const f = fixture(), lookup = barrier(), seed = prefix === 'daily' ? today : previous;
+    const pipeline = await import('../src/dynamic-map');
+    try {
+      const live = await pipeline.runDynamicMap(seed, true, f);
+      const baked = { ...live!, tileLayers: [] };
+      vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
+      vi.mocked(cancelPendingDynamicTerrain).mockClear();
+      vi.mocked(initTelescope).mockClear();
+      vi.mocked(fetchDailySeed).mockImplementationOnce(() => lookup.promise.then(() => today));
+      vi.mocked(fetchBakedGeneration).mockResolvedValue(baked);
+      vi.mocked(probeBakedDZIs).mockResolvedValue({ baked: true, prefix, decorationsBaked: true,
+        fullPixelsBaked: true, placements: [{ pw: 0, x: 0, y: 0, width: 100, bust: 'published', dziUrl: `/${prefix}.dzi` }] });
+      const pending = pipeline.runDynamicMap(seed, false, f);
+      expect(cancelPendingDynamicTerrain).toHaveBeenCalledOnce();
+      lookup.resolve();
+      expect(await pending).toBe(baked);
+      expect(cancelPendingDynamicTerrain).toHaveBeenCalledOnce();
+      expect(initTelescope).not.toHaveBeenCalled();
+      expect(generateDynamicMap).toHaveBeenCalledOnce(); // only the original live map
+    } finally { lookup.resolve(); pipeline.clearDynamicMap(f.viewer); f.frame.mockRestore(); }
+  });
+
+  it('restarts the cached outgoing map when selected again after its renderer was retired', async () => {
+    const f = fixture(), lookup = barrier();
+    const pipeline = await import('../src/dynamic-map');
+    try {
+      const original = await pipeline.runDynamicMap(71, false, f);
+      vi.mocked(fetchDailySeed).mockImplementationOnce(() => lookup.promise.then(() => today));
+      const pending = pipeline.runDynamicMap(72, false, f);
+      expect(await pipeline.runDynamicMap(71, false, f)).toBe(original);
+      expect(renderGenerationResult).toHaveBeenCalledTimes(2); // restore the stopped renderer
+      expect(generateDynamicMap).toHaveBeenCalledOnce(); // reuse saved geometry
+      lookup.resolve();
+      expect(await pending).toBeNull();
+      expect(pipeline.getCurrentDynamicSeed()).toBe(71);
+    } finally { lookup.resolve(); pipeline.clearDynamicMap(f.viewer); f.frame.mockRestore(); }
+  });
+
+  it.each([false, true])('does not retire the winner when an obsolete Daily lookup settles (failure=%s)', async fails => {
+    const f = fixture(), lookup = barrier();
+    const pipeline = await import('../src/dynamic-map');
+    try {
+      await pipeline.runDynamicMap(71, false, f);
+      vi.mocked(cancelPendingDynamicTerrain).mockClear();
+      vi.mocked(fetchDailySeed).mockImplementationOnce(async () => {
+        await lookup.promise; if (fails) throw new Error('offline'); return today;
+      });
+      const pending = pipeline.runDynamicMap(72, false, f);
+      expect(cancelPendingDynamicTerrain).toHaveBeenCalledOnce();
+      expect(await pipeline.runDynamicMap(73, false, f)).toMatchObject({ seed: 73 });
+      vi.mocked(cancelPendingDynamicTerrain).mockClear();
+      lookup.resolve();
+      expect(await pending).toBeNull();
+      expect(cancelPendingDynamicTerrain).not.toHaveBeenCalled();
+      expect(pipeline.getLastGenerationResult()).toMatchObject({ seed: 73 });
+    } finally { lookup.resolve(); pipeline.clearDynamicMap(f.viewer); f.frame.mockRestore(); }
+  });
+
+  it('does not let a reentrant replacement callback retire the completed map it reselected', async () => {
+    const f = fixture();
+    const pipeline = await import('../src/dynamic-map');
+    try {
+      const current = await pipeline.runDynamicMap(today, true, f);
+      vi.mocked(cancelPendingDynamicTerrain).mockClear();
+      let replay: Promise<unknown> | undefined;
+      expect(await pipeline.runDynamicMap(72, false, { ...f, onMapReplacementStart: () => {
+        replay = pipeline.runDynamicMap(today, true, f);
+      } })).toBeNull();
+      expect(await replay).toBe(current);
+      expect(cancelPendingDynamicTerrain).not.toHaveBeenCalled();
+      expect(renderGenerationResult).toHaveBeenCalledOnce();
+    } finally { pipeline.clearDynamicMap(f.viewer); f.frame.mockRestore(); }
+  });
 
   it.each(['assets', 'generation', 'presentation'])(
     'does not mistake the incoming seed for the completed outgoing map while waiting for %s', async stage => {
