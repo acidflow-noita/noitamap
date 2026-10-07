@@ -464,7 +464,9 @@ function translateBiomeList(s: string | null | undefined): string {
 function dismissEnclosingPopup(el: HTMLElement): void {
   const tooltip = el.closest(".marker-tooltip") as HTMLElement | null;
   if (tooltip) {
-    tooltip.remove();
+    const close = (tooltip as HTMLElement & { __close?: () => void }).__close;
+    if (close) close();
+    else tooltip.remove();
     return;
   }
   const popup = el.closest(".osOverlayPopup") as HTMLElement | null;

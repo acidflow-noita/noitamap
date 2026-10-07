@@ -1,6 +1,7 @@
 import { clearPortalAnimations, installPortalAnimations } from "../portals";
 import { canOpenPOIFromCanvas, drawingOwnsMapPointer } from "../drawing/poi-interaction";
 import { onProSidebarIntent } from "../pro-sidebar-intent";
+import { mountPOICardPlacement, type CardAnchor } from './poi-card-placement';
 import { POICardLifecycle, type POICardOwner, type POICardRequest } from './poi-card-lifecycle';
 import Flatbush from "flatbush";
 import { CONTAINER_TYPES } from "./poi-containers";
@@ -2701,6 +2702,7 @@ async function registerPixelSceneHoverDebug(viewer: OSDViewer, result: Generatio
 // ─── Active marker data (for tooltip click handling) ────────────────────────
 let activeMarkerData: MarkerData | null = null;
 let tooltipEl: HTMLDivElement | null = null;
+let tooltipPlacementCleanup: (() => void) | undefined;
 const poiCards = new POICardLifecycle(getCurrentDynamicSeed, removeMarkerTooltip);
 let canvasClickHandler: ((event: any) => void) | null = null;
 let markerTiledImage: any = null;
@@ -2716,8 +2718,7 @@ i18next.on('languageChanged', () => {
   if (typeof el.__rebuild === 'function') {
     el.__rebuild();
   } else {
-    el.remove();
-    tooltipEl = null;
+    discardMarkerCard();
   }
 });
 
@@ -2946,90 +2947,39 @@ function wrapWithWikiLink(el: HTMLElement, poi: any): HTMLElement {
   return a;
 }
 
-/**
- * Pick a viewport-pixel position for the marker tooltip card such that:
- *  - the card never extends into a right-side overlay (the seed-report
- *    sidebar, when open) — its right edge is clamped against the visible
- *    canvas (canvas right minus sidebar width).
- *  - the card prefers the LEFT side of the marker when a sidebar is open,
- *    so the card lives on the opposite side of the screen from the sidebar.
- *  - if neither side fits, the card pins to whichever edge gives more room.
- *
- * Used by both the direct canvas-click handler and the seed-report
- * row-click flow, so click-anywhere POI cards stay clear of the sidebar.
- */
-function placeTooltipForMarker(
-  viewer: any,
-  _item: MarkerItem,
-  clickX: number,
-  clickY: number
-): { x: number; y: number } {
-  const canvasEl = viewer.canvas as HTMLElement;
-  const canvasRect = canvasEl.getBoundingClientRect();
-  const TOOLTIP_W = 32 * 14; // width: 32em at 14px base
-  // Breathing room between the POI marker and the tooltip card. The old 16px
-  // hugged the POI sprite tightly — bump to ~5vh (clamped) so the card sits
-  // clearly away from the marker on any screen size.
-  const TOOLTIP_GAP = Math.max(32, Math.round(window.innerHeight * 0.05));
+function mountMarkerCard(card: HTMLElement, viewer: any, anchor: CardAnchor, request: POICardRequest): void {
+  (card as HTMLElement & { __close?: () => void }).__close = () => {
+    if (tooltipEl === card && request.isCurrent()) hideMarkerTooltip();
+  };
+  card.style.visibility = 'hidden';
+  document.body.appendChild(card);
+  tooltipPlacementCleanup = mountPOICardPlacement(card, { viewer, anchor, isCurrent: request.isCurrent });
+}
 
-  let sidebarPx = 0;
-  const srEl = document.querySelector<HTMLElement>('#seed-report-v3.open, #seed-report-sidebar.open');
-  if (srEl && srEl.classList.contains('open')) {
-    sidebarPx = srEl.getBoundingClientRect().width;
-  }
-
-  // Right-most pixel the card may occupy.
-  const rightEdge = canvasRect.right - sidebarPx - TOOLTIP_GAP;
-  const leftEdge = canvasRect.left + 8;
-
-  // When the sidebar is open, prefer LEFT placement (card on opposite side
-  // from the sidebar). Otherwise default to right of the click.
-  let x: number;
-  if (sidebarPx > 0) {
-    const leftAttempt = clickX - TOOLTIP_GAP - TOOLTIP_W;
-    if (leftAttempt >= leftEdge) {
-      x = leftAttempt;
-    } else {
-      // Not enough room on the left — try right, then pin to whichever edge fits.
-      const rightAttempt = clickX + TOOLTIP_GAP;
-      if (rightAttempt + TOOLTIP_W <= rightEdge) {
-        x = rightAttempt;
-      } else {
-        x = leftEdge;
-      }
-    }
-  } else {
-    const rightAttempt = clickX + TOOLTIP_GAP;
-    if (rightAttempt + TOOLTIP_W <= rightEdge) {
-      x = rightAttempt;
-    } else {
-      const leftAttempt = clickX - TOOLTIP_GAP - TOOLTIP_W;
-      x = leftAttempt >= leftEdge ? leftAttempt : leftEdge;
-    }
-  }
-
-  let y = Math.min(clickY, canvasRect.top + canvasRect.height * 0.35);
-  if (y < canvasRect.top + 8) y = canvasRect.top + 8;
-  return { x, y };
+function discardMarkerCard(): void {
+  tooltipPlacementCleanup?.();
+  tooltipPlacementCleanup = undefined;
+  if (!tooltipEl) return;
+  cleanupPopovers(tooltipEl);
+  tooltipEl.remove();
+  tooltipEl = null;
 }
 
 function cleanupPopovers(el: HTMLElement): void {
   dismissPopovers(el);
 }
 
-function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, request = poiCards.begin()): void {
+function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.begin()): void {
   if (!request.isCurrent() || drawingOwnsMapPointer()) return;
-  // Remove previous popup
-  if (tooltipEl) {
-    cleanupPopovers(tooltipEl);
-    tooltipEl.remove();
-    tooltipEl = null;
-  }
+  discardMarkerCard();
 
   tooltipEl = document.createElement('div');
   // Allow the languageChanged listener to rebuild this tooltip in place.
-  (tooltipEl as any).__rebuild = () => showMarkerTooltip(item, screenX, screenY, request);
+  (tooltipEl as any).__rebuild = () => showMarkerTooltip(item, viewer, request);
   tooltipEl.className = 'marker-tooltip';
+  const rootKey = Array.isArray(item.spriteKey) ? item.spriteKey[0] : item.spriteKey;
+  const sprite = getAtlas()?.[rootKey];
+  const anchor = { x: item.osdX, y: item.osdY, width: item.w, height: item.h, offsetX: sprite?.ox, offsetY: sprite?.oy };
 
   // Top controls container — in normal flow, pushed to right
   const topBar = document.createElement('div');
@@ -3345,26 +3295,7 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
     footer.textContent = `${i18next.t('poi.pw', 'PW')} ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
     tooltipEl.appendChild(footer);
 
-    document.body.appendChild(tooltipEl);
-    const pad = 12;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    let tx = screenX + pad;
-    let ty = screenY + pad;
-    requestAnimationFrame(() => {
-      if (!tooltipEl) return;
-      const rect = tooltipEl.getBoundingClientRect();
-      if (tx + rect.width > vw - pad) tx = screenX - rect.width - pad;
-      if (ty + rect.height > vh - pad) ty = screenY - rect.height - pad;
-      tx = Math.max(pad, Math.min(tx, vw - rect.width - pad));
-      ty = Math.max(pad, Math.min(ty, vh - rect.height - pad));
-      tooltipEl.style.left = `${tx}px`;
-      tooltipEl.style.top = `${ty}px`;
-      // Async details stay inside the viewport without moving the card.
-      tooltipEl.style.maxHeight = `calc(100dvh - ${ty + pad}px)`;
-    });
-    tooltipEl.style.left = `${tx}px`;
-    tooltipEl.style.top = `${ty}px`;
+    mountMarkerCard(tooltipEl, viewer, anchor, request);
     return;
   }
 
@@ -4616,42 +4547,11 @@ function showMarkerTooltip(item: MarkerItem, screenX: number, screenY: number, r
   footer.textContent = `${i18next.t('poi.pw', 'PW')} ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
   tooltipEl.appendChild(footer);
 
-  document.body.appendChild(tooltipEl);
-
-  // Position popup near click, clamped to viewport.
-  const pad = 12;
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  let tx = screenX + pad;
-  let ty = screenY + pad;
-  requestAnimationFrame(() => {
-    if (!tooltipEl) return;
-    const rect = tooltipEl.getBoundingClientRect();
-    // Horizontal: try right of cursor, fall back to left, then clamp
-    if (tx + rect.width > vw - pad) tx = screenX - rect.width - pad;
-    if (tx < pad) tx = pad;
-    // If still wider than viewport, pin to left edge
-    if (rect.width > vw - 2 * pad) tx = pad;
-
-    // Vertical: try below cursor, fall back to above, then clamp to top
-    if (ty + rect.height > vh - pad) ty = screenY - rect.height - pad;
-    if (ty < pad) ty = pad;
-
-    tooltipEl.style.left = `${tx}px`;
-    tooltipEl.style.top = `${ty}px`;
-    // Async details stay inside the viewport without moving the card.
-    tooltipEl.style.maxHeight = `calc(100dvh - ${ty + pad}px)`;
-  });
-  tooltipEl.style.left = `${tx}px`;
-  tooltipEl.style.top = `${ty}px`;
+  mountMarkerCard(tooltipEl, viewer, anchor, request);
 }
 
 function removeMarkerTooltip(): void {
-  if (tooltipEl) {
-    cleanupPopovers(tooltipEl);
-    tooltipEl.remove();
-    tooltipEl = null;
-  }
+  discardMarkerCard();
   clearTargetPoiId();
 }
 
@@ -4773,8 +4673,7 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
     const item = findNearestMarker(event);
     if (item) {
       event.preventDefaultAction = true;
-      const { x, y } = placeTooltipForMarker(viewer, item, event.originalEvent.clientX, event.originalEvent.clientY);
-      showMarkerTooltip(item, x, y);
+      showMarkerTooltip(item, viewer);
       return;
     }
 
@@ -4797,7 +4696,7 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
       // Only match if within ~15 world units (orb icons are 20x25)
       if (bestOrb && bestDist < 15 * 15) {
         event.preventDefaultAction = true;
-        showOrbTooltip(bestOrb.orb, bestOrb.iconUrl, event.originalEvent.clientX, event.originalEvent.clientY);
+        showOrbTooltip(bestOrb.orb, bestOrb.iconUrl, viewer, { x: bestOrb.osdX, y: bestOrb.osdY });
         return;
       }
     }
@@ -4941,21 +4840,7 @@ export function openTooltipForPOI(
   // for plain viewport.panTo.
   const showTooltipNow = () => {
     if (!request.isCurrent()) return;
-    const pixel = viewer.viewport.pixelFromPoint(pt);
-    const canvasRect = (viewer.canvas as HTMLElement).getBoundingClientRect();
-    const isOffScreen =
-      pixel.x < -100 || pixel.x > canvasRect.width + 100 || pixel.y < -100 || pixel.y > canvasRect.height + 100;
-
-    const markerX = isOffScreen ? canvasRect.width / 2 : pixel.x;
-    const markerY = isOffScreen ? canvasRect.height / 2 : pixel.y;
-    const clickX = canvasRect.left + markerX;
-    const clickY = canvasRect.top + markerY;
-
-    // Delegate to the shared placement helper so direct map clicks and
-    // seed-report row clicks behave identically — left-side when sidebar is
-    // open, right-side otherwise.
-    const { x: screenX, y: screenY } = placeTooltipForMarker(viewer, item, clickX, clickY);
-    showMarkerTooltip(item, screenX, screenY, request);
+    showMarkerTooltip(item, viewer, request);
   };
 
   request.afterNavigation(panPromise, showTooltipNow, () => viewer.cancelNavigation?.());
@@ -4966,19 +4851,15 @@ export function openTooltipForPOI(
 function showOrbTooltip(
   orb: { name?: string; text?: string; x: number; y: number },
   iconUrl: string,
-  screenX: number,
-  screenY: number,
+  viewer: any,
+  anchor: { x: number; y: number },
   request: POICardRequest = poiCards.begin()
 ): void {
   if (!request.isCurrent() || drawingOwnsMapPointer()) return;
-  if (tooltipEl) {
-    cleanupPopovers(tooltipEl);
-    tooltipEl.remove();
-    tooltipEl = null;
-  }
+  discardMarkerCard();
 
   tooltipEl = document.createElement('div');
-  (tooltipEl as any).__rebuild = () => showOrbTooltip(orb, iconUrl, screenX, screenY, request);
+  (tooltipEl as any).__rebuild = () => showOrbTooltip(orb, iconUrl, viewer, anchor, request);
   tooltipEl.className = 'marker-tooltip';
   const controls = document.createElement('div');
   controls.className = 'poi-card-controls';
@@ -5018,27 +4899,7 @@ function showOrbTooltip(
   footer.textContent = `(${Math.round(orb.x)}, ${Math.round(orb.y)})`;
   tooltipEl.appendChild(footer);
 
-  document.body.appendChild(tooltipEl);
-
-  const pad = 12;
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  let tx = screenX + pad;
-  let ty = screenY + pad;
-  requestAnimationFrame(() => {
-    if (!tooltipEl) return;
-    const rect = tooltipEl.getBoundingClientRect();
-    if (tx + rect.width > vw - pad) tx = screenX - rect.width - pad;
-    if (ty + rect.height > vh - pad) ty = screenY - rect.height - pad;
-    if (tx < pad) tx = pad;
-    if (ty < pad) ty = pad;
-    tooltipEl.style.left = `${tx}px`;
-    tooltipEl.style.top = `${ty}px`;
-    // Async details stay inside the viewport without moving the card.
-    tooltipEl.style.maxHeight = `calc(100dvh - ${ty + pad}px)`;
-  });
-  tooltipEl.style.left = `${tx}px`;
-  tooltipEl.style.top = `${ty}px`;
+  mountMarkerCard(tooltipEl, viewer, anchor, request);
 }
 
 /**

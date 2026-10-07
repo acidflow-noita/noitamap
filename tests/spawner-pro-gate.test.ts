@@ -66,6 +66,18 @@ it('shows the existing Pro gate, with no spawn odds/notes or extended fetches fo
   expect(fetch).not.toHaveBeenCalled();
 });
 
+it('uses the card cleanup when its Pro button dismisses it', () => {
+  const card = document.createElement('div');
+  card.className = 'marker-tooltip';
+  const close = vi.fn(() => card.remove());
+  (card as HTMLElement & { __close?: () => void }).__close = close;
+  card.appendChild(buildExtendedSection('spawner', 'egg_worm'));
+  document.body.appendChild(card);
+  card.querySelector<HTMLButtonElement>('.extended-info-cta')!.click();
+  expect(close).toHaveBeenCalledOnce();
+  expect(card.isConnected).toBe(false);
+});
+
 it('cannot reveal delayed spawner information after logout', async () => {
   let resolve!: (response: any) => void;
   vi.stubGlobal('fetch', vi.fn(() => new Promise(done => { resolve = done; })));
