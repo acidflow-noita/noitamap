@@ -38,6 +38,9 @@ let isBusy = false;
 let generatePopoverInstance: any = null;
 let resolvedInputSeed: number | null = null;
 let unsubscribeDailyIdentity: (() => void) | undefined;
+let loadingStripRevision = 0;
+let loadingStripHideTimer: ReturnType<typeof setTimeout> | undefined;
+let loadingStripHideElement: HTMLElement | undefined;
 
 // ─── Build ───────────────────────────────────────────────────────────────────
 
@@ -499,6 +502,10 @@ function updateGenerateButtonState(): void {
 
 /** Show the non-blocking loading strip with download already complete. */
 export function showLoadingStrip(): void {
+  loadingStripRevision++;
+  clearTimeout(loadingStripHideTimer);
+  loadingStripHideTimer = undefined;
+  loadingStripHideElement = undefined;
   const strip = document.getElementById("map-loading-strip");
   if (!strip) return;
   strip.classList.remove("fade-out");
@@ -521,11 +528,37 @@ export function showLoadingStrip(): void {
 export function hideLoadingStrip(): void {
   const strip = document.getElementById("map-loading-strip");
   if (!strip) return;
+  // Repeated completion signals share this fade; they must not leave cleanup
+  // timers behind or extend its duration. A new show cancels it immediately.
+  if (loadingStripHideTimer !== undefined && loadingStripHideElement === strip) return;
+  clearTimeout(loadingStripHideTimer);
+  loadingStripHideElement = strip;
+  const revision = loadingStripRevision;
   strip.classList.add("fade-out");
   // After the CSS transition completes, fully hide
-  setTimeout(() => {
+  loadingStripHideTimer = setTimeout(() => {
+    if (revision !== loadingStripRevision || loadingStripHideElement !== strip) return;
+    loadingStripHideTimer = undefined;
+    loadingStripHideElement = undefined;
     strip.classList.remove("visible", "fade-out");
   }, 400);
+}
+
+/** Let completed progress paint, but never finish a newer loading cycle. */
+export function finishLoadingStrip(): void {
+  const strip = document.getElementById("map-loading-strip");
+  if (!strip) return;
+  const revision = loadingStripRevision;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (revision !== loadingStripRevision || document.getElementById("map-loading-strip") !== strip) return;
+      hideLoadingStrip();
+      for (const phase of ['download', 'generation', 'items']) {
+        const bar = document.getElementById(`loading-bar-${phase}`);
+        if (bar) bar.style.width = '0%';
+      }
+    });
+  });
 }
 
 export function setDynamicUISeed(seed: number, _isDaily: boolean): void {

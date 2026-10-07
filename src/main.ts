@@ -8,7 +8,7 @@ import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
 import { setupDropOverlay } from "./drop-overlay";
 import { createProLoader } from "./pro-loader";
 import { negotiateTabHandoff } from "./tab-coordinator";
-import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed, showLoadingStrip, hideLoadingStrip } from "./dynamic_ui";
+import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed, showLoadingStrip, hideLoadingStrip, finishLoadingStrip } from "./dynamic_ui";
 import {
   runDynamicMapFromURL,
   runDynamicMap,
@@ -391,18 +391,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (e.detail.percentage >= 100) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          hideLoadingStrip();
-          // Reset all bars for the next generation
-          const dl = _getDownloadBar();
-          const gen = _getGenerationBar();
-          const it = _getItemsBar();
-          if (dl) dl.style.width = "0%";
-          if (gen) gen.style.width = "0%";
-          if (it) it.style.width = "0%";
-        });
-      });
+      finishLoadingStrip();
     }
   }) as EventListener);
 
