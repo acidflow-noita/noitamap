@@ -29,14 +29,14 @@ const { attachBiomeBackgroundLayer, clearBiomeBackgroundLayers, biomeBackgroundG
 // renderer is a controlled readiness barrier; native OSD draws the pixels.
 const bridgeSource = createSourceFile('telescope-osd-bridge.ts',
   readFileSync('src/telescope/telescope-osd-bridge.ts', 'utf8'), ScriptTarget.Latest);
-const bridgeFunctions = new Set(['isDynamicSeedItem', 'addBiomeBgToOSD', 'renderGenerationResult']);
+const bridgeFunctions = new Set(['isDynamicSeedItem', 'addBiomeBgToOSD', 'renderGenerationResult', 'beginMarkerRequest']);
 const bridgeCode = transpileModule(bridgeSource.statements.filter(statement =>
   isFunctionDeclaration(statement) && bridgeFunctions.has(statement.name?.text ?? ''))
   .map(statement => statement.getText(bridgeSource)).join('\n'), {
   compilerOptions: { target: ScriptTarget.ES2022, module: ModuleKind.CommonJS },
 }).outputText;
 const createBridge = new Function('exports', 'attachBiomeBackgroundLayer', '_bgLayer', `
-  let _bgEpoch = 0, currentGenerationId = 0;
+  let _bgEpoch = 0, currentGenerationId = 0, currentMarkerRequestId = 0, pendingMarkerProgressGeneration;
   const dynamicTiledImages = new Set();
   let dynamicOverlayElements = [], dynamicBlobUrls = [], activeOrbTargets = [];
   const isGLTerrainEnabled = () => false, isInstantTerrainEnabled = () => false, isLightMode = () => false;

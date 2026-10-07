@@ -12,19 +12,21 @@ function barrier() {
 /** Run the bridge's actual orchestration without booting its browser UI imports. */
 function bridgeLifecycle(dependencies: Record<string, unknown>) {
   const source = createSourceFile('bridge.ts', readFileSync('src/telescope/telescope-osd-bridge.ts', 'utf8'), ScriptTarget.Latest);
-  const names = ['clearInstantTerrain', 'cancelPendingDynamicTerrain', 'clearDynamicOverlays', 'renderGenerationResult'];
+  const names = ['clearInstantTerrain', 'beginMarkerRequest', 'cancelPendingDynamicTerrain', 'clearDynamicOverlays', 'renderGenerationResult', 'rebuildAltLayers'];
+  if (!dependencies.addOrbOverlays) names.push('addOrbOverlays');
   const functions = source.statements.filter(statement =>
     isFunctionDeclaration(statement) && names.includes(statement.name?.text ?? ''));
   expect(functions).toHaveLength(names.length);
   const js = transpileModule(functions.map(statement => statement.getText(source).replace(/^export /, '')).join('\n'),
     { compilerOptions: { target: ScriptTarget.ES2022 } }).outputText;
   return new Function(...Object.keys(dependencies), `
-    let currentGenerationId = 0;
+    let currentGenerationId = 0, currentMarkerRequestId = 0, pendingMarkerProgressGeneration;
     let dynamicOverlayElements = [], dynamicBlobUrls = [], activeOrbTargets = [];
     let activeMarkerData, markerTiledImage, suspendedMarkerContext;
     const dynamicTiledImages = new Set();
     ${js}
-    return { renderGenerationResult, cancelPendingDynamicTerrain, clearDynamicOverlays };
+    return { renderGenerationResult, cancelPendingDynamicTerrain, clearDynamicOverlays, rebuildAltLayers,
+      markers: () => activeMarkerData, orbs: () => activeOrbTargets };
   `)(...Object.values(dependencies));
 }
 
@@ -88,7 +90,7 @@ describe('terrain presentation lifetime', () => {
   });
 });
 
-function presentationFixture() {
+function presentationFixture(instant = true) {
   const artwork = barrier(), calls: any[][] = [];
   const oldImage = { source: {} }, terrainImage = { source: {} };
   const viewer = {
@@ -104,7 +106,7 @@ function presentationFixture() {
     instantTerrainModule: module, loadInstantTerrain: async () => module,
     clearPortalAnimations: vi.fn(), clearTerrainPngEncoders: vi.fn(), window: { dispatchEvent: vi.fn() },
     setTimeout: vi.fn((callback: () => void, delay: number) => { if (delay === 0) queueMicrotask(callback); }),
-    isDynamicSeedItem: () => true, isGLTerrainEnabled: () => false, isInstantTerrainEnabled: () => true,
+    isDynamicSeedItem: () => true, isGLTerrainEnabled: () => false, isInstantTerrainEnabled: () => instant,
     isRepeatedTempleTemplate, addBiomeBgToOSD: vi.fn(), ensureTelescopeModules: async () => {},
     instantSceneMasks: async () => [], glTerrainDeps: {},
     addBiomeLayersProgressively: vi.fn(async (_viewer: any, _result: any, _id: number, paint: () => void) => paint()),
@@ -305,5 +307,183 @@ describe('marker progress belongs to its generation', () => {
     attachments[1].success({ item: {} });
     expect(progress(f)).toEqual([100]);
     oldTimeout(); expect(progress(f)).toEqual([100]);
+  });
+});
+
+describe('same-seed marker request ownership', () => {
+  const progress = (f: ReturnType<typeof presentationFixture>) => f.window.dispatchEvent.mock.calls
+    .map(([event]) => (event as CustomEvent).detail.percentage);
+
+  async function paint(f: ReturnType<typeof presentationFixture>) {
+    const pending = f.start();
+    await vi.waitFor(() => expect(f.addPixelScenes).toHaveBeenCalledOnce());
+    f.artwork.resolve(); await f.calls[0][9]; f.calls[0][6](); await pending;
+  }
+
+  it.each(['success', 'failure'])('ignores an older unlock build that finishes with %s', async outcome => {
+    const f = presentationFixture(), ready = barrier(), started = barrier();
+    const old = { ...f.result, variant: 'old' }, current = { ...f.result, variant: 'current' };
+    f.buildMarkerData.mockImplementation((async (result: unknown) => {
+      if (result === old) {
+        started.resolve(); await ready.promise;
+        if (outcome === 'failure') throw new Error('obsolete marker preparation');
+      }
+      return { originX: 0, originY: 0, bboxWidth: 100, result };
+    }) as any);
+    const previous = f.bridge.rebuildAltLayers(f.viewer, old, [], false);
+    await started.promise;
+    await f.bridge.rebuildAltLayers(f.viewer, current, null, false);
+    ready.resolve(); await expect(previous).resolves.toBeUndefined();
+    expect(f.installClickHandler).toHaveBeenCalledOnce();
+    expect(f.bridge.markers().result).toBe(current);
+    expect(f.viewer.addTiledImage).toHaveBeenCalledOnce();
+    expect(f.window.dispatchEvent).not.toHaveBeenCalled();
+    expect(f.module.addInstantTerrain).not.toHaveBeenCalled();
+    expect(f.module.clearInstantTerrain).not.toHaveBeenCalled();
+  });
+
+  it('removes a late OSD attachment without replacing the current layer', async () => {
+    const f = presentationFixture(), attachments: any[] = [];
+    f.viewer.addTiledImage.mockImplementation(options => { attachments.push(options); });
+    await f.bridge.rebuildAltLayers(f.viewer, f.result, [], false);
+    await f.bridge.rebuildAltLayers(f.viewer, f.result, null, false);
+    const old = {}, current = {};
+    attachments[1].success({ item: current }); attachments[0].success({ item: old });
+    expect(f.viewer.world.removeItem).toHaveBeenCalledWith(old);
+    expect(f.viewer.world.removeItem).not.toHaveBeenCalledWith(current);
+    await f.bridge.rebuildAltLayers(f.viewer, f.result, [], false);
+    expect(f.viewer.world.removeItem).toHaveBeenLastCalledWith(current);
+  });
+
+  it.each(['success', 'error', 'timeout'])('hands initial marker progress to the replacement %s callback', async completion => {
+    const f = presentationFixture(), attachments: any[] = [];
+    f.viewer.addTiledImage.mockImplementation(options => { attachments.push(options); });
+    await paint(f);
+    expect(progress(f)).toEqual([0, 50]);
+    const oldTimeout = f.setTimeout.mock.calls.find(([, ms]) => ms === 3000)![0];
+    await f.bridge.rebuildAltLayers(f.viewer, f.result, [], false);
+    f.window.dispatchEvent.mockClear();
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const old = {};
+      attachments[0].success({ item: old });
+      attachments[0].error(new Error('obsolete OSD callback')); oldTimeout();
+      expect(f.viewer.world.removeItem).toHaveBeenCalledWith(old);
+      expect(f.window.dispatchEvent).not.toHaveBeenCalled();
+      expect(warning).not.toHaveBeenCalled();
+      if (completion === 'success') attachments[1].success({ item: {} });
+      else if (completion === 'error') attachments[1].error(new Error('current OSD callback'));
+      else f.setTimeout.mock.calls.filter(([, ms]) => ms === 3000).at(-1)![0]();
+      expect(progress(f)).toEqual([100]);
+      expect(warning).toHaveBeenCalledTimes(completion === 'error' ? 1 : 0);
+      oldTimeout(); attachments[1].success({ item: {} });
+      expect(progress(f)).toEqual([100]);
+    } finally { warning.mockRestore(); }
+  });
+
+  it('finishes adopted progress when current marker preparation fails', async () => {
+    const f = presentationFixture();
+    f.viewer.addTiledImage.mockImplementation(() => {});
+    await paint(f); f.window.dispatchEvent.mockClear();
+    const error = new Error('current atlas failure');
+    f.buildMarkerData.mockRejectedValueOnce(error);
+    await expect(f.bridge.rebuildAltLayers(f.viewer, f.result, [], false)).rejects.toBe(error);
+    expect(progress(f)).toEqual([100]);
+  });
+
+  it('does not open a progress interval for an ordinary unlock refresh', async () => {
+    const f = presentationFixture();
+    await f.bridge.rebuildAltLayers(f.viewer, f.result, [], false);
+    expect(f.window.dispatchEvent).not.toHaveBeenCalled();
+    expect(f.setTimeout).not.toHaveBeenCalled();
+  });
+
+  it.each(['reseed', 'static'].flatMap(target => ['success', 'failure'].map(outcome => ({ target, outcome }))))(
+    'retires an unlock build with $outcome when leaving for $target', async ({ target, outcome }) => {
+      const f = presentationFixture(), ready = barrier(), started = barrier();
+      f.buildMarkerData.mockImplementationOnce(async () => {
+        started.resolve(); await ready.promise;
+        if (outcome === 'failure') throw new Error('retired unlock build');
+        return { originX: 0, originY: 0, bboxWidth: 100 };
+      });
+      const pending = f.bridge.rebuildAltLayers(f.viewer, f.result, [], false);
+      await started.promise;
+      if (target === 'static') f.bridge.clearDynamicOverlays(f.viewer);
+      else f.bridge.cancelPendingDynamicTerrain();
+      ready.resolve(); await expect(pending).resolves.toBeUndefined();
+      expect(f.viewer.addTiledImage).not.toHaveBeenCalled();
+      expect(f.installClickHandler).not.toHaveBeenCalled();
+      expect(f.window.dispatchEvent).not.toHaveBeenCalled();
+    },
+  );
+
+  it('ignores superseded initial orb errors while finishing the terrain handoff', async () => {
+    const f = presentationFixture(false), ready = barrier(), started = barrier();
+    f.addBiomeLayersProgressively.mockImplementation(async () => {});
+    f.addOrbOverlays.mockImplementationOnce(async () => {
+      started.resolve(); await ready.promise; throw new Error('obsolete orb load');
+    });
+    const pending = f.start();
+    await vi.waitFor(() => expect(f.addPixelScenes).toHaveBeenCalledOnce());
+    f.artwork.resolve(); await started.promise;
+    await f.bridge.rebuildAltLayers(f.viewer, f.result, [], false);
+    ready.resolve(); await expect(pending).resolves.toBeUndefined();
+    expect(f.installClickHandler).toHaveBeenCalledOnce();
+    expect(f.window.dispatchEvent).not.toHaveBeenCalled();
+    expect(f.installPortalAnimations).toHaveBeenCalledOnce();
+    expect(f.viewer.world.removeItem).toHaveBeenCalledWith(f.oldImage);
+  });
+
+  it.each(['success', 'failure'])('keeps terrain cleanup and portals when superseded initial markers settle with %s', async outcome => {
+    const f = presentationFixture(false), ready = barrier(), started = barrier();
+    const initial = { ...f.result, variant: 'initial' };
+    f.addBiomeLayersProgressively.mockImplementation(async () => {});
+    f.buildMarkerData.mockImplementation((async (result: unknown) => {
+      if (result === initial) {
+        started.resolve(); await ready.promise;
+        if (outcome === 'failure') throw new Error('obsolete initial marker failure');
+      }
+      return { originX: 0, originY: 0, bboxWidth: 100, result };
+    }) as any);
+    const pending = f.bridge.renderGenerationResult(f.viewer, initial);
+    await vi.waitFor(() => expect(f.addPixelScenes).toHaveBeenCalledOnce());
+    f.artwork.resolve(); await started.promise;
+    expect(progress(f)).toEqual([0]);
+    await f.bridge.rebuildAltLayers(f.viewer, f.result, [], false);
+    expect(progress(f)).toEqual([0, 100]);
+    f.window.dispatchEvent.mockClear(); ready.resolve();
+    await expect(pending).resolves.toBeUndefined();
+    expect(f.window.dispatchEvent).not.toHaveBeenCalled();
+    expect(f.installClickHandler).toHaveBeenCalledOnce();
+    expect(f.bridge.markers().result).toBe(f.result);
+    expect(f.installPortalAnimations).toHaveBeenCalledExactlyOnceWith(f.viewer, initial);
+    expect(f.viewer.world.removeItem).toHaveBeenCalledWith(f.oldImage);
+  });
+
+  it.each(['icons', 'collected sprite'])('ignores obsolete orb overlays after waiting for %s', async stage => {
+    const ready = barrier(), started = barrier();
+    const viewer = { world: { removeItem: vi.fn() }, removeOverlay: vi.fn(), addOverlay: vi.fn(),
+      addTiledImage: vi.fn((options: any) => options.success({ item: {} })) };
+    const loadIcon = vi.fn(async () => {});
+    const emptySprite = vi.fn(async () => 'empty-orb');
+    if (stage === 'icons') loadIcon.mockImplementationOnce(async () => { started.resolve(); await ready.promise; });
+    else emptySprite.mockImplementationOnce(async () => { started.resolve(); await ready.promise; return 'obsolete-empty-orb'; });
+    const bridge = bridgeLifecycle({
+      orbsData: [{ maps: ['dynamic-main-branch'], icon: 'orb_00.png', x: 10, y: 20 }],
+      ORB_OVERLAY_UNLOCK_KEYS: ['sea_lava'], _orbIconCache: new Map([['orb_00.png', 'full-orb']]),
+      loadOrbIconByPath: loadIcon, getPOISpriteFirstFrame: emptySprite,
+      document: { createElement: () => ({ style: {}, remove: vi.fn() }) },
+      OpenSeadragon: { Rect: class {} }, window: { dispatchEvent: vi.fn() },
+      buildMarkerData: async () => ({ originX: 0, originY: 0, bboxWidth: 100 }),
+      createMarkerTileSource: () => ({}), installClickHandler: vi.fn(), rebuildHighValueOverlays: vi.fn(),
+    });
+    const previous = bridge.rebuildAltLayers(viewer, {}, ['sea_lava'], false);
+    await started.promise;
+    await bridge.rebuildAltLayers(viewer, {}, null, false);
+    ready.resolve(); await previous;
+    expect(viewer.addOverlay).toHaveBeenCalledOnce();
+    expect(bridge.orbs()).toHaveLength(1);
+    expect(bridge.orbs()[0].iconUrl).toBe('full-orb');
+    expect(viewer.addTiledImage).toHaveBeenCalledOnce();
   });
 });

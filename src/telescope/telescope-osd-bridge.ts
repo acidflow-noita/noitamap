@@ -465,12 +465,32 @@ let dynamicBlobUrls: string[] = [];
  * if a newer generation starts while we're awaiting async operations.
  */
 let currentGenerationId = 0;
+let currentMarkerRequestId = 0;
+let pendingMarkerProgressGeneration: number | undefined;
+
+/** Unlock variants share terrain, but only the latest marker request may publish. */
+function beginMarkerRequest(generationId: number) {
+  const requestId = ++currentMarkerRequestId;
+  if (pendingMarkerProgressGeneration !== generationId) pendingMarkerProgressGeneration = undefined;
+  const isCurrent = () => currentGenerationId === generationId && currentMarkerRequestId === requestId;
+  return {
+    isCurrent,
+    // An unlock refresh inherits an initial marker layer's unfinished progress.
+    // Ordinary unlock changes do not open a new loading interval.
+    completeProgress: () => {
+      if (!isCurrent() || pendingMarkerProgressGeneration !== generationId) return;
+      pendingMarkerProgressGeneration = undefined;
+      window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 100 } }));
+    },
+  };
+}
 
 /** Retire terrain work while keeping the outgoing map visible until first paint. */
 export function cancelPendingDynamicTerrain(): void {
   // A retired presentation may still be waiting for modules or scene masks,
   // before addInstantTerrain creates the lifetime that clear can abort.
   currentGenerationId++;
+  pendingMarkerProgressGeneration = undefined;
   clearInstantTerrain();
 }
 
@@ -483,6 +503,7 @@ export function clearDynamicOverlays(viewer: any): void {
   clearPortalAnimations();
   // Invalidate any in-flight async generation so it won't render on top of the new map
   currentGenerationId++;
+  pendingMarkerProgressGeneration = undefined;
   liveSceneBitmaps.clear();
   resetPersistentBiomeBackgrounds();
   clearBiomeBackgroundLayers(viewer);
@@ -5044,8 +5065,10 @@ async function addOrbOverlays(
   result: GenerationResult,
   generationId: number,
   unlocks: string[] | null,
-  isDaily: boolean
+  isDaily: boolean,
+  isCurrent = () => currentGenerationId === generationId,
 ): Promise<void> {
+  if (!isCurrent()) return;
   const { worldCenter } = result;
 
   // Filter orbs for the dynamic map
@@ -5054,7 +5077,7 @@ async function addOrbOverlays(
 
   // Pre-load all spell orb icons
   await Promise.all(dynamicOrbs.map((orb: any) => loadOrbIconByPath(orb.icon)));
-  if (currentGenerationId !== generationId) return;
+  if (!isCurrent()) return;
 
   // Build unlock set for collected detection
   const unlockSet = !isDaily && unlocks ? new Set(unlocks) : null;
@@ -5064,12 +5087,12 @@ async function addOrbOverlays(
   if (unlockSet) {
     emptyOrbUrl = await getPOISpriteFirstFrame({ type: 'item', item: 'orb', collected: true } as any);
   }
-  if (currentGenerationId !== generationId) return;
+  if (!isCurrent()) return;
 
   activeOrbTargets = [];
   let addedCount = 0;
   for (const orb of dynamicOrbs) {
-    if (currentGenerationId !== generationId) return;
+    if (!isCurrent()) return;
 
     // Determine if this orb is collected based on unlock state
     let isCollected = false;
@@ -5134,6 +5157,7 @@ export async function renderGenerationResult(
   restoreTerrain = false,
 ): Promise<void> {
   const generationId = ++currentGenerationId;
+  const markerRequest = beginMarkerRequest(generationId);
   let completeArtwork = () => {};
   const artworkReady = new Promise<void>(resolve => { completeArtwork = resolve; });
   let completeTerrainDraw!: (drawn: boolean) => void;
@@ -5338,70 +5362,75 @@ export async function renderGenerationResult(
     await registerPixelSceneHoverDebug(viewer, result);
     if (currentGenerationId !== generationId) return;
 
-    // Orb icons render as individual overlays using the webp icons.
-    await addOrbOverlays(viewer, result, generationId, unlocks ?? null, isDaily ?? false);
-    if (currentGenerationId !== generationId) return;
+    const attachMarkers = async () => {
+      if (!markerRequest.isCurrent()) return;
+      // Orb icons render as individual overlays using the webp icons.
+      await addOrbOverlays(viewer, result, generationId, unlocks ?? null, isDaily ?? false, markerRequest.isCurrent);
+      if (!markerRequest.isCurrent()) return;
 
-    // 1. Build spatial index for POIs (markers). The index drives click hit
-    // testing and is needed even when sprites are baked into the DZI pixels.
-    window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 0 } }));
-    const markerOutcome = await (markerDataReady ?? prepareMarkers());
-    if (currentGenerationId !== generationId) return;
-    if ('error' in markerOutcome) throw markerOutcome.error;
-    const markerData = markerOutcome.value;
-    window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 50 } }));
-    if (currentGenerationId !== generationId) return;
+      // 1. Build spatial index for POIs (markers). The index drives click hit
+      // testing and is needed even when sprites are baked into the DZI pixels.
+      pendingMarkerProgressGeneration = generationId;
+      window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 0 } }));
+      const markerOutcome = await (markerDataReady ?? prepareMarkers());
+      if (!markerRequest.isCurrent()) return;
+      if ('error' in markerOutcome) throw markerOutcome.error;
+      const markerData = markerOutcome.value;
+      window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 50 } }));
+      if (!markerRequest.isCurrent()) return;
 
-    installClickHandler(viewer, markerData);
-    activeMarkerData = markerData;
-    // If the HV filter was active before this generation, re-apply rings to the
-    // new map. No-op when the predicate is null.
-    rebuildHighValueOverlays();
+      installClickHandler(viewer, markerData);
+      activeMarkerData = markerData;
+      // If the HV filter was active before this generation, re-apply rings to the
+      // new map. No-op when the predicate is null.
+      rebuildHighValueOverlays();
 
-    let itemsProgressDone = false;
-    const emitItemsDone = () => {
-      if (itemsProgressDone || currentGenerationId !== generationId) return;
-      itemsProgressDone = true;
-      window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 100 } }));
+      const emitItemsDone = markerRequest.completeProgress;
+
+      const visibleMarkerData = bakedDecorations
+        ? legacyMimicMarkerData(markerData, result.bakedMimicSpritesVersionByPW) : markerData;
+      if (!visibleMarkerData) {
+        // New bakes include every sprite. Legacy bakes get only their missing
+        // mimic icons above the existing DZI, without regenerating terrain.
+        emitItemsDone();
+      } else {
+        // 2. Add as a custom OSD tiled layer
+        const markerTileSource = createMarkerTileSource(visibleMarkerData);
+        viewer.addTiledImage({
+          tileSource: markerTileSource,
+          x: visibleMarkerData.originX,
+          y: visibleMarkerData.originY,
+          width: visibleMarkerData.bboxWidth,
+          success: (event: any) => {
+            if (!markerRequest.isCurrent()) {
+              try {
+                viewer.world.removeItem(event.item);
+              } catch {}
+              return;
+            }
+            event.item._isMarkerLayer = true;
+            dynamicTiledImages.add(event.item);
+            markerTiledImage = event.item;
+
+            emitItemsDone();
+          },
+          error: (err: any) => {
+            if (!markerRequest.isCurrent()) return;
+            console.warn('[OSD Bridge] Failed to add marker tiled image:', err);
+            emitItemsDone();
+          },
+        });
+
+        // Fallback: if OSD callback hasn't fired within 3s, force-complete the bar
+        setTimeout(emitItemsDone, 3000);
+      }
     };
-
-    const visibleMarkerData = bakedDecorations
-      ? legacyMimicMarkerData(markerData, result.bakedMimicSpritesVersionByPW) : markerData;
-    if (!visibleMarkerData) {
-      // New bakes include every sprite. Legacy bakes get only their missing
-      // mimic icons above the existing DZI, without regenerating terrain.
-      emitItemsDone();
-    } else {
-      // 2. Add as a custom OSD tiled layer
-      const markerTileSource = createMarkerTileSource(visibleMarkerData);
-      viewer.addTiledImage({
-        tileSource: markerTileSource,
-        x: visibleMarkerData.originX,
-        y: visibleMarkerData.originY,
-        width: visibleMarkerData.bboxWidth,
-        success: (event: any) => {
-          if (currentGenerationId !== generationId) {
-            try {
-              viewer.world.removeItem(event.item);
-            } catch {}
-            return;
-          }
-          event.item._isMarkerLayer = true;
-          dynamicTiledImages.add(event.item);
-          markerTiledImage = event.item;
-
-          emitItemsDone();
-        },
-        error: (err: any) => {
-          if (currentGenerationId !== generationId) return;
-          console.warn('[OSD Bridge] Failed to add marker tiled image:', err);
-          emitItemsDone();
-        },
-      });
-
-      // Fallback: if OSD callback hasn't fired within 3s, force-complete the bar
-      setTimeout(emitItemsDone, 3000);
+    try {
+      await attachMarkers();
+    } catch (error) {
+      if (markerRequest.isCurrent()) throw error;
     }
+    if (currentGenerationId !== generationId) return;
 
     // A separate, non-interactive animation layer; never baked into terrain or
     // added to loot counts. Scene metadata also works on existing daily bakes.
@@ -5425,6 +5454,7 @@ export async function rebuildAltLayers(
   isDaily: boolean
 ): Promise<void> {
   const generationId = currentGenerationId;
+  const markerRequest = beginMarkerRequest(generationId);
 
   // 1. Remove previous marker layer
   if (markerTiledImage) {
@@ -5444,13 +5474,20 @@ export async function rebuildAltLayers(
   }
   dynamicOverlayElements = [];
 
-  // 3. Rebuild orb overlays
-  await addOrbOverlays(viewer, result, generationId, unlocks, isDaily);
-  if (currentGenerationId !== generationId) return;
+  let markerData: MarkerData;
+  try {
+    // 3. Rebuild orb overlays
+    await addOrbOverlays(viewer, result, generationId, unlocks, isDaily, markerRequest.isCurrent);
+    if (!markerRequest.isCurrent()) return;
 
-  // 4. Build new marker data
-  const markerData = await buildMarkerData(result);
-  if (currentGenerationId !== generationId) return;
+    // 4. Build new marker data
+    markerData = await buildMarkerData(result);
+  } catch (error) {
+    if (!markerRequest.isCurrent()) return;
+    markerRequest.completeProgress();
+    throw error;
+  }
+  if (!markerRequest.isCurrent()) return;
 
   // 5. Add as a custom OSD tiled layer
   const markerTileSource = createMarkerTileSource(markerData);
@@ -5464,7 +5501,7 @@ export async function rebuildAltLayers(
     y: markerData.originY,
     width: markerData.bboxWidth,
     success: (event: any) => {
-      if (currentGenerationId !== generationId) {
+      if (!markerRequest.isCurrent()) {
         try {
           viewer.world.removeItem(event.item);
         } catch {}
@@ -5473,11 +5510,15 @@ export async function rebuildAltLayers(
       event.item._isMarkerLayer = true;
       dynamicTiledImages.add(event.item);
       markerTiledImage = event.item;
+      markerRequest.completeProgress();
     },
     error: (err: any) => {
+      if (!markerRequest.isCurrent()) return;
       console.warn('[OSD Bridge] Failed to add marker tiled image:', err);
+      markerRequest.completeProgress();
     },
   });
+  if (pendingMarkerProgressGeneration === generationId) setTimeout(markerRequest.completeProgress, 3000);
 }
 
 export { getAllPOIsFlat } from "./poi-inventory";
