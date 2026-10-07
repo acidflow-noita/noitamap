@@ -509,8 +509,8 @@ function updateGenerateButtonState(): void {
   }
 }
 
-/** Show the non-blocking loading strip with download already complete. */
-export function showLoadingStrip(): void {
+/** Show a new load, or preserve the phase values when publishing an update. */
+export function showLoadingStrip(reset = true): void {
   loadingStripRevision++;
   clearTimeout(loadingStripHideTimer);
   loadingStripHideTimer = undefined;
@@ -519,18 +519,96 @@ export function showLoadingStrip(): void {
   if (!strip) return;
   strip.classList.remove("fade-out");
   strip.classList.add("visible");
-  // Skip download phase (data.zip already loaded)
-  const dl = document.getElementById("loading-bar-download") as HTMLElement | null;
-  if (dl) dl.style.width = "100%";
-  // Reset generation and items bars
-  const gen = document.getElementById("loading-bar-generation") as HTMLElement | null;
-  const items = document.getElementById("loading-bar-items") as HTMLElement | null;
-  if (gen) gen.style.width = "0%";
-  if (items) items.style.width = "0%";
+  if (!reset) return;
+  for (const phase of ['download', 'generation', 'items']) {
+    const bar = document.getElementById(`loading-bar-${phase}`);
+    if (bar) bar.style.width = '0%';
+  }
   const title = document.getElementById("map-loading-title");
-  if (title) title.textContent = i18next.t("loading.mapData.generating");
+  if (title) title.textContent = i18next.t("loading.maps");
   const status = document.getElementById("map-loading-status");
-  if (status) status.textContent = "33%";
+  if (status) status.textContent = '';
+  document.querySelector('.loading-strip-bar-track')?.classList.add('indeterminate');
+}
+
+type LoadingPhase = 'download' | 'generation' | 'items';
+
+/** The strip reports ordered phases of the selected map, never background work. */
+export function createLoadingStripProgress() {
+  const phases: LoadingPhase[] = ['download', 'generation', 'items'];
+  let active = false, finished = true;
+  let baked: boolean | undefined;
+  let phase: LoadingPhase | undefined, percentage = 0;
+
+  const render = () => {
+    showLoadingStrip(false);
+    const index = phase ? phases.indexOf(phase) : -1;
+    const itemsOnly = baked === true;
+    const values = phases.map((_, i) => itemsOnly
+      ? (i === 2 && phase === 'items' ? percentage : 0)
+      : (i < index ? 100 : i === index ? percentage : 0));
+    const weight = itemsOnly ? 1 : 3;
+    phases.forEach((name, i) => {
+      const bar = document.getElementById(`loading-bar-${name}`);
+      if (bar) bar.style.width = `${values[i] / weight}%`;
+    });
+    const title = document.getElementById('map-loading-title');
+    const key = phase === 'items' ? 'loading.mapData.addingItems'
+      : phase === 'download' && percentage < 100 ? 'loading.mapData.downloading'
+      : baked === false ? 'loading.mapData.generating' : 'loading.maps';
+    if (title) title.textContent = i18next.t(key);
+    const status = document.getElementById('map-loading-status');
+    const complete = phase === 'items' && percentage === 100;
+    const overall = Math.round(values.reduce((a, b) => a + b, 0) / weight);
+    if (status) status.textContent = phase ? `${complete ? 100 : Math.min(99, overall)}%` : '';
+    document.querySelector('.loading-strip-bar-track')?.classList.toggle('indeterminate',
+      !phase || (phase !== 'items' && percentage === 100));
+  };
+
+  return {
+    start() {
+      active = true; finished = false; baked = undefined; phase = undefined; percentage = 0;
+    },
+    settle() {
+      active = false;
+      // OSD may still owe the current marker layer's completion callback.
+      if (phase !== 'items') { finished = true; hideLoadingStrip(); }
+    },
+    cancel() {
+      active = false; finished = true; hideLoadingStrip();
+    },
+    show() {
+      if (active && !finished) render();
+    },
+    setBaked(value: boolean) {
+      baked = value;
+      if (!active || finished) return;
+      if (value && phase !== 'items') {
+        phase = undefined; percentage = 0;
+        for (const name of phases) {
+          const bar = document.getElementById(`loading-bar-${name}`);
+          if (bar) bar.style.width = '0%';
+        }
+        document.querySelector('.loading-strip-bar-track')?.classList.remove('indeterminate');
+        hideLoadingStrip();
+      } else if (document.getElementById('map-loading-strip')?.classList.contains('visible')) render();
+    },
+    update(next: LoadingPhase, value: number) {
+      if (!Number.isFinite(value) || finished) return;
+      if (!active && !(phase === 'items' && next === 'items')) return;
+      if (baked === true && next !== 'items') return;
+      if (phase && phases.indexOf(next) < phases.indexOf(phase)) return;
+      const nextPercentage = Math.min(100, Math.max(0, value));
+      if (phase === next && nextPercentage < percentage) return;
+      phase = next; percentage = nextPercentage;
+      if (next === 'generation') baked = false;
+      render();
+      if (next === 'items' && percentage === 100) {
+        finished = true;
+        finishLoadingStrip();
+      }
+    },
+  };
 }
 
 /** Hide the loading strip with a fade-out. */

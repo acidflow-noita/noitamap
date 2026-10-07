@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { ScriptTarget, transpileModule } from 'typescript';
+import { bindLoadingProgress } from './helpers/loading-progress';
 
 vi.mock('i18next', () => ({ default: { t: (key: string) => key } }));
 vi.mock('../src/data_sources/overlays', () => ({ isValidOverlayKey: () => false }));
@@ -10,6 +9,7 @@ vi.mock('../src/spoiler-free', () => ({ isSpoilerFree: () => false }));
 vi.mock('../src/overflow-menu', () => ({ updateOverflowMenu: vi.fn() }));
 
 let ui: typeof import('../src/dynamic_ui');
+let progress: ReturnType<typeof bindLoadingProgress>;
 let frames: FrameRequestCallback[];
 const markup = `<div id="map-loading-strip">
   <div id="loading-bar-download"></div><div id="loading-bar-generation"></div><div id="loading-bar-items"></div>
@@ -19,30 +19,14 @@ const strip = () => element('map-loading-strip');
 const width = (phase: string) => element(`loading-bar-${phase}`).style.width;
 const frame = () => { for (const callback of frames.splice(0)) callback(performance.now()); };
 
-/** Exercise main's actual completion handler, including its two-frame delay. */
-function itemsProgress(percentage: number) {
-  const source = readFileSync('src/main.ts', 'utf8');
-  const start = source.indexOf('  window.addEventListener("itemsGenerationProgress"');
-  const end = source.indexOf('\n\n  // TODO:', start);
-  expect(start).toBeGreaterThan(0); expect(end).toBeGreaterThan(start);
-  const script = transpileModule(source.slice(start, end), {
-    compilerOptions: { target: ScriptTarget.ES2022 },
-  }).outputText;
-  let handler!: (event: CustomEvent) => void;
-  new Function('window', 'i18next', 'showLoadingStrip', 'hideLoadingStrip', 'finishLoadingStrip',
-    '_getDownloadBar', '_getGenerationBar', '_getItemsBar', '_getTitle', '_getStatusText', script)(
-    { addEventListener: (_name: string, callback: typeof handler) => { handler = callback; } },
-    { isInitialized: true, t: (key: string) => key }, ui.showLoadingStrip, ui.hideLoadingStrip, ui.finishLoadingStrip,
-    () => element('loading-bar-download'), () => element('loading-bar-generation'), () => element('loading-bar-items'),
-    () => element('map-loading-title'), () => element('map-loading-status'));
-  handler(new CustomEvent('itemsGenerationProgress', { detail: { percentage } }));
-}
+const itemsProgress = (percentage: number) => progress.update('items', percentage);
 
 beforeEach(async () => {
   vi.resetModules(); vi.useFakeTimers(); frames = [];
   document.body.innerHTML = markup;
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => frames.push(callback));
   ui = await import('../src/dynamic_ui');
+  progress = bindLoadingProgress(ui); progress.start(); progress.setBaked(true);
 });
 afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); document.body.replaceChildren(); });
 
@@ -104,7 +88,7 @@ it('completes current progress after the same two frames and fade', () => {
 });
 
 it('lets later item progress supersede a queued completion', () => {
-  itemsProgress(100); frame(); itemsProgress(50); frame();
+  itemsProgress(100); frame(); progress.start(); progress.setBaked(true); itemsProgress(50); frame();
   vi.advanceTimersByTime(1000);
   expect(strip().classList.contains('visible')).toBe(true);
   expect(width('items')).toBe('50%');

@@ -860,7 +860,9 @@ body.toggle-hidden div.osOverlayHighlight {
 .loading-strip-bar {
   position: relative;
   height: 100%;
-  max-width: 33.34%;
+  /* Widths already account for three live phases or one baked POI phase. */
+  max-width: 100%;
+  flex-shrink: 0;
   background: var(--accent-strong);
   transition: width 0.25s ease;
   overflow: hidden;
