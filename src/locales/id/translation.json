@@ -5777,5 +5777,9 @@
   "hdRenderer": {
     "title": "Perender HD",
     "content": "Menggunakan GPU untuk medan yang mendetail pada peta yang dihasilkan. Aktif secara bawaan. Memuat ulang peta. Gambar peta harian tidak berubah."
+  },
+  "startup": {
+    "failed": "Noitamap tidak dapat dimulai. Muat ulang halaman untuk mencoba lagi.",
+    "retry": "Muat ulang halaman"
   }
 }

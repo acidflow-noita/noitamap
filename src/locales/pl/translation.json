@@ -5777,5 +5777,9 @@
   "hdRenderer": {
     "title": "Renderowanie HD",
     "content": "Używa GPU do wyświetlania szczegółowego terenu na generowanych mapach. Domyślnie włączone. Ponownie ładuje mapę. Obrazy map dziennych pozostają bez zmian."
+  },
+  "startup": {
+    "failed": "Nie udało się uruchomić Noitamap. Odśwież stronę i spróbuj ponownie.",
+    "retry": "Odśwież stronę"
   }
 }

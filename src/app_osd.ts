@@ -182,13 +182,18 @@ export class AppOSD {
     return this.viewer.isOpen();
   }
 
-  private static getTileSources(mapName: MapName): string[] {
-    let sources = getTileData(mapName).map(tileData => tileData.url);
+  private static getTileSources(mapName: MapName): DziTileSource[] {
+    let entries = getTileData(mapName);
     // Light mode on the dynamic map: skip left/right PW backgrounds, keep only middle.
     if (mapName === 'dynamic-main-branch' && isLightMode()) {
-      sources = sources.filter(url => !/-left\.|-right\./.test(url));
+      entries = entries.filter(({ url }) => !/-left\.|-right\./.test(url));
     }
-    return sources;
+    return entries.map(({ url, dziContent }) => {
+      // Preserve OSD's URL, geometry and overlap interpretation, using the
+      // exact descriptor already captured by the map-definition build.
+      const options = OpenSeadragon.DziTileSource.prototype.configure(JSON.parse(dziContent), url);
+      return new OpenSeadragon.DziTileSource(options);
+    });
   }
 
   // Cached natural size of the simplistic-background PNG, loaded once.

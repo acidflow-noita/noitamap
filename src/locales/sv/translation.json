@@ -5777,5 +5777,9 @@
   "hdRenderer": {
     "title": "HD-rendering",
     "content": "Använder GPU:n för detaljerad terräng på genererade kartor. Aktiverad som standard. Laddar om kartan. Bilderna för dagliga kartor ändras inte."
+  },
+  "startup": {
+    "failed": "Noitamap kunde inte startas. Ladda om sidan och försök igen.",
+    "retry": "Ladda om sidan"
   }
 }

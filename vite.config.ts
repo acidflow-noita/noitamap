@@ -221,6 +221,7 @@ export default defineConfig({
         codeSplitting: {
           includeDependenciesRecursively: true,
           groups: [
+            { name: "startup", test: /\/src\/(?:startup\.ts|i18n\.ts|locales\/en\/translation\.json)$/, priority: 45 },
             { name: "terrain-assets", test: /\/lib\/noita-telescope-vm\/data\/.*\?url/, priority: 200 },
             { name: "telescope-data-tables", test: /\/lib\/noita-telescope-vm\/js\/.*(?:enemy_config|engine_data)\.js$/, priority: 140 },
             { name: "telescope-runtime", test: /\/src\/(?:data-archive|renderer_settings|telescope\/(?:telescope-(?:data-bridge|dom-shim|app-shim|assets|asset-paths)|zip-extraction-shim|png-decode|full-pixel-data))\.[jt]s$/, priority: 150 },

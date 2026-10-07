@@ -5777,5 +5777,9 @@
   "hdRenderer": {
     "title": "HD-renderöinti",
     "content": "Käyttää näytönohjainta yksityiskohtaisen maaston piirtämiseen luoduilla kartoilla. Oletuksena käytössä. Lataa kartan uudelleen. Päivittäisten karttojen kuvat eivät muutu."
+  },
+  "startup": {
+    "failed": "Noitamap ei käynnistynyt. Lataa sivu uudelleen ja yritä uudestaan.",
+    "retry": "Lataa sivu uudelleen"
   }
 }

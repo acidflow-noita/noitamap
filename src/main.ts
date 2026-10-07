@@ -4,7 +4,8 @@ import { getPOIDisplayName } from "./telescope/poi-display-name";
 import { getPOIBiomeDescription } from "./data_sources/biome-names";
 import { loadSpritesheetAndAtlas } from "./telescope/poi-spatial-index";
 import { getCachedGeneration } from "./telescope/tile-cache";
-import i18next, { SUPPORTED_LANGUAGES } from "./i18n";
+import i18next, { initializeTranslations, STARTUP_MESSAGES, SUPPORTED_LANGUAGES } from "./i18n";
+import { showStartupFailure, startWhenReady } from './startup';
 import { setupDropOverlay } from "./drop-overlay";
 import { createProLoader } from "./pro-loader";
 import { negotiateTabHandoff } from "./tab-coordinator";
@@ -221,39 +222,14 @@ export const refreshSearchTranslations = () => {
 // we want it to take over so this duplicate tab can self-close).
 const _tabHandoff = negotiateTabHandoff();
 
-document.addEventListener("DOMContentLoaded", async () => {
+startWhenReady(async () => {
   if (!(await _tabHandoff)) return;
   // Start preloading the atlas for search results immediately
   loadSpritesheetAndAtlas()
     .catch((e) => console.warn("[Noitamap] Atlas preload failed:", e));
 
   try {
-    await i18next.init({
-      fallbackLng: "en",
-      debug: false,
-      showSupportNotice: false,
-      detection: {
-        order: ["querystring", "cookie", "localStorage", "sessionStorage", "navigator", "htmlTag"],
-        lookupQuerystring: "lng",
-        lookupCookie: "i18next",
-        lookupLocalStorage: "i18nextLng",
-        lookupSessionStorage: "i18nextLng",
-        caches: ["localStorage", "cookie"],
-      },
-      backend: {
-        loadPath: "./locales/{{lng}}/translation.json",
-        requestOptions: {
-          cache: "no-store",
-        },
-      },
-      interpolation: {
-        escapeValue: false,
-      },
-      supportedLngs: Object.keys(SUPPORTED_LANGUAGES),
-      load: "languageOnly",
-      cleanCode: true,
-      nonExplicitSupportedLngs: true,
-    });
+    await initializeTranslations();
 
     createLanguageSelector();
     updateTranslations();
@@ -1461,4 +1437,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   } else {
     setTimeout(preloadAllLocales, 2000);
   }
-});
+}, error => showStartupFailure(error,
+  i18next.t('startup.failed', { defaultValue: STARTUP_MESSAGES.failed }) || STARTUP_MESSAGES.failed,
+  i18next.t('startup.retry', { defaultValue: STARTUP_MESSAGES.retry }) || STARTUP_MESSAGES.retry));

@@ -5777,5 +5777,9 @@
   "hdRenderer": {
     "title": "HD-Renderer",
     "content": "Nutzt die GPU für detailliertes Gelände auf generierten Karten. Standardmäßig aktiviert. Lädt die Karte neu. Bilder der täglichen Karten bleiben unverändert."
+  },
+  "startup": {
+    "failed": "Noitamap konnte nicht gestartet werden. Lade die Seite neu, um es erneut zu versuchen.",
+    "retry": "Seite neu laden"
   }
 }

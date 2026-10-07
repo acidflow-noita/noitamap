@@ -5777,5 +5777,9 @@
   "hdRenderer": {
     "title": "Rendu HD",
     "content": "Utilise le GPU pour afficher un terrain détaillé sur les cartes générées. Activé par défaut. Recharge la carte. Les images des cartes quotidiennes restent inchangées."
+  },
+  "startup": {
+    "failed": "Impossible de démarrer Noitamap. Rechargez la page pour réessayer.",
+    "retry": "Recharger la page"
   }
 }

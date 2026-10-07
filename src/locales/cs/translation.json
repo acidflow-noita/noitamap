@@ -5777,5 +5777,9 @@
   "hdRenderer": {
     "title": "HD vykreslování",
     "content": "Používá GPU pro detailní terén na generovaných mapách. Ve výchozím nastavení zapnuto. Znovu načte mapu. Obrázky denních map se nemění."
+  },
+  "startup": {
+    "failed": "Noitamap se nepodařilo spustit. Obnovte stránku a zkuste to znovu.",
+    "retry": "Obnovit stránku"
   }
 }

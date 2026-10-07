@@ -1,4 +1,5 @@
 import json from '../data/tilesources.json';
+import { STARTUP_REQUEST_TIMEOUT_MS } from '../startup';
 
 export type TileData = {
   url: string;
@@ -41,8 +42,8 @@ export async function fetchMapVersions(mapName: MapName): Promise<Record<string,
 
     // We don't want to fetch a cached version of the manifest!
     const cacheBustString = await fetch(versionFile, {
-      // Commented out because it's causing CORS issues
-      // headers: { 'cache-control': 'no-cache' }
+      cache: 'no-store',
+      signal: AbortSignal.timeout(STARTUP_REQUEST_TIMEOUT_MS),
     })
       .then(async res => {
         if (res.status !== 200) throw new Error(`Fetch failed: ${res.status} ${res.statusText}`);
