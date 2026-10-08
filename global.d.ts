@@ -78,6 +78,8 @@ declare global {
     getDailySeedIdentity?: () => 'today' | 'previous' | null;
     /** Set active seed active params */
     setSeedParams: (seed: number) => void;
+    /** Select the current published Daily using the normal baked-map route. */
+    openTodaysDaily?: () => Promise<boolean>;
     /** Set the canvas background and update URL */
     setBackground: (type: 'map' | 'black' | 'white') => void;
     /** Set the current map in unified search (so search results match after map change) */

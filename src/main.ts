@@ -515,6 +515,7 @@ startWhenReady(async () => {
   let lastSessionIsDaily: boolean = false;
   // Pending seed set via setSeedParams before the map has switched to dynamic
   let pendingDynamicSeed: number | null = null;
+  let drawingDailyRequest: { run?: Promise<GenerationResult | null> } | undefined;
 
   let reportHighlights: ReportMapHighlights | null = null;
   let reportMapLoading = false;
@@ -741,6 +742,28 @@ startWhenReady(async () => {
       lastSessionIsDaily = false;
       if (app.getMap() === "dynamic-main-branch") {
         runDynamicMap(seed, false, dynamicOpts).catch((e) => console.error("[Noitamap] Dynamic map rebuild failed:", e));
+      }
+    },
+    openTodaysDaily: async () => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('se');
+      url.searchParams.delete('seed');
+      url.searchParams.delete('nb');
+      url.searchParams.set('ds', '1');
+      window.history.replaceState(window.history.state, '', url);
+      pendingDynamicSeed = null;
+      if (app.getMap() === 'dynamic-main-branch') {
+        return !!await runDynamicMapFromURL(dynamicOpts, true);
+      }
+      // The ordinary map-change handler starts exactly one Daily request.
+      // Wait for it before the drawing importer publishes its shapes.
+      const request: { run?: Promise<GenerationResult | null> } = {};
+      drawingDailyRequest = request;
+      try {
+        await app.setMap('dynamic-main-branch');
+        return !!(request.run && await request.run);
+      } finally {
+        if (drawingDailyRequest === request) drawingDailyRequest = undefined;
       }
     },
     setBackground: (type: "map" | "black" | "white") => {
@@ -1040,8 +1063,14 @@ startWhenReady(async () => {
       unifiedSearch.setDynamicPOIs([]);
       unifiedSearch.setIndexingState('idle');
     } else if (lastKnownMap !== "dynamic-main-branch" && state.map === "dynamic-main-branch") {
-      // Moving TO dynamic map — if we have a pending seed from drawing import, use it directly
-      if (pendingDynamicSeed !== null) {
+      if (drawingDailyRequest) {
+        const request = drawingDailyRequest;
+        drawingDailyRequest = undefined;
+        request.run = runDynamicMapFromURL(dynamicOpts, true);
+        // Also handle failures if the caller's map transition was superseded.
+        void request.run.catch(e => console.error('[Noitamap] Drawing Daily load failed:', e));
+      } else if (pendingDynamicSeed !== null) {
+        // A normal drawing import keeps its explicitly pinned seed.
         const seedToRun = pendingDynamicSeed;
         pendingDynamicSeed = null;
         runDynamicMap(seedToRun, false, dynamicOpts).catch((e) => console.error("[Noitamap] Dynamic map switch (pending seed) failed:", e));

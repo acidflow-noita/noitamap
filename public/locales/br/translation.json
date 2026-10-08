@@ -4794,6 +4794,13 @@
       "upTitle": "Mover para frente",
       "downTitle": "Mover para tras",
       "backTitle": "Enviar para tras"
+    },
+    "target": {
+      "label": "Abrir em",
+      "fixed": "Este mapa/seed",
+      "daily": "Diário de hoje",
+      "description": "A escolha é salva na imagem. Diário de hoje usa a seed diária atual sempre que o desenho é aberto.",
+      "updateRequired": "Recarregue a página para abrir um desenho no diário de hoje."
     }
   },
   "dynamicMap": {

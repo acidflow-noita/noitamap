@@ -51,6 +51,16 @@ beforeEach(() => {
 });
 
 describe('URL seed request ownership', () => {
+  it('requires a fresh published Daily for a floating drawing and does not invent a fallback seed', async () => {
+    history.replaceState(null, '', '/?m=dy&ds=1');
+    const { resolveSeed } = await import('../src/dynamic-map');
+    expect(await resolveSeed(() => true, true)).toEqual({ seed: today, isDaily: true });
+    expect(fetchDailySeed).toHaveBeenLastCalledWith(true);
+    history.replaceState(null, '', '/?m=dy&ds=1');
+    vi.mocked(fetchDailySeed).mockRejectedValueOnce(new Error('offline'));
+    await expect(resolveSeed(() => true, true)).rejects.toThrow('offline');
+    expect(new URL(location.href).searchParams.has('se')).toBe(false);
+  });
   function deferred<T>() {
     let resolve!: (value: T) => void, reject!: (error: Error) => void;
     const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; });

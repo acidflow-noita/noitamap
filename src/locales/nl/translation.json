@@ -4794,6 +4794,13 @@
       "upTitle": "Vooruit verplaatsen",
       "downTitle": "Achteruit verplaatsen",
       "backTitle": "Naar achtergrond"
+    },
+    "target": {
+      "label": "Openen op",
+      "fixed": "Deze kaart/seed",
+      "daily": "Daily van vandaag",
+      "description": "De keuze wordt in de afbeelding opgeslagen. De daily van vandaag gebruikt bij elke opening van de tekening de actuele dagelijkse seed.",
+      "updateRequired": "Vernieuw de pagina om een tekening op de daily van vandaag te openen."
     }
   },
   "dynamicMap": {

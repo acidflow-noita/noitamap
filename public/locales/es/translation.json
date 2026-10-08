@@ -4794,6 +4794,13 @@
       "upTitle": "Mover adelante",
       "downTitle": "Mover atras",
       "backTitle": "Enviar al fondo"
+    },
+    "target": {
+      "label": "Abrir en",
+      "fixed": "Este mapa/semilla",
+      "daily": "Diario de hoy",
+      "description": "La elección se guarda en la imagen. Diario de hoy usa la semilla diaria actual cada vez que se abre el dibujo.",
+      "updateRequired": "Recarga la página para abrir un dibujo en el diario de hoy."
     }
   },
   "dynamicMap": {

@@ -4794,6 +4794,13 @@
       "upTitle": "向前移动",
       "downTitle": "向后移动",
       "backTitle": "移至最后"
+    },
+    "target": {
+      "label": "打开位置",
+      "fixed": "此地图／种子",
+      "daily": "今日每日挑战",
+      "description": "此选项会保存在图片中。“今日每日挑战”会在每次打开绘图时使用最新的每日种子。",
+      "updateRequired": "请刷新页面，以在今日每日挑战中打开绘图。"
     }
   },
   "dynamicMap": {

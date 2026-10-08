@@ -4794,6 +4794,13 @@
       "upTitle": "Siirra eteenpain",
       "downTitle": "Siirra taaksepain",
       "backTitle": "Lahetaa taakse"
+    },
+    "target": {
+      "label": "Avaa kohteessa",
+      "fixed": "Tämä kartta/siemen",
+      "daily": "Tämän päivän päivittäinen",
+      "description": "Valinta tallennetaan kuvaan. Päivittäinen vaihtoehto käyttää ajantasaista päivittäistä siementä aina, kun piirros avataan.",
+      "updateRequired": "Lataa sivu uudelleen avataksesi piirroksen tämän päivän päivittäisellä siemenellä."
     }
   },
   "dynamicMap": {

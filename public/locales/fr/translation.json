@@ -4794,6 +4794,13 @@
       "upTitle": "Avancer",
       "downTitle": "Reculer",
       "backTitle": "Mettre en arriere-plan"
+    },
+    "target": {
+      "label": "Ouvrir sur",
+      "fixed": "Cette carte/graine",
+      "daily": "Quotidien du jour",
+      "description": "Le choix est enregistré dans l’image. Le quotidien du jour utilise la graine quotidienne actuelle à chaque ouverture du dessin.",
+      "updateRequired": "Rechargez la page pour ouvrir un dessin sur le quotidien du jour."
     }
   },
   "dynamicMap": {

@@ -4794,6 +4794,13 @@
       "upTitle": "Przesun do przodu",
       "downTitle": "Przesun do tylu",
       "backTitle": "Przesun na spod"
+    },
+    "target": {
+      "label": "Otwórz na",
+      "fixed": "Tej mapie / tym seedzie",
+      "daily": "Dzisiejszym seedzie dziennym",
+      "description": "Wybór jest zapisywany w obrazie. Dzisiejszy seed dzienny używa aktualnego dziennego seedu przy każdym otwarciu rysunku.",
+      "updateRequired": "Odśwież stronę, aby otworzyć rysunek na dzisiejszym seedzie dziennym."
     }
   },
   "dynamicMap": {

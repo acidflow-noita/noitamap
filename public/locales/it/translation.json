@@ -4794,6 +4794,13 @@
       "upTitle": "Porta avanti",
       "downTitle": "Porta indietro",
       "backTitle": "Manda in fondo"
+    },
+    "target": {
+      "label": "Apri su",
+      "fixed": "Questa mappa/seed",
+      "daily": "Giornaliera di oggi",
+      "description": "La scelta viene salvata nell’immagine. La giornaliera di oggi usa il seed giornaliero attuale ogni volta che si apre il disegno.",
+      "updateRequired": "Ricarica la pagina per aprire un disegno sulla giornaliera di oggi."
     }
   },
   "dynamicMap": {

@@ -4794,6 +4794,13 @@
       "upTitle": "Flytta framat",
       "downTitle": "Flytta bakat",
       "backTitle": "Flytta langst bak"
+    },
+    "target": {
+      "label": "Öppna på",
+      "fixed": "Den här kartan/det här fröet",
+      "daily": "Dagens Daily",
+      "description": "Valet sparas i bilden. Dagens Daily använder det aktuella dagliga fröet varje gång teckningen öppnas.",
+      "updateRequired": "Ladda om sidan för att öppna en teckning på dagens Daily."
     }
   },
   "dynamicMap": {

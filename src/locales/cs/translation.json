@@ -4794,6 +4794,13 @@
       "upTitle": "Posunout dopredu",
       "downTitle": "Posunout dozadu",
       "backTitle": "Odeslat dozadu"
+    },
+    "target": {
+      "label": "Otevřít na",
+      "fixed": "Této mapě / tomto seedu",
+      "daily": "Dnešním denním seedu",
+      "description": "Volba se uloží do obrázku. Dnešní denní seed se při každém otevření kresby načte znovu.",
+      "updateRequired": "Obnovte stránku, aby bylo možné otevřít kresbu na dnešním denním seedu."
     }
   },
   "dynamicMap": {

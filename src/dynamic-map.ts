@@ -202,7 +202,7 @@ export function startDailyFastPath(): void {
  * - ?ds=1 without ?se → fetch today's seed and pin it in the URL
  * - Neither present → treat as daily seed (fetch + set both params)
  */
-export async function resolveSeed(isCurrent = () => true): Promise<{ seed: number; isDaily: boolean }> {
+export async function resolveSeed(isCurrent = () => true, requirePublishedDaily = false): Promise<{ seed: number; isDaily: boolean }> {
   const urlState = parseURL();
 
   if (urlState.seed !== undefined) {
@@ -213,10 +213,11 @@ export async function resolveSeed(isCurrent = () => true): Promise<{ seed: numbe
 
   // No seed identity: daily-only links and the default map resolve today.
   try {
-    const seed = await fetchDailySeed();
+    const seed = await fetchDailySeed(requirePublishedDaily);
     if (isCurrent()) updateURLWithSeed(seed, true);
     return { seed, isDaily: true };
   } catch (err) {
+    if (requirePublishedDaily) throw err;
     if (isCurrent()) console.warn("[DynamicMap] Daily seed fetch failed, using fallback:", err);
     // Fallback: use a deterministic seed based on UTC date so every visitor
     // still sees the same map even when the Nolla endpoint is unreachable.
@@ -667,7 +668,7 @@ async function runDynamicMapRequest(
 /**
  * Convenience wrapper: resolve seed from URL then run the full pipeline.
  */
-export async function runDynamicMapFromURL(opts: DynamicMapOptions): Promise<GenerationResult | null> {
+export async function runDynamicMapFromURL(opts: DynamicMapOptions, requirePublishedDaily = false): Promise<GenerationResult | null> {
   // Own the request before Daily resolution awaits the network. A newer seed
   // or clearDynamicMap must invalidate both its URL write and pipeline start.
   const token = ++generationToken;
@@ -675,7 +676,7 @@ export async function runDynamicMapFromURL(opts: DynamicMapOptions): Promise<Gen
   try {
     opts.onRequestStateChange?.(true);
     if (!isCurrent()) return null;
-    const { seed, isDaily } = await resolveSeed(isCurrent);
+    const { seed, isDaily } = await resolveSeed(isCurrent, requirePublishedDaily);
     if (!isCurrent()) return null;
     return await runDynamicMapRequest(seed, isDaily, opts, token);
   } finally {

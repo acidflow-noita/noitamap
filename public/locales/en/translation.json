@@ -5347,6 +5347,13 @@
     "toggle": {
       "title": "Drawing Mode",
       "content": "Toggle drawing tools to annotate the map"
+    },
+    "target": {
+      "label": "Open on",
+      "fixed": "This map/seed",
+      "daily": "Today’s Daily",
+      "description": "Saved with the image. Today’s Daily uses the current daily seed whenever the drawing opens.",
+      "updateRequired": "Reload the page to open a drawing on today’s Daily."
     }
   },
   "konami": {
