@@ -1,3 +1,5 @@
+import { deliveryPlugin } from "./build_scripts/vite-delivery.ts";
+import { localeAssetsPlugin } from "./build_scripts/vite-locales.ts";
 import { terrainShaderBitsPlugin } from "./build_scripts/vite-terrain-shaders.ts";
 import { defineConfig, type Plugin } from "vite";
 import { telescopeBrowserPlugin } from "./build_scripts/vite-telescope-browser.ts";
@@ -60,8 +62,10 @@ const shimTelescopePlugin = {
 
 function workerOutputNames(): Plugin {
   let workerId = "";
+  let assetsDir = "assets";
   return {
     name: "worker-output-names",
+    configResolved(config) { assetsDir = config.build.assetsDir; },
     options(options) {
       const input = options.input;
       const entries = typeof input === "string" ? [input]
@@ -75,8 +79,8 @@ function workerOutputNames(): Plugin {
       // with different sourceMappingURLs. Give each worker's chunks/maps their
       // own namespace so neither output can silently overwrite the other.
       return { ...options,
-        chunkFileNames: `assets/worker-${workerId}-[name]-[hash].js`,
-        sourcemapFileNames: `assets/worker-${workerId}-[name]-[hash].js.map`,
+        chunkFileNames: `${assetsDir}/worker-${workerId}-[name]-[hash].js`,
+        sourcemapFileNames: `${assetsDir}/worker-${workerId}-[name]-[hash].js.map`,
       };
     },
   };
@@ -96,6 +100,8 @@ export default defineConfig({
     },
   },
   plugins: [
+    deliveryPlugin(),
+    localeAssetsPlugin(import.meta.dirname),
     dataArchivesPlugin(import.meta.dirname),
     telescopeScenesPlugin(import.meta.dirname),
     {
@@ -202,6 +208,7 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
+    assetsDir: "build",
     emptyOutDir: true, // Always start clean — no stale hashed files
     sourcemap: true,
     minify: "esbuild",
@@ -222,6 +229,7 @@ export default defineConfig({
           includeDependenciesRecursively: true,
           groups: [
             { name: "startup", test: /\/src\/(?:startup\.ts|i18n\.ts|locales\/en\/translation\.json)$/, priority: 45 },
+            { name: "creature-data", test: /\/src\/data\/creature-data\.ts$/, priority: 150 },
             { name: "terrain-assets", test: /\/lib\/noita-telescope-vm\/data\/.*\?url/, priority: 200 },
             { name: "telescope-data-tables", test: /\/lib\/noita-telescope-vm\/js\/.*(?:enemy_config|engine_data)\.js$/, priority: 140 },
             { name: "telescope-runtime", test: /\/src\/(?:data-archive|renderer_settings|telescope\/(?:telescope-(?:data-bridge|dom-shim|app-shim|assets|asset-paths)|zip-extraction-shim|png-decode|full-pixel-data))\.[jt]s$/, priority: 150 },

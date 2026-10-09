@@ -14,7 +14,8 @@
     "popoverContent": "Cerca incantesimi, oggetti, bacchette, boss, creature, pozioni, strutture e altro ancora. Utilizza i pulsanti filtro qui sotto per restringere i risultati per categoria.",
     "chunksAway": "~{{count}} chunk di distanza",
     "openTelescope": "Apri in Telescope",
-    "noResults": "Nessun risultato"
+    "noResults": "Nessun risultato",
+    "shortcutHint": "Attiva la ricerca: /, Ctrl+/ o ⌘+/"
   },
   "spell_prefix": "Incantesimo",
   "tiers_prefix": "Livelli",
@@ -5085,7 +5086,15 @@
     "ingestionEffects": "Effetti dell'ingestione",
     "reactionsHeader": "Reazioni materiali sul Barista",
     "asReagent": "Visualizza come reagente",
-    "asProduct": "Visualizza come prodotto"
+    "asProduct": "Visualizza come prodotto",
+    "openInWiki": "Apri in Noita Wiki",
+    "openInBartender": "Apri in Bartender",
+    "bartenderProductHint": "Visualizza in Bartender le reazioni che producono questo materiale.",
+    "bartenderReagentHint": "Visualizza in Bartender le reazioni che utilizzano questo materiale.",
+    "spawnBiomesPro": "L’evidenziazione dei biomi di comparsa è una funzione Pro.",
+    "spawnBiomesUnavailable": "I biomi di comparsa di questa creatura non sono disponibili su questa mappa.",
+    "showSpawnBiomes": "Mostra sulla mappa i biomi di comparsa",
+    "spawnMapMissing": "Non mostrato su questa mappa: {{locations}}"
   },
   "wand": {
     "shuffle": "Casuale",

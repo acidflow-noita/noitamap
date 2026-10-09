@@ -1,3 +1,5 @@
+import { releaseTerrainImage } from "./terrain-frame";
+
 declare const OpenSeadragon: any;
 
 export interface ViewportTerrainBounds {
@@ -156,11 +158,7 @@ export function planInstantTerrainViewport(viewport: any, bounds: ViewportTerrai
   return { x, y, width: pixelWidth * scale, height: pixelHeight * scale, scale, pixelWidth, pixelHeight };
 }
 
-function releaseImage(image: CanvasImageSource): void {
-  const owned = image as any;
-  if (typeof owned.close === 'function') owned.close();
-  else if (typeof owned.getContext === 'function') owned.width = owned.height = 0;
-}
+const releaseImage = releaseTerrainImage;
 
 /** Split coverage instead of painting an old frame beneath a newer one: air
  * in the newer frame must reveal the biome background, never old terrain. */
@@ -213,6 +211,8 @@ export function createInstantTerrainViewport(options: {
   maxRetainedPixels?: number;
   /** Prepare same-seed coverage before revealing a first close-up frame. */
   initialOverview?: boolean;
+  /** Ready GPU state can draw the current camera before the Canvas pass. */
+  renderFrameNow?: (plan: InstantTerrainViewportPlan) => CanvasImageSource;
 }) {
   const { bounds, signal } = options;
   const osd = options.viewer.viewer || options.viewer;
@@ -229,7 +229,7 @@ export function createInstantTerrainViewport(options: {
   const stats = { frames: 0, discarded: 0, renderMs: 0, firstDrawMs: 0, shadedPixels: 0, overviewMs: 0 };
   const started = performance.now();
   type Request = { plan: InstantTerrainViewportPlan; key: string; revision: number };
-  type Frame = Request & { image: CanvasImageSource };
+  type Frame = Request & { image: CanvasImageSource; borrowed?: boolean };
   let frame: Frame | undefined;
   let overview: Frame | undefined;
   let overviewReady = !options.initialOverview;
@@ -283,6 +283,16 @@ export function createInstantTerrainViewport(options: {
   }
 
   function stop(): void {
+    // Preserve the outgoing map before its GPU resources are retired/reused.
+    if (!destroyed && frame?.borrowed && options.renderFrameNow) {
+      try {
+        const image = options.renderFrameNow(frame.plan);
+        const copy = document.createElement('canvas');
+        copy.width = frame.plan.pixelWidth; copy.height = frame.plan.pixelHeight;
+        copy.getContext('2d')!.drawImage(image, 0, 0);
+        frame = { ...frame, image: copy, borrowed: false };
+      } catch { frame = undefined; }
+    }
     pending = undefined;
     controller?.abort();
     for (const name of events) osd.removeHandler?.(name, refresh);
@@ -306,7 +316,7 @@ export function createInstantTerrainViewport(options: {
       drawController.signal.throwIfAborted();
       return options.renderFrame(request.plan, drawController.signal, !!fallbackPlan);
     }).then(image => {
-      if (destroyed || signal.aborted || drawController.signal.aborted || request.revision !== revision()
+      if ((painted && options.renderFrameNow) || destroyed || signal.aborted || drawController.signal.aborted || request.revision !== revision()
         || (!fallbackPlan && frame?.key === desiredKey && request.key !== desiredKey)) {
         releaseImage(image);
         stats.discarded++;
@@ -349,6 +359,7 @@ export function createInstantTerrainViewport(options: {
       const version = revision();
       const key = [plan.x, plan.y, plan.pixelWidth, plan.pixelHeight, plan.scale, version].join('/');
       desiredKey = key;
+      if (painted && options.renderFrameNow) { pending = undefined; return; }
       if (key === active?.key || key === frame?.key) { pending = undefined; return; }
       pending = { plan, key, revision: version };
       pump();
@@ -357,6 +368,19 @@ export function createInstantTerrainViewport(options: {
   source.__drawViewport = (context: CanvasRenderingContext2D, item: any, viewport: any): boolean => {
     if (destroyed) return true;
     refresh();
+    if (painted && options.renderFrameNow && !signal.aborted && !failed) {
+      const plan = planInstantTerrainViewport(viewport, bounds);
+      if (!plan) return true;
+      try {
+        const start = performance.now();
+        const image = options.renderFrameNow(plan);
+        if (frame && !frame.borrowed) releaseImage(frame.image);
+        retained.forEach(entry => releaseImage(entry.image)); retained = [];
+        frame = { plan, image, key: desiredKey!, revision: revision(), borrowed: true };
+        stats.frames++; stats.renderMs += performance.now() - start;
+        stats.shadedPixels += plan.pixelWidth * plan.pixelHeight;
+      } catch (error) { fail(error); return true; }
+    }
     if (!frame) return true;
     // Clip fallback coverage out of every newer frame, including transparent
     // pixels. It cannot overwrite sharp terrain or resurrect erased material.
@@ -402,7 +426,7 @@ export function createInstantTerrainViewport(options: {
     if (destroyed) return;
     destroyed = true;
     stop();
-    if (frame) releaseImage(frame.image);
+    if (frame && !frame.borrowed) releaseImage(frame.image);
     frame = undefined;
     if (overview) releaseImage(overview.image);
     overview = undefined;

@@ -178,3 +178,53 @@ describe('POI card navigation ownership and cancellation', () => {
     }
   });
 });
+
+it('retains a suspended report through card replacement and returns exactly once on final close', () => {
+  const returnReport = vi.fn(), remove = vi.fn();
+  const cards = new POICardLifecycle(() => 1, remove);
+  const first = cards.begin('report', returnReport);
+  cards.begin('map');
+  expect(first.isCurrent()).toBe(false);
+  expect(returnReport).not.toHaveBeenCalled();
+  cards.close(); cards.close();
+  expect(returnReport).toHaveBeenCalledOnce();
+});
+
+it('returns a suspended report when navigation fails, without reviving a cancelled card', async () => {
+  const returnReport = vi.fn(), show = vi.fn();
+  const cards = new POICardLifecycle(() => 1, () => {});
+  cards.begin('report', returnReport).afterNavigation(Promise.resolve(false), show);
+  await Promise.resolve();
+  expect(returnReport).toHaveBeenCalledOnce();
+  expect(show).not.toHaveBeenCalled();
+  expect(cards.owner).toBeUndefined();
+});
+
+
+it('returns a suspended report if rendering the arrived card fails', async () => {
+  const returnReport = vi.fn();
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    const cards = new POICardLifecycle(() => 1, () => {});
+    cards.begin('report', returnReport).afterNavigation(Promise.resolve(true), () => { throw new Error('render failed'); });
+    await Promise.resolve();
+    expect(returnReport).toHaveBeenCalledOnce();
+    expect(cards.owner).toBeUndefined();
+    expect(log).toHaveBeenCalledOnce();
+  } finally { log.mockRestore(); }
+});
+
+
+it('report navigation closes a replacement map card carrying the suspended report return action', () => {
+  const returnReport = vi.fn();
+  const cards = new POICardLifecycle(() => 1, () => {});
+  cards.begin('report', returnReport);
+  const replacement = cards.begin('map');
+  expect(cards.close({ reportOnly: true })).toBe(true);
+  expect(replacement.isCurrent()).toBe(false);
+  expect(returnReport).toHaveBeenCalledOnce();
+  const unrelated = cards.begin('map');
+  expect(cards.close({ reportOnly: true })).toBe(false);
+  expect(unrelated.isCurrent()).toBe(true);
+  cards.close();
+});

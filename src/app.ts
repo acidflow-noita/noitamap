@@ -95,17 +95,25 @@ export class App extends EventEmitter2 {
     // go through the results and apply disabled to the overlay buttons
     // that should be disabled
     for (const [key, enabled] of Object.entries(enableOverlayButton)) {
-      const overlayToggle = this.overlayButtons.querySelector(
+      // Boundaries is a primary navbar control; the other overlays can live
+      // in More. Both use the same availability and popover lifecycle.
+      const standalone = key === "biomeBoundaries"
+        ? this.overlayButtons.ownerDocument.getElementById("biome-boundaries-ui-wrapper")
+        : null;
+      const buttonGroup = standalone ?? this.overlayButtons;
+      const overlayToggle = buttonGroup.querySelector<HTMLInputElement>(
         `input[data-overlay-key="${key}"]`,
-      ) as HTMLInputElement | null;
-      if (!overlayToggle) continue; // toggle may live outside the group (e.g. standalone biome boundaries button)
-      const overlayLabel = this.overlayButtons.querySelector(`label[for="${overlayToggle.id}"]`) as HTMLLabelElement;
+      );
+      if (!overlayToggle) continue;
+      const overlayLabel = buttonGroup.querySelector<HTMLLabelElement>(`label[for="${overlayToggle.id}"]`);
 
       overlayToggle.disabled = !enabled;
       // Hide rather than grey out: on a map with few applicable overlays the
       // row was mostly dead buttons whose only affordance was a "Not available"
       // popover. The label carries the visual, so both move together.
       overlayToggle.classList.toggle("d-none", !enabled);
+      standalone?.classList.toggle("d-none", !enabled);
+      if (!overlayLabel) continue;
       overlayLabel.classList.toggle("d-none", !enabled);
 
       if (!enabled) {

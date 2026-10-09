@@ -14,7 +14,8 @@
     "popoverContent": "Szukaj zaklęć, przedmiotów, różdżek, bossów, stworzeń, mikstur, struktur i nie tylko. Użyj poniższych przycisków filtrowania, aby zawęzić wyniki według kategorii.",
     "chunksAway": "~{{count}} chunkow dalej",
     "openTelescope": "Otwórz w Telescope",
-    "noResults": "Nic nie znaleziono"
+    "noResults": "Nic nie znaleziono",
+    "shortcutHint": "Przejdź do wyszukiwania: /, Ctrl+/ lub ⌘+/"
   },
   "spell_prefix": "Zaklęcie",
   "tiers_prefix": "Poziomy",
@@ -5085,7 +5086,15 @@
     "ingestionEffects": "Skutki spożycia",
     "reactionsHeader": "Materialne reakcje na Barmana",
     "asReagent": "Zobacz jako odczynnik",
-    "asProduct": "Wyświetl jako produkt"
+    "asProduct": "Wyświetl jako produkt",
+    "openInWiki": "Otwórz w Noita Wiki",
+    "openInBartender": "Otwórz w Bartender",
+    "bartenderProductHint": "Zobacz w Bartender reakcje wytwarzające ten materiał.",
+    "bartenderReagentHint": "Zobacz w Bartender reakcje wykorzystujące ten materiał.",
+    "spawnBiomesPro": "Podświetlanie biomów występowania to funkcja Pro.",
+    "spawnBiomesUnavailable": "Biomy występowania tego stworzenia są niedostępne na tej mapie.",
+    "showSpawnBiomes": "Pokaż biomy występowania na mapie",
+    "spawnMapMissing": "Niewidoczne na tej mapie: {{locations}}"
   },
   "wand": {
     "shuffle": "Tasowanie",

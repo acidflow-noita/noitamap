@@ -1,6 +1,6 @@
 import { backgroundAssetYield } from "./background-idle";
 import { reportTerrainStorageUsage } from "./terrain-storage-usage";
-import { isInstantTerrainEnabled, useRenderPerfGeneration } from "../renderer_settings";
+import { useRenderPerfGeneration } from "../renderer_settings";
 import { prepareDailyAssetsOffThread } from './daily-asset-worker-client';
 
 export interface DailyAssetWarmupOptions {
@@ -57,18 +57,6 @@ export function scheduleDailyAssetWarmup(
         baseUrl: new URL('./', document.baseURI || location.href).href,
         fullPixels: useRenderPerfGeneration(),
       }, controller.signal, failure),
-      async () => {
-        if (!isInstantTerrainEnabled()) return;
-        const started = performance.now();
-        console.info('[Dynamic assets] Worker shader preparation started');
-        const { prewarmInstantTerrain } = await import('./instant-terrain-backend');
-        if (!current()) return;
-        const ready = await prewarmInstantTerrain({ workerOnly: true });
-        console.info(`[Dynamic assets] Worker shader preparation ${ready ? 'finished' : 'unavailable'} in ${((performance.now() - started) / 1000).toFixed(2)} seconds`, {
-          elapsedMs: performance.now() - started,
-          scope: 'Reusable worker WebGL program; no main-thread compilation or generated terrain',
-        });
-      },
     ];
     for (const stage of stages) {
       await yieldTask(controller.signal);

@@ -1,3 +1,4 @@
+import { ownTerrainFrame, retainTerrainFrame, releaseTerrainImage } from "./terrain-frame";
 import { scheduleTerrainWork } from './terrain-work-queue';
 import type { TerrainViewportPlan } from './terrain-viewport-compositor';
 import type { RetainedTerrainRegion, RetainedView, RetainedViewCoverage } from './retained-terrain';
@@ -87,7 +88,7 @@ export function createRetainedViewportRenderer(options: {
   const prefix = `viewport/${nextRendererId++}/`;
   let hydratedKey: string | undefined;
   let hydrating = false;
-  const releaseBase = () => { if (base) base.canvas.width = base.canvas.height = 0; base = undefined; };
+  const releaseBase = () => { if (base) releaseTerrainImage(base.canvas); base = undefined; };
   const dispose = () => {
     releaseBase();
     cameras.clear();
@@ -206,7 +207,7 @@ export function createRetainedViewportRenderer(options: {
         }
         if (!resident) {
           if (base?.key !== key) {
-            const cached = cache.get(key);
+            const cached = cache.getFrame(key);
             if (cached) {
               previous = base;
               base = { key, plan, canvas: cached.canvas, canonical: cameras.get(key)?.canonical ?? [] };
@@ -262,13 +263,13 @@ export function createRetainedViewportRenderer(options: {
         // Save the composition, not its provisional shader base. Coarser
         // cameras inherit already viewed detail before current canonical cells
         // are applied above, including newly completed transparent pixels.
-        if (!base || base.key !== key) { previous = base; base = { key, plan, canvas: canvas(plan).canvas, canonical: [] }; }
-        const saved = base.canvas.getContext('2d')!;
-        saved.resetTransform();
-        saved.clearRect(0, 0, plan.pixelWidth, plan.pixelHeight);
-        saved.drawImage(context.canvas, 0, 0);
-        base.canonical = resident ? [{ ...plan }] : mergeCoverage(canonical, plan);
-        cache.set(key, saved);
+        // Publish one immutable pixel buffer. The base, display and optional
+        // LRU own references, never mutable aliases or duplicate full canvases.
+        if (base && base !== previous) releaseTerrainImage(base.canvas);
+        const published = ownTerrainFrame(context.canvas);
+        base = { key, plan, canvas: retainTerrainFrame(published),
+          canonical: resident ? [{ ...plan }] : mergeCoverage(canonical, plan) };
+        cache.setFrame(key, context);
         cameras.delete(key); cameras.set(key, { plan, canonical: base.canonical });
         for (const candidate of cameras.keys()) if (!cache.has(candidate)) cameras.delete(candidate);
         // Optional reads run alongside later interaction and never gate this
@@ -302,9 +303,9 @@ export function createRetainedViewportRenderer(options: {
                 x: rect.x + entry.region.x, y: rect.y + entry.region.y });
             }
             releaseBase();
-            base = { key, plan, canvas: replay.canvas, canonical: mergeCoverage(replayCoverage, plan) };
+            base = { key, plan, canvas: ownTerrainFrame(replay.canvas), canonical: mergeCoverage(replayCoverage, plan) };
             published = true;
-            cache.set(key, replay);
+            cache.setFrame(key, replay);
             cameras.delete(key); cameras.set(key, { plan, canonical: base.canonical });
           }).catch(() => {}).finally(() => {
             if (!published) replay.canvas.width = replay.canvas.height = 0;
@@ -315,7 +316,7 @@ export function createRetainedViewportRenderer(options: {
         return context.canvas;
       } catch (error) { if (context) context.canvas.width = context.canvas.height = 0; throw error; }
       finally {
-        if (previous) previous.canvas.width = previous.canvas.height = 0;
+        if (previous) releaseTerrainImage(previous.canvas);
         requestSignal.removeEventListener('abort', cancelRequest);
         options.signal.removeEventListener('abort', cancelLifetime);
       }

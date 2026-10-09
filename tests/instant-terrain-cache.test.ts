@@ -1,3 +1,4 @@
+import { ownTerrainFrame, releaseTerrainImage } from "../src/telescope/terrain-frame";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCanvas, type Canvas } from "@napi-rs/canvas";
 import {
@@ -191,4 +192,43 @@ describe("completed terrain cache (native canvas, no browser)", () => {
     expect(pixels(returned)).toEqual(pixels(source));
     expect(cache.stats.bytes).toBe(0);
   });
+});
+
+
+it('shares immutable viewport pixels until the last owner releases them, while OSD gets a copy', () => {
+  const cache = new InstantTerrainCache(tileBytes * 2), source = tile();
+  const image = ownTerrainFrame(source.canvas), expected = pixels(source);
+  const resized = vi.spyOn(image, 'width', 'set');
+  expect(cache.setFrame('view', source)).toBe(true);
+  const borrowed = cache.getFrame('view')!;
+  expect(borrowed.canvas).toBe(image);
+  const osd = cache.get('view')!;
+  expect(osd.canvas).not.toBe(image);
+  osd.clearRect(0, 0, 4, 4);
+  expect(pixels(source)).toEqual(expected);
+  cache.clear();
+  releaseTerrainImage(image);
+  expect(pixels(borrowed)).toEqual(expected);
+  releaseTerrainImage(borrowed.canvas);
+  expect(resized).toHaveBeenLastCalledWith(0);
+});
+
+it('releases old shared pixels during 100 pan/zoom cache replacements without changing displayed pixels', () => {
+  const cache = new InstantTerrainCache(tileBytes * 4), displays: HTMLCanvasElement[] = [], all: HTMLCanvasElement[] = [];
+  // Native Skia normalizes size zero to its default dimensions; observe the
+  // browser release request instead of counting Skia's replacement surface.
+  const releases = new Map<HTMLCanvasElement, ReturnType<typeof vi.spyOn>>();
+  for (let i = 0; i < 100; i++) {
+    const ctx = tile(i % 2 ? '#4080c0' : '#fc8000');
+    const image = ownTerrainFrame(ctx.canvas); all.push(image); displays.push(image);
+    releases.set(image, vi.spyOn(image, 'width', 'set'));
+    cache.setFrame('view-' + i, ctx);
+    if (displays.length > 3) releaseTerrainImage(displays.shift()!);
+    expect(pixels(ctx).slice(0, 4)).toEqual(i % 2 ? [64, 128, 192, 255] : [252, 128, 0, 255]);
+    expect(all.filter(canvas => releases.get(canvas)!.mock.calls.length === 0).length * tileBytes).toBeLessThanOrEqual(tileBytes * 4);
+  }
+  cache.clear();
+  expect(displays.every(canvas => canvas.width === 4)).toBe(true);
+  displays.forEach(releaseTerrainImage);
+  for (const canvas of all) expect(releases.get(canvas)).toHaveBeenLastCalledWith(0);
 });

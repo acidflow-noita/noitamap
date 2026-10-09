@@ -75,6 +75,6 @@ describe('side-world prewarm archive/lifecycle ordering', () => {
     archive.resolve(null);
     await vi.waitFor(() => expect(console.warn).toHaveBeenCalled());
     expect(state.workers).toHaveLength(0);
-    expect(String(vi.mocked(console.warn).mock.calls[0][1])).toContain('data.zip is unavailable');
+    expect(String(vi.mocked(console.warn).mock.calls[0][1])).toContain('game asset index is unavailable');
   });
 });

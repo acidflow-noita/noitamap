@@ -14,7 +14,8 @@
     "popoverContent": "Recherchez des sorts, des objets, des baguettes, des boss, des créatures, des potions, des structures et bien plus encore. Utilisez les boutons de filtre ci-dessous pour affiner les résultats par catégorie.",
     "chunksAway": "~{{count}} chunks de distance",
     "openTelescope": "Ouvrir dans Telescope",
-    "noResults": "Aucun résultat"
+    "noResults": "Aucun résultat",
+    "shortcutHint": "Activer la recherche : /, Ctrl+/ ou ⌘+/"
   },
   "spell_prefix": "Sort",
   "tiers_prefix": "Niveaux",
@@ -5085,7 +5086,15 @@
     "ingestionEffects": "Effets de l'ingestion",
     "reactionsHeader": "Réactions importantes sur Barman",
     "asReagent": "Afficher comme réactif",
-    "asProduct": "Afficher en tant que produit"
+    "asProduct": "Afficher en tant que produit",
+    "openInWiki": "Ouvrir dans Noita Wiki",
+    "openInBartender": "Ouvrir dans Bartender",
+    "bartenderProductHint": "Voir dans Bartender les réactions qui produisent ce matériau.",
+    "bartenderReagentHint": "Voir dans Bartender les réactions qui utilisent ce matériau.",
+    "spawnBiomesPro": "La mise en évidence des biomes d’apparition est une fonctionnalité Pro.",
+    "spawnBiomesUnavailable": "Les biomes d’apparition de cette créature ne sont pas disponibles sur cette carte.",
+    "showSpawnBiomes": "Afficher les biomes d’apparition sur la carte",
+    "spawnMapMissing": "Non affiché sur cette carte : {{locations}}"
   },
   "wand": {
     "shuffle": "Aléatoire",

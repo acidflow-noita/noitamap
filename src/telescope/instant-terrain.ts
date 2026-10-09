@@ -15,7 +15,7 @@ import {
 import type { StaticTerrainMask } from "./static-terrain-mask";
 import { scheduleTerrainWork, wakeTerrainWorkQueue } from "./terrain-work-queue";
 import { setTerrainPlane } from "./instant-terrain-plane";
-import { prepareInstantTerrain } from "./instant-terrain-backend";
+import { usesDirectTerrainGPU, prepareInstantTerrain } from "./instant-terrain-backend";
 import { smoothInstantTile } from "../osd-pixel-rendering";
 import { InstantTerrainCache, copyTerrainContext } from "./instant-terrain-cache";
 import { createInstantCoverage, INSTANT_COVERAGE_EXTRA_LEVELS } from "./instant-terrain-coverage";
@@ -685,7 +685,7 @@ export async function addInstantTerrain(
     return pending;
   };
   try {
-    const retentionIdentity = await retainedTerrainIdentityAsync(gen, masks, lifetime.signal);
+    const retentionIdentity = usesDirectTerrainGPU() ? 'direct-gpu' : await retainedTerrainIdentityAsync(gen, masks, lifetime.signal);
     if (!isCurrent() || lifetime.signal.aborted)
       throw new DOMException("Obsolete terrain generation", "AbortError");
     const mainRenderer = await getRenderer(0);
@@ -766,7 +766,7 @@ export async function addInstantTerrain(
         });
         source.instantStats = stats;
         sources.add(source);
-        cooker.add(source);
+        if (!mainRenderer.renderViewportSync) cooker.add(source);
         if (direct) continue; // Native cooking stays independent of foreground presentation.
         viewer.addTiledImage({
           tileSource: source,
@@ -813,6 +813,7 @@ export async function addInstantTerrain(
             firstPaint();
           }).catch(fail);
         },
+        renderFrameNow: mainRenderer.renderViewportSync,
         async renderFrame(plan, signal, preparingOverview) {
           // The overview is retained privately until the close-up paints.
           // Prepare it alongside scene artwork; visible terrain still waits.
@@ -823,6 +824,18 @@ export async function addInstantTerrain(
             presentationReady.then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
           });
           signal.throwIfAborted();
+          if (mainRenderer.renderViewportSync) {
+            mainRenderer.renderViewportSync(plan);
+            await mainRenderer.waitForViewport(signal);
+            signal.throwIfAborted();
+            // Republish from retained GPU textures after the wait: WebGL may
+            // discard its default drawing buffer between animation frames.
+            const image = mainRenderer.renderViewportSync(plan);
+            const canvas = document.createElement('canvas');
+            canvas.width = plan.pixelWidth; canvas.height = plan.pixelHeight;
+            canvas.getContext('2d')!.drawImage(image, 0, 0);
+            return canvas;
+          }
           return display.render(plan, signal);
         },
         firstPaint() {
@@ -830,12 +843,14 @@ export async function addInstantTerrain(
           painted = true;
           stats.firstDrawMs = performance.now() - start;
           if (!emptyViewReported) firstPaint();
-          cooker.start();
+          if (!mainRenderer.renderViewportSync) cooker.start();
           console.info('[Instant terrain] First complete viewport drawn', stats);
         },
         onFailure: fail,
       });
-      Object.assign(stats, { presentation: 'viewport', viewport: viewport.stats, display: display.stats });
+      Object.assign(stats, { presentation: mainRenderer.renderViewportSync ? 'gpu-viewport' : 'viewport',
+        viewport: viewport.stats, display: display.stats,
+        ...(mainRenderer.renderViewportSync ? { cooking: { state: 'not-needed', total: 0, complete: 0 } } : {}) });
       viewport.source.instantStats = stats;
       const source = viewport.source;
       viewer.addTiledImage({

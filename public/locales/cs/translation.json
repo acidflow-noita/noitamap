@@ -14,7 +14,8 @@
     "popoverContent": "Hledejte kouzla, předměty, hůlky, bossy, stvoření, lektvary, struktury a další. Pomocí níže uvedených tlačítek filtru můžete zúžit výsledky podle kategorie.",
     "chunksAway": "~{{count}} chunku daleko",
     "openTelescope": "Otevřít v Telescope",
-    "noResults": "Nic nenalezeno"
+    "noResults": "Nic nenalezeno",
+    "shortcutHint": "Přejít na vyhledávání: /, Ctrl+/ nebo ⌘+/"
   },
   "spell_prefix": "Kouzlo",
   "tiers_prefix": "Úrovně",
@@ -5085,7 +5086,15 @@
     "ingestionEffects": "Účinky požití",
     "reactionsHeader": "Materiální reakce na Bartendera",
     "asReagent": "Zobrazit jako činidlo",
-    "asProduct": "Zobrazit jako produkt"
+    "asProduct": "Zobrazit jako produkt",
+    "openInWiki": "Otevřít v Noita Wiki",
+    "openInBartender": "Otevřít v Bartender",
+    "bartenderProductHint": "Zobrazit v Bartender reakce, při kterých vzniká tento materiál.",
+    "bartenderReagentHint": "Zobrazit v Bartender reakce, které používají tento materiál.",
+    "spawnBiomesPro": "Zvýraznění biomů výskytu je funkce Pro.",
+    "spawnBiomesUnavailable": "Biomy výskytu tohoto tvora nejsou na této mapě dostupné.",
+    "showSpawnBiomes": "Zobrazit biomy výskytu na mapě",
+    "spawnMapMissing": "Na této mapě není zobrazeno: {{locations}}"
   },
   "wand": {
     "shuffle": "Zamíchat",

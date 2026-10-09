@@ -1,8 +1,9 @@
+import { probeDirectTerrainContext } from "./direct-terrain-capability";
 import type {
   GLTerrainDeps,
   GLTerrainGeneration,
 } from "./gl-terrain-tile-source";
-import type { VerticalPlane } from "./terrain-policy";
+import { WORLD_TOP, WORLD_HEIGHT, type VerticalPlane } from "./terrain-policy";
 import { prepareTerrainPlane } from "./terrain-planes";
 import { prepareElevatorShafts } from "./terrain-elevator";
 import { serializeTileLayer } from "./tile-layer-cache";
@@ -113,6 +114,8 @@ export class InstantTerrainWorkerClient {
 
 interface Slot {
   released?: boolean;
+  direct?: boolean;
+  bareMain?: boolean;
   worker?: InstantTerrainWorkerClient;
   main?: any;
   resources?: any;
@@ -130,6 +133,8 @@ interface Slot {
 let sharedSlot: Slot | undefined;
 let nextToken = 0;
 const fallbackSignal = new AbortController().signal;
+
+export function usesDirectTerrainGPU(): boolean { return sharedSlot?.direct === true; }
 
 function getSlot(): Slot {
   return (sharedSlot ??= { token: 0, handles: new Map() });
@@ -155,6 +160,31 @@ function warmWorker(slot: Slot): Promise<boolean> {
 async function warmSlot(slot: Slot, deps?: GLTerrainDeps): Promise<void> {
   if (slot.warm) return slot.warm;
   return (slot.warm = (async () => {
+    if (slot.direct === undefined) {
+      slot.direct = false;
+      const probe = probeDirectTerrainContext();
+      if (probe) {
+        try {
+          const { prewarmTerrainShader } = await import('./terrain-shader-prewarm');
+          await prewarmTerrainShader(probe);
+          if (slot.released) throw new DOMException('Terrain backend released', 'AbortError');
+          slot.main = probe; slot.bareMain = true; slot.direct = true;
+          probe.canvas.addEventListener('webglcontextlost', () => {
+            if (slot.released) return;
+            slot.main.contextLost = true; slot.main.program = null; slot.main.textures = null;
+            slot.warm = undefined; slot.prepared = undefined;
+          });
+          probe.canvas.addEventListener('webglcontextrestored', () => {
+            if (slot.released) return;
+            slot.main.contextLost = false; slot.main.sourceKey = null;
+          });
+          return;
+        } catch (error) {
+          probe.gl.getExtension('WEBGL_lose_context')?.loseContext();
+          if (slot.released) throw error;
+        }
+      }
+    }
     try {
       if (await warmWorker(slot)) return;
     } catch (error) {
@@ -273,7 +303,20 @@ export async function prepareInstantTerrain(
         warmSlot(slot, deps),
       ]);
       current();
-      if (slot.worker) {
+      let upload: any;
+      if (slot.direct) {
+        slot.worker ??= new InstantTerrainWorkerClient();
+        const layers = prepared.tileLayers.map(serializeTileLayer), shafts = elevatorShafts.map(serializeTileLayer);
+        const transfer = [...layers, ...shafts].map(layer => layer.buffer).filter((value): value is ArrayBuffer => value !== null);
+        const data = await slot.worker.request('prepare', { token, limit: slot.main.gl.getParameter(slot.main.gl.MAX_TEXTURE_SIZE), generation: {
+          seed: gen.seed, isNGP: gen.isNGP, gameMode: gen.gameMode, tileLayers: layers,
+          elevatorShafts: shafts, biomeData: prepared.biomeData,
+        } }, undefined, transfer);
+        current();
+        if (!data.upload) throw new Error('GPU terrain preparation returned no resource data');
+        upload = data.upload;
+        if (slot.bareMain) { slot.main = Object.assign(new deps.GLTerrainRenderer(), slot.main); slot.bareMain = false; }
+      } else if (slot.worker) {
         const worker = slot.worker;
         const layers = prepared.tileLayers.map(serializeTileLayer);
         const shafts = elevatorShafts.map(serializeTileLayer);
@@ -344,6 +387,7 @@ export async function prepareInstantTerrain(
               engineTerrain: true,
               generatorConfig: deps.GENERATOR_CONFIG,
               elevatorShafts,
+              upload,
               checkCurrent: current,
             },
           );
@@ -353,7 +397,9 @@ export async function prepareInstantTerrain(
               slot.main.failed || "WebGL2 terrain resources unavailable",
             );
           return {
-            backend: "main",
+            backend: slot.direct ? "main-gpu" : "main",
+            direct: slot.direct,
+            cpuWorker: slot.direct ? slot.worker : undefined,
             resources: slot.resources,
             renderer: slot.main,
             resourceMs: performance.now() - started,
@@ -431,7 +477,30 @@ export async function prepareInstantTerrain(
             base.presentation?.dispose();
             base.presentation = createTerrainViewportCompositor(inputs);
           }
+          if (base.direct) {
+            const { createGPUViewportCompositor } = await import('./gpu-viewport-compositor');
+            current();
+            const worlds = (gen as GLTerrainGeneration & {parallelWorlds?: number[]}).parallelWorlds ?? [0, -1, 1];
+            const worldWidth = deps.getWorldSize(gen.isNGP, gen.gameMode) * 512;
+            const bounds = { x: (Math.min(...worlds) - .5) * worldWidth, y: WORLD_TOP - WORLD_HEIGHT,
+              width: (Math.max(...worlds) - Math.min(...worlds) + 1) * worldWidth, height: WORLD_HEIGHT * 3 };
+            const { packed } = await base.cpuWorker.request('clip-data', { token, inputs, bounds });
+            current();
+            const next = await createGPUViewportCompositor(base.renderer, inputs, bounds, fallbackSignal, packed);
+            try { current(); } catch (error) { next.dispose(); throw error; }
+            base.gpuPresentation?.dispose(); base.gpuPresentation = next;
+          }
           current();
+        },
+        async waitForViewport(signal: AbortSignal) {
+          if (!base.direct) return;
+          const { waitForTerrainGPU } = await import('./terrain-gpu-ready');
+          current(); await waitForTerrainGPU(base.renderer.gl, signal); current();
+        },
+        get renderViewportSync() {
+          return base.direct && base.gpuPresentation ? (plan: import('./terrain-viewport-compositor').TerrainViewportPlan) => {
+            current(); return base.gpuPresentation.render(base.resources, plan);
+          } : undefined;
         },
         async renderViewport(plan: import('./terrain-viewport-compositor').TerrainViewportPlan, renderSignal?: AbortSignal) {
           current();
@@ -446,6 +515,7 @@ export async function prepareInstantTerrain(
         },
         invalidate() {
           base.presentation?.dispose();
+          base.gpuPresentation?.dispose();
           if (slot.token !== token) return;
           slot.token = ++nextToken;
           slot.prepared = undefined;

@@ -1,3 +1,4 @@
+import { releaseTerrainImage } from "../../src/telescope/terrain-frame";
 import { generateDynamicMap, releaseParallelWorlds } from '../../src/telescope/telescope-adapter';
 import * as bridge from '../../src/telescope/telescope-osd-bridge';
 import { createPlaneOwnership, WORLD_TOP, WORLD_HEIGHT } from '../../src/telescope/terrain-policy';
@@ -57,14 +58,15 @@ export async function run() {
           const starts=new Map([[actual,actual.requests.length],[reference,reference.requests.length]]);
           for(const display of order){const t=performance.now();outputs.set(display,await display.render(plan));times.set(display,performance.now()-t);}
           const a=read(outputs.get(actual)),b=read(outputs.get(reference));
-          let differences=0;for(let i=0;i<a.length;i++)if(a[i]!==b[i])differences++;
+          let differences=0,visiblePixels=0;for(let i=0;i<a.length;i++)if(a[i]!==b[i])differences++;
+          for(let i=3;i<b.length;i+=4)if(b[i])visiblePixels++;
           const calls=actual.requests.slice(starts.get(actual)),fullCalls=reference.requests.slice(starts.get(reference));
-          samples.push({cx,cy,scale,index,x,y,differences,pixels:pw*ph,
+          samples.push({cx,cy,scale,index,x,y,differences,visiblePixels,pixels:pw*ph,
             actualMs:times.get(actual),referenceMs:times.get(reference),
             shadedPixels:calls.reduce((sum,p)=>sum+p.pixelWidth*p.pixelHeight,0),
             referencePixels:fullCalls.reduce((sum,p)=>sum+p.pixelWidth*p.pixelHeight,0),
             draws:calls.length});
-          for(const canvas of outputs.values())canvas.width=canvas.height=0;
+          for(const canvas of outputs.values())releaseTerrainImage(canvas);
         }
       } finally {lifetime.abort();reference.compositor.dispose();actual.compositor.dispose();}
     }

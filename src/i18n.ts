@@ -1,6 +1,7 @@
 import i18next from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import HttpApi from 'i18next-http-backend';
+import localeUrls from 'virtual:noitamap-locales';
 import english from './locales/en/translation.json';
 import { STARTUP_REQUEST_TIMEOUT_MS } from './startup';
 
@@ -46,8 +47,8 @@ export function initializeTranslations() {
       caches: ['localStorage', 'cookie'],
     },
     backend: {
-      loadPath: './locales/{{lng}}/translation.json',
-      requestOptions: () => ({ cache: 'no-store', signal: AbortSignal.timeout(STARTUP_REQUEST_TIMEOUT_MS) }),
+      loadPath: (languages: string[]) => localeUrls[languages[0]] ?? localeUrls.en,
+      requestOptions: () => ({ cache: import.meta.env.PROD ? 'force-cache' : 'no-store', signal: AbortSignal.timeout(STARTUP_REQUEST_TIMEOUT_MS) }),
     },
     interpolation: { escapeValue: false },
     supportedLngs: Object.keys(SUPPORTED_LANGUAGES),

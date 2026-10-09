@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import OpenSeadragon from 'openseadragon';
 import { PortalGPUOverlay } from '../src/portals/overlay';
 import { MAX_CANVAS_PIXELS, reprojectCamera, type CameraMatrix } from '../src/portals/geometry';
 import type { PortalPlacement } from '../src/portals/placements';
@@ -9,6 +10,7 @@ let overlay: PortalGPUOverlay | undefined;
 let frames = new Map<number, FrameRequestCallback>(), sequence = 0;
 const context = { transferFromImageBitmap: vi.fn() };
 beforeEach(() => {
+  vi.stubGlobal('OpenSeadragon', OpenSeadragon);
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
   vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context as any);

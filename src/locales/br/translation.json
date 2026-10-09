@@ -14,7 +14,8 @@
     "popoverContent": "Procure feitiços, itens, varinhas, chefes, criaturas, poções, estruturas e muito mais. Use os botões de filtro abaixo para restringir os resultados por categoria.",
     "chunksAway": "~{{count}} chunks de distancia",
     "openTelescope": "Abrir no Telescope",
-    "noResults": "Nada encontrado"
+    "noResults": "Nada encontrado",
+    "shortcutHint": "Focar a busca: /, Ctrl+/ ou ⌘+/"
   },
   "spell_prefix": "Feitiço",
   "tiers_prefix": "Níveis",
@@ -5085,7 +5086,15 @@
     "ingestionEffects": "Efeitos de ingestão",
     "reactionsHeader": "Reações materiais no Bartender",
     "asReagent": "Ver como reagente",
-    "asProduct": "Ver como produto"
+    "asProduct": "Ver como produto",
+    "openInWiki": "Abrir na Noita Wiki",
+    "openInBartender": "Abrir no Bartender",
+    "bartenderProductHint": "Ver no Bartender as reações que produzem este material.",
+    "bartenderReagentHint": "Ver no Bartender as reações que usam este material.",
+    "spawnBiomesPro": "Destacar os biomas de surgimento é um recurso Pro.",
+    "spawnBiomesUnavailable": "Os biomas de surgimento desta criatura não estão disponíveis neste mapa.",
+    "showSpawnBiomes": "Mostrar os biomas de surgimento no mapa",
+    "spawnMapMissing": "Não exibido neste mapa: {{locations}}"
   },
   "wand": {
     "shuffle": "Alternância",

@@ -1,3 +1,4 @@
+import { releaseTerrainImage } from "../src/telescope/terrain-frame";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCanvas } from "@napi-rs/canvas";
 import {
@@ -252,7 +253,7 @@ describe("retained native pixels with atomic viewport presentation", () => {
     expect(f.store.readCoverage).not.toHaveBeenCalled();
   });
 
-  it("reuses one GPU base when native revisions arrive, clearing known air and retaining independent returned frames", async () => {
+  it("reuses one GPU base when native revisions arrive, clearing known air and retaining immutable published frames", async () => {
     const f = fixture();
     const first: any = await f.request();
     const native = context(256, 256, "#ff0000");
@@ -263,7 +264,7 @@ describe("retained native pixels with atomic viewport presentation", () => {
     expect(pixel(second, 40, 40)).toEqual([255, 0, 0, 255]);
     expect(pixel(second, 300, 40)).toEqual([0, 0, 255, 255]);
     expect(pixel(first, 40, 40)).toEqual([0, 0, 255, 255]);
-    first.width = first.height = second.width = second.height = 0;
+    releaseTerrainImage(first); releaseTerrainImage(second);
     f.captured[0].width = f.captured[0].height = 0;
     const third = await f.request();
     expect(pixel(third, 300, 40)).toEqual([0, 0, 255, 255]);

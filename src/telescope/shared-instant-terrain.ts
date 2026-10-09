@@ -91,6 +91,19 @@ export function buildPlaneEngineChunks(
   return chunks;
 }
 
+/** CPU preparation is transferable; interactive GPU presentation can upload it
+ * on the UI context without running the lattice/atlas builders on that thread. */
+export function buildSharedTerrainUpload(layers: any[], biomeData: any, opts: any, limit: number) {
+  const isNGP = opts.isNGP ?? false, gameMode = opts.gameMode ?? 'normal';
+  const width = getWorldSize(isNGP, gameMode);
+  const resources = buildTerrainResources(layers, biomeData, { isNGP, gameMode, maxTextureSize: limit, lut: opts.lut });
+  const engine = buildEngineResources(layers, biomeData, opts.generatorConfig ?? {}, width);
+  const elevators = packElevatorLattices(engine.lattice, opts.elevatorShafts ?? [], opts.generatorConfig ?? {}, limit);
+  // The palette lookup closure is only used while building the atlas above.
+  const { indexOf: _lookup, ...palette } = resources.palette;
+  return { resources: { ...resources, palette }, engine, elevators };
+}
+
 type PlaneResources = { textures: Record<string, any>; chunks: Uint16Array };
 
 /** One context/program and one immutable source upload for all nine regions.
@@ -178,24 +191,7 @@ export class SharedInstantTerrainResources {
       const isNGP = opts.isNGP ?? false,
         gameMode = opts.gameMode ?? "normal";
       const width = getWorldSize(isNGP, gameMode);
-      const resources = buildTerrainResources(layers, biomeData, {
-        isNGP,
-        gameMode,
-        maxTextureSize: maxTextureSize(gl),
-        lut: opts.lut,
-      });
-      const engine = buildEngineResources(
-        layers,
-        biomeData,
-        opts.generatorConfig ?? {},
-        width,
-      );
-      const elevators = packElevatorLattices(
-        engine.lattice,
-        opts.elevatorShafts ?? [],
-        opts.generatorConfig ?? {},
-        maxTextureSize(gl),
-      );
+      const { resources, engine, elevators } = opts.upload ?? buildSharedTerrainUpload(layers, biomeData, opts, maxTextureSize(gl));
       const atlas = getMaterialAtlas();
       if (!atlas) throw new Error("Shared terrain material atlas unavailable");
       const own = (texture: any) => {

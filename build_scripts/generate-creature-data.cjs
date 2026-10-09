@@ -14,6 +14,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { createCreatureMaterialResolver } = require('./creature-materials.cjs');
 
 const INPUT = path.resolve(__dirname, "..", "public", "assets", "full_creatures.json");
 const OUTPUT = path.resolve(__dirname, "..", "src", "data", "creature-data.ts");
@@ -196,7 +197,7 @@ function syntheticId(c, taken) {
   return `_${base}_${i}`;
 }
 
-function main() {
+async function main() {
   console.log("[generate-creature-data] Reading FULL_CREATURES_FINAL.json...");
   const raw = JSON.parse(fs.readFileSync(INPUT, "utf-8"));
   console.log(`[generate-creature-data] Found ${raw.length} creature entries`);
@@ -262,7 +263,7 @@ function main() {
     { wikipage: "Hämis", alias: "Hämis Nest", entities: ["spidernest"] },
     { wikipage: "Tulikärpänen", alias: "Firefly Hive", entities: ["firebugnest"] },
     { wikipage: "Houre", alias: "Houre Crystal", entities: ["ghost_crystal"] },
-    { wikipage: "Epäalkemisti", alias: "Death Orb", entities: ["orb_death"] },
+    { wikipage: "Epäalkemisti", alias: "Death Orb", entities: ["failed_alchemist_orb"] },
     {
       wikipage: "Mestarien mestari",
       alias: "Death Orb",
@@ -291,6 +292,55 @@ function main() {
   }
   console.log(`[generate-creature-data] Emitted ${aliasCount} entity-name aliases`);
 
+  // The Wiki-derived JSON omits inherited/default component materials for
+  // many creatures. Bake their actual game IDs once; opening a card needs no
+  // archive fetch, name heuristics, or new runtime material lookup.
+  const materials = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/assets/full_materials.json'), 'utf8'));
+  const materialIds = new Set(materials.map(material => material.id));
+  const normalizeMaterialName = name => String(name ?? '').replace(/_/g, ' ').trim().toLowerCase();
+  const resolveMaterials = await createCreatureMaterialResolver(
+    fs.readFileSync(path.resolve(__dirname, '../public/data.zip')), materialIds);
+  const unresolved = [];
+  let enriched = 0;
+  for (const [id, source] of sourceById) {
+    const aliases = Object.keys(data).filter(alias => alias !== id && data[alias] === data[id]);
+    const resolved = resolveMaterials([id, ...aliases]);
+    for (const field of ['blood', 'corpse']) {
+      const key = `${field}MaterialId`;
+      // The source uses the truthy string "none" for missing references too.
+      // Only a real catalog ID may suppress the component fallback.
+      const sourceId = source[`${field}_material_id`];
+      const rawId = materialIds.has(sourceId) ? sourceId : null;
+      const hasMaterial = !!source[field] && !/^none$/i.test(source[field].trim());
+      const references = [...(source[field] ?? '').matchAll(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g)];
+      // A unique explicit Wiki material reference can describe a death effect
+      // instead of the default ragdoll (e.g. Tiny's disintegrated Ominous Liquid).
+      // Ambiguous pages such as Meat still require the actual game component.
+      const namedMaterials = references.length === 1 ? materials.filter(material =>
+        [material.name, material.wikipage].some(name => normalizeMaterialName(name) === normalizeMaterialName(references[0][1]))) : [];
+      const referenceId = namedMaterials.length === 1 ? namedMaterials[0].id : null;
+      // Multi-material descriptions need separate destinations; a creature's
+      // one ragdoll material cannot replace a list of death/spawn effects.
+      const multipleMaterials = /\]\][\s\S]*\[\[/.test(source[field] ?? '');
+      data[id][key] = hasMaterial ? (rawId || (!multipleMaterials && (referenceId || resolved[key])) || null) : null;
+      if (multipleMaterials) {
+        // Exact catalog names disambiguate the multiple game component IDs;
+        // a name match alone is insufficient to invent a destination.
+        const ids = references.map(reference => {
+          const matches = materials.filter(material => resolved[`${field}MaterialCandidates`].includes(material.id)
+            && [material.name, material.wikipage].some(name => normalizeMaterialName(name) === normalizeMaterialName(reference[1])));
+          return matches.length === 1 ? matches[0].id : null;
+        });
+        if (ids.every(Boolean)) data[id][`${field}MaterialIds`] = ids;
+      }
+      if (!rawId && data[id][key]) enriched++;
+      if (!rawId && data[id][`${field}MaterialIds`]) enriched++;
+      if (hasMaterial && !data[id][key] && !data[id][`${field}MaterialIds`]) unresolved.push(`${id}.${field}`);
+    }
+  }
+  console.log(`[generate-creature-data] Resolved ${enriched} missing blood/corpse IDs from game data and material references`);
+  if (unresolved.length) console.warn(`[generate-creature-data] Unresolved material references: ${unresolved.join(', ')}`);
+
   // Hand-injected composite bosses that have no single source entity. The
   // Gate Guardian (triangle boss) is four gate monsters (Veska, Molari, Mokke,
   // Seula) treated as one POI; we key it "boss_gate" to match the telescope
@@ -307,6 +357,8 @@ function main() {
       immunities: g.immunities || null,
       blood: g.blood || null,
       corpse: g.corpse || null,
+      bloodMaterialId: g.bloodMaterialId || null,
+      corpseMaterialId: g.corpseMaterialId || null,
       category: "Bosses",
       faction: g.faction || "ghost",
       dmgMults: g.dmgMults || null,
@@ -350,6 +402,12 @@ export interface CreatureInfo {
   blood: string | null;
   /** Corpse material */
   corpse: string | null;
+  /** Actual material IDs, including inherited/default game components. */
+  bloodMaterialId: string | null;
+  corpseMaterialId: string | null;
+  /** Multiple explicitly described materials, in source Wiki-link order. */
+  bloodMaterialIds?: string[];
+  corpseMaterialIds?: string[];
   /** Category (e.g., "Ghosts", "Slimes", "Monsters") */
   category: string | null;
   /** Faction (e.g., "ghost", "slimes", "helpless") */
@@ -391,5 +449,5 @@ ${Object.entries(data)
 }
 
 if (require.main === module) {
-  main();
+  main().catch(error => { console.error(error); process.exitCode = 1; });
 }

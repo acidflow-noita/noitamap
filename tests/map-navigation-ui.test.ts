@@ -117,9 +117,9 @@ describe('map navigation UI during camera movement', () => {
     const runPriority = vi.fn(async () => {});
     new Function('app', 'debouncedUpdateURL', 'debouncedViewportNotify', 'updateDynamicUIVisibility',
       'updateMapSelectorText', 'clearDynamicMap', 'unifiedSearch', 'pendingDynamicSeed', 'dynamicOpts',
-      'runDynamicMap', 'runDynamicMapWithPriority', script)(
+      'runDynamicMap', 'runDynamicMapWithPriority', 'spawnSharing', 'poiContextReady', 'drawingDailyRequest', script)(
       { getMap: () => map, on: (_name: string, fn: typeof callback) => { callback = fn; }, osd: {} },
-      url, search, toolbar, selector, clear, { setDynamicPOIs: vi.fn(), setIndexingState: vi.fn() }, null, {}, vi.fn(), runPriority);
+      url, search, toolbar, selector, clear, { setDynamicPOIs: vi.fn(), setIndexingState: vi.fn() }, null, {}, vi.fn(), runPriority, undefined, true, undefined);
     for (let frame = 0; frame < 180; frame++) callback({ map, pos: { x: frame, y: 0, zoom: 0.001 }, seed: frame < 90 ? 1 : 2 });
     expect(url).toHaveBeenCalledTimes(180); expect(search).toHaveBeenCalledTimes(180);
     expect(toolbar).toHaveBeenCalledExactlyOnceWith(map); expect(selector).toHaveBeenCalledExactlyOnceWith(map);

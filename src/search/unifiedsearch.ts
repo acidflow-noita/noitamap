@@ -1,3 +1,4 @@
+import { installSearchShortcut } from "./search-shortcut";
 import { getPoiPreviewItems } from "../telescope/poi-inventory";
 import { loadSpritesheetAndAtlas, FIRST_FRAME_SIZE } from "../telescope/poi-spatial-index";
 import { searchOverlays } from "../flexsearch";
@@ -1952,6 +1953,10 @@ export class UnifiedSearch extends EventEmitter2 {
       searchResults.resetScroll();
     });
 
+    searchInput.closest('.navbar-collapse')?.addEventListener('shown.bs.collapse', () => {
+      if (isOverlayVisible) positionOverlay();
+    });
+
     searchInput.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         overlayDiv.style.display = "none";
@@ -2057,6 +2062,15 @@ export class UnifiedSearch extends EventEmitter2 {
       searchResults,
       initialFilters,
     });
+
+    const shortcutLabel = () => String(i18next.t('search.shortcutHint', 'Focus search: /, Ctrl+/ or ⌘+/'));
+    const shortcut = installSearchShortcut(searchInput, shortcutLabel());
+    const refreshShortcut = () => {
+      shortcut.updateHint(shortcutLabel());
+      searchInput.setAttribute('aria-label', String(i18next.t('search.popoverTitle', 'Search')));
+    };
+    refreshShortcut();
+    i18next.on('languageChanged', refreshShortcut);
 
     // allow programmatically opening the overlay without focusing
     (instance as any).showOverlay = () => {

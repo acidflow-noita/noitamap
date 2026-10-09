@@ -2,6 +2,21 @@ import i18next from "./i18n";
 
 const bs = () => (window as any).bootstrap;
 
+const nativeLinks = new WeakSet<HTMLElement>();
+
+/** Keep OSD's map gesture tracker from capturing or cancelling card links. */
+function preserveNativeLinkNavigation(el: HTMLElement): void {
+  if (!el.matches('a[href]') || nativeLinks.has(el)) return;
+  nativeLinks.add(el);
+  // Stop at the anchor, including clicks on its text/icon children. Never
+  // cancel the default: the browser owns navigation, modifiers, middle click,
+  // and keyboard activation. Down events must stay out of OSD too, otherwise
+  // it captures the pointer before the eventual click can reach the link.
+  for (const type of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'click', 'auxclick', 'dblclick']) {
+    el.addEventListener(type, event => event.stopPropagation());
+  }
+}
+
 /**
  * Attach a hover Bootstrap popover to `el`. The host element is tagged with
  * `__disposePopover` so dismissPopovers() can tear it down when its container
@@ -12,21 +27,76 @@ export function attachHoverPopover(
   el: HTMLElement,
   content: string,
   placement: "top" | "bottom" | "left" | "right" = "top",
+  options: { title?: HTMLElement; owner?: string; focus?: boolean } = {},
 ): void {
+  preserveNativeLinkNavigation(el);
   const lib = bs();
   if (!lib?.Popover) return;
-  const existing = lib.Popover.getInstance(el);
-  if (existing) existing.dispose();
-  el.setAttribute('data-popover-owner', 'hover-help');
-  new lib.Popover(el, {
-    content,
-    trigger: "hover",
+  const disposePrevious = (el as any).__disposePopover;
+  if (typeof disposePrevious === 'function') disposePrevious();
+  else lib.Popover.getInstance(el)?.dispose();
+  el.setAttribute('data-popover-owner', options.owner ?? 'hover-help');
+  const trigger = options.focus ? 'hover focus' : 'hover';
+  if (options.focus) {
+    el.dataset.bsToggle = 'popover';
+    el.dataset.bsTrigger = trigger;
+  }
+  // A DOM title lets branded links include their logo without interpolating
+  // HTML. Keep their translated help as text even with Bootstrap html enabled.
+  let textContent: string | HTMLElement = content;
+  if (options.title) {
+    textContent = document.createElement('span');
+    textContent.textContent = content;
+    el.removeAttribute('title');
+  }
+  const isLink = el.matches('a[href]');
+  const config = {
+    content: textContent,
+    ...(options.title ? { title: options.title, html: true } : {}),
+    trigger,
     placement,
     container: "body",
     delay: { show: 80, hide: 120 },
-  });
+    // Links dismiss immediately on activation. Avoid transition callbacks
+    // outliving the instance when a click resets a shown or pending popover.
+    ...(isLink ? { animation: false } : {}),
+  };
+  const create = () => new lib.Popover(el, config);
+  create();
+  let dismissedByActivation = false;
+  const activate = (event: MouseEvent) => {
+    if (event.type === 'auxclick' && event.button !== 1) return;
+    // hide() alone does not cancel Bootstrap's pending show timer or reset
+    // its hover/focus state before first show. Dispose through public APIs;
+    // retain DOM focus and leave native navigation/modifiers untouched.
+    const instance = lib.Popover.getInstance(el);
+    instance?.hide(); // Synchronous for links; also removes aria-describedby.
+    instance?.dispose();
+    dismissedByActivation = true;
+  };
+  const rearm = (event: MouseEvent | FocusEvent) => {
+    if (!dismissedByActivation) return;
+    // Opening/returning from target=_blank can restore focus and hover to the
+    // same link, with no related element. Recreating immediately lets that
+    // restoration reopen the dismissed panel. Wait for a real new visit from
+    // another element; movement between the link's own text/icon is not one.
+    if (!(event.relatedTarget instanceof Node) || el.contains(event.relatedTarget)) return;
+    dismissedByActivation = false;
+    create();
+  };
+  if (isLink) {
+    el.addEventListener('click', activate);
+    el.addEventListener('auxclick', activate);
+    // Capture runs before Bootstrap's hover/focus handlers for this new visit.
+    el.addEventListener('mouseover', rearm, true);
+    el.addEventListener('focusin', rearm, true);
+  }
   (el as any).__disposePopover = () => {
     delete (el as any).__disposePopover;
+    el.removeEventListener('click', activate);
+    el.removeEventListener('auxclick', activate);
+    el.removeEventListener('mouseover', rearm, true);
+    el.removeEventListener('focusin', rearm, true);
     try { lib.Popover.getInstance(el)?.dispose(); } catch { /* noop */ }
   };
 }
@@ -37,30 +107,41 @@ export function attachAlwaysCastPopover(el: HTMLElement): void {
   attachHoverPopover(el, i18next.t("gameContent.ui.inventory_alwayscasts", { defaultValue: "Always casts" }));
 }
 
+/** Wiki help belongs to the link itself; card/row containers stay inert. */
+export function attachWikiLinkPopover(link: HTMLAnchorElement): void {
+  const destination = i18next.t('extended.openInWiki', { defaultValue: 'Open in Noita Wiki' });
+  link.classList.add('wiki-link');
+  link.setAttribute('aria-description', destination);
+  attachHoverPopover(link, destination, 'top', { owner: 'wiki-link', focus: true });
+}
+
 /**
  * Dispose every popover within `root` (inclusive). Handles both
  * `data-bs-toggle="popover"` instances and manually-managed ones tagged with
  * `__disposePopover`. Call before tearing down a subtree that hosts popovers.
  */
 export function dismissPopovers(root: HTMLElement): void {
-  try {
-    const lib = bs();
-    if (lib?.Popover) {
-      root.querySelectorAll('[data-bs-toggle="popover"]').forEach((pop) => {
-        const inst = lib.Popover.getInstance(pop);
-        if (inst) {
-          inst.hide();
-          inst.dispose();
-        }
-      });
-    }
-    const visit = (node: Element) => {
-      const disp = (node as any).__disposePopover;
-      if (typeof disp === "function") disp();
-    };
-    visit(root);
-    root.querySelectorAll("*").forEach(visit);
-  } catch { /* noop */ }
+  const lib = bs();
+  const visit = (node: Element) => {
+    try {
+      const dispose = (node as any).__disposePopover;
+      if (typeof dispose === "function") dispose();
+      else lib?.Popover?.getInstance(node)?.dispose();
+    } catch { /* A removed instance must not prevent cleanup of its siblings. */ }
+  };
+  visit(root);
+  root.querySelectorAll('[data-bs-toggle="popover"], [data-popover-owner]').forEach(visit);
+}
+
+/** Hide panels on a temporarily hidden card without destroying its triggers. */
+export function hidePopovers(root: HTMLElement): void {
+  const lib = bs();
+  if (!lib?.Popover) return;
+  const hide = (element: Element) => {
+    try { lib.Popover.getInstance(element)?.hide(); } catch { /* already removed */ }
+  };
+  hide(root);
+  root.querySelectorAll('[data-bs-toggle="popover"], [data-popover-owner]').forEach(hide);
 }
 
 /** Hide every currently-open Bootstrap popover in the document. */

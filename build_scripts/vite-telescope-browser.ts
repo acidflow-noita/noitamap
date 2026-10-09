@@ -4,10 +4,27 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import type { Plugin } from "vite";
 
+/** Preserve the exact fields used by the pinned runtime parser in a generated
+ * browser payload. The original CSV and all game/submodule files stay untouched. */
+export function compactTelescopeTranslations(csv: string): string {
+  return csv.split('\n').flatMap(line => {
+    const fields = line.split(',');
+    return fields.length < 2 ? [] : [`${fields[0]},${fields[1]}`];
+  }).join('\n');
+}
+
 /** Vite builds browser APIs, including the native baker's browser facade. Leave
  * the upstream Node entrypoints intact for tools importing them outside Vite. */
 export async function browserTelescopeSource(code: string, id: string) {
   let source = code;
+  if (id.endsWith('/image_processing.js')) {
+    const writes = /ctx\.putImageData\((outImageData|imageData), 0, 0\);/g;
+    const count = [...source.matchAll(writes)].length;
+    if (count !== 4 && count !== 6) throw new Error(`Review changed Telescope image outputs: ${id}`);
+    source = source.replace(writes, 'putTelescopeImageData(ctx, $1);');
+    source = `import { putTelescopeImageData } from ${JSON.stringify(resolve(import.meta.dirname, '../src/telescope/telescope-canvas-pixels.ts'))};\n` + source;
+  }
+
   const replaceExpected = (
     pattern: RegExp,
     replacement: string,
@@ -181,9 +198,10 @@ export async function browserTelescopeSource(code: string, id: string) {
 }
 
 export function telescopeBrowserPlugin(directories: string[]): Plugin {
+  let production = false;
   const files = new Set(
     directories.flatMap((dir) =>
-      ["png_sanitizer.js", "utils.js", "pixel_scene_generation.js", "icon_sheets.js", "tile_generator.js", "poi_scanner.js", "gl/terrain_renderer.js", "engine_resolve/lattice_builder.js"].map(
+      ["image_processing.js", "translations.js", "png_sanitizer.js", "utils.js", "pixel_scene_generation.js", "icon_sheets.js", "tile_generator.js", "poi_scanner.js", "gl/terrain_renderer.js", "engine_resolve/lattice_builder.js"].map(
         (name) => resolve(dir, name).replace(/\\/g, "/"),
       ),
     ),
@@ -191,8 +209,18 @@ export function telescopeBrowserPlugin(directories: string[]): Plugin {
   return {
     name: "telescope-browser-entrypoints",
     enforce: "pre",
-    transform(code, id) {
+    configResolved(config) { production = config.command === 'build'; },
+    async transform(code, id) {
       if (!files.has(id)) return null;
+      if (production && id.endsWith('/translations.js')) {
+        const path = resolve(dirname(id), '../data/translations.csv');
+        const original = /new URL\(['"]\.\.\/data\/translations\.csv['"],\s*import\.meta\.url\)/g;
+        if (!original.test(code)) throw new Error(`Unknown telescope translation URL in ${id}`);
+        this.addWatchFile(path);
+        const reference = this.emitFile({ type: 'asset', name: 'translations-en.csv',
+          source: compactTelescopeTranslations(await readFile(path, 'utf8')) });
+        code = code.replace(original, `new URL(import.meta.ROLLUP_FILE_URL_${reference}, import.meta.url)`);
+      }
       return browserTelescopeSource(code, id);
     },
   };

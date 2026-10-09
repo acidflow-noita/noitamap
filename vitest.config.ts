@@ -1,7 +1,9 @@
+import { localeAssetsPlugin } from "./build_scripts/vite-locales.ts";
 import { configDefaults, defineConfig } from "vitest/config";
 import { resolveLocalPro } from "./build_scripts/local-pro";
 
 export default defineConfig({
+  plugins: [localeAssetsPlugin(import.meta.dirname)],
   resolve: { alias: resolveLocalPro(import.meta.dirname).aliases },
   server: {
     fs: { allow: [".."] },

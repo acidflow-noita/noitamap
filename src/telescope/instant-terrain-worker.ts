@@ -94,7 +94,7 @@ self.onmessage = ({ data }) => {
     if (outstanding.has(id)) cancelled.add(id);
     return;
   }
-  if (type === "init") latestToken = token;
+  if (type === "init" || type === "prepare") latestToken = token;
   outstanding.add(id);
   queue = queue
     .then(async () => {
@@ -104,6 +104,35 @@ self.onmessage = ({ data }) => {
       if (type === "prewarm") {
         await prewarm();
         self.postMessage({ id, shaderWarmupMs: renderer.shaderWarmupMs });
+      } else if (type === 'prepare') {
+        if (token !== latestToken) throw new DOMException('Obsolete terrain preparation', 'AbortError');
+        const [{ buildSharedTerrainUpload }, { GENERATOR_CONFIG }] = await Promise.all([
+          import('./shared-instant-terrain'), import('noita-telescope-full-pixels/generator_config.js'),
+        ]);
+        const gen = data.generation;
+        const upload = buildSharedTerrainUpload(gen.tileLayers.map(restoreTileLayer), gen.biomeData, {
+          seed: gen.seed, isNGP: gen.isNGP, gameMode: gen.gameMode,
+          lut: { recolorMaterials: true, clearSpawnPixels: true }, generatorConfig: GENERATOR_CONFIG,
+          elevatorShafts: (gen.elevatorShafts ?? []).map(restoreTileLayer),
+        }, data.limit);
+        const buffers = new Set<ArrayBuffer>(), seen = new Set<object>();
+        const visit = (value: any) => {
+          if (!value || typeof value !== 'object' || seen.has(value)) return;
+          seen.add(value);
+          if (ArrayBuffer.isView(value)) buffers.add(value.buffer as ArrayBuffer);
+          else if (value instanceof ArrayBuffer) buffers.add(value);
+          else if (value instanceof Map) for (const item of value.values()) visit(item);
+          else for (const item of Object.values(value)) visit(item);
+        };
+        visit(upload);
+        activeToken = token;
+        self.postMessage({ id, upload }, [...buffers]);
+      } else if (type === 'clip-data') {
+        if (token !== activeToken || token !== latestToken) throw new DOMException('Obsolete clipping data', 'AbortError');
+        const { packViewportClipping } = await import('./gpu-viewport-compositor');
+        const packed = await packViewportClipping(data.inputs, data.bounds, new AbortController().signal);
+        if (token !== latestToken) throw new DOMException('Obsolete clipping data', 'AbortError');
+        self.postMessage({ id, packed }, [packed.data.buffer]);
       } else if (type === "init") {
         await loadResources();
         if (token !== latestToken)

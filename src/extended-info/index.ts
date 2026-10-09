@@ -11,7 +11,12 @@
 import i18next from "../i18n";
 import { authService } from "../auth/auth-service";
 import { AuthUI } from "../auth/auth-ui";
+import { gameTranslator } from "../game-translations/translator";
+import { CREATURE_DATA } from "../data/creature-data";
+import { getCatalogMaterial, loadMaterialCatalog } from "../data_sources/material-catalog";
 import { renderExtendedSpawns } from './spawner';
+import { navigateCreatureSpawns, onCreatureSpawnNavigationChanged, resolveCreatureSpawns, type CreatureSpawnMode } from '../creature-spawn-navigation';
+import { attachHoverPopover, attachWikiLinkPopover, dismissPopovers, hidePopovers } from '../popover-util';
 
 const BARTENDER_BASE = "https://bartender.runfast.stream";
 
@@ -132,8 +137,6 @@ let creatureNameToId: Map<string, string> | null = null;
 let spellsById: Map<string, ExtendedSpell> | null = null;
 let spellsLoading: Promise<void> | null = null;
 
-let materialsById: Map<string, ExtendedMaterial> | null = null;
-let materialsLoading: Promise<void> | null = null;
 
 let reactionRoles: ReactionRoles | null = null;
 let reactionRolesLoading: Promise<void> | null = null;
@@ -252,30 +255,10 @@ export function getExtendedSpell(id: string): ExtendedSpell | null {
   return spellsById?.get(id) ?? null;
 }
 
-export async function loadExtendedMaterials(): Promise<void> {
-  if (materialsById) return;
-  if (materialsLoading) return materialsLoading;
-  materialsLoading = (async () => {
-    try {
-      const list = await fetchJson<ExtendedMaterial[]>("assets/full_materials.json");
-      const m = new Map<string, ExtendedMaterial>();
-      for (const mat of list) {
-        if (!mat?.id) continue;
-        if (!m.has(mat.id)) m.set(mat.id, mat);
-      }
-      materialsById = m;
-    } catch (err) {
-      console.warn("[extended-info] full_materials.json load failed:", err);
-      materialsById = new Map();
-    } finally {
-      materialsLoading = null;
-    }
-  })();
-  return materialsLoading;
-}
+export const loadExtendedMaterials = loadMaterialCatalog;
 
 export function getExtendedMaterial(id: string): ExtendedMaterial | null {
-  return materialsById?.get(id) ?? null;
+  return getCatalogMaterial(id);
 }
 
 export async function loadReactionRoles(): Promise<void> {
@@ -456,21 +439,68 @@ function translateBiomeList(s: string | null | undefined): string {
     .join(", ");
 }
 
+/** One destination action for the whole spawn list, using the report's map glyph. */
+function creatureSpawnRow(label: string, rawSpawn: string, creatureId: string, mode: CreatureSpawnMode = 'normal'): HTMLElement | null {
+  const locations = translateBiomeList(rawSpawn);
+  const result = row(label, locations);
+  if (!result) return null;
+  const available = resolveCreatureSpawns(rawSpawn, mode);
+
+  const value = result.querySelector<HTMLElement>(".extended-info-value")!;
+  value.classList.add("extended-info-spawn-value");
+  if (available.canNavigate) {
+    const link = document.createElement("button");
+    link.type = "button";
+    link.className = "creature-spawn-link";
+    link.textContent = locations;
+    const action = i18next.t("extended.showSpawnBiomes", "Show spawn biomes on map");
+    link.title = action;
+    link.setAttribute("aria-label", `${action}: ${locations}`);
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    icon.setAttribute("viewBox", "0 0 24 24");
+    icon.setAttribute("fill", "currentColor");
+    icon.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", "M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z");
+    icon.append(path);
+    link.append(icon);
+    link.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      // A card can survive until the next auth render; recheck access at action time.
+      if (isProUser()) navigateCreatureSpawns(rawSpawn, link, mode, creatureId);
+    });
+    value.replaceChildren(link);
+  }
+  if (available.missing.length) {
+    const missing = document.createElement("span");
+    missing.className = "creature-spawn-missing";
+    missing.textContent = i18next.t("extended.spawnMapMissing", {
+      defaultValue: "Not shown on this map: {{locations}}",
+      locations: available.missing.map(name => translateBiomeList(name)).join(", "),
+    });
+    value.append(missing);
+  }
+  return result;
+}
+
+
 /**
  * Walk up from `el` to find an enclosing popup (static OSD overlay popup or
  * telescope marker tooltip) and dismiss it. Used by the CTA click handler so
  * the auth modal isn't visually buried under the popup.
  */
-function dismissEnclosingPopup(el: HTMLElement): void {
+export function dismissEnclosingPopup(el: HTMLElement): void {
   const tooltip = el.closest(".marker-tooltip") as HTMLElement | null;
   if (tooltip) {
     const close = (tooltip as HTMLElement & { __close?: () => void }).__close;
     if (close) close();
-    else tooltip.remove();
+    else { dismissPopovers(tooltip); tooltip.remove(); }
     return;
   }
   const popup = el.closest(".osOverlayPopup") as HTMLElement | null;
   if (popup) {
+    hidePopovers(popup);
     popup.style.display = "none";
     const parent = popup.parentElement;
     if (parent) {
@@ -510,6 +540,15 @@ function isSectionVisible(sec: HTMLElement): boolean {
 function ensureLangListener(): void {
   if (langListenerInstalled) return;
   langListenerInstalled = true;
+  onCreatureSpawnNavigationChanged(() => {
+    document.querySelectorAll<HTMLElement>(".extended-info-section[data-extended-kind='creature']").forEach(wrap => {
+      const render = (wrap as HTMLElement & { __rerender?: () => void }).__rerender;
+      if (!render) return;
+      if (isSectionVisible(wrap)) render();
+      else wrap.dataset.langStale = "1";
+    });
+  });
+
   i18next.on("languageChanged", () => {
     document.querySelectorAll<HTMLElement>(".extended-info-section").forEach((wrap) => {
       const fn = (wrap as any).__rerender as (() => void) | undefined;
@@ -564,6 +603,7 @@ export function buildExtendedSection(kind: ExtendedKind, id: string): HTMLElemen
   let renderRevision = 0;
   const render = () => {
     const revision = ++renderRevision;
+    dismissPopovers(body);
     body.replaceChildren();
     if (!isProUser()) {
       wrap.style.display = "";
@@ -605,8 +645,11 @@ export function buildExtendedCreatureSectionByName(name: string, aliases?: strin
   wrap.appendChild(body);
 
   const tryNames = [name, ...(aliases ?? [])];
+  let renderRevision = 0;
 
   const render = () => {
+    const revision = ++renderRevision;
+    dismissPopovers(body);
     body.replaceChildren();
     if (!isProUser()) {
       wrap.style.display = "";
@@ -618,12 +661,14 @@ export function buildExtendedCreatureSectionByName(name: string, aliases?: strin
     loading.textContent = i18next.t("extended.loading", "Loading...");
     body.appendChild(loading);
     loadExtendedCreatures().then(() => {
+      if (revision !== renderRevision || !isProUser() || !wrap.isConnected) return;
       let id: string | null = null;
       for (const n of tryNames) {
         if (!n) continue;
         id = getCreatureIdByName(n);
         if (id) break;
       }
+      dismissPopovers(body);
       body.replaceChildren();
       const node = id ? renderCreature(id) : null;
       if (node) {
@@ -761,8 +806,9 @@ function renderProBody(
 
   const fill = (cb: () => HTMLElement | null) => {
     // A fetch that finishes after logout must not repopulate paid information.
-    if (!isCurrent()) return;
+    if (!isCurrent() || (kind !== 'spawner' && !wrap.isConnected)) return;
     const node = cb();
+    dismissPopovers(body);
     body.replaceChildren();
     if (node) {
       wrap.style.display = "";
@@ -815,8 +861,11 @@ function rowWithNode(label: string, valueNode: HTMLElement): HTMLElement {
   const l = document.createElement("span");
   l.className = "extended-info-label";
   l.textContent = `${label}:`;
+  const value = document.createElement("span");
+  value.className = "extended-info-value";
+  value.appendChild(valueNode);
   r.appendChild(l);
-  r.appendChild(valueNode);
+  r.appendChild(value);
   return r;
 }
 
@@ -951,21 +1000,21 @@ function renderCreature(id: string): HTMLElement | null {
   const bottomRows: HTMLElement[] = [];
 
   if (c.spawnLocation) {
-    const r = row(i18next.t("extended.row.spawn", "Spawn"), translateBiomeList(c.spawnLocation));
+    const r = creatureSpawnRow(i18next.t("extended.row.spawn", "Spawn"), c.spawnLocation, id);
     if (r) bottomRows.push(r);
   }
   if (c.ngplusSpawnLocation) {
-    const r = row(i18next.t("extended.row.spawnNgplus", "Spawn (NG+)"), translateBiomeList(c.ngplusSpawnLocation));
+    const r = creatureSpawnRow(i18next.t("extended.row.spawnNgplus", "Spawn (NG+)"), c.ngplusSpawnLocation, id, "ng-plus");
     if (r) bottomRows.push(r);
   }
 
   // Blood / Corpse — individual rows, each with a bartender link
   if (c.blood) {
-    const node = creatureMaterialNode(stripWiki(c.blood), c.blood_material_id);
+    const node = creatureMaterialNode(c.blood, CREATURE_DATA[id]?.bloodMaterialId || c.blood_material_id, CREATURE_DATA[id]?.bloodMaterialIds);
     bottomRows.push(rowWithNode(i18next.t("extended.row.blood", "Blood"), node));
   }
   if (c.corpse) {
-    const node = creatureMaterialNode(stripWiki(c.corpse), c.corpse_material_id);
+    const node = creatureMaterialNode(c.corpse, CREATURE_DATA[id]?.corpseMaterialId || c.corpse_material_id, CREATURE_DATA[id]?.corpseMaterialIds);
     bottomRows.push(rowWithNode(i18next.t("extended.row.corpse", "Corpse"), node));
   }
 
@@ -1172,6 +1221,7 @@ function renderMaterial(id: string): HTMLElement | null {
       a.rel = "noopener";
       a.textContent = tag;
       a.className = "extended-info-tag-link";
+      attachWikiLinkPopover(a);
       tagsNode.appendChild(a);
       if (i < m.tags!.length - 1) {
         tagsNode.appendChild(document.createTextNode(", "));
@@ -1193,7 +1243,7 @@ function renderMaterial(id: string): HTMLElement | null {
       linksWrap.appendChild(externalLink(bartenderReagentLink(id), i18next.t("extended.asReagent", "View as reagent")));
     }
     if (roles.asResult) {
-      linksWrap.appendChild(externalLink(bartenderProductLink(id), i18next.t("extended.asProduct", "View as product")));
+      linksWrap.appendChild(externalLink(bartenderProductLink(id), i18next.t("extended.asProduct", "View as product"), "product"));
     }
     root.appendChild(linksWrap);
   }
@@ -1206,18 +1256,40 @@ function renderMaterial(id: string): HTMLElement | null {
  * icon wrapped in a single <a> so the click target is exactly the visible
  * content, not the whole row.
  */
-function externalLink(href: string, label: string): HTMLElement {
+function externalLink(href: string, label: string, role: "reagent" | "product" = "reagent"): HTMLElement {
   const a = document.createElement("a");
   a.href = href;
   a.target = "_blank";
-  a.rel = "noopener";
-  a.className = "extended-info-link";
+  a.rel = "noopener noreferrer";
+  a.className = "extended-info-link bartender-link";
+  const destination = i18next.t("extended.openInBartender", "Open in Bartender");
+  a.title = destination;
+  a.setAttribute("aria-label", `${label} · ${destination}`);
   const text = document.createElement("span");
   text.textContent = label;
   a.appendChild(text);
   const icon = document.createElement("i");
   icon.className = "bi bi-box-arrow-up-right";
+  icon.setAttribute("aria-hidden", "true");
   a.appendChild(icon);
+
+  const title = document.createElement("span");
+  title.className = "bartender-link-title";
+  const logo = document.createElement("img");
+  logo.className = "bartender-link-logo";
+  logo.src = "./assets/Bartender_logo.svg";
+  logo.alt = "Bartender";
+  const brand = /Bartender/i.exec(destination);
+  if (brand) {
+    title.append(document.createTextNode(destination.slice(0, brand.index)), logo,
+      document.createTextNode(destination.slice(brand.index + brand[0].length)));
+  } else {
+    title.append(document.createTextNode(destination), logo);
+  }
+  const hint = role === "product"
+    ? i18next.t("extended.bartenderProductHint", "View reactions that produce this material in Bartender.")
+    : i18next.t("extended.bartenderReagentHint", "View reactions that use this material in Bartender.");
+  attachHoverPopover(a, hint, "top", { title, owner: "bartender-link", focus: true });
   return a;
 }
 
@@ -1226,9 +1298,28 @@ function externalLink(href: string, label: string): HTMLElement {
  * Used for Blood / Corpse rows. When we have the bartender material id we
  * link to bartender's reactions page; otherwise plain text.
  */
-function creatureMaterialNode(displayName: string, materialId: string | null | undefined): HTMLElement {
-  if (materialId) {
-    return externalLink(bartenderReagentLink(materialId), displayName);
+function creatureMaterialNode(rawName: string, materialId: string | null | undefined, materialIds?: string[]): HTMLElement {
+  const displayName = stripWiki(rawName);
+  const linkIds = materialIds?.length ? materialIds : materialId && materialId !== 'none' ? [materialId] : [];
+  if (linkIds.length) {
+    const references = [...rawName.matchAll(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g)];
+    if (references.length === linkIds.length) {
+      const value = document.createElement('span');
+      const separator = (text: string) => `${/^\s/.test(text) ? ' ' : ''}${stripWiki(text)}${/\s$/.test(text) ? ' ' : ''}`;
+      let from = 0;
+      references.forEach((reference, index) => {
+        value.append(document.createTextNode(separator(rawName.slice(from, reference.index))));
+        value.append(creatureMaterialNode(stripWiki(reference[0]), linkIds[index]));
+        from = reference.index! + reference[0].length;
+      });
+      value.append(document.createTextNode(separator(rawName.slice(from))));
+      return value;
+    }
+  }
+  if (materialId && materialId !== 'none') {
+    const translated = gameTranslator.translateMaterial(materialId);
+    const normalizedId = materialId.replace(/^mat_/, "");
+    return externalLink(bartenderReagentLink(materialId), translated === normalizedId ? displayName : translated);
   }
   const t = document.createElement("span");
   t.className = "extended-info-value";
@@ -1247,6 +1338,8 @@ function stripWiki(s: string | null | undefined): string {
     .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
     .replace(/&#039;/g, "'");
+  // Wiki Cargo can include unresolved citation markers in creature fields.
+  t = t.replace(/\x7f?['"`]*UNIQ--ref-[\da-f]+-QINU['"`]*\x7f?/gi, '');
   t = t.replace(/<[^>]+>/g, " ");
   t = t.replace(/\[\[File:[^\]]*\]\]/g, "");
   t = t.replace(/\[\[([^\]|]*\|)?([^\]]*)\]\]/g, "$2");

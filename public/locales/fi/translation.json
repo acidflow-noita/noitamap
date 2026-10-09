@@ -14,7 +14,8 @@
     "popoverContent": "Etsi loitsuja, esineitä, sauvoja, pomoja, olentoja, juomia, rakenteita ja muuta. Käytä alla olevia suodatinpainikkeita rajataksesi tuloksia luokittain.",
     "chunksAway": "~{{count}} chunkkia kaukana",
     "openTelescope": "Avaa Telescopessa",
-    "noResults": "Ei tuloksia"
+    "noResults": "Ei tuloksia",
+    "shortcutHint": "Siirry hakuun: /, Ctrl+/ tai ⌘+/"
   },
   "spell_prefix": "Loitsu",
   "tiers_prefix": "Tasot",
@@ -5085,7 +5086,15 @@
     "ingestionEffects": "Nielemisen vaikutukset",
     "reactionsHeader": "Materiaalireaktiot Bartenderissa",
     "asReagent": "Näytä reagenssina",
-    "asProduct": "Näytä tuotteena"
+    "asProduct": "Näytä tuotteena",
+    "openInWiki": "Avaa Noita Wikissä",
+    "openInBartender": "Avaa Bartenderissa",
+    "bartenderProductHint": "Katso Bartenderista reaktiot, joissa tätä materiaalia syntyy.",
+    "bartenderReagentHint": "Katso Bartenderista reaktiot, joissa tätä materiaalia käytetään.",
+    "spawnBiomesPro": "Esiintymisbiomien korostus on Pro-ominaisuus.",
+    "spawnBiomesUnavailable": "Tämän olennon esiintymisbiomeja ei ole saatavilla tällä kartalla.",
+    "showSpawnBiomes": "Näytä esiintymisbiomit kartalla",
+    "spawnMapMissing": "Ei näytetä tällä kartalla: {{locations}}"
   },
   "wand": {
     "shuffle": "Sekoita",

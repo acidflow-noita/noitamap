@@ -14,7 +14,8 @@
     "popoverContent": "Шукайте заклинання, предмети, чарівні палички, босів, істот, зілля, структури тощо. Використовуйте кнопки фільтра нижче, щоб звузити результати за категоріями.",
     "chunksAway": "~{{count}} чанкiв",
     "openTelescope": "Відкрити в Telescope",
-    "noResults": "Нічого не знайдено"
+    "noResults": "Нічого не знайдено",
+    "shortcutHint": "Перейти до пошуку: /, Ctrl+/ або ⌘+/"
   },
   "spell_prefix": "Заклинання",
   "tiers_prefix": "Рівні",
@@ -5085,7 +5086,15 @@
     "ingestionEffects": "Ефекти проковтування",
     "reactionsHeader": "Матеріальні реакції на Бармена",
     "asReagent": "Дивитися як реагент",
-    "asProduct": "Переглянути як товар"
+    "asProduct": "Переглянути як товар",
+    "openInWiki": "Відкрити в Noita Wiki",
+    "openInBartender": "Відкрити в Bartender",
+    "bartenderProductHint": "Переглянути в Bartender реакції, у результаті яких утворюється цей матеріал.",
+    "bartenderReagentHint": "Переглянути в Bartender реакції, у яких використовується цей матеріал.",
+    "spawnBiomesPro": "Підсвічування біомів появи доступне з Pro.",
+    "spawnBiomesUnavailable": "Біоми появи цієї істоти недоступні на цій мапі.",
+    "showSpawnBiomes": "Показати біоми появи на мапі",
+    "spawnMapMissing": "Не показано на цій мапі: {{locations}}"
   },
   "wand": {
     "shuffle": "Тасування",

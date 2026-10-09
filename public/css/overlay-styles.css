@@ -490,3 +490,60 @@ img[src$="spatial_awareness_special_spot.png"] {
   min-height: var(--size);
   image-rendering: pixelated;
 }
+
+/* A creature's spawn selection persists while inspecting the map. Keep hover
+   from replacing that selection; switching boundaries off clears the filter. */
+#osContainer.biome-spawn-focus .biome-spawn-match path {
+  fill: currentColor;
+  fill-opacity: .38;
+  stroke: currentColor;
+  stroke-opacity: 1;
+  stroke-width: 56;
+  paint-order: stroke;
+}
+#osContainer.biome-spawn-focus .biome-spawn-muted path {
+  fill: oklch(55% 0 0);
+  fill-opacity: .14;
+  stroke: oklch(55% 0 0);
+  stroke-opacity: .25;
+  stroke-width: 24;
+}
+
+/* A separate flex row prevents notices from stretching the navbar's nowrap
+   desktop container and keeps the way out visible when either menu is closed. */
+#map-view-controls {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--control-gap);
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  padding: var(--control-gap) var(--control-padding-x);
+  background: var(--bg);
+  border-block-end: .0625rem solid var(--border-strong);
+}
+#map-view-controls:not(:has(> :not([hidden]))) { display: none; }
+
+#creature-spawn-notice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--control-gap);
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  color: var(--text-muted);
+  font-size: var(--control-font-size);
+  line-height: 1.5;
+}
+#creature-spawn-notice[hidden],
+#creature-spawn-notice [hidden] { display: none; }
+#creature-spawn-notice .creature-spawn-notice-message {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+}
+#creature-spawn-notice .btn {
+  max-inline-size: 100%;
+  white-space: normal;
+}

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from 'vitest';
-vi.mock('../src/telescope/instant-terrain-backend', () => ({ prepareInstantTerrain: vi.fn() }));
+vi.mock('../src/telescope/instant-terrain-backend', () => ({ usesDirectTerrainGPU: () => false, prepareInstantTerrain: vi.fn() }));
 vi.mock('../src/telescope/terrain-elevator', () => ({ prepareElevatorShafts: vi.fn(), includeElevatorOwnership: vi.fn() }));
 vi.mock('../src/telescope/instant-terrain-coverage', () => ({ createInstantCoverage: () => ({ start() {} }) }));
 vi.mock('../src/telescope/instant-terrain-cooker', () => ({ createInstantTerrainCooker: () => ({ stats: {}, start() {} }) }));

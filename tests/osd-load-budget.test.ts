@@ -4,7 +4,7 @@ import { createCanvas } from '@napi-rs/canvas';
 import { createInstantTileSource } from '../src/telescope/instant-terrain';
 import { PIXEL_MAP_DRAW_OPTIONS } from '../src/osd-pixel-rendering';
 
-vi.mock('../src/telescope/instant-terrain-backend', () => ({ prepareInstantTerrain: vi.fn() }));
+vi.mock('../src/telescope/instant-terrain-backend', () => ({ usesDirectTerrainGPU: () => false, prepareInstantTerrain: vi.fn() }));
 vi.mock('../src/telescope/instant-terrain-plane', () => ({ setTerrainPlane: vi.fn() }));
 let OSD: any;
 beforeAll(async () => {

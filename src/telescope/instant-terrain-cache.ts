@@ -1,3 +1,5 @@
+import { retainTerrainFrame, releaseTerrainImage } from "./terrain-frame";
+
 const DEFAULT_CACHE_BYTES = 32 * 1024 * 1024;
 
 /** OSD owns and may resize every context it receives. Never share its canvas
@@ -19,6 +21,7 @@ interface CachedTerrain {
   context: CanvasRenderingContext2D;
   bytes: number;
   pinned: boolean;
+  shared?: boolean;
 }
 
 /** Active-map cache shared by all terrain regions. Keys must include the
@@ -47,13 +50,19 @@ export class InstantTerrainCache {
   }
 
   /** Returns an independent canvas that the caller/OSD can mutate or destroy. */
-  get(key: string): CanvasRenderingContext2D | undefined {
+  get(key: string): CanvasRenderingContext2D | undefined { return this.read(key, false); }
+
+  /** Read-only viewport reuse. Tile callers continue to receive independent copies. */
+  getFrame(key: string): CanvasRenderingContext2D | undefined { return this.read(key, true); }
+
+  private read(key: string, borrow: boolean): CanvasRenderingContext2D | undefined {
     const entry = this.entries.get(key);
     if (!entry) {
       this.misses++;
       return undefined;
     }
-    const result = copyTerrainContext(entry.context);
+    const result = borrow && entry.shared
+      ? (retainTerrainFrame(entry.context.canvas), entry.context) : copyTerrainContext(entry.context);
     this.entries.delete(key);
     this.entries.set(key, entry);
     this.hits++;
@@ -81,8 +90,20 @@ export class InstantTerrainCache {
     if (!Number.isSafeInteger(bytes) || bytes <= 0 || bytes > this.maxBytes)
       return false;
     const context = copyTerrainContext(source);
+    return this.store(key, context, bytes, pinned);
+  }
+
+  /** A published immutable frame needs a reference, not another RGBA canvas. */
+  setFrame(key: string, context: CanvasRenderingContext2D): boolean {
+    const bytes = context.canvas.width * context.canvas.height * 4;
+    if (!Number.isSafeInteger(bytes) || bytes <= 0 || bytes > this.maxBytes) return false;
+    retainTerrainFrame(context.canvas);
+    return this.store(key, context, bytes, false, true);
+  }
+
+  private store(key: string, context: CanvasRenderingContext2D, bytes: number, pinned: boolean, shared = false): boolean {
     this.remove(key);
-    this.entries.set(key, { context, bytes, pinned });
+    this.entries.set(key, { context, bytes, pinned, shared });
     this.bytes += bytes;
     while (this.bytes > this.maxBytes) {
       let oldest: string | undefined;
@@ -124,6 +145,7 @@ export class InstantTerrainCache {
     if (!entry) return;
     this.entries.delete(key);
     this.bytes -= entry.bytes;
-    entry.context.canvas.width = entry.context.canvas.height = 0;
+    if (entry.shared) releaseTerrainImage(entry.context.canvas);
+    else entry.context.canvas.width = entry.context.canvas.height = 0;
   }
 }

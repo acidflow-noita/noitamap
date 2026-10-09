@@ -119,3 +119,34 @@
 .marker-tooltip .extended-info-reactions { border-color: var(--border); }
 .marker-tooltip .extended-info-mat-entry { flex-wrap: wrap; }
 .marker-tooltip .extended-info-link { width: auto; max-width: 100%; }
+
+/* External actions occupy their visible label; the rest of the card stays inert. */
+.wiki-link { inline-size: fit-content; max-inline-size: 100%; justify-self: start; align-self: flex-start; }
+.poi-card-heading.wiki-link { flex: 0 1 auto; }
+.bartender-link { inline-size: fit-content; max-inline-size: 100%; justify-self: start; align-self: flex-start; }
+.bartender-link-title { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .2em; max-width: 100%; }
+.bartender-link-logo { height: var(--brand-logo-height, 1.25em); width: auto; max-width: 100%; object-fit: contain; }
+
+.poi-card-back { white-space: normal; }
+
+.creature-spawn-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-fg);
+  font: inherit;
+  text-align: left;
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: .2em;
+  cursor: pointer;
+}
+.creature-spawn-link:hover { color: var(--accent-strong); }
+.creature-spawn-link svg {
+  width: 1em;
+  height: 1em;
+  margin-left: .25em;
+  vertical-align: -.125em;
+}
+.creature-spawn-missing { display: block; color: var(--text-muted); font-size: inherit; }

@@ -7,7 +7,7 @@ import { createInstantTerrainCooker } from '../src/telescope/instant-terrain-coo
 import { RetainedTerrain, type StoredTerrain } from '../src/telescope/retained-terrain';
 import { installTerrainAdmission } from '../src/osd-terrain-admission';
 vi.mock('../src/data_sources/overlays', () => ({ createOverlays: () => [] }));
-vi.mock('../src/telescope/instant-terrain-backend', () => ({ prepareInstantTerrain: vi.fn() }));
+vi.mock('../src/telescope/instant-terrain-backend', () => ({ usesDirectTerrainGPU: () => false, prepareInstantTerrain: vi.fn() }));
 vi.mock('../src/telescope/instant-terrain-plane', () => ({ setTerrainPlane: vi.fn() }));
 vi.mock('../src/telescope/terrain-elevator', () => ({
   includeElevatorOwnership: (owner: unknown) => owner,
@@ -164,14 +164,23 @@ it('presents one complete native viewport through real AppOSD while nine regions
   const pending: Array<{ plan: any; resolve: (image: any) => void }> = [];
   const backend = { backend: 'worker', configureViewport: vi.fn(async () => {}), invalidate: vi.fn(),
     render: vi.fn(() => { throw new Error('Foreground terrain used an OSD tile'); }),
-    renderViewport: vi.fn((plan: any) => new Promise<any>(resolve => pending.push({ plan, resolve }))),
+    renderViewport: vi.fn((plan: any, signal: AbortSignal) => new Promise<any>((resolve, reject) => {
+      const abort = () => reject(signal.reason);
+      signal.addEventListener('abort', abort, { once: true });
+      pending.push({ plan, resolve: image => { signal.removeEventListener('abort', abort); resolve(image); } });
+    })),
   };
   vi.mocked(prepareInstantTerrain).mockResolvedValue(backend);
-  const gen = { seed: 1245, isNGP: false, tileLayers: [], parallelWorlds: [-1, 0, 1],
-    biomeData: { pixels: new Uint32Array(70 * 48) } };
+  const gen = { seed: 1245, isNGP: false,
+    tileLayers: [{ biomeName: 'coalmine', buffer: new Uint8Array(4),
+      validChunks: new Set(['34,14', '35,14']) }], parallelWorlds: [-1, 0, 1],
+    biomeData: { pixels: new Uint32Array(70 * 48).fill(1) } };
   const deps = { GLTerrainRenderer: class {} as any, initMaterialAtlas: async () => {},
-    getWorldSize: () => 70, getWorldCenter: () => 35, GENERATOR_CONFIG: {} };
+    getWorldSize: () => 70, getWorldCenter: () => 35, GENERATOR_CONFIG: { coalmine: { color: 1, wangFile: 'mine' } } };
+  const finishedRequests = new Set<typeof pending[number]>();
   const finish = (request: typeof pending[number]) => {
+    if (finishedRequests.has(request)) return;
+    finishedRequests.add(request);
     const canvas: any = createCanvas(request.plan.pixelWidth, request.plan.pixelHeight), context = canvas.getContext('2d');
     context.fillStyle = '#f08020'; context.fillRect(0, 0, canvas.width, canvas.height);
     canvas.close = vi.fn(); request.resolve(canvas);
@@ -188,31 +197,32 @@ it('presents one complete native viewport through real AppOSD while nine regions
     expect(source.instantStats.cooking.state).toBe('waiting');
     expect(backend.configureViewport.mock.calls[0]).toBeDefined();
     for (let i = 0; i < 3; i++) { viewer.forceRedraw(); runFrame(); }
-    expect(backend.renderViewport).not.toHaveBeenCalled();
+    // The private initial overview may prepare while artwork loads, but must
+    // never complete visible readiness before the requested detailed view.
+    await vi.waitFor(() => expect(pending).toHaveLength(1));
+    finish(pending[0]);
+    await vi.waitFor(() => expect(source.instantStats.viewport.frames).toBe(1));
     expect(backend.render).not.toHaveBeenCalled();
     expect(firstPaint).not.toHaveBeenCalled();
     expect(viewer.imageLoader.jobsInProgress).toBe(0);
 
-    // Attachment/home and navigation may change the camera while artwork is
-    // preparing. That initial stale frame must not retire the previous map.
     viewer.viewport.fitBounds(new OSD.Rect(-128, 0, 256, 256), true);
     viewer.forceRedraw(); runFrame();
     release();
-    await vi.waitFor(() => expect(pending.length).toBe(1));
-    finish(pending[0]);
-    await vi.waitFor(() => expect(source.instantStats.viewport.frames).toBe(1));
-    viewer.forceRedraw(); runFrame();
-    await Promise.resolve();
-    expect(firstPaint).not.toHaveBeenCalled();
-    await vi.waitFor(() => expect(pending.length).toBe(2));
-    expect(pending[1].plan.x).toBeCloseTo(-128);
-    expect(pending[1].plan.pixelWidth).toBe(256);
+    await vi.waitFor(() => expect(pending).toHaveLength(2));
+    // This frame was queued before the camera change while artwork waited.
+    // It must not announce first paint for the newer close-up.
     finish(pending[1]);
-    await vi.waitFor(() => expect(source.instantStats.viewport.frames).toBeGreaterThanOrEqual(2));
-    viewer.forceRedraw(); runFrame();
-    expect(firstPaint).not.toHaveBeenCalled();
     await Promise.resolve();
-    expect(firstPaint).toHaveBeenCalledOnce();
+    expect(firstPaint).not.toHaveBeenCalled();
+    // A frame may use several cropped GPU requests when reusing pan overlap.
+    // Complete those real requests, rather than equating one request to a frame.
+    await vi.waitFor(() => {
+      pending.forEach(finish);
+      viewer.forceRedraw(); runFrame();
+      expect(firstPaint).toHaveBeenCalledOnce();
+    });
+    expect(source.instantStats.viewport.frames).toBeGreaterThanOrEqual(2);
     expect([...viewer.drawer.context.getImageData(128, 128, 1, 1).data]).toEqual([240, 128, 32, 255]);
     expect(backend.render).not.toHaveBeenCalled();
     expect(viewer.imageLoader.jobsInProgress).toBe(0);

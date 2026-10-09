@@ -9,6 +9,7 @@ import { PIXEL_MAP_DRAW_OPTIONS } from './osd-pixel-rendering';
 import { installTileContinuity } from './osd-tile-continuity';
 import { installTerrainAdmission } from './osd-terrain-admission';
 import { installStaticBackgroundResidency } from './osd-static-background';
+import { dismissPopovers } from './popover-util';
 
 declare const OpenSeadragon: any;
 
@@ -50,7 +51,7 @@ export class AppOSD {
       crossOriginPolicy: 'Anonymous',
       drawer: (() => {
         if (!useWebGL) {
-          console.log('[OSD] Drawer: canvas (user preference)');
+          console.log('[OSD] Drawer: canvas');
           return 'canvas';
         }
         try {
@@ -169,13 +170,23 @@ export class AppOSD {
     this.viewer.addOverlay(options);
   }
   clearOverlays() {
+    this.disposeOverlayPopovers();
     this.viewer.clearOverlays();
   }
   removeOverlay(el: HTMLElement) {
+    el.querySelectorAll<HTMLElement>('.osOverlayPopup').forEach(dismissPopovers);
     this.viewer.removeOverlay(el);
   }
 
+  private disposeOverlayPopovers() {
+    // POI cards are rebuilt per map; cached biome overlays remain reusable.
+    for (const overlay of this.viewer.currentOverlays ?? []) {
+      overlay.element.querySelectorAll('.osOverlayPopup').forEach(dismissPopovers);
+    }
+  }
+
   open(sources: any) {
+    this.disposeOverlayPopovers();
     this.viewer.open(sources);
   }
   isOpen() {

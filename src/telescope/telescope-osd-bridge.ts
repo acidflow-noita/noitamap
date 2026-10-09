@@ -58,7 +58,7 @@ import {
   TILE_OVERLAY_COLORS,
 } from './telescope-adapter';
 import { getDataZip } from '../data-archive';
-import { installTelescopeShim, isCanvasTainted } from './telescope-dom-shim';
+import { installTelescopeShim } from './telescope-dom-shim';
 import { installFetchInterceptor, installImageSrcInterceptor } from './telescope-data-bridge';
 import { decodePngToRgba, rgbaToPngBlobUrl, rgbaToPngBlob } from './png-decode';
 import {
@@ -71,7 +71,7 @@ import {
   getCachedBiomeRendersForKey,
 } from './tile-cache';
 import i18next from '../i18n';
-import { attachAlwaysCastPopover, dismissPopovers } from '../popover-util';
+import { attachAlwaysCastPopover, attachWikiLinkPopover, dismissPopovers } from '../popover-util';
 import {
   clearGLTerrain,
   type GLTerrainDeps,
@@ -159,7 +159,6 @@ let getWorldSize: any;
 /** Set only when the aliased telescope fork ships js/gl/ (vitaminmoo render-perf). */
 let glTerrainDeps: GLTerrainDeps | null = null;
 let _telescopeModulesLoaded = false;
-let privacyToastShown = false;
 
 // ─── Biome Render Order ─────────────────────────────────────────────────────
 
@@ -876,16 +875,6 @@ async function addBiomeLayersProgressively(
         const compositeH = Math.ceil((maxY - minY) / 10);
         const compositeCanvas = new OffscreenCanvas(compositeW, compositeH);
         const compositeCtx = compositeCanvas.getContext('2d')!;
-
-        // Show privacy browser warning toast once per session if canvas tainting detected
-        if (isCanvasTainted() && !privacyToastShown) {
-          privacyToastShown = true;
-          const toastEl = document.getElementById('privacyBrowserToast');
-          if (toastEl) {
-            // @ts-ignore — Bootstrap is loaded globally
-            new bootstrap.Toast(toastEl).show();
-          }
-        }
 
         // ── GPU-accelerated compositing (all browsers) ──
         for (const { overlay, x, y } of validOverlays) {
@@ -2705,6 +2694,7 @@ let activeMarkerData: MarkerData | null = null;
 let tooltipEl: HTMLDivElement | null = null;
 let tooltipPlacementCleanup: (() => void) | undefined;
 const poiCards = new POICardLifecycle(getCurrentDynamicSeed, removeMarkerTooltip);
+let reportCardReturn: { label: string; onClose(): void } | undefined;
 let canvasClickHandler: ((event: any) => void) | null = null;
 let markerTiledImage: any = null;
 
@@ -2930,6 +2920,7 @@ function wrapWithWikiLink(el: HTMLElement, poi: any): HTMLElement {
   if (!url) return el;
   const a = document.createElement('a');
   a.href = url;
+  attachWikiLinkPopover(a);
   a.target = '_blank';
   a.rel = 'noopener';
   a.style.cssText =
@@ -2952,9 +2943,18 @@ function mountMarkerCard(card: HTMLElement, viewer: any, anchor: CardAnchor, req
   (card as HTMLElement & { __close?: () => void }).__close = () => {
     if (tooltipEl === card && request.isCurrent()) hideMarkerTooltip();
   };
+  if (reportCardReturn) {
+    const back = document.createElement('button');
+    back.type = 'button';
+    back.className = 'btn btn-sm btn-outline-light poi-card-back';
+    back.textContent = i18next.t('seedReport.v3.backToReport', reportCardReturn.label);
+    back.onclick = event => { event.stopPropagation(); (card as any).__close?.(); };
+    card.querySelector('.poi-card-controls')?.prepend(back);
+  }
   card.style.visibility = 'hidden';
   document.body.appendChild(card);
   tooltipPlacementCleanup = mountPOICardPlacement(card, { viewer, anchor, isCurrent: request.isCurrent });
+  card.querySelector<HTMLButtonElement>('.poi-card-back')?.focus({ preventScroll: true });
 }
 
 function discardMarkerCard(): void {
@@ -3761,6 +3761,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
             a.href = String((link as import('../data/pillars').PillarLink).wiki);
             a.target = '_blank';
             a.rel = 'noopener';
+            attachWikiLinkPopover(a);
             a.insertAdjacentHTML(
               'beforeend',
               '<i class="bi bi-box-arrow-up-right" style="font-size:0.75em;margin-left:3px;vertical-align:-1px"></i>'
@@ -4759,14 +4760,19 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
 export function openTooltipForPOI(
   poiId: string,
   viewer: any,
-  opts?: { sidebarRightPx?: number; fallbackX?: number; fallbackY?: number; fallbackPoi?: any; owner?: POICardOwner }
+  opts?: { sidebarRightPx?: number; fallbackX?: number; fallbackY?: number; fallbackPoi?: any; owner?: POICardOwner; reportReturn?: { label: string; onClose(): void } }
 ): void {
-  if (!poiId || poiId === 'undefined' || poiId === 'null') return;
+  if (!poiId || poiId === 'undefined' || poiId === 'null' || drawingOwnsMapPointer() || isDropOverlayActive()) { opts?.reportReturn?.onClose(); return; }
 
   // Close any tooltip card that was already open. Otherwise the previous POI's
   // card sits on screen for ~2 s during the cinematic pan before getting
   // replaced, which looks like the click did nothing.
-  const request = poiCards.begin(opts?.owner ?? poiCards.owner ?? 'map');
+  const returnAction = opts?.reportReturn;
+  const request = poiCards.begin(opts?.owner ?? poiCards.owner ?? 'map', returnAction ? () => {
+    if (reportCardReturn === returnAction) reportCardReturn = undefined;
+    returnAction.onClose();
+  } : undefined);
+  if (returnAction) reportCardReturn = returnAction;
 
   // Find the exact marker item based on its reference or fallback ID
   let item = globalMarkerData
@@ -4803,7 +4809,7 @@ export function openTooltipForPOI(
   // them).
   const baseX = item ? item.osdX : opts?.fallbackX;
   const baseY = item ? item.osdY : opts?.fallbackY;
-  if (baseX === undefined || baseY === undefined) return;
+  if (!Number.isFinite(baseX) || !Number.isFinite(baseY)) { poiCards.close(); return; }
   const pt = new (OpenSeadragon as any).Point(baseX, baseY);
 
   // The same report can be a right sidebar or a bottom sheet. Its actual
@@ -4837,7 +4843,7 @@ export function openTooltipForPOI(
   // rows whose POI was excluded from the marker layer (perf-mode creatures,
   // etc.) but still has world coords.
   if (!item) {
-    request.afterNavigation(panPromise, () => {}, () => viewer.cancelNavigation?.());
+    request.afterNavigation(panPromise, () => poiCards.close(), () => viewer.cancelNavigation?.());
     return;
   }
 

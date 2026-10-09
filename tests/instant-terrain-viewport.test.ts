@@ -19,7 +19,7 @@ afterEach(() => { for (const cleanup of cleanups.splice(0)) cleanup(); OSD.pixel
 afterAll(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 const drain = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
 
-function fixture(bounds = { x: -1000, y: -1000, width: 2000, height: 2000 }, maxRetainedPixels?: number, initialOverview = false) {
+function fixture(bounds = { x: -1000, y: -1000, width: 2000, height: 2000 }, maxRetainedPixels?: number, initialOverview = false, renderFrameNow?: (plan: InstantTerrainViewportPlan) => CanvasImageSource) {
   OSD.pixelDensityRatio = 1;
   const viewer: any = new OSD.EventSource(), world: any = new OSD.EventSource();
   const items: any[] = [], canvas = createCanvas(32, 24), lifetime = new AbortController();
@@ -55,7 +55,7 @@ function fixture(bounds = { x: -1000, y: -1000, width: 2000, height: 2000 }, max
   const renderFrame = vi.fn((plan: InstantTerrainViewportPlan, signal: AbortSignal, _preparingOverview?: boolean) =>
     new Promise<any>((resolve, reject) => renders.push({ plan, signal, resolve, reject })));
   const layer = createInstantTerrainViewport({ viewer, bounds, signal: lifetime.signal,
-    renderFrame, firstPaint, onFailure: failure, revision: () => version, maxRetainedPixels, initialOverview });
+    renderFrame, firstPaint, onFailure: failure, revision: () => version, maxRetainedPixels, initialOverview, renderFrameNow });
   function attach(source: any = layer.source) {
     const item = new OSD.TiledImage({ source, viewer, viewport, drawer, tileCache: viewer.tileCache,
       imageLoader: new OSD.ImageLoader({ jobLimit: 2 }), width: source.width, x: bounds.x, y: bounds.y,
@@ -483,4 +483,40 @@ describe('direct viewport terrain with installed OSD and native canvas', () => {
     expect(installViewportLayerDrawing(viewer)).toBe(false);
     expect(viewer.drawer._drawTiles).toBe(original);
   });
+});
+
+
+it('draws newly exposed terrain synchronously without a coarse frame and freezes only on seed retirement', async () => {
+  const originalCreate = document.createElement.bind(document);
+  const create = vi.spyOn(document, 'createElement').mockImplementation(((tag: string, ...args: any[]) =>
+    tag === 'canvas' ? createCanvas(1, 1) : (originalCreate as any)(tag, ...args)) as any);
+  const gpu: any = createCanvas(32, 24);
+  const immediate = vi.fn((plan: InstantTerrainViewportPlan) => {
+    gpu.width = plan.pixelWidth; gpu.height = plan.pixelHeight;
+    const context = gpu.getContext('2d');
+    context.fillStyle = plan.x < 0 ? '#e04020' : '#20c060';
+    context.fillRect(0, 0, gpu.width, gpu.height);
+    return gpu;
+  });
+  try {
+    const f = fixture(undefined, undefined, false, immediate);
+    await drain(); f.image(); await drain(); f.draw(); await drain();
+    expect(f.firstPaint).toHaveBeenCalledOnce();
+    f.navigate(-10); f.draw();
+    expect(f.pixel(0, 8)).toEqual([224, 64, 32, 255]);
+    expect(f.pixel(31, 8)).toEqual([224, 64, 32, 255]);
+    f.navigate(20, 64); f.draw();
+    expect(f.pixel(0, 8)).toEqual([32, 192, 96, 255]);
+    expect(f.pixel(31, 8)).toEqual([32, 192, 96, 255]);
+    expect(f.renderFrame).toHaveBeenCalledOnce();
+    expect(f.layer.source.isInstantTerrainBusy()).toBe(false);
+    f.lifetime.abort();
+    const count = immediate.mock.calls.length;
+    gpu.width = gpu.height = 0; // The old GPU context can now be recycled.
+    f.draw();
+    expect(f.pixel(20, 8)).toEqual([32, 192, 96, 255]);
+    expect(immediate).toHaveBeenCalledTimes(count);
+    expect(f.firstPaint).toHaveBeenCalledOnce();
+    expect(f.failure).not.toHaveBeenCalled();
+  } finally { create.mockRestore(); }
 });
