@@ -4797,10 +4797,10 @@
       "backTitle": "Przesun na spod"
     },
     "target": {
-      "label": "Otwórz na",
+      "label": "Zapisane i udostępnione rysunki otwierają się na",
       "fixed": "Tej mapie / tym seedzie",
       "daily": "Dzisiejszym seedzie dziennym",
-      "description": "Wybór jest zapisywany w obrazie. Dzisiejszy seed dzienny używa aktualnego dziennego seedu przy każdym otwarciu rysunku.",
+      "description": "Ten wybór jest zapisywany razem z rysunkiem. Opcja dzienna używa seedu z dnia, w którym rysunek zostanie otwarty.",
       "updateRequired": "Odśwież stronę, aby otworzyć rysunek na dzisiejszym seedzie dziennym."
     }
   },

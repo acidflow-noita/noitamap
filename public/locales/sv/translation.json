@@ -4797,10 +4797,10 @@
       "backTitle": "Flytta langst bak"
     },
     "target": {
-      "label": "Öppna på",
+      "label": "Sparade och delade teckningar öppnas på",
       "fixed": "Den här kartan/det här fröet",
       "daily": "Dagens Daily",
-      "description": "Valet sparas i bilden. Dagens Daily använder det aktuella dagliga fröet varje gång teckningen öppnas.",
+      "description": "Valet sparas med teckningen. Daily-alternativet använder det dagliga fröet för den dag då teckningen öppnas.",
       "updateRequired": "Ladda om sidan för att öppna en teckning på dagens Daily."
     }
   },

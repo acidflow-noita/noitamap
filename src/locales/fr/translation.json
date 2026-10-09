@@ -4797,10 +4797,10 @@
       "backTitle": "Mettre en arriere-plan"
     },
     "target": {
-      "label": "Ouvrir sur",
+      "label": "Les dessins enregistrés et partagés s’ouvrent sur",
       "fixed": "Cette carte/graine",
       "daily": "Quotidien du jour",
-      "description": "Le choix est enregistré dans l’image. Le quotidien du jour utilise la graine quotidienne actuelle à chaque ouverture du dessin.",
+      "description": "Ce choix est enregistré avec le dessin. L’option quotidienne utilise la graine du jour où le dessin est ouvert.",
       "updateRequired": "Rechargez la page pour ouvrir un dessin sur le quotidien du jour."
     }
   },

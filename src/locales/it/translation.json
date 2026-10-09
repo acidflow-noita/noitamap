@@ -4797,10 +4797,10 @@
       "backTitle": "Manda in fondo"
     },
     "target": {
-      "label": "Apri su",
+      "label": "I disegni salvati e condivisi si aprono su",
       "fixed": "Questa mappa/seed",
       "daily": "Giornaliera di oggi",
-      "description": "La scelta viene salvata nell’immagine. La giornaliera di oggi usa il seed giornaliero attuale ogni volta che si apre il disegno.",
+      "description": "Questa scelta viene salvata con il disegno. L’opzione giornaliera usa il seed del giorno in cui viene aperto il disegno.",
       "updateRequired": "Ricarica la pagina per aprire un disegno sulla giornaliera di oggi."
     }
   },

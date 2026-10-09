@@ -4797,10 +4797,10 @@
       "backTitle": "Lahetaa taakse"
     },
     "target": {
-      "label": "Avaa kohteessa",
+      "label": "Tallennettujen ja jaettujen piirrosten avauskohde",
       "fixed": "Tämä kartta/siemen",
       "daily": "Tämän päivän päivittäinen",
-      "description": "Valinta tallennetaan kuvaan. Päivittäinen vaihtoehto käyttää ajantasaista päivittäistä siementä aina, kun piirros avataan.",
+      "description": "Valinta tallennetaan piirroksen mukana. Päivittäinen vaihtoehto käyttää sen päivän päivittäistä siementä, jolloin piirros avataan.",
       "updateRequired": "Lataa sivu uudelleen avataksesi piirroksen tämän päivän päivittäisellä siemenellä."
     }
   },

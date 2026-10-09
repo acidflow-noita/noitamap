@@ -5350,10 +5350,10 @@
       "content": "Toggle drawing tools to annotate the map"
     },
     "target": {
-      "label": "Open on",
+      "label": "Saved and shared drawings open on",
       "fixed": "This map/seed",
       "daily": "Today’s Daily",
-      "description": "Saved with the image. Today’s Daily uses the current daily seed whenever the drawing opens.",
+      "description": "This choice is saved with the drawing. The Daily option uses the daily seed for the day the drawing is opened.",
       "updateRequired": "Reload the page to open a drawing on today’s Daily."
     }
   },

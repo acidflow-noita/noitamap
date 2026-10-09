@@ -4797,10 +4797,10 @@
       "backTitle": "Enviar para tras"
     },
     "target": {
-      "label": "Abrir em",
+      "label": "Desenhos salvos e compartilhados abrem em",
       "fixed": "Este mapa/seed",
       "daily": "Diário de hoje",
-      "description": "A escolha é salva na imagem. Diário de hoje usa a seed diária atual sempre que o desenho é aberto.",
+      "description": "Esta escolha é salva com o desenho. A opção diária usa a seed diária do dia em que o desenho for aberto.",
       "updateRequired": "Recarregue a página para abrir um desenho no diário de hoje."
     }
   },

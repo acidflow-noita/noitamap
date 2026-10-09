@@ -4797,10 +4797,10 @@
       "backTitle": "Enviar al fondo"
     },
     "target": {
-      "label": "Abrir en",
+      "label": "Los dibujos guardados y compartidos se abren en",
       "fixed": "Este mapa/semilla",
       "daily": "Diario de hoy",
-      "description": "La elección se guarda en la imagen. Diario de hoy usa la semilla diaria actual cada vez que se abre el dibujo.",
+      "description": "Esta elección se guarda con el dibujo. La opción diaria usa la semilla diaria del día en que se abra el dibujo.",
       "updateRequired": "Recarga la página para abrir un dibujo en el diario de hoy."
     }
   },

@@ -4797,10 +4797,10 @@
       "backTitle": "Kirim ke belakang"
     },
     "target": {
-      "label": "Buka di",
+      "label": "Gambar yang disimpan dan dibagikan dibuka di",
       "fixed": "Peta/seed ini",
       "daily": "Harian hari ini",
-      "description": "Pilihan disimpan dalam gambar. Harian hari ini memakai seed harian terbaru setiap kali gambar dibuka.",
+      "description": "Pilihan ini disimpan bersama gambar. Opsi harian menggunakan seed harian pada hari gambar dibuka.",
       "updateRequired": "Muat ulang halaman untuk membuka gambar pada harian hari ini."
     }
   },

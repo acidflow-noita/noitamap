@@ -4797,10 +4797,10 @@
       "backTitle": "Nach hinten senden"
     },
     "target": {
-      "label": "Öffnen auf",
+      "label": "Gespeicherte und geteilte Zeichnungen öffnen auf",
       "fixed": "Dieser Karte/diesem Seed",
       "daily": "Heutigem Daily",
-      "description": "Die Auswahl wird im Bild gespeichert. Heutiges Daily verwendet bei jedem Öffnen der Zeichnung den aktuellen täglichen Seed.",
+      "description": "Diese Auswahl wird mit der Zeichnung gespeichert. Die Daily-Option verwendet den täglichen Seed vom Tag, an dem die Zeichnung geöffnet wird.",
       "updateRequired": "Lade die Seite neu, um eine Zeichnung auf dem heutigen Daily zu öffnen."
     }
   },
