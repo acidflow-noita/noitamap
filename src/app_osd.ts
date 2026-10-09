@@ -9,6 +9,7 @@ import { PIXEL_MAP_DRAW_OPTIONS } from './osd-pixel-rendering';
 import { installTileContinuity } from './osd-tile-continuity';
 import { installTerrainAdmission } from './osd-terrain-admission';
 import { installStaticBackgroundResidency } from './osd-static-background';
+import { installOffscreenRedrawGuard } from './osd-offscreen-redraw';
 import { dismissPopovers } from './popover-util';
 
 declare const OpenSeadragon: any;
@@ -90,6 +91,7 @@ export class AppOSD {
     installTileContinuity(this.viewer);
     installTerrainAdmission(this.viewer);
     installStaticBackgroundResidency(this.viewer);
+    installOffscreenRedrawGuard(this.viewer, () => this.mapName === 'dynamic-main-branch');
 
     this.addHandler('canvas-key', (event: any) => {
       // Case-insensitive so Shift+R (key "R") is caught too — OSD binds r/R to
