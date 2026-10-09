@@ -751,7 +751,7 @@
       "crystal_key": "Chave de cristal",
       "egg": "Ovo",
       "egg_fire": "Ovo morninho",
-      "egg_monster": "Ovo agitado",
+      "egg_monster": "Ovo",
       "egg_purple": "Ovo frio",
       "egg_slime": "Ovo gosmento",
       "egg_hollow": "Ovo oco",
@@ -783,7 +783,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Ovo",
+      "egg_spiders": "Ovo frio"
     },
     "bosses": {
       "Tapion vasalli": "Vassalo de Tapio",
@@ -4610,7 +4612,9 @@
     "switchProviderConfirm": "Ao entrar com {{next}}, você será desconectado de {{current}}.\n\nO acesso Pro passará a depender da sua assinatura do {{next}}.\n\nDeseja entrar com {{next}}?",
     "loginWithTwitch": "Entrar com Twitch",
     "subscribeTwitch": "Assinar no Twitch",
-    "or": "ou"
+    "or": "ou",
+    "workspaceSaveFailed": "Não foi possível salvar seu espaço de trabalho. O login foi cancelado. Tente novamente.",
+    "workspaceRestoreFailed": "Não foi possível restaurar seu espaço de desenho. Recarregue a página para tentar novamente."
   },
   "loading": {
     "maps": "Carregando mapas...",
@@ -4791,6 +4795,13 @@
       "upTitle": "Mover para frente",
       "downTitle": "Mover para tras",
       "backTitle": "Enviar para tras"
+    },
+    "target": {
+      "label": "Desenhos salvos e compartilhados abrem em",
+      "fixed": "Este mapa/seed",
+      "daily": "Diário de hoje",
+      "description": "Esta escolha é salva com o desenho. A opção diária usa a seed diária do dia em que o desenho for aberto.",
+      "updateRequired": "Recarregue a página para abrir um desenho no diário de hoje."
     }
   },
   "dynamicMap": {
@@ -5076,14 +5087,14 @@
     "reactionsHeader": "Reações materiais no Bartender",
     "asReagent": "Ver como reagente",
     "asProduct": "Ver como produto",
-    "openInBartender": "Abrir no Bartender",
-    "bartenderReagentHint": "Ver no Bartender as reações que usam este material.",
-    "bartenderProductHint": "Ver no Bartender as reações que produzem este material.",
-    "showSpawnBiomes": "Mostrar os biomas de surgimento no mapa",
-    "spawnMapMissing": "Não exibido neste mapa: {{locations}}",
     "openInWiki": "Abrir na Noita Wiki",
+    "openInBartender": "Abrir no Bartender",
+    "bartenderProductHint": "Ver no Bartender as reações que produzem este material.",
+    "bartenderReagentHint": "Ver no Bartender as reações que usam este material.",
     "spawnBiomesPro": "Destacar os biomas de surgimento é um recurso Pro.",
-    "spawnBiomesUnavailable": "Os biomas de surgimento desta criatura não estão disponíveis neste mapa."
+    "spawnBiomesUnavailable": "Os biomas de surgimento desta criatura não estão disponíveis neste mapa.",
+    "showSpawnBiomes": "Mostrar os biomas de surgimento no mapa",
+    "spawnMapMissing": "Não exibido neste mapa: {{locations}}"
   },
   "wand": {
     "shuffle": "Alternância",
@@ -5120,7 +5131,17 @@
     "pillarGoto": "Mostrar no mapa",
     "pillarSingular": "Pilar de Conquistas",
     "pillarSearch": "Buscar no mapa",
-    "biomeShop": "Loja de bioma"
+    "biomeShop": "Loja de bioma",
+    "possibleSpawns": "Possíveis criaturas",
+    "eggHatch": "O resultado depende da semente e do local onde o ovo eclode.",
+    "noEggSpawns": "Nenhuma criatura nasce deste ovo.",
+    "possibleIllusions": "Possíveis ilusões",
+    "nestSpawnLimit": "Verifica a cada {{frames}} quadros do jogo. Cada verificação tem {{chance}} de chance de gerar uma criatura se o jogador estiver a menos de {{distance}} pixels, até {{count}} no total.",
+    "spawnChancePerCreature": "As probabilidades se aplicam a cada geração bem-sucedida.",
+    "cocoonSpawns": "Libera uma criatura ao ser destruído; o dano pode liberá-la antes.",
+    "snowCrystalSpawns": "Cria uma ilusão por vez enquanto o jogador está por perto. As probabilidades se aplicam a cada geração bem-sucedida.",
+    "spawns": "Gera",
+    "lukkiEggSpawns": "Libera uma criatura a cada golpe que o ativa. Golpes repetidos podem liberar mais antes que o ovo seja destruído."
   },
   "skipCreatures": {
     "title": "Não adicionar criaturas",
@@ -5770,5 +5791,13 @@
       "progress_hut_b": "Varinha experimental (Requisitos)",
       "secret_null": "Altar da anulação"
     }
+  },
+  "hdRenderer": {
+    "title": "Renderizador HD",
+    "content": "Usa a GPU para exibir terrenos detalhados nos mapas gerados. Ativado por padrão. Recarrega o mapa. As imagens dos mapas diários não são alteradas."
+  },
+  "startup": {
+    "failed": "Não foi possível iniciar o Noitamap. Recarregue a página para tentar novamente.",
+    "retry": "Recarregar página"
   }
 }

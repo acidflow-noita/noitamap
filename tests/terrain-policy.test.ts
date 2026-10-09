@@ -3,6 +3,8 @@ import {
   createTerrainOwnership,
   createPlaneOwnership,
   createBackgroundOwnership,
+  isRepeatedTempleTemplate,
+  sceneBiomeNames,
 } from "../src/telescope/terrain-policy";
 import {
   planeAtWorldY,
@@ -142,6 +144,31 @@ it("vertical material bands cannot fill main-world gaps, static rock or holy mou
   expect(ownership.at(0, 1536)).toBe(-1);
 });
 
+it("shades repeated temple islands without repainting the main-world static temples", () => {
+  const source = new Uint32Array(70 * 48).fill(9);
+  const layers = ["biome_potion_mimics", "biome_darkness", "temple_altar", "dragoncave"].map((biomeName, i) => {
+    source[70 * 5 + 30 + i] = i + 1;
+    return { biomeName, buffer: new Uint8Array(3), validChunks: new Set([`${30 + i},5`, `${30 + i},6`]) };
+  });
+  const config = Object.fromEntries(layers.map((layer, i) => [layer.biomeName, { color: i + 1, wangFile: "template" }]));
+  config.the_sky = { color: 7, wangFile: "sky" };
+  config.the_end = { color: 8, wangFile: "hell" };
+  const main = createPlaneOwnership(layers, source, source, config, 70);
+  for (let i = 0; i < 4; i++) expect(main.owners[70 * 5 + 30 + i]).toBe(-1);
+  for (const color of [7, 8]) {
+    const vertical = createPlaneOwnership(layers, source, new Uint32Array(source.length).fill(color), config, 70);
+    for (let i = 0; i < 2; i++) {
+      expect(vertical.names[vertical.owners[70 * 5 + 30 + i]]).toBe(color === 7 ? "the_sky" : "the_end");
+      // A template bounding box must not steal cells of a different source biome.
+      expect(vertical.owners[70 * 6 + 30 + i]).toBe(-1);
+    }
+    for (let i = 2; i < 4; i++) expect(vertical.owners[70 * 5 + 30 + i]).toBe(-1);
+  }
+  expect(isRepeatedTempleTemplate({ key: "static_tile/temples-assets/potion_mimics" })).toBe(true);
+  expect(isRepeatedTempleTemplate({ key: "static_tile/temples-assets/darkness" })).toBe(true);
+  expect(isRepeatedTempleTemplate({ key: "temple/altar" })).toBe(false);
+});
+
 it("hell's native background continues through gaps without adding terrain", () => {
   const pixels = new Uint32Array(70 * 48).fill(3);
   const terrain = createTerrainOwnership([], pixels, {}, 70);
@@ -154,4 +181,25 @@ it("hell's native background continues through gaps without adding terrain", () 
   expect(terrain.at(0, 1024)).toBe(-1);
   expect(background.names[background.at(0, 1024)]).toBe("the_end");
   expect(createBackgroundOwnership(terrain, pixels, {}, 0)).toBe(terrain);
+});
+
+it("leaves existing Friend and hidden-cavern rock to the static map", () => {
+  const pixels = new Uint32Array(70 * 48).fill(99);
+  const names = ["friend_1", "friend_2", "friend_3", "friend_4", "friend_5", "friend_6", "winter", "solid_wall_hidden_cavern"];
+  const config = Object.fromEntries(names.map((name, i) => [name, { color: i + 1, fillMaterial: 'rock_hard_border' }]));
+  const layers = names.map((biomeName, i) => {
+    pixels[70 * 20 + i] = i + 1;
+    return { biomeName, isFill: true, buffer: null, validChunks: new Set([`${i},20`, `${i},21`]) };
+  });
+  const main = createPlaneOwnership(layers, pixels, pixels, config, 70);
+  expect([...main.owners].every(id => id === -1)).toBe(true);
+  const vertical = createPlaneOwnership(layers, pixels, pixels.slice(), config, 70);
+  expect([...vertical.owners].every(id => id === -1)).toBe(true);
+});
+
+it("resolves the Friend room aliases to the same cave backdrop in native composition", () => {
+  for (const key of ["general/friendroom", "general/cavern"])
+    expect(sceneBiomeNames({ key, variantKey: 'biome=general' })[0]).toBe('friend_1');
+  expect(sceneBiomeNames({ key: 'snowcastle/cavern', variantKey: 'biome=snowcastle' })[0]).toBe('snowcastle');
+  expect(sceneBiomeNames({ key: 'general/solid_wall_hidden_cavern', variantKey: 'biome=general' })[0]).toBe('solid_wall_hidden_cavern');
 });

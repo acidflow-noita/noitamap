@@ -71,17 +71,25 @@ Huge thanks to [@Dadido3](https://github.com/Dadido3), [@myndzi](https://github.
 
 ## Full-pixel terrain and daily baking
 
-**Public maps use baked pixels when available, approximate terrain otherwise.**
+**Public maps use baked pixels when available; generated maps default to the HD renderer.**
 The **Render every pixel** toggle is removed from every map/view, including
 localhost. The old `noitamap-gl-terrain` saved preference is ignored, and there
-is no browser-console or URL opt-in. Returning users cannot accidentally remain
+is no browser-console or URL opt-in to that full-resolution pyramid path. Returning users cannot accidentally remain
 on the expensive live-render path just because they enabled it in an older build.
 
 Daily and previous-daily maps still load their matching baked DZI pyramids without
 live terrain rendering. If no bake is available (including arbitrary seeds and
-failed/mismatched daily probes), the map uses the existing approximate generator.
-`?nb=1` explicitly bypasses baked output but does **not** enable live final pixels.
-Static maps and other performance controls are unchanged.
+failed/mismatched daily probes), HD renders terrain at the requested display
+resolution using the GPU. **Performance → HD renderer** saves the preference
+and reloads the current map and camera position. Turning it off uses approximate
+terrain. GPU failures also fall back to approximate terrain. `?nb=1` explicitly
+bypasses baked output; it does not enable the offline full-resolution pyramid.
+
+The `instant-map` branch implements this display-resolution GPU path without
+walking the full-resolution pyramid. Diagnostic links can force `?terrain=gpu`
+or `?terrain=approx`; changing the menu preference clears that override.
+See [HD terrain renderer](docs/instant-map.md) for
+local testing, measured results, fallback behavior and accuracy limits.
 
 This is not fixed by simply switching on GPU rendering: the retained renderer
 already uses WebGL2 for the main plane, then CPU workers for scene/liquid/edge
@@ -272,6 +280,24 @@ inheritance, and cross-check every shader material classified as sand/powder in
 the engine table. Missing flags and commented-out definitions cannot turn an
 unknown material into a fluid. This classification check does not resolve the
 separately documented ore-density placement mismatch.
+
+## Local builds on Windows and Linux
+
+Use Node.js 22.12 or newer, with `node` and `npm` available in your shell.
+After moving a checkout between operating systems, run `npm ci` to reinstall
+platform-specific dependencies, then `npm run build`. The install step also
+initializes submodules at the revisions recorded by this repository.
+
+`.gitattributes` keeps text files LF on both systems, independently of your
+global `core.autocrlf` setting; Windows batch scripts use CRLF. Existing files
+committed with CRLF need a one-time normalization commit. Review with
+`git diff --ignore-space-at-eol` to distinguish line-ending changes from code
+changes. No global Git setting needs to change.
+
+Keep the public and private Pro checkouts on compatible revisions. Pro imports
+shared report/Sage sources from the public checkout, so a newer Pro revision
+can fail to build against an older public revision even when dependencies are
+installed correctly.
 
 ## Local Pro development
 

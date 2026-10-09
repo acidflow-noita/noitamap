@@ -23,11 +23,14 @@ const root = workerData.root;
 const output = workerData.output ?? resolve(root, "dist");
 const NativeResponse = Response;
 const NativeBlob = Blob;
-const workerURL = new URL("http://noitamap.test/build/pw-worker.js");
+// Native fixtures select their fork explicitly; the browser's default HD
+// preference must not silently turn an approximate fixture into the full fork.
+const workerURL = new URL("http://noitamap.test/assets/pw-worker.js?terrain=approx");
 const events = new EventTarget();
 const requests = [];
 const missing = [];
 const urls = new Map();
+const cacheStorage = new Map();
 let blobID = 0;
 const context = createCanvas(1, 1).getContext("2d");
 const nativeDrawImage = context.constructor.prototype.drawImage;
@@ -39,7 +42,7 @@ async function localFetch(input, init) {
     workerURL,
   );
   // import.meta.url in the executed bundle is file://; in the browser it is
-  // /build/<chunk>.js. Resolve its data URLs against the served output root.
+  // /assets/<chunk>.js. Resolve its data URLs against the served output root.
   if (url.protocol === "file:")
     url = new URL(
       "/" + relative(output, fileURLToPath(url)).split(sep).join("/"),
@@ -99,8 +102,15 @@ Object.assign(globalThis, {
   DOMMatrix,
   fetch: localFetch,
   caches: {
-    async open() {
-      return { match: (url) => localFetch(url), async put() {} };
+    async open(name) {
+      let records = cacheStorage.get(name);
+      if (!records) cacheStorage.set(name, records = new Map());
+      const key = input => new URL(typeof input === 'string' ? input : input.url ?? input.href, workerURL).href;
+      return {
+        async match(input) { return records.get(key(input))?.clone(); },
+        async put(input, response) { records.set(key(input), response.clone()); },
+        async delete(input) { return records.delete(key(input)); },
+      };
     },
   },
   addEventListener: events.addEventListener.bind(events),

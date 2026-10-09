@@ -239,7 +239,12 @@ export class App extends EventEmitter2 {
     // if we do not have an initial position, we have to fully initialize
     // OpenSeadragon so that we can zoom it to fit and get what the position
     // _should_ be...
-    await osd.setMap(mapName, initialState.pos);
+    try {
+      await osd.setMap(mapName, initialState.pos);
+    } catch (error) {
+      osd.viewer.destroy();
+      throw error;
+    }
 
     // our app _requires_ that we have a known position, so we initialize
     // it after we've figured out the ZoomPos data from AppOSD

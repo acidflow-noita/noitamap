@@ -751,7 +751,7 @@
       "crystal_key": "Kryształowy klucz",
       "egg": "Jajo",
       "egg_fire": "Piekące jajo",
-      "egg_monster": "Poruszające się jajo",
+      "egg_monster": "Jajo",
       "egg_purple": "Zimne jajo",
       "egg_slime": "Śluzowate jajo",
       "egg_hollow": "Puste jajo",
@@ -783,7 +783,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Jajo",
+      "egg_spiders": "Zimne jajo"
     },
     "bosses": {
       "Kivi": "Kivi",
@@ -4610,7 +4612,9 @@
     "switchProviderConfirm": "Logując się przez {{next}}, wylogujesz się z {{current}}.\n\nDostęp do Pro będzie wtedy zależał od Twojej subskrypcji {{next}}.\n\nCzy chcesz się przełączyć na {{next}}?",
     "loginWithTwitch": "Zaloguj sie przez Twitch",
     "subscribeTwitch": "Subskrybuj na Twitchu",
-    "or": "lub"
+    "or": "lub",
+    "workspaceSaveFailed": "Nie udało się zapisać obszaru roboczego. Logowanie zostało anulowane. Spróbuj ponownie.",
+    "workspaceRestoreFailed": "Nie udało się przywrócić obszaru rysowania. Odśwież stronę, aby spróbować ponownie."
   },
   "loading": {
     "maps": "Ładowanie map...",
@@ -4791,6 +4795,13 @@
       "upTitle": "Przesun do przodu",
       "downTitle": "Przesun do tylu",
       "backTitle": "Przesun na spod"
+    },
+    "target": {
+      "label": "Zapisane i udostępnione rysunki otwierają się na",
+      "fixed": "Tej mapie / tym seedzie",
+      "daily": "Dzisiejszym seedzie dziennym",
+      "description": "Ten wybór jest zapisywany razem z rysunkiem. Opcja dzienna używa seedu z dnia, w którym rysunek zostanie otwarty.",
+      "updateRequired": "Odśwież stronę, aby otworzyć rysunek na dzisiejszym seedzie dziennym."
     }
   },
   "dynamicMap": {
@@ -5076,14 +5087,14 @@
     "reactionsHeader": "Materialne reakcje na Barmana",
     "asReagent": "Zobacz jako odczynnik",
     "asProduct": "Wyświetl jako produkt",
-    "openInBartender": "Otwórz w Bartender",
-    "bartenderReagentHint": "Zobacz w Bartender reakcje wykorzystujące ten materiał.",
-    "bartenderProductHint": "Zobacz w Bartender reakcje wytwarzające ten materiał.",
-    "showSpawnBiomes": "Pokaż biomy występowania na mapie",
-    "spawnMapMissing": "Niewidoczne na tej mapie: {{locations}}",
     "openInWiki": "Otwórz w Noita Wiki",
+    "openInBartender": "Otwórz w Bartender",
+    "bartenderProductHint": "Zobacz w Bartender reakcje wytwarzające ten materiał.",
+    "bartenderReagentHint": "Zobacz w Bartender reakcje wykorzystujące ten materiał.",
     "spawnBiomesPro": "Podświetlanie biomów występowania to funkcja Pro.",
-    "spawnBiomesUnavailable": "Biomy występowania tego stworzenia są niedostępne na tej mapie."
+    "spawnBiomesUnavailable": "Biomy występowania tego stworzenia są niedostępne na tej mapie.",
+    "showSpawnBiomes": "Pokaż biomy występowania na mapie",
+    "spawnMapMissing": "Niewidoczne na tej mapie: {{locations}}"
   },
   "wand": {
     "shuffle": "Tasowanie",
@@ -5120,7 +5131,17 @@
     "pillarGoto": "Pokaż na mapie",
     "pillarSingular": "Filar Osiągnięć",
     "pillarSearch": "Szukaj na mapie",
-    "biomeShop": "Sklep w biomie"
+    "biomeShop": "Sklep w biomie",
+    "possibleSpawns": "Możliwe stworzenia",
+    "eggHatch": "Wynik zależy od ziarna świata i miejsca wyklucia się jaja.",
+    "noEggSpawns": "Z tego jaja nie wykluwają się żadne stworzenia.",
+    "possibleIllusions": "Możliwe iluzje",
+    "nestSpawnLimit": "Sprawdza co {{frames}} klatek gry. Każde sprawdzenie ma szansę {{chance}} na przywołanie jednego stworzenia, jeśli gracz jest bliżej niż {{distance}} pikseli, do {{count}} łącznie.",
+    "spawnChancePerCreature": "Podane szanse dotyczą każdego udanego przywołania.",
+    "cocoonSpawns": "Uwalnia jedno stworzenie po zniszczeniu; obrażenia mogą uwolnić je wcześniej.",
+    "snowCrystalSpawns": "Tworzy po jednej iluzji, gdy gracz jest w pobliżu. Podane szanse dotyczą każdego udanego przywołania.",
+    "spawns": "Przywołuje",
+    "lukkiEggSpawns": "Uwalnia jedno stworzenie przy każdym trafieniu, które wyzwoli ten efekt. Kolejne trafienia mogą uwolnić więcej stworzeń przed zniszczeniem jaja."
   },
   "skipCreatures": {
     "title": "Nie dodawaj stworzeń",
@@ -5770,5 +5791,13 @@
       "progress_hut_b": "Eksperymentalna różdżka (Requirements)",
       "secret_null": "Ołtarz unieważniania"
     }
+  },
+  "hdRenderer": {
+    "title": "Renderowanie HD",
+    "content": "Używa GPU do wyświetlania szczegółowego terenu na generowanych mapach. Domyślnie włączone. Ponownie ładuje mapę. Obrazy map dziennych pozostają bez zmian."
+  },
+  "startup": {
+    "failed": "Nie udało się uruchomić Noitamap. Odśwież stronę i spróbuj ponownie.",
+    "retry": "Odśwież stronę"
   }
 }

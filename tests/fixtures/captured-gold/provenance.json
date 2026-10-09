@@ -1,0 +1,14 @@
+{
+  "capture": "dynamic-main-branch-2025-01-25-78633191",
+  "level": 17,
+  "tile": [
+    29,
+    62
+  ],
+  "overlap": 2,
+  "urls": {
+    "middle": "https://dynamic-main-branch-middle.acidflow.stream/maps/dynamic-main-branch-middle/dynamic-main-branch-middle-2025-01-25-78633191_files/17/29_62.webp",
+    "left": "https://dynamic-main-branch-left.acidflow.stream/maps/dynamic-main-branch-left/dynamic-main-branch-left-2025-01-25-78633191_files/17/29_62.webp",
+    "right": "https://dynamic-main-branch-right.acidflow.stream/maps/dynamic-main-branch-right/dynamic-main-branch-right-2025-01-25-78633191_files/17/29_62.webp"
+  }
+}

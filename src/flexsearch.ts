@@ -1,0 +1,105 @@
+import { getAllOverlays, type TargetOfInterest } from './data_sources/overlays';
+import { type MapName } from './data_sources/tile_data';
+import { gameTranslator } from './game-translations/translator';
+
+import type FFlexSearch from 'flexsearch';
+import type { Id as FlexSearchId } from 'flexsearch';
+
+// on load, we'll instantiate flexsearch just once, but we'll tell it
+// about the different maps and require that when a user queries the
+// list, they supply the map they're searching. we can use the "tags"
+// feature to only return items that are present in the map being searched
+
+// FlexSearch's types are _fucked_, so we have to do a bunch of hacky nonsense
+// to get types that agree with the actual interfaces present in the window
+type DocumentFactory = (
+  options: any
+) => any;
+
+const index = (FlexSearch.Document as DocumentFactory)({
+  document: {
+    id: 'id',
+    index: ['text', 'name', 'aliases'],
+    tag: 'maps',
+  },
+  tokenize: 'forward',
+});
+
+// FlexSearch's ability to return the document we gave it sucks. Instead,
+// we'll just use its core behavior of returning an ID and dereference
+// that from the list of all overlays.
+const overlays: Map<FlexSearchId, TargetOfInterest> = new Map();
+
+for (const [type, overlayDatas] of getAllOverlays()) {
+  for (const [idx, data] of overlayDatas.entries()) {
+    // Skip path overlays - they shouldn't appear in search results
+    if (data.overlayType === 'path') continue;
+
+    // Since we want to be able to search all kinds of things, we need to namespace
+    // the array index (id) by its overlay type to keep everything unique
+    const id = `${type}:${idx}`;
+    overlays.set(id, data);
+
+    // Index the original data - translations will be applied at search time
+    index.add({
+      id,
+      ...data,
+    });
+  }
+}
+
+export const searchOverlays = (mapName: MapName, query: string, filters: Set<string>): TargetOfInterest[] => {
+  // do the search
+  const found = index.search(query, { tag: { maps: mapName } }).flatMap((v: any) => v.result);
+  // deduplicate the ids we get back
+  const ids = new Set<FlexSearchId>(found);
+  // turn the ids back into TargetOfInterest objects, but with translated display names
+  return [...ids.values()].flatMap(key => {
+    if (!overlays.has(key)) return [];
+
+    // Determine overlay type from the key (format: "type:index")
+    const overlayType = (key as any).split(':')[0] as string;
+    const shortKeys: Record<string, string> = {
+      'bosses': 'b',
+      'items': 'i',
+      'structures': 'st',
+      'orbs': 'or',
+      'spatialAwareness': 'sa',
+      'hiddenMessages': 'msg'
+    };
+    const filterKey = shortKeys[overlayType] || overlayType;
+    if (filters.size > 0 && !filters.has(filterKey)) return [];
+
+    const originalData = overlays.get(key)!;
+
+    // Apply translations at search time using the processed translation files
+    let displayName = (originalData as any).name;
+
+    switch (overlayType) {
+      case 'bosses':
+        displayName = gameTranslator.translateBoss((originalData as any).name);
+        break;
+      case 'items':
+        displayName = gameTranslator.translateItem((originalData as any).name);
+        break;
+      case 'structures':
+        displayName = gameTranslator.translateStructure((originalData as any).name);
+        break;
+      case 'orbs':
+        displayName = gameTranslator.translateContent('orbs', (originalData as any).name);
+        break;
+      default:
+        displayName = gameTranslator.translateGameContent((originalData as any).name);
+        break;
+    }
+
+    // Return the original data but with translated display properties
+    return [
+      {
+        ...originalData,
+        displayName,
+        displayText: (originalData as any).text ? gameTranslator.translateGameContent((originalData as any).text as any) : (originalData as any).text,
+      },
+    ];
+  });
+};

@@ -83,31 +83,34 @@ export function getAllPOIsFlat(
       const position = { pw, worldX: poi.x, worldY: poi.y, biome: poiBiome(poi) };
 
       if (!isSpawnGroup) {
+        let entry: WorldPOI;
         if (isRewardOwner || expands) {
           const { items: _items, ...identity } = poi;
-          flat.push({
-            ...identity,
-            ...position,
-            ...(isRewardOwner
-              ? { rewards: children }
-              : { previewItems: children }),
-          });
+          entry = identity as WorldPOI;
         } else {
-          flat.push({ ...poi, ...position });
+          entry = { ...poi } as WorldPOI;
         }
+        // Copy metadata once, then write the projected fields in the same
+        // order as before. Do not cache these copies: IDs/unlocks may change.
+        entry.pw = pw;
+        entry.worldX = position.worldX;
+        entry.worldY = position.worldY;
+        entry.biome = position.biome;
+        if (isRewardOwner) entry.rewards = children;
+        else if (expands) entry.previewItems = children;
+        flat.push(entry);
       }
       if (expands || isRewardOwner) {
         for (const child of children) {
-          flat.push({
-            ...child,
-            pw,
-            parentType: poi.type,
-            parentId: poi.id,
-            ...(isRewardOwner ? { isBossReward: true } : {}),
-            biome: poiBiome(child) || position.biome,
-            worldX: child.x ?? poi.x,
-            worldY: child.y ?? poi.y,
-          });
+          const entry = { ...child } as WorldPOI;
+          entry.pw = pw;
+          entry.parentType = poi.type;
+          entry.parentId = poi.id;
+          if (isRewardOwner) entry.isBossReward = true;
+          entry.biome = poiBiome(child) || position.biome;
+          entry.worldX = child.x ?? poi.x;
+          entry.worldY = child.y ?? poi.y;
+          flat.push(entry);
         }
       }
     }

@@ -1,3 +1,4 @@
+import { generationCacheDB } from './helpers/generation-cache-db';
 import { describe, expect, it, vi } from "vitest";
 import { createReportInventorySnapshot, readReportInventorySnapshot, reportInventoryCount, sliceReportInventorySnapshot } from "../src/report-inventory";
 import { getAllPOIsFlat } from "../src/telescope/poi-inventory";
@@ -127,27 +128,14 @@ describe("selected-seed inventory snapshots", () => {
   });
 
   it("preserves daily snapshots through the generation cache and discards invalid saved or loaded snapshots", async () => {
-    const entries = new Map<string, any>();
-    const request = (result: unknown) => {
-      const req: any = { result };
-      queueMicrotask(() => req.onsuccess?.());
-      return req;
-    };
-    const db = { close: vi.fn(), transaction: () => {
-      const tx: any = { objectStore: () => ({
-        put: (entry: any) => { entries.set(entry.cacheKey, structuredClone(entry)); queueMicrotask(() => tx.oncomplete?.()); },
-        get: (key: string) => request(structuredClone(entries.get(key))),
-      }) };
-      return tx;
-    } };
-    vi.stubGlobal("indexedDB", { open: () => request(db) });
+    const cache = generationCacheDB();
     try {
       const result = hydrateBakedGeneration([serializeGenerationForBake(fixture())!]);
       result.bakedMimicSpritesVersionByPW = { '-1': 1, '0': 0, '1': 1 };
       await cacheGeneration("42-all", 42, result);
       expect((await getCachedGeneration("42-all"))?.reportInventory).toEqual(result.reportInventory);
       expect((await getCachedGeneration("42-all"))?.bakedMimicSpritesVersionByPW).toEqual(result.bakedMimicSpritesVersionByPW);
-      const entry = [...entries.values()][0];
+      const entry = cache.header();
       const original = structuredClone(entry.reportInventory);
       for (const change of [
         (value: any) => { value.version = 1; },
@@ -163,7 +151,7 @@ describe("selected-seed inventory snapshots", () => {
         expect(loaded?.poisByPW).toEqual(result.poisByPW);
       }
       await cacheGeneration("42-all", 42, { ...result, reportInventory: { ...original, seed: 99 } });
-      expect([...entries.values()][0].reportInventory).toBeUndefined();
+      expect(cache.header().reportInventory).toBeUndefined();
     } finally {
       vi.unstubAllGlobals();
     }

@@ -1,4 +1,7 @@
 import { TERRAIN_VERSION } from "./terrain-policy";
+// Shader coefficients changed without changing the daily manifest schema.
+// Invalidate old finished GPU leaves, preserving existing baked daily identity.
+const TILE_RENDER_REVISION = "shader-bits-2026-09-25";
 /** Persistent completed tiles only. Browsing another zoom level must not
  * regenerate thousands of world pixels that were already rendered. */
 let database: Promise<IDBDatabase | null> | undefined;
@@ -27,7 +30,7 @@ export function terrainTileKey(
   x: number,
   y: number,
 ): string {
-  return `${TERRAIN_VERSION}/${seed}/${mode}/${plane}/${pw}/${bounds}/${level}/${x}/${y}`;
+  return `${TERRAIN_VERSION}/${TILE_RENDER_REVISION}/${seed}/${mode}/${plane}/${pw}/${bounds}/${level}/${x}/${y}`;
 }
 export async function readTerrainTile(
   key: string,

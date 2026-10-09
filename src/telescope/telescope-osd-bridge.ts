@@ -1,15 +1,44 @@
 import { clearPortalAnimations, installPortalAnimations } from "../portals";
-import { canOpenPOIFromCanvas, drawingOwnsMapPointer } from "../drawing/poi-interaction";
+import { canOpenPOIFromCanvas, drawingOwnsMapPointer, onDrawingMapOwnershipChange } from "../drawing/poi-interaction";
 import { onProSidebarIntent } from "../pro-sidebar-intent";
-import { mountPOICardPlacement } from './poi-card-placement';
+import { isDropOverlayActive } from '../drop-overlay';
+import { mountPOICardPlacement, type CardAnchor } from './poi-card-placement';
 import { POICardLifecycle, type POICardOwner, type POICardRequest } from './poi-card-lifecycle';
 import Flatbush from "flatbush";
 import { CONTAINER_TYPES } from "./poi-containers";
+import { EGG_SPAWNS } from './egg-spawns';
+import { getPOISpawnDetails } from './poi-spawn-details';
+import { prepareAssetJobs } from './background-idle';
 import { staticSceneBits, type StaticTerrainMask } from "./static-terrain-mask";
+import { loadInstantSceneMasks } from "./instant-scene-masks";
+import { isSimplisticBackground } from '../simplistic-background';
+import { GOLD_ROOM_KEY, GOLD_ROOM_REPAIR_KEY, isCapturedGoldRoom, capturedGoldRepairs, capturedGoldRepairPixels } from './captured-gold-room';
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
-import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, isRepeatedTempleTemplate } from "./terrain-policy";
+import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate, carvedRoomBiome, isWaterCaveLayout } from "./terrain-policy";
 import { loadTelescopeModules } from "./load-telescope";
-import { isGLTerrainEnabled } from "../renderer_settings";
+import { isGLTerrainEnabled, isInstantTerrainEnabled, useRenderPerfGeneration } from "../renderer_settings";
+import { prepareInstantTerrain } from './instant-terrain-backend';
+import { clearTerrainPngEncoders } from './terrain-png-encoder';
+import { createScenePrefetch } from "./scene-prefetch";
+import { SceneBitmapCache } from './scene-bitmap-cache';
+import { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer, clearBiomeBackgroundLayers } from "./biome-background-layer";
+
+const liveSceneBitmaps = new SceneBitmapCache();
+
+let instantTerrainModule: typeof import('./instant-terrain') | undefined;
+let instantTerrainLoading: Promise<typeof import('./instant-terrain')> | undefined;
+function loadInstantTerrain() {
+  return instantTerrainLoading ??= import('./instant-terrain').then(module => {
+    instantTerrainModule = module;
+    return module;
+  }).catch(error => {
+    instantTerrainLoading = undefined;
+    throw error;
+  });
+}
+function clearInstantTerrain() {
+  instantTerrainModule?.clearInstantTerrain();
+}
 /**
  * telescope-osd-bridge.ts
  *
@@ -19,8 +48,9 @@ import { isGLTerrainEnabled } from "../renderer_settings";
 
 import type { GenerationResult, POI, PixelScene, TileLayer } from './telescope-adapter';
 import {
-  ensurePixelSceneData,
+  getPixelSceneImgElement,
   getPixelSceneData,
+  ensurePixelSceneData,
   getAllPixelSceneKeys,
   recolorPixelSceneForBiome,
   recolorPixelScene,
@@ -28,9 +58,9 @@ import {
   TILE_OVERLAY_COLORS,
 } from './telescope-adapter';
 import { getDataZip } from '../data-archive';
-import { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer } from './biome-background-layer';
-import { installTelescopeShim, isCanvasTainted } from './telescope-dom-shim';
+import { installTelescopeShim } from './telescope-dom-shim';
 import { installFetchInterceptor, installImageSrcInterceptor } from './telescope-data-bridge';
+import { decodePngToRgba, rgbaToPngBlobUrl, rgbaToPngBlob } from './png-decode';
 import {
   getCachedBiomeRender,
   cacheBiomeRender,
@@ -42,7 +72,10 @@ import {
 } from './tile-cache';
 import i18next from '../i18n';
 import { attachAlwaysCastPopover, attachWikiLinkPopover, dismissPopovers } from '../popover-util';
-import type { GLTerrainDeps } from './gl-terrain-tile-source';
+import {
+  clearGLTerrain,
+  type GLTerrainDeps,
+} from './gl-terrain-tile-source';
 import {
   getActiveDescriptor,
   setActiveDescriptor,
@@ -65,7 +98,6 @@ import {
   FIRST_FRAME_SIZE,
   drawSpriteToCanvas,
   getSpriteNativeSize,
-  perkAtlasKey,
 } from './poi-spatial-index';
 import type { MarkerData, MarkerItem } from './poi-spatial-index';
 import {
@@ -80,10 +112,11 @@ import {
   ITEM_SEARCH_NAME_KEYS,
 } from '../data/pillars';
 import { createMarkerTileSource } from './marker-tile-source';
+import type { SceneTileItem } from './pixel-scene-tile-source';
 import { perkNameKey, perkDescKey } from './perk-i18n';
 import { canonicalEntityId } from './entity-canonical';
 import { formatWandName, getPOIDisplayName } from './poi-display-name';
-import { getMimicEntityId } from './poi-mimics';
+import { getMimicEntityId, MIMIC_SPRITES_VERSION } from './poi-mimics';
 import { legacyMimicMarkerData } from './legacy-mimic-markers';
 import { poiNavigationOffsets } from './poi-navigation-offsets';
 import { cameraPixelDelta, readCameraMatrix } from '../portals/geometry';
@@ -98,17 +131,9 @@ import { SPECIAL_WAND_ALIAS } from '../data/special-wands';
 import { buildExtendedSection } from '../extended-info';
 import perkWiki from '../data/perk-wiki.json';
 
-// id -> { wikipage, image } from the noita.wiki.gg Perks cargo table
+// Perk page links from the noita.wiki.gg Perks cargo table.
 // (baked by build_scripts/generate-perk-wiki.cjs).
-const PERK_WIKI: Record<string, { wikipage?: string; image?: string }> = perkWiki as any;
-
-/** Wiki image URL for a perk whose icon is missing from the local atlas. */
-function perkWikiImageUrl(perkId?: string): string | null {
-  if (!perkId) return null;
-  const e = PERK_WIKI[String(perkId).toUpperCase()];
-  if (e?.image) return `https://noita.wiki.gg/wiki/Special:FilePath/${encodeURIComponent(e.image)}`;
-  return null;
-}
+const PERK_WIKI: Record<string, { wikipage?: string }> = perkWiki;
 
 declare const OpenSeadragon: any;
 
@@ -133,9 +158,7 @@ let createTileOverlaysCheap: any;
 let getWorldSize: any;
 /** Set only when the aliased telescope fork ships js/gl/ (vitaminmoo render-perf). */
 let glTerrainDeps: GLTerrainDeps | null = null;
-let clearFullPixelTerrain: (() => void) | null = null;
 let _telescopeModulesLoaded = false;
-let privacyToastShown = false;
 
 // ─── Biome Render Order ─────────────────────────────────────────────────────
 
@@ -293,7 +316,6 @@ export async function getRotatedWandSprite(spriteName: string): Promise<{ url: s
   if (!file) return null;
 
   const buf = await file.async('arraybuffer');
-  const { decodePngToRgba, rgbaToPngBlobUrl } = await import('./png-decode');
   const srcImg = decodePngToRgba(buf);
   const sw = srcImg.width;
   const sh = srcImg.height;
@@ -368,7 +390,7 @@ async function ensureTelescopeModules(): Promise<void> {
   createTileOverlaysCheap = imageMod.createTileOverlaysCheap;
   getWorldSize = utilsMod.getWorldSize;
 
-  if (isGLTerrainEnabled() && telescope.glTerrainMod?.GLTerrainRenderer) {
+  if (useRenderPerfGeneration() && telescope.glTerrainMod?.GLTerrainRenderer) {
     glTerrainDeps = {
       GLTerrainRenderer: telescope.glTerrainMod.GLTerrainRenderer,
       initMaterialAtlas: telescope.materialAtlasMod.initMaterialAtlas,
@@ -390,6 +412,24 @@ async function ensureTelescopeModules(): Promise<void> {
 }
 
 type OSDViewer = any;
+
+/** Prepare GPU resources while POIs scan; complete scene masks are applied only
+ * when renderGenerationResult presents the finished generation. */
+export async function prepareInstantTerrainResources(
+  terrain: Parameters<typeof prepareInstantTerrain>[0],
+  isCurrent = () => true,
+): Promise<void> {
+  if (!isInstantTerrainEnabled()) return;
+  await ensureTelescopeModules();
+  if (isCurrent() && glTerrainDeps) await prepareInstantTerrain(terrain, glTerrainDeps, 0);
+}
+
+/** Start independent presentation downloads alongside generation. */
+export function prewarmMapPresentation(): Promise<PromiseSettledResult<unknown>[]> {
+  return Promise.allSettled([loadSpritesheetAndAtlas(), getScenePngIndex(),
+    prepareBiomeBackgroundLayer().then(layer => { _bgLayer = layer; }),
+    ...(isInstantTerrainEnabled() ? [loadInstantTerrain()] : [])]);
+}
 
 /**
  * Identify a tiled image as removable seed content, regardless of whether its
@@ -426,6 +466,34 @@ let dynamicBlobUrls: string[] = [];
  * if a newer generation starts while we're awaiting async operations.
  */
 let currentGenerationId = 0;
+let currentMarkerRequestId = 0;
+let pendingMarkerProgressGeneration: number | undefined;
+
+/** Unlock variants share terrain, but only the latest marker request may publish. */
+function beginMarkerRequest(generationId: number) {
+  const requestId = ++currentMarkerRequestId;
+  if (pendingMarkerProgressGeneration !== generationId) pendingMarkerProgressGeneration = undefined;
+  const isCurrent = () => currentGenerationId === generationId && currentMarkerRequestId === requestId;
+  return {
+    isCurrent,
+    // An unlock refresh inherits an initial marker layer's unfinished progress.
+    // Ordinary unlock changes do not open a new loading interval.
+    completeProgress: () => {
+      if (!isCurrent() || pendingMarkerProgressGeneration !== generationId) return;
+      pendingMarkerProgressGeneration = undefined;
+      window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 100 } }));
+    },
+  };
+}
+
+/** Retire terrain work while keeping the outgoing map visible until first paint. */
+export function cancelPendingDynamicTerrain(): void {
+  // A retired presentation may still be waiting for modules or scene masks,
+  // before addInstantTerrain creates the lifetime that clear can abort.
+  currentGenerationId++;
+  pendingMarkerProgressGeneration = undefined;
+  clearInstantTerrain();
+}
 
 /**
  * Remove all dynamic map overlays from the viewer.
@@ -436,11 +504,16 @@ export function clearDynamicOverlays(viewer: any): void {
   clearPortalAnimations();
   // Invalidate any in-flight async generation so it won't render on top of the new map
   currentGenerationId++;
+  pendingMarkerProgressGeneration = undefined;
+  liveSceneBitmaps.clear();
+  resetPersistentBiomeBackgrounds();
+  clearBiomeBackgroundLayers(viewer);
 
   // Drop the GL terrain's GPU resources: they are keyed to the outgoing seed's
   // layer buffers, and the atlas alone is several MiB of texture.
-  if (clearFullPixelTerrain) clearFullPixelTerrain();
-  else window.dispatchEvent(new Event('fullPixelTerrainReset'));
+  clearGLTerrain();
+  clearInstantTerrain();
+  clearTerrainPngEncoders();
 
   markerTiledImage = null;
 
@@ -495,38 +568,34 @@ export function hasDynamicOverlays(): boolean {
 
 // ─── Biome background layer ─────────────────────────────────────────────────
 
-let _bgLayer: Awaited<ReturnType<typeof prepareBiomeBackgroundLayer>> | null = null;
-let _bgInitPromise: Promise<void> | null = null;
+let _bgLayer: Awaited<ReturnType<typeof prepareBiomeBackgroundLayer>> | undefined;
 let _bgEpoch = 0;
 
-/** Load native background textures once, then let OSD cache small visible tiles. */
-export function ensurePersistentBiomeBackgrounds(viewer: any): Promise<void> {
-  if (isGLTerrainEnabled()) return Promise.resolve();
-  if (!_bgInitPromise) {
-    const epoch = _bgEpoch;
-    _bgInitPromise = prepareBiomeBackgroundLayer().then(layer => {
-      if (epoch !== _bgEpoch) return;
-      _bgLayer = layer;
-      addBiomeBgToOSD(viewer);
-    }).catch(error => {
-      if (epoch === _bgEpoch) _bgInitPromise = null;
-      console.warn('[OSD Bridge] Biome backgrounds failed to load:', error);
-    });
-  }
-  return _bgInitPromise;
+/** Prepare original artwork once and show native tiled backgrounds immediately. */
+export async function ensurePersistentBiomeBackgrounds(viewer: any, isCurrent = () => true): Promise<void> {
+  if (isGLTerrainEnabled()) return;
+  const epoch = _bgEpoch;
+  _bgLayer = await prepareBiomeBackgroundLayer();
+  if (epoch !== _bgEpoch || !isCurrent()) return;
+  addBiomeBgToOSD(viewer, isCurrent);
 }
 
-/** Invalidate pending attachments on map switches, retaining decoded textures. */
+/** Keep original textures and bounded tiles ready when returning to dynamic. */
 export function resetPersistentBiomeBackgrounds(): void {
   _bgEpoch++;
-  _bgInitPromise = null;
 }
 
-export function addBiomeBgToOSD(viewer: any): void {
+/** Keep shared artwork below outgoing and incoming seed layers. */
+export function addBiomeBgToOSD(viewer: any, isCurrent = () => true): void {
   if (!_bgLayer) return;
-  const epoch = _bgEpoch, generationId = currentGenerationId;
-  attachBiomeBackgroundLayer(viewer, _bgLayer, isLightMode() ? [0] : [-35840, 0, 35840],
-    () => epoch === _bgEpoch && generationId === currentGenerationId);
+  const epoch = _bgEpoch;
+  const world = viewer.world;
+  let index = 0;
+  while (index < world.getItemCount() && !isDynamicSeedItem(world.getItemAt(index))) index++;
+  attachBiomeBackgroundLayer(viewer, _bgLayer,
+    (isLightMode() ? [0] : [-1, 0, 1]).map(pw => pw * 70 * 512),
+    () => epoch === _bgEpoch && isCurrent(),
+    item => dynamicTiledImages.add(item), index);
 }
 
 /**
@@ -544,7 +613,6 @@ async function offscreenCanvasToBlobUrl(canvas: OffscreenCanvas): Promise<string
  * Mirrors offscreenCanvasToBlobUrl's fingerprint-protection-friendly path.
  */
 async function offscreenCanvasToBlob(canvas: OffscreenCanvas): Promise<Blob> {
-  const { rgbaToPngBlob } = await import('./png-decode');
   const rawData = (canvas as any).__noitamap_rawImageData as ImageData | undefined;
   if (rawData) {
     return await rgbaToPngBlob(rawData.data, rawData.width, rawData.height);
@@ -565,7 +633,6 @@ async function offscreenCanvasToBlob(canvas: OffscreenCanvas): Promise<Blob> {
 async function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
   const rawData = (canvas as any).__noitamap_rawImageData as ImageData | undefined;
   if (rawData) {
-    const { rgbaToPngBlobUrl } = await import('./png-decode');
     const url = await rgbaToPngBlobUrl(rawData.data, rawData.width, rawData.height);
     dynamicBlobUrls.push(url);
     return url;
@@ -607,11 +674,8 @@ async function addBiomeLayersProgressively(
 
   if (isGLTerrainEnabled()) {
     if (!glTerrainDeps) throw new Error("Full-resolution terrain modules are missing");
-    const { addFullPixelLayers, clearGLTerrain } = await import('./full-pixel-layers');
-    if (currentGenerationId !== generationId) return;
-    clearFullPixelTerrain = clearGLTerrain;
+    const { addFullPixelLayers } = await import('./full-pixel-layers');
     const sceneData = await prepareTerrainSceneData(result);
-    if (currentGenerationId !== generationId) return;
     await addFullPixelLayers(viewer, { ...result, sceneData }, glTerrainDeps,
       () => currentGenerationId === generationId,
       item => dynamicTiledImages.add(item), onFirstPwReady);
@@ -670,218 +734,655 @@ async function addBiomeLayersProgressively(
   // Way faster than N separate IDB reads (each transaction has high overhead in
   // Brave/FF — ~5s extra on F5 with 9 PWs).
   const bulkBiomeCache = cacheKey && !isGLTerrainEnabled() ? await getCachedBiomeRendersForKey(cacheKey) : new Map();
+  const [{ ApproximateCompositeReuse, canShareApproximateComposites }, { TerrainPngEncoder }] = await Promise.all([
+    import('./approximate-composite-reuse'), import('./terrain-png-encoder'),
+  ]);
+  let pngEncoder: InstanceType<typeof TerrainPngEncoder> | undefined;
+  let workerPngAvailable = typeof Worker !== 'undefined';
+  const encodeComposite = async (canvas: OffscreenCanvas): Promise<Blob | null> => {
+    if (workerPngAvailable) {
+      try {
+        pngEncoder ??= new TerrainPngEncoder();
+        const pixels = (canvas as any).__noitamap_rawImageData as ImageData | undefined
+          ?? canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
+        return await pngEncoder.encode(pixels.data, pixels.width, pixels.height);
+      } catch (error) {
+        pngEncoder?.dispose();
+        if (currentGenerationId !== generationId) return null;
+        workerPngAvailable = false;
+        console.warn('[OSD Bridge] Terrain PNG worker unavailable; using local encoder:', error);
+      }
+    }
+    return offscreenCanvasToBlob(canvas);
+  };
+  const shareHorizontal = canShareApproximateComposites(result);
+  const composites = new ApproximateCompositeReuse(pwOffsetPixels, shareHorizontal);
+  // Existing caches may contain any horizontal world. Reuse those pixels even
+  // if the main-world entry is missing, without changing the cache schema.
+  for (const cached of bulkBiomeCache.values()) composites.remember(cached.pw, cached.pvt, cached);
+  const compositeURLs = new Map<Blob, string>();
+  const urlForComposite = (blob: Blob): string => {
+    let url = compositeURLs.get(blob);
+    if (!url) {
+      url = URL.createObjectURL(blob);
+      compositeURLs.set(blob, url);
+      dynamicBlobUrls.push(url);
+    }
+    return url;
+  };
 
-  for (let pwIdx = 0; pwIdx < pwOrder.length; pwIdx++) {
-    const pw = pwOrder[pwIdx];
-    if (currentGenerationId !== generationId) return;
-
-    for (const pvt of pvtList) {
-      // Report progress before CPU-heavy work
-      const progress = Math.round((stepsDone / totalSteps) * 100);
-      window.dispatchEvent(new CustomEvent('biomeGenerationProgress', { detail: { percentage: progress } }));
-
-      // Yield briefly so the browser can paint the progress update before we block the main thread.
-      await new Promise(r => setTimeout(r, 0));
+  try {
+    for (let pwIdx = 0; pwIdx < pwOrder.length; pwIdx++) {
+      const pw = pwOrder[pwIdx];
       if (currentGenerationId !== generationId) return;
 
-      const isFirstPw = pw === 0 && pvt === 0;
+      for (const pvt of pvtList) {
+        // Report progress before CPU-heavy work
+        const progress = Math.round((stepsDone / totalSteps) * 100);
+        window.dispatchEvent(new CustomEvent('biomeGenerationProgress', { detail: { percentage: progress } }));
 
-      // ── Cache fast path: blob already rendered for this (seed, pw, pvt) ──
-      if (cacheKey) {
-        const cached = bulkBiomeCache.get(`${pw},${pvt}`);
-        if (cached) {
-          const url = URL.createObjectURL(cached.blob);
-          dynamicBlobUrls.push(url);
-          viewer.addTiledImage({
-            tileSource: { type: 'image', url, buildPyramid: false },
-            x: cached.minX,
-            y: cached.minY,
-            width: cached.osdWidth,
-            success: (event: any) => {
-              if (currentGenerationId !== generationId) {
+        // Yield briefly so the browser can paint the progress update before we block the main thread.
+        await new Promise(r => setTimeout(r, 0));
+        if (currentGenerationId !== generationId) return;
+
+        const isFirstPw = pw === 0 && pvt === 0;
+
+        // ── Cache fast path: blob already rendered for this (seed, pw, pvt) ──
+        {
+          const cached = composites.get(pw, pvt);
+          if (cached) {
+            const url = urlForComposite(cached.blob);
+            viewer.addTiledImage({
+              tileSource: { type: 'image', url, buildPyramid: false },
+              x: cached.minX,
+              y: cached.minY,
+              width: cached.osdWidth,
+              success: (event: any) => {
+                if (currentGenerationId !== generationId) {
+                  try {
+                    viewer.world.removeItem(event.item);
+                  } catch {}
+                  return;
+                }
                 try {
-                  viewer.world.removeItem(event.item);
+                  event.item.source.__biomeComposite = true;
                 } catch {}
-                return;
-              }
+                dynamicTiledImages.add(event.item);
+              },
+            });
+            if (isFirstPw && onFirstPwReady) {
               try {
-                event.item.source.__biomeComposite = true;
-              } catch {}
-              dynamicTiledImages.add(event.item);
-            },
-          });
-          if (isFirstPw && onFirstPwReady) {
-            try {
-              onFirstPwReady();
-            } catch (e) {
-              console.warn('[OSD Bridge] onFirstPwReady threw:', e);
+                onFirstPwReady();
+              } catch (e) {
+                console.warn('[OSD Bridge] onFirstPwReady threw:', e);
+              }
+              await new Promise(r => setTimeout(r, 0));
+              await new Promise(r => requestAnimationFrame(() => r(null)));
             }
-            await new Promise(r => setTimeout(r, 0));
-            await new Promise(r => requestAnimationFrame(() => r(null)));
+            stepsDone++;
+            continue;
           }
+        }
+
+        // Render each vertical plane once. NG0 horizontal worlds reuse these
+        // exact pixels above; scenes and POIs remain world-specific.
+        const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(biomeData, tileLayers, pw, pvt, isNGP);
+
+        if (currentGenerationId !== generationId) return;
+
+        // ── Composite all biome overlays into one canvas per PW ──────────────
+        // Instead of adding 50+ individual TiledImages (which overwhelms the
+        // canvas drawer in Firefox), we merge them into a single image.
+
+        // First pass: determine bounding box across all non-empty overlays
+        let minX = Infinity,
+          minY = Infinity,
+          maxX = -Infinity,
+          maxY = -Infinity;
+        const validOverlays: { overlay: OffscreenCanvas; x: number; y: number; osdWidth: number }[] = [];
+        for (const biomeName of allBiomesToRender) {
+          const layerIdxArr = layerIndicesByBiome.get(biomeName);
+          if (!layerIdxArr) continue;
+
+          for (const layerIdx of layerIdxArr) {
+            const overlay = overlays[layerIdx];
+            if (!overlay || overlay.width === 0 || overlay.height === 0) continue;
+
+            const layer = tileLayers[layerIdx];
+            const x = -(worldCenter * 512) + pw * pwOffsetPixels + layer.correctedX;
+            const y = anchorY + layer.correctedY + pvt * 24576;
+            const osdWidth = overlay.width * 10;
+            const osdHeight = overlay.height * 10;
+
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x + osdWidth);
+            maxY = Math.max(maxY, y + osdHeight);
+
+            validOverlays.push({ overlay, x, y, osdWidth });
+          }
+        }
+
+        if (validOverlays.length === 0) {
           stepsDone++;
           continue;
         }
-      }
 
-      // Compute all overlays for this PW at once (CPU-bound, ~1-2s)
-      const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(biomeData, tileLayers, pw, pvt, isNGP);
+        if (currentGenerationId !== generationId) return;
 
-      if (currentGenerationId !== generationId) return;
+        // Create a composited canvas at the same pixel density (1 pixel = 10 OSD units)
+        const compositeW = Math.ceil((maxX - minX) / 10);
+        const compositeH = Math.ceil((maxY - minY) / 10);
+        const compositeCanvas = new OffscreenCanvas(compositeW, compositeH);
+        const compositeCtx = compositeCanvas.getContext('2d')!;
 
-      // ── Composite all biome overlays into one canvas per PW ──────────────
-      // Instead of adding 50+ individual TiledImages (which overwhelms the
-      // canvas drawer in Firefox), we merge them into a single image.
-
-      // First pass: determine bounding box across all non-empty overlays
-      let minX = Infinity,
-        minY = Infinity,
-        maxX = -Infinity,
-        maxY = -Infinity;
-      const validOverlays: { overlay: OffscreenCanvas; x: number; y: number; osdWidth: number }[] = [];
-      for (const biomeName of allBiomesToRender) {
-        const layerIdxArr = layerIndicesByBiome.get(biomeName);
-        if (!layerIdxArr) continue;
-
-        for (const layerIdx of layerIdxArr) {
-          const overlay = overlays[layerIdx];
-          if (!overlay || overlay.width === 0 || overlay.height === 0) continue;
-
-          const layer = tileLayers[layerIdx];
-          const x = -(worldCenter * 512) + pw * pwOffsetPixels + layer.correctedX;
-          const y = anchorY + layer.correctedY + pvt * 24576;
-          const osdWidth = overlay.width * 10;
-          const osdHeight = overlay.height * 10;
-
-          minX = Math.min(minX, x);
-          minY = Math.min(minY, y);
-          maxX = Math.max(maxX, x + osdWidth);
-          maxY = Math.max(maxY, y + osdHeight);
-
-          validOverlays.push({ overlay, x, y, osdWidth });
+        // ── GPU-accelerated compositing (all browsers) ──
+        for (const { overlay, x, y } of validOverlays) {
+          const px = Math.round((x - minX) / 10);
+          const py = Math.round((y - minY) / 10);
+          compositeCtx.drawImage(overlay, px, py);
         }
-      }
+        const blob = await encodeComposite(compositeCanvas);
+        if (!blob || currentGenerationId !== generationId) return;
+        const url = urlForComposite(blob);
 
-      if (validOverlays.length === 0) {
-        stepsDone++;
-        continue;
-      }
-
-      if (currentGenerationId !== generationId) return;
-
-      // Create a composited canvas at the same pixel density (1 pixel = 10 OSD units)
-      const compositeW = Math.ceil((maxX - minX) / 10);
-      const compositeH = Math.ceil((maxY - minY) / 10);
-      const compositeCanvas = new OffscreenCanvas(compositeW, compositeH);
-      const compositeCtx = compositeCanvas.getContext('2d')!;
-
-      // Show privacy browser warning toast once per session if canvas tainting detected
-      if (isCanvasTainted() && !privacyToastShown) {
-        privacyToastShown = true;
-        const toastEl = document.getElementById('privacyBrowserToast');
-        if (toastEl) {
-          // @ts-ignore — Bootstrap is loaded globally
-          new bootstrap.Toast(toastEl).show();
+        const osdWidth = compositeW * 10;
+        composites.remember(pw, pvt, { blob, minX, minY, osdWidth });
+        // Store one horizontal copy per plane, including when only a side world
+        // was requested. Older per-world cached entries remain readable.
+        if (cacheKey) {
+          const storedPw = shareHorizontal ? 0 : pw;
+          const stored = composites.get(storedPw, pvt)!;
+          cacheBiomeRender(cacheKey, storedPw, pvt, blob, stored).catch(e =>
+            console.warn('[OSD Bridge] cacheBiomeRender failed:', e)
+          );
         }
-      }
-
-      // ── GPU-accelerated compositing (all browsers) ──
-      for (const { overlay, x, y } of validOverlays) {
-        const px = Math.round((x - minX) / 10);
-        const py = Math.round((y - minY) / 10);
-        compositeCtx.drawImage(overlay, px, py);
-      }
-      const blob = await offscreenCanvasToBlob(compositeCanvas);
-      const url = URL.createObjectURL(blob);
-      dynamicBlobUrls.push(url);
-      if (currentGenerationId !== generationId) return;
-
-      const osdWidth = compositeW * 10;
-      // Persist the rendered blob so future loads of this seed skip the
-      // ~100-200ms tile-overlay computation per PW.
-      if (cacheKey) {
-        cacheBiomeRender(cacheKey, pw, pvt, blob, { minX, minY, osdWidth }).catch(e =>
-          console.warn('[OSD Bridge] cacheBiomeRender failed:', e)
-        );
-      }
-      viewer.addTiledImage({
-        tileSource: { type: 'image', url, buildPyramid: false },
-        x: minX,
-        y: minY,
-        width: osdWidth,
-        success: (event: any) => {
-          if (currentGenerationId !== generationId) {
+        viewer.addTiledImage({
+          tileSource: { type: 'image', url, buildPyramid: false },
+          x: minX,
+          y: minY,
+          width: osdWidth,
+          success: (event: any) => {
+            if (currentGenerationId !== generationId) {
+              try {
+                viewer.world.removeItem(event.item);
+              } catch {}
+              return;
+            }
             try {
-              viewer.world.removeItem(event.item);
+              event.item.source.__biomeComposite = true;
             } catch {}
-            return;
-          }
+            dynamicTiledImages.add(event.item);
+          },
+        });
+
+        if (isFirstPw && onFirstPwReady) {
+          // Fire after queueing PW 0,0 (don't wait for OSD's success callback —
+          // it's blocked by the loop's subsequent CPU-heavy iterations).
+          // Yield twice so the browser can paint the indicator hiding before
+          // the next PW iteration blocks the main thread for ~100ms.
           try {
-            event.item.source.__biomeComposite = true;
-          } catch {}
-          dynamicTiledImages.add(event.item);
-        },
-      });
-
-      if (isFirstPw && onFirstPwReady) {
-        // Fire after queueing PW 0,0 (don't wait for OSD's success callback —
-        // it's blocked by the loop's subsequent CPU-heavy iterations).
-        // Yield twice so the browser can paint the indicator hiding before
-        // the next PW iteration blocks the main thread for ~100ms.
-        try {
-          onFirstPwReady();
-        } catch (e) {
-          console.warn('[OSD Bridge] onFirstPwReady threw:', e);
+            onFirstPwReady();
+          } catch (e) {
+            console.warn('[OSD Bridge] onFirstPwReady threw:', e);
+          }
+          await new Promise(r => setTimeout(r, 0));
+          await new Promise(r => requestAnimationFrame(() => r(null)));
         }
-        await new Promise(r => setTimeout(r, 0));
-        await new Promise(r => requestAnimationFrame(() => r(null)));
-      }
 
-      stepsDone++;
+        stepsDone++;
+      }
     }
+  } finally {
+    pngEncoder?.dispose();
   }
 
   // Report 100% completion
   window.dispatchEvent(new CustomEvent('biomeGenerationProgress', { detail: { percentage: 100 } }));
 }
 
-// ─── Bake-only exports, loaded on demand ────────────────────────────────────
+// ─── Headless biome-region export (build-daily-seed-images.cjs) ─────────────
 
-export type { BiomeRegionImage, BiomeRegionExportResult } from './bake-export';
-import type { BiomeRegionExportResult } from './bake-export';
-
-let bakeExports: typeof import('./bake-export') | null = null;
-async function loadBakeExports() {
-  return bakeExports ??= await import('./bake-export');
+export interface BiomeRegionImage {
+  pw: number;
+  pvt: number;
+  /** OSD top-left corner (seed-anchored world coords) — the x/y the live render
+   *  passes to viewer.addTiledImage. Use as-is when re-loading the pyramid. */
+  minX: number;
+  minY: number;
+  /** OSD width of the placed image (= compositeW * scale). */
+  osdWidth: number;
+  /** Nearest-neighbour factor OSD applies on display. The 10x upscale + bg
+   *  composite happens downstream in build-daily-seed-images.cjs. */
+  scale: number;
+  compositeW: number;
+  compositeH: number;
+  /** PNG bytes (base64) of the native overlay composite. */
+  small: string;
+  /** PNG bytes (base64) of the per-pixel biome-bg index mask, at the same
+   *  scale as `small`. RGB encodes a biome index (look up in biomeIndex);
+   *  alpha=255 means "use that biome's bg PNG", alpha=0 means "outside biome —
+   *  transparent, let static bg show through". Only present for pvt=0 (main
+   *  world); heaven/hell regions skip the mask and emit transparent gaps. */
+  mask?: string;
 }
+
+export interface BiomeRegionExportResult {
+  /** Per-region output. */
+  regions: BiomeRegionImage[];
+  /** Biome-index lookup: index -> biome bg PNG filename (basename of
+   *  noitamap/public/biome_bg/<filename>). Indices are RGB-encoded in the
+   *  per-region mask PNGs. Stable across one bake's regions. */
+  biomeIndex: Record<number, string>;
+}
+
+async function blobToBase64(blob: Blob): Promise<string> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let bin = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK) as any);
+  }
+  return btoa(bin);
+}
+
+// ─── Decoration bake export (pixel scenes + POI marker sprites) ─────────────
+//
+// The bake page calls prepareDecorationExport() once (builds the full draw
+// list: every scene composite + every marker sprite at world coords), then
+// exportDecorationCell() per non-empty 2048px grid cell. The node compositor
+// alpha-blends the cells onto the upscaled region fulls before stitching, so
+// the deployed pyramids carry scenes + creatures in their pixels and the live
+// map skips both visual layers entirely (clicks keep working off the spatial
+// index; see renderGenerationResult's decorBaked path).
+
+interface DecorDraw {
+  img: CanvasImageSource;
+  // Optional spritesheet source rect (markers); scenes draw the full bitmap.
+  sx?: number;
+  sy?: number;
+  sw?: number;
+  sh?: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  // Taikasauva ("alive") wands draw rotated 90deg CCW (tip-up -> tip-left).
+  rot?: boolean;
+}
+const DECOR_CELL = 2048;
+let _decorDraws: DecorDraw[] | null = null;
 
 export async function prepareDecorationExport(
   result: GenerationResult,
   includeScenes = true
 ): Promise<{ cellSize: number; cells: { cx: number; cy: number }[]; mimicSpritesVersion: number } | null> {
-  const exports = await loadBakeExports();
-  return exports.prepareDecorationExport(result, {
-    buildSceneBitmaps: result => buildSceneBitmaps(result, null),
-    sceneRenderKey,
-  }, includeScenes);
+  const draws: DecorDraw[] = [];
+
+  // 1. Pixel scenes (z-order below markers, so pushed first).
+  const decorationResult = includeScenes ? result : {
+    ...result,
+    pixelScenesByPW: Object.fromEntries(Object.entries(result.pixelScenesByPW).map(([key, scenes]) =>
+      [key, scenes.filter(scene => scene.key.startsWith('static_tile/') && !isRepeatedTempleTemplate(scene))])),
+  };
+  const built = await buildSceneBitmaps(decorationResult, null);
+  if (!built) return null;
+  for (const scene of built.validScenes) {
+    const bmp = built.bitmapByKey.get(sceneRenderKey(scene, result.seed));
+    if (!bmp) continue;
+    draws.push({ img: bmp, x: scene.x, y: scene.y, w: scene.width, h: scene.height });
+  }
+  const sceneCount = draws.length;
+
+  // 2. POI marker sprites. Mirrors marker-tile-source.ts at drawScale=1 with
+  // no spoiler scrub (bake is always full-detail; spoiler-free is disabled on
+  // baked seeds client-side).
+  const md = await buildMarkerData(result);
+  for (const item of md.items) {
+    const keys = Array.isArray(item.spriteKey) ? item.spriteKey : [item.spriteKey];
+    const isTaikasauva = !!(item.poi && (item.poi as any).isTaikasauva);
+    let isMain = true;
+    let rootOX = 0,
+      rootOY = 0;
+    for (const k of keys) {
+      const a = md.atlas[k];
+      if (!a) continue;
+      if (isMain) {
+        isMain = false;
+        rootOX = a.ox ?? item.w / 2;
+        rootOY = a.oy ?? item.h / 2;
+      }
+      // Same math as the tile source: layer top-left = marker centre minus the
+      // root layer's origin (per-layer l_ox cancels out at drawScale=1).
+      draws.push({
+        img: md.spritesheet,
+        sx: a.x,
+        sy: a.y,
+        sw: a.w,
+        sh: a.h,
+        x: item.osdX - rootOX,
+        y: item.osdY - rootOY,
+        w: a.w,
+        h: a.h,
+        rot: isTaikasauva,
+      });
+    }
+  }
+  _decorDraws = draws;
+
+  // Non-empty cells on the absolute world grid (cell x0 = cx * DECOR_CELL).
+  const cellSet = new Set<string>();
+  for (const d of draws) {
+    const cx0 = Math.floor(d.x / DECOR_CELL),
+      cx1 = Math.floor((d.x + d.w - 1) / DECOR_CELL);
+    const cy0 = Math.floor(d.y / DECOR_CELL),
+      cy1 = Math.floor((d.y + d.h - 1) / DECOR_CELL);
+    for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) cellSet.add(`${cx},${cy}`);
+  }
+  const cells = [...cellSet].map(s => {
+    const [cx, cy] = s.split(',').map(Number);
+    return { cx, cy };
+  });
+  console.log(
+    `[OSD Bridge] Decor export prepared: ${sceneCount} scenes + ${draws.length - sceneCount} sprite layers, ${cells.length} cells`
+  );
+  return { cellSize: DECOR_CELL, cells, mimicSpritesVersion: MIMIC_SPRITES_VERSION };
 }
 
-/** Synchronous after prepareDecorationExport has completed. */
+/** Render one decor grid cell; returns a PNG data URL or null when empty. */
 export function exportDecorationCell(cx: number, cy: number): string | null {
-  return bakeExports?.exportDecorationCell(cx, cy) ?? null;
+  if (!_decorDraws) return null;
+  const x0 = cx * DECOR_CELL,
+    y0 = cy * DECOR_CELL;
+  const hits = _decorDraws.filter(
+    d => d.x < x0 + DECOR_CELL && d.x + d.w > x0 && d.y < y0 + DECOR_CELL && d.y + d.h > y0
+  );
+  if (hits.length === 0) return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = DECOR_CELL;
+  canvas.height = DECOR_CELL;
+  const ctx = canvas.getContext('2d')!;
+  ctx.imageSmoothingEnabled = false;
+  for (const d of hits) {
+    if (d.sw !== undefined) {
+      if (d.rot) {
+        const cx = d.x - x0 + d.w / 2;
+        const cy = d.y - y0 + d.h / 2;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(-Math.PI / 2); // tip-up -> tip-left
+        ctx.drawImage(d.img, d.sx!, d.sy!, d.sw!, d.sh!, -d.w / 2, -d.h / 2, d.w, d.h);
+        ctx.restore();
+      } else {
+        ctx.drawImage(d.img, d.sx!, d.sy!, d.sw!, d.sh!, d.x - x0, d.y - y0, d.w, d.h);
+      }
+    } else {
+      ctx.drawImage(d.img, d.x - x0, d.y - y0, d.w, d.h);
+    }
+  }
+  return canvas.toDataURL('image/png');
 }
 
 export function releaseDecorationExport(): void {
-  bakeExports?.releaseDecorationExport();
+  _decorDraws = null;
 }
 
+/**
+ * Re-render the 9 biome regions (3 horizontal PWs × 3 verticals: main/heaven/
+ * hell) for a finished generation, plus per-region biome-bg masks (main world
+ * only) so a downstream Node compositor can stamp the live map's biome
+ * backgrounds in at native scale before stitching. Heaven/hell regions get a
+ * solid black bg downstream (matches the live map, which doesn't paint biome
+ * bgs in those planes). Empty regions are skipped and logged.
+ */
 export async function exportBiomeRegionImages(result: GenerationResult): Promise<BiomeRegionExportResult> {
   await ensureTelescopeModules();
-  const exports = await loadBakeExports();
-  return exports.exportBiomeRegionImages(result, {
-    biomeRenderOrder: BIOME_RENDER_ORDER,
-    createTileOverlays: createTileOverlaysCheap,
+
+  const { tileLayers, biomeData, isNGP, worldCenter, parallelWorlds } = result;
+  const w = isNGP ? 72 : 70;
+  const pwOffsetPixels = w * 512;
+  const pws = parallelWorlds || [-1, 0, 1];
+  const pwOrder = [...pws].sort((a, b) => {
+    if (a === 0) return -1;
+    if (b === 0) return 1;
+    return b - a;
   });
+
+  const layerIndicesByBiome = new Map<string, number[]>();
+  for (let i = 0; i < tileLayers.length; i++) {
+    const layer = tileLayers[i];
+    if (layer.biomeName) {
+      const arr = layerIndicesByBiome.get(layer.biomeName);
+      if (arr) arr.push(i);
+      else layerIndicesByBiome.set(layer.biomeName, [i]);
+    }
+  }
+  const orderedBiomes = BIOME_RENDER_ORDER.filter(b => !SKIP_BIOMES.has(b));
+  const orderedSet = new Set<string>(orderedBiomes);
+  const unorderedBiomes: string[] = [];
+  for (const [biomeName] of layerIndicesByBiome) {
+    if (!orderedSet.has(biomeName) && !SKIP_BIOMES.has(biomeName)) unorderedBiomes.push(biomeName);
+  }
+  const allBiomesToRender = [...orderedBiomes, ...unorderedBiomes];
+
+  const anchorY = -(14 * 512);
+  const pvtList = [0, -1, 1].filter(pvt => {
+    if (pvt < 0 && !biomeData.heavenPixels) return false;
+    if (pvt > 0 && !biomeData.hellPixels) return false;
+    return true;
+  });
+
+  // Load the static-map biome boundary polygons (same source the live bg
+  // renderer uses). Polygons live in static-map coords:
+  //   gx = svgX * CHUNK_SIZE + MAP_TOP_LEFT_X
+  //   gy = svgY * CHUNK_SIZE + BIOME_IMAGE_TOP_Y
+  // Per pw the bg translates by pw * pwOffsetPixels horizontally.
+  const boundaryData = (await import('../data/biome_boundries_py.json')).default as any;
+  const biomesWithBg = (boundaryData?.biomes ?? []).filter(
+    (b: any) => b.filename && BIOME_BACKGROUND_MAP[b.filename] && !SKIP_BIOMES.has(b.filename)
+  );
+  // Stable index assignment: each biome's `filename` -> integer index ≥ 1.
+  // 0 is reserved for "no biome" (alpha=0 in the mask).
+  const biomeIndex: Record<number, string> = {};
+  const indexByFilename = new Map<string, number>();
+  biomesWithBg.forEach((b: any, i: number) => {
+    const idx = i + 1;
+    indexByFilename.set(b.filename, idx);
+    // Value is the bg PNG basename so the Node side can fetch
+    // noitamap/public/biome_bg/<file>.
+    const bgPath = BIOME_BACKGROUND_MAP[b.filename];
+    biomeIndex[idx] = bgPath.split('/').pop() || bgPath;
+  });
+
+  const CHUNK = 512;
+  const MAP_TOP_LEFT_X = -17920;
+  const BIOME_IMAGE_TOP_Y = -14 * CHUNK;
+
+  // Fold POI marker extents into region bounds. Region X/Y come only from biome
+  // tile overlays, but markers are baked into decor cells at absolute world
+  // coords and the upscale compositor only samples decor inside [minX, maxX) x
+  // [minY, maxY). A marker past the biome edge (e.g. the gun_room "It's a wand,
+  // ok?" experimental wand at x~16121, east of pw=0's biome edge ~15870 and west
+  // of pw=1's ~18940) lands in an inter-region gap and is clipped from the baked
+  // DZI on every bake — even though the live map shows it (markers are a separate
+  // OSD layer there). Group marker extents by world column (round(osdX/stride))
+  // so a cross-column POI misfiled into another pw's poisByPW bucket expands the
+  // region it actually sits in, never balloons a wrong region or double-draws.
+  const markerBoundsByCol = new Map<number, { minX: number; minY: number; maxX: number; maxY: number }>();
+  try {
+    const md = await buildMarkerData(result);
+    for (const it of md.items) {
+      const col = Math.round(it.osdX / pwOffsetPixels);
+      const l = it.osdX - it.w / 2,
+        r = it.osdX + it.w / 2;
+      const t = it.osdY - it.h / 2,
+        b = it.osdY + it.h / 2;
+      const cur = markerBoundsByCol.get(col);
+      if (cur) {
+        if (l < cur.minX) cur.minX = l;
+        if (r > cur.maxX) cur.maxX = r;
+        if (t < cur.minY) cur.minY = t;
+        if (b > cur.maxY) cur.maxY = b;
+      } else {
+        markerBoundsByCol.set(col, { minX: l, minY: t, maxX: r, maxY: b });
+      }
+    }
+  } catch (e) {
+    console.warn('[export] marker-bounds fold skipped:', e);
+  }
+
+  const out: BiomeRegionImage[] = [];
+
+  for (const pw of pwOrder) {
+    for (const pvt of pvtList) {
+      const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(biomeData, tileLayers, pw, pvt, isNGP);
+
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
+      const validOverlays: { overlay: OffscreenCanvas; x: number; y: number }[] = [];
+      for (const biomeName of allBiomesToRender) {
+        const layerIdxArr = layerIndicesByBiome.get(biomeName);
+        if (!layerIdxArr) continue;
+        for (const layerIdx of layerIdxArr) {
+          const overlay = overlays[layerIdx];
+          if (!overlay || overlay.width === 0 || overlay.height === 0) continue;
+          const layer = tileLayers[layerIdx];
+          const x = -(worldCenter * 512) + pw * pwOffsetPixels + layer.correctedX;
+          const y = anchorY + layer.correctedY + pvt * 24576;
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x + overlay.width * 10);
+          maxY = Math.max(maxY, y + overlay.height * 10);
+          validOverlays.push({ overlay, x, y });
+        }
+      }
+      if (validOverlays.length === 0) {
+        console.warn(`[export] skipped empty region pw=${pw} pvt=${pvt}`);
+        continue;
+      }
+
+      // Expand to cover markers in this pw's world column so decor sprites past
+      // the biome edge (inter-region gaps) aren't clipped from the baked DZI.
+      // Markers only sit on the main plane (pvt=0); heaven/hell bands carry no
+      // decor at the markers' Y, so widening them would just grow the canvas.
+      const mb = pvt === 0 ? markerBoundsByCol.get(pw) : undefined;
+      if (mb) {
+        if (mb.minX < minX) minX = mb.minX;
+        if (mb.maxX > maxX) maxX = mb.maxX;
+        if (mb.minY < minY) minY = mb.minY;
+        if (mb.maxY > maxY) maxY = mb.maxY;
+      }
+
+      const compositeW = Math.ceil((maxX - minX) / 10);
+      const compositeH = Math.ceil((maxY - minY) / 10);
+      const compositeCanvas = new OffscreenCanvas(compositeW, compositeH);
+      const compositeCtx = compositeCanvas.getContext('2d', { willReadFrequently: true })!;
+      for (const { overlay, x, y } of validOverlays) {
+        compositeCtx.drawImage(overlay, Math.round((x - minX) / 10), Math.round((y - minY) / 10));
+      }
+
+      const smallData = compositeCtx.getImageData(0, 0, compositeW, compositeH);
+      // Force overlay alpha to binary (0/255 with 128 threshold). The overlay
+      // bitmaps from createTileOverlaysCheap can carry soft-alpha edge pixels
+      // which blend badly when the upscale step composites biome bgs
+      // underneath. Snapping alpha kills the fringe at the source. The final
+      // flatten-to-opaque-black happens later, in upscalePngWithBg, AFTER the
+      // bgs are baked underneath.
+      for (let i = 3; i < smallData.data.length; i += 4) {
+        smallData.data[i] = smallData.data[i] >= 128 ? 255 : 0;
+      }
+      const osdWidth = compositeW * 10;
+      const scale = osdWidth / compositeW;
+      const small = await blobToBase64(await rgbaToPngBlob(smallData.data, compositeW, compositeH));
+
+      // Per-region biome-index mask. Main world only — biome polygons are
+      // anchored to the static-map (boundary JSON only covers main-world
+      // biomes), so heaven/hell skip the mask and emit transparent gaps.
+      let mask: string | undefined;
+      if (pvt === 0) {
+        const maskCanvas = new OffscreenCanvas(compositeW, compositeH);
+        const maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true })!;
+        // Translate biome-polygon static-map coords into this region's local
+        // (compositeW, compositeH) space. The region's top-left is (minX, minY)
+        // in OSD coords; biomes' static-map gx/gy translate by pw horizontally.
+        const pwShift = pw * pwOffsetPixels;
+        for (const biome of biomesWithBg) {
+          const idx = indexByFilename.get(biome.filename);
+          if (!idx) continue;
+          const rawParts = (biome.svg_map_path as string).split(' ');
+          maskCtx.beginPath();
+          let prev: string | null = null;
+          for (let j = 0; j < rawParts.length; j++) {
+            const part = rawParts[j];
+            if (part === 'M' || part === 'L' || part === 'Z') {
+              if (part === 'Z') maskCtx.closePath();
+              prev = part;
+              continue;
+            }
+            const xVal = Number(part);
+            const yPart = rawParts[j + 1];
+            if (yPart === undefined) break;
+            const yVal = Number(yPart);
+            const gx = xVal * CHUNK + MAP_TOP_LEFT_X + pwShift;
+            const gy = yVal * CHUNK + BIOME_IMAGE_TOP_Y;
+            // Convert to local mask coords (1px = 10 OSD units).
+            const cx = (gx - minX) / 10;
+            const cy = (gy - minY) / 10;
+            if (prev === 'M') maskCtx.moveTo(cx, cy);
+            else maskCtx.lineTo(cx, cy);
+            j++; // skip the y part we just consumed
+            prev = 'L';
+          }
+          maskCtx.fillStyle = `rgb(${(idx >> 16) & 0xff}, ${(idx >> 8) & 0xff}, ${idx & 0xff})`;
+          maskCtx.fill();
+        }
+        // Keep the mask only where some terrain overlay actually covers. The
+        // wang layers are laid out at 510 px per chunk (tile_generator.js
+        // correctedX: 51 tiles x 10 px), so every layer ends a few px short
+        // of the chunk grid the biome polygons follow. The live map never
+        // notices — the static base map shows through the strip — but the
+        // bake paints raw biome background wherever "inside polygon, overlay
+        // transparent", which turned every such strip into a dark chunk-
+        // aligned line. Dropping the mask there makes the strip transparent,
+        // matching what the live map shows.
+        const coverage = new OffscreenCanvas(compositeW, compositeH);
+        const covCtx = coverage.getContext('2d')!;
+        covCtx.fillStyle = '#fff';
+        for (const { overlay, x, y } of validOverlays) {
+          covCtx.fillRect(Math.round((x - minX) / 10), Math.round((y - minY) / 10), overlay.width, overlay.height);
+        }
+        maskCtx.globalCompositeOperation = 'destination-in';
+        maskCtx.drawImage(coverage, 0, 0);
+        maskCtx.globalCompositeOperation = 'source-over';
+        const maskData = maskCtx.getImageData(0, 0, compositeW, compositeH);
+        // Force alpha to 255 wherever any biome was painted, 0 elsewhere — so
+        // the Node side has a clean alpha=255 / alpha=0 mask with no
+        // antialiased edges. (Canvas2D may have anti-aliased polygon edges.)
+        for (let i = 0; i < maskData.data.length; i += 4) {
+          const any = maskData.data[i] | maskData.data[i + 1] | maskData.data[i + 2];
+          maskData.data[i + 3] = any ? 255 : 0;
+        }
+        mask = await blobToBase64(await rgbaToPngBlob(maskData.data, compositeW, compositeH));
+      }
+
+      out.push({
+        pw,
+        pvt,
+        minX: Math.round(minX),
+        minY: Math.round(minY),
+        osdWidth,
+        scale,
+        compositeW,
+        compositeH,
+        small,
+        mask,
+      });
+    }
+  }
+
+  return { regions: out, biomeIndex };
 }
 
 // ─── Pixel Scene Config ─────────────────────────────────────────────────────
@@ -1120,12 +1621,15 @@ let _lastLoadedScenes: Array<{ name: string; key: string; x: number; y: number; 
 //
 // Kinds: staticBase (the seed-invariant main-branch DZIs), bakedDzi (daily bake),
 // biomeBg (the biome background composites — the "bg map"), biomeComposite (the
-// CPU wang-tile biome layer), glTerrain (the GPU final-pixel terrain), synthetic
-// (marker / pixel-scene tile sources), other.
+// CPU wang-tile biome layer), glTerrain (offline final-pixel terrain),
+// instantTerrain (live HD terrain), pixelScenes (scene artwork), synthetic
+// (marker tile sources), other.
 
 function _layerKind(source: any): string {
   if (!source) return 'other';
   if (source.__glTerrain) return 'glTerrain';
+  if (source.__instantTerrain || source.__instantViewport) return 'instantTerrain';
+  if (source.__pixelScenes) return 'pixelScenes';
   if (source.__bakedDzi) return 'bakedDzi';
   if (source.__biomeBg) return 'biomeBg';
   if (source.__biomeComposite) return 'biomeComposite';
@@ -1327,7 +1831,7 @@ async function getScenePngIndex(): Promise<ScenePngIndex> {
       // Temple foreground scenes use _fg.png instead of _visual.png
       addTo('_fg.png', visualByPath, visualByName);
       // Top-level plain .png files (no subdirectory, no _visual/_background suffix) —
-      // these are full pixel scene visuals like watercave_layout_X.png. Defer them
+      // keep the legacy artwork fallback except for known material maps. Defer
       // to a second pass: a plain .png that has a sibling _visual/_background (e.g.
       // essenceroom.png next to essenceroom_visual.png) is a MATERIAL COLORMAP, not
       // a visual, and must not shadow the real visual in visualByName.
@@ -1342,6 +1846,8 @@ async function getScenePngIndex(): Promise<ScenePngIndex> {
       }
     });
     for (const { key, path } of plainPngCandidates) {
+      // These are material/force-air maps, not visual artwork.
+      if (carvedRoomBiome(`general/${key}`) || isWaterCaveLayout(`general/${key}`)) continue;
       if (visualByPath.has(key) || bgByPath.has(key)) continue; // colormap with dedicated layers
       if (!visualByName.has(key)) visualByName.set(key, path);
     }
@@ -1386,7 +1892,6 @@ async function decodeScenePng(zip: any, path: string): Promise<ImageData | null>
   const file = zip.file(path);
   if (!file) return null;
   const buf = await file.async('arraybuffer');
-  const { decodePngToRgba } = await import('./png-decode');
   const decoded = decodePngToRgba(buf);
   const d = decoded.data;
   const tlR = d[0],
@@ -1502,23 +2007,36 @@ async function loadVisualPngBitmap(sceneKey: string): Promise<ImageBitmap | null
   return null;
 }
 
-// The legacy fork aliases these rooms to "general", losing their cave backdrop.
-// All Friend rooms use the same rock/background pair, regardless of which one
-// contains the boss. Their air must erase the rock under the scene.
-const CARVED_ROOM_BIOMES: Record<string, string> = {
-  'general/friendroom': 'friend_1',
-  'general/cavern': 'friend_1',
-  'general/solid_wall_hidden_cavern': 'solid_wall_hidden_cavern',
-};
-
-/** Preserve random liquid variants; carved rooms also need their texture phase. */
-function sceneRenderKey(scene: { key: string; variantKey?: string; x?: number; y?: number }): string {
+/**
+ * Per-instance render key. Pixel-scene fills (oiltank, vault liquids, etc.)
+ * pick a material via PRNG and encode it in variantKey as `f0bbee=<wang>`. Two
+ * instances of the same scene.key with different liquids must NOT share a
+ * cached bitmap, so fold the material part of the variant into the key. The
+ * biome part is normally implied by scene.key. The shared sky/hell shop needs
+ * its explicit biome, while unrelated scenes retain their existing keys.
+ */
+function sceneRenderKey(scene: { key: string; variantKey?: string; x?: number; y?: number }, seed: number): string {
   const vk = scene.variantKey || '';
+  // Native materials/backdrops are phased in world space; edge decorations
+  // also depend on the seed. Only these five layouts need revised entries.
+  if (isWaterCaveLayout(scene.key)) {
+    const name = scene.key.substring(scene.key.lastIndexOf('/') + 1);
+    const layers = pixelSceneConfig.layerOverrides[name] || pixelSceneConfig.layerOverrides[scene.key];
+    const background = layers?.background ?? pixelSceneConfig.layers.background;
+    const mid = layers?.mid ?? pixelSceneConfig.layers.mid;
+    return `${scene.key}|watercave-edges-v2|${seed}|${vk || 'biome=watercave'}|${scene.x ?? 0},${scene.y ?? 0}|${+background},${+mid}`;
+  }
   const mat = vk.split('&').filter(p => p && !p.startsWith('biome='));
   const key = mat.length ? `${scene.key}|${mat.join('&')}` : scene.key;
-  // Background textures repeat in world coordinates; different placements
-  // cannot share a flattened bitmap. This also bypasses old black room caches.
-  return CARVED_ROOM_BIOMES[scene.key] ? `${key}|cave-bg-v1|${scene.x ?? 0},${scene.y ?? 0}` : key;
+  if (scene.key === 'general/the_end_shop') {
+    // Both vertical worlds use this template, but its fill colours differ.
+    // Version even the default/prefetch variant so old shared PNGs cannot win.
+    const biome = vk.split('&').filter(p => p.startsWith('biome=')).join('&') || 'biome=general';
+    return `${key}|shop-biome-v1|${biome}`;
+  }
+  if (scene.key === GOLD_ROOM_REPAIR_KEY) return `${key}|${scene.x ?? 0},${scene.y ?? 0}`;
+  // Cave textures are phased in world space. Bypass old black room bitmaps.
+  return carvedRoomBiome(scene.key) ? `${key}|friend-bg-v1|${scene.x ?? 0},${scene.y ?? 0}` : key;
 }
 
 /**
@@ -1570,7 +2088,8 @@ async function compositeSceneBitmap(
     visualByName: Map<string, string>;
     bgByPath: Map<string, string>;
     bgByName: Map<string, string>;
-  }
+  },
+  seed: number
 ): Promise<{
   bitmap: ImageBitmap;
   blob: Blob | null;
@@ -1578,11 +2097,30 @@ async function compositeSceneBitmap(
   height: number;
   kind: 'composite' | 'fallback';
 } | null> {
+  if (key === GOLD_ROOM_REPAIR_KEY) {
+    const raw = await ensurePixelSceneData(GOLD_ROOM_KEY, { art: false });
+    const file = (await getDataZip())?.file('data/materials_gfx/rock_hard_border.png');
+    if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement) || !file)
+      throw new Error('Missing captured gold room repair data');
+    const texture = decodePngToRgba(await file.async('arraybuffer'));
+    const pixels = capturedGoldRepairPixels(raw, texture, { ...scene, x: scene.x ?? 0, y: scene.y ?? 0 });
+    const canvas = new OffscreenCanvas(scene.width, scene.height);
+    const ctx = canvas.getContext('2d')!;
+    const image = ctx.createImageData(scene.width, scene.height);
+    image.data.set(pixels);
+    ctx.putImageData(image, 0, 0);
+    const bitmap = await createImageBitmap(canvas);
+    let blob: Blob | null = null;
+    try { blob = await canvas.convertToBlob({ type: 'image/png' }); }
+    catch (error) { console.warn("[OSD Bridge] convertToBlob failed (scene won't be cached):", key, error); }
+    return { bitmap, blob, width: scene.width, height: scene.height, kind: 'composite' };
+  }
   const slashIdx = key.indexOf('/');
   const biome = slashIdx >= 0 ? key.substring(0, slashIdx) : '';
   const name = slashIdx >= 0 ? key.substring(slashIdx + 1) : key;
 
-  const caveBiome = CARVED_ROOM_BIOMES[key];
+  const caveBiome = carvedRoomBiome(key);
+  const waterCave = isWaterCaveLayout(key);
   const skipBg = biome === 'temple' || (biome === 'general' && !caveBiome);
 
   const override = pixelSceneConfig.layerOverrides[name] || pixelSceneConfig.layerOverrides[key];
@@ -1590,7 +2128,7 @@ async function compositeSceneBitmap(
   const wantMid = override?.mid ?? pixelSceneConfig.layers.mid;
   const wantVis = override?.visual ?? pixelSceneConfig.layers.visual;
 
-  const visualPath = wantVis ? resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, key) : undefined;
+  const visualPath = wantVis && !waterCave ? resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, key) : undefined;
   const bgPath = skipBg || !wantBg ? undefined : resolveScenePath(idx.bgByPath, idx.bgByName, biome, name, key);
 
   const zip = await getDataZip();
@@ -1599,7 +2137,7 @@ async function compositeSceneBitmap(
 
   if (zip && bgPath) {
     if (caveBiome) {
-      const { decodePngToRgba } = await import('./png-decode');
+      // Preserve the authored PNG alpha; its top-left colour is not a key.
       const file = zip.file(bgPath);
       if (file) {
         const decoded = decodePngToRgba(await file.async('arraybuffer'));
@@ -1614,10 +2152,20 @@ async function compositeSceneBitmap(
   }
 
   let midBitmap: ImageBitmap | null = null;
-  if (wantMid) {
+  if (wantMid && waterCave) {
+    // Always use the raw source, not a legacy scene instance's flat recolor.
+    const raw = await ensurePixelSceneData(scene.key, { art: false });
+    if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement))
+      throw new Error(`Missing Water Cave material pixels: ${scene.key}`);
+    const { paintWaterCaveScene } = await import('./watercave-scene');
+    const pixels = await paintWaterCaveScene({ ...scene, x: scene.x ?? 0, y: scene.y ?? 0 },
+      { data: raw.imgElement, width: raw.width, height: raw.height }, wantBg, seed);
+    midBitmap = await imgElementToBitmap(pixels, raw.width, raw.height);
+  } else if (wantMid) {
+    await ensurePixelSceneData(scene.key, { art: false });
     const arr =
       scene.imgElement instanceof Uint8Array || scene.imgElement instanceof Uint8ClampedArray ? scene.imgElement : null;
-    const baseImg = arr || (await ensurePixelSceneData(scene.key, { art: false }))?.imgElement;
+    const baseImg = arr || getPixelSceneImgElement(scene.key);
     if (baseImg) {
       let recolored: any = baseImg;
       try {
@@ -1684,7 +2232,7 @@ async function compositeSceneBitmap(
   if (hasMid && !hasBg && !hasVis) {
     cw = midBitmap!.width;
     ch = midBitmap!.height;
-    kind = 'fallback';
+    kind = waterCave ? 'composite' : 'fallback';
   } else if (hasVis && !hasBg && !hasMid) {
     cw = visualData!.width;
     ch = visualData!.height;
@@ -1731,20 +2279,17 @@ async function compositeSceneBitmap(
   return { bitmap, blob, width: cw, height: ch, kind };
 }
 
-let _scenePrefetchInflight: Promise<void> | null = null;
-
 /**
  * Composite and persist every pixel scene key telescope knows about,
  * skipping ones already in the IDB cache. Fires once per session in the
  * background after the first render so future seed switches have zero
  * pixel-scene compositing work.
  */
-export function prefetchAllSceneBitmaps(): Promise<void> {
-  if (_scenePrefetchInflight) return _scenePrefetchInflight;
-  _scenePrefetchInflight = (async () => {
+export const prefetchAllSceneBitmaps = createScenePrefetch(async (isCurrent, beforeScene) => {
     try {
-      // Carved rooms need placement coordinates to sample their background.
-      const allKeys = getAllPixelSceneKeys().filter(key => !CARVED_ROOM_BIOMES[key]);
+      // These scenes need actual placement coordinates, seed or biome context.
+      const allKeys = getAllPixelSceneKeys().filter(key => !carvedRoomBiome(key) && !isWaterCaveLayout(key)
+        && key !== 'general/the_end_shop');
       if (allKeys.length === 0) return;
       const cached = await getCachedSceneBitmapKeys();
       const missing = allKeys.filter(k => !cached.has(k));
@@ -1761,6 +2306,8 @@ export function prefetchAllSceneBitmaps(): Promise<void> {
       const t0 = performance.now();
       // Process serially to keep main-thread pressure low.
       for (const key of missing) {
+        if (!isCurrent()) break;
+        if (!(await beforeScene()) || !isCurrent()) break;
         const data = getPixelSceneData(key);
         if (!data) {
           skipped++;
@@ -1774,7 +2321,7 @@ export function prefetchAllSceneBitmaps(): Promise<void> {
           key,
         };
         try {
-          const composited = await compositeSceneBitmap(key, scene, idx);
+          const composited = await compositeSceneBitmap(key, scene, idx, 0);
           if (!composited) {
             skipped++;
             continue;
@@ -1790,20 +2337,14 @@ export function prefetchAllSceneBitmaps(): Promise<void> {
           skipped++;
           console.warn('[OSD Bridge] Prefetch composite failed:', key, e);
         }
-        // Yield between keys so UI stays responsive.
-        await new Promise(r => setTimeout(r, 0));
       }
       console.log(
         `[OSD Bridge] Pixel-scene prefetch: warmed ${warmed}, skipped ${skipped}, took ${((performance.now() - t0) / 1000).toFixed(2)}s`
       );
     } catch (e) {
       console.warn('[OSD Bridge] Pixel-scene prefetch failed:', e);
-    } finally {
-      _scenePrefetchInflight = null;
     }
-  })();
-  return _scenePrefetchInflight;
-}
+});
 
 /**
  * Add pixel scenes for all parallel worlds to the viewer.
@@ -1827,6 +2368,7 @@ function renderableScenes(result: GenerationResult): PixelScene[] {
   const allScenes = Object.values(result.pixelScenesByPW).flat();
   return allScenes.filter(s => {
     if (!s || s.width <= 0 || s.height <= 0) return false;
+    if (isCapturedGoldRoom(s, result.worldSize) && !isSimplisticBackground()) return false;
     if (pixelSceneConfig.skipNames.has(s.name)) return false;
     const biome = s.key.split('/')[0];
     if (pixelSceneConfig.skipBiomes.has(biome)) return false;
@@ -1857,8 +2399,7 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
       const path = raw.backgroundArt.replace(/^data\/backgrounds\//, 'data/');
       const file = zip?.file(path);
       if (!file) throw new Error(`Missing scene background: ${path}`);
-      const { decodePngToRgba } = await import('./png-decode');
-      backgroundArt = decodePngToRgba(await file.async('arraybuffer'));
+      backgroundArt = await decodePngToRgba(await file.async('arraybuffer'));
     }
     sources[scene.key] = {
       data: (override?.mid ?? pixelSceneConfig.layers.mid) ? raw.imgElement : new Uint8Array(raw.imgElement.length),
@@ -1873,7 +2414,7 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
   for (const scene of Object.values(result.pixelScenesByPW).flat()) {
     // The static scene skip/no-op list still owns the same pixels. Skipping the
     // scene's draw alone is insufficient: final terrain must not cover its art.
-    if (!(pixelSceneConfig.skipNames.has(scene.name) || pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]))) continue;
+    if (!((isCapturedGoldRoom(scene, result.worldSize) && !isSimplisticBackground()) || pixelSceneConfig.skipNames.has(scene.name) || pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]))) continue;
     const raw = await ensurePixelSceneData(scene.key, { art: false });
     if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement) || raw.width < 2 || raw.height < 2) continue;
     const placement = `${scene.key}/${scene.x}/${scene.y}`;
@@ -1886,72 +2427,122 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
   return { sources, staticMasks, scenes: scenes.map(({ key, name, variantKey, x, y, width, height }) => ({ key, name, variantKey, x, y, width, height })) };
 }
 
+/** Reuse raw scene pixels already loaded by the generator. Only the mask is
+ * needed by the display-resolution GPU path; existing scene layers paint art. */
+async function instantSceneMasks(result: GenerationResult): Promise<StaticTerrainMask[]> {
+  const rendered = new Set(renderableScenes(result));
+  const scenes = Object.values(result.pixelScenesByPW).flat().filter(scene =>
+    rendered.has(scene) || (isCapturedGoldRoom(scene, result.worldSize) && !isSimplisticBackground()) || pixelSceneConfig.skipNames.has(scene.name) ||
+    pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]));
+  return loadInstantSceneMasks(scenes, key => ensurePixelSceneData(key, { art: false }));
+}
+
 async function buildSceneBitmaps(
   result: GenerationResult,
   generationId: number | null
-): Promise<{ validScenes: PixelScene[]; bitmapByKey: Map<string, ImageBitmap> } | null> {
+): Promise<{ validScenes: PixelScene[]; bitmapByKey: Map<string, ImageBitmap>; release: () => void } | null> {
   const validScenes = renderableScenes(result);
+  // Correct the captured base only for live/exported scene composition. Baked
+  // daily display skips this entire path and keeps its finished pixels.
+  if (!isSimplisticBackground()) validScenes.unshift(...capturedGoldRepairs(validScenes, result.worldSize));
   const bitmapByKey = new Map<string, ImageBitmap>();
-  if (validScenes.length === 0) return { validScenes, bitmapByKey };
+  const releases: Array<() => void> = [];
+  let released = false;
+  const release = () => {
+    if (released) return;
+    released = true;
+    for (const close of releases) close();
+    releases.length = 0;
+    bitmapByKey.clear();
+  };
+  if (validScenes.length === 0) return { validScenes, bitmapByKey, release };
+  // Offline decoration exports keep their existing, individually owned images.
+  const memory = generationId === null ? undefined : liveSceneBitmaps;
+  const current = () => !released && (generationId === null || currentGenerationId === generationId);
+  const remember = (key: string, bitmap: ImageBitmap) => {
+    if (!current()) { bitmap.close(); return; }
+    const lease = memory?.adopt(key, bitmap);
+    releases.push(lease ? lease.release : () => bitmap.close());
+    bitmapByKey.set(key, lease?.bitmap ?? bitmap);
+  };
 
-  const uniqueKeys = new Map<string, PixelScene>();
-  for (const scene of validScenes) {
-    const rk = sceneRenderKey(scene);
-    if (!uniqueKeys.has(rk)) uniqueKeys.set(rk, scene);
-  }
+  try {
+    const uniqueKeys = new Map<string, PixelScene>();
+    for (const scene of validScenes) {
+      const rk = sceneRenderKey(scene, result.seed);
+      if (!uniqueKeys.has(rk)) uniqueKeys.set(rk, scene);
+    }
 
-  // Per-key bitmaps are seed-independent — cache them in IDB so future seeds
-  // reuse the work. Bulk-fetch every cached bitmap in one IDB transaction
-  // (~138 separate read transactions add 1-3s on Brave/FF).
-  const BATCH = 50;
-  const keyArr = Array.from(uniqueKeys.entries()); // [renderKey, scene]
-  let compositeCount = 0;
-  let cacheHitCount = 0;
-  let fallbackCount = 0;
-  let missingCount = 0;
-  const idx = await getScenePngIndex();
-  const bulkSceneCache = await getCachedSceneBitmapsBulk(keyArr.map(([k]) => k));
+    // Most scene bitmaps are seed-independent; Water Cave keys include its
+    // seeded edges. Bulk-fetch every cached bitmap in one IDB transaction
+    // (~138 separate read transactions add 1-3s on Brave/FF).
+    const keyArr: Array<[string, PixelScene]> = [];
+    let memoryHitCount = 0;
+    // Acquire every existing image before admitting misses that may evict it
+    // from the bounded cache. Both generations can use the same native bitmap.
+    for (const [key, scene] of uniqueKeys) {
+      if (!current()) { release(); return null; }
+      const hit = memory?.acquire(key);
+      if (hit) {
+        bitmapByKey.set(key, hit.bitmap);
+        releases.push(hit.release);
+        memoryHitCount++;
+      } else keyArr.push([key, scene]);
+    }
+    let compositeCount = 0;
+    let cacheHitCount = 0;
+    let fallbackCount = 0;
+    let missingCount = 0;
+    const [idx, bulkSceneCache] = keyArr.length ? await Promise.all([
+      getScenePngIndex(), getCachedSceneBitmapsBulk(keyArr.map(([k]) => k)),
+    ]) : [undefined, new Map()];
 
-  for (let i = 0; i < keyArr.length; i += BATCH) {
-    if (generationId !== null && currentGenerationId !== generationId) return null;
-    const batch = keyArr.slice(i, i + BATCH);
-    await Promise.all(
-      batch.map(async ([rk, scene]) => {
-        // ── Cache fast path ────────────────────────────────────────────────
-        const cached = bulkSceneCache.get(rk);
-        if (cached) {
-          try {
-            const bmp = await createImageBitmap(cached.blob);
-            bitmapByKey.set(rk, bmp);
-            cacheHitCount++;
-            return;
-          } catch {
-            // fall through to recompute
-          }
-        }
-
-        const composited = await compositeSceneBitmap(scene.key, scene, idx);
-        if (!composited) {
-          missingCount++;
+    // A burst of fifty cached decodes/recolors could monopolize the UI thread.
+    // Share bounded foreground preparation with real task yields between slices.
+    await prepareAssetJobs(keyArr, async ([rk, scene]) => {
+      if (!current()) return;
+      // ── Cache fast path ────────────────────────────────────────────────
+      const cached = bulkSceneCache.get(rk);
+      if (cached) {
+        try {
+          const bmp = await createImageBitmap(cached.blob);
+          remember(rk, bmp);
+          cacheHitCount++;
           return;
+        } catch {
+          // fall through to recompute
         }
-        bitmapByKey.set(rk, composited.bitmap);
-        if (composited.kind === 'fallback') fallbackCount++;
-        else compositeCount++;
-        if (composited.blob) {
-          cacheSceneBitmap(rk, composited.blob, composited.width, composited.height).catch(e =>
-            console.warn('[OSD Bridge] cacheSceneBitmap failed:', rk, e)
-          );
-        }
-      })
-    );
-  }
+      }
 
-  console.log(
-    `[OSD Bridge] Pixel scene bitmaps: ${bitmapByKey.size}/${uniqueKeys.size} ` +
-      `(${cacheHitCount} cache, ${compositeCount} composite, ${fallbackCount} fallback, ${missingCount} missing)`
-  );
-  return { validScenes, bitmapByKey };
+      if (!current()) return;
+      const composited = await compositeSceneBitmap(scene.key, scene, idx!, result.seed);
+      if (!composited) {
+        missingCount++;
+        return;
+      }
+      remember(rk, composited.bitmap);
+      if (composited.kind === 'fallback') fallbackCount++;
+      else compositeCount++;
+      if (composited.blob) {
+        cacheSceneBitmap(rk, composited.blob, composited.width, composited.height).catch(e =>
+          console.warn('[OSD Bridge] cacheSceneBitmap failed:', rk, e)
+        );
+      }
+    });
+    if (generationId !== null && currentGenerationId !== generationId) {
+      release();
+      return null;
+    }
+
+    console.log(
+      `[OSD Bridge] Pixel scene bitmaps: ${bitmapByKey.size}/${uniqueKeys.size} ` +
+        `(${memoryHitCount} memory, ${cacheHitCount} disk, ${compositeCount} composite, ${fallbackCount} fallback, ${missingCount} missing)`
+    );
+    return { validScenes, bitmapByKey, release };
+  } catch (error) {
+    release();
+    throw error;
+  }
 }
 
 export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult, generationId: number): Promise<void> {
@@ -1975,10 +2566,16 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     );
   }
 
-  const built = await buildSceneBitmaps(result, generationId);
+  const bitmapWork = buildSceneBitmaps(result, generationId);
+  const sourceWork = import('./pixel-scene-tile-source').catch(error => {
+    // A failed module download must also release images still being prepared.
+    void bitmapWork.then(built => built?.release(), () => {});
+    throw error;
+  });
+  const [built, { createPixelSceneTileSource }] = await Promise.all([bitmapWork, sourceWork]);
   if (!built) return; // cancelled
   const { validScenes, bitmapByKey } = built;
-  if (validScenes.length === 0) return;
+  if (validScenes.length === 0) { built.release(); return; }
 
   // Populate debug scene list for __pixelSceneList()
   _lastLoadedScenes = allScenes.map(s => ({
@@ -1991,149 +2588,43 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
 
   console.log(`[OSD Bridge] Pixel scenes: ${allScenes.length} total, ${validScenes.length} valid`);
 
-  if (currentGenerationId !== generationId) return;
-
-  // 3. Build items array and compute bounding box
-  interface SceneItem {
-    osdX: number;
-    osdY: number;
-    w: number;
-    h: number;
-    sceneKey: string;
+  if (currentGenerationId !== generationId) {
+    built.release();
+    return;
   }
-  const items: SceneItem[] = [];
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
 
+  const items: SceneTileItem[] = [];
   for (const scene of validScenes) {
-    const rk = sceneRenderKey(scene);
+    const rk = sceneRenderKey(scene, result.seed);
     if (!bitmapByKey.has(rk)) continue;
-    // Raw engine coordinates align exactly to 1:1 mapped grid.
-    const x = scene.x;
-    const y = scene.y;
-    items.push({ osdX: x, osdY: y, w: scene.width, h: scene.height, sceneKey: rk });
-    if (x < minX) minX = x;
-    if (y < minY) minY = y;
-    if (x + scene.width > maxX) maxX = x + scene.width;
-    if (y + scene.height > maxY) maxY = y + scene.height;
+    items.push({ osdX: scene.x, osdY: scene.y, w: scene.width, h: scene.height, sceneKey: rk });
   }
-
-  if (items.length === 0) return;
-
-  const pad = 50;
-  minX -= pad;
-  minY -= pad;
-  maxX += pad;
-  maxY += pad;
-  const originX = minX;
-  const originY = minY;
-  const bboxWidth = maxX - minX;
-  const bboxHeight = maxY - minY;
-
-  // 3. Build Flatbush spatial index
-  const index = new Flatbush(items.length);
-  for (const item of items) {
-    index.add(item.osdX - originX, item.osdY - originY, item.osdX + item.w - originX, item.osdY + item.h - originY);
-  }
-  index.finish();
-
-  // 4. Create custom tile source
-  const TILE_SIZE = 512;
-  const maxDim = Math.max(bboxWidth, bboxHeight);
-  const maxLevel = Math.max(0, Math.ceil(Math.log2(maxDim)));
-
-  function tileBounds(level: number, tx: number, ty: number) {
-    const scale = Math.pow(2, maxLevel - level);
-    return {
-      bx: tx * TILE_SIZE * scale,
-      by: ty * TILE_SIZE * scale,
-      bw: TILE_SIZE * scale,
-      bh: TILE_SIZE * scale,
-    };
-  }
-
-  const source = new OpenSeadragon.TileSource({
-    height: bboxHeight,
-    width: bboxWidth,
-    tileSize: TILE_SIZE,
-    minLevel: 0,
-    maxLevel,
-  });
-
-  source.getTileUrl = function (level: number, x: number, y: number) {
-    return `pixel-scene-tile://${generationId}/${level}/${x}/${y}`;
-  };
-  source.hasTransparency = function () {
-    return true;
-  };
-
-  const tileExists = source.tileExists.bind(source);
-  source.tileExists = function (level: number, x: number, y: number) {
-    if (!tileExists(level, x, y)) return false;
-    const { bx, by, bw, bh } = tileBounds(level, x, y);
-    return index.search(bx, by, bx + bw, by + bh).length > 0;
-  };
-
-  let logCount = 0;
-  source.downloadTileStart = function (context: any) {
-    const tile = context.tile;
-    const { bx, by, bw, bh } = tileBounds(tile.level, tile.x, tile.y);
-    // Flatbush returns spatial order; overlapping scenes must retain the
-    // generator's paint order, as they do in the decoration bake.
-    const results = index.search(bx, by, bx + bw, by + bh).sort((a, b) => a - b);
-
-    if (logCount < 3) {
-      console.log(`[PixelSceneTile] level=${tile.level} (${tile.x},${tile.y}), hits=${results.length}`);
-      logCount++;
-    }
-
-    const canvas = document.createElement('canvas');
-    const drawScale = TILE_SIZE / bw;
-    canvas.width = Math.ceil(Math.min(TILE_SIZE, (bboxWidth - bx) * drawScale));
-    canvas.height = Math.ceil(Math.min(TILE_SIZE, (bboxHeight - by) * drawScale));
-    const ctx = canvas.getContext('2d')!;
-    ctx.imageSmoothingEnabled = false;
-    ctx.setTransform(drawScale, 0, 0, drawScale, -bx * drawScale, -by * drawScale);
-
-    if (results.length > 0) {
-      for (const idx of results) {
-        const item = items[idx];
-        if (!item) continue;
-        const bitmap = bitmapByKey.get(item.sceneKey);
-        if (!bitmap) continue;
-        // Keep exact world dimensions. Inflating each draw by a pixel stretches
-        // scene artwork and shifts the cave/background boundary inside tiles.
-        ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height,
-          item.osdX - originX, item.osdY - originY, item.w, item.h);
-      }
-    }
-
-    queueMicrotask(() => {
-      context.finish(canvas, null, 'image');
+  if (items.length === 0) { built.release(); return; }
+  try {
+    const { source, originX, originY, width: bboxWidth } = createPixelSceneTileSource({
+      items, bitmapByKey, generationId, releaseBitmaps: built.release,
     });
-  };
-  source.downloadTileAbort = function () {};
 
-  // 5. Add as a single tiled image to OSD
-  viewer.addTiledImage({
-    tileSource: source,
-    x: originX,
-    y: originY,
-    width: bboxWidth,
-    success: (event: any) => {
-      if (currentGenerationId !== generationId) {
-        try {
-          viewer.world.removeItem(event.item);
-        } catch {}
-        return;
-      }
-      dynamicTiledImages.add(event.item);
-    },
-  });
+    // Complete attachment before the first atomic terrain/art frame is released.
+    await new Promise<void>((resolve, reject) => viewer.addTiledImage({
+      tileSource: source,
+      x: originX,
+      y: originY,
+      width: bboxWidth,
+      error: (error: unknown) => { source.destroy(); reject(error); },
+      success: (event: any) => {
+        if (currentGenerationId !== generationId) {
+          try { viewer.world.removeItem(event.item); } catch {}
+        } else dynamicTiledImages.add(event.item);
+        resolve();
+      },
+    }));
 
-  console.log(`[OSD Bridge] Added ${items.length} pixel scenes as single tile source`);
+    console.log(`[OSD Bridge] Added ${items.length} pixel scenes as single tile source`);
+  } catch (error) {
+    built.release();
+    throw error;
+  }
 }
 
 /**
@@ -2202,8 +2693,8 @@ async function registerPixelSceneHoverDebug(viewer: OSDViewer, result: Generatio
 let activeMarkerData: MarkerData | null = null;
 let tooltipEl: HTMLDivElement | null = null;
 let tooltipPlacementCleanup: (() => void) | undefined;
-let reportCardReturn: { label: string; onClose(): void } | undefined;
 const poiCards = new POICardLifecycle(getCurrentDynamicSeed, removeMarkerTooltip);
+let reportCardReturn: { label: string; onClose(): void } | undefined;
 let canvasClickHandler: ((event: any) => void) | null = null;
 let markerTiledImage: any = null;
 
@@ -2429,6 +2920,7 @@ function wrapWithWikiLink(el: HTMLElement, poi: any): HTMLElement {
   if (!url) return el;
   const a = document.createElement('a');
   a.href = url;
+  attachWikiLinkPopover(a);
   a.target = '_blank';
   a.rel = 'noopener';
   a.style.cssText =
@@ -2444,45 +2936,25 @@ function wrapWithWikiLink(el: HTMLElement, poi: any): HTMLElement {
   icon.className = 'bi bi-box-arrow-up-right';
   icon.style.cssText = 'font-size:0.75em;opacity:0.5;flex-shrink:0';
   a.appendChild(icon);
-  attachWikiLinkPopover(a);
   return a;
 }
 
-/** Header and placement are shared by full, spoiler-free and orb cards. */
-function mountMarkerCard(card: HTMLElement, viewer: any, anchor: {
-  x: number; y: number; width?: number; height?: number; offsetX?: number; offsetY?: number;
-}, request: POICardRequest, opening: { mayPan: boolean }): void {
-  (card as HTMLElement & { __close?: () => void }).__close = hideMarkerTooltip;
-  const focusReturn = opening.mayPan && !!reportCardReturn;
-  const controls = card.querySelector<HTMLElement>('.poi-card-controls');
-  const heading = controls?.nextElementSibling as HTMLElement | null;
-  if (controls && heading) {
-    const header = document.createElement('div');
-    header.className = 'poi-card-header';
-    heading.classList.add('poi-card-heading');
-    heading.style.marginBottom = '';
-    card.prepend(header);
-    header.append(heading, controls);
-    if (reportCardReturn) {
-      const back = document.createElement('button');
-      back.type = 'button';
-      back.className = 'btn btn-sm btn-outline-light poi-card-back';
-      back.textContent = i18next.t('seedReport.v3.backToReport', reportCardReturn.label);
-      back.onclick = e => { e.stopPropagation(); hideMarkerTooltip(); };
-      controls.prepend(back);
-    }
+function mountMarkerCard(card: HTMLElement, viewer: any, anchor: CardAnchor, request: POICardRequest): void {
+  (card as HTMLElement & { __close?: () => void }).__close = () => {
+    if (tooltipEl === card && request.isCurrent()) hideMarkerTooltip();
+  };
+  if (reportCardReturn) {
+    const back = document.createElement('button');
+    back.type = 'button';
+    back.className = 'btn btn-sm btn-outline-light poi-card-back';
+    back.textContent = i18next.t('seedReport.v3.backToReport', reportCardReturn.label);
+    back.onclick = event => { event.stopPropagation(); (card as any).__close?.(); };
+    card.querySelector('.poi-card-controls')?.prepend(back);
   }
   card.style.visibility = 'hidden';
   document.body.appendChild(card);
-  tooltipPlacementCleanup = mountPOICardPlacement(card, { viewer, anchor, isCurrent: request.isCurrent, opening });
-  if (focusReturn) card.querySelector<HTMLButtonElement>('.poi-card-back')?.focus({ preventScroll: true });
-}
-
-function rebuildMarkerCard(build: () => void): void {
-  const selector = 'button, a, input, select, [tabindex]';
-  const focused = tooltipEl ? [...tooltipEl.querySelectorAll(selector)].indexOf(document.activeElement as Element) : -1;
-  build();
-  if (focused >= 0) tooltipEl?.querySelectorAll<HTMLElement>(selector)[focused]?.focus({ preventScroll: true });
+  tooltipPlacementCleanup = mountPOICardPlacement(card, { viewer, anchor, isCurrent: request.isCurrent });
+  card.querySelector<HTMLButtonElement>('.poi-card-back')?.focus({ preventScroll: true });
 }
 
 function discardMarkerCard(): void {
@@ -2498,17 +2970,16 @@ function cleanupPopovers(el: HTMLElement): void {
   dismissPopovers(el);
 }
 
-function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.begin(), opening = { mayPan: true }): void {
-  if (!request.isCurrent()) return;
-  if (drawingOwnsMapPointer()) { poiCards.close(); return; }
+function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.begin()): void {
+  if (!request.isCurrent() || drawingOwnsMapPointer() || isDropOverlayActive()) return;
   discardMarkerCard();
 
   tooltipEl = document.createElement('div');
   // Allow the languageChanged listener to rebuild this tooltip in place.
-  (tooltipEl as any).__rebuild = () => rebuildMarkerCard(() => showMarkerTooltip(item, viewer, request, opening));
+  (tooltipEl as any).__rebuild = () => showMarkerTooltip(item, viewer, request);
   tooltipEl.className = 'marker-tooltip';
-  const rootSpriteKey = Array.isArray(item.spriteKey) ? item.spriteKey[0] : item.spriteKey;
-  const sprite = getAtlas()?.[rootSpriteKey];
+  const rootKey = Array.isArray(item.spriteKey) ? item.spriteKey[0] : item.spriteKey;
+  const sprite = getAtlas()?.[rootKey];
   const anchor = { x: item.osdX, y: item.osdY, width: item.w, height: item.h, offsetX: sprite?.ox, offsetY: sprite?.oy };
 
   // Top controls container — in normal flow, pushed to right
@@ -2679,7 +3150,6 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
             /* surfaced inline */
           }
         }
-        if (!request.isCurrent()) return;
         const rebuild = (tooltipEl as any)?.__rebuild;
         if (typeof rebuild === 'function') rebuild();
       });
@@ -2717,7 +3187,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     // Refresh on alt-ready so loading state clears in place.
     if (!isVariantReady(getActiveDescriptor())) {
       onAltReady(() => {
-        if (!tooltipEl || !request.isCurrent()) return;
+        if (!tooltipEl) return;
         applyLockBtnStyle();
       });
     }
@@ -2822,11 +3292,11 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     // Footer with position only
     const footer = document.createElement('div');
     footer.style.cssText =
-      'margin-top:0.5em;color:var(--text-faint);font-size:inherit;border-top:0.065em solid var(--border-strong);padding-top:0.3em';
+      'margin-top:0.5em;color:var(--text-faint);font-size:var(--control-font-size);border-top:0.065em solid var(--border-strong);padding-top:0.3em';
     footer.textContent = `${i18next.t('poi.pw', 'PW')} ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
     tooltipEl.appendChild(footer);
 
-    mountMarkerCard(tooltipEl, viewer, anchor, request, opening);
+    mountMarkerCard(tooltipEl, viewer, anchor, request);
     return;
   }
 
@@ -2873,7 +3343,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     titleCol.appendChild(wrapWithWikiLink(title, poi));
     if (isTaikasauva) {
       const sub = document.createElement('div');
-      sub.style.cssText = 'color:var(--text-muted);font-size:inherit;font-style:italic';
+      sub.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic';
       sub.textContent = '"Alive wand"';
       titleCol.appendChild(sub);
     } else if (
@@ -2883,7 +3353,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     ) {
       // Named special wand (Huilu/Kantele): show the English alias as subtitle.
       const sub = document.createElement('div');
-      sub.style.cssText = 'color:var(--text-muted);font-size:inherit;font-style:italic';
+      sub.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic';
       sub.textContent = SPECIAL_WAND_ALIAS[String(poi.sprite)];
       titleCol.appendChild(sub);
     }
@@ -2960,7 +3430,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
           const badge = document.createElement('div');
           badge.textContent = 'AC';
           badge.style.cssText =
-            'position:absolute;top:-0.35em;left:-0.35em;min-height:1.25em;padding-inline:0.15em;display:flex;align-items:center;justify-content:center;font-size:inherit;font-weight:bold;background:white;color:black;border-radius:0.25em;border:1px solid var(--border-strong);z-index:2';
+            'position:absolute;top:-5px;left:-5px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:bold;background:white;color:black;border-radius:50%;border:1px solid var(--border-strong);z-index:2';
           attachAlwaysCastPopover(badge);
           container.appendChild(badge);
         }
@@ -2979,7 +3449,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
           });
           container.appendChild(img);
         }
-        // Empty slots retain the same dimensions as occupied card slots.
+        // Empty slots keep the same dimensions as the native 20px cards at 2×.
         spellsRow.appendChild(container);
       }
       tooltipEl.appendChild(spellsRow);
@@ -3027,7 +3497,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
           k => gameTranslator.translateItem(k),
           (k, dv) => i18next.t(k, dv)
         );
-    } else if (getMimicEntityId(poi)) {
+    } else if (getMimicEntityId(poi) || Object.hasOwn(EGG_SPAWNS, poi.item || '')) {
       title.textContent = getPOIDisplayName(poi);
     } else if (poi.item === 'heart') title.textContent = i18next.t('poi.heartSmall', 'Heart (+25 HP)');
     else if (poi.item === 'heart_bigger') title.textContent = i18next.t('poi.heartBig', 'Heart (+50 HP)');
@@ -3048,7 +3518,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       const theme = String((poi as any).theme || '');
       if (theme) {
         const sub = document.createElement('div');
-        sub.style.cssText = 'color:var(--text);font-size:inherit;font-style:italic;margin-bottom:0.2em';
+        sub.style.cssText = 'color:var(--text);font-size:var(--control-font-size);font-style:italic;margin-bottom:0.2em';
         sub.textContent = i18next.t(theme, theme);
         tooltipEl.appendChild(sub);
       }
@@ -3060,7 +3530,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       const spec = pillarReqSpec(poi as any);
       if (spec) {
         const d = document.createElement('div');
-        d.style.cssText = 'color:var(--text-muted);font-size:inherit;margin-bottom:0.2em';
+        d.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);margin-bottom:0.2em';
         const lead = document.createElement('span');
         lead.textContent = `${i18next.t('poi.pillarHowTo', 'To unlock')}: `;
         d.appendChild(lead);
@@ -3291,11 +3761,11 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
             a.href = String((link as import('../data/pillars').PillarLink).wiki);
             a.target = '_blank';
             a.rel = 'noopener';
+            attachWikiLinkPopover(a);
             a.insertAdjacentHTML(
               'beforeend',
               '<i class="bi bi-box-arrow-up-right" style="font-size:0.75em;margin-left:3px;vertical-align:-1px"></i>'
             );
-            attachWikiLinkPopover(a);
             return a;
           }
           a.href = '#';
@@ -3431,7 +3901,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       const t = gameTranslator.translateItem(String((poi as any).titleKey));
       if (t && t !== (poi as any).titleKey) {
         const sub = document.createElement('div');
-        sub.style.cssText = 'color:var(--text);font-size:inherit;font-style:italic;margin-bottom:0.2em';
+        sub.style.cssText = 'color:var(--text);font-size:var(--control-font-size);font-style:italic;margin-bottom:0.2em';
         sub.textContent = t;
         tooltipEl.appendChild(sub);
       }
@@ -3441,7 +3911,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     if ((poi as any).description) {
       const d = document.createElement('div');
       d.style.cssText =
-        'color:var(--text-muted);font-size:inherit;font-style:italic;white-space:pre-line;text-align:center;margin-bottom:0.2em';
+        'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;white-space:pre-line;text-align:center;margin-bottom:0.2em';
       d.textContent = String((poi as any).description);
       tooltipEl.appendChild(d);
     }
@@ -3449,7 +3919,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     // Unknown (parallel-world) perk: explain why the identity can't be shown.
     if (poi.item === 'perk' && (poi as any).unknown) {
       const d = document.createElement('div');
-      d.style.cssText = 'color:var(--text-muted);font-size:inherit;font-style:italic;margin-bottom:0.2em';
+      d.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin-bottom:0.2em';
       d.textContent = i18next.t(
         'perk.unknownParallel',
         'Loading order for holy mountains and parallel worlds matters. Without knowing your "travel history" it is impossible to accurately show the perks.'
@@ -3466,7 +3936,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       const desc = gameTranslator.translateItem(descKey);
       if (desc && desc !== descKey) {
         const d = document.createElement('div');
-        d.style.cssText = 'color:var(--text-muted);font-size:inherit;font-style:italic;margin-bottom:0.2em';
+        d.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin-bottom:0.2em';
         d.textContent = desc;
         tooltipEl.appendChild(d);
       }
@@ -3475,7 +3945,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
         const acId = String(typeof ac === 'string' ? ac : (ac.id ?? ac));
         const acName = gameTranslator.translateSpell(getSpellName(acId));
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;gap:0.3em;font-size:inherit;color:#c8a2ff;margin-top:0.2em';
+        row.style.cssText = 'display:flex;align-items:center;gap:0.3em;font-size:var(--control-font-size);color:#c8a2ff;margin-top:0.2em';
         const lbl = document.createElement('span');
         lbl.textContent = `${i18next.t('perk.alwaysCast', 'Always Cast')}:`;
         row.appendChild(lbl);
@@ -3495,7 +3965,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       if (gamble && Array.isArray(gamble.perks) && gamble.perks.length) {
         const row = document.createElement('div');
         row.style.cssText =
-          'display:flex;align-items:center;gap:0.4em;flex-wrap:wrap;font-size:inherit;color:var(--text);margin-top:0.2em';
+          'display:flex;align-items:center;gap:0.4em;flex-wrap:wrap;font-size:var(--control-font-size);color:var(--text);margin-top:0.2em';
         const lbl = document.createElement('span');
         lbl.textContent = `${i18next.t('perk.gambleGrants', 'Gamble grants')}:`;
         row.appendChild(lbl);
@@ -3536,7 +4006,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       link.textContent = 'Noitool';
       link.style.cssText = 'color:var(--accent-fg);text-decoration:underline';
       const note = document.createElement('div');
-      note.style.cssText = 'color:var(--text-muted);font-size:inherit;font-style:italic;margin-top:0.4em';
+      note.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin-top:0.4em';
       const tpl = i18next.t(
         'perk.noitoolNote',
         'Note, that perks are shown as if you went through every holy mountain in regular order on a normal run and did not pick up extra perk. If you want to have absolute precision in what perks you are going to see, use {{link}} in "Advanced" mode'
@@ -3552,7 +4022,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       const desc = gameTranslator.translateItem(descKey);
       if (desc && desc !== descKey) {
         const sub = document.createElement('div');
-        sub.style.cssText = 'color:var(--text-muted);font-size:inherit;font-style:italic;margin-bottom:0.2em;white-space:pre-line';
+        sub.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin-bottom:0.2em;white-space:pre-line';
         // In-game description text encodes line breaks as a literal backslash-n.
         sub.textContent = desc.replace(/\\n/g, '\n');
         tooltipEl.appendChild(sub);
@@ -3561,7 +4031,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
 
     if (poi.material && poi.item !== 'essence') {
       const mat = document.createElement('div');
-      mat.style.cssText = 'color:var(--text-muted);font-size:inherit';
+      mat.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size)';
       const materialLabel = gameTranslator.translateItem('inventory_actiontype_material');
       mat.textContent = `${materialLabel}: ${gameTranslator.translateMaterial(poi.material)}`;
       tooltipEl.appendChild(mat);
@@ -3569,13 +4039,13 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     }
     if (poi.amount) {
       const amt = document.createElement('div');
-      amt.style.cssText = 'color:var(--text-muted);font-size:inherit';
+      amt.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size)';
       amt.textContent = `${i18next.t('poi.amount', 'Amount')}: ${poi.amount}`;
       tooltipEl.appendChild(amt);
     }
     if (poi.contents && poi.contents.length) {
       const contentsDiv = document.createElement('div');
-      contentsDiv.style.cssText = 'margin-top:0.15em;color:var(--text-muted);font-size:inherit';
+      contentsDiv.style.cssText = 'margin-top:0.15em;color:var(--text-muted);font-size:var(--control-font-size)';
       contentsDiv.textContent = `${i18next.t('poi.contains', 'Contains')}: ${poi.contents
         .map((c: any) => {
           const cName = typeof c === 'string' ? c : (c.name ?? c.item ?? String(c));
@@ -3590,7 +4060,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     const stoneDrops = (poi as any).stoneDrops as Array<{ item: string; nameKey: string; name: string }> | undefined;
     if (poi.item === 'essence_eater' && Array.isArray(stoneDrops) && stoneDrops.length) {
       const note = document.createElement('div');
-      note.style.cssText = 'color:var(--text-muted);font-size:inherit;font-style:italic;margin:0.3em 0 0.2em;line-height:1.4';
+      note.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin:0.3em 0 0.2em;line-height:1.4';
       note.textContent = i18next.t(
         'poi.essenceEaterConvert',
         'Essence Eaters convert any carried Essence into its corresponding elemental stone.'
@@ -3616,7 +4086,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
         });
         box.appendChild(img);
         const label = document.createElement('span');
-        label.style.cssText = 'font-size:inherit;color:var(--text-muted)';
+        label.style.cssText = 'font-size:0.8em;color:var(--text-muted)';
         const t = gameTranslator.translateItem(s.nameKey);
         label.textContent = t !== s.nameKey ? t : s.name;
         box.appendChild(label);
@@ -3717,7 +4187,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       }
       if (parts.length > 0) {
         const aliasDiv = document.createElement('div');
-        aliasDiv.style.cssText = 'color:#999;font-size:inherit;font-style:italic';
+        aliasDiv.style.cssText = 'color:#999;font-size:var(--control-font-size);font-style:italic';
         aliasDiv.textContent = parts.join(', ');
         titleCol.appendChild(aliasDiv);
       }
@@ -3729,12 +4199,13 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     // Horde marker (free) — full creature stats are in the pro extended section.
     if ((poi as any).isHorde && creature?.category) {
       const catDiv = document.createElement('div');
-      catDiv.style.cssText = 'color:var(--text-muted);margin-top:0.15em;font-size:inherit';
+      catDiv.style.cssText = 'color:var(--text-muted);margin-top:0.15em;font-size:var(--control-font-size)';
       catDiv.textContent = `${i18next.t('poi.horde', 'Horde')}: ${creature.category}`;
       tooltipEl.appendChild(catDiv);
     }
 
-    tooltipEl.appendChild(buildExtendedSection('creature', entityId));
+    // Spawner cards put their free offspring row before the paid section.
+    if (!getPOISpawnDetails(poi)) tooltipEl.appendChild(buildExtendedSection('creature', entityId));
 
     if (poi.biome) {
       const biomeDiv = document.createElement('div');
@@ -3774,10 +4245,61 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     tooltipEl.appendChild(wrapWithWikiLink(title, poi));
     if (poi.item) {
       const itemDiv = document.createElement('div');
-      itemDiv.style.cssText = 'color:var(--text-muted);font-size:inherit';
+      itemDiv.style.cssText = 'color:var(--text-muted);font-size:var(--panel-heading-size)';
       itemDiv.textContent = gameTranslator.translateItem(poi.item).replace(/_/g, ' ');
       tooltipEl.appendChild(itemDiv);
     }
+  }
+
+  const spawnDetails = getPOISpawnDetails(poi);
+  if (spawnDetails) {
+    const spawnsDiv = document.createElement('div');
+    spawnsDiv.className = 'poi-spawn-section';
+    const heading = document.createElement('div');
+    heading.className = 'poi-spawn-heading';
+    heading.textContent = `${spawnDetails.heading}:`;
+    spawnsDiv.appendChild(heading);
+    const entries = spawnDetails.outcomes.map(([entity, count]) => {
+      const key = `enemy:${entity}`;
+      return { key, count, name: getPOIDisplayName({ type: 'entity', entity }), size: getSpriteNativeSize(key) };
+    });
+    // All current offspring fit 48px. A larger future sprite expands every
+    // slot together, preserving native pixels instead of clipping/shrinking it.
+    const iconSize = Math.max(48, ...entries.map(({ size }) => size ? Math.max(size.w, size.h) : 0));
+    const list = document.createElement('ul');
+    list.className = 'poi-spawn-list';
+    list.setAttribute('role', 'list');
+    list.style.setProperty('--poi-spawn-icon-size', `${iconSize}px`);
+    for (const { key, count, name, size } of entries) {
+      const row = document.createElement('li');
+      row.className = 'poi-spawn-row';
+      const icon = document.createElement('span');
+      icon.className = 'poi-spawn-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      const canvas = size && drawSpriteToCanvas(key, size.w, size.h);
+      if (canvas && size) {
+        // Keep the canvas at native resolution and let its pixelated CSS
+        // enlarge by a whole number, capped at 3x for tiny creatures.
+        const scale = Math.min(3, Math.floor(iconSize / Math.max(size.w, size.h)));
+        canvas.style.width = `${size.w * scale}px`;
+        canvas.style.height = `${size.h * scale}px`;
+        canvas.title = name;
+        icon.appendChild(canvas);
+      }
+      const amount = document.createElement('span');
+      amount.className = 'poi-spawn-count';
+      amount.textContent = `${count}× `;
+      const label = document.createElement('span');
+      label.className = 'poi-spawn-name';
+      label.textContent = name;
+      row.append(icon, amount, label);
+      list.appendChild(row);
+    }
+    spawnsDiv.appendChild(list);
+    if (spawnDetails.outcomes.length) tooltipEl.appendChild(spawnsDiv);
+    tooltipEl.appendChild(poi.type === 'entity'
+      ? buildExtendedSection('creature', canonicalEntityId(poi.entity))
+      : buildExtendedSection('spawner', poi.item!));
   }
 
   // Container contents — show items inside chests/shops/bosses
@@ -3811,7 +4333,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     contRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center';
     // Render a content sprite at an integer multiple of its native size so
     // nearest-neighbour scaling stays perfectly sharp (sprites have varied
-    // native sizes; spells are 16px, items/wands differ).
+    // native sizes; spell cards are 20px, items/wands differ).
     const scaledSprite = (key: string | string[], mult = 2): HTMLCanvasElement | null => {
       const n = getSpriteNativeSize(key);
       if (!n) return null;
@@ -3828,7 +4350,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       const n = Number(ci.count);
       if (!Number.isFinite(n) || n <= 1) return null;
       const b = document.createElement('span');
-      b.style.cssText = 'font-size:inherit;color:#fff;font-weight:bold;margin-left:0.15em';
+      b.style.cssText = 'font-size:0.8em;color:#fff;font-weight:bold;margin-left:0.15em';
       b.textContent = `x${n}`;
       return b;
     };
@@ -3920,7 +4442,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
           if (canvas) goldBox.appendChild(canvas);
         }
         const label = document.createElement('span');
-        label.style.cssText = 'font-size:inherit;color:var(--warning-fg)';
+        label.style.cssText = 'font-size:0.8em;color:var(--warning-fg)';
         label.textContent = ci.amount ? `$${ci.amount}` : i18next.t('poi.gold', 'Gold');
         goldBox.appendChild(label);
         {
@@ -3941,7 +4463,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
           if (canvas) heartBox.appendChild(canvas);
         }
         const label = document.createElement('span');
-        label.style.cssText = 'font-size:inherit;color:#ff6b6b';
+        label.style.cssText = 'font-size:0.8em;color:#ff6b6b';
         // Honour an explicit name override (e.g. boss-specific "Full regen
         // (On first kill)") before falling back to the generic HP label.
         if (ci.name) label.textContent = ci.name;
@@ -3977,7 +4499,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
         const canvas = scaledSprite(ciKey);
         if (canvas) itemBox.appendChild(canvas);
         const textSpan = document.createElement('span');
-        textSpan.style.cssText = 'font-size:inherit;color:var(--text-muted)';
+        textSpan.style.cssText = 'font-size:0.8em;color:var(--text-muted)';
         textSpan.textContent = displayName;
         itemBox.appendChild(textSpan);
         {
@@ -3989,7 +4511,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       }
       const span = document.createElement('span');
       span.style.cssText =
-        'font-size:inherit;color:var(--text-muted);background:var(--surface-2);border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid var(--border-strong)';
+        'font-size:0.8em;color:var(--text-muted);background:var(--surface-2);border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid var(--border-strong)';
       span.textContent = displayName;
       contRow.appendChild(span);
       {
@@ -4023,11 +4545,11 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
 
   // Footer: position info
   const footer = document.createElement('div');
-  footer.style.cssText = 'margin-top:0.5em;color:var(--text-faint);font-size:inherit;border-top:0.065em solid var(--border-strong);padding-top:0.3em';
+  footer.style.cssText = 'margin-top:0.5em;color:var(--text-faint);font-size:var(--control-font-size);border-top:0.065em solid var(--border-strong);padding-top:0.3em';
   footer.textContent = `${i18next.t('poi.pw', 'PW')} ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
   tooltipEl.appendChild(footer);
 
-  mountMarkerCard(tooltipEl, viewer, anchor, request, opening);
+  mountMarkerCard(tooltipEl, viewer, anchor, request);
 }
 
 function removeMarkerTooltip(): void {
@@ -4213,16 +4735,21 @@ function installClickHandler(viewer: OSDViewer, data: MarkerData): void {
     osdCanvas.classList.toggle('poi-hover', results.length > 0);
   };
   osdCanvas.addEventListener('mousemove', onMouseMove);
-  const removeIntentListener = onProSidebarIntent(sidebar => {
-    if (sidebar === "drawing") {
+  const closeForDrawing = () => {
+    if (drawingOwnsMapPointer()) {
       osdCanvas.classList.remove('poi-hover');
       hideMarkerTooltip();
     }
-  });
+  };
+  const removeOwnershipListener = onDrawingMapOwnershipChange(closeForDrawing);
+  // Opening the menu dismisses the current card once so its drop hint is
+  // unobstructed. Empty menus still allow subsequent POI clicks.
+  const removeIntentListener = onProSidebarIntent(sidebar => { if (sidebar === 'drawing') hideMarkerTooltip(); });
   canvasMoveCleanup = () => {
     osdCanvas.removeEventListener('mousemove', onMouseMove);
     osdCanvas.classList.remove('poi-hover');
     removeIntentListener();
+    removeOwnershipListener();
   };
 
   viewer.addHandler('canvas-click', canvasClickHandler);
@@ -4235,7 +4762,7 @@ export function openTooltipForPOI(
   viewer: any,
   opts?: { sidebarRightPx?: number; fallbackX?: number; fallbackY?: number; fallbackPoi?: any; owner?: POICardOwner; reportReturn?: { label: string; onClose(): void } }
 ): void {
-  if (!poiId || poiId === 'undefined' || poiId === 'null') { opts?.reportReturn?.onClose(); return; }
+  if (!poiId || poiId === 'undefined' || poiId === 'null' || drawingOwnsMapPointer() || isDropOverlayActive()) { opts?.reportReturn?.onClose(); return; }
 
   // Close any tooltip card that was already open. Otherwise the previous POI's
   // card sits on screen for ~2 s during the cinematic pan before getting
@@ -4282,7 +4809,7 @@ export function openTooltipForPOI(
   // them).
   const baseX = item ? item.osdX : opts?.fallbackX;
   const baseY = item ? item.osdY : opts?.fallbackY;
-  if (baseX === undefined || baseY === undefined) { poiCards.close(); return; }
+  if (!Number.isFinite(baseX) || !Number.isFinite(baseY)) { poiCards.close(); return; }
   const pt = new (OpenSeadragon as any).Point(baseX, baseY);
 
   // The same report can be a right sidebar or a bottom sheet. Its actual
@@ -4338,15 +4865,13 @@ function showOrbTooltip(
   iconUrl: string,
   viewer: any,
   anchor: { x: number; y: number },
-  request: POICardRequest = poiCards.begin(),
-  opening = { mayPan: true }
+  request: POICardRequest = poiCards.begin()
 ): void {
-  if (!request.isCurrent()) return;
-  if (drawingOwnsMapPointer()) { poiCards.close(); return; }
+  if (!request.isCurrent() || drawingOwnsMapPointer() || isDropOverlayActive()) return;
   discardMarkerCard();
 
   tooltipEl = document.createElement('div');
-  (tooltipEl as any).__rebuild = () => rebuildMarkerCard(() => showOrbTooltip(orb, iconUrl, viewer, anchor, request, opening));
+  (tooltipEl as any).__rebuild = () => showOrbTooltip(orb, iconUrl, viewer, anchor, request);
   tooltipEl.className = 'marker-tooltip';
   const controls = document.createElement('div');
   controls.className = 'poi-card-controls';
@@ -4376,17 +4901,17 @@ function showOrbTooltip(
 
   if (orb.text) {
     const desc = document.createElement('div');
-    desc.style.cssText = 'color:var(--text-muted);font-size:inherit;font-style:italic;margin-top:0.15em';
+    desc.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin-top:0.15em';
     desc.textContent = orb.text;
     tooltipEl.appendChild(desc);
   }
 
   const footer = document.createElement('div');
-  footer.style.cssText = 'margin-top:0.5em;color:var(--text-faint);font-size:inherit;border-top:0.065em solid var(--border-strong);padding-top:0.3em';
+  footer.style.cssText = 'margin-top:0.5em;color:var(--text-faint);font-size:var(--control-font-size);border-top:0.065em solid var(--border-strong);padding-top:0.3em';
   footer.textContent = `(${Math.round(orb.x)}, ${Math.round(orb.y)})`;
   tooltipEl.appendChild(footer);
 
-  mountMarkerCard(tooltipEl, viewer, anchor, request, opening);
+  mountMarkerCard(tooltipEl, viewer, anchor, request);
 }
 
 /**
@@ -4427,8 +4952,10 @@ async function addOrbOverlays(
   result: GenerationResult,
   generationId: number,
   unlocks: string[] | null,
-  isDaily: boolean
+  isDaily: boolean,
+  isCurrent = () => currentGenerationId === generationId,
 ): Promise<void> {
+  if (!isCurrent()) return;
   const { worldCenter } = result;
 
   // Filter orbs for the dynamic map
@@ -4437,7 +4964,7 @@ async function addOrbOverlays(
 
   // Pre-load all spell orb icons
   await Promise.all(dynamicOrbs.map((orb: any) => loadOrbIconByPath(orb.icon)));
-  if (currentGenerationId !== generationId) return;
+  if (!isCurrent()) return;
 
   // Build unlock set for collected detection
   const unlockSet = !isDaily && unlocks ? new Set(unlocks) : null;
@@ -4447,12 +4974,12 @@ async function addOrbOverlays(
   if (unlockSet) {
     emptyOrbUrl = await getPOISpriteFirstFrame({ type: 'item', item: 'orb', collected: true } as any);
   }
-  if (currentGenerationId !== generationId) return;
+  if (!isCurrent()) return;
 
   activeOrbTargets = [];
   let addedCount = 0;
   for (const orb of dynamicOrbs) {
-    if (currentGenerationId !== generationId) return;
+    if (!isCurrent()) return;
 
     // Determine if this orb is collected based on unlock state
     let isCollected = false;
@@ -4511,15 +5038,28 @@ export async function renderGenerationResult(
   // so the live map keeps the static-map render path (except a small missing-
   // mimic overlay for older bakes). POI clicks come from the spatial index built off
   // the prebaked generation.json (installClickHandler below).
-  bakedDecorations?: boolean
+  bakedDecorations?: boolean,
+  forceApproximateTerrain = false,
+  generationStartedAt = performance.now(),
+  restoreTerrain = false,
 ): Promise<void> {
   const generationId = ++currentGenerationId;
+  const markerRequest = beginMarkerRequest(generationId);
+  let completeArtwork = () => {};
+  const artworkReady = new Promise<void>(resolve => { completeArtwork = resolve; });
+  let completeTerrainDraw!: (drawn: boolean) => void;
+  const terrainDrawn = new Promise<boolean>(resolve => { completeTerrainDraw = resolve; });
+  let terrainPainted = false;
+  let fallbackRender: Promise<void> | undefined;
   clearPortalAnimations();
+  clearInstantTerrain();
+  clearTerrainPngEncoders();
   (window as any).__osdViewer = viewer;
 
   // Snapshot old dynamic items (tiled images + HTML overlays) BEFORE adding
   // new content. We'll remove them AFTER new content is fully in place,
   // so there's never a visible gap where biome backgrounds disappear.
+  const keepBiomeBackgrounds = (!bakedDZIs || bakedDZIs.length === 0) && !isGLTerrainEnabled();
   const oldWorldItems: any[] = [];
   try {
     const world = viewer.world;
@@ -4528,7 +5068,7 @@ export async function renderGenerationResult(
       // Same base-layer test as clearDynamicOverlays. Routed through
       // isDynamicSeedItem so in-flight baked DZIs whose async success callback
       // hasn't yet tagged source.__bakedDzi are still captured for cleanup.
-      if (item && isDynamicSeedItem(item)) {
+      if (item && isDynamicSeedItem(item) && !(keepBiomeBackgrounds && item.source?.__biomeBg)) {
         oldWorldItems.push(item);
       }
     }
@@ -4544,7 +5084,7 @@ export async function renderGenerationResult(
   // Skipped when baked DZIs will replace them — the baked tiles already
   // include the biome bgs and the placeholder would otherwise flash visibly
   // under them on every refresh.
-  if ((!bakedDZIs || bakedDZIs.length === 0) && !isGLTerrainEnabled()) {
+  if (keepBiomeBackgrounds) {
     addBiomeBgToOSD(viewer);
   }
   if (currentGenerationId !== generationId) return;
@@ -4581,18 +5121,29 @@ export async function renderGenerationResult(
     }, 500);
   };
   const wrappedOnFirstPaint = () => {
+    if (currentGenerationId !== generationId || terrainPainted) return;
+    terrainPainted = true;
     cleanupOldItems();
     try {
       onFirstPaint?.();
     } catch (e) {
       console.warn('[OSD Bridge] onFirstPaint threw:', e);
     }
+    completeTerrainDraw(true);
   };
+
+  // Bakes already contain terrain and sprites. Live POI preparation waits for
+  // the visible terrain, so atlas/index work cannot hold up its first frame.
+  const prepareMarkers = () => buildMarkerData(result).then(
+    value => ({ value }), error => ({ error }),
+  );
+  const markerDataReady = bakedDZIs?.length ? prepareMarkers() : undefined;
 
   // Biome layer: prefer baked DZIs from CF Static Assets workers when the
   // probe in dynamic-map.ts already validated them for this seed. Falls back
   // to the live dynamic composite when no baked set is available (any non-
   // daily seed or a deploy that hasn't caught up yet).
+  let awaitingTerrainDraw = false;
   if (bakedDZIs && bakedDZIs.length > 0) {
     if (bakedDZIsAlreadyOnScreen) {
       // dynamic-map painted these the moment the probe resolved. Just hook
@@ -4641,98 +5192,146 @@ export async function renderGenerationResult(
     }
   } else {
     // Adding biomes initializes the OSD viewport bounds.
-    await addBiomeLayersProgressively(viewer, result, generationId, wrappedOnFirstPaint, cacheKey);
+    let instant = false;
+    if (isInstantTerrainEnabled() && !forceApproximateTerrain && !result.isNGP && result.worldSize === 70) {
+      await ensureTelescopeModules();
+      if (currentGenerationId !== generationId) return;
+      const [{ addInstantTerrain }, masks] = await Promise.all([
+        loadInstantTerrain(), instantSceneMasks(result),
+      ]);
+      if (currentGenerationId !== generationId) return;
+      if (glTerrainDeps) instant = await addInstantTerrain(viewer, result, glTerrainDeps,
+        masks, () => currentGenerationId === generationId,
+        item => dynamicTiledImages.add(item), wrappedOnFirstPaint,
+        error => {
+          if (currentGenerationId !== generationId) return;
+          console.warn('[OSD Bridge] GPU terrain failed; rebuilding approximate layers:', error);
+          fallbackRender = renderGenerationResult(viewer, result, unlocks, isDaily, onFirstPaint, cacheKey,
+            null, false, false, true, generationStartedAt);
+          void fallbackRender.catch(error => console.error('[OSD Bridge] Terrain fallback failed:', error));
+        }, generationStartedAt, artworkReady, () => completeTerrainDraw(false), restoreTerrain);
+    }
+    if (currentGenerationId !== generationId) return fallbackRender;
+    awaitingTerrainDraw = instant;
+    if (!instant) await addBiomeLayersProgressively(viewer, result, generationId, wrappedOnFirstPaint, cacheKey);
     if (currentGenerationId !== generationId) return;
   }
 
-  // Pixel scenes render on top of biome overlays, below POI markers. When the
-  // baked DZIs already carry scenes in their pixels, skip the live layer.
-  if (!bakedDecorations) {
-    // Wang-template temple foregrounds are a separate existing static-art layer,
-    // not pixel-scene material PNGs. Keep them; all actual dynamic scenes now
-    // paint into terrain tiles so their air masks can erase the terrain.
-    const sceneResult = isGLTerrainEnabled() ? {
-      ...result,
-      pixelScenesByPW: Object.fromEntries(Object.entries(result.pixelScenesByPW).map(([key, scenes]) =>
-        [key, scenes.filter(scene => scene.key.startsWith('static_tile/') && !isRepeatedTempleTemplate(scene))])),
-    } : result;
-    await addPixelScenes(viewer, sceneResult, generationId);
+  try {
+    // Pixel scenes render on top of biome overlays, below POI markers. When the
+    // baked DZIs already carry scenes in their pixels, skip the live layer.
+    if (!bakedDecorations) {
+      // Native terrain paints repeated temples. Keep their coarse template
+      // overlays only when using the approximate renderer, including fallback.
+      const sceneResult = isGLTerrainEnabled() || awaitingTerrainDraw ? {
+        ...result,
+        pixelScenesByPW: Object.fromEntries(Object.entries(result.pixelScenesByPW).map(([key, scenes]) =>
+          [key, scenes.filter(scene => !isRepeatedTempleTemplate(scene)
+            && (!isGLTerrainEnabled() || scene.key.startsWith('static_tile/')))])),
+      } : result;
+      await addPixelScenes(viewer, sceneResult, generationId);
+      if (currentGenerationId !== generationId) return fallbackRender;
+    }
+
+    // Scene artwork is the last prerequisite for terrain. POIs must never own
+    // this gate: they are attached only after the first complete visible frame.
+    completeArtwork();
+    if (awaitingTerrainDraw) {
+      if (!await terrainDrawn) return fallbackRender;
+      // The draw notification runs inside OSD's animation frame. Yield a task
+      // so the browser presents that frame before marker preparation starts.
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+    }
+    if (currentGenerationId !== generationId) return fallbackRender;
+
+    // Pixel-scene hover debug (__pixelSceneHover) — register unconditionally so it
+    // works on baked/daily seeds where addPixelScenes is skipped.
+    await registerPixelSceneHoverDebug(viewer, result);
     if (currentGenerationId !== generationId) return;
-  }
 
-  // Pixel-scene hover debug (__pixelSceneHover) — register unconditionally so it
-  // works on baked/daily seeds where addPixelScenes is skipped.
-  await registerPixelSceneHoverDebug(viewer, result);
-  if (currentGenerationId !== generationId) return;
+    const attachMarkers = async () => {
+      if (!markerRequest.isCurrent()) return;
+      // Orb icons render as individual overlays using the webp icons.
+      await addOrbOverlays(viewer, result, generationId, unlocks ?? null, isDaily ?? false, markerRequest.isCurrent);
+      if (!markerRequest.isCurrent()) return;
 
-  // Orb icons render as individual overlays using the webp icons.
-  await addOrbOverlays(viewer, result, generationId, unlocks ?? null, isDaily ?? false);
-  if (currentGenerationId !== generationId) return;
+      // 1. Build spatial index for POIs (markers). The index drives click hit
+      // testing and is needed even when sprites are baked into the DZI pixels.
+      pendingMarkerProgressGeneration = generationId;
+      window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 0 } }));
+      const markerOutcome = await (markerDataReady ?? prepareMarkers());
+      if (!markerRequest.isCurrent()) return;
+      if ('error' in markerOutcome) throw markerOutcome.error;
+      const markerData = markerOutcome.value;
+      window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 50 } }));
+      if (!markerRequest.isCurrent()) return;
 
-  // 1. Build spatial index for POIs (markers). The index drives click hit
-  // testing and is needed even when sprites are baked into the DZI pixels.
-  window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 0 } }));
-  const markerData = await buildMarkerData(result);
-  window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 50 } }));
-  if (currentGenerationId !== generationId) return;
+      installClickHandler(viewer, markerData);
+      activeMarkerData = markerData;
+      // If the HV filter was active before this generation, re-apply rings to the
+      // new map. No-op when the predicate is null.
+      rebuildHighValueOverlays();
 
-  installClickHandler(viewer, markerData);
-  activeMarkerData = markerData;
-  // If the HV filter was active before this generation, re-apply rings to the
-  // new map. No-op when the predicate is null.
-  rebuildHighValueOverlays();
+      const emitItemsDone = markerRequest.completeProgress;
 
-  let itemsProgressDone = false;
-  const emitItemsDone = () => {
-    if (itemsProgressDone) return;
-    itemsProgressDone = true;
-    window.dispatchEvent(new CustomEvent('itemsGenerationProgress', { detail: { percentage: 100 } }));
-  };
-
-  const visibleMarkerData = bakedDecorations
-    ? legacyMimicMarkerData(markerData, result.bakedMimicSpritesVersionByPW) : markerData;
-  if (!visibleMarkerData) {
-    // New bakes include every sprite. Legacy bakes get only their missing
-    // mimic icons above the existing DZI, without regenerating terrain.
-    emitItemsDone();
-  } else {
-    // 2. Add as a custom OSD tiled layer
-    const markerTileSource = createMarkerTileSource(visibleMarkerData);
-    viewer.addTiledImage({
-      tileSource: markerTileSource,
-      x: visibleMarkerData.originX,
-      y: visibleMarkerData.originY,
-      width: visibleMarkerData.bboxWidth,
-      success: (event: any) => {
-        if (currentGenerationId !== generationId) {
-          try {
-            viewer.world.removeItem(event.item);
-          } catch {}
-          return;
-        }
-        event.item._isMarkerLayer = true;
-        dynamicTiledImages.add(event.item);
-        markerTiledImage = event.item;
-
+      const visibleMarkerData = bakedDecorations
+        ? legacyMimicMarkerData(markerData, result.bakedMimicSpritesVersionByPW) : markerData;
+      if (!visibleMarkerData) {
+        // New bakes include every sprite. Legacy bakes get only their missing
+        // mimic icons above the existing DZI, without regenerating terrain.
         emitItemsDone();
-      },
-      error: (err: any) => {
-        console.warn('[OSD Bridge] Failed to add marker tiled image:', err);
-        emitItemsDone();
-      },
-    });
+      } else {
+        // 2. Add as a custom OSD tiled layer
+        const markerTileSource = createMarkerTileSource(visibleMarkerData);
+        viewer.addTiledImage({
+          tileSource: markerTileSource,
+          x: visibleMarkerData.originX,
+          y: visibleMarkerData.originY,
+          width: visibleMarkerData.bboxWidth,
+          success: (event: any) => {
+            if (!markerRequest.isCurrent()) {
+              try {
+                viewer.world.removeItem(event.item);
+              } catch {}
+              return;
+            }
+            event.item._isMarkerLayer = true;
+            dynamicTiledImages.add(event.item);
+            markerTiledImage = event.item;
 
-    // Fallback: if OSD callback hasn't fired within 3s, force-complete the bar
-    setTimeout(emitItemsDone, 3000);
+            emitItemsDone();
+          },
+          error: (err: any) => {
+            if (!markerRequest.isCurrent()) return;
+            console.warn('[OSD Bridge] Failed to add marker tiled image:', err);
+            emitItemsDone();
+          },
+        });
+
+        // Fallback: if OSD callback hasn't fired within 3s, force-complete the bar
+        setTimeout(emitItemsDone, 3000);
+      }
+    };
+    try {
+      await attachMarkers();
+    } catch (error) {
+      if (markerRequest.isCurrent()) throw error;
+    }
+    if (currentGenerationId !== generationId) return;
+
+    // A separate, non-interactive animation layer; never baked into terrain or
+    // added to loot counts. Scene metadata also works on existing daily bakes.
+    installPortalAnimations(viewer, result);
+
+    // GPU replacement waits for a complete viewport draw. Other paths retain
+    // the empty-result safety net for old items.
+    if (!awaitingTerrainDraw) cleanupOldItems();
+  } catch (error) {
+    // Failed artwork cannot release terrain. A later POI failure must leave
+    // already visible terrain usable and navigable.
+    if (currentGenerationId === generationId && !terrainPainted) clearInstantTerrain();
+    throw error;
   }
-
-  // A separate, non-interactive animation layer; never baked into terrain or
-  // added to loot counts. Scene metadata also works on existing daily bakes.
-  installPortalAnimations(viewer, result);
-
-  // Safety net: if first-paint never fired (e.g., empty result, error path),
-  // make sure stale items don't linger forever.
-  cleanupOldItems();
 }
 
 export async function rebuildAltLayers(
@@ -4742,6 +5341,7 @@ export async function rebuildAltLayers(
   isDaily: boolean
 ): Promise<void> {
   const generationId = currentGenerationId;
+  const markerRequest = beginMarkerRequest(generationId);
 
   // 1. Remove previous marker layer
   if (markerTiledImage) {
@@ -4761,13 +5361,20 @@ export async function rebuildAltLayers(
   }
   dynamicOverlayElements = [];
 
-  // 3. Rebuild orb overlays
-  await addOrbOverlays(viewer, result, generationId, unlocks, isDaily);
-  if (currentGenerationId !== generationId) return;
+  let markerData: MarkerData;
+  try {
+    // 3. Rebuild orb overlays
+    await addOrbOverlays(viewer, result, generationId, unlocks, isDaily, markerRequest.isCurrent);
+    if (!markerRequest.isCurrent()) return;
 
-  // 4. Build new marker data
-  const markerData = await buildMarkerData(result);
-  if (currentGenerationId !== generationId) return;
+    // 4. Build new marker data
+    markerData = await buildMarkerData(result);
+  } catch (error) {
+    if (!markerRequest.isCurrent()) return;
+    markerRequest.completeProgress();
+    throw error;
+  }
+  if (!markerRequest.isCurrent()) return;
 
   // 5. Add as a custom OSD tiled layer
   const markerTileSource = createMarkerTileSource(markerData);
@@ -4781,7 +5388,7 @@ export async function rebuildAltLayers(
     y: markerData.originY,
     width: markerData.bboxWidth,
     success: (event: any) => {
-      if (currentGenerationId !== generationId) {
+      if (!markerRequest.isCurrent()) {
         try {
           viewer.world.removeItem(event.item);
         } catch {}
@@ -4790,11 +5397,15 @@ export async function rebuildAltLayers(
       event.item._isMarkerLayer = true;
       dynamicTiledImages.add(event.item);
       markerTiledImage = event.item;
+      markerRequest.completeProgress();
     },
     error: (err: any) => {
+      if (!markerRequest.isCurrent()) return;
       console.warn('[OSD Bridge] Failed to add marker tiled image:', err);
+      markerRequest.completeProgress();
     },
   });
+  if (pendingMarkerProgressGeneration === generationId) setTimeout(markerRequest.completeProgress, 3000);
 }
 
 export { getAllPOIsFlat } from "./poi-inventory";
@@ -4822,16 +5433,6 @@ export async function getPOISpriteFirstFrame(poi: {
     const loaded = await loadSpritesheetAndAtlas();
     atlas = loaded.atlas;
     spritesheet = loaded.spritesheet;
-  }
-
-  // Perk whose specific icon isn't baked into the local atlas (e.g. Stainless
-  // Armour) — fall back to the wiki image instead of the generic perk square.
-  if (poi.type === 'item' && (poi as any).item === 'perk' && (poi as any).perk) {
-    const specific = perkAtlasKey(String((poi as any).perk));
-    if (atlas && !atlas[specific]) {
-      const wikiUrl = perkWikiImageUrl(String((poi as any).perk));
-      if (wikiUrl) return wikiUrl;
-    }
   }
 
   const rawKey = getSpriteKey(poi as POI, atlas);

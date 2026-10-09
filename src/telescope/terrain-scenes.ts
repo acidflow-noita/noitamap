@@ -67,8 +67,8 @@ export function writeRGBA(
   data[i + 3] = rgba >>> 24;
 }
 
-/** Cell-color art overrides painted material, including translucent material,
- * but never places material in air (Noita's colors_filename rule). */
+/** Cell-color art overrides painted cells, including translucent materials.
+ * An opaque art pixel supplies the cell's opacity; air still receives no art. */
 export function applySceneVisualArt(
   pixels: Uint8Array | Uint8ClampedArray,
   source: TerrainSceneSource,

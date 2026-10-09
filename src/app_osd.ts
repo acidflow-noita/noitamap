@@ -5,6 +5,11 @@ import { isSimplisticBackground } from './simplistic-background';
 
 import { CHUNK_SIZE } from './constants';
 import { cameraPixelDelta, readCameraMatrix } from './portals/geometry';
+import { PIXEL_MAP_DRAW_OPTIONS } from './osd-pixel-rendering';
+import { installTileContinuity } from './osd-tile-continuity';
+import { installTerrainAdmission } from './osd-terrain-admission';
+import { installStaticBackgroundResidency } from './osd-static-background';
+import { installOffscreenRedrawGuard } from './osd-offscreen-redraw';
 import { dismissPopovers } from './popover-util';
 
 declare const OpenSeadragon: any;
@@ -47,7 +52,7 @@ export class AppOSD {
       crossOriginPolicy: 'Anonymous',
       drawer: (() => {
         if (!useWebGL) {
-          console.log('[OSD] Drawer: canvas (user preference)');
+          console.log('[OSD] Drawer: canvas');
           return 'canvas';
         }
         try {
@@ -65,7 +70,7 @@ export class AppOSD {
         console.log('[OSD] Drawer: canvas (webgl not supported)');
         return 'canvas';
       })(),
-      imageSmoothingEnabled: false,
+      ...PIXEL_MAP_DRAW_OPTIONS,
       debugMode: false,
       // Canvas drawer: round transparent tiles to whole pixels once the
       // viewport is at rest so overlap seams don't show. The baked daily
@@ -83,6 +88,10 @@ export class AppOSD {
       },
       opacity: 1,
     });
+    installTileContinuity(this.viewer);
+    installTerrainAdmission(this.viewer);
+    installStaticBackgroundResidency(this.viewer);
+    installOffscreenRedrawGuard(this.viewer, () => this.mapName === 'dynamic-main-branch');
 
     this.addHandler('canvas-key', (event: any) => {
       // Case-insensitive so Shift+R (key "R") is caught too — OSD binds r/R to
@@ -172,15 +181,13 @@ export class AppOSD {
   }
 
   private disposeOverlayPopovers() {
-    // Static POI cards are rebuilt per map. Cached biome overlays have no
-    // .osOverlayPopup and retain their reusable DOM and event handlers.
+    // POI cards are rebuilt per map; cached biome overlays remain reusable.
     for (const overlay of this.viewer.currentOverlays ?? []) {
       overlay.element.querySelectorAll('.osOverlayPopup').forEach(dismissPopovers);
     }
   }
 
   open(sources: any) {
-    // OSD open() clears old overlays internally, before clearOverlays() runs.
     this.disposeOverlayPopovers();
     this.viewer.open(sources);
   }
@@ -188,13 +195,18 @@ export class AppOSD {
     return this.viewer.isOpen();
   }
 
-  private static getTileSources(mapName: MapName): string[] {
-    let sources = getTileData(mapName).map(tileData => tileData.url);
+  private static getTileSources(mapName: MapName): DziTileSource[] {
+    let entries = getTileData(mapName);
     // Light mode on the dynamic map: skip left/right PW backgrounds, keep only middle.
     if (mapName === 'dynamic-main-branch' && isLightMode()) {
-      sources = sources.filter(url => !/-left\.|-right\./.test(url));
+      entries = entries.filter(({ url }) => !/-left\.|-right\./.test(url));
     }
-    return sources;
+    return entries.map(({ url, dziContent }) => {
+      // Preserve OSD's URL, geometry and overlap interpretation, using the
+      // exact descriptor already captured by the map-definition build.
+      const options = OpenSeadragon.DziTileSource.prototype.configure(JSON.parse(dziContent), url);
+      return new OpenSeadragon.DziTileSource(options);
+    });
   }
 
   // Cached natural size of the simplistic-background PNG, loaded once.
@@ -322,7 +334,10 @@ export class AppOSD {
           // Only bust origins we have a real version for. Unknown origins
           // (e.g. the daily workers) would otherwise get a constant
           // "?v=undefined" that never changes across bakes -> stale tiles.
-          if (version !== undefined) source.queryParams = `?v=${version}`;
+          if (version !== undefined) {
+            source.queryParams = `?v=${version}`;
+            if (this.mapName === 'dynamic-main-branch') source.__staticBackground = true;
+          }
         } catch (e) {}
       }
     };

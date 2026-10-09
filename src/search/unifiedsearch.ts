@@ -1,7 +1,7 @@
+import { installSearchShortcut } from "./search-shortcut";
 import { getPoiPreviewItems } from "../telescope/poi-inventory";
 import { loadSpritesheetAndAtlas, FIRST_FRAME_SIZE } from "../telescope/poi-spatial-index";
-import { Document as SearchDocument } from "flexsearch";
-import { searchOverlays } from "./static-index";
+import { searchOverlays } from "../flexsearch";
 import { resetBiomeOverlays } from "../data_sources/overlays";
 import { MapName } from "../data_sources/tile_data";
 import { debounce } from "../util";
@@ -22,7 +22,6 @@ import { canonicalEntityId } from "../telescope/entity-canonical";
 import { getMimicEntityId } from '../telescope/poi-mimics';
 import { isAchievementPillarSegment, pillarSegmentTitle, pillarReqSpec, resolvePillarLinkLabel, resolvePillarItemName, ITEM_SEARCH_NAME_KEYS, ITEM_LOCALE_NAME_KEYS, PILLAR_PLACES } from "../data/pillars";
 import orbsData from "../data/orbs.json";
-import { installSearchShortcut } from "./search-shortcut";
 
 /**
  * The 11 Orbs of True Knowledge as synthetic search POIs. On NG the generator
@@ -579,6 +578,9 @@ export interface UnifiedSearch {
   on(event: "selected", listener: (target: TargetOfInterest | { type: "spell"; spell: any }) => void): this;
 }
 
+// FlexSearch Document factory — FlexSearch is loaded as a global via script tag
+type DocumentFactory = (options: any) => any;
+
 export class UnifiedSearch extends EventEmitter2 {
   private lastSearchText: string = "";
   private lastSearchFilters: string = "";
@@ -593,6 +595,8 @@ export class UnifiedSearch extends EventEmitter2 {
   private dynamicIndex: any = null; // FlexSearch.Document index for dynamic POIs
   private dynamicPOIMap: Map<string, DynamicPOI> = new Map(); // fast id→POI lookup
   private indexingState: "idle" | "indexing" | "ready" = "idle";
+  private dynamicIndexPending = false;
+  private cancelDynamicIndex?: () => void;
 
   private _currentMap: MapName;
   /** When set, alchemy recipe is displayed; suppress text-query / viewport-based result refreshes. */
@@ -1052,6 +1056,9 @@ export class UnifiedSearch extends EventEmitter2 {
 
   /** Set the search indexing state (idle | indexing | ready). */
   setIndexingState(state: "idle" | "indexing" | "ready"): void {
+    // The map pipeline can finish before the task-sliced search index. Publish
+    // ready only with the complete selected-seed index, never a partial one.
+    if (state === "ready" && this.dynamicIndexPending) return;
     const prev = this.indexingState;
     this.indexingState = state;
     if (prev !== state) {
@@ -1079,10 +1086,13 @@ export class UnifiedSearch extends EventEmitter2 {
 
   /** Build a FlexSearch Document index over the dynamic POI array for fast text queries. */
   private rebuildDynamicIndex(pois: DynamicPOI[]): void {
+    this.cancelDynamicIndex?.();
+    this.cancelDynamicIndex = undefined;
+    this.dynamicIndexPending = false;
     // Build a compound searchable text field for each POI
-    this.dynamicPOIMap = new Map();
+    const poiMap = new Map();
 
-    this.dynamicIndex = new SearchDocument({
+    const index = (FlexSearch.Document as DocumentFactory)({
       document: {
         id: "id",
         index: ["searchText"],
@@ -1117,8 +1127,8 @@ export class UnifiedSearch extends EventEmitter2 {
       parts.push(id, id.startsWith("mat_") ? id : `mat_${id}`, gameTranslator.translateMaterial(id));
     };
 
-    for (const p of pois) {
-      this.dynamicPOIMap.set(p.id, p);
+    const indexPOI = (p: DynamicPOI) => {
+      poiMap.set(p.id, p);
 
       // Concatenate all searchable fields into one text blob
       const parts: string[] = [p.name ?? "", p.type ?? "", p.item ?? "", p.enemy ?? "", p.material ?? ""];
@@ -1339,11 +1349,78 @@ export class UnifiedSearch extends EventEmitter2 {
         }
       }
 
-      this.dynamicIndex.add({
+      index.add({
         id: p.id,
         searchText: parts.filter(Boolean).join(" "),
       });
+    };
+    const publish = () => {
+      this.dynamicIndex = index;
+      this.dynamicPOIMap = poiMap;
+      this.dynamicIndexPending = false;
+      if (this.indexingState === 'indexing') this.setIndexingState('ready');
+      this.lastSearchText = '__force__';
+      this.lastViewportKey = '';
+      this.updateSearchResults();
+    };
+    // Keep small updates synchronous. Full daily inventories contain tens of
+    // thousands of translated/tokenized records; a single loop freezes pan
+    // and zoom even though the baked image has already painted.
+    if (pois.length <= 256) {
+      for (const poi of pois) indexPOI(poi);
+      publish();
+      return;
     }
+    this.dynamicIndexPending = true;
+    this.setIndexingState('indexing');
+    let next = 0, cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let channel: MessageChannel | undefined;
+    const cancel = () => {
+      cancelled = true;
+      clearTimeout(timer);
+      if (channel) {
+        channel.port1.onmessage = null;
+        channel.port1.close(); channel.port2.close(); channel = undefined;
+      }
+    };
+    this.cancelDynamicIndex = cancel;
+    const batch = () => {
+      if (cancelled) return;
+      const until = performance.now() + 4;
+      const end = Math.min(next + 128, pois.length);
+      try {
+        do { indexPOI(pois[next++]); } while (next < end && performance.now() < until);
+      } catch (error) {
+        cancel();
+        this.cancelDynamicIndex = undefined;
+        this.dynamicIndexPending = false;
+        this.dynamicIndex = null;
+        this.dynamicPOIMap = new Map();
+        console.warn('[Search] Dynamic index unavailable:', error);
+        this.setIndexingState('ready');
+        return;
+      }
+      if (next < pois.length) schedule();
+      else {
+        cancel();
+        this.cancelDynamicIndex = undefined;
+        publish();
+      }
+    };
+    const schedule = () => {
+      // Message tasks keep the yield without adding a nested-timer delay to
+      // every batch. Browsers without MessageChannel retain the timer path.
+      if (channel) channel.port2.postMessage(null);
+      else timer = setTimeout(batch, 0);
+    };
+    try {
+      if (typeof window.MessageChannel === 'function') {
+        channel = new window.MessageChannel();
+        channel.port1.onmessage = batch;
+      }
+    } catch { channel = undefined; }
+    schedule();
   }
 
   // Method to refresh search results with new translations

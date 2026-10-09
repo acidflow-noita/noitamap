@@ -12,6 +12,7 @@
  * - Wand sprites are rotated 90° CCW.
  * - Animated sprites are cropped to first frame using XML data or heuristic.
  * - Custom flask/pouch material icons from src/material-icons are included.
+ * - Spell cards include their native action-type backgrounds from data.zip.
  *
  * Output:
  *   public/assets/spritesheet.png
@@ -133,8 +134,9 @@ const SKIP_SUFFIXES = [
 const SKIP_SUBSTRINGS = [
   "/image_emitters/",
 ];
-// Skip stain sprites, not unrelated names such as stainless_armour.
-const STAIN_PATH = /(?:^|[/_])stain(?:[._/]|$)/;
+
+// Match the stain texture token, not perk names such as stainless_armour.
+const STAIN_TEXTURE = /(?:^|[/_])stain(?:[._/]|$)/;
 
 // Directories whose PNGs should be rotated 90° CCW (wand sprites)
 const WAND_DIRS = [
@@ -419,7 +421,7 @@ async function main() {
     for (const sub of SKIP_SUBSTRINGS) {
       if (relPath.includes(sub)) return;
     }
-    if (STAIN_PATH.test(relPath)) return;
+    if (STAIN_TEXTURE.test(relPath)) return;
     // Skip filename patterns (_hotspot, _hotspots, _uv_src, _normals)
     const baseName = path.basename(relPath, ".png");
     for (const suffix of SKIP_SUFFIXES) {
@@ -737,12 +739,15 @@ async function main() {
     console.log(`[build-spritesheet] Added ${materialIconCount} custom material icons`);
   }
 
+  // Real spell items include their action-type background. Keep the original
+  // glyphs too: a bomb entity/decorative icon is not a spell card.
   const spellCards = await buildSpellCards(zip);
   for (const card of spellCards) {
     sprites.push(card);
     seenKeys.add(card.key);
   }
-  console.log(`[build-spritesheet] Spell cards: ${spellCards.length}`);
+  console.log(`[build-spritesheet] Added ${spellCards.length} native spell cards`);
+
   console.log(`[build-spritesheet] Total sprites: ${sprites.length}`);
 
   // ─── Grayscale variants for pillar segments ────────────────────────────────
@@ -912,7 +917,7 @@ async function main() {
   writeFileSyncRetry(OUT_PNG, pngBuf);
   console.log(`[build-spritesheet] Wrote ${OUT_PNG} (${(pngBuf.length / 1024).toFixed(1)} KB)`);
 
-  const atlasJson = JSON.stringify(atlas);
+  const atlasJson = JSON.stringify(atlas, null, 2);
   writeFileSyncRetry(OUT_JSON, atlasJson);
   console.log(`[build-spritesheet] Wrote ${OUT_JSON} (${Object.keys(atlas).length} entries)`);
 

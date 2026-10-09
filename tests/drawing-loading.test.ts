@@ -30,7 +30,10 @@ beforeEach(() => {
   const deferred = new Promise<boolean>((resolve) => {
     finish = resolve;
   });
-  load = vi.fn(() => deferred);
+  load = vi.fn(() => {
+    expect(document.querySelector("#drawing-sidebar-skel.open")).not.toBeNull();
+    return deferred;
+  });
   ui = new DrawingUI(document.getElementById("auth-container")!, {
     onEnableDrawing: load,
   });
@@ -44,14 +47,32 @@ afterEach(() => {
   hideDrawingSkeleton(true);
   document.body.replaceChildren();
   delete (window as any).__noitamap;
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+});
+it("starts loading and replaces the skeleton even while map animation frames are stalled", async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal("requestAnimationFrame", vi.fn(() => 1));
+  vi.stubGlobal("cancelAnimationFrame", vi.fn());
+  input.click();
+  expect(document.querySelector("#drawing-sidebar-skel.open")).not.toBeNull();
+  expect(load).toHaveBeenCalledOnce();
+  // Neither animation frames nor timers have run, and the real feature
+  // is still pending. Only completing it may replace the loading shell.
+  await Promise.resolve();
+  expect(changed).not.toHaveBeenCalled();
+  expect(document.querySelector("#drawing-sidebar-skel.open")).not.toBeNull();
+  finish(true);
+  await Promise.resolve();
+  expect(changed).toHaveBeenCalledOnce();
+  expect(input.checked).toBe(true);
+  expect(document.getElementById("drawing-sidebar-skel")).toBeNull();
 });
 it("shows loading feedback before fetching, and supports cancel/reopen while the fetch is pending", async () => {
   input.click();
   expect(document.querySelector("#drawing-sidebar-skel.open")).not.toBeNull();
-  expect(load).not.toHaveBeenCalled();
-  await vi.waitFor(() => expect(load).toHaveBeenCalledTimes(1));
+  expect(load).toHaveBeenCalledTimes(1);
   input.click();
   expect(document.getElementById("drawing-sidebar-skel")).toBeNull();
   input.click();

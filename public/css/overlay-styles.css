@@ -84,40 +84,6 @@ body:has(.biome-overlay-path:hover) .biome-overlay-path:not(:hover) path {
   stroke-opacity: 0.5;
 }
 
-/* A creature's spawn selection persists while inspecting the map. Keep hover
-   from replacing that selection; switching boundaries off clears the filter. */
-#osContainer.biome-spawn-focus .biome-spawn-match path {
-  fill: currentColor;
-  fill-opacity: .38;
-  stroke: currentColor;
-  stroke-opacity: 1;
-  stroke-width: 56;
-  paint-order: stroke;
-}
-#osContainer.biome-spawn-focus .biome-spawn-muted path {
-  fill: oklch(55% 0 0);
-  fill-opacity: .14;
-  stroke: oklch(55% 0 0);
-  stroke-opacity: .25;
-  stroke-width: 24;
-}
-
-/* A separate flex row prevents notices from stretching the navbar's nowrap
-   desktop container and keeps the way out visible when either menu is closed. */
-#map-view-controls {
-  flex: 0 0 auto;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--control-gap);
-  min-inline-size: 0;
-  max-inline-size: 100%;
-  padding: var(--control-gap) var(--control-padding-x);
-  background: var(--bg);
-  border-block-end: .0625rem solid var(--border-strong);
-}
-#map-view-controls:not(:has(> :not([hidden]))) { display: none; }
-
 div:has(> div > .osOverlayPOI) {
   position: relative;
   transform: translate(-50%, -50%);
@@ -145,7 +111,7 @@ div:has(> div > .osOverlayPOI) {
   visibility: hidden;
   opacity: 0;
   transform: translate(-50%, -0.3em) scale(0.9);
-  font-size: var(--control-font-size);
+  font-size: 14px;
   padding: 0.85em 1.1em;
   border: 0.125em solid var(--border-color);
   border-radius: 0.4em;
@@ -194,7 +160,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 }
 
 .osOverlayPopup p {
-  font-size: inherit;
+  font-size: 0.9em;
   color: var(--text-muted);
 }
 
@@ -230,7 +196,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 }
 
 .extended-info-header {
-  font-size: inherit;
+  font-size: 0.8em;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-faint);
@@ -285,11 +251,12 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 .extended-info-label {
   color: var(--text-faint);
   white-space: nowrap;
-  font-size: inherit;
+  font-size: 0.93em;
 }
 
 .extended-info-value {
   color: var(--text);
+  white-space: pre-line;
   /* break-word lets very long single words wrap at the line edge but does NOT
      break inside short tokens like "1.0" or "0.8" — that was causing single
      numbers to split across three lines in narrow popup grids. */
@@ -300,7 +267,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 /* ── Subheadings ── */
 .extended-info-subhead {
   margin-bottom: 0.15em;
-  font-size: inherit;
+  font-size: 0.78em;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -314,6 +281,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 /* ── Description (spell) ── */
 .extended-info-desc {
   break-inside: avoid;
+  white-space: pre-line;
   font-style: italic;
   color: var(--text-muted);
   margin-bottom: 0.3em;
@@ -337,7 +305,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
   align-items: center;
   gap: 0.25em;
   color: var(--accent-fg) !important;
-  font-size: inherit;
+  font-size: 0.92em;
   text-decoration: underline;
   text-decoration-color: color-mix(in oklch, var(--accent-fg) 40%, transparent);
   width: max-content;
@@ -368,13 +336,13 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 
 .extended-info-mat-kind {
   color: var(--text-faint);
-  font-size: inherit;
+  font-size: 0.92em;
 }
 
 /* ── Loading / empty states ── */
 .extended-info-loading,
 .extended-info-empty {
-  font-size: inherit;
+  font-size: 0.92em;
   color: var(--text-faint);
   font-style: italic;
 }
@@ -410,7 +378,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 
 .extended-info-placeholder-label {
   color: var(--pro-fg);
-  font-size: inherit;
+  font-size: 0.92em;
 }
 
 .extended-info-placeholder-fields {
@@ -443,7 +411,7 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
   animation: pro-border-pan 6s linear infinite;
   color: var(--pro-fg);
   font-weight: 600;
-  font-size: inherit;
+  font-size: 0.92em;
   padding: 0.2em 0.55em;
   border-radius: var(--radius-control);
   cursor: pointer;
@@ -523,7 +491,40 @@ img[src$="spatial_awareness_special_spot.png"] {
   image-rendering: pixelated;
 }
 
-/* Shared spawn links remain understandable outside either collapsed menu. */
+/* A creature's spawn selection persists while inspecting the map. Keep hover
+   from replacing that selection; switching boundaries off clears the filter. */
+#osContainer.biome-spawn-focus .biome-spawn-match path {
+  fill: currentColor;
+  fill-opacity: .38;
+  stroke: currentColor;
+  stroke-opacity: 1;
+  stroke-width: 56;
+  paint-order: stroke;
+}
+#osContainer.biome-spawn-focus .biome-spawn-muted path {
+  fill: oklch(55% 0 0);
+  fill-opacity: .14;
+  stroke: oklch(55% 0 0);
+  stroke-opacity: .25;
+  stroke-width: 24;
+}
+
+/* A separate flex row prevents notices from stretching the navbar's nowrap
+   desktop container and keeps the way out visible when either menu is closed. */
+#map-view-controls {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--control-gap);
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  padding: var(--control-gap) var(--control-padding-x);
+  background: var(--bg);
+  border-block-end: .0625rem solid var(--border-strong);
+}
+#map-view-controls:not(:has(> :not([hidden]))) { display: none; }
+
 #creature-spawn-notice {
   display: flex;
   align-items: center;

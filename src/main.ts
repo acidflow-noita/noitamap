@@ -1,20 +1,20 @@
-import { ReportMapHighlights } from './report-map-highlights';
-import { getCachedDailyComparisonTarget, getCachedDailySeedIdentity } from './data_sources/daily_seed';
-import { getPOIDisplayName } from "./telescope/poi-display-name";
-import { getPOIBiomeDescription } from "./data_sources/biome-names";
 import { clearCreatureSpawnBiomeFocus, focusCreatureSpawnBiomes, frameCreatureSpawnBiomes, resolveCreatureSpawnBiomes } from "./data_sources/creature-spawn-biomes";
 import { setCreatureSpawnNavigation } from "./creature-spawn-navigation";
 import { mountCreatureSpawnNotice } from "./creature-spawn-notice";
 import { createCreatureSpawnSharing } from "./creature-spawn-sharing";
 import { dismissEnclosingPopup, getExtendedCreature, isProUser, loadExtendedCreatures } from "./extended-info";
+import { ReportMapHighlights } from './report-map-highlights';
+import { getCachedDailyComparisonTarget, getCachedDailySeedIdentity } from './data_sources/daily_seed';
+import { getPOIDisplayName } from "./telescope/poi-display-name";
+import { getPOIBiomeDescription } from "./data_sources/biome-names";
+import { loadSpritesheetAndAtlas } from "./telescope/poi-spatial-index";
 import { getCachedGeneration } from "./telescope/tile-cache";
-import i18next from "./i18n";
-import { initializeApplication } from "./app/startup";
-import { installLoadingProgress } from "./app/loading-progress";
+import i18next, { initializeTranslations, STARTUP_MESSAGES, SUPPORTED_LANGUAGES } from "./i18n";
+import { showStartupFailure, startWhenReady } from './startup';
 import { setupDropOverlay } from "./drop-overlay";
 import { createProLoader } from "./pro-loader";
 import { negotiateTabHandoff } from "./tab-coordinator";
-import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed, showLoadingStrip, hideLoadingStrip } from "./dynamic_ui";
+import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed, setDynamicUIBusy, createLoadingStripProgress, hideLoadingStrip } from "./dynamic_ui";
 import {
   runDynamicMapFromURL,
   runDynamicMap,
@@ -37,11 +37,123 @@ import {
   isVariantReady,
   UnlockDescriptor,
 } from "./unlocks-toggle";
-import { rebuildAltLayers, getAllPOIsFlat, openTooltipForPOI, closePOICard, guardPOICardContext, resetPOICardContext, restorePOICardContext, getPOISpriteFirstFrame, applyHighValueOverlays } from "./telescope/telescope-osd-bridge";
+import { rebuildAltLayers, getAllPOIsFlat, exportBiomeRegionImages, prepareDecorationExport, exportDecorationCell, releaseDecorationExport, openTooltipForPOI, closePOICard, guardPOICardContext, resetPOICardContext, restorePOICardContext, getPOISpriteFirstFrame, applyHighValueOverlays } from "./telescope/telescope-osd-bridge";
 import { getUnlocksFromURL } from "./unlocks";
 import type { GenerationResult } from "./telescope/telescope-adapter";
-import { isRenderer, getStoredRenderer, setStoredRenderer } from "./renderer_settings";
+import { isRenderer, getStoredRenderer, setStoredRenderer, clearStoredRenderer } from "./renderer_settings";
 
+// --- Dev Console Commands (Early Initialization) ---
+const isDev =
+  /dev\.noitamap\.com|localhost|127\.0\.0\.1/.test(window.location.hostname) || window.location.protocol === "file:";
+
+if (isDev) {
+  (window as any).noitamap = {
+    enableDrawing: () => {
+      localStorage.setItem("noitamap-dev-drawing", "1");
+      console.log("Drawing dev mode enabled. Refresh and open the sidebar.");
+    },
+    disableDrawing: () => {
+      localStorage.removeItem("noitamap-dev-drawing");
+      console.log("Drawing dev mode disabled. Refresh to hide the sidebar.");
+    },
+    exportData: () => {
+      const result = getLastGenerationResult();
+      if (!result) {
+        console.warn("No dynamic generation data available to export.");
+        return;
+      }
+      // Prepare serializable copy
+      const exportable = {
+        seed: result.seed,
+        ngPlus: result.ngPlus,
+        isNGP: result.isNGP,
+        worldSize: result.worldSize,
+        worldCenter: result.worldCenter,
+        poisByPW: Object.entries(result.poisByPW).reduce((acc, [pw, pois]) => {
+          acc[pw] = pois.map((p) => {
+            const { x, y, type, ...rest } = p;
+            return { x, y, type, data: rest };
+          });
+          return acc;
+        }, {} as any),
+        pixelScenesByPW: Object.entries(result.pixelScenesByPW).reduce((acc, [pw, scenes]) => {
+          acc[pw] = scenes.map((s) => ({ x: s.x, y: s.y, name: s.name, key: s.key }));
+          return acc;
+        }, {} as any),
+        eyes: result.eyes,
+        parallelWorlds: result.parallelWorlds,
+        biomes: result.tileLayers.map((l) => ({ name: l.biomeName, x: l.correctedX, y: l.correctedY, w: l.w, h: l.h })),
+      };
+      const blob = new Blob([JSON.stringify(exportable, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `noitamap-seed-${result.seed}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      console.log(`Exported data for seed ${result.seed}`);
+    },
+    // Biomes are ready once a full render has completed (lastResult is set
+    // after renderGenerationResult, which awaits the biome pass). Used by
+    // build-daily-seed-images.cjs to wait for biomes, not POIs.
+    biomesReady: () => {
+      const r = getLastGenerationResult();
+      return !!(r && r.tileLayers && r.tileLayers.length);
+    },
+    /** Raw generation result, for console inspection and debug harnesses. */
+    getGeneration: () => getLastGenerationResult(),
+    exportBiomeRegions: async () => {
+      const result = getLastGenerationResult();
+      if (!result) return null;
+      return exportBiomeRegionImages(result);
+    },
+    // Serialized generation result (POIs, pixel scenes, biome map) for the
+    // bake pipeline. build-daily-seed-images.cjs writes this as
+    // generation.json; stitch-dzis.cjs splits it per world; the live map
+    // loads it from the static workers and skips telescope entirely.
+    exportGenerationData: async () => {
+      const result = getLastGenerationResult();
+      if (!result) return null;
+      const { serializeGenerationForBake } = await import("./telescope/baked-generation");
+      return serializeGenerationForBake(result);
+    },
+    // Decoration bake (pixel scenes + POI marker sprites) at native scale.
+    // build-daily-seed-images.cjs calls prepareDecorationExport() once, then
+    // exportDecorationCell(cx, cy) per non-empty 2048px world-grid cell; the
+    // upscale step composites those cells onto the region fulls before stitch,
+    // so the deployed pyramids carry scenes + creatures in their pixels.
+    prepareDecorationExport: async () => {
+      const result = getLastGenerationResult();
+      if (!result) return null;
+      return prepareDecorationExport(result);
+    },
+    exportDecorationCell: (cx: number, cy: number) => exportDecorationCell(cx, cy),
+    releaseDecorationExport: () => releaseDecorationExport(),
+    // Dev-only OSD drawer override. Default everywhere is "canvas" (the prod
+    // setting in renderer_settings.ts). On localhost/dev.noitamap.com this
+    // hook flips it via localStorage so we can A/B test perf and baked-DZI
+    // edge fringing at zoom without shipping webgl to users.
+    //   noitamap.setRenderer("webgl")  -> opt in, reload page
+    //   noitamap.setRenderer("canvas") -> opt back to default, reload
+    //   noitamap.getRenderer()         -> see what the next reload will use
+    //   noitamap.clearRenderer()       -> wipe override, fall back to default
+    setRenderer: (r: "canvas" | "webgl") => {
+      if (r !== "canvas" && r !== "webgl") {
+        console.warn('Use "canvas" or "webgl"'); return;
+      }
+      setStoredRenderer(r);
+      console.log(`[Noitamap] Requested OSD drawer: ${r}; selected drawer after reload: ${getStoredRenderer()}.`);
+    },
+    getRenderer: () => getStoredRenderer(),
+    clearRenderer: () => {
+      clearStoredRenderer();
+      console.log("[Noitamap] Renderer override cleared. Reload to use the default.");
+    },
+  };
+  console.log('[Noitamap] Dev mode detected, "noitamap" commands available.');
+}
+
+// temporary comment to force deploy to CF
 import { App } from "./app";
 import {
   parseURL,
@@ -68,6 +180,7 @@ import { createMapLinks, createMapSelectorRenderer, refreshMapSelectorDate, NAV_
 import { initMouseTracker } from "./mouse_tracker";
 import { isSpoilerFree, setSpoilerFree, onSpoilerFreeChange, isBakedSeedView } from "./spoiler-free";
 import { isLightMode, setLightMode } from "./light-mode";
+import { initHDRendererToggle } from "./hd-renderer-control";
 import { installPopoverTouchDismiss } from "./popover-util";
 import { isSkipCreatures, setSkipCreatures } from "./skip-creatures";
 import { isSimplisticBackground, setSimplisticBackground } from "./simplistic-background";
@@ -78,20 +191,13 @@ import { initKonamiCode } from "./konami";
 import { AuthUI } from "./auth/auth-ui";
 import { authService } from "./auth/auth-service";
 import { DrawingUI } from "./drawing/drawing-ui";
+import { setDrawingMapOwnership } from './drawing/poi-interaction';
 import { createSeedReportButton } from "./seed-report-button";
 import { placeBiomeBoundariesButton, placeMoreMenuLast } from "./overflow-menu";
-import { cueBiomeBoundariesButton } from "./biome-boundaries-button";
 import { initChunkGrid, showChunkGrid, isChunkGridVisible } from "./drawing/chunk-grid";
 import { initSideworld, toggleSideworld, mapHasSideworld, resetSideworld } from "./sideworld";
 import { roundVisibleOverlayGroupEdges } from "./dynamic_ui";
 import { getMaterialInfo, primeMaterialInfo } from "./material-info";
-
-const isDev = /dev\.noitamap\.com|localhost|127\.0\.0\.1/.test(window.location.hostname)
-  || window.location.protocol === "file:";
-if (isDev) {
-  import("./dev/console").then(module => module.installDevCommands())
-    .catch(error => console.warn("[Noitamap] Dev commands unavailable:", error));
-}
 
 // Global reference to unified search for translation updates
 let globalUnifiedSearch: UnifiedSearch | null = null;
@@ -124,8 +230,81 @@ export const refreshSearchTranslations = () => {
 // we want it to take over so this duplicate tab can self-close).
 const _tabHandoff = negotiateTabHandoff();
 
-document.addEventListener("DOMContentLoaded", async () => {
+startWhenReady(async () => {
   if (!(await _tabHandoff)) return;
+  // Start preloading the atlas for search results immediately
+  loadSpritesheetAndAtlas()
+    .catch((e) => console.warn("[Noitamap] Atlas preload failed:", e));
+
+  try {
+    await initializeTranslations();
+
+    createLanguageSelector();
+    updateTranslations();
+  } catch (error) {
+    console.error("i18next initialization failed:", error);
+  }
+
+  // Handle map loading progress UI (non-blocking strip).
+  const loadingProgress = createLoadingStripProgress();
+  const _getTitle = () => document.getElementById("map-loading-title");
+  let bakedViewActive = false;
+
+  // Pin the phase label column to the widest phase translation
+  // in the current language, so the percent column never shifts when the
+  // phase text changes. Re-measure on language change.
+  const _phaseKeys = [
+    "loading.maps",
+    "loading.mapData.downloading",
+    "loading.mapData.generating",
+    "loading.mapData.addingItems",
+  ];
+  const _recomputePhaseMinWidth = () => {
+    const phaseEl = _getTitle();
+    if (!phaseEl) return;
+    const probe = document.createElement("span");
+    const cs = getComputedStyle(phaseEl);
+    probe.style.position = "absolute";
+    probe.style.visibility = "hidden";
+    probe.style.whiteSpace = "nowrap";
+    probe.style.fontFamily = cs.fontFamily;
+    probe.style.fontSize = cs.fontSize;
+    probe.style.fontWeight = cs.fontWeight;
+    probe.style.fontStyle = cs.fontStyle;
+    probe.style.letterSpacing = cs.letterSpacing;
+    probe.style.fontFeatureSettings = cs.fontFeatureSettings;
+    document.body.appendChild(probe);
+    let maxW = 0;
+    for (const k of _phaseKeys) {
+      probe.textContent = i18next.isInitialized ? i18next.t(k) : k;
+      if (probe.offsetWidth > maxW) maxW = probe.offsetWidth;
+    }
+    probe.remove();
+    const fontSizePx = parseFloat(cs.fontSize) || 16;
+    phaseEl.style.minWidth = `${(maxW / fontSizePx).toFixed(3)}em`;
+  };
+  if (i18next.isInitialized) _recomputePhaseMinWidth();
+  else i18next.on("initialized", _recomputePhaseMinWidth);
+  i18next.on("languageChanged", _recomputePhaseMinWidth);
+
+  window.addEventListener("dataZipProgress", ((e: CustomEvent) => {
+    if (app.getMap() !== "dynamic-main-branch" || bakedViewActive) return;
+    loadingProgress.update('download', e.detail?.percentage);
+  }) as EventListener);
+
+  window.addEventListener("biomeGenerationProgress", ((e: CustomEvent) => {
+    if (app.getMap() !== "dynamic-main-branch" || bakedViewActive) return;
+    loadingProgress.update('generation', e.detail?.percentage);
+  }) as EventListener);
+
+  window.addEventListener("itemsGenerationProgress", ((e: CustomEvent) => {
+    if (app.getMap() !== "dynamic-main-branch") return;
+    loadingProgress.update('items', e.detail?.percentage);
+  }) as EventListener);
+
+  // TODO: probably most of this should be part of the "App" class, or the "App" class should be removed.
+  // i'm not sure i'm happy with the abstraction
+
   const navbarBrandElement = assertElementById("navbar-brand", HTMLElement);
   const osdRootElement = assertElementById("osContainer", HTMLElement);
   const searchForm = assertElementById("search-form", HTMLFormElement);
@@ -134,23 +313,40 @@ document.addEventListener("DOMContentLoaded", async () => {
   const tooltipElement = assertElementById("coordinate", HTMLElement);
   const coordinatesText = tooltipElement.innerText;
   const rendererForm = assertElementById("renderer-form", HTMLFormElement);
+
+  // Initialize renderer from storage
   const storedRenderer = getStoredRenderer();
   (rendererForm.elements as any)["renderer"].value = storedRenderer;
-  const urlState = parseURL();
-  const loadingProgress = installLoadingProgress(() => globalApp?.getMap() ?? urlState.map ?? "dynamic-main-branch");
 
-  // Seed/manifests and base-map tiles can load while the selected language loads.
-  if (!urlState.map || urlState.map === "dynamic-main-branch") startDailyFastPath();
-  const app = await initializeApplication({
+  // Parse URL state including overlays and drawing
+  const urlState = parseURL();
+
+  const app = await App.create({
     mountTo: osdRootElement,
     overlayButtons: overlayButtonsElement,
     initialState: urlState,
     useWebGL: storedRenderer === "webgl",
+  }).catch(async (e) => {
+    // The default or URL-specified map failed to open (e.g. CORS block on a new domain).
+    // Fall back to a known-good map so the rest of the app still initializes.
+    console.warn("[Noitamap] Map failed to open, falling back to regular-main-branch:", e);
+    return App.create({
+      mountTo: osdRootElement,
+      overlayButtons: overlayButtonsElement,
+      initialState: { ...urlState, map: "regular-main-branch" as MapName },
+      useWebGL: storedRenderer === "webgl",
+    });
   });
   globalApp = app;
-  createLanguageSelector();
-  updateTranslations();
   console.log(`[Noitamap] Active OSD drawer: ${(app.osd as any).drawer?.getType?.() ?? storedRenderer}`);
+
+  // Kick the daily baked-overlay fast path off NOW, in parallel with all the UI
+  // wiring below. With no custom seed in the URL we know it's today's daily, so
+  // its seed + baked-manifest round-trips run during init and are already
+  // resolved by the time the dynamic pipeline (line ~681) reaches its probe —
+  // letting the daily biome DZIs queue onto OSD nearly as early as the static
+  // background instead of after all the setup + serial fetches.
+  startDailyFastPath();
 
   // Helper to update the map selector button: shows the current map's full
   // label plus icon-only versions of its badges. Hover popovers on the badges
@@ -260,6 +456,37 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   new AuthUI(authContainer);
 
+  // The URL is intentionally rounded for sharing. Keep the actual camera and
+  // overlay switches when leaving this tab for authentication.
+  authService.registerLoginPreparation('map', () => {
+    const center = app.osd.viewport.getCenter(true);
+    const view = { x: center.x, y: center.y, zoom: app.osd.viewport.getZoom(true) };
+    const overlays = getEnabledOverlays();
+    updateURL({ map: app.getMap(), pos: view });
+    updateURLWithOverlays(overlays);
+    updateURLWithSidebar(!!(document.querySelector('.drawing-sidebar.open')
+      || document.querySelector<HTMLInputElement>('#drawToggleBtn')?.checked));
+    return { version: 1, map: app.getMap(), view, overlays, canvas: parseURL().canvas ?? 'map' };
+  });
+  const returnedMap = authService.getLoginReturnState('map');
+  if (returnedMap) {
+    const saved = returnedMap.data as { version?: number; map?: string; view?: { x: number; y: number; zoom: number }; overlays?: string[]; canvas?: string };
+    if (saved?.version === 1 && saved.map === app.getMap() && saved.view
+      && [saved.view.x, saved.view.y, saved.view.zoom].every(Number.isFinite) && saved.view.zoom > 0) {
+      app.osd.setZoomPos(saved.view);
+      if (Array.isArray(saved.overlays)) {
+        document.querySelectorAll<HTMLInputElement>('input.overlayToggler').forEach(toggler => {
+          const key = toggler.dataset.overlayKey;
+          if (!key || toggler.disabled) return;
+          toggler.checked = saved.overlays!.includes(key);
+          showOverlay(key as any, toggler.checked);
+        });
+      }
+      if (saved.canvas === 'map' || saved.canvas === 'black' || saved.canvas === 'white') app.setBackground(saved.canvas);
+    }
+    authService.completeLoginReturnState('map', returnedMap.id);
+  }
+
   navbarBrandElement.addEventListener("click", (ev) => {
     ev.preventDefault();
     app.home();
@@ -295,34 +522,43 @@ document.addEventListener("DOMContentLoaded", async () => {
   let lastSessionIsDaily: boolean = false;
   // Pending seed set via setSeedParams before the map has switched to dynamic
   let pendingDynamicSeed: number | null = null;
+  let drawingDailyRequest: { run?: Promise<GenerationResult | null> } | undefined;
 
   let reportHighlights: ReportMapHighlights | null = null;
   let reportMapLoading = false;
   let poiContextReady = false;
   let initialTargetSeedStarted = false;
   let spawnSharing: ReturnType<typeof createCreatureSpawnSharing> | undefined;
-  app.osd.addHandler('map-change-start', () => {
+  app.osd.addHandler('map-change-start', (event: { mapName?: string }) => {
+    if (event.mapName !== 'dynamic-main-branch') {
+      setDynamicUIBusy(false);
+      loadingProgress.cancel();
+    }
     initialTargetPoiId = undefined;
-    poiContextReady = false;
-    reportHighlights?.clear(false);
     spawnSharing?.dismiss();
+    poiContextReady = false;
     spawnSharing?.setMapReady(false);
     clearCreatureSpawnBiomeFocus(osdRootElement);
+    reportHighlights?.clear(false);
     resetPOICardContext(app.osd);
   });
   const dynamicOpts = {
     viewer: app.osd,
+    onRequestStateChange: (pending: boolean) => {
+      setDynamicUIBusy(pending);
+      if (pending) {
+        bakedViewActive = false;
+        loadingProgress.start();
+      } else loadingProgress.settle();
+    },
     onMapReplacementStart: () => {
       poiContextReady = false;
-      // The original URL target belongs to the first requested generation only.
-      if (initialTargetSeedStarted) {
-        initialTargetPoiId = undefined;
-        spawnSharing?.dismiss();
-      }
       spawnSharing?.setMapReady(false);
+      clearCreatureSpawnBiomeFocus(osdRootElement);
+      // The original URL target belongs to the first requested generation only.
+      if (initialTargetSeedStarted) { initialTargetPoiId = undefined; spawnSharing?.dismiss(); }
       initialTargetSeedStarted = true;
       reportHighlights?.clear(false);
-      clearCreatureSpawnBiomeFocus(osdRootElement);
       resetPOICardContext(app.osd);
     },
     onLoadingChange: (isLoading: boolean) => {
@@ -330,20 +566,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (isLoading) {
         poiContextReady = false;
         spawnSharing?.setMapReady(false);
-        reportHighlights?.clear(false);
         clearCreatureSpawnBiomeFocus(osdRootElement);
+        reportHighlights?.clear(false);
         resetPOICardContext(app.osd);
       }
       loadingIndicator.style.display = isLoading ? "block" : "none";
       if (isLoading) {
-        showLoadingStrip();
+        loadingProgress.show();
         unifiedSearch.setIndexingState('indexing');
       } else {
         hideLoadingStrip();
       }
     },
     onSeedResolved: (seed: number, isDaily: boolean) => {
-      setDynamicUISeed(seed, isDaily);
+      setDynamicUISeed(seed, isDaily, true);
       updateMapSelectorText(app.getMap());
       lastSessionSeed = seed;
       lastSessionIsDaily = isDaily;
@@ -476,8 +712,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     refreshActiveVariant();
   });
 
-  onAltReady(() => {
-    refreshActiveVariant();
+  onAltReady((descriptor, seed) => {
+    // Unused variants must not remove/re-add the already visible POI layer.
+    if (seed === getCurrentDynamicSeed() && descriptor === getActiveDescriptor()) {
+      refreshActiveVariant();
+    }
   }, true); // register as persistent listener
 
   // Auto-start generation if landing on dynamic map
@@ -487,6 +726,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Expose hooks for the pro bundle via window.__noitamap
   const proHooks: NoitamapProHooks = {
+    setDrawingMapOwnership,
     i18next,
     authService,
     osd: app.osd as unknown as OpenSeadragon.Viewer,
@@ -518,6 +758,28 @@ document.addEventListener("DOMContentLoaded", async () => {
       lastSessionIsDaily = false;
       if (app.getMap() === "dynamic-main-branch") {
         runDynamicMap(seed, false, dynamicOpts).catch((e) => console.error("[Noitamap] Dynamic map rebuild failed:", e));
+      }
+    },
+    openTodaysDaily: async () => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('se');
+      url.searchParams.delete('seed');
+      url.searchParams.delete('nb');
+      url.searchParams.set('ds', '1');
+      window.history.replaceState(window.history.state, '', url);
+      pendingDynamicSeed = null;
+      if (app.getMap() === 'dynamic-main-branch') {
+        return !!await runDynamicMapFromURL(dynamicOpts, true);
+      }
+      // The ordinary map-change handler starts exactly one Daily request.
+      // Wait for it before the drawing importer publishes its shapes.
+      const request: { run?: Promise<GenerationResult | null> } = {};
+      drawingDailyRequest = request;
+      try {
+        await app.setMap('dynamic-main-branch');
+        return !!(request.run && await request.run);
+      } finally {
+        if (drawingDailyRequest === request) drawingDailyRequest = undefined;
       }
     },
     setBackground: (type: "map" | "black" | "white") => {
@@ -648,18 +910,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     },
     closePOICard,
+    openReportPOICard: (poiId, opts) => {
+      if (!poiContextReady || app.getMap() !== 'dynamic-main-branch') { opts.onClose(); return; }
+      if (!opts.preserveReportHighlights) reportHighlights?.clear(false);
+      reportHighlights ??= new ReportMapHighlights(app.osd.viewer);
+      try {
+        openTooltipForPOI(poiId, app.osd, { ...opts, owner: 'report',
+          reportReturn: { label: opts.returnLabel, onClose: opts.onClose } });
+      } catch (error) {
+        closePOICard({ reportOnly: true });
+        throw error;
+      }
+    },
     openPOIById: (poiId: string, opts?: { sidebarRightPx?: number; preserveReportHighlights?: boolean; fallbackX?: number; fallbackY?: number; fallbackPoi?: any; owner?: 'report' }) => {
       if (!poiContextReady || app.getMap() !== 'dynamic-main-branch') return;
       if (!opts?.preserveReportHighlights) reportHighlights?.clear(false);
       if (opts?.owner === 'report') reportHighlights ??= new ReportMapHighlights(app.osd.viewer);
       openTooltipForPOI(poiId, app.osd, { ...opts, owner: opts?.owner ?? 'map' });
-    },
-    openReportPOICard: (poiId, opts) => {
-      if (!poiContextReady || app.getMap() !== 'dynamic-main-branch') { opts.onClose(); return; }
-      if (!opts.preserveReportHighlights) reportHighlights?.clear(false);
-      reportHighlights ??= new ReportMapHighlights(app.osd.viewer);
-      const { returnLabel, onClose, ...navigation } = opts;
-      openTooltipForPOI(poiId, app.osd, { ...navigation, owner: 'report', reportReturn: { label: returnLabel, onClose } });
     },
     showGetProModal: () => {
       AuthUI.showGetProModal();
@@ -688,6 +955,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Advertise lazy-feature support; cached older Pro bundles remain compatible.
   proHooks.proFeatureAPI = 1;
   const loadProBundle = createProLoader(proHooks);
+  const loadDrawing = async (): Promise<boolean> => {
+    if (!await loadProBundle('drawing')) {
+      if (authService.getLoginReturnState('drawing')) {
+        window.alert(i18next.t('auth.workspaceRestoreFailed', 'Could not restore your drawing workspace. Reload to try again.'));
+      }
+      return false;
+    }
+    if (authService.getLoginReturnState('drawing')) {
+      try {
+        if (!proHooks.restoreDrawingLoginState) throw new Error('Drawing bundle cannot restore the login workspace');
+        await proHooks.restoreDrawingLoginState();
+      } catch (error) {
+        console.error('[Auth] Drawing workspace restoration failed:', error);
+        window.alert(i18next.t('auth.workspaceRestoreFailed', 'Could not restore your drawing workspace. Reload to try again.'));
+        return false;
+      }
+    }
+    return true;
+  };
 
   // Expose a pro-load requester so non-pro search components (AP/LC buttons)
   // can trigger pro loading after an auth check.
@@ -696,7 +982,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Initialize Drawing UI (Brush Button)
   // This handles the "Get Pro" modal for unauthed users and loads the pro bundle for subscribers
   const drawingUI = new DrawingUI(authContainer, {
-    onEnableDrawing: () => loadProBundle("drawing"),
+    onEnableDrawing: loadDrawing,
   });
 
   // Seed Report toggle button — sits next to the drawing toggle.
@@ -718,7 +1004,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupDropOverlay(i18next, () => loadProBundle("drawing"));
 
   // Dynamically load the pro bundle when URL requests sidebar (auth check handled inside pro bundle)
-  if (!urlState.seedReportOpen) {
+  const drawingReturn = authService.getLoginReturnState('drawing');
+  if (drawingReturn) {
+    if ((drawingReturn.data as { sidebarOpen?: boolean })?.sidebarOpen) drawingUI.openFromURL();
+    else void loadDrawing();
+  } else if (!urlState.seedReportOpen) {
     if (urlState.sidebarOpen) drawingUI.openFromURL();
     else if (isDev && localStorage.getItem("noitamap-dev-drawing") === "1") loadProBundle("drawing");
   }
@@ -802,8 +1092,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       unifiedSearch.setDynamicPOIs([]);
       unifiedSearch.setIndexingState('idle');
     } else if (lastKnownMap !== "dynamic-main-branch" && state.map === "dynamic-main-branch") {
-      // Moving TO dynamic map — if we have a pending seed from drawing import, use it directly
-      if (pendingDynamicSeed !== null) {
+      if (drawingDailyRequest) {
+        const request = drawingDailyRequest;
+        drawingDailyRequest = undefined;
+        request.run = runDynamicMapFromURL(dynamicOpts, true);
+        // Also handle failures if the caller's map transition was superseded.
+        void request.run.catch(e => console.error('[Noitamap] Drawing Daily load failed:', e));
+      } else if (pendingDynamicSeed !== null) {
+        // A normal drawing import keeps its explicitly pinned seed.
         const seedToRun = pendingDynamicSeed;
         pendingDynamicSeed = null;
         runDynamicMap(seedToRun, false, dynamicOpts).catch((e) => console.error("[Noitamap] Dynamic map switch (pending seed) failed:", e));
@@ -813,6 +1109,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
     lastKnownMap = state.map;
+    spawnSharing?.setMapReady(state.map !== 'dynamic-main-branch' || poiContextReady);
 
     // Camera frames still update URL/search above. Toolbar DOM and Bootstrap
     // instances only need work when the selected map actually changes.
@@ -1135,10 +1432,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!id || mode !== 'normal' || !isProUser()) return false;
       if (!applySpawnRegions(raw, true, source)) return false;
       spawnSharing!.setMapReady(true);
-      if (spawnSharing!.rememberApplied(id)) {
-        cueBiomeBoundariesButton();
-        return true;
-      }
+      if (spawnSharing!.rememberApplied(id)) return true;
       clearCreatureSpawnBiomeFocus(osdRootElement);
       return false;
     },
@@ -1178,12 +1472,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // Mouse tracker for displaying coordinates
-  const { copyCoordinates } = initMouseTracker({
+  initMouseTracker({
     osd: app.osd,
     osdElement: osdRootElement,
     tooltipElement: assertElementById("coordinate", HTMLElement),
   });
-  document.addEventListener("keydown", copyCoordinates, { capture: false });
 
   // Handle renderer changes
   rendererForm.addEventListener("change", (ev) => {
@@ -1222,6 +1515,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // the current view changes.
   window.addEventListener("bakedSeedChange", ((e: CustomEvent) => {
     const baked = !!e.detail?.baked;
+    bakedViewActive = baked;
     loadingProgress.setBaked(baked);
 
     updateSpoilerControlVisibility(baked);
@@ -1269,6 +1563,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       setTimeout(() => window.location.reload(), 50);
     });
   }
+
+  initHDRendererToggle(() => updateURL({ map: app.getMap(), pos: app.osd.getZoomPos() }));
 
   // Handle light-mode toggle — full reload so OSD re-opens without the
   // left/right PW static tile sources. Dynamic generation is IDB-cached,
@@ -1322,4 +1618,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   initKonamiCode();
-});
+
+}, error => showStartupFailure(error,
+  i18next.t('startup.failed', { defaultValue: STARTUP_MESSAGES.failed }) || STARTUP_MESSAGES.failed,
+  i18next.t('startup.retry', { defaultValue: STARTUP_MESSAGES.retry }) || STARTUP_MESSAGES.retry));

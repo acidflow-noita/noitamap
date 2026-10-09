@@ -1,7 +1,4 @@
-import {
-  paintLoadingFeedback,
-  dismissLoadingPopover,
-} from "../pro-loading-feedback";
+import { dismissLoadingPopover } from "../pro-loading-feedback";
 import { requestProSidebar, onProSidebarIntent } from "../pro-sidebar-intent";
 import i18next from "../i18n";
 import { showDrawingSkeleton, hideDrawingSkeleton, replaceDrawingSkeleton } from "./drawing-skeleton";
@@ -96,8 +93,8 @@ export class DrawingUI {
     const attempt = ++this.attempt;
     showDrawingSkeleton();
     try {
-      await paintLoadingFeedback();
-      if (!current()) return;
+      // The shell is mounted. Start loading now; map animation frames must
+      // not gate the download. Replace it only when initialization completes.
       const loaded = await this.options.onEnableDrawing();
       if (loaded && current()) {
         replaceDrawingSkeleton(() => {

@@ -1,0 +1,4 @@
+# Keep text identical on Windows and Unix; do not rewrite binary assets.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf

@@ -1,244 +1,191 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { availablePOICardRect, mountPOICardPlacement, planPOICardPlacement, type CardRect } from '../src/telescope/poi-card-placement';
 
 const rect = (left: number, top: number, right: number, bottom: number): CardRect => ({ left, top, right, bottom });
 const overlaps = (a: CardRect, b: CardRect) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
-const marker = (x: number, y: number) => rect(x - 18, y - 18, x + 18, y + 18);
 
-it('uses the visible map intersection and the report exclusion for offset canvases and mobile keyboards', () => {
-  expect(availablePOICardRect(rect(50, 80, 1250, 880), rect(0, 0, 1300, 700), rect(850, 100, 1250, 850)))
-    .toEqual(rect(50, 80, 850, 700));
-  expect(availablePOICardRect(rect(0, 0, 390, 844), rect(0, 60, 390, 540), rect(0, 400, 390, 844)))
-    .toEqual(rect(0, 60, 390, 400));
+describe('visible map area for POI cards', () => {
+  it('excludes the report in its actual position, including an offset canvas', () => {
+    expect(availablePOICardRect(rect(50, 80, 1250, 880), rect(0, 0, 1300, 700), rect(850, 100, 1250, 850)))
+      .toEqual(rect(50, 80, 850, 700));
+    expect(availablePOICardRect(rect(0, 76, 390, 844), rect(0, 110, 390, 540), rect(0, 464, 390, 844)))
+      .toEqual(rect(0, 110, 390, 464));
+  });
+
+  it('handles a keyboard and horizontal visual-viewport offset without using window dimensions', () => {
+    expect(availablePOICardRect(rect(0, 76, 1200, 844), rect(80, 130, 470, 350)))
+      .toEqual(rect(80, 130, 470, 350));
+  });
+
+  it('ignores an offscreen report and retains usable controls if the report covers everything', () => {
+    const visible = rect(0, 76, 390, 410);
+    expect(availablePOICardRect(visible, visible, rect(0, 464, 390, 844))).toEqual(visible);
+    expect(availablePOICardRect(visible, visible, visible)).toEqual(visible);
+    expect(availablePOICardRect(visible, rect(0, 0, 390, 70))).toBeNull();
+  });
+
+  it('keeps short and overflowing cards within every corner of the available map', () => {
+    for (const available of [rect(60, 80, 780, 760), rect(0, 110, 390, 464), rect(80, 130, 470, 350)]) {
+      for (const [x, y] of [[available.left + 20, available.top + 20], [available.right - 20, available.bottom - 20],
+        [available.left - 200, available.top - 200], [available.right + 200, available.bottom + 500],
+        [(available.left + available.right) / 2, (available.top + available.bottom) / 2]]) {
+        for (const h of [110.375, 500.625, 1800]) {
+          const selected = rect(x - 18, y - 18, x + 18, y + 18);
+          const p = planPOICardPlacement(available, selected, 448, h);
+          const card = rect(p.left, p.top, p.left + p.width, p.top + Math.min(h, p.maxHeight));
+          expect(card.left).toBeGreaterThanOrEqual(available.left + 12);
+          expect(card.top).toBeGreaterThanOrEqual(available.top + 12);
+          expect(card.right).toBeLessThanOrEqual(available.right - 12);
+          expect(card.bottom).toBeLessThanOrEqual(available.bottom - 12);
+        }
+      }
+    }
+  });
+
+  it('keeps the selected sprite uncovered when there is a usable side or vertical space', () => {
+    for (const [available, selected] of [
+      [rect(0, 76, 1280, 800), rect(180, 330, 220, 370)],
+      [rect(0, 76, 390, 844), rect(175, 402, 215, 442)],
+    ]) {
+      const p = planPOICardPlacement(available, selected, 448, 1200);
+      expect(overlaps(rect(p.left, p.top, p.left + p.width, p.top + p.maxHeight), selected)).toBe(false);
+    }
+  });
 });
 
-it('keeps measured cards clear of the selected marker at every corner and against a sidebar', () => {
-  const available = rect(60, 50, 800, 750);
-  for (const [x, y] of [[90, 90], [760, 90], [90, 700], [760, 700], [430, 390]]) {
-    const selected = marker(x, y);
-    const p = planPOICardPlacement({ available, marker: selected, cardWidth: 420, cardHeight: 570, compact: false, allowPan: true });
-    const card = rect(p.left, p.top, p.left + p.width, p.top + Math.min(570, p.maxHeight));
-    const moved = { left: selected.left + p.markerShift.x, right: selected.right + p.markerShift.x, top: selected.top + p.markerShift.y, bottom: selected.bottom + p.markerShift.y };
-    expect(overlaps(card, moved), `${x},${y}`).toBe(false);
-    expect(card.left).toBeGreaterThanOrEqual(72);
-    expect(card.right).toBeLessThanOrEqual(788);
-    expect(card.top).toBeGreaterThanOrEqual(62);
-    expect(card.bottom).toBeLessThanOrEqual(738);
-  }
-});
-
-it('reserves sheet growth on the first opening and shifts a covered marker only into the free map area', () => {
-  const p = planPOICardPlacement({ available: rect(0, 0, 390, 844), marker: marker(330, 750), cardWidth: 448, cardHeight: 1200, compact: true, allowPan: true });
-  expect(p.sheet).toBe(true);
-  expect(p.markerShift.x).toBe(0);
-  expect(750 + 18 + p.markerShift.y).toBeCloseTo(p.top - 12);
-  expect(p.maxHeight).toBeLessThan(422);
-  const short = planPOICardPlacement({ available: rect(0, 0, 390, 844), marker: marker(330, 750), cardWidth: 448, cardHeight: 120, compact: true, allowPan: true });
-  expect(short.markerShift).toEqual(p.markerShift);
-});
-
-it('scrolls a tall card above the marker instead of hiding it or moving the camera during relayout', () => {
-  const p = planPOICardPlacement({ available: rect(0, 0, 800, 700), marker: marker(400, 480), cardWidth: 448, cardHeight: 1800, compact: false, allowPan: false });
-  expect(p.markerShift).toEqual({ x: 0, y: 0 });
-  expect(p.top + p.maxHeight).toBeLessThanOrEqual(462 - 12);
-});
-
-it('moves a side card up to fit its full fractional natural height near the bottom edge', () => {
-  const selected = marker(120, 750), naturalHeight = 480.625;
-  const p = planPOICardPlacement({ available: rect(0, 0, 1200, 844), marker: selected, cardWidth: 448, cardHeight: naturalHeight, compact: false, allowPan: false });
-  expect(p.sheet).toBe(false);
-  expect(p.maxHeight).toBeGreaterThanOrEqual(naturalHeight);
-  expect(p.top + naturalHeight).toBe(832);
-  expect(overlaps(rect(p.left, p.top, p.left + p.width, p.top + naturalHeight), selected)).toBe(false);
-  expect(p.markerShift).toEqual({ x: 0, y: 0 });
-});
-
-it.each([true, false])('fits a slightly taller sheet in existing marker-free space without a tiny scrollbar (initial=%s)', allowPan => {
-  const naturalHeight = 400.375;
-  const p = planPOICardPlacement({ available: rect(0, 0, 390, 844), marker: marker(190, 320), cardWidth: 366, cardHeight: naturalHeight, compact: true, allowPan });
-  expect(p.maxHeight).toBe(naturalHeight);
-  expect(p.top).toBe(832 - naturalHeight);
-  expect(p.markerShift).toEqual({ x: 0, y: 0 });
-});
-
-it('keeps real overflow scrollable when a full sheet would cover the marker or substantially exceed its cap', () => {
-  for (const [naturalHeight, y] of [[400.375, 404], [430, 320]]) {
-    const p = planPOICardPlacement({ available: rect(0, 0, 390, 844), marker: marker(190, y), cardWidth: 366, cardHeight: naturalHeight, compact: true, allowPan: false });
-    expect(p.maxHeight).toBeLessThan(naturalHeight);
-    expect(p.maxHeight).toBeLessThanOrEqual(820 * .48);
-    expect(p.top).toBeGreaterThanOrEqual(y + 18 + 12);
-    expect(p.markerShift).toEqual({ x: 0, y: 0 });
-  }
-});
-
-it('fits the whole short-overflow sheet above a marker when a resized viewport leaves no room below it', () => {
-  const p = planPOICardPlacement({ available: rect(0, 0, 390, 430), marker: marker(190, 385), cardWidth: 366, cardHeight: 200.375, compact: true, allowPan: false });
-  expect(p.top).toBe(12);
-  expect(p.maxHeight).toBe(200.375);
-  expect(p.markerShift).toEqual({ x: 0, y: 0 });
-});
-
-describe('mounted card placement lifecycle', () => {
-  afterEach(() => { document.body.replaceChildren(); vi.unstubAllGlobals(); vi.useRealTimers(); });
-
-  function mount(flipped = false, rotation = false) {
-    vi.useFakeTimers();
-    vi.stubGlobal('innerWidth', 390); vi.stubGlobal('innerHeight', 844);
+describe('card placement ownership and updates', () => {
+  const cleanups: Array<() => void> = [];
+  let resizeObservers: Array<{ callback: () => void; observe: ReturnType<typeof vi.fn>; unobserve: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn> }>;
+  beforeEach(() => {
+    vi.useFakeTimers(); resizeObservers = [];
+    vi.stubGlobal('innerWidth', 1200); vi.stubGlobal('innerHeight', 800);
     vi.stubGlobal('OpenSeadragon', { Point: class { constructor(public x: number, public y: number) {} } });
+    vi.stubGlobal('ResizeObserver', class {
+      observe = vi.fn(); unobserve = vi.fn(); disconnect = vi.fn();
+      constructor(public callback: () => void) { resizeObservers.push(this); }
+    });
+  });
+  afterEach(() => { for (const cleanup of cleanups.splice(0)) cleanup(); document.body.replaceChildren(); vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers(); });
+  const tick = async () => { await Promise.resolve(); vi.advanceTimersByTime(20); await Promise.resolve(); };
+
+  function mount() {
     const canvas = document.createElement('div'), card = document.createElement('div');
     document.body.append(canvas, card);
-    canvas.getBoundingClientRect = () => ({ ...rect(0, 0, 390, 844), width: 390, height: 844 } as DOMRect);
-    Object.defineProperty(canvas, 'clientWidth', { value: 390 });
-    Object.defineProperty(canvas, 'clientHeight', { value: 844 });
-    let contentHeight = 600;
-    card.getBoundingClientRect = () => ({ ...rect(0, 0, 366, contentHeight), width: 366, height: contentHeight } as DOMRect);
-    Object.defineProperty(card, 'scrollHeight', { configurable: true, get: () => contentHeight });
-    let center = { x: 195, y: 422 };
-    const matrix = rotation ? { a: 0, b: 2, c: -2, d: 0 } : { a: 2, b: 0, c: 0, d: 2 };
+    let canvasBounds = new DOMRect(0, 76, 1200, 724), naturalHeight = 530.625, current = true;
+    canvas.getBoundingClientRect = () => canvasBounds;
+    Object.defineProperty(canvas, 'clientWidth', { get: () => canvasBounds.width });
+    Object.defineProperty(canvas, 'clientHeight', { get: () => canvasBounds.height });
+    const measurements: Array<{ maxHeight: string; scrollTop: number }> = [];
+    card.getBoundingClientRect = vi.fn(() => {
+      measurements.push({ maxHeight: card.style.maxHeight, scrollTop: card.scrollTop });
+      return new DOMRect(parseFloat(card.style.left) || 0, parseFloat(card.style.top) || 0,
+        Math.min(parseFloat(card.style.width) || 448, parseFloat(card.style.maxWidth) || Infinity),
+        Math.min(naturalHeight, parseFloat(card.style.maxHeight) || Infinity));
+    });
+    const visual = Object.assign(new EventTarget(), { offsetLeft: 0, offsetTop: 0, width: 1200, height: 800 });
+    vi.stubGlobal('visualViewport', visual);
+    const handlers = new Map<string, Set<() => void>>();
     const viewport = {
-      getFlip: () => flipped,
-      pixelFromPoint: ({ x, y }: { x: number; y: number }) => ({
-        x: 195 + matrix.a * (x - center.x) + matrix.c * (y - center.y),
-        y: 422 + matrix.b * (x - center.x) + matrix.d * (y - center.y),
-      }),
-      getCenter: () => center,
-      panTo: vi.fn((next: { x: number; y: number }) => { center = next; }),
+      pixelFromPoint: vi.fn(({ x, y }: { x: number; y: number }, displayed: boolean) => ({ x: x + (displayed ? 0 : 500), y })),
+      panTo: vi.fn(), zoomTo: vi.fn(),
     };
-    const viewer = { canvas, viewport, addHandler: vi.fn(), removeHandler: vi.fn() };
-    const anchor = rotation ? { x: 359, y: 422 } : { x: 195, y: 586 };
-    let current = true;
-    const opening = { mayPan: true };
-    const cleanup = mountPOICardPlacement(card, { viewer, anchor, opening, isCurrent: () => current });
-    return { card, viewport, viewer, cleanup, opening, anchor, grow: () => { contentHeight = 1800; card.append(document.createElement('p')); }, invalidate: () => { current = false; } };
+    const viewer = { canvas, viewport,
+      addHandler: (name: string, cb: () => void) => { if (!handlers.has(name)) handlers.set(name, new Set()); handlers.get(name)!.add(cb); },
+      removeHandler: (name: string, cb: () => void) => handlers.get(name)?.delete(cb),
+    };
+    const cleanup = mountPOICardPlacement(card, { viewer, anchor: { x: 200, y: 280 }, isCurrent: () => current });
+    cleanups.push(cleanup);
+    return { canvas, card, visual, viewport, cleanup, measurements,
+      emit: (name: string) => { for (const cb of [...handlers.get(name) ?? []]) cb(); },
+      invalidate: () => { current = false; },
+      shrink: () => { canvasBounds = new DOMRect(0, 76, 390, 768); visual.width = 390; visual.height = 844; window.dispatchEvent(new Event('resize')); },
+      grow: () => { naturalHeight = 1800; card.append(document.createElement('p')); },
+    };
   }
+  const bounds = (card: HTMLElement) => card.getBoundingClientRect();
 
-  it.each([[false, false], [true, false], [false, true], [true, true]])('uses the rendered camera transform (flip=%s, rotation=%s), never zooming', (flip, rotation) => {
-    const m = mount(flip, rotation);
-    expect(m.viewport.panTo).toHaveBeenCalledOnce();
-    vi.runOnlyPendingTimers();
-    expect(m.card.classList.contains('poi-card-sheet')).toBe(true);
-    expect(m.opening.mayPan).toBe(false);
-    const projected = m.viewport.pixelFromPoint(rotation ? { x: 359, y: 422 } : { x: 195, y: 586 });
-    expect(projected.y + (rotation ? 20 : 24)).toBeLessThanOrEqual(Number.parseFloat(m.card.style.top) - 11);
-    expect(m.viewport.panTo).toHaveBeenCalledOnce();
-    m.cleanup();
+  it('tracks the reduced visual viewport and its offset while an existing card stays open', async () => {
+    const f = mount(); f.shrink(); await tick();
+    Object.assign(f.visual, { offsetLeft: 30, offsetTop: 130, width: 330, height: 220 });
+    f.visual.dispatchEvent(new Event('resize')); f.visual.dispatchEvent(new Event('scroll')); await tick();
+    const r = bounds(f.card);
+    expect(r.left).toBeGreaterThanOrEqual(42); expect(r.right).toBeLessThanOrEqual(348);
+    expect(r.top).toBeGreaterThanOrEqual(142); expect(r.bottom).toBeLessThanOrEqual(338);
+    expect(f.viewport.panTo).not.toHaveBeenCalled(); expect(f.viewport.zoomTo).not.toHaveBeenCalled();
+    expect(f.viewport.pixelFromPoint.mock.calls.every(([, displayed]) => displayed === true)).toBe(true);
   });
 
-  it('does not pan again for late details, hover, translation rebuild, resize, or stale callbacks', async () => {
-    const m = mount();
-    m.grow(); await Promise.resolve(); vi.runOnlyPendingTimers();
-    m.card.dispatchEvent(new MouseEvent('mouseenter'));
-    m.cleanup();
-    // A translated/variant rebuild reuses the opening token.
-    const rebuiltCleanup = mountPOICardPlacement(m.card, { viewer: m.viewer, anchor: m.anchor, opening: m.opening, isCurrent: () => true });
-    window.dispatchEvent(new Event('resize')); vi.runOnlyPendingTimers();
-    expect(m.viewport.panTo).toHaveBeenCalledOnce();
-    m.invalidate(); window.dispatchEvent(new Event('resize')); vi.runOnlyPendingTimers();
-    expect(m.viewport.panTo).toHaveBeenCalledOnce();
-    rebuiltCleanup();
-    expect(m.viewer.removeHandler).toHaveBeenCalledTimes(4);
-    window.dispatchEvent(new Event('resize'));
-    expect(vi.getTimerCount()).toBe(0);
+  it('finds a late report, observes its resize/removal, and does not mistake a hidden legacy panel for it', async () => {
+    const f = mount(), legacy = document.createElement('aside'), report = document.createElement('aside');
+    legacy.id = 'seed-report-sidebar'; legacy.hidden = true;
+    report.id = 'seed-report-v3'; report.hidden = true;
+    let left = 700;
+    report.getBoundingClientRect = () => new DOMRect(left, 76, 1200 - left, 724);
+    document.body.append(legacy, report); await tick();
+    report.hidden = false; report.classList.add('open'); await tick();
+    expect(bounds(f.card).right).toBeLessThanOrEqual(688);
+    left = 500; resizeObservers[0].callback(); await tick();
+    expect(bounds(f.card).right).toBeLessThanOrEqual(488);
+    report.remove(); await tick();
+    expect(bounds(f.card).right).toBeGreaterThan(500);
+    expect(resizeObservers[0].unobserve).toHaveBeenCalledWith(report);
   });
 
-  it('measures desktop sheet fallback at its final width and settles after resize delivery', () => {
-    vi.useFakeTimers();
-    vi.stubGlobal('innerWidth', 1400); vi.stubGlobal('innerHeight', 240);
-    vi.stubGlobal('OpenSeadragon', { Point: class { constructor(public x: number, public y: number) {} } });
-    let notifyResize: () => void = () => {};
-    vi.stubGlobal('ResizeObserver', class {
-      constructor(callback: () => void) { notifyResize = callback; }
-      observe() {} disconnect() {}
-    });
-    const canvas = document.createElement('div'), card = document.createElement('div'), report = document.createElement('div');
-    report.id = 'seed-report-v3'; report.className = 'open';
-    document.body.append(canvas, card, report);
-    canvas.getBoundingClientRect = () => ({ ...rect(0, 0, 1400, 240), width: 1400, height: 240 } as DOMRect);
-    report.getBoundingClientRect = () => ({ ...rect(600, 0, 1400, 240), width: 800, height: 240 } as DOMRect);
-    const measurements: { width: number; maxHeight: string; scrollTop: number }[] = [];
-    // A long wrapped row is 180px tall at the desktop width, 60px when the
-    // fallback sheet uses the whole map width. Include CSS max-height behavior
-    // so a stale constraint cannot pass as a natural content measurement.
-    const size = () => {
-      const width = Number.parseFloat(card.style.width) || 448;
-      const naturalHeight = width >= 576 ? 60 : 180;
-      const height = Math.min(naturalHeight, Number.parseFloat(card.style.maxHeight) || Infinity);
-      return { width, height };
-    };
-    card.getBoundingClientRect = () => {
-      measurements.push({ width: size().width, maxHeight: card.style.maxHeight, scrollTop: card.scrollTop });
-      const { width, height } = size();
-      return { ...rect(0, 0, width, height), width, height } as DOMRect;
-    };
-    Object.defineProperty(card, 'scrollHeight', { get: () => (size().width >= 576 ? 58 : 178) });
-    const viewport = { getFlip: () => false, pixelFromPoint: (p: { x: number; y: number }) => p, getCenter: () => ({ x: 700, y: 120 }), panTo: vi.fn() };
-    const cleanup = mountPOICardPlacement(card, { viewer: { canvas, viewport }, anchor: { x: 300, y: 120 }, opening: { mayPan: false }, isCurrent: () => true });
-    const expected = { top: card.style.top, width: card.style.width, height: size().height };
-    expect(expected).toEqual({ top: '168px', width: '576px', height: 60 });
+  it('uses height above a bottom sheet instead of subtracting its full screen width', async () => {
+    const f = mount(); f.shrink();
+    const report = document.createElement('aside'); report.id = 'seed-report-v3'; report.className = 'open';
+    report.getBoundingClientRect = () => new DOMRect(0, 464, 390, 380);
+    document.body.append(report); await tick();
+    const r = bounds(f.card);
+    expect(r.width).toBe(366); expect(r.top).toBeGreaterThanOrEqual(88); expect(r.bottom).toBeLessThanOrEqual(452);
+  });
+
+  it('keeps allowed POI cards clear of a late drawing sidebar and its bottom toolbar', async () => {
+    const container = document.createElement('div'); container.id = 'drawing-sidebar-container';
+    document.body.append(container);
+    const f = mount(), sidebar = document.createElement('aside'), toolbar = document.createElement('div');
+    sidebar.className = 'drawing-sidebar open'; toolbar.className = 'drawing-toolbar open';
+    sidebar.getBoundingClientRect = () => new DOMRect(900, 76, 300, 724);
+    toolbar.getBoundingClientRect = () => new DOMRect(0, 680, 1200, 120);
+    container.append(sidebar, toolbar); await tick();
+    const r = bounds(f.card);
+    expect(r.right).toBeLessThanOrEqual(888); expect(r.bottom).toBeLessThanOrEqual(668);
+    sidebar.remove(); toolbar.remove(); await tick();
+    expect(bounds(f.card).bottom).toBeGreaterThan(680);
+  });
+
+  it('keeps scroll position and stable geometry through repeated content and resize notifications', async () => {
+    const f = mount(); f.card.scrollTop = 137; f.grow(); await tick();
+    const initial = bounds(f.card);
     for (let i = 0; i < 8; i++) {
-      notifyResize(); vi.runOnlyPendingTimers();
-      expect({ top: card.style.top, width: card.style.width, height: size().height }).toEqual(expected);
+      resizeObservers[0].callback(); window.dispatchEvent(new Event('resize')); await tick();
+      expect(bounds(f.card).toJSON()).toEqual(initial.toJSON()); expect(f.card.scrollTop).toBe(137);
     }
-    expect(measurements.every(m => m.maxHeight === 'none' && m.scrollTop === 0)).toBe(true);
-    expect(viewport.panTo).not.toHaveBeenCalled();
-    cleanup();
+    // Remove the explicit inspection reads: production measures only with
+    // its old cap removed and its displaced sticky header scrolled to zero.
+    expect(f.measurements.filter(m => m.maxHeight === 'none').every(m => m.scrollTop === 0)).toBe(true);
   });
 
-  it('uses fractional natural height without scroll overflow and preserves a scrolled creature card', () => {
-    const m = mount();
-    m.cleanup();
-    const measurements: number[] = [];
-    m.card.scrollTop = 137;
-    m.card.getBoundingClientRect = () => {
-      measurements.push(m.card.scrollTop);
-      const height = Math.min(1400.375, Number.parseFloat(m.card.style.maxHeight) || Infinity);
-      return { ...rect(0, 0, 366, height), width: 366, height } as DOMRect;
-    };
-    // scrollHeight is rounded and may include sticky overflow. The card's
-    // unconstrained border box, rather than that live scroll area, drives layout.
-    const scrollHeight = vi.spyOn(m.card, 'scrollHeight', 'get');
-    const cleanup = mountPOICardPlacement(m.card, { viewer: m.viewer, anchor: m.anchor, opening: m.opening, isCurrent: () => true });
-    const top = m.card.style.top;
-    for (let i = 0; i < 8; i++) {
-      window.dispatchEvent(new Event('resize')); vi.runOnlyPendingTimers();
-      expect(m.card.style.top).toBe(top);
-      expect(m.card.scrollTop).toBe(137);
-    }
-    expect(measurements.every(scrollTop => scrollTop === 0)).toBe(true);
-    expect(scrollHeight).not.toHaveBeenCalled();
-    expect(m.viewport.panTo).toHaveBeenCalledOnce();
-    cleanup();
+  it('coalesces viewport, content and window events into one pending layout', async () => {
+    const f = mount(); vi.mocked(f.card.getBoundingClientRect).mockClear();
+    for (let i = 0; i < 20; i++) { f.emit('viewport-change'); window.dispatchEvent(new Event('resize')); }
+    f.grow(); await Promise.resolve();
+    expect(vi.getTimerCount()).toBe(1); await tick();
+    expect(f.card.getBoundingClientRect).toHaveBeenCalledOnce();
   });
 
-  it('keeps the whole near-cap sheet visible and stable across repeated content and resize delivery', async () => {
-    const m = mount();
-    m.cleanup();
-    const naturalHeight = 400.375;
-    m.card.getBoundingClientRect = () => {
-      const height = Math.min(naturalHeight, Number.parseFloat(m.card.style.maxHeight) || Infinity);
-      return { ...rect(0, 0, 366, height), width: 366, height } as DOMRect;
-    };
-    const cleanup = mountPOICardPlacement(m.card, {
-      viewer: m.viewer, anchor: { ...m.anchor, y: m.anchor.y - 100 },
-      opening: m.opening, isCurrent: () => true,
-    });
-    const expected = { top: '431.625px', maxHeight: '400.375px' };
-    for (let i = 0; i < 8; i++) {
-      m.card.append(document.createTextNode('details'));
-      await Promise.resolve();
-      window.dispatchEvent(new Event('resize')); vi.runOnlyPendingTimers();
-      expect({ top: m.card.style.top, maxHeight: m.card.style.maxHeight }).toEqual(expected);
-      expect(m.card.getBoundingClientRect().height).toBe(naturalHeight);
-    }
-    expect(m.viewport.panTo).toHaveBeenCalledOnce();
-    cleanup();
+  it.each(['close', 'remove', 'retire', 'destroy'])('stops queued layout and listeners after %s', async action => {
+    const f = mount(); f.emit('viewport-change');
+    if (action === 'close') f.cleanup();
+    else if (action === 'remove') f.card.remove();
+    else if (action === 'retire') f.invalidate();
+    else f.emit('before-destroy');
+    vi.mocked(f.card.getBoundingClientRect).mockClear();
+    await tick();
+    resizeObservers[0].callback(); f.visual.dispatchEvent(new Event('resize')); f.emit('viewport-change'); window.dispatchEvent(new Event('resize'));
+    await tick();
+    expect(f.card.getBoundingClientRect).not.toHaveBeenCalled();
+    expect(resizeObservers[0].disconnect).toHaveBeenCalledOnce(); expect(vi.getTimerCount()).toBe(0);
   });
-});
-
-it('moves the compact card above the marker after a viewport resize instead of panning again or collapsing controls', () => {
-  const p = planPOICardPlacement({ available: rect(0, 0, 390, 430), marker: marker(190, 385), cardWidth: 366, cardHeight: 1500, compact: true, allowPan: false });
-  expect(p.markerShift).toEqual({ x: 0, y: 0 });
-  expect(p.maxHeight).toBeGreaterThan(112);
-  expect(p.top + p.maxHeight).toBeLessThan(367);
 });

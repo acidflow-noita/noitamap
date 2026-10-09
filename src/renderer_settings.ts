@@ -1,4 +1,5 @@
 const RENDERER_STORAGE_KEY = 'noitamap-renderer';
+const HD_RENDERER_STORAGE_KEY = 'noitamap-hd-renderer';
 
 export type RendererType = 'canvas' | 'webgl';
 
@@ -14,6 +15,10 @@ function isLocalhost(): boolean {
 }
 
 export function getStoredRenderer(): RendererType {
+  // Instant terrain uses the canvas drawer's per-tile filtering and actual
+  // tile-drawn lifecycle. A persisted local drawer experiment must not bypass
+  // either contract; terrain itself still runs on the GPU in its worker.
+  if (isInstantTerrainEnabled()) return "canvas";
   // Force canvas for everyone in production: Chromium's webgl drawer produces
   // visible raster artifacts on POI overlays and highlight circles at certain
   // zoom levels. Localhost is allowed to opt into webgl via the dev console
@@ -39,10 +44,54 @@ export function clearStoredRenderer(): void {
 // read: hiding the checkbox alone would leave returning users on the slow path.
 let fullPixelTerrainForBake = false;
 
-/** Historical name shared by the renderer and generator. Public maps always
- * use approximate live terrain; completed baked pixels are loaded separately. */
+/** Historical name for offline full-pixel generation. Completed baked pixels
+ * are loaded separately from the live renderer preference. */
 export function isGLTerrainEnabled(): boolean {
   return fullPixelTerrainForBake;
+}
+
+/** Live GPU detail defaults on. Keep old diagnostic links usable, without
+ * reviving the unrelated, slow offline-pyramid preference. */
+export function isHDRendererEnabled(): boolean {
+  if (typeof window !== 'undefined') {
+    const override = new URLSearchParams(window.location?.search ?? '').get('terrain');
+    if (override === 'gpu') return true;
+    if (override === 'approx') return false;
+  }
+  try {
+    return localStorage.getItem(HD_RENDERER_STORAGE_KEY) !== 'false';
+  } catch {
+    return true;
+  }
+}
+
+export function setHDRendererEnabled(enabled: boolean): void {
+  let persisted = false;
+  try {
+    localStorage.setItem(HD_RENDERER_STORAGE_KEY, String(enabled));
+    persisted = true;
+  } catch {
+    // Keep the choice through the required reload even if storage is blocked.
+  }
+  if (typeof window !== 'undefined') {
+    const url = new URL(window.location.href);
+    if (persisted) url.searchParams.delete('terrain');
+    else url.searchParams.set('terrain', enabled ? 'gpu' : 'approx');
+    window.history.replaceState(window.history.state, '', url);
+  }
+}
+
+/** GPU pixels at the requested display resolution, independent of the offline
+ * native-resolution pyramid renderer. Native entrypoints select their mode. */
+export function isInstantTerrainEnabled(): boolean {
+  return !fullPixelTerrainForBake && typeof window !== 'undefined' &&
+    isHDRendererEnabled();
+}
+
+/** Generation, worker data, material tables and cache identities must all use
+ * the same fork, even when WebGL is unavailable and presentation falls back. */
+export function useRenderPerfGeneration(): boolean {
+  return isGLTerrainEnabled() || isInstantTerrainEnabled();
 }
 
 /** Internal native-entrypoint switch. Never expose this through UI, URL state,

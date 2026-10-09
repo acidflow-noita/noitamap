@@ -32,6 +32,7 @@ import { isLightMode } from "./light-mode";
 import { getCurrentIsDaily } from "./dynamic-map";
 
 export type UnlockDescriptor = "all" | "none" | "mod";
+type AltReadyListener = (descriptor: UnlockDescriptor, seed: number) => void;
 
 const VIEW_STORAGE = "noitamap-unlocks-view";
 const URL_KEY_STORAGE = "noitamap-unlocks-url-key";
@@ -39,12 +40,21 @@ const URL_KEY_STORAGE = "noitamap-unlocks-url-key";
 // Per-seed, per-descriptor cache. Keys: `${seed}|${descriptor}`.
 const altCache = new Map<string, GenerationResult>();
 const altIndexes = new Map<string, Map<string, any>>();
-const pendingDescriptors = new Set<string>();
-let readyListeners: Array<() => void> = [];
-const persistentReadyListeners: Array<() => void> = [];
+const pendingDescriptors = new Map<string, Promise<void>>();
+let altLifetime = new AbortController();
+let readyListeners: AltReadyListener[] = [];
+const persistentReadyListeners: AltReadyListener[] = [];
 let viewListeners: Array<(v: UnlockDescriptor) => void> = [];
 
 let lastSeedSeen: number | null = null;
+
+/** Bind speculative work to the requested seed before any network lookup or
+ * primary generation wait. A completed same-seed variant remains reusable. */
+export function beginAltSeed(seed: number): void {
+  if (lastSeedSeen === seed) return;
+  if (lastSeedSeen !== null) resetAltCache();
+  lastSeedSeen = seed;
+}
 
 /** True if the page was opened with a `?u=<base64>` URL parameter — i.e. the
  *  noitamap in-game mod supplied a fresh unlock list from save00. The
@@ -168,7 +178,7 @@ export function getAltResult(desc: UnlockDescriptor, seed?: number): GenerationR
   return altCache.get(`${s}|${desc}`) ?? null;
 }
 
-export function onAltReady(cb: () => void, persistent = false): () => void {
+export function onAltReady(cb: AltReadyListener, persistent = false): () => void {
   if (persistent) {
     persistentReadyListeners.push(cb);
     return () => {
@@ -198,21 +208,26 @@ function indexPois(result: GenerationResult): Map<string, any> {
  *  silently swallows races (seed-change cancellation, multiple callers
  *  for the same key, etc.). Resolves after the variant is in cache (or
  *  failed). */
-async function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescriptor): Promise<void> {
+function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescriptor): Promise<void> {
   const cacheKey = `${seed}|${desc}`;
-  if (altCache.has(cacheKey) || pendingDescriptors.has(cacheKey)) return;
-  if (desc === primaryDescriptor()) return; // primary is always live, not cached here
-  pendingDescriptors.add(cacheKey);
-  try {
-    const result = await generateDynamicMap({
-      seed,
-      ngPlus: 0,
-      dailySeed: isDaily,
-      unlocks: descriptorToUnlocks(desc),
-      // Pillars track real achievements, independent of the spell-unlock toggle.
-      pillarFlags: getPillarFlagsFromURL(),
-      parallelWorlds: isLightMode() ? [0] : undefined,
-    });
+  if (seed !== lastSeedSeen || altCache.has(cacheKey) || desc === primaryDescriptor()) return Promise.resolve();
+  const existing = pendingDescriptors.get(cacheKey);
+  if (existing) return existing;
+  const lifetime = altLifetime;
+  const input = {
+    seed,
+    ngPlus: 0,
+    dailySeed: isDaily,
+    unlocks: descriptorToUnlocks(desc),
+    // Pillars track real achievements, independent of the spell-unlock toggle.
+    pillarFlags: getPillarFlagsFromURL(),
+    parallelWorlds: isLightMode() ? [0] : undefined,
+    signal: lifetime.signal,
+  };
+  const pending = Promise.resolve().then(async () => {
+    lifetime.signal.throwIfAborted();
+    const result = await generateDynamicMap(input);
+    lifetime.signal.throwIfAborted();
     // Assign stable IDs based on coordinates and PW key
     const assignIds = (poiArr: any[], prefix: string) => {
       if (!Array.isArray(poiArr)) return;
@@ -235,23 +250,29 @@ async function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescrip
     altIndexes.set(cacheKey, indexPois(result));
     const listeners = [...readyListeners, ...persistentReadyListeners];
     for (const cb of listeners) {
-      try { cb(); } catch { /* swallow */ }
+      if (lifetime.signal.aborted) break;
+      try { cb(desc, seed); } catch { /* swallow */ }
     }
-  } catch (e) {
-    console.warn(`[unlocks-toggle] variant ${desc} pre-warm failed:`, e);
-  } finally {
-    pendingDescriptors.delete(cacheKey);
-  }
+  }).catch(e => {
+    if (!lifetime.signal.aborted) console.warn(`[unlocks-toggle] variant ${desc} pre-warm failed:`, e);
+  }).finally(() => {
+    // A reset can start a new request for the same key before this settles.
+    if (pendingDescriptors.get(cacheKey) === pending) pendingDescriptors.delete(cacheKey);
+  });
+  pendingDescriptors.set(cacheKey, pending);
+  return pending;
 }
 
 /** Background pre-warm of every non-primary variant. Called after the
  *  primary render completes; fires the generations sequentially so we
  *  don't thrash telescope's PRNG / cache. */
 export async function prewarmAlt(seed: number, isDaily: boolean, generate = true): Promise<void> {
-  lastSeedSeen = seed;
+  beginAltSeed(seed);
   if (!generate) return; // Baked maps generate an alternate only when explicitly requested.
+  const lifetime = altLifetime;
   const primary = primaryDescriptor();
   for (const desc of availableDescriptors()) {
+    if (lifetime.signal.aborted) return;
     if (desc === primary) continue;
     // Sequential — telescope generation isn't cheap and we don't want to
     // contend with the user's next interaction.
@@ -274,6 +295,8 @@ export async function requestVariant(desc: UnlockDescriptor): Promise<void> {
 
 /** Reset cache when seed changes. */
 export function resetAltCache(): void {
+  altLifetime.abort();
+  altLifetime = new AbortController();
   altCache.clear();
   altIndexes.clear();
   pendingDescriptors.clear();
@@ -290,6 +313,6 @@ if (typeof window !== "undefined") {
     available: availableDescriptors(),
     seed: lastSeedSeen,
     cached: Array.from(altCache.keys()),
-    pending: Array.from(pendingDescriptors),
+    pending: Array.from(pendingDescriptors.keys()),
   });
 }

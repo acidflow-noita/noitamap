@@ -221,3 +221,50 @@ describe("authored coral chest biome", () => {
     expect(JSON.stringify(raw)).toBe(before);expect(flat).toHaveLength(6);
   });
 });
+
+describe("inventory projection copies", () => {
+  it("overrides stale projected fields while retaining metadata, key order and shallow preview references", () => {
+    const symbol = Symbol('metadata');
+    const child = Object.freeze({ type: 'wand', x: 0, y: null, pw: 99,
+      parentType: 'old-type', parentId: 'old-id', isBossReward: false,
+      biome: '', worldX: 999, worldY: 888, cards: ['BOMB'], extra: { keep: true }, [symbol]: 'kept' });
+    const items = Object.freeze([child]);
+    const parent = Object.freeze({ type: 'boss_fish', id: 'fish', x: -35840, y: -24576,
+      pw: 88, worldX: 777, worldY: 666, biome: 'lake', items,
+      extra: { parent: true }, rewards: ['old-preview'] });
+    const flat = getAllPOIsFlat({ poisByPW: { '-1,-1': [parent] } } as any);
+    expect(flat[0]).toMatchObject({ id: 'fish', pw: -1, worldX: -35840, worldY: -24576, biome: 'lake' });
+    expect(Object.hasOwn(flat[0], 'items')).toBe(false);
+    expect(flat[0].rewards).toEqual(items);
+    expect(flat[0].rewards).not.toBe(items);
+    expect(flat[0].rewards?.[0]).toBe(child);
+    expect(flat[0].extra).toBe(parent.extra);
+    expect(flat[1]).toMatchObject({ pw: -1, parentType: 'boss_fish', parentId: 'fish',
+      isBossReward: true, biome: 'lake', worldX: 0, worldY: -24576 });
+    expect(flat[1].cards).toBe(child.cards);
+    expect(flat[1].extra).toBe(child.extra);
+    expect((flat[1] as any)[symbol]).toBe('kept');
+    expect(Reflect.ownKeys(flat[1])).toEqual(Reflect.ownKeys(child));
+    expect(child.parentId).toBe('old-id');
+    expect(parent.rewards).toEqual(['old-preview']);
+  });
+
+  it("reads changed IDs, coordinates and reward metadata on each call without altering previous projections", () => {
+    const child = { type: 'wand', id: 'old-child', x: null, y: 0, biome: '', isBossReward: false };
+    const parent = { type: 'holy_mountain_shop', id: 'old-shop', x: 100, y: 200, biome: 'coalmine', items: [child] };
+    const generation = { poisByPW: { '1,0': [parent] } } as any;
+    const previous = getAllPOIsFlat(generation);
+    parent.id = 'new-shop'; parent.x = 300; parent.biome = 'snowcave';
+    child.id = 'new-child'; child.x = 12 as any; child.isBossReward = true;
+    const current = getAllPOIsFlat(generation);
+    expect(previous[1]).toMatchObject({ id: 'old-child', parentId: 'old-shop', worldX: 100,
+      worldY: 0, pw: 1, biome: 'coalmine', isBossReward: false });
+    expect(current[1]).toMatchObject({ id: 'new-child', parentId: 'new-shop', worldX: 12,
+      worldY: 0, pw: 1, biome: 'snowcave', isBossReward: true });
+    expect(previous[1]).not.toBe(current[1]);
+    expect(current[0].previewItems?.[0]).toBe(child);
+    expect(Object.hasOwn(current[0], 'items')).toBe(false);
+    expect(Reflect.ownKeys(current[1])).toEqual(['type', 'id', 'x', 'y', 'biome', 'isBossReward',
+      'pw', 'parentType', 'parentId', 'worldX', 'worldY']);
+  });
+});

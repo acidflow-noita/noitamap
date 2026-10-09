@@ -15,11 +15,13 @@ export function snapshotWorkerScenes(sceneModule: any, fullPixels: boolean): Wor
   for (const [key, scene] of Object.entries(sceneModule.PIXEL_SCENE_DATA) as [string, any][]) {
     const spawnPoints = sceneModule.PIXEL_SCENE_SPAWN_DATA[key];
     if (!Array.isArray(spawnPoints)) throw new Error(`Missing prescanned scene spawns: ${key}`);
-    // Metadata-only records are sufficient for the updated fork's spawn scan.
-    // Keep the eager pixels for the legacy generator that still needs them.
+    // Updated render-perf workers scan prescanned metadata only. Pixels may
+    // already be warm on the main thread; do not clone those back to workers.
     data[key] = {
       ...scene,
-      ...(fullPixels && sceneModule.ensureScenePixels ? { imgElement: null, visualArt: null } : {}),
+      ...(fullPixels && sceneModule.ensureScenePixels
+        ? { imgElement: null, visualArt: null }
+        : {}),
       variants: {},
     };
     spawns[key] = spawnPoints;

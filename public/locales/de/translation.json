@@ -751,7 +751,7 @@
       "crystal_key": "Kristallschlüssel",
       "egg": "Ei",
       "egg_fire": "Geröstetes Ei",
-      "egg_monster": "Wackelndes Ei",
+      "egg_monster": "Ei",
       "egg_purple": "Unterkühltes Ei",
       "egg_slime": "Schleimiges Ei",
       "egg_hollow": "Hohles Ei",
@@ -783,7 +783,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Ei",
+      "egg_spiders": "Unterkühltes Ei"
     },
     "bosses": {
       "Kivi": "Stein",
@@ -4610,7 +4612,9 @@
     "switchProviderConfirm": "Wenn Sie sich mit {{next}} anmelden, werden Sie von {{current}} abgemeldet.\n\nDer Pro-Zugriff richtet sich dann nach Ihrem {{next}}-Abonnement.\n\nMöchten Sie zu {{next}} wechseln?",
     "loginWithTwitch": "Mit Twitch anmelden",
     "subscribeTwitch": "Auf Twitch abonnieren",
-    "or": "oder"
+    "or": "oder",
+    "workspaceSaveFailed": "Der aktuelle Arbeitsstand konnte nicht gespeichert werden. Die Anmeldung wurde abgebrochen. Bitte versuche es erneut.",
+    "workspaceRestoreFailed": "Der Zeichnungsbereich konnte nicht wiederhergestellt werden. Lade die Seite neu und versuche es erneut."
   },
   "loading": {
     "maps": "Karten werden geladen...",
@@ -4791,6 +4795,13 @@
       "upTitle": "Vorwaerts bewegen",
       "downTitle": "Rueckwaerts bewegen",
       "backTitle": "Nach hinten senden"
+    },
+    "target": {
+      "label": "Gespeicherte und geteilte Zeichnungen öffnen auf",
+      "fixed": "Dieser Karte/diesem Seed",
+      "daily": "Heutigem Daily",
+      "description": "Diese Auswahl wird mit der Zeichnung gespeichert. Die Daily-Option verwendet den täglichen Seed vom Tag, an dem die Zeichnung geöffnet wird.",
+      "updateRequired": "Lade die Seite neu, um eine Zeichnung auf dem heutigen Daily zu öffnen."
     }
   },
   "dynamicMap": {
@@ -5076,14 +5087,14 @@
     "reactionsHeader": "Wesentliche Reaktionen auf Barkeeper",
     "asReagent": "Als Reagenz anzeigen",
     "asProduct": "Als Produkt ansehen",
-    "openInBartender": "In Bartender öffnen",
-    "bartenderReagentHint": "Reaktionen mit diesem Material in Bartender ansehen.",
-    "bartenderProductHint": "Reaktionen, die dieses Material erzeugen, in Bartender ansehen.",
-    "showSpawnBiomes": "Spawn-Biome auf der Karte anzeigen",
-    "spawnMapMissing": "Auf dieser Karte nicht angezeigt: {{locations}}",
     "openInWiki": "Im Noita Wiki öffnen",
+    "openInBartender": "In Bartender öffnen",
+    "bartenderProductHint": "Reaktionen, die dieses Material erzeugen, in Bartender ansehen.",
+    "bartenderReagentHint": "Reaktionen mit diesem Material in Bartender ansehen.",
     "spawnBiomesPro": "Das Hervorheben von Spawn-Biomen ist eine Pro-Funktion.",
-    "spawnBiomesUnavailable": "Für diese Kreatur sind auf dieser Karte keine Spawn-Biome verfügbar."
+    "spawnBiomesUnavailable": "Für diese Kreatur sind auf dieser Karte keine Spawn-Biome verfügbar.",
+    "showSpawnBiomes": "Spawn-Biome auf der Karte anzeigen",
+    "spawnMapMissing": "Auf dieser Karte nicht angezeigt: {{locations}}"
   },
   "wand": {
     "shuffle": "Mischen",
@@ -5120,7 +5131,17 @@
     "pillarGoto": "Auf der Karte anzeigen",
     "pillarSingular": "Säule der Errungenschaften",
     "pillarSearch": "Auf der Karte suchen",
-    "biomeShop": "Biom-Laden"
+    "biomeShop": "Biom-Laden",
+    "possibleSpawns": "Mögliche Kreaturen",
+    "eggHatch": "Das Ergebnis hängt vom Seed und davon ab, wo das Ei schlüpft.",
+    "noEggSpawns": "Aus diesem Ei schlüpfen keine Kreaturen.",
+    "possibleIllusions": "Mögliche Illusionen",
+    "nestSpawnLimit": "Prüft alle {{frames}} Spiel-Frames. Jede Prüfung hat eine Chance von {{chance}}, eine Kreatur zu erzeugen, wenn der Spieler weniger als {{distance}} Pixel entfernt ist, insgesamt bis zu {{count}}.",
+    "spawnChancePerCreature": "Die Wahrscheinlichkeiten gelten für jede erfolgreiche Erzeugung.",
+    "cocoonSpawns": "Setzt bei Zerstörung eine Kreatur frei; Schaden kann sie bereits vorher freisetzen.",
+    "snowCrystalSpawns": "Erzeugt jeweils eine Illusion, solange der Spieler in der Nähe ist. Die Wahrscheinlichkeiten gelten für jede erfolgreiche Erzeugung.",
+    "spawns": "Erzeugt",
+    "lukkiEggSpawns": "Setzt pro auslösendem Treffer eine Kreatur frei. Wiederholte Treffer können weitere freisetzen, bevor das Ei zerstört wird."
   },
   "skipCreatures": {
     "title": "Keine Kreaturen hinzufügen",
@@ -5770,5 +5791,13 @@
       "progress_hut_b": "Experimenteller Zauberstab (Voraussetzungen)",
       "secret_null": "Altar der Aufhebung"
     }
+  },
+  "hdRenderer": {
+    "title": "HD-Renderer",
+    "content": "Nutzt die GPU für detailliertes Gelände auf generierten Karten. Standardmäßig aktiviert. Lädt die Karte neu. Bilder der täglichen Karten bleiben unverändert."
+  },
+  "startup": {
+    "failed": "Noitamap konnte nicht gestartet werden. Lade die Seite neu, um es erneut zu versuchen.",
+    "retry": "Seite neu laden"
   }
 }

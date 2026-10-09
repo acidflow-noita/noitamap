@@ -751,7 +751,7 @@
       "crystal_key": "クリスタルの鍵",
       "egg": "卵",
       "egg_fire": "灼熱の卵",
-      "egg_monster": "蠢く卵",
+      "egg_monster": "卵",
       "egg_purple": "冷たい卵",
       "egg_slime": "ベトベトな卵",
       "egg_hollow": "空の卵",
@@ -783,7 +783,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "卵",
+      "egg_spiders": "冷たい卵"
     },
     "bosses": {
       "Kivi": "キヴィ",
@@ -4610,7 +4612,9 @@
     "switchProviderConfirm": "{{next}}でログインすると、{{current}}からログアウトされます。\n\nその後、Pro へのアクセスは {{next}} のサブスクリプションによって決まります。\n\n{{next}}に切り替えますか?",
     "loginWithTwitch": "Twitchでログイン",
     "subscribeTwitch": "Twitchでサブスク登録",
-    "or": "または"
+    "or": "または",
+    "workspaceSaveFailed": "作業状態を保存できませんでした。ログインを中止しました。もう一度お試しください。",
+    "workspaceRestoreFailed": "描画の作業状態を復元できませんでした。ページを再読み込みしてお試しください。"
   },
   "loading": {
     "maps": "マップを読み込み中...",
@@ -4791,6 +4795,13 @@
       "upTitle": "前へ移動",
       "downTitle": "後ろへ移動",
       "backTitle": "最背面へ"
+    },
+    "target": {
+      "label": "保存・共有した描画を開くマップ",
+      "fixed": "このマップ・シード",
+      "daily": "今日のデイリー",
+      "description": "この設定は描画と一緒に保存されます。デイリーを選ぶと、描画を開いた日のデイリーシードが使われます。",
+      "updateRequired": "今日のデイリーで描画を開くには、ページを再読み込みしてください。"
     }
   },
   "dynamicMap": {
@@ -5076,14 +5087,14 @@
     "reactionsHeader": "Bartender での物質的な反応",
     "asReagent": "試薬として表示",
     "asProduct": "製品として見る",
-    "openInBartender": "Bartenderで開く",
-    "bartenderReagentHint": "この素材を使う反応をBartenderで確認します。",
-    "bartenderProductHint": "この素材を生成する反応をBartenderで確認します。",
-    "showSpawnBiomes": "出現バイオームをマップに表示",
-    "spawnMapMissing": "このマップには表示されません：{{locations}}",
     "openInWiki": "Noita Wikiで開く",
+    "openInBartender": "Bartenderで開く",
+    "bartenderProductHint": "この素材を生成する反応をBartenderで確認します。",
+    "bartenderReagentHint": "この素材を使う反応をBartenderで確認します。",
     "spawnBiomesPro": "出現バイオームの強調表示はPro機能です。",
-    "spawnBiomesUnavailable": "このマップでは、この生物の出現バイオームを表示できません。"
+    "spawnBiomesUnavailable": "このマップでは、この生物の出現バイオームを表示できません。",
+    "showSpawnBiomes": "出現バイオームをマップに表示",
+    "spawnMapMissing": "このマップには表示されません：{{locations}}"
   },
   "wand": {
     "shuffle": "シャッフル",
@@ -5120,7 +5131,17 @@
     "pillarGoto": "地図上に表示",
     "pillarSingular": "達成の柱",
     "pillarSearch": "地図で検索",
-    "biomeShop": "バイオーム内のショップ"
+    "biomeShop": "バイオーム内のショップ",
+    "possibleSpawns": "出現する可能性のある生物",
+    "eggHatch": "結果はシード値と卵が孵化する場所によって決まります。",
+    "noEggSpawns": "この卵から生物は孵化しません。",
+    "possibleIllusions": "出現する可能性のある幻影",
+    "nestSpawnLimit": "{{frames}}ゲームフレームごとに判定します。プレイヤーとの距離が{{distance}}ピクセル未満の場合、判定ごとに{{chance}}の確率で1体出現し、合計で最大{{count}}体まで出現します。",
+    "spawnChancePerCreature": "確率は、出現に成功するたびに適用されます。",
+    "cocoonSpawns": "破壊されると1体出現します。ダメージを受けると、それより早く出現することがあります。",
+    "snowCrystalSpawns": "プレイヤーが近くにいる間、幻影を1体ずつ作り出します。確率は、出現に成功するたびに適用されます。",
+    "spawns": "出現する生物",
+    "lukkiEggSpawns": "攻撃によって効果が発動するたびに1体出現します。卵が破壊されるまでに繰り返し攻撃すると、さらに出現することがあります。"
   },
   "skipCreatures": {
     "title": "クリーチャーを追加しない",
@@ -5770,5 +5791,13 @@
       "progress_hut_b": "実験用の杖（条件）",
       "secret_null": "取り消しの祭壇"
     }
+  },
+  "hdRenderer": {
+    "title": "HDレンダラー",
+    "content": "生成マップの地形をGPUで詳細に描画します。初期設定はオンです。変更するとマップが再読み込みされます。デイリーマップの画像は変わりません。"
+  },
+  "startup": {
+    "failed": "Noitamapを起動できませんでした。ページを再読み込みして、もう一度お試しください。",
+    "retry": "ページを再読み込み"
   }
 }

@@ -20,6 +20,8 @@
  * of the three is the recurring "added a POI, forgot a wiring" bug class.
  */
 import { describe, it, expect, beforeAll } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import atlas from "../src/data/atlas.json";
 import spells from "../src/data/spells.json";
 import { buildPillarSegments } from "../src/data/pillars";
@@ -105,6 +107,19 @@ const POI_TYPES = [
 ];
 
 describe("POI sprite coverage", () => {
+  it.each(['noita-telescope', 'noita-telescope-vm'])("every %s perk resolves to its own local icon", fork => {
+    const source = readFileSync(resolve(process.cwd(), 'lib', fork, 'js/perks.js'), 'utf8');
+    const list = source.match(/export const PERKS = (\[[\s\S]*?\n\]);/);
+    expect(list).not.toBeNull();
+    const perks = [...list![1].matchAll(/"id"\s*:\s*"([^"]+)"/g)].map(([, id]) => id);
+    expect(perks.length).toBeGreaterThan(100);
+    for (const id of perks) {
+      const { key, ok } = resolvesInAtlas({ type: 'item', item: 'perk', perk: id });
+      expect(key, id).not.toBe('item:perk');
+      expect(ok, `${id}: ${key}`).toBe(true);
+    }
+  });
+
   it("every special wand sprite resolves to a present atlas key", () => {
     const missing: Array<{ sprite: string; key: string | string[] | null }> = [];
     for (const sprite of SPECIAL_WAND_SPRITES) {
@@ -234,11 +249,21 @@ describe("POI sprite coverage", () => {
     for (const s of spells as Array<{ id: string }>) {
       const { key, ok } = resolvesInAtlas({ type: "item", item: "spell", spell: s.id });
       if (!ok) missing.push({ id: s.id, key });
+      expect(key, s.id).toMatch(/^spell:card\//);
+      expect(atlasMap[key as string], s.id).toMatchObject({ w: 20, h: 20 });
     }
     expect(
       missing,
       `${missing.length}/${(spells as unknown[]).length} spells with no atlas sprite (empty squares in cards/search):\n${JSON.stringify(missing, null, 2)}`,
     ).toEqual([]);
+  });
+
+  it('uses the same card for loose spells and container contents, including filename aliases', () => {
+    const key = getSpriteKey({ type: 'item', item: 'spell', spell: 'LASER_LUMINOUS_DRILL' }, atlasMap);
+    expect(key).toBe('spell:card/luminous_drill_timer');
+    expect(getSpriteKey({ type: 'spell', item: 'laser_luminous_drill' }, atlasMap)).toBe(key);
+    // An actual bomb entity retains its raw glyph instead of acquiring a card.
+    expect(getSpriteKey({ type: 'item', item: 'bomb' }, atlasMap)).toBe('spell:bomb');
   });
 
   // ── Structural invariant ──────────────────────────────────────────────────

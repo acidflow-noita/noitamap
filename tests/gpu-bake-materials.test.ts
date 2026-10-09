@@ -5,7 +5,7 @@ import {mkdtemp,rm} from "node:fs/promises";
 import {resolve} from "node:path";
 import {tmpdir} from "node:os";
 
-it("resolves the corrected rare-material samples through actual native GPU shaders",async()=>{
+it("resolves corrected rare-material and topology-coordinate samples through actual native GPU shaders",async()=>{
  const root=resolve(import.meta.dirname,".."),bundle=await mkdtemp(resolve(tmpdir(),"noitamap-gpu-materials-"));
  try {
   await build({configFile:resolve(root,"vite.config.ts"),logLevel:"error",build:{outDir:bundle,
@@ -24,7 +24,18 @@ it("resolves the corrected rare-material samples through actual native GPU shade
     worker.once("exit",()=>{clearTimeout(shutdown);done(m)});
    });
   });
-  expect(result.samples.map((p:any)=>p.gpuMaterial)).toEqual([426,140,140,426]);
+  expect(result.samples.map((p:any)=>p.gpuMaterial)).toEqual([426,140,140,426,5,5,32,279,140,140]);
   for(const sample of result.samples)expect(sample.gpuMaterial).toBe(sample.cpuMaterial);
+  expect(result.vertical).toHaveLength(12);
+  for(const region of result.vertical){
+   // A real mixture of air/material prevents empty-region false positives.
+   expect(region.nonAir).toBeGreaterThan(0);
+   expect(region.nonAir).toBeLessThan(region.pixels);
+   expect(region.baselineMismatches).toBeGreaterThan(region.mismatches);
+   expect(region.geometryMismatches).toBe(0);
+   // One recorded heaven pixel differs in silver/cloud material at a noise
+   // threshold. This bound must not hide a geometric shift or broader drift.
+   expect(region.mismatches).toBeLessThanOrEqual(region.plane===-1&&region.x===-3520?1:0);
+  }
  } finally {await rm(bundle,{recursive:true,force:true})}
 },210000);

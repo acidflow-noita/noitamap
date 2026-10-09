@@ -751,7 +751,7 @@
       "crystal_key": "Clé en cristal",
       "egg": "Œuf",
       "egg_fire": "Œuf chaud",
-      "egg_monster": "Œuf tortillant",
+      "egg_monster": "Œuf",
       "egg_purple": "Œuf glacial",
       "egg_slime": "Œuf gluant",
       "egg_hollow": "Œuf creux",
@@ -783,7 +783,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Œuf",
+      "egg_spiders": "Œuf glacial"
     },
     "bosses": {
       "Kolmisilmän silmä": "Trois yeux silmä",
@@ -4610,7 +4612,9 @@
     "switchProviderConfirm": "En vous connectant avec {{next}}, vous serez déconnecté de {{current}}.\n\nL'accès Pro dépendra alors de votre abonnement {{next}}.\n\nSouhaitez-vous passer à {{next}} ?",
     "loginWithTwitch": "Se connecter avec Twitch",
     "subscribeTwitch": "S’abonner sur Twitch",
-    "or": "ou"
+    "or": "ou",
+    "workspaceSaveFailed": "Impossible d’enregistrer votre espace de travail. La connexion a été annulée. Veuillez réessayer.",
+    "workspaceRestoreFailed": "Impossible de restaurer votre espace de dessin. Rechargez la page pour réessayer."
   },
   "loading": {
     "maps": "Chargement des cartes...",
@@ -4791,6 +4795,13 @@
       "upTitle": "Avancer",
       "downTitle": "Reculer",
       "backTitle": "Mettre en arriere-plan"
+    },
+    "target": {
+      "label": "Les dessins enregistrés et partagés s’ouvrent sur",
+      "fixed": "Cette carte/graine",
+      "daily": "Quotidien du jour",
+      "description": "Ce choix est enregistré avec le dessin. L’option quotidienne utilise la graine du jour où le dessin est ouvert.",
+      "updateRequired": "Rechargez la page pour ouvrir un dessin sur le quotidien du jour."
     }
   },
   "dynamicMap": {
@@ -5076,14 +5087,14 @@
     "reactionsHeader": "Réactions importantes sur Barman",
     "asReagent": "Afficher comme réactif",
     "asProduct": "Afficher en tant que produit",
-    "openInBartender": "Ouvrir dans Bartender",
-    "bartenderReagentHint": "Voir dans Bartender les réactions qui utilisent ce matériau.",
-    "bartenderProductHint": "Voir dans Bartender les réactions qui produisent ce matériau.",
-    "showSpawnBiomes": "Afficher les biomes d’apparition sur la carte",
-    "spawnMapMissing": "Non affiché sur cette carte : {{locations}}",
     "openInWiki": "Ouvrir dans Noita Wiki",
+    "openInBartender": "Ouvrir dans Bartender",
+    "bartenderProductHint": "Voir dans Bartender les réactions qui produisent ce matériau.",
+    "bartenderReagentHint": "Voir dans Bartender les réactions qui utilisent ce matériau.",
     "spawnBiomesPro": "La mise en évidence des biomes d’apparition est une fonctionnalité Pro.",
-    "spawnBiomesUnavailable": "Les biomes d’apparition de cette créature ne sont pas disponibles sur cette carte."
+    "spawnBiomesUnavailable": "Les biomes d’apparition de cette créature ne sont pas disponibles sur cette carte.",
+    "showSpawnBiomes": "Afficher les biomes d’apparition sur la carte",
+    "spawnMapMissing": "Non affiché sur cette carte : {{locations}}"
   },
   "wand": {
     "shuffle": "Aléatoire",
@@ -5120,7 +5131,17 @@
     "pillarGoto": "Afficher sur la carte",
     "pillarSingular": "Pilier d'exploits",
     "pillarSearch": "Rechercher sur la carte",
-    "biomeShop": "Boutique de biome"
+    "biomeShop": "Boutique de biome",
+    "possibleSpawns": "Créatures possibles",
+    "eggHatch": "Le résultat dépend de la graine et de l’endroit où l’œuf éclot.",
+    "noEggSpawns": "Aucune créature ne sort de cet œuf.",
+    "possibleIllusions": "Illusions possibles",
+    "nestSpawnLimit": "Effectue une vérification toutes les {{frames}} images du jeu. Chaque vérification a une probabilité de {{chance}} de faire apparaître une créature si le joueur est à moins de {{distance}} pixels, jusqu’à {{count}} au total.",
+    "spawnChancePerCreature": "Les probabilités s’appliquent à chaque apparition effective.",
+    "cocoonSpawns": "Libère une créature à sa destruction ; les dégâts peuvent la libérer plus tôt.",
+    "snowCrystalSpawns": "Crée une illusion à la fois lorsque le joueur est à proximité. Les probabilités s’appliquent à chaque apparition effective.",
+    "spawns": "Fait apparaître",
+    "lukkiEggSpawns": "Libère une créature par coup déclencheur. Des coups répétés peuvent en libérer davantage avant la destruction de l’œuf."
   },
   "skipCreatures": {
     "title": "Ne pas ajouter de créatures",
@@ -5770,5 +5791,13 @@
       "progress_hut_b": "Baguette expérimentale (Conditions)",
       "secret_null": "Autel d'annulation"
     }
+  },
+  "hdRenderer": {
+    "title": "Rendu HD",
+    "content": "Utilise le GPU pour afficher un terrain détaillé sur les cartes générées. Activé par défaut. Recharge la carte. Les images des cartes quotidiennes restent inchangées."
+  },
+  "startup": {
+    "failed": "Impossible de démarrer Noitamap. Rechargez la page pour réessayer.",
+    "retry": "Recharger la page"
   }
 }

@@ -16,9 +16,8 @@ import { clearTargetPoiId } from './url';
 import { drawSpriteToCanvas, getSpriteOffset, loadSpritesheetAndAtlas } from '../telescope/poi-spatial-index';
 import { buildExtendedCreatureSectionByName } from '../extended-info';
 import { describeBiome } from './biome-names';
-import { attachWikiLinkPopover, hidePopovers } from '../popover-util';
-import { biomePathBounds } from './biome-path-bounds';
 import { clearCreatureSpawnBiomeFocus } from './creature-spawn-biomes';
+import { attachWikiLinkPopover, hidePopovers } from '../popover-util';
 
 // Preload the POI atlas, but DEFER it to browser idle. Loading it eagerly at
 // module init pulls a ~1.25 MB spritesheet + atlas decode onto the main thread
@@ -241,9 +240,29 @@ function createPathOverlay({ path, color, text, biomeName }: PathOfInterest): OS
     }
   }
 
-  const bounds = biomePathBounds(path);
-  if (!bounds) throw new Error(`Invalid biome boundary path: ${text}`);
-  const { x: minX, y: minY, width, height } = bounds;
+  // Calculate bounding box from all coordinates
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  const allCoords = path.split(/[MLZ]/).filter(p => p.trim() !== '');
+  for (const point of allCoords) {
+    const coords = point.trim().split(' ').map(Number).filter(n => !isNaN(n));
+    for (let i = 0; i < coords.length; i += 2) {
+      if (i + 1 < coords.length) {
+        const x = coords[i];
+        const y = coords[i + 1];
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+  }
+
+  const width = maxX - minX;
+  const height = maxY - minY;
 
   // Create container element
   const el = document.createElement('div');
@@ -498,9 +517,9 @@ function createOverlayPopup({ name, aliases, text, wiki, fileName, x, y }: Point
       wikiLink.target = '_blank';
       wikiLink.textContent = 'Wiki';
       wikiLink.classList.add('wikiLink');
+      attachWikiLinkPopover(wikiLink);
       wikiLink.style.display = 'inline-block';
       wikiLink.style.marginTop = '8px';
-      attachWikiLinkPopover(wikiLink);
       textContainer.appendChild(wikiLink);
     }
 
@@ -739,9 +758,7 @@ export const refreshOverlayTranslations = () => {
   const overlayPopups = document.querySelectorAll('.osOverlayPopup');
   overlayPopups.forEach(popup => {
     const popupElement = popup as HTMLElement;
-
-    popupElement.querySelectorAll<HTMLAnchorElement>('a[data-popover-owner="wiki-link"]')
-      .forEach(attachWikiLinkPopover);
+    popupElement.querySelectorAll<HTMLAnchorElement>('a[data-popover-owner="wiki-link"]').forEach(attachWikiLinkPopover);
 
     // Get the stored original data
     const originalName = popupElement.dataset.originalName;

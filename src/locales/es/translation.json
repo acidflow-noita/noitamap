@@ -751,7 +751,7 @@
       "crystal_key": "Llave de cristal",
       "egg": "Huevo",
       "egg_fire": "Huevo tostado",
-      "egg_monster": "Huevo tembloroso",
+      "egg_monster": "Huevo",
       "egg_purple": "Huevo frío",
       "egg_slime": "Huevo gelatinoso",
       "egg_hollow": "Huevo vacío",
@@ -783,7 +783,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Huevo",
+      "egg_spiders": "Huevo frío"
     },
     "bosses": {
       "Kivi": "Kivi",
@@ -4610,7 +4612,9 @@
     "switchProviderConfirm": "Al iniciar sesión con {{next}}, se cerrará tu sesión de {{current}}.\n\nEl acceso Pro dependerá entonces de tu suscripción de {{next}}.\n\n¿Quieres iniciar sesión con {{next}}?",
     "loginWithTwitch": "Iniciar sesion con Twitch",
     "subscribeTwitch": "Suscribirse en Twitch",
-    "or": "o"
+    "or": "o",
+    "workspaceSaveFailed": "No se pudo guardar tu espacio de trabajo. Se canceló el inicio de sesión. Inténtalo de nuevo.",
+    "workspaceRestoreFailed": "No se pudo restaurar tu espacio de dibujo. Recarga la página para intentarlo de nuevo."
   },
   "loading": {
     "maps": "Cargando mapas...",
@@ -4791,6 +4795,13 @@
       "upTitle": "Mover adelante",
       "downTitle": "Mover atras",
       "backTitle": "Enviar al fondo"
+    },
+    "target": {
+      "label": "Los dibujos guardados y compartidos se abren en",
+      "fixed": "Este mapa/semilla",
+      "daily": "Diario de hoy",
+      "description": "Esta elección se guarda con el dibujo. La opción diaria usa la semilla diaria del día en que se abra el dibujo.",
+      "updateRequired": "Recarga la página para abrir un dibujo en el diario de hoy."
     }
   },
   "dynamicMap": {
@@ -5076,14 +5087,14 @@
     "reactionsHeader": "Reacciones materiales sobre Bartender",
     "asReagent": "Ver como reactivo",
     "asProduct": "Ver como producto",
-    "openInBartender": "Abrir en Bartender",
-    "bartenderReagentHint": "Ver en Bartender las reacciones que utilizan este material.",
-    "bartenderProductHint": "Ver en Bartender las reacciones que producen este material.",
-    "showSpawnBiomes": "Mostrar los biomas de aparición en el mapa",
-    "spawnMapMissing": "No se muestra en este mapa: {{locations}}",
     "openInWiki": "Abrir en Noita Wiki",
+    "openInBartender": "Abrir en Bartender",
+    "bartenderProductHint": "Ver en Bartender las reacciones que producen este material.",
+    "bartenderReagentHint": "Ver en Bartender las reacciones que utilizan este material.",
     "spawnBiomesPro": "Resaltar los biomas de aparición es una función Pro.",
-    "spawnBiomesUnavailable": "Los biomas de aparición de esta criatura no están disponibles en este mapa."
+    "spawnBiomesUnavailable": "Los biomas de aparición de esta criatura no están disponibles en este mapa.",
+    "showSpawnBiomes": "Mostrar los biomas de aparición en el mapa",
+    "spawnMapMissing": "No se muestra en este mapa: {{locations}}"
   },
   "wand": {
     "shuffle": "Aleatorio",
@@ -5120,7 +5131,17 @@
     "pillarGoto": "Mostrar en el mapa",
     "pillarSingular": "Pilar de Logros",
     "pillarSearch": "Buscar en el mapa",
-    "biomeShop": "Tienda de bioma"
+    "biomeShop": "Tienda de bioma",
+    "possibleSpawns": "Posibles criaturas",
+    "eggHatch": "El resultado depende de la semilla y del lugar donde eclosiona el huevo.",
+    "noEggSpawns": "De este huevo no nacen criaturas.",
+    "possibleIllusions": "Posibles ilusiones",
+    "nestSpawnLimit": "Comprueba cada {{frames}} fotogramas del juego. Cada comprobación tiene una probabilidad de {{chance}} de generar una criatura si el jugador está a menos de {{distance}} píxeles, hasta {{count}} en total.",
+    "spawnChancePerCreature": "Las probabilidades se aplican a cada aparición efectiva.",
+    "cocoonSpawns": "Libera una criatura al ser destruido; el daño puede liberarla antes.",
+    "snowCrystalSpawns": "Crea una ilusión cada vez mientras el jugador está cerca. Las probabilidades se aplican a cada aparición efectiva.",
+    "spawns": "Genera",
+    "lukkiEggSpawns": "Libera una criatura por cada golpe que lo activa. Los golpes repetidos pueden liberar más antes de que el huevo sea destruido."
   },
   "skipCreatures": {
     "title": "No añadir criaturas",
@@ -5770,5 +5791,13 @@
       "progress_hut_b": "Varita experimental (Requisitos)",
       "secret_null": "Altar anulador"
     }
+  },
+  "hdRenderer": {
+    "title": "Renderizador HD",
+    "content": "Usa la GPU para mostrar terreno detallado en los mapas generados. Activado por defecto. Recarga el mapa. Las imágenes de los mapas diarios no cambian."
+  },
+  "startup": {
+    "failed": "No se pudo iniciar Noitamap. Recarga la página para volver a intentarlo.",
+    "retry": "Recargar página"
   }
 }

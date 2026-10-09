@@ -1,0 +1,66 @@
+{
+  "en": {
+    "title": "HD renderer",
+    "content": "Use the GPU for detailed terrain on generated maps. Enabled by default. Reloads the map. Daily map images are unchanged."
+  },
+  "br": {
+    "title": "Renderizador HD",
+    "content": "Usa a GPU para exibir terrenos detalhados nos mapas gerados. Ativado por padrão. Recarrega o mapa. As imagens dos mapas diários não são alteradas."
+  },
+  "cs": {
+    "title": "HD vykreslování",
+    "content": "Používá GPU pro detailní terén na generovaných mapách. Ve výchozím nastavení zapnuto. Znovu načte mapu. Obrázky denních map se nemění."
+  },
+  "de": {
+    "title": "HD-Renderer",
+    "content": "Nutzt die GPU für detailliertes Gelände auf generierten Karten. Standardmäßig aktiviert. Lädt die Karte neu. Bilder der täglichen Karten bleiben unverändert."
+  },
+  "es": {
+    "title": "Renderizador HD",
+    "content": "Usa la GPU para mostrar terreno detallado en los mapas generados. Activado por defecto. Recarga el mapa. Las imágenes de los mapas diarios no cambian."
+  },
+  "fi": {
+    "title": "HD-renderöinti",
+    "content": "Käyttää näytönohjainta yksityiskohtaisen maaston piirtämiseen luoduilla kartoilla. Oletuksena käytössä. Lataa kartan uudelleen. Päivittäisten karttojen kuvat eivät muutu."
+  },
+  "fr": {
+    "title": "Rendu HD",
+    "content": "Utilise le GPU pour afficher un terrain détaillé sur les cartes générées. Activé par défaut. Recharge la carte. Les images des cartes quotidiennes restent inchangées."
+  },
+  "id": {
+    "title": "Perender HD",
+    "content": "Menggunakan GPU untuk medan yang mendetail pada peta yang dihasilkan. Aktif secara bawaan. Memuat ulang peta. Gambar peta harian tidak berubah."
+  },
+  "it": {
+    "title": "Rendering HD",
+    "content": "Usa la GPU per mostrare un terreno dettagliato nelle mappe generate. Attivo per impostazione predefinita. Ricarica la mappa. Le immagini delle mappe giornaliere non cambiano."
+  },
+  "ja": {
+    "title": "HDレンダラー",
+    "content": "生成マップの地形をGPUで詳細に描画します。初期設定はオンです。変更するとマップが再読み込みされます。デイリーマップの画像は変わりません。"
+  },
+  "nl": {
+    "title": "HD-renderer",
+    "content": "Gebruikt de GPU voor gedetailleerd terrein op gegenereerde kaarten. Standaard ingeschakeld. Laadt de kaart opnieuw. Afbeeldingen van dagelijkse kaarten blijven ongewijzigd."
+  },
+  "pl": {
+    "title": "Renderowanie HD",
+    "content": "Używa GPU do wyświetlania szczegółowego terenu na generowanych mapach. Domyślnie włączone. Ponownie ładuje mapę. Obrazy map dziennych pozostają bez zmian."
+  },
+  "ru": {
+    "title": "HD-рендерер",
+    "content": "Использует видеокарту для детальной отрисовки рельефа на генерируемых картах. Включён по умолчанию. Перезагружает карту. Изображения ежедневных карт не меняются."
+  },
+  "sv": {
+    "title": "HD-rendering",
+    "content": "Använder GPU:n för detaljerad terräng på genererade kartor. Aktiverad som standard. Laddar om kartan. Bilderna för dagliga kartor ändras inte."
+  },
+  "uk": {
+    "title": "HD-рендерер",
+    "content": "Використовує відеокарту для детального відображення рельєфу на згенерованих картах. Увімкнено за замовчуванням. Перезавантажує карту. Зображення щоденних карт не змінюються."
+  },
+  "zh": {
+    "title": "高清渲染器",
+    "content": "使用GPU为生成的地图绘制精细地形。默认开启。更改后会重新加载地图。每日地图的图像不受影响。"
+  }
+}

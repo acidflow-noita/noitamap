@@ -9,7 +9,7 @@
   // Production environment (default)
   "vars": {
     "WORKER_URL": "https://noitamap-auth.wuote.workers.dev",
-    "ALLOWED_ORIGINS": "https://noitamap.com,https://dev.noitamap.com,https://dynamic-map.noitamap.com,https://dynamic-map.noitamap.pages.dev",
+    "ALLOWED_ORIGINS": "https://noitamap.com,https://dev.noitamap.com,https://dynamic-map.noitamap.com,https://dynamic-map.noitamap.pages.dev,https://instant-map.noitamap.com,https://instant-map.noitamap.pages.dev",
   },
   // Production bindings. Wrangler does not inherit bindings into environments.
   "kv_namespaces": [{ "binding": "TWITCH_TOKEN_STORE", "id": "7be2bbc4b8bd4b7b9d4ede511756ff92" }],

@@ -1,8 +1,20 @@
 import type OSD from 'openseadragon';
+import type EEventEmitter2 from 'eventemitter2';
+import FFlexSearch from 'flexsearch';
+import type { IndexOptionsForDocumentSearch } from 'flexsearch';
 import bbootstrap from 'bootstrap';
 
 declare global {
   export const bootstrap = bbootstrap;
+
+  export namespace FlexSearch {
+    export type Document = FFlexSearch.Document;
+  }
+  export const FlexSearch = {
+    Document: DocumentFactory,
+  };
+
+  export const EventEmitter2 = EEventEmitter2;
 
   export namespace OpenSeadragon {
     export const enum SUBPIXEL_ROUNDING_OCCURRENCES {
@@ -36,6 +48,10 @@ declare global {
     proFeatureAPI?: 1;
     loadProFeature?: (feature: NoitamapProFeature) => Promise<void>;
     isProFeatureReady?: (feature: NoitamapProFeature) => boolean;
+    /** Pro owns POI input only while its open menu edits or displays a drawing. */
+    setDrawingMapOwnership?: (owned: boolean) => void;
+    /** Installed by drawing after initialization; hydrates a saved login return. */
+    restoreDrawingLoginState?: () => Promise<void>;
     /** Optional asset origin for hosted-module preview/testing. */
     proAssetBaseUrl?: string;
     /** Initialized i18next instance (shared so the pro bundle doesn't need its own) */
@@ -62,6 +78,8 @@ declare global {
     getDailySeedIdentity?: () => 'today' | 'previous' | null;
     /** Set active seed active params */
     setSeedParams: (seed: number) => void;
+    /** Select the current published Daily using the normal baked-map route. */
+    openTodaysDaily?: () => Promise<boolean>;
     /** Set the canvas background and update URL */
     setBackground: (type: 'map' | 'black' | 'white') => void;
     /** Set the current map in unified search (so search results match after map change) */
@@ -151,8 +169,6 @@ declare global {
     handleSeedReportToggle?: (open: boolean) => void;
     /** Open the telescope tooltip ("POI card") for a dynamic POI by id. */
     openPOIById?: (poiId: string, opts?: { sidebarRightPx?: number; preserveReportHighlights?: boolean; fallbackX?: number; fallbackY?: number; fallbackPoi?: any; owner?: 'report' }) => void;
-    /** Mobile report handoff: the host keeps a return action through card replacement
-     * and calls onClose once when the card/flight ends, including failed opening. */
     openReportPOICard?: (poiId: string, opts: { sidebarRightPx?: number; preserveReportHighlights?: boolean; fallbackX?: number; fallbackY?: number; fallbackPoi?: any; returnLabel: string; onClose(): void }) => void;
     /** Close an open POI card; reportOnly preserves cards opened by other map actions. */
     closePOICard?: (options?: { reportOnly?: boolean }) => void;

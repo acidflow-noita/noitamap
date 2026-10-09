@@ -1,3 +1,4 @@
+import { generationCacheDB } from './helpers/generation-cache-db';
 import { describe, expect, it, vi } from 'vitest';
 import scheme from '../src/sage/seed-scheme.json';
 import { createBakedSageSnapshot, decodeSageRecord, readBakedSageComparison, readBakedSageSnapshot } from '../src/sage/records';
@@ -65,17 +66,7 @@ describe('baked previous-daily census', () => {
       biomeDataPixels: Buffer.alloc(70 * 48 * 4).toString('base64'),
       poisByPW: { [`${pw},0`]: [] }, pixelScenesByPW: {}, sage,
     }));
-    const entries = new Map<string, any>();
-    const request = (result: unknown) => {
-      const req: any = { result }; queueMicrotask(() => req.onsuccess?.()); return req;
-    };
-    const db = { close: vi.fn(), transaction: () => {
-      const tx: any = { objectStore: () => ({
-        put: (entry: any) => { entries.set(entry.cacheKey, structuredClone(entry)); queueMicrotask(() => tx.oncomplete?.()); },
-        get: (key: string) => request(structuredClone(entries.get(key))),
-      }) }; return tx;
-    } };
-    vi.stubGlobal('indexedDB', { open: () => request(db) });
+    generationCacheDB();
     try {
       const hydrated = hydrateBakedGeneration(files);
       expect(hydrated.sage).toEqual(sage);

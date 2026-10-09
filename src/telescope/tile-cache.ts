@@ -1,8 +1,10 @@
 import { OptionalCacheDatabase, warnCacheFailure } from "./cache-storage";
 import { normalizeScenePOIs } from "./scene-pois";
+import { completeGenerationBossPOIs } from "./boss-pois";
 import { serializeTileLayer, restoreTileLayer, type CachedTileLayer } from "./tile-layer-cache";
 import { telescopeCacheKey } from "./cache-identity";
 import { readReportInventorySnapshot, type ReportInventorySnapshot } from "../report-inventory";
+import { readGenerationCache, writeGenerationCache } from './generation-cache-records';
 /**
  * tile-cache.ts
  *
@@ -14,7 +16,7 @@ import { readReportInventorySnapshot, type ReportInventorySnapshot } from "../re
  */
 
 const DB_NAME = "noitamap-telescope";
-const DB_VERSION = 13; // invalidate main-only boss POIs and their cached renders
+const DB_VERSION = 14; // invalidate scene pixels/geometry derived from raw asset fallbacks
 const STORE_NAME = "generations";
 const RENDER_STORE_NAME = "biome_renders";
 const SCENE_BITMAP_STORE_NAME = "pixel_scene_bitmaps";
@@ -101,10 +103,12 @@ const storage = new OptionalCacheDatabase(DB_NAME, DB_VERSION, (db, transaction,
     db.deleteObjectStore(STORE_NAME);
     db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
   }
-  // v12 replaces missing scene inputs (previously transparent 1x1 PNGs)
-  // with real assets. Clear all derived stores, even on the cache-only path
-  // that can run before telescope initialization/version checks.
-  if (oldVersion > 0 && oldVersion < 12) {
+  // v12 replaces missing scene inputs (previously transparent 1x1 PNGs).
+  // v13 corrects main-only boss POIs. v14 prioritizes prepared scene assets:
+  // the raw watercave image had the wrong height, so both composed bitmaps and
+  // cached generation geometry can be stale. Clear all derived stores even on
+  // cache-only paths before telescope initialization/library-version checks.
+  if (oldVersion > 0 && oldVersion < 14) {
     for (const name of [STORE_NAME, RENDER_STORE_NAME, SCENE_BITMAP_STORE_NAME]) {
       transaction.objectStore(name).clear();
     }
@@ -172,9 +176,7 @@ export async function cacheGeneration(cacheKey: string, seed: number, result: an
       pixelScenesByPW,
     };
 
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    tx.objectStore(STORE_NAME).put(entry);
-    await storage.complete(tx);
+    await writeGenerationCache(storage, db, STORE_NAME, entry);
 
     console.log(`[TileCache] Cached generation for key ${cacheKey}`);
   } catch (e) {
@@ -190,11 +192,7 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
   cacheKey = telescopeCacheKey(cacheKey);
   try {
     const db = await openDB();
-    const tx = db.transaction(STORE_NAME, "readonly");
-    const req = tx.objectStore(STORE_NAME).get(cacheKey);
-
-    const entry: CachedGeneration | undefined = await storage.read(req);
-
+    const entry = await readGenerationCache<CachedGeneration>(storage, db, STORE_NAME, cacheKey);
 
     if (!entry) return null;
     if (Date.now() - entry.timestamp > MAX_AGE_MS) {
@@ -240,7 +238,7 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
     }
 
     console.log(`[TileCache] Cache hit for key ${cacheKey}`);
-    return normalizeScenePOIs({
+    return normalizeScenePOIs(completeGenerationBossPOIs({
       cacheKey: entry.cacheKey,
       seed: entry.seed,
       ngPlus: entry.ngPlus,
@@ -256,7 +254,7 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
       elevatorShafts: entry.elevatorShafts?.map(restoreTileLayer),
       poisByPW: entry.poisByPW,
       pixelScenesByPW,
-    });
+    }));
   } catch (e) {
     warnCacheFailure("[TileCache] Failed to read cache:", e);
     return null;

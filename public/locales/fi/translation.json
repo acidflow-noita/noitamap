@@ -751,7 +751,7 @@
       "crystal_key": "Crystal key",
       "egg": "Egg",
       "egg_fire": "Toasty egg",
-      "egg_monster": "Wiggling egg",
+      "egg_monster": "Egg",
       "egg_purple": "Chilly egg",
       "egg_slime": "Slimy egg",
       "egg_hollow": "Hollow egg",
@@ -783,7 +783,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Egg",
+      "egg_spiders": "Chilly egg"
     },
     "bosses": {
       "Kivi": "Kivi",
@@ -4610,7 +4612,9 @@
     "switchProviderConfirm": "Kirjautuminen {{next}}-tilillä kirjaa sinut ulos {{current}}-tililtä.\n\nPro-käyttöoikeus määräytyy sen jälkeen {{next}}-tilauksesi mukaan.\n\nHaluatko vaihtaa {{next}}-tiliin?",
     "loginWithTwitch": "Kirjaudu Twitchilla",
     "subscribeTwitch": "Tilaa Twitchissä",
-    "or": "tai"
+    "or": "tai",
+    "workspaceSaveFailed": "Työtilan tallentaminen epäonnistui. Kirjautuminen peruttiin. Yritä uudelleen.",
+    "workspaceRestoreFailed": "Piirustustilan palauttaminen epäonnistui. Lataa sivu uudelleen ja yritä uudestaan."
   },
   "loading": {
     "maps": "Ladataan karttoja...",
@@ -4791,6 +4795,13 @@
       "upTitle": "Siirra eteenpain",
       "downTitle": "Siirra taaksepain",
       "backTitle": "Lahetaa taakse"
+    },
+    "target": {
+      "label": "Tallennettujen ja jaettujen piirrosten avauskohde",
+      "fixed": "Tämä kartta/siemen",
+      "daily": "Tämän päivän päivittäinen",
+      "description": "Valinta tallennetaan piirroksen mukana. Päivittäinen vaihtoehto käyttää sen päivän päivittäistä siementä, jolloin piirros avataan.",
+      "updateRequired": "Lataa sivu uudelleen avataksesi piirroksen tämän päivän päivittäisellä siemenellä."
     }
   },
   "dynamicMap": {
@@ -5076,14 +5087,14 @@
     "reactionsHeader": "Materiaalireaktiot Bartenderissa",
     "asReagent": "Näytä reagenssina",
     "asProduct": "Näytä tuotteena",
-    "openInBartender": "Avaa Bartenderissa",
-    "bartenderReagentHint": "Katso Bartenderista reaktiot, joissa tätä materiaalia käytetään.",
-    "bartenderProductHint": "Katso Bartenderista reaktiot, joissa tätä materiaalia syntyy.",
-    "showSpawnBiomes": "Näytä esiintymisbiomit kartalla",
-    "spawnMapMissing": "Ei näytetä tällä kartalla: {{locations}}",
     "openInWiki": "Avaa Noita Wikissä",
+    "openInBartender": "Avaa Bartenderissa",
+    "bartenderProductHint": "Katso Bartenderista reaktiot, joissa tätä materiaalia syntyy.",
+    "bartenderReagentHint": "Katso Bartenderista reaktiot, joissa tätä materiaalia käytetään.",
     "spawnBiomesPro": "Esiintymisbiomien korostus on Pro-ominaisuus.",
-    "spawnBiomesUnavailable": "Tämän olennon esiintymisbiomeja ei ole saatavilla tällä kartalla."
+    "spawnBiomesUnavailable": "Tämän olennon esiintymisbiomeja ei ole saatavilla tällä kartalla.",
+    "showSpawnBiomes": "Näytä esiintymisbiomit kartalla",
+    "spawnMapMissing": "Ei näytetä tällä kartalla: {{locations}}"
   },
   "wand": {
     "shuffle": "Sekoita",
@@ -5120,7 +5131,17 @@
     "pillarGoto": "Näytä kartalla",
     "pillarSingular": "Saavutuspylväs",
     "pillarSearch": "Etsi kartalta",
-    "biomeShop": "Biomin kauppa"
+    "biomeShop": "Biomin kauppa",
+    "possibleSpawns": "Mahdolliset olennot",
+    "eggHatch": "Tulos riippuu siemenluvusta ja munan kuoriutumispaikasta.",
+    "noEggSpawns": "Tästä munasta ei kuoriudu olentoja.",
+    "possibleIllusions": "Mahdolliset illuusiot",
+    "nestSpawnLimit": "Tarkistaa {{frames}} peliruudun välein. Jokaisella tarkistuksella on {{chance}} todennäköisyys synnyttää yksi olento, jos pelaaja on alle {{distance}} pikselin päässä, yhteensä enintään {{count}} olentoa.",
+    "spawnChancePerCreature": "Todennäköisyydet koskevat jokaista onnistunutta syntymistä.",
+    "cocoonSpawns": "Vapauttaa yhden olennon tuhoutuessaan; vahinko voi vapauttaa sen jo aiemmin.",
+    "snowCrystalSpawns": "Luo yhden illuusion kerrallaan pelaajan ollessa lähellä. Todennäköisyydet koskevat jokaista onnistunutta syntymistä.",
+    "spawns": "Synnyttää",
+    "lukkiEggSpawns": "Vapauttaa yhden olennon jokaista vaikutuksen laukaisevaa osumaa kohti. Toistuvat osumat voivat vapauttaa lisää ennen munan tuhoutumista."
   },
   "skipCreatures": {
     "title": "Älä lisää olentoja",
@@ -5770,5 +5791,13 @@
       "progress_hut_b": "Kokeellinen sauva (Requirements)",
       "secret_null": "Nullifying Altar"
     }
+  },
+  "hdRenderer": {
+    "title": "HD-renderöinti",
+    "content": "Käyttää näytönohjainta yksityiskohtaisen maaston piirtämiseen luoduilla kartoilla. Oletuksena käytössä. Lataa kartan uudelleen. Päivittäisten karttojen kuvat eivät muutu."
+  },
+  "startup": {
+    "failed": "Noitamap ei käynnistynyt. Lataa sivu uudelleen ja yritä uudestaan.",
+    "retry": "Lataa sivu uudelleen"
   }
 }

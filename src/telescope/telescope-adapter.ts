@@ -1,9 +1,8 @@
 import { completeGenerationBossPOIs } from "./boss-pois";
-import { snapshotWorkerScenes } from "./worker-scenes";
 import { normalizeScenePOIs } from "./scene-pois";
 import { prepareElevatorShafts, withoutElevatorEndpointSpawns } from "./terrain-elevator";
 import { loadTelescopeModules } from "./load-telescope";
-import { isGLTerrainEnabled } from "../renderer_settings";
+import { useRenderPerfGeneration } from "../renderer_settings";
 /**
  * telescope-adapter.ts
  *
@@ -14,7 +13,7 @@ import { isGLTerrainEnabled } from "../renderer_settings";
 import { installTelescopeShim } from "./telescope-dom-shim";
 import { installFetchInterceptor, installImageSrcInterceptor } from "./telescope-data-bridge";
 import { getDataZip } from "../data-archive";
-import { clearCache } from "./tile-cache";
+import { ensureTelescopeCacheVersion } from "./telescope-cache-version";
 import orbsData from "../data/orbs.json";
 import {
   buildPillarSegments,
@@ -23,6 +22,10 @@ import {
   PILLAR_BASE,
 } from "../data/pillars";
 import PwWorker from "./pw-worker?worker";
+import { ParallelWorldWorkerPool } from "./pw-worker-pool";
+import { prepareAssetJobs } from "./background-idle";
+import { createGenerationCheckpoint, runGenerationTask, waitForGenerationWork, yieldGenerationTask } from "./generation-task";
+let parallelWorldWorkerPool = new ParallelWorldWorkerPool(() => new PwWorker());
 
 // Telescope modules
 let generateBiomeData: any;
@@ -50,8 +53,11 @@ export function getPixelSceneData(key: string): any | null {
   return PIXEL_SCENE_DATA[key];
 }
 
-/** Newer Telescope records contain metadata until their pixels are requested. */
-export async function ensurePixelSceneData(key: string, options: { art?: boolean } = {}): Promise<any | null> {
+/** Decode only scenes used by the host; the legacy fork already holds pixels. */
+export async function ensurePixelSceneData(
+  key: string,
+  options: { art?: boolean } = {},
+): Promise<any | null> {
   const data = getPixelSceneData(key);
   if (data && ensureScenePixels) await ensureScenePixels(data, options);
   return data;
@@ -150,6 +156,8 @@ export interface GenerationResult {
 
 export interface GenerateOptions {
   seed: number;
+  /** Obsolete background work stops at the existing task/checkpoint boundaries. */
+  signal?: AbortSignal;
   ngPlus?: number;
   dailySeed?: boolean;
   /** Which horizontal parallel worlds to generate for */
@@ -162,6 +170,11 @@ export interface GenerateOptions {
    *  When provided, drives pillar segment lock state directly; falls back to
    *  `unlocks` (spell-key inference) when null/undefined. */
   pillarFlags?: string[] | null;
+  /** Start independent GPU preparation before scanning POIs and scene placements.
+   * This snapshot is not a complete map and must not be presented as one. */
+  onTerrainReady?: (terrain: Pick<GenerationResult,
+    "seed" | "ngPlus" | "isNGP" | "worldSize" | "worldCenter" | "tileLayers" |
+    "elevatorShafts" | "biomeData" | "parallelWorlds">) => void;
 }
 
 // ─── State ──────────────────────────────────────────────────────────────────
@@ -185,6 +198,7 @@ function retowerWands(pois: POI[]): void {
 
 let initialized = false;
 let initPromise: Promise<void> | null = null;
+let backgroundInitialization: AbortController | null = null;
 let biomeAssets: { ng0: Uint32Array | null; ngp: Uint32Array | null; nightmare: Uint32Array | null } = {
   ng0: null,
   ngp: null,
@@ -197,16 +211,34 @@ let biomeAssets: { ng0: Uint32Array | null; ngp: Uint32Array | null; nightmare: 
  * One-time setup: install DOM shim, fetch interceptor, load base assets.
  * Safe to call multiple times (no-ops after first).
  */
-export async function initTelescope(): Promise<void> {
+export async function initTelescope(options: { background?: boolean } = {}): Promise<void> {
+  // A live-map caller promotes existing work immediately, including any
+  // queued idle callback. It joins the same module/asset promise.
+  if (!options.background) backgroundInitialization?.abort();
   if (initialized) return;
   if (initPromise) return initPromise;
-
-  initPromise = _doInitTelescope();
+  const idle = options.background ? new AbortController() : null;
+  backgroundInitialization = idle;
+  initPromise = _doInitTelescope(idle?.signal).catch(error => {
+    initPromise = null;
+    throw error;
+  }).finally(() => { if (backgroundInitialization === idle) backgroundInitialization = null; });
   await initPromise;
 }
 
-async function _doInitTelescope(): Promise<void> {
+async function _doInitTelescope(background?: AbortSignal): Promise<void> {
   console.log("[Telescope] Initializing...");
+  const started = performance.now();
+  // Immutable prepared scenes can download/decompress while data.zip and the
+  // generator modules initialize. Injection still waits for their settings.
+  const preparedScenes = import("./prepared-scenes").then(async api => {
+    await api.prepareSceneInputs(useRenderPerfGeneration());
+    return api;
+  });
+  void preparedScenes.catch(() => {}); // awaited below; avoid early rejection warnings
+  const measure = (name: string, from: number) => performance.measure?.(
+    `noitamap.telescope.init.${name}`, { start: from, end: performance.now() },
+  );
 
   // 1. Install DOM shim before any telescope code reads the DOM
   installTelescopeShim({
@@ -216,9 +248,10 @@ async function _doInitTelescope(): Promise<void> {
     fixHolyMountainEdgeNoise: true,
   });
 
-  // 2. Ensure data.zip is loaded
+  // 2. Ensure the game asset index is available
   const zip = await getDataZip();
-  if (!zip) throw new Error("[Telescope] data.zip failed to load");
+  if (!zip) throw new Error("[Telescope] Game asset index failed to load");
+  measure("archive", started);
 
   // 3. Install fetch interceptor so telescope's fetch('./data/...') goes to zip
   installFetchInterceptor();
@@ -228,7 +261,9 @@ async function _doInitTelescope(): Promise<void> {
 
   // 4. Dynamically import telescope modules (must happen AFTER interceptors are installed,
   //    because image_processing.js has top-level await that loads PNGs via new Image())
+  const modulesStarted = performance.now();
   const telescope = await loadTelescopeModules();
+  measure("modules", modulesStarted);
   const biomeGenMod = telescope.biomeGenMod;
   const tileGenMod = telescope.tileGenMod;
   const poiScannerMod = telescope.poiScannerMod;
@@ -285,88 +320,108 @@ async function _doInitTelescope(): Promise<void> {
   BIOME_COLOR_LOOKUP = imageProcessingMod.BIOME_COLOR_LOOKUP;
   TILE_OVERLAY_COLORS = imageProcessingMod.TILE_OVERLAY_COLORS;
 
-  // 5. Load biome map base assets (telescope's preload step)
-  // Use library's loadPNG which handles sanitization
-  const [ng0Img, ngpImg] = await Promise.all([
-    pngSanitizerMod.loadPNG("./data/biome_maps/biome_map.png"),
-    pngSanitizerMod.loadPNG("./data/biome_maps/biome_map_newgame_plus.png"),
-  ]);
-
-  // Nightmare biome map is optional — only available when data.zip includes it
-  let nightmareImg: any = null;
-  try {
-    nightmareImg = await pngSanitizerMod.loadPNG("./data/biome_maps/biome_map_nightmare.png");
-  } catch (_) {}
-
-  // Apply gamma fix directly to the raw RGBA bytes.
-  // The dev mentioned #000042 becomes #000040. We ensure it's #000042.
-  const applyGammaFix = (img: any) => {
-    const data = img.data;
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i] === 0 && data[i + 1] === 0 && data[i + 2] === 0x40) {
-        data[i + 2] = 0x42;
-      }
-    }
-    return data;
-  };
-
-  biomeAssets = {
-    ng0: applyGammaFix(ng0Img),
-    ngp: applyGammaFix(ngpImg),
-    nightmare: nightmareImg ? applyGammaFix(nightmareImg) : null,
-  };
-
-  if (!biomeAssets.ng0) throw new Error("[Telescope] Failed to load NG0 biome map");
-
-  // 6. Load translations
-  await loadTranslations();
-
-  // 7. Enable all regions in generator config
+  // Enable all regions before scene prescanning. Seed/PRNG work starts only
+  // after the source assets and translations have finished loading.
   for (const key of Object.keys(GENERATOR_CONFIG)) {
     GENERATOR_CONFIG[key].enabled = true;
   }
 
-  // 8. Pre-load wang tile data for all regions
-  const wangLoadResults: string[] = [];
-  for (const key of Object.keys(GENERATOR_CONFIG)) {
-    const cfg = GENERATOR_CONFIG[key];
-    if (cfg.wangFile && !cfg.wangData) {
-      // Use library's loadPNG for wang tiles too
-      try {
-        const img = await pngSanitizerMod.loadPNG(cfg.wangFile);
-        cfg.wangData = img;
-      } catch (e) {
-        wangLoadResults.push(`FAIL: ${key} (${cfg.wangFile})`);
+  const assetsStarted = performance.now();
+  const loadBaseMaps = async () => {
+    const from = performance.now();
+    const [ng0Img, ngpImg, nightmareImg] = await Promise.all([
+      pngSanitizerMod.loadPNG("./data/biome_maps/biome_map.png", { bitmap: false }),
+      pngSanitizerMod.loadPNG("./data/biome_maps/biome_map_newgame_plus.png", { bitmap: false }),
+      pngSanitizerMod.loadPNG("./data/biome_maps/biome_map_nightmare.png", { bitmap: false }).catch(() => null),
+    ]);
+    const applyGammaFix = (img: any) => {
+      const data = img.data;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i] === 0 && data[i + 1] === 0 && data[i + 2] === 0x40)
+          data[i + 2] = 0x42;
       }
+      return data;
+    };
+    biomeAssets = {
+      ng0: applyGammaFix(ng0Img),
+      ngp: applyGammaFix(ngpImg),
+      nightmare: nightmareImg ? applyGammaFix(nightmareImg) : null,
+    };
+    if (!biomeAssets.ng0) throw new Error("[Telescope] Failed to load NG0 biome map");
+    measure("base-maps", from);
+  };
+  const loadWangTemplates = async () => {
+    const from = performance.now();
+    const templates = new Map<string, any[]>();
+    for (const cfg of Object.values(GENERATOR_CONFIG) as any[]) {
+      if (!cfg.wangFile || cfg.wangData) continue;
+      const configs = templates.get(cfg.wangFile) ?? [];
+      configs.push(cfg);
+      templates.set(cfg.wangFile, configs);
     }
-  }
-  if (wangLoadResults.length > 0) {
-    console.warn("[Telescope] Wang tile load failures:", wangLoadResults);
-  } else {
-    console.log("[Telescope] All wang tiles loaded successfully");
-  }
+    const failed = new Set<string>();
+    // Sharing these immutable source pixels is safe: each tileset builder
+    // copies RGBA into its own RGB array before generating terrain. Decode
+    // each unique template once, without allocating unused GPU bitmaps.
+    const jobs = [...templates];
+    await prepareAssetJobs(jobs, async ([file, configs]) => {
+      try {
+        const image = await pngSanitizerMod.loadPNG(file, { bitmap: false });
+        for (const cfg of configs) cfg.wangData = image;
+      } catch {
+        failed.add(file);
+      }
+    }, background);
+    const failures = Object.keys(GENERATOR_CONFIG)
+      .filter(key => failed.has(GENERATOR_CONFIG[key].wangFile))
+      .map(key => `FAIL: ${key} (${GENERATOR_CONFIG[key].wangFile})`);
+    if (failures.length) console.warn("[Telescope] Wang tile load failures:", failures);
+    else console.log("[Telescope] All wang tiles loaded successfully");
+    measure("wang-templates", from);
+  };
+  const loadTimed = async (name: string, load: () => Promise<unknown>) => {
+    const from = performance.now();
+    await load();
+    measure(name, from);
+  };
+  await Promise.all([loadBaseMaps(), loadTimed("translations", loadTranslations), loadWangTemplates(), loadTimed("pixel-scenes", async () => {
+    const { installPreparedScenes } = await preparedScenes;
+    await installPreparedScenes(pixelSceneMod, useRenderPerfGeneration());
+    // Injection replaces the module's exported table; retain its new identity.
+    PIXEL_SCENE_DATA = pixelSceneMod.PIXEL_SCENE_DATA;
+  })]);
+  measure("assets", assetsStarted);
 
-  // 9. Load pixel scene metadata (or eager pixels in the legacy fork).
-  // Renderers explicitly ensure pixels before consuming lazy scene records.
-  await loadPixelSceneData();
-
-  // 10. Cache bust check: If we just updated the library, clear the generation cache
-  // to ensure fixed logic actually runs instead of showing old empty results.
-  const LIB_VERSION = "2026-09-30-telescope-7fce46b-render-perf-9c58775-scenes-v2";
-  if (localStorage.getItem("noitamap-telescope-version") !== LIB_VERSION) {
-    console.log("[Telescope] Library version updated, clearing generation cache...");
-    // A blocked/failed optional cache must not prevent generation, but must
-    // also not be marked as successfully invalidated for the next page load.
-    if (typeof indexedDB !== "undefined" && await clearCache()) {
-      localStorage.setItem("noitamap-telescope-version", LIB_VERSION);
-    }
-  }
+  await ensureTelescopeCacheVersion();
 
   initialized = true;
+  measure("total", started);
   console.log("[Telescope] Initialization complete");
 }
 
 // ─── Generation ─────────────────────────────────────────────────────────────
+
+/** Release large immutable scene tables only when leaving the dynamic map.
+ * Reseeding keeps these workers warm; a later visit starts with a fresh pool. */
+export function releaseParallelWorlds(): void {
+  parallelWorldWorkerPool.dispose();
+  parallelWorldWorkerPool = new ParallelWorldWorkerPool(() => new PwWorker());
+}
+
+/** Load side-world worker assets concurrently with the main thread. Single-world
+ * callers (including the baker) do not allocate the extra scene tables. */
+export function prewarmParallelWorlds(worlds: number[] = [-1, 0, 1]): void {
+  if (typeof Worker === "undefined" || !worlds.some(pw => pw !== 0)) return;
+  // Start the shared index read before creating workers; they reuse its
+  // persistent bytes when available and can fetch on a cold/denied cache.
+  // Capture this pool so an obsolete index read cannot wake its replacement.
+  const pool = parallelWorldWorkerPool;
+  const fullPixels = useRenderPerfGeneration();
+  void getDataZip().then(archive => {
+    if (!archive) throw new Error("Cannot prewarm side worlds: game asset index is unavailable");
+    return pool.prewarm(fullPixels);
+  }).catch(error => console.warn("[Telescope] Side-world prewarm unavailable:", error));
+}
 
 /**
  * Run the full telescope generation pipeline for a given seed.
@@ -377,8 +432,19 @@ async function _doInitTelescope(): Promise<void> {
  * @param opts.parallelWorlds — Horizontal PW indices to scan (default [-1, 0, 1])
  */
 export async function generateDynamicMap(opts: GenerateOptions): Promise<GenerationResult> {
+  opts.signal?.throwIfAborted();
+  // A generation may resume after navigation while its assets/tiles awaited.
+  // Keep its original pool so disposal rejects late dispatch rather than
+  // starting workers in the new pool after the dynamic map has closed.
+  const workerPool = parallelWorldWorkerPool;
+  prewarmParallelWorlds(opts.parallelWorlds);
   await initTelescope();
 
+  return runGenerationTask(() => generatePreparedMap(opts, workerPool));
+}
+
+async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWorldWorkerPool): Promise<GenerationResult> {
+  opts.signal?.throwIfAborted(); // A request can be cancelled while queued.
   const seed = opts.seed;
   const ngPlus = opts.ngPlus ?? 0;
   const dailySeed = opts.dailySeed ?? false;
@@ -542,7 +608,9 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     ngPlus,
     0 /* extra_rerolls */,
     gameMode,
+    createGenerationCheckpoint(opts.signal),
   );
+  await yieldGenerationTask(opts.signal);
 
   // Initialize pixel scene caches on each layer
   for (const layer of tileLayers) {
@@ -552,12 +620,16 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   // The isolated last-row Power Plant stub continues downward through the
   // lower map. Generate its narrow strip once; scan its real placements instead
   // of leaving a fake second endpoint and a gap between the two copies.
-  const elevatorShafts = isGLTerrainEnabled() ? await prepareElevatorShafts({ tileLayers, biomeData, seed, ngPlus, isNGP, gameMode }) : [];
+  const elevatorShafts = useRenderPerfGeneration() ? await prepareElevatorShafts({ tileLayers, biomeData, seed, ngPlus, isNGP, gameMode }) : [];
+  opts.signal?.throwIfAborted();
+  opts.onTerrainReady?.({ seed, ngPlus, isNGP, worldSize, worldCenter,
+    tileLayers, elevatorShafts, biomeData, parallelWorlds });
   const elevatorColumns = elevatorShafts.map(layer => layer.minX);
   const elevatorSpawns = prescanSpawnFunctions(elevatorShafts, isNGP, gameMode).filter((spawn: any) => spawn.y >= 34 * 512 && spawn.y < 82 * 512);
 
   // Step 3: Prescan spawn functions (once per seed, reused across PWs)
   const tileSpawns = prescanSpawnFunctions(tileLayers, isNGP, gameMode);
+  await yieldGenerationTask(opts.signal);
 
   // Step 4: Scan each PW
   const poisByPW: Record<string, POI[]> = {};
@@ -566,6 +638,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
 
   // Pre-load telescope modules needed for wand naming (avoid repeated dynamic imports in loop)
   const telescopeMods = await loadTelescopeModules();
+  opts.signal?.throwIfAborted();
   const { NollaPrng } = telescopeMods.nollaPrngMod;
   const { GUN_NAMES } = telescopeMods.wandConfigMod;
   const { getPitBossDrops } = telescopeMods.miscGenMod;
@@ -574,46 +647,21 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   const mainWorlds = parallelWorlds.filter((w) => w === 0);
   const backgroundWorlds = parallelWorlds.filter((w) => w !== 0);
 
-  // Reuse the exact scene pixels/spawns already prepared by initTelescope.
-  // Re-decoding and prescanning all 334 scenes in EACH new worker dominated
-  // cold generation (especially Firefox), before any seed-specific scan ran.
-  const workerScenes = backgroundWorlds.length ? snapshotWorkerScenes(telescopeMods.pixelSceneMod, isGLTerrainEnabled()) : null;
-  const workerPromises = backgroundWorlds.map((pw) => {
-    return new Promise<{ pw: number; pois: any[]; pixelScenes: any[] }>((resolve, reject) => {
-      const worker = new PwWorker();
-      worker.onmessage = (e) => {
-        if (e.data.success) resolve(e.data);
-        else {
-          const error = new Error(`PW ${pw}, ${e.data.phase || "worker"}: ${e.data.error || "Worker failed"}`);
-          if (e.data.stack) error.stack += `\nWorker stack:\n${e.data.stack}`;
-          reject(error);
-        }
-        worker.terminate();
-      };
-      worker.onerror = (err) => {
-        reject(err);
-        worker.terminate();
-      };
-      worker.postMessage({
-        biomeData,
-        tileSpawns,
-        seed,
-        ngPlus,
-        pw,
-        gameMode,
-        perks,
-        skipCosmeticScenes: false,
-        unlocks: dailySeed || opts.unlocks == null ? null : opts.unlocks,
-        dailySeed,
-        fullPixels: isGLTerrainEnabled(),
-        workerScenes,
-        elevatorColumns,
-        elevatorSpawns,
-      });
-    });
-  });
+  // Persist two workers across seeds. They prepare immutable scenes directly
+  // from the compact asset pack while the main thread initializes, avoiding
+  // hundreds of MB of main-thread structured cloning per seed.
+  const workerPromises = backgroundWorlds.map(pw => workerPool.run({
+    biomeData, tileSpawns, seed, ngPlus, pw, gameMode, perks,
+    skipCosmeticScenes: false,
+    unlocks: dailySeed || opts.unlocks == null ? null : opts.unlocks,
+    dailySeed, fullPixels: useRenderPerfGeneration(), elevatorColumns, elevatorSpawns,
+  }));
+  // Observe failures immediately: workers can now finish while the UI runs
+  // between main-world stages. Still propagate the failure at the join below.
+  const workerResultsReady = Promise.all(workerPromises);
+  void workerResultsReady.catch(() => {});
 
-  // Synchronously process main worlds (PW 0) for instant UI response
+  // Keep each deterministic scan intact; return to the browser between planes.
   for (const pw of mainWorlds) {
     const pwKey = `${pw},0`; // vertical PW always 0 for noitamap
 
@@ -638,6 +686,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     if (staticResults && staticResults.pixelScenes) {
       pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(staticResults.pixelScenes);
     }
+    await yieldGenerationTask(opts.signal);
 
     // Also generate for heaven (pwVertical=-1) and hell (pwVertical=+1)
     const verticalPois: POI[] = [];
@@ -671,6 +720,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
       if (vtResults && vtResults.pois && vtResults.pois.length > 0) {
         verticalPois.push(...vtResults.pois);
       }
+      await yieldGenerationTask(opts.signal);
     }
 
     // Post-process POIs to fix wand names without modifying library code
@@ -891,7 +941,8 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   // Wait for background worlds to finish
   if (workerPromises.length > 0) {
     console.log(`[Telescope] Waiting for ${workerPromises.length} background parallel worlds...`);
-    const workerResults = await Promise.all(workerPromises);
+    const workerResults = await waitForGenerationWork(workerResultsReady, opts.signal);
+    opts.signal?.throwIfAborted();
     for (const res of workerResults) {
       const pwKey = `${res.pw},0`;
       let workerPois = res.pois;
@@ -1302,8 +1353,8 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
     }
   }
 
-  // Inject approximate temple templates for heaven/hell across ALL parallel worlds.
-  // Final-pixel live rendering and baking omit these in favor of native terrain.
+  // Approximate-renderer fallback for heaven/hell temples in all parallel worlds.
+  // Native terrain uses the Wang layers and omits these coarse overlays.
   // addStaticPixelScenes skips chunk-based scenes when pwIndexVertical !== 0,
   // so Spirited (potion_mimics) and Ominous (darkness) temple foregrounds
   // never get generated. We scan biomeData.pixels directly and create pixel

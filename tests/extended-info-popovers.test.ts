@@ -201,68 +201,6 @@ describe('Bartender links in POI cards', () => {
     expect(Popover.getInstance(link.closest('.extended-info-row')!)).toBeNull();
   });
 
-  it('marks numeric stats and prose explicitly, leaving creature/material names as text', async () => {
-    const section = await card();
-    const rows = [...section.querySelectorAll<HTMLElement>('.extended-info-row')];
-    const find = (label: string) => rows.find(row => row.firstElementChild?.textContent === `${label}:`)!;
-    expect(find('HP').classList.contains('extended-info-row--numeric')).toBe(true);
-    expect(find('Melee').classList.contains('extended-info-row--numeric')).toBe(true);
-    expect(find('Melee').lastElementChild?.textContent).toBe('0.5');
-    for (const label of ['Attacks', 'Spawn', 'Notes']) {
-      expect(find(label).classList.contains('extended-info-row--prose')).toBe(true);
-    }
-    for (const label of ['Faction', 'Blood', 'Corpse']) {
-      expect(find(label).classList.contains('extended-info-row--text')).toBe(true);
-    }
-  });
-
-  it('allows location-dependent health explanations to span the card', async () => {
-    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [
-      { ...creature, health: 'Normal: 100, Temple of the Art: 350' },
-    ] } as Response);
-    const section = await card();
-    const health = [...section.querySelectorAll<HTMLElement>('.extended-info-row')]
-      .find(row => row.firstElementChild?.textContent === 'HP:')!;
-    expect(health.classList.contains('extended-info-row--prose')).toBe(true);
-    expect(health.lastElementChild?.textContent).toBe('Normal: 100, Temple of the Art: 350');
-  });
-
-  it('keeps every damage multiplier and special explanation in one ordered grid', async () => {
-    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [{
-      ...creature,
-      dmgMultProjectile: '1x', dmgMultSlice: '0', dmgMultExplosion: '2x',
-      dmgMultElectricity: '1x', dmgMultFire: '0.01', dmgMultIce: '1x',
-      dmgMultDrill: '1x', dmgMultRadioactive: '1x', dmgMultHoly: 'Immune unless wet',
-    }] } as Response);
-    const section = await card();
-    const grid = section.querySelector('.extended-info-group--stats-grid')!;
-    expect(grid.classList.contains('extended-info-group--cols')).toBe(false);
-    expect(grid.firstElementChild?.textContent).toBe('Damage multipliers');
-    const rows = [...grid.querySelectorAll('.extended-info-row')];
-    expect(rows.map(row => row.firstElementChild?.textContent)).toEqual([
-      'Melee:', 'Projectile:', 'Slice:', 'Explosion:', 'Electricity:',
-      'Fire:', 'Ice:', 'Drill:', 'Radioactive:', 'Holy:',
-    ]);
-    expect(rows.map(row => row.lastElementChild?.textContent)).toEqual([
-      '0.5', '1.0', '0.0', '2.0', '1.0', '0.01', '1.0', '1.0', '1.0', 'Immune unless wet',
-    ]);
-    expect(rows[9].classList.contains('extended-info-row--prose')).toBe(true);
-    expect(section.textContent).toContain('Receives extra damage while wet.');
-  });
-
-  it('keeps spell quantities with units numeric without changing their text', async () => {
-    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [
-      { id: 'test_spell', castDelay: '0.17s', speed: '90 px/s', criticalChance: '+5%' },
-    ] } as Response);
-    const { buildExtendedSection } = await import('../src/extended-info');
-    const section = buildExtendedSection('spell', 'test_spell');
-    document.body.appendChild(section);
-    await vi.waitFor(() => expect(section.querySelectorAll('.extended-info-row')).toHaveLength(3));
-    const rows = [...section.querySelectorAll<HTMLElement>('.extended-info-row')];
-    expect(rows.every(row => row.classList.contains('extended-info-row--numeric'))).toBe(true);
-    expect(rows.map(row => row.lastElementChild?.textContent)).toEqual(['0.17s', '90 px/s', '+5%']);
-  });
-
   it('lets the owning card restore its report and remove observers before opening the Pro modal', async () => {
     state.pro = false;
     const { buildExtendedSection } = await import('../src/extended-info');

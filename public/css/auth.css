@@ -77,14 +77,25 @@
   min-width: 0;
   max-width: 15rem;
 }
-/* Make the two action buttons in a column equal width and single-line so the
-   columns line up regardless of label length (no wrapping = no crooked rows). */
+/* Translated labels must fit the button even at increased text sizes. */
 .pro-col > .btn-twitch,
 .pro-col > .btn-patreon,
 .pro-col > .btn-patron {
   width: 100%;
   max-width: none;
-  white-space: nowrap;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+  line-height: 1.35;
+}
+.pro-col > a > i,
+.pro-col > button > svg {
+  flex-shrink: 0;
+}
+.pro-provider-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .pro-or {
   display: flex;
@@ -94,11 +105,44 @@
   text-transform: lowercase;
   user-select: none;
 }
-/* Widen the modal so two columns of pill buttons sit side by side without the
-   labels wrapping. */
+/* Give translations room and share row heights between the two providers. */
 .modal-dialog.pro-dialog {
-  max-width: 34rem;
+  max-width: 46rem;
 }
+.pro-dialog .modal-body {
+  padding: 1.5rem 2rem 2rem;
+}
+.pro-dialog .pro-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 1rem 1.5rem;
+}
+.pro-dialog .pro-col {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: 1 / span 2;
+  max-width: none;
+}
+.pro-dialog .pro-col:first-child { grid-column: 1; }
+.pro-dialog .pro-col:last-child { grid-column: 3; }
+.pro-dialog .pro-col:only-child {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: 22rem;
+  justify-self: center;
+}
+.pro-dialog .pro-or {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.pro-dialog .pro-col > a,
+.pro-dialog .pro-col > button {
+  min-height: 3rem;
+  padding: 0.65rem 1rem;
+}
+.pro-dialog .pro-col > button { grid-row: 1; }
+.pro-dialog .pro-col > a { grid-row: 2; }
 @media (max-width: 560px) {
   .pro-columns {
     flex-direction: column;
@@ -106,6 +150,13 @@
   }
   .pro-or {
     justify-content: center;
+  }
+  .pro-dialog .modal-body { padding: 1rem; }
+  .pro-dialog .pro-columns { display: flex; }
+  .pro-dialog .pro-col {
+    display: flex;
+    width: 100%;
+    max-width: 22rem;
   }
 }
 

@@ -751,7 +751,7 @@
       "crystal_key": "Crystal key",
       "egg": "Egg",
       "egg_fire": "Toasty egg",
-      "egg_monster": "Wiggling egg",
+      "egg_monster": "Egg",
       "egg_purple": "Chilly egg",
       "egg_slime": "Slimy egg",
       "egg_hollow": "Hollow egg",
@@ -783,7 +783,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Egg",
+      "egg_spiders": "Chilly egg"
     },
     "bosses": {
       "Kivi": "Kivi",
@@ -4610,7 +4612,9 @@
     "switchProviderConfirm": "Om du loggar in med {{next}} loggas du ut från {{current}}.\n\nPro-åtkomsten baseras därefter på din {{next}}-prenumeration.\n\nVill du byta till {{next}}?",
     "loginWithTwitch": "Logga in med Twitch",
     "subscribeTwitch": "Prenumerera på Twitch",
-    "or": "eller"
+    "or": "eller",
+    "workspaceSaveFailed": "Arbetsläget kunde inte sparas. Inloggningen avbröts. Försök igen.",
+    "workspaceRestoreFailed": "Ritningsarbetsytan kunde inte återställas. Ladda om sidan och försök igen."
   },
   "loading": {
     "maps": "Laddar kartor...",
@@ -4791,6 +4795,13 @@
       "upTitle": "Flytta framat",
       "downTitle": "Flytta bakat",
       "backTitle": "Flytta langst bak"
+    },
+    "target": {
+      "label": "Sparade och delade teckningar öppnas på",
+      "fixed": "Den här kartan/det här fröet",
+      "daily": "Dagens Daily",
+      "description": "Valet sparas med teckningen. Daily-alternativet använder det dagliga fröet för den dag då teckningen öppnas.",
+      "updateRequired": "Ladda om sidan för att öppna en teckning på dagens Daily."
     }
   },
   "dynamicMap": {
@@ -5076,14 +5087,14 @@
     "reactionsHeader": "Materialreaktioner på Bartender",
     "asReagent": "Visa som reagens",
     "asProduct": "Visa som produkt",
-    "openInBartender": "Öppna i Bartender",
-    "bartenderReagentHint": "Visa reaktioner som använder detta material i Bartender.",
-    "bartenderProductHint": "Visa reaktioner som producerar detta material i Bartender.",
-    "showSpawnBiomes": "Visa biomer där varelsen förekommer på kartan",
-    "spawnMapMissing": "Visas inte på denna karta: {{locations}}",
     "openInWiki": "Öppna i Noita Wiki",
+    "openInBartender": "Öppna i Bartender",
+    "bartenderProductHint": "Visa reaktioner som producerar detta material i Bartender.",
+    "bartenderReagentHint": "Visa reaktioner som använder detta material i Bartender.",
     "spawnBiomesPro": "Markering av förekomstbiomer är en Pro-funktion.",
-    "spawnBiomesUnavailable": "Biomer där denna varelse förekommer är inte tillgängliga på denna karta."
+    "spawnBiomesUnavailable": "Biomer där denna varelse förekommer är inte tillgängliga på denna karta.",
+    "showSpawnBiomes": "Visa biomer där varelsen förekommer på kartan",
+    "spawnMapMissing": "Visas inte på denna karta: {{locations}}"
   },
   "wand": {
     "shuffle": "Blanda",
@@ -5120,7 +5131,17 @@
     "pillarGoto": "Visa på kartan",
     "pillarSingular": "Bedriftspelare",
     "pillarSearch": "Sök på kartan",
-    "biomeShop": "Butik i en biom"
+    "biomeShop": "Butik i en biom",
+    "possibleSpawns": "Möjliga varelser",
+    "eggHatch": "Resultatet beror på fröet och var ägget kläcks.",
+    "noEggSpawns": "Inga varelser kläcks ur detta ägg.",
+    "possibleIllusions": "Möjliga illusioner",
+    "nestSpawnLimit": "Kontrollerar var {{frames}}:e spelbildruta. Varje kontroll har sannolikheten {{chance}} att skapa en varelse om spelaren är närmare än {{distance}} pixlar, upp till {{count}} totalt.",
+    "spawnChancePerCreature": "Sannolikheterna gäller varje gång en varelse faktiskt skapas.",
+    "cocoonSpawns": "Släpper ut en varelse när den förstörs; skada kan släppa ut den tidigare.",
+    "snowCrystalSpawns": "Skapar en illusion i taget medan spelaren är i närheten. Sannolikheterna gäller varje gång en illusion faktiskt skapas.",
+    "spawns": "Skapar",
+    "lukkiEggSpawns": "Släpper ut en varelse per träff som utlöser effekten. Upprepade träffar kan släppa ut fler innan ägget förstörs."
   },
   "skipCreatures": {
     "title": "Lägg inte till varelser",
@@ -5770,5 +5791,13 @@
       "progress_hut_b": "Experimentell stav (Krav)",
       "secret_null": "Nullifying Altar"
     }
+  },
+  "hdRenderer": {
+    "title": "HD-rendering",
+    "content": "Använder GPU:n för detaljerad terräng på genererade kartor. Aktiverad som standard. Laddar om kartan. Bilderna för dagliga kartor ändras inte."
+  },
+  "startup": {
+    "failed": "Noitamap kunde inte startas. Ladda om sidan och försök igen.",
+    "retry": "Ladda om sidan"
   }
 }

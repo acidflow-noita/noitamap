@@ -25,6 +25,17 @@ const ITEM_KEYS: Record<string, string> = {
   pouch: "item_powder_stash_3",
   powder_stash: "item_powder_stash",
   powder_stash_pouch: "item_powder_stash_3",
+  // Pickup XML item_name keys. Plain/red eggs share item_egg; the spider
+  // variant shares the Chilly egg name. Do not use Telescope's English aliases.
+  egg: "item_egg",
+  egg_monster: "item_egg",
+  egg_red: "item_egg",
+  egg_fire: "item_egg_fire",
+  egg_purple: "item_egg_purple",
+  egg_spiders: "item_egg_purple",
+  egg_slime: "item_egg_slime",
+  egg_hollow: "item_egg_hollow",
+  egg_worm: "item_egg_worm",
 };
 
 /** Telescope names can be an adjective, a full wand name, or a named special

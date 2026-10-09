@@ -8,3 +8,22 @@ declare module "virtual:noitamap-public-report" {
 
 // The pinned render-perf fork is JavaScript and is resolved by Vite in both entries.
 declare module "noita-telescope-full-pixels/*";
+
+declare module "virtual:noitamap-scene-assets" {
+  export const provenance: string;
+  export const packs: Record<"full" | "approx", { url: string; scenes: number; bytes: number }>;
+}
+declare module "virtual:noitamap-telescope-asset-identity" {
+  export const provenance: string;
+}
+declare module 'virtual:instant-terrain-shaders' {
+  export const TERRAIN_FS: string;
+  export const TERRAIN_VS: string;
+}
+declare module "virtual:noitamap-data-archives" {
+  export const archiveRevisions: Record<string, string>;
+  export const biomeBackgroundRevisions: Record<string, string>;
+}
+declare module "virtual:noitamap-asset-pages" {
+  export const assetManifests: Record<string, { file: string; revision: string; bytes: number }>;
+}

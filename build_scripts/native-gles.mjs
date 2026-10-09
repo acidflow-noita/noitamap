@@ -27,6 +27,7 @@ const C = {
   RGBA16UI: 0x8d76,
   RGBA32F: 0x8814,
   RGBA32I: 0x8d82,
+  RGBA32UI: 0x8d70,
   RGBA8: 0x8058,
   RGBA8UI: 0x8d7c,
   RGBA_INTEGER: 0x8d99,
@@ -40,6 +41,7 @@ const C = {
   TRIANGLES: 4,
   UNPACK_ALIGNMENT: 0x0cf5,
   UNSIGNED_BYTE: 0x1401,
+  UNSIGNED_INT: 0x1405,
   UNSIGNED_SHORT: 0x1403,
   VERTEX_SHADER: 0x8b31,
 };
@@ -182,6 +184,7 @@ export function createNativeGLES({ requireHardware = false, softwareOnly = false
     texParameteri: "void glTexParameteri(uint target, uint name, int value)",
     texSubImage2D:
       "void glTexSubImage2D(uint target, int level, int x, int y, int w, int h, uint format, uint type, const void *data)",
+    copyTexSubImage2D: "void glCopyTexSubImage2D(uint target, int level, int xoffset, int yoffset, int x, int y, int width, int height)",
     uniform1f: "void glUniform1f(int location, float value)",
     uniform1i: "void glUniform1i(int location, int value)",
     uniform2f: "void glUniform2f(int location, float x, float y)",

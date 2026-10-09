@@ -29,12 +29,11 @@ export interface URLState extends Partial<AppState> {
   filters?: string[];
   /** Target POI ID to automatically open popup for */
   targetPoiId?: string;
-  /** Creature whose spawn biomes should be highlighted after access is checked. */
   spawnCreatureId?: string;
 }
 
 /**
- * Desired URL param order: x, y, z (zoom), m (map), se (seed), ds (daily seed), o (overlays), s (sidebar), c (canvas), poi (targetPoiId), spawn (creature spawn biomes), q (search), f (filters), sr (seed report), u (unlocks descriptor / mod payload)
+ * Desired URL param order: x, y, z (zoom), m (map), se (seed), ds (daily seed), o (overlays), s (sidebar), c (canvas), poi (targetPoiId), q (search), f (filters), sr (seed report), u (unlocks descriptor / mod payload)
  * Short params used for encoding, decoder accepts both short and long names
  */
 const PARAM_ORDER = ['x', 'y', 'z', 'm', 'se', 'ds', 'o', 's', 'c', 'poi', 'spawn', 'q', 'f', 'sr', 'u'];
@@ -45,6 +44,7 @@ export function normalizeSpawnCreatureId(value: string | null | undefined): stri
     ? value
     : undefined;
 }
+
 
 /**
  * Reorder URL search params to maintain consistent order
@@ -211,6 +211,7 @@ export function updateURLWithCreatureSpawn(id?: string): void {
   reorderParams(url);
   window.history.replaceState(null, '', url.toString());
 }
+
 
 /**
  * Clear the target POI ID from the window URL without a full AppState rewrite

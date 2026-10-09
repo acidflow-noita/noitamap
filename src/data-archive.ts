@@ -1,236 +1,135 @@
-/**
- * Runtime data.zip archive loader.
- * Fetches data.zip once, caches it, and provides typed accessors for
- * individual entries (text, blob, ImageBitmap, etc.).
- */
-import type JSZip from "jszip";
+/** Original game files indexed into immutable byte bundles at build time.
+ * Compatibility accessor names stay in place; no ZIP parsing runs here. */
+import { assetManifests } from "virtual:noitamap-asset-pages";
+import { ImmutableTelescopeAssets } from "./telescope/immutable-assets";
 
-function getBaseUrl() {
-  if (typeof document !== "undefined") {
-    // Main thread: resolve relative to current page
-    return new URL("./", document.baseURI || location.href).href;
+interface AssetPage { file: string; revision: string; bytes: number }
+interface AssetIndex {
+  version: 1;
+  pages: AssetPage[];
+  entries: Record<string, [page: number, offset: number, length: number]>;
+}
+interface EntryOutputs { string: string; arraybuffer: ArrayBuffer; blob: Blob; uint8array: Uint8Array }
+
+// Keep compressed PNG/file bytes bounded separately from decoded scene images.
+const assets = new ImmutableTelescopeAssets(8 * 1024 * 1024);
+const catalogs = new Map<string, Promise<AssetCatalog>>();
+let reportedMain = false;
+const workerScope = (globalThis as typeof globalThis & {
+  WorkerGlobalScope?: new () => object;
+}).WorkerGlobalScope;
+const workerRealm = typeof workerScope === 'function' && globalThis instanceof workerScope;
+function getBaseUrl(): string {
+  // A worker may install a synthetic document for Telescope. That document
+  // must never turn /assets/worker.js into the base for game-asset downloads.
+  if (!workerRealm && typeof document !== 'undefined' && document.baseURI)
+    return new URL('./', document.baseURI).href;
+  return new URL(import.meta.env.BASE_URL || '/', globalThis.location.href).href;
+}
+function validPage(page: AssetPage): boolean {
+  return !!page && typeof page.file === 'string' && typeof page.revision === 'string' && /^[a-f0-9]{64}$/.test(page.revision)
+    && page.file === `game-assets/assets-${page.revision}.${page.file?.endsWith('.json') ? 'json' : 'bin'}`
+    && Number.isSafeInteger(page.bytes) && page.bytes >= 0;
+}
+async function readPage(page: AssetPage, base: string): Promise<Blob> {
+  if (!validPage(page)) throw new Error('Invalid game asset descriptor');
+  const url = new URL(page.file, base).href;
+  const response = await assets.fetch(page.file, page.revision, () => fetch(url, {
+    cache: 'force-cache', signal: AbortSignal.timeout(30_000),
+  }), undefined, async response => {
+    if (!response.ok) throw new Error(`Game asset unavailable: ${page.file} (HTTP ${response.status})`);
+    const bytes = await response.arrayBuffer();
+    if (bytes.byteLength !== page.bytes) throw new Error(`Truncated game asset: ${page.file}`);
+    if (globalThis.crypto?.subtle) {
+      const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)),
+        byte => byte.toString(16).padStart(2, '0')).join('');
+      if (digest !== page.revision) throw new Error(`Game asset content mismatch: ${page.file}`);
+    }
+  });
+  return response.blob();
+}
+
+class AssetEntry {
+  readonly dir = false;
+  constructor(readonly name: string, private page: AssetPage, private offset: number,
+    private length: number, private base: string) {}
+  async async<T extends keyof EntryOutputs>(type: T): Promise<EntryOutputs[T]> {
+    const bytes = await readPage(this.page, this.base);
+    const mime = this.name.endsWith('.png') ? 'image/png'
+      : this.name.endsWith('.json') ? 'application/json' : 'application/octet-stream';
+    const blob = bytes.slice(this.offset, this.offset + this.length, mime);
+    switch (type) {
+      // Small sprite object URLs must not retain an entire sliced 2 MiB page.
+      case 'blob': return new Blob([await blob.arrayBuffer()], { type: mime }) as EntryOutputs[T];
+      // JSZip preserved UTF-8 BOMs; Blob.text() strips them.
+      case 'string': return new TextDecoder('utf-8', { ignoreBOM: true }).decode(await blob.arrayBuffer()) as EntryOutputs[T];
+      case 'arraybuffer': return await blob.arrayBuffer() as EntryOutputs[T];
+      case 'uint8array': return new Uint8Array(await blob.arrayBuffer()) as EntryOutputs[T];
+      default: throw new Error(`Unsupported asset output: ${type}`);
+    }
   }
-  // Worker: Resolve to the root origin to avoid fetching from /assets/
-  return new URL("/", self.location.href).href;
 }
 
-const BASE_URL = getBaseUrl();
-const ZIP_URLS: Record<string, string> = {
-  main: BASE_URL + "data.zip",
-  pixel_scenes: BASE_URL + "pixel_scenes.zip",
-  wang_tiles: BASE_URL + "wang_tiles.zip",
-};
-
-const zipPromises: Record<string, Promise<JSZip | null> | null> = {};
-const zips: Record<string, JSZip | null> = {};
-
-function archiveMetadata(headers: Headers): string {
-  return headers.get("ETag") || headers.get("Last-Modified") || headers.get("Content-Length") || "";
-}
-
-/**
- * Lazily fetch and cache a zip archive.
- */
-const isWorker = typeof document === "undefined";
-
-export async function getZip(key: string = "main", silent: boolean = false): Promise<JSZip | null> {
-  if (zips[key]) return zips[key];
-  if (zipPromises[key]) return zipPromises[key];
-
-  const url = ZIP_URLS[key];
-  if (!url) {
-    console.error(`[DataArchive] Unknown zip key: ${key}`);
-    return null;
+export class AssetCatalog {
+  readonly files: Record<string, AssetEntry> = Object.create(null);
+  constructor(index: AssetIndex, base: string) {
+    if (!index || index.version !== 1 || !Array.isArray(index.pages)
+      || !index.pages.every(validPage) || !index.entries || typeof index.entries !== 'object' || Array.isArray(index.entries))
+      throw new Error('Unsupported game asset index');
+    for (const [path, range] of Object.entries(index.entries)) {
+      if (!Array.isArray(range) || range.length !== 3) throw new Error(`Invalid game asset range: ${path}`);
+      const [pageId, offset, length] = range, page = index.pages[pageId];
+      if (!Number.isSafeInteger(pageId) || !page || !Number.isSafeInteger(offset) || !Number.isSafeInteger(length)
+        || offset < 0 || length < 0 || offset + length > page.bytes)
+        throw new Error(`Invalid game asset range: ${path}`);
+      this.files[path] = new AssetEntry(path, page, offset, length, base);
+    }
   }
-
-  zipPromises[key] = isWorker ? _loadZipWorkerFast(key, url) : _loadZipMainThread(key, url, silent);
-
-  return zipPromises[key];
+  file(path: string): AssetEntry | null { return this.files[path] ?? null; }
+  forEach(callback: (path: string, entry: AssetEntry) => void): void {
+    for (const [path, entry] of Object.entries(this.files)) callback(path, entry);
+  }
 }
 
-/** Worker fast path: read from Cache API, parse, done. No locks, no HEAD, no network. */
-async function _loadZipWorkerFast(key: string, url: string): Promise<JSZip | null> {
+function loadCatalog(key: string, base: string): Promise<AssetCatalog> {
+  const descriptor = assetManifests[key];
+  if (!descriptor) return Promise.reject(new Error(`Unknown game asset group: ${key}`));
+  const identity = `${base}/${key}/${descriptor.revision}`;
+  let pending = catalogs.get(identity);
+  if (!pending) {
+    pending = readPage(descriptor, base).then(async blob => new AssetCatalog(JSON.parse(await blob.text()), base))
+      .catch(error => { catalogs.delete(identity); throw error; });
+    catalogs.set(identity, pending);
+  }
+  return pending;
+}
+
+/** Compatibility name: metadata only. Individual files share lazy page reads. */
+export async function getZip(key = 'main', silent = false): Promise<AssetCatalog | null> {
   try {
-    const t0 = performance.now();
-    const cache = await caches.open(`noitamap-archive-${key}-v2`);
-    const response = await cache.match(url);
-    if (!response || !response.ok) {
-      console.warn(`[DataArchive/Worker] ${key}.zip not in cache, cannot load`);
-      return null;
+    const catalog = await loadCatalog(key, getBaseUrl());
+    if (key === 'main' && !reportedMain && !silent && !workerRealm && typeof document !== 'undefined' && document.baseURI
+      && typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
+      reportedMain = true;
+      window.dispatchEvent(new CustomEvent('dataZipProgress', { detail: { loaded: 1, total: 1, percentage: 100 } }));
     }
-    const [buf, { default: JSZip }] = await Promise.all([response.arrayBuffer(), import("jszip")]);
-    const instance = await JSZip.loadAsync(buf);
-    zips[key] = instance;
-    console.log(`[DataArchive/Worker] ${key}.zip ready in ${(performance.now() - t0).toFixed(0)}ms`);
-    return instance;
-  } catch (e) {
-    console.error(`[DataArchive/Worker] Failed to load ${key}.zip:`, e);
+    return catalog;
+  } catch (error) {
+    console.error(`[DataArchive] Cannot load ${key} assets:`, error);
     return null;
   }
 }
 
-/** Main thread path: lock, validate existing cache, fetch with progress, cache write. */
-async function _loadZipMainThread(key: string, url: string, silent: boolean): Promise<JSZip | null> {
-  return new Promise((resolve) => {
-    const run = async () => {
-      try {
-        // Re-check after acquiring lock (another tab may have loaded it)
-        if (zips[key]) { resolve(zips[key]); return; }
-
-        console.log(`[DataArchive] Loading ${url}...`);
-
-      // Cache Storage API requires secure context (HTTPS). iOS Safari on
-      // plain HTTP has no `caches` — fall through to network-only.
-      const cachesAvailable = typeof caches !== "undefined";
-      const cacheName = `noitamap-archive-${key}-v2`;
-      const cache = cachesAvailable ? await caches.open(cacheName) : null;
-      const response = cache ? await cache.match(url) : null;
-
-      // Only validate an existing usable response. A cold download already
-      // supplies its own freshness headers and needs no serial HEAD round trip.
-      let serverMeta = "";
-      if (response?.ok) {
-        try {
-          const headResp = await fetch(url, { method: "HEAD", cache: "no-cache" });
-          if (headResp.ok) serverMeta = archiveMetadata(headResp.headers);
-        } catch (e) {
-          console.warn(`[DataArchive] HEAD request failed for ${url}, falling back to cache if available`, e);
-        }
-      }
-
-      let buf: ArrayBuffer | null = null;
-      let decoder: typeof JSZip;
-      let shouldUseCache = false;
-
-      if (response && response.ok) {
-        const cachedMeta = response.headers.get("X-Archive-Meta");
-        if (serverMeta && cachedMeta === serverMeta) {
-          shouldUseCache = true;
-        } else if (!serverMeta) {
-          shouldUseCache = true;
-        } else {
-          console.log(`[DataArchive] Cache invalidated for ${url}! Server: ${serverMeta}, Cached: ${cachedMeta}`);
-        }
-      }
-
-      if (shouldUseCache && response) {
-        console.log(`[DataArchive] Loaded ${url} from Cache API`);
-        [buf, { default: decoder }] = await Promise.all([response.arrayBuffer(), import("jszip")]);
-
-        if (key === "main" && !silent) {
-          if (typeof window !== "undefined" && typeof CustomEvent !== "undefined") {
-            window.dispatchEvent(
-              new CustomEvent("dataZipProgress", { detail: { loaded: 100, total: 100, percentage: 100 } }),
-            );
-          }
-        }
-      } else {
-        console.log(`[DataArchive] Fetching ${url} from network...`);
-        // The decoder stays lazy, but downloads alongside the archive. Await
-        // both together so an import failure never becomes an unhandled rejection.
-        const [fetchResp, { default: Zip }] = await Promise.all([fetch(url), import("jszip")]);
-        decoder = Zip;
-
-        if (!fetchResp.ok) {
-          console.warn(`${url} fetch failed (${fetchResp.status})`);
-          resolve(null);
-          return;
-        }
-
-        const contentType = fetchResp.headers.get("content-type");
-        if (contentType && contentType.includes("text/html")) {
-          console.warn(`[DataArchive] ${url} returned HTML fallback, skipping and resolving null`);
-          resolve(null);
-          return;
-        }
-
-        const contentLength = fetchResp.headers.get("content-length");
-        const totalBytes = contentLength ? parseInt(contentLength, 10) : 25000000;
-
-        let loadedBytes = 0;
-        const reader = fetchResp.body!.getReader();
-        const chunks: Uint8Array[] = [];
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          if (value) {
-            chunks.push(value);
-            loadedBytes += value.length;
-
-            if (key === "main" && !silent) {
-              const percentage = Math.min(100, Math.round((loadedBytes / totalBytes) * 100));
-              if (typeof window !== "undefined" && typeof CustomEvent !== "undefined") {
-                window.dispatchEvent(
-                  new CustomEvent("dataZipProgress", {
-                    detail: { loaded: loadedBytes, total: totalBytes, percentage },
-                  }),
-                );
-              }
-            }
-          }
-        }
-        
-        if (totalBytes > 0 && loadedBytes < totalBytes) {
-          throw new Error(`Download truncated: expected ${totalBytes} bytes, stream ended at ${loadedBytes}`);
-        }
-
-        const combined = new Uint8Array(loadedBytes);
-        let offset = 0;
-        for (const chunk of chunks) {
-          combined.set(chunk, offset);
-          offset += chunk.length;
-        }
-        buf = combined.buffer;
-
-        const headers = new Headers(fetchResp.headers);
-        // GET may observe a newer archive than HEAD; cache the identity of the
-        // actual downloaded bytes rather than the earlier validation response.
-        serverMeta = archiveMetadata(fetchResp.headers) || serverMeta;
-        if (serverMeta) {
-          headers.set("X-Archive-Meta", serverMeta);
-        }
-        const cacheResponse = new Response(buf, {
-          status: fetchResp.status,
-          statusText: fetchResp.statusText,
-          headers: headers,
-        });
-        if (cache) await cache.put(url, cacheResponse);
-      }
-
-      if (!buf) throw new Error(`Failed to obtain array buffer for ${url}`);
-
-      const instance = await decoder.loadAsync(buf);
-      zips[key] = instance;
-      console.log(`[DataArchive] ${url} loaded and ready`);
-      resolve(instance);
-    } catch (e) {
-      console.error(`[DataArchive] Failed to load ${url}:`, e);
-      try {
-        if (typeof caches !== "undefined") await caches.delete(`noitamap-archive-${key}-v2`);
-      } catch (err) {}
-      resolve(null);
-    }
-    }; // end run()
-    // Web Locks API requires a secure context (HTTPS). In HTTP dev or
-    // restricted contexts (some private tabs), navigator.locks is undefined.
-    // Fall back to running without a cross-tab lock.
-    if (typeof navigator !== "undefined" && navigator.locks?.request) {
-      navigator.locks.request(`zip-fetch-${key}`, run);
-    } else {
-      run();
-    }
-  }); // end new Promise
+/** Optional baked-map preparation only fetches the small indexes. Files load
+ * on demand; workers can fetch missing pages even when storage is unavailable. */
+export async function prepareDataArchive(key: string, base: string): Promise<void> {
+  await loadCatalog(key, base);
+  await assets.flushWrites();
 }
-
-/** Legacy alias */
-export async function getDataZip(): Promise<JSZip | null> {
-  return getZip("main", false);
-}
+export async function getDataZip(): Promise<AssetCatalog | null> { return getZip('main'); }
 
 /**
- * Read a text file from one of the zip archives.
+ * Read a text file from the game asset index.
  */
 export async function readText(path: string, zipKey: string = "main", silent: boolean = false): Promise<string | null> {
   const z = await getZip(zipKey, silent);
@@ -249,7 +148,7 @@ export async function readText(path: string, zipKey: string = "main", silent: bo
 }
 
 /**
- * Read a binary file from one of the zip archives as a Blob.
+ * Read a binary file from the game asset index as a Blob.
  */
 export async function readBlob(
   path: string,
@@ -274,7 +173,7 @@ export async function readBlob(
 }
 
 /**
- * Read an image from one of the zip archives as an ImageBitmap.
+ * Read an image from the game asset index as an ImageBitmap.
  */
 export async function readImage(
   path: string,
@@ -287,7 +186,7 @@ export async function readImage(
 }
 
 /**
- * Read a PNG from one of the zip archives and return it as ImageData.
+ * Read a PNG from the game asset index and return it as ImageData.
  */
 export async function readImageData(path: string, zipKey: string = "main"): Promise<ImageData | null> {
   const blob = await readBlob(path, "image/png", zipKey);
@@ -308,7 +207,7 @@ export async function readImageData(path: string, zipKey: string = "main"): Prom
 }
 
 /**
- * Read a PNG from one of the zip archives and return it as an OffscreenCanvas (worker safe) or HTMLCanvasElement.
+ * Read a PNG from the game asset index and return it as an OffscreenCanvas (worker safe) or HTMLCanvasElement.
  */
 export async function readCanvas(path: string, zipKey: string = "main"): Promise<HTMLCanvasElement | OffscreenCanvas | null> {
   const blob = await readBlob(path, "image/png", zipKey);
@@ -331,7 +230,7 @@ export async function readCanvas(path: string, zipKey: string = "main"): Promise
 }
 
 /**
- * List all entries in a zip archive matching a prefix.
+ * List all entries in the game asset index matching a prefix.
  */
 export async function listEntries(prefix: string, zipKey: string = "main"): Promise<string[]> {
   const z = await getZip(zipKey);

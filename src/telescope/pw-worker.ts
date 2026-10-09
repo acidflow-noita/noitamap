@@ -29,7 +29,15 @@ installTelescopeShim();
 installFetchInterceptor();
 installImageSrcInterceptor();
 
-self.onmessage = async (e) => {
+const scenesReady = new Set<boolean>();
+let pendingGeneration = Promise.resolve();
+self.onmessage = (e) => {
+  const pending = pendingGeneration.then(() => generateParallelWorld(e));
+  pendingGeneration = pending.catch(() => {});
+  return pending;
+};
+
+async function generateParallelWorld(e: MessageEvent) {
   let phase = "initializing worker modules";
   try {
     const { biomeData, tileSpawns, seed, ngPlus, pw, gameMode, perks, skipCosmeticScenes, unlocks, dailySeed, elevatorColumns = [], elevatorSpawns = [] } = e.data;
@@ -71,10 +79,27 @@ self.onmessage = async (e) => {
     phase = "loading pixel scenes";
     if (e.data.workerScenes) {
       installWorkerScenes(modules.pixelSceneMod, e.data.workerScenes, !!e.data.fullPixels);
-    } else {
-      // Standalone/native callers can still initialize directly from archives.
-      await loadPixelSceneData();
+      scenesReady.add(!!e.data.fullPixels);
+    } else if (!scenesReady.has(!!e.data.fullPixels)) {
+      // Inflate/expand directly on this PW thread. No nested decode worker and
+      // no hundreds-of-MB main-thread scene snapshot clone on a cold seed.
+      try {
+        const { installPreparedScenes } = await import('./prepared-scenes');
+        await installPreparedScenes(modules.pixelSceneMod, !!e.data.fullPixels, true);
+      } catch (error) {
+        console.warn('[PW worker] Prepared scenes unavailable; loading archives:', error);
+        await loadPixelSceneData();
+      }
+      scenesReady.add(!!e.data.fullPixels);
     }
+    if (e.data.prepareOnly) {
+      self.postMessage({ success: true, requestId: e.data.requestId, pw, pois: [], pixelScenes: [] });
+      return;
+    }
+    // Raw scenes/spawns are immutable, but recolors can depend on the seed and
+    // destination biome. Bound memory and prevent stale variants on reuse.
+    modules.pixelSceneMod.clearPixelSceneBitmapCache?.();
+    for (const scene of Object.values(modules.pixelSceneMod.PIXEL_SCENE_DATA) as any[]) scene.variants = {};
 
     phase = "scanning main-plane spawns";
     // 1. Scan spawns
@@ -147,6 +172,7 @@ self.onmessage = async (e) => {
     phase = "posting worker results";
     self.postMessage({
       success: true,
+      requestId: e.data.requestId,
       pw,
       pois: combinedPois,
       pixelScenes: slimPixelScenes
@@ -154,6 +180,7 @@ self.onmessage = async (e) => {
   } catch (error) {
     self.postMessage({
       success: false,
+      requestId: e.data.requestId,
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
       phase,
@@ -161,4 +188,4 @@ self.onmessage = async (e) => {
       fullPixels: !!e.data.fullPixels,
     });
   }
-};
+}

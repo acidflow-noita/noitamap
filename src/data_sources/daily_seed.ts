@@ -28,6 +28,21 @@ interface SeedCache {
 const daily: SeedCache = { at: 0, seed: null, utcDate: null, pending: null };
 const previous: SeedCache = { at: 0, seed: null, utcDate: null, pending: null };
 
+const identityListeners = new Set<() => void>();
+
+/** Identity lookups may finish after the map toolbar has displayed its seed. */
+export function subscribeDailySeedIdentity(listener: () => void): () => void {
+  identityListeners.add(listener);
+  return () => { identityListeners.delete(listener); };
+}
+
+function notifyDailySeedIdentity(): void {
+  for (const listener of identityListeners) {
+    try { listener(); }
+    catch (error) { console.warn('[Daily seed] Identity listener failed:', error); }
+  }
+}
+
 /** Current UTC date as "YYYY-MM-DD" */
 function currentUTCDate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -60,6 +75,7 @@ function fetchSeed(cache: SeedCache, url: string, force: boolean): Promise<numbe
         cache.at = Date.now();
         cache.seed = seed;
         cache.utcDate = today;
+        notifyDailySeedIdentity();
       }
       return seed;
     }).finally(() => {
@@ -121,6 +137,7 @@ export function clearDailySeedCache(): void {
     cache.utcDate = null;
     cache.pending = null;
   }
+  notifyDailySeedIdentity();
 }
 
 /** Synchronous accessor for the cached previous-daily seed (today's UTC day

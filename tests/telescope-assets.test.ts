@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import JSZip from "jszip";
-import { encode } from "fast-png";
 import { readFile } from "node:fs/promises";
 import { decodePngToRgba } from "../src/telescope/png-decode";
 import { clearTelescopeAssetCache } from "../src/telescope/telescope-assets";
@@ -10,9 +9,12 @@ vi.mock("../src/data-archive", () => ({
   getZip: async (name: string) => archives.get(name),
   getDataZip: async () => archives.get("main"),
 }));
-vi.mock("../src/renderer_settings", () => ({ isGLTerrainEnabled: () => true }));
+vi.mock("../src/renderer_settings", () => ({
+  useRenderPerfGeneration: () => true,
+}));
+vi.mock("virtual:noitamap-telescope-asset-identity", () => ({ provenance: "test-assets-v1" }));
 import { getFromZipFirst } from "../src/telescope/zip-extraction-shim";
-import { installFetchInterceptor, installImageSrcInterceptor } from "../src/telescope/telescope-data-bridge";
+import { installFetchInterceptor } from "../src/telescope/telescope-data-bridge";
 
 afterEach(() => {
   archives.clear();
@@ -49,6 +51,7 @@ const repairedPaths = [
   ],
   ["general/scale.png", "pixel_scenes", "overworld/scale.png"],
   ["general/scale_old.png", "pixel_scenes", "overworld/scale_old.png"],
+  ["spliced/watercave.png", "pixel_scenes", "spliced/watercave.png"],
 ] as const;
 let realArchives: Promise<Map<string, JSZip>> | undefined;
 const loadRealArchives = () =>
@@ -70,6 +73,64 @@ const loadRealArchives = () =>
   ).then((entries) => new Map(entries)));
 
 describe("repaired asset paths use real authored pixels", () => {
+  it("preserves the spliced directory when falling back to the main archive", async () => {
+    const main = (await loadRealArchives()).get("main")!;
+    archives.set("main", main);
+    const bytes = await (
+      await getFromZipFirst("../data/pixel_scenes/spliced/watercave.png")
+    ).arrayBuffer();
+    expect(new Uint8Array(bytes)).toEqual(
+      await main
+        .file("data/biome_impl/spliced/watercave.png")!
+        .async("uint8array"),
+    );
+    const image = decodePngToRgba(bytes);
+    expect([image.width, image.height]).toEqual([512, 1139]);
+  });
+
+  it("does not substitute an unrelated basename if a spliced scene is unavailable", async () => {
+    archives.set(
+      "main",
+      new JSZip().file("data/biome_impl/watercave.png", new Uint8Array([1])),
+    );
+    await expect(
+      getFromZipFirst("../data/pixel_scenes/spliced/watercave.png"),
+    ).rejects.toThrow("Missing telescope PNG");
+  });
+
+  it("loads every configured spliced scene from prepared pixels, including the complete watercave", async () => {
+    for (const [key, zip] of await loadRealArchives()) archives.set(key, zip);
+    const { SPLICED_SCENES } =
+      await import("../lib/noita-telescope-vm/js/pixel_scene_config.js");
+    const metadata = JSON.parse(
+      await readFile(
+        new URL(
+          "../lib/noita-telescope-vm/data/pixel_scene_meta.json",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    ).scenes;
+    for (const { name } of SPLICED_SCENES.extras) {
+      const path = `spliced/${name}.png`;
+      const expected = await archives
+        .get("pixel_scenes")
+        .file(path)
+        .async("uint8array");
+      const bytes = await (
+        await getFromZipFirst(`../data/pixel_scenes/${path}`)
+      ).arrayBuffer();
+      expect(new Uint8Array(bytes), path).toEqual(expected);
+      const image = decodePngToRgba(bytes),
+        record = metadata[`general/${name}`];
+      expect([image.width, image.height], path).toEqual([
+        record.width,
+        record.height,
+      ]);
+      if (name === "watercave")
+        expect([image.width, image.height]).toEqual([512, 1139]);
+    }
+  });
   it.each(repairedPaths)(
     "resolves %s to its canonical archive entry",
     async (path, archive, canonical) => {
@@ -91,6 +152,7 @@ describe("repaired asset paths use real authored pixels", () => {
   it.each([
     "biome_maps/biome_map_nightmare.png",
     "pixel_scenes/general/cauldron.png",
+    "pixel_scenes/general/cauldron_fg.png",
   ])(
     "loads the bundled %s without recursive interception or blank fallback",
     async (path) => {
@@ -137,44 +199,6 @@ describe("repaired asset paths use real authored pixels", () => {
 });
 
 describe("asset extraction and failure handling", () => {
-  it("decodes an intercepted archive image before publishing its blob URL", async () => {
-    const png = encode({ width: 1, height: 1, data: new Uint8Array([20, 40, 60, 255]), channels: 4 });
-    archives.set("main", new JSZip().file("data/test.png", png));
-    class ArchiveImage extends EventTarget {
-      private value = "";
-      get src() { return this.value; }
-      set src(value: string) { this.value = value; }
-    }
-    vi.stubGlobal("HTMLImageElement", ArchiveImage);
-    const createURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:test-image");
-    installImageSrcInterceptor();
-    const image = new ArchiveImage();
-    image.src = "./data/test.png";
-    await vi.waitFor(() => expect(image.src).toBe("blob:test-image"));
-    const bytes = await (createURL.mock.calls[0][0] as Blob).arrayBuffer();
-    expect([...decodePngToRgba(bytes).data]).toEqual([20, 40, 60, 255]);
-  });
-
-  it("does not overwrite a replacement image source while archive decoding is pending", async () => {
-    const png = encode({ width: 1, height: 1, data: new Uint8Array([20, 40, 60, 255]), channels: 4 });
-    archives.set("main", new JSZip().file("data/test.png", png));
-    class ArchiveImage extends EventTarget {
-      private value = "";
-      get src() { return this.value; }
-      set src(value: string) { this.value = value; }
-    }
-    vi.stubGlobal("HTMLImageElement", ArchiveImage);
-    const createURL = vi.spyOn(URL, "createObjectURL");
-    installImageSrcInterceptor();
-    const image = new ArchiveImage();
-    image.src = "./data/test.png";
-    image.src = "https://example.test/replacement.png";
-    await getFromZipFirst("./data/test.png");
-    await new Promise(resolve => setTimeout(resolve, 0));
-    expect(image.src).toBe("https://example.test/replacement.png");
-    expect(createURL).not.toHaveBeenCalled();
-  });
-
   it("coalesces simultaneous reads and keeps only one successful extraction", async () => {
     const zip = new JSZip().file("data/test.png", new Uint8Array([1, 2, 3]));
     archives.set("main", zip);
@@ -202,7 +226,7 @@ describe("asset extraction and failure handling", () => {
     expect((await getFromZipFirst("./data/missing.png")).size).toBe(1);
   });
 
-  it("surfaces archive corruption, evicts the broken archive, and permits retry", async () => {
+  it("surfaces failed asset reads and permits retry without caching a blank image", async () => {
     const zip = new JSZip().file("data/test.png", new Uint8Array([1]));
     archives.set("main", zip);
     const extract = vi
@@ -211,9 +235,9 @@ describe("asset extraction and failure handling", () => {
     const remove = vi.fn().mockResolvedValue(true);
     vi.stubGlobal("caches", { delete: remove });
     await expect(getFromZipFirst("./data/test.png")).rejects.toThrow(
-      "archive cache cleared",
+      "Cannot read data/test.png from main assets",
     );
-    expect(remove).toHaveBeenCalledWith("noitamap-archive-main-v2");
+    expect(remove).not.toHaveBeenCalled();
     expect((await getFromZipFirst("./data/test.png")).size).toBe(1);
     expect(extract).toHaveBeenCalledTimes(2);
   });
@@ -246,6 +270,18 @@ describe("asset extraction and failure handling", () => {
       window.fetch("./data/test.png", { signal: AbortSignal.abort() }),
     ).rejects.toThrow();
     expect(original).not.toHaveBeenCalled();
+  });
+
+  it("reuses full-pixel atlas inputs and versions the underlying HTTP request", async () => {
+    const original = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(new Uint8Array([4, 0, 255])));
+    vi.stubGlobal("window", { fetch: original });
+    installFetchInterceptor(true);
+    const one = await window.fetch("../data/material_atlas.bin");
+    const two = await window.fetch("../data/material_atlas.bin");
+    expect(new Uint8Array(await one.arrayBuffer())).toEqual(new Uint8Array([4, 0, 255]));
+    expect(new Uint8Array(await two.arrayBuffer())).toEqual(new Uint8Array([4, 0, 255]));
+    expect(original).toHaveBeenCalledOnce();
+    expect(original.mock.calls[0][0]).toContain("noitamap_revision=test-assets-v1");
   });
 });
 describe("engine artwork archive paths", () => {
@@ -288,19 +324,27 @@ describe("engine artwork archive paths", () => {
       expect(fetchOriginal).not.toHaveBeenCalled();
     });
   }
-  it("does not replace the generator's specialized base material PNG with a differently prepared main-archive copy", async () => {
-    const main = new JSZip(),
-      scenes = new JSZip();
-    main.file("data/biome_impl/coalmine/coalpit01.png", new Uint8Array([1]));
-    scenes.file("coalmine/coalpit01.png", new Uint8Array([2]));
-    archives.set("main", main);
-    archives.set("pixel_scenes", scenes);
-    expect(
-      new Uint8Array(
-        await (
-          await getFromZipFirst("../data/pixel_scenes/coalmine/coalpit01.png")
-        ).arrayBuffer(),
-      ),
-    ).toEqual(new Uint8Array([2]));
-  });
+  it.each(["coalmine/coalpit01", "general/wand_altar", "spliced/watercave"])(
+    "keeps prepared %s material pixels ahead of differently prepared main-archive copies",
+    async (path) => {
+      const main = new JSZip(),
+        scenes = new JSZip();
+      main.file(`data/biome_impl/${path}.png`, new Uint8Array([1]));
+      main.file(
+        `data/biome_impl/${path.split("/").at(-1)}.png`,
+        new Uint8Array([1]),
+      );
+      main.file(`data/pixel_scenes/${path}.png`, new Uint8Array([1]));
+      scenes.file(`${path}.png`, new Uint8Array([2]));
+      archives.set("main", main);
+      archives.set("pixel_scenes", scenes);
+      expect(
+        new Uint8Array(
+          await (
+            await getFromZipFirst(`../data/pixel_scenes/${path}.png`)
+          ).arrayBuffer(),
+        ),
+      ).toEqual(new Uint8Array([2]));
+    },
+  );
 });

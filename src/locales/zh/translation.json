@@ -751,7 +751,7 @@
       "crystal_key": "晶体钥匙",
       "egg": "蛋",
       "egg_fire": "暖和的蛋",
-      "egg_monster": "摆动的蛋",
+      "egg_monster": "蛋",
       "egg_purple": "冰凉的蛋",
       "egg_slime": "发黏的蛋",
       "egg_hollow": "空的蛋",
@@ -783,7 +783,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "蛋",
+      "egg_spiders": "冰凉的蛋"
     },
     "bosses": {
       "Kivi": "奇威",
@@ -4610,7 +4612,9 @@
     "switchProviderConfirm": "通过 {{next}} 登录后，您将退出 {{current}}。\n\n之后，Pro 权限将取决于您的 {{next}} 订阅。\n\n要切换到 {{next}} 吗？",
     "loginWithTwitch": "通过 Twitch 登录",
     "subscribeTwitch": "在 Twitch 订阅",
-    "or": "或"
+    "or": "或",
+    "workspaceSaveFailed": "无法保存当前工作状态。登录已取消，请重试。",
+    "workspaceRestoreFailed": "无法恢复绘图工作状态。请刷新页面重试。"
   },
   "loading": {
     "maps": "加载地图中...",
@@ -4791,6 +4795,13 @@
       "upTitle": "向前移动",
       "downTitle": "向后移动",
       "backTitle": "移至最后"
+    },
+    "target": {
+      "label": "保存和分享的绘图打开时使用",
+      "fixed": "此地图／种子",
+      "daily": "今日每日挑战",
+      "description": "此选项会随绘图一起保存。每日挑战选项使用打开绘图当天的每日种子。",
+      "updateRequired": "请刷新页面，以在今日每日挑战中打开绘图。"
     }
   },
   "dynamicMap": {
@@ -5076,14 +5087,14 @@
     "reactionsHeader": "调酒师上的物质反应",
     "asReagent": "查看试剂",
     "asProduct": "查看产品",
-    "openInBartender": "在 Bartender 中打开",
-    "bartenderReagentHint": "在 Bartender 中查看使用此材料的反应。",
-    "bartenderProductHint": "在 Bartender 中查看生成此材料的反应。",
-    "showSpawnBiomes": "在地图上显示生成生物群系",
-    "spawnMapMissing": "此地图未显示：{{locations}}",
     "openInWiki": "在 Noita Wiki 中打开",
+    "openInBartender": "在 Bartender 中打开",
+    "bartenderProductHint": "在 Bartender 中查看生成此材料的反应。",
+    "bartenderReagentHint": "在 Bartender 中查看使用此材料的反应。",
     "spawnBiomesPro": "生成生物群系高亮显示是 Pro 功能。",
-    "spawnBiomesUnavailable": "此地图上无法显示该生物的生成生物群系。"
+    "spawnBiomesUnavailable": "此地图上无法显示该生物的生成生物群系。",
+    "showSpawnBiomes": "在地图上显示生成生物群系",
+    "spawnMapMissing": "此地图未显示：{{locations}}"
   },
   "wand": {
     "shuffle": "乱序",
@@ -5120,7 +5131,17 @@
     "pillarGoto": "在地图上显示",
     "pillarSingular": "成就之柱",
     "pillarSearch": "在地图上搜索",
-    "biomeShop": "生物群系商店"
+    "biomeShop": "生物群系商店",
+    "possibleSpawns": "可能生成的生物",
+    "eggHatch": "结果取决于种子和蛋孵化的位置。",
+    "noEggSpawns": "此蛋不会孵化出任何生物。",
+    "possibleIllusions": "可能生成的幻象",
+    "nestSpawnLimit": "每 {{frames}} 个游戏帧检查一次。如果玩家距离小于 {{distance}} 像素，每次检查有 {{chance}} 的概率生成一个生物，最多共生成 {{count}} 个。",
+    "spawnChancePerCreature": "这些概率适用于每次成功生成生物时。",
+    "cocoonSpawns": "被摧毁时释放一个生物；受到伤害可能使其提前释放。",
+    "snowCrystalSpawns": "玩家在附近时，每次生成一个幻象。这些概率适用于每次成功生成幻象时。",
+    "spawns": "生成",
+    "lukkiEggSpawns": "每次命中触发效果时释放一个生物。在蛋被摧毁前，多次命中可释放更多生物。"
   },
   "skipCreatures": {
     "title": "不添加生物",
@@ -5770,5 +5791,13 @@
       "progress_hut_b": "实验性魔杖（要求）",
       "secret_null": "无效化祭坛"
     }
+  },
+  "hdRenderer": {
+    "title": "高清渲染器",
+    "content": "使用GPU为生成的地图绘制精细地形。默认开启。更改后会重新加载地图。每日地图的图像不受影响。"
+  },
+  "startup": {
+    "failed": "Noitamap 无法启动。请重新加载页面后重试。",
+    "retry": "重新加载页面"
   }
 }

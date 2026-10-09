@@ -3,10 +3,10 @@ import {
   clearDailySeedCache,
   fetchDailySeed,
   fetchPreviousDailySeed,
-  getCachedDailySeed,
-  getCachedPreviousDailySeed,
   getCachedDailyComparisonTarget,
   getCachedDailySeedIdentity,
+  getCachedDailySeed,
+  getCachedPreviousDailySeed,
 } from "../src/data_sources/daily_seed";
 let today = 1318860803,
   previous = 1993746523;

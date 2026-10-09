@@ -209,8 +209,53 @@ const KEYS = [
 // Wiki display name (full_creatures.json's spawnLocation field) → biome_*
 // CSV row that holds the translations. Names with no CSV match keep the EN
 // display value across every locale — translators can fix them by hand.
-// Shared with creature-card biome navigation; keep wiki names and game IDs aligned.
-const SPAWN_NAME_TO_CSV_KEY = require("../src/data/spawn-biome-names.json");
+const SPAWN_NAME_TO_CSV_KEY = {
+  "Mines": "biome_coalmine",
+  "Collapsed Mines": "biome_coalmine_alt",
+  "Coal Pits": "biome_excavationsite",
+  "Fungal Caverns": "biome_fungicave",
+  "Snowy Depths": "biome_snowcave",
+  "Hiisi Base": "biome_snowcastle",
+  "Underground Jungle": "biome_rainforest",
+  "The Vault": "biome_vault",
+  "Frozen Vault": "biome_vault_frozen",
+  "Temple of the Art": "biome_crypt",
+  "Lukki Lair": "biome_rainforest_dark",
+  "Wizards' Den": "biome_wizardcave",
+  "Wizards&#039; Den": "biome_wizardcave",
+  "Overgrown Cavern": "biome_fun",
+  "Power Plant": "biome_robobase",
+  "Meat Realm": "biome_meat",
+  "Pyramid": "biome_pyramid",
+  "Lake": "biome_lake",
+  "Lava Lake": "biome_lava",
+  "Sandcave": "biome_sandcave",
+  "Holy Mountain": "biome_holymountain",
+  "Watchtower": "biome_watchtower",
+  "Cloudscape": "biome_clouds",
+  "Forgotten Cave": "biome_ghost_secret",
+  "Throne Room": "biome_mestari_secret",
+  "Snowy Chasm": "biome_winter_caves",
+  "Snowy Wasteland": "biome_winter",
+  "Magical Temple": "biome_wandcave",
+  "The Tower": "biome_tower",
+  "Ancient Laboratory": "biome_liquidcave",
+  "Abandoned Alchemy Lab": "biome_secret_lab",
+  "The Laboratory": "biome_boss_arena",
+  "The Work (Sky)": "biome_boss_victoryroom",
+  "The Work (Hell)": "biome_boss_victoryroom",
+  "Kivi Temple": "biome_boss_sky",
+  "Dragoncave": "biome_dragoncave",
+  "Desert Chasm": "biome_desert",
+  // Wiki names with no CSV match — EN value is used in every locale.
+  "Forest": null,
+  "Friend Room": null,
+  "Giant Tree": null,
+  "Lake Island": null,
+  "Parallel Worlds": null,
+  "Treasure Chest": null,
+  "Buried skull": null,
+};
 
 // ─── gameContent.items.* — POI labels used by the popup card ────────────────
 // Each key here maps a raw POI label (the value telescope-osd-bridge.ts /
@@ -309,8 +354,10 @@ const POI_NAME_TO_CSV_KEY = {
   // Eggs.
   "egg": "item_egg",
   "egg_fire": "item_egg_fire",
-  "egg_monster": "item_egg_worm",
+  "egg_monster": "item_egg",
+  "egg_red": "item_egg",
   "egg_purple": "item_egg_purple",
+  "egg_spiders": "item_egg_purple",
   "egg_slime": "item_egg_slime",
   "egg_hollow": "item_egg_hollow",
   "egg_worm": "item_egg_worm",
@@ -431,18 +478,6 @@ function csvValue(rows, colIndex, csvKey, csvCol) {
 function main() {
   const { rows, colIndex } = loadCsv();
   const localesDir = path.join(__dirname, "../src/locales");
-  // Site UI prose lives separately from the in-game terminology above.
-  const cardUI = {
-    ...require("../build_data/poi-card-ui.json"),
-    ...require("../build_data/search-ui.json"),
-  };
-  for (const [key, translations] of Object.entries(cardUI)) {
-    for (const locale of Object.keys(LOCALE_TO_CSV_COL)) {
-      if (typeof translations[locale] !== "string" || !translations[locale].trim()) {
-        throw new Error(`Missing POI card translation: ${locale}/${key}`);
-      }
-    }
-  }
 
   for (const [loc, csvCol] of Object.entries(LOCALE_TO_CSV_COL)) {
     const file = path.join(localesDir, loc, "translation.json");
@@ -503,9 +538,6 @@ function main() {
       }
     }
 
-    for (const [key, translations] of Object.entries(cardUI)) {
-      setNested(json, key, translations[loc], { force: true });
-    }
     fs.writeFileSync(file, JSON.stringify(json, null, 2) + "\n");
     console.log(`${loc}: csv=${csvWrites}, en-fallback=${enFallbackAdds}`);
   }

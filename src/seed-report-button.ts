@@ -1,9 +1,6 @@
 import { requestProSidebar, onProSidebarIntent } from "./pro-sidebar-intent";
 import { createSeedReportLoading } from "./seed-report-loading";
-import {
-  paintLoadingFeedback,
-  dismissLoadingPopover,
-} from "./pro-loading-feedback";
+import { dismissLoadingPopover } from "./pro-loading-feedback";
 /**
  * Seed Report toggle button.
  *
@@ -113,8 +110,8 @@ export function createSeedReportButton(
     const feedback = needsLoad ? showPending() : pending;
     try {
       if (needsLoad) {
-        await paintLoadingFeedback();
-        if (!stillWanted()) return false;
+        // Loading feedback is mounted; only actual feature readiness should
+        // gate the handoff, not animation frames from a busy map.
         if (!(await opts.loadProBundle())) {
           if (stillWanted()) {
             feedback?.error();

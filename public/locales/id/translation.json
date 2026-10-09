@@ -751,7 +751,7 @@
       "crystal_key": "Crystal key",
       "egg": "Egg",
       "egg_fire": "Toasty egg",
-      "egg_monster": "Wiggling egg",
+      "egg_monster": "Egg",
       "egg_purple": "Chilly egg",
       "egg_slime": "Slimy egg",
       "egg_hollow": "Hollow egg",
@@ -783,7 +783,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Egg",
+      "egg_spiders": "Chilly egg"
     },
     "bosses": {
       "Kivi": "Kivi",
@@ -4610,7 +4612,9 @@
     "switchProviderConfirm": "Masuk dengan {{next}} akan mengeluarkan Anda dari {{current}}.\n\nAkses Pro kemudian akan bergantung pada langganan {{next}} Anda.\n\nApakah Anda ingin beralih ke {{next}}?",
     "loginWithTwitch": "Masuk dengan Twitch",
     "subscribeTwitch": "Berlangganan di Twitch",
-    "or": "atau"
+    "or": "atau",
+    "workspaceSaveFailed": "Tidak dapat menyimpan ruang kerja. Proses masuk dibatalkan. Silakan coba lagi.",
+    "workspaceRestoreFailed": "Tidak dapat memulihkan ruang gambar. Muat ulang halaman untuk mencoba lagi."
   },
   "loading": {
     "maps": "Memuat peta...",
@@ -4791,6 +4795,13 @@
       "upTitle": "Pindahkan ke depan",
       "downTitle": "Pindahkan ke belakang",
       "backTitle": "Kirim ke belakang"
+    },
+    "target": {
+      "label": "Gambar yang disimpan dan dibagikan dibuka di",
+      "fixed": "Peta/seed ini",
+      "daily": "Harian hari ini",
+      "description": "Pilihan ini disimpan bersama gambar. Opsi harian menggunakan seed harian pada hari gambar dibuka.",
+      "updateRequired": "Muat ulang halaman untuk membuka gambar pada harian hari ini."
     }
   },
   "dynamicMap": {
@@ -5076,14 +5087,14 @@
     "reactionsHeader": "Reaksi material terhadap Bartender",
     "asReagent": "Lihat sebagai reagen",
     "asProduct": "Lihat sebagai produk",
-    "openInBartender": "Buka di Bartender",
-    "bartenderReagentHint": "Lihat reaksi yang menggunakan material ini di Bartender.",
-    "bartenderProductHint": "Lihat reaksi yang menghasilkan material ini di Bartender.",
-    "showSpawnBiomes": "Tampilkan bioma kemunculan di peta",
-    "spawnMapMissing": "Tidak ditampilkan di peta ini: {{locations}}",
     "openInWiki": "Buka di Noita Wiki",
+    "openInBartender": "Buka di Bartender",
+    "bartenderProductHint": "Lihat reaksi yang menghasilkan material ini di Bartender.",
+    "bartenderReagentHint": "Lihat reaksi yang menggunakan material ini di Bartender.",
     "spawnBiomesPro": "Penyorotan bioma kemunculan adalah fitur Pro.",
-    "spawnBiomesUnavailable": "Bioma kemunculan makhluk ini tidak tersedia di peta ini."
+    "spawnBiomesUnavailable": "Bioma kemunculan makhluk ini tidak tersedia di peta ini.",
+    "showSpawnBiomes": "Tampilkan bioma kemunculan di peta",
+    "spawnMapMissing": "Tidak ditampilkan di peta ini: {{locations}}"
   },
   "wand": {
     "shuffle": "Acak",
@@ -5120,7 +5131,17 @@
     "pillarGoto": "Tampilkan di peta",
     "pillarSingular": "Pilar Pencapaian",
     "pillarSearch": "Cari di peta",
-    "biomeShop": "Toko bioma"
+    "biomeShop": "Toko bioma",
+    "possibleSpawns": "Makhluk yang mungkin muncul",
+    "eggHatch": "Hasilnya bergantung pada seed dan tempat telur menetas.",
+    "noEggSpawns": "Tidak ada makhluk yang menetas dari telur ini.",
+    "possibleIllusions": "Ilusi yang mungkin muncul",
+    "nestSpawnLimit": "Memeriksa setiap {{frames}} frame permainan. Setiap pemeriksaan memiliki peluang {{chance}} untuk memunculkan satu makhluk jika pemain berjarak kurang dari {{distance}} piksel, hingga total {{count}}.",
+    "spawnChancePerCreature": "Peluang berlaku setiap kali makhluk berhasil dimunculkan.",
+    "cocoonSpawns": "Melepaskan satu makhluk saat dihancurkan; kerusakan dapat melepaskannya lebih awal.",
+    "snowCrystalSpawns": "Menciptakan satu ilusi setiap kali selama pemain berada di dekatnya. Peluang berlaku setiap kali ilusi berhasil dimunculkan.",
+    "spawns": "Memunculkan",
+    "lukkiEggSpawns": "Melepaskan satu makhluk setiap kali serangan memicu efeknya. Serangan berulang dapat melepaskan lebih banyak sebelum telur dihancurkan."
   },
   "skipCreatures": {
     "title": "Jangan tambahkan makhluk",
@@ -5770,5 +5791,13 @@
       "progress_hut_b": "Tongkat eksperimental (Persyaratan)",
       "secret_null": "Nullifying Altar"
     }
+  },
+  "hdRenderer": {
+    "title": "Perender HD",
+    "content": "Menggunakan GPU untuk medan yang mendetail pada peta yang dihasilkan. Aktif secara bawaan. Memuat ulang peta. Gambar peta harian tidak berubah."
+  },
+  "startup": {
+    "failed": "Noitamap tidak dapat dimulai. Muat ulang halaman untuk mencoba lagi.",
+    "retry": "Muat ulang halaman"
   }
 }

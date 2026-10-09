@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import {
   applySceneVisualArt,
   applySceneForceAir,
@@ -52,7 +53,7 @@ describe("full-pixel scene paint order", () => {
     scene.paint(terrain, background, 0, 0, 3, 1);
     expect(terrain).toEqual(rgba(rock, water, rock));
   });
-  it("applies opaque visual art to translucent material while preserving empty air", () => {
+  it("paints acid-tank glass with its opaque art while leaving air empty", () => {
     const source = {
       data: rgba(clear, clear, clear),
       width: 3,
@@ -62,6 +63,28 @@ describe("full-pixel scene paint order", () => {
     const pixels = rgba(clear, [20, 30, 40, 128], [1, 2, 3, 255]);
     applySceneVisualArt(pixels, source);
     expect(pixels).toEqual(rgba(clear, rock, rock));
+  });
+  it("matches upstream scene art for every cell/art alpha and clipped art bounds", () => {
+    const upstream = readFileSync(
+      new URL("../lib/noita-telescope-vm/js/pixel_scene_generation.js", import.meta.url),
+      "utf8",
+    ).match(/export function overlayVisualArt\([\s\S]*?\n\}/)?.[0];
+    expect(upstream, "Review the changed upstream scene-art boundary").toBeTruthy();
+    const overlay = new Function(
+      `${upstream!.replace("export ", "")}; return overlayVisualArt;`,
+    )();
+    const width = 259, height = 256, artWidth = 256;
+    const pixels = new Uint8ClampedArray(width * height * 4);
+    const art = new Uint8ClampedArray(artWidth * (height + 1) * 4);
+    for (let y = 0; y < height; y++)
+      for (let x = 0; x < width; x++) {
+        pixels.set([23, 79, 183, y], (y * width + x) * 4);
+        if (x < artWidth) art.set([239, 141, 37, x], (y * artWidth + x) * 4);
+      }
+    const visualArt = { data: art, width: artWidth, height: height + 1 };
+    const expected = overlay(pixels, width, height, visualArt);
+    applySceneVisualArt(pixels, { data: pixels, width, height, visualArt });
+    expect(pixels).toEqual(new Uint8ClampedArray(expected));
   });
   it("caches by placed instance, not shared variant, and preserves game paint order", () => {
     const data = fixture();

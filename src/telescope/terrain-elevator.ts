@@ -33,10 +33,23 @@ export function bottomElevatorStubs(
  * start chunk so the generator's 1/10 lattice remains anchored there. Only the
  * lower-plane renderer consumes the continuation. All original layers remain
  * read-only and all other columns retain the existing plane/source policy. */
-export async function prepareElevatorShafts(
+const preparedShafts = new WeakMap<GLTerrainGeneration, Promise<any[]>>();
+
+export function prepareElevatorShafts(
   gen: GLTerrainGeneration,
 ): Promise<any[]> {
-  if (gen.elevatorShafts) return gen.elevatorShafts;
+  if (gen.elevatorShafts) return Promise.resolve(gen.elevatorShafts);
+  const existing = preparedShafts.get(gen);
+  if (existing) return existing;
+  const pending = generateElevatorShafts(gen).catch(error => {
+    if (preparedShafts.get(gen) === pending) preparedShafts.delete(gen);
+    throw error;
+  });
+  preparedShafts.set(gen, pending);
+  return pending;
+}
+
+async function generateElevatorShafts(gen: GLTerrainGeneration): Promise<any[]> {
   const pixels = (gen.sourceBiomeData ?? gen.biomeData).pixels;
   const width = pixels.length / 48;
   const stubs = bottomElevatorStubs(gen.tileLayers, pixels, width);

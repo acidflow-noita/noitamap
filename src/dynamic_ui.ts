@@ -6,9 +6,9 @@
  */
 
 import i18next from "i18next";
-import { fetchDailySeed, fetchPreviousDailySeed, getCachedDailySeedIdentity } from "./data_sources/daily_seed";
+import { fetchDailySeed, fetchPreviousDailySeed, getCachedDailySeedIdentity, subscribeDailySeedIdentity } from "./data_sources/daily_seed";
 import { updateURLWithSeed } from "./data_sources/url";
-import { getCurrentDynamicSeed, runDynamicMap } from "./dynamic-map";
+import { getCurrentDynamicSeed, getCompletedDynamicSeed, runDynamicMap } from "./dynamic-map";
 import type { DynamicMapOptions } from "./dynamic-map";
 import { isSpoilerFree } from "./spoiler-free";
 import { updateOverflowMenu } from "./overflow-menu";
@@ -35,7 +35,14 @@ let dailySeedBtn: HTMLButtonElement | null = null;
 let prevDailySeedBtn: HTMLButtonElement | null = null;
 let dynamicOpts: DynamicMapOptions | null = null;
 let isBusy = false;
+let toolbarRequestId = 0;
 let generatePopoverInstance: any = null;
+let resolvedInputSeed: number | null = null;
+let seedInputEdited = false;
+let unsubscribeDailyIdentity: (() => void) | undefined;
+let loadingStripRevision = 0;
+let loadingStripHideTimer: ReturnType<typeof setTimeout> | undefined;
+let loadingStripHideElement: HTMLElement | undefined;
 
 // ─── Build ───────────────────────────────────────────────────────────────────
 
@@ -113,9 +120,14 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   seedInput.setAttribute("data-bs-title", i18next.t("dynamicMap.placeholder"));
   seedInput.setAttribute("data-bs-content", i18next.t("dynamicMap.seedTooltipCustom"));
   seedInput.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter") onGenerateClick();
+    if (ev.key === "Enter" && !ev.isComposing) {
+      ev.preventDefault();
+      void onGenerateClick();
+    }
   });
   seedInput.addEventListener("input", () => {
+    seedInputEdited = true;
+    resolvedInputSeed = null;
     if (seedInput) {
       let digits = seedInput.value.replace(/\D/g, "");
       // Clamp to the valid Noita seed range (1 .. 2147483647).
@@ -188,6 +200,9 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
 
   // Initial state for buttons
   updateGenerateButtonState();
+  resolvedInputSeed = null;
+  unsubscribeDailyIdentity?.();
+  unsubscribeDailyIdentity = subscribeDailySeedIdentity(refreshSeedIdentity);
 
   // Re-translate the entire toolbar whenever the language changes
   i18next.on("languageChanged", refreshDynamicUITranslations);
@@ -278,6 +293,7 @@ export function roundVisibleOverlayGroupEdges(): void {
 export function updateDynamicUIVisibility(currentMap: string): void {
   if (!toolbarItems.length) return;
   const isDynamic = currentMap === DYNAMIC_MAP_NAME;
+  if (!isDynamic) setDynamicUIBusy(false);
   toolbarItems.forEach(el => { el.style.display = isDynamic ? "" : "none"; });
 
   // Toggle any dynamic-map-only controls outside the toolbar (e.g. light-mode switch in navbar)
@@ -315,8 +331,8 @@ export function updateDynamicUIVisibility(currentMap: string): void {
     roundVisibleOverlayGroupEdges();
   }
 
-  // Relocate secondary controls on dynamic maps and narrow desktop layouts;
-  // the overflow menu keeps its breakpoint listener in sync with this map.
+  // Relocate secondary controls into the "..." menu on the dynamic map;
+  // restore them to the navbar on static maps.
   updateOverflowMenu(currentMap);
 
   if (isDynamic) {
@@ -335,23 +351,28 @@ export function updateDynamicUIVisibility(currentMap: string): void {
 
 // ─── Handlers ────────────────────────────────────────────────────────────────
 
+/** Daily navigation leaves an explicitly forced live preview. Renderer and
+ * camera preferences remain unchanged; only the baked-map bypass is reset. */
+function restoreBakedDailyRoute(): boolean {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has('nb')) return false;
+  url.searchParams.delete('nb');
+  window.history.replaceState(window.history.state, '', url);
+  return true;
+}
+
 async function onDailySeedClick(): Promise<void> {
   if (isBusy || !dynamicOpts) return;
-  setBusy(true);
+  seedInputEdited = false;
+  const isCurrent = beginToolbarRequest();
   try {
     const seed = await fetchDailySeed(true);
-    if (seedInput) {
-      seedInput.value = String(seed);
-      // Apply the colour immediately. onSeedResolved would do this after
-      // runDynamicMap finishes, but that's seconds later — by then the user
-      // has already seen the wrong colour.
-      seedInput.classList.add("seed-daily");
-      seedInput.classList.remove("seed-prev-daily");
-      updateSeedTooltip("daily");
-    }
-    const currentSeed = getCurrentDynamicSeed();
+    if (!isCurrent()) return;
+    setDynamicUISeed(seed, true, true);
+    const currentSeed = getCompletedDynamicSeed();
+    const routeChanged = restoreBakedDailyRoute();
 
-    if (seed !== currentSeed) {
+    if (seed !== currentSeed || routeChanged) {
       updateURLWithSeed(seed, true);
       showLoadingStrip();
       await runDynamicMap(seed, true, dynamicOpts);
@@ -361,31 +382,26 @@ async function onDailySeedClick(): Promise<void> {
   } catch (e) {
     console.error("[DynamicUI] Daily seed fetch failed:", e);
   } finally {
-    setTimeout(() => {
-      setBusy(false);
-      updateGenerateButtonState();
-    }, 300);
+    if (isCurrent()) setDynamicUIBusy(false);
   }
 }
 
 async function onPrevDailySeedClick(): Promise<void> {
   if (isBusy || !dynamicOpts) return;
-  setBusy(true);
+  seedInputEdited = false;
+  const isCurrent = beginToolbarRequest();
   try {
     const seed = await fetchPreviousDailySeed(true);
+    if (!isCurrent()) return;
     if (seed === null) {
       console.warn("[DynamicUI] Previous daily seed unavailable.");
       return;
     }
-    if (seedInput) {
-      seedInput.value = String(seed);
-      seedInput.classList.add("seed-prev-daily");
-      seedInput.classList.remove("seed-daily");
-      updateSeedTooltip("previousDaily");
-    }
-    const currentSeed = getCurrentDynamicSeed();
+    setDynamicUISeed(seed, true, true);
+    const currentSeed = getCompletedDynamicSeed();
+    const routeChanged = restoreBakedDailyRoute();
 
-    if (seed !== currentSeed) {
+    if (seed !== currentSeed || routeChanged) {
       // Previous daily renders as a daily (all-unlocked, baked DZIs available
       // on the previous-daily-* workers).
       updateURLWithSeed(seed, true);
@@ -397,10 +413,7 @@ async function onPrevDailySeedClick(): Promise<void> {
   } catch (e) {
     console.error("[DynamicUI] Previous daily seed fetch failed:", e);
   } finally {
-    setTimeout(() => {
-      setBusy(false);
-      updateGenerateButtonState();
-    }, 300);
+    if (isCurrent()) setDynamicUIBusy(false);
   }
 }
 
@@ -408,6 +421,7 @@ async function onGenerateClick(): Promise<void> {
   if (isBusy || !dynamicOpts || !seedInput) return;
   const rawVal = seedInput.value.trim();
   if (!rawVal) {
+    finishSeedEntry();
     await onDailySeedClick();
     return;
   }
@@ -418,10 +432,12 @@ async function onGenerateClick(): Promise<void> {
     return;
   }
 
-  const currentSeed = getCurrentDynamicSeed();
+  setDynamicUISeed(seed, false);
+  finishSeedEntry();
+  const currentSeed = getCompletedDynamicSeed();
   if (seed === currentSeed) return;
 
-  setBusy(true);
+  const isCurrent = beginToolbarRequest();
   try {
     updateURLWithSeed(seed, false);
     showLoadingStrip();
@@ -429,11 +445,28 @@ async function onGenerateClick(): Promise<void> {
   } catch (e) {
     console.error("[DynamicUI] Generate failed:", e);
   } finally {
-    setTimeout(() => {
-      setBusy(false);
-      updateGenerateButtonState();
-    }, 300);
+    if (isCurrent()) setDynamicUIBusy(false);
   }
+}
+
+function finishSeedEntry(): void {
+  if (seedInput && document.activeElement === seedInput) {
+    dynamicOpts?.viewer.canvas?.focus({ preventScroll: true });
+  }
+}
+
+/** The current pipeline owns busy state; first paint alone does not finish it. */
+export function setDynamicUIBusy(busy: boolean): void {
+  toolbarRequestId++;
+  setBusy(busy);
+  updateGenerateButtonState();
+}
+
+/** Daily lookup belongs to the toolbar until it hands off to the map pipeline. */
+function beginToolbarRequest(): () => boolean {
+  setDynamicUIBusy(true);
+  const requestId = toolbarRequestId;
+  return () => requestId === toolbarRequestId;
 }
 
 function setBusy(busy: boolean): void {
@@ -450,7 +483,7 @@ function setBusy(busy: boolean): void {
 
 function updateGenerateButtonState(): void {
   if (!generateBtn || !seedInput) return;
-  const currentSeed = getCurrentDynamicSeed();
+  const currentSeed = getCompletedDynamicSeed();
   const inputSeed = parseInt(seedInput.value || "", 10);
   const isMatch = !isNaN(inputSeed) && inputSeed === currentSeed;
 
@@ -477,57 +510,167 @@ function updateGenerateButtonState(): void {
   }
 }
 
-/** Show the non-blocking loading strip with download already complete. */
-export function showLoadingStrip(): void {
+/** Show a new load, or preserve the phase values when publishing an update. */
+export function showLoadingStrip(reset = true): void {
+  loadingStripRevision++;
+  clearTimeout(loadingStripHideTimer);
+  loadingStripHideTimer = undefined;
+  loadingStripHideElement = undefined;
   const strip = document.getElementById("map-loading-strip");
   if (!strip) return;
   strip.classList.remove("fade-out");
   strip.classList.add("visible");
-  // Skip download phase (data.zip already loaded)
-  const dl = document.getElementById("loading-bar-download") as HTMLElement | null;
-  if (dl) dl.style.width = "100%";
-  // Reset generation and items bars
-  const gen = document.getElementById("loading-bar-generation") as HTMLElement | null;
-  const items = document.getElementById("loading-bar-items") as HTMLElement | null;
-  if (gen) gen.style.width = "0%";
-  if (items) items.style.width = "0%";
+  if (!reset) return;
+  for (const phase of ['download', 'generation', 'items']) {
+    const bar = document.getElementById(`loading-bar-${phase}`);
+    if (bar) bar.style.width = '0%';
+  }
   const title = document.getElementById("map-loading-title");
-  if (title) title.textContent = i18next.t("loading.mapData.generating");
+  if (title) title.textContent = i18next.t("loading.maps");
   const status = document.getElementById("map-loading-status");
-  if (status) status.textContent = "33%";
+  if (status) status.textContent = '';
+  document.querySelector('.loading-strip-bar-track')?.classList.add('indeterminate');
+}
+
+type LoadingPhase = 'download' | 'generation' | 'items';
+
+/** The strip reports ordered phases of the selected map, never background work. */
+export function createLoadingStripProgress() {
+  const phases: LoadingPhase[] = ['download', 'generation', 'items'];
+  let active = false, finished = true;
+  let baked: boolean | undefined;
+  let phase: LoadingPhase | undefined, percentage = 0;
+
+  const render = () => {
+    showLoadingStrip(false);
+    const index = phase ? phases.indexOf(phase) : -1;
+    const itemsOnly = baked === true;
+    const values = phases.map((_, i) => itemsOnly
+      ? (i === 2 && phase === 'items' ? percentage : 0)
+      : (i < index ? 100 : i === index ? percentage : 0));
+    const weight = itemsOnly ? 1 : 3;
+    phases.forEach((name, i) => {
+      const bar = document.getElementById(`loading-bar-${name}`);
+      if (bar) bar.style.width = `${values[i] / weight}%`;
+    });
+    const title = document.getElementById('map-loading-title');
+    const key = phase === 'items' ? 'loading.mapData.addingItems'
+      : phase === 'download' && percentage < 100 ? 'loading.mapData.downloading'
+      : baked === false ? 'loading.mapData.generating' : 'loading.maps';
+    if (title) title.textContent = i18next.t(key);
+    const status = document.getElementById('map-loading-status');
+    const complete = phase === 'items' && percentage === 100;
+    const overall = Math.round(values.reduce((a, b) => a + b, 0) / weight);
+    if (status) status.textContent = phase ? `${complete ? 100 : Math.min(99, overall)}%` : '';
+    document.querySelector('.loading-strip-bar-track')?.classList.toggle('indeterminate',
+      !phase || (phase !== 'items' && percentage === 100));
+  };
+
+  return {
+    start() {
+      active = true; finished = false; baked = undefined; phase = undefined; percentage = 0;
+    },
+    settle() {
+      active = false;
+      // OSD may still owe the current marker layer's completion callback.
+      if (phase !== 'items') { finished = true; hideLoadingStrip(); }
+    },
+    cancel() {
+      active = false; finished = true; hideLoadingStrip();
+    },
+    show() {
+      if (active && !finished) render();
+    },
+    setBaked(value: boolean) {
+      baked = value;
+      if (!active || finished) return;
+      if (value && phase !== 'items') {
+        phase = undefined; percentage = 0;
+        for (const name of phases) {
+          const bar = document.getElementById(`loading-bar-${name}`);
+          if (bar) bar.style.width = '0%';
+        }
+        document.querySelector('.loading-strip-bar-track')?.classList.remove('indeterminate');
+        hideLoadingStrip();
+      } else if (document.getElementById('map-loading-strip')?.classList.contains('visible')) render();
+    },
+    update(next: LoadingPhase, value: number) {
+      if (!Number.isFinite(value) || finished) return;
+      if (!active && !(phase === 'items' && next === 'items')) return;
+      if (baked === true && next !== 'items') return;
+      if (phase && phases.indexOf(next) < phases.indexOf(phase)) return;
+      const nextPercentage = Math.min(100, Math.max(0, value));
+      if (phase === next && nextPercentage < percentage) return;
+      phase = next; percentage = nextPercentage;
+      if (next === 'generation') baked = false;
+      render();
+      if (next === 'items' && percentage === 100) {
+        finished = true;
+        finishLoadingStrip();
+      }
+    },
+  };
 }
 
 /** Hide the loading strip with a fade-out. */
 export function hideLoadingStrip(): void {
   const strip = document.getElementById("map-loading-strip");
   if (!strip) return;
+  // Repeated completion signals share this fade; they must not leave cleanup
+  // timers behind or extend its duration. A new show cancels it immediately.
+  if (loadingStripHideTimer !== undefined && loadingStripHideElement === strip) return;
+  clearTimeout(loadingStripHideTimer);
+  loadingStripHideElement = strip;
+  const revision = loadingStripRevision;
   strip.classList.add("fade-out");
   // After the CSS transition completes, fully hide
-  setTimeout(() => {
+  loadingStripHideTimer = setTimeout(() => {
+    if (revision !== loadingStripRevision || loadingStripHideElement !== strip) return;
+    loadingStripHideTimer = undefined;
+    loadingStripHideElement = undefined;
     strip.classList.remove("visible", "fade-out");
   }, 400);
 }
 
-export function setDynamicUISeed(seed: number, _isDaily: boolean): void {
+/** Let completed progress paint, but never finish a newer loading cycle. */
+export function finishLoadingStrip(): void {
+  const strip = document.getElementById("map-loading-strip");
+  if (!strip) return;
+  const revision = loadingStripRevision;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (revision !== loadingStripRevision || document.getElementById("map-loading-strip") !== strip) return;
+      hideLoadingStrip();
+      for (const phase of ['download', 'generation', 'items']) {
+        const bar = document.getElementById(`loading-bar-${phase}`);
+        if (bar) bar.style.width = '0%';
+      }
+    });
+  });
+}
+
+/** Resolution callbacks preserve text edited during loading. Explicit seed
+ * selections replace that draft; repeating its value preserves the caret. */
+export function setDynamicUISeed(seed: number, _isDaily: boolean, preserveDraft = false): void {
+  if (preserveDraft && seedInputEdited) return;
   if (seedInput) {
-    seedInput.value = "";
-    seedInput.value = String(seed);
-    // Daily generation mode also covers historical seeds. Colour only a seed
-    // identified by the current published pointers, regardless of that mode.
-    const identity = getCachedDailySeedIdentity(seed);
-    let kind: SeedKind;
-    if (identity === 'previous') {
-      kind = "previousDaily";
-    } else if (identity === 'today') {
-      kind = "daily";
-    } else {
-      kind = "custom";
-    }
-    seedInput.classList.toggle("seed-daily", kind === "daily");
-    seedInput.classList.toggle("seed-prev-daily", kind === "previousDaily");
-    updateSeedTooltip(kind);
+    const value = String(seed);
+    if (seedInput.value !== value) seedInput.value = value;
+    seedInputEdited = false;
+    resolvedInputSeed = seed;
+    refreshSeedIdentity();
+    updateSeedTooltip("custom");
   }
   updateGenerateButtonState();
+}
+
+/** Refresh colours after a delayed lookup without replacing edited input or
+ * changing generation mode. Historical ds=1 links aren't necessarily today. */
+function refreshSeedIdentity(): void {
+  if (!seedInput || resolvedInputSeed === null || seedInput.value !== String(resolvedInputSeed)) return;
+  const identity = getCachedDailySeedIdentity(resolvedInputSeed);
+  seedInput.classList.toggle("seed-daily", identity === 'today');
+  seedInput.classList.toggle("seed-prev-daily", identity === 'previous');
 }
 
 // ─── Seed Tooltip ────────────────────────────────────────────────────────────

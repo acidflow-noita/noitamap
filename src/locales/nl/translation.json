@@ -751,7 +751,7 @@
       "crystal_key": "Crystal key",
       "egg": "Egg",
       "egg_fire": "Toasty egg",
-      "egg_monster": "Wiggling egg",
+      "egg_monster": "Egg",
       "egg_purple": "Chilly egg",
       "egg_slime": "Slimy egg",
       "egg_hollow": "Hollow egg",
@@ -783,7 +783,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Egg",
+      "egg_spiders": "Chilly egg"
     },
     "bosses": {
       "Kolmisilmän Koipi": "Kolmisilmän koipi",
@@ -4610,7 +4612,9 @@
     "switchProviderConfirm": "Als u inlogt met {{next}}, wordt u uitgelogd bij {{current}}.\n\nPro-toegang is daarna afhankelijk van uw {{next}}-abonnement.\n\nWilt u overschakelen naar {{next}}?",
     "loginWithTwitch": "Inloggen met Twitch",
     "subscribeTwitch": "Abonneren op Twitch",
-    "or": "of"
+    "or": "of",
+    "workspaceSaveFailed": "De huidige werkstatus kon niet worden opgeslagen. Het aanmelden is geannuleerd. Probeer het opnieuw.",
+    "workspaceRestoreFailed": "De tekenwerkruimte kon niet worden hersteld. Herlaad de pagina om het opnieuw te proberen."
   },
   "loading": {
     "maps": "Kaarten laden...",
@@ -4791,6 +4795,13 @@
       "upTitle": "Vooruit verplaatsen",
       "downTitle": "Achteruit verplaatsen",
       "backTitle": "Naar achtergrond"
+    },
+    "target": {
+      "label": "Opgeslagen en gedeelde tekeningen openen op",
+      "fixed": "Deze kaart/seed",
+      "daily": "Daily van vandaag",
+      "description": "Deze keuze wordt bij de tekening opgeslagen. De Daily-optie gebruikt de dagelijkse seed van de dag waarop de tekening wordt geopend.",
+      "updateRequired": "Vernieuw de pagina om een tekening op de daily van vandaag te openen."
     }
   },
   "dynamicMap": {
@@ -5076,14 +5087,14 @@
     "reactionsHeader": "Materiële reacties op Barman",
     "asReagent": "Bekijk als reagens",
     "asProduct": "Bekijk als product",
-    "openInBartender": "Openen in Bartender",
-    "bartenderReagentHint": "Bekijk in Bartender de reacties die dit materiaal gebruiken.",
-    "bartenderProductHint": "Bekijk in Bartender de reacties die dit materiaal produceren.",
-    "showSpawnBiomes": "Toon biomen waar dit wezen voorkomt op de kaart",
-    "spawnMapMissing": "Niet weergegeven op deze kaart: {{locations}}",
     "openInWiki": "Openen in Noita Wiki",
+    "openInBartender": "Openen in Bartender",
+    "bartenderProductHint": "Bekijk in Bartender de reacties die dit materiaal produceren.",
+    "bartenderReagentHint": "Bekijk in Bartender de reacties die dit materiaal gebruiken.",
     "spawnBiomesPro": "Het markeren van biomen waar wezens voorkomen is een Pro-functie.",
-    "spawnBiomesUnavailable": "De biomen waar dit wezen voorkomt zijn niet beschikbaar op deze kaart."
+    "spawnBiomesUnavailable": "De biomen waar dit wezen voorkomt zijn niet beschikbaar op deze kaart.",
+    "showSpawnBiomes": "Toon biomen waar dit wezen voorkomt op de kaart",
+    "spawnMapMissing": "Niet weergegeven op deze kaart: {{locations}}"
   },
   "wand": {
     "shuffle": "Schudden",
@@ -5120,7 +5131,17 @@
     "pillarGoto": "Toon op kaart",
     "pillarSingular": "Prestatiepilaar",
     "pillarSearch": "Zoek op de kaart",
-    "biomeShop": "Winkel in een bioom"
+    "biomeShop": "Winkel in een bioom",
+    "possibleSpawns": "Mogelijke wezens",
+    "eggHatch": "Het resultaat hangt af van de seed en de plek waar het ei uitkomt.",
+    "noEggSpawns": "Uit dit ei komen geen wezens.",
+    "possibleIllusions": "Mogelijke illusies",
+    "nestSpawnLimit": "Controleert elke {{frames}} gameframes. Elke controle heeft een kans van {{chance}} om één wezen voort te brengen als de speler minder dan {{distance}} pixels verwijderd is, tot {{count}} in totaal.",
+    "spawnChancePerCreature": "De kansen gelden voor elke geslaagde verschijning.",
+    "cocoonSpawns": "Laat bij vernietiging één wezen vrij; schade kan het eerder vrijlaten.",
+    "snowCrystalSpawns": "Creëert één illusie tegelijk zolang de speler in de buurt is. De kansen gelden voor elke geslaagde verschijning.",
+    "spawns": "Brengt voort",
+    "lukkiEggSpawns": "Laat één wezen vrij per treffer die het effect activeert. Herhaalde treffers kunnen er meer vrijlaten voordat het ei wordt vernietigd."
   },
   "skipCreatures": {
     "title": "Geen wezens toevoegen",
@@ -5770,5 +5791,13 @@
       "progress_hut_b": "Experimentele toverstok (Requirements)",
       "secret_null": "Nullifying Altar"
     }
+  },
+  "hdRenderer": {
+    "title": "HD-renderer",
+    "content": "Gebruikt de GPU voor gedetailleerd terrein op gegenereerde kaarten. Standaard ingeschakeld. Laadt de kaart opnieuw. Afbeeldingen van dagelijkse kaarten blijven ongewijzigd."
+  },
+  "startup": {
+    "failed": "Noitamap kon niet worden gestart. Vernieuw de pagina om het opnieuw te proberen.",
+    "retry": "Pagina vernieuwen"
   }
 }

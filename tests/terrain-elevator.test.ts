@@ -1,8 +1,9 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import {
   bottomElevatorStubs,
   includeElevatorOwnership,
   withoutElevatorEndpointSpawns,
+  prepareElevatorShafts,
 } from "../src/telescope/terrain-elevator";
 import { createTerrainOwnership } from "../src/telescope/terrain-policy";
 import {
@@ -10,6 +11,12 @@ import {
   restoreTileLayer,
 } from "../src/telescope/tile-layer-cache";
 const ROBOT = 0xff4e5267;
+const generate = vi.hoisted(() => vi.fn());
+vi.mock("noita-telescope-full-pixels/tile_generator.js", () => ({ generateBiomeTiles: generate }));
+vi.mock("noita-telescope-full-pixels/generator_config.js", () => ({
+  GENERATOR_CONFIG: { robobase: { color: 0xff4e5267, wangData: {} } },
+}));
+vi.mock("noita-telescope-full-pixels/png_sanitizer.js", () => ({ loadPNG: vi.fn() }));
 function stub(x = 2, y = 47) {
   return {
     biomeName: "robobase",
@@ -23,6 +30,24 @@ function stub(x = 2, y = 47) {
     validChunks: new Set([`${x},${y}`]),
   };
 }
+it("coalesces shaft generation, retries failures, and honors an explicit shaft result", async () => {
+  const pixels = new Uint32Array(70 * 48);
+  pixels[47 * 70 + 2] = ROBOT;
+  const gen: any = { seed: 42, isNGP: false, tileLayers: [stub()], biomeData: { pixels } };
+  const shaft = { ...stub(), validChunks: new Set(Array.from({ length: 49 }, (_, row) => `2,${47 + row}`)) };
+  generate.mockReset().mockRejectedValueOnce(new Error("missing Wang image")).mockResolvedValue([shaft]);
+  const failed = prepareElevatorShafts(gen);
+  expect(prepareElevatorShafts(gen)).toBe(failed);
+  await expect(failed).rejects.toThrow("missing Wang image");
+  const ready = prepareElevatorShafts(gen);
+  expect(prepareElevatorShafts(gen)).toBe(ready);
+  expect(await ready).toEqual([shaft]);
+  expect(await prepareElevatorShafts(gen)).toEqual([shaft]);
+  expect(generate).toHaveBeenCalledTimes(2);
+  gen.elevatorShafts = [];
+  expect(await prepareElevatorShafts(gen)).toBe(gen.elevatorShafts);
+  expect(generate).toHaveBeenCalledTimes(2);
+});
 it("detects only the real isolated bottom-row elevator stub, not the ordinary Power Plant", () => {
   const pixels = new Uint32Array(70 * 48).fill(0xff3d3d3d);
   pixels[47 * 70 + 2] = ROBOT;

@@ -1,6 +1,7 @@
 import { snapshotWorkerScenes } from "../../src/telescope/worker-scenes";
 import { installTelescopeShim } from "../../src/telescope/telescope-dom-shim";
 import { installFetchInterceptor } from "../../src/telescope/telescope-data-bridge";
+import { setFullPixelTerrainForBake } from "../../src/renderer_settings";
 
 /** Generate real worker inputs from shipped PNGs/archives, not mocked POIs. */
 export async function generateFixture(
@@ -8,6 +9,7 @@ export async function generateFixture(
   seed: number,
   includeTerrain = false,
 ) {
+  setFullPixelTerrainForBake(fullPixels);
   installTelescopeShim();
   installFetchInterceptor(fullPixels);
   const { biome, tiles, config, png, scanner, settings, scenes, unlocks } =

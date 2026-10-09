@@ -751,7 +751,7 @@
       "crystal_key": "Crystal key",
       "egg": "Egg",
       "egg_fire": "Toasty egg",
-      "egg_monster": "Wiggling egg",
+      "egg_monster": "Egg",
       "egg_purple": "Chilly egg",
       "egg_slime": "Slimy egg",
       "egg_hollow": "Hollow egg",
@@ -783,7 +783,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Egg",
+      "egg_spiders": "Chilly egg"
     },
     "bosses": {
       "Kivi": "Kivi",
@@ -4610,7 +4612,9 @@
     "switchProviderConfirm": "Přihlášením přes {{next}} budete odhlášeni z {{current}}.\n\nPřístup k Pro pak bude záviset na vašem předplatném {{next}}.\n\nChcete se přihlásit přes {{next}}?",
     "loginWithTwitch": "Prihlasit se pres Twitch",
     "subscribeTwitch": "Předplatit na Twitchi",
-    "or": "nebo"
+    "or": "nebo",
+    "workspaceSaveFailed": "Pracovní stav se nepodařilo uložit. Přihlášení bylo zrušeno. Zkuste to znovu.",
+    "workspaceRestoreFailed": "Kresbu a pracovní stav se nepodařilo obnovit. Načtěte stránku znovu."
   },
   "loading": {
     "maps": "Načítání map...",
@@ -4791,6 +4795,13 @@
       "upTitle": "Posunout dopredu",
       "downTitle": "Posunout dozadu",
       "backTitle": "Odeslat dozadu"
+    },
+    "target": {
+      "label": "Uložené a sdílené kresby se otevřou na",
+      "fixed": "Této mapě / tomto seedu",
+      "daily": "Dnešním denním seedu",
+      "description": "Tato volba se uloží s kresbou. Denní volba použije seed platný v den otevření kresby.",
+      "updateRequired": "Obnovte stránku, aby bylo možné otevřít kresbu na dnešním denním seedu."
     }
   },
   "dynamicMap": {
@@ -5076,14 +5087,14 @@
     "reactionsHeader": "Materiální reakce na Bartendera",
     "asReagent": "Zobrazit jako činidlo",
     "asProduct": "Zobrazit jako produkt",
-    "openInBartender": "Otevřít v Bartender",
-    "bartenderReagentHint": "Zobrazit v Bartender reakce, které používají tento materiál.",
-    "bartenderProductHint": "Zobrazit v Bartender reakce, při kterých vzniká tento materiál.",
-    "showSpawnBiomes": "Zobrazit biomy výskytu na mapě",
-    "spawnMapMissing": "Na této mapě není zobrazeno: {{locations}}",
     "openInWiki": "Otevřít v Noita Wiki",
+    "openInBartender": "Otevřít v Bartender",
+    "bartenderProductHint": "Zobrazit v Bartender reakce, při kterých vzniká tento materiál.",
+    "bartenderReagentHint": "Zobrazit v Bartender reakce, které používají tento materiál.",
     "spawnBiomesPro": "Zvýraznění biomů výskytu je funkce Pro.",
-    "spawnBiomesUnavailable": "Biomy výskytu tohoto tvora nejsou na této mapě dostupné."
+    "spawnBiomesUnavailable": "Biomy výskytu tohoto tvora nejsou na této mapě dostupné.",
+    "showSpawnBiomes": "Zobrazit biomy výskytu na mapě",
+    "spawnMapMissing": "Na této mapě není zobrazeno: {{locations}}"
   },
   "wand": {
     "shuffle": "Zamíchat",
@@ -5120,7 +5131,17 @@
     "pillarGoto": "Zobrazit na mapě",
     "pillarSingular": "Pilíř úspěchů",
     "pillarSearch": "Hledat na mapě",
-    "biomeShop": "Obchod v biomu"
+    "biomeShop": "Obchod v biomu",
+    "possibleSpawns": "Možní tvorové",
+    "eggHatch": "Výsledek závisí na seedu a místě, kde se vejce vylíhne.",
+    "noEggSpawns": "Z tohoto vejce se nelíhnou žádní tvorové.",
+    "possibleIllusions": "Možné iluze",
+    "nestSpawnLimit": "Kontroluje každých {{frames}} herních snímků. Každá kontrola má šanci {{chance}} vytvořit jednoho tvora, pokud je hráč blíže než {{distance}} pixelů, celkem nejvýše {{count}}.",
+    "spawnChancePerCreature": "Pravděpodobnosti platí pro každé úspěšné vytvoření tvora.",
+    "cocoonSpawns": "Při zničení vypustí jednoho tvora; poškození ho může vypustit dříve.",
+    "snowCrystalSpawns": "Vytváří vždy jednu iluzi, dokud je hráč poblíž. Pravděpodobnosti platí pro každé úspěšné vytvoření iluze.",
+    "spawns": "Vytváří",
+    "lukkiEggSpawns": "Vypustí jednoho tvora za každý zásah, který účinek spustí. Opakované zásahy mohou vypustit další před zničením vejce."
   },
   "skipCreatures": {
     "title": "Nepřidávat tvory",
@@ -5770,5 +5791,13 @@
       "progress_hut_b": "Experimentální hůlka (Requirements)",
       "secret_null": "Nullifying Altar"
     }
+  },
+  "hdRenderer": {
+    "title": "HD vykreslování",
+    "content": "Používá GPU pro detailní terén na generovaných mapách. Ve výchozím nastavení zapnuto. Znovu načte mapu. Obrázky denních map se nemění."
+  },
+  "startup": {
+    "failed": "Noitamap se nepodařilo spustit. Obnovte stránku a zkuste to znovu.",
+    "retry": "Obnovit stránku"
   }
 }

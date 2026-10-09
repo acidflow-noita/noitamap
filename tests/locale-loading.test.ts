@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 describe('on-demand locale requests', () => {
-  it('loads only the detected language and English, then loads another complete dictionary on selection', async () => {
+  it('reuses bundled English and loads only the detected language, then loads another complete dictionary on selection', async () => {
     vi.resetModules();
     vi.stubEnv('PROD', true);
     window.history.replaceState({}, '', '/?lng=ru');
@@ -28,15 +28,15 @@ describe('on-demand locale requests', () => {
     await initializeTranslations();
     expect(i18next.t('greeting')).toBe('Привет');
     expect(fetch.mock.calls.map(call => call[0]).sort()).toEqual([
-      '/build/locale-en-contenthash.json', '/build/locale-ru-contenthash.json',
+      '/build/locale-ru-contenthash.json',
     ]);
     expect(fetch).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ cache: 'force-cache' }));
     await i18next.changeLanguage('fr');
     expect(i18next.t('greeting')).toBe('Bonjour');
-    expect(fetch).toHaveBeenCalledTimes(3);
-    expect(fetch.mock.calls[2][0]).toBe('/build/locale-fr-contenthash.json');
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls[1][0]).toBe('/build/locale-fr-contenthash.json');
     await i18next.changeLanguage('ru');
     expect(i18next.t('greeting')).toBe('Привет');
-    expect(fetch).toHaveBeenCalledTimes(3);
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 });

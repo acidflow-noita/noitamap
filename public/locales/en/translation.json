@@ -1336,7 +1336,7 @@
       "crystal_key": "Crystal key",
       "egg": "Egg",
       "egg_fire": "Toasty egg",
-      "egg_monster": "Wiggling egg",
+      "egg_monster": "Egg",
       "egg_purple": "Chilly egg",
       "egg_slime": "Slimy egg",
       "egg_hollow": "Hollow egg",
@@ -1368,7 +1368,9 @@
       "kiuaskivi": "kiuaskivi",
       "oil_receptacle_puzzle": "oil_receptacle_puzzle",
       "water_receptacle_puzzle": "water_receptacle_puzzle",
-      "steam_receptacle_puzzle": "steam_receptacle_puzzle"
+      "steam_receptacle_puzzle": "steam_receptacle_puzzle",
+      "egg_red": "Egg",
+      "egg_spiders": "Chilly egg"
     },
     "bosses": {
       "Kivi": "Kivi",
@@ -5163,7 +5165,9 @@
     "switchProviderConfirm": "Signing in with {{next}} will sign you out of {{current}}.\n\nPro access will then be based on your {{next}} subscription.\n\nSwitch to {{next}}?",
     "loginWithTwitch": "Sign in with Twitch",
     "subscribeTwitch": "Subscribe on Twitch",
-    "or": "or"
+    "or": "or",
+    "workspaceSaveFailed": "Could not save your workspace. Sign-in was cancelled. Please try again.",
+    "workspaceRestoreFailed": "Could not restore your drawing workspace. Reload to try again."
   },
   "loading": {
     "maps": "Loading maps...",
@@ -5344,6 +5348,13 @@
     "toggle": {
       "title": "Drawing Mode",
       "content": "Toggle drawing tools to annotate the map"
+    },
+    "target": {
+      "label": "Saved and shared drawings open on",
+      "fixed": "This map/seed",
+      "daily": "Today’s Daily",
+      "description": "This choice is saved with the drawing. The Daily option uses the daily seed for the day the drawing is opened.",
+      "updateRequired": "Reload the page to open a drawing on today’s Daily."
     }
   },
   "konami": {
@@ -5537,14 +5548,14 @@
     "reactionsHeader": "Material reactions on Bartender",
     "asReagent": "View as reagent",
     "asProduct": "View as product",
-    "openInBartender": "Open in Bartender",
-    "bartenderReagentHint": "View reactions that use this material in Bartender.",
-    "bartenderProductHint": "View reactions that produce this material in Bartender.",
-    "showSpawnBiomes": "Show spawn biomes on map",
-    "spawnMapMissing": "Not shown on this map: {{locations}}",
     "openInWiki": "Open in Noita Wiki",
+    "openInBartender": "Open in Bartender",
+    "bartenderProductHint": "View reactions that produce this material in Bartender.",
+    "bartenderReagentHint": "View reactions that use this material in Bartender.",
     "spawnBiomesPro": "Spawn biome highlighting is a Pro feature.",
-    "spawnBiomesUnavailable": "Spawn biomes are unavailable for this creature on this map."
+    "spawnBiomesUnavailable": "Spawn biomes are unavailable for this creature on this map.",
+    "showSpawnBiomes": "Show spawn biomes on map",
+    "spawnMapMissing": "Not shown on this map: {{locations}}"
   },
   "wand": {
     "shuffle": "Shuffle",
@@ -5565,6 +5576,14 @@
     "amount": "Amount",
     "contains": "Contains",
     "drops": "Drops",
+    "possibleSpawns": "Possible spawns",
+    "eggHatch": "The outcome depends on the seed and where the egg hatches.",
+    "noEggSpawns": "No creatures hatch from this egg.",
+    "possibleIllusions": "Possible illusions",
+    "nestSpawnLimit": "Checks every {{frames}} game frames. Each check has a {{chance}} chance to spawn one if the player is less than {{distance}} pixels away, up to {{count}} in total.",
+    "spawnChancePerCreature": "Chances apply to each successful spawn.",
+    "cocoonSpawns": "Releases one when destroyed; damage can release it early.",
+    "snowCrystalSpawns": "Creates one illusion at a time while the player is nearby. Chances apply to each successful spawn.",
     "pw": "PW",
     "essenceEaterConvert": "Essence Eaters convert any carried Essence into its corresponding elemental stone.",
     "gold": "Gold",
@@ -5581,7 +5600,9 @@
     "pillarGoto": "Show on map",
     "pillarSearch": "Search the map",
     "pillarSingular": "Achievement pillar",
-    "biomeShop": "Biome shop"
+    "biomeShop": "Biome shop",
+    "spawns": "Spawns",
+    "lukkiEggSpawns": "Releases one per triggering hit. Repeated hits can release more before the egg is destroyed."
   },
   "pillar": {
     "searchNone": "Not found in the three worlds shown here.",
@@ -5715,5 +5736,13 @@
       "progress_hut_b": "Experimental Wand (Requirements)",
       "secret_null": "Nullifying Altar"
     }
+  },
+  "hdRenderer": {
+    "title": "HD renderer",
+    "content": "Use the GPU for detailed terrain on generated maps. Enabled by default. Reloads the map. Daily map images are unchanged."
+  },
+  "startup": {
+    "failed": "Noitamap could not start. Reload the page to try again.",
+    "retry": "Reload page"
   }
 }

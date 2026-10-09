@@ -13,9 +13,10 @@ import { authService } from "../auth/auth-service";
 import { AuthUI } from "../auth/auth-ui";
 import { gameTranslator } from "../game-translations/translator";
 import { CREATURE_DATA } from "../data/creature-data";
-import { attachHoverPopover, attachWikiLinkPopover, dismissPopovers, hidePopovers } from "../popover-util";
-import { navigateCreatureSpawns, onCreatureSpawnNavigationChanged, resolveCreatureSpawns, type CreatureSpawnMode } from "../creature-spawn-navigation";
-import { getCatalogMaterial, loadMaterialCatalog } from '../data_sources/material-catalog';
+import { getCatalogMaterial, loadMaterialCatalog } from "../data_sources/material-catalog";
+import { renderExtendedSpawns } from './spawner';
+import { navigateCreatureSpawns, onCreatureSpawnNavigationChanged, resolveCreatureSpawns, type CreatureSpawnMode } from '../creature-spawn-navigation';
+import { attachHoverPopover, attachWikiLinkPopover, dismissPopovers, hidePopovers } from '../popover-util';
 
 const BARTENDER_BASE = "https://bartender.runfast.stream";
 
@@ -135,6 +136,7 @@ let creatureNameToId: Map<string, string> | null = null;
 
 let spellsById: Map<string, ExtendedSpell> | null = null;
 let spellsLoading: Promise<void> | null = null;
+
 
 let reactionRoles: ReactionRoles | null = null;
 let reactionRolesLoading: Promise<void> | null = null;
@@ -440,7 +442,7 @@ function translateBiomeList(s: string | null | undefined): string {
 /** One destination action for the whole spawn list, using the report's map glyph. */
 function creatureSpawnRow(label: string, rawSpawn: string, creatureId: string, mode: CreatureSpawnMode = 'normal'): HTMLElement | null {
   const locations = translateBiomeList(rawSpawn);
-  const result = row(label, locations, "prose");
+  const result = row(label, locations);
   if (!result) return null;
   const available = resolveCreatureSpawns(rawSpawn, mode);
 
@@ -482,6 +484,7 @@ function creatureSpawnRow(label: string, rawSpawn: string, creatureId: string, m
   return result;
 }
 
+
 /**
  * Walk up from `el` to find an enclosing popup (static OSD overlay popup or
  * telescope marker tooltip) and dismiss it. Used by the CTA click handler so
@@ -492,10 +495,7 @@ export function dismissEnclosingPopup(el: HTMLElement): void {
   if (tooltip) {
     const close = (tooltip as HTMLElement & { __close?: () => void }).__close;
     if (close) close();
-    else {
-      dismissPopovers(tooltip);
-      tooltip.remove();
-    }
+    else { dismissPopovers(tooltip); tooltip.remove(); }
     return;
   }
   const popup = el.closest(".osOverlayPopup") as HTMLElement | null;
@@ -515,7 +515,7 @@ export function dismissEnclosingPopup(el: HTMLElement): void {
 
 // ─── Section builder ─────────────────────────────────────────────────────────
 
-export type ExtendedKind = "creature" | "spell" | "material";
+export type ExtendedKind = "creature" | "spell" | "material" | "spawner";
 
 // Single global languageChanged listener that re-renders ONLY currently
 // visible extended-info sections. Hidden popups (visibility:hidden /
@@ -540,9 +540,6 @@ function isSectionVisible(sec: HTMLElement): boolean {
 function ensureLangListener(): void {
   if (langListenerInstalled) return;
   langListenerInstalled = true;
-  // Static creature cards can be constructed before the map registers its
-  // navigation callback. Refresh visible cards, reusing the lazy refresh for
-  // hidden cards instead of fetching every creature as soon as the map starts.
   onCreatureSpawnNavigationChanged(() => {
     document.querySelectorAll<HTMLElement>(".extended-info-section[data-extended-kind='creature']").forEach(wrap => {
       const render = (wrap as HTMLElement & { __rerender?: () => void }).__rerender;
@@ -551,6 +548,7 @@ function ensureLangListener(): void {
       else wrap.dataset.langStale = "1";
     });
   });
+
   i18next.on("languageChanged", () => {
     document.querySelectorAll<HTMLElement>(".extended-info-section").forEach((wrap) => {
       const fn = (wrap as any).__rerender as (() => void) | undefined;
@@ -602,9 +600,9 @@ export function buildExtendedSection(kind: ExtendedKind, id: string): HTMLElemen
   body.className = "extended-info-body";
   wrap.appendChild(body);
 
-  let renderVersion = 0;
+  let renderRevision = 0;
   const render = () => {
-    const version = ++renderVersion;
+    const revision = ++renderRevision;
     dismissPopovers(body);
     body.replaceChildren();
     if (!isProUser()) {
@@ -613,7 +611,7 @@ export function buildExtendedSection(kind: ExtendedKind, id: string): HTMLElemen
       body.appendChild(renderProPlaceholder(kind));
       return;
     }
-    renderProBody(wrap, body, kind, id, () => version === renderVersion && isProUser() && wrap.isConnected);
+    renderProBody(wrap, header, body, kind, id, () => revision === renderRevision && isProUser());
   };
 
   (wrap as any).__rerender = render;
@@ -647,10 +645,10 @@ export function buildExtendedCreatureSectionByName(name: string, aliases?: strin
   wrap.appendChild(body);
 
   const tryNames = [name, ...(aliases ?? [])];
+  let renderRevision = 0;
 
-  let renderVersion = 0;
   const render = () => {
-    const version = ++renderVersion;
+    const revision = ++renderRevision;
     dismissPopovers(body);
     body.replaceChildren();
     if (!isProUser()) {
@@ -663,7 +661,7 @@ export function buildExtendedCreatureSectionByName(name: string, aliases?: strin
     loading.textContent = i18next.t("extended.loading", "Loading...");
     body.appendChild(loading);
     loadExtendedCreatures().then(() => {
-      if (version !== renderVersion || !isProUser() || !wrap.isConnected) return;
+      if (revision !== renderRevision || !isProUser() || !wrap.isConnected) return;
       let id: string | null = null;
       for (const n of tryNames) {
         if (!n) continue;
@@ -699,6 +697,10 @@ export function buildExtendedCreatureSectionByName(name: string, aliases?: strin
 // as the lookup into SKELETON_WIDTHS so the skeleton width stays stable
 // regardless of locale.
 const PREVIEW_FIELDS: Record<ExtendedKind, Array<[string, string]>> = {
+  spawner: [
+    ['extended.row.spawn', 'Spawn'],
+    ['extended.row.notes', 'Notes'],
+  ],
   creature: [
     ["extended.row.faction", "Faction"],
     ["extended.row.hp", "HP"],
@@ -791,6 +793,7 @@ function renderProPlaceholder(kind: ExtendedKind): HTMLElement {
 
 function renderProBody(
   wrap: HTMLElement,
+  header: HTMLElement,
   body: HTMLElement,
   kind: ExtendedKind,
   id: string,
@@ -802,9 +805,8 @@ function renderProBody(
   body.appendChild(loading);
 
   const fill = (cb: () => HTMLElement | null) => {
-    // Language/auth changes or closing the card can outlive a lazy fetch.
-    // Only the current attached card may create body-mounted popovers.
-    if (!isCurrent()) return;
+    // A fetch that finishes after logout must not repopulate paid information.
+    if (!isCurrent() || (kind !== 'spawner' && !wrap.isConnected)) return;
     const node = cb();
     dismissPopovers(body);
     body.replaceChildren();
@@ -818,7 +820,14 @@ function renderProBody(
   };
 
   if (kind === "creature") {
-    loadExtendedCreatures().then(() => fill(() => renderCreature(id)));
+    loadExtendedCreatures().then(() => fill(() => {
+      const creature = renderCreature(id);
+      const spawns = renderExtendedSpawns({ type: 'entity', entity: id });
+      if (creature && spawns) creature.appendChild(spawns);
+      return creature ?? spawns;
+    }));
+  } else if (kind === 'spawner') {
+    fill(() => renderExtendedSpawns({ type: 'item', item: id }));
   } else if (kind === "spell") {
     loadExtendedSpells().then(() => fill(() => renderSpell(id)));
   } else if (kind === "material") {
@@ -830,24 +839,17 @@ function renderProBody(
 
 // ─── Renderers (pro-only) ────────────────────────────────────────────────────
 
-type RowLayout = "numeric" | "text" | "prose";
-type StatRow = [string, string | number | null | undefined, RowLayout?];
-
-function row(label: string, value: string | number | null | undefined, layout: RowLayout = "text"): HTMLElement | null {
+function row(label: string, value: string | number | null | undefined): HTMLElement | null {
   if (value == null || value === "") return null;
-  // Only fields explicitly designated as stats can be numeric. Some health
-  // entries contain location-dependent values and explanations instead of a
-  // scalar; let those read across the card rather than squeezing them right.
-  const numericText = String(value).replace(/(?:frames?|seconds?|milliseconds?|pixels?|ms|px|hp|s)\b/gi, "");
-  if (layout === "numeric" && !/^[\d\s.,+\-−–—×x/%°∞<>≤≥=():eE]+$/u.test(numericText)) layout = "prose";
   const r = document.createElement("div");
-  r.className = `extended-info-row extended-info-row--${layout}`;
+  r.className = "extended-info-row";
   const l = document.createElement("span");
   l.className = "extended-info-label";
   l.textContent = `${label}:`;
   const v = document.createElement("span");
   v.className = "extended-info-value";
-  v.textContent = String(value);
+  // Game CSV descriptions encode line breaks as literal backslash-n pairs.
+  v.textContent = String(value).replace(/\\n/g, "\n");
   r.appendChild(l);
   r.appendChild(v);
   return r;
@@ -855,12 +857,10 @@ function row(label: string, value: string | number | null | undefined, layout: R
 
 function rowWithNode(label: string, valueNode: HTMLElement): HTMLElement {
   const r = document.createElement("div");
-  r.className = "extended-info-row extended-info-row--text";
+  r.className = "extended-info-row";
   const l = document.createElement("span");
   l.className = "extended-info-label";
   l.textContent = `${label}:`;
-  // The value occupies the grid cell; an actionable child keeps only its
-  // visible content as its hit area, rather than stretching across the row.
   const value = document.createElement("span");
   value.className = "extended-info-value";
   value.appendChild(valueNode);
@@ -870,10 +870,10 @@ function rowWithNode(label: string, valueNode: HTMLElement): HTMLElement {
 }
 
 /** Append key-value pairs as rows into the parent. Returns count of rows added. */
-function appendKVRows(parent: HTMLElement, pairs: StatRow[]): number {
+function appendKVRows(parent: HTMLElement, pairs: [string, string | number | null | undefined][]): number {
   const present = pairs.filter(([, v]) => v != null && v !== "" && v !== 0);
-  for (const [k, v, layout = "numeric"] of present) {
-    const r = row(k, String(v), layout);
+  for (const [k, v] of present) {
+    const r = row(k, String(v));
     if (r) parent.appendChild(r);
   }
   return present.length;
@@ -886,7 +886,7 @@ const DMG_COLOR_VULNERABLE = "oklch(72.3% 0.219 149.579)"; // > 1.0 → weaker (
 function appendDmgMultRows(parent: HTMLElement, pairs: [string, string | number | null | undefined][]): number {
   const present = pairs.filter(([, v]) => v != null && v !== "" && v !== 0);
   for (const [k, v] of present) {
-    const r = row(k, String(v), "numeric");
+    const r = row(k, String(v));
     if (!r) continue;
     const numStr = String(v).replace(/^[^\d.-]*/, "");
     const numVal = parseFloat(numStr);
@@ -954,15 +954,15 @@ function renderCreature(id: string): HTMLElement | null {
     if (r) topRows.push(r);
   }
   if (c.health) {
-    const r = row(i18next.t("extended.row.hp", "HP"), stripWiki(c.health), "numeric");
+    const r = row(i18next.t("extended.row.hp", "HP"), stripWiki(c.health));
     if (r) topRows.push(r);
   }
   if (c.attackType) {
-    const r = row(i18next.t("extended.row.attacks", "Attacks"), parseAttacks(c.attackType), "prose");
+    const r = row(i18next.t("extended.row.attacks", "Attacks"), parseAttacks(c.attackType));
     if (r) topRows.push(r);
   }
   if (c.immunities) {
-    const r = row(i18next.t("extended.row.immunities", "Immunities"), translateImmunities(c.immunities), "prose");
+    const r = row(i18next.t("extended.row.immunities", "Immunities"), translateImmunities(c.immunities));
     if (r) topRows.push(r);
   }
 
@@ -991,10 +991,7 @@ function renderCreature(id: string): HTMLElement | null {
   ]);
   const multsPresent = mults.filter(([, v]) => v != null && v !== "");
   if (multsPresent.length > 0) {
-    // A row-major grid keeps every label/value together without balancing
-    // columns again when lazy content or translated labels change height.
-    const g = group(i18next.t("extended.dmgMults", "Damage multipliers"), 0);
-    g.classList.add("extended-info-group--stats-grid");
+    const g = group(i18next.t("extended.dmgMults", "Damage multipliers"), multsPresent.length);
     appendDmgMultRows(g, mults);
     root.appendChild(g);
   }
@@ -1007,12 +1004,11 @@ function renderCreature(id: string): HTMLElement | null {
     if (r) bottomRows.push(r);
   }
   if (c.ngplusSpawnLocation) {
-    const r = creatureSpawnRow(i18next.t("extended.row.spawnNgplus", "Spawn (NG+)"), c.ngplusSpawnLocation, id, 'ng-plus');
+    const r = creatureSpawnRow(i18next.t("extended.row.spawnNgplus", "Spawn (NG+)"), c.ngplusSpawnLocation, id, "ng-plus");
     if (r) bottomRows.push(r);
   }
 
   // Blood / Corpse — individual rows, each with a bartender link
-  // Prefer validated baked references over missing/"none" IDs in the raw JSON.
   if (c.blood) {
     const node = creatureMaterialNode(c.blood, CREATURE_DATA[id]?.bloodMaterialId || c.blood_material_id, CREATURE_DATA[id]?.bloodMaterialIds);
     bottomRows.push(rowWithNode(i18next.t("extended.row.blood", "Blood"), node));
@@ -1031,7 +1027,7 @@ function renderCreature(id: string): HTMLElement | null {
     if (r) bottomRows.push(r);
   }
   if (c.dmgMultNotes && c.dmgMultNotes !== "1x") {
-    const r = row(i18next.t("extended.row.notes", "Notes"), c.dmgMultNotes, "prose");
+    const r = row(i18next.t("extended.row.notes", "Notes"), c.dmgMultNotes);
     if (r) bottomRows.push(r);
   }
 
@@ -1054,13 +1050,13 @@ function renderSpell(id: string): HTMLElement | null {
   if (s.description) {
     const desc = document.createElement("div");
     desc.className = "extended-info-desc";
-    desc.textContent = s.description;
+    desc.textContent = s.description.replace(/\\n/g, "\n");
     root.appendChild(desc);
   }
 
   // ── Top-level spell stats — many rows, use column layout ──
-  const statsRows: StatRow[] = [
-    [i18next.t("extended.row.type", "Type"), s.type, "text"],
+  const statsRows: [string, string | number | null | undefined][] = [
+    [i18next.t("extended.row.type", "Type"), s.type],
     [i18next.t("extended.row.mana", "Mana"), s.manaDrain != null ? String(s.manaDrain) : null],
     [i18next.t("extended.row.uses", "Uses"), s.uses ? String(s.uses) : null],
     [i18next.t("extended.row.castDelay", "Cast delay"), s.castDelay],
@@ -1072,7 +1068,7 @@ function renderSpell(id: string): HTMLElement | null {
     [i18next.t("extended.row.bounces", "Bounces"), s.bounces],
     [i18next.t("extended.row.crit", "Crit"), s.criticalChance],
     [i18next.t("extended.row.price", "Price"), s.price != null ? String(s.price) : null],
-    [i18next.t("extended.row.unlock", "Unlock"), s.unlockCondition ?? null, "prose"],
+    [i18next.t("extended.row.unlock", "Unlock"), s.unlockCondition ?? null],
   ];
   const statsPresent = statsRows.filter(([, v]) => v != null && v !== "");
   if (statsPresent.length > 0) {
@@ -1135,23 +1131,23 @@ function renderMaterial(id: string): HTMLElement | null {
   typeSpan.textContent = materialTypeLabel(slug);
   pushRow(rowWithNode(i18next.t("extended.row.type", "Type"), typeSpan));
 
-  if (m.density != null) pushRow(row(i18next.t("extended.row.density", "Density"), String(m.density), "numeric"));
+  if (m.density != null) pushRow(row(i18next.t("extended.row.density", "Density"), String(m.density)));
 
   // Solid / powder mining stats
   if (slug === "solid" || slug === "powder") {
-    if (m.hardness != null) pushRow(row(i18next.t("extended.row.hardness", "Hardness"), String(m.hardness), "numeric"));
+    if (m.hardness != null) pushRow(row(i18next.t("extended.row.hardness", "Hardness"), String(m.hardness)));
     if (m.durability != null && m.durability !== 0)
-      pushRow(row(i18next.t("extended.row.durability", "Durability"), String(m.durability), "numeric"));
+      pushRow(row(i18next.t("extended.row.durability", "Durability"), String(m.durability)));
     if (m.crackability != null && m.crackability !== 0)
-      pushRow(row(i18next.t("extended.row.crackability", "Crackability"), String(m.crackability), "numeric"));
+      pushRow(row(i18next.t("extended.row.crackability", "Crackability"), String(m.crackability)));
   }
 
   // Liquid-specific
   if (slug === "liquid") {
     if (m.liquid_viscosity != null)
-      pushRow(row(i18next.t("extended.row.viscosity", "Viscosity"), String(m.liquid_viscosity), "numeric"));
+      pushRow(row(i18next.t("extended.row.viscosity", "Viscosity"), String(m.liquid_viscosity)));
     if (m.liquid_gravity != null)
-      pushRow(row(i18next.t("extended.row.liquidGravity", "Liquid gravity"), String(m.liquid_gravity), "numeric"));
+      pushRow(row(i18next.t("extended.row.liquidGravity", "Liquid gravity"), String(m.liquid_gravity)));
   }
 
   const yes = i18next.t("extended.yes", "yes");
@@ -1161,7 +1157,7 @@ function renderMaterial(id: string): HTMLElement | null {
   if (m.burnable) pushRow(row(i18next.t("extended.row.burnable", "Burnable"), yes));
   if (m.on_fire) pushRow(row(i18next.t("extended.row.alwaysBurning", "Always burning"), yes));
   if (m.autoignition_temperature != null && m.autoignition_temperature !== 100) {
-    pushRow(row(i18next.t("extended.row.autoignition", "Autoignition"), String(m.autoignition_temperature), "numeric"));
+    pushRow(row(i18next.t("extended.row.autoignition", "Autoignition"), String(m.autoignition_temperature)));
   }
   if (m.cold_freezes_to_material_name)
     pushRow(row(i18next.t("extended.row.freezesTo", "Freezes to"), m.cold_freezes_to_material_name));
@@ -1187,7 +1183,7 @@ function renderMaterial(id: string): HTMLElement | null {
     for (const se of m.stain_effects) {
       const eff = getStatusEffect(se.id);
       if (!eff?.name) continue;
-      const r = row(eff.name, eff.description || "", "prose");
+      const r = row(eff.name, eff.description || "");
       if (r) items.push(r);
     }
     if (items.length) {
@@ -1203,7 +1199,7 @@ function renderMaterial(id: string): HTMLElement | null {
     for (const ie of m.ingestion_effects) {
       const eff = getStatusEffect(ie.id);
       if (!eff?.name) continue;
-      const r = row(eff.name, eff.description || "", "prose");
+      const r = row(eff.name, eff.description || "");
       if (r) items.push(r);
     }
     if (items.length) {

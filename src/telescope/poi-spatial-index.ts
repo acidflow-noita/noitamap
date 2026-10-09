@@ -13,7 +13,9 @@ import { isSkipCreatures } from "../skip-creatures";
 import spells from "../data/spells.json";
 import { PILLAR_PLACES } from "../data/pillars";
 import { getMimicSpriteKey } from './poi-mimics';
+import { canonicalEntityId } from './entity-canonical';
 import spritesheetRevision from '../data/spritesheet-revision.json';
+import { immutableTelescopeAssets } from './immutable-assets';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -60,15 +62,29 @@ let atlasLoading: Promise<Record<string, AtlasEntry>> | null = null;
 
 async function loadSpritesheet(): Promise<HTMLImageElement> {
   if (cachedSpritesheet) return cachedSpritesheet;
-  return spritesheetLoading ??= new Promise<HTMLImageElement>((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      cachedSpritesheet = img;
-      resolve(img);
-    };
-    img.onerror = reject;
-    img.src = `./assets/spritesheet.png?v=${spritesheetRevision}`;
-  }).finally(() => { spritesheetLoading = null; });
+  return spritesheetLoading ??= (async () => {
+    const source = `./assets/spritesheet.png?v=${spritesheetRevision}`;
+    let local: string | undefined;
+    try {
+      const response = await immutableTelescopeAssets.fetch('marker-spritesheet', spritesheetRevision,
+        () => fetch(source, { cache: 'force-cache', signal: AbortSignal.timeout(30000) }));
+      if (response.ok) local = URL.createObjectURL(await response.blob());
+    } catch { /* Sites restricting fetch can still permit same-origin images. */ }
+    const image = (url: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+    try {
+      cachedSpritesheet = local
+        ? await image(local).catch(() => image(source))
+        : await image(source);
+      return cachedSpritesheet;
+    } finally {
+      if (local) URL.revokeObjectURL(local);
+    }
+  })().finally(() => { spritesheetLoading = null; });
 }
 
 async function loadAtlas(): Promise<Record<string, AtlasEntry>> {
@@ -93,8 +109,8 @@ export const FIRST_FRAME_SIZE: Record<string, { w: number; h: number }> = {
 
 // ─── Sprite key resolution ──────────────────────────────────────────────────
 
-// Spell ID → atlas sprite key (handles ID/filename mismatches like
-// LASER_LUMINOUS_DRILL → spell:card/luminous_drill_timer)
+// Spell ID → complete card, including the native action-type background.
+// Handles ID/filename mismatches such as LASER_LUMINOUS_DRILL.
 let _spellIdToSpriteKey: Map<string, string> | null = null;
 function resolveSpellKey(spellId: string): string {
   if (!_spellIdToSpriteKey) {
@@ -254,8 +270,7 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
       // item:perks/critical_hit). Falls back to the generic perk icon.
       const perkId = (poi as any).perk;
       if (perkId) {
-        const id = String(perkId).toLowerCase();
-        const key = `item:perks/${PERK_ICON_REMAP[id] || id}`;
+        const key = perkAtlasKey(String(perkId));
         if (!atlas || atlas[key]) return key;
       }
       return "item:perk";
@@ -392,7 +407,9 @@ function getSpriteKey(poi: POI, atlas?: Record<string, AtlasEntry>): string | st
     const entityName = String((poi as any).entity).toLowerCase();
     const key = `enemy:${entityName}`;
     if (atlas && atlas[key]) return key;
-    return key; // return even if not in atlas — the renderer will skip if missing
+    // Older saved generations can retain XML paths. Prefer an exact atlas
+    // key when available so existing variant sprites keep their identity.
+    return `enemy:${entityName.replace(/\.xml$/, '').split('/').pop()}`;
   }
 
   // Wand altars / special wand sources — also skip base icons
@@ -512,27 +529,22 @@ const BOSS_DROP_TYPES = new Set([
 /** Enemy/prop spawn containers: spread inner items to avoid overlap. */
 const ENEMY_SPAWN_TYPES = new Set(["enemies", "props"]);
 
-/**
- * Some "container" entities visually contain another entity that spawns when
- * the container is broken. Both are emitted as siblings in the POI's items
- * array, but rendering both produces duplicate markers (e.g. one Houre + one
- * Houre Crystal at the same spot). Skip the contained entity when its
- * container sibling is present.
- *
- * Format: [containerEntityPathRegex, containedEntityPathRegex].
- */
-const CONTAINED_BY_SIBLING: Array<[RegExp, RegExp]> = [[/\/buildings\/ghost_crystal/, /\/animals\/ghost\.xml$/]];
+function isEntity(poi: POI, entity: string): boolean {
+  return poi.type === 'entity' && canonicalEntityId(poi.entity || '') === entity;
+}
 
-function shouldSkipDueToContainer(item: any, siblings: any[]): boolean {
-  const itemEntity = String(item?.entity || "");
-  if (!itemEntity) return false;
-  for (const [containerRe, containedRe] of CONTAINED_BY_SIBLING) {
-    if (!containedRe.test(itemEntity)) continue;
-    if (siblings.some((s) => s !== item && containerRe.test(String(s?.entity || "")))) {
-      return true;
-    }
-  }
-  return false;
+/** ghost_crystal.lua creates one Houre immediately, not when broken. Draw it
+ * beside its crystal even when Telescope only emits the crystal. The display
+ * projection replaces surplus ghost siblings in that same spawn group only;
+ * independently generated Houres and the original generation remain intact. */
+function addCrystalHoure(items: MarkerItem[], crystal: POI, pw: number,
+  worldCenter: number, atlas: Record<string, AtlasEntry>): void {
+  addMarkerItem(items, {
+    type: 'entity', entity: 'ghost',
+    id: crystal.id ? `${crystal.id}_houre` : undefined,
+    biome: crystal.biome, isHorde: true,
+    x: crystal.x + 20, y: crystal.y,
+  }, pw, worldCenter, atlas);
 }
 
 export async function buildMarkerData(result: GenerationResult): Promise<MarkerData> {
@@ -559,17 +571,26 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
         addClickOnlyMarker(items, poi, pw);
       } else {
         addMarkerItem(items, poi, pw, worldCenter, atlas);
+        if (!skipCreatures && isEntity(poi, 'ghost_crystal'))
+          addCrystalHoure(items, poi, pw, worldCenter, atlas);
       }
 
       // Unwrap container contents as separate markers (except chest types which just show the chest icon)
       if (CONTAINER_TYPES.has(poi.type) && !CHEST_ONLY_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items)) {
-        const innerItems = poi.items.filter((i: any) => !i.ignore);
+        const siblings = poi.items.filter((i: any) => !i.ignore);
+        const hasCrystal = siblings.some((item: POI) => isEntity(item, 'ghost_crystal'));
+        const innerItems = hasCrystal ? siblings.filter((item: POI) => !isEntity(item, 'ghost')) : siblings;
         const count = innerItems.length;
         const isBoss = BOSS_DROP_TYPES.has(poi.type);
         for (let ci = 0; ci < count; ci++) {
           const innerItem = innerItems[ci];
-          if (shouldSkipDueToContainer(innerItem, innerItems)) continue;
-          if (isBoss) {
+          if (isEntity(innerItem, 'ghost_crystal')) {
+            const crystal = { ...innerItem, biome: innerItem.biome || poi.biome,
+              x: Number.isFinite(innerItem.x) ? innerItem.x : poi.x,
+              y: Number.isFinite(innerItem.y) ? innerItem.y : poi.y };
+            addMarkerItem(items, crystal, pw, worldCenter, atlas);
+            if (!skipCreatures) addCrystalHoure(items, crystal, pw, worldCenter, atlas);
+          } else if (isBoss) {
             // Boss drops: spread horizontally + push down below the boss sprite.
             // Drops may omit their own x/y (most hardcoded boss drops do), so
             // anchor to the boss POI's position. Without this the offset math
@@ -636,18 +657,20 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
     );
   }
 
+  // Spell cards extend 19px above their entity and only 1px below it; their
+  // click bounds need the card hotspot rather than a centred rectangle.
+  const boundsOf = (item: MarkerItem) => {
+    const key = Array.isArray(item.spriteKey) ? item.spriteKey[0] : item.spriteKey;
+    const sprite = key?.startsWith('spell:card/') ? atlas[key] : undefined;
+    const left = item.osdX - (sprite?.ox ?? item.w / 2);
+    const top = item.osdY - (sprite?.oy ?? item.h / 2);
+    return [left, top, left + item.w, top + item.h];
+  };
   // Compute bounding box
   let minX = Infinity,
     minY = Infinity,
     maxX = -Infinity,
     maxY = -Infinity;
-  const boundsOf = (item: MarkerItem) => {
-    const key = Array.isArray(item.spriteKey) ? item.spriteKey[0] : item.spriteKey;
-    const sprite = atlas[key];
-    const left = item.osdX - (sprite?.ox ?? item.w / 2);
-    const top = item.osdY - (sprite?.oy ?? item.h / 2);
-    return [left, top, left + item.w, top + item.h];
-  };
   for (const item of items) {
     const [left, top, right, bottom] = boundsOf(item);
     if (left < minX) minX = left;

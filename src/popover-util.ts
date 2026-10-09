@@ -121,24 +121,16 @@ export function attachWikiLinkPopover(link: HTMLAnchorElement): void {
  * `__disposePopover`. Call before tearing down a subtree that hosts popovers.
  */
 export function dismissPopovers(root: HTMLElement): void {
-  try {
-    const lib = bs();
-    if (lib?.Popover) {
-      root.querySelectorAll('[data-bs-toggle="popover"]').forEach((pop) => {
-        const inst = lib.Popover.getInstance(pop);
-        if (inst) {
-          inst.hide();
-          inst.dispose();
-        }
-      });
-    }
-    const visit = (node: Element) => {
-      const disp = (node as any).__disposePopover;
-      if (typeof disp === "function") disp();
-    };
-    visit(root);
-    root.querySelectorAll("*").forEach(visit);
-  } catch { /* noop */ }
+  const lib = bs();
+  const visit = (node: Element) => {
+    try {
+      const dispose = (node as any).__disposePopover;
+      if (typeof dispose === "function") dispose();
+      else lib?.Popover?.getInstance(node)?.dispose();
+    } catch { /* A removed instance must not prevent cleanup of its siblings. */ }
+  };
+  visit(root);
+  root.querySelectorAll('[data-bs-toggle="popover"], [data-popover-owner]').forEach(visit);
 }
 
 /** Hide panels on a temporarily hidden card without destroying its triggers. */

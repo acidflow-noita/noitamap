@@ -17,19 +17,34 @@ export const STATIC_TERRAIN_BIOMES = new Set([
   "lake_deep",
 ]);
 
-const REPEATED_TEMPLE_BIOMES = new Set(["biome_potion_mimics", "biome_darkness"]);
-
-// The scene carves only part of these solid rock chunks. Keep the surrounding
-// fill, which the static base leaves empty for seed-dependent room placement.
-export const AUTHORED_ROOM_FILL_BIOMES = new Set([
-  "solid_wall_hidden_cavern",
-  "friend_1", "friend_2", "friend_3", "friend_4", "friend_5", "friend_6",
+// Main-world temples belong to the static map. Their heaven/hell repeats
+// instead need the generated Wang geometry shaded with the vertical material.
+const REPEATED_TEMPLE_BIOMES = new Set([
+  "biome_potion_mimics",
+  "biome_darkness",
 ]);
 
-/** Approximate temple templates must not cover their repeated final-pixel terrain. */
+// These seed-dependent rooms carve air into the existing static-map rock.
+// Their backdrop belongs only inside the scene, never across the whole biome.
+export const CARVED_ROOM_BIOMES = new Set([
+  "friend_1", "friend_2", "friend_3", "friend_4", "friend_5", "friend_6",
+  "solid_wall_hidden_cavern",
+]);
+
+/** Telescope stores these material maps under general instead of their biome. */
+export function carvedRoomBiome(key: string): string | undefined {
+  if (key === "general/solid_wall_hidden_cavern") return "solid_wall_hidden_cavern";
+  return key === "general/friendroom" || key === "general/cavern" ? "friend_1" : undefined;
+}
+
+/** Coarse temple templates are only needed by the approximate renderer. */
 export function isRepeatedTempleTemplate(scene: { key: string }): boolean {
   return scene.key === "static_tile/temples-assets/potion_mimics" ||
     scene.key === "static_tile/temples-assets/darkness";
+}
+
+export function isWaterCaveLayout(key: string): boolean {
+  return /^general\/watercave_layout_[1-5]$/.test(key);
 }
 
 export const BIOME_BACKGROUND_MAP: Record<string, string> = {
@@ -57,7 +72,6 @@ export const BIOME_BACKGROUND_MAP: Record<string, string> = {
   meat: "data/weather_gfx/background_the_end.png",
   pyramid: "data/weather_gfx/background_pyramid.png",
   liquidcave: "data/weather_gfx/background_cave_04_alt.png",
-  watercave: "data/weather_gfx/background_cave_04_alt.png",
   sandcave: "data/weather_gfx/background_cave_09.png",
   dragoncave: "data/weather_gfx/background_cave_02.png",
   lavalake: "data/weather_gfx/background_cave_04_alt.png",
@@ -75,7 +89,7 @@ export const BIOME_BACKGROUND_MAP: Record<string, string> = {
   solid_wall_tower_2: "data/weather_gfx/background_excavationsite.png",
   solid_wall_tower_1: "data/weather_gfx/background_coalmine.png",
   solid_wall_tower_10: "data/weather_gfx/background_crypt.png",
-  // Carved air in the solid fill biomes reveals their cave backdrop.
+  // Carved room interiors reveal this backdrop through their force-air pixels.
   friend_1: "data/weather_gfx/background_cave_02.png",
   friend_2: "data/weather_gfx/background_cave_02.png",
   friend_3: "data/weather_gfx/background_cave_02.png",
@@ -90,13 +104,15 @@ export const BIOME_BACKGROUND_MAP: Record<string, string> = {
  * supply the backdrop the game shows inside the carved room. */
 export function sceneBiomeNames(scene: { key: string; variantKey?: string }): string[] {
   const names: string[] = [];
+  const room = carvedRoomBiome(scene.key);
+  if (room) names.push(room);
   for (const part of (scene.variantKey ?? "").split("&"))
     if (part.startsWith("biome=")) names.push(...part.slice(6).split("@"));
   names.push(scene.key.split("/")[0]);
   return names;
 }
 
-export const TERRAIN_VERSION = "full-pixel-v17";
+export const TERRAIN_VERSION = "full-pixel-v21-instant-gold-cavern";
 export const WORLD_HEIGHT = 48 * 512;
 export const WORLD_TOP = -14 * 512;
 export type VerticalPlane = -1 | 0 | 1;
@@ -123,11 +139,8 @@ export function createTerrainOwnership(
   for (const layer of layers) {
     const name = layer.biomeName;
     const conf = config[name];
-    const roomFill = AUTHORED_ROOM_FILL_BIOMES.has(name) && layer.isFill &&
-      !!conf?.fillMaterial && !conf.sceneOnly && !includeRepeatedTemples;
-    if ((!roomFill && (!layer.buffer || layer.isFill || !conf?.wangFile)) ||
-      (STATIC_TERRAIN_BIOMES.has(name) &&
-        !(includeRepeatedTemples && REPEATED_TEMPLE_BIOMES.has(name))))
+    if (!layer.buffer || layer.isFill || !conf?.wangFile || (STATIC_TERRAIN_BIOMES.has(name) &&
+      !(includeRepeatedTemples && REPEATED_TEMPLE_BIOMES.has(name))))
       continue;
     let id = ids.get(name);
     if (id === undefined) {
@@ -171,7 +184,8 @@ export function createTerrainOwnership(
 }
 
 /** Vertical-world paint is restricted to original source claims as well as the
- * sky/hell material band. Source exclusions still apply before remapping names. */
+ * sky/hell material band. Only repeated temple Wang layers are exempt from
+ * main-world static-art exclusions; other authored rooms stay excluded. */
 export function createPlaneOwnership(
   layers: any[],
   sourcePixels: Uint32Array,
@@ -179,7 +193,8 @@ export function createPlaneOwnership(
   config: Record<string, any>,
   width: number,
 ): TerrainOwnership {
-  const source = createTerrainOwnership(layers, sourcePixels, config, width, sourcePixels !== paintPixels);
+  const source = createTerrainOwnership(layers, sourcePixels, config, width,
+    sourcePixels !== paintPixels);
   if (sourcePixels === paintPixels) return source;
   const nameByColor = new Map<number, string>();
   for (const [name, cfg] of Object.entries(config))

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { build } from "vite";
 import { Worker } from "node:worker_threads";
-import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
@@ -70,18 +70,14 @@ beforeAll(async () => {
   fixtureOutput = resolve(directory, "fixtures");
   // Build the actual app worker using the deployment aliases and worker plugin.
   // Do NOT mock modules or polyfill Image; those would hide the reported crash.
-  await build({
+  const application: any = await build({
     configFile: resolve(root, "vite.config.ts"),
     logLevel: "error",
     build: { outDir: output },
   });
-  workerEntry = resolve(
-    output,
-    "build",
-    (await readdir(resolve(output, "build"))).find((f) =>
-      /^pw-worker-.*\.js$/.test(f),
-    )!,
-  );
+  const emittedWorker = application.output.find((file: any) => /(?:^|\/)pw-worker-.*\.js$/.test(file.fileName));
+  expect(emittedWorker, 'the production build must emit its PW worker').toBeDefined();
+  workerEntry = resolve(output, emittedWorker.fileName);
   const fixture = resolve(root, "tests/helpers/generate-worker-fixture.ts");
   await build({
     configFile: resolve(root, "vite.config.ts"),
